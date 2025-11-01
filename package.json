@@ -10,7 +10,8 @@
     "tauri": "tauri",
     "format": "biome format --write",
     "lint": "biome lint",
-    "check": "biome check --write"
+    "check": "biome check --write",
+    "diff": "git diff --staged > diff.txt"
   },
   "dependencies": {
     "@lexical/code": "^0.38.2",
