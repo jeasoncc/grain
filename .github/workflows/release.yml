@@ -1,100 +1,82 @@
-name: Build & Release Multi-Platform (Bun)
+name: 'publish'
 
 on:
+  workflow_dispatch:      # 手动触发
   push:
-    tags:
-      - "v*.*.*"      # 仅当 push 标签时触发 release
-  workflow_dispatch:  # 手动触发
+    branches:
+      - release           # 推送 release 分支触发
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
+  publish-tauri:
+    permissions:
+      contents: write
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        node: [20]
+        include:
+          - platform: 'macos-latest'    # macOS Arm
+            args: '--target aarch64-apple-darwin'
+          - platform: 'macos-latest'    # macOS Intel
+            args: '--target x86_64-apple-darwin'
+          - platform: 'ubuntu-22.04'
+            args: ''
+          - platform: 'windows-latest'
+            args: ''
 
+    runs-on: ${{ matrix.platform }}
     steps:
-      # 1️⃣ 检出代码
-      - uses: actions/checkout@v3
+      # 1️⃣ 获取代码
+      - uses: actions/checkout@v4
 
-      # 2️⃣ 安装 Node.js (为了 Bun)
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node }}
-
-      # 3️⃣ 安装 Rust
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      # 4️⃣ Linux 系统依赖（修复 Ubuntu 24.04 报错）
-      - name: Install Linux system dependencies
-        if: runner.os == 'Linux'
+      # 2️⃣ 安装 Linux 系统依赖（仅 Ubuntu）
+      - name: Install Linux dependencies
+        if: startsWith(matrix.platform, 'ubuntu')
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libglib2.0-dev \
-            libgtk-3-dev \
-            pkg-config \
             libwebkit2gtk-4.1-dev \
-            build-essential
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            build-essential \
+            pkg-config \
+            curl
 
-      # 5️⃣ 安装 Bun 并依赖
-      - name: Install Bun and dependencies
+      # 3️⃣ 安装 Node（Bun）
+      - name: Install Bun
         run: |
-          npm install -g bun
-          bun install
+          curl -fsSL https://bun.sh/install | bash
+          export PATH="$HOME/.bun/bin:$PATH"
+          bun --version
 
-      # 6️⃣ 构建前端
+      # 4️⃣ 安装 Rust
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      # 5️⃣ Rust 缓存
+      - name: Cache Rust
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      # 6️⃣ 安装前端依赖（Bun）
+      - name: Install frontend dependencies
+        run: bun install
+
+      # 7️⃣ 构建前端
       - name: Build frontend
         run: bun run build
 
-      # 7️⃣ 构建 Tauri 桌面应用
-      - name: Build Tauri App
-        run: bun run tauri build
-
-      # 8️⃣ 上传构建产物
-      - name: Upload Platform Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.os }}-bundle
-          path: |
-            src-tauri/target/release/bundle/**/*.AppImage
-            src-tauri/target/release/bundle/**/*.deb
-            src-tauri/target/release/bundle/**/*.rpm
-            src-tauri/target/release/bundle/**/*.msi
-            src-tauri/target/release/bundle/**/*.dmg
-            src-tauri/target/release/bundle/**/*.exe
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      # 1️⃣ 检出代码
-      - uses: actions/checkout@v3
-
-      # 2️⃣ 下载构建产物
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      # 3️⃣ 创建 GitHub Release
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          body: "Automated release of Novel Editor"
+      # 8️⃣ 构建 Tauri App
+      - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # 4️⃣ 上传 Release 附件
-      - name: Upload Release Assets
-        uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/**/*
+          tagName: app-v__VERSION__          # 自动替换版本
+          releaseName: 'App v__VERSION__'
+          releaseBody: 'See the assets to download this version and install.'
+          releaseDraft: true                 # 测试用 draft
+          prerelease: false
+          args: ${{ matrix.args }}
