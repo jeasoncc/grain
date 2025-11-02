@@ -14,28 +14,29 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
+          - platform: 'macos-latest'      # Arm macs
             args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest'
+          - platform: 'macos-latest'      # Intel macs
             args: '--target x86_64-apple-darwin'
           - platform: 'ubuntu-22.04'
             args: ''
-          - platform: 'ubuntu-22.04-arm'
+          - platform: 'ubuntu-22.04-arm'  # ARM Ubuntu runner
             args: ''
           - platform: 'windows-latest'
             args: ''
 
     runs-on: ${{ matrix.platform }}
-    timeout-minutes: 60
-
     steps:
       - uses: actions/checkout@v4
 
+      # -----------------------------
       # Ubuntu 系统依赖
-      - name: Install Linux dependencies
-        if: startsWith(matrix.platform, 'ubuntu')
+      # -----------------------------
+      - name: install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04' || matrix.platform == 'ubuntu-22.04-arm'
         run: |
           sudo apt-get update
+          # 使用 libwebkit2gtk-4.1-dev 替代 4.0
           sudo apt-get install -y \
             libwebkit2gtk-4.1-dev \
             libappindicator3-dev \
@@ -44,34 +45,38 @@ jobs:
             build-essential \
             pkg-config
 
-      # Node.js
-      - name: Setup Node.js
+      # -----------------------------
+      # Node
+      # -----------------------------
+      - name: setup node
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
           cache: 'yarn'
 
+      # -----------------------------
       # Rust
-      - name: Install Rust stable
-        uses: actions-rs/toolchain@v1
+      # -----------------------------
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      # Rust 缓存
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
 
+      # -----------------------------
       # 前端依赖
-      - name: Install frontend dependencies
+      # -----------------------------
+      - name: install frontend dependencies
         run: yarn install
 
-      # Tauri 打包
-      - name: Build and release Tauri app
-        uses: tauri-apps/tauri-action@v0
+      # -----------------------------
+      # 构建 & 发布 Tauri App
+      # -----------------------------
+      - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
