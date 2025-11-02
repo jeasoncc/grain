@@ -86,7 +86,7 @@ jobs:
       # -----------------------------
       - uses: tauri-apps/tauri-action@v0
         env:
-          # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 替换为生成的token
           GH_TOKEN: ${{ secrets.GH_PAT }}
         with:
           tagName: app-v__VERSION__
