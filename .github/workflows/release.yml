@@ -1,10 +1,10 @@
 name: 'publish'
 
 on:
-  workflow_dispatch:      # 手动触发
+  workflow_dispatch:
   push:
     branches:
-      - release           # 推送 release 分支触发
+      - release
 
 jobs:
   publish-tauri:
@@ -14,21 +14,24 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'    # macOS Arm
+          - platform: 'macos-latest'
             args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest'    # macOS Intel
+          - platform: 'macos-latest'
             args: '--target x86_64-apple-darwin'
           - platform: 'ubuntu-22.04'
+            args: ''
+          - platform: 'ubuntu-22.04-arm'
             args: ''
           - platform: 'windows-latest'
             args: ''
 
     runs-on: ${{ matrix.platform }}
+    timeout-minutes: 60
+
     steps:
-      # 1️⃣ 获取代码
       - uses: actions/checkout@v4
 
-      # 2️⃣ 安装 Linux 系统依赖（仅 Ubuntu）
+      # Ubuntu 系统依赖
       - name: Install Linux dependencies
         if: startsWith(matrix.platform, 'ubuntu')
         run: |
@@ -39,44 +42,42 @@ jobs:
             librsvg2-dev \
             patchelf \
             build-essential \
-            pkg-config \
-            curl
+            pkg-config
 
-      # 3️⃣ 安装 Node（Bun）
-      - name: Install Bun
-        run: |
-          curl -fsSL https://bun.sh/install | bash
-          export PATH="$HOME/.bun/bin:$PATH"
-          bun --version
-
-      # 4️⃣ 安装 Rust
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      # Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
+          node-version: lts/*
+          cache: 'yarn'
+
+      # Rust
+      - name: Install Rust stable
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      # 5️⃣ Rust 缓存
-      - name: Cache Rust
+      # Rust 缓存
+      - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
 
-      # 6️⃣ 安装前端依赖（Bun）
+      # 前端依赖
       - name: Install frontend dependencies
-        run: bun install
+        run: yarn install
 
-      # 7️⃣ 构建前端
-      - name: Build frontend
-        run: bun run build
-
-      # 8️⃣ 构建 Tauri App
-      - uses: tauri-apps/tauri-action@v0
+      # Tauri 打包
+      - name: Build and release Tauri app
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: app-v__VERSION__          # 自动替换版本
+          tagName: app-v__VERSION__
           releaseName: 'App v__VERSION__'
           releaseBody: 'See the assets to download this version and install.'
-          releaseDraft: true                 # 测试用 draft
+          releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
