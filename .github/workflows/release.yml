@@ -1,10 +1,12 @@
-name: 'publish'
+name: Build & Release Multi-Platform (Bun)
 
 on:
   workflow_dispatch:
   push:
     branches:
       - release
+    tags:
+      - "v*.*.*"      # 仅当 push 标签时触发 release
 
 jobs:
   publish-tauri:
@@ -36,7 +38,6 @@ jobs:
         if: matrix.platform == 'ubuntu-22.04' || matrix.platform == 'ubuntu-22.04-arm'
         run: |
           sudo apt-get update
-          # 使用 libwebkit2gtk-4.1-dev 替代 4.0 就是这里
           sudo apt-get install -y \
             libwebkit2gtk-4.1-dev \
             libappindicator3-dev \
@@ -46,13 +47,12 @@ jobs:
             pkg-config
 
       # -----------------------------
-      # Node
+      # 安装 Bun
       # -----------------------------
-      - name: setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: 'yarn'
+      - name: setup Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "export PATH=\"$HOME/.bun/bin:$PATH\"" >> $GITHUB_ENV
 
       # -----------------------------
       # Rust
@@ -68,10 +68,16 @@ jobs:
           workspaces: './src-tauri -> target'
 
       # -----------------------------
-      # 前端依赖
+      # 前端依赖（Bun）
       # -----------------------------
       - name: install frontend dependencies
-        run: yarn install
+        run: bun install
+
+      # -----------------------------
+      # 前端构建（可选）
+      # -----------------------------
+      - name: build frontend
+        run: bun run build
 
       # -----------------------------
       # 构建 & 发布 Tauri App
