@@ -1,3 +1,4 @@
+
 name: Build & Release Multi-Platform (Bun)
 
 on:
@@ -52,12 +53,10 @@ jobs:
       - name: setup Bun
         run: |
           curl -fsSL https://bun.sh/install | bash
-          echo "$HOME/.bun/bin" >> $GITHUB_PATH   # 这样每一步都能识别 bun
-          # curl -fsSL https://bun.sh/install | bash
-          # echo "export PATH=\"$HOME/.bun/bin:$PATH\"" >> $GITHUB_ENV
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
 
       # -----------------------------
-      # Rust
+      # 安装 Rust
       # -----------------------------
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -86,8 +85,8 @@ jobs:
       # -----------------------------
       - uses: tauri-apps/tauri-action@v0
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }} # 可选，用于手动发布
         with:
           tagName: app-v__VERSION__
           releaseName: 'App v__VERSION__'
@@ -95,3 +94,18 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+      # -----------------------------
+      # 上传构建产物到 GitHub Actions（Artifacts）
+      # -----------------------------
+      - name: Upload build artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-bundles-${{ matrix.platform }}
+          path: |
+            src-tauri/target/release/bundle/**/*.deb
+            src-tauri/target/release/bundle/**/*.AppImage
+            src-tauri/target/release/bundle/**/*.rpm
+            src-tauri/target/release/bundle/**/*.exe
+            src-tauri/target/release/bundle/**/*.msi
