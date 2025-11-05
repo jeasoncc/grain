@@ -328,6 +328,34 @@ export class NovelEditorDB extends Dexie {
 }
 
 // ==============================
+// 初始化数据库（第一次使用时调用）
+// ==============================
+export async function initDatabase() {
+  try {
+    const existingUsers = await db.users.toArray();
+    if (existingUsers.length === 0) {
+      // 新建一个默认免费用户
+      await db.addUser({
+        username: "guest",
+        displayName: "Guest User",
+        plan: "free",
+      });
+      logger.info("✅ Created default guest user");
+    }
+
+    const dbVersion = await db.getDBVersion();
+    if (dbVersion.length === 0) {
+      await db.setDBVersion("1.0.0", "Initial database setup");
+      logger.info("✅ Initialized DB version 1.0.0");
+    }
+
+    logger.success("🎉 Database initialized successfully!");
+  } catch (error) {
+    logger.error("❌ Database initialization failed:", error);
+  }
+}
+
+// ==============================
 // 单例导出
 // ==============================
 export const db = new NovelEditorDB();
