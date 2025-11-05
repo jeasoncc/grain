@@ -9,7 +9,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { CreateBookDialog } from "./CreateBookDialog";
+import { CreateBookDialog } from "./createBookDialog";
 
 interface EmptyProjectProps {
   onCreate: () => void;
@@ -38,7 +38,8 @@ export function EmptyProject({
         <div className="flex gap-2">
           {/* <Button >Create Project</Button> */}
 
-          <CreateBookDialog onSubmit={onCreate} />
+          {/* <CreateBookDialog onSubmit={onCreate} /> */}
+          <Button onClick={onCreate}>Create Project</Button>
           <Button variant="outline" onClick={onImport}>
             Import Project
           </Button>
