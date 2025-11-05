@@ -1,321 +1,1287 @@
 diff --git a/bun.lock b/bun.lock
-index e670ed7..ccbc986 100644
+index ccbc986..360c478 100644
 --- a/bun.lock
 +++ b/bun.lock
-@@ -4,6 +4,7 @@
-     "": {
-       "name": "novel-editor",
-       "dependencies": {
-+        "@hookform/resolvers": "^5.2.2",
-         "@lexical/code": "^0.38.2",
-         "@lexical/file": "^0.38.2",
-         "@lexical/hashtag": "^0.38.2",
-@@ -17,23 +18,11 @@
-         "@lexical/table": "^0.38.2",
-         "@lexical/text": "^0.38.2",
-         "@lexical/utils": "^0.38.2",
--        "@radix-ui/react-checkbox": "^1.3.3",
--        "@radix-ui/react-collapsible": "^1.1.12",
-         "@radix-ui/react-dialog": "^1.1.15",
--        "@radix-ui/react-icons": "^1.3.2",
--        "@radix-ui/react-label": "^2.1.7",
--        "@radix-ui/react-popover": "^1.1.15",
--        "@radix-ui/react-scroll-area": "^1.2.10",
--        "@radix-ui/react-select": "^2.2.6",
--        "@radix-ui/react-separator": "^1.1.7",
--        "@radix-ui/react-slider": "^1.3.6",
--        "@radix-ui/react-slot": "^1.2.3",
--        "@radix-ui/react-tabs": "^1.1.13",
--        "@radix-ui/react-toggle": "^1.1.10",
--        "@radix-ui/react-toggle-group": "^1.1.11",
--        "@radix-ui/react-tooltip": "^1.2.8",
-         "@tailwindcss/vite": "^4.1.16",
-         "@tanstack/react-devtools": "^0.8.0",
-+        "@tanstack/react-form": "^1.23.8",
-+        "@tanstack/react-form-devtools": "^0.1.8",
-         "@tanstack/react-query": "^5.90.6",
-         "@tanstack/react-router": "^1.134.4",
-         "@tanstack/react-router-devtools": "^1.134.4",
-@@ -46,6 +35,7 @@
-         "consola": "^3.4.2",
-         "dayjs": "^1.11.19",
-         "dexie": "^4.2.1",
-+        "dexie-react-hooks": "^4.2.0",
-         "lexical": "^0.38.2",
+@@ -40,6 +40,7 @@
          "lodash": "^4.17.21",
          "lucide-react": "^0.552.0",
-@@ -58,6 +48,7 @@
-         "tailwindcss": "^4.0.0",
-         "tw-animate-css": "^1.4.0",
-         "uuid": "^13.0.0",
-+        "zod": "^4.1.12",
-       },
-       "devDependencies": {
-         "@biomejs/biome": "2.3.2",
-@@ -218,6 +209,8 @@
+         "lunr": "^2.3.9",
++        "next-themes": "^0.4.6",
+         "react": "^19.1.0",
+         "react-dom": "^19.1.0",
+         "react-error-boundary": "^6.0.0",
+@@ -639,6 +640,8 @@
  
-     "@floating-ui/utils": ["@floating-ui/utils@0.2.10", "", {}, "sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ=="],
+     "nanoid": ["nanoid@3.3.11", "", { "bin": { "nanoid": "bin/nanoid.cjs" } }, "sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w=="],
  
-+    "@hookform/resolvers": ["@hookform/resolvers@5.2.2", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "react-hook-form": "^7.55.0" } }, "sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA=="],
++    "next-themes": ["next-themes@0.4.6", "", { "peerDependencies": { "react": "^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc", "react-dom": "^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc" } }, "sha512-pZvgD5L0IEvX5/9GWyHMf3m8BKiVQwsCMHfoFosXtXBMnaS0ZnIJ9ST4b4NqLVKDEm8QBxoNNGNaBv2JNF6XNA=="],
 +
-     "@jridgewell/gen-mapping": ["@jridgewell/gen-mapping@0.3.13", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.0", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA=="],
+     "node-releases": ["node-releases@2.0.27", "", {}, "sha512-nmh3lCkYZ3grZvqcCH+fjmQ7X+H0OeZgP40OierEaAptX4XofMh5kwNbWh7lBduUzCcV/8kZ+NDLCwm2iorIlA=="],
  
-     "@jridgewell/remapping": ["@jridgewell/remapping@2.3.5", "", { "dependencies": { "@jridgewell/gen-mapping": "^0.3.5", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-LI9u/+laYG4Ds1TDKSJW2YPrIlcVYOwi2fUC6xB43lueCjgxV4lffOCZCtYFiH6TNOX+tQKXx97T4IKHbhyHEQ=="],
-@@ -276,68 +269,30 @@
- 
-     "@preact/signals-core": ["@preact/signals-core@1.12.1", "", {}, "sha512-BwbTXpj+9QutoZLQvbttRg5x3l5468qaV2kufh+51yha1c53ep5dY4kTuZR35+3pAZxpfQerGJiQqg34ZNZ6uA=="],
- 
--    "@radix-ui/number": ["@radix-ui/number@1.1.1", "", {}, "sha512-MkKCwxlXTgz6CFoJx3pCwn07GKp36+aZyu/u2Ln2VrA5DcdyCZkASEDBTd8x5whTQQL5CiYf4prXKLcgQdv29g=="],
--
-     "@radix-ui/primitive": ["@radix-ui/primitive@1.1.3", "", {}, "sha512-JTF99U/6XIjCBo0wqkU5sK10glYe27MRRsfwoiq5zzOEZLHU3A3KCMa5X/azekYRCJ0HlwI0crAXS/5dEHTzDg=="],
- 
--    "@radix-ui/react-arrow": ["@radix-ui/react-arrow@1.1.7", "", { "dependencies": { "@radix-ui/react-primitive": "2.1.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-F+M1tLhO+mlQaOWspE8Wstg+z6PwxwRd8oQ8IXceWz92kfAmalTRf0EjrouQeo7QssEPfCn05B4Ihs1K9WQ/7w=="],
--
--    "@radix-ui/react-checkbox": ["@radix-ui/react-checkbox@1.3.3", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-presence": "1.1.5", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-controllable-state": "1.2.2", "@radix-ui/react-use-previous": "1.1.1", "@radix-ui/react-use-size": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-wBbpv+NQftHDdG86Qc0pIyXk5IR3tM8Vd0nWLKDcX8nNn4nXFOFwsKuqw2okA/1D/mpaAkmuyndrPJTYDNZtFw=="],
--
--    "@radix-ui/react-collapsible": ["@radix-ui/react-collapsible@1.1.12", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-id": "1.1.1", "@radix-ui/react-presence": "1.1.5", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-controllable-state": "1.2.2", "@radix-ui/react-use-layout-effect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-Uu+mSh4agx2ib1uIGPP4/CKNULyajb3p92LsVXmH2EHVMTfZWpll88XJ0j4W0z3f8NK1eYl1+Mf/szHPmcHzyA=="],
--
--    "@radix-ui/react-collection": ["@radix-ui/react-collection@1.1.7", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-slot": "1.2.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-Fh9rGN0MoI4ZFUNyfFVNU4y9LUz93u9/0K+yLgA2bwRojxM8JU1DyvvMBabnZPBgMWREAJvU2jjVzq+LrFUglw=="],
--
-     "@radix-ui/react-compose-refs": ["@radix-ui/react-compose-refs@1.1.2", "", { "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-z4eqJvfiNnFMHIIvXP3CY57y2WJs5g2v3X0zm9mEJkrkNv4rDxu+sg9Jh8EkXyeqBkB7SOcboo9dMVqhyrACIg=="],
- 
-     "@radix-ui/react-context": ["@radix-ui/react-context@1.1.2", "", { "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-jCi/QKUM2r1Ju5a3J64TH2A5SpKAgh0LpknyqdQ4m6DCV0xJ2HG1xARRwNGPQfi1SLdLWZ1OJz6F4OMBBNiGJA=="],
- 
-     "@radix-ui/react-dialog": ["@radix-ui/react-dialog@1.1.15", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-dismissable-layer": "1.1.11", "@radix-ui/react-focus-guards": "1.1.3", "@radix-ui/react-focus-scope": "1.1.7", "@radix-ui/react-id": "1.1.1", "@radix-ui/react-portal": "1.1.9", "@radix-ui/react-presence": "1.1.5", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-slot": "1.2.3", "@radix-ui/react-use-controllable-state": "1.2.2", "aria-hidden": "^1.2.4", "react-remove-scroll": "^2.6.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-TCglVRtzlffRNxRMEyR36DGBLJpeusFcgMVD9PZEzAKnUs1lKCgX5u9BmC2Yg+LL9MgZDugFFs1Vl+Jp4t/PGw=="],
- 
--    "@radix-ui/react-direction": ["@radix-ui/react-direction@1.1.1", "", { "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-1UEWRX6jnOA2y4H5WczZ44gOOjTEmlqv1uNW4GAJEO5+bauCBhv8snY65Iw5/VOS/ghKN9gr2KjnLKxrsvoMVw=="],
--
-     "@radix-ui/react-dismissable-layer": ["@radix-ui/react-dismissable-layer@1.1.11", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-callback-ref": "1.1.1", "@radix-ui/react-use-escape-keydown": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-Nqcp+t5cTB8BinFkZgXiMJniQH0PsUt2k51FUhbdfeKvc4ACcG2uQniY/8+h1Yv6Kza4Q7lD7PQV0z0oicE0Mg=="],
- 
-     "@radix-ui/react-focus-guards": ["@radix-ui/react-focus-guards@1.1.3", "", { "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-0rFg/Rj2Q62NCm62jZw0QX7a3sz6QCQU0LpZdNrJX8byRGaGVTqbrW9jAoIAHyMQqsNpeZ81YgSizOt5WXq0Pw=="],
- 
-     "@radix-ui/react-focus-scope": ["@radix-ui/react-focus-scope@1.1.7", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-callback-ref": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-t2ODlkXBQyn7jkl6TNaw/MtVEVvIGelJDCG41Okq/KwUsJBwQ4XVZsHAVUkK4mBv3ewiAS3PGuUWuY2BoK4ZUw=="],
- 
--    "@radix-ui/react-icons": ["@radix-ui/react-icons@1.3.2", "", { "peerDependencies": { "react": "^16.x || ^17.x || ^18.x || ^19.0.0 || ^19.0.0-rc" } }, "sha512-fyQIhGDhzfc9pK2kH6Pl9c4BDJGfMkPqkyIgYDthyNYoNg3wVhoJMMh19WS4Up/1KMPFVpNsT2q3WmXn2N1m6g=="],
--
-     "@radix-ui/react-id": ["@radix-ui/react-id@1.1.1", "", { "dependencies": { "@radix-ui/react-use-layout-effect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-kGkGegYIdQsOb4XjsfM97rXsiHaBwco+hFI66oO4s9LU+PLAC5oJ7khdOVFxkhsmlbpUqDAvXw11CluXP+jkHg=="],
- 
--    "@radix-ui/react-label": ["@radix-ui/react-label@2.1.7", "", { "dependencies": { "@radix-ui/react-primitive": "2.1.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-YT1GqPSL8kJn20djelMX7/cTRp/Y9w5IZHvfxQTVHrOqa2yMl7i/UfMqKRU5V7mEyKTrUVgJXhNQPVCG8PBLoQ=="],
--
--    "@radix-ui/react-popover": ["@radix-ui/react-popover@1.1.15", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-dismissable-layer": "1.1.11", "@radix-ui/react-focus-guards": "1.1.3", "@radix-ui/react-focus-scope": "1.1.7", "@radix-ui/react-id": "1.1.1", "@radix-ui/react-popper": "1.2.8", "@radix-ui/react-portal": "1.1.9", "@radix-ui/react-presence": "1.1.5", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-slot": "1.2.3", "@radix-ui/react-use-controllable-state": "1.2.2", "aria-hidden": "^1.2.4", "react-remove-scroll": "^2.6.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-kr0X2+6Yy/vJzLYJUPCZEc8SfQcf+1COFoAqauJm74umQhta9M7lNJHP7QQS3vkvcGLQUbWpMzwrXYwrYztHKA=="],
--
--    "@radix-ui/react-popper": ["@radix-ui/react-popper@1.2.8", "", { "dependencies": { "@floating-ui/react-dom": "^2.0.0", "@radix-ui/react-arrow": "1.1.7", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-callback-ref": "1.1.1", "@radix-ui/react-use-layout-effect": "1.1.1", "@radix-ui/react-use-rect": "1.1.1", "@radix-ui/react-use-size": "1.1.1", "@radix-ui/rect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-0NJQ4LFFUuWkE7Oxf0htBKS6zLkkjBH+hM1uk7Ng705ReR8m/uelduy1DBo0PyBXPKVnBA6YBlU94MBGXrSBCw=="],
--
-     "@radix-ui/react-portal": ["@radix-ui/react-portal@1.1.9", "", { "dependencies": { "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-layout-effect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-bpIxvq03if6UNwXZ+HTK71JLh4APvnXntDc6XOX8UVq4XQOVl7lwok0AvIl+b8zgCw3fSaVTZMpAPPagXbKmHQ=="],
- 
-     "@radix-ui/react-presence": ["@radix-ui/react-presence@1.1.5", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-use-layout-effect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-/jfEwNDdQVBCNvjkGit4h6pMOzq8bHkopq458dPt2lMjx+eBQUohZNG9A7DtO/O5ukSbxuaNGXMjHicgwy6rQQ=="],
- 
-     "@radix-ui/react-primitive": ["@radix-ui/react-primitive@2.1.3", "", { "dependencies": { "@radix-ui/react-slot": "1.2.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-m9gTwRkhy2lvCPe6QJp4d3G1TYEUHn/FzJUtq9MjH46an1wJU+GdoGC5VLof8RX8Ft/DlpshApkhswDLZzHIcQ=="],
- 
--    "@radix-ui/react-roving-focus": ["@radix-ui/react-roving-focus@1.1.11", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-collection": "1.1.7", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-direction": "1.1.1", "@radix-ui/react-id": "1.1.1", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-callback-ref": "1.1.1", "@radix-ui/react-use-controllable-state": "1.2.2" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-7A6S9jSgm/S+7MdtNDSb+IU859vQqJ/QAtcYQcfFC6W8RS4IxIZDldLR0xqCFZ6DCyrQLjLPsxtTNch5jVA4lA=="],
--
--    "@radix-ui/react-scroll-area": ["@radix-ui/react-scroll-area@1.2.10", "", { "dependencies": { "@radix-ui/number": "1.1.1", "@radix-ui/primitive": "1.1.3", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-direction": "1.1.1", "@radix-ui/react-presence": "1.1.5", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-callback-ref": "1.1.1", "@radix-ui/react-use-layout-effect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-tAXIa1g3sM5CGpVT0uIbUx/U3Gs5N8T52IICuCtObaos1S8fzsrPXG5WObkQN3S6NVl6wKgPhAIiBGbWnvc97A=="],
--
--    "@radix-ui/react-select": ["@radix-ui/react-select@2.2.6", "", { "dependencies": { "@radix-ui/number": "1.1.1", "@radix-ui/primitive": "1.1.3", "@radix-ui/react-collection": "1.1.7", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-direction": "1.1.1", "@radix-ui/react-dismissable-layer": "1.1.11", "@radix-ui/react-focus-guards": "1.1.3", "@radix-ui/react-focus-scope": "1.1.7", "@radix-ui/react-id": "1.1.1", "@radix-ui/react-popper": "1.2.8", "@radix-ui/react-portal": "1.1.9", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-slot": "1.2.3", "@radix-ui/react-use-callback-ref": "1.1.1", "@radix-ui/react-use-controllable-state": "1.2.2", "@radix-ui/react-use-layout-effect": "1.1.1", "@radix-ui/react-use-previous": "1.1.1", "@radix-ui/react-visually-hidden": "1.2.3", "aria-hidden": "^1.2.4", "react-remove-scroll": "^2.6.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-I30RydO+bnn2PQztvo25tswPH+wFBjehVGtmagkU78yMdwTwVf12wnAOF+AeP8S2N8xD+5UPbGhkUfPyvT+mwQ=="],
--
--    "@radix-ui/react-separator": ["@radix-ui/react-separator@1.1.7", "", { "dependencies": { "@radix-ui/react-primitive": "2.1.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-0HEb8R9E8A+jZjvmFCy/J4xhbXy3TV+9XSnGJ3KvTtjlIUy/YQ/p6UYZvi7YbeoeXdyU9+Y3scizK6hkY37baA=="],
--
--    "@radix-ui/react-slider": ["@radix-ui/react-slider@1.3.6", "", { "dependencies": { "@radix-ui/number": "1.1.1", "@radix-ui/primitive": "1.1.3", "@radix-ui/react-collection": "1.1.7", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-direction": "1.1.1", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-controllable-state": "1.2.2", "@radix-ui/react-use-layout-effect": "1.1.1", "@radix-ui/react-use-previous": "1.1.1", "@radix-ui/react-use-size": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-JPYb1GuM1bxfjMRlNLE+BcmBC8onfCi60Blk7OBqi2MLTFdS+8401U4uFjnwkOr49BLmXxLC6JHkvAsx5OJvHw=="],
--
-     "@radix-ui/react-slot": ["@radix-ui/react-slot@1.2.3", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-aeNmHnBxbi2St0au6VBVC7JXFlhLlOnvIIlePNniyUNAClzmtAUEY8/pBiK3iHjufOlwA+c20/8jngo7xcrg8A=="],
- 
--    "@radix-ui/react-tabs": ["@radix-ui/react-tabs@1.1.13", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-direction": "1.1.1", "@radix-ui/react-id": "1.1.1", "@radix-ui/react-presence": "1.1.5", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-roving-focus": "1.1.11", "@radix-ui/react-use-controllable-state": "1.2.2" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-7xdcatg7/U+7+Udyoj2zodtI9H/IIopqo+YOIcZOq1nJwXWBZ9p8xiu5llXlekDbZkca79a/fozEYQXIA4sW6A=="],
--
--    "@radix-ui/react-toggle": ["@radix-ui/react-toggle@1.1.10", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-controllable-state": "1.2.2" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-lS1odchhFTeZv3xwHH31YPObmJn8gOg7Lq12inrr0+BH/l3Tsq32VfjqH1oh80ARM3mlkfMic15n0kg4sD1poQ=="],
--
--    "@radix-ui/react-toggle-group": ["@radix-ui/react-toggle-group@1.1.11", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-direction": "1.1.1", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-roving-focus": "1.1.11", "@radix-ui/react-toggle": "1.1.10", "@radix-ui/react-use-controllable-state": "1.2.2" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-5umnS0T8JQzQT6HbPyO7Hh9dgd82NmS36DQr+X/YJ9ctFNCiiQd6IJAYYZ33LUwm8M+taCz5t2ui29fHZc4Y6Q=="],
--
--    "@radix-ui/react-tooltip": ["@radix-ui/react-tooltip@1.2.8", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-dismissable-layer": "1.1.11", "@radix-ui/react-id": "1.1.1", "@radix-ui/react-popper": "1.2.8", "@radix-ui/react-portal": "1.1.9", "@radix-ui/react-presence": "1.1.5", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-slot": "1.2.3", "@radix-ui/react-use-controllable-state": "1.2.2", "@radix-ui/react-visually-hidden": "1.2.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-tY7sVt1yL9ozIxvmbtN5qtmH2krXcBCfjEiCgKGLqunJHvgvZG2Pcl2oQ3kbcZARb1BGEHdkLzcYGO8ynVlieg=="],
--
-     "@radix-ui/react-use-callback-ref": ["@radix-ui/react-use-callback-ref@1.1.1", "", { "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-FkBMwD+qbGQeMu1cOHnuGB6x4yzPjho8ap5WtbEJ26umhgqVXbhekKUQO+hZEL1vU92a3wHwdp0HAcqAUF5iDg=="],
- 
-     "@radix-ui/react-use-controllable-state": ["@radix-ui/react-use-controllable-state@1.2.2", "", { "dependencies": { "@radix-ui/react-use-effect-event": "0.0.2", "@radix-ui/react-use-layout-effect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-BjasUjixPFdS+NKkypcyyN5Pmg83Olst0+c6vGov0diwTEo6mgdqVR6hxcEgFuh4QrAs7Rc+9KuGJ9TVCj0Zzg=="],
-@@ -348,16 +303,6 @@
- 
-     "@radix-ui/react-use-layout-effect": ["@radix-ui/react-use-layout-effect@1.1.1", "", { "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-RbJRS4UWQFkzHTTwVymMTUv8EqYhOp8dOOviLj2ugtTiXRaRQS7GLGxZTLL1jWhMeoSCf5zmcZkqTl9IiYfXcQ=="],
- 
--    "@radix-ui/react-use-previous": ["@radix-ui/react-use-previous@1.1.1", "", { "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-2dHfToCj/pzca2Ck724OZ5L0EVrr3eHRNsG/b3xQJLA2hZpVCS99bLAX+hm1IHXDEnzU6by5z/5MIY794/a8NQ=="],
--
--    "@radix-ui/react-use-rect": ["@radix-ui/react-use-rect@1.1.1", "", { "dependencies": { "@radix-ui/rect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-QTYuDesS0VtuHNNvMh+CjlKJ4LJickCMUAqjlE3+j8w+RlRpwyX3apEQKGFzbZGdo7XNG1tXa+bQqIE7HIXT2w=="],
--
--    "@radix-ui/react-use-size": ["@radix-ui/react-use-size@1.1.1", "", { "dependencies": { "@radix-ui/react-use-layout-effect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-ewrXRDTAqAXlkl6t/fkXWNAhFX9I+CkKlw6zjEwk86RSPKwZr3xpBRso655aqYafwtnbpHLj6toFzmd6xdVptQ=="],
--
--    "@radix-ui/react-visually-hidden": ["@radix-ui/react-visually-hidden@1.2.3", "", { "dependencies": { "@radix-ui/react-primitive": "2.1.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-pzJq12tEaaIhqjbzpCuv/OypJY/BPavOofm+dbab+MHLajy277+1lLm6JFcGgF5eskJ6mquGirhXY2GD/8u8Ug=="],
--
--    "@radix-ui/rect": ["@radix-ui/rect@1.1.1", "", {}, "sha512-HPwpGIzkl28mWyZqG52jiqDJ12waP11Pa1lGoiyUkIEuMLBP0oeK/C89esbXrxsky5we7dfd8U58nm0SgAWpVw=="],
--
-     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.0-beta.43", "", {}, "sha512-5Uxg7fQUCmfhax7FJke2+8B6cqgeUJUD9o2uXIKXhD+mG0mL6NObmVoi9wXEU1tY89mZKgAYA6fTbftx3q2ZPQ=="],
- 
-     "@rollup/rollup-android-arm-eabi": ["@rollup/rollup-android-arm-eabi@4.52.5", "", { "os": "android", "cpu": "arm" }, "sha512-8c1vW4ocv3UOMp9K+gToY5zL2XiiVw3k7f1ksf4yO1FlDFQ1C2u72iACFnSOceJFsWskc2WZNqeRhFRPzv+wtQ=="],
-@@ -416,6 +361,8 @@
- 
-     "@solid-primitives/utils": ["@solid-primitives/utils@6.3.2", "", { "peerDependencies": { "solid-js": "^1.6.12" } }, "sha512-hZ/M/qr25QOCcwDPOHtGjxTD8w2mNyVAYvcfgwzBHq2RwNqHNdDNsMZYap20+ruRwW4A3Cdkczyoz0TSxLCAPQ=="],
- 
-+    "@standard-schema/utils": ["@standard-schema/utils@0.3.0", "", {}, "sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g=="],
-+
-     "@tailwindcss/node": ["@tailwindcss/node@4.1.16", "", { "dependencies": { "@jridgewell/remapping": "^2.3.4", "enhanced-resolve": "^5.18.3", "jiti": "^2.6.1", "lightningcss": "1.30.2", "magic-string": "^0.30.19", "source-map-js": "^1.2.1", "tailwindcss": "4.1.16" } }, "sha512-BX5iaSsloNuvKNHRN3k2RcCuTEgASTo77mofW0vmeHkfrDWaoFAFvNHpEgtu0eqyypcyiBkDWzSMxJhp3AUVcw=="],
- 
-     "@tailwindcss/oxide": ["@tailwindcss/oxide@4.1.16", "", { "optionalDependencies": { "@tailwindcss/oxide-android-arm64": "4.1.16", "@tailwindcss/oxide-darwin-arm64": "4.1.16", "@tailwindcss/oxide-darwin-x64": "4.1.16", "@tailwindcss/oxide-freebsd-x64": "4.1.16", "@tailwindcss/oxide-linux-arm-gnueabihf": "4.1.16", "@tailwindcss/oxide-linux-arm64-gnu": "4.1.16", "@tailwindcss/oxide-linux-arm64-musl": "4.1.16", "@tailwindcss/oxide-linux-x64-gnu": "4.1.16", "@tailwindcss/oxide-linux-x64-musl": "4.1.16", "@tailwindcss/oxide-wasm32-wasi": "4.1.16", "@tailwindcss/oxide-win32-arm64-msvc": "4.1.16", "@tailwindcss/oxide-win32-x64-msvc": "4.1.16" } }, "sha512-2OSv52FRuhdlgyOQqgtQHuCgXnS8nFSYRp2tJ+4WZXKgTxqPy7SMSls8c3mPT5pkZ17SBToGM5LHEJBO7miEdg=="],
-@@ -456,19 +403,29 @@
- 
-     "@tanstack/devtools-ui": ["@tanstack/devtools-ui@0.4.4", "", { "dependencies": { "clsx": "^2.1.1", "goober": "^2.1.16", "solid-js": "^1.9.9" } }, "sha512-5xHXFyX3nom0UaNfiOM92o6ziaHjGo3mcSGe2HD5Xs8dWRZNpdZ0Smd0B9ddEhy0oB+gXyMzZgUJb9DmrZV0Mg=="],
- 
-+    "@tanstack/form-core": ["@tanstack/form-core@1.24.4", "", { "dependencies": { "@tanstack/devtools-event-client": "^0.3.3", "@tanstack/pacer": "^0.15.3", "@tanstack/store": "^0.7.7" } }, "sha512-+eIR7DiDamit1zvTVgaHxuIRA02YFgJaXMUGxsLRJoBpUjGl/g/nhUocQoNkRyfXqOlh8OCMTanjwDprWSRq6w=="],
-+
-+    "@tanstack/form-devtools": ["@tanstack/form-devtools@0.1.8", "", { "dependencies": { "@tanstack/devtools-ui": "^0.4.3", "@tanstack/form-core": "1.24.4", "clsx": "^2.1.1", "dayjs": "^1.11.18", "goober": "^2.1.16" }, "peerDependencies": { "solid-js": ">=1.9.9" } }, "sha512-r34PPx1f5QlkWMqFh8Vyw6ats+ValLrTJMhFTx66m1i0YZJ1D5vZ/1ZF62JWMUxsep0yJqDbXznr1629Qmrt8w=="],
-+
-     "@tanstack/history": ["@tanstack/history@1.133.28", "", {}, "sha512-B7+x7eP2FFvi3fgd3rNH9o/Eixt+pp0zCIdGhnQbAJjFrlwIKGjGnwyJjhWJ5fMQlGks/E2LdDTqEV4W9Plx7g=="],
- 
-+    "@tanstack/pacer": ["@tanstack/pacer@0.15.4", "", { "dependencies": { "@tanstack/devtools-event-client": "^0.3.2", "@tanstack/store": "^0.7.5" } }, "sha512-vGY+CWsFZeac3dELgB6UZ4c7OacwsLb8hvL2gLS6hTgy8Fl0Bm/aLokHaeDIP+q9F9HUZTnp360z9uv78eg8pg=="],
-+
-     "@tanstack/query-core": ["@tanstack/query-core@5.90.6", "", {}, "sha512-AnZSLF26R8uX+tqb/ivdrwbVdGemdEDm1Q19qM6pry6eOZ6bEYiY7mWhzXT1YDIPTNEVcZ5kYP9nWjoxDLiIVw=="],
- 
-     "@tanstack/react-devtools": ["@tanstack/react-devtools@0.8.0", "", { "dependencies": { "@tanstack/devtools": "0.8.0" }, "peerDependencies": { "@types/react": ">=16.8", "@types/react-dom": ">=16.8", "react": ">=16.8", "react-dom": ">=16.8" } }, "sha512-0TsFICBPr68us3iWHFXCIBSEilTo8j1OdIJLW48LNQNjC/Puno82uqX4qFuaZWfZv6K37QnS6UeRxzWJItMFSA=="],
- 
-+    "@tanstack/react-form": ["@tanstack/react-form@1.23.8", "", { "dependencies": { "@tanstack/form-core": "1.24.4", "@tanstack/react-store": "^0.7.7", "decode-formdata": "^0.9.0", "devalue": "^5.3.2" }, "peerDependencies": { "@tanstack/react-start": "^1.130.10", "react": "^17.0.0 || ^18.0.0 || ^19.0.0" }, "optionalPeers": ["@tanstack/react-start"] }, "sha512-ivfkiOHAI3aIWkCY4FnPWVAL6SkQWGWNVjtwIZpaoJE4ulukZWZ1KB8TQKs8f4STl+egjTsMHrWJuf2fv3Xh1w=="],
-+
-+    "@tanstack/react-form-devtools": ["@tanstack/react-form-devtools@0.1.8", "", { "dependencies": { "@tanstack/form-devtools": "0.1.8" }, "peerDependencies": { "react": "^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-FwXYLzLIGpqhHcg3sv81ioBBP+3+d2DPS8F+srXBZHuaJAHh6yhwDPAjhe5FlCK8X8+RlVtEbbD+4JXyWao8EQ=="],
-+
-     "@tanstack/react-query": ["@tanstack/react-query@5.90.6", "", { "dependencies": { "@tanstack/query-core": "5.90.6" }, "peerDependencies": { "react": "^18 || ^19" } }, "sha512-gB1sljYjcobZKxjPbKSa31FUTyr+ROaBdoH+wSSs9Dk+yDCmMs+TkTV3PybRRVLC7ax7q0erJ9LvRWnMktnRAw=="],
- 
-     "@tanstack/react-router": ["@tanstack/react-router@1.134.4", "", { "dependencies": { "@tanstack/history": "1.133.28", "@tanstack/react-store": "^0.8.0", "@tanstack/router-core": "1.134.4", "isbot": "^5.1.22", "tiny-invariant": "^1.3.3", "tiny-warning": "^1.0.3" }, "peerDependencies": { "react": ">=18.0.0 || >=19.0.0", "react-dom": ">=18.0.0 || >=19.0.0" } }, "sha512-AJfO4SOltCjyHKwZ+NHkDxwLj1CJQdgvmvHh8U2ikF2d4rjMlQ0bRjEpDJ8eY5AO2Z09cak/5goqNvcpRQjhfQ=="],
- 
-     "@tanstack/react-router-devtools": ["@tanstack/react-router-devtools@1.134.4", "", { "dependencies": { "@tanstack/router-devtools-core": "1.134.4", "vite": "^7.1.7" }, "peerDependencies": { "@tanstack/react-router": "^1.134.4", "react": ">=18.0.0 || >=19.0.0", "react-dom": ">=18.0.0 || >=19.0.0" } }, "sha512-5egZR8X02DjvuACmBni+EJoP0YkA7hRt+AMlx9cBoVhSe4mWpp5qhqOmG9F9LCRZ2goa82YJXyvas80gjH4fSQ=="],
- 
--    "@tanstack/react-store": ["@tanstack/react-store@0.8.0", "", { "dependencies": { "@tanstack/store": "0.8.0", "use-sync-external-store": "^1.6.0" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-1vG9beLIuB7q69skxK9r5xiLN3ztzIPfSQSs0GfeqWGO2tGIyInZx0x1COhpx97RKaONSoAb8C3dxacWksm1ow=="],
-+    "@tanstack/react-store": ["@tanstack/react-store@0.7.7", "", { "dependencies": { "@tanstack/store": "0.7.7", "use-sync-external-store": "^1.5.0" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-qqT0ufegFRDGSof9D/VqaZgjNgp4tRPHZIJq2+QIHkMUtHjaJ0lYrrXjeIUJvjnTbgPfSD1XgOMEt0lmANn6Zg=="],
- 
-     "@tanstack/router-core": ["@tanstack/router-core@1.134.4", "", { "dependencies": { "@tanstack/history": "1.133.28", "@tanstack/store": "^0.8.0", "cookie-es": "^2.0.0", "seroval": "^1.3.2", "seroval-plugins": "^1.3.2", "tiny-invariant": "^1.3.3", "tiny-warning": "^1.0.3" } }, "sha512-f3lzOx3aX+z+gfVyl9D+APArwM395E7mW26A0od9QB+yOAbFnEtJ8mUDWJAY57BPR9fOCnkMEaEVx9m7eL3u4w=="],
- 
-@@ -480,7 +437,7 @@
- 
-     "@tanstack/router-utils": ["@tanstack/router-utils@1.133.19", "", { "dependencies": { "@babel/core": "^7.27.4", "@babel/generator": "^7.27.5", "@babel/parser": "^7.27.5", "@babel/preset-typescript": "^7.27.1", "ansis": "^4.1.0", "diff": "^8.0.2", "pathe": "^2.0.3", "tinyglobby": "^0.2.15" } }, "sha512-WEp5D2gPxvlLDRXwD/fV7RXjYtqaqJNXKB/L6OyZEbT+9BG/Ib2d7oG9GSUZNNMGPGYAlhBUOi3xutySsk6rxA=="],
- 
--    "@tanstack/store": ["@tanstack/store@0.8.0", "", {}, "sha512-Om+BO0YfMZe//X2z0uLF2j+75nQga6TpTJgLJQBiq85aOyZNIhkCgleNcud2KQg4k4v9Y9l+Uhru3qWMPGTOzQ=="],
-+    "@tanstack/store": ["@tanstack/store@0.7.7", "", {}, "sha512-xa6pTan1bcaqYDS9BDpSiS63qa6EoDkPN9RsRaxHuDdVDNntzq3xNwR5YKTU/V3SkSyC9T4YVOPh2zRQN0nhIQ=="],
- 
-     "@tanstack/virtual-file-routes": ["@tanstack/virtual-file-routes@1.133.19", "", {}, "sha512-IKwZENsK7owmW1Lm5FhuHegY/SyQ8KqtL/7mTSnzoKJgfzhrrf9qwKB1rmkKkt+svUuy/Zw3uVEpZtUzQruWtA=="],
- 
-@@ -576,12 +533,18 @@
- 
-     "debug": ["debug@4.4.3", "", { "dependencies": { "ms": "^2.1.3" } }, "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA=="],
- 
-+    "decode-formdata": ["decode-formdata@0.9.0", "", {}, "sha512-q5uwOjR3Um5YD+ZWPOF/1sGHVW9A5rCrRwITQChRXlmPkxDFBqCm4jNTIVdGHNH9OnR+V9MoZVgRhsFb+ARbUw=="],
-+
-     "detect-libc": ["detect-libc@2.1.2", "", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
- 
-     "detect-node-es": ["detect-node-es@1.1.0", "", {}, "sha512-ypdmJU/TbBby2Dxibuv7ZLW3Bs1QEmM7nHjEANfohJLvE0XVujisn1qPJcZxg+qDucsr+bP6fLD1rPS3AhJ7EQ=="],
- 
-+    "devalue": ["devalue@5.4.2", "", {}, "sha512-MwPZTKEPK2k8Qgfmqrd48ZKVvzSQjgW0lXLxiIBA8dQjtf/6mw6pggHNLcyDKyf+fI6eXxlQwPsfaCMTU5U+Bw=="],
-+
-     "dexie": ["dexie@4.2.1", "", {}, "sha512-Ckej0NS6jxQ4Po3OrSQBFddayRhTCic2DoCAG5zacOfOVB9P2Q5Xc5uL/nVa7ZVs+HdMnvUPzLFCB/JwpB6Csg=="],
- 
-+    "dexie-react-hooks": ["dexie-react-hooks@4.2.0", "", { "peerDependencies": { "@types/react": ">=16", "dexie": ">=4.2.0-alpha.1 <5.0.0", "react": ">=16" } }, "sha512-u7KqTX9JpBQK8+tEyA9X0yMGXlSCsbm5AU64N6gjvGk/IutYDpLBInMYEAEC83s3qhIvryFS+W+sqLZUBEvePQ=="],
-+
-     "diff": ["diff@8.0.2", "", {}, "sha512-sSuxWU5j5SR9QQji/o2qMvqRNYRDOcBTgsJ/DeCf4iSN4gW+gNMXM7wFIP+fdXZxoNiAnHUTGjCr+TSWXdRDKg=="],
- 
-     "electron-to-chromium": ["electron-to-chromium@1.5.244", "", {}, "sha512-OszpBN7xZX4vWMPJwB9illkN/znA8M36GQqQxi6MNy9axWxhOfJyZZJtSLQCpEFLHP2xK33BiWx9aIuIEXVCcw=="],
-@@ -702,6 +665,8 @@
- 
-     "react-error-boundary": ["react-error-boundary@6.0.0", "", { "dependencies": { "@babel/runtime": "^7.12.5" }, "peerDependencies": { "react": ">=16.13.1" } }, "sha512-gdlJjD7NWr0IfkPlaREN2d9uUZUlksrfOx7SX62VRerwXbMY6ftGCIZua1VG1aXFNOimhISsTq+Owp725b9SiA=="],
- 
-+    "react-hook-form": ["react-hook-form@7.66.0", "", { "peerDependencies": { "react": "^16.8.0 || ^17 || ^18 || ^19" } }, "sha512-xXBqsWGKrY46ZqaHDo+ZUYiMUgi8suYu5kdrS20EG8KiL7VRQitEbNjm+UcrDYrNi1YLyfpmAeGjCZYXLT9YBw=="],
-+
-     "react-refresh": ["react-refresh@0.18.0", "", {}, "sha512-QgT5//D3jfjJb6Gsjxv0Slpj23ip+HtOpnNgnb2S5zU3CB26G/IDPGoy4RJB42wzFE46DRsstbW6tKHoKbhAxw=="],
- 
-     "react-remove-scroll": ["react-remove-scroll@2.7.1", "", { "dependencies": { "react-remove-scroll-bar": "^2.3.7", "react-style-singleton": "^2.2.3", "tslib": "^2.1.0", "use-callback-ref": "^1.3.3", "use-sidecar": "^1.1.3" }, "peerDependencies": { "@types/react": "*", "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-HpMh8+oahmIdOuS5aFKKY6Pyog+FNaZV/XyJOq7b4YFwsFHe5yYfdbIalI4k3vU2nSDql7YskmUseHsRrJqIPA=="],
-@@ -784,7 +749,7 @@
- 
-     "yjs": ["yjs@13.6.27", "", { "dependencies": { "lib0": "^0.2.99" } }, "sha512-OIDwaflOaq4wC6YlPBy2L6ceKeKuF7DeTxx+jPzv1FHn9tCZ0ZwSRnUBxD05E3yed46fv/FWJbvR+Ud7x0L7zw=="],
- 
--    "zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
-+    "zod": ["zod@4.1.12", "", {}, "sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ=="],
- 
-     "@tailwindcss/node/tailwindcss": ["tailwindcss@4.1.16", "", {}, "sha512-pONL5awpaQX4LN5eiv7moSiSPd/DLDzKVRJz8Q9PgzmAdd1R4307GQS2ZpfiN7ZmekdQrfhZZiSE5jkLR4WNaA=="],
- 
-@@ -802,10 +767,20 @@
- 
-     "@tailwindcss/vite/tailwindcss": ["tailwindcss@4.1.16", "", {}, "sha512-pONL5awpaQX4LN5eiv7moSiSPd/DLDzKVRJz8Q9PgzmAdd1R4307GQS2ZpfiN7ZmekdQrfhZZiSE5jkLR4WNaA=="],
- 
-+    "@tanstack/react-router/@tanstack/react-store": ["@tanstack/react-store@0.8.0", "", { "dependencies": { "@tanstack/store": "0.8.0", "use-sync-external-store": "^1.6.0" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-1vG9beLIuB7q69skxK9r5xiLN3ztzIPfSQSs0GfeqWGO2tGIyInZx0x1COhpx97RKaONSoAb8C3dxacWksm1ow=="],
-+
-+    "@tanstack/router-core/@tanstack/store": ["@tanstack/store@0.8.0", "", {}, "sha512-Om+BO0YfMZe//X2z0uLF2j+75nQga6TpTJgLJQBiq85aOyZNIhkCgleNcud2KQg4k4v9Y9l+Uhru3qWMPGTOzQ=="],
-+
-+    "@tanstack/router-generator/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
-+
-+    "@tanstack/router-plugin/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
-+
-     "anymatch/picomatch": ["picomatch@2.3.1", "", {}, "sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA=="],
- 
-     "readdirp/picomatch": ["picomatch@2.3.1", "", {}, "sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA=="],
- 
-     "recast/source-map": ["source-map@0.6.1", "", {}, "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g=="],
-+
-+    "@tanstack/react-router/@tanstack/react-store/@tanstack/store": ["@tanstack/store@0.8.0", "", {}, "sha512-Om+BO0YfMZe//X2z0uLF2j+75nQga6TpTJgLJQBiq85aOyZNIhkCgleNcud2KQg4k4v9Y9l+Uhru3qWMPGTOzQ=="],
-   }
- }
+     "normalize-path": ["normalize-path@3.0.0", "", {}, "sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA=="],
+diff --git a/diff.txt b/diff.txt
+index e69de29..d69f1de 100644
+--- a/diff.txt
++++ b/diff.txt
+@@ -0,0 +1,1147 @@
++diff --git a/bun.lock b/bun.lock
++index e670ed7..ccbc986 100644
++--- a/bun.lock
+++++ b/bun.lock
++@@ -4,6 +4,7 @@
++     "": {
++       "name": "novel-editor",
++       "dependencies": {
+++        "@hookform/resolvers": "^5.2.2",
++         "@lexical/code": "^0.38.2",
++         "@lexical/file": "^0.38.2",
++         "@lexical/hashtag": "^0.38.2",
++@@ -17,23 +18,11 @@
++         "@lexical/table": "^0.38.2",
++         "@lexical/text": "^0.38.2",
++         "@lexical/utils": "^0.38.2",
++-        "@radix-ui/react-checkbox": "^1.3.3",
++-        "@radix-ui/react-collapsible": "^1.1.12",
++         "@radix-ui/react-dialog": "^1.1.15",
++-        "@radix-ui/react-icons": "^1.3.2",
++-        "@radix-ui/react-label": "^2.1.7",
++-        "@radix-ui/react-popover": "^1.1.15",
++-        "@radix-ui/react-scroll-area": "^1.2.10",
++-        "@radix-ui/react-select": "^2.2.6",
++-        "@radix-ui/react-separator": "^1.1.7",
++-        "@radix-ui/react-slider": "^1.3.6",
++-        "@radix-ui/react-slot": "^1.2.3",
++-        "@radix-ui/react-tabs": "^1.1.13",
++-        "@radix-ui/react-toggle": "^1.1.10",
++-        "@radix-ui/react-toggle-group": "^1.1.11",
++-        "@radix-ui/react-tooltip": "^1.2.8",
++         "@tailwindcss/vite": "^4.1.16",
++         "@tanstack/react-devtools": "^0.8.0",
+++        "@tanstack/react-form": "^1.23.8",
+++        "@tanstack/react-form-devtools": "^0.1.8",
++         "@tanstack/react-query": "^5.90.6",
++         "@tanstack/react-router": "^1.134.4",
++         "@tanstack/react-router-devtools": "^1.134.4",
++@@ -46,6 +35,7 @@
++         "consola": "^3.4.2",
++         "dayjs": "^1.11.19",
++         "dexie": "^4.2.1",
+++        "dexie-react-hooks": "^4.2.0",
++         "lexical": "^0.38.2",
++         "lodash": "^4.17.21",
++         "lucide-react": "^0.552.0",
++@@ -58,6 +48,7 @@
++         "tailwindcss": "^4.0.0",
++         "tw-animate-css": "^1.4.0",
++         "uuid": "^13.0.0",
+++        "zod": "^4.1.12",
++       },
++       "devDependencies": {
++         "@biomejs/biome": "2.3.2",
++@@ -218,6 +209,8 @@
++ 
++     "@floating-ui/utils": ["@floating-ui/utils@0.2.10", "", {}, "sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ=="],
++ 
+++    "@hookform/resolvers": ["@hookform/resolvers@5.2.2", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "react-hook-form": "^7.55.0" } }, "sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA=="],
+++
++     "@jridgewell/gen-mapping": ["@jridgewell/gen-mapping@0.3.13", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.0", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA=="],
++ 
++     "@jridgewell/remapping": ["@jridgewell/remapping@2.3.5", "", { "dependencies": { "@jridgewell/gen-mapping": "^0.3.5", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-LI9u/+laYG4Ds1TDKSJW2YPrIlcVYOwi2fUC6xB43lueCjgxV4lffOCZCtYFiH6TNOX+tQKXx97T4IKHbhyHEQ=="],
++@@ -276,68 +269,30 @@
++ 
++     "@preact/signals-core": ["@preact/signals-core@1.12.1", "", {}, "sha512-BwbTXpj+9QutoZLQvbttRg5x3l5468qaV2kufh+51yha1c53ep5dY4kTuZR35+3pAZxpfQerGJiQqg34ZNZ6uA=="],
++ 
++-    "@radix-ui/number": ["@radix-ui/number@1.1.1", "", {}, "sha512-MkKCwxlXTgz6CFoJx3pCwn07GKp36+aZyu/u2Ln2VrA5DcdyCZkASEDBTd8x5whTQQL5CiYf4prXKLcgQdv29g=="],
++-
++     "@radix-ui/primitive": ["@radix-ui/primitive@1.1.3", "", {}, "sha512-JTF99U/6XIjCBo0wqkU5sK10glYe27MRRsfwoiq5zzOEZLHU3A3KCMa5X/azekYRCJ0HlwI0crAXS/5dEHTzDg=="],
++ 
++-    "@radix-ui/react-arrow": ["@radix-ui/react-arrow@1.1.7", "", { "dependencies": { "@radix-ui/react-primitive": "2.1.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-F+M1tLhO+mlQaOWspE8Wstg+z6PwxwRd8oQ8IXceWz92kfAmalTRf0EjrouQeo7QssEPfCn05B4Ihs1K9WQ/7w=="],
++-
++-    "@radix-ui/react-checkbox": ["@radix-ui/react-checkbox@1.3.3", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-presence": "1.1.5", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-controllable-state": "1.2.2", "@radix-ui/react-use-previous": "1.1.1", "@radix-ui/react-use-size": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-wBbpv+NQftHDdG86Qc0pIyXk5IR3tM8Vd0nWLKDcX8nNn4nXFOFwsKuqw2okA/1D/mpaAkmuyndrPJTYDNZtFw=="],
++-
++-    "@radix-ui/react-collapsible": ["@radix-ui/react-collapsible@1.1.12", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-id": "1.1.1", "@radix-ui/react-presence": "1.1.5", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-controllable-state": "1.2.2", "@radix-ui/react-use-layout-effect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-Uu+mSh4agx2ib1uIGPP4/CKNULyajb3p92LsVXmH2EHVMTfZWpll88XJ0j4W0z3f8NK1eYl1+Mf/szHPmcHzyA=="],
++-
++-    "@radix-ui/react-collection": ["@radix-ui/react-collection@1.1.7", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-slot": "1.2.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-Fh9rGN0MoI4ZFUNyfFVNU4y9LUz93u9/0K+yLgA2bwRojxM8JU1DyvvMBabnZPBgMWREAJvU2jjVzq+LrFUglw=="],
++-
++     "@radix-ui/react-compose-refs": ["@radix-ui/react-compose-refs@1.1.2", "", { "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-z4eqJvfiNnFMHIIvXP3CY57y2WJs5g2v3X0zm9mEJkrkNv4rDxu+sg9Jh8EkXyeqBkB7SOcboo9dMVqhyrACIg=="],
++ 
++     "@radix-ui/react-context": ["@radix-ui/react-context@1.1.2", "", { "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-jCi/QKUM2r1Ju5a3J64TH2A5SpKAgh0LpknyqdQ4m6DCV0xJ2HG1xARRwNGPQfi1SLdLWZ1OJz6F4OMBBNiGJA=="],
++ 
++     "@radix-ui/react-dialog": ["@radix-ui/react-dialog@1.1.15", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-dismissable-layer": "1.1.11", "@radix-ui/react-focus-guards": "1.1.3", "@radix-ui/react-focus-scope": "1.1.7", "@radix-ui/react-id": "1.1.1", "@radix-ui/react-portal": "1.1.9", "@radix-ui/react-presence": "1.1.5", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-slot": "1.2.3", "@radix-ui/react-use-controllable-state": "1.2.2", "aria-hidden": "^1.2.4", "react-remove-scroll": "^2.6.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-TCglVRtzlffRNxRMEyR36DGBLJpeusFcgMVD9PZEzAKnUs1lKCgX5u9BmC2Yg+LL9MgZDugFFs1Vl+Jp4t/PGw=="],
++ 
++-    "@radix-ui/react-direction": ["@radix-ui/react-direction@1.1.1", "", { "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-1UEWRX6jnOA2y4H5WczZ44gOOjTEmlqv1uNW4GAJEO5+bauCBhv8snY65Iw5/VOS/ghKN9gr2KjnLKxrsvoMVw=="],
++-
++     "@radix-ui/react-dismissable-layer": ["@radix-ui/react-dismissable-layer@1.1.11", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-callback-ref": "1.1.1", "@radix-ui/react-use-escape-keydown": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-Nqcp+t5cTB8BinFkZgXiMJniQH0PsUt2k51FUhbdfeKvc4ACcG2uQniY/8+h1Yv6Kza4Q7lD7PQV0z0oicE0Mg=="],
++ 
++     "@radix-ui/react-focus-guards": ["@radix-ui/react-focus-guards@1.1.3", "", { "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-0rFg/Rj2Q62NCm62jZw0QX7a3sz6QCQU0LpZdNrJX8byRGaGVTqbrW9jAoIAHyMQqsNpeZ81YgSizOt5WXq0Pw=="],
++ 
++     "@radix-ui/react-focus-scope": ["@radix-ui/react-focus-scope@1.1.7", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-callback-ref": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-t2ODlkXBQyn7jkl6TNaw/MtVEVvIGelJDCG41Okq/KwUsJBwQ4XVZsHAVUkK4mBv3ewiAS3PGuUWuY2BoK4ZUw=="],
++ 
++-    "@radix-ui/react-icons": ["@radix-ui/react-icons@1.3.2", "", { "peerDependencies": { "react": "^16.x || ^17.x || ^18.x || ^19.0.0 || ^19.0.0-rc" } }, "sha512-fyQIhGDhzfc9pK2kH6Pl9c4BDJGfMkPqkyIgYDthyNYoNg3wVhoJMMh19WS4Up/1KMPFVpNsT2q3WmXn2N1m6g=="],
++-
++     "@radix-ui/react-id": ["@radix-ui/react-id@1.1.1", "", { "dependencies": { "@radix-ui/react-use-layout-effect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-kGkGegYIdQsOb4XjsfM97rXsiHaBwco+hFI66oO4s9LU+PLAC5oJ7khdOVFxkhsmlbpUqDAvXw11CluXP+jkHg=="],
++ 
++-    "@radix-ui/react-label": ["@radix-ui/react-label@2.1.7", "", { "dependencies": { "@radix-ui/react-primitive": "2.1.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-YT1GqPSL8kJn20djelMX7/cTRp/Y9w5IZHvfxQTVHrOqa2yMl7i/UfMqKRU5V7mEyKTrUVgJXhNQPVCG8PBLoQ=="],
++-
++-    "@radix-ui/react-popover": ["@radix-ui/react-popover@1.1.15", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-dismissable-layer": "1.1.11", "@radix-ui/react-focus-guards": "1.1.3", "@radix-ui/react-focus-scope": "1.1.7", "@radix-ui/react-id": "1.1.1", "@radix-ui/react-popper": "1.2.8", "@radix-ui/react-portal": "1.1.9", "@radix-ui/react-presence": "1.1.5", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-slot": "1.2.3", "@radix-ui/react-use-controllable-state": "1.2.2", "aria-hidden": "^1.2.4", "react-remove-scroll": "^2.6.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-kr0X2+6Yy/vJzLYJUPCZEc8SfQcf+1COFoAqauJm74umQhta9M7lNJHP7QQS3vkvcGLQUbWpMzwrXYwrYztHKA=="],
++-
++-    "@radix-ui/react-popper": ["@radix-ui/react-popper@1.2.8", "", { "dependencies": { "@floating-ui/react-dom": "^2.0.0", "@radix-ui/react-arrow": "1.1.7", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-callback-ref": "1.1.1", "@radix-ui/react-use-layout-effect": "1.1.1", "@radix-ui/react-use-rect": "1.1.1", "@radix-ui/react-use-size": "1.1.1", "@radix-ui/rect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-0NJQ4LFFUuWkE7Oxf0htBKS6zLkkjBH+hM1uk7Ng705ReR8m/uelduy1DBo0PyBXPKVnBA6YBlU94MBGXrSBCw=="],
++-
++     "@radix-ui/react-portal": ["@radix-ui/react-portal@1.1.9", "", { "dependencies": { "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-layout-effect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-bpIxvq03if6UNwXZ+HTK71JLh4APvnXntDc6XOX8UVq4XQOVl7lwok0AvIl+b8zgCw3fSaVTZMpAPPagXbKmHQ=="],
++ 
++     "@radix-ui/react-presence": ["@radix-ui/react-presence@1.1.5", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-use-layout-effect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-/jfEwNDdQVBCNvjkGit4h6pMOzq8bHkopq458dPt2lMjx+eBQUohZNG9A7DtO/O5ukSbxuaNGXMjHicgwy6rQQ=="],
++ 
++     "@radix-ui/react-primitive": ["@radix-ui/react-primitive@2.1.3", "", { "dependencies": { "@radix-ui/react-slot": "1.2.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-m9gTwRkhy2lvCPe6QJp4d3G1TYEUHn/FzJUtq9MjH46an1wJU+GdoGC5VLof8RX8Ft/DlpshApkhswDLZzHIcQ=="],
++ 
++-    "@radix-ui/react-roving-focus": ["@radix-ui/react-roving-focus@1.1.11", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-collection": "1.1.7", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-direction": "1.1.1", "@radix-ui/react-id": "1.1.1", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-callback-ref": "1.1.1", "@radix-ui/react-use-controllable-state": "1.2.2" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-7A6S9jSgm/S+7MdtNDSb+IU859vQqJ/QAtcYQcfFC6W8RS4IxIZDldLR0xqCFZ6DCyrQLjLPsxtTNch5jVA4lA=="],
++-
++-    "@radix-ui/react-scroll-area": ["@radix-ui/react-scroll-area@1.2.10", "", { "dependencies": { "@radix-ui/number": "1.1.1", "@radix-ui/primitive": "1.1.3", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-direction": "1.1.1", "@radix-ui/react-presence": "1.1.5", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-callback-ref": "1.1.1", "@radix-ui/react-use-layout-effect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-tAXIa1g3sM5CGpVT0uIbUx/U3Gs5N8T52IICuCtObaos1S8fzsrPXG5WObkQN3S6NVl6wKgPhAIiBGbWnvc97A=="],
++-
++-    "@radix-ui/react-select": ["@radix-ui/react-select@2.2.6", "", { "dependencies": { "@radix-ui/number": "1.1.1", "@radix-ui/primitive": "1.1.3", "@radix-ui/react-collection": "1.1.7", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-direction": "1.1.1", "@radix-ui/react-dismissable-layer": "1.1.11", "@radix-ui/react-focus-guards": "1.1.3", "@radix-ui/react-focus-scope": "1.1.7", "@radix-ui/react-id": "1.1.1", "@radix-ui/react-popper": "1.2.8", "@radix-ui/react-portal": "1.1.9", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-slot": "1.2.3", "@radix-ui/react-use-callback-ref": "1.1.1", "@radix-ui/react-use-controllable-state": "1.2.2", "@radix-ui/react-use-layout-effect": "1.1.1", "@radix-ui/react-use-previous": "1.1.1", "@radix-ui/react-visually-hidden": "1.2.3", "aria-hidden": "^1.2.4", "react-remove-scroll": "^2.6.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-I30RydO+bnn2PQztvo25tswPH+wFBjehVGtmagkU78yMdwTwVf12wnAOF+AeP8S2N8xD+5UPbGhkUfPyvT+mwQ=="],
++-
++-    "@radix-ui/react-separator": ["@radix-ui/react-separator@1.1.7", "", { "dependencies": { "@radix-ui/react-primitive": "2.1.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-0HEb8R9E8A+jZjvmFCy/J4xhbXy3TV+9XSnGJ3KvTtjlIUy/YQ/p6UYZvi7YbeoeXdyU9+Y3scizK6hkY37baA=="],
++-
++-    "@radix-ui/react-slider": ["@radix-ui/react-slider@1.3.6", "", { "dependencies": { "@radix-ui/number": "1.1.1", "@radix-ui/primitive": "1.1.3", "@radix-ui/react-collection": "1.1.7", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-direction": "1.1.1", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-controllable-state": "1.2.2", "@radix-ui/react-use-layout-effect": "1.1.1", "@radix-ui/react-use-previous": "1.1.1", "@radix-ui/react-use-size": "1.1.1" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-JPYb1GuM1bxfjMRlNLE+BcmBC8onfCi60Blk7OBqi2MLTFdS+8401U4uFjnwkOr49BLmXxLC6JHkvAsx5OJvHw=="],
++-
++     "@radix-ui/react-slot": ["@radix-ui/react-slot@1.2.3", "", { "dependencies": { "@radix-ui/react-compose-refs": "1.1.2" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-aeNmHnBxbi2St0au6VBVC7JXFlhLlOnvIIlePNniyUNAClzmtAUEY8/pBiK3iHjufOlwA+c20/8jngo7xcrg8A=="],
++ 
++-    "@radix-ui/react-tabs": ["@radix-ui/react-tabs@1.1.13", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-direction": "1.1.1", "@radix-ui/react-id": "1.1.1", "@radix-ui/react-presence": "1.1.5", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-roving-focus": "1.1.11", "@radix-ui/react-use-controllable-state": "1.2.2" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-7xdcatg7/U+7+Udyoj2zodtI9H/IIopqo+YOIcZOq1nJwXWBZ9p8xiu5llXlekDbZkca79a/fozEYQXIA4sW6A=="],
++-
++-    "@radix-ui/react-toggle": ["@radix-ui/react-toggle@1.1.10", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-use-controllable-state": "1.2.2" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-lS1odchhFTeZv3xwHH31YPObmJn8gOg7Lq12inrr0+BH/l3Tsq32VfjqH1oh80ARM3mlkfMic15n0kg4sD1poQ=="],
++-
++-    "@radix-ui/react-toggle-group": ["@radix-ui/react-toggle-group@1.1.11", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-direction": "1.1.1", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-roving-focus": "1.1.11", "@radix-ui/react-toggle": "1.1.10", "@radix-ui/react-use-controllable-state": "1.2.2" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-5umnS0T8JQzQT6HbPyO7Hh9dgd82NmS36DQr+X/YJ9ctFNCiiQd6IJAYYZ33LUwm8M+taCz5t2ui29fHZc4Y6Q=="],
++-
++-    "@radix-ui/react-tooltip": ["@radix-ui/react-tooltip@1.2.8", "", { "dependencies": { "@radix-ui/primitive": "1.1.3", "@radix-ui/react-compose-refs": "1.1.2", "@radix-ui/react-context": "1.1.2", "@radix-ui/react-dismissable-layer": "1.1.11", "@radix-ui/react-id": "1.1.1", "@radix-ui/react-popper": "1.2.8", "@radix-ui/react-portal": "1.1.9", "@radix-ui/react-presence": "1.1.5", "@radix-ui/react-primitive": "2.1.3", "@radix-ui/react-slot": "1.2.3", "@radix-ui/react-use-controllable-state": "1.2.2", "@radix-ui/react-visually-hidden": "1.2.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-tY7sVt1yL9ozIxvmbtN5qtmH2krXcBCfjEiCgKGLqunJHvgvZG2Pcl2oQ3kbcZARb1BGEHdkLzcYGO8ynVlieg=="],
++-
++     "@radix-ui/react-use-callback-ref": ["@radix-ui/react-use-callback-ref@1.1.1", "", { "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-FkBMwD+qbGQeMu1cOHnuGB6x4yzPjho8ap5WtbEJ26umhgqVXbhekKUQO+hZEL1vU92a3wHwdp0HAcqAUF5iDg=="],
++ 
++     "@radix-ui/react-use-controllable-state": ["@radix-ui/react-use-controllable-state@1.2.2", "", { "dependencies": { "@radix-ui/react-use-effect-event": "0.0.2", "@radix-ui/react-use-layout-effect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-BjasUjixPFdS+NKkypcyyN5Pmg83Olst0+c6vGov0diwTEo6mgdqVR6hxcEgFuh4QrAs7Rc+9KuGJ9TVCj0Zzg=="],
++@@ -348,16 +303,6 @@
++ 
++     "@radix-ui/react-use-layout-effect": ["@radix-ui/react-use-layout-effect@1.1.1", "", { "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-RbJRS4UWQFkzHTTwVymMTUv8EqYhOp8dOOviLj2ugtTiXRaRQS7GLGxZTLL1jWhMeoSCf5zmcZkqTl9IiYfXcQ=="],
++ 
++-    "@radix-ui/react-use-previous": ["@radix-ui/react-use-previous@1.1.1", "", { "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-2dHfToCj/pzca2Ck724OZ5L0EVrr3eHRNsG/b3xQJLA2hZpVCS99bLAX+hm1IHXDEnzU6by5z/5MIY794/a8NQ=="],
++-
++-    "@radix-ui/react-use-rect": ["@radix-ui/react-use-rect@1.1.1", "", { "dependencies": { "@radix-ui/rect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-QTYuDesS0VtuHNNvMh+CjlKJ4LJickCMUAqjlE3+j8w+RlRpwyX3apEQKGFzbZGdo7XNG1tXa+bQqIE7HIXT2w=="],
++-
++-    "@radix-ui/react-use-size": ["@radix-ui/react-use-size@1.1.1", "", { "dependencies": { "@radix-ui/react-use-layout-effect": "1.1.1" }, "peerDependencies": { "@types/react": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-ewrXRDTAqAXlkl6t/fkXWNAhFX9I+CkKlw6zjEwk86RSPKwZr3xpBRso655aqYafwtnbpHLj6toFzmd6xdVptQ=="],
++-
++-    "@radix-ui/react-visually-hidden": ["@radix-ui/react-visually-hidden@1.2.3", "", { "dependencies": { "@radix-ui/react-primitive": "2.1.3" }, "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "react": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react-dom": "^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-pzJq12tEaaIhqjbzpCuv/OypJY/BPavOofm+dbab+MHLajy277+1lLm6JFcGgF5eskJ6mquGirhXY2GD/8u8Ug=="],
++-
++-    "@radix-ui/rect": ["@radix-ui/rect@1.1.1", "", {}, "sha512-HPwpGIzkl28mWyZqG52jiqDJ12waP11Pa1lGoiyUkIEuMLBP0oeK/C89esbXrxsky5we7dfd8U58nm0SgAWpVw=="],
++-
++     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.0-beta.43", "", {}, "sha512-5Uxg7fQUCmfhax7FJke2+8B6cqgeUJUD9o2uXIKXhD+mG0mL6NObmVoi9wXEU1tY89mZKgAYA6fTbftx3q2ZPQ=="],
++ 
++     "@rollup/rollup-android-arm-eabi": ["@rollup/rollup-android-arm-eabi@4.52.5", "", { "os": "android", "cpu": "arm" }, "sha512-8c1vW4ocv3UOMp9K+gToY5zL2XiiVw3k7f1ksf4yO1FlDFQ1C2u72iACFnSOceJFsWskc2WZNqeRhFRPzv+wtQ=="],
++@@ -416,6 +361,8 @@
++ 
++     "@solid-primitives/utils": ["@solid-primitives/utils@6.3.2", "", { "peerDependencies": { "solid-js": "^1.6.12" } }, "sha512-hZ/M/qr25QOCcwDPOHtGjxTD8w2mNyVAYvcfgwzBHq2RwNqHNdDNsMZYap20+ruRwW4A3Cdkczyoz0TSxLCAPQ=="],
++ 
+++    "@standard-schema/utils": ["@standard-schema/utils@0.3.0", "", {}, "sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g=="],
+++
++     "@tailwindcss/node": ["@tailwindcss/node@4.1.16", "", { "dependencies": { "@jridgewell/remapping": "^2.3.4", "enhanced-resolve": "^5.18.3", "jiti": "^2.6.1", "lightningcss": "1.30.2", "magic-string": "^0.30.19", "source-map-js": "^1.2.1", "tailwindcss": "4.1.16" } }, "sha512-BX5iaSsloNuvKNHRN3k2RcCuTEgASTo77mofW0vmeHkfrDWaoFAFvNHpEgtu0eqyypcyiBkDWzSMxJhp3AUVcw=="],
++ 
++     "@tailwindcss/oxide": ["@tailwindcss/oxide@4.1.16", "", { "optionalDependencies": { "@tailwindcss/oxide-android-arm64": "4.1.16", "@tailwindcss/oxide-darwin-arm64": "4.1.16", "@tailwindcss/oxide-darwin-x64": "4.1.16", "@tailwindcss/oxide-freebsd-x64": "4.1.16", "@tailwindcss/oxide-linux-arm-gnueabihf": "4.1.16", "@tailwindcss/oxide-linux-arm64-gnu": "4.1.16", "@tailwindcss/oxide-linux-arm64-musl": "4.1.16", "@tailwindcss/oxide-linux-x64-gnu": "4.1.16", "@tailwindcss/oxide-linux-x64-musl": "4.1.16", "@tailwindcss/oxide-wasm32-wasi": "4.1.16", "@tailwindcss/oxide-win32-arm64-msvc": "4.1.16", "@tailwindcss/oxide-win32-x64-msvc": "4.1.16" } }, "sha512-2OSv52FRuhdlgyOQqgtQHuCgXnS8nFSYRp2tJ+4WZXKgTxqPy7SMSls8c3mPT5pkZ17SBToGM5LHEJBO7miEdg=="],
++@@ -456,19 +403,29 @@
++ 
++     "@tanstack/devtools-ui": ["@tanstack/devtools-ui@0.4.4", "", { "dependencies": { "clsx": "^2.1.1", "goober": "^2.1.16", "solid-js": "^1.9.9" } }, "sha512-5xHXFyX3nom0UaNfiOM92o6ziaHjGo3mcSGe2HD5Xs8dWRZNpdZ0Smd0B9ddEhy0oB+gXyMzZgUJb9DmrZV0Mg=="],
++ 
+++    "@tanstack/form-core": ["@tanstack/form-core@1.24.4", "", { "dependencies": { "@tanstack/devtools-event-client": "^0.3.3", "@tanstack/pacer": "^0.15.3", "@tanstack/store": "^0.7.7" } }, "sha512-+eIR7DiDamit1zvTVgaHxuIRA02YFgJaXMUGxsLRJoBpUjGl/g/nhUocQoNkRyfXqOlh8OCMTanjwDprWSRq6w=="],
+++
+++    "@tanstack/form-devtools": ["@tanstack/form-devtools@0.1.8", "", { "dependencies": { "@tanstack/devtools-ui": "^0.4.3", "@tanstack/form-core": "1.24.4", "clsx": "^2.1.1", "dayjs": "^1.11.18", "goober": "^2.1.16" }, "peerDependencies": { "solid-js": ">=1.9.9" } }, "sha512-r34PPx1f5QlkWMqFh8Vyw6ats+ValLrTJMhFTx66m1i0YZJ1D5vZ/1ZF62JWMUxsep0yJqDbXznr1629Qmrt8w=="],
+++
++     "@tanstack/history": ["@tanstack/history@1.133.28", "", {}, "sha512-B7+x7eP2FFvi3fgd3rNH9o/Eixt+pp0zCIdGhnQbAJjFrlwIKGjGnwyJjhWJ5fMQlGks/E2LdDTqEV4W9Plx7g=="],
++ 
+++    "@tanstack/pacer": ["@tanstack/pacer@0.15.4", "", { "dependencies": { "@tanstack/devtools-event-client": "^0.3.2", "@tanstack/store": "^0.7.5" } }, "sha512-vGY+CWsFZeac3dELgB6UZ4c7OacwsLb8hvL2gLS6hTgy8Fl0Bm/aLokHaeDIP+q9F9HUZTnp360z9uv78eg8pg=="],
+++
++     "@tanstack/query-core": ["@tanstack/query-core@5.90.6", "", {}, "sha512-AnZSLF26R8uX+tqb/ivdrwbVdGemdEDm1Q19qM6pry6eOZ6bEYiY7mWhzXT1YDIPTNEVcZ5kYP9nWjoxDLiIVw=="],
++ 
++     "@tanstack/react-devtools": ["@tanstack/react-devtools@0.8.0", "", { "dependencies": { "@tanstack/devtools": "0.8.0" }, "peerDependencies": { "@types/react": ">=16.8", "@types/react-dom": ">=16.8", "react": ">=16.8", "react-dom": ">=16.8" } }, "sha512-0TsFICBPr68us3iWHFXCIBSEilTo8j1OdIJLW48LNQNjC/Puno82uqX4qFuaZWfZv6K37QnS6UeRxzWJItMFSA=="],
++ 
+++    "@tanstack/react-form": ["@tanstack/react-form@1.23.8", "", { "dependencies": { "@tanstack/form-core": "1.24.4", "@tanstack/react-store": "^0.7.7", "decode-formdata": "^0.9.0", "devalue": "^5.3.2" }, "peerDependencies": { "@tanstack/react-start": "^1.130.10", "react": "^17.0.0 || ^18.0.0 || ^19.0.0" }, "optionalPeers": ["@tanstack/react-start"] }, "sha512-ivfkiOHAI3aIWkCY4FnPWVAL6SkQWGWNVjtwIZpaoJE4ulukZWZ1KB8TQKs8f4STl+egjTsMHrWJuf2fv3Xh1w=="],
+++
+++    "@tanstack/react-form-devtools": ["@tanstack/react-form-devtools@0.1.8", "", { "dependencies": { "@tanstack/form-devtools": "0.1.8" }, "peerDependencies": { "react": "^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-FwXYLzLIGpqhHcg3sv81ioBBP+3+d2DPS8F+srXBZHuaJAHh6yhwDPAjhe5FlCK8X8+RlVtEbbD+4JXyWao8EQ=="],
+++
++     "@tanstack/react-query": ["@tanstack/react-query@5.90.6", "", { "dependencies": { "@tanstack/query-core": "5.90.6" }, "peerDependencies": { "react": "^18 || ^19" } }, "sha512-gB1sljYjcobZKxjPbKSa31FUTyr+ROaBdoH+wSSs9Dk+yDCmMs+TkTV3PybRRVLC7ax7q0erJ9LvRWnMktnRAw=="],
++ 
++     "@tanstack/react-router": ["@tanstack/react-router@1.134.4", "", { "dependencies": { "@tanstack/history": "1.133.28", "@tanstack/react-store": "^0.8.0", "@tanstack/router-core": "1.134.4", "isbot": "^5.1.22", "tiny-invariant": "^1.3.3", "tiny-warning": "^1.0.3" }, "peerDependencies": { "react": ">=18.0.0 || >=19.0.0", "react-dom": ">=18.0.0 || >=19.0.0" } }, "sha512-AJfO4SOltCjyHKwZ+NHkDxwLj1CJQdgvmvHh8U2ikF2d4rjMlQ0bRjEpDJ8eY5AO2Z09cak/5goqNvcpRQjhfQ=="],
++ 
++     "@tanstack/react-router-devtools": ["@tanstack/react-router-devtools@1.134.4", "", { "dependencies": { "@tanstack/router-devtools-core": "1.134.4", "vite": "^7.1.7" }, "peerDependencies": { "@tanstack/react-router": "^1.134.4", "react": ">=18.0.0 || >=19.0.0", "react-dom": ">=18.0.0 || >=19.0.0" } }, "sha512-5egZR8X02DjvuACmBni+EJoP0YkA7hRt+AMlx9cBoVhSe4mWpp5qhqOmG9F9LCRZ2goa82YJXyvas80gjH4fSQ=="],
++ 
++-    "@tanstack/react-store": ["@tanstack/react-store@0.8.0", "", { "dependencies": { "@tanstack/store": "0.8.0", "use-sync-external-store": "^1.6.0" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-1vG9beLIuB7q69skxK9r5xiLN3ztzIPfSQSs0GfeqWGO2tGIyInZx0x1COhpx97RKaONSoAb8C3dxacWksm1ow=="],
+++    "@tanstack/react-store": ["@tanstack/react-store@0.7.7", "", { "dependencies": { "@tanstack/store": "0.7.7", "use-sync-external-store": "^1.5.0" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-qqT0ufegFRDGSof9D/VqaZgjNgp4tRPHZIJq2+QIHkMUtHjaJ0lYrrXjeIUJvjnTbgPfSD1XgOMEt0lmANn6Zg=="],
++ 
++     "@tanstack/router-core": ["@tanstack/router-core@1.134.4", "", { "dependencies": { "@tanstack/history": "1.133.28", "@tanstack/store": "^0.8.0", "cookie-es": "^2.0.0", "seroval": "^1.3.2", "seroval-plugins": "^1.3.2", "tiny-invariant": "^1.3.3", "tiny-warning": "^1.0.3" } }, "sha512-f3lzOx3aX+z+gfVyl9D+APArwM395E7mW26A0od9QB+yOAbFnEtJ8mUDWJAY57BPR9fOCnkMEaEVx9m7eL3u4w=="],
++ 
++@@ -480,7 +437,7 @@
++ 
++     "@tanstack/router-utils": ["@tanstack/router-utils@1.133.19", "", { "dependencies": { "@babel/core": "^7.27.4", "@babel/generator": "^7.27.5", "@babel/parser": "^7.27.5", "@babel/preset-typescript": "^7.27.1", "ansis": "^4.1.0", "diff": "^8.0.2", "pathe": "^2.0.3", "tinyglobby": "^0.2.15" } }, "sha512-WEp5D2gPxvlLDRXwD/fV7RXjYtqaqJNXKB/L6OyZEbT+9BG/Ib2d7oG9GSUZNNMGPGYAlhBUOi3xutySsk6rxA=="],
++ 
++-    "@tanstack/store": ["@tanstack/store@0.8.0", "", {}, "sha512-Om+BO0YfMZe//X2z0uLF2j+75nQga6TpTJgLJQBiq85aOyZNIhkCgleNcud2KQg4k4v9Y9l+Uhru3qWMPGTOzQ=="],
+++    "@tanstack/store": ["@tanstack/store@0.7.7", "", {}, "sha512-xa6pTan1bcaqYDS9BDpSiS63qa6EoDkPN9RsRaxHuDdVDNntzq3xNwR5YKTU/V3SkSyC9T4YVOPh2zRQN0nhIQ=="],
++ 
++     "@tanstack/virtual-file-routes": ["@tanstack/virtual-file-routes@1.133.19", "", {}, "sha512-IKwZENsK7owmW1Lm5FhuHegY/SyQ8KqtL/7mTSnzoKJgfzhrrf9qwKB1rmkKkt+svUuy/Zw3uVEpZtUzQruWtA=="],
++ 
++@@ -576,12 +533,18 @@
++ 
++     "debug": ["debug@4.4.3", "", { "dependencies": { "ms": "^2.1.3" } }, "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA=="],
++ 
+++    "decode-formdata": ["decode-formdata@0.9.0", "", {}, "sha512-q5uwOjR3Um5YD+ZWPOF/1sGHVW9A5rCrRwITQChRXlmPkxDFBqCm4jNTIVdGHNH9OnR+V9MoZVgRhsFb+ARbUw=="],
+++
++     "detect-libc": ["detect-libc@2.1.2", "", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
++ 
++     "detect-node-es": ["detect-node-es@1.1.0", "", {}, "sha512-ypdmJU/TbBby2Dxibuv7ZLW3Bs1QEmM7nHjEANfohJLvE0XVujisn1qPJcZxg+qDucsr+bP6fLD1rPS3AhJ7EQ=="],
++ 
+++    "devalue": ["devalue@5.4.2", "", {}, "sha512-MwPZTKEPK2k8Qgfmqrd48ZKVvzSQjgW0lXLxiIBA8dQjtf/6mw6pggHNLcyDKyf+fI6eXxlQwPsfaCMTU5U+Bw=="],
+++
++     "dexie": ["dexie@4.2.1", "", {}, "sha512-Ckej0NS6jxQ4Po3OrSQBFddayRhTCic2DoCAG5zacOfOVB9P2Q5Xc5uL/nVa7ZVs+HdMnvUPzLFCB/JwpB6Csg=="],
++ 
+++    "dexie-react-hooks": ["dexie-react-hooks@4.2.0", "", { "peerDependencies": { "@types/react": ">=16", "dexie": ">=4.2.0-alpha.1 <5.0.0", "react": ">=16" } }, "sha512-u7KqTX9JpBQK8+tEyA9X0yMGXlSCsbm5AU64N6gjvGk/IutYDpLBInMYEAEC83s3qhIvryFS+W+sqLZUBEvePQ=="],
+++
++     "diff": ["diff@8.0.2", "", {}, "sha512-sSuxWU5j5SR9QQji/o2qMvqRNYRDOcBTgsJ/DeCf4iSN4gW+gNMXM7wFIP+fdXZxoNiAnHUTGjCr+TSWXdRDKg=="],
++ 
++     "electron-to-chromium": ["electron-to-chromium@1.5.244", "", {}, "sha512-OszpBN7xZX4vWMPJwB9illkN/znA8M36GQqQxi6MNy9axWxhOfJyZZJtSLQCpEFLHP2xK33BiWx9aIuIEXVCcw=="],
++@@ -702,6 +665,8 @@
++ 
++     "react-error-boundary": ["react-error-boundary@6.0.0", "", { "dependencies": { "@babel/runtime": "^7.12.5" }, "peerDependencies": { "react": ">=16.13.1" } }, "sha512-gdlJjD7NWr0IfkPlaREN2d9uUZUlksrfOx7SX62VRerwXbMY6ftGCIZua1VG1aXFNOimhISsTq+Owp725b9SiA=="],
++ 
+++    "react-hook-form": ["react-hook-form@7.66.0", "", { "peerDependencies": { "react": "^16.8.0 || ^17 || ^18 || ^19" } }, "sha512-xXBqsWGKrY46ZqaHDo+ZUYiMUgi8suYu5kdrS20EG8KiL7VRQitEbNjm+UcrDYrNi1YLyfpmAeGjCZYXLT9YBw=="],
+++
++     "react-refresh": ["react-refresh@0.18.0", "", {}, "sha512-QgT5//D3jfjJb6Gsjxv0Slpj23ip+HtOpnNgnb2S5zU3CB26G/IDPGoy4RJB42wzFE46DRsstbW6tKHoKbhAxw=="],
++ 
++     "react-remove-scroll": ["react-remove-scroll@2.7.1", "", { "dependencies": { "react-remove-scroll-bar": "^2.3.7", "react-style-singleton": "^2.2.3", "tslib": "^2.1.0", "use-callback-ref": "^1.3.3", "use-sidecar": "^1.1.3" }, "peerDependencies": { "@types/react": "*", "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-HpMh8+oahmIdOuS5aFKKY6Pyog+FNaZV/XyJOq7b4YFwsFHe5yYfdbIalI4k3vU2nSDql7YskmUseHsRrJqIPA=="],
++@@ -784,7 +749,7 @@
++ 
++     "yjs": ["yjs@13.6.27", "", { "dependencies": { "lib0": "^0.2.99" } }, "sha512-OIDwaflOaq4wC6YlPBy2L6ceKeKuF7DeTxx+jPzv1FHn9tCZ0ZwSRnUBxD05E3yed46fv/FWJbvR+Ud7x0L7zw=="],
++ 
++-    "zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+++    "zod": ["zod@4.1.12", "", {}, "sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ=="],
++ 
++     "@tailwindcss/node/tailwindcss": ["tailwindcss@4.1.16", "", {}, "sha512-pONL5awpaQX4LN5eiv7moSiSPd/DLDzKVRJz8Q9PgzmAdd1R4307GQS2ZpfiN7ZmekdQrfhZZiSE5jkLR4WNaA=="],
++ 
++@@ -802,10 +767,20 @@
++ 
++     "@tailwindcss/vite/tailwindcss": ["tailwindcss@4.1.16", "", {}, "sha512-pONL5awpaQX4LN5eiv7moSiSPd/DLDzKVRJz8Q9PgzmAdd1R4307GQS2ZpfiN7ZmekdQrfhZZiSE5jkLR4WNaA=="],
++ 
+++    "@tanstack/react-router/@tanstack/react-store": ["@tanstack/react-store@0.8.0", "", { "dependencies": { "@tanstack/store": "0.8.0", "use-sync-external-store": "^1.6.0" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-1vG9beLIuB7q69skxK9r5xiLN3ztzIPfSQSs0GfeqWGO2tGIyInZx0x1COhpx97RKaONSoAb8C3dxacWksm1ow=="],
+++
+++    "@tanstack/router-core/@tanstack/store": ["@tanstack/store@0.8.0", "", {}, "sha512-Om+BO0YfMZe//X2z0uLF2j+75nQga6TpTJgLJQBiq85aOyZNIhkCgleNcud2KQg4k4v9Y9l+Uhru3qWMPGTOzQ=="],
+++
+++    "@tanstack/router-generator/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+++
+++    "@tanstack/router-plugin/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+++
++     "anymatch/picomatch": ["picomatch@2.3.1", "", {}, "sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA=="],
++ 
++     "readdirp/picomatch": ["picomatch@2.3.1", "", {}, "sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA=="],
++ 
++     "recast/source-map": ["source-map@0.6.1", "", {}, "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g=="],
+++
+++    "@tanstack/react-router/@tanstack/react-store/@tanstack/store": ["@tanstack/store@0.8.0", "", {}, "sha512-Om+BO0YfMZe//X2z0uLF2j+75nQga6TpTJgLJQBiq85aOyZNIhkCgleNcud2KQg4k4v9Y9l+Uhru3qWMPGTOzQ=="],
++   }
++ }
++diff --git a/package.json b/package.json
++index bfe5fa6..5e1912a 100644
++--- a/package.json
+++++ b/package.json
++@@ -14,6 +14,7 @@
++     "diff": "git diff --staged > diff.txt"
++   },
++   "dependencies": {
+++    "@hookform/resolvers": "^5.2.2",
++     "@lexical/code": "^0.38.2",
++     "@lexical/file": "^0.38.2",
++     "@lexical/hashtag": "^0.38.2",
++@@ -27,23 +28,11 @@
++     "@lexical/table": "^0.38.2",
++     "@lexical/text": "^0.38.2",
++     "@lexical/utils": "^0.38.2",
++-    "@radix-ui/react-checkbox": "^1.3.3",
++-    "@radix-ui/react-collapsible": "^1.1.12",
++     "@radix-ui/react-dialog": "^1.1.15",
++-    "@radix-ui/react-icons": "^1.3.2",
++-    "@radix-ui/react-label": "^2.1.7",
++-    "@radix-ui/react-popover": "^1.1.15",
++-    "@radix-ui/react-scroll-area": "^1.2.10",
++-    "@radix-ui/react-select": "^2.2.6",
++-    "@radix-ui/react-separator": "^1.1.7",
++-    "@radix-ui/react-slider": "^1.3.6",
++-    "@radix-ui/react-slot": "^1.2.3",
++-    "@radix-ui/react-tabs": "^1.1.13",
++-    "@radix-ui/react-toggle": "^1.1.10",
++-    "@radix-ui/react-toggle-group": "^1.1.11",
++-    "@radix-ui/react-tooltip": "^1.2.8",
++     "@tailwindcss/vite": "^4.1.16",
++     "@tanstack/react-devtools": "^0.8.0",
+++    "@tanstack/react-form": "^1.23.8",
+++    "@tanstack/react-form-devtools": "^0.1.8",
++     "@tanstack/react-query": "^5.90.6",
++     "@tanstack/react-router": "^1.134.4",
++     "@tanstack/react-router-devtools": "^1.134.4",
++@@ -56,6 +45,7 @@
++     "consola": "^3.4.2",
++     "dayjs": "^1.11.19",
++     "dexie": "^4.2.1",
+++    "dexie-react-hooks": "^4.2.0",
++     "lexical": "^0.38.2",
++     "lodash": "^4.17.21",
++     "lucide-react": "^0.552.0",
++@@ -67,7 +57,8 @@
++     "tailwind-merge": "^3.3.1",
++     "tailwindcss": "^4.0.0",
++     "tw-animate-css": "^1.4.0",
++-    "uuid": "^13.0.0"
+++    "uuid": "^13.0.0",
+++    "zod": "^4.1.12"
++   },
++   "devDependencies": {
++     "@biomejs/biome": "2.3.2",
++diff --git a/src/components/blocks/CreateBookDialog.tsx b/src/components/blocks/CreateBookDialog.tsx
++new file mode 100644
++index 0000000..80ffe1e
++--- /dev/null
+++++ b/src/components/blocks/CreateBookDialog.tsx
++@@ -0,0 +1,87 @@
+++import { Button } from "@/components/ui/button";
+++import {
+++  Dialog,
+++  DialogClose,
+++  DialogContent,
+++  DialogDescription,
+++  DialogFooter,
+++  DialogHeader,
+++  DialogTitle,
+++  DialogTrigger,
+++} from "@/components/ui/dialog";
+++import { Input } from "@/components/ui/input";
+++import { Label } from "@/components/ui/label";
+++import { Textarea } from "@/components/ui/textarea";
+++
+++interface CreateBookDialogProps {
+++  onOpen?: () => void;
+++  onClose?: () => void;
+++  onSubmit?: () => void;
+++}
+++
+++export function CreateBookDialog({
+++  onOpen,
+++  onClose,
+++  onSubmit,
+++}: CreateBookDialogProps) {
+++  return (
+++    <Dialog onOpenChange={(open) => (open ? onOpen?.() : onClose?.())}>
+++      <DialogTrigger asChild>
+++        <Button>Create Novel Project</Button>
+++      </DialogTrigger>
+++
+++      <DialogContent className="sm:max-w-[440px]">
+++        <DialogHeader>
+++          <DialogTitle>Create a New Novel</DialogTitle>
+++          <DialogDescription>
+++            Fill in the basic information to create your novel project.
+++          </DialogDescription>
+++        </DialogHeader>
+++
+++        <div className="grid gap-4 py-2">
+++          {/* 小说标题 */}
+++          <div className="grid gap-2">
+++            <Label htmlFor="title">Title</Label>
+++            <Input
+++              id="title"
+++              name="title"
+++              placeholder="Enter novel title"
+++              required
+++            />
+++          </div>
+++
+++          {/* 作者 */}
+++          <div className="grid gap-2">
+++            <Label htmlFor="author">Author</Label>
+++            <Input
+++              id="author"
+++              name="author"
+++              placeholder="Your name or pen name"
+++              required
+++            />
+++          </div>
+++
+++          {/* 描述 */}
+++          <div className="grid gap-2">
+++            <Label htmlFor="description">Description</Label>
+++            <Textarea
+++              id="description"
+++              name="description"
+++              placeholder="A short summary of your novel"
+++              rows={3}
+++            />
+++          </div>
+++        </div>
+++
+++        <DialogFooter>
+++          <DialogClose asChild>
+++            <Button variant="outline">Cancel</Button>
+++          </DialogClose>
+++          <Button type="button" onClick={onSubmit}>
+++            Create
+++          </Button>
+++        </DialogFooter>
+++      </DialogContent>
+++    </Dialog>
+++  );
+++}
++diff --git a/src/components/blocks/EmptyProject.tsx b/src/components/blocks/EmptyProject.tsx
++new file mode 100644
++index 0000000..b901b8f
++--- /dev/null
+++++ b/src/components/blocks/EmptyProject.tsx
++@@ -0,0 +1,52 @@
+++import { ArrowUpRightIcon, LucideFolderOpen } from "lucide-react";
+++
+++import { Button } from "@/components/ui/button";
+++import {
+++  Empty,
+++  EmptyContent,
+++  EmptyDescription,
+++  EmptyHeader,
+++  EmptyMedia,
+++  EmptyTitle,
+++} from "@/components/ui/empty";
+++import { CreateBookDialog } from "./CreateBookDialog";
+++
+++interface EmptyProjectProps {
+++  onCreate: () => void;
+++  onImport?: () => void;
+++  onLearnMore?: () => void;
+++}
+++
+++export function EmptyProject({
+++  onCreate,
+++  onImport,
+++  onLearnMore,
+++}: EmptyProjectProps) {
+++  return (
+++    <Empty>
+++      <EmptyHeader>
+++        <EmptyMedia variant="icon">
+++          <LucideFolderOpen />
+++        </EmptyMedia>
+++        <EmptyTitle>No Projects Yet</EmptyTitle>
+++        <EmptyDescription>
+++          You haven&apos;t created any projects yet. Get started by creating
+++          your first project.
+++        </EmptyDescription>
+++      </EmptyHeader>
+++      <EmptyContent>
+++        <div className="flex gap-2">
+++          {/* <Button >Create Project</Button> */}
+++
+++          <CreateBookDialog onSubmit={onCreate} />
+++          <Button variant="outline" onClick={onImport}>
+++            Import Project
+++          </Button>
+++        </div>
+++      </EmptyContent>
+++      <Button variant="link" size="sm" onClick={onLearnMore}>
+++        Learn More <ArrowUpRightIcon />
+++      </Button>
+++    </Empty>
+++  );
+++}
++diff --git a/src/components/ui/dialog.tsx b/src/components/ui/dialog.tsx
++new file mode 100644
++index 0000000..6cb123b
++--- /dev/null
+++++ b/src/components/ui/dialog.tsx
++@@ -0,0 +1,141 @@
+++import * as React from "react"
+++import * as DialogPrimitive from "@radix-ui/react-dialog"
+++import { XIcon } from "lucide-react"
+++
+++import { cn } from "@/lib/utils"
+++
+++function Dialog({
+++  ...props
+++}: React.ComponentProps<typeof DialogPrimitive.Root>) {
+++  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+++}
+++
+++function DialogTrigger({
+++  ...props
+++}: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
+++  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+++}
+++
+++function DialogPortal({
+++  ...props
+++}: React.ComponentProps<typeof DialogPrimitive.Portal>) {
+++  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+++}
+++
+++function DialogClose({
+++  ...props
+++}: React.ComponentProps<typeof DialogPrimitive.Close>) {
+++  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+++}
+++
+++function DialogOverlay({
+++  className,
+++  ...props
+++}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+++  return (
+++    <DialogPrimitive.Overlay
+++      data-slot="dialog-overlay"
+++      className={cn(
+++        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+++        className
+++      )}
+++      {...props}
+++    />
+++  )
+++}
+++
+++function DialogContent({
+++  className,
+++  children,
+++  showCloseButton = true,
+++  ...props
+++}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+++  showCloseButton?: boolean
+++}) {
+++  return (
+++    <DialogPortal data-slot="dialog-portal">
+++      <DialogOverlay />
+++      <DialogPrimitive.Content
+++        data-slot="dialog-content"
+++        className={cn(
+++          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+++          className
+++        )}
+++        {...props}
+++      >
+++        {children}
+++        {showCloseButton && (
+++          <DialogPrimitive.Close
+++            data-slot="dialog-close"
+++            className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+++          >
+++            <XIcon />
+++            <span className="sr-only">Close</span>
+++          </DialogPrimitive.Close>
+++        )}
+++      </DialogPrimitive.Content>
+++    </DialogPortal>
+++  )
+++}
+++
+++function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+++  return (
+++    <div
+++      data-slot="dialog-header"
+++      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+++      {...props}
+++    />
+++  )
+++}
+++
+++function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
+++  return (
+++    <div
+++      data-slot="dialog-footer"
+++      className={cn(
+++        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+++        className
+++      )}
+++      {...props}
+++    />
+++  )
+++}
+++
+++function DialogTitle({
+++  className,
+++  ...props
+++}: React.ComponentProps<typeof DialogPrimitive.Title>) {
+++  return (
+++    <DialogPrimitive.Title
+++      data-slot="dialog-title"
+++      className={cn("text-lg leading-none font-semibold", className)}
+++      {...props}
+++    />
+++  )
+++}
+++
+++function DialogDescription({
+++  className,
+++  ...props
+++}: React.ComponentProps<typeof DialogPrimitive.Description>) {
+++  return (
+++    <DialogPrimitive.Description
+++      data-slot="dialog-description"
+++      className={cn("text-muted-foreground text-sm", className)}
+++      {...props}
+++    />
+++  )
+++}
+++
+++export {
+++  Dialog,
+++  DialogClose,
+++  DialogContent,
+++  DialogDescription,
+++  DialogFooter,
+++  DialogHeader,
+++  DialogOverlay,
+++  DialogPortal,
+++  DialogTitle,
+++  DialogTrigger,
+++}
++diff --git a/src/components/ui/empty.tsx b/src/components/ui/empty.tsx
++new file mode 100644
++index 0000000..df91e9d
++--- /dev/null
+++++ b/src/components/ui/empty.tsx
++@@ -0,0 +1,104 @@
+++import { cva, type VariantProps } from "class-variance-authority"
+++
+++import { cn } from "@/lib/utils"
+++
+++function Empty({ className, ...props }: React.ComponentProps<"div">) {
+++  return (
+++    <div
+++      data-slot="empty"
+++      className={cn(
+++        "flex min-w-0 flex-1 flex-col items-center justify-center gap-6 rounded-lg border-dashed p-6 text-center text-balance md:p-12",
+++        className
+++      )}
+++      {...props}
+++    />
+++  )
+++}
+++
+++function EmptyHeader({ className, ...props }: React.ComponentProps<"div">) {
+++  return (
+++    <div
+++      data-slot="empty-header"
+++      className={cn(
+++        "flex max-w-sm flex-col items-center gap-2 text-center",
+++        className
+++      )}
+++      {...props}
+++    />
+++  )
+++}
+++
+++const emptyMediaVariants = cva(
+++  "flex shrink-0 items-center justify-center mb-2 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+++  {
+++    variants: {
+++      variant: {
+++        default: "bg-transparent",
+++        icon: "bg-muted text-foreground flex size-10 shrink-0 items-center justify-center rounded-lg [&_svg:not([class*='size-'])]:size-6",
+++      },
+++    },
+++    defaultVariants: {
+++      variant: "default",
+++    },
+++  }
+++)
+++
+++function EmptyMedia({
+++  className,
+++  variant = "default",
+++  ...props
+++}: React.ComponentProps<"div"> & VariantProps<typeof emptyMediaVariants>) {
+++  return (
+++    <div
+++      data-slot="empty-icon"
+++      data-variant={variant}
+++      className={cn(emptyMediaVariants({ variant, className }))}
+++      {...props}
+++    />
+++  )
+++}
+++
+++function EmptyTitle({ className, ...props }: React.ComponentProps<"div">) {
+++  return (
+++    <div
+++      data-slot="empty-title"
+++      className={cn("text-lg font-medium tracking-tight", className)}
+++      {...props}
+++    />
+++  )
+++}
+++
+++function EmptyDescription({ className, ...props }: React.ComponentProps<"p">) {
+++  return (
+++    <div
+++      data-slot="empty-description"
+++      className={cn(
+++        "text-muted-foreground [&>a:hover]:text-primary text-sm/relaxed [&>a]:underline [&>a]:underline-offset-4",
+++        className
+++      )}
+++      {...props}
+++    />
+++  )
+++}
+++
+++function EmptyContent({ className, ...props }: React.ComponentProps<"div">) {
+++  return (
+++    <div
+++      data-slot="empty-content"
+++      className={cn(
+++        "flex w-full max-w-sm min-w-0 flex-col items-center gap-4 text-sm text-balance",
+++        className
+++      )}
+++      {...props}
+++    />
+++  )
+++}
+++
+++export {
+++  Empty,
+++  EmptyHeader,
+++  EmptyTitle,
+++  EmptyDescription,
+++  EmptyContent,
+++  EmptyMedia,
+++}
++diff --git a/src/components/ui/form.tsx b/src/components/ui/form.tsx
++new file mode 100644
++index 0000000..524b986
++--- /dev/null
+++++ b/src/components/ui/form.tsx
++@@ -0,0 +1,167 @@
+++"use client"
+++
+++import * as React from "react"
+++import * as LabelPrimitive from "@radix-ui/react-label"
+++import { Slot } from "@radix-ui/react-slot"
+++import {
+++  Controller,
+++  FormProvider,
+++  useFormContext,
+++  useFormState,
+++  type ControllerProps,
+++  type FieldPath,
+++  type FieldValues,
+++} from "react-hook-form"
+++
+++import { cn } from "@/lib/utils"
+++import { Label } from "@/components/ui/label"
+++
+++const Form = FormProvider
+++
+++type FormFieldContextValue<
+++  TFieldValues extends FieldValues = FieldValues,
+++  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+++> = {
+++  name: TName
+++}
+++
+++const FormFieldContext = React.createContext<FormFieldContextValue>(
+++  {} as FormFieldContextValue
+++)
+++
+++const FormField = <
+++  TFieldValues extends FieldValues = FieldValues,
+++  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+++>({
+++  ...props
+++}: ControllerProps<TFieldValues, TName>) => {
+++  return (
+++    <FormFieldContext.Provider value={{ name: props.name }}>
+++      <Controller {...props} />
+++    </FormFieldContext.Provider>
+++  )
+++}
+++
+++const useFormField = () => {
+++  const fieldContext = React.useContext(FormFieldContext)
+++  const itemContext = React.useContext(FormItemContext)
+++  const { getFieldState } = useFormContext()
+++  const formState = useFormState({ name: fieldContext.name })
+++  const fieldState = getFieldState(fieldContext.name, formState)
+++
+++  if (!fieldContext) {
+++    throw new Error("useFormField should be used within <FormField>")
+++  }
+++
+++  const { id } = itemContext
+++
+++  return {
+++    id,
+++    name: fieldContext.name,
+++    formItemId: `${id}-form-item`,
+++    formDescriptionId: `${id}-form-item-description`,
+++    formMessageId: `${id}-form-item-message`,
+++    ...fieldState,
+++  }
+++}
+++
+++type FormItemContextValue = {
+++  id: string
+++}
+++
+++const FormItemContext = React.createContext<FormItemContextValue>(
+++  {} as FormItemContextValue
+++)
+++
+++function FormItem({ className, ...props }: React.ComponentProps<"div">) {
+++  const id = React.useId()
+++
+++  return (
+++    <FormItemContext.Provider value={{ id }}>
+++      <div
+++        data-slot="form-item"
+++        className={cn("grid gap-2", className)}
+++        {...props}
+++      />
+++    </FormItemContext.Provider>
+++  )
+++}
+++
+++function FormLabel({
+++  className,
+++  ...props
+++}: React.ComponentProps<typeof LabelPrimitive.Root>) {
+++  const { error, formItemId } = useFormField()
+++
+++  return (
+++    <Label
+++      data-slot="form-label"
+++      data-error={!!error}
+++      className={cn("data-[error=true]:text-destructive", className)}
+++      htmlFor={formItemId}
+++      {...props}
+++    />
+++  )
+++}
+++
+++function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
+++  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
+++
+++  return (
+++    <Slot
+++      data-slot="form-control"
+++      id={formItemId}
+++      aria-describedby={
+++        !error
+++          ? `${formDescriptionId}`
+++          : `${formDescriptionId} ${formMessageId}`
+++      }
+++      aria-invalid={!!error}
+++      {...props}
+++    />
+++  )
+++}
+++
+++function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
+++  const { formDescriptionId } = useFormField()
+++
+++  return (
+++    <p
+++      data-slot="form-description"
+++      id={formDescriptionId}
+++      className={cn("text-muted-foreground text-sm", className)}
+++      {...props}
+++    />
+++  )
+++}
+++
+++function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
+++  const { error, formMessageId } = useFormField()
+++  const body = error ? String(error?.message ?? "") : props.children
+++
+++  if (!body) {
+++    return null
+++  }
+++
+++  return (
+++    <p
+++      data-slot="form-message"
+++      id={formMessageId}
+++      className={cn("text-destructive text-sm", className)}
+++      {...props}
+++    >
+++      {body}
+++    </p>
+++  )
+++}
+++
+++export {
+++  useFormField,
+++  Form,
+++  FormItem,
+++  FormLabel,
+++  FormControl,
+++  FormDescription,
+++  FormMessage,
+++  FormField,
+++}
++diff --git a/src/components/ui/input.tsx b/src/components/ui/input.tsx
++new file mode 100644
++index 0000000..8916905
++--- /dev/null
+++++ b/src/components/ui/input.tsx
++@@ -0,0 +1,21 @@
+++import * as React from "react"
+++
+++import { cn } from "@/lib/utils"
+++
+++function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+++  return (
+++    <input
+++      type={type}
+++      data-slot="input"
+++      className={cn(
+++        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+++        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+++        "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+++        className
+++      )}
+++      {...props}
+++    />
+++  )
+++}
+++
+++export { Input }
++diff --git a/src/components/ui/label.tsx b/src/components/ui/label.tsx
++new file mode 100644
++index 0000000..ef7133a
++--- /dev/null
+++++ b/src/components/ui/label.tsx
++@@ -0,0 +1,22 @@
+++import * as React from "react"
+++import * as LabelPrimitive from "@radix-ui/react-label"
+++
+++import { cn } from "@/lib/utils"
+++
+++function Label({
+++  className,
+++  ...props
+++}: React.ComponentProps<typeof LabelPrimitive.Root>) {
+++  return (
+++    <LabelPrimitive.Root
+++      data-slot="label"
+++      className={cn(
+++        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+++        className
+++      )}
+++      {...props}
+++    />
+++  )
+++}
+++
+++export { Label }
++diff --git a/src/components/ui/textarea.tsx b/src/components/ui/textarea.tsx
++new file mode 100644
++index 0000000..7f21b5e
++--- /dev/null
+++++ b/src/components/ui/textarea.tsx
++@@ -0,0 +1,18 @@
+++import * as React from "react"
+++
+++import { cn } from "@/lib/utils"
+++
+++function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
+++  return (
+++    <textarea
+++      data-slot="textarea"
+++      className={cn(
+++        "border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 flex field-sizing-content min-h-16 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+++        className
+++      )}
+++      {...props}
+++    />
+++  )
+++}
+++
+++export { Textarea }
++diff --git a/src/db/curd.ts b/src/db/curd.ts
++index a910110..185a00f 100644
++--- a/src/db/curd.ts
+++++ b/src/db/curd.ts
++@@ -327,6 +327,34 @@ export class NovelEditorDB extends Dexie {
++   }
++ }
++ 
+++// ==============================
+++// 初始化数据库（第一次使用时调用）
+++// ==============================
+++export async function initDatabase() {
+++  try {
+++    const existingUsers = await db.users.toArray();
+++    if (existingUsers.length === 0) {
+++      // 新建一个默认免费用户
+++      await db.addUser({
+++        username: "guest",
+++        displayName: "Guest User",
+++        plan: "free",
+++      });
+++      logger.info("✅ Created default guest user");
+++    }
+++
+++    const dbVersion = await db.getDBVersion();
+++    if (dbVersion.length === 0) {
+++      await db.setDBVersion("1.0.0", "Initial database setup");
+++      logger.info("✅ Initialized DB version 1.0.0");
+++    }
+++
+++    logger.success("🎉 Database initialized successfully!");
+++  } catch (error) {
+++    logger.error("❌ Database initialization failed:", error);
+++  }
+++}
+++
++ // ==============================
++ // 单例导出
++ // ==============================
++diff --git a/src/main.tsx b/src/main.tsx
++index eca13b9..a6de487 100644
++--- a/src/main.tsx
+++++ b/src/main.tsx
++@@ -5,6 +5,7 @@ import { routeTree } from "./routeTree.gen";
++ import "./styles.css";
++ 
++ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+++import { db, initDatabase } from "./db/curd";
++ 
++ // Create the router instance
++ const router = createRouter({
++@@ -24,6 +25,13 @@ declare module "@tanstack/react-router" {
++ // 创建 QueryClient
++ const queryClient = new QueryClient();
++ 
+++async function main() {
+++  await db.open(); // 打开数据库
+++  await initDatabase(); // 初始化默认数据
+++}
+++
+++main();
+++
++ const rootElement = document.getElementById("app");
++ if (rootElement && !rootElement.innerHTML) {
++   const root = ReactDOM.createRoot(rootElement);
++diff --git a/src/routes/__root.tsx b/src/routes/__root.tsx
++index ce6090f..3775633 100644
++--- a/src/routes/__root.tsx
+++++ b/src/routes/__root.tsx
++@@ -1,23 +1,25 @@
++ import { TanStackDevtools } from "@tanstack/react-devtools";
++ import { createRootRoute, Outlet } from "@tanstack/react-router";
++ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+++import { FormDevtoolsPlugin } from "@tanstack/react-form-devtools";
++ 
++ export const Route = createRootRoute({
++-	component: () => (
++-		<>
++-			{/* <Header /> */}
++-			<Outlet />
++-			<TanStackDevtools
++-				config={{
++-					position: "bottom-right",
++-				}}
++-				plugins={[
++-					{
++-						name: "Tanstack Router",
++-						render: <TanStackRouterDevtoolsPanel />,
++-					},
++-				]}
++-			/>
++-		</>
++-	),
+++  component: () => (
+++    <>
+++      {/* <Header /> */}
+++      <Outlet />
+++      <TanStackDevtools
+++        config={{
+++          position: "bottom-right",
+++        }}
+++        plugins={[
+++          {
+++            name: "Tanstack Router",
+++            render: <TanStackRouterDevtoolsPanel />,
+++          },
+++          FormDevtoolsPlugin(),
+++        ]}
+++      />
+++    </>
+++  ),
++ });
++diff --git a/src/routes/index.tsx b/src/routes/index.tsx
++index c5f290e..9171dca 100644
++--- a/src/routes/index.tsx
+++++ b/src/routes/index.tsx
++@@ -1,21 +1,45 @@
++-import logger from "@/log";
+++import { EmptyProject } from "@/components/blocks/EmptyProject";
+++import { db } from "@/db/curd";
++ import { createFileRoute } from "@tanstack/react-router";
+++import { useState } from "react";
+++import { useLiveQuery } from "dexie-react-hooks";
+++import logger from "@/log";
+++import { Spinner } from "@/components/ui/loading";
++ 
++ export const Route = createFileRoute("/")({
++   component: RouteComponent,
++ });
++ 
++-logger.start("启动构建中…")
++-logger.ready("前端构建完成")
++-logger.success("所有资源加载成功")
++-logger.warn("警告：配置文件缺少字段")
++-logger.error("请求失败：连接超时")
++-logger.debug("渲染器初始化")
++-logger.verbose("细节日志")
++-logger.fatal("无法启动服务")
++-
++-logger.info({ abx: "212" })
++ function RouteComponent() {
++-  return <div>Hello "/"!</div>;
++-}
+++  const [loading, setLoading] = useState(false);
+++
+++  const projects = useLiveQuery(() => db.getAllProjects(), []);
++ 
+++  const createProject = async () => {
+++    logger.info("create project");
+++
+++    // setLoading(true);
+++
+++    // try {
+++    //   await db.addProject({ title: "New project" });
+++    // } catch (err) {
+++    //   logger.error(err);
+++    // } finally {
+++    //   setLoading(false);
+++    // }
+++  };
+++
+++  if (loading) return <Spinner />;
+++  if (!projects?.length) return <EmptyProject onCreate={createProject} />;
+++
+++  return (
+++    <div className="grid gap-4">
+++      {projects.map((project) => (
+++        <div key={project.id} className="p-4 border rounded">
+++          <h3>{project.title}</h3>
+++          <p>{project.description}</p>
+++        </div>
+++      ))}
+++    </div>
+++  );
+++}
 diff --git a/package.json b/package.json
-index bfe5fa6..5e1912a 100644
+index 5e1912a..b074306 100644
 --- a/package.json
 +++ b/package.json
-@@ -14,6 +14,7 @@
-     "diff": "git diff --staged > diff.txt"
-   },
-   "dependencies": {
-+    "@hookform/resolvers": "^5.2.2",
-     "@lexical/code": "^0.38.2",
-     "@lexical/file": "^0.38.2",
-     "@lexical/hashtag": "^0.38.2",
-@@ -27,23 +28,11 @@
-     "@lexical/table": "^0.38.2",
-     "@lexical/text": "^0.38.2",
-     "@lexical/utils": "^0.38.2",
--    "@radix-ui/react-checkbox": "^1.3.3",
--    "@radix-ui/react-collapsible": "^1.1.12",
-     "@radix-ui/react-dialog": "^1.1.15",
--    "@radix-ui/react-icons": "^1.3.2",
--    "@radix-ui/react-label": "^2.1.7",
--    "@radix-ui/react-popover": "^1.1.15",
--    "@radix-ui/react-scroll-area": "^1.2.10",
--    "@radix-ui/react-select": "^2.2.6",
--    "@radix-ui/react-separator": "^1.1.7",
--    "@radix-ui/react-slider": "^1.3.6",
--    "@radix-ui/react-slot": "^1.2.3",
--    "@radix-ui/react-tabs": "^1.1.13",
--    "@radix-ui/react-toggle": "^1.1.10",
--    "@radix-ui/react-toggle-group": "^1.1.11",
--    "@radix-ui/react-tooltip": "^1.2.8",
-     "@tailwindcss/vite": "^4.1.16",
-     "@tanstack/react-devtools": "^0.8.0",
-+    "@tanstack/react-form": "^1.23.8",
-+    "@tanstack/react-form-devtools": "^0.1.8",
-     "@tanstack/react-query": "^5.90.6",
-     "@tanstack/react-router": "^1.134.4",
-     "@tanstack/react-router-devtools": "^1.134.4",
-@@ -56,6 +45,7 @@
-     "consola": "^3.4.2",
-     "dayjs": "^1.11.19",
-     "dexie": "^4.2.1",
-+    "dexie-react-hooks": "^4.2.0",
-     "lexical": "^0.38.2",
+@@ -50,6 +50,7 @@
      "lodash": "^4.17.21",
      "lucide-react": "^0.552.0",
-@@ -67,7 +57,8 @@
-     "tailwind-merge": "^3.3.1",
-     "tailwindcss": "^4.0.0",
-     "tw-animate-css": "^1.4.0",
--    "uuid": "^13.0.0"
-+    "uuid": "^13.0.0",
-+    "zod": "^4.1.12"
-   },
-   "devDependencies": {
-     "@biomejs/biome": "2.3.2",
+     "lunr": "^2.3.9",
++    "next-themes": "^0.4.6",
+     "react": "^19.1.0",
+     "react-dom": "^19.1.0",
+     "react-error-boundary": "^6.0.0",
 diff --git a/src/components/blocks/CreateBookDialog.tsx b/src/components/blocks/CreateBookDialog.tsx
+deleted file mode 100644
+index 80ffe1e..0000000
+--- a/src/components/blocks/CreateBookDialog.tsx
++++ /dev/null
+@@ -1,87 +0,0 @@
+-import { Button } from "@/components/ui/button";
+-import {
+-  Dialog,
+-  DialogClose,
+-  DialogContent,
+-  DialogDescription,
+-  DialogFooter,
+-  DialogHeader,
+-  DialogTitle,
+-  DialogTrigger,
+-} from "@/components/ui/dialog";
+-import { Input } from "@/components/ui/input";
+-import { Label } from "@/components/ui/label";
+-import { Textarea } from "@/components/ui/textarea";
+-
+-interface CreateBookDialogProps {
+-  onOpen?: () => void;
+-  onClose?: () => void;
+-  onSubmit?: () => void;
+-}
+-
+-export function CreateBookDialog({
+-  onOpen,
+-  onClose,
+-  onSubmit,
+-}: CreateBookDialogProps) {
+-  return (
+-    <Dialog onOpenChange={(open) => (open ? onOpen?.() : onClose?.())}>
+-      <DialogTrigger asChild>
+-        <Button>Create Novel Project</Button>
+-      </DialogTrigger>
+-
+-      <DialogContent className="sm:max-w-[440px]">
+-        <DialogHeader>
+-          <DialogTitle>Create a New Novel</DialogTitle>
+-          <DialogDescription>
+-            Fill in the basic information to create your novel project.
+-          </DialogDescription>
+-        </DialogHeader>
+-
+-        <div className="grid gap-4 py-2">
+-          {/* 小说标题 */}
+-          <div className="grid gap-2">
+-            <Label htmlFor="title">Title</Label>
+-            <Input
+-              id="title"
+-              name="title"
+-              placeholder="Enter novel title"
+-              required
+-            />
+-          </div>
+-
+-          {/* 作者 */}
+-          <div className="grid gap-2">
+-            <Label htmlFor="author">Author</Label>
+-            <Input
+-              id="author"
+-              name="author"
+-              placeholder="Your name or pen name"
+-              required
+-            />
+-          </div>
+-
+-          {/* 描述 */}
+-          <div className="grid gap-2">
+-            <Label htmlFor="description">Description</Label>
+-            <Textarea
+-              id="description"
+-              name="description"
+-              placeholder="A short summary of your novel"
+-              rows={3}
+-            />
+-          </div>
+-        </div>
+-
+-        <DialogFooter>
+-          <DialogClose asChild>
+-            <Button variant="outline">Cancel</Button>
+-          </DialogClose>
+-          <Button type="button" onClick={onSubmit}>
+-            Create
+-          </Button>
+-        </DialogFooter>
+-      </DialogContent>
+-    </Dialog>
+-  );
+-}
+diff --git a/src/components/blocks/createBookDialog.tsx b/src/components/blocks/createBookDialog.tsx
 new file mode 100644
-index 0000000..80ffe1e
+index 0000000..77c135c
 --- /dev/null
-+++ b/src/components/blocks/CreateBookDialog.tsx
-@@ -0,0 +1,87 @@
++++ b/src/components/blocks/createBookDialog.tsx
+@@ -0,0 +1,199 @@
 +import { Button } from "@/components/ui/button";
 +import {
 +  Dialog,
@@ -325,29 +1291,83 @@ index 0000000..80ffe1e
 +  DialogFooter,
 +  DialogHeader,
 +  DialogTitle,
-+  DialogTrigger,
 +} from "@/components/ui/dialog";
 +import { Input } from "@/components/ui/input";
 +import { Label } from "@/components/ui/label";
 +import { Textarea } from "@/components/ui/textarea";
++import { useForm } from "@tanstack/react-form";
++import { toast } from "sonner";
++import { z } from "zod";
 +
-+interface CreateBookDialogProps {
++// ✅ 验证规则（Zod）
++const bookSchema = z.object({
++  title: z
++    .string()
++    .trim()
++    .min(2, "Title must be at least 2 characters long")
++    .max(100, "Title cannot exceed 100 characters")
++    .regex(
++      /[a-zA-Z0-9\u4e00-\u9fa5]+/,
++      "Title must contain at least one letter or Chinese character",
++    ),
++  author: z
++    .string()
++    .trim()
++    .min(2, "Author name must be at least 2 characters long")
++    .max(50, "Author name cannot exceed 50 characters")
++    .regex(/^[\p{L}\p{M}\s.'-]+$/u, "Author name contains invalid characters"),
++  description: z.string().trim().max(500, "Description too long").optional(),
++});
++
++export interface CreateBookDialogProps {
++  open?: boolean; // 由外部控制 Dialog 开启状态
++  loading?: boolean; // 外部传入是否正在提交（例如数据库写入中）
 +  onOpen?: () => void;
 +  onClose?: () => void;
-+  onSubmit?: () => void;
++  onSubmit?: (data: z.infer<typeof bookSchema>) => Promise<void> | void;
 +}
 +
 +export function CreateBookDialog({
++  open,
++  loading,
 +  onOpen,
 +  onClose,
 +  onSubmit,
 +}: CreateBookDialogProps) {
-+  return (
-+    <Dialog onOpenChange={(open) => (open ? onOpen?.() : onClose?.())}>
-+      <DialogTrigger asChild>
-+        <Button>Create Novel Project</Button>
-+      </DialogTrigger>
++  const form = useForm({
++    defaultValues: {
++      title: "",
++      author: "",
++      description: "",
++    },
++    onSubmit: async ({ value }) => {
++      const result = bookSchema.safeParse(value);
++      if (!result.success) {
++        const msg = result.error.issues[0]?.message ?? "Invalid input";
++        toast.error(msg);
++        return;
++      }
++      try {
++        await onSubmit?.(result.data);
++        toast.success(`✅ Created book "${result.data.title}" successfully!`);
++      } catch (err) {
++        console.error(err);
++        toast.error("❌ Failed to create project.");
++      }
++    },
++  });
 +
++  // ✅ 辅助函数：抽离单字段 onBlur 校验
++  const validateField = (schema: z.ZodString) => (value: string) => {
++    const result = schema.safeParse(value);
++    return result.success ? undefined : result.error.issues[0]?.message;
++  };
++
++  return (
++    <Dialog
++      open={open}
++      onOpenChange={(isOpen) => (isOpen ? onOpen?.() : onClose?.())}
++    >
 +      <DialogContent className="sm:max-w-[440px]">
 +        <DialogHeader>
 +          <DialogTitle>Create a New Novel</DialogTitle>
@@ -356,792 +1376,303 @@ index 0000000..80ffe1e
 +          </DialogDescription>
 +        </DialogHeader>
 +
-+        <div className="grid gap-4 py-2">
-+          {/* 小说标题 */}
-+          <div className="grid gap-2">
-+            <Label htmlFor="title">Title</Label>
-+            <Input
-+              id="title"
-+              name="title"
-+              placeholder="Enter novel title"
-+              required
-+            />
-+          </div>
++        <form
++          onSubmit={(e) => {
++            e.preventDefault();
++            form.handleSubmit();
++          }}
++          className="grid gap-4 py-2"
++        >
++          {/* Title */}
++          <form.Field
++            name="title"
++            validators={{
++              onBlur: ({ value }) =>
++                validateField(bookSchema.shape.title)(value),
++            }}
++          >
++            {(field) => (
++              <div className="grid gap-2">
++                <Label htmlFor={field.name}>Title</Label>
++                <Input
++                  id={field.name}
++                  value={field.state.value}
++                  onChange={(e) => field.handleChange(e.target.value)}
++                  onBlur={field.handleBlur}
++                  placeholder="Enter novel title"
++                  disabled={loading}
++                />
++                {field.state.meta.isTouched &&
++                  field.state.meta.errors.length > 0 && (
++                    <p className="text-sm text-red-500">
++                      {field.state.meta.errors.join(", ")}
++                    </p>
++                  )}
++              </div>
++            )}
++          </form.Field>
 +
-+          {/* 作者 */}
-+          <div className="grid gap-2">
-+            <Label htmlFor="author">Author</Label>
-+            <Input
-+              id="author"
-+              name="author"
-+              placeholder="Your name or pen name"
-+              required
-+            />
-+          </div>
++          {/* Author */}
++          <form.Field
++            name="author"
++            validators={{
++              onBlur: ({ value }) =>
++                validateField(bookSchema.shape.author)(value),
++            }}
++          >
++            {(field) => (
++              <div className="grid gap-2">
++                <Label htmlFor={field.name}>Author</Label>
++                <Input
++                  id={field.name}
++                  value={field.state.value}
++                  onChange={(e) => field.handleChange(e.target.value)}
++                  onBlur={field.handleBlur}
++                  placeholder="Your name or pen name"
++                  disabled={loading}
++                />
++                {field.state.meta.isTouched &&
++                  field.state.meta.errors.length > 0 && (
++                    <p className="text-sm text-red-500">
++                      {field.state.meta.errors.join(", ")}
++                    </p>
++                  )}
++              </div>
++            )}
++          </form.Field>
 +
-+          {/* 描述 */}
-+          <div className="grid gap-2">
-+            <Label htmlFor="description">Description</Label>
-+            <Textarea
-+              id="description"
-+              name="description"
-+              placeholder="A short summary of your novel"
-+              rows={3}
-+            />
-+          </div>
-+        </div>
++          {/* Description */}
++          <form.Field name="description">
++            {(field) => (
++              <div className="grid gap-2">
++                <Label htmlFor={field.name}>Description</Label>
++                <Textarea
++                  id={field.name}
++                  value={field.state.value}
++                  onChange={(e) => field.handleChange(e.target.value)}
++                  onBlur={field.handleBlur}
++                  placeholder="A short summary of your novel (optional)"
++                  rows={3}
++                  disabled={loading}
++                />
++                {field.state.meta.isTouched &&
++                  field.state.meta.errors.length > 0 && (
++                    <p className="text-sm text-red-500">
++                      {field.state.meta.errors.join(", ")}
++                    </p>
++                  )}
++              </div>
++            )}
++          </form.Field>
 +
-+        <DialogFooter>
-+          <DialogClose asChild>
-+            <Button variant="outline">Cancel</Button>
-+          </DialogClose>
-+          <Button type="button" onClick={onSubmit}>
-+            Create
-+          </Button>
-+        </DialogFooter>
++          {/* Footer */}
++          <DialogFooter className="pt-2">
++            <DialogClose asChild>
++              <Button variant="outline" type="button" disabled={loading}>
++                Cancel
++              </Button>
++            </DialogClose>
++            <Button type="submit" disabled={loading}>
++              {loading ? "Creating..." : "Create"}
++            </Button>
++          </DialogFooter>
++        </form>
 +      </DialogContent>
 +    </Dialog>
 +  );
 +}
-diff --git a/src/components/blocks/EmptyProject.tsx b/src/components/blocks/EmptyProject.tsx
+diff --git a/src/components/blocks/EmptyProject.tsx b/src/components/blocks/emptyProject.tsx
+similarity index 87%
+rename from src/components/blocks/EmptyProject.tsx
+rename to src/components/blocks/emptyProject.tsx
+index b901b8f..9ab979f 100644
+--- a/src/components/blocks/EmptyProject.tsx
++++ b/src/components/blocks/emptyProject.tsx
+@@ -9,7 +9,7 @@ import {
+   EmptyMedia,
+   EmptyTitle,
+ } from "@/components/ui/empty";
+-import { CreateBookDialog } from "./CreateBookDialog";
++import { CreateBookDialog } from "./createBookDialog";
+ 
+ interface EmptyProjectProps {
+   onCreate: () => void;
+@@ -38,7 +38,8 @@ export function EmptyProject({
+         <div className="flex gap-2">
+           {/* <Button >Create Project</Button> */}
+ 
+-          <CreateBookDialog onSubmit={onCreate} />
++          {/* <CreateBookDialog onSubmit={onCreate} /> */}
++          <Button onClick={onCreate}>Create Project</Button>
+           <Button variant="outline" onClick={onImport}>
+             Import Project
+           </Button>
+diff --git a/src/components/ui/sonner.tsx b/src/components/ui/sonner.tsx
 new file mode 100644
-index 0000000..b901b8f
+index 0000000..9f46e06
 --- /dev/null
-+++ b/src/components/blocks/EmptyProject.tsx
-@@ -0,0 +1,52 @@
-+import { ArrowUpRightIcon, LucideFolderOpen } from "lucide-react";
-+
-+import { Button } from "@/components/ui/button";
++++ b/src/components/ui/sonner.tsx
+@@ -0,0 +1,38 @@
 +import {
-+  Empty,
-+  EmptyContent,
-+  EmptyDescription,
-+  EmptyHeader,
-+  EmptyMedia,
-+  EmptyTitle,
-+} from "@/components/ui/empty";
-+import { CreateBookDialog } from "./CreateBookDialog";
++  CircleCheckIcon,
++  InfoIcon,
++  Loader2Icon,
++  OctagonXIcon,
++  TriangleAlertIcon,
++} from "lucide-react"
++import { useTheme } from "next-themes"
++import { Toaster as Sonner, type ToasterProps } from "sonner"
 +
-+interface EmptyProjectProps {
-+  onCreate: () => void;
-+  onImport?: () => void;
-+  onLearnMore?: () => void;
-+}
-+
-+export function EmptyProject({
-+  onCreate,
-+  onImport,
-+  onLearnMore,
-+}: EmptyProjectProps) {
-+  return (
-+    <Empty>
-+      <EmptyHeader>
-+        <EmptyMedia variant="icon">
-+          <LucideFolderOpen />
-+        </EmptyMedia>
-+        <EmptyTitle>No Projects Yet</EmptyTitle>
-+        <EmptyDescription>
-+          You haven&apos;t created any projects yet. Get started by creating
-+          your first project.
-+        </EmptyDescription>
-+      </EmptyHeader>
-+      <EmptyContent>
-+        <div className="flex gap-2">
-+          {/* <Button >Create Project</Button> */}
-+
-+          <CreateBookDialog onSubmit={onCreate} />
-+          <Button variant="outline" onClick={onImport}>
-+            Import Project
-+          </Button>
-+        </div>
-+      </EmptyContent>
-+      <Button variant="link" size="sm" onClick={onLearnMore}>
-+        Learn More <ArrowUpRightIcon />
-+      </Button>
-+    </Empty>
-+  );
-+}
-diff --git a/src/components/ui/dialog.tsx b/src/components/ui/dialog.tsx
-new file mode 100644
-index 0000000..6cb123b
---- /dev/null
-+++ b/src/components/ui/dialog.tsx
-@@ -0,0 +1,141 @@
-+import * as React from "react"
-+import * as DialogPrimitive from "@radix-ui/react-dialog"
-+import { XIcon } from "lucide-react"
-+
-+import { cn } from "@/lib/utils"
-+
-+function Dialog({
-+  ...props
-+}: React.ComponentProps<typeof DialogPrimitive.Root>) {
-+  return <DialogPrimitive.Root data-slot="dialog" {...props} />
-+}
-+
-+function DialogTrigger({
-+  ...props
-+}: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
-+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
-+}
-+
-+function DialogPortal({
-+  ...props
-+}: React.ComponentProps<typeof DialogPrimitive.Portal>) {
-+  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
-+}
-+
-+function DialogClose({
-+  ...props
-+}: React.ComponentProps<typeof DialogPrimitive.Close>) {
-+  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
-+}
-+
-+function DialogOverlay({
-+  className,
-+  ...props
-+}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
-+  return (
-+    <DialogPrimitive.Overlay
-+      data-slot="dialog-overlay"
-+      className={cn(
-+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
-+        className
-+      )}
-+      {...props}
-+    />
-+  )
-+}
-+
-+function DialogContent({
-+  className,
-+  children,
-+  showCloseButton = true,
-+  ...props
-+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
-+  showCloseButton?: boolean
-+}) {
-+  return (
-+    <DialogPortal data-slot="dialog-portal">
-+      <DialogOverlay />
-+      <DialogPrimitive.Content
-+        data-slot="dialog-content"
-+        className={cn(
-+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
-+          className
-+        )}
-+        {...props}
-+      >
-+        {children}
-+        {showCloseButton && (
-+          <DialogPrimitive.Close
-+            data-slot="dialog-close"
-+            className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
-+          >
-+            <XIcon />
-+            <span className="sr-only">Close</span>
-+          </DialogPrimitive.Close>
-+        )}
-+      </DialogPrimitive.Content>
-+    </DialogPortal>
-+  )
-+}
-+
-+function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
-+  return (
-+    <div
-+      data-slot="dialog-header"
-+      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
-+      {...props}
-+    />
-+  )
-+}
-+
-+function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
-+  return (
-+    <div
-+      data-slot="dialog-footer"
-+      className={cn(
-+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
-+        className
-+      )}
-+      {...props}
-+    />
-+  )
-+}
-+
-+function DialogTitle({
-+  className,
-+  ...props
-+}: React.ComponentProps<typeof DialogPrimitive.Title>) {
-+  return (
-+    <DialogPrimitive.Title
-+      data-slot="dialog-title"
-+      className={cn("text-lg leading-none font-semibold", className)}
-+      {...props}
-+    />
-+  )
-+}
-+
-+function DialogDescription({
-+  className,
-+  ...props
-+}: React.ComponentProps<typeof DialogPrimitive.Description>) {
-+  return (
-+    <DialogPrimitive.Description
-+      data-slot="dialog-description"
-+      className={cn("text-muted-foreground text-sm", className)}
-+      {...props}
-+    />
-+  )
-+}
-+
-+export {
-+  Dialog,
-+  DialogClose,
-+  DialogContent,
-+  DialogDescription,
-+  DialogFooter,
-+  DialogHeader,
-+  DialogOverlay,
-+  DialogPortal,
-+  DialogTitle,
-+  DialogTrigger,
-+}
-diff --git a/src/components/ui/empty.tsx b/src/components/ui/empty.tsx
-new file mode 100644
-index 0000000..df91e9d
---- /dev/null
-+++ b/src/components/ui/empty.tsx
-@@ -0,0 +1,104 @@
-+import { cva, type VariantProps } from "class-variance-authority"
-+
-+import { cn } from "@/lib/utils"
-+
-+function Empty({ className, ...props }: React.ComponentProps<"div">) {
-+  return (
-+    <div
-+      data-slot="empty"
-+      className={cn(
-+        "flex min-w-0 flex-1 flex-col items-center justify-center gap-6 rounded-lg border-dashed p-6 text-center text-balance md:p-12",
-+        className
-+      )}
-+      {...props}
-+    />
-+  )
-+}
-+
-+function EmptyHeader({ className, ...props }: React.ComponentProps<"div">) {
-+  return (
-+    <div
-+      data-slot="empty-header"
-+      className={cn(
-+        "flex max-w-sm flex-col items-center gap-2 text-center",
-+        className
-+      )}
-+      {...props}
-+    />
-+  )
-+}
-+
-+const emptyMediaVariants = cva(
-+  "flex shrink-0 items-center justify-center mb-2 [&_svg]:pointer-events-none [&_svg]:shrink-0",
-+  {
-+    variants: {
-+      variant: {
-+        default: "bg-transparent",
-+        icon: "bg-muted text-foreground flex size-10 shrink-0 items-center justify-center rounded-lg [&_svg:not([class*='size-'])]:size-6",
-+      },
-+    },
-+    defaultVariants: {
-+      variant: "default",
-+    },
-+  }
-+)
-+
-+function EmptyMedia({
-+  className,
-+  variant = "default",
-+  ...props
-+}: React.ComponentProps<"div"> & VariantProps<typeof emptyMediaVariants>) {
-+  return (
-+    <div
-+      data-slot="empty-icon"
-+      data-variant={variant}
-+      className={cn(emptyMediaVariants({ variant, className }))}
-+      {...props}
-+    />
-+  )
-+}
-+
-+function EmptyTitle({ className, ...props }: React.ComponentProps<"div">) {
-+  return (
-+    <div
-+      data-slot="empty-title"
-+      className={cn("text-lg font-medium tracking-tight", className)}
-+      {...props}
-+    />
-+  )
-+}
-+
-+function EmptyDescription({ className, ...props }: React.ComponentProps<"p">) {
-+  return (
-+    <div
-+      data-slot="empty-description"
-+      className={cn(
-+        "text-muted-foreground [&>a:hover]:text-primary text-sm/relaxed [&>a]:underline [&>a]:underline-offset-4",
-+        className
-+      )}
-+      {...props}
-+    />
-+  )
-+}
-+
-+function EmptyContent({ className, ...props }: React.ComponentProps<"div">) {
-+  return (
-+    <div
-+      data-slot="empty-content"
-+      className={cn(
-+        "flex w-full max-w-sm min-w-0 flex-col items-center gap-4 text-sm text-balance",
-+        className
-+      )}
-+      {...props}
-+    />
-+  )
-+}
-+
-+export {
-+  Empty,
-+  EmptyHeader,
-+  EmptyTitle,
-+  EmptyDescription,
-+  EmptyContent,
-+  EmptyMedia,
-+}
-diff --git a/src/components/ui/form.tsx b/src/components/ui/form.tsx
-new file mode 100644
-index 0000000..524b986
---- /dev/null
-+++ b/src/components/ui/form.tsx
-@@ -0,0 +1,167 @@
-+"use client"
-+
-+import * as React from "react"
-+import * as LabelPrimitive from "@radix-ui/react-label"
-+import { Slot } from "@radix-ui/react-slot"
-+import {
-+  Controller,
-+  FormProvider,
-+  useFormContext,
-+  useFormState,
-+  type ControllerProps,
-+  type FieldPath,
-+  type FieldValues,
-+} from "react-hook-form"
-+
-+import { cn } from "@/lib/utils"
-+import { Label } from "@/components/ui/label"
-+
-+const Form = FormProvider
-+
-+type FormFieldContextValue<
-+  TFieldValues extends FieldValues = FieldValues,
-+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
-+> = {
-+  name: TName
-+}
-+
-+const FormFieldContext = React.createContext<FormFieldContextValue>(
-+  {} as FormFieldContextValue
-+)
-+
-+const FormField = <
-+  TFieldValues extends FieldValues = FieldValues,
-+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
-+>({
-+  ...props
-+}: ControllerProps<TFieldValues, TName>) => {
-+  return (
-+    <FormFieldContext.Provider value={{ name: props.name }}>
-+      <Controller {...props} />
-+    </FormFieldContext.Provider>
-+  )
-+}
-+
-+const useFormField = () => {
-+  const fieldContext = React.useContext(FormFieldContext)
-+  const itemContext = React.useContext(FormItemContext)
-+  const { getFieldState } = useFormContext()
-+  const formState = useFormState({ name: fieldContext.name })
-+  const fieldState = getFieldState(fieldContext.name, formState)
-+
-+  if (!fieldContext) {
-+    throw new Error("useFormField should be used within <FormField>")
-+  }
-+
-+  const { id } = itemContext
-+
-+  return {
-+    id,
-+    name: fieldContext.name,
-+    formItemId: `${id}-form-item`,
-+    formDescriptionId: `${id}-form-item-description`,
-+    formMessageId: `${id}-form-item-message`,
-+    ...fieldState,
-+  }
-+}
-+
-+type FormItemContextValue = {
-+  id: string
-+}
-+
-+const FormItemContext = React.createContext<FormItemContextValue>(
-+  {} as FormItemContextValue
-+)
-+
-+function FormItem({ className, ...props }: React.ComponentProps<"div">) {
-+  const id = React.useId()
++const Toaster = ({ ...props }: ToasterProps) => {
++  const { theme = "system" } = useTheme()
 +
 +  return (
-+    <FormItemContext.Provider value={{ id }}>
-+      <div
-+        data-slot="form-item"
-+        className={cn("grid gap-2", className)}
-+        {...props}
-+      />
-+    </FormItemContext.Provider>
-+  )
-+}
-+
-+function FormLabel({
-+  className,
-+  ...props
-+}: React.ComponentProps<typeof LabelPrimitive.Root>) {
-+  const { error, formItemId } = useFormField()
-+
-+  return (
-+    <Label
-+      data-slot="form-label"
-+      data-error={!!error}
-+      className={cn("data-[error=true]:text-destructive", className)}
-+      htmlFor={formItemId}
-+      {...props}
-+    />
-+  )
-+}
-+
-+function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
-+  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
-+
-+  return (
-+    <Slot
-+      data-slot="form-control"
-+      id={formItemId}
-+      aria-describedby={
-+        !error
-+          ? `${formDescriptionId}`
-+          : `${formDescriptionId} ${formMessageId}`
++    <Sonner
++      theme={theme as ToasterProps["theme"]}
++      className="toaster group"
++      icons={{
++        success: <CircleCheckIcon className="size-4" />,
++        info: <InfoIcon className="size-4" />,
++        warning: <TriangleAlertIcon className="size-4" />,
++        error: <OctagonXIcon className="size-4" />,
++        loading: <Loader2Icon className="size-4 animate-spin" />,
++      }}
++      style={
++        {
++          "--normal-bg": "var(--popover)",
++          "--normal-text": "var(--popover-foreground)",
++          "--normal-border": "var(--border)",
++          "--border-radius": "var(--radius)",
++        } as React.CSSProperties
 +      }
-+      aria-invalid={!!error}
 +      {...props}
 +    />
 +  )
 +}
 +
-+function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
-+  const { formDescriptionId } = useFormField()
-+
-+  return (
-+    <p
-+      data-slot="form-description"
-+      id={formDescriptionId}
-+      className={cn("text-muted-foreground text-sm", className)}
-+      {...props}
-+    />
-+  )
-+}
-+
-+function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
-+  const { error, formMessageId } = useFormField()
-+  const body = error ? String(error?.message ?? "") : props.children
-+
-+  if (!body) {
-+    return null
-+  }
-+
-+  return (
-+    <p
-+      data-slot="form-message"
-+      id={formMessageId}
-+      className={cn("text-destructive text-sm", className)}
-+      {...props}
-+    >
-+      {body}
-+    </p>
-+  )
-+}
-+
-+export {
-+  useFormField,
-+  Form,
-+  FormItem,
-+  FormLabel,
-+  FormControl,
-+  FormDescription,
-+  FormMessage,
-+  FormField,
-+}
-diff --git a/src/components/ui/input.tsx b/src/components/ui/input.tsx
-new file mode 100644
-index 0000000..8916905
---- /dev/null
-+++ b/src/components/ui/input.tsx
-@@ -0,0 +1,21 @@
-+import * as React from "react"
-+
-+import { cn } from "@/lib/utils"
-+
-+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
-+  return (
-+    <input
-+      type={type}
-+      data-slot="input"
-+      className={cn(
-+        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-+        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-+        "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
-+        className
-+      )}
-+      {...props}
-+    />
-+  )
-+}
-+
-+export { Input }
-diff --git a/src/components/ui/label.tsx b/src/components/ui/label.tsx
-new file mode 100644
-index 0000000..ef7133a
---- /dev/null
-+++ b/src/components/ui/label.tsx
-@@ -0,0 +1,22 @@
-+import * as React from "react"
-+import * as LabelPrimitive from "@radix-ui/react-label"
-+
-+import { cn } from "@/lib/utils"
-+
-+function Label({
-+  className,
-+  ...props
-+}: React.ComponentProps<typeof LabelPrimitive.Root>) {
-+  return (
-+    <LabelPrimitive.Root
-+      data-slot="label"
-+      className={cn(
-+        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
-+        className
-+      )}
-+      {...props}
-+    />
-+  )
-+}
-+
-+export { Label }
-diff --git a/src/components/ui/textarea.tsx b/src/components/ui/textarea.tsx
-new file mode 100644
-index 0000000..7f21b5e
---- /dev/null
-+++ b/src/components/ui/textarea.tsx
-@@ -0,0 +1,18 @@
-+import * as React from "react"
-+
-+import { cn } from "@/lib/utils"
-+
-+function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
-+  return (
-+    <textarea
-+      data-slot="textarea"
-+      className={cn(
-+        "border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 flex field-sizing-content min-h-16 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-+        className
-+      )}
-+      {...props}
-+    />
-+  )
-+}
-+
-+export { Textarea }
-diff --git a/src/db/curd.ts b/src/db/curd.ts
-index a910110..185a00f 100644
---- a/src/db/curd.ts
-+++ b/src/db/curd.ts
-@@ -327,6 +327,34 @@ export class NovelEditorDB extends Dexie {
-   }
- }
- 
-+// ==============================
-+// 初始化数据库（第一次使用时调用）
-+// ==============================
-+export async function initDatabase() {
-+  try {
-+    const existingUsers = await db.users.toArray();
-+    if (existingUsers.length === 0) {
-+      // 新建一个默认免费用户
-+      await db.addUser({
-+        username: "guest",
-+        displayName: "Guest User",
-+        plan: "free",
-+      });
-+      logger.info("✅ Created default guest user");
-+    }
-+
-+    const dbVersion = await db.getDBVersion();
-+    if (dbVersion.length === 0) {
-+      await db.setDBVersion("1.0.0", "Initial database setup");
-+      logger.info("✅ Initialized DB version 1.0.0");
-+    }
-+
-+    logger.success("🎉 Database initialized successfully!");
-+  } catch (error) {
-+    logger.error("❌ Database initialization failed:", error);
-+  }
-+}
-+
- // ==============================
- // 单例导出
- // ==============================
-diff --git a/src/main.tsx b/src/main.tsx
-index eca13b9..a6de487 100644
---- a/src/main.tsx
-+++ b/src/main.tsx
-@@ -5,6 +5,7 @@ import { routeTree } from "./routeTree.gen";
- import "./styles.css";
- 
- import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-+import { db, initDatabase } from "./db/curd";
- 
- // Create the router instance
- const router = createRouter({
-@@ -24,6 +25,13 @@ declare module "@tanstack/react-router" {
- // 创建 QueryClient
- const queryClient = new QueryClient();
- 
-+async function main() {
-+  await db.open(); // 打开数据库
-+  await initDatabase(); // 初始化默认数据
-+}
-+
-+main();
-+
- const rootElement = document.getElementById("app");
- if (rootElement && !rootElement.innerHTML) {
-   const root = ReactDOM.createRoot(rootElement);
++export { Toaster }
 diff --git a/src/routes/__root.tsx b/src/routes/__root.tsx
-index ce6090f..3775633 100644
+index 3775633..b2da382 100644
 --- a/src/routes/__root.tsx
 +++ b/src/routes/__root.tsx
-@@ -1,23 +1,25 @@
- import { TanStackDevtools } from "@tanstack/react-devtools";
+@@ -2,11 +2,30 @@ import { TanStackDevtools } from "@tanstack/react-devtools";
  import { createRootRoute, Outlet } from "@tanstack/react-router";
  import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-+import { FormDevtoolsPlugin } from "@tanstack/react-form-devtools";
+ import { FormDevtoolsPlugin } from "@tanstack/react-form-devtools";
++import { Toaster } from "@/components/ui/sonner";
++import {
++  CircleCheckIcon,
++  InfoIcon,
++  Loader2Icon,
++  OctagonXIcon,
++  TriangleAlertIcon,
++} from "lucide-react";
  
  export const Route = createRootRoute({
--	component: () => (
--		<>
--			{/* <Header /> */}
--			<Outlet />
--			<TanStackDevtools
--				config={{
--					position: "bottom-right",
--				}}
--				plugins={[
--					{
--						name: "Tanstack Router",
--						render: <TanStackRouterDevtoolsPanel />,
--					},
--				]}
--			/>
--		</>
--	),
-+  component: () => (
-+    <>
-+      {/* <Header /> */}
-+      <Outlet />
-+      <TanStackDevtools
-+        config={{
-+          position: "bottom-right",
+   component: () => (
+     <>
+       {/* <Header /> */}
++      <Toaster
++        icons={{
++          success: <CircleCheckIcon className="size-4 text-green-500" />,
++          info: <InfoIcon className="size-4 text-blue-500" />,
++          warning: <TriangleAlertIcon className="size-4 text-yellow-500" />,
++          error: <OctagonXIcon className="size-4 text-red-500" />,
++          loading: (
++            <Loader2Icon className="size-4 animate-spin text-muted-foreground" />
++          ),
 +        }}
-+        plugins={[
-+          {
-+            name: "Tanstack Router",
-+            render: <TanStackRouterDevtoolsPanel />,
-+          },
-+          FormDevtoolsPlugin(),
-+        ]}
 +      />
-+    </>
-+  ),
- });
+       <Outlet />
+       <TanStackDevtools
+         config={{
 diff --git a/src/routes/index.tsx b/src/routes/index.tsx
-index c5f290e..9171dca 100644
+index 9171dca..ce2e1e8 100644
 --- a/src/routes/index.tsx
 +++ b/src/routes/index.tsx
-@@ -1,21 +1,45 @@
--import logger from "@/log";
-+import { EmptyProject } from "@/components/blocks/EmptyProject";
-+import { db } from "@/db/curd";
+@@ -1,10 +1,13 @@
+-import { EmptyProject } from "@/components/blocks/EmptyProject";
++import { EmptyProject } from "@/components/blocks/emptyProject";
+ import { db } from "@/db/curd";
  import { createFileRoute } from "@tanstack/react-router";
-+import { useState } from "react";
-+import { useLiveQuery } from "dexie-react-hooks";
-+import logger from "@/log";
-+import { Spinner } from "@/components/ui/loading";
+ import { useState } from "react";
+ import { useLiveQuery } from "dexie-react-hooks";
+ import logger from "@/log";
+ import { Spinner } from "@/components/ui/loading";
++import { CreateBookDialog } from "@/components/blocks/createBookDialog";
++import { toast } from "sonner";
++import { Button } from "@/components/ui/button";
  
  export const Route = createFileRoute("/")({
    component: RouteComponent,
- });
+@@ -12,34 +15,49 @@ export const Route = createFileRoute("/")({
  
--logger.start("启动构建中…")
--logger.ready("前端构建完成")
--logger.success("所有资源加载成功")
--logger.warn("警告：配置文件缺少字段")
--logger.error("请求失败：连接超时")
--logger.debug("渲染器初始化")
--logger.verbose("细节日志")
--logger.fatal("无法启动服务")
--
--logger.info({ abx: "212" })
  function RouteComponent() {
--  return <div>Hello "/"!</div>;
--}
-+  const [loading, setLoading] = useState(false);
-+
-+  const projects = useLiveQuery(() => db.getAllProjects(), []);
+   const [loading, setLoading] = useState(false);
+-
++  const [open, setOpen] = useState(false);
+   const projects = useLiveQuery(() => db.getAllProjects(), []);
  
-+  const createProject = async () => {
-+    logger.info("create project");
+-  const createProject = async () => {
+-    logger.info("create project");
+-
+-    // setLoading(true);
+-
+-    // try {
+-    //   await db.addProject({ title: "New project" });
+-    // } catch (err) {
+-    //   logger.error(err);
+-    // } finally {
+-    //   setLoading(false);
+-    // }
++  const createProject = async (data: any) => {
++    setLoading(true);
++    try {
++      await db.addProject(data);
++      toast.success(`Project "${data.title}" created!`);
++    } catch (err) {
++      toast.error("Failed to create project");
++      logger.error(err);
++    } finally {
++      setLoading(false);
++      setOpen(false);
++    }
+   };
+ 
+   if (loading) return <Spinner />;
+-  if (!projects?.length) return <EmptyProject onCreate={createProject} />;
+ 
+   return (
+-    <div className="grid gap-4">
+-      {projects.map((project) => (
+-        <div key={project.id} className="p-4 border rounded">
+-          <h3>{project.title}</h3>
+-          <p>{project.description}</p>
++    <>
++      {!projects?.length ? (
++        <EmptyProject onCreate={() => setOpen(true)} />
++      ) : (
++        <div className="grid gap-4">
++          {projects.map((project) => (
++            <div key={project.id} className="p-4 border rounded">
++              <h3>{project.title}</h3>
++              <p>{project.description}</p>
++            </div>
++          ))}
++          <Button onClick={() => setOpen(true)}>Create New</Button>
+         </div>
+-      ))}
+-    </div>
++      )}
 +
-+    // setLoading(true);
-+
-+    // try {
-+    //   await db.addProject({ title: "New project" });
-+    // } catch (err) {
-+    //   logger.error(err);
-+    // } finally {
-+    //   setLoading(false);
-+    // }
-+  };
-+
-+  if (loading) return <Spinner />;
-+  if (!projects?.length) return <EmptyProject onCreate={createProject} />;
-+
-+  return (
-+    <div className="grid gap-4">
-+      {projects.map((project) => (
-+        <div key={project.id} className="p-4 border rounded">
-+          <h3>{project.title}</h3>
-+          <p>{project.description}</p>
-+        </div>
-+      ))}
-+    </div>
-+  );
-+}
++      {/* ✅ Dialog 统一渲染 */}
++      <CreateBookDialog
++        open={open}
++        loading={loading}
++        onSubmit={createProject}
++        onOpen={() => setOpen(true)}
++        onClose={() => setOpen(false)}
++      />
++    </>
+   );
+ }

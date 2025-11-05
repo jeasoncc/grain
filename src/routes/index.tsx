@@ -8,6 +8,12 @@ import { Spinner } from "@/components/ui/loading";
 import { CreateBookDialog } from "@/components/blocks/createBookDialog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { AppSidebar } from "@/components/app-sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarHeader,
+} from "@/components/ui/sidebar";
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,
@@ -40,6 +46,22 @@ function RouteComponent() {
         <EmptyProject onCreate={() => setOpen(true)} />
       ) : (
         <div className="grid gap-4">
+          <SidebarProvider className="flex flex-col">
+            <SidebarHeader />
+            <div className="flex flex-1">
+              <AppSidebar />
+              <SidebarInset>
+                <div className="flex flex-1 flex-col gap-4 p-4">
+                  <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+                    <div className="bg-muted/50 aspect-video rounded-xl" />
+                    <div className="bg-muted/50 aspect-video rounded-xl" />
+                    <div className="bg-muted/50 aspect-video rounded-xl" />
+                  </div>
+                  <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
+                </div>
+              </SidebarInset>
+            </div>
+          </SidebarProvider>
           {projects.map((project) => (
             <div key={project.id} className="p-4 border rounded">
               <h3>{project.title}</h3>
