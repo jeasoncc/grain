@@ -7,10 +7,10 @@
  * 存储本地数据库版本信息，用于初始化、升级和迁移检查
  */
 export interface DBVersionInterface {
-  id: string; // 数据库记录唯一标识，使用 UUID
-  version: string; // 当前数据库版本号（例如 "1.0.0"）
-  updatedAt: string; // 更新时间 ISO 格式
-  migrationNotes?: string; // 可选，记录升级迁移说明
+	id: string; // 数据库记录唯一标识，使用 UUID
+	version: string; // 当前数据库版本号（例如 "1.0.0"）
+	updatedAt: string; // 更新时间 ISO 格式
+	migrationNotes?: string; // 可选，记录升级迁移说明
 }
 
 // ---------- 应用状态 ----------
@@ -18,15 +18,15 @@ export interface DBVersionInterface {
  * 存储用户在应用中的当前状态，用于恢复上次编辑上下文
  */
 export interface StateInterface {
-  lastLocation: string; // 上次打开位置
-  currentProject: string; // 当前打开项目 ID
-  currentChapter: string; // 当前编辑章节 ID
-  currentScene: string; // 当前编辑场景 ID
-  currentTitle: string; // 当前编辑标题
-  currentTyping: string; // 当前输入文本
-  lastCloudSave: string; // 最近一次云保存时间
-  lastLocalSave: string; // 最近一次本地保存时间
-  isUserLoggedIn: boolean; // 当前用户登录状态
+	lastLocation: string; // 上次打开位置
+	currentProject: string; // 当前打开项目 ID
+	currentChapter: string; // 当前编辑章节 ID
+	currentScene: string; // 当前编辑场景 ID
+	currentTitle: string; // 当前编辑标题
+	currentTyping: string; // 当前输入文本
+	lastCloudSave: string; // 最近一次云保存时间
+	lastLocalSave: string; // 最近一次本地保存时间
+	isUserLoggedIn: boolean; // 当前用户登录状态
 }
 
 // ---------- 系统/全局设置 ----------
@@ -34,12 +34,12 @@ export interface StateInterface {
  * 存储用户偏好设置，如主题、语言、编辑器配置等
  */
 export interface SettingInterface {
-  theme: string; // 界面主题，例如 light / dark
-  language: string; // 应用语言，例如 zh / en
-  autosave?: boolean; // 是否启用自动保存
-  spellCheck?: boolean; // 是否启用拼写检查
-  lastLocation?: boolean; // 是否记录上次编辑位置
-  fontSize: string; // 编辑器字体大小
+	theme: string; // 界面主题，例如 light / dark
+	language: string; // 应用语言，例如 zh / en
+	autosave?: boolean; // 是否启用自动保存
+	spellCheck?: boolean; // 是否启用拼写检查
+	lastLocation?: boolean; // 是否记录上次编辑位置
+	fontSize: string; // 编辑器字体大小
 }
 
 // ---------- 用户信息 ----------
@@ -47,52 +47,52 @@ export interface SettingInterface {
  * 用户基础信息、订阅状态、功能权限、应用状态及远程验证
  */
 export interface UserInterface {
-  id: string; // 用户唯一标识，使用 UUID
-  username: string; // 登录用户名
-  displayName?: string; // 显示名称
-  avatar?: string; // 用户头像 URL
-  email?: string; // 用户邮箱
-  lastLogin: string; // 最近登录时间
-  createDate: string; // 创建时间
+	id: string; // 用户唯一标识，使用 UUID
+	username: string; // 登录用户名
+	displayName?: string; // 显示名称
+	avatar?: string; // 用户头像 URL
+	email?: string; // 用户邮箱
+	lastLogin: string; // 最近登录时间
+	createDate: string; // 创建时间
 
-  // --------------------------
-  // 订阅与版本信息
-  // --------------------------
-  plan: "free" | "premium"; // 用户订阅类型
-  planStartDate?: string; // 当前订阅开始日期
-  planExpiresAt?: string; // 当前订阅结束日期（premium）
-  trialExpiresAt?: string; // 免费试用到期时间（如果有）
+	// --------------------------
+	// 订阅与版本信息
+	// --------------------------
+	plan: "free" | "premium"; // 用户订阅类型
+	planStartDate?: string; // 当前订阅开始日期
+	planExpiresAt?: string; // 当前订阅结束日期（premium）
+	trialExpiresAt?: string; // 免费试用到期时间（如果有）
 
-  // --------------------------
-  // Token 与远程验证
-  // --------------------------
-  token?: string; // 本地保存的认证 token
-  tokenStatus?: "valid" | "invalid" | "unchecked"; // token 校验状态
-  lastTokenCheck?: string; // 上次远程校验时间
-  serverMessage?: string; // 服务器返回的提示信息（订阅过期、权限限制等）
+	// --------------------------
+	// Token 与远程验证
+	// --------------------------
+	token?: string; // 本地保存的认证 token
+	tokenStatus?: "valid" | "invalid" | "unchecked"; // token 校验状态
+	lastTokenCheck?: string; // 上次远程校验时间
+	serverMessage?: string; // 服务器返回的提示信息（订阅过期、权限限制等）
 
-  // --------------------------
-  // 功能权限控制
-  // --------------------------
-  features?: {
-    canUseAllScenes?: boolean; // 是否允许使用全部场景
-    canExportPDF?: boolean; // 是否允许导出 PDF
-    canUseCloudSync?: boolean; // 是否允许云同步
-    showAds?: boolean; // 免费版是否显示广告
-    reminderInterval?: number; // 提示或广告弹窗间隔（单位：秒）
-    featureFlags?: Record<string, boolean>; // 功能开关，可灵活扩展
-  };
+	// --------------------------
+	// 功能权限控制
+	// --------------------------
+	features?: {
+		canUseAllScenes?: boolean; // 是否允许使用全部场景
+		canExportPDF?: boolean; // 是否允许导出 PDF
+		canUseCloudSync?: boolean; // 是否允许云同步
+		showAds?: boolean; // 免费版是否显示广告
+		reminderInterval?: number; // 提示或广告弹窗间隔（单位：秒）
+		featureFlags?: Record<string, boolean>; // 功能开关，可灵活扩展
+	};
 
-  // --------------------------
-  // 用户应用状态与设置
-  // --------------------------
-  state?: StateInterface; // 当前用户的应用状态
-  settings?: SettingInterface; // 用户偏好设置
+	// --------------------------
+	// 用户应用状态与设置
+	// --------------------------
+	state?: StateInterface; // 当前用户的应用状态
+	settings?: SettingInterface; // 用户偏好设置
 
-  // --------------------------
-  // 数据库版本
-  // --------------------------
-  dbVersion?: DBVersionInterface; // 用户数据库版本信息
+	// --------------------------
+	// 数据库版本
+	// --------------------------
+	dbVersion?: DBVersionInterface; // 用户数据库版本信息
 }
 
 // ---------- 小说/项目 ----------
@@ -100,16 +100,16 @@ export interface UserInterface {
  * 存储小说或项目的元信息
  */
 export interface ProjectInterface {
-  id: string; // 项目唯一标识，使用 UUID
-  title: string; // 小说名称
-  author: string; // 作者名称
-  description: string; // 项目描述
-  publisher: string; // 出版方信息
-  language: string; // 项目语言
-  lastOpen: string; // 最近一次打开时间
-  createDate: string; // 创建时间
-  members?: string[]; // 多用户/团队模式，可选，存储用户ID
-  owner?: string; // 项目拥有者ID，可选
+	id: string; // 项目唯一标识，使用 UUID
+	title: string; // 小说名称
+	author: string; // 作者名称
+	description: string; // 项目描述
+	publisher: string; // 出版方信息
+	language: string; // 项目语言
+	lastOpen: string; // 最近一次打开时间
+	createDate: string; // 创建时间
+	members?: string[]; // 多用户/团队模式，可选，存储用户ID
+	owner?: string; // 项目拥有者ID，可选
 }
 
 // ---------- 章节 ----------
@@ -117,12 +117,12 @@ export interface ProjectInterface {
  * 存储小说章节信息，包括顺序和编辑状态
  */
 export interface ChapterInterface {
-  id: string; // 章节唯一标识，使用 UUID
-  project: string; // 所属项目 ID
-  title: string; // 章节标题
-  order: number; // 章节顺序，用于排序
-  open: boolean; // 当前章节是否展开显示
-  showEdit: boolean; // 是否显示编辑界面
+	id: string; // 章节唯一标识，使用 UUID
+	project: string; // 所属项目 ID
+	title: string; // 章节标题
+	order: number; // 章节顺序，用于排序
+	open: boolean; // 当前章节是否展开显示
+	showEdit: boolean; // 是否显示编辑界面
 }
 
 // ---------- 场景 ----------
@@ -130,15 +130,15 @@ export interface ChapterInterface {
  * 存储章节下的场景内容及元信息
  */
 export interface SceneInterface {
-  id: string; // 场景唯一标识，使用 UUID
-  chapter: string; // 所属章节 ID
-  project: string; // 所属项目 ID
-  title: string; // 场景标题
-  order: number; // 场景顺序
-  lastEdit: string; // 最近编辑时间
-  content: string | any; // 场景内容，支持 Lexical JSON 或文本
-  createDate?: string; // 创建时间，可选
-  showEdit: boolean; // 是否显示编辑界面
+	id: string; // 场景唯一标识，使用 UUID
+	chapter: string; // 所属章节 ID
+	project: string; // 所属项目 ID
+	title: string; // 场景标题
+	order: number; // 场景顺序
+	lastEdit: string; // 最近编辑时间
+	content: string | any; // 场景内容，支持 Lexical JSON 或文本
+	createDate?: string; // 创建时间，可选
+	showEdit: boolean; // 是否显示编辑界面
 }
 
 // ---------- 角色 ----------
@@ -146,17 +146,17 @@ export interface SceneInterface {
  * 存储项目角色信息，包括别名、身份、关系和属性
  */
 export interface RoleInterface {
-  id: string; // 角色唯一标识，使用 UUID
-  project: string; // 所属项目 ID
-  name: string; // 角色名称
-  alias: string[]; // 角色别名
-  identity: string[]; // 身份标签
-  relationships: string[]; // 与其他角色的关系，可拓展为关系表
-  basicSettings: string; // 基本属性配置
-  image: string[]; // 角色图片
-  experience: string; // 经验或成长描述
-  showTip: boolean; // 是否显示提示
-  createDate: string; // 创建时间
+	id: string; // 角色唯一标识，使用 UUID
+	project: string; // 所属项目 ID
+	name: string; // 角色名称
+	alias: string[]; // 角色别名
+	identity: string[]; // 身份标签
+	relationships: string[]; // 与其他角色的关系，可拓展为关系表
+	basicSettings: string; // 基本属性配置
+	image: string[]; // 角色图片
+	experience: string; // 经验或成长描述
+	showTip: boolean; // 是否显示提示
+	createDate: string; // 创建时间
 }
 
 // ---------- 附件 ----------
@@ -164,16 +164,16 @@ export interface RoleInterface {
  * 存储项目、章节或场景相关的附件信息
  */
 export interface AttachmentInterface {
-  id: string; // 附件唯一标识，使用 UUID
-  project?: string; // 所属项目 ID，可选
-  chapter?: string; // 所属章节 ID，可选
-  scene?: string; // 所属场景 ID，可选
-  type: "image" | "audio" | "file"; // 附件类型
-  fileName: string; // 文件名
-  filePath: string; // 文件路径
-  uploadedAt: string; // 上传时间
-  size?: number; // 文件大小，可选
-  mimeType?: string; // 文件类型，可选
+	id: string; // 附件唯一标识，使用 UUID
+	project?: string; // 所属项目 ID，可选
+	chapter?: string; // 所属章节 ID，可选
+	scene?: string; // 所属场景 ID，可选
+	type: "image" | "audio" | "file"; // 附件类型
+	fileName: string; // 文件名
+	filePath: string; // 文件路径
+	uploadedAt: string; // 上传时间
+	size?: number; // 文件大小，可选
+	mimeType?: string; // 文件类型，可选
 }
 
 // ---------- 多项目映射 ----------
@@ -181,5 +181,5 @@ export interface AttachmentInterface {
  * 用于存储多项目映射关系，方便按索引或 ID 访问
  */
 export interface ProjectsInterface {
-  [x: number]: ProjectInterface; // 索引对应的项目对象
+	[x: number]: ProjectInterface; // 索引对应的项目对象
 }

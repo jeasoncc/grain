@@ -1,28 +1,63 @@
 # Novel Editor
 
-A modern, cross-platform novel writing and editing tool built with **Tauri**, **React**, and **Shadcn UI**.  
-Supports Linux, Windows, and macOS, with persistent local storage and a rich-text editor powered by **Lexical**.
+Novel Editor is a modern, cross-platform writing environment built with **Tauri**, **React**, and **Shadcn UI**. It focuses on long-form fiction projects, blending a distraction-free editor with powerful project organization, research management, and release-ready packaging for Linux, Windows, and macOS.
+
+> 🇨🇳 Read this document in Chinese: [`README.zh-CN.md`](./README.zh-CN.md)
 
 ---
 
-## Features
+## Highlights
 
-- 📝 Rich-text editing for novels, chapters, and notes
-- 💾 Persistent local storage with **IndexedDB** (via **Dexie.js**)
-- 📜 Visual logging system with console + database persistence
-- 🚀 Fast, native-like experience using **Tauri**
-- 🎨 Modern and responsive UI using **Shadcn UI** and **Tailwind CSS**
-- ⚡ Multi-platform packaging: Linux (AppImage, DEB, RPM), Windows (MSI), macOS (DMG)
+- ✍️ **Immersive writing**: Rich Lexical-based editor with formatting, keyboard shortcuts, and an optional focus mode.
+- 📂 **Project structure**: Chapters, scenes, characters, and world-building assets live side by side with search and tagging.
+- 🧠 **Knowledge workspace**: Link notes, references, and research; visualize timelines and relationships.
+- ⚙️ **Reliable storage**: IndexedDB + Dexie keep drafts safe offline; optional cloud sync keeps devices aligned.
+- 🧪 **Quality pipeline**: Automated linting, testing, and desktop packaging through CI and Tauri.
+- 🚢 **Production ready**: One command to build installers (AppImage, DEB, RPM, MSI, DMG) with signing hooks.
+
+---
+
+## Key Capabilities
+
+### Writing Experience
+- Rich-text editor with styling, markdown shortcuts, templates, and dark/light themes.
+- Immersive full-screen mode, customizable layouts, and distraction controls.
+- Inline comments, version history, and compare views for safe iteration.
+
+### Project Organization
+- Tree-based project navigator covering books → chapters → scenes.
+- Character, location, and lore databases with custom fields and tags.
+- Global search, filters, and status tracking across all project entities.
+- Backup, restore, import/export (Markdown, DOCX, JSON) to keep work portable.
+
+### Productivity Toolkit
+- Daily writing goals, progress dashboards, and timeline visualizations.
+- Scene cards, outline boards, and plot arc planning widgets.
+- Optional AI-assisted brainstorming, synopsis generation, and editing helpers.
+
+### Platform & Packaging
+- Offline-first desktop app powered by Tauri.
+- Multi-platform packaging with preconfigured icons, updater hooks, and signing scripts.
+- Structured logging (in-app log viewer + Dexie persistence) for debugging and support.
+
+---
+
+## Roadmap Snapshot
+
+- **Near term**: project templates, Create/Import dialogs, autosave & snapshots, per-entity metadata, lint/test coverage.
+- **Mid term**: collaborative sync backend (WebDAV/Supabase), AI-assisted features, extended export formats, spell/grammar tooling.
+- **Long term**: plugin system, mobile companion, real-time collaboration, community content marketplace.
+
+Follow progress in [`docs/roadmap.md`](docs/roadmap.md) (coming soon) and on issue labels (`status:planned`, `status:in-progress`).
 
 ---
 
 ## Tech Stack
 
-- **Frontend:** React, TypeScript, Tailwind CSS, Shadcn UI, Lexical
-- **State & Data:** Dexie.js (IndexedDB), Consola logging
-- **Routing & Queries:** @tanstack/react-router, @tanstack/react-query
-- **Icons & UI Components:** Radix UI, Lucide React
-- **Build & Packaging:** Tauri, Vite, TypeScript
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS, Shadcn UI, Lexical.
+- **State & Data**: Dexie.js (IndexedDB), TanStack Query & Router, Zustand for local state.
+- **Desktop Shell**: Tauri (Rust), Consola logging, cross-platform packaging assets.
+- **Tooling**: Biome (format/lint), Vitest, Playwright (E2E), GitHub Actions CI.
 
 ---
 
@@ -30,98 +65,111 @@ Supports Linux, Windows, and macOS, with persistent local storage and a rich-tex
 
 ### Prerequisites
 
-- Node.js >= 20
-- Bun (optional, used in scripts)
-- Rust & Cargo (for Tauri)
-- [Tauri prerequisites](https://tauri.app/v1/guides/getting-started/prerequisites)
+- Node.js ≥ 20
+- Rust & Cargo (Tauri toolchain)
+- Optional: Bun for faster scripts
+- Platform-specific [Tauri prerequisites](https://tauri.app/v1/guides/getting-started/prerequisites)
 
 ### Install Dependencies
 
 ```bash
-bun install
-# or
+# using npm
 npm install
-````
 
-### Run in Development
-
-```bash
-bun run dev
-# or
-npm run dev
+# or using bun
+bun install
 ```
 
-This will start the frontend on `http://localhost:1420` and Tauri in dev mode.
+### Development
+
+```bash
+npm run dev         # Start Vite + Tauri dev in watch mode
+npm run tauri dev   # Run only the Tauri shell with live reload
+```
+
+The frontend dev server lives at `http://localhost:1420`.
+
+### Production Build
+
+```bash
+npm run build       # Type-check, bundle frontend, and prepare Tauri artifacts
+npm run preview     # Preview the built frontend
+npm run tauri build # Produce platform installers (AppImage, DEB, RPM, MSI, DMG)
+```
+
+> Linux packaging requires `patchelf`, `appimagetool`, `desktop-file-utils`, and `fuse2`.
 
 ---
 
-## Build
+## Development Scripts
 
-Build the frontend and bundle the Tauri app:
-
-```bash
-bun run build
-# or
-npm run build
-```
-
-### Preview Production Build
-
-```bash
-npm run preview
-```
-
----
-
-## Tauri Commands
-
-Run Tauri dev:
-
-```bash
-npm run tauri dev
-```
-
-Build Tauri for production:
-
-```bash
-npm run tauri build
-```
-
-> ⚠ On Linux, ensure you have `patchelf`, `appimagetool` (or via AUR `appimagetool-bin`), `desktop-file-utils`, and `fuse2` installed to build AppImages.
+| Script       | Description                                      |
+|--------------|--------------------------------------------------|
+| `dev`        | Start Vite + Tauri development environment       |
+| `build`      | Run `tsc`, bundle frontend, prepare Tauri output |
+| `preview`    | Serve production build locally                   |
+| `tauri`      | Proxy command to the Tauri CLI                   |
+| `format`     | Format with Biome                                 |
+| `lint`       | Lint with Biome                                   |
+| `check`      | Type + lint checks via Biome                      |
+| `test`       | Run unit and component tests (Vitest)             |
+| `test:e2e`   | Run Playwright end-to-end suite                   |
+| `diff`       | Save staged diff to `diff.txt`                    |
 
 ---
 
-## Scripts
-
-| Script    | Description                        |
-| --------- | ---------------------------------- |
-| `dev`     | Start Vite dev server              |
-| `build`   | Build frontend and Tauri app       |
-| `preview` | Preview production build           |
-| `tauri`   | Run Tauri CLI commands             |
-| `format`  | Format code using Biome            |
-| `lint`    | Lint project files using Biome     |
-| `check`   | Type & lint checks using Biome     |
-| `diff`    | Save git staged diff to `diff.txt` |
-
----
-
-## Folder Structure
+## Architecture Overview
 
 ```
 src/
-├─ components/       # Reusable UI components (e.g., Button, Spinner)
-├─ lib/              # Utilities, logger, Dexie DB
-├─ routes/           # React Router routes
-├─ styles.css        # Global CSS / Tailwind imports
-src-tauri/           # Tauri Rust backend
+├─ components/         Reusable UI primitives and blocks
+│  ├─ ui/              Shadcn-derived primitives
+│  └─ blocks/          Feature-level components (EmptyProject, dialogs, etc.)
+├─ routes/             TanStack router tree
+├─ db/                 Dexie schema + CRUD helpers
+├─ lib/                Cross-cutting utilities (logging, helpers)
+├─ assets/             Static assets bundled by Vite
+└─ styles.css          Tailwind layers & global styles
+
+src-tauri/
+├─ src/main.rs         Tauri entrypoint & command handlers
+├─ src/lib.rs          Shared Rust utilities
+├─ icons/              Platform-specific icon sets
+└─ tauri.conf.json     Tauri configuration
 ```
+
+Key flows:
+
+- React + TanStack Router orchestrate UI layout, with state fetched via TanStack Query.
+- Dexie schemas define books, chapters, scenes, and research entities; hooks expose typed CRUD operations.
+- Tauri commands bridge to filesystem, sync services, and OS-level integrations.
+- Consola-powered logs stream to a `log` route for diagnostics.
 
 ---
 
-## Logging
+## Quality & Testing
 
-Uses **Consola** for colorful logs in console and also saves logs to **IndexedDB**.
-View logs in-app via the `/log` route.
+- **Type safety**: Strict TypeScript + Biome checks in CI.
+- **Unit/component tests**: Vitest + React Testing Library for logic and UI.
+- **End-to-end**: Playwright covers project lifecycle smoke tests.
+- **Rust**: `cargo test` for Tauri-side logic; Clippy and rustfmt keep code consistent.
+- **Continuous integration**: GitHub Actions (or your preferred CI) runs lint, tests, build, and packaging checks on each PR.
+
+---
+
+## Contributing
+
+1. Fork and create a feature branch.
+2. Run `npm run lint` and `npm run test` before opening a PR.
+3. Include screenshots or demo videos for UI-facing changes.
+4. For desktop changes, note your OS and packaging steps tested.
+
+Issue templates and contribution guidelines live under `.github/` (coming soon). Discussions and roadmap feedback are welcome.
+
+---
+
+## License
+
+This project is released under the MIT License. See [`LICENSE`](./LICENSE) for details.
 
 
