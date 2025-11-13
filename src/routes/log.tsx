@@ -23,14 +23,14 @@ function RouteComponent() {
 
 	if (isLoading) {
 		return (
-			<div className="flex items-center justify-center h-screen bg-gray-900">
+			<div className="flex items-center justify-center h-screen bg-background">
 				<Spinner color="text-orange-600" />
 			</div>
 		);
 	}
 
 	return (
-		<div className="p-4 font-mono text-sm text-white bg-neutral-900 h-screen">
+		<div className="p-4 font-mono text-sm text-foreground bg-background h-screen">
 			<h1 className="text-lg mb-2 font-bold">📜 日志记录</h1>
 			<div className="space-y-1 overflow-auto h-[80vh]">
 				{logs.map((log) => (

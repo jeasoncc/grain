@@ -204,6 +204,9 @@ export class NovelEditorDB extends Dexie {
 	async getChaptersByProject(projectId: string) {
 		return this.chapters.where("project").equals(projectId).sortBy("order");
 	}
+	async getAllChapters() {
+		return this.chapters.toArray();
+	}
 
 	// ==========================
 	// 场景表
@@ -243,6 +246,12 @@ export class NovelEditorDB extends Dexie {
 
 	async getScenesByChapter(chapterId: string) {
 		return this.scenes.where("chapter").equals(chapterId).sortBy("order");
+	}
+	async getScenesByProject(projectId: string) {
+		return this.scenes.where("project").equals(projectId).sortBy("order");
+	}
+	async getAllScenes() {
+		return this.scenes.toArray();
 	}
 
 	// ==========================

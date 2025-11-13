@@ -1,0 +1,71 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/settings/design")({
+  component: DesignSettings,
+});
+
+const themes = [
+  { name: "Slate", key: "slate", css: "--primary: 222.2 84% 4.9%; --primary-foreground: 210 40% 98%; --secondary: 210 40% 96%; --secondary-foreground: 222.2 84% 4.9%; --accent: 210 40% 96%; --accent-foreground: 222.2 84% 4.9%; --muted: 210 40% 96%; --muted-foreground: 215.4 16.3% 46.9%; --card: 0 0% 100%; --card-foreground: 222.2 84% 4.9%; --border: 214.3 31.8% 91.4%; --input: 214.3 31.8% 91.4%; --ring: 222.2 84% 4.9%; --background: 0 0% 100%; --foreground: 222.2 84% 4.9%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 210 40% 98%; --radius: 0.5rem;" },
+  { name: "Gray", key: "gray", css: "--primary: 0 0% 9%; --primary-foreground: 0 0% 98%; --secondary: 0 0% 96.1%; --secondary-foreground: 0 0% 9%; --accent: 0 0% 96.1%; --accent-foreground: 0 0% 9%; --muted: 0 0% 96.1%; --muted-foreground: 0 0% 45.1%; --card: 0 0% 100%; --card-foreground: 0 0% 9%; --border: 0 0% 89.8%; --input: 0 0% 89.8%; --ring: 0 0% 9%; --background: 0 0% 100%; --foreground: 0 0% 9%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 0 0% 98%; --radius: 0.5rem;" },
+  { name: "Zinc", key: "zinc", css: "--primary: 240 5.9% 10%; --primary-foreground: 0 0% 98%; --secondary: 240 4.8% 95.9%; --secondary-foreground: 240 5.9% 10%; --accent: 240 4.8% 95.9%; --accent-foreground: 240 5.9% 10%; --muted: 240 4.8% 95.9%; --muted-foreground: 240 3.8% 46.1%; --card: 0 0% 100%; --card-foreground: 240 5.9% 10%; --border: 240 5.9% 90%; --input: 240 5.9% 90%; --ring: 240 5.9% 10%; --background: 0 0% 100%; --foreground: 240 5.9% 10%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 0 0% 98%; --radius: 0.5rem;" },
+  { name: "Neutral", key: "neutral", css: "--primary: 0 0% 3.9%; --primary-foreground: 0 0% 98%; --secondary: 0 0% 14.9%; --secondary-foreground: 0 0% 98%; --accent: 0 0% 14.9%; --accent-foreground: 0 0% 98%; --muted: 0 0% 14.9%; --muted-foreground: 0 0% 63.9%; --card: 0 0% 100%; --card-foreground: 0 0% 3.9%; --border: 0 0% 89.8%; --input: 0 0% 89.8%; --ring: 0 0% 3.9%; --background: 0 0% 100%; --foreground: 0 0% 3.9%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 0 0% 98%; --radius: 0.5rem;" },
+  { name: "Stone", key: "stone", css: "--primary: 24 9.8% 10%; --primary-foreground: 60 9.1% 97.8%; --secondary: 24 9.8% 95.9%; --secondary-foreground: 24 9.8% 10%; --accent: 24 9.8% 95.9%; --accent-foreground: 24 9.8% 10%; --muted: 24 9.8% 95.9%; --muted-foreground: 24 6.1% 46.1%; --card: 0 0% 100%; --card-foreground: 24 9.8% 10%; --border: 24 9.8% 90%; --input: 24 9.8% 90%; --ring: 24 9.8% 10%; --background: 0 0% 100%; --foreground: 24 9.8% 10%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 60 9.1% 97.8%; --radius: 0.5rem;" },
+  { name: "Red", key: "red", css: "--primary: 0 72.6% 50.6%; --primary-foreground: 0 85.7% 97.3%; --secondary: 0 70% 96.1%; --secondary-foreground: 0 72.6% 50.6%; --accent: 0 70% 96.1%; --accent-foreground: 0 72.6% 50.6%; --muted: 0 70% 96.1%; --muted-foreground: 0 62.8% 30.6%; --card: 0 0% 100%; --card-foreground: 0 72.6% 50.6%; --border: 0 70% 96.1%; --input: 0 70% 96.1%; --ring: 0 72.6% 50.6%; --background: 0 0% 100%; --foreground: 0 72.6% 50.6%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 0 85.7% 97.3%; --radius: 0.5rem;" },
+  { name: "Rose", key: "rose", css: "--primary: 346.8 77.2% 49.8%; --primary-foreground: 355.7 100% 97.3%; --secondary: 356 100% 97%; --secondary-foreground: 346.8 77.2% 49.8%; --accent: 356 100% 97%; --accent-foreground: 346.8 77.2% 49.8%; --muted: 356 100% 97%; --muted-foreground: 345.8 95% 68.1%; --card: 0 0% 100%; --card-foreground: 346.8 77.2% 49.8%; --border: 356 100% 97%; --input: 356 100% 97%; --ring: 346.8 77.2% 49.8%; --background: 0 0% 100%; --foreground: 346.8 77.2% 49.8%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 355.7 100% 97.3%; --radius: 0.5rem;" },
+  { name: "Orange", key: "orange", css: "--primary: 24.6 95% 53.1%; --primary-foreground: 60 9.1% 97.8%; --secondary: 24.6 95% 96.1%; --secondary-foreground: 24.6 95% 53.1%; --accent: 24.6 95% 96.1%; --accent-foreground: 24.6 95% 53.1%; --muted: 24.6 95% 96.1%; --muted-foreground: 24.6 95% 46.1%; --card: 0 0% 100%; --card-foreground: 24.6 95% 53.1%; --border: 24.6 95% 96.1%; --input: 24.6 95% 96.1%; --ring: 24.6 95% 53.1%; --background: 0 0% 100%; --foreground: 24.6 95% 53.1%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 60 9.1% 97.8%; --radius: 0.5rem;" },
+  { name: "Amber", key: "amber", css: "--primary: 48 96% 53%; --primary-foreground: 26 83.3% 14.1%; --secondary: 48 96% 96.1%; --secondary-foreground: 48 96% 53%; --accent: 48 96% 96.1%; --accent-foreground: 48 96% 53%; --muted: 48 96% 96.1%; --muted-foreground: 48 96% 46.1%; --card: 0 0% 100%; --card-foreground: 48 96% 53%; --border: 48 96% 96.1%; --input: 48 96% 96.1%; --ring: 48 96% 53%; --background: 0 0% 100%; --foreground: 48 96% 53%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 26 83.3% 14.1%; --radius: 0.5rem;" },
+  { name: "Yellow", key: "yellow", css: "--primary: 47.9 95.8% 53.1%; --primary-foreground: 26 92.5% 10.2%; --secondary: 47.9 95.8% 96.1%; --secondary-foreground: 47.9 95.8% 53.1%; --accent: 47.9 95.8% 96.1%; --accent-foreground: 47.9 95.8% 53.1%; --muted: 47.9 95.8% 96.1%; --muted-foreground: 47.9 95.8% 46.1%; --card: 0 0% 100%; --card-foreground: 47.9 95.8% 53.1%; --border: 47.9 95.8% 96.1%; --input: 47.9 95.8% 96.1%; --ring: 47.9 95.8% 53.1%; --background: 0 0% 100%; --foreground: 47.9 95.8% 53.1%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 26 92.5% 10.2%; --radius: 0.5rem;" },
+  { name: "Lime", key: "lime", css: "--primary: 84.2 60.2% 47.6%; --primary-foreground: 84.2 60.2% 10%; --secondary: 84.2 60.2% 96.1%; --secondary-foreground: 84.2 60.2% 47.6%; --accent: 84.2 60.2% 96.1%; --accent-foreground: 84.2 60.2% 47.6%; --muted: 84.2 60.2% 96.1%; --muted-foreground: 84.2 60.2% 46.1%; --card: 0 0% 100%; --card-foreground: 84.2 60.2% 47.6%; --border: 84.2 60.2% 96.1%; --input: 84.2 60.2% 96.1%; --ring: 84.2 60.2% 47.6%; --background: 0 0% 100%; --foreground: 84.2 60.2% 47.6%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 84.2 60.2% 10%; --radius: 0.5rem;" },
+  { name: "Green", key: "green", css: "--primary: 142.1 76.2% 36.3%; --primary-foreground: 355.7 100% 97.3%; --secondary: 142.1 76.2% 96.1%; --secondary-foreground: 142.1 76.2% 36.3%; --accent: 142.1 76.2% 96.1%; --accent-foreground: 142.1 76.2% 36.3%; --muted: 142.1 76.2% 96.1%; --muted-foreground: 142.1 76.2% 46.1%; --card: 0 0% 100%; --card-foreground: 142.1 76.2% 36.3%; --border: 142.1 76.2% 96.1%; --input: 142.1 76.2% 96.1%; --ring: 142.1 76.2% 36.3%; --background: 0 0% 100%; --foreground: 142.1 76.2% 36.3%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 355.7 100% 97.3%; --radius: 0.5rem;" },
+  { name: "Emerald", key: "emerald", css: "--primary: 160.1 84.2% 39.8%; --primary-foreground: 0 0% 98%; --secondary: 160.1 84.2% 96.1%; --secondary-foreground: 160.1 84.2% 39.8%; --accent: 160.1 84.2% 96.1%; --accent-foreground: 160.1 84.2% 39.8%; --muted: 160.1 84.2% 96.1%; --muted-foreground: 160.1 84.2% 46.1%; --card: 0 0% 100%; --card-foreground: 160.1 84.2% 39.8%; --border: 160.1 84.2% 96.1%; --input: 160.1 84.2% 96.1%; --ring: 160.1 84.2% 39.8%; --background: 0 0% 100%; --foreground: 160.1 84.2% 39.8%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 0 0% 98%; --radius: 0.5rem;" },
+  { name: "Teal", key: "teal", css: "--primary: 175.3 100% 26.3%; --primary-foreground: 0 0% 98%; --secondary: 175.3 100% 96.1%; --secondary-foreground: 175.3 100% 26.3%; --accent: 175.3 100% 96.1%; --accent-foreground: 175.3 100% 26.3%; --muted: 175.3 100% 96.1%; --muted-foreground: 175.3 100% 46.1%; --card: 0 0% 100%; --card-foreground: 175.3 100% 26.3%; --border: 175.3 100% 96.1%; --input: 175.3 100% 96.1%; --ring: 175.3 100% 26.3%; --background: 0 0% 100%; --foreground: 175.3 100% 26.3%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 0 0% 98%; --radius: 0.5rem;" },
+  { name: "Cyan", key: "cyan", css: "--primary: 188.7 94.5% 42.9%; --primary-foreground: 0 0% 98%; --secondary: 188.7 94.5% 96.1%; --secondary-foreground: 188.7 94.5% 42.9%; --accent: 188.7 94.5% 96.1%; --accent-foreground: 188.7 94.5% 42.9%; --muted: 188.7 94.5% 96.1%; --muted-foreground: 188.7 94.5% 46.1%; --card: 0 0% 100%; --card-foreground: 188.7 94.5% 42.9%; --border: 188.7 94.5% 96.1%; --input: 188.7 94.5% 96.1%; --ring: 188.7 94.5% 42.9%; --background: 0 0% 100%; --foreground: 188.7 94.5% 42.9%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 0 0% 98%; --radius: 0.5rem;" },
+  { name: "Sky", key: "sky", css: "--primary: 198.6 88.7% 48.4%; --primary-foreground: 0 0% 98%; --secondary: 198.6 88.7% 96.1%; --secondary-foreground: 198.6 88.7% 48.4%; --accent: 198.6 88.7% 96.1%; --accent-foreground: 198.6 88.7% 48.4%; --muted: 198.6 88.7% 96.1%; --muted-foreground: 198.6 88.7% 46.1%; --card: 0 0% 100%; --card-foreground: 198.6 88.7% 48.4%; --border: 198.6 88.7% 96.1%; --input: 198.6 88.7% 96.1%; --ring: 198.6 88.7% 48.4%; --background: 0 0% 100%; --foreground: 198.6 88.7% 48.4%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 0 0% 98%; --radius: 0.5rem;" },
+  { name: "Blue", key: "blue", css: "--primary: 221.2 83.2% 53.3%; --primary-foreground: 210 40% 98%; --secondary: 221.2 83.2% 96.1%; --secondary-foreground: 221.2 83.2% 53.3%; --accent: 221.2 83.2% 96.1%; --accent-foreground: 221.2 83.2% 53.3%; --muted: 221.2 83.2% 96.1%; --muted-foreground: 221.2 83.2% 46.1%; --card: 0 0% 100%; --card-foreground: 221.2 83.2% 53.3%; --border: 221.2 83.2% 96.1%; --input: 221.2 83.2% 96.1%; --ring: 221.2 83.2% 53.3%; --background: 0 0% 100%; --foreground: 221.2 83.2% 53.3%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 210 40% 98%; --radius: 0.5rem;" },
+  { name: "Indigo", key: "indigo", css: "--primary: 242.2 91.4% 42.2%; --primary-foreground: 0 0% 98%; --secondary: 242.2 91.4% 96.1%; --secondary-foreground: 242.2 91.4% 42.2%; --accent: 242.2 91.4% 96.1%; --accent-foreground: 242.2 91.4% 42.2%; --muted: 242.2 91.4% 96.1%; --muted-foreground: 242.2 91.4% 46.1%; --card: 0 0% 100%; --card-foreground: 242.2 91.4% 42.2%; --border: 242.2 91.4% 96.1%; --input: 242.2 91.4% 96.1%; --ring: 242.2 91.4% 42.2%; --background: 0 0% 100%; --foreground: 242.2 91.4% 42.2%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 0 0% 98%; --radius: 0.5rem;" },
+  { name: "Violet", key: "violet", css: "--primary: 262.1 83.3% 57.8%; --primary-foreground: 210 40% 98%; --secondary: 262.1 83.3% 96.1%; --secondary-foreground: 262.1 83.3% 57.8%; --accent: 262.1 83.3% 96.1%; --accent-foreground: 262.1 83.3% 57.8%; --muted: 262.1 83.3% 96.1%; --muted-foreground: 262.1 83.3% 46.1%; --card: 0 0% 100%; --card-foreground: 262.1 83.3% 57.8%; --border: 262.1 83.3% 96.1%; --input: 262.1 83.3% 96.1%; --ring: 262.1 83.3% 57.8%; --background: 0 0% 100%; --foreground: 262.1 83.3% 57.8%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 210 40% 98%; --radius: 0.5rem;" },
+  { name: "Purple", key: "purple", css: "--primary: 268.3 89.8% 55.5%; --primary-foreground: 0 0% 98%; --secondary: 268.3 89.8% 96.1%; --secondary-foreground: 268.3 89.8% 55.5%; --accent: 268.3 89.8% 96.1%; --accent-foreground: 268.3 89.8% 55.5%; --muted: 268.3 89.8% 96.1%; --muted-foreground: 268.3 89.8% 46.1%; --card: 0 0% 100%; --card-foreground: 268.3 89.8% 55.5%; --border: 268.3 89.8% 96.1%; --input: 268.3 89.8% 96.1%; --ring: 268.3 89.8% 55.5%; --background: 0 0% 100%; --foreground: 268.3 89.8% 55.5%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 0 0% 98%; --radius: 0.5rem;" },
+  { name: "Fuchsia", key: "fuchsia", css: "--primary: 288.3 79.8% 57.1%; --primary-foreground: 0 0% 98%; --secondary: 288.3 79.8% 96.1%; --secondary-foreground: 288.3 79.8% 57.1%; --accent: 288.3 79.8% 96.1%; --accent-foreground: 288.3 79.8% 57.1%; --muted: 288.3 79.8% 96.1%; --muted-foreground: 288.3 79.8% 46.1%; --card: 0 0% 100%; --card-foreground: 288.3 79.8% 57.1%; --border: 288.3 79.8% 96.1%; --input: 288.3 79.8% 96.1%; --ring: 288.3 79.8% 57.1%; --background: 0 0% 100%; --foreground: 288.3 79.8% 57.1%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 0 0% 98%; --radius: 0.5rem;" },
+  { name: "Pink", key: "pink", css: "--primary: 323.4 77.5% 55.8%; --primary-foreground: 0 0% 98%; --secondary: 323.4 77.5% 96.1%; --secondary-foreground: 323.4 77.5% 55.8%; --accent: 323.4 77.5% 96.1%; --accent-foreground: 323.4 77.5% 55.8%; --muted: 323.4 77.5% 96.1%; --muted-foreground: 323.4 77.5% 46.1%; --card: 0 0% 100%; --card-foreground: 323.4 77.5% 55.8%; --border: 323.4 77.5% 96.1%; --input: 323.4 77.5% 96.1%; --ring: 323.4 77.5% 55.8%; --background: 0 0% 100%; --foreground: 323.4 77.5% 55.8%; --destructive: 0 84.2% 60.2%; --destructive-foreground: 0 0% 98%; --radius: 0.5rem;" },
+];
+
+function DesignSettings() {
+  const applyTheme = (theme: typeof themes[0]) => {
+    const root = document.documentElement;
+    const vars = theme.css.split(";").filter(Boolean);
+    vars.forEach(v => {
+      const [key, val] = v.split(":").map(s => s.trim());
+      if (key && val) {
+        root.style.setProperty(key, val);
+      }
+    });
+    toast.success(`主题已切换为 ${theme.name}`);
+  };
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">设计设置</h1>
+        <p className="text-muted-foreground">选择你喜欢的配色方案，主题会立即生效。</p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {themes.map(theme => (
+          <Card key={theme.key} className="transition-shadow hover:shadow-md">
+            <CardHeader>
+              <CardTitle className="capitalize">{theme.name}</CardTitle>
+              <CardDescription>点击应用此配色</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => applyTheme(theme)} className="w-full">
+                应用主题
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}

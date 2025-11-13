@@ -2,18 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AppSidebar } from "@/components/app-sidebar";
 import { CreateBookDialog } from "@/components/blocks/createBookDialog";
 import { EmptyProject } from "@/components/blocks/emptyProject";
-import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/loading";
-import {
-	SidebarHeader,
-	SidebarInset,
-	SidebarProvider,
-} from "@/components/ui/sidebar";
 import { db } from "@/db/curd";
+import type {
+	ChapterInterface,
+	ProjectInterface,
+	SceneInterface,
+} from "@/db/schema";
 import logger from "@/log";
+import { StoryWorkspace } from "@/components/workspace/story-workspace";
 
 export const Route = createFileRoute("/")({
 	component: RouteComponent,
@@ -22,7 +21,9 @@ export const Route = createFileRoute("/")({
 function RouteComponent() {
 	const [loading, setLoading] = useState(false);
 	const [open, setOpen] = useState(false);
-	const projects = useLiveQuery(() => db.getAllProjects(), []);
+	const projects = useLiveQuery<ProjectInterface[]>(() => db.getAllProjects(), []);
+	const chapters = useLiveQuery<ChapterInterface[]>(() => db.getAllChapters(), []);
+	const scenes = useLiveQuery<SceneInterface[]>(() => db.getAllScenes(), []);
 
 	const createProject = async (data: any) => {
 		setLoading(true);
@@ -38,41 +39,32 @@ function RouteComponent() {
 		}
 	};
 
-	if (loading) return <Spinner />;
+	if (
+		loading ||
+		projects === undefined ||
+		chapters === undefined ||
+		scenes === undefined
+	) {
+		return (
+			<div className="flex min-h-screen items-center justify-center">
+				<Spinner />
+			</div>
+		);
+	}
 
 	return (
 		<>
 			{!projects?.length ? (
-				<EmptyProject onCreate={() => setOpen(true)} />
+				<EmptyProject onCreate={() => setOpen(true)} onImport={() => setOpen(true)} />
 			) : (
-				<div className="grid gap-4">
-					<SidebarProvider className="flex flex-col">
-						<SidebarHeader />
-						<div className="flex flex-1">
-							<AppSidebar />
-							<SidebarInset>
-								<div className="flex flex-1 flex-col gap-4 p-4">
-									<div className="grid auto-rows-min gap-4 md:grid-cols-3">
-										<div className="bg-muted/50 aspect-video rounded-xl" />
-										<div className="bg-muted/50 aspect-video rounded-xl" />
-										<div className="bg-muted/50 aspect-video rounded-xl" />
-									</div>
-									<div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
-								</div>
-							</SidebarInset>
-						</div>
-					</SidebarProvider>
-					{projects.map((project) => (
-						<div key={project.id} className="p-4 border rounded">
-							<h3>{project.title}</h3>
-							<p>{project.description}</p>
-						</div>
-					))}
-					<Button onClick={() => setOpen(true)}>Create New</Button>
-				</div>
+				<StoryWorkspace
+					projects={projects}
+					chapters={chapters}
+					scenes={scenes}
+					onCreateProject={() => setOpen(true)}
+				/>
 			)}
 
-			{/* ✅ Dialog 统一渲染 */}
 			<CreateBookDialog
 				open={open}
 				loading={loading}
