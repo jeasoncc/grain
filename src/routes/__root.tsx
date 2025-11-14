@@ -3,6 +3,7 @@ import { FormDevtoolsPlugin } from "@tanstack/react-form-devtools";
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { ActivityBar } from "@/components/activity-bar";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import {
 	CircleCheckIcon,
@@ -27,17 +28,22 @@ export const Route = createRootRoute({
 					),
 				}}
 			/>
-			<AppSidebar />
-			<SidebarInset className="bg-background text-foreground">
-				<div className="flex items-center gap-2 border-b px-4 py-2">
-					<SidebarTrigger />
-					<div className="text-sm text-muted-foreground">Workspace</div>
-				</div>
-				<Outlet />
-			</SidebarInset>
+			<div className="flex min-h-screen w-full">
+				<ActivityBar />
+				<AppSidebar />
+				<SidebarInset className="bg-background text-foreground flex-1 min-h-svh">
+					<div className="flex items-center gap-2 border-b px-4 py-2">
+						<SidebarTrigger />
+						<div className="text-sm text-muted-foreground">Workspace</div>
+					</div>
+					<div className="flex-1 min-h-0 overflow-auto">
+						<Outlet />
+					</div>
+				</SidebarInset>
+			</div>
 			<TanStackDevtools
 				config={{
-					position: "bottom-right",
+					position: "top-right",
 				}}
 				plugins={[
 					{

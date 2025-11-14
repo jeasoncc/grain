@@ -9,14 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WorldRouteImport } from './routes/world'
 import { Route as LogRouteImport } from './routes/log'
+import { Route as CharactersRouteImport } from './routes/characters'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsDesignRouteImport } from './routes/settings/design'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects/$projectId'
 
+const WorldRoute = WorldRouteImport.update({
+  id: '/world',
+  path: '/world',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LogRoute = LogRouteImport.update({
   id: '/log',
   path: '/log',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CharactersRoute = CharactersRouteImport.update({
+  id: '/characters',
+  path: '/characters',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -37,45 +49,86 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/characters': typeof CharactersRoute
   '/log': typeof LogRoute
+  '/world': typeof WorldRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/design': typeof SettingsDesignRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/characters': typeof CharactersRoute
   '/log': typeof LogRoute
+  '/world': typeof WorldRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/design': typeof SettingsDesignRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/characters': typeof CharactersRoute
   '/log': typeof LogRoute
+  '/world': typeof WorldRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/design': typeof SettingsDesignRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/log' | '/projects/$projectId' | '/settings/design'
+  fullPaths:
+    | '/'
+    | '/characters'
+    | '/log'
+    | '/world'
+    | '/projects/$projectId'
+    | '/settings/design'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/log' | '/projects/$projectId' | '/settings/design'
-  id: '__root__' | '/' | '/log' | '/projects/$projectId' | '/settings/design'
+  to:
+    | '/'
+    | '/characters'
+    | '/log'
+    | '/world'
+    | '/projects/$projectId'
+    | '/settings/design'
+  id:
+    | '__root__'
+    | '/'
+    | '/characters'
+    | '/log'
+    | '/world'
+    | '/projects/$projectId'
+    | '/settings/design'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CharactersRoute: typeof CharactersRoute
   LogRoute: typeof LogRoute
+  WorldRoute: typeof WorldRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   SettingsDesignRoute: typeof SettingsDesignRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/world': {
+      id: '/world'
+      path: '/world'
+      fullPath: '/world'
+      preLoaderRoute: typeof WorldRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/log': {
       id: '/log'
       path: '/log'
       fullPath: '/log'
       preLoaderRoute: typeof LogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/characters': {
+      id: '/characters'
+      path: '/characters'
+      fullPath: '/characters'
+      preLoaderRoute: typeof CharactersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -104,7 +157,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CharactersRoute: CharactersRoute,
   LogRoute: LogRoute,
+  WorldRoute: WorldRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   SettingsDesignRoute: SettingsDesignRoute,
 }

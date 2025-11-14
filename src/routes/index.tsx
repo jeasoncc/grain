@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -13,12 +14,20 @@ import type {
 } from "@/db/schema";
 import logger from "@/log";
 import { StoryWorkspace } from "@/components/workspace/story-workspace";
+import { useUIStore, type RightPanelView } from "@/stores/ui";
 
 export const Route = createFileRoute("/")({
 	component: RouteComponent,
 });
 
 function RouteComponent() {
+  const search = Route.useSearch<{ view?: RightPanelView }>();
+  const setRightPanelView = useUIStore(s => s.setRightPanelView);
+
+  useEffect(() => {
+    if (!search?.view) return;
+    setRightPanelView(search.view ?? null);
+  }, [search?.view, setRightPanelView]);
 	const [loading, setLoading] = useState(false);
 	const [open, setOpen] = useState(false);
 	const projects = useLiveQuery<ProjectInterface[]>(() => db.getAllProjects(), []);

@@ -39,6 +39,17 @@ export class NovelEditorDB extends Dexie {
 			dbVersions: "id, version",
 		});
 
+		// v2: Add 'project' index for scenes to enable where('project') queries
+		this.version(2).stores({
+			users: "id, username, email",
+			projects: "id, title, owner",
+			chapters: "id, project, order",
+			scenes: "id, project, chapter, order",
+			roles: "id, project, name",
+			attachments: "id, project, chapter, scene",
+			dbVersions: "id, version",
+		});
+
 		this.open()
 			.then(() => logger.success("NovelEditorDB initialized"))
 			.catch((err) => logger.error("Dexie open error:", err));

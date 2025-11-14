@@ -1,36 +1,14 @@
 import debounce from "lodash/debounce";
-import {
-	ArrowDown,
-	ArrowUp,
-	Flame,
-	Layers,
-	Notebook,
-	Pencil,
-	Plus,
-	Trash2,
-} from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+//
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SerializedEditorState } from "lexical";
 
 import { Editor } from "@/components/blocks/editor-x/editor";
-import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Link } from "@tanstack/react-router";
+import { Plus, Upload, Download, Settings, MoreHorizontal, Trash2 } from "lucide-react";
+//
 import { db } from "@/db/curd";
 import type {
 	ChapterInterface,
@@ -38,6 +16,11 @@ import type {
 	SceneInterface,
 } from "@/db/schema";
 import { toast } from "sonner";
+import { StoryRightSidebar } from "@/components/story-right-sidebar";
+import { useSelectionStore, type SelectionState } from "@/stores/selection";
+import { useOutlineStore } from "@/stores/outline";
+import { createBook, exportAll, importFromJson, readFileAsText, triggerDownload } from "@/services/projects";
+//
 
 interface StoryWorkspaceProps {
 	projects: ProjectInterface[];
@@ -57,11 +40,12 @@ export function StoryWorkspace({
 	onCreateProject,
 }: StoryWorkspaceProps) {
 	const initialProjectId = activeProjectId ?? projects[0]?.id ?? null;
-	const [selectedProjectId, setSelectedProjectId] =
-		useState<string | null>(initialProjectId);
-	const [selectedChapterId, setSelectedChapterId] =
-		useState<string | null>(null);
-	const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
+	const selectedProjectId = useSelectionStore((s: SelectionState) => s.selectedProjectId);
+	const setSelectedProjectId = useSelectionStore((s: SelectionState) => s.setSelectedProjectId);
+	const selectedChapterId = useSelectionStore((s: SelectionState) => s.selectedChapterId);
+	const setSelectedChapterId = useSelectionStore((s: SelectionState) => s.setSelectedChapterId);
+	const selectedSceneId = useSelectionStore((s: SelectionState) => s.selectedSceneId);
+	const setSelectedSceneId = useSelectionStore((s: SelectionState) => s.setSelectedSceneId);
 
 	const [chapterEditId, setChapterEditId] = useState<string | null>(null);
 	const [chapterEditTitle, setChapterEditTitle] = useState("");
@@ -73,12 +57,89 @@ export function StoryWorkspace({
 	const [sceneWordCount, setSceneWordCount] = useState(0);
 	const [isSaving, setIsSaving] = useState(false);
 
+	// bottom dock actions
+	const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+	const handleExport = useCallback(async () => {
+		try {
+			const json = await exportAll();
+			triggerDownload(`novel-editor-backup-${new Date().toISOString().slice(0,10)}.json`, json);
+			toast.success("导出成功");
+		} catch (err) {
+			toast.error("导出失败");
+		}
+	}, []);
+
+	const handleImportClick = useCallback(() => {
+		fileInputRef.current?.click();
+	}, []);
+
+	const handleImportFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		try {
+			const text = await readFileAsText(file);
+			await importFromJson(text, { keepIds: false });
+			toast.success("导入成功");
+		} catch (err) {
+			toast.error("导入失败");
+		} finally {
+			if (fileInputRef.current) fileInputRef.current.value = "";
+		}
+	}, []);
+
+	const handleQuickCreate = useCallback(async () => {
+		const title = window.prompt("书名：");
+		if (!title) return;
+		const author = window.prompt("作者：", "Author");
+		if (!author) return;
+		try {
+			await createBook({ title, author, description: "" });
+			toast.success("已创建书籍");
+		} catch (e) {
+			// createBook 内部包含 toast
+		}
+	}, []);
+
+	const handleDeleteAllBooks = useCallback(async () => {
+		if (!window.confirm("确认删除所有书籍及其章节、场景等数据吗？该操作不可恢复！")) return;
+		try {
+			await Promise.all([
+				db.attachments.clear(),
+				db.roles.clear(),
+				db.scenes.clear(),
+				db.chapters.clear(),
+				db.projects.clear(),
+			]);
+			toast.success("已删除所有书籍");
+		} catch (err) {
+			toast.error("删除失败，请重试");
+		}
+	}, []);
+
+	// sync props data into outline store for global consumption
+	const setProjectsStore = useOutlineStore((s) => s.setProjects);
+	const setChaptersStore = useOutlineStore((s) => s.setChapters);
+	const setScenesStore = useOutlineStore((s) => s.setScenes);
+	useEffect(() => {
+		setProjectsStore(projects);
+	}, [projects, setProjectsStore]);
+	useEffect(() => {
+		setChaptersStore(chapters);
+	}, [chapters, setChaptersStore]);
+	useEffect(() => {
+		setScenesStore(scenes);
+	}, [scenes, setScenesStore]);
+
 	// keep project selection in sync with external changes
 	useEffect(() => {
+		if (!selectedProjectId && initialProjectId) {
+			setSelectedProjectId(initialProjectId);
+		}
 		if (activeProjectId && activeProjectId !== selectedProjectId) {
 			setSelectedProjectId(activeProjectId);
 		}
-	}, [activeProjectId, selectedProjectId]);
+	}, [activeProjectId, selectedProjectId, initialProjectId, setSelectedProjectId]);
 
 	useEffect(() => {
 		if (!selectedProjectId && projects.length) {
@@ -91,7 +152,7 @@ export function StoryWorkspace({
 		) {
 			setSelectedProjectId(projects[0].id);
 		}
-	}, [projects, selectedProjectId]);
+	}, [projects, selectedProjectId, setSelectedProjectId]);
 
 	const projectChapters = useMemo(
 		() =>
@@ -112,7 +173,7 @@ export function StoryWorkspace({
 		) {
 			setSelectedChapterId(projectChapters[0].id);
 		}
-	}, [projectChapters, selectedChapterId]);
+	}, [projectChapters, selectedChapterId, setSelectedChapterId]);
 
 	const chapterScenes = useMemo(
 		() =>
@@ -133,7 +194,7 @@ export function StoryWorkspace({
 		) {
 			setSelectedSceneId(chapterScenes[0].id);
 		}
-	}, [chapterScenes, selectedSceneId]);
+	}, [chapterScenes, selectedSceneId, setSelectedSceneId]);
 
 	const activeScene = useMemo(
 		() => chapterScenes.find((scene) => scene.id === selectedSceneId) ?? null,
@@ -240,7 +301,7 @@ export function StoryWorkspace({
 			loggerError("Failed to add chapter", error);
 			toast.error("创建章节失败");
 		}
-	}, [projectChapters, selectedProjectId]);
+	}, [projectChapters, selectedProjectId, setSelectedChapterId]);
 
 	const handleDeleteChapter = useCallback(
 		async (chapterId: string) => {
@@ -325,7 +386,7 @@ export function StoryWorkspace({
 			loggerError("Failed to add scene", error);
 			toast.error("创建场景失败");
 		}
-	}, [chapterScenes, selectedChapterId, selectedProjectId]);
+	}, [chapterScenes, selectedChapterId, selectedProjectId, setSelectedSceneId]);
 
 	const handleDeleteScene = useCallback(
 		async (sceneId: string) => {
@@ -389,479 +450,11 @@ export function StoryWorkspace({
 	return (
 		<TooltipProvider>
 			<div className="flex h-screen bg-background text-foreground">
-				<aside className="relative hidden w-72 flex-col border-r border-border bg-background lg:flex">
-					<div className="border-b border-border px-5 py-4">
-						<div className="flex items-center justify-between">
-							<div>
-								<p className="text-xs uppercase tracking-wide text-muted-foreground">
-									Story projects
-								</p>
-								<h1 className="text-lg font-semibold text-foreground">
-									Project hub
-								</h1>
-							</div>
-							<Button
-								size="sm"
-								variant="secondary"
-								className="bg-accent text-accent-foreground hover:bg-accent/80"
-								onClick={onCreateProject}
-							>
-								<Plus className="mr-1.5 size-4" />
-								New
-							</Button>
-						</div>
-					</div>
-					<ScrollArea className="flex-1">
-						<div className="space-y-4 px-4 py-5">
-							<ul className="space-y-2">
-								{projects.map((project) => {
-									const isActive = project.id === selectedProjectId;
-									const projectSceneCount = scenes.filter(
-										(scene) => scene.project === project.id,
-									).length;
-									const projectChapterCount = chapters.filter(
-										(chapter) => chapter.project === project.id,
-									).length;
-									return (
-										<li key={project.id}>
-											<button
-												type="button"
-												onClick={() => setSelectedProjectId(project.id)}
-												className={`w-full rounded-xl border px-3 py-2 text-left transition ${
-													isActive
-														? "bg-accent/30"
-														: "hover:bg-muted"
-												}`}
-											>
-												<div className="flex items-center justify-between">
-													<div>
-														<p className="text-sm font-semibold text-foreground">
-															{project.title}
-														</p>
-														<p className="text-xs text-muted-foreground">
-															{projectChapterCount} chapters · {projectSceneCount} scenes
-														</p>
-													</div>
-													<Badge variant={isActive ? "success" : "outline"}>
-														{formatRelativeTime(project.lastOpen)}
-													</Badge>
-												</div>
-											</button>
-										</li>
-									);
-								})}
-								{projects.length === 0 ? (
-									<li>
-										<div className="rounded-xl border border-dashed border-border bg-card p-4 text-center text-xs text-muted-foreground">
-											暂无项目，点击右上角按钮创建新的作品。
-										</div>
-									</li>
-								) : null}
-							</ul>
-						</div>
-					</ScrollArea>
-					{/* Settings link at bottom-right */}
-					<div className="pointer-events-none absolute bottom-3 right-3">
-						<Link to="/settings/design" className="pointer-events-auto">
-							<Button variant="outline" size="sm" className="border-border bg-card text-card-foreground hover:bg-accent">设置</Button>
-						</Link>
-					</div>
-				</aside>
 				<main className="flex-1 overflow-hidden">
-					<div className="flex h-full flex-col">
-						<header className="border-b border-border bg-background px-8 py-5">
-							<div className="flex flex-wrap items-center justify-between gap-4">
-								<div>
-									<p className="text-xs uppercase tracking-wide text-muted-foreground">
-										{selectedProjectId ? "Project overview" : "No project selected"}
-									</p>
-									<h2 className="text-2xl font-semibold text-foreground">
-										{projects.find((project) => project.id === selectedProjectId)
-											?.title ?? "Select a project"}
-									</h2>
-								</div>
-								<div className="flex items-center gap-3">
-									<Button
-										variant="outline"
-										className="border-border bg-card text-card-foreground hover:bg-accent"
-										onClick={() => setSelectedSceneId(null)}
-									>
-										<Notebook className="mr-2 size-4" />
-										Scene list
-									</Button>
-									<Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-										<Flame className="mr-2 size-4" />
-										Start focus session
-									</Button>
-								</div>
-							</div>
-							<div className="mt-6 grid gap-4 md:grid-cols-3">
-								<ProjectStatCard
-									label="Chapters"
-									value={projectStats.chapterCount}
-									description="Structured narrative checkpoints"
-								/>
-								<ProjectStatCard
-									label="Scenes"
-									value={projectStats.sceneCount}
-									description="Drafted and in progress"
-								/>
-								<ProjectStatCard
-									label="Words logged"
-									value={projectStats.wordCount.toLocaleString()}
-									description={`Last update ${formatRelativeTime(projectStats.lastEdited)}`}
-								/>
-							</div>
-						</header>
+					<div className="flex h-full flex-col pb-8">
 						<div className="flex flex-1 overflow-hidden">
-							<div className="grid flex-1 gap-4 overflow-hidden px-8 py-6 xl:grid-cols-[300px,320px,1fr]">
-								<section className="flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm">
-									<div className="flex items-center justify-between border-b border-border px-4 py-3">
-										<div>
-											<h3 className="text-sm font-semibold text-foreground">Chapters</h3>
-											<p className="text-xs text-muted-foreground">
-												双击重命名，使用控制按钮调整顺序
-											</p>
-										</div>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													variant="ghost"
-													size="icon"
-													className="text-foreground/70 hover:text-foreground"
-													onClick={handleAddChapter}
-												>
-													<Plus className="size-4" />
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent>新增章节</TooltipContent>
-										</Tooltip>
-									</div>
-									<ScrollArea className="flex-1">
-										<ul className="space-y-1 px-2 py-2">
-											{projectChapters.map((chapter) => {
-												const isSelected = chapter.id === selectedChapterId;
-												const chapterScenesCount = scenes.filter(
-													(scene) => scene.chapter === chapter.id,
-												).length;
-												const chapterWordCount = scenes
-													.filter((scene) => scene.chapter === chapter.id)
-													.reduce(
-														(sum, scene) => sum + countSceneWords(scene),
-														0,
-													);
-												return (
-													<li key={chapter.id}>
-														<div
-															className={`group rounded-xl border px-3 py-2 transition ${
-																isSelected ? "bg-accent/30" : "hover:bg-muted"
-															}`}
-														>
-															<div
-																className="flex cursor-pointer items-center justify-between gap-2"
-																onClick={() => setSelectedChapterId(chapter.id)}
-																onDoubleClick={() => {
-																	setChapterEditId(chapter.id);
-																	setChapterEditTitle(chapter.title);
-																}}
-															>
-																<div className="flex-1">
-																	{chapterEditId === chapter.id ? (
-																		<form
-																			onSubmit={(event) => {
-																				event.preventDefault();
-																				commitChapterRename();
-																			}}
-																		>
-																			<Input
-																				value={chapterEditTitle}
-																				onChange={(event) =>
-																					setChapterEditTitle(event.target.value)
-																				}
-																				onBlur={() => {
-																					setChapterEditId(null);
-																					setChapterEditTitle("");
-																				}}
-																				autoFocus
-																				className="h-8 text-sm"
-																			/>
-																		</form>
-																	) : (
-																		<>
-																			<p className="text-sm font-semibold text-foreground">
-																				{chapter.title}
-																			</p>
-																			<p className="text-xs text-muted-foreground">
-																				{chapterScenesCount} scenes ·{" "}
-																				{chapterWordCount.toLocaleString()} words
-																			</p>
-																		</>
-																	)}
-																</div>
-																<div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
-																	<Tooltip>
-																		<TooltipTrigger asChild>
-																			<Button
-																				variant="ghost"
-																				size="icon"
-																				className="text-foreground/60 hover:text-foreground"
-																				disabled={chapter.order === 1}
-																				onClick={() =>
-																					handleChapterReorder(chapter.id, "up")
-																				}
-																			>
-																				<ArrowUp className="size-4" />
-																			</Button>
-																		</TooltipTrigger>
-																		<TooltipContent>上移</TooltipContent>
-																	</Tooltip>
-																	<Tooltip>
-																		<TooltipTrigger asChild>
-																			<Button
-																				variant="ghost"
-																				size="icon"
-																				className="text-foreground/60 hover:text-foreground"
-																				disabled={
-																					chapter.order ===
-																					Math.max(
-																						...projectChapters.map(
-																							(item) => item.order,
-																						),
-																					)
-																				}
-																				onClick={() =>
-																					handleChapterReorder(chapter.id, "down")
-																				}
-																			>
-																				<ArrowDown className="size-4" />
-																			</Button>
-																		</TooltipTrigger>
-																		<TooltipContent>下移</TooltipContent>
-																	</Tooltip>
-																	<Tooltip>
-																		<TooltipTrigger asChild>
-																			<Button
-																				variant="ghost"
-																				size="icon"
-																				className="text-foreground/60 hover:text-foreground"
-																				onClick={() => {
-																					setChapterEditId(chapter.id);
-																					setChapterEditTitle(chapter.title);
-																				}}
-																			>
-																				<Pencil className="size-4" />
-																			</Button>
-																		</TooltipTrigger>
-																		<TooltipContent>重命名</TooltipContent>
-																	</Tooltip>
-																	<Tooltip>
-																		<TooltipTrigger asChild>
-																			<Button
-																				variant="ghost"
-																				size="icon"
-																				className="text-red-400 hover:text-red-300"
-																				onClick={() => handleDeleteChapter(chapter.id)}
-																			>
-																				<Trash2 className="size-4" />
-																			</Button>
-																		</TooltipTrigger>
-																		<TooltipContent>删除</TooltipContent>
-																	</Tooltip>
-																</div>
-															</div>
-														</div>
-													</li>
-												);
-											})}
-											{projectChapters.length === 0 ? (
-												<li>
-													<div className="rounded-xl border border-dashed border-white/20 bg-white/5 p-4 text-center text-xs text-white/60">
-														暂无章节，点击右上角按钮创建。
-													</div>
-												</li>
-											) : null}
-										</ul>
-									</ScrollArea>
-								</section>
-								<section className="flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm">
-									<div className="flex items-center justify-between border-b border-border px-4 py-3">
-										<div>
-											<h3 className="text-sm font-semibold text-foreground">Scenes</h3>
-											<p className="text-xs text-muted-foreground">
-												维护场景顺序，双击重命名
-											</p>
-										</div>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<Button
-													variant="ghost"
-													size="icon"
-													className="text-foreground/70 hover:text-foreground"
-													onClick={handleAddScene}
-													disabled={!selectedChapterId}
-												>
-													<Plus className="size-4" />
-												</Button>
-											</TooltipTrigger>
-											<TooltipContent>新增场景</TooltipContent>
-										</Tooltip>
-									</div>
-									<ScrollArea className="flex-1">
-										<ul className="space-y-1 px-2 py-2">
-											{chapterScenes.map((scene) => {
-												const isActive = scene.id === selectedSceneId;
-												const words = countSceneWords(scene);
-												return (
-													<li key={scene.id}>
-														<div
-															className={`group rounded-xl border px-3 py-2 transition ${
-																isActive ? "bg-accent/30" : "hover:bg-muted"
-															}`}
-														>
-															<div
-																className="flex cursor-pointer items-center justify-between gap-2"
-																onClick={() => setSelectedSceneId(scene.id)}
-																onDoubleClick={() => {
-																	setSceneEditId(scene.id);
-																	setSceneEditTitle(scene.title);
-																}}
-															>
-																<div className="flex-1">
-																	{sceneEditId === scene.id ? (
-																		<form
-																			onSubmit={(event) => {
-																				event.preventDefault();
-																				commitSceneRename();
-																			}}
-																		>
-																			<Input
-																				value={sceneEditTitle}
-																				onChange={(event) =>
-																					setSceneEditTitle(event.target.value)
-																				}
-																				onBlur={() => {
-																					setSceneEditId(null);
-																					setSceneEditTitle("");
-																				}}
-																				autoFocus
-																				className="h-8 text-sm"
-																			/>
-																		</form>
-																	) : (
-																		<>
-																			<p className="text-sm font-semibold text-foreground">
-																				{scene.title}
-																			</p>
-																			<p className="text-xs text-muted-foreground">
-																				{words.toLocaleString()} words ·{" "}
-																				{formatRelativeTime(scene.lastEdit)}
-																			</p>
-																		</>
-																	)}
-																</div>
-																<div className="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
-																	<Tooltip>
-																		<TooltipTrigger asChild>
-																			<Button
-																				variant="ghost"
-																				size="icon"
-																				className="text-foreground/60 hover:text-foreground"
-																				disabled={scene.order === 1}
-																				onClick={() => handleSceneReorder(scene.id, "up")}
-																			>
-																				<ArrowUp className="size-4" />
-																			</Button>
-																		</TooltipTrigger>
-																		<TooltipContent>上移</TooltipContent>
-																	</Tooltip>
-																	<Tooltip>
-																		<TooltipTrigger asChild>
-																			<Button
-																				variant="ghost"
-																				size="icon"
-																				className="text-foreground/60 hover:text-foreground"
-																				disabled={
-																					scene.order ===
-																					Math.max(
-																						...chapterScenes.map(
-																							(item) => item.order,
-																						),
-																					)
-																				}
-																				onClick={() => handleSceneReorder(scene.id, "down")}
-																			>
-																				<ArrowDown className="size-4" />
-																			</Button>
-																		</TooltipTrigger>
-																		<TooltipContent>下移</TooltipContent>
-																	</Tooltip>
-																	<Tooltip>
-																		<TooltipTrigger asChild>
-																			<Button
-																				variant="ghost"
-																				size="icon"
-																				className="text-foreground/60 hover:text-foreground"
-																				onClick={() => {
-																					setSceneEditId(scene.id);
-																					setSceneEditTitle(scene.title);
-																				}}
-																			>
-																				<Pencil className="size-4" />
-																			</Button>
-																		</TooltipTrigger>
-																		<TooltipContent>重命名</TooltipContent>
-																	</Tooltip>
-																	<Tooltip>
-																		<TooltipTrigger asChild>
-																			<Button
-																				variant="ghost"
-																				size="icon"
-																				className="text-red-400 hover:text-red-300"
-																				onClick={() => handleDeleteScene(scene.id)}
-																			>
-																				<Trash2 className="size-4" />
-																			</Button>
-																		</TooltipTrigger>
-																		<TooltipContent>删除</TooltipContent>
-																	</Tooltip>
-																</div>
-															</div>
-														</div>
-													</li>
-												);
-											})}
-											{chapterScenes.length === 0 ? (
-												<li>
-													<div className="rounded-xl border border-dashed border-white/20 bg-white/5 p-4 text-center text-xs text-white/60">
-														暂无场景，点击右上角新增。
-													</div>
-												</li>
-											) : null}
-										</ul>
-									</ScrollArea>
-								</section>
-								<section className="flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm">
-									<div className="flex items-center justify-between border-b border-border px-4 py-3">
-										<div>
-											<h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-												<Layers className="size-4 text-emerald-300" />
-												Scene editor
-											</h3>
-											<p className="text-xs text-muted-foreground">
-												shadcn-editor · 自动保存 {isSaving ? "(保存中…)" : "(已保存)"}
-											</p>
-										</div>
-										<div className="text-right text-xs text-muted-foreground">
-											<p>{sceneWordCount.toLocaleString()} words</p>
-											<p>
-												{chapterScenes.length
-													? `${chapterScenes.findIndex(
-															(scene) => scene.id === selectedSceneId,
-													  ) + 1} / ${chapterScenes.length}`
-													: "0 / 0"}
-											</p>
-										</div>
-									</div>
+							<div className="flex-1 overflow-hidden px-8 py-6">
+								<section className="flex h-full flex-col overflow-hidden rounded-2xl border bg-card shadow-sm">
 									<div className="flex flex-1 flex-col overflow-hidden">
 										{editorInitialState && selectedSceneId ? (
 											<Editor
@@ -870,45 +463,57 @@ export function StoryWorkspace({
 												onSerializedChange={handleSerializedChange}
 											/>
 										) : (
-											<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-												请选择一个场景开始创作。
-											</div>
+											<>
+												<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+													请选择一个场景开始创作。
+												</div>
+											</>
 										)}
 									</div>
 								</section>
 							</div>
-						</div>
-					</div>
-				</main>
-			</div>
-		</TooltipProvider>
-	);
-}
-
-function ProjectStatCard({
-	label,
-	value,
-	description,
-}: {
-	label: string;
-	value: number | string;
-	description: string;
-}) {
-	return (
-		<Card className="border-white/10 bg-white/5 text-white">
-			<CardHeader>
-				<CardTitle className="text-sm uppercase tracking-wide text-white/60">
-					{label}
-				</CardTitle>
-				<CardDescription className="text-xs text-white/50">
-					{description}
-				</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<p className="text-2xl font-semibold text-white">{value}</p>
-			</CardContent>
-		</Card>
-	);
+							</div>
+							</div>
+							<footer className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 px-3 py-1 text-xs backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 truncate">
+              {projects.find((project) => project.id === selectedProjectId)?.title ?? "No project selected"}
+              {projectStats.streak ? (
+                <span className="ml-2 text-muted-foreground"> {projectStats.streak}d</span>
+              ) : null}
+            </div>
+            <div className="min-w-0 truncate text-muted-foreground">
+              {projectChapters.length ? `第${projectChapters.findIndex((c) => c.id === selectedChapterId) + 1}章` : "第0章"}
+              <span className="mx-2 text-border">/</span>
+              {chapterScenes.length ? `第${chapterScenes.findIndex((s) => s.id === selectedSceneId) + 1}节` : "第0节"}
+              <span className="ml-2">
+                {(chapters.find((c) => c.id === selectedChapterId)?.title ?? "无章节")} · {(chapterScenes.find((s) => s.id === selectedSceneId)?.title ?? "无场景")}
+              </span>
+            </div>
+            <div className="flex items-center gap-4 text-muted-foreground">
+              <span>Chapters: {projectStats.chapterCount}</span>
+              <span>Scenes: {projectStats.sceneCount}</span>
+              <span>Words: {projectStats.wordCount.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-4 text-muted-foreground">
+              <span>{isSaving ? "保存中…" : "已保存"}</span>
+              <span>
+                {chapterScenes.length
+                  ? `${chapterScenes.findIndex((scene) => scene.id === selectedSceneId) + 1}/${chapterScenes.length}`
+                  : "0/0"}
+              </span>
+              <span>{sceneWordCount.toLocaleString()} words</span>
+              <span>Last {formatRelativeTime(projectStats.lastEdited)}</span>
+            </div>
+          </div>
+        </footer>
+      </main>
+      {/* Right-side Sidebar for Chapters & Scenes */}
+      <StoryRightSidebar />
+      {/* <OutlineSidebar /> */}
+    </div>
+  </TooltipProvider>
+);
 }
 
 function loggerError(message: string, error: unknown) {
