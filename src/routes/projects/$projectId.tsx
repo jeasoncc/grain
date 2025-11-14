@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/loading";
-import { CreateBookDialog } from "@/components/blocks/createBookDialog";
+import { openCreateBookDialog } from "@/components/blocks/createBookDialog";
 import { StoryWorkspace } from "@/components/workspace/story-workspace";
 import { db } from "@/db/curd";
 import type {
@@ -21,14 +21,15 @@ export const Route = createFileRoute("/projects/$projectId")({
 function ProjectRoute() {
 	const { projectId } = Route.useParams();
 	const navigate = useNavigate();
-	const [open, setOpen] = useState(false);
 	const [creating, setCreating] = useState(false);
 
 	const projects = useLiveQuery<ProjectInterface[]>(() => db.getAllProjects(), []);
 	const chapters = useLiveQuery<ChapterInterface[]>(() => db.getAllChapters(), []);
 	const scenes = useLiveQuery<SceneInterface[]>(() => db.getAllScenes(), []);
 
-	const handleCreateProject = async (data: any) => {
+	const handleCreateProject = async () => {
+		const data = await openCreateBookDialog();
+		if (!data) return;
 		setCreating(true);
 		try {
 			await db.addProject(data);
@@ -38,7 +39,6 @@ function ProjectRoute() {
 			logger.error(err);
 		} finally {
 			setCreating(false);
-			setOpen(false);
 		}
 	};
 
@@ -85,16 +85,8 @@ function ProjectRoute() {
 				chapters={chapters}
 				scenes={scenes}
 				activeProjectId={targetProject.id}
-				onCreateProject={() => setOpen(true)}
-			/>
-			<CreateBookDialog
-				open={open}
-				loading={creating}
-				onSubmit={handleCreateProject}
-				onOpen={() => setOpen(true)}
-				onClose={() => setOpen(false)}
+				onCreateProject={handleCreateProject}
 			/>
 		</>
 	);
 }
-

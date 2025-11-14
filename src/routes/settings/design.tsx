@@ -78,6 +78,87 @@ function DesignSettings() {
           </Card>
         ))}
       </div>
+
+      {/* Live color tokens preview */}
+      <div className="space-y-3">
+        <h2 className="text-xl font-semibold">主题颜色预览</h2>
+        <p className="text-sm text-muted-foreground">当前主题下各关键颜色变量的可视化，便于选择与对比。</p>
+        <ColorTokensPreview />
+      </div>
     </div>
   );
+}
+
+function ColorTokensPreview() {
+  const tokens = [
+    { key: "--background", label: "background" },
+    { key: "--foreground", label: "foreground" },
+    { key: "--card", label: "card" },
+    { key: "--card-foreground", label: "card-foreground" },
+    { key: "--primary", label: "primary" },
+    { key: "--primary-foreground", label: "primary-foreground" },
+    { key: "--secondary", label: "secondary" },
+    { key: "--secondary-foreground", label: "secondary-foreground" },
+    { key: "--accent", label: "accent" },
+    { key: "--accent-foreground", label: "accent-foreground" },
+    { key: "--muted", label: "muted" },
+    { key: "--muted-foreground", label: "muted-foreground" },
+    { key: "--destructive", label: "destructive" },
+    { key: "--destructive-foreground", label: "destructive-foreground" },
+    { key: "--border", label: "border" },
+    { key: "--input", label: "input" },
+    { key: "--ring", label: "ring" },
+  ];
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {tokens.map(t => (
+        <div key={t.key} className="rounded-lg border">
+          <div className="flex items-center justify-between border-b px-3 py-2 text-sm">
+            <span className="font-medium">{t.label}</span>
+            <code className="text-xs text-muted-foreground">{t.key}</code>
+          </div>
+          <div className="p-3">
+            <div className="flex items-center gap-3">
+              <div
+                className="h-10 w-10 rounded-md border"
+                style={{ backgroundColor: `hsl(var(${t.key}))` }}
+                aria-label={`${t.label} swatch`}
+              />
+              <div className="flex-1">
+                <div
+                  className="rounded-sm border px-2 py-1 text-xs"
+                  style={{
+                    backgroundColor: `hsl(var(${t.key}))`,
+                    color: `hsl(var(${inferForeground(t.key)}))`,
+                  }}
+                >
+                  按钮示例
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function inferForeground(token: string): string {
+  switch (token) {
+    case "--primary":
+      return "--primary-foreground";
+    case "--secondary":
+      return "--secondary-foreground";
+    case "--accent":
+      return "--accent-foreground";
+    case "--muted":
+      return "--muted-foreground";
+    case "--destructive":
+      return "--destructive-foreground";
+    case "--card":
+      return "--card-foreground";
+    default:
+      return "--foreground";
+  }
 }

@@ -17,9 +17,11 @@ import type {
 } from "@/db/schema";
 import { toast } from "sonner";
 import { StoryRightSidebar } from "@/components/story-right-sidebar";
+import { useConfirm } from "@/components/ui/confirm";
 import { useSelectionStore, type SelectionState } from "@/stores/selection";
 import { useOutlineStore } from "@/stores/outline";
 import { createBook, exportAll, importFromJson, readFileAsText, triggerDownload } from "@/services/projects";
+import { openCreateBookDialog } from "@/components/blocks/createBookDialog";
 //
 
 interface StoryWorkspaceProps {
@@ -56,6 +58,7 @@ export function StoryWorkspace({
 		useState<SerializedEditorState>();
 	const [sceneWordCount, setSceneWordCount] = useState(0);
 	const [isSaving, setIsSaving] = useState(false);
+    const confirm = useConfirm();
 
 	// bottom dock actions
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -89,20 +92,19 @@ export function StoryWorkspace({
 	}, []);
 
 	const handleQuickCreate = useCallback(async () => {
-		const title = window.prompt("书名：");
-		if (!title) return;
-		const author = window.prompt("作者：", "Author");
-		if (!author) return;
+		const data = await openCreateBookDialog();
+		if (!data) return;
 		try {
-			await createBook({ title, author, description: "" });
-			toast.success("已创建书籍");
+			await createBook({ title: data.title, author: data.author, description: data.description ?? "" });
+			toast.success(`已创建书籍：${data.title}`);
 		} catch (e) {
-			// createBook 内部包含 toast
+			// createBook 内部包含失败处理
 		}
 	}, []);
 
 	const handleDeleteAllBooks = useCallback(async () => {
-		if (!window.confirm("确认删除所有书籍及其章节、场景等数据吗？该操作不可恢复！")) return;
+		const ok = await confirm({ title: "确认删除所有书籍？", description: "该操作不可恢复，将清空书籍、章节、场景与附件。", confirmText: "删除", cancelText: "取消" });
+		if (!ok) return;
 		try {
 			await Promise.all([
 				db.attachments.clear(),
@@ -307,7 +309,8 @@ export function StoryWorkspace({
 		async (chapterId: string) => {
 			const target = projectChapters.find((chapter) => chapter.id === chapterId);
 			if (!target) return;
-			if (!window.confirm(`确认删除章节 “${target.title}” 吗？`)) return;
+			const ok = await confirm({ title: "删除章节？", description: `确认删除章节 “${target.title}” 吗？该操作不可撤销。`, confirmText: "删除", cancelText: "取消" });
+			if (!ok) return;
 			try {
 				await db.deleteChapter(chapterId);
 				toast.success("章节已删除");
@@ -392,7 +395,8 @@ export function StoryWorkspace({
 		async (sceneId: string) => {
 			const target = chapterScenes.find((scene) => scene.id === sceneId);
 			if (!target) return;
-			if (!window.confirm(`确认删除场景 “${target.title}” 吗？`)) return;
+			const ok = await confirm({ title: "删除场景？", description: `确认删除场景 “${target.title}” 吗？该操作不可撤销。`, confirmText: "删除", cancelText: "取消" });
+			if (!ok) return;
 			try {
 				await db.deleteScene(sceneId);
 				toast.success("场景已删除");
@@ -449,7 +453,7 @@ export function StoryWorkspace({
 
 	return (
 		<TooltipProvider>
-			<div className="flex h-screen bg-background text-foreground">
+			<div className="flex h-screen bg-background text-foreground  ">
 				<main className="flex-1 overflow-hidden">
 					<div className="flex h-full flex-col pb-8">
 						<div className="flex flex-1 overflow-hidden">

@@ -185,24 +185,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>
-
-            <SidebarFooter className="p-2">
-                <TooltipProvider>
-                    <div className="flex flex-col items-center gap-2">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button size="icon" variant="ghost" aria-label="设置" asChild>
-                                    <Link to="/settings/design">
-                                        <Settings className="size-4" />
-                                    </Link>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="right">设置</TooltipContent>
-                        </Tooltip>
-                    </div>
-                </TooltipProvider>
-            </SidebarFooter>
-            <SidebarRail />
+            {/* <SidebarRail /> */}
         </Sidebar>
     );
 }

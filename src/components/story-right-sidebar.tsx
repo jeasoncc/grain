@@ -17,6 +17,7 @@ import type { SceneInterface } from "@/db/schema";
 import { useChaptersByProject, createChapter, renameChapter, reorderChapters, deleteChapter } from "@/services/chapters";
 import { useScenesByProject, useScenesByChapter, createScene, renameScene, reorderScenes, deleteScene } from "@/services/scenes";
 import { useAllProjects } from "@/services/projects";
+import { useConfirm } from "@/components/ui/confirm";
 import { useUIStore } from "@/stores/ui";
 import {
   UncontrolledTreeEnvironment,
@@ -39,6 +40,7 @@ function countSceneWordsQuick(scene: SceneInterface): number {
 }
 
 export function StoryRightSidebar() {
+  const confirm = useConfirm();
   const rightPanelView = useUIStore(s => s.rightPanelView);
   const selectedProjectId = useSelectionStore((s: SelectionState) => s.selectedProjectId);
   const setSelectedProjectId = useSelectionStore((s: SelectionState) => s.setSelectedProjectId);
@@ -103,7 +105,8 @@ export function StoryRightSidebar() {
   const handleDeleteChapter = useCallback(async (chapterId: string) => {
     const target = projectChapters.find(c=>c.id===chapterId);
     if (!target) return;
-    if (!window.confirm(`确认删除章节 “${target.title}” 吗？`)) return;
+    const ok = await confirm({ title: "删除章节？", description: `确认删除章节 “${target.title}” 吗？该操作不可撤销。`, confirmText: "删除", cancelText: "取消" });
+    if (!ok) return;
     try {
       await deleteChapter(chapterId);
       toast.success("章节已删除");
@@ -164,7 +167,8 @@ export function StoryRightSidebar() {
   const handleDeleteScene = useCallback(async (sceneId: string) => {
     const target = chapterScenes.find(s=>s.id===sceneId);
     if (!target) return;
-    if (!window.confirm(`确认删除场景 “${target.title}” 吗？`)) return;
+    const ok = await confirm({ title: "删除场景？", description: `确认删除场景 “${target.title}” 吗？该操作不可撤销。`, confirmText: "删除", cancelText: "取消" });
+    if (!ok) return;
     try {
       await deleteScene(sceneId);
       toast.success("场景已删除");
@@ -372,7 +376,7 @@ export function StoryRightSidebar() {
       <SidebarFooter>
         <div className="w-full p-2 text-center text-xs text-muted-foreground">Chapters & Scenes</div>
       </SidebarFooter>
-      <SidebarRail />
+      {/* <SidebarRail /> */}
     </UISidebar>
   );
 }

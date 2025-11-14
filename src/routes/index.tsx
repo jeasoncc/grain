@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 import { toast } from "sonner";
-import { CreateBookDialog } from "@/components/blocks/createBookDialog";
+import { openCreateBookDialog } from "@/components/blocks/createBookDialog";
 import { EmptyProject } from "@/components/blocks/emptyProject";
 import { Spinner } from "@/components/ui/loading";
 import { db } from "@/db/curd";
@@ -29,12 +29,13 @@ function RouteComponent() {
     setRightPanelView(search.view ?? null);
   }, [search?.view, setRightPanelView]);
 	const [loading, setLoading] = useState(false);
-	const [open, setOpen] = useState(false);
 	const projects = useLiveQuery<ProjectInterface[]>(() => db.getAllProjects(), []);
 	const chapters = useLiveQuery<ChapterInterface[]>(() => db.getAllChapters(), []);
 	const scenes = useLiveQuery<SceneInterface[]>(() => db.getAllScenes(), []);
 
-	const createProject = async (data: any) => {
+	const createProject = async () => {
+		const data = await openCreateBookDialog();
+		if (!data) return;
 		setLoading(true);
 		try {
 			await db.addProject(data);
@@ -44,7 +45,6 @@ function RouteComponent() {
 			logger.error(err);
 		} finally {
 			setLoading(false);
-			setOpen(false);
 		}
 	};
 
@@ -64,23 +64,15 @@ function RouteComponent() {
 	return (
 		<>
 			{!projects?.length ? (
-				<EmptyProject onCreate={() => setOpen(true)} onImport={() => setOpen(true)} />
+				<EmptyProject onCreate={createProject} onImport={createProject} />
 			) : (
 				<StoryWorkspace
 					projects={projects}
 					chapters={chapters}
 					scenes={scenes}
-					onCreateProject={() => setOpen(true)}
+					onCreateProject={createProject}
 				/>
 			)}
-
-			<CreateBookDialog
-				open={open}
-				loading={loading}
-				onSubmit={createProject}
-				onOpen={() => setOpen(true)}
-				onClose={() => setOpen(false)}
-			/>
 		</>
 	);
 }

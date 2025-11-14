@@ -8,11 +8,14 @@ import { toast } from "sonner";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/db/curd";
 import { exportAll, importFromJson, readFileAsText, triggerDownload, createBook } from "@/services/projects";
+import { openCreateBookDialog } from "@/components/blocks/createBookDialog";
 import { BookMarked, Settings, ListTree, Users, BookOpen, Upload, Download, MoreHorizontal, Trash2, Plus } from "lucide-react";
+import { useConfirm } from "@/components/ui/confirm";
 
 export function ActivityBar(): React.ReactElement {
   const projects = useLiveQuery(() => db.getAllProjects(), []) || [];
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const confirm = useConfirm();
 
   const handleExport = useCallback(async () => {
     try {
@@ -25,14 +28,13 @@ export function ActivityBar(): React.ReactElement {
   }, []);
 
   const handleQuickCreate = useCallback(async () => {
-    const title = window.prompt("书名：");
-    if (!title) return;
-    const author = window.prompt("作者：", "Author");
-    if (!author) return;
+    const data = await openCreateBookDialog();
+    if (!data) return;
     try {
-      await createBook({ title, author, description: "" });
+      await createBook({ title: data.title, author: data.author, description: data.description ?? "" });
+      toast.success(`已创建书籍：${data.title}`);
     } catch (e) {
-      // createBook 内部已处理 toast
+      // createBook 内部有失败处理
     }
   }, []);
 
@@ -55,7 +57,8 @@ export function ActivityBar(): React.ReactElement {
   }, []);
 
   const handleDeleteAllBooks = useCallback(async () => {
-    if (!window.confirm("确认删除所有书籍及其章节、场景等数据吗？该操作不可恢复！")) return;
+    const ok = await confirm({ title: "确认删除所有书籍？", description: "该操作不可恢复，将清空书籍、章节、场景与附件。", confirmText: "删除", cancelText: "取消" });
+    if (!ok) return;
     try {
       await Promise.all([
         db.attachments.clear(),

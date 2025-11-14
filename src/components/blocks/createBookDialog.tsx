@@ -1,4 +1,6 @@
 import { useForm } from "@tanstack/react-form";
+import React from "react";
+import ReactDOM from "react-dom/client";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -41,6 +43,39 @@ export interface CreateBookDialogProps {
   onOpen?: () => void;
   onClose?: () => void;
   onSubmit?: (data: z.infer<typeof bookSchema>) => Promise<void> | void;
+}
+
+// Imperative API: open the CreateBookDialog as a function and return the submitted values
+export function openCreateBookDialog(): Promise<z.infer<typeof bookSchema> | null> {
+  return new Promise((resolve) => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = ReactDOM.createRoot(host);
+
+    const handleClose = () => {
+      // Unmount and cleanup
+      setTimeout(() => {
+        try { root.unmount(); } catch {}
+        host.remove();
+      }, 0);
+    };
+
+    const onSubmit = async (data: z.infer<typeof bookSchema>) => {
+      resolve(data);
+      handleClose();
+    };
+
+    const onClose = () => {
+      resolve(null);
+      handleClose();
+    };
+
+    root.render(
+      <React.StrictMode>
+        <CreateBookDialog open onClose={onClose} onSubmit={onSubmit} />
+      </React.StrictMode>
+    );
+  });
 }
 
 export function CreateBookDialog({
