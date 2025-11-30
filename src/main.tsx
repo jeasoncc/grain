@@ -7,6 +7,11 @@ import "./styles.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { db, initDatabase } from "./db/curd";
 
+// 开发环境下加载测试工具
+if (import.meta.env.DEV) {
+	import("./utils/test-features");
+}
+
 // Create the router instance
 const router = createRouter({
 	routeTree,

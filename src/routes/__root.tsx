@@ -9,6 +9,7 @@ import { BottomDrawerContent } from "@/components/bottom-drawer-content";
 import { CommandPalette } from "@/components/command-palette";
 import { FontStyleInjector } from "@/components/font-style-injector";
 import { OnboardingTour } from "@/components/onboarding-tour";
+import { GlobalSearch } from "@/components/blocks/global-search";
 import { ConfirmProvider } from "@/components/ui/confirm";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { initializeTheme } from "@/hooks/use-theme";
@@ -21,9 +22,11 @@ import {
 } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { useState, useEffect } from "react";
+import { autoBackupManager } from "@/services/backup";
 
 function RootComponent() {
 	const [commandOpen, setCommandOpen] = useState(false);
+	const [searchOpen, setSearchOpen] = useState(false);
 
 	// 初始化主题系统（包括系统主题监听）
 	useEffect(() => {
@@ -31,16 +34,39 @@ function RootComponent() {
 		return () => cleanup?.();
 	}, []);
 
-	// 全局快捷键：Ctrl/Cmd + K 打开命令面板
+	// 初始化自动备份
+	useEffect(() => {
+		const enabled = localStorage.getItem("auto-backup-enabled") === "true";
+		if (enabled) {
+			autoBackupManager.start();
+		}
+		return () => autoBackupManager.stop();
+	}, []);
+
+	// 全局快捷键
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
+			// Ctrl/Cmd + K 打开命令面板
 			if ((e.ctrlKey || e.metaKey) && e.key === "k") {
 				e.preventDefault();
 				setCommandOpen(true);
 			}
+			// Ctrl/Cmd + Shift + F 打开全局搜索
+			if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "f") {
+				e.preventDefault();
+				setSearchOpen(true);
+			}
 		};
+
+		// 监听自定义事件（从命令面板触发）
+		const handleOpenSearch = () => setSearchOpen(true);
+		window.addEventListener("open-global-search", handleOpenSearch);
+
 		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("open-global-search", handleOpenSearch);
+		};
 	}, []);
 
 	return (
@@ -72,6 +98,8 @@ function RootComponent() {
 				</div>
 				{/* 命令面板 */}
 				<CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
+				{/* 全局搜索 */}
+				<GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
 				{/* 字体样式注入 */}
 				<FontStyleInjector />
 				{/* 新手引导 */}

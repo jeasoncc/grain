@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorldRouteImport } from './routes/world'
+import { Route as TestFocusRouteImport } from './routes/test-focus'
 import { Route as StatisticsRouteImport } from './routes/statistics'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as OutlineRouteImport } from './routes/outline'
@@ -21,12 +22,18 @@ import { Route as SettingsTypographyRouteImport } from './routes/settings/typogr
 import { Route as SettingsGeneralRouteImport } from './routes/settings/general'
 import { Route as SettingsEditorRouteImport } from './routes/settings/editor'
 import { Route as SettingsDesignRouteImport } from './routes/settings/design'
+import { Route as SettingsDataRouteImport } from './routes/settings/data'
 import { Route as SettingsAboutRouteImport } from './routes/settings/about'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects/$projectId'
 
 const WorldRoute = WorldRouteImport.update({
   id: '/world',
   path: '/world',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TestFocusRoute = TestFocusRouteImport.update({
+  id: '/test-focus',
+  path: '/test-focus',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StatisticsRoute = StatisticsRouteImport.update({
@@ -84,6 +91,11 @@ const SettingsDesignRoute = SettingsDesignRouteImport.update({
   path: '/design',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsDataRoute = SettingsDataRouteImport.update({
+  id: '/data',
+  path: '/data',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const SettingsAboutRoute = SettingsAboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -103,9 +115,11 @@ export interface FileRoutesByFullPath {
   '/outline': typeof OutlineRoute
   '/settings': typeof SettingsRouteWithChildren
   '/statistics': typeof StatisticsRoute
+  '/test-focus': typeof TestFocusRoute
   '/world': typeof WorldRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/about': typeof SettingsAboutRoute
+  '/settings/data': typeof SettingsDataRoute
   '/settings/design': typeof SettingsDesignRoute
   '/settings/editor': typeof SettingsEditorRoute
   '/settings/general': typeof SettingsGeneralRoute
@@ -119,9 +133,11 @@ export interface FileRoutesByTo {
   '/outline': typeof OutlineRoute
   '/settings': typeof SettingsRouteWithChildren
   '/statistics': typeof StatisticsRoute
+  '/test-focus': typeof TestFocusRoute
   '/world': typeof WorldRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/about': typeof SettingsAboutRoute
+  '/settings/data': typeof SettingsDataRoute
   '/settings/design': typeof SettingsDesignRoute
   '/settings/editor': typeof SettingsEditorRoute
   '/settings/general': typeof SettingsGeneralRoute
@@ -136,9 +152,11 @@ export interface FileRoutesById {
   '/outline': typeof OutlineRoute
   '/settings': typeof SettingsRouteWithChildren
   '/statistics': typeof StatisticsRoute
+  '/test-focus': typeof TestFocusRoute
   '/world': typeof WorldRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/about': typeof SettingsAboutRoute
+  '/settings/data': typeof SettingsDataRoute
   '/settings/design': typeof SettingsDesignRoute
   '/settings/editor': typeof SettingsEditorRoute
   '/settings/general': typeof SettingsGeneralRoute
@@ -154,9 +172,11 @@ export interface FileRouteTypes {
     | '/outline'
     | '/settings'
     | '/statistics'
+    | '/test-focus'
     | '/world'
     | '/projects/$projectId'
     | '/settings/about'
+    | '/settings/data'
     | '/settings/design'
     | '/settings/editor'
     | '/settings/general'
@@ -170,9 +190,11 @@ export interface FileRouteTypes {
     | '/outline'
     | '/settings'
     | '/statistics'
+    | '/test-focus'
     | '/world'
     | '/projects/$projectId'
     | '/settings/about'
+    | '/settings/data'
     | '/settings/design'
     | '/settings/editor'
     | '/settings/general'
@@ -186,9 +208,11 @@ export interface FileRouteTypes {
     | '/outline'
     | '/settings'
     | '/statistics'
+    | '/test-focus'
     | '/world'
     | '/projects/$projectId'
     | '/settings/about'
+    | '/settings/data'
     | '/settings/design'
     | '/settings/editor'
     | '/settings/general'
@@ -203,6 +227,7 @@ export interface RootRouteChildren {
   OutlineRoute: typeof OutlineRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   StatisticsRoute: typeof StatisticsRoute
+  TestFocusRoute: typeof TestFocusRoute
   WorldRoute: typeof WorldRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
 }
@@ -214,6 +239,13 @@ declare module '@tanstack/react-router' {
       path: '/world'
       fullPath: '/world'
       preLoaderRoute: typeof WorldRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/test-focus': {
+      id: '/test-focus'
+      path: '/test-focus'
+      fullPath: '/test-focus'
+      preLoaderRoute: typeof TestFocusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/statistics': {
@@ -293,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsDesignRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/data': {
+      id: '/settings/data'
+      path: '/data'
+      fullPath: '/settings/data'
+      preLoaderRoute: typeof SettingsDataRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/about': {
       id: '/settings/about'
       path: '/about'
@@ -312,6 +351,7 @@ declare module '@tanstack/react-router' {
 
 interface SettingsRouteChildren {
   SettingsAboutRoute: typeof SettingsAboutRoute
+  SettingsDataRoute: typeof SettingsDataRoute
   SettingsDesignRoute: typeof SettingsDesignRoute
   SettingsEditorRoute: typeof SettingsEditorRoute
   SettingsGeneralRoute: typeof SettingsGeneralRoute
@@ -320,6 +360,7 @@ interface SettingsRouteChildren {
 
 const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsAboutRoute: SettingsAboutRoute,
+  SettingsDataRoute: SettingsDataRoute,
   SettingsDesignRoute: SettingsDesignRoute,
   SettingsEditorRoute: SettingsEditorRoute,
   SettingsGeneralRoute: SettingsGeneralRoute,
@@ -338,6 +379,7 @@ const rootRouteChildren: RootRouteChildren = {
   OutlineRoute: OutlineRoute,
   SettingsRoute: SettingsRouteWithChildren,
   StatisticsRoute: StatisticsRoute,
+  TestFocusRoute: TestFocusRoute,
   WorldRoute: WorldRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
 }

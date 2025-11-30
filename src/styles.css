@@ -199,6 +199,96 @@ h6 { font-size: 0.75rem; font-weight: 600; line-height: 1.5; }
   background-color: var(--editor-selection, color-mix(in srgb, var(--primary) 45%, transparent));
 }
 
+/* ========================================
+   焦点样式优化 - 移除默认轮廓，使用自定义样式
+   ======================================== */
+
+/* 移除所有元素的默认焦点轮廓（使用 !important 确保优先级） */
+*:focus {
+  outline: none !important;
+}
+
+*:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 仅在键盘导航时显示焦点样式（保持无障碍性） */
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring)) !important;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 按钮和交互元素的焦点样式 */
+button:focus,
+button:focus-visible,
+a:focus,
+a:focus-visible,
+[role="button"]:focus,
+[role="button"]:focus-visible {
+  outline: none !important;
+}
+
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid hsl(var(--ring)) !important;
+  outline-offset: 2px;
+}
+
+/* 输入框的焦点样式 */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none !important;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none !important;
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 3px color-mix(in srgb, hsl(var(--ring)) 15%, transparent);
+}
+
+/* 对话框和弹出层不显示焦点轮廓 */
+[role="dialog"]:focus,
+[role="menu"]:focus,
+[role="listbox"]:focus,
+[role="combobox"]:focus,
+[role="option"]:focus {
+  outline: none !important;
+}
+
+/* Radix UI 组件特殊处理 */
+[data-radix-focus-guard]:focus,
+[data-radix-popper-content-wrapper]:focus {
+  outline: none !important;
+}
+
+/* 所有 div 和 span 的焦点 */
+div:focus:not(:focus-visible),
+span:focus:not(:focus-visible) {
+  outline: none !important;
+}
+
+/* 编辑器内容区域的焦点样式 */
+.editor-container:focus,
+.editor-container:focus-within {
+  outline: none;
+}
+
+/* Canvas 和绘图区域 */
+canvas:focus {
+  outline: none;
+}
+
+/* 自定义滚动条不显示焦点 */
+[data-radix-scroll-area-viewport]:focus {
+  outline: none;
+}
+
 /* 焦点状态 */
 *:focus-visible {
   outline: 2px solid var(--ring);
@@ -531,4 +621,35 @@ button, .no-select {
   height: 100%;
   color: var(--muted-foreground);
   gap: 0.5rem;
+}
+
+/* ========================================
+   全局焦点轮廓移除（最高优先级）
+   ======================================== */
+
+/* 强制移除所有焦点轮廓 - 鼠标点击时 */
+html *:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 确保所有元素默认无轮廓 */
+html * {
+  outline: none;
+}
+
+/* 仅在键盘导航时显示（Tab 键） */
+html *:focus-visible {
+  outline: 2px solid hsl(var(--ring)) !important;
+  outline-offset: 2px;
+}
+
+/* 特殊元素完全移除焦点轮廓 */
+html div:focus,
+html span:focus,
+html [role="dialog"]:focus,
+html [role="menu"]:focus,
+html [data-radix-focus-guard]:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>焦点样式测试</title>
+    <style>
+        /* 测试焦点样式 */
+        * {
+            outline: none;
+        }
+        
+        *:focus:not(:focus-visible) {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+        
+        *:focus-visible {
+            outline: 2px solid #3b82f6 !important;
+            outline-offset: 2px;
+        }
+        
+        body {
+            font-family: system-ui, sans-serif;
+            padding: 40px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        button, input {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+        }
+        
+        .info {
+            background: #f0f9ff;
+            border: 1px solid #3b82f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>焦点样式测试</h1>
+    
+    <div class="info">
+        <h3>测试说明：</h3>
+        <ul>
+            <li><strong>鼠标点击按钮</strong>：不应该有焦点轮廓</li>
+            <li><strong>Tab 键导航</strong>：应该有蓝色焦点轮廓</li>
+            <li><strong>点击输入框</strong>：不应该有焦点轮廓</li>
+        </ul>
+    </div>
+    
+    <div>
+        <button>测试按钮 1</button>
+        <button>测试按钮 2</button>
+        <button>测试按钮 3</button>
+    </div>
+    
+    <div>
+        <input type="text" placeholder="测试输入框 1">
+        <input type="text" placeholder="测试输入框 2">
+    </div>
+    
+    <div>
+        <a href="#" style="display: inline-block; padding: 10px; margin: 10px;">测试链接</a>
+    </div>
+    
+    <div class="info">
+        <h3>当前状态：</h3>
+        <p id="status">等待测试...</p>
+    </div>
+    
+    <script>
+        // 检测焦点方式
+        document.addEventListener('mousedown', () => {
+            document.getElementById('status').textContent = '鼠标点击 - 不应该有焦点轮廓';
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                document.getElementById('status').textContent = 'Tab 键导航 - 应该有焦点轮廓';
+            }
+        });
+        
+        // 检测浏览器支持
+        const supportsVisible = CSS.supports('selector(:focus-visible)');
+        if (!supportsVisible) {
+            document.getElementById('status').textContent = '⚠️ 浏览器不支持 :focus-visible';
+        }
+    </script>
+</body>
+</html>

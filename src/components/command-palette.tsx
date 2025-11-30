@@ -25,6 +25,8 @@ import {
   BookOpen,
   Clock,
   Search,
+  Archive,
+  Database,
 } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/db/curd";
@@ -133,6 +135,16 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       group: "操作",
       items: [
         {
+          label: "全局搜索",
+          icon: <Search className="size-4" />,
+          shortcut: "Ctrl+Shift+F",
+          onSelect: () => {
+            onOpenChange(false);
+            // 触发全局搜索（通过事件）
+            window.dispatchEvent(new CustomEvent("open-global-search"));
+          },
+        },
+        {
           label: "新建章节",
           icon: <Plus className="size-4" />,
           onSelect: () => {
@@ -170,6 +182,27 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           icon: <BookOpen className="size-4" />,
           onSelect: () => {
             toggleBottomDrawer("world");
+            onOpenChange(false);
+          },
+        },
+      ],
+    },
+    {
+      group: "数据管理",
+      items: [
+        {
+          label: "备份数据",
+          icon: <Archive className="size-4" />,
+          onSelect: () => {
+            navigate({ to: "/settings/data" });
+            onOpenChange(false);
+          },
+        },
+        {
+          label: "数据统计",
+          icon: <Database className="size-4" />,
+          onSelect: () => {
+            navigate({ to: "/statistics" });
             onOpenChange(false);
           },
         },
@@ -304,7 +337,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   className="flex items-center gap-2"
                 >
                   {item.icon}
-                  <span>{item.label}</span>
+                  <span className="flex-1">{item.label}</span>
+                  {"shortcut" in item && item.shortcut && (
+                    <kbd className="text-xs text-muted-foreground">{item.shortcut}</kbd>
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>

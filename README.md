@@ -10,6 +10,8 @@ Novel Editor is a modern, cross-platform writing environment built with **Tauri*
 
 - ✍️ **Immersive writing**: Rich Lexical-based editor with formatting, keyboard shortcuts, and an optional focus mode.
 - 📂 **Project structure**: Chapters, scenes, characters, and world-building assets live side by side with search and tagging.
+- 🔍 **Global search**: Fast full-text search across scenes, characters, and world-building with keyboard navigation.
+- 💾 **Auto backup**: Automatic daily backups with manual export/restore in JSON or ZIP format.
 - 🧠 **Knowledge workspace**: Link notes, references, and research; visualize timelines and relationships.
 - ⚙️ **Reliable storage**: IndexedDB + Dexie keep drafts safe offline; optional cloud sync keeps devices aligned.
 - 🧪 **Quality pipeline**: Automated linting, testing, and desktop packaging through CI and Tauri.
@@ -27,8 +29,9 @@ Novel Editor is a modern, cross-platform writing environment built with **Tauri*
 ### Project Organization
 - Tree-based project navigator covering books → chapters → scenes.
 - Character, location, and lore databases with custom fields and tags.
-- Global search, filters, and status tracking across all project entities.
-- Backup, restore, import/export (Markdown, DOCX, JSON) to keep work portable.
+- **Global search** (`Ctrl+Shift+F`): Fast full-text search with keyword highlighting and smart ranking.
+- **Backup & restore**: Automatic daily backups + manual export in JSON/ZIP format.
+- Import/export (Markdown, DOCX, PDF, EPUB) to keep work portable.
 
 ### Productivity Toolkit
 - Daily writing goals, progress dashboards, and timeline visualizations.
