@@ -76,8 +76,9 @@ jobs:
         working-directory: apps/desktop
         run: bun run build
       
-      # 验证前端构建
-      - name: Verify frontend build
+      # 验证前端构建 (跨平台)
+      - name: Verify frontend build (Unix)
+        if: runner.os != 'Windows'
         working-directory: apps/desktop
         run: |
           if [ ! -d "dist" ]; then
@@ -86,6 +87,18 @@ jobs:
           fi
           echo "Frontend build successful"
           ls -la dist/
+      
+      - name: Verify frontend build (Windows)
+        if: runner.os == 'Windows'
+        working-directory: apps/desktop
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "dist")) {
+            Write-Error "Frontend build failed: dist directory not found"
+            exit 1
+          }
+          Write-Output "Frontend build successful"
+          Get-ChildItem dist/
 
       # 构建 & 发布 Tauri App
       - uses: tauri-apps/tauri-action@v0
@@ -100,16 +113,33 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
 
-      # 上传构建产物
-      - name: Upload build artifacts
-        if: success()
+      # 上传构建产物 (Linux)
+      - name: Upload build artifacts (Linux)
+        if: success() && runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-bundles-${{ matrix.platform }}
+          path: |
+            apps/desktop/src-tauri/target/release/bundle/deb/*.deb
+            apps/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+            apps/desktop/src-tauri/target/release/bundle/rpm/*.rpm
+      
+      # 上传构建产物 (macOS)
+      - name: Upload build artifacts (macOS)
+        if: success() && runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
           name: tauri-bundles-${{ matrix.platform }}-${{ matrix.args }}
           path: |
-            apps/desktop/src-tauri/target/release/bundle/**/*.deb
-            apps/desktop/src-tauri/target/release/bundle/**/*.AppImage
-            apps/desktop/src-tauri/target/release/bundle/**/*.rpm
-            apps/desktop/src-tauri/target/release/bundle/**/*.exe
-            apps/desktop/src-tauri/target/release/bundle/**/*.msi
-            apps/desktop/src-tauri/target/release/bundle/**/*.dmg
+            apps/desktop/src-tauri/target/*/release/bundle/dmg/*.dmg
+            apps/desktop/src-tauri/target/*/release/bundle/macos/*.app
+      
+      # 上传构建产物 (Windows)
+      - name: Upload build artifacts (Windows)
+        if: success() && runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-bundles-${{ matrix.platform }}
+          path: |
+            apps/desktop/src-tauri/target/release/bundle/msi/*.msi
+            apps/desktop/src-tauri/target/release/bundle/nsis/*.exe
