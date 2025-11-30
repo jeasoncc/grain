@@ -43,7 +43,8 @@ jobs:
             librsvg2-dev \
             patchelf \
             build-essential \
-            pkg-config
+            pkg-config \
+            xdg-utils
 
       # 安装 Bun
       - name: Setup Bun
