@@ -1,7 +1,7 @@
 name: Deploy Website
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: 
   push:
     branches:
       - main
@@ -34,4 +34,3 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./apps/web/out
-          cname: your-domain.com  # 可选：如果有自定义域名

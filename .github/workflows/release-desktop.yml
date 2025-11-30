@@ -6,7 +6,8 @@ on:
     branches:
       - release
     tags:
-      - "desktop-v*.*.*"
+      - "v*.*.*"           # 支持旧格式 (v0.1.0)
+      - "desktop-v*.*.*"   # 支持新格式 (desktop-v0.1.0)
 
 jobs:
   publish-tauri:
@@ -22,6 +23,8 @@ jobs:
             args: '--target x86_64-apple-darwin'
           - platform: 'ubuntu-22.04'
             args: ''
+          - platform: 'ubuntu-22.04-arm'
+            args: ''
           - platform: 'windows-latest'
             args: ''
 
@@ -31,7 +34,7 @@ jobs:
 
       # Ubuntu 系统依赖
       - name: Install dependencies (Ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
+        if: matrix.platform == 'ubuntu-22.04' || matrix.platform == 'ubuntu-22.04-arm'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -59,14 +62,30 @@ jobs:
         with:
           workspaces: 'apps/desktop/src-tauri -> target'
 
-      # 安装依赖 (在根目录，使用 workspaces)
-      - name: Install dependencies
+      # 安装根目录依赖（monorepo）
+      - name: Install root dependencies
+        run: bun install
+
+      # 安装桌面应用依赖
+      - name: Install desktop dependencies
+        working-directory: apps/desktop
         run: bun install
 
       # 构建桌面应用前端
-      - name: Build desktop frontend
+      - name: Build frontend
         working-directory: apps/desktop
         run: bun run build
+      
+      # 验证前端构建
+      - name: Verify frontend build
+        working-directory: apps/desktop
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Frontend build failed: dist directory not found"
+            exit 1
+          fi
+          echo "Frontend build successful"
+          ls -la dist/
 
       # 构建 & 发布 Tauri App
       - uses: tauri-apps/tauri-action@v0
