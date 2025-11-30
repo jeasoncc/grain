@@ -19,122 +19,69 @@ interface EmptyProjectProps {
 export function EmptyProject({
 	onCreate,
 	onImport,
-	onLearnMore,
 }: EmptyProjectProps) {
 	return (
-		<div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 py-12 text-foreground">
-			<div className="w-full max-w-4xl space-y-8">
-				<div className="rounded-3xl border bg-card/80 p-10 shadow-2xl ring-1 ring-border backdrop-blur">
-					<div className="flex flex-col items-center gap-3 text-center">
-						<div className="flex h-16 w-16 items-center justify-center rounded-2xl border bg-accent text-accent-foreground">
-							<LucideFolderOpen className="size-7" />
+		<div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
+			<div className="w-full max-w-2xl space-y-6">
+				{/* 主卡片 */}
+				<div className="rounded-xl border border-border bg-card p-8 text-center shadow-sm">
+					<div className="inline-flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4">
+						<LucideFolderOpen className="size-6" />
+					</div>
+					<h1 className="text-2xl font-semibold mb-2">
+						欢迎使用小说编辑器
+					</h1>
+					<p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
+						开始创作你的故事，管理章节、场景、角色和世界观
+					</p>
+					<div className="flex flex-col sm:flex-row gap-3 justify-center">
+						<Button size="lg" onClick={onCreate}>
+							<BookPlus className="mr-2 size-4" />
+							创建新项目
+						</Button>
+						<Button size="lg" variant="outline" onClick={onImport}>
+							<ArrowRight className="mr-2 size-4" />
+							导入已有项目
+						</Button>
+					</div>
+				</div>
+
+				{/* 功能卡片 */}
+				<div className="grid gap-4 md:grid-cols-3">
+					<div className="group rounded-lg border border-border bg-card p-5 text-center hover:shadow-md transition-all duration-200">
+						<div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500 mb-3 group-hover:scale-110 transition-transform">
+							<PenLine className="size-5" />
 						</div>
-						<h1 className="text-3xl font-semibold tracking-tight text-foreground">
-							Welcome to your story headquarters
-						</h1>
-						<p className="max-w-2xl text-base text-muted-foreground">
-							Spin up a Trillium-inspired workspace for outlining arcs, capturing lore, and orchestrating your publishing pipeline. Everything stays cohesive—chapters, scenes, characters, research, and AI tools in one command center.
+						<h3 className="text-sm font-medium mb-1">大纲管理</h3>
+						<p className="text-xs text-muted-foreground">
+							树形结构管理章节和场景
 						</p>
 					</div>
-					<div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-						<Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={onCreate}>
-							<BookPlus className="mr-2 size-4" />
-							Create a new project
-						</Button>
-						<Button
-							size="lg"
-							variant="outline"
-							className="border-border bg-card text-card-foreground hover:bg-accent"
-							onClick={onImport}
-						>
-							<ArrowRight className="mr-2 size-4" />
-							Import existing story
-						</Button>
+					<div className="group rounded-lg border border-border bg-card p-5 text-center hover:shadow-md transition-all duration-200">
+						<div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-sky-500/10 text-sky-500 mb-3 group-hover:scale-110 transition-transform">
+							<Users className="size-5" />
+						</div>
+						<h3 className="text-sm font-medium mb-1">角色设定</h3>
+						<p className="text-xs text-muted-foreground">
+							管理角色信息和关系
+						</p>
+					</div>
+					<div className="group rounded-lg border border-border bg-card p-5 text-center hover:shadow-md transition-all duration-200">
+						<div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-purple-500/10 text-purple-500 mb-3 group-hover:scale-110 transition-transform">
+							<Stars className="size-5" />
+						</div>
+						<h3 className="text-sm font-medium mb-1">世界观</h3>
+						<p className="text-xs text-muted-foreground">
+							构建完整的故事世界
+						</p>
 					</div>
 				</div>
 
-				<div className="grid gap-4 md:grid-cols-3">
-					<div className="rounded-2xl border bg-card p-6 shadow-lg">
-						<div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-							<PenLine className="size-4 text-emerald-300" />
-							Narrative toolkit
-						</div>
-						<ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-							<li>• Multi-level outline tree with focus mode</li>
-							<li>• Scene drafting panels & quick synopsis</li>
-							<li>• Act/beat breakdown, goal vs. conflict tracking</li>
-						</ul>
-					</div>
-					<div className="rounded-2xl border bg-card p-6 shadow-lg">
-						<div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-							<CalendarCheck className="size-4 text-sky-300" />
-							Productivity engine
-						</div>
-						<ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-							<li>• Visual timelines, streaks, and milestone tracker</li>
-							<li>• Session planner with Pomodoro cadence</li>
-							<li>• Publishing pipeline checklist with Tauri packaging</li>
-						</ul>
-					</div>
-					<div className="rounded-2xl border bg-card p-6 shadow-lg">
-						<div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-							<Users className="size-4 text-purple-300" />
-							Knowledge vault
-						</div>
-						<ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-							<li>• Characters, locations, lore entries with cross-links</li>
-							<li>• Research snippets, reference boards, inspiration feed</li>
-							<li>• AI co-writing prompts and snippet curation</li>
-						</ul>
-					</div>
-				</div>
-
-				<div className="rounded-3xl border bg-card p-8 shadow-xl">
-					<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-						<div>
-							<div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-								<Stars className="size-4 text-amber-300" />
-								Lift-off checklist
-							</div>
-							<h2 className="mt-1 text-xl font-semibold text-foreground">
-								Set the foundation for a cohesive universe
-							</h2>
-						</div>
-						<Button
-							variant="outline"
-							className="border-border bg-card text-card-foreground hover:bg-accent"
-							onClick={onLearnMore}
-						>
-							View full playbook
-							<ArrowUpRightIcon className="ml-2 size-4" />
-						</Button>
-					</div>
-					<div className="mt-5 grid gap-3 md:grid-cols-2">
-						<div className="rounded-2xl border border-dashed border-border bg-card p-4 text-sm text-card-foreground">
-							<p className="font-medium text-foreground">1. Define the macro plot</p>
-							<p className="mt-1 text-muted-foreground">
-								Draft your series bible—acts, arcs, pivotal reveals, antagonistic forces, and lore anchors.
-							</p>
-						</div>
-						<div className="rounded-2xl border border-dashed border-border bg-card p-4 text-sm text-card-foreground">
-							<p className="font-medium text-foreground">2. Scaffold chapters & beats</p>
-							<p className="mt-1 text-muted-foreground">
-								Create hierarchical outlines with beat tags, POV notes, and tonal markers for each chapter.
-							</p>
-						</div>
-						<div className="rounded-2xl border border-dashed border-border bg-card p-4 text-sm text-card-foreground">
-							<p className="font-medium text-foreground">3. Seed your knowledge vault</p>
-							<p className="mt-1 text-muted-foreground">
-								Add characters, factions, locations, and research references; link them to scenes for continuity.
-							</p>
-						</div>
-						<div className="rounded-2xl border border-dashed border-border bg-card p-4 text-sm text-card-foreground">
-							<p className="font-medium text-foreground">4. Plan cadence & output</p>
-							<p className="mt-1 text-muted-foreground">
-								Set focus sessions, AI experiments, revision stages, and publishing deliverables.
-							</p>
-						</div>
-					</div>
+				{/* 快速开始提示 */}
+				<div className="rounded-lg border border-dashed border-border bg-muted/50 p-4 text-center">
+					<p className="text-xs text-muted-foreground">
+						💡 提示：创建项目后，可以按 <kbd className="px-1.5 py-0.5 rounded bg-background border border-border text-xs mx-1">Ctrl+K</kbd> 打开命令面板快速导航
+					</p>
 				</div>
 			</div>
 		</div>

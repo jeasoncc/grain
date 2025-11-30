@@ -120,8 +120,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     };
 
     return (
-        <Sidebar {...props} className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-            <SidebarHeader className="h-12 flex items-center px-4 border-b border-sidebar-border/50">
+        <Sidebar {...props} className="app-sidebar border-r border-sidebar-border/30 bg-sidebar text-sidebar-foreground">
+            <SidebarHeader className="h-12 flex items-center px-4 border-b border-sidebar-border/20">
                  <div className="flex items-center gap-2 font-semibold text-foreground/80">
                     <LibraryBig className="size-5" />
                     <span>My Library</span>
@@ -159,7 +159,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             
                             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                                 <DialogTrigger asChild>
-                                    <SidebarMenuItem className="mt-2">
+                                    <SidebarMenuItem className="mt-2" data-tour="create-book">
                                         <SidebarMenuButton className="text-muted-foreground hover:text-foreground border border-dashed border-border hover:border-primary/50 justify-center group">
                                             <Plus className="size-4 mr-2 group-hover:scale-110 transition-transform" />
                                             <span>Create New Book</span>
@@ -210,7 +210,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SidebarGroup>
             </SidebarContent>
 
-            <SidebarFooter className="p-2 border-t border-sidebar-border/50">
+            <SidebarFooter className="p-2 border-t border-sidebar-border/20">
                 <input 
                     type="file" 
                     ref={fileInputRef} 

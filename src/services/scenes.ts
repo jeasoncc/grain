@@ -22,6 +22,22 @@ export async function createScene(params: { projectId: string; chapterId: string
   return db.addScene({ project: params.projectId, chapter: params.chapterId, title: params.title, order: params.order, content: params.content ?? "" });
 }
 
+export async function createCanvasScene(params: { projectId: string; chapterId: string; title: string; order: number }) {
+  // 生成文件路径
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const filePath = `canvas/${params.projectId}/${timestamp}.excalidraw`;
+  
+  return db.addScene({
+    project: params.projectId,
+    chapter: params.chapterId,
+    title: params.title,
+    order: params.order,
+    content: JSON.stringify({ elements: [], appState: {}, files: {} }),
+    type: "canvas",
+    filePath,
+  });
+}
+
 export async function renameScene(id: string, title: string) {
   return db.updateScene(id, { title });
 }

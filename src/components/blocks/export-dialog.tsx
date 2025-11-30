@@ -14,13 +14,14 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileText, FileType, File, Loader2 } from "lucide-react";
+import { FileText, FileType, File, Loader2, BookOpen, FileJson, FileCode } from "lucide-react";
 import { toast } from "sonner";
 import {
 	exportProject,
 	type ExportFormat,
 	type ExportOptions,
 } from "@/services/export";
+import { exportAll, exportAsMarkdown, triggerDownload } from "@/services/projects";
 
 interface ExportDialogProps {
 	open: boolean;
@@ -29,13 +30,15 @@ interface ExportDialogProps {
 	projectTitle?: string;
 }
 
+type ExtendedExportFormat = ExportFormat | "markdown" | "json";
+
 export function ExportDialog({
 	open,
 	onOpenChange,
 	projectId,
 	projectTitle,
 }: ExportDialogProps) {
-	const [format, setFormat] = useState<ExportFormat>("pdf");
+	const [format, setFormat] = useState<ExtendedExportFormat>("pdf");
 	const [isExporting, setIsExporting] = useState(false);
 	const [options, setOptions] = useState<ExportOptions>({
 		includeTitle: true,
@@ -48,8 +51,20 @@ export function ExportDialog({
 	const handleExport = async () => {
 		setIsExporting(true);
 		try {
-			await exportProject(projectId, format, options);
-			toast.success(`${formatLabels[format]} 导出成功`);
+			// 处理 Markdown 和 JSON 导出
+			if (format === "markdown") {
+				const md = await exportAsMarkdown(projectId);
+				triggerDownload(`${projectTitle || "novel"}.md`, md, "text/markdown;charset=utf-8");
+				toast.success("Markdown 导出成功");
+			} else if (format === "json") {
+				const json = await exportAll();
+				triggerDownload(`novel-editor-backup-${new Date().toISOString().slice(0,10)}.json`, json);
+				toast.success("JSON 备份导出成功");
+			} else {
+				// 标准格式导出
+				await exportProject(projectId, format as ExportFormat, options);
+				toast.success(`${formatLabels[format]} 导出成功`);
+			}
 			onOpenChange(false);
 		} catch (error) {
 			console.error("Export error:", error);
@@ -61,27 +76,36 @@ export function ExportDialog({
 		}
 	};
 
-	const formatLabels: Record<ExportFormat, string> = {
+	const formatLabels: Record<ExtendedExportFormat, string> = {
 		pdf: "PDF",
 		docx: "Word",
 		txt: "纯文本",
+		epub: "EPUB",
+		markdown: "Markdown",
+		json: "JSON 备份",
 	};
 
-	const formatDescriptions: Record<ExportFormat, string> = {
+	const formatDescriptions: Record<ExtendedExportFormat, string> = {
 		pdf: "适合打印和分享，保持精美排版",
 		docx: "可在 Word 中编辑，支持格式调整",
 		txt: "纯文本格式，兼容性最好",
+		epub: "电子书格式，适合阅读器",
+		markdown: "Markdown 格式，适合版本控制",
+		json: "完整备份，包含所有数据",
 	};
 
-	const formatIcons: Record<ExportFormat, React.ReactNode> = {
+	const formatIcons: Record<ExtendedExportFormat, React.ReactNode> = {
 		pdf: <FileText className="size-5 text-red-500" />,
 		docx: <FileType className="size-5 text-blue-500" />,
 		txt: <File className="size-5 text-gray-500" />,
+		epub: <BookOpen className="size-5 text-green-500" />,
+		markdown: <FileCode className="size-5 text-purple-500" />,
+		json: <FileJson className="size-5 text-orange-500" />,
 	};
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-[480px]">
+			<DialogContent className="sm:max-w-[600px]">
 				<DialogHeader>
 					<DialogTitle>导出作品</DialogTitle>
 					<DialogDescription>
@@ -93,16 +117,21 @@ export function ExportDialog({
 					{/* 格式选择 */}
 					<div className="space-y-3">
 						<Label className="text-sm font-medium">导出格式</Label>
+						{format === "json" && (
+							<p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+								💡 JSON 备份包含所有书籍、章节、场景、角色和世界观数据，可用于完整恢复。
+							</p>
+						)}
 						<RadioGroup
 							value={format}
-							onValueChange={(v) => setFormat(v as ExportFormat)}
+							onValueChange={(v) => setFormat(v as ExtendedExportFormat)}
 							className="grid grid-cols-3 gap-3"
 						>
-							{(["pdf", "docx", "txt"] as ExportFormat[]).map((f) => (
+							{(["pdf", "docx", "epub", "txt", "markdown", "json"] as ExtendedExportFormat[]).map((f) => (
 								<label
 									key={f}
 									className={`
-										flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all
+										flex flex-col items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all
 										${format === f
 											? "border-primary bg-primary/5"
 											: "border-border hover:border-primary/50"
@@ -112,7 +141,7 @@ export function ExportDialog({
 									<RadioGroupItem value={f} className="sr-only" />
 									{formatIcons[f]}
 									<span className="text-sm font-medium">{formatLabels[f]}</span>
-									<span className="text-xs text-muted-foreground text-center">
+									<span className="text-xs text-muted-foreground text-center leading-tight">
 										{formatDescriptions[f]}
 									</span>
 								</label>
@@ -120,90 +149,92 @@ export function ExportDialog({
 						</RadioGroup>
 					</div>
 
-					{/* 导出选项 */}
-					<div className="space-y-3">
-						<Label className="text-sm font-medium">导出选项</Label>
-						<div className="space-y-3 rounded-lg border p-4">
-							<div className="flex items-center space-x-3">
-								<Checkbox
-									id="includeTitle"
-									checked={options.includeTitle}
-									onCheckedChange={(checked) =>
-										setOptions({ ...options, includeTitle: !!checked })
-									}
-								/>
-								<Label htmlFor="includeTitle" className="text-sm cursor-pointer">
-									包含书名
-								</Label>
-							</div>
-
-							<div className="flex items-center space-x-3">
-								<Checkbox
-									id="includeAuthor"
-									checked={options.includeAuthor}
-									onCheckedChange={(checked) =>
-										setOptions({ ...options, includeAuthor: !!checked })
-									}
-								/>
-								<Label htmlFor="includeAuthor" className="text-sm cursor-pointer">
-									包含作者名
-								</Label>
-							</div>
-
-							<div className="flex items-center space-x-3">
-								<Checkbox
-									id="includeChapterTitles"
-									checked={options.includeChapterTitles}
-									onCheckedChange={(checked) =>
-										setOptions({ ...options, includeChapterTitles: !!checked })
-									}
-								/>
-								<Label
-									htmlFor="includeChapterTitles"
-									className="text-sm cursor-pointer"
-								>
-									包含章节标题
-								</Label>
-							</div>
-
-							<div className="flex items-center space-x-3">
-								<Checkbox
-									id="includeSceneTitles"
-									checked={options.includeSceneTitles}
-									onCheckedChange={(checked) =>
-										setOptions({ ...options, includeSceneTitles: !!checked })
-									}
-								/>
-								<Label
-									htmlFor="includeSceneTitles"
-									className="text-sm cursor-pointer"
-								>
-									包含场景标题
-								</Label>
-							</div>
-
-							{format !== "txt" && (
+					{/* 导出选项 - 仅对需要选项的格式显示 */}
+					{format !== "json" && (
+						<div className="space-y-3">
+							<Label className="text-sm font-medium">导出选项</Label>
+							<div className="space-y-3 rounded-lg border p-4">
 								<div className="flex items-center space-x-3">
 									<Checkbox
-										id="pageBreakBetweenChapters"
-										checked={options.pageBreakBetweenChapters}
+										id="includeTitle"
+										checked={options.includeTitle}
 										onCheckedChange={(checked) =>
-											setOptions({
-												...options,
-												pageBreakBetweenChapters: !!checked,
-											})
+											setOptions({ ...options, includeTitle: !!checked })
+										}
+									/>
+									<Label htmlFor="includeTitle" className="text-sm cursor-pointer">
+										包含书名
+									</Label>
+								</div>
+
+								<div className="flex items-center space-x-3">
+									<Checkbox
+										id="includeAuthor"
+										checked={options.includeAuthor}
+										onCheckedChange={(checked) =>
+											setOptions({ ...options, includeAuthor: !!checked })
+										}
+									/>
+									<Label htmlFor="includeAuthor" className="text-sm cursor-pointer">
+										包含作者名
+									</Label>
+								</div>
+
+								<div className="flex items-center space-x-3">
+									<Checkbox
+										id="includeChapterTitles"
+										checked={options.includeChapterTitles}
+										onCheckedChange={(checked) =>
+											setOptions({ ...options, includeChapterTitles: !!checked })
 										}
 									/>
 									<Label
-										htmlFor="pageBreakBetweenChapters"
+										htmlFor="includeChapterTitles"
 										className="text-sm cursor-pointer"
 									>
-										章节间分页
+										包含章节标题
 									</Label>
 								</div>
-							)}
+
+								<div className="flex items-center space-x-3">
+									<Checkbox
+										id="includeSceneTitles"
+										checked={options.includeSceneTitles}
+										onCheckedChange={(checked) =>
+											setOptions({ ...options, includeSceneTitles: !!checked })
+										}
+									/>
+									<Label
+										htmlFor="includeSceneTitles"
+										className="text-sm cursor-pointer"
+									>
+										包含场景标题
+									</Label>
+								</div>
+
+								{format !== "txt" && format !== "markdown" && (
+									<div className="flex items-center space-x-3">
+										<Checkbox
+											id="pageBreakBetweenChapters"
+											checked={options.pageBreakBetweenChapters}
+											onCheckedChange={(checked) =>
+												setOptions({
+													...options,
+													pageBreakBetweenChapters: !!checked,
+												})
+											}
+										/>
+										<Label
+											htmlFor="pageBreakBetweenChapters"
+											className="text-sm cursor-pointer"
+										>
+											章节间分页
+										</Label>
+									</div>
+								)}
+							</div>
 						</div>
-					</div>
+					)}
 				</div>
 
 				<DialogFooter>

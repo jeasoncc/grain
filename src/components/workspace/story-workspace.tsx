@@ -2,11 +2,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SerializedEditorState } from "lexical";
 
-import { Editor } from "@/components/blocks/rich-editor/editor";
+import { MinimalEditor } from "@/components/blocks/rich-editor/minimal-editor";
+import { NovelEditor } from "@/components/blocks/rich-editor/novel-editor";
+import { CanvasEditor } from "@/components/blocks/canvas-editor";
+import { FocusMode } from "@/components/blocks/focus-mode";
+import { WritingStatsPanel } from "@/components/blocks/writing-stats-panel";
+import { WordCountBadge } from "@/components/blocks/word-count-badge";
+import { AutoSaveIndicator } from "@/components/blocks/auto-save-indicator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Plus, Upload, Download, Settings, MoreHorizontal, Trash2, ChevronRight, Home, FileText } from "lucide-react";
+import { Plus, Upload, Download, Settings, MoreHorizontal, Trash2, ChevronRight, Home, FileText, Maximize2, AlignCenter, PanelRightClose, PanelRightOpen, Folder } from "lucide-react";
+import { KeyboardShortcutsHelp } from "@/components/blocks/keyboard-shortcuts-help";
+import { ThemeSelector } from "@/components/blocks/theme-selector";
+import { useUIStore } from "@/stores/ui";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -15,6 +24,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { useWritingStore } from "@/stores/writing";
 //
 import { db } from "@/db/curd";
 import type {
@@ -33,6 +43,7 @@ import { openCreateBookDialog } from "@/components/blocks/createBookDialog";
 //
 
 import { countWords, extractTextFromSerialized } from "@/lib/statistics";
+import { cn } from "@/lib/utils";
 
 interface StoryWorkspaceProps {
 	projects: ProjectInterface[];
@@ -74,7 +85,18 @@ export function StoryWorkspace({
 		useState<SerializedEditorState>();
 	const [sceneWordCount, setSceneWordCount] = useState(0);
 	const [isSaving, setIsSaving] = useState(false);
+	const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "error">("saved");
     const confirm = useConfirm();
+
+	// 专注模式和写作状态
+	const focusMode = useWritingStore((s) => s.focusMode);
+	const setFocusMode = useWritingStore((s) => s.setFocusMode);
+	const typewriterMode = useWritingStore((s) => s.typewriterMode);
+	const toggleTypewriterMode = useWritingStore((s) => s.toggleTypewriterMode);
+	
+	// UI 状态
+	const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen);
+	const toggleRightSidebar = useUIStore((s) => s.toggleRightSidebar);
 
 	// bottom dock actions
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -148,6 +170,35 @@ export function StoryWorkspace({
 	useEffect(() => {
 		setScenesStore(scenes);
 	}, [scenes, setScenesStore]);
+
+	// 快捷键: 专注模式 + 打字机模式
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			// 忽略输入框中的快捷键
+			const target = e.target as HTMLElement;
+			if (target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+				return;
+			}
+			
+			// F11 进入专注模式
+			if (e.key === "F11" && selectedSceneId) {
+				e.preventDefault();
+				setFocusMode(true);
+			}
+			// Ctrl/Cmd + Enter 进入专注模式
+			if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && selectedSceneId) {
+				e.preventDefault();
+				setFocusMode(true);
+			}
+			// Ctrl/Cmd + T 切换打字机模式
+			if ((e.ctrlKey || e.metaKey) && e.key === "t") {
+				e.preventDefault();
+				toggleTypewriterMode();
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [selectedSceneId, setFocusMode, toggleTypewriterMode]);
 
 	// keep project selection in sync with external changes
 	useEffect(() => {
@@ -237,12 +288,15 @@ export function StoryWorkspace({
 				async (sceneId: string, serialized: SerializedEditorState) => {
 					if (!autoSave) return; // 如果禁用自动保存，不执行
 					setIsSaving(true);
+					setSaveStatus("saving");
 					try {
 						await db.updateScene(sceneId, {
 							content: JSON.stringify(serialized),
 						});
+						setSaveStatus("saved");
 					} catch (error) {
 						loggerError("Failed to save scene", error);
+						setSaveStatus("error");
 						toast.error("保存场景内容失败");
 					} finally {
 						setIsSaving(false);
@@ -410,6 +464,51 @@ export function StoryWorkspace({
 		}
 	}, [chapterScenes, selectedChapterId, selectedProjectId, setSelectedSceneId]);
 
+	// 创建绘图场景
+	const handleAddCanvasScene = useCallback(async () => {
+		if (!selectedChapterId || !selectedProjectId) {
+			toast.error("请先选择章节");
+			return;
+		}
+		try {
+			const nextOrder =
+				chapterScenes.length > 0
+					? Math.max(...chapterScenes.map((scene) => scene.order)) + 1
+					: 1;
+			// 生成文件路径
+			const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+			const filePath = `canvas/${selectedProjectId}/${timestamp}.excalidraw`;
+			
+			const newScene = await db.addScene({
+				project: selectedProjectId,
+				chapter: selectedChapterId,
+				title: `Canvas ${nextOrder}`,
+				order: nextOrder,
+				content: JSON.stringify({ elements: [], appState: {}, files: {} }),
+				showEdit: false,
+				type: "canvas",
+				filePath,
+			});
+			setSelectedSceneId(newScene.id);
+			toast.success("绘图场景已创建");
+		} catch (error) {
+			loggerError("Failed to add canvas scene", error);
+			toast.error("创建绘图场景失败");
+		}
+	}, [chapterScenes, selectedChapterId, selectedProjectId, setSelectedSceneId]);
+
+	// 保存绘图数据
+	const handleCanvasSave = useCallback(async (sceneId: string, data: string) => {
+		try {
+			await db.updateScene(sceneId, { content: data });
+			setSaveStatus("saved");
+		} catch (error) {
+			loggerError("Failed to save canvas", error);
+			setSaveStatus("error");
+			toast.error("保存绘图失败");
+		}
+	}, []);
+
 	const handleDeleteScene = useCallback(
 		async (sceneId: string) => {
 			const target = chapterScenes.find((scene) => scene.id === sceneId);
@@ -475,93 +574,281 @@ export function StoryWorkspace({
     const currentChapter = useMemo(() => chapters.find(c => c.id === selectedChapterId), [chapters, selectedChapterId]);
     const currentScene = useMemo(() => scenes.find(s => s.id === selectedSceneId), [scenes, selectedSceneId]);
 
+	// 专注模式渲染 - 使用极简编辑器
+	if (focusMode && editorInitialState && selectedSceneId) {
+		return (
+			<TooltipProvider>
+				<FocusMode
+					wordCount={sceneWordCount}
+					sceneTitle={currentScene?.title}
+					chapterTitle={currentChapter?.title}
+					onExit={() => setFocusMode(false)}
+				>
+					<MinimalEditor
+						key={`focus-${selectedSceneId}`}
+						editorSerializedState={editorInitialState}
+						onSerializedChange={handleSerializedChange}
+						placeholder="专注写作..."
+					/>
+				</FocusMode>
+			</TooltipProvider>
+		);
+	}
+
 	return (
 		<TooltipProvider>
 			<div className="flex h-screen bg-background text-foreground">
-				<main className="flex-1 flex flex-col overflow-hidden relative bg-background/50">
-                    {/* Top Header / Breadcrumb */}
-                    <header className="h-12 flex items-center px-6 border-b border-border/40 bg-background/95 backdrop-blur z-10 shrink-0">
-                        <Breadcrumb>
-                            <BreadcrumbList>
-                                <BreadcrumbItem>
-                                    <BreadcrumbLink className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors font-medium">
-                                       <Home className="size-3.5" />
-                                    </BreadcrumbLink>
-                                </BreadcrumbItem>
-                                <BreadcrumbSeparator />
-                                <BreadcrumbItem>
-                                    <BreadcrumbLink className={`font-medium ${!currentChapter ? 'text-foreground' : ''}`}>
-                                        {currentProject?.title || "Select Project"}
-                                    </BreadcrumbLink>
-                                </BreadcrumbItem>
-                                {currentChapter && (
-                                    <>
-                                        <BreadcrumbSeparator />
-                                        <BreadcrumbItem>
-                                             <BreadcrumbLink className={`font-medium ${!currentScene ? 'text-foreground' : ''}`}>
+				<main className={cn(
+					"flex-1 flex flex-col overflow-hidden relative transition-all duration-300",
+					rightSidebarOpen ? "mr-0" : "mr-0"
+				)}>
+                    {/* Top Header / Breadcrumb - 增强版 */}
+                    <header className="header-bar h-11 flex items-center px-6 bg-background z-10 shrink-0">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            {/* 项目名 */}
+                            <span className="text-foreground font-medium">{currentProject?.title || "未选择项目"}</span>
+                            
+                            {/* 章节选择器 */}
+                            {currentChapter && (
+                                <>
+                                    <span className="text-muted-foreground/40">/</span>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <button className="hover:text-foreground hover:bg-muted/50 px-2 py-0.5 rounded transition-colors">
                                                 {currentChapter.title}
-                                            </BreadcrumbLink>
-                                        </BreadcrumbItem>
-                                    </>
-                                )}
-                                {currentScene && (
-                                    <>
-                                        <BreadcrumbSeparator />
-                                        <BreadcrumbItem>
-                                            <BreadcrumbPage className="font-semibold text-primary">
+                                            </button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-64 p-1" align="start">
+                                            <div className="text-xs font-medium text-muted-foreground px-2 py-1.5">切换章节</div>
+                                            <div className="max-h-64 overflow-y-auto">
+                                                {projectChapters.map((ch) => (
+                                                    <button
+                                                        key={ch.id}
+                                                        onClick={() => setSelectedChapterId(ch.id)}
+                                                        className={cn(
+                                                            "w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent text-left",
+                                                            ch.id === selectedChapterId && "bg-accent font-medium"
+                                                        )}
+                                                    >
+                                                        <Folder className="size-3.5 text-blue-500" />
+                                                        <span className="flex-1 truncate">{ch.title}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
+                                </>
+                            )}
+                            
+                            {/* 场景选择器 */}
+                            {currentScene && (
+                                <>
+                                    <span className="text-muted-foreground/40">/</span>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <button className="text-foreground hover:bg-muted/50 px-2 py-0.5 rounded transition-colors">
                                                 {currentScene.title}
-                                            </BreadcrumbPage>
-                                        </BreadcrumbItem>
-                                    </>
-                                )}
-                            </BreadcrumbList>
-                        </Breadcrumb>
+                                            </button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-64 p-1" align="start">
+                                            <div className="text-xs font-medium text-muted-foreground px-2 py-1.5">切换场景</div>
+                                            <div className="max-h-64 overflow-y-auto">
+                                                {chapterScenes.map((sc) => (
+                                                    <button
+                                                        key={sc.id}
+                                                        onClick={() => setSelectedSceneId(sc.id)}
+                                                        className={cn(
+                                                            "w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-accent text-left",
+                                                            sc.id === selectedSceneId && "bg-accent font-medium"
+                                                        )}
+                                                    >
+                                                        <FileText className="size-3.5" />
+                                                        <span className="flex-1 truncate">{sc.title}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
+                                </>
+                            )}
+                        </div>
                         
                         <div className="ml-auto flex items-center gap-4 text-xs text-muted-foreground">
-                            {isSaving && <span className="animate-pulse text-primary">Saving...</span>}
-                            {!isSaving && <span>Saved</span>}
+                            {/* 场景导航 */}
+                            {chapterScenes.length > 1 && selectedSceneId && (
+                                <div className="flex items-center gap-1">
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="size-7"
+                                                disabled={chapterScenes.findIndex(s => s.id === selectedSceneId) === 0}
+                                                onClick={() => {
+                                                    const currentIndex = chapterScenes.findIndex(s => s.id === selectedSceneId);
+                                                    if (currentIndex > 0) {
+                                                        setSelectedSceneId(chapterScenes[currentIndex - 1].id);
+                                                    }
+                                                }}
+                                            >
+                                                <ChevronRight className="size-3.5 rotate-180" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>上一个场景</TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="size-7"
+                                                disabled={chapterScenes.findIndex(s => s.id === selectedSceneId) === chapterScenes.length - 1}
+                                                onClick={() => {
+                                                    const currentIndex = chapterScenes.findIndex(s => s.id === selectedSceneId);
+                                                    if (currentIndex < chapterScenes.length - 1) {
+                                                        setSelectedSceneId(chapterScenes[currentIndex + 1].id);
+                                                    }
+                                                }}
+                                            >
+                                                <ChevronRight className="size-3.5" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>下一个场景</TooltipContent>
+                                    </Tooltip>
+                                </div>
+                            )}
+                            
+                            {/* 自动保存指示器 */}
+                            <AutoSaveIndicator status={saveStatus} />
+                            
+                            {/* 侧边栏切换 */}
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="size-7"
+                                        onClick={toggleRightSidebar}
+                                    >
+                                        {rightSidebarOpen ? (
+                                            <PanelRightClose className="size-3.5" />
+                                        ) : (
+                                            <PanelRightOpen className="size-3.5" />
+                                        )}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    {rightSidebarOpen ? "隐藏" : "显示"}侧边栏
+                                </TooltipContent>
+                            </Tooltip>
+                            
+                            {/* 打字机模式切换 */}
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant={typewriterMode ? "secondary" : "ghost"}
+                                        size="icon"
+                                        className="size-7"
+                                        onClick={toggleTypewriterMode}
+                                    >
+                                        <AlignCenter className="size-3.5" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>打字机模式</TooltipContent>
+                            </Tooltip>
+                            
+                            {/* 专注模式按钮 */}
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="size-7"
+                                        onClick={() => setFocusMode(true)}
+                                        disabled={!selectedSceneId}
+                                        data-tour="focus-mode"
+                                    >
+                                        <Maximize2 className="size-3.5" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>专注模式 (F11)</TooltipContent>
+                            </Tooltip>
+                            
+                            {/* 主题选择器 */}
+                            <ThemeSelector />
+                            
+                            {/* 快捷键帮助 */}
+                            <div data-tour="command-palette">
+                                <KeyboardShortcutsHelp />
+                            </div>
                         </div>
                     </header>
 
-					<div className="flex-1 overflow-hidden relative w-full max-w-5xl mx-auto">
-						<div className="h-full w-full overflow-y-auto px-8 py-8 scroll-smooth">
-                            {/* Editor Container */}
-							<article className="min-h-[calc(100%-4rem)] w-full max-w-3xl mx-auto bg-card shadow-sm border border-border/50 rounded-lg overflow-hidden relative pb-20">
-								{editorInitialState && selectedSceneId ? (
-										<div className="p-8 sm:p-12 min-h-[600px] font-editor text-lg leading-relaxed text-card-foreground">
-												<Editor
-														key={selectedSceneId}
-														editorSerializedState={editorInitialState}
-														onSerializedChange={handleSerializedChange}
-												/>
+					<div className="flex-1 overflow-hidden relative w-full mx-auto">
+						<div className="h-full w-full overflow-y-auto scroll-smooth scrollbar-thin">
+                            {/* Typora-style Editor Container */}
+							{activeScene?.type === "canvas" ? (
+								/* 绘图场景 - 占据整个编辑面板 */
+								<div className="h-full">
+									<CanvasEditor
+										sceneId={selectedSceneId || ""}
+										filePath={activeScene.filePath}
+										initialData={typeof activeScene.content === "string" ? activeScene.content : undefined}
+										onSave={(data) => {
+											if (selectedSceneId) {
+												handleCanvasSave(selectedSceneId, data);
+											}
+										}}
+									/>
+								</div>
+							) : (
+								/* 文本场景 */
+								<article className="editor-container min-h-[calc(100vh-10rem)] w-full max-w-4xl mx-auto px-16 py-12">
+									{editorInitialState && selectedSceneId ? (
+											<div className="min-h-[600px]">
+													<MinimalEditor
+															key={selectedSceneId}
+															editorSerializedState={editorInitialState}
+															onSerializedChange={handleSerializedChange}
+															placeholder="开始写作..."
+													/>
+											</div>
+									) : (
+										<div className="flex h-full min-h-[400px] items-center justify-center text-sm text-muted-foreground flex-col gap-2">
+											<div className="size-12 rounded-full bg-muted/30 flex items-center justify-center">
+												<FileText className="size-6 text-muted-foreground/40" />
+											</div>
+											<p className="text-muted-foreground/60">选择一个场景开始写作</p>
 										</div>
-								) : (
-									<div className="flex h-full min-h-[400px] items-center justify-center text-sm text-muted-foreground flex-col gap-2">
-                                        <div className="size-12 rounded-full bg-muted flex items-center justify-center">
-                                            <FileText className="size-6 text-muted-foreground/50" />
-                                        </div>
-										<p>Select a scene from the sidebar to start writing.</p>
-									</div>
-								)}
-							</article>
+									)}
+								</article>
+							)}
+							
+							{/* 字数统计浮动徽章 */}
+							<WordCountBadge wordCount={sceneWordCount} show={!!selectedSceneId} />
 						</div>
 					</div>
 
-                    {/* Minimal Footer Status Bar */}
-					<footer className="h-8 border-t border-border/40 bg-background/80 backdrop-blur text-[11px] text-muted-foreground flex items-center justify-between px-4 shrink-0 z-20">
-                        <div className="flex items-center gap-3">
-                           <span>Words: <strong className="text-foreground font-medium">{projectStats.wordCount.toLocaleString()}</strong> total</span>
-                           <span className="w-px h-3 bg-border" />
-                           <span>Current Scene: <strong className="text-foreground font-medium">{sceneWordCount.toLocaleString()}</strong></span>
+                    {/* 简洁状态栏 - Typora 风格 */}
+					<footer className="h-8 border-t border-border/30 bg-background flex items-center justify-between px-4 shrink-0 z-20">
+                        {/* 左侧：基本字数 */}
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                           <span>场景 <strong className="text-foreground font-medium tabular-nums">{sceneWordCount.toLocaleString()}</strong></span>
+                           <span className="w-px h-3 bg-border/50" />
+                           <span>全书 <strong className="text-foreground font-medium tabular-nums">{projectStats.wordCount.toLocaleString()}</strong></span>
                         </div>
-                        <div className="flex items-center gap-3">
-                            {projectStats.lastEdited && <span>Last edited {formatRelativeTime(projectStats.lastEdited)}</span>}
+                        
+                        {/* 中间：写作统计面板 */}
+                        <WritingStatsPanel currentWordCount={sceneWordCount} />
+                        
+                        {/* 右侧：最后编辑时间 */}
+                        <div className="text-xs text-muted-foreground">
+                            {projectStats.lastEdited && <span>{formatRelativeTime(projectStats.lastEdited)}</span>}
                         </div>
                     </footer>
 				</main>
 				{/* Right-side Sidebar for Chapters & Scenes */}
-				<StoryRightSidebar />
-				{/* <OutlineSidebar /> */}
+				{rightSidebarOpen && <StoryRightSidebar />}
 			</div>
 		</TooltipProvider>
 	);

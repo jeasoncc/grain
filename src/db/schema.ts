@@ -125,6 +125,9 @@ export interface ChapterInterface {
 	showEdit: boolean; // 是否显示编辑界面
 }
 
+// ---------- 场景类型 ----------
+export type SceneType = "text" | "canvas";
+
 // ---------- 场景 ----------
 /**
  * 存储章节下的场景内容及元信息
@@ -136,9 +139,11 @@ export interface SceneInterface {
 	title: string; // 场景标题
 	order: number; // 场景顺序
 	lastEdit: string; // 最近编辑时间
-	content: string | any; // 场景内容，支持 Lexical JSON 或文本
+	content: string | any; // 场景内容，支持 Lexical JSON、文本或绘图数据
 	createDate?: string; // 创建时间，可选
 	showEdit: boolean; // 是否显示编辑界面
+	type?: SceneType; // 场景类型：text（默认）或 canvas（绘图）
+	filePath?: string; // 文件路径，用于 canvas 类型场景的保存位置
 }
 
 // ---------- 角色 ----------

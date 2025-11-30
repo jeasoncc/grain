@@ -18,7 +18,9 @@ import {
   Search,
   UserPlus,
   Globe,
-  MapPin
+  MapPin,
+  ListTree,
+  PenTool
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -47,7 +49,7 @@ import {
 } from "@/components/ui/popover";
 import { useSelectionStore, type SelectionState } from "@/stores/selection";
 import { useChaptersByProject, createChapter, renameChapter, moveChapter, deleteChapter } from "@/services/chapters";
-import { useScenesByProject, useScenesByChapter, createScene, renameScene, moveScene, deleteScene } from "@/services/scenes";
+import { useScenesByProject, useScenesByChapter, createScene, createCanvasScene, renameScene, moveScene, deleteScene } from "@/services/scenes";
 import { useAllProjects } from "@/services/projects";
 import { useRolesByProject, createRole, updateRole, deleteRole } from "@/services/roles";
 import { useWorldEntriesByProject, createWorldEntry, updateWorldEntry, deleteWorldEntry } from "@/services/world";
@@ -133,6 +135,23 @@ export function StoryRightSidebar() {
       setTimeout(() => setRenamingId(newScene.id), 100);
     } catch {
       toast.error("Failed to create scene");
+    }
+  }, [selectedProjectId, scenesOfProject, setSelectedSceneId, setSelectedChapterId, expandedChapters]);
+
+  // 创建绘图场景
+  const handleAddCanvasScene = useCallback(async (chapterId: string) => {
+    if (!selectedProjectId) return;
+    const existingScenes = scenesOfProject.filter(s => s.chapter === chapterId);
+    const nextOrder = existingScenes.length ? Math.max(...existingScenes.map(s=>s.order)) + 1 : 1;
+    try {
+      const newScene = await createCanvasScene({ projectId: selectedProjectId, chapterId, title: `Canvas ${nextOrder}`, order: nextOrder });
+      setSelectedSceneId(newScene.id);
+      setSelectedChapterId(chapterId);
+      if (!expandedChapters[chapterId]) toggleChapter(chapterId);
+      toast.success("Canvas scene created");
+      setTimeout(() => setRenamingId(newScene.id), 100);
+    } catch {
+      toast.error("Failed to create canvas scene");
     }
   }, [selectedProjectId, scenesOfProject, setSelectedSceneId, setSelectedChapterId, expandedChapters]);
 
@@ -350,36 +369,80 @@ export function StoryRightSidebar() {
   }, [projectChapters, scenesOfProject, projectRoles, projectWorldEntries, searchQuery]);
 
   return (
-    <UISidebar side="right" className="border-l border-sidebar-border bg-sidebar/50 backdrop-blur-sm">
-      <SidebarHeader className="h-14 flex flex-row items-center justify-between px-4 border-b border-sidebar-border/50 gap-2">
-         <div className="flex-1 min-w-0">
-          <Select value={selectedProjectId ?? ""} onValueChange={(v) => setSelectedProjectId(v || null)}>
-            <SelectTrigger className="h-8 w-full border-none bg-transparent shadow-none p-0 hover:bg-sidebar-accent/50 focus:ring-0 font-semibold text-foreground">
-              <SelectValue placeholder="Select Book" />
-            </SelectTrigger>
-            <SelectContent>
-              {projects.map((p) => (
-                <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <UISidebar side="right" className="border-l border-sidebar-border/30 bg-sidebar/50 backdrop-blur-sm">
+      <SidebarHeader className="flex flex-col gap-0 p-0 border-b border-sidebar-border/20">
+         {/* 项目选择器 */}
+         <div className="h-12 flex items-center justify-between px-4">
+            <div className="flex-1 min-w-0">
+              <Select value={selectedProjectId ?? ""} onValueChange={(v) => setSelectedProjectId(v || null)}>
+                <SelectTrigger className="h-8 w-full border-none bg-transparent shadow-none p-0 hover:bg-sidebar-accent/50 focus:ring-0 font-semibold text-foreground">
+                  <SelectValue placeholder="Select Book" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* 添加按钮 */}
+            {(!rightPanelView || rightPanelView === 'outline') && (
+                <Button variant="ghost" size="icon" className="size-7" onClick={handleAddChapter} title="Add Chapter">
+                    <FolderPlus className="size-4 text-muted-foreground" />
+                </Button>
+            )}
+            {rightPanelView === 'characters' && (
+                <Button variant="ghost" size="icon" className="size-7" onClick={handleAddRole} title="Add Character">
+                    <UserPlus className="size-4 text-muted-foreground" />
+                </Button>
+            )}
+            {rightPanelView === 'world' && (
+                <Button variant="ghost" size="icon" className="size-7" onClick={handleAddWorldEntry} title="Add Entry">
+                    <Plus className="size-4 text-muted-foreground" />
+                </Button>
+            )}
          </div>
          
-         {(!rightPanelView || rightPanelView === 'outline') && (
-            <Button variant="ghost" size="icon" className="size-7" onClick={handleAddChapter} title="Add Chapter">
-                <FolderPlus className="size-4 text-muted-foreground" />
-            </Button>
-         )}
-         {rightPanelView === 'characters' && (
-            <Button variant="ghost" size="icon" className="size-7" onClick={handleAddRole} title="Add Character">
-                <UserPlus className="size-4 text-muted-foreground" />
-            </Button>
-         )}
-         {rightPanelView === 'world' && (
-            <Button variant="ghost" size="icon" className="size-7" onClick={handleAddWorldEntry} title="Add Entry">
-                <Plus className="size-4 text-muted-foreground" />
-            </Button>
-         )}
+         {/* 标签页 */}
+         <div className="flex items-center h-10 px-2 bg-muted/30" data-tour="outline-tab">
+            <button
+                onClick={() => setRightPanelView(null)}
+                className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors",
+                    (!rightPanelView || rightPanelView === 'outline')
+                        ? "bg-background text-foreground shadow-sm font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                )}
+            >
+                <ListTree className="size-3.5" />
+                <span>大纲</span>
+            </button>
+            <button
+                onClick={() => setRightPanelView('characters')}
+                className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors",
+                    rightPanelView === 'characters'
+                        ? "bg-background text-foreground shadow-sm font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                )}
+            >
+                <Users className="size-3.5" />
+                <span>角色</span>
+            </button>
+            <button
+                onClick={() => setRightPanelView('world')}
+                className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors",
+                    rightPanelView === 'world'
+                        ? "bg-background text-foreground shadow-sm font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                )}
+            >
+                <Globe className="size-3.5" />
+                <span>世界观</span>
+            </button>
+         </div>
       </SidebarHeader>
       
       <SidebarContent className="px-0">
@@ -467,10 +530,13 @@ export function StoryRightSidebar() {
                                     <MoreHorizontal className="size-3.5" />
                                 </Button>
                               </PopoverTrigger>
-                              <PopoverContent align="end" className="w-36 p-1">
+                              <PopoverContent align="end" className="w-40 p-1">
                                 <div className="grid gap-0.5">
                                    <button onClick={() => handleAddScene(chapter.id)} className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left">
                                        <Plus className="size-3" /> Add Scene
+                                   </button>
+                                   <button onClick={() => handleAddCanvasScene(chapter.id)} className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left">
+                                       <PenTool className="size-3" /> Add Canvas
                                    </button>
                                    <button onClick={() => setRenamingId(chapter.id)} className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left">
                                        <Pencil className="size-3" /> Rename
@@ -516,7 +582,11 @@ export function StoryRightSidebar() {
                                      setSelectedChapterId(chapter.id);
                                  }}
                                  >
-                                    <FileText className="size-3.5 shrink-0 opacity-70" />
+                                    {scene.type === "canvas" ? (
+                                      <PenTool className="size-3.5 shrink-0 opacity-70 text-blue-500" />
+                                    ) : (
+                                      <FileText className="size-3.5 shrink-0 opacity-70" />
+                                    )}
                                     
                                     {renamingId === scene.id ? (
                                       <Input 

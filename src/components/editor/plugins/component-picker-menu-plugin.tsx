@@ -39,7 +39,8 @@ export function ComponentPickerMenuPlugin({
   })
 
   const options = useMemo(() => {
-    if (!queryString) {
+    // 没有查询字符串或为空时，显示所有选项
+    if (queryString === null || queryString === "") {
       return baseOptions
     }
 
@@ -80,7 +81,7 @@ export function ComponentPickerMenuPlugin({
     }
 
     return createPortal(
-      <div className="fixed z-10 w-[250px] rounded-md shadow-md">
+      <div className="fixed z-50 w-[250px] rounded-md border bg-popover shadow-md">
         <Command
           onKeyDown={(event) => {
             if (event.key === "ArrowUp") {

@@ -1,59 +1,32 @@
 import type * as React from "react";
 import { useCallback, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/db/curd";
-import { exportAll, importFromJson, readFileAsText, triggerDownload, createBook, exportAsMarkdown } from "@/services/projects";
+import { importFromJson, readFileAsText, createBook } from "@/services/projects";
 import { openCreateBookDialog } from "@/components/blocks/createBookDialog";
 import { ExportDialog } from "@/components/blocks/export-dialog";
-import { BookMarked, Settings, ListTree, Users, BookOpen, Upload, Download, MoreHorizontal, Trash2, Plus, TrendingUp, FileJson, FileText, FileOutput } from "lucide-react";
+import { BookMarked, Settings, ListTree, Users, BookOpen, Upload, Download, MoreHorizontal, Trash2, Plus, TrendingUp, Pencil } from "lucide-react";
 import { useConfirm } from "@/components/ui/confirm";
 import { useSelectionStore } from "@/stores/selection";
+import { useUIStore, type BottomDrawerView } from "@/stores/ui";
+import { cn } from "@/lib/utils";
 
 export function ActivityBar(): React.ReactElement {
+  const location = useLocation();
   const projects = useLiveQuery(() => db.getAllProjects(), []) || [];
   const selectedProjectId = useSelectionStore(s => s.selectedProjectId);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const confirm = useConfirm();
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  
+  // 底部抽屉状态
+  const { bottomDrawerOpen, bottomDrawerView, toggleBottomDrawer } = useUIStore();
 
-  const handleExportBackup = useCallback(async () => {
-    try {
-      const json = await exportAll();
-      triggerDownload(`novel-editor-backup-${new Date().toISOString().slice(0,10)}.json`, json);
-      toast.success("备份导出成功");
-    } catch {
-      toast.error("导出失败");
-    }
-  }, []);
 
-  const handleExportMarkdown = useCallback(async () => {
-    if (!selectedProjectId) {
-      if (projects.length > 0) {
-        const pid = projects[0].id;
-        const md = await exportAsMarkdown(pid);
-        triggerDownload(`${projects[0].title}.md`, md, "text/markdown;charset=utf-8");
-        toast.success("Markdown 导出成功");
-      } else {
-        toast.error("未找到可导出的项目");
-      }
-      return;
-    }
-
-    try {
-      const project = projects.find(p => p.id === selectedProjectId);
-      const md = await exportAsMarkdown(selectedProjectId);
-      triggerDownload(`${project?.title || "novel"}.md`, md, "text/markdown;charset=utf-8");
-      toast.success("Markdown 导出成功");
-    } catch (e) {
-      console.error(e);
-      toast.error("导出失败");
-    }
-  }, [projects, selectedProjectId]);
 
   const handleQuickCreate = useCallback(async () => {
     const data = await openCreateBookDialog();
@@ -61,9 +34,7 @@ export function ActivityBar(): React.ReactElement {
     try {
       await createBook({ title: data.title, author: data.author, description: data.description ?? "" });
       toast.success(`已创建书籍：${data.title}`);
-    } catch (e) {
-      // createBook 内部有失败处理
-    }
+    } catch (e) {}
   }, []);
 
   const handleImportClick = useCallback(() => {
@@ -85,169 +56,100 @@ export function ActivityBar(): React.ReactElement {
   }, []);
 
   const handleDeleteAllBooks = useCallback(async () => {
-    const ok = await confirm({ title: "确认删除所有书籍？", description: "该操作不可恢复，将清空书籍、章节、场景与附件。", confirmText: "删除", cancelText: "取消" });
+    const ok = await confirm({ title: "确认删除所有书籍？", description: "该操作不可恢复", confirmText: "删除", cancelText: "取消" });
     if (!ok) return;
     try {
-      await Promise.all([
-        db.attachments.clear(),
-        db.roles.clear(),
-        db.scenes.clear(),
-        db.chapters.clear(),
-        db.projects.clear(),
-      ]);
+      await Promise.all([db.attachments.clear(), db.roles.clear(), db.scenes.clear(), db.chapters.clear(), db.projects.clear()]);
       toast.success("已删除所有书籍");
     } catch {
-      toast.error("删除失败，请重试");
+      toast.error("删除失败");
     }
-  }, []);
+  }, [confirm]);
+
+  // 检查当前路由是否匹配
+  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
 
   return (
-    <aside className="flex h-screen w-12 shrink-0 flex-col items-center gap-2 border-r bg-card py-2 text-foreground">
+    <aside className="activity-bar flex h-screen w-12 shrink-0 flex-col items-center bg-sidebar py-3">
       <TooltipProvider>
-        {/* Books */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button size="icon" variant="ghost" aria-label="书库" asChild>
-              <Link to="/">
-                <BookMarked className="size-5" />
-              </Link>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">书库</TooltipContent>
-        </Tooltip>
+        {/* 主导航 */}
+        <nav className="flex flex-col items-center gap-1">
+          <NavItem to="/" icon={<BookMarked className="size-5" />} label="书库" active={isActive("/") && !isActive("/outline") && !isActive("/characters") && !isActive("/world") && !isActive("/statistics") && !isActive("/settings")} />
+          <NavItem to="/outline" icon={<ListTree className="size-5" />} label="大纲" active={isActive("/outline")} />
+          <NavItem to="/characters" icon={<Users className="size-5" />} label="角色" active={isActive("/characters")} />
+          <NavItem to="/world" icon={<BookOpen className="size-5" />} label="世界观" active={isActive("/world")} />
+          <NavItem to="/canvas" icon={<Pencil className="size-5" />} label="绘图" active={isActive("/canvas")} />
+        </nav>
 
-        {/* Outline */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button size="icon" variant="ghost" aria-label="大纲" asChild>
-              <Link to="/outline">
-                <ListTree className="size-5" />
-              </Link>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">大纲</TooltipContent>
-        </Tooltip>
+        <div className="my-3 h-px w-6 bg-border/20" />
 
-        {/* Characters */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button size="icon" variant="ghost" aria-label="角色" asChild>
-              <Link to="/characters">
-                <Users className="size-5" />
-              </Link>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">角色</TooltipContent>
-        </Tooltip>
+        {/* 操作按钮 */}
+        <div className="flex flex-col items-center gap-1">
+          <ActionButton icon={<Plus className="size-5" />} label="新建书籍" onClick={handleQuickCreate} />
+          <ActionButton icon={<Upload className="size-5" />} label="导入" onClick={handleImportClick} />
+          
+          <ActionButton 
+            icon={<Download className="size-5" />} 
+            label="导出" 
+            onClick={() => setExportDialogOpen(true)}
+          />
 
-        {/* World */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button size="icon" variant="ghost" aria-label="世界观" asChild>
-              <Link to="/world">
-                <BookOpen className="size-5" />
-              </Link>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">世界观</TooltipContent>
-        </Tooltip>
+          <NavItem to="/statistics" icon={<TrendingUp className="size-5" />} label="统计" active={isActive("/statistics")} />
+        </div>
 
-        <div className="my-1 h-px w-6 bg-border" />
+        <div className="my-3 h-px w-6 bg-border/20" />
 
-        {/* Actions: Import / Export */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button size="icon" variant="ghost" aria-label="新建书籍" onClick={handleQuickCreate}>
-              <Plus className="size-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">新建书籍</TooltipContent>
-        </Tooltip>
+        {/* 底部抽屉快捷按钮 */}
+        <div className="flex flex-col items-center gap-1" data-tour="bottom-drawer">
+          <DrawerToggle
+            view="outline"
+            icon={<ListTree className="size-5" />}
+            label="大纲面板"
+            active={bottomDrawerOpen && bottomDrawerView === "outline"}
+            onClick={() => toggleBottomDrawer("outline")}
+          />
+          <DrawerToggle
+            view="characters"
+            icon={<Users className="size-5" />}
+            label="角色面板"
+            active={bottomDrawerOpen && bottomDrawerView === "characters"}
+            onClick={() => toggleBottomDrawer("characters")}
+          />
+          <DrawerToggle
+            view="world"
+            icon={<BookOpen className="size-5" />}
+            label="世界观面板"
+            active={bottomDrawerOpen && bottomDrawerView === "world"}
+            onClick={() => toggleBottomDrawer("world")}
+          />
+        </div>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button size="icon" variant="ghost" aria-label="导入" onClick={handleImportClick}>
-              <Upload className="size-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">导入</TooltipContent>
-        </Tooltip>
-
-        <Popover>
+        {/* 底部 */}
+        <div className="mt-auto flex flex-col items-center gap-1">
+          <Popover>
             <Tooltip>
-            <TooltipTrigger asChild>
+              <TooltipTrigger asChild>
                 <PopoverTrigger asChild>
-                    <Button size="icon" variant="ghost" aria-label="导出" disabled={projects.length === 0}>
-                        <Download className="size-5" />
-                    </Button>
+                  <button className="flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-all hover:bg-sidebar-accent hover:text-foreground" disabled={projects.length === 0}>
+                    <MoreHorizontal className="size-5" />
+                  </button>
                 </PopoverTrigger>
-            </TooltipTrigger>
-            <TooltipContent side="right">导出</TooltipContent>
+              </TooltipTrigger>
+              <TooltipContent side="right">更多</TooltipContent>
             </Tooltip>
-            <PopoverContent side="right" align="start" className="w-56 p-1">
-                <div className="grid gap-1">
-                    <button onClick={() => setExportDialogOpen(true)} className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground w-full text-left">
-                        <FileOutput className="size-4" /> 导出作品 (PDF/Word/TXT)
-                    </button>
-                    <div className="h-px bg-border my-1" />
-                    <button onClick={handleExportBackup} className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground w-full text-left">
-                        <FileJson className="size-4" /> 导出备份 (JSON)
-                    </button>
-                    <button onClick={handleExportMarkdown} className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground w-full text-left">
-                        <FileText className="size-4" /> 导出文档 (Markdown)
-                    </button>
-                </div>
+            <PopoverContent side="right" align="end" className="w-48 p-1">
+              <button onClick={handleDeleteAllBooks} className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10">
+                <Trash2 className="size-4" /> 删除所有书籍
+              </button>
             </PopoverContent>
-        </Popover>
+          </Popover>
 
-        {/* Statistics */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button size="icon" variant="ghost" aria-label="统计" asChild>
-              <Link to="/statistics">
-                <TrendingUp className="size-5" />
-              </Link>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">统计</TooltipContent>
-        </Tooltip>
-
-        {/* More (danger) */}
-        <Popover>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <PopoverTrigger asChild>
-                <Button size="icon" variant="ghost" aria-label="更多" disabled={projects.length === 0}>
-                  <MoreHorizontal className="size-5" />
-                </Button>
-              </PopoverTrigger>
-            </TooltipTrigger>
-            <TooltipContent side="right">更多</TooltipContent>
-          </Tooltip>
-          <PopoverContent align="end" className="w-56 p-2">
-            <div className="flex flex-col gap-2">
-              <Button variant="destructive" className="justify-start" onClick={handleDeleteAllBooks}>
-                <Trash2 className="mr-2 size-4" /> 删除所有书籍
-              </Button>
-            </div>
-          </PopoverContent>
-        </Popover>
+          <NavItem to="/settings/design" icon={<Settings className="size-5" />} label="设置" active={isActive("/settings")} />
+        </div>
 
         <input ref={fileInputRef} type="file" accept="application/json" className="hidden" onChange={handleImportFile} />
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button size="icon" variant="ghost" aria-label="设置" asChild>
-              <Link to="/settings/design">
-                <Settings className="size-5" />
-              </Link>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">设置</TooltipContent>
-        </Tooltip>
       </TooltipProvider>
 
-      {/* 导出对话框 */}
       <ExportDialog
         open={exportDialogOpen}
         onOpenChange={setExportDialogOpen}
@@ -255,5 +157,68 @@ export function ActivityBar(): React.ReactElement {
         projectTitle={projects.find(p => p.id === (selectedProjectId || projects[0]?.id))?.title}
       />
     </aside>
+  );
+}
+
+// 导航项组件
+function NavItem({ to, icon, label, active }: { to: string; icon: React.ReactNode; label: string; active: boolean }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Link
+          to={to}
+          className={cn(
+            "relative flex size-10 items-center justify-center rounded-lg transition-all",
+            active
+              ? "bg-sidebar-accent text-primary"
+              : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+          )}
+        >
+          {active && <div className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r bg-primary" />}
+          {icon}
+        </Link>
+      </TooltipTrigger>
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+// 操作按钮组件
+function ActionButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={onClick}
+          className="flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-all hover:bg-sidebar-accent hover:text-foreground"
+        >
+          {icon}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+// 底部抽屉切换按钮
+function DrawerToggle({ icon, label, active, onClick }: { view: BottomDrawerView; icon: React.ReactNode; label: string; active: boolean; onClick: () => void }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={onClick}
+          className={cn(
+            "relative flex size-10 items-center justify-center rounded-lg transition-all",
+            active
+              ? "bg-sidebar-accent text-primary"
+              : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+          )}
+        >
+          {active && <div className="absolute bottom-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-t bg-primary" />}
+          {icon}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
   );
 }

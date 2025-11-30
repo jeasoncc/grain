@@ -238,6 +238,8 @@ export class NovelEditorDB extends Dexie {
 			content: scene.content || "",
 			createDate: now,
 			showEdit: scene.showEdit || false,
+			type: scene.type || "text",
+			filePath: scene.filePath,
 		};
 		await this.scenes.add(newScene);
 		logger.info(`Added scene ${newScene.title} (${newScene.id})`);

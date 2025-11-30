@@ -15,7 +15,9 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as OutlineRouteImport } from './routes/outline'
 import { Route as LogRouteImport } from './routes/log'
 import { Route as CharactersRouteImport } from './routes/characters'
+import { Route as CanvasRouteImport } from './routes/canvas'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsTypographyRouteImport } from './routes/settings/typography'
 import { Route as SettingsGeneralRouteImport } from './routes/settings/general'
 import { Route as SettingsEditorRouteImport } from './routes/settings/editor'
 import { Route as SettingsDesignRouteImport } from './routes/settings/design'
@@ -52,10 +54,20 @@ const CharactersRoute = CharactersRouteImport.update({
   path: '/characters',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CanvasRoute = CanvasRouteImport.update({
+  id: '/canvas',
+  path: '/canvas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsTypographyRoute = SettingsTypographyRouteImport.update({
+  id: '/typography',
+  path: '/typography',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsGeneralRoute = SettingsGeneralRouteImport.update({
   id: '/general',
@@ -85,6 +97,7 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/canvas': typeof CanvasRoute
   '/characters': typeof CharactersRoute
   '/log': typeof LogRoute
   '/outline': typeof OutlineRoute
@@ -96,9 +109,11 @@ export interface FileRoutesByFullPath {
   '/settings/design': typeof SettingsDesignRoute
   '/settings/editor': typeof SettingsEditorRoute
   '/settings/general': typeof SettingsGeneralRoute
+  '/settings/typography': typeof SettingsTypographyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/canvas': typeof CanvasRoute
   '/characters': typeof CharactersRoute
   '/log': typeof LogRoute
   '/outline': typeof OutlineRoute
@@ -110,10 +125,12 @@ export interface FileRoutesByTo {
   '/settings/design': typeof SettingsDesignRoute
   '/settings/editor': typeof SettingsEditorRoute
   '/settings/general': typeof SettingsGeneralRoute
+  '/settings/typography': typeof SettingsTypographyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/canvas': typeof CanvasRoute
   '/characters': typeof CharactersRoute
   '/log': typeof LogRoute
   '/outline': typeof OutlineRoute
@@ -125,11 +142,13 @@ export interface FileRoutesById {
   '/settings/design': typeof SettingsDesignRoute
   '/settings/editor': typeof SettingsEditorRoute
   '/settings/general': typeof SettingsGeneralRoute
+  '/settings/typography': typeof SettingsTypographyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/canvas'
     | '/characters'
     | '/log'
     | '/outline'
@@ -141,9 +160,11 @@ export interface FileRouteTypes {
     | '/settings/design'
     | '/settings/editor'
     | '/settings/general'
+    | '/settings/typography'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/canvas'
     | '/characters'
     | '/log'
     | '/outline'
@@ -155,9 +176,11 @@ export interface FileRouteTypes {
     | '/settings/design'
     | '/settings/editor'
     | '/settings/general'
+    | '/settings/typography'
   id:
     | '__root__'
     | '/'
+    | '/canvas'
     | '/characters'
     | '/log'
     | '/outline'
@@ -169,10 +192,12 @@ export interface FileRouteTypes {
     | '/settings/design'
     | '/settings/editor'
     | '/settings/general'
+    | '/settings/typography'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CanvasRoute: typeof CanvasRoute
   CharactersRoute: typeof CharactersRoute
   LogRoute: typeof LogRoute
   OutlineRoute: typeof OutlineRoute
@@ -226,12 +251,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CharactersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/canvas': {
+      id: '/canvas'
+      path: '/canvas'
+      fullPath: '/canvas'
+      preLoaderRoute: typeof CanvasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/settings/typography': {
+      id: '/settings/typography'
+      path: '/typography'
+      fullPath: '/settings/typography'
+      preLoaderRoute: typeof SettingsTypographyRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/settings/general': {
       id: '/settings/general'
@@ -276,6 +315,7 @@ interface SettingsRouteChildren {
   SettingsDesignRoute: typeof SettingsDesignRoute
   SettingsEditorRoute: typeof SettingsEditorRoute
   SettingsGeneralRoute: typeof SettingsGeneralRoute
+  SettingsTypographyRoute: typeof SettingsTypographyRoute
 }
 
 const SettingsRouteChildren: SettingsRouteChildren = {
@@ -283,6 +323,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsDesignRoute: SettingsDesignRoute,
   SettingsEditorRoute: SettingsEditorRoute,
   SettingsGeneralRoute: SettingsGeneralRoute,
+  SettingsTypographyRoute: SettingsTypographyRoute,
 }
 
 const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
@@ -291,6 +332,7 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CanvasRoute: CanvasRoute,
   CharactersRoute: CharactersRoute,
   LogRoute: LogRoute,
   OutlineRoute: OutlineRoute,

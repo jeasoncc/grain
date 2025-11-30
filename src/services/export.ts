@@ -1,5 +1,5 @@
 /**
- * 导出服务 - 支持 PDF、Word、TXT 格式导出
+ * 导出服务 - 支持 PDF、Word、TXT、EPUB 格式导出
  */
 import {
 	Document,
@@ -12,9 +12,9 @@ import {
 	Header,
 	Footer,
 	PageNumber,
-	NumberFormat,
 } from "docx";
 import { saveAs } from "file-saver";
+import JSZip from "jszip";
 import { db } from "@/db/curd";
 import type { ProjectInterface, ChapterInterface, SceneInterface } from "@/db/schema";
 import { extractTextFromSerialized } from "@/lib/statistics";
@@ -499,10 +499,247 @@ function escapeHtml(text: string): string {
 }
 
 // ============================================
+// EPUB 导出
+// ============================================
+
+export async function exportToEpub(
+	projectId: string,
+	options: ExportOptions = {}
+): Promise<void> {
+	const opts = { ...defaultOptions, ...options };
+	const { project, chapterContents } = await getProjectContent(projectId);
+
+	const zip = new JSZip();
+	const bookId = `novel-editor-${Date.now()}`;
+	const title = project.title || "未命名作品";
+	const author = project.author || "未知作者";
+
+	// mimetype (必须是第一个文件，不压缩)
+	zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
+
+	// META-INF/container.xml
+	zip.file(
+		"META-INF/container.xml",
+		`<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`
+	);
+
+	// 生成章节 HTML 文件
+	const chapters: Array<{ id: string; title: string; filename: string }> = [];
+
+	// 标题页
+	if (opts.includeTitle) {
+		const titleHtml = generateEpubChapterHtml(
+			title,
+			`<div class="title-page">
+				<h1>${escapeHtml(title)}</h1>
+				${opts.includeAuthor ? `<p class="author">${escapeHtml(author)}</p>` : ""}
+			</div>`
+		);
+		zip.file("OEBPS/title.xhtml", titleHtml);
+		chapters.push({ id: "title", title: "封面", filename: "title.xhtml" });
+	}
+
+	// 章节内容
+	for (let i = 0; i < chapterContents.length; i++) {
+		const { chapter, scenes } = chapterContents[i];
+		const chapterId = `chapter-${i + 1}`;
+		const filename = `${chapterId}.xhtml`;
+
+		let content = "";
+
+		if (opts.includeChapterTitles) {
+			content += `<h2 class="chapter-title">${escapeHtml(chapter.title)}</h2>`;
+		}
+
+		for (const scene of scenes) {
+			if (opts.includeSceneTitles) {
+				content += `<h3 class="scene-title">${escapeHtml(scene.title)}</h3>`;
+			}
+
+			const text = getSceneText(scene);
+			if (text.trim()) {
+				const paragraphs = text.split("\n").filter((p) => p.trim());
+				for (const para of paragraphs) {
+					content += `<p>${escapeHtml(para.trim())}</p>`;
+				}
+			}
+		}
+
+		const chapterHtml = generateEpubChapterHtml(chapter.title, content);
+		zip.file(`OEBPS/${filename}`, chapterHtml);
+		chapters.push({ id: chapterId, title: chapter.title, filename });
+	}
+
+	// 样式表
+	zip.file(
+		"OEBPS/styles.css",
+		`@charset "UTF-8";
+
+body {
+	font-family: "Source Han Serif SC", "Noto Serif CJK SC", "SimSun", "宋体", serif;
+	font-size: 1em;
+	line-height: 1.8;
+	color: #333;
+	margin: 1em;
+	text-align: justify;
+}
+
+.title-page {
+	text-align: center;
+	padding-top: 30%;
+}
+
+.title-page h1 {
+	font-size: 2em;
+	font-weight: bold;
+	margin-bottom: 1em;
+}
+
+.title-page .author {
+	font-size: 1.2em;
+	color: #666;
+}
+
+.chapter-title {
+	font-size: 1.5em;
+	font-weight: bold;
+	text-align: center;
+	margin: 2em 0 1em;
+	page-break-before: always;
+}
+
+.scene-title {
+	font-size: 1.2em;
+	font-weight: bold;
+	margin: 1.5em 0 0.5em;
+	color: #555;
+}
+
+p {
+	text-indent: 2em;
+	margin: 0.5em 0;
+}`
+	);
+
+	// content.opf (包清单)
+	const manifestItems = chapters
+		.map((ch) => `    <item id="${ch.id}" href="${ch.filename}" media-type="application/xhtml+xml"/>`)
+		.join("\n");
+
+	const spineItems = chapters.map((ch) => `    <itemref idref="${ch.id}"/>`).join("\n");
+
+	const navPoints = chapters
+		.map(
+			(ch, i) => `
+    <navPoint id="navpoint-${i + 1}" playOrder="${i + 1}">
+      <navLabel><text>${escapeHtml(ch.title)}</text></navLabel>
+      <content src="${ch.filename}"/>
+    </navPoint>`
+		)
+		.join("");
+
+	zip.file(
+		"OEBPS/content.opf",
+		`<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="BookId">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="BookId">${bookId}</dc:identifier>
+    <dc:title>${escapeHtml(title)}</dc:title>
+    <dc:creator>${escapeHtml(author)}</dc:creator>
+    <dc:language>zh-CN</dc:language>
+    <meta property="dcterms:modified">${new Date().toISOString().split(".")[0]}Z</meta>
+  </metadata>
+  <manifest>
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="css" href="styles.css" media-type="text/css"/>
+${manifestItems}
+  </manifest>
+  <spine toc="ncx">
+${spineItems}
+  </spine>
+</package>`
+	);
+
+	// toc.ncx (目录 - EPUB 2 兼容)
+	zip.file(
+		"OEBPS/toc.ncx",
+		`<?xml version="1.0" encoding="UTF-8"?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+  <head>
+    <meta name="dtb:uid" content="${bookId}"/>
+    <meta name="dtb:depth" content="1"/>
+    <meta name="dtb:totalPageCount" content="0"/>
+    <meta name="dtb:maxPageNumber" content="0"/>
+  </head>
+  <docTitle><text>${escapeHtml(title)}</text></docTitle>
+  <navMap>${navPoints}
+  </navMap>
+</ncx>`
+	);
+
+	// nav.xhtml (目录 - EPUB 3)
+	const navItems = chapters
+		.map((ch) => `      <li><a href="${ch.filename}">${escapeHtml(ch.title)}</a></li>`)
+		.join("\n");
+
+	zip.file(
+		"OEBPS/nav.xhtml",
+		`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+  <meta charset="UTF-8"/>
+  <title>目录</title>
+  <link rel="stylesheet" type="text/css" href="styles.css"/>
+</head>
+<body>
+  <nav epub:type="toc">
+    <h1>目录</h1>
+    <ol>
+${navItems}
+    </ol>
+  </nav>
+</body>
+</html>`
+	);
+
+	// 生成 EPUB 文件
+	const blob = await zip.generateAsync({
+		type: "blob",
+		mimeType: "application/epub+zip",
+		compression: "DEFLATE",
+		compressionOptions: { level: 9 },
+	});
+
+	saveAs(blob, `${title}.epub`);
+}
+
+function generateEpubChapterHtml(title: string, content: string): string {
+	return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8"/>
+  <title>${escapeHtml(title)}</title>
+  <link rel="stylesheet" type="text/css" href="styles.css"/>
+</head>
+<body>
+${content}
+</body>
+</html>`;
+}
+
+// ============================================
 // 导出对话框数据
 // ============================================
 
-export type ExportFormat = "pdf" | "docx" | "txt";
+export type ExportFormat = "pdf" | "docx" | "txt" | "epub";
 
 export async function exportProject(
 	projectId: string,
@@ -516,6 +753,8 @@ export async function exportProject(
 			return exportToWord(projectId, options);
 		case "txt":
 			return exportToTxt(projectId, options);
+		case "epub":
+			return exportToEpub(projectId, options);
 		default:
 			throw new Error(`不支持的导出格式: ${format}`);
 	}

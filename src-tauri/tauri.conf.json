@@ -12,9 +12,21 @@
   "app": {
     "windows": [
       {
-        "title": "novel-editor",
-        "width": 800,
-        "height": 600
+        "title": "小说编辑器",
+        "width": 1400,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 768,
+        "center": true,
+        "resizable": true,
+        "maximizable": true,
+        "minimizable": true,
+        "closable": true,
+        "decorations": true,
+        "transparent": false,
+        "fullscreen": false,
+        "focus": true,
+        "visible": true
       }
     ],
     "security": {

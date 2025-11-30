@@ -1,11 +1,17 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { FormDevtoolsPlugin } from "@tanstack/react-form-devtools";
 import { createRootRoute, Outlet } from "@tanstack/react-router";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ActivityBar } from "@/components/activity-bar";
+import { BottomDrawer } from "@/components/bottom-drawer";
+import { BottomDrawerContent } from "@/components/bottom-drawer-content";
+import { CommandPalette } from "@/components/command-palette";
+import { FontStyleInjector } from "@/components/font-style-injector";
+import { OnboardingTour } from "@/components/onboarding-tour";
 import { ConfirmProvider } from "@/components/ui/confirm";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { initializeTheme } from "@/hooks/use-theme";
 import {
 	CircleCheckIcon,
 	InfoIcon,
@@ -14,9 +20,30 @@ import {
 	TriangleAlertIcon,
 } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
+import { useState, useEffect } from "react";
 
-export const Route = createRootRoute({
-	component: () => (
+function RootComponent() {
+	const [commandOpen, setCommandOpen] = useState(false);
+
+	// 初始化主题系统（包括系统主题监听）
+	useEffect(() => {
+		const cleanup = initializeTheme();
+		return () => cleanup?.();
+	}, []);
+
+	// 全局快捷键：Ctrl/Cmd + K 打开命令面板
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+				e.preventDefault();
+				setCommandOpen(true);
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, []);
+
+	return (
 		<ConfirmProvider>
 			<SidebarProvider open>
 				<Toaster
@@ -38,7 +65,17 @@ export const Route = createRootRoute({
 							<Outlet />
 						</div>
 					</SidebarInset>
+					{/* 底部抽屉 */}
+					<BottomDrawer>
+						<BottomDrawerContent />
+					</BottomDrawer>
 				</div>
+				{/* 命令面板 */}
+				<CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
+				{/* 字体样式注入 */}
+				<FontStyleInjector />
+				{/* 新手引导 */}
+				<OnboardingTour />
 				<TanStackDevtools
 					config={{
 						position: "top-right",
@@ -53,5 +90,9 @@ export const Route = createRootRoute({
 				/>
 			</SidebarProvider>
 		</ConfirmProvider>
-	),
+	);
+}
+
+export const Route = createRootRoute({
+	component: RootComponent,
 });

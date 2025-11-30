@@ -43,6 +43,7 @@ import { DraggableBlockPlugin } from "@/components/editor/plugins/draggable-bloc
 import { AutoEmbedPlugin } from "@/components/editor/plugins/embeds/auto-embed-plugin"
 import { TwitterPlugin } from "@/components/editor/plugins/embeds/twitter-plugin"
 import { YouTubePlugin } from "@/components/editor/plugins/embeds/youtube-plugin"
+import { ExcalidrawPlugin } from "@/components/editor/plugins/excalidraw-plugin"
 import { EmojiPickerPlugin } from "@/components/editor/plugins/emoji-picker-plugin"
 import { EmojisPlugin } from "@/components/editor/plugins/emojis-plugin"
 import { FloatingLinkEditorPlugin } from "@/components/editor/plugins/floating-link-editor-plugin"
@@ -61,6 +62,7 @@ import { ColumnsLayoutPickerPlugin } from "@/components/editor/plugins/picker/co
 import { DividerPickerPlugin } from "@/components/editor/plugins/picker/divider-picker-plugin"
 import { EmbedsPickerPlugin } from "@/components/editor/plugins/picker/embeds-picker-plugin"
 import { HeadingPickerPlugin } from "@/components/editor/plugins/picker/heading-picker-plugin"
+import { ExcalidrawPickerPlugin } from "@/components/editor/plugins/picker/excalidraw-picker-plugin"
 import { ImagePickerPlugin } from "@/components/editor/plugins/picker/image-picker-plugin"
 import { NumberedListPickerPlugin } from "@/components/editor/plugins/picker/numbered-list-picker-plugin"
 import { ParagraphPickerPlugin } from "@/components/editor/plugins/picker/paragraph-picker-plugin"
@@ -195,6 +197,7 @@ export function Plugins({}) {
         <KeywordsPlugin />
         <EmojisPlugin />
         <ImagesPlugin />
+        <ExcalidrawPlugin />
 
         <LayoutPlugin />
 
@@ -241,6 +244,7 @@ export function Plugins({}) {
             EmbedsPickerPlugin({ embed: "tweet" }),
             EmbedsPickerPlugin({ embed: "youtube-video" }),
             ImagePickerPlugin(),
+            ExcalidrawPickerPlugin(),
             ColumnsLayoutPickerPlugin(),
             AlignmentPickerPlugin({ alignment: "left" }),
             AlignmentPickerPlugin({ alignment: "center" }),
