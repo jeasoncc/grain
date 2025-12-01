@@ -19,6 +19,7 @@ import { Route as CharactersRouteImport } from './routes/characters'
 import { Route as CanvasRouteImport } from './routes/canvas'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsTypographyRouteImport } from './routes/settings/typography'
+import { Route as SettingsIconsRouteImport } from './routes/settings/icons'
 import { Route as SettingsGeneralRouteImport } from './routes/settings/general'
 import { Route as SettingsEditorRouteImport } from './routes/settings/editor'
 import { Route as SettingsDesignRouteImport } from './routes/settings/design'
@@ -76,6 +77,11 @@ const SettingsTypographyRoute = SettingsTypographyRouteImport.update({
   path: '/typography',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsIconsRoute = SettingsIconsRouteImport.update({
+  id: '/icons',
+  path: '/icons',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const SettingsGeneralRoute = SettingsGeneralRouteImport.update({
   id: '/general',
   path: '/general',
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/settings/design': typeof SettingsDesignRoute
   '/settings/editor': typeof SettingsEditorRoute
   '/settings/general': typeof SettingsGeneralRoute
+  '/settings/icons': typeof SettingsIconsRoute
   '/settings/typography': typeof SettingsTypographyRoute
 }
 export interface FileRoutesByTo {
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/settings/design': typeof SettingsDesignRoute
   '/settings/editor': typeof SettingsEditorRoute
   '/settings/general': typeof SettingsGeneralRoute
+  '/settings/icons': typeof SettingsIconsRoute
   '/settings/typography': typeof SettingsTypographyRoute
 }
 export interface FileRoutesById {
@@ -160,6 +168,7 @@ export interface FileRoutesById {
   '/settings/design': typeof SettingsDesignRoute
   '/settings/editor': typeof SettingsEditorRoute
   '/settings/general': typeof SettingsGeneralRoute
+  '/settings/icons': typeof SettingsIconsRoute
   '/settings/typography': typeof SettingsTypographyRoute
 }
 export interface FileRouteTypes {
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/settings/design'
     | '/settings/editor'
     | '/settings/general'
+    | '/settings/icons'
     | '/settings/typography'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/settings/design'
     | '/settings/editor'
     | '/settings/general'
+    | '/settings/icons'
     | '/settings/typography'
   id:
     | '__root__'
@@ -216,6 +227,7 @@ export interface FileRouteTypes {
     | '/settings/design'
     | '/settings/editor'
     | '/settings/general'
+    | '/settings/icons'
     | '/settings/typography'
   fileRoutesById: FileRoutesById
 }
@@ -304,6 +316,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsTypographyRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/icons': {
+      id: '/settings/icons'
+      path: '/icons'
+      fullPath: '/settings/icons'
+      preLoaderRoute: typeof SettingsIconsRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/general': {
       id: '/settings/general'
       path: '/general'
@@ -355,6 +374,7 @@ interface SettingsRouteChildren {
   SettingsDesignRoute: typeof SettingsDesignRoute
   SettingsEditorRoute: typeof SettingsEditorRoute
   SettingsGeneralRoute: typeof SettingsGeneralRoute
+  SettingsIconsRoute: typeof SettingsIconsRoute
   SettingsTypographyRoute: typeof SettingsTypographyRoute
 }
 
@@ -364,6 +384,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsDesignRoute: SettingsDesignRoute,
   SettingsEditorRoute: SettingsEditorRoute,
   SettingsGeneralRoute: SettingsGeneralRoute,
+  SettingsIconsRoute: SettingsIconsRoute,
   SettingsTypographyRoute: SettingsTypographyRoute,
 }
 

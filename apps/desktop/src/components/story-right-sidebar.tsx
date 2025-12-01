@@ -1,791 +1,1189 @@
 import {
-  Plus,
-  ArrowUp,
-  ArrowDown,
-  Pencil,
-  Trash2,
-  BookOpen,
-  FolderPlus,
-  Users,
-  ArrowUpRight,
-  Globe2,
-  MoreHorizontal,
-  FileText,
-  Folder,
-  ChevronRight,
-  ChevronDown,
-  GripVertical,
-  Search,
-  UserPlus,
-  Globe,
-  MapPin,
-  ListTree,
-  PenTool
+	ArrowDown,
+	ArrowUp,
+	ArrowUpRight,
+	BookOpen,
+	ChevronDown,
+	ChevronRight,
+	FileText,
+	Folder,
+	FolderPlus,
+	Globe,
+	Globe2,
+	GripVertical,
+	ListTree,
+	MapPin,
+	MoreHorizontal,
+	Pencil,
+	PenTool,
+	Plus,
+	Search,
+	Trash2,
+	UserPlus,
+	Users,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm";
 import { Input } from "@/components/ui/input";
 import {
-  Sidebar as UISidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarFooter,
-  SidebarHeader,
-} from "@/components/ui/sidebar";
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
 } from "@/components/ui/select";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { useSelectionStore, type SelectionState } from "@/stores/selection";
-import { useChaptersByProject, createChapter, renameChapter, moveChapter, deleteChapter } from "@/services/chapters";
-import { useScenesByProject, useScenesByChapter, createScene, createCanvasScene, renameScene, moveScene, deleteScene } from "@/services/scenes";
-import { useAllProjects } from "@/services/projects";
-import { useRolesByProject, createRole, updateRole, deleteRole } from "@/services/roles";
-import { useWorldEntriesByProject, createWorldEntry, updateWorldEntry, deleteWorldEntry } from "@/services/world";
-import { useConfirm } from "@/components/ui/confirm";
-import { useUIStore } from "@/stores/ui";
+	SidebarContent,
+	SidebarFooter,
+	SidebarGroup,
+	SidebarGroupContent,
+	SidebarGroupLabel,
+	SidebarHeader,
+	Sidebar as UISidebar,
+} from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import {
+	createChapter,
+	deleteChapter,
+	moveChapter,
+	renameChapter,
+	useChaptersByProject,
+} from "@/services/chapters";
+import { useAllProjects } from "@/services/projects";
+import {
+	createRole,
+	deleteRole,
+	updateRole,
+	useRolesByProject,
+} from "@/services/roles";
+import {
+	createCanvasScene,
+	createScene,
+	deleteScene,
+	moveScene,
+	renameScene,
+	useScenesByChapter,
+	useScenesByProject,
+} from "@/services/scenes";
+import {
+	createWorldEntry,
+	deleteWorldEntry,
+	updateWorldEntry,
+	useWorldEntriesByProject,
+} from "@/services/world";
+import { type SelectionState, useSelectionStore } from "@/stores/selection";
+import { useUIStore } from "@/stores/ui";
 
 export function StoryRightSidebar() {
-  const confirm = useConfirm();
-  const rightPanelView = useUIStore(s => s.rightPanelView);
-  const setRightPanelView = useUIStore(s => s.setRightPanelView);
-  const selectedProjectId = useSelectionStore((s: SelectionState) => s.selectedProjectId);
-  const setSelectedProjectId = useSelectionStore((s: SelectionState) => s.setSelectedProjectId);
-  const selectedChapterId = useSelectionStore((s: SelectionState) => s.selectedChapterId);
-  const setSelectedChapterId = useSelectionStore((s: SelectionState) => s.setSelectedChapterId);
-  const selectedSceneId = useSelectionStore((s: SelectionState) => s.selectedSceneId);
-  const setSelectedSceneId = useSelectionStore((s: SelectionState) => s.setSelectedSceneId);
+	const confirm = useConfirm();
+	const rightPanelView = useUIStore((s) => s.rightPanelView);
+	const setRightPanelView = useUIStore((s) => s.setRightPanelView);
+	const selectedProjectId = useSelectionStore(
+		(s: SelectionState) => s.selectedProjectId,
+	);
+	const setSelectedProjectId = useSelectionStore(
+		(s: SelectionState) => s.setSelectedProjectId,
+	);
+	const selectedChapterId = useSelectionStore(
+		(s: SelectionState) => s.selectedChapterId,
+	);
+	const setSelectedChapterId = useSelectionStore(
+		(s: SelectionState) => s.setSelectedChapterId,
+	);
+	const selectedSceneId = useSelectionStore(
+		(s: SelectionState) => s.selectedSceneId,
+	);
+	const setSelectedSceneId = useSelectionStore(
+		(s: SelectionState) => s.setSelectedSceneId,
+	);
 
-  const projects = useAllProjects();
-  const projectChapters = useChaptersByProject(selectedProjectId);
-  const scenesOfProject = useScenesByProject(selectedProjectId);
-  const projectRoles = useRolesByProject(selectedProjectId ?? null);
-  const projectWorldEntries = useWorldEntriesByProject(selectedProjectId ?? null);
+	const projects = useAllProjects();
+	const projectChapters = useChaptersByProject(selectedProjectId);
+	const scenesOfProject = useScenesByProject(selectedProjectId);
+	const projectRoles = useRolesByProject(selectedProjectId ?? null);
+	const projectWorldEntries = useWorldEntriesByProject(
+		selectedProjectId ?? null,
+	);
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({});
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  
-  // Drag and Drop State
-  const [dragState, setDragState] = useState<{
-    draggedId: string;
-    draggedType: 'chapter' | 'scene';
-    targetId: string | null;
-    position: 'before' | 'after' | 'inside' | null;
-  }>({ draggedId: '', draggedType: 'chapter', targetId: null, position: null });
+	const [searchQuery, setSearchQuery] = useState("");
+	const [expandedChapters, setExpandedChapters] = useState<
+		Record<string, boolean>
+	>({});
+	const [renamingId, setRenamingId] = useState<string | null>(null);
 
-  // Ensure project/chapter selection
-  useEffect(() => {
-    if (!selectedProjectId && projects.length > 0) {
-      setSelectedProjectId(projects[0].id);
-    }
-  }, [projects, selectedProjectId, setSelectedProjectId]);
+	// Drag and Drop State
+	const [dragState, setDragState] = useState<{
+		draggedId: string;
+		draggedType: "chapter" | "scene";
+		targetId: string | null;
+		position: "before" | "after" | "inside" | null;
+	}>({ draggedId: "", draggedType: "chapter", targetId: null, position: null });
 
-  useEffect(() => {
-    if (selectedProjectId && !selectedChapterId && projectChapters.length > 0) {
-      setSelectedChapterId(projectChapters[0].id);
-      setExpandedChapters(prev => ({...prev, [projectChapters[0].id]: true}));
-    }
-  }, [selectedProjectId, selectedChapterId, projectChapters, setSelectedChapterId]);
+	// Ensure project/chapter selection
+	useEffect(() => {
+		if (!selectedProjectId && projects.length > 0) {
+			setSelectedProjectId(projects[0].id);
+		}
+	}, [projects, selectedProjectId, setSelectedProjectId]);
 
-  // Expand/Collapse
-  const toggleChapter = (id: string) => {
-    setExpandedChapters(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+	useEffect(() => {
+		if (selectedProjectId && !selectedChapterId && projectChapters.length > 0) {
+			setSelectedChapterId(projectChapters[0].id);
+			setExpandedChapters((prev) => ({
+				...prev,
+				[projectChapters[0].id]: true,
+			}));
+		}
+	}, [
+		selectedProjectId,
+		selectedChapterId,
+		projectChapters,
+		setSelectedChapterId,
+	]);
 
-  // --- Actions ---
+	// Expand/Collapse
+	const toggleChapter = (id: string) => {
+		setExpandedChapters((prev) => ({ ...prev, [id]: !prev[id] }));
+	};
 
-  const handleAddChapter = useCallback(async () => {
-    if (!selectedProjectId) return;
-    const nextOrder = projectChapters.length ? Math.max(...projectChapters.map(c=>c.order)) + 1 : 1;
-    try {
-      const newChapter = await createChapter({ projectId: selectedProjectId, title: `Chapter ${nextOrder}`, order: nextOrder });
-      setSelectedChapterId(newChapter.id);
-      setExpandedChapters(prev => ({...prev, [newChapter.id]: true}));
-      toast.success("Chapter created");
-      // Auto start renaming
-      setTimeout(() => setRenamingId(newChapter.id), 100);
-    } catch {
-      toast.error("Failed to create chapter");
-    }
-  }, [selectedProjectId, projectChapters, setSelectedChapterId]);
+	// --- Actions ---
 
-  const handleAddScene = useCallback(async (chapterId: string) => {
-    if (!selectedProjectId) return;
-    const existingScenes = scenesOfProject.filter(s => s.chapter === chapterId);
-    const nextOrder = existingScenes.length ? Math.max(...existingScenes.map(s=>s.order)) + 1 : 1;
-    try {
-      const newScene = await createScene({ projectId: selectedProjectId, chapterId, title: `Scene ${nextOrder}`, order: nextOrder, content: "" });
-      setSelectedSceneId(newScene.id);
-      setSelectedChapterId(chapterId);
-      if (!expandedChapters[chapterId]) toggleChapter(chapterId);
-      toast.success("Scene created");
-      setTimeout(() => setRenamingId(newScene.id), 100);
-    } catch {
-      toast.error("Failed to create scene");
-    }
-  }, [selectedProjectId, scenesOfProject, setSelectedSceneId, setSelectedChapterId, expandedChapters]);
+	const handleAddChapter = useCallback(async () => {
+		if (!selectedProjectId) return;
+		const nextOrder = projectChapters.length
+			? Math.max(...projectChapters.map((c) => c.order)) + 1
+			: 1;
+		try {
+			const newChapter = await createChapter({
+				projectId: selectedProjectId,
+				title: `Chapter ${nextOrder}`,
+				order: nextOrder,
+			});
+			setSelectedChapterId(newChapter.id);
+			setExpandedChapters((prev) => ({ ...prev, [newChapter.id]: true }));
+			toast.success("Chapter created");
+			// Auto start renaming
+			setTimeout(() => setRenamingId(newChapter.id), 100);
+		} catch {
+			toast.error("Failed to create chapter");
+		}
+	}, [selectedProjectId, projectChapters, setSelectedChapterId]);
 
-  // 创建绘图场景
-  const handleAddCanvasScene = useCallback(async (chapterId: string) => {
-    if (!selectedProjectId) return;
-    const existingScenes = scenesOfProject.filter(s => s.chapter === chapterId);
-    const nextOrder = existingScenes.length ? Math.max(...existingScenes.map(s=>s.order)) + 1 : 1;
-    try {
-      const newScene = await createCanvasScene({ projectId: selectedProjectId, chapterId, title: `Canvas ${nextOrder}`, order: nextOrder });
-      setSelectedSceneId(newScene.id);
-      setSelectedChapterId(chapterId);
-      if (!expandedChapters[chapterId]) toggleChapter(chapterId);
-      toast.success("Canvas scene created");
-      setTimeout(() => setRenamingId(newScene.id), 100);
-    } catch {
-      toast.error("Failed to create canvas scene");
-    }
-  }, [selectedProjectId, scenesOfProject, setSelectedSceneId, setSelectedChapterId, expandedChapters]);
+	const handleAddScene = useCallback(
+		async (chapterId: string) => {
+			if (!selectedProjectId) return;
+			const existingScenes = scenesOfProject.filter(
+				(s) => s.chapter === chapterId,
+			);
+			const nextOrder = existingScenes.length
+				? Math.max(...existingScenes.map((s) => s.order)) + 1
+				: 1;
+			try {
+				const newScene = await createScene({
+					projectId: selectedProjectId,
+					chapterId,
+					title: `Scene ${nextOrder}`,
+					order: nextOrder,
+					content: "",
+				});
+				setSelectedSceneId(newScene.id);
+				setSelectedChapterId(chapterId);
+				if (!expandedChapters[chapterId]) toggleChapter(chapterId);
+				toast.success("Scene created");
+				setTimeout(() => setRenamingId(newScene.id), 100);
+			} catch {
+				toast.error("Failed to create scene");
+			}
+		},
+		[
+			selectedProjectId,
+			scenesOfProject,
+			setSelectedSceneId,
+			setSelectedChapterId,
+			expandedChapters,
+		],
+	);
 
-  const handleAddRole = useCallback(async () => {
-      if (!selectedProjectId) return;
-      try {
-          const newRole = await createRole({ projectId: selectedProjectId, name: "New Character" });
-          toast.success("Character created");
-          setTimeout(() => setRenamingId(newRole.id), 100);
-      } catch {
-          toast.error("Failed to create character");
-      }
-  }, [selectedProjectId]);
+	// 创建绘图场景
+	const handleAddCanvasScene = useCallback(
+		async (chapterId: string) => {
+			if (!selectedProjectId) return;
+			const existingScenes = scenesOfProject.filter(
+				(s) => s.chapter === chapterId,
+			);
+			const nextOrder = existingScenes.length
+				? Math.max(...existingScenes.map((s) => s.order)) + 1
+				: 1;
+			try {
+				const newScene = await createCanvasScene({
+					projectId: selectedProjectId,
+					chapterId,
+					title: `Canvas ${nextOrder}`,
+					order: nextOrder,
+				});
+				setSelectedSceneId(newScene.id);
+				setSelectedChapterId(chapterId);
+				if (!expandedChapters[chapterId]) toggleChapter(chapterId);
+				toast.success("Canvas scene created");
+				setTimeout(() => setRenamingId(newScene.id), 100);
+			} catch {
+				toast.error("Failed to create canvas scene");
+			}
+		},
+		[
+			selectedProjectId,
+			scenesOfProject,
+			setSelectedSceneId,
+			setSelectedChapterId,
+			expandedChapters,
+		],
+	);
 
-  const handleAddWorldEntry = useCallback(async () => {
-      if (!selectedProjectId) return;
-      try {
-          const newEntry = await createWorldEntry({ projectId: selectedProjectId, name: "New Entry" });
-          toast.success("World entry created");
-          setTimeout(() => setRenamingId(newEntry.id), 100);
-      } catch {
-          toast.error("Failed to create world entry");
-      }
-  }, [selectedProjectId]);
+	const handleAddRole = useCallback(async () => {
+		if (!selectedProjectId) return;
+		try {
+			const newRole = await createRole({
+				projectId: selectedProjectId,
+				name: "New Character",
+			});
+			toast.success("Character created");
+			setTimeout(() => setRenamingId(newRole.id), 100);
+		} catch {
+			toast.error("Failed to create character");
+		}
+	}, [selectedProjectId]);
 
-  const handleRename = async (id: string, type: 'chapter' | 'scene' | 'role' | 'world', newName: string) => {
-    if (!newName.trim()) return;
-    try {
-      if (type === 'chapter') await renameChapter(id, newName);
-      else if (type === 'scene') await renameScene(id, newName);
-      else if (type === 'role') await updateRole(id, { name: newName });
-      else if (type === 'world') await updateWorldEntry(id, { name: newName });
-    } catch {
-      toast.error("Failed to rename");
-    }
-    setRenamingId(null);
-  };
+	const handleAddWorldEntry = useCallback(async () => {
+		if (!selectedProjectId) return;
+		try {
+			const newEntry = await createWorldEntry({
+				projectId: selectedProjectId,
+				name: "New Entry",
+			});
+			toast.success("World entry created");
+			setTimeout(() => setRenamingId(newEntry.id), 100);
+		} catch {
+			toast.error("Failed to create world entry");
+		}
+	}, [selectedProjectId]);
 
-  const handleDelete = async (id: string, type: 'chapter' | 'scene' | 'role' | 'world', title: string) => {
-    const ok = await confirm({ 
-        title: `Delete ${type}?`, 
-        description: `Are you sure you want to delete "${title}"? This cannot be undone.`,
-        confirmText: "Delete",
-        cancelText: "Cancel"
-    });
-    if (!ok) return;
+	const handleRename = async (
+		id: string,
+		type: "chapter" | "scene" | "role" | "world",
+		newName: string,
+	) => {
+		if (!newName.trim()) return;
+		try {
+			if (type === "chapter") await renameChapter(id, newName);
+			else if (type === "scene") await renameScene(id, newName);
+			else if (type === "role") await updateRole(id, { name: newName });
+			else if (type === "world") await updateWorldEntry(id, { name: newName });
+		} catch {
+			toast.error("Failed to rename");
+		}
+		setRenamingId(null);
+	};
 
-    try {
-      if (type === 'chapter') await deleteChapter(id);
-      else if (type === 'scene') await deleteScene(id);
-      else if (type === 'role') await deleteRole(id);
-      else if (type === 'world') await deleteWorldEntry(id);
-      toast.success(`${type} deleted`);
-    } catch {
-      toast.error("Failed to delete");
-    }
-  };
+	const handleDelete = async (
+		id: string,
+		type: "chapter" | "scene" | "role" | "world",
+		title: string,
+	) => {
+		const ok = await confirm({
+			title: `Delete ${type}?`,
+			description: `Are you sure you want to delete "${title}"? This cannot be undone.`,
+			confirmText: "Delete",
+			cancelText: "Cancel",
+		});
+		if (!ok) return;
 
-  // --- Keyboard Shortcuts ---
-  useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-          // Only trigger if we have a selection and no inputs are focused
-          if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
-          
-          if (e.key === 'F2') {
-             // Ideally we'd know exactly what is selected. 
-             // For now, simplistic support for Scene/Chapter if they are selected.
-             // Roles/World don't have a "selected ID" in store (yet), but maybe we can infer or just skip.
-             if (rightPanelView === 'outline' || !rightPanelView) {
-                 if (selectedSceneId) setRenamingId(selectedSceneId);
-                 else if (selectedChapterId) setRenamingId(selectedChapterId);
-             }
-          }
-          if (e.key === 'Delete') {
-             if (rightPanelView === 'outline' || !rightPanelView) {
-                 if (selectedSceneId) {
-                     const s = scenesOfProject.find(s => s.id === selectedSceneId);
-                     if(s) handleDelete(s.id, 'scene', s.title);
-                 } else if (selectedChapterId) {
-                     const c = projectChapters.find(ch => ch.id === selectedChapterId);
-                     if(c) handleDelete(c.id, 'chapter', c.title);
-                 }
-             }
-          }
-      };
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedSceneId, selectedChapterId, rightPanelView, scenesOfProject, projectChapters]);
+		try {
+			if (type === "chapter") await deleteChapter(id);
+			else if (type === "scene") await deleteScene(id);
+			else if (type === "role") await deleteRole(id);
+			else if (type === "world") await deleteWorldEntry(id);
+			toast.success(`${type} deleted`);
+		} catch {
+			toast.error("Failed to delete");
+		}
+	};
 
-  // --- Drag and Drop Logic ---
+	// --- Keyboard Shortcuts ---
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			// Only trigger if we have a selection and no inputs are focused
+			if (
+				document.activeElement?.tagName === "INPUT" ||
+				document.activeElement?.tagName === "TEXTAREA"
+			)
+				return;
 
-  const handleDragStart = (e: React.DragEvent, id: string, type: 'chapter' | 'scene') => {
-    e.dataTransfer.setData("text/plain", id);
-    e.dataTransfer.effectAllowed = "move";
-    setDragState({ draggedId: id, draggedType: type, targetId: null, position: null });
-  };
+			if (e.key === "F2") {
+				// Ideally we'd know exactly what is selected.
+				// For now, simplistic support for Scene/Chapter if they are selected.
+				// Roles/World don't have a "selected ID" in store (yet), but maybe we can infer or just skip.
+				if (rightPanelView === "outline" || !rightPanelView) {
+					if (selectedSceneId) setRenamingId(selectedSceneId);
+					else if (selectedChapterId) setRenamingId(selectedChapterId);
+				}
+			}
+			if (e.key === "Delete") {
+				if (rightPanelView === "outline" || !rightPanelView) {
+					if (selectedSceneId) {
+						const s = scenesOfProject.find((s) => s.id === selectedSceneId);
+						if (s) handleDelete(s.id, "scene", s.title);
+					} else if (selectedChapterId) {
+						const c = projectChapters.find((ch) => ch.id === selectedChapterId);
+						if (c) handleDelete(c.id, "chapter", c.title);
+					}
+				}
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [
+		selectedSceneId,
+		selectedChapterId,
+		rightPanelView,
+		scenesOfProject,
+		projectChapters,
+	]);
 
-  const handleDragOver = (e: React.DragEvent, id: string, type: 'chapter' | 'scene') => {
-    e.preventDefault();
-    e.stopPropagation();
+	// --- Drag and Drop Logic ---
 
-    if (dragState.draggedId === id) return; // Can't drag onto self
-    // Can't drop chapter into scene
-    if (dragState.draggedType === 'chapter' && type === 'scene') return;
-    
-    const rect = e.currentTarget.getBoundingClientRect();
-    const y = e.clientY - rect.top;
-    const height = rect.height;
-    
-    let pos: 'before' | 'after' | 'inside' = 'inside';
+	const handleDragStart = (
+		e: React.DragEvent,
+		id: string,
+		type: "chapter" | "scene",
+	) => {
+		e.dataTransfer.setData("text/plain", id);
+		e.dataTransfer.effectAllowed = "move";
+		setDragState({
+			draggedId: id,
+			draggedType: type,
+			targetId: null,
+			position: null,
+		});
+	};
 
-    // Logic for drop position
-    if (type === 'scene') {
-      // Scene target: only before/after
-      if (y < height / 2) pos = 'before';
-      else pos = 'after';
-    } else {
-      // Chapter target
-      if (dragState.draggedType === 'scene') {
-        // Dragging scene to chapter -> always inside
-        pos = 'inside'; 
-      } else {
-        // Dragging chapter to chapter
-        if (y < height * 0.25) pos = 'before';
-        else if (y > height * 0.75) pos = 'after';
-        else pos = 'inside'; 
-        if (pos === 'inside') pos = 'after'; // Default to after if middle
-      }
-    }
-    
-    setDragState(prev => ({ ...prev, targetId: id, position: pos }));
-  };
+	const handleDragOver = (
+		e: React.DragEvent,
+		id: string,
+		type: "chapter" | "scene",
+	) => {
+		e.preventDefault();
+		e.stopPropagation();
 
-  const handleDrop = async (e: React.DragEvent, targetId: string, targetType: 'chapter' | 'scene') => {
-    e.preventDefault();
-    e.stopPropagation();
-    const { draggedId, draggedType, position } = dragState;
-    
-    setDragState({ draggedId: '', draggedType: 'chapter', targetId: null, position: null });
+		if (dragState.draggedId === id) return; // Can't drag onto self
+		// Can't drop chapter into scene
+		if (dragState.draggedType === "chapter" && type === "scene") return;
 
-    if (!draggedId || !position) return;
-    if (draggedId === targetId) return;
+		const rect = e.currentTarget.getBoundingClientRect();
+		const y = e.clientY - rect.top;
+		const height = rect.height;
 
-    // Perform Move
-    if (draggedType === 'chapter' && targetType === 'chapter') {
-       // Move Chapter
-       const draggedChapter = projectChapters.find(c => c.id === draggedId);
-       if (!draggedChapter) return;
+		let pos: "before" | "after" | "inside" = "inside";
 
-       // Reordering Logic
-       const allChapters = [...projectChapters].sort((a,b) => a.order - b.order);
-       let targetIndex = allChapters.findIndex(c => c.id === targetId);
-       
-       // If dropping after, increment index
-       if (position === 'after') targetIndex++;
-       
-       await moveChapter(selectedProjectId!, draggedId, targetIndex);
-       toast.success("Chapter moved");
+		// Logic for drop position
+		if (type === "scene") {
+			// Scene target: only before/after
+			if (y < height / 2) pos = "before";
+			else pos = "after";
+		} else {
+			// Chapter target
+			if (dragState.draggedType === "scene") {
+				// Dragging scene to chapter -> always inside
+				pos = "inside";
+			} else {
+				// Dragging chapter to chapter
+				if (y < height * 0.25) pos = "before";
+				else if (y > height * 0.75) pos = "after";
+				else pos = "inside";
+				if (pos === "inside") pos = "after"; // Default to after if middle
+			}
+		}
 
-    } else if (draggedType === 'scene') {
-       // Move Scene
-       const draggedScene = scenesOfProject.find(s => s.id === draggedId);
-       if (!draggedScene) return;
-       
-       let targetChapterId = '';
-       let newIndex = 0;
+		setDragState((prev) => ({ ...prev, targetId: id, position: pos }));
+	};
 
-       if (targetType === 'chapter') {
-          // Dropped on chapter header -> append to end
-          targetChapterId = targetId;
-          const targetScenes = scenesOfProject.filter(s => s.chapter === targetChapterId);
-          newIndex = targetScenes.length; 
-       } else {
-          // Dropped on scene
-          const targetScene = scenesOfProject.find(s => s.id === targetId);
-          if (!targetScene) return;
-          targetChapterId = targetScene.chapter;
-          
-          // Get scenes of that chapter to find index
-          const siblings = scenesOfProject.filter(s => s.chapter === targetChapterId).sort((a,b) => a.order - b.order);
-          const targetSceneIndex = siblings.findIndex(s => s.id === targetId);
-          
-          newIndex = position === 'before' ? targetSceneIndex : targetSceneIndex + 1;
-       }
+	const handleDrop = async (
+		e: React.DragEvent,
+		targetId: string,
+		targetType: "chapter" | "scene",
+	) => {
+		e.preventDefault();
+		e.stopPropagation();
+		const { draggedId, draggedType, position } = dragState;
 
-       await moveScene(selectedProjectId!, draggedId, targetChapterId, newIndex);
-       toast.success("Scene moved");
-       if (targetType === 'chapter' && !expandedChapters[targetChapterId]) {
-         toggleChapter(targetChapterId);
-       }
-    }
-  };
+		setDragState({
+			draggedId: "",
+			draggedType: "chapter",
+			targetId: null,
+			position: null,
+		});
 
-  // --- Filter Logic ---
-  const filteredData = useMemo(() => {
-    const query = searchQuery.toLowerCase();
-    
-    const matchingScenes = query ? scenesOfProject.filter(s => s.title.toLowerCase().includes(query)) : scenesOfProject;
-    const matchingChapters = query 
-        ? projectChapters.filter(c => c.title.toLowerCase().includes(query) || matchingScenes.some(s => s.chapter === c.id))
-        : projectChapters;
-    const matchingRoles = query
-        ? projectRoles.filter(r => r.name.toLowerCase().includes(query) || r.alias?.some(a => a.toLowerCase().includes(query)))
-        : projectRoles;
-    const matchingWorld = query
-        ? projectWorldEntries.filter(w => w.name.toLowerCase().includes(query) || w.category.toLowerCase().includes(query))
-        : projectWorldEntries;
+		if (!draggedId || !position) return;
+		if (draggedId === targetId) return;
 
-    return { 
-        chapters: matchingChapters, 
-        scenes: matchingScenes,
-        roles: matchingRoles,
-        world: matchingWorld
-    };
-  }, [projectChapters, scenesOfProject, projectRoles, projectWorldEntries, searchQuery]);
+		// Perform Move
+		if (draggedType === "chapter" && targetType === "chapter") {
+			// Move Chapter
+			const draggedChapter = projectChapters.find((c) => c.id === draggedId);
+			if (!draggedChapter) return;
 
-  return (
-    <UISidebar side="right" className="border-l border-sidebar-border/30 bg-sidebar/50 backdrop-blur-sm">
-      <SidebarHeader className="flex flex-col gap-0 p-0 border-b border-sidebar-border/20">
-         {/* 项目选择器 */}
-         <div className="h-12 flex items-center justify-between px-4">
-            <div className="flex-1 min-w-0">
-              <Select value={selectedProjectId ?? ""} onValueChange={(v) => setSelectedProjectId(v || null)}>
-                <SelectTrigger className="h-8 w-full border-none bg-transparent shadow-none p-0 hover:bg-sidebar-accent/50 focus:ring-0 font-semibold text-foreground">
-                  <SelectValue placeholder="Select Book" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {/* 添加按钮 */}
-            {(!rightPanelView || rightPanelView === 'outline') && (
-                <Button variant="ghost" size="icon" className="size-7" onClick={handleAddChapter} title="Add Chapter">
-                    <FolderPlus className="size-4 text-muted-foreground" />
-                </Button>
-            )}
-            {rightPanelView === 'characters' && (
-                <Button variant="ghost" size="icon" className="size-7" onClick={handleAddRole} title="Add Character">
-                    <UserPlus className="size-4 text-muted-foreground" />
-                </Button>
-            )}
-            {rightPanelView === 'world' && (
-                <Button variant="ghost" size="icon" className="size-7" onClick={handleAddWorldEntry} title="Add Entry">
-                    <Plus className="size-4 text-muted-foreground" />
-                </Button>
-            )}
-         </div>
-         
-         {/* 标签页 */}
-         <div className="flex items-center h-10 px-2 bg-muted/30" data-tour="outline-tab">
-            <button
-                onClick={() => setRightPanelView(null)}
-                className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors",
-                    (!rightPanelView || rightPanelView === 'outline')
-                        ? "bg-background text-foreground shadow-sm font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                )}
-            >
-                <ListTree className="size-3.5" />
-                <span>大纲</span>
-            </button>
-            <button
-                onClick={() => setRightPanelView('characters')}
-                className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors",
-                    rightPanelView === 'characters'
-                        ? "bg-background text-foreground shadow-sm font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                )}
-            >
-                <Users className="size-3.5" />
-                <span>角色</span>
-            </button>
-            <button
-                onClick={() => setRightPanelView('world')}
-                className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors",
-                    rightPanelView === 'world'
-                        ? "bg-background text-foreground shadow-sm font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                )}
-            >
-                <Globe className="size-3.5" />
-                <span>世界观</span>
-            </button>
-         </div>
-      </SidebarHeader>
-      
-      <SidebarContent className="px-0">
-        {/* Global Search Bar */}
-         <div className="px-2 py-2">
-             <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-                <Input 
-                    placeholder={rightPanelView === 'characters' ? "Search characters..." : rightPanelView === 'world' ? "Search world info..." : "Search outline..."} 
-                    className="h-8 pl-8 text-xs bg-background/50 border-transparent focus:border-border focus:bg-background transition-all"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-             </div>
-         </div>
+			// Reordering Logic
+			const allChapters = [...projectChapters].sort(
+				(a, b) => a.order - b.order,
+			);
+			let targetIndex = allChapters.findIndex((c) => c.id === targetId);
 
-        {(!rightPanelView || rightPanelView === 'outline') && (
-        <SidebarGroup className="px-0 h-full flex flex-col">
-          <SidebarGroupContent className="flex-1 flex flex-col min-h-0">
-            <div className="flex-1 overflow-auto px-2 pb-4 space-y-1">
-              {selectedProjectId && filteredData.chapters.length === 0 && !searchQuery ? (
-                <div className="mx-2 my-8 flex flex-col items-center text-center p-6 rounded-lg border border-dashed bg-sidebar-accent/30">
-                   <BookOpen className="size-8 text-muted-foreground/50 mb-3" />
-                   <span className="text-sm font-medium">Start Writing</span>
-                   <Button size="sm" variant="link" onClick={handleAddChapter}>Create first chapter</Button>
-                </div>
-              ) : (
-                filteredData.chapters.map((chapter) => {
-                  const chapterScenes = filteredData.scenes
-                    .filter(s => s.chapter === chapter.id)
-                    .sort((a, b) => a.order - b.order);
-                  
-                  // Filter logic is already handled in useMemo but let's double check if we need to hide empty chapters if search is strict? 
-                  // Currently logic allows showing chapter if title matches.
+			// If dropping after, increment index
+			if (position === "after") targetIndex++;
 
-                  const isExpanded = expandedChapters[chapter.id] || !!searchQuery;
-                  const isDragging = dragState.draggedId === chapter.id;
-                  const isDropTarget = dragState.targetId === chapter.id;
-                  const dropPos = dragState.position;
+			await moveChapter(selectedProjectId!, draggedId, targetIndex);
+			toast.success("Chapter moved");
+		} else if (draggedType === "scene") {
+			// Move Scene
+			const draggedScene = scenesOfProject.find((s) => s.id === draggedId);
+			if (!draggedScene) return;
 
-                  return (
-                    <div key={chapter.id} 
-                         className={cn("transition-all duration-200", isDragging && "opacity-30")}
-                         draggable
-                         onDragStart={(e) => handleDragStart(e, chapter.id, 'chapter')}
-                         onDragOver={(e) => handleDragOver(e, chapter.id, 'chapter')}
-                         onDrop={(e) => handleDrop(e, chapter.id, 'chapter')}
-                    >
-                      {/* Drop Indicator Before */}
-                      {isDropTarget && dropPos === 'before' && <div className="h-0.5 bg-primary my-1 rounded-full" />}
-                      
-                      <div className={cn(
-                          "group flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-sidebar-accent/50",
-                          selectedChapterId === chapter.id && !selectedSceneId && "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
-                          isDropTarget && dropPos === 'inside' && "bg-sidebar-accent ring-1 ring-primary/20"
-                        )}
-                        onClick={() => setSelectedChapterId(chapter.id)}
-                      >
-                        <button onClick={(e) => { e.stopPropagation(); toggleChapter(chapter.id); }} className="p-0.5 hover:bg-black/5 rounded">
-                          {isExpanded ? <ChevronDown className="size-3.5 text-muted-foreground" /> : <ChevronRight className="size-3.5 text-muted-foreground" />}
-                        </button>
-                        
-                        <Folder className={cn("size-4 shrink-0", selectedChapterId === chapter.id ? "text-blue-500" : "text-blue-500/70")} />
-                        
-                        {renamingId === chapter.id ? (
-                          <Input 
-                            autoFocus
-                            defaultValue={chapter.title}
-                            className="h-6 text-sm px-1 py-0"
-                            onBlur={(e) => handleRename(chapter.id, 'chapter', e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleRename(chapter.id, 'chapter', e.currentTarget.value);
-                              if (e.key === 'Escape') setRenamingId(null);
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        ) : (
-                          <span className="flex-1 text-sm truncate" onDoubleClick={() => setRenamingId(chapter.id)}>{chapter.title}</span>
-                        )}
+			let targetChapterId = "";
+			let newIndex = 0;
 
-                        <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-                           <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground">
-                                    <MoreHorizontal className="size-3.5" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent align="end" className="w-40 p-1">
-                                <div className="grid gap-0.5">
-                                   <button onClick={() => handleAddScene(chapter.id)} className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left">
-                                       <Plus className="size-3" /> Add Scene
-                                   </button>
-                                   <button onClick={() => handleAddCanvasScene(chapter.id)} className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left">
-                                       <PenTool className="size-3" /> Add Canvas
-                                   </button>
-                                   <button onClick={() => setRenamingId(chapter.id)} className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left">
-                                       <Pencil className="size-3" /> Rename
-                                   </button>
-                                   <div className="h-px bg-border my-1" />
-                                   <button onClick={() => handleDelete(chapter.id, 'chapter', chapter.title)} className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-destructive/10 text-destructive w-full text-left">
-                                       <Trash2 className="size-3" /> Delete
-                                   </button>
-                                </div>
-                              </PopoverContent>
-                           </Popover>
-                        </div>
-                      </div>
-                      
-                      {/* Drop Indicator After */}
-                      {isDropTarget && dropPos === 'after' && <div className="h-0.5 bg-primary my-1 rounded-full" />}
+			if (targetType === "chapter") {
+				// Dropped on chapter header -> append to end
+				targetChapterId = targetId;
+				const targetScenes = scenesOfProject.filter(
+					(s) => s.chapter === targetChapterId,
+				);
+				newIndex = targetScenes.length;
+			} else {
+				// Dropped on scene
+				const targetScene = scenesOfProject.find((s) => s.id === targetId);
+				if (!targetScene) return;
+				targetChapterId = targetScene.chapter;
 
-                      {/* Scenes List */}
-                      {isExpanded && (
-                        <div className="ml-3 pl-3 border-l border-border/40 mt-0.5 space-y-0.5">
-                          {chapterScenes.map(scene => {
-                             const isSceneDragging = dragState.draggedId === scene.id;
-                             const isSceneDropTarget = dragState.targetId === scene.id;
-                             const sceneDropPos = dragState.position;
+				// Get scenes of that chapter to find index
+				const siblings = scenesOfProject
+					.filter((s) => s.chapter === targetChapterId)
+					.sort((a, b) => a.order - b.order);
+				const targetSceneIndex = siblings.findIndex((s) => s.id === targetId);
 
-                             return (
-                               <div key={scene.id}
-                                   className={cn("transition-all duration-200 relative", isSceneDragging && "opacity-30")}
-                                   draggable
-                                   onDragStart={(e) => handleDragStart(e, scene.id, 'scene')}
-                                   onDragOver={(e) => handleDragOver(e, scene.id, 'scene')}
-                                   onDrop={(e) => handleDrop(e, scene.id, 'scene')}
-                               >
-                                 {isSceneDropTarget && sceneDropPos === 'before' && <div className="absolute -top-0.5 left-0 right-0 h-0.5 bg-primary rounded-full z-10" />}
-                                 
-                                 <div className={cn(
-                                   "group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors hover:bg-sidebar-accent/50",
-                                   selectedSceneId === scene.id && "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
-                                   !selectedSceneId && "text-muted-foreground hover:text-foreground"
-                                 )}
-                                 onClick={() => {
-                                     setSelectedSceneId(scene.id);
-                                     setSelectedChapterId(chapter.id);
-                                 }}
-                                 >
-                                    {scene.type === "canvas" ? (
-                                      <PenTool className="size-3.5 shrink-0 opacity-70 text-blue-500" />
-                                    ) : (
-                                      <FileText className="size-3.5 shrink-0 opacity-70" />
-                                    )}
-                                    
-                                    {renamingId === scene.id ? (
-                                      <Input 
-                                        autoFocus
-                                        defaultValue={scene.title}
-                                        className="h-6 text-sm px-1 py-0"
-                                        onBlur={(e) => handleRename(scene.id, 'scene', e.target.value)}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') handleRename(scene.id, 'scene', e.currentTarget.value);
-                                          if (e.key === 'Escape') setRenamingId(null);
-                                        }}
-                                        onClick={(e) => e.stopPropagation()}
-                                      />
-                                    ) : (
-                                      <span className="flex-1 truncate" onDoubleClick={() => setRenamingId(scene.id)}>{scene.title}</span>
-                                    )}
-                                    
-                                    <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-                                      <Popover>
-                                          <PopoverTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground">
-                                                <MoreHorizontal className="size-3.5" />
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent align="end" className="w-36 p-1">
-                                            <div className="grid gap-0.5">
-                                              <button onClick={() => setRenamingId(scene.id)} className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left">
-                                                  <Pencil className="size-3" /> Rename
-                                              </button>
-                                              <div className="h-px bg-border my-1" />
-                                              <button onClick={() => handleDelete(scene.id, 'scene', scene.title)} className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-destructive/10 text-destructive w-full text-left">
-                                                  <Trash2 className="size-3" /> Delete
-                                              </button>
-                                            </div>
-                                          </PopoverContent>
-                                      </Popover>
-                                    </div>
-                                 </div>
+				newIndex =
+					position === "before" ? targetSceneIndex : targetSceneIndex + 1;
+			}
 
-                                 {isSceneDropTarget && sceneDropPos === 'after' && <div className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-primary rounded-full z-10" />}
-                               </div>
-                             );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        )}
+			await moveScene(selectedProjectId!, draggedId, targetChapterId, newIndex);
+			toast.success("Scene moved");
+			if (targetType === "chapter" && !expandedChapters[targetChapterId]) {
+				toggleChapter(targetChapterId);
+			}
+		}
+	};
 
-        {/* Characters View */}
-        {rightPanelView === 'characters' && (
-        <SidebarGroup className="px-0">
-          <SidebarGroupLabel className="px-4">Characters</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <div className="px-2 pb-4 space-y-1">
-              {filteredData.roles.length === 0 ? (
-                <div className="mx-2 my-8 flex flex-col items-center text-center p-6 rounded-lg border border-dashed bg-sidebar-accent/30">
-                  <Users className="size-8 text-muted-foreground/50 mb-3" />
-                  <span className="text-sm font-medium">No characters</span>
-                  <Button size="sm" variant="link" onClick={handleAddRole}>Create character</Button>
-                </div>
-              ) : (
-                filteredData.roles.map((role) => (
-                  <div
-                    key={role.id}
-                    className="group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors hover:bg-sidebar-accent/50 text-muted-foreground hover:text-foreground"
-                  >
-                    <Users className="size-3.5 shrink-0 opacity-70" />
-                    
-                    {renamingId === role.id ? (
-                         <Input 
-                           autoFocus
-                           defaultValue={role.name}
-                           className="h-6 text-sm px-1 py-0"
-                           onBlur={(e) => handleRename(role.id, 'role', e.target.value)}
-                           onKeyDown={(e) => {
-                             if (e.key === 'Enter') handleRename(role.id, 'role', e.currentTarget.value);
-                             if (e.key === 'Escape') setRenamingId(null);
-                           }}
-                           onClick={(e) => e.stopPropagation()}
-                         />
-                    ) : (
-                         <div className="flex-1 min-w-0 flex items-center gap-2">
-                            <span className="truncate font-medium" onDoubleClick={() => setRenamingId(role.id)}>{role.name}</span>
-                            {role.alias && role.alias.length > 0 && (
-                                <span className="text-[10px] text-muted-foreground/60 truncate">
-                                    {role.alias.join(", ")}
-                                </span>
-                            )}
-                         </div>
-                    )}
+	// --- Filter Logic ---
+	const filteredData = useMemo(() => {
+		const query = searchQuery.toLowerCase();
 
-                    <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-                      <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground">
-                                <MoreHorizontal className="size-3.5" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent align="end" className="w-36 p-1">
-                            <div className="grid gap-0.5">
-                              <button onClick={() => setRenamingId(role.id)} className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left">
-                                  <Pencil className="size-3" /> Rename
-                              </button>
-                              <div className="h-px bg-border my-1" />
-                              <button onClick={() => handleDelete(role.id, 'role', role.name)} className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-destructive/10 text-destructive w-full text-left">
-                                  <Trash2 className="size-3" /> Delete
-                              </button>
-                            </div>
-                          </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        )}
+		const matchingScenes = query
+			? scenesOfProject.filter((s) => s.title.toLowerCase().includes(query))
+			: scenesOfProject;
+		const matchingChapters = query
+			? projectChapters.filter(
+					(c) =>
+						c.title.toLowerCase().includes(query) ||
+						matchingScenes.some((s) => s.chapter === c.id),
+				)
+			: projectChapters;
+		const matchingRoles = query
+			? projectRoles.filter(
+					(r) =>
+						r.name.toLowerCase().includes(query) ||
+						r.alias?.some((a) => a.toLowerCase().includes(query)),
+				)
+			: projectRoles;
+		const matchingWorld = query
+			? projectWorldEntries.filter(
+					(w) =>
+						w.name.toLowerCase().includes(query) ||
+						w.category.toLowerCase().includes(query),
+				)
+			: projectWorldEntries;
 
-        {/* World View */}
-        {rightPanelView === 'world' && (
-        <SidebarGroup className="px-0">
-          <SidebarGroupLabel className="px-4">World Building</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <div className="px-2 pb-4 space-y-1">
-              {filteredData.world.length === 0 ? (
-                <div className="mx-2 my-8 flex flex-col items-center text-center p-6 rounded-lg border border-dashed bg-sidebar-accent/30">
-                  <Globe className="size-8 text-muted-foreground/50 mb-3" />
-                  <span className="text-sm font-medium">No entries</span>
-                  <Button size="sm" variant="link" onClick={handleAddWorldEntry}>Create entry</Button>
-                </div>
-              ) : (
-                filteredData.world.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors hover:bg-sidebar-accent/50 text-muted-foreground hover:text-foreground"
-                  >
-                    <MapPin className="size-3.5 shrink-0 opacity-70" />
-                    
-                    {renamingId === entry.id ? (
-                         <Input 
-                           autoFocus
-                           defaultValue={entry.name}
-                           className="h-6 text-sm px-1 py-0"
-                           onBlur={(e) => handleRename(entry.id, 'world', e.target.value)}
-                           onKeyDown={(e) => {
-                             if (e.key === 'Enter') handleRename(entry.id, 'world', e.currentTarget.value);
-                             if (e.key === 'Escape') setRenamingId(null);
-                           }}
-                           onClick={(e) => e.stopPropagation()}
-                         />
-                    ) : (
-                         <div className="flex-1 min-w-0 flex items-center gap-2">
-                            <span className="truncate font-medium" onDoubleClick={() => setRenamingId(entry.id)}>{entry.name}</span>
-                            <span className="shrink-0 text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted rounded-full">
-                                {entry.category}
-                            </span>
-                         </div>
-                    )}
+		return {
+			chapters: matchingChapters,
+			scenes: matchingScenes,
+			roles: matchingRoles,
+			world: matchingWorld,
+		};
+	}, [
+		projectChapters,
+		scenesOfProject,
+		projectRoles,
+		projectWorldEntries,
+		searchQuery,
+	]);
 
-                    <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-                      <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground">
-                                <MoreHorizontal className="size-3.5" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent align="end" className="w-36 p-1">
-                            <div className="grid gap-0.5">
-                              <button onClick={() => setRenamingId(entry.id)} className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left">
-                                  <Pencil className="size-3" /> Rename
-                              </button>
-                              <div className="h-px bg-border my-1" />
-                              <button onClick={() => handleDelete(entry.id, 'world', entry.name)} className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-destructive/10 text-destructive w-full text-left">
-                                  <Trash2 className="size-3" /> Delete
-                              </button>
-                            </div>
-                          </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        )}
-      </SidebarContent>
-      <SidebarFooter>
-        <div className="w-full p-2 text-center text-[10px] text-muted-foreground/40">
-           Novel Editor &copy; 2024
-        </div>
-      </SidebarFooter>
-    </UISidebar>
-  );
+	return (
+		<UISidebar
+			side="right"
+			className="border-l border-sidebar-border/30 bg-sidebar/50 backdrop-blur-sm"
+		>
+			<SidebarHeader className="flex flex-col gap-0 p-0 border-b border-sidebar-border/20">
+				{/* 项目选择器 */}
+				<div className="h-12 flex items-center justify-between px-4">
+					<div className="flex-1 min-w-0">
+						<Select
+							value={selectedProjectId ?? ""}
+							onValueChange={(v) => setSelectedProjectId(v || null)}
+						>
+							<SelectTrigger className="h-8 w-full border-none bg-transparent shadow-none p-0 hover:bg-sidebar-accent/50 focus:ring-0 font-semibold text-foreground">
+								<SelectValue placeholder="Select Book" />
+							</SelectTrigger>
+							<SelectContent>
+								{projects.map((p) => (
+									<SelectItem key={p.id} value={p.id}>
+										{p.title}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+
+					{/* 添加按钮 */}
+					{(!rightPanelView || rightPanelView === "outline") && (
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-7"
+							onClick={handleAddChapter}
+							title="Add Chapter"
+						>
+							<FolderPlus className="size-4 text-muted-foreground" />
+						</Button>
+					)}
+					{rightPanelView === "characters" && (
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-7"
+							onClick={handleAddRole}
+							title="Add Character"
+						>
+							<UserPlus className="size-4 text-muted-foreground" />
+						</Button>
+					)}
+					{rightPanelView === "world" && (
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-7"
+							onClick={handleAddWorldEntry}
+							title="Add Entry"
+						>
+							<Plus className="size-4 text-muted-foreground" />
+						</Button>
+					)}
+				</div>
+
+				{/* 标签页 */}
+				<div
+					className="flex items-center h-10 px-2 bg-muted/30"
+					data-tour="outline-tab"
+				>
+					<button
+						onClick={() => setRightPanelView(null)}
+						className={cn(
+							"flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors",
+							!rightPanelView || rightPanelView === "outline"
+								? "bg-background text-foreground shadow-sm font-medium"
+								: "text-muted-foreground hover:text-foreground hover:bg-background/50",
+						)}
+					>
+						<ListTree className="size-3.5" />
+						<span>大纲</span>
+					</button>
+					<button
+						onClick={() => setRightPanelView("characters")}
+						className={cn(
+							"flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors",
+							rightPanelView === "characters"
+								? "bg-background text-foreground shadow-sm font-medium"
+								: "text-muted-foreground hover:text-foreground hover:bg-background/50",
+						)}
+					>
+						<Users className="size-3.5" />
+						<span>角色</span>
+					</button>
+					<button
+						onClick={() => setRightPanelView("world")}
+						className={cn(
+							"flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors",
+							rightPanelView === "world"
+								? "bg-background text-foreground shadow-sm font-medium"
+								: "text-muted-foreground hover:text-foreground hover:bg-background/50",
+						)}
+					>
+						<Globe className="size-3.5" />
+						<span>世界观</span>
+					</button>
+				</div>
+			</SidebarHeader>
+
+			<SidebarContent className="px-0">
+				{/* Global Search Bar */}
+				<div className="px-2 py-2">
+					<div className="relative">
+						<Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+						<Input
+							placeholder={
+								rightPanelView === "characters"
+									? "Search characters..."
+									: rightPanelView === "world"
+										? "Search world info..."
+										: "Search outline..."
+							}
+							className="h-8 pl-8 text-xs bg-background/50 border-transparent focus:border-border focus:bg-background transition-all"
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+						/>
+					</div>
+				</div>
+
+				{(!rightPanelView || rightPanelView === "outline") && (
+					<SidebarGroup className="px-0 h-full flex flex-col">
+						<SidebarGroupContent className="flex-1 flex flex-col min-h-0">
+							<div className="flex-1 overflow-auto px-2 pb-4 space-y-1">
+								{selectedProjectId &&
+								filteredData.chapters.length === 0 &&
+								!searchQuery ? (
+									<div className="mx-2 my-8 flex flex-col items-center text-center p-6 rounded-lg border border-dashed bg-sidebar-accent/30">
+										<BookOpen className="size-8 text-muted-foreground/50 mb-3" />
+										<span className="text-sm font-medium">Start Writing</span>
+										<Button size="sm" variant="link" onClick={handleAddChapter}>
+											Create first chapter
+										</Button>
+									</div>
+								) : (
+									filteredData.chapters.map((chapter) => {
+										const chapterScenes = filteredData.scenes
+											.filter((s) => s.chapter === chapter.id)
+											.sort((a, b) => a.order - b.order);
+
+										// Filter logic is already handled in useMemo but let's double check if we need to hide empty chapters if search is strict?
+										// Currently logic allows showing chapter if title matches.
+
+										const isExpanded =
+											expandedChapters[chapter.id] || !!searchQuery;
+										const isDragging = dragState.draggedId === chapter.id;
+										const isDropTarget = dragState.targetId === chapter.id;
+										const dropPos = dragState.position;
+
+										return (
+											<div
+												key={chapter.id}
+												className={cn(
+													"transition-all duration-200",
+													isDragging && "opacity-30",
+												)}
+												draggable
+												onDragStart={(e) =>
+													handleDragStart(e, chapter.id, "chapter")
+												}
+												onDragOver={(e) =>
+													handleDragOver(e, chapter.id, "chapter")
+												}
+												onDrop={(e) => handleDrop(e, chapter.id, "chapter")}
+											>
+												{/* Drop Indicator Before */}
+												{isDropTarget && dropPos === "before" && (
+													<div className="h-0.5 bg-primary my-1 rounded-full" />
+												)}
+
+												<div
+													className={cn(
+														"group flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-sidebar-accent/50",
+														selectedChapterId === chapter.id &&
+															!selectedSceneId &&
+															"bg-sidebar-accent text-sidebar-accent-foreground font-medium",
+														isDropTarget &&
+															dropPos === "inside" &&
+															"bg-sidebar-accent ring-1 ring-primary/20",
+													)}
+													onClick={() => setSelectedChapterId(chapter.id)}
+												>
+													<button
+														onClick={(e) => {
+															e.stopPropagation();
+															toggleChapter(chapter.id);
+														}}
+														className="p-0.5 hover:bg-black/5 rounded"
+													>
+														{isExpanded ? (
+															<ChevronDown className="size-3.5 text-muted-foreground" />
+														) : (
+															<ChevronRight className="size-3.5 text-muted-foreground" />
+														)}
+													</button>
+
+													<Folder
+														className={cn(
+															"size-4 shrink-0",
+															selectedChapterId === chapter.id
+																? "text-blue-500"
+																: "text-blue-500/70",
+														)}
+													/>
+
+													{renamingId === chapter.id ? (
+														<Input
+															autoFocus
+															defaultValue={chapter.title}
+															className="h-6 text-sm px-1 py-0"
+															onBlur={(e) =>
+																handleRename(
+																	chapter.id,
+																	"chapter",
+																	e.target.value,
+																)
+															}
+															onKeyDown={(e) => {
+																if (e.key === "Enter")
+																	handleRename(
+																		chapter.id,
+																		"chapter",
+																		e.currentTarget.value,
+																	);
+																if (e.key === "Escape") setRenamingId(null);
+															}}
+															onClick={(e) => e.stopPropagation()}
+														/>
+													) : (
+														<span
+															className="flex-1 text-sm truncate"
+															onDoubleClick={() => setRenamingId(chapter.id)}
+														>
+															{chapter.title}
+														</span>
+													)}
+
+													<div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+														<Popover>
+															<PopoverTrigger asChild>
+																<Button
+																	variant="ghost"
+																	size="icon"
+																	className="h-5 w-5 text-muted-foreground"
+																>
+																	<MoreHorizontal className="size-3.5" />
+																</Button>
+															</PopoverTrigger>
+															<PopoverContent align="end" className="w-40 p-1">
+																<div className="grid gap-0.5">
+																	<button
+																		onClick={() => handleAddScene(chapter.id)}
+																		className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left"
+																	>
+																		<Plus className="size-3" /> Add Scene
+																	</button>
+																	<button
+																		onClick={() =>
+																			handleAddCanvasScene(chapter.id)
+																		}
+																		className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left"
+																	>
+																		<PenTool className="size-3" /> Add Canvas
+																	</button>
+																	<button
+																		onClick={() => setRenamingId(chapter.id)}
+																		className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left"
+																	>
+																		<Pencil className="size-3" /> Rename
+																	</button>
+																	<div className="h-px bg-border my-1" />
+																	<button
+																		onClick={() =>
+																			handleDelete(
+																				chapter.id,
+																				"chapter",
+																				chapter.title,
+																			)
+																		}
+																		className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-destructive/10 text-destructive w-full text-left"
+																	>
+																		<Trash2 className="size-3" /> Delete
+																	</button>
+																</div>
+															</PopoverContent>
+														</Popover>
+													</div>
+												</div>
+
+												{/* Drop Indicator After */}
+												{isDropTarget && dropPos === "after" && (
+													<div className="h-0.5 bg-primary my-1 rounded-full" />
+												)}
+
+												{/* Scenes List */}
+												{isExpanded && (
+													<div className="ml-3 pl-3 border-l border-border/40 mt-0.5 space-y-0.5">
+														{chapterScenes.map((scene) => {
+															const isSceneDragging =
+																dragState.draggedId === scene.id;
+															const isSceneDropTarget =
+																dragState.targetId === scene.id;
+															const sceneDropPos = dragState.position;
+
+															return (
+																<div
+																	key={scene.id}
+																	className={cn(
+																		"transition-all duration-200 relative",
+																		isSceneDragging && "opacity-30",
+																	)}
+																	draggable
+																	onDragStart={(e) =>
+																		handleDragStart(e, scene.id, "scene")
+																	}
+																	onDragOver={(e) =>
+																		handleDragOver(e, scene.id, "scene")
+																	}
+																	onDrop={(e) =>
+																		handleDrop(e, scene.id, "scene")
+																	}
+																>
+																	{isSceneDropTarget &&
+																		sceneDropPos === "before" && (
+																			<div className="absolute -top-0.5 left-0 right-0 h-0.5 bg-primary rounded-full z-10" />
+																		)}
+
+																	<div
+																		className={cn(
+																			"group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors hover:bg-sidebar-accent/50",
+																			selectedSceneId === scene.id &&
+																				"bg-sidebar-accent text-sidebar-accent-foreground font-medium",
+																			!selectedSceneId &&
+																				"text-muted-foreground hover:text-foreground",
+																		)}
+																		onClick={() => {
+																			setSelectedSceneId(scene.id);
+																			setSelectedChapterId(chapter.id);
+																		}}
+																	>
+																		{scene.type === "canvas" ? (
+																			<PenTool className="size-3.5 shrink-0 opacity-70 text-blue-500" />
+																		) : (
+																			<FileText className="size-3.5 shrink-0 opacity-70" />
+																		)}
+
+																		{renamingId === scene.id ? (
+																			<Input
+																				autoFocus
+																				defaultValue={scene.title}
+																				className="h-6 text-sm px-1 py-0"
+																				onBlur={(e) =>
+																					handleRename(
+																						scene.id,
+																						"scene",
+																						e.target.value,
+																					)
+																				}
+																				onKeyDown={(e) => {
+																					if (e.key === "Enter")
+																						handleRename(
+																							scene.id,
+																							"scene",
+																							e.currentTarget.value,
+																						);
+																					if (e.key === "Escape")
+																						setRenamingId(null);
+																				}}
+																				onClick={(e) => e.stopPropagation()}
+																			/>
+																		) : (
+																			<span
+																				className="flex-1 truncate"
+																				onDoubleClick={() =>
+																					setRenamingId(scene.id)
+																				}
+																			>
+																				{scene.title}
+																			</span>
+																		)}
+
+																		<div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+																			<Popover>
+																				<PopoverTrigger asChild>
+																					<Button
+																						variant="ghost"
+																						size="icon"
+																						className="h-5 w-5 text-muted-foreground"
+																					>
+																						<MoreHorizontal className="size-3.5" />
+																					</Button>
+																				</PopoverTrigger>
+																				<PopoverContent
+																					align="end"
+																					className="w-36 p-1"
+																				>
+																					<div className="grid gap-0.5">
+																						<button
+																							onClick={() =>
+																								setRenamingId(scene.id)
+																							}
+																							className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left"
+																						>
+																							<Pencil className="size-3" />{" "}
+																							Rename
+																						</button>
+																						<div className="h-px bg-border my-1" />
+																						<button
+																							onClick={() =>
+																								handleDelete(
+																									scene.id,
+																									"scene",
+																									scene.title,
+																								)
+																							}
+																							className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-destructive/10 text-destructive w-full text-left"
+																						>
+																							<Trash2 className="size-3" />{" "}
+																							Delete
+																						</button>
+																					</div>
+																				</PopoverContent>
+																			</Popover>
+																		</div>
+																	</div>
+
+																	{isSceneDropTarget &&
+																		sceneDropPos === "after" && (
+																			<div className="absolute -bottom-0.5 left-0 right-0 h-0.5 bg-primary rounded-full z-10" />
+																		)}
+																</div>
+															);
+														})}
+													</div>
+												)}
+											</div>
+										);
+									})
+								)}
+							</div>
+						</SidebarGroupContent>
+					</SidebarGroup>
+				)}
+
+				{/* Characters View */}
+				{rightPanelView === "characters" && (
+					<SidebarGroup className="px-0">
+						<SidebarGroupLabel className="px-4">Characters</SidebarGroupLabel>
+						<SidebarGroupContent>
+							<div className="px-2 pb-4 space-y-1">
+								{filteredData.roles.length === 0 ? (
+									<div className="mx-2 my-8 flex flex-col items-center text-center p-6 rounded-lg border border-dashed bg-sidebar-accent/30">
+										<Users className="size-8 text-muted-foreground/50 mb-3" />
+										<span className="text-sm font-medium">No characters</span>
+										<Button size="sm" variant="link" onClick={handleAddRole}>
+											Create character
+										</Button>
+									</div>
+								) : (
+									filteredData.roles.map((role) => (
+										<div
+											key={role.id}
+											className="group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors hover:bg-sidebar-accent/50 text-muted-foreground hover:text-foreground"
+										>
+											<Users className="size-3.5 shrink-0 opacity-70" />
+
+											{renamingId === role.id ? (
+												<Input
+													autoFocus
+													defaultValue={role.name}
+													className="h-6 text-sm px-1 py-0"
+													onBlur={(e) =>
+														handleRename(role.id, "role", e.target.value)
+													}
+													onKeyDown={(e) => {
+														if (e.key === "Enter")
+															handleRename(
+																role.id,
+																"role",
+																e.currentTarget.value,
+															);
+														if (e.key === "Escape") setRenamingId(null);
+													}}
+													onClick={(e) => e.stopPropagation()}
+												/>
+											) : (
+												<div className="flex-1 min-w-0 flex items-center gap-2">
+													<span
+														className="truncate font-medium"
+														onDoubleClick={() => setRenamingId(role.id)}
+													>
+														{role.name}
+													</span>
+													{role.alias && role.alias.length > 0 && (
+														<span className="text-[10px] text-muted-foreground/60 truncate">
+															{role.alias.join(", ")}
+														</span>
+													)}
+												</div>
+											)}
+
+											<div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+												<Popover>
+													<PopoverTrigger asChild>
+														<Button
+															variant="ghost"
+															size="icon"
+															className="h-5 w-5 text-muted-foreground"
+														>
+															<MoreHorizontal className="size-3.5" />
+														</Button>
+													</PopoverTrigger>
+													<PopoverContent align="end" className="w-36 p-1">
+														<div className="grid gap-0.5">
+															<button
+																onClick={() => setRenamingId(role.id)}
+																className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left"
+															>
+																<Pencil className="size-3" /> Rename
+															</button>
+															<div className="h-px bg-border my-1" />
+															<button
+																onClick={() =>
+																	handleDelete(role.id, "role", role.name)
+																}
+																className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-destructive/10 text-destructive w-full text-left"
+															>
+																<Trash2 className="size-3" /> Delete
+															</button>
+														</div>
+													</PopoverContent>
+												</Popover>
+											</div>
+										</div>
+									))
+								)}
+							</div>
+						</SidebarGroupContent>
+					</SidebarGroup>
+				)}
+
+				{/* World View */}
+				{rightPanelView === "world" && (
+					<SidebarGroup className="px-0">
+						<SidebarGroupLabel className="px-4">
+							World Building
+						</SidebarGroupLabel>
+						<SidebarGroupContent>
+							<div className="px-2 pb-4 space-y-1">
+								{filteredData.world.length === 0 ? (
+									<div className="mx-2 my-8 flex flex-col items-center text-center p-6 rounded-lg border border-dashed bg-sidebar-accent/30">
+										<Globe className="size-8 text-muted-foreground/50 mb-3" />
+										<span className="text-sm font-medium">No entries</span>
+										<Button
+											size="sm"
+											variant="link"
+											onClick={handleAddWorldEntry}
+										>
+											Create entry
+										</Button>
+									</div>
+								) : (
+									filteredData.world.map((entry) => (
+										<div
+											key={entry.id}
+											className="group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors hover:bg-sidebar-accent/50 text-muted-foreground hover:text-foreground"
+										>
+											<MapPin className="size-3.5 shrink-0 opacity-70" />
+
+											{renamingId === entry.id ? (
+												<Input
+													autoFocus
+													defaultValue={entry.name}
+													className="h-6 text-sm px-1 py-0"
+													onBlur={(e) =>
+														handleRename(entry.id, "world", e.target.value)
+													}
+													onKeyDown={(e) => {
+														if (e.key === "Enter")
+															handleRename(
+																entry.id,
+																"world",
+																e.currentTarget.value,
+															);
+														if (e.key === "Escape") setRenamingId(null);
+													}}
+													onClick={(e) => e.stopPropagation()}
+												/>
+											) : (
+												<div className="flex-1 min-w-0 flex items-center gap-2">
+													<span
+														className="truncate font-medium"
+														onDoubleClick={() => setRenamingId(entry.id)}
+													>
+														{entry.name}
+													</span>
+													<span className="shrink-0 text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted rounded-full">
+														{entry.category}
+													</span>
+												</div>
+											)}
+
+											<div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+												<Popover>
+													<PopoverTrigger asChild>
+														<Button
+															variant="ghost"
+															size="icon"
+															className="h-5 w-5 text-muted-foreground"
+														>
+															<MoreHorizontal className="size-3.5" />
+														</Button>
+													</PopoverTrigger>
+													<PopoverContent align="end" className="w-36 p-1">
+														<div className="grid gap-0.5">
+															<button
+																onClick={() => setRenamingId(entry.id)}
+																className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left"
+															>
+																<Pencil className="size-3" /> Rename
+															</button>
+															<div className="h-px bg-border my-1" />
+															<button
+																onClick={() =>
+																	handleDelete(entry.id, "world", entry.name)
+																}
+																className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-destructive/10 text-destructive w-full text-left"
+															>
+																<Trash2 className="size-3" /> Delete
+															</button>
+														</div>
+													</PopoverContent>
+												</Popover>
+											</div>
+										</div>
+									))
+								)}
+							</div>
+						</SidebarGroupContent>
+					</SidebarGroup>
+				)}
+			</SidebarContent>
+			<SidebarFooter>
+				<div className="w-full p-2 text-center text-[10px] text-muted-foreground/40">
+					Novel Editor &copy; 2024
+				</div>
+			</SidebarFooter>
+		</UISidebar>
+	);
 }

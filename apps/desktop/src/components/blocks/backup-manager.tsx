@@ -1,33 +1,40 @@
 /**
  * 备份管理器组件
  */
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import {
-	Download,
-	Upload,
-	Archive,
-	Trash2,
-	Database,
-	Clock,
-	FileText,
-	Loader2,
-} from "lucide-react";
-import {
-	exportBackup,
-	exportBackupZip,
-	restoreBackup,
-	getDatabaseStats,
-	autoBackupManager,
-	type BackupData,
-} from "@/services/backup";
-import { toast } from "sonner";
+
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import {
+	Archive,
+	Clock,
+	Database,
+	Download,
+	FileText,
+	Loader2,
+	Trash2,
+	Upload,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import {
+	autoBackupManager,
+	type BackupData,
+	exportBackup,
+	exportBackupZip,
+	getDatabaseStats,
+	restoreBackup,
+} from "@/services/backup";
 import "dayjs/locale/zh-cn";
 import { useConfirm } from "@/components/ui/confirm";
 
@@ -38,7 +45,9 @@ export function BackupManager() {
 	const [stats, setStats] = useState<any>(null);
 	const [loading, setLoading] = useState(false);
 	const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
-	const [localBackups, setLocalBackups] = useState<Array<{ timestamp: string; data: BackupData }>>([]);
+	const [localBackups, setLocalBackups] = useState<
+		Array<{ timestamp: string; data: BackupData }>
+	>([]);
 	const confirm = useConfirm();
 
 	// 加载统计信息
@@ -100,7 +109,8 @@ export function BackupManager() {
 	const handleRestore = async () => {
 		const confirmed = await confirm({
 			title: "恢复备份",
-			description: "恢复备份将覆盖当前数据，此操作不可撤销。建议先导出当前数据作为备份。",
+			description:
+				"恢复备份将覆盖当前数据，此操作不可撤销。建议先导出当前数据作为备份。",
 			confirmText: "确认恢复",
 			cancelText: "取消",
 		});
@@ -197,7 +207,9 @@ export function BackupManager() {
 							</div>
 							<div className="space-y-1">
 								<p className="text-sm text-muted-foreground">总字数</p>
-								<p className="text-2xl font-bold">{stats.totalWords.toLocaleString()}</p>
+								<p className="text-2xl font-bold">
+									{stats.totalWords.toLocaleString()}
+								</p>
 							</div>
 						</div>
 					) : (
@@ -223,11 +235,19 @@ export function BackupManager() {
 							<Download className="size-4 mr-2" />
 							导出 JSON
 						</Button>
-						<Button onClick={handleExportZip} disabled={loading} variant="outline">
+						<Button
+							onClick={handleExportZip}
+							disabled={loading}
+							variant="outline"
+						>
 							<Archive className="size-4 mr-2" />
 							导出 ZIP
 						</Button>
-						<Button onClick={handleRestore} disabled={loading} variant="outline">
+						<Button
+							onClick={handleRestore}
+							disabled={loading}
+							variant="outline"
+						>
 							<Upload className="size-4 mr-2" />
 							恢复备份
 						</Button>
@@ -245,7 +265,9 @@ export function BackupManager() {
 						<Clock className="size-5" />
 						自动备份
 					</CardTitle>
-					<CardDescription>每24小时自动创建本地备份（最多保留3个）</CardDescription>
+					<CardDescription>
+						每24小时自动创建本地备份（最多保留3个）
+					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="flex items-center justify-between">
@@ -273,10 +295,13 @@ export function BackupManager() {
 											<FileText className="size-4 text-muted-foreground" />
 											<div>
 												<p className="text-sm font-medium">
-													{dayjs(backup.timestamp).format("YYYY-MM-DD HH:mm:ss")}
+													{dayjs(backup.timestamp).format(
+														"YYYY-MM-DD HH:mm:ss",
+													)}
 												</p>
 												<p className="text-xs text-muted-foreground">
-													{dayjs(backup.timestamp).fromNow()} · {backup.data.metadata.projectCount} 个项目
+													{dayjs(backup.timestamp).fromNow()} ·{" "}
+													{backup.data.metadata.projectCount} 个项目
 												</p>
 											</div>
 										</div>
@@ -311,7 +336,8 @@ export function BackupManager() {
 						onClick={async () => {
 							const confirmed = await confirm({
 								title: "清空所有数据",
-								description: "此操作将永久删除所有项目、章节、场景等数据，且无法恢复！",
+								description:
+									"此操作将永久删除所有项目、章节、场景等数据，且无法恢复！",
 								confirmText: "确认清空",
 								cancelText: "取消",
 							});

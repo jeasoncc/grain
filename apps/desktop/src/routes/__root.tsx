@@ -1,18 +1,7 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { FormDevtoolsPlugin } from "@tanstack/react-form-devtools";
 import { createRootRoute, Outlet } from "@tanstack/react-router";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { ActivityBar } from "@/components/activity-bar";
-import { BottomDrawer } from "@/components/bottom-drawer";
-import { BottomDrawerContent } from "@/components/bottom-drawer-content";
-import { CommandPalette } from "@/components/command-palette";
-import { FontStyleInjector } from "@/components/font-style-injector";
-import { OnboardingTour } from "@/components/onboarding-tour";
-import { GlobalSearch } from "@/components/blocks/global-search";
-import { ConfirmProvider } from "@/components/ui/confirm";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import { initializeTheme } from "@/hooks/use-theme";
 import {
 	CircleCheckIcon,
 	InfoIcon,
@@ -20,13 +9,37 @@ import {
 	OctagonXIcon,
 	TriangleAlertIcon,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ActivityBar } from "@/components/activity-bar";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SearchSidebar } from "@/components/search-sidebar";
+import { GlobalSearch } from "@/components/blocks/global-search";
+import { BottomDrawer } from "@/components/bottom-drawer";
+import { BottomDrawerContent } from "@/components/bottom-drawer-content";
+import { CommandPalette } from "@/components/command-palette";
+import { FontStyleInjector } from "@/components/font-style-injector";
+import { OnboardingTour } from "@/components/onboarding-tour";
+import { ConfirmProvider } from "@/components/ui/confirm";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
-import { useState, useEffect } from "react";
+import { initializeTheme } from "@/hooks/use-theme";
 import { autoBackupManager } from "@/services/backup";
 
 function RootComponent() {
 	const [commandOpen, setCommandOpen] = useState(false);
 	const [searchOpen, setSearchOpen] = useState(false);
+	const [searchSidebarOpen, setSearchSidebarOpen] = useState(false);
+	
+	// 侧边栏默认状态：从 localStorage 读取，默认关闭
+	const [sidebarOpen, setSidebarOpen] = useState(() => {
+		const saved = localStorage.getItem("sidebar-open");
+		return saved ? saved === "true" : false;
+	});
+
+	// 保存侧边栏状态到 localStorage
+	useEffect(() => {
+		localStorage.setItem("sidebar-open", String(sidebarOpen));
+	}, [sidebarOpen]);
 
 	// 初始化主题系统（包括系统主题监听）
 	useEffect(() => {
@@ -56,22 +69,27 @@ function RootComponent() {
 				e.preventDefault();
 				setSearchOpen(true);
 			}
+			// 注意：Ctrl/Cmd + B 由 SidebarProvider 内置处理
 		};
 
 		// 监听自定义事件（从命令面板触发）
 		const handleOpenSearch = () => setSearchOpen(true);
+		const handleToggleSearchSidebar = () => setSearchSidebarOpen((prev) => !prev);
+		
 		window.addEventListener("open-global-search", handleOpenSearch);
-
+		window.addEventListener("toggle-search-sidebar", handleToggleSearchSidebar);
 		window.addEventListener("keydown", handleKeyDown);
+		
 		return () => {
 			window.removeEventListener("keydown", handleKeyDown);
 			window.removeEventListener("open-global-search", handleOpenSearch);
+			window.removeEventListener("toggle-search-sidebar", handleToggleSearchSidebar);
 		};
 	}, []);
 
 	return (
 		<ConfirmProvider>
-			<SidebarProvider open>
+			<SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
 				<Toaster
 					icons={{
 						success: <CircleCheckIcon className="size-4 text-green-500" />,
@@ -86,6 +104,12 @@ function RootComponent() {
 				<div className="flex min-h-screen w-full">
 					<ActivityBar />
 					<AppSidebar />
+					{/* 搜索侧边栏 */}
+					{searchSidebarOpen && (
+						<div className="w-80 shrink-0">
+							<SearchSidebar />
+						</div>
+					)}
 					<SidebarInset className="bg-background text-foreground flex-1 min-h-svh transition-colors duration-300 ease-in-out">
 						<div className="flex-1 min-h-0 overflow-auto">
 							<Outlet />

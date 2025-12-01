@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Check, Moon, Sun } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Check, Moon, Sun } from "lucide-react";
-import { getLightThemes, getDarkThemes, type Theme } from "@/lib/themes";
 import { useTheme } from "@/hooks/use-theme";
+import { getDarkThemes, getLightThemes, type Theme } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings/design")({
@@ -65,21 +65,30 @@ function DesignSettings() {
 							))}
 						</div>
 					</section>
+					
+
 				</div>
 
 				{/* 右侧：预览 */}
-				<div className="lg:col-span-7">
-					<div className="sticky top-24">
+				<div className="lg:col-span-7 space-y-4">
+					<div className="sticky top-24 space-y-4">
+						{/* 主题预览 */}
 						<Card className="overflow-hidden border-2 shadow-xl">
-							<CardHeader className="border-b p-4" style={{ background: currentTheme?.colors.sidebar }}>
+							<CardHeader
+								className="border-b p-4"
+								style={{ background: currentTheme?.colors.sidebar }}
+							>
 								<div className="flex items-center gap-2">
 									<div className="flex gap-1.5">
 										<div className="size-3 rounded-full bg-red-500/80" />
 										<div className="size-3 rounded-full bg-yellow-500/80" />
 										<div className="size-3 rounded-full bg-green-500/80" />
 									</div>
-									<span className="text-xs ml-2" style={{ color: currentTheme?.colors.sidebarForeground }}>
-										预览 - {currentTheme?.name}
+									<span
+										className="text-xs ml-2"
+										style={{ color: currentTheme?.colors.sidebarForeground }}
+									>
+										主题预览 - {currentTheme?.name}
 									</span>
 								</div>
 							</CardHeader>
@@ -158,8 +167,9 @@ function DesignSettings() {
 								</div>
 							</CardContent>
 						</Card>
-						<p className="text-xs text-muted-foreground text-center mt-3">
-							预览展示当前主题效果
+
+						<p className="text-xs text-muted-foreground text-center">
+							实时预览当前主题效果
 						</p>
 					</div>
 				</div>
@@ -183,36 +193,69 @@ function ThemeCard({ theme, isActive, onSelect }: ThemeCardProps) {
 			className={cn(
 				"relative flex flex-col rounded-lg border-2 overflow-hidden transition-all text-left",
 				"hover:shadow-lg hover:scale-[1.02]",
-				isActive ? "border-primary ring-2 ring-primary/20" : "border-border"
+				isActive ? "border-primary ring-2 ring-primary/20" : "border-border",
 			)}
 		>
 			{/* 主题预览 */}
-			<div className="h-20 w-full flex" style={{ background: colors.background }}>
+			<div
+				className="h-20 w-full flex"
+				style={{ background: colors.background }}
+			>
 				{/* 模拟侧边栏 */}
-				<div className="w-1/4 h-full border-r" style={{ background: colors.sidebar, borderColor: colors.sidebarBorder }} />
+				<div
+					className="w-1/4 h-full border-r"
+					style={{
+						background: colors.sidebar,
+						borderColor: colors.sidebarBorder,
+					}}
+				/>
 				{/* 模拟编辑区 */}
 				<div className="flex-1 p-2 flex flex-col gap-1.5">
-					<div className="h-2 w-3/4 rounded" style={{ background: colors.primary }} />
-					<div className="h-1.5 w-full rounded opacity-60" style={{ background: colors.foreground }} />
-					<div className="h-1.5 w-2/3 rounded opacity-40" style={{ background: colors.foreground }} />
-					<div className="h-1.5 w-4/5 rounded opacity-40" style={{ background: colors.foreground }} />
+					<div
+						className="h-2 w-3/4 rounded"
+						style={{ background: colors.primary }}
+					/>
+					<div
+						className="h-1.5 w-full rounded opacity-60"
+						style={{ background: colors.foreground }}
+					/>
+					<div
+						className="h-1.5 w-2/3 rounded opacity-40"
+						style={{ background: colors.foreground }}
+					/>
+					<div
+						className="h-1.5 w-4/5 rounded opacity-40"
+						style={{ background: colors.foreground }}
+					/>
 				</div>
 			</div>
 
 			{/* 主题信息 */}
 			<div className="px-3 py-2" style={{ background: colors.card }}>
-				<div className="text-sm font-medium" style={{ color: colors.cardForeground }}>
+				<div
+					className="text-sm font-medium"
+					style={{ color: colors.cardForeground }}
+				>
 					{theme.name}
 				</div>
-				<div className="text-xs opacity-60" style={{ color: colors.cardForeground }}>
+				<div
+					className="text-xs opacity-60"
+					style={{ color: colors.cardForeground }}
+				>
 					{theme.description}
 				</div>
 			</div>
 
 			{/* 选中标记 */}
 			{isActive && (
-				<div className="absolute top-2 right-2 size-5 rounded-full flex items-center justify-center" style={{ background: colors.primary }}>
-					<Check className="size-3" style={{ color: colors.primaryForeground }} />
+				<div
+					className="absolute top-2 right-2 size-5 rounded-full flex items-center justify-center"
+					style={{ background: colors.primary }}
+				>
+					<Check
+						className="size-3"
+						style={{ color: colors.primaryForeground }}
+					/>
 				</div>
 			)}
 		</button>

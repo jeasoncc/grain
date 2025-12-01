@@ -1,17 +1,27 @@
 /**
  * 全局搜索组件
  */
-import { useState, useEffect, useCallback } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+
+import { useNavigate } from "@tanstack/react-router";
+import { FileText, Globe, Loader2, Search, User, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Search, FileText, User, Globe, Loader2, X } from "lucide-react";
-import { searchEngine, type SearchResult, type SearchResultType } from "@/services/search";
 import { cn } from "@/lib/utils";
-import { useNavigate } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
+import {
+	type SearchResult,
+	type SearchResultType,
+	searchEngine,
+} from "@/services/search";
 
 interface GlobalSearchProps {
 	open: boolean;
@@ -147,12 +157,15 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 		const parts = text.split(new RegExp(`(${query})`, "gi"));
 		return parts.map((part, index) =>
 			part.toLowerCase() === query.toLowerCase() ? (
-				<mark key={index} className="bg-yellow-200 dark:bg-yellow-900/50 text-foreground">
+				<mark
+					key={index}
+					className="bg-yellow-200 dark:bg-yellow-900/50 text-foreground"
+				>
 					{part}
 				</mark>
 			) : (
 				part
-			)
+			),
 		);
 	};
 
@@ -204,11 +217,16 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 										className={cn(
 											"w-full text-left p-3 rounded-lg transition-colors",
 											"hover:bg-accent",
-											index === selectedIndex && "bg-accent"
+											index === selectedIndex && "bg-accent",
 										)}
 									>
 										<div className="flex items-start gap-3">
-											<div className={cn("p-2 rounded-md", typeColors[result.type])}>
+											<div
+												className={cn(
+													"p-2 rounded-md",
+													typeColors[result.type],
+												)}
+											>
 												<Icon className="size-4" />
 											</div>
 											<div className="flex-1 min-w-0">

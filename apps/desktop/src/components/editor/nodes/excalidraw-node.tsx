@@ -1,8 +1,7 @@
 /**
  * Excalidraw 节点 - 在 Lexical 编辑器中嵌入绘图
  */
-import * as React from "react";
-import { JSX, Suspense } from "react";
+
 import type {
 	DOMConversionMap,
 	DOMExportOutput,
@@ -13,7 +12,8 @@ import type {
 	Spread,
 } from "lexical";
 import { $applyNodeReplacement, DecoratorNode } from "lexical";
-
+import * as React from "react";
+import { type JSX, Suspense } from "react";
 
 const ExcalidrawComponent = React.lazy(
 	() => import("../editor-ui/excalidraw-component"),
@@ -84,10 +84,8 @@ export class ExcalidrawNode extends DecoratorNode<JSX.Element> {
 					return {
 						conversion: () => {
 							const data = element.getAttribute("data-excalidraw-data") || "";
-							const width =
-								Number.parseInt(element.style.width, 10) || 600;
-							const height =
-								Number.parseInt(element.style.height, 10) || 400;
+							const width = Number.parseInt(element.style.width, 10) || 600;
+							const height = Number.parseInt(element.style.height, 10) || 400;
 							return { node: $createExcalidrawNode({ data, width, height }) };
 						},
 						priority: 1,

@@ -2,21 +2,25 @@
  * 导出服务 - 支持 PDF、Word、TXT、EPUB 格式导出
  */
 import {
+	AlignmentType,
 	Document,
+	Footer,
+	Header,
+	HeadingLevel,
 	Packer,
+	PageBreak,
+	PageNumber,
 	Paragraph,
 	TextRun,
-	HeadingLevel,
-	AlignmentType,
-	PageBreak,
-	Header,
-	Footer,
-	PageNumber,
 } from "docx";
 import { saveAs } from "file-saver";
 import JSZip from "jszip";
 import { db } from "@/db/curd";
-import type { ProjectInterface, ChapterInterface, SceneInterface } from "@/db/schema";
+import type {
+	ChapterInterface,
+	ProjectInterface,
+	SceneInterface,
+} from "@/db/schema";
 import { extractTextFromSerialized } from "@/lib/statistics";
 
 export interface ExportOptions {
@@ -47,10 +51,7 @@ async function getProjectContent(projectId: string) {
 		.equals(projectId)
 		.sortBy("order");
 
-	const scenes = await db.scenes
-		.where("project")
-		.equals(projectId)
-		.toArray();
+	const scenes = await db.scenes.where("project").equals(projectId).toArray();
 
 	// 按章节组织场景
 	const chapterContents = chapters.map((chapter) => {
@@ -88,7 +89,7 @@ function getSceneText(scene: SceneInterface): string {
 
 export async function exportToTxt(
 	projectId: string,
-	options: ExportOptions = {}
+	options: ExportOptions = {},
 ): Promise<void> {
 	const opts = { ...defaultOptions, ...options };
 	const { project, chapterContents } = await getProjectContent(projectId);
@@ -156,7 +157,7 @@ export async function exportToTxt(
 
 export async function exportToWord(
 	projectId: string,
-	options: ExportOptions = {}
+	options: ExportOptions = {},
 ): Promise<void> {
 	const opts = { ...defaultOptions, ...options };
 	const { project, chapterContents } = await getProjectContent(projectId);
@@ -171,7 +172,7 @@ export async function exportToWord(
 				heading: HeadingLevel.TITLE,
 				alignment: AlignmentType.CENTER,
 				spacing: { after: 400 },
-			})
+			}),
 		);
 	}
 
@@ -181,7 +182,7 @@ export async function exportToWord(
 				text: `作者：${project.author}`,
 				alignment: AlignmentType.CENTER,
 				spacing: { after: 800 },
-			})
+			}),
 		);
 	}
 
@@ -194,7 +195,7 @@ export async function exportToWord(
 			children.push(
 				new Paragraph({
 					children: [new PageBreak()],
-				})
+				}),
 			);
 		}
 
@@ -205,7 +206,7 @@ export async function exportToWord(
 					text: chapter.title,
 					heading: HeadingLevel.HEADING_1,
 					spacing: { before: 400, after: 200 },
-				})
+				}),
 			);
 		}
 
@@ -217,7 +218,7 @@ export async function exportToWord(
 						text: scene.title,
 						heading: HeadingLevel.HEADING_2,
 						spacing: { before: 200, after: 100 },
-					})
+					}),
 				);
 			}
 
@@ -235,7 +236,7 @@ export async function exportToWord(
 								}),
 							],
 							spacing: { line: 360, after: 120 }, // 1.5倍行距
-						})
+						}),
 					);
 				}
 			}
@@ -303,7 +304,7 @@ export async function exportToWord(
 
 export async function exportToPdf(
 	projectId: string,
-	options: ExportOptions = {}
+	options: ExportOptions = {},
 ): Promise<void> {
 	const opts = { ...defaultOptions, ...options };
 	const { project, chapterContents } = await getProjectContent(projectId);
@@ -330,8 +331,11 @@ export async function exportToPdf(
 
 function generatePrintHtml(
 	project: ProjectInterface,
-	chapterContents: Array<{ chapter: ChapterInterface; scenes: SceneInterface[] }>,
-	opts: ExportOptions
+	chapterContents: Array<{
+		chapter: ChapterInterface;
+		scenes: SceneInterface[];
+	}>,
+	opts: ExportOptions,
 ): string {
 	let content = "";
 
@@ -504,7 +508,7 @@ function escapeHtml(text: string): string {
 
 export async function exportToEpub(
 	projectId: string,
-	options: ExportOptions = {}
+	options: ExportOptions = {},
 ): Promise<void> {
 	const opts = { ...defaultOptions, ...options };
 	const { project, chapterContents } = await getProjectContent(projectId);
@@ -525,7 +529,7 @@ export async function exportToEpub(
   <rootfiles>
     <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
   </rootfiles>
-</container>`
+</container>`,
 	);
 
 	// 生成章节 HTML 文件
@@ -538,7 +542,7 @@ export async function exportToEpub(
 			`<div class="title-page">
 				<h1>${escapeHtml(title)}</h1>
 				${opts.includeAuthor ? `<p class="author">${escapeHtml(author)}</p>` : ""}
-			</div>`
+			</div>`,
 		);
 		zip.file("OEBPS/title.xhtml", titleHtml);
 		chapters.push({ id: "title", title: "封面", filename: "title.xhtml" });
@@ -623,15 +627,20 @@ body {
 p {
 	text-indent: 2em;
 	margin: 0.5em 0;
-}`
+}`,
 	);
 
 	// content.opf (包清单)
 	const manifestItems = chapters
-		.map((ch) => `    <item id="${ch.id}" href="${ch.filename}" media-type="application/xhtml+xml"/>`)
+		.map(
+			(ch) =>
+				`    <item id="${ch.id}" href="${ch.filename}" media-type="application/xhtml+xml"/>`,
+		)
 		.join("\n");
 
-	const spineItems = chapters.map((ch) => `    <itemref idref="${ch.id}"/>`).join("\n");
+	const spineItems = chapters
+		.map((ch) => `    <itemref idref="${ch.id}"/>`)
+		.join("\n");
 
 	const navPoints = chapters
 		.map(
@@ -639,7 +648,7 @@ p {
     <navPoint id="navpoint-${i + 1}" playOrder="${i + 1}">
       <navLabel><text>${escapeHtml(ch.title)}</text></navLabel>
       <content src="${ch.filename}"/>
-    </navPoint>`
+    </navPoint>`,
 		)
 		.join("");
 
@@ -663,7 +672,7 @@ ${manifestItems}
   <spine toc="ncx">
 ${spineItems}
   </spine>
-</package>`
+</package>`,
 	);
 
 	// toc.ncx (目录 - EPUB 2 兼容)
@@ -680,12 +689,15 @@ ${spineItems}
   <docTitle><text>${escapeHtml(title)}</text></docTitle>
   <navMap>${navPoints}
   </navMap>
-</ncx>`
+</ncx>`,
 	);
 
 	// nav.xhtml (目录 - EPUB 3)
 	const navItems = chapters
-		.map((ch) => `      <li><a href="${ch.filename}">${escapeHtml(ch.title)}</a></li>`)
+		.map(
+			(ch) =>
+				`      <li><a href="${ch.filename}">${escapeHtml(ch.title)}</a></li>`,
+		)
 		.join("\n");
 
 	zip.file(
@@ -706,7 +718,7 @@ ${navItems}
     </ol>
   </nav>
 </body>
-</html>`
+</html>`,
 	);
 
 	// 生成 EPUB 文件
@@ -744,7 +756,7 @@ export type ExportFormat = "pdf" | "docx" | "txt" | "epub";
 export async function exportProject(
 	projectId: string,
 	format: ExportFormat,
-	options?: ExportOptions
+	options?: ExportOptions,
 ): Promise<void> {
 	switch (format) {
 		case "pdf":

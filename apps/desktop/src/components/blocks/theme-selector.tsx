@@ -1,22 +1,22 @@
 /**
  * 主题选择器 - VS Code 风格
- * 
+ *
  * 功能：
  * - 主题预览卡片
  * - 系统主题跟随模式
  * - 过渡动画开关
  */
-import { Palette, Check, Sun, Moon, Monitor } from "lucide-react";
+import { Check, Monitor, Moon, Palette, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { useTheme, type ThemeMode } from "@/hooks/use-theme";
-import { getLightThemes, getDarkThemes, type Theme } from "@/lib/themes";
+import { type ThemeMode, useTheme } from "@/hooks/use-theme";
+import { getDarkThemes, getLightThemes, type Theme } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 
 // 模式配置
@@ -27,14 +27,14 @@ const modeConfig: { mode: ThemeMode; icon: typeof Sun; label: string }[] = [
 ];
 
 export function ThemeSelector() {
-	const { 
-		theme, 
-		setTheme, 
-		currentTheme, 
-		mode, 
-		setMode, 
-		enableTransition, 
-		setEnableTransition 
+	const {
+		theme,
+		setTheme,
+		currentTheme,
+		mode,
+		setMode,
+		enableTransition,
+		setEnableTransition,
 	} = useTheme();
 
 	const lightThemes = getLightThemes();
@@ -66,7 +66,7 @@ export function ThemeSelector() {
 									"flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all",
 									mode === m
 										? "bg-background text-foreground shadow-sm"
-										: "text-muted-foreground hover:text-foreground"
+										: "text-muted-foreground hover:text-foreground",
 								)}
 							>
 								<Icon className="size-3.5" />
@@ -79,7 +79,9 @@ export function ThemeSelector() {
 					<div>
 						<div className="flex items-center gap-2 mb-2">
 							<Sun className="size-3.5 text-muted-foreground" />
-							<span className="text-xs text-muted-foreground font-medium">浅色主题</span>
+							<span className="text-xs text-muted-foreground font-medium">
+								浅色主题
+							</span>
 						</div>
 						<div className="grid grid-cols-3 gap-2">
 							{lightThemes.map((t) => (
@@ -97,7 +99,9 @@ export function ThemeSelector() {
 					<div>
 						<div className="flex items-center gap-2 mb-2">
 							<Moon className="size-3.5 text-muted-foreground" />
-							<span className="text-xs text-muted-foreground font-medium">深色主题</span>
+							<span className="text-xs text-muted-foreground font-medium">
+								深色主题
+							</span>
 						</div>
 						<div className="grid grid-cols-3 gap-2">
 							{darkThemes.map((t) => (
@@ -113,7 +117,10 @@ export function ThemeSelector() {
 
 					{/* 过渡动画开关 */}
 					<div className="flex items-center justify-between pt-2 border-t">
-						<Label htmlFor="theme-transition" className="text-xs text-muted-foreground">
+						<Label
+							htmlFor="theme-transition"
+							className="text-xs text-muted-foreground"
+						>
 							切换过渡动画
 						</Label>
 						<Switch
@@ -144,7 +151,9 @@ function ThemeCard({ theme, isSelected, onSelect }: ThemeCardProps) {
 			className={cn(
 				"relative flex flex-col rounded-lg border-2 overflow-hidden transition-all",
 				"hover:scale-105 hover:shadow-md",
-				isSelected ? "border-primary ring-2 ring-primary/20" : "border-transparent"
+				isSelected
+					? "border-primary ring-2 ring-primary/20"
+					: "border-transparent",
 			)}
 		>
 			{/* 主题预览 */}
@@ -153,10 +162,7 @@ function ThemeCard({ theme, isSelected, onSelect }: ThemeCardProps) {
 				style={{ background: colors.background }}
 			>
 				{/* 模拟侧边栏 */}
-				<div
-					className="w-1/4 h-full"
-					style={{ background: colors.sidebar }}
-				/>
+				<div className="w-1/4 h-full" style={{ background: colors.sidebar }} />
 				{/* 模拟编辑区 */}
 				<div className="flex-1 p-1.5 flex flex-col gap-1">
 					<div

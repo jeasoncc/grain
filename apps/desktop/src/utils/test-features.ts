@@ -3,9 +3,9 @@
  * 用于验证新功能是否正常工作
  */
 import { db } from "@/db/curd";
+import logger from "@/log/index";
 import { createBackup, getDatabaseStats } from "@/services/backup";
 import { searchEngine } from "@/services/search";
-import logger from "@/log/index";
 
 /**
  * 测试备份功能
@@ -91,15 +91,25 @@ export async function testDatabaseIndexes() {
 
 			// 2. 测试章节查询（使用 project 索引）
 			const startTime1 = performance.now();
-			const chapters = await db.chapters.where("project").equals(projectId).toArray();
+			const chapters = await db.chapters
+				.where("project")
+				.equals(projectId)
+				.toArray();
 			const time1 = performance.now() - startTime1;
-			logger.info(`📖 章节查询: ${chapters.length} 个结果, 耗时 ${time1.toFixed(2)}ms`);
+			logger.info(
+				`📖 章节查询: ${chapters.length} 个结果, 耗时 ${time1.toFixed(2)}ms`,
+			);
 
 			// 3. 测试场景查询（使用 project 索引）
 			const startTime2 = performance.now();
-			const scenes = await db.scenes.where("project").equals(projectId).toArray();
+			const scenes = await db.scenes
+				.where("project")
+				.equals(projectId)
+				.toArray();
 			const time2 = performance.now() - startTime2;
-			logger.info(`📄 场景查询: ${scenes.length} 个结果, 耗时 ${time2.toFixed(2)}ms`);
+			logger.info(
+				`📄 场景查询: ${scenes.length} 个结果, 耗时 ${time2.toFixed(2)}ms`,
+			);
 
 			// 4. 验证性能
 			if (time1 > 100 || time2 > 100) {

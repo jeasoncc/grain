@@ -2,10 +2,11 @@
  * 备份与恢复服务
  * 提供完整的数据库备份、恢复、自动备份功能
  */
+
+import dayjs from "dayjs";
 import { saveAs } from "file-saver";
 import JSZip from "jszip";
 import { db } from "@/db/curd";
-import dayjs from "dayjs";
 import logger from "@/log/index";
 
 export interface BackupMetadata {
@@ -35,17 +36,25 @@ export interface BackupData {
 export async function createBackup(): Promise<BackupData> {
 	logger.info("开始创建备份...");
 
-	const [users, projects, chapters, scenes, roles, worldEntries, attachments, dbVersions] =
-		await Promise.all([
-			db.users.toArray(),
-			db.projects.toArray(),
-			db.chapters.toArray(),
-			db.scenes.toArray(),
-			db.roles.toArray(),
-			db.worldEntries.toArray(),
-			db.attachments.toArray(),
-			db.dbVersions.toArray(),
-		]);
+	const [
+		users,
+		projects,
+		chapters,
+		scenes,
+		roles,
+		worldEntries,
+		attachments,
+		dbVersions,
+	] = await Promise.all([
+		db.users.toArray(),
+		db.projects.toArray(),
+		db.chapters.toArray(),
+		db.scenes.toArray(),
+		db.roles.toArray(),
+		db.worldEntries.toArray(),
+		db.attachments.toArray(),
+		db.dbVersions.toArray(),
+	]);
 
 	const backup: BackupData = {
 		metadata: {
@@ -66,7 +75,9 @@ export async function createBackup(): Promise<BackupData> {
 		dbVersions,
 	};
 
-	logger.success(`备份创建成功: ${projects.length} 个项目, ${scenes.length} 个场景`);
+	logger.success(
+		`备份创建成功: ${projects.length} 个项目, ${scenes.length} 个场景`,
+	);
 	return backup;
 }
 
@@ -107,7 +118,7 @@ export async function exportBackupZip(): Promise<void> {
 2. 进入设置 -> 数据管理
 3. 选择"恢复备份"
 4. 选择此文件
-`
+`,
 	);
 
 	// 生成压缩包
@@ -156,29 +167,39 @@ export async function restoreBackup(file: File): Promise<void> {
 		// await clearAllData();
 
 		// 恢复数据
-		await db.transaction("rw", [
-			db.users,
-			db.projects,
-			db.chapters,
-			db.scenes,
-			db.roles,
-			db.worldEntries,
-			db.attachments,
-			db.dbVersions,
-		], async () => {
-			// 批量插入数据
-			if (backupData.users?.length) await db.users.bulkPut(backupData.users);
-			if (backupData.projects?.length) await db.projects.bulkPut(backupData.projects);
-			if (backupData.chapters?.length) await db.chapters.bulkPut(backupData.chapters);
-			if (backupData.scenes?.length) await db.scenes.bulkPut(backupData.scenes);
-			if (backupData.roles?.length) await db.roles.bulkPut(backupData.roles);
-			if (backupData.worldEntries?.length) await db.worldEntries.bulkPut(backupData.worldEntries);
-			if (backupData.attachments?.length) await db.attachments.bulkPut(backupData.attachments);
-			if (backupData.dbVersions?.length) await db.dbVersions.bulkPut(backupData.dbVersions);
-		});
+		await db.transaction(
+			"rw",
+			[
+				db.users,
+				db.projects,
+				db.chapters,
+				db.scenes,
+				db.roles,
+				db.worldEntries,
+				db.attachments,
+				db.dbVersions,
+			],
+			async () => {
+				// 批量插入数据
+				if (backupData.users?.length) await db.users.bulkPut(backupData.users);
+				if (backupData.projects?.length)
+					await db.projects.bulkPut(backupData.projects);
+				if (backupData.chapters?.length)
+					await db.chapters.bulkPut(backupData.chapters);
+				if (backupData.scenes?.length)
+					await db.scenes.bulkPut(backupData.scenes);
+				if (backupData.roles?.length) await db.roles.bulkPut(backupData.roles);
+				if (backupData.worldEntries?.length)
+					await db.worldEntries.bulkPut(backupData.worldEntries);
+				if (backupData.attachments?.length)
+					await db.attachments.bulkPut(backupData.attachments);
+				if (backupData.dbVersions?.length)
+					await db.dbVersions.bulkPut(backupData.dbVersions);
+			},
+		);
 
 		logger.success(
-			`备份恢复成功: ${backupData.metadata.projectCount} 个项目, ${backupData.metadata.sceneCount} 个场景`
+			`备份恢复成功: ${backupData.metadata.projectCount} 个项目, ${backupData.metadata.sceneCount} 个场景`,
 		);
 	} catch (error) {
 		logger.error("备份恢复失败:", error);
@@ -191,23 +212,27 @@ export async function restoreBackup(file: File): Promise<void> {
  */
 export async function clearAllData(): Promise<void> {
 	logger.warn("清空所有数据...");
-	await db.transaction("rw", [
-		db.users,
-		db.projects,
-		db.chapters,
-		db.scenes,
-		db.roles,
-		db.worldEntries,
-		db.attachments,
-	], async () => {
-		await db.users.clear();
-		await db.projects.clear();
-		await db.chapters.clear();
-		await db.scenes.clear();
-		await db.roles.clear();
-		await db.worldEntries.clear();
-		await db.attachments.clear();
-	});
+	await db.transaction(
+		"rw",
+		[
+			db.users,
+			db.projects,
+			db.chapters,
+			db.scenes,
+			db.roles,
+			db.worldEntries,
+			db.attachments,
+		],
+		async () => {
+			await db.users.clear();
+			await db.projects.clear();
+			await db.chapters.clear();
+			await db.scenes.clear();
+			await db.roles.clear();
+			await db.worldEntries.clear();
+			await db.attachments.clear();
+		},
+	);
 	logger.success("数据已清空");
 }
 
@@ -238,7 +263,10 @@ export async function getDatabaseStats() {
 	let totalWords = 0;
 	for (const scene of scenes) {
 		try {
-			const content = typeof scene.content === "string" ? JSON.parse(scene.content) : scene.content;
+			const content =
+				typeof scene.content === "string"
+					? JSON.parse(scene.content)
+					: scene.content;
 			const text = extractTextFromContent(content);
 			totalWords += countWords(text);
 		} catch {
@@ -265,7 +293,9 @@ function extractTextFromContent(content: any): string {
 	return children
 		.map((node: any) => {
 			if (node.type === "paragraph" || node.type === "heading") {
-				return node.children?.map((child: any) => child.text || "").join("") || "";
+				return (
+					node.children?.map((child: any) => child.text || "").join("") || ""
+				);
 			}
 			return "";
 		})
@@ -303,7 +333,7 @@ export class AutoBackupManager {
 		// 设置定时器
 		this.intervalId = window.setInterval(
 			() => this.checkAndBackup(),
-			intervalHours * 60 * 60 * 1000
+			intervalHours * 60 * 60 * 1000,
 		);
 
 		logger.info(`自动备份已启动，间隔: ${intervalHours} 小时`);
@@ -381,23 +411,34 @@ export class AutoBackupManager {
 		}
 
 		// 恢复数据
-		await db.transaction("rw", [
-			db.users,
-			db.projects,
-			db.chapters,
-			db.scenes,
-			db.roles,
-			db.worldEntries,
-			db.attachments,
-		], async () => {
-			if (backup.data.users?.length) await db.users.bulkPut(backup.data.users);
-			if (backup.data.projects?.length) await db.projects.bulkPut(backup.data.projects);
-			if (backup.data.chapters?.length) await db.chapters.bulkPut(backup.data.chapters);
-			if (backup.data.scenes?.length) await db.scenes.bulkPut(backup.data.scenes);
-			if (backup.data.roles?.length) await db.roles.bulkPut(backup.data.roles);
-			if (backup.data.worldEntries?.length) await db.worldEntries.bulkPut(backup.data.worldEntries);
-			if (backup.data.attachments?.length) await db.attachments.bulkPut(backup.data.attachments);
-		});
+		await db.transaction(
+			"rw",
+			[
+				db.users,
+				db.projects,
+				db.chapters,
+				db.scenes,
+				db.roles,
+				db.worldEntries,
+				db.attachments,
+			],
+			async () => {
+				if (backup.data.users?.length)
+					await db.users.bulkPut(backup.data.users);
+				if (backup.data.projects?.length)
+					await db.projects.bulkPut(backup.data.projects);
+				if (backup.data.chapters?.length)
+					await db.chapters.bulkPut(backup.data.chapters);
+				if (backup.data.scenes?.length)
+					await db.scenes.bulkPut(backup.data.scenes);
+				if (backup.data.roles?.length)
+					await db.roles.bulkPut(backup.data.roles);
+				if (backup.data.worldEntries?.length)
+					await db.worldEntries.bulkPut(backup.data.worldEntries);
+				if (backup.data.attachments?.length)
+					await db.attachments.bulkPut(backup.data.attachments);
+			},
+		);
 
 		logger.success(`已恢复备份: ${timestamp}`);
 	}

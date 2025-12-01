@@ -1,7 +1,8 @@
 /**
  * Excalidraw 组件 - 嵌入式绘图编辑器
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+
+import { Excalidraw, exportToBlob } from "@excalidraw/excalidraw";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { useLexicalNodeSelection } from "@lexical/react/useLexicalNodeSelection";
 import { mergeRegister } from "@lexical/utils";
@@ -13,22 +14,22 @@ import {
 	KEY_DELETE_COMMAND,
 	type NodeKey,
 } from "lexical";
-import { Excalidraw, exportToBlob } from "@excalidraw/excalidraw";
+import {
+	Download,
+	Edit3,
+	Eye,
+	Maximize2,
+	Minimize2,
+	Trash2,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "@/hooks/use-theme";
+import { cn } from "@/lib/utils";
 import {
 	$isExcalidrawNode,
 	type ExcalidrawData,
 } from "../nodes/excalidraw-node";
-import { useTheme } from "@/hooks/use-theme";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import {
-	Maximize2,
-	Minimize2,
-	Trash2,
-	Download,
-	Edit3,
-	Eye,
-} from "lucide-react";
 
 interface ExcalidrawComponentProps {
 	nodeKey: NodeKey;
@@ -163,14 +164,7 @@ export default function ExcalidrawComponent({
 				COMMAND_PRIORITY_LOW,
 			),
 		);
-	}, [
-		editor,
-		isSelected,
-		isEditing,
-		setSelected,
-		clearSelection,
-		deleteNode,
-	]);
+	}, [editor, isSelected, isEditing, setSelected, clearSelection, deleteNode]);
 
 	// 全屏模式处理
 	useEffect(() => {

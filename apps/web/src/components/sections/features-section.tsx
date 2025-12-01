@@ -129,10 +129,14 @@ export function FeaturesSection() {
               delay={index * 30}
             >
               <Card className="group h-full hover:-translate-y-2 transition-all duration-300 relative overflow-hidden">
-                {/* Decorative corner */}
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gray-100/30 dark:bg-gray-800/30 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                {/* Subtle gradient overlay on hover */}
+                {/* Decorative corner - 更精细 */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gray-100/30 dark:bg-gray-800/30 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 group-hover:scale-110 transition-transform duration-300"></div>
+                {/* 多层渐变叠加 */}
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-50/0 via-transparent to-gray-100/0 dark:from-gray-800/0 dark:to-gray-900/0 opacity-0 group-hover:opacity-100 group-hover:from-gray-50/50 dark:group-hover:from-gray-800/30 transition-all duration-500 pointer-events-none"></div>
+                {/* 精细的边框高光 */}
+                <div className="absolute inset-0 rounded-xl border border-transparent group-hover:border-gray-200/50 dark:group-hover:border-gray-700/50 transition-colors duration-300 pointer-events-none"></div>
+                {/* 闪烁光效 */}
+                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 group-hover:animate-shimmer pointer-events-none"></div>
                 <CardHeader className="pb-4 relative z-10">
                   <div className="relative">
                     <div className="absolute -inset-1 bg-gray-200/50 dark:bg-gray-700/50 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

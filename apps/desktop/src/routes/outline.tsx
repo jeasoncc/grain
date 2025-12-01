@@ -1,12 +1,15 @@
 // 大纲页面路由
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/db/curd";
-import { OutlineView } from "@/components/outline/outline-view";
-import { useNavigate } from "@tanstack/react-router";
-import { useSelectionStore } from "@/stores/selection";
 import { useCallback, useEffect } from "react";
-import type { ProjectInterface, ChapterInterface, SceneInterface } from "@/db/schema";
+import { OutlineView } from "@/components/outline/outline-view";
+import { db } from "@/db/curd";
+import type {
+	ChapterInterface,
+	ProjectInterface,
+	SceneInterface,
+} from "@/db/schema";
+import { useSelectionStore } from "@/stores/selection";
 
 export const Route = createFileRoute("/outline")({
 	component: OutlinePage,
@@ -14,17 +17,20 @@ export const Route = createFileRoute("/outline")({
 
 function OutlinePage() {
 	const navigate = useNavigate();
-	
+
 	// 获取所有数据
-	const projects = useLiveQuery<ProjectInterface[]>(() => db.getAllProjects(), []) ?? [];
-	const chapters = useLiveQuery<ChapterInterface[]>(() => db.getAllChapters(), []) ?? [];
-	const scenes = useLiveQuery<SceneInterface[]>(() => db.getAllScenes(), []) ?? [];
+	const projects =
+		useLiveQuery<ProjectInterface[]>(() => db.getAllProjects(), []) ?? [];
+	const chapters =
+		useLiveQuery<ChapterInterface[]>(() => db.getAllChapters(), []) ?? [];
+	const scenes =
+		useLiveQuery<SceneInterface[]>(() => db.getAllScenes(), []) ?? [];
 
 	// 使用全局选择状态
-	const selectedProjectId = useSelectionStore(s => s.selectedProjectId);
-	const setSelectedProjectId = useSelectionStore(s => s.setSelectedProjectId);
-	const setSelectedChapterId = useSelectionStore(s => s.setSelectedChapterId);
-	const setSelectedSceneId = useSelectionStore(s => s.setSelectedSceneId);
+	const selectedProjectId = useSelectionStore((s) => s.selectedProjectId);
+	const setSelectedProjectId = useSelectionStore((s) => s.setSelectedProjectId);
+	const setSelectedChapterId = useSelectionStore((s) => s.setSelectedChapterId);
+	const setSelectedSceneId = useSelectionStore((s) => s.setSelectedSceneId);
 
 	// 初始化项目选择
 	useEffect(() => {
@@ -33,28 +39,40 @@ function OutlinePage() {
 		}
 	}, [projects, selectedProjectId, setSelectedProjectId]);
 
-	const handleProjectChange = useCallback((projectId: string) => {
-		setSelectedProjectId(projectId);
-		setSelectedChapterId(null);
-		setSelectedSceneId(null);
-	}, [setSelectedProjectId, setSelectedChapterId, setSelectedSceneId]);
+	const handleProjectChange = useCallback(
+		(projectId: string) => {
+			setSelectedProjectId(projectId);
+			setSelectedChapterId(null);
+			setSelectedSceneId(null);
+		},
+		[setSelectedProjectId, setSelectedChapterId, setSelectedSceneId],
+	);
 
-	const handleNavigateToScene = useCallback((sceneId: string) => {
-		// 找到场景所属的章节和项目
-		const scene = scenes.find((s) => s.id === sceneId);
-		if (scene) {
-			// 设置选择状态
-			setSelectedProjectId(scene.project);
-			setSelectedChapterId(scene.chapter);
-			setSelectedSceneId(scene.id);
-			
-			// 导航到项目编辑页面
-			navigate({
-				to: "/projects/$projectId",
-				params: { projectId: scene.project },
-			});
-		}
-	}, [scenes, navigate, setSelectedProjectId, setSelectedChapterId, setSelectedSceneId]);
+	const handleNavigateToScene = useCallback(
+		(sceneId: string) => {
+			// 找到场景所属的章节和项目
+			const scene = scenes.find((s) => s.id === sceneId);
+			if (scene) {
+				// 设置选择状态
+				setSelectedProjectId(scene.project);
+				setSelectedChapterId(scene.chapter);
+				setSelectedSceneId(scene.id);
+
+				// 导航到项目编辑页面
+				navigate({
+					to: "/projects/$projectId",
+					params: { projectId: scene.project },
+				});
+			}
+		},
+		[
+			scenes,
+			navigate,
+			setSelectedProjectId,
+			setSelectedChapterId,
+			setSelectedSceneId,
+		],
+	);
 
 	if (projects.length === 0) {
 		return (

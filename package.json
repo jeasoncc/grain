@@ -5,10 +5,10 @@
   "email": "xiaomiquan@aliyun.com",
   "version": "0.1.0",
   "license": "MIT",
-  "homepage": "https://github.com/novel-editor/novel-editor-monorepo",
+  "homepage": "https://github.com/jeasoncc/novel-editor",
   "repository": {
     "type": "git",
-    "url": "https://github.com/novel-editor/novel-editor-monorepo.git"
+    "url": "https://github.com/jeasoncc/novel-editor.git"
   },
   "scripts": {
     "dev": "turbo run dev",

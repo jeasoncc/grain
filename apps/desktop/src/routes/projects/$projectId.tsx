@@ -2,9 +2,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useState } from "react";
 import { toast } from "sonner";
+import { openCreateBookDialog } from "@/components/blocks/createBookDialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/loading";
-import { openCreateBookDialog } from "@/components/blocks/createBookDialog";
 import { StoryWorkspace } from "@/components/workspace/story-workspace";
 import { db } from "@/db/curd";
 import type {
@@ -23,8 +23,14 @@ function ProjectRoute() {
 	const navigate = useNavigate();
 	const [creating, setCreating] = useState(false);
 
-	const projects = useLiveQuery<ProjectInterface[]>(() => db.getAllProjects(), []);
-	const chapters = useLiveQuery<ChapterInterface[]>(() => db.getAllChapters(), []);
+	const projects = useLiveQuery<ProjectInterface[]>(
+		() => db.getAllProjects(),
+		[],
+	);
+	const chapters = useLiveQuery<ChapterInterface[]>(
+		() => db.getAllChapters(),
+		[],
+	);
 	const scenes = useLiveQuery<SceneInterface[]>(() => db.getAllScenes(), []);
 
 	const handleCreateProject = async () => {

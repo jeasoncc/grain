@@ -1,20 +1,21 @@
 /**
  * 写作统计面板 - 显示写作目标、进度、会话统计
  */
-import { useEffect, useState, useRef } from "react";
-import { Target, Clock, TrendingUp, Flame, Settings2 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+
+import { Clock, Flame, Settings2, Target, TrendingUp } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { useWritingStore } from "@/stores/writing";
+import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { useWritingStore } from "@/stores/writing";
 
 interface WritingStatsPanelProps {
 	currentWordCount: number;
@@ -92,7 +93,7 @@ export function WritingStatsPanel({
 		<div
 			className={cn(
 				"flex items-center gap-4 text-sm text-muted-foreground",
-				className
+				className,
 			)}
 		>
 			{/* 今日进度 */}
@@ -102,7 +103,8 @@ export function WritingStatsPanel({
 					<div className="flex items-center gap-2">
 						<Progress value={progress} className="w-24 h-2" />
 						<span className="text-xs tabular-nums">
-							{todayWordCount.toLocaleString()}/{writingGoal.dailyTarget.toLocaleString()}
+							{todayWordCount.toLocaleString()}/
+							{writingGoal.dailyTarget.toLocaleString()}
 						</span>
 					</div>
 					{progress >= 100 && <Flame className="size-4 text-orange-500" />}
@@ -115,7 +117,9 @@ export function WritingStatsPanel({
 					<div className="w-px h-4 bg-border" />
 					<div className="flex items-center gap-1.5">
 						<Clock className="size-3.5" />
-						<span className="text-xs tabular-nums">{formatDuration(sessionDuration)}</span>
+						<span className="text-xs tabular-nums">
+							{formatDuration(sessionDuration)}
+						</span>
 					</div>
 					<div className="flex items-center gap-1.5">
 						<TrendingUp className="size-3.5" />
@@ -143,7 +147,9 @@ export function WritingStatsPanel({
 							<Switch
 								id="goal-enabled"
 								checked={writingGoal.enabled}
-								onCheckedChange={(checked: boolean) => setWritingGoal({ enabled: checked })}
+								onCheckedChange={(checked: boolean) =>
+									setWritingGoal({ enabled: checked })
+								}
 							/>
 						</div>
 

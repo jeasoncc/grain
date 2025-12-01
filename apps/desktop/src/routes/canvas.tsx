@@ -1,11 +1,10 @@
 /**
  * 绘图画布页面 - 使用 Excalidraw 在线版本
  */
-import { createFileRoute } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ExternalLink } from "lucide-react";
-import { useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/canvas")({
 	component: CanvasPage,

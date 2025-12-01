@@ -60,7 +60,8 @@ export const useWritingStore = create<WritingState>()(
 			// 打字机模式
 			typewriterMode: false,
 			setTypewriterMode: (typewriterMode) => set({ typewriterMode }),
-			toggleTypewriterMode: () => set((s) => ({ typewriterMode: !s.typewriterMode })),
+			toggleTypewriterMode: () =>
+				set((s) => ({ typewriterMode: !s.typewriterMode })),
 
 			// 写作目标
 			writingGoal: {
@@ -102,22 +103,25 @@ export const useWritingStore = create<WritingState>()(
 			updateSessionWordCount: (wordCount) => {
 				const state = get();
 				if (!state.session) return;
-				
+
 				// 避免重复更新相同的字数
 				if (state.session.currentWordCount === wordCount) return;
-				
+
 				const wordsWritten = wordCount - state.session.currentWordCount;
 				const today = getTodayDate();
-				
+
 				set({
 					session: { ...state.session, currentWordCount: wordCount },
 					// 只有字数增加时才更新今日字数
-					...(wordsWritten > 0 ? {
-						todayWordCount: state.todayDate === today 
-							? state.todayWordCount + wordsWritten 
-							: wordsWritten,
-						todayDate: today,
-					} : {}),
+					...(wordsWritten > 0
+						? {
+								todayWordCount:
+									state.todayDate === today
+										? state.todayWordCount + wordsWritten
+										: wordsWritten,
+								todayDate: today,
+							}
+						: {}),
 				});
 			},
 			endSession: () => set({ session: null }),
@@ -135,6 +139,6 @@ export const useWritingStore = create<WritingState>()(
 				todayDate: state.todayDate,
 				minimalToolbar: state.minimalToolbar,
 			}),
-		}
-	)
+		},
+	),
 );

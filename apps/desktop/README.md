@@ -26,12 +26,15 @@ Novel Editor is a modern, cross-platform writing environment built with **Tauri*
 ### Writing Experience
 - Rich-text editor with styling, markdown shortcuts, templates, and dark/light themes.
 - Immersive full-screen mode, customizable layouts, and distraction controls.
+- **Collapsible sidebar** (`Ctrl+B`): Hide the book library for maximum writing space.
 - Inline comments, version history, and compare views for safe iteration.
 
 ### Project Organization
 - Tree-based project navigator covering books → chapters → scenes.
 - Character, location, and lore databases with custom fields and tags.
-- **Global search** (`Ctrl+Shift+F`): Fast full-text search with keyword highlighting and smart ranking.
+- **Search & Replace**:
+  - In-file search/replace (`Ctrl+F` / `Ctrl+H`): Case-sensitive, whole word, regex support
+  - Global search (`Ctrl+Shift+F`): Fast full-text search across scenes, characters, and world-building with keyword highlighting and smart ranking
 - **Backup & restore**: Automatic daily backups + manual export in JSON/ZIP format.
 - Import/export (Markdown, DOCX, PDF, EPUB) to keep work portable.
 

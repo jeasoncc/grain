@@ -1,31 +1,33 @@
 // 字体样式注入器 - 将字体设置应用到全局
 import { useEffect } from "react";
-import { useFontSettings, AVAILABLE_FONTS } from "@/stores/font";
+import { AVAILABLE_FONTS, useFontSettings } from "@/stores/font";
 
 export function FontStyleInjector() {
-  const {
-    fontFamily,
-    fontSize,
-    lineHeight,
-    letterSpacing,
-    paragraphSpacing,
-    firstLineIndent,
-  } = useFontSettings();
+	const {
+		fontFamily,
+		fontSize,
+		lineHeight,
+		letterSpacing,
+		paragraphSpacing,
+		firstLineIndent,
+	} = useFontSettings();
 
-  useEffect(() => {
-    const font = AVAILABLE_FONTS.find((f) => f.value === fontFamily);
-    if (!font) return;
+	useEffect(() => {
+		const font = AVAILABLE_FONTS.find((f) => f.value === fontFamily);
+		if (!font) return;
 
-    // 创建或更新 style 标签
-    let styleEl = document.getElementById("font-settings-style") as HTMLStyleElement;
-    if (!styleEl) {
-      styleEl = document.createElement("style");
-      styleEl.id = "font-settings-style";
-      document.head.appendChild(styleEl);
-    }
+		// 创建或更新 style 标签
+		let styleEl = document.getElementById(
+			"font-settings-style",
+		) as HTMLStyleElement;
+		if (!styleEl) {
+			styleEl = document.createElement("style");
+			styleEl.id = "font-settings-style";
+			document.head.appendChild(styleEl);
+		}
 
-    // 应用字体设置到编辑器
-    styleEl.textContent = `
+		// 应用字体设置到编辑器
+		styleEl.textContent = `
       /* 编辑器字体设置 */
       .editor-container,
       .editor-container p,
@@ -61,13 +63,20 @@ export function FontStyleInjector() {
       }
     `;
 
-    return () => {
-      // 清理
-      if (styleEl && styleEl.parentNode) {
-        styleEl.parentNode.removeChild(styleEl);
-      }
-    };
-  }, [fontFamily, fontSize, lineHeight, letterSpacing, paragraphSpacing, firstLineIndent]);
+		return () => {
+			// 清理
+			if (styleEl && styleEl.parentNode) {
+				styleEl.parentNode.removeChild(styleEl);
+			}
+		};
+	}, [
+		fontFamily,
+		fontSize,
+		lineHeight,
+		letterSpacing,
+		paragraphSpacing,
+		firstLineIndent,
+	]);
 
-  return null;
+	return null;
 }

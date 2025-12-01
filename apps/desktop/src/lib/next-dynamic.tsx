@@ -1,13 +1,17 @@
-import { ComponentType, lazy, Suspense, type JSX } from "react";
+import { type ComponentType, type JSX, lazy, Suspense } from "react";
 
-type DynamicLoader<TProps extends object> = () => Promise<{ default: ComponentType<TProps> }>;
+type DynamicLoader<TProps extends object> = () => Promise<{
+	default: ComponentType<TProps>;
+}>;
 
 type DynamicOptions = {
 	loading?: ComponentType;
 	ssr?: boolean;
 };
 
-export default function dynamic<TProps extends object = Record<string, unknown>>(
+export default function dynamic<
+	TProps extends object = Record<string, unknown>,
+>(
 	loader: DynamicLoader<TProps>,
 	options: DynamicOptions = {},
 ): ComponentType<TProps> {

@@ -2,12 +2,24 @@
  * 全局搜索服务
  * 支持跨项目、章节、场景的全文搜索
  */
-import { db } from "@/db/curd";
-import type { ProjectInterface, ChapterInterface, SceneInterface, RoleInterface, WorldEntryInterface } from "@/db/schema";
+
 import lunr from "lunr";
+import { db } from "@/db/curd";
+import type {
+	ChapterInterface,
+	ProjectInterface,
+	RoleInterface,
+	SceneInterface,
+	WorldEntryInterface,
+} from "@/db/schema";
 import logger from "@/log/index";
 
-export type SearchResultType = "project" | "chapter" | "scene" | "role" | "world";
+export type SearchResultType =
+	| "project"
+	| "chapter"
+	| "scene"
+	| "role"
+	| "world";
 
 export interface SearchResult {
 	id: string;
@@ -130,7 +142,7 @@ export class SearchEngine {
 			for (const entry of worldEntries) this.indexedData.set(entry.id, entry);
 
 			logger.success(
-				`索引构建完成: ${scenes.length} 场景, ${roles.length} 角色, ${worldEntries.length} 世界观条目`
+				`索引构建完成: ${scenes.length} 场景, ${roles.length} 角色, ${worldEntries.length} 世界观条目`,
 			);
 		} catch (error) {
 			logger.error("索引构建失败:", error);
@@ -143,7 +155,10 @@ export class SearchEngine {
 	/**
 	 * 执行搜索
 	 */
-	async search(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
+	async search(
+		query: string,
+		options: SearchOptions = {},
+	): Promise<SearchResult[]> {
 		if (!query.trim()) return [];
 
 		// 确保索引已构建
@@ -260,7 +275,10 @@ export class SearchEngine {
 	/**
 	 * 简单搜索（不使用索引，适合实时搜索）
 	 */
-	async simpleSearch(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
+	async simpleSearch(
+		query: string,
+		options: SearchOptions = {},
+	): Promise<SearchResult[]> {
 		if (!query.trim()) return [];
 
 		const {
@@ -383,13 +401,18 @@ export class SearchEngine {
 // 辅助函数：从场景中提取文本
 function extractTextFromScene(scene: SceneInterface): string {
 	try {
-		const content = typeof scene.content === "string" ? JSON.parse(scene.content) : scene.content;
+		const content =
+			typeof scene.content === "string"
+				? JSON.parse(scene.content)
+				: scene.content;
 		if (!content || !content.root) return "";
 		const children = content.root.children || [];
 		return children
 			.map((node: any) => {
 				if (node.type === "paragraph" || node.type === "heading") {
-					return node.children?.map((child: any) => child.text || "").join("") || "";
+					return (
+						node.children?.map((child: any) => child.text || "").join("") || ""
+					);
 				}
 				return "";
 			})
@@ -400,17 +423,27 @@ function extractTextFromScene(scene: SceneInterface): string {
 }
 
 // 辅助函数：生成摘要
-function generateExcerpt(content: string, query: string, contextLength = 100): string {
+function generateExcerpt(
+	content: string,
+	query: string,
+	contextLength = 100,
+): string {
 	const lowerContent = content.toLowerCase();
 	const lowerQuery = query.toLowerCase();
 	const index = lowerContent.indexOf(lowerQuery);
 
 	if (index === -1) {
-		return content.slice(0, contextLength) + (content.length > contextLength ? "..." : "");
+		return (
+			content.slice(0, contextLength) +
+			(content.length > contextLength ? "..." : "")
+		);
 	}
 
 	const start = Math.max(0, index - contextLength / 2);
-	const end = Math.min(content.length, index + query.length + contextLength / 2);
+	const end = Math.min(
+		content.length,
+		index + query.length + contextLength / 2,
+	);
 
 	let excerpt = content.slice(start, end);
 	if (start > 0) excerpt = "..." + excerpt;
@@ -420,7 +453,11 @@ function generateExcerpt(content: string, query: string, contextLength = 100): s
 }
 
 // 辅助函数：提取高亮关键词
-function extractHighlights(content: string, query: string, maxHighlights = 3): string[] {
+function extractHighlights(
+	content: string,
+	query: string,
+	maxHighlights = 3,
+): string[] {
 	const highlights: string[] = [];
 	const lowerContent = content.toLowerCase();
 	const lowerQuery = query.toLowerCase();
@@ -441,7 +478,11 @@ function extractHighlights(content: string, query: string, maxHighlights = 3): s
 }
 
 // 辅助函数：计算简单相关性分数
-function calculateSimpleScore(title: string, content: string, query: string): number {
+function calculateSimpleScore(
+	title: string,
+	content: string,
+	query: string,
+): number {
 	const lowerTitle = title.toLowerCase();
 	const lowerContent = content.toLowerCase();
 	const lowerQuery = query.toLowerCase();
@@ -454,7 +495,8 @@ function calculateSimpleScore(title: string, content: string, query: string): nu
 	else if (lowerTitle.includes(lowerQuery)) score += 50;
 
 	// 内容匹配次数
-	const matches = (lowerContent.match(new RegExp(lowerQuery, "g")) || []).length;
+	const matches = (lowerContent.match(new RegExp(lowerQuery, "g")) || [])
+		.length;
 	score += matches * 10;
 
 	return score;

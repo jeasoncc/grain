@@ -1,10 +1,15 @@
 /**
  * 主题 Hook - 使用 Zustand Store
- * 
+ *
  * 功能：
  * - 主题持久化（Zustand persist）
  * - 系统主题跟随
  * - 平滑过渡动画
  */
 
-export { useTheme, useThemeStore, initializeTheme, type ThemeMode } from "@/stores/theme";
+export {
+	initializeTheme,
+	type ThemeMode,
+	useTheme,
+	useThemeStore,
+} from "@/stores/theme";

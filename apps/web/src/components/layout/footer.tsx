@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { FileText, Github, Mail, MessageSquare, Code } from "lucide-react";
+import { OpenSourceBadges } from "@/components/ui/open-source-badges";
 
 const footerLinks = {
   product: [
-    { name: "功能特性", href: "#features" },
-    { name: "下载", href: "#download" },
-    { name: "更新日志", href: "#changelog" },
-    { name: "路线图", href: "#roadmap" },
+    { name: "功能特性", href: "/#features" },
+    { name: "下载", href: "/download" },
+    { name: "更新日志", href: "/#changelog" },
+    { name: "路线图", href: "/#roadmap" },
   ],
   resources: [
     { name: "文档", href: "/docs" },
@@ -15,15 +16,18 @@ const footerLinks = {
     { name: "常见问题", href: "/docs/faq" },
   ],
   community: [
-    { name: "GitHub", href: "https://github.com/yourusername/novel-editor" },
-    { name: "讨论区", href: "https://github.com/yourusername/novel-editor/discussions" },
-    { name: "问题反馈", href: "https://github.com/yourusername/novel-editor/issues" },
+    { name: "GitHub", href: "https://github.com/jeasoncc/novel-editor" },
+    { name: "讨论区", href: "https://github.com/jeasoncc/novel-editor/discussions" },
+    { name: "问题反馈", href: "https://github.com/jeasoncc/novel-editor/issues" },
     { name: "贡献指南", href: "/docs/contributing" },
+    { name: "贡献者", href: "/contributors" },
+    { name: "行为准则", href: "/conduct" },
   ],
   legal: [
     { name: "隐私政策", href: "/privacy" },
     { name: "使用条款", href: "/terms" },
     { name: "许可证", href: "/license" },
+    { name: "安全政策", href: "/security" },
   ],
 };
 
@@ -45,7 +49,7 @@ export function Footer() {
             </p>
             <div className="flex gap-3">
               <a
-                href="https://github.com/yourusername/novel-editor"
+                href="https://github.com/jeasoncc/novel-editor"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition"
@@ -144,6 +148,11 @@ export function Footer() {
               ))}
             </ul>
           </div>
+        </div>
+
+        {/* Open Source Badges */}
+        <div className="pt-8 border-t border-gray-200 dark:border-gray-800 mb-8">
+          <OpenSourceBadges className="justify-center" />
         </div>
 
         {/* Bottom */}

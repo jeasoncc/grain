@@ -10,28 +10,28 @@ export interface ThemeColors {
 	cardForeground: string;
 	popover: string;
 	popoverForeground: string;
-	
+
 	// 主色调
 	primary: string;
 	primaryForeground: string;
-	
+
 	// 次要色
 	secondary: string;
 	secondaryForeground: string;
-	
+
 	// 柔和色
 	muted: string;
 	mutedForeground: string;
-	
+
 	// 强调色
 	accent: string;
 	accentForeground: string;
-	
+
 	// 边框和输入
 	border: string;
 	input: string;
 	ring: string;
-	
+
 	// 侧边栏
 	sidebar: string;
 	sidebarForeground: string;
@@ -40,18 +40,18 @@ export interface ThemeColors {
 	sidebarAccent: string;
 	sidebarAccentForeground: string;
 	sidebarBorder: string;
-	
+
 	// 编辑器扩展颜色（可选）
 	editorCursor?: string;
 	editorSelection?: string;
 	editorLineHighlight?: string;
-	
+
 	// 状态颜色（可选）
 	success?: string;
 	warning?: string;
 	error?: string;
 	info?: string;
-	
+
 	// 编辑器语法高亮（可选）
 	syntaxHeading?: string;
 	syntaxBold?: string;
@@ -782,6 +782,486 @@ export const themes: Theme[] = [
 			sidebarBorder: "#504945",
 		},
 	},
+	{
+		key: "night-owl",
+		name: "Night Owl",
+		description: "夜猫子深色主题",
+		type: "dark",
+		colors: {
+			background: "#011627",
+			foreground: "#d6deeb",
+			card: "#01111d",
+			cardForeground: "#d6deeb",
+			popover: "#01111d",
+			popoverForeground: "#d6deeb",
+			primary: "#82aaff",
+			primaryForeground: "#011627",
+			secondary: "#0b2942",
+			secondaryForeground: "#d6deeb",
+			muted: "#0b2942",
+			mutedForeground: "#637777",
+			accent: "#1d3b53",
+			accentForeground: "#d6deeb",
+			border: "#1d3b53",
+			input: "#1d3b53",
+			ring: "#82aaff",
+			sidebar: "#011627",
+			sidebarForeground: "#d6deeb",
+			sidebarPrimary: "#82aaff",
+			sidebarPrimaryForeground: "#011627",
+			sidebarAccent: "#1d3b53",
+			sidebarAccentForeground: "#d6deeb",
+			sidebarBorder: "#1d3b53",
+		},
+	},
+	{
+		key: "cobalt2",
+		name: "Cobalt2",
+		description: "鲜艳的蓝色主题",
+		type: "dark",
+		colors: {
+			background: "#193549",
+			foreground: "#ffffff",
+			card: "#122738",
+			cardForeground: "#ffffff",
+			popover: "#122738",
+			popoverForeground: "#ffffff",
+			primary: "#ffc600",
+			primaryForeground: "#193549",
+			secondary: "#1f4662",
+			secondaryForeground: "#ffffff",
+			muted: "#1f4662",
+			mutedForeground: "#0088ff",
+			accent: "#1f4662",
+			accentForeground: "#ffffff",
+			border: "#0d3a58",
+			input: "#0d3a58",
+			ring: "#ffc600",
+			sidebar: "#15232d",
+			sidebarForeground: "#ffffff",
+			sidebarPrimary: "#ffc600",
+			sidebarPrimaryForeground: "#193549",
+			sidebarAccent: "#1f4662",
+			sidebarAccentForeground: "#ffffff",
+			sidebarBorder: "#0d3a58",
+		},
+	},
+	{
+		key: "synthwave-84",
+		name: "SynthWave '84",
+		description: "赛博朋克霓虹主题",
+		type: "dark",
+		colors: {
+			background: "#262335",
+			foreground: "#f92aad",
+			card: "#1e1b2e",
+			cardForeground: "#f92aad",
+			popover: "#1e1b2e",
+			popoverForeground: "#f92aad",
+			primary: "#ff7edb",
+			primaryForeground: "#262335",
+			secondary: "#2a2139",
+			secondaryForeground: "#f92aad",
+			muted: "#2a2139",
+			mutedForeground: "#848bbd",
+			accent: "#34294f",
+			accentForeground: "#f92aad",
+			border: "#495495",
+			input: "#495495",
+			ring: "#ff7edb",
+			sidebar: "#241b2f",
+			sidebarForeground: "#f92aad",
+			sidebarPrimary: "#ff7edb",
+			sidebarPrimaryForeground: "#262335",
+			sidebarAccent: "#34294f",
+			sidebarAccentForeground: "#f92aad",
+			sidebarBorder: "#495495",
+		},
+	},
+	{
+		key: "shades-of-purple",
+		name: "Shades of Purple",
+		description: "紫色渐变主题",
+		type: "dark",
+		colors: {
+			background: "#2d2b55",
+			foreground: "#ffffff",
+			card: "#1e1e3f",
+			cardForeground: "#ffffff",
+			popover: "#1e1e3f",
+			popoverForeground: "#ffffff",
+			primary: "#fad000",
+			primaryForeground: "#2d2b55",
+			secondary: "#4d21fc",
+			secondaryForeground: "#ffffff",
+			muted: "#4d21fc",
+			mutedForeground: "#a599e9",
+			accent: "#4d21fc",
+			accentForeground: "#ffffff",
+			border: "#7c4dff",
+			input: "#7c4dff",
+			ring: "#fad000",
+			sidebar: "#1e1e3f",
+			sidebarForeground: "#ffffff",
+			sidebarPrimary: "#fad000",
+			sidebarPrimaryForeground: "#2d2b55",
+			sidebarAccent: "#4d21fc",
+			sidebarAccentForeground: "#ffffff",
+			sidebarBorder: "#7c4dff",
+		},
+	},
+	{
+		key: "winter-dark",
+		name: "Winter is Coming (Dark)",
+		description: "冬日深色主题",
+		type: "dark",
+		colors: {
+			background: "#011627",
+			foreground: "#d6deeb",
+			card: "#001424",
+			cardForeground: "#d6deeb",
+			popover: "#001424",
+			popoverForeground: "#d6deeb",
+			primary: "#7fdbca",
+			primaryForeground: "#011627",
+			secondary: "#0b2942",
+			secondaryForeground: "#d6deeb",
+			muted: "#0b2942",
+			mutedForeground: "#5f7e97",
+			accent: "#1d3b53",
+			accentForeground: "#d6deeb",
+			border: "#1d3b53",
+			input: "#1d3b53",
+			ring: "#7fdbca",
+			sidebar: "#011627",
+			sidebarForeground: "#d6deeb",
+			sidebarPrimary: "#7fdbca",
+			sidebarPrimaryForeground: "#011627",
+			sidebarAccent: "#1d3b53",
+			sidebarAccentForeground: "#d6deeb",
+			sidebarBorder: "#1d3b53",
+		},
+	},
+	{
+		key: "ayu-dark",
+		name: "Ayu Dark",
+		description: "现代简约深色主题",
+		type: "dark",
+		colors: {
+			background: "#0a0e14",
+			foreground: "#b3b1ad",
+			card: "#01060e",
+			cardForeground: "#b3b1ad",
+			popover: "#01060e",
+			popoverForeground: "#b3b1ad",
+			primary: "#39bae6",
+			primaryForeground: "#0a0e14",
+			secondary: "#0d1016",
+			secondaryForeground: "#b3b1ad",
+			muted: "#0d1016",
+			mutedForeground: "#626a73",
+			accent: "#1f2430",
+			accentForeground: "#b3b1ad",
+			border: "#1f2430",
+			input: "#1f2430",
+			ring: "#39bae6",
+			sidebar: "#01060e",
+			sidebarForeground: "#b3b1ad",
+			sidebarPrimary: "#39bae6",
+			sidebarPrimaryForeground: "#0a0e14",
+			sidebarAccent: "#1f2430",
+			sidebarAccentForeground: "#b3b1ad",
+			sidebarBorder: "#1f2430",
+		},
+	},
+	{
+		key: "ayu-mirage",
+		name: "Ayu Mirage",
+		description: "Ayu 中间色调主题",
+		type: "dark",
+		colors: {
+			background: "#1f2430",
+			foreground: "#cbccc6",
+			card: "#191e2a",
+			cardForeground: "#cbccc6",
+			popover: "#191e2a",
+			popoverForeground: "#cbccc6",
+			primary: "#5ccfe6",
+			primaryForeground: "#1f2430",
+			secondary: "#242936",
+			secondaryForeground: "#cbccc6",
+			muted: "#242936",
+			mutedForeground: "#707a8c",
+			accent: "#343d4a",
+			accentForeground: "#cbccc6",
+			border: "#343d4a",
+			input: "#343d4a",
+			ring: "#5ccfe6",
+			sidebar: "#1f2430",
+			sidebarForeground: "#cbccc6",
+			sidebarPrimary: "#5ccfe6",
+			sidebarPrimaryForeground: "#1f2430",
+			sidebarAccent: "#343d4a",
+			sidebarAccentForeground: "#cbccc6",
+			sidebarBorder: "#343d4a",
+		},
+	},
+	{
+		key: "andromeda",
+		name: "Andromeda",
+		description: "星空紫色主题",
+		type: "dark",
+		colors: {
+			background: "#23262e",
+			foreground: "#d5ced9",
+			card: "#1b1e26",
+			cardForeground: "#d5ced9",
+			popover: "#1b1e26",
+			popoverForeground: "#d5ced9",
+			primary: "#f39c12",
+			primaryForeground: "#23262e",
+			secondary: "#2b2e36",
+			secondaryForeground: "#d5ced9",
+			muted: "#2b2e36",
+			mutedForeground: "#7e8a98",
+			accent: "#2b2e36",
+			accentForeground: "#d5ced9",
+			border: "#3e4451",
+			input: "#3e4451",
+			ring: "#f39c12",
+			sidebar: "#1b1e26",
+			sidebarForeground: "#d5ced9",
+			sidebarPrimary: "#f39c12",
+			sidebarPrimaryForeground: "#23262e",
+			sidebarAccent: "#2b2e36",
+			sidebarAccentForeground: "#d5ced9",
+			sidebarBorder: "#3e4451",
+		},
+	},
+	{
+		key: "horizon",
+		name: "Horizon",
+		description: "地平线主题",
+		type: "dark",
+		colors: {
+			background: "#1c1e26",
+			foreground: "#e3e6ee",
+			card: "#16161c",
+			cardForeground: "#e3e6ee",
+			popover: "#16161c",
+			popoverForeground: "#e3e6ee",
+			primary: "#e95678",
+			primaryForeground: "#1c1e26",
+			secondary: "#232530",
+			secondaryForeground: "#e3e6ee",
+			muted: "#232530",
+			mutedForeground: "#6c6f93",
+			accent: "#2e303e",
+			accentForeground: "#e3e6ee",
+			border: "#2e303e",
+			input: "#2e303e",
+			ring: "#e95678",
+			sidebar: "#1c1e26",
+			sidebarForeground: "#e3e6ee",
+			sidebarPrimary: "#e95678",
+			sidebarPrimaryForeground: "#1c1e26",
+			sidebarAccent: "#2e303e",
+			sidebarAccentForeground: "#e3e6ee",
+			sidebarBorder: "#2e303e",
+		},
+	},
+	{
+		key: "panda",
+		name: "Panda",
+		description: "熊猫主题",
+		type: "dark",
+		colors: {
+			background: "#292a2b",
+			foreground: "#e6e6e6",
+			card: "#1d1e1f",
+			cardForeground: "#e6e6e6",
+			popover: "#1d1e1f",
+			popoverForeground: "#e6e6e6",
+			primary: "#19f9d8",
+			primaryForeground: "#292a2b",
+			secondary: "#373839",
+			secondaryForeground: "#e6e6e6",
+			muted: "#373839",
+			mutedForeground: "#676b79",
+			accent: "#373839",
+			accentForeground: "#e6e6e6",
+			border: "#3f3f40",
+			input: "#3f3f40",
+			ring: "#19f9d8",
+			sidebar: "#292a2b",
+			sidebarForeground: "#e6e6e6",
+			sidebarPrimary: "#19f9d8",
+			sidebarPrimaryForeground: "#292a2b",
+			sidebarAccent: "#373839",
+			sidebarAccentForeground: "#e6e6e6",
+			sidebarBorder: "#3f3f40",
+		},
+	},
+	{
+		key: "dark-plus",
+		name: "Dark+",
+		description: "VSCode 默认深色主题",
+		type: "dark",
+		colors: {
+			background: "#1e1e1e",
+			foreground: "#d4d4d4",
+			card: "#252526",
+			cardForeground: "#d4d4d4",
+			popover: "#252526",
+			popoverForeground: "#d4d4d4",
+			primary: "#0e639c",
+			primaryForeground: "#ffffff",
+			secondary: "#2d2d30",
+			secondaryForeground: "#d4d4d4",
+			muted: "#2d2d30",
+			mutedForeground: "#858585",
+			accent: "#094771",
+			accentForeground: "#d4d4d4",
+			border: "#3e3e42",
+			input: "#3e3e42",
+			ring: "#0e639c",
+			sidebar: "#252526",
+			sidebarForeground: "#cccccc",
+			sidebarPrimary: "#0e639c",
+			sidebarPrimaryForeground: "#ffffff",
+			sidebarAccent: "#094771",
+			sidebarAccentForeground: "#d4d4d4",
+			sidebarBorder: "#3e3e42",
+		},
+	},
+	{
+		key: "monokai",
+		name: "Monokai",
+		description: "经典 Monokai 主题",
+		type: "dark",
+		colors: {
+			background: "#272822",
+			foreground: "#f8f8f2",
+			card: "#1e1f1c",
+			cardForeground: "#f8f8f2",
+			popover: "#1e1f1c",
+			popoverForeground: "#f8f8f2",
+			primary: "#66d9ef",
+			primaryForeground: "#272822",
+			secondary: "#3e3d32",
+			secondaryForeground: "#f8f8f2",
+			muted: "#3e3d32",
+			mutedForeground: "#75715e",
+			accent: "#49483e",
+			accentForeground: "#f8f8f2",
+			border: "#49483e",
+			input: "#49483e",
+			ring: "#66d9ef",
+			sidebar: "#1e1f1c",
+			sidebarForeground: "#f8f8f2",
+			sidebarPrimary: "#66d9ef",
+			sidebarPrimaryForeground: "#272822",
+			sidebarAccent: "#49483e",
+			sidebarAccentForeground: "#f8f8f2",
+			sidebarBorder: "#49483e",
+		},
+	},
+	{
+		key: "tokyo-night-storm",
+		name: "Tokyo Night Storm",
+		description: "Tokyo Night 暴风版",
+		type: "dark",
+		colors: {
+			background: "#24283b",
+			foreground: "#a9b1d6",
+			card: "#1f2335",
+			cardForeground: "#a9b1d6",
+			popover: "#1f2335",
+			popoverForeground: "#a9b1d6",
+			primary: "#7aa2f7",
+			primaryForeground: "#24283b",
+			secondary: "#292e42",
+			secondaryForeground: "#a9b1d6",
+			muted: "#292e42",
+			mutedForeground: "#565f89",
+			accent: "#3b4261",
+			accentForeground: "#a9b1d6",
+			border: "#3b4261",
+			input: "#3b4261",
+			ring: "#7aa2f7",
+			sidebar: "#1f2335",
+			sidebarForeground: "#a9b1d6",
+			sidebarPrimary: "#7aa2f7",
+			sidebarPrimaryForeground: "#24283b",
+			sidebarAccent: "#3b4261",
+			sidebarAccentForeground: "#a9b1d6",
+			sidebarBorder: "#3b4261",
+		},
+	},
+	{
+		key: "catppuccin-mocha",
+		name: "Catppuccin Mocha",
+		description: "温暖的咖啡色主题",
+		type: "dark",
+		colors: {
+			background: "#1e1e2e",
+			foreground: "#cdd6f4",
+			card: "#181825",
+			cardForeground: "#cdd6f4",
+			popover: "#181825",
+			popoverForeground: "#cdd6f4",
+			primary: "#89b4fa",
+			primaryForeground: "#1e1e2e",
+			secondary: "#313244",
+			secondaryForeground: "#cdd6f4",
+			muted: "#313244",
+			mutedForeground: "#6c7086",
+			accent: "#45475a",
+			accentForeground: "#cdd6f4",
+			border: "#45475a",
+			input: "#45475a",
+			ring: "#89b4fa",
+			sidebar: "#1e1e2e",
+			sidebarForeground: "#cdd6f4",
+			sidebarPrimary: "#89b4fa",
+			sidebarPrimaryForeground: "#1e1e2e",
+			sidebarAccent: "#45475a",
+			sidebarAccentForeground: "#cdd6f4",
+			sidebarBorder: "#45475a",
+		},
+	},
+	{
+		key: "rose-pine",
+		name: "Rosé Pine",
+		description: "优雅的玫瑰松木主题",
+		type: "dark",
+		colors: {
+			background: "#191724",
+			foreground: "#e0def4",
+			card: "#1f1d2e",
+			cardForeground: "#e0def4",
+			popover: "#1f1d2e",
+			popoverForeground: "#e0def4",
+			primary: "#c4a7e7",
+			primaryForeground: "#191724",
+			secondary: "#26233a",
+			secondaryForeground: "#e0def4",
+			muted: "#26233a",
+			mutedForeground: "#6e6a86",
+			accent: "#403d52",
+			accentForeground: "#e0def4",
+			border: "#403d52",
+			input: "#403d52",
+			ring: "#c4a7e7",
+			sidebar: "#191724",
+			sidebarForeground: "#e0def4",
+			sidebarPrimary: "#c4a7e7",
+			sidebarPrimaryForeground: "#191724",
+			sidebarAccent: "#403d52",
+			sidebarAccentForeground: "#e0def4",
+			sidebarBorder: "#403d52",
+		},
+	},
 ];
 
 // 将 camelCase 转换为 kebab-case
@@ -793,27 +1273,30 @@ function toKebabCase(str: string): string {
 function hexToHSL(hex: string): string {
 	// 移除 # 号
 	hex = hex.replace(/^#/, "");
-	
+
 	// 处理 3 位十六进制
 	if (hex.length === 3) {
-		hex = hex.split("").map(char => char + char).join("");
+		hex = hex
+			.split("")
+			.map((char) => char + char)
+			.join("");
 	}
-	
+
 	// 转换为 RGB
 	const r = Number.parseInt(hex.substring(0, 2), 16) / 255;
 	const g = Number.parseInt(hex.substring(2, 4), 16) / 255;
 	const b = Number.parseInt(hex.substring(4, 6), 16) / 255;
-	
+
 	const max = Math.max(r, g, b);
 	const min = Math.min(r, g, b);
 	let h = 0;
 	let s = 0;
 	const l = (max + min) / 2;
-	
+
 	if (max !== min) {
 		const d = max - min;
 		s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-		
+
 		switch (max) {
 			case r:
 				h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
@@ -826,31 +1309,35 @@ function hexToHSL(hex: string): string {
 				break;
 		}
 	}
-	
+
 	// 转换为度数和百分比
 	h = Math.round(h * 360);
 	s = Math.round(s * 100);
 	const lPercent = Math.round(l * 100);
-	
+
 	// 返回 Tailwind CSS 格式：h s% l%
 	return `${h} ${s}% ${lPercent}%`;
 }
 
 // 生成默认的扩展颜色
-function getExtendedColors(colors: ThemeColors, type: "light" | "dark"): Required<ThemeColors> {
+function getExtendedColors(
+	colors: ThemeColors,
+	type: "light" | "dark",
+): Required<ThemeColors> {
 	return {
 		...colors,
 		// 编辑器颜色
 		editorCursor: colors.editorCursor || colors.primary,
 		editorSelection: colors.editorSelection || colors.accent,
-		editorLineHighlight: colors.editorLineHighlight || (type === "light" ? "#f5f5f5" : "#2a2a2a"),
-		
+		editorLineHighlight:
+			colors.editorLineHighlight || (type === "light" ? "#f5f5f5" : "#2a2a2a"),
+
 		// 状态颜色
 		success: colors.success || (type === "light" ? "#22c55e" : "#4ade80"),
 		warning: colors.warning || (type === "light" ? "#f59e0b" : "#fbbf24"),
 		error: colors.error || (type === "light" ? "#ef4444" : "#f87171"),
 		info: colors.info || colors.primary,
-		
+
 		// 语法高亮
 		syntaxHeading: colors.syntaxHeading || colors.primary,
 		syntaxBold: colors.syntaxBold || (type === "light" ? "#1f2937" : "#f1f5f9"),
@@ -865,14 +1352,14 @@ function getExtendedColors(colors: ThemeColors, type: "light" | "dark"): Require
 // 应用主题
 export function applyTheme(theme: Theme): void {
 	const root = document.documentElement;
-	
+
 	// 设置主题类型
 	root.classList.remove("light", "dark");
 	root.classList.add(theme.type);
-	
+
 	// 获取完整的颜色配置（包括默认扩展颜色）
 	const fullColors = getExtendedColors(theme.colors, theme.type);
-	
+
 	// 应用所有颜色变量（直接使用十六进制颜色）
 	Object.entries(fullColors).forEach(([key, value]) => {
 		root.style.setProperty(`--${toKebabCase(key)}`, value);

@@ -72,7 +72,9 @@ export const useEditorHistory = create<EditorHistoryState>()(
 					// 清空重做栈（新操作后不能重做）
 					redoStack.delete(sceneId);
 
-					logger.debug(`历史记录已保存: ${sceneId}, 栈大小: ${sceneHistory.length}`);
+					logger.debug(
+						`历史记录已保存: ${sceneId}, 栈大小: ${sceneHistory.length}`,
+					);
 
 					return { undoStack, redoStack };
 				});
@@ -209,6 +211,6 @@ export const useEditorHistory = create<EditorHistoryState>()(
 				},
 				removeItem: (name) => localStorage.removeItem(name),
 			},
-		}
-	)
+		},
+	),
 );

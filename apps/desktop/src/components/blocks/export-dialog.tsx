@@ -1,7 +1,21 @@
 /**
  * 导出对话框组件
  */
+
+import {
+	BookOpen,
+	File,
+	FileCode,
+	FileJson,
+	FileText,
+	FileType,
+	FileArchive,
+	Loader2,
+} from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -10,18 +24,20 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { FileText, FileType, File, Loader2, BookOpen, FileJson, FileCode } from "lucide-react";
-import { toast } from "sonner";
 import {
-	exportProject,
 	type ExportFormat,
 	type ExportOptions,
+	exportProject,
 } from "@/services/export";
-import { exportAll, exportAsMarkdown, triggerDownload } from "@/services/projects";
+import {
+	exportAll,
+	exportAsMarkdown,
+	exportAllAsZip,
+	triggerDownload,
+	triggerBlobDownload,
+} from "@/services/projects";
 
 interface ExportDialogProps {
 	open: boolean;
@@ -30,7 +46,7 @@ interface ExportDialogProps {
 	projectTitle?: string;
 }
 
-type ExtendedExportFormat = ExportFormat | "markdown" | "json";
+type ExtendedExportFormat = ExportFormat | "markdown" | "json" | "zip";
 
 export function ExportDialog({
 	open,
@@ -54,12 +70,26 @@ export function ExportDialog({
 			// 处理 Markdown 和 JSON 导出
 			if (format === "markdown") {
 				const md = await exportAsMarkdown(projectId);
-				triggerDownload(`${projectTitle || "novel"}.md`, md, "text/markdown;charset=utf-8");
+				triggerDownload(
+					`${projectTitle || "novel"}.md`,
+					md,
+					"text/markdown;charset=utf-8",
+				);
 				toast.success("Markdown 导出成功");
 			} else if (format === "json") {
 				const json = await exportAll();
-				triggerDownload(`novel-editor-backup-${new Date().toISOString().slice(0,10)}.json`, json);
+				triggerDownload(
+					`novel-editor-backup-${new Date().toISOString().slice(0, 10)}.json`,
+					json,
+				);
 				toast.success("JSON 备份导出成功");
+			} else if (format === "zip") {
+				const zipBlob = await exportAllAsZip();
+				triggerBlobDownload(
+					`novel-editor-backup-${new Date().toISOString().slice(0, 10)}.zip`,
+					zipBlob,
+				);
+				toast.success("ZIP 备份导出成功");
 			} else {
 				// 标准格式导出
 				await exportProject(projectId, format as ExportFormat, options);
@@ -68,9 +98,7 @@ export function ExportDialog({
 			onOpenChange(false);
 		} catch (error) {
 			console.error("Export error:", error);
-			toast.error(
-				error instanceof Error ? error.message : "导出失败，请重试"
-			);
+			toast.error(error instanceof Error ? error.message : "导出失败，请重试");
 		} finally {
 			setIsExporting(false);
 		}
@@ -83,6 +111,7 @@ export function ExportDialog({
 		epub: "EPUB",
 		markdown: "Markdown",
 		json: "JSON 备份",
+		zip: "ZIP 压缩包",
 	};
 
 	const formatDescriptions: Record<ExtendedExportFormat, string> = {
@@ -92,6 +121,7 @@ export function ExportDialog({
 		epub: "电子书格式，适合阅读器",
 		markdown: "Markdown 格式，适合版本控制",
 		json: "完整备份，包含所有数据",
+		zip: "结构化备份，包含文件夹和文本",
 	};
 
 	const formatIcons: Record<ExtendedExportFormat, React.ReactNode> = {
@@ -101,6 +131,7 @@ export function ExportDialog({
 		epub: <BookOpen className="size-5 text-green-500" />,
 		markdown: <FileCode className="size-5 text-purple-500" />,
 		json: <FileJson className="size-5 text-orange-500" />,
+		zip: <FileArchive className="size-5 text-cyan-500" />,
 	};
 
 	return (
@@ -122,19 +153,35 @@ export function ExportDialog({
 								💡 JSON 备份包含所有书籍、章节、场景、角色和世界观数据，可用于完整恢复。
 							</p>
 						)}
+						{format === "zip" && (
+							<p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+								📦 ZIP 压缩包将数据按项目、章节组织成文件夹结构，每个场景导出为独立的文本文件，便于查看和管理。
+							</p>
+						)}
 						<RadioGroup
 							value={format}
 							onValueChange={(v) => setFormat(v as ExtendedExportFormat)}
 							className="grid grid-cols-3 gap-3"
 						>
-							{(["pdf", "docx", "epub", "txt", "markdown", "json"] as ExtendedExportFormat[]).map((f) => (
+							{(
+								[
+									"pdf",
+									"docx",
+									"epub",
+									"txt",
+									"markdown",
+									"json",
+									"zip",
+								] as ExtendedExportFormat[]
+							).map((f) => (
 								<label
 									key={f}
 									className={`
 										flex flex-col items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all
-										${format === f
-											? "border-primary bg-primary/5"
-											: "border-border hover:border-primary/50"
+										${
+											format === f
+												? "border-primary bg-primary/5"
+												: "border-border hover:border-primary/50"
 										}
 									`}
 								>
@@ -150,7 +197,7 @@ export function ExportDialog({
 					</div>
 
 					{/* 导出选项 - 仅对需要选项的格式显示 */}
-					{format !== "json" && (
+					{format !== "json" && format !== "zip" && (
 						<div className="space-y-3">
 							<Label className="text-sm font-medium">导出选项</Label>
 							<div className="space-y-3 rounded-lg border p-4">
@@ -162,7 +209,10 @@ export function ExportDialog({
 											setOptions({ ...options, includeTitle: !!checked })
 										}
 									/>
-									<Label htmlFor="includeTitle" className="text-sm cursor-pointer">
+									<Label
+										htmlFor="includeTitle"
+										className="text-sm cursor-pointer"
+									>
 										包含书名
 									</Label>
 								</div>
@@ -175,7 +225,10 @@ export function ExportDialog({
 											setOptions({ ...options, includeAuthor: !!checked })
 										}
 									/>
-									<Label htmlFor="includeAuthor" className="text-sm cursor-pointer">
+									<Label
+										htmlFor="includeAuthor"
+										className="text-sm cursor-pointer"
+									>
 										包含作者名
 									</Label>
 								</div>
@@ -185,7 +238,10 @@ export function ExportDialog({
 										id="includeChapterTitles"
 										checked={options.includeChapterTitles}
 										onCheckedChange={(checked) =>
-											setOptions({ ...options, includeChapterTitles: !!checked })
+											setOptions({
+												...options,
+												includeChapterTitles: !!checked,
+											})
 										}
 									/>
 									<Label

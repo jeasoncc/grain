@@ -1,7 +1,7 @@
 /**
  * 自动保存指示器 - 显示保存状态
  */
-import { Check, Loader2, AlertCircle } from "lucide-react";
+import { AlertCircle, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AutoSaveIndicatorProps {
@@ -9,7 +9,10 @@ interface AutoSaveIndicatorProps {
 	className?: string;
 }
 
-export function AutoSaveIndicator({ status, className }: AutoSaveIndicatorProps) {
+export function AutoSaveIndicator({
+	status,
+	className,
+}: AutoSaveIndicatorProps) {
 	return (
 		<div
 			className={cn(
@@ -17,7 +20,7 @@ export function AutoSaveIndicator({ status, className }: AutoSaveIndicatorProps)
 				status === "saved" && "text-muted-foreground",
 				status === "saving" && "text-primary",
 				status === "error" && "text-destructive",
-				className
+				className,
 			)}
 		>
 			{status === "saved" && (

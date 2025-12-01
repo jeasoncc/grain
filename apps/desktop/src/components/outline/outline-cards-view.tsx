@@ -1,10 +1,24 @@
 // 卡片视图组件（Scrivener 风格）
-import { useMemo, useState, useCallback } from "react";
-import { FileText, MoreVertical, GripVertical, Plus, Edit3, Trash2, Folder } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+
+import {
+	Edit3,
+	FileText,
+	Folder,
+	GripVertical,
+	MoreVertical,
+	Plus,
+	Trash2,
+} from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -12,9 +26,14 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
-import type { ProjectInterface, ChapterInterface, SceneInterface } from "@/db/schema";
+import { Input } from "@/components/ui/input";
+import type {
+	ChapterInterface,
+	ProjectInterface,
+	SceneInterface,
+} from "@/db/schema";
 import { countWords, extractTextFromSerialized } from "@/lib/statistics";
+import { cn } from "@/lib/utils";
 
 interface OutlineCardsViewProps {
 	project: ProjectInterface;
@@ -94,9 +113,9 @@ function ChapterCardGroup({
 			<div className="flex items-center gap-2 mb-4">
 				<h3 className="text-lg font-semibold">{chapter.title}</h3>
 				<Badge variant="secondary">{scenes.length} 场景</Badge>
-				<Button 
-					variant="ghost" 
-					size="sm" 
+				<Button
+					variant="ghost"
+					size="sm"
 					className="ml-auto gap-1"
 					onClick={() => onAddScene?.(chapter.id)}
 				>
@@ -121,8 +140,8 @@ function ChapterCardGroup({
 			) : (
 				<div className="p-6 text-center border border-dashed rounded-lg">
 					<p className="text-sm text-muted-foreground mb-2">暂无场景</p>
-					<Button 
-						variant="outline" 
+					<Button
+						variant="outline"
 						size="sm"
 						onClick={() => onAddScene?.(chapter.id)}
 					>
@@ -148,9 +167,10 @@ function SceneCard({ scene, onNavigate, onRename, onDelete }: SceneCardProps) {
 
 	const { wordCount, excerpt } = useMemo(() => {
 		try {
-			const content = typeof scene.content === "string" 
-				? JSON.parse(scene.content) 
-				: scene.content;
+			const content =
+				typeof scene.content === "string"
+					? JSON.parse(scene.content)
+					: scene.content;
 			const text = extractTextFromSerialized(content);
 			return {
 				wordCount: countWords(text),
@@ -167,11 +187,14 @@ function SceneCard({ scene, onNavigate, onRename, onDelete }: SceneCardProps) {
 		}
 	};
 
-	const handleStartRename = useCallback((e: React.MouseEvent) => {
-		e.stopPropagation();
-		setRenameValue(scene.title);
-		setIsRenaming(true);
-	}, [scene.title]);
+	const handleStartRename = useCallback(
+		(e: React.MouseEvent) => {
+			e.stopPropagation();
+			setRenameValue(scene.title);
+			setIsRenaming(true);
+		},
+		[scene.title],
+	);
 
 	const handleConfirmRename = useCallback(() => {
 		if (renameValue.trim() && renameValue !== scene.title) {
@@ -189,7 +212,7 @@ function SceneCard({ scene, onNavigate, onRename, onDelete }: SceneCardProps) {
 		<Card
 			className={cn(
 				"group cursor-pointer transition-all hover:shadow-md hover:border-primary/50",
-				wordCount === 0 && "border-dashed opacity-60"
+				wordCount === 0 && "border-dashed opacity-60",
 			)}
 			onClick={handleClick}
 		>
@@ -216,7 +239,9 @@ function SceneCard({ scene, onNavigate, onRename, onDelete }: SceneCardProps) {
 							/>
 						) : (
 							<>
-								<CardTitle className="text-base truncate">{scene.title}</CardTitle>
+								<CardTitle className="text-base truncate">
+									{scene.title}
+								</CardTitle>
 								<CardDescription className="text-xs mt-1">
 									{wordCount.toLocaleString()} 字
 								</CardDescription>
@@ -239,7 +264,7 @@ function SceneCard({ scene, onNavigate, onRename, onDelete }: SceneCardProps) {
 								重命名
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
-							<DropdownMenuItem 
+							<DropdownMenuItem
 								className="text-destructive"
 								onClick={(e) => {
 									e.stopPropagation();

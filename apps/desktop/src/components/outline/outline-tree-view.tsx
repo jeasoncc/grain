@@ -1,39 +1,38 @@
 // 树形大纲视图组件 - 支持拖拽重排
-import { useState, useMemo, useCallback } from "react";
+
 import {
-	DndContext,
 	closestCenter,
+	DndContext,
+	type DragEndEvent,
+	DragOverlay,
+	type DragStartEvent,
 	KeyboardSensor,
 	PointerSensor,
 	useSensor,
 	useSensors,
-	type DragEndEvent,
-	type DragStartEvent,
-	DragOverlay,
 } from "@dnd-kit/core";
 import {
 	SortableContext,
 	sortableKeyboardCoordinates,
-	verticalListSortingStrategy,
 	useSortable,
+	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+	CheckCircle2,
 	ChevronDown,
 	ChevronRight,
+	Circle,
+	Edit3,
 	FileText,
+	Folder,
+	GripVertical,
 	MoreVertical,
 	Plus,
-	GripVertical,
-	Circle,
-	CheckCircle2,
-	Edit3,
 	Trash2,
-	Folder,
 } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -41,8 +40,14 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { ProjectInterface, ChapterInterface, SceneInterface } from "@/db/schema";
+import { Input } from "@/components/ui/input";
+import type {
+	ChapterInterface,
+	ProjectInterface,
+	SceneInterface,
+} from "@/db/schema";
 import { countWords, extractTextFromSerialized } from "@/lib/statistics";
+import { cn } from "@/lib/utils";
 
 interface OutlineTreeViewProps {
 	project: ProjectInterface;
@@ -57,7 +62,11 @@ interface OutlineTreeViewProps {
 	onDeleteChapter?: (chapterId: string, title: string) => void;
 	onDeleteScene?: (sceneId: string, title: string) => void;
 	onReorderChapters?: (activeId: string, overId: string) => void;
-	onReorderScenes?: (activeId: string, overId: string, targetChapterId?: string) => void;
+	onReorderScenes?: (
+		activeId: string,
+		overId: string,
+		targetChapterId?: string,
+	) => void;
 }
 
 export function OutlineTreeView({
@@ -75,10 +84,12 @@ export function OutlineTreeView({
 	onReorderScenes,
 }: OutlineTreeViewProps) {
 	const [expandedChapters, setExpandedChapters] = useState<Set<string>>(
-		new Set(chapters.map((ch) => ch.id))
+		new Set(chapters.map((ch) => ch.id)),
 	);
 	const [activeId, setActiveId] = useState<string | null>(null);
-	const [activeType, setActiveType] = useState<"chapter" | "scene" | null>(null);
+	const [activeType, setActiveType] = useState<"chapter" | "scene" | null>(
+		null,
+	);
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
@@ -88,7 +99,7 @@ export function OutlineTreeView({
 		}),
 		useSensor(KeyboardSensor, {
 			coordinateGetter: sortableKeyboardCoordinates,
-		})
+		}),
 	);
 
 	const toggleChapter = (chapterId: string) => {
@@ -105,12 +116,12 @@ export function OutlineTreeView({
 
 	const sortedChapters = useMemo(
 		() => [...chapters].sort((a, b) => a.order - b.order),
-		[chapters]
+		[chapters],
 	);
 
 	const chapterIds = useMemo(
 		() => sortedChapters.map((ch) => `chapter-${ch.id}`),
-		[sortedChapters]
+		[sortedChapters],
 	);
 
 	const handleDragStart = (event: DragStartEvent) => {
@@ -135,25 +146,33 @@ export function OutlineTreeView({
 		const overIdStr = String(over.id);
 
 		// 章节拖拽
-		if (activeIdStr.startsWith("chapter-") && overIdStr.startsWith("chapter-")) {
+		if (
+			activeIdStr.startsWith("chapter-") &&
+			overIdStr.startsWith("chapter-")
+		) {
 			const activeChapterId = activeIdStr.replace("chapter-", "");
 			const overChapterId = overIdStr.replace("chapter-", "");
 			onReorderChapters?.(activeChapterId, overChapterId);
 		}
 		// 场景拖拽
-		else if (activeIdStr.startsWith("scene-") && overIdStr.startsWith("scene-")) {
+		else if (
+			activeIdStr.startsWith("scene-") &&
+			overIdStr.startsWith("scene-")
+		) {
 			const activeSceneId = activeIdStr.replace("scene-", "");
 			const overSceneId = overIdStr.replace("scene-", "");
 			onReorderScenes?.(activeSceneId, overSceneId);
 		}
 	};
 
-	const activeChapter = activeType === "chapter" && activeId
-		? chapters.find((ch) => ch.id === activeId)
-		: null;
-	const activeScene = activeType === "scene" && activeId
-		? scenes.find((sc) => sc.id === activeId)
-		: null;
+	const activeChapter =
+		activeType === "chapter" && activeId
+			? chapters.find((ch) => ch.id === activeId)
+			: null;
+	const activeScene =
+		activeType === "scene" && activeId
+			? scenes.find((sc) => sc.id === activeId)
+			: null;
 
 	if (chapters.length === 0) {
 		return (
@@ -174,7 +193,10 @@ export function OutlineTreeView({
 			onDragStart={handleDragStart}
 			onDragEnd={handleDragEnd}
 		>
-			<SortableContext items={chapterIds} strategy={verticalListSortingStrategy}>
+			<SortableContext
+				items={chapterIds}
+				strategy={verticalListSortingStrategy}
+			>
 				<div className="space-y-1">
 					{sortedChapters.map((chapter) => {
 						const chapterScenes = scenes
@@ -236,7 +258,11 @@ interface SortableChapterNodeProps {
 	onRenameScene?: (sceneId: string, newTitle: string) => void;
 	onDeleteChapter?: (chapterId: string, title: string) => void;
 	onDeleteScene?: (sceneId: string, title: string) => void;
-	onReorderScenes?: (activeId: string, overId: string, targetChapterId?: string) => void;
+	onReorderScenes?: (
+		activeId: string,
+		overId: string,
+		targetChapterId?: string,
+	) => void;
 }
 
 function SortableChapterNode({
@@ -273,9 +299,10 @@ function SortableChapterNode({
 	const chapterWordCount = useMemo(() => {
 		return scenes.reduce((sum, scene) => {
 			try {
-				const content = typeof scene.content === "string"
-					? JSON.parse(scene.content)
-					: scene.content;
+				const content =
+					typeof scene.content === "string"
+						? JSON.parse(scene.content)
+						: scene.content;
 				const text = extractTextFromSerialized(content);
 				return sum + countWords(text);
 			} catch {
@@ -303,7 +330,7 @@ function SortableChapterNode({
 
 	const sceneIds = useMemo(
 		() => scenes.map((sc) => `scene-${sc.id}`),
-		[scenes]
+		[scenes],
 	);
 
 	return (
@@ -316,7 +343,7 @@ function SortableChapterNode({
 			<div
 				className={cn(
 					"flex items-center gap-2 p-2 rounded-lg hover:bg-accent/50 transition-colors",
-					"border border-transparent hover:border-border"
+					"border border-transparent hover:border-border",
 				)}
 			>
 				{/* 拖拽手柄 */}
@@ -411,7 +438,10 @@ function SortableChapterNode({
 
 			{/* 场景列表 */}
 			{isExpanded && scenes.length > 0 && (
-				<SortableContext items={sceneIds} strategy={verticalListSortingStrategy}>
+				<SortableContext
+					items={sceneIds}
+					strategy={verticalListSortingStrategy}
+				>
 					<div className="ml-8 mt-1 space-y-1">
 						{scenes.map((scene) => (
 							<SortableSceneNode
@@ -453,7 +483,13 @@ interface SortableSceneNodeProps {
 	onDelete?: (sceneId: string, title: string) => void;
 }
 
-function SortableSceneNode({ scene, showWordCount, onNavigate, onRename, onDelete }: SortableSceneNodeProps) {
+function SortableSceneNode({
+	scene,
+	showWordCount,
+	onNavigate,
+	onRename,
+	onDelete,
+}: SortableSceneNodeProps) {
 	const [isRenaming, setIsRenaming] = useState(false);
 	const [renameValue, setRenameValue] = useState(scene.title);
 
@@ -473,9 +509,10 @@ function SortableSceneNode({ scene, showWordCount, onNavigate, onRename, onDelet
 
 	const sceneWordCount = useMemo(() => {
 		try {
-			const content = typeof scene.content === "string"
-				? JSON.parse(scene.content)
-				: scene.content;
+			const content =
+				typeof scene.content === "string"
+					? JSON.parse(scene.content)
+					: scene.content;
 			const text = extractTextFromSerialized(content);
 			return countWords(text);
 		} catch {
@@ -489,11 +526,14 @@ function SortableSceneNode({ scene, showWordCount, onNavigate, onRename, onDelet
 		}
 	};
 
-	const handleStartRename = useCallback((e: React.MouseEvent) => {
-		e.stopPropagation();
-		setRenameValue(scene.title);
-		setIsRenaming(true);
-	}, [scene.title]);
+	const handleStartRename = useCallback(
+		(e: React.MouseEvent) => {
+			e.stopPropagation();
+			setRenameValue(scene.title);
+			setIsRenaming(true);
+		},
+		[scene.title],
+	);
 
 	const handleConfirmRename = useCallback(() => {
 		if (renameValue.trim() && renameValue !== scene.title) {
@@ -514,7 +554,7 @@ function SortableSceneNode({ scene, showWordCount, onNavigate, onRename, onDelet
 			className={cn(
 				"group/scene flex items-center gap-2 p-2 pl-4 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer",
 				"border border-transparent hover:border-border",
-				isDragging && "opacity-50"
+				isDragging && "opacity-50",
 			)}
 			onClick={handleClick}
 		>

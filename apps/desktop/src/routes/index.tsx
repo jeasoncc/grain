@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { openCreateBookDialog } from "@/components/blocks/createBookDialog";
 import { EmptyProject } from "@/components/blocks/emptyProject";
 import { OnboardingTour } from "@/components/onboarding-tour";
 import { Spinner } from "@/components/ui/loading";
+import { StoryWorkspace } from "@/components/workspace/story-workspace";
 import { db } from "@/db/curd";
 import type {
 	ChapterInterface,
@@ -14,19 +14,24 @@ import type {
 	SceneInterface,
 } from "@/db/schema";
 import logger from "@/log";
-import { StoryWorkspace } from "@/components/workspace/story-workspace";
-import { useUIStore, type RightPanelView } from "@/stores/ui";
+import { type RightPanelView, useUIStore } from "@/stores/ui";
 
 export const Route = createFileRoute("/")({
 	component: RouteComponent,
 });
 
 function RouteComponent() {
-  const setRightPanelView = useUIStore(s => s.setRightPanelView);
+	const setRightPanelView = useUIStore((s) => s.setRightPanelView);
 	const [loading, setLoading] = useState(false);
 	const [showTour, setShowTour] = useState(false);
-	const projects = useLiveQuery<ProjectInterface[]>(() => db.getAllProjects(), []);
-	const chapters = useLiveQuery<ChapterInterface[]>(() => db.getAllChapters(), []);
+	const projects = useLiveQuery<ProjectInterface[]>(
+		() => db.getAllProjects(),
+		[],
+	);
+	const chapters = useLiveQuery<ChapterInterface[]>(
+		() => db.getAllChapters(),
+		[],
+	);
 	const scenes = useLiveQuery<SceneInterface[]>(() => db.getAllScenes(), []);
 
 	// 检查是否需要显示引导

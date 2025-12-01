@@ -24,7 +24,10 @@ export function ExcalidrawPickerPlugin() {
 				INSERT_EXCALIDRAW_COMMAND,
 				undefined,
 			);
-			console.log("ExcalidrawPickerPlugin: command dispatched, result:", result);
+			console.log(
+				"ExcalidrawPickerPlugin: command dispatched, result:",
+				result,
+			);
 		},
 	});
 }

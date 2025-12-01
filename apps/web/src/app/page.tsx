@@ -5,7 +5,8 @@ import { UseCasesSection } from "@/components/sections/use-cases-section";
 import { TechStackSection } from "@/components/sections/tech-stack-section";
 import { TestimonialsSection } from "@/components/sections/testimonials-section";
 import { FAQSection } from "@/components/sections/faq-section";
-import { DownloadSection } from "@/components/sections/download-section";
+import { ChangelogSection } from "@/components/sections/changelog-section";
+import { RoadmapSection } from "@/components/sections/roadmap-section";
 import { CTASection } from "@/components/sections/cta-section";
 
 export default function Home() {
@@ -18,7 +19,8 @@ export default function Home() {
       <TechStackSection />
       <TestimonialsSection />
       <FAQSection />
-      <DownloadSection />
+      <ChangelogSection />
+      <RoadmapSection />
       <CTASection />
     </>
   );

@@ -1,39 +1,39 @@
 /**
  * 小说专用编辑器 - 简洁、专注的写作体验
  */
-import { useEffect, useRef } from "react";
-import {
-	InitialConfigType,
-	LexicalComposer,
-} from "@lexical/react/LexicalComposer";
-import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
-import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
-import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
-import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
-import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
-import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
-import { ListPlugin } from "@lexical/react/LexicalListPlugin";
-import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
+
 import {
 	ELEMENT_TRANSFORMERS,
 	TEXT_FORMAT_TRANSFORMERS,
 	TEXT_MATCH_TRANSFORMERS,
 } from "@lexical/markdown";
+import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
+import {
+	type InitialConfigType,
+	LexicalComposer,
+} from "@lexical/react/LexicalComposer";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
+import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
+import { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin";
+import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
+import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
+import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
+import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
 import type { SerializedEditorState } from "lexical";
-
-import { editorTheme } from "@/components/editor/themes/editor-theme";
+import { useEffect, useRef } from "react";
 import { ContentEditable } from "@/components/editor/editor-ui/content-editable";
 import { ComponentPickerMenuPlugin } from "@/components/editor/plugins/component-picker-menu-plugin";
 import { ExcalidrawPlugin } from "@/components/editor/plugins/excalidraw-plugin";
 import { FloatingTextFormatToolbarPlugin } from "@/components/editor/plugins/floating-text-format-plugin";
+import { DividerPickerPlugin } from "@/components/editor/plugins/picker/divider-picker-plugin";
 import { ExcalidrawPickerPlugin } from "@/components/editor/plugins/picker/excalidraw-picker-plugin";
 import { HeadingPickerPlugin } from "@/components/editor/plugins/picker/heading-picker-plugin";
-import { DividerPickerPlugin } from "@/components/editor/plugins/picker/divider-picker-plugin";
 import { QuotePickerPlugin } from "@/components/editor/plugins/picker/quote-picker-plugin";
-import { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin";
-import { useWritingStore } from "@/stores/writing";
+import { editorTheme } from "@/components/editor/themes/editor-theme";
 import { cn } from "@/lib/utils";
+import { useWritingStore } from "@/stores/writing";
 import { nodes } from "./nodes";
 
 const editorConfig: InitialConfigType = {
@@ -80,7 +80,7 @@ export function NovelEditor({
 									"text-lg leading-relaxed",
 									"focus:outline-none",
 									"font-serif",
-									typewriterMode && "typewriter-mode"
+									typewriterMode && "typewriter-mode",
 								)}
 							/>
 						</div>

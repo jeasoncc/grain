@@ -1,25 +1,34 @@
 /**
  * 专注模式 - 全屏沉浸式写作体验
  */
-import { useEffect } from "react";
-import { X, Target, Clock, TrendingUp, Flame, AlignCenter, Settings2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+
 import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+	AlignCenter,
+	Clock,
+	Flame,
+	Settings2,
+	Target,
+	TrendingUp,
+	X,
+} from "lucide-react";
+import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
-import { useWritingStore } from "@/stores/writing";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useWritingStore } from "@/stores/writing";
 
 interface FocusModeProps {
 	children: React.ReactNode;
@@ -84,7 +93,9 @@ export function FocusMode({
 					<div className="flex items-center gap-3 text-sm text-muted-foreground">
 						{chapterTitle && <span>{chapterTitle}</span>}
 						{chapterTitle && sceneTitle && <span>·</span>}
-						{sceneTitle && <span className="font-medium text-foreground">{sceneTitle}</span>}
+						{sceneTitle && (
+							<span className="font-medium text-foreground">{sceneTitle}</span>
+						)}
 					</div>
 
 					{/* 中间：写作统计 */}
@@ -97,7 +108,9 @@ export function FocusMode({
 								<span className="text-xs tabular-nums text-muted-foreground">
 									{todayWordCount}/{writingGoal.dailyTarget}
 								</span>
-								{progress >= 100 && <Flame className="size-4 text-orange-500" />}
+								{progress >= 100 && (
+									<Flame className="size-4 text-orange-500" />
+								)}
 							</div>
 						)}
 
@@ -107,12 +120,15 @@ export function FocusMode({
 								<div className="w-px h-4 bg-border" />
 								<div className="flex items-center gap-1.5 text-muted-foreground">
 									<Clock className="size-3.5" />
-									<span className="text-xs tabular-nums">{formatDuration(sessionDuration)}</span>
+									<span className="text-xs tabular-nums">
+										{formatDuration(sessionDuration)}
+									</span>
 								</div>
 								<div className="flex items-center gap-1.5 text-muted-foreground">
 									<TrendingUp className="size-3.5" />
 									<span className="text-xs tabular-nums">
-										{sessionWords >= 0 ? "+" : ""}{sessionWords}
+										{sessionWords >= 0 ? "+" : ""}
+										{sessionWords}
 									</span>
 								</div>
 							</>
@@ -167,21 +183,15 @@ export function FocusMode({
 
 			{/* 编辑器内容 */}
 			<div className="h-full overflow-auto pt-14">
-				<div className="max-w-3xl mx-auto px-8 py-16">
-					{children}
-				</div>
+				<div className="max-w-3xl mx-auto px-8 py-16">{children}</div>
 			</div>
 		</div>
 	);
 }
 
 function FocusModeSettings() {
-	const {
-		writingGoal,
-		setWritingGoal,
-		typewriterMode,
-		setTypewriterMode,
-	} = useWritingStore();
+	const { writingGoal, setWritingGoal, typewriterMode, setTypewriterMode } =
+		useWritingStore();
 
 	return (
 		<Popover>
@@ -220,7 +230,9 @@ function FocusModeSettings() {
 							<Switch
 								id="goal-enabled"
 								checked={writingGoal.enabled}
-								onCheckedChange={(checked: boolean) => setWritingGoal({ enabled: checked })}
+								onCheckedChange={(checked: boolean) =>
+									setWritingGoal({ enabled: checked })
+								}
 							/>
 						</div>
 

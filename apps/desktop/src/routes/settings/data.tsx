@@ -14,9 +14,7 @@ function DataSettingsPage() {
 			<div className="space-y-6">
 				<div>
 					<h1 className="text-2xl font-bold">数据管理</h1>
-					<p className="text-muted-foreground mt-1">
-						备份、恢复和管理你的数据
-					</p>
+					<p className="text-muted-foreground mt-1">备份、恢复和管理你的数据</p>
 				</div>
 
 				<BackupManager />

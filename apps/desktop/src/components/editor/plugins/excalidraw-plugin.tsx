@@ -1,7 +1,7 @@
 /**
  * Excalidraw 插件 - 处理绘图节点的插入和管理
  */
-import { useEffect } from "react";
+
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $insertNodeToNearestRoot } from "@lexical/utils";
 import {
@@ -9,8 +9,9 @@ import {
 	$isRangeSelection,
 	COMMAND_PRIORITY_EDITOR,
 	createCommand,
-	LexicalCommand,
+	type LexicalCommand,
 } from "lexical";
+import { useEffect } from "react";
 import {
 	$createExcalidrawNode,
 	ExcalidrawNode,

@@ -42,7 +42,7 @@ export function CTASection() {
                 className="text-lg px-10 py-6 h-auto bg-white text-gray-900 hover:bg-gray-100 shadow-lg"
                 asChild
               >
-                <Link href="#download">
+                <Link href="/download">
                   <Download className="w-5 h-5 mr-2" />
                   立即下载
                   <ArrowRight className="w-5 h-5 ml-2" />
@@ -55,7 +55,7 @@ export function CTASection() {
                 asChild
               >
                 <Link
-                  href="https://github.com/yourusername/novel-editor"
+                  href="https://github.com/jeasoncc/novel-editor"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

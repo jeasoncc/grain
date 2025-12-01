@@ -3,7 +3,7 @@
  * 无工具栏，只在选中文字时显示格式化选项
  */
 import {
-	InitialConfigType,
+	type InitialConfigType,
 	LexicalComposer,
 } from "@lexical/react/LexicalComposer";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";

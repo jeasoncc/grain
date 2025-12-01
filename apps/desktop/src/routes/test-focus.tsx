@@ -4,9 +4,15 @@
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute("/test-focus")({
 	component: TestFocusPage,
@@ -18,7 +24,8 @@ function TestFocusPage() {
 			<div>
 				<h1 className="text-3xl font-bold mb-2">焦点样式测试</h1>
 				<p className="text-muted-foreground">
-					测试不同元素的焦点样式。使用 Tab 键导航查看键盘焦点，使用鼠标点击查看鼠标焦点。
+					测试不同元素的焦点样式。使用 Tab
+					键导航查看键盘焦点，使用鼠标点击查看鼠标焦点。
 				</p>
 			</div>
 
@@ -70,7 +77,10 @@ function TestFocusPage() {
 						<a href="#" className="text-primary hover:underline block">
 							普通链接
 						</a>
-						<a href="#" className="text-muted-foreground hover:text-foreground block">
+						<a
+							href="#"
+							className="text-muted-foreground hover:text-foreground block"
+						>
 							次要链接
 						</a>
 						<a href="#" className="underline block">
@@ -84,9 +94,7 @@ function TestFocusPage() {
 			<Card>
 				<CardHeader>
 					<CardTitle>自定义元素焦点测试</CardTitle>
-					<CardDescription>
-						使用 tabIndex 使元素可聚焦
-					</CardDescription>
+					<CardDescription>使用 tabIndex 使元素可聚焦</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div

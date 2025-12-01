@@ -153,5 +153,5 @@ MIT License - 详见项目根目录的 LICENSE 文件
 
 ## 📧 联系我们
 
-- GitHub: [@yourusername/novel-editor](https://github.com/yourusername/novel-editor)
+- GitHub: [@jeasoncc/novel-editor](https://github.com/jeasoncc/novel-editor)
 - Email: support@novel-editor.com

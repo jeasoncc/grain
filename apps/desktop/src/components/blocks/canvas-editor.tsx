@@ -2,12 +2,22 @@
  * 绘图编辑器组件 - 全屏 Excalidraw 编辑器
  * 用于 canvas 类型的场景，占据整个编辑面板
  */
-import { useCallback, useRef, useState, useEffect } from "react";
+
 import { Excalidraw, exportToBlob } from "@excalidraw/excalidraw";
-import { useTheme } from "@/hooks/use-theme";
-import { Button } from "@/components/ui/button";
-import { Download, Save, Undo, Redo, ZoomIn, ZoomOut, Maximize2, Minimize2 } from "lucide-react";
+import {
+	Download,
+	Maximize2,
+	Minimize2,
+	Redo,
+	Save,
+	Undo,
+	ZoomIn,
+	ZoomOut,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 
 export interface ExcalidrawSceneData {
@@ -26,7 +36,12 @@ interface CanvasEditorProps {
 	onSave?: (data: string) => void;
 }
 
-export function CanvasEditor({ sceneId, filePath, initialData, onSave }: CanvasEditorProps) {
+export function CanvasEditor({
+	sceneId,
+	filePath,
+	initialData,
+	onSave,
+}: CanvasEditorProps) {
 	// biome-ignore lint/suspicious/noExplicitAny: Excalidraw API 类型复杂
 	const excalidrawRef = useRef<any>(null);
 	const { isDark } = useTheme();
@@ -39,7 +54,11 @@ export function CanvasEditor({ sceneId, filePath, initialData, onSave }: CanvasE
 		try {
 			const parsed = JSON.parse(initialData);
 			// 检查是否是有效的 Excalidraw 数据
-			if (parsed && typeof parsed === "object" && Array.isArray(parsed.elements)) {
+			if (
+				parsed &&
+				typeof parsed === "object" &&
+				Array.isArray(parsed.elements)
+			) {
 				return parsed as ExcalidrawSceneData;
 			}
 			return undefined;
@@ -104,9 +123,12 @@ export function CanvasEditor({ sceneId, filePath, initialData, onSave }: CanvasE
 
 	// 处理内容变化
 	// biome-ignore lint/suspicious/noExplicitAny: Excalidraw 类型
-	const handleChange = useCallback((elements: readonly any[], appState: any, files: any) => {
-		setHasChanges(true);
-	}, []);
+	const handleChange = useCallback(
+		(elements: readonly any[], appState: any, files: any) => {
+			setHasChanges(true);
+		},
+		[],
+	);
 
 	// 快捷键保存
 	useEffect(() => {
@@ -129,9 +151,7 @@ export function CanvasEditor({ sceneId, filePath, initialData, onSave }: CanvasE
 					<div className="flex items-center gap-2">
 						<span className="text-sm font-medium">绘图画布</span>
 						{filePath && (
-							<span className="text-xs text-muted-foreground">
-								{filePath}
-							</span>
+							<span className="text-xs text-muted-foreground">{filePath}</span>
 						)}
 						{hasChanges && (
 							<span className="text-xs text-orange-500">• 未保存</span>
@@ -196,9 +216,7 @@ export function CanvasEditor({ sceneId, filePath, initialData, onSave }: CanvasE
 				<div className="flex items-center gap-2">
 					<span className="text-sm text-muted-foreground">绘图画布</span>
 					{filePath && (
-						<span className="text-xs text-muted-foreground/60">
-							{filePath}
-						</span>
+						<span className="text-xs text-muted-foreground/60">{filePath}</span>
 					)}
 					{hasChanges && (
 						<span className="text-xs text-orange-500">• 未保存</span>
