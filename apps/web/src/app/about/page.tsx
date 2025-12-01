@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Hero Section */}
       <section className="py-20 border-b border-gray-200 dark:border-gray-800">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-900/30 mb-6">
-              <FileText className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 mb-6 border-2 border-gray-300 dark:border-gray-700">
+              <FileText className="w-10 h-10 text-gray-900 dark:text-white" />
             </div>
             <h1 className="text-5xl md:text-6xl font-bold mb-6 text-gray-900 dark:text-white">
               关于 Novel Editor
@@ -55,7 +55,7 @@ export default function AboutPage() {
             <Card>
               <CardHeader>
                 <div className="mb-4">
-                  <Code className="w-8 h-8 text-blue-600" />
+                  <Code className="w-8 h-8 text-gray-900 dark:text-white" />
                 </div>
                 <CardTitle>开源透明</CardTitle>
               </CardHeader>
@@ -69,7 +69,7 @@ export default function AboutPage() {
             <Card>
               <CardHeader>
                 <div className="mb-4">
-                  <Heart className="w-8 h-8 text-red-600" />
+                  <Heart className="w-8 h-8 text-gray-900 dark:text-white" />
                 </div>
                 <CardTitle>用户至上</CardTitle>
               </CardHeader>
@@ -83,7 +83,7 @@ export default function AboutPage() {
             <Card>
               <CardHeader>
                 <div className="mb-4">
-                  <Users className="w-8 h-8 text-green-600" />
+                  <Users className="w-8 h-8 text-gray-900 dark:text-white" />
                 </div>
                 <CardTitle>社区驱动</CardTitle>
               </CardHeader>

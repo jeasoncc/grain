@@ -1,10 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Noto_Sans_SC } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ 
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const notoSansSC = Noto_Sans_SC({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "900"],
+  variable: "--font-noto-sans-sc",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Novel Editor - 专业的长篇小说写作工具",
@@ -40,7 +51,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.variable} ${notoSansSC.variable} font-sans antialiased`}>
         <Header />
         <main className="pt-16">{children}</main>
         <Footer />

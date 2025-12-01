@@ -58,11 +58,18 @@ export function FAQSection() {
   };
 
   return (
-    <section className="py-24 md:py-32 bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-100/20 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-100/20 rounded-full blur-3xl"></div>
+    <section className="py-24 md:py-32 bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04]">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)`,
+            backgroundSize: "40px 40px",
+          }}></div>
+        </div>
+        {/* Decorative background elements */}
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-gray-200/20 dark:bg-gray-800/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-gray-200/20 dark:bg-gray-800/20 rounded-full blur-3xl"></div>
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
@@ -72,8 +79,8 @@ export function FAQSection() {
             description="解答你关于 Novel Editor 的疑问"
             subtitle="FAQ"
           >
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 mb-4 mt-4">
-              <HelpCircle className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-800 mb-4 mt-4 border-2 border-gray-300 dark:border-gray-700">
+              <HelpCircle className="w-8 h-8 text-gray-900 dark:text-white" />
             </div>
           </SectionHeader>
         </ScrollReveal>
@@ -85,35 +92,42 @@ export function FAQSection() {
                 className={cn(
                   "overflow-hidden border-2 transition-all duration-300 cursor-pointer group",
                   openIndex === index
-                    ? "border-blue-300 dark:border-blue-700 shadow-xl bg-white dark:bg-gray-900"
-                    : "border-transparent hover:border-blue-200 dark:hover:border-blue-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm hover:shadow-lg"
+                    ? "border-gray-900 dark:border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(255,255,255,0.08)] bg-white dark:bg-gray-800 hover:-translate-y-1"
+                    : "border-gray-200/80 dark:border-gray-700/80 hover:border-gray-400 dark:hover:border-gray-500 bg-white dark:bg-gray-800 hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_8px_30px_rgba(255,255,255,0.05)] hover:-translate-y-1"
                 )}
                 onClick={() => toggleFAQ(index)}
               >
                 <CardContent className="p-0">
                   <button
-                    className="w-full px-6 py-5 flex items-center justify-between text-left gap-4 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors"
+                    className="w-full px-8 py-6 flex items-center justify-between text-left gap-4 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors duration-300"
                     aria-expanded={openIndex === index}
                   >
-                    <span className="font-semibold text-gray-900 dark:text-white flex-1 text-lg">
+                    <span className={cn(
+                      "font-semibold flex-1 text-[17px] transition-colors duration-300 leading-snug",
+                      openIndex === index 
+                        ? "text-gray-900 dark:text-white" 
+                        : "text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white"
+                    )}>
                       {faq.question}
                     </span>
                     <ChevronDown
                       className={cn(
-                        "w-5 h-5 text-gray-500 dark:text-gray-400 transition-all duration-300 flex-shrink-0",
-                        openIndex === index && "transform rotate-180 text-blue-600 dark:text-blue-400"
+                        "w-6 h-6 transition-all duration-500 flex-shrink-0",
+                        openIndex === index 
+                          ? "transform rotate-180 text-gray-900 dark:text-white scale-110" 
+                          : "text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300"
                       )}
                     />
                   </button>
                   <div
                     className={cn(
-                      "px-6 pb-5 transition-all duration-500 ease-out",
+                      "px-8 pb-6 transition-all duration-500 ease-out overflow-hidden",
                       openIndex === index
-                        ? "max-h-96 opacity-100"
-                        : "max-h-0 opacity-0 overflow-hidden"
+                        ? "max-h-96 opacity-100 translate-y-0"
+                        : "max-h-0 opacity-0 -translate-y-2"
                     )}
                   >
-                    <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-base">
+                    <p className="text-gray-600 dark:text-gray-400 leading-[1.8] text-[15px] pt-1 font-light">
                       {faq.answer}
                     </p>
                   </div>

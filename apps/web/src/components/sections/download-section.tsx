@@ -67,21 +67,25 @@ export function DownloadSection() {
             <ScrollReveal key={platform.name} direction="up" delay={index * 100}>
               <Card
                 className={cn(
-                  "relative",
+                  "relative group hover:-translate-y-1 transition-all duration-300",
                   platform.popular
                     ? "ring-2 ring-gray-900 dark:ring-gray-100"
                     : ""
                 )}
               >
                 {platform.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs font-semibold rounded-full z-10">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs font-semibold rounded-full z-10 animate-pulse">
                     最受欢迎
                   </div>
                 )}
 
                 <CardHeader className="text-center pb-4">
-                  <div className="text-5xl mb-3">{platform.icon}</div>
-                  <CardTitle className="text-2xl">{platform.name}</CardTitle>
+                  <div className="text-5xl mb-3 group-hover:scale-110 transition-transform duration-300 inline-block">
+                    {platform.icon}
+                  </div>
+                  <CardTitle className="text-2xl group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-300">
+                    {platform.name}
+                  </CardTitle>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {platform.version}
                   </p>
@@ -90,18 +94,20 @@ export function DownloadSection() {
                   {platform.formats.map((format) => (
                     <Button
                       key={format.name}
-                      className="w-full justify-between group"
+                      className="w-full justify-between group/btn"
                       variant="outline"
                       asChild
                     >
                       <Link href="#">
                         <div className="flex flex-col items-start">
-                          <span className="font-medium">{format.name}</span>
+                          <span className="font-medium group-hover/btn:text-gray-900 dark:group-hover/btn:text-white transition-colors duration-300">
+                            {format.name}
+                          </span>
                           <span className="text-xs text-gray-500 dark:text-gray-400">
                             {format.size}
                           </span>
                         </div>
-                        <Download className="w-4 h-4" />
+                        <Download className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-300" />
                       </Link>
                     </Button>
                   ))}

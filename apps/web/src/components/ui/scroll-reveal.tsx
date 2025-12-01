@@ -48,24 +48,24 @@ export function ScrollReveal({
   const directionClasses = {
     up: isVisible
       ? "translate-y-0 opacity-100"
-      : "translate-y-8 opacity-0",
+      : "translate-y-10 opacity-0",
     down: isVisible
       ? "translate-y-0 opacity-100"
-      : "-translate-y-8 opacity-0",
+      : "-translate-y-10 opacity-0",
     left: isVisible
       ? "translate-x-0 opacity-100"
-      : "-translate-x-8 opacity-0",
+      : "-translate-x-10 opacity-0",
     right: isVisible
       ? "translate-x-0 opacity-100"
-      : "translate-x-8 opacity-0",
-    fade: isVisible ? "opacity-100" : "opacity-0",
+      : "translate-x-10 opacity-0",
+    fade: isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95",
   };
 
   return (
     <div
       ref={ref}
       className={cn(
-        "transition-all duration-700 ease-out",
+        "transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform",
         directionClasses[direction],
         className
       )}

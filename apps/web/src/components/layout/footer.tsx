@@ -35,7 +35,7 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <FileText className="w-6 h-6 text-gray-900 dark:text-white" />
               <span className="text-xl font-bold text-gray-900 dark:text-white">
                 Novel Editor
               </span>

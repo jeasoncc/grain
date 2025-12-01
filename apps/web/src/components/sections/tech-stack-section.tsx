@@ -68,13 +68,15 @@ export function TechStackSection() {
               direction="up"
               delay={index * 50}
             >
-              <Card className="h-full hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-200">
+              <Card className="group h-full hover:-translate-y-1 transition-all duration-300">
                 <CardHeader>
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-300">
+                    <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-300 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 group-hover:scale-110 transition-all duration-300">
                       {tech.icon}
                     </div>
-                    <CardTitle className="text-lg">{tech.category}</CardTitle>
+                    <CardTitle className="text-lg group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-300">
+                      {tech.category}
+                    </CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -85,7 +87,7 @@ export function TechStackSection() {
                     {tech.items.map((item, i) => (
                       <span
                         key={i}
-                        className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium"
+                        className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-md text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-300 cursor-default"
                       >
                         {item}
                       </span>

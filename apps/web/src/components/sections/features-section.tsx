@@ -105,8 +105,13 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="py-24 md:py-32 bg-gray-50 dark:bg-gray-950">
-      <div className="container mx-auto px-4">
+    <section id="features" className="py-24 md:py-32 bg-gray-50 dark:bg-gray-950 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gray-200/20 dark:bg-gray-800/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gray-200/20 dark:bg-gray-800/20 rounded-full blur-3xl"></div>
+      </div>
+      <div className="container mx-auto px-4 relative z-10">
         <ScrollReveal>
           <SectionHeader
             title="强大的功能特性"
@@ -116,24 +121,33 @@ export function FeaturesSection() {
         </ScrollReveal>
 
         {/* Features grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((feature, index) => (
             <ScrollReveal
               key={index}
               direction="up"
               delay={index * 30}
             >
-              <Card className="group h-full hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-200">
-                <CardHeader className="pb-3">
-                  <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 transition-colors">
-                    <div className="text-gray-700 dark:text-gray-300">
-                      {feature.icon}
+              <Card className="group h-full hover:-translate-y-2 transition-all duration-300 relative overflow-hidden">
+                {/* Decorative corner */}
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gray-100/30 dark:bg-gray-800/30 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                {/* Subtle gradient overlay on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-50/0 via-transparent to-gray-100/0 dark:from-gray-800/0 dark:to-gray-900/0 opacity-0 group-hover:opacity-100 group-hover:from-gray-50/50 dark:group-hover:from-gray-800/30 transition-all duration-500 pointer-events-none"></div>
+                <CardHeader className="pb-4 relative z-10">
+                  <div className="relative">
+                    <div className="absolute -inset-1 bg-gray-200/50 dark:bg-gray-700/50 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="w-14 h-14 rounded-xl bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm flex items-center justify-center mb-4 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-sm relative z-10">
+                      <div className="text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                        {feature.icon}
+                      </div>
                     </div>
                   </div>
-                  <CardTitle className="text-lg mb-1">{feature.title}</CardTitle>
+                  <CardTitle className="text-lg mb-2 font-bold group-hover:text-gray-900 dark:group-hover:text-white transition-colors leading-snug">
+                    {feature.title}
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-sm leading-relaxed">
+                <CardContent className="relative z-10">
+                  <CardDescription className="text-sm leading-[1.7] text-gray-600 dark:text-gray-400">
                     {feature.description}
                   </CardDescription>
                 </CardContent>

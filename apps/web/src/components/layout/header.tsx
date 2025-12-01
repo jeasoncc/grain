@@ -65,28 +65,32 @@ export function Header() {
           {/* Logo */}
           <Link
             href="/"
-            className="flex items-center gap-2 text-gray-900 dark:text-white hover:opacity-80 transition"
+            className="flex items-center gap-3 text-gray-900 dark:text-white hover:opacity-90 transition-all duration-300 group"
           >
-            <FileText className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-            <span className="text-xl font-bold">Novel Editor</span>
+            <div className="relative">
+              <div className="absolute inset-0 rounded-lg bg-gray-200/50 dark:bg-gray-700/50 blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <FileText className="w-8 h-8 text-gray-900 dark:text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
+            </div>
+            <span className="text-xl font-bold tracking-tight">Novel Editor</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium"
+                className="relative px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all duration-300 font-medium rounded-lg group/nav"
               >
-                {link.name}
+                <span className="relative z-10">{link.name}</span>
+                <span className="absolute inset-0 bg-gray-100 dark:bg-gray-800 rounded-lg opacity-0 group-hover/nav:opacity-100 transition-opacity duration-300"></span>
               </Link>
             ))}
             <a
               href="https://github.com/yourusername/novel-editor"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium"
+              className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition font-medium"
             >
               GitHub
             </a>
@@ -144,7 +148,7 @@ export function Header() {
                 <Link
                   key={link.name}
                   href={link.href}
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium"
+                  className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition font-medium"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {link.name}
@@ -154,7 +158,7 @@ export function Header() {
                 href="https://github.com/yourusername/novel-editor"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium"
+                className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition font-medium"
               >
                 GitHub
               </a>

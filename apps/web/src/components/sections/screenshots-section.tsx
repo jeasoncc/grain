@@ -59,11 +59,13 @@ export function ScreenshotsSection() {
   };
 
   return (
-    <section className="py-24 md:py-32 bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 right-0 w-96 h-96 bg-blue-100/20 dark:bg-blue-900/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-1/4 left-0 w-96 h-96 bg-purple-100/20 dark:bg-purple-900/10 rounded-full blur-3xl"></div>
+    <section className="py-24 md:py-32 bg-white dark:bg-gray-900 relative overflow-hidden">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04]">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `linear-gradient(90deg, transparent 0%, currentColor 50%, transparent 100%), linear-gradient(0deg, transparent 0%, currentColor 50%, transparent 100%)`,
+          backgroundSize: "50px 50px",
+        }}></div>
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
@@ -78,12 +80,12 @@ export function ScreenshotsSection() {
         {/* Main screenshot display */}
         <div className="max-w-6xl mx-auto mb-12">
           <ScrollReveal direction="up" delay={200}>
-            <Card className="relative overflow-hidden group border-2 border-gray-200/50 dark:border-gray-800/50 shadow-2xl">
-              <div className="aspect-video bg-gradient-to-br from-gray-100 via-blue-50/50 to-purple-50/50 dark:from-gray-800 dark:via-blue-950/20 dark:to-purple-950/20 flex items-center justify-center relative">
+            <Card className="relative overflow-hidden group border-2 border-gray-200 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-shadow duration-300">
+              <div className="aspect-video bg-gray-100 dark:bg-gray-800 flex items-center justify-center relative border-b border-gray-200 dark:border-gray-700">
                 {/* Placeholder for screenshot */}
                 <div className="text-center p-8">
-                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 mb-6">
-                    <ImageIcon className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-200 dark:bg-gray-700 mb-6 border-2 border-gray-300 dark:border-gray-600">
+                    <ImageIcon className="w-10 h-10 text-gray-900 dark:text-white" />
                   </div>
                   <p className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-3">
                     {screenshots[currentIndex].title}
@@ -130,22 +132,22 @@ export function ScreenshotsSection() {
                 className={cn(
                   "flex-shrink-0 w-32 h-20 rounded-lg overflow-hidden border-2 transition-all duration-300",
                   currentIndex === index
-                    ? "border-blue-600 dark:border-blue-400 ring-2 ring-blue-600/20 dark:ring-blue-400/20 shadow-lg scale-105"
-                    : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:scale-102"
+                    ? "border-gray-900 dark:border-white ring-2 ring-gray-900/20 dark:ring-white/20 shadow-lg scale-105"
+                    : "border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 hover:scale-102"
                 )}
                 aria-label={`查看 ${screenshot.title}`}
               >
                 <div className={cn(
                   "w-full h-full flex items-center justify-center transition-all",
                   currentIndex === index
-                    ? "bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30"
-                    : "bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700"
+                    ? "bg-gray-900 dark:bg-white border-2 border-gray-900 dark:border-white"
+                    : "bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700"
                 )}>
                   <span className={cn(
                     "text-2xl font-bold transition-colors",
                     currentIndex === index
-                      ? "text-blue-600 dark:text-blue-400"
-                      : "text-gray-400 dark:text-gray-600"
+                      ? "text-white dark:text-gray-900"
+                      : "text-gray-400 dark:text-gray-500"
                   )}>
                     {index + 1}
                   </span>

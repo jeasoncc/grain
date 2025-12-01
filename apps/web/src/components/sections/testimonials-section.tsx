@@ -29,8 +29,13 @@ const testimonials = [
 
 export function TestimonialsSection() {
   return (
-    <section className="py-24 md:py-32 bg-white dark:bg-gray-900">
-      <div className="container mx-auto px-4">
+    <section className="py-24 md:py-32 bg-white dark:bg-gray-900 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/3 right-0 w-72 h-72 bg-gray-100/30 dark:bg-gray-800/30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/3 left-0 w-72 h-72 bg-gray-100/30 dark:bg-gray-800/30 rounded-full blur-3xl"></div>
+      </div>
+      <div className="container mx-auto px-4 relative z-10">
         <ScrollReveal>
           <SectionHeader
             title="用户评价"
@@ -46,36 +51,39 @@ export function TestimonialsSection() {
               direction="up"
               delay={index * 100}
             >
-              <Card className="flex flex-col h-full hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-200">
-                <CardContent className="p-6 flex-1 flex flex-col">
+              <Card className="group flex flex-col h-full hover:-translate-y-2 transition-all duration-300 relative overflow-hidden">
+                {/* Subtle gradient overlay on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/0 via-transparent to-gray-50/0 dark:from-gray-800/0 dark:to-gray-900/0 opacity-0 group-hover:opacity-100 group-hover:from-white/50 dark:group-hover:from-gray-800/30 transition-all duration-500 pointer-events-none"></div>
+                <CardContent className="p-8 flex-1 flex flex-col relative z-10">
                   {/* Rating */}
-                  <div className="flex gap-1 mb-4">
+                  <div className="flex gap-1.5 mb-6">
                     {Array.from({ length: testimonial.rating }).map((_, i) => (
                       <Star
                         key={i}
-                        className="w-5 h-5 fill-yellow-400 text-yellow-400"
+                        className="w-5 h-5 fill-gray-900 dark:fill-white text-gray-300 dark:text-gray-700 transition-transform duration-300 group-hover:scale-125"
+                        style={{ transitionDelay: `${i * 50}ms` }}
                       />
                     ))}
                   </div>
 
                   {/* Content */}
-                  <div className="mb-6 flex-1">
-                    <Quote className="w-6 h-6 text-gray-300 dark:text-gray-700 mb-2" />
-                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                  <div className="mb-8 flex-1">
+                    <Quote className="w-8 h-8 text-gray-300 dark:text-gray-700 mb-4 opacity-40 group-hover:opacity-100 transition-opacity duration-300" />
+                    <p className="text-gray-700 dark:text-gray-300 leading-[1.8] text-[15px] group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-300 font-light">
                       {testimonial.content}
                     </p>
                   </div>
 
                   {/* Author */}
-                  <div className="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
-                    <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xl">
+                  <div className="flex items-center gap-4 pt-6 border-t border-gray-200/50 dark:border-gray-800/50">
+                    <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-300 shadow-sm">
                       {testimonial.avatar}
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-900 dark:text-white">
+                      <div className="font-semibold text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors duration-300 text-[15px]">
                         {testimonial.name}
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                      <div className="text-sm text-gray-500 dark:text-gray-400 font-light">
                         {testimonial.role}
                       </div>
                     </div>
