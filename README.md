@@ -1,222 +1,226 @@
 # Novel Editor Monorepo
 
-> 专业的长篇小说写作工具 - 桌面应用 + 官网
+> Professional long-form fiction writing tool - Desktop app + Website
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Bun](https://img.shields.io/badge/Bun-1.2+-black?logo=bun)](https://bun.sh)
 [![Turborepo](https://img.shields.io/badge/Turborepo-2.0+-blue?logo=turborepo)](https://turbo.build)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8+-blue?logo=typescript)](https://www.typescriptlang.org/)
 
-Novel Editor 是一个现代化的长篇小说创作工具集，采用 Monorepo 架构，包含跨平台桌面应用和官网。
+Novel Editor is a modern long-form fiction writing toolset built with a Monorepo architecture, including a cross-platform desktop application and official website.
 
-## 🎯 项目概述
+> 🇨🇳 [中文文档](./README.zh-CN.md) | English
 
-这是一个基于 **Turborepo** 的 Monorepo 项目，使用 **Bun** 作为包管理器和运行时，包含两个主要应用：
+---
 
-- **Desktop App** (`apps/desktop`) - 基于 Tauri + React 的跨平台桌面应用
-- **Website** (`apps/web`) - 基于 Next.js 15 的官方网站
+## 🎯 Project Overview
 
-## ✨ 核心特性
+This is a **Turborepo**-based Monorepo project using **Bun** as the package manager and runtime, containing two main applications:
 
-### Desktop 应用
+- **Desktop App** (`apps/desktop`) - Cross-platform desktop application based on Tauri + React
+- **Website** (`apps/web`) - Official website based on Next.js 15
 
-- ✍️ **沉浸式写作** - 基于 Lexical 的富文本编辑器，支持 Markdown 快捷格式
-- 📂 **项目结构化管理** - 书籍 → 章节 → 场景的树状组织
-- 🔍 **强大的搜索功能** - 当前文件搜索替换、全局全文搜索，支持正则表达式
-- 🎨 **图标主题系统** - 6 种预设主题，类似 VSCode 的图标主题功能
-- 📊 **大纲与图表系统** - 完整的大纲管理，支持 Mermaid 和 PlantUML 图表
-- 👤 **角色提及功能** - 通过 `@` 符号快速引用角色，悬停显示 Wiki 信息
-- 💾 **多种导出格式** - JSON、ZIP 结构化导出，Markdown、DOCX 等
-- ⚙️ **可靠存储** - IndexedDB + Dexie 提供离线持久化
-- 🚢 **生产级发布** - 一键产出 AppImage、DEB、RPM、MSI、DMG 安装包
+## ✨ Key Features
 
-### Web 官网
+### Desktop Application
 
-- 🎨 **现代化设计** - 精美的 UI 设计，支持暗色模式
-- 📱 **完全响应式** - 完美适配移动端、平板和桌面端
-- ⚡ **性能优化** - 使用 Next.js 15 的 App Router，极速加载
-- ♿ **无障碍友好** - 遵循 WCAG 标准，键盘导航支持
-- 🔍 **SEO 优化** - 完整的元数据和 Open Graph 标签
-- 📚 **文档系统** - 三栏布局的文档中心，支持搜索和大纲导航
+- ✍️ **Immersive Writing** - Rich text editor based on Lexical with Markdown shortcuts
+- 📂 **Structured Project Management** - Tree-based organization: Books → Chapters → Scenes
+- 🔍 **Powerful Search** - In-file search/replace, global full-text search with regex support
+- 🎨 **Icon Theme System** - 6 preset themes, similar to VSCode's icon theme feature
+- 📊 **Outline & Chart System** - Complete outline management with Mermaid and PlantUML chart support
+- 👤 **Character Mention** - Quick character references via `@` symbol with hover Wiki display
+- 💾 **Multiple Export Formats** - JSON, ZIP structured export, Markdown, DOCX, etc.
+- ⚙️ **Reliable Storage** - IndexedDB + Dexie for offline persistence
+- 🚢 **Production-Ready** - One-command build for AppImage, DEB, RPM, MSI, DMG installers
 
-## 📁 项目结构
+### Web Website
+
+- 🎨 **Modern Design** - Beautiful UI design with dark mode support
+- 📱 **Fully Responsive** - Perfect adaptation for mobile, tablet, and desktop
+- ⚡ **Performance Optimized** - Next.js 15 App Router for lightning-fast loading
+- ♿ **Accessibility Friendly** - WCAG compliant with keyboard navigation support
+- 🔍 **SEO Optimized** - Complete metadata and Open Graph tags
+- 📚 **Documentation System** - Three-column layout documentation center with search and outline navigation
+
+## 📁 Project Structure
 
 ```
 novel-editor-monorepo/
 ├── apps/
-│   ├── desktop/          # Tauri 桌面应用
-│   │   ├── src/          # React 应用源码
-│   │   ├── src-tauri/    # Tauri 后端 (Rust)
+│   ├── desktop/          # Tauri desktop application
+│   │   ├── src/          # React application source
+│   │   ├── src-tauri/    # Tauri backend (Rust)
 │   │   └── package.json
-│   └── web/              # Next.js 官网
-│       ├── src/          # Next.js 应用源码
+│   └── web/              # Next.js website
+│       ├── src/          # Next.js application source
 │       └── package.json
-├── packages/             # 共享包（未来扩展）
-├── docs/                 # 项目文档中心
-│   ├── desktop/          # Desktop 应用文档
-│   ├── web/              # Web 项目文档
-│   ├── deployment/       # 部署文档
-│   └── development/      # 开发文档
-├── scripts/              # 构建和开发脚本
-├── turbo.json            # Turborepo 配置
-├── package.json          # 根 package.json
-└── README.md             # 本文件
+├── packages/             # Shared packages (future expansion)
+├── docs/                 # Project documentation center
+│   ├── desktop/          # Desktop application docs
+│   ├── web/              # Web project docs
+│   ├── deployment/       # Deployment docs
+│   └── development/      # Development docs
+├── scripts/              # Build and development scripts
+├── turbo.json            # Turborepo configuration
+├── package.json          # Root package.json
+└── README.md             # This file
 ```
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 环境要求
+### Prerequisites
 
 - **Node.js** ≥ 20
-- **Bun** ≥ 1.1.0 (推荐使用 Bun 获得更快的性能)
-- **Rust** & **Cargo** (仅 Desktop 应用需要，用于 Tauri)
-- 各平台的 [Tauri 依赖](https://tauri.app/v1/guides/getting-started/prerequisites)
+- **Bun** ≥ 1.1.0 (Recommended for faster performance)
+- **Rust** & **Cargo** (Desktop app only, for Tauri)
+- Platform-specific [Tauri dependencies](https://tauri.app/v1/guides/getting-started/prerequisites)
 
-### 安装依赖
+### Install Dependencies
 
 ```bash
-# 使用 Bun (推荐)
+# Using Bun (Recommended)
 bun install
 
-# 或使用 npm
+# Or using npm
 npm install
 ```
 
-### 开发模式
+### Development Mode
 
 ```bash
-# 同时运行所有应用
+# Run all applications simultaneously
 bun dev
 
-# 只运行桌面应用
+# Run desktop app only
 bun desktop:dev
-# 或
+# Or
 turbo run dev --filter=desktop
 
-# 只运行官网
+# Run website only
 bun web:dev
-# 或
+# Or
 turbo run dev --filter=web
 ```
 
-开发服务器地址：
-- Desktop 前端: `http://localhost:1420`
-- Web 官网: `http://localhost:3000`
+Development server addresses:
+- Desktop frontend: `http://localhost:1420`
+- Web website: `http://localhost:3000`
 
-### 构建
+### Build
 
 ```bash
-# 构建所有应用
+# Build all applications
 bun build
 
-# 构建特定应用
+# Build specific application
 turbo run build --filter=desktop
 turbo run build --filter=web
 ```
 
-### 桌面应用打包
+### Desktop Application Packaging
 
 ```bash
 cd apps/desktop
 npm run tauri build
 ```
 
-这会生成对应平台的安装包：
+This will generate platform-specific installers:
 - Linux: AppImage, DEB, RPM
 - Windows: MSI
 - macOS: DMG
 
-## 📜 可用脚本
+## 📜 Available Scripts
 
-在项目根目录执行：
+Execute in the project root:
 
-| 脚本 | 说明 |
-|------|------|
-| `bun dev` | 启动所有应用的开发服务器 |
-| `bun build` | 构建所有应用 |
-| `bun lint` | 对所有应用运行 lint 检查 |
-| `bun format` | 格式化所有应用的代码 |
-| `bun check` | 运行类型检查和 lint |
-| `bun clean` | 清理所有构建产物 |
-| `bun desktop:dev` | 仅启动桌面应用开发服务器 |
-| `bun web:dev` | 仅启动官网开发服务器 |
+| Script | Description |
+|--------|-------------|
+| `bun dev` | Start all applications' development servers |
+| `bun build` | Build all applications |
+| `bun lint` | Run lint checks on all applications |
+| `bun format` | Format code in all applications |
+| `bun check` | Run type checking and lint |
+| `bun clean` | Clean all build artifacts |
+| `bun desktop:dev` | Start desktop app development server only |
+| `bun web:dev` | Start website development server only |
 
-## 🛠️ 技术栈
+## 🛠️ Tech Stack
 
-### Monorepo 工具
-- **Turborepo** 2.0+ - 高性能构建系统
-- **Bun** - 包管理器、运行时和构建工具
-- **Workspaces** - 工作区管理
+### Monorepo Tools
+- **Turborepo** 2.0+ - High-performance build system
+- **Bun** - Package manager, runtime, and build tool
+- **Workspaces** - Workspace management
 
-### Desktop 应用
-- **前端框架**: React 19 + TypeScript
-- **构建工具**: Vite
-- **UI 库**: Shadcn UI + Radix UI
-- **编辑器**: Lexical (富文本编辑器)
-- **状态管理**: Zustand + TanStack Query
-- **路由**: TanStack Router
-- **数据库**: Dexie.js (IndexedDB)
-- **桌面框架**: Tauri (Rust)
-- **样式**: Tailwind CSS
-- **代码质量**: Biome
+### Desktop Application
+- **Frontend Framework**: React 19 + TypeScript
+- **Build Tool**: Vite
+- **UI Library**: Shadcn UI + Radix UI
+- **Editor**: Lexical (rich text editor)
+- **State Management**: Zustand + TanStack Query
+- **Routing**: TanStack Router
+- **Database**: Dexie.js (IndexedDB)
+- **Desktop Framework**: Tauri (Rust)
+- **Styling**: Tailwind CSS
+- **Code Quality**: Biome
 
-### Web 官网
-- **框架**: Next.js 15
-- **语言**: TypeScript
-- **样式**: Tailwind CSS 4
-- **UI 组件**: Shadcn UI + Radix UI
-- **图标**: Lucide React
-- **主题**: next-themes
+### Web Website
+- **Framework**: Next.js 15
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS 4
+- **UI Components**: Shadcn UI + Radix UI
+- **Icons**: Lucide React
+- **Theme**: next-themes
 
-### 工具链
-- **代码格式化/检查**: Biome
-- **类型检查**: TypeScript (严格模式)
-- **测试**: Vitest + Playwright (计划中)
+### Tooling
+- **Code Formatting/Checking**: Biome
+- **Type Checking**: TypeScript (strict mode)
+- **Testing**: Vitest + Playwright (planned)
 - **CI/CD**: GitHub Actions
 
-## 📚 文档
+## 📚 Documentation
 
-> 📖 **完整文档中心**：查看 [`docs/README.md`](./docs/README.md) 获取所有文档
+> 📖 **Complete Documentation Center**: See [`docs/README.md`](./docs/README.md) for all documentation
 
-### 快速导航
+### Quick Navigation
 
-- 🚀 [开始使用](./docs/project/START_HERE.md) - 从这里开始！
-- ⚡ [快速开始](./docs/project/QUICKSTART.md) - 5分钟上手
-- 🖥️ [Desktop 应用文档](./docs/desktop/README.md) - 桌面应用完整文档
-- 🌐 [Web 项目文档](./docs/web/README.md) - 官网项目文档
-- 🔧 [开发指南](./docs/development/README.md) - 开发环境搭建和构建指南
-- 🚢 [部署指南](./docs/deployment/README.md) - 部署相关文档
+- 🚀 [Getting Started](./docs/project/START_HERE.md) - Start here!
+- ⚡ [Quick Start](./docs/project/QUICKSTART.md) - 5-minute guide
+- 🖥️ [Desktop Application Docs](./docs/desktop/README.md) - Complete desktop app documentation
+- 🌐 [Web Project Docs](./docs/web/README.md) - Website project documentation
+- 🔧 [Development Guide](./docs/development/README.md) - Development environment setup and build guide
+- 🚢 [Deployment Guide](./docs/deployment/README.md) - Deployment-related documentation
 
-### 子项目文档
+### Sub-project Documentation
 
-- [Desktop App](./apps/desktop/README.md) - Tauri 桌面应用详细文档
-- [Desktop App (中文)](./apps/desktop/README.zh-CN.md) - 中文文档
-- [Website](./apps/web/README.md) - Next.js 官网详细文档
+- [Desktop App](./apps/desktop/README.md) - Detailed Tauri desktop application documentation
+- [Desktop App (中文)](./apps/desktop/README.zh-CN.md) - Chinese documentation
+- [Website](./apps/web/README.md) - Detailed Next.js website documentation
 
-## 🏗️ 架构说明
+## 🏗️ Architecture Overview
 
-### Monorepo 优势
+### Monorepo Benefits
 
-- **代码共享**: 可以在多个应用间共享类型定义、工具函数等
-- **统一构建**: 使用 Turborepo 进行增量构建和缓存
-- **统一管理**: 依赖、版本、脚本统一管理
-- **快速开发**: 并行构建和开发服务器
+- **Code Sharing**: Share type definitions, utility functions, etc. across multiple applications
+- **Unified Build**: Use Turborepo for incremental builds and caching
+- **Unified Management**: Unified dependency, version, and script management
+- **Fast Development**: Parallel builds and development servers
 
-### Turborepo 配置
+### Turborepo Configuration
 
-项目使用 Turborepo 进行任务编排，主要配置在 `turbo.json`：
+The project uses Turborepo for task orchestration, with main configuration in `turbo.json`:
 
-- **构建缓存**: 自动缓存构建产物，加速后续构建
-- **任务依赖**: 自动管理任务间的依赖关系
-- **并行执行**: 并行运行独立任务，提高效率
-- **输出管理**: 自动管理各应用的构建输出
+- **Build Cache**: Automatically cache build artifacts to speed up subsequent builds
+- **Task Dependencies**: Automatically manage dependencies between tasks
+- **Parallel Execution**: Run independent tasks in parallel for efficiency
+- **Output Management**: Automatically manage build outputs for each application
 
-### 工作流程
+### Workflow
 
 ```
 ┌─────────────────────────────────────────┐
 │         Root Package.json               │
-│  (Turborepo 任务编排和脚本)            │
+│  (Turborepo task orchestration)        │
 └─────────────────┬───────────────────────┘
                   │
         ┌─────────┴─────────┐
@@ -232,98 +236,98 @@ npm run tauri build
 └──────────────┘  └─────────────────┘
 ```
 
-## 🔧 开发指南
+## 🔧 Development Guidelines
 
-### 代码规范
+### Code Standards
 
-- **TypeScript**: 严格模式，类型安全优先
-- **代码格式**: 使用 Biome 统一格式化
-- **组件规范**: 函数式组件，使用 TypeScript 接口定义 Props
-- **样式**: 使用 Tailwind CSS，遵循设计系统
+- **TypeScript**: Strict mode, prioritize type safety
+- **Code Format**: Use Biome for unified formatting
+- **Component Standards**: Functional components, use TypeScript interfaces for Props
+- **Styling**: Use Tailwind CSS, follow design system
 
-### 提交规范
+### Commit Standards
 
-建议使用约定式提交：
+Recommend using conventional commits:
 
 ```bash
-feat(desktop): 添加新的搜索功能
-fix(web): 修复文档页面的滚动问题
-docs: 更新 README 文档
+feat(desktop): Add new search feature
+fix(web): Fix scrolling issue on docs page
+docs: Update README documentation
 ```
 
-### 添加新功能
+### Adding New Features
 
-1. 创建功能分支: `git checkout -b feat/new-feature`
-2. 开发并测试
-3. 运行检查: `bun check`
-4. 提交代码: `git commit -m "feat: 新功能"`
-5. 推送并创建 PR
+1. Create feature branch: `git checkout -b feat/new-feature`
+2. Develop and test
+3. Run checks: `bun check`
+4. Commit code: `git commit -m "feat: new feature"`
+5. Push and create PR
 
-## 🧪 测试
+## 🧪 Testing
 
 ```bash
-# 运行所有测试（计划中）
+# Run all tests (planned)
 bun test
 
-# 运行桌面应用测试
+# Run desktop app tests
 cd apps/desktop && npm test
 
-# 运行 E2E 测试
+# Run E2E tests
 cd apps/desktop && npm run test:e2e
 ```
 
-## 🚢 部署
+## 🚢 Deployment
 
-### Desktop 应用
+### Desktop Application
 
-桌面应用可以打包为各平台的安装包：
+The desktop application can be packaged as installers for each platform:
 
 ```bash
 cd apps/desktop
 npm run tauri build
 ```
 
-### Web 官网
+### Web Website
 
-官网可以部署到任何支持 Next.js 的平台：
+The website can be deployed to any platform that supports Next.js:
 
-- **Vercel** (推荐) - 零配置部署
-- **Netlify** - 支持 SSR
-- **Cloudflare Pages** - 边缘计算
-- **自建服务器** - 使用 Docker 或直接运行
+- **Vercel** (Recommended) - Zero-config deployment
+- **Netlify** - Supports SSR
+- **Cloudflare Pages** - Edge computing
+- **Self-hosted** - Use Docker or run directly
 
-详细部署指南请查看 [部署文档](./docs/deployment/README.md)。
+For detailed deployment guides, see [Deployment Documentation](./docs/deployment/README.md).
 
-## 🤝 贡献
+## 🤝 Contributing
 
-欢迎贡献代码！请遵循以下步骤：
+Contributions are welcome! Please follow these steps:
 
-1. Fork 本仓库
-2. 创建功能分支 (`git checkout -b feat/amazing-feature`)
-3. 提交更改 (`git commit -m 'feat: 添加新功能'`)
-4. 推送到分支 (`git push origin feat/amazing-feature`)
-5. 创建 Pull Request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feat/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feat/amazing-feature`)
+5. Create a Pull Request
 
-### 贡献指南
+### Contribution Guidelines
 
-- 代码需要通过 lint 和类型检查
-- UI 改动请附上截图或演示视频
-- 桌面端改动请注明测试平台
-- 重大改动请先创建 issue 讨论
+- Code must pass lint and type checks
+- UI changes should include screenshots or demo videos
+- Desktop changes should note the tested platform
+- Major changes should first create an issue for discussion
 
-## 📄 许可证
+## 📄 License
 
-本项目采用 [MIT License](./LICENSE) 许可证。
+This project is licensed under the [MIT License](./LICENSE).
 
-## 📧 联系方式
+## 📧 Contact
 
 - **GitHub**: [@jeasoncc/novel-editor](https://github.com/jeasoncc/novel-editor)
-- **邮箱**: xiaomiquan@aliyun.com
+- **Email**: xiaomiquan@aliyun.com
 
-## 🙏 致谢
+## 🙏 Acknowledgments
 
-感谢所有为这个项目做出贡献的开发者！
+Thank you to all developers who have contributed to this project!
 
 ---
 
-**开始使用**: 查看 [快速开始指南](./docs/project/QUICKSTART.md) 了解更多！
+**Get Started**: Check out the [Quick Start Guide](./docs/project/QUICKSTART.md) to learn more!
