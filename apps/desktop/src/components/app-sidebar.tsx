@@ -294,12 +294,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					<PopoverContent side="right" align="start" className="w-48 p-1">
 						<div className="grid gap-1">
 							<button
+								type="button"
 								onClick={handleImportClick}
 								className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground w-full text-left"
 							>
 								<Upload className="size-4" /> Import Library
 							</button>
 							<button
+								type="button"
 								onClick={handleExport}
 								className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground w-full text-left"
 							>
@@ -307,6 +309,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 							</button>
 							<div className="h-px bg-border my-1" />
 							<button
+								type="button"
 								onClick={handleDeleteAllBooks}
 								className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-destructive/10 text-destructive w-full text-left"
 							>

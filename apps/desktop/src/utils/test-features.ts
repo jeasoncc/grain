@@ -156,6 +156,7 @@ export async function runAllTests() {
 
 // 在开发环境下暴露到全局
 if (import.meta.env.DEV) {
+	// biome-ignore lint/suspicious/noExplicitAny: 开发环境全局对象类型
 	(window as any).testFeatures = {
 		runAll: runAllTests,
 		backup: testBackupFeature,

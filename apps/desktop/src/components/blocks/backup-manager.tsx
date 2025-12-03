@@ -61,6 +61,7 @@ export function BackupManager() {
 		if (enabled) {
 			autoBackupManager.start();
 		}
+		// biome-ignore lint/correctness/useExhaustiveDependencies: 仅在组件挂载时执行一次
 	}, []);
 
 	const loadStats = async () => {

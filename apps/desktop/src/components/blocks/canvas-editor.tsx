@@ -124,7 +124,7 @@ export function CanvasEditor({
 	// 处理内容变化
 	// biome-ignore lint/suspicious/noExplicitAny: Excalidraw 类型
 	const handleChange = useCallback(
-		(elements: readonly any[], appState: any, files: any) => {
+		(_elements: readonly any[], _appState: any, _files: any) => {
 			setHasChanges(true);
 		},
 		[],
