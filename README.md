@@ -61,10 +61,20 @@ bun build
 
 ## 📖 文档
 
-- 🚀 [开始使用](./START_HERE.md) - 从这里开始！
-- ⚡ [快速开始](./QUICKSTART.md) - 5分钟上手
-- 🎉 [成功总结](./SUCCESS_SUMMARY.md) - 查看完成的工作
-- 📋 [验证清单](./VERIFICATION_CHECKLIST.md) - 确保一切正常
+> 📚 **完整文档中心**：查看 [`docs/README.md`](./docs/README.md) 获取所有文档
+
+### 快速导航
+
+- 🚀 [开始使用](./docs/project/START_HERE.md) - 从这里开始！
+- ⚡ [快速开始](./docs/project/QUICKSTART.md) - 5分钟上手
+- 📚 [文档中心](./docs/README.md) - 完整的文档索引
+- 🖥️ [Desktop 应用文档](./docs/desktop/README.md) - 桌面应用完整文档
+- 🌐 [Web 项目文档](./apps/web/README.md) - 官网项目文档
+
+### 子项目文档
+
+- [Desktop App](./apps/desktop/README.md) - Tauri 桌面应用
+- [Website](./apps/web/README.md) - Next.js 官网
 
 ## License
 

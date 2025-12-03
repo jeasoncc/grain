@@ -11,6 +11,11 @@ Novel Editor 是一款基于 **Tauri**、**React** 与 **Shadcn UI** 打造的�
 - ✍️ **沉浸式写作**：基于 Lexical 的富文本编辑器，支持快捷键、模板和可选的专注模式。
 - 📂 **项目结构化管理**：将章节、场景、人物和世界观资料统一管理，支持搜索与标签。
 - 🧠 **知识工作台**：关联笔记、参考资料，提供时间线与关系图可视化。
+- 🎨 **图标主题系统**：6 种精心设计的图标主题，支持自定义文件类型图标，类似 VSCode 的图标主题功能。
+- 📊 **大纲与图表系统**：完整的大纲管理系统，支持 Mermaid 和 PlantUML 图表，可视化故事结构。
+- 👤 **角色提及功能**：通过 `@` 符号快速引用角色，悬停显示角色 Wiki 信息。
+- 🔍 **强大的搜索功能**：当前文件搜索替换、全局全文搜索，支持正则表达式和智能排序。
+- 💾 **多种导出格式**：支持 JSON、ZIP 结构化导出，Markdown、DOCX 等格式导入导出。
 - ⚙️ **可靠存储**：IndexedDB + Dexie 提供离线持久化，可选云同步确保多设备一致。
 - 🧪 **质量流程**：集成自动化 Lint、测试与桌面打包，确保版本稳定。
 - 🚢 **生产级发布**：一键产出 AppImage、DEB、RPM、MSI、DMG 安装包，预留签名与更新脚本。
@@ -33,7 +38,24 @@ Novel Editor 是一款基于 **Tauri**、**React** 与 **Shadcn UI** 打造的�
 - **搜索与替换**：
   - 当前文件搜索替换（`Ctrl+F` / `Ctrl+H`）：支持区分大小写、全字匹配、正则表达式
   - 全局搜索（`Ctrl+Shift+F`）：跨场景、角色、世界观的全文搜索，关键词高亮，智能排序
-- 导入导出（Markdown、DOCX、JSON）、自动备份与快照恢复。
+- **大纲管理系统**：
+  - 章节详情编辑面板，支持状态管理、剧情点、角色关联、标签系统
+  - 多种视图模式：树形视图、卡片视图、图表视图
+  - 支持 Mermaid 图表（结构图、流程图、时间线、甘特图、角色关系图）
+  - 可选 PlantUML 图表支持（需要配置 Kroki 服务器）
+- **角色提及功能**：
+  - 在编辑器中使用 `@` 符号快速引用角色
+  - 自动补全角色名称，支持模糊搜索
+  - 悬停显示角色 Wiki 卡片，包含详细信息
+- **图标主题系统**：
+  - 6 种预设图标主题（默认、极简、经典、现代、优雅、作家）
+  - 支持实时预览和切换
+  - 自定义文件类型图标显示
+- **多种导出格式**：
+  - JSON 完整备份
+  - ZIP 结构化导出（按项目→章节→场景组织）
+  - Markdown、DOCX 等格式导入导出
+  - 自动备份与快照恢复
 
 ### 创作增效
 
@@ -55,7 +77,20 @@ Novel Editor 是一款基于 **Tauri**、**React** 与 **Shadcn UI** 打造的�
 - **中期**：协作云同步（WebDAV/Supabase）、AI 辅助功能、导出格式扩充、拼写语法工具。
 - **远期**：插件生态、移动端伴侣、实时协作、社区内容市场。
 
-进度将同步到 `docs/roadmap.md`（规划中），以及 issue 标签（`status:planned`、`status:in-progress`）。
+进度将同步到 [`docs/roadmap.md`](../../docs/desktop/README.md)（规划中），以及 issue 标签（`status:planned`、`status:in-progress`）。
+
+## 📚 文档
+
+详细的功能文档和指南请查看：
+
+- **完整文档**：查看 [`docs/desktop/README.md`](../../docs/desktop/README.md) 获取所有功能文档
+- **功能指南**：
+  - [搜索和替换功能](../../docs/desktop/features/SEARCH_REPLACE_GUIDE.md)
+  - [图标主题系统](../../docs/desktop/features/ICON_THEME_SYSTEM.md)
+  - [大纲系统](../../docs/desktop/features/OUTLINE_SYSTEM.md)
+  - [图表系统](../../docs/desktop/features/CHARTS_SYSTEM.md)
+  - [角色提及功能](../../docs/desktop/features/CHARACTER_MENTION_FEATURE.md)
+- **更新日志**：查看 [`docs/desktop/changelog/`](../../docs/desktop/changelog/) 了解版本更新历史
 
 ---
 
