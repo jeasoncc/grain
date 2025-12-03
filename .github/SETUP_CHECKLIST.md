@@ -2,9 +2,27 @@
 
 完成以下步骤以启用所有自动化功能。
 
-## ✅ 必需配置 (5 分钟)
+## ✅ 必需配置 (10 分钟)
 
-### 1. 配置 GitHub Actions 权限
+### 1. 配置分支保护 ⭐ 重要！
+
+- [ ] 进入 `Settings` → `Branches`
+- [ ] 点击 **"Add branch protection rule"**
+- [ ] Branch name pattern: `main`
+- [ ] 勾选以下选项:
+  - [ ] **Require a pull request before merging** (审批数设为 0)
+  - [ ] **Require status checks to pass before merging**
+    - [ ] Require branches to be up to date
+    - [ ] 选择: `Lint and Type Check`, `Build Web`, `Build Desktop`
+  - [ ] **Require conversation resolution before merging**
+  - [ ] **Require linear history**
+  - [ ] **Do not allow force pushes**
+  - [ ] **Do not allow deletions**
+- [ ] 点击 **Create**
+
+📖 详细指南: [分支保护快速配置](../docs/branch-protection-quick-start.md)
+
+### 2. 配置 GitHub Actions 权限
 
 - [ ] 进入 `Settings` → `Actions` → `General`
 - [ ] 在 "Workflow permissions" 部分:
@@ -12,13 +30,13 @@
   - [ ] 勾选 **"Allow GitHub Actions to create and approve pull requests"**
 - [ ] 点击 **Save**
 
-### 2. 启用 GitHub Pages (用于 Web 部署)
+### 3. 启用 GitHub Pages (用于 Web 部署)
 
 - [ ] 进入 `Settings` → `Pages`
 - [ ] Source 选择 **"GitHub Actions"**
 - [ ] 点击 **Save**
 
-### 3. 创建必需的标签
+### 4. 创建必需的标签
 
 运行标签创建脚本:
 
