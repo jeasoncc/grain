@@ -12,11 +12,20 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # 主版本号源文件（使用根目录的 package.json 作为版本源）
 VERSION_SOURCE="$PROJECT_ROOT/package.json"
 
-# 颜色输出
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+# 检测是否在终端环境（避免颜色代码出现在 Git 提交信息中）
+if [ -t 1 ]; then
+    # 在终端中，使用颜色
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    RED='\033[0;31m'
+    NC='\033[0m' # No Color
+else
+    # 不在终端中（如被 Git hook 调用），不使用颜色
+    GREEN=''
+    YELLOW=''
+    RED=''
+    NC=''
+fi
 
 # 函数：从 JSON 文件读取版本号
 get_version_from_json() {
@@ -109,64 +118,83 @@ bump_patch_version() {
 main() {
     cd "$PROJECT_ROOT"
     
-    echo -e "${GREEN}开始自动递增版本号...${NC}"
-    echo ""
+    # 静默模式：不输出调试信息，只输出版本号
+    SILENT_MODE="${SILENT_MODE:-false}"
+    
+    if [ "$SILENT_MODE" != "true" ]; then
+        echo -e "${GREEN}开始自动递增版本号...${NC}" >&2
+        echo "" >&2
+    fi
     
     # 从主版本源文件读取当前版本
     if [ ! -f "$VERSION_SOURCE" ]; then
-        echo -e "${RED}错误: 找不到版本源文件: $VERSION_SOURCE${NC}"
+        echo -e "${RED}错误: 找不到版本源文件: $VERSION_SOURCE${NC}" >&2
         exit 1
     fi
     
     CURRENT_VERSION=$(get_version_from_json "$VERSION_SOURCE")
     
     if [ -z "$CURRENT_VERSION" ]; then
-        echo -e "${RED}错误: 无法从 $VERSION_SOURCE 读取版本号${NC}"
+        echo -e "${RED}错误: 无法从 $VERSION_SOURCE 读取版本号${NC}" >&2
         exit 1
     fi
     
-    echo -e "当前版本: ${YELLOW}$CURRENT_VERSION${NC}"
+    if [ "$SILENT_MODE" != "true" ]; then
+        echo -e "当前版本: ${YELLOW}$CURRENT_VERSION${NC}" >&2
+    fi
     
     # 递增版本号
     NEW_VERSION=$(bump_patch_version "$CURRENT_VERSION")
     
     if [ "$NEW_VERSION" = "$CURRENT_VERSION" ]; then
-        echo -e "${RED}错误: 版本号格式不正确: $CURRENT_VERSION${NC}"
+        echo -e "${RED}错误: 版本号格式不正确: $CURRENT_VERSION${NC}" >&2
         exit 1
     fi
     
-    echo -e "新版本: ${GREEN}$NEW_VERSION${NC}"
-    echo ""
+    if [ "$SILENT_MODE" != "true" ]; then
+        echo -e "新版本: ${GREEN}$NEW_VERSION${NC}" >&2
+        echo "" >&2
+        echo -e "${GREEN}正在同步版本号到所有文件...${NC}" >&2
+    fi
     
-    # 更新所有相关文件的版本号
-    echo -e "${GREEN}正在同步版本号到所有文件...${NC}"
+    # 更新所有相关文件的版本号（输出重定向到 stderr）
+    if [ "$SILENT_MODE" != "true" ]; then
+        # 1. 根目录 package.json
+        update_json_version "$PROJECT_ROOT/package.json" "$NEW_VERSION" >&2
+        
+        # 2. Desktop package.json
+        update_json_version "$PROJECT_ROOT/apps/desktop/package.json" "$NEW_VERSION" >&2
+        
+        # 3. Web package.json
+        update_json_version "$PROJECT_ROOT/apps/web/package.json" "$NEW_VERSION" >&2
+        
+        # 4. Tauri config
+        update_json_version "$PROJECT_ROOT/apps/desktop/src-tauri/tauri.conf.json" "$NEW_VERSION" >&2
+        
+        # 5. Cargo.toml
+        update_cargo_version "$PROJECT_ROOT/apps/desktop/src-tauri/Cargo.toml" "$NEW_VERSION" >&2
+        
+        # 6. AUR PKGBUILD
+        update_pkgbuild_version "$PROJECT_ROOT/aur/PKGBUILD" "$NEW_VERSION" >&2
+        
+        # 7. AUR PKGBUILD-binary
+        update_pkgbuild_version "$PROJECT_ROOT/aur/PKGBUILD-binary" "$NEW_VERSION" >&2
+        
+        echo "" >&2
+        echo -e "${GREEN}✅ 版本号已从 $CURRENT_VERSION 更新到 $NEW_VERSION${NC}" >&2
+        echo "" >&2
+    else
+        # 静默模式：不输出更新信息
+        update_json_version "$PROJECT_ROOT/package.json" "$NEW_VERSION" >/dev/null 2>&1
+        update_json_version "$PROJECT_ROOT/apps/desktop/package.json" "$NEW_VERSION" >/dev/null 2>&1
+        update_json_version "$PROJECT_ROOT/apps/web/package.json" "$NEW_VERSION" >/dev/null 2>&1
+        update_json_version "$PROJECT_ROOT/apps/desktop/src-tauri/tauri.conf.json" "$NEW_VERSION" >/dev/null 2>&1
+        update_cargo_version "$PROJECT_ROOT/apps/desktop/src-tauri/Cargo.toml" "$NEW_VERSION" >/dev/null 2>&1
+        update_pkgbuild_version "$PROJECT_ROOT/aur/PKGBUILD" "$NEW_VERSION" >/dev/null 2>&1
+        update_pkgbuild_version "$PROJECT_ROOT/aur/PKGBUILD-binary" "$NEW_VERSION" >/dev/null 2>&1
+    fi
     
-    # 1. 根目录 package.json
-    update_json_version "$PROJECT_ROOT/package.json" "$NEW_VERSION"
-    
-    # 2. Desktop package.json
-    update_json_version "$PROJECT_ROOT/apps/desktop/package.json" "$NEW_VERSION"
-    
-    # 3. Web package.json
-    update_json_version "$PROJECT_ROOT/apps/web/package.json" "$NEW_VERSION"
-    
-    # 4. Tauri config
-    update_json_version "$PROJECT_ROOT/apps/desktop/src-tauri/tauri.conf.json" "$NEW_VERSION"
-    
-    # 5. Cargo.toml
-    update_cargo_version "$PROJECT_ROOT/apps/desktop/src-tauri/Cargo.toml" "$NEW_VERSION"
-    
-    # 6. AUR PKGBUILD
-    update_pkgbuild_version "$PROJECT_ROOT/aur/PKGBUILD" "$NEW_VERSION"
-    
-    # 7. AUR PKGBUILD-binary
-    update_pkgbuild_version "$PROJECT_ROOT/aur/PKGBUILD-binary" "$NEW_VERSION"
-    
-    echo ""
-    echo -e "${GREEN}✅ 版本号已从 $CURRENT_VERSION 更新到 $NEW_VERSION${NC}"
-    echo ""
-    
-    # 返回新版本号（供其他脚本使用）
+    # 只输出纯净的版本号到 stdout（供 Git hook 使用）
     echo "$NEW_VERSION"
 }
 
