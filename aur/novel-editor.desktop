@@ -1,0 +1,17 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Novel Editor
+Name[zh_CN]=小说编辑器
+Comment=A modern writing tool designed for novelists
+Comment[zh_CN]=专为小说创作者设计的现代化写作工具
+GenericName=Novel Writing Tool
+GenericName[zh_CN]=小说写作工具
+Exec=novel-editor %U
+Icon=novel-editor
+Terminal=false
+Categories=Office;WordProcessor;Literature;
+Keywords=novel;writing;editor;author;book;
+MimeType=application/x-novel-editor;
+StartupNotify=true
+StartupWMClass=novel-editor

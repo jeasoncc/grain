@@ -1,0 +1,35 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#6366f1"/>
+  
+  <!-- Book -->
+  <g transform="translate(256, 256)">
+    <!-- Book cover -->
+    <rect x="-120" y="-160" width="240" height="320" rx="8" fill="#ffffff" opacity="0.95"/>
+    <rect x="-120" y="-160" width="240" height="320" rx="8" fill="none" stroke="#e5e7eb" stroke-width="4"/>
+    
+    <!-- Book pages -->
+    <rect x="-110" y="-150" width="220" height="300" fill="#f9fafb"/>
+    <line x1="-100" y1="-130" x2="100" y2="-130" stroke="#d1d5db" stroke-width="2"/>
+    <line x1="-100" y1="-100" x2="100" y2="-100" stroke="#d1d5db" stroke-width="2"/>
+    <line x1="-100" y1="-70" x2="100" y2="-70" stroke="#d1d5db" stroke-width="2"/>
+    <line x1="-100" y1="-40" x2="80" y2="-40" stroke="#d1d5db" stroke-width="2"/>
+    <line x1="-100" y1="-10" x2="110" y2="-10" stroke="#d1d5db" stroke-width="2"/>
+    <line x1="-100" y1="20" x2="90" y2="20" stroke="#d1d5db" stroke-width="2"/>
+    
+    <!-- Pen/Pencil -->
+    <g transform="translate(140, -140) rotate(45)">
+      <!-- Pen body -->
+      <rect x="-6" y="-80" width="12" height="80" rx="2" fill="#fbbf24"/>
+      <!-- Pen tip -->
+      <polygon points="-8,-80 0,-95 8,-80" fill="#78716c"/>
+      <!-- Pen clip -->
+      <rect x="6" y="-60" width="4" height="25" rx="1" fill="#525252"/>
+    </g>
+  </g>
+  
+  <!-- Decorative elements -->
+  <circle cx="180" cy="180" r="30" fill="#ffffff" opacity="0.2"/>
+  <circle cx="340" cy="340" r="40" fill="#ffffff" opacity="0.15"/>
+</svg>
+

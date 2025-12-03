@@ -95,3 +95,4 @@ export function FormattedText({ text }: { text: string }) {
   return <>{formatKeyboardShortcut(text)}</>;
 }
 
+

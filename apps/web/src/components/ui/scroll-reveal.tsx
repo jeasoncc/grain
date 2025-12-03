@@ -18,10 +18,17 @@ export function ScrollReveal({
   className,
   threshold = 0.1,
 }: ScrollRevealProps) {
+  // 在 SSR 时默认可见，避免水合不匹配
   const [isVisible, setIsVisible] = useState(false);
   const [hasAnimated, setHasAnimated] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // 标记组件已挂载
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleIntersection = useCallback(
     (entries: IntersectionObserverEntry[]) => {
@@ -42,6 +49,8 @@ export function ScrollReveal({
   );
 
   useEffect(() => {
+    // 只在客户端执行
+    if (!isMounted) return;
     const element = ref.current;
     if (!element) return;
 
@@ -75,22 +84,25 @@ export function ScrollReveal({
       }
       observer.disconnect();
     };
-  }, [handleIntersection, threshold]);
+  }, [handleIntersection, threshold, isMounted]);
 
+  // 在 SSR 时或未挂载时，显示内容以避免布局闪烁
+  const shouldShow = isMounted ? isVisible : true;
+  
   const directionClasses = {
-    up: isVisible
+    up: shouldShow
       ? "translate-y-0 opacity-100"
       : "translate-y-10 opacity-0",
-    down: isVisible
+    down: shouldShow
       ? "translate-y-0 opacity-100"
       : "-translate-y-10 opacity-0",
-    left: isVisible
+    left: shouldShow
       ? "translate-x-0 opacity-100"
       : "-translate-x-10 opacity-0",
-    right: isVisible
+    right: shouldShow
       ? "translate-x-0 opacity-100"
       : "translate-x-10 opacity-0",
-    fade: isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95",
+    fade: shouldShow ? "opacity-100 scale-100" : "opacity-0 scale-95",
   };
 
   return (
@@ -99,7 +111,7 @@ export function ScrollReveal({
       className={cn(
         "transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
         // 使用 will-change 优化动画性能，但只在动画期间
-        isVisible && !hasAnimated ? "will-change-transform" : "",
+        shouldShow && !hasAnimated ? "will-change-transform" : "",
         directionClasses[direction],
         className
       )}

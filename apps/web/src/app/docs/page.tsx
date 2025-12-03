@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { BookOpen, GraduationCap, Code, HelpCircle, GitBranch, FileText } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";

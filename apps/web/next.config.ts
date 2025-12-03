@@ -21,6 +21,12 @@ const nextConfig: NextConfig = {
   // 禁用自动 lockfile 修补
   // Next.js 会在启动时自动修补 lockfile，但在 monorepo 中可能导致问题
   // 我们使用 bun 作为包管理器，不需要这个功能
+  
+  // 输出配置 - 仅在需要静态导出时启用
+  // output: process.env.NODE_ENV === "production" ? "export" : undefined,
+  
+  // 禁用特定路由的静态生成（通过配置）
+  // 这些路由包含客户端交互组件，需要动态渲染
 };
 
 export default nextConfig;

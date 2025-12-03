@@ -12,6 +12,9 @@ Novel Editor 是一个现代化的长篇小说创作工具集，采用 Monorepo 
 > 🇺🇸 [English Documentation](./README.md) | 中文
 
 ---
+![](https://s3.bmp.ovh/imgs/2025/11/30/17e3f22342be954f.png)
+
+![](https://s3.bmp.ovh/imgs/2025/11/30/20c87f8ef08b246d.png)
 
 ## 🎯 项目概述
 
@@ -331,4 +334,5 @@ npm run tauri build
 ---
 
 **开始使用**: 查看 [快速开始指南](./docs/project/QUICKSTART.md) 了解更多！
+
 

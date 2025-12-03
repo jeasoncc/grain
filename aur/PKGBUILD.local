@@ -1,0 +1,84 @@
+# Maintainer: Jeason <xiaomiquan@aliyun.com>
+# 本地测试版本 - 使用本地源代码
+
+pkgname=novel-editor
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="一款专为小说创作者设计的现代化写作工具"
+arch=('x86_64')
+url="https://github.com/jeasoncc/novel-editor"
+license=('MIT')
+depends=(
+  'webkit2gtk'
+  'gtk3'
+  'libappindicator-gtk3'
+)
+makedepends=(
+  'rust'
+  'cargo'
+  'nodejs'
+  'patchelf'
+)
+# 注意：bun 需要手动安装，不在官方仓库中
+optdepends=(
+  'libfuse2: 用于 AppImage 支持'
+)
+
+# 本地测试：不从网络下载
+source=()
+sha256sums=()
+
+prepare() {
+  # 使用当前目录的源代码
+  echo "使用本地源代码进行构建"
+}
+
+build() {
+  # 获取项目根目录（PKGBUILD 所在目录的上一级）
+  PROJECT_ROOT="$(dirname "$startdir")"
+  
+  echo "📍 项目根目录: $PROJECT_ROOT"
+  cd "$PROJECT_ROOT"
+  
+  echo "📦 安装依赖..."
+  bun install
+  
+  echo "🔨 构建前端..."
+  cd apps/desktop
+  bun run build
+  
+  echo "🚀 构建 Tauri 应用..."
+  bun run tauri build -- --bundles deb
+}
+
+package() {
+  # 获取项目根目录
+  PROJECT_ROOT="$(dirname "$startdir")"
+  cd "$PROJECT_ROOT"
+  
+  # 安装二进制文件
+  install -Dm755 "apps/desktop/src-tauri/target/release/$pkgname" \
+    "$pkgdir/usr/bin/$pkgname"
+  
+  # 安装桌面文件
+  install -Dm644 "aur/$pkgname.desktop" \
+    "$pkgdir/usr/share/applications/$pkgname.desktop"
+  
+  # 安装图标
+  for size in 32 128 256; do
+    if [ -f "apps/desktop/src-tauri/icons/${size}x${size}.png" ]; then
+      install -Dm644 "apps/desktop/src-tauri/icons/${size}x${size}.png" \
+        "$pkgdir/usr/share/icons/hicolor/${size}x${size}/apps/$pkgname.png"
+    fi
+  done
+  
+  # 安装许可证
+  if [ -f LICENSE ]; then
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  fi
+  
+  # 安装文档
+  if [ -f README.md ]; then
+    install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+  fi
+}
