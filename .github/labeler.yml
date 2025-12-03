@@ -1,0 +1,27 @@
+# 根据文件路径自动添加标签
+
+desktop:
+  - apps/desktop/**/*
+  - apps/desktop/src-tauri/**/*
+
+web:
+  - apps/web/**/*
+
+documentation:
+  - docs/**/*
+  - '**/*.md'
+  - README.*
+
+ci/cd:
+  - .github/**/*
+  - scripts/**/*
+
+dependencies:
+  - package.json
+  - bun.lock
+  - '**/package.json'
+  - apps/desktop/src-tauri/Cargo.toml
+  - apps/desktop/src-tauri/Cargo.lock
+
+aur:
+  - aur/**/*

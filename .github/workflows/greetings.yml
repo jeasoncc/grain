@@ -1,0 +1,44 @@
+name: Greetings
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+
+jobs:
+  greeting:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          
+          issue-message: |
+            👋 你好！感谢你创建第一个 issue！
+            
+            我们会尽快查看并回复。在此期间，你可以：
+            
+            - 📖 查看[文档](https://github.com/${{ github.repository }}/tree/main/docs)
+            - 💬 加入我们的讨论
+            - ⭐ 给项目点个 star
+            
+            如果你想贡献代码，欢迎查看 [贡献指南](https://github.com/${{ github.repository }}/blob/main/CONTRIBUTING.md)（如果有的话）。
+          
+          pr-message: |
+            🎉 感谢你的第一个 Pull Request！
+            
+            我们很高兴看到你的贡献。在 review 之前，请确保：
+            
+            - ✅ 代码通过了所有 CI 检查
+            - ✅ 遵循了项目的代码规范
+            - ✅ 添加了必要的测试（如果适用）
+            - ✅ 更新了相关文档
+            
+            我们会尽快 review 你的 PR。如果有任何问题，请随时在评论中提问！
+            
+            再次感谢你的贡献！ 🙏

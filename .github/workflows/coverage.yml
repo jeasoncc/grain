@@ -1,0 +1,52 @@
+name: Code Coverage
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      # 当你添加测试后，取消注释以下步骤
+      # - name: Run tests with coverage
+      #   run: bun test --coverage
+      
+      # - name: Upload coverage to Codecov
+      #   uses: codecov/codecov-action@v4
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     files: ./coverage/coverage-final.json
+      #     flags: unittests
+      #     name: codecov-umbrella
+      
+      - name: Coverage placeholder
+        run: |
+          echo "📊 测试覆盖率功能已配置"
+          echo "当添加测试后，将自动生成覆盖率报告"
+          echo ""
+          echo "建议的测试框架："
+          echo "- Vitest (推荐用于 Vite 项目)"
+          echo "- Jest"
+          echo ""
+          echo "配置步骤："
+          echo "1. 安装测试框架: bun add -D vitest @vitest/ui"
+          echo "2. 添加测试脚本到 package.json"
+          echo "3. 取消注释此 workflow 中的覆盖率步骤"

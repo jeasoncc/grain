@@ -1,0 +1,39 @@
+# Code Owners
+# 
+# 这个文件定义了代码的所有者，当相关文件被修改时，
+# 这些所有者会自动被添加为 PR 的 reviewer
+#
+# 语法: path/to/files @username
+# 文档: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# 默认所有者 - 所有文件
+* @jeasoncc
+
+# Desktop 应用
+/apps/desktop/ @jeasoncc
+
+# Web 应用
+/apps/web/ @jeasoncc
+
+# 文档
+/docs/ @jeasoncc
+*.md @jeasoncc
+
+# CI/CD 配置
+/.github/ @jeasoncc
+/scripts/ @jeasoncc
+
+# AUR 包配置
+/aur/ @jeasoncc
+
+# 依赖配置
+package.json @jeasoncc
+bun.lock @jeasoncc
+/apps/desktop/src-tauri/Cargo.toml @jeasoncc
+/apps/desktop/src-tauri/Cargo.lock @jeasoncc
+
+# 配置文件
+*.config.* @jeasoncc
+*.json @jeasoncc
+*.yml @jeasoncc
+*.yaml @jeasoncc

@@ -1,0 +1,140 @@
+name: Quality Gate
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  quality-checks:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      checks: write
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Run Biome check
+        id: biome
+        continue-on-error: true
+        run: |
+          bun run check > biome-report.txt 2>&1 || true
+          cat biome-report.txt
+      
+      - name: Check for TODO/FIXME comments
+        id: todos
+        run: |
+          echo "## 🔍 待办事项检查" > todo-report.md
+          echo "" >> todo-report.md
+          
+          TODOS=$(git diff origin/${{ github.base_ref }}...HEAD | grep -E "^\+.*TODO|^\+.*FIXME" || true)
+          
+          if [ -n "$TODOS" ]; then
+            echo "⚠️ 发现新的 TODO/FIXME 注释：" >> todo-report.md
+            echo "\`\`\`" >> todo-report.md
+            echo "$TODOS" >> todo-report.md
+            echo "\`\`\`" >> todo-report.md
+            echo "" >> todo-report.md
+            echo "建议在合并前处理这些待办事项。" >> todo-report.md
+          else
+            echo "✅ 没有新增 TODO/FIXME 注释" >> todo-report.md
+          fi
+      
+      - name: Check for console.log
+        id: console
+        run: |
+          echo "## 🐛 Console 语句检查" > console-report.md
+          echo "" >> console-report.md
+          
+          CONSOLES=$(git diff origin/${{ github.base_ref }}...HEAD | grep -E "^\+.*console\.(log|debug|warn)" | grep -v "// console" || true)
+          
+          if [ -n "$CONSOLES" ]; then
+            echo "⚠️ 发现新的 console 语句：" >> console-report.md
+            echo "\`\`\`" >> console-report.md
+            echo "$CONSOLES" >> console-report.md
+            echo "\`\`\`" >> console-report.md
+            echo "" >> console-report.md
+            echo "建议移除或使用适当的日志库。" >> console-report.md
+          else
+            echo "✅ 没有新增 console 语句" >> console-report.md
+          fi
+      
+      - name: Check file sizes
+        id: filesize
+        run: |
+          echo "## 📏 文件大小检查" > filesize-report.md
+          echo "" >> filesize-report.md
+          
+          LARGE_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | xargs -I {} sh -c 'test -f {} && find {} -size +100k' || true)
+          
+          if [ -n "$LARGE_FILES" ]; then
+            echo "⚠️ 发现大文件 (>100KB)：" >> filesize-report.md
+            echo "\`\`\`" >> filesize-report.md
+            echo "$LARGE_FILES" | xargs du -h >> filesize-report.md
+            echo "\`\`\`" >> filesize-report.md
+            echo "" >> filesize-report.md
+            echo "请确认这些大文件是必需的。" >> filesize-report.md
+          else
+            echo "✅ 没有超大文件" >> filesize-report.md
+          fi
+      
+      - name: Generate quality report
+        run: |
+          echo "# 📊 代码质量报告" > quality-report.md
+          echo "" >> quality-report.md
+          
+          cat todo-report.md >> quality-report.md
+          echo "" >> quality-report.md
+          cat console-report.md >> quality-report.md
+          echo "" >> quality-report.md
+          cat filesize-report.md >> quality-report.md
+          echo "" >> quality-report.md
+          
+          echo "## 🔧 Biome 检查结果" >> quality-report.md
+          echo "\`\`\`" >> quality-report.md
+          cat biome-report.txt >> quality-report.md
+          echo "\`\`\`" >> quality-report.md
+      
+      - name: Comment PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('quality-report.md', 'utf8');
+            
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && comment.body.includes('📊 代码质量报告')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: report
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: report
+              });
+            }

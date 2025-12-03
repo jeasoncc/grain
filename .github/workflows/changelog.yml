@@ -1,0 +1,35 @@
+name: Update Changelog
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  update-changelog:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Update Changelog
+        uses: rhysd/changelog-from-release/action@v3
+        with:
+          file: CHANGELOG.md
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          header: |
+            # Changelog
+            
+            All notable changes to this project will be documented in this file.
+      
+      - name: Commit changelog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --quiet && git diff --staged --quiet || (git commit -m "docs: update CHANGELOG.md [skip ci]" && git push)

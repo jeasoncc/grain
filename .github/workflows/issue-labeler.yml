@@ -1,0 +1,72 @@
+name: Issue Labeler
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  label-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    
+    steps:
+      - name: Label bug reports
+        if: contains(github.event.issue.title, 'bug') || contains(github.event.issue.body, 'bug')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['bug']
+            })
+      
+      - name: Label feature requests
+        if: contains(github.event.issue.title, 'feature') || contains(github.event.issue.title, '功能')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['enhancement']
+            })
+      
+      - name: Label documentation
+        if: contains(github.event.issue.title, 'doc') || contains(github.event.issue.title, '文档')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['documentation']
+            })
+      
+      - name: Label desktop app issues
+        if: contains(github.event.issue.title, 'desktop') || contains(github.event.issue.title, '桌面')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['desktop']
+            })
+      
+      - name: Label web app issues
+        if: contains(github.event.issue.title, 'web') || contains(github.event.issue.title, '网页')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['web']
+            })

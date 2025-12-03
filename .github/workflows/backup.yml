@@ -1,0 +1,109 @@
+name: Backup Repository
+
+on:
+  schedule:
+    # 每周日凌晨 3 点备份
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    name: Create Repository Backup
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史
+      
+      - name: Create backup archive
+        run: |
+          DATE=$(date +%Y%m%d)
+          BACKUP_NAME="novel-editor-backup-$DATE"
+          
+          echo "📦 创建备份: $BACKUP_NAME"
+          
+          # 创建完整备份（包括 .git）
+          tar -czf "$BACKUP_NAME-full.tar.gz" \
+            --exclude=node_modules \
+            --exclude=.turbo \
+            --exclude=dist \
+            --exclude=out \
+            --exclude=target \
+            .
+          
+          # 创建源码备份（不包括 .git）
+          tar -czf "$BACKUP_NAME-source.tar.gz" \
+            --exclude=.git \
+            --exclude=node_modules \
+            --exclude=.turbo \
+            --exclude=dist \
+            --exclude=out \
+            --exclude=target \
+            .
+          
+          echo "✅ 备份创建完成"
+          ls -lh *.tar.gz
+      
+      - name: Generate backup info
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          COMMIT=$(git rev-parse HEAD)
+          BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          
+          cat > backup-info.txt << EOF
+          Novel Editor 备份信息
+          =====================
+          
+          备份日期: $DATE
+          提交哈希: $COMMIT
+          分支: $BRANCH
+          
+          文件列表:
+          - novel-editor-backup-$(date +%Y%m%d)-full.tar.gz (完整备份，包含 Git 历史)
+          - novel-editor-backup-$(date +%Y%m%d)-source.tar.gz (源码备份)
+          
+          恢复方法:
+          1. 下载备份文件
+          2. 解压: tar -xzf novel-editor-backup-*.tar.gz
+          3. 安装依赖: bun install
+          4. 构建项目: bun run build
+          
+          注意事项:
+          - 完整备份包含 Git 历史，体积较大
+          - 源码备份仅包含源代码，体积较小
+          - 备份不包含 node_modules 和构建产物
+          EOF
+          
+          cat backup-info.txt
+      
+      - name: Upload backup artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: repository-backup-${{ github.run_number }}
+          path: |
+            *.tar.gz
+            backup-info.txt
+          retention-days: 90  # 保留 90 天
+      
+      - name: Calculate backup size
+        run: |
+          FULL_SIZE=$(du -h *-full.tar.gz | cut -f1)
+          SOURCE_SIZE=$(du -h *-source.tar.gz | cut -f1)
+          
+          echo "📊 备份大小:"
+          echo "  - 完整备份: $FULL_SIZE"
+          echo "  - 源码备份: $SOURCE_SIZE"
+      
+      # 可选: 上传到云存储
+      # - name: Upload to cloud storage
+      #   run: |
+      #     # 示例: 上传到 AWS S3
+      #     # aws s3 cp *.tar.gz s3://your-bucket/backups/
+      #     
+      #     # 示例: 上传到 Google Cloud Storage
+      #     # gsutil cp *.tar.gz gs://your-bucket/backups/
+      #     
+      #     echo "云存储上传功能待配置"

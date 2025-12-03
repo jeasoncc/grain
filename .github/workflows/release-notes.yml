@@ -1,0 +1,140 @@
+name: Generate Release Notes
+
+on:
+  release:
+    types: [created, edited]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag name for release notes'
+        required: true
+        type: string
+
+jobs:
+  generate-notes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get tag name
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Generate release notes
+        id: notes
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 $TAG^ 2>/dev/null || echo "")
+          
+          echo "# 🎉 Release $TAG" > release-notes.md
+          echo "" >> release-notes.md
+          
+          # 获取提交历史
+          if [ -n "$PREV_TAG" ]; then
+            echo "## 📝 更新内容" >> release-notes.md
+            echo "" >> release-notes.md
+            
+            # 按类型分组提交
+            echo "### ✨ 新功能" >> release-notes.md
+            git log $PREV_TAG..$TAG --pretty=format:"- %s (%h)" --grep="^feat" >> release-notes.md || echo "无" >> release-notes.md
+            echo "" >> release-notes.md
+            echo "" >> release-notes.md
+            
+            echo "### 🐛 Bug 修复" >> release-notes.md
+            git log $PREV_TAG..$TAG --pretty=format:"- %s (%h)" --grep="^fix" >> release-notes.md || echo "无" >> release-notes.md
+            echo "" >> release-notes.md
+            echo "" >> release-notes.md
+            
+            echo "### 📚 文档" >> release-notes.md
+            git log $PREV_TAG..$TAG --pretty=format:"- %s (%h)" --grep="^docs" >> release-notes.md || echo "无" >> release-notes.md
+            echo "" >> release-notes.md
+            echo "" >> release-notes.md
+            
+            echo "### 🎨 样式改进" >> release-notes.md
+            git log $PREV_TAG..$TAG --pretty=format:"- %s (%h)" --grep="^style" >> release-notes.md || echo "无" >> release-notes.md
+            echo "" >> release-notes.md
+            echo "" >> release-notes.md
+            
+            echo "### ♻️ 重构" >> release-notes.md
+            git log $PREV_TAG..$TAG --pretty=format:"- %s (%h)" --grep="^refactor" >> release-notes.md || echo "无" >> release-notes.md
+            echo "" >> release-notes.md
+            echo "" >> release-notes.md
+            
+            echo "### ⚡ 性能优化" >> release-notes.md
+            git log $PREV_TAG..$TAG --pretty=format:"- %s (%h)" --grep="^perf" >> release-notes.md || echo "无" >> release-notes.md
+            echo "" >> release-notes.md
+            echo "" >> release-notes.md
+            
+            # 统计信息
+            COMMIT_COUNT=$(git rev-list --count $PREV_TAG..$TAG)
+            CONTRIBUTORS=$(git log $PREV_TAG..$TAG --format='%an' | sort -u | wc -l)
+            FILES_CHANGED=$(git diff --shortstat $PREV_TAG..$TAG | awk '{print $1}')
+            
+            echo "## 📊 统计信息" >> release-notes.md
+            echo "" >> release-notes.md
+            echo "- 提交数: $COMMIT_COUNT" >> release-notes.md
+            echo "- 贡献者: $CONTRIBUTORS" >> release-notes.md
+            echo "- 文件变更: $FILES_CHANGED" >> release-notes.md
+          else
+            echo "首次发布 🎊" >> release-notes.md
+          fi
+          
+          echo "" >> release-notes.md
+          echo "## 📦 安装方式" >> release-notes.md
+          echo "" >> release-notes.md
+          
+          if [[ "$TAG" == desktop-v* ]]; then
+            echo "### Desktop 应用" >> release-notes.md
+            echo "" >> release-notes.md
+            echo "#### Arch Linux (AUR)" >> release-notes.md
+            echo "\`\`\`bash" >> release-notes.md
+            echo "yay -S novel-editor" >> release-notes.md
+            echo "# 或" >> release-notes.md
+            echo "paru -S novel-editor" >> release-notes.md
+            echo "\`\`\`" >> release-notes.md
+            echo "" >> release-notes.md
+            echo "#### 其他 Linux 发行版" >> release-notes.md
+            echo "下载对应的 .deb 或 .rpm 包进行安装" >> release-notes.md
+            echo "" >> release-notes.md
+            echo "#### Windows" >> release-notes.md
+            echo "下载 .msi 或 .exe 安装包" >> release-notes.md
+            echo "" >> release-notes.md
+            echo "#### macOS" >> release-notes.md
+            echo "下载 .dmg 文件" >> release-notes.md
+          fi
+          
+          echo "" >> release-notes.md
+          echo "---" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "**完整变更日志**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...$TAG" >> release-notes.md
+      
+      - name: Update release
+        if: github.event_name == 'release'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const notes = fs.readFileSync('release-notes.md', 'utf8');
+            
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: context.payload.release.id,
+              body: notes
+            });
+      
+      - name: Upload release notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md

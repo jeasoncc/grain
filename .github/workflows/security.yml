@@ -1,0 +1,84 @@
+name: Security Audit
+
+on:
+  schedule:
+    # 每周一早上 8 点运行
+    - cron: '0 0 * * 1'
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'bun.lock'
+      - '**/package.json'
+      - 'apps/desktop/src-tauri/Cargo.toml'
+      - 'apps/desktop/src-tauri/Cargo.lock'
+  workflow_dispatch:
+
+jobs:
+  npm-audit:
+    name: NPM Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Run security audit
+        run: bun audit || true
+      
+      - name: Check for vulnerabilities
+        run: |
+          echo "检查 npm 依赖安全性..."
+          bun audit --json > audit-report.json || true
+          
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: audit-report.json
+
+  cargo-audit:
+    name: Cargo Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+      
+      - name: Run cargo audit
+        working-directory: apps/desktop/src-tauri
+        run: cargo audit || true
+      
+      - name: Generate audit report
+        working-directory: apps/desktop/src-tauri
+        run: cargo audit --json > ../../cargo-audit-report.json || true
+      
+      - name: Upload cargo audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-audit-report
+          path: cargo-audit-report.json
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
