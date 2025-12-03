@@ -10,10 +10,11 @@
 Novel Editor is a modern long-form fiction writing toolset built with a Monorepo architecture, including a cross-platform desktop application and official website.
 
 > 🇨🇳 [中文文档](./README.zh-CN.md) | English
+
+---
 ![](https://s3.bmp.ovh/imgs/2025/11/30/17e3f22342be954f.png)
 
 ![](https://s3.bmp.ovh/imgs/2025/11/30/20c87f8ef08b246d.png)
----
 
 ## 🎯 Project Overview
 

@@ -1,7 +1,7 @@
 # Maintainer: Jeason <xiaomiquan@aliyun.com>
 
 pkgname=novel-editor
-pkgver=0.1.0
+pkgver=0.1.1
 pkgrel=1
 pkgdesc="一款专为小说创作者设计的现代化写作工具"
 arch=('x86_64')
