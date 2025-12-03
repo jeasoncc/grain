@@ -42,9 +42,11 @@ export function ShareButton() {
 
   if (pathname === "/docs") return null;
 
+  const hasShareAPI = typeof navigator !== 'undefined' && 'share' in navigator;
+
   return (
     <Button
-      onClick={navigator.share ? handleShare : handleCopy}
+      onClick={handleShare}
       variant="ghost"
       size="sm"
       className={cn(
@@ -54,7 +56,7 @@ export function ShareButton() {
         "text-gray-600 dark:text-gray-400"
       )}
       aria-label={copied ? "已复制链接" : "分享或复制链接"}
-      title={navigator.share ? "分享当前页面" : "复制链接"}
+      title={hasShareAPI ? "分享当前页面" : "复制链接"}
     >
       {copied ? (
         <>

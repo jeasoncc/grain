@@ -34,19 +34,20 @@ function formatKeyboardShortcut(text: string): React.ReactNode[] {
   // 收集所有匹配
   allPatterns.forEach(pattern => {
     pattern.lastIndex = 0; // 重置正则状态
-    let match;
+    let match: RegExpExecArray | null;
     while ((match = pattern.exec(text)) !== null) {
       // 检查是否与已有匹配重叠
+      const currentMatch = match; // 保存当前匹配以避免 null 检查问题
       const overlaps = matches.some(m => 
-        (match.index >= m.index && match.index < m.index + m.length) ||
-        (m.index >= match.index && m.index < match.index + match[0].length)
+        (currentMatch.index >= m.index && currentMatch.index < m.index + m.length) ||
+        (m.index >= currentMatch.index && m.index < currentMatch.index + currentMatch[0].length)
       );
       
       if (!overlaps) {
         matches.push({
-          index: match.index,
-          length: match[0].length,
-          text: match[0]
+          index: currentMatch.index,
+          length: currentMatch[0].length,
+          text: currentMatch[0]
         });
       }
     }
