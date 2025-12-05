@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:prod": "tsc && vite build --mode production",
+    "build:test": "tsc && vite build --mode development",
     "preview": "vite preview",
     "tauri": "tauri",
     "format": "biome format --write",

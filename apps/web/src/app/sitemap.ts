@@ -1,5 +1,8 @@
 import { MetadataRoute } from "next";
 
+// 静态导出配置：强制静态生成
+export const dynamic = "force-static";
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://novel-editor.com";
 

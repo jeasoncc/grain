@@ -1,0 +1,26 @@
+# Dependencies
+node_modules
+
+# Environment
+.env
+.env.local
+
+# Database migrations (optional, can be committed)
+# drizzle/
+
+# Build outputs
+dist
+*.local
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

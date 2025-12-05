@@ -13,12 +13,23 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
+    "build:prod": "NODE_ENV=production turbo run build:prod",
+    "build:test": "NODE_ENV=development turbo run build:test",
     "lint": "turbo run lint",
     "format": "turbo run format",
     "check": "turbo run check",
     "clean": "turbo run clean",
     "desktop:dev": "turbo run dev --filter=desktop",
-    "web:dev": "turbo run dev --filter=web"
+    "web:dev": "turbo run dev --filter=web",
+    "mobile:dev": "turbo run dev --filter=mobile",
+    "admin:dev": "turbo run dev --filter=admin",
+    "api:dev": "turbo run dev --filter=api",
+    "build:prod:desktop": "NODE_ENV=production turbo run build:prod --filter=desktop",
+    "build:prod:web": "NODE_ENV=production turbo run build:prod --filter=web",
+    "build:prod:mobile": "NODE_ENV=production turbo run build:prod --filter=mobile",
+    "build:test:desktop": "NODE_ENV=development turbo run build:test --filter=desktop",
+    "build:test:web": "NODE_ENV=development turbo run build:test --filter=web",
+    "build:test:mobile": "NODE_ENV=development turbo run build:test --filter=mobile"
   },
   "devDependencies": {
     "turbo": "^2.3.3",

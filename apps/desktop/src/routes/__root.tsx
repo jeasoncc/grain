@@ -1,7 +1,4 @@
-import { TanStackDevtools } from "@tanstack/react-devtools";
-import { FormDevtoolsPlugin } from "@tanstack/react-form-devtools";
 import { createRootRoute, Outlet } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import {
 	CircleCheckIcon,
 	InfoIcon,
@@ -17,6 +14,7 @@ import { GlobalSearch } from "@/components/blocks/global-search";
 import { BottomDrawer } from "@/components/bottom-drawer";
 import { BottomDrawerContent } from "@/components/bottom-drawer-content";
 import { CommandPalette } from "@/components/command-palette";
+import { DevtoolsWrapper } from "@/components/devtools-wrapper";
 import { FontStyleInjector } from "@/components/font-style-injector";
 import { OnboardingTour } from "@/components/onboarding-tour";
 import { ConfirmProvider } from "@/components/ui/confirm";
@@ -128,18 +126,8 @@ function RootComponent() {
 				<FontStyleInjector />
 				{/* 新手引导 */}
 				<OnboardingTour />
-				<TanStackDevtools
-					config={{
-						position: "top-right",
-					}}
-					plugins={[
-						{
-							name: "Tanstack Router",
-							render: <TanStackRouterDevtoolsPanel />,
-						},
-						FormDevtoolsPlugin(),
-					]}
-				/>
+				{/* TanStack Devtools - 仅在开发模式下显示 */}
+				{import.meta.env.DEV && <DevtoolsWrapper />}
 			</SidebarProvider>
 		</ConfirmProvider>
 	);

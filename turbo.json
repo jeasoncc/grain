@@ -4,7 +4,17 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "target/**", "out/**"]
+      "outputs": ["dist/**", ".next/**", "target/**", "out/**", ".expo/**"]
+    },
+    "build:prod": {
+      "dependsOn": ["^build:prod"],
+      "outputs": ["dist/**", ".next/**", "target/**", "out/**", ".expo/**"],
+      "env": ["NODE_ENV"]
+    },
+    "build:test": {
+      "dependsOn": ["^build:test"],
+      "outputs": ["dist/**", ".next/**", "target/**", "out/**", ".expo/**"],
+      "env": ["NODE_ENV"]
     },
     "dev": {
       "cache": false,
