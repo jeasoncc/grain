@@ -8,6 +8,9 @@ on:
     paths:
       - 'apps/web/**'
       - '.github/workflows/deploy-web.yml'
+    # 忽略 Dependabot 的提交
+    branches-ignore:
+      - 'dependabot/**'
 
 # 避免重复部署
 concurrency:

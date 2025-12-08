@@ -9,6 +9,9 @@ on:
         description: 'Version to publish (e.g., 0.1.0)'
         required: true
         type: string
+  push:
+    tags:
+      - 'desktop-v*.*.*'
 
 jobs:
   publish-aur:
