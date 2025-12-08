@@ -10,6 +10,8 @@ export default defineConfig({
   plugins: [
     tanstackRouter({
       target: 'react',
+      routesDirectory: './src/routes',
+      generatedRouteTree: './src/routeTree.gen.ts',
       autoCodeSplitting: true,
     }),
     tailwindcss(),
@@ -22,7 +24,7 @@ export default defineConfig({
   },
   server: {
     port: 4000,
-    strictPort: true,
+    strictPort: false,
     proxy: {
       '/api': {
         target: 'http://localhost:4001',
@@ -31,4 +33,3 @@ export default defineConfig({
     },
   },
 });
-

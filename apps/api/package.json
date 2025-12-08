@@ -29,8 +29,5 @@
     "drizzle-kit": "^0.30.0",
     "typescript": "~5.8.3",
     "uuid": "^13.0.0"
-  },
-  "overrides": {
-    "@sinclair/typebox": "^0.32.35"
   }
 }

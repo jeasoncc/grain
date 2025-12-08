@@ -1,0 +1,90 @@
+name: novel-editor
+base: core22
+version: '0.1.8'
+summary: 一个现代化的小说编辑器
+description: |
+  Novel Editor 是一个功能强大的小说编辑器，提供丰富的编辑功能和直观的用户界面。
+  
+  主要特性：
+  - 富文本编辑
+  - 章节管理
+  - 角色管理
+  - 大纲视图
+  - 导出为多种格式
+
+grade: stable
+confinement: strict
+
+architectures:
+  - build-on: amd64
+  - build-on: arm64
+
+apps:
+  novel-editor:
+    command: novel-editor
+    extensions: [gnome]
+    plugs:
+      - home
+      - network
+      - desktop
+      - desktop-legacy
+      - wayland
+      - x11
+      - opengl
+      - audio-playback
+      - removable-media
+
+parts:
+  novel-editor:
+    plugin: nil
+    source: .
+    build-packages:
+      - curl
+      - wget
+      - file
+      - libwebkit2gtk-4.1-dev
+      - libgtk-3-dev
+      - libayatana-appindicator3-dev
+      - librsvg2-dev
+      - patchelf
+      - build-essential
+      - pkg-config
+    stage-packages:
+      - libwebkit2gtk-4.1-0
+      - libgtk-3-0
+      - libayatana-appindicator3-1
+      - librsvg2-2
+    override-build: |
+      set -eux
+      
+      # 安装 Bun
+      curl -fsSL https://bun.sh/install | bash
+      export BUN_INSTALL="$HOME/.bun"
+      export PATH="$BUN_INSTALL/bin:$PATH"
+      
+      # 安装 Rust
+      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      export PATH="$HOME/.cargo/bin:$PATH"
+      
+      # 安装依赖
+      cd $CRAFT_PART_SRC
+      bun install
+      
+      # 构建前端
+      cd apps/desktop
+      bun install
+      bun run build
+      
+      # 构建 Tauri 应用
+      cd src-tauri
+      cargo tauri build --bundles deb
+      
+      # 提取 deb 包内容
+      DEB_FILE=$(find target/release/bundle/deb -name "*.deb" | head -n 1)
+      dpkg-deb -x $DEB_FILE $CRAFT_PART_INSTALL
+      
+      # 移动二进制文件到正确位置
+      mkdir -p $CRAFT_PART_INSTALL/bin
+      if [ -f $CRAFT_PART_INSTALL/usr/bin/novel-editor ]; then
+        mv $CRAFT_PART_INSTALL/usr/bin/novel-editor $CRAFT_PART_INSTALL/bin/
+      fi

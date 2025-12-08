@@ -1,0 +1,72 @@
+name: Publish to Snap Store
+
+on:
+  push:
+    tags:
+      - 'snap-v*.*.*'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Snap channel to publish to'
+        required: true
+        default: 'edge'
+        type: choice
+        options:
+          - edge
+          - beta
+          - candidate
+          - stable
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Snapcraft
+        run: |
+          sudo snap install snapcraft --classic
+      
+      - name: Build Snap
+        uses: snapcore/action-build@v1
+        id: build
+      
+      - name: Determine channel
+        id: channel
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "channel=${{ github.event.inputs.channel }}" >> $GITHUB_OUTPUT
+          else
+            # Tag 推送默认发布到 edge
+            echo "channel=edge" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Publish to Snap Store
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          release: ${{ steps.channel.outputs.channel }}
+      
+      - name: Upload snap artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: snap-package
+          path: ${{ steps.build.outputs.snap }}
+      
+      - name: Create release comment
+        if: github.event_name == 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const channel = '${{ steps.channel.outputs.channel }}';
+            const tag = context.ref.replace('refs/tags/', '');
+            
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: `✅ Snap 已发布到 **${channel}** channel\n\n安装命令：\n\`\`\`bash\nsudo snap install novel-editor --${channel}\n\`\`\``
+            });
