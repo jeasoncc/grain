@@ -295,7 +295,7 @@ jobs:
                       Version="$version.0" />
             <Properties>
               <DisplayName>Novel Editor</DisplayName>
-              <PublisherDisplayName>$publisherDisplayName</ >
+              <PublisherDisplayName>$publisherDisplayName</PublisherDisplayName>
               <Logo>Assets\StoreLogo.png</Logo>
             </Properties>
             <Dependencies>
