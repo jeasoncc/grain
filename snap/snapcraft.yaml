@@ -21,7 +21,7 @@ architectures:
 
 apps:
   novel-editor:
-    command: novel-editor
+    command: bin/novel-editor
     extensions: [gnome]
     plugs:
       - home
@@ -104,15 +104,23 @@ parts:
       echo "=== Setting up binary ==="
       mkdir -p $CRAFT_PART_INSTALL/bin
       
-      # 查找并移动二进制文件
-      if [ -f $CRAFT_PART_INSTALL/usr/bin/novel-editor ]; then
-        mv $CRAFT_PART_INSTALL/usr/bin/novel-editor $CRAFT_PART_INSTALL/bin/
-      elif [ -f $CRAFT_PART_INSTALL/usr/local/bin/novel-editor ]; then
-        mv $CRAFT_PART_INSTALL/usr/local/bin/novel-editor $CRAFT_PART_INSTALL/bin/
+      # 列出解压后的内容以便调试
+      echo "Contents of CRAFT_PART_INSTALL:"
+      find $CRAFT_PART_INSTALL -type f -name "novel-editor*" 2>/dev/null || true
+      
+      # 查找并复制二进制文件（使用 cp 而非 mv，更安全）
+      BINARY_PATH=$(find $CRAFT_PART_INSTALL -type f -name "novel-editor" -executable | head -n 1)
+      if [ -n "$BINARY_PATH" ]; then
+        echo "Found binary at: $BINARY_PATH"
+        cp "$BINARY_PATH" $CRAFT_PART_INSTALL/bin/novel-editor
+        chmod +x $CRAFT_PART_INSTALL/bin/novel-editor
       else
-        echo "ERROR: Binary not found in expected locations"
-        find $CRAFT_PART_INSTALL -name "novel-editor" -type f
+        echo "ERROR: Binary not found, listing all files:"
+        find $CRAFT_PART_INSTALL -type f
         exit 1
       fi
+      
+      echo "=== Verifying binary ==="
+      ls -la $CRAFT_PART_INSTALL/bin/
       
       echo "=== Build completed successfully ==="
