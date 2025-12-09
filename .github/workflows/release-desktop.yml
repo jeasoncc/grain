@@ -236,20 +236,17 @@ jobs:
           $publisher = $env:MSIX_PUBLISHER
           $publisherDisplayName = $env:MSIX_PUBLISHER_DISPLAY_NAME
           
-          # 使用默认值（如果未设置 secrets）
+          # 使用默认值（如果未设置 secrets）- 使用 Microsoft Store Partner Center 的值
           if ([string]::IsNullOrEmpty($identityName)) {
-            $identityName = "Lotus.NovelEditor"
+            $identityName = "Jeason.5842835EA9EE6"
             Write-Warning "⚠ 使用默认 Identity Name: $identityName"
-            Write-Warning "  建议在 GitHub Secrets 中设置 MSIX_IDENTITY_NAME"
           }
           if ([string]::IsNullOrEmpty($publisher)) {
-            $publisher = "CN=Lotus"
+            $publisher = "CN=056C6E40-362E-4DC2-A03D-B19B795AA254"
             Write-Warning "⚠ 使用默认 Publisher: $publisher"
-            Write-Warning "  建议在 GitHub Secrets 中设置 MSIX_PUBLISHER"
           }
           if ([string]::IsNullOrEmpty($publisherDisplayName)) {
             $publisherDisplayName = "Jeason"
-            Write-Warning "⚠ 使用默认 Publisher Display Name: $publisherDisplayName"
           }
           
           Write-Output ""
@@ -294,7 +291,7 @@ jobs:
                       Publisher="$publisher"
                       Version="$version.0" />
             <Properties>
-              <DisplayName>Novel Editor</DisplayName>
+              <DisplayName>小麦写作</DisplayName>
               <PublisherDisplayName>$publisherDisplayName</PublisherDisplayName>
               <Logo>Assets\StoreLogo.png</Logo>
             </Properties>
@@ -306,7 +303,7 @@ jobs:
             </Resources>
             <Applications>
               <Application Id="NovelEditor" Executable="novel-editor.exe" EntryPoint="Windows.FullTrustApplication">
-                <uap:VisualElements DisplayName="Novel Editor"
+                <uap:VisualElements DisplayName="小麦写作"
                                     Description="一个现代化的小说编辑器"
                                     BackgroundColor="transparent"
                                     Square150x150Logo="Assets\Square150x150Logo.png"
