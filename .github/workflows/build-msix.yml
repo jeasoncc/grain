@@ -24,9 +24,9 @@ jobs:
         with:
           workspaces: 'apps/desktop/src-tauri -> target'
 
-      # 安装 cargo-packager
-      - name: Install cargo-packager
-        run: cargo install cargo-packager --locked
+      # 安装 msixbundle-rs
+      - name: Install msixbundle
+        run: cargo install msixbundle
 
       # 安装 Bun
       - name: Setup Bun
@@ -41,44 +41,76 @@ jobs:
           cd apps/desktop
           bun install
 
-      # 构建前端
-      - name: Build frontend
+      # 构建 Tauri 应用
+      - name: Build Tauri app
         working-directory: apps/desktop
-        run: bun run build
+        run: bun run tauri build
 
-      # 使用 cargo-packager 构建 MSIX
-      - name: Build MSIX with cargo-packager
-        working-directory: apps/desktop/src-tauri
+      # 使用 msixbundle 创建 MSIX
+      - name: Create MSIX with msixbundle
         shell: pwsh
         run: |
-          Write-Output "使用 cargo-packager 构建 MSIX..."
+          Write-Output "使用 msixbundle 创建 MSIX 包..."
           
-          # 构建 MSIX（注意：格式是 msix 不是 app）
-          cargo packager --release --formats msix
+          # 读取版本号
+          $config = Get-Content 'apps/desktop/src-tauri/tauri.conf.json' | ConvertFrom-Json
+          $version = $config.version
           
-          Write-Output "MSIX 构建完成"
-          
-          # 列出生成的文件
-          Write-Output "查找生成的 MSIX 文件..."
-          Get-ChildItem -Path "target/release" -Recurse -Include "*.msix" | ForEach-Object {
-            Write-Output "找到 MSIX: $($_.FullName)"
-            Write-Output "文件大小: $([math]::Round($_.Length / 1MB, 2)) MB"
-          }
-
-      # 签名 MSIX（使用自签名证书）
-      - name: Sign MSIX
-        shell: pwsh
-        run: |
-          # 查找生成的 MSIX 文件
-          Write-Output "查找 MSIX 文件..."
-          $msixFiles = Get-ChildItem -Path "apps/desktop/src-tauri/target/release" -Recurse -Include "*.msix" -ErrorAction SilentlyContinue
-          
-          if ($null -eq $msixFiles -or $msixFiles.Count -eq 0) {
-            Write-Error "未找到 MSIX 文件，构建可能失败"
+          # 查找可执行文件
+          $exePath = "apps/desktop/src-tauri/target/release/novel-editor.exe"
+          if (-not (Test-Path $exePath)) {
+            Write-Error "未找到可执行文件: $exePath"
             exit 1
           }
           
-          Write-Output "找到 $($msixFiles.Count) 个 MSIX 文件"
+          Write-Output "✓ 找到可执行文件: $exePath"
+          
+          # 使用 msixbundle 创建 MSIX
+          $outputMsix = "novel-editor_${version}_x64.msix"
+          
+          msixbundle `
+            --exe $exePath `
+            --output $outputMsix `
+            --name "NovelEditor" `
+            --display-name "Novel Editor" `
+            --publisher "CN=Lotus" `
+            --publisher-display-name "Lotus" `
+            --version "$version.0" `
+            --description "一个现代化的小说编辑器" `
+            --icon "apps/desktop/src-tauri/icons/icon.ico" `
+            --logo "apps/desktop/src-tauri/icons/Square150x150Logo.png"
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "MSIX 创建失败"
+            exit 1
+          }
+          
+          Write-Output "✓ MSIX 创建成功: $outputMsix"
+          
+          # 显示文件信息
+          if (Test-Path $outputMsix) {
+            $fileInfo = Get-Item $outputMsix
+            Write-Output "文件大小: $([math]::Round($fileInfo.Length / 1MB, 2)) MB"
+          } else {
+            Write-Error "MSIX 文件未生成"
+            exit 1
+          }
+
+      # 签名 MSIX
+      - name: Sign MSIX
+        shell: pwsh
+        run: |
+          Write-Output "签名 MSIX 包..."
+          
+          # 读取版本号
+          $config = Get-Content 'apps/desktop/src-tauri/tauri.conf.json' | ConvertFrom-Json
+          $version = $config.version
+          $msixFile = "novel-editor_${version}_x64.msix"
+          
+          if (-not (Test-Path $msixFile)) {
+            Write-Error "未找到 MSIX 文件: $msixFile"
+            exit 1
+          }
           
           # 创建自签名证书
           Write-Output "创建自签名证书..."
@@ -89,7 +121,7 @@ jobs:
           
           $password = ConvertTo-SecureString -String "temp123" -Force -AsPlainText
           Export-PfxCertificate -Cert $cert -FilePath "temp-cert.pfx" -Password $password | Out-Null
-          Write-Output "证书创建成功"
+          Write-Output "✓ 证书创建成功"
           
           # 查找 SignTool
           Write-Output "查找 SignTool..."
@@ -98,49 +130,43 @@ jobs:
                       Select-Object -First 1 -ExpandProperty FullName
           
           if (-not $signTool) {
-            Write-Error "未找到 SignTool，无法签名 MSIX"
+            Write-Error "未找到 SignTool"
             exit 1
           }
           
           Write-Output "找到 SignTool: $signTool"
           
-          # 签名所有 MSIX 文件
-          foreach ($msix in $msixFiles) {
-            Write-Output "正在签名: $($msix.Name)"
-            & $signTool sign /fd SHA256 /a /f "temp-cert.pfx" /p "temp123" $msix.FullName
-            
-            if ($LASTEXITCODE -eq 0) {
-              Write-Output "✓ 签名成功: $($msix.Name)"
-            } else {
-              Write-Error "✗ 签名失败: $($msix.Name)"
-              exit 1
-            }
-          }
-
-      # 复制 MSIX 到根目录
-      - name: Copy MSIX files
-        shell: pwsh
-        run: |
-          Write-Output "查找并复制 MSIX 文件..."
-          $msixFiles = Get-ChildItem -Path "apps/desktop/src-tauri/target/release" -Recurse -Include "*.msix" -ErrorAction SilentlyContinue
+          # 签名 MSIX
+          Write-Output "正在签名: $msixFile"
+          & $signTool sign /fd SHA256 /a /f "temp-cert.pfx" /p "temp123" $msixFile
           
-          if ($null -eq $msixFiles -or $msixFiles.Count -eq 0) {
-            Write-Error "未找到 MSIX 文件"
+          if ($LASTEXITCODE -eq 0) {
+            Write-Output "✓ 签名成功"
+          } else {
+            Write-Error "✗ 签名失败"
             exit 1
           }
+
+      # 验证 MSIX 文件
+      - name: Verify MSIX package
+        shell: pwsh
+        run: |
+          Write-Output "验证 MSIX 包..."
           
           # 读取版本号
           $config = Get-Content 'apps/desktop/src-tauri/tauri.conf.json' | ConvertFrom-Json
           $version = $config.version
+          $msixFile = "novel-editor_${version}_x64.msix"
           
-          foreach ($msix in $msixFiles) {
-            $destName = "novel-editor_${version}_x64.msix"
-            Copy-Item $msix.FullName $destName -Force
-            Write-Output "✓ 复制: $($msix.Name) -> $destName"
-            
-            # 显示文件信息
-            $fileInfo = Get-Item $destName
+          if (Test-Path $msixFile) {
+            $fileInfo = Get-Item $msixFile
+            Write-Output "✓ MSIX 文件存在"
+            Write-Output "  文件名: $($fileInfo.Name)"
             Write-Output "  文件大小: $([math]::Round($fileInfo.Length / 1MB, 2)) MB"
+            Write-Output "  完整路径: $($fileInfo.FullName)"
+          } else {
+            Write-Error "MSIX 文件不存在: $msixFile"
+            exit 1
           }
 
       # 上传 MSIX 产物
