@@ -2,7 +2,7 @@
 # 本地测试版本 - 使用已构建的二进制文件
 
 pkgname=novel-editor
-pkgver=0.1.20
+pkgver=0.1.21
 pkgrel=1
 pkgdesc="一款专为小说创作者设计的现代化写作工具"
 arch=('x86_64')
