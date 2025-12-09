@@ -1,4 +1,4 @@
-name: novel-editor
+name: novel-editor-app
 base: core22
 version: '0.1.8'
 summary: 一个现代化的小说编辑器
