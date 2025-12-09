@@ -7,41 +7,38 @@
 - 可用格式：`all, default, app, dmg, wix, nsis, deb, appimage, pacman`
 - 需要改用其他方案
 
-### 最终方案（v0.1.14）
-- 使用 **msixbundle-rs** 工具
-- 这是一个专门的 Rust 工具，可以从可执行文件创建 MSIX 包
-- 项目地址：https://github.com/Choochmeque/msixbundle-rs
+### 第二次尝试（v0.1.14）
+- 尝试使用 **msixbundle-rs** 工具
+- 但该工具未发布到 crates.io，无法通过 `cargo install` 安装
+
+### 最终方案（v0.1.15）
+- 使用 **Windows SDK 自带的 MakeAppx 工具**
+- 这是 Microsoft 官方工具，GitHub Actions Windows 环境自带
+- 最可靠和稳定的方案
 
 ## 修复内容
 
 ### 1. 工作流更新 (`.github/workflows/build-msix.yml`)
-- ✅ 安装 msixbundle：`cargo install msixbundle`
 - ✅ 使用 Tauri 原生构建：`bun run tauri build`
-- ✅ 使用 msixbundle 创建 MSIX：
-  ```bash
-  msixbundle \
-    --exe novel-editor.exe \
-    --output novel-editor_x.x.x_x64.msix \
-    --name "NovelEditor" \
-    --display-name "Novel Editor" \
-    --publisher "CN=Lotus" \
-    --version "x.x.x.0"
-  ```
-- ✅ 使用 SignTool 签名
+- ✅ 创建 MSIX 包结构：
+  - 创建目录：`msix-package/` 和 `msix-package/Assets/`
+  - 复制可执行文件：`novel-editor.exe`
+  - 复制图标文件：Square44x44Logo.png, Square150x150Logo.png, StoreLogo.png
+  - 生成 AppxManifest.xml 清单文件
+- ✅ 使用 MakeAppx 打包：`makeappx pack /d msix-package /p output.msix`
+- ✅ 使用 SignTool 签名（自签名证书）
 - ✅ 完善的错误处理和验证
 
 ### 2. 删除不需要的文件
 - ❌ 删除 `apps/desktop/src-tauri/Packager.toml`（cargo-packager 配置）
 
 ### 3. 版本更新
-- 版本号自动递增到：**0.1.14**
-- 创建并推送标签：`desktop-v0.1.14`
+- 版本号自动递增到：**0.1.15**
+- 创建并推送标签：`desktop-v0.1.15`
 
 ## 工作流触发
 
-已推送标签 `desktop-v0.1.14`，GitHub Actions 正在构建 MSIX 包。
-
-**构建 ID**: 20054194871
+已推送标签 `desktop-v0.1.15`，GitHub Actions 正在构建 MSIX 包。
 
 查看构建状态：
 ```bash
@@ -53,7 +50,7 @@
 ## 预期输出
 
 构建成功后将生成：
-- `novel-editor_0.1.14_x64.msix` - 已签名的 MSIX 包
+- `novel-editor_0.1.15_x64.msix` - 已签名的 MSIX 包
 - 自动上传到 GitHub Release（草稿状态）
 - 可下载的 Artifact
 

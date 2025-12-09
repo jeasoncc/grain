@@ -32,7 +32,7 @@ if [ "$STATUS" = "completed" ]; then
         echo "   gh run download $RUN_ID -n msix-package"
         echo ""
         echo "2. 从 Release 下载："
-        echo "   https://github.com/jeasoncc/novel-editor/releases/tag/desktop-v0.1.14"
+        echo "   https://github.com/jeasoncc/novel-editor/releases/tag/desktop-v0.1.15"
         echo ""
         echo "3. 查看工作流详情："
         echo "   gh run view $RUN_ID --web"
