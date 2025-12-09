@@ -50,24 +50,6 @@
       "nsis": {
         "languages": ["SimpChinese"]
       }
-    },
-    "linux": {
-      "deb": {
-        "depends": []
-      },
-      "appimage": {
-        "bundleMediaFramework": true
-      }
-    },
-    "macOS": {
-      "minimumSystemVersion": "10.13"
-    },
-    "publisher": "Jeason",
-    "copyright": "Copyright © 2025 Jeason",
-    "category": "Productivity",
-    "homepage": "https://github.com/jeasoncc/novel-editor",
-    "licenseFile": "../../LICENSE",
-    "shortDescription": "一个现代化的小说编辑器",
-    "longDescription": "Novel Editor 是一个功能强大的小说编辑器，提供丰富的编辑功能和直观的用户界面。"
+    }
   }
 }
