@@ -248,7 +248,8 @@ jobs:
             Write-Warning "  建议在 GitHub Secrets 中设置 MSIX_PUBLISHER"
           }
           if ([string]::IsNullOrEmpty($publisherDisplayName)) {
-            $publisherDisplayName = "Lotus"
+            $publisherDisplayName = "Jeason"
+            Write-Warning "⚠ 使用默认 Publisher Display Name: $publisherDisplayName"
           }
           
           Write-Output ""
@@ -294,7 +295,7 @@ jobs:
                       Version="$version.0" />
             <Properties>
               <DisplayName>Novel Editor</DisplayName>
-              <PublisherDisplayName>$publisherDisplayName</PublisherDisplayName>
+              <PublisherDisplayName>$publisherDisplayName</ >
               <Logo>Assets\StoreLogo.png</Logo>
             </Properties>
             <Dependencies>
