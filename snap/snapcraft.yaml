@@ -74,9 +74,11 @@ parts:
       cd $CRAFT_PART_SRC
       bun install
       
-      echo "=== Building desktop frontend ==="
+      echo "=== Installing desktop dependencies ==="
       cd apps/desktop
       bun install
+      
+      echo "=== Building desktop frontend ==="
       bun run build
       
       # 验证构建输出
@@ -86,8 +88,8 @@ parts:
       fi
       
       echo "=== Building Tauri application ==="
-      cd src-tauri
-      cargo tauri build --bundles deb
+      # 使用 bun 运行 tauri（会自动使用 node_modules 中的 @tauri-apps/cli）
+      bun run tauri build --bundles deb
       
       echo "=== Extracting deb package ==="
       DEB_FILE=$(find target/release/bundle/deb -name "*.deb" | head -n 1)
