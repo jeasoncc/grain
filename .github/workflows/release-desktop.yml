@@ -3,11 +3,8 @@ name: Release Desktop App
 on:
   workflow_dispatch:
   push:
-    branches:
-      - release
     tags:
-      - "v*.*.*"           # 支持旧格式 (v0.1.0)
-      - "desktop-v*.*.*"   # 支持新格式 (desktop-v0.1.0)
+      - "desktop-v*.*.*"   # 仅在打 tag 时触发 (desktop-v0.1.7)
 
 # 避免重复构建（特别是多个 tag 同时推送时）
 concurrency:
@@ -195,12 +192,44 @@ jobs:
       # 创建 MSIX 包
       - name: Create MSIX package
         shell: pwsh
+        env:
+          MSIX_IDENTITY_NAME: ${{ secrets.MSIX_IDENTITY_NAME }}
+          MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
+          MSIX_PUBLISHER_DISPLAY_NAME: ${{ secrets.MSIX_PUBLISHER_DISPLAY_NAME }}
         run: |
           Write-Output "创建 MSIX 包..."
           
           # 读取版本号
           $config = Get-Content 'apps/desktop/src-tauri/tauri.conf.json' | ConvertFrom-Json
           $version = $config.version
+          
+          # 获取 Identity 信息（从环境变量或使用默认值）
+          $identityName = $env:MSIX_IDENTITY_NAME
+          $publisher = $env:MSIX_PUBLISHER
+          $publisherDisplayName = $env:MSIX_PUBLISHER_DISPLAY_NAME
+          
+          # 使用默认值（如果未设置 secrets）
+          if ([string]::IsNullOrEmpty($identityName)) {
+            $identityName = "Lotus.NovelEditor"
+            Write-Warning "⚠ 使用默认 Identity Name: $identityName"
+            Write-Warning "  建议在 GitHub Secrets 中设置 MSIX_IDENTITY_NAME"
+          }
+          if ([string]::IsNullOrEmpty($publisher)) {
+            $publisher = "CN=Lotus"
+            Write-Warning "⚠ 使用默认 Publisher: $publisher"
+            Write-Warning "  建议在 GitHub Secrets 中设置 MSIX_PUBLISHER"
+          }
+          if ([string]::IsNullOrEmpty($publisherDisplayName)) {
+            $publisherDisplayName = "Lotus"
+          }
+          
+          Write-Output ""
+          Write-Output "📝 Package Identity:"
+          Write-Output "   Name: $identityName"
+          Write-Output "   Publisher: $publisher"
+          Write-Output "   Publisher Display Name: $publisherDisplayName"
+          Write-Output "   Version: $version.0"
+          Write-Output ""
           
           # 查找可执行文件
           $exePath = "apps/desktop/src-tauri/target/release/novel-editor.exe"
@@ -232,12 +261,12 @@ jobs:
           <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
                    xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
                    xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
-            <Identity Name="Lotus.NovelEditor"
-                      Publisher="CN=Lotus"
+            <Identity Name="$identityName"
+                      Publisher="$publisher"
                       Version="$version.0" />
             <Properties>
               <DisplayName>Novel Editor</DisplayName>
-              <PublisherDisplayName>Lotus</PublisherDisplayName>
+              <PublisherDisplayName>$publisherDisplayName</PublisherDisplayName>
               <Logo>Assets\StoreLogo.png</Logo>
             </Properties>
             <Dependencies>
@@ -302,6 +331,8 @@ jobs:
       # 签名 MSIX
       - name: Sign MSIX
         shell: pwsh
+        env:
+          MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
         run: |
           Write-Output "签名 MSIX 包..."
           
@@ -315,9 +346,17 @@ jobs:
             exit 1
           }
           
+          # 获取 Publisher（用于创建证书）
+          $publisher = $env:MSIX_PUBLISHER
+          if ([string]::IsNullOrEmpty($publisher)) {
+            $publisher = "CN=Lotus"
+            Write-Warning "⚠ 使用默认 Publisher: $publisher"
+          }
+          
           # 创建自签名证书
           Write-Output "创建自签名证书..."
-          $cert = New-SelfSignedCertificate -Type Custom -Subject "CN=Lotus" `
+          Write-Output "  Subject: $publisher"
+          $cert = New-SelfSignedCertificate -Type Custom -Subject $publisher `
             -KeyUsage DigitalSignature -FriendlyName "Novel Editor" `
             -CertStoreLocation "Cert:\CurrentUser\My" `
             -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")

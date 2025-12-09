@@ -1,9 +1,6 @@
 name: Publish to Snap Store
 
 on:
-  push:
-    tags:
-      - 'snap-v*.*.*'
   workflow_dispatch:
     inputs:
       channel:
@@ -16,6 +13,9 @@ on:
           - beta
           - candidate
           - stable
+  push:
+    tags:
+      - 'snap-v*.*.*'   # 仅在打 snap tag 时触发 (snap-v0.1.7)
 
 jobs:
   build-and-publish:

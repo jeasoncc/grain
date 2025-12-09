@@ -1,8 +1,6 @@
 name: Publish to AUR
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       version:
@@ -11,12 +9,12 @@ on:
         type: string
   push:
     tags:
-      - 'desktop-v*.*.*'
+      - 'aur-v*.*.*'   # 仅在打 aur tag 时触发 (aur-v0.1.7)
 
 jobs:
   publish-aur:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/desktop-v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/aur-v') || github.event_name == 'workflow_dispatch'
     
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +27,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             VERSION="${{ github.event.inputs.version }}"
           else
-            VERSION=${GITHUB_REF#refs/tags/desktop-v}
+            VERSION=${GITHUB_REF#refs/tags/aur-v}
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
