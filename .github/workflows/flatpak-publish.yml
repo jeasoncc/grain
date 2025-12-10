@@ -1,0 +1,176 @@
+name: Publish to Flathub
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 0.1.36)'
+        required: true
+        type: string
+  push:
+    tags:
+      - 'flatpak-v*.*.*'   # 仅在打 flatpak tag 时触发
+
+jobs:
+  publish-flatpak:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    if: startsWith(github.ref, 'refs/tags/flatpak-v') || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/flatpak-v}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Publishing version: $VERSION"
+      
+      - name: Verify release exists
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "🔍 Checking if release v$VERSION exists..."
+          
+          # 检查 GitHub release 是否存在
+          if ! curl -s -f "https://api.github.com/repos/${{ github.repository }}/releases/tags/v$VERSION" > /dev/null; then
+            echo "❌ Release v$VERSION not found."
+            echo ""
+            echo "📋 To fix this issue:"
+            echo "1. Create a GitHub release first:"
+            echo "   gh release create v$VERSION --title \"Release v$VERSION\" --notes \"Release v$VERSION\""
+            echo ""
+            echo "2. Or run the desktop release workflow first:"
+            echo "   git tag desktop-v$VERSION && git push origin desktop-v$VERSION"
+            echo ""
+            echo "3. Then retry this Flatpak workflow"
+            exit 1
+          fi
+          
+          echo "✅ Release v$VERSION found"
+      
+      - name: Update Flatpak manifest
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "📝 Updating Flatpak manifest to version $VERSION"
+          
+          # 更新版本号和 tag
+          sed -i "s/tag: v.*/tag: v$VERSION/" flatpak/com.lotus.NovelEditor.yml
+          
+          # 更新 metainfo 中的版本
+          sed -i "s/<release version=\".*\"/<release version=\"$VERSION\"/" flatpak/com.lotus.NovelEditor.metainfo.xml
+          sed -i "s/date=\".*\"/date=\"$(date +%Y-%m-%d)\"/" flatpak/com.lotus.NovelEditor.metainfo.xml
+          
+          echo "📄 Updated Flatpak manifest:"
+          grep -E "tag:|version=" flatpak/com.lotus.NovelEditor.yml flatpak/com.lotus.NovelEditor.metainfo.xml
+      
+      - name: Install Flatpak
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+          sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+      
+      - name: Install Flatpak SDK
+        run: |
+          sudo flatpak install -y flathub org.freedesktop.Platform//23.08
+          sudo flatpak install -y flathub org.freedesktop.Sdk//23.08
+          sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.node18//23.08
+          sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.rust-stable//23.08
+      
+      - name: Build Flatpak
+        run: |
+          echo "🔨 Building Flatpak package..."
+          
+          # 创建构建目录
+          mkdir -p build-dir
+          
+          # 构建 Flatpak
+          flatpak-builder --force-clean --sandbox --user --install-deps-from=flathub \
+            --repo=repo build-dir flatpak/com.lotus.NovelEditor.yml
+          
+          # 导出为 .flatpak 文件
+          flatpak build-export repo build-dir
+          flatpak build-bundle repo novel-editor-${{ steps.version.outputs.version }}.flatpak \
+            com.lotus.NovelEditor
+          
+          echo "✅ Flatpak built successfully"
+          ls -la *.flatpak
+      
+      - name: Test Flatpak installation
+        run: |
+          echo "🧪 Testing Flatpak installation..."
+          
+          # 安装测试
+          flatpak install --user -y novel-editor-${{ steps.version.outputs.version }}.flatpak
+          
+          # 验证安装
+          if flatpak list --user | grep -q com.lotus.NovelEditor; then
+            echo "✅ Flatpak installation test passed"
+          else
+            echo "❌ Flatpak installation test failed"
+            exit 1
+          fi
+      
+      - name: Upload Flatpak artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flatpak-package
+          path: "*.flatpak"
+          retention-days: 30
+      
+      - name: Create Flathub PR preparation
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "📋 Flatpak package ready for Flathub submission!"
+          echo ""
+          echo "Next steps to publish on Flathub:"
+          echo "1. Fork https://github.com/flathub/flathub"
+          echo "2. Create a new repository: https://github.com/flathub/com.lotus.NovelEditor"
+          echo "3. Copy flatpak/com.lotus.NovelEditor.yml to the new repo"
+          echo "4. Submit PR to flathub/flathub with the new app"
+          echo ""
+          echo "Files ready for submission:"
+          echo "- flatpak/com.lotus.NovelEditor.yml"
+          echo "- flatpak/com.lotus.NovelEditor.desktop"
+          echo "- flatpak/com.lotus.NovelEditor.metainfo.xml"
+      
+      - name: Create success comment
+        if: success() && github.event_name == 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.version }}';
+            
+            try {
+              await github.rest.repos.createCommitComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: context.sha,
+                body: `🎉 **Flatpak 构建成功！**
+            
+            **版本：** ${version}
+            **包名：** com.lotus.NovelEditor
+            
+            **下载：** 查看 Actions artifacts
+            
+            **下一步：** 提交到 Flathub
+            1. Fork https://github.com/flathub/flathub
+            2. 创建新仓库：com.lotus.NovelEditor
+            3. 提交 PR 到 Flathub
+            
+            **安装命令（发布后）：**
+            \`\`\`bash
+            flatpak install flathub com.lotus.NovelEditor
+            \`\`\``
+              });
+            } catch (error) {
+              console.log('无法创建评论，但 Flatpak 构建成功:', error.message);
+            }

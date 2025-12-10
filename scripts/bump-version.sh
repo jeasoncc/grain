@@ -115,6 +115,25 @@ update_snap_version() {
     echo -e "${GREEN}✓${NC} 更新 $file -> $new_version"
 }
 
+# 函数：更新 Flatpak manifest 中的版本号
+update_flatpak_version() {
+    local file=$1
+    local new_version=$2
+    
+    if [ ! -f "$file" ]; then
+        echo -e "${YELLOW}警告: 文件不存在，跳过: $file${NC}"
+        return 1
+    fi
+    
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/tag: v.*/tag: v$new_version/" "$file"
+    else
+        sed -i "s/tag: v.*/tag: v$new_version/" "$file"
+    fi
+    
+    echo -e "${GREEN}✓${NC} 更新 $file -> $new_version"
+}
+
 # 函数：递增版本号（patch 版本 +1）
 bump_patch_version() {
     local version=$1
@@ -202,6 +221,9 @@ main() {
         # 8. Snap snapcraft.yaml
         update_snap_version "$PROJECT_ROOT/snap/snapcraft.yaml" "$NEW_VERSION" >&2
         
+        # 9. Flatpak manifest
+        update_flatpak_version "$PROJECT_ROOT/flatpak/com.lotus.NovelEditor.yml" "$NEW_VERSION" >&2
+        
         echo "" >&2
         echo -e "${GREEN}✅ 版本号已从 $CURRENT_VERSION 更新到 $NEW_VERSION${NC}" >&2
         echo "" >&2
@@ -215,6 +237,7 @@ main() {
         update_pkgbuild_version "$PROJECT_ROOT/aur/PKGBUILD" "$NEW_VERSION" >/dev/null 2>&1
         update_pkgbuild_version "$PROJECT_ROOT/aur/PKGBUILD-binary" "$NEW_VERSION" >/dev/null 2>&1
         update_snap_version "$PROJECT_ROOT/snap/snapcraft.yaml" "$NEW_VERSION" >/dev/null 2>&1
+        update_flatpak_version "$PROJECT_ROOT/flatpak/com.lotus.NovelEditor.yml" "$NEW_VERSION" >/dev/null 2>&1
     fi
     
     # 只输出纯净的版本号到 stdout（供 Git hook 使用）

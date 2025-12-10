@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.lotus.NovelEditor</id>
+  <name>Novel Editor</name>
+  <summary>Professional novel writing tool with advanced project management</summary>
+  
+  <description>
+    <p>
+      Novel Editor is a comprehensive writing application designed specifically for 
+      novelists and creative writers. Built with modern web technologies and powered 
+      by the Lexical rich-text editor, it provides everything you need to craft 
+      compelling stories from initial concept to final manuscript.
+    </p>
+    
+    <p>🚀 Advanced Text Editor:</p>
+    <ul>
+      <li>Rich-text editing with Lexical editor framework</li>
+      <li>Markdown shortcuts for rapid formatting</li>
+      <li>Table support for complex document structures</li>
+      <li>Real-time auto-save prevents data loss</li>
+      <li>Multi-format export including DOCX</li>
+    </ul>
+    
+    <p>🎯 Project Management:</p>
+    <ul>
+      <li>Three-tier structure: Project → Chapter → Scene</li>
+      <li>Drag-and-drop reordering for easy organization</li>
+      <li>Visual outline view with quick navigation</li>
+      <li>Global search across all projects and content</li>
+    </ul>
+    
+    <p>👥 Character Development:</p>
+    <ul>
+      <li>Character profiles with detailed information</li>
+      <li>Alias management for complex character relationships</li>
+      <li>Experience tracking and backstory development</li>
+      <li>Character relationship mapping</li>
+    </ul>
+    
+    <p>🌍 World-building Tools:</p>
+    <ul>
+      <li>Location management for story settings</li>
+      <li>Faction and organization tracking</li>
+      <li>Item and concept organization</li>
+      <li>Integrated drawing tools (Excalidraw canvas)</li>
+      <li>Mermaid diagrams for plot visualization</li>
+    </ul>
+    
+    <p>📊 Writing Analytics:</p>
+    <ul>
+      <li>Real-time word counting and progress tracking</li>
+      <li>Reading time estimation based on content length</li>
+      <li>Chapter distribution visualization</li>
+      <li>Writing statistics and progress reports</li>
+    </ul>
+    
+    <p>🎨 Customizable Interface:</p>
+    <ul>
+      <li>Multiple themes (VSCode-like experience)</li>
+      <li>Icon customization with various icon sets</li>
+      <li>Dark/light mode support</li>
+      <li>Responsive design for all screen sizes</li>
+    </ul>
+    
+    <p>🔒 Privacy-First Design:</p>
+    <ul>
+      <li>Complete local data storage (Dexie/IndexedDB)</li>
+      <li>No cloud dependency or data collection</li>
+      <li>Offline-first architecture</li>
+      <li>Your stories stay on your device</li>
+    </ul>
+    
+    <p>
+      Perfect for novelists, screenwriters, game developers, and anyone crafting 
+      complex narratives. Whether you're writing your first short story or managing 
+      a multi-book series, Novel Editor provides the tools to bring your creative 
+      vision to life.
+    </p>
+  </description>
+  
+  <categories>
+    <category>Office</category>
+    <category>WordProcessor</category>
+  </categories>
+  
+  <keywords>
+    <keyword>novel</keyword>
+    <keyword>writing</keyword>
+    <keyword>editor</keyword>
+    <keyword>story</keyword>
+    <keyword>book</keyword>
+    <keyword>author</keyword>
+    <keyword>manuscript</keyword>
+    <keyword>creative writing</keyword>
+    <keyword>fiction</keyword>
+    <keyword>screenplay</keyword>
+    <keyword>character development</keyword>
+    <keyword>world building</keyword>
+    <keyword>project management</keyword>
+    <keyword>outline</keyword>
+    <keyword>chapter</keyword>
+    <keyword>scene</keyword>
+    <keyword>plot</keyword>
+    <keyword>narrative</keyword>
+  </keywords>
+  
+  <url type="homepage">https://github.com/jeasoncc/novel-editor</url>
+  <url type="bugtracker">https://github.com/jeasoncc/novel-editor/issues</url>
+  
+  <launchable type="desktop-id">com.lotus.NovelEditor.desktop</launchable>
+  
+  <screenshots>
+    <screenshot type="default">
+      <caption>Main editing interface</caption>
+      <image>https://raw.githubusercontent.com/jeasoncc/novel-editor/main/docs/screenshots/main-interface.png</image>
+    </screenshot>
+  </screenshots>
+  
+  <releases>
+    <release version="0.1.36" date="2025-12-10">
+      <description>
+        <p>Initial Flatpak release with core writing features</p>
+      </description>
+    </release>
+  </releases>
+  
+  <content_rating type="oars-1.1" />
+  
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+</component>
