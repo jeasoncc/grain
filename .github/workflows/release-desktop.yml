@@ -103,6 +103,51 @@ jobs:
           Write-Output "Frontend build successful"
           Get-ChildItem dist/
 
+      # 预下载 WiX 工具包 (Windows only) - 避免 503 错误
+      - name: Cache WiX Toolset
+        if: runner.os == 'Windows'
+        uses: actions/cache@v4
+        id: wix-cache
+        with:
+          path: ~/.tauri/WixTools
+          key: wix-tools-3.14.1
+          restore-keys: |
+            wix-tools-
+
+      - name: Download WiX Toolset
+        if: runner.os == 'Windows' && steps.wix-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $wixDir = "$env:USERPROFILE\.tauri\WixTools"
+          New-Item -ItemType Directory -Force -Path $wixDir | Out-Null
+          
+          $maxRetries = 3
+          $retryCount = 0
+          $success = $false
+          
+          while (-not $success -and $retryCount -lt $maxRetries) {
+            try {
+              Write-Output "Downloading WiX Toolset (attempt $($retryCount + 1)/$maxRetries)..."
+              Invoke-WebRequest -Uri "https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip" -OutFile "$wixDir\wix314-binaries.zip" -UseBasicParsing
+              
+              Write-Output "Extracting WiX Toolset..."
+              Expand-Archive -Path "$wixDir\wix314-binaries.zip" -DestinationPath $wixDir -Force
+              Remove-Item "$wixDir\wix314-binaries.zip"
+              
+              $success = $true
+              Write-Output "WiX Toolset downloaded and extracted successfully"
+            } catch {
+              $retryCount++
+              if ($retryCount -lt $maxRetries) {
+                Write-Warning "Download failed, retrying in 10 seconds..."
+                Start-Sleep -Seconds 10
+              } else {
+                Write-Error "Failed to download WiX Toolset after $maxRetries attempts"
+                throw
+              }
+            }
+          }
+
       # 构建 Tauri App（不上传到 release）
       - uses: tauri-apps/tauri-action@v0
         env:
@@ -211,6 +256,50 @@ jobs:
           bun install
           cd apps/desktop
           bun install
+
+      # 预下载 WiX 工具包 - 避免 503 错误
+      - name: Cache WiX Toolset
+        uses: actions/cache@v4
+        id: wix-cache
+        with:
+          path: ~/.tauri/WixTools
+          key: wix-tools-3.14.1
+          restore-keys: |
+            wix-tools-
+
+      - name: Download WiX Toolset
+        if: steps.wix-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $wixDir = "$env:USERPROFILE\.tauri\WixTools"
+          New-Item -ItemType Directory -Force -Path $wixDir | Out-Null
+          
+          $maxRetries = 3
+          $retryCount = 0
+          $success = $false
+          
+          while (-not $success -and $retryCount -lt $maxRetries) {
+            try {
+              Write-Output "Downloading WiX Toolset (attempt $($retryCount + 1)/$maxRetries)..."
+              Invoke-WebRequest -Uri "https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip" -OutFile "$wixDir\wix314-binaries.zip" -UseBasicParsing
+              
+              Write-Output "Extracting WiX Toolset..."
+              Expand-Archive -Path "$wixDir\wix314-binaries.zip" -DestinationPath $wixDir -Force
+              Remove-Item "$wixDir\wix314-binaries.zip"
+              
+              $success = $true
+              Write-Output "WiX Toolset downloaded and extracted successfully"
+            } catch {
+              $retryCount++
+              if ($retryCount -lt $maxRetries) {
+                Write-Warning "Download failed, retrying in 10 seconds..."
+                Start-Sleep -Seconds 10
+              } else {
+                Write-Error "Failed to download WiX Toolset after $maxRetries attempts"
+                throw
+              }
+            }
+          }
 
       # 构建 Tauri 应用
       - name: Build Tauri app
