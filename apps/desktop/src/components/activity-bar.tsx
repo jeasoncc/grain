@@ -52,12 +52,12 @@ export function ActivityBar(): React.ReactElement {
 	}, []);
 
 	// 获取图标
+	// 顺序: 书籍管理(1st) → 章节管理(2nd) → Wiki(3rd) → 搜索(4th) → 大纲(5th)
 	const LibraryIcon = iconTheme.icons.activityBar.library;
+	const ChaptersIcon = iconTheme.icons.activityBar.chapters;
+	const WikiIcon = iconTheme.icons.activityBar.wiki;
 	const SearchIcon = iconTheme.icons.activityBar.search;
 	const OutlineIcon = iconTheme.icons.activityBar.outline;
-	const WikiIcon = iconTheme.icons.activityBar.wiki;
-	const CanvasIcon = iconTheme.icons.activityBar.canvas;
-	const ChaptersIcon = iconTheme.icons.activityBar.chapters;
 	const StatisticsIcon = iconTheme.icons.activityBar.statistics;
 	const SettingsIcon = iconTheme.icons.activityBar.settings;
 	const ImportIcon = iconTheme.icons.activityBar.import;
@@ -117,7 +117,10 @@ export function ActivityBar(): React.ReactElement {
 		<aside className="activity-bar fixed left-0 top-0 z-50 flex h-screen w-12 shrink-0 flex-col items-center bg-sidebar py-2">
 			<TooltipProvider>
 				{/* 主导航 - 侧边栏面板切换 */}
+				{/* 顺序: 书籍管理(1st) → 章节管理(2nd) → Wiki(3rd) → 搜索(4th) → 大纲(5th) */}
+				{/* 绘图按钮已移除，绘图通过书籍管理面板访问 */}
 				<nav className="flex flex-col items-center gap-0.5">
+					{/* 1st: 书籍管理 */}
 					<ActionButton
 						icon={<LibraryIcon className="size-5" />}
 						label="书库 (Ctrl+B)"
@@ -130,42 +133,7 @@ export function ActivityBar(): React.ReactElement {
 							}
 						}}
 					/>
-					<ActionButton
-						icon={<SearchIcon className="size-5" />}
-						label="搜索 (Ctrl+Shift+F)"
-						active={activePanel === "search" && unifiedSidebarOpen}
-						onClick={() => {
-							if (activePanel === "search" && unifiedSidebarOpen) {
-								toggleSidebar();
-							} else {
-								setActivePanel("search");
-							}
-						}}
-					/>
-					<ActionButton
-						icon={<CanvasIcon className="size-5" />}
-						label="绘图"
-						active={activePanel === "drawings" && unifiedSidebarOpen}
-						onClick={() => {
-							if (activePanel === "drawings" && unifiedSidebarOpen) {
-								toggleSidebar();
-							} else {
-								setActivePanel("drawings");
-							}
-						}}
-					/>
-					<ActionButton
-						icon={<WikiIcon className="size-5" />}
-						label="Wiki 知识库"
-						active={activePanel === "wiki" && unifiedSidebarOpen}
-						onClick={() => {
-							if (activePanel === "wiki" && unifiedSidebarOpen) {
-								toggleSidebar();
-							} else {
-								setActivePanel("wiki");
-							}
-						}}
-					/>
+					{/* 2nd: 章节管理 */}
 					<ActionButton
 						icon={<ChaptersIcon className="size-5" />}
 						label="章节管理"
@@ -178,18 +146,45 @@ export function ActivityBar(): React.ReactElement {
 							}
 						}}
 					/>
-				</nav>
-
-				<div className="my-2 h-px w-6 bg-border/30" />
-
-				{/* 页面导航 */}
-				<nav className="flex flex-col items-center gap-0.5">
+					{/* 3rd: Wiki */}
+					<ActionButton
+						icon={<WikiIcon className="size-5" />}
+						label="Wiki 知识库"
+						active={activePanel === "wiki" && unifiedSidebarOpen}
+						onClick={() => {
+							if (activePanel === "wiki" && unifiedSidebarOpen) {
+								toggleSidebar();
+							} else {
+								setActivePanel("wiki");
+							}
+						}}
+					/>
+					{/* 4th: 搜索 */}
+					<ActionButton
+						icon={<SearchIcon className="size-5" />}
+						label="搜索 (Ctrl+Shift+F)"
+						active={activePanel === "search" && unifiedSidebarOpen}
+						onClick={() => {
+							if (activePanel === "search" && unifiedSidebarOpen) {
+								toggleSidebar();
+							} else {
+								setActivePanel("search");
+							}
+						}}
+					/>
+					{/* 5th: 大纲 */}
 					<NavItem
 						to="/outline"
 						icon={<OutlineIcon className="size-5" />}
 						label="大纲"
 						active={isActive("/outline")}
 					/>
+				</nav>
+
+				<div className="my-2 h-px w-6 bg-border/30" />
+
+				{/* 页面导航 */}
+				<nav className="flex flex-col items-center gap-0.5">
 					<NavItem
 						to="/statistics"
 						icon={<StatisticsIcon className="size-5" />}

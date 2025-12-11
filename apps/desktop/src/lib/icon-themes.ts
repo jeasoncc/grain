@@ -11,7 +11,6 @@ import {
 	BookOpenText,
 	BookText,
 	Cog,
-	Compass,
 	Download,
 	Feather,
 	File,
@@ -177,7 +176,7 @@ export const iconThemes: IconTheme[] = [
 				outline: ListTree,
 				wiki: BookOpen,
 				canvas: Pencil,
-				chapters: ListTree,
+				chapters: FolderTree, // 使用 FolderTree 确保与 outline (ListTree) 不同
 				statistics: BarChart3,
 				settings: Cog,
 				create: Plus,
@@ -312,10 +311,10 @@ export const iconThemes: IconTheme[] = [
 			activityBar: {
 				library: BookText,
 				search: Search,
-				outline: Layers,
+				outline: ListTree, // 使用 ListTree 保持一致性
 				wiki: BookOpen,
 				canvas: Feather,
-				chapters: Layers,
+				chapters: FolderTree, // 使用 FolderTree 确保与 outline (ListTree) 不同
 				statistics: TrendingUp,
 				settings: Settings,
 				create: Plus,
@@ -358,10 +357,10 @@ export const iconThemes: IconTheme[] = [
 			activityBar: {
 				library: Notebook,
 				search: Search,
-				outline: ScrollText,
+				outline: ListTree, // 使用 ListTree 保持一致性
 				wiki: BookOpen,
 				canvas: Feather,
-				chapters: ScrollText,
+				chapters: FolderTree, // 使用 FolderTree 确保与 outline (ListTree) 不同
 				statistics: TrendingUp,
 				settings: Settings,
 				create: PenTool,

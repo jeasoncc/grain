@@ -30,13 +30,6 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
 	createChapter,
@@ -51,7 +44,7 @@ import {
 	renameScene,
 	useScenesByProject,
 } from "@/services/scenes";
-import { useAllProjects } from "@/services/projects";
+// Projects are now selected from the Books Panel, not here
 import { useSceneCreation } from "@/hooks/use-scene-creation";
 import { useSceneCreationStore } from "@/stores/scene-creation";
 import type { ChapterInterface, SceneInterface } from "@/db/schema";
@@ -89,8 +82,7 @@ export function ChaptersPanel() {
 		position: "before" | "after" | "inside" | null;
 	}>({ draggedId: "", draggedType: "chapter", targetId: null, position: null });
 
-	// Data
-	const projects = useAllProjects();
+	// Data - uses globally selected project from selection store
 	const chapters = useChaptersByProject(globalSelectedProjectId);
 	const scenes = useScenesByProject(globalSelectedProjectId);
 
@@ -100,22 +92,6 @@ export function ChaptersPanel() {
 			setChaptersSelectedProjectId(globalSelectedProjectId);
 		}
 	}, [globalSelectedProjectId, chaptersState.selectedProjectId, setChaptersSelectedProjectId]);
-
-	// Auto-select first project if none selected
-	useEffect(() => {
-		if (!globalSelectedProjectId && projects.length > 0) {
-			setGlobalSelectedProjectId(projects[0].id);
-		}
-	}, [projects, globalSelectedProjectId, setGlobalSelectedProjectId]);
-
-	// Handle project change
-	const handleProjectChange = useCallback((projectId: string) => {
-		setGlobalSelectedProjectId(projectId);
-		setChaptersSelectedProjectId(projectId);
-		// Reset chapter/scene selection when project changes
-		setChaptersSelectedChapterId(null);
-		setChaptersSelectedSceneId(null);
-	}, [setGlobalSelectedProjectId, setChaptersSelectedProjectId, setChaptersSelectedChapterId, setChaptersSelectedSceneId]);
 
 	// Toggle chapter expansion
 	const toggleChapter = useCallback((chapterId: string) => {
@@ -233,8 +209,8 @@ export function ChaptersPanel() {
 		setRenamingId(id);
 	}, []);
 
-	// Scene creation management
-	const { createTextScene, createCanvasScene } = useSceneCreation({
+	// Scene creation management (canvas scenes are created from Drawings Panel at book level)
+	const { createTextScene } = useSceneCreation({
 		selectedProjectId: globalSelectedProjectId,
 		scenesOfProject: scenes,
 		onSceneCreated: (sceneId, chapterId) => {
@@ -262,13 +238,6 @@ export function ChaptersPanel() {
 		setOpenPopovers((prev) => ({ ...prev, [chapterId]: false }));
 		await createTextScene(chapterId);
 	}, [createTextScene]);
-
-	// Create canvas scene
-	const handleAddCanvasScene = useCallback(async (chapterId: string) => {
-		// Close the popover first
-		setOpenPopovers((prev) => ({ ...prev, [chapterId]: false }));
-		await createCanvasScene(chapterId);
-	}, [createCanvasScene]);
 
 	// Rename scene
 	const handleRenameScene = useCallback(async (sceneId: string, newTitle: string) => {
@@ -499,25 +468,6 @@ export function ChaptersPanel() {
 				</Button>
 			</div>
 
-			{/* Project Selector */}
-			<div className="px-3 py-2 border-b border-sidebar-border/20">
-				<Select
-					value={globalSelectedProjectId ?? ""}
-					onValueChange={handleProjectChange}
-				>
-					<SelectTrigger className="h-8 w-full">
-						<SelectValue placeholder="Select a book..." />
-					</SelectTrigger>
-					<SelectContent>
-						{projects.map((project) => (
-							<SelectItem key={project.id} value={project.id}>
-								{project.title}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-			</div>
-
 			{/* Search */}
 			<div className="p-3 border-b border-sidebar-border/20">
 				<div className="relative">
@@ -538,11 +488,14 @@ export function ChaptersPanel() {
 			<ScrollArea className="flex-1">
 				<div className="px-2 py-4">
 					{!globalSelectedProjectId ? (
-						// No project selected
+						// No project selected - prompt user to select from Books Panel
 						<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
 							<BookOpen className="size-12 mb-3 opacity-20" />
-							<p className="text-sm text-center">
-								Select a book to view chapters
+							<p className="text-sm text-center px-4">
+								请先从书库面板选择一本书籍
+							</p>
+							<p className="text-xs text-center mt-1 opacity-70">
+								Please select a book from the Books panel first
 							</p>
 						</div>
 					) : filteredData.chapters.length === 0 ? (
@@ -603,7 +556,6 @@ export function ChaptersPanel() {
 											onDelete={() => handleDeleteChapter(chapter)}
 											onPopoverChange={(open) => setOpenPopovers((prev) => ({ ...prev, [chapter.id]: open }))}
 											onAddScene={() => handleAddScene(chapter.id)}
-											onAddCanvasScene={() => handleAddCanvasScene(chapter.id)}
 											onDragStart={(e) => handleDragStart(e, chapter.id, "chapter")}
 											onDragOver={(e) => handleDragOver(e, chapter.id, "chapter")}
 											onDragEnd={handleDragEnd}
@@ -682,7 +634,6 @@ interface ChapterListItemProps {
 	onDelete: () => void;
 	onPopoverChange: (open: boolean) => void;
 	onAddScene: () => void;
-	onAddCanvasScene: () => void;
 	onDragStart: (e: React.DragEvent) => void;
 	onDragOver: (e: React.DragEvent) => void;
 	onDragEnd: () => void;
@@ -708,7 +659,6 @@ function ChapterListItem({
 	onDelete,
 	onPopoverChange,
 	onAddScene,
-	onAddCanvasScene,
 	onDragStart,
 	onDragOver,
 	onDragEnd,
@@ -829,17 +779,6 @@ function ChapterListItem({
 								>
 									<Plus className="size-3" />
 									{isCreatingScene ? "Creating..." : "Add Scene"}
-								</button>
-								<button
-									onClick={(e) => {
-										e.stopPropagation();
-										onAddCanvasScene();
-									}}
-									disabled={isCreatingScene}
-									className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
-								>
-									<PenTool className="size-3" />
-									{isCreatingScene ? "Creating..." : "Add Canvas"}
 								</button>
 								<div className="h-px bg-border my-1" />
 								<button

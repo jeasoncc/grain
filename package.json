@@ -30,7 +30,11 @@
     "build:prod:mobile": "NODE_ENV=production turbo run build:prod --filter=mobile",
     "build:test:desktop": "NODE_ENV=development turbo run build:test --filter=desktop",
     "build:test:web": "NODE_ENV=development turbo run build:test --filter=web",
-    "build:test:mobile": "NODE_ENV=development turbo run build:test --filter=mobile"
+    "build:test:mobile": "NODE_ENV=development turbo run build:test --filter=mobile",
+    "tag:desktop": "bash scripts/create-tag.sh desktop",
+    "tag:snap": "bash scripts/create-tag.sh snap",
+    "tag:aur": "bash scripts/create-tag.sh aur",
+    "tag:all": "bash scripts/create-tag.sh all"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.2",

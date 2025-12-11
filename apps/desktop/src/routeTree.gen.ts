@@ -17,7 +17,6 @@ import { Route as TestClearDataRouteImport } from './routes/test-clear-data'
 import { Route as StatisticsRouteImport } from './routes/statistics'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as OutlineRouteImport } from './routes/outline'
-import { Route as LogRouteImport } from './routes/log'
 import { Route as CanvasRouteImport } from './routes/canvas'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
@@ -72,11 +71,6 @@ const SettingsRoute = SettingsRouteImport.update({
 const OutlineRoute = OutlineRouteImport.update({
   id: '/outline',
   path: '/outline',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LogRoute = LogRouteImport.update({
-  id: '/log',
-  path: '/log',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CanvasRoute = CanvasRouteImport.update({
@@ -158,7 +152,6 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/canvas': typeof CanvasRoute
-  '/log': typeof LogRoute
   '/outline': typeof OutlineRoute
   '/settings': typeof SettingsRouteWithChildren
   '/statistics': typeof StatisticsRoute
@@ -184,7 +177,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/canvas': typeof CanvasRoute
-  '/log': typeof LogRoute
   '/outline': typeof OutlineRoute
   '/statistics': typeof StatisticsRoute
   '/test-clear-data': typeof TestClearDataRoute
@@ -210,7 +202,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/canvas': typeof CanvasRoute
-  '/log': typeof LogRoute
   '/outline': typeof OutlineRoute
   '/settings': typeof SettingsRouteWithChildren
   '/statistics': typeof StatisticsRoute
@@ -238,7 +229,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/canvas'
-    | '/log'
     | '/outline'
     | '/settings'
     | '/statistics'
@@ -264,7 +254,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/canvas'
-    | '/log'
     | '/outline'
     | '/statistics'
     | '/test-clear-data'
@@ -289,7 +278,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/canvas'
-    | '/log'
     | '/outline'
     | '/settings'
     | '/statistics'
@@ -316,7 +304,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CanvasRoute: typeof CanvasRoute
-  LogRoute: typeof LogRoute
   OutlineRoute: typeof OutlineRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   StatisticsRoute: typeof StatisticsRoute
@@ -384,13 +371,6 @@ declare module '@tanstack/react-router' {
       path: '/outline'
       fullPath: '/outline'
       preLoaderRoute: typeof OutlineRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/log': {
-      id: '/log'
-      path: '/log'
-      fullPath: '/log'
-      preLoaderRoute: typeof LogRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/canvas': {
@@ -538,7 +518,6 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CanvasRoute: CanvasRoute,
-  LogRoute: LogRoute,
   OutlineRoute: OutlineRoute,
   SettingsRoute: SettingsRouteWithChildren,
   StatisticsRoute: StatisticsRoute,

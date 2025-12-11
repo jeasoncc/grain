@@ -32,17 +32,6 @@ function RootComponent() {
 		toggleSidebar,
 	} = useUnifiedSidebarStore();
 
-	// 右侧边栏状态（用于章节和场景管理）
-	const [rightSidebarOpen, setRightSidebarOpen] = useState(() => {
-		const saved = localStorage.getItem("right-sidebar-open");
-		return saved ? saved === "true" : false;
-	});
-
-	// 保存右侧边栏状态到 localStorage
-	useEffect(() => {
-		localStorage.setItem("right-sidebar-open", String(rightSidebarOpen));
-	}, [rightSidebarOpen]);
-
 	// 初始化主题系统（包括系统主题监听）
 	useEffect(() => {
 		const cleanup = initializeTheme();
@@ -100,10 +89,7 @@ function RootComponent() {
 
 	return (
 		<ConfirmProvider>
-			<SidebarProvider
-				open={rightSidebarOpen}
-				onOpenChange={setRightSidebarOpen}
-			>
+			<SidebarProvider>
 				<Toaster
 					icons={{
 						success: <CircleCheckIcon className="size-4 text-green-500" />,
