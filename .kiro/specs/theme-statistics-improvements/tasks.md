@@ -4,8 +4,7 @@
 
 - [ ] 1.1 Add editorSelection color to all existing themes in themes.ts
   - Update ThemeColors interface to make editorSelection required
-  - Add appropriate selection colors to all 9 existing light themes
-  - Add appropriate selection colors to all existing dark themes
+  - Add appropriate selection colors to themes missing them (solarized-light, light-plus, atom-one-light, winter-light, ayu-light, gruvbox-light, and most dark themes)
   - Ensure selection colors contrast with background colors
   - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
@@ -22,15 +21,15 @@
   - Add Sepia theme (classic sepia tone)
   - Add Nord Light theme (cool Nordic-inspired)
   - Ensure all new themes have editorSelection colors
+  - This brings total light themes to 12 (currently 9)
   - _Requirements: 1.1, 1.3_
 
 - [ ]* 1.5 Write property test for light theme count
   - **Property 1: Light theme count minimum**
   - **Validates: Requirements 1.1**
 
-- [ ] 1.6 Apply selection color CSS variable globally
-  - Add ::selection CSS rule using var(--editor-selection) in styles.css
-  - Ensure selection styles work in editor component
+- [x] 1.6 Apply selection color CSS variable globally
+  - ::selection CSS rule already exists in styles.css using var(--editor-selection)
   - _Requirements: 5.1, 5.5_
 
 ## 2. Fix Theme Selector Scroll Issue
@@ -69,29 +68,57 @@
   - _Requirements: 3.1, 3.2, 3.3_
 
 - [ ] 4.3 Convert strings in export-button.tsx
-  - Replace format labels to English
+  - Replace format labels to English (纯文本→Plain Text, Word 文档→Word Document, etc.)
   - Replace "导出中..." with "Exporting..."
   - Replace "导出" with "Export"
   - Replace "快速导出" with "Quick Export"
+  - Replace "高级选项..." with "Advanced Options..."
   - _Requirements: 3.1, 3.2, 3.3_
 
 - [ ] 4.4 Convert strings in activity-bar.tsx
+  - Replace "书库 (Ctrl+B)" with "Library (Ctrl+B)"
+  - Replace "章节管理" with "Chapters"
+  - Replace "Wiki 知识库" with "Wiki"
+  - Replace "搜索 (Ctrl+Shift+F)" with "Search (Ctrl+Shift+F)"
+  - Replace "大纲" with "Outline"
   - Replace "统计" with "Statistics"
-  - Replace any other Chinese labels
+  - Replace "更多" with "More"
+  - Replace "导入" with "Import"
+  - Replace "导出" with "Export"
+  - Replace "删除所有书籍" with "Delete All Books"
+  - Replace "设置" with "Settings"
+  - Replace toast messages and confirm dialogs
   - _Requirements: 3.1, 3.2, 3.3_
 
 - [ ] 4.5 Convert strings in command-palette.tsx
+  - Replace "操作" with "Actions"
+  - Replace "全局搜索" with "Global Search"
+  - Replace "新建章节" with "New Chapter"
+  - Replace "导出作品" with "Export Project"
+  - Replace "打开大纲页面" with "Open Outline"
+  - Replace "打开 Wiki 知识库" with "Open Wiki"
+  - Replace "数据管理" with "Data Management"
+  - Replace "备份数据" with "Backup Data"
   - Replace "数据统计" with "Statistics"
+  - Replace "设置" with "Settings"
   - Replace "切换到浅色主题/深色主题" with "Switch to Light/Dark Theme"
-  - Replace any other Chinese labels
+  - Replace "打开设置" with "Open Settings"
+  - Replace search placeholder and other labels
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 4.6 Convert remaining Chinese strings in desktop app
+- [ ] 4.6 Convert strings in drawing-workspace.tsx
+  - Replace "绘图数据异常，画布尺寸超出限制" with "Drawing data error, canvas size exceeded"
+  - Replace "绘图组件加载失败" with "Failed to load drawing component"
+  - Replace "重试" with "Retry"
+  - Replace "清空重置" with "Clear & Reset"
+  - _Requirements: 3.1, 3.2, 3.3_
+
+- [ ] 4.7 Convert remaining Chinese strings in desktop app
   - Search for remaining Chinese characters in src/**/*.tsx
   - Convert all found strings to English equivalents
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ]* 4.7 Write property test for English text verification
+- [ ]* 4.8 Write property test for English text verification
   - **Property 5: UI text is English**
   - **Validates: Requirements 3.1**
 
