@@ -75,9 +75,9 @@ export function ActivityBar(): React.ReactElement {
 			try {
 				const text = await readFileAsText(file);
 				await importFromJson(text, { keepIds: false });
-				toast.success("导入成功");
+				toast.success("Import successful");
 			} catch {
-				toast.error("导入失败");
+				toast.error("Import failed");
 			} finally {
 				if (fileInputRef.current) fileInputRef.current.value = "";
 			}
@@ -89,10 +89,10 @@ export function ActivityBar(): React.ReactElement {
 
 	const handleDeleteAllBooks = useCallback(async () => {
 		const ok = await confirm({
-			title: "确认删除所有书籍？",
-			description: "该操作不可恢复",
-			confirmText: "删除",
-			cancelText: "取消",
+			title: "Delete all books?",
+			description: "This action cannot be undone",
+			confirmText: "Delete",
+			cancelText: "Cancel",
 		});
 		if (!ok) return;
 		try {
@@ -103,9 +103,9 @@ export function ActivityBar(): React.ReactElement {
 				db.chapters.clear(),
 				db.projects.clear(),
 			]);
-			toast.success("已删除所有书籍");
+			toast.success("All books deleted");
 		} catch {
-			toast.error("删除失败");
+			toast.error("Delete failed");
 		}
 	}, [confirm]);
 
@@ -120,10 +120,10 @@ export function ActivityBar(): React.ReactElement {
 				{/* 顺序: 书籍管理(1st) → 章节管理(2nd) → Wiki(3rd) → 搜索(4th) → 大纲(5th) */}
 				{/* 绘图按钮已移除，绘图通过书籍管理面板访问 */}
 				<nav className="flex flex-col items-center gap-0.5">
-					{/* 1st: 书籍管理 */}
+					{/* 1st: Library */}
 					<ActionButton
 						icon={<LibraryIcon className="size-5" />}
-						label="书库 (Ctrl+B)"
+						label="Library (Ctrl+B)"
 						active={activePanel === "books" && unifiedSidebarOpen}
 						onClick={() => {
 							if (activePanel === "books" && unifiedSidebarOpen) {
@@ -133,10 +133,10 @@ export function ActivityBar(): React.ReactElement {
 							}
 						}}
 					/>
-					{/* 2nd: 章节管理 */}
+					{/* 2nd: Chapters */}
 					<ActionButton
 						icon={<ChaptersIcon className="size-5" />}
-						label="章节管理"
+						label="Chapters"
 						active={activePanel === "chapters" && unifiedSidebarOpen}
 						onClick={() => {
 							if (activePanel === "chapters" && unifiedSidebarOpen) {
@@ -149,7 +149,7 @@ export function ActivityBar(): React.ReactElement {
 					{/* 3rd: Wiki */}
 					<ActionButton
 						icon={<WikiIcon className="size-5" />}
-						label="Wiki 知识库"
+						label="Wiki"
 						active={activePanel === "wiki" && unifiedSidebarOpen}
 						onClick={() => {
 							if (activePanel === "wiki" && unifiedSidebarOpen) {
@@ -159,10 +159,10 @@ export function ActivityBar(): React.ReactElement {
 							}
 						}}
 					/>
-					{/* 4th: 搜索 */}
+					{/* 4th: Search */}
 					<ActionButton
 						icon={<SearchIcon className="size-5" />}
-						label="搜索 (Ctrl+Shift+F)"
+						label="Search (Ctrl+Shift+F)"
 						active={activePanel === "search" && unifiedSidebarOpen}
 						onClick={() => {
 							if (activePanel === "search" && unifiedSidebarOpen) {
@@ -172,11 +172,11 @@ export function ActivityBar(): React.ReactElement {
 							}
 						}}
 					/>
-					{/* 5th: 大纲 */}
+					{/* 5th: Outline */}
 					<NavItem
 						to="/outline"
 						icon={<OutlineIcon className="size-5" />}
-						label="大纲"
+						label="Outline"
 						active={isActive("/outline")}
 					/>
 				</nav>
@@ -188,7 +188,7 @@ export function ActivityBar(): React.ReactElement {
 					<NavItem
 						to="/statistics"
 						icon={<StatisticsIcon className="size-5" />}
-						label="统计"
+						label="Statistics"
 						active={isActive("/statistics")}
 					/>
 				</nav>
@@ -204,7 +204,7 @@ export function ActivityBar(): React.ReactElement {
 									</button>
 								</PopoverTrigger>
 							</TooltipTrigger>
-							<TooltipContent side="right">更多</TooltipContent>
+							<TooltipContent side="right">More</TooltipContent>
 						</Tooltip>
 						<PopoverContent side="right" align="end" className="w-48 p-1">
 							<div className="grid gap-1">
@@ -212,13 +212,13 @@ export function ActivityBar(): React.ReactElement {
 									onClick={handleImportClick}
 									className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
 								>
-									<ImportIcon className="size-4" /> 导入
+									<ImportIcon className="size-4" /> Import
 								</button>
 								<button
 									onClick={() => setExportDialogOpen(true)}
 									className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
 								>
-									<ExportIcon className="size-4" /> 导出
+									<ExportIcon className="size-4" /> Export
 								</button>
 								<div className="h-px bg-border my-1" />
 								<button
@@ -226,7 +226,7 @@ export function ActivityBar(): React.ReactElement {
 									className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10"
 									disabled={projects.length === 0}
 								>
-									<Trash2 className="size-4" /> 删除所有书籍
+									<Trash2 className="size-4" /> Delete All Books
 								</button>
 							</div>
 						</PopoverContent>
@@ -235,7 +235,7 @@ export function ActivityBar(): React.ReactElement {
 					<NavItem
 						to="/settings/design"
 						icon={<SettingsIcon className="size-5" />}
-						label="设置"
+						label="Settings"
 						active={isActive("/settings")}
 					/>
 				</div>

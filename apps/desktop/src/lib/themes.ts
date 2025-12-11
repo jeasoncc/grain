@@ -41,9 +41,9 @@ export interface ThemeColors {
 	sidebarAccentForeground: string;
 	sidebarBorder: string;
 
-	// 编辑器扩展颜色（可选）
+	// 编辑器扩展颜色
 	editorCursor?: string;
-	editorSelection?: string;
+	editorSelection: string; // Required - background color for selected text
 	editorLineHighlight?: string;
 
 	// 状态颜色（可选）
@@ -174,6 +174,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#fdf6e3",
 			sidebarAccentForeground: "#657b83",
 			sidebarBorder: "#93a1a1",
+			editorSelection: "#d3cbb7",
 		},
 	},
 	{
@@ -253,6 +254,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#e8f2ff",
 			sidebarAccentForeground: "#000000",
 			sidebarBorder: "#e5e5e5",
+			editorSelection: "#add6ff",
 		},
 	},
 	{
@@ -285,6 +287,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#e5f0ff",
 			sidebarAccentForeground: "#383a42",
 			sidebarBorder: "#e5e5e6",
+			editorSelection: "#c9d0e5",
 		},
 	},
 	{
@@ -317,6 +320,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#e3f2fd",
 			sidebarAccentForeground: "#0e293f",
 			sidebarBorder: "#d9e7f1",
+			editorSelection: "#b3d7f0",
 		},
 	},
 	{
@@ -349,6 +353,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#e7f3fa",
 			sidebarAccentForeground: "#5c6166",
 			sidebarBorder: "#e7e8e9",
+			editorSelection: "#c8e4f8",
 		},
 	},
 	{
@@ -381,6 +386,106 @@ export const themes: Theme[] = [
 			sidebarAccent: "#d5c4a1",
 			sidebarAccentForeground: "#3c3836",
 			sidebarBorder: "#d5c4a1",
+			editorSelection: "#d5c4a1",
+		},
+	},
+	{
+		key: "paper-light",
+		name: "Paper",
+		description: "Warm paper-like theme for comfortable reading",
+		type: "light",
+		colors: {
+			background: "#f8f5f0",
+			foreground: "#2c2c2c",
+			card: "#ffffff",
+			cardForeground: "#2c2c2c",
+			popover: "#ffffff",
+			popoverForeground: "#2c2c2c",
+			primary: "#8b7355",
+			primaryForeground: "#ffffff",
+			secondary: "#f0ebe3",
+			secondaryForeground: "#2c2c2c",
+			muted: "#f0ebe3",
+			mutedForeground: "#6b6b6b",
+			accent: "#e8e0d5",
+			accentForeground: "#2c2c2c",
+			border: "#ddd5c8",
+			input: "#ddd5c8",
+			ring: "#8b7355",
+			sidebar: "#f5f0e8",
+			sidebarForeground: "#2c2c2c",
+			sidebarPrimary: "#8b7355",
+			sidebarPrimaryForeground: "#ffffff",
+			sidebarAccent: "#e8e0d5",
+			sidebarAccentForeground: "#2c2c2c",
+			sidebarBorder: "#ddd5c8",
+			editorSelection: "#d4c4a8",
+		},
+	},
+	{
+		key: "sepia",
+		name: "Sepia",
+		description: "Classic sepia tone for reduced eye strain",
+		type: "light",
+		colors: {
+			background: "#f4ecd8",
+			foreground: "#5b4636",
+			card: "#faf6eb",
+			cardForeground: "#5b4636",
+			popover: "#faf6eb",
+			popoverForeground: "#5b4636",
+			primary: "#8b6914",
+			primaryForeground: "#ffffff",
+			secondary: "#ebe3d0",
+			secondaryForeground: "#5b4636",
+			muted: "#ebe3d0",
+			mutedForeground: "#7a6a5a",
+			accent: "#e0d5be",
+			accentForeground: "#5b4636",
+			border: "#d4c9b0",
+			input: "#d4c9b0",
+			ring: "#8b6914",
+			sidebar: "#f0e8d5",
+			sidebarForeground: "#5b4636",
+			sidebarPrimary: "#8b6914",
+			sidebarPrimaryForeground: "#ffffff",
+			sidebarAccent: "#e0d5be",
+			sidebarAccentForeground: "#5b4636",
+			sidebarBorder: "#d4c9b0",
+			editorSelection: "#d4c4a0",
+		},
+	},
+	{
+		key: "nord-light",
+		name: "Nord Light",
+		description: "Cool Nordic-inspired light theme",
+		type: "light",
+		colors: {
+			background: "#eceff4",
+			foreground: "#2e3440",
+			card: "#ffffff",
+			cardForeground: "#2e3440",
+			popover: "#ffffff",
+			popoverForeground: "#2e3440",
+			primary: "#5e81ac",
+			primaryForeground: "#ffffff",
+			secondary: "#e5e9f0",
+			secondaryForeground: "#2e3440",
+			muted: "#e5e9f0",
+			mutedForeground: "#4c566a",
+			accent: "#d8dee9",
+			accentForeground: "#2e3440",
+			border: "#d8dee9",
+			input: "#d8dee9",
+			ring: "#5e81ac",
+			sidebar: "#e5e9f0",
+			sidebarForeground: "#2e3440",
+			sidebarPrimary: "#5e81ac",
+			sidebarPrimaryForeground: "#ffffff",
+			sidebarAccent: "#d8dee9",
+			sidebarAccentForeground: "#2e3440",
+			sidebarBorder: "#d8dee9",
+			editorSelection: "#b8c5d9",
 		},
 	},
 	// ============ 深色主题 ============
@@ -605,6 +710,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#403e41",
 			sidebarAccentForeground: "#fcfcfa",
 			sidebarBorder: "#5b595c",
+			editorSelection: "#544f4f",
 		},
 	},
 	{
@@ -637,6 +743,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#073642",
 			sidebarAccentForeground: "#839496",
 			sidebarBorder: "#586e75",
+			editorSelection: "#094959",
 		},
 	},
 	{
@@ -716,6 +823,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#1e2030",
 			sidebarAccentForeground: "#8f93a2",
 			sidebarBorder: "#464b5d",
+			editorSelection: "#2b3245",
 		},
 	},
 	{
@@ -748,6 +856,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#3a3f58",
 			sidebarAccentForeground: "#a6accd",
 			sidebarBorder: "#4e5579",
+			editorSelection: "#3e4460",
 		},
 	},
 	{
@@ -780,6 +889,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#504945",
 			sidebarAccentForeground: "#ebdbb2",
 			sidebarBorder: "#504945",
+			editorSelection: "#504945",
 		},
 	},
 	{
@@ -812,6 +922,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#1d3b53",
 			sidebarAccentForeground: "#d6deeb",
 			sidebarBorder: "#1d3b53",
+			editorSelection: "#1d3b53",
 		},
 	},
 	{
@@ -844,6 +955,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#1f4662",
 			sidebarAccentForeground: "#ffffff",
 			sidebarBorder: "#0d3a58",
+			editorSelection: "#1f4662",
 		},
 	},
 	{
@@ -876,6 +988,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#34294f",
 			sidebarAccentForeground: "#f92aad",
 			sidebarBorder: "#495495",
+			editorSelection: "#463465",
 		},
 	},
 	{
@@ -908,6 +1021,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#4d21fc",
 			sidebarAccentForeground: "#ffffff",
 			sidebarBorder: "#7c4dff",
+			editorSelection: "#5c4d9a",
 		},
 	},
 	{
@@ -940,6 +1054,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#1d3b53",
 			sidebarAccentForeground: "#d6deeb",
 			sidebarBorder: "#1d3b53",
+			editorSelection: "#1d3b53",
 		},
 	},
 	{
@@ -972,6 +1087,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#1f2430",
 			sidebarAccentForeground: "#b3b1ad",
 			sidebarBorder: "#1f2430",
+			editorSelection: "#273747",
 		},
 	},
 	{
@@ -1004,6 +1120,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#343d4a",
 			sidebarAccentForeground: "#cbccc6",
 			sidebarBorder: "#343d4a",
+			editorSelection: "#33415e",
 		},
 	},
 	{
@@ -1036,6 +1153,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#2b2e36",
 			sidebarAccentForeground: "#d5ced9",
 			sidebarBorder: "#3e4451",
+			editorSelection: "#3e4451",
 		},
 	},
 	{
@@ -1068,6 +1186,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#2e303e",
 			sidebarAccentForeground: "#e3e6ee",
 			sidebarBorder: "#2e303e",
+			editorSelection: "#3e4155",
 		},
 	},
 	{
@@ -1100,6 +1219,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#373839",
 			sidebarAccentForeground: "#e6e6e6",
 			sidebarBorder: "#3f3f40",
+			editorSelection: "#45474a",
 		},
 	},
 	{
@@ -1132,6 +1252,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#094771",
 			sidebarAccentForeground: "#d4d4d4",
 			sidebarBorder: "#3e3e42",
+			editorSelection: "#264f78",
 		},
 	},
 	{
@@ -1164,6 +1285,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#49483e",
 			sidebarAccentForeground: "#f8f8f2",
 			sidebarBorder: "#49483e",
+			editorSelection: "#49483e",
 		},
 	},
 	{
@@ -1196,6 +1318,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#3b4261",
 			sidebarAccentForeground: "#a9b1d6",
 			sidebarBorder: "#3b4261",
+			editorSelection: "#364a82",
 		},
 	},
 	{
@@ -1228,6 +1351,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#45475a",
 			sidebarAccentForeground: "#cdd6f4",
 			sidebarBorder: "#45475a",
+			editorSelection: "#45475a",
 		},
 	},
 	{
@@ -1260,6 +1384,7 @@ export const themes: Theme[] = [
 			sidebarAccent: "#403d52",
 			sidebarAccentForeground: "#e0def4",
 			sidebarBorder: "#403d52",
+			editorSelection: "#403d52",
 		},
 	},
 ];

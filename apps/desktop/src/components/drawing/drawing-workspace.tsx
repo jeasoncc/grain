@@ -60,8 +60,8 @@ class DrawingErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 					<AlertTriangle className="size-8 text-destructive" />
 					<span className="text-sm text-muted-foreground text-center">
 						{this.state.isCanvasError 
-							? "绘图数据异常，画布尺寸超出限制" 
-							: "绘图组件加载失败"}
+							? "Drawing data error, canvas size exceeded" 
+							: "Failed to load drawing component"}
 					</span>
 					<div className="flex gap-2">
 						<Button
@@ -71,7 +71,7 @@ class DrawingErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 							className="gap-1"
 						>
 							<RefreshCw className="size-3" />
-							重试
+							Retry
 						</Button>
 						{this.state.isCanvasError && this.props.onClearData && (
 							<Button
@@ -81,7 +81,7 @@ class DrawingErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 								className="gap-1"
 							>
 								<Trash2 className="size-3" />
-								清空重置
+								Clear & Reset
 							</Button>
 						)}
 					</div>
@@ -348,7 +348,7 @@ export function DrawingWorkspace({
 		setIsEditing(false);
 		setIsReady(false);
 		setTimeout(() => setIsReady(true), 100);
-		toast.success("绘图已重置");
+		toast.success("Drawing reset");
 	}, [drawing.id]);
 
 	// Render preview mode

@@ -19,11 +19,11 @@ import { type ThemeMode, useTheme } from "@/hooks/use-theme";
 import { getDarkThemes, getLightThemes, type Theme } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 
-// 模式配置
+// Mode configuration
 const modeConfig: { mode: ThemeMode; icon: typeof Sun; label: string }[] = [
-	{ mode: "light", icon: Sun, label: "浅色" },
-	{ mode: "dark", icon: Moon, label: "深色" },
-	{ mode: "system", icon: Monitor, label: "跟随系统" },
+	{ mode: "light", icon: Sun, label: "Light" },
+	{ mode: "dark", icon: Moon, label: "Dark" },
+	{ mode: "system", icon: Monitor, label: "System" },
 ];
 
 export function ThemeSelector() {
@@ -47,17 +47,17 @@ export function ThemeSelector() {
 					<Palette className="size-3.5" />
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent align="end" className="w-80">
-				<div className="space-y-4">
-					<div>
-						<h4 className="font-medium text-sm">选择主题</h4>
+			<PopoverContent align="end" className="w-80 max-h-[500px] overflow-hidden flex flex-col">
+				<div className="space-y-4 flex flex-col min-h-0">
+					<div className="flex-shrink-0">
+						<h4 className="font-medium text-sm">Select Theme</h4>
 						<p className="text-xs text-muted-foreground mt-1">
 							{currentTheme?.description}
 						</p>
 					</div>
 
 					{/* 主题模式切换 */}
-					<div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+					<div className="flex-shrink-0 flex items-center gap-1 p-1 bg-muted rounded-lg">
 						{modeConfig.map(({ mode: m, icon: Icon, label }) => (
 							<button
 								key={m}
@@ -75,53 +75,56 @@ export function ThemeSelector() {
 						))}
 					</div>
 
-					{/* 浅色主题 */}
-					<div>
-						<div className="flex items-center gap-2 mb-2">
-							<Sun className="size-3.5 text-muted-foreground" />
-							<span className="text-xs text-muted-foreground font-medium">
-								浅色主题
-							</span>
+					{/* 可滚动的主题列表区域 */}
+					<div className="flex-1 overflow-y-auto min-h-0 space-y-4 pr-1">
+						{/* Light Themes */}
+						<div>
+							<div className="flex items-center gap-2 mb-2">
+								<Sun className="size-3.5 text-muted-foreground" />
+								<span className="text-xs text-muted-foreground font-medium">
+									Light Themes
+								</span>
+							</div>
+							<div className="grid grid-cols-3 gap-2">
+								{lightThemes.map((t) => (
+									<ThemeCard
+										key={t.key}
+										theme={t}
+										isSelected={t.key === theme}
+										onSelect={() => setTheme(t.key)}
+									/>
+								))}
+							</div>
 						</div>
-						<div className="grid grid-cols-3 gap-2">
-							{lightThemes.map((t) => (
-								<ThemeCard
-									key={t.key}
-									theme={t}
-									isSelected={t.key === theme}
-									onSelect={() => setTheme(t.key)}
-								/>
-							))}
-						</div>
-					</div>
 
-					{/* 深色主题 */}
-					<div>
-						<div className="flex items-center gap-2 mb-2">
-							<Moon className="size-3.5 text-muted-foreground" />
-							<span className="text-xs text-muted-foreground font-medium">
-								深色主题
-							</span>
-						</div>
-						<div className="grid grid-cols-3 gap-2">
-							{darkThemes.map((t) => (
-								<ThemeCard
-									key={t.key}
-									theme={t}
-									isSelected={t.key === theme}
-									onSelect={() => setTheme(t.key)}
-								/>
-							))}
+						{/* Dark Themes */}
+						<div>
+							<div className="flex items-center gap-2 mb-2">
+								<Moon className="size-3.5 text-muted-foreground" />
+								<span className="text-xs text-muted-foreground font-medium">
+									Dark Themes
+								</span>
+							</div>
+							<div className="grid grid-cols-3 gap-2">
+								{darkThemes.map((t) => (
+									<ThemeCard
+										key={t.key}
+										theme={t}
+										isSelected={t.key === theme}
+										onSelect={() => setTheme(t.key)}
+									/>
+								))}
+							</div>
 						</div>
 					</div>
 
 					{/* 过渡动画开关 */}
-					<div className="flex items-center justify-between pt-2 border-t">
+					<div className="flex-shrink-0 flex items-center justify-between pt-2 border-t">
 						<Label
 							htmlFor="theme-transition"
 							className="text-xs text-muted-foreground"
 						>
-							切换过渡动画
+							Enable Transitions
 						</Label>
 						<Switch
 							id="theme-transition"

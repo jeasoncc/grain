@@ -116,7 +116,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 				params: { projectId: scene.project },
 			});
 			onOpenChange(false);
-			toast.success(`已跳转到：${scene.title}`);
+			toast.success(`Navigated to: ${scene.title}`);
 		},
 		[
 			scenes,
@@ -142,7 +142,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 				params: { projectId: chapter.project },
 			});
 			onOpenChange(false);
-			toast.success(`已跳转到：${chapter.title}`);
+			toast.success(`Navigated to: ${chapter.title}`);
 		},
 		[
 			chapters,
@@ -153,32 +153,32 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 		],
 	);
 
-	// 命令操作
+	// Command actions
 	const commands = [
 		{
-			group: "操作",
+			group: "Actions",
 			items: [
 				{
-					label: "全局搜索",
+					label: "Global Search",
 					icon: <Search className="size-4" />,
 					shortcut: "Ctrl+Shift+F",
 					onSelect: () => {
 						onOpenChange(false);
-						// 触发全局搜索（通过事件）
+						// Trigger global search (via event)
 						window.dispatchEvent(new CustomEvent("open-global-search"));
 					},
 				},
 				{
-					label: "新建章节",
+					label: "New Chapter",
 					icon: <Plus className="size-4" />,
 					onSelect: () => {
-						// TODO: 触发新建章节
+						// TODO: Trigger new chapter
 						onOpenChange(false);
-						toast.info("请在大纲面板中创建章节");
+						toast.info("Please create a chapter in the outline panel");
 					},
 				},
 				{
-					label: "导出作品",
+					label: "Export Project",
 					icon: <Download className="size-4" />,
 					onSelect: () => {
 						onOpenChange(false);
@@ -186,7 +186,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 					},
 				},
 				{
-					label: "打开大纲页面",
+					label: "Open Outline",
 					icon: <ListTree className="size-4" />,
 					onSelect: () => {
 						navigate({ to: "/outline" });
@@ -194,7 +194,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 					},
 				},
 				{
-					label: "打开 Wiki 知识库",
+					label: "Open Wiki",
 					icon: <BookOpen className="size-4" />,
 					onSelect: () => {
 						navigate({ to: "/wiki" });
@@ -204,10 +204,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 			],
 		},
 		{
-			group: "数据管理",
+			group: "Data Management",
 			items: [
 				{
-					label: "备份数据",
+					label: "Backup Data",
 					icon: <Archive className="size-4" />,
 					onSelect: () => {
 						navigate({ to: "/settings/data" });
@@ -215,7 +215,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 					},
 				},
 				{
-					label: "数据统计",
+					label: "Statistics",
 					icon: <Database className="size-4" />,
 					onSelect: () => {
 						navigate({ to: "/statistics" });
@@ -225,10 +225,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 			],
 		},
 		{
-			group: "设置",
+			group: "Settings",
 			items: [
 				{
-					label: theme === "dark" ? "切换到浅色主题" : "切换到深色主题",
+					label: theme === "dark" ? "Switch to Light Theme" : "Switch to Dark Theme",
 					icon:
 						theme === "dark" ? (
 							<Sun className="size-4" />
@@ -241,7 +241,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 					},
 				},
 				{
-					label: "打开设置",
+					label: "Open Settings",
 					icon: <Settings className="size-4" />,
 					onSelect: () => {
 						navigate({ to: "/settings/design" });
@@ -262,17 +262,17 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 	return (
 		<CommandDialog open={open} onOpenChange={onOpenChange}>
 			<CommandInput
-				placeholder="搜索场景、章节或执行命令..."
+				placeholder="Search scenes, chapters or run commands..."
 				value={search}
 				onValueChange={setSearch}
 			/>
 			<CommandList>
-				<CommandEmpty>未找到结果</CommandEmpty>
+				<CommandEmpty>No results found</CommandEmpty>
 
-				{/* 最近访问 */}
+				{/* Recent */}
 				{!search && recentScenes.length > 0 && (
 					<>
-						<CommandGroup heading="最近访问">
+						<CommandGroup heading="Recent">
 							{recentScenes.map((scene) => {
 								if (!scene) return null;
 								const chapter = chapters.find((c) => c.id === scene.chapter);
@@ -299,10 +299,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 					</>
 				)}
 
-				{/* 搜索结果 - 场景 */}
+				{/* Search Results - Scenes */}
 				{search && filteredScenes.length > 0 && (
 					<>
-						<CommandGroup heading="场景">
+						<CommandGroup heading="Scenes">
 							{filteredScenes.map((scene) => {
 								const chapter = chapters.find((c) => c.id === scene.chapter);
 								return (
@@ -328,10 +328,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 					</>
 				)}
 
-				{/* 搜索结果 - 章节 */}
+				{/* Search Results - Chapters */}
 				{search && filteredChapters.length > 0 && (
 					<>
-						<CommandGroup heading="章节">
+						<CommandGroup heading="Chapters">
 							{filteredChapters.map((chapter) => (
 								<CommandItem
 									key={chapter.id}

@@ -41,10 +41,10 @@ const formatIcons = {
 };
 
 const formatLabels = {
-	txt: "纯文本",
-	docx: "Word 文档",
-	pdf: "PDF 文档",
-	epub: "电子书",
+	txt: "Plain Text",
+	docx: "Word Document",
+	pdf: "PDF Document",
+	epub: "E-Book",
 };
 
 export function ExportButton({
@@ -78,7 +78,7 @@ export function ExportButton({
 					className={className}
 				>
 					<Download className="h-4 w-4 mr-2" />
-					{isExporting ? "导出中..." : "导出"}
+					{isExporting ? "Exporting..." : "Export"}
 				</Button>
 				<ExportDialogEnhanced
 					open={dialogOpen}
@@ -102,13 +102,13 @@ export function ExportButton({
 						className={className}
 					>
 						<Download className="h-4 w-4 mr-2" />
-						{isExporting ? "导出中..." : "导出"}
+						{isExporting ? "Exporting..." : "Export"}
 						<ChevronDown className="h-4 w-4 ml-2" />
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-48">
 					<div className="px-2 py-1.5 text-sm font-medium text-muted-foreground">
-						快速导出
+						Quick Export
 					</div>
 					{(Object.keys(formatLabels) as ExportFormat[]).map((format) => {
 						const Icon = formatIcons[format];
@@ -126,7 +126,7 @@ export function ExportButton({
 					<DropdownMenuSeparator />
 					<DropdownMenuItem onClick={handleAdvancedExport} disabled={isExporting}>
 						<Settings className="h-4 w-4 mr-2" />
-						高级选项...
+						Advanced Options...
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>

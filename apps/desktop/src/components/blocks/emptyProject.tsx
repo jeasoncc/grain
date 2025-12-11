@@ -26,57 +26,57 @@ export function EmptyProject({ onCreate, onImport }: EmptyProjectProps) {
 					<div className="inline-flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4">
 						<LucideFolderOpen className="size-6" />
 					</div>
-					<h1 className="text-2xl font-semibold mb-2">欢迎使用小说编辑器</h1>
+					<h1 className="text-2xl font-semibold mb-2">Welcome to Novel Editor</h1>
 					<p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-						开始创作你的故事，管理章节、场景和 Wiki 知识库
+						Start writing your story, manage chapters, scenes and Wiki
 					</p>
 					<div className="flex flex-col sm:flex-row gap-3 justify-center">
 						<Button size="lg" onClick={onCreate}>
 							<BookPlus className="mr-2 size-4" />
-							创建新项目
+							Create New Project
 						</Button>
 						<Button size="lg" variant="outline" onClick={onImport}>
 							<ArrowRight className="mr-2 size-4" />
-							导入已有项目
+							Import Project
 						</Button>
 					</div>
 				</div>
 
-				{/* 功能卡片 */}
+				{/* Feature Cards */}
 				<div className="grid gap-4 md:grid-cols-3">
 					<div className="group rounded-lg border border-border bg-card p-5 text-center hover:shadow-md transition-all duration-200">
 						<div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500 mb-3 group-hover:scale-110 transition-transform">
 							<PenLine className="size-5" />
 						</div>
-						<h3 className="text-sm font-medium mb-1">大纲管理</h3>
+						<h3 className="text-sm font-medium mb-1">Outline Management</h3>
 						<p className="text-xs text-muted-foreground">
-							树形结构管理章节和场景
+							Tree structure for chapters and scenes
 						</p>
 					</div>
 					<div className="group rounded-lg border border-border bg-card p-5 text-center hover:shadow-md transition-all duration-200">
 						<div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-sky-500/10 text-sky-500 mb-3 group-hover:scale-110 transition-transform">
 							<Users className="size-5" />
 						</div>
-						<h3 className="text-sm font-medium mb-1">Wiki 知识库</h3>
-						<p className="text-xs text-muted-foreground">管理角色、地点、物品等设定</p>
+						<h3 className="text-sm font-medium mb-1">Wiki Knowledge Base</h3>
+						<p className="text-xs text-muted-foreground">Manage characters, locations, items</p>
 					</div>
 					<div className="group rounded-lg border border-border bg-card p-5 text-center hover:shadow-md transition-all duration-200">
 						<div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-purple-500/10 text-purple-500 mb-3 group-hover:scale-110 transition-transform">
 							<Stars className="size-5" />
 						</div>
-						<h3 className="text-sm font-medium mb-1">绘图画布</h3>
-						<p className="text-xs text-muted-foreground">可视化创作和思维导图</p>
+						<h3 className="text-sm font-medium mb-1">Drawing Canvas</h3>
+						<p className="text-xs text-muted-foreground">Visual creation and mind maps</p>
 					</div>
 				</div>
 
-				{/* 快速开始提示 */}
+				{/* Quick Start Tip */}
 				<div className="rounded-lg border border-dashed border-border bg-muted/50 p-4 text-center">
 					<p className="text-xs text-muted-foreground">
-						💡 提示：创建项目后，可以按{" "}
+						💡 Tip: After creating a project, press{" "}
 						<kbd className="px-1.5 py-0.5 rounded bg-background border border-border text-xs mx-1">
 							Ctrl+K
 						</kbd>{" "}
-						打开命令面板快速导航
+						to open the command palette for quick navigation
 					</p>
 				</div>
 			</div>

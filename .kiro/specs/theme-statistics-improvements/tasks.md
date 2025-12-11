@@ -2,7 +2,7 @@
 
 ## 1. Add New Light Themes and Selection Colors
 
-- [ ] 1.1 Add editorSelection color to all existing themes in themes.ts
+- [x] 1.1 Add editorSelection color to all existing themes in themes.ts
   - Update ThemeColors interface to make editorSelection required
   - Add appropriate selection colors to themes missing them (solarized-light, light-plus, atom-one-light, winter-light, ayu-light, gruvbox-light, and most dark themes)
   - Ensure selection colors contrast with background colors
@@ -16,7 +16,7 @@
   - **Property 4: Selection color contrasts with background**
   - **Validates: Requirements 5.2, 5.3**
 
-- [ ] 1.4 Add new light themes to themes.ts
+- [x] 1.4 Add new light themes to themes.ts
   - Add Paper Light theme (warm paper-like background)
   - Add Sepia theme (classic sepia tone)
   - Add Nord Light theme (cool Nordic-inspired)
@@ -34,7 +34,7 @@
 
 ## 2. Fix Theme Selector Scroll Issue
 
-- [ ] 2.1 Update theme-selector.tsx to enable scrolling
+- [x] 2.1 Update theme-selector.tsx to enable scrolling
   - Add max-height constraint to PopoverContent
   - Add overflow-y-auto to theme sections container
   - Ensure all themes are accessible via scroll
@@ -51,7 +51,7 @@
 
 ## 4. Convert Chinese Strings to English
 
-- [ ] 4.1 Convert strings in theme-selector.tsx
+- [x] 4.1 Convert strings in theme-selector.tsx
   - Replace "选择主题" with "Select Theme"
   - Replace "浅色主题" with "Light Themes"
   - Replace "深色主题" with "Dark Themes"
@@ -59,7 +59,7 @@
   - Replace mode labels: "浅色" → "Light", "深色" → "Dark", "跟随系统" → "System"
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 4.2 Convert strings in emptyProject.tsx
+- [x] 4.2 Convert strings in emptyProject.tsx
   - Replace "欢迎使用小说编辑器" with "Welcome to Novel Editor"
   - Replace "开始创作你的故事..." with "Start writing your story..."
   - Replace "创建新项目" with "Create New Project"
@@ -67,7 +67,7 @@
   - Replace feature card titles and descriptions
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 4.3 Convert strings in export-button.tsx
+- [x] 4.3 Convert strings in export-button.tsx
   - Replace format labels to English (纯文本→Plain Text, Word 文档→Word Document, etc.)
   - Replace "导出中..." with "Exporting..."
   - Replace "导出" with "Export"
@@ -75,7 +75,7 @@
   - Replace "高级选项..." with "Advanced Options..."
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 4.4 Convert strings in activity-bar.tsx
+- [x] 4.4 Convert strings in activity-bar.tsx
   - Replace "书库 (Ctrl+B)" with "Library (Ctrl+B)"
   - Replace "章节管理" with "Chapters"
   - Replace "Wiki 知识库" with "Wiki"
@@ -90,7 +90,7 @@
   - Replace toast messages and confirm dialogs
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 4.5 Convert strings in command-palette.tsx
+- [x] 4.5 Convert strings in command-palette.tsx
   - Replace "操作" with "Actions"
   - Replace "全局搜索" with "Global Search"
   - Replace "新建章节" with "New Chapter"
@@ -106,14 +106,14 @@
   - Replace search placeholder and other labels
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 4.6 Convert strings in drawing-workspace.tsx
+- [x] 4.6 Convert strings in drawing-workspace.tsx
   - Replace "绘图数据异常，画布尺寸超出限制" with "Drawing data error, canvas size exceeded"
   - Replace "绘图组件加载失败" with "Failed to load drawing component"
   - Replace "重试" with "Retry"
   - Replace "清空重置" with "Clear & Reset"
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 4.7 Convert remaining Chinese strings in desktop app
+- [x] 4.7 Convert remaining Chinese strings in desktop app
   - Search for remaining Chinese characters in src/**/*.tsx
   - Convert all found strings to English equivalents
   - _Requirements: 3.1, 3.2, 3.3_
@@ -129,32 +129,32 @@
 
 ## 6. Redesign Statistics Page
 
-- [ ] 6.1 Update statistics page header and layout
+- [x] 6.1 Update statistics page header and layout
   - Modernize header design with better typography
   - Add subtle gradient background to header
   - Improve project selector styling
   - _Requirements: 4.1, 4.3_
 
-- [ ] 6.2 Redesign overview cards
+- [x] 6.2 Redesign overview cards
   - Add gradient backgrounds to stat cards
   - Improve icon styling with colored backgrounds
   - Add hover effects and subtle shadows
   - Improve number formatting and typography
   - _Requirements: 4.1, 4.3_
 
-- [ ] 6.3 Redesign chapter breakdown section
+- [x] 6.3 Redesign chapter breakdown section
   - Add gradient progress bars
   - Improve chapter list styling
   - Add better visual hierarchy
   - _Requirements: 4.2, 4.3_
 
-- [ ] 6.4 Redesign scene details section
+- [x] 6.4 Redesign scene details section
   - Improve scene list styling
   - Add better ranking indicators
   - Improve typography and spacing
   - _Requirements: 4.1, 4.3_
 
-- [ ] 6.5 Add entrance animations
+- [x] 6.5 Add entrance animations
   - Add staggered fade-in animations for cards
   - Add smooth transitions for progress bars
   - _Requirements: 4.4_

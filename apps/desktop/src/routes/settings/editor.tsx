@@ -11,7 +11,9 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/hooks/use-settings";
+import { useFontSettings } from "@/stores/font";
 
 export const Route = createFileRoute("/settings/editor")({
 	component: EditorSettings,
@@ -28,6 +30,8 @@ function EditorSettings() {
 		setLineHeight,
 		setParagraphSpacing,
 	} = useSettings();
+
+	const { firstLineIndent, setFirstLineIndent } = useFontSettings();
 
 	return (
 		<div className="space-y-6">
@@ -165,6 +169,27 @@ function EditorSettings() {
 								</Select>
 							</div>
 						</div>
+
+						<Separator />
+
+						{/* First Line Indent */}
+						<div className="flex items-center justify-between">
+							<div className="space-y-0.5">
+								<Label className="text-base">First Line Indent</Label>
+								<p className="text-sm text-muted-foreground">
+									Indent the first line of each paragraph.
+								</p>
+							</div>
+							<div className="flex items-center gap-3">
+								<Switch
+									checked={firstLineIndent > 0}
+									onCheckedChange={(checked) => setFirstLineIndent(checked ? 2 : 0)}
+								/>
+								<span className="text-sm text-muted-foreground w-20">
+									{firstLineIndent > 0 ? `${firstLineIndent} chars` : "Off"}
+								</span>
+							</div>
+						</div>
 					</div>
 				</section>
 
@@ -179,19 +204,19 @@ function EditorSettings() {
 								lineHeight,
 							}}
 						>
-							<p style={{ marginBottom: `${paragraphSpacing}em` }}>
+							<p style={{ marginBottom: `${paragraphSpacing}em`, textIndent: `${firstLineIndent}em` }}>
 								The old lighthouse stood defiant against the crashing waves, its
 								beacon cutting through the thick fog like a silver blade. For
 								generations, it had guided sailors home, but tonight, the light
 								seemed to flicker with an eerie, irregular rhythm.
 							</p>
-							<p style={{ marginBottom: `${paragraphSpacing}em` }}>
+							<p style={{ marginBottom: `${paragraphSpacing}em`, textIndent: `${firstLineIndent}em` }}>
 								Elias wiped the salt spray from his glasses and squinted into
 								the dark. He had tended this lamp for forty years, knowing every
 								gear and lens by heart. But the sound echoing from the lantern
 								room wasn't mechanical. It was a whisper.
 							</p>
-							<p>
+							<p style={{ textIndent: `${firstLineIndent}em` }}>
 								"They are coming," it said, carried on the wind that shouldn't
 								have been able to breach the thick glass walls.
 							</p>

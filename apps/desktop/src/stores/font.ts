@@ -62,7 +62,7 @@ const DEFAULT_SETTINGS = {
 	lineHeight: 1.75, // 稍微紧凑的行高
 	letterSpacing: 0,
 	paragraphSpacing: 0.4, // 减小段落间距
-	firstLineIndent: 2,
+	firstLineIndent: 0, // 默认不缩进
 };
 
 export const useFontSettings = create<FontSettings>()(
