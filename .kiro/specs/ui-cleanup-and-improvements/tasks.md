@@ -40,13 +40,13 @@
 - [ ] 4. Checkpoint - 确保所有测试通过
   - Ensure all tests pass, ask the user if questions arise.
 
-- [-] 5. 添加 Git Tag 构建触发脚本
+- [x] 5. 添加 Git Tag 构建触发脚本
   - [x] 5.1 创建 create-tag.sh 脚本
     - 支持 desktop, snap, aur, all 参数
     - 从 package.json 读取版本号
     - 创建并推送对应格式的 git tag
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
-  - [-] 5.2 添加 npm scripts 到 package.json
+  - [x] 5.2 添加 npm scripts 到 package.json
     - 添加 tag:desktop, tag:snap, tag:aur, tag:all 命令
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
   - [ ]* 5.3 Write property test for tag version consistency
