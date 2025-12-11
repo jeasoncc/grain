@@ -1,6 +1,6 @@
 /**
- * 角色提及插件 - 支持 @ 提及角色
- * 优化版本：移除调试日志、改进 UI、支持拼音搜索
+ * Wiki提及插件 - 支持 @ 提及Wiki条目
+ * 从角色系统升级为Wiki系统
  */
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
@@ -9,14 +9,14 @@ import {
 	MenuOption,
 } from "@lexical/react/LexicalTypeaheadMenuPlugin";
 import { $getSelection, $isRangeSelection, type TextNode } from "lexical";
-import { Hash, User } from "lucide-react";
+import { Hash, BookOpen } from "lucide-react";
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
 import * as ReactDOM from "react-dom";
 
 import { $createMentionNode } from "@/components/editor/nodes/mention-node";
-import type { RoleInterface } from "@/db/schema";
-import { useRolesByProject } from "@/services/roles";
+import type { WikiEntryInterface } from "@/db/schema";
+import { useWikiEntriesByProject } from "@/services/wiki";
 import { useSelectionStore } from "@/stores/selection";
 
 // 简单的 @ 匹配 - 支持中英文
@@ -26,14 +26,14 @@ const SUGGESTION_LIST_LENGTH_LIMIT = 8;
 
 class MentionTypeaheadOption extends MenuOption {
 	name: string;
-	roleId: string;
-	role: RoleInterface;
+	entryId: string;
+	entry: WikiEntryInterface;
 
-	constructor(name: string, roleId: string, role: RoleInterface) {
+	constructor(name: string, entryId: string, entry: WikiEntryInterface) {
 		super(name);
 		this.name = name;
-		this.roleId = roleId;
-		this.role = role;
+		this.entryId = entryId;
+		this.entry = entry;
 	}
 }
 
@@ -50,7 +50,7 @@ function MentionsTypeaheadMenuItem({
 	onMouseEnter: () => void;
 	option: MentionTypeaheadOption;
 }) {
-	const { role } = option;
+	const { entry } = option;
 
 	return (
 		<li
@@ -69,22 +69,22 @@ function MentionsTypeaheadMenuItem({
 			`}
 		>
 			<div className="flex items-center justify-center size-8 rounded-full bg-primary/10 shrink-0">
-				<User className="size-4 text-primary" />
+				<BookOpen className="size-4 text-primary" />
 			</div>
 			<div className="flex-1 min-w-0">
 				<div className="text-sm font-medium truncate">{option.name}</div>
-				{role.alias && role.alias.length > 0 && (
+				{entry.alias && entry.alias.length > 0 && (
 					<div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
 						<Hash className="size-3" />
 						<span className="truncate">
-							{role.alias.slice(0, 2).join(", ")}
+							{entry.alias.slice(0, 2).join(", ")}
 						</span>
 					</div>
 				)}
 			</div>
-			{role.identity && role.identity.length > 0 && (
+			{entry.tags && entry.tags.length > 0 && (
 				<div className="text-xs text-muted-foreground shrink-0">
-					{role.identity[0]}
+					{entry.tags[0]}
 				</div>
 			)}
 		</li>
@@ -124,46 +124,46 @@ function getPinyinInitials(text: string): string {
 export default function MentionsPlugin(): React.ReactElement | null {
 	const [editor] = useLexicalComposerContext();
 	const selectedProjectId = useSelectionStore((s) => s.selectedProjectId);
-	const roles = useRolesByProject(selectedProjectId);
+	const wikiEntries = useWikiEntriesByProject(selectedProjectId);
 
 	const [queryString, setQueryString] = useState<string | null>(null);
 
 	const options = useMemo(() => {
-		if (!roles || roles.length === 0) {
+		if (!wikiEntries || wikiEntries.length === 0) {
 			return [];
 		}
 
 		const query = (queryString || "").toLowerCase().trim();
 
-		// 如果没有查询，显示所有角色
+		// 如果没有查询，显示所有Wiki条目
 		if (!query) {
-			return roles
-				.map((role) => new MentionTypeaheadOption(role.name, role.id, role))
+			return wikiEntries
+				.map((entry) => new MentionTypeaheadOption(entry.name, entry.id, entry))
 				.slice(0, SUGGESTION_LIST_LENGTH_LIMIT);
 		}
 
-		// 过滤匹配的角色
-		const filtered = roles.filter((role) => {
-			// 1. 匹配角色名称
-			if (role.name.toLowerCase().includes(query)) return true;
+		// 过滤匹配的Wiki条目
+		const filtered = wikiEntries.filter((entry) => {
+			// 1. 匹配条目名称
+			if (entry.name.toLowerCase().includes(query)) return true;
 
 			// 2. 匹配别名
-			if (role.alias?.some((a) => a.toLowerCase().includes(query))) return true;
+			if (entry.alias?.some((a) => a.toLowerCase().includes(query))) return true;
 
-			// 3. 匹配身份标签
-			if (role.identity?.some((i) => i.toLowerCase().includes(query)))
+			// 3. 匹配标签
+			if (entry.tags?.some((t) => t.toLowerCase().includes(query)))
 				return true;
 
 			// 4. 可以添加拼音匹配（需要拼音库）
-			// if (getPinyinInitials(role.name).includes(query)) return true;
+			// if (getPinyinInitials(entry.name).includes(query)) return true;
 
 			return false;
 		});
 
 		return filtered
-			.map((role) => new MentionTypeaheadOption(role.name, role.id, role))
+			.map((entry) => new MentionTypeaheadOption(entry.name, entry.id, entry))
 			.slice(0, SUGGESTION_LIST_LENGTH_LIMIT);
-	}, [roles, queryString]);
+	}, [wikiEntries, queryString]);
 
 	const onSelectOption = useCallback(
 		(
@@ -177,7 +177,7 @@ export default function MentionsPlugin(): React.ReactElement | null {
 				}
 				const mentionNode = $createMentionNode(
 					selectedOption.name,
-					selectedOption.roleId,
+					selectedOption.entryId,
 				);
 				const selection = $getSelection();
 				if ($isRangeSelection(selection)) {
@@ -210,7 +210,7 @@ export default function MentionsPlugin(): React.ReactElement | null {
 				return ReactDOM.createPortal(
 					<div className="z-[9999] bg-popover border border-border rounded-lg shadow-xl p-1.5 min-w-[240px] max-w-[320px] max-h-[280px] overflow-auto animate-in fade-in-0 zoom-in-95 duration-200">
 						<div className="px-2 py-1.5 text-xs text-muted-foreground border-b mb-1">
-							{queryString ? `搜索 "${queryString}"` : "选择角色"}
+							{queryString ? `搜索 "${queryString}"` : "选择Wiki条目"}
 						</div>
 						<ul className="space-y-0.5">
 							{options.map((option, i: number) => (

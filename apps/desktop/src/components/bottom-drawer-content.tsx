@@ -28,18 +28,14 @@ import type {
 	ChapterInterface,
 	RoleInterface,
 	SceneInterface,
-	WorldEntryInterface,
+
 } from "@/db/schema";
 import { countWords, extractTextFromSerialized } from "@/lib/statistics";
 import { cn } from "@/lib/utils";
 import { createChapter } from "@/services/chapters";
 import { createRole, deleteRole, updateRole } from "@/services/roles";
 import { createCanvasScene, createScene } from "@/services/scenes";
-import {
-	createWorldEntry,
-	deleteWorldEntry,
-	updateWorldEntry,
-} from "@/services/world";
+
 import { useSelectionStore } from "@/stores/selection";
 import { useUIStore } from "@/stores/ui";
 
@@ -51,8 +47,7 @@ export function BottomDrawerContent() {
 			return <OutlineContent />;
 		case "characters":
 			return <CharactersContent />;
-		case "world":
-			return <WorldContent />;
+
 		case "statistics":
 			return (
 				<PlaceholderContent title="统计" description="写作统计功能开发中..." />
@@ -555,246 +550,6 @@ function CharactersContent() {
 			{filteredRoles.length === 0 && (
 				<div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
 					{searchQuery ? "未找到匹配的角色" : "暂无角色，使用上方输入框创建"}
-				</div>
-			)}
-		</div>
-	);
-}
-
-// ============================================
-// 世界观面板
-// ============================================
-
-const categoryIcons: Record<string, React.ReactNode> = {
-	location: <MapPin className="size-4 text-blue-500" />,
-	faction: <UsersIcon className="size-4 text-purple-500" />,
-	item: <Package className="size-4 text-amber-500" />,
-	concept: <Lightbulb className="size-4 text-green-500" />,
-};
-
-const categoryLabels: Record<string, string> = {
-	location: "地点",
-	faction: "势力",
-	item: "物品",
-	concept: "概念",
-};
-
-function WorldContent() {
-	const [searchQuery, setSearchQuery] = useState("");
-	const [newName, setNewName] = useState("");
-	const [newCategory, setNewCategory] = useState("location");
-	const [editingId, setEditingId] = useState<string | null>(null);
-	const [editingName, setEditingName] = useState("");
-	const [editingCategory, setEditingCategory] = useState("location");
-	const confirm = useConfirm();
-
-	const projects = useLiveQuery(() => db.getAllProjects(), []) ?? [];
-	const selectedProjectId = useSelectionStore((s) => s.selectedProjectId);
-
-	const currentProject = useMemo(
-		() => projects.find((p) => p.id === selectedProjectId) ?? projects[0],
-		[projects, selectedProjectId],
-	);
-
-	const entries =
-		useLiveQuery(
-			() =>
-				currentProject
-					? db.worldEntries.where("project").equals(currentProject.id).toArray()
-					: Promise.resolve([] as WorldEntryInterface[]),
-			[currentProject?.id],
-		) ?? ([] as WorldEntryInterface[]);
-
-	const filteredEntries = useMemo(() => {
-		if (!searchQuery) return entries;
-		const query = searchQuery.toLowerCase();
-		return entries.filter((e) => e.name.toLowerCase().includes(query));
-	}, [entries, searchQuery]);
-
-	const handleCreate = useCallback(async () => {
-		if (!currentProject) return;
-		const name = newName.trim() || "新条目";
-		try {
-			await createWorldEntry({
-				projectId: currentProject.id,
-				name,
-				category: newCategory,
-			});
-			setNewName("");
-			toast.success("世界观条目已创建");
-		} catch {
-			toast.error("创建世界观条目失败");
-		}
-	}, [currentProject, newName, newCategory]);
-
-	const handleSaveEdit = useCallback(async () => {
-		if (!editingId) return;
-		const name = editingName.trim();
-		if (!name) {
-			toast.error("名称不能为空");
-			return;
-		}
-		try {
-			await updateWorldEntry(editingId, {
-				name,
-				category: editingCategory,
-			});
-			setEditingId(null);
-			setEditingName("");
-			toast.success("世界观条目已更新");
-		} catch {
-			toast.error("更新世界观条目失败");
-		}
-	}, [editingId, editingName, editingCategory]);
-
-	const handleDelete = useCallback(
-		async (id: string, name: string) => {
-			const ok = await confirm({
-				title: "删除世界观条目？",
-				description: `确认删除 "${name}" 吗？该操作不可撤销。`,
-				confirmText: "删除",
-				cancelText: "取消",
-			});
-			if (!ok) return;
-			try {
-				await deleteWorldEntry(id);
-				toast.success("世界观条目已删除");
-			} catch {
-				toast.error("删除世界观条目失败");
-			}
-		},
-		[confirm],
-	);
-
-	if (!currentProject) {
-		return (
-			<div className="flex items-center justify-center h-32 text-muted-foreground">
-				<p>暂无项目</p>
-			</div>
-		);
-	}
-
-	return (
-		<div className="space-y-3">
-			{/* 工具栏 */}
-			<div className="flex items-center gap-2">
-				<div className="relative flex-1 max-w-xs">
-					<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-					<Input
-						placeholder="搜索世界观..."
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-						className="h-7 pl-8 text-xs"
-					/>
-				</div>
-				<Input
-					placeholder="新条目名称"
-					value={newName}
-					onChange={(e) => setNewName(e.target.value)}
-					onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-					className="h-7 text-xs w-32"
-				/>
-				<select
-					value={newCategory}
-					onChange={(e) => setNewCategory(e.target.value)}
-					className="h-7 rounded-md border bg-background px-2 text-xs"
-				>
-					<option value="location">地点</option>
-					<option value="faction">势力</option>
-					<option value="item">物品</option>
-					<option value="concept">概念</option>
-				</select>
-				<Button
-					variant="outline"
-					size="sm"
-					className="h-7 text-xs gap-1"
-					onClick={handleCreate}
-				>
-					<Plus className="size-3" />
-					添加条目
-				</Button>
-				<div className="ml-auto text-xs text-muted-foreground">
-					{entries.length} 个条目
-				</div>
-			</div>
-
-			{/* 世界观列表 - 卡片布局 */}
-			<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-				{filteredEntries.map((entry) => (
-					<div
-						key={entry.id}
-						className="flex flex-col gap-2 p-3 rounded-lg border bg-card hover:shadow-sm transition-shadow"
-					>
-						<div className="flex items-start gap-2">
-							<div className="flex-shrink-0 size-8 rounded-full bg-muted flex items-center justify-center">
-								{categoryIcons[entry.category] || categoryIcons.concept}
-							</div>
-							<div className="flex-1 min-w-0">
-								{editingId === entry.id ? (
-									<Input
-										value={editingName}
-										onChange={(e) => setEditingName(e.target.value)}
-										onKeyDown={(e) => e.key === "Enter" && handleSaveEdit()}
-										onBlur={handleSaveEdit}
-										className="h-6 text-xs mb-1"
-										autoFocus
-									/>
-								) : (
-									<p className="text-sm font-medium truncate">{entry.name}</p>
-								)}
-								{editingId === entry.id ? (
-									<select
-										value={editingCategory}
-										onChange={(e) => setEditingCategory(e.target.value)}
-										className="h-5 rounded border bg-background px-1 text-[10px] w-full"
-									>
-										<option value="location">地点</option>
-										<option value="faction">势力</option>
-										<option value="item">物品</option>
-										<option value="concept">概念</option>
-									</select>
-								) : (
-									<p className="text-xs text-muted-foreground">
-										{categoryLabels[entry.category] || "其他"}
-									</p>
-								)}
-							</div>
-						</div>
-						<div className="flex items-center gap-1 justify-end">
-							{editingId !== entry.id && (
-								<>
-									<Button
-										variant="ghost"
-										size="icon"
-										className="size-6"
-										onClick={() => {
-											setEditingId(entry.id);
-											setEditingName(entry.name);
-											setEditingCategory(entry.category);
-										}}
-									>
-										<Pencil className="size-3" />
-									</Button>
-									<Button
-										variant="ghost"
-										size="icon"
-										className="size-6 text-destructive"
-										onClick={() => handleDelete(entry.id, entry.name)}
-									>
-										<Trash2 className="size-3" />
-									</Button>
-								</>
-							)}
-						</div>
-					</div>
-				))}
-			</div>
-
-			{filteredEntries.length === 0 && (
-				<div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
-					{searchQuery
-						? "未找到匹配的条目"
-						: "暂无世界观条目，使用上方输入框创建"}
 				</div>
 			)}
 		</div>

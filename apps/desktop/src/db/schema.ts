@@ -148,9 +148,25 @@ export interface SceneInterface {
 	filePath?: string; // 文件路径，用于 canvas 类型场景的保存位置
 }
 
-// ---------- 角色 ----------
+// ---------- Wiki条目 (原角色系统升级) ----------
 /**
- * 存储项目角色信息，包括别名、身份、关系和属性
+ * Wiki条目信息，支持角色、地点、物品等各种类型的知识管理
+ * 从原角色系统升级而来，增加了标签和分类功能
+ */
+export interface WikiEntryInterface {
+	id: string; // Wiki条目唯一标识，使用 UUID
+	project: string; // 所属项目 ID
+	name: string; // 条目名称
+	alias: string[]; // 别名
+	tags: string[]; // 自定义标签
+	content: string; // 富文本内容 (Lexical JSON序列化状态)
+	createDate: string; // 创建时间
+	updatedAt: string; // 最近更新时间
+}
+
+// ---------- 角色 (已废弃，使用WikiEntryInterface) ----------
+/**
+ * @deprecated 使用 WikiEntryInterface 替代
  */
 export interface RoleInterface {
 	id: string; // 角色唯一标识，使用 UUID
@@ -169,6 +185,7 @@ export interface RoleInterface {
 // ---------- 世界观 ----------
 /**
  * 存储项目世界观信息，例如地点、势力、物品、设定条目等
+ * @deprecated Use WikiEntryInterface instead
  */
 export interface WorldEntryInterface {
 	id: string; // 世界观条目唯一标识，使用 UUID
@@ -177,6 +194,23 @@ export interface WorldEntryInterface {
 	category: string; // 分类：location / faction / item / concept 等
 	summary: string; // 简要描述
 	tags?: string[]; // 标签
+	createDate: string; // 创建时间
+	updatedAt: string; // 最近更新时间
+}
+
+
+
+// ---------- 绘图 ----------
+/**
+ * 存储项目级别的绘图数据，从场景级别迁移到书籍级别
+ */
+export interface DrawingInterface {
+	id: string; // 绘图唯一标识，使用 UUID
+	project: string; // 所属项目 ID
+	name: string; // 绘图名称
+	content: string; // Excalidraw 数据，JSON 字符串格式
+	width: number; // 绘图宽度
+	height: number; // 绘图高度
 	createDate: string; // 创建时间
 	updatedAt: string; // 最近更新时间
 }

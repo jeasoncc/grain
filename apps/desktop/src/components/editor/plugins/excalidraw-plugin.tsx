@@ -32,7 +32,7 @@ export function ExcalidrawPlugin(): null {
 			);
 		}
 
-		// 注册插入命令
+		// 注册插入命令 - 现在创建新的空白绘图
 		return editor.registerCommand(
 			INSERT_EXCALIDRAW_COMMAND,
 			() => {
@@ -41,10 +41,15 @@ export function ExcalidrawPlugin(): null {
 					const selection = $getSelection();
 					console.log("ExcalidrawPlugin: selection:", selection);
 					if ($isRangeSelection(selection)) {
-						console.log("ExcalidrawPlugin: creating excalidraw node");
-						const excalidrawNode = $createExcalidrawNode({});
+						console.log("ExcalidrawPlugin: creating new blank excalidraw node");
+						// Create a new blank drawing each time
+						const excalidrawNode = $createExcalidrawNode({
+							data: JSON.stringify({ elements: [], appState: {}, files: {} }),
+							width: 800,
+							height: 600,
+						});
 						$insertNodeToNearestRoot(excalidrawNode);
-						console.log("ExcalidrawPlugin: node inserted");
+						console.log("ExcalidrawPlugin: blank node inserted");
 					} else {
 						console.log("ExcalidrawPlugin: selection is not range selection");
 					}

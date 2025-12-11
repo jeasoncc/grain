@@ -6,12 +6,8 @@ import { Link } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
 	BookMarked,
-	Download,
 	LibraryBig,
-	MoreHorizontal,
 	Plus,
-	Trash2,
-	Upload,
 } from "lucide-react";
 import type * as React from "react";
 import { useCallback, useRef, useState } from "react";
@@ -27,13 +23,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+
 import { db } from "@/db/curd";
 import type {
 	ChapterInterface,
@@ -42,10 +34,8 @@ import type {
 } from "@/db/schema";
 import {
 	createBook,
-	exportAll,
 	importFromJson,
 	readFileAsText,
-	triggerDownload,
 } from "@/services/projects";
 
 export function BooksPanel() {
@@ -60,7 +50,6 @@ export function BooksPanel() {
 	const scenes = useLiveQuery<SceneInterface[]>(() => db.getAllScenes(), []);
 
 	const projectList = projects ?? [];
-	const [isActionsOpen, setIsActionsOpen] = useState(false);
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 	const [newBookData, setNewBookData] = useState({
 		title: "",
@@ -68,42 +57,7 @@ export function BooksPanel() {
 		description: "",
 	});
 
-	async function handleDeleteAllBooks() {
-		if (
-			!window.confirm(
-				"Are you sure you want to delete ALL books? This action cannot be undone.",
-			)
-		)
-			return;
-		try {
-			await Promise.all([
-				db.attachments.clear(),
-				db.roles.clear(),
-				db.scenes.clear(),
-				db.chapters.clear(),
-				db.projects.clear(),
-			]);
-			toast.success("All books deleted");
-			setIsActionsOpen(false);
-		} catch (err) {
-			toast.error("Failed to delete books");
-		}
-	}
-
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
-	const handleExport = useCallback(async () => {
-		const json = await exportAll();
-		triggerDownload(
-			`novel-editor-backup-${new Date().toISOString().slice(0, 10)}.json`,
-			json,
-		);
-		setIsActionsOpen(false);
-	}, []);
-
-	const handleImportClick = useCallback(() => {
-		fileInputRef.current?.click();
-		setIsActionsOpen(false);
-	}, []);
 
 	const handleImportFile = useCallback(
 		async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -265,50 +219,14 @@ export function BooksPanel() {
 				</div>
 			</ScrollArea>
 
-			{/* 底部操作区域 */}
-			<div className="p-2 border-t border-sidebar-border/20">
-				<input
-					type="file"
-					ref={fileInputRef}
-					className="hidden"
-					accept=".json"
-					onChange={handleImportFile}
-				/>
-				<Popover open={isActionsOpen} onOpenChange={setIsActionsOpen}>
-					<PopoverTrigger asChild>
-						<button className="w-full justify-between text-muted-foreground hover:text-foreground py-2 px-3 rounded-md hover:bg-sidebar-accent transition-colors flex items-center">
-							<span className="text-xs font-medium">Library Actions</span>
-							<MoreHorizontal className="size-4" />
-						</button>
-					</PopoverTrigger>
-					<PopoverContent side="right" align="start" className="w-48 p-1">
-						<div className="grid gap-1">
-							<button
-								type="button"
-								onClick={handleImportClick}
-								className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground w-full text-left"
-							>
-								<Upload className="size-4" /> Import Library
-							</button>
-							<button
-								type="button"
-								onClick={handleExport}
-								className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground w-full text-left"
-							>
-								<Download className="size-4" /> Export Library
-							</button>
-							<div className="h-px bg-border my-1" />
-							<button
-								type="button"
-								onClick={handleDeleteAllBooks}
-								className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-destructive/10 text-destructive w-full text-left"
-							>
-								<Trash2 className="size-4" /> Delete All
-							</button>
-						</div>
-					</PopoverContent>
-				</Popover>
-			</div>
+			{/* Hidden file input for import functionality */}
+			<input
+				type="file"
+				ref={fileInputRef}
+				className="hidden"
+				accept=".json"
+				onChange={handleImportFile}
+			/>
 		</div>
 	);
 }

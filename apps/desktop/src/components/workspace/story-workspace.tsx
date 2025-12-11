@@ -73,6 +73,9 @@ import { useSaveStore } from "@/stores/save";
 import { type SelectionState, useSelectionStore } from "@/stores/selection";
 import { useUIStore } from "@/stores/ui";
 import { useWritingStore } from "@/stores/writing";
+import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
+import { useDrawingsByProject } from "@/services/drawings";
+import type { DrawingInterface } from "@/db/schema";
 //
 
 import { countWords, extractTextFromSerialized } from "@/lib/statistics";
@@ -146,6 +149,11 @@ export function StoryWorkspace({
 	// UI 状态
 	const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen);
 	const toggleRightSidebar = useUIStore((s) => s.toggleRightSidebar);
+	const rightPanelView = useUIStore((s) => s.rightPanelView);
+
+	// 绘图状态
+	const [selectedDrawing, setSelectedDrawing] = useState<DrawingInterface | null>(null);
+	const drawings = useDrawingsByProject(selectedProjectId);
 
 	// 保存状态管理
 	const { markAsUnsaved, markAsSaved, markAsSaving } = useSaveStore();
@@ -1010,26 +1018,33 @@ export function StoryWorkspace({
 					<div className="flex-1 overflow-hidden relative w-full mx-auto">
 						<div className="h-full w-full overflow-y-auto scroll-smooth scrollbar-thin">
 							{/* Typora-style Editor Container */}
-							{activeScene?.type === "canvas" ? (
-								/* 绘图场景 - 占据整个编辑面板 */
-								<div className="h-full">
-									<CanvasEditor
-										sceneId={selectedSceneId || ""}
-										filePath={activeScene.filePath}
-										initialData={
-											typeof activeScene.content === "string"
-												? activeScene.content
-												: undefined
-										}
-										onSave={(data) => {
-											if (selectedSceneId) {
-												handleCanvasSave(selectedSceneId, data);
-											}
+							{/* 根据右侧面板视图决定显示内容 */}
+							{rightPanelView === "drawings" && selectedDrawing ? (
+								/* 绘图工作区 */
+								<div className="h-full flex items-center justify-center p-8">
+									<DrawingWorkspace
+										drawing={selectedDrawing}
+										onDelete={(id) => {
+											setSelectedDrawing(null);
 										}}
+										onRename={(id, newName) => {
+											setSelectedDrawing(prev => prev ? { ...prev, name: newName } : null);
+										}}
+										className="max-w-5xl w-full"
 									/>
 								</div>
+							) : rightPanelView === "drawings" ? (
+								/* 绘图视图但未选择绘图 */
+								<div className="flex h-full min-h-[400px] items-center justify-center text-sm text-muted-foreground flex-col gap-2">
+									<div className="size-12 rounded-full bg-muted/30 flex items-center justify-center">
+										<FileText className="size-6 text-muted-foreground/40" />
+									</div>
+									<p className="text-muted-foreground/60">
+										从右侧边栏选择一个绘图开始编辑
+									</p>
+								</div>
 							) : (
-								/* 文本场景 */
+								/* 文本编辑区域 */
 								<article className="editor-container min-h-[calc(100vh-10rem)] w-full max-w-4xl mx-auto px-16 py-12">
 									{editorInitialState && selectedSceneId ? (
 										<div className="min-h-[600px]">
@@ -1092,7 +1107,12 @@ export function StoryWorkspace({
 					</footer>
 				</main>
 				{/* Right-side Sidebar for Chapters & Scenes */}
-				{rightSidebarOpen && <StoryRightSidebar />}
+				{rightSidebarOpen && (
+					<StoryRightSidebar 
+						onSelectDrawing={setSelectedDrawing}
+						selectedDrawing={selectedDrawing}
+					/>
+				)}
 			</div>
 		</TooltipProvider>
 	);

@@ -71,17 +71,22 @@ import {
 	useScenesByChapter,
 	useScenesByProject,
 } from "@/services/scenes";
-import {
-	createWorldEntry,
-	deleteWorldEntry,
-	updateWorldEntry,
-	useWorldEntriesByProject,
-} from "@/services/world";
+
 import { useSceneCreationStore } from "@/stores/scene-creation";
 import { type SelectionState, useSelectionStore } from "@/stores/selection";
 import { useUIStore } from "@/stores/ui";
+import { DrawingList } from "./drawing/drawing-list";
+import type { DrawingInterface } from "@/db/schema";
 
-export function StoryRightSidebar() {
+interface StoryRightSidebarProps {
+	onSelectDrawing?: (drawing: DrawingInterface | null) => void;
+	selectedDrawing?: DrawingInterface | null;
+}
+
+export function StoryRightSidebar({ 
+	onSelectDrawing, 
+	selectedDrawing 
+}: StoryRightSidebarProps = {}) {
 	const confirm = useConfirm();
 	const rightPanelView = useUIStore((s) => s.rightPanelView);
 	const setRightPanelView = useUIStore((s) => s.setRightPanelView);
@@ -108,9 +113,7 @@ export function StoryRightSidebar() {
 	const projectChapters = useChaptersByProject(selectedProjectId);
 	const scenesOfProject = useScenesByProject(selectedProjectId);
 	const projectRoles = useRolesByProject(selectedProjectId ?? null);
-	const projectWorldEntries = useWorldEntriesByProject(
-		selectedProjectId ?? null,
-	);
+
 
 	const [searchQuery, setSearchQuery] = useState("");
 	const [expandedChapters, setExpandedChapters] = useState<
@@ -234,17 +237,19 @@ export function StoryRightSidebar() {
 		}
 	}, [selectedProjectId]);
 
-	const handleAddWorldEntry = useCallback(async () => {
+
+
+	const handleAddDrawing = useCallback(async () => {
 		if (!selectedProjectId) return;
 		try {
-			const newEntry = await createWorldEntry({
+			const { createDrawing } = await import("@/services/drawings");
+			const newDrawing = await createDrawing({
 				projectId: selectedProjectId,
-				name: "New Entry",
+				name: "New Drawing",
 			});
-			toast.success("World entry created");
-			setTimeout(() => setRenamingId(newEntry.id), 100);
+			toast.success("Drawing created");
 		} catch {
-			toast.error("Failed to create world entry");
+			toast.error("Failed to create drawing");
 		}
 	}, [selectedProjectId]);
 
@@ -258,7 +263,7 @@ export function StoryRightSidebar() {
 			if (type === "chapter") await renameChapter(id, newName);
 			else if (type === "scene") await renameScene(id, newName);
 			else if (type === "role") await updateRole(id, { name: newName });
-			else if (type === "world") await updateWorldEntry(id, { name: newName });
+
 		} catch {
 			toast.error("Failed to rename");
 		}
@@ -282,7 +287,7 @@ export function StoryRightSidebar() {
 			if (type === "chapter") await deleteChapter(id);
 			else if (type === "scene") await deleteScene(id);
 			else if (type === "role") await deleteRole(id);
-			else if (type === "world") await deleteWorldEntry(id);
+
 			toast.success(`${type} deleted`);
 		} catch {
 			toast.error("Failed to delete");
@@ -483,25 +488,19 @@ export function StoryRightSidebar() {
 						r.alias?.some((a) => a.toLowerCase().includes(query)),
 				)
 			: projectRoles;
-		const matchingWorld = query
-			? projectWorldEntries.filter(
-					(w) =>
-						w.name.toLowerCase().includes(query) ||
-						w.category.toLowerCase().includes(query),
-				)
-			: projectWorldEntries;
+
 
 		return {
 			chapters: matchingChapters,
 			scenes: matchingScenes,
 			roles: matchingRoles,
-			world: matchingWorld,
+
 		};
 	}, [
 		projectChapters,
 		scenesOfProject,
 		projectRoles,
-		projectWorldEntries,
+
 		searchQuery,
 	]);
 
@@ -554,15 +553,16 @@ export function StoryRightSidebar() {
 							<UserPlus className="size-4 text-muted-foreground" />
 						</Button>
 					)}
-					{rightPanelView === "world" && (
+
+					{rightPanelView === "drawings" && (
 						<Button
 							variant="ghost"
 							size="icon"
 							className="size-7"
-							onClick={handleAddWorldEntry}
-							title="Add Entry"
+							onClick={handleAddDrawing}
+							title="Add Drawing"
 						>
-							<Plus className="size-4 text-muted-foreground" />
+							<PenTool className="size-4 text-muted-foreground" />
 						</Button>
 					)}
 				</div>
@@ -593,20 +593,20 @@ export function StoryRightSidebar() {
 								: "text-muted-foreground hover:text-foreground hover:bg-background/50",
 						)}
 					>
-						<Users className="size-3.5" />
-						<span>角色</span>
+						<BookOpen className="size-3.5" />
+						<span>Wiki</span>
 					</button>
 					<button
-						onClick={() => setRightPanelView("world")}
+						onClick={() => setRightPanelView("drawings")}
 						className={cn(
 							"flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors",
-							rightPanelView === "world"
+							rightPanelView === "drawings"
 								? "bg-background text-foreground shadow-sm font-medium"
 								: "text-muted-foreground hover:text-foreground hover:bg-background/50",
 						)}
 					>
-						<Globe className="size-3.5" />
-						<span>世界观</span>
+						<PenTool className="size-3.5" />
+						<span>绘图</span>
 					</button>
 				</div>
 			</SidebarHeader>
@@ -619,9 +619,9 @@ export function StoryRightSidebar() {
 						<Input
 							placeholder={
 								rightPanelView === "characters"
-									? "Search characters..."
-									: rightPanelView === "world"
-										? "Search world info..."
+									? "Search wiki..."
+									: rightPanelView === "drawings"
+										? "Search drawings..."
 										: "Search outline..."
 							}
 							className="h-8 pl-8 text-xs bg-background/50 border-transparent focus:border-border focus:bg-background transition-all"
@@ -1100,103 +1100,17 @@ export function StoryRightSidebar() {
 					</SidebarGroup>
 				)}
 
-				{/* World View */}
-				{rightPanelView === "world" && (
-					<SidebarGroup className="px-0">
-						<SidebarGroupLabel className="px-4">
-							World Building
-						</SidebarGroupLabel>
-						<SidebarGroupContent>
-							<div className="px-2 pb-4 space-y-1">
-								{filteredData.world.length === 0 ? (
-									<div className="mx-2 my-8 flex flex-col items-center text-center p-6 rounded-lg border border-dashed bg-sidebar-accent/30">
-										<Globe className="size-8 text-muted-foreground/50 mb-3" />
-										<span className="text-sm font-medium">No entries</span>
-										<Button
-											size="sm"
-											variant="link"
-											onClick={handleAddWorldEntry}
-										>
-											Create entry
-										</Button>
-									</div>
-								) : (
-									filteredData.world.map((entry) => (
-										<div
-											key={entry.id}
-											className="group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors hover:bg-sidebar-accent/50 text-muted-foreground hover:text-foreground"
-										>
-											<MapPin className="size-3.5 shrink-0 opacity-70" />
 
-											{renamingId === entry.id ? (
-												<Input
-													autoFocus
-													defaultValue={entry.name}
-													className="h-6 text-sm px-1 py-0"
-													onBlur={(e) =>
-														handleRename(entry.id, "world", e.target.value)
-													}
-													onKeyDown={(e) => {
-														if (e.key === "Enter")
-															handleRename(
-																entry.id,
-																"world",
-																e.currentTarget.value,
-															);
-														if (e.key === "Escape") setRenamingId(null);
-													}}
-													onClick={(e) => e.stopPropagation()}
-												/>
-											) : (
-												<div className="flex-1 min-w-0 flex items-center gap-2">
-													<span
-														className="truncate font-medium"
-														onDoubleClick={() => setRenamingId(entry.id)}
-													>
-														{entry.name}
-													</span>
-													<span className="shrink-0 text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted rounded-full">
-														{entry.category}
-													</span>
-												</div>
-											)}
 
-											<div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-												<Popover>
-													<PopoverTrigger asChild>
-														<Button
-															variant="ghost"
-															size="icon"
-															className="h-5 w-5 text-muted-foreground"
-														>
-															<MoreHorizontal className="size-3.5" />
-														</Button>
-													</PopoverTrigger>
-													<PopoverContent align="end" className="w-36 p-1">
-														<div className="grid gap-0.5">
-															<button
-																onClick={() => setRenamingId(entry.id)}
-																className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left"
-															>
-																<Pencil className="size-3" /> Rename
-															</button>
-															<div className="h-px bg-border my-1" />
-															<button
-																onClick={() =>
-																	handleDelete(entry.id, "world", entry.name)
-																}
-																className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-destructive/10 text-destructive w-full text-left"
-															>
-																<Trash2 className="size-3" /> Delete
-															</button>
-														</div>
-													</PopoverContent>
-												</Popover>
-											</div>
-										</div>
-									))
-								)}
-							</div>
+				{/* Drawings View */}
+				{rightPanelView === "drawings" && (
+					<SidebarGroup className="px-0 h-full">
+						<SidebarGroupContent className="h-full">
+							<DrawingList
+								projectId={selectedProjectId}
+								onSelectDrawing={onSelectDrawing}
+								selectedDrawingId={selectedDrawing?.id}
+							/>
 						</SidebarGroupContent>
 					</SidebarGroup>
 				)}

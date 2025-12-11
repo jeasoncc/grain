@@ -8,11 +8,13 @@ import type {
 	AttachmentInterface,
 	ChapterInterface,
 	DBVersionInterface,
+	DrawingInterface,
 	ProjectInterface,
 	RoleInterface,
 	SceneInterface,
 	UserInterface,
 	WorldEntryInterface,
+	WikiEntryInterface,
 } from "./schema.ts";
 
 // ==============================
@@ -23,8 +25,10 @@ export class NovelEditorDB extends Dexie {
 	projects!: Table<ProjectInterface, string>;
 	chapters!: Table<ChapterInterface, string>;
 	scenes!: Table<SceneInterface, string>;
-	roles!: Table<RoleInterface, string>;
-	worldEntries!: Table<WorldEntryInterface, string>;
+	roles!: Table<RoleInterface, string>; // 保留用于迁移
+	worldEntries!: Table<WorldEntryInterface, string>; // 保留用于迁移
+	wikiEntries!: Table<WikiEntryInterface, string>; // 新的Wiki系统
+	drawings!: Table<DrawingInterface, string>;
 	attachments!: Table<AttachmentInterface, string>;
 	dbVersions!: Table<DBVersionInterface, string>;
 
@@ -50,6 +54,33 @@ export class NovelEditorDB extends Dexie {
 			scenes: "id, project, chapter, order",
 			roles: "id, project, name",
 			worldEntries: "id, project, category",
+			attachments: "id, project, chapter, scene",
+			dbVersions: "id, version",
+		});
+
+		// v3: Add drawings table for book-level drawing storage
+		this.version(3).stores({
+			users: "id, username, email",
+			projects: "id, title, owner",
+			chapters: "id, project, order",
+			scenes: "id, project, chapter, order",
+			roles: "id, project, name",
+			worldEntries: "id, project, category",
+			drawings: "id, project, name",
+			attachments: "id, project, chapter, scene",
+			dbVersions: "id, version",
+		});
+
+		// v4: Add Wiki system (upgrade from roles system)
+		this.version(4).stores({
+			users: "id, username, email",
+			projects: "id, title, owner",
+			chapters: "id, project, order",
+			scenes: "id, project, chapter, order",
+			roles: "id, project, name", // 保留用于迁移
+			worldEntries: "id, project, category", // 保留用于迁移
+			wikiEntries: "id, project, name", // 新的Wiki系统
+			drawings: "id, project, name",
 			attachments: "id, project, chapter, scene",
 			dbVersions: "id, version",
 		});
@@ -313,6 +344,45 @@ export class NovelEditorDB extends Dexie {
 	}
 
 	// ==========================
+	// 绘图表
+	// ==========================
+	async addDrawing(drawing: Partial<DrawingInterface>) {
+		const now = dayjs().toISOString();
+		const newDrawing: DrawingInterface = {
+			id: uuidv4(),
+			project: drawing.project!,
+			name: drawing.name || "New Drawing",
+			content: drawing.content || JSON.stringify({ elements: [], appState: {}, files: {} }),
+			width: drawing.width || 800,
+			height: drawing.height || 600,
+			createDate: now,
+			updatedAt: now,
+		};
+		await this.drawings.add(newDrawing);
+		logger.info(`Added drawing ${newDrawing.name} (${newDrawing.id})`);
+		return newDrawing;
+	}
+
+	async updateDrawing(id: string, updates: Partial<DrawingInterface>) {
+		updates.updatedAt = dayjs().toISOString();
+		await this.drawings.update(id, updates);
+		logger.info(`Updated drawing ${id}`);
+	}
+
+	async deleteDrawing(id: string) {
+		await this.drawings.delete(id);
+		logger.warn(`Deleted drawing ${id}`);
+	}
+
+	async getDrawing(id: string) {
+		return this.drawings.get(id);
+	}
+
+	async getDrawingsByProject(projectId: string) {
+		return this.drawings.where("project").equals(projectId).toArray();
+	}
+
+	// ==========================
 	// 附件表
 	// ==========================
 	async addAttachment(attachment: Partial<AttachmentInterface>) {
@@ -351,6 +421,124 @@ export class NovelEditorDB extends Dexie {
 
 	async getAttachmentsByProject(projectId: string) {
 		return this.attachments.where("project").equals(projectId).toArray();
+	}
+
+	// ==========================
+	// Wiki条目表 (原角色系统升级)
+	// ==========================
+	async addWikiEntry(entry: Partial<WikiEntryInterface>) {
+		const now = dayjs().toISOString();
+		const newEntry: WikiEntryInterface = {
+			id: uuidv4(),
+			project: entry.project!,
+			name: entry.name || "新条目",
+			alias: entry.alias || [],
+			tags: entry.tags || [],
+			content: entry.content || "",
+			createDate: now,
+			updatedAt: now,
+		};
+		await this.wikiEntries.add(newEntry);
+		logger.info(`Added wiki entry ${newEntry.name} (${newEntry.id})`);
+		return newEntry;
+	}
+
+	async updateWikiEntry(id: string, updates: Partial<WikiEntryInterface>) {
+		updates.updatedAt = dayjs().toISOString();
+		await this.wikiEntries.update(id, updates);
+		logger.info(`Updated wiki entry ${id}`);
+	}
+
+	async deleteWikiEntry(id: string) {
+		await this.wikiEntries.delete(id);
+		logger.warn(`Deleted wiki entry ${id}`);
+	}
+
+	async getWikiEntry(id: string) {
+		return this.wikiEntries.get(id);
+	}
+
+	async getWikiEntriesByProject(projectId: string) {
+		return this.wikiEntries.where("project").equals(projectId).toArray();
+	}
+
+	async searchWikiEntries(projectId: string, query: string) {
+		const lowerQuery = query.toLowerCase();
+		return this.wikiEntries
+			.where("project")
+			.equals(projectId)
+			.and((entry) => 
+				entry.name.toLowerCase().includes(lowerQuery) ||
+				entry.tags.some(tag => tag.toLowerCase().includes(lowerQuery)) ||
+				entry.alias.some(alias => alias.toLowerCase().includes(lowerQuery))
+			)
+			.toArray();
+	}
+
+	// 迁移角色数据到Wiki系统
+	async migrateRolesToWiki(projectId: string) {
+		const roles = await this.getRolesByProject(projectId);
+		const migratedEntries = [];
+		
+		for (const role of roles) {
+			// 将角色的experience转换为content
+			let content = "";
+			if (role.experience) {
+				try {
+					// 如果experience已经是JSON格式，直接使用
+					JSON.parse(role.experience);
+					content = role.experience;
+				} catch {
+					// 如果是纯文本，包装成Lexical格式
+					content = JSON.stringify({
+						root: {
+							children: [
+								{
+									children: [
+										{
+											detail: 0,
+											format: 0,
+											mode: "normal",
+											style: "",
+											text: role.experience,
+											type: "text",
+											version: 1,
+										},
+									],
+									direction: "ltr",
+									format: "",
+									indent: 0,
+									type: "paragraph",
+									version: 1,
+								},
+							],
+							direction: "ltr",
+							format: "",
+							indent: 0,
+							type: "root",
+							version: 1,
+						},
+					});
+				}
+			}
+
+			const wikiEntry: WikiEntryInterface = {
+				id: uuidv4(),
+				project: role.project,
+				name: role.name,
+				alias: role.alias,
+				tags: role.identity, // 将identity转换为tags
+				content,
+				createDate: role.createDate,
+				updatedAt: dayjs().toISOString(),
+			};
+
+			await this.wikiEntries.add(wikiEntry);
+			migratedEntries.push(wikiEntry);
+		}
+
+		logger.info(`Migrated ${migratedEntries.length} roles to wiki entries for project ${projectId}`);
+		return migratedEntries;
 	}
 }
 

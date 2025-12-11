@@ -1,12 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type RightPanelView = "outline" | "characters" | "world" | null;
+export type RightPanelView = "outline" | "characters" | "drawings" | null;
 export type BottomDrawerView =
 	| "outline"
 	| "characters"
-	| "world"
 	| "statistics"
+	| "world"
 	| null;
 
 interface UIState {

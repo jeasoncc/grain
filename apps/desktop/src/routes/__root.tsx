@@ -119,10 +119,12 @@ function RootComponent() {
 				/>
 				<div className="flex min-h-screen w-full">
 					<ActivityBar />
-					<UnifiedSidebar />
-					<div className="bg-background text-foreground flex-1 min-h-svh transition-colors duration-300 ease-in-out">
-						<div className="flex-1 min-h-0 overflow-auto">
-							<Outlet />
+					<div className="flex flex-1 ml-12">
+						<UnifiedSidebar />
+						<div className="bg-background text-foreground flex-1 min-h-svh transition-colors duration-300 ease-in-out overflow-hidden">
+							<div className="flex-1 h-full overflow-auto">
+								<Outlet />
+							</div>
 						</div>
 					</div>
 					{/* 底部抽屉 */}

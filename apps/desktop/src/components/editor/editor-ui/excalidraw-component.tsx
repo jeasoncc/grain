@@ -265,6 +265,10 @@ export default function ExcalidrawComponent({
 		);
 	}
 
+	// Calculate responsive dimensions
+	const responsiveWidth = Math.max(400, Math.min(width, window.innerWidth * 0.8));
+	const responsiveHeight = Math.max(300, Math.min(height, window.innerHeight * 0.6));
+
 	return (
 		<div
 			ref={containerRef}
@@ -273,7 +277,12 @@ export default function ExcalidrawComponent({
 				isSelected && "ring-2 ring-primary",
 				isEditing ? "bg-background" : "bg-muted/30",
 			)}
-			style={{ width, height }}
+			style={{ 
+				width: responsiveWidth, 
+				height: responsiveHeight,
+				minWidth: 400, // Ensure minimum width for Excalidraw
+				minHeight: 300, // Ensure minimum height for Excalidraw
+			}}
 		>
 			{/* 工具栏 - 悬停时显示 */}
 			<div

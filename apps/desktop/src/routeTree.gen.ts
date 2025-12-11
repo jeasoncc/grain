@@ -23,6 +23,7 @@ import { Route as CanvasRouteImport } from './routes/canvas'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SettingsTypographyRouteImport } from './routes/settings/typography'
+import { Route as SettingsScrollTestRouteImport } from './routes/settings/scroll-test'
 import { Route as SettingsIconsRouteImport } from './routes/settings/icons'
 import { Route as SettingsGeneralRouteImport } from './routes/settings/general'
 import { Route as SettingsEditorRouteImport } from './routes/settings/editor'
@@ -102,6 +103,11 @@ const SettingsTypographyRoute = SettingsTypographyRouteImport.update({
   path: '/typography',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsScrollTestRoute = SettingsScrollTestRouteImport.update({
+  id: '/scroll-test',
+  path: '/scroll-test',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const SettingsIconsRoute = SettingsIconsRouteImport.update({
   id: '/icons',
   path: '/icons',
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/settings/editor': typeof SettingsEditorRoute
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/icons': typeof SettingsIconsRoute
+  '/settings/scroll-test': typeof SettingsScrollTestRoute
   '/settings/typography': typeof SettingsTypographyRoute
   '/settings/': typeof SettingsIndexRoute
 }
@@ -187,6 +194,7 @@ export interface FileRoutesByTo {
   '/settings/editor': typeof SettingsEditorRoute
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/icons': typeof SettingsIconsRoute
+  '/settings/scroll-test': typeof SettingsScrollTestRoute
   '/settings/typography': typeof SettingsTypographyRoute
   '/settings': typeof SettingsIndexRoute
 }
@@ -212,6 +220,7 @@ export interface FileRoutesById {
   '/settings/editor': typeof SettingsEditorRoute
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/icons': typeof SettingsIconsRoute
+  '/settings/scroll-test': typeof SettingsScrollTestRoute
   '/settings/typography': typeof SettingsTypographyRoute
   '/settings/': typeof SettingsIndexRoute
 }
@@ -238,6 +247,7 @@ export interface FileRouteTypes {
     | '/settings/editor'
     | '/settings/general'
     | '/settings/icons'
+    | '/settings/scroll-test'
     | '/settings/typography'
     | '/settings/'
   fileRoutesByTo: FileRoutesByTo
@@ -261,6 +271,7 @@ export interface FileRouteTypes {
     | '/settings/editor'
     | '/settings/general'
     | '/settings/icons'
+    | '/settings/scroll-test'
     | '/settings/typography'
     | '/settings'
   id:
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
     | '/settings/editor'
     | '/settings/general'
     | '/settings/icons'
+    | '/settings/scroll-test'
     | '/settings/typography'
     | '/settings/'
   fileRoutesById: FileRoutesById
@@ -405,6 +417,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsTypographyRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/settings/scroll-test': {
+      id: '/settings/scroll-test'
+      path: '/scroll-test'
+      fullPath: '/settings/scroll-test'
+      preLoaderRoute: typeof SettingsScrollTestRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/icons': {
       id: '/settings/icons'
       path: '/icons'
@@ -472,6 +491,7 @@ interface SettingsRouteChildren {
   SettingsEditorRoute: typeof SettingsEditorRoute
   SettingsGeneralRoute: typeof SettingsGeneralRoute
   SettingsIconsRoute: typeof SettingsIconsRoute
+  SettingsScrollTestRoute: typeof SettingsScrollTestRoute
   SettingsTypographyRoute: typeof SettingsTypographyRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
 }
@@ -484,6 +504,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsEditorRoute: SettingsEditorRoute,
   SettingsGeneralRoute: SettingsGeneralRoute,
   SettingsIconsRoute: SettingsIconsRoute,
+  SettingsScrollTestRoute: SettingsScrollTestRoute,
   SettingsTypographyRoute: SettingsTypographyRoute,
   SettingsIndexRoute: SettingsIndexRoute,
 }

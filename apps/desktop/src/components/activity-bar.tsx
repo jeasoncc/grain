@@ -135,7 +135,7 @@ export function ActivityBar(): React.ReactElement {
 		location.pathname === path || location.pathname.startsWith(path + "/");
 
 	return (
-		<aside className="activity-bar flex h-screen w-12 shrink-0 flex-col items-center bg-sidebar py-3">
+		<aside className="activity-bar fixed left-0 top-0 z-50 flex h-screen w-12 shrink-0 flex-col items-center bg-sidebar py-3">
 			<TooltipProvider>
 				{/* 主导航 */}
 				<nav className="flex flex-col items-center gap-1">
@@ -221,13 +221,6 @@ export function ActivityBar(): React.ReactElement {
 						label="角色面板"
 						active={bottomDrawerOpen && bottomDrawerView === "characters"}
 						onClick={() => toggleBottomDrawer("characters")}
-					/>
-					<DrawerToggle
-						view="world"
-						icon={<WorldIcon className="size-5" />}
-						label="世界观面板"
-						active={bottomDrawerOpen && bottomDrawerView === "world"}
-						onClick={() => toggleBottomDrawer("world")}
 					/>
 				</div>
 
