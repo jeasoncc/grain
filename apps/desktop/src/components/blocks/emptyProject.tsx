@@ -28,7 +28,7 @@ export function EmptyProject({ onCreate, onImport }: EmptyProjectProps) {
 					</div>
 					<h1 className="text-2xl font-semibold mb-2">欢迎使用小说编辑器</h1>
 					<p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-						开始创作你的故事，管理章节、场景、角色和世界观
+						开始创作你的故事，管理章节、场景和 Wiki 知识库
 					</p>
 					<div className="flex flex-col sm:flex-row gap-3 justify-center">
 						<Button size="lg" onClick={onCreate}>
@@ -57,15 +57,15 @@ export function EmptyProject({ onCreate, onImport }: EmptyProjectProps) {
 						<div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-sky-500/10 text-sky-500 mb-3 group-hover:scale-110 transition-transform">
 							<Users className="size-5" />
 						</div>
-						<h3 className="text-sm font-medium mb-1">角色设定</h3>
-						<p className="text-xs text-muted-foreground">管理角色信息和关系</p>
+						<h3 className="text-sm font-medium mb-1">Wiki 知识库</h3>
+						<p className="text-xs text-muted-foreground">管理角色、地点、物品等设定</p>
 					</div>
 					<div className="group rounded-lg border border-border bg-card p-5 text-center hover:shadow-md transition-all duration-200">
 						<div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-purple-500/10 text-purple-500 mb-3 group-hover:scale-110 transition-transform">
 							<Stars className="size-5" />
 						</div>
-						<h3 className="text-sm font-medium mb-1">世界观</h3>
-						<p className="text-xs text-muted-foreground">构建完整的故事世界</p>
+						<h3 className="text-sm font-medium mb-1">绘图画布</h3>
+						<p className="text-xs text-muted-foreground">可视化创作和思维导图</p>
 					</div>
 				</div>
 

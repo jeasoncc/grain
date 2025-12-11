@@ -4,21 +4,90 @@
  */
 
 import { Excalidraw, exportToBlob } from "@excalidraw/excalidraw";
-import {
-	Download,
-	Maximize2,
-	Minimize2,
-	Redo,
-	Save,
-	Undo,
-	ZoomIn,
-	ZoomOut,
-} from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { AlertTriangle, Download, Maximize2, Minimize2, RefreshCw, Save, Trash2 } from "lucide-react";
+import { Component, type ErrorInfo, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
-import { cn } from "@/lib/utils";
+
+// Error Boundary for Canvas Editor
+interface ErrorBoundaryProps {
+	children: ReactNode;
+	onReset?: () => void;
+	onClearData?: () => void;
+}
+
+interface ErrorBoundaryState {
+	hasError: boolean;
+	error: Error | null;
+	isCanvasError: boolean;
+}
+
+class CanvasErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+	constructor(props: ErrorBoundaryProps) {
+		super(props);
+		this.state = { hasError: false, error: null, isCanvasError: false };
+	}
+
+	static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+		const isCanvasError = error.message?.includes("Canvas exceeds max size") || 
+			error.name === "DOMException";
+		return { hasError: true, error, isCanvasError };
+	}
+
+	componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+		console.error("Canvas Editor Error:", error, errorInfo);
+	}
+
+	handleReset = () => {
+		this.setState({ hasError: false, error: null, isCanvasError: false });
+		this.props.onReset?.();
+	};
+
+	handleClearData = () => {
+		this.setState({ hasError: false, error: null, isCanvasError: false });
+		this.props.onClearData?.();
+	};
+
+	render() {
+		if (this.state.hasError) {
+			return (
+				<div className="flex flex-col items-center justify-center h-full bg-muted/30 rounded-lg p-4 gap-3">
+					<AlertTriangle className="size-8 text-destructive" />
+					<span className="text-sm text-muted-foreground text-center">
+						{this.state.isCanvasError 
+							? "绘图数据异常，画布尺寸超出限制" 
+							: "绘图组件加载失败"}
+					</span>
+					<div className="flex gap-2">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={this.handleReset}
+							className="gap-1"
+						>
+							<RefreshCw className="size-3" />
+							重试
+						</Button>
+						{this.state.isCanvasError && this.props.onClearData && (
+							<Button
+								variant="destructive"
+								size="sm"
+								onClick={this.handleClearData}
+								className="gap-1"
+							>
+								<Trash2 className="size-3" />
+								清空重置
+							</Button>
+						)}
+					</div>
+				</div>
+			);
+		}
+
+		return this.props.children;
+	}
+}
 
 export interface ExcalidrawSceneData {
 	// biome-ignore lint/suspicious/noExplicitAny: Excalidraw 元素类型
@@ -47,8 +116,51 @@ export function CanvasEditor({
 	const { isDark } = useTheme();
 	const [isFullscreen, setIsFullscreen] = useState(false);
 	const [hasChanges, setHasChanges] = useState(false);
+	const [isReady, setIsReady] = useState(false); // 延迟渲染 Excalidraw
 
-	// 解析初始数据
+	// 延迟渲染 Excalidraw，确保容器尺寸已经确定
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			setIsReady(true);
+		}, 100);
+		return () => clearTimeout(timer);
+	}, []);
+
+	// 清理 appState 以避免 Canvas exceeds max size 错误
+	const sanitizeAppState = (appState: any): any => {
+		if (!appState || typeof appState !== "object") {
+			return {};
+		}
+		const sanitized: any = {};
+		if (appState.viewBackgroundColor && typeof appState.viewBackgroundColor === "string") {
+			sanitized.viewBackgroundColor = appState.viewBackgroundColor;
+		}
+		if (typeof appState.gridSize === "number" && Number.isFinite(appState.gridSize) && appState.gridSize > 0) {
+			sanitized.gridSize = appState.gridSize;
+		}
+		return sanitized;
+	};
+
+	// 清理 elements 数据
+	const sanitizeElements = (elements: any[]): any[] => {
+		if (!Array.isArray(elements)) return [];
+		const MAX_COORD = 50000;
+		const MAX_SIZE = 10000;
+		return elements.filter((el) => {
+			if (!el || typeof el !== "object") return false;
+			const x = el.x ?? 0;
+			const y = el.y ?? 0;
+			const width = el.width ?? 0;
+			const height = el.height ?? 0;
+			if (!Number.isFinite(x) || Math.abs(x) > MAX_COORD) return false;
+			if (!Number.isFinite(y) || Math.abs(y) > MAX_COORD) return false;
+			if (!Number.isFinite(width) || width < 0 || width > MAX_SIZE) return false;
+			if (!Number.isFinite(height) || height < 0 || height > MAX_SIZE) return false;
+			return true;
+		});
+	};
+
+	// 解析并清理初始数据
 	const parsedInitialData: ExcalidrawSceneData | undefined = (() => {
 		if (!initialData) return undefined;
 		try {
@@ -59,7 +171,11 @@ export function CanvasEditor({
 				typeof parsed === "object" &&
 				Array.isArray(parsed.elements)
 			) {
-				return parsed as ExcalidrawSceneData;
+				return {
+					elements: sanitizeElements(parsed.elements),
+					appState: sanitizeAppState(parsed.appState),
+					files: parsed.files || {},
+				};
 			}
 			return undefined;
 		} catch {
@@ -130,6 +246,21 @@ export function CanvasEditor({
 		[],
 	);
 
+	// 错误恢复 - 重试
+	const handleReset = useCallback(() => {
+		setIsReady(false);
+		setTimeout(() => setIsReady(true), 100);
+	}, []);
+
+	// 错误恢复 - 清空数据
+	const handleClearData = useCallback(() => {
+		const emptyData = JSON.stringify({ elements: [], appState: {}, files: {} });
+		onSave?.(emptyData);
+		setIsReady(false);
+		setTimeout(() => setIsReady(true), 100);
+		toast.success("绘图已重置");
+	}, [onSave]);
+
 	// 快捷键保存
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -189,21 +320,29 @@ export function CanvasEditor({
 				</div>
 				{/* Excalidraw 编辑器 */}
 				<div className="flex-1">
-					<Excalidraw
-						excalidrawAPI={(api) => {
-							excalidrawRef.current = api;
-						}}
-						initialData={parsedInitialData}
-						theme={isDark ? "dark" : "light"}
-						onChange={handleChange}
-						UIOptions={{
-							canvasActions: {
-								export: false,
-								loadScene: false,
-								saveToActiveFile: false,
-							},
-						}}
-					/>
+					{isReady ? (
+						<CanvasErrorBoundary onReset={handleReset} onClearData={handleClearData}>
+							<Excalidraw
+								excalidrawAPI={(api) => {
+									excalidrawRef.current = api;
+								}}
+								initialData={parsedInitialData}
+								theme={isDark ? "dark" : "light"}
+								onChange={handleChange}
+								UIOptions={{
+									canvasActions: {
+										export: false,
+										loadScene: false,
+										saveToActiveFile: false,
+									},
+								}}
+							/>
+						</CanvasErrorBoundary>
+					) : (
+						<div className="flex items-center justify-center h-full text-muted-foreground">
+							<span>Loading...</span>
+						</div>
+					)}
 				</div>
 			</div>
 		);
@@ -256,21 +395,29 @@ export function CanvasEditor({
 
 			{/* Excalidraw 编辑器 */}
 			<div className="flex-1 min-h-0">
-				<Excalidraw
-					excalidrawAPI={(api) => {
-						excalidrawRef.current = api;
-					}}
-					initialData={parsedInitialData}
-					theme={isDark ? "dark" : "light"}
-					onChange={handleChange}
-					UIOptions={{
-						canvasActions: {
-							export: false,
-							loadScene: false,
-							saveToActiveFile: false,
-						},
-					}}
-				/>
+				{isReady ? (
+					<CanvasErrorBoundary onReset={handleReset} onClearData={handleClearData}>
+						<Excalidraw
+							excalidrawAPI={(api) => {
+								excalidrawRef.current = api;
+							}}
+							initialData={parsedInitialData}
+							theme={isDark ? "dark" : "light"}
+							onChange={handleChange}
+							UIOptions={{
+								canvasActions: {
+									export: false,
+									loadScene: false,
+									saveToActiveFile: false,
+								},
+							}}
+						/>
+					</CanvasErrorBoundary>
+				) : (
+					<div className="flex items-center justify-center h-full text-muted-foreground">
+						<span>Loading...</span>
+					</div>
+				)}
 			</div>
 		</div>
 	);

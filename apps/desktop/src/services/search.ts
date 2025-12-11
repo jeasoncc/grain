@@ -1,6 +1,9 @@
 /**
  * 全局搜索服务
  * 支持跨项目、章节、场景的全文搜索
+ * 
+ * 注意：此服务仍使用废弃的 RoleInterface 和 WorldEntryInterface
+ * 用于向后兼容。未来版本将迁移到 WikiEntryInterface
  */
 
 import lunr from "lunr";
@@ -8,9 +11,9 @@ import { db } from "@/db/curd";
 import type {
 	ChapterInterface,
 	ProjectInterface,
-	RoleInterface,
+	RoleInterface, // @deprecated - 保留用于向后兼容
 	SceneInterface,
-	WorldEntryInterface,
+	WorldEntryInterface, // @deprecated - 保留用于向后兼容
 } from "@/db/schema";
 import logger from "@/log/index";
 

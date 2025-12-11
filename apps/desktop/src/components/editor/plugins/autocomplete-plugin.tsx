@@ -30,6 +30,7 @@ import {
 import type { JSX } from "react";
 import { useCallback, useEffect } from "react";
 
+import logger from "@/log";
 import {
 	$createAutocompleteNode,
 	AutocompleteNode,
@@ -194,7 +195,7 @@ export function AutocompletePlugin(): JSX.Element | null {
 					})
 					.catch((e) => {
 						if (e !== "Dismissed") {
-							console.error(e);
+							logger.error(e);
 						}
 					});
 				lastMatch = match;

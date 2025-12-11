@@ -9,6 +9,7 @@ import { CircleCheckIcon, CopyIcon } from "lucide-react";
 import * as React from "react";
 import { useState } from "react";
 
+import logger from "@/log";
 import { useDebounce } from "@/components/editor/editor-hooks/use-debounce";
 
 interface Props {
@@ -48,7 +49,7 @@ export function CopyButton({ editor, getCodeDOMNode }: Props) {
 			setCopyCompleted(true);
 			removeSuccessIcon();
 		} catch (err) {
-			console.error("Failed to copy: ", err);
+			logger.error("Failed to copy: ", err);
 		}
 	}
 

@@ -2,6 +2,7 @@ import { Copy, Download } from "lucide-react";
 import mermaid from "mermaid";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import logger from "@/log";
 import { Button } from "@/components/ui/button";
 
 interface MermaidViewerProps {
@@ -39,7 +40,7 @@ export function MermaidViewer({ code, title }: MermaidViewerProps) {
 				const { svg: renderedSvg } = await mermaid.render(id, code);
 				setSvg(renderedSvg);
 			} catch (err) {
-				console.error("Mermaid render error:", err);
+				logger.error("Mermaid render error:", err);
 				setError(err instanceof Error ? err.message : "渲染失败");
 			}
 		};
@@ -107,7 +108,7 @@ export function MermaidViewer({ code, title }: MermaidViewerProps) {
 
 			img.src = url;
 		} catch (error) {
-			console.error("PNG export error:", error);
+			logger.error("PNG export error:", error);
 			toast.error("PNG 导出失败");
 		}
 	};

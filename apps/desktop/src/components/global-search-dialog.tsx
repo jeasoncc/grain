@@ -13,6 +13,7 @@ import {
 	User,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import logger from "@/log";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,7 +63,7 @@ export function GlobalSearchDialog({
 				setResults(searchResults);
 				setSelectedIndex(0);
 			} catch (error) {
-				console.error("搜索失败:", error);
+				logger.error("搜索失败:", error);
 			} finally {
 				setIsSearching(false);
 			}
@@ -122,16 +123,8 @@ export function GlobalSearchDialog({
 				});
 				break;
 			case "role":
-				navigate({
-					to: "/characters",
-					search: { roleId: result.id },
-				});
-				break;
 			case "world":
-				navigate({
-					to: "/world",
-					search: { entryId: result.id },
-				});
+				navigate({ to: "/wiki" });
 				break;
 		}
 	};
@@ -156,9 +149,8 @@ export function GlobalSearchDialog({
 			case "scene":
 				return "场景";
 			case "role":
-				return "角色";
 			case "world":
-				return "世界观";
+				return "Wiki";
 			default:
 				return type;
 		}
@@ -189,7 +181,7 @@ export function GlobalSearchDialog({
 			<DialogContent className="max-w-2xl p-0">
 				<DialogHeader className="px-6 pt-6">
 					<DialogTitle>全局搜索</DialogTitle>
-					<DialogDescription>搜索项目中的场景、角色和世界观</DialogDescription>
+					<DialogDescription>搜索项目中的场景和 Wiki 条目</DialogDescription>
 				</DialogHeader>
 
 				<div className="px-6">

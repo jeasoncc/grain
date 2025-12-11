@@ -1,0 +1,149 @@
+# Implementation Plan
+
+- [x] 1. Update UnifiedSidebarStore to support chapters panel
+  - [x] 1.1 Add "chapters" to UnifiedSidebarPanel type
+    - Extend the type definition to include "chapters" as a valid panel option
+    - _Requirements: 1.1_
+  - [x] 1.2 Add ChaptersPanelState interface and state
+    - Add selectedProjectId, expandedChapters, selectedChapterId, selectedSceneId
+    - Add corresponding actions: setChaptersSelectedProjectId, setChaptersExpandedChapters, etc.
+    - _Requirements: 1.1, 1.2_
+
+- [x] 2. Create ChaptersPanel component
+  - [x] 2.1 Create basic ChaptersPanel component structure
+    - Create `apps/desktop/src/components/panels/chapters-panel.tsx`
+    - Implement header with project selector
+    - Implement chapter/scene tree view
+    - _Requirements: 1.1, 1.2_
+  - [x] 2.2 Implement chapter CRUD operations
+    - Add chapter creation with auto-rename
+    - Add chapter rename functionality
+    - Add chapter delete with confirmation
+    - _Requirements: 1.3, 1.6, 1.7_
+  - [x] 2.3 Implement scene CRUD operations
+    - Add scene creation (text and canvas types)
+    - Add scene rename functionality
+    - Add scene delete with confirmation
+    - _Requirements: 1.4, 1.6, 1.7_
+  - [x] 2.4 Implement drag and drop reordering
+    - Add drag state management
+    - Implement chapter reordering
+    - Implement scene reordering (within and across chapters)
+    - _Requirements: 1.5_
+  - [ ]* 2.5 Write property test for chapter creation persistence
+    - **Property 3: Chapter Creation Persistence**
+    - **Validates: Requirements 1.3**
+  - [ ]* 2.6 Write property test for scene creation persistence
+    - **Property 4: Scene Creation Persistence**
+    - **Validates: Requirements 1.4**
+  - [ ]* 2.7 Write property test for reorder persistence
+    - **Property 5: Reorder Persistence**
+    - **Validates: Requirements 1.5**
+
+- [x] 3. Update ActivityBar with chapters button
+  - [x] 3.1 Add chapters icon to icon themes
+    - Add `chapters` icon to activityBar icons in icon-themes.ts
+    - _Requirements: 1.1_
+  - [x] 3.2 Add chapters ActionButton to ActivityBar
+    - Add button that toggles chapters panel
+    - Implement active state highlighting
+    - _Requirements: 1.1, 1.8_
+
+- [x] 4. Update UnifiedSidebar to render ChaptersPanel
+  - [x] 4.1 Import and conditionally render ChaptersPanel
+    - Add ChaptersPanel import
+    - Add conditional rendering when activePanel === "chapters"
+    - _Requirements: 1.1_
+
+- [ ] 5. Checkpoint - Ensure chapters panel works
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 6. Improve WikiHoverPreview component
+  - [x] 6.1 Create RichContentRenderer component
+    - Create component to parse Lexical JSON and render as HTML
+    - Support headings, paragraphs, lists, bold, italic formatting
+    - _Requirements: 2.2_
+  - [x] 6.2 Update PreviewCard with improved design
+    - Add gradient background and improved shadows
+    - Add proper spacing and typography
+    - Add scrollable content area with max-height
+    - _Requirements: 2.4, 2.5_
+  - [x] 6.3 Display full Wiki content instead of truncated summary
+    - Remove SUMMARY_MAX_LENGTH truncation
+    - Use RichContentRenderer for content display
+    - Show all fields: name, aliases, tags, full content
+    - _Requirements: 2.1, 2.3_
+  - [ ]* 6.4 Write property test for wiki preview content completeness
+    - **Property 8: Wiki Preview Content Completeness**
+    - **Validates: Requirements 2.1, 2.3**
+  - [ ]* 6.5 Write property test for rich text rendering
+    - **Property 9: Rich Text Rendering**
+    - **Validates: Requirements 2.2**
+
+- [ ] 7. Checkpoint - Ensure wiki preview improvements work
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 8. Create LogViewer settings page
+  - [x] 8.1 Create logs settings route
+    - Create `apps/desktop/src/routes/settings/logs.tsx`
+    - Add route to settings navigation
+    - _Requirements: 3.1_
+  - [x] 8.2 Implement log list display
+    - Fetch logs from LogDB using useLiveQuery
+    - Display timestamp, level, and message for each entry
+    - Apply color coding based on log level
+    - _Requirements: 3.1, 3.2, 3.3_
+  - [x] 8.3 Implement log level filtering
+    - Add filter dropdown for log levels
+    - Filter displayed logs based on selection
+    - _Requirements: 3.6_
+  - [x] 8.4 Implement log search functionality
+    - Add search input field
+    - Filter logs by message content
+    - _Requirements: 3.7_
+  - [x] 8.5 Implement clear logs functionality
+    - Add clear button with confirmation dialog
+    - Clear all logs from LogDB
+    - _Requirements: 3.4_
+  - [ ]* 8.6 Write property test for log display completeness
+    - **Property 10: Log Display Completeness**
+    - **Validates: Requirements 3.1, 3.2**
+  - [ ]* 8.7 Write property test for log level filtering
+    - **Property 14: Log Level Filtering**
+    - **Validates: Requirements 3.6**
+  - [ ]* 8.8 Write property test for log search filtering
+    - **Property 15: Log Search Filtering**
+    - **Validates: Requirements 3.7**
+  - [ ]* 8.9 Write property test for log clear operation
+    - **Property 12: Log Clear Operation**
+    - **Validates: Requirements 3.4**
+
+- [x] 9. Update settings navigation
+  - [x] 9.1 Add logs navigation item to settings layout
+    - Add "Logs" item to navItems array in settings.tsx
+    - Use appropriate icon (Terminal or ScrollText)
+    - _Requirements: 3.1_
+
+- [ ] 10. Checkpoint - Ensure log viewer works
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [-] 11. Replace console.log with Logger
+  - [x] 11.1 Identify files using console.log
+    - Search codebase for console.log usage
+    - Create list of files to update
+    - _Requirements: 4.1, 4.2, 4.3, 4.4_
+  - [x] 11.2 Replace console.log in component files
+    - Import logger from @/log
+    - Replace console.log with logger.log/info
+    - Replace console.error with logger.error
+    - Replace console.warn with logger.warn
+    - _Requirements: 4.1, 4.2, 4.3, 4.4_
+  - [x] 11.3 Replace console.log in service files
+    - Update services/chapters.ts, services/scenes.ts, etc.
+    - _Requirements: 4.1, 4.2, 4.3, 4.4_
+  - [ ]* 11.4 Write property test for logger round-trip
+    - **Property 13: Logger Round-Trip**
+    - **Validates: Requirements 3.5, 4.5**
+
+- [ ] 12. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.

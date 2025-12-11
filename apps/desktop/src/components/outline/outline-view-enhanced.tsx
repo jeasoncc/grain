@@ -34,7 +34,7 @@ import {
 	deleteChapter,
 	reorderChapters,
 } from "@/services/chapters";
-import { useRolesByProject } from "@/services/roles";
+import { useWikiEntriesByProject } from "@/services/wiki";
 import { createScene, deleteScene, reorderScenes } from "@/services/scenes";
 import { DiagramViewRedesigned } from "./diagram-view-redesigned";
 import { OutlineCardsView } from "./outline-cards-view";
@@ -85,8 +85,8 @@ export function OutlineViewEnhanced({
 		[scenes, currentProject?.id],
 	);
 
-	// 获取角色数据用于图表
-	const roles = useRolesByProject(currentProject?.id || null);
+	// 获取 Wiki 数据用于图表
+	const wikiEntries = useWikiEntriesByProject(currentProject?.id || null);
 
 	// 过滤数据
 	const filteredChapters = useMemo(() => {
@@ -352,7 +352,7 @@ export function OutlineViewEnhanced({
 					<DiagramViewRedesigned
 						chapters={filteredChapters}
 						scenes={filteredScenes}
-						characters={roles}
+						characters={wikiEntries as any}
 					/>
 				) : (
 					<ScrollArea className="flex-1">

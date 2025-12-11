@@ -6,6 +6,7 @@ import "./styles.css";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { db, initDatabase } from "./db/curd";
+import { cleanupAllDrawings } from "./services/drawings";
 
 // 开发环境下加载测试工具
 if (import.meta.env.DEV) {
@@ -33,18 +34,22 @@ const queryClient = new QueryClient();
 async function main() {
 	await db.open(); // 打开数据库
 	await initDatabase(); // 初始化默认数据
+	
+	// 清理绘图数据中的异常值，防止 "Canvas exceeds max size" 错误
+	await cleanupAllDrawings();
+	
+	// 确保数据库操作完成后再渲染应用
+	const rootElement = document.getElementById("app");
+	if (rootElement && !rootElement.innerHTML) {
+		const root = ReactDOM.createRoot(rootElement);
+		root.render(
+			<StrictMode>
+				<QueryClientProvider client={queryClient}>
+					<RouterProvider router={router} />
+				</QueryClientProvider>
+			</StrictMode>,
+		);
+	}
 }
 
 main();
-
-const rootElement = document.getElementById("app");
-if (rootElement && !rootElement.innerHTML) {
-	const root = ReactDOM.createRoot(rootElement);
-	root.render(
-		<StrictMode>
-			<QueryClientProvider client={queryClient}>
-				<RouterProvider router={router} />
-			</QueryClientProvider>
-		</StrictMode>,
-	);
-}

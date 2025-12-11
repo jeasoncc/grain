@@ -3,21 +3,102 @@
  */
 
 import { Excalidraw, exportToBlob } from "@excalidraw/excalidraw";
-import { Download, Edit3, Eye, Maximize2, Minimize2, Save, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { AlertTriangle, Download, Edit3, Eye, Maximize2, Minimize2, RefreshCw, Save, Trash2 } from "lucide-react";
+import { Component, type ErrorInfo, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import logger from "@/log";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
-import { saveDrawingContent, updateDrawing } from "@/services/drawings";
+import { resetDrawing, saveDrawingContent, updateDrawing } from "@/services/drawings";
 import type { DrawingInterface } from "@/db/schema";
+
+// Error Boundary for Excalidraw component
+interface ErrorBoundaryProps {
+	children: ReactNode;
+	onReset?: () => void;
+	onClearData?: () => void;
+}
+
+interface ErrorBoundaryState {
+	hasError: boolean;
+	error: Error | null;
+	isCanvasError: boolean;
+}
+
+class DrawingErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+	constructor(props: ErrorBoundaryProps) {
+		super(props);
+		this.state = { hasError: false, error: null, isCanvasError: false };
+	}
+
+	static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+		const isCanvasError = error.message?.includes("Canvas exceeds max size") || 
+			error.name === "DOMException";
+		return { hasError: true, error, isCanvasError };
+	}
+
+	componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+		logger.error("Drawing Workspace Error:", error, errorInfo);
+	}
+
+	handleReset = () => {
+		this.setState({ hasError: false, error: null, isCanvasError: false });
+		this.props.onReset?.();
+	};
+
+	handleClearData = () => {
+		this.setState({ hasError: false, error: null, isCanvasError: false });
+		this.props.onClearData?.();
+	};
+
+	render() {
+		if (this.state.hasError) {
+			return (
+				<div className="flex flex-col items-center justify-center h-full bg-muted/30 rounded-lg p-4 gap-3">
+					<AlertTriangle className="size-8 text-destructive" />
+					<span className="text-sm text-muted-foreground text-center">
+						{this.state.isCanvasError 
+							? "绘图数据异常，画布尺寸超出限制" 
+							: "绘图组件加载失败"}
+					</span>
+					<div className="flex gap-2">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={this.handleReset}
+							className="gap-1"
+						>
+							<RefreshCw className="size-3" />
+							重试
+						</Button>
+						{this.state.isCanvasError && this.props.onClearData && (
+							<Button
+								variant="destructive"
+								size="sm"
+								onClick={this.handleClearData}
+								className="gap-1"
+							>
+								<Trash2 className="size-3" />
+								清空重置
+							</Button>
+						)}
+					</div>
+				</div>
+			);
+		}
+
+		return this.props.children;
+	}
+}
 
 interface DrawingWorkspaceProps {
 	drawing: DrawingInterface;
 	onDelete?: (id: string) => void;
 	onRename?: (id: string, name: string) => void;
 	className?: string;
+	fillContainer?: boolean; // 是否填满容器
 }
 
 export function DrawingWorkspace({
@@ -25,21 +106,88 @@ export function DrawingWorkspace({
 	onDelete,
 	onRename,
 	className,
+	fillContainer = false,
 }: DrawingWorkspaceProps) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [isFullscreen, setIsFullscreen] = useState(false);
 	const [isRenaming, setIsRenaming] = useState(false);
 	const [tempName, setTempName] = useState(drawing.name);
 	const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+	const [isReady, setIsReady] = useState(false); // 延迟渲染 Excalidraw
 	// biome-ignore lint/suspicious/noExplicitAny: Excalidraw API 类型复杂
 	const excalidrawRef = useRef<any>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const { isDark } = useTheme();
 
-	// Parse drawing data
-	const drawingData = drawing.content
-		? JSON.parse(drawing.content)
-		: { elements: [], appState: {}, files: {} };
+	// 延迟渲染 Excalidraw，确保容器尺寸已经确定
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			setIsReady(true);
+		}, 100);
+		return () => clearTimeout(timer);
+	}, []);
+
+	// 清理 appState 以避免 Canvas exceeds max size 错误
+	const sanitizeAppState = (appState: any): any => {
+		if (!appState || typeof appState !== "object") {
+			return {};
+		}
+		// 只保留安全的属性，不传递可能导致 canvas 尺寸异常的值
+		const sanitized: any = {};
+		if (appState.viewBackgroundColor && typeof appState.viewBackgroundColor === "string") {
+			sanitized.viewBackgroundColor = appState.viewBackgroundColor;
+		}
+		if (typeof appState.gridSize === "number" && Number.isFinite(appState.gridSize) && appState.gridSize > 0) {
+			sanitized.gridSize = appState.gridSize;
+		}
+		return sanitized;
+	};
+
+	// 清理 elements 数据，移除可能导致 canvas 尺寸异常的元素
+	const sanitizeElements = (elements: any[]): any[] => {
+		if (!Array.isArray(elements)) return [];
+		const MAX_COORD = 50000;
+		const MAX_SIZE = 10000;
+		return elements.filter((el) => {
+			if (!el || typeof el !== "object") return false;
+			const x = el.x ?? 0;
+			const y = el.y ?? 0;
+			const width = el.width ?? 0;
+			const height = el.height ?? 0;
+			if (!Number.isFinite(x) || Math.abs(x) > MAX_COORD) return false;
+			if (!Number.isFinite(y) || Math.abs(y) > MAX_COORD) return false;
+			if (!Number.isFinite(width) || width < 0 || width > MAX_SIZE) return false;
+			if (!Number.isFinite(height) || height < 0 || height > MAX_SIZE) return false;
+			return true;
+		});
+	};
+
+	// Parse and sanitize drawing data
+	const drawingData = (() => {
+		if (!drawing.content) {
+			return { elements: [], appState: {}, files: {} };
+		}
+		try {
+			const parsed = JSON.parse(drawing.content);
+			const sanitizedElements = sanitizeElements(parsed.elements || []);
+			const sanitizedAppState = sanitizeAppState(parsed.appState);
+			
+			// 额外检查：如果元素数量过多或有异常，返回空数据
+			if (sanitizedElements.length > 10000) {
+				logger.warn("Too many elements, resetting drawing data");
+				return { elements: [], appState: {}, files: {} };
+			}
+			
+			return {
+				elements: sanitizedElements,
+				appState: sanitizedAppState,
+				files: parsed.files || {},
+			};
+		} catch (error) {
+			logger.error("Failed to parse drawing data:", error);
+			return { elements: [], appState: {}, files: {} };
+		}
+	})();
 
 	// Calculate responsive size based on container
 	const [containerSize, setContainerSize] = useState({
@@ -48,12 +196,26 @@ export function DrawingWorkspace({
 	});
 
 	// Update container size on resize
+	// 限制最大尺寸以避免 Canvas exceeds max size 错误
+	// 浏览器 Canvas 有最大尺寸限制（通常是 16384x16384 或更小）
+	// Excalidraw 内部会根据 devicePixelRatio 放大，所以我们需要更保守的限制
+	// 考虑到 devicePixelRatio 可能是 2-3，我们需要更小的限制
+	const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+	const MAX_CANVAS_SIZE = Math.floor(4096 / dpr); // 根据 DPR 动态计算安全尺寸
+	
 	useEffect(() => {
 		const updateSize = () => {
-			if (containerRef.current) {
+			if (fillContainer && containerRef.current?.parentElement) {
+				// 填满父容器模式，但限制最大尺寸
+				const parentRect = containerRef.current.parentElement.getBoundingClientRect();
+				setContainerSize({
+					width: Math.min(MAX_CANVAS_SIZE, Math.max(400, parentRect.width - 8)),
+					height: Math.min(MAX_CANVAS_SIZE, Math.max(300, parentRect.height - 8)),
+				});
+			} else if (containerRef.current) {
 				const rect = containerRef.current.getBoundingClientRect();
-				const maxWidth = Math.max(600, rect.width - 32); // Min 600px with padding
-				const maxHeight = Math.max(400, Math.min(800, window.innerHeight * 0.6)); // Responsive height
+				const maxWidth = Math.min(MAX_CANVAS_SIZE, Math.max(600, rect.width - 32));
+				const maxHeight = Math.min(MAX_CANVAS_SIZE, Math.max(400, Math.min(800, window.innerHeight * 0.6)));
 				
 				setContainerSize({
 					width: Math.min(drawing.width, maxWidth),
@@ -65,7 +227,7 @@ export function DrawingWorkspace({
 		updateSize();
 		window.addEventListener('resize', updateSize);
 		return () => window.removeEventListener('resize', updateSize);
-	}, [drawing.width, drawing.height]);
+	}, [drawing.width, drawing.height, fillContainer]);
 
 	// Save drawing data
 	const saveData = useCallback(
@@ -89,7 +251,7 @@ export function DrawingWorkspace({
 				);
 				setHasUnsavedChanges(false);
 			} catch (error) {
-				console.error("Failed to save drawing:", error);
+				logger.error("Failed to save drawing:", error);
 				toast.error("Failed to save drawing");
 			}
 		},
@@ -104,7 +266,7 @@ export function DrawingWorkspace({
 				onRename?.(drawing.id, tempName.trim());
 				toast.success("Drawing renamed");
 			} catch (error) {
-				console.error("Failed to rename drawing:", error);
+				logger.error("Failed to rename drawing:", error);
 				toast.error("Failed to rename drawing");
 			}
 		}
@@ -145,7 +307,7 @@ export function DrawingWorkspace({
 			URL.revokeObjectURL(url);
 			toast.success("Drawing exported");
 		} catch (error) {
-			console.error("Export failed:", error);
+			logger.error("Export failed:", error);
 			toast.error("Export failed");
 		}
 	}, [isDark, drawing.name]);
@@ -173,6 +335,22 @@ export function DrawingWorkspace({
 		};
 	}, [isFullscreen]);
 
+	// 错误恢复 - 重试
+	const handleReset = useCallback(() => {
+		setIsEditing(false);
+		setIsReady(false);
+		setTimeout(() => setIsReady(true), 100);
+	}, []);
+
+	// 错误恢复 - 清空数据
+	const handleClearData = useCallback(async () => {
+		await resetDrawing(drawing.id);
+		setIsEditing(false);
+		setIsReady(false);
+		setTimeout(() => setIsReady(true), 100);
+		toast.success("绘图已重置");
+	}, [drawing.id]);
+
 	// Render preview mode
 	const renderPreview = () => {
 		if (drawingData.elements.length === 0) {
@@ -184,53 +362,93 @@ export function DrawingWorkspace({
 			);
 		}
 
+		// 等待容器准备好再渲染 Excalidraw
+		if (!isReady) {
+			return (
+				<div className="flex items-center justify-center h-full text-muted-foreground">
+					<span>Loading...</span>
+				</div>
+			);
+		}
+
 		return (
-			<div className="pointer-events-none h-full">
-				<Excalidraw
-					initialData={drawingData}
-					theme={isDark ? "dark" : "light"}
-					viewModeEnabled={true}
-					zenModeEnabled={true}
-					UIOptions={{
-						canvasActions: {
-							changeViewBackgroundColor: false,
-							clearCanvas: false,
-							export: false,
-							loadScene: false,
-							saveToActiveFile: false,
-							toggleTheme: false,
-						},
+			<DrawingErrorBoundary onReset={handleReset} onClearData={handleClearData}>
+				<div 
+					className="pointer-events-none h-full"
+					style={{ 
+						maxWidth: MAX_CANVAS_SIZE, 
+						maxHeight: MAX_CANVAS_SIZE,
+						overflow: "hidden"
 					}}
-				/>
-			</div>
+				>
+					<Excalidraw
+						initialData={drawingData}
+						theme={isDark ? "dark" : "light"}
+						viewModeEnabled={true}
+						zenModeEnabled={true}
+						UIOptions={{
+							canvasActions: {
+								changeViewBackgroundColor: false,
+								clearCanvas: false,
+								export: false,
+								loadScene: false,
+								saveToActiveFile: false,
+								toggleTheme: false,
+							},
+						}}
+					/>
+				</div>
+			</DrawingErrorBoundary>
 		);
 	};
 
 	// Render editor mode
-	const renderEditor = () => (
-		<Excalidraw
-			excalidrawAPI={(api) => {
-				excalidrawRef.current = api;
-			}}
-			initialData={drawingData}
-			theme={isDark ? "dark" : "light"}
-			onChange={(elements, appState, files) => {
-				setHasUnsavedChanges(true);
-				// Auto-save after 2 seconds of inactivity
-				const timeoutId = setTimeout(() => {
-					saveData(elements, appState, files);
-				}, 2000);
-				return () => clearTimeout(timeoutId);
-			}}
-			UIOptions={{
-				canvasActions: {
-					export: false,
-					loadScene: false,
-					saveToActiveFile: false,
-				},
-			}}
-		/>
-	);
+	const renderEditor = () => {
+		// 等待容器准备好再渲染 Excalidraw
+		if (!isReady) {
+			return (
+				<div className="flex items-center justify-center h-full text-muted-foreground">
+					<span>Loading...</span>
+				</div>
+			);
+		}
+
+		return (
+			<DrawingErrorBoundary onReset={handleReset} onClearData={handleClearData}>
+				<div 
+					className="h-full"
+					style={{ 
+						maxWidth: MAX_CANVAS_SIZE, 
+						maxHeight: MAX_CANVAS_SIZE,
+						overflow: "hidden"
+					}}
+				>
+					<Excalidraw
+						excalidrawAPI={(api) => {
+							excalidrawRef.current = api;
+						}}
+						initialData={drawingData}
+						theme={isDark ? "dark" : "light"}
+						onChange={(elements, appState, files) => {
+							setHasUnsavedChanges(true);
+							// Auto-save after 2 seconds of inactivity
+							const timeoutId = setTimeout(() => {
+								saveData(elements, appState, files);
+							}, 2000);
+							return () => clearTimeout(timeoutId);
+						}}
+						UIOptions={{
+							canvasActions: {
+								export: false,
+								loadScene: false,
+								saveToActiveFile: false,
+							},
+						}}
+					/>
+				</div>
+			</DrawingErrorBoundary>
+		);
+	};
 
 	// Fullscreen mode
 	if (isFullscreen) {
@@ -280,13 +498,17 @@ export function DrawingWorkspace({
 			className={cn(
 				"group relative rounded-lg border overflow-hidden",
 				isEditing ? "bg-background" : "bg-muted/30",
+				fillContainer && "w-full h-full",
 				className,
 			)}
-			style={{ 
+			style={fillContainer ? {
+				minWidth: 400,
+				minHeight: 300,
+			} : { 
 				width: containerSize.width, 
 				height: containerSize.height,
-				minWidth: 400, // Minimum width to handle Excalidraw constraints
-				minHeight: 300, // Minimum height to handle Excalidraw constraints
+				minWidth: 400,
+				minHeight: 300,
 			}}
 		>
 			{/* Header with title and controls */}

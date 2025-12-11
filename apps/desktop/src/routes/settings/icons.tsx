@@ -121,7 +121,7 @@ function IconSettings() {
 											icon={currentIconTheme.icons.activityBar.outline}
 										/>
 										<ActivityBarIcon
-											icon={currentIconTheme.icons.activityBar.characters}
+											icon={currentIconTheme.icons.activityBar.wiki}
 										/>
 										<div className="h-px w-6 bg-border/20 my-1" />
 										<ActivityBarIcon
@@ -237,12 +237,8 @@ function IconSettings() {
 												label="大纲"
 											/>
 											<ActivityBarIconItem
-												icon={currentIconTheme.icons.activityBar.characters}
-												label="角色"
-											/>
-											<ActivityBarIconItem
-												icon={currentIconTheme.icons.activityBar.world}
-												label="世界观"
+												icon={currentIconTheme.icons.activityBar.wiki}
+												label="Wiki"
 											/>
 											<ActivityBarIconItem
 												icon={currentIconTheme.icons.activityBar.canvas}

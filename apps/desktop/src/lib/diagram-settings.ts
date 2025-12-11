@@ -5,6 +5,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import logger from "@/log";
 
 interface DiagramSettings {
 	// Kroki 服务器配置
@@ -50,7 +51,7 @@ export const useDiagramSettings = create<DiagramSettings>()(
 
 					return response.ok;
 				} catch (error) {
-					console.error("Kroki connection test failed:", error);
+					logger.error("Kroki connection test failed:", error);
 					return false;
 				}
 			},

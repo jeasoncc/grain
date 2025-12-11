@@ -84,9 +84,9 @@ export interface IconTheme {
 			library: LucideIcon;
 			search: LucideIcon;
 			outline: LucideIcon;
-			characters: LucideIcon;
-			world: LucideIcon;
+			wiki: LucideIcon;
 			canvas: LucideIcon;
+			chapters: LucideIcon;
 			statistics: LucideIcon;
 			settings: LucideIcon;
 			create: LucideIcon;
@@ -132,9 +132,9 @@ export const iconThemes: IconTheme[] = [
 				library: BookMarked,
 				search: Search,
 				outline: ListTree,
-				characters: Users,
-				world: BookOpen,
+				wiki: BookOpen,
 				canvas: Pencil,
+				chapters: FolderTree,
 				statistics: TrendingUp,
 				settings: Settings,
 				create: Plus,
@@ -175,9 +175,9 @@ export const iconThemes: IconTheme[] = [
 				library: Book,
 				search: Search,
 				outline: ListTree,
-				characters: Users,
-				world: Globe,
+				wiki: BookOpen,
 				canvas: Pencil,
+				chapters: ListTree,
 				statistics: BarChart3,
 				settings: Cog,
 				create: Plus,
@@ -221,9 +221,9 @@ export const iconThemes: IconTheme[] = [
 				library: BookMarked,
 				search: Search,
 				outline: ListTree,
-				characters: Users,
-				world: BookOpen,
+				wiki: BookOpen,
 				canvas: Pencil,
+				chapters: FolderTree,
 				statistics: TrendingUp,
 				settings: Settings,
 				create: PlusCircle,
@@ -267,9 +267,9 @@ export const iconThemes: IconTheme[] = [
 				library: Library,
 				search: Search,
 				outline: Grid3x3,
-				characters: Users,
-				world: Compass,
+				wiki: BookOpenText,
 				canvas: Palette,
+				chapters: FolderTree,
 				statistics: BarChart3,
 				settings: Cog,
 				create: PlusCircle,
@@ -313,9 +313,9 @@ export const iconThemes: IconTheme[] = [
 				library: BookText,
 				search: Search,
 				outline: Layers,
-				characters: Users,
-				world: Sparkles,
+				wiki: BookOpen,
 				canvas: Feather,
+				chapters: Layers,
 				statistics: TrendingUp,
 				settings: Settings,
 				create: Plus,
@@ -359,9 +359,9 @@ export const iconThemes: IconTheme[] = [
 				library: Notebook,
 				search: Search,
 				outline: ScrollText,
-				characters: Users,
-				world: Globe,
+				wiki: BookOpen,
 				canvas: Feather,
+				chapters: ScrollText,
 				statistics: TrendingUp,
 				settings: Settings,
 				create: PenTool,

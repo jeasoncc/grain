@@ -1,8 +1,14 @@
+/**
+ * @deprecated 此服务已废弃，请使用 Wiki 服务替代
+ * 保留此文件仅用于向后兼容和数据迁移
+ * 所有新代码应使用 WikiEntryInterface 和相关的 Wiki 服务
+ */
 import { useLiveQuery } from "dexie-react-hooks";
 
 import { db } from "@/db/curd";
 import type { RoleInterface } from "@/db/schema";
 
+/** @deprecated 使用 Wiki 服务替代 */
 export function useRolesByProject(projectId: string | null): RoleInterface[] {
 	const data = useLiveQuery(
 		() =>
@@ -15,6 +21,7 @@ export function useRolesByProject(projectId: string | null): RoleInterface[] {
 	return (data ?? []) as RoleInterface[];
 }
 
+/** @deprecated 使用 db.addWikiEntry 替代 */
 export async function createRole(params: {
 	projectId: string;
 	name: string;
@@ -33,6 +40,7 @@ export async function createRole(params: {
 	return role as RoleInterface;
 }
 
+/** @deprecated 使用 db.updateWikiEntry 替代 */
 export async function updateRole(
 	id: string,
 	updates: Partial<RoleInterface>,
@@ -40,6 +48,7 @@ export async function updateRole(
 	await db.updateRole(id, updates);
 }
 
+/** @deprecated 使用 db.deleteWikiEntry 替代 */
 export async function deleteRole(id: string): Promise<void> {
 	await db.deleteRole(id);
 }

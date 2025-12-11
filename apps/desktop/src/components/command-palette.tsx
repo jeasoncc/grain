@@ -194,18 +194,10 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 					},
 				},
 				{
-					label: "打开角色页面",
-					icon: <Users className="size-4" />,
-					onSelect: () => {
-						navigate({ to: "/characters" });
-						onOpenChange(false);
-					},
-				},
-				{
-					label: "打开世界观页面",
+					label: "打开 Wiki 知识库",
 					icon: <BookOpen className="size-4" />,
 					onSelect: () => {
-						navigate({ to: "/world" });
+						navigate({ to: "/wiki" });
 						onOpenChange(false);
 					},
 				},

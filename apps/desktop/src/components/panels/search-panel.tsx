@@ -47,8 +47,8 @@ const typeLabels: Record<SearchResultType, string> = {
 	scene: "场景",
 	chapter: "章节",
 	project: "项目",
-	role: "角色",
-	world: "世界观",
+	role: "Wiki",
+	world: "Wiki",
 };
 
 const typeColors: Record<SearchResultType, string> = {
@@ -130,10 +130,8 @@ export function SearchPanel() {
 				}
 				break;
 			case "role":
-				navigate({ to: "/characters" });
-				break;
 			case "world":
-				navigate({ to: "/world" });
+				navigate({ to: "/wiki" });
 				break;
 		}
 	};
@@ -275,7 +273,7 @@ export function SearchPanel() {
 					<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
 						<Search className="size-12 mb-3 opacity-20" />
 						<p className="text-sm">输入关键词开始搜索</p>
-						<p className="text-xs mt-1">支持搜索场景、角色、世界观</p>
+						<p className="text-xs mt-1">支持搜索场景、Wiki 条目</p>
 					</div>
 				)}
 			</ScrollArea>

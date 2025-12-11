@@ -5,6 +5,7 @@
 import { PenTool, Plus, Search } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import logger from "@/log";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -45,7 +46,7 @@ export function DrawingList({
 			onSelectDrawing?.(newDrawing);
 			toast.success("New drawing created");
 		} catch (error) {
-			console.error("Failed to create drawing:", error);
+			logger.error("Failed to create drawing:", error);
 			toast.error("Failed to create drawing");
 		}
 	}, [projectId, drawings.length, onSelectDrawing]);
@@ -56,7 +57,7 @@ export function DrawingList({
 			await deleteDrawing(drawingId);
 			toast.success("Drawing deleted");
 		} catch (error) {
-			console.error("Failed to delete drawing:", error);
+			logger.error("Failed to delete drawing:", error);
 			toast.error("Failed to delete drawing");
 		}
 	}, []);

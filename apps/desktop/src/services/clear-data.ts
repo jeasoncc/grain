@@ -3,6 +3,7 @@
  * 包括 IndexedDB、localStorage、sessionStorage、cookies 等
  */
 
+import logger from "@/log";
 import { db } from "@/db/curd";
 
 export interface ClearDataOptions {
@@ -40,9 +41,9 @@ export async function clearIndexedDB(): Promise<void> {
 			},
 		);
 
-		console.log("[Clear Data] IndexedDB cleared successfully");
+		logger.info("[Clear Data] IndexedDB cleared successfully");
 	} catch (error) {
-		console.error("[Clear Data] Failed to clear IndexedDB:", error);
+		logger.error("[Clear Data] Failed to clear IndexedDB:", error);
 		throw new Error(
 			"Failed to clear IndexedDB: " +
 				(error instanceof Error ? error.message : "Unknown error"),
@@ -72,9 +73,9 @@ export function clearLocalStorage(): void {
 			}
 		}
 
-		console.log("[Clear Data] localStorage cleared successfully");
+		logger.info("[Clear Data] localStorage cleared successfully");
 	} catch (error) {
-		console.error("[Clear Data] Failed to clear localStorage:", error);
+		logger.error("[Clear Data] Failed to clear localStorage:", error);
 		throw new Error(
 			"Failed to clear localStorage: " +
 				(error instanceof Error ? error.message : "Unknown error"),
@@ -88,9 +89,9 @@ export function clearLocalStorage(): void {
 export function clearSessionStorage(): void {
 	try {
 		sessionStorage.clear();
-		console.log("[Clear Data] sessionStorage cleared successfully");
+		logger.info("[Clear Data] sessionStorage cleared successfully");
 	} catch (error) {
-		console.error("[Clear Data] Failed to clear sessionStorage:", error);
+		logger.error("[Clear Data] Failed to clear sessionStorage:", error);
 		throw new Error(
 			"Failed to clear sessionStorage: " +
 				(error instanceof Error ? error.message : "Unknown error"),
@@ -119,9 +120,9 @@ export function clearCookies(): void {
 			}
 		}
 
-		console.log("[Clear Data] Cookies cleared successfully");
+		logger.info("[Clear Data] Cookies cleared successfully");
 	} catch (error) {
-		console.error("[Clear Data] Failed to clear cookies:", error);
+		logger.error("[Clear Data] Failed to clear cookies:", error);
 		throw new Error(
 			"Failed to clear cookies: " +
 				(error instanceof Error ? error.message : "Unknown error"),
@@ -149,9 +150,9 @@ function initializeBasicSettings(): void {
 			activePanel: 'books'
 		}));
 		
-		console.log("[Clear Data] Basic settings initialized");
+		logger.info("[Clear Data] Basic settings initialized");
 	} catch (error) {
-		console.error("[Clear Data] Failed to initialize basic settings:", error);
+		logger.error("[Clear Data] Failed to initialize basic settings:", error);
 	}
 }
 
@@ -165,10 +166,10 @@ export async function clearCaches(): Promise<void> {
 			await Promise.all(
 				cacheNames.map((cacheName) => caches.delete(cacheName)),
 			);
-			console.log("[Clear Data] Caches cleared successfully");
+			logger.info("[Clear Data] Caches cleared successfully");
 		}
 	} catch (error) {
-		console.error("[Clear Data] Failed to clear caches:", error);
+		logger.error("[Clear Data] Failed to clear caches:", error);
 		// 不抛出错误，因为缓存清理失败不是致命的
 	}
 }
@@ -217,7 +218,7 @@ export async function clearAllData(
 			initializeBasicSettings();
 		}
 
-		console.log("[Clear Data] All data cleared successfully");
+		logger.info("[Clear Data] All data cleared successfully");
 	} catch (error) {
 		const errorMessage =
 			error instanceof Error ? error.message : "Unknown error";

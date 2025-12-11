@@ -1,11 +1,14 @@
 /**
  * Mermaid 图表生成器
  * 根据大纲数据自动生成各种 Mermaid 图表
+ * 
+ * 注意：generateCharacterRelations 函数仍使用废弃的 RoleInterface
+ * 未来版本将迁移到 WikiEntryInterface
  */
 
 import type {
 	ChapterInterface,
-	RoleInterface,
+	RoleInterface, // @deprecated - 保留用于向后兼容
 	SceneInterface,
 } from "@/db/schema";
 
@@ -97,6 +100,7 @@ export function generateChapterFlow(chapters: ChapterInterface[]): string {
 
 /**
  * 生成角色关系图
+ * @deprecated 此函数使用废弃的 RoleInterface，未来将迁移到 WikiEntryInterface
  */
 export function generateCharacterRelations(
 	characters: RoleInterface[],

@@ -151,7 +151,7 @@ export function ExportDialog({
 						{format === "json" && (
 							<p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
 								💡 JSON
-								备份包含所有书籍、章节、场景、角色和世界观数据，可用于完整恢复。
+								备份包含所有书籍、章节、场景和 Wiki 数据，可用于完整恢复。
 							</p>
 						)}
 						{format === "zip" && (

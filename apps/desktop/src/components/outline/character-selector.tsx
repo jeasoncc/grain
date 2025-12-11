@@ -1,8 +1,8 @@
 /**
- * 角色选择器组件
+ * Wiki 条目选择器组件
  */
 
-import { Plus, User, X } from "lucide-react";
+import { BookOpen, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useRolesByProject } from "@/services/roles";
+import { useWikiEntriesByProject } from "@/services/wiki";
 
 interface CharacterSelectorProps {
 	projectId: string;
@@ -26,48 +26,48 @@ export function CharacterSelector({
 	selectedCharacters,
 	onChange,
 }: CharacterSelectorProps) {
-	const roles = useRolesByProject(projectId);
+	const wikiEntries = useWikiEntriesByProject(projectId);
 	const [open, setOpen] = useState(false);
 	const [search, setSearch] = useState("");
 
-	const selectedRoles = useMemo(
-		() => roles.filter((r) => selectedCharacters.includes(r.id)),
-		[roles, selectedCharacters],
+	const selectedEntries = useMemo(
+		() => wikiEntries.filter((w) => selectedCharacters.includes(w.id)),
+		[wikiEntries, selectedCharacters],
 	);
 
-	const availableRoles = useMemo(() => {
-		const filtered = roles.filter((r) => !selectedCharacters.includes(r.id));
+	const availableEntries = useMemo(() => {
+		const filtered = wikiEntries.filter((w) => !selectedCharacters.includes(w.id));
 
 		if (!search) return filtered;
 
 		const query = search.toLowerCase();
 		return filtered.filter(
-			(r) =>
-				r.name.toLowerCase().includes(query) ||
-				r.alias?.some((a) => a.toLowerCase().includes(query)),
+			(w) =>
+				w.name.toLowerCase().includes(query) ||
+				w.alias?.some((a) => a.toLowerCase().includes(query)),
 		);
-	}, [roles, selectedCharacters, search]);
+	}, [wikiEntries, selectedCharacters, search]);
 
-	const handleAdd = (roleId: string) => {
-		onChange([...selectedCharacters, roleId]);
+	const handleAdd = (entryId: string) => {
+		onChange([...selectedCharacters, entryId]);
 		setSearch("");
 	};
 
-	const handleRemove = (roleId: string) => {
-		onChange(selectedCharacters.filter((id) => id !== roleId));
+	const handleRemove = (entryId: string) => {
+		onChange(selectedCharacters.filter((id) => id !== entryId));
 	};
 
 	return (
 		<div className="flex flex-wrap gap-2">
-			{selectedRoles.map((role) => (
+			{selectedEntries.map((entry) => (
 				<Badge
-					key={role.id}
+					key={entry.id}
 					variant="secondary"
 					className="gap-1.5 cursor-pointer hover:bg-secondary/80"
-					onClick={() => handleRemove(role.id)}
+					onClick={() => handleRemove(entry.id)}
 				>
-					<User className="size-3" />
-					{role.name}
+					<BookOpen className="size-3" />
+					{entry.name}
 					<X className="size-3" />
 				</Badge>
 			))}
@@ -76,37 +76,37 @@ export function CharacterSelector({
 				<PopoverTrigger asChild>
 					<Button size="sm" variant="outline" className="h-6 px-2 text-xs">
 						<Plus className="size-3 mr-1" />
-						添加角色
+						添加条目
 					</Button>
 				</PopoverTrigger>
 				<PopoverContent className="w-64 p-2" align="start">
 					<Input
-						placeholder="搜索角色..."
+						placeholder="搜索 Wiki 条目..."
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
 						className="h-8 mb-2"
 					/>
 					<ScrollArea className="h-48">
-						{availableRoles.length === 0 ? (
+						{availableEntries.length === 0 ? (
 							<div className="text-sm text-muted-foreground text-center py-4">
-								{search ? "未找到角色" : "暂无可选角色"}
+								{search ? "未找到条目" : "暂无可选条目"}
 							</div>
 						) : (
 							<div className="space-y-1">
-								{availableRoles.map((role) => (
+								{availableEntries.map((entry) => (
 									<button
-										key={role.id}
+										key={entry.id}
 										onClick={() => {
-											handleAdd(role.id);
+											handleAdd(entry.id);
 											setOpen(false);
 										}}
 										className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-accent text-sm"
 									>
-										<User className="size-4 text-muted-foreground" />
-										<span>{role.name}</span>
-										{role.alias && role.alias.length > 0 && (
+										<BookOpen className="size-4 text-muted-foreground" />
+										<span>{entry.name}</span>
+										{entry.alias && entry.alias.length > 0 && (
 											<span className="text-xs text-muted-foreground">
-												({role.alias[0]})
+												({entry.alias[0]})
 											</span>
 										)}
 									</button>

@@ -4,6 +4,7 @@
  */
 
 import { saveAs } from "file-saver";
+import logger from "@/log";
 import type { ExportOptions, ExportFormat } from "./export";
 import {
 	exportToTxt as browserExportToTxt,
@@ -22,11 +23,11 @@ async function loadTauriAPIs() {
 		if (typeof window !== "undefined" && (window as any).__TAURI__) {
 			// For now, we'll implement a fallback that uses the browser download
 			// In the future, this can be enhanced with proper Tauri file system APIs
-			console.log("Tauri environment detected, but using browser fallback for file operations");
+			logger.info("Tauri environment detected, but using browser fallback for file operations");
 			return false; // Use browser fallback for now
 		}
 	} catch (error) {
-		console.warn("Failed to load Tauri APIs:", error);
+		logger.warn("Failed to load Tauri APIs:", error);
 	}
 	return false;
 }
@@ -121,7 +122,7 @@ export class UniversalExportService {
 	async showSaveDialog(config: FileDialogConfig): Promise<string | null> {
 		// For now, return null to use browser fallback
 		// This can be implemented later with proper Tauri APIs
-		console.log("Save dialog requested but using browser fallback");
+		logger.debug("Save dialog requested but using browser fallback");
 		return null;
 	}
 

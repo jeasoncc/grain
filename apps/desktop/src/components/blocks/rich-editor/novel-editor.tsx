@@ -34,6 +34,7 @@ import { ExcalidrawPickerPlugin } from "@/components/editor/plugins/picker/excal
 import { HeadingPickerPlugin } from "@/components/editor/plugins/picker/heading-picker-plugin";
 import { QuotePickerPlugin } from "@/components/editor/plugins/picker/quote-picker-plugin";
 import { editorTheme } from "@/components/editor/themes/editor-theme";
+import logger from "@/log";
 import { cn } from "@/lib/utils";
 import { useWritingStore } from "@/stores/writing";
 import { nodes } from "./nodes";
@@ -43,7 +44,7 @@ const editorConfig: InitialConfigType = {
 	theme: editorTheme,
 	nodes,
 	onError: (error: Error) => {
-		console.error(error);
+		logger.error(error);
 	},
 };
 
@@ -122,7 +123,7 @@ export function NovelEditor({
 					]}
 				/>
 
-				{/* @ 角色提及功能 */}
+				{/* @ Wiki 提及功能 */}
 				<MentionsPlugin />
 				<MentionTooltipPlugin />
 

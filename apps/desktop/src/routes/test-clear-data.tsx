@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+import logger from "@/log";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -31,7 +32,7 @@ function TestClearData() {
 			setStorageStats(stats);
 		} catch (error) {
 			toast.error("Failed to load storage stats");
-			console.error(error);
+			logger.error(error);
 		}
 	};
 
@@ -43,7 +44,7 @@ function TestClearData() {
 			await loadStats();
 		} catch (error) {
 			toast.error("Failed to clear data");
-			console.error(error);
+			logger.error(error);
 		} finally {
 			setLoading(false);
 		}
@@ -57,7 +58,7 @@ function TestClearData() {
 			await loadStats();
 		} catch (error) {
 			toast.error("Failed to clear IndexedDB");
-			console.error(error);
+			logger.error(error);
 		} finally {
 			setLoading(false);
 		}
@@ -70,7 +71,7 @@ function TestClearData() {
 			loadStats();
 		} catch (error) {
 			toast.error("Failed to clear localStorage");
-			console.error(error);
+			logger.error(error);
 		}
 	};
 
@@ -81,7 +82,7 @@ function TestClearData() {
 			loadStats();
 		} catch (error) {
 			toast.error("Failed to clear sessionStorage");
-			console.error(error);
+			logger.error(error);
 		}
 	};
 
@@ -92,7 +93,7 @@ function TestClearData() {
 			loadStats();
 		} catch (error) {
 			toast.error("Failed to clear cookies");
-			console.error(error);
+			logger.error(error);
 		}
 	};
 

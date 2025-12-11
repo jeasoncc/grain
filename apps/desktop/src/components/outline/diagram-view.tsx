@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type {
 	ChapterInterface,
-	RoleInterface,
+	RoleInterface, // @deprecated - 保留用于向后兼容，未来将使用 WikiEntryInterface
 	SceneInterface,
 } from "@/db/schema";
 import { isKrokiEnabled } from "@/lib/diagram-settings";
@@ -23,6 +23,7 @@ import { PlantUMLViewer } from "./plantuml-viewer";
 interface DiagramViewProps {
 	chapters: ChapterInterface[];
 	scenes: SceneInterface[];
+	/** @deprecated 将来会使用 WikiEntryInterface 替代 */
 	characters?: RoleInterface[];
 }
 

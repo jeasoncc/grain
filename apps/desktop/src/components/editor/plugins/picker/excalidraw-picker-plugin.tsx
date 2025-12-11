@@ -2,6 +2,7 @@
  * Excalidraw 选择器插件 - 用于 / 命令菜单
  */
 import { Pencil } from "lucide-react";
+import logger from "@/log";
 import { ComponentPickerOption } from "@/components/editor/plugins/picker/component-picker-option";
 import { INSERT_EXCALIDRAW_COMMAND } from "../excalidraw-plugin";
 
@@ -19,12 +20,12 @@ export function ExcalidrawPickerPlugin() {
 			"白板",
 		],
 		onSelect: (queryString, editor, showModal) => {
-			console.log("ExcalidrawPickerPlugin: onSelect called");
+			logger.debug("ExcalidrawPickerPlugin: onSelect called");
 			const result = editor.dispatchCommand(
 				INSERT_EXCALIDRAW_COMMAND,
 				undefined,
 			);
-			console.log(
+			logger.debug(
 				"ExcalidrawPickerPlugin: command dispatched, result:",
 				result,
 			);

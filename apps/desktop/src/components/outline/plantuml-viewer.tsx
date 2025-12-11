@@ -5,6 +5,7 @@
 import { Copy, Download, Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import logger from "@/log";
 import { Button } from "@/components/ui/button";
 import { useDiagramSettings } from "@/lib/diagram-settings";
 import { cn } from "@/lib/utils";
@@ -49,7 +50,7 @@ export function PlantUMLViewer({
 				const svg = await response.text();
 				setSvgContent(svg);
 			} catch (err) {
-				console.error("PlantUML render error:", err);
+				logger.error("PlantUML render error:", err);
 				setError(err instanceof Error ? err.message : "渲染失败");
 			} finally {
 				setLoading(false);

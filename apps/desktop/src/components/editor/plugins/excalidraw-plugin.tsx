@@ -12,6 +12,7 @@ import {
 	type LexicalCommand,
 } from "lexical";
 import { useEffect } from "react";
+import logger from "@/log";
 import {
 	$createExcalidrawNode,
 	ExcalidrawNode,
@@ -36,12 +37,12 @@ export function ExcalidrawPlugin(): null {
 		return editor.registerCommand(
 			INSERT_EXCALIDRAW_COMMAND,
 			() => {
-				console.log("ExcalidrawPlugin: INSERT_EXCALIDRAW_COMMAND received");
+				logger.debug("ExcalidrawPlugin: INSERT_EXCALIDRAW_COMMAND received");
 				editor.update(() => {
 					const selection = $getSelection();
-					console.log("ExcalidrawPlugin: selection:", selection);
+					logger.debug("ExcalidrawPlugin: selection:", selection);
 					if ($isRangeSelection(selection)) {
-						console.log("ExcalidrawPlugin: creating new blank excalidraw node");
+						logger.debug("ExcalidrawPlugin: creating new blank excalidraw node");
 						// Create a new blank drawing each time
 						const excalidrawNode = $createExcalidrawNode({
 							data: JSON.stringify({ elements: [], appState: {}, files: {} }),
@@ -49,9 +50,9 @@ export function ExcalidrawPlugin(): null {
 							height: 600,
 						});
 						$insertNodeToNearestRoot(excalidrawNode);
-						console.log("ExcalidrawPlugin: blank node inserted");
+						logger.debug("ExcalidrawPlugin: blank node inserted");
 					} else {
-						console.log("ExcalidrawPlugin: selection is not range selection");
+						logger.debug("ExcalidrawPlugin: selection is not range selection");
 					}
 				});
 				return true;

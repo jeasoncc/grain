@@ -45,30 +45,27 @@ function CanvasPage() {
 					</div>
 				</header>
 
-				{/* 绘图内容区域 */}
-				<div className="flex-1 overflow-hidden relative w-full mx-auto">
-					<div className="h-full w-full overflow-y-auto scroll-smooth scrollbar-thin">
-						<article className="min-h-[calc(100vh-10rem)] w-full max-w-4xl mx-auto px-16 py-12">
-							{selectedDrawing ? (
-								<DrawingWorkspace
-									drawing={selectedDrawing}
-									onDelete={handleDeleteDrawing}
-									onRename={handleRenameDrawing}
-									className="w-full"
-								/>
-							) : (
-								<div className="flex flex-col items-center justify-center h-full min-h-[400px] text-muted-foreground">
-									<div className="text-center">
-										<PenTool className="size-12 mx-auto mb-4 opacity-30" />
-										<h3 className="text-lg font-medium mb-2">选择一个绘图开始编辑</h3>
-										<p className="text-sm">
-											从左侧边栏选择一个绘图，或创建一个新的绘图来开始。
-										</p>
-									</div>
-								</div>
-							)}
-						</article>
-					</div>
+				{/* 绘图内容区域 - 填满整个可用空间 */}
+				<div className="flex-1 overflow-hidden relative w-full p-4">
+					{selectedDrawing ? (
+						<DrawingWorkspace
+							drawing={selectedDrawing}
+							onDelete={handleDeleteDrawing}
+							onRename={handleRenameDrawing}
+							className="w-full h-full"
+							fillContainer={true}
+						/>
+					) : (
+						<div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+							<div className="text-center">
+								<PenTool className="size-12 mx-auto mb-4 opacity-30" />
+								<h3 className="text-lg font-medium mb-2">选择一个绘图开始编辑</h3>
+								<p className="text-sm">
+									从左侧边栏选择一个绘图，或创建一个新的绘图来开始。
+								</p>
+							</div>
+						</div>
+					)}
 				</div>
 			</main>
 		</div>

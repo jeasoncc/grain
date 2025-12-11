@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
+import logger from "@/log";
 import { createCanvasScene, createScene } from "@/services/scenes";
 import { useSceneCreationStore } from "@/stores/scene-creation";
 
@@ -26,7 +27,7 @@ export function useSceneCreation({
 
 	const handleCreateScene = useCallback(
 		async (chapterId: string, type: "text" | "canvas" = "text") => {
-			console.log(
+			logger.debug(
 				`[Scene Creation] Starting ${type} scene creation for chapter:`,
 				chapterId,
 			);
@@ -41,18 +42,18 @@ export function useSceneCreation({
 			// Get current state to check if creation is in progress
 			const currentState = useSceneCreationStore.getState();
 			const chapterState = currentState.creationStates[chapterId];
-			console.log(`[Scene Creation] Current chapter state:`, chapterState);
+			logger.debug(`[Scene Creation] Current chapter state:`, chapterState);
 
 			if (chapterState?.isCreating) {
 				const error = `${type === "canvas" ? "Canvas scene" : "Scene"} creation already in progress`;
-				console.log(`[Scene Creation] Blocked - already creating:`, error);
+				logger.debug(`[Scene Creation] Blocked - already creating:`, error);
 				toast.error(error);
 				onError?.(error, chapterId);
 				return null;
 			}
 
 			// Set creation state to prevent concurrent operations
-			console.log(
+			logger.debug(
 				`[Scene Creation] Setting creating state to true for chapter:`,
 				chapterId,
 			);
@@ -88,7 +89,7 @@ export function useSceneCreation({
 				}
 
 				// Update creation state
-				console.log(
+				logger.debug(
 					`[Scene Creation] Scene created successfully:`,
 					newScene.id,
 				);
@@ -110,7 +111,7 @@ export function useSceneCreation({
 				return null;
 			} finally {
 				// Always reset creation state
-				console.log(
+				logger.debug(
 					`[Scene Creation] Resetting creating state to false for chapter:`,
 					chapterId,
 				);

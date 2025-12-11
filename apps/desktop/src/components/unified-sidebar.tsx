@@ -5,6 +5,7 @@ import { BooksPanel } from "./panels/books-panel";
 import { SearchPanel } from "./panels/search-panel";
 import { DrawingsPanel } from "./panels/drawings-panel";
 import { WikiPanel } from "./panels/wiki-panel";
+import { ChaptersPanel } from "./panels/chapters-panel";
 import type { DrawingInterface, WikiEntryInterface } from "@/db/schema";
 
 export function UnifiedSidebar() {
@@ -29,10 +30,10 @@ export function UnifiedSidebar() {
 		navigate({ to: "/canvas" });
 	};
 
-	// Handle wiki entry selection - update store and navigate to world page
+	// Handle wiki entry selection - update store and navigate to wiki page
 	const handleSelectWikiEntry = (entry: WikiEntryInterface) => {
 		setSelectedWikiEntryId(entry.id);
-		navigate({ to: "/world" });
+		navigate({ to: "/wiki" });
 	};
 
 	return (
@@ -57,6 +58,7 @@ export function UnifiedSidebar() {
 					selectedEntryId={wikiState.selectedEntryId}
 				/>
 			)}
+			{activePanel === "chapters" && <ChaptersPanel />}
 		</div>
 	);
 }

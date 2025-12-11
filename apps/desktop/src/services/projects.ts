@@ -7,7 +7,7 @@ import type {
 	AttachmentInterface,
 	ChapterInterface,
 	ProjectInterface,
-	RoleInterface,
+	RoleInterface, // @deprecated - 保留用于导入/导出向后兼容
 	SceneInterface,
 } from "@/db/schema";
 import { extractTextFromSerialized } from "@/lib/statistics";
@@ -34,10 +34,16 @@ export function useAllProjects(): ProjectInterface[] {
 	return (data ?? []) as ProjectInterface[];
 }
 
+/**
+ * 导出数据包接口
+ * 注意：roles 字段使用废弃的 RoleInterface，保留用于向后兼容
+ * 未来版本将添加 wikiEntries 字段
+ */
 export interface ExportBundle {
 	projects: ProjectInterface[];
 	chapters: ChapterInterface[];
 	scenes: SceneInterface[];
+	/** @deprecated 保留用于向后兼容，未来将使用 wikiEntries */
 	roles: RoleInterface[];
 	attachments: AttachmentInterface[];
 }

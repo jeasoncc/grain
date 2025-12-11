@@ -19,14 +19,9 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { db } from "@/db/curd";
-import { getActivityBarIcon, getCurrentIconTheme } from "@/lib/icon-themes";
+import { getCurrentIconTheme } from "@/lib/icon-themes";
 import { cn } from "@/lib/utils";
-import {
-	exportAllAsZip,
-	importFromJson,
-	readFileAsText,
-	triggerBlobDownload,
-} from "@/services/projects";
+import { importFromJson, readFileAsText } from "@/services/projects";
 import { useSelectionStore } from "@/stores/selection";
 import { useUnifiedSidebarStore } from "@/stores/unified-sidebar";
 
@@ -60,9 +55,9 @@ export function ActivityBar(): React.ReactElement {
 	const LibraryIcon = iconTheme.icons.activityBar.library;
 	const SearchIcon = iconTheme.icons.activityBar.search;
 	const OutlineIcon = iconTheme.icons.activityBar.outline;
-	const CharactersIcon = iconTheme.icons.activityBar.characters;
-	const WorldIcon = iconTheme.icons.activityBar.world;
+	const WikiIcon = iconTheme.icons.activityBar.wiki;
 	const CanvasIcon = iconTheme.icons.activityBar.canvas;
+	const ChaptersIcon = iconTheme.icons.activityBar.chapters;
 	const StatisticsIcon = iconTheme.icons.activityBar.statistics;
 	const SettingsIcon = iconTheme.icons.activityBar.settings;
 	const ImportIcon = iconTheme.icons.activityBar.import;
@@ -90,18 +85,7 @@ export function ActivityBar(): React.ReactElement {
 		[],
 	);
 
-	const handleExportZip = useCallback(async () => {
-		try {
-			toast.loading("正在打包数据...");
-			const zipBlob = await exportAllAsZip();
-			const filename = `novel-editor-backup-${new Date().toISOString().slice(0, 10)}.zip`;
-			triggerBlobDownload(filename, zipBlob);
-			toast.success("导出成功");
-		} catch (error) {
-			console.error("导出失败:", error);
-			toast.error("导出失败");
-		}
-	}, []);
+
 
 	const handleDeleteAllBooks = useCallback(async () => {
 		const ok = await confirm({
@@ -130,10 +114,10 @@ export function ActivityBar(): React.ReactElement {
 		location.pathname === path || location.pathname.startsWith(path + "/");
 
 	return (
-		<aside className="activity-bar fixed left-0 top-0 z-50 flex h-screen w-12 shrink-0 flex-col items-center bg-sidebar py-3">
+		<aside className="activity-bar fixed left-0 top-0 z-50 flex h-screen w-12 shrink-0 flex-col items-center bg-sidebar py-2">
 			<TooltipProvider>
 				{/* 主导航 - 侧边栏面板切换 */}
-				<nav className="flex flex-col items-center gap-1">
+				<nav className="flex flex-col items-center gap-0.5">
 					<ActionButton
 						icon={<LibraryIcon className="size-5" />}
 						label="书库 (Ctrl+B)"
@@ -171,8 +155,8 @@ export function ActivityBar(): React.ReactElement {
 						}}
 					/>
 					<ActionButton
-						icon={<WorldIcon className="size-5" />}
-						label="世界观"
+						icon={<WikiIcon className="size-5" />}
+						label="Wiki 知识库"
 						active={activePanel === "wiki" && unifiedSidebarOpen}
 						onClick={() => {
 							if (activePanel === "wiki" && unifiedSidebarOpen) {
@@ -182,30 +166,30 @@ export function ActivityBar(): React.ReactElement {
 							}
 						}}
 					/>
+					<ActionButton
+						icon={<ChaptersIcon className="size-5" />}
+						label="章节管理"
+						active={activePanel === "chapters" && unifiedSidebarOpen}
+						onClick={() => {
+							if (activePanel === "chapters" && unifiedSidebarOpen) {
+								toggleSidebar();
+							} else {
+								setActivePanel("chapters");
+							}
+						}}
+					/>
 				</nav>
 
-				<div className="my-3 h-px w-6 bg-border/20" />
+				<div className="my-2 h-px w-6 bg-border/30" />
 
 				{/* 页面导航 */}
-				<nav className="flex flex-col items-center gap-1">
+				<nav className="flex flex-col items-center gap-0.5">
 					<NavItem
 						to="/outline"
 						icon={<OutlineIcon className="size-5" />}
 						label="大纲"
 						active={isActive("/outline")}
 					/>
-					<NavItem
-						to="/characters"
-						icon={<CharactersIcon className="size-5" />}
-						label="角色"
-						active={isActive("/characters")}
-					/>
-				</nav>
-
-				<div className="my-3 h-px w-6 bg-border/20" />
-
-				{/* 统计 */}
-				<nav className="flex flex-col items-center gap-1">
 					<NavItem
 						to="/statistics"
 						icon={<StatisticsIcon className="size-5" />}
@@ -215,7 +199,7 @@ export function ActivityBar(): React.ReactElement {
 				</nav>
 
 				{/* 底部 */}
-				<div className="mt-auto flex flex-col items-center gap-1">
+				<div className="mt-auto flex flex-col items-center gap-0.5">
 					<Popover>
 						<Tooltip>
 							<TooltipTrigger asChild>

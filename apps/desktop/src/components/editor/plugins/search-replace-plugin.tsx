@@ -4,6 +4,7 @@
  */
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import logger from "@/log";
 import {
 	$getRoot,
 	$isElementNode,
@@ -127,7 +128,7 @@ export function SearchReplacePlugin() {
 						});
 					}
 				} catch (error) {
-					console.error("搜索错误:", error);
+					logger.error("搜索错误:", error);
 				}
 			}
 

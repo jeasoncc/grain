@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import logger from "@/log";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +17,7 @@ const TOUR_STEPS: TourStep[] = [
 	{
 		target: "[data-tour='activity-bar']",
 		title: "活动栏",
-		description: "这里可以快速访问书库、大纲、角色、世界观等功能",
+		description: "这里可以快速访问书库、大纲、Wiki 知识库等功能",
 		position: "right",
 	},
 	{
@@ -81,7 +82,7 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
 		const element = document.querySelector(step.target);
 
 		if (!element) {
-			console.warn(`Tour target not found: ${step.target}`);
+			logger.warn(`Tour target not found: ${step.target}`);
 			return;
 		}
 

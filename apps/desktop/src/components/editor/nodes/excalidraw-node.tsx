@@ -19,6 +19,40 @@ const ExcalidrawComponent = React.lazy(
 	() => import("../editor-ui/excalidraw-component"),
 );
 
+// Loading fallback component
+function ExcalidrawLoadingFallback({ height }: { height: number }) {
+	return (
+		<div 
+			className="flex flex-col items-center justify-center bg-muted/30 rounded-lg border animate-pulse"
+			style={{ height: Math.max(300, height), minWidth: 400 }}
+		>
+			<div className="flex items-center gap-2 text-muted-foreground">
+				<svg 
+					className="animate-spin h-5 w-5" 
+					xmlns="http://www.w3.org/2000/svg" 
+					fill="none" 
+					viewBox="0 0 24 24"
+				>
+					<circle 
+						className="opacity-25" 
+						cx="12" 
+						cy="12" 
+						r="10" 
+						stroke="currentColor" 
+						strokeWidth="4"
+					/>
+					<path 
+						className="opacity-75" 
+						fill="currentColor" 
+						d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+					/>
+				</svg>
+				<span>加载绘图组件...</span>
+			</div>
+		</div>
+	);
+}
+
 export interface ExcalidrawPayload {
 	key?: NodeKey;
 	data?: string; // JSON 字符串存储 Excalidraw 数据
@@ -63,7 +97,14 @@ export class ExcalidrawNode extends DecoratorNode<JSX.Element> {
 	}
 
 	static importJSON(serializedNode: SerializedExcalidrawNode): ExcalidrawNode {
-		const { data, width, height } = serializedNode;
+		// Safely extract and validate data
+		const data = typeof serializedNode.data === "string" ? serializedNode.data : "";
+		const width = typeof serializedNode.width === "number" && serializedNode.width > 0 
+			? serializedNode.width 
+			: 600;
+		const height = typeof serializedNode.height === "number" && serializedNode.height > 0 
+			? serializedNode.height 
+			: 400;
 		return $createExcalidrawNode({ data, width, height });
 	}
 
@@ -157,13 +198,7 @@ export class ExcalidrawNode extends DecoratorNode<JSX.Element> {
 
 	decorate(): JSX.Element {
 		return (
-			<Suspense
-				fallback={
-					<div className="flex items-center justify-center h-[400px] bg-muted rounded-lg">
-						<span className="text-muted-foreground">加载绘图组件...</span>
-					</div>
-				}
-			>
+			<Suspense fallback={<ExcalidrawLoadingFallback height={this.__height} />}>
 				<ExcalidrawComponent
 					nodeKey={this.getKey()}
 					data={this.__data}

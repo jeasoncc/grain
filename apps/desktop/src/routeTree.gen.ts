@@ -9,7 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WorldRouteImport } from './routes/world'
+import { Route as WikiRouteImport } from './routes/wiki'
 import { Route as TestSceneCreationRouteImport } from './routes/test-scene-creation'
 import { Route as TestManualSaveRouteImport } from './routes/test-manual-save'
 import { Route as TestFocusRouteImport } from './routes/test-focus'
@@ -18,12 +18,12 @@ import { Route as StatisticsRouteImport } from './routes/statistics'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as OutlineRouteImport } from './routes/outline'
 import { Route as LogRouteImport } from './routes/log'
-import { Route as CharactersRouteImport } from './routes/characters'
 import { Route as CanvasRouteImport } from './routes/canvas'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SettingsTypographyRouteImport } from './routes/settings/typography'
 import { Route as SettingsScrollTestRouteImport } from './routes/settings/scroll-test'
+import { Route as SettingsLogsRouteImport } from './routes/settings/logs'
 import { Route as SettingsIconsRouteImport } from './routes/settings/icons'
 import { Route as SettingsGeneralRouteImport } from './routes/settings/general'
 import { Route as SettingsExportRouteImport } from './routes/settings/export'
@@ -34,9 +34,9 @@ import { Route as SettingsDataRouteImport } from './routes/settings/data'
 import { Route as SettingsAboutRouteImport } from './routes/settings/about'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects/$projectId'
 
-const WorldRoute = WorldRouteImport.update({
-  id: '/world',
-  path: '/world',
+const WikiRoute = WikiRouteImport.update({
+  id: '/wiki',
+  path: '/wiki',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TestSceneCreationRoute = TestSceneCreationRouteImport.update({
@@ -79,11 +79,6 @@ const LogRoute = LogRouteImport.update({
   path: '/log',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CharactersRoute = CharactersRouteImport.update({
-  id: '/characters',
-  path: '/characters',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CanvasRoute = CanvasRouteImport.update({
   id: '/canvas',
   path: '/canvas',
@@ -107,6 +102,11 @@ const SettingsTypographyRoute = SettingsTypographyRouteImport.update({
 const SettingsScrollTestRoute = SettingsScrollTestRouteImport.update({
   id: '/scroll-test',
   path: '/scroll-test',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsLogsRoute = SettingsLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
   getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsIconsRoute = SettingsIconsRouteImport.update({
@@ -158,7 +158,6 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/canvas': typeof CanvasRoute
-  '/characters': typeof CharactersRoute
   '/log': typeof LogRoute
   '/outline': typeof OutlineRoute
   '/settings': typeof SettingsRouteWithChildren
@@ -167,7 +166,7 @@ export interface FileRoutesByFullPath {
   '/test-focus': typeof TestFocusRoute
   '/test-manual-save': typeof TestManualSaveRoute
   '/test-scene-creation': typeof TestSceneCreationRoute
-  '/world': typeof WorldRoute
+  '/wiki': typeof WikiRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/data': typeof SettingsDataRoute
@@ -177,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/settings/export': typeof SettingsExportRoute
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/icons': typeof SettingsIconsRoute
+  '/settings/logs': typeof SettingsLogsRoute
   '/settings/scroll-test': typeof SettingsScrollTestRoute
   '/settings/typography': typeof SettingsTypographyRoute
   '/settings/': typeof SettingsIndexRoute
@@ -184,7 +184,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/canvas': typeof CanvasRoute
-  '/characters': typeof CharactersRoute
   '/log': typeof LogRoute
   '/outline': typeof OutlineRoute
   '/statistics': typeof StatisticsRoute
@@ -192,7 +191,7 @@ export interface FileRoutesByTo {
   '/test-focus': typeof TestFocusRoute
   '/test-manual-save': typeof TestManualSaveRoute
   '/test-scene-creation': typeof TestSceneCreationRoute
-  '/world': typeof WorldRoute
+  '/wiki': typeof WikiRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/data': typeof SettingsDataRoute
@@ -202,6 +201,7 @@ export interface FileRoutesByTo {
   '/settings/export': typeof SettingsExportRoute
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/icons': typeof SettingsIconsRoute
+  '/settings/logs': typeof SettingsLogsRoute
   '/settings/scroll-test': typeof SettingsScrollTestRoute
   '/settings/typography': typeof SettingsTypographyRoute
   '/settings': typeof SettingsIndexRoute
@@ -210,7 +210,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/canvas': typeof CanvasRoute
-  '/characters': typeof CharactersRoute
   '/log': typeof LogRoute
   '/outline': typeof OutlineRoute
   '/settings': typeof SettingsRouteWithChildren
@@ -219,7 +218,7 @@ export interface FileRoutesById {
   '/test-focus': typeof TestFocusRoute
   '/test-manual-save': typeof TestManualSaveRoute
   '/test-scene-creation': typeof TestSceneCreationRoute
-  '/world': typeof WorldRoute
+  '/wiki': typeof WikiRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/data': typeof SettingsDataRoute
@@ -229,6 +228,7 @@ export interface FileRoutesById {
   '/settings/export': typeof SettingsExportRoute
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/icons': typeof SettingsIconsRoute
+  '/settings/logs': typeof SettingsLogsRoute
   '/settings/scroll-test': typeof SettingsScrollTestRoute
   '/settings/typography': typeof SettingsTypographyRoute
   '/settings/': typeof SettingsIndexRoute
@@ -238,7 +238,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/canvas'
-    | '/characters'
     | '/log'
     | '/outline'
     | '/settings'
@@ -247,7 +246,7 @@ export interface FileRouteTypes {
     | '/test-focus'
     | '/test-manual-save'
     | '/test-scene-creation'
-    | '/world'
+    | '/wiki'
     | '/projects/$projectId'
     | '/settings/about'
     | '/settings/data'
@@ -257,6 +256,7 @@ export interface FileRouteTypes {
     | '/settings/export'
     | '/settings/general'
     | '/settings/icons'
+    | '/settings/logs'
     | '/settings/scroll-test'
     | '/settings/typography'
     | '/settings/'
@@ -264,7 +264,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/canvas'
-    | '/characters'
     | '/log'
     | '/outline'
     | '/statistics'
@@ -272,7 +271,7 @@ export interface FileRouteTypes {
     | '/test-focus'
     | '/test-manual-save'
     | '/test-scene-creation'
-    | '/world'
+    | '/wiki'
     | '/projects/$projectId'
     | '/settings/about'
     | '/settings/data'
@@ -282,6 +281,7 @@ export interface FileRouteTypes {
     | '/settings/export'
     | '/settings/general'
     | '/settings/icons'
+    | '/settings/logs'
     | '/settings/scroll-test'
     | '/settings/typography'
     | '/settings'
@@ -289,7 +289,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/canvas'
-    | '/characters'
     | '/log'
     | '/outline'
     | '/settings'
@@ -298,7 +297,7 @@ export interface FileRouteTypes {
     | '/test-focus'
     | '/test-manual-save'
     | '/test-scene-creation'
-    | '/world'
+    | '/wiki'
     | '/projects/$projectId'
     | '/settings/about'
     | '/settings/data'
@@ -308,6 +307,7 @@ export interface FileRouteTypes {
     | '/settings/export'
     | '/settings/general'
     | '/settings/icons'
+    | '/settings/logs'
     | '/settings/scroll-test'
     | '/settings/typography'
     | '/settings/'
@@ -316,7 +316,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CanvasRoute: typeof CanvasRoute
-  CharactersRoute: typeof CharactersRoute
   LogRoute: typeof LogRoute
   OutlineRoute: typeof OutlineRoute
   SettingsRoute: typeof SettingsRouteWithChildren
@@ -325,17 +324,17 @@ export interface RootRouteChildren {
   TestFocusRoute: typeof TestFocusRoute
   TestManualSaveRoute: typeof TestManualSaveRoute
   TestSceneCreationRoute: typeof TestSceneCreationRoute
-  WorldRoute: typeof WorldRoute
+  WikiRoute: typeof WikiRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/world': {
-      id: '/world'
-      path: '/world'
-      fullPath: '/world'
-      preLoaderRoute: typeof WorldRouteImport
+    '/wiki': {
+      id: '/wiki'
+      path: '/wiki'
+      fullPath: '/wiki'
+      preLoaderRoute: typeof WikiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/test-scene-creation': {
@@ -394,13 +393,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LogRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/characters': {
-      id: '/characters'
-      path: '/characters'
-      fullPath: '/characters'
-      preLoaderRoute: typeof CharactersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/canvas': {
       id: '/canvas'
       path: '/canvas'
@@ -434,6 +426,13 @@ declare module '@tanstack/react-router' {
       path: '/scroll-test'
       fullPath: '/settings/scroll-test'
       preLoaderRoute: typeof SettingsScrollTestRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/logs': {
+      id: '/settings/logs'
+      path: '/logs'
+      fullPath: '/settings/logs'
+      preLoaderRoute: typeof SettingsLogsRouteImport
       parentRoute: typeof SettingsRoute
     }
     '/settings/icons': {
@@ -511,6 +510,7 @@ interface SettingsRouteChildren {
   SettingsExportRoute: typeof SettingsExportRoute
   SettingsGeneralRoute: typeof SettingsGeneralRoute
   SettingsIconsRoute: typeof SettingsIconsRoute
+  SettingsLogsRoute: typeof SettingsLogsRoute
   SettingsScrollTestRoute: typeof SettingsScrollTestRoute
   SettingsTypographyRoute: typeof SettingsTypographyRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
@@ -525,6 +525,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsExportRoute: SettingsExportRoute,
   SettingsGeneralRoute: SettingsGeneralRoute,
   SettingsIconsRoute: SettingsIconsRoute,
+  SettingsLogsRoute: SettingsLogsRoute,
   SettingsScrollTestRoute: SettingsScrollTestRoute,
   SettingsTypographyRoute: SettingsTypographyRoute,
   SettingsIndexRoute: SettingsIndexRoute,
@@ -537,7 +538,6 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CanvasRoute: CanvasRoute,
-  CharactersRoute: CharactersRoute,
   LogRoute: LogRoute,
   OutlineRoute: OutlineRoute,
   SettingsRoute: SettingsRouteWithChildren,
@@ -546,7 +546,7 @@ const rootRouteChildren: RootRouteChildren = {
   TestFocusRoute: TestFocusRoute,
   TestManualSaveRoute: TestManualSaveRoute,
   TestSceneCreationRoute: TestSceneCreationRoute,
-  WorldRoute: WorldRoute,
+  WikiRoute: WikiRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
 }
 export const routeTree = rootRouteImport

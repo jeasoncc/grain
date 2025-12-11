@@ -1,12 +1,16 @@
 /**
  * PlantUML 图表生成器
  * 根据大纲数据自动生成各种 PlantUML 图表
+ * 
+ * 注意：generateCharacterRelations 函数仍使用废弃的 RoleInterface
+ * 未来版本将迁移到 WikiEntryInterface
  */
 
 import pako from "pako";
+import logger from "@/log";
 import type {
 	ChapterInterface,
-	RoleInterface,
+	RoleInterface, // @deprecated - 保留用于向后兼容
 	SceneInterface,
 } from "@/db/schema";
 
@@ -83,6 +87,7 @@ export function generateChapterFlow(chapters: ChapterInterface[]): string {
 
 /**
  * 生成角色关系图
+ * @deprecated 此函数使用废弃的 RoleInterface，未来将迁移到 WikiEntryInterface
  */
 export function generateCharacterRelations(
 	characters: RoleInterface[],
@@ -344,7 +349,7 @@ export function encodePlantUML(plantumlCode: string): string {
 
 		return result;
 	} catch (error) {
-		console.error("PlantUML encoding error:", error);
+		logger.error("PlantUML encoding error:", error);
 		return "";
 	}
 }

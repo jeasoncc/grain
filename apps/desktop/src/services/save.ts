@@ -3,6 +3,7 @@
  */
 import type { SerializedEditorState } from "lexical";
 import { toast } from "sonner";
+import logger from "@/log";
 import { db } from "@/db/curd";
 
 export interface SaveResult {
@@ -57,7 +58,7 @@ class SaveServiceImpl implements SaveService {
 				timestamp,
 			};
 		} catch (error) {
-			console.error("Failed to save document:", error);
+			logger.error("Failed to save document:", error);
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",

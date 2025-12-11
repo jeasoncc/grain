@@ -303,8 +303,10 @@ export class NovelEditorDB extends Dexie {
 	}
 
 	// ==========================
-	// 角色表
+	// 角色表 (已废弃，保留用于迁移)
+	// @deprecated 请使用 Wiki 条目相关方法替代
 	// ==========================
+	/** @deprecated 使用 addWikiEntry 替代 */
 	async addRole(role: Partial<RoleInterface>) {
 		const now = dayjs().toISOString();
 		const newRole: RoleInterface = {
@@ -325,20 +327,24 @@ export class NovelEditorDB extends Dexie {
 		return newRole;
 	}
 
+	/** @deprecated 使用 updateWikiEntry 替代 */
 	async updateRole(id: string, updates: Partial<RoleInterface>) {
 		await this.roles.update(id, updates);
 		logger.info(`Updated role ${id}`);
 	}
 
+	/** @deprecated 使用 deleteWikiEntry 替代 */
 	async deleteRole(id: string) {
 		await this.roles.delete(id);
 		logger.warn(`Deleted role ${id}`);
 	}
 
+	/** @deprecated 使用 getWikiEntry 替代 */
 	async getRole(id: string) {
 		return this.roles.get(id);
 	}
 
+	/** @deprecated 使用 getWikiEntriesByProject 替代 */
 	async getRolesByProject(projectId: string) {
 		return this.roles.where("project").equals(projectId).toArray();
 	}

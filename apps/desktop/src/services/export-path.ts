@@ -7,6 +7,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { saveAs } from "file-saver";
+import logger from "@/log";
 
 /**
  * 导出设置接口
@@ -36,7 +37,7 @@ export function isTauriEnvironment(): boolean {
  */
 export async function selectExportDirectory(initialDirectory?: string | null): Promise<string | null> {
   if (!isTauriEnvironment()) {
-    console.warn("selectExportDirectory: Not in Tauri environment, returning null");
+    logger.warn("selectExportDirectory: Not in Tauri environment, returning null");
     return null;
   }
 
@@ -46,7 +47,7 @@ export async function selectExportDirectory(initialDirectory?: string | null): P
     });
     return result;
   } catch (error) {
-    console.error("Failed to select directory:", error);
+    logger.error("Failed to select directory:", error);
     throw new Error(`目录选择失败: ${error}`);
   }
 }
@@ -66,7 +67,7 @@ export async function saveToPath(
 ): Promise<void> {
   if (!isTauriEnvironment()) {
     // 浏览器环境降级处理：使用 file-saver 下载
-    console.warn("saveToPath: Not in Tauri environment, falling back to browser download");
+    logger.warn("saveToPath: Not in Tauri environment, falling back to browser download");
     if (content instanceof Uint8Array) {
       // Create a new ArrayBuffer to avoid SharedArrayBuffer type issues
       const buffer = new ArrayBuffer(content.length);
@@ -95,7 +96,7 @@ export async function saveToPath(
       content: contentArray,
     });
   } catch (error) {
-    console.error("Failed to save file:", error);
+    logger.error("Failed to save file:", error);
     throw new Error(`文件保存失败: ${error}`);
   }
 }
@@ -116,7 +117,7 @@ export async function getDownloadsDirectory(): Promise<string> {
     const result = await invoke<string>("get_downloads_dir");
     return result;
   } catch (error) {
-    console.error("Failed to get downloads directory:", error);
+    logger.error("Failed to get downloads directory:", error);
     return "";
   }
 }
@@ -132,7 +133,7 @@ export function getExportSettings(): ExportSettings {
       return JSON.parse(stored);
     }
   } catch (error) {
-    console.error("Failed to load export settings:", error);
+    logger.error("Failed to load export settings:", error);
   }
   
   return {
@@ -149,7 +150,7 @@ export function saveExportSettings(settings: ExportSettings): void {
   try {
     localStorage.setItem(EXPORT_SETTINGS_KEY, JSON.stringify(settings));
   } catch (error) {
-    console.error("Failed to save export settings:", error);
+    logger.error("Failed to save export settings:", error);
   }
 }
 

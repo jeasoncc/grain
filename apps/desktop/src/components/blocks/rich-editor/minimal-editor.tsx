@@ -9,6 +9,7 @@ import {
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import type { SerializedEditorState } from "lexical";
 
+import logger from "@/log";
 import { editorTheme } from "@/components/editor/themes/editor-theme";
 import { MinimalPlugins } from "./minimal-plugins";
 import { nodes } from "./nodes";
@@ -18,7 +19,7 @@ const editorConfig: InitialConfigType = {
 	theme: editorTheme,
 	nodes,
 	onError: (error: Error) => {
-		console.error(error);
+		logger.error(error);
 	},
 };
 

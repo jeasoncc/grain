@@ -1,29 +1,21 @@
 import {
-	ArrowDown,
-	ArrowUp,
-	ArrowUpRight,
 	BookOpen,
 	ChevronDown,
 	ChevronRight,
 	FileText,
 	Folder,
 	FolderPlus,
-	Globe,
-	Globe2,
-	GripVertical,
 	ListTree,
-	MapPin,
 	MoreHorizontal,
 	Pencil,
 	PenTool,
 	Plus,
 	Search,
 	Trash2,
-	UserPlus,
-	Users,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import logger from "@/log";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm";
 import { Input } from "@/components/ui/input";
@@ -59,11 +51,11 @@ import {
 } from "@/services/chapters";
 import { useAllProjects } from "@/services/projects";
 import {
-	createRole,
-	deleteRole,
-	updateRole,
-	useRolesByProject,
-} from "@/services/roles";
+	createWikiEntry,
+	deleteWikiEntry,
+	updateWikiEntry,
+	useWikiEntriesByProject,
+} from "@/services/wiki";
 import {
 	deleteScene,
 	moveScene,
@@ -112,7 +104,7 @@ export function StoryRightSidebar({
 	const projects = useAllProjects();
 	const projectChapters = useChaptersByProject(selectedProjectId);
 	const scenesOfProject = useScenesByProject(selectedProjectId);
-	const projectRoles = useRolesByProject(selectedProjectId ?? null);
+	const projectWiki = useWikiEntriesByProject(selectedProjectId ?? null);
 
 
 	const [searchQuery, setSearchQuery] = useState("");
@@ -137,7 +129,7 @@ export function StoryRightSidebar({
 				setTimeout(() => setRenamingId(sceneId), 150);
 			},
 			onError: (error, chapterId) => {
-				console.error(`Scene creation error for chapter ${chapterId}:`, error);
+				logger.error(`Scene creation error for chapter ${chapterId}:`, error);
 			},
 		});
 
@@ -204,7 +196,7 @@ export function StoryRightSidebar({
 
 	const handleAddScene = useCallback(
 		async (chapterId: string) => {
-			console.log(`[UI] Add Scene clicked for chapter:`, chapterId);
+			logger.debug(`[UI] Add Scene clicked for chapter:`, chapterId);
 			// Close the popover first
 			setOpenPopovers((prev) => ({ ...prev, [chapterId]: false }));
 			await createTextScene(chapterId);
@@ -215,7 +207,7 @@ export function StoryRightSidebar({
 	// 创建绘图场景
 	const handleAddCanvasScene = useCallback(
 		async (chapterId: string) => {
-			console.log(`[UI] Add Canvas Scene clicked for chapter:`, chapterId);
+			logger.debug(`[UI] Add Canvas Scene clicked for chapter:`, chapterId);
 			// Close the popover first
 			setOpenPopovers((prev) => ({ ...prev, [chapterId]: false }));
 			await createCanvasSceneHandler(chapterId);
@@ -223,19 +215,45 @@ export function StoryRightSidebar({
 		[createCanvasSceneHandler],
 	);
 
-	const handleAddRole = useCallback(async () => {
+	const handleAddWikiEntry = useCallback(async () => {
 		if (!selectedProjectId) return;
 		try {
-			const newRole = await createRole({
+			const newEntry = await createWikiEntry({
 				projectId: selectedProjectId,
-				name: "New Character",
+				name: "新条目",
 			});
-			toast.success("Character created");
-			setTimeout(() => setRenamingId(newRole.id), 100);
+			toast.success("条目已创建");
+			setTimeout(() => setRenamingId(newEntry.id), 100);
 		} catch {
-			toast.error("Failed to create character");
+			toast.error("创建失败");
 		}
 	}, [selectedProjectId]);
+
+	const handleRenameWiki = useCallback(async (id: string, newName: string) => {
+		if (!newName.trim()) return;
+		try {
+			await updateWikiEntry(id, { name: newName });
+		} catch {
+			toast.error("重命名失败");
+		}
+		setRenamingId(null);
+	}, []);
+
+	const handleDeleteWiki = useCallback(async (id: string, name: string) => {
+		const ok = await confirm({
+			title: "删除条目？",
+			description: `确定要删除 "${name}" 吗？此操作无法撤销。`,
+			confirmText: "删除",
+			cancelText: "取消",
+		});
+		if (!ok) return;
+		try {
+			await deleteWikiEntry(id);
+			toast.success("条目已删除");
+		} catch {
+			toast.error("删除失败");
+		}
+	}, [confirm]);
 
 
 
@@ -255,15 +273,13 @@ export function StoryRightSidebar({
 
 	const handleRename = async (
 		id: string,
-		type: "chapter" | "scene" | "role" | "world",
+		type: "chapter" | "scene",
 		newName: string,
 	) => {
 		if (!newName.trim()) return;
 		try {
 			if (type === "chapter") await renameChapter(id, newName);
 			else if (type === "scene") await renameScene(id, newName);
-			else if (type === "role") await updateRole(id, { name: newName });
-
 		} catch {
 			toast.error("Failed to rename");
 		}
@@ -272,7 +288,7 @@ export function StoryRightSidebar({
 
 	const handleDelete = async (
 		id: string,
-		type: "chapter" | "scene" | "role" | "world",
+		type: "chapter" | "scene",
 		title: string,
 	) => {
 		const ok = await confirm({
@@ -286,8 +302,6 @@ export function StoryRightSidebar({
 		try {
 			if (type === "chapter") await deleteChapter(id);
 			else if (type === "scene") await deleteScene(id);
-			else if (type === "role") await deleteRole(id);
-
 			toast.success(`${type} deleted`);
 		} catch {
 			toast.error("Failed to delete");
@@ -481,26 +495,24 @@ export function StoryRightSidebar({
 						matchingScenes.some((s) => s.chapter === c.id),
 				)
 			: projectChapters;
-		const matchingRoles = query
-			? projectRoles.filter(
-					(r) =>
-						r.name.toLowerCase().includes(query) ||
-						r.alias?.some((a) => a.toLowerCase().includes(query)),
+		const matchingWiki = query
+			? projectWiki.filter(
+					(w) =>
+						w.name.toLowerCase().includes(query) ||
+						w.alias?.some((a) => a.toLowerCase().includes(query)) ||
+						w.tags?.some((t) => t.toLowerCase().includes(query)),
 				)
-			: projectRoles;
-
+			: projectWiki;
 
 		return {
 			chapters: matchingChapters,
 			scenes: matchingScenes,
-			roles: matchingRoles,
-
+			wiki: matchingWiki,
 		};
 	}, [
 		projectChapters,
 		scenesOfProject,
-		projectRoles,
-
+		projectWiki,
 		searchQuery,
 	]);
 
@@ -547,10 +559,10 @@ export function StoryRightSidebar({
 							variant="ghost"
 							size="icon"
 							className="size-7"
-							onClick={handleAddRole}
-							title="Add Character"
+							onClick={handleAddWikiEntry}
+							title="添加 Wiki 条目"
 						>
-							<UserPlus className="size-4 text-muted-foreground" />
+							<Plus className="size-4 text-muted-foreground" />
 						</Button>
 					)}
 
@@ -1003,43 +1015,39 @@ export function StoryRightSidebar({
 					</SidebarGroup>
 				)}
 
-				{/* Characters View */}
+				{/* Wiki View */}
 				{rightPanelView === "characters" && (
 					<SidebarGroup className="px-0">
-						<SidebarGroupLabel className="px-4">Characters</SidebarGroupLabel>
+						<SidebarGroupLabel className="px-4">Wiki 知识库</SidebarGroupLabel>
 						<SidebarGroupContent>
 							<div className="px-2 pb-4 space-y-1">
-								{filteredData.roles.length === 0 ? (
+								{filteredData.wiki.length === 0 ? (
 									<div className="mx-2 my-8 flex flex-col items-center text-center p-6 rounded-lg border border-dashed bg-sidebar-accent/30">
-										<Users className="size-8 text-muted-foreground/50 mb-3" />
-										<span className="text-sm font-medium">No characters</span>
-										<Button size="sm" variant="link" onClick={handleAddRole}>
-											Create character
+										<BookOpen className="size-8 text-muted-foreground/50 mb-3" />
+										<span className="text-sm font-medium">暂无条目</span>
+										<Button size="sm" variant="link" onClick={handleAddWikiEntry}>
+											创建条目
 										</Button>
 									</div>
 								) : (
-									filteredData.roles.map((role) => (
+									filteredData.wiki.map((entry) => (
 										<div
-											key={role.id}
+											key={entry.id}
 											className="group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm transition-colors hover:bg-sidebar-accent/50 text-muted-foreground hover:text-foreground"
 										>
-											<Users className="size-3.5 shrink-0 opacity-70" />
+											<BookOpen className="size-3.5 shrink-0 opacity-70 text-emerald-500" />
 
-											{renamingId === role.id ? (
+											{renamingId === entry.id ? (
 												<Input
 													autoFocus
-													defaultValue={role.name}
+													defaultValue={entry.name}
 													className="h-6 text-sm px-1 py-0"
 													onBlur={(e) =>
-														handleRename(role.id, "role", e.target.value)
+														handleRenameWiki(entry.id, e.target.value)
 													}
 													onKeyDown={(e) => {
 														if (e.key === "Enter")
-															handleRename(
-																role.id,
-																"role",
-																e.currentTarget.value,
-															);
+															handleRenameWiki(entry.id, e.currentTarget.value);
 														if (e.key === "Escape") setRenamingId(null);
 													}}
 													onClick={(e) => e.stopPropagation()}
@@ -1048,13 +1056,13 @@ export function StoryRightSidebar({
 												<div className="flex-1 min-w-0 flex items-center gap-2">
 													<span
 														className="truncate font-medium"
-														onDoubleClick={() => setRenamingId(role.id)}
+														onDoubleClick={() => setRenamingId(entry.id)}
 													>
-														{role.name}
+														{entry.name}
 													</span>
-													{role.alias && role.alias.length > 0 && (
+													{entry.alias && entry.alias.length > 0 && (
 														<span className="text-[10px] text-muted-foreground/60 truncate">
-															{role.alias.join(", ")}
+															{entry.alias.join(", ")}
 														</span>
 													)}
 												</div>
@@ -1074,19 +1082,19 @@ export function StoryRightSidebar({
 													<PopoverContent align="end" className="w-36 p-1">
 														<div className="grid gap-0.5">
 															<button
-																onClick={() => setRenamingId(role.id)}
+																onClick={() => setRenamingId(entry.id)}
 																className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent w-full text-left"
 															>
-																<Pencil className="size-3" /> Rename
+																<Pencil className="size-3" /> 重命名
 															</button>
 															<div className="h-px bg-border my-1" />
 															<button
 																onClick={() =>
-																	handleDelete(role.id, "role", role.name)
+																	handleDeleteWiki(entry.id, entry.name)
 																}
 																className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-destructive/10 text-destructive w-full text-left"
 															>
-																<Trash2 className="size-3" /> Delete
+																<Trash2 className="size-3" /> 删除
 															</button>
 														</div>
 													</PopoverContent>

@@ -93,7 +93,7 @@ export function MinimalPlugins({
 				anchorElem={floatingAnchorElem}
 			/>
 
-			{/* @ 角色提及功能 */}
+			{/* @ Wiki 提及功能 */}
 			<MentionsPlugin />
 			<MentionTooltipPlugin />
 		</div>

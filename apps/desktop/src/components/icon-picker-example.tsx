@@ -4,6 +4,7 @@
  */
 
 import { useState } from "react";
+import logger from "@/log";
 import { IconDisplay, IconSelectButton } from "@/components/icon-picker";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +26,7 @@ export function CreateProjectExample() {
 	const [projectName, setProjectName] = useState("");
 
 	const handleCreate = () => {
-		console.log("创建项目:", { iconKey, projectName });
+		logger.info("创建项目:", { iconKey, projectName });
 		// 这里添加创建项目的逻辑
 	};
 

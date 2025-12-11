@@ -2,6 +2,7 @@
 // 仅在开发模式下加载和显示 TanStack Devtools
 
 import { useEffect, useState } from "react";
+import logger from "@/log";
 
 // 类型定义
 type DevtoolsModules = {
@@ -36,7 +37,7 @@ export function DevtoolsWrapper() {
 			})
 			.catch((error) => {
 				// 静默失败（开发环境下可能缺少依赖）
-				console.warn("Failed to load Devtools:", error);
+				logger.warn("Failed to load Devtools:", error);
 			});
 	}, []);
 

@@ -166,7 +166,10 @@ export interface WikiEntryInterface {
 
 // ---------- 角色 (已废弃，使用WikiEntryInterface) ----------
 /**
- * @deprecated 使用 WikiEntryInterface 替代
+ * @deprecated 此接口已废弃，请使用 WikiEntryInterface 替代
+ * 保留此接口仅用于数据库迁移兼容性
+ * 所有新代码应使用 WikiEntryInterface
+ * @see WikiEntryInterface
  */
 export interface RoleInterface {
 	id: string; // 角色唯一标识，使用 UUID
@@ -182,10 +185,13 @@ export interface RoleInterface {
 	createDate: string; // 创建时间
 }
 
-// ---------- 世界观 ----------
+// ---------- 世界观 (已废弃，使用WikiEntryInterface) ----------
 /**
  * 存储项目世界观信息，例如地点、势力、物品、设定条目等
- * @deprecated Use WikiEntryInterface instead
+ * @deprecated 此接口已废弃，请使用 WikiEntryInterface 替代
+ * 保留此接口仅用于数据库迁移兼容性
+ * 所有新代码应使用 WikiEntryInterface
+ * @see WikiEntryInterface
  */
 export interface WorldEntryInterface {
 	id: string; // 世界观条目唯一标识，使用 UUID
