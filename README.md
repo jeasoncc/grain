@@ -183,6 +183,26 @@ To update the application icon:
 
 For more details, see [Icon Configuration Guide](./docs/icon-configuration.md).
 
+### Version Management
+
+The project uses an automated version management system with Git hooks:
+
+```bash
+# Version is automatically incremented on each commit
+git commit -m "feat: add new feature"  # 0.1.47 → 0.1.48
+
+# Skip version increment for documentation-only changes
+SKIP_VERSION_BUMP=true git commit -m "docs: update readme"
+
+# Manual version bump
+npm run version:bump
+```
+
+**Documentation:**
+- [Git Hooks Version System](./docs/git-hooks-version-system.md) - Complete system overview
+- [Quick Guide](./docs/version-system-quick-guide.md) - AI assistant reference
+- [Configuration Example](./docs/version-system-example.md) - Step-by-step example
+
 ## 📄 License
 
 This project is licensed under the [MIT License](./LICENSE).
