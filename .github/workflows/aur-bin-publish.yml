@@ -1,0 +1,161 @@
+name: Publish AUR Binary Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 0.1.33)'
+        required: true
+        type: string
+  push:
+    tags:
+      - 'aur-bin-v*.*.*'   # 仅在打 aur-bin tag 时触发 (aur-bin-v0.1.33)
+
+jobs:
+  publish-aur-bin:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    if: startsWith(github.ref, 'refs/tags/aur-bin-v') || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/aur-bin-v}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Publishing binary version: $VERSION"
+      
+      - name: Verify release and DEB file exist
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "🔍 Checking if release desktop-v$VERSION exists..."
+          
+          # 检查 GitHub release 是否存在
+          if ! curl -s -f "https://api.github.com/repos/${{ github.repository }}/releases/tags/desktop-v$VERSION" > /dev/null; then
+            echo "❌ Release desktop-v$VERSION not found. Please create a GitHub release first."
+            exit 1
+          fi
+          
+          # 检查 DEB 文件是否存在
+          DEB_URL="https://github.com/${{ github.repository }}/releases/download/desktop-v$VERSION/novel-editor_${VERSION}_amd64.deb"
+          echo "🔍 Checking DEB file: $DEB_URL"
+          if ! curl -s -f -I "$DEB_URL" > /dev/null; then
+            echo "❌ DEB file not found: $DEB_URL"
+            exit 1
+          fi
+          
+          echo "✅ Release desktop-v$VERSION and DEB file found"
+      
+      - name: Update PKGBUILD-bin
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "📝 Updating PKGBUILD-bin to version $VERSION"
+          
+          # 更新版本号
+          sed -i "s/^pkgver=.*/pkgver=$VERSION/" aur/PKGBUILD-bin
+          
+          # 更新 source URL
+          sed -i "s|desktop-v.*\/novel-editor_.*_amd64\.deb|desktop-v$VERSION/novel-editor_${VERSION}_amd64.deb|" aur/PKGBUILD-bin
+          
+          # 显示更新后的内容
+          echo "📄 Updated PKGBUILD-bin:"
+          grep -E "^(pkgver|source)" aur/PKGBUILD-bin
+      
+      - name: Generate .SRCINFO using Docker
+        run: |
+          cd aur
+          echo "🔨 Generating .SRCINFO for binary package using Arch Linux container..."
+          
+          # 使用 Arch Linux Docker 容器生成 .SRCINFO
+          docker run --rm -v "$(pwd):/workspace" -w /workspace archlinux:latest bash -c "
+            pacman -Sy --noconfirm base-devel
+            useradd -m builder
+            chown -R builder:builder /workspace
+            su builder -c 'makepkg --printsrcinfo -p PKGBUILD-bin > .SRCINFO-bin'
+          "
+          
+          echo "📄 Generated .SRCINFO-bin:"
+          cat .SRCINFO-bin
+      
+      - name: Validate PKGBUILD-bin
+        run: |
+          cd aur
+          echo "✅ Validating PKGBUILD-bin..."
+          
+          # 检查 PKGBUILD 语法
+          bash -n PKGBUILD-bin
+          
+          # 使用 Docker 验证 PKGBUILD
+          docker run --rm -v "$(pwd):/workspace" -w /workspace archlinux:latest bash -c "
+            source PKGBUILD-bin
+            if [ -z \"\$pkgname\" ] || [ -z \"\$pkgver\" ] || [ -z \"\$pkgdesc\" ]; then
+              echo '❌ PKGBUILD-bin missing required fields'
+              exit 1
+            fi
+            echo '✅ PKGBUILD-bin validation passed'
+          "
+      
+      - name: Check AUR credentials
+        run: |
+          if [ -z "${{ secrets.AUR_BIN_USERNAME }}" ] || [ -z "${{ secrets.AUR_BIN_EMAIL }}" ] || [ -z "${{ secrets.AUR_BIN_SSH_PRIVATE_KEY }}" ]; then
+            echo "❌ Missing AUR binary package credentials. Please set AUR_BIN_USERNAME, AUR_BIN_EMAIL, and AUR_BIN_SSH_PRIVATE_KEY secrets."
+            exit 1
+          fi
+          echo "✅ AUR binary package credentials found"
+      
+      - name: Publish to AUR (Binary Package)
+        uses: KSXGitHub/github-actions-deploy-aur@v2.7.2
+        with:
+          pkgname: novel-editor-bin
+          pkgbuild: aur/PKGBUILD-bin
+          commit_username: ${{ secrets.AUR_BIN_USERNAME }}
+          commit_email: ${{ secrets.AUR_BIN_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_BIN_SSH_PRIVATE_KEY }}
+          commit_message: "Update novel-editor-bin to version ${{ steps.version.outputs.version }}"
+          ssh_keyscan_types: rsa,ecdsa,ed25519
+          force_push: true
+      
+      - name: Create success comment
+        if: success() && github.event_name == 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.version }}';
+            
+            try {
+              await github.rest.repos.createCommitComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: context.sha,
+                body: `🎉 **AUR 二进制包发布成功！**
+            
+            **版本：** ${version}
+            **包名：** novel-editor-bin
+            
+            **安装命令（快速安装，无需编译）：**
+            \`\`\`bash
+            yay -S novel-editor-bin
+            # 或
+            paru -S novel-editor-bin
+            \`\`\`
+            
+            **优势：**
+            - ✅ 快速安装（直接使用预编译的 DEB 包）
+            - ✅ 无需构建依赖（Rust、Bun 等）
+            - ✅ 安装包只有 ~6MB
+            
+            **AUR 页面：** https://aur.archlinux.org/packages/novel-editor-bin`
+              });
+            } catch (error) {
+              console.log('无法创建评论，但 AUR 二进制包发布成功:', error.message);
+            }

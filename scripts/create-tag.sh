@@ -40,13 +40,14 @@ get_version_from_json() {
 show_help() {
     echo -e "${BLUE}Git Tag 创建脚本${NC}"
     echo ""
-    echo "用法: $0 {desktop|snap|aur|all}"
+    echo "用法: $0 {desktop|snap|aur|aur-bin|all}"
     echo ""
     echo "参数:"
     echo "  desktop  - 创建 desktop-v{version} 标签，触发桌面应用发布"
     echo "  snap     - 创建 snap-v{version} 标签，触发 Snap Store 发布"
-    echo "  aur      - 创建 aur-v{version} 标签，触发 AUR 发布"
-    echo "  all      - 创建所有三个标签"
+    echo "  aur      - 创建 aur-v{version} 标签，触发 AUR 源码包发布"
+    echo "  aur-bin  - 创建 aur-bin-v{version} 标签，触发 AUR 二进制包发布"
+    echo "  all      - 创建所有标签"
     echo ""
     echo "示例:"
     echo "  $0 desktop    # 创建并推送 desktop-v0.1.39"
@@ -155,6 +156,9 @@ main() {
         aur)
             create_and_push_tag "aur" "$VERSION"
             ;;
+        aur-bin)
+            create_and_push_tag "aur-bin" "$VERSION"
+            ;;
         all)
             echo -e "${BLUE}创建所有标签...${NC}"
             echo ""
@@ -168,6 +172,9 @@ main() {
             echo ""
             
             create_and_push_tag "aur" "$VERSION" || failed=1
+            echo ""
+            
+            create_and_push_tag "aur-bin" "$VERSION" || failed=1
             
             if [ $failed -eq 1 ]; then
                 echo ""
