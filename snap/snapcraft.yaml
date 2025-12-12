@@ -1,6 +1,6 @@
 name: novel-editor-app
 base: core22
-version: '0.1.51'
+version: '0.1.52'
 summary: Professional novel writing tool with advanced project management
 description: |
   Novel Editor is a comprehensive writing application designed specifically for 

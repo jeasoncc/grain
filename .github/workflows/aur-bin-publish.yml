@@ -56,53 +56,57 @@ jobs:
           
           echo "✅ Release desktop-v$VERSION and DEB file found"
       
-      - name: Update PKGBUILD-bin
+      - name: Prepare binary PKGBUILD
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          echo "📝 Updating PKGBUILD-bin to version $VERSION"
+          cd aur
+          echo "📝 Preparing binary PKGBUILD for version $VERSION"
+          
+          # 复制 PKGBUILD-bin 为 PKGBUILD (保持源文件不变)
+          cp PKGBUILD-bin PKGBUILD
           
           # 更新版本号
-          sed -i "s/^pkgver=.*/pkgver=$VERSION/" aur/PKGBUILD-bin
+          sed -i "s/^pkgver=.*/pkgver=$VERSION/" PKGBUILD
           
           # 更新 source URL
-          sed -i "s|desktop-v.*\/novel-editor_.*_amd64\.deb|desktop-v$VERSION/novel-editor_${VERSION}_amd64.deb|" aur/PKGBUILD-bin
+          sed -i "s|desktop-v.*\/novel-editor_.*_amd64\.deb|desktop-v$VERSION/novel-editor_${VERSION}_amd64.deb|" PKGBUILD
           
           # 显示更新后的内容
-          echo "📄 Updated PKGBUILD-bin:"
-          grep -E "^(pkgver|source)" aur/PKGBUILD-bin
+          echo "📄 Updated PKGBUILD:"
+          grep -E "^(pkgver|source)" PKGBUILD
       
       - name: Generate .SRCINFO using Docker
         run: |
           cd aur
-          echo "🔨 Generating .SRCINFO for binary package using Arch Linux container..."
+          echo "🔨 Generating .SRCINFO using Arch Linux container..."
           
           # 使用 Arch Linux Docker 容器生成 .SRCINFO
           docker run --rm -v "$(pwd):/workspace" -w /workspace archlinux:latest bash -c "
             pacman -Sy --noconfirm base-devel
             useradd -m builder
             chown -R builder:builder /workspace
-            su builder -c 'makepkg --printsrcinfo -p PKGBUILD-bin > .SRCINFO-bin'
+            su builder -c 'makepkg --printsrcinfo > .SRCINFO'
           "
           
-          echo "📄 Generated .SRCINFO-bin:"
-          cat .SRCINFO-bin
+          echo "📄 Generated .SRCINFO:"
+          cat .SRCINFO
       
-      - name: Validate PKGBUILD-bin
+      - name: Validate PKGBUILD
         run: |
           cd aur
-          echo "✅ Validating PKGBUILD-bin..."
+          echo "✅ Validating PKGBUILD..."
           
           # 检查 PKGBUILD 语法
-          bash -n PKGBUILD-bin
+          bash -n PKGBUILD
           
           # 使用 Docker 验证 PKGBUILD
           docker run --rm -v "$(pwd):/workspace" -w /workspace archlinux:latest bash -c "
-            source PKGBUILD-bin
+            source PKGBUILD
             if [ -z \"\$pkgname\" ] || [ -z \"\$pkgver\" ] || [ -z \"\$pkgdesc\" ]; then
-              echo '❌ PKGBUILD-bin missing required fields'
+              echo '❌ PKGBUILD missing required fields'
               exit 1
             fi
-            echo '✅ PKGBUILD-bin validation passed'
+            echo '✅ PKGBUILD validation passed'
           "
       
       - name: Check AUR credentials
@@ -117,7 +121,7 @@ jobs:
         uses: KSXGitHub/github-actions-deploy-aur@v2.7.2
         with:
           pkgname: novel-editor-bin
-          pkgbuild: aur/PKGBUILD-bin
+          pkgbuild: aur/PKGBUILD
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
