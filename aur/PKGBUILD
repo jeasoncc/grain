@@ -23,7 +23,7 @@ optdepends=(
   'libfuse2: 用于 AppImage 支持'
 )
 source=(
-  "$pkgname-$pkgver.tar.gz::https://github.com/jeasoncc/$pkgname/archive/refs/tags/v$pkgver.tar.gz"
+  "$pkgname-$pkgver.tar.gz::https://github.com/jeasoncc/$pkgname/archive/refs/tags/desktop-v$pkgver.tar.gz"
 )
 sha256sums=('SKIP')  # 首次发布时使用 SKIP，之后更新为实际的 SHA256
 

@@ -38,15 +38,16 @@ jobs:
       - name: Verify release exists
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          echo "🔍 Checking if release v$VERSION exists..."
+          echo "🔍 Checking if release desktop-v$VERSION exists..."
           
-          # 检查 GitHub release 是否存在
-          if ! curl -s -f "https://api.github.com/repos/${{ github.repository }}/releases/tags/v$VERSION" > /dev/null; then
-            echo "❌ Release v$VERSION not found. Please create a GitHub release first."
+          # 检查 GitHub release 是否存在 (使用 desktop-v 前缀)
+          if ! curl -s -f "https://api.github.com/repos/${{ github.repository }}/releases/tags/desktop-v$VERSION" > /dev/null; then
+            echo "❌ Release desktop-v$VERSION not found. Please create a GitHub release first."
+            echo "💡 Expected release tag: desktop-v$VERSION"
             exit 1
           fi
           
-          echo "✅ Release v$VERSION found"
+          echo "✅ Release desktop-v$VERSION found"
       
       - name: Update PKGBUILD
         run: |
@@ -57,7 +58,7 @@ jobs:
           sed -i "s/^pkgver=.*/pkgver=$VERSION/" aur/PKGBUILD
           
           # 更新 source URL
-          sed -i "s|archive/refs/tags/v.*\.tar\.gz|archive/refs/tags/v$VERSION.tar.gz|" aur/PKGBUILD
+          sed -i "s|archive/refs/tags/desktop-v.*\.tar\.gz|archive/refs/tags/desktop-v$VERSION.tar.gz|" aur/PKGBUILD
           
           # 显示更新后的内容
           echo "📄 Updated PKGBUILD:"
