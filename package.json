@@ -43,8 +43,7 @@
     "icons:update": "bash scripts/update-icons.sh",
     "icons:generate": "cd apps/desktop && bun run tauri icon src-tauri/icons/my-new-icon.jpg",
     "version:bump": "bash scripts/bump-version.sh",
-    "stats:check": "bash scripts/check-download-stats.sh",
-    "release:fix": "bash scripts/fix-missing-desktop-release.sh"
+    "stats:check": "bash scripts/check-download-stats.sh"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.2",
