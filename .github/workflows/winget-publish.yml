@@ -12,11 +12,19 @@ on:
         description: 'Version to publish (e.g., 0.1.45)'
         required: true
         type: string
+  workflow_run:
+    workflows: ["Release Desktop App"]
+    types:
+      - completed
 
 jobs:
   winget-publish:
     runs-on: windows-latest
-    if: startsWith(github.event.release.tag_name, 'desktop-v') || startsWith(github.ref, 'refs/tags/winget-v') || github.event_name == 'workflow_dispatch'
+    if: |
+      startsWith(github.event.release.tag_name, 'desktop-v') || 
+      startsWith(github.ref, 'refs/tags/winget-v') || 
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     
     steps:
       - name: Checkout repository
@@ -29,6 +37,10 @@ jobs:
             $version = "${{ github.event.inputs.version }}"
           } elseif ("${{ github.ref }}" -like "refs/tags/winget-v*") {
             $version = "${{ github.ref }}" -replace "refs/tags/winget-v", ""
+          } elseif ("${{ github.event_name }}" -eq "workflow_run") {
+            # 从 package.json 读取版本号
+            $packageJson = Get-Content "package.json" | ConvertFrom-Json
+            $version = $packageJson.version
           } else {
             $version = "${{ github.event.release.tag_name }}" -replace "desktop-v", ""
           }

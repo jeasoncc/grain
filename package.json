@@ -4,7 +4,7 @@
   "author": "Jeason",
   "description": "Novel Editor 是一个功能强大的小说编辑器，提供丰富的编辑功能和直观的用户界面。",
   "email": "xiaomiquan@aliyun.com",
-  "version": "0.1.54",
+  "version": "0.1.55",
   "license": "MIT",
   "homepage": "https://github.com/jeasoncc/novel-editor",
   "repository": {
@@ -52,7 +52,8 @@
     "icons:update": "bash scripts/update-icons.sh",
     "icons:generate": "cd apps/desktop && bun run tauri icon src-tauri/icons/my-new-icon.jpg",
     "version:bump": "bash scripts/bump-version.sh",
-    "stats:check": "bash scripts/check-download-stats.sh"
+    "stats:check": "bash scripts/check-download-stats.sh",
+    "release:fix": "bash scripts/fix-missing-desktop-release.sh"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.2",
