@@ -1,5 +1,7 @@
 name: Publish to AUR
 
+# 依赖 desktop 构建完成，只通过 workflow_dispatch 触发
+# desktop 完成后会自动触发此工作流
 on:
   workflow_dispatch:
     inputs:
@@ -7,16 +9,12 @@ on:
         description: 'Version to publish (e.g., 0.1.33)'
         required: true
         type: string
-  push:
-    tags:
-      - 'aur-v*.*.*'   # 仅在打 aur tag 时触发 (aur-v0.1.33)
 
 jobs:
   publish-aur:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    if: startsWith(github.ref, 'refs/tags/aur-v') || github.event_name == 'workflow_dispatch'
     
     steps:
       - name: Checkout code
@@ -27,11 +25,7 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.version }}"
-          else
-            VERSION=${GITHUB_REF#refs/tags/aur-v}
-          fi
+          VERSION="${{ github.event.inputs.version }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "📦 Publishing version: $VERSION"
       

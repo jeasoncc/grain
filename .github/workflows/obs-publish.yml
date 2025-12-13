@@ -1,9 +1,8 @@
 name: Publish to openSUSE Build Service
 
+# 依赖 desktop 构建完成，只通过 workflow_dispatch 触发
+# desktop 完成后会自动触发此工作流
 on:
-  push:
-    tags:
-      - 'obs-v*.*.*'
   workflow_dispatch:
     inputs:
       version:
@@ -14,7 +13,6 @@ on:
 jobs:
   publish-obs:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/obs-v') || github.event_name == 'workflow_dispatch'
     
     steps:
       - name: Checkout code
@@ -23,11 +21,7 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.version }}"
-          else
-            VERSION=${GITHUB_REF#refs/tags/obs-v}
-          fi
+          VERSION="${{ github.event.inputs.version }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "📦 Creating OBS package for version: $VERSION"
 
