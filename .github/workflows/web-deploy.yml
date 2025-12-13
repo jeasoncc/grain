@@ -42,6 +42,20 @@ jobs:
           echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
           echo "🚀 Deploying web app version: $VERSION to $ENVIRONMENT"
 
+      - name: Check secrets availability
+        id: secrets
+        run: |
+          if [ -n "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "has_vercel=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_vercel=false" >> $GITHUB_OUTPUT
+          fi
+          if [ -n "${{ secrets.NETLIFY_AUTH_TOKEN }}" ]; then
+            echo "has_netlify=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_netlify=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
@@ -69,7 +83,7 @@ jobs:
           fi
 
       - name: Deploy to Vercel
-        if: steps.version.outputs.environment == 'production' && secrets.VERCEL_TOKEN != ''
+        if: steps.version.outputs.environment == 'production' && steps.secrets.outputs.has_vercel == 'true'
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -80,7 +94,7 @@ jobs:
         continue-on-error: true
 
       - name: Deploy to Vercel (Staging)
-        if: steps.version.outputs.environment == 'staging' && secrets.VERCEL_TOKEN != ''
+        if: steps.version.outputs.environment == 'staging' && steps.secrets.outputs.has_vercel == 'true'
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -90,7 +104,7 @@ jobs:
         continue-on-error: true
 
       - name: Deploy to Netlify
-        if: secrets.NETLIFY_AUTH_TOKEN != ''
+        if: steps.secrets.outputs.has_netlify == 'true'
         uses: nwtgck/actions-netlify@v3.0
         with:
           publish-dir: 'apps/web/out'

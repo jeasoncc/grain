@@ -79,6 +79,21 @@ jobs:
           flatpak install --user -y flathub org.freedesktop.Sdk//24.08
           flatpak install --user -y flathub org.freedesktop.Sdk.Extension.node20//24.08
           flatpak install --user -y flathub org.freedesktop.Sdk.Extension.rust-stable//24.08
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Pre-install dependencies with Bun
+        run: |
+          echo "📦 Pre-installing dependencies with Bun..."
+          # 在 workflow 中用 Bun 安装依赖（有网络）
+          # 这样 Flatpak 沙箱构建时就不需要网络了
+          bun install
+          
+          echo "✅ Dependencies installed"
+          echo "node_modules size: $(du -sh node_modules | cut -f1)"
       
       - name: Build Flatpak
         run: |
