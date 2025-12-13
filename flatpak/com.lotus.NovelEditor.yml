@@ -50,42 +50,33 @@ modules:
       env:
         CARGO_HOME: /run/build/novel-editor/cargo
         npm_config_cache: /run/build/novel-editor/npm-cache
-        BUN_INSTALL: /run/build/novel-editor/bun
         # Optimize build for release
         CARGO_PROFILE_RELEASE_LTO: 'true'
         CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '1'
         CARGO_PROFILE_RELEASE_PANIC: 'abort'
     build-commands:
-      # Install Bun
+      # Check node/npm version
       - |
-        echo "=== Installing Bun ==="
-        curl -fsSL https://bun.sh/install | bash
-        export BUN_INSTALL="$HOME/.bun"
-        export PATH="$BUN_INSTALL/bin:$PATH"
-        bun --version
+        echo "=== Checking Node.js environment ==="
+        node --version
+        npm --version
       
       # Install root dependencies
       - |
         echo "=== Installing root dependencies ==="
-        export BUN_INSTALL="$HOME/.bun"
-        export PATH="$BUN_INSTALL/bin:$PATH"
-        bun install --frozen-lockfile
+        npm ci --legacy-peer-deps || npm install --legacy-peer-deps
       
       # Install desktop dependencies
       - |
         echo "=== Installing desktop dependencies ==="
-        export BUN_INSTALL="$HOME/.bun"
-        export PATH="$BUN_INSTALL/bin:$PATH"
         cd apps/desktop
-        bun install --frozen-lockfile
+        npm ci --legacy-peer-deps || npm install --legacy-peer-deps
       
       # Build frontend
       - |
         echo "=== Building frontend ==="
-        export BUN_INSTALL="$HOME/.bun"
-        export PATH="$BUN_INSTALL/bin:$PATH"
         cd apps/desktop
-        bun run build
+        npm run build
         
         # Verify build output
         if [ ! -d "dist" ]; then
@@ -97,10 +88,8 @@ modules:
       # Build Tauri application
       - |
         echo "=== Building Tauri application ==="
-        export BUN_INSTALL="$HOME/.bun"
-        export PATH="$BUN_INSTALL/bin:$PATH"
         cd apps/desktop
-        bun run tauri build --bundles none
+        npm run tauri build -- --bundles none
         
         # Verify binary exists
         if [ ! -f "src-tauri/target/release/novel-editor" ]; then

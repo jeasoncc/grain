@@ -13,6 +13,8 @@ on:
 jobs:
   winget-publish:
     runs-on: windows-latest
+    permissions:
+      contents: write
     
     steps:
       - name: Checkout repository
@@ -158,6 +160,7 @@ jobs:
           }
 
       - name: Commit updated manifests
+        continue-on-error: true
         run: |
           $version = "${{ steps.version.outputs.VERSION }}"
           
@@ -167,8 +170,13 @@ jobs:
             Write-Host "No changes to commit"
           } else {
             git commit -m "chore(winget): update manifests to version $version"
-            git push
-            Write-Host "Committed and pushed updated manifests"
+            try {
+              git push
+              Write-Host "✅ Committed and pushed updated manifests"
+            } catch {
+              Write-Warning "⚠ Could not push to repository (this is optional)"
+              Write-Host "The winget submission to microsoft/winget-pkgs is the main goal"
+            }
           }
 
       - name: Create summary

@@ -69,7 +69,7 @@ jobs:
           fi
 
       - name: Deploy to Vercel
-        if: steps.version.outputs.environment == 'production'
+        if: steps.version.outputs.environment == 'production' && secrets.VERCEL_TOKEN != ''
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -77,17 +77,20 @@ jobs:
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           working-directory: apps/web
           vercel-args: '--prod'
+        continue-on-error: true
 
       - name: Deploy to Vercel (Staging)
-        if: steps.version.outputs.environment == 'staging'
+        if: steps.version.outputs.environment == 'staging' && secrets.VERCEL_TOKEN != ''
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           working-directory: apps/web
+        continue-on-error: true
 
       - name: Deploy to Netlify
+        if: secrets.NETLIFY_AUTH_TOKEN != ''
         uses: nwtgck/actions-netlify@v3.0
         with:
           publish-dir: 'apps/web/out'
@@ -100,14 +103,15 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        continue-on-error: true
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
         if: steps.version.outputs.environment == 'production'
+        uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: apps/web/out
-          cname: novel-editor.example.com  # 替换为你的域名
+        continue-on-error: true
 
       - name: Create deployment summary
         run: |

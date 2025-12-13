@@ -29,7 +29,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "📦 Creating Homebrew cask for version: $VERSION"
 
-      - name: Verify release and get download info
+      - name: Wait for release assets
         id: release_info
         run: |
           VERSION="${{ steps.version.outputs.version }}"
@@ -37,51 +37,72 @@ jobs:
           
           echo "🔍 Checking release: desktop-v$VERSION"
           
-          # 获取 release 信息
-          RESPONSE=$(curl -s "$RELEASE_URL")
+          # 等待 release 和 assets（最多等待 20 分钟）
+          MAX_ATTEMPTS=40
+          ATTEMPT=0
+          DMG_FOUND=false
           
-          # 检查是否找到 release
-          if echo "$RESPONSE" | jq -e '.message == "Not Found"' > /dev/null 2>&1; then
-            echo "❌ Release desktop-v$VERSION not found"
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
             echo ""
-            echo "📋 To fix this:"
-            echo "1. Create desktop release first: npm run tag:desktop"
-            echo "2. Wait for build to complete"
-            echo "3. Then retry Homebrew publish"
-            exit 1
-          fi
+            echo "⏳ Attempt $ATTEMPT/$MAX_ATTEMPTS..."
+            
+            # 获取 release 信息
+            RESPONSE=$(curl -s "$RELEASE_URL")
+            
+            # 检查是否找到 release
+            if echo "$RESPONSE" | jq -e '.message == "Not Found"' > /dev/null 2>&1; then
+              echo "⚠ Release not found yet, waiting..."
+              sleep 30
+              continue
+            fi
+            
+            # 检查 assets 数量
+            ASSETS_COUNT=$(echo "$RESPONSE" | jq '.assets | length // 0')
+            echo "📦 Found $ASSETS_COUNT assets"
+            
+            if [ "$ASSETS_COUNT" -eq 0 ]; then
+              echo "⚠ No assets yet, release may still be building..."
+              sleep 30
+              continue
+            fi
+            
+            # 显示可用的 assets
+            echo "Available assets:"
+            echo "$RESPONSE" | jq -r '.assets[].name // empty'
+            
+            # 查找 macOS DMG 文件
+            ARM_DMG=$(echo "$RESPONSE" | jq -r '[.assets[] | select(.name | test("aarch64.*\\.dmg$"; "i")) | .browser_download_url][0] // empty')
+            INTEL_DMG=$(echo "$RESPONSE" | jq -r '[.assets[] | select(.name | test("x64.*\\.dmg$"; "i")) | .browser_download_url][0] // empty')
+            
+            if [ -n "$ARM_DMG" ]; then
+              DOWNLOAD_URL="$ARM_DMG"
+              ARCH="arm64"
+              DMG_FOUND=true
+              echo "✅ Found Apple Silicon DMG: $DOWNLOAD_URL"
+              break
+            elif [ -n "$INTEL_DMG" ]; then
+              DOWNLOAD_URL="$INTEL_DMG"
+              ARCH="intel"
+              DMG_FOUND=true
+              echo "✅ Found Intel DMG: $DOWNLOAD_URL"
+              break
+            else
+              echo "⚠ No macOS DMG found yet, waiting for macOS build..."
+              sleep 30
+            fi
+          done
           
-          echo "✅ Release found"
-          
-          # 检查 assets 是否存在
-          ASSETS_COUNT=$(echo "$RESPONSE" | jq '.assets | length // 0')
-          if [ "$ASSETS_COUNT" -eq 0 ]; then
-            echo "❌ No assets found in release"
-            echo "Release may still be building. Please wait and retry."
-            exit 1
-          fi
-          
-          echo "📦 Found $ASSETS_COUNT assets in release"
-          echo "Available assets:"
-          echo "$RESPONSE" | jq -r '.assets[].name // empty'
-          
-          # 查找 macOS DMG 文件（优先 Apple Silicon，然后 Intel）
-          ARM_DMG=$(echo "$RESPONSE" | jq -r '[.assets[] | select(.name | test("aarch64.*\\.dmg$"; "i")) | .browser_download_url][0] // empty')
-          INTEL_DMG=$(echo "$RESPONSE" | jq -r '[.assets[] | select(.name | test("x64.*\\.dmg$"; "i")) | .browser_download_url][0] // empty')
-          
-          if [ -n "$ARM_DMG" ]; then
-            DOWNLOAD_URL="$ARM_DMG"
-            ARCH="arm64"
-            echo "✅ Found Apple Silicon DMG: $DOWNLOAD_URL"
-          elif [ -n "$INTEL_DMG" ]; then
-            DOWNLOAD_URL="$INTEL_DMG"
-            ARCH="intel"
-            echo "✅ Found Intel DMG: $DOWNLOAD_URL"
-          else
-            echo "❌ No macOS DMG files found in release"
+          if [ "$DMG_FOUND" = false ]; then
             echo ""
-            echo "📋 This workflow requires macOS DMG files."
-            echo "Make sure the desktop release includes macOS builds."
+            echo "❌ Timeout: No macOS DMG files found after $MAX_ATTEMPTS attempts"
+            echo ""
+            echo "📋 Possible reasons:"
+            echo "1. macOS build is still in progress"
+            echo "2. macOS build failed"
+            echo "3. Release doesn't include macOS builds"
+            echo ""
+            echo "Please check the desktop release workflow and retry."
             exit 1
           fi
           
