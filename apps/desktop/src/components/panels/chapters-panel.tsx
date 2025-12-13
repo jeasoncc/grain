@@ -50,6 +50,7 @@ import { useSceneCreationStore } from "@/stores/scene-creation";
 import type { ChapterInterface, SceneInterface } from "@/db/schema";
 import { useUnifiedSidebarStore } from "@/stores/unified-sidebar";
 import { useSelectionStore } from "@/stores/selection";
+import { useEditorTabsStore } from "@/stores/editor-tabs";
 
 export function ChaptersPanel() {
 	const navigate = useNavigate();
@@ -112,12 +113,26 @@ export function ChaptersPanel() {
 		}
 	}, [setChaptersSelectedChapterId, setChaptersSelectedSceneId, setGlobalSelectedChapterId, chaptersState.expandedChapters, toggleChapter]);
 
+	// 标签页
+	const openTab = useEditorTabsStore((s) => s.openTab);
+
 	// Handle scene selection
 	const handleSelectScene = useCallback((scene: SceneInterface) => {
 		setChaptersSelectedSceneId(scene.id);
 		setChaptersSelectedChapterId(scene.chapter);
 		setGlobalSelectedSceneId(scene.id);
 		setGlobalSelectedChapterId(scene.chapter);
+		
+		// 打开标签页
+		if (globalSelectedProjectId) {
+			openTab({
+				projectId: globalSelectedProjectId,
+				chapterId: scene.chapter,
+				sceneId: scene.id,
+				title: scene.title,
+				type: scene.type === "canvas" ? "canvas" : "scene",
+			});
+		}
 		
 		// Navigate to canvas for canvas scenes, or home for text scenes
 		if (scene.type === "canvas") {
@@ -126,7 +141,7 @@ export function ChaptersPanel() {
 			// Text scenes are edited on the main page
 			navigate({ to: "/" });
 		}
-	}, [setChaptersSelectedSceneId, setChaptersSelectedChapterId, setGlobalSelectedSceneId, setGlobalSelectedChapterId, navigate]);
+	}, [setChaptersSelectedSceneId, setChaptersSelectedChapterId, setGlobalSelectedSceneId, setGlobalSelectedChapterId, navigate, globalSelectedProjectId, openTab]);
 
 	// Create new chapter with auto-rename
 	const handleCreateChapter = useCallback(async () => {

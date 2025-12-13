@@ -11,11 +11,16 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { DevOnlyPage } from "@/components/dev-only";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/test-focus")({
-	component: TestFocusPage,
+	component: () => (
+		<DevOnlyPage>
+			<TestFocusPage />
+		</DevOnlyPage>
+	),
 });
 
 function TestFocusPage() {

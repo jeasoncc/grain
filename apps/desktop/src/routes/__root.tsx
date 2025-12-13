@@ -9,6 +9,7 @@ import {
 import { useEffect, useState } from "react";
 import { ActivityBar } from "@/components/activity-bar";
 import { GlobalSearch } from "@/components/blocks/global-search";
+import { BufferSwitcher } from "@/components/buffer-switcher";
 import { CommandPalette } from "@/components/command-palette";
 import { ExportDialogManager } from "@/components/export/export-dialog-manager";
 import { DevtoolsWrapper } from "@/components/devtools-wrapper";
@@ -20,11 +21,20 @@ import { Toaster } from "@/components/ui/sonner";
 import { UnifiedSidebar } from "@/components/unified-sidebar";
 import { initializeTheme } from "@/hooks/use-theme";
 import { autoBackupManager } from "@/services/backup";
+import { useEditorTabsStore } from "@/stores/editor-tabs";
 import { useUnifiedSidebarStore } from "@/stores/unified-sidebar";
 
 function RootComponent() {
 	const [commandOpen, setCommandOpen] = useState(false);
 	const [searchOpen, setSearchOpen] = useState(false);
+	const [bufferSwitcherOpen, setBufferSwitcherOpen] = useState(false);
+	const [bufferSwitcherDirection, setBufferSwitcherDirection] = useState<"forward" | "backward">("forward");
+	
+	// Editor tabs state for buffer switcher
+	const tabs = useEditorTabsStore((s) => s.tabs);
+	const activeTabId = useEditorTabsStore((s) => s.activeTabId);
+	const setActiveTab = useEditorTabsStore((s) => s.setActiveTab);
+	
 	const {
 		activePanel,
 		isOpen: unifiedSidebarOpen,
@@ -73,6 +83,13 @@ function RootComponent() {
 					setActivePanel("books");
 				}
 			}
+			// Ctrl + Tab 打开 buffer switcher (forward)
+			// Ctrl + Shift + Tab 打开 buffer switcher (backward)
+			if (e.ctrlKey && e.key === "Tab") {
+				e.preventDefault();
+				setBufferSwitcherDirection(e.shiftKey ? "backward" : "forward");
+				setBufferSwitcherOpen(true);
+			}
 		};
 
 		// 监听自定义事件（从命令面板触发）
@@ -85,7 +102,7 @@ function RootComponent() {
 			window.removeEventListener("keydown", handleKeyDown);
 			window.removeEventListener("open-global-search", handleOpenSearch);
 		};
-	}, []);
+	}, [activePanel, unifiedSidebarOpen, toggleSidebar, setActivePanel]);
 
 	return (
 		<ConfirmProvider>
@@ -116,6 +133,15 @@ function RootComponent() {
 				<CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
 				{/* 全局搜索 */}
 				<GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
+				{/* Buffer Switcher (Emacs-style tab switching) */}
+				<BufferSwitcher
+					open={bufferSwitcherOpen}
+					onOpenChange={setBufferSwitcherOpen}
+					tabs={tabs}
+					activeTabId={activeTabId}
+					onSelectTab={setActiveTab}
+					initialDirection={bufferSwitcherDirection}
+				/>
 				{/* 导出对话框管理器 */}
 				<ExportDialogManager />
 				{/* 字体样式注入 */}

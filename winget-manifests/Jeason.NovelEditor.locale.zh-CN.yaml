@@ -2,7 +2,7 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.5.0.schema.json
 
 PackageIdentifier: Jeason.NovelEditor
-PackageVersion: 0.1.71
+PackageVersion: 0.1.72
 PackageLocale: zh-CN
 Publisher: Lotus
 PublisherUrl: https://github.com/jeasoncc

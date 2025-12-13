@@ -59,6 +59,45 @@ fn get_downloads_dir() -> Result<String, String> {
         .ok_or_else(|| "Could not determine downloads directory".to_string())
 }
 
+/// Get the user's home directory
+#[tauri::command]
+fn get_home_dir() -> Result<String, String> {
+    dirs::home_dir()
+        .map(|p| p.to_string_lossy().to_string())
+        .ok_or_else(|| "Could not determine home directory".to_string())
+}
+
+/// Ensure directory exists and save text file
+/// Supports ~ expansion for home directory
+#[tauri::command]
+async fn ensure_directory_and_save(
+    directory: String,
+    filename: String,
+    content: String,
+    expand_home: bool,
+) -> Result<String, String> {
+    // Expand ~ to home directory if needed
+    let dir_path = if expand_home && directory.starts_with('~') {
+        let home = dirs::home_dir()
+            .ok_or_else(|| "Could not determine home directory".to_string())?;
+        let rest = directory.strip_prefix("~/").unwrap_or(&directory[1..]);
+        home.join(rest)
+    } else {
+        PathBuf::from(&directory)
+    };
+
+    // Create directory recursively
+    fs::create_dir_all(&dir_path)
+        .map_err(|e| format!("Failed to create directory {}: {}", dir_path.display(), e))?;
+
+    // Write the file
+    let full_path = dir_path.join(&filename);
+    fs::write(&full_path, content.as_bytes())
+        .map_err(|e| format!("Failed to write file: {}", e))?;
+
+    Ok(full_path.to_string_lossy().to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -69,7 +108,9 @@ pub fn run() {
             greet,
             select_directory,
             save_file,
-            get_downloads_dir
+            get_downloads_dir,
+            get_home_dir,
+            ensure_directory_and_save
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

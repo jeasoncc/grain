@@ -103,6 +103,8 @@ export async function generateExportBlob(
 			return generatePdfBlob(project, chapterContents, opts);
 		case "epub":
 			return generateEpubBlob(project, chapterContents, opts);
+		case "org":
+			return generateOrgBlob(project, chapterContents, opts);
 		default:
 			throw new Error(`Unsupported format: ${format}`);
 	}
@@ -566,6 +568,55 @@ ${navItems}
 		compression: "DEFLATE",
 		compressionOptions: { level: 9 },
 	});
+}
+
+/**
+ * 生成 Org-mode 格式 Blob
+ * Generate Org-mode format blob
+ */
+function generateOrgBlob(
+	project: ProjectInterface,
+	chapterContents: Array<{
+		chapter: ChapterInterface;
+		scenes: SceneInterface[];
+	}>,
+	opts: ExportOptions,
+): Blob {
+	const lines: string[] = [];
+
+	// 文件头
+	lines.push(`#+title: ${project.title || "未命名作品"}`);
+	lines.push(`#+author: ${project.author || "未知作者"}`);
+	lines.push(`#+date: [${new Date().toISOString().split("T")[0]}]`);
+	lines.push(`#+filetags: :novel:novel-editor:`);
+	lines.push("");
+
+	// 章节内容
+	for (const { chapter, scenes } of chapterContents) {
+		if (opts.includeChapterTitles) {
+			lines.push(`* ${chapter.title}`);
+			lines.push("");
+		}
+
+		for (const scene of scenes) {
+			if (opts.includeSceneTitles) {
+				lines.push(`** ${scene.title}`);
+				lines.push("");
+			}
+
+			const text = getSceneText(scene);
+			if (text.trim()) {
+				const paragraphs = text.split("\n").filter((p) => p.trim());
+				for (const para of paragraphs) {
+					lines.push(para.trim());
+				}
+				lines.push("");
+			}
+		}
+	}
+
+	const content = lines.join("\n");
+	return new Blob([content], { type: "text/plain;charset=utf-8" });
 }
 
 /**

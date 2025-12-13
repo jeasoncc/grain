@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import logger from "@/log";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DevOnlyPage } from "@/components/dev-only";
 import {
 	clearAllData,
 	clearCookies,
@@ -14,7 +15,11 @@ import {
 } from "@/services/clear-data";
 
 export const Route = createFileRoute("/test-clear-data")({
-	component: TestClearData,
+	component: () => (
+		<DevOnlyPage>
+			<TestClearData />
+		</DevOnlyPage>
+	),
 });
 
 function TestClearData() {

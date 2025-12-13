@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type UnifiedSidebarPanel = "search" | "books" | "drawings" | "wiki" | "chapters" | null;
+export type UnifiedSidebarPanel = "search" | "books" | "drawings" | "wiki" | "chapters" | "diary" | null;
 
 interface SearchPanelState {
 	query: string;
@@ -31,11 +31,21 @@ interface ChaptersPanelState {
 	selectedSceneId: string | null;
 }
 
+// Sidebar width constraints
+export const SIDEBAR_MIN_WIDTH = 200;
+export const SIDEBAR_MAX_WIDTH = 600;
+export const SIDEBAR_AUTO_COLLAPSE_THRESHOLD = 150;
+export const SIDEBAR_DEFAULT_WIDTH = 320;
+
 interface UnifiedSidebarState {
 	// Main sidebar state
 	activePanel: UnifiedSidebarPanel;
 	isOpen: boolean;
 	width: number;
+	// New: track if sidebar was collapsed by drag vs manual toggle
+	wasCollapsedByDrag: boolean;
+	// New: store previous width for restore after drag collapse
+	previousWidth: number;
 
 	// Panel states
 	searchState: SearchPanelState;
@@ -49,6 +59,10 @@ interface UnifiedSidebarState {
 	setIsOpen: (open: boolean) => void;
 	toggleSidebar: () => void;
 	setWidth: (width: number) => void;
+	// New: resize with auto-collapse support
+	resizeSidebar: (newWidth: number) => void;
+	// New: restore from drag collapse
+	restoreFromCollapse: () => void;
 
 	// Search panel actions
 	setSearchQuery: (query: string) => void;
@@ -80,7 +94,9 @@ export const useUnifiedSidebarStore = create<UnifiedSidebarState>()(
 			// Main sidebar state
 			activePanel: "books",
 			isOpen: true,
-			width: 320,
+			width: SIDEBAR_DEFAULT_WIDTH,
+			wasCollapsedByDrag: false,
+			previousWidth: SIDEBAR_DEFAULT_WIDTH,
 
 			// Panel states
 			searchState: {
@@ -118,9 +134,32 @@ export const useUnifiedSidebarStore = create<UnifiedSidebarState>()(
 			setIsOpen: (open) => set({ isOpen: open }),
 			toggleSidebar: () => {
 				const state = get();
-				set({ isOpen: !state.isOpen });
+				set({ isOpen: !state.isOpen, wasCollapsedByDrag: false });
 			},
-			setWidth: (width) => set({ width: Math.max(280, Math.min(600, width)) }),
+			setWidth: (width) => set({ width: Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, width)) }),
+			resizeSidebar: (newWidth) => {
+				const state = get();
+				// Auto-collapse when width drops below threshold
+				if (newWidth < SIDEBAR_AUTO_COLLAPSE_THRESHOLD) {
+					set({
+						isOpen: false,
+						wasCollapsedByDrag: true,
+						previousWidth: state.width,
+					});
+					return;
+				}
+				// Constrain width within bounds
+				const constrainedWidth = Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, newWidth));
+				set({ width: constrainedWidth, wasCollapsedByDrag: false });
+			},
+			restoreFromCollapse: () => {
+				const state = get();
+				set({
+					isOpen: true,
+					wasCollapsedByDrag: false,
+					width: state.previousWidth || SIDEBAR_DEFAULT_WIDTH,
+				});
+			},
 
 			// Search panel actions
 			setSearchQuery: (query) =>
@@ -190,6 +229,8 @@ export const useUnifiedSidebarStore = create<UnifiedSidebarState>()(
 				activePanel: state.activePanel,
 				isOpen: state.isOpen,
 				width: state.width,
+				wasCollapsedByDrag: state.wasCollapsedByDrag,
+				previousWidth: state.previousWidth,
 				searchState: state.searchState,
 				booksState: state.booksState,
 				drawingsState: state.drawingsState,

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { runScrollTests, logScrollTestResults, type ScrollTestResult } from "@/utils/scroll-test";
 import { runComprehensiveScrollTest } from "@/test/scroll-behavior.test";
+import { DevOnlyPage } from "@/components/dev-only";
 
 export const Route = createFileRoute("/settings/scroll-test")({
 	component: ScrollTestSettings,
@@ -42,6 +43,7 @@ function ScrollTestSettings() {
 	};
 
 	return (
+		<DevOnlyPage redirectTo="/settings">
 		<div className="space-y-6" data-testid="settings-content">
 			<div>
 				<h3 className="text-lg font-medium">滚动测试页面</h3>
@@ -170,5 +172,6 @@ function ScrollTestSettings() {
 				</p>
 			</div>
 		</div>
+		</DevOnlyPage>
 	);
 }

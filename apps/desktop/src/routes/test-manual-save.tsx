@@ -7,12 +7,17 @@ import { toast } from "sonner";
 import { SaveStatusIndicator } from "@/components/blocks/save-status-indicator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DevOnlyPage } from "@/components/dev-only";
 import { Textarea } from "@/components/ui/textarea";
 import { useManualSave } from "@/hooks/use-manual-save";
 import { useSaveStore } from "@/stores/save";
 
 export const Route = createFileRoute("/test-manual-save")({
-	component: TestManualSaveComponent,
+	component: () => (
+		<DevOnlyPage>
+			<TestManualSaveComponent />
+		</DevOnlyPage>
+	),
 });
 
 function TestManualSaveComponent() {

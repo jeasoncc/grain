@@ -10,6 +10,8 @@ import {
 	BookOpen,
 	BookOpenText,
 	BookText,
+	Calendar,
+	CalendarDays,
 	Cog,
 	Download,
 	Feather,
@@ -86,6 +88,7 @@ export interface IconTheme {
 			wiki: LucideIcon;
 			canvas: LucideIcon;
 			chapters: LucideIcon;
+			diary: LucideIcon;
 			statistics: LucideIcon;
 			settings: LucideIcon;
 			create: LucideIcon;
@@ -134,6 +137,7 @@ export const iconThemes: IconTheme[] = [
 				wiki: BookOpen,
 				canvas: Pencil,
 				chapters: FolderTree,
+				diary: CalendarDays,
 				statistics: TrendingUp,
 				settings: Settings,
 				create: Plus,
@@ -177,6 +181,7 @@ export const iconThemes: IconTheme[] = [
 				wiki: BookOpen,
 				canvas: Pencil,
 				chapters: FolderTree, // 使用 FolderTree 确保与 outline (ListTree) 不同
+				diary: Calendar,
 				statistics: BarChart3,
 				settings: Cog,
 				create: Plus,
@@ -223,6 +228,7 @@ export const iconThemes: IconTheme[] = [
 				wiki: BookOpen,
 				canvas: Pencil,
 				chapters: FolderTree,
+				diary: CalendarDays,
 				statistics: TrendingUp,
 				settings: Settings,
 				create: PlusCircle,
@@ -269,6 +275,7 @@ export const iconThemes: IconTheme[] = [
 				wiki: BookOpenText,
 				canvas: Palette,
 				chapters: FolderTree,
+				diary: CalendarDays,
 				statistics: BarChart3,
 				settings: Cog,
 				create: PlusCircle,
@@ -315,6 +322,7 @@ export const iconThemes: IconTheme[] = [
 				wiki: BookOpen,
 				canvas: Feather,
 				chapters: FolderTree, // 使用 FolderTree 确保与 outline (ListTree) 不同
+				diary: CalendarDays,
 				statistics: TrendingUp,
 				settings: Settings,
 				create: Plus,
@@ -361,6 +369,7 @@ export const iconThemes: IconTheme[] = [
 				wiki: BookOpen,
 				canvas: Feather,
 				chapters: FolderTree, // 使用 FolderTree 确保与 outline (ListTree) 不同
+				diary: CalendarDays,
 				statistics: TrendingUp,
 				settings: Settings,
 				create: PenTool,

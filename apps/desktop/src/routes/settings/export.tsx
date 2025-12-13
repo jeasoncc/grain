@@ -9,7 +9,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { FolderOpen, Trash2, Download, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { FolderOpen, Trash2, Download, AlertCircle, FileText } from "lucide-react";
 import {
   getDefaultExportPath,
   setDefaultExportPath,
@@ -17,6 +19,11 @@ import {
   getDownloadsDirectory,
   isTauriEnvironment,
 } from "@/services/export-path";
+import {
+  getOrgmodeSettings,
+  saveOrgmodeSettings,
+  type OrgmodeSettings,
+} from "@/services/export-orgmode";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/settings/export")({
@@ -28,11 +35,19 @@ function ExportSettingsPage() {
   const [downloadsDir, setDownloadsDir] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isTauri, setIsTauri] = useState(false);
+  
+  // Org-mode 设置
+  const [orgSettings, setOrgSettings] = useState<OrgmodeSettings>({
+    orgRoamPath: null,
+    diarySubdir: "diary",
+    enabled: false,
+  });
 
   // 加载初始设置
   useEffect(() => {
     setIsTauri(isTauriEnvironment());
     setDefaultPathState(getDefaultExportPath());
+    setOrgSettings(getOrgmodeSettings());
     
     // 获取系统下载目录
     getDownloadsDirectory().then((dir) => {
@@ -70,6 +85,36 @@ function ExportSettingsPage() {
     setDefaultExportPath(null);
     setDefaultPathState(null);
     toast.success("默认导出路径已清除，将使用系统下载目录");
+  };
+
+  // 选择 org-roam 路径
+  const handleSelectOrgRoamPath = async () => {
+    if (!isTauri) {
+      toast.error("此功能仅在桌面应用中可用");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const selectedPath = await selectExportDirectory(orgSettings.orgRoamPath);
+      if (selectedPath) {
+        const newSettings = { ...orgSettings, orgRoamPath: selectedPath };
+        setOrgSettings(newSettings);
+        saveOrgmodeSettings(newSettings);
+        toast.success("Org-roam 路径已设置");
+      }
+    } catch (error) {
+      toast.error(`选择路径失败: ${error}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 更新 org-roam 设置
+  const updateOrgSettings = (updates: Partial<OrgmodeSettings>) => {
+    const newSettings = { ...orgSettings, ...updates };
+    setOrgSettings(newSettings);
+    saveOrgmodeSettings(newSettings);
   };
 
   return (
@@ -172,6 +217,96 @@ function ExportSettingsPage() {
               {downloadsDir || "无法获取系统下载目录"}
             </p>
           </div>
+        </div>
+
+        <Separator />
+
+        {/* Org-mode / Org-roam 集成 */}
+        <div className="space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2">
+                <FileText className="size-5 text-primary" />
+                <Label className="text-base">Org-mode 集成</Label>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                将日记导出为 Emacs Org-mode 格式，与 org-roam 目录结构无缝集成。
+              </p>
+            </div>
+            <Switch
+              checked={orgSettings.enabled}
+              onCheckedChange={(checked) => updateOrgSettings({ enabled: checked })}
+              disabled={!isTauri}
+            />
+          </div>
+
+          {orgSettings.enabled && (
+            <div className="space-y-4 pl-7">
+              {/* Org-roam 根目录 */}
+              <div className="space-y-2">
+                <Label className="text-sm">Org-roam 根目录</Label>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
+                  <FolderOpen className="size-5 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    {orgSettings.orgRoamPath ? (
+                      <p className="text-sm font-mono truncate" title={orgSettings.orgRoamPath}>
+                        {orgSettings.orgRoamPath}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        未设置（如 ~/org-roam）
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSelectOrgRoamPath}
+                    disabled={isLoading || !isTauri}
+                  >
+                    <FolderOpen className="size-4" />
+                    选择路径
+                  </Button>
+                  {orgSettings.orgRoamPath && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => updateOrgSettings({ orgRoamPath: null })}
+                      disabled={isLoading}
+                    >
+                      <Trash2 className="size-4" />
+                      清除
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* 日记子目录 */}
+              <div className="space-y-2">
+                <Label className="text-sm">日记子目录</Label>
+                <Input
+                  value={orgSettings.diarySubdir}
+                  onChange={(e) => updateOrgSettings({ diarySubdir: e.target.value })}
+                  placeholder="diary"
+                  className="max-w-xs font-mono"
+                />
+                <p className="text-xs text-muted-foreground">
+                  日记将保存到: {orgSettings.orgRoamPath || "~/org-roam"}/{orgSettings.diarySubdir}/year-YYYY-Zodiac/month-MM-Name/day-DD-Day/
+                </p>
+              </div>
+
+              {/* 路径预览 */}
+              {orgSettings.orgRoamPath && (
+                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <p className="text-xs text-green-600 dark:text-green-400 font-mono">
+                    示例路径: {orgSettings.orgRoamPath}/{orgSettings.diarySubdir}/year-2025-Snake/month-12-December/day-13-Saturday/diary-1734123456-21:15:51.org
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

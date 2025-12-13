@@ -62,18 +62,20 @@ interface ExportState {
 	exportedFilePath: string | null;
 }
 
-const formatIcons = {
+const formatIcons: Record<string, typeof FileText> = {
 	txt: FileText,
 	docx: FileType,
 	pdf: FileText,
 	epub: BookOpen,
+	org: FileText,
 };
 
-const formatLabels = {
+const formatLabels: Record<string, string> = {
 	txt: "纯文本 (.txt)",
 	docx: "Word 文档 (.docx)",
 	pdf: "PDF 文档 (.pdf)",
 	epub: "电子书 (.epub)",
+	org: "Org-mode (.org)",
 };
 
 export function ExportDialogEnhanced({

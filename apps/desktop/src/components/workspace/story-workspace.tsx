@@ -28,8 +28,9 @@ import { NovelEditor } from "@/components/blocks/rich-editor/novel-editor";
 import { SaveStatusIndicator } from "@/components/blocks/save-status-indicator";
 import { ThemeSelector } from "@/components/blocks/theme-selector";
 import { WordCountBadge } from "@/components/blocks/word-count-badge";
-import { ExportButton } from "@/components/export/export-button";
 import { WritingStatsPanel } from "@/components/blocks/writing-stats-panel";
+import { EditorTabs } from "@/components/editor-tabs";
+import { useEditorTabsStore } from "@/stores/editor-tabs";
 import { StoryRightSidebar } from "@/components/story-right-sidebar";
 import {
 	Breadcrumb,
@@ -70,12 +71,14 @@ import {
 } from "@/services/projects";
 import { useOutlineStore } from "@/stores/outline";
 import { useSaveStore } from "@/stores/save";
+import { saveService } from "@/services/save";
 import { type SelectionState, useSelectionStore } from "@/stores/selection";
 import { useUIStore } from "@/stores/ui";
 import { useWritingStore } from "@/stores/writing";
 import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
 import { useDrawingsByProject } from "@/services/drawings";
 import type { DrawingInterface } from "@/db/schema";
+import { MultiEditorWorkspace } from "@/components/workspace/multi-editor-workspace";
 //
 
 import { countWords, extractTextFromSerialized } from "@/lib/statistics";
@@ -154,6 +157,31 @@ export function StoryWorkspace({
 	// 绘图状态
 	const [selectedDrawing, setSelectedDrawing] = useState<DrawingInterface | null>(null);
 	const drawings = useDrawingsByProject(selectedProjectId);
+
+	// 标签页状态
+	const tabs = useEditorTabsStore((s) => s.tabs);
+	const activeTabId = useEditorTabsStore((s) => s.activeTabId);
+	const openTab = useEditorTabsStore((s) => s.openTab);
+	const editorStates = useEditorTabsStore((s) => s.editorStates);
+	const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
+
+	// 当标签切换时，同步选择状态
+	useEffect(() => {
+		if (!activeTabId) return;
+		const activeTab = tabs.find((t) => t.id === activeTabId);
+		if (!activeTab) return;
+
+		// 只有当选择状态与标签不同时才更新
+		if (
+			activeTab.projectId !== selectedProjectId ||
+			activeTab.chapterId !== selectedChapterId ||
+			activeTab.sceneId !== selectedSceneId
+		) {
+			setSelectedProjectId(activeTab.projectId);
+			setSelectedChapterId(activeTab.chapterId);
+			setSelectedSceneId(activeTab.sceneId);
+		}
+	}, [activeTabId, tabs]);
 
 	// 保存状态管理
 	const { markAsUnsaved, markAsSaved, markAsSaving } = useSaveStore();
@@ -376,7 +404,16 @@ export function StoryWorkspace({
 		setEditorInitialState(initial);
 		const text = extractTextFromSerialized(initial);
 		setSceneWordCount(countWords(text));
-	}, [activeScene?.id]);
+
+		// 初始化编辑器状态到 store（如果尚未存在）
+		const existingState = editorStates[activeScene.id];
+		if (!existingState || !existingState.serializedState) {
+			updateEditorState(activeScene.id, {
+				serializedState: initial,
+				isDirty: false,
+			});
+		}
+	}, [activeScene?.id, editorStates, updateEditorState]);
 
 	// 使用 ref 存储 debounce 函数，避免依赖变化时重新创建
 	const debouncedSaveRef = useRef<ReturnType<typeof debounce> | null>(null);
@@ -483,13 +520,53 @@ export function StoryWorkspace({
 			const text = extractTextFromSerialized(serialized);
 			setSceneWordCount(countWords(text));
 
-			// 标记为有未保存的更改
+			// 标记为有未保存的更改（同时更新 store 和 service）
 			markAsUnsaved();
+			saveService.markAsChanged(activeScene.id);
+
+			// 更新当前编辑器状态，用于手动保存
+			setEditorInitialState(serialized);
 
 			// 使用 ref 中的 debounce 函数进行自动保存
 			debouncedSaveRef.current(activeScene.id, serialized);
 		},
 		[activeScene, markAsUnsaved],
+	);
+
+	// 多编辑器工作区：处理编辑器内容变化
+	const handleMultiEditorChange = useCallback(
+		(tabId: string, serialized: SerializedEditorState) => {
+			// 更新编辑器状态到 store
+			updateEditorState(tabId, {
+				serializedState: serialized,
+				isDirty: true,
+			});
+
+			// 如果是当前活动标签，也触发保存逻辑
+			if (tabId === activeTabId && debouncedSaveRef.current) {
+				const text = extractTextFromSerialized(serialized);
+				setSceneWordCount(countWords(text));
+
+				// 标记为有未保存的更改
+				markAsUnsaved();
+				saveService.markAsChanged(tabId);
+
+				// 更新当前编辑器状态，用于手动保存
+				setEditorInitialState(serialized);
+
+				// 使用 ref 中的 debounce 函数进行自动保存
+				debouncedSaveRef.current(tabId, serialized);
+			}
+		},
+		[activeTabId, markAsUnsaved, updateEditorState],
+	);
+
+	// 多编辑器工作区：处理滚动位置变化
+	const handleMultiEditorScrollChange = useCallback(
+		(tabId: string, scrollTop: number, scrollLeft: number) => {
+			updateEditorState(tabId, { scrollTop, scrollLeft });
+		},
+		[updateEditorState],
 	);
 
 	const projectStats = useMemo(() => {
@@ -997,16 +1074,7 @@ export function StoryWorkspace({
 							{/* 主题选择器 */}
 							<ThemeSelector />
 
-							{/* 导出按钮 */}
-							{currentProject && (
-								<ExportButton
-									projectId={currentProject.id}
-									projectTitle={currentProject.title}
-									variant="ghost"
-									size="sm"
-									showQuickExport={false}
-								/>
-							)}
+
 
 							{/* 快捷键帮助 */}
 							<div data-tour="command-palette">
@@ -1014,6 +1082,9 @@ export function StoryWorkspace({
 							</div>
 						</div>
 					</header>
+
+					{/* 编辑器标签栏 */}
+					<EditorTabs />
 
 					<div className="flex-1 overflow-hidden relative w-full mx-auto">
 						<div className="h-full w-full overflow-y-auto scroll-smooth scrollbar-thin">
@@ -1043,28 +1114,27 @@ export function StoryWorkspace({
 										从右侧边栏选择一个绘图开始编辑
 									</p>
 								</div>
+							) : tabs.length > 0 ? (
+								/* 多编辑器工作区 */
+								<MultiEditorWorkspace
+									tabs={tabs}
+									activeTabId={activeTabId}
+									editorStates={editorStates}
+									onEditorChange={handleMultiEditorChange}
+									onScrollChange={handleMultiEditorScrollChange}
+									placeholder="开始写作..."
+								/>
 							) : (
-								/* 文本编辑区域 */
+								/* 无打开的标签页 */
 								<article className="editor-container min-h-[calc(100vh-10rem)] w-full max-w-4xl mx-auto px-16 py-12">
-									{editorInitialState && selectedSceneId ? (
-										<div className="min-h-[600px]">
-											<MinimalEditor
-												key={selectedSceneId}
-												editorSerializedState={editorInitialState}
-												onSerializedChange={handleSerializedChange}
-												placeholder="开始写作..."
-											/>
+									<div className="flex h-full min-h-[400px] items-center justify-center text-sm text-muted-foreground flex-col gap-2">
+										<div className="size-12 rounded-full bg-muted/30 flex items-center justify-center">
+											<FileText className="size-6 text-muted-foreground/40" />
 										</div>
-									) : (
-										<div className="flex h-full min-h-[400px] items-center justify-center text-sm text-muted-foreground flex-col gap-2">
-											<div className="size-12 rounded-full bg-muted/30 flex items-center justify-center">
-												<FileText className="size-6 text-muted-foreground/40" />
-											</div>
-											<p className="text-muted-foreground/60">
-												选择一个场景开始写作
-											</p>
-										</div>
-									)}
+										<p className="text-muted-foreground/60">
+											选择一个场景开始写作
+										</p>
+									</div>
 								</article>
 							)}
 

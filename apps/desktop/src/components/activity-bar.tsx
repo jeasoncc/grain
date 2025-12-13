@@ -52,12 +52,13 @@ export function ActivityBar(): React.ReactElement {
 	}, []);
 
 	// 获取图标
-	// 顺序: 书籍管理(1st) → 章节管理(2nd) → Wiki(3rd) → 搜索(4th) → 大纲(5th)
+	// 顺序: 书籍管理(1st) → 章节管理(2nd) → Wiki(3rd) → 搜索(4th) → 大纲(5th) → 日记(6th)
 	const LibraryIcon = iconTheme.icons.activityBar.library;
 	const ChaptersIcon = iconTheme.icons.activityBar.chapters;
 	const WikiIcon = iconTheme.icons.activityBar.wiki;
 	const SearchIcon = iconTheme.icons.activityBar.search;
 	const OutlineIcon = iconTheme.icons.activityBar.outline;
+	const DiaryIcon = iconTheme.icons.activityBar.diary;
 	const StatisticsIcon = iconTheme.icons.activityBar.statistics;
 	const SettingsIcon = iconTheme.icons.activityBar.settings;
 	const ImportIcon = iconTheme.icons.activityBar.import;
@@ -178,6 +179,19 @@ export function ActivityBar(): React.ReactElement {
 						icon={<OutlineIcon className="size-5" />}
 						label="Outline"
 						active={isActive("/outline")}
+					/>
+					{/* 6th: Diary */}
+					<ActionButton
+						icon={<DiaryIcon className="size-5" />}
+						label="日记 (Diary)"
+						active={activePanel === "diary" && unifiedSidebarOpen}
+						onClick={() => {
+							if (activePanel === "diary" && unifiedSidebarOpen) {
+								toggleSidebar();
+							} else {
+								setActivePanel("diary");
+							}
+						}}
 					/>
 				</nav>
 

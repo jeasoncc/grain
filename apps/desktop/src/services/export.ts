@@ -748,10 +748,60 @@ ${content}
 }
 
 // ============================================
+// Org-mode 导出
+// ============================================
+
+export async function exportToOrg(
+	projectId: string,
+	options: ExportOptions = {},
+): Promise<void> {
+	const opts = { ...defaultOptions, ...options };
+	const { project, chapterContents } = await getProjectContent(projectId);
+
+	const lines: string[] = [];
+
+	// 文件头
+	lines.push(`#+title: ${project.title || "未命名作品"}`);
+	lines.push(`#+author: ${project.author || "未知作者"}`);
+	lines.push(`#+date: [${new Date().toISOString().split("T")[0]}]`);
+	lines.push(`#+filetags: :novel:novel-editor:`);
+	lines.push("");
+
+	// 章节内容
+	for (const { chapter, scenes } of chapterContents) {
+		if (opts.includeChapterTitles) {
+			lines.push(`* ${chapter.title}`);
+			lines.push("");
+		}
+
+		for (const scene of scenes) {
+			if (opts.includeSceneTitles) {
+				lines.push(`** ${scene.title}`);
+				lines.push("");
+			}
+
+			const text = getSceneText(scene);
+			if (text.trim()) {
+				const paragraphs = text.split("\n").filter((p) => p.trim());
+				for (const para of paragraphs) {
+					lines.push(para.trim());
+				}
+				lines.push("");
+			}
+		}
+	}
+
+	// 生成文件
+	const content = lines.join("\n");
+	const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+	saveAs(blob, `${project.title || "novel"}.org`);
+}
+
+// ============================================
 // 导出对话框数据
 // ============================================
 
-export type ExportFormat = "pdf" | "docx" | "txt" | "epub";
+export type ExportFormat = "pdf" | "docx" | "txt" | "epub" | "org";
 
 export async function exportProject(
 	projectId: string,
@@ -767,6 +817,8 @@ export async function exportProject(
 			return exportToTxt(projectId, options);
 		case "epub":
 			return exportToEpub(projectId, options);
+		case "org":
+			return exportToOrg(projectId, options);
 		default:
 			throw new Error(`不支持的导出格式: ${format}`);
 	}

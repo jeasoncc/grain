@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { SceneCreationDebug } from "@/components/debug/scene-creation-debug";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DevOnlyPage } from "@/components/dev-only";
 import { useSceneCreation } from "@/hooks/use-scene-creation";
 import { useChaptersByProject } from "@/services/chapters";
 import { useAllProjects } from "@/services/projects";
@@ -11,7 +12,11 @@ import { useScenesByProject } from "@/services/scenes";
 import { useSceneCreationStore } from "@/stores/scene-creation";
 
 export const Route = createFileRoute("/test-scene-creation")({
-	component: TestSceneCreation,
+	component: () => (
+		<DevOnlyPage>
+			<TestSceneCreation />
+		</DevOnlyPage>
+	),
 });
 
 function TestSceneCreation() {
