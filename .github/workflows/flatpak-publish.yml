@@ -10,13 +10,20 @@ on:
   push:
     tags:
       - 'flatpak-v*.*.*'   # 仅在打 flatpak tag 时触发
+  workflow_run:
+    workflows: ["Release Desktop App"]
+    types:
+      - completed
 
 jobs:
   publish-flatpak:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    if: startsWith(github.ref, 'refs/tags/flatpak-v') || github.event_name == 'workflow_dispatch'
+    if: |
+      startsWith(github.ref, 'refs/tags/flatpak-v') || 
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     
     steps:
       - name: Checkout code
@@ -29,6 +36,15 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             VERSION="${{ github.event.inputs.version }}"
+          elif [ "${{ github.event_name }}" = "workflow_run" ]; then
+            # 从触发的 desktop 工作流中提取版本
+            DESKTOP_TAG="${{ github.event.workflow_run.head_branch }}"
+            if [[ "$DESKTOP_TAG" =~ ^desktop-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+              VERSION="${BASH_REMATCH[1]}"
+            else
+              # 从 package.json 读取版本
+              VERSION=$(grep -o '"version":\s*"[^"]*"' package.json | sed 's/.*"version":\s*"\([^"]*\)".*/\1/')
+            fi
           else
             VERSION=${GITHUB_REF#refs/tags/flatpak-v}
           fi
@@ -38,24 +54,24 @@ jobs:
       - name: Verify release exists
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          echo "🔍 Checking if release v$VERSION exists..."
+          echo "🔍 Checking if release desktop-v$VERSION exists..."
           
           # 检查 GitHub release 是否存在
-          if ! curl -s -f "https://api.github.com/repos/${{ github.repository }}/releases/tags/v$VERSION" > /dev/null; then
-            echo "❌ Release v$VERSION not found."
+          if ! curl -s -f "https://api.github.com/repos/${{ github.repository }}/releases/tags/desktop-v$VERSION" > /dev/null; then
+            echo "❌ Release desktop-v$VERSION not found."
             echo ""
             echo "📋 To fix this issue:"
-            echo "1. Create a GitHub release first:"
-            echo "   gh release create v$VERSION --title \"Release v$VERSION\" --notes \"Release v$VERSION\""
+            echo "1. Run the desktop release workflow first:"
+            echo "   npm run tag:desktop"
+            echo "   # or manually: git tag desktop-v$VERSION && git push origin desktop-v$VERSION"
             echo ""
-            echo "2. Or run the desktop release workflow first:"
-            echo "   git tag desktop-v$VERSION && git push origin desktop-v$VERSION"
+            echo "2. Wait for desktop build to complete"
             echo ""
             echo "3. Then retry this Flatpak workflow"
             exit 1
           fi
           
-          echo "✅ Release v$VERSION found"
+          echo "✅ Release desktop-v$VERSION found"
       
       - name: Update Flatpak manifest
         run: |
@@ -63,7 +79,7 @@ jobs:
           echo "📝 Updating Flatpak manifest to version $VERSION"
           
           # 更新版本号和 tag
-          sed -i "s/tag: v.*/tag: v$VERSION/" flatpak/com.lotus.NovelEditor.yml
+          sed -i "s/tag: v.*/tag: desktop-v$VERSION/" flatpak/com.lotus.NovelEditor.yml
           
           # 更新 metainfo 中的版本
           sed -i "s/<release version=\".*\"/<release version=\"$VERSION\"/" flatpak/com.lotus.NovelEditor.metainfo.xml

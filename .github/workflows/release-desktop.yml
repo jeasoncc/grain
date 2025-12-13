@@ -544,3 +544,112 @@ jobs:
           draft: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 发布完成后的通知和触发
+  post-release:
+    runs-on: ubuntu-latest
+    needs: [publish-tauri, build-msix]
+    if: startsWith(github.ref, 'refs/tags/desktop-v')
+    
+    steps:
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/desktop-v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Desktop release completed for version: $VERSION"
+
+      - name: Trigger dependent platform releases
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const version = '${{ steps.version.outputs.version }}';
+            
+            // 需要 desktop release 的平台列表
+            const dependentPlatforms = [
+              'flatpak',
+              'winget', 
+              'chocolatey',
+              'scoop',
+              'homebrew',
+              'ppa',
+              'copr',
+              'obs',
+              'aur',
+              'aur-bin',
+              'gentoo'
+            ];
+            
+            console.log(`🚀 Desktop release v${version} completed successfully!`);
+            console.log(`📋 Checking for dependent platform tags...`);
+            
+            // 获取所有标签
+            const { data: tags } = await github.rest.repos.listTags({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+            
+            // 查找需要触发的平台
+            const platformsToTrigger = [];
+            
+            for (const platform of dependentPlatforms) {
+              const tagName = `${platform}-v${version}`;
+              const tagExists = tags.some(tag => tag.name === tagName);
+              
+              if (tagExists) {
+                platformsToTrigger.push(platform);
+                console.log(`✅ Found tag: ${tagName}`);
+              }
+            }
+            
+            if (platformsToTrigger.length === 0) {
+              console.log(`ℹ️ No dependent platform tags found for version ${version}`);
+              return;
+            }
+            
+            console.log(`🎯 Will trigger workflows for: ${platformsToTrigger.join(', ')}`);
+            
+            // 触发每个平台的工作流
+            for (const platform of platformsToTrigger) {
+              try {
+                await github.rest.actions.createWorkflowDispatch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: `${platform}-publish.yml`,
+                  ref: 'main',
+                  inputs: {
+                    version: version
+                  }
+                });
+                console.log(`✅ Triggered ${platform} workflow`);
+              } catch (error) {
+                console.log(`⚠️ Failed to trigger ${platform} workflow: ${error.message}`);
+              }
+            }
+            
+            // 创建成功评论
+            try {
+              await github.rest.repos.createCommitComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: context.sha,
+                body: `🎉 **Desktop Release v${version} 完成！**
+            
+            **✅ 已构建的包格式：**
+            - Windows: MSI, NSIS, MSIX
+            - macOS: DMG, APP (Intel + Apple Silicon)  
+            - Linux: DEB, RPM, AppImage
+            
+            **🚀 自动触发的平台工作流：**
+            ${platformsToTrigger.map(p => `- ${p}`).join('\n')}
+            
+            **📥 下载地址：**
+            [GitHub Releases](https://github.com/${context.repo.owner}/${context.repo.repo}/releases/tag/desktop-v${version})
+            
+            **⏱️ 预计完成时间：** 10-15 分钟`
+              });
+            } catch (error) {
+              console.log('无法创建评论，但发布成功:', error.message);
+            }

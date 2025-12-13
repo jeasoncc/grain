@@ -4,7 +4,7 @@
   "author": "Jeason",
   "description": "Novel Editor 是一个功能强大的小说编辑器，提供丰富的编辑功能和直观的用户界面。",
   "email": "xiaomiquan@aliyun.com",
-  "version": "0.1.54",
+  "version": "0.1.56",
   "license": "MIT",
   "homepage": "https://github.com/jeasoncc/novel-editor",
   "repository": {
@@ -32,6 +32,9 @@
     "build:test:web": "NODE_ENV=development turbo run build:test --filter=web",
     "build:test:mobile": "NODE_ENV=development turbo run build:test --filter=mobile",
     "tag:desktop": "bash scripts/create-tag.sh desktop",
+    "tag:linux": "bash scripts/create-tag.sh linux",
+    "tag:linux:independent": "bash scripts/create-tag.sh linux-independent",
+    "tag:linux:dependent": "bash scripts/create-tag.sh linux-dependent",
     "tag:linux:snap": "bash scripts/create-tag.sh snap",
     "tag:linux:flatpak": "bash scripts/create-tag.sh flatpak",
     "tag:linux:aur": "bash scripts/create-tag.sh aur",
@@ -46,13 +49,11 @@
     "tag:macos:homebrew": "bash scripts/create-tag.sh homebrew",
     "tag:web": "bash scripts/create-tag.sh web",
     "tag:all": "bash scripts/create-tag.sh all",
-    "tag:linux:all": "npm run tag:linux:snap && npm run tag:linux:flatpak && npm run tag:linux:aur && npm run tag:linux:aur-bin && npm run tag:linux:ppa && npm run tag:linux:copr && npm run tag:linux:obs && npm run tag:linux:gentoo",
-    "tag:windows:all": "npm run tag:windows:winget && npm run tag:windows:chocolatey && npm run tag:windows:scoop",
-    "tag:macos:all": "npm run tag:macos:homebrew",
     "icons:update": "bash scripts/update-icons.sh",
     "icons:generate": "cd apps/desktop && bun run tauri icon src-tauri/icons/my-new-icon.jpg",
     "version:bump": "bash scripts/bump-version.sh",
-    "stats:check": "bash scripts/check-download-stats.sh"
+    "stats:check": "bash scripts/check-download-stats.sh",
+    "release:fix": "bash scripts/fix-missing-desktop-release.sh"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.2",
