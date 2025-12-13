@@ -1,55 +1,8 @@
-# Novel Editor
-
-> A modern, powerful novel writing application for serious writers
-
-> 🇨🇳 [中文文档](./README.zh-CN.md) | English
-
-![Novel Editor Screenshot](https://s3.bmp.ovh/imgs/2025/11/30/17e3f22342be954f.png)
-
-![Novel Editor Features](https://s3.bmp.ovh/imgs/2025/11/30/20c87f8ef08b246d.png)
-
-Novel Editor is a professional writing tool designed specifically for novelists and long-form fiction writers. Built with modern technologies, it provides a distraction-free writing environment with powerful organizational features.
-
----
-
-
-## 📥 Installation
-
-Choose your platform and install Novel Editor in seconds:
-
-### Windows
-
-#### Microsoft Store (Recommended)
-Coming soon to Microsoft Store for automatic updates.
-
-#### Winget (Windows Package Manager)
-```bash
-winget install Jeason.NovelEditor
-```
-
-#### Direct Download
-Download the installer from [GitHub Releases](https://github.com/jeasoncc/novel-editor/releases):
-- `novel-editor_x.x.x_x64-setup.exe` - NSIS installer (recommended)
-- `novel-editor_x.x.x_x64_zh-CN.msi` - MSI installer
-- `novel-editor_x.x.x_x64.msix` - MSIX package
-
-### macOS
-
-#### Homebrew (Coming Soon)
-```bash
-brew install --cask novel-editor
-```
-
-#### Direct Download
-Download from [GitHub Releases](https://github.com/jeasoncc/novel-editor/releases):
-- `novel-editor_x.x.x_aarch64.dmg` - Apple Silicon (M1/M2/M3)
-- `novel-editor_x.x.x_x64.dmg` - Intel Mac
-
-## Linux 安装指南
+# Linux 安装指南
 
 Novel Editor 支持多种 Linux 发行版和安装方式。选择最适合你系统的安装方法。
 
-### 快速安装对照表
+## 快速安装对照表
 
 | 发行版 | 推荐方式 | 命令 |
 |--------|----------|------|
@@ -62,13 +15,13 @@ Novel Editor 支持多种 Linux 发行版和安装方式。选择最适合你系
 
 ---
 
-### 1. GitHub Release 直接下载
+## 1. GitHub Release 直接下载
 
 最简单的方式，适用于所有发行版。
 
 **下载地址：** https://github.com/Jeason-Lotus/novel-editor/releases
 
-#### DEB 包 (Ubuntu/Debian/Linux Mint/Pop!_OS)
+### DEB 包 (Ubuntu/Debian/Linux Mint/Pop!_OS)
 
 ```bash
 # 下载最新版本
@@ -81,7 +34,7 @@ sudo dpkg -i novel-editor_*.deb
 sudo apt-get install -f
 ```
 
-#### RPM 包 (Fedora/RHEL/CentOS/openSUSE)
+### RPM 包 (Fedora/RHEL/CentOS/openSUSE)
 
 ```bash
 # 下载最新版本
@@ -94,7 +47,7 @@ sudo dnf install novel-editor-*.rpm
 sudo zypper install novel-editor-*.rpm
 ```
 
-#### AppImage (通用)
+### AppImage (通用)
 
 ```bash
 # 下载
@@ -109,7 +62,7 @@ chmod +x novel-editor_*.AppImage
 
 ---
 
-### 2. Snap Store
+## 2. Snap Store
 
 适用于所有支持 Snap 的发行版（Ubuntu、Fedora、Debian、Arch 等）。
 
@@ -128,7 +81,7 @@ sudo snap refresh novel-editor-app
 
 ---
 
-### 3. Flatpak (Flathub)
+## 3. Flatpak (Flathub)
 
 适用于所有支持 Flatpak 的发行版。
 
@@ -154,11 +107,11 @@ flatpak update com.lotus.NovelEditor
 
 ---
 
-### 4. Arch Linux (AUR)
+## 4. Arch Linux (AUR)
 
 Arch Linux 用户可以通过 AUR 安装。
 
-#### 二进制包（推荐，快速安装）
+### 二进制包（推荐，快速安装）
 
 ```bash
 # 使用 yay
@@ -168,7 +121,7 @@ yay -S novel-editor-bin
 paru -S novel-editor-bin
 ```
 
-#### 源码编译包
+### 源码编译包
 
 ```bash
 # 使用 yay（需要编译，耗时较长）
@@ -184,7 +137,7 @@ paru -S novel-editor
 
 ---
 
-### 5. Ubuntu PPA
+## 5. Ubuntu PPA
 
 Ubuntu 用户可以通过 PPA 获取自动更新。
 
@@ -202,7 +155,7 @@ sudo apt upgrade novel-editor
 
 ---
 
-### 6. Fedora COPR
+## 6. Fedora COPR
 
 Fedora 用户可以通过 COPR 获取。
 
@@ -219,7 +172,7 @@ sudo dnf upgrade novel-editor
 
 ---
 
-### 安装方式对比
+## 安装方式对比
 
 | 特性 | DEB/RPM | Snap | Flatpak | AUR | AppImage |
 |------|---------|------|---------|-----|----------|
@@ -231,7 +184,7 @@ sudo dnf upgrade novel-editor
 
 ---
 
-### 系统要求
+## 系统要求
 
 - **操作系统：** Linux (x86_64 或 ARM64)
 - **内存：** 最低 2GB，推荐 4GB+
@@ -240,16 +193,16 @@ sudo dnf upgrade novel-editor
 
 ---
 
-### 常见问题
+## 常见问题
 
-#### Q: 哪种安装方式最好？
+### Q: 哪种安装方式最好？
 
 - **Ubuntu/Debian 用户：** 推荐 DEB 包或 Snap
 - **Fedora 用户：** 推荐 RPM 包或 COPR
 - **Arch 用户：** 推荐 AUR (`novel-editor-bin`)
 - **其他发行版：** 推荐 Flatpak 或 AppImage
 
-#### Q: 如何卸载？
+### Q: 如何卸载？
 
 ```bash
 # DEB
@@ -268,52 +221,15 @@ flatpak uninstall com.lotus.NovelEditor
 yay -R novel-editor-bin
 ```
 
-## 🎯 What is Novel Editor?
+### Q: 数据存储在哪里？
 
-Novel Editor is a **Monorepo** project containing:
+用户数据默认存储在：
+- `~/.local/share/novel-editor/` - 应用数据
+- `~/.config/novel-editor/` - 配置文件
 
-- **Desktop App** - Cross-platform desktop application (Tauri + React)
-- **Website** - Official website and documentation (Next.js 15)
-- **API Server** - Backend services (Fastify + PostgreSQL)
-- **Admin Panel** - Content management system
+---
 
-### Desktop Application
+## 获取帮助
 
-- ✍️ **Immersive Writing** - Rich text editor based on Lexical with Markdown shortcuts
-- 📂 **Structured Project Management** - Tree-based organization: Books → Chapters → Scenes
-- 🔍 **Powerful Search** - In-file search/replace, global full-text search with regex support
-- 🎨 **Icon Theme System** - 6 preset themes, similar to VSCode's icon theme feature
-- 📊 **Outline & Chart System** - Complete outline management with Mermaid and PlantUML chart support
-- 👤 **Character Mention** - Quick character references via `@` symbol with hover Wiki display
-- 💾 **Multiple Export Formats** - JSON, ZIP structured export, Markdown, DOCX, etc.
-- ⚙️ **Reliable Storage** - IndexedDB + Dexie for offline persistence
-- 🚢 **Production-Ready** - One-command build for AppImage, DEB, RPM, MSI, DMG installers
-
-
-### Desktop Application
-- **Frontend Framework**: React 19 + TypeScript
-- **Build Tool**: Vite
-- **UI Library**: Shadcn UI + Radix UI
-- **Editor**: Lexical (rich text editor)
-- **State Management**: Zustand + TanStack Query
-- **Routing**: TanStack Router
-- **Database**: Dexie.js (IndexedDB)
-- **Desktop Framework**: Tauri (Rust)
-- **Styling**: Tailwind CSS
-- **Code Quality**: Biome
-
-
-
-
-
-## 🌟 Star History
-
-If you find Novel Editor useful, please consider giving it a star! ⭐
-
-
-## 📄 License
-
-This project is licensed under the [MIT License](./LICENSE).
-
-
-Made with ❤️ by [Jeason](https://github.com/jeasoncc) and [contributors](https://github.com/jeasoncc/novel-editor/graphs/contributors)
+- **GitHub Issues：** https://github.com/Jeason-Lotus/novel-editor/issues
+- **文档：** https://github.com/Jeason-Lotus/novel-editor/tree/main/docs

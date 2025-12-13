@@ -56,15 +56,19 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           echo "📝 Updating Flatpak manifest to version $VERSION"
           
-          # 更新版本号和 tag
-          sed -i "s/tag: v.*/tag: desktop-v$VERSION/" flatpak/com.lotus.NovelEditor.yml
+          # 更新版本号和 tag (匹配 desktop-v 开头的 tag)
+          sed -i "s/tag: desktop-v.*/tag: desktop-v$VERSION/" flatpak/com.lotus.NovelEditor.yml
+          
+          # 移除 commit: HEAD 行（如果存在）
+          sed -i '/commit: HEAD/d' flatpak/com.lotus.NovelEditor.yml
           
           # 更新 metainfo 中的版本
           sed -i "s/<release version=\".*\"/<release version=\"$VERSION\"/" flatpak/com.lotus.NovelEditor.metainfo.xml
           sed -i "s/date=\".*\"/date=\"$(date +%Y-%m-%d)\"/" flatpak/com.lotus.NovelEditor.metainfo.xml
           
           echo "📄 Updated Flatpak manifest:"
-          grep -E "tag:|version=" flatpak/com.lotus.NovelEditor.yml flatpak/com.lotus.NovelEditor.metainfo.xml
+          grep -E "tag:|url:" flatpak/com.lotus.NovelEditor.yml
+          cat flatpak/com.lotus.NovelEditor.yml | tail -20
       
       - name: Install Flatpak
         run: |

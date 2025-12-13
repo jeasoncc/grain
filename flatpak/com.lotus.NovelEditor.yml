@@ -171,9 +171,8 @@ modules:
     
     sources:
       - type: git
-        url: https://github.com/jeasoncc/novel-editor.git
-        tag: desktop-v0.1.54
-        commit: HEAD
+        url: https://github.com/Jeason-Lotus/novel-editor.git
+        tag: desktop-v0.1.62
     
     sdk-extensions:
       - org.freedesktop.Sdk.Extension.node18
