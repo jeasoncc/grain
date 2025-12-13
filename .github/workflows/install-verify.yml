@@ -1,6 +1,8 @@
 name: Verify All Installations
 
 # 验证所有平台的安装包是否可以正常安装
+# 注意：此工作流应在所有发布工作流完成后手动触发
+# 发布流程：desktop -> snap/flatpak/winget/homebrew/etc -> 手动触发验证
 on:
   workflow_dispatch:
     inputs:
@@ -13,17 +15,18 @@ on:
         required: false
         default: 'all'
         type: string
-  workflow_run:
-    workflows: ["Release Desktop App"]
-    types:
-      - completed
+      wait_minutes:
+        description: 'Minutes to wait for packages to propagate (0 = no wait)'
+        required: false
+        default: '0'
+        type: string
 
 env:
   PACKAGE_ID: novel-editor
   PACKAGE_NAME: Novel Editor
 
 jobs:
-  # 获取版本号
+  # 获取版本号并等待
   get-version:
     runs-on: ubuntu-latest
     outputs:
@@ -35,13 +38,17 @@ jobs:
       - name: Get version
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.version }}"
-          else
-            VERSION=$(jq -r '.version' package.json)
-          fi
+          VERSION="${{ github.event.inputs.version }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "📦 Verifying version: $VERSION"
+      
+      - name: Wait for package propagation
+        if: github.event.inputs.wait_minutes != '0'
+        run: |
+          WAIT_MINUTES="${{ github.event.inputs.wait_minutes }}"
+          echo "⏳ Waiting $WAIT_MINUTES minutes for packages to propagate..."
+          sleep $((WAIT_MINUTES * 60))
+          echo "✅ Wait complete, starting verification"
 
   # ==================== Windows 平台 ====================
   

@@ -86,18 +86,22 @@ modules:
         fi
         echo "Frontend build successful"
       
-      # Build Tauri application
+      # Build Tauri application (binary only, no bundling)
       - |
         echo "=== Building Tauri application ==="
-        cd apps/desktop
-        npm run tauri build -- --bundles none
+        cd apps/desktop/src-tauri
+        
+        # 直接用 cargo 构建，跳过 Tauri 的打包步骤
+        cargo build --release
         
         # Verify binary exists
-        if [ ! -f "src-tauri/target/release/novel-editor" ]; then
+        if [ ! -f "target/release/novel-editor" ]; then
           echo "ERROR: Binary not found"
+          ls -la target/release/ || true
           exit 1
         fi
         echo "Tauri build successful"
+        ls -la target/release/novel-editor
       
       # Install binary
       - |

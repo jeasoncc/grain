@@ -1,0 +1,188 @@
+name: Release Orchestrator
+
+# 监控所有发布工作流，当全部完成后触发验证
+on:
+  workflow_run:
+    workflows: 
+      - "Release Desktop App"
+    types:
+      - completed
+
+jobs:
+  wait-and-verify:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    permissions:
+      actions: read
+      contents: read
+    
+    steps:
+      - name: Extract version from triggering workflow
+        id: version
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // 从触发的工作流获取版本
+            const run = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id
+            });
+            
+            // 从 ref 提取版本 (desktop-v0.1.70 -> 0.1.70)
+            const ref = run.data.head_branch || context.payload.workflow_run.head_branch;
+            let version = '';
+            
+            if (ref && ref.startsWith('desktop-v')) {
+              version = ref.replace('desktop-v', '');
+            } else {
+              // 尝试从 tag 获取
+              const tags = await github.rest.repos.listTags({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 1
+              });
+              if (tags.data.length > 0 && tags.data[0].name.startsWith('desktop-v')) {
+                version = tags.data[0].name.replace('desktop-v', '');
+              }
+            }
+            
+            console.log(`📦 Version: ${version}`);
+            core.setOutput('version', version);
+            return version;
+
+      - name: Wait for all publish workflows
+        id: wait
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.result }}';
+            if (!version) {
+              console.log('⚠️ Could not determine version, skipping');
+              return false;
+            }
+            
+            // 需要等待的工作流列表
+            const publishWorkflows = [
+              'snap-publish.yml',
+              'flatpak-publish.yml',
+              'aur-publish.yml',
+              'aur-bin-publish.yml',
+              'winget-publish.yml',
+              'scoop-publish.yml',
+              'chocolatey-publish.yml',
+              'homebrew-publish.yml'
+            ];
+            
+            const maxWaitMinutes = 60;  // 最多等待 60 分钟
+            const checkIntervalSeconds = 60;  // 每 60 秒检查一次
+            const maxChecks = (maxWaitMinutes * 60) / checkIntervalSeconds;
+            
+            console.log(`⏳ Waiting for ${publishWorkflows.length} publish workflows to complete...`);
+            console.log(`   Max wait time: ${maxWaitMinutes} minutes`);
+            console.log(`   Check interval: ${checkIntervalSeconds} seconds`);
+            
+            // 等待一段时间让工作流启动
+            console.log('\n⏳ Waiting 2 minutes for workflows to start...');
+            await new Promise(resolve => setTimeout(resolve, 120000));
+            
+            let allCompleted = false;
+            let checkCount = 0;
+            
+            while (!allCompleted && checkCount < maxChecks) {
+              checkCount++;
+              console.log(`\n🔍 Check ${checkCount}/${maxChecks}...`);
+              
+              const workflowStatus = {};
+              let pendingCount = 0;
+              let completedCount = 0;
+              let failedCount = 0;
+              
+              for (const workflowFile of publishWorkflows) {
+                try {
+                  // 获取最近的工作流运行
+                  const runs = await github.rest.actions.listWorkflowRuns({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    workflow_id: workflowFile,
+                    per_page: 5,
+                    created: `>=${new Date(Date.now() - 3600000).toISOString()}`  // 最近 1 小时
+                  });
+                  
+                  if (runs.data.workflow_runs.length === 0) {
+                    workflowStatus[workflowFile] = 'not_started';
+                    pendingCount++;
+                  } else {
+                    const latestRun = runs.data.workflow_runs[0];
+                    workflowStatus[workflowFile] = latestRun.status === 'completed' 
+                      ? latestRun.conclusion 
+                      : latestRun.status;
+                    
+                    if (latestRun.status === 'completed') {
+                      if (latestRun.conclusion === 'success') {
+                        completedCount++;
+                      } else {
+                        failedCount++;
+                      }
+                    } else {
+                      pendingCount++;
+                    }
+                  }
+                } catch (error) {
+                  workflowStatus[workflowFile] = 'error';
+                  console.log(`  ⚠️ ${workflowFile}: ${error.message}`);
+                }
+              }
+              
+              // 打印状态
+              console.log('\n📊 Workflow Status:');
+              for (const [workflow, status] of Object.entries(workflowStatus)) {
+                const icon = status === 'success' ? '✅' : 
+                             status === 'failure' ? '❌' : 
+                             status === 'in_progress' || status === 'queued' ? '🔄' : '⏳';
+                console.log(`  ${icon} ${workflow}: ${status}`);
+              }
+              
+              console.log(`\n📈 Summary: ${completedCount} completed, ${failedCount} failed, ${pendingCount} pending`);
+              
+              // 检查是否全部完成
+              if (pendingCount === 0) {
+                allCompleted = true;
+                console.log('\n✅ All workflows completed!');
+              } else {
+                console.log(`\n⏳ Waiting ${checkIntervalSeconds} seconds before next check...`);
+                await new Promise(resolve => setTimeout(resolve, checkIntervalSeconds * 1000));
+              }
+            }
+            
+            if (!allCompleted) {
+              console.log('\n⚠️ Timeout reached, some workflows may still be running');
+            }
+            
+            return allCompleted;
+
+      - name: Trigger verification workflow
+        if: steps.version.outputs.result != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.result }}';
+            
+            console.log(`🚀 Triggering verification workflow for version ${version}...`);
+            
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'install-verify.yml',
+                ref: 'main',
+                inputs: {
+                  version: version,
+                  platforms: 'all',
+                  wait_minutes: '5'  // 等待 5 分钟让包分发
+                }
+              });
+              console.log('✅ Verification workflow triggered successfully!');
+            } catch (error) {
+              console.log(`⚠️ Failed to trigger verification: ${error.message}`);
+            }
