@@ -14,7 +14,7 @@ InstallModes:
 UpgradeBehavior: install
 Installers:
 - Architecture: x64
-  InstallerUrl: https://github.com/jeasoncc/novel-editor/releases/download/desktop-v0.1.69/novel-editor_0.1.69_x64_zh-CN.msi
-  InstallerSha256: F769A7FB5E438B3FC354B0E89A42E1B7E60867358471A21AC144B7E855D9EC11
+  InstallerUrl: https://github.com/jeasoncc/novel-editor/releases/download/desktop-v0.1.70/novel-editor_0.1.70_x64_zh-CN.msi
+  InstallerSha256: B012C18D1DD4D2FA63A970E0FB1093F5EF28561E2540667DD40F7FBF3ABD5560
 ManifestType: installer
 ManifestVersion: 1.5.0
