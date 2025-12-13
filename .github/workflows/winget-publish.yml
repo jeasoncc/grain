@@ -80,39 +80,10 @@ jobs:
           $url = "https://github.com/${{ github.repository }}/releases/download/desktop-v$version/novel-editor_${version}_x64_zh-CN.msi"
           
           # 更新版本文件
-          $versionContent = @"
-# yaml-language-server: `$schema=https://aka.ms/winget-manifest.version.1.5.0.schema.json
-
-PackageIdentifier: Jeason.NovelEditor
-PackageVersion: $version
-DefaultLocale: zh-CN
-ManifestType: version
-ManifestVersion: 1.5.0
-"@
+          $versionContent = "# yaml-language-server: `$schema=https://aka.ms/winget-manifest.version.1.5.0.schema.json`n`nPackageIdentifier: Jeason.NovelEditor`nPackageVersion: $version`nDefaultLocale: zh-CN`nManifestType: version`nManifestVersion: 1.5.0"
           
           # 更新安装器文件
-          $installerContent = @"
-# yaml-language-server: `$schema=https://aka.ms/winget-manifest.installer.1.5.0.schema.json
-
-PackageIdentifier: Jeason.NovelEditor
-PackageVersion: $version
-Platform:
-- Windows.Desktop
-MinimumOSVersion: 10.0.0.0
-InstallerType: wix
-Scope: machine
-InstallModes:
-- interactive
-- silent
-- silentWithProgress
-UpgradeBehavior: install
-Installers:
-- Architecture: x64
-  InstallerUrl: $url
-  InstallerSha256: $sha256
-ManifestType: installer
-ManifestVersion: 1.5.0
-"@
+          $installerContent = "# yaml-language-server: `$schema=https://aka.ms/winget-manifest.installer.1.5.0.schema.json`n`nPackageIdentifier: Jeason.NovelEditor`nPackageVersion: $version`nPlatform:`n- Windows.Desktop`nMinimumOSVersion: 10.0.0.0`nInstallerType: wix`nScope: machine`nInstallModes:`n- interactive`n- silent`n- silentWithProgress`nUpgradeBehavior: install`nInstallers:`n- Architecture: x64`n  InstallerUrl: $url`n  InstallerSha256: $sha256`nManifestType: installer`nManifestVersion: 1.5.0"
           
           # 写入文件
           $versionContent | Out-File -FilePath "winget-manifests/Jeason.NovelEditor.yaml" -Encoding UTF8
