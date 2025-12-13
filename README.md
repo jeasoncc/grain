@@ -26,18 +26,27 @@ Wheat Editor is a professional writing tool designed specifically for novelists 
 
 ---
 
-## �A Download
+## 📥 Download
 
-### Quick Install
+### All Platforms
 
-| Platform | Recommended | Command / Link |
-|----------|-------------|----------------|
-| 🪟 Windows | Microsoft Store | [小麦写作](ms-windows-store://pdp/?productid=9NV7M2PW25B3) |
+| Platform | Method | Install Command / Link |
+|----------|--------|------------------------|
+| 🪟 Windows | Microsoft Store | [小麦写作 / Wheat Editor](ms-windows-store://pdp/?productid=9NV7M2PW25B3) |
 | 🪟 Windows | Winget | `winget install Jeason.NovelEditor` |
+| 🪟 Windows | Scoop | `scoop install extras/novel-editor` |
+| 🪟 Windows | Chocolatey | `choco install novel-editor` |
+| 🪟 Windows | Direct Download | [MSI / NSIS / MSIX](https://github.com/Jeason-Lotus/novel-editor/releases) |
 | 🍎 macOS | Homebrew | `brew install --cask novel-editor` |
-| 🐧 Arch Linux | AUR | `yay -S novel-editor-bin` |
-| 🐧 All Linux | Snap | `sudo snap install novel-editor-app` |
-| 🐧 All Linux | Flatpak | `flatpak install com.lotus.NovelEditor` |
+| 🍎 macOS | Direct Download | [DMG (Intel / Apple Silicon)](https://github.com/Jeason-Lotus/novel-editor/releases) |
+| 🐧 Linux | Snap Store | `sudo snap install novel-editor-app` |
+| 🐧 Linux | Flatpak | `flatpak install flathub com.lotus.NovelEditor` |
+| 🐧 Linux | AUR (Arch) | `yay -S novel-editor-bin` |
+| 🐧 Linux | DEB (Ubuntu/Debian) | [Download DEB](https://github.com/Jeason-Lotus/novel-editor/releases) |
+| 🐧 Linux | RPM (Fedora/RHEL) | [Download RPM](https://github.com/Jeason-Lotus/novel-editor/releases) |
+| 🐧 Linux | AppImage | [Download AppImage](https://github.com/Jeason-Lotus/novel-editor/releases) |
+| 🐧 Linux | Ubuntu PPA | `sudo add-apt-repository ppa:jeason/novel-editor` |
+| 🐧 Linux | Fedora COPR | `sudo dnf copr enable jeason/novel-editor` |
 
 ---
 
@@ -46,87 +55,64 @@ Wheat Editor is a professional writing tool designed specifically for novelists 
 #### Microsoft Store (Recommended)
 [![Get it from Microsoft Store](https://get.microsoft.com/images/en-us%20dark.svg)](ms-windows-store://pdp/?productid=9NV7M2PW25B3)
 
-Search "小麦写作" or "Wheat Editor" in Microsoft Store, or [click here](ms-windows-store://pdp/?productid=9NV7M2PW25B3).
+Search "小麦写作" or "Wheat Editor" in Microsoft Store.
 
-#### Winget
+#### Package Managers
 ```bash
+# Winget
 winget install Jeason.NovelEditor
-```
 
-#### Scoop
-```bash
+# Scoop
 scoop install extras/novel-editor
-```
 
-#### Chocolatey
-```bash
+# Chocolatey
 choco install novel-editor
 ```
-
-#### Direct Download
-Download from [GitHub Releases](https://github.com/Jeason-Lotus/novel-editor/releases):
-- `novel-editor_x.x.x_x64-setup.exe` - NSIS installer
-- `novel-editor_x.x.x_x64_zh-CN.msi` - MSI installer
-- `novel-editor_x.x.x_x64.msix` - MSIX package
 
 ---
 
 ### 🍎 macOS
 
-#### Homebrew
 ```bash
+# Homebrew
 brew install --cask novel-editor
 ```
 
-#### Direct Download
-Download from [GitHub Releases](https://github.com/Jeason-Lotus/novel-editor/releases):
-- `novel-editor_x.x.x_aarch64.dmg` - Apple Silicon (M1/M2/M3)
-- `novel-editor_x.x.x_x64.dmg` - Intel Mac
+Or download DMG from [GitHub Releases](https://github.com/Jeason-Lotus/novel-editor/releases).
 
 ---
 
 ### 🐧 Linux
 
-#### Snap Store
 ```bash
+# Snap (All Distros)
 sudo snap install novel-editor-app
-```
 
-#### Flatpak
-```bash
+# Flatpak (All Distros)
 flatpak install flathub com.lotus.NovelEditor
-```
 
-#### Arch Linux (AUR)
-```bash
+# Arch Linux (AUR)
 yay -S novel-editor-bin
-```
 
-#### Ubuntu/Debian (DEB)
-```bash
-# Download from GitHub Releases
-sudo dpkg -i novel-editor_*.deb
-sudo apt-get install -f
-```
+# Ubuntu PPA
+sudo add-apt-repository ppa:jeason/novel-editor
+sudo apt update && sudo apt install novel-editor
 
-#### Fedora/RHEL (RPM)
-```bash
-sudo dnf install novel-editor-*.rpm
-```
-
-#### AppImage
-```bash
-chmod +x novel-editor_*.AppImage
-./novel-editor_*.AppImage
+# Fedora COPR
+sudo dnf copr enable jeason/novel-editor
+sudo dnf install novel-editor
 ```
 
 ---
 
 ### System Requirements
 
-- **OS:** Windows 10+, macOS 10.15+, Linux (x86_64/ARM64)
-- **RAM:** 2GB minimum, 4GB+ recommended
-- **Storage:** ~200MB
+| | Minimum | Recommended |
+|---|---------|-------------|
+| **OS** | Windows 10, macOS 10.15, Linux | Latest version |
+| **RAM** | 2GB | 4GB+ |
+| **Storage** | 200MB | 500MB |
+| **Architecture** | x86_64, ARM64 | - |
 
 ---
 
