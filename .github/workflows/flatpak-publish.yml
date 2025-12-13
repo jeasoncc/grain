@@ -56,19 +56,12 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           echo "📝 Updating Flatpak manifest to version $VERSION"
           
-          # 更新版本号和 tag (匹配 desktop-v 开头的 tag)
-          sed -i "s/tag: desktop-v.*/tag: desktop-v$VERSION/" flatpak/com.lotus.NovelEditor.yml
-          
-          # 移除 commit: HEAD 行（如果存在）
-          sed -i '/commit: HEAD/d' flatpak/com.lotus.NovelEditor.yml
-          
           # 更新 metainfo 中的版本
           sed -i "s/<release version=\".*\"/<release version=\"$VERSION\"/" flatpak/com.lotus.NovelEditor.metainfo.xml
           sed -i "s/date=\".*\"/date=\"$(date +%Y-%m-%d)\"/" flatpak/com.lotus.NovelEditor.metainfo.xml
           
-          echo "📄 Updated Flatpak manifest:"
-          grep -E "tag:|url:" flatpak/com.lotus.NovelEditor.yml
-          cat flatpak/com.lotus.NovelEditor.yml | tail -20
+          echo "📄 Flatpak manifest (using local source):"
+          cat flatpak/com.lotus.NovelEditor.yml | tail -10
       
       - name: Install Flatpak
         run: |
@@ -92,14 +85,13 @@ jobs:
           echo "🔨 Building Flatpak package..."
           
           # 创建构建目录
-          mkdir -p build-dir
+          mkdir -p build-dir repo
           
-          # 构建 Flatpak（使用用户级 flathub remote）
-          flatpak-builder --force-clean --sandbox --user --install-deps-from=flathub \
+          # 构建 Flatpak（使用用户级 flathub remote，禁用沙箱以允许网络访问安装 bun）
+          flatpak-builder --force-clean --disable-rofiles-fuse --user --install-deps-from=flathub \
             --repo=repo build-dir flatpak/com.lotus.NovelEditor.yml
           
           # 导出为 .flatpak 文件
-          flatpak build-export repo build-dir
           flatpak build-bundle repo novel-editor-${{ steps.version.outputs.version }}.flatpak \
             com.lotus.NovelEditor
           

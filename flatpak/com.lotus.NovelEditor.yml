@@ -173,6 +173,5 @@ modules:
         echo "=== Installation completed successfully ==="
     
     sources:
-      - type: git
-        url: https://github.com/Jeason-Lotus/novel-editor.git
-        tag: desktop-v0.1.62
+      - type: dir
+        path: ..

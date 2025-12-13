@@ -103,27 +103,44 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.WINGET_GITHUB_TOKEN }}
         run: |
           $version = "${{ steps.version.outputs.VERSION }}"
+          $installerUrl = "https://github.com/${{ github.repository }}/releases/download/desktop-v$version/novel-editor_${version}_x64_zh-CN.msi"
           
           # 配置git
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
+          # 创建临时 manifest 目录
+          $manifestDir = "winget-submit"
+          New-Item -ItemType Directory -Force -Path $manifestDir | Out-Null
+          
           try {
-            # 使用winget-create提交到winget-pkgs仓库
-            ./wingetcreate.exe submit --id "Jeason.NovelEditor" --version "$version" --urls "https://github.com/${{ github.repository }}/releases/download/desktop-v$version/novel-editor_${version}_x64_zh-CN.msi" --token "$env:GITHUB_TOKEN" --submit
+            # 使用 winget-create update 命令生成 manifest 并提交 PR
+            # update 命令会自动创建 manifest 并可选择提交
+            ./wingetcreate.exe update "Jeason.NovelEditor" --version "$version" --urls "$installerUrl" --out "$manifestDir" --token "$env:GITHUB_TOKEN" --submit
             Write-Host "Successfully submitted to winget-pkgs repository"
           } catch {
             Write-Warning "Failed to auto-submit to winget-pkgs: $_"
-            Write-Host "You may need to manually create a PR to microsoft/winget-pkgs"
+            Write-Host "Trying alternative submission method..."
             
-            # 输出手动提交的信息
-            Write-Host ""
-            Write-Host "=== Manual Submission Info ==="
-            Write-Host "Package ID: Jeason.NovelEditor"
-            Write-Host "Version: $version"
-            Write-Host "Installer URL: https://github.com/${{ github.repository }}/releases/download/desktop-v$version/novel-editor_${version}_x64_zh-CN.msi"
-            Write-Host "SHA256: ${{ steps.sha256.outputs.SHA256 }}"
-            Write-Host "=============================="
+            try {
+              # 备选方案：先生成 manifest，再手动提交
+              ./wingetcreate.exe update "Jeason.NovelEditor" --version "$version" --urls "$installerUrl" --out "$manifestDir"
+              
+              # 使用 submit 命令提交已生成的 manifest
+              ./wingetcreate.exe submit --prtitle "Update Jeason.NovelEditor to $version" --token "$env:GITHUB_TOKEN" "$manifestDir"
+              Write-Host "Successfully submitted via alternative method"
+            } catch {
+              Write-Warning "Alternative submission also failed: $_"
+              Write-Host ""
+              Write-Host "=== Manual Submission Info ==="
+              Write-Host "Package ID: Jeason.NovelEditor"
+              Write-Host "Version: $version"
+              Write-Host "Installer URL: $installerUrl"
+              Write-Host "SHA256: ${{ steps.sha256.outputs.SHA256 }}"
+              Write-Host ""
+              Write-Host "Please manually submit to: https://github.com/microsoft/winget-pkgs"
+              Write-Host "=============================="
+            }
           }
 
       - name: Commit updated manifests

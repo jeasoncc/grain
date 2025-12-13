@@ -4,6 +4,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // 启用静态导出
   output: "export",
+  // 输出目录设为 dist（默认是 out）
+  distDir: "dist",
   images: {
     unoptimized: true,
   },
