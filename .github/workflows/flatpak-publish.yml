@@ -70,14 +70,18 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y flatpak flatpak-builder
+          
+          # 添加 flathub remote（系统级和用户级）
           sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
       
       - name: Install Flatpak SDK
         run: |
-          sudo flatpak install -y flathub org.freedesktop.Platform//23.08
-          sudo flatpak install -y flathub org.freedesktop.Sdk//23.08
-          sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.node18//23.08
-          sudo flatpak install -y flathub org.freedesktop.Sdk.Extension.rust-stable//23.08
+          # 安装到用户空间（与 flatpak-builder --user 匹配）
+          flatpak install --user -y flathub org.freedesktop.Platform//23.08
+          flatpak install --user -y flathub org.freedesktop.Sdk//23.08
+          flatpak install --user -y flathub org.freedesktop.Sdk.Extension.node18//23.08
+          flatpak install --user -y flathub org.freedesktop.Sdk.Extension.rust-stable//23.08
       
       - name: Build Flatpak
         run: |
@@ -86,7 +90,7 @@ jobs:
           # 创建构建目录
           mkdir -p build-dir
           
-          # 构建 Flatpak
+          # 构建 Flatpak（使用用户级 flathub remote）
           flatpak-builder --force-clean --sandbox --user --install-deps-from=flathub \
             --repo=repo build-dir flatpak/com.lotus.NovelEditor.yml
           
