@@ -411,14 +411,14 @@ export function getIconByKey(key: string): IconOption | undefined {
 
 // 获取默认图标
 export function getDefaultIcon(
-	type: "project" | "chapter" | "scene",
+	type: "project" | "folder" | "file",
 ): IconOption {
 	switch (type) {
 		case "project":
 			return icons.find((i) => i.key === "book") || icons[0];
-		case "chapter":
+		case "folder":
 			return icons.find((i) => i.key === "folder") || icons[0];
-		case "scene":
+		case "file":
 			return icons.find((i) => i.key === "file-text") || icons[0];
 		default:
 			return icons[0];

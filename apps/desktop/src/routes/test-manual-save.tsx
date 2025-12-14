@@ -22,7 +22,7 @@ export const Route = createFileRoute("/test-manual-save")({
 
 function TestManualSaveComponent() {
 	const [content, setContent] = useState("");
-	const [sceneId] = useState("test-scene-id");
+	const [nodeId] = useState("test-node-id");
 
 	const {
 		status,
@@ -67,7 +67,7 @@ function TestManualSaveComponent() {
 	};
 
 	const { performManualSave, canSave } = useManualSave({
-		sceneId,
+		nodeId,
 		currentContent: mockEditorState as any,
 		onSaveSuccess: () => {
 			toast.success("测试保存成功！");

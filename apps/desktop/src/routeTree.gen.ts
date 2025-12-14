@@ -10,13 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WikiRouteImport } from './routes/wiki'
-import { Route as TestSceneCreationRouteImport } from './routes/test-scene-creation'
 import { Route as TestManualSaveRouteImport } from './routes/test-manual-save'
 import { Route as TestFocusRouteImport } from './routes/test-focus'
 import { Route as TestClearDataRouteImport } from './routes/test-clear-data'
-import { Route as StatisticsRouteImport } from './routes/statistics'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as OutlineRouteImport } from './routes/outline'
 import { Route as CanvasRouteImport } from './routes/canvas'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
@@ -31,16 +28,10 @@ import { Route as SettingsDiagramsRouteImport } from './routes/settings/diagrams
 import { Route as SettingsDesignRouteImport } from './routes/settings/design'
 import { Route as SettingsDataRouteImport } from './routes/settings/data'
 import { Route as SettingsAboutRouteImport } from './routes/settings/about'
-import { Route as ProjectsProjectIdRouteImport } from './routes/projects/$projectId'
 
 const WikiRoute = WikiRouteImport.update({
   id: '/wiki',
   path: '/wiki',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TestSceneCreationRoute = TestSceneCreationRouteImport.update({
-  id: '/test-scene-creation',
-  path: '/test-scene-creation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TestManualSaveRoute = TestManualSaveRouteImport.update({
@@ -58,19 +49,9 @@ const TestClearDataRoute = TestClearDataRouteImport.update({
   path: '/test-clear-data',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StatisticsRoute = StatisticsRouteImport.update({
-  id: '/statistics',
-  path: '/statistics',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OutlineRoute = OutlineRouteImport.update({
-  id: '/outline',
-  path: '/outline',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CanvasRoute = CanvasRouteImport.update({
@@ -143,24 +124,15 @@ const SettingsAboutRoute = SettingsAboutRouteImport.update({
   path: '/about',
   getParentRoute: () => SettingsRoute,
 } as any)
-const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
-  id: '/projects/$projectId',
-  path: '/projects/$projectId',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/canvas': typeof CanvasRoute
-  '/outline': typeof OutlineRoute
   '/settings': typeof SettingsRouteWithChildren
-  '/statistics': typeof StatisticsRoute
   '/test-clear-data': typeof TestClearDataRoute
   '/test-focus': typeof TestFocusRoute
   '/test-manual-save': typeof TestManualSaveRoute
-  '/test-scene-creation': typeof TestSceneCreationRoute
   '/wiki': typeof WikiRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/data': typeof SettingsDataRoute
   '/settings/design': typeof SettingsDesignRoute
@@ -177,14 +149,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/canvas': typeof CanvasRoute
-  '/outline': typeof OutlineRoute
-  '/statistics': typeof StatisticsRoute
   '/test-clear-data': typeof TestClearDataRoute
   '/test-focus': typeof TestFocusRoute
   '/test-manual-save': typeof TestManualSaveRoute
-  '/test-scene-creation': typeof TestSceneCreationRoute
   '/wiki': typeof WikiRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/data': typeof SettingsDataRoute
   '/settings/design': typeof SettingsDesignRoute
@@ -202,15 +170,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/canvas': typeof CanvasRoute
-  '/outline': typeof OutlineRoute
   '/settings': typeof SettingsRouteWithChildren
-  '/statistics': typeof StatisticsRoute
   '/test-clear-data': typeof TestClearDataRoute
   '/test-focus': typeof TestFocusRoute
   '/test-manual-save': typeof TestManualSaveRoute
-  '/test-scene-creation': typeof TestSceneCreationRoute
   '/wiki': typeof WikiRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/data': typeof SettingsDataRoute
   '/settings/design': typeof SettingsDesignRoute
@@ -229,15 +193,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/canvas'
-    | '/outline'
     | '/settings'
-    | '/statistics'
     | '/test-clear-data'
     | '/test-focus'
     | '/test-manual-save'
-    | '/test-scene-creation'
     | '/wiki'
-    | '/projects/$projectId'
     | '/settings/about'
     | '/settings/data'
     | '/settings/design'
@@ -254,14 +214,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/canvas'
-    | '/outline'
-    | '/statistics'
     | '/test-clear-data'
     | '/test-focus'
     | '/test-manual-save'
-    | '/test-scene-creation'
     | '/wiki'
-    | '/projects/$projectId'
     | '/settings/about'
     | '/settings/data'
     | '/settings/design'
@@ -278,15 +234,11 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/canvas'
-    | '/outline'
     | '/settings'
-    | '/statistics'
     | '/test-clear-data'
     | '/test-focus'
     | '/test-manual-save'
-    | '/test-scene-creation'
     | '/wiki'
-    | '/projects/$projectId'
     | '/settings/about'
     | '/settings/data'
     | '/settings/design'
@@ -304,15 +256,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CanvasRoute: typeof CanvasRoute
-  OutlineRoute: typeof OutlineRoute
   SettingsRoute: typeof SettingsRouteWithChildren
-  StatisticsRoute: typeof StatisticsRoute
   TestClearDataRoute: typeof TestClearDataRoute
   TestFocusRoute: typeof TestFocusRoute
   TestManualSaveRoute: typeof TestManualSaveRoute
-  TestSceneCreationRoute: typeof TestSceneCreationRoute
   WikiRoute: typeof WikiRoute
-  ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -322,13 +270,6 @@ declare module '@tanstack/react-router' {
       path: '/wiki'
       fullPath: '/wiki'
       preLoaderRoute: typeof WikiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/test-scene-creation': {
-      id: '/test-scene-creation'
-      path: '/test-scene-creation'
-      fullPath: '/test-scene-creation'
-      preLoaderRoute: typeof TestSceneCreationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/test-manual-save': {
@@ -352,25 +293,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TestClearDataRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/statistics': {
-      id: '/statistics'
-      path: '/statistics'
-      fullPath: '/statistics'
-      preLoaderRoute: typeof StatisticsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/settings': {
       id: '/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/outline': {
-      id: '/outline'
-      path: '/outline'
-      fullPath: '/outline'
-      preLoaderRoute: typeof OutlineRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/canvas': {
@@ -471,13 +398,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsAboutRouteImport
       parentRoute: typeof SettingsRoute
     }
-    '/projects/$projectId': {
-      id: '/projects/$projectId'
-      path: '/projects/$projectId'
-      fullPath: '/projects/$projectId'
-      preLoaderRoute: typeof ProjectsProjectIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -518,15 +438,11 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CanvasRoute: CanvasRoute,
-  OutlineRoute: OutlineRoute,
   SettingsRoute: SettingsRouteWithChildren,
-  StatisticsRoute: StatisticsRoute,
   TestClearDataRoute: TestClearDataRoute,
   TestFocusRoute: TestFocusRoute,
   TestManualSaveRoute: TestManualSaveRoute,
-  TestSceneCreationRoute: TestSceneCreationRoute,
   WikiRoute: WikiRoute,
-  ProjectsProjectIdRoute: ProjectsProjectIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

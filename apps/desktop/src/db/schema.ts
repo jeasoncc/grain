@@ -1,5 +1,5 @@
 // ==============================
-// 小说编辑器数据库接口汇总 - 用户状态与设置优化版
+// 小说编辑器数据库接口汇总 - 简化版
 // ==============================
 
 // ---------- 数据库版本信息 ----------
@@ -20,8 +20,8 @@ export interface DBVersionInterface {
 export interface StateInterface {
 	lastLocation: string; // 上次打开位置
 	currentProject: string; // 当前打开项目 ID
-	currentChapter: string; // 当前编辑章节 ID
-	currentScene: string; // 当前编辑场景 ID
+	currentChapter: string; // 当前编辑章节 ID (保留兼容)
+	currentScene: string; // 当前编辑场景 ID (保留兼容)
 	currentTitle: string; // 当前编辑标题
 	currentTyping: string; // 当前输入文本
 	lastCloudSave: string; // 最近一次云保存时间
@@ -95,13 +95,13 @@ export interface UserInterface {
 	dbVersion?: DBVersionInterface; // 用户数据库版本信息
 }
 
-// ---------- 小说/项目 ----------
+// ---------- 工作空间/项目 ----------
 /**
- * 存储小说或项目的元信息
+ * 存储工作空间的元信息
  */
 export interface ProjectInterface {
 	id: string; // 项目唯一标识，使用 UUID
-	title: string; // 小说名称
+	title: string; // 工作空间名称
 	author: string; // 作者名称
 	description: string; // 项目描述
 	publisher: string; // 出版方信息
@@ -112,46 +112,9 @@ export interface ProjectInterface {
 	owner?: string; // 项目拥有者ID，可选
 }
 
-// ---------- 章节 ----------
-/**
- * 存储小说章节信息，包括顺序和编辑状态
- */
-export interface ChapterInterface {
-	id: string; // 章节唯一标识，使用 UUID
-	project: string; // 所属项目 ID
-	title: string; // 章节标题
-	order: number; // 章节顺序，用于排序
-	open: boolean; // 当前章节是否展开显示
-	showEdit: boolean; // 是否显示编辑界面
-	outline?: any; // 大纲元数据（OutlineMetadata）
-}
-
-// ---------- 场景类型 ----------
-export type SceneType = "text" | "canvas";
-
-// ---------- 场景 ----------
-/**
- * 存储章节下的场景内容及元信息
- */
-export interface SceneInterface {
-	id: string; // 场景唯一标识，使用 UUID
-	chapter: string; // 所属章节 ID
-	project: string; // 所属项目 ID
-	title: string; // 场景标题
-	order: number; // 场景顺序
-	lastEdit: string; // 最近编辑时间
-	content: string | any; // 场景内容，支持 Lexical JSON、文本或绘图数据
-	createDate?: string; // 创建时间，可选
-	showEdit: boolean; // 是否显示编辑界面
-	type?: SceneType; // 场景类型：text（默认）或 canvas（绘图）
-	outline?: any; // 大纲元数据（OutlineMetadata）
-	filePath?: string; // 文件路径，用于 canvas 类型场景的保存位置
-}
-
-// ---------- Wiki条目 (原角色系统升级) ----------
+// ---------- Wiki条目 ----------
 /**
  * Wiki条目信息，支持角色、地点、物品等各种类型的知识管理
- * 从原角色系统升级而来，增加了标签和分类功能
  */
 export interface WikiEntryInterface {
 	id: string; // Wiki条目唯一标识，使用 UUID
@@ -164,51 +127,9 @@ export interface WikiEntryInterface {
 	updatedAt: string; // 最近更新时间
 }
 
-// ---------- 角色 (已废弃，使用WikiEntryInterface) ----------
-/**
- * @deprecated 此接口已废弃，请使用 WikiEntryInterface 替代
- * 保留此接口仅用于数据库迁移兼容性
- * 所有新代码应使用 WikiEntryInterface
- * @see WikiEntryInterface
- */
-export interface RoleInterface {
-	id: string; // 角色唯一标识，使用 UUID
-	project: string; // 所属项目 ID
-	name: string; // 角色名称
-	alias: string[]; // 角色别名
-	identity: string[]; // 身份标签
-	relationships: string[]; // 与其他角色的关系，可拓展为关系表
-	basicSettings: string; // 基本属性配置
-	image: string[]; // 角色图片
-	experience: string; // 经验或成长描述
-	showTip: boolean; // 是否显示提示
-	createDate: string; // 创建时间
-}
-
-// ---------- 世界观 (已废弃，使用WikiEntryInterface) ----------
-/**
- * 存储项目世界观信息，例如地点、势力、物品、设定条目等
- * @deprecated 此接口已废弃，请使用 WikiEntryInterface 替代
- * 保留此接口仅用于数据库迁移兼容性
- * 所有新代码应使用 WikiEntryInterface
- * @see WikiEntryInterface
- */
-export interface WorldEntryInterface {
-	id: string; // 世界观条目唯一标识，使用 UUID
-	project: string; // 所属项目 ID
-	name: string; // 条目名称，例如地点名、组织名、物品名
-	category: string; // 分类：location / faction / item / concept 等
-	summary: string; // 简要描述
-	tags?: string[]; // 标签
-	createDate: string; // 创建时间
-	updatedAt: string; // 最近更新时间
-}
-
-
-
 // ---------- 绘图 ----------
 /**
- * 存储项目级别的绘图数据，从场景级别迁移到书籍级别
+ * 存储项目级别的绘图数据
  */
 export interface DrawingInterface {
 	id: string; // 绘图唯一标识，使用 UUID
@@ -223,13 +144,11 @@ export interface DrawingInterface {
 
 // ---------- 附件 ----------
 /**
- * 存储项目、章节或场景相关的附件信息
+ * 存储项目相关的附件信息
  */
 export interface AttachmentInterface {
 	id: string; // 附件唯一标识，使用 UUID
 	project?: string; // 所属项目 ID，可选
-	chapter?: string; // 所属章节 ID，可选
-	scene?: string; // 所属场景 ID，可选
 	type: "image" | "audio" | "file"; // 附件类型
 	fileName: string; // 文件名
 	filePath: string; // 文件路径
@@ -238,10 +157,29 @@ export interface AttachmentInterface {
 	mimeType?: string; // 文件类型，可选
 }
 
-// ---------- 多项目映射 ----------
+// ---------- 节点类型 ----------
 /**
- * 用于存储多项目映射关系，方便按索引或 ID 访问
+ * 节点类型定义，用于文件树结构
+ * - folder: 文件夹，可包含子节点
+ * - file: 文本文件，使用 Lexical 编辑器
+ * - canvas: 画布文件，使用 Excalidraw
+ * - diary: 日记文件
  */
-export interface ProjectsInterface {
-	[x: number]: ProjectInterface; // 索引对应的项目对象
+export type NodeType = "folder" | "file" | "canvas" | "diary";
+
+// ---------- 节点 ----------
+/**
+ * 统一的节点接口，用于构建无限层级的文件树结构
+ */
+export interface NodeInterface {
+	id: string; // 节点唯一标识，使用 UUID
+	workspace: string; // 所属工作空间 ID（即 Project ID）
+	parent: string | null; // 父节点 ID，null 表示根节点
+	type: NodeType; // 节点类型
+	title: string; // 节点标题
+	order: number; // 同级排序顺序
+	content?: string; // 文件内容（Lexical JSON 或 Excalidraw JSON）
+	collapsed?: boolean; // 文件夹是否折叠
+	createDate: string; // 创建时间 ISO 格式
+	lastEdit: string; // 最后编辑时间 ISO 格式
 }

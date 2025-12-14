@@ -99,14 +99,14 @@ export interface ExcalidrawSceneData {
 }
 
 interface CanvasEditorProps {
-	sceneId: string;
+	nodeId: string;
 	filePath?: string;
 	initialData?: string;
 	onSave?: (data: string) => void;
 }
 
 export function CanvasEditor({
-	sceneId,
+	nodeId,
 	filePath,
 	initialData,
 	onSave,
@@ -227,7 +227,7 @@ export function CanvasEditor({
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement("a");
 			a.href = url;
-			a.download = `canvas-${sceneId}-${Date.now()}.png`;
+			a.download = `canvas-${nodeId}-${Date.now()}.png`;
 			a.click();
 			URL.revokeObjectURL(url);
 			toast.success("图片已导出");
@@ -235,7 +235,7 @@ export function CanvasEditor({
 			console.error("导出图片失败:", error);
 			toast.error("导出图片失败");
 		}
-	}, [isDark, sceneId]);
+	}, [isDark, nodeId]);
 
 	// 处理内容变化
 	// biome-ignore lint/suspicious/noExplicitAny: Excalidraw 类型

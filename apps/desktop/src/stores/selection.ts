@@ -3,10 +3,9 @@ import { create, type StateCreator } from "zustand";
 export interface SelectionState {
 	selectedProjectId: string | null;
 	setSelectedProjectId: (id: string | null) => void;
-	selectedChapterId: string | null;
-	setSelectedChapterId: (id: string | null) => void;
-	selectedSceneId: string | null;
-	setSelectedSceneId: (id: string | null) => void;
+	/** Selected node ID in file tree */
+	selectedNodeId: string | null;
+	setSelectedNodeId: (id: string | null) => void;
 }
 
 type Setter = (
@@ -20,14 +19,10 @@ const initializer: StateCreator<SelectionState> = (set: Setter) => ({
 	setSelectedProjectId: (id: string | null) =>
 		set({
 			selectedProjectId: id,
-			selectedChapterId: id ? null : null,
-			selectedSceneId: null,
+			selectedNodeId: null, // Clear node selection when workspace changes
 		}),
-	selectedChapterId: null,
-	setSelectedChapterId: (id: string | null) =>
-		set({ selectedChapterId: id, selectedSceneId: null }),
-	selectedSceneId: null,
-	setSelectedSceneId: (id: string | null) => set({ selectedSceneId: id }),
+	selectedNodeId: null,
+	setSelectedNodeId: (id: string | null) => set({ selectedNodeId: id }),
 });
 
 export const useSelectionStore = create<SelectionState>(initializer);

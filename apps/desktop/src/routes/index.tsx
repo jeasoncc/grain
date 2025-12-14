@@ -8,38 +8,26 @@ import { OnboardingTour } from "@/components/onboarding-tour";
 import { Spinner } from "@/components/ui/loading";
 import { StoryWorkspace } from "@/components/workspace/story-workspace";
 import { db } from "@/db/curd";
-import type {
-	ChapterInterface,
-	ProjectInterface,
-	SceneInterface,
-} from "@/db/schema";
+import type { ProjectInterface } from "@/db/schema";
 import logger from "@/log";
-import { type RightPanelView, useUIStore } from "@/stores/ui";
 
 export const Route = createFileRoute("/")({
 	component: RouteComponent,
 });
 
 function RouteComponent() {
-	const setRightPanelView = useUIStore((s) => s.setRightPanelView);
 	const [loading, setLoading] = useState(false);
 	const [showTour, setShowTour] = useState(false);
 	const projects = useLiveQuery<ProjectInterface[]>(
 		() => db.getAllProjects(),
 		[],
 	);
-	const chapters = useLiveQuery<ChapterInterface[]>(
-		() => db.getAllChapters(),
-		[],
-	);
-	const scenes = useLiveQuery<SceneInterface[]>(() => db.getAllScenes(), []);
 
 	// 检查是否需要显示引导
 	useEffect(() => {
 		if (projects && projects.length > 0) {
 			const completed = localStorage.getItem("onboarding-completed");
 			if (!completed) {
-				// 延迟显示引导，等待页面完全加载
 				const timer = setTimeout(() => setShowTour(true), 1000);
 				return () => clearTimeout(timer);
 			}
@@ -61,12 +49,7 @@ function RouteComponent() {
 		}
 	};
 
-	if (
-		loading ||
-		projects === undefined ||
-		chapters === undefined ||
-		scenes === undefined
-	) {
+	if (loading || projects === undefined) {
 		return (
 			<div className="flex min-h-screen items-center justify-center">
 				<Spinner />
@@ -82,8 +65,6 @@ function RouteComponent() {
 				<>
 					<StoryWorkspace
 						projects={projects}
-						chapters={chapters}
-						scenes={scenes}
 						onCreateProject={createProject}
 					/>
 					{showTour && <OnboardingTour onComplete={() => setShowTour(false)} />}

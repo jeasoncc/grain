@@ -73,7 +73,9 @@ export async function getWikiEntry(id: string): Promise<WikiEntryInterface | und
 
 /**
  * Migrate roles to wiki entries for a project
+ * @deprecated - No longer needed as roles table has been removed
  */
-export async function migrateRolesToWiki(projectId: string): Promise<WikiEntryInterface[]> {
-	return db.migrateRolesToWiki(projectId);
+export async function migrateRolesToWiki(_projectId: string): Promise<WikiEntryInterface[]> {
+	// Migration no longer needed - roles table has been removed
+	return [];
 }

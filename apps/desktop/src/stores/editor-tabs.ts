@@ -1,6 +1,6 @@
 /**
  * 编辑器标签页状态管理
- * 支持同时打开多个文件（场景/日记）
+ * 支持同时打开多个文件（基于 Node 文件树结构）
  * 支持多编辑器实例状态管理
  */
 import { create } from "zustand";
@@ -8,12 +8,11 @@ import { persist } from "zustand/middleware";
 import type { SerializedEditorState } from "lexical";
 
 export interface EditorTab {
-  id: string; // 唯一标识，通常是 sceneId
-  projectId: string;
-  chapterId: string;
-  sceneId: string;
+  id: string; // 唯一标识，通常是 nodeId
+  projectId: string; // 工作空间/项目 ID
+  nodeId: string; // 节点 ID
   title: string;
-  type: "scene" | "diary" | "canvas";
+  type: "file" | "diary" | "canvas" | "folder"; // 节点类型
   isDirty?: boolean; // 是否有未保存的更改
 }
 
@@ -83,10 +82,10 @@ export const useEditorTabsStore = create<EditorTabsState>()(
 
       openTab: (tabData) => {
         const { tabs, editorStates } = get();
-        const tabId = tabData.sceneId;
+        const tabId = tabData.nodeId;
         
         // 检查是否已经打开
-        const existingTab = tabs.find(t => t.sceneId === tabData.sceneId);
+        const existingTab = tabs.find(t => t.nodeId === tabData.nodeId);
         if (existingTab) {
           // 已存在，切换到该标签，更新 lastModified
           const existingState = editorStates[existingTab.id];

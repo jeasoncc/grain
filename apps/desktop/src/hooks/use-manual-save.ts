@@ -1,5 +1,6 @@
 /**
  * 手动保存 Hook - 处理 Ctrl+S 快捷键和手动保存逻辑
+ * 基于 Node 文件树结构
  */
 
 import type { SerializedEditorState } from "lexical";
@@ -11,14 +12,15 @@ import { saveService } from "@/services/save";
 import { useSaveStore } from "@/stores/save";
 
 interface UseManualSaveOptions {
-	sceneId: string | null;
+	/** 节点 ID */
+	nodeId: string | null;
 	currentContent: SerializedEditorState | null;
 	onSaveSuccess?: () => void;
 	onSaveError?: (error: string) => void;
 }
 
 export function useManualSave({
-	sceneId,
+	nodeId,
 	currentContent,
 	onSaveSuccess,
 	onSaveError,
@@ -31,13 +33,13 @@ export function useManualSave({
 
 	// 执行手动保存
 	const performManualSave = useCallback(async () => {
-		if (!sceneId || !currentContent) {
+		if (!nodeId || !currentContent) {
 			toast.info("没有可保存的内容");
 			return;
 		}
 
 		// 如果没有未保存的更改，显示提示但不执行保存
-		if (!hasUnsavedChanges && !saveService.hasUnsavedChanges(sceneId)) {
+		if (!hasUnsavedChanges && !saveService.hasUnsavedChanges(nodeId)) {
 			toast.info("没有需要保存的更改");
 			return;
 		}
@@ -55,7 +57,7 @@ export function useManualSave({
 		}, 10000);
 
 		try {
-			const result = await saveService.saveDocument(sceneId, currentContent);
+			const result = await saveService.saveDocument(nodeId, currentContent);
 
 			if (saveTimeoutRef.current) {
 				clearTimeout(saveTimeoutRef.current);
@@ -85,7 +87,7 @@ export function useManualSave({
 			setIsManualSaving(false);
 		}
 	}, [
-		sceneId,
+		nodeId,
 		currentContent,
 		hasUnsavedChanges,
 		setIsManualSaving,
@@ -123,6 +125,6 @@ export function useManualSave({
 
 	return {
 		performManualSave,
-		canSave: Boolean(sceneId && currentContent),
+		canSave: Boolean(nodeId && currentContent),
 	};
 }

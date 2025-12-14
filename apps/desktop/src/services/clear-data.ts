@@ -18,25 +18,23 @@ export interface ClearDataOptions {
  */
 export async function clearIndexedDB(): Promise<void> {
 	try {
-		// 清空所有表的数据
+		// 清空所有表的数据（使用新的 node-based 结构）
 		await db.transaction(
 			"rw",
 			[
 				db.users,
 				db.projects,
-				db.chapters,
-				db.scenes,
-				db.roles,
-				db.worldEntries,
+				db.nodes,
+				db.wikiEntries,
+				db.drawings,
 				db.attachments,
 			],
 			async () => {
 				await db.users.clear();
 				await db.projects.clear();
-				await db.chapters.clear();
-				await db.scenes.clear();
-				await db.roles.clear();
-				await db.worldEntries.clear();
+				await db.nodes.clear();
+				await db.wikiEntries.clear();
+				await db.drawings.clear();
 				await db.attachments.clear();
 			},
 		);
@@ -147,7 +145,7 @@ function initializeBasicSettings(): void {
 		// 设置默认的统一侧边栏状态
 		localStorage.setItem('unified-sidebar-state', JSON.stringify({
 			isOpen: true,
-			activePanel: 'books'
+			activePanel: 'files'
 		}));
 		
 		logger.info("[Clear Data] Basic settings initialized");
@@ -240,16 +238,15 @@ export async function getStorageStats(): Promise<{
 	cookies: { count: number };
 }> {
 	try {
-		// IndexedDB 统计
+		// IndexedDB 统计（使用新的 node-based 结构）
 		const indexedDBStats = {
 			size: 0,
 			tables: {
 				users: await db.users.count(),
 				projects: await db.projects.count(),
-				chapters: await db.chapters.count(),
-				scenes: await db.scenes.count(),
-				roles: await db.roles.count(),
-				worldEntries: await db.worldEntries.count(),
+				nodes: await db.nodes.count(),
+				wikiEntries: await db.wikiEntries.count(),
+				drawings: await db.drawings.count(),
 				attachments: await db.attachments.count(),
 			},
 		};

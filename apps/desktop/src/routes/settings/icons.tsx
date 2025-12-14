@@ -159,30 +159,30 @@ function IconSettings() {
 											level={0}
 										/>
 
-										{/* 章节 */}
+										{/* 文件夹 */}
 										<FileItem
-											icon={currentIconTheme.icons.chapter.default}
+											icon={currentIconTheme.icons.folder.default}
 											label="第一章"
 											isOpen={true}
 											level={1}
 										/>
 
-										{/* 场景 */}
+										{/* 文件 */}
 										<FileItem
-											icon={currentIconTheme.icons.scene.default}
+											icon={currentIconTheme.icons.file.default}
 											label="开场.md"
 											level={2}
 										/>
 										<FileItem
-											icon={currentIconTheme.icons.scene.default}
+											icon={currentIconTheme.icons.file.default}
 											label="相遇.md"
 											level={2}
 											isActive={true}
 										/>
 
-										{/* 章节 */}
+										{/* 文件夹 */}
 										<FileItem
-											icon={currentIconTheme.icons.chapter.default}
+											icon={currentIconTheme.icons.folder.default}
 											label="第二章"
 											level={1}
 										/>
@@ -281,8 +281,8 @@ interface IconThemeCardProps {
 
 function IconThemeCard({ theme, isActive, onSelect }: IconThemeCardProps) {
 	const ProjectIcon = theme.icons.project.default;
-	const ChapterIcon = theme.icons.chapter.default;
-	const SceneIcon = theme.icons.scene.default;
+	const FolderIcon = theme.icons.folder.default;
+	const FileIcon = theme.icons.file.default;
 
 	return (
 		<button
@@ -296,8 +296,8 @@ function IconThemeCard({ theme, isActive, onSelect }: IconThemeCardProps) {
 			{/* 图标预览 */}
 			<div className="h-16 w-full flex items-center justify-center gap-3 bg-muted/30">
 				<ProjectIcon className="size-5 text-muted-foreground" />
-				<ChapterIcon className="size-5 text-muted-foreground" />
-				<SceneIcon className="size-5 text-muted-foreground" />
+				<FolderIcon className="size-5 text-muted-foreground" />
+				<FileIcon className="size-5 text-muted-foreground" />
 			</div>
 
 			{/* 主题信息 */}

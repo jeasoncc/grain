@@ -1,53 +1,71 @@
-import { useState, useCallback } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useUnifiedSidebarStore, SIDEBAR_DEFAULT_WIDTH } from "@/stores/unified-sidebar";
-import { BooksPanel } from "./panels/books-panel";
+import { useUnifiedSidebarStore } from "@/stores/unified-sidebar";
 import { SearchPanel } from "./panels/search-panel";
 import { DrawingsPanel } from "./panels/drawings-panel";
 import { WikiPanel } from "./panels/wiki-panel";
-import { ChaptersPanel } from "./panels/chapters-panel";
-import { DiaryPanel } from "./panels/diary-panel";
-import { ResizeHandle } from "./ui/resize-handle";
+import { FileTreePanel } from "./panels/file-tree-panel";
 import { Button } from "./ui/button";
 import type { DrawingInterface, WikiEntryInterface } from "@/db/schema";
 
-export function UnifiedSidebar() {
+/**
+ * UnifiedSidebarContent - The content of the sidebar without resize handling
+ * Used inside react-resizable-panels Panel component
+ */
+export function UnifiedSidebarContent() {
 	const navigate = useNavigate();
 	const {
 		activePanel,
-		isOpen,
-		width,
-		wasCollapsedByDrag,
 		drawingsState,
 		wikiState,
 		setSelectedDrawingId,
 		setSelectedWikiEntryId,
-		resizeSidebar,
-		restoreFromCollapse,
 	} = useUnifiedSidebarStore();
 
-	// Track drag start width for delta calculations
-	const [dragStartWidth, setDragStartWidth] = useState(width);
-	const [isResizing, setIsResizing] = useState(false);
+	// Handle drawing selection - update store and navigate to canvas
+	const handleSelectDrawing = (drawing: DrawingInterface) => {
+		setSelectedDrawingId(drawing.id);
+		navigate({ to: "/canvas" });
+	};
 
-	const handleResizeStart = useCallback(() => {
-		setDragStartWidth(width);
-		setIsResizing(true);
-	}, [width]);
+	// Handle wiki entry selection - update store and navigate to wiki page
+	const handleSelectWikiEntry = (entry: WikiEntryInterface) => {
+		setSelectedWikiEntryId(entry.id);
+		navigate({ to: "/wiki" });
+	};
 
-	const handleResize = useCallback(
-		(deltaX: number) => {
-			const newWidth = dragStartWidth + deltaX;
-			resizeSidebar(newWidth);
-		},
-		[dragStartWidth, resizeSidebar]
+	return (
+		<div className="flex flex-col h-full w-full border-r border-sidebar-border/30 overflow-hidden">
+			{activePanel === "search" && <SearchPanel />}
+			{activePanel === "drawings" && (
+				<DrawingsPanel
+					onSelectDrawing={handleSelectDrawing}
+					selectedDrawingId={drawingsState.selectedDrawingId}
+				/>
+			)}
+			{activePanel === "wiki" && (
+				<WikiPanel
+					onSelectEntry={handleSelectWikiEntry}
+					selectedEntryId={wikiState.selectedEntryId}
+				/>
+			)}
+			{activePanel === "files" && <FileTreePanel />}
+		</div>
 	);
+}
 
-	const handleResizeEnd = useCallback(() => {
-		setIsResizing(false);
-	}, []);
+/**
+ * UnifiedSidebar - Legacy wrapper for backward compatibility
+ * @deprecated Use UnifiedSidebarContent with react-resizable-panels instead
+ */
+export function UnifiedSidebar() {
+	const {
+		activePanel,
+		isOpen,
+		wasCollapsedByDrag,
+		restoreFromCollapse,
+	} = useUnifiedSidebarStore();
 
 	// Show restore button when collapsed by drag
 	if (!isOpen && wasCollapsedByDrag) {
@@ -70,52 +88,5 @@ export function UnifiedSidebar() {
 		return null;
 	}
 
-	// Handle drawing selection - update store and navigate to canvas
-	const handleSelectDrawing = (drawing: DrawingInterface) => {
-		setSelectedDrawingId(drawing.id);
-		navigate({ to: "/canvas" });
-	};
-
-	// Handle wiki entry selection - update store and navigate to wiki page
-	const handleSelectWikiEntry = (entry: WikiEntryInterface) => {
-		setSelectedWikiEntryId(entry.id);
-		navigate({ to: "/wiki" });
-	};
-
-	return (
-		<div
-			className={cn(
-				"shrink-0 bg-sidebar border-r border-sidebar-border/30 relative",
-				"flex flex-col h-full",
-				// Only animate when not actively resizing
-				!isResizing && "transition-[width] duration-200 ease-out",
-			)}
-			style={{ width: `${width}px` }}
-		>
-			{activePanel === "search" && <SearchPanel />}
-			{activePanel === "books" && <BooksPanel />}
-			{activePanel === "drawings" && (
-				<DrawingsPanel
-					onSelectDrawing={handleSelectDrawing}
-					selectedDrawingId={drawingsState.selectedDrawingId}
-				/>
-			)}
-			{activePanel === "wiki" && (
-				<WikiPanel
-					onSelectEntry={handleSelectWikiEntry}
-					selectedEntryId={wikiState.selectedEntryId}
-				/>
-			)}
-			{activePanel === "chapters" && <ChaptersPanel />}
-			{activePanel === "diary" && <DiaryPanel />}
-
-			{/* Resize handle on right edge */}
-			<ResizeHandle
-				position="right"
-				onResizeStart={handleResizeStart}
-				onResize={handleResize}
-				onResizeEnd={handleResizeEnd}
-			/>
-		</div>
-	);
+	return <UnifiedSidebarContent />;
 }

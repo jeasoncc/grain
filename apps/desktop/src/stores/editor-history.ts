@@ -7,7 +7,7 @@ import { persist } from "zustand/middleware";
 import logger from "@/log/index";
 
 export interface EditorHistoryEntry {
-	sceneId: string;
+	nodeId: string;
 	content: any; // Lexical EditorState JSON
 	timestamp: string;
 	wordCount: number;
@@ -18,131 +18,131 @@ export interface EditorHistoryState {
 	undoStack: Map<string, EditorHistoryEntry[]>;
 	redoStack: Map<string, EditorHistoryEntry[]>;
 
-	// 当前编辑的场景
-	currentSceneId: string | null;
+	// 当前编辑的节点
+	currentNodeId: string | null;
 
 	// 操作方法
-	pushHistory: (sceneId: string, content: any, wordCount: number) => void;
-	undo: (sceneId: string) => EditorHistoryEntry | null;
-	redo: (sceneId: string) => EditorHistoryEntry | null;
-	clearHistory: (sceneId: string) => void;
+	pushHistory: (nodeId: string, content: any, wordCount: number) => void;
+	undo: (nodeId: string) => EditorHistoryEntry | null;
+	redo: (nodeId: string) => EditorHistoryEntry | null;
+	clearHistory: (nodeId: string) => void;
 	clearAllHistory: () => void;
-	setCurrentScene: (sceneId: string | null) => void;
+	setCurrentNode: (nodeId: string | null) => void;
 
 	// 查询方法
-	canUndo: (sceneId: string) => boolean;
-	canRedo: (sceneId: string) => boolean;
-	getHistoryCount: (sceneId: string) => { undo: number; redo: number };
+	canUndo: (nodeId: string) => boolean;
+	canRedo: (nodeId: string) => boolean;
+	getHistoryCount: (nodeId: string) => { undo: number; redo: number };
 }
 
-const MAX_HISTORY_SIZE = 50; // 每个场景最多保存50个历史记录
+const MAX_HISTORY_SIZE = 50; // 每个节点最多保存50个历史记录
 
 export const useEditorHistory = create<EditorHistoryState>()(
 	persist(
 		(set, get) => ({
 			undoStack: new Map(),
 			redoStack: new Map(),
-			currentSceneId: null,
+			currentNodeId: null,
 
-			pushHistory: (sceneId, content, wordCount) => {
+			pushHistory: (nodeId, content, wordCount) => {
 				set((state) => {
 					const undoStack = new Map(state.undoStack);
 					const redoStack = new Map(state.redoStack);
 
-					// 获取当前场景的历史栈
-					const sceneHistory = undoStack.get(sceneId) || [];
+					// 获取当前节点的历史栈
+					const nodeHistory = undoStack.get(nodeId) || [];
 
 					// 添加新记录
 					const entry: EditorHistoryEntry = {
-						sceneId,
+						nodeId,
 						content,
 						timestamp: new Date().toISOString(),
 						wordCount,
 					};
 
-					sceneHistory.push(entry);
+					nodeHistory.push(entry);
 
 					// 限制历史记录数量
-					if (sceneHistory.length > MAX_HISTORY_SIZE) {
-						sceneHistory.shift();
+					if (nodeHistory.length > MAX_HISTORY_SIZE) {
+						nodeHistory.shift();
 					}
 
-					undoStack.set(sceneId, sceneHistory);
+					undoStack.set(nodeId, nodeHistory);
 
 					// 清空重做栈（新操作后不能重做）
-					redoStack.delete(sceneId);
+					redoStack.delete(nodeId);
 
 					logger.debug(
-						`历史记录已保存: ${sceneId}, 栈大小: ${sceneHistory.length}`,
+						`历史记录已保存: ${nodeId}, 栈大小: ${nodeHistory.length}`,
 					);
 
 					return { undoStack, redoStack };
 				});
 			},
 
-			undo: (sceneId) => {
+			undo: (nodeId) => {
 				const state = get();
 				const undoStack = new Map(state.undoStack);
 				const redoStack = new Map(state.redoStack);
 
-				const sceneHistory = undoStack.get(sceneId) || [];
-				if (sceneHistory.length === 0) {
-					logger.warn(`无法撤销: ${sceneId} 没有历史记录`);
+				const nodeHistory = undoStack.get(nodeId) || [];
+				if (nodeHistory.length === 0) {
+					logger.warn(`无法撤销: ${nodeId} 没有历史记录`);
 					return null;
 				}
 
 				// 弹出最后一个记录
-				const entry = sceneHistory.pop()!;
+				const entry = nodeHistory.pop()!;
 
 				// 保存到重做栈
-				const sceneRedoHistory = redoStack.get(sceneId) || [];
-				sceneRedoHistory.push(entry);
-				redoStack.set(sceneId, sceneRedoHistory);
+				const nodeRedoHistory = redoStack.get(nodeId) || [];
+				nodeRedoHistory.push(entry);
+				redoStack.set(nodeId, nodeRedoHistory);
 
-				undoStack.set(sceneId, sceneHistory);
+				undoStack.set(nodeId, nodeHistory);
 
 				set({ undoStack, redoStack });
 
-				logger.info(`撤销操作: ${sceneId}`);
+				logger.info(`撤销操作: ${nodeId}`);
 				return entry;
 			},
 
-			redo: (sceneId) => {
+			redo: (nodeId) => {
 				const state = get();
 				const undoStack = new Map(state.undoStack);
 				const redoStack = new Map(state.redoStack);
 
-				const sceneRedoHistory = redoStack.get(sceneId) || [];
-				if (sceneRedoHistory.length === 0) {
-					logger.warn(`无法重做: ${sceneId} 没有重做记录`);
+				const nodeRedoHistory = redoStack.get(nodeId) || [];
+				if (nodeRedoHistory.length === 0) {
+					logger.warn(`无法重做: ${nodeId} 没有重做记录`);
 					return null;
 				}
 
 				// 弹出重做记录
-				const entry = sceneRedoHistory.pop()!;
+				const entry = nodeRedoHistory.pop()!;
 
 				// 保存回撤销栈
-				const sceneHistory = undoStack.get(sceneId) || [];
-				sceneHistory.push(entry);
-				undoStack.set(sceneId, sceneHistory);
+				const nodeHistory = undoStack.get(nodeId) || [];
+				nodeHistory.push(entry);
+				undoStack.set(nodeId, nodeHistory);
 
-				redoStack.set(sceneId, sceneRedoHistory);
+				redoStack.set(nodeId, nodeRedoHistory);
 
 				set({ undoStack, redoStack });
 
-				logger.info(`重做操作: ${sceneId}`);
+				logger.info(`重做操作: ${nodeId}`);
 				return entry;
 			},
 
-			clearHistory: (sceneId) => {
+			clearHistory: (nodeId) => {
 				set((state) => {
 					const undoStack = new Map(state.undoStack);
 					const redoStack = new Map(state.redoStack);
 
-					undoStack.delete(sceneId);
-					redoStack.delete(sceneId);
+					undoStack.delete(nodeId);
+					redoStack.delete(nodeId);
 
-					logger.info(`已清除历史记录: ${sceneId}`);
+					logger.info(`已清除历史记录: ${nodeId}`);
 
 					return { undoStack, redoStack };
 				});
@@ -156,26 +156,26 @@ export const useEditorHistory = create<EditorHistoryState>()(
 				logger.info("已清除所有历史记录");
 			},
 
-			setCurrentScene: (sceneId) => {
-				set({ currentSceneId: sceneId });
+			setCurrentNode: (nodeId) => {
+				set({ currentNodeId: nodeId });
 			},
 
-			canUndo: (sceneId) => {
+			canUndo: (nodeId) => {
 				const state = get();
-				const sceneHistory = state.undoStack.get(sceneId) || [];
-				return sceneHistory.length > 0;
+				const nodeHistory = state.undoStack.get(nodeId) || [];
+				return nodeHistory.length > 0;
 			},
 
-			canRedo: (sceneId) => {
+			canRedo: (nodeId) => {
 				const state = get();
-				const sceneRedoHistory = state.redoStack.get(sceneId) || [];
-				return sceneRedoHistory.length > 0;
+				const nodeRedoHistory = state.redoStack.get(nodeId) || [];
+				return nodeRedoHistory.length > 0;
 			},
 
-			getHistoryCount: (sceneId) => {
+			getHistoryCount: (nodeId) => {
 				const state = get();
-				const undoCount = (state.undoStack.get(sceneId) || []).length;
-				const redoCount = (state.redoStack.get(sceneId) || []).length;
+				const undoCount = (state.undoStack.get(nodeId) || []).length;
+				const redoCount = (state.redoStack.get(nodeId) || []).length;
 				return { undo: undoCount, redo: redoCount };
 			},
 		}),

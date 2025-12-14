@@ -1,4 +1,4 @@
-// db.ts
+// db.ts - 简化版数据库操作
 
 import dayjs from "dayjs";
 import Dexie, { type Table } from "dexie";
@@ -6,14 +6,11 @@ import { v4 as uuidv4 } from "uuid";
 import logger from "@/log/index.ts";
 import type {
 	AttachmentInterface,
-	ChapterInterface,
 	DBVersionInterface,
 	DrawingInterface,
+	NodeInterface,
 	ProjectInterface,
-	RoleInterface,
-	SceneInterface,
 	UserInterface,
-	WorldEntryInterface,
 	WikiEntryInterface,
 } from "./schema.ts";
 
@@ -23,18 +20,16 @@ import type {
 export class NovelEditorDB extends Dexie {
 	users!: Table<UserInterface, string>;
 	projects!: Table<ProjectInterface, string>;
-	chapters!: Table<ChapterInterface, string>;
-	scenes!: Table<SceneInterface, string>;
-	roles!: Table<RoleInterface, string>; // 保留用于迁移
-	worldEntries!: Table<WorldEntryInterface, string>; // 保留用于迁移
-	wikiEntries!: Table<WikiEntryInterface, string>; // 新的Wiki系统
+	wikiEntries!: Table<WikiEntryInterface, string>;
 	drawings!: Table<DrawingInterface, string>;
 	attachments!: Table<AttachmentInterface, string>;
 	dbVersions!: Table<DBVersionInterface, string>;
+	nodes!: Table<NodeInterface, string>;
 
 	constructor() {
 		super("NovelEditorDB");
 
+		// 保留所有版本历史以支持数据库迁移
 		this.version(1).stores({
 			users: "id, username, email",
 			projects: "id, title, owner",
@@ -46,7 +41,6 @@ export class NovelEditorDB extends Dexie {
 			dbVersions: "id, version",
 		});
 
-		// v2: Add 'project' index for scenes to enable where('project') queries
 		this.version(2).stores({
 			users: "id, username, email",
 			projects: "id, title, owner",
@@ -58,7 +52,6 @@ export class NovelEditorDB extends Dexie {
 			dbVersions: "id, version",
 		});
 
-		// v3: Add drawings table for book-level drawing storage
 		this.version(3).stores({
 			users: "id, username, email",
 			projects: "id, title, owner",
@@ -71,18 +64,46 @@ export class NovelEditorDB extends Dexie {
 			dbVersions: "id, version",
 		});
 
-		// v4: Add Wiki system (upgrade from roles system)
 		this.version(4).stores({
 			users: "id, username, email",
 			projects: "id, title, owner",
 			chapters: "id, project, order",
 			scenes: "id, project, chapter, order",
-			roles: "id, project, name", // 保留用于迁移
-			worldEntries: "id, project, category", // 保留用于迁移
-			wikiEntries: "id, project, name", // 新的Wiki系统
+			roles: "id, project, name",
+			worldEntries: "id, project, category",
+			wikiEntries: "id, project, name",
 			drawings: "id, project, name",
 			attachments: "id, project, chapter, scene",
 			dbVersions: "id, version",
+		});
+
+		this.version(5).stores({
+			users: "id, username, email",
+			projects: "id, title, owner",
+			chapters: "id, project, order",
+			scenes: "id, project, chapter, order",
+			roles: "id, project, name",
+			worldEntries: "id, project, category",
+			wikiEntries: "id, project, name",
+			drawings: "id, project, name",
+			attachments: "id, project, chapter, scene",
+			dbVersions: "id, version",
+			nodes: "id, workspace, parent, type, order",
+		});
+
+		// v6: 清理旧表，简化结构
+		this.version(6).stores({
+			users: "id, username, email",
+			projects: "id, title, owner",
+			chapters: null, // 删除
+			scenes: null, // 删除
+			roles: null, // 删除
+			worldEntries: null, // 删除
+			wikiEntries: "id, project, name",
+			drawings: "id, project, name",
+			attachments: "id, project",
+			dbVersions: "id, version",
+			nodes: "id, workspace, parent, type, order",
 		});
 
 		this.open()
@@ -145,7 +166,7 @@ export class NovelEditorDB extends Dexie {
 			settings: {
 				...user.settings,
 				theme: user.settings?.theme || "light",
-				language: user.settings?.language || "en", // 默认英文
+				language: user.settings?.language || "en",
 				autosave: user.settings?.autosave ?? true,
 				spellCheck: user.settings?.spellCheck ?? true,
 				lastLocation: user.settings?.lastLocation ?? true,
@@ -177,7 +198,7 @@ export class NovelEditorDB extends Dexie {
 	}
 
 	// ==========================
-	// 项目表
+	// 项目/工作空间表
 	// ==========================
 	async addProject(project: Partial<ProjectInterface>) {
 		const now = dayjs().toISOString();
@@ -187,7 +208,7 @@ export class NovelEditorDB extends Dexie {
 			author: project.author || "Author",
 			description: project.description || "",
 			publisher: project.publisher || "",
-			language: project.language || "en", // 默认英文
+			language: project.language || "en",
 			lastOpen: now,
 			createDate: now,
 			members: project.members || [],
@@ -214,139 +235,6 @@ export class NovelEditorDB extends Dexie {
 
 	async getAllProjects() {
 		return this.projects.toArray();
-	}
-
-	// ==========================
-	// 章节表
-	// ==========================
-	async addChapter(chapter: Partial<ChapterInterface>) {
-		const newChapter: ChapterInterface = {
-			id: uuidv4(),
-			project: chapter.project!,
-			title: chapter.title || "New Chapter",
-			order: chapter.order || 0,
-			open: chapter.open || false,
-			showEdit: chapter.showEdit || false,
-		};
-		await this.chapters.add(newChapter);
-		logger.info(`Added chapter ${newChapter.title} (${newChapter.id})`);
-		return newChapter;
-	}
-
-	async updateChapter(id: string, updates: Partial<ChapterInterface>) {
-		await this.chapters.update(id, updates);
-		logger.info(`Updated chapter ${id}`);
-	}
-
-	async deleteChapter(id: string) {
-		await this.chapters.delete(id);
-		logger.warn(`Deleted chapter ${id}`);
-	}
-
-	async getChapter(id: string) {
-		return this.chapters.get(id);
-	}
-
-	async getChaptersByProject(projectId: string) {
-		return this.chapters.where("project").equals(projectId).sortBy("order");
-	}
-	async getAllChapters() {
-		return this.chapters.toArray();
-	}
-
-	// ==========================
-	// 场景表
-	// ==========================
-	async addScene(scene: Partial<SceneInterface>) {
-		const now = dayjs().toISOString();
-		const newScene: SceneInterface = {
-			id: uuidv4(),
-			chapter: scene.chapter!,
-			project: scene.project!,
-			title: scene.title || "New Scene",
-			order: scene.order || 0,
-			lastEdit: now,
-			content: scene.content || "",
-			createDate: now,
-			showEdit: scene.showEdit || false,
-			type: scene.type || "text",
-			filePath: scene.filePath,
-		};
-		await this.scenes.add(newScene);
-		logger.info(`Added scene ${newScene.title} (${newScene.id})`);
-		return newScene;
-	}
-
-	async updateScene(id: string, updates: Partial<SceneInterface>) {
-		updates.lastEdit = dayjs().toISOString();
-		await this.scenes.update(id, updates);
-		logger.info(`Updated scene ${id}`);
-	}
-
-	async deleteScene(id: string) {
-		await this.scenes.delete(id);
-		logger.warn(`Deleted scene ${id}`);
-	}
-
-	async getScene(id: string) {
-		return this.scenes.get(id);
-	}
-
-	async getScenesByChapter(chapterId: string) {
-		return this.scenes.where("chapter").equals(chapterId).sortBy("order");
-	}
-	async getScenesByProject(projectId: string) {
-		return this.scenes.where("project").equals(projectId).sortBy("order");
-	}
-	async getAllScenes() {
-		return this.scenes.toArray();
-	}
-
-	// ==========================
-	// 角色表 (已废弃，保留用于迁移)
-	// @deprecated 请使用 Wiki 条目相关方法替代
-	// ==========================
-	/** @deprecated 使用 addWikiEntry 替代 */
-	async addRole(role: Partial<RoleInterface>) {
-		const now = dayjs().toISOString();
-		const newRole: RoleInterface = {
-			id: uuidv4(),
-			project: role.project!,
-			name: role.name || "New Role",
-			alias: role.alias || [],
-			identity: role.identity || [],
-			relationships: role.relationships || [],
-			basicSettings: role.basicSettings || "",
-			image: role.image || [],
-			experience: role.experience || "",
-			showTip: role.showTip || false,
-			createDate: now,
-		};
-		await this.roles.add(newRole);
-		logger.info(`Added role ${newRole.name} (${newRole.id})`);
-		return newRole;
-	}
-
-	/** @deprecated 使用 updateWikiEntry 替代 */
-	async updateRole(id: string, updates: Partial<RoleInterface>) {
-		await this.roles.update(id, updates);
-		logger.info(`Updated role ${id}`);
-	}
-
-	/** @deprecated 使用 deleteWikiEntry 替代 */
-	async deleteRole(id: string) {
-		await this.roles.delete(id);
-		logger.warn(`Deleted role ${id}`);
-	}
-
-	/** @deprecated 使用 getWikiEntry 替代 */
-	async getRole(id: string) {
-		return this.roles.get(id);
-	}
-
-	/** @deprecated 使用 getWikiEntriesByProject 替代 */
-	async getRolesByProject(projectId: string) {
-		return this.roles.where("project").equals(projectId).toArray();
 	}
 
 	// ==========================
@@ -395,8 +283,6 @@ export class NovelEditorDB extends Dexie {
 		const newAttachment: AttachmentInterface = {
 			id: uuidv4(),
 			project: attachment.project,
-			chapter: attachment.chapter,
-			scene: attachment.scene,
 			type: attachment.type || "file",
 			fileName: attachment.fileName || "unknown",
 			filePath: attachment.filePath || "",
@@ -405,9 +291,7 @@ export class NovelEditorDB extends Dexie {
 			mimeType: attachment.mimeType,
 		};
 		await this.attachments.add(newAttachment);
-		logger.info(
-			`Added attachment ${newAttachment.fileName} (${newAttachment.id})`,
-		);
+		logger.info(`Added attachment ${newAttachment.fileName} (${newAttachment.id})`);
 		return newAttachment;
 	}
 
@@ -430,7 +314,7 @@ export class NovelEditorDB extends Dexie {
 	}
 
 	// ==========================
-	// Wiki条目表 (原角色系统升级)
+	// Wiki条目表
 	// ==========================
 	async addWikiEntry(entry: Partial<WikiEntryInterface>) {
 		const now = dayjs().toISOString();
@@ -481,81 +365,85 @@ export class NovelEditorDB extends Dexie {
 			.toArray();
 	}
 
-	// 迁移角色数据到Wiki系统
-	async migrateRolesToWiki(projectId: string) {
-		const roles = await this.getRolesByProject(projectId);
-		const migratedEntries = [];
+	// ==========================
+	// 节点表 (文件树结构)
+	// ==========================
+	async addNode(node: Partial<NodeInterface>) {
+		const now = dayjs().toISOString();
 		
-		for (const role of roles) {
-			// 将角色的experience转换为content
-			let content = "";
-			if (role.experience) {
-				try {
-					// 如果experience已经是JSON格式，直接使用
-					JSON.parse(role.experience);
-					content = role.experience;
-				} catch {
-					// 如果是纯文本，包装成Lexical格式
-					content = JSON.stringify({
-						root: {
-							children: [
-								{
-									children: [
-										{
-											detail: 0,
-											format: 0,
-											mode: "normal",
-											style: "",
-											text: role.experience,
-											type: "text",
-											version: 1,
-										},
-									],
-									direction: "ltr",
-									format: "",
-									indent: 0,
-									type: "paragraph",
-									version: 1,
-								},
-							],
-							direction: "ltr",
-							format: "",
-							indent: 0,
-							type: "root",
-							version: 1,
-						},
-					});
-				}
-			}
-
-			const wikiEntry: WikiEntryInterface = {
-				id: uuidv4(),
-				project: role.project,
-				name: role.name,
-				alias: role.alias,
-				tags: role.identity, // 将identity转换为tags
-				content,
-				createDate: role.createDate,
-				updatedAt: dayjs().toISOString(),
-			};
-
-			await this.wikiEntries.add(wikiEntry);
-			migratedEntries.push(wikiEntry);
+		// 计算同级节点的下一个 order 值
+		let nextOrder = 0;
+		const siblings = await this.nodes
+			.where("workspace")
+			.equals(node.workspace!)
+			.and((n) => n.parent === (node.parent ?? null))
+			.toArray();
+		if (siblings.length > 0) {
+			nextOrder = Math.max(...siblings.map((s) => s.order)) + 1;
 		}
 
-		logger.info(`Migrated ${migratedEntries.length} roles to wiki entries for project ${projectId}`);
-		return migratedEntries;
+		const newNode: NodeInterface = {
+			id: uuidv4(),
+			workspace: node.workspace!,
+			parent: node.parent ?? null,
+			type: node.type || "file",
+			title: node.title || "New Node",
+			order: node.order ?? nextOrder,
+			content: node.content,
+			collapsed: node.collapsed ?? true,
+			createDate: now,
+			lastEdit: now,
+		};
+		await this.nodes.add(newNode);
+		logger.info(`Added node ${newNode.title} (${newNode.id})`);
+		return newNode;
+	}
+
+	async updateNode(id: string, updates: Partial<NodeInterface>) {
+		updates.lastEdit = dayjs().toISOString();
+		await this.nodes.update(id, updates);
+		logger.info(`Updated node ${id}`);
+	}
+
+	async deleteNode(id: string) {
+		// 递归删除所有子节点
+		const children = await this.nodes.where("parent").equals(id).toArray();
+		for (const child of children) {
+			await this.deleteNode(child.id);
+		}
+		// 删除当前节点
+		await this.nodes.delete(id);
+		logger.warn(`Deleted node ${id}`);
+	}
+
+	async getNode(id: string) {
+		return this.nodes.get(id);
+	}
+
+	async getNodesByWorkspace(workspaceId: string) {
+		return this.nodes.where("workspace").equals(workspaceId).toArray();
+	}
+
+	async getNodesByParent(parentId: string | null) {
+		if (parentId === null) {
+			return this.nodes.filter((n) => n.parent === null).toArray();
+		}
+		return this.nodes.where("parent").equals(parentId).toArray();
+	}
+
+	async getNodesByWorkspaceAndParent(workspaceId: string, parentId: string | null) {
+		const nodes = await this.getNodesByWorkspace(workspaceId);
+		return nodes.filter((n) => n.parent === parentId).sort((a, b) => a.order - b.order);
 	}
 }
 
 // ==============================
-// 初始化数据库（第一次使用时调用）
+// 初始化数据库
 // ==============================
 export async function initDatabase() {
 	try {
 		const existingUsers = await db.users.toArray();
 		if (existingUsers.length === 0) {
-			// 新建一个默认免费用户
 			await db.addUser({
 				username: "guest",
 				displayName: "Guest User",
@@ -566,8 +454,8 @@ export async function initDatabase() {
 
 		const dbVersion = await db.getDBVersion();
 		if (dbVersion.length === 0) {
-			await db.setDBVersion("1.0.0", "Initial database setup");
-			logger.info("✅ Initialized DB version 1.0.0");
+			await db.setDBVersion("2.0.0", "Simplified database structure");
+			logger.info("✅ Initialized DB version 2.0.0");
 		}
 
 		logger.success("🎉 Database initialized successfully!");

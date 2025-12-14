@@ -5,48 +5,11 @@
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { createDrawing, useDrawingsByProject } from "@/services/drawings";
-import { migrateCanvasScenesToDrawings, hasCanvasScenes } from "@/services/drawing-migration";
 import type { DrawingInterface } from "@/db/schema";
 
 export function useDrawingWorkspace(projectId: string | null) {
 	const [selectedDrawing, setSelectedDrawing] = useState<DrawingInterface | null>(null);
-	const [showMigrationPrompt, setShowMigrationPrompt] = useState(false);
 	const drawings = useDrawingsByProject(projectId);
-
-	// Check if migration is needed
-	const checkMigrationNeeded = useCallback(async () => {
-		if (!projectId) return;
-		
-		try {
-			const needsMigration = await hasCanvasScenes(projectId);
-			setShowMigrationPrompt(needsMigration);
-		} catch (error) {
-			console.error("Failed to check migration status:", error);
-		}
-	}, [projectId]);
-
-	// Perform migration
-	const performMigration = useCallback(async () => {
-		if (!projectId) return;
-
-		try {
-			const result = await migrateCanvasScenesToDrawings(projectId);
-			
-			if (result.migrated > 0) {
-				toast.success(`Migrated ${result.migrated} canvas scenes to drawings`);
-			}
-			
-			if (result.errors.length > 0) {
-				toast.error(`Migration completed with ${result.errors.length} errors`);
-				console.error("Migration errors:", result.errors);
-			}
-			
-			setShowMigrationPrompt(false);
-		} catch (error) {
-			console.error("Migration failed:", error);
-			toast.error("Migration failed. Please try again.");
-		}
-	}, [projectId]);
 
 	// Create new drawing
 	const createNewDrawing = useCallback(async (name?: string) => {
@@ -84,12 +47,8 @@ export function useDrawingWorkspace(projectId: string | null) {
 	return {
 		drawings,
 		selectedDrawing,
-		showMigrationPrompt,
-		checkMigrationNeeded,
-		performMigration,
 		createNewDrawing,
 		selectDrawing,
 		clearSelection,
-		setShowMigrationPrompt,
 	};
 }

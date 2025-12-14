@@ -60,24 +60,17 @@ export interface IconTheme {
 			default: LucideIcon;
 			open?: LucideIcon;
 		};
-		chapter: {
+		folder: {
 			default: LucideIcon;
 			open?: LucideIcon;
 		};
-		scene: {
+		file: {
 			default: LucideIcon;
 		};
 		character: {
 			default: LucideIcon;
 		};
 		world: {
-			default: LucideIcon;
-		};
-		folder: {
-			default: LucideIcon;
-			open?: LucideIcon;
-		};
-		file: {
 			default: LucideIcon;
 		};
 		// ActivityBar 图标
@@ -88,6 +81,7 @@ export interface IconTheme {
 			wiki: LucideIcon;
 			canvas: LucideIcon;
 			chapters: LucideIcon;
+			files: LucideIcon;
 			diary: LucideIcon;
 			statistics: LucideIcon;
 			settings: LucideIcon;
@@ -110,11 +104,11 @@ export const iconThemes: IconTheme[] = [
 				default: Book,
 				open: BookOpen,
 			},
-			chapter: {
+			folder: {
 				default: Folder,
 				open: FolderOpen,
 			},
-			scene: {
+			file: {
 				default: FileText,
 			},
 			character: {
@@ -123,13 +117,6 @@ export const iconThemes: IconTheme[] = [
 			world: {
 				default: Globe,
 			},
-			folder: {
-				default: Folder,
-				open: FolderOpen,
-			},
-			file: {
-				default: File,
-			},
 			activityBar: {
 				library: BookMarked,
 				search: Search,
@@ -137,6 +124,7 @@ export const iconThemes: IconTheme[] = [
 				wiki: BookOpen,
 				canvas: Pencil,
 				chapters: FolderTree,
+				files: Files,
 				diary: CalendarDays,
 				statistics: TrendingUp,
 				settings: Settings,
@@ -156,10 +144,10 @@ export const iconThemes: IconTheme[] = [
 			project: {
 				default: Book,
 			},
-			chapter: {
+			folder: {
 				default: Folder,
 			},
-			scene: {
+			file: {
 				default: File,
 			},
 			character: {
@@ -168,19 +156,14 @@ export const iconThemes: IconTheme[] = [
 			world: {
 				default: File,
 			},
-			folder: {
-				default: Folder,
-			},
-			file: {
-				default: File,
-			},
 			activityBar: {
 				library: Book,
 				search: Search,
 				outline: ListTree,
 				wiki: BookOpen,
 				canvas: Pencil,
-				chapters: FolderTree, // 使用 FolderTree 确保与 outline (ListTree) 不同
+				chapters: FolderTree,
+				files: Files,
 				diary: Calendar,
 				statistics: BarChart3,
 				settings: Cog,
@@ -201,11 +184,11 @@ export const iconThemes: IconTheme[] = [
 				default: BookMarked,
 				open: BookOpen,
 			},
-			chapter: {
+			folder: {
 				default: Folder,
 				open: FolderOpen,
 			},
-			scene: {
+			file: {
 				default: FileText,
 			},
 			character: {
@@ -214,13 +197,6 @@ export const iconThemes: IconTheme[] = [
 			world: {
 				default: BookMarked,
 			},
-			folder: {
-				default: Folder,
-				open: FolderOpen,
-			},
-			file: {
-				default: FileText,
-			},
 			activityBar: {
 				library: BookMarked,
 				search: Search,
@@ -228,6 +204,7 @@ export const iconThemes: IconTheme[] = [
 				wiki: BookOpen,
 				canvas: Pencil,
 				chapters: FolderTree,
+				files: Files,
 				diary: CalendarDays,
 				statistics: TrendingUp,
 				settings: Settings,
@@ -248,11 +225,11 @@ export const iconThemes: IconTheme[] = [
 				default: Library,
 				open: BookOpenText,
 			},
-			chapter: {
+			folder: {
 				default: FolderTree,
 				open: FolderOpen,
 			},
-			scene: {
+			file: {
 				default: FileEdit,
 			},
 			character: {
@@ -261,13 +238,6 @@ export const iconThemes: IconTheme[] = [
 			world: {
 				default: Map,
 			},
-			folder: {
-				default: FolderTree,
-				open: FolderOpen,
-			},
-			file: {
-				default: Files,
-			},
 			activityBar: {
 				library: Library,
 				search: Search,
@@ -275,6 +245,7 @@ export const iconThemes: IconTheme[] = [
 				wiki: BookOpenText,
 				canvas: Palette,
 				chapters: FolderTree,
+				files: Files,
 				diary: CalendarDays,
 				statistics: BarChart3,
 				settings: Cog,
@@ -295,11 +266,11 @@ export const iconThemes: IconTheme[] = [
 				default: BookText,
 				open: BookOpen,
 			},
-			chapter: {
+			folder: {
 				default: Layers,
 				open: FolderOpen,
 			},
-			scene: {
+			file: {
 				default: ScrollText,
 			},
 			character: {
@@ -308,20 +279,14 @@ export const iconThemes: IconTheme[] = [
 			world: {
 				default: Sparkles,
 			},
-			folder: {
-				default: Folder,
-				open: FolderOpen,
-			},
-			file: {
-				default: FileText,
-			},
 			activityBar: {
 				library: BookText,
 				search: Search,
-				outline: ListTree, // 使用 ListTree 保持一致性
+				outline: ListTree,
 				wiki: BookOpen,
 				canvas: Feather,
-				chapters: FolderTree, // 使用 FolderTree 确保与 outline (ListTree) 不同
+				chapters: FolderTree,
+				files: Files,
 				diary: CalendarDays,
 				statistics: TrendingUp,
 				settings: Settings,
@@ -342,11 +307,11 @@ export const iconThemes: IconTheme[] = [
 				default: Notebook,
 				open: BookOpen,
 			},
-			chapter: {
+			folder: {
 				default: Folder,
 				open: FolderOpen,
 			},
-			scene: {
+			file: {
 				default: Feather,
 			},
 			character: {
@@ -355,20 +320,14 @@ export const iconThemes: IconTheme[] = [
 			world: {
 				default: Globe,
 			},
-			folder: {
-				default: Folder,
-				open: FolderOpen,
-			},
-			file: {
-				default: PenTool,
-			},
 			activityBar: {
 				library: Notebook,
 				search: Search,
-				outline: ListTree, // 使用 ListTree 保持一致性
+				outline: ListTree,
 				wiki: BookOpen,
 				canvas: Feather,
-				chapters: FolderTree, // 使用 FolderTree 确保与 outline (ListTree) 不同
+				chapters: FolderTree,
+				files: Files,
 				diary: CalendarDays,
 				statistics: TrendingUp,
 				settings: Settings,
@@ -404,14 +363,7 @@ export function getCurrentIconTheme(): IconTheme {
 
 // 根据类型和状态获取图标
 export function getIconForType(
-	type:
-		| "project"
-		| "chapter"
-		| "scene"
-		| "character"
-		| "world"
-		| "folder"
-		| "file",
+	type: "project" | "character" | "world" | "folder" | "file",
 	state: "default" | "open" = "default",
 ): LucideIcon {
 	const theme = getCurrentIconTheme();

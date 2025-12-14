@@ -14,7 +14,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { TabsCardView } from "./tabs-card-view";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface EditorTabsProps {
   className?: string;
@@ -197,17 +202,44 @@ export function EditorTabs({ className }: EditorTabsProps) {
       </div>
 
       {/* 卡片视图弹窗 */}
-      <TabsCardView
-        open={cardViewOpen}
-        onOpenChange={setCardViewOpen}
-        tabs={tabs}
-        activeTabId={activeTabId}
-        onSelectTab={(tabId) => {
-          setActiveTab(tabId);
-          setCardViewOpen(false);
-        }}
-        onCloseTab={closeTab}
-      />
+      <Dialog open={cardViewOpen} onOpenChange={setCardViewOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>所有标签页</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-96 overflow-y-auto p-1">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setCardViewOpen(false);
+                }}
+                className={cn(
+                  "flex items-center gap-2 p-3 rounded-lg border text-left",
+                  "hover:bg-accent transition-colors",
+                  activeTabId === tab.id && "border-primary bg-accent"
+                )}
+              >
+                {getTabIcon(tab.type)}
+                <span className="flex-1 truncate text-sm">{tab.title}</span>
+                {tab.isDirty && <span className="text-primary">●</span>}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-5 opacity-50 hover:opacity-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeTab(tab.id);
+                  }}
+                >
+                  <X className="size-3" />
+                </Button>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

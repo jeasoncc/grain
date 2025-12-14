@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useSettings } from "@/hooks/use-settings";
+import { useUISettingsStore, type TabPosition } from "@/stores/ui-settings";
 
 export const Route = createFileRoute("/settings/general")({
 	component: GeneralSettings,
@@ -27,6 +28,8 @@ function GeneralSettings() {
 		setAutoSaveInterval,
 		setSpellCheck,
 	} = useSettings();
+
+	const { tabPosition, setTabPosition } = useUISettingsStore();
 
 	return (
 		<div className="space-y-6">
@@ -118,6 +121,32 @@ function GeneralSettings() {
 						onCheckedChange={(c) => setSpellCheck(!!c)}
 						className="size-5"
 					/>
+				</div>
+
+				<Separator />
+
+				{/* Tab Position */}
+				<div className="flex items-center justify-between">
+					<div className="space-y-0.5">
+						<Label className="text-base">Tab Position</Label>
+						<p className="text-sm text-muted-foreground">
+							Choose where editor tabs are displayed.
+						</p>
+					</div>
+					<div className="w-[200px]">
+						<Select
+							value={tabPosition}
+							onValueChange={(v: TabPosition) => setTabPosition(v)}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder="Select position" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="top">Top</SelectItem>
+								<SelectItem value="right-sidebar">Right Sidebar</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
 				</div>
 			</div>
 		</div>

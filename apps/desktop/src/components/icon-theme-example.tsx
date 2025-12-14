@@ -14,14 +14,7 @@ import { cn } from "@/lib/utils";
 interface FileItem {
 	id: string;
 	name: string;
-	type:
-		| "project"
-		| "chapter"
-		| "scene"
-		| "character"
-		| "world"
-		| "folder"
-		| "file";
+	type: "project" | "folder" | "file" | "character" | "world";
 	isOpen?: boolean;
 	children?: FileItem[];
 }
@@ -37,19 +30,19 @@ const exampleData: FileItem[] = [
 			{
 				id: "2",
 				name: "第一章",
-				type: "chapter",
+				type: "folder",
 				isOpen: true,
 				children: [
-					{ id: "3", name: "开场", type: "scene" },
-					{ id: "4", name: "相遇", type: "scene" },
+					{ id: "3", name: "开场.md", type: "file" },
+					{ id: "4", name: "相遇.md", type: "file" },
 				],
 			},
 			{
 				id: "5",
 				name: "第二章",
-				type: "chapter",
+				type: "folder",
 				isOpen: false,
-				children: [{ id: "6", name: "冲突", type: "scene" }],
+				children: [{ id: "6", name: "冲突.md", type: "file" }],
 			},
 			{
 				id: "7",
@@ -139,12 +132,10 @@ function FileTreeItem({ item, level = 0 }: { item: FileItem; level?: number }) {
 function getTypeLabel(type: FileItem["type"]): string {
 	const labels: Record<FileItem["type"], string> = {
 		project: "项目",
-		chapter: "章节",
-		scene: "场景",
-		character: "角色",
-		world: "世界观",
 		folder: "文件夹",
 		file: "文件",
+		character: "角色",
+		world: "世界观",
 	};
 	return labels[type];
 }
@@ -170,12 +161,10 @@ function IconGrid() {
 		hasOpen?: boolean;
 	}> = [
 		{ type: "project", label: "项目", hasOpen: true },
-		{ type: "chapter", label: "章节", hasOpen: true },
-		{ type: "scene", label: "场景" },
-		{ type: "character", label: "角色" },
-		{ type: "world", label: "世界观" },
 		{ type: "folder", label: "文件夹", hasOpen: true },
 		{ type: "file", label: "文件" },
+		{ type: "character", label: "角色" },
+		{ type: "world", label: "世界观" },
 	];
 
 	return (

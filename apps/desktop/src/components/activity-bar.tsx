@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Trash2 } from "lucide-react";
+import { Trash2, Plus, Check } from "lucide-react";
 import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -22,16 +22,24 @@ import { db } from "@/db/curd";
 import { getCurrentIconTheme } from "@/lib/icon-themes";
 import { cn } from "@/lib/utils";
 import { importFromJson, readFileAsText } from "@/services/projects";
+import { createDiaryInFileTree } from "@/services/diary-v2";
 import { useSelectionStore } from "@/stores/selection";
 import { useUnifiedSidebarStore } from "@/stores/unified-sidebar";
+import { useEditorTabsStore } from "@/stores/editor-tabs";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export function ActivityBar(): React.ReactElement {
 	const location = useLocation();
 	const projects = useLiveQuery(() => db.getAllProjects(), []) || [];
 	const selectedProjectId = useSelectionStore((s) => s.selectedProjectId);
+	const setSelectedProjectId = useSelectionStore((s) => s.setSelectedProjectId);
+	const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const confirm = useConfirm();
 	const [exportDialogOpen, setExportDialogOpen] = useState(false);
+	const [showNewWorkspace, setShowNewWorkspace] = useState(false);
+	const [newWorkspaceName, setNewWorkspaceName] = useState("");
 	const {
 		activePanel,
 		isOpen: unifiedSidebarOpen,
@@ -39,8 +47,42 @@ export function ActivityBar(): React.ReactElement {
 		toggleSidebar,
 	} = useUnifiedSidebarStore();
 
+	// Auto-create default workspace if none exists
+	const hasAutoCreatedRef = useRef(false);
+	useEffect(() => {
+		const autoCreateDefaultWorkspace = async () => {
+			// Only run once and when projects are loaded (not undefined)
+			if (hasAutoCreatedRef.current || projects === undefined) return;
+			
+			// Check if no workspaces exist
+			if (projects.length === 0) {
+				hasAutoCreatedRef.current = true;
+				try {
+					const newProject = await db.addProject({
+						title: "My Workspace",
+						author: "",
+						description: "",
+						language: "zh",
+					});
+					setSelectedProjectId(newProject.id);
+					// Open file tree panel
+					setActivePanel("files");
+				} catch (error) {
+					console.error("Failed to create default workspace:", error);
+				}
+			} else if (!selectedProjectId) {
+				// Auto-select first workspace if none selected
+				setSelectedProjectId(projects[0].id);
+			}
+		};
+		autoCreateDefaultWorkspace();
+	}, [projects, selectedProjectId, setSelectedProjectId, setActivePanel]);
+
 	// 图标主题
 	const [iconTheme, setIconTheme] = useState(getCurrentIconTheme());
+
+	// Editor tabs store for opening diary
+	const openTab = useEditorTabsStore((s) => s.openTab);
 
 	// 监听图标主题变化
 	useEffect(() => {
@@ -52,22 +94,47 @@ export function ActivityBar(): React.ReactElement {
 	}, []);
 
 	// 获取图标
-	// 顺序: 书籍管理(1st) → 章节管理(2nd) → Wiki(3rd) → 搜索(4th) → 大纲(5th) → 日记(6th)
-	const LibraryIcon = iconTheme.icons.activityBar.library;
-	const ChaptersIcon = iconTheme.icons.activityBar.chapters;
+	// 顺序: Files → Wiki → Search → Calendar → Outline → Statistics → Settings
+	const FilesIcon = iconTheme.icons.activityBar.files;
 	const WikiIcon = iconTheme.icons.activityBar.wiki;
 	const SearchIcon = iconTheme.icons.activityBar.search;
-	const OutlineIcon = iconTheme.icons.activityBar.outline;
 	const DiaryIcon = iconTheme.icons.activityBar.diary;
+	const OutlineIcon = iconTheme.icons.activityBar.outline;
 	const StatisticsIcon = iconTheme.icons.activityBar.statistics;
 	const SettingsIcon = iconTheme.icons.activityBar.settings;
 	const ImportIcon = iconTheme.icons.activityBar.import;
 	const ExportIcon = iconTheme.icons.activityBar.export;
 	const MoreIcon = iconTheme.icons.activityBar.more;
+	const FolderIcon = iconTheme.icons.activityBar.library; // Reuse for workspace
 
 	const handleImportClick = useCallback(() => {
 		fileInputRef.current?.click();
 	}, []);
+
+	// Handle diary creation from Calendar icon
+	const handleCreateDiary = useCallback(async () => {
+		if (!selectedProjectId) {
+			toast.error("Please select a workspace first");
+			return;
+		}
+		try {
+			const diaryNode = await createDiaryInFileTree(selectedProjectId);
+			// Open the created diary in the editor
+			openTab({
+				projectId: selectedProjectId,
+				nodeId: diaryNode.id,
+				title: diaryNode.title,
+				type: "diary",
+			});
+			// Open file tree panel and highlight the new diary
+			setActivePanel("files");
+			setSelectedNodeId(diaryNode.id);
+			toast.success("Diary created");
+		} catch (error) {
+			toast.error("Failed to create diary");
+			console.error("Diary creation error:", error);
+		}
+	}, [selectedProjectId, openTab, setActivePanel, setSelectedNodeId]);
 
 	const handleImportFile = useCallback(
 		async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,8 +157,8 @@ export function ActivityBar(): React.ReactElement {
 
 	const handleDeleteAllBooks = useCallback(async () => {
 		const ok = await confirm({
-			title: "Delete all books?",
-			description: "This action cannot be undone",
+			title: "Delete all data?",
+			description: "This action cannot be undone. All workspaces, files, and data will be deleted.",
 			confirmText: "Delete",
 			cancelText: "Cancel",
 		});
@@ -99,16 +166,49 @@ export function ActivityBar(): React.ReactElement {
 		try {
 			await Promise.all([
 				db.attachments.clear(),
-				db.roles.clear(),
-				db.scenes.clear(),
-				db.chapters.clear(),
+				db.nodes.clear(),
+				db.wikiEntries.clear(),
+				db.drawings.clear(),
 				db.projects.clear(),
 			]);
-			toast.success("All books deleted");
+			// Reset selection state
+			setSelectedProjectId(null);
+			setSelectedNodeId(null);
+			// Reset auto-create flag so a new workspace will be created
+			hasAutoCreatedRef.current = false;
+			toast.success("All data deleted");
 		} catch {
 			toast.error("Delete failed");
 		}
-	}, [confirm]);
+	}, [confirm, setSelectedProjectId, setSelectedNodeId]);
+
+	// Handle workspace selection
+	const handleSelectWorkspace = useCallback((projectId: string) => {
+		setSelectedProjectId(projectId);
+		toast.success("Workspace selected");
+	}, [setSelectedProjectId]);
+
+	// Handle new workspace creation
+	const handleCreateWorkspace = useCallback(async () => {
+		if (!newWorkspaceName.trim()) {
+			toast.error("Please enter a workspace name");
+			return;
+		}
+		try {
+			const newProject = await db.addProject({
+				title: newWorkspaceName.trim(),
+				author: "",
+				description: "",
+				language: "zh",
+			});
+			setSelectedProjectId(newProject.id);
+			setNewWorkspaceName("");
+			setShowNewWorkspace(false);
+			toast.success("Workspace created");
+		} catch {
+			toast.error("Failed to create workspace");
+		}
+	}, [newWorkspaceName, setSelectedProjectId]);
 
 	// 检查当前路由是否匹配
 	const isActive = (path: string) =>
@@ -118,36 +218,23 @@ export function ActivityBar(): React.ReactElement {
 		<aside className="activity-bar fixed left-0 top-0 z-50 flex h-screen w-12 shrink-0 flex-col items-center bg-sidebar py-2">
 			<TooltipProvider>
 				{/* 主导航 - 侧边栏面板切换 */}
-				{/* 顺序: 书籍管理(1st) → 章节管理(2nd) → Wiki(3rd) → 搜索(4th) → 大纲(5th) */}
-				{/* 绘图按钮已移除，绘图通过书籍管理面板访问 */}
+				{/* 顺序: Files → Wiki → Search → Calendar → Outline → Statistics → Settings */}
+				{/* Library 和 Diary 面板按钮已移除，日记功能整合到文件树中，但保留日历图标用于快速创建 */}
 				<nav className="flex flex-col items-center gap-0.5">
-					{/* 1st: Library */}
+					{/* 1st: Files (Node-based File Tree) */}
 					<ActionButton
-						icon={<LibraryIcon className="size-5" />}
-						label="Library (Ctrl+B)"
-						active={activePanel === "books" && unifiedSidebarOpen}
+						icon={<FilesIcon className="size-5" />}
+						label="Files"
+						active={activePanel === "files" && unifiedSidebarOpen}
 						onClick={() => {
-							if (activePanel === "books" && unifiedSidebarOpen) {
+							if (activePanel === "files" && unifiedSidebarOpen) {
 								toggleSidebar();
 							} else {
-								setActivePanel("books");
+								setActivePanel("files");
 							}
 						}}
 					/>
-					{/* 2nd: Chapters */}
-					<ActionButton
-						icon={<ChaptersIcon className="size-5" />}
-						label="Chapters"
-						active={activePanel === "chapters" && unifiedSidebarOpen}
-						onClick={() => {
-							if (activePanel === "chapters" && unifiedSidebarOpen) {
-								toggleSidebar();
-							} else {
-								setActivePanel("chapters");
-							}
-						}}
-					/>
-					{/* 3rd: Wiki */}
+					{/* 2nd: Wiki */}
 					<ActionButton
 						icon={<WikiIcon className="size-5" />}
 						label="Wiki"
@@ -160,7 +247,7 @@ export function ActivityBar(): React.ReactElement {
 							}
 						}}
 					/>
-					{/* 4th: Search */}
+					{/* 3rd: Search */}
 					<ActionButton
 						icon={<SearchIcon className="size-5" />}
 						label="Search (Ctrl+Shift+F)"
@@ -173,25 +260,18 @@ export function ActivityBar(): React.ReactElement {
 							}
 						}}
 					/>
+					{/* 4th: Calendar - Quick Diary Creation */}
+					<ActionButton
+						icon={<DiaryIcon className="size-5" />}
+						label="New Diary"
+						onClick={handleCreateDiary}
+					/>
 					{/* 5th: Outline */}
 					<NavItem
 						to="/outline"
 						icon={<OutlineIcon className="size-5" />}
 						label="Outline"
 						active={isActive("/outline")}
-					/>
-					{/* 6th: Diary */}
-					<ActionButton
-						icon={<DiaryIcon className="size-5" />}
-						label="日记 (Diary)"
-						active={activePanel === "diary" && unifiedSidebarOpen}
-						onClick={() => {
-							if (activePanel === "diary" && unifiedSidebarOpen) {
-								toggleSidebar();
-							} else {
-								setActivePanel("diary");
-							}
-						}}
 					/>
 				</nav>
 
@@ -220,8 +300,69 @@ export function ActivityBar(): React.ReactElement {
 							</TooltipTrigger>
 							<TooltipContent side="right">More</TooltipContent>
 						</Tooltip>
-						<PopoverContent side="right" align="end" className="w-48 p-1">
+						<PopoverContent side="right" align="end" className="w-56 p-1">
 							<div className="grid gap-1">
+								{/* Workspace Selection */}
+								<div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+									Workspaces
+								</div>
+								{projects.length > 0 ? (
+									<div className="max-h-32 overflow-y-auto">
+										{projects.map((project) => (
+											<button
+												key={project.id}
+												onClick={() => handleSelectWorkspace(project.id)}
+												className={cn(
+													"flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground",
+													selectedProjectId === project.id && "bg-accent/50"
+												)}
+											>
+												<FolderIcon className="size-4" />
+												<span className="flex-1 truncate text-left">{project.title}</span>
+												{selectedProjectId === project.id && (
+													<Check className="size-4 text-primary" />
+												)}
+											</button>
+										))}
+									</div>
+								) : (
+									<div className="px-2 py-1.5 text-sm text-muted-foreground">
+										No workspaces
+									</div>
+								)}
+								
+								{/* New Workspace */}
+								{showNewWorkspace ? (
+									<div className="flex items-center gap-1 px-2 py-1">
+										<Input
+											value={newWorkspaceName}
+											onChange={(e) => setNewWorkspaceName(e.target.value)}
+											placeholder="Workspace name"
+											className="h-7 text-sm"
+											autoFocus
+											onKeyDown={(e) => {
+												if (e.key === "Enter") handleCreateWorkspace();
+												if (e.key === "Escape") {
+													setShowNewWorkspace(false);
+													setNewWorkspaceName("");
+												}
+											}}
+										/>
+										<Button size="sm" className="h-7 px-2" onClick={handleCreateWorkspace}>
+											<Plus className="size-4" />
+										</Button>
+									</div>
+								) : (
+									<button
+										onClick={() => setShowNewWorkspace(true)}
+										className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+									>
+										<Plus className="size-4" /> New Workspace
+									</button>
+								)}
+								
+								<div className="h-px bg-border my-1" />
+								
 								<button
 									onClick={handleImportClick}
 									className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
@@ -240,7 +381,7 @@ export function ActivityBar(): React.ReactElement {
 									className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10"
 									disabled={projects.length === 0}
 								>
-									<Trash2 className="size-4" /> Delete All Books
+									<Trash2 className="size-4" /> Delete All
 								</button>
 							</div>
 						</PopoverContent>

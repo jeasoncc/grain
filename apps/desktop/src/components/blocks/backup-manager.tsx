@@ -44,10 +44,12 @@ dayjs.locale("zh-cn");
 
 export function BackupManager() {
 	const [stats, setStats] = useState<{
+		userCount: number;
 		projectCount: number;
-		chapterCount: number;
-		sceneCount: number;
-		totalWords: number;
+		wikiEntryCount: number;
+		drawingCount: number;
+		attachmentCount: number;
+		nodeCount: number;
 	} | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
@@ -246,24 +248,26 @@ export function BackupManager() {
 							{/* 数据库统计 */}
 							<div>
 								<h4 className="text-sm font-medium mb-3">数据库内容</h4>
-								<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+								<div className="grid grid-cols-2 md:grid-cols-3 gap-4">
 									<div className="space-y-1">
 										<p className="text-sm text-muted-foreground">项目</p>
 										<p className="text-2xl font-bold">{stats.projectCount}</p>
 									</div>
 									<div className="space-y-1">
-										<p className="text-sm text-muted-foreground">章节</p>
-										<p className="text-2xl font-bold">{stats.chapterCount}</p>
+										<p className="text-sm text-muted-foreground">文件节点</p>
+										<p className="text-2xl font-bold">{stats.nodeCount}</p>
 									</div>
 									<div className="space-y-1">
-										<p className="text-sm text-muted-foreground">场景</p>
-										<p className="text-2xl font-bold">{stats.sceneCount}</p>
+										<p className="text-sm text-muted-foreground">Wiki 条目</p>
+										<p className="text-2xl font-bold">{stats.wikiEntryCount}</p>
 									</div>
 									<div className="space-y-1">
-										<p className="text-sm text-muted-foreground">总字数</p>
-										<p className="text-2xl font-bold">
-											{stats.totalWords.toLocaleString()}
-										</p>
+										<p className="text-sm text-muted-foreground">绘图</p>
+										<p className="text-2xl font-bold">{stats.drawingCount}</p>
+									</div>
+									<div className="space-y-1">
+										<p className="text-sm text-muted-foreground">附件</p>
+										<p className="text-2xl font-bold">{stats.attachmentCount}</p>
 									</div>
 								</div>
 							</div>

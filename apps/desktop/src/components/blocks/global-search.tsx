@@ -3,7 +3,7 @@
  */
 
 import { useNavigate } from "@tanstack/react-router";
-import { FileText, Globe, Loader2, Search, User, X } from "lucide-react";
+import { FileText, Globe, Loader2, Search, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,27 +29,21 @@ interface GlobalSearchProps {
 }
 
 const typeIcons: Record<SearchResultType, any> = {
-	scene: FileText,
-	chapter: FileText,
 	project: FileText,
-	role: User,
-	world: Globe,
+	node: FileText,
+	wiki: Globe,
 };
 
 const typeLabels: Record<SearchResultType, string> = {
-	scene: "场景",
-	chapter: "章节",
 	project: "项目",
-	role: "Wiki",
-	world: "Wiki",
+	node: "文件",
+	wiki: "Wiki",
 };
 
 const typeColors: Record<SearchResultType, string> = {
-	scene: "bg-blue-500/10 text-blue-500",
-	chapter: "bg-green-500/10 text-green-500",
 	project: "bg-purple-500/10 text-purple-500",
-	role: "bg-orange-500/10 text-orange-500",
-	world: "bg-cyan-500/10 text-cyan-500",
+	node: "bg-blue-500/10 text-blue-500",
+	wiki: "bg-cyan-500/10 text-cyan-500",
 };
 
 export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
@@ -128,17 +122,12 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 
 		// 根据类型导航到对应页面
 		switch (result.type) {
-			case "scene":
-				if (result.projectId) {
-					navigate({
-						to: "/projects/$projectId",
-						params: { projectId: result.projectId },
-						search: { sceneId: result.id },
-					});
-				}
+			case "node":
+			case "project":
+				// 导航到主页，通过文件树打开
+				navigate({ to: "/" });
 				break;
-			case "role":
-			case "world":
+			case "wiki":
 				navigate({ to: "/wiki" });
 				break;
 		}
@@ -180,7 +169,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 					<Input
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
-						placeholder="搜索场景、Wiki 条目..."
+						placeholder="搜索文件、Wiki 条目..."
 						className="pl-9 pr-9"
 						autoFocus
 					/>
@@ -239,7 +228,6 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 												{result.projectTitle && (
 													<p className="text-xs text-muted-foreground mb-1">
 														{result.projectTitle}
-														{result.chapterTitle && ` / ${result.chapterTitle}`}
 													</p>
 												)}
 												<p className="text-xs text-muted-foreground line-clamp-2">
@@ -260,7 +248,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 						<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
 							<Search className="size-12 mb-3 opacity-20" />
 							<p className="text-sm">输入关键词开始搜索</p>
-							<p className="text-xs mt-1">支持搜索场景、Wiki 条目</p>
+							<p className="text-xs mt-1">支持搜索文件、Wiki 条目</p>
 						</div>
 					)}
 				</ScrollArea>

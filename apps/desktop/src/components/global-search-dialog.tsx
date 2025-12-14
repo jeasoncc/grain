@@ -1,21 +1,13 @@
 /**
  * 全局搜索对话框
- * 支持跨项目、章节、场景的全文搜索
+ * 支持跨项目的全文搜索
  */
 
 import { useNavigate } from "@tanstack/react-router";
-import {
-	ChevronRight,
-	FileText,
-	Globe,
-	Loader2,
-	Search,
-	User,
-} from "lucide-react";
+import { FileText, Globe, Loader2, Search } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import logger from "@/log";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -115,15 +107,12 @@ export function GlobalSearchDialog({
 
 		// 根据类型导航到相应页面
 		switch (result.type) {
-			case "scene":
-				navigate({
-					to: "/projects/$projectId",
-					params: { projectId: result.projectId! },
-					search: { sceneId: result.id },
-				});
+			case "node":
+			case "project":
+				// 导航到主页
+				navigate({ to: "/" });
 				break;
-			case "role":
-			case "world":
+			case "wiki":
 				navigate({ to: "/wiki" });
 				break;
 		}
@@ -132,11 +121,9 @@ export function GlobalSearchDialog({
 	// 获取类型图标
 	const getTypeIcon = (type: string) => {
 		switch (type) {
-			case "scene":
+			case "node":
 				return <FileText className="h-4 w-4" />;
-			case "role":
-				return <User className="h-4 w-4" />;
-			case "world":
+			case "wiki":
 				return <Globe className="h-4 w-4" />;
 			default:
 				return <FileText className="h-4 w-4" />;
@@ -146,10 +133,9 @@ export function GlobalSearchDialog({
 	// 获取类型标签
 	const getTypeLabel = (type: string) => {
 		switch (type) {
-			case "scene":
-				return "场景";
-			case "role":
-			case "world":
+			case "node":
+				return "文件";
+			case "wiki":
 				return "Wiki";
 			default:
 				return type;
@@ -181,7 +167,7 @@ export function GlobalSearchDialog({
 			<DialogContent className="max-w-2xl p-0">
 				<DialogHeader className="px-6 pt-6">
 					<DialogTitle>全局搜索</DialogTitle>
-					<DialogDescription>搜索项目中的场景和 Wiki 条目</DialogDescription>
+					<DialogDescription>搜索项目中的文件和 Wiki 条目</DialogDescription>
 				</DialogHeader>
 
 				<div className="px-6">
@@ -243,12 +229,6 @@ export function GlobalSearchDialog({
 											{result.projectTitle && (
 												<div className="flex items-center gap-1 text-xs text-muted-foreground">
 													<span>{result.projectTitle}</span>
-													{result.chapterTitle && (
-														<>
-															<ChevronRight className="h-3 w-3" />
-															<span>{result.chapterTitle}</span>
-														</>
-													)}
 												</div>
 											)}
 										</div>

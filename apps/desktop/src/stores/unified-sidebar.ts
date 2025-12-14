@@ -1,19 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type UnifiedSidebarPanel = "search" | "books" | "drawings" | "wiki" | "chapters" | "diary" | null;
+// Simplified panel types - files panel is the main file tree
+export type UnifiedSidebarPanel = "search" | "drawings" | "wiki" | "files" | null;
 
 interface SearchPanelState {
 	query: string;
 	selectedTypes: string[];
 	showFilters: boolean;
-}
-
-interface BooksPanelState {
-	selectedProjectId: string | null;
-	expandedChapters: Record<string, boolean>;
-	selectedChapter: string | null;
-	selectedScene: string | null;
 }
 
 interface DrawingsPanelState {
@@ -24,11 +18,9 @@ interface WikiPanelState {
 	selectedEntryId: string | null;
 }
 
-interface ChaptersPanelState {
-	selectedProjectId: string | null;
-	expandedChapters: Record<string, boolean>;
-	selectedChapterId: string | null;
-	selectedSceneId: string | null;
+interface FileTreeState {
+	/** 展开的文件夹 ID 映射 */
+	expandedFolders: Record<string, boolean>;
 }
 
 // Sidebar width constraints
@@ -42,26 +34,25 @@ interface UnifiedSidebarState {
 	activePanel: UnifiedSidebarPanel;
 	isOpen: boolean;
 	width: number;
-	// New: track if sidebar was collapsed by drag vs manual toggle
+	// Track if sidebar was collapsed by drag vs manual toggle
 	wasCollapsedByDrag: boolean;
-	// New: store previous width for restore after drag collapse
+	// Store previous width for restore after drag collapse
 	previousWidth: number;
 
 	// Panel states
 	searchState: SearchPanelState;
-	booksState: BooksPanelState;
 	drawingsState: DrawingsPanelState;
 	wikiState: WikiPanelState;
-	chaptersState: ChaptersPanelState;
+	fileTreeState: FileTreeState;
 
 	// Actions
 	setActivePanel: (panel: UnifiedSidebarPanel) => void;
 	setIsOpen: (open: boolean) => void;
 	toggleSidebar: () => void;
 	setWidth: (width: number) => void;
-	// New: resize with auto-collapse support
+	// Resize with auto-collapse support
 	resizeSidebar: (newWidth: number) => void;
-	// New: restore from drag collapse
+	// Restore from drag collapse
 	restoreFromCollapse: () => void;
 
 	// Search panel actions
@@ -69,30 +60,22 @@ interface UnifiedSidebarState {
 	setSearchSelectedTypes: (types: string[]) => void;
 	setSearchShowFilters: (show: boolean) => void;
 
-	// Books panel actions
-	setSelectedProjectId: (id: string | null) => void;
-	setExpandedChapters: (chapters: Record<string, boolean>) => void;
-	setSelectedChapter: (id: string | null) => void;
-	setSelectedScene: (id: string | null) => void;
-
 	// Drawings panel actions
 	setSelectedDrawingId: (id: string | null) => void;
 
 	// Wiki panel actions
 	setSelectedWikiEntryId: (id: string | null) => void;
 
-	// Chapters panel actions
-	setChaptersSelectedProjectId: (id: string | null) => void;
-	setChaptersExpandedChapters: (chapters: Record<string, boolean>) => void;
-	setChaptersSelectedChapterId: (id: string | null) => void;
-	setChaptersSelectedSceneId: (id: string | null) => void;
+	// File tree actions
+	setExpandedFolders: (folders: Record<string, boolean>) => void;
+	toggleFolderExpanded: (folderId: string) => void;
 }
 
 export const useUnifiedSidebarStore = create<UnifiedSidebarState>()(
 	persist(
 		(set, get) => ({
 			// Main sidebar state
-			activePanel: "books",
+			activePanel: "files",
 			isOpen: true,
 			width: SIDEBAR_DEFAULT_WIDTH,
 			wasCollapsedByDrag: false,
@@ -101,14 +84,8 @@ export const useUnifiedSidebarStore = create<UnifiedSidebarState>()(
 			// Panel states
 			searchState: {
 				query: "",
-				selectedTypes: ["scene", "role", "world"],
+				selectedTypes: ["node", "wiki"],
 				showFilters: false,
-			},
-			booksState: {
-				selectedProjectId: null,
-				expandedChapters: {},
-				selectedChapter: null,
-				selectedScene: null,
 			},
 			drawingsState: {
 				selectedDrawingId: null,
@@ -116,11 +93,8 @@ export const useUnifiedSidebarStore = create<UnifiedSidebarState>()(
 			wikiState: {
 				selectedEntryId: null,
 			},
-			chaptersState: {
-				selectedProjectId: null,
-				expandedChapters: {},
-				selectedChapterId: null,
-				selectedSceneId: null,
+			fileTreeState: {
+				expandedFolders: {},
 			},
 
 			// Actions
@@ -175,24 +149,6 @@ export const useUnifiedSidebarStore = create<UnifiedSidebarState>()(
 					searchState: { ...state.searchState, showFilters: show },
 				})),
 
-			// Books panel actions
-			setSelectedProjectId: (id) =>
-				set((state) => ({
-					booksState: { ...state.booksState, selectedProjectId: id },
-				})),
-			setExpandedChapters: (chapters) =>
-				set((state) => ({
-					booksState: { ...state.booksState, expandedChapters: chapters },
-				})),
-			setSelectedChapter: (id) =>
-				set((state) => ({
-					booksState: { ...state.booksState, selectedChapter: id },
-				})),
-			setSelectedScene: (id) =>
-				set((state) => ({
-					booksState: { ...state.booksState, selectedScene: id },
-				})),
-
 			// Drawings panel actions
 			setSelectedDrawingId: (id) =>
 				set((state) => ({
@@ -205,22 +161,20 @@ export const useUnifiedSidebarStore = create<UnifiedSidebarState>()(
 					wikiState: { ...state.wikiState, selectedEntryId: id },
 				})),
 
-			// Chapters panel actions
-			setChaptersSelectedProjectId: (id) =>
+			// File tree actions
+			setExpandedFolders: (folders) =>
 				set((state) => ({
-					chaptersState: { ...state.chaptersState, selectedProjectId: id },
+					fileTreeState: { ...state.fileTreeState, expandedFolders: folders },
 				})),
-			setChaptersExpandedChapters: (chapters) =>
+			toggleFolderExpanded: (folderId) =>
 				set((state) => ({
-					chaptersState: { ...state.chaptersState, expandedChapters: chapters },
-				})),
-			setChaptersSelectedChapterId: (id) =>
-				set((state) => ({
-					chaptersState: { ...state.chaptersState, selectedChapterId: id },
-				})),
-			setChaptersSelectedSceneId: (id) =>
-				set((state) => ({
-					chaptersState: { ...state.chaptersState, selectedSceneId: id },
+					fileTreeState: {
+						...state.fileTreeState,
+						expandedFolders: {
+							...state.fileTreeState.expandedFolders,
+							[folderId]: !state.fileTreeState.expandedFolders[folderId],
+						},
+					},
 				})),
 		}),
 		{
@@ -232,10 +186,9 @@ export const useUnifiedSidebarStore = create<UnifiedSidebarState>()(
 				wasCollapsedByDrag: state.wasCollapsedByDrag,
 				previousWidth: state.previousWidth,
 				searchState: state.searchState,
-				booksState: state.booksState,
 				drawingsState: state.drawingsState,
 				wikiState: state.wikiState,
-				chaptersState: state.chaptersState,
+				fileTreeState: state.fileTreeState,
 			}),
 		},
 	),

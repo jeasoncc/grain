@@ -1,8 +1,8 @@
 /**
  * 保存服务 - 处理手动和自动保存功能
+ * 基于 Node 文件树结构
  */
 import type { SerializedEditorState } from "lexical";
-import { toast } from "sonner";
 import logger from "@/log";
 import { db } from "@/db/curd";
 
@@ -24,6 +24,11 @@ class SaveServiceImpl implements SaveService {
 	private unsavedChanges = new Map<string, boolean>();
 	private lastSavedContent = new Map<string, string>();
 
+	/**
+	 * 保存文档内容
+	 * @param documentId - 节点 ID
+	 * @param content - Lexical 序列化内容
+	 */
 	async saveDocument(
 		documentId: string,
 		content: SerializedEditorState,
@@ -43,11 +48,12 @@ class SaveServiceImpl implements SaveService {
 				};
 			}
 
-			// 保存到数据库
-			await db.updateScene(documentId, {
+			// 保存到 nodes 表
+			await db.updateNode(documentId, {
 				content: contentString,
 				lastEdit: timestamp.toISOString(),
 			});
+			logger.info(`Saved document ${documentId}`)
 
 			// 更新缓存
 			this.lastSavedContent.set(documentId, contentString);
@@ -58,7 +64,7 @@ class SaveServiceImpl implements SaveService {
 				timestamp,
 			};
 		} catch (error) {
-			logger.error("Failed to save document:", error);
+			logger.error(`Failed to save document:`, error);
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",

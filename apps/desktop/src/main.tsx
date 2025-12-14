@@ -8,10 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { db, initDatabase } from "./db/curd";
 import { cleanupAllDrawings } from "./services/drawings";
 
-// 开发环境下加载测试工具
-if (import.meta.env.DEV) {
-	import("./utils/test-features");
-}
+// 开发环境下的调试工具已移除
 
 // Create the router instance
 const router = createRouter({

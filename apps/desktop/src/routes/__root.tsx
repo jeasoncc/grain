@@ -7,6 +7,7 @@ import {
 	TriangleAlertIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { ActivityBar } from "@/components/activity-bar";
 import { GlobalSearch } from "@/components/blocks/global-search";
 import { BufferSwitcher } from "@/components/buffer-switcher";
@@ -18,7 +19,7 @@ import { OnboardingTour } from "@/components/onboarding-tour";
 import { ConfirmProvider } from "@/components/ui/confirm";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
-import { UnifiedSidebar } from "@/components/unified-sidebar";
+import { UnifiedSidebarContent } from "@/components/unified-sidebar";
 import { initializeTheme } from "@/hooks/use-theme";
 import { autoBackupManager } from "@/services/backup";
 import { useEditorTabsStore } from "@/stores/editor-tabs";
@@ -74,13 +75,13 @@ function RootComponent() {
 					setActivePanel("search");
 				}
 			}
-			// Ctrl/Cmd + B 切换书库面板
+			// Ctrl/Cmd + B 切换文件面板
 			if ((e.ctrlKey || e.metaKey) && e.key === "b") {
 				e.preventDefault();
-				if (activePanel === "books" && unifiedSidebarOpen) {
+				if (activePanel === "files" && unifiedSidebarOpen) {
 					toggleSidebar();
 				} else {
-					setActivePanel("books");
+					setActivePanel("files");
 				}
 			}
 			// Ctrl + Tab 打开 buffer switcher (forward)
@@ -120,13 +121,39 @@ function RootComponent() {
 				/>
 				<div className="flex min-h-screen w-full">
 					<ActivityBar />
-					<div className="flex flex-1 ml-12">
-						<UnifiedSidebar />
-						<div className="bg-background text-foreground flex-1 min-h-svh transition-colors duration-300 ease-in-out overflow-hidden">
-							<div className="flex-1 h-full overflow-auto">
-								<Outlet />
-							</div>
-						</div>
+					<div className="flex flex-1 ml-12 h-screen">
+						<PanelGroup
+							direction="horizontal"
+							autoSaveId="novel-editor-main-layout"
+						>
+							{/* Sidebar Panel - only show when open */}
+							{unifiedSidebarOpen && activePanel && (
+								<>
+									<Panel
+										id="sidebar"
+										order={1}
+										defaultSize={20}
+										minSize={15}
+										maxSize={40}
+										className="bg-sidebar"
+									>
+										<UnifiedSidebarContent />
+									</Panel>
+									<PanelResizeHandle className="w-1 bg-border/30 hover:bg-primary/50 transition-colors data-[resize-handle-active]:bg-primary/70" />
+								</>
+							)}
+							{/* Main Content Panel */}
+							<Panel
+								id="main"
+								order={2}
+								defaultSize={80}
+								className="bg-background text-foreground min-h-svh transition-colors duration-300 ease-in-out overflow-hidden"
+							>
+								<div className="flex-1 h-full overflow-auto">
+									<Outlet />
+								</div>
+							</Panel>
+						</PanelGroup>
 					</div>
 				</div>
 				{/* 命令面板 */}

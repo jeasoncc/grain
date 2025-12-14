@@ -19,11 +19,26 @@ import {
   getDownloadsDirectory,
   isTauriEnvironment,
 } from "@/services/export-path";
-import {
-  getOrgmodeSettings,
-  saveOrgmodeSettings,
-  type OrgmodeSettings,
-} from "@/services/export-orgmode";
+// Org-mode settings (simplified)
+interface OrgmodeSettings {
+  orgRoamPath: string | null;
+  diarySubdir: string;
+  enabled: boolean;
+}
+
+const ORGMODE_SETTINGS_KEY = "orgmode-settings";
+
+function getOrgmodeSettings(): OrgmodeSettings {
+  try {
+    const stored = localStorage.getItem(ORGMODE_SETTINGS_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return { orgRoamPath: null, diarySubdir: "diary", enabled: false };
+}
+
+function saveOrgmodeSettings(settings: OrgmodeSettings): void {
+  localStorage.setItem(ORGMODE_SETTINGS_KEY, JSON.stringify(settings));
+}
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/settings/export")({

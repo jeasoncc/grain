@@ -11,11 +11,9 @@ import {
 	Globe,
 	Loader2,
 	Search,
-	User,
 	X,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -36,27 +34,21 @@ import {
 import { useUnifiedSidebarStore } from "@/stores/unified-sidebar";
 
 const typeIcons: Record<SearchResultType, any> = {
-	scene: FileText,
-	chapter: FileText,
 	project: FileText,
-	role: User,
-	world: Globe,
+	node: FileText,
+	wiki: Globe,
 };
 
 const typeLabels: Record<SearchResultType, string> = {
-	scene: "场景",
-	chapter: "章节",
 	project: "项目",
-	role: "Wiki",
-	world: "Wiki",
+	node: "文件",
+	wiki: "Wiki",
 };
 
 const typeColors: Record<SearchResultType, string> = {
-	scene: "text-blue-500",
-	chapter: "text-green-500",
 	project: "text-purple-500",
-	role: "text-orange-500",
-	world: "text-cyan-500",
+	node: "text-blue-500",
+	wiki: "text-cyan-500",
 };
 
 export function SearchPanel() {
@@ -120,17 +112,12 @@ export function SearchPanel() {
 	// 选择结果
 	const handleSelectResult = (result: SearchResult) => {
 		switch (result.type) {
-			case "scene":
-				if (result.projectId) {
-					navigate({
-						to: "/projects/$projectId",
-						params: { projectId: result.projectId },
-						search: { sceneId: result.id },
-					});
-				}
+			case "node":
+			case "project":
+				// 导航到主页
+				navigate({ to: "/" });
 				break;
-			case "role":
-			case "world":
+			case "wiki":
 				navigate({ to: "/wiki" });
 				break;
 		}
@@ -207,23 +194,21 @@ export function SearchPanel() {
 							搜索范围
 						</p>
 						<div className="space-y-2">
-							{(["scene", "role", "world"] as SearchResultType[]).map(
-								(type) => (
-									<div key={type} className="flex items-center space-x-2">
-										<Checkbox
-											id={`type-${type}`}
-											checked={searchState.selectedTypes.includes(type)}
-											onCheckedChange={() => toggleType(type)}
-										/>
-										<Label
-											htmlFor={`type-${type}`}
-											className="text-sm cursor-pointer"
-										>
-											{typeLabels[type]}
-										</Label>
-									</div>
-								),
-							)}
+							{(["node", "wiki"] as SearchResultType[]).map((type) => (
+								<div key={type} className="flex items-center space-x-2">
+									<Checkbox
+										id={`type-${type}`}
+										checked={searchState.selectedTypes.includes(type)}
+										onCheckedChange={() => toggleType(type)}
+									/>
+									<Label
+										htmlFor={`type-${type}`}
+										className="text-sm cursor-pointer"
+									>
+										{typeLabels[type]}
+									</Label>
+								</div>
+							))}
 						</div>
 					</div>
 				)}
@@ -273,7 +258,7 @@ export function SearchPanel() {
 					<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
 						<Search className="size-12 mb-3 opacity-20" />
 						<p className="text-sm">输入关键词开始搜索</p>
-						<p className="text-xs mt-1">支持搜索场景、Wiki 条目</p>
+						<p className="text-xs mt-1">支持搜索文件、Wiki 条目</p>
 					</div>
 				)}
 			</ScrollArea>
@@ -325,7 +310,6 @@ function ResultGroup({
 							{result.projectTitle && (
 								<p className="text-xs text-muted-foreground truncate">
 									{result.projectTitle}
-									{result.chapterTitle && ` / ${result.chapterTitle}`}
 								</p>
 							)}
 							{result.excerpt && (
