@@ -1,10 +1,12 @@
 /**
  * 保存服务 - 处理手动和自动保存功能
- * 基于 Node 文件树结构
+ * 基于 Node 文件树结构，使用 ContentRepository 进行内容存储
+ *
+ * Requirements: 5.3, 6.2
  */
 import type { SerializedEditorState } from "lexical";
 import logger from "@/log";
-import { db } from "@/db/curd";
+import { ContentRepository } from "@/db/models";
 
 export interface SaveResult {
 	success: boolean;
@@ -20,9 +22,13 @@ export interface SaveService {
 	hasUnsavedChanges(documentId: string): boolean;
 }
 
+// Debounce timeout in milliseconds (500ms as per requirements)
+const DEBOUNCE_TIMEOUT = 500;
+
 class SaveServiceImpl implements SaveService {
 	private unsavedChanges = new Map<string, boolean>();
 	private lastSavedContent = new Map<string, string>();
+	private debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 	/**
 	 * 保存文档内容
@@ -36,11 +42,9 @@ class SaveServiceImpl implements SaveService {
 		const timestamp = new Date();
 
 		try {
-			// 将内容序列化为字符串进行比较
 			const contentString = JSON.stringify(content);
 			const lastSaved = this.lastSavedContent.get(documentId);
 
-			// 如果内容没有变化，跳过保存
 			if (lastSaved === contentString) {
 				return {
 					success: true,
@@ -48,14 +52,9 @@ class SaveServiceImpl implements SaveService {
 				};
 			}
 
-			// 保存到 nodes 表
-			await db.updateNode(documentId, {
-				content: contentString,
-				lastEdit: timestamp.toISOString(),
-			});
-			logger.info(`Saved document ${documentId}`)
+			await ContentRepository.updateByNodeId(documentId, contentString, "lexical");
+			logger.info(`Saved document ${documentId}`);
 
-			// 更新缓存
 			this.lastSavedContent.set(documentId, contentString);
 			this.unsavedChanges.set(documentId, false);
 
@@ -71,6 +70,25 @@ class SaveServiceImpl implements SaveService {
 				timestamp,
 			};
 		}
+	}
+
+	/**
+	 * 防抖保存文档内容
+	 */
+	debouncedSave(documentId: string, content: SerializedEditorState): void {
+		this.unsavedChanges.set(documentId, true);
+
+		const existingTimer = this.debounceTimers.get(documentId);
+		if (existingTimer) {
+			clearTimeout(existingTimer);
+		}
+
+		const timer = setTimeout(async () => {
+			await this.saveDocument(documentId, content);
+			this.debounceTimers.delete(documentId);
+		}, DEBOUNCE_TIMEOUT);
+
+		this.debounceTimers.set(documentId, timer);
 	}
 
 	hasUnsavedChanges(documentId: string): boolean {
@@ -89,8 +107,20 @@ class SaveServiceImpl implements SaveService {
 	clearDocument(documentId: string): void {
 		this.unsavedChanges.delete(documentId);
 		this.lastSavedContent.delete(documentId);
+		
+		const timer = this.debounceTimers.get(documentId);
+		if (timer) {
+			clearTimeout(timer);
+			this.debounceTimers.delete(documentId);
+		}
+	}
+
+	async flushAll(): Promise<void> {
+		for (const [documentId, timer] of this.debounceTimers.entries()) {
+			clearTimeout(timer);
+			this.debounceTimers.delete(documentId);
+		}
 	}
 }
 
-// 单例实例
 export const saveService = new SaveServiceImpl();

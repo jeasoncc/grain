@@ -16,8 +16,11 @@ import {
 } from "docx";
 import { saveAs } from "file-saver";
 import JSZip from "jszip";
-import { db } from "@/db/curd";
-import type { ProjectInterface, NodeInterface } from "@/db/schema";
+import { database } from "@/db/database";
+import { ContentRepository, type WorkspaceInterface, type NodeInterface } from "@/db/models";
+
+// Type alias for backward compatibility
+type ProjectInterface = WorkspaceInterface;
 
 export interface ExportOptions {
 	includeTitle?: boolean;
@@ -66,14 +69,19 @@ function extractTextFromNode(node: any): string {
  * 获取项目的完整内容数据（基于 Node 结构）
  */
 async function getProjectContent(projectId: string) {
-	const project = await db.projects.get(projectId);
+	const project = await database.workspaces.get(projectId);
 	if (!project) throw new Error("项目不存在");
 
 	// 获取所有节点
-	const nodes = await db.nodes
+	const nodes = await database.nodes
 		.where("workspace")
 		.equals(projectId)
 		.toArray();
+
+	// 获取所有节点的内容
+	const nodeIds = nodes.map(n => n.id);
+	const contents = await ContentRepository.getByNodeIds(nodeIds);
+	const contentMap = new Map(contents.map(c => [c.nodeId, c.content]));
 
 	// 按 order 排序
 	nodes.sort((a, b) => a.order - b.order);
@@ -81,7 +89,7 @@ async function getProjectContent(projectId: string) {
 	// 构建树结构
 	const rootNodes = nodes.filter(n => !n.parent);
 	
-	return { project, nodes, rootNodes };
+	return { project, nodes, rootNodes, contentMap };
 }
 
 /**
@@ -90,16 +98,18 @@ async function getProjectContent(projectId: string) {
 function getNodeContents(
 	node: NodeInterface,
 	allNodes: NodeInterface[],
+	contentMap: Map<string, string>,
 	depth: number = 0
 ): Array<{ node: NodeInterface; depth: number; text: string }> {
 	const results: Array<{ node: NodeInterface; depth: number; text: string }> = [];
 	
 	// 只处理文件类型的节点
 	if (node.type === "file" || node.type === "diary") {
+		const content = contentMap.get(node.id) ?? null;
 		results.push({
 			node,
 			depth,
-			text: extractTextFromContent(node.content ?? null),
+			text: extractTextFromContent(content),
 		});
 	}
 	
@@ -109,7 +119,7 @@ function getNodeContents(
 		.sort((a, b) => a.order - b.order);
 	
 	for (const child of children) {
-		results.push(...getNodeContents(child, allNodes, depth + 1));
+		results.push(...getNodeContents(child, allNodes, contentMap, depth + 1));
 	}
 	
 	return results;
@@ -124,7 +134,7 @@ export async function exportToTxt(
 	options: ExportOptions = {},
 ): Promise<void> {
 	const opts = { ...defaultOptions, ...options };
-	const { project, nodes, rootNodes } = await getProjectContent(projectId);
+	const { project, nodes, rootNodes, contentMap } = await getProjectContent(projectId);
 
 	const lines: string[] = [];
 
@@ -148,7 +158,7 @@ export async function exportToTxt(
 
 	// 内容
 	for (const rootNode of rootNodes) {
-		const contents = getNodeContents(rootNode, nodes);
+		const contents = getNodeContents(rootNode, nodes, contentMap);
 		
 		for (const { node, depth, text } of contents) {
 			if (opts.includeChapterTitles && depth === 0) {
@@ -190,7 +200,7 @@ export async function exportToWord(
 	options: ExportOptions = {},
 ): Promise<void> {
 	const opts = { ...defaultOptions, ...options };
-	const { project, nodes, rootNodes } = await getProjectContent(projectId);
+	const { project, nodes, rootNodes, contentMap } = await getProjectContent(projectId);
 
 	const children: Paragraph[] = [];
 
@@ -219,7 +229,7 @@ export async function exportToWord(
 	// 内容
 	let isFirst = true;
 	for (const rootNode of rootNodes) {
-		const contents = getNodeContents(rootNode, nodes);
+		const contents = getNodeContents(rootNode, nodes, contentMap);
 		
 		for (const { node, depth, text } of contents) {
 			// 章节分页
@@ -334,14 +344,14 @@ export async function exportToPdf(
 	options: ExportOptions = {},
 ): Promise<void> {
 	const opts = { ...defaultOptions, ...options };
-	const { project, nodes, rootNodes } = await getProjectContent(projectId);
+	const { project, nodes, rootNodes, contentMap } = await getProjectContent(projectId);
 
 	const printWindow = window.open("", "_blank");
 	if (!printWindow) {
 		throw new Error("无法打开打印窗口，请检查浏览器弹窗设置");
 	}
 
-	const html = generatePrintHtml(project, nodes, rootNodes, opts);
+	const html = generatePrintHtml(project, nodes, rootNodes, contentMap, opts);
 
 	printWindow.document.write(html);
 	printWindow.document.close();
@@ -357,6 +367,7 @@ function generatePrintHtml(
 	project: ProjectInterface,
 	nodes: NodeInterface[],
 	rootNodes: NodeInterface[],
+	contentMap: Map<string, string>,
 	opts: ExportOptions,
 ): string {
 	let content = "";
@@ -371,7 +382,7 @@ function generatePrintHtml(
 
 	// 内容
 	for (const rootNode of rootNodes) {
-		const contents = getNodeContents(rootNode, nodes);
+		const contents = getNodeContents(rootNode, nodes, contentMap);
 		
 		for (const { node, depth, text } of contents) {
 			if (opts.pageBreakBetweenChapters && depth === 0) {
@@ -435,7 +446,7 @@ export async function exportToEpub(
 	options: ExportOptions = {},
 ): Promise<void> {
 	const opts = { ...defaultOptions, ...options };
-	const { project, nodes, rootNodes } = await getProjectContent(projectId);
+	const { project, nodes, rootNodes, contentMap } = await getProjectContent(projectId);
 
 	const zip = new JSZip();
 	const bookId = `novel-editor-${Date.now()}`;
@@ -469,7 +480,7 @@ export async function exportToEpub(
 	// 内容
 	let chapterIndex = 0;
 	for (const rootNode of rootNodes) {
-		const contents = getNodeContents(rootNode, nodes);
+		const contents = getNodeContents(rootNode, nodes, contentMap);
 		
 		for (const { node, depth, text } of contents) {
 			if (depth > 0 && !opts.includeSceneTitles) continue;

@@ -2,10 +2,19 @@
  * 编辑器标签页状态管理
  * 支持同时打开多个文件（基于 Node 文件树结构）
  * 支持多编辑器实例状态管理
+ * 
+ * Implements LRU cache for editor states to limit memory usage
+ * Requirements: 4.3, 4.4, 5.2, 5.4
  */
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SerializedEditorState } from "lexical";
+
+/**
+ * Maximum number of editor states to keep in memory (LRU cache limit)
+ * Requirements: 5.2, 5.4
+ */
+const MAX_EDITOR_STATES = 10;
 
 export interface EditorTab {
   id: string; // 唯一标识，通常是 nodeId
@@ -73,11 +82,85 @@ function createDefaultEditorState(): EditorInstanceState {
   };
 }
 
+/**
+ * LRU cache eviction for editor states
+ * Removes the least recently used states when exceeding MAX_EDITOR_STATES
+ * Only evicts states that are not dirty (have unsaved changes)
+ * 
+ * @param editorStates - Current editor states map
+ * @param activeTabId - Currently active tab ID (should not be evicted)
+ * @param openTabIds - Set of currently open tab IDs (should not be evicted)
+ * @returns New editor states map with evicted entries removed
+ * 
+ * Requirements: 5.2, 5.4
+ */
+function evictLRUEditorStates(
+  editorStates: Record<string, EditorInstanceState>,
+  activeTabId: string | null,
+  openTabIds: Set<string>
+): Record<string, EditorInstanceState> {
+  const entries = Object.entries(editorStates);
+  
+  // If under the limit, no eviction needed
+  if (entries.length <= MAX_EDITOR_STATES) {
+    return editorStates;
+  }
+
+  // Sort by lastModified (oldest first)
+  const sortedEntries = entries.sort(
+    ([, a], [, b]) => a.lastModified - b.lastModified
+  );
+
+  // Calculate how many to evict
+  const toEvict = entries.length - MAX_EDITOR_STATES;
+  let evicted = 0;
+  const evictedIds = new Set<string>();
+
+  for (const [id, state] of sortedEntries) {
+    if (evicted >= toEvict) break;
+    
+    // Don't evict:
+    // 1. Active tab
+    // 2. Open tabs
+    // 3. Dirty states (unsaved changes)
+    if (id === activeTabId || openTabIds.has(id) || state.isDirty) {
+      continue;
+    }
+    
+    evictedIds.add(id);
+    evicted++;
+  }
+
+  // If we couldn't evict enough (all are protected), return as-is
+  if (evictedIds.size === 0) {
+    return editorStates;
+  }
+
+  // Create new object without evicted entries
+  const newStates: Record<string, EditorInstanceState> = {};
+  for (const [id, state] of entries) {
+    if (!evictedIds.has(id)) {
+      newStates[id] = state;
+    }
+  }
+
+  return newStates;
+}
+
+/**
+ * Editor tabs store with clear separation:
+ * - Tab list (tabs, activeTabId): Persisted in Zustand for session restoration
+ * - Editor states (editorStates): In-memory only for runtime performance
+ * 
+ * Requirements: 4.3, 4.4
+ */
 export const useEditorTabsStore = create<EditorTabsState>()(
   persist(
     (set, get) => ({
       tabs: [],
       activeTabId: null,
+      // Editor states are kept in memory only (not persisted)
+      // This improves performance and avoids stale state issues
       editorStates: {},
 
       openTab: (tabData) => {
@@ -112,16 +195,26 @@ export const useEditorTabsStore = create<EditorTabsState>()(
           ...tabData,
         };
 
-        // 创建新的编辑器状态
+        // 创建新的编辑器状态 (in-memory only)
         const newEditorState = createDefaultEditorState();
+        const newTabs = [...tabs, newTab];
+        
+        // Apply LRU eviction before adding new state
+        const updatedStates = {
+          ...editorStates,
+          [tabId]: newEditorState,
+        };
+        const openTabIds = new Set(newTabs.map(t => t.id));
+        const evictedStates = evictLRUEditorStates(
+          updatedStates,
+          tabId,
+          openTabIds
+        );
 
         set({
-          tabs: [...tabs, newTab],
+          tabs: newTabs,
           activeTabId: tabId,
-          editorStates: {
-            ...editorStates,
-            [tabId]: newEditorState,
-          },
+          editorStates: evictedStates,
         });
       },
 
@@ -232,16 +325,24 @@ export const useEditorTabsStore = create<EditorTabsState>()(
       updateEditorState: (tabId, state) => {
         set(currentState => {
           const existingState = currentState.editorStates[tabId] || createDefaultEditorState();
-          return {
-            editorStates: {
-              ...currentState.editorStates,
-              [tabId]: {
-                ...existingState,
-                ...state,
-                lastModified: Date.now(),
-              },
+          const updatedStates = {
+            ...currentState.editorStates,
+            [tabId]: {
+              ...existingState,
+              ...state,
+              lastModified: Date.now(),
             },
           };
+          
+          // Apply LRU eviction to keep memory usage bounded
+          const openTabIds = new Set(currentState.tabs.map(t => t.id));
+          const evictedStates = evictLRUEditorStates(
+            updatedStates,
+            currentState.activeTabId,
+            openTabIds
+          );
+          
+          return { editorStates: evictedStates };
         });
       },
 
@@ -251,23 +352,12 @@ export const useEditorTabsStore = create<EditorTabsState>()(
     }),
     {
       name: "novel-editor-tabs",
+      // Only persist tab list and active tab (session state)
+      // Editor states are NOT persisted - they are runtime/memory only
       partialize: (state) => ({
         tabs: state.tabs.map(t => ({ ...t, isDirty: false })), // 不持久化 dirty 状态
         activeTabId: state.activeTabId,
-        // 持久化编辑器状态，但重置瞬态状态（光标、滚动位置）
-        editorStates: Object.fromEntries(
-          Object.entries(state.editorStates).map(([tabId, editorState]) => [
-            tabId,
-            {
-              ...editorState,
-              // 重置瞬态状态
-              selectionState: undefined,
-              scrollTop: 0,
-              scrollLeft: 0,
-              isDirty: false,
-            },
-          ])
-        ),
+        // editorStates is intentionally NOT included - kept in memory only
       }),
     }
   )

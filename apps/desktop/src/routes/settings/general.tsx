@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useSettings } from "@/hooks/use-settings";
-import { useUISettingsStore, type TabPosition } from "@/stores/ui-settings";
+import { useUIStore, type TabPosition } from "@/stores/ui";
 
 export const Route = createFileRoute("/settings/general")({
 	component: GeneralSettings,
@@ -29,7 +29,7 @@ function GeneralSettings() {
 		setSpellCheck,
 	} = useSettings();
 
-	const { tabPosition, setTabPosition } = useUISettingsStore();
+	const { tabPosition, setTabPosition } = useUIStore();
 
 	return (
 		<div className="space-y-6">

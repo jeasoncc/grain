@@ -6,7 +6,7 @@
 
 import { X, FileText, Calendar, Palette } from "lucide-react";
 import type { DrawingInterface } from "@/db/schema";
-import { useUISettingsStore } from "@/stores/ui-settings";
+import { useUIStore } from "@/stores/ui";
 import { useEditorTabsStore, type EditorTab } from "@/stores/editor-tabs";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ export function StoryRightSidebar({
 	onSelectDrawing, 
 	selectedDrawing 
 }: StoryRightSidebarProps = {}) {
-	const tabPosition = useUISettingsStore((s) => s.tabPosition);
+	const tabPosition = useUIStore((s) => s.tabPosition);
 	const tabs = useEditorTabsStore((s) => s.tabs);
 	const activeTabId = useEditorTabsStore((s) => s.activeTabId);
 	const setActiveTab = useEditorTabsStore((s) => s.setActiveTab);

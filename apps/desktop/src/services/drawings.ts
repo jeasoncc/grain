@@ -1,7 +1,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/db/curd";
+import { database } from "@/db/database";
+import { DrawingRepository, DrawingBuilder, type DrawingInterface } from "@/db/models";
 import logger from "@/log/index";
-import type { DrawingInterface } from "@/db/schema";
 
 // 清理绘图数据中的异常值，防止 "Canvas exceeds max size" 错误
 export function sanitizeDrawingContent(content: string): string {
@@ -65,7 +65,7 @@ export function sanitizeDrawingContent(content: string): string {
 // 检查并修复 width/height 值，以及重置异常内容
 export async function cleanupAllDrawings(): Promise<number> {
 	try {
-		const allDrawings = await db.drawings.toArray();
+		const allDrawings = await database.drawings.toArray();
 		let cleanedCount = 0;
 		const emptyContent = JSON.stringify({ elements: [], appState: {}, files: {} });
 		
@@ -156,7 +156,7 @@ export async function cleanupAllDrawings(): Promise<number> {
 			}
 			
 			if (needsUpdate) {
-				await db.updateDrawing(drawing.id, updates);
+				await DrawingRepository.update(drawing.id, updates);
 				cleanedCount++;
 			}
 		}
@@ -177,11 +177,11 @@ export async function cleanupAllDrawings(): Promise<number> {
 // 清理特定绘图的数据
 export async function cleanupDrawing(drawingId: string): Promise<boolean> {
 	try {
-		const drawing = await db.getDrawing(drawingId);
+		const drawing = await DrawingRepository.getById(drawingId);
 		if (!drawing) return false;
 
 		const sanitizedContent = sanitizeDrawingContent(drawing.content || "");
-		await db.updateDrawing(drawingId, { content: sanitizedContent });
+		await DrawingRepository.update(drawingId, { content: sanitizedContent });
 		logger.info(`Cleaned drawing ${drawingId}`);
 		return true;
 	} catch (error) {
@@ -194,7 +194,7 @@ export async function cleanupDrawing(drawingId: string): Promise<boolean> {
 export async function resetDrawing(drawingId: string): Promise<boolean> {
 	try {
 		const emptyContent = JSON.stringify({ elements: [], appState: {}, files: {} });
-		await db.updateDrawing(drawingId, { content: emptyContent });
+		await DrawingRepository.update(drawingId, { content: emptyContent });
 		logger.info(`Reset drawing ${drawingId} to empty state`);
 		return true;
 	} catch (error) {
@@ -207,7 +207,7 @@ export function useDrawingById(drawingId: string | null): DrawingInterface | nul
 	const data = useLiveQuery(
 		() =>
 			drawingId
-				? db.getDrawing(drawingId)
+				? database.drawings.get(drawingId)
 				: Promise.resolve(null),
 		[drawingId] as const,
 	);
@@ -218,7 +218,7 @@ export function useDrawingsByProject(projectId: string | null): DrawingInterface
 	const data = useLiveQuery(
 		() =>
 			projectId
-				? db.getDrawingsByProject(projectId)
+				? database.drawings.where("project").equals(projectId).toArray()
 				: Promise.resolve([] as DrawingInterface[]),
 		[projectId] as const,
 	);
@@ -231,9 +231,7 @@ export async function createDrawing(params: {
 	width?: number;
 	height?: number;
 }) {
-	return db.addDrawing({
-		project: params.projectId,
-		name: params.name || `Drawing ${Date.now()}`,
+	return DrawingRepository.add(params.projectId, params.name || `Drawing ${Date.now()}`, {
 		width: params.width || 800,
 		height: params.height || 600,
 		content: JSON.stringify({ elements: [], appState: {}, files: {} }),
@@ -244,15 +242,15 @@ export async function updateDrawing(
 	id: string,
 	updates: Partial<DrawingInterface>,
 ) {
-	return db.updateDrawing(id, updates);
+	return DrawingRepository.update(id, updates);
 }
 
 export async function renameDrawing(id: string, name: string) {
-	return db.updateDrawing(id, { name });
+	return DrawingRepository.update(id, { name });
 }
 
 export async function deleteDrawing(id: string) {
-	return db.deleteDrawing(id);
+	return DrawingRepository.delete(id);
 }
 
 export async function saveDrawingContent(
@@ -264,5 +262,5 @@ export async function saveDrawingContent(
 	const updates: Partial<DrawingInterface> = { content };
 	if (width !== undefined) updates.width = width;
 	if (height !== undefined) updates.height = height;
-	return db.updateDrawing(id, updates);
+	return DrawingRepository.update(id, updates);
 }

@@ -238,7 +238,7 @@ export function FileTree({
   onMoveNode,
   onCreateDiary,
 }: FileTreeProps) {
-  const nodes = useNodesByWorkspace(workspaceId);
+  const nodes = useNodesByWorkspace(workspaceId) ?? [];
   const treeData = useMemo(() => buildArboristTree(nodes), [nodes]);
   const treeRef = useRef<any>(null);
 

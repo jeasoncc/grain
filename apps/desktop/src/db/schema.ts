@@ -1,5 +1,13 @@
+/**
+ * @deprecated This file is deprecated. Use the new model-based architecture instead:
+ * - Import types from "@/db/models" (e.g., NodeInterface, WorkspaceInterface, etc.)
+ * - Import schemas from "@/db/models" (e.g., NodeSchema, WorkspaceSchema, etc.)
+ * 
+ * This file is kept for backward compatibility during migration.
+ */
+
 // ==============================
-// 小说编辑器数据库接口汇总 - 简化版
+// 小说编辑器数据库接口汇总 - 简化版 (DEPRECATED)
 // ==============================
 
 // ---------- 数据库版本信息 ----------

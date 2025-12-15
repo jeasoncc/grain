@@ -7,8 +7,8 @@
  */
 
 import dayjs from "dayjs";
-import { db } from "@/db/curd";
-import type { NodeInterface } from "@/db/schema";
+import { NodeRepository, ContentRepository, type NodeInterface } from "@/db/models";
+import { database } from "@/db/database";
 
 // ==============================
 // Constants
@@ -382,7 +382,7 @@ async function getOrCreateFolder(
   parentId: string | null,
   title: string
 ): Promise<NodeInterface> {
-  const nodes = await db.getNodesByWorkspace(workspaceId);
+  const nodes = await NodeRepository.getByWorkspace(workspaceId);
   const existing = nodes.find(
     (n) => n.parent === parentId && n.title === title && n.type === "folder"
   );
@@ -391,11 +391,9 @@ async function getOrCreateFolder(
     return existing;
   }
 
-  return db.addNode({
-    workspace: workspaceId,
+  return NodeRepository.add(workspaceId, title, {
     parent: parentId,
     type: "folder",
-    title,
     collapsed: false,
   });
 }
@@ -426,14 +424,14 @@ export async function createDiaryInFileTree(
   const content = generateDiaryContent(date);
 
   // Create diary file node
-  const diaryNode = await db.addNode({
-    workspace: workspaceId,
+  const diaryNode = await NodeRepository.add(workspaceId, structure.filename, {
     parent: dayFolder.id,
-    type: "file",
-    title: structure.filename,
-    content,
+    type: "diary",
     collapsed: false,
   });
+
+  // Create content record for the diary
+  await ContentRepository.add(diaryNode.id, content, "lexical");
 
   return diaryNode;
 }

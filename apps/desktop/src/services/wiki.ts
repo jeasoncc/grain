@@ -1,24 +1,30 @@
+/**
+ * Wiki Service
+ * Provides wiki entry management using WikiBuilder and WikiRepository
+ *
+ * Requirements: 6.2
+ */
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/db/curd";
-import type { WikiEntryInterface } from "@/db/schema";
+import { database } from "@/db/database";
+import { WikiRepository, WikiBuilder, type WikiInterface } from "@/db/models";
 
 /**
  * Hook to get all wiki entries for a project
  */
-export function useWikiEntriesByProject(projectId: string | null): WikiEntryInterface[] {
+export function useWikiEntriesByProject(projectId: string | null): WikiInterface[] {
 	const data = useLiveQuery(
 		() =>
 			projectId
-				? db.getWikiEntriesByProject(projectId)
-				: Promise.resolve([] as WikiEntryInterface[]),
+				? database.wikiEntries.where("project").equals(projectId).toArray()
+				: Promise.resolve([] as WikiInterface[]),
 		[projectId] as const,
 	);
 
-	return (data ?? []) as WikiEntryInterface[];
+	return (data ?? []) as WikiInterface[];
 }
 
 /**
- * Create a new wiki entry
+ * Create a new wiki entry using WikiBuilder
  */
 export async function createWikiEntry(params: {
 	projectId: string;
@@ -26,15 +32,12 @@ export async function createWikiEntry(params: {
 	content?: string;
 	tags?: string[];
 	alias?: string[];
-}): Promise<WikiEntryInterface> {
-	const entry = await db.addWikiEntry({
-		project: params.projectId,
-		name: params.name,
-		content: params.content || "",
-		tags: params.tags || [],
-		alias: params.alias || [],
+}): Promise<WikiInterface> {
+	return WikiRepository.add(params.projectId, params.name, {
+		content: params.content,
+		tags: params.tags,
+		alias: params.alias,
 	});
-	return entry as WikiEntryInterface;
 }
 
 /**
@@ -42,16 +45,16 @@ export async function createWikiEntry(params: {
  */
 export async function updateWikiEntry(
 	id: string,
-	updates: Partial<WikiEntryInterface>,
+	updates: Partial<WikiInterface>,
 ): Promise<void> {
-	await db.updateWikiEntry(id, updates);
+	await WikiRepository.update(id, updates);
 }
 
 /**
  * Delete a wiki entry
  */
 export async function deleteWikiEntry(id: string): Promise<void> {
-	await db.deleteWikiEntry(id);
+	await WikiRepository.delete(id);
 }
 
 /**
@@ -60,22 +63,22 @@ export async function deleteWikiEntry(id: string): Promise<void> {
 export async function searchWikiEntries(
 	projectId: string,
 	query: string
-): Promise<WikiEntryInterface[]> {
-	return db.searchWikiEntries(projectId, query);
+): Promise<WikiInterface[]> {
+	return WikiRepository.search(projectId, query);
 }
 
 /**
  * Get a single wiki entry by ID
  */
-export async function getWikiEntry(id: string): Promise<WikiEntryInterface | undefined> {
-	return db.getWikiEntry(id);
+export async function getWikiEntry(id: string): Promise<WikiInterface | undefined> {
+	return WikiRepository.getById(id);
 }
 
 /**
  * Migrate roles to wiki entries for a project
  * @deprecated - No longer needed as roles table has been removed
  */
-export async function migrateRolesToWiki(_projectId: string): Promise<WikiEntryInterface[]> {
+export async function migrateRolesToWiki(_projectId: string): Promise<WikiInterface[]> {
 	// Migration no longer needed - roles table has been removed
 	return [];
 }

@@ -1,4 +1,13 @@
-// db.ts - 简化版数据库操作
+/**
+ * @deprecated This file is deprecated. Use the new model-based architecture instead:
+ * - Import { database } from "@/db/database" for database access
+ * - Import { NodeRepository, ContentRepository, etc. } from "@/db/models" for CRUD operations
+ * - Import types from "@/db/models" instead of "@/db/schema"
+ * 
+ * This file is kept for backward compatibility during migration.
+ */
+
+// db.ts - 简化版数据库操作 (DEPRECATED)
 
 import dayjs from "dayjs";
 import Dexie, { type Table } from "dexie";

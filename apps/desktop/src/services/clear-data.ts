@@ -4,7 +4,7 @@
  */
 
 import logger from "@/log";
-import { db } from "@/db/curd";
+import { database } from "@/db/database";
 
 export interface ClearDataOptions {
 	clearIndexedDB?: boolean;
@@ -19,23 +19,25 @@ export interface ClearDataOptions {
 export async function clearIndexedDB(): Promise<void> {
 	try {
 		// 清空所有表的数据（使用新的 node-based 结构）
-		await db.transaction(
+		await database.transaction(
 			"rw",
 			[
-				db.users,
-				db.projects,
-				db.nodes,
-				db.wikiEntries,
-				db.drawings,
-				db.attachments,
+				database.users,
+				database.workspaces,
+				database.nodes,
+				database.contents,
+				database.wikiEntries,
+				database.drawings,
+				database.attachments,
 			],
 			async () => {
-				await db.users.clear();
-				await db.projects.clear();
-				await db.nodes.clear();
-				await db.wikiEntries.clear();
-				await db.drawings.clear();
-				await db.attachments.clear();
+				await database.users.clear();
+				await database.workspaces.clear();
+				await database.nodes.clear();
+				await database.contents.clear();
+				await database.wikiEntries.clear();
+				await database.drawings.clear();
+				await database.attachments.clear();
 			},
 		);
 
@@ -242,12 +244,13 @@ export async function getStorageStats(): Promise<{
 		const indexedDBStats = {
 			size: 0,
 			tables: {
-				users: await db.users.count(),
-				projects: await db.projects.count(),
-				nodes: await db.nodes.count(),
-				wikiEntries: await db.wikiEntries.count(),
-				drawings: await db.drawings.count(),
-				attachments: await db.attachments.count(),
+				users: await database.users.count(),
+				workspaces: await database.workspaces.count(),
+				nodes: await database.nodes.count(),
+				contents: await database.contents.count(),
+				wikiEntries: await database.wikiEntries.count(),
+				drawings: await database.drawings.count(),
+				attachments: await database.attachments.count(),
 			},
 		};
 

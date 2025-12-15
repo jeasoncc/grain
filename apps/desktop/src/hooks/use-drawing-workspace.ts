@@ -5,7 +5,7 @@
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { createDrawing, useDrawingsByProject } from "@/services/drawings";
-import type { DrawingInterface } from "@/db/schema";
+import type { DrawingInterface } from "@/db/models";
 
 export function useDrawingWorkspace(projectId: string | null) {
 	const [selectedDrawing, setSelectedDrawing] = useState<DrawingInterface | null>(null);

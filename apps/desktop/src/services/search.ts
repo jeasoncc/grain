@@ -1,11 +1,14 @@
 /**
  * 全局搜索服务
- * 基于新的 Node 和 WikiEntry 结构
+ * 基于新的 Node 和 WikiEntry 结构，使用 contents 表进行全文搜索
+ *
+ * Requirements: 6.2
  */
 
 import lunr from "lunr";
-import { db } from "@/db/curd";
-import type { NodeInterface, WikiEntryInterface, ProjectInterface } from "@/db/schema";
+import { database } from "@/db/database";
+import { ContentRepository } from "@/db/models";
+import type { NodeInterface, WikiInterface, WorkspaceInterface } from "@/db/models";
 import logger from "@/log/index";
 
 export type SearchResultType = "project" | "node" | "wiki";
@@ -32,7 +35,8 @@ export interface SearchOptions {
 export class SearchEngine {
 	private nodeIndex: lunr.Index | null = null;
 	private wikiIndex: lunr.Index | null = null;
-	private indexedData: Map<string, any> = new Map();
+	private indexedData: Map<string, NodeInterface | WikiInterface> = new Map();
+	private nodeContents: Map<string, string> = new Map();
 	private isIndexing = false;
 
 	async buildIndex() {
@@ -41,9 +45,19 @@ export class SearchEngine {
 
 		try {
 			const [nodes, wikiEntries] = await Promise.all([
-				db.nodes.toArray(),
-				db.wikiEntries.toArray(),
+				database.nodes.toArray(),
+				database.wikiEntries.toArray(),
 			]);
+
+			// Load content from contents table for nodes
+			const nodeIds = nodes.map(n => n.id);
+			const contents = await ContentRepository.getByNodeIds(nodeIds);
+			
+			// Build content map
+			this.nodeContents.clear();
+			for (const content of contents) {
+				this.nodeContents.set(content.nodeId, content.content);
+			}
 
 			this.nodeIndex = lunr(function (this: lunr.Builder) {
 				this.ref("id");
@@ -53,8 +67,9 @@ export class SearchEngine {
 				this.searchPipeline.remove(lunr.stemmer);
 
 				for (const node of nodes) {
-					const content = extractTextFromNode(node);
-					this.add({ id: node.id, title: node.title, content });
+					const contentStr = contents.find(c => c.nodeId === node.id)?.content || "";
+					const textContent = extractTextFromContent(contentStr);
+					this.add({ id: node.id, title: node.title, content: textContent });
 				}
 			});
 
@@ -105,8 +120,9 @@ export class SearchEngine {
 					if (!node) continue;
 					if (projectId && node.workspace !== projectId) continue;
 
-					const project = await db.projects.get(node.workspace);
-					const content = extractTextFromNode(node);
+					const project = await database.workspaces.get(node.workspace);
+					const contentStr = this.nodeContents.get(node.id) || "";
+					const content = extractTextFromContent(contentStr);
 
 					results.push({
 						id: node.id,
@@ -125,11 +141,11 @@ export class SearchEngine {
 			if (types.includes("wiki") && this.wikiIndex) {
 				const wikiResults = this.wikiIndex.search(searchQuery);
 				for (const result of wikiResults) {
-					const entry = this.indexedData.get(result.ref) as WikiEntryInterface;
+					const entry = this.indexedData.get(result.ref) as WikiInterface;
 					if (!entry) continue;
 					if (projectId && entry.project !== projectId) continue;
 
-					const project = await db.projects.get(entry.project);
+					const project = await database.workspaces.get(entry.project);
 					const content = extractTextFromWiki(entry);
 
 					results.push({
@@ -164,13 +180,19 @@ export class SearchEngine {
 		try {
 			if (types.includes("node")) {
 				const nodes = projectId
-					? await db.nodes.where("workspace").equals(projectId).toArray()
-					: await db.nodes.toArray();
+					? await database.nodes.where("workspace").equals(projectId).toArray()
+					: await database.nodes.toArray();
+
+				// Get content for all nodes
+				const nodeIds = nodes.map(n => n.id);
+				const contents = await ContentRepository.getByNodeIds(nodeIds);
+				const contentMap = new Map(contents.map(c => [c.nodeId, c.content]));
 
 				for (const node of nodes) {
-					const content = extractTextFromNode(node);
+					const contentStr = contentMap.get(node.id) || "";
+					const content = extractTextFromContent(contentStr);
 					if (node.title.toLowerCase().includes(lowerQuery) || content.toLowerCase().includes(lowerQuery)) {
-						const project = await db.projects.get(node.workspace);
+						const project = await database.workspaces.get(node.workspace);
 						results.push({
 							id: node.id,
 							type: "node",
@@ -188,13 +210,13 @@ export class SearchEngine {
 
 			if (types.includes("wiki")) {
 				const wikiEntries = projectId
-					? await db.wikiEntries.where("project").equals(projectId).toArray()
-					: await db.wikiEntries.toArray();
+					? await database.wikiEntries.where("project").equals(projectId).toArray()
+					: await database.wikiEntries.toArray();
 
 				for (const entry of wikiEntries) {
 					const content = extractTextFromWiki(entry);
 					if (entry.name.toLowerCase().includes(lowerQuery) || content.toLowerCase().includes(lowerQuery)) {
-						const project = await db.projects.get(entry.project);
+						const project = await database.workspaces.get(entry.project);
 						results.push({
 							id: entry.id,
 							type: "wiki",
@@ -222,21 +244,22 @@ export class SearchEngine {
 		this.nodeIndex = null;
 		this.wikiIndex = null;
 		this.indexedData.clear();
+		this.nodeContents.clear();
 	}
 }
 
-function extractTextFromNode(node: NodeInterface): string {
+function extractTextFromContent(content: string): string {
 	try {
-		if (!node.content) return "";
-		const content = JSON.parse(node.content);
-		if (!content?.root) return "";
-		return extractTextFromLexical(content.root);
+		if (!content) return "";
+		const parsed = JSON.parse(content);
+		if (!parsed?.root) return "";
+		return extractTextFromLexical(parsed.root);
 	} catch {
-		return node.content || "";
+		return content || "";
 	}
 }
 
-function extractTextFromWiki(entry: WikiEntryInterface): string {
+function extractTextFromWiki(entry: WikiInterface): string {
 	try {
 		if (!entry.content) return entry.name;
 		const content = JSON.parse(entry.content);
@@ -247,10 +270,11 @@ function extractTextFromWiki(entry: WikiEntryInterface): string {
 	}
 }
 
-function extractTextFromLexical(node: any): string {
-	if (!node) return "";
-	if (node.type === "text") return node.text || "";
-	if (node.children) return node.children.map(extractTextFromLexical).join(" ");
+function extractTextFromLexical(node: unknown): string {
+	if (!node || typeof node !== "object") return "";
+	const n = node as Record<string, unknown>;
+	if (n.type === "text") return (n.text as string) || "";
+	if (Array.isArray(n.children)) return n.children.map(extractTextFromLexical).join(" ");
 	return "";
 }
 

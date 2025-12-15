@@ -1,12 +1,15 @@
 /**
  * 备份与恢复服务 - 简化版
  * 提供完整的数据库备份、恢复功能
+ * 包含 contents 表以支持新的数据架构
+ *
+ * Requirements: 6.2
  */
 
 import dayjs from "dayjs";
 import { saveAs } from "file-saver";
 import JSZip from "jszip";
-import { db } from "@/db/curd";
+import { database } from "@/db/database";
 import logger from "@/log/index";
 
 export interface BackupMetadata {
@@ -14,18 +17,20 @@ export interface BackupMetadata {
 	timestamp: string;
 	projectCount: number;
 	nodeCount: number;
+	contentCount: number;
 	appVersion: string;
 }
 
 export interface BackupData {
 	metadata: BackupMetadata;
-	users: any[];
-	projects: any[];
-	wikiEntries: any[];
-	drawings: any[];
-	attachments: any[];
-	nodes: any[];
-	dbVersions: any[];
+	users: unknown[];
+	projects: unknown[];
+	wikiEntries: unknown[];
+	drawings: unknown[];
+	attachments: unknown[];
+	nodes: unknown[];
+	contents: unknown[];
+	dbVersions: unknown[];
 }
 
 /**
@@ -41,23 +46,26 @@ export async function createBackup(): Promise<BackupData> {
 		drawings,
 		attachments,
 		nodes,
+		contents,
 		dbVersions,
 	] = await Promise.all([
-		db.users.toArray(),
-		db.projects.toArray(),
-		db.wikiEntries.toArray(),
-		db.drawings.toArray(),
-		db.attachments.toArray(),
-		db.nodes.toArray(),
-		db.dbVersions.toArray(),
+		database.users.toArray(),
+		database.workspaces.toArray(),
+		database.wikiEntries.toArray(),
+		database.drawings.toArray(),
+		database.attachments.toArray(),
+		database.nodes.toArray(),
+		database.contents.toArray(),
+		database.dbVersions.toArray(),
 	]);
 
 	const backup: BackupData = {
 		metadata: {
-			version: "2.0.0",
+			version: "3.0.0",
 			timestamp: dayjs().toISOString(),
 			projectCount: projects.length,
 			nodeCount: nodes.length,
+			contentCount: contents.length,
 			appVersion: "0.1.0",
 		},
 		users,
@@ -66,10 +74,11 @@ export async function createBackup(): Promise<BackupData> {
 		drawings,
 		attachments,
 		nodes,
+		contents,
 		dbVersions,
 	};
 
-	logger.success(`备份创建成功: ${projects.length} 个项目, ${nodes.length} 个节点`);
+	logger.success(`备份创建成功: ${projects.length} 个项目, ${nodes.length} 个节点, ${contents.length} 个内容记录`);
 	return backup;
 }
 
@@ -99,6 +108,7 @@ export async function exportBackupZip(): Promise<void> {
 创建时间: ${backup.metadata.timestamp}
 项目数量: ${backup.metadata.projectCount}
 节点数量: ${backup.metadata.nodeCount}
+内容记录: ${backup.metadata.contentCount}
 应用版本: ${backup.metadata.appVersion}
 
 恢复方法:
@@ -146,25 +156,27 @@ export async function restoreBackup(file: File): Promise<void> {
 			throw new Error("备份文件格式错误");
 		}
 
-		await db.transaction(
+		await database.transaction(
 			"rw",
 			[
-				db.users,
-				db.projects,
-				db.wikiEntries,
-				db.drawings,
-				db.attachments,
-				db.nodes,
-				db.dbVersions,
+				database.users,
+				database.workspaces,
+				database.wikiEntries,
+				database.drawings,
+				database.attachments,
+				database.nodes,
+				database.contents,
+				database.dbVersions,
 			],
 			async () => {
-				if (backupData.users?.length) await db.users.bulkPut(backupData.users);
-				if (backupData.projects?.length) await db.projects.bulkPut(backupData.projects);
-				if (backupData.wikiEntries?.length) await db.wikiEntries.bulkPut(backupData.wikiEntries);
-				if (backupData.drawings?.length) await db.drawings.bulkPut(backupData.drawings);
-				if (backupData.attachments?.length) await db.attachments.bulkPut(backupData.attachments);
-				if (backupData.nodes?.length) await db.nodes.bulkPut(backupData.nodes);
-				if (backupData.dbVersions?.length) await db.dbVersions.bulkPut(backupData.dbVersions);
+				if (backupData.users?.length) await database.users.bulkPut(backupData.users as never[]);
+				if (backupData.projects?.length) await database.workspaces.bulkPut(backupData.projects as never[]);
+				if (backupData.wikiEntries?.length) await database.wikiEntries.bulkPut(backupData.wikiEntries as never[]);
+				if (backupData.drawings?.length) await database.drawings.bulkPut(backupData.drawings as never[]);
+				if (backupData.attachments?.length) await database.attachments.bulkPut(backupData.attachments as never[]);
+				if (backupData.nodes?.length) await database.nodes.bulkPut(backupData.nodes as never[]);
+				if (backupData.contents?.length) await database.contents.bulkPut(backupData.contents as never[]);
+				if (backupData.dbVersions?.length) await database.dbVersions.bulkPut(backupData.dbVersions as never[]);
 			},
 		);
 
@@ -180,16 +192,17 @@ export async function restoreBackup(file: File): Promise<void> {
  */
 export async function clearAllData(): Promise<void> {
 	logger.warn("清空所有数据...");
-	await db.transaction(
+	await database.transaction(
 		"rw",
-		[db.users, db.projects, db.wikiEntries, db.drawings, db.attachments, db.nodes],
+		[database.users, database.workspaces, database.wikiEntries, database.drawings, database.attachments, database.nodes, database.contents],
 		async () => {
-			await db.users.clear();
-			await db.projects.clear();
-			await db.wikiEntries.clear();
-			await db.drawings.clear();
-			await db.attachments.clear();
-			await db.nodes.clear();
+			await database.users.clear();
+			await database.workspaces.clear();
+			await database.wikiEntries.clear();
+			await database.drawings.clear();
+			await database.attachments.clear();
+			await database.nodes.clear();
+			await database.contents.clear();
 		},
 	);
 	logger.success("数据已清空");
@@ -199,14 +212,15 @@ export async function clearAllData(): Promise<void> {
  * 获取数据库统计信息
  */
 export async function getDatabaseStats() {
-	const [userCount, projectCount, wikiEntryCount, drawingCount, attachmentCount, nodeCount] =
+	const [userCount, projectCount, wikiEntryCount, drawingCount, attachmentCount, nodeCount, contentCount] =
 		await Promise.all([
-			db.users.count(),
-			db.projects.count(),
-			db.wikiEntries.count(),
-			db.drawings.count(),
-			db.attachments.count(),
-			db.nodes.count(),
+			database.users.count(),
+			database.workspaces.count(),
+			database.wikiEntries.count(),
+			database.drawings.count(),
+			database.attachments.count(),
+			database.nodes.count(),
+			database.contents.count(),
 		]);
 
 	return {
@@ -216,6 +230,7 @@ export async function getDatabaseStats() {
 		drawingCount,
 		attachmentCount,
 		nodeCount,
+		contentCount,
 	};
 }
 
@@ -290,16 +305,17 @@ export class AutoBackupManager {
 			throw new Error("备份不存在");
 		}
 
-		await db.transaction(
+		await database.transaction(
 			"rw",
-			[db.users, db.projects, db.wikiEntries, db.drawings, db.attachments, db.nodes],
+			[database.users, database.workspaces, database.wikiEntries, database.drawings, database.attachments, database.nodes, database.contents],
 			async () => {
-				if (backup.data.users?.length) await db.users.bulkPut(backup.data.users);
-				if (backup.data.projects?.length) await db.projects.bulkPut(backup.data.projects);
-				if (backup.data.wikiEntries?.length) await db.wikiEntries.bulkPut(backup.data.wikiEntries);
-				if (backup.data.drawings?.length) await db.drawings.bulkPut(backup.data.drawings);
-				if (backup.data.attachments?.length) await db.attachments.bulkPut(backup.data.attachments);
-				if (backup.data.nodes?.length) await db.nodes.bulkPut(backup.data.nodes);
+				if (backup.data.users?.length) await database.users.bulkPut(backup.data.users as never[]);
+				if (backup.data.projects?.length) await database.workspaces.bulkPut(backup.data.projects as never[]);
+				if (backup.data.wikiEntries?.length) await database.wikiEntries.bulkPut(backup.data.wikiEntries as never[]);
+				if (backup.data.drawings?.length) await database.drawings.bulkPut(backup.data.drawings as never[]);
+				if (backup.data.attachments?.length) await database.attachments.bulkPut(backup.data.attachments as never[]);
+				if (backup.data.nodes?.length) await database.nodes.bulkPut(backup.data.nodes as never[]);
+				if (backup.data.contents?.length) await database.contents.bulkPut(backup.data.contents as never[]);
 			},
 		);
 

@@ -32,8 +32,9 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { db } from "@/db/curd";
-import type { ProjectInterface } from "@/db/schema";
+import { database } from "@/db/database";
+import type { WorkspaceInterface, DrawingInterface } from "@/db/models";
+import { ContentRepository } from "@/db/models";
 import { useManualSave } from "@/hooks/use-manual-save";
 import { useSettings } from "@/hooks/use-settings";
 import { exportAll, importFromJson, readFileAsText } from "@/services/projects";
@@ -44,10 +45,11 @@ import { useUIStore } from "@/stores/ui";
 import { useWritingStore } from "@/stores/writing";
 import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
 import { useDrawingsByProject } from "@/services/drawings";
-import type { DrawingInterface } from "@/db/schema";
-import { useUISettingsStore } from "@/stores/ui-settings";
 import { MultiEditorWorkspace } from "@/components/workspace/multi-editor-workspace";
-import { getNode } from "@/services/nodes";
+import { getNode, getNodeContent } from "@/services/nodes";
+
+// Type alias for backward compatibility
+type ProjectInterface = WorkspaceInterface;
 import { cn } from "@/lib/utils";
 
 interface StoryWorkspaceProps {
@@ -82,7 +84,7 @@ export function StoryWorkspace({
 	// UI 状态
 	const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen);
 	const toggleRightSidebar = useUIStore((s) => s.toggleRightSidebar);
-	const tabPosition = useUISettingsStore((s) => s.tabPosition);
+	const tabPosition = useUIStore((s) => s.tabPosition);
 
 	// 绘图状态
 	const [selectedDrawing, setSelectedDrawing] = useState<DrawingInterface | null>(null);
@@ -131,10 +133,10 @@ export function StoryWorkspace({
 
 		// 加载节点内容
 		if (activeTab.nodeId) {
-			getNode(activeTab.nodeId).then((node) => {
-				if (node?.content) {
+			getNodeContent(activeTab.nodeId).then((content) => {
+				if (content) {
 					try {
-						const parsed = JSON.parse(node.content);
+						const parsed = JSON.parse(content);
 						setEditorInitialState(parsed);
 					} catch {
 						setEditorInitialState(undefined);

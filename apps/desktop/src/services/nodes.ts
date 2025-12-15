@@ -3,14 +3,25 @@
  * Provides tree building, path navigation, and node manipulation functions
  * for the workspace file tree structure.
  *
- * Requirements: 2.1, 1.4
+ * Requirements: 2.1, 1.4, 6.2
  */
 
-import { db } from "@/db/curd";
-import type { NodeInterface, NodeType } from "@/db/schema";
+import {
+  NodeRepository,
+  ContentRepository,
+  type NodeInterface,
+  type NodeType,
+  // Hooks from new model location
+  useNodesByWorkspace,
+  useNode,
+  useChildNodes,
+} from "@/db/models";
 
-// Re-export hooks from the hooks module for backward compatibility
-export { useNodesByWorkspace, useNode, useChildNodes } from "@/hooks/use-nodes";
+// Re-export hooks for backward compatibility
+export { useNodesByWorkspace, useNode, useChildNodes };
+
+// Re-export types for convenience
+export type { NodeInterface, NodeType };
 
 // ==============================
 // Types for UI Consumption
@@ -140,13 +151,13 @@ export async function moveNode(
   newParentId: string | null,
   newIndex?: number
 ): Promise<void> {
-  const node = await db.getNode(nodeId);
+  const node = await NodeRepository.getById(nodeId);
   if (!node) {
     throw new Error(`Node not found: ${nodeId}`);
   }
 
   // Get all nodes in the workspace to check for cycles
-  const allNodes = await db.getNodesByWorkspace(node.workspace);
+  const allNodes = await NodeRepository.getByWorkspace(node.workspace);
 
   // Check for circular reference
   if (wouldCreateCycle(allNodes, nodeId, newParentId)) {
@@ -168,19 +179,19 @@ export async function moveNode(
       : newSiblings.length;
 
   // Update the moved node
-  await db.updateNode(nodeId, {
+  await NodeRepository.update(nodeId, {
     parent: newParentId,
     order: targetIndex,
   });
 
   // Reorder siblings at the new location
-  const reorderPromises: Promise<void>[] = [];
+  const reorderPromises: Promise<number>[] = [];
 
   for (let i = 0; i < newSiblings.length; i++) {
     const sibling = newSiblings[i];
     const newOrder = i >= targetIndex ? i + 1 : i;
     if (sibling.order !== newOrder) {
-      reorderPromises.push(db.updateNode(sibling.id, { order: newOrder }));
+      reorderPromises.push(NodeRepository.update(sibling.id, { order: newOrder }));
     }
   }
 
@@ -193,7 +204,7 @@ export async function moveNode(
     for (let i = 0; i < oldSiblings.length; i++) {
       const sibling = oldSiblings[i];
       if (sibling.order !== i) {
-        reorderPromises.push(db.updateNode(sibling.id, { order: i }));
+        reorderPromises.push(NodeRepository.update(sibling.id, { order: i }));
       }
     }
   }
@@ -210,6 +221,7 @@ export async function moveNode(
 
 /**
  * Create a new node (folder or file)
+ * Also creates an empty content record for file-type nodes
  *
  * @param params - Node creation parameters
  * @returns The created node
@@ -223,13 +235,27 @@ export async function createNode(params: {
   title: string;
   content?: string;
 }): Promise<NodeInterface> {
-  return db.addNode({
-    workspace: params.workspaceId,
-    parent: params.parentId,
-    type: params.type,
-    title: params.title,
-    content: params.content,
-  });
+  // Get next order for the new node
+  const nextOrder = await NodeRepository.getNextOrder(params.parentId, params.workspaceId);
+  
+  // Create the node using NodeBuilder
+  const node = await NodeRepository.add(
+    params.workspaceId,
+    params.title,
+    {
+      parent: params.parentId,
+      type: params.type,
+      order: nextOrder,
+    }
+  );
+
+  // Create content record for file-type nodes
+  if (params.type === "file" || params.type === "diary" || params.type === "canvas") {
+    const contentType = params.type === "canvas" ? "excalidraw" : "lexical";
+    await ContentRepository.add(node.id, params.content || "", contentType);
+  }
+
+  return node;
 }
 
 /**
@@ -244,11 +270,12 @@ export async function renameNode(
   nodeId: string,
   newTitle: string
 ): Promise<void> {
-  await db.updateNode(nodeId, { title: newTitle });
+  await NodeRepository.updateTitle(nodeId, newTitle);
 }
 
 /**
  * Update node content
+ * Uses ContentRepository to store content separately from node metadata
  *
  * @param nodeId - Node ID to update
  * @param content - New content (Lexical JSON or Excalidraw JSON)
@@ -257,7 +284,7 @@ export async function updateNodeContent(
   nodeId: string,
   content: string
 ): Promise<void> {
-  await db.updateNode(nodeId, { content });
+  await ContentRepository.updateByNodeId(nodeId, content);
 }
 
 /**
@@ -272,18 +299,19 @@ export async function toggleNodeCollapsed(
   nodeId: string,
   collapsed: boolean
 ): Promise<void> {
-  await db.updateNode(nodeId, { collapsed });
+  await NodeRepository.setCollapsed(nodeId, collapsed);
 }
 
 /**
  * Delete a node and all its children
+ * Also deletes associated content records
  *
  * @param nodeId - Node ID to delete
  *
  * Requirements: 1.3
  */
 export async function deleteNode(nodeId: string): Promise<void> {
-  await db.deleteNode(nodeId);
+  await NodeRepository.deleteWithChildren(nodeId);
 }
 
 /**
@@ -295,7 +323,20 @@ export async function deleteNode(nodeId: string): Promise<void> {
 export async function getNode(
   nodeId: string
 ): Promise<NodeInterface | undefined> {
-  return db.getNode(nodeId);
+  return NodeRepository.getById(nodeId);
+}
+
+/**
+ * Get node content by node ID
+ *
+ * @param nodeId - Node ID
+ * @returns The content string or undefined if not found
+ */
+export async function getNodeContent(
+  nodeId: string
+): Promise<string | undefined> {
+  const content = await ContentRepository.getByNodeId(nodeId);
+  return content?.content;
 }
 
 /**
@@ -310,7 +351,7 @@ export async function reorderNode(
   nodeId: string,
   newIndex: number
 ): Promise<void> {
-  const node = await db.getNode(nodeId);
+  const node = await NodeRepository.getById(nodeId);
   if (!node) {
     throw new Error(`Node not found: ${nodeId}`);
   }
