@@ -4,10 +4,12 @@
  * 当 tabPosition 设置为 "right-sidebar" 时，显示编辑器标签页列表
  */
 
+import { useMemo } from "react";
 import { X, FileText, Calendar, Palette } from "lucide-react";
 import type { DrawingInterface } from "@/db/schema";
 import { useUIStore } from "@/stores/ui";
 import { useEditorTabsStore, type EditorTab } from "@/stores/editor-tabs";
+import { useSelectionStore } from "@/stores/selection";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +28,13 @@ export function StoryRightSidebar({
 	selectedDrawing 
 }: StoryRightSidebarProps = {}) {
 	const tabPosition = useUIStore((s) => s.tabPosition);
-	const tabs = useEditorTabsStore((s) => s.tabs);
+	const selectedProjectId = useSelectionStore((s) => s.selectedProjectId);
+	const allTabs = useEditorTabsStore((s) => s.tabs);
+	// 只显示当前 workspace 的标签
+	const tabs = useMemo(() => 
+		allTabs.filter(t => t.projectId === selectedProjectId),
+		[allTabs, selectedProjectId]
+	);
 	const activeTabId = useEditorTabsStore((s) => s.activeTabId);
 	const setActiveTab = useEditorTabsStore((s) => s.setActiveTab);
 	const closeTab = useEditorTabsStore((s) => s.closeTab);

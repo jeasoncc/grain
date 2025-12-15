@@ -4,18 +4,8 @@ import {
 	Outlet,
 	useLocation,
 } from "@tanstack/react-router";
-import {
-	ArrowLeft,
-	BarChart3,
-	Database,
-	FolderOutput,
-	Info,
-	Palette,
-	ScrollText,
-	Settings2,
-	Sparkles,
-	Type,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { useIconTheme } from "@/hooks/use-icon-theme";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings")({
@@ -24,57 +14,58 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsLayout() {
 	const location = useLocation();
+	const iconTheme = useIconTheme();
 
 	const navItems = [
 		{
 			to: "/settings/design",
 			label: "Appearance",
-			icon: Palette,
+			icon: iconTheme.icons.settingsPage.appearance,
 		},
 		{
 			to: "/settings/icons",
 			label: "Icons",
-			icon: Sparkles,
+			icon: iconTheme.icons.settingsPage.icons,
 		},
 		{
 			to: "/settings/diagrams",
 			label: "Diagrams",
-			icon: BarChart3,
+			icon: iconTheme.icons.settingsPage.diagrams,
 		},
 		{
 			to: "/settings/general",
 			label: "General",
-			icon: Settings2,
+			icon: iconTheme.icons.settingsPage.general,
 		},
 		{
 			to: "/settings/editor",
 			label: "Editor",
-			icon: Type,
+			icon: iconTheme.icons.settingsPage.editor,
 		},
 		{
 			to: "/settings/data",
 			label: "数据管理",
-			icon: Database,
+			icon: iconTheme.icons.settingsPage.data,
 		},
 		{
 			to: "/settings/export",
 			label: "导出设置",
-			icon: FolderOutput,
+			icon: iconTheme.icons.settingsPage.export,
 		},
 		{
 			to: "/settings/scroll-test",
 			label: "Scroll Test",
-			icon: BarChart3,
+			icon: iconTheme.icons.settingsPage.scroll,
 		},
 		{
 			to: "/settings/logs",
 			label: "Logs",
-			icon: ScrollText,
+			icon: iconTheme.icons.settingsPage.logs,
 		},
 		{
 			to: "/settings/about",
 			label: "About",
-			icon: Info,
+			icon: iconTheme.icons.settingsPage.about,
 		},
 	];
 

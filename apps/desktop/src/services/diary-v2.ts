@@ -140,12 +140,88 @@ export function getDiaryFolderStructure(date: Date = new Date()): DiaryFolderStr
 
 /**
  * Generate diary content in Lexical JSON format
- * Simplified: just an empty document ready for writing
+ * Includes a template with tags: diary, notes
  */
-export function generateDiaryContent(): string {
+export function generateDiaryContent(date: Date = new Date()): string {
+  const dateStr = date.toLocaleDateString("zh-CN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  });
+
   const content = {
     root: {
       children: [
+        // 标签行: #[diary] #[notes]
+        {
+          children: [
+            {
+              type: "tag",
+              version: 1,
+              tagName: "diary",
+              text: "#[diary]",
+              format: 0,
+              style: "",
+              detail: 2,
+              mode: "segmented",
+            },
+            {
+              type: "text",
+              version: 1,
+              text: " ",
+              format: 0,
+              style: "",
+              detail: 0,
+              mode: "normal",
+            },
+            {
+              type: "tag",
+              version: 1,
+              tagName: "notes",
+              text: "#[notes]",
+              format: 0,
+              style: "",
+              detail: 2,
+              mode: "segmented",
+            },
+          ],
+          direction: "ltr",
+          format: "",
+          indent: 0,
+          type: "paragraph",
+          version: 1,
+        },
+        // 空行
+        {
+          children: [],
+          direction: "ltr",
+          format: "",
+          indent: 0,
+          type: "paragraph",
+          version: 1,
+        },
+        // 日期标题
+        {
+          children: [
+            {
+              type: "text",
+              version: 1,
+              text: dateStr,
+              format: 0,
+              style: "",
+              detail: 0,
+              mode: "normal",
+            },
+          ],
+          direction: "ltr",
+          format: "",
+          indent: 0,
+          type: "heading",
+          version: 1,
+          tag: "h2",
+        },
+        // 空行，准备开始写作
         {
           children: [],
           direction: "ltr",
@@ -216,8 +292,8 @@ export async function createDiaryInFileTree(
   const monthFolder = await getOrCreateFolder(workspaceId, yearFolder.id, structure.monthFolder);
   const dayFolder = await getOrCreateFolder(workspaceId, monthFolder.id, structure.dayFolder);
 
-  // Generate diary content
-  const content = generateDiaryContent();
+  // Generate diary content with date
+  const content = generateDiaryContent(date);
 
   // Create diary file node
   const diaryNode = await NodeRepository.add(workspaceId, structure.filename, {

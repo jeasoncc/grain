@@ -15,7 +15,6 @@ import { CommandPalette } from "@/components/command-palette";
 import { ExportDialogManager } from "@/components/export/export-dialog-manager";
 import { DevtoolsWrapper } from "@/components/devtools-wrapper";
 import { FontStyleInjector } from "@/components/font-style-injector";
-import { OnboardingTour } from "@/components/onboarding-tour";
 import { ConfirmProvider } from "@/components/ui/confirm";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
@@ -120,9 +119,9 @@ function RootComponent() {
 						),
 					}}
 				/>
-				<div className="flex min-h-screen w-full">
+				<div className="flex h-screen w-full overflow-hidden bg-background">
 					<ActivityBar />
-					<div className="flex flex-1 ml-12 h-screen">
+					<div className="flex-1 flex h-full min-w-0 overflow-hidden">
 						<PanelGroup
 							direction="horizontal"
 							autoSaveId="novel-editor-main-layout"
@@ -136,11 +135,11 @@ function RootComponent() {
 										defaultSize={20}
 										minSize={15}
 										maxSize={40}
-										className="bg-sidebar"
+										className="bg-sidebar flex flex-col"
 									>
 										<UnifiedSidebarContent />
 									</Panel>
-									<PanelResizeHandle className="w-1 bg-border/30 hover:bg-primary/50 transition-colors data-[resize-handle-active]:bg-primary/70" />
+									<PanelResizeHandle className="w-[1px] bg-border transition-colors hover:w-1 hover:bg-primary/50 data-[resize-handle-active]:w-1 data-[resize-handle-active]:bg-primary/70 z-10" />
 								</>
 							)}
 							{/* Main Content Panel */}
@@ -174,7 +173,7 @@ function RootComponent() {
 				<ExportDialogManager />
 				{/* 字体样式注入 */}
 				<FontStyleInjector />
-				{/* 新手引导 */}
+				{/* TanStack Devto
 				<OnboardingTour />
 				{/* TanStack Devtools - 仅在开发模式下显示 */}
 				{import.meta.env.DEV && <DevtoolsWrapper />}

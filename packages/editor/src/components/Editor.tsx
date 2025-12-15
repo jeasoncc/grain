@@ -34,9 +34,9 @@ import type React from "react";
 import { useCallback } from "react";
 
 import { EditorNodes } from "../nodes";
-import MentionsPlugin from "../plugins/mentions-plugin";
-import MentionTooltipPlugin from "../plugins/mention-tooltip-plugin";
-import TagPickerPlugin from "../plugins/tag-picker-plugin";
+import MentionsPlugin, { type WikiEntryInterface } from "../plugins/mentions-plugin";
+import MentionTooltipPlugin, { type MentionTooltipPluginProps } from "../plugins/mention-tooltip-plugin";
+import TagPickerPlugin, { type TagInterface } from "../plugins/tag-picker-plugin";
 import TagTransformPlugin from "../plugins/tag-transform-plugin";
 import theme from "../themes/PlaygroundEditorTheme";
 import "../themes/PlaygroundEditorTheme.css";
@@ -52,6 +52,14 @@ export interface EditorProps {
   readOnly?: boolean;
   /** 编辑器命名空间 (用于区分多个编辑器实例) */
   namespace?: string;
+  /** Wiki 条目列表 (用于 @ 提及) */
+  wikiEntries?: WikiEntryInterface[];
+  /** 标签列表 (用于 #[ 标签选择) */
+  tags?: TagInterface[];
+  /** Wiki 悬浮预览 hook (可选) */
+  useWikiHoverPreview?: MentionTooltipPluginProps["useWikiHoverPreview"];
+  /** Wiki 悬浮预览组件 (可选) */
+  WikiHoverPreview?: MentionTooltipPluginProps["WikiHoverPreview"];
 }
 
 /**
@@ -81,6 +89,10 @@ export default function Editor({
   placeholder = "开始写作...",
   readOnly = false,
   namespace = "Editor",
+  wikiEntries,
+  tags,
+  useWikiHoverPreview,
+  WikiHoverPreview,
 }: EditorProps): React.ReactElement {
   // 处理编辑器状态变化
   const handleChange = useCallback(
@@ -139,10 +151,14 @@ export default function Editor({
         )}
 
         {/* 自定义插件 */}
-        <MentionsPlugin />
-        {/* MentionTooltipPlugin requires external dependencies from consuming app */}
-        {/* <MentionTooltipPlugin /> */}
-        <TagPickerPlugin />
+        <MentionsPlugin wikiEntries={wikiEntries} />
+        {useWikiHoverPreview && WikiHoverPreview && (
+          <MentionTooltipPlugin 
+            useWikiHoverPreview={useWikiHoverPreview}
+            WikiHoverPreview={WikiHoverPreview}
+          />
+        )}
+        <TagPickerPlugin tags={tags} />
         <TagTransformPlugin />
       </div>
     </LexicalComposer>

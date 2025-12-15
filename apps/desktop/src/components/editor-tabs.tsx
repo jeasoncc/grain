@@ -8,6 +8,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { X, FileText, Calendar, Palette, LayoutGrid, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEditorTabsStore, type EditorTab } from "@/stores/editor-tabs";
+import { useSelectionStore } from "@/stores/selection";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -34,7 +35,13 @@ function getTabMaxWidth(tabCount: number): number {
 }
 
 export function EditorTabs({ className }: EditorTabsProps) {
-  const tabs = useEditorTabsStore(s => s.tabs);
+  const selectedProjectId = useSelectionStore(s => s.selectedProjectId);
+  const allTabs = useEditorTabsStore(s => s.tabs);
+  // 只显示当前 workspace 的标签
+  const tabs = useMemo(() => 
+    allTabs.filter(t => t.projectId === selectedProjectId),
+    [allTabs, selectedProjectId]
+  );
   const activeTabId = useEditorTabsStore(s => s.activeTabId);
   const setActiveTab = useEditorTabsStore(s => s.setActiveTab);
   const closeTab = useEditorTabsStore(s => s.closeTab);

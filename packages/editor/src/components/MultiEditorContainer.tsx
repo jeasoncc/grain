@@ -15,7 +15,7 @@ import type React from "react";
 import { useCallback, useMemo } from "react";
 
 import type { EditorTab, EditorInstanceState } from "../types";
-import { EditorInstance } from "./EditorInstance";
+import { EditorInstance, type EditorInstanceProps } from "./EditorInstance";
 
 export interface MultiEditorContainerProps {
   /** 所有打开的标签页 */
@@ -34,6 +34,14 @@ export interface MultiEditorContainerProps {
   readOnly?: boolean;
   /** 空状态组件 */
   emptyState?: React.ReactNode;
+  /** Wiki 条目列表 (用于 @ 提及) */
+  wikiEntries?: EditorInstanceProps["wikiEntries"];
+  /** 标签列表 (用于 #[ 标签选择) */
+  tags?: EditorInstanceProps["tags"];
+  /** Wiki 悬浮预览 hook */
+  useWikiHoverPreview?: EditorInstanceProps["useWikiHoverPreview"];
+  /** Wiki 悬浮预览组件 */
+  WikiHoverPreview?: EditorInstanceProps["WikiHoverPreview"];
 }
 
 /**
@@ -55,6 +63,10 @@ export function MultiEditorContainer({
   placeholder = "开始写作...",
   readOnly = false,
   emptyState,
+  wikiEntries,
+  tags,
+  useWikiHoverPreview,
+  WikiHoverPreview,
 }: MultiEditorContainerProps): React.ReactElement {
   /**
    * 创建内容变化处理器
@@ -86,6 +98,10 @@ export function MultiEditorContainer({
     (tabId: string): string | null => {
       const state = editorStates[tabId];
       if (state?.serializedState) {
+        // 如果已经是字符串，直接返回；否则序列化
+        if (typeof state.serializedState === "string") {
+          return state.serializedState;
+        }
         return JSON.stringify(state.serializedState);
       }
       return null;
@@ -124,6 +140,10 @@ export function MultiEditorContainer({
           onScrollChange={createScrollChangeHandler(tab.id)}
           placeholder={placeholder}
           readOnly={readOnly}
+          wikiEntries={wikiEntries}
+          tags={tags}
+          useWikiHoverPreview={useWikiHoverPreview}
+          WikiHoverPreview={WikiHoverPreview}
         />
       );
     });
@@ -136,6 +156,10 @@ export function MultiEditorContainer({
     createScrollChangeHandler,
     placeholder,
     readOnly,
+    wikiEntries,
+    tags,
+    useWikiHoverPreview,
+    WikiHoverPreview,
   ]);
 
   // 如果没有打开的标签，显示空状态

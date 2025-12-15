@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Moon, Sun } from "lucide-react";
+import { Check, Moon, Sun, Folder, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useTheme } from "@/hooks/use-theme";
+import { useIconTheme } from "@/hooks/use-icon-theme";
 import { getDarkThemes, getLightThemes, type Theme } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,7 @@ export const Route = createFileRoute("/settings/design")({
 
 function DesignSettings() {
 	const { theme: activeTheme, setTheme, currentTheme } = useTheme();
+	const iconTheme = useIconTheme();
 	const lightThemes = getLightThemes();
 	const darkThemes = getDarkThemes();
 
@@ -68,8 +70,8 @@ function DesignSettings() {
 				</div>
 
 				{/* 右侧：预览 */}
-				<div className="lg:col-span-7 space-y-4">
-					<div className="sticky top-24 space-y-4">
+				<div className="lg:col-span-7 space-y-4 min-w-0">
+					<div className="sticky top-6 space-y-4">
 						{/* 主题预览 */}
 						<Card className="overflow-hidden border-2 shadow-xl">
 							<CardHeader
@@ -94,72 +96,92 @@ function DesignSettings() {
 								<div className="flex h-[300px]">
 									{/* 模拟侧边栏 */}
 									<div
-										className="w-48 border-r p-3 space-y-2"
+										className="w-48 border-r p-3 space-y-1"
 										style={{
 											background: currentTheme?.colors.sidebar,
 											borderColor: currentTheme?.colors.sidebarBorder,
 										}}
 									>
 										<div
-											className="text-xs font-medium px-2 py-1"
+											className="text-xs font-medium px-2 py-1 mb-2 opacity-70"
 											style={{ color: currentTheme?.colors.sidebarForeground }}
 										>
-											章节列表
+											Explorer
 										</div>
+										
+										{/* Folder Item */}
 										<div
-											className="text-xs px-2 py-1.5 rounded"
+											className="flex items-center gap-2 px-2 py-1.5 rounded text-xs"
+											style={{
+												color: currentTheme?.colors.sidebarForeground,
+											}}
+										>
+											{(() => {
+												const Icon = iconTheme.icons.folder.default;
+												return <Icon className="size-3.5 shrink-0" style={{ color: currentTheme?.colors.folderColor }} />;
+											})()}
+											<span className="truncate opacity-90">My Novel</span>
+										</div>
+
+										{/* Active File Item */}
+										<div
+											className="flex items-center gap-2 px-2 py-1.5 rounded text-xs"
 											style={{
 												background: currentTheme?.colors.sidebarAccent,
 												color: currentTheme?.colors.primary,
 											}}
 										>
-											第一章 开始
+											{(() => {
+												const Icon = iconTheme.icons.file.default;
+												return <Icon className="size-3.5 shrink-0" />;
+											})()}
+											<span className="truncate font-medium">Chapter 1</span>
 										</div>
+
+										{/* Inactive File Item */}
 										<div
-											className="text-xs px-2 py-1.5 rounded opacity-70"
+											className="flex items-center gap-2 px-2 py-1.5 rounded text-xs"
 											style={{ color: currentTheme?.colors.sidebarForeground }}
 										>
-											第二章 发展
-										</div>
-										<div
-											className="text-xs px-2 py-1.5 rounded opacity-70"
-											style={{ color: currentTheme?.colors.sidebarForeground }}
-										>
-											第三章 高潮
+											{(() => {
+												const Icon = iconTheme.icons.file.default;
+												return <Icon className="size-3.5 shrink-0 opacity-70" />;
+											})()}
+											<span className="truncate opacity-70">Chapter 2</span>
 										</div>
 									</div>
 
 									{/* 模拟编辑区 */}
 									<div
-										className="flex-1 p-6"
+										className="flex-1 p-8"
 										style={{ background: currentTheme?.colors.background }}
 									>
 										<h2
-											className="text-xl font-bold mb-4"
+											className="text-2xl font-bold mb-6"
 											style={{ color: currentTheme?.colors.foreground }}
 										>
-											故事的开始
+											The Beginning
 										</h2>
 										<p
-											className="text-sm leading-relaxed mb-3"
+											className="text-sm leading-relaxed mb-4"
 											style={{ color: currentTheme?.colors.foreground }}
 										>
-											在一个遥远的地方，有一座古老的城堡...
+											In a land far away, where the ancient ruins whisper secrets of the past, a lone traveler stood atop the hill...
 										</p>
 										<p
 											className="text-sm leading-relaxed"
 											style={{ color: currentTheme?.colors.mutedForeground }}
 										>
-											这里是故事开始的地方，一切都将从这里展开。
+											The wind howled through the broken pillars, carrying with it the scent of rain and forgotten memories.
 										</p>
 										<button
-											className="mt-4 px-4 py-2 rounded text-sm font-medium"
+											className="mt-8 px-4 py-1.5 rounded text-xs font-medium opacity-90 hover:opacity-100 transition-opacity"
 											style={{
 												background: currentTheme?.colors.primary,
 												color: currentTheme?.colors.primaryForeground,
 											}}
 										>
-											保存
+											Save Content
 										</button>
 									</div>
 								</div>
@@ -167,7 +189,7 @@ function DesignSettings() {
 						</Card>
 
 						<p className="text-xs text-muted-foreground text-center">
-							实时预览当前主题效果
+							Theme Live Preview
 						</p>
 					</div>
 				</div>
@@ -189,65 +211,68 @@ function ThemeCard({ theme, isActive, onSelect }: ThemeCardProps) {
 		<button
 			onClick={onSelect}
 			className={cn(
-				"relative flex flex-col rounded-lg border-2 overflow-hidden transition-all text-left",
-				"hover:shadow-lg hover:scale-[1.02]",
-				isActive ? "border-primary ring-2 ring-primary/20" : "border-border",
+				"relative flex flex-col rounded-xl border-2 overflow-hidden transition-all text-left group",
+				"hover:shadow-md hover:-translate-y-0.5",
+				isActive ? "border-primary ring-2 ring-primary/20 shadow-sm" : "border-border/50",
 			)}
 		>
 			{/* 主题预览 */}
 			<div
-				className="h-20 w-full flex"
+				className="h-16 w-full flex border-b border-border/10"
 				style={{ background: colors.background }}
 			>
 				{/* 模拟侧边栏 */}
 				<div
-					className="w-1/4 h-full border-r"
+					className="w-1/4 h-full border-r flex flex-col items-center pt-2 gap-1.5"
 					style={{
 						background: colors.sidebar,
 						borderColor: colors.sidebarBorder,
 					}}
-				/>
+				>
+					<div 
+						className="size-1.5 rounded-sm opacity-50"
+						style={{ background: colors.sidebarForeground }}
+					/>
+					<div 
+						className="size-1.5 rounded-sm"
+						style={{ background: colors.folderColor || colors.primary }}
+					/>
+					<div 
+						className="size-1.5 rounded-sm opacity-50"
+						style={{ background: colors.sidebarForeground }}
+					/>
+				</div>
 				{/* 模拟编辑区 */}
-				<div className="flex-1 p-2 flex flex-col gap-1.5">
+				<div className="flex-1 p-3 flex flex-col gap-2">
 					<div
-						className="h-2 w-3/4 rounded"
-						style={{ background: colors.primary }}
+						className="h-2 w-3/4 rounded-full"
+						style={{ background: colors.primary, opacity: 0.8 }}
 					/>
 					<div
-						className="h-1.5 w-full rounded opacity-60"
+						className="h-1.5 w-full rounded-full opacity-40"
 						style={{ background: colors.foreground }}
 					/>
 					<div
-						className="h-1.5 w-2/3 rounded opacity-40"
-						style={{ background: colors.foreground }}
-					/>
-					<div
-						className="h-1.5 w-4/5 rounded opacity-40"
+						className="h-1.5 w-2/3 rounded-full opacity-20"
 						style={{ background: colors.foreground }}
 					/>
 				</div>
 			</div>
 
 			{/* 主题信息 */}
-			<div className="px-3 py-2" style={{ background: colors.card }}>
+			<div className="px-3 py-2.5 bg-card/50">
 				<div
-					className="text-sm font-medium"
+					className="text-xs font-medium"
 					style={{ color: colors.cardForeground }}
 				>
 					{theme.name}
-				</div>
-				<div
-					className="text-xs opacity-60"
-					style={{ color: colors.cardForeground }}
-				>
-					{theme.description}
 				</div>
 			</div>
 
 			{/* 选中标记 */}
 			{isActive && (
 				<div
-					className="absolute top-2 right-2 size-5 rounded-full flex items-center justify-center"
+					className="absolute top-2 right-2 size-5 rounded-full flex items-center justify-center shadow-sm"
 					style={{ background: colors.primary }}
 				>
 					<Check

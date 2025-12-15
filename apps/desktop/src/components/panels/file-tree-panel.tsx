@@ -51,6 +51,8 @@ export function FileTreePanel({ workspaceId: propWorkspaceId }: FileTreePanelPro
 
   // Editor tabs
   const openTab = useEditorTabsStore((s) => s.openTab);
+  const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
+  const editorStates = useEditorTabsStore((s) => s.editorStates);
 
   // Handle node selection - open file in editor
   const handleSelectNode = useCallback(async (nodeId: string) => {
@@ -64,6 +66,21 @@ export function FileTreePanel({ workspaceId: propWorkspaceId }: FileTreePanelPro
     if (node.type === "folder") return;
 
     if (workspaceId) {
+      // Pre-load content into editorStates if not already loaded
+      // This ensures the editor is initialized with the correct content
+      if (!editorStates[nodeId]?.serializedState) {
+        const { getNodeContent } = await import("@/services/nodes");
+        const content = await getNodeContent(nodeId);
+        if (content) {
+          try {
+            const parsed = JSON.parse(content);
+            updateEditorState(nodeId, { serializedState: parsed });
+          } catch {
+            // Ignore parse errors
+          }
+        }
+      }
+
       // Map node type to editor tab type
       const tabType = node.type === "canvas" ? "canvas" : 
                       node.type === "diary" ? "diary" : "file";
@@ -81,7 +98,7 @@ export function FileTreePanel({ workspaceId: propWorkspaceId }: FileTreePanelPro
     } else {
       navigate({ to: "/" });
     }
-  }, [workspaceId, openTab, navigate]);
+  }, [workspaceId, openTab, navigate, editorStates, updateEditorState]);
 
   // Handle folder creation
   const handleCreateFolder = useCallback(async (parentId: string | null) => {
@@ -215,6 +232,20 @@ export function FileTreePanel({ workspaceId: propWorkspaceId }: FileTreePanelPro
 
     try {
       const diaryNode = await createDiaryInFileTree(workspaceId);
+      
+      // Pre-load the diary content into editorStates BEFORE opening the tab
+      // This ensures the editor is initialized with the template content
+      const { getNodeContent } = await import("@/services/nodes");
+      const content = await getNodeContent(diaryNode.id);
+      if (content) {
+        try {
+          const parsed = JSON.parse(content);
+          updateEditorState(diaryNode.id, { serializedState: parsed });
+        } catch {
+          // Ignore parse errors
+        }
+      }
+      
       toast.success("Diary created");
 
       // Auto-select and open the new diary file
@@ -223,7 +254,7 @@ export function FileTreePanel({ workspaceId: propWorkspaceId }: FileTreePanelPro
       console.error("Failed to create diary:", error);
       toast.error("Failed to create diary");
     }
-  }, [workspaceId, handleSelectNode]);
+  }, [workspaceId, handleSelectNode, updateEditorState]);
 
   return (
     <FileTree

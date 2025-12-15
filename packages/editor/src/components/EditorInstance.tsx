@@ -19,7 +19,7 @@ import type { SerializedEditorState } from "lexical";
 import type React from "react";
 import { useCallback, useEffect, useRef } from "react";
 
-import Editor from "./Editor";
+import Editor, { type EditorProps } from "./Editor";
 
 export interface EditorInstanceProps {
   /** 标签页 ID */
@@ -38,6 +38,14 @@ export interface EditorInstanceProps {
   placeholder?: string;
   /** 是否只读 */
   readOnly?: boolean;
+  /** Wiki 条目列表 (用于 @ 提及) */
+  wikiEntries?: EditorProps["wikiEntries"];
+  /** 标签列表 (用于 #[ 标签选择) */
+  tags?: EditorProps["tags"];
+  /** Wiki 悬浮预览 hook */
+  useWikiHoverPreview?: EditorProps["useWikiHoverPreview"];
+  /** Wiki 悬浮预览组件 */
+  WikiHoverPreview?: EditorProps["WikiHoverPreview"];
 }
 
 /**
@@ -55,6 +63,10 @@ export function EditorInstance({
   onScrollChange,
   placeholder,
   readOnly = false,
+  wikiEntries,
+  tags,
+  useWikiHoverPreview,
+  WikiHoverPreview,
 }: EditorInstanceProps): React.ReactElement {
   // 滚动容器引用
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -158,6 +170,10 @@ export function EditorInstance({
           placeholder={placeholder}
           readOnly={readOnly}
           namespace={`editor-${tabId}`}
+          wikiEntries={wikiEntries}
+          tags={tags}
+          useWikiHoverPreview={useWikiHoverPreview}
+          WikiHoverPreview={WikiHoverPreview}
         />
       </div>
     </div>

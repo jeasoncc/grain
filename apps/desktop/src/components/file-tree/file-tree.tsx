@@ -8,7 +8,7 @@
 
 import { useMemo, useRef, useCallback } from "react";
 import { Tree, type NodeRendererProps, type NodeApi } from "react-arborist";
-import { FolderPlus, Plus, FileText, Folder, FolderOpen, PenTool, ChevronRight, ChevronDown, Calendar, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { FolderPlus, Plus, Calendar, MoreHorizontal, Pencil, Trash2, ChevronRight, ChevronDown, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,6 +24,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useNodesByWorkspace, toggleNodeCollapsed } from "@/services/nodes";
 import type { NodeType, NodeInterface } from "@/db/schema";
+import { useIconTheme } from "@/hooks/use-icon-theme";
+import { useTheme } from "@/hooks/use-theme";
 
 export interface FileTreeProps {
   workspaceId: string | null;
@@ -71,26 +73,38 @@ function Node({
   onDelete,
   onCreateFolder,
   onCreateFile,
+  folderColor,
 }: NodeRendererProps<TreeData> & {
   onDelete: (nodeId: string) => void;
   onCreateFolder: (parentId: string | null) => void;
   onCreateFile: (parentId: string | null, type: NodeType) => void;
+  folderColor?: string;
 }) {
   const data = node.data;
   const isFolder = data.type === "folder";
+  const iconTheme = useIconTheme();
 
   const getIcon = () => {
     switch (data.type) {
       case "folder":
-        return node.isOpen ? (
-          <FolderOpen className="size-4 shrink-0 text-blue-500" />
-        ) : (
-          <Folder className="size-4 shrink-0 text-blue-500/70" />
+        const FolderIcon = node.isOpen 
+          ? (iconTheme.icons.folder.open || iconTheme.icons.folder.default)
+          : iconTheme.icons.folder.default;
+        return (
+          <FolderIcon
+            className="size-4 shrink-0"
+            style={{ 
+              color: folderColor || "#3b82f6",
+              fill: folderColor ? `${folderColor}1A` : "#3b82f61A" 
+            }} 
+          />
         );
       case "canvas":
-        return <PenTool className="size-4 shrink-0 text-purple-500/70" />;
+        const CanvasIcon = iconTheme.icons.activityBar.canvas;
+        return <CanvasIcon className="size-4 shrink-0 text-purple-500" />;
       default:
-        return <FileText className="size-4 shrink-0 text-muted-foreground" />;
+        const FileIcon = iconTheme.icons.file.default;
+        return <FileIcon className="size-4 shrink-0 text-muted-foreground" />;
     }
   };
 
@@ -99,10 +113,10 @@ function Node({
       style={style}
       ref={dragHandle}
       className={cn(
-        "group flex items-center gap-1.5 py-1 px-2 rounded-md cursor-pointer transition-all",
+        "group flex items-center gap-1.5 py-1 pr-2 cursor-pointer transition-all duration-200 px-2 rounded-md mx-1 overflow-hidden",
         node.isSelected
-          ? "bg-primary/10 text-primary"
-          : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm"
+          : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
         node.willReceiveDrop && "bg-sidebar-accent ring-1 ring-primary/20"
       )}
       onClick={(e) => {
@@ -125,16 +139,16 @@ function Node({
             e.stopPropagation();
             node.toggle();
           }}
-          className="p-0.5 hover:bg-black/5 rounded shrink-0"
+          className="p-0.5 hover:bg-foreground/10 rounded-sm shrink-0 transition-colors -ml-1"
         >
           {node.isOpen ? (
-            <ChevronDown className="size-3.5 text-muted-foreground" />
+            <ChevronDown className="size-3.5 opacity-70" />
           ) : (
-            <ChevronRight className="size-3.5 text-muted-foreground" />
+            <ChevronRight className="size-3.5 opacity-70" />
           )}
         </button>
       ) : (
-        <span className="w-4" />
+        <span className="w-3.5 -ml-1" />
       )}
 
       {getIcon()}
@@ -143,7 +157,7 @@ function Node({
         <Input
           autoFocus
           defaultValue={data.name}
-          className="h-6 text-sm px-1 py-0 flex-1"
+          className="h-6 text-sm px-1 py-0 flex-1 min-w-0"
           onBlur={() => node.reset()}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -155,11 +169,16 @@ function Node({
           onClick={(e) => e.stopPropagation()}
         />
       ) : (
-        <span className="flex-1 text-sm truncate">{data.name}</span>
+        <span 
+          className="flex-1 text-sm truncate leading-none pb-0.5 min-w-0" 
+          title={data.name}
+        >
+          {data.name}
+        </span>
       )}
 
       {isFolder && node.children && node.children.length > 0 && !node.isEditing && (
-        <span className="text-xs text-muted-foreground/70 opacity-0 group-hover:opacity-100 transition-opacity mr-1">
+        <span className="text-xs opacity-50 group-hover:opacity-100 transition-opacity mr-1">
           {node.children.length}
         </span>
       )}
@@ -170,7 +189,7 @@ function Node({
           <DropdownMenuTrigger asChild>
             <button
               onClick={(e) => e.stopPropagation()}
-              className="p-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="p-0.5 hover:bg-foreground/10 rounded-sm shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
               title="More actions"
             >
               <MoreHorizontal className="size-3.5 text-muted-foreground hover:text-foreground" />
@@ -195,7 +214,10 @@ function Node({
                       文本文件
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onCreateFile(node.id, "canvas")}>
-                      <PenTool className="size-4 mr-2" />
+                      {(() => {
+                        const CanvasIcon = iconTheme.icons.activityBar.canvas;
+                        return <CanvasIcon className="size-4 mr-2" />;
+                      })()}
                       画布
                     </DropdownMenuItem>
                   </DropdownMenuSubContent>
@@ -241,6 +263,8 @@ export function FileTree({
   const nodes = useNodesByWorkspace(workspaceId) ?? [];
   const treeData = useMemo(() => buildArboristTree(nodes), [nodes]);
   const treeRef = useRef<any>(null);
+  const iconTheme = useIconTheme();
+  const { currentTheme } = useTheme();
 
   // Handle selection change
   const handleSelect = useCallback(
@@ -300,16 +324,24 @@ export function FileTree({
           onDelete={onDeleteNode}
           onCreateFolder={onCreateFolder}
           onCreateFile={onCreateFile}
+          folderColor={currentTheme?.colors.folderColor}
         />
       );
     },
-    [onDeleteNode, onCreateFolder, onCreateFile]
+    [onDeleteNode, onCreateFolder, onCreateFile, currentTheme?.colors.folderColor]
   );
 
   if (!workspaceId) {
+    const FolderIcon = iconTheme.icons.folder.default;
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-        <Folder className="size-12 mb-3 opacity-20" />
+        <FolderIcon
+          className="size-12 mb-3 opacity-20"
+          style={{ 
+            color: currentTheme?.colors.folderColor || "#3b82f6",
+            fill: currentTheme?.colors.folderColor ? `${currentTheme.colors.folderColor}1A` : "#3b82f61A" 
+          }} 
+        />
         <p className="text-sm text-center px-4">请先选择一个工作空间</p>
         <p className="text-xs text-center mt-1 opacity-70">Please select a workspace first</p>
       </div>
@@ -319,17 +351,16 @@ export function FileTree({
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="h-12 flex items-center justify-between px-4 border-b border-sidebar-border/20">
-        <div className="flex items-center gap-2 font-semibold text-foreground/80">
-          <Folder className="size-5" />
-          <span>Files</span>
-        </div>
-        <div className="flex items-center gap-1">
+      <div className="h-11 flex items-center justify-between px-4 shrink-0 group/header">
+        <span className="text-sm font-semibold text-foreground/80 tracking-wide pl-1">
+          Explorer
+        </span>
+        <div className="flex items-center gap-1 opacity-0 group-hover/header:opacity-100 transition-opacity duration-200">
           {onCreateDiary && (
             <Button
               variant="ghost"
               size="icon"
-              className="size-7"
+              className="size-7 hover:bg-sidebar-accent hover:text-foreground rounded-sm"
               onClick={onCreateDiary}
               title="Create new diary"
             >
@@ -339,7 +370,7 @@ export function FileTree({
           <Button
             variant="ghost"
             size="icon"
-            className="size-7"
+            className="size-7 hover:bg-sidebar-accent hover:text-foreground rounded-sm"
             onClick={() => onCreateFolder(null)}
             title="Create new folder"
           >
@@ -348,7 +379,7 @@ export function FileTree({
           <Button
             variant="ghost"
             size="icon"
-            className="size-7"
+            className="size-7 hover:bg-sidebar-accent hover:text-foreground rounded-sm"
             onClick={() => onCreateFile(null, "file")}
             title="Create new file"
           >
@@ -358,18 +389,21 @@ export function FileTree({
       </div>
 
       {/* Tree Content */}
-      <div className="flex-1 px-2 py-2 overflow-hidden">
+      <div className="flex-1 overflow-hidden">
         {treeData.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <FileText className="size-12 mb-3 opacity-20" />
-            <p className="text-sm text-center">No files yet</p>
+            {(() => {
+                const FileIcon = iconTheme.icons.file.default;
+                return <FileIcon className="size-12 mb-3 opacity-20" />;
+            })()}
+            <p className="text-sm text-center px-4">No files yet</p>
             <Button
               variant="outline"
               size="sm"
-              className="mt-3"
+              className="mt-3 text-xs"
               onClick={() => onCreateFile(null, "file")}
             >
-              <Plus className="size-4 mr-1" />
+              <Plus className="size-3 mr-1" />
               Create File
             </Button>
           </div>
@@ -382,12 +416,12 @@ export function FileTree({
             onRename={handleRename}
             onMove={handleMove}
             onToggle={handleToggle}
-            indent={16}
-            rowHeight={32}
+            indent={12}
+            rowHeight={30}
             overscanCount={5}
             openByDefault={false}
             disableMultiSelection
-            className="h-full w-full [&>div]:w-full"
+            className="h-full w-full [&>div]:w-full outline-none"
             width="100%"
           >
             {renderNode}

@@ -37,7 +37,7 @@ export function UnifiedSidebarContent() {
 	};
 
 	return (
-		<div className="flex flex-col h-full w-full border-r border-sidebar-border/30 overflow-hidden">
+		<div className="flex flex-col h-full w-full overflow-hidden">
 			{activePanel === "search" && <SearchPanel />}
 			{activePanel === "drawings" && (
 				<DrawingsPanel

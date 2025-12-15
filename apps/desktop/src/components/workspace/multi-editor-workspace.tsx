@@ -5,7 +5,7 @@
  */
 import { useCallback, useEffect, useRef } from "react";
 import type { SerializedEditorState } from "lexical";
-import { Editor } from "@novel-editor/editor";
+import { Editor, type WikiEntryInterface, type TagInterface } from "@novel-editor/editor";
 import { cn } from "@/lib/utils";
 import type { EditorTab, EditorInstanceState } from "@/stores/editor-tabs";
 
@@ -22,6 +22,10 @@ interface MultiEditorWorkspaceProps {
   onScrollChange: (tabId: string, scrollTop: number, scrollLeft: number) => void;
   /** 占位符文本 */
   placeholder?: string;
+  /** Wiki 条目列表 (用于 @ 提及) */
+  wikiEntries?: WikiEntryInterface[];
+  /** 标签列表 (用于 #[ 标签选择) */
+  tags?: TagInterface[];
 }
 
 /**
@@ -36,6 +40,8 @@ export function MultiEditorWorkspace({
   onEditorChange,
   onScrollChange,
   placeholder = "开始写作...",
+  wikiEntries,
+  tags,
 }: MultiEditorWorkspaceProps) {
   // 存储每个编辑器容器的 ref
   const containerRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -105,10 +111,12 @@ export function MultiEditorWorkspace({
             <article className="editor-container min-h-[calc(100vh-10rem)] w-full max-w-4xl mx-auto px-16 py-12">
               <div className="min-h-[600px]">
                 <Editor
-                  initialState={serializedState ? JSON.stringify(serializedState) : null}
+                  initialState={serializedState ? (typeof serializedState === "string" ? serializedState : JSON.stringify(serializedState)) : null}
                   onChange={(state: SerializedEditorState) => onEditorChange(tab.id, state)}
                   placeholder={placeholder}
                   namespace={`editor-${tab.id}`}
+                  wikiEntries={wikiEntries}
+                  tags={tags}
                 />
               </div>
             </article>

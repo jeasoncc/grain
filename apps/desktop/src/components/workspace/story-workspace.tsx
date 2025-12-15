@@ -2,18 +2,12 @@
  * StoryWorkspace - 简化版工作空间
  * 基于新的 Node 结构，移除旧的 chapter/scene 依赖
  *
- * 重构说明：
- * - 移除旧的 rich-editor 导入，使用新的 MultiEditorContainer
- * - 实现 CSS visibility 切换，保留编辑器状态
- * - 集成自动保存逻辑
- *
  * @see Requirements 1.4, 3.1, 4.1, 6.4
  */
 
 import type { SerializedEditorState } from "lexical";
 import {
 	Download,
-	Maximize2,
 	PanelRightClose,
 	PanelRightOpen,
 	Upload,
@@ -21,11 +15,9 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CanvasEditor } from "@/components/blocks/canvas-editor";
-import { FocusMode } from "@/components/blocks/focus-mode";
 import { KeyboardShortcutsHelp } from "@/components/blocks/keyboard-shortcuts-help";
 import { SaveStatusIndicator } from "@/components/blocks/save-status-indicator";
 import { ThemeSelector } from "@/components/blocks/theme-selector";
-import { WordCountBadge } from "@/components/blocks/word-count-badge";
 import { EditorTabs } from "@/components/editor-tabs";
 import { useEditorTabsStore } from "@/stores/editor-tabs";
 import { StoryRightSidebar } from "@/components/story-right-sidebar";
@@ -44,31 +36,24 @@ import { useSaveStore } from "@/stores/save";
 import { saveService } from "@/services/save";
 import { type SelectionState, useSelectionStore } from "@/stores/selection";
 import { useUIStore } from "@/stores/ui";
-import { useWritingStore } from "@/stores/writing";
 import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
 import { getNodeContent } from "@/services/nodes";
-// 新的多编辑器容器组件 - 基于 Lexical Playground 实现
-import { MultiEditorContainer, Editor } from "@novel-editor/editor";
+import { useWikiEntriesByProject } from "@/services/wiki";
+import { useTagsByWorkspace } from "@/services/tags";
+import { MultiEditorContainer } from "@novel-editor/editor";
 
-// Type alias for backward compatibility
 type ProjectInterface = WorkspaceInterface;
 
 interface StoryWorkspaceProps {
 	projects: ProjectInterface[];
 	activeProjectId?: string;
-	onCreateProject?: () => void;
 }
 
-/**
- * 默认自动保存延迟（毫秒）
- * @see Requirements 6.4 - 自动保存配置
- */
 const DEFAULT_AUTO_SAVE_MS = 800;
 
 export function StoryWorkspace({
 	projects,
 	activeProjectId,
-	onCreateProject,
 }: StoryWorkspaceProps) {
 	const initialProjectId = activeProjectId ?? projects[0]?.id ?? null;
 	const selectedProjectId = useSelectionStore((s: SelectionState) => s.selectedProjectId);
@@ -78,13 +63,7 @@ export function StoryWorkspace({
 	const autoSaveDelayMs = autoSave ? Math.max(DEFAULT_AUTO_SAVE_MS, autoSaveInterval * 1000) : 0;
 
 	const [editorInitialState, setEditorInitialState] = useState<SerializedEditorState>();
-	const [sceneWordCount, setSceneWordCount] = useState(0);
-	// 保存状态用于自动保存逻辑
 	const [, setSaveStatus] = useState<"saved" | "saving" | "error">("saved");
-
-	// 专注模式
-	const focusMode = useWritingStore((s) => s.focusMode);
-	const setFocusMode = useWritingStore((s) => s.setFocusMode);
 
 	// UI 状态
 	const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen);
@@ -94,8 +73,16 @@ export function StoryWorkspace({
 	// 绘图状态
 	const [selectedDrawing] = useState<DrawingInterface | null>(null);
 
-	// 标签页状态
-	const tabs = useEditorTabsStore((s) => s.tabs);
+	// Wiki 和标签数据 (用于编辑器插件)
+	const wikiEntries = useWikiEntriesByProject(selectedProjectId);
+	const tags = useTagsByWorkspace(selectedProjectId ?? undefined);
+
+	// 标签页状态 - 只获取当前 workspace 的标签
+	const allTabs = useEditorTabsStore((s) => s.tabs);
+	const tabs = useMemo(() => 
+		allTabs.filter(t => t.projectId === selectedProjectId),
+		[allTabs, selectedProjectId]
+	);
 	const activeTabId = useEditorTabsStore((s) => s.activeTabId);
 	const editorStates = useEditorTabsStore((s) => s.editorStates);
 	const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
@@ -111,7 +98,7 @@ export function StoryWorkspace({
 		return editorInitialState || null;
 	}, [activeTabId, editorStates, editorInitialState]);
 
-	// 手动保存 hook（保留以支持快捷键保存）
+	// 手动保存 hook
 	useManualSave({
 		nodeId: activeTabId,
 		currentContent,
@@ -132,6 +119,12 @@ export function StoryWorkspace({
 		const activeTab = tabs.find((t) => t.id === activeTabId);
 		if (!activeTab) return;
 
+		// 检查是否已经有编辑器状态
+		const existingState = editorStates[activeTabId];
+		if (existingState?.serializedState) {
+			return;
+		}
+
 		// 加载节点内容
 		if (activeTab.nodeId) {
 			getNodeContent(activeTab.nodeId).then((content) => {
@@ -139,6 +132,7 @@ export function StoryWorkspace({
 					try {
 						const parsed = JSON.parse(content);
 						setEditorInitialState(parsed);
+						updateEditorState(activeTabId, { serializedState: parsed });
 					} catch {
 						setEditorInitialState(undefined);
 					}
@@ -147,7 +141,7 @@ export function StoryWorkspace({
 				}
 			});
 		}
-	}, [activeTabId, tabs]);
+	}, [activeTabId, tabs, editorStates, updateEditorState]);
 
 	// 自动保存定时器引用
 	const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -161,7 +155,7 @@ export function StoryWorkspace({
 		try {
 			await exportAll(selectedProjectId);
 			toast.success("导出成功");
-		} catch (error) {
+		} catch {
 			toast.error("导出失败");
 		}
 	}, [selectedProjectId]);
@@ -177,7 +171,7 @@ export function StoryWorkspace({
 				const text = await readFileAsText(file);
 				await importFromJson(text);
 				toast.success("导入成功");
-			} catch (error) {
+			} catch {
 				toast.error("导入失败");
 			}
 		};
@@ -188,10 +182,6 @@ export function StoryWorkspace({
 	const activeTab = tabs.find((t) => t.id === activeTabId);
 	const isCanvasTab = activeTab?.type === "canvas";
 
-	/**
-	 * 处理滚动位置变化
-	 * @see Requirements 3.3 - 保留滚动位置
-	 */
 	const handleScrollChange = useCallback(
 		(tabId: string, scrollTop: number) => {
 			updateEditorState(tabId, { scrollTop });
@@ -199,22 +189,15 @@ export function StoryWorkspace({
 		[updateEditorState]
 	);
 
-	/**
-	 * 处理编辑器内容变化（来自 MultiEditorContainer）
-	 * @see Requirements 6.4 - 自动保存
-	 */
 	const handleMultiEditorContentChange = useCallback(
 		(tabId: string, state: SerializedEditorState) => {
-			// 更新编辑器状态
 			updateEditorState(tabId, { serializedState: state });
 			markAsUnsaved();
 
-			// 清除之前的定时器
 			if (autoSaveTimerRef.current) {
 				clearTimeout(autoSaveTimerRef.current);
 			}
 
-			// 设置新的自动保存定时器
 			if (autoSaveDelayMs > 0) {
 				autoSaveTimerRef.current = setTimeout(async () => {
 					const tab = tabs.find(t => t.id === tabId);
@@ -240,19 +223,10 @@ export function StoryWorkspace({
 		[autoSaveDelayMs, tabs, updateEditorState, markAsUnsaved, markAsSaving, markAsSaved]
 	);
 
-	/**
-	 * 过滤出文本编辑器标签（非 canvas 类型）
-	 * @see Requirements 3.1, 4.1 - 多编辑器实例管理
-	 */
 	const textEditorTabs = useMemo(() => {
 		return tabs.filter(tab => tab.type !== "canvas");
 	}, [tabs]);
 
-	/**
-	 * 渲染编辑器内容
-	 * 使用 MultiEditorContainer 管理多个编辑器实例
-	 * @see Requirements 4.1 - CSS visibility 切换
-	 */
 	const renderEditorContent = () => {
 		if (!activeTab) {
 			return (
@@ -262,7 +236,6 @@ export function StoryWorkspace({
 			);
 		}
 
-		// Canvas 编辑器单独处理
 		if (isCanvasTab) {
 			return (
 				<CanvasEditor
@@ -272,7 +245,6 @@ export function StoryWorkspace({
 			);
 		}
 
-		// 绘图工作区单独处理
 		if (selectedDrawing) {
 			return (
 				<DrawingWorkspace
@@ -281,8 +253,6 @@ export function StoryWorkspace({
 			);
 		}
 
-		// 使用 MultiEditorContainer 管理文本编辑器
-		// 所有编辑器实例同时挂载，通过 CSS visibility 控制显示
 		return (
 			<div className="flex-1 overflow-hidden">
 				<MultiEditorContainer
@@ -292,123 +262,73 @@ export function StoryWorkspace({
 					onContentChange={handleMultiEditorContentChange}
 					onScrollChange={handleScrollChange}
 					placeholder="开始写作..."
+					wikiEntries={wikiEntries}
+					tags={tags}
 				/>
 			</div>
 		);
 	};
 
-	/**
-	 * 处理专注模式下的编辑器内容变化
-	 * @see Requirements 6.4 - 自动保存
-	 */
-	const handleFocusModeChange = useCallback(
-		(state: SerializedEditorState) => {
-			if (!activeTabId) return;
-			handleMultiEditorContentChange(activeTabId, state);
-		},
-		[activeTabId, handleMultiEditorContentChange]
-	);
-
-	// 专注模式
-	if (focusMode) {
-		const state = activeTab ? editorStates[activeTab.id] : undefined;
-		// 将 SerializedEditorState 转换为 JSON 字符串供新 Editor 使用
-		const editorStateJson = state?.serializedState
-			? JSON.stringify(state.serializedState)
-			: editorInitialState
-				? JSON.stringify(editorInitialState)
-				: null;
-
-		return (
-			<FocusMode
-				wordCount={sceneWordCount}
-				onExit={() => setFocusMode(false)}
-				sceneTitle={activeTab?.title || ""}
-			>
-				<Editor
-					initialState={editorStateJson}
-					onChange={handleFocusModeChange}
-					placeholder="开始写作..."
-				/>
-			</FocusMode>
-		);
-	}
-
 	return (
 		<TooltipProvider>
-			<div className="flex h-full w-full flex-col overflow-hidden bg-background">
-				{/* 顶部工具栏 */}
-				<div className="flex h-12 items-center justify-between border-b px-4">
-					<div className="flex items-center gap-2">
-						<SaveStatusIndicator />
-						<WordCountBadge wordCount={sceneWordCount} />
+			<div className="flex h-full w-full flex-row overflow-hidden bg-background">
+				<div className="flex flex-1 flex-col min-w-0 overflow-hidden">
+					{/* 顶部工具栏 */}
+					<div className="flex h-12 items-center justify-between border-b px-4 shrink-0">
+						<div className="flex items-center gap-2">
+							<SaveStatusIndicator />
+						</div>
+
+						<div className="flex items-center gap-1">
+							<ThemeSelector />
+
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button variant="ghost" size="icon" onClick={handleExport}>
+										<Download className="size-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>导出</TooltipContent>
+							</Tooltip>
+
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button variant="ghost" size="icon" onClick={handleImport}>
+										<Upload className="size-4" />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>导入</TooltipContent>
+							</Tooltip>
+
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button variant="ghost" size="icon" onClick={toggleRightSidebar}>
+										{rightSidebarOpen ? (
+											<PanelRightClose className="size-4" />
+										) : (
+											<PanelRightOpen className="size-4" />
+										)}
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>{rightSidebarOpen ? "关闭侧边栏" : "打开侧边栏"}</TooltipContent>
+							</Tooltip>
+
+							<KeyboardShortcutsHelp />
+						</div>
 					</div>
 
-					<div className="flex items-center gap-1">
-						<ThemeSelector />
-						
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button variant="ghost" size="icon" onClick={() => setFocusMode(true)}>
-									<Maximize2 className="size-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>专注模式</TooltipContent>
-						</Tooltip>
-
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button variant="ghost" size="icon" onClick={handleExport}>
-									<Download className="size-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>导出</TooltipContent>
-						</Tooltip>
-
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button variant="ghost" size="icon" onClick={handleImport}>
-									<Upload className="size-4" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>导入</TooltipContent>
-						</Tooltip>
-
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button variant="ghost" size="icon" onClick={toggleRightSidebar}>
-									{rightSidebarOpen ? (
-										<PanelRightClose className="size-4" />
-									) : (
-										<PanelRightOpen className="size-4" />
-									)}
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>{rightSidebarOpen ? "关闭侧边栏" : "打开侧边栏"}</TooltipContent>
-						</Tooltip>
-
-						<KeyboardShortcutsHelp />
-					</div>
-				</div>
-
-				{/* 主内容区 */}
-				<div className="flex flex-1 overflow-hidden">
 					{/* 编辑器区域 */}
 					<div className="flex flex-1 flex-col overflow-hidden">
-						{/* 标签栏 - 顶部位置 */}
 						{tabPosition === "top" && tabs.length > 0 && (
 							<EditorTabs />
 						)}
-
-						{/* 编辑器内容 */}
 						{renderEditorContent()}
 					</div>
-
-					{/* 右侧边栏 */}
-					{rightSidebarOpen && (
-						<StoryRightSidebar />
-					)}
 				</div>
+
+				{rightSidebarOpen && (
+					<StoryRightSidebar />
+				)}
 			</div>
 		</TooltipProvider>
 	);

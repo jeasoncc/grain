@@ -63,6 +63,10 @@ interface EditorTabsState {
   updateEditorState: (tabId: string, state: Partial<EditorInstanceState>) => void;
   /** 获取指定标签的编辑器状态 */
   getEditorState: (tabId: string) => EditorInstanceState | undefined;
+  /** 获取指定 workspace 的标签 */
+  getTabsByWorkspace: (workspaceId: string) => EditorTab[];
+  /** 关闭指定 workspace 的所有标签 */
+  closeTabsByWorkspace: (workspaceId: string) => void;
 }
 
 /**
@@ -192,8 +196,9 @@ export const useEditorTabsStore = create<EditorTabsState>()(
           ...tabData,
         };
 
-        // 创建新的编辑器状态 (in-memory only)
-        const newEditorState = createDefaultEditorState();
+        // 使用已存在的编辑器状态（如果有），否则创建新的默认状态
+        // 这允许在打开标签前预加载内容
+        const newEditorState = editorStates[tabId] || createDefaultEditorState();
         const newTabs = [...tabs, newTab];
         
         // Apply LRU eviction before adding new state
@@ -345,6 +350,34 @@ export const useEditorTabsStore = create<EditorTabsState>()(
 
       getEditorState: (tabId) => {
         return get().editorStates[tabId];
+      },
+
+      getTabsByWorkspace: (workspaceId) => {
+        return get().tabs.filter(t => t.projectId === workspaceId);
+      },
+
+      closeTabsByWorkspace: (workspaceId) => {
+        const { tabs, activeTabId, editorStates } = get();
+        const tabsToClose = tabs.filter(t => t.projectId === workspaceId);
+        const remainingTabs = tabs.filter(t => t.projectId !== workspaceId);
+        
+        // 清理对应的编辑器状态
+        const newEditorStates = { ...editorStates };
+        for (const tab of tabsToClose) {
+          delete newEditorStates[tab.id];
+        }
+        
+        // 如果当前活动标签被关闭，切换到剩余标签的第一个
+        let newActiveTabId = activeTabId;
+        if (activeTabId && tabsToClose.some(t => t.id === activeTabId)) {
+          newActiveTabId = remainingTabs.length > 0 ? remainingTabs[0].id : null;
+        }
+        
+        set({
+          tabs: remainingTabs,
+          activeTabId: newActiveTabId,
+          editorStates: newEditorStates,
+        });
       },
     }),
     {

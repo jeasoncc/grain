@@ -157,7 +157,7 @@ export function FileTreeItem({
             : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
           isDropTarget && dropPosition === "inside" && "bg-sidebar-accent ring-1 ring-primary/20"
         )}
-        style={{ paddingLeft: `${node.depth * 12 + 8}px` }}
+        style={{ paddingLeft: `${node.depth * 8 + 8}px` }}
         onClick={handleClick}
         draggable={!isRenaming}
         onDragStart={(e) => onDragStart(e, node.id)}

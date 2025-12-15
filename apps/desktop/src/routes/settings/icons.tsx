@@ -1,12 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useTheme } from "@/hooks/use-theme";
+import { useIconTheme } from "@/hooks/use-icon-theme";
 import {
 	applyIconTheme,
-	getCurrentIconTheme,
 	type IconTheme,
 	iconThemes,
 } from "@/lib/icon-themes";
@@ -17,31 +16,15 @@ export const Route = createFileRoute("/settings/icons")({
 });
 
 function IconSettings() {
-	const [activeIconTheme, setActiveIconTheme] = useState(
-		() => getCurrentIconTheme().key,
-	);
-	const [currentIconTheme, setCurrentIconTheme] = useState(
-		getCurrentIconTheme(),
-	);
+	const currentIconTheme = useIconTheme();
 	const { currentTheme } = useTheme();
 
 	// 应用图标主题
 	const handleIconThemeChange = (themeKey: string) => {
-		setActiveIconTheme(themeKey);
 		applyIconTheme(themeKey);
-		setCurrentIconTheme(getCurrentIconTheme());
 		// 触发重新渲染
 		window.dispatchEvent(new Event("icon-theme-changed"));
 	};
-
-	// 监听图标主题变化
-	useEffect(() => {
-		const handler = () => {
-			setCurrentIconTheme(getCurrentIconTheme());
-		};
-		window.addEventListener("icon-theme-changed", handler);
-		return () => window.removeEventListener("icon-theme-changed", handler);
-	}, []);
 
 	return (
 		<div className="space-y-6">
@@ -69,7 +52,7 @@ function IconSettings() {
 								<IconThemeCard
 									key={theme.key}
 									theme={theme}
-									isActive={activeIconTheme === theme.key}
+									isActive={currentIconTheme.key === theme.key}
 									onSelect={() => handleIconThemeChange(theme.key)}
 								/>
 							))}
@@ -145,16 +128,16 @@ function IconSettings() {
 										}}
 									>
 										<div
-											className="text-xs font-medium px-2 py-1 mb-2"
+											className="text-xs font-medium px-2 py-1 mb-2 opacity-70"
 											style={{ color: currentTheme?.colors.sidebarForeground }}
 										>
-											项目结构
+											Structure
 										</div>
 
 										{/* 项目 */}
 										<FileItem
 											icon={currentIconTheme.icons.project.default}
-											label="我的小说"
+											label="My Novel"
 											isOpen={true}
 											level={0}
 										/>
@@ -162,7 +145,7 @@ function IconSettings() {
 										{/* 文件夹 */}
 										<FileItem
 											icon={currentIconTheme.icons.folder.default}
-											label="第一章"
+											label="Book 1: The Mist"
 											isOpen={true}
 											level={1}
 										/>
@@ -170,12 +153,12 @@ function IconSettings() {
 										{/* 文件 */}
 										<FileItem
 											icon={currentIconTheme.icons.file.default}
-											label="开场.md"
+											label="Chapter 1.md"
 											level={2}
 										/>
 										<FileItem
 											icon={currentIconTheme.icons.file.default}
-											label="相遇.md"
+											label="Chapter 2.md"
 											level={2}
 											isActive={true}
 										/>
@@ -183,14 +166,14 @@ function IconSettings() {
 										{/* 文件夹 */}
 										<FileItem
 											icon={currentIconTheme.icons.folder.default}
-											label="第二章"
+											label="Book 2: The Storm"
 											level={1}
 										/>
 
 										{/* 文件夹 */}
 										<FileItem
 											icon={currentIconTheme.icons.folder.default}
-											label="角色设定"
+											label="Characters"
 											isOpen={true}
 											level={1}
 										/>
@@ -198,14 +181,14 @@ function IconSettings() {
 										{/* 角色 */}
 										<FileItem
 											icon={currentIconTheme.icons.character.default}
-											label="主角.md"
+											label="Hero.md"
 											level={2}
 										/>
 
 										{/* 世界观 */}
 										<FileItem
 											icon={currentIconTheme.icons.world.default}
-											label="世界观.md"
+											label="World.md"
 											level={1}
 										/>
 									</div>
@@ -220,21 +203,41 @@ function IconSettings() {
 											style={{ color: currentTheme?.colors.foreground }}
 										>
 											<Sparkles className="size-4" />
-											活动栏图标预览
+											Icon Preview
 										</h2>
 
-										<div className="grid grid-cols-3 gap-3">
+										<div className="grid grid-cols-4 gap-3">
+											{/* File Tree Icons */}
+											<ActivityBarIconItem
+												icon={currentIconTheme.icons.project.default}
+												label="Project"
+											/>
+											<ActivityBarIconItem
+												icon={currentIconTheme.icons.folder.default}
+												label="Folder"
+												color={currentTheme?.colors.folderColor}
+											/>
+											<ActivityBarIconItem
+												icon={currentIconTheme.icons.file.default}
+												label="File"
+											/>
+											<ActivityBarIconItem
+												icon={currentIconTheme.icons.character.default}
+												label="Character"
+											/>
+
+											{/* Activity Bar Icons */}
 											<ActivityBarIconItem
 												icon={currentIconTheme.icons.activityBar.library}
-												label="书库"
+												label="Library"
 											/>
 											<ActivityBarIconItem
 												icon={currentIconTheme.icons.activityBar.search}
-												label="搜索"
+												label="Search"
 											/>
 											<ActivityBarIconItem
 												icon={currentIconTheme.icons.activityBar.outline}
-												label="大纲"
+												label="Outline"
 											/>
 											<ActivityBarIconItem
 												icon={currentIconTheme.icons.activityBar.wiki}
@@ -242,19 +245,19 @@ function IconSettings() {
 											/>
 											<ActivityBarIconItem
 												icon={currentIconTheme.icons.activityBar.canvas}
-												label="绘图"
+												label="Canvas"
 											/>
 											<ActivityBarIconItem
 												icon={currentIconTheme.icons.activityBar.statistics}
-												label="统计"
+												label="Stats"
 											/>
 											<ActivityBarIconItem
 												icon={currentIconTheme.icons.activityBar.settings}
-												label="设置"
+												label="Settings"
 											/>
 											<ActivityBarIconItem
 												icon={currentIconTheme.icons.activityBar.create}
-												label="新建"
+												label="New"
 											/>
 										</div>
 									</div>
@@ -263,7 +266,7 @@ function IconSettings() {
 						</Card>
 
 						<p className="text-xs text-muted-foreground text-center">
-							实时预览当前图标主题效果
+							Icon Theme Live Preview
 						</p>
 					</div>
 				</div>
@@ -288,29 +291,28 @@ function IconThemeCard({ theme, isActive, onSelect }: IconThemeCardProps) {
 		<button
 			onClick={onSelect}
 			className={cn(
-				"relative flex flex-col rounded-lg border-2 overflow-hidden transition-all text-left",
-				"hover:shadow-lg hover:scale-[1.02]",
-				isActive ? "border-primary ring-2 ring-primary/20" : "border-border",
+				"relative flex flex-col rounded-xl border-2 overflow-hidden transition-all text-left group",
+				"hover:shadow-md hover:-translate-y-0.5",
+				isActive ? "border-primary ring-2 ring-primary/20 shadow-sm" : "border-border/50",
 			)}
 		>
 			{/* 图标预览 */}
-			<div className="h-16 w-full flex items-center justify-center gap-3 bg-muted/30">
-				<ProjectIcon className="size-5 text-muted-foreground" />
-				<FolderIcon className="size-5 text-muted-foreground" />
-				<FileIcon className="size-5 text-muted-foreground" />
+			<div className="h-14 w-full flex items-center justify-center gap-4 bg-muted/20 border-b border-border/10">
+				<ProjectIcon className="size-5 text-foreground/70" />
+				<FolderIcon className="size-5 text-foreground/70" />
+				<FileIcon className="size-5 text-foreground/70" />
 			</div>
 
 			{/* 主题信息 */}
-			<div className="px-3 py-2 bg-card">
-				<div className="text-sm font-medium text-card-foreground">
+			<div className="px-3 py-2.5 bg-card/50">
+				<div className="text-xs font-medium text-card-foreground">
 					{theme.name}
 				</div>
-				<div className="text-xs text-muted-foreground">{theme.description}</div>
 			</div>
 
 			{/* 选中标记 */}
 			{isActive && (
-				<div className="absolute top-2 right-2 size-5 rounded-full bg-primary flex items-center justify-center">
+				<div className="absolute top-2 right-2 size-5 rounded-full bg-primary flex items-center justify-center shadow-sm">
 					<Check className="size-3 text-primary-foreground" />
 				</div>
 			)}
@@ -347,7 +349,13 @@ function FileItem({
 					: currentTheme?.colors.sidebarForeground,
 			}}
 		>
-			<Icon className="size-4 shrink-0" />
+			<Icon 
+				className="size-4 shrink-0" 
+				style={{ 
+					color: label.includes("Book") || label.includes("Character") ? currentTheme?.colors.folderColor : undefined,
+					fill: (label.includes("Book") || label.includes("Character")) && currentTheme?.colors.folderColor ? `${currentTheme.colors.folderColor}1A` : undefined
+				}}
+			/>
 			<span className="truncate">{label}</span>
 		</div>
 	);
@@ -390,9 +398,11 @@ function ActivityBarIcon({
 function ActivityBarIconItem({
 	icon: Icon,
 	label,
+	color,
 }: {
 	icon: any;
 	label: string;
+	color?: string;
 }) {
 	const { currentTheme } = useTheme();
 
@@ -405,7 +415,10 @@ function ActivityBarIconItem({
 		>
 			<Icon
 				className="size-6"
-				style={{ color: currentTheme?.colors.foreground }}
+				style={{ 
+					color: color || currentTheme?.colors.foreground,
+					fill: color ? `${color}1A` : undefined
+				}}
 			/>
 			<span
 				className="text-xs text-center"
