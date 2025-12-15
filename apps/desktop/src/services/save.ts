@@ -1,17 +1,24 @@
 /**
  * 保存服务 - 处理手动和自动保存功能
  * 基于 Node 文件树结构，使用 ContentRepository 进行内容存储
+ * 
+ * 支持 org-mode 风格的标签提取：
+ * - 保存时自动从 #+TAGS: 行提取标签
+ * - 同步到 nodes.tags 数组
+ * - 更新 tags 聚合缓存表
  *
  * Requirements: 5.3, 6.2
  */
 import type { SerializedEditorState } from "lexical";
 import logger from "@/log";
-import { ContentRepository } from "@/db/models";
+import { ContentRepository, NodeRepository } from "@/db/models";
+import { syncTagsCache } from "./tags";
 
 export interface SaveResult {
 	success: boolean;
 	error?: string;
 	timestamp: Date;
+	tags?: string[];
 }
 
 export interface SaveService {
@@ -24,6 +31,34 @@ export interface SaveService {
 
 // Debounce timeout in milliseconds (500ms as per requirements)
 const DEBOUNCE_TIMEOUT = 500;
+
+/**
+ * 从 Lexical 编辑器状态中提取 #+TAGS: 标签
+ */
+function extractTagsFromContent(content: SerializedEditorState): string[] {
+	const tags: string[] = [];
+
+	function traverse(node: any) {
+		// Check for FrontMatterNode with TAGS key
+		if (node.type === "front-matter" && node.key?.toUpperCase() === "TAGS") {
+			const value = node.value || "";
+			const parsed = value.split(",").map((t: string) => t.trim()).filter(Boolean);
+			tags.push(...parsed);
+		}
+		// Traverse children
+		if (node.children && Array.isArray(node.children)) {
+			for (const child of node.children) {
+				traverse(child);
+			}
+		}
+	}
+
+	if (content.root) {
+		traverse(content.root);
+	}
+
+	return [...new Set(tags)]; // Deduplicate
+}
 
 class SaveServiceImpl implements SaveService {
 	private unsavedChanges = new Map<string, boolean>();
@@ -52,8 +87,24 @@ class SaveServiceImpl implements SaveService {
 				};
 			}
 
+			// Extract tags from #+TAGS: lines
+			const tags = extractTagsFromContent(content);
+
+			// Save content
 			await ContentRepository.updateByNodeId(documentId, contentString, "lexical");
-			logger.info(`Saved document ${documentId}`);
+			
+			// Update node's tags array
+			if (tags.length > 0 || this.lastSavedContent.has(documentId)) {
+				await NodeRepository.update(documentId, { tags });
+				
+				// Get workspace for tag cache sync
+				const node = await NodeRepository.getById(documentId);
+				if (node) {
+					await syncTagsCache(node.workspace, tags);
+				}
+			}
+
+			logger.info(`Saved document ${documentId} with ${tags.length} tags`);
 
 			this.lastSavedContent.set(documentId, contentString);
 			this.unsavedChanges.set(documentId, false);
@@ -61,6 +112,7 @@ class SaveServiceImpl implements SaveService {
 			return {
 				success: true,
 				timestamp,
+				tags,
 			};
 		} catch (error) {
 			logger.error(`Failed to save document:`, error);

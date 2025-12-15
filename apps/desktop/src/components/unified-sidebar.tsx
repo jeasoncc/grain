@@ -6,7 +6,7 @@ import { SearchPanel } from "./panels/search-panel";
 import { DrawingsPanel } from "./panels/drawings-panel";
 import { WikiPanel } from "./panels/wiki-panel";
 import { FileTreePanel } from "./panels/file-tree-panel";
-import { TagsPanel } from "./panels/tags-panel";
+import { TagGraphPanel } from "./panels/tag-graph-panel";
 import { Button } from "./ui/button";
 import type { DrawingInterface, WikiEntryInterface } from "@/db/schema";
 
@@ -52,6 +52,7 @@ export function UnifiedSidebarContent() {
 				/>
 			)}
 			{activePanel === "files" && <FileTreePanel />}
+			{activePanel === "tags" && <TagGraphPanel />}
 		</div>
 	);
 }

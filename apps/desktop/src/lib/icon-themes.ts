@@ -43,6 +43,8 @@ import {
 	Search,
 	Settings,
 	Sparkles,
+	Tag,
+	Tags,
 	TrendingUp,
 	Upload,
 	User,
@@ -83,6 +85,7 @@ export interface IconTheme {
 			chapters: LucideIcon;
 			files: LucideIcon;
 			diary: LucideIcon;
+			tags: LucideIcon;
 			statistics: LucideIcon;
 			settings: LucideIcon;
 			create: LucideIcon;
@@ -126,6 +129,7 @@ export const iconThemes: IconTheme[] = [
 				chapters: FolderTree,
 				files: Files,
 				diary: CalendarDays,
+				tags: Tags,
 				statistics: TrendingUp,
 				settings: Settings,
 				create: Plus,
@@ -165,6 +169,7 @@ export const iconThemes: IconTheme[] = [
 				chapters: FolderTree,
 				files: Files,
 				diary: Calendar,
+				tags: Tag,
 				statistics: BarChart3,
 				settings: Cog,
 				create: Plus,
@@ -206,6 +211,7 @@ export const iconThemes: IconTheme[] = [
 				chapters: FolderTree,
 				files: Files,
 				diary: CalendarDays,
+				tags: Tags,
 				statistics: TrendingUp,
 				settings: Settings,
 				create: PlusCircle,
@@ -247,6 +253,7 @@ export const iconThemes: IconTheme[] = [
 				chapters: FolderTree,
 				files: Files,
 				diary: CalendarDays,
+				tags: Tags,
 				statistics: BarChart3,
 				settings: Cog,
 				create: PlusCircle,
@@ -288,6 +295,7 @@ export const iconThemes: IconTheme[] = [
 				chapters: FolderTree,
 				files: Files,
 				diary: CalendarDays,
+				tags: Tags,
 				statistics: TrendingUp,
 				settings: Settings,
 				create: Plus,
@@ -329,6 +337,7 @@ export const iconThemes: IconTheme[] = [
 				chapters: FolderTree,
 				files: Files,
 				diary: CalendarDays,
+				tags: Tags,
 				statistics: TrendingUp,
 				settings: Settings,
 				create: PenTool,

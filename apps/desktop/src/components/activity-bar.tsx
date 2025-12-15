@@ -102,6 +102,7 @@ export function ActivityBar(): React.ReactElement {
 	const OutlineIcon = iconTheme.icons.activityBar.outline;
 	const StatisticsIcon = iconTheme.icons.activityBar.statistics;
 	const SettingsIcon = iconTheme.icons.activityBar.settings;
+	const TagsIcon = iconTheme.icons.activityBar.tags;
 	const ImportIcon = iconTheme.icons.activityBar.import;
 	const ExportIcon = iconTheme.icons.activityBar.export;
 	const MoreIcon = iconTheme.icons.activityBar.more;
@@ -266,7 +267,20 @@ export function ActivityBar(): React.ReactElement {
 						label="New Diary"
 						onClick={handleCreateDiary}
 					/>
-					{/* 5th: Outline */}
+					{/* 5th: Tags */}
+					<ActionButton
+						icon={<TagsIcon className="size-5" />}
+						label="Tags"
+						active={activePanel === "tags" && unifiedSidebarOpen}
+						onClick={() => {
+							if (activePanel === "tags" && unifiedSidebarOpen) {
+								toggleSidebar();
+							} else {
+								setActivePanel("tags");
+							}
+						}}
+					/>
+					{/* 6th: Outline */}
 					<NavItem
 						to="/outline"
 						icon={<OutlineIcon className="size-5" />}

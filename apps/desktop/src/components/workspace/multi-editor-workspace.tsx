@@ -5,7 +5,7 @@
  */
 import { useCallback, useEffect, useRef } from "react";
 import type { SerializedEditorState } from "lexical";
-import { MinimalEditor } from "@/components/blocks/rich-editor/minimal-editor";
+import { Editor } from "@novel-editor/editor";
 import { cn } from "@/lib/utils";
 import type { EditorTab, EditorInstanceState } from "@/stores/editor-tabs";
 
@@ -62,8 +62,8 @@ export function MultiEditorWorkspace({
       if (container && editorState) {
         // 使用 requestAnimationFrame 确保 DOM 已更新
         requestAnimationFrame(() => {
-          container.scrollTop = editorState.scrollTop;
-          container.scrollLeft = editorState.scrollLeft;
+          container.scrollTop = editorState.scrollTop || 0;
+          container.scrollLeft = editorState.scrollLeft || 0;
         });
       }
       
@@ -104,18 +104,12 @@ export function MultiEditorWorkspace({
           >
             <article className="editor-container min-h-[calc(100vh-10rem)] w-full max-w-4xl mx-auto px-16 py-12">
               <div className="min-h-[600px]">
-                {serializedState ? (
-                  <MinimalEditor
-                    editorSerializedState={serializedState}
-                    onSerializedChange={(state) => onEditorChange(tab.id, state)}
-                    placeholder={placeholder}
-                  />
-                ) : (
-                  <MinimalEditor
-                    onSerializedChange={(state) => onEditorChange(tab.id, state)}
-                    placeholder={placeholder}
-                  />
-                )}
+                <Editor
+                  initialState={serializedState ? JSON.stringify(serializedState) : null}
+                  onChange={(state: SerializedEditorState) => onEditorChange(tab.id, state)}
+                  placeholder={placeholder}
+                  namespace={`editor-${tab.id}`}
+                />
               </div>
             </article>
           </div>

@@ -1,11 +1,12 @@
 /**
- * Tag Picker Plugin - 支持 #[ 插入标签
+ * Tag Picker Plugin - 支持 #[ 插入内联标签
  *
  * 功能：
  * - 输入 #[ 触发标签选择器
  * - 支持搜索现有标签
  * - 支持创建新标签
- * - 按类别分组显示
+ * 
+ * 注意：这是 #+TAGS: 的补充，用于在正文中引用标签
  */
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
@@ -14,28 +15,13 @@ import {
   MenuOption,
 } from "@lexical/react/LexicalTypeaheadMenuPlugin";
 import { $getSelection, $isRangeSelection, type TextNode } from "lexical";
-import {
-  Tag,
-  User,
-  MapPin,
-  Package,
-  Calendar,
-  Lightbulb,
-  Plus,
-} from "lucide-react";
+import { Tag, Plus } from "lucide-react";
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
 import * as ReactDOM from "react-dom";
 
 import { $createTagNode } from "@/components/editor/nodes/tag-node";
-import {
-  useTagsByWorkspace,
-  type TagInterface,
-  type TagCategory,
-  TAG_CATEGORY_COLORS,
-  TAG_CATEGORY_LABELS,
-  createTag,
-} from "@/services/tags";
+import { useTagsByWorkspace, type TagInterface } from "@/services/tags";
 import { useSelectionStore } from "@/stores/selection";
 
 // 匹配 #[ 开头的输入
@@ -43,15 +29,17 @@ const TagTriggerRegex = /#\[([\u4e00-\u9fa5a-zA-Z0-9_\s]*)$/;
 
 const SUGGESTION_LIST_LENGTH_LIMIT = 10;
 
-// 类别图标映射
-const CATEGORY_ICONS: Record<TagCategory, React.ReactNode> = {
-  character: <User className="size-4" />,
-  location: <MapPin className="size-4" />,
-  item: <Package className="size-4" />,
-  event: <Calendar className="size-4" />,
-  theme: <Lightbulb className="size-4" />,
-  custom: <Tag className="size-4" />,
-};
+/**
+ * 根据标签名生成颜色
+ */
+function getTagColor(tagName: string): string {
+  let hash = 0;
+  for (let i = 0; i < tagName.length; i++) {
+    hash = tagName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash % 360);
+  return `hsl(${hue}, 60%, 50%)`;
+}
 
 class TagTypeaheadOption extends MenuOption {
   tag: TagInterface | null;
@@ -85,6 +73,7 @@ function TagTypeaheadMenuItem({
   option: TagTypeaheadOption;
 }) {
   if (option.isCreateNew) {
+    const color = getTagColor(option.createName);
     return (
       <li
         key={option.key}
@@ -101,8 +90,11 @@ function TagTypeaheadMenuItem({
           ${isSelected ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"}
         `}
       >
-        <div className="flex items-center justify-center size-8 rounded-full bg-green-500/10 shrink-0">
-          <Plus className="size-4 text-green-500" />
+        <div 
+          className="flex items-center justify-center size-8 rounded-full shrink-0"
+          style={{ backgroundColor: `${color}20`, color }}
+        >
+          <Plus className="size-4" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium">
@@ -118,6 +110,8 @@ function TagTypeaheadMenuItem({
 
   const { tag } = option;
   if (!tag) return null;
+
+  const color = getTagColor(tag.name);
 
   return (
     <li
@@ -137,23 +131,15 @@ function TagTypeaheadMenuItem({
     >
       <div
         className="flex items-center justify-center size-8 rounded-full shrink-0"
-        style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
+        style={{ backgroundColor: `${color}20`, color }}
       >
-        {CATEGORY_ICONS[tag.category]}
+        <Tag className="size-4" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium truncate">{tag.name}</div>
-        {tag.description && (
-          <div className="text-xs text-muted-foreground truncate">
-            {tag.description}
-          </div>
-        )}
-      </div>
-      <div
-        className="text-xs px-2 py-0.5 rounded-full shrink-0"
-        style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
-      >
-        {TAG_CATEGORY_LABELS[tag.category]}
+        <div className="text-xs text-muted-foreground">
+          {tag.count} 篇文档
+        </div>
       </div>
     </li>
   );
@@ -182,7 +168,7 @@ function checkForTagTrigger(text: string): MenuTextMatch | null {
 export default function TagPickerPlugin(): React.ReactElement | null {
   const [editor] = useLexicalComposerContext();
   const selectedProjectId = useSelectionStore((s) => s.selectedProjectId);
-  const tags = useTagsByWorkspace(selectedProjectId);
+  const tags = useTagsByWorkspace(selectedProjectId ?? undefined);
 
   const [queryString, setQueryString] = useState<string | null>(null);
 
@@ -193,21 +179,15 @@ export default function TagPickerPlugin(): React.ReactElement | null {
     let filtered: TagInterface[];
 
     if (!query) {
-      // 没有查询时显示所有标签
-      filtered = allTags.slice(0, SUGGESTION_LIST_LENGTH_LIMIT);
+      // 没有查询时显示所有标签（按使用次数排序）
+      filtered = [...allTags]
+        .sort((a, b) => b.count - a.count)
+        .slice(0, SUGGESTION_LIST_LENGTH_LIMIT);
     } else {
       // 过滤匹配的标签
       filtered = allTags
-        .filter((tag) => {
-          // 匹配名称
-          if (tag.name.toLowerCase().includes(query)) return true;
-          // 匹配描述
-          if (tag.description?.toLowerCase().includes(query)) return true;
-          // 匹配类别
-          if (TAG_CATEGORY_LABELS[tag.category].includes(query)) return true;
-          return false;
-        })
-        .slice(0, SUGGESTION_LIST_LENGTH_LIMIT - 1); // 留一个位置给"创建新标签"
+        .filter((tag) => tag.name.toLowerCase().includes(query))
+        .slice(0, SUGGESTION_LIST_LENGTH_LIMIT - 1);
     }
 
     const result: TagTypeaheadOption[] = filtered.map(
@@ -230,18 +210,11 @@ export default function TagPickerPlugin(): React.ReactElement | null {
       nodeToRemove: TextNode | null,
       closeMenu: () => void
     ) => {
-      let tag = selectedOption.tag;
+      const tagName = selectedOption.isCreateNew 
+        ? selectedOption.createName 
+        : selectedOption.tag?.name;
 
-      // 如果是创建新标签
-      if (selectedOption.isCreateNew && selectedProjectId) {
-        tag = await createTag({
-          workspace: selectedProjectId,
-          name: selectedOption.createName,
-          category: "custom",
-        });
-      }
-
-      if (!tag) {
+      if (!tagName) {
         closeMenu();
         return;
       }
@@ -250,12 +223,7 @@ export default function TagPickerPlugin(): React.ReactElement | null {
         if (nodeToRemove) {
           nodeToRemove.remove();
         }
-        const tagNode = $createTagNode(
-          tag.name,
-          tag.id,
-          tag.color,
-          tag.category
-        );
+        const tagNode = $createTagNode(tagName);
         const selection = $getSelection();
         if ($isRangeSelection(selection)) {
           selection.insertNodes([tagNode]);
@@ -263,7 +231,7 @@ export default function TagPickerPlugin(): React.ReactElement | null {
         closeMenu();
       });
     },
-    [editor, selectedProjectId]
+    [editor]
   );
 
   const checkForTagMatch = useCallback((text: string) => {

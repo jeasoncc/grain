@@ -30,12 +30,12 @@ function RootComponent() {
 	const [searchOpen, setSearchOpen] = useState(false);
 	const [bufferSwitcherOpen, setBufferSwitcherOpen] = useState(false);
 	const [bufferSwitcherDirection, setBufferSwitcherDirection] = useState<"forward" | "backward">("forward");
-	
+
 	// Editor tabs state for buffer switcher
 	const tabs = useEditorTabsStore((s) => s.tabs);
 	const activeTabId = useEditorTabsStore((s) => s.activeTabId);
 	const setActiveTab = useEditorTabsStore((s) => s.setActiveTab);
-	
+
 	const {
 		activePanel,
 		isOpen: unifiedSidebarOpen,
@@ -57,6 +57,7 @@ function RootComponent() {
 		}
 		return () => autoBackupManager.stop();
 	}, []);
+
 
 	// 全局快捷键
 	useEffect(() => {

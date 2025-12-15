@@ -57,6 +57,9 @@ export interface NodeInterface {
 
   /** Last modification timestamp in ISO 8601 format */
   lastEdit: ISODateString;
+
+  /** Tags array - extracted from #+TAGS: in content */
+  tags?: string[];
 }
 
 /**
@@ -84,4 +87,5 @@ export interface NodeUpdateInput {
   title?: string;
   order?: number;
   collapsed?: boolean;
+  tags?: string[];
 }

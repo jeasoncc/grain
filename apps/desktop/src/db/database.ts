@@ -6,16 +6,14 @@
  * for performance optimization with large documents (5000+ characters).
  *
  * Tables:
- * - nodes: File tree structure (without content)
+ * - nodes: File tree structure (with tags array for org-mode style tagging)
  * - contents: Document content (Lexical JSON, Excalidraw, etc.)
  * - workspaces: Project/workspace metadata
  * - wikiEntries: Wiki knowledge base entries
  * - drawings: Excalidraw drawings
  * - users: User information and settings
  * - attachments: File attachments
- * - tags: Tag definitions
- * - nodeTags: Node-tag relationships
- * - tagRelations: Tag-tag relationships
+ * - tags: Tag aggregation cache (for statistics and graph visualization)
  * - dbVersions: Database version tracking
  *
  * @requirements 5.1, 5.2
@@ -24,19 +22,21 @@
 import Dexie, { type Table } from "dexie";
 import logger from "@/log/index.ts";
 
-// Import interfaces from schema (will be migrated to models later)
+// Import interfaces from schema (legacy types)
 import type {
 	AttachmentInterface,
 	DBVersionInterface,
 	DrawingInterface,
-	NodeInterface,
 	ProjectInterface,
 	UserInterface,
 	WikiEntryInterface,
 } from "./schema.ts";
 
+// Import NodeInterface from models (has tags field)
+import type { NodeInterface } from "./models/node";
+
 // Import tag interfaces
-import type { TagInterface, NodeTagInterface, TagRelationInterface } from "./models/tag";
+import type { TagInterface } from "./models/tag";
 
 /**
  * Content type for the contents table
@@ -74,16 +74,13 @@ export class NovelEditorDatabase extends Dexie {
 	attachments!: Table<AttachmentInterface, string>;
 	dbVersions!: Table<DBVersionInterface, string>;
 
-	// Tag system tables
+	// Tag aggregation cache (source of truth is nodes.tags)
 	tags!: Table<TagInterface, string>;
-	nodeTags!: Table<NodeTagInterface, string>;
-	tagRelations!: Table<TagRelationInterface, string>;
 
 	constructor() {
 		super("NovelEditorDB");
 
 		// Version 7: Add contents table for content separation
-		// Preserves backward compatibility with existing data
 		this.version(7).stores({
 			nodes: "id, workspace, parent, type, order",
 			contents: "id, nodeId, contentType",
@@ -96,9 +93,8 @@ export class NovelEditorDatabase extends Dexie {
 			projects: "id, title, owner",
 		});
 
-		// Version 8: Add tag system tables
+		// Version 8: Add tag system tables (legacy)
 		this.version(8).stores({
-			// Existing tables (unchanged)
 			nodes: "id, workspace, parent, type, order",
 			contents: "id, nodeId, contentType",
 			workspaces: "id, title, owner",
@@ -108,23 +104,36 @@ export class NovelEditorDatabase extends Dexie {
 			attachments: "id, project",
 			dbVersions: "id, version",
 			projects: "id, title, owner",
-
-			// Tag definitions table
-			// Indexes: id (primary), workspace, name, category
 			tags: "id, workspace, name, category",
-
-			// Node-tag junction table (many-to-many)
-			// Indexes: id (primary), nodeId, tagId, compound [nodeId+tagId]
 			nodeTags: "id, nodeId, tagId, [nodeId+tagId]",
-
-			// Tag-tag relations table (for graph visualization)
-			// Indexes: id (primary), workspace, sourceTagId, targetTagId, compound
 			tagRelations: "id, workspace, sourceTagId, targetTagId, [sourceTagId+targetTagId]",
+		});
+
+		// Version 9: Simplified tag system (org-mode style)
+		// - Tags stored in nodes.tags array (source of truth)
+		// - *tags creates multi-entry index for efficient tag queries
+		// - tags table is aggregation cache only
+		// - Remove nodeTags and tagRelations tables
+		this.version(9).stores({
+			nodes: "id, workspace, parent, type, order, *tags",
+			contents: "id, nodeId, contentType",
+			workspaces: "id, title, owner",
+			wikiEntries: "id, project, name",
+			drawings: "id, project, name",
+			users: "id, username, email",
+			attachments: "id, project",
+			dbVersions: "id, version",
+			projects: "id, title, owner",
+			// Simplified tags table - aggregation cache only
+			tags: "id, workspace, name",
+			// Remove junction tables (set to null to delete)
+			nodeTags: null,
+			tagRelations: null,
 		});
 
 		// Open database and log status
 		this.open()
-			.then(() => logger.success("NovelEditorDatabase initialized (v8)"))
+			.then(() => logger.success("NovelEditorDatabase initialized (v9)"))
 			.catch((err) => logger.error("Database open error:", err));
 	}
 }

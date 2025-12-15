@@ -1,327 +1,261 @@
 /**
- * Tag Service
+ * Tag Service (Simplified)
  *
- * Provides high-level tag management operations.
- * Handles tag CRUD, node-tag associations, and graph data.
+ * Tags are stored in nodes.tags array (source of truth).
+ * This service manages the tags aggregation cache for:
+ * - Tag statistics (usage count)
+ * - Quick lookup for autocomplete
+ * - Graph visualization data
  *
  * @requirements 6.2
  */
 
-import { toast } from "sonner";
-import {
-  TagRepository,
-  NodeTagRepository,
-  TagRelationRepository,
-  getTagGraph,
-  getTagsWithStats,
-  type TagInterface,
-  type TagCategory,
-  type TagCreateInput,
-  type TagUpdateInput,
-  type NodeTagInterface,
-  type TagRelationInterface,
-  type RelationType,
-  type TagGraphData,
-  type TagPosition,
-} from "@/db/models";
+import { database } from "@/db/database";
+import type { TagInterface } from "@/db/models/tag";
+import { useLiveQuery } from "dexie-react-hooks";
 
-// Re-export hooks for convenience
-export {
-  useTagsByWorkspace,
-  useTag,
-  useTagsByCategory,
-  useNodeTags,
-  useNodeTagRelations,
-  useNodesWithTag,
-  useTagRelations,
-  useTagRelationsForTag,
-  useTagGraph,
-  useTagsWithStats,
-  useTagSearch,
-  useTagUsageCount,
-} from "@/db/models";
-
-// Re-export types
-export type {
-  TagInterface,
-  TagCategory,
-  TagCreateInput,
-  TagUpdateInput,
-  NodeTagInterface,
-  TagRelationInterface,
-  RelationType,
-  TagGraphData,
-  TagPosition,
-};
+// Re-export TagInterface for convenience
+export type { TagInterface } from "@/db/models/tag";
 
 // ============================================
-// Tag Management
+// Tag Cache Sync
 // ============================================
 
 /**
- * Create a new tag
+ * Sync tags to the aggregation cache
+ * Called after saving a document with tags
  */
-export async function createTag(input: TagCreateInput): Promise<TagInterface> {
-  const tag = await TagRepository.add(input);
-  toast.success(`标签 "${tag.name}" 创建成功`);
-  return tag;
+export async function syncTagsCache(workspaceId: string, tags: string[]): Promise<void> {
+  const now = new Date().toISOString();
+
+  for (const tagName of tags) {
+    const tagId = `${workspaceId}:${tagName}`;
+    const existing = await database.tags.get(tagId);
+
+    if (existing) {
+      // Update last used time
+      await database.tags.update(tagId, {
+        lastUsed: now,
+      });
+    } else {
+      // Create new tag cache entry
+      await database.tags.add({
+        id: tagId,
+        name: tagName,
+        workspace: workspaceId,
+        count: 0, // Will be recalculated
+        lastUsed: now,
+        createDate: now,
+      });
+    }
+  }
+
+  // Recalculate counts for affected tags
+  await recalculateTagCounts(workspaceId, tags);
 }
 
 /**
- * Update a tag
+ * Recalculate tag usage counts from nodes.tags
  */
-export async function updateTag(id: string, updates: TagUpdateInput): Promise<void> {
-  await TagRepository.update(id, updates);
-  toast.success("标签已更新");
+export async function recalculateTagCounts(workspaceId: string, tags: string[]): Promise<void> {
+  for (const tagName of tags) {
+    const tagId = `${workspaceId}:${tagName}`;
+    // Count nodes that have this tag using multi-entry index
+    const count = await database.nodes
+      .where("tags")
+      .equals(tagName)
+      .and((node) => node.workspace === workspaceId)
+      .count();
+
+    await database.tags.update(tagId, { count });
+  }
 }
 
 /**
- * Delete a tag
+ * Rebuild entire tag cache for a workspace
+ * Use this for data recovery or initial migration
  */
-export async function deleteTag(id: string): Promise<void> {
-  await TagRepository.delete(id);
-  toast.success("标签已删除");
+export async function rebuildTagCache(workspaceId: string): Promise<void> {
+  // Get all unique tags from nodes
+  const nodes = await database.nodes
+    .where("workspace")
+    .equals(workspaceId)
+    .toArray();
+
+  const tagCounts = new Map<string, number>();
+  const now = new Date().toISOString();
+
+  for (const node of nodes) {
+    if (node.tags && Array.isArray(node.tags)) {
+      for (const tag of node.tags) {
+        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+      }
+    }
+  }
+
+  // Clear existing cache for workspace
+  await database.tags.where("workspace").equals(workspaceId).delete();
+
+  // Rebuild cache
+  const tagEntries: TagInterface[] = [];
+  for (const [name, count] of tagCounts) {
+    tagEntries.push({
+      id: `${workspaceId}:${name}`,
+      name,
+      workspace: workspaceId,
+      count,
+      lastUsed: now,
+      createDate: now,
+    });
+  }
+
+  if (tagEntries.length > 0) {
+    await database.tags.bulkAdd(tagEntries);
+  }
+}
+
+// ============================================
+// Tag Queries
+// ============================================
+
+/**
+ * Get all tags for a workspace (from cache)
+ */
+export async function getTagsByWorkspace(workspaceId: string): Promise<TagInterface[]> {
+  return database.tags.where("workspace").equals(workspaceId).toArray();
 }
 
 /**
- * Get or create a tag by name
- */
-export async function getOrCreateTag(
-  workspaceId: string,
-  name: string,
-  category?: TagCategory
-): Promise<TagInterface> {
-  return TagRepository.getOrCreate(workspaceId, name, category);
-}
-
-/**
- * Search tags by name
+ * Search tags by name prefix
  */
 export async function searchTags(workspaceId: string, query: string): Promise<TagInterface[]> {
-  return TagRepository.searchByName(workspaceId, query);
-}
-
-// ============================================
-// Node-Tag Association
-// ============================================
-
-/**
- * Add a tag to a node
- */
-export async function addTagToNode(nodeId: string, tagId: string): Promise<NodeTagInterface> {
-  return NodeTagRepository.add({ nodeId, tagId });
+  const lowerQuery = query.toLowerCase();
+  return database.tags
+    .where("workspace")
+    .equals(workspaceId)
+    .filter((tag) => tag.name.toLowerCase().includes(lowerQuery))
+    .toArray();
 }
 
 /**
- * Remove a tag from a node
+ * Get nodes by tag
  */
-export async function removeTagFromNode(nodeId: string, tagId: string): Promise<void> {
-  await NodeTagRepository.remove(nodeId, tagId);
+export async function getNodesByTag(workspaceId: string, tagName: string) {
+  return database.nodes
+    .where("tags")
+    .equals(tagName)
+    .and((node) => node.workspace === workspaceId)
+    .toArray();
 }
-
-/**
- * Sync tags for a node (replace all existing tags)
- */
-export async function syncNodeTags(nodeId: string, tagIds: string[]): Promise<void> {
-  await NodeTagRepository.syncForNode(nodeId, tagIds);
-}
-
-/**
- * Update tag positions in content
- */
-export async function updateTagPositions(
-  nodeId: string,
-  tagId: string,
-  positions: TagPosition[]
-): Promise<void> {
-  await NodeTagRepository.updatePositions(nodeId, tagId, positions);
-}
-
-/**
- * Get tag usage count
- */
-export async function getTagUsageCount(tagId: string): Promise<number> {
-  return NodeTagRepository.countByTagId(tagId);
-}
-
-// ============================================
-// Tag Relations
-// ============================================
-
-/**
- * Create a relation between two tags
- */
-export async function createTagRelation(
-  workspaceId: string,
-  sourceTagId: string,
-  targetTagId: string,
-  relationType: RelationType = "related",
-  weight: number = 50
-): Promise<TagRelationInterface> {
-  return TagRelationRepository.add({
-    workspace: workspaceId,
-    sourceTagId,
-    targetTagId,
-    relationType,
-    weight,
-  });
-}
-
-/**
- * Delete a relation between two tags
- */
-export async function deleteTagRelation(sourceTagId: string, targetTagId: string): Promise<void> {
-  await TagRelationRepository.deleteBetween(sourceTagId, targetTagId);
-}
-
-/**
- * Update a tag relation
- */
-export async function updateTagRelation(
-  id: string,
-  updates: { relationType?: RelationType; weight?: number; description?: string }
-): Promise<void> {
-  await TagRelationRepository.update(id, updates);
-}
-
-// ============================================
-// Graph Data
-// ============================================
 
 /**
  * Get tag graph data for visualization
  */
-export async function fetchTagGraph(workspaceId: string): Promise<TagGraphData> {
-  return getTagGraph(workspaceId);
-}
+export async function getTagGraphData(workspaceId: string) {
+  const tags = await getTagsByWorkspace(workspaceId);
+  const nodes = await database.nodes
+    .where("workspace")
+    .equals(workspaceId)
+    .toArray();
 
-/**
- * Get tags with usage statistics
- */
-export async function fetchTagsWithStats(
-  workspaceId: string
-): Promise<Array<TagInterface & { usageCount: number }>> {
-  return getTagsWithStats(workspaceId);
-}
+  // Build co-occurrence matrix
+  const coOccurrence = new Map<string, Map<string, number>>();
 
-// ============================================
-// Content Tag Extraction
-// ============================================
+  for (const node of nodes) {
+    if (!node.tags || node.tags.length < 2) continue;
 
-/**
- * Extract tags from Lexical content
- * Looks for TagNode instances in the content
- */
-export function extractTagsFromContent(content: string): Array<{ tagId: string; positions: TagPosition[] }> {
-  if (!content) return [];
+    for (let i = 0; i < node.tags.length; i++) {
+      for (let j = i + 1; j < node.tags.length; j++) {
+        const tag1 = node.tags[i];
+        const tag2 = node.tags[j];
 
-  try {
-    const parsed = JSON.parse(content);
-    const tagMap = new Map<string, TagPosition[]>();
-
-    function traverse(node: any, offset: number = 0): number {
-      if (!node) return offset;
-
-      // Check if this is a tag node
-      if (node.type === "tag" && node.tagId) {
-        const positions = tagMap.get(node.tagId) || [];
-        const length = node.tagName?.length || 0;
-        positions.push({ start: offset, end: offset + length });
-        tagMap.set(node.tagId, positions);
-        return offset + length;
-      }
-
-      // Handle text nodes
-      if (node.type === "text" && node.text) {
-        return offset + node.text.length;
-      }
-
-      // Traverse children
-      if (node.children && Array.isArray(node.children)) {
-        let currentOffset = offset;
-        for (const child of node.children) {
-          currentOffset = traverse(child, currentOffset);
+        if (!coOccurrence.has(tag1)) {
+          coOccurrence.set(tag1, new Map());
         }
-        return currentOffset;
+        if (!coOccurrence.has(tag2)) {
+          coOccurrence.set(tag2, new Map());
+        }
+
+        const map1 = coOccurrence.get(tag1)!;
+        const map2 = coOccurrence.get(tag2)!;
+
+        map1.set(tag2, (map1.get(tag2) || 0) + 1);
+        map2.set(tag1, (map2.get(tag1) || 0) + 1);
       }
-
-      return offset;
     }
-
-    traverse(parsed.root);
-
-    return Array.from(tagMap.entries()).map(([tagId, positions]) => ({
-      tagId,
-      positions,
-    }));
-  } catch {
-    return [];
   }
+
+  // Build graph nodes and edges
+  const graphNodes = tags.map((tag) => ({
+    id: tag.id,
+    name: tag.name,
+    count: tag.count,
+  }));
+
+  const edges: Array<{ source: string; target: string; weight: number }> = [];
+  const addedEdges = new Set<string>();
+
+  for (const [tag1, connections] of coOccurrence) {
+    for (const [tag2, weight] of connections) {
+      const edgeKey = [tag1, tag2].sort().join(":");
+      if (!addedEdges.has(edgeKey)) {
+        edges.push({
+          source: `${workspaceId}:${tag1}`,
+          target: `${workspaceId}:${tag2}`,
+          weight,
+        });
+        addedEdges.add(edgeKey);
+      }
+    }
+  }
+
+  return { nodes: graphNodes, edges };
+}
+
+// ============================================
+// React Hooks
+// ============================================
+
+/**
+ * Hook to get all tags for a workspace
+ */
+export function useTagsByWorkspace(workspaceId: string | undefined) {
+  return useLiveQuery(
+    () => (workspaceId ? getTagsByWorkspace(workspaceId) : []),
+    [workspaceId],
+    []
+  );
 }
 
 /**
- * Sync tags from content to database
- * Call this after saving content to update node-tag relations
+ * Hook to get nodes by tag
  */
-export async function syncTagsFromContent(nodeId: string, content: string): Promise<void> {
-  const extracted = extractTagsFromContent(content);
-
-  // Get current tags for this node
-  const currentTags = await NodeTagRepository.getByNodeId(nodeId);
-  const currentTagIds = new Set(currentTags.map((t) => t.tagId));
-  const newTagIds = new Set(extracted.map((t) => t.tagId));
-
-  // Remove tags that are no longer in content
-  for (const tagId of currentTagIds) {
-    if (!newTagIds.has(tagId)) {
-      await NodeTagRepository.remove(nodeId, tagId);
-    }
-  }
-
-  // Add or update tags from content
-  for (const { tagId, positions } of extracted) {
-    if (currentTagIds.has(tagId)) {
-      // Update positions
-      await NodeTagRepository.updatePositions(nodeId, tagId, positions);
-    } else {
-      // Add new tag
-      await NodeTagRepository.add({
-        nodeId,
-        tagId,
-        mentions: positions.length,
-        positions: JSON.stringify(positions),
-      });
-    }
-  }
+export function useNodesByTag(workspaceId: string | undefined, tagName: string | undefined) {
+  return useLiveQuery(
+    () => (workspaceId && tagName ? getNodesByTag(workspaceId, tagName) : []),
+    [workspaceId, tagName],
+    []
+  );
 }
 
-// ============================================
-// Default Tag Colors
-// ============================================
+/**
+ * Hook to get tag graph data
+ */
+export function useTagGraph(workspaceId: string | undefined) {
+  return useLiveQuery(
+    () => (workspaceId ? getTagGraphData(workspaceId) : { nodes: [], edges: [] }),
+    [workspaceId],
+    { nodes: [], edges: [] }
+  );
+}
 
-export const TAG_CATEGORY_COLORS: Record<TagCategory, string> = {
-  character: "#FF6B6B",  // 红色 - 角色
-  location: "#4ECDC4",   // 青色 - 地点
-  item: "#FFE66D",       // 黄色 - 物品
-  event: "#95E1D3",      // 绿色 - 事件
-  theme: "#DDA0DD",      // 紫色 - 主题
-  custom: "#A8A8A8",     // 灰色 - 自定义
-};
-
-export const TAG_CATEGORY_LABELS: Record<TagCategory, string> = {
-  character: "角色",
-  location: "地点",
-  item: "物品",
-  event: "事件",
-  theme: "主题",
-  custom: "自定义",
-};
-
-export const TAG_CATEGORY_ICONS: Record<TagCategory, string> = {
-  character: "user",
-  location: "map-pin",
-  item: "package",
-  event: "calendar",
-  theme: "lightbulb",
-  custom: "tag",
-};
+/**
+ * Hook to search tags
+ */
+export function useTagSearch(workspaceId: string | undefined, query: string) {
+  return useLiveQuery(
+    () => (workspaceId && query ? searchTags(workspaceId, query) : []),
+    [workspaceId, query],
+    []
+  );
+}

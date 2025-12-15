@@ -3,12 +3,14 @@
  *
  * 使用 Canvas 绘制标签关系图
  * 支持拖拽、缩放、点击交互
+ * 
+ * 基于 nodes.tags 数组计算标签共现关系
  */
 
 import { useRef, useEffect, useState, useCallback } from "react";
-import { ZoomIn, ZoomOut, Maximize2, RefreshCw } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTagGraph, type TagGraphData } from "@/services/tags";
+import { useTagGraph } from "@/services/tags";
 import { useSelectionStore } from "@/stores/selection";
 
 interface GraphNode {
@@ -36,7 +38,7 @@ const MIN_DISTANCE = 80;
 
 export function TagGraphPanel() {
   const selectedProjectId = useSelectionStore((s) => s.selectedProjectId);
-  const graphData = useTagGraph(selectedProjectId);
+  const graphData = useTagGraph(selectedProjectId ?? undefined);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -58,18 +60,28 @@ export function TagGraphPanel() {
     const centerX = width / 2;
     const centerY = height / 2;
 
+    // 生成颜色 - 基于标签名称的哈希
+    const getColor = (name: string) => {
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const hue = Math.abs(hash % 360);
+      return `hsl(${hue}, 60%, 50%)`;
+    };
+
     const newNodes: GraphNode[] = graphData.nodes.map((node, i) => {
       const angle = (2 * Math.PI * i) / graphData.nodes.length;
       const radius = Math.min(width, height) * 0.3;
       return {
         id: node.id,
-        label: node.label,
-        color: node.color,
+        label: node.name,
+        color: getColor(node.name),
         x: centerX + radius * Math.cos(angle),
         y: centerY + radius * Math.sin(angle),
         vx: 0,
         vy: 0,
-        radius: 20 + Math.min(node.usageCount * 2, 20),
+        radius: 20 + Math.min(node.count * 2, 20),
       };
     });
 

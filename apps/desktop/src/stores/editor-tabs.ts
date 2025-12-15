@@ -9,6 +9,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SerializedEditorState } from "lexical";
+import type { EditorInstanceState as BaseEditorInstanceState } from "@novel-editor/editor";
 
 /**
  * Maximum number of editor states to keep in memory (LRU cache limit)
@@ -27,24 +28,20 @@ export interface EditorTab {
 
 /**
  * 编辑器实例状态
- * 存储每个标签页的编辑器状态，包括内容、光标、滚动位置等
+ * 扩展基础的 EditorInstanceState，添加额外的应用特定字段
  */
-export interface EditorInstanceState {
-  /** Lexical 序列化状态 */
-  serializedState: SerializedEditorState | null;
+export interface EditorInstanceState extends BaseEditorInstanceState {
   /** 光标/选区状态 */
   selectionState?: {
     anchor: { key: string; offset: number };
     focus: { key: string; offset: number };
   };
-  /** 垂直滚动位置 */
-  scrollTop: number;
   /** 水平滚动位置 */
-  scrollLeft: number;
+  scrollLeft?: number;
   /** 是否有未保存更改 */
-  isDirty: boolean;
+  isDirty?: boolean;
   /** 最后修改时间戳，用于 LRU 清理 */
-  lastModified: number;
+  lastModified?: number;
 }
 
 interface EditorTabsState {
@@ -73,7 +70,7 @@ interface EditorTabsState {
  */
 function createDefaultEditorState(): EditorInstanceState {
   return {
-    serializedState: null,
+    serializedState: undefined,
     selectionState: undefined,
     scrollTop: 0,
     scrollLeft: 0,
@@ -108,7 +105,7 @@ function evictLRUEditorStates(
 
   // Sort by lastModified (oldest first)
   const sortedEntries = entries.sort(
-    ([, a], [, b]) => a.lastModified - b.lastModified
+    ([, a], [, b]) => (a.lastModified || 0) - (b.lastModified || 0)
   );
 
   // Calculate how many to evict

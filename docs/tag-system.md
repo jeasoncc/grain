@@ -1,175 +1,172 @@
-# Tag 系统设计文档
+# Tag 系统设计文档 (Simplified Org-mode Style)
 
 ## 概述
 
-Tag 系统为小说编辑器提供标签管理功能，支持：
-- 在编辑器中通过 `#[标签名]` 内联插入标签
-- 标签管理面板（创建、编辑、删除）
-- 标签关系图谱可视化
-- 按类别分组（角色、地点、物品、事件、主题、自定义）
+Tag 系统采用 org-mode 风格的简化设计：
+- 在文档头部使用 `#+TAGS: tag1, tag2, tag3` 定义标签
+- 标签存储在 `nodes.tags` 数组中（数据源）
+- `tags` 表仅作为聚合缓存（统计和图谱）
+- 保存时自动提取标签并同步到数据库
+
+## 设计原则
+
+1. **定义简单**：直接在文档中输入 `#+TAGS:` 行
+2. **存储丰富**：数据库索引支持高效查询
+3. **功能强大**：支持信息检索和图谱可视化
 
 ## 数据模型
 
-### 1. tags 表 - 标签定义
+### 1. nodes 表 - 标签存储（数据源）
+
+```typescript
+interface NodeInterface {
+  id: UUID;
+  workspace: UUID;
+  parent: UUID | null;
+  type: NodeType;
+  title: string;
+  order: number;
+  collapsed?: boolean;
+  createDate: ISODateString;
+  lastEdit: ISODateString;
+  tags?: string[];  // ← 标签数组，从 #+TAGS: 提取
+}
+```
+
+数据库索引：`"id, workspace, parent, type, order, *tags"`
+- `*tags` 是 Dexie 的 multi-entry 索引，支持高效的标签查询
+
+### 2. tags 表 - 聚合缓存
 
 ```typescript
 interface TagInterface {
-  id: UUID;
-  workspace: UUID;        // 所属工作区
-  name: string;           // 标签名
-  color: string;          // 颜色 (#RRGGBB)
-  category: TagCategory;  // 类别
-  icon?: string;          // 图标名
-  description?: string;   // 描述
-  metadata?: string;      // JSON 扩展字段
-  createDate: ISODateString;
-  lastEdit: ISODateString;
-}
-
-type TagCategory = "character" | "location" | "item" | "event" | "theme" | "custom";
-```
-
-### 2. nodeTags 表 - 节点与标签关联
-
-```typescript
-interface NodeTagInterface {
-  id: UUID;
-  nodeId: UUID;           // 关联的节点
-  tagId: UUID;            // 关联的标签
-  mentions: number;       // 出现次数
-  positions?: string;     // JSON: 位置数组 [{start, end}]
+  id: string;           // workspace:tagName
+  name: string;         // 标签名
+  workspace: UUID;      // 所属工作区
+  count: number;        // 使用次数
+  lastUsed: ISODateString;
   createDate: ISODateString;
 }
 ```
 
-### 3. tagRelations 表 - 标签间关系
+数据库索引：`"id, workspace, name"`
 
-```typescript
-interface TagRelationInterface {
-  id: UUID;
-  workspace: UUID;
-  sourceTagId: UUID;      // 源标签
-  targetTagId: UUID;      // 目标标签
-  relationType: RelationType;
-  weight: number;         // 关系强度 0-100
-  description?: string;
-  createDate: ISODateString;
-}
+## 工作流程
 
-type RelationType = "related" | "parent" | "child" | "conflict" | "alias" | "belongs" | "owns" | "knows" | "custom";
+### 1. 标签定义
+
+在文档开头输入：
+```
+#+TAGS: 日记, 工作, 想法
+#+TITLE: 今日笔记
+#+DATE: 2025-01-01
 ```
 
-## 数据库索引
+按 Enter 后，`#+TAGS:` 行会转换为 `FrontMatterNode`，显示为美观的标签样式。
+
+### 2. 保存时同步
+
+```
+用户编辑 → 保存触发 → 提取 #+TAGS: → 更新 nodes.tags → 同步 tags 缓存
+```
+
+### 3. 标签查询
 
 ```typescript
-tags: "id, workspace, name, category"
-nodeTags: "id, nodeId, tagId, [nodeId+tagId]"
-tagRelations: "id, workspace, sourceTagId, targetTagId, [sourceTagId+targetTagId]"
+// 按标签查找文档（使用 multi-entry 索引）
+const nodes = await database.nodes
+  .where("tags")
+  .equals("日记")
+  .and(node => node.workspace === workspaceId)
+  .toArray();
 ```
+
+### 4. 图谱可视化
+
+基于 `nodes.tags` 计算标签共现关系：
+- 同一文档中的标签形成边
+- 边的权重 = 共现次数
 
 ## 文件结构
 
 ```
 apps/desktop/src/
 ├── db/
-│   ├── database.ts                    # 数据库定义 (v8)
+│   ├── database.ts                    # 数据库定义 (v9)
 │   └── models/
 │       └── tag/
 │           ├── index.ts               # 统一导出
-│           ├── tag.interface.ts       # Tag 接口
-│           ├── node-tag.interface.ts  # NodeTag 接口
-│           ├── tag-relation.interface.ts # TagRelation 接口
-│           ├── tag.schema.ts          # Zod 验证
-│           ├── tag.builder.ts         # Builder 类
-│           ├── tag.repository.ts      # CRUD 操作
-│           └── tag.hooks.ts           # React hooks
+│           └── tag.interface.ts       # Tag 接口
 ├── services/
-│   └── tags.ts                        # 标签服务层
+│   ├── save.ts                        # 保存服务（含标签提取）
+│   └── tags.ts                        # 标签服务（缓存同步、查询）
 ├── components/
 │   ├── editor/
 │   │   ├── nodes/
-│   │   │   └── tag-node.tsx           # Lexical TagNode
+│   │   │   └── front-matter-node.tsx  # #+KEY: value 渲染
 │   │   └── plugins/
-│   │       └── tag-picker-plugin.tsx  # 标签选择器插件
+│   │       └── front-matter-plugin.tsx # 前置内容解析
 │   └── panels/
-│       ├── tags-panel.tsx             # 标签管理面板
-│       ├── node-tags-panel.tsx        # 当前节点标签
-│       ├── tag-graph-panel.tsx        # 标签图谱
-│       ├── create-tag-dialog.tsx      # 创建标签对话框
-│       └── edit-tag-dialog.tsx        # 编辑标签对话框
+│       └── tag-graph-panel.tsx        # 标签图谱
 ```
 
 ## 使用方式
 
-### 1. 在编辑器中插入标签
+### 1. 定义标签
 
-输入 `#[` 触发标签选择器：
-- 搜索现有标签
-- 选择或创建新标签
-- 标签显示为彩色 badge
+在文档开头输入：
+```
+#+TAGS: 角色, 设定, 第一章
+```
 
-### 2. 标签管理
+按 Enter，自动转换为 FrontMatterNode。
 
-通过 `TagsPanel` 组件：
-- 查看所有标签（按类别分组）
-- 创建新标签
-- 编辑标签属性
-- 删除标签
+### 2. 查看标签图谱
 
-### 3. 标签图谱
+点击侧边栏的 Tags 图标，查看标签关系图谱。
 
-通过 `TagGraphPanel` 组件：
-- 可视化标签关系
-- 力导向布局
-- 支持拖拽、缩放
-
-### 4. API 使用
+### 3. API 使用
 
 ```typescript
 import {
   // Hooks
   useTagsByWorkspace,
-  useNodeTags,
+  useNodesByTag,
   useTagGraph,
   
-  // Services
-  createTag,
-  updateTag,
-  deleteTag,
-  addTagToNode,
-  removeTagFromNode,
-  createTagRelation,
+  // Functions
+  getNodesByTag,
+  getTagGraphData,
+  rebuildTagCache,
 } from "@/services/tags";
 
-// 创建标签
-const tag = await createTag({
-  workspace: workspaceId,
-  name: "张三",
-  category: "character",
-  color: "#FF6B6B",
-});
+// 按标签查找文档
+const nodes = useNodesByTag(workspaceId, "日记");
 
-// 添加标签到节点
-await addTagToNode(nodeId, tag.id);
-
-// 获取标签图谱数据
-const graphData = await fetchTagGraph(workspaceId);
+// 获取图谱数据
+const graphData = useTagGraph(workspaceId);
 ```
-
-## 默认颜色
-
-| 类别 | 颜色 | 说明 |
-|------|------|------|
-| character | #FF6B6B | 红色 - 角色 |
-| location | #4ECDC4 | 青色 - 地点 |
-| item | #FFE66D | 黄色 - 物品 |
-| event | #95E1D3 | 绿色 - 事件 |
-| theme | #DDA0DD | 紫色 - 主题 |
-| custom | #A8A8A8 | 灰色 - 自定义 |
 
 ## 性能优化
 
-1. **独立表设计**：标签数据与内容分离，图谱加载不需要读取内容
-2. **复合索引**：`[nodeId+tagId]` 加速关联查询
-3. **懒加载**：标签详情按需加载
-4. **缓存**：使用 `useLiveQuery` 自动缓存和更新
+1. **Multi-entry 索引**：`*tags` 索引支持 O(log n) 的标签查询
+2. **增量同步**：保存时只更新变化的标签
+3. **缓存表**：`tags` 表避免每次都扫描所有节点
+4. **懒加载**：图谱数据按需计算
+
+## 与旧版对比
+
+| 特性 | 旧版 (v8) | 新版 (v9) |
+|------|-----------|-----------|
+| 标签定义 | 侧边栏输入框 | 文档内 #+TAGS: |
+| 数据源 | nodeTags 关联表 | nodes.tags 数组 |
+| 标签属性 | 颜色、类别、图标 | 仅名称 |
+| 关系存储 | tagRelations 表 | 动态计算共现 |
+| 复杂度 | 高（3张表） | 低（1张缓存表） |
+
+## 迁移说明
+
+从 v8 升级到 v9：
+1. `nodeTags` 和 `tagRelations` 表会被删除
+2. 需要手动在文档中添加 `#+TAGS:` 行
+3. 可运行 `rebuildTagCache(workspaceId)` 重建缓存

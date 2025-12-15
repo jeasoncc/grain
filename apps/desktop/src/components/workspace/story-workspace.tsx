@@ -1,6 +1,13 @@
 /**
  * StoryWorkspace - 简化版工作空间
  * 基于新的 Node 结构，移除旧的 chapter/scene 依赖
+ *
+ * 重构说明：
+ * - 移除旧的 rich-editor 导入，使用新的 MultiEditorContainer
+ * - 实现 CSS visibility 切换，保留编辑器状态
+ * - 集成自动保存逻辑
+ *
+ * @see Requirements 1.4, 3.1, 4.1, 6.4
  */
 
 import type { SerializedEditorState } from "lexical";
@@ -9,7 +16,6 @@ import {
 	Maximize2,
 	PanelRightClose,
 	PanelRightOpen,
-	Settings,
 	Upload,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -17,8 +23,6 @@ import { toast } from "sonner";
 import { CanvasEditor } from "@/components/blocks/canvas-editor";
 import { FocusMode } from "@/components/blocks/focus-mode";
 import { KeyboardShortcutsHelp } from "@/components/blocks/keyboard-shortcuts-help";
-import { MinimalEditor } from "@/components/blocks/rich-editor/minimal-editor";
-import { NovelEditor } from "@/components/blocks/rich-editor/novel-editor";
 import { SaveStatusIndicator } from "@/components/blocks/save-status-indicator";
 import { ThemeSelector } from "@/components/blocks/theme-selector";
 import { WordCountBadge } from "@/components/blocks/word-count-badge";
@@ -32,9 +36,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { database } from "@/db/database";
 import type { WorkspaceInterface, DrawingInterface } from "@/db/models";
-import { ContentRepository } from "@/db/models";
 import { useManualSave } from "@/hooks/use-manual-save";
 import { useSettings } from "@/hooks/use-settings";
 import { exportAll, importFromJson, readFileAsText } from "@/services/projects";
@@ -44,13 +46,12 @@ import { type SelectionState, useSelectionStore } from "@/stores/selection";
 import { useUIStore } from "@/stores/ui";
 import { useWritingStore } from "@/stores/writing";
 import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
-import { useDrawingsByProject } from "@/services/drawings";
-import { MultiEditorWorkspace } from "@/components/workspace/multi-editor-workspace";
-import { getNode, getNodeContent } from "@/services/nodes";
+import { getNodeContent } from "@/services/nodes";
+// 新的多编辑器容器组件 - 基于 Lexical Playground 实现
+import { MultiEditorContainer, Editor } from "@novel-editor/editor";
 
 // Type alias for backward compatibility
 type ProjectInterface = WorkspaceInterface;
-import { cn } from "@/lib/utils";
 
 interface StoryWorkspaceProps {
 	projects: ProjectInterface[];
@@ -58,6 +59,10 @@ interface StoryWorkspaceProps {
 	onCreateProject?: () => void;
 }
 
+/**
+ * 默认自动保存延迟（毫秒）
+ * @see Requirements 6.4 - 自动保存配置
+ */
 const DEFAULT_AUTO_SAVE_MS = 800;
 
 export function StoryWorkspace({
@@ -74,12 +79,12 @@ export function StoryWorkspace({
 
 	const [editorInitialState, setEditorInitialState] = useState<SerializedEditorState>();
 	const [sceneWordCount, setSceneWordCount] = useState(0);
-	const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "error">("saved");
+	// 保存状态用于自动保存逻辑
+	const [, setSaveStatus] = useState<"saved" | "saving" | "error">("saved");
 
 	// 专注模式
 	const focusMode = useWritingStore((s) => s.focusMode);
 	const setFocusMode = useWritingStore((s) => s.setFocusMode);
-	const typewriterMode = useWritingStore((s) => s.typewriterMode);
 
 	// UI 状态
 	const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen);
@@ -87,8 +92,7 @@ export function StoryWorkspace({
 	const tabPosition = useUIStore((s) => s.tabPosition);
 
 	// 绘图状态
-	const [selectedDrawing, setSelectedDrawing] = useState<DrawingInterface | null>(null);
-	const drawings = useDrawingsByProject(selectedProjectId);
+	const [selectedDrawing] = useState<DrawingInterface | null>(null);
 
 	// 标签页状态
 	const tabs = useEditorTabsStore((s) => s.tabs);
@@ -99,9 +103,6 @@ export function StoryWorkspace({
 	// 保存状态管理
 	const { markAsUnsaved, markAsSaved, markAsSaving } = useSaveStore();
 
-	// 所有标签都是 node 类型
-	const activeTabDocumentType = "node" as const;
-
 	// 获取当前编辑器内容
 	const currentContent = useMemo(() => {
 		if (!activeTabId) return null;
@@ -110,8 +111,8 @@ export function StoryWorkspace({
 		return editorInitialState || null;
 	}, [activeTabId, editorStates, editorInitialState]);
 
-	// 手动保存 hook
-	const { performManualSave } = useManualSave({
+	// 手动保存 hook（保留以支持快捷键保存）
+	useManualSave({
 		nodeId: activeTabId,
 		currentContent,
 		onSaveSuccess: () => setSaveStatus("saved"),
@@ -148,47 +149,8 @@ export function StoryWorkspace({
 		}
 	}, [activeTabId, tabs]);
 
-	// 自动保存处理
+	// 自动保存定时器引用
 	const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-	const handleEditorChange = useCallback(
-		(state: SerializedEditorState) => {
-			if (!activeTabId) return;
-
-			// 更新编辑器状态
-			updateEditorState(activeTabId, { serializedState: state });
-			markAsUnsaved();
-
-			// 清除之前的定时器
-			if (autoSaveTimerRef.current) {
-				clearTimeout(autoSaveTimerRef.current);
-			}
-
-			// 设置新的自动保存定时器
-			if (autoSaveDelayMs > 0) {
-				autoSaveTimerRef.current = setTimeout(async () => {
-					const activeTab = tabs.find(t => t.id === activeTabId);
-					if (!activeTab) return;
-
-					setSaveStatus("saving");
-					markAsSaving();
-
-					try {
-						const documentId = activeTab.nodeId;
-						if (documentId) {
-							await saveService.saveDocument(documentId, state);
-						}
-						setSaveStatus("saved");
-						markAsSaved();
-					} catch (error) {
-						console.error("Auto-save failed:", error);
-						setSaveStatus("error");
-					}
-				}, autoSaveDelayMs);
-			}
-		},
-		[activeTabId, autoSaveDelayMs, tabs, activeTabDocumentType, updateEditorState, markAsUnsaved, markAsSaving, markAsSaved]
-	);
 
 	// 导入导出
 	const handleExport = useCallback(async () => {
@@ -226,7 +188,71 @@ export function StoryWorkspace({
 	const activeTab = tabs.find((t) => t.id === activeTabId);
 	const isCanvasTab = activeTab?.type === "canvas";
 
-	// 渲染编辑器内容
+	/**
+	 * 处理滚动位置变化
+	 * @see Requirements 3.3 - 保留滚动位置
+	 */
+	const handleScrollChange = useCallback(
+		(tabId: string, scrollTop: number) => {
+			updateEditorState(tabId, { scrollTop });
+		},
+		[updateEditorState]
+	);
+
+	/**
+	 * 处理编辑器内容变化（来自 MultiEditorContainer）
+	 * @see Requirements 6.4 - 自动保存
+	 */
+	const handleMultiEditorContentChange = useCallback(
+		(tabId: string, state: SerializedEditorState) => {
+			// 更新编辑器状态
+			updateEditorState(tabId, { serializedState: state });
+			markAsUnsaved();
+
+			// 清除之前的定时器
+			if (autoSaveTimerRef.current) {
+				clearTimeout(autoSaveTimerRef.current);
+			}
+
+			// 设置新的自动保存定时器
+			if (autoSaveDelayMs > 0) {
+				autoSaveTimerRef.current = setTimeout(async () => {
+					const tab = tabs.find(t => t.id === tabId);
+					if (!tab) return;
+
+					setSaveStatus("saving");
+					markAsSaving();
+
+					try {
+						const documentId = tab.nodeId;
+						if (documentId) {
+							await saveService.saveDocument(documentId, state);
+						}
+						setSaveStatus("saved");
+						markAsSaved();
+					} catch (error) {
+						console.error("Auto-save failed:", error);
+						setSaveStatus("error");
+					}
+				}, autoSaveDelayMs);
+			}
+		},
+		[autoSaveDelayMs, tabs, updateEditorState, markAsUnsaved, markAsSaving, markAsSaved]
+	);
+
+	/**
+	 * 过滤出文本编辑器标签（非 canvas 类型）
+	 * @see Requirements 3.1, 4.1 - 多编辑器实例管理
+	 */
+	const textEditorTabs = useMemo(() => {
+		return tabs.filter(tab => tab.type !== "canvas");
+	}, [tabs]);
+
+	/**
+	 * 渲染编辑器内容
+	 * 使用 MultiEditorContainer 管理多个编辑器实例
+	 * @see Requirements 4.1 - CSS visibility 切换
+	 */
 	const renderEditorContent = () => {
 		if (!activeTab) {
 			return (
@@ -236,6 +262,7 @@ export function StoryWorkspace({
 			);
 		}
 
+		// Canvas 编辑器单独处理
 		if (isCanvasTab) {
 			return (
 				<CanvasEditor
@@ -245,6 +272,7 @@ export function StoryWorkspace({
 			);
 		}
 
+		// 绘图工作区单独处理
 		if (selectedDrawing) {
 			return (
 				<DrawingWorkspace
@@ -253,34 +281,54 @@ export function StoryWorkspace({
 			);
 		}
 
-		// 文本编辑器
-		const state = editorStates[activeTab.id];
-		const editorState = state?.serializedState || editorInitialState;
-
+		// 使用 MultiEditorContainer 管理文本编辑器
+		// 所有编辑器实例同时挂载，通过 CSS visibility 控制显示
 		return (
-			<div className="flex-1 overflow-auto">
-				<NovelEditor
-					key={activeTab.id}
-					editorSerializedState={editorState}
-					onSerializedChange={handleEditorChange}
+			<div className="flex-1 overflow-hidden">
+				<MultiEditorContainer
+					tabs={textEditorTabs}
+					activeTabId={activeTabId}
+					editorStates={editorStates}
+					onContentChange={handleMultiEditorContentChange}
+					onScrollChange={handleScrollChange}
+					placeholder="开始写作..."
 				/>
 			</div>
 		);
 	};
 
+	/**
+	 * 处理专注模式下的编辑器内容变化
+	 * @see Requirements 6.4 - 自动保存
+	 */
+	const handleFocusModeChange = useCallback(
+		(state: SerializedEditorState) => {
+			if (!activeTabId) return;
+			handleMultiEditorContentChange(activeTabId, state);
+		},
+		[activeTabId, handleMultiEditorContentChange]
+	);
+
 	// 专注模式
 	if (focusMode) {
 		const state = activeTab ? editorStates[activeTab.id] : undefined;
-		const editorState = state?.serializedState || editorInitialState;
+		// 将 SerializedEditorState 转换为 JSON 字符串供新 Editor 使用
+		const editorStateJson = state?.serializedState
+			? JSON.stringify(state.serializedState)
+			: editorInitialState
+				? JSON.stringify(editorInitialState)
+				: null;
+
 		return (
 			<FocusMode
 				wordCount={sceneWordCount}
 				onExit={() => setFocusMode(false)}
 				sceneTitle={activeTab?.title || ""}
 			>
-				<NovelEditor
-					editorSerializedState={editorState}
-					onSerializedChange={handleEditorChange}
+				<Editor
+					initialState={editorStateJson}
+					onChange={handleFocusModeChange}
+					placeholder="开始写作..."
 				/>
 			</FocusMode>
 		);
