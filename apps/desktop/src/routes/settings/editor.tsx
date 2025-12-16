@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
 	Select,
@@ -43,14 +43,19 @@ function EditorSettings() {
 			</div>
 			<Separator />
 
-			<div className="grid gap-8">
+			<div className="grid gap-6">
 				{/* Typography Section */}
-				<section className="space-y-4">
-					<h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-						Typography
-					</h4>
-
-					<div className="grid gap-6">
+				<Card>
+					<CardHeader>
+						<CardTitle className="text-base flex items-center gap-2">
+							<Type className="size-4 text-primary" />
+							Typography
+						</CardTitle>
+						<CardDescription>
+							Control fonts, sizes, and spacing for optimal readability.
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="grid gap-6">
 						{/* Font Family */}
 						<div className="flex items-center justify-between">
 							<div className="space-y-0.5">
@@ -181,23 +186,28 @@ function EditorSettings() {
 								</p>
 							</div>
 							<div className="flex items-center gap-3">
+								<span className="text-sm text-muted-foreground w-16 text-right">
+									{firstLineIndent > 0 ? `${firstLineIndent} chars` : "Off"}
+								</span>
 								<Switch
 									checked={firstLineIndent > 0}
 									onCheckedChange={(checked) => setFirstLineIndent(checked ? 2 : 0)}
 								/>
-								<span className="text-sm text-muted-foreground w-20">
-									{firstLineIndent > 0 ? `${firstLineIndent} chars` : "Off"}
-								</span>
 							</div>
 						</div>
-					</div>
-				</section>
+					</CardContent>
+				</Card>
 
 				{/* Preview */}
-				<Card className="bg-muted/30 mt-4">
-					<CardContent className="p-6">
+				<Card className="bg-muted/30 border-dashed">
+					<CardHeader className="pb-2">
+						<CardTitle className="text-sm font-medium uppercase text-muted-foreground">
+							Preview
+						</CardTitle>
+					</CardHeader>
+					<CardContent className="p-6 pt-0">
 						<div
-							className="max-w-2xl mx-auto"
+							className="max-w-2xl mx-auto bg-background p-8 rounded-lg shadow-sm border"
 							style={{
 								fontFamily,
 								fontSize: `${fontSize}px`,

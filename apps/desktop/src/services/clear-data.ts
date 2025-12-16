@@ -5,6 +5,7 @@
 
 import logger from "@/log";
 import { database } from "@/db/database";
+import { db } from "@/db/curd";
 
 export interface ClearDataOptions {
 	clearIndexedDB?: boolean;
@@ -18,7 +19,9 @@ export interface ClearDataOptions {
  */
 export async function clearIndexedDB(): Promise<void> {
 	try {
-		// 清空所有表的数据（使用新的 node-based 结构）
+		// 清空所有表的数据
+		// 注意：workspaces 和 projects 是同一数据的不同表名（向后兼容）
+		// 我们需要同时清空两个表以确保完全清空
 		await database.transaction(
 			"rw",
 			[
@@ -29,6 +32,8 @@ export async function clearIndexedDB(): Promise<void> {
 				database.wikiEntries,
 				database.drawings,
 				database.attachments,
+				database.tags,
+				database.dbVersions,
 			],
 			async () => {
 				await database.users.clear();
@@ -38,8 +43,13 @@ export async function clearIndexedDB(): Promise<void> {
 				await database.wikiEntries.clear();
 				await database.drawings.clear();
 				await database.attachments.clear();
+				await database.tags.clear();
+				await database.dbVersions.clear();
 			},
 		);
+
+		// 同时清空 projects 表（旧的表名，通过 db 实例访问）
+		await db.projects.clear();
 
 		logger.info("[Clear Data] IndexedDB cleared successfully");
 	} catch (error) {
@@ -56,22 +66,8 @@ export async function clearIndexedDB(): Promise<void> {
  */
 export function clearLocalStorage(): void {
 	try {
-		const keysToKeep: string[] = [
-			// 保留一些系统关键设置，确保应用正常运行
-			'theme',
-			'language', 
-			'right-sidebar-open',
-			'unified-sidebar-state',
-			'font-settings',
-			'editor-settings'
-		];
-
-		const allKeys = Object.keys(localStorage);
-		for (const key of allKeys) {
-			if (!keysToKeep.includes(key)) {
-				localStorage.removeItem(key);
-			}
-		}
+		// 清空所有 localStorage 数据，包括 zustand 持久化的 store
+		localStorage.clear();
 
 		logger.info("[Clear Data] localStorage cleared successfully");
 	} catch (error) {
@@ -132,25 +128,14 @@ export function clearCookies(): void {
 
 /**
  * 初始化基本设置，确保应用正常运行
+ * 清空所有数据后，设置一些默认值
  */
 function initializeBasicSettings(): void {
 	try {
-		// 设置默认主题
-		localStorage.setItem('theme', 'system');
+		// 不设置任何默认值，让应用使用代码中的默认值
+		// 这样可以确保完全清空，应用会自动初始化
 		
-		// 设置默认语言
-		localStorage.setItem('language', 'zh-CN');
-		
-		// 设置默认的侧边栏状态
-		localStorage.setItem('right-sidebar-open', 'false');
-		
-		// 设置默认的统一侧边栏状态
-		localStorage.setItem('unified-sidebar-state', JSON.stringify({
-			isOpen: true,
-			activePanel: 'files'
-		}));
-		
-		logger.info("[Clear Data] Basic settings initialized");
+		logger.info("[Clear Data] Basic settings will be initialized by app on next load");
 	} catch (error) {
 		logger.error("[Clear Data] Failed to initialize basic settings:", error);
 	}
@@ -251,6 +236,7 @@ export async function getStorageStats(): Promise<{
 				wikiEntries: await database.wikiEntries.count(),
 				drawings: await database.drawings.count(),
 				attachments: await database.attachments.count(),
+				tags: await database.tags.count(),
 			},
 		};
 

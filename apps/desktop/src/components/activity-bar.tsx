@@ -74,8 +74,23 @@ export function ActivityBar(): React.ReactElement {
 				// Workspaces exist - validate and restore selection
 				const isSelectedValid = selectedProjectId && projects.some(p => p.id === selectedProjectId);
 				if (!isSelectedValid) {
-					// Selected workspace doesn't exist or none selected - select first one
-					setSelectedProjectId(projects[0].id);
+					// Selected workspace doesn't exist or none selected
+					// Select the most recently opened workspace (by lastOpen field)
+					const sortedByLastOpen = [...projects].sort((a, b) => {
+						const dateA = new Date(a.lastOpen || a.createDate).getTime();
+						const dateB = new Date(b.lastOpen || b.createDate).getTime();
+						return dateB - dateA; // Most recent first
+					});
+					setSelectedProjectId(sortedByLastOpen[0].id);
+				} else {
+					// Valid selection exists - update its lastOpen timestamp
+					try {
+						await db.updateProject(selectedProjectId, {
+							lastOpen: new Date().toISOString(),
+						});
+					} catch (error) {
+						console.error("Failed to update lastOpen on init:", error);
+					}
 				}
 				hasAutoCreatedRef.current = true;
 			}
@@ -197,8 +212,16 @@ export function ActivityBar(): React.ReactElement {
 	}, [confirm, setSelectedProjectId, setSelectedNodeId]);
 
 	// Handle workspace selection
-	const handleSelectWorkspace = useCallback((projectId: string) => {
+	const handleSelectWorkspace = useCallback(async (projectId: string) => {
 		setSelectedProjectId(projectId);
+		// Update lastOpen timestamp
+		try {
+			await db.updateProject(projectId, {
+				lastOpen: new Date().toISOString(),
+			});
+		} catch (error) {
+			console.error("Failed to update lastOpen:", error);
+		}
 		toast.success("Workspace selected");
 	}, [setSelectedProjectId]);
 

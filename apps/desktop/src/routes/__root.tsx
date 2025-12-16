@@ -173,8 +173,6 @@ function RootComponent() {
 				<ExportDialogManager />
 				{/* 字体样式注入 */}
 				<FontStyleInjector />
-				{/* TanStack Devto
-				<OnboardingTour />
 				{/* TanStack Devtools - 仅在开发模式下显示 */}
 				{import.meta.env.DEV && <DevtoolsWrapper />}
 			</SidebarProvider>
