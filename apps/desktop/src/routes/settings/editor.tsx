@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus, Type } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
 	Select,
@@ -12,8 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { useSettings } from "@/hooks/use-settings";
-import { useFontSettings } from "@/stores/font";
+import { AVAILABLE_FONTS, useFontSettings } from "@/stores/font";
 
 export const Route = createFileRoute("/settings/editor")({
 	component: EditorSettings,
@@ -25,70 +23,61 @@ function EditorSettings() {
 		fontSize,
 		lineHeight,
 		paragraphSpacing,
+		firstLineIndent,
 		setFontFamily,
 		setFontSize,
 		setLineHeight,
 		setParagraphSpacing,
-	} = useSettings();
+		setFirstLineIndent,
+	} = useFontSettings();
 
-	const { firstLineIndent, setFirstLineIndent } = useFontSettings();
+	const currentFont = AVAILABLE_FONTS.find(f => f.value === fontFamily);
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-10 max-w-3xl">
 			<div>
 				<h3 className="text-lg font-medium">Editor Settings</h3>
 				<p className="text-sm text-muted-foreground">
 					Customize the writing experience.
 				</p>
 			</div>
-			<Separator />
-
-			<div className="grid gap-6">
+			
+			<div className="space-y-8">
 				{/* Typography Section */}
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-base flex items-center gap-2">
-							<Type className="size-4 text-primary" />
-							Typography
-						</CardTitle>
-						<CardDescription>
-							Control fonts, sizes, and spacing for optimal readability.
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="grid gap-6">
+				<div className="space-y-4">
+					<h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Typography</h4>
+					
+					<div className="space-y-6">
 						{/* Font Family */}
 						<div className="flex items-center justify-between">
 							<div className="space-y-0.5">
-								<Label className="text-base">Font Family</Label>
+								<Label className="text-base font-normal">Font Family</Label>
 								<p className="text-sm text-muted-foreground">
 									The primary font used for writing.
 								</p>
 							</div>
-							<div className="w-[200px]">
+							<div className="w-[240px]">
 								<Select value={fontFamily} onValueChange={setFontFamily}>
 									<SelectTrigger>
-										<SelectValue placeholder="Select font" />
+										<SelectValue placeholder="Select font">
+											{currentFont?.label || fontFamily}
+										</SelectValue>
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="Merriweather">
-											Merriweather (Serif)
-										</SelectItem>
-										<SelectItem value="Inter">Inter (Sans)</SelectItem>
-										<SelectItem value="Georgia">Georgia</SelectItem>
-										<SelectItem value="Times New Roman">
-											Times New Roman
-										</SelectItem>
+										{AVAILABLE_FONTS.map((font) => (
+											<SelectItem key={font.value} value={font.value}>
+												{font.label}
+											</SelectItem>
+										))}
 									</SelectContent>
 								</Select>
 							</div>
 						</div>
 
-						<Separator />
-
 						{/* Font Size */}
 						<div className="flex items-center justify-between">
 							<div className="space-y-0.5">
-								<Label className="text-base">Font Size</Label>
+								<Label className="text-base font-normal">Font Size</Label>
 								<p className="text-sm text-muted-foreground">
 									Adjust the text size (px).
 								</p>
@@ -118,12 +107,10 @@ function EditorSettings() {
 							</div>
 						</div>
 
-						<Separator />
-
 						{/* Line Height */}
 						<div className="flex items-center justify-between">
 							<div className="space-y-0.5">
-								<Label className="text-base">Line Height</Label>
+								<Label className="text-base font-normal">Line Height</Label>
 								<p className="text-sm text-muted-foreground">
 									Vertical spacing between lines.
 								</p>
@@ -140,6 +127,7 @@ function EditorSettings() {
 										<SelectItem value="1.2">Compact (1.2)</SelectItem>
 										<SelectItem value="1.5">Standard (1.5)</SelectItem>
 										<SelectItem value="1.6">Relaxed (1.6)</SelectItem>
+										<SelectItem value="1.75">Ideal (1.75)</SelectItem>
 										<SelectItem value="1.8">Loose (1.8)</SelectItem>
 										<SelectItem value="2">Double (2.0)</SelectItem>
 									</SelectContent>
@@ -147,12 +135,10 @@ function EditorSettings() {
 							</div>
 						</div>
 
-						<Separator />
-
 						{/* Paragraph Spacing */}
 						<div className="flex items-center justify-between">
 							<div className="space-y-0.5">
-								<Label className="text-base">Paragraph Spacing</Label>
+								<Label className="text-base font-normal">Paragraph Spacing</Label>
 								<p className="text-sm text-muted-foreground">
 									Spacing between paragraphs.
 								</p>
@@ -166,21 +152,21 @@ function EditorSettings() {
 										<SelectValue placeholder="Select spacing" />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="0.5">Compact</SelectItem>
-										<SelectItem value="1">Standard</SelectItem>
-										<SelectItem value="1.2">Relaxed</SelectItem>
-										<SelectItem value="1.5">Wide</SelectItem>
+										<SelectItem value="0">None</SelectItem>
+										<SelectItem value="0.4">Small (0.4)</SelectItem>
+										<SelectItem value="0.5">Compact (0.5)</SelectItem>
+										<SelectItem value="1">Standard (1.0)</SelectItem>
+										<SelectItem value="1.2">Relaxed (1.2)</SelectItem>
+										<SelectItem value="1.5">Wide (1.5)</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>
 						</div>
 
-						<Separator />
-
 						{/* First Line Indent */}
 						<div className="flex items-center justify-between">
 							<div className="space-y-0.5">
-								<Label className="text-base">First Line Indent</Label>
+								<Label className="text-base font-normal">First Line Indent</Label>
 								<p className="text-sm text-muted-foreground">
 									Indent the first line of each paragraph.
 								</p>
@@ -195,21 +181,20 @@ function EditorSettings() {
 								/>
 							</div>
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</div>
+
+				<Separator />
 
 				{/* Preview */}
-				<Card className="bg-muted/30 border-dashed">
-					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium uppercase text-muted-foreground">
-							Preview
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="p-6 pt-0">
+				<div className="space-y-4">
+					<h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Preview</h4>
+					
+					<div className="rounded-lg bg-muted/20 p-8">
 						<div
-							className="max-w-2xl mx-auto bg-background p-8 rounded-lg shadow-sm border"
+							className="max-w-2xl mx-auto"
 							style={{
-								fontFamily,
+								fontFamily: currentFont?.family || fontFamily,
 								fontSize: `${fontSize}px`,
 								lineHeight,
 							}}
@@ -231,8 +216,8 @@ function EditorSettings() {
 								have been able to breach the thick glass walls.
 							</p>
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</div>
 			</div>
 		</div>
 	);

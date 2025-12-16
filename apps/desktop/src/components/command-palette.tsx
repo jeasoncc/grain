@@ -2,7 +2,6 @@
 
 import { useNavigate } from "@tanstack/react-router";
 import {
-	BookOpen,
 	Download,
 	Moon,
 	Search,
@@ -21,8 +20,7 @@ import {
 import { useTheme } from "@/hooks/use-theme";
 import { useSelectionStore } from "@/stores/selection";
 import { exportDialogManager } from "@/components/export/export-dialog-manager";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/db/curd";
+import { useAllWorkspaces } from "@/db/models";
 
 interface CommandPaletteProps {
 	open: boolean;
@@ -34,9 +32,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 	const { theme, setTheme } = useTheme();
 	const [search, setSearch] = useState("");
 
-	const selectedProjectId = useSelectionStore((s) => s.selectedProjectId);
-	const projects = useLiveQuery(() => db.getAllProjects(), []) ?? [];
-	const currentProject = projects.find(p => p.id === selectedProjectId);
+	const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
+	const workspaces = useAllWorkspaces() ?? [];
+	const currentWorkspace = workspaces.find(w => w.id === selectedWorkspaceId);
 
 	// Command actions
 	const commands = [
@@ -53,19 +51,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 					},
 				},
 				{
-					label: "Export Project",
+					label: "Export Workspace",
 					icon: <Download className="size-4" />,
 					onSelect: () => {
 						onOpenChange(false);
-						exportDialogManager.open(selectedProjectId || undefined, currentProject?.title);
-					},
-				},
-				{
-					label: "Open Wiki",
-					icon: <BookOpen className="size-4" />,
-					onSelect: () => {
-						navigate({ to: "/wiki" });
-						onOpenChange(false);
+						exportDialogManager.open(selectedWorkspaceId || undefined, currentWorkspace?.title);
 					},
 				},
 			],

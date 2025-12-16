@@ -24,6 +24,11 @@ export const AVAILABLE_FONTS = [
 		family: '"Sarasa Gothic SC", "PingFang SC", "Microsoft YaHei", sans-serif',
 	},
 	{
+		value: "fira",
+		label: "Fira Code",
+		family: '"Fira Code", "Fira Mono", monospace',
+	},
+	{
 		value: "hack",
 		label: "Hack (等宽)",
 		family: '"Hack", "Fira Code", "Consolas", monospace',
@@ -38,6 +43,7 @@ export const AVAILABLE_FONTS = [
 interface FontSettings {
 	// 字体
 	fontFamily: string;
+	uiFontFamily: string; // Global UI font
 	fontSize: number; // 14-24
 	lineHeight: number; // 1.5-2.5
 	letterSpacing: number; // -0.05 - 0.1
@@ -48,6 +54,7 @@ interface FontSettings {
 
 	// 操作
 	setFontFamily: (family: string) => void;
+	setUiFontFamily: (family: string) => void;
 	setFontSize: (size: number) => void;
 	setLineHeight: (height: number) => void;
 	setLetterSpacing: (spacing: number) => void;
@@ -57,7 +64,8 @@ interface FontSettings {
 }
 
 const DEFAULT_SETTINGS = {
-	fontFamily: "songti",
+	fontFamily: "hack",
+	uiFontFamily: "system",
 	fontSize: 15, // 减小默认字体
 	lineHeight: 1.75, // 稍微紧凑的行高
 	letterSpacing: 0,
@@ -70,6 +78,7 @@ export const useFontSettings = create<FontSettings>()(
 		(set) => ({
 			...DEFAULT_SETTINGS,
 			setFontFamily: (fontFamily) => set({ fontFamily }),
+			setUiFontFamily: (uiFontFamily) => set({ uiFontFamily }),
 			setFontSize: (fontSize) =>
 				set({ fontSize: Math.max(14, Math.min(24, fontSize)) }),
 			setLineHeight: (lineHeight) =>

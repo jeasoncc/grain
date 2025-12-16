@@ -8,7 +8,6 @@
  */
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { SerializedEditorState } from "lexical";
 import type { EditorInstanceState as BaseEditorInstanceState } from "@novel-editor/editor";
 
 /**
@@ -19,7 +18,7 @@ const MAX_EDITOR_STATES = 10;
 
 export interface EditorTab {
   id: string; // 唯一标识，通常是 nodeId
-  projectId: string; // 工作空间/项目 ID
+  workspaceId: string; // 工作空间 ID
   nodeId: string; // 节点 ID
   title: string;
   type: "file" | "diary" | "canvas" | "folder"; // 节点类型
@@ -353,13 +352,13 @@ export const useEditorTabsStore = create<EditorTabsState>()(
       },
 
       getTabsByWorkspace: (workspaceId) => {
-        return get().tabs.filter(t => t.projectId === workspaceId);
+        return get().tabs.filter(t => t.workspaceId === workspaceId);
       },
 
       closeTabsByWorkspace: (workspaceId) => {
         const { tabs, activeTabId, editorStates } = get();
-        const tabsToClose = tabs.filter(t => t.projectId === workspaceId);
-        const remainingTabs = tabs.filter(t => t.projectId !== workspaceId);
+        const tabsToClose = tabs.filter(t => t.workspaceId === workspaceId);
+        const remainingTabs = tabs.filter(t => t.workspaceId !== workspaceId);
         
         // 清理对应的编辑器状态
         const newEditorStates = { ...editorStates };

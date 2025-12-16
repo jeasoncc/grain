@@ -15,8 +15,8 @@ import { exportProject, type ExportFormat } from "@/services/export";
 import { toast } from "sonner";
 
 interface ExportButtonProps {
-	projectId: string;
-	projectTitle?: string;
+	workspaceId: string;
+	workspaceTitle?: string;
 	variant?: "default" | "outline" | "ghost";
 	size?: "default" | "sm" | "lg";
 	className?: string;
@@ -37,8 +37,8 @@ const formatLabels: Record<ExportFormat, string> = {
 };
 
 export function ExportButton({
-	projectId,
-	projectTitle,
+	workspaceId,
+	workspaceTitle,
 	variant = "default",
 	size = "default",
 	className,
@@ -48,10 +48,10 @@ export function ExportButton({
 	const handleExport = async (format: ExportFormat) => {
 		setIsExporting(true);
 		try {
-			await exportProject(projectId, format);
-			toast.success(`导出成功: ${projectTitle || "项目"}.${format}`);
+			await exportProject(workspaceId, format);
+			toast.success(`Export successful: ${workspaceTitle || "workspace"}.${format}`);
 		} catch (error) {
-			toast.error(`导出失败: ${error instanceof Error ? error.message : "未知错误"}`);
+			toast.error(`Export failed: ${error instanceof Error ? error.message : "Unknown error"}`);
 		} finally {
 			setIsExporting(false);
 		}

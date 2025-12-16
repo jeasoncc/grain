@@ -37,8 +37,8 @@ const DAMPING = 0.9;
 const MIN_DISTANCE = 80;
 
 export function TagGraphPanel() {
-  const selectedProjectId = useSelectionStore((s) => s.selectedProjectId);
-  const graphData = useTagGraph(selectedProjectId ?? undefined);
+  const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
+  const graphData = useTagGraph(selectedWorkspaceId ?? undefined);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -300,10 +300,10 @@ export function TagGraphPanel() {
     setOffset({ x: 0, y: 0 });
   };
 
-  if (!selectedProjectId) {
+  if (!selectedWorkspaceId) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
-        请先选择一个工作区
+        Please select a workspace first
       </div>
     );
   }
@@ -311,7 +311,7 @@ export function TagGraphPanel() {
   if (!graphData || graphData.nodes.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
-        暂无标签数据
+        No tag data available
       </div>
     );
   }

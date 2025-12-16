@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 // Simplified panel types - files panel is the main file tree
-export type UnifiedSidebarPanel = "search" | "drawings" | "wiki" | "files" | "tags" | null;
+export type UnifiedSidebarPanel = "search" | "drawings" | "files" | "tags" | null;
 
 interface SearchPanelState {
 	query: string;
@@ -12,10 +12,6 @@ interface SearchPanelState {
 
 interface DrawingsPanelState {
 	selectedDrawingId: string | null;
-}
-
-interface WikiPanelState {
-	selectedEntryId: string | null;
 }
 
 interface FileTreeState {
@@ -42,7 +38,6 @@ interface UnifiedSidebarState {
 	// Panel states
 	searchState: SearchPanelState;
 	drawingsState: DrawingsPanelState;
-	wikiState: WikiPanelState;
 	fileTreeState: FileTreeState;
 
 	// Actions
@@ -63,9 +58,6 @@ interface UnifiedSidebarState {
 	// Drawings panel actions
 	setSelectedDrawingId: (id: string | null) => void;
 
-	// Wiki panel actions
-	setSelectedWikiEntryId: (id: string | null) => void;
-
 	// File tree actions
 	setExpandedFolders: (folders: Record<string, boolean>) => void;
 	toggleFolderExpanded: (folderId: string) => void;
@@ -84,14 +76,11 @@ export const useUnifiedSidebarStore = create<UnifiedSidebarState>()(
 			// Panel states
 			searchState: {
 				query: "",
-				selectedTypes: ["node", "wiki"],
+				selectedTypes: ["node"],
 				showFilters: false,
 			},
 			drawingsState: {
 				selectedDrawingId: null,
-			},
-			wikiState: {
-				selectedEntryId: null,
 			},
 			fileTreeState: {
 				expandedFolders: {},
@@ -155,12 +144,6 @@ export const useUnifiedSidebarStore = create<UnifiedSidebarState>()(
 					drawingsState: { ...state.drawingsState, selectedDrawingId: id },
 				})),
 
-			// Wiki panel actions
-			setSelectedWikiEntryId: (id) =>
-				set((state) => ({
-					wikiState: { ...state.wikiState, selectedEntryId: id },
-				})),
-
 			// File tree actions
 			setExpandedFolders: (folders) =>
 				set((state) => ({
@@ -187,7 +170,6 @@ export const useUnifiedSidebarStore = create<UnifiedSidebarState>()(
 				previousWidth: state.previousWidth,
 				searchState: state.searchState,
 				drawingsState: state.drawingsState,
-				wikiState: state.wikiState,
 				fileTreeState: state.fileTreeState,
 			}),
 		},

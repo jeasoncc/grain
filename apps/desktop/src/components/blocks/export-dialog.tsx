@@ -15,7 +15,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
 	Dialog,
 	DialogContent,
@@ -37,13 +37,13 @@ import {
 	exportAsMarkdown,
 	triggerBlobDownload,
 	triggerDownload,
-} from "@/services/projects";
+} from "@/services/import-export";
 
 interface ExportDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	projectId: string;
-	projectTitle?: string;
+	workspaceId: string;
+	workspaceTitle?: string;
 }
 
 type ExtendedExportFormat = ExportFormat | "markdown" | "json" | "zip";
@@ -51,8 +51,8 @@ type ExtendedExportFormat = ExportFormat | "markdown" | "json" | "zip";
 export function ExportDialog({
 	open,
 	onOpenChange,
-	projectId,
-	projectTitle,
+	workspaceId,
+	workspaceTitle,
 }: ExportDialogProps) {
 	const [format, setFormat] = useState<ExtendedExportFormat>("pdf");
 	const [isExporting, setIsExporting] = useState(false);
@@ -67,38 +67,38 @@ export function ExportDialog({
 	const handleExport = async () => {
 		setIsExporting(true);
 		try {
-			// 处理 Markdown 和 JSON 导出
+			// Handle Markdown and JSON export
 			if (format === "markdown") {
-				const md = await exportAsMarkdown(projectId);
+				const md = await exportAsMarkdown(workspaceId);
 				triggerDownload(
-					`${projectTitle || "novel"}.md`,
+					`${workspaceTitle || "novel"}.md`,
 					md,
 					"text/markdown;charset=utf-8",
 				);
-				toast.success("Markdown 导出成功");
+				toast.success("Markdown export successful");
 			} else if (format === "json") {
 				const json = await exportAll();
 				triggerDownload(
 					`novel-editor-backup-${new Date().toISOString().slice(0, 10)}.json`,
 					json,
 				);
-				toast.success("JSON 备份导出成功");
+				toast.success("JSON backup export successful");
 			} else if (format === "zip") {
 				const zipBlob = await exportAllAsZip();
 				triggerBlobDownload(
 					`novel-editor-backup-${new Date().toISOString().slice(0, 10)}.zip`,
 					zipBlob,
 				);
-				toast.success("ZIP 备份导出成功");
+				toast.success("ZIP archive export successful");
 			} else {
-				// 标准格式导出
-				await exportProject(projectId, format as ExportFormat, options);
-				toast.success(`${formatLabels[format]} 导出成功`);
+				// Standard format export
+				await exportProject(workspaceId, format as ExportFormat, options);
+				toast.success(`${formatLabels[format]} export successful`);
 			}
 			onOpenChange(false);
 		} catch (error) {
 			console.error("Export error:", error);
-			toast.error(error instanceof Error ? error.message : "导出失败，请重试");
+			toast.error(error instanceof Error ? error.message : "Export failed, please try again");
 		} finally {
 			setIsExporting(false);
 		}
@@ -107,21 +107,11 @@ export function ExportDialog({
 	const formatLabels: Record<ExtendedExportFormat, string> = {
 		pdf: "PDF",
 		docx: "Word",
-		txt: "纯文本",
+		txt: "Text",
 		epub: "EPUB",
 		markdown: "Markdown",
-		json: "JSON 备份",
-		zip: "ZIP 压缩包",
-	};
-
-	const formatDescriptions: Record<ExtendedExportFormat, string> = {
-		pdf: "适合打印和分享，保持精美排版",
-		docx: "可在 Word 中编辑，支持格式调整",
-		txt: "纯文本格式，兼容性最好",
-		epub: "电子书格式，适合阅读器",
-		markdown: "Markdown 格式，适合版本控制",
-		json: "完整备份，包含所有数据",
-		zip: "结构化备份，包含文件夹和文本",
+		json: "JSON Backup",
+		zip: "ZIP Archive",
 	};
 
 	const formatIcons: Record<ExtendedExportFormat, React.ReactNode> = {
@@ -136,34 +126,24 @@ export function ExportDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-[600px]">
+			<DialogContent className="sm:max-w-[700px] shadow-2xl border border-border/40 bg-popover/95 backdrop-blur-xl rounded-xl">
 				<DialogHeader>
-					<DialogTitle>导出作品</DialogTitle>
-					<DialogDescription>
-						将《{projectTitle || "作品"}》导出为文件
+					<DialogTitle className="text-lg font-medium tracking-tight">Export Workspace</DialogTitle>
+					<DialogDescription className="text-muted-foreground/80">
+						Select export format and options to save your work locally.
 					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-6 py-4">
-					{/* 格式选择 */}
+					{/* Format Selection */}
 					<div className="space-y-3">
-						<Label className="text-sm font-medium">导出格式</Label>
-						{format === "json" && (
-							<p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-								💡 JSON
-								备份包含所有书籍、章节、场景和 Wiki 数据，可用于完整恢复。
-							</p>
-						)}
-						{format === "zip" && (
-							<p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-								📦 ZIP
-								压缩包将数据按项目、章节组织成文件夹结构，每个场景导出为独立的文本文件，便于查看和管理。
-							</p>
-						)}
+						<Label className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold pl-1">
+							Export Format
+						</Label>
 						<RadioGroup
 							value={format}
 							onValueChange={(v) => setFormat(v as ExtendedExportFormat)}
-							className="grid grid-cols-3 gap-3"
+							className="grid grid-cols-4 gap-3"
 						>
 							{(
 								[
@@ -179,64 +159,75 @@ export function ExportDialog({
 								<label
 									key={f}
 									className={`
-										flex flex-col items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all
+										group relative flex flex-col items-center justify-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200 min-h-[110px]
 										${
 											format === f
-												? "border-primary bg-primary/5"
-												: "border-border hover:border-primary/50"
+												? "border-primary/50 bg-primary/10 shadow-sm"
+												: "border-border/40 bg-muted/30 hover:bg-muted/60 hover:border-border/80"
 										}
 									`}
 								>
 									<RadioGroupItem value={f} className="sr-only" />
-									{formatIcons[f]}
-									<span className="text-sm font-medium">{formatLabels[f]}</span>
-									<span className="text-xs text-muted-foreground text-center leading-tight">
-										{formatDescriptions[f]}
-									</span>
+									<div className={`transition-transform duration-200 ${format === f ? "scale-125" : "group-hover:scale-110"}`}>
+										{formatIcons[f]}
+									</div>
+									<div className={`text-xs font-medium ${format === f ? "text-primary" : "text-foreground"}`}>
+										{formatLabels[f]}
+									</div>
 								</label>
 							))}
 						</RadioGroup>
 					</div>
 
-					{/* 导出选项 - 仅对需要选项的格式显示 */}
+					{/* Export Options - Only show for formats that need options */}
 					{format !== "json" && format !== "zip" && (
 						<div className="space-y-3">
-							<Label className="text-sm font-medium">导出选项</Label>
-							<div className="space-y-3 rounded-lg border p-4">
-								<div className="flex items-center space-x-3">
-									<Checkbox
+							<Label className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold pl-1">
+								Options
+							</Label>
+							<div className="space-y-1 bg-muted/20 p-2 rounded-xl border border-border/40">
+								<div className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted/30 transition-colors">
+									<Label
+										htmlFor="includeTitle"
+										className="text-sm font-normal cursor-pointer text-muted-foreground peer-data-[state=checked]:text-foreground"
+									>
+										Include Book Title
+									</Label>
+									<Switch
 										id="includeTitle"
 										checked={options.includeTitle}
 										onCheckedChange={(checked) =>
 											setOptions({ ...options, includeTitle: !!checked })
 										}
+										className="scale-90"
 									/>
-									<Label
-										htmlFor="includeTitle"
-										className="text-sm cursor-pointer"
-									>
-										包含书名
-									</Label>
 								</div>
 
-								<div className="flex items-center space-x-3">
-									<Checkbox
+								<div className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted/30 transition-colors">
+									<Label
+										htmlFor="includeAuthor"
+										className="text-sm font-normal cursor-pointer text-muted-foreground peer-data-[state=checked]:text-foreground"
+									>
+										Include Author Name
+									</Label>
+									<Switch
 										id="includeAuthor"
 										checked={options.includeAuthor}
 										onCheckedChange={(checked) =>
 											setOptions({ ...options, includeAuthor: !!checked })
 										}
+										className="scale-90"
 									/>
-									<Label
-										htmlFor="includeAuthor"
-										className="text-sm cursor-pointer"
-									>
-										包含作者名
-									</Label>
 								</div>
 
-								<div className="flex items-center space-x-3">
-									<Checkbox
+								<div className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted/30 transition-colors">
+									<Label
+										htmlFor="includeChapterTitles"
+										className="text-sm font-normal cursor-pointer text-muted-foreground peer-data-[state=checked]:text-foreground"
+									>
+										Include Chapter Titles
+									</Label>
+									<Switch
 										id="includeChapterTitles"
 										checked={options.includeChapterTitles}
 										onCheckedChange={(checked) =>
@@ -245,34 +236,36 @@ export function ExportDialog({
 												includeChapterTitles: !!checked,
 											})
 										}
+										className="scale-90"
 									/>
-									<Label
-										htmlFor="includeChapterTitles"
-										className="text-sm cursor-pointer"
-									>
-										包含章节标题
-									</Label>
 								</div>
 
-								<div className="flex items-center space-x-3">
-									<Checkbox
+								<div className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted/30 transition-colors">
+									<Label
+										htmlFor="includeSceneTitles"
+										className="text-sm font-normal cursor-pointer text-muted-foreground peer-data-[state=checked]:text-foreground"
+									>
+										Include Scene Titles
+									</Label>
+									<Switch
 										id="includeSceneTitles"
 										checked={options.includeSceneTitles}
 										onCheckedChange={(checked) =>
 											setOptions({ ...options, includeSceneTitles: !!checked })
 										}
+										className="scale-90"
 									/>
-									<Label
-										htmlFor="includeSceneTitles"
-										className="text-sm cursor-pointer"
-									>
-										包含场景标题
-									</Label>
 								</div>
 
 								{format !== "txt" && format !== "markdown" && (
-									<div className="flex items-center space-x-3">
-										<Checkbox
+									<div className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted/30 transition-colors border-t border-border/30 mt-1 pt-2">
+										<Label
+											htmlFor="pageBreakBetweenChapters"
+											className="text-sm font-normal cursor-pointer text-muted-foreground peer-data-[state=checked]:text-foreground"
+										>
+											Page Break Between Chapters
+										</Label>
+										<Switch
 											id="pageBreakBetweenChapters"
 											checked={options.pageBreakBetweenChapters}
 											onCheckedChange={(checked) =>
@@ -281,13 +274,8 @@ export function ExportDialog({
 													pageBreakBetweenChapters: !!checked,
 												})
 											}
+											className="scale-90"
 										/>
-										<Label
-											htmlFor="pageBreakBetweenChapters"
-											className="text-sm cursor-pointer"
-										>
-											章节间分页
-										</Label>
 									</div>
 								)}
 							</div>
@@ -301,16 +289,16 @@ export function ExportDialog({
 						onClick={() => onOpenChange(false)}
 						disabled={isExporting}
 					>
-						取消
+						Cancel
 					</Button>
 					<Button onClick={handleExport} disabled={isExporting}>
 						{isExporting ? (
 							<>
 								<Loader2 className="mr-2 size-4 animate-spin" />
-								导出中...
+								Exporting...
 							</>
 						) : (
-							<>导出 {formatLabels[format]}</>
+							<>Export {formatLabels[format]}</>
 						)}
 					</Button>
 				</DialogFooter>

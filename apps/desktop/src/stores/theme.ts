@@ -62,8 +62,8 @@ function applyThemeWithTransition(theme: Theme, enableTransition: boolean) {
 export const useThemeStore = create<ThemeState>()(
 	persist(
 		(set, get) => ({
-			themeKey: "default-light",
-			mode: "system",
+			themeKey: "default-dark",
+			mode: "dark",
 			enableTransition: true,
 			_initialized: false,
 

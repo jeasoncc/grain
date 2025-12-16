@@ -10,10 +10,8 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSettings } from "@/hooks/use-settings";
 import { useUIStore, type TabPosition } from "@/stores/ui";
-import { Globe, Save, LayoutTemplate, SpellCheck as SpellCheckIcon } from "lucide-react";
 
 export const Route = createFileRoute("/settings/general")({
 	component: GeneralSettings,
@@ -34,31 +32,23 @@ function GeneralSettings() {
 	const { tabPosition, setTabPosition } = useUIStore();
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-10 max-w-3xl">
 			<div>
 				<h3 className="text-lg font-medium">General Settings</h3>
 				<p className="text-sm text-muted-foreground">
 					Configure general preferences for the application.
 				</p>
 			</div>
-			<Separator />
-
-			<div className="grid gap-6">
+			
+			<div className="space-y-8">
 				{/* Application Preferences */}
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-base flex items-center gap-2">
-							<LayoutTemplate className="size-4 text-primary" />
-							Application
-						</CardTitle>
-						<CardDescription>
-							Customize how the application looks and behaves.
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="grid gap-6">
+				<div className="space-y-4">
+					<h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Application</h4>
+					
+					<div className="space-y-6">
 						<div className="flex items-center justify-between">
 							<div className="space-y-0.5">
-								<Label className="text-base">Language</Label>
+								<Label className="text-base font-normal">Language</Label>
 								<p className="text-sm text-muted-foreground">
 									Select the display language.
 								</p>
@@ -79,11 +69,9 @@ function GeneralSettings() {
 							</div>
 						</div>
 
-						<Separator />
-
 						<div className="flex items-center justify-between">
 							<div className="space-y-0.5">
-								<Label className="text-base">Tab Position</Label>
+								<Label className="text-base font-normal">Tab Position</Label>
 								<p className="text-sm text-muted-foreground">
 									Choose where editor tabs are displayed.
 								</p>
@@ -103,24 +91,19 @@ function GeneralSettings() {
 								</Select>
 							</div>
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</div>
+
+				<Separator />
 
 				{/* Editor & Saving */}
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-base flex items-center gap-2">
-							<Save className="size-4 text-primary" />
-							Editor & Saving
-						</CardTitle>
-						<CardDescription>
-							Manage auto-save behavior and writing aids.
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="grid gap-6">
+				<div className="space-y-4">
+					<h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Editor & Saving</h4>
+					
+					<div className="space-y-6">
 						<div className="flex items-center justify-between">
 							<div className="space-y-0.5">
-								<Label className="text-base">Auto Save</Label>
+								<Label className="text-base font-normal">Auto Save</Label>
 								<p className="text-sm text-muted-foreground">
 									Automatically save your work periodically.
 								</p>
@@ -132,9 +115,9 @@ function GeneralSettings() {
 						</div>
 
 						{autoSave && (
-							<div className="flex items-center justify-between bg-muted/50 p-3 rounded-md -mt-2">
+							<div className="flex items-center justify-between pl-4 border-l-2 border-muted">
 								<div className="space-y-0.5">
-									<Label className="text-sm">Save Interval</Label>
+									<Label className="text-sm font-normal">Save Interval</Label>
 									<p className="text-xs text-muted-foreground">
 										How often to save (in seconds).
 									</p>
@@ -153,11 +136,9 @@ function GeneralSettings() {
 							</div>
 						)}
 
-						<Separator />
-
 						<div className="flex items-center justify-between">
 							<div className="space-y-0.5">
-								<Label className="text-base">Spell Check</Label>
+								<Label className="text-base font-normal">Spell Check</Label>
 								<p className="text-sm text-muted-foreground">
 									Highlight misspelled words in the editor.
 								</p>
@@ -167,8 +148,8 @@ function GeneralSettings() {
 								onCheckedChange={(c) => setSpellCheck(!!c)}
 							/>
 						</div>
-					</CardContent>
-				</Card>
+					</div>
+				</div>
 			</div>
 		</div>
 	);

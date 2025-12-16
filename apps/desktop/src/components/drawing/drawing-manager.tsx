@@ -8,11 +8,11 @@ import { DrawingWorkspace } from "./drawing-workspace";
 import type { DrawingInterface } from "@/db/schema";
 
 interface DrawingManagerProps {
-	projectId: string | null;
+	workspaceId: string | null;
 	className?: string;
 }
 
-export function DrawingManager({ projectId, className }: DrawingManagerProps) {
+export function DrawingManager({ workspaceId, className }: DrawingManagerProps) {
 	const [selectedDrawing, setSelectedDrawing] = useState<DrawingInterface | null>(null);
 
 	const handleSelectDrawing = (drawing: DrawingInterface) => {
@@ -36,7 +36,7 @@ export function DrawingManager({ projectId, className }: DrawingManagerProps) {
 			{/* Sidebar with drawing list */}
 			<div className="w-80 border-r bg-muted/30">
 				<DrawingList
-					projectId={projectId}
+					workspaceId={workspaceId}
 					onSelectDrawing={handleSelectDrawing}
 					selectedDrawingId={selectedDrawing?.id}
 				/>

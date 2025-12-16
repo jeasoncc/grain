@@ -284,8 +284,8 @@ export const UserRepository = {
       displayName: "Default User",
       plan: "free",
       settings: {
-        theme: "light",
-        language: "zh",
+        theme: "dark",
+        language: "en",
         fontSize: "16px",
       },
     });

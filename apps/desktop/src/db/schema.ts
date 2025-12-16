@@ -120,21 +120,6 @@ export interface ProjectInterface {
 	owner?: string; // 项目拥有者ID，可选
 }
 
-// ---------- Wiki条目 ----------
-/**
- * Wiki条目信息，支持角色、地点、物品等各种类型的知识管理
- */
-export interface WikiEntryInterface {
-	id: string; // Wiki条目唯一标识，使用 UUID
-	project: string; // 所属项目 ID
-	name: string; // 条目名称
-	alias: string[]; // 别名
-	tags: string[]; // 自定义标签
-	content: string; // 富文本内容 (Lexical JSON序列化状态)
-	createDate: string; // 创建时间
-	updatedAt: string; // 最近更新时间
-}
-
 // ---------- 绘图 ----------
 /**
  * 存储项目级别的绘图数据

@@ -1,42 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useLiveQuery } from "dexie-react-hooks";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { openCreateBookDialog } from "@/components/blocks/createBookDialog";
-import { EmptyProject } from "@/components/blocks/emptyProject";
 import { Spinner } from "@/components/ui/loading";
 import { StoryWorkspace } from "@/components/workspace/story-workspace";
-import { db } from "@/db/curd";
-import type { ProjectInterface } from "@/db/schema";
-import logger from "@/log";
+import { useAllWorkspaces } from "@/db/models";
 
 export const Route = createFileRoute("/")({
 	component: RouteComponent,
 });
 
 function RouteComponent() {
-	const [loading, setLoading] = useState(false);
-	const projects = useLiveQuery<ProjectInterface[]>(
-		() => db.getAllProjects(),
-		[],
-	);
+	const workspaces = useAllWorkspaces();
 
-	const createProject = async () => {
-		const data = await openCreateBookDialog();
-		if (!data) return;
-		setLoading(true);
-		try {
-			await db.addProject(data);
-			toast.success(`Project "${data.title}" created!`);
-		} catch (err) {
-			toast.error("Failed to create project");
-			logger.error(err);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	if (loading || projects === undefined) {
+	// Show loading spinner while:
+	// 1. Workspaces haven't loaded yet (undefined)
+	// 2. Workspaces array is empty (waiting for auto-creation in activity-bar)
+	if (workspaces === undefined || workspaces.length === 0) {
 		return (
 			<div className="flex min-h-screen items-center justify-center">
 				<Spinner />
@@ -44,16 +21,5 @@ function RouteComponent() {
 		);
 	}
 
-	return (
-		<>
-			{!projects?.length ? (
-				<EmptyProject onCreate={createProject} onImport={createProject} />
-			) : (
-				<StoryWorkspace
-					projects={projects}
-					onCreateProject={createProject}
-				/>
-			)}
-		</>
-	);
+	return <StoryWorkspace workspaces={workspaces} />;
 }

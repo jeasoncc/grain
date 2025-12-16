@@ -20,7 +20,6 @@ import type {
 	NodeInterface,
 	ProjectInterface,
 	UserInterface,
-	WikiEntryInterface,
 } from "./schema.ts";
 
 // ==============================
@@ -29,7 +28,6 @@ import type {
 export class NovelEditorDB extends Dexie {
 	users!: Table<UserInterface, string>;
 	projects!: Table<ProjectInterface, string>;
-	wikiEntries!: Table<WikiEntryInterface, string>;
 	drawings!: Table<DrawingInterface, string>;
 	attachments!: Table<AttachmentInterface, string>;
 	dbVersions!: Table<DBVersionInterface, string>;
@@ -174,7 +172,7 @@ export class NovelEditorDB extends Dexie {
 			},
 			settings: {
 				...user.settings,
-				theme: user.settings?.theme || "light",
+				theme: user.settings?.theme || "dark",
 				language: user.settings?.language || "en",
 				autosave: user.settings?.autosave ?? true,
 				spellCheck: user.settings?.spellCheck ?? true,
@@ -320,58 +318,6 @@ export class NovelEditorDB extends Dexie {
 
 	async getAttachmentsByProject(projectId: string) {
 		return this.attachments.where("project").equals(projectId).toArray();
-	}
-
-	// ==========================
-	// Wiki条目表
-	// ==========================
-	async addWikiEntry(entry: Partial<WikiEntryInterface>) {
-		const now = dayjs().toISOString();
-		const newEntry: WikiEntryInterface = {
-			id: uuidv4(),
-			project: entry.project!,
-			name: entry.name || "新条目",
-			alias: entry.alias || [],
-			tags: entry.tags || [],
-			content: entry.content || "",
-			createDate: now,
-			updatedAt: now,
-		};
-		await this.wikiEntries.add(newEntry);
-		logger.info(`Added wiki entry ${newEntry.name} (${newEntry.id})`);
-		return newEntry;
-	}
-
-	async updateWikiEntry(id: string, updates: Partial<WikiEntryInterface>) {
-		updates.updatedAt = dayjs().toISOString();
-		await this.wikiEntries.update(id, updates);
-		logger.info(`Updated wiki entry ${id}`);
-	}
-
-	async deleteWikiEntry(id: string) {
-		await this.wikiEntries.delete(id);
-		logger.warn(`Deleted wiki entry ${id}`);
-	}
-
-	async getWikiEntry(id: string) {
-		return this.wikiEntries.get(id);
-	}
-
-	async getWikiEntriesByProject(projectId: string) {
-		return this.wikiEntries.where("project").equals(projectId).toArray();
-	}
-
-	async searchWikiEntries(projectId: string, query: string) {
-		const lowerQuery = query.toLowerCase();
-		return this.wikiEntries
-			.where("project")
-			.equals(projectId)
-			.and((entry) => 
-				entry.name.toLowerCase().includes(lowerQuery) ||
-				entry.tags.some(tag => tag.toLowerCase().includes(lowerQuery)) ||
-				entry.alias.some(alias => alias.toLowerCase().includes(lowerQuery))
-			)
-			.toArray();
 	}
 
 	// ==========================

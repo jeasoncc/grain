@@ -28,12 +28,12 @@ export function StoryRightSidebar({
 	selectedDrawing 
 }: StoryRightSidebarProps = {}) {
 	const tabPosition = useUIStore((s) => s.tabPosition);
-	const selectedProjectId = useSelectionStore((s) => s.selectedProjectId);
+	const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
 	const allTabs = useEditorTabsStore((s) => s.tabs);
 	// 只显示当前 workspace 的标签
 	const tabs = useMemo(() => 
-		allTabs.filter(t => t.projectId === selectedProjectId),
-		[allTabs, selectedProjectId]
+		allTabs.filter(t => t.workspaceId === selectedWorkspaceId),
+		[allTabs, selectedWorkspaceId]
 	);
 	const activeTabId = useEditorTabsStore((s) => s.activeTabId);
 	const setActiveTab = useEditorTabsStore((s) => s.setActiveTab);
@@ -61,55 +61,66 @@ export function StoryRightSidebar({
 	};
 
 	return (
-		<aside className="w-56 shrink-0 border-l border-border/30 bg-sidebar flex flex-col h-full">
+		<aside className="w-56 shrink-0 border-l border-border/30 bg-sidebar/50 flex flex-col h-full backdrop-blur-sm">
 			{/* Header */}
-			<div className="h-11 flex items-center px-3 border-b border-border/30">
-				<span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+			<div className="h-10 flex items-center px-4 border-b border-border/30 justify-between shrink-0">
+				<span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">
 					Open Tabs
 				</span>
-				<span className="ml-auto text-xs text-muted-foreground">
+				<span className="flex items-center justify-center min-w-[1.25rem] h-4 text-[10px] font-medium rounded-full bg-primary/10 text-primary px-1">
 					{tabs.length}
 				</span>
 			</div>
 
 			{/* Tabs List */}
-			<div className="flex-1 overflow-y-auto py-1">
-				{tabs.map((tab) => (
-					<Tooltip key={tab.id}>
-						<TooltipTrigger asChild>
-							<button
-								onClick={() => setActiveTab(tab.id)}
-								className={cn(
-									"group w-full flex items-center gap-2 px-3 py-2 text-sm",
-									"hover:bg-accent/50 transition-colors",
-									activeTabId === tab.id
-										? "bg-accent text-accent-foreground border-l-2 border-l-primary"
-										: "text-muted-foreground hover:text-foreground"
-								)}
-							>
-								{getTabIcon(tab.type)}
-								<span className="flex-1 truncate text-left text-xs">
-									{tab.isDirty && <span className="text-primary mr-1">●</span>}
-									{tab.title}
-								</span>
-								<Button
-									variant="ghost"
-									size="icon"
-									className="size-5 opacity-0 group-hover:opacity-100 hover:bg-destructive/20 transition-opacity shrink-0"
-									onClick={(e) => {
-										e.stopPropagation();
-										closeTab(tab.id);
-									}}
+			<div className="flex-1 overflow-y-auto p-2 space-y-0.5 custom-scrollbar">
+				{tabs.map((tab) => {
+					const isActive = activeTabId === tab.id;
+					return (
+						<Tooltip key={tab.id}>
+							<TooltipTrigger asChild>
+								<button
+									onClick={() => setActiveTab(tab.id)}
+									className={cn(
+										"group w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs rounded-md transition-all duration-200",
+										isActive
+											? "bg-primary/10 text-primary font-medium shadow-sm scale-[1.02]"
+											: "text-muted-foreground/60 hover:text-foreground hover:bg-muted/60"
+									)}
 								>
-									<X className="size-3" />
-								</Button>
-							</button>
-						</TooltipTrigger>
-						<TooltipContent side="left" className="text-xs">
-							{tab.title}
-						</TooltipContent>
-					</Tooltip>
-				))}
+									<div className={cn("relative flex items-center justify-center", isActive && "animate-pulse")}>
+										{isActive && (
+											<div className="absolute inset-0 bg-primary/20 blur-[2px] rounded-full" />
+										)}
+										{getTabIcon(tab.type)}
+									</div>
+									<span className="flex-1 truncate text-left">
+										{tab.isDirty && <span className="text-primary mr-1">●</span>}
+										{tab.title}
+									</span>
+									<div
+										role="button"
+										tabIndex={0}
+										className={cn(
+											"flex items-center justify-center size-5 rounded-full transition-all",
+											"opacity-0 group-hover:opacity-100 hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground",
+											isActive && "text-primary/60 hover:text-primary hover:bg-primary/10"
+										)}
+										onClick={(e) => {
+											e.stopPropagation();
+											closeTab(tab.id);
+										}}
+									>
+										<X className="size-3" />
+									</div>
+								</button>
+							</TooltipTrigger>
+							<TooltipContent side="left" className="text-xs">
+								{tab.title}
+							</TooltipContent>
+						</Tooltip>
+					);
+				})}
 			</div>
 		</aside>
 	);

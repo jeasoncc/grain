@@ -5,6 +5,7 @@ import { AVAILABLE_FONTS, useFontSettings } from "@/stores/font";
 export function FontStyleInjector() {
 	const {
 		fontFamily,
+		uiFontFamily,
 		fontSize,
 		lineHeight,
 		letterSpacing,
@@ -14,6 +15,7 @@ export function FontStyleInjector() {
 
 	useEffect(() => {
 		const font = AVAILABLE_FONTS.find((f) => f.value === fontFamily);
+		const uiFont = AVAILABLE_FONTS.find((f) => f.value === uiFontFamily);
 		if (!font) return;
 
 		// 创建或更新 style 标签
@@ -26,8 +28,17 @@ export function FontStyleInjector() {
 			document.head.appendChild(styleEl);
 		}
 
-		// 应用字体设置到编辑器
+		// 应用字体设置到编辑器和全局
 		styleEl.textContent = `
+      /* 全局 UI 字体设置 */
+      :root {
+        --font-sans: ${uiFont ? uiFont.family : "system-ui, sans-serif"};
+      }
+      
+      body {
+        font-family: var(--font-sans);
+      }
+
       /* 编辑器字体设置 */
       .editor-container,
       .editor-container p,
@@ -71,6 +82,7 @@ export function FontStyleInjector() {
 		};
 	}, [
 		fontFamily,
+		uiFontFamily,
 		fontSize,
 		lineHeight,
 		letterSpacing,

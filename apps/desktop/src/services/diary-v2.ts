@@ -7,15 +7,15 @@
  */
 
 import dayjs from "dayjs";
-import { NodeRepository, ContentRepository, type NodeInterface } from "@/db/models";
-import { database } from "@/db/database";
+import type { NodeInterface } from "@/db/models";
+import { createFileInTree } from "./file-creator";
 
 // ==============================
 // Constants
 // ==============================
 
 /** Diary root folder name */
-export const DIARY_ROOT_FOLDER = "📔 日记";
+export const DIARY_ROOT_FOLDER = "Diary";
 
 // Zodiac animals (Chinese and English)
 const ZODIAC_ANIMALS = [
@@ -141,19 +141,30 @@ export function getDiaryFolderStructure(date: Date = new Date()): DiaryFolderStr
 /**
  * Generate diary content in Lexical JSON format
  * Includes a template with tags: diary, notes
+ * Shows full date and time in English format
  */
 export function generateDiaryContent(date: Date = new Date()): string {
-  const dateStr = date.toLocaleDateString("zh-CN", {
+  // Format: "Monday, December 16, 2024 at 2:30 PM"
+  const dateStr = date.toLocaleDateString("en-US", {
+    weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
-    weekday: "long",
   });
+  
+  const timeStr = date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+
+  const fullDateTime = `${dateStr} at ${timeStr}`;
 
   const content = {
     root: {
       children: [
-        // 标签行: #[diary] #[notes]
+        // Tags line: #[diary] #[notes]
         {
           children: [
             {
@@ -192,7 +203,7 @@ export function generateDiaryContent(date: Date = new Date()): string {
           type: "paragraph",
           version: 1,
         },
-        // 空行
+        // Empty line
         {
           children: [],
           direction: "ltr",
@@ -201,13 +212,13 @@ export function generateDiaryContent(date: Date = new Date()): string {
           type: "paragraph",
           version: 1,
         },
-        // 日期标题
+        // Date and time heading
         {
           children: [
             {
               type: "text",
               version: 1,
-              text: dateStr,
+              text: fullDateTime,
               format: 0,
               style: "",
               detail: 0,
@@ -221,7 +232,7 @@ export function generateDiaryContent(date: Date = new Date()): string {
           version: 1,
           tag: "h2",
         },
-        // 空行，准备开始写作
+        // Empty line, ready to start writing
         {
           children: [],
           direction: "ltr",
@@ -247,32 +258,8 @@ export function generateDiaryContent(date: Date = new Date()): string {
 // ==============================
 
 /**
- * Get or create a folder node by title under a parent
- */
-async function getOrCreateFolder(
-  workspaceId: string,
-  parentId: string | null,
-  title: string
-): Promise<NodeInterface> {
-  const nodes = await NodeRepository.getByWorkspace(workspaceId);
-  const existing = nodes.find(
-    (n) => n.parent === parentId && n.title === title && n.type === "folder"
-  );
-
-  if (existing) {
-    return existing;
-  }
-
-  return NodeRepository.add(workspaceId, title, {
-    parent: parentId,
-    type: "folder",
-    collapsed: false,
-  });
-}
-
-/**
  * Create a diary entry in the file tree
- * Creates the full folder hierarchy: 📔 日记 > year > month > day > diary file
+ * Creates the full folder hierarchy: Diary > year > month > day > diary file
  *
  * Requirements: 1.1, 1.2, 1.3
  *
@@ -286,24 +273,23 @@ export async function createDiaryInFileTree(
 ): Promise<NodeInterface> {
   const structure = getDiaryFolderStructure(date);
 
-  // Create folder hierarchy
-  const diaryRoot = await getOrCreateFolder(workspaceId, null, DIARY_ROOT_FOLDER);
-  const yearFolder = await getOrCreateFolder(workspaceId, diaryRoot.id, structure.yearFolder);
-  const monthFolder = await getOrCreateFolder(workspaceId, yearFolder.id, structure.monthFolder);
-  const dayFolder = await getOrCreateFolder(workspaceId, monthFolder.id, structure.dayFolder);
-
   // Generate diary content with date
   const content = generateDiaryContent(date);
 
-  // Create diary file node
-  const diaryNode = await NodeRepository.add(workspaceId, structure.filename, {
-    parent: dayFolder.id,
+  // Create diary file using the unified file creator
+  const { node } = await createFileInTree({
+    workspaceId,
+    title: structure.filename,
+    folderPath: [
+      DIARY_ROOT_FOLDER,
+      structure.yearFolder,
+      structure.monthFolder,
+      structure.dayFolder,
+    ],
     type: "diary",
-    collapsed: false,
+    tags: ["diary"],
+    content,
   });
 
-  // Create content record for the diary
-  await ContentRepository.add(diaryNode.id, content, "lexical");
-
-  return diaryNode;
+  return node;
 }

@@ -31,13 +31,14 @@ import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin
 import { TRANSFORMERS } from "@lexical/markdown";
 import type { EditorState, SerializedEditorState } from "lexical";
 import type React from "react";
-import { useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { EditorNodes } from "../nodes";
-import MentionsPlugin, { type WikiEntryInterface } from "../plugins/mentions-plugin";
+import MentionsPlugin, { type MentionEntry } from "../plugins/mentions-plugin";
 import MentionTooltipPlugin, { type MentionTooltipPluginProps } from "../plugins/mention-tooltip-plugin";
 import TagPickerPlugin, { type TagInterface } from "../plugins/tag-picker-plugin";
 import TagTransformPlugin from "../plugins/tag-transform-plugin";
+import DraggableBlockPlugin from "../plugins/draggable-block-plugin";
 import theme from "../themes/PlaygroundEditorTheme";
 import "../themes/PlaygroundEditorTheme.css";
 
@@ -52,8 +53,10 @@ export interface EditorProps {
   readOnly?: boolean;
   /** 编辑器命名空间 (用于区分多个编辑器实例) */
   namespace?: string;
-  /** Wiki 条目列表 (用于 @ 提及) */
-  wikiEntries?: WikiEntryInterface[];
+  /** 提及条目列表 (用于 @ 提及) */
+  mentionEntries?: MentionEntry[];
+  /** @deprecated Use mentionEntries instead */
+  wikiEntries?: MentionEntry[];
   /** 标签列表 (用于 #[ 标签选择) */
   tags?: TagInterface[];
   /** Wiki 悬浮预览 hook (可选) */
@@ -69,16 +72,7 @@ function onError(error: Error): void {
   console.error("[Editor Error]", error);
 }
 
-/**
- * 占位符组件
- */
-function Placeholder({ text }: { text: string }): React.ReactElement {
-  return (
-    <div className="absolute top-4 left-4 text-muted-foreground pointer-events-none select-none">
-      {text}
-    </div>
-  );
-}
+
 
 /**
  * 核心编辑器组件
@@ -86,15 +80,28 @@ function Placeholder({ text }: { text: string }): React.ReactElement {
 export default function Editor({
   initialState,
   onChange,
-  placeholder = "开始写作...",
+  placeholder = "Start writing...",
   readOnly = false,
   namespace = "Editor",
+  mentionEntries,
   wikiEntries,
   tags,
   useWikiHoverPreview,
   WikiHoverPreview,
 }: EditorProps): React.ReactElement {
-  // 处理编辑器状态变化
+  // Support both new and deprecated prop names
+  const entries = mentionEntries ?? wikiEntries;
+  
+  // Ref for draggable block plugin anchor element
+  const [floatingAnchorElem, setFloatingAnchorElem] = useState<HTMLDivElement | null>(null);
+  
+  const onRef = (_floatingAnchorElem: HTMLDivElement) => {
+    if (_floatingAnchorElem !== null) {
+      setFloatingAnchorElem(_floatingAnchorElem);
+    }
+  };
+  
+  // Handle editor state changes
   const handleChange = useCallback(
     (editorState: EditorState) => {
       if (onChange) {
@@ -105,39 +112,44 @@ export default function Editor({
     [onChange]
   );
 
-  // 初始配置
+  // Initial configuration
   const initialConfig = {
     namespace,
     theme,
     nodes: EditorNodes,
     editable: !readOnly,
     onError,
-    // 如果有初始状态，解析它
     editorState: initialState || undefined,
   };
 
   return (
     <LexicalComposer initialConfig={initialConfig}>
       <div className="relative flex flex-col h-full">
-        {/* 编辑器主体 */}
-        <div className="relative flex-1 overflow-auto">
+        {/* Editor body */}
+        <div className="relative flex-1 overflow-auto" ref={onRef}>
           <RichTextPlugin
             contentEditable={
               <ContentEditable
-                className="min-h-full outline-none px-4 py-4 prose prose-sm dark:prose-invert max-w-none"
-                aria-placeholder={placeholder}
-                placeholder={<Placeholder text={placeholder} />}
+                className="min-h-full outline-none p-8 text-base leading-relaxed relative"
+                style={{ caretColor: 'var(--primary)' }}
               />
             }
             ErrorBoundary={LexicalErrorBoundary}
+            placeholder={
+              <div className="absolute top-8 left-8 text-muted-foreground/50 pointer-events-none select-none text-base">
+                {placeholder}
+              </div>
+            }
           />
+          {/* Draggable Block Plugin - DISABLED due to severe performance issues */}
+          {/* TODO: Reimplement with better performance approach */}
         </div>
 
-        {/* 内置插件 */}
+        {/* Built-in plugins */}
         {/* 
-          HistoryPlugin - 撤销/重做功能
-          每个 LexicalComposer 实例都有独立的历史状态，
-          确保不同标签页的 undo/redo 操作相互隔离。
+          HistoryPlugin - Undo/Redo functionality
+          Each LexicalComposer instance has independent history state,
+          ensuring undo/redo operations are isolated between tabs.
           @see Requirements 6.3
         */}
         <HistoryPlugin />
@@ -145,13 +157,13 @@ export default function Editor({
         <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
         <TabIndentationPlugin />
 
-        {/* 内容变化监听 */}
+        {/* Content change listener */}
         {onChange && (
           <OnChangePlugin onChange={handleChange} ignoreSelectionChange />
         )}
 
-        {/* 自定义插件 */}
-        <MentionsPlugin wikiEntries={wikiEntries} />
+        {/* Custom plugins */}
+        <MentionsPlugin mentionEntries={entries} />
         {useWikiHoverPreview && WikiHoverPreview && (
           <MentionTooltipPlugin 
             useWikiHoverPreview={useWikiHoverPreview}

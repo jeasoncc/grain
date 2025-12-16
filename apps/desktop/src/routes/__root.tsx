@@ -1,11 +1,4 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
-import {
-	CircleCheckIcon,
-	InfoIcon,
-	Loader2Icon,
-	OctagonXIcon,
-	TriangleAlertIcon,
-} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { ActivityBar } from "@/components/activity-bar";
@@ -108,17 +101,7 @@ function RootComponent() {
 	return (
 		<ConfirmProvider>
 			<SidebarProvider>
-				<Toaster
-					icons={{
-						success: <CircleCheckIcon className="size-4 text-green-500" />,
-						info: <InfoIcon className="size-4 text-blue-500" />,
-						warning: <TriangleAlertIcon className="size-4 text-yellow-500" />,
-						error: <OctagonXIcon className="size-4 text-red-500" />,
-						loading: (
-							<Loader2Icon className="size-4 animate-spin text-muted-foreground" />
-						),
-					}}
-				/>
+				<Toaster />
 				<div className="flex h-screen w-full overflow-hidden bg-background">
 					<ActivityBar />
 					<div className="flex-1 flex h-full min-w-0 overflow-hidden">

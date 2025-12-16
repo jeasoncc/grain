@@ -8,7 +8,8 @@
 export { default as MentionsPlugin } from "./mentions-plugin";
 export type { 
   MentionsPluginProps, 
-  WikiEntryInterface, 
+  MentionEntry,
+  WikiEntryInterface, // deprecated, use MentionEntry
   MenuTextMatch as MentionMenuTextMatch 
 } from "./mentions-plugin";
 
@@ -27,6 +28,9 @@ export type {
 } from "./tag-picker-plugin";
 
 export { default as TagTransformPlugin } from "./tag-transform-plugin";
+
+export { default as DraggableBlockPlugin } from "./draggable-block-plugin";
+export type { DraggableBlockPluginProps } from "./draggable-block-plugin";
 
 // Re-export commonly used Lexical plugins for convenience
 export { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";

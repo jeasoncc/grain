@@ -1,5 +1,4 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { useLiveQuery } from "dexie-react-hooks";
 import { Trash2, Plus, Check } from "lucide-react";
 import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,11 +17,13 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { db } from "@/db/curd";
+import { useAllWorkspaces, WorkspaceRepository } from "@/db/models";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { cn } from "@/lib/utils";
-import { importFromJson, readFileAsText } from "@/services/projects";
+import { importFromJson, readFileAsText } from "@/services/import-export";
 import { createDiaryInFileTree } from "@/services/diary-v2";
+import { runMigrationIfNeeded } from "@/services/wiki-migration";
+import { createWikiFile } from "@/services/wiki-files";
 import { useSelectionStore } from "@/stores/selection";
 import { useUnifiedSidebarStore } from "@/stores/unified-sidebar";
 import { useEditorTabsStore } from "@/stores/editor-tabs";
@@ -31,9 +32,9 @@ import { Button } from "@/components/ui/button";
 
 export function ActivityBar(): React.ReactElement {
 	const location = useLocation();
-	const projects = useLiveQuery(() => db.getAllProjects(), []) || [];
-	const selectedProjectId = useSelectionStore((s) => s.selectedProjectId);
-	const setSelectedProjectId = useSelectionStore((s) => s.setSelectedProjectId);
+	const workspaces = useAllWorkspaces() || [];
+	const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
+	const setSelectedWorkspaceId = useSelectionStore((s) => s.setSelectedWorkspaceId);
 	const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const confirm = useConfirm();
@@ -47,56 +48,77 @@ export function ActivityBar(): React.ReactElement {
 		toggleSidebar,
 	} = useUnifiedSidebarStore();
 
-	// Auto-create default workspace if none exists
-	const hasAutoCreatedRef = useRef(false);
+	// Initialize workspace selection on mount
+	// This effect only handles workspace selection, not creation
+	// Workspace creation only happens when workspaces.length === 0 AND no selectedWorkspaceId exists
+	const hasInitializedRef = useRef(false);
+	
 	useEffect(() => {
-		const autoCreateDefaultWorkspace = async () => {
-			// Only run once and when projects are loaded (not undefined)
-			if (hasAutoCreatedRef.current || projects === undefined) return;
+		const initializeWorkspace = async () => {
+			// Wait for workspaces to load (undefined means still loading)
+			if (workspaces === undefined) return;
 			
-			// Check if no workspaces exist - only create default if truly empty
-			if (projects.length === 0) {
-				hasAutoCreatedRef.current = true;
+			// Only run once per component mount
+			if (hasInitializedRef.current) return;
+			hasInitializedRef.current = true;
+			
+			// If no workspaces exist AND no previously selected workspace, create a default one
+			// This should only happen on first-time use or after clearing all data
+			if (workspaces.length === 0 && !selectedWorkspaceId) {
 				try {
-					const newProject = await db.addProject({
-						title: "My Workspace",
+					const newWorkspace = await WorkspaceRepository.add("My Workspace", {
 						author: "",
 						description: "",
-						language: "zh",
+						language: "en",
 					});
-					setSelectedProjectId(newProject.id);
-					// Open file tree panel
+					setSelectedWorkspaceId(newWorkspace.id);
 					setActivePanel("files");
+					// Run wiki migration for new workspace (Requirements: 4.1)
+					await runMigrationIfNeeded(newWorkspace.id);
 				} catch (error) {
 					console.error("Failed to create default workspace:", error);
 				}
+				return;
+			}
+			
+			// If workspaces is empty but we have a selectedWorkspaceId, just wait
+			// The selectedWorkspaceId might be from a previous session and data is still loading
+			if (workspaces.length === 0) {
+				return;
+			}
+			
+			// Workspaces exist - validate and restore selection
+			const isSelectedValid = selectedWorkspaceId && workspaces.some(w => w.id === selectedWorkspaceId);
+			let workspaceIdToMigrate: string | null = null;
+			
+			if (!isSelectedValid) {
+				// Selected workspace doesn't exist or none selected
+				// Select the most recently opened workspace (by lastOpen field)
+				const sortedByLastOpen = [...workspaces].sort((a, b) => {
+					const dateA = new Date(a.lastOpen || a.createDate).getTime();
+					const dateB = new Date(b.lastOpen || b.createDate).getTime();
+					return dateB - dateA; // Most recent first
+				});
+				setSelectedWorkspaceId(sortedByLastOpen[0].id);
+				workspaceIdToMigrate = sortedByLastOpen[0].id;
 			} else {
-				// Workspaces exist - validate and restore selection
-				const isSelectedValid = selectedProjectId && projects.some(p => p.id === selectedProjectId);
-				if (!isSelectedValid) {
-					// Selected workspace doesn't exist or none selected
-					// Select the most recently opened workspace (by lastOpen field)
-					const sortedByLastOpen = [...projects].sort((a, b) => {
-						const dateA = new Date(a.lastOpen || a.createDate).getTime();
-						const dateB = new Date(b.lastOpen || b.createDate).getTime();
-						return dateB - dateA; // Most recent first
-					});
-					setSelectedProjectId(sortedByLastOpen[0].id);
-				} else {
-					// Valid selection exists - update its lastOpen timestamp
-					try {
-						await db.updateProject(selectedProjectId, {
-							lastOpen: new Date().toISOString(),
-						});
-					} catch (error) {
-						console.error("Failed to update lastOpen on init:", error);
-					}
+				// Valid selection exists - update its lastOpen timestamp
+				try {
+					await WorkspaceRepository.touch(selectedWorkspaceId);
+				} catch (error) {
+					console.error("Failed to update lastOpen on init:", error);
 				}
-				hasAutoCreatedRef.current = true;
+				workspaceIdToMigrate = selectedWorkspaceId;
+			}
+			
+			// Run wiki migration if needed (Requirements: 4.1)
+			if (workspaceIdToMigrate) {
+				await runMigrationIfNeeded(workspaceIdToMigrate);
 			}
 		};
-		autoCreateDefaultWorkspace();
-	}, [projects, selectedProjectId, setSelectedProjectId, setActivePanel]);
+		initializeWorkspace();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [workspaces]); // Only depend on workspaces to avoid re-running when selection changes
 
 	// 图标主题
 	const iconTheme = useIconTheme();
@@ -104,20 +126,16 @@ export function ActivityBar(): React.ReactElement {
 	// Editor tabs store for opening diary
 	const openTab = useEditorTabsStore((s) => s.openTab);
 
-	// 获取图标
-	// 顺序: Files → Wiki → Search → Calendar → Outline → Statistics → Settings
+	// Get icons
 	const FilesIcon = iconTheme.icons.activityBar.files;
-	const WikiIcon = iconTheme.icons.activityBar.wiki;
 	const SearchIcon = iconTheme.icons.activityBar.search;
 	const DiaryIcon = iconTheme.icons.activityBar.diary;
-	const OutlineIcon = iconTheme.icons.activityBar.outline;
-	const StatisticsIcon = iconTheme.icons.activityBar.statistics;
+	const WikiIcon = iconTheme.icons.activityBar.library;
 	const SettingsIcon = iconTheme.icons.activityBar.settings;
-	const TagsIcon = iconTheme.icons.activityBar.tags;
 	const ImportIcon = iconTheme.icons.activityBar.import;
 	const ExportIcon = iconTheme.icons.activityBar.export;
 	const MoreIcon = iconTheme.icons.activityBar.more;
-	const FolderIcon = iconTheme.icons.activityBar.library; // Reuse for workspace
+	const FolderIcon = iconTheme.icons.activityBar.library;
 
 	const handleImportClick = useCallback(() => {
 		fileInputRef.current?.click();
@@ -128,12 +146,12 @@ export function ActivityBar(): React.ReactElement {
 
 	// Handle diary creation from Calendar icon
 	const handleCreateDiary = useCallback(async () => {
-		if (!selectedProjectId) {
+		if (!selectedWorkspaceId) {
 			toast.error("Please select a workspace first");
 			return;
 		}
 		try {
-			const diaryNode = await createDiaryInFileTree(selectedProjectId);
+			const diaryNode = await createDiaryInFileTree(selectedWorkspaceId);
 			
 			// Pre-load the diary content into editorStates BEFORE opening the tab
 			// This ensures the editor is initialized with the template content
@@ -150,7 +168,7 @@ export function ActivityBar(): React.ReactElement {
 			
 			// Open the created diary in the editor
 			openTab({
-				projectId: selectedProjectId,
+				workspaceId: selectedWorkspaceId,
 				nodeId: diaryNode.id,
 				title: diaryNode.title,
 				type: "diary",
@@ -163,7 +181,53 @@ export function ActivityBar(): React.ReactElement {
 			toast.error("Failed to create diary");
 			console.error("Diary creation error:", error);
 		}
-	}, [selectedProjectId, openTab, setActivePanel, setSelectedNodeId, updateEditorState]);
+	}, [selectedWorkspaceId, openTab, setActivePanel, setSelectedNodeId, updateEditorState]);
+
+	// Handle wiki creation from Wiki icon
+	const handleCreateWiki = useCallback(async () => {
+		if (!selectedWorkspaceId) {
+			toast.error("Please select a workspace first");
+			return;
+		}
+		try {
+			// Generate a default name with timestamp
+			const now = new Date();
+			const defaultName = `New Entry ${now.toLocaleDateString("en-US")} ${now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`;
+			
+			const wikiNode = await createWikiFile({
+				workspaceId: selectedWorkspaceId,
+				name: defaultName,
+				useTemplate: true,
+			});
+			
+			// Pre-load the wiki content into editorStates BEFORE opening the tab
+			const { getNodeContent } = await import("@/services/nodes");
+			const content = await getNodeContent(wikiNode.id);
+			if (content) {
+				try {
+					const parsed = JSON.parse(content);
+					updateEditorState(wikiNode.id, { serializedState: parsed });
+				} catch {
+					// Ignore parse errors
+				}
+			}
+			
+			// Open the created wiki in the editor
+			openTab({
+				workspaceId: selectedWorkspaceId,
+				nodeId: wikiNode.id,
+				title: wikiNode.title,
+				type: "file",
+			});
+			// Open file tree panel and highlight the new wiki
+			setActivePanel("files");
+			setSelectedNodeId(wikiNode.id);
+			toast.success("Wiki entry created");
+		} catch (error) {
+			toast.error("Failed to create wiki entry");
+			console.error("Wiki creation error:", error);
+		}
+	}, [selectedWorkspaceId, openTab, setActivePanel, setSelectedNodeId, updateEditorState]);
 
 	const handleImportFile = useCallback(
 		async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -184,7 +248,7 @@ export function ActivityBar(): React.ReactElement {
 
 
 
-	const handleDeleteAllBooks = useCallback(async () => {
+	const handleDeleteAllData = useCallback(async () => {
 		const ok = await confirm({
 			title: "Delete all data?",
 			description: "This action cannot be undone. All workspaces, files, and data will be deleted.",
@@ -193,37 +257,34 @@ export function ActivityBar(): React.ReactElement {
 		});
 		if (!ok) return;
 		try {
-			await Promise.all([
-				db.attachments.clear(),
-				db.nodes.clear(),
-				db.wikiEntries.clear(),
-				db.drawings.clear(),
-				db.projects.clear(),
-			]);
+			const { clearAllData } = await import("@/services/clear-data");
+			await clearAllData();
 			// Reset selection state
-			setSelectedProjectId(null);
+			setSelectedWorkspaceId(null);
 			setSelectedNodeId(null);
-			// Reset auto-create flag so a new workspace will be created
-			hasAutoCreatedRef.current = false;
+			// Reset initialization flag so a new workspace will be created
+			hasInitializedRef.current = false;
 			toast.success("All data deleted");
+			// Reload page to reinitialize
+			setTimeout(() => window.location.reload(), 1000);
 		} catch {
 			toast.error("Delete failed");
 		}
-	}, [confirm, setSelectedProjectId, setSelectedNodeId]);
+	}, [confirm, setSelectedWorkspaceId, setSelectedNodeId]);
 
 	// Handle workspace selection
-	const handleSelectWorkspace = useCallback(async (projectId: string) => {
-		setSelectedProjectId(projectId);
+	const handleSelectWorkspace = useCallback(async (workspaceId: string) => {
+		setSelectedWorkspaceId(workspaceId);
 		// Update lastOpen timestamp
 		try {
-			await db.updateProject(projectId, {
-				lastOpen: new Date().toISOString(),
-			});
+			await WorkspaceRepository.touch(workspaceId);
 		} catch (error) {
 			console.error("Failed to update lastOpen:", error);
 		}
+		// Run wiki migration if needed (Requirements: 4.1)
+		await runMigrationIfNeeded(workspaceId);
 		toast.success("Workspace selected");
-	}, [setSelectedProjectId]);
+	}, [setSelectedWorkspaceId]);
 
 	// Handle new workspace creation
 	const handleCreateWorkspace = useCallback(async () => {
@@ -232,20 +293,19 @@ export function ActivityBar(): React.ReactElement {
 			return;
 		}
 		try {
-			const newProject = await db.addProject({
-				title: newWorkspaceName.trim(),
+			const newWorkspace = await WorkspaceRepository.add(newWorkspaceName.trim(), {
 				author: "",
 				description: "",
-				language: "zh",
+				language: "en",
 			});
-			setSelectedProjectId(newProject.id);
+			setSelectedWorkspaceId(newWorkspace.id);
 			setNewWorkspaceName("");
 			setShowNewWorkspace(false);
 			toast.success("Workspace created");
 		} catch {
 			toast.error("Failed to create workspace");
 		}
-	}, [newWorkspaceName, setSelectedProjectId]);
+	}, [newWorkspaceName, setSelectedWorkspaceId]);
 
 	// 检查当前路由是否匹配
 	const isActive = (path: string) =>
@@ -255,12 +315,12 @@ export function ActivityBar(): React.ReactElement {
 		<aside className="activity-bar z-10 flex w-12 shrink-0 flex-col items-center border-r border-border/30 bg-muted/50 pb-2">
 			<TooltipProvider>
 				{/* 主导航 - 侧边栏面板切换 */}
-				{/* 顺序: Files → Wiki → Search → Calendar → Outline → Statistics → Settings */}
+				{/* 顺序: Files → Calendar → Wiki → Search → Outline → Statistics → Settings */}
 				{/* Library 和 Diary 面板按钮已移除，日记功能整合到文件树中，但保留日历图标用于快速创建 */}
 				<nav className="flex flex-col items-center w-full">
 					{/* 1st: Files (Node-based File Tree) */}
 					<ActionButton
-						icon={<FilesIcon className="size-6" />}
+						icon={<FilesIcon className="size-5" />}
 						label="Files"
 						active={activePanel === "files" && unifiedSidebarOpen}
 						onClick={() => {
@@ -273,26 +333,19 @@ export function ActivityBar(): React.ReactElement {
 					/>
 					{/* 2nd: Calendar - Quick Diary Creation */}
 					<ActionButton
-						icon={<DiaryIcon className="size-6" />}
+						icon={<DiaryIcon className="size-5" />}
 						label="New Diary"
 						onClick={handleCreateDiary}
 					/>
-					{/* 3rd: Wiki */}
+					{/* 3rd: Wiki - Quick Wiki Entry Creation */}
 					<ActionButton
-						icon={<WikiIcon className="size-6" />}
-						label="Wiki"
-						active={activePanel === "wiki" && unifiedSidebarOpen}
-						onClick={() => {
-							if (activePanel === "wiki" && unifiedSidebarOpen) {
-								toggleSidebar();
-							} else {
-								setActivePanel("wiki");
-							}
-						}}
+						icon={<WikiIcon className="size-5" />}
+						label="New Wiki"
+						onClick={handleCreateWiki}
 					/>
 					{/* 4th: Search */}
 					<ActionButton
-						icon={<SearchIcon className="size-6" />}
+						icon={<SearchIcon className="size-5" />}
 						label="Search (Ctrl+Shift+F)"
 						active={activePanel === "search" && unifiedSidebarOpen}
 						onClick={() => {
@@ -314,105 +367,146 @@ export function ActivityBar(): React.ReactElement {
 							<TooltipTrigger asChild>
 								<PopoverTrigger asChild>
 									<button className="relative flex w-full aspect-square items-center justify-center text-muted-foreground transition-all hover:text-foreground">
-										<MoreIcon className="size-6" />
+										<MoreIcon className="size-5" />
 									</button>
 								</PopoverTrigger>
 							</TooltipTrigger>
 							<TooltipContent side="right">More</TooltipContent>
 						</Tooltip>
-						<PopoverContent side="right" align="end" className="w-56 p-1">
-							<div className="grid gap-1">
-								{/* Workspace Selection */}
-								<div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-									Workspaces
+						<PopoverContent side="right" align="end" className="w-56 p-0 overflow-hidden shadow-2xl border border-border/40 bg-popover/95 backdrop-blur-xl rounded-xl">
+							<div className="flex flex-col py-1">
+								{/* Header */}
+								<div className="px-3 py-1.5 flex items-center justify-between border-b border-border/30">
+									<span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest">Workspaces</span>
+									<span className="flex items-center justify-center min-w-[1rem] h-3.5 text-[9px] font-medium rounded-full bg-primary/10 text-primary px-1">
+										{workspaces.length}
+									</span>
 								</div>
-								{projects.length > 0 ? (
-									<div className="max-h-32 overflow-y-auto">
-										{projects.map((project) => {
-											const isSelected = selectedProjectId === project.id;
-											return (
-												<button
-													key={project.id}
-													onClick={() => handleSelectWorkspace(project.id)}
-													className={cn(
-														"flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground",
-														isSelected && "bg-primary/10 text-primary border-l-2 border-l-primary"
-													)}
-												>
-													<FolderIcon className={cn("size-4", isSelected && "text-primary")} />
-													<span className="flex-1 truncate text-left">{project.title}</span>
-													{isSelected && (
-														<Check className="size-4 text-primary" />
-													)}
-												</button>
-											);
-										})}
-									</div>
-								) : (
-									<div className="px-2 py-1.5 text-sm text-muted-foreground">
-										No workspaces
-									</div>
-								)}
 								
-								{/* New Workspace */}
-								{showNewWorkspace ? (
-									<div className="flex items-center gap-1 px-2 py-1">
-										<Input
-											value={newWorkspaceName}
-											onChange={(e) => setNewWorkspaceName(e.target.value)}
-											placeholder="Workspace name"
-											className="h-7 text-sm"
-											autoFocus
-											onKeyDown={(e) => {
-												if (e.key === "Enter") handleCreateWorkspace();
-												if (e.key === "Escape") {
-													setShowNewWorkspace(false);
-													setNewWorkspaceName("");
-												}
-											}}
-										/>
-										<Button size="sm" className="h-7 px-2" onClick={handleCreateWorkspace}>
-											<Plus className="size-4" />
-										</Button>
-									</div>
-								) : (
+								{/* Workspace List */}
+								<div className="max-h-[200px] overflow-y-auto p-1 custom-scrollbar">
+									{workspaces.length > 0 ? (
+										<div className="space-y-0.5">
+											{workspaces.map((workspace) => {
+												const isSelected = selectedWorkspaceId === workspace.id;
+												return (
+													<button
+														key={workspace.id}
+														onClick={() => handleSelectWorkspace(workspace.id)}
+														className={cn(
+															"group relative flex w-full items-center gap-2 rounded-lg px-2 py-1 transition-all duration-200 outline-none",
+															isSelected 
+																? "bg-primary/10 text-primary font-medium" 
+																: "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+														)}
+													>
+														<div className={cn(
+															"flex items-center justify-center size-6 shrink-0 rounded-full transition-colors border",
+															isSelected 
+																? "bg-background/50 border-primary/20 text-primary shadow-sm" 
+																: "bg-muted/30 border-transparent text-muted-foreground/70 group-hover:text-foreground group-hover:bg-background group-hover:border-border/50"
+														)}>
+															<FolderIcon className="size-3" />
+														</div>
+														
+														<span className="flex-1 truncate text-left text-xs">{workspace.title}</span>
+														
+														{isSelected && (
+															<div className="relative flex items-center justify-center size-3 shrink-0 animate-in zoom-in duration-300">
+																<div className="absolute inset-0 bg-primary/20 rounded-full animate-pulse" />
+																<Check className="relative size-2 text-primary stroke-[3]" />
+															</div>
+														)}
+													</button>
+												);
+											})}
+										</div>
+									) : (
+										<div className="px-2 py-4 text-center">
+											<div className="size-6 mx-auto mb-1.5 rounded-full bg-muted/30 flex items-center justify-center">
+												<FolderIcon className="size-3 text-muted-foreground/40" />
+											</div>
+											<p className="text-[10px] text-muted-foreground/60 italic">No workspaces</p>
+										</div>
+									)}
+								</div>
+								
+								<div className="h-px bg-border/40 mx-2 my-0.5" />
+								
+								{/* Actions Area */}
+								<div className="px-1 pb-1 space-y-0.5">
+									{/* New Workspace */}
+									{showNewWorkspace ? (
+										<div className="flex items-center gap-1.5 p-0.5 animate-in fade-in slide-in-from-left-2 duration-200 bg-muted/30 rounded-lg border border-border/40">
+											<Input
+												value={newWorkspaceName}
+												onChange={(e) => setNewWorkspaceName(e.target.value)}
+												placeholder="Name..."
+												className="h-6 text-xs border-none bg-transparent shadow-none focus-visible:ring-0 px-1.5"
+												autoFocus
+												onKeyDown={(e) => {
+													if (e.key === "Enter") handleCreateWorkspace();
+													if (e.key === "Escape") {
+														setShowNewWorkspace(false);
+														setNewWorkspaceName("");
+													}
+												}}
+											/>
+											<Button size="icon" variant="ghost" className="size-6 hover:bg-primary/10 hover:text-primary rounded-full" onClick={handleCreateWorkspace}>
+												<Plus className="size-3" />
+											</Button>
+										</div>
+									) : (
+										<button
+											onClick={() => setShowNewWorkspace(true)}
+											className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all"
+										>
+											<div className="flex items-center justify-center size-6 shrink-0 rounded-full bg-muted/30">
+												<Plus className="size-3" />
+											</div>
+											<span>New Workspace</span>
+										</button>
+									)}
+									
 									<button
-										onClick={() => setShowNewWorkspace(true)}
-										className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+										onClick={handleImportClick}
+										className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all"
 									>
-										<Plus className="size-4" /> New Workspace
+										<div className="flex items-center justify-center size-6 shrink-0 rounded-full bg-muted/30">
+											<ImportIcon className="size-3" />
+										</div>
+										<span>Import from JSON</span>
 									</button>
-								)}
-								
-								<div className="h-px bg-border my-1" />
-								
-								<button
-									onClick={handleImportClick}
-									className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
-								>
-									<ImportIcon className="size-4" /> Import
-								</button>
-								<button
-									onClick={() => setExportDialogOpen(true)}
-									className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
-								>
-									<ExportIcon className="size-4" /> Export
-								</button>
-								<div className="h-px bg-border my-1" />
-								<button
-									onClick={handleDeleteAllBooks}
-									className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10"
-									disabled={projects.length === 0}
-								>
-									<Trash2 className="size-4" /> Delete All
-								</button>
+									<button
+										onClick={() => setExportDialogOpen(true)}
+										className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all"
+									>
+										<div className="flex items-center justify-center size-6 shrink-0 rounded-full bg-muted/30">
+											<ExportIcon className="size-3" />
+										</div>
+										<span>Export Data</span>
+									</button>
+									
+									<div className="h-px bg-border/40 mx-1.5 my-0.5" />
+									
+									<button
+										onClick={handleDeleteAllData}
+										className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-xs text-destructive/80 hover:bg-destructive/10 hover:text-destructive transition-all group"
+										disabled={workspaces.length === 0}
+									>
+										<div className="flex items-center justify-center size-6 shrink-0 rounded-full bg-destructive/5 group-hover:bg-destructive/10 transition-colors">
+											<Trash2 className="size-3" />
+										</div>
+										<span>Delete All Data</span>
+									</button>
+								</div>
 							</div>
 						</PopoverContent>
 					</Popover>
 
 					<NavItem
 						to="/settings/design"
-						icon={<SettingsIcon className="size-6" />}
+						icon={<SettingsIcon className="size-5" />}
 						label="Settings"
 						active={isActive("/settings")}
 					/>
@@ -430,9 +524,9 @@ export function ActivityBar(): React.ReactElement {
 			<ExportDialog
 				open={exportDialogOpen}
 				onOpenChange={setExportDialogOpen}
-				projectId={selectedProjectId || projects[0]?.id || ""}
-				projectTitle={
-					projects.find((p) => p.id === (selectedProjectId || projects[0]?.id))
+				workspaceId={selectedWorkspaceId || workspaces[0]?.id || ""}
+				workspaceTitle={
+					workspaces.find((w) => w.id === (selectedWorkspaceId || workspaces[0]?.id))
 						?.title
 				}
 			/>

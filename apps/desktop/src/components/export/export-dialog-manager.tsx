@@ -5,24 +5,23 @@
 import { useState, useEffect } from "react";
 import { ExportDialog } from "@/components/blocks/export-dialog";
 import { useSelectionStore } from "@/stores/selection";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/db/curd";
+import { useAllWorkspaces } from "@/db/models";
 
 // Global export dialog state
 let globalExportDialogState = {
 	isOpen: false,
-	projectId: "",
-	projectTitle: "",
+	workspaceId: "",
+	workspaceTitle: "",
 };
 
 const exportDialogListeners: Array<() => void> = [];
 
 export const exportDialogManager = {
-	open: (projectId?: string, projectTitle?: string) => {
+	open: (workspaceId?: string, workspaceTitle?: string) => {
 		globalExportDialogState = {
 			isOpen: true,
-			projectId: projectId || "",
-			projectTitle: projectTitle || "",
+			workspaceId: workspaceId || "",
+			workspaceTitle: workspaceTitle || "",
 		};
 		exportDialogListeners.forEach(listener => listener());
 	},
@@ -43,8 +42,8 @@ export const exportDialogManager = {
 
 export function ExportDialogManager() {
 	const [dialogState, setDialogState] = useState(globalExportDialogState);
-	const selectedProjectId = useSelectionStore((s) => s.selectedProjectId);
-	const projects = useLiveQuery(() => db.getAllProjects(), []) ?? [];
+	const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
+	const workspaces = useAllWorkspaces() ?? [];
 
 	useEffect(() => {
 		return exportDialogManager.subscribe(() => {
@@ -52,23 +51,23 @@ export function ExportDialogManager() {
 		});
 	}, []);
 
-	const effectiveProjectId = dialogState.projectId || selectedProjectId || "";
-	const currentProject = projects.find(p => p.id === effectiveProjectId);
-	const effectiveProjectTitle = dialogState.projectTitle || currentProject?.title || "未命名项目";
+	const effectiveWorkspaceId = dialogState.workspaceId || selectedWorkspaceId || "";
+	const currentWorkspace = workspaces.find(w => w.id === effectiveWorkspaceId);
+	const effectiveWorkspaceTitle = dialogState.workspaceTitle || currentWorkspace?.title || "Untitled Workspace";
 
 	const handleOpenChange = (open: boolean) => {
-		if (open) exportDialogManager.open(effectiveProjectId, effectiveProjectTitle);
+		if (open) exportDialogManager.open(effectiveWorkspaceId, effectiveWorkspaceTitle);
 		else exportDialogManager.close();
 	};
 
-	if (!effectiveProjectId) return null;
+	if (!effectiveWorkspaceId) return null;
 
 	return (
 		<ExportDialog
 			open={dialogState.isOpen}
 			onOpenChange={handleOpenChange}
-			projectId={effectiveProjectId}
-			projectTitle={effectiveProjectTitle}
+			workspaceId={effectiveWorkspaceId}
+			workspaceTitle={effectiveWorkspaceTitle}
 		/>
 	);
 }

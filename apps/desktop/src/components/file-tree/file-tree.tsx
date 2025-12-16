@@ -74,11 +74,13 @@ function Node({
   onCreateFolder,
   onCreateFile,
   folderColor,
+  hasSelection,
 }: NodeRendererProps<TreeData> & {
   onDelete: (nodeId: string) => void;
   onCreateFolder: (parentId: string | null) => void;
   onCreateFile: (parentId: string | null, type: NodeType) => void;
   folderColor?: string;
+  hasSelection: boolean;
 }) {
   const data = node.data;
   const isFolder = data.type === "folder";
@@ -92,19 +94,36 @@ function Node({
           : iconTheme.icons.folder.default;
         return (
           <FolderIcon
-            className="size-4 shrink-0"
+            className="size-4 shrink-0 transition-opacity duration-200"
             style={{ 
               color: folderColor || "#3b82f6",
-              fill: folderColor ? `${folderColor}1A` : "#3b82f61A" 
+              fill: folderColor ? `${folderColor}1A` : "#3b82f61A",
+              opacity: (!hasSelection || node.isSelected) ? 1 : 0.5
             }} 
           />
         );
       case "canvas":
         const CanvasIcon = iconTheme.icons.activityBar.canvas;
-        return <CanvasIcon className="size-4 shrink-0 text-purple-500" />;
+        return (
+          <div className={cn("relative flex items-center justify-center transition-opacity duration-200", (!hasSelection || node.isSelected) ? "opacity-100" : "opacity-50")}>
+            <CanvasIcon className="size-4 shrink-0 text-purple-500" />
+            {node.isSelected && (
+              <div className="absolute inset-0 bg-primary/20 blur-[2px] rounded-full animate-pulse" />
+            )}
+          </div>
+        );
       default:
         const FileIcon = iconTheme.icons.file.default;
-        return <FileIcon className="size-4 shrink-0 text-muted-foreground" />;
+        return (
+          <div className={cn("relative flex items-center justify-center transition-opacity duration-200", (!hasSelection || node.isSelected) ? "opacity-100" : "opacity-50")}>
+            <FileIcon
+              className={cn("size-4 shrink-0", node.isSelected && "text-primary")}
+            />
+            {node.isSelected && (
+              <div className="absolute inset-0 bg-primary/20 blur-[2px] rounded-full animate-pulse" />
+            )}
+          </div>
+        );
     }
   };
 
@@ -115,8 +134,9 @@ function Node({
       className={cn(
         "group flex items-center gap-1.5 py-1 pr-2 cursor-pointer transition-all duration-200 px-2 rounded-md mx-1 overflow-hidden",
         node.isSelected
-          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm"
-          : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+          ? "bg-primary/5 shadow-sm"
+          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+        !node.isSelected && hasSelection && "opacity-60 hover:opacity-100",
         node.willReceiveDrop && "bg-sidebar-accent ring-1 ring-primary/20"
       )}
       onClick={(e) => {
@@ -170,7 +190,11 @@ function Node({
         />
       ) : (
         <span 
-          className="flex-1 text-sm truncate leading-none pb-0.5 min-w-0" 
+          className={cn(
+            "flex-1 text-sm truncate leading-none pb-0.5 min-w-0 transition-colors duration-200",
+            node.isSelected ? "text-foreground font-medium" : "text-muted-foreground",
+            !node.isSelected && hasSelection && "text-muted-foreground/70"
+          )}
           title={data.name}
         >
           {data.name}
@@ -258,7 +282,6 @@ export function FileTree({
   onDeleteNode,
   onRenameNode,
   onMoveNode,
-  onCreateDiary,
 }: FileTreeProps) {
   const nodes = useNodesByWorkspace(workspaceId) ?? [];
   const treeData = useMemo(() => buildArboristTree(nodes), [nodes]);
@@ -325,10 +348,11 @@ export function FileTree({
           onCreateFolder={onCreateFolder}
           onCreateFile={onCreateFile}
           folderColor={currentTheme?.colors.folderColor}
+          hasSelection={!!selectedNodeId}
         />
       );
     },
-    [onDeleteNode, onCreateFolder, onCreateFile, currentTheme?.colors.folderColor]
+    [onDeleteNode, onCreateFolder, onCreateFile, currentTheme?.colors.folderColor, selectedNodeId]
   );
 
   if (!workspaceId) {
@@ -356,17 +380,6 @@ export function FileTree({
           Explorer
         </span>
         <div className="flex items-center gap-1 opacity-0 group-hover/header:opacity-100 transition-opacity duration-200">
-          {onCreateDiary && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-7 hover:bg-sidebar-accent hover:text-foreground rounded-sm"
-              onClick={onCreateDiary}
-              title="Create new diary"
-            >
-              <Calendar className="size-4" />
-            </Button>
-          )}
           <Button
             variant="ghost"
             size="icon"

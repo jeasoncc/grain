@@ -19,7 +19,13 @@
 
 .PlaygroundEditorTheme__paragraph {
   margin: 0;
+  margin-bottom: 0.75rem;
   position: relative;
+  line-height: 1.6;
+}
+
+.PlaygroundEditorTheme__paragraph:last-child {
+  margin-bottom: 0;
 }
 
 /* ========================================
@@ -636,4 +642,61 @@
 
 .inline-editor-image img.focused {
   outline: 2px solid var(--primary);
+}
+
+
+/* ========================================
+   Draggable Block Plugin
+   ======================================== */
+
+.draggable-block-menu {
+  border-radius: 4px;
+  padding: 2px 1px;
+  cursor: grab;
+  opacity: 0;
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.draggable-block-menu.visible {
+  opacity: 1;
+}
+
+.draggable-block-menu:active {
+  cursor: grabbing;
+}
+
+.draggable-block-menu:hover {
+  background-color: var(--muted);
+}
+
+.draggable-block-menu .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  opacity: 0.3;
+  color: var(--foreground);
+}
+
+.draggable-block-menu:hover .icon {
+  opacity: 0.6;
+}
+
+.draggable-block-target-line {
+  pointer-events: none;
+  background: var(--primary);
+  height: 4px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  will-change: transform;
+  border-radius: 2px;
 }

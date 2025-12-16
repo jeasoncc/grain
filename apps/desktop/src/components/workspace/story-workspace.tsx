@@ -31,33 +31,33 @@ import {
 import type { WorkspaceInterface, DrawingInterface } from "@/db/models";
 import { useManualSave } from "@/hooks/use-manual-save";
 import { useSettings } from "@/hooks/use-settings";
-import { exportAll, importFromJson, readFileAsText } from "@/services/projects";
+import { exportAll, importFromJson, readFileAsText } from "@/services/import-export";
 import { useSaveStore } from "@/stores/save";
 import { saveService } from "@/services/save";
 import { type SelectionState, useSelectionStore } from "@/stores/selection";
 import { useUIStore } from "@/stores/ui";
 import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
 import { getNodeContent } from "@/services/nodes";
-import { useWikiEntriesByProject } from "@/services/wiki";
+import { useWikiFiles } from "@/services/wiki-files";
 import { useTagsByWorkspace } from "@/services/tags";
-import { MultiEditorContainer } from "@novel-editor/editor";
-
-type ProjectInterface = WorkspaceInterface;
+import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
+import { WikiHoverPreview } from "@/components/blocks/wiki-hover-preview";
+import { MultiEditorContainer, type MentionEntry } from "@novel-editor/editor";
 
 interface StoryWorkspaceProps {
-	projects: ProjectInterface[];
-	activeProjectId?: string;
+	workspaces: WorkspaceInterface[];
+	activeWorkspaceId?: string;
 }
 
 const DEFAULT_AUTO_SAVE_MS = 800;
 
 export function StoryWorkspace({
-	projects,
-	activeProjectId,
+	workspaces,
+	activeWorkspaceId,
 }: StoryWorkspaceProps) {
-	const initialProjectId = activeProjectId ?? projects[0]?.id ?? null;
-	const selectedProjectId = useSelectionStore((s: SelectionState) => s.selectedProjectId);
-	const setSelectedProjectId = useSelectionStore((s: SelectionState) => s.setSelectedProjectId);
+	const initialWorkspaceId = activeWorkspaceId ?? workspaces[0]?.id ?? null;
+	const selectedWorkspaceId = useSelectionStore((s: SelectionState) => s.selectedWorkspaceId);
+	const setSelectedWorkspaceId = useSelectionStore((s: SelectionState) => s.setSelectedWorkspaceId);
 
 	const { autoSave, autoSaveInterval } = useSettings();
 	const autoSaveDelayMs = autoSave ? Math.max(DEFAULT_AUTO_SAVE_MS, autoSaveInterval * 1000) : 0;
@@ -74,14 +74,24 @@ export function StoryWorkspace({
 	const [selectedDrawing] = useState<DrawingInterface | null>(null);
 
 	// Wiki 和标签数据 (用于编辑器插件)
-	const wikiEntries = useWikiEntriesByProject(selectedProjectId);
-	const tags = useTagsByWorkspace(selectedProjectId ?? undefined);
+	const wikiFiles = useWikiFiles(selectedWorkspaceId);
+	const tags = useTagsByWorkspace(selectedWorkspaceId ?? undefined);
+
+	// Map WikiFileEntry to MentionEntry format for the editor
+	const mentionEntries: MentionEntry[] = useMemo(() => 
+		wikiFiles.map(file => ({
+			id: file.id,
+			name: file.name,
+			alias: file.alias,
+		})),
+		[wikiFiles]
+	);
 
 	// 标签页状态 - 只获取当前 workspace 的标签
 	const allTabs = useEditorTabsStore((s) => s.tabs);
 	const tabs = useMemo(() => 
-		allTabs.filter(t => t.projectId === selectedProjectId),
-		[allTabs, selectedProjectId]
+		allTabs.filter(t => t.workspaceId === selectedWorkspaceId),
+		[allTabs, selectedWorkspaceId]
 	);
 	const activeTabId = useEditorTabsStore((s) => s.activeTabId);
 	const editorStates = useEditorTabsStore((s) => s.editorStates);
@@ -106,17 +116,18 @@ export function StoryWorkspace({
 		onSaveError: () => setSaveStatus("error"),
 	});
 
-	// 初始化项目选择
+	// 初始化工作空间选择
 	useEffect(() => {
-		if (!selectedProjectId && initialProjectId) {
-			setSelectedProjectId(initialProjectId);
+		if (!selectedWorkspaceId && initialWorkspaceId) {
+			setSelectedWorkspaceId(initialWorkspaceId);
 		}
-	}, [selectedProjectId, initialProjectId, setSelectedProjectId]);
+	}, [selectedWorkspaceId, initialWorkspaceId, setSelectedWorkspaceId]);
 
 	// 当标签切换时，加载节点内容
+	// 使用 allTabs 而不是过滤后的 tabs，确保能找到活动标签
 	useEffect(() => {
 		if (!activeTabId) return;
-		const activeTab = tabs.find((t) => t.id === activeTabId);
+		const activeTab = allTabs.find((t) => t.id === activeTabId);
 		if (!activeTab) return;
 
 		// 检查是否已经有编辑器状态
@@ -141,24 +152,24 @@ export function StoryWorkspace({
 				}
 			});
 		}
-	}, [activeTabId, tabs, editorStates, updateEditorState]);
+	}, [activeTabId, allTabs, editorStates, updateEditorState]);
 
 	// 自动保存定时器引用
 	const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
 	// 导入导出
 	const handleExport = useCallback(async () => {
-		if (!selectedProjectId) {
-			toast.error("请先选择项目");
+		if (!selectedWorkspaceId) {
+			toast.error("Please select a workspace first");
 			return;
 		}
 		try {
-			await exportAll(selectedProjectId);
-			toast.success("导出成功");
+			await exportAll(selectedWorkspaceId);
+			toast.success("Export successful");
 		} catch {
-			toast.error("导出失败");
+			toast.error("Export failed");
 		}
-	}, [selectedProjectId]);
+	}, [selectedWorkspaceId]);
 
 	const handleImport = useCallback(async () => {
 		const input = document.createElement("input");
@@ -170,9 +181,9 @@ export function StoryWorkspace({
 			try {
 				const text = await readFileAsText(file);
 				await importFromJson(text);
-				toast.success("导入成功");
+				toast.success("Import successful");
 			} catch {
-				toast.error("导入失败");
+				toast.error("Import failed");
 			}
 		};
 		input.click();
@@ -229,9 +240,23 @@ export function StoryWorkspace({
 
 	const renderEditorContent = () => {
 		if (!activeTab) {
+			// Check if there are any files in the workspace
+			const hasFiles = wikiFiles.length > 0;
+			
 			return (
-				<div className="flex-1 flex items-center justify-center text-muted-foreground">
-					<p>从左侧文件树选择一个文件开始编辑</p>
+				<div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-4">
+					{hasFiles ? (
+						<>
+							<p className="text-lg">Select a file from the file tree to start editing</p>
+							<p className="text-sm opacity-70">Choose a file from the left sidebar or create a new one</p>
+						</>
+					) : (
+						<>
+							<p className="text-lg">Welcome to your workspace!</p>
+							<p className="text-sm opacity-70">Create your first file to get started</p>
+							<p className="text-xs opacity-50 mt-2">Click the "Create File" button in the file tree on the left</p>
+						</>
+					)}
 				</div>
 			);
 		}
@@ -261,9 +286,11 @@ export function StoryWorkspace({
 					editorStates={editorStates}
 					onContentChange={handleMultiEditorContentChange}
 					onScrollChange={handleScrollChange}
-					placeholder="开始写作..."
-					wikiEntries={wikiEntries}
+					placeholder="Start writing..."
+					mentionEntries={mentionEntries}
 					tags={tags}
+					useWikiHoverPreview={useWikiHoverPreview}
+					WikiHoverPreview={WikiHoverPreview}
 				/>
 			</div>
 		);
@@ -288,7 +315,7 @@ export function StoryWorkspace({
 										<Download className="size-4" />
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent>导出</TooltipContent>
+								<TooltipContent>Export</TooltipContent>
 							</Tooltip>
 
 							<Tooltip>
@@ -297,7 +324,7 @@ export function StoryWorkspace({
 										<Upload className="size-4" />
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent>导入</TooltipContent>
+								<TooltipContent>Import</TooltipContent>
 							</Tooltip>
 
 							<Tooltip>
@@ -310,7 +337,7 @@ export function StoryWorkspace({
 										)}
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent>{rightSidebarOpen ? "关闭侧边栏" : "打开侧边栏"}</TooltipContent>
+								<TooltipContent>{rightSidebarOpen ? "Close sidebar" : "Open sidebar"}</TooltipContent>
 							</Tooltip>
 
 							<KeyboardShortcutsHelp />

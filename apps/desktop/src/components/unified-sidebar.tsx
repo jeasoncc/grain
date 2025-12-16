@@ -1,14 +1,12 @@
 import { useNavigate } from "@tanstack/react-router";
 import { PanelLeftOpen } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useUnifiedSidebarStore } from "@/stores/unified-sidebar";
 import { SearchPanel } from "./panels/search-panel";
 import { DrawingsPanel } from "./panels/drawings-panel";
-import { WikiPanel } from "./panels/wiki-panel";
 import { FileTreePanel } from "./panels/file-tree-panel";
 import { TagGraphPanel } from "./panels/tag-graph-panel";
 import { Button } from "./ui/button";
-import type { DrawingInterface, WikiEntryInterface } from "@/db/schema";
+import type { DrawingInterface } from "@/db/schema";
 
 /**
  * UnifiedSidebarContent - The content of the sidebar without resize handling
@@ -19,21 +17,13 @@ export function UnifiedSidebarContent() {
 	const {
 		activePanel,
 		drawingsState,
-		wikiState,
 		setSelectedDrawingId,
-		setSelectedWikiEntryId,
 	} = useUnifiedSidebarStore();
 
 	// Handle drawing selection - update store and navigate to canvas
 	const handleSelectDrawing = (drawing: DrawingInterface) => {
 		setSelectedDrawingId(drawing.id);
 		navigate({ to: "/canvas" });
-	};
-
-	// Handle wiki entry selection - update store and navigate to wiki page
-	const handleSelectWikiEntry = (entry: WikiEntryInterface) => {
-		setSelectedWikiEntryId(entry.id);
-		navigate({ to: "/wiki" });
 	};
 
 	return (
@@ -43,12 +33,6 @@ export function UnifiedSidebarContent() {
 				<DrawingsPanel
 					onSelectDrawing={handleSelectDrawing}
 					selectedDrawingId={drawingsState.selectedDrawingId}
-				/>
-			)}
-			{activePanel === "wiki" && (
-				<WikiPanel
-					onSelectEntry={handleSelectWikiEntry}
-					selectedEntryId={wikiState.selectedEntryId}
 				/>
 			)}
 			{activePanel === "files" && <FileTreePanel />}

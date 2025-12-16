@@ -47,6 +47,9 @@ export const NodeSchema = z.object({
 
   /** Last modification timestamp in ISO 8601 format */
   lastEdit: ISODateTimeSchema,
+
+  /** Tags array for categorization */
+  tags: z.array(z.string()).optional(),
 });
 
 /**

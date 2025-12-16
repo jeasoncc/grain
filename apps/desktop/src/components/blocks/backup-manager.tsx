@@ -46,10 +46,10 @@ export function BackupManager() {
 	const [stats, setStats] = useState<{
 		userCount: number;
 		projectCount: number;
-		wikiEntryCount: number;
 		drawingCount: number;
 		attachmentCount: number;
 		nodeCount: number;
+		contentCount: number;
 	} | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
@@ -258,8 +258,8 @@ export function BackupManager() {
 										<p className="text-2xl font-bold">{stats.nodeCount}</p>
 									</div>
 									<div className="space-y-1">
-										<p className="text-sm text-muted-foreground">Wiki 条目</p>
-										<p className="text-2xl font-bold">{stats.wikiEntryCount}</p>
+										<p className="text-sm text-muted-foreground">内容记录</p>
+										<p className="text-2xl font-bold">{stats.contentCount}</p>
 									</div>
 									<div className="space-y-1">
 										<p className="text-sm text-muted-foreground">绘图</p>

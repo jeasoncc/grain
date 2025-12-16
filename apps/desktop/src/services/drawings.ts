@@ -214,24 +214,24 @@ export function useDrawingById(drawingId: string | null): DrawingInterface | nul
 	return (data ?? null) as DrawingInterface | null;
 }
 
-export function useDrawingsByProject(projectId: string | null): DrawingInterface[] {
+export function useDrawingsByWorkspace(workspaceId: string | null): DrawingInterface[] {
 	const data = useLiveQuery(
 		() =>
-			projectId
-				? database.drawings.where("project").equals(projectId).toArray()
+			workspaceId
+				? database.drawings.where("project").equals(workspaceId).toArray()
 				: Promise.resolve([] as DrawingInterface[]),
-		[projectId] as const,
+		[workspaceId] as const,
 	);
 	return (data ?? []) as DrawingInterface[];
 }
 
 export async function createDrawing(params: {
-	projectId: string;
+	workspaceId: string;
 	name?: string;
 	width?: number;
 	height?: number;
 }) {
-	return DrawingRepository.add(params.projectId, params.name || `Drawing ${Date.now()}`, {
+	return DrawingRepository.add(params.workspaceId, params.name || `Drawing ${Date.now()}`, {
 		width: params.width || 800,
 		height: params.height || 600,
 		content: JSON.stringify({ elements: [], appState: {}, files: {} }),

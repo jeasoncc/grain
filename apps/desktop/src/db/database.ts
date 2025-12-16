@@ -9,7 +9,6 @@
  * - nodes: File tree structure (with tags array for org-mode style tagging)
  * - contents: Document content (Lexical JSON, Excalidraw, etc.)
  * - workspaces: Project/workspace metadata
- * - wikiEntries: Wiki knowledge base entries
  * - drawings: Excalidraw drawings
  * - users: User information and settings
  * - attachments: File attachments
@@ -29,7 +28,6 @@ import type {
 	DrawingInterface,
 	ProjectInterface,
 	UserInterface,
-	WikiEntryInterface,
 } from "./schema.ts";
 
 // Import NodeInterface from models (has tags field)
@@ -68,7 +66,6 @@ export class NovelEditorDatabase extends Dexie {
 	nodes!: Table<NodeInterface, string>;
 	contents!: Table<ContentInterface, string>;
 	workspaces!: Table<ProjectInterface, string>;
-	wikiEntries!: Table<WikiEntryInterface, string>;
 	drawings!: Table<DrawingInterface, string>;
 	users!: Table<UserInterface, string>;
 	attachments!: Table<AttachmentInterface, string>;
@@ -123,7 +120,6 @@ export class NovelEditorDatabase extends Dexie {
 			users: "id, username, email",
 			attachments: "id, project",
 			dbVersions: "id, version",
-			projects: "id, title, owner",
 			// Simplified tags table - aggregation cache only
 			tags: "id, workspace, name",
 			// Remove junction tables (set to null to delete)
@@ -131,9 +127,42 @@ export class NovelEditorDatabase extends Dexie {
 			tagRelations: null,
 		});
 
+		// Version 10: Remove deprecated projects table
+		// - Fully migrate to workspaces table
+		// - Remove projects table for clean architecture
+		this.version(10).stores({
+			nodes: "id, workspace, parent, type, order, *tags",
+			contents: "id, nodeId, contentType",
+			workspaces: "id, title, owner",
+			wikiEntries: "id, project, name",
+			drawings: "id, project, name",
+			users: "id, username, email",
+			attachments: "id, project",
+			dbVersions: "id, version",
+			tags: "id, workspace, name",
+			// Remove deprecated projects table
+			projects: null,
+		});
+
+		// Version 11: Remove wikiEntries table
+		// - Wiki entries are now stored as regular file nodes with "wiki" tag
+		// - Migration handled by wiki-migration.ts service
+		this.version(11).stores({
+			nodes: "id, workspace, parent, type, order, *tags",
+			contents: "id, nodeId, contentType",
+			workspaces: "id, title, owner",
+			drawings: "id, project, name",
+			users: "id, username, email",
+			attachments: "id, project",
+			dbVersions: "id, version",
+			tags: "id, workspace, name",
+			// Remove wikiEntries table - wiki entries are now file nodes with "wiki" tag
+			wikiEntries: null,
+		});
+
 		// Open database and log status
 		this.open()
-			.then(() => logger.success("NovelEditorDatabase initialized (v9)"))
+			.then(() => logger.success("NovelEditorDatabase initialized (v11)"))
 			.catch((err) => logger.error("Database open error:", err));
 	}
 }

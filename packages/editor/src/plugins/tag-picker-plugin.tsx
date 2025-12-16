@@ -17,7 +17,7 @@ import {
 import { $getSelection, $isRangeSelection, type TextNode } from "lexical";
 import { Tag, Plus } from "lucide-react";
 import type React from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useLayoutEffect } from "react";
 import * as ReactDOM from "react-dom";
 
 import { $createTagNode } from "../nodes/tag-node";
@@ -27,23 +27,51 @@ const TagTriggerRegex = /#\[([\u4e00-\u9fa5a-zA-Z0-9_\s]*)$/;
 
 const SUGGESTION_LIST_LENGTH_LIMIT = 10;
 
+// Portal component to handle positioning and body mounting
+function TagMenuPortal({ 
+  anchorElement, 
+  children 
+}: { 
+  anchorElement: HTMLElement; 
+  children: React.ReactNode; 
+}) {
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+
+  useLayoutEffect(() => {
+    const updatePosition = () => {
+      const rect = anchorElement.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + 5,
+        left: rect.left,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [anchorElement]);
+
+  return ReactDOM.createPortal(
+    <div
+      className="fixed z-[100000]"
+      style={{ top: position.top, left: position.left }}
+    >
+      {children}
+    </div>,
+    document.body
+  );
+}
+
 // Type definitions for external dependencies
 export interface TagInterface {
   id: string;
   name: string;
   count: number;
-}
-
-/**
- * 根据标签名生成颜色
- */
-function getTagColor(tagName: string): string {
-  let hash = 0;
-  for (let i = 0; i < tagName.length; i++) {
-    hash = tagName.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const hue = Math.abs(hash % 360);
-  return `hsl(${hue}, 60%, 50%)`;
 }
 
 class TagTypeaheadOption extends MenuOption {
@@ -78,7 +106,6 @@ function TagTypeaheadMenuItem({
   option: TagTypeaheadOption;
 }) {
   if (option.isCreateNew) {
-    const color = getTagColor(option.createName);
     return (
       <li
         key={option.key}
@@ -90,23 +117,19 @@ function TagTypeaheadMenuItem({
         onMouseEnter={onMouseEnter}
         onClick={onClick}
         className={`
-          flex items-center gap-3 px-3 py-2.5 cursor-pointer rounded-md
-          transition-colors duration-150 border-t border-border mt-1 pt-3
-          ${isSelected ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"}
+          flex items-center gap-3 px-2 py-2 cursor-pointer rounded-lg
+          transition-all duration-200 mt-1
+          ${isSelected ? "bg-primary/10 text-primary shadow-sm" : "hover:bg-muted/50 text-muted-foreground"}
         `}
       >
         <div 
-          className="flex items-center justify-center size-8 rounded-full shrink-0"
-          style={{ backgroundColor: `${color}20`, color }}
+          className="flex items-center justify-center size-7 rounded-full shrink-0 transition-transform duration-200 bg-primary/10 text-primary"
         >
-          <Plus className="size-4" />
+          <Plus className={isSelected ? "size-3.5" : "size-3"} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium">
-            创建标签 "{option.createName}"
-          </div>
-          <div className="text-xs text-muted-foreground">
-            按 Enter 创建新标签
+          <div className="text-xs font-medium">
+            Create tag "{option.createName}"
           </div>
         </div>
       </li>
@@ -114,9 +137,18 @@ function TagTypeaheadMenuItem({
   }
 
   const { tag } = option;
-  if (!tag) return null;
-
-  const color = getTagColor(tag.name);
+  
+  // 渲染占位符
+  if (!tag) {
+    return (
+      <li
+        key={option.key}
+        className="px-4 py-3 text-xs text-muted-foreground/60 italic text-center select-none"
+      >
+        {option.createName}
+      </li>
+    );
+  }
 
   return (
     <li
@@ -129,22 +161,21 @@ function TagTypeaheadMenuItem({
       onMouseEnter={onMouseEnter}
       onClick={onClick}
       className={`
-        flex items-center gap-3 px-3 py-2.5 cursor-pointer rounded-md
-        transition-colors duration-150
-        ${isSelected ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"}
+        flex items-center gap-2.5 px-2 py-1.5 cursor-pointer rounded-lg
+        transition-all duration-200
+        ${isSelected ? "bg-primary/10 text-primary shadow-sm translate-x-0.5" : "hover:bg-muted/50 text-muted-foreground"}
       `}
     >
       <div
-        className="flex items-center justify-center size-8 rounded-full shrink-0"
-        style={{ backgroundColor: `${color}20`, color }}
+        className={`flex items-center justify-center size-6 rounded-full shrink-0 transition-all duration-200 bg-primary/10 text-primary ${isSelected ? "scale-110" : ""}`}
       >
-        <Tag className="size-4" />
+        <Tag className="size-3" />
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium truncate">{tag.name}</div>
-        <div className="text-xs text-muted-foreground">
-          {tag.count} 篇文档
-        </div>
+      <div className="flex-1 min-w-0 flex items-center justify-between">
+        <span className="text-sm font-medium truncate">{tag.name}</span>
+        <span className={`text-[10px] ${isSelected ? "text-primary/70" : "text-muted-foreground/50"}`}>
+          {tag.count} docs
+        </span>
       </div>
     </li>
   );
@@ -210,6 +241,13 @@ export default function TagPickerPlugin({
       );
     }
 
+    // 如果结果为空，添加占位符选项
+    if (result.length === 0) {
+      result.push(
+        new TagTypeaheadOption("placeholder", null, false, "Type to search or create...")
+      );
+    }
+
     return result;
   }, [tags, queryString]);
 
@@ -219,6 +257,11 @@ export default function TagPickerPlugin({
       nodeToRemove: TextNode | null,
       closeMenu: () => void
     ) => {
+      // 忽略占位符选项
+      if (!selectedOption.tag && !selectedOption.isCreateNew) {
+        return;
+      }
+
       const tagName = selectedOption.isCreateNew 
         ? selectedOption.createName 
         : selectedOption.tag?.name;
@@ -261,34 +304,37 @@ export default function TagPickerPlugin({
           return null;
         }
 
-        return ReactDOM.createPortal(
-          <div className="z-[9999] bg-popover border border-border rounded-lg shadow-xl p-1.5 min-w-[280px] max-w-[360px] max-h-[320px] overflow-auto animate-in fade-in-0 zoom-in-95 duration-200">
-            <div className="px-2 py-1.5 text-xs text-muted-foreground border-b mb-1 flex items-center gap-2">
-              <Tag className="size-3" />
-              {queryString ? `搜索 "${queryString}"` : "选择或创建标签"}
+        return (
+          <TagMenuPortal anchorElement={anchorElementRef.current}>
+            <div className="bg-popover/95 backdrop-blur-xl border border-border/40 rounded-xl shadow-2xl p-1 w-72 max-h-[320px] overflow-hidden flex flex-col animate-in fade-in-0 zoom-in-95 duration-200">
+              <div className="px-3 py-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60 border-b border-border/40 mb-1 flex items-center gap-2 shrink-0">
+                <Tag className="size-3" />
+                {queryString ? `Search "${queryString}"` : "Tags"}
+              </div>
+              <ul className="space-y-0.5 overflow-y-auto custom-scrollbar p-1 flex-1">
+                {options.map((option, i: number) => (
+                  <TagTypeaheadMenuItem
+                    index={i}
+                    isSelected={selectedIndex === i}
+                    onClick={() => {
+                      setHighlightedIndex(i);
+                      selectOptionAndCleanUp(option);
+                    }}
+                    onMouseEnter={() => {
+                      setHighlightedIndex(i);
+                    }}
+                    key={option.key}
+                    option={option}
+                  />
+                ))}
+              </ul>
+              <div className="px-3 py-2 text-[10px] text-muted-foreground/50 border-t border-border/40 mt-1 shrink-0 flex items-center justify-between">
+                <span>↑↓ Navigate</span>
+                <span>↵ Select</span>
+                <span>Esc Close</span>
+              </div>
             </div>
-            <ul className="space-y-0.5">
-              {options.map((option, i: number) => (
-                <TagTypeaheadMenuItem
-                  index={i}
-                  isSelected={selectedIndex === i}
-                  onClick={() => {
-                    setHighlightedIndex(i);
-                    selectOptionAndCleanUp(option);
-                  }}
-                  onMouseEnter={() => {
-                    setHighlightedIndex(i);
-                  }}
-                  key={option.key}
-                  option={option}
-                />
-              ))}
-            </ul>
-            <div className="px-2 py-1.5 text-xs text-muted-foreground border-t mt-1">
-              ↑↓ 选择 · ↵ 确认 · Esc 取消
-            </div>
-          </div>,
-          anchorElementRef.current
+          </TagMenuPortal>
         );
       }}
     />

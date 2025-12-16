@@ -1,6 +1,3 @@
-/**
- * 数据管理设置页面
- */
 import { createFileRoute } from "@tanstack/react-router";
 import { BackupManager } from "@/components/blocks/backup-manager";
 
@@ -10,14 +7,19 @@ export const Route = createFileRoute("/settings/data")({
 
 function DataSettingsPage() {
 	return (
-		<div className="container max-w-4xl py-6">
-			<div className="space-y-6">
-				<div>
-					<h1 className="text-2xl font-bold">数据管理</h1>
-					<p className="text-muted-foreground mt-1">备份、恢复和管理你的数据</p>
-				</div>
+		<div className="space-y-10 max-w-3xl">
+			<div>
+				<h3 className="text-lg font-medium">Data Management</h3>
+				<p className="text-sm text-muted-foreground">
+					Backup, restore, and manage your application data.
+				</p>
+			</div>
 
-				<BackupManager />
+			<div className="space-y-4">
+				<h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Backup & Restore</h4>
+				<div className="pt-2">
+					<BackupManager />
+				</div>
 			</div>
 		</div>
 	);

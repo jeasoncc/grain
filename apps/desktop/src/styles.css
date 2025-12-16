@@ -2,9 +2,6 @@
    Novel Editor - Tailwind CSS v4 + shadcn/ui
    ======================================== */
 
-/* 导入字体 */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
-
 /* 导入 Tailwind */
 @import 'tailwindcss';
 
@@ -164,7 +161,7 @@ body {
   margin: 0;
   background-color: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -173,11 +170,11 @@ body {
 
 /* 字体 */
 .font-editor {
-  font-family: 'Merriweather', 'Georgia', serif;
+  font-family: 'Georgia', 'Times New Roman', 'Palatino', 'Baskerville', serif;
 }
 
 code {
-  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Fira Mono', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
 }
 
 /* 标题层级 */
@@ -399,9 +396,19 @@ kbd {
   position: relative;
 }
 
-/* 光标颜色 - 使用主题的 editorCursor 或 primary */
+/* 光标颜色 - 使用主题的 editorCursor 或 primary，增强可见性 */
 .editor-container [contenteditable="true"] {
   caret-color: var(--editor-cursor, var(--primary));
+}
+
+/* 增强光标可见性 - 使用更粗的光标 */
+[contenteditable="true"] {
+  caret-color: var(--primary);
+}
+
+/* 深色模式下使用更亮的光标 */
+.dark [contenteditable="true"] {
+  caret-color: #60a5fa;
 }
 
 /* 编辑器内文本选择 - 更明显的背景色 */
@@ -769,7 +776,7 @@ html [data-radix-focus-guard]:focus {
 /* 优化文字样式 */
 .mermaid .nodeLabel,
 .mermaid .edgeLabel {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 500;
 }

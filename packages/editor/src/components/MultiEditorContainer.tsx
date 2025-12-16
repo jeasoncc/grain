@@ -34,7 +34,9 @@ export interface MultiEditorContainerProps {
   readOnly?: boolean;
   /** 空状态组件 */
   emptyState?: React.ReactNode;
-  /** Wiki 条目列表 (用于 @ 提及) */
+  /** 提及条目列表 (用于 @ 提及) */
+  mentionEntries?: EditorInstanceProps["mentionEntries"];
+  /** @deprecated Use mentionEntries instead */
   wikiEntries?: EditorInstanceProps["wikiEntries"];
   /** 标签列表 (用于 #[ 标签选择) */
   tags?: EditorInstanceProps["tags"];
@@ -63,11 +65,14 @@ export function MultiEditorContainer({
   placeholder = "开始写作...",
   readOnly = false,
   emptyState,
+  mentionEntries,
   wikiEntries,
   tags,
   useWikiHoverPreview,
   WikiHoverPreview,
 }: MultiEditorContainerProps): React.ReactElement {
+  // Support both new and deprecated prop names
+  const entries = mentionEntries ?? wikiEntries;
   /**
    * 创建内容变化处理器
    * 使用 useCallback 确保每个 tab 的回调稳定
@@ -140,7 +145,7 @@ export function MultiEditorContainer({
           onScrollChange={createScrollChangeHandler(tab.id)}
           placeholder={placeholder}
           readOnly={readOnly}
-          wikiEntries={wikiEntries}
+          mentionEntries={entries}
           tags={tags}
           useWikiHoverPreview={useWikiHoverPreview}
           WikiHoverPreview={WikiHoverPreview}
@@ -156,7 +161,7 @@ export function MultiEditorContainer({
     createScrollChangeHandler,
     placeholder,
     readOnly,
-    wikiEntries,
+    entries,
     tags,
     useWikiHoverPreview,
     WikiHoverPreview,

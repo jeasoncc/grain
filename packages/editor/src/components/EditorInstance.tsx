@@ -38,7 +38,9 @@ export interface EditorInstanceProps {
   placeholder?: string;
   /** 是否只读 */
   readOnly?: boolean;
-  /** Wiki 条目列表 (用于 @ 提及) */
+  /** 提及条目列表 (用于 @ 提及) */
+  mentionEntries?: EditorProps["mentionEntries"];
+  /** @deprecated Use mentionEntries instead */
   wikiEntries?: EditorProps["wikiEntries"];
   /** 标签列表 (用于 #[ 标签选择) */
   tags?: EditorProps["tags"];
@@ -63,11 +65,14 @@ export function EditorInstance({
   onScrollChange,
   placeholder,
   readOnly = false,
+  mentionEntries,
   wikiEntries,
   tags,
   useWikiHoverPreview,
   WikiHoverPreview,
 }: EditorInstanceProps): React.ReactElement {
+  // Support both new and deprecated prop names
+  const entries = mentionEntries ?? wikiEntries;
   // 滚动容器引用
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   // 是否已恢复初始滚动位置
@@ -170,7 +175,7 @@ export function EditorInstance({
           placeholder={placeholder}
           readOnly={readOnly}
           namespace={`editor-${tabId}`}
-          wikiEntries={wikiEntries}
+          mentionEntries={entries}
           tags={tags}
           useWikiHoverPreview={useWikiHoverPreview}
           WikiHoverPreview={WikiHoverPreview}

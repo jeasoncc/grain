@@ -7,12 +7,12 @@ import { GlobalSearchDialog } from "./global-search-dialog";
 
 interface GlobalSearchProviderProps {
 	children: ReactNode;
-	projectId?: string;
+	workspaceId?: string;
 }
 
 export function GlobalSearchProvider({
 	children,
-	projectId,
+	workspaceId,
 }: GlobalSearchProviderProps) {
 	const [isOpen, setIsOpen] = useState(false);
 
@@ -39,7 +39,7 @@ export function GlobalSearchProvider({
 			<GlobalSearchDialog
 				open={isOpen}
 				onOpenChange={setIsOpen}
-				projectId={projectId}
+				workspaceId={workspaceId}
 			/>
 		</>
 	);

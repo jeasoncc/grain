@@ -27,7 +27,6 @@ export type {
 	SettingInterface,
 	StateInterface,
 	UserInterface as LegacyUserInterface,
-	WikiEntryInterface,
 } from "./schema";
 
 // New data models - unified export from models directory

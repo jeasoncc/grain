@@ -34,9 +34,6 @@ export * from "./node";
 // Workspace model (projects/workspaces)
 export * from "./workspace";
 
-// Wiki model (wiki entries)
-export * from "./wiki";
-
 // Drawing model (Excalidraw drawings)
 export * from "./drawing";
 

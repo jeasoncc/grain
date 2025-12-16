@@ -9,22 +9,22 @@ import logger from "@/log";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { createDrawing, deleteDrawing, useDrawingsByProject } from "@/services/drawings";
+import { createDrawing, deleteDrawing, useDrawingsByWorkspace } from "@/services/drawings";
 import type { DrawingInterface } from "@/db/schema";
 
 interface DrawingListProps {
-	projectId: string | null;
+	workspaceId: string | null;
 	onSelectDrawing?: (drawing: DrawingInterface) => void;
 	selectedDrawingId?: string | null;
 }
 
 export function DrawingList({
-	projectId,
+	workspaceId,
 	onSelectDrawing,
 	selectedDrawingId,
 }: DrawingListProps) {
 	const [searchQuery, setSearchQuery] = useState("");
-	const drawings = useDrawingsByProject(projectId);
+	const drawings = useDrawingsByWorkspace(workspaceId);
 
 	// Filter drawings based on search
 	const filteredDrawings = drawings.filter((drawing) =>
@@ -33,14 +33,14 @@ export function DrawingList({
 
 	// Create new drawing
 	const handleCreateDrawing = useCallback(async () => {
-		if (!projectId) {
-			toast.error("No project selected");
+		if (!workspaceId) {
+			toast.error("No workspace selected");
 			return;
 		}
 
 		try {
 			const newDrawing = await createDrawing({
-				projectId,
+				workspaceId,
 				name: `Drawing ${drawings.length + 1}`,
 			});
 			onSelectDrawing?.(newDrawing);
@@ -49,7 +49,7 @@ export function DrawingList({
 			logger.error("Failed to create drawing:", error);
 			toast.error("Failed to create drawing");
 		}
-	}, [projectId, drawings.length, onSelectDrawing]);
+	}, [workspaceId, drawings.length, onSelectDrawing]);
 
 	// Delete drawing
 	const handleDeleteDrawing = useCallback(async (drawingId: string) => {
@@ -62,11 +62,11 @@ export function DrawingList({
 		}
 	}, []);
 
-	if (!projectId) {
+	if (!workspaceId) {
 		return (
 			<div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
 				<PenTool className="size-8 mb-2" />
-				<span className="text-sm">Select a project to view drawings</span>
+				<span className="text-sm">Select a workspace to view drawings</span>
 			</div>
 		);
 	}

@@ -4,23 +4,23 @@
 
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import { createDrawing, useDrawingsByProject } from "@/services/drawings";
+import { createDrawing, useDrawingsByWorkspace } from "@/services/drawings";
 import type { DrawingInterface } from "@/db/models";
 
-export function useDrawingWorkspace(projectId: string | null) {
+export function useDrawingWorkspace(workspaceId: string | null) {
 	const [selectedDrawing, setSelectedDrawing] = useState<DrawingInterface | null>(null);
-	const drawings = useDrawingsByProject(projectId);
+	const drawings = useDrawingsByWorkspace(workspaceId);
 
 	// Create new drawing
 	const createNewDrawing = useCallback(async (name?: string) => {
-		if (!projectId) {
-			toast.error("No project selected");
+		if (!workspaceId) {
+			toast.error("No workspace selected");
 			return null;
 		}
 
 		try {
 			const newDrawing = await createDrawing({
-				projectId,
+				workspaceId,
 				name: name || `Drawing ${drawings.length + 1}`,
 			});
 			
@@ -32,7 +32,7 @@ export function useDrawingWorkspace(projectId: string | null) {
 			toast.error("Failed to create drawing");
 			return null;
 		}
-	}, [projectId, drawings.length]);
+	}, [workspaceId, drawings.length]);
 
 	// Select drawing
 	const selectDrawing = useCallback((drawing: DrawingInterface) => {

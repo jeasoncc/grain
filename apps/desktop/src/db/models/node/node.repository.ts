@@ -35,6 +35,7 @@ export const NodeRepository = {
       type?: NodeType;
       order?: number;
       collapsed?: boolean;
+      tags?: string[];
     } = {}
   ): Promise<NodeInterface> {
     const builder = new NodeBuilder()
@@ -52,6 +53,9 @@ export const NodeRepository = {
     }
     if (options.collapsed !== undefined) {
       builder.collapsed(options.collapsed);
+    }
+    if (options.tags) {
+      builder.tags(options.tags);
     }
 
     const node = builder.build();

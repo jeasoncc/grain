@@ -36,19 +36,16 @@ import {
 const typeIcons: Record<SearchResultType, any> = {
 	project: FileText,
 	node: FileText,
-	wiki: Globe,
 };
 
 const typeLabels: Record<SearchResultType, string> = {
-	project: "项目",
-	node: "文件",
-	wiki: "Wiki",
+	project: "Workspace",
+	node: "File",
 };
 
 const typeColors: Record<SearchResultType, string> = {
 	project: "text-purple-500",
 	node: "text-blue-500",
-	wiki: "text-cyan-500",
 };
 
 export function SearchSidebar() {
@@ -57,7 +54,6 @@ export function SearchSidebar() {
 	const [loading, setLoading] = useState(false);
 	const [selectedTypes, setSelectedTypes] = useState<SearchResultType[]>([
 		"node",
-		"wiki",
 	]);
 	const [showFilters, setShowFilters] = useState(false);
 	const navigate = useNavigate();
@@ -115,9 +111,6 @@ export function SearchSidebar() {
 			case "project":
 				// 导航到主页
 				navigate({ to: "/" });
-				break;
-			case "wiki":
-				navigate({ to: "/wiki" });
 				break;
 		}
 	};
@@ -192,7 +185,7 @@ export function SearchSidebar() {
 							搜索范围
 						</p>
 						<div className="space-y-2">
-							{(["node", "wiki"] as SearchResultType[]).map((type) => (
+							{(["node"] as SearchResultType[]).map((type) => (
 								<div key={type} className="flex items-center space-x-2">
 									<Checkbox
 										id={`type-${type}`}
@@ -256,7 +249,7 @@ export function SearchSidebar() {
 					<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
 						<Search className="size-12 mb-3 opacity-20" />
 						<p className="text-sm">输入关键词开始搜索</p>
-						<p className="text-xs mt-1">支持搜索文件、Wiki 条目</p>
+						<p className="text-xs mt-1">支持搜索文件内容</p>
 					</div>
 				)}
 			</ScrollArea>
@@ -305,9 +298,9 @@ function ResultGroup({
 							<p className="text-sm font-medium truncate">
 								{highlightText(result.title, query)}
 							</p>
-							{result.projectTitle && (
+							{result.workspaceTitle && (
 								<p className="text-xs text-muted-foreground truncate">
-									{result.projectTitle}
+									{result.workspaceTitle}
 								</p>
 							)}
 							{result.excerpt && (

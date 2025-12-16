@@ -36,19 +36,16 @@ import { useUnifiedSidebarStore } from "@/stores/unified-sidebar";
 const typeIcons: Record<SearchResultType, any> = {
 	project: FileText,
 	node: FileText,
-	wiki: Globe,
 };
 
 const typeLabels: Record<SearchResultType, string> = {
 	project: "项目",
 	node: "文件",
-	wiki: "Wiki",
 };
 
 const typeColors: Record<SearchResultType, string> = {
 	project: "text-purple-500",
 	node: "text-blue-500",
-	wiki: "text-cyan-500",
 };
 
 export function SearchPanel() {
@@ -116,9 +113,6 @@ export function SearchPanel() {
 			case "project":
 				// 导航到主页
 				navigate({ to: "/" });
-				break;
-			case "wiki":
-				navigate({ to: "/wiki" });
 				break;
 		}
 	};
@@ -308,9 +302,9 @@ function ResultGroup({
 							<p className="text-sm font-medium truncate text-foreground/80 group-hover/item:text-foreground">
 								{highlightText(result.title, query)}
 							</p>
-							{result.projectTitle && (
+							{result.workspaceTitle && (
 								<p className="text-xs text-muted-foreground/60 truncate">
-									{result.projectTitle}
+									{result.workspaceTitle}
 								</p>
 							)}
 							{result.excerpt && (

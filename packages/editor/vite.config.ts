@@ -9,7 +9,7 @@ export default defineConfig({
     dts({
       include: ["src"],
       outDir: "dist",
-      rollupTypes: true,
+      rollupTypes: false,
     }),
   ],
   resolve: {

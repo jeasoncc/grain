@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { createDrawing, deleteDrawing, useDrawingsByProject } from "@/services/drawings";
+import { createDrawing, deleteDrawing, useDrawingsByWorkspace } from "@/services/drawings";
 import type { DrawingInterface } from "@/db/schema";
 import { useSelectionStore } from "@/stores/selection";
 
@@ -24,9 +24,9 @@ export function DrawingsPanel({
 	onSelectDrawing,
 	selectedDrawingId,
 }: DrawingsPanelProps) {
-	const selectedProjectId = useSelectionStore((s) => s.selectedProjectId);
+	const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
 	const [searchQuery, setSearchQuery] = useState("");
-	const drawings = useDrawingsByProject(selectedProjectId);
+	const drawings = useDrawingsByWorkspace(selectedWorkspaceId);
 
 	// Filter drawings based on search
 	const filteredDrawings = drawings.filter((drawing) =>
@@ -35,14 +35,14 @@ export function DrawingsPanel({
 
 	// Create new drawing
 	const handleCreateDrawing = useCallback(async () => {
-		if (!selectedProjectId) {
-			toast.error("Please select a project first");
+		if (!selectedWorkspaceId) {
+			toast.error("Please select a workspace first");
 			return;
 		}
 
 		try {
 			const newDrawing = await createDrawing({
-				projectId: selectedProjectId,
+				workspaceId: selectedWorkspaceId,
 				name: `Drawing ${drawings.length + 1}`,
 			});
 			onSelectDrawing?.(newDrawing);
@@ -51,7 +51,7 @@ export function DrawingsPanel({
 			console.error("Failed to create drawing:", error);
 			toast.error("Failed to create drawing");
 		}
-	}, [selectedProjectId, drawings.length, onSelectDrawing]);
+	}, [selectedWorkspaceId, drawings.length, onSelectDrawing]);
 
 	// Delete drawing
 	const handleDeleteDrawing = useCallback(async (drawingId: string, drawingName: string) => {
@@ -81,7 +81,7 @@ export function DrawingsPanel({
 					className="size-7"
 					onClick={handleCreateDrawing}
 					title="Create new drawing"
-					disabled={!selectedProjectId}
+					disabled={!selectedWorkspaceId}
 				>
 					<Plus className="size-4" />
 				</Button>
@@ -96,7 +96,7 @@ export function DrawingsPanel({
 						onChange={(e) => setSearchQuery(e.target.value)}
 						placeholder="Search drawings..."
 						className="pl-9 h-8"
-						disabled={!selectedProjectId}
+						disabled={!selectedWorkspaceId}
 					/>
 				</div>
 			</div>
@@ -106,11 +106,11 @@ export function DrawingsPanel({
 			{/* 内容区域 */}
 			<ScrollArea className="flex-1">
 				<div className="px-2 py-4">
-					{!selectedProjectId ? (
-						// 未选择项目
+					{!selectedWorkspaceId ? (
+						// 未选择工作空间
 						<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
 							<PenTool className="size-12 mb-3 opacity-20" />
-							<p className="text-sm text-center">Select a project to view drawings</p>
+							<p className="text-sm text-center">Select a workspace to view drawings</p>
 						</div>
 					) : filteredDrawings.length === 0 ? (
 						// 无绘图

@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WikiRouteImport } from './routes/wiki'
 import { Route as TestManualSaveRouteImport } from './routes/test-manual-save'
 import { Route as TestFocusRouteImport } from './routes/test-focus'
 import { Route as TestClearDataRouteImport } from './routes/test-clear-data'
@@ -29,11 +28,6 @@ import { Route as SettingsDesignRouteImport } from './routes/settings/design'
 import { Route as SettingsDataRouteImport } from './routes/settings/data'
 import { Route as SettingsAboutRouteImport } from './routes/settings/about'
 
-const WikiRoute = WikiRouteImport.update({
-  id: '/wiki',
-  path: '/wiki',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TestManualSaveRoute = TestManualSaveRouteImport.update({
   id: '/test-manual-save',
   path: '/test-manual-save',
@@ -132,7 +126,6 @@ export interface FileRoutesByFullPath {
   '/test-clear-data': typeof TestClearDataRoute
   '/test-focus': typeof TestFocusRoute
   '/test-manual-save': typeof TestManualSaveRoute
-  '/wiki': typeof WikiRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/data': typeof SettingsDataRoute
   '/settings/design': typeof SettingsDesignRoute
@@ -152,7 +145,6 @@ export interface FileRoutesByTo {
   '/test-clear-data': typeof TestClearDataRoute
   '/test-focus': typeof TestFocusRoute
   '/test-manual-save': typeof TestManualSaveRoute
-  '/wiki': typeof WikiRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/data': typeof SettingsDataRoute
   '/settings/design': typeof SettingsDesignRoute
@@ -174,7 +166,6 @@ export interface FileRoutesById {
   '/test-clear-data': typeof TestClearDataRoute
   '/test-focus': typeof TestFocusRoute
   '/test-manual-save': typeof TestManualSaveRoute
-  '/wiki': typeof WikiRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/data': typeof SettingsDataRoute
   '/settings/design': typeof SettingsDesignRoute
@@ -197,7 +188,6 @@ export interface FileRouteTypes {
     | '/test-clear-data'
     | '/test-focus'
     | '/test-manual-save'
-    | '/wiki'
     | '/settings/about'
     | '/settings/data'
     | '/settings/design'
@@ -217,7 +207,6 @@ export interface FileRouteTypes {
     | '/test-clear-data'
     | '/test-focus'
     | '/test-manual-save'
-    | '/wiki'
     | '/settings/about'
     | '/settings/data'
     | '/settings/design'
@@ -238,7 +227,6 @@ export interface FileRouteTypes {
     | '/test-clear-data'
     | '/test-focus'
     | '/test-manual-save'
-    | '/wiki'
     | '/settings/about'
     | '/settings/data'
     | '/settings/design'
@@ -260,18 +248,10 @@ export interface RootRouteChildren {
   TestClearDataRoute: typeof TestClearDataRoute
   TestFocusRoute: typeof TestFocusRoute
   TestManualSaveRoute: typeof TestManualSaveRoute
-  WikiRoute: typeof WikiRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/wiki': {
-      id: '/wiki'
-      path: '/wiki'
-      fullPath: '/wiki'
-      preLoaderRoute: typeof WikiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/test-manual-save': {
       id: '/test-manual-save'
       path: '/test-manual-save'
@@ -442,7 +422,6 @@ const rootRouteChildren: RootRouteChildren = {
   TestClearDataRoute: TestClearDataRoute,
   TestFocusRoute: TestFocusRoute,
   TestManualSaveRoute: TestManualSaveRoute,
-  WikiRoute: WikiRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

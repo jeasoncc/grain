@@ -88,7 +88,8 @@ export const WorkspaceRepository = {
 
   /**
    * Delete a workspace and all its associated data
-   * Deletes nodes, contents, wiki entries, drawings, and attachments
+   * Deletes nodes, contents, drawings, and attachments
+   * Note: Wiki entries are now stored as file nodes with "wiki" tag
    * @param id - The workspace ID
    */
   async deleteWithContents(id: string): Promise<void> {
@@ -98,7 +99,6 @@ export const WorkspaceRepository = {
         database.workspaces,
         database.nodes,
         database.contents,
-        database.wikiEntries,
         database.drawings,
         database.attachments,
       ],
@@ -115,11 +115,8 @@ export const WorkspaceRepository = {
           await database.contents.where("nodeId").anyOf(nodeIds).delete();
         }
 
-        // Delete nodes
+        // Delete nodes (includes wiki files which are now regular nodes with "wiki" tag)
         await database.nodes.where("workspace").equals(id).delete();
-
-        // Delete wiki entries
-        await database.wikiEntries.where("project").equals(id).delete();
 
         // Delete drawings
         await database.drawings.where("project").equals(id).delete();

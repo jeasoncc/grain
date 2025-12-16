@@ -21,20 +21,23 @@ const AtSignMentionsRegex = /@([\u4e00-\u9fa5a-zA-Z0-9_]*)$/;
 
 const SUGGESTION_LIST_LENGTH_LIMIT = 8;
 
-// Type definitions for external dependencies
-export interface WikiEntryInterface {
+// Type definitions for mention entries (renamed from WikiEntryInterface)
+export interface MentionEntry {
 	id: string;
 	name: string;
 	alias?: string[];
 	tags?: string[];
 }
 
+/** @deprecated Use MentionEntry instead */
+export type WikiEntryInterface = MentionEntry;
+
 class MentionTypeaheadOption extends MenuOption {
 	name: string;
 	entryId: string;
-	entry: WikiEntryInterface;
+	entry: MentionEntry;
 
-	constructor(name: string, entryId: string, entry: WikiEntryInterface) {
+	constructor(name: string, entryId: string, entry: MentionEntry) {
 		super(name);
 		this.name = name;
 		this.entryId = entryId;
@@ -127,32 +130,38 @@ function getPinyinInitials(text: string): string {
 }
 
 export interface MentionsPluginProps {
-	wikiEntries?: WikiEntryInterface[];
+	/** Mention entries for @ autocomplete (renamed from wikiEntries) */
+	mentionEntries?: MentionEntry[];
+	/** @deprecated Use mentionEntries instead */
+	wikiEntries?: MentionEntry[];
 }
 
 export default function MentionsPlugin({ 
-	wikiEntries = [] 
+	mentionEntries,
+	wikiEntries,
 }: MentionsPluginProps): React.ReactElement | null {
+	// Support both new and deprecated prop names
+	const entries = mentionEntries ?? wikiEntries ?? [];
 	const [editor] = useLexicalComposerContext();
 
 	const [queryString, setQueryString] = useState<string | null>(null);
 
 	const options = useMemo(() => {
-		if (!wikiEntries || wikiEntries.length === 0) {
+		if (!entries || entries.length === 0) {
 			return [];
 		}
 
 		const query = (queryString || "").toLowerCase().trim();
 
-		// 如果没有查询，显示所有Wiki条目
+		// 如果没有查询，显示所有条目
 		if (!query) {
-			return wikiEntries
+			return entries
 				.map((entry) => new MentionTypeaheadOption(entry.name, entry.id, entry))
 				.slice(0, SUGGESTION_LIST_LENGTH_LIMIT);
 		}
 
-		// 过滤匹配的Wiki条目
-		const filtered = wikiEntries.filter((entry) => {
+		// 过滤匹配的条目
+		const filtered = entries.filter((entry) => {
 			// 1. 匹配条目名称
 			if (entry.name.toLowerCase().includes(query)) return true;
 
@@ -172,7 +181,7 @@ export default function MentionsPlugin({
 		return filtered
 			.map((entry) => new MentionTypeaheadOption(entry.name, entry.id, entry))
 			.slice(0, SUGGESTION_LIST_LENGTH_LIMIT);
-	}, [wikiEntries, queryString]);
+	}, [entries, queryString]);
 
 	const onSelectOption = useCallback(
 		(

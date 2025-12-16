@@ -36,18 +36,6 @@ function convertTagElement(domNode: HTMLElement): DOMConversionOutput | null {
   return null;
 }
 
-/**
- * 根据标签名生成颜色
- */
-function getTagColor(tagName: string): string {
-  let hash = 0;
-  for (let i = 0; i < tagName.length; i++) {
-    hash = tagName.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const hue = Math.abs(hash % 360);
-  return `hsl(${hue}, 60%, 50%)`;
-}
-
 export class TagNode extends TextNode {
   __tagName: string;
 
@@ -85,35 +73,13 @@ export class TagNode extends TextNode {
 
   createDOM(config: EditorConfig): HTMLElement {
     const dom = super.createDOM(config);
-    const color = getTagColor(this.__tagName);
 
-    dom.className = "tag-node";
+    dom.className = "tag-node inline-flex items-center text-xs font-medium text-primary";
     dom.style.cssText = `
-      display: inline-flex;
-      align-items: center;
-      padding: 0 6px;
-      margin: 0 2px;
-      border-radius: 4px;
-      font-size: 0.875em;
-      font-weight: 500;
-      background-color: ${color}20;
-      color: ${color};
-      border: 1px solid ${color}40;
-      cursor: pointer;
-      transition: all 0.15s ease;
+      vertical-align: middle;
     `;
 
     dom.setAttribute("data-tag-name", this.__tagName);
-
-    // 悬停效果
-    dom.addEventListener("mouseenter", () => {
-      dom.style.backgroundColor = `${color}30`;
-      dom.style.borderColor = `${color}60`;
-    });
-    dom.addEventListener("mouseleave", () => {
-      dom.style.backgroundColor = `${color}20`;
-      dom.style.borderColor = `${color}40`;
-    });
 
     return dom;
   }

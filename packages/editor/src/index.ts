@@ -73,7 +73,8 @@ export {
 
 export type {
   MentionsPluginProps,
-  WikiEntryInterface,
+  MentionEntry,
+  WikiEntryInterface, // deprecated, use MentionEntry
   MentionMenuTextMatch,
   MentionTooltipPluginProps,
   WikiPreviewState,

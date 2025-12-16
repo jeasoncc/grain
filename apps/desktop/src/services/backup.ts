@@ -25,7 +25,8 @@ export interface BackupData {
 	metadata: BackupMetadata;
 	users: unknown[];
 	projects: unknown[];
-	wikiEntries: unknown[];
+	/** @deprecated Wiki entries are now stored as file nodes with "wiki" tag */
+	wikiEntries?: unknown[];
 	drawings: unknown[];
 	attachments: unknown[];
 	nodes: unknown[];
@@ -35,6 +36,7 @@ export interface BackupData {
 
 /**
  * 创建完整数据库备份
+ * Note: Wiki entries are now stored as file nodes with "wiki" tag
  */
 export async function createBackup(): Promise<BackupData> {
 	logger.info("开始创建备份...");
@@ -42,7 +44,6 @@ export async function createBackup(): Promise<BackupData> {
 	const [
 		users,
 		projects,
-		wikiEntries,
 		drawings,
 		attachments,
 		nodes,
@@ -51,7 +52,6 @@ export async function createBackup(): Promise<BackupData> {
 	] = await Promise.all([
 		database.users.toArray(),
 		database.workspaces.toArray(),
-		database.wikiEntries.toArray(),
 		database.drawings.toArray(),
 		database.attachments.toArray(),
 		database.nodes.toArray(),
@@ -61,7 +61,7 @@ export async function createBackup(): Promise<BackupData> {
 
 	const backup: BackupData = {
 		metadata: {
-			version: "3.0.0",
+			version: "4.0.0", // Bumped version - wiki entries now in nodes
 			timestamp: dayjs().toISOString(),
 			projectCount: projects.length,
 			nodeCount: nodes.length,
@@ -70,7 +70,7 @@ export async function createBackup(): Promise<BackupData> {
 		},
 		users,
 		projects,
-		wikiEntries,
+		// wikiEntries no longer exported - they are now file nodes with "wiki" tag
 		drawings,
 		attachments,
 		nodes,
@@ -161,7 +161,6 @@ export async function restoreBackup(file: File): Promise<void> {
 			[
 				database.users,
 				database.workspaces,
-				database.wikiEntries,
 				database.drawings,
 				database.attachments,
 				database.nodes,
@@ -171,7 +170,7 @@ export async function restoreBackup(file: File): Promise<void> {
 			async () => {
 				if (backupData.users?.length) await database.users.bulkPut(backupData.users as never[]);
 				if (backupData.projects?.length) await database.workspaces.bulkPut(backupData.projects as never[]);
-				if (backupData.wikiEntries?.length) await database.wikiEntries.bulkPut(backupData.wikiEntries as never[]);
+				// Note: wikiEntries from old backups are ignored - they should be migrated separately
 				if (backupData.drawings?.length) await database.drawings.bulkPut(backupData.drawings as never[]);
 				if (backupData.attachments?.length) await database.attachments.bulkPut(backupData.attachments as never[]);
 				if (backupData.nodes?.length) await database.nodes.bulkPut(backupData.nodes as never[]);
@@ -194,11 +193,10 @@ export async function clearAllData(): Promise<void> {
 	logger.warn("清空所有数据...");
 	await database.transaction(
 		"rw",
-		[database.users, database.workspaces, database.wikiEntries, database.drawings, database.attachments, database.nodes, database.contents],
+		[database.users, database.workspaces, database.drawings, database.attachments, database.nodes, database.contents],
 		async () => {
 			await database.users.clear();
 			await database.workspaces.clear();
-			await database.wikiEntries.clear();
 			await database.drawings.clear();
 			await database.attachments.clear();
 			await database.nodes.clear();
@@ -212,11 +210,10 @@ export async function clearAllData(): Promise<void> {
  * 获取数据库统计信息
  */
 export async function getDatabaseStats() {
-	const [userCount, projectCount, wikiEntryCount, drawingCount, attachmentCount, nodeCount, contentCount] =
+	const [userCount, projectCount, drawingCount, attachmentCount, nodeCount, contentCount] =
 		await Promise.all([
 			database.users.count(),
 			database.workspaces.count(),
-			database.wikiEntries.count(),
 			database.drawings.count(),
 			database.attachments.count(),
 			database.nodes.count(),
@@ -226,7 +223,6 @@ export async function getDatabaseStats() {
 	return {
 		userCount,
 		projectCount,
-		wikiEntryCount,
 		drawingCount,
 		attachmentCount,
 		nodeCount,
@@ -307,11 +303,11 @@ export class AutoBackupManager {
 
 		await database.transaction(
 			"rw",
-			[database.users, database.workspaces, database.wikiEntries, database.drawings, database.attachments, database.nodes, database.contents],
+			[database.users, database.workspaces, database.drawings, database.attachments, database.nodes, database.contents],
 			async () => {
 				if (backup.data.users?.length) await database.users.bulkPut(backup.data.users as never[]);
 				if (backup.data.projects?.length) await database.workspaces.bulkPut(backup.data.projects as never[]);
-				if (backup.data.wikiEntries?.length) await database.wikiEntries.bulkPut(backup.data.wikiEntries as never[]);
+				// Note: wikiEntries from old backups are ignored - they should be migrated separately
 				if (backup.data.drawings?.length) await database.drawings.bulkPut(backup.data.drawings as never[]);
 				if (backup.data.attachments?.length) await database.attachments.bulkPut(backup.data.attachments as never[]);
 				if (backup.data.nodes?.length) await database.nodes.bulkPut(backup.data.nodes as never[]);

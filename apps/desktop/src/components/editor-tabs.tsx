@@ -35,12 +35,12 @@ function getTabMaxWidth(tabCount: number): number {
 }
 
 export function EditorTabs({ className }: EditorTabsProps) {
-  const selectedProjectId = useSelectionStore(s => s.selectedProjectId);
+  const selectedWorkspaceId = useSelectionStore(s => s.selectedWorkspaceId);
   const allTabs = useEditorTabsStore(s => s.tabs);
   // 只显示当前 workspace 的标签
   const tabs = useMemo(() => 
-    allTabs.filter(t => t.projectId === selectedProjectId),
-    [allTabs, selectedProjectId]
+    allTabs.filter(t => t.workspaceId === selectedWorkspaceId),
+    [allTabs, selectedWorkspaceId]
   );
   const activeTabId = useEditorTabsStore(s => s.activeTabId);
   const setActiveTab = useEditorTabsStore(s => s.setActiveTab);
@@ -203,7 +203,7 @@ export function EditorTabs({ className }: EditorTabsProps) {
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="text-xs">
-            查看所有标签页
+            View all tabs
           </TooltipContent>
         </Tooltip>
       </div>
@@ -212,7 +212,7 @@ export function EditorTabs({ className }: EditorTabsProps) {
       <Dialog open={cardViewOpen} onOpenChange={setCardViewOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>所有标签页</DialogTitle>
+            <DialogTitle>All Tabs</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-96 overflow-y-auto p-1">
             {tabs.map((tab) => (

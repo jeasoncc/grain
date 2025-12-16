@@ -5,7 +5,6 @@
 
 import logger from "@/log";
 import { database } from "@/db/database";
-import { db } from "@/db/curd";
 
 export interface ClearDataOptions {
 	clearIndexedDB?: boolean;
@@ -20,8 +19,6 @@ export interface ClearDataOptions {
 export async function clearIndexedDB(): Promise<void> {
 	try {
 		// 清空所有表的数据
-		// 注意：workspaces 和 projects 是同一数据的不同表名（向后兼容）
-		// 我们需要同时清空两个表以确保完全清空
 		await database.transaction(
 			"rw",
 			[
@@ -29,7 +26,6 @@ export async function clearIndexedDB(): Promise<void> {
 				database.workspaces,
 				database.nodes,
 				database.contents,
-				database.wikiEntries,
 				database.drawings,
 				database.attachments,
 				database.tags,
@@ -40,16 +36,12 @@ export async function clearIndexedDB(): Promise<void> {
 				await database.workspaces.clear();
 				await database.nodes.clear();
 				await database.contents.clear();
-				await database.wikiEntries.clear();
 				await database.drawings.clear();
 				await database.attachments.clear();
 				await database.tags.clear();
 				await database.dbVersions.clear();
 			},
 		);
-
-		// 同时清空 projects 表（旧的表名，通过 db 实例访问）
-		await db.projects.clear();
 
 		logger.info("[Clear Data] IndexedDB cleared successfully");
 	} catch (error) {
@@ -233,7 +225,6 @@ export async function getStorageStats(): Promise<{
 				workspaces: await database.workspaces.count(),
 				nodes: await database.nodes.count(),
 				contents: await database.contents.count(),
-				wikiEntries: await database.wikiEntries.count(),
 				drawings: await database.drawings.count(),
 				attachments: await database.attachments.count(),
 				tags: await database.tags.count(),

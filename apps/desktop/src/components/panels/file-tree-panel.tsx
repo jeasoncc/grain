@@ -32,8 +32,8 @@ export function FileTreePanel({ workspaceId: propWorkspaceId }: FileTreePanelPro
   const confirm = useConfirm();
 
   // Global selection state
-  const globalSelectedProjectId = useSelectionStore((s) => s.selectedProjectId);
-  const workspaceId = propWorkspaceId ?? globalSelectedProjectId;
+  const globalSelectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
+  const workspaceId = propWorkspaceId ?? globalSelectedWorkspaceId;
 
   // Selected node state - use global store for cross-component communication
   const selectedNodeId = useSelectionStore((s) => s.selectedNodeId);
@@ -85,7 +85,7 @@ export function FileTreePanel({ workspaceId: propWorkspaceId }: FileTreePanelPro
       const tabType = node.type === "canvas" ? "canvas" : 
                       node.type === "diary" ? "diary" : "file";
       openTab({
-        projectId: workspaceId,
+        workspaceId: workspaceId,
         nodeId: nodeId,
         title: node.title,
         type: tabType,

@@ -3,7 +3,7 @@
  */
 
 import { useNavigate } from "@tanstack/react-router";
-import { FileText, Globe, Loader2, Search, X } from "lucide-react";
+import { FileText, Loader2, Search, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,19 +31,16 @@ interface GlobalSearchProps {
 const typeIcons: Record<SearchResultType, any> = {
 	project: FileText,
 	node: FileText,
-	wiki: Globe,
 };
 
 const typeLabels: Record<SearchResultType, string> = {
 	project: "项目",
 	node: "文件",
-	wiki: "Wiki",
 };
 
 const typeColors: Record<SearchResultType, string> = {
 	project: "bg-purple-500/10 text-purple-500",
 	node: "bg-blue-500/10 text-blue-500",
-	wiki: "bg-cyan-500/10 text-cyan-500",
 };
 
 export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
@@ -127,9 +124,6 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 				// 导航到主页，通过文件树打开
 				navigate({ to: "/" });
 				break;
-			case "wiki":
-				navigate({ to: "/wiki" });
-				break;
 		}
 
 		// 清空搜索
@@ -169,7 +163,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 					<Input
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
-						placeholder="搜索文件、Wiki 条目..."
+						placeholder="搜索文件..."
 						className="pl-9 pr-9"
 						autoFocus
 					/>
@@ -225,9 +219,9 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 														{typeLabels[result.type]}
 													</Badge>
 												</div>
-												{result.projectTitle && (
+												{result.workspaceTitle && (
 													<p className="text-xs text-muted-foreground mb-1">
-														{result.projectTitle}
+														{result.workspaceTitle}
 													</p>
 												)}
 												<p className="text-xs text-muted-foreground line-clamp-2">
@@ -248,7 +242,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 						<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
 							<Search className="size-12 mb-3 opacity-20" />
 							<p className="text-sm">输入关键词开始搜索</p>
-							<p className="text-xs mt-1">支持搜索文件、Wiki 条目</p>
+							<p className="text-xs mt-1">支持搜索文件内容</p>
 						</div>
 					)}
 				</ScrollArea>

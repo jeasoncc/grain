@@ -4,7 +4,7 @@
  */
 
 import { useNavigate } from "@tanstack/react-router";
-import { FileText, Globe, Loader2, Search } from "lucide-react";
+import { FileText, Loader2, Search } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import logger from "@/log";
 import { Badge } from "@/components/ui/badge";
@@ -24,13 +24,13 @@ import { type SearchResult, searchEngine } from "@/services/search";
 interface GlobalSearchDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	projectId?: string;
+	workspaceId?: string;
 }
 
 export function GlobalSearchDialog({
 	open,
 	onOpenChange,
-	projectId,
+	workspaceId,
 }: GlobalSearchDialogProps) {
 	const navigate = useNavigate();
 	const [query, setQuery] = useState("");
@@ -49,18 +49,18 @@ export function GlobalSearchDialog({
 			setIsSearching(true);
 			try {
 				const searchResults = await searchEngine.simpleSearch(searchQuery, {
-					projectId,
+					workspaceId,
 					limit: 50,
 				});
 				setResults(searchResults);
 				setSelectedIndex(0);
 			} catch (error) {
-				logger.error("搜索失败:", error);
+				logger.error("Search failed:", error);
 			} finally {
 				setIsSearching(false);
 			}
 		},
-		[projectId],
+		[workspaceId],
 	);
 
 	// 防抖搜索
@@ -112,9 +112,6 @@ export function GlobalSearchDialog({
 				// 导航到主页
 				navigate({ to: "/" });
 				break;
-			case "wiki":
-				navigate({ to: "/wiki" });
-				break;
 		}
 	};
 
@@ -123,8 +120,6 @@ export function GlobalSearchDialog({
 		switch (type) {
 			case "node":
 				return <FileText className="h-4 w-4" />;
-			case "wiki":
-				return <Globe className="h-4 w-4" />;
 			default:
 				return <FileText className="h-4 w-4" />;
 		}
@@ -134,9 +129,7 @@ export function GlobalSearchDialog({
 	const getTypeLabel = (type: string) => {
 		switch (type) {
 			case "node":
-				return "文件";
-			case "wiki":
-				return "Wiki";
+				return "File";
 			default:
 				return type;
 		}
@@ -166,8 +159,8 @@ export function GlobalSearchDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-2xl p-0">
 				<DialogHeader className="px-6 pt-6">
-					<DialogTitle>全局搜索</DialogTitle>
-					<DialogDescription>搜索项目中的文件和 Wiki 条目</DialogDescription>
+					<DialogTitle>Global Search</DialogTitle>
+					<DialogDescription>Search files in workspace</DialogDescription>
 				</DialogHeader>
 
 				<div className="px-6">
@@ -176,7 +169,7 @@ export function GlobalSearchDialog({
 						<Input
 							value={query}
 							onChange={(e) => setQuery(e.target.value)}
-							placeholder="输入搜索内容..."
+							placeholder="Enter search query..."
 							className="pl-9"
 							autoFocus
 						/>
@@ -193,7 +186,7 @@ export function GlobalSearchDialog({
 						<div className="flex flex-col items-center justify-center py-12 text-center">
 							<Search className="mb-4 h-12 w-12 text-muted-foreground" />
 							<p className="text-sm text-muted-foreground">
-								{query ? "未找到匹配结果" : "输入关键词开始搜索"}
+								{query ? "No matching results" : "Enter keywords to search"}
 							</p>
 						</div>
 					) : (
@@ -226,9 +219,9 @@ export function GlobalSearchDialog({
 													{highlightText(result.excerpt, query)}
 												</p>
 											)}
-											{result.projectTitle && (
+											{result.workspaceTitle && (
 												<div className="flex items-center gap-1 text-xs text-muted-foreground">
-													<span>{result.projectTitle}</span>
+													<span>{result.workspaceTitle}</span>
 												</div>
 											)}
 										</div>
@@ -243,7 +236,7 @@ export function GlobalSearchDialog({
 					<>
 						<Separator />
 						<div className="px-6 py-3 text-xs text-muted-foreground">
-							找到 {results.length} 个结果 · 使用 ↑↓ 导航 · Enter 打开
+							Found {results.length} results · Use ↑↓ to navigate · Enter to open
 						</div>
 					</>
 				)}

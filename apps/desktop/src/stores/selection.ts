@@ -2,8 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export interface SelectionState {
-	selectedProjectId: string | null;
-	setSelectedProjectId: (id: string | null) => void;
+	selectedWorkspaceId: string | null;
+	setSelectedWorkspaceId: (id: string | null) => void;
 	/** Selected node ID in file tree */
 	selectedNodeId: string | null;
 	setSelectedNodeId: (id: string | null) => void;
@@ -12,10 +12,10 @@ export interface SelectionState {
 export const useSelectionStore = create<SelectionState>()(
 	persist(
 		(set) => ({
-			selectedProjectId: null,
-			setSelectedProjectId: (id: string | null) =>
+			selectedWorkspaceId: null,
+			setSelectedWorkspaceId: (id: string | null) =>
 				set({
-					selectedProjectId: id,
+					selectedWorkspaceId: id,
 					selectedNodeId: null, // Clear node selection when workspace changes
 				}),
 			selectedNodeId: null,
@@ -23,8 +23,7 @@ export const useSelectionStore = create<SelectionState>()(
 		}),
 		{
 			name: "novel-editor-selection",
-			// 只持久化 selectedProjectId，不持久化 selectedNodeId
-			partialize: (state) => ({ selectedProjectId: state.selectedProjectId }),
+			partialize: (state) => ({ selectedWorkspaceId: state.selectedWorkspaceId }),
 		}
 	)
 );

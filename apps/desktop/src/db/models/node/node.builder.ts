@@ -129,6 +129,16 @@ export class NodeBuilder {
   }
 
   /**
+   * Set the tags array
+   * @param tags - Array of tag strings
+   * @returns this builder for chaining
+   */
+  tags(tags: string[]): this {
+    this.data.tags = tags;
+    return this;
+  }
+
+  /**
    * Build and validate the Node object
    * @returns A validated NodeInterface object
    * @throws ZodError if validation fails

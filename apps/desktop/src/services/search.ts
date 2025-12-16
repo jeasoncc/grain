@@ -8,10 +8,10 @@
 import lunr from "lunr";
 import { database } from "@/db/database";
 import { ContentRepository } from "@/db/models";
-import type { NodeInterface, WikiInterface, WorkspaceInterface } from "@/db/models";
+import type { NodeInterface, WorkspaceInterface } from "@/db/models";
 import logger from "@/log/index";
 
-export type SearchResultType = "project" | "node" | "wiki";
+export type SearchResultType = "project" | "node";
 
 export interface SearchResult {
 	id: string;
@@ -19,23 +19,22 @@ export interface SearchResult {
 	title: string;
 	content: string;
 	excerpt: string;
-	projectId?: string;
-	projectTitle?: string;
+	workspaceId?: string;
+	workspaceTitle?: string;
 	score: number;
 	highlights: string[];
 }
 
 export interface SearchOptions {
 	types?: SearchResultType[];
-	projectId?: string;
+	workspaceId?: string;
 	limit?: number;
 	fuzzy?: boolean;
 }
 
 export class SearchEngine {
 	private nodeIndex: lunr.Index | null = null;
-	private wikiIndex: lunr.Index | null = null;
-	private indexedData: Map<string, NodeInterface | WikiInterface> = new Map();
+	private indexedData: Map<string, NodeInterface> = new Map();
 	private nodeContents: Map<string, string> = new Map();
 	private isIndexing = false;
 
@@ -44,10 +43,8 @@ export class SearchEngine {
 		this.isIndexing = true;
 
 		try {
-			const [nodes, wikiEntries] = await Promise.all([
-				database.nodes.toArray(),
-				database.wikiEntries.toArray(),
-			]);
+			// Wiki entries are now stored as file nodes with "wiki" tag
+			const nodes = await database.nodes.toArray();
 
 			// Load content from contents table for nodes
 			const nodeIds = nodes.map(n => n.id);
@@ -62,6 +59,7 @@ export class SearchEngine {
 			this.nodeIndex = lunr(function (this: lunr.Builder) {
 				this.ref("id");
 				this.field("title", { boost: 10 });
+				this.field("tags", { boost: 5 });
 				this.field("content");
 				this.pipeline.remove(lunr.stemmer);
 				this.searchPipeline.remove(lunr.stemmer);
@@ -69,36 +67,21 @@ export class SearchEngine {
 				for (const node of nodes) {
 					const contentStr = contents.find(c => c.nodeId === node.id)?.content || "";
 					const textContent = extractTextFromContent(contentStr);
-					this.add({ id: node.id, title: node.title, content: textContent });
-				}
-			});
-
-			this.wikiIndex = lunr(function (this: lunr.Builder) {
-				this.ref("id");
-				this.field("name", { boost: 10 });
-				this.field("alias", { boost: 5 });
-				this.field("content");
-				this.pipeline.remove(lunr.stemmer);
-				this.searchPipeline.remove(lunr.stemmer);
-
-				for (const entry of wikiEntries) {
-					const content = extractTextFromWiki(entry);
-					this.add({
-						id: entry.id,
-						name: entry.name,
-						alias: entry.alias?.join(" ") || "",
-						content,
+					this.add({ 
+						id: node.id, 
+						title: node.title, 
+						tags: node.tags?.join(" ") || "",
+						content: textContent 
 					});
 				}
 			});
 
 			this.indexedData.clear();
 			for (const node of nodes) this.indexedData.set(node.id, node);
-			for (const entry of wikiEntries) this.indexedData.set(entry.id, entry);
 
-			logger.success(`索引构建完成: ${nodes.length} 节点, ${wikiEntries.length} Wiki条目`);
+			logger.success(`Index built: ${nodes.length} nodes`);
 		} catch (error) {
-			logger.error("索引构建失败:", error);
+			logger.error("Index build failed:", error);
 		} finally {
 			this.isIndexing = false;
 		}
@@ -106,9 +89,9 @@ export class SearchEngine {
 
 	async search(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
 		if (!query.trim()) return [];
-		if (!this.nodeIndex || !this.wikiIndex) await this.buildIndex();
+		if (!this.nodeIndex) await this.buildIndex();
 
-		const { types = ["node", "wiki"], projectId, limit = 50, fuzzy = true } = options;
+		const { types = ["node"], workspaceId, limit = 50, fuzzy = true } = options;
 		const results: SearchResult[] = [];
 		const searchQuery = fuzzy ? `${query}~1 ${query}*` : query;
 
@@ -116,11 +99,11 @@ export class SearchEngine {
 			if (types.includes("node") && this.nodeIndex) {
 				const nodeResults = this.nodeIndex.search(searchQuery);
 				for (const result of nodeResults) {
-					const node = this.indexedData.get(result.ref) as NodeInterface;
+					const node = this.indexedData.get(result.ref);
 					if (!node) continue;
-					if (projectId && node.workspace !== projectId) continue;
+					if (workspaceId && node.workspace !== workspaceId) continue;
 
-					const project = await database.workspaces.get(node.workspace);
+					const workspace = await database.workspaces.get(node.workspace);
 					const contentStr = this.nodeContents.get(node.id) || "";
 					const content = extractTextFromContent(contentStr);
 
@@ -130,32 +113,8 @@ export class SearchEngine {
 						title: node.title,
 						content,
 						excerpt: generateExcerpt(content, query),
-						projectId: node.workspace,
-						projectTitle: project?.title,
-						score: result.score,
-						highlights: extractHighlights(content, query),
-					});
-				}
-			}
-
-			if (types.includes("wiki") && this.wikiIndex) {
-				const wikiResults = this.wikiIndex.search(searchQuery);
-				for (const result of wikiResults) {
-					const entry = this.indexedData.get(result.ref) as WikiInterface;
-					if (!entry) continue;
-					if (projectId && entry.project !== projectId) continue;
-
-					const project = await database.workspaces.get(entry.project);
-					const content = extractTextFromWiki(entry);
-
-					results.push({
-						id: entry.id,
-						type: "wiki",
-						title: entry.name,
-						content,
-						excerpt: generateExcerpt(content, query),
-						projectId: entry.project,
-						projectTitle: project?.title,
+						workspaceId: node.workspace,
+						workspaceTitle: workspace?.title,
 						score: result.score,
 						highlights: extractHighlights(content, query),
 					});
@@ -165,7 +124,7 @@ export class SearchEngine {
 			results.sort((a, b) => b.score - a.score);
 			return results.slice(0, limit);
 		} catch (error) {
-			logger.error("搜索失败:", error);
+			logger.error("Search failed:", error);
 			return [];
 		}
 	}
@@ -173,14 +132,14 @@ export class SearchEngine {
 	async simpleSearch(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
 		if (!query.trim()) return [];
 
-		const { types = ["node", "wiki"], projectId, limit = 50 } = options;
+		const { types = ["node"], workspaceId, limit = 50 } = options;
 		const results: SearchResult[] = [];
 		const lowerQuery = query.toLowerCase();
 
 		try {
 			if (types.includes("node")) {
-				const nodes = projectId
-					? await database.nodes.where("workspace").equals(projectId).toArray()
+				const nodes = workspaceId
+					? await database.nodes.where("workspace").equals(workspaceId).toArray()
 					: await database.nodes.toArray();
 
 				// Get content for all nodes
@@ -191,41 +150,20 @@ export class SearchEngine {
 				for (const node of nodes) {
 					const contentStr = contentMap.get(node.id) || "";
 					const content = extractTextFromContent(contentStr);
-					if (node.title.toLowerCase().includes(lowerQuery) || content.toLowerCase().includes(lowerQuery)) {
-						const project = await database.workspaces.get(node.workspace);
+					const tagsStr = node.tags?.join(" ") || "";
+					if (node.title.toLowerCase().includes(lowerQuery) || 
+					    content.toLowerCase().includes(lowerQuery) ||
+					    tagsStr.toLowerCase().includes(lowerQuery)) {
+						const workspace = await database.workspaces.get(node.workspace);
 						results.push({
 							id: node.id,
 							type: "node",
 							title: node.title,
 							content,
 							excerpt: generateExcerpt(content, query),
-							projectId: node.workspace,
-							projectTitle: project?.title,
+							workspaceId: node.workspace,
+							workspaceTitle: workspace?.title,
 							score: calculateSimpleScore(node.title, content, query),
-							highlights: extractHighlights(content, query),
-						});
-					}
-				}
-			}
-
-			if (types.includes("wiki")) {
-				const wikiEntries = projectId
-					? await database.wikiEntries.where("project").equals(projectId).toArray()
-					: await database.wikiEntries.toArray();
-
-				for (const entry of wikiEntries) {
-					const content = extractTextFromWiki(entry);
-					if (entry.name.toLowerCase().includes(lowerQuery) || content.toLowerCase().includes(lowerQuery)) {
-						const project = await database.workspaces.get(entry.project);
-						results.push({
-							id: entry.id,
-							type: "wiki",
-							title: entry.name,
-							content,
-							excerpt: generateExcerpt(content, query),
-							projectId: entry.project,
-							projectTitle: project?.title,
-							score: calculateSimpleScore(entry.name, content, query),
 							highlights: extractHighlights(content, query),
 						});
 					}
@@ -235,14 +173,13 @@ export class SearchEngine {
 			results.sort((a, b) => b.score - a.score);
 			return results.slice(0, limit);
 		} catch (error) {
-			logger.error("简单搜索失败:", error);
+			logger.error("Simple search failed:", error);
 			return [];
 		}
 	}
 
 	clearIndex() {
 		this.nodeIndex = null;
-		this.wikiIndex = null;
 		this.indexedData.clear();
 		this.nodeContents.clear();
 	}
@@ -256,17 +193,6 @@ function extractTextFromContent(content: string): string {
 		return extractTextFromLexical(parsed.root);
 	} catch {
 		return content || "";
-	}
-}
-
-function extractTextFromWiki(entry: WikiInterface): string {
-	try {
-		if (!entry.content) return entry.name;
-		const content = JSON.parse(entry.content);
-		if (!content?.root) return entry.name;
-		return `${entry.name} ${entry.alias?.join(" ") || ""} ${extractTextFromLexical(content.root)}`;
-	} catch {
-		return `${entry.name} ${entry.content || ""}`;
 	}
 }
 
