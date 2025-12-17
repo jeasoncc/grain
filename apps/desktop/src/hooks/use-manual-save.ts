@@ -66,7 +66,8 @@ export function useManualSave({
 
 			if (result.success) {
 				markAsSaved();
-				toast.success("Saved successfully");
+				// 不显示 toast，依赖状态指示器
+				// 用户可以通过顶部的保存状态看到结果
 				onSaveSuccess?.();
 			} else {
 				markAsError(result.error || "Save failed");
