@@ -100,9 +100,9 @@ export function BackupManager() {
 		setLoading(true);
 		try {
 			await exportBackup();
-			toast.success("备份已Export");
+			toast.success("Backup exported");
 		} catch (error) {
-			toast.error("Export失败");
+			toast.error("Export failed");
 			console.error(error);
 		} finally {
 			setLoading(false);
@@ -114,9 +114,9 @@ export function BackupManager() {
 		setLoading(true);
 		try {
 			await exportBackupZip();
-			toast.success("压缩备份已Export");
+			toast.success("Compressed backup exported");
 		} catch (error) {
-			toast.error("Export失败");
+			toast.error("Export failed");
 			console.error(error);
 		} finally {
 			setLoading(false);
@@ -145,11 +145,11 @@ export function BackupManager() {
 			setLoading(true);
 			try {
 				await restoreBackup(file);
-				toast.success("备份恢复成功");
+				toast.success("Backup restored successfully");
 				await loadStats();
 				window.location.reload(); // 刷新页面
 			} catch (error) {
-				toast.error("恢复失败");
+				toast.error("Restore failed");
 				console.error(error);
 			} finally {
 				setLoading(false);

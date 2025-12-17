@@ -34,13 +34,13 @@ export function useManualSave({
 	// 执行手动保存
 	const performManualSave = useCallback(async () => {
 		if (!nodeId || !currentContent) {
-			toast.info("没有可保存的内容");
+			toast.info("No content to save");
 			return;
 		}
 
 		// 如果没有未保存的更改，显示提示但不执行保存
 		if (!hasUnsavedChanges && !saveService.hasUnsavedChanges(nodeId)) {
-			toast.info("没有需要保存的更改");
+			toast.info("No changes to save");
 			return;
 		}
 
@@ -52,8 +52,8 @@ export function useManualSave({
 		}
 
 		saveTimeoutRef.current = window.setTimeout(() => {
-			markAsError("保存超时");
-			toast.error("保存超时，请检查网络连接");
+			markAsError("Save timeout");
+			toast.error("Save timeout, please check your network connection");
 		}, 10000);
 
 		try {
@@ -66,12 +66,12 @@ export function useManualSave({
 
 			if (result.success) {
 				markAsSaved();
-				toast.success("保存成功");
+				toast.success("Saved successfully");
 				onSaveSuccess?.();
 			} else {
-				markAsError(result.error || "保存失败");
-				toast.error(`保存失败: ${result.error || "未知错误"}`);
-				onSaveError?.(result.error || "未知错误");
+				markAsError(result.error || "Save failed");
+				toast.error(`Save failed: ${result.error || "Unknown error"}`);
+				onSaveError?.(result.error || "Unknown error");
 			}
 		} catch (error) {
 			if (saveTimeoutRef.current) {
@@ -79,9 +79,9 @@ export function useManualSave({
 				saveTimeoutRef.current = null;
 			}
 
-			const errorMessage = error instanceof Error ? error.message : "未知错误";
+			const errorMessage = error instanceof Error ? error.message : "Unknown error";
 			markAsError(errorMessage);
-			toast.error(`保存失败: ${errorMessage}`);
+			toast.error(`Save failed: ${errorMessage}`);
 			onSaveError?.(errorMessage);
 		} finally {
 			setIsManualSaving(false);

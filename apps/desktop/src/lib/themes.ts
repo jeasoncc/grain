@@ -153,6 +153,10 @@ export const themes: Theme[] = [
 			// 编辑器扩展颜色
 			editorCursor: "#0969da",
 			editorSelection: "#b6e3ff",
+			// Toast
+			toastBackground: "#ffffff",
+			toastForeground: "#24292f",
+			toastBorder: "#d0d7de",
 			editorLineHighlight: "#f6f8fa",
 		},
 	},
@@ -228,6 +232,10 @@ export const themes: Theme[] = [
 			// 扩展颜色
 			editorCursor: "#4078c0",
 			editorSelection: "#c8ddf0",
+			// Toast
+			toastBackground: "#ffffff",
+			toastForeground: "#333333",
+			toastBorder: "#d4d4d4",
 			editorLineHighlight: "#f0f0f0",
 			success: "#22863a",
 			warning: "#b08800",
@@ -274,6 +282,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#e5e5e5",
 			folderColor: "#0066bf",
 			editorSelection: "#add6ff",
+			// Toast
+			toastBackground: "#ffffff",
+			toastForeground: "#000000",
+			toastBorder: "#e5e5e5",
 		},
 	},
 	{
@@ -308,6 +320,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#e5e5e6",
 			folderColor: "#4078f2",
 			editorSelection: "#c9d0e5",
+			// Toast
+			toastBackground: "#fafafa",
+			toastForeground: "#383a42",
+			toastBorder: "#e5e5e6",
 		},
 	},
 	{
@@ -342,6 +358,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#d9e7f1",
 			folderColor: "#0073a1",
 			editorSelection: "#b3d7f0",
+			// Toast
+			toastBackground: "#f7f9fb",
+			toastForeground: "#0e293f",
+			toastBorder: "#d9e7f1",
 		},
 	},
 	{
@@ -376,6 +396,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#e7e8e9",
 			folderColor: "#399ee6",
 			editorSelection: "#c8e4f8",
+			// Toast
+			toastBackground: "#fafafa",
+			toastForeground: "#5c6166",
+			toastBorder: "#e7e8e9",
 		},
 	},
 	{
@@ -485,6 +509,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#d4c9b0",
 			folderColor: "#8b6914",
 			editorSelection: "#d4c4a0",
+			// Toast
+			toastBackground: "#f4ecd8",
+			toastForeground: "#5b4636",
+			toastBorder: "#d4c9b0",
 		},
 	},
 	{
@@ -519,6 +547,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#d8dee9",
 			folderColor: "#88c0d0",
 			editorSelection: "#b8c5d9",
+			// Toast
+			toastBackground: "#eceff4",
+			toastForeground: "#2e3440",
+			toastBorder: "#d8dee9",
 		},
 	},
 	{
@@ -553,6 +585,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#dfdad9",
 			folderColor: "#ea9a97",
 			editorSelection: "#dfdad9",
+			// Toast
+			toastBackground: "#faf4ed",
+			toastForeground: "#575279",
+			toastBorder: "#dfdad9",
 		},
 	},
 	{
@@ -587,6 +623,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#bcc0cc",
 			folderColor: "#1e66f5",
 			editorSelection: "#acb0be",
+			// Toast
+			toastBackground: "#eff1f5",
+			toastForeground: "#4c4f69",
+			toastBorder: "#bcc0cc",
 		},
 	},
 	{
@@ -621,6 +661,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#9aa5ce",
 			folderColor: "#2e7de9",
 			editorSelection: "#99a7df",
+			// Toast
+			toastBackground: "#e1e2e7",
+			toastForeground: "#3760bf",
+			toastBorder: "#9aa5ce",
 		},
 	},
 	{
@@ -655,6 +699,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#e5e6e7",
 			folderColor: "#0098dd",
 			editorSelection: "#cceae7",
+			// Toast
+			toastBackground: "#f9f9f9",
+			toastForeground: "#383a42",
+			toastBorder: "#e5e6e7",
 		},
 	},
 	{
@@ -689,6 +737,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#e0dcc7",
 			folderColor: "#8da101",
 			editorSelection: "#e9e5cf",
+			// Toast
+			toastBackground: "#fdf6e3",
+			toastForeground: "#5c6a72",
+			toastBorder: "#e0dcc7",
 		},
 	},
 	{
@@ -723,6 +775,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#D7D7D7",
 			folderColor: "#B45A3C",
 			editorSelection: "#EAEAEB",
+			// Toast
+			toastBackground: "#F9F9F9",
+			toastForeground: "#080808",
+			toastBorder: "#D7D7D7",
 		},
 	},
 	{
@@ -757,6 +813,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#eaeaea",
 			folderColor: "#111111",
 			editorSelection: "#eeeeee",
+			// Toast
+			toastBackground: "#ffffff",
+			toastForeground: "#111111",
+			toastBorder: "#eaeaea",
 		},
 	},
 	{
@@ -791,6 +851,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#bdc3c7",
 			folderColor: "#3498db",
 			editorSelection: "#d5dbdb",
+			// Toast
+			toastBackground: "#ffffff",
+			toastForeground: "#2c3e50",
+			toastBorder: "#bdc3c7",
 		},
 	},
 	{
@@ -825,6 +889,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#e5e5e5",
 			folderColor: "#646cff",
 			editorSelection: "#dbeafe",
+			// Toast
+			toastBackground: "#ffffff",
+			toastForeground: "#3d3d3d",
+			toastBorder: "#e5e5e5",
 		},
 	},
 	{
@@ -899,6 +967,10 @@ export const themes: Theme[] = [
 			// 编辑器扩展颜色
 			editorCursor: "#60a5fa",
 			editorSelection: "#1e3a5f",
+			// Toast
+			toastBackground: "#1e293b",
+			toastForeground: "#f1f5f9",
+			toastBorder: "#334155",
 			editorLineHighlight: "#1e293b",
 		},
 	},
@@ -936,6 +1008,10 @@ export const themes: Theme[] = [
 			// 编辑器扩展颜色
 			editorCursor: "#58a6ff",
 			editorSelection: "#264f78",
+			// Toast
+			toastBackground: "#161b22",
+			toastForeground: "#c9d1d9",
+			toastBorder: "#30363d",
 			editorLineHighlight: "#161b22",
 		},
 	},
@@ -973,6 +1049,10 @@ export const themes: Theme[] = [
 			// 编辑器扩展颜色
 			editorCursor: "#528bff",
 			editorSelection: "#3e4451",
+			// Toast
+			toastBackground: "#282c34",
+			toastForeground: "#abb2bf",
+			toastBorder: "#3e4451",
 			editorLineHighlight: "#2c313c",
 		},
 	},
@@ -1100,6 +1180,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#5b595c",
 			folderColor: "#ffd866",
 			editorSelection: "#544f4f",
+			// Toast
+			toastBackground: "#2d2a2e",
+			toastForeground: "#fcfcfa",
+			toastBorder: "#5b595c",
 		},
 	},
 	{
@@ -1134,6 +1218,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#586e75",
 			folderColor: "#268bd2",
 			editorSelection: "#094959",
+			// Toast
+			toastBackground: "#002b36",
+			toastForeground: "#839496",
+			toastBorder: "#586e75",
 		},
 	},
 	{
@@ -1170,6 +1258,10 @@ export const themes: Theme[] = [
 			// 扩展颜色
 			editorCursor: "#c0caf5",
 			editorSelection: "#364a82",
+			// Toast
+			toastBackground: "#1a1b26",
+			toastForeground: "#a9b1d6",
+			toastBorder: "#414868",
 			editorLineHighlight: "#1f2335",
 			success: "#9ece6a",
 			warning: "#e0af68",
@@ -1216,6 +1308,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#464b5d",
 			folderColor: "#82aaff",
 			editorSelection: "#2b3245",
+			// Toast
+			toastBackground: "#090b10",
+			toastForeground: "#8f93a2",
+			toastBorder: "#464b5d",
 		},
 	},
 	{
@@ -1250,6 +1346,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#4e5579",
 			folderColor: "#c792ea",
 			editorSelection: "#3e4460",
+			// Toast
+			toastBackground: "#292d3e",
+			toastForeground: "#a6accd",
+			toastBorder: "#4e5579",
 		},
 	},
 	{
@@ -1284,6 +1384,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#504945",
 			folderColor: "#d79921",
 			editorSelection: "#504945",
+			// Toast
+			toastBackground: "#282828",
+			toastForeground: "#ebdbb2",
+			toastBorder: "#504945",
 		},
 	},
 	{
@@ -1352,6 +1456,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#0d3a58",
 			folderColor: "#ffc600",
 			editorSelection: "#1f4662",
+			// Toast
+			toastBackground: "#193549",
+			toastForeground: "#ffffff",
+			toastBorder: "#0d3a58",
 		},
 	},
 	{
@@ -1386,6 +1494,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#495495",
 			folderColor: "#ff7edb",
 			editorSelection: "#463465",
+			// Toast
+			toastBackground: "#262335",
+			toastForeground: "#f92aad",
+			toastBorder: "#495495",
 		},
 	},
 	{
@@ -1420,6 +1532,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#7c4dff",
 			folderColor: "#fad000",
 			editorSelection: "#5c4d9a",
+			// Toast
+			toastBackground: "#2d2b55",
+			toastForeground: "#ffffff",
+			toastBorder: "#7c4dff",
 		},
 	},
 	{
@@ -1454,6 +1570,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#1d3b53",
 			folderColor: "#7fdbca",
 			editorSelection: "#1d3b53",
+			// Toast
+			toastBackground: "#011627",
+			toastForeground: "#d6deeb",
+			toastBorder: "#1d3b53",
 		},
 	},
 	{
@@ -1488,6 +1608,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#1f2430",
 			folderColor: "#39bae6",
 			editorSelection: "#273747",
+			// Toast
+			toastBackground: "#0a0e14",
+			toastForeground: "#b3b1ad",
+			toastBorder: "#1f2430",
 		},
 	},
 	{
@@ -1522,6 +1646,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#343d4a",
 			folderColor: "#5ccfe6",
 			editorSelection: "#33415e",
+			// Toast
+			toastBackground: "#1f2430",
+			toastForeground: "#cbccc6",
+			toastBorder: "#343d4a",
 		},
 	},
 	{
@@ -1556,6 +1684,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#3e4451",
 			folderColor: "#f39c12",
 			editorSelection: "#3e4451",
+			// Toast
+			toastBackground: "#23262e",
+			toastForeground: "#d5ced9",
+			toastBorder: "#3e4451",
 		},
 	},
 	{
@@ -1590,6 +1722,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#2e303e",
 			folderColor: "#e95678",
 			editorSelection: "#3e4155",
+			// Toast
+			toastBackground: "#1c1e26",
+			toastForeground: "#e3e6ee",
+			toastBorder: "#2e303e",
 		},
 	},
 	{
@@ -1624,6 +1760,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#3f3f40",
 			folderColor: "#19f9d8",
 			editorSelection: "#45474a",
+			// Toast
+			toastBackground: "#292a2b",
+			toastForeground: "#e6e6e6",
+			toastBorder: "#3f3f40",
 		},
 	},
 	{
@@ -1658,6 +1798,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#3e3e42",
 			folderColor: "#0e639c",
 			editorSelection: "#264f78",
+			// Toast
+			toastBackground: "#1e1e1e",
+			toastForeground: "#d4d4d4",
+			toastBorder: "#3e3e42",
 		},
 	},
 	{
@@ -1692,6 +1836,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#49483e",
 			folderColor: "#66d9ef",
 			editorSelection: "#49483e",
+			// Toast
+			toastBackground: "#272822",
+			toastForeground: "#f8f8f2",
+			toastBorder: "#49483e",
 		},
 	},
 	{
@@ -1726,6 +1874,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#3b4261",
 			folderColor: "#7aa2f7",
 			editorSelection: "#364a82",
+			// Toast
+			toastBackground: "#24283b",
+			toastForeground: "#a9b1d6",
+			toastBorder: "#3b4261",
 		},
 	},
 	{
@@ -1760,6 +1912,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#45475a",
 			folderColor: "#89b4fa",
 			editorSelection: "#45475a",
+			// Toast
+			toastBackground: "#1e1e2e",
+			toastForeground: "#cdd6f4",
+			toastBorder: "#45475a",
 		},
 	},
 	{
@@ -1794,6 +1950,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#403d52",
 			folderColor: "#c4a7e7",
 			editorSelection: "#403d52",
+			// Toast
+			toastBackground: "#191724",
+			toastForeground: "#e0def4",
+			toastBorder: "#403d52",
 		},
 	},
 	{
@@ -1828,6 +1988,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#444c56",
 			folderColor: "#539bf5",
 			editorSelection: "#253341",
+			// Toast
+			toastBackground: "#22272e",
+			toastForeground: "#adbac7",
+			toastBorder: "#444c56",
 		},
 	},
 	{
@@ -1862,6 +2026,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#3e4451",
 			folderColor: "#e06c75",
 			editorSelection: "#3e4451",
+			// Toast
+			toastBackground: "#282c34",
+			toastForeground: "#abb2bf",
+			toastBorder: "#3e4451",
 		},
 	},
 	{
@@ -1897,6 +2065,7 @@ export const themes: Theme[] = [
 			folderColor: "#ff2a6d",
 			// Toast - Cyberpunk Neon
 			toastBackground: "#0b1015",
+			toastForeground: "#00ff9c",
 			toastBorder: "#ff2a6d",
 			editorSelection: "#21262d",
 		},
@@ -1933,6 +2102,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#44475a",
 			folderColor: "#ff79c6",
 			editorSelection: "#44475a",
+			// Toast
+			toastBackground: "#282a36",
+			toastForeground: "#f8f8f2",
+			toastBorder: "#44475a",
 		},
 	},
 	{
@@ -1967,6 +2140,10 @@ export const themes: Theme[] = [
 			sidebarBorder: "#2a2139",
 			folderColor: "#f8d847",
 			editorSelection: "#3c1f42",
+			// Toast
+			toastBackground: "#141321",
+			toastForeground: "#fe428e",
+			toastBorder: "#2a2139",
 		},
 	},
 ];

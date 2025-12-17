@@ -5,35 +5,39 @@ import {
   OctagonXIcon,
   TriangleAlertIcon,
 } from "lucide-react"
-import { useTheme } from "next-themes"
+import { useTheme } from "@/hooks/use-theme"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+  const { mode } = useTheme()
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={mode as ToasterProps["theme"]}
       className="toaster group"
       position="bottom-right"
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-toast-background/85 group-[.toaster]:backdrop-blur-xl group-[.toaster]:text-toast-foreground group-[.toaster]:border-toast-border/40 group-[.toaster]:shadow-2xl group-[.toaster]:rounded-xl group-[.toaster]:p-4 group-[.toaster]:gap-3",
-          description: "group-[.toast]:text-muted-foreground text-xs",
+            "group toast group-[.toaster]:bg-[var(--toast-background)] group-[.toaster]:backdrop-blur-xl group-[.toaster]:text-[var(--toast-foreground)] group-[.toaster]:border-2 group-[.toaster]:border-[var(--toast-border)] group-[.toaster]:shadow-2xl group-[.toaster]:rounded-xl group-[.toaster]:p-4 group-[.toaster]:gap-3 group-[.toaster]:font-sans",
+          description: "group-[.toast]:text-muted-foreground text-xs font-medium",
           actionButton:
-            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground font-medium",
+            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground font-medium rounded-lg px-3 py-1.5 transition-colors hover:bg-primary/90",
           cancelButton:
-            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground font-medium",
-          title: "group-[.toast]:font-semibold text-sm",
+            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground font-medium rounded-lg px-3 py-1.5 transition-colors hover:bg-muted/80",
+          title: "group-[.toast]:font-semibold text-sm tracking-tight",
+          success: "!border-2 !border-[var(--success)] !bg-[var(--toast-background)]",
+          error: "!border-2 !border-[var(--error)] !bg-[var(--toast-background)]",
+          warning: "!border-2 !border-[var(--warning)] !bg-[var(--toast-background)]",
+          info: "!border-2 !border-[var(--info)] !bg-[var(--toast-background)]",
         },
       }}
       icons={{
-        success: <CircleCheckIcon className="size-4 text-green-500" />,
-        info: <InfoIcon className="size-4 text-blue-500" />,
-        warning: <TriangleAlertIcon className="size-4 text-yellow-500" />,
-        error: <OctagonXIcon className="size-4 text-red-500" />,
-        loading: <Loader2Icon className="size-4 animate-spin text-muted-foreground" />,
+        success: <CircleCheckIcon className="size-5 text-[var(--success)]" />,
+        info: <InfoIcon className="size-5 text-[var(--info)]" />,
+        warning: <TriangleAlertIcon className="size-5 text-[var(--warning)]" />,
+        error: <OctagonXIcon className="size-5 text-[var(--error)]" />,
+        loading: <Loader2Icon className="size-5 animate-spin text-muted-foreground" />,
       }}
       {...props}
     />

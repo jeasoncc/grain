@@ -115,6 +115,12 @@
   --toast-background: #ffffff;
   --toast-foreground: #1f2937;
   --toast-border: #e5e7eb;
+
+  /* Status Colors */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #2563eb;
 }
 
 /* ========================================
@@ -168,6 +174,12 @@
   --toast-background: #1e293b;
   --toast-foreground: #f1f5f9;
   --toast-border: #334155;
+
+  /* Status Colors */
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --error: #f87171;
+  --info: #3b82f6;
 }
 
 /* ========================================
