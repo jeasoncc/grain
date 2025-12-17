@@ -64,7 +64,7 @@ export const UI_CONFIG = {
 	},
 } as const;
 
-// 导出类型
+// Export类型
 export type FontSize = keyof typeof UI_CONFIG.fontSize;
 export type Spacing = keyof typeof UI_CONFIG.spacing;
 export type Radius = keyof typeof UI_CONFIG.radius;

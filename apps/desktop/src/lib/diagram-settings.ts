@@ -80,7 +80,7 @@ export function getKrokiPlantUMLUrl(
 }
 
 /**
- * 检查是否启用了 Kroki
+ * 检查是否Enable了 Kroki
  */
 export function isKrokiEnabled(): boolean {
 	const { enableKroki, krokiServerUrl } = useDiagramSettings.getState();

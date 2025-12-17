@@ -49,7 +49,7 @@ function SettingsLayout() {
 		},
 		{
 			to: "/settings/export",
-			label: "导出设置",
+			label: "Export设置",
 			icon: iconTheme.icons.settingsPage.export,
 		},
 		{

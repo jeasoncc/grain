@@ -26,7 +26,7 @@ export function SaveStatusIndicator({
 		if (isManualSaving) {
 			return {
 				icon: <Loader2 className="size-3.5 animate-spin" />,
-				text: "手动保存中...",
+				text: "Saving manually...",
 				className: "text-primary",
 			};
 		}
@@ -35,7 +35,7 @@ export function SaveStatusIndicator({
 			case "saved":
 				return {
 					icon: <Check className="size-3.5" />,
-					text: hasUnsavedChanges ? "有未保存更改" : "已保存",
+					text: hasUnsavedChanges ? "Unsaved changes" : "Saved",
 					className: hasUnsavedChanges
 						? "text-orange-500"
 						: "text-muted-foreground",
@@ -43,25 +43,25 @@ export function SaveStatusIndicator({
 			case "saving":
 				return {
 					icon: <Loader2 className="size-3.5 animate-spin" />,
-					text: "自动保存中...",
+					text: "Auto-saving...",
 					className: "text-primary",
 				};
 			case "error":
 				return {
 					icon: <AlertCircle className="size-3.5" />,
-					text: "保存失败",
+					text: "Save failed",
 					className: "text-destructive",
 				};
 			case "unsaved":
 				return {
 					icon: <Save className="size-3.5" />,
-					text: "有未保存更改",
+					text: "Unsaved changes",
 					className: "text-orange-500",
 				};
 			default:
 				return {
 					icon: <Check className="size-3.5" />,
-					text: "已保存",
+					text: "Saved",
 					className: "text-muted-foreground",
 				};
 		}
@@ -74,8 +74,8 @@ export function SaveStatusIndicator({
 		const now = new Date();
 		const diff = now.getTime() - time.getTime();
 
-		if (diff < 60000) return "刚刚保存";
-		if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前保存`;
+		if (diff < 60000) return "just now";
+		if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
 		return time.toLocaleTimeString();
 	};
 

@@ -98,7 +98,7 @@ export function FocusMode({
 						)}
 					</div>
 
-					{/* 中间：写作统计 */}
+					{/* 中间：Writing Statistics */}
 					<div className="flex items-center gap-4">
 						{/* 今日进度 */}
 						{writingGoal.enabled && (
@@ -134,7 +134,7 @@ export function FocusMode({
 							</>
 						)}
 
-						{/* 当前字数 */}
+						{/* 当前Word Count */}
 						<div className="w-px h-4 bg-border" />
 						<span className="text-xs text-muted-foreground">
 							{wordCount.toLocaleString()} 字
@@ -156,7 +156,7 @@ export function FocusMode({
 								</Button>
 							</TooltipTrigger>
 							<TooltipContent>
-								打字机模式 {typewriterMode ? "(已开启)" : "(已关闭)"}
+								Typewriter Mode {typewriterMode ? "(Enabled)" : "(Disabled)"}
 							</TooltipContent>
 						</Tooltip>
 
@@ -225,7 +225,7 @@ function FocusModeSettings() {
 					<div className="space-y-3">
 						<div className="flex items-center justify-between">
 							<Label htmlFor="goal-enabled" className="text-sm">
-								每日写作目标
+								每日写作Target
 							</Label>
 							<Switch
 								id="goal-enabled"

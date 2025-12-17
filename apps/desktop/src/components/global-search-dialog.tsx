@@ -1,5 +1,5 @@
 /**
- * 全局搜索对话框
+ * Global Search对话框
  * 支持跨项目的全文搜索
  */
 
@@ -38,7 +38,7 @@ export function GlobalSearchDialog({
 	const [isSearching, setIsSearching] = useState(false);
 	const [selectedIndex, setSelectedIndex] = useState(0);
 
-	// 执行搜索
+	// Execute Search
 	const performSearch = useCallback(
 		async (searchQuery: string) => {
 			if (!searchQuery.trim()) {
@@ -63,7 +63,7 @@ export function GlobalSearchDialog({
 		[workspaceId],
 	);
 
-	// 防抖搜索
+	// Debounced Search
 	useEffect(() => {
 		const timer = setTimeout(() => {
 			performSearch(query);
@@ -72,7 +72,7 @@ export function GlobalSearchDialog({
 		return () => clearTimeout(timer);
 	}, [query, performSearch]);
 
-	// 键盘导航
+	// Keyboard Navigation
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (!open) return;
@@ -101,7 +101,7 @@ export function GlobalSearchDialog({
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [open, results, selectedIndex]);
 
-	// 处理结果点击
+	// Handle Result Click
 	const handleResultClick = (result: SearchResult) => {
 		onOpenChange(false);
 
@@ -109,13 +109,13 @@ export function GlobalSearchDialog({
 		switch (result.type) {
 			case "node":
 			case "project":
-				// 导航到主页
+				// Navigate to Home
 				navigate({ to: "/" });
 				break;
 		}
 	};
 
-	// 获取类型图标
+	// Get Type Icon
 	const getTypeIcon = (type: string) => {
 		switch (type) {
 			case "node":
@@ -125,7 +125,7 @@ export function GlobalSearchDialog({
 		}
 	};
 
-	// 获取类型标签
+	// Get Type Label
 	const getTypeLabel = (type: string) => {
 		switch (type) {
 			case "node":
@@ -135,7 +135,7 @@ export function GlobalSearchDialog({
 		}
 	};
 
-	// 高亮搜索词
+	// Highlight Search Term
 	const highlightText = (text: string, query: string) => {
 		if (!query) return text;
 

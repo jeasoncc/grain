@@ -420,6 +420,6 @@ export async function initDatabase() {
 }
 
 // ==============================
-// 单例导出
+// 单例Export
 // ==============================
 export const db = new NovelEditorDB();

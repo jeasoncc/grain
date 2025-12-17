@@ -23,47 +23,47 @@ interface FileItem {
 const exampleData: FileItem[] = [
 	{
 		id: "1",
-		name: "我的小说项目",
+		name: "My Novel Project",
 		type: "project",
 		isOpen: true,
 		children: [
 			{
 				id: "2",
-				name: "第一章",
+				name: "Chapter 1",
 				type: "folder",
 				isOpen: true,
 				children: [
-					{ id: "3", name: "开场.md", type: "file" },
-					{ id: "4", name: "相遇.md", type: "file" },
+					{ id: "3", name: "Opening.md", type: "file" },
+					{ id: "4", name: "Meeting.md", type: "file" },
 				],
 			},
 			{
 				id: "5",
-				name: "第二章",
+				name: "Chapter 2",
 				type: "folder",
 				isOpen: false,
-				children: [{ id: "6", name: "冲突.md", type: "file" }],
+				children: [{ id: "6", name: "Conflict.md", type: "file" }],
 			},
 			{
 				id: "7",
-				name: "角色设定",
+				name: "Character Settings",
 				type: "folder",
 				isOpen: true,
 				children: [
-					{ id: "8", name: "主角", type: "character" },
-					{ id: "9", name: "配角", type: "character" },
+					{ id: "8", name: "Protagonist", type: "character" },
+					{ id: "9", name: "Supporting Character", type: "character" },
 				],
 			},
 			{
 				id: "10",
-				name: "世界观设定",
+				name: "World Building",
 				type: "world",
 			},
 		],
 	},
 ];
 
-// 文件树项组件
+// File树项组件
 function FileTreeItem({ item, level = 0 }: { item: FileItem; level?: number }) {
 	const [isOpen, setIsOpen] = useState(item.isOpen ?? false);
 	const [iconTheme, setIconTheme] = useState(getCurrentIconTheme());
@@ -104,10 +104,10 @@ function FileTreeItem({ item, level = 0 }: { item: FileItem; level?: number }) {
 					<div className="size-4 shrink-0" />
 				)}
 
-				{/* 文件类型图标 */}
+				{/* File类型图标 */}
 				<Icon className="size-4 text-muted-foreground shrink-0 group-hover:text-foreground transition-colors" />
 
-				{/* 文件名 */}
+				{/* File名 */}
 				<span className="text-sm truncate">{item.name}</span>
 
 				{/* 类型标签 */}
@@ -128,14 +128,14 @@ function FileTreeItem({ item, level = 0 }: { item: FileItem; level?: number }) {
 	);
 }
 
-// 获取类型标签
+// Get Type Label
 function getTypeLabel(type: FileItem["type"]): string {
 	const labels: Record<FileItem["type"], string> = {
-		project: "项目",
-		folder: "文件夹",
-		file: "文件",
-		character: "角色",
-		world: "世界观",
+		project: "Project",
+		folder: "Folder",
+		file: "File",
+		character: "Character",
+		world: "World",
 	};
 	return labels[type];
 }
@@ -160,11 +160,11 @@ function IconGrid() {
 		label: string;
 		hasOpen?: boolean;
 	}> = [
-		{ type: "project", label: "项目", hasOpen: true },
-		{ type: "folder", label: "文件夹", hasOpen: true },
-		{ type: "file", label: "文件" },
-		{ type: "character", label: "角色" },
-		{ type: "world", label: "世界观" },
+		{ type: "project", label: "Project", hasOpen: true },
+		{ type: "folder", label: "Folder", hasOpen: true },
+		{ type: "file", label: "File" },
+		{ type: "character", label: "Character" },
+		{ type: "world", label: "World" },
 	];
 
 	return (
@@ -184,7 +184,7 @@ function IconGrid() {
 								<div className="text-center">
 									<div className="text-sm font-medium">{label}</div>
 									<div className="text-xs text-muted-foreground">
-										{hasOpen ? "关闭 / 打开" : "默认"}
+										{hasOpen ? "Closed / Open" : "Default"}
 									</div>
 								</div>
 							</div>
@@ -221,12 +221,12 @@ export function IconThemeExample() {
 				</p>
 			</div>
 
-			{/* 文件树示例 */}
+			{/* File树示例 */}
 			<Card>
 				<CardHeader>
-					<CardTitle>文件树示例</CardTitle>
+					<CardTitle>File树示例</CardTitle>
 					<p className="text-sm text-muted-foreground">
-						展示如何在文件树中使用图标主题
+						展示如何在File树中使用图标主题
 					</p>
 				</CardHeader>
 				<CardContent>

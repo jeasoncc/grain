@@ -1,5 +1,5 @@
 /**
- * 全局搜索组件
+ * Global Search组件
  */
 
 import { useNavigate } from "@tanstack/react-router";
@@ -50,7 +50,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const navigate = useNavigate();
 
-	// 执行搜索
+	// Execute Search
 	const performSearch = useCallback(async (searchQuery: string) => {
 		if (!searchQuery.trim()) {
 			setResults([]);
@@ -66,14 +66,14 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 			setResults(searchResults);
 			setSelectedIndex(0);
 		} catch (error) {
-			console.error("搜索失败:", error);
+			console.error("Search failed:", error);
 			setResults([]);
 		} finally {
 			setLoading(false);
 		}
 	}, []);
 
-	// 防抖搜索
+	// Debounced Search
 	useEffect(() => {
 		const timer = setTimeout(() => {
 			performSearch(query);
@@ -82,7 +82,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 		return () => clearTimeout(timer);
 	}, [query, performSearch]);
 
-	// 键盘导航
+	// Keyboard Navigation
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (!open) return;
@@ -121,7 +121,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 		switch (result.type) {
 			case "node":
 			case "project":
-				// 导航到主页，通过文件树打开
+				// Navigate to Home，通过文件树打开
 				navigate({ to: "/" });
 				break;
 		}
@@ -154,7 +154,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-2xl p-0 gap-0">
 				<DialogHeader className="px-4 pt-4 pb-0">
-					<DialogTitle className="sr-only">全局搜索</DialogTitle>
+					<DialogTitle className="sr-only">Global Search</DialogTitle>
 				</DialogHeader>
 
 				{/* 搜索输入 */}

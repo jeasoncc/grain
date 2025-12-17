@@ -1,5 +1,5 @@
 /**
- * 全局搜索侧边栏 - 类似 VSCode 的搜索面板
+ * Global Search侧边栏 - 类似 VSCode 的搜索面板
  */
 
 import { useNavigate } from "@tanstack/react-router";
@@ -70,7 +70,7 @@ export function SearchSidebar() {
 		{} as Record<SearchResultType, SearchResult[]>,
 	);
 
-	// 执行搜索
+	// Execute Search
 	const performSearch = useCallback(
 		async (searchQuery: string) => {
 			if (!searchQuery.trim()) {
@@ -86,7 +86,7 @@ export function SearchSidebar() {
 				});
 				setResults(searchResults);
 			} catch (error) {
-				logger.error("搜索失败:", error);
+				logger.error("Search failed:", error);
 				setResults([]);
 			} finally {
 				setLoading(false);
@@ -95,7 +95,7 @@ export function SearchSidebar() {
 		[selectedTypes],
 	);
 
-	// 防抖搜索
+	// Debounced Search
 	useEffect(() => {
 		const timer = setTimeout(() => {
 			performSearch(query);
@@ -109,7 +109,7 @@ export function SearchSidebar() {
 		switch (result.type) {
 			case "node":
 			case "project":
-				// 导航到主页
+				// Navigate to Home
 				navigate({ to: "/" });
 				break;
 		}

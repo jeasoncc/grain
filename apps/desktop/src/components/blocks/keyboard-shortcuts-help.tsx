@@ -10,17 +10,17 @@ import {
 } from "@/components/ui/popover";
 
 const shortcuts = [
-	{ keys: ["Ctrl", "K"], description: "命令面板", category: "全局" },
-	{ keys: ["Ctrl", "Shift", "F"], description: "搜索面板", category: "全局" },
-	{ keys: ["Ctrl", "B"], description: "文件面板", category: "全局" },
-	{ keys: ["Ctrl", "Tab"], description: "下一个标签", category: "导航" },
-	{ keys: ["Ctrl", "Shift", "Tab"], description: "上一个标签", category: "导航" },
-	{ keys: ["Ctrl", "S"], description: "保存", category: "编辑" },
-	{ keys: ["Ctrl", "B"], description: "加粗", category: "格式" },
-	{ keys: ["Ctrl", "I"], description: "斜体", category: "格式" },
-	{ keys: ["Ctrl", "U"], description: "下划线", category: "格式" },
-	{ keys: ["Ctrl", "Z"], description: "撤销", category: "编辑" },
-	{ keys: ["Ctrl", "Shift", "Z"], description: "重做", category: "编辑" },
+	{ keys: ["Ctrl", "K"], description: "Command Palette", category: "Global" },
+	{ keys: ["Ctrl", "Shift", "F"], description: "Search Panel", category: "Global" },
+	{ keys: ["Ctrl", "B"], description: "File Panel", category: "Global" },
+	{ keys: ["Ctrl", "Tab"], description: "Next Tab", category: "Navigation" },
+	{ keys: ["Ctrl", "Shift", "Tab"], description: "Previous Tab", category: "Navigation" },
+	{ keys: ["Ctrl", "S"], description: "Save", category: "Edit" },
+	{ keys: ["Ctrl", "B"], description: "Bold", category: "Format" },
+	{ keys: ["Ctrl", "I"], description: "Italic", category: "Format" },
+	{ keys: ["Ctrl", "U"], description: "Underline", category: "Format" },
+	{ keys: ["Ctrl", "Z"], description: "Undo", category: "Edit" },
+	{ keys: ["Ctrl", "Shift", "Z"], description: "Redo", category: "Edit" },
 ];
 
 export function KeyboardShortcutsHelp() {

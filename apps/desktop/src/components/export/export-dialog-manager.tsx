@@ -1,5 +1,5 @@
 /**
- * 全局导出对话框管理器
+ * 全局Export对话框管理器
  */
 
 import { useState, useEffect } from "react";

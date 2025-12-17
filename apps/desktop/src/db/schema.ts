@@ -44,8 +44,8 @@ export interface StateInterface {
 export interface SettingInterface {
 	theme: string; // 界面主题，例如 light / dark
 	language: string; // 应用语言，例如 zh / en
-	autosave?: boolean; // 是否启用自动保存
-	spellCheck?: boolean; // 是否启用拼写检查
+	autosave?: boolean; // 是否Enable自动保存
+	spellCheck?: boolean; // 是否Enable拼写检查
 	lastLocation?: boolean; // 是否记录上次编辑位置
 	fontSize: string; // 编辑器字体大小
 }
@@ -84,7 +84,7 @@ export interface UserInterface {
 	// --------------------------
 	features?: {
 		canUseAllScenes?: boolean; // 是否允许使用全部场景
-		canExportPDF?: boolean; // 是否允许导出 PDF
+		canExportPDF?: boolean; // 是否允许Export PDF
 		canUseCloudSync?: boolean; // 是否允许云同步
 		showAds?: boolean; // 免费版是否显示广告
 		reminderInterval?: number; // 提示或广告弹窗间隔（单位：秒）

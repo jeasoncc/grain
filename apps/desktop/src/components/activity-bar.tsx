@@ -586,10 +586,10 @@ function ToggleNavItem({
 	const handleClick = (e: React.MouseEvent) => {
 		e.preventDefault();
 		if (active) {
-			// 如果已经在目标页面，返回主页
+			// 如果已经在Target页面，返回主页
 			navigate({ to: "/" });
 		} else {
-			// 否则导航到目标页面
+			// Otherwise Navigate toTarget页面
 			navigate({ to });
 		}
 	};

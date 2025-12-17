@@ -43,7 +43,7 @@ export function BufferSwitcher({
     }
   }, [open, tabs, activeTabId, initialDirection]);
 
-  // 键盘导航
+  // Keyboard Navigation
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!open) return;

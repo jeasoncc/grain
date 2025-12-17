@@ -1,5 +1,5 @@
 /**
- * 全局搜索服务
+ * Global Search服务
  * 基于新的 Node 和 WikiEntry 结构，使用 contents 表进行全文搜索
  *
  * Requirements: 6.2

@@ -73,7 +73,7 @@ export function BackupManager() {
 			const storage = await getStorageStats();
 			setStorageStats(storage);
 		} catch (error) {
-			console.error("加载统计失败:", error);
+			console.error("Failed to load statistics:", error);
 		}
 	}, []);
 
@@ -95,28 +95,28 @@ export function BackupManager() {
 		}
 	}, [loadStats, loadLocalBackups]);
 
-	// 导出备份（JSON）
+	// Export备份（JSON）
 	const handleExportJson = async () => {
 		setLoading(true);
 		try {
 			await exportBackup();
-			toast.success("备份已导出");
+			toast.success("备份已Export");
 		} catch (error) {
-			toast.error("导出失败");
+			toast.error("Export失败");
 			console.error(error);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	// 导出备份（ZIP）
+	// Export备份（ZIP）
 	const handleExportZip = async () => {
 		setLoading(true);
 		try {
 			await exportBackupZip();
-			toast.success("压缩备份已导出");
+			toast.success("压缩备份已Export");
 		} catch (error) {
-			toast.error("导出失败");
+			toast.error("Export失败");
 			console.error(error);
 		} finally {
 			setLoading(false);
@@ -128,7 +128,7 @@ export function BackupManager() {
 		const confirmed = await confirm({
 			title: "恢复备份",
 			description:
-				"恢复备份将覆盖当前数据，此操作不可撤销。建议先导出当前数据作为备份。",
+				"恢复备份将覆盖当前数据，此操作不可撤销。建议先Export当前数据作为备份。",
 			confirmText: "确认恢复",
 			cancelText: "取消",
 		});
@@ -165,7 +165,7 @@ export function BackupManager() {
 
 		if (enabled) {
 			autoBackupManager.start();
-			toast.success("自动备份已启用");
+			toast.success("自动备份已Enable");
 		} else {
 			autoBackupManager.stop();
 			toast.info("自动备份已禁用");
@@ -202,7 +202,7 @@ export function BackupManager() {
 		const confirmed = await confirm({
 			title: "清空所有数据",
 			description:
-				"此操作将永久删除所有数据，包括：\n• 所有项目、章节、场景数据 (IndexedDB)\n• 应用设置和偏好 (localStorage)\n• 会话数据 (sessionStorage)\n• 浏览器 cookies\n• 应用缓存\n\n此操作不可撤销！建议先导出备份。",
+				"此操作将永久删除所有数据，包括：\n• 所有项目、章节、场景数据 (IndexedDB)\n• 应用设置和偏好 (localStorage)\n• 会话数据 (sessionStorage)\n• 浏览器 cookies\n• 应用缓存\n\n此操作不可撤销！建议先Export备份。",
 			confirmText: "确认清空",
 			cancelText: "取消",
 		});
@@ -334,13 +334,13 @@ export function BackupManager() {
 						<Archive className="size-5" />
 						手动备份
 					</CardTitle>
-					<CardDescription>导出或恢复完整数据库备份</CardDescription>
+					<CardDescription>Export或恢复完整数据库备份</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="flex flex-wrap gap-3">
 						<Button onClick={handleExportJson} disabled={loading}>
 							<Download className="size-4 mr-2" />
-							导出 JSON
+							Export JSON
 						</Button>
 						<Button
 							onClick={handleExportZip}
@@ -348,7 +348,7 @@ export function BackupManager() {
 							variant="outline"
 						>
 							<Archive className="size-4 mr-2" />
-							导出 ZIP
+							Export ZIP
 						</Button>
 						<Button
 							onClick={handleRestore}
@@ -360,7 +360,7 @@ export function BackupManager() {
 						</Button>
 					</div>
 					<p className="text-xs text-muted-foreground">
-						建议定期导出备份文件，以防数据丢失。ZIP 格式包含完整的元数据信息。
+						建议定期Export备份文件，以防数据丢失。ZIP 格式包含完整的元数据信息。
 					</p>
 				</CardContent>
 			</Card>
@@ -379,7 +379,7 @@ export function BackupManager() {
 				<CardContent className="space-y-4">
 					<div className="flex items-center justify-between">
 						<Label htmlFor="auto-backup" className="cursor-pointer">
-							启用自动备份
+							Enable自动备份
 						</Label>
 						<Switch
 							id="auto-backup"

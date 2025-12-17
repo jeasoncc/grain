@@ -1,18 +1,18 @@
 /**
- * 写作状态管理 - 专注模式、写作目标、统计
+ * 写作状态管理 - 专注模式、写作Target、统计
  */
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export interface WritingGoal {
-	dailyTarget: number; // 每日目标字数
+	dailyTarget: number; // 每日TargetWord Count
 	enabled: boolean;
 }
 
 export interface WritingSession {
 	startTime: number; // 开始时间戳
-	startWordCount: number; // 开始时的字数
-	currentWordCount: number; // 当前字数
+	startWordCount: number; // 开始时的Word Count
+	currentWordCount: number; // 当前Word Count
 }
 
 interface WritingState {
@@ -26,11 +26,11 @@ interface WritingState {
 	setTypewriterMode: (enabled: boolean) => void;
 	toggleTypewriterMode: () => void;
 
-	// 写作目标
+	// 写作Target
 	writingGoal: WritingGoal;
 	setWritingGoal: (goal: Partial<WritingGoal>) => void;
 
-	// 今日字数
+	// 今日Word Count
 	todayWordCount: number;
 	todayDate: string; // YYYY-MM-DD
 	addTodayWords: (count: number) => void;
@@ -63,7 +63,7 @@ export const useWritingStore = create<WritingState>()(
 			toggleTypewriterMode: () =>
 				set((s) => ({ typewriterMode: !s.typewriterMode })),
 
-			// 写作目标
+			// 写作Target
 			writingGoal: {
 				dailyTarget: 1000,
 				enabled: true,
@@ -71,7 +71,7 @@ export const useWritingStore = create<WritingState>()(
 			setWritingGoal: (goal) =>
 				set((s) => ({ writingGoal: { ...s.writingGoal, ...goal } })),
 
-			// 今日字数
+			// 今日Word Count
 			todayWordCount: 0,
 			todayDate: getTodayDate(),
 			addTodayWords: (count) =>
@@ -104,7 +104,7 @@ export const useWritingStore = create<WritingState>()(
 				const state = get();
 				if (!state.session) return;
 
-				// 避免重复更新相同的字数
+				// 避免重复更新相同的Word Count
 				if (state.session.currentWordCount === wordCount) return;
 
 				const wordsWritten = wordCount - state.session.currentWordCount;
@@ -112,7 +112,7 @@ export const useWritingStore = create<WritingState>()(
 
 				set({
 					session: { ...state.session, currentWordCount: wordCount },
-					// 只有字数增加时才更新今日字数
+					// 只有Word Count增加时才更新今日Word Count
 					...(wordsWritten > 0
 						? {
 								todayWordCount:

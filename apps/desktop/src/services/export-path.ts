@@ -1,5 +1,5 @@
 /**
- * 导出路径服务 - 支持 Tauri 环境的目录选择和文件保存
+ * Export路径服务 - 支持 Tauri 环境的目录选择和文件保存
  * Export Path Service - Directory selection and file saving for Tauri environment
  * 
  * Requirements: 4.1, 4.2, 4.3
@@ -10,7 +10,7 @@ import { saveAs } from "file-saver";
 import logger from "@/log";
 
 /**
- * 导出设置接口
+ * Export设置接口
  * Export settings interface
  */
 export interface ExportSettings {
@@ -29,7 +29,7 @@ export function isTauriEnvironment(): boolean {
 }
 
 /**
- * 选择导出目录
+ * 选择Export目录
  * Select export directory using native dialog
  * 
  * @param initialDirectory - 可选的初始目录路径，对话框将从此目录打开
@@ -56,7 +56,7 @@ export async function selectExportDirectory(initialDirectory?: string | null): P
  * 将文件保存到指定路径
  * Save file to specified path
  * 
- * @param path - 目标目录路径
+ * @param path - Target目录路径
  * @param filename - 文件名
  * @param content - 文件内容 (Blob 或 Uint8Array)
  */
@@ -123,7 +123,7 @@ export async function getDownloadsDirectory(): Promise<string> {
 }
 
 /**
- * 获取导出设置
+ * 获取Export设置
  * Get export settings from localStorage
  */
 export function getExportSettings(): ExportSettings {
@@ -143,7 +143,7 @@ export function getExportSettings(): ExportSettings {
 }
 
 /**
- * 保存导出设置
+ * 保存Export设置
  * Save export settings to localStorage
  */
 export function saveExportSettings(settings: ExportSettings): void {
@@ -155,7 +155,7 @@ export function saveExportSettings(settings: ExportSettings): void {
 }
 
 /**
- * 获取默认导出路径
+ * 获取默认Export路径
  * Get default export path
  */
 export function getDefaultExportPath(): string | null {
@@ -163,7 +163,7 @@ export function getDefaultExportPath(): string | null {
 }
 
 /**
- * 设置默认导出路径
+ * 设置默认Export路径
  * Set default export path
  */
 export function setDefaultExportPath(path: string | null): void {
@@ -191,7 +191,7 @@ export function setLastUsedPath(path: string | null): void {
 }
 
 /**
- * 清除默认导出路径
+ * 清除默认Export路径
  * Clear default export path
  */
 export function clearDefaultExportPath(): void {
@@ -199,7 +199,7 @@ export function clearDefaultExportPath(): void {
 }
 
 /**
- * 导出路径服务接口
+ * Export路径服务接口
  * Export path service interface (as defined in design.md)
  */
 export interface ExportPathService {
@@ -211,7 +211,7 @@ export interface ExportPathService {
 }
 
 /**
- * 导出路径服务实例
+ * Export路径服务实例
  * Export path service instance
  */
 export const exportPathService: ExportPathService = {
@@ -223,13 +223,13 @@ export const exportPathService: ExportPathService = {
 };
 
 /**
- * 带路径选择的导出函数
+ * 带路径选择的Export函数
  * Export with path selection
  * 
  * @param filename - 文件名
  * @param content - 文件内容
- * @param options - 导出选项
- * @returns 导出结果，包含成功状态和路径信息
+ * @param options - Export选项
+ * @returns Export结果，包含成功状态和路径信息
  */
 export async function exportWithPathSelection(
   filename: string,
@@ -264,7 +264,7 @@ export async function exportWithPathSelection(
     let initialPath: string | null = null;
     
     if (useDefaultPath) {
-      // 优先使用默认导出路径，其次使用最后使用的路径
+      // 优先使用默认Export路径，其次使用最后使用的路径
       initialPath = getDefaultExportPath() || getLastUsedPath();
     }
 

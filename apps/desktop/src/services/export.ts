@@ -1,5 +1,5 @@
 /**
- * 导出服务 - 支持 PDF、Word、TXT、EPUB 格式导出
+ * Export服务 - 支持 PDF、Word、TXT、EPUB 格式Export
  * 基于新的 Node 结构
  */
 import {
@@ -70,7 +70,7 @@ function extractTextFromNode(node: any): string {
  */
 async function getProjectContent(projectId: string) {
 	const project = await database.workspaces.get(projectId);
-	if (!project) throw new Error("项目不存在");
+	if (!project) throw new Error("Project not found");
 
 	// 获取所有节点
 	const nodes = await database.nodes
@@ -126,7 +126,7 @@ function getNodeContents(
 }
 
 // ============================================
-// TXT 导出
+// TXT Export
 // ============================================
 
 export async function exportToTxt(
@@ -140,7 +140,7 @@ export async function exportToTxt(
 
 	// 标题
 	if (opts.includeTitle) {
-		lines.push(project.title || "未命名作品");
+		lines.push(project.title || "Untitled Work");
 		lines.push("");
 	}
 
@@ -192,7 +192,7 @@ export async function exportToTxt(
 }
 
 // ============================================
-// Word (DOCX) 导出
+// Word (DOCX) Export
 // ============================================
 
 export async function exportToWord(
@@ -208,7 +208,7 @@ export async function exportToWord(
 	if (opts.includeTitle) {
 		children.push(
 			new Paragraph({
-				text: project.title || "未命名作品",
+				text: project.title || "Untitled Work",
 				heading: HeadingLevel.TITLE,
 				alignment: AlignmentType.CENTER,
 				spacing: { after: 400 },
@@ -336,7 +336,7 @@ export async function exportToWord(
 }
 
 // ============================================
-// PDF 导出 (使用打印样式)
+// PDF Export (使用打印样式)
 // ============================================
 
 export async function exportToPdf(
@@ -348,7 +348,7 @@ export async function exportToPdf(
 
 	const printWindow = window.open("", "_blank");
 	if (!printWindow) {
-		throw new Error("无法打开打印窗口，请检查浏览器弹窗设置");
+		throw new Error("Unable to open print window, please check browser popup settings");
 	}
 
 	const html = generatePrintHtml(project, nodes, rootNodes, contentMap, opts);
@@ -375,8 +375,8 @@ function generatePrintHtml(
 	// 标题页
 	if (opts.includeTitle) {
 		content += `<div class="title-page">
-			<h1 class="book-title">${escapeHtml(project.title || "未命名作品")}</h1>
-			${opts.includeAuthor && project.author ? `<p class="author">作者：${escapeHtml(project.author)}</p>` : ""}
+			<h1 class="book-title">${escapeHtml(project.title || "Untitled Work")}</h1>
+			${opts.includeAuthor && project.author ? `<p class="author">Author: ${escapeHtml(project.author)}</p>` : ""}
 		</div>`;
 	}
 
@@ -412,7 +412,7 @@ function generatePrintHtml(
 <html lang="zh-CN">
 <head>
 	<meta charset="UTF-8">
-	<title>${escapeHtml(project.title || "导出")}</title>
+	<title>${escapeHtml(project.title || "Export")}</title>
 	<style>
 		@page { size: A4; margin: 2.5cm 2cm; }
 		body { font-family: "SimSun", serif; font-size: 12pt; line-height: 1.8; }
@@ -438,7 +438,7 @@ function escapeHtml(text: string): string {
 }
 
 // ============================================
-// EPUB 导出
+// EPUB Export
 // ============================================
 
 export async function exportToEpub(
@@ -450,8 +450,8 @@ export async function exportToEpub(
 
 	const zip = new JSZip();
 	const bookId = `novel-editor-${Date.now()}`;
-	const title = project.title || "未命名作品";
-	const author = project.author || "未知作者";
+	const title = project.title || "Untitled Work";
+	const author = project.author || "Unknown Author";
 
 	zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
 
@@ -474,7 +474,7 @@ export async function exportToEpub(
 			`<div class="title-page"><h1>${escapeHtml(title)}</h1>${opts.includeAuthor ? `<p class="author">${escapeHtml(author)}</p>` : ""}</div>`,
 		);
 		zip.file("OEBPS/title.xhtml", titleHtml);
-		chapters.push({ id: "title", title: "封面", filename: "title.xhtml" });
+		chapters.push({ id: "title", title: "Cover", filename: "title.xhtml" });
 	}
 
 	// 内容
@@ -543,7 +543,7 @@ function generateEpubChapterHtml(title: string, content: string): string {
 }
 
 // ============================================
-// 导出接口
+// Export接口
 // ============================================
 
 export type ExportFormat = "pdf" | "docx" | "txt" | "epub";
@@ -563,6 +563,6 @@ export async function exportProject(
 		case "epub":
 			return exportToEpub(projectId, options);
 		default:
-			throw new Error(`不支持的导出格式: ${format}`);
+			throw new Error(`不支持的Export格式: ${format}`);
 	}
 }

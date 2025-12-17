@@ -1,6 +1,6 @@
 /**
- * 全局搜索提供者
- * 处理全局搜索快捷键和状态
+ * Global Search提供者
+ * 处理Global Search快捷键和状态
  */
 import { type ReactNode, useEffect, useState } from "react";
 import { GlobalSearchDialog } from "./global-search-dialog";
@@ -18,7 +18,7 @@ export function GlobalSearchProvider({
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
-			// Ctrl/Cmd + Shift + F 打开全局搜索
+			// Ctrl/Cmd + Shift + F 打开Global Search
 			if (
 				(event.ctrlKey || event.metaKey) &&
 				event.shiftKey &&

@@ -19,15 +19,15 @@ import { Label } from "@/components/ui/label";
 import type { IconOption } from "@/lib/icons";
 
 /**
- * 示例 1: 创建项目对话框
+ * 示例 1: Create Project对话框
  */
 export function CreateProjectExample() {
 	const [iconKey, setIconKey] = useState("book");
 	const [projectName, setProjectName] = useState("");
 
 	const handleCreate = () => {
-		logger.info("创建项目:", { iconKey, projectName });
-		// 这里添加创建项目的逻辑
+		logger.info("Create Project:", { iconKey, projectName });
+		// 这里添加Create Project的逻辑
 	};
 
 	return (
@@ -57,7 +57,7 @@ export function CreateProjectExample() {
 					</div>
 				</div>
 				<Button onClick={handleCreate} className="w-full">
-					创建项目
+					Create Project
 				</Button>
 			</CardContent>
 		</Card>
@@ -69,16 +69,16 @@ export function CreateProjectExample() {
  */
 export function ProjectListExample() {
 	const [projects] = useState([
-		{ id: "1", title: "我的第一本小说", iconKey: "book" },
-		{ id: "2", title: "科幻短篇集", iconKey: "sparkles" },
-		{ id: "3", title: "个人日记", iconKey: "notebook" },
-		{ id: "4", title: "重要项目", iconKey: "star" },
+		{ id: "1", title: "My First Novel", iconKey: "book" },
+		{ id: "2", title: "Sci-Fi Short Stories", iconKey: "sparkles" },
+		{ id: "3", title: "Personal Diary", iconKey: "notebook" },
+		{ id: "4", title: "Important Project", iconKey: "star" },
 	]);
 
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>我的项目</CardTitle>
+				<CardTitle>My Projects</CardTitle>
 				<CardDescription>所有项目列表</CardDescription>
 			</CardHeader>
 			<CardContent>
@@ -103,14 +103,14 @@ export function ProjectListExample() {
  */
 export function IconShowcaseExample() {
 	const showcaseIcons = [
-		{ key: "book", label: "书籍" },
-		{ key: "feather", label: "羽毛笔" },
-		{ key: "star", label: "星星" },
-		{ key: "heart", label: "心形" },
-		{ key: "flame", label: "火焰" },
-		{ key: "crown", label: "皇冠" },
-		{ key: "target", label: "目标" },
-		{ key: "sparkles", label: "闪光" },
+		{ key: "book", label: "Book" },
+		{ key: "feather", label: "Feather Pen" },
+		{ key: "star", label: "Star" },
+		{ key: "heart", label: "Heart" },
+		{ key: "flame", label: "Flame" },
+		{ key: "crown", label: "Crown" },
+		{ key: "target", label: "Target" },
+		{ key: "sparkles", label: "Sparkle" },
 	];
 
 	return (

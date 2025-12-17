@@ -11,22 +11,22 @@ import { cn } from "@/lib/utils";
 const settingsNav = [
 	{
 		to: "/settings/design",
-		label: "外观主题",
+		label: "Appearance",
 		icon: <Palette className="size-4" />,
 	},
 	{
 		to: "/settings/typography",
-		label: "字体排版",
+		label: "Typography",
 		icon: <Type className="size-4" />,
 	},
 	{
 		to: "/settings/general",
-		label: "通用设置",
+		label: "General",
 		icon: <SettingsIcon className="size-4" />,
 	},
 	{
 		to: "/settings/data",
-		label: "数据管理",
+		label: "Data Management",
 		icon: <Database className="size-4" />,
 	},
 ];

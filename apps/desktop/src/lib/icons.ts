@@ -69,8 +69,8 @@ export const iconCategories: Record<
 	{ name: string; description: string }
 > = {
 	book: {
-		name: "书籍",
-		description: "书籍相关图标",
+		name: "Book",
+		description: "Book相关图标",
 	},
 	writing: {
 		name: "写作",
@@ -99,31 +99,31 @@ export const iconCategories: Record<
 };
 
 export const icons: IconOption[] = [
-	// 书籍类图标
+	// Book类图标
 	{
 		key: "book",
-		name: "书籍",
+		name: "Book",
 		icon: Book,
 		category: "book",
-		description: "标准书籍图标",
+		description: "标准Book图标",
 	},
 	{
 		key: "book-open",
 		name: "打开的书",
 		icon: BookOpen,
 		category: "book",
-		description: "展开的书籍",
+		description: "展开的Book",
 	},
 	{
 		key: "book-marked",
-		name: "书签书籍",
+		name: "书签Book",
 		icon: BookMarked,
 		category: "book",
 		description: "带书签的书",
 	},
 	{
 		key: "book-text",
-		name: "文本书籍",
+		name: "文本Book",
 		icon: BookText,
 		category: "book",
 		description: "带文字的书",
@@ -153,10 +153,10 @@ export const icons: IconOption[] = [
 	// 写作类图标
 	{
 		key: "feather",
-		name: "羽毛笔",
+		name: "Feather Pen",
 		icon: Feather,
 		category: "writing",
-		description: "经典羽毛笔",
+		description: "经典Feather Pen",
 	},
 	{
 		key: "pen",
@@ -243,28 +243,28 @@ export const icons: IconOption[] = [
 	// 特殊标记图标
 	{
 		key: "sparkles",
-		name: "闪光",
+		name: "Sparkle",
 		icon: Sparkles,
 		category: "special",
 		description: "特殊/精选",
 	},
 	{
 		key: "star",
-		name: "星星",
+		name: "Star",
 		icon: Star,
 		category: "special",
 		description: "收藏/重要",
 	},
 	{
 		key: "heart",
-		name: "心形",
+		name: "Heart",
 		icon: Heart,
 		category: "special",
 		description: "喜爱",
 	},
 	{
 		key: "flame",
-		name: "火焰",
+		name: "Flame",
 		icon: Flame,
 		category: "special",
 		description: "热门/火热",
@@ -278,7 +278,7 @@ export const icons: IconOption[] = [
 	},
 	{
 		key: "crown",
-		name: "皇冠",
+		name: "Crown",
 		icon: Crown,
 		category: "special",
 		description: "王者/顶级",
@@ -299,10 +299,10 @@ export const icons: IconOption[] = [
 	},
 	{
 		key: "target",
-		name: "目标",
+		name: "Target",
 		icon: Target,
 		category: "special",
-		description: "目标/焦点",
+		description: "Target/焦点",
 	},
 	{
 		key: "flag",

@@ -97,7 +97,7 @@ function Node({
             className={cn(
               "size-4 shrink-0 transition-opacity duration-200 group-hover/panel:opacity-100",
               (!hasSelection || node.isSelected) ? "opacity-100" : "opacity-40",
-              node.isSelected && "animate-[icon-glow_2s_ease-in-out_infinite]"
+              node.isSelected && "animate-[icon-glow_3s_ease-in-out_infinite]"
             )}
             style={{ 
               color: folderColor || "#3b82f6",
@@ -109,7 +109,7 @@ function Node({
         const CanvasIcon = iconTheme.icons.activityBar.canvas;
         return (
           <div className={cn("relative flex items-center justify-center transition-opacity duration-200 group-hover/panel:opacity-100", (!hasSelection || node.isSelected) ? "opacity-100" : "opacity-40")}>
-            <CanvasIcon className={cn("size-4 shrink-0 text-purple-500", node.isSelected && "animate-[icon-glow_2s_ease-in-out_infinite]")} />
+            <CanvasIcon className={cn("size-4 shrink-0 text-purple-500", node.isSelected && "animate-[icon-glow_3s_ease-in-out_infinite]")} />
           </div>
         );
       default:
@@ -117,7 +117,7 @@ function Node({
         return (
           <div className={cn("relative flex items-center justify-center transition-opacity duration-200 group-hover/panel:opacity-100", (!hasSelection || node.isSelected) ? "opacity-100" : "opacity-40")}>
             <FileIcon
-              className={cn("size-4 shrink-0", node.isSelected && "text-primary animate-[icon-glow_2s_ease-in-out_infinite]")}
+              className={cn("size-4 shrink-0", node.isSelected && "text-primary animate-[icon-glow_3s_ease-in-out_infinite]")}
             />
           </div>
         );
@@ -129,7 +129,7 @@ function Node({
       style={style}
       ref={dragHandle}
       className={cn(
-        "group flex items-center gap-1.5 py-1 pr-2 cursor-pointer transition-all duration-300 px-2 rounded-md mx-1 overflow-hidden",
+        "group flex items-center gap-1.5 py-1 pr-2 cursor-pointer transition-all duration-300 px-2 rounded-md mx-1",
         node.isSelected
           ? "text-foreground font-medium"
           : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",

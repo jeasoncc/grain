@@ -56,8 +56,8 @@ class CanvasErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySta
 					<AlertTriangle className="size-8 text-destructive" />
 					<span className="text-sm text-muted-foreground text-center">
 						{this.state.isCanvasError 
-							? "绘图数据异常，画布尺寸超出限制" 
-							: "绘图组件加载失败"}
+							? "Drawing data error, canvas size exceeds limit" 
+							: "Drawing component failed to load"}
 					</span>
 					<div className="flex gap-2">
 						<Button
@@ -67,7 +67,7 @@ class CanvasErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySta
 							className="gap-1"
 						>
 							<RefreshCw className="size-3" />
-							重试
+							Retry
 						</Button>
 						{this.state.isCanvasError && this.props.onClearData && (
 							<Button
@@ -77,7 +77,7 @@ class CanvasErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySta
 								className="gap-1"
 							>
 								<Trash2 className="size-3" />
-								清空重置
+								Clear & Reset
 							</Button>
 						)}
 					</div>
@@ -202,10 +202,10 @@ export function CanvasEditor({
 
 		onSave?.(JSON.stringify(dataToSave));
 		setHasChanges(false);
-		toast.success("绘图已保存");
+		toast.success("Drawing saved");
 	}, [onSave]);
 
-	// 导出为图片
+	// Export为图片
 	const handleExport = useCallback(async () => {
 		if (!excalidrawRef.current) return;
 
@@ -230,10 +230,10 @@ export function CanvasEditor({
 			a.download = `canvas-${nodeId}-${Date.now()}.png`;
 			a.click();
 			URL.revokeObjectURL(url);
-			toast.success("图片已导出");
+			toast.success("Image exported");
 		} catch (error) {
-			console.error("导出图片失败:", error);
-			toast.error("导出图片失败");
+			console.error("Failed to export image:", error);
+			toast.error("Failed to export image");
 		}
 	}, [isDark, nodeId]);
 
@@ -258,7 +258,7 @@ export function CanvasEditor({
 		onSave?.(emptyData);
 		setIsReady(false);
 		setTimeout(() => setIsReady(true), 100);
-		toast.success("绘图已重置");
+		toast.success("Drawing reset");
 	}, [onSave]);
 
 	// 快捷键保存
@@ -280,12 +280,12 @@ export function CanvasEditor({
 				{/* 全屏工具栏 */}
 				<div className="h-12 border-b bg-card flex items-center justify-between px-4 shrink-0">
 					<div className="flex items-center gap-2">
-						<span className="text-sm font-medium">绘图画布</span>
+						<span className="text-sm font-medium">Drawing Canvas</span>
 						{filePath && (
 							<span className="text-xs text-muted-foreground">{filePath}</span>
 						)}
 						{hasChanges && (
-							<span className="text-xs text-orange-500">• 未保存</span>
+							<span className="text-xs text-orange-500">• Unsaved</span>
 						)}
 					</div>
 					<div className="flex items-center gap-2">
@@ -296,7 +296,7 @@ export function CanvasEditor({
 							className="gap-2"
 						>
 							<Save className="size-4" />
-							保存
+							Save
 						</Button>
 						<Button
 							variant="outline"
@@ -305,7 +305,7 @@ export function CanvasEditor({
 							className="gap-2"
 						>
 							<Download className="size-4" />
-							导出
+							Export
 						</Button>
 						<Button
 							variant="secondary"
@@ -314,7 +314,7 @@ export function CanvasEditor({
 							className="gap-2"
 						>
 							<Minimize2 className="size-4" />
-							退出全屏
+							Exit Fullscreen
 						</Button>
 					</div>
 				</div>
@@ -353,12 +353,12 @@ export function CanvasEditor({
 			{/* 工具栏 */}
 			<div className="h-11 flex items-center justify-between px-4 border-b bg-card shrink-0">
 				<div className="flex items-center gap-2">
-					<span className="text-sm text-muted-foreground">绘图画布</span>
+					<span className="text-sm text-muted-foreground">Drawing Canvas</span>
 					{filePath && (
 						<span className="text-xs text-muted-foreground/60">{filePath}</span>
 					)}
 					{hasChanges && (
-						<span className="text-xs text-orange-500">• 未保存</span>
+						<span className="text-xs text-orange-500">• Unsaved</span>
 					)}
 				</div>
 				<div className="flex items-center gap-1">
@@ -367,7 +367,7 @@ export function CanvasEditor({
 						size="icon"
 						className="size-8"
 						onClick={handleSave}
-						title="保存 (Ctrl+S)"
+						title="Save (Ctrl+S)"
 					>
 						<Save className="size-4" />
 					</Button>
@@ -376,7 +376,7 @@ export function CanvasEditor({
 						size="icon"
 						className="size-8"
 						onClick={handleExport}
-						title="导出为图片"
+						title="Export as Image"
 					>
 						<Download className="size-4" />
 					</Button>
@@ -386,7 +386,7 @@ export function CanvasEditor({
 						size="icon"
 						className="size-8"
 						onClick={() => setIsFullscreen(true)}
-						title="全屏编辑"
+						title="Fullscreen Edit"
 					>
 						<Maximize2 className="size-4" />
 					</Button>

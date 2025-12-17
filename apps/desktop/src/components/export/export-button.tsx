@@ -1,5 +1,5 @@
 /**
- * 导出按钮组件 - 简单的导出触发器
+ * Export按钮组件 - 简单的Export触发器
  */
 
 import { useState } from "react";
@@ -62,7 +62,7 @@ export function ExportButton({
 			<DropdownMenuTrigger asChild>
 				<Button variant={variant} size={size} disabled={isExporting} className={className}>
 					<Download className="h-4 w-4 mr-2" />
-					{isExporting ? "导出中..." : "导出"}
+					{isExporting ? "Exporting..." : "Export"}
 					<ChevronDown className="h-4 w-4 ml-2" />
 				</Button>
 			</DropdownMenuTrigger>

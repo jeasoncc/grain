@@ -1,5 +1,5 @@
 /**
- * 写作统计面板 - 显示写作目标、进度、会话统计
+ * Writing Statistics面板 - 显示写作Target、进度、会话统计
  */
 
 import { Clock, Flame, Settings2, Target, TrendingUp } from "lucide-react";
@@ -43,7 +43,7 @@ export function WritingStatsPanel({
 		resetTodayIfNeeded();
 	}, [resetTodayIfNeeded]);
 
-	// 自动开始会话 - 只在首次有字数时启动
+	// 自动开始会话 - 只在首次有Word Count时启动
 	useEffect(() => {
 		if (!session && currentWordCount > 0) {
 			startSession(currentWordCount);
@@ -52,7 +52,7 @@ export function WritingStatsPanel({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [currentWordCount > 0, !session]);
 
-	// 更新会话字数 - 使用 ref 避免循环
+	// 更新会话Word Count - 使用 ref 避免循环
 	const lastWordCountRef = useRef(currentWordCount);
 	useEffect(() => {
 		if (session && currentWordCount !== lastWordCountRef.current) {
@@ -142,7 +142,7 @@ export function WritingStatsPanel({
 					<div className="space-y-4">
 						<div className="flex items-center justify-between">
 							<Label htmlFor="goal-enabled" className="text-sm">
-								启用每日目标
+								Enable每日Target
 							</Label>
 							<Switch
 								id="goal-enabled"
@@ -156,7 +156,7 @@ export function WritingStatsPanel({
 						{writingGoal.enabled && (
 							<div className="space-y-2">
 								<Label htmlFor="daily-target" className="text-sm">
-									每日目标字数
+									每日TargetWord Count
 								</Label>
 								<Input
 									id="daily-target"

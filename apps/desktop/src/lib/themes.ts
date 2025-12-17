@@ -42,6 +42,11 @@ export interface ThemeColors {
 	sidebarBorder: string;
 	folderColor: string;
 
+	// Toast 提示框（可选）
+	toastBackground?: string;
+	toastForeground?: string;
+	toastBorder?: string;
+
 	// 编辑器扩展颜色
 	editorCursor?: string;
 	editorSelection: string; // Required - background color for selected text
@@ -104,6 +109,10 @@ export const themes: Theme[] = [
 			sidebarAccentForeground: "#1f2937",
 			sidebarBorder: "#e5e7eb",
 			folderColor: "#3b82f6",
+			// Toast
+			toastBackground: "#ffffff",
+			toastForeground: "#1f2937",
+			toastBorder: "#e5e7eb",
 			// 编辑器扩展颜色
 			editorCursor: "#2563eb",
 			editorSelection: "#bfdbfe",
@@ -178,6 +187,10 @@ export const themes: Theme[] = [
 			sidebarAccentForeground: "#657b83",
 			sidebarBorder: "#93a1a1",
 			folderColor: "#268bd2",
+			// Toast - Solarized Style
+			toastBackground: "#fdf6e3",
+			toastForeground: "#657b83",
+			toastBorder: "#93a1a1",
 			editorSelection: "#d3cbb7",
 		},
 	},
@@ -396,6 +409,9 @@ export const themes: Theme[] = [
 			sidebarAccentForeground: "#3c3836",
 			sidebarBorder: "#d5c4a1",
 			folderColor: "#d79921",
+			// Toast - Retro Style
+			toastBackground: "#fbf1c7",
+			toastBorder: "#d79921",
 			editorSelection: "#d5c4a1",
 		},
 	},
@@ -430,6 +446,10 @@ export const themes: Theme[] = [
 			sidebarAccentForeground: "#2c2c2c",
 			sidebarBorder: "#ddd5c8",
 			folderColor: "#8b7355",
+			// Toast - Warm Paper Style
+			toastBackground: "#fff9f0",
+			toastForeground: "#2c2c2c",
+			toastBorder: "#e8e0d5",
 			editorSelection: "#d4c4a8",
 		},
 	},
@@ -838,6 +858,9 @@ export const themes: Theme[] = [
 			sidebarAccentForeground: "#4a4a4a",
 			sidebarBorder: "#f0e0d0",
 			folderColor: "#ff6b6b",
+			// Toast - Summer Pop
+			toastBackground: "#fff9f0",
+			toastBorder: "#ff6b6b",
 			editorSelection: "#fff0f0",
 		},
 	},
@@ -984,6 +1007,10 @@ export const themes: Theme[] = [
 			sidebarAccentForeground: "#f8f8f2",
 			sidebarBorder: "#44475a",
 			folderColor: "#bd93f9",
+			// Toast - Dracula Style
+			toastBackground: "#282a36",
+			toastForeground: "#f8f8f2",
+			toastBorder: "#bd93f9",
 			// 扩展颜色
 			editorCursor: "#f8f8f0",
 			editorSelection: "#44475a",
@@ -1032,6 +1059,9 @@ export const themes: Theme[] = [
 			sidebarAccentForeground: "#eceff4",
 			sidebarBorder: "#4c566a",
 			folderColor: "#88c0d0",
+			// Toast - Frost Style
+			toastBackground: "#3b4252",
+			toastBorder: "#88c0d0",
 			// 编辑器扩展颜色
 			editorCursor: "#d8dee9",
 			editorSelection: "#434c5e",
@@ -1865,6 +1895,9 @@ export const themes: Theme[] = [
 			sidebarAccentForeground: "#00ff9c",
 			sidebarBorder: "#0556f3",
 			folderColor: "#ff2a6d",
+			// Toast - Cyberpunk Neon
+			toastBackground: "#0b1015",
+			toastBorder: "#ff2a6d",
 			editorSelection: "#21262d",
 		},
 	},
@@ -2005,6 +2038,11 @@ function getExtendedColors(
 		editorSelection: colors.editorSelection || colors.accent,
 		editorLineHighlight:
 			colors.editorLineHighlight || (type === "light" ? "#f5f5f5" : "#2a2a2a"),
+
+		// Toast 颜色
+		toastBackground: colors.toastBackground || colors.popover,
+		toastForeground: colors.toastForeground || colors.popoverForeground,
+		toastBorder: colors.toastBorder || colors.border,
 
 		// 状态颜色
 		success: colors.success || (type === "light" ? "#22c55e" : "#4ade80"),

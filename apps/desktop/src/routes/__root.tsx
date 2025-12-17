@@ -141,7 +141,7 @@ function RootComponent() {
 				</div>
 				{/* 命令面板 */}
 				<CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
-				{/* 全局搜索 */}
+				{/* Global Search */}
 				<GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
 				{/* Buffer Switcher (Emacs-style tab switching) */}
 				<BufferSwitcher
@@ -152,7 +152,7 @@ function RootComponent() {
 					onSelectTab={setActiveTab}
 					initialDirection={bufferSwitcherDirection}
 				/>
-				{/* 导出对话框管理器 */}
+				{/* Export对话框管理器 */}
 				<ExportDialogManager />
 				{/* 字体样式注入 */}
 				<FontStyleInjector />

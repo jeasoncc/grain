@@ -83,7 +83,7 @@ export async function createBackup(): Promise<BackupData> {
 }
 
 /**
- * 导出备份到文件
+ * Export备份到文件
  */
 export async function exportBackup(): Promise<void> {
 	const backup = await createBackup();
@@ -91,11 +91,11 @@ export async function exportBackup(): Promise<void> {
 	const blob = new Blob([json], { type: "application/json" });
 	const filename = `novel-editor-backup-${dayjs().format("YYYY-MM-DD-HHmmss")}.json`;
 	saveAs(blob, filename);
-	logger.success(`备份已导出: ${filename}`);
+	logger.success(`备份已Export: ${filename}`);
 }
 
 /**
- * 导出备份为压缩包
+ * Export备份为压缩包
  */
 export async function exportBackupZip(): Promise<void> {
 	const backup = await createBackup();
@@ -127,7 +127,7 @@ export async function exportBackupZip(): Promise<void> {
 
 	const filename = `novel-editor-backup-${dayjs().format("YYYY-MM-DD-HHmmss")}.zip`;
 	saveAs(blob, filename);
-	logger.success(`压缩备份已导出: ${filename}`);
+	logger.success(`压缩备份已Export: ${filename}`);
 }
 
 /**

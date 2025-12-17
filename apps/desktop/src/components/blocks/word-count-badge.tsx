@@ -1,5 +1,5 @@
 /**
- * 字数统计徽章 - 浮动显示当前字数
+ * Word Count统计徽章 - 浮动显示当前Word Count
  */
 
 import { FileText } from "lucide-react";
@@ -18,7 +18,7 @@ export function WordCountBadge({
 	const [visible, setVisible] = useState(false);
 	const [lastCount, setLastCount] = useState(wordCount);
 
-	// 字数变化时显示徽章
+	// Word Count变化时显示徽章
 	useEffect(() => {
 		if (wordCount !== lastCount && show) {
 			setVisible(true);

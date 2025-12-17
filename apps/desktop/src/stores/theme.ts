@@ -19,7 +19,7 @@ interface ThemeState {
 	themeKey: string;
 	// 主题模式：light, dark, system
 	mode: ThemeMode;
-	// 是否启用过渡动画
+	// 是否Enable过渡动画
 	enableTransition: boolean;
 	// 是否已初始化
 	_initialized: boolean;

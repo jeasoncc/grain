@@ -1,0 +1,64 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/home/lotus/project/book2/novel-editor"
+      ],
+      "autoApprove": [
+        "read_file",
+        "read_multiple_files",
+        "write_file",
+        "list_directory",
+        "search_files",
+        "get_file_info"
+      ]
+    },
+    "playwright": {
+      "command": "bunx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--browser",
+        "chromium"
+      ],
+      "autoApprove": [
+        "playwright_navigate",
+        "playwright_screenshot",
+        "playwright_click",
+        "playwright_fill"
+      ]
+    },
+    "puppeteer": {
+      "command": "bunx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ],
+      "env": {
+        "PUPPETEER_BROWSER_URL": "http://localhost:1420"
+      },
+      "autoApprove": [
+        "puppeteer_navigate",
+        "puppeteer_screenshot",
+        "puppeteer_click"
+      ]
+    },
+    "github": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "your_github_token_here"
+      },
+      "autoApprove": [
+        "create_or_update_file",
+        "search_repositories",
+        "create_issue",
+        "create_pull_request"
+      ]
+    }
+  }
+}

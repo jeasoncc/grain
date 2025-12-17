@@ -72,7 +72,7 @@ export function SearchPanel() {
 		{} as Record<SearchResultType, SearchResult[]>,
 	);
 
-	// 执行搜索
+	// Execute Search
 	const performSearch = useCallback(
 		async (searchQuery: string) => {
 			if (!searchQuery.trim()) {
@@ -88,7 +88,7 @@ export function SearchPanel() {
 				});
 				setResults(searchResults);
 			} catch (error) {
-				console.error("搜索失败:", error);
+				console.error("Search failed:", error);
 				setResults([]);
 			} finally {
 				setLoading(false);
@@ -97,7 +97,7 @@ export function SearchPanel() {
 		[searchState.selectedTypes],
 	);
 
-	// 防抖搜索
+	// Debounced Search
 	useEffect(() => {
 		const timer = setTimeout(() => {
 			performSearch(searchState.query);
@@ -111,7 +111,7 @@ export function SearchPanel() {
 		switch (result.type) {
 			case "node":
 			case "project":
-				// 导航到主页
+				// Navigate to Home
 				navigate({ to: "/" });
 				break;
 		}

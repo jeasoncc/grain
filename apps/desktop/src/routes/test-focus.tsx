@@ -124,7 +124,7 @@ function TestFocusPage() {
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="space-y-2">
-						<h3 className="font-semibold">键盘导航测试</h3>
+						<h3 className="font-semibold">Keyboard Navigation测试</h3>
 						<ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
 							<li>按 Tab 键在元素间导航</li>
 							<li>确认焦点指示器清晰可见（蓝色轮廓）</li>
