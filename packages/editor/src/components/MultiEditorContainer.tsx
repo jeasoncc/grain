@@ -38,8 +38,6 @@ export interface MultiEditorContainerProps {
   mentionEntries?: EditorInstanceProps["mentionEntries"];
   /** @deprecated Use mentionEntries instead */
   wikiEntries?: EditorInstanceProps["wikiEntries"];
-  /** 标签列表 (用于 #[ 标签选择) */
-  tags?: EditorInstanceProps["tags"];
   /** Wiki 悬浮预览 hook */
   useWikiHoverPreview?: EditorInstanceProps["useWikiHoverPreview"];
   /** Wiki 悬浮预览组件 */
@@ -67,7 +65,6 @@ export function MultiEditorContainer({
   emptyState,
   mentionEntries,
   wikiEntries,
-  tags,
   useWikiHoverPreview,
   WikiHoverPreview,
 }: MultiEditorContainerProps): React.ReactElement {
@@ -146,7 +143,6 @@ export function MultiEditorContainer({
           placeholder={placeholder}
           readOnly={readOnly}
           mentionEntries={entries}
-          tags={tags}
           useWikiHoverPreview={useWikiHoverPreview}
           WikiHoverPreview={WikiHoverPreview}
         />
@@ -162,7 +158,6 @@ export function MultiEditorContainer({
     placeholder,
     readOnly,
     entries,
-    tags,
     useWikiHoverPreview,
     WikiHoverPreview,
   ]);

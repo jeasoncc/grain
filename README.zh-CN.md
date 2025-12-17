@@ -1,125 +1,110 @@
-# 小麦写作 / Wheat Editor
+# Grain / 小麦
 
-> 现代化、强大的小说写作应用，为严肃作家打造
+> 一个现代化、功能强大的写作应用，专为创意工作者打造
 
-> 🇺🇸 [English](./README.md) | 中文
+> [English](./README.md) | 🇨🇳 中文文档
 
-![Untitled123.png](https://s3.bmp.ovh/imgs/2025/12/13/6647787c1fa17679.png)
+![Grain 编辑器](https://s3.bmp.ovh/imgs/2025/12/13/6647787c1fa17679.png)
 
-
-小麦写作是专为小说家和长篇小说作者设计的专业写作工具。采用现代技术构建，提供无干扰的写作环境和强大的组织功能。
+Grain（小麦）是一款专业的写作工具，专注于长文写作、知识管理和创意表达。采用现代技术构建，提供无干扰的写作环境和强大的组织功能。
 
 ---
 
-## ✨ 功能特性
+## ✨ 特性
 
-- ✍️ **沉浸式写作** - 基于 Lexical 的富文本编辑器，支持 Markdown 快捷格式
-- 📂 **项目结构化管理** - 书籍 → 章节 → 场景的树状组织
-- 🔍 **强大的搜索功能** - 当前文件搜索替换、全局全文搜索，支持正则表达式
-- 🎨 **图标主题系统** - 6 种预设主题，类似 VSCode 的图标主题功能
+- ✍️ **沉浸式写作** - 基于 Lexical 的富文本编辑器，支持 Markdown 快捷键
+- 📂 **灵活组织** - 基于树形结构的文件管理，支持多工作空间
+- 🔍 **强大搜索** - 文件内搜索/替换，全局全文搜索，支持正则表达式
+- 🎨 **图标主题系统** - 6 个预设主题，类似 VSCode 的图标主题功能
 - 📊 **大纲与图表系统** - 完整的大纲管理，支持 Mermaid 和 PlantUML 图表
-- 👤 **角色提及功能** - 通过 `@` 符号快速引用角色，悬停显示 Wiki 信息
-- 💾 **多种导出格式** - JSON、ZIP 结构化导出，Markdown、DOCX 等
-- ⚙️ **可靠存储** - IndexedDB + Dexie 提供离线持久化
-- 🚢 **跨平台支持** - Windows、macOS、Linux 全平台支持
+- 🏷️ **标签系统** - 使用 `#[标签]` 组织内容，轻松分类
+- 👤 **Wiki 链接** - 通过 `@` 符号快速引用，悬停预览
+- 📝 **每日日记** - 内置日记系统，记录每日写作
+- 💾 **多种导出格式** - JSON、ZIP 结构化导出、Markdown、DOCX 等
+- ⚙️ **可靠存储** - IndexedDB + Dexie 离线持久化
+- 🚢 **跨平台** - 支持 Windows、macOS、Linux
 
 ---
 
-## 📥 下载安装
+## 📥 下载
 
-### 全平台安装方式
+### 所有平台
 
-| 平台 | 安装方式 | 安装命令 / 链接 |
-|------|----------|-----------------|
-| 🪟 Windows | 微软应用商店 | [小麦写作](ms-windows-store://pdp/?productid=9NV7M2PW25B3) |
-| 🪟 Windows | Winget | `winget install Jeason.NovelEditor` |
-| 🪟 Windows | Scoop | `scoop install extras/novel-editor` |
-| 🪟 Windows | Chocolatey | `choco install novel-editor` |
-| 🪟 Windows | 直接下载 | [MSI / NSIS / MSIX](https://github.com/Jeason-Lotus/novel-editor/releases) |
-| 🍎 macOS | Homebrew | `brew install --cask novel-editor` |
-| 🍎 macOS | 直接下载 | [DMG (Intel / Apple Silicon)](https://github.com/Jeason-Lotus/novel-editor/releases) |
-| 🐧 Linux | Snap Store | `sudo snap install novel-editor-app` |
-| 🐧 Linux | Flatpak | `flatpak install flathub com.lotus.NovelEditor` |
-| 🐧 Linux | AUR (Arch) | `yay -S novel-editor-bin` |
-| 🐧 Linux | DEB (Ubuntu/Debian) | [下载 DEB](https://github.com/Jeason-Lotus/novel-editor/releases) |
-| 🐧 Linux | RPM (Fedora/RHEL) | [下载 RPM](https://github.com/Jeason-Lotus/novel-editor/releases) |
-| 🐧 Linux | AppImage | [下载 AppImage](https://github.com/Jeason-Lotus/novel-editor/releases) |
-| 🐧 Linux | Ubuntu PPA | `sudo add-apt-repository ppa:jeason/novel-editor` |
-| 🐧 Linux | Fedora COPR | `sudo dnf copr enable jeason/novel-editor` |
+| 平台 | 方式 | 安装命令 / 链接 |
+|------|------|----------------|
+| 🪟 Windows | Microsoft Store | [Grain / 小麦](ms-windows-store://pdp/?productid=9NV7M2PW25B3) |
+| 🪟 Windows | 直接下载 | [MSI / NSIS / MSIX](https://github.com/jeasoncc/grain-editor/releases) |
+| 🍎 macOS | 直接下载 | [DMG (Intel / Apple Silicon)](https://github.com/jeasoncc/grain-editor/releases) |
+| 🐧 Linux | Snap Store | `sudo snap install grain-editor` |
+| 🐧 Linux | 直接下载 | [DEB / RPM / AppImage](https://github.com/jeasoncc/grain-editor/releases) |
 
 ---
 
-### 🪟 Windows
+## 🚀 快速开始
 
-#### 微软应用商店（推荐）
-[![从微软商店获取](https://get.microsoft.com/images/zh-cn%20dark.svg)](ms-windows-store://pdp/?productid=9NV7M2PW25B3)
+1. **创建工作空间** - 首先创建你的第一个工作空间
+2. **添加文件** - 创建文件和文件夹来组织你的内容
+3. **开始写作** - 使用富文本编辑器和 Markdown 快捷键
+4. **使用标签组织** - 用 `#[标签]` 对内容进行分类
+5. **链接内容** - 用 `@文件名` 引用其他文件
 
-在微软应用商店搜索"小麦写作"或"Wheat Editor"即可下载。
+---
 
-#### 包管理器安装
+## 🛠️ 开发
+
+### 前置要求
+
+- Node.js >= 20
+- Bun >= 1.1.0
+- Rust（用于 Tauri）
+
+### 设置
+
 ```bash
-# Winget
-winget install Jeason.NovelEditor
+# 安装依赖
+bun install
 
-# Scoop
-scoop install extras/novel-editor
+# 运行开发服务器
+bun run desktop:dev
 
-# Chocolatey
-choco install novel-editor
+# 生产构建
+bun run build:prod:desktop
 ```
 
 ---
 
-### 🍎 macOS
+## 📖 文档
 
-```bash
-# Homebrew
-brew install --cask novel-editor
-```
-
-或从 [GitHub Releases](https://github.com/Jeason-Lotus/novel-editor/releases) 下载 DMG 安装包。
+- [用户指南](./docs/README.md)
+- [开发指南](./docs/development/)
+- [API 文档](./docs/api-server.md)
 
 ---
 
-### 🐧 Linux
+## 🤝 贡献
 
-```bash
-# Snap（所有发行版）
-sudo snap install novel-editor-app
-
-# Flatpak（所有发行版）
-flatpak install flathub com.lotus.NovelEditor
-
-# Arch Linux (AUR)
-yay -S novel-editor-bin
-
-# Ubuntu PPA
-sudo add-apt-repository ppa:jeason/novel-editor
-sudo apt update && sudo apt install novel-editor
-
-# Fedora COPR
-sudo dnf copr enable jeason/novel-editor
-sudo dnf install novel-editor
-```
+欢迎贡献！请先阅读我们的[贡献指南](./CONTRIBUTING.md)。
 
 ---
 
-### 系统要求
+## 📄 许可证
 
-| | 最低配置 | 推荐配置 |
-|---|---------|----------|
-| **操作系统** | Windows 10, macOS 10.15, Linux | 最新版本 |
-| **内存** | 2GB | 4GB+ |
-| **存储空间** | 200MB | 500MB |
-| **架构** | x86_64, ARM64 | - |
+MIT 许可证 - 详见 [LICENSE](./LICENSE)
 
 ---
 
-## 📄 开源协议
+## 🙏 致谢
 
-本项目采用 [MIT License](./LICENSE) 开源协议。
+- 使用 [Tauri](https://tauri.app/) 构建
+- 编辑器由 [Lexical](https://lexical.dev/) 驱动
+- UI 组件来自 [shadcn/ui](https://ui.shadcn.com/)
 
 ---
 
-Made with ❤️ by [Jeason](https://github.com/jeasoncc)
+## 📧 联系方式
 
+- 作者：Jeason
+- 邮箱：xiaomiquan@aliyun.com
+- GitHub：[@jeasoncc](https://github.com/jeasoncc)
+
+---

@@ -94,34 +94,31 @@ function Node({
           : iconTheme.icons.folder.default;
         return (
           <FolderIcon
-            className="size-4 shrink-0 transition-opacity duration-200"
+            className={cn(
+              "size-4 shrink-0 transition-opacity duration-200 group-hover/panel:opacity-100",
+              (!hasSelection || node.isSelected) ? "opacity-100" : "opacity-40",
+              node.isSelected && "animate-[icon-glow_2s_ease-in-out_infinite]"
+            )}
             style={{ 
               color: folderColor || "#3b82f6",
               fill: folderColor ? `${folderColor}1A` : "#3b82f61A",
-              opacity: (!hasSelection || node.isSelected) ? 1 : 0.5
             }} 
           />
         );
       case "canvas":
         const CanvasIcon = iconTheme.icons.activityBar.canvas;
         return (
-          <div className={cn("relative flex items-center justify-center transition-opacity duration-200", (!hasSelection || node.isSelected) ? "opacity-100" : "opacity-50")}>
-            <CanvasIcon className="size-4 shrink-0 text-purple-500" />
-            {node.isSelected && (
-              <div className="absolute inset-0 bg-primary/20 blur-[2px] rounded-full animate-pulse" />
-            )}
+          <div className={cn("relative flex items-center justify-center transition-opacity duration-200 group-hover/panel:opacity-100", (!hasSelection || node.isSelected) ? "opacity-100" : "opacity-40")}>
+            <CanvasIcon className={cn("size-4 shrink-0 text-purple-500", node.isSelected && "animate-[icon-glow_2s_ease-in-out_infinite]")} />
           </div>
         );
       default:
         const FileIcon = iconTheme.icons.file.default;
         return (
-          <div className={cn("relative flex items-center justify-center transition-opacity duration-200", (!hasSelection || node.isSelected) ? "opacity-100" : "opacity-50")}>
+          <div className={cn("relative flex items-center justify-center transition-opacity duration-200 group-hover/panel:opacity-100", (!hasSelection || node.isSelected) ? "opacity-100" : "opacity-40")}>
             <FileIcon
-              className={cn("size-4 shrink-0", node.isSelected && "text-primary")}
+              className={cn("size-4 shrink-0", node.isSelected && "text-primary animate-[icon-glow_2s_ease-in-out_infinite]")}
             />
-            {node.isSelected && (
-              <div className="absolute inset-0 bg-primary/20 blur-[2px] rounded-full animate-pulse" />
-            )}
           </div>
         );
     }
@@ -132,11 +129,11 @@ function Node({
       style={style}
       ref={dragHandle}
       className={cn(
-        "group flex items-center gap-1.5 py-1 pr-2 cursor-pointer transition-all duration-200 px-2 rounded-md mx-1 overflow-hidden",
+        "group flex items-center gap-1.5 py-1 pr-2 cursor-pointer transition-all duration-300 px-2 rounded-md mx-1 overflow-hidden",
         node.isSelected
-          ? "bg-primary/5 shadow-sm"
+          ? "text-foreground font-medium"
           : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
-        !node.isSelected && hasSelection && "opacity-60 hover:opacity-100",
+        !node.isSelected && hasSelection && "opacity-40 group-hover/panel:opacity-100",
         node.willReceiveDrop && "bg-sidebar-accent ring-1 ring-primary/20"
       )}
       onClick={(e) => {
@@ -191,9 +188,9 @@ function Node({
       ) : (
         <span 
           className={cn(
-            "flex-1 text-sm truncate leading-none pb-0.5 min-w-0 transition-colors duration-200",
-            node.isSelected ? "text-foreground font-medium" : "text-muted-foreground",
-            !node.isSelected && hasSelection && "text-muted-foreground/70"
+            "flex-1 text-sm truncate leading-none pb-0.5 min-w-0 transition-all duration-200",
+            node.isSelected ? "text-foreground font-medium transition-opacity duration-300 opacity-60 group-hover/panel:opacity-100" : "text-muted-foreground",
+            !node.isSelected && hasSelection && "opacity-40 group-hover/panel:opacity-100"
           )}
           title={data.name}
         >
@@ -225,24 +222,24 @@ function Node({
               <>
                 <DropdownMenuItem onClick={() => onCreateFolder(node.id)}>
                   <FolderPlus className="size-4 mr-2" />
-                  新建文件夹
+                  New Folder
                 </DropdownMenuItem>
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <Plus className="size-4 mr-2" />
-                    新建文件
+                    New File
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
                     <DropdownMenuItem onClick={() => onCreateFile(node.id, "file")}>
                       <FileText className="size-4 mr-2" />
-                      文本文件
+                      Text File
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onCreateFile(node.id, "canvas")}>
                       {(() => {
                         const CanvasIcon = iconTheme.icons.activityBar.canvas;
                         return <CanvasIcon className="size-4 mr-2" />;
                       })()}
-                      画布
+                      Canvas
                     </DropdownMenuItem>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
@@ -253,7 +250,7 @@ function Node({
             {/* Rename option */}
             <DropdownMenuItem onClick={() => node.edit()}>
               <Pencil className="size-4 mr-2" />
-              重命名
+              Rename
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
@@ -264,7 +261,7 @@ function Node({
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="size-4 mr-2" />
-              删除
+              Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -366,14 +363,13 @@ export function FileTree({
             fill: currentTheme?.colors.folderColor ? `${currentTheme.colors.folderColor}1A` : "#3b82f61A" 
           }} 
         />
-        <p className="text-sm text-center px-4">请先选择一个工作空间</p>
-        <p className="text-xs text-center mt-1 opacity-70">Please select a workspace first</p>
+        <p className="text-sm text-center px-4">Please select a workspace first</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col group/panel hover:animate-[breathe-shadow_3s_ease-in-out_infinite]">
       {/* Header */}
       <div className="h-11 flex items-center justify-between px-4 shrink-0 group/header">
         <span className="text-sm font-semibold text-foreground/80 tracking-wide pl-1">
@@ -402,7 +398,7 @@ export function FileTree({
       </div>
 
       {/* Tree Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden group/tree">
         {treeData.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             {(() => {

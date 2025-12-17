@@ -70,7 +70,7 @@ export function FontStyleInjector() {
       .editor-container ::selection,
       .ProseMirror ::selection,
       .lexical-editor ::selection {
-        background-color: hsl(var(--primary) / 0.2);
+        background-color: var(--editor-selection);
       }
     `;
 

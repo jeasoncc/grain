@@ -36,7 +36,6 @@ import { useCallback, useRef, useState } from "react";
 import { EditorNodes } from "../nodes";
 import MentionsPlugin, { type MentionEntry } from "../plugins/mentions-plugin";
 import MentionTooltipPlugin, { type MentionTooltipPluginProps } from "../plugins/mention-tooltip-plugin";
-import TagPickerPlugin, { type TagInterface } from "../plugins/tag-picker-plugin";
 import TagTransformPlugin from "../plugins/tag-transform-plugin";
 import DraggableBlockPlugin from "../plugins/draggable-block-plugin";
 import theme from "../themes/PlaygroundEditorTheme";
@@ -57,8 +56,6 @@ export interface EditorProps {
   mentionEntries?: MentionEntry[];
   /** @deprecated Use mentionEntries instead */
   wikiEntries?: MentionEntry[];
-  /** 标签列表 (用于 #[ 标签选择) */
-  tags?: TagInterface[];
   /** Wiki 悬浮预览 hook (可选) */
   useWikiHoverPreview?: MentionTooltipPluginProps["useWikiHoverPreview"];
   /** Wiki 悬浮预览组件 (可选) */
@@ -85,7 +82,6 @@ export default function Editor({
   namespace = "Editor",
   mentionEntries,
   wikiEntries,
-  tags,
   useWikiHoverPreview,
   WikiHoverPreview,
 }: EditorProps): React.ReactElement {
@@ -177,7 +173,6 @@ export default function Editor({
             WikiHoverPreview={WikiHoverPreview}
           />
         )}
-        <TagPickerPlugin tags={tags} />
         <TagTransformPlugin />
       </div>
     </LexicalComposer>

@@ -28,6 +28,11 @@ interface UIState {
 	/** Tab position: "top" displays tabs above editor, "right-sidebar" displays in right panel */
 	tabPosition: TabPosition;
 	setTabPosition: (position: TabPosition) => void;
+	
+	// Language settings
+	/** Application locale - defaults to English ("en") */
+	locale: string;
+	setLocale: (locale: string) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -44,12 +49,17 @@ export const useUIStore = create<UIState>()(
 			// UI Settings - default to "right-sidebar" as per requirements
 			tabPosition: "right-sidebar",
 			setTabPosition: (position) => set({ tabPosition: position }),
+			
+			// Language settings - default to English
+			locale: "en",
+			setLocale: (locale) => set({ locale }),
 		}),
 		{
 			name: "novel-editor-ui",
 			partialize: (state) => ({
 				rightSidebarOpen: state.rightSidebarOpen,
 				tabPosition: state.tabPosition,
+				locale: state.locale,
 			}),
 		},
 	),

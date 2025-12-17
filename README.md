@@ -1,24 +1,25 @@
-# Wheat Editor / 小麦写作
+# Grain / 小麦
 
-> A modern, powerful novel writing application for serious writers
+> A modern, powerful writing application for creative minds
 
 > 🇨🇳 [中文文档](./README.zh-CN.md) | English
 
-![Untitled123.png](https://s3.bmp.ovh/imgs/2025/12/13/6647787c1fa17679.png)
+![Grain Editor](https://s3.bmp.ovh/imgs/2025/12/13/6647787c1fa17679.png)
 
-
-Wheat Editor is a professional writing tool designed specifically for novelists and long-form fiction writers. Built with modern technologies, it provides a distraction-free writing environment with powerful organizational features.
+Grain (小麦) is a professional writing tool designed for long-form writing, knowledge management, and creative expression. Built with modern technologies, it provides a distraction-free writing environment with powerful organizational features.
 
 ---
 
 ## ✨ Features
 
 - ✍️ **Immersive Writing** - Rich text editor based on Lexical with Markdown shortcuts
-- 📂 **Structured Project Management** - Tree-based organization: Books → Chapters → Scenes
+- 📂 **Flexible Organization** - Tree-based file management with workspaces
 - 🔍 **Powerful Search** - In-file search/replace, global full-text search with regex support
 - 🎨 **Icon Theme System** - 6 preset themes, similar to VSCode's icon theme feature
 - 📊 **Outline & Chart System** - Complete outline management with Mermaid and PlantUML chart support
-- 👤 **Character Mention** - Quick character references via `@` symbol with hover Wiki display
+- 🏷️ **Tag System** - Organize content with `#[tags]` for easy categorization
+- 👤 **Wiki Links** - Quick references via `@` symbol with hover preview
+- 📝 **Daily Journal** - Built-in diary system for daily writing
 - 💾 **Multiple Export Formats** - JSON, ZIP structured export, Markdown, DOCX, etc.
 - ⚙️ **Reliable Storage** - IndexedDB + Dexie for offline persistence
 - 🚢 **Cross-Platform** - Windows, macOS, Linux support
@@ -31,94 +32,77 @@ Wheat Editor is a professional writing tool designed specifically for novelists 
 
 | Platform | Method | Install Command / Link |
 |----------|--------|------------------------|
-| 🪟 Windows | Microsoft Store | [小麦写作 / Wheat Editor](ms-windows-store://pdp/?productid=9NV7M2PW25B3) |
-| 🪟 Windows | Winget | `winget install Jeason.NovelEditor` |
-| 🪟 Windows | Scoop | `scoop install extras/novel-editor` |
-| 🪟 Windows | Chocolatey | `choco install novel-editor` |
-| 🪟 Windows | Direct Download | [MSI / NSIS / MSIX](https://github.com/Jeason-Lotus/novel-editor/releases) |
-| 🍎 macOS | Homebrew | `brew install --cask novel-editor` |
-| 🍎 macOS | Direct Download | [DMG (Intel / Apple Silicon)](https://github.com/Jeason-Lotus/novel-editor/releases) |
-| 🐧 Linux | Snap Store | `sudo snap install novel-editor-app` |
-| 🐧 Linux | Flatpak | `flatpak install flathub com.lotus.NovelEditor` |
-| 🐧 Linux | AUR (Arch) | `yay -S novel-editor-bin` |
-| 🐧 Linux | DEB (Ubuntu/Debian) | [Download DEB](https://github.com/Jeason-Lotus/novel-editor/releases) |
-| 🐧 Linux | RPM (Fedora/RHEL) | [Download RPM](https://github.com/Jeason-Lotus/novel-editor/releases) |
-| 🐧 Linux | AppImage | [Download AppImage](https://github.com/Jeason-Lotus/novel-editor/releases) |
-| 🐧 Linux | Ubuntu PPA | `sudo add-apt-repository ppa:jeason/novel-editor` |
-| 🐧 Linux | Fedora COPR | `sudo dnf copr enable jeason/novel-editor` |
+| 🪟 Windows | Microsoft Store | [Grain / 小麦](ms-windows-store://pdp/?productid=9NV7M2PW25B3) |
+| 🪟 Windows | Direct Download | [MSI / NSIS / MSIX](https://github.com/jeasoncc/grain-editor/releases) |
+| 🍎 macOS | Direct Download | [DMG (Intel / Apple Silicon)](https://github.com/jeasoncc/grain-editor/releases) |
+| 🐧 Linux | Snap Store | `sudo snap install grain-editor` |
+| 🐧 Linux | Direct Download | [DEB / RPM / AppImage](https://github.com/jeasoncc/grain-editor/releases) |
 
 ---
 
-### 🪟 Windows
+## 🚀 Quick Start
 
-#### Microsoft Store (Recommended)
-[![Get it from Microsoft Store](https://get.microsoft.com/images/en-us%20dark.svg)](ms-windows-store://pdp/?productid=9NV7M2PW25B3)
+1. **Create a Workspace** - Start by creating your first workspace
+2. **Add Files** - Create files and folders to organize your content
+3. **Start Writing** - Use the rich text editor with Markdown shortcuts
+4. **Organize with Tags** - Use `#[tag]` to categorize your content
+5. **Link Content** - Reference other files with `@filename`
 
-Search "小麦写作" or "Wheat Editor" in Microsoft Store.
+---
 
-#### Package Managers
+## 🛠️ Development
+
+### Prerequisites
+
+- Node.js >= 20
+- Bun >= 1.1.0
+- Rust (for Tauri)
+
+### Setup
+
 ```bash
-# Winget
-winget install Jeason.NovelEditor
+# Install dependencies
+bun install
 
-# Scoop
-scoop install extras/novel-editor
+# Run development server
+bun run desktop:dev
 
-# Chocolatey
-choco install novel-editor
+# Build for production
+bun run build:prod:desktop
 ```
 
 ---
 
-### 🍎 macOS
+## 📖 Documentation
 
-```bash
-# Homebrew
-brew install --cask novel-editor
-```
-
-Or download DMG from [GitHub Releases](https://github.com/Jeason-Lotus/novel-editor/releases).
+- [User Guide](./docs/README.md)
+- [Development Guide](./docs/development/)
+- [API Documentation](./docs/api-server.md)
 
 ---
 
-### 🐧 Linux
+## 🤝 Contributing
 
-```bash
-# Snap (All Distros)
-sudo snap install novel-editor-app
-
-# Flatpak (All Distros)
-flatpak install flathub com.lotus.NovelEditor
-
-# Arch Linux (AUR)
-yay -S novel-editor-bin
-
-# Ubuntu PPA
-sudo add-apt-repository ppa:jeason/novel-editor
-sudo apt update && sudo apt install novel-editor
-
-# Fedora COPR
-sudo dnf copr enable jeason/novel-editor
-sudo dnf install novel-editor
-```
-
----
-
-### System Requirements
-
-| | Minimum | Recommended |
-|---|---------|-------------|
-| **OS** | Windows 10, macOS 10.15, Linux | Latest version |
-| **RAM** | 2GB | 4GB+ |
-| **Storage** | 200MB | 500MB |
-| **Architecture** | x86_64, ARM64 | - |
+Contributions are welcome! Please read our [Contributing Guide](./CONTRIBUTING.md) first.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the [MIT License](./LICENSE).
+MIT License - see [LICENSE](./LICENSE) for details
 
 ---
 
-Made with ❤️ by [Jeason](https://github.com/jeasoncc)
+## 🙏 Acknowledgments
+
+- Built with [Tauri](https://tauri.app/)
+- Editor powered by [Lexical](https://lexical.dev/)
+- UI components from [shadcn/ui](https://ui.shadcn.com/)
+
+---
+
+## 📧 Contact
+
+- Author: Jeason
+- Email: xiaomiquan@aliyun.com
+- GitHub: [@jeasoncc](https://github.com/jeasoncc)

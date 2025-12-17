@@ -20,13 +20,6 @@ export type {
   WikiHoverPreviewHook
 } from "./mention-tooltip-plugin";
 
-export { default as TagPickerPlugin } from "./tag-picker-plugin";
-export type { 
-  TagPickerPluginProps,
-  TagInterface,
-  MenuTextMatch as TagMenuTextMatch
-} from "./tag-picker-plugin";
-
 export { default as TagTransformPlugin } from "./tag-transform-plugin";
 
 export { default as DraggableBlockPlugin } from "./draggable-block-plugin";

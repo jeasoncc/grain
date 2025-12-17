@@ -68,6 +68,9 @@
   --background: #ffffff;
   --foreground: #1f2937;
   
+  /* 编辑器选中背景色 */
+  --editor-selection: #bfdbfe;
+  
   --card: #ffffff;
   --card-foreground: #1f2937;
   
@@ -112,6 +115,9 @@
 .dark {
   --background: #0f172a;
   --foreground: #f1f5f9;
+  
+  /* 编辑器选中背景色 - 深色主题 */
+  --editor-selection: #1e3a5f;
   
   --card: #1e293b;
   --card-foreground: #f1f5f9;
@@ -187,13 +193,13 @@ h6 { font-size: 0.75rem; font-weight: 600; line-height: 1.5; }
 
 /* 文本选择 - 增强可见性 */
 ::selection {
-  background-color: var(--editor-selection, color-mix(in srgb, var(--primary) 35%, transparent));
+  background-color: var(--editor-selection);
   color: inherit;
 }
 
 /* 深色模式下选中样式更明显 */
 .dark ::selection {
-  background-color: var(--editor-selection, color-mix(in srgb, var(--primary) 45%, transparent));
+  background-color: var(--editor-selection);
 }
 
 /* ========================================
@@ -413,12 +419,12 @@ kbd {
 
 /* 编辑器内文本选择 - 更明显的背景色 */
 .editor-container ::selection {
-  background-color: var(--editor-selection, color-mix(in srgb, var(--primary) 40%, transparent));
+  background-color: var(--editor-selection);
   color: inherit;
 }
 
 .dark .editor-container ::selection {
-  background-color: var(--editor-selection, color-mix(in srgb, var(--primary) 50%, transparent));
+  background-color: var(--editor-selection);
 }
 
 /* 小说编辑器专用样式 */
@@ -428,12 +434,12 @@ kbd {
 
 /* 小说编辑器选中样式 */
 .novel-editor-content ::selection {
-  background-color: var(--editor-selection, color-mix(in srgb, var(--primary) 40%, transparent));
+  background-color: var(--editor-selection);
   color: inherit;
 }
 
 .dark .novel-editor-content ::selection {
-  background-color: var(--editor-selection, color-mix(in srgb, var(--primary) 50%, transparent));
+  background-color: var(--editor-selection);
 }
 
 /* Lexical 编辑器选中节点样式 */
@@ -582,6 +588,36 @@ kbd {
 
 .animate-slide-in {
   animation: slideIn 0.2s ease-out;
+}
+
+/* Breathing animation for sidebar hover effects */
+@keyframes breathe {
+  0%, 100% { 
+    opacity: 0.5;
+  }
+  50% { 
+    opacity: 1;
+  }
+}
+
+@keyframes breathe-shadow {
+  0%, 100% {
+    box-shadow: 0 0 0 0px color-mix(in srgb, var(--primary), transparent 100%);
+  }
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary), transparent 85%);
+  }
+}
+
+@keyframes icon-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 2px color-mix(in srgb, var(--primary), transparent 70%));
+    opacity: 0.8;
+  }
+  50% {
+    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--primary), transparent 20%));
+    opacity: 1;
+  }
 }
 
 /* 主题切换过渡动画 */

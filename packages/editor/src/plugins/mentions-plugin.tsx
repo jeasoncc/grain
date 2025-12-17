@@ -226,9 +226,9 @@ export default function MentionsPlugin({
 				}
 
 				return ReactDOM.createPortal(
-					<div className="z-[9999] bg-popover border border-border rounded-lg shadow-xl p-1.5 min-w-[240px] max-w-[320px] max-h-[280px] overflow-auto animate-in fade-in-0 zoom-in-95 duration-200">
+					<div className="fixed z-[99999] bg-popover border border-border rounded-lg shadow-xl p-1.5 min-w-[240px] max-w-[320px] max-h-[280px] overflow-auto">
 						<div className="px-2 py-1.5 text-xs text-muted-foreground border-b mb-1">
-							{queryString ? `搜索 "${queryString}"` : "选择Wiki条目"}
+							{queryString ? `Search "${queryString}"` : "Select Wiki Entry"}
 						</div>
 						<ul className="space-y-0.5">
 							{options.map((option, i: number) => (
@@ -248,7 +248,7 @@ export default function MentionsPlugin({
 							))}
 						</ul>
 						<div className="px-2 py-1.5 text-xs text-muted-foreground border-t mt-1">
-							↑↓ 选择 · ↵ 确认 · Esc 取消
+							↑↓ Select · ↵ Confirm · Esc Cancel
 						</div>
 					</div>,
 					anchorElementRef.current,

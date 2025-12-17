@@ -646,6 +646,54 @@
 
 
 /* ========================================
+   Text Selection
+   ======================================== */
+
+/* Global text selection styles */
+::selection {
+  background-color: var(--editor-selection);
+  color: inherit;
+}
+
+::-moz-selection {
+  background-color: var(--editor-selection);
+  color: inherit;
+}
+
+/* Editor-specific selection styles */
+.PlaygroundEditorTheme__paragraph::selection,
+.PlaygroundEditorTheme__h1::selection,
+.PlaygroundEditorTheme__h2::selection,
+.PlaygroundEditorTheme__h3::selection,
+.PlaygroundEditorTheme__h4::selection,
+.PlaygroundEditorTheme__h5::selection,
+.PlaygroundEditorTheme__h6::selection,
+.PlaygroundEditorTheme__textBold::selection,
+.PlaygroundEditorTheme__textItalic::selection,
+.PlaygroundEditorTheme__textCode::selection,
+.PlaygroundEditorTheme__link::selection,
+.PlaygroundEditorTheme__quote::selection {
+  background-color: var(--editor-selection);
+  color: inherit;
+}
+
+.PlaygroundEditorTheme__paragraph::-moz-selection,
+.PlaygroundEditorTheme__h1::-moz-selection,
+.PlaygroundEditorTheme__h2::-moz-selection,
+.PlaygroundEditorTheme__h3::-moz-selection,
+.PlaygroundEditorTheme__h4::-moz-selection,
+.PlaygroundEditorTheme__h5::-moz-selection,
+.PlaygroundEditorTheme__h6::-moz-selection,
+.PlaygroundEditorTheme__textBold::-moz-selection,
+.PlaygroundEditorTheme__textItalic::-moz-selection,
+.PlaygroundEditorTheme__textCode::-moz-selection,
+.PlaygroundEditorTheme__link::-moz-selection,
+.PlaygroundEditorTheme__quote::-moz-selection {
+  background-color: var(--editor-selection);
+  color: inherit;
+}
+
+/* ========================================
    Draggable Block Plugin
    ======================================== */
 

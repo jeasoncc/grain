@@ -59,7 +59,6 @@ export type {
 export {
   MentionsPlugin,
   MentionTooltipPlugin,
-  TagPickerPlugin,
   TagTransformPlugin,
   // Re-exported Lexical plugins
   HistoryPlugin,
@@ -79,9 +78,6 @@ export type {
   MentionTooltipPluginProps,
   WikiPreviewState,
   WikiHoverPreviewHook,
-  TagPickerPluginProps,
-  TagInterface,
-  TagMenuTextMatch,
 } from "./plugins";
 
 // ============================================================================

@@ -1,61 +1,73 @@
-name: novel-editor-app
+name: grain-editor
 base: core22
-version: '0.1.80'
-summary: Professional novel writing tool with advanced project management
+version: '0.1.85'
+summary: Modern writing tool for long-form content and knowledge management
 description: |
-  Novel Editor is a comprehensive writing application designed specifically for 
-  novelists and creative writers. Built with modern web technologies and powered 
-  by the Lexical rich-text editor, it provides everything you need to craft 
-  compelling stories from initial concept to final manuscript.
+  Grain (小麦) is a professional writing application designed for long-form 
+  writing, knowledge management, and creative expression. Built with modern 
+  web technologies and powered by the Lexical rich-text editor, it provides 
+  everything you need to organize your thoughts and craft compelling content.
 
   🚀 KEY FEATURES:
   
-  📝 Advanced Text Editor
+  ✍️ Immersive Writing Experience
   • Rich-text editing with Markdown shortcuts
-  • Table support for complex formatting
+  • Distraction-free writing environment
   • Real-time auto-save to prevent data loss
-  • Multiple export formats including DOCX
+  • Multiple export formats (Markdown, DOCX, JSON)
   
-  🎯 Structured Project Management  
-  • Three-tier hierarchy: Project → Chapter → Scene
-  • Drag-and-drop reordering for easy organization
-  • Visual outline view with quick navigation
-  • Cross-project global search functionality
+  📂 Flexible Organization
+  • Tree-based file management system
+  • Multiple workspace support
+  • Drag-and-drop file organization
+  • Global search across all content
   
-  👥 Character Development
-  • Comprehensive character profile system
-  • Alias management for complex characters
-  • Detailed backstory and experience tracking
-  • Character relationship mapping
+  🏷️ Tag System
+  • Organize content with #[tags]
+  • Quick tag creation and management
+  • Tag-based filtering and search
+  • Visual tag relationships
   
-  🌍 World-building Tools
-  • Location, faction, and item organization
-  • Concept management for complex universes
-  • Integrated drawing canvas (Excalidraw)
-  • Mermaid diagram support for plotting
+  👤 Wiki Links & References
+  • Quick references via @ symbol
+  • Hover preview for linked content
+  • Bidirectional linking
+  • Knowledge graph visualization
   
-  📊 Writing Analytics
-  • Real-time word count tracking
-  • Reading time estimation
-  • Chapter distribution visualization
-  • Progress tracking and statistics
+  📝 Daily Journal
+  • Built-in diary system
+  • Daily writing templates
+  • Calendar view for entries
+  • Writing streak tracking
+  
+  📊 Outline & Visualization
+  • Mermaid diagram support
+  • PlantUML integration
+  • Visual outline management
+  • Chart and graph creation
   
   🎨 Customizable Interface
-  • Multiple editor themes (VSCode-like experience)
-  • Icon theme customization
-  • Responsive design for all screen sizes
+  • Multiple editor themes
+  • Icon theme customization (6 presets)
   • Dark/light mode support
+  • Responsive design
   
   🔒 Privacy-First Design
-  • Complete local data storage (Dexie/IndexedDB)
-  • No cloud dependency or data collection
+  • Complete local data storage (IndexedDB)
+  • No cloud dependency
   • Offline-first architecture
-  • Your stories stay on your device
+  • Your data stays on your device
   
-  Perfect for novelists, screenwriters, game developers, and anyone crafting 
-  complex narratives. Whether you're writing your first short story or managing 
-  a multi-book series, Novel Editor provides the tools to bring your creative 
-  vision to life.
+  Perfect for writers, researchers, students, and anyone who needs a powerful 
+  tool for organizing thoughts and creating long-form content. Whether you're 
+  writing novels, research papers, documentation, or personal journals, Grain 
+  provides the tools to bring your ideas to life.
+
+  ---
+  
+  Note: This application was formerly known as "Novel Editor". We've rebranded 
+  to "Grain" to better reflect our expanded focus on general writing and 
+  knowledge management.
 
 grade: stable
 confinement: strict
@@ -65,8 +77,8 @@ architectures:
   - build-on: arm64
 
 apps:
-  novel-editor:
-    command: bin/novel-editor
+  grain:
+    command: bin/grain
     extensions: [gnome]
     plugs:
       - home
@@ -80,7 +92,7 @@ apps:
       - removable-media
 
 parts:
-  novel-editor:
+  grain:
     plugin: nil
     source: .
     build-packages:
@@ -126,14 +138,13 @@ parts:
       echo "=== Building desktop frontend ==="
       bun run build
       
-      # 验证构建输出
+      # Verify build output
       if [ ! -d "dist" ]; then
         echo "ERROR: Frontend build failed - dist directory not found"
         exit 1
       fi
       
       echo "=== Building Tauri application ==="
-      # 使用 bun 运行 tauri（会自动使用 node_modules 中的 @tauri-apps/cli）
       bun run tauri build --bundles deb
       
       echo "=== Extracting deb package ==="
@@ -149,16 +160,12 @@ parts:
       echo "=== Setting up binary ==="
       mkdir -p $CRAFT_PART_INSTALL/bin
       
-      # 列出解压后的内容以便调试
-      echo "Contents of CRAFT_PART_INSTALL:"
-      find $CRAFT_PART_INSTALL -type f -name "novel-editor*" 2>/dev/null || true
-      
-      # 查找并复制二进制文件（使用 cp 而非 mv，更安全）
-      BINARY_PATH=$(find $CRAFT_PART_INSTALL -type f -name "novel-editor" -executable | head -n 1)
+      # Find and copy binary
+      BINARY_PATH=$(find $CRAFT_PART_INSTALL -type f -name "grain" -executable | head -n 1)
       if [ -n "$BINARY_PATH" ]; then
         echo "Found binary at: $BINARY_PATH"
-        cp "$BINARY_PATH" $CRAFT_PART_INSTALL/bin/novel-editor
-        chmod +x $CRAFT_PART_INSTALL/bin/novel-editor
+        cp "$BINARY_PATH" $CRAFT_PART_INSTALL/bin/grain
+        chmod +x $CRAFT_PART_INSTALL/bin/grain
       else
         echo "ERROR: Binary not found, listing all files:"
         find $CRAFT_PART_INSTALL -type f

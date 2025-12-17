@@ -35,7 +35,6 @@ import { useUIStore } from "@/stores/ui";
 import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
 import { getNodeContent } from "@/services/nodes";
 import { useWikiFiles } from "@/services/wiki-files";
-import { useTagsByWorkspace } from "@/services/tags";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
 import { WikiHoverPreview } from "@/components/blocks/wiki-hover-preview";
 import { MultiEditorContainer, type MentionEntry } from "@novel-editor/editor";
@@ -69,9 +68,8 @@ export function StoryWorkspace({
 	// 绘图状态
 	const [selectedDrawing] = useState<DrawingInterface | null>(null);
 
-	// Wiki 和标签数据 (用于编辑器插件)
+	// Wiki 数据 (用于编辑器插件)
 	const wikiFiles = useWikiFiles(selectedWorkspaceId);
-	const tags = useTagsByWorkspace(selectedWorkspaceId ?? undefined);
 
 	// Map WikiFileEntry to MentionEntry format for the editor
 	const mentionEntries: MentionEntry[] = useMemo(() => 
@@ -252,7 +250,6 @@ export function StoryWorkspace({
 					onScrollChange={handleScrollChange}
 					placeholder="Start writing..."
 					mentionEntries={mentionEntries}
-					tags={tags}
 					useWikiHoverPreview={useWikiHoverPreview}
 					WikiHoverPreview={WikiHoverPreview}
 				/>

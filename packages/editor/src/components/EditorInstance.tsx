@@ -42,8 +42,6 @@ export interface EditorInstanceProps {
   mentionEntries?: EditorProps["mentionEntries"];
   /** @deprecated Use mentionEntries instead */
   wikiEntries?: EditorProps["wikiEntries"];
-  /** 标签列表 (用于 #[ 标签选择) */
-  tags?: EditorProps["tags"];
   /** Wiki 悬浮预览 hook */
   useWikiHoverPreview?: EditorProps["useWikiHoverPreview"];
   /** Wiki 悬浮预览组件 */
@@ -67,7 +65,6 @@ export function EditorInstance({
   readOnly = false,
   mentionEntries,
   wikiEntries,
-  tags,
   useWikiHoverPreview,
   WikiHoverPreview,
 }: EditorInstanceProps): React.ReactElement {
@@ -176,7 +173,6 @@ export function EditorInstance({
           readOnly={readOnly}
           namespace={`editor-${tabId}`}
           mentionEntries={entries}
-          tags={tags}
           useWikiHoverPreview={useWikiHoverPreview}
           WikiHoverPreview={WikiHoverPreview}
         />

@@ -5,7 +5,7 @@
  */
 import { useCallback, useEffect, useRef } from "react";
 import type { SerializedEditorState } from "lexical";
-import { Editor, type MentionEntry, type TagInterface } from "@novel-editor/editor";
+import { Editor, type MentionEntry } from "@novel-editor/editor";
 import { cn } from "@/lib/utils";
 import type { EditorTab, EditorInstanceState } from "@/stores/editor-tabs";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
@@ -26,8 +26,6 @@ interface MultiEditorWorkspaceProps {
   placeholder?: string;
   /** 提及条目列表 (用于 @ 提及) */
   mentionEntries?: MentionEntry[];
-  /** 标签列表 (用于 #[ 标签选择) */
-  tags?: TagInterface[];
 }
 
 /**
@@ -43,7 +41,6 @@ export function MultiEditorWorkspace({
   onScrollChange,
   placeholder = "开始写作...",
   mentionEntries,
-  tags,
 }: MultiEditorWorkspaceProps) {
   // 存储每个编辑器容器的 ref
   const containerRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -118,7 +115,6 @@ export function MultiEditorWorkspace({
                   placeholder={placeholder}
                   namespace={`editor-${tab.id}`}
                   mentionEntries={mentionEntries}
-                  tags={tags}
                   useWikiHoverPreview={useWikiHoverPreview}
                   WikiHoverPreview={WikiHoverPreview}
                 />
