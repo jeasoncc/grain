@@ -6,7 +6,7 @@
  * Requirements: 2.1
  */
 
-import { useMemo, useRef, useCallback } from "react";
+import { useMemo, useRef, useCallback, useState, useEffect } from "react";
 import { Tree, type NodeRendererProps, type NodeApi } from "react-arborist";
 import { FolderPlus, Plus, Calendar, MoreHorizontal, Pencil, Trash2, ChevronRight, ChevronDown, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -286,6 +286,27 @@ export function FileTree({
   const iconTheme = useIconTheme();
   const { currentTheme } = useTheme();
 
+  // Container sizing
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        setDimensions({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
+        });
+      }
+    });
+
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   // Handle selection change
   const handleSelect = useCallback(
     (selectedNodes: NodeApi<TreeData>[]) => {
@@ -398,7 +419,7 @@ export function FileTree({
       </div>
 
       {/* Tree Content */}
-      <div className="flex-1 overflow-hidden group/tree">
+      <div className="flex-1 overflow-hidden group/tree pb-2" ref={containerRef}>
         {treeData.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             {(() => {
@@ -430,8 +451,9 @@ export function FileTree({
             overscanCount={5}
             openByDefault={false}
             disableMultiSelection
-            className="h-full w-full [&>div]:w-full outline-none"
-            width="100%"
+            className="outline-none"
+            width={dimensions.width}
+            height={dimensions.height}
           >
             {renderNode}
           </Tree>
