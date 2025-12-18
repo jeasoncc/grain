@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import type { WikiPreviewState, WikiHoverPreviewHook } from "@novel-editor/editor";
+import type { WikiPreviewState, WikiHoverPreviewHook } from "@grain/editor";
 
 export function useWikiHoverPreview(): WikiHoverPreviewHook {
   const [previewState, setPreviewState] = useState<WikiPreviewState>({

@@ -9,10 +9,10 @@ import { cn } from "@/lib/utils";
 import { smoothScrollTo } from "@/lib/smooth-scroll";
 
 const navLinks = [
-  { name: "下载", href: "/download" },
-  { name: "文档", href: "/docs" },
-  { name: "关于", href: "/about" },
-  { name: "捐赠", href: "/donate" },
+  { name: "Download", href: "/download" },
+  { name: "Docs", href: "/docs" },
+  { name: "About", href: "/about" },
+  { name: "Donate", href: "/donate" },
 ];
 
 export function Header() {
@@ -73,7 +73,7 @@ export function Header() {
                 <div className="absolute inset-0 rounded-lg bg-gray-200/50 dark:bg-gray-700/50 blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <FileText className="w-8 h-8 text-gray-900 dark:text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
               </div>
-              <span className="text-xl font-bold tracking-tight">Novel Editor</span>
+              <span className="text-xl font-bold tracking-tight">Grain</span>
             </Link>
             <div className="hidden md:flex items-center gap-1">
               {navLinks.map((link) => (
@@ -87,14 +87,14 @@ export function Header() {
                 </Link>
               ))}
               <a
-                href="https://github.com/jeasoncc/novel-editor"
+                href="https://github.com/jeasoncc/grain"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition font-medium"
               >
                 GitHub
               </a>
-              <div className="w-10 h-10" /> {/* 占位符 */}
+              <div className="w-10 h-10" /> {/* placeholder */}
             </div>
             <div className="md:hidden flex items-center gap-2">
               <div className="w-10 h-10" /> {/* 占位符 */}
@@ -134,7 +134,7 @@ export function Header() {
               <div className="absolute inset-0 rounded-lg bg-gray-200/50 dark:bg-gray-700/50 blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <FileText className="w-8 h-8 text-gray-900 dark:text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
             </div>
-            <span className="text-xl font-bold tracking-tight">Novel Editor</span>
+            <span className="text-xl font-bold tracking-tight">Grain</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -162,7 +162,7 @@ export function Header() {
               );
             })}
             <a
-              href="https://github.com/jeasoncc/novel-editor"
+              href="https://github.com/jeasoncc/grain"
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition font-medium"
@@ -239,7 +239,7 @@ export function Header() {
                 );
               })}
               <a
-                href="https://github.com/jeasoncc/novel-editor"
+                href="https://github.com/jeasoncc/grain"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition font-medium"

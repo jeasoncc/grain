@@ -37,7 +37,7 @@ import { getNodeContent } from "@/services/nodes";
 import { useWikiFiles } from "@/services/wiki-files";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
 import { WikiHoverPreview } from "@/components/blocks/wiki-hover-preview";
-import { MultiEditorContainer, type MentionEntry } from "@novel-editor/editor";
+import { MultiEditorContainer, type MentionEntry } from "@grain/editor";
 
 interface StoryWorkspaceProps {
 	workspaces: WorkspaceInterface[];

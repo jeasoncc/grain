@@ -23,9 +23,9 @@ import type {
 } from "./schema.ts";
 
 // ==============================
-// 小说编辑器数据库 - Dexie 初始化
+// Grain 数据库 - Dexie 初始化
 // ==============================
-export class NovelEditorDB extends Dexie {
+export class GrainDB extends Dexie {
 	users!: Table<UserInterface, string>;
 	projects!: Table<ProjectInterface, string>;
 	drawings!: Table<DrawingInterface, string>;
@@ -34,7 +34,7 @@ export class NovelEditorDB extends Dexie {
 	nodes!: Table<NodeInterface, string>;
 
 	constructor() {
-		super("NovelEditorDB");
+		super("GrainDB");
 
 		// 保留所有版本历史以支持数据库迁移
 		this.version(1).stores({
@@ -114,7 +114,7 @@ export class NovelEditorDB extends Dexie {
 		});
 
 		this.open()
-			.then(() => logger.success("NovelEditorDB initialized"))
+			.then(() => logger.success("GrainDB initialized"))
 			.catch((err) => logger.error("Dexie open error:", err));
 	}
 
@@ -422,4 +422,7 @@ export async function initDatabase() {
 // ==============================
 // 单例Export
 // ==============================
-export const db = new NovelEditorDB();
+export const db = new GrainDB();
+
+// Legacy alias for backward compatibility
+export const NovelEditorDB = GrainDB;

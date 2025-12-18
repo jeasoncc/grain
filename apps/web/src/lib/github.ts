@@ -34,7 +34,7 @@ export interface PlatformFile {
 
 const GITHUB_API_BASE = "https://api.github.com";
 const REPO_OWNER = "jeasoncc";
-const REPO_NAME = "novel-editor";
+const REPO_NAME = "grain";
 
 /**
  * 从 GitHub API 获取最新的 release
@@ -46,7 +46,7 @@ export async function getLatestRelease(): Promise<GitHubRelease | null> {
       {
         headers: {
           Accept: "application/vnd.github.v3+json",
-          "User-Agent": "Novel-Editor-Website",
+          "User-Agent": "Grain-Website",
         },
         next: { revalidate: 3600 }, // 缓存 1 小时
       }
@@ -74,7 +74,7 @@ export async function getAllReleases(): Promise<GitHubRelease[]> {
       {
         headers: {
           Accept: "application/vnd.github.v3+json",
-          "User-Agent": "Novel-Editor-Website",
+          "User-Agent": "Grain-Website",
         },
         next: { revalidate: 3600 }, // 缓存 1 小时
       }

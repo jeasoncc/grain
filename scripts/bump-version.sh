@@ -144,33 +144,33 @@ update_winget_version() {
     fi
     
     # 更新版本文件
-    if [ -f "$winget_dir/Jeason.NovelEditor.yaml" ]; then
+    if [ -f "$winget_dir/Jeason.Grain.yaml" ]; then
         if [[ "$OSTYPE" == "darwin"* ]]; then
-            sed -i '' "s/^PackageVersion: .*/PackageVersion: $new_version/" "$winget_dir/Jeason.NovelEditor.yaml"
+            sed -i '' "s/^PackageVersion: .*/PackageVersion: $new_version/" "$winget_dir/Jeason.Grain.yaml"
         else
-            sed -i "s/^PackageVersion: .*/PackageVersion: $new_version/" "$winget_dir/Jeason.NovelEditor.yaml"
+            sed -i "s/^PackageVersion: .*/PackageVersion: $new_version/" "$winget_dir/Jeason.Grain.yaml"
         fi
-        echo -e "${GREEN}✓${NC} 更新 winget-manifests/Jeason.NovelEditor.yaml -> $new_version"
+        echo -e "${GREEN}✓${NC} 更新 winget-manifests/Jeason.Grain.yaml -> $new_version"
     fi
     
     # 更新安装器文件
-    if [ -f "$winget_dir/Jeason.NovelEditor.installer.yaml" ]; then
+    if [ -f "$winget_dir/Jeason.Grain.installer.yaml" ]; then
         if [[ "$OSTYPE" == "darwin"* ]]; then
-            sed -i '' "s/^PackageVersion: .*/PackageVersion: $new_version/" "$winget_dir/Jeason.NovelEditor.installer.yaml"
+            sed -i '' "s/^PackageVersion: .*/PackageVersion: $new_version/" "$winget_dir/Jeason.Grain.installer.yaml"
         else
-            sed -i "s/^PackageVersion: .*/PackageVersion: $new_version/" "$winget_dir/Jeason.NovelEditor.installer.yaml"
+            sed -i "s/^PackageVersion: .*/PackageVersion: $new_version/" "$winget_dir/Jeason.Grain.installer.yaml"
         fi
-        echo -e "${GREEN}✓${NC} 更新 winget-manifests/Jeason.NovelEditor.installer.yaml -> $new_version"
+        echo -e "${GREEN}✓${NC} 更新 winget-manifests/Jeason.Grain.installer.yaml -> $new_version"
     fi
     
     # 更新 locale 文件
-    if [ -f "$winget_dir/Jeason.NovelEditor.locale.zh-CN.yaml" ]; then
+    if [ -f "$winget_dir/Jeason.Grain.locale.zh-CN.yaml" ]; then
         if [[ "$OSTYPE" == "darwin"* ]]; then
-            sed -i '' "s/^PackageVersion: .*/PackageVersion: $new_version/" "$winget_dir/Jeason.NovelEditor.locale.zh-CN.yaml"
+            sed -i '' "s/^PackageVersion: .*/PackageVersion: $new_version/" "$winget_dir/Jeason.Grain.locale.zh-CN.yaml"
         else
-            sed -i "s/^PackageVersion: .*/PackageVersion: $new_version/" "$winget_dir/Jeason.NovelEditor.locale.zh-CN.yaml"
+            sed -i "s/^PackageVersion: .*/PackageVersion: $new_version/" "$winget_dir/Jeason.Grain.locale.zh-CN.yaml"
         fi
-        echo -e "${GREEN}✓${NC} 更新 winget-manifests/Jeason.NovelEditor.locale.zh-CN.yaml -> $new_version"
+        echo -e "${GREEN}✓${NC} 更新 winget-manifests/Jeason.Grain.locale.zh-CN.yaml -> $new_version"
     fi
 }
 

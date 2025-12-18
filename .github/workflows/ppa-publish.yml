@@ -108,7 +108,7 @@ jobs:
           DEB_NAME="${{ steps.deb_info.outputs.deb_name }}"
           
           # 创建工作目录
-          WORK_DIR="novel-editor-$VERSION"
+          WORK_DIR="grain-$VERSION"
           mkdir -p "$WORK_DIR"
           cd "$WORK_DIR"
           
@@ -117,21 +117,21 @@ jobs:
           tar -xf data.tar.*
           
           # 创建源码目录结构
-          mkdir -p "novel-editor-$VERSION"
+          mkdir -p "grain-$VERSION"
           
           # 复制应用文件
           if [ -d "usr" ]; then
-            cp -r usr "novel-editor-$VERSION/"
+            cp -r usr "grain-$VERSION/"
           fi
           
-          cd "novel-editor-$VERSION"
+          cd "grain-$VERSION"
           
           # 创建 debian 目录
           mkdir -p debian
           
           # 创建 debian/control
           cat > debian/control << EOF
-          Source: novel-editor
+          Source: grain
           Section: editors
           Priority: optional
           Maintainer: Jeason <xiaomiquan@aliyun.com>
@@ -139,7 +139,7 @@ jobs:
           Standards-Version: 4.1.2
           Homepage: https://github.com/${{ github.repository }}
           
-          Package: novel-editor
+          Package: grain
           Architecture: amd64
           Depends: \${shlibs:Depends}, \${misc:Depends}
           Description: A modern, powerful novel writing application
@@ -154,7 +154,7 @@ jobs:
           
           # 创建 debian/changelog (使用 jammy 作为目标发行版)
           cat > debian/changelog << EOF
-          novel-editor ($VERSION-1) jammy; urgency=medium
+          grain ($VERSION-1) jammy; urgency=medium
           
             * New upstream release $VERSION
             * See https://github.com/${{ github.repository }}/releases/tag/desktop-v$VERSION
@@ -165,7 +165,7 @@ jobs:
           # 创建 debian/copyright
           cat > debian/copyright << EOF
           Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-          Upstream-Name: novel-editor
+          Upstream-Name: grain
           Source: https://github.com/${{ github.repository }}
           
           Files: *
@@ -204,8 +204,8 @@ jobs:
           
           override_dh_auto_install:
           	# Copy files to package directory
-          	mkdir -p debian/novel-editor
-          	cp -r usr debian/novel-editor/
+          	mkdir -p debian/grain
+          	cp -r usr debian/grain/
           EOF
           
           chmod +x debian/rules
@@ -222,12 +222,12 @@ jobs:
       - name: Build source package
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          cd "novel-editor-$VERSION/novel-editor-$VERSION"
+          cd "grain-$VERSION/grain-$VERSION"
           
           # 创建原始 tarball
           cd ..
-          tar -czf "novel-editor_$VERSION.orig.tar.gz" "novel-editor-$VERSION"
-          cd "novel-editor-$VERSION"
+          tar -czf "grain_$VERSION.orig.tar.gz" "grain-$VERSION"
+          cd "grain-$VERSION"
           
           # 构建源码包
           if [ "$SKIP_SIGNING" = "true" ]; then
@@ -245,7 +245,7 @@ jobs:
             # 然后手动签名
             cd ..
             if [ -n "$GPG_PASSPHRASE" ]; then
-              echo "$GPG_PASSPHRASE" | gpg --batch --pinentry-mode loopback --passphrase-fd 0 --armor --detach-sign -u "$GPG_KEY_ID" "novel-editor_$VERSION-1.dsc" || echo "⚠ DSC signing skipped"
+              echo "$GPG_PASSPHRASE" | gpg --batch --pinentry-mode loopback --passphrase-fd 0 --armor --detach-sign -u "$GPG_KEY_ID" "grain_$VERSION-1.dsc" || echo "⚠ DSC signing skipped"
             fi
           fi
           
@@ -258,7 +258,7 @@ jobs:
       - name: Test package with lintian
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          cd "novel-editor-$VERSION"
+          cd "grain-$VERSION"
           
           # 检查源码包
           lintian -i *.changes || echo "⚠ Lintian warnings found (non-fatal)"
@@ -271,7 +271,7 @@ jobs:
           LAUNCHPAD_PPA: ${{ secrets.LAUNCHPAD_PPA }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          cd "novel-editor-$VERSION"
+          cd "grain-$VERSION"
           
           if [ -z "$LAUNCHPAD_PPA" ]; then
             echo "⚠ LAUNCHPAD_PPA not set, skipping upload"
@@ -300,16 +300,16 @@ jobs:
           echo "📥 Users can install with:"
           echo "   sudo add-apt-repository $LAUNCHPAD_PPA"
           echo "   sudo apt update"
-          echo "   sudo apt install novel-editor"
+          echo "   sudo apt install grain"
 
       - name: Upload PPA artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ppa-package
           path: |
-            novel-editor-*/*.changes
-            novel-editor-*/*.dsc
-            novel-editor-*/*.tar.*
+            grain-*/*.changes
+            grain-*/*.dsc
+            grain-*/*.tar.*
           retention-days: 30
 
       - name: Create success summary
@@ -324,9 +324,9 @@ jobs:
           echo "✅ Lintian checked"
           echo ""
           echo "📦 Installation commands:"
-          echo "   sudo add-apt-repository ppa:username/novel-editor"
+          echo "   sudo add-apt-repository ppa:username/grain"
           echo "   sudo apt update"
-          echo "   sudo apt install novel-editor"
+          echo "   sudo apt install grain"
           echo ""
           echo "🔗 Supported distributions:"
           echo "   - Ubuntu (all supported versions)"

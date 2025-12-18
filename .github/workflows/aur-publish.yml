@@ -103,12 +103,12 @@ jobs:
       - name: Publish to AUR
         uses: KSXGitHub/github-actions-deploy-aur@v2.7.2
         with:
-          pkgname: novel-editor
+          pkgname: grain
           pkgbuild: aur/PKGBUILD
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: "Update novel-editor to version ${{ steps.version.outputs.version }}"
+          commit_message: "Update grain to version ${{ steps.version.outputs.version }}"
           ssh_keyscan_types: rsa,ecdsa,ed25519
           force_push: true
       
@@ -127,16 +127,16 @@ jobs:
                 body: `🎉 **AUR 发布成功！**
             
             **版本：** ${version}
-            **包名：** novel-editor
+            **包名：** grain
             
             **安装命令：**
             \`\`\`bash
-            yay -S novel-editor
+            yay -S grain
             # 或
-            paru -S novel-editor
+            paru -S grain
             \`\`\`
             
-            **AUR 页面：** https://aur.archlinux.org/packages/novel-editor`
+            **AUR 页面：** https://aur.archlinux.org/packages/grain`
               });
             } catch (error) {
               console.log('无法创建评论，但 AUR 发布成功:', error.message);

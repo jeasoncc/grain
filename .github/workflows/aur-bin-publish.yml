@@ -41,7 +41,7 @@ jobs:
           fi
           
           # 检查 DEB 文件是否存在
-          DEB_URL="https://github.com/${{ github.repository }}/releases/download/desktop-v$VERSION/novel-editor_${VERSION}_amd64.deb"
+          DEB_URL="https://github.com/${{ github.repository }}/releases/download/desktop-v$VERSION/grain_${VERSION}_amd64.deb"
           echo "🔍 Checking DEB file: $DEB_URL"
           if ! curl -s -f -I "$DEB_URL" > /dev/null; then
             echo "❌ DEB file not found: $DEB_URL"
@@ -63,7 +63,7 @@ jobs:
           sed -i "s/^pkgver=.*/pkgver=$VERSION/" PKGBUILD
           
           # 更新 source URL
-          sed -i "s|desktop-v.*\/novel-editor_.*_amd64\.deb|desktop-v$VERSION/novel-editor_${VERSION}_amd64.deb|" PKGBUILD
+          sed -i "s|desktop-v.*\/grain_.*_amd64\.deb|desktop-v$VERSION/grain_${VERSION}_amd64.deb|" PKGBUILD
           
           # 显示更新后的内容
           echo "📄 Updated PKGBUILD:"
@@ -91,7 +91,7 @@ jobs:
           echo "🧪 Testing DEB file extraction..."
           
           # 下载 DEB 文件进行测试
-          DEB_URL="https://github.com/${{ github.repository }}/releases/download/desktop-v$VERSION/novel-editor_${VERSION}_amd64.deb"
+          DEB_URL="https://github.com/${{ github.repository }}/releases/download/desktop-v$VERSION/grain_${VERSION}_amd64.deb"
           curl -L -o test.deb "$DEB_URL"
           
           # 检查 DEB 包内容
@@ -144,12 +144,12 @@ jobs:
       - name: Publish to AUR (Binary Package)
         uses: KSXGitHub/github-actions-deploy-aur@v2.7.2
         with:
-          pkgname: novel-editor-bin
+          pkgname: grain-bin
           pkgbuild: aur/PKGBUILD
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: "Update novel-editor-bin to version ${{ steps.version.outputs.version }}"
+          commit_message: "Update grain-bin to version ${{ steps.version.outputs.version }}"
           ssh_keyscan_types: rsa,ecdsa,ed25519
           force_push: true
       
@@ -168,13 +168,13 @@ jobs:
                 body: `🎉 **AUR 二进制包发布成功！**
             
             **版本：** ${version}
-            **包名：** novel-editor-bin
+            **包名：** grain-bin
             
             **安装命令（快速安装，无需编译）：**
             \`\`\`bash
-            yay -S novel-editor-bin
+            yay -S grain-bin
             # 或
-            paru -S novel-editor-bin
+            paru -S grain-bin
             \`\`\`
             
             **优势：**
@@ -182,7 +182,7 @@ jobs:
             - ✅ 无需构建依赖（Rust、Bun 等）
             - ✅ 安装包只有 ~6MB
             
-            **AUR 页面：** https://aur.archlinux.org/packages/novel-editor-bin`
+            **AUR 页面：** https://aur.archlinux.org/packages/grain-bin`
               });
             } catch (error) {
               console.log('无法创建评论，但 AUR 二进制包发布成功:', error.message);

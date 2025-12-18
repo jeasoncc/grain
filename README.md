@@ -33,10 +33,10 @@ Grain is a minimalist writing sanctuary for long-form content. Distraction-free 
 | Platform | Method | Install Command / Link |
 |----------|--------|------------------------|
 | 🪟 Windows | Microsoft Store | [Grain / 小麦](ms-windows-store://pdp/?productid=9NV7M2PW25B3) |
-| 🪟 Windows | Direct Download | [MSI / NSIS / MSIX](https://github.com/jeasoncc/grain-editor/releases) |
-| 🍎 macOS | Direct Download | [DMG (Intel / Apple Silicon)](https://github.com/jeasoncc/grain-editor/releases) |
-| 🐧 Linux | Snap Store | `sudo snap install grain-editor` |
-| 🐧 Linux | Direct Download | [DEB / RPM / AppImage](https://github.com/jeasoncc/grain-editor/releases) |
+| 🪟 Windows | Direct Download | [MSI / NSIS / MSIX](https://github.com/jeasoncc/grain/releases) |
+| 🍎 macOS | Direct Download | [DMG (Intel / Apple Silicon)](https://github.com/jeasoncc/grain/releases) |
+| 🐧 Linux | Snap Store | `sudo snap install grain` |
+| 🐧 Linux | Direct Download | [DEB / RPM / AppImage](https://github.com/jeasoncc/grain/releases) |
 
 ---
 

@@ -129,7 +129,7 @@ export const useThemeStore = create<ThemeState>()(
 			},
 		}),
 		{
-			name: "novel-editor-theme",
+			name: "grain-theme",
 			partialize: (state) => ({
 				themeKey: state.themeKey,
 				mode: state.mode,

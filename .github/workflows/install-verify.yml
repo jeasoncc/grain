@@ -22,7 +22,7 @@ on:
         type: string
 
 env:
-  PACKAGE_ID: novel-editor
+  PACKAGE_ID: grain
   PACKAGE_NAME: Novel Editor
 
 jobs:
@@ -61,7 +61,7 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ needs.get-version.outputs.version }}"
-          $fileName = "novel-editor_${version}_x64_zh-CN.msi"
+          $fileName = "grain_${version}_x64_zh-CN.msi"
           $url = "https://github.com/${{ github.repository }}/releases/download/desktop-v$version/$fileName"
           
           Write-Host "📥 Downloading MSI: $url"
@@ -96,7 +96,7 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ needs.get-version.outputs.version }}"
-          $fileName = "novel-editor_${version}_x64-setup.exe"
+          $fileName = "grain_${version}_x64-setup.exe"
           $url = "https://github.com/${{ github.repository }}/releases/download/desktop-v$version/$fileName"
           
           Write-Host "📥 Downloading NSIS: $url"
@@ -109,7 +109,7 @@ jobs:
             $proc = Start-Process $fileName -ArgumentList "/S" -Wait -PassThru
             if ($proc.ExitCode -eq 0) {
               Write-Host "✅ NSIS installation successful"
-              $uninstaller = "$env:LOCALAPPDATA\novel-editor\uninstall.exe"
+              $uninstaller = "$env:LOCALAPPDATA\grain\uninstall.exe"
               if (Test-Path $uninstaller) {
                 Start-Process $uninstaller -ArgumentList "/S" -Wait
                 Write-Host "✅ NSIS uninstallation successful"
@@ -160,14 +160,14 @@ jobs:
           Write-Host "🔍 Checking Chocolatey package availability..."
           
           # 搜索包
-          $result = choco search novel-editor --exact 2>&1
+          $result = choco search grain --exact 2>&1
           
-          if ($result -match "novel-editor") {
+          if ($result -match "grain") {
             Write-Host "✅ Package found in Chocolatey"
             Write-Host $result
             
             # 显示包信息
-            choco info novel-editor
+            choco info grain
           } else {
             Write-Host "⚠ Package not yet available in Chocolatey (may be pending review)"
           }
@@ -190,9 +190,9 @@ jobs:
           }
           
           # 搜索包
-          $result = scoop search novel-editor 2>&1
+          $result = scoop search grain 2>&1
           
-          if ($result -match "novel-editor") {
+          if ($result -match "grain") {
             Write-Host "✅ Package found in Scoop"
             Write-Host $result
           } else {
@@ -210,7 +210,7 @@ jobs:
       - name: Download and test ARM64 DMG
         run: |
           VERSION="${{ needs.get-version.outputs.version }}"
-          FILE="novel-editor_${VERSION}_aarch64.dmg"
+          FILE="grain_${VERSION}_aarch64.dmg"
           URL="https://github.com/${{ github.repository }}/releases/download/desktop-v$VERSION/$FILE"
           
           echo "📥 Downloading ARM64 DMG: $URL"
@@ -241,7 +241,7 @@ jobs:
       - name: Download and test x64 DMG
         run: |
           VERSION="${{ needs.get-version.outputs.version }}"
-          FILE="novel-editor_${VERSION}_x64.dmg"
+          FILE="grain_${VERSION}_x64.dmg"
           URL="https://github.com/${{ github.repository }}/releases/download/desktop-v$VERSION/$FILE"
           
           echo "📥 Downloading x64 DMG: $URL"
@@ -274,9 +274,9 @@ jobs:
           echo "🔍 Checking Homebrew cask availability..."
           
           # 搜索 cask
-          if brew search --cask novel-editor 2>/dev/null | grep -q "novel-editor"; then
+          if brew search --cask grain 2>/dev/null | grep -q "grain"; then
             echo "✅ Cask found in Homebrew"
-            brew info --cask novel-editor
+            brew info --cask grain
           else
             echo "⚠ Cask not yet available in Homebrew (may be pending review)"
           fi
@@ -291,7 +291,7 @@ jobs:
       - name: Download and test DEB
         run: |
           VERSION="${{ needs.get-version.outputs.version }}"
-          FILE="novel-editor_${VERSION}_amd64.deb"
+          FILE="grain_${VERSION}_amd64.deb"
           URL="https://github.com/${{ github.repository }}/releases/download/desktop-v$VERSION/$FILE"
           
           echo "📥 Downloading DEB: $URL"
@@ -305,8 +305,8 @@ jobs:
             
             if sudo dpkg -i "$FILE" 2>/dev/null || sudo apt-get install -f -y; then
               echo "✅ DEB installation successful"
-              dpkg -L novel-editor | head -10
-              sudo dpkg -r novel-editor
+              dpkg -L grain | head -10
+              sudo dpkg -r grain
               echo "✅ DEB uninstallation successful"
             else
               echo "❌ DEB installation failed"
@@ -325,7 +325,7 @@ jobs:
       - name: Download and test AppImage
         run: |
           VERSION="${{ needs.get-version.outputs.version }}"
-          FILE="novel-editor_${VERSION}_amd64.AppImage"
+          FILE="grain_${VERSION}_amd64.AppImage"
           URL="https://github.com/${{ github.repository }}/releases/download/desktop-v$VERSION/$FILE"
           
           echo "📥 Downloading AppImage: $URL"
@@ -356,9 +356,9 @@ jobs:
           echo "🔍 Checking Snap Store availability..."
           
           # 搜索 snap
-          if snap find novel-editor 2>/dev/null | grep -q "novel-editor"; then
+          if snap find grain 2>/dev/null | grep -q "grain"; then
             echo "✅ Package found in Snap Store"
-            snap info novel-editor
+            snap info grain
           else
             echo "⚠ Package not yet available in Snap Store"
           fi
@@ -396,25 +396,25 @@ jobs:
           
           pacman -Syu --noconfirm curl jq
           
-          # 检查 novel-editor (源码构建)
-          echo "Checking novel-editor..."
-          RESULT=$(curl -s "https://aur.archlinux.org/rpc/?v=5&type=info&arg=novel-editor")
+          # 检查 grain (源码构建)
+          echo "Checking grain..."
+          RESULT=$(curl -s "https://aur.archlinux.org/rpc/?v=5&type=info&arg=grain")
           if echo "$RESULT" | jq -e '.resultcount > 0' > /dev/null; then
-            echo "✅ novel-editor found in AUR"
+            echo "✅ grain found in AUR"
             echo "$RESULT" | jq '.results[0] | {name, version, description}'
           else
-            echo "⚠ novel-editor not found in AUR"
+            echo "⚠ grain not found in AUR"
           fi
           
-          # 检查 novel-editor-bin (二进制)
+          # 检查 grain-bin (二进制)
           echo ""
-          echo "Checking novel-editor-bin..."
-          RESULT=$(curl -s "https://aur.archlinux.org/rpc/?v=5&type=info&arg=novel-editor-bin")
+          echo "Checking grain-bin..."
+          RESULT=$(curl -s "https://aur.archlinux.org/rpc/?v=5&type=info&arg=grain-bin")
           if echo "$RESULT" | jq -e '.resultcount > 0' > /dev/null; then
-            echo "✅ novel-editor-bin found in AUR"
+            echo "✅ grain-bin found in AUR"
             echo "$RESULT" | jq '.results[0] | {name, version, description}'
           else
-            echo "⚠ novel-editor-bin not found in AUR"
+            echo "⚠ grain-bin not found in AUR"
           fi
 
   # PPA 验证 (Ubuntu)
@@ -426,7 +426,7 @@ jobs:
         run: |
           echo "🔍 Checking PPA availability..."
           echo "⚠ PPA verification requires manual check"
-          echo "PPA URL: https://launchpad.net/~jeason/+archive/ubuntu/novel-editor"
+          echo "PPA URL: https://launchpad.net/~jeason/+archive/ubuntu/grain"
 
   # COPR 验证 (Fedora)
   verify-copr:
@@ -438,9 +438,9 @@ jobs:
           echo "🔍 Checking COPR availability..."
           
           # 检查 COPR API
-          RESULT=$(curl -s "https://copr.fedorainfracloud.org/api_3/project/search?query=novel-editor" || echo "{}")
+          RESULT=$(curl -s "https://copr.fedorainfracloud.org/api_3/project/search?query=grain" || echo "{}")
           
-          if echo "$RESULT" | grep -q "novel-editor"; then
+          if echo "$RESULT" | grep -q "grain"; then
             echo "✅ Package found in COPR"
             echo "$RESULT" | head -50
           else
@@ -456,7 +456,7 @@ jobs:
         run: |
           echo "🔍 Checking openSUSE OBS availability..."
           echo "⚠ OBS verification requires manual check"
-          echo "OBS URL: https://build.opensuse.org/package/show/home:jeason/novel-editor"
+          echo "OBS URL: https://build.opensuse.org/package/show/home:jeason/grain"
 
   # Gentoo 验证
   verify-gentoo:
@@ -482,8 +482,8 @@ jobs:
           
           # 检查可能的部署 URL
           URLS=(
-            "https://novel-editor.vercel.app"
-            "https://novel-editor.netlify.app"
+            "https://grain.vercel.app"
+            "https://grain.netlify.app"
           )
           
           for URL in "${URLS[@]}"; do

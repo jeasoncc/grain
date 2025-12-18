@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Grain
+Comment=A minimalist writing sanctuary for long-form content
+Exec=grain
+Icon=${SNAP}/meta/gui/grain.png
+Terminal=false
+Type=Application
+Categories=Office;WordProcessor;
+Keywords=writing;editor;notes;
+StartupWMClass=grain

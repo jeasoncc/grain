@@ -18,7 +18,7 @@ export interface ExportSettings {
   lastUsedPath: string | null;
 }
 
-const EXPORT_SETTINGS_KEY = "novel-editor-export-settings";
+const EXPORT_SETTINGS_KEY = "grain-export-settings";
 
 /**
  * 检查是否在 Tauri 环境中运行

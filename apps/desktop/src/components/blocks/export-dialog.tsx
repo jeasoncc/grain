@@ -79,14 +79,14 @@ export function ExportDialog({
 			} else if (format === "json") {
 				const json = await exportAll();
 				triggerDownload(
-					`novel-editor-backup-${new Date().toISOString().slice(0, 10)}.json`,
+					`grain-backup-${new Date().toISOString().slice(0, 10)}.json`,
 					json,
 				);
 				toast.success("JSON backup export successful");
 			} else if (format === "zip") {
 				const zipBlob = await exportAllAsZip();
 				triggerBlobDownload(
-					`novel-editor-backup-${new Date().toISOString().slice(0, 10)}.zip`,
+					`grain-backup-${new Date().toISOString().slice(0, 10)}.zip`,
 					zipBlob,
 				);
 				toast.success("ZIP archive export successful");

@@ -449,7 +449,7 @@ export async function exportToEpub(
 	const { project, nodes, rootNodes, contentMap } = await getProjectContent(projectId);
 
 	const zip = new JSZip();
-	const bookId = `novel-editor-${Date.now()}`;
+	const bookId = `grain-${Date.now()}`;
 	const title = project.title || "Untitled Work";
 	const author = project.author || "Unknown Author";
 

@@ -108,7 +108,7 @@ export const useFontSettings = create<FontSettings>()(
 			reset: () => set(DEFAULT_SETTINGS),
 		}),
 		{
-			name: "novel-editor-font-settings",
+			name: "grain-font-settings",
 		},
 	),
 );

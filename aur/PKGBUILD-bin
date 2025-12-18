@@ -1,30 +1,30 @@
 # Maintainer: Jeason <xiaomiquan@aliyun.com>
 
-pkgname=novel-editor-bin
-pkgver=0.1.42
+pkgname=grain-bin
+pkgver=0.1.91
 pkgrel=1
-pkgdesc="Professional novel writing application with advanced project management and world-building tools (binary)"
+pkgdesc="A minimalist writing sanctuary for long-form content (binary)"
 arch=('x86_64')
-url="https://github.com/jeasoncc/novel-editor"
+url="https://github.com/jeasoncc/grain"
 license=('MIT')
 depends=(
   'webkit2gtk'
   'gtk3'
   'libappindicator-gtk3'
 )
-provides=('novel-editor')
-conflicts=('novel-editor')
+provides=('grain')
+conflicts=('grain')
 source=(
-  "$pkgname-$pkgver.deb::https://github.com/jeasoncc/novel-editor/releases/download/desktop-v$pkgver/novel-editor_${pkgver}_amd64.deb"
+  "$pkgname-$pkgver.deb::https://github.com/jeasoncc/grain/releases/download/desktop-v$pkgver/grain_${pkgver}_amd64.deb"
 )
-sha256sums=('SKIP')  # 首次发布时使用 SKIP，之后更新为实际的 SHA256
+sha256sums=('SKIP')
 
 prepare() {
-  # 提取 DEB 包
+  # Extract DEB package
   cd "$srcdir"
   ar x "$pkgname-$pkgver.deb"
   
-  # 检查数据文件格式并解压
+  # Check data file format and extract
   if [ -f data.tar.xz ]; then
     tar -xf data.tar.xz
   elif [ -f data.tar.gz ]; then
@@ -40,9 +40,9 @@ prepare() {
 package() {
   cd "$srcdir"
   
-  # 复制所有文件到目标目录
+  # Copy all files to target directory
   cp -r usr "$pkgdir/"
   
-  # 确保二进制文件有执行权限
-  chmod +x "$pkgdir/usr/bin/novel-editor"
+  # Ensure binary has execute permission
+  chmod +x "$pkgdir/usr/bin/grain"
 }

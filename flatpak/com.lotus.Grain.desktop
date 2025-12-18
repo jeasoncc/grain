@@ -1,24 +1,24 @@
 [Desktop Entry]
-Name=Novel Editor
+Name=Grain
 GenericName=Novel Writing Tool
 Comment=Professional novel writing application with advanced project management
 Comment[zh_CN]=专业的小说写作工具，具有高级项目管理功能
-Exec=novel-editor %F
-Icon=com.lotus.NovelEditor
+Exec=grain %F
+Icon=com.lotus.Grain
 Type=Application
 Categories=Office;WordProcessor;Literature;Publishing;
 Keywords=novel;writing;editor;story;book;author;manuscript;creative;fiction;screenplay;character;world;building;outline;chapter;scene;plot;narrative;
 StartupNotify=true
-StartupWMClass=novel-editor
+StartupWMClass=grain
 MimeType=text/plain;text/markdown;application/json;
 Actions=new-project;open-recent;
 
 [Desktop Action new-project]
 Name=New Project
 Name[zh_CN]=新建项目
-Exec=novel-editor --new-project
+Exec=grain --new-project
 
 [Desktop Action open-recent]
 Name=Open Recent
 Name[zh_CN]=打开最近项目
-Exec=novel-editor --recent
+Exec=grain --recent

@@ -95,7 +95,7 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
             <metadata>
-              <id>novel-editor</id>
+              <id>grain</id>
               <version>$version</version>
               <packageSourceUrl>https://github.com/${{ github.repository }}</packageSourceUrl>
               <owners>Jeason</owners>
@@ -131,13 +131,13 @@ jobs:
           </package>
           "@
           
-          Set-Content -Path "$packageDir/novel-editor.nuspec" -Value $nuspec -Encoding UTF8
+          Set-Content -Path "$packageDir/grain.nuspec" -Value $nuspec -Encoding UTF8
           
           # 创建安装脚本
           $installScript = @"
           `$ErrorActionPreference = 'Stop'
           
-          `$packageName = 'novel-editor'
+          `$packageName = 'grain'
           `$toolsDir = "`$(Split-Path -parent `$MyInvocation.MyCommand.Definition)"
           `$url = '$downloadUrl'
           `$checksum = '$checksum'
@@ -163,8 +163,8 @@ jobs:
           $uninstallScript = @"
           `$ErrorActionPreference = 'Stop'
           
-          `$packageName = 'novel-editor'
-          `$softwareName = 'novel-editor*'
+          `$packageName = 'grain'
+          `$softwareName = 'grain*'
           `$installerType = 'exe'
           `$silentArgs = '/S'
           `$validExitCodes = @(0)
@@ -214,10 +214,10 @@ jobs:
         shell: pwsh
         run: |
           cd chocolatey-package
-          choco pack novel-editor.nuspec
+          choco pack grain.nuspec
           
           $version = "${{ steps.version.outputs.VERSION }}"
-          $packageFile = "novel-editor.$version.nupkg"
+          $packageFile = "grain.$version.nupkg"
           
           if (Test-Path $packageFile) {
             Write-Output "✅ Package created: $packageFile"
@@ -235,7 +235,7 @@ jobs:
           cd chocolatey-package
           
           $version = "${{ steps.version.outputs.VERSION }}"
-          $packageFile = "novel-editor.$version.nupkg"
+          $packageFile = "grain.$version.nupkg"
           
           # 测试包结构
           choco info $packageFile
@@ -249,7 +249,7 @@ jobs:
           CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
         run: |
           $version = "${{ steps.version.outputs.VERSION }}"
-          $packageFile = "chocolatey-package/novel-editor.$version.nupkg"
+          $packageFile = "chocolatey-package/grain.$version.nupkg"
           
           if ([string]::IsNullOrEmpty($env:CHOCOLATEY_API_KEY)) {
             Write-Warning "⚠ CHOCOLATEY_API_KEY not set, skipping publish"
@@ -271,10 +271,10 @@ jobs:
             Write-Output "✅ Successfully published to Chocolatey!"
             Write-Output ""
             Write-Output "🎉 Package will be available at:"
-            Write-Output "   https://community.chocolatey.org/packages/novel-editor/$version"
+            Write-Output "   https://community.chocolatey.org/packages/grain/$version"
             Write-Output ""
             Write-Output "📥 Users can install with:"
-            Write-Output "   choco install novel-editor"
+            Write-Output "   choco install grain"
           } catch {
             Write-Error "❌ Failed to publish to Chocolatey: $_"
             Write-Output ""
@@ -298,11 +298,11 @@ jobs:
           Write-Output "🎉 Chocolatey Package Summary"
           Write-Output "================================"
           Write-Output "✅ Version: $version"
-          Write-Output "✅ Package: novel-editor.$version.nupkg"
+          Write-Output "✅ Package: grain.$version.nupkg"
           Write-Output "✅ Checksum verified"
           Write-Output ""
           Write-Output "📦 Installation command:"
-          Write-Output "   choco install novel-editor"
+          Write-Output "   choco install grain"
           Write-Output ""
           Write-Output "🔗 Package URL (after approval):"
-          Write-Output "   https://community.chocolatey.org/packages/novel-editor"
+          Write-Output "   https://community.chocolatey.org/packages/grain"

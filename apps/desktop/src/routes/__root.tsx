@@ -107,7 +107,7 @@ function RootComponent() {
 					<div className="flex-1 flex h-full min-w-0 overflow-hidden">
 						<PanelGroup
 							direction="horizontal"
-							autoSaveId="novel-editor-main-layout"
+							autoSaveId="grain-main-layout"
 						>
 							{/* Sidebar Panel - only show when open */}
 							{unifiedSidebarOpen && activePanel && (

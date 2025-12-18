@@ -133,12 +133,12 @@ jobs:
           mkdir -p homebrew-cask
           
           # 创建 Cask 文件
-          cat > homebrew-cask/novel-editor.rb << EOF
-          cask "novel-editor" do
+          cat > homebrew-cask/grain.rb << EOF
+          cask "grain" do
             version "$VERSION"
             sha256 "$SHA256"
           
-            url "https://github.com/${{ github.repository }}/releases/download/desktop-v#{version}/novel-editor_#{version}_aarch64.dmg",
+            url "https://github.com/${{ github.repository }}/releases/download/desktop-v#{version}/grain_#{version}_aarch64.dmg",
                 verified: "github.com/${{ github.repository }}/"
             name "Novel Editor"
             desc "Modern, powerful novel writing application for serious writers"
@@ -149,14 +149,14 @@ jobs:
               regex(/desktop-v?(\d+(?:\.\d+)+)/i)
             end
           
-            app "novel-editor.app"
+            app "grain.app"
           
             zap trash: [
-              "~/Library/Application Support/com.lotus.novel-editor",
-              "~/Library/Caches/com.lotus.novel-editor",
-              "~/Library/Preferences/com.lotus.novel-editor.plist",
-              "~/Library/Saved Application State/com.lotus.novel-editor.savedState",
-              "~/Library/WebKit/com.lotus.novel-editor",
+              "~/Library/Application Support/com.lotus.grain",
+              "~/Library/Caches/com.lotus.grain",
+              "~/Library/Preferences/com.lotus.grain.plist",
+              "~/Library/Saved Application State/com.lotus.grain.savedState",
+              "~/Library/WebKit/com.lotus.grain",
             ]
           end
           EOF
@@ -164,7 +164,7 @@ jobs:
           echo "✅ Homebrew Cask created"
           echo ""
           echo "📄 Cask content:"
-          cat homebrew-cask/novel-editor.rb
+          cat homebrew-cask/grain.rb
 
       - name: Install Homebrew and test cask
         run: |
@@ -178,10 +178,10 @@ jobs:
           
           # 验证 cask 语法（使用新的命令格式）
           echo "Validating cask syntax..."
-          brew style --cask homebrew-cask/novel-editor.rb || echo "Style check completed (warnings are acceptable)"
+          brew style --cask homebrew-cask/grain.rb || echo "Style check completed (warnings are acceptable)"
           
           # 验证 Ruby 语法
-          ruby -c homebrew-cask/novel-editor.rb
+          ruby -c homebrew-cask/grain.rb
           
           echo "✅ Cask syntax validation passed"
 
@@ -204,22 +204,22 @@ jobs:
           cd homebrew-cask
           
           # 创建新分支
-          BRANCH_NAME="novel-editor-$VERSION"
+          BRANCH_NAME="grain-$VERSION"
           git checkout -b "$BRANCH_NAME"
           
           # 复制 cask 文件
-          cp ../homebrew-cask/novel-editor.rb Casks/n/novel-editor.rb
+          cp ../homebrew-cask/grain.rb Casks/n/grain.rb
           
           # 提交更改
-          git add Casks/n/novel-editor.rb
-          git commit -m "Add novel-editor $VERSION"
+          git add Casks/n/grain.rb
+          git commit -m "Add grain $VERSION"
           
           echo "✅ Prepared Homebrew Cask update"
           echo ""
           echo "📋 Next steps (manual):"
           echo "1. Fork https://github.com/Homebrew/homebrew-cask"
           echo "2. Add the cask file to Casks/n/ directory"
-          echo "3. Create PR with title: 'Add novel-editor $VERSION'"
+          echo "3. Create PR with title: 'Add grain $VERSION'"
           echo ""
           echo "📄 Cask file ready in artifacts"
 
@@ -227,7 +227,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: homebrew-cask
-          path: "homebrew-cask/novel-editor.rb"
+          path: "homebrew-cask/grain.rb"
           retention-days: 30
 
       - name: Create success summary
@@ -240,11 +240,11 @@ jobs:
           echo "========================"
           echo "✅ Version: $VERSION"
           echo "✅ Architecture: $ARCH"
-          echo "✅ Cask: novel-editor.rb"
+          echo "✅ Cask: grain.rb"
           echo "✅ SHA256 verified"
           echo ""
           echo "📦 Installation command (after approval):"
-          echo "   brew install --cask novel-editor"
+          echo "   brew install --cask grain"
           echo ""
           echo "🔗 Repository:"
           echo "   https://github.com/Homebrew/homebrew-cask"

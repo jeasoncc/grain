@@ -14,21 +14,21 @@ export function OpenSourceBadges({ className }: OpenSourceBadgesProps) {
       icon: <Shield className="w-4 h-4" />,
       href: "/license",
       text: "MIT License",
-      description: "开源许可证",
+      description: "Open source license",
     },
     {
       name: "GitHub",
       icon: <Github className="w-4 h-4" />,
-      href: "https://github.com/jeasoncc/novel-editor",
+      href: "https://github.com/jeasoncc/grain",
       text: "View on GitHub",
-      description: "查看源代码",
+      description: "View source code",
     },
     {
       name: "Contributions",
       icon: <Code className="w-4 h-4" />,
       href: "/docs/contributing",
       text: "Contributing",
-      description: "参与贡献",
+      description: "Join us",
     },
   ];
 

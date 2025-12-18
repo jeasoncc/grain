@@ -68,4 +68,4 @@ src/
 ## Import Aliases
 
 - `@/*` → `./src/*` (in all apps)
-- `@novel-editor/editor` → shared editor package
+- `@grain/editor` → shared editor package

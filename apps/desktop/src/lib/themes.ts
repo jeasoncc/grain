@@ -81,7 +81,7 @@ export const themes: Theme[] = [
 	{
 		key: "default-light",
 		name: "Default Light",
-		description: "默认浅色主题",
+		description: "The default light theme for the editor.",
 		type: "light",
 		colors: {
 			background: "#ffffff",
@@ -122,7 +122,7 @@ export const themes: Theme[] = [
 	{
 		key: "github-light",
 		name: "GitHub Light",
-		description: "GitHub 浅色主题",
+		description: "A light theme inspired by GitHub.",
 		type: "light",
 		colors: {
 			background: "#ffffff",
@@ -163,7 +163,7 @@ export const themes: Theme[] = [
 	{
 		key: "solarized-light",
 		name: "Solarized Light",
-		description: "护眼浅色主题",
+		description: "A theme designed to reduce eye strain.",
 		type: "light",
 		colors: {
 			background: "#fdf6e3",
@@ -201,7 +201,7 @@ export const themes: Theme[] = [
 	{
 		key: "quiet-light",
 		name: "Quiet Light",
-		description: "柔和温暖的浅色主题",
+		description: "A soft and warm light theme.",
 		type: "light",
 		colors: {
 			background: "#f5f5f5",
@@ -253,7 +253,7 @@ export const themes: Theme[] = [
 	{
 		key: "light-plus",
 		name: "Light+",
-		description: "VSCode 默认浅色主题",
+		description: "The default light theme from VS Code.",
 		type: "light",
 		colors: {
 			background: "#ffffff",
@@ -291,7 +291,7 @@ export const themes: Theme[] = [
 	{
 		key: "atom-one-light",
 		name: "Atom One Light",
-		description: "流行的 Atom 浅色主题",
+		description: "A popular light theme from Atom.",
 		type: "light",
 		colors: {
 			background: "#fafafa",
@@ -329,7 +329,7 @@ export const themes: Theme[] = [
 	{
 		key: "winter-light",
 		name: "Winter is Coming (Light)",
-		description: "清新的蓝色调浅色主题",
+		description: "A fresh light theme with blue tones.",
 		type: "light",
 		colors: {
 			background: "#ffffff",
@@ -367,7 +367,7 @@ export const themes: Theme[] = [
 	{
 		key: "ayu-light",
 		name: "Ayu Light",
-		description: "现代简约的浅色主题",
+		description: "A modern and minimalistic light theme.",
 		type: "light",
 		colors: {
 			background: "#fafafa",
@@ -405,7 +405,7 @@ export const themes: Theme[] = [
 	{
 		key: "gruvbox-light",
 		name: "Gruvbox Light",
-		description: "复古温暖浅色主题",
+		description: "A retro-style warm light theme.",
 		type: "light",
 		colors: {
 			background: "#fbf1c7",
@@ -746,7 +746,7 @@ export const themes: Theme[] = [
 	{
 		key: "dawn",
 		name: "Dawn",
-		description: "柔和的黎明主题",
+		description: "A soft dawn-inspired theme.",
 		type: "light",
 		colors: {
 			background: "#F9F9F9",
@@ -784,7 +784,7 @@ export const themes: Theme[] = [
 	{
 		key: "min-light",
 		name: "Min Light",
-		description: "极简纯白主题",
+		description: "A minimalistic pure white theme.",
 		type: "light",
 		colors: {
 			background: "#ffffff",
@@ -822,7 +822,7 @@ export const themes: Theme[] = [
 	{
 		key: "flat-light",
 		name: "Flat Light",
-		description: "扁平化清爽主题",
+		description: "A flat and clean light theme.",
 		type: "light",
 		colors: {
 			background: "#f2f2f2",
@@ -860,7 +860,7 @@ export const themes: Theme[] = [
 	{
 		key: "vitesse-light",
 		name: "Vitesse Light",
-		description: "温暖的淡黄色主题",
+		description: "A warm yellowish light theme.",
 		type: "light",
 		colors: {
 			background: "#ffffff",
@@ -898,7 +898,7 @@ export const themes: Theme[] = [
 	{
 		key: "summer",
 		name: "Summer",
-		description: "夏日明亮主题",
+		description: "A bright and sunny summer theme.",
 		type: "light",
 		colors: {
 			background: "#fefdf5",
@@ -932,11 +932,122 @@ export const themes: Theme[] = [
 			editorSelection: "#fff0f0",
 		},
 	},
+	{
+		key: "pure-light",
+		name: "Pure",
+		description: "A clean and simple pure white theme.",
+		type: "light",
+		colors: {
+			background: "#ffffff",
+			foreground: "#222222",
+			card: "#ffffff",
+			cardForeground: "#222222",
+			popover: "#ffffff",
+			popoverForeground: "#222222",
+			primary: "#222222",
+			primaryForeground: "#ffffff",
+			secondary: "#f5f5f5",
+			secondaryForeground: "#222222",
+			muted: "#f5f5f5",
+			mutedForeground: "#888888",
+			accent: "#f5f5f5",
+			accentForeground: "#222222",
+			border: "#eeeeee",
+			input: "#eeeeee",
+			ring: "#222222",
+			sidebar: "#fafafa",
+			sidebarForeground: "#222222",
+			sidebarPrimary: "#222222",
+			sidebarPrimaryForeground: "#ffffff",
+			sidebarAccent: "#f0f0f0",
+			sidebarAccentForeground: "#222222",
+			sidebarBorder: "#eeeeee",
+			folderColor: "#444444",
+			editorSelection: "#eeeeee",
+			toastBackground: "#ffffff",
+			toastForeground: "#222222",
+			toastBorder: "#eeeeee",
+		},
+	},
+	{
+		key: "cloud-light",
+		name: "Cloud",
+		description: "A soft airy theme with blue accents.",
+		type: "light",
+		colors: {
+			background: "#f8fafd",
+			foreground: "#334155",
+			card: "#ffffff",
+			cardForeground: "#334155",
+			popover: "#ffffff",
+			popoverForeground: "#334155",
+			primary: "#0ea5e9",
+			primaryForeground: "#ffffff",
+			secondary: "#e0f2fe",
+			secondaryForeground: "#0284c7",
+			muted: "#f1f5f9",
+			mutedForeground: "#94a3b8",
+			accent: "#f1f5f9",
+			accentForeground: "#334155",
+			border: "#e2e8f0",
+			input: "#e2e8f0",
+			ring: "#0ea5e9",
+			sidebar: "#ffffff",
+			sidebarForeground: "#475569",
+			sidebarPrimary: "#0ea5e9",
+			sidebarPrimaryForeground: "#ffffff",
+			sidebarAccent: "#f0f9ff",
+			sidebarAccentForeground: "#0284c7",
+			sidebarBorder: "#e2e8f0",
+			folderColor: "#0ea5e9",
+			editorSelection: "#e0f2fe",
+			toastBackground: "#ffffff",
+			toastForeground: "#334155",
+			toastBorder: "#e2e8f0",
+		},
+	},
+	{
+		key: "snow-light",
+		name: "Snow",
+		description: "A crisp and bright winter white theme.",
+		type: "light",
+		colors: {
+			background: "#ffffff",
+			foreground: "#374151",
+			card: "#ffffff",
+			cardForeground: "#374151",
+			popover: "#ffffff",
+			popoverForeground: "#374151",
+			primary: "#9ca3af",
+			primaryForeground: "#ffffff",
+			secondary: "#f3f4f6",
+			secondaryForeground: "#374151",
+			muted: "#f3f4f6",
+			mutedForeground: "#9ca3af",
+			accent: "#f9fafb",
+			accentForeground: "#374151",
+			border: "#e5e7eb",
+			input: "#e5e7eb",
+			ring: "#9ca3af",
+			sidebar: "#f9fafb",
+			sidebarForeground: "#4b5563",
+			sidebarPrimary: "#6b7280",
+			sidebarPrimaryForeground: "#ffffff",
+			sidebarAccent: "#e5e7eb",
+			sidebarAccentForeground: "#111827",
+			sidebarBorder: "#e5e7eb",
+			folderColor: "#9ca3af",
+			editorSelection: "#e5e7eb",
+			toastBackground: "#ffffff",
+			toastForeground: "#374151",
+			toastBorder: "#e5e7eb",
+		},
+	},
 	// ============ 深色主题 ============
 	{
 		key: "default-dark",
 		name: "Default Dark",
-		description: "默认深色主题",
+		description: "The default dark theme for the editor.",
 		type: "dark",
 		colors: {
 			background: "#0f172a",
@@ -977,7 +1088,7 @@ export const themes: Theme[] = [
 	{
 		key: "github-dark",
 		name: "GitHub Dark",
-		description: "GitHub 深色主题",
+		description: "A dark theme inspired by GitHub.",
 		type: "dark",
 		colors: {
 			background: "#0d1117",
@@ -1018,7 +1129,7 @@ export const themes: Theme[] = [
 	{
 		key: "one-dark-pro",
 		name: "One Dark Pro",
-		description: "经典 Atom 深色主题",
+		description: "The classic dark theme from Atom.",
 		type: "dark",
 		colors: {
 			background: "#282c34",
@@ -1059,7 +1170,7 @@ export const themes: Theme[] = [
 	{
 		key: "dracula",
 		name: "Dracula",
-		description: "吸血鬼紫色主题",
+		description: "A dark theme with vampire-inspired colors.",
 		type: "dark",
 		colors: {
 			background: "#282a36",
@@ -1111,7 +1222,7 @@ export const themes: Theme[] = [
 	{
 		key: "nord",
 		name: "Nord",
-		description: "北欧冷色调主题",
+		description: "An arctic, north-blue clean theme.",
 		type: "dark",
 		colors: {
 			background: "#2e3440",
@@ -1151,7 +1262,7 @@ export const themes: Theme[] = [
 	{
 		key: "monokai-pro",
 		name: "Monokai Pro",
-		description: "经典 Monokai 主题",
+		description: "The classic Monokai theme.",
 		type: "dark",
 		colors: {
 			background: "#2d2a2e",

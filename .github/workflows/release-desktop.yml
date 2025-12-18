@@ -148,10 +148,11 @@ jobs:
             }
           }
 
-      # 构建 Tauri App（不上传到 release）
+      # 构建 Tauri App（带签名，用于自动更新）
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         with:
           projectPath: apps/desktop
           args: ${{ matrix.args }}
@@ -555,12 +556,64 @@ jobs:
       actions: write
     
     steps:
+      - uses: actions/checkout@v4
+
       - name: Extract version
         id: version
         run: |
           VERSION=${GITHUB_REF#refs/tags/desktop-v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "📦 Desktop release completed for version: $VERSION"
+
+      # 生成 latest.json 用于自动更新
+      - name: Generate latest.json for auto-updater
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          REPO="${{ github.repository }}"
+          DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          # 获取 release notes
+          NOTES=$(gh release view "desktop-v${VERSION}" --json body -q .body 2>/dev/null || echo "Bug fixes and improvements")
+          
+          # 生成 latest.json
+          cat > latest.json << EOF
+          {
+            "version": "${VERSION}",
+            "notes": "${NOTES}",
+            "pub_date": "${DATE}",
+            "platforms": {
+              "windows-x86_64": {
+                "signature": "",
+                "url": "https://github.com/${REPO}/releases/download/desktop-v${VERSION}/grain_${VERSION}_x64-setup.exe"
+              },
+              "darwin-x86_64": {
+                "signature": "",
+                "url": "https://github.com/${REPO}/releases/download/desktop-v${VERSION}/grain_${VERSION}_x64.dmg"
+              },
+              "darwin-aarch64": {
+                "signature": "",
+                "url": "https://github.com/${REPO}/releases/download/desktop-v${VERSION}/grain_${VERSION}_aarch64.dmg"
+              },
+              "linux-x86_64": {
+                "signature": "",
+                "url": "https://github.com/${REPO}/releases/download/desktop-v${VERSION}/grain_${VERSION}_amd64.AppImage"
+              }
+            }
+          }
+          EOF
+          
+          echo "Generated latest.json:"
+          cat latest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload latest.json to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: desktop-v${{ steps.version.outputs.version }}
+          files: latest.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Trigger dependent platform releases
         uses: actions/github-script@v7

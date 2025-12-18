@@ -1,12 +1,12 @@
 # Maintainer: Jeason <xiaomiquan@aliyun.com>
-# 本地测试版本 - 使用已构建的二进制文件
+# Local test version - uses pre-built binary
 
-pkgname=novel-editor
+pkgname=grain
 pkgver=0.1.91
 pkgrel=1
-pkgdesc="一款专为小说创作者设计的现代化写作工具"
+pkgdesc="A minimalist writing sanctuary for long-form content"
 arch=('x86_64')
-url="https://github.com/jeasoncc/novel-editor"
+url="https://github.com/jeasoncc/grain"
 license=('MIT')
 depends=(
   'webkit2gtk'
@@ -14,32 +14,32 @@ depends=(
   'libappindicator-gtk3'
 )
 
-# 使用本地已构建的文件
+# Use local pre-built files
 source=()
 sha256sums=()
 noextract=()
 
 package() {
-  # 从环境变量获取项目根目录（由测试脚本设置）
-  # 如果没有设置，尝试从 startdir 推断
+  # Get project root from environment variable (set by test script)
+  # If not set, infer from startdir
   local project_root="${PROJECT_ROOT:-$startdir/..}"
   local build_dir="$project_root/apps/desktop/src-tauri/target/release"
   
   if [ ! -f "$build_dir/$pkgname" ]; then
-    error "找不到构建的二进制文件: $build_dir/$pkgname"
-    error "请先运行: ./scripts/test-local-build.sh"
+    error "Binary not found: $build_dir/$pkgname"
+    error "Please run: ./scripts/test-local-build.sh first"
     return 1
   fi
   
-  # 安装二进制文件
+  # Install binary
   install -Dm755 "$build_dir/$pkgname" \
     "$pkgdir/usr/bin/$pkgname"
   
-  # 安装桌面文件
-  install -Dm644 "$startdir/novel-editor.desktop" \
+  # Install desktop file
+  install -Dm644 "$startdir/grain.desktop" \
     "$pkgdir/usr/share/applications/$pkgname.desktop"
   
-  # 安装图标
+  # Install icons
   local icon_dir="$project_root/apps/desktop/src-tauri/icons"
   for size in 32 128 256; do
     if [ -f "$icon_dir/${size}x${size}.png" ]; then
@@ -48,13 +48,13 @@ package() {
     fi
   done
   
-  # 安装许可证
+  # Install license
   if [ -f "$project_root/LICENSE" ]; then
     install -Dm644 "$project_root/LICENSE" \
       "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   fi
   
-  # 安装文档
+  # Install documentation
   if [ -f "$project_root/README.md" ]; then
     install -Dm644 "$project_root/README.md" \
       "$pkgdir/usr/share/doc/$pkgname/README.md"

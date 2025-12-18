@@ -2,6 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Check, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useIconTheme } from "@/hooks/use-icon-theme";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { getDarkThemes, getLightThemes, type Theme } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 
@@ -68,9 +73,9 @@ function DesignSettings() {
 				<div className="lg:col-span-7 space-y-4 min-w-0">
 					<div className="sticky top-6 space-y-4">
 						{/* Theme Preview */}
-						<div className="rounded-lg border overflow-hidden shadow-sm">
+						<div className="rounded-lg border border-border/40 overflow-hidden shadow-sm">
 							<div
-								className="border-b p-4"
+								className="border-b border-border/40 p-4"
 								style={{ background: currentTheme?.colors.sidebar }}
 							>
 								<div className="flex items-center gap-2">
@@ -203,91 +208,89 @@ function ThemeCard({ theme, isActive, onSelect }: ThemeCardProps) {
 		<button
 			onClick={onSelect}
 			className={cn(
-				"relative flex flex-col rounded-xl border overflow-hidden transition-all duration-300 text-left group",
-				"hover:shadow-md hover:-translate-y-1 hover:border-primary/50",
-				isActive 
-					? "border-primary ring-2 ring-primary/20 shadow-md bg-accent/5" 
-					: "border-border/40 bg-card"
-			)}
-		>
-			{/* Theme Preview */}
-			<div
-				className="h-24 w-full flex border-b border-border/10 transition-colors"
-				style={{ background: colors.background }}
-			>
-				{/* Sidebar Mock */}
-				<div
-					className="w-1/3 h-full border-r flex flex-col pt-3 px-3 gap-2"
-					style={{
-						background: colors.sidebar,
-						borderColor: colors.sidebarBorder,
-					}}
+						"group relative flex flex-col rounded-lg border overflow-hidden transition-all duration-300 text-left",
+						"hover:shadow-md hover:-translate-y-0.5",
+						isActive
+							? "border-primary ring-2 ring-primary/20 shadow-sm"
+							: "border-border/20 bg-card hover:border-primary/20",
+					)}
 				>
-					<div 
-						className="h-2 w-16 rounded-full opacity-70 mb-1"
-						style={{ background: colors.sidebarForeground }}
-					/>
-					<div className="space-y-2">
-						<div className="flex items-center gap-2 opacity-90">
-							<div className="size-2 rounded-full shrink-0" style={{ background: colors.folderColor || colors.primary }} />
-							<div className="h-1.5 w-full rounded-full" style={{ background: colors.sidebarForeground }} />
-						</div>
-						<div className="flex items-center gap-2 opacity-60 pl-2">
-							<div className="size-1.5 rounded-full shrink-0" style={{ background: colors.sidebarForeground }} />
-							<div className="h-1.5 w-full rounded-full" style={{ background: colors.sidebarForeground }} />
-						</div>
-					</div>
-				</div>
-				{/* Editor Mock */}
-				<div className="flex-1 p-3 flex flex-col gap-2">
+					{/* Minimalist Abstract Preview */}
 					<div
-						className="h-2.5 w-24 rounded-full mb-1"
-						style={{ background: colors.primary, opacity: 0.9 }}
-					/>
-					<div className="space-y-2">
+						className="w-full aspect-[2.4/1] flex"
+						style={{ background: colors.background }}
+					>
+						{/* Abstract Sidebar */}
 						<div
-							className="h-1.5 w-full rounded-full opacity-40"
-							style={{ background: colors.foreground }}
+							className="w-[25%] h-full border-r opacity-90"
+							style={{
+								background: colors.sidebar,
+								borderColor: colors.sidebarBorder,
+							}}
 						/>
-						<div
-							className="h-1.5 w-5/6 rounded-full opacity-30"
-							style={{ background: colors.foreground }}
-						/>
-						<div
-							className="h-1.5 w-4/6 rounded-full opacity-20"
-							style={{ background: colors.foreground }}
-						/>
-					</div>
-				</div>
-			</div>
 
-			{/* Theme Info */}
-			<div className="px-4 py-3 bg-muted/20 group-hover:bg-muted/30 transition-colors">
-				<div className="flex items-center justify-between gap-2">
-					<div className="font-semibold text-sm text-card-foreground truncate">
-						{theme.name}
+						{/* Abstract Editor */}
+						<div className="flex-1 h-full relative p-2.5">
+							{/* Primary Accent Line */}
+							<div
+								className="h-1.5 w-8 rounded-full opacity-80"
+								style={{ background: colors.primary }}
+							/>
+							{/* Subtle Content Hints */}
+							<div className="mt-2 space-y-1.5 opacity-30">
+								<div 
+									className="h-1 w-2/3 rounded-full" 
+									style={{ background: colors.foreground }} 
+								/>
+								<div 
+									className="h-1 w-1/2 rounded-full" 
+									style={{ background: colors.foreground }} 
+								/>
+							</div>
+						</div>
 					</div>
-					{/* Color Palette Preview */}
-					<div className="flex -space-x-1.5 shrink-0">
-						<div className="size-4 rounded-full ring-2 ring-background z-30" style={{ background: colors.background }} />
-						<div className="size-4 rounded-full ring-2 ring-background z-20" style={{ background: colors.sidebar }} />
-						<div className="size-4 rounded-full ring-2 ring-background z-10" style={{ background: colors.primary }} />
-					</div>
-				</div>
-			</div>
 
-			{/* Selected Check */}
-			{isActive && (
-				<div
-					className="absolute top-2 right-2 size-5 rounded-full flex items-center justify-center shadow-sm animate-in fade-in zoom-in duration-200"
-					style={{ background: colors.primary }}
-				>
-					<Check
-						className="size-3"
-						style={{ color: colors.primaryForeground }}
-					/>
-				</div>
-			)}
-		</button>
+					{/* Theme Info */}
+					<div
+						className={cn(
+							"px-2.5 py-1.5 transition-colors w-full",
+							isActive ? "bg-primary/5" : "bg-transparent group-hover:bg-muted/30",
+						)}
+					>
+						<div className="flex items-center justify-between gap-2">
+							<div className="font-medium text-[10px] text-card-foreground truncate">
+								{theme.name}
+							</div>
+							{/* Minimal Color Dots */}
+							<div className="flex -space-x-1 shrink-0">
+								<div
+									className="size-1.5 rounded-full ring-1 ring-background z-30"
+									style={{ background: colors.background }}
+								/>
+								<div
+									className="size-1.5 rounded-full ring-1 ring-background z-20"
+									style={{ background: colors.sidebar }}
+								/>
+								<div
+									className="size-1.5 rounded-full ring-1 ring-background z-10"
+									style={{ background: colors.primary }}
+								/>
+							</div>
+						</div>
+					</div>
+
+					{/* Active Check Indicator */}
+					{isActive && (
+						<div
+							className="absolute top-1.5 right-1.5 size-3 rounded-full flex items-center justify-center shadow-sm animate-in fade-in zoom-in duration-200 z-40"
+							style={{ background: colors.primary }}
+						>
+							<Check
+								className="size-1.5"
+								style={{ color: colors.primaryForeground }}
+							/>
+						</div>
+					)}
+				</button>
 	);
 }

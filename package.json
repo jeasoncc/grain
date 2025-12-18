@@ -1,15 +1,15 @@
 {
-  "name": "grain-editor-monorepo",
+  "name": "grain-monorepo",
   "private": true,
   "author": "Jeason",
   "description": "A minimalist writing sanctuary for long-form content. Pure, elegant, and distraction-free.",
   "email": "xiaomiquan@aliyun.com",
   "version": "0.1.91",
   "license": "MIT",
-  "homepage": "https://github.com/jeasoncc/grain-editor",
+  "homepage": "https://github.com/jeasoncc/grain",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jeasoncc/grain-editor.git"
+    "url": "https://github.com/jeasoncc/grain.git"
   },
   "scripts": {
     "dev": "turbo run dev",

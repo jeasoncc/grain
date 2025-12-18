@@ -90,10 +90,10 @@ jobs:
             
             **安装命令：**
             \`\`\`bash
-            sudo snap install novel-editor-app --${channel}
+            sudo snap install grain-app --${channel}
             \`\`\`
             
-            **查看详情：** https://snapcraft.io/novel-editor-app`
+            **查看详情：** https://snapcraft.io/grain-app`
               });
             } catch (error) {
               console.log('无法创建评论，但 Snap 发布成功:', error.message);

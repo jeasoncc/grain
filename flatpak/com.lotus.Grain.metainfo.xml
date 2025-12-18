@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>com.lotus.NovelEditor</id>
-  <name>Novel Editor</name>
+  <id>com.lotus.Grain</id>
+  <name>Grain</name>
   <summary>Professional novel writing tool with advanced project management</summary>
   
   <description>
     <p>
-      Novel Editor is a comprehensive writing application designed specifically for 
+      Grain is a comprehensive writing application designed specifically for 
       novelists and creative writers. Built with modern web technologies and powered 
       by the Lexical rich-text editor, it provides everything you need to craft 
       compelling stories from initial concept to final manuscript.
@@ -73,7 +73,7 @@
     <p>
       Perfect for novelists, screenwriters, game developers, and anyone crafting 
       complex narratives. Whether you're writing your first short story or managing 
-      a multi-book series, Novel Editor provides the tools to bring your creative 
+      a multi-book series, Grain provides the tools to bring your creative 
       vision to life.
     </p>
   </description>
@@ -104,15 +104,15 @@
     <keyword>narrative</keyword>
   </keywords>
   
-  <url type="homepage">https://github.com/jeasoncc/novel-editor</url>
-  <url type="bugtracker">https://github.com/jeasoncc/novel-editor/issues</url>
+  <url type="homepage">https://github.com/jeasoncc/grain</url>
+  <url type="bugtracker">https://github.com/jeasoncc/grain/issues</url>
   
-  <launchable type="desktop-id">com.lotus.NovelEditor.desktop</launchable>
+  <launchable type="desktop-id">com.lotus.Grain.desktop</launchable>
   
   <screenshots>
     <screenshot type="default">
       <caption>Main editing interface</caption>
-      <image>https://raw.githubusercontent.com/jeasoncc/novel-editor/main/docs/screenshots/main-interface.png</image>
+      <image>https://raw.githubusercontent.com/jeasoncc/grain/main/docs/screenshots/main-interface.png</image>
     </screenshot>
   </screenshots>
   

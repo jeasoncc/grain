@@ -98,7 +98,7 @@ jobs:
             }
             uninstaller = @{
               script = @(
-                "`$uninstall = Get-ItemProperty -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' | Where-Object { `$_.DisplayName -like '*novel-editor*' }",
+                "`$uninstall = Get-ItemProperty -Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*' | Where-Object { `$_.DisplayName -like '*grain*' }",
                 "if (`$uninstall) {",
                 "    Start-Process -FilePath `$uninstall.UninstallString -ArgumentList '/S' -Wait",
                 "}"
@@ -109,7 +109,7 @@ jobs:
               regex = "desktop-v([\\d.]+)"
             }
             autoupdate = @{
-              url = "https://github.com/${{ github.repository }}/releases/download/desktop-v`$version/novel-editor_`$version_x64-setup.exe"
+              url = "https://github.com/${{ github.repository }}/releases/download/desktop-v`$version/grain_`$version_x64-setup.exe"
             }
           }
           
@@ -118,12 +118,12 @@ jobs:
           
           # 创建目录并保存文件
           New-Item -ItemType Directory -Force -Path "scoop-manifest" | Out-Null
-          Set-Content -Path "scoop-manifest/novel-editor.json" -Value $manifestJson -Encoding UTF8
+          Set-Content -Path "scoop-manifest/grain.json" -Value $manifestJson -Encoding UTF8
           
           Write-Output "✅ Scoop manifest created"
           Write-Output ""
           Write-Output "📄 Manifest content:"
-          Get-Content "scoop-manifest/novel-editor.json"
+          Get-Content "scoop-manifest/grain.json"
 
       - name: Test Scoop manifest
         shell: pwsh
@@ -138,7 +138,7 @@ jobs:
           }
           
           # 验证 manifest 格式
-          $manifestPath = "scoop-manifest/novel-editor.json"
+          $manifestPath = "scoop-manifest/grain.json"
           try {
             $manifest = Get-Content $manifestPath | ConvertFrom-Json
             Write-Output "✅ Manifest JSON is valid"
@@ -179,22 +179,22 @@ jobs:
             cd scoop-extras
             
             # 创建新分支
-            $branchName = "novel-editor-$version"
+            $branchName = "grain-$version"
             git checkout -b $branchName
             
             # 复制 manifest
-            Copy-Item "../scoop-manifest/novel-editor.json" "bucket/"
+            Copy-Item "../scoop-manifest/grain.json" "bucket/"
             
             # 提交更改
-            git add bucket/novel-editor.json
-            git commit -m "novel-editor: Update to version $version"
+            git add bucket/grain.json
+            git commit -m "grain: Update to version $version"
             
             Write-Output "✅ Prepared update for scoop-extras bucket"
             Write-Output ""
             Write-Output "📋 Next steps (manual):"
             Write-Output "1. Fork https://github.com/ScoopInstaller/Extras"
             Write-Output "2. Add the manifest file to bucket/ directory"
-            Write-Output "3. Create PR with title: 'novel-editor: Add version $version'"
+            Write-Output "3. Create PR with title: 'grain: Add version $version'"
             Write-Output ""
             Write-Output "📄 Manifest file ready in artifacts"
             
@@ -204,7 +204,7 @@ jobs:
             Write-Output "📋 Manual submission steps:"
             Write-Output "1. Download the manifest from artifacts"
             Write-Output "2. Fork https://github.com/ScoopInstaller/Extras"
-            Write-Output "3. Add novel-editor.json to bucket/ directory"
+            Write-Output "3. Add grain.json to bucket/ directory"
             Write-Output "4. Create PR to upstream repository"
           }
 
@@ -212,7 +212,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: scoop-manifest
-          path: "scoop-manifest/novel-editor.json"
+          path: "scoop-manifest/grain.json"
           retention-days: 30
 
       - name: Create success summary
@@ -223,11 +223,11 @@ jobs:
           Write-Output "🎉 Scoop Manifest Summary"
           Write-Output "=========================="
           Write-Output "✅ Version: $version"
-          Write-Output "✅ Manifest: novel-editor.json"
+          Write-Output "✅ Manifest: grain.json"
           Write-Output "✅ Hash verified"
           Write-Output ""
           Write-Output "📦 Installation command (after approval):"
-          Write-Output "   scoop install extras/novel-editor"
+          Write-Output "   scoop install extras/grain"
           Write-Output ""
           Write-Output "🔗 Bucket repository:"
           Write-Output "   https://github.com/ScoopInstaller/Extras"

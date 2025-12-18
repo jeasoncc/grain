@@ -61,7 +61,7 @@ export interface ContentInterface {
  * Extends Dexie to provide typed table access and version management.
  * Uses indexed queries for efficient data retrieval.
  */
-export class NovelEditorDatabase extends Dexie {
+export class GrainDatabase extends Dexie {
 	// Core tables
 	nodes!: Table<NodeInterface, string>;
 	contents!: Table<ContentInterface, string>;
@@ -75,7 +75,7 @@ export class NovelEditorDatabase extends Dexie {
 	tags!: Table<TagInterface, string>;
 
 	constructor() {
-		super("NovelEditorDB");
+		super("GrainDB");
 
 		// Version 7: Add contents table for content separation
 		this.version(7).stores({
@@ -162,7 +162,7 @@ export class NovelEditorDatabase extends Dexie {
 
 		// Open database and log status
 		this.open()
-			.then(() => logger.success("NovelEditorDatabase initialized (v11)"))
+			.then(() => logger.success("GrainDatabase initialized (v11)"))
 			.catch((err) => logger.error("Database open error:", err));
 	}
 }
@@ -171,4 +171,7 @@ export class NovelEditorDatabase extends Dexie {
  * Database singleton instance
  * Use this instance throughout the application for all database operations
  */
-export const database = new NovelEditorDatabase();
+export const database = new GrainDatabase();
+
+// Legacy alias for backward compatibility
+export const NovelEditorDatabase = GrainDatabase;

@@ -4,14 +4,14 @@ export function StructuredData() {
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Novel Editor",
-    description: "专业的长篇小说写作工具",
-    url: "https://novel-editor.com",
+    name: "Grain",
+    description: "A minimalist writing sanctuary for long-form content",
+    url: "https://grain.app",
     potentialAction: {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: "https://novel-editor.com/search?q={search_term_string}",
+        urlTemplate: "https://grain.app/search?q={search_term_string}",
       },
       "query-input": "required name=search_term_string",
     },
@@ -20,7 +20,7 @@ export function StructuredData() {
   const softwareApplicationSchema = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: "Novel Editor",
+    name: "Grain",
     applicationCategory: "WritingApplication",
     operatingSystem: ["Linux", "Windows", "macOS"],
     offers: {
@@ -29,25 +29,25 @@ export function StructuredData() {
       priceCurrency: "USD",
     },
     description:
-      "Novel Editor 是一款基于 Tauri 构建的跨平台桌面写作应用，专为长篇小说创作而设计。",
+      "Grain is a minimalist writing sanctuary built with Tauri for long-form content creation.",
     featureList: [
-      "沉浸式写作",
-      "树形大纲",
-      "全局搜索",
-      "角色管理",
-      "自动备份",
-      "离线优先",
+      "Immersive writing",
+      "Tree-based outline",
+      "Global search",
+      "Tag system",
+      "Auto backup",
+      "Offline first",
     ],
   };
 
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "Novel Editor",
-    url: "https://novel-editor.com",
-    logo: "https://novel-editor.com/logo.png",
+    name: "Grain",
+    url: "https://grain.app",
+    logo: "https://grain.app/logo.png",
     sameAs: [
-      "https://github.com/jeasoncc/novel-editor",
+      "https://github.com/jeasoncc/grain",
     ],
   };
 

@@ -40,11 +40,11 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           
           # 创建 overlay 结构
-          mkdir -p gentoo-overlay/app-editors/novel-editor
-          cd gentoo-overlay/app-editors/novel-editor
+          mkdir -p gentoo-overlay/app-editors/grain
+          cd gentoo-overlay/app-editors/grain
           
           # 创建 ebuild 文件
-          cat > "novel-editor-$VERSION.ebuild" << 'EOF'
+          cat > "grain-$VERSION.ebuild" << 'EOF'
           # Copyright 2024 Gentoo Authors
           # Distributed under the terms of the GNU General Public License v2
           
@@ -81,7 +81,7 @@ jobs:
           	sys-apps/yarn
           "
           
-          S="${WORKDIR}/novel-editor-desktop-v${PV}"
+          S="${WORKDIR}/grain-desktop-v${PV}"
           
           src_prepare() {
           	default
@@ -105,10 +105,10 @@ jobs:
           	cd apps/desktop || die
           	
           	# Install binary
-          	dobin src-tauri/target/release/novel-editor
+          	dobin src-tauri/target/release/grain
           	
           	# Install desktop file
-          	domenu src-tauri/novel-editor.desktop
+          	domenu src-tauri/grain.desktop
           	
           	# Install icons
           	local size
@@ -124,7 +124,7 @@ jobs:
           	xdg_pkg_postinst
           	
           	elog "Novel Editor has been installed."
-          	elog "You can start it from your application menu or by running 'novel-editor'"
+          	elog "You can start it from your application menu or by running 'grain'"
           }
           EOF
           
@@ -153,7 +153,7 @@ jobs:
           EOF
           
           # 创建 Manifest 文件（校验和）
-          echo "DIST novel-editor-$VERSION.tar.gz $(curl -sL https://github.com/${{ github.repository }}/archive/refs/tags/desktop-v$VERSION.tar.gz | sha512sum | cut -d' ' -f1) $(curl -sL https://github.com/${{ github.repository }}/archive/refs/tags/desktop-v$VERSION.tar.gz | wc -c)" > Manifest
+          echo "DIST grain-$VERSION.tar.gz $(curl -sL https://github.com/${{ github.repository }}/archive/refs/tags/desktop-v$VERSION.tar.gz | sha512sum | cut -d' ' -f1) $(curl -sL https://github.com/${{ github.repository }}/archive/refs/tags/desktop-v$VERSION.tar.gz | wc -c)" > Manifest
           
           echo "✅ Gentoo ebuild created"
 
@@ -164,7 +164,7 @@ jobs:
           # 创建 overlay 配置
           cat > layout.conf << EOF
           masters = gentoo
-          repo-name = novel-editor-overlay
+          repo-name = grain-overlay
           EOF
           
           # 创建 repositories.xml
@@ -173,7 +173,7 @@ jobs:
           <!DOCTYPE repositories SYSTEM "/dtd/repositories.dtd">
           <repositories xmlns="" version="1.0">
           	<repo quality="experimental" status="unofficial">
-          		<name>novel-editor-overlay</name>
+          		<name>grain-overlay</name>
           		<description>Novel Editor Gentoo Overlay</description>
           		<homepage>https://github.com/${{ github.repository }}</homepage>
           		<owner type="person">
@@ -195,7 +195,7 @@ jobs:
           
           # 基本语法检查
           VERSION="${{ steps.version.outputs.version }}"
-          EBUILD_FILE="app-editors/novel-editor/novel-editor-$VERSION.ebuild"
+          EBUILD_FILE="app-editors/grain/grain-$VERSION.ebuild"
           
           # 检查必需的变量
           for var in DESCRIPTION HOMEPAGE SRC_URI LICENSE SLOT; do
@@ -233,40 +233,40 @@ jobs:
           emerge --ask app-eselect/eselect-repository
           
           # Add the overlay
-          eselect repository add novel-editor-overlay git https://github.com/${{ github.repository }}-gentoo-overlay.git
+          eselect repository add grain-overlay git https://github.com/${{ github.repository }}-gentoo-overlay.git
           
           # Sync the overlay
-          emerge --sync novel-editor-overlay
+          emerge --sync grain-overlay
           
           # Install Novel Editor
-          emerge --ask app-editors/novel-editor
+          emerge --ask app-editors/grain
           \`\`\`
           
           ### Method 2: Manual overlay setup
           
           \`\`\`bash
           # Create overlay directory
-          mkdir -p /var/db/repos/novel-editor-overlay
+          mkdir -p /var/db/repos/grain-overlay
           
           # Clone the overlay
-          git clone https://github.com/${{ github.repository }}-gentoo-overlay.git /var/db/repos/novel-editor-overlay
+          git clone https://github.com/${{ github.repository }}-gentoo-overlay.git /var/db/repos/grain-overlay
           
           # Add to repos.conf
-          echo '[novel-editor-overlay]
-          location = /var/db/repos/novel-editor-overlay
+          echo '[grain-overlay]
+          location = /var/db/repos/grain-overlay
           sync-type = git
           sync-uri = https://github.com/${{ github.repository }}-gentoo-overlay.git
-          auto-sync = yes' >> /etc/portage/repos.conf/novel-editor-overlay.conf
+          auto-sync = yes' >> /etc/portage/repos.conf/grain-overlay.conf
           
           # Sync and install
           emerge --sync
-          emerge --ask app-editors/novel-editor
+          emerge --ask app-editors/grain
           \`\`\`
           
           ## Package Information
           
           - **Category**: app-editors
-          - **Package**: novel-editor
+          - **Package**: grain
           - **Version**: $VERSION
           - **License**: MIT
           - **Keywords**: ~amd64
@@ -314,9 +314,9 @@ jobs:
           echo "✅ Installation instructions ready"
           echo ""
           echo "📦 Installation commands:"
-          echo "   eselect repository add novel-editor-overlay git <overlay-url>"
-          echo "   emerge --sync novel-editor-overlay"
-          echo "   emerge --ask app-editors/novel-editor"
+          echo "   eselect repository add grain-overlay git <overlay-url>"
+          echo "   emerge --sync grain-overlay"
+          echo "   emerge --ask app-editors/grain"
           echo ""
           echo "🔗 Next steps:"
           echo "1. Create separate repository for the overlay"

@@ -40,8 +40,8 @@ jobs:
       - name: Download MSI installer
         run: |
           $version = "${{ steps.version.outputs.VERSION }}"
-          $url = "https://github.com/${{ github.repository }}/releases/download/desktop-v$version/novel-editor_${version}_x64_zh-CN.msi"
-          $output = "novel-editor_${version}_x64_zh-CN.msi"
+          $url = "https://github.com/${{ github.repository }}/releases/download/desktop-v$version/grain_${version}_x64_zh-CN.msi"
+          $output = "grain_${version}_x64_zh-CN.msi"
           
           Write-Host "Downloading from: $url"
           try {
@@ -64,7 +64,7 @@ jobs:
         id: sha256
         run: |
           $version = "${{ steps.version.outputs.VERSION }}"
-          $file = "novel-editor_${version}_x64_zh-CN.msi"
+          $file = "grain_${version}_x64_zh-CN.msi"
           
           if (Test-Path $file) {
             $hash = (Get-FileHash -Path $file -Algorithm SHA256).Hash
@@ -79,7 +79,7 @@ jobs:
         run: |
           $version = "${{ steps.version.outputs.VERSION }}"
           $sha256 = "${{ steps.sha256.outputs.SHA256 }}"
-          $url = "https://github.com/${{ github.repository }}/releases/download/desktop-v$version/novel-editor_${version}_x64_zh-CN.msi"
+          $url = "https://github.com/${{ github.repository }}/releases/download/desktop-v$version/grain_${version}_x64_zh-CN.msi"
           
           # 更新版本文件
           $versionContent = "# yaml-language-server: `$schema=https://aka.ms/winget-manifest.version.1.5.0.schema.json`n`nPackageIdentifier: Jeason.NovelEditor`nPackageVersion: $version`nDefaultLocale: zh-CN`nManifestType: version`nManifestVersion: 1.5.0"
@@ -105,7 +105,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.WINGET_GITHUB_TOKEN }}
         run: |
           $version = "${{ steps.version.outputs.VERSION }}"
-          $installerUrl = "https://github.com/${{ github.repository }}/releases/download/desktop-v$version/novel-editor_${version}_x64_zh-CN.msi"
+          $installerUrl = "https://github.com/${{ github.repository }}/releases/download/desktop-v$version/grain_${version}_x64_zh-CN.msi"
           
           # 配置git
           git config --global user.name "github-actions[bot]"

@@ -8,7 +8,7 @@
  */
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { EditorInstanceState as BaseEditorInstanceState } from "@novel-editor/editor";
+import type { EditorInstanceState as BaseEditorInstanceState } from "@grain/editor";
 
 /**
  * Maximum number of editor states to keep in memory (LRU cache limit)
@@ -380,7 +380,7 @@ export const useEditorTabsStore = create<EditorTabsState>()(
       },
     }),
     {
-      name: "novel-editor-tabs",
+      name: "grain-tabs",
       // Don't persist tabs - they should be empty on refresh
       // This provides a clean slate on each app start
       partialize: (state) => ({

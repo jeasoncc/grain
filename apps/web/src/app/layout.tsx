@@ -28,26 +28,25 @@ const notoSansSC = Noto_Sans_SC({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://novel-editor.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://grain.app"),
   title: {
-    default: "Novel Editor - 专业的长篇小说写作工具",
-    template: "%s | Novel Editor",
+    default: "Grain - A minimalist writing sanctuary",
+    template: "%s | Grain",
   },
   description:
-    "Novel Editor 是一款现代化的跨平台写作环境，专为长篇小说创作而设计。支持 Linux、Windows 和 macOS。沉浸式编辑体验，强大的项目管理，让创作更加专注和高效。",
+    "Grain is a minimalist writing sanctuary for long-form content. Cross-platform support for Linux, Windows, and macOS. Pure, elegant, focused on what matters—your words.",
   keywords: [
-    "小说编辑器",
-    "写作工具",
-    "长篇小说",
-    "创作软件",
-    "跨平台",
-    "Novel Editor",
+    "writing tool",
+    "long-form writing",
+    "minimalist editor",
+    "cross-platform",
+    "Grain",
     "Tauri",
-    "离线写作",
+    "offline writing",
   ],
-  authors: [{ name: "Novel Editor Team" }],
-  creator: "Novel Editor Team",
-  publisher: "Novel Editor",
+  authors: [{ name: "Grain Team" }],
+  creator: "Grain Team",
+  publisher: "Grain",
   formatDetection: {
     email: false,
     address: false,
@@ -65,27 +64,27 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    locale: "zh_CN",
+    locale: "en_US",
     url: "/",
-    siteName: "Novel Editor",
-    title: "Novel Editor - 专业的长篇小说写作工具",
+    siteName: "Grain",
+    title: "Grain - A minimalist writing sanctuary",
     description:
-      "现代化的跨平台写作环境，专为长篇小说创作而设计",
+      "Pure. Elegant. Focused on what matters—your words.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Novel Editor",
+        alt: "Grain",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Novel Editor - 专业的长篇小说写作工具",
-    description: "现代化的跨平台写作环境，专为长篇小说创作而设计",
+    title: "Grain - A minimalist writing sanctuary",
+    description: "Pure. Elegant. Focused on what matters—your words.",
     images: ["/og-image.png"],
-    creator: "@novel-editor",
+    creator: "@grain_app",
   },
   robots: {
     index: true,

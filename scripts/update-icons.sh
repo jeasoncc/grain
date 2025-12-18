@@ -50,12 +50,12 @@ cd "$PROJECT_ROOT"
 
 # 3. 更新 Snap 图标
 echo -e "${YELLOW}📦 更新 Snap 图标...${NC}"
-cp apps/desktop/src-tauri/icons/icon.png snap/gui/novel-editor.png
+cp apps/desktop/src-tauri/icons/icon.png snap/gui/grain.png
 echo -e "${GREEN}✓${NC} Snap 图标已更新"
 
 # 4. 验证 Flatpak 图标配置
 echo -e "${YELLOW}📦 验证 Flatpak 图标配置...${NC}"
-if grep -q "icons/.*\.png" flatpak/com.lotus.NovelEditor.yml; then
+if grep -q "icons/.*\.png" flatpak/com.lotus.Grain.yml; then
     echo -e "${GREEN}✓${NC} Flatpak 配置正确 (从 Tauri 图标目录安装)"
 else
     echo -e "${YELLOW}⚠️${NC}  Flatpak 配置可能需要检查"
@@ -87,7 +87,7 @@ echo "1. 提交更改到 git 仓库"
 echo "2. 创建新的 release 来触发各平台的构建"
 echo "3. 各平台将自动使用新图标:"
 echo "   • Tauri: 使用生成的 .ico/.icns/.png 文件"
-echo "   • Snap: 使用 snap/gui/novel-editor.png"
+echo "   • Snap: 使用 snap/gui/grain.png"
 echo "   • Flatpak: 从 Tauri 图标目录安装多尺寸图标"
 echo "   • AUR: 从 Tauri 图标目录安装多尺寸图标"
 echo "   • Winget: 使用 MSI 包中的图标"

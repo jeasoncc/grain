@@ -1,12 +1,12 @@
 # Maintainer: Jeason <xiaomiquan@aliyun.com>
-# 本地测试版本 - 使用本地源代码
+# Local test version - uses local source code
 
-pkgname=novel-editor
-pkgver=0.1.0
+pkgname=grain
+pkgver=0.1.91
 pkgrel=1
-pkgdesc="一款专为小说创作者设计的现代化写作工具"
+pkgdesc="A minimalist writing sanctuary for long-form content"
 arch=('x86_64')
-url="https://github.com/jeasoncc/novel-editor"
+url="https://github.com/jeasoncc/grain"
 license=('MIT')
 depends=(
   'webkit2gtk'
@@ -19,52 +19,52 @@ makedepends=(
   'nodejs'
   'patchelf'
 )
-# 注意：bun 需要手动安装，不在官方仓库中
+# Note: bun needs to be installed manually, not in official repos
 optdepends=(
-  'libfuse2: 用于 AppImage 支持'
+  'libfuse2: AppImage support'
 )
 
-# 本地测试：不从网络下载
+# Local test: no network download
 source=()
 sha256sums=()
 
 prepare() {
-  # 使用当前目录的源代码
-  echo "使用本地源代码进行构建"
+  # Use local source code
+  echo "Using local source code for build"
 }
 
 build() {
-  # 获取项目根目录（PKGBUILD 所在目录的上一级）
+  # Get project root (parent of PKGBUILD directory)
   PROJECT_ROOT="$(dirname "$startdir")"
   
-  echo "📍 项目根目录: $PROJECT_ROOT"
+  echo "📍 Project root: $PROJECT_ROOT"
   cd "$PROJECT_ROOT"
   
-  echo "📦 安装依赖..."
+  echo "📦 Installing dependencies..."
   bun install
   
-  echo "🔨 构建前端..."
+  echo "🔨 Building frontend..."
   cd apps/desktop
   bun run build
   
-  echo "🚀 构建 Tauri 应用..."
+  echo "🚀 Building Tauri app..."
   bun run tauri build -- --bundles deb
 }
 
 package() {
-  # 获取项目根目录
+  # Get project root
   PROJECT_ROOT="$(dirname "$startdir")"
   cd "$PROJECT_ROOT"
   
-  # 安装二进制文件
+  # Install binary
   install -Dm755 "apps/desktop/src-tauri/target/release/$pkgname" \
     "$pkgdir/usr/bin/$pkgname"
   
-  # 安装桌面文件
+  # Install desktop file
   install -Dm644 "aur/$pkgname.desktop" \
     "$pkgdir/usr/share/applications/$pkgname.desktop"
   
-  # 安装图标
+  # Install icons
   for size in 32 128 256; do
     if [ -f "apps/desktop/src-tauri/icons/${size}x${size}.png" ]; then
       install -Dm644 "apps/desktop/src-tauri/icons/${size}x${size}.png" \
@@ -72,12 +72,12 @@ package() {
     fi
   done
   
-  # 安装许可证
+  # Install license
   if [ -f LICENSE ]; then
     install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   fi
   
-  # 安装文档
+  # Install documentation
   if [ -f README.md ]; then
     install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
   fi

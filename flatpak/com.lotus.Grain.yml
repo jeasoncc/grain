@@ -1,11 +1,11 @@
-app-id: com.lotus.NovelEditor
+app-id: com.lotus.Grain
 runtime: org.freedesktop.Platform
 runtime-version: '24.08'
 sdk: org.freedesktop.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.node20
   - org.freedesktop.Sdk.Extension.rust-stable
-command: novel-editor
+command: grain
 
 finish-args:
   # Display and graphics
@@ -43,13 +43,13 @@ finish-args:
   - --talk-name=org.freedesktop.ScreenSaver
 
 modules:
-  - name: novel-editor
+  - name: grain
     buildsystem: simple
     build-options:
       append-path: /usr/lib/sdk/node20/bin:/usr/lib/sdk/rust-stable/bin
       env:
-        CARGO_HOME: /run/build/novel-editor/cargo
-        npm_config_cache: /run/build/novel-editor/npm-cache
+        CARGO_HOME: /run/build/grain/cargo
+        npm_config_cache: /run/build/grain/npm-cache
         # Optimize build for release
         CARGO_PROFILE_RELEASE_LTO: 'true'
         CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '1'
@@ -95,21 +95,21 @@ modules:
         cargo build --release
         
         # Verify binary exists
-        if [ ! -f "target/release/novel-editor" ]; then
+        if [ ! -f "target/release/grain" ]; then
           echo "ERROR: Binary not found"
           ls -la target/release/ || true
           exit 1
         fi
         echo "Tauri build successful"
-        ls -la target/release/novel-editor
+        ls -la target/release/grain
       
       # Install binary
       - |
         echo "=== Installing binary ==="
-        install -Dm755 apps/desktop/src-tauri/target/release/novel-editor /app/bin/novel-editor
+        install -Dm755 apps/desktop/src-tauri/target/release/grain /app/bin/grain
         
         # Verify installation
-        if [ ! -x "/app/bin/novel-editor" ]; then
+        if [ ! -x "/app/bin/grain" ]; then
           echo "ERROR: Binary installation failed"
           exit 1
         fi
@@ -118,10 +118,10 @@ modules:
       # Install desktop file
       - |
         echo "=== Installing desktop file ==="
-        install -Dm644 flatpak/com.lotus.NovelEditor.desktop /app/share/applications/com.lotus.NovelEditor.desktop
+        install -Dm644 flatpak/com.lotus.Grain.desktop /app/share/applications/com.lotus.Grain.desktop
         
         # Validate desktop file
-        desktop-file-validate /app/share/applications/com.lotus.NovelEditor.desktop || echo "Desktop file validation warning (non-fatal)"
+        desktop-file-validate /app/share/applications/com.lotus.Grain.desktop || echo "Desktop file validation warning (non-fatal)"
       
       # Install icons (multiple sizes)
       - |
@@ -130,7 +130,7 @@ modules:
         for size in 32 128 256; do
           if [ -f "apps/desktop/src-tauri/icons/${size}x${size}.png" ]; then
             install -Dm644 "apps/desktop/src-tauri/icons/${size}x${size}.png" \
-              "/app/share/icons/hicolor/${size}x${size}/apps/com.lotus.NovelEditor.png"
+              "/app/share/icons/hicolor/${size}x${size}/apps/com.lotus.Grain.png"
             echo "Installed ${size}x${size} icon"
           fi
         done
@@ -138,30 +138,30 @@ modules:
         # Install scalable icon if available
         if [ -f "apps/desktop/src-tauri/icons/icon.svg" ]; then
           install -Dm644 "apps/desktop/src-tauri/icons/icon.svg" \
-            "/app/share/icons/hicolor/scalable/apps/com.lotus.NovelEditor.svg"
+            "/app/share/icons/hicolor/scalable/apps/com.lotus.Grain.svg"
           echo "Installed scalable icon"
         fi
       
       # Install metainfo
       - |
         echo "=== Installing metainfo ==="
-        install -Dm644 flatpak/com.lotus.NovelEditor.metainfo.xml /app/share/metainfo/com.lotus.NovelEditor.metainfo.xml
+        install -Dm644 flatpak/com.lotus.Grain.metainfo.xml /app/share/metainfo/com.lotus.Grain.metainfo.xml
         
         # Validate metainfo
-        appstream-util validate-relax /app/share/metainfo/com.lotus.NovelEditor.metainfo.xml || echo "Metainfo validation warning (non-fatal)"
+        appstream-util validate-relax /app/share/metainfo/com.lotus.Grain.metainfo.xml || echo "Metainfo validation warning (non-fatal)"
       
       # Install license
       - |
         echo "=== Installing license ==="
         if [ -f "LICENSE" ]; then
-          install -Dm644 LICENSE /app/share/licenses/com.lotus.NovelEditor/LICENSE
+          install -Dm644 LICENSE /app/share/licenses/com.lotus.Grain/LICENSE
         fi
       
       # Install documentation
       - |
         echo "=== Installing documentation ==="
         if [ -f "README.md" ]; then
-          install -Dm644 README.md /app/share/doc/com.lotus.NovelEditor/README.md
+          install -Dm644 README.md /app/share/doc/com.lotus.Grain/README.md
         fi
         
         echo "=== Installation completed successfully ==="

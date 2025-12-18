@@ -1,7 +1,7 @@
 /**
- * @novel-editor/editor
+ * @grain/editor
  * 
- * A reusable Lexical-based rich text editor package for the Novel Editor monorepo.
+ * A reusable Lexical-based rich text editor package for the Grain monorepo.
  * 
  * This package provides:
  * - Core editor components (Editor, EditorInstance, MultiEditorContainer)

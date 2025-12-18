@@ -88,14 +88,14 @@ jobs:
           cd obs-package
           
           # 创建 spec 文件
-          cat > novel-editor.spec << EOF
+          cat > grain.spec << EOF
           #
-          # spec file for package novel-editor
+          # spec file for package grain
           #
           # Copyright (c) 2024 Jeason
           #
           
-          Name:           novel-editor
+          Name:           grain
           Version:        $VERSION
           Release:        1
           Summary:        A modern, powerful novel writing application
@@ -135,7 +135,7 @@ jobs:
           - Cross-platform compatibility
           
           %prep
-          %setup -q -n novel-editor-desktop-v%{version}
+          %setup -q -n grain-desktop-v%{version}
           
           %build
           # Install Bun
@@ -154,23 +154,23 @@ jobs:
           cd apps/desktop/src-tauri/target/release
           
           # Install binary
-          install -D -m 755 novel-editor %{buildroot}%{_bindir}/novel-editor
+          install -D -m 755 grain %{buildroot}%{_bindir}/grain
           
           # Install desktop file
-          install -D -m 644 bundle/deb/novel-editor_*_amd64/data/usr/share/applications/novel-editor.desktop \\
-              %{buildroot}%{_datadir}/applications/novel-editor.desktop
+          install -D -m 644 bundle/deb/grain_*_amd64/data/usr/share/applications/grain.desktop \\
+              %{buildroot}%{_datadir}/applications/grain.desktop
           
           # Install icons
           for size in 32 128 256; do
               install -D -m 644 ../icons/\${size}x\${size}.png \\
-                  %{buildroot}%{_datadir}/icons/hicolor/\${size}x\${size}/apps/novel-editor.png
+                  %{buildroot}%{_datadir}/icons/hicolor/\${size}x\${size}/apps/grain.png
           done
           
           %files
           %defattr(-,root,root,-)
-          %{_bindir}/novel-editor
-          %{_datadir}/applications/novel-editor.desktop
-          %{_datadir}/icons/hicolor/*/apps/novel-editor.png
+          %{_bindir}/grain
+          %{_datadir}/applications/grain.desktop
+          %{_datadir}/icons/hicolor/*/apps/grain.png
           
           %changelog
           * $(date +'%a %b %d %Y') Jeason <xiaomiquan@aliyun.com> - $VERSION-1
@@ -205,7 +205,7 @@ jobs:
           
           # 检查必需的字段
           for field in Name Version Release Summary License; do
-            if ! grep -q "^$field:" novel-editor.spec; then
+            if ! grep -q "^$field:" grain.spec; then
               echo "❌ Missing required field: $field"
               exit 1
             fi
@@ -225,9 +225,9 @@ jobs:
             echo ""
             echo "📋 To submit to OBS:"
             echo "1. Create openSUSE Build Service account"
-            echo "2. Create a project (e.g., home:username:novel-editor)"
+            echo "2. Create a project (e.g., home:username:grain)"
             echo "3. Add OBS_CONFIG secret with ~/.config/osc/oscrc content"
-            echo "4. Add OBS_PROJECT secret (format: home:username:novel-editor)"
+            echo "4. Add OBS_PROJECT secret (format: home:username:grain)"
             echo "5. Re-run this workflow"
             echo ""
             echo "📦 Files ready for manual submission:"
@@ -238,29 +238,29 @@ jobs:
           echo "📤 Submitting to OBS project: $OBS_PROJECT"
           
           # 检出项目
-          osc co "$OBS_PROJECT" || osc mkpac "$OBS_PROJECT" novel-editor
+          osc co "$OBS_PROJECT" || osc mkpac "$OBS_PROJECT" grain
           
           # 复制文件
-          cp obs-package/* "$OBS_PROJECT/novel-editor/"
+          cp obs-package/* "$OBS_PROJECT/grain/"
           
-          cd "$OBS_PROJECT/novel-editor"
+          cd "$OBS_PROJECT/grain"
           
           # 添加文件
           osc add *
           
           # 提交
-          osc ci -m "Update novel-editor to version $VERSION"
+          osc ci -m "Update grain to version $VERSION"
           
           echo "✅ Successfully submitted to OBS!"
           echo ""
           echo "🎉 Package will be available at:"
-          echo "   https://build.opensuse.org/package/show/$OBS_PROJECT/novel-editor"
+          echo "   https://build.opensuse.org/package/show/$OBS_PROJECT/grain"
           echo ""
           echo "📥 Users can install with:"
           echo "   # Add repository"
-          echo "   sudo zypper ar https://download.opensuse.org/repositories/$OBS_PROJECT/openSUSE_Tumbleweed/ novel-editor"
+          echo "   sudo zypper ar https://download.opensuse.org/repositories/$OBS_PROJECT/openSUSE_Tumbleweed/ grain"
           echo "   sudo zypper refresh"
-          echo "   sudo zypper install novel-editor"
+          echo "   sudo zypper install grain"
 
       - name: Upload OBS artifacts
         uses: actions/upload-artifact@v4
@@ -280,8 +280,8 @@ jobs:
           echo "✅ Service file created"
           echo ""
           echo "📦 Installation commands:"
-          echo "   sudo zypper ar <repo-url> novel-editor"
-          echo "   sudo zypper install novel-editor"
+          echo "   sudo zypper ar <repo-url> grain"
+          echo "   sudo zypper install grain"
           echo ""
           echo "🔗 Supported distributions:"
           echo "   - openSUSE Tumbleweed"

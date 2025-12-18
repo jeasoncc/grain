@@ -97,15 +97,15 @@ jobs:
           
           # 创建 spec 文件
           mkdir -p copr-package
-          cat > copr-package/novel-editor.spec << EOF
-          Name:           novel-editor
+          cat > copr-package/grain.spec << EOF
+          Name:           grain
           Version:        $VERSION
           Release:        1%{?dist}
           Summary:        A modern, powerful novel writing application
           
           License:        MIT
           URL:            https://github.com/${{ github.repository }}
-          Source0:        %{url}/releases/download/desktop-v%{version}/novel-editor_%{version}_x64.rpm
+          Source0:        %{url}/releases/download/desktop-v%{version}/grain_%{version}_x64.rpm
           
           BuildArch:      x86_64
           
@@ -136,11 +136,11 @@ jobs:
           cp -r * %{buildroot}/
           
           %files
-          %license usr/share/doc/novel-editor/copyright
-          %doc usr/share/doc/novel-editor/
-          %{_bindir}/novel-editor
-          %{_datadir}/applications/novel-editor.desktop
-          %{_datadir}/icons/hicolor/*/apps/novel-editor.*
+          %license usr/share/doc/grain/copyright
+          %doc usr/share/doc/grain/
+          %{_bindir}/grain
+          %{_datadir}/applications/grain.desktop
+          %{_datadir}/icons/hicolor/*/apps/grain.*
           
           %changelog
           * $(date +'%a %b %d %Y') Jeason <xiaomiquan@aliyun.com> - $VERSION-1
@@ -159,7 +159,7 @@ jobs:
           cd copr-package
           
           # 创建源码 tarball
-          tar -czf "novel-editor-$VERSION.tar.gz" novel-editor.spec
+          tar -czf "grain-$VERSION.tar.gz" grain.spec
           
           echo "✅ COPR source package created"
           ls -la
@@ -190,7 +190,7 @@ jobs:
           cd copr-package
           
           # 提交构建
-          copr-cli build "$COPR_PROJECT" "novel-editor-$VERSION.tar.gz"
+          copr-cli build "$COPR_PROJECT" "grain-$VERSION.tar.gz"
           
           echo "✅ Successfully submitted to COPR!"
           echo ""
@@ -199,7 +199,7 @@ jobs:
           echo ""
           echo "📥 Users can install with:"
           echo "   sudo dnf copr enable $COPR_PROJECT"
-          echo "   sudo dnf install novel-editor"
+          echo "   sudo dnf install grain"
 
       - name: Upload COPR artifacts
         uses: actions/upload-artifact@v4
@@ -219,8 +219,8 @@ jobs:
           echo "✅ Source package built"
           echo ""
           echo "📦 Installation commands:"
-          echo "   sudo dnf copr enable username/novel-editor"
-          echo "   sudo dnf install novel-editor"
+          echo "   sudo dnf copr enable username/grain"
+          echo "   sudo dnf install grain"
           echo ""
           echo "🔗 Supported distributions:"
           echo "   - Fedora (all supported versions)"

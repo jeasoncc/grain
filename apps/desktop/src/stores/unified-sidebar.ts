@@ -161,7 +161,7 @@ export const useUnifiedSidebarStore = create<UnifiedSidebarState>()(
 				})),
 		}),
 		{
-			name: "novel-editor-unified-sidebar",
+			name: "grain-unified-sidebar",
 			partialize: (state) => ({
 				activePanel: state.activePanel,
 				isOpen: state.isOpen,

@@ -51,7 +51,7 @@ export const useSettings = create<SettingsState>()(
 			setParagraphSpacing: (paragraphSpacing) => set({ paragraphSpacing }),
 		}),
 		{
-			name: "novel-editor-settings",
+			name: "grain-settings",
 		},
 	),
 );

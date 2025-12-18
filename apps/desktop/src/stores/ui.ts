@@ -55,7 +55,7 @@ export const useUIStore = create<UIState>()(
 			setLocale: (locale) => set({ locale }),
 		}),
 		{
-			name: "novel-editor-ui",
+			name: "grain-ui",
 			partialize: (state) => ({
 				rightSidebarOpen: state.rightSidebarOpen,
 				tabPosition: state.tabPosition,

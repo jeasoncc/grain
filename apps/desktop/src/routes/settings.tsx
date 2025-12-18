@@ -16,7 +16,7 @@ export const Route = createFileRoute("/settings")({
 interface NavItem {
 	to: string;
 	label: string;
-	description: string;
+	description?: string;
 	icon: React.ComponentType<{ className?: string }>;
 }
 
@@ -36,25 +36,21 @@ function SettingsLayout() {
 				{
 					to: "/settings/design",
 					label: "Appearance",
-					description: "Theme & colors",
 					icon: iconTheme.icons.settingsPage.appearance,
 				},
 				{
 					to: "/settings/typography",
 					label: "Typography",
-					description: "Fonts & sizes",
 					icon: iconTheme.icons.settingsPage.editor,
 				},
 				{
 					to: "/settings/icons",
 					label: "Icons",
-					description: "Icon style",
 					icon: iconTheme.icons.settingsPage.icons,
 				},
 				{
 					to: "/settings/diagrams",
 					label: "Diagrams",
-					description: "Diagram settings",
 					icon: iconTheme.icons.settingsPage.diagrams,
 				},
 			],
@@ -65,13 +61,11 @@ function SettingsLayout() {
 				{
 					to: "/settings/general",
 					label: "General",
-					description: "Basic settings",
 					icon: iconTheme.icons.settingsPage.general,
 				},
 				{
 					to: "/settings/editor",
 					label: "Editor",
-					description: "Writing preferences",
 					icon: iconTheme.icons.settingsPage.editor,
 				},
 			],
@@ -82,13 +76,11 @@ function SettingsLayout() {
 				{
 					to: "/settings/data",
 					label: "Data",
-					description: "Backup & storage",
 					icon: iconTheme.icons.settingsPage.data,
 				},
 				{
 					to: "/settings/export",
 					label: "Export",
-					description: "Export options",
 					icon: iconTheme.icons.settingsPage.export,
 				},
 			],
@@ -99,13 +91,11 @@ function SettingsLayout() {
 				{
 					to: "/settings/scroll-test",
 					label: "Scroll Test",
-					description: "Test scrolling",
 					icon: iconTheme.icons.settingsPage.scroll,
 				},
 				{
 					to: "/settings/logs",
 					label: "Logs",
-					description: "System logs",
 					icon: iconTheme.icons.settingsPage.logs,
 				},
 			],
@@ -116,7 +106,6 @@ function SettingsLayout() {
 				{
 					to: "/settings/about",
 					label: "About",
-					description: "App info",
 					icon: iconTheme.icons.settingsPage.about,
 				},
 			],
@@ -127,7 +116,7 @@ function SettingsLayout() {
 		<div className="h-screen bg-background flex flex-col overflow-hidden">
 			{/* Header - Fixed at top */}
 			<header className="shrink-0 z-20 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-				<div className="container flex h-14 max-w-screen-2xl items-center">
+				<div className="container flex h-14 max-w-screen-2xl items-center pl-8">
 					<Link
 						to="/"
 						className="mr-6 flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -137,7 +126,7 @@ function SettingsLayout() {
 					</Link>
 					<div className="h-4 w-px bg-border mx-2" />
 					<div className="flex items-center gap-2">
-						<h1 className="font-semibold text-sm">Settings</h1>
+						<h1 className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">Settings</h1>
 					</div>
 				</div>
 			</header>
@@ -179,9 +168,6 @@ function SettingsLayout() {
 												<div className="flex flex-col min-w-0">
 													<span className={cn("text-xs font-medium truncate", isActive && "text-primary")}>
 														{item.label}
-													</span>
-													<span className="text-[9px] text-muted-foreground/60 truncate leading-tight">
-														{item.description}
 													</span>
 												</div>
 											</Link>

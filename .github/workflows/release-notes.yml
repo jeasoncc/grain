@@ -98,9 +98,9 @@ jobs:
             echo "" >> release-notes.md
             echo "#### Arch Linux (AUR)" >> release-notes.md
             echo "\`\`\`bash" >> release-notes.md
-            echo "yay -S novel-editor" >> release-notes.md
+            echo "yay -S grain" >> release-notes.md
             echo "# 或" >> release-notes.md
-            echo "paru -S novel-editor" >> release-notes.md
+            echo "paru -S grain" >> release-notes.md
             echo "\`\`\`" >> release-notes.md
             echo "" >> release-notes.md
             echo "#### 其他 Linux 发行版" >> release-notes.md

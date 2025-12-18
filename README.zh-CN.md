@@ -33,10 +33,10 @@ Grain（小麦）是一款专业的写作工具，专注于长文写作、知识
 | 平台 | 方式 | 安装命令 / 链接 |
 |------|------|----------------|
 | 🪟 Windows | Microsoft Store | [Grain / 小麦](ms-windows-store://pdp/?productid=9NV7M2PW25B3) |
-| 🪟 Windows | 直接下载 | [MSI / NSIS / MSIX](https://github.com/jeasoncc/grain-editor/releases) |
-| 🍎 macOS | 直接下载 | [DMG (Intel / Apple Silicon)](https://github.com/jeasoncc/grain-editor/releases) |
-| 🐧 Linux | Snap Store | `sudo snap install grain-editor` |
-| 🐧 Linux | 直接下载 | [DEB / RPM / AppImage](https://github.com/jeasoncc/grain-editor/releases) |
+| 🪟 Windows | 直接下载 | [MSI / NSIS / MSIX](https://github.com/jeasoncc/grain/releases) |
+| 🍎 macOS | 直接下载 | [DMG (Intel / Apple Silicon)](https://github.com/jeasoncc/grain/releases) |
+| 🐧 Linux | Snap Store | `sudo snap install grain` |
+| 🐧 Linux | 直接下载 | [DEB / RPM / AppImage](https://github.com/jeasoncc/grain/releases) |
 
 ---
 

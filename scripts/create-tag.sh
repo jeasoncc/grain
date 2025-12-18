@@ -324,7 +324,7 @@ main() {
     
     echo ""
     echo -e "${GREEN}✅ 完成！CI/CD 构建将自动触发${NC}"
-    echo -e "${BLUE}📊 查看构建状态: https://github.com/Jeason-Lotus/novel-editor/actions${NC}"
+    echo -e "${BLUE}📊 查看构建状态: https://github.com/jeasoncc/grain/actions${NC}"
 }
 
 # 执行主函数

@@ -22,7 +22,7 @@ export const useSelectionStore = create<SelectionState>()(
 			setSelectedNodeId: (id: string | null) => set({ selectedNodeId: id }),
 		}),
 		{
-			name: "novel-editor-selection",
+			name: "grain-selection",
 			partialize: (state) => ({ selectedWorkspaceId: state.selectedWorkspaceId }),
 		}
 	)

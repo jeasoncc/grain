@@ -34,7 +34,7 @@
 
 ```bash
 # Install dependencies
-npm install
+bun install
 
 # Development
 npm run desktop:dev    # Desktop app

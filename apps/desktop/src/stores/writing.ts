@@ -131,7 +131,7 @@ export const useWritingStore = create<WritingState>()(
 			setMinimalToolbar: (minimalToolbar) => set({ minimalToolbar }),
 		}),
 		{
-			name: "novel-editor-writing",
+			name: "grain-writing",
 			partialize: (state) => ({
 				typewriterMode: state.typewriterMode,
 				writingGoal: state.writingGoal,

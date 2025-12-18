@@ -4,24 +4,24 @@ import { OpenSourceBadges } from "@/components/ui/open-source-badges";
 
 const footerLinks = {
   product: [
-    { name: "功能特性", href: "/#features" },
-    { name: "下载", href: "/download" },
-    { name: "更新日志", href: "/#changelog" },
-    { name: "路线图", href: "/#roadmap" },
+    { name: "Features", href: "/#features" },
+    { name: "Download", href: "/download" },
+    { name: "Changelog", href: "/#changelog" },
+    { name: "Roadmap", href: "/#roadmap" },
   ],
   resources: [
-    { name: "文档", href: "/docs" },
-    { name: "教程", href: "/docs/tutorials" },
-    { name: "API 参考", href: "/docs/api" },
-    { name: "常见问题", href: "/docs/faq" },
+    { name: "Docs", href: "/docs" },
+    { name: "Tutorials", href: "/docs/tutorials" },
+    { name: "API Reference", href: "/docs/api" },
+    { name: "FAQ", href: "/docs/faq" },
   ],
   community: [
-    { name: "GitHub", href: "https://github.com/jeasoncc/novel-editor" },
-    { name: "讨论区", href: "https://github.com/jeasoncc/novel-editor/discussions" },
-    { name: "问题反馈", href: "https://github.com/jeasoncc/novel-editor/issues" },
-    { name: "贡献指南", href: "/docs/contributing" },
-    { name: "贡献者", href: "/contributors" },
-    { name: "行为准则", href: "/conduct" },
+    { name: "GitHub", href: "https://github.com/jeasoncc/grain" },
+    { name: "Discussions", href: "https://github.com/jeasoncc/grain/discussions" },
+    { name: "Issues", href: "https://github.com/jeasoncc/grain/issues" },
+    { name: "Contributing", href: "/docs/contributing" },
+    { name: "Contributors", href: "/contributors" },
+    { name: "Code of Conduct", href: "/conduct" },
   ],
   legal: [
     { name: "隐私政策", href: "/privacy" },
@@ -41,15 +41,15 @@ export function Footer() {
             <div className="flex items-center gap-2 mb-4">
               <FileText className="w-6 h-6 text-gray-900 dark:text-white" />
               <span className="text-xl font-bold text-gray-900 dark:text-white">
-                Novel Editor
+                Grain
               </span>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-              专业的长篇小说写作工具
+              A minimalist writing sanctuary
             </p>
             <div className="flex gap-3">
               <a
-                href="https://github.com/jeasoncc/novel-editor"
+                href="https://github.com/jeasoncc/grain"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition"
@@ -58,7 +58,7 @@ export function Footer() {
                 <Github className="w-5 h-5" />
               </a>
               <a
-                href="mailto:support@novel-editor.com"
+                href="mailto:support@grain.app"
                 className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition"
                 aria-label="Email"
               >
@@ -70,7 +70,7 @@ export function Footer() {
           {/* Product */}
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
-              产品
+              Product
             </h3>
             <ul className="space-y-2">
               {footerLinks.product.map((link) => (
@@ -89,7 +89,7 @@ export function Footer() {
           {/* Resources */}
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
-              资源
+              Resources
             </h3>
             <ul className="space-y-2">
               {footerLinks.resources.map((link) => (
@@ -108,7 +108,7 @@ export function Footer() {
           {/* Community */}
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
-              社区
+              Community
             </h3>
             <ul className="space-y-2">
               {footerLinks.community.map((link) => (
@@ -133,7 +133,7 @@ export function Footer() {
           {/* Legal */}
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
-              法律
+              Legal
             </h3>
             <ul className="space-y-2">
               {footerLinks.legal.map((link) => (
@@ -158,7 +158,7 @@ export function Footer() {
         {/* Bottom */}
         <div className="pt-8 border-t border-gray-200 dark:border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            © {new Date().getFullYear()} Novel Editor. Released under the MIT License.
+            © {new Date().getFullYear()} Grain. Released under the MIT License.
           </p>
           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <Code className="w-4 h-4" />

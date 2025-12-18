@@ -4,6 +4,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useTheme } from "@/hooks/use-theme";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
 	applyIconTheme,
 	type IconTheme,
 	iconThemes,
@@ -59,9 +64,9 @@ function IconSettings() {
 				<div className="lg:col-span-7 space-y-4 min-w-0">
 					<div className="sticky top-6 space-y-4">
 						{/* Icon Preview Window */}
-						<div className="rounded-lg border overflow-hidden shadow-sm">
+						<div className="rounded-lg border border-border/40 overflow-hidden shadow-sm">
 							<div
-								className="border-b p-4"
+								className="border-b border-border/40 p-4"
 								style={{ background: currentTheme?.colors.sidebar }}
 							>
 								<div className="flex items-center gap-2">
@@ -295,48 +300,61 @@ function IconThemeCard({ theme, isActive, onSelect }: IconThemeCardProps) {
 		<button
 			onClick={onSelect}
 			className={cn(
-				"relative flex flex-col rounded-xl border overflow-hidden transition-all duration-300 text-left group",
-				"hover:shadow-md hover:-translate-y-1 hover:border-primary/50",
-				isActive 
-					? "border-primary ring-2 ring-primary/20 shadow-md bg-accent/5" 
-					: "border-border/40 bg-card"
-			)}
-		>
-			{/* Icon Preview */}
-			<div className={cn(
-				"h-16 w-full flex items-center justify-center gap-4 border-b border-border/10 transition-colors",
-				isActive ? "bg-primary/5" : "bg-muted/30 group-hover:bg-muted/50"
-			)}>
-				<div className="p-2 rounded-lg bg-background shadow-sm ring-1 ring-border/10 group-hover:scale-110 transition-transform duration-300">
-					<ProjectIcon className="size-5 text-foreground/80" />
-				</div>
-				<div className="p-2 rounded-lg bg-background shadow-sm ring-1 ring-border/10 group-hover:scale-110 transition-transform duration-300 delay-75">
-					<FolderIcon className="size-5 text-foreground/80" />
-				</div>
-				<div className="p-2 rounded-lg bg-background shadow-sm ring-1 ring-border/10 group-hover:scale-110 transition-transform duration-300 delay-150">
-					<FileIcon className="size-5 text-foreground/80" />
-				</div>
-			</div>
-
-			{/* Theme Info */}
-			<div className="px-4 py-3">
-				<div className="text-sm font-semibold text-card-foreground mb-1 group-hover:text-primary transition-colors">
-					{theme.name}
-				</div>
-				<p className="text-[10px] text-muted-foreground line-clamp-1 opacity-70">
-					{theme.description}
-				</p>
-			</div>
-
-			{/* Selection Indicator */}
-			{isActive && (
-				<div className="absolute top-2 right-2 size-5 rounded-full flex items-center justify-center shadow-sm animate-in fade-in zoom-in duration-200"
-					style={{ background: "hsl(var(--primary))" }}
+						"relative flex flex-col rounded-xl border overflow-hidden transition-all duration-300 text-left group",
+						"hover:shadow-lg hover:-translate-y-1 hover:border-primary/50",
+						isActive
+							? "border-primary ring-2 ring-primary/20 shadow-md bg-accent/5 scale-[1.02]"
+							: "border-border/40 bg-card",
+					)}
 				>
-					<Check className="size-3 text-primary-foreground" />
-				</div>
-			)}
-		</button>
+					{/* Icon Preview */}
+					<div
+						className={cn(
+							"h-16 w-full flex items-center justify-center gap-4 border-b border-border/10 transition-colors relative overflow-hidden",
+							isActive
+								? "bg-primary/5"
+								: "bg-muted/30 group-hover:bg-muted/50",
+						)}
+					>
+						{/* Subtle Gradient Overlay */}
+						<div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/5 pointer-events-none" />
+
+						<div className="p-2 rounded-lg bg-background shadow-sm ring-1 ring-border/10 group-hover:scale-110 transition-transform duration-300 relative z-10">
+							<ProjectIcon className="size-5 text-foreground/80" />
+						</div>
+						<div className="p-2 rounded-lg bg-background shadow-sm ring-1 ring-border/10 group-hover:scale-110 transition-transform duration-300 delay-75 relative z-10">
+							<FolderIcon className="size-5 text-foreground/80" />
+						</div>
+						<div className="p-2 rounded-lg bg-background shadow-sm ring-1 ring-border/10 group-hover:scale-110 transition-transform duration-300 delay-150 relative z-10">
+							<FileIcon className="size-5 text-foreground/80" />
+						</div>
+					</div>
+
+					{/* Theme Info */}
+					<div
+						className={cn(
+							"px-4 py-3 transition-colors w-full",
+							isActive ? "bg-primary/5" : "bg-transparent",
+						)}
+					>
+						<div className="text-sm font-semibold text-card-foreground mb-1 group-hover:text-primary transition-colors">
+							{theme.name}
+						</div>
+						<p className="text-[10px] text-muted-foreground line-clamp-1 opacity-70">
+							{theme.description}
+						</p>
+					</div>
+
+					{/* Selection Indicator */}
+					{isActive && (
+						<div
+							className="absolute top-2 right-2 size-5 rounded-full flex items-center justify-center shadow-sm animate-in fade-in zoom-in duration-200"
+							style={{ background: "hsl(var(--primary))" }}
+						>
+							<Check className="size-3 text-primary-foreground" />
+						</div>
+					)}
+				</button>
 	);
 }
 

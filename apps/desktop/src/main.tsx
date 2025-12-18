@@ -3,7 +3,7 @@ import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { routeTree } from "./routeTree.gen";
 import "./styles.css";
-import "@novel-editor/editor/styles";
+import "@grain/editor/styles";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { db, initDatabase } from "./db/curd";

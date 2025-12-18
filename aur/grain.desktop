@@ -1,0 +1,17 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Grain
+Name[zh_CN]=小麦
+Comment=A minimalist writing sanctuary for long-form content
+Comment[zh_CN]=专注长文写作的极简写作空间
+GenericName=Writing Tool
+GenericName[zh_CN]=写作工具
+Exec=grain %U
+Icon=grain
+Terminal=false
+Categories=Office;WordProcessor;Literature;
+Keywords=writing;editor;author;book;notes;
+MimeType=application/x-grain;
+StartupNotify=true
+StartupWMClass=grain

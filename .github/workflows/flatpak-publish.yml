@@ -107,7 +107,7 @@ jobs:
             --repo=repo build-dir flatpak/com.lotus.NovelEditor.yml
           
           # 导出为 .flatpak 文件
-          flatpak build-bundle repo novel-editor-${{ steps.version.outputs.version }}.flatpak \
+          flatpak build-bundle repo grain-${{ steps.version.outputs.version }}.flatpak \
             com.lotus.NovelEditor
           
           echo "✅ Flatpak built successfully"
@@ -118,7 +118,7 @@ jobs:
           echo "🧪 Testing Flatpak installation..."
           
           # 安装测试
-          flatpak install --user -y novel-editor-${{ steps.version.outputs.version }}.flatpak
+          flatpak install --user -y grain-${{ steps.version.outputs.version }}.flatpak
           
           # 验证安装
           if flatpak list --user | grep -q com.lotus.NovelEditor; then

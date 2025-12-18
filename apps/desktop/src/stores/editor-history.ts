@@ -180,7 +180,7 @@ export const useEditorHistory = create<EditorHistoryState>()(
 			},
 		}),
 		{
-			name: "novel-editor-history",
+			name: "grain-history",
 			// 只持久化必要的数据
 			partialize: (state) => ({
 				undoStack: Array.from(state.undoStack.entries()),

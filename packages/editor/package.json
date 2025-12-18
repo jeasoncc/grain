@@ -1,5 +1,5 @@
 {
-  "name": "@novel-editor/editor",
+  "name": "@grain/editor",
   "version": "0.1.0",
   "description": "Wheat Editor - A rich text editor based on Lexical",
   "type": "module",
