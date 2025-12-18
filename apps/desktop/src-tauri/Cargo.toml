@@ -1,7 +1,7 @@
 [package]
 name = "grain"
 version = "0.1.91"
-description = "Grain - A powerful writing editor focused on long-form writing, knowledge management, and creative expression"
+description = "A minimalist writing sanctuary for long-form content. Pure, elegant, and distraction-free."
 authors = ["Jeason"]
 edition = "2021"
 

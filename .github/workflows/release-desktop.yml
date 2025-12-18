@@ -347,7 +347,7 @@ jobs:
           Write-Output ""
           
           # 查找可执行文件
-          $exePath = "apps/desktop/src-tauri/target/release/novel-editor.exe"
+          $exePath = "apps/desktop/src-tauri/target/release/grain.exe"
           if (-not (Test-Path $exePath)) {
             Write-Error "未找到可执行文件: $exePath"
             exit 1
@@ -361,7 +361,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "$msixDir/Assets" | Out-Null
           
           # 复制可执行文件
-          Copy-Item $exePath "$msixDir/novel-editor.exe"
+          Copy-Item $exePath "$msixDir/grain.exe"
           Write-Output "✓ 复制可执行文件"
           
           # 复制图标
@@ -391,9 +391,9 @@ jobs:
               <Resource Language="zh-CN" />
             </Resources>
             <Applications>
-              <Application Id="NovelEditor" Executable="novel-editor.exe" EntryPoint="Windows.FullTrustApplication">
-                <uap:VisualElements DisplayName="小麦写作"
-                                    Description="一个现代化的小说编辑器"
+              <Application Id="Grain" Executable="grain.exe" EntryPoint="Windows.FullTrustApplication">
+                <uap:VisualElements DisplayName="Grain"
+                                    Description="A minimalist writing sanctuary for long-form content"
                                     BackgroundColor="transparent"
                                     Square150x150Logo="Assets\Square150x150Logo.png"
                                     Square44x44Logo="Assets\Square44x44Logo.png">
@@ -423,7 +423,7 @@ jobs:
           Write-Output "✓ 找到 MakeAppx: $makeAppx"
           
           # 打包 MSIX
-          $outputMsix = "novel-editor_${version}_x64.msix"
+          $outputMsix = "grain_${version}_x64.msix"
           Write-Output "打包 MSIX: $outputMsix"
           & $makeAppx pack /d $msixDir /p $outputMsix /o
           
@@ -454,7 +454,7 @@ jobs:
           # 读取版本号
           $config = Get-Content 'apps/desktop/src-tauri/tauri.conf.json' | ConvertFrom-Json
           $version = $config.version
-          $msixFile = "novel-editor_${version}_x64.msix"
+          $msixFile = "grain_${version}_x64.msix"
           
           if (-not (Test-Path $msixFile)) {
             Write-Error "未找到 MSIX 文件: $msixFile"
@@ -514,7 +514,7 @@ jobs:
           # 读取版本号
           $config = Get-Content 'apps/desktop/src-tauri/tauri.conf.json' | ConvertFrom-Json
           $version = $config.version
-          $msixFile = "novel-editor_${version}_x64.msix"
+          $msixFile = "grain_${version}_x64.msix"
           
           if (Test-Path $msixFile) {
             $fileInfo = Get-Item $msixFile

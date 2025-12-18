@@ -2,7 +2,7 @@
   "name": "grain-editor-monorepo",
   "private": true,
   "author": "Jeason",
-  "description": "Grain（小麦）是一个功能强大的写作编辑器，专注于长文写作、知识管理和创意表达。",
+  "description": "A minimalist writing sanctuary for long-form content. Pure, elegant, and distraction-free.",
   "email": "xiaomiquan@aliyun.com",
   "version": "0.1.91",
   "license": "MIT",

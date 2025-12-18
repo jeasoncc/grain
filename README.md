@@ -1,12 +1,12 @@
 # Grain / 小麦
 
-> A modern, powerful writing application for creative minds
+> Pure. Elegant. Focused on what matters—your words.
 
 > 🇨🇳 [中文文档](./README.zh-CN.md) | English
 
 ![Grain Editor](https://s3.bmp.ovh/imgs/2025/12/13/6647787c1fa17679.png)
 
-Grain (小麦) is a professional writing tool designed for long-form writing, knowledge management, and creative expression. Built with modern technologies, it provides a distraction-free writing environment with powerful organizational features.
+Grain is a minimalist writing sanctuary for long-form content. Distraction-free by design, powerful when you need it. Write novels, essays, research papers, or build your knowledge base—all in one elegant space.
 
 ---
 
