@@ -4,10 +4,8 @@
  *
  * Requirements: 6.2
  */
-import { useLiveQuery } from "dexie-react-hooks";
 import { toast } from "sonner";
 import { z } from "zod";
-import { database } from "@/db/database";
 import {
 	WorkspaceRepository,
 	type WorkspaceInterface,
@@ -19,6 +17,12 @@ export const bookSchema = z.object({
 	description: z.string().trim().max(500).optional(),
 });
 
+/**
+ * 创建新书籍/工作区
+ * 
+ * @param input - 书籍数据，包含标题、作者和可选描述
+ * @returns 创建的工作区对象
+ */
 export async function createBook(
 	input: z.infer<typeof bookSchema>,
 ): Promise<WorkspaceInterface> {
@@ -35,7 +39,5 @@ export async function createBook(
 	return workspace;
 }
 
-export function useAllWorkspaces(): WorkspaceInterface[] {
-	const data = useLiveQuery(() => database.workspaces.toArray(), [] as const);
-	return (data ?? []) as WorkspaceInterface[];
-}
+// Note: useAllWorkspaces hook is available from @/db/models/workspace/workspace.hooks.ts
+// Import it from @/db/models instead of this service file

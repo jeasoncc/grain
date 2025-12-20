@@ -18,7 +18,7 @@ import {
 	CommandList,
 } from "@/components/ui/command";
 import { useTheme } from "@/hooks/use-theme";
-import { useSelectionStore } from "@/stores/selection";
+import { useSelectionStore } from "@/domain/selection";
 import { exportDialogManager } from "@/components/export/export-dialog-manager";
 import { useAllWorkspaces } from "@/db/models";
 

@@ -3,7 +3,7 @@
  */
 import { AlertCircle, Check, Loader2, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useSaveStore } from "@/stores/save";
+import { useSaveStore } from "@/domain/save";
 
 interface SaveStatusIndicatorProps {
 	className?: string;
@@ -69,14 +69,14 @@ export function SaveStatusIndicator({
 
 	const statusDisplay = getStatusDisplay();
 
-	const formatLastSaveTime = (time: Date | null) => {
-		if (!time) return "";
-		const now = new Date();
-		const diff = now.getTime() - time.getTime();
+	const formatLastSaveTime = (timestamp: number | null) => {
+		if (!timestamp) return "";
+		const now = Date.now();
+		const diff = now - timestamp;
 
 		if (diff < 60000) return "just now";
 		if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-		return time.toLocaleTimeString();
+		return new Date(timestamp).toLocaleTimeString();
 	};
 
 	return (

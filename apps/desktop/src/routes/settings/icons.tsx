@@ -12,7 +12,7 @@ import {
 	applyIconTheme,
 	type IconTheme,
 	iconThemes,
-} from "@/lib/icon-themes";
+} from "@/domain/icon-theme";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings/icons")({

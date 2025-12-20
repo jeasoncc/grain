@@ -16,7 +16,7 @@ import { KeyboardShortcutsHelp } from "@/components/blocks/keyboard-shortcuts-he
 import { SaveStatusIndicator } from "@/components/blocks/save-status-indicator";
 import { ThemeSelector } from "@/components/blocks/theme-selector";
 import { EditorTabs } from "@/components/editor-tabs";
-import { useEditorTabsStore } from "@/stores/editor-tabs";
+import { useEditorTabsStore } from "@/domain/editor-tabs";
 import { StoryRightSidebar } from "@/components/story-right-sidebar";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,10 +28,10 @@ import {
 import type { WorkspaceInterface, DrawingInterface } from "@/db/models";
 import { useManualSave } from "@/hooks/use-manual-save";
 import { useSettings } from "@/hooks/use-settings";
-import { useSaveStore } from "@/stores/save";
+import { useSaveStore } from "@/domain/save";
 import { saveService } from "@/services/save";
-import { type SelectionState, useSelectionStore } from "@/stores/selection";
-import { useUIStore } from "@/stores/ui";
+import { useSelectionStore } from "@/domain/selection";
+import { useUIStore } from "@/domain/ui";
 import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
 import { getNodeContent } from "@/services/nodes";
 import { useWikiFiles } from "@/services/wiki-files";
@@ -51,8 +51,8 @@ export function StoryWorkspace({
 	activeWorkspaceId,
 }: StoryWorkspaceProps) {
 	const initialWorkspaceId = activeWorkspaceId ?? workspaces[0]?.id ?? null;
-	const selectedWorkspaceId = useSelectionStore((s: SelectionState) => s.selectedWorkspaceId);
-	const setSelectedWorkspaceId = useSelectionStore((s: SelectionState) => s.setSelectedWorkspaceId);
+	const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
+	const setSelectedWorkspaceId = useSelectionStore((s) => s.setSelectedWorkspaceId);
 
 	const { autoSave, autoSaveInterval } = useSettings();
 	const autoSaveDelayMs = autoSave ? Math.max(DEFAULT_AUTO_SAVE_MS, autoSaveInterval * 1000) : 0;

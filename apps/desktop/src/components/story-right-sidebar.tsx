@@ -7,9 +7,9 @@
 import { useMemo } from "react";
 import { X, FileText, Calendar, Palette } from "lucide-react";
 import type { DrawingInterface } from "@/db/schema";
-import { useUIStore } from "@/stores/ui";
-import { useEditorTabsStore, type EditorTab } from "@/stores/editor-tabs";
-import { useSelectionStore } from "@/stores/selection";
+import { useUIStore } from "@/domain/ui";
+import { useEditorTabsStore, type EditorTab } from "@/domain/editor-tabs";
+import { useSelectionStore } from "@/domain/selection";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {

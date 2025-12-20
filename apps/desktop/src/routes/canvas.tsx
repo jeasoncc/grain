@@ -6,7 +6,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { PenTool } from "lucide-react";
 import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
-import { useUnifiedSidebarStore } from "@/stores/unified-sidebar";
+import { useUnifiedSidebarStore } from "@/domain/sidebar";
 import { useDrawingById } from "@/services/drawings";
 
 export const Route = createFileRoute("/canvas")({

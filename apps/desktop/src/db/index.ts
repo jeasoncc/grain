@@ -10,9 +10,8 @@
 // Database instance and class
 export { database, GrainDatabase, NovelEditorDatabase } from "./database";
 
-// Legacy exports for backward compatibility
-// @deprecated Use database from "./database" instead
-export { db, initDatabase, GrainDB, NovelEditorDB } from "./curd";
+// Database initialization
+export { initDatabase } from "@/services/db-init";
 
 // Legacy schema types for backward compatibility
 // @deprecated Use types from "./models" instead

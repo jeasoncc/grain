@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { PanelLeftOpen } from "lucide-react";
-import { useUnifiedSidebarStore } from "@/stores/unified-sidebar";
+import { useUnifiedSidebarStore } from "@/domain/sidebar";
 import { SearchPanel } from "./panels/search-panel";
 import { DrawingsPanel } from "./panels/drawings-panel";
 import { FileTreePanel } from "./panels/file-tree-panel";

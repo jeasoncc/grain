@@ -14,8 +14,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { UnifiedSidebarContent } from "@/components/unified-sidebar";
 import { initializeTheme } from "@/hooks/use-theme";
 import { autoBackupManager } from "@/services/backup";
-import { useEditorTabsStore } from "@/stores/editor-tabs";
-import { useUnifiedSidebarStore } from "@/stores/unified-sidebar";
+import { useEditorTabsStore } from "@/domain/editor-tabs";
+import { useUnifiedSidebarStore } from "@/domain/sidebar";
+import logger from "@/log";
 
 function RootComponent() {
 	const [commandOpen, setCommandOpen] = useState(false);
@@ -34,6 +35,11 @@ function RootComponent() {
 		setActivePanel,
 		toggleSidebar,
 	} = useUnifiedSidebarStore();
+	
+	// 日志：追踪侧边栏状态变化
+	useEffect(() => {
+		logger.info(`[Root] Sidebar state: isOpen=${unifiedSidebarOpen}, activePanel=${activePanel}, willRender=${unifiedSidebarOpen && activePanel !== null}`);
+	}, [unifiedSidebarOpen, activePanel]);
 
 	// 初始化主题系统（包括系统主题监听）
 	useEffect(() => {

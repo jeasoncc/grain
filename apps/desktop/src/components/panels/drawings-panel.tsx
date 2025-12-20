@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { createDrawing, deleteDrawing, useDrawingsByWorkspace } from "@/services/drawings";
 import type { DrawingInterface } from "@/db/schema";
-import { useSelectionStore } from "@/stores/selection";
+import { useSelectionStore } from "@/domain/selection";
 
 interface DrawingsPanelProps {
 	onSelectDrawing?: (drawing: DrawingInterface) => void;

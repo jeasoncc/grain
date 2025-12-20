@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSettings } from "@/hooks/use-settings";
-import { useUIStore, type TabPosition } from "@/stores/ui";
+import { useUIStore, type TabPosition } from "@/domain/ui";
 import { 
 	Globe, 
 	LayoutTemplate, 

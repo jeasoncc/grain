@@ -22,17 +22,21 @@ import { useIconTheme } from "@/hooks/use-icon-theme";
 import { cn } from "@/lib/utils";
 import { importFromJson, readFileAsText } from "@/services/import-export";
 import { createDiaryInFileTree } from "@/services/diary-v2";
-import { runMigrationIfNeeded } from "@/services/wiki-migration";
 import { createWikiFile } from "@/services/wiki-files";
-import { useSelectionStore } from "@/stores/selection";
-import { useUnifiedSidebarStore } from "@/stores/unified-sidebar";
-import { useEditorTabsStore } from "@/stores/editor-tabs";
+import { runMigrationIfNeeded } from "@/services/wiki-migration";
+
+import { useSelectionStore } from "@/domain/selection";
+import { useUnifiedSidebarStore } from "@/domain/sidebar";
+import { useEditorTabsStore } from "@/domain/editor-tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import logger from "@/log";
+
 
 export function ActivityBar(): React.ReactElement {
 	const location = useLocation();
-	const workspaces = useAllWorkspaces() || [];
+	const workspacesRaw = useAllWorkspaces(); // undefined = loading, [] = empty
+	const workspaces = workspacesRaw ?? []; // 用于渲染，但保留 undefined 状态用于判断
 	const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
 	const setSelectedWorkspaceId = useSelectionStore((s) => s.setSelectedWorkspaceId);
 	const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId);
@@ -41,6 +45,7 @@ export function ActivityBar(): React.ReactElement {
 	const [exportDialogOpen, setExportDialogOpen] = useState(false);
 	const [showNewWorkspace, setShowNewWorkspace] = useState(false);
 	const [newWorkspaceName, setNewWorkspaceName] = useState("");
+	const [isCreatingDiary, setIsCreatingDiary] = useState(false);
 	const {
 		activePanel,
 		isOpen: unifiedSidebarOpen,
@@ -56,15 +61,18 @@ export function ActivityBar(): React.ReactElement {
 	useEffect(() => {
 		const initializeWorkspace = async () => {
 			// Wait for workspaces to load (undefined means still loading)
-			if (workspaces === undefined) return;
+			if (workspacesRaw === undefined) return;
 			
 			// Only run once per component mount
 			if (hasInitializedRef.current) return;
 			hasInitializedRef.current = true;
 			
-			// If no workspaces exist AND no previously selected workspace, create a default one
-			// This should only happen on first-time use or after clearing all data
-			if (workspaces.length === 0 && !selectedWorkspaceId) {
+			// If no workspaces exist, create a default one
+			if (workspaces.length === 0) {
+				// Clear stale selection if exists
+				if (selectedWorkspaceId) {
+					setSelectedWorkspaceId(null);
+				}
 				try {
 					const newWorkspace = await WorkspaceRepository.add("My Workspace", {
 						author: "",
@@ -73,7 +81,6 @@ export function ActivityBar(): React.ReactElement {
 					});
 					setSelectedWorkspaceId(newWorkspace.id);
 					setActivePanel("files");
-					// Run wiki migration for new workspace (Requirements: 4.1)
 					await runMigrationIfNeeded(newWorkspace.id);
 				} catch (error) {
 					console.error("Failed to create default workspace:", error);
@@ -81,19 +88,15 @@ export function ActivityBar(): React.ReactElement {
 				return;
 			}
 			
-			// If workspaces is empty but we have a selectedWorkspaceId, just wait
-			// The selectedWorkspaceId might be from a previous session and data is still loading
-			if (workspaces.length === 0) {
-				return;
-			}
-			
 			// Workspaces exist - validate and restore selection
 			const isSelectedValid = selectedWorkspaceId && workspaces.some(w => w.id === selectedWorkspaceId);
+			console.log('[ActivityBar] workspaces 存在:', workspaces.length, '个, isSelectedValid:', isSelectedValid);
 			let workspaceIdToMigrate: string | null = null;
 			
 			if (!isSelectedValid) {
 				// Selected workspace doesn't exist or none selected
 				// Select the most recently opened workspace (by lastOpen field)
+				console.log('[ActivityBar] 选择无效，自动选择最近的 workspace');
 				const sortedByLastOpen = [...workspaces].sort((a, b) => {
 					const dateA = new Date(a.lastOpen || a.createDate).getTime();
 					const dateB = new Date(b.lastOpen || b.createDate).getTime();
@@ -118,7 +121,7 @@ export function ActivityBar(): React.ReactElement {
 		};
 		initializeWorkspace();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [workspaces]); // Only depend on workspaces to avoid re-running when selection changes
+	}, [workspacesRaw]); // Depend on workspacesRaw to detect when loading completes (undefined -> [])
 
 	// 图标主题
 	const iconTheme = useIconTheme();
@@ -146,42 +149,42 @@ export function ActivityBar(): React.ReactElement {
 
 	// Handle diary creation from Calendar icon
 	const handleCreateDiary = useCallback(async () => {
+		// Prevent multiple rapid clicks
+		if (isCreatingDiary) {
+			return;
+		}
+
 		if (!selectedWorkspaceId) {
 			toast.error("Please select a workspace first");
 			return;
 		}
+
+		setIsCreatingDiary(true);
 		try {
-			const diaryNode = await createDiaryInFileTree(selectedWorkspaceId);
-			
+			// Create diary and get content in one call (avoids race condition)
+			const { node, parsedContent } = await createDiaryInFileTree(selectedWorkspaceId);
+
 			// Pre-load the diary content into editorStates BEFORE opening the tab
-			// This ensures the editor is initialized with the template content
-			const { getNodeContent } = await import("@/services/nodes");
-			const content = await getNodeContent(diaryNode.id);
-			if (content) {
-				try {
-					const parsed = JSON.parse(content);
-					updateEditorState(diaryNode.id, { serializedState: parsed });
-				} catch {
-					// Ignore parse errors
-				}
-			}
-			
+			updateEditorState(node.id, { serializedState: parsedContent });
+
 			// Open the created diary in the editor
 			openTab({
 				workspaceId: selectedWorkspaceId,
-				nodeId: diaryNode.id,
-				title: diaryNode.title,
+				nodeId: node.id,
+				title: node.title,
 				type: "diary",
 			});
-			// Open file tree panel and highlight the new diary
+
 			setActivePanel("files");
-			setSelectedNodeId(diaryNode.id);
+			setSelectedNodeId(node.id);
 			toast.success("Diary created");
 		} catch (error) {
 			toast.error("Failed to create diary");
 			console.error("Diary creation error:", error);
+		} finally {
+			setIsCreatingDiary(false);
 		}
-	}, [selectedWorkspaceId, openTab, setActivePanel, setSelectedNodeId, updateEditorState]);
+	}, [selectedWorkspaceId, openTab, setActivePanel, setSelectedNodeId, updateEditorState, isCreatingDiary]);
 
 	// Handle wiki creation from Wiki icon
 	const handleCreateWiki = useCallback(async () => {
@@ -193,35 +196,27 @@ export function ActivityBar(): React.ReactElement {
 			// Generate a default name with timestamp
 			const now = new Date();
 			const defaultName = `New Entry ${now.toLocaleDateString("en-US")} ${now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`;
-			
-			const wikiNode = await createWikiFile({
+
+			// Create wiki and get content in one call (avoids race condition)
+			const { node, parsedContent } = await createWikiFile({
 				workspaceId: selectedWorkspaceId,
 				name: defaultName,
 				useTemplate: true,
 			});
-			
+
 			// Pre-load the wiki content into editorStates BEFORE opening the tab
-			const { getNodeContent } = await import("@/services/nodes");
-			const content = await getNodeContent(wikiNode.id);
-			if (content) {
-				try {
-					const parsed = JSON.parse(content);
-					updateEditorState(wikiNode.id, { serializedState: parsed });
-				} catch {
-					// Ignore parse errors
-				}
-			}
-			
+			updateEditorState(node.id, { serializedState: parsedContent });
+
 			// Open the created wiki in the editor
 			openTab({
 				workspaceId: selectedWorkspaceId,
-				nodeId: wikiNode.id,
-				title: wikiNode.title,
+				nodeId: node.id,
+				title: node.title,
 				type: "file",
 			});
-			// Open file tree panel and highlight the new wiki
+
 			setActivePanel("files");
-			setSelectedNodeId(wikiNode.id);
+			setSelectedNodeId(node.id);
 			toast.success("Wiki entry created");
 		} catch (error) {
 			toast.error("Failed to create wiki entry");

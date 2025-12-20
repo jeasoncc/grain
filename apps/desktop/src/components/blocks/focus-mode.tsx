@@ -28,7 +28,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { useWritingStore } from "@/stores/writing";
+import { useWritingStore } from "@/domain/writing";
 
 interface FocusModeProps {
 	children: React.ReactNode;

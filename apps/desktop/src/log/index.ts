@@ -1,7 +1,7 @@
 // src/lib/logger.ts
 
 import consola, { type LogType } from "consola";
-import { logDB } from "@/lib/log-db";
+import { logDB } from "@/db/log-db";
 
 // 定义图标与颜色
 export const ICONS: Record<LogType, string> = {

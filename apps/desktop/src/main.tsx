@@ -6,7 +6,8 @@ import "./styles.css";
 import "@grain/editor/styles";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { db, initDatabase } from "./db/curd";
+import { database } from "./db/database";
+import { initDatabase } from "./services/db-init";
 import { cleanupAllDrawings } from "./services/drawings";
 
 // 开发环境下的调试工具已移除
@@ -30,7 +31,7 @@ declare module "@tanstack/react-router" {
 const queryClient = new QueryClient();
 
 async function main() {
-	await db.open(); // 打开数据库
+	await database.open(); // 打开数据库
 	await initDatabase(); // 初始化默认数据
 	
 	// 清理绘图数据中的异常值，防止 "Canvas exceeds max size" 错误

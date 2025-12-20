@@ -89,11 +89,6 @@ function SettingsLayout() {
 			title: "Advanced",
 			items: [
 				{
-					to: "/settings/scroll-test",
-					label: "Scroll Test",
-					icon: iconTheme.icons.settingsPage.scroll,
-				},
-				{
 					to: "/settings/logs",
 					label: "Logs",
 					icon: iconTheme.icons.settingsPage.logs,

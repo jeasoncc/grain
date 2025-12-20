@@ -24,20 +24,57 @@ grain-editor-monorepo/
 
 ```
 src/
-├── components/           # React components
-│   ├── blocks/          # Feature-specific components
-│   ├── ui/              # shadcn/ui components (do not modify)
-│   ├── panels/          # Panel components
-│   └── file-tree/       # File tree components
-├── db/                   # Database layer (Dexie/IndexedDB)
-│   └── models/          # Data models and repositories
-├── hooks/                # Custom React hooks
-├── lib/                  # Utilities and configurations
-├── routes/               # TanStack Router file-based routes
-│   └── settings/        # Settings sub-routes
-├── services/             # Business logic services
-├── stores/               # Zustand state stores
-└── utils/                # Helper utilities
+├── types/                # Interface + Builder + Zod Schema
+│   ├── node/
+│   │   ├── node.interface.ts
+│   │   ├── node.schema.ts
+│   │   ├── node.builder.ts
+│   │   └── index.ts
+│   ├── workspace/
+│   └── export/
+│
+├── fn/                   # 纯函数（管道节点）
+│   ├── node/
+│   │   ├── node.parse.fn.ts
+│   │   ├── node.transform.fn.ts
+│   │   └── index.ts
+│   ├── export/
+│   └── search/
+│
+├── lib/                  # 函数式工具库
+│   ├── pipe.fn.ts
+│   ├── result.fn.ts
+│   └── option.fn.ts
+│
+├── db/                   # 持久化函数
+│   ├── database.ts
+│   ├── node.db.fn.ts
+│   └── workspace.db.fn.ts
+│
+├── stores/               # 状态函数
+│   ├── editor.store.fn.ts
+│   ├── ui.store.fn.ts
+│   └── selection.store.fn.ts
+│
+├── hooks/                # React 绑定
+│   ├── use-node.ts
+│   └── use-workspace.ts
+│
+├── components/           # UI 组件
+│   ├── blocks/
+│   ├── ui/              # shadcn/ui (do not modify)
+│   ├── panels/
+│   └── file-tree/
+│
+└── routes/               # TanStack Router
+    ├── nodes/
+    │   ├── nodes.route.tsx      # 路由组件（编排层）
+    │   ├── actions/             # 操作函数（实现层）
+    │   │   ├── create-node.action.ts
+    │   │   ├── delete-node.action.ts
+    │   │   └── index.ts
+    │   └── index.ts
+    └── settings/
 ```
 
 ## Shared Editor Package (`packages/editor/src/`)
@@ -53,17 +90,26 @@ src/
 
 ## Data Architecture
 
-- **UI State**: Zustand stores (persisted to localStorage)
-- **Persistent Data**: Dexie (IndexedDB wrapper)
-- **Key Models**: Workspace, Node (file/folder/diary/canvas), Drawing, User, Settings
+- **Types**: Interface + Builder + Zod Schema（数据定义层）
+- **Functions**: 纯函数管道（数据处理层）
+- **DB**: Dexie/IndexedDB（持久化层）
+- **Stores**: Zustand（运行时状态层）
+- **Hooks**: React 绑定（响应式层）
 
-## File Conventions
+## File Naming Conventions
 
-- Components: PascalCase (`ActivityBar.tsx`)
-- Hooks: camelCase with `use-` prefix (`use-theme.ts`)
-- Stores: camelCase (`ui.ts`, `selection.ts`)
-- Services: camelCase (`backup.ts`, `export.ts`)
-- Routes: kebab-case matching URL paths
+| 类型 | 命名格式 | 示例 |
+|------|---------|------|
+| 接口定义 | `xxx.interface.ts` | `node.interface.ts` |
+| Zod Schema | `xxx.schema.ts` | `node.schema.ts` |
+| Builder | `xxx.builder.ts` | `node.builder.ts` |
+| 纯函数 | `xxx.fn.ts` | `node.parse.fn.ts` |
+| 数据库函数 | `xxx.db.fn.ts` | `node.db.fn.ts` |
+| 状态函数 | `xxx.store.fn.ts` | `editor.store.fn.ts` |
+| React Hook | `use-xxx.ts` | `use-node.ts` |
+| React 组件 | `XxxComponent.tsx` | `FileTree.tsx` |
+| 路由组件 | `xxx.route.tsx` | `nodes.route.tsx` |
+| Action 函数 | `xxx-yyy.action.ts` | `create-node.action.ts` |
 
 ## Import Aliases
 

@@ -2,7 +2,7 @@
 
 ## Monorepo Structure
 
-- **Package Manager**: npm (with workspaces)
+- **Package Manager**: bun (with workspaces)
 - **Build Orchestration**: Turborepo
 - **Node.js**: >= 20
 - **Bun**: >= 1.1.0 (for API server)
@@ -21,14 +21,34 @@
 ## Key Libraries
 
 - **Editor**: Lexical (rich text)
-- **State Management**: Zustand (UI state), Dexie (IndexedDB persistence)
+- **State Management**: Zustand + Immer (immutable state), Dexie (IndexedDB persistence)
 - **Routing**: TanStack Router (desktop/admin), Next.js App Router (web), Expo Router (mobile)
-- **Data Fetching**: TanStack Query
+- **Data Access**: Dexie React Hooks (IndexedDB 响应式绑定)
 - **Forms**: TanStack Form + Zod
 - **UI Components**: Radix UI primitives, Lucide icons
 - **Charts**: Mermaid, PlantUML
 - **Drawing**: Excalidraw
 - **Linting/Formatting**: Biome
+
+## Functional Programming Libraries
+
+- **fp-ts**: 函数式核心 (pipe, Option, Either, Task)
+- **es-toolkit**: 实用工具函数 (替代 lodash)
+- **Immer**: 不可变数据更新
+- **Zod**: 运行时数据校验
+- **dayjs**: 时间处理
+
+## Performance Libraries
+
+- **Million.js**: React 编译优化，自动优化组件渲染
+- **@tanstack/react-virtual**: 虚拟列表，大量数据高性能渲染
+
+## Architecture Patterns
+
+- **Immutable State**: Immer for safe state mutations
+- **Functional Programming**: Pure functions, higher-order functions, function composition
+- **Builder Pattern**: Complex object construction with method chaining
+- **Repository Pattern**: Data access abstraction layer
 
 ## Common Commands
 
@@ -37,26 +57,26 @@
 bun install
 
 # Development
-npm run desktop:dev    # Desktop app
-npm run web:dev        # Web app
-npm run mobile:dev     # Mobile app
-npm run admin:dev      # Admin panel
-npm run api:dev        # API server
+bun run desktop:dev    # Desktop app
+bun run web:dev        # Web app
+bun run mobile:dev     # Mobile app
+bun run admin:dev      # Admin panel
+bun run api:dev        # API server
 
 # Build
-npm run build                    # Build all
-npm run build:prod:desktop       # Production desktop build
-npm run build:prod:web           # Production web build
+bun run build                    # Build all
+bun run build:prod:desktop       # Production desktop build
+bun run build:prod:web           # Production web build
 
 # Linting & Formatting
-npm run lint           # Lint all packages
-npm run format         # Format all packages
-npm run check          # Check all packages
+bun run lint           # Lint all packages
+bun run format         # Format all packages
+bun run check          # Check all packages
 
 # Version & Release
-npm run version:bump   # Bump version across packages
-npm run tag:desktop    # Create desktop release tag
-npm run tag:all        # Create all release tags
+bun run version:bump   # Bump version across packages
+bun run tag:desktop    # Create desktop release tag
+bun run tag:all        # Create all release tags
 ```
 
 ## TypeScript Configuration

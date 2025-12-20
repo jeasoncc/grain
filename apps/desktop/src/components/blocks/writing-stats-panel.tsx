@@ -15,7 +15,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { useWritingStore } from "@/stores/writing";
+import { useWritingStore } from "@/domain/writing";
 
 interface WritingStatsPanelProps {
 	currentWordCount: number;

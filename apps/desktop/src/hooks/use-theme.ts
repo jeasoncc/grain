@@ -12,4 +12,4 @@ export {
 	type ThemeMode,
 	useTheme,
 	useThemeStore,
-} from "@/stores/theme";
+} from "@/domain/theme";

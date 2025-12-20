@@ -1,0 +1,76 @@
+# Implementation Plan
+
+- [x] 1. 移动 log-db.ts 到 db 目录
+  - [x] 1.1 创建 `db/log-db.ts`
+    - 复制文件内容到新位置
+    - 添加 JSDoc 注释
+    - _Requirements: 2.1_
+  - [x] 1.2 更新所有导入
+    - 更新 `log/index.ts` 的导入
+    - 更新 `routes/settings/logs.tsx` 的导入
+    - _Requirements: 2.2_
+  - [x] 1.3 删除旧文件
+    - 删除 `lib/log-db.ts`
+    - _Requirements: 2.2_
+
+- [x] 2. 创建 diagram domain 模块
+  - [x] 2.1 创建 `domain/diagram/diagram.interface.ts`
+    - 定义 DiagramState, DiagramActions, DiagramStore 类型
+    - _Requirements: 1.2_
+  - [x] 2.2 创建 `domain/diagram/diagram.store.ts`
+    - 从 lib/diagram-settings.ts 移动 store 逻辑
+    - 添加 selector hooks
+    - 保留 legacy alias 向后兼容
+    - _Requirements: 1.1, 1.2_
+  - [x] 2.3 创建 `domain/diagram/diagram.utils.ts`
+    - 移动 getKrokiPlantUMLUrl, isKrokiEnabled 函数
+    - _Requirements: 1.1_
+  - [x] 2.4 创建 `domain/diagram/index.ts`
+    - 统一导出所有类型、store 和工具函数
+    - _Requirements: 1.2_
+  - [x] 2.5 更新导入并删除旧文件
+    - 更新 `routes/settings/diagrams.tsx`
+    - 删除 `lib/diagram-settings.ts`
+    - _Requirements: 1.3_
+
+- [x] 3. 创建 icon-theme domain 模块
+  - [x] 3.1 创建 `domain/icon-theme/icon-theme.interface.ts`
+    - 定义 IconTheme, IconThemeIcons, IconThemeStore 类型
+    - _Requirements: 3.1, 3.2_
+  - [x] 3.2 创建 `domain/icon-theme/icon-theme.config.ts`
+    - 移动所有图标主题配置数据
+    - _Requirements: 3.2_
+  - [x] 3.3 创建 `domain/icon-theme/icon-theme.store.ts`
+    - 封装 localStorage 操作到 Zustand store
+    - _Requirements: 3.3_
+  - [x] 3.4 创建 `domain/icon-theme/icon-theme.utils.ts`
+    - 移动纯工具函数
+    - _Requirements: 3.2_
+  - [x] 3.5 创建 `domain/icon-theme/index.ts`
+    - 统一导出
+    - _Requirements: 3.1_
+  - [x] 3.6 更新导入并删除旧文件
+    - 更新 `hooks/use-icon-theme.ts`
+    - 更新 `components/icon-theme-example.tsx`
+    - 更新 `components/icon-theme-preview.tsx`
+    - 更新 `routes/settings/icons.tsx`
+    - 删除 `lib/icon-themes.ts`
+    - _Requirements: 3.1_
+
+- [x] 4. 验证剩余 lib 文件符合规范
+  - [x] 4.1 确认纯配置文件保留
+    - `diagram-presets.ts` - 纯配置数据 ✓
+    - `font-config.ts` - 纯配置数据 ✓
+    - `icons.ts` - 纯配置数据 ✓
+    - `themes.ts` - 纯配置数据 ✓
+    - `ui-config.ts` - 纯配置数据 ✓
+    - _Requirements: 4.1, 4.2_
+  - [x] 4.2 确认工具函数文件命名正确
+    - `utils.ts` - 通用工具 ✓
+    - `fuzzy-match.utils.ts` - 模糊匹配工具 ✓
+    - _Requirements: 5.1, 5.2_
+
+- [x] 5. 最终验证
+  - [x] 5.1 运行类型检查
+    - 确保无 TypeScript 错误
+    - _Requirements: 1.3, 2.2, 3.1_

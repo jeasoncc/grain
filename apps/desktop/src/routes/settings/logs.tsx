@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useState, useMemo } from "react";
 import { Search, Trash2, Filter, AlertTriangle, Info, CheckCircle2, Bug, XCircle, Box } from "lucide-react";
-import { logDB, type LogEntry } from "@/lib/log-db";
+import { logDB, type LogEntry } from "@/db/log-db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {

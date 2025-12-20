@@ -18,7 +18,6 @@ import { Route as CanvasRouteImport } from './routes/canvas'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SettingsTypographyRouteImport } from './routes/settings/typography'
-import { Route as SettingsScrollTestRouteImport } from './routes/settings/scroll-test'
 import { Route as SettingsLogsRouteImport } from './routes/settings/logs'
 import { Route as SettingsIconsRouteImport } from './routes/settings/icons'
 import { Route as SettingsGeneralRouteImport } from './routes/settings/general'
@@ -72,11 +71,6 @@ const SettingsIndexRoute = SettingsIndexRouteImport.update({
 const SettingsTypographyRoute = SettingsTypographyRouteImport.update({
   id: '/typography',
   path: '/typography',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsScrollTestRoute = SettingsScrollTestRouteImport.update({
-  id: '/scroll-test',
-  path: '/scroll-test',
   getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsLogsRoute = SettingsLogsRouteImport.update({
@@ -142,7 +136,6 @@ export interface FileRoutesByFullPath {
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/icons': typeof SettingsIconsRoute
   '/settings/logs': typeof SettingsLogsRoute
-  '/settings/scroll-test': typeof SettingsScrollTestRoute
   '/settings/typography': typeof SettingsTypographyRoute
   '/settings/': typeof SettingsIndexRoute
 }
@@ -162,7 +155,6 @@ export interface FileRoutesByTo {
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/icons': typeof SettingsIconsRoute
   '/settings/logs': typeof SettingsLogsRoute
-  '/settings/scroll-test': typeof SettingsScrollTestRoute
   '/settings/typography': typeof SettingsTypographyRoute
   '/settings': typeof SettingsIndexRoute
 }
@@ -184,7 +176,6 @@ export interface FileRoutesById {
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/icons': typeof SettingsIconsRoute
   '/settings/logs': typeof SettingsLogsRoute
-  '/settings/scroll-test': typeof SettingsScrollTestRoute
   '/settings/typography': typeof SettingsTypographyRoute
   '/settings/': typeof SettingsIndexRoute
 }
@@ -207,7 +198,6 @@ export interface FileRouteTypes {
     | '/settings/general'
     | '/settings/icons'
     | '/settings/logs'
-    | '/settings/scroll-test'
     | '/settings/typography'
     | '/settings/'
   fileRoutesByTo: FileRoutesByTo
@@ -227,7 +217,6 @@ export interface FileRouteTypes {
     | '/settings/general'
     | '/settings/icons'
     | '/settings/logs'
-    | '/settings/scroll-test'
     | '/settings/typography'
     | '/settings'
   id:
@@ -248,7 +237,6 @@ export interface FileRouteTypes {
     | '/settings/general'
     | '/settings/icons'
     | '/settings/logs'
-    | '/settings/scroll-test'
     | '/settings/typography'
     | '/settings/'
   fileRoutesById: FileRoutesById
@@ -328,13 +316,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsTypographyRouteImport
       parentRoute: typeof SettingsRoute
     }
-    '/settings/scroll-test': {
-      id: '/settings/scroll-test'
-      path: '/scroll-test'
-      fullPath: '/settings/scroll-test'
-      preLoaderRoute: typeof SettingsScrollTestRouteImport
-      parentRoute: typeof SettingsRoute
-    }
     '/settings/logs': {
       id: '/settings/logs'
       path: '/logs'
@@ -411,7 +392,6 @@ interface SettingsRouteChildren {
   SettingsGeneralRoute: typeof SettingsGeneralRoute
   SettingsIconsRoute: typeof SettingsIconsRoute
   SettingsLogsRoute: typeof SettingsLogsRoute
-  SettingsScrollTestRoute: typeof SettingsScrollTestRoute
   SettingsTypographyRoute: typeof SettingsTypographyRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
 }
@@ -426,7 +406,6 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsGeneralRoute: SettingsGeneralRoute,
   SettingsIconsRoute: SettingsIconsRoute,
   SettingsLogsRoute: SettingsLogsRoute,
-  SettingsScrollTestRoute: SettingsScrollTestRoute,
   SettingsTypographyRoute: SettingsTypographyRoute,
   SettingsIndexRoute: SettingsIndexRoute,
 }

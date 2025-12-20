@@ -1,172 +1,72 @@
-import { useLiveQuery } from "dexie-react-hooks";
-import { database } from "@/db/database";
-import { DrawingRepository, DrawingBuilder, type DrawingInterface } from "@/db/models";
+/**
+ * Drawing Service
+ *
+ * Business logic for drawing operations including cleanup, creation, and updates.
+ * Uses DrawingRepository for all database access.
+ *
+ * @requirements 1.2, 4.1
+ */
+
+import {
+	DrawingRepository,
+	type DrawingInterface,
+	// Pure functions from drawing.utils.ts
+	sanitizeDrawingContent,
+	EMPTY_DRAWING_CONTENT,
+	// Hooks from drawing.hooks.ts
+	useDrawing,
+	useDrawingsByProject,
+} from "@/db/models";
 import logger from "@/log/index";
+import { computeDrawingUpdates } from "./drawings.utils";
 
-// 清理绘图数据中的异常值，防止 "Canvas exceeds max size" 错误
-export function sanitizeDrawingContent(content: string): string {
-	if (!content) {
-		return JSON.stringify({ elements: [], appState: {}, files: {} });
-	}
+// Re-export pure function for backward compatibility
+export { sanitizeDrawingContent };
 
-	try {
-		const parsed = JSON.parse(content);
-		
-		// 清理 elements
-		const MAX_COORD = 50000;
-		const MAX_SIZE = 10000;
-		
-		const sanitizedElements = Array.isArray(parsed.elements) 
-			? parsed.elements.filter((el: any) => {
-				if (!el || typeof el !== "object") return false;
-				const x = el.x ?? 0;
-				const y = el.y ?? 0;
-				const width = el.width ?? 0;
-				const height = el.height ?? 0;
-				
-				// 过滤掉坐标或尺寸异常的元素
-				if (!Number.isFinite(x) || Math.abs(x) > MAX_COORD) return false;
-				if (!Number.isFinite(y) || Math.abs(y) > MAX_COORD) return false;
-				if (!Number.isFinite(width) || width < 0 || width > MAX_SIZE) return false;
-				if (!Number.isFinite(height) || height < 0 || height > MAX_SIZE) return false;
-				
-				return true;
-			}).map((el: any) => ({
-				...el,
-				x: Number.isFinite(el.x) ? Math.max(-MAX_COORD, Math.min(MAX_COORD, el.x)) : 0,
-				y: Number.isFinite(el.y) ? Math.max(-MAX_COORD, Math.min(MAX_COORD, el.y)) : 0,
-				width: Number.isFinite(el.width) ? Math.min(el.width, MAX_SIZE) : 100,
-				height: Number.isFinite(el.height) ? Math.min(el.height, MAX_SIZE) : 100,
-			}))
-			: [];
-
-		// 清理 appState - 只保留安全的属性
-		const sanitizedAppState: any = {};
-		if (parsed.appState?.viewBackgroundColor && typeof parsed.appState.viewBackgroundColor === "string") {
-			sanitizedAppState.viewBackgroundColor = parsed.appState.viewBackgroundColor;
-		}
-		if (typeof parsed.appState?.gridSize === "number" && Number.isFinite(parsed.appState.gridSize) && parsed.appState.gridSize > 0) {
-			sanitizedAppState.gridSize = parsed.appState.gridSize;
-		}
-		// 不保留 zoom、scrollX、scrollY 等可能导致问题的属性
-
-		return JSON.stringify({
-			elements: sanitizedElements,
-			appState: sanitizedAppState,
-			files: parsed.files || {},
-		});
-	} catch (error) {
-		logger.error("Failed to sanitize drawing content:", error);
-		return JSON.stringify({ elements: [], appState: {}, files: {} });
-	}
-}
-
-// 清理数据库中所有绘图的异常数据
-// 检查并修复 width/height 值，以及重置异常内容
+/**
+ * Cleanup all drawings with invalid data
+ * Uses functional approach: map -> filter -> parallel updates
+ *
+ * @requirements 1.2, 4.1
+ */
 export async function cleanupAllDrawings(): Promise<number> {
 	try {
-		const allDrawings = await database.drawings.toArray();
-		let cleanedCount = 0;
-		const emptyContent = JSON.stringify({ elements: [], appState: {}, files: {} });
-		
-		// 安全的最大尺寸 - 考虑 devicePixelRatio
+		const allDrawings = await DrawingRepository.getAll();
 		const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
-		const MAX_SAFE_SIZE = Math.floor(4096 / dpr);
-		const DEFAULT_WIDTH = 800;
-		const DEFAULT_HEIGHT = 600;
-		
-		logger.info(`Cleanup drawings: dpr=${dpr}, maxSize=${MAX_SAFE_SIZE}`);
+		const maxSafeSize = Math.floor(4096 / dpr);
 
-		for (const drawing of allDrawings) {
-			const updates: Partial<DrawingInterface> = {};
-			let needsUpdate = false;
-			
-			// 检查并修复 width
-			if (!drawing.width || drawing.width > MAX_SAFE_SIZE || drawing.width < 100) {
-				updates.width = DEFAULT_WIDTH;
-				needsUpdate = true;
-				logger.warn(`Drawing ${drawing.id}: fixing width from ${drawing.width} to ${DEFAULT_WIDTH}`);
-			}
-			
-			// 检查并修复 height
-			if (!drawing.height || drawing.height > MAX_SAFE_SIZE || drawing.height < 100) {
-				updates.height = DEFAULT_HEIGHT;
-				needsUpdate = true;
-				logger.warn(`Drawing ${drawing.id}: fixing height from ${drawing.height} to ${DEFAULT_HEIGHT}`);
-			}
-			
-			// 检查内容
-			const originalContent = drawing.content || "";
-			try {
-				const parsed = JSON.parse(originalContent);
-				let contentNeedsReset = false;
-				
-				// 检查 appState 中是否有异常的尺寸值
-				if (parsed.appState) {
-					const { width, height, scrollX, scrollY, zoom } = parsed.appState;
-					if ((width && width > MAX_SAFE_SIZE) || 
-						(height && height > MAX_SAFE_SIZE) ||
-						(scrollX && Math.abs(scrollX) > 10000) ||
-						(scrollY && Math.abs(scrollY) > 10000) ||
-						(zoom?.value && (zoom.value > 10 || zoom.value < 0.1))) {
-						contentNeedsReset = true;
-						logger.warn(`Drawing ${drawing.id}: invalid appState detected`, parsed.appState);
-					}
-				}
-				
-				// 检查 elements 中是否有异常的坐标或尺寸
-				if (Array.isArray(parsed.elements)) {
-					for (const el of parsed.elements) {
-						if (!el || typeof el !== "object") continue;
-						const x = el.x ?? 0;
-						const y = el.y ?? 0;
-						const w = el.width ?? 0;
-						const h = el.height ?? 0;
-						
-						if (!Number.isFinite(x) || Math.abs(x) > 50000 ||
-							!Number.isFinite(y) || Math.abs(y) > 50000 ||
-							!Number.isFinite(w) || w > 10000 ||
-							!Number.isFinite(h) || h > 10000) {
-							contentNeedsReset = true;
-							logger.warn(`Drawing ${drawing.id}: invalid element detected`, { x, y, w, h });
-							break;
-						}
-					}
-				}
-				
-				if (contentNeedsReset) {
-					// 清理 appState，保留 elements
-					const cleanedContent = {
-						elements: parsed.elements || [],
-						appState: {
-							viewBackgroundColor: parsed.appState?.viewBackgroundColor,
-							gridSize: parsed.appState?.gridSize,
-						},
-						files: parsed.files || {},
-					};
-					updates.content = JSON.stringify(cleanedContent);
-					needsUpdate = true;
-					logger.warn(`Drawing ${drawing.id}: cleaned appState`);
-				}
-			} catch {
-				// 解析失败，重置内容
-				updates.content = emptyContent;
-				needsUpdate = true;
-				logger.warn(`Drawing ${drawing.id}: resetting corrupted content`);
-			}
-			
-			if (needsUpdate) {
-				await DrawingRepository.update(drawing.id, updates);
-				cleanedCount++;
-			}
-		}
+		logger.info(`Cleanup drawings: dpr=${dpr}, maxSize=${maxSafeSize}`);
 
+		// Functional pipeline: compute updates -> filter non-null -> execute
+		const drawingsWithUpdates = allDrawings
+			.map((drawing) => ({
+				id: drawing.id,
+				updates: computeDrawingUpdates(drawing, dpr, maxSafeSize),
+			}))
+			.filter((item): item is { id: string; updates: Partial<DrawingInterface> } => 
+				item.updates !== null
+			);
+
+		// Log warnings for each update
+		drawingsWithUpdates.forEach(({ id, updates }) => {
+			if (updates.width) logger.warn(`Drawing ${id}: fixing dimensions`);
+			if (updates.content) logger.warn(`Drawing ${id}: sanitizing content`);
+		});
+
+		// Execute all updates in parallel
+		await Promise.all(
+			drawingsWithUpdates.map(({ id, updates }) => 
+				DrawingRepository.update(id, updates)
+			)
+		);
+
+		const cleanedCount = drawingsWithUpdates.length;
 		if (cleanedCount > 0) {
 			logger.success(`Fixed ${cleanedCount} drawings with invalid data`);
 		} else {
 			logger.info("No drawings needed cleanup");
 		}
-		
+
 		return cleanedCount;
 	} catch (error) {
 		logger.error("Failed to cleanup drawings:", error);
@@ -174,7 +74,7 @@ export async function cleanupAllDrawings(): Promise<number> {
 	}
 }
 
-// 清理特定绘图的数据
+/** Cleanup a specific drawing's data */
 export async function cleanupDrawing(drawingId: string): Promise<boolean> {
 	try {
 		const drawing = await DrawingRepository.getById(drawingId);
@@ -190,11 +90,10 @@ export async function cleanupDrawing(drawingId: string): Promise<boolean> {
 	}
 }
 
-// 重置绘图为空白状态
+/** Reset drawing to empty state */
 export async function resetDrawing(drawingId: string): Promise<boolean> {
 	try {
-		const emptyContent = JSON.stringify({ elements: [], appState: {}, files: {} });
-		await DrawingRepository.update(drawingId, { content: emptyContent });
+		await DrawingRepository.update(drawingId, { content: EMPTY_DRAWING_CONTENT });
 		logger.info(`Reset drawing ${drawingId} to empty state`);
 		return true;
 	} catch (error) {
@@ -203,26 +102,28 @@ export async function resetDrawing(drawingId: string): Promise<boolean> {
 	}
 }
 
+/**
+ * Hook to get a drawing by ID with live updates
+ * Re-exports useDrawing from @/db/models for backward compatibility
+ *
+ * @param drawingId - The drawing ID (can be null)
+ * @returns The drawing or null if not found
+ */
 export function useDrawingById(drawingId: string | null): DrawingInterface | null {
-	const data = useLiveQuery(
-		() =>
-			drawingId
-				? database.drawings.get(drawingId)
-				: Promise.resolve(null),
-		[drawingId] as const,
-	);
-	return (data ?? null) as DrawingInterface | null;
+	const drawing = useDrawing(drawingId);
+	return drawing ?? null;
 }
 
+/**
+ * Hook to get all drawings for a workspace with live updates
+ * Re-exports useDrawingsByProject from @/db/models for backward compatibility
+ *
+ * @param workspaceId - The workspace/project ID (can be null)
+ * @returns Array of drawings
+ */
 export function useDrawingsByWorkspace(workspaceId: string | null): DrawingInterface[] {
-	const data = useLiveQuery(
-		() =>
-			workspaceId
-				? database.drawings.where("project").equals(workspaceId).toArray()
-				: Promise.resolve([] as DrawingInterface[]),
-		[workspaceId] as const,
-	);
-	return (data ?? []) as DrawingInterface[];
+	const drawings = useDrawingsByProject(workspaceId);
+	return drawings ?? [];
 }
 
 export async function createDrawing(params: {

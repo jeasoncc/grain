@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useSettings } from "@/hooks/use-settings";
 import { keyboardShortcutManager } from "@/services/keyboard-shortcuts";
 import { saveService } from "@/services/save";
-import { useSaveStore } from "@/stores/save";
+import { useSaveStore } from "@/domain/save";
 
 interface UseManualSaveOptions {
 	/** 节点 ID */

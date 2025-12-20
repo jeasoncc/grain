@@ -44,3 +44,14 @@ export {
   useRecentDrawings,
   useAllDrawings,
 } from "./drawing.hooks";
+
+// Utils exports (pure functions)
+export {
+  sanitizeDrawingContent,
+  isValidDrawingSize,
+  getSafeDrawingDimensions,
+  hasInvalidAppState,
+  MAX_COORD,
+  MAX_ELEMENT_SIZE,
+  EMPTY_DRAWING_CONTENT,
+} from "./drawing.utils";

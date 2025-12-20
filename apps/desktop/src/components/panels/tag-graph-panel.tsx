@@ -11,7 +11,7 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTagGraph } from "@/services/tags";
-import { useSelectionStore } from "@/stores/selection";
+import { useSelectionStore } from "@/domain/selection";
 
 interface GraphNode {
   id: string;

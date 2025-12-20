@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getCurrentIconTheme } from "@/lib/icon-themes";
+import { getCurrentIconTheme } from "@/domain/icon-theme";
 
 export function IconThemePreview() {
 	const [iconTheme, setIconTheme] = useState(getCurrentIconTheme());

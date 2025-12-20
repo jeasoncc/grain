@@ -46,3 +46,18 @@ export {
   useNodeExists,
   useNodesByIds,
 } from "./node.hooks";
+
+// Utils exports (pure functions)
+export type { TreeNode } from "./node.utils";
+export {
+  buildTree,
+  getNodePath,
+  wouldCreateCycle,
+  getRootNodes as getRootNodesFromList,
+  getChildNodes as getChildNodesFromList,
+  getDescendants as getDescendantsFromList,
+  filterByType,
+  filterByTag,
+  getNextOrder as getNextOrderFromList,
+  calculateReorderAfterInsert,
+} from "./node.utils";

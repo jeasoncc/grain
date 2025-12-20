@@ -2,260 +2,68 @@
  * Tag Service (Simplified)
  *
  * Tags are stored in nodes.tags array (source of truth).
- * This service manages the tags aggregation cache for:
- * - Tag statistics (usage count)
- * - Quick lookup for autocomplete
- * - Graph visualization data
+ * This service re-exports from TagRepository and hooks for backward compatibility.
  *
  * @requirements 6.2
  */
 
-import { database } from "@/db/database";
-import type { TagInterface } from "@/db/models/tag";
-import { useLiveQuery } from "dexie-react-hooks";
+import {
+	TagRepository,
+	type TagInterface,
+	useTagsByWorkspace,
+	useNodesByTag,
+	useTagGraph,
+	useTagSearch,
+} from "@/db/models";
 
-// Re-export TagInterface for convenience
-export type { TagInterface } from "@/db/models/tag";
+// Re-export types
+export type { TagInterface };
+
+// Re-export hooks for backward compatibility
+export { useTagsByWorkspace, useNodesByTag, useTagGraph, useTagSearch };
 
 // ============================================
-// Tag Cache Sync
+// Service Functions (delegate to TagRepository)
 // ============================================
 
 /**
  * Sync tags to the aggregation cache
- * Called after saving a document with tags
+ * @deprecated Use TagRepository.syncCache instead
  */
-export async function syncTagsCache(workspaceId: string, tags: string[]): Promise<void> {
-  const now = new Date().toISOString();
-
-  for (const tagName of tags) {
-    const tagId = `${workspaceId}:${tagName}`;
-    const existing = await database.tags.get(tagId);
-
-    if (existing) {
-      // Update last used time
-      await database.tags.update(tagId, {
-        lastUsed: now,
-      });
-    } else {
-      // Create new tag cache entry
-      await database.tags.add({
-        id: tagId,
-        name: tagName,
-        workspace: workspaceId,
-        count: 0, // Will be recalculated
-        lastUsed: now,
-        createDate: now,
-      });
-    }
-  }
-
-  // Recalculate counts for affected tags
-  await recalculateTagCounts(workspaceId, tags);
-}
+export const syncTagsCache = TagRepository.syncCache.bind(TagRepository);
 
 /**
- * Recalculate tag usage counts from nodes.tags
+ * Recalculate tag usage counts
+ * @deprecated Use TagRepository.recalculateCounts instead
  */
-export async function recalculateTagCounts(workspaceId: string, tags: string[]): Promise<void> {
-  for (const tagName of tags) {
-    const tagId = `${workspaceId}:${tagName}`;
-    // Count nodes that have this tag using multi-entry index
-    const count = await database.nodes
-      .where("tags")
-      .equals(tagName)
-      .and((node) => node.workspace === workspaceId)
-      .count();
-
-    await database.tags.update(tagId, { count });
-  }
-}
+export const recalculateTagCounts = TagRepository.recalculateCounts.bind(TagRepository);
 
 /**
  * Rebuild entire tag cache for a workspace
- * Use this for data recovery or initial migration
+ * @deprecated Use TagRepository.rebuildCache instead
  */
-export async function rebuildTagCache(workspaceId: string): Promise<void> {
-  // Get all unique tags from nodes
-  const nodes = await database.nodes
-    .where("workspace")
-    .equals(workspaceId)
-    .toArray();
-
-  const tagCounts = new Map<string, number>();
-  const now = new Date().toISOString();
-
-  for (const node of nodes) {
-    if (node.tags && Array.isArray(node.tags)) {
-      for (const tag of node.tags) {
-        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
-      }
-    }
-  }
-
-  // Clear existing cache for workspace
-  await database.tags.where("workspace").equals(workspaceId).delete();
-
-  // Rebuild cache
-  const tagEntries: TagInterface[] = [];
-  for (const [name, count] of tagCounts) {
-    tagEntries.push({
-      id: `${workspaceId}:${name}`,
-      name,
-      workspace: workspaceId,
-      count,
-      lastUsed: now,
-      createDate: now,
-    });
-  }
-
-  if (tagEntries.length > 0) {
-    await database.tags.bulkAdd(tagEntries);
-  }
-}
-
-// ============================================
-// Tag Queries
-// ============================================
+export const rebuildTagCache = TagRepository.rebuildCache.bind(TagRepository);
 
 /**
- * Get all tags for a workspace (from cache)
+ * Get all tags for a workspace
+ * @deprecated Use TagRepository.getByWorkspace instead
  */
-export async function getTagsByWorkspace(workspaceId: string): Promise<TagInterface[]> {
-  return database.tags.where("workspace").equals(workspaceId).toArray();
-}
+export const getTagsByWorkspace = TagRepository.getByWorkspace.bind(TagRepository);
 
 /**
  * Search tags by name prefix
+ * @deprecated Use TagRepository.search instead
  */
-export async function searchTags(workspaceId: string, query: string): Promise<TagInterface[]> {
-  const lowerQuery = query.toLowerCase();
-  return database.tags
-    .where("workspace")
-    .equals(workspaceId)
-    .filter((tag) => tag.name.toLowerCase().includes(lowerQuery))
-    .toArray();
-}
+export const searchTags = TagRepository.search.bind(TagRepository);
 
 /**
  * Get nodes by tag
+ * @deprecated Use TagRepository.getNodesByTag instead
  */
-export async function getNodesByTag(workspaceId: string, tagName: string) {
-  return database.nodes
-    .where("tags")
-    .equals(tagName)
-    .and((node) => node.workspace === workspaceId)
-    .toArray();
-}
+export const getNodesByTag = TagRepository.getNodesByTag.bind(TagRepository);
 
 /**
  * Get tag graph data for visualization
+ * @deprecated Use TagRepository.getGraphData instead
  */
-export async function getTagGraphData(workspaceId: string) {
-  const tags = await getTagsByWorkspace(workspaceId);
-  const nodes = await database.nodes
-    .where("workspace")
-    .equals(workspaceId)
-    .toArray();
-
-  // Build co-occurrence matrix
-  const coOccurrence = new Map<string, Map<string, number>>();
-
-  for (const node of nodes) {
-    if (!node.tags || node.tags.length < 2) continue;
-
-    for (let i = 0; i < node.tags.length; i++) {
-      for (let j = i + 1; j < node.tags.length; j++) {
-        const tag1 = node.tags[i];
-        const tag2 = node.tags[j];
-
-        if (!coOccurrence.has(tag1)) {
-          coOccurrence.set(tag1, new Map());
-        }
-        if (!coOccurrence.has(tag2)) {
-          coOccurrence.set(tag2, new Map());
-        }
-
-        const map1 = coOccurrence.get(tag1)!;
-        const map2 = coOccurrence.get(tag2)!;
-
-        map1.set(tag2, (map1.get(tag2) || 0) + 1);
-        map2.set(tag1, (map2.get(tag1) || 0) + 1);
-      }
-    }
-  }
-
-  // Build graph nodes and edges
-  const graphNodes = tags.map((tag) => ({
-    id: tag.id,
-    name: tag.name,
-    count: tag.count,
-  }));
-
-  const edges: Array<{ source: string; target: string; weight: number }> = [];
-  const addedEdges = new Set<string>();
-
-  for (const [tag1, connections] of coOccurrence) {
-    for (const [tag2, weight] of connections) {
-      const edgeKey = [tag1, tag2].sort().join(":");
-      if (!addedEdges.has(edgeKey)) {
-        edges.push({
-          source: `${workspaceId}:${tag1}`,
-          target: `${workspaceId}:${tag2}`,
-          weight,
-        });
-        addedEdges.add(edgeKey);
-      }
-    }
-  }
-
-  return { nodes: graphNodes, edges };
-}
-
-// ============================================
-// React Hooks
-// ============================================
-
-/**
- * Hook to get all tags for a workspace
- */
-export function useTagsByWorkspace(workspaceId: string | undefined) {
-  return useLiveQuery(
-    () => (workspaceId ? getTagsByWorkspace(workspaceId) : []),
-    [workspaceId],
-    []
-  );
-}
-
-/**
- * Hook to get nodes by tag
- */
-export function useNodesByTag(workspaceId: string | undefined, tagName: string | undefined) {
-  return useLiveQuery(
-    () => (workspaceId && tagName ? getNodesByTag(workspaceId, tagName) : []),
-    [workspaceId, tagName],
-    []
-  );
-}
-
-/**
- * Hook to get tag graph data
- */
-export function useTagGraph(workspaceId: string | undefined) {
-  return useLiveQuery(
-    () => (workspaceId ? getTagGraphData(workspaceId) : { nodes: [], edges: [] }),
-    [workspaceId],
-    { nodes: [], edges: [] }
-  );
-}
-
-/**
- * Hook to search tags
- */
-export function useTagSearch(workspaceId: string | undefined, query: string) {
-  return useLiveQuery(
-    () => (workspaceId && query ? searchTags(workspaceId, query) : []),
-    [workspaceId, query],
-    []
-  );
-}
+export const getTagGraphData = TagRepository.getGraphData.bind(TagRepository);

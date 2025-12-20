@@ -115,6 +115,14 @@ export const NodeRepository = {
   },
 
   /**
+   * Get all nodes across all workspaces
+   * @returns Array of all nodes
+   */
+  async getAll(): Promise<NodeInterface[]> {
+    return database.nodes.toArray();
+  },
+
+  /**
    * Get all nodes in a workspace
    * @param workspaceId - The workspace ID
    * @returns Array of nodes

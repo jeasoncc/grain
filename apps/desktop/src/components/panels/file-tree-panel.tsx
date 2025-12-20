@@ -11,8 +11,8 @@ import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm";
 import { FileTree } from "@/components/file-tree";
 import type { NodeType } from "@/db/schema";
-import { useSelectionStore } from "@/stores/selection";
-import { useEditorTabsStore } from "@/stores/editor-tabs";
+import { useSelectionStore } from "@/domain/selection";
+import { useEditorTabsStore } from "@/domain/editor-tabs";
 import {
   createNode,
   deleteNode as deleteNodeService,
@@ -115,6 +115,8 @@ export function FileTreePanel({ workspaceId: propWorkspaceId }: FileTreePanelPro
         title: "New Folder",
       });
       toast.success("Folder created");
+      // Note: No need to setActivePanel here as we're already in FileTreePanel
+      // which only renders when activePanel === "files"
     } catch (error) {
       console.error("Failed to create folder:", error);
       toast.error("Failed to create folder");
@@ -231,25 +233,16 @@ export function FileTreePanel({ workspaceId: propWorkspaceId }: FileTreePanelPro
     }
 
     try {
-      const diaryNode = await createDiaryInFileTree(workspaceId);
-      
+      // Create diary and get content in one call (avoids race condition)
+      const { node, parsedContent } = await createDiaryInFileTree(workspaceId);
+
       // Pre-load the diary content into editorStates BEFORE opening the tab
-      // This ensures the editor is initialized with the template content
-      const { getNodeContent } = await import("@/services/nodes");
-      const content = await getNodeContent(diaryNode.id);
-      if (content) {
-        try {
-          const parsed = JSON.parse(content);
-          updateEditorState(diaryNode.id, { serializedState: parsed });
-        } catch {
-          // Ignore parse errors
-        }
-      }
-      
+      updateEditorState(node.id, { serializedState: parsedContent });
+
       toast.success("Diary created");
 
       // Auto-select and open the new diary file
-      handleSelectNode(diaryNode.id);
+      handleSelectNode(node.id);
     } catch (error) {
       console.error("Failed to create diary:", error);
       toast.error("Failed to create diary");

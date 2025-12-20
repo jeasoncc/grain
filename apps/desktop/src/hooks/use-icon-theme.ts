@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getCurrentIconTheme, type IconTheme } from "@/lib/icon-themes";
+import { getCurrentIconTheme, type IconTheme } from "@/domain/icon-theme";
 
 export function useIconTheme() {
 	const [iconTheme, setIconTheme] = useState<IconTheme>(getCurrentIconTheme());

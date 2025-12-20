@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from "react";
 import { ExportDialog } from "@/components/blocks/export-dialog";
-import { useSelectionStore } from "@/stores/selection";
+import { useSelectionStore } from "@/domain/selection";
 import { useAllWorkspaces } from "@/db/models";
 
 // Global export dialog state

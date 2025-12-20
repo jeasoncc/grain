@@ -4,7 +4,7 @@
   "author": "Jeason",
   "description": "A minimalist writing sanctuary for long-form content. Pure, elegant, and distraction-free.",
   "email": "xiaomiquan@aliyun.com",
-  "version": "0.1.91",
+  "version": "0.1.92",
   "license": "MIT",
   "homepage": "https://github.com/jeasoncc/grain",
   "repository": {
@@ -41,7 +41,9 @@
     "icons:generate": "cd apps/desktop && bun run tauri icon src-tauri/icons/my-new-icon.jpg",
     "version:bump": "bash scripts/bump-version.sh",
     "stats:check": "bash scripts/check-download-stats.sh",
-    "verify:install": "bash scripts/verify-install.sh"
+    "verify:install": "bash scripts/verify-install.sh",
+    "test": "turbo run test",
+    "test:desktop": "turbo run test --filter=desktop"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.2",

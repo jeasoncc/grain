@@ -1,7 +1,7 @@
 /**
  * Node Service Layer
- * Provides tree building, path navigation, and node manipulation functions
- * for the workspace file tree structure.
+ * Provides node manipulation functions for the workspace file tree structure.
+ * Pure functions are now in db/models/node/node.utils.ts
  *
  * Requirements: 2.1, 1.4, 6.2
  */
@@ -11,6 +11,11 @@ import {
   ContentRepository,
   type NodeInterface,
   type NodeType,
+  type TreeNode,
+  // Pure functions from node.utils.ts
+  buildTree,
+  getNodePath,
+  wouldCreateCycle,
   // Hooks from new model location
   useNodesByWorkspace,
   useNode,
@@ -21,118 +26,10 @@ import {
 export { useNodesByWorkspace, useNode, useChildNodes };
 
 // Re-export types for convenience
-export type { NodeInterface, NodeType };
+export type { NodeInterface, NodeType, TreeNode };
 
-// ==============================
-// Types for UI Consumption
-// ==============================
-
-/**
- * TreeNode interface for UI rendering
- * Represents a node in the hierarchical tree structure
- */
-export interface TreeNode {
-  id: string;
-  title: string;
-  type: NodeType;
-  collapsed: boolean;
-  children: TreeNode[];
-  depth: number;
-}
-
-// ==============================
-// Tree Building Functions
-// ==============================
-
-/**
- * Build a hierarchical tree structure from a flat list of nodes
- * Recursively constructs the tree based on parent references
- *
- * @param nodes - Flat array of NodeInterface objects
- * @param parentId - Parent ID to filter by (null for root nodes)
- * @param depth - Current depth level in the tree
- * @returns Array of TreeNode objects representing the tree structure
- *
- * Requirements: 2.1
- */
-export function buildTree(
-  nodes: NodeInterface[],
-  parentId: string | null = null,
-  depth = 0
-): TreeNode[] {
-  return nodes
-    .filter((n) => n.parent === parentId)
-    .sort((a, b) => a.order - b.order)
-    .map((node) => ({
-      id: node.id,
-      title: node.title,
-      type: node.type,
-      collapsed: node.collapsed ?? true,
-      depth,
-      children:
-        node.type === "folder" ? buildTree(nodes, node.id, depth + 1) : [],
-    }));
-}
-
-
-/**
- * Get the path from root to a specific node (for breadcrumb navigation)
- *
- * @param nodes - Flat array of all nodes
- * @param nodeId - Target node ID
- * @returns Array of NodeInterface objects from root to target node
- *
- * Requirements: 2.1
- */
-export function getNodePath(
-  nodes: NodeInterface[],
-  nodeId: string
-): NodeInterface[] {
-  const path: NodeInterface[] = [];
-  let current = nodes.find((n) => n.id === nodeId);
-
-  while (current) {
-    path.unshift(current);
-    current = current.parent
-      ? nodes.find((n) => n.id === current!.parent)
-      : undefined;
-  }
-
-  return path;
-}
-
-// ==============================
-// Node Movement Functions
-// ==============================
-
-/**
- * Check if moving a node would create a circular reference
- * A node cannot be moved to one of its descendants
- *
- * @param nodes - Flat array of all nodes
- * @param nodeId - Node being moved
- * @param newParentId - Proposed new parent ID
- * @returns true if the move would create a cycle
- */
-export function wouldCreateCycle(
-  nodes: NodeInterface[],
-  nodeId: string,
-  newParentId: string | null
-): boolean {
-  if (newParentId === null) return false;
-  if (nodeId === newParentId) return true;
-
-  // Walk up from newParentId to check if we encounter nodeId
-  let current = nodes.find((n) => n.id === newParentId);
-  while (current) {
-    if (current.id === nodeId) return true;
-    current = current.parent
-      ? nodes.find((n) => n.id === current!.parent)
-      : undefined;
-  }
-
-  return false;
-}
+// Re-export pure functions for backward compatibility
+export { buildTree, getNodePath, wouldCreateCycle };
 
 /**
  * Move a node to a new parent and/or position

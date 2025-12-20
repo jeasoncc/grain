@@ -18,7 +18,7 @@ import {
 	UI_SCALE_OPTIONS,
 	CARD_SIZE_OPTIONS,
 	useFontSettings,
-} from "@/stores/font";
+} from "@/domain/font";
 
 export const Route = createFileRoute("/settings/typography")({
 	component: TypographySettings,

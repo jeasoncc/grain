@@ -6,7 +6,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { FileText, Calendar, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { EditorTab } from "@/stores/editor-tabs";
+import type { EditorTab } from "@/domain/editor-tabs";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
 interface BufferSwitcherProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  tabs: EditorTab[];
+  tabs: readonly EditorTab[];
   activeTabId: string | null;
   onSelectTab: (tabId: string) => void;
   initialDirection?: "forward" | "backward";

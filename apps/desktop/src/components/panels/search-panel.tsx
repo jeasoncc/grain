@@ -31,7 +31,7 @@ import {
 	type SearchResultType,
 	searchEngine,
 } from "@/services/search";
-import { useUnifiedSidebarStore } from "@/stores/unified-sidebar";
+import { useUnifiedSidebarStore } from "@/domain/sidebar";
 
 const typeIcons: Record<SearchResultType, any> = {
 	project: FileText,

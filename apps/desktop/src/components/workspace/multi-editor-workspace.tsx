@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef } from "react";
 import type { SerializedEditorState } from "lexical";
 import { Editor, type MentionEntry } from "@grain/editor";
 import { cn } from "@/lib/utils";
-import type { EditorTab, EditorInstanceState } from "@/stores/editor-tabs";
+import type { EditorTab, EditorInstanceState } from "@/domain/editor-tabs";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
 import { WikiHoverPreview } from "@/components/blocks/wiki-hover-preview";
 

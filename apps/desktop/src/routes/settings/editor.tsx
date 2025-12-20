@@ -5,7 +5,7 @@ import { DebouncedSlider } from "@/components/ui/debounced-slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { DEFAULT_EDITOR_FONT, POPULAR_FONTS, useFontSettings } from "@/stores/font";
+import { DEFAULT_EDITOR_FONT, POPULAR_FONTS, useFontSettings } from "@/domain/font";
 
 export const Route = createFileRoute("/settings/editor")({
 	component: EditorSettings,

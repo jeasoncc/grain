@@ -7,8 +7,8 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { X, FileText, Calendar, Palette, LayoutGrid, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEditorTabsStore, type EditorTab } from "@/stores/editor-tabs";
-import { useSelectionStore } from "@/stores/selection";
+import { useEditorTabsStore, type EditorTab } from "@/domain/editor-tabs";
+import { useSelectionStore } from "@/domain/selection";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,

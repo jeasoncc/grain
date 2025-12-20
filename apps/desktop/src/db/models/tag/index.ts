@@ -8,4 +8,38 @@
  */
 
 // Interfaces
-export * from "./tag.interface";
+export type { TagInterface, TagCreateInput } from "./tag.interface";
+
+// Repository
+export { TagRepository } from "./tag.repository";
+
+// Hooks
+export {
+	useTagsByWorkspace,
+	useNodesByTag,
+	useTagGraph,
+	useTagSearch,
+} from "./tag.hooks";
+
+// Utils (pure functions)
+export {
+	// Constants
+	MAX_TAG_NAME_LENGTH,
+	MIN_TAG_NAME_LENGTH,
+	INVALID_TAG_CHARS,
+	TAG_PATTERN,
+	// Normalization
+	normalizeTagName,
+	validateTagName,
+	// Filtering
+	filterTagsByPrefix,
+	filterTagsByMinCount,
+	sortTagsByCount,
+	sortTagsAlphabetically,
+	// Extraction
+	extractTagsFromContent,
+	getUniqueTagNames,
+	// Statistics
+	getTotalTagUsage,
+	getTopTags,
+} from "./tag.utils";
