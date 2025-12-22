@@ -3,8 +3,8 @@
  * 使用 Unified Sidebar 中的 DrawingsPanel 进行绘图管理
  */
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback } from "react";
 import { PenTool } from "lucide-react";
+import { useCallback } from "react";
 import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
 import { useUnifiedSidebarStore } from "@/domain/sidebar";
 import { useDrawingById } from "@/services/drawings";
@@ -17,15 +17,21 @@ function CanvasPage() {
 	const { drawingsState, setSelectedDrawingId } = useUnifiedSidebarStore();
 	const selectedDrawing = useDrawingById(drawingsState.selectedDrawingId);
 
-	const handleDeleteDrawing = useCallback((drawingId: string) => {
-		if (drawingsState.selectedDrawingId === drawingId) {
-			setSelectedDrawingId(null);
-		}
-	}, [drawingsState.selectedDrawingId, setSelectedDrawingId]);
+	const handleDeleteDrawing = useCallback(
+		(drawingId: string) => {
+			if (drawingsState.selectedDrawingId === drawingId) {
+				setSelectedDrawingId(null);
+			}
+		},
+		[drawingsState.selectedDrawingId, setSelectedDrawingId],
+	);
 
-	const handleRenameDrawing = useCallback((_drawingId: string, _newName: string) => {
-		// Drawing name is updated in the database, the live query will automatically update
-	}, []);
+	const handleRenameDrawing = useCallback(
+		(_drawingId: string, _newName: string) => {
+			// Drawing name is updated in the database, the live query will automatically update
+		},
+		[],
+	);
 
 	return (
 		<div className="flex h-screen bg-background text-foreground">
@@ -39,7 +45,9 @@ function CanvasPage() {
 						{selectedDrawing && (
 							<>
 								<span className="text-muted-foreground">/</span>
-								<span className="text-muted-foreground">{selectedDrawing.name}</span>
+								<span className="text-muted-foreground">
+									{selectedDrawing.name}
+								</span>
 							</>
 						)}
 					</div>
@@ -59,7 +67,9 @@ function CanvasPage() {
 						<div className="flex flex-col items-center justify-center h-full text-muted-foreground">
 							<div className="text-center">
 								<PenTool className="size-12 mx-auto mb-4 opacity-30" />
-								<h3 className="text-lg font-medium mb-2">选择一个绘图开始编辑</h3>
+								<h3 className="text-lg font-medium mb-2">
+									选择一个绘图开始编辑
+								</h3>
 								<p className="text-sm">
 									从左侧边栏选择一个绘图，或创建一个新的绘图来开始。
 								</p>

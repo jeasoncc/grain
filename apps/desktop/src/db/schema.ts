@@ -1,8 +1,9 @@
 /**
- * @deprecated This file is deprecated. Use the new model-based architecture instead:
- * - Import types from "@/db/models" (e.g., NodeInterface, WorkspaceInterface, etc.)
- * - Import schemas from "@/db/models" (e.g., NodeSchema, WorkspaceSchema, etc.)
- * 
+ * @deprecated This file is deprecated. Use the new architecture instead:
+ * - Import types from "@/types" (e.g., NodeInterface, WorkspaceInterface, etc.)
+ * - Import schemas from "@/types" (e.g., NodeSchema, WorkspaceSchema, etc.)
+ * - Import database functions from "@/db" (e.g., addNode, getNodeById, etc.)
+ *
  * This file is kept for backward compatibility during migration.
  */
 

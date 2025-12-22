@@ -2,21 +2,23 @@
  * StoryWorkspace - 简化版工作空间
  * 基于新的 Node 结构，移除旧的 chapter/scene 依赖
  *
+ * 路由编排层：连接数据和展示组件
+ *
  * @see Requirements 1.4, 3.1, 4.1, 6.4
  */
 
+import { type MentionEntry, MultiEditorContainer } from "@grain/editor";
 import type { SerializedEditorState } from "lexical";
-import {
-	PanelRightClose,
-	PanelRightOpen,
-} from "lucide-react";
+import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CanvasEditor } from "@/components/blocks/canvas-editor";
 import { KeyboardShortcutsHelp } from "@/components/blocks/keyboard-shortcuts-help";
 import { SaveStatusIndicator } from "@/components/blocks/save-status-indicator";
 import { ThemeSelector } from "@/components/blocks/theme-selector";
+import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-preview-connected";
+import { WordCountBadge } from "@/components/blocks/word-count-badge";
+import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
 import { EditorTabs } from "@/components/editor-tabs";
-import { useEditorTabsStore } from "@/domain/editor-tabs";
 import { StoryRightSidebar } from "@/components/story-right-sidebar";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,19 +27,18 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { WorkspaceInterface, DrawingInterface } from "@/db/models";
-import { useManualSave } from "@/hooks/use-manual-save";
-import { useSettings } from "@/hooks/use-settings";
-import { useSaveStore } from "@/domain/save";
-import { saveService } from "@/services/save";
-import { useSelectionStore } from "@/domain/selection";
 import { useUIStore } from "@/domain/ui";
-import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
-import { getNodeContent } from "@/services/nodes";
-import { useWikiFiles } from "@/services/wiki-files";
+import { useWikiFiles } from "@/domain/wiki";
+import { saveService } from "@/fn/save";
+import { countWordsFromLexicalState } from "@/fn/word-count";
+import { useManualSave } from "@/hooks/use-save";
+import { useSettings } from "@/hooks/use-settings";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
-import { WikiHoverPreview } from "@/components/blocks/wiki-hover-preview";
-import { MultiEditorContainer, type MentionEntry } from "@grain/editor";
+import { getNodeContent } from "@/services/nodes";
+import { useEditorTabsStore } from "@/stores/editor-tabs.store";
+import { useSaveStore } from "@/stores/save.store";
+import { useSelectionStore } from "@/stores/selection.store";
+import type { DrawingInterface, WorkspaceInterface } from "@/types";
 
 interface StoryWorkspaceProps {
 	workspaces: WorkspaceInterface[];
@@ -52,12 +53,18 @@ export function StoryWorkspace({
 }: StoryWorkspaceProps) {
 	const initialWorkspaceId = activeWorkspaceId ?? workspaces[0]?.id ?? null;
 	const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
-	const setSelectedWorkspaceId = useSelectionStore((s) => s.setSelectedWorkspaceId);
+	const setSelectedWorkspaceId = useSelectionStore(
+		(s) => s.setSelectedWorkspaceId,
+	);
 
-	const { autoSave, autoSaveInterval } = useSettings();
-	const autoSaveDelayMs = autoSave ? Math.max(DEFAULT_AUTO_SAVE_MS, autoSaveInterval * 1000) : 0;
+	const { autoSave, autoSaveInterval, wordCountMode, showWordCountBadge } =
+		useSettings();
+	const autoSaveDelayMs = autoSave
+		? Math.max(DEFAULT_AUTO_SAVE_MS, autoSaveInterval * 1000)
+		: 0;
 
-	const [editorInitialState, setEditorInitialState] = useState<SerializedEditorState>();
+	const [editorInitialState, setEditorInitialState] =
+		useState<SerializedEditorState>();
 	const [, setSaveStatus] = useState<"saved" | "saving" | "error">("saved");
 
 	// UI 状态
@@ -72,27 +79,41 @@ export function StoryWorkspace({
 	const wikiFiles = useWikiFiles(selectedWorkspaceId);
 
 	// Map WikiFileEntry to MentionEntry format for the editor
-	const mentionEntries: MentionEntry[] = useMemo(() => 
-		wikiFiles.map(file => ({
-			id: file.id,
-			name: file.name,
-			alias: file.alias,
-		})),
-		[wikiFiles]
+	const mentionEntries: MentionEntry[] = useMemo(
+		() =>
+			wikiFiles.map((file) => ({
+				id: file.id,
+				name: file.name,
+				alias: file.alias,
+			})),
+		[wikiFiles],
 	);
 
 	// 标签页状态 - 只获取当前 workspace 的标签
 	const allTabs = useEditorTabsStore((s) => s.tabs);
-	const tabs = useMemo(() => 
-		allTabs.filter(t => t.workspaceId === selectedWorkspaceId),
-		[allTabs, selectedWorkspaceId]
+	const tabs = useMemo(
+		() => allTabs.filter((t) => t.workspaceId === selectedWorkspaceId),
+		[allTabs, selectedWorkspaceId],
 	);
 	const activeTabId = useEditorTabsStore((s) => s.activeTabId);
 	const editorStates = useEditorTabsStore((s) => s.editorStates);
 	const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
 
 	// 保存状态管理
-	const { markAsUnsaved, markAsSaved, markAsSaving } = useSaveStore();
+	const {
+		status: saveStatus,
+		lastSaveTime,
+		errorMessage,
+		hasUnsavedChanges,
+		isManualSaving,
+		markAsUnsaved,
+		markAsSaved,
+		markAsSaving,
+	} = useSaveStore();
+
+	// 标签页操作
+	const setActiveTab = useEditorTabsStore((s) => s.setActiveTab);
+	const closeTab = useEditorTabsStore((s) => s.closeTab);
 
 	// 获取当前编辑器内容
 	const currentContent = useMemo(() => {
@@ -159,7 +180,7 @@ export function StoryWorkspace({
 		(tabId: string, scrollTop: number) => {
 			updateEditorState(tabId, { scrollTop });
 		},
-		[updateEditorState]
+		[updateEditorState],
 	);
 
 	const handleMultiEditorContentChange = useCallback(
@@ -173,7 +194,7 @@ export function StoryWorkspace({
 
 			if (autoSaveDelayMs > 0) {
 				autoSaveTimerRef.current = setTimeout(async () => {
-					const tab = tabs.find(t => t.id === tabId);
+					const tab = tabs.find((t) => t.id === tabId);
 					if (!tab) return;
 
 					setSaveStatus("saving");
@@ -193,30 +214,57 @@ export function StoryWorkspace({
 				}, autoSaveDelayMs);
 			}
 		},
-		[autoSaveDelayMs, tabs, updateEditorState, markAsUnsaved, markAsSaving, markAsSaved]
+		[
+			autoSaveDelayMs,
+			tabs,
+			updateEditorState,
+			markAsUnsaved,
+			markAsSaving,
+			markAsSaved,
+		],
 	);
 
 	const textEditorTabs = useMemo(() => {
-		return tabs.filter(tab => tab.type !== "canvas");
+		return tabs.filter((tab) => tab.type !== "canvas");
 	}, [tabs]);
+
+	// 计算当前编辑器的字数
+	const wordCountResult = useMemo(() => {
+		if (!activeTabId || isCanvasTab) {
+			return { chineseChars: 0, englishWords: 0, total: 0, characters: 0 };
+		}
+		const state = editorStates[activeTabId];
+		if (!state?.serializedState) {
+			return { chineseChars: 0, englishWords: 0, total: 0, characters: 0 };
+		}
+		return countWordsFromLexicalState(state.serializedState, wordCountMode);
+	}, [activeTabId, editorStates, isCanvasTab, wordCountMode]);
 
 	const renderEditorContent = () => {
 		if (!activeTab) {
 			// Check if there are any files in the workspace
 			const hasFiles = wikiFiles.length > 0;
-			
+
 			return (
 				<div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-4">
 					{hasFiles ? (
 						<>
-							<p className="text-lg">Select a file from the file tree to start editing</p>
-							<p className="text-sm opacity-70">Choose a file from the left sidebar or create a new one</p>
+							<p className="text-lg">
+								Select a file from the file tree to start editing
+							</p>
+							<p className="text-sm opacity-70">
+								Choose a file from the left sidebar or create a new one
+							</p>
 						</>
 					) : (
 						<>
 							<p className="text-lg">Welcome to your workspace!</p>
-							<p className="text-sm opacity-70">Create your first file to get started</p>
-							<p className="text-xs opacity-50 mt-2">Click the "Create File" button in the file tree on the left</p>
+							<p className="text-sm opacity-70">
+								Create your first file to get started
+							</p>
+							<p className="text-xs opacity-50 mt-2">
+								Click the "Create File" button in the file tree on the left
+							</p>
 						</>
 					)}
 				</div>
@@ -225,19 +273,12 @@ export function StoryWorkspace({
 
 		if (isCanvasTab) {
 			return (
-				<CanvasEditor
-					key={activeTab.id}
-					nodeId={activeTab.nodeId || ""}
-				/>
+				<CanvasEditor key={activeTab.id} nodeId={activeTab.nodeId || ""} />
 			);
 		}
 
 		if (selectedDrawing) {
-			return (
-				<DrawingWorkspace
-					drawing={selectedDrawing}
-				/>
-			);
+			return <DrawingWorkspace drawing={selectedDrawing} />;
 		}
 
 		return (
@@ -251,7 +292,7 @@ export function StoryWorkspace({
 					placeholder="Start writing..."
 					mentionEntries={mentionEntries}
 					useWikiHoverPreview={useWikiHoverPreview}
-					WikiHoverPreview={WikiHoverPreview}
+					WikiHoverPreview={WikiHoverPreviewConnected}
 				/>
 			</div>
 		);
@@ -264,7 +305,13 @@ export function StoryWorkspace({
 					{/* 顶部工具栏 */}
 					<div className="flex h-12 items-center justify-between px-4 shrink-0">
 						<div className="flex items-center gap-2">
-							<SaveStatusIndicator />
+							<SaveStatusIndicator
+								status={saveStatus}
+								lastSaveTime={lastSaveTime}
+								errorMessage={errorMessage}
+								hasUnsavedChanges={hasUnsavedChanges}
+								isManualSaving={isManualSaving}
+							/>
 						</div>
 
 						<div className="flex items-center gap-1">
@@ -272,7 +319,11 @@ export function StoryWorkspace({
 
 							<Tooltip>
 								<TooltipTrigger asChild>
-									<Button variant="ghost" size="icon" onClick={toggleRightSidebar}>
+									<Button
+										variant="ghost"
+										size="icon"
+										onClick={toggleRightSidebar}
+									>
 										{rightSidebarOpen ? (
 											<PanelRightClose className="size-4" />
 										) : (
@@ -280,7 +331,9 @@ export function StoryWorkspace({
 										)}
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent>{rightSidebarOpen ? "Close sidebar" : "Open sidebar"}</TooltipContent>
+								<TooltipContent>
+									{rightSidebarOpen ? "Close sidebar" : "Open sidebar"}
+								</TooltipContent>
 							</Tooltip>
 
 							<KeyboardShortcutsHelp />
@@ -290,15 +343,34 @@ export function StoryWorkspace({
 					{/* 编辑器区域 */}
 					<div className="flex flex-1 flex-col overflow-hidden">
 						{tabPosition === "top" && tabs.length > 0 && (
-							<EditorTabs />
+							<EditorTabs
+								tabs={tabs}
+								activeTabId={activeTabId}
+								onSetActiveTab={setActiveTab}
+								onCloseTab={closeTab}
+							/>
 						)}
 						{renderEditorContent()}
 					</div>
 				</div>
 
 				{rightSidebarOpen && (
-					<StoryRightSidebar />
+					<StoryRightSidebar
+						tabPosition={tabPosition}
+						tabs={tabs}
+						activeTabId={activeTabId}
+						onSetActiveTab={setActiveTab}
+						onCloseTab={closeTab}
+					/>
 				)}
+
+				{/* 字数统计徽章 */}
+				<WordCountBadge
+					wordCountResult={wordCountResult}
+					countMode={wordCountMode}
+					show={showWordCountBadge && !isCanvasTab && !!activeTab}
+					showDetail={wordCountMode === "mixed"}
+				/>
 			</div>
 		</TooltipProvider>
 	);

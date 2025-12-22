@@ -47,7 +47,10 @@ export function ThemeSelector() {
 					<Palette className="size-3.5" />
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent align="end" className="w-80 max-h-[500px] overflow-hidden flex flex-col p-3 shadow-2xl border border-border/40 bg-popover/95 backdrop-blur-xl rounded-xl">
+			<PopoverContent
+				align="end"
+				className="w-80 max-h-[500px] overflow-hidden flex flex-col p-3 shadow-2xl border border-border/40 bg-popover/95 backdrop-blur-xl rounded-xl"
+			>
 				<div className="space-y-4 flex flex-col min-h-0">
 					<div className="flex-shrink-0 border-b border-border/40 pb-3">
 						<div className="flex items-center justify-between mb-2">
@@ -58,11 +61,12 @@ export function ThemeSelector() {
 								</span>
 							)}
 						</div>
-						
+
 						{/* 主题模式切换 */}
 						<div className="flex items-center gap-1 p-1 bg-muted/30 rounded-lg border border-border/20">
 							{modeConfig.map(({ mode: m, icon: Icon, label }) => (
 								<button
+									type="button"
 									key={m}
 									onClick={() => setMode(m)}
 									className={cn(
@@ -158,6 +162,7 @@ function ThemeCard({ theme, isSelected, onSelect }: ThemeCardProps) {
 
 	return (
 		<button
+			type="button"
 			onClick={onSelect}
 			title={theme.description}
 			className={cn(
@@ -174,7 +179,10 @@ function ThemeCard({ theme, isSelected, onSelect }: ThemeCardProps) {
 				style={{ background: colors.background }}
 			>
 				{/* 模拟侧边栏 */}
-				<div className="w-1/4 h-full border-r border-black/5 dark:border-white/5" style={{ background: colors.sidebar }} />
+				<div
+					className="w-1/4 h-full border-r border-black/5 dark:border-white/5"
+					style={{ background: colors.sidebar }}
+				/>
 				{/* 模拟编辑区 */}
 				<div className="flex-1 p-2 flex flex-col gap-1.5">
 					<div

@@ -14,7 +14,6 @@ import {
 	X,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import logger from "@/log";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -26,12 +25,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 import {
 	type SearchResult,
 	type SearchResultType,
 	searchEngine,
-} from "@/services/search";
+} from "@/domain/search";
+import { cn } from "@/lib/utils";
+import logger from "@/log";
 
 const typeIcons: Record<SearchResultType, any> = {
 	project: FileText,
@@ -290,6 +290,7 @@ function ResultGroup({
 			<CollapsibleContent className="space-y-1 mt-1">
 				{results.map((result) => (
 					<button
+						type="button"
 						key={result.id}
 						onClick={() => onSelect(result)}
 						className="w-full text-left p-2 pl-8 rounded-md hover:bg-accent transition-colors"

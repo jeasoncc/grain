@@ -8,7 +8,12 @@ import { immer } from "zustand/middleware/immer";
 import type { SaveStatus, SaveStore } from "./save.interface";
 
 // Re-export types for convenience
-export type { SaveStatus, SaveState, SaveActions, SaveStore } from "./save.interface";
+export type {
+	SaveActions,
+	SaveState,
+	SaveStatus,
+	SaveStore,
+} from "./save.interface";
 
 // ============================================================================
 // Store
@@ -84,5 +89,6 @@ export const useSaveStore = create<SaveStore>()(
 // ============================================================================
 
 export const useSaveStatus = () => useSaveStore((s) => s.status);
-export const useHasUnsavedChanges = () => useSaveStore((s) => s.hasUnsavedChanges);
+export const useHasUnsavedChanges = () =>
+	useSaveStore((s) => s.hasUnsavedChanges);
 export const useIsManualSaving = () => useSaveStore((s) => s.isManualSaving);

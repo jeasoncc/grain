@@ -7,7 +7,11 @@
  * - Does not modify input parameters
  */
 
-import type { WritingGoal, WritingSession, WritingState } from "./writing.interface";
+import type {
+	WritingGoal,
+	WritingSession,
+	WritingState,
+} from "./writing.interface";
 
 // ==============================
 // Date Utilities
@@ -31,7 +35,10 @@ export const getTodayDate = (date: Date = new Date()): string => {
  * @param today - Optional current date for comparison
  * @returns Whether the date string matches today
  */
-export const isToday = (dateString: string, today: Date = new Date()): boolean => {
+export const isToday = (
+	dateString: string,
+	today: Date = new Date(),
+): boolean => {
 	return dateString === getTodayDate(today);
 };
 
@@ -58,7 +65,7 @@ export const getSessionWordsWritten = (session: WritingSession): number => {
  */
 export const calculateWordDifference = (
 	currentCount: number,
-	previousCount: number
+	previousCount: number,
 ): number => {
 	return currentCount - previousCount;
 };
@@ -72,7 +79,7 @@ export const calculateWordDifference = (
  */
 export const calculateGoalProgress = (
 	todayWordCount: number,
-	goal: WritingGoal
+	goal: WritingGoal,
 ): number => {
 	if (!goal.enabled || goal.dailyTarget <= 0) {
 		return 0;
@@ -89,7 +96,7 @@ export const calculateGoalProgress = (
  */
 export const isGoalReached = (
 	todayWordCount: number,
-	goal: WritingGoal
+	goal: WritingGoal,
 ): boolean => {
 	if (!goal.enabled) {
 		return false;
@@ -106,7 +113,7 @@ export const isGoalReached = (
  */
 export const getRemainingWords = (
 	todayWordCount: number,
-	goal: WritingGoal
+	goal: WritingGoal,
 ): number => {
 	if (!goal.enabled) {
 		return 0;
@@ -127,7 +134,7 @@ export const getRemainingWords = (
  */
 export const createSession = (
 	wordCount: number,
-	startTime: number = Date.now()
+	startTime: number = Date.now(),
 ): WritingSession => {
 	return {
 		startTime,
@@ -146,7 +153,7 @@ export const createSession = (
  */
 export const updateSessionCount = (
 	session: WritingSession,
-	wordCount: number
+	wordCount: number,
 ): WritingSession => {
 	return {
 		...session,
@@ -163,7 +170,7 @@ export const updateSessionCount = (
  */
 export const getSessionDuration = (
 	session: WritingSession,
-	currentTime: number = Date.now()
+	currentTime: number = Date.now(),
 ): number => {
 	return Math.floor((currentTime - session.startTime) / 60000);
 };
@@ -177,7 +184,7 @@ export const getSessionDuration = (
  */
 export const getWordsPerMinute = (
 	session: WritingSession,
-	currentTime: number = Date.now()
+	currentTime: number = Date.now(),
 ): number => {
 	const duration = getSessionDuration(session, currentTime);
 	if (duration <= 0) {
@@ -201,7 +208,7 @@ export const getWordsPerMinute = (
  */
 export const mergeWritingGoal = (
 	currentGoal: WritingGoal,
-	updates: Partial<WritingGoal>
+	updates: Partial<WritingGoal>,
 ): WritingGoal => {
 	return {
 		...currentGoal,
@@ -221,7 +228,7 @@ export const mergeWritingGoal = (
 export const calculateTodayWordCountUpdate = (
 	state: Pick<WritingState, "todayWordCount" | "todayDate" | "session">,
 	newWordCount: number,
-	today: string
+	today: string,
 ): { todayWordCount: number; todayDate: string } => {
 	if (!state.session) {
 		return { todayWordCount: state.todayWordCount, todayDate: state.todayDate };

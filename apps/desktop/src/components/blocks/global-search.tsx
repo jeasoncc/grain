@@ -1,5 +1,7 @@
 /**
- * Global Search组件
+ * Global Search 组件
+ *
+ * 纯展示组件，通过 props 接收搜索函数
  */
 
 import { useNavigate } from "@tanstack/react-router";
@@ -17,18 +19,50 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import {
-	type SearchResult,
-	type SearchResultType,
-	searchEngine,
-} from "@/services/search";
 
-interface GlobalSearchProps {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
+/**
+ * 搜索结果类型
+ */
+export type SearchResultType = "project" | "node";
+
+/**
+ * 搜索结果
+ */
+export interface SearchResult {
+	id: string;
+	type: SearchResultType;
+	title: string;
+	content: string;
+	excerpt: string;
+	workspaceId?: string;
+	workspaceTitle?: string;
+	score: number;
+	highlights: string[];
 }
 
-const typeIcons: Record<SearchResultType, any> = {
+/**
+ * 搜索选项
+ */
+export interface SearchOptions {
+	limit?: number;
+}
+
+/**
+ * Global Search Props
+ */
+interface GlobalSearchProps {
+	/** 是否打开 */
+	open: boolean;
+	/** 打开状态变化回调 */
+	onOpenChange: (open: boolean) => void;
+	/** 搜索函数 */
+	onSearch: (query: string, options?: SearchOptions) => Promise<SearchResult[]>;
+}
+
+const typeIcons: Record<
+	SearchResultType,
+	React.ComponentType<{ className?: string }>
+> = {
 	project: FileText,
 	node: FileText,
 };
@@ -43,7 +77,11 @@ const typeColors: Record<SearchResultType, string> = {
 	node: "bg-blue-500/10 text-blue-500",
 };
 
-export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
+export function GlobalSearch({
+	open,
+	onOpenChange,
+	onSearch,
+}: GlobalSearchProps) {
 	const [query, setQuery] = useState("");
 	const [results, setResults] = useState<SearchResult[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -51,27 +89,27 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 	const navigate = useNavigate();
 
 	// Execute Search
-	const performSearch = useCallback(async (searchQuery: string) => {
-		if (!searchQuery.trim()) {
-			setResults([]);
-			return;
-		}
+	const performSearch = useCallback(
+		async (searchQuery: string) => {
+			if (!searchQuery.trim()) {
+				setResults([]);
+				return;
+			}
 
-		setLoading(true);
-		try {
-			// 使用简单搜索（更快，适合实时搜索）
-			const searchResults = await searchEngine.simpleSearch(searchQuery, {
-				limit: 30,
-			});
-			setResults(searchResults);
-			setSelectedIndex(0);
-		} catch (error) {
-			console.error("Search failed:", error);
-			setResults([]);
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+			setLoading(true);
+			try {
+				const searchResults = await onSearch(searchQuery, { limit: 30 });
+				setResults(searchResults);
+				setSelectedIndex(0);
+			} catch (error) {
+				console.error("Search failed:", error);
+				setResults([]);
+			} finally {
+				setLoading(false);
+			}
+		},
+		[onSearch],
+	);
 
 	// Debounced Search
 	useEffect(() => {
@@ -81,6 +119,27 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 
 		return () => clearTimeout(timer);
 	}, [query, performSearch]);
+
+	// 选择结果
+	const handleSelectResult = useCallback(
+		(result: SearchResult) => {
+			onOpenChange(false);
+
+			// 根据类型导航到对应页面
+			switch (result.type) {
+				case "node":
+				case "project":
+					// Navigate to Home，通过文件树打开
+					navigate({ to: "/" });
+					break;
+			}
+
+			// 清空搜索
+			setQuery("");
+			setResults([]);
+		},
+		[onOpenChange, navigate],
+	);
 
 	// Keyboard Navigation
 	useEffect(() => {
@@ -111,25 +170,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [open, results, selectedIndex, onOpenChange]);
-
-	// 选择结果
-	const handleSelectResult = (result: SearchResult) => {
-		onOpenChange(false);
-
-		// 根据类型导航到对应页面
-		switch (result.type) {
-			case "node":
-			case "project":
-				// Navigate to Home，通过文件树打开
-				navigate({ to: "/" });
-				break;
-		}
-
-		// 清空搜索
-		setQuery("");
-		setResults([]);
-	};
+	}, [open, results, selectedIndex, onOpenChange, handleSelectResult]);
 
 	// 高亮匹配文本
 	const highlightText = (text: string, query: string) => {
@@ -139,6 +180,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 		return parts.map((part, index) =>
 			part.toLowerCase() === query.toLowerCase() ? (
 				<mark
+					// biome-ignore lint/suspicious/noArrayIndexKey: 文本片段顺序稳定
 					key={index}
 					className="bg-yellow-200 dark:bg-yellow-900/50 text-foreground"
 				>
@@ -193,6 +235,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
 								const Icon = typeIcons[result.type];
 								return (
 									<button
+										type="button"
 										key={result.id}
 										onClick={() => handleSelectResult(result)}
 										className={cn(

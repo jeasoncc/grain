@@ -4,14 +4,18 @@
  */
 
 // Types
-export type { DiagramState, DiagramActions, DiagramStore } from "./diagram.interface";
+export type {
+	DiagramActions,
+	DiagramState,
+	DiagramStore,
+} from "./diagram.interface";
 
 // Store
 export {
-	useDiagramStore,
 	useDiagramSettings, // Legacy alias
-	useKrokiServerUrl,
+	useDiagramStore,
 	useEnableKroki,
+	useKrokiServerUrl,
 } from "./diagram.store";
 
 // Utils

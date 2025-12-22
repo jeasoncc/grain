@@ -1,6 +1,13 @@
 // Update checker component
+
+import {
+	AlertCircle,
+	CheckCircle,
+	Download,
+	Info,
+	RefreshCw,
+} from "lucide-react";
 import { useEffect, useState } from "react";
-import { Download, RefreshCw, CheckCircle, AlertCircle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -11,9 +18,19 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { checkForUpdates, downloadAndInstall, type UpdateInfo } from "@/services/updater";
+import {
+	checkForUpdates,
+	downloadAndInstall,
+	type UpdateInfo,
+} from "@/services/updater";
 
-type CheckStatus = "idle" | "checking" | "up-to-date" | "update-available" | "error" | "dev-mode";
+type CheckStatus =
+	| "idle"
+	| "checking"
+	| "up-to-date"
+	| "update-available"
+	| "error"
+	| "dev-mode";
 
 export function UpdateChecker() {
 	const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
@@ -69,7 +86,11 @@ export function UpdateChecker() {
 
 	// Auto-clear status message after 5 seconds
 	useEffect(() => {
-		if (checkStatus === "up-to-date" || checkStatus === "dev-mode" || checkStatus === "error") {
+		if (
+			checkStatus === "up-to-date" ||
+			checkStatus === "dev-mode" ||
+			checkStatus === "error"
+		) {
 			const timer = setTimeout(() => {
 				setCheckStatus("idle");
 			}, 5000);
@@ -115,7 +136,9 @@ export function UpdateChecker() {
 					disabled={isChecking}
 					className="w-fit"
 				>
-					<RefreshCw className={`size-4 mr-2 ${isChecking ? "animate-spin" : ""}`} />
+					<RefreshCw
+						className={`size-4 mr-2 ${isChecking ? "animate-spin" : ""}`}
+					/>
 					{isChecking ? "Checking..." : "Check for Updates"}
 				</Button>
 				{renderStatusMessage()}
@@ -134,7 +157,9 @@ export function UpdateChecker() {
 						<div className="space-y-4">
 							<div className="space-y-2">
 								<div className="flex justify-between text-sm">
-									<span className="text-muted-foreground">Current Version:</span>
+									<span className="text-muted-foreground">
+										Current Version:
+									</span>
 									<span className="font-mono">{updateInfo.currentVersion}</span>
 								</div>
 								<div className="flex justify-between text-sm">
@@ -176,10 +201,7 @@ export function UpdateChecker() {
 						>
 							Later
 						</Button>
-						<Button
-							onClick={handleDownloadAndInstall}
-							disabled={isDownloading}
-						>
+						<Button onClick={handleDownloadAndInstall} disabled={isDownloading}>
 							<Download className="size-4 mr-2" />
 							{isDownloading ? "Downloading..." : "Update Now"}
 						</Button>

@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import {
 	createFileRoute,
 	Link,
@@ -6,6 +5,7 @@ import {
 	useLocation,
 } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { useMemo } from "react";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { cn } from "@/lib/utils";
 
@@ -29,83 +29,86 @@ function SettingsLayout() {
 	const location = useLocation();
 	const iconTheme = useIconTheme();
 
-	const navGroups = useMemo<NavGroup[]>(() => [
-		{
-			title: "Customization",
-			items: [
-				{
-					to: "/settings/design",
-					label: "Appearance",
-					icon: iconTheme.icons.settingsPage.appearance,
-				},
-				{
-					to: "/settings/typography",
-					label: "Typography",
-					icon: iconTheme.icons.settingsPage.editor,
-				},
-				{
-					to: "/settings/icons",
-					label: "Icons",
-					icon: iconTheme.icons.settingsPage.icons,
-				},
-				{
-					to: "/settings/diagrams",
-					label: "Diagrams",
-					icon: iconTheme.icons.settingsPage.diagrams,
-				},
-			],
-		},
-		{
-			title: "Application",
-			items: [
-				{
-					to: "/settings/general",
-					label: "General",
-					icon: iconTheme.icons.settingsPage.general,
-				},
-				{
-					to: "/settings/editor",
-					label: "Editor",
-					icon: iconTheme.icons.settingsPage.editor,
-				},
-			],
-		},
-		{
-			title: "Data & Storage",
-			items: [
-				{
-					to: "/settings/data",
-					label: "Data",
-					icon: iconTheme.icons.settingsPage.data,
-				},
-				{
-					to: "/settings/export",
-					label: "Export",
-					icon: iconTheme.icons.settingsPage.export,
-				},
-			],
-		},
-		{
-			title: "Advanced",
-			items: [
-				{
-					to: "/settings/logs",
-					label: "Logs",
-					icon: iconTheme.icons.settingsPage.logs,
-				},
-			],
-		},
-		{
-			title: "Info",
-			items: [
-				{
-					to: "/settings/about",
-					label: "About",
-					icon: iconTheme.icons.settingsPage.about,
-				},
-			],
-		},
-	], [iconTheme]);
+	const navGroups = useMemo<NavGroup[]>(
+		() => [
+			{
+				title: "Customization",
+				items: [
+					{
+						to: "/settings/design",
+						label: "Appearance",
+						icon: iconTheme.icons.settingsPage.appearance,
+					},
+					{
+						to: "/settings/typography",
+						label: "Typography",
+						icon: iconTheme.icons.settingsPage.editor,
+					},
+					{
+						to: "/settings/icons",
+						label: "Icons",
+						icon: iconTheme.icons.settingsPage.icons,
+					},
+					{
+						to: "/settings/diagrams",
+						label: "Diagrams",
+						icon: iconTheme.icons.settingsPage.diagrams,
+					},
+				],
+			},
+			{
+				title: "Application",
+				items: [
+					{
+						to: "/settings/general",
+						label: "General",
+						icon: iconTheme.icons.settingsPage.general,
+					},
+					{
+						to: "/settings/editor",
+						label: "Editor",
+						icon: iconTheme.icons.settingsPage.editor,
+					},
+				],
+			},
+			{
+				title: "Data & Storage",
+				items: [
+					{
+						to: "/settings/data",
+						label: "Data",
+						icon: iconTheme.icons.settingsPage.data,
+					},
+					{
+						to: "/settings/export",
+						label: "Export",
+						icon: iconTheme.icons.settingsPage.export,
+					},
+				],
+			},
+			{
+				title: "Advanced",
+				items: [
+					{
+						to: "/settings/logs",
+						label: "Logs",
+						icon: iconTheme.icons.settingsPage.logs,
+					},
+				],
+			},
+			{
+				title: "Info",
+				items: [
+					{
+						to: "/settings/about",
+						label: "About",
+						icon: iconTheme.icons.settingsPage.about,
+					},
+				],
+			},
+		],
+		[iconTheme],
+	);
 
 	return (
 		<div className="h-screen bg-background flex flex-col overflow-hidden">
@@ -121,7 +124,9 @@ function SettingsLayout() {
 					</Link>
 					<div className="h-4 w-px bg-border mx-2" />
 					<div className="flex items-center gap-2">
-						<h1 className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">Settings</h1>
+						<h1 className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">
+							Settings
+						</h1>
 					</div>
 				</div>
 			</header>
@@ -161,7 +166,12 @@ function SettingsLayout() {
 													<item.icon className="size-3.5" />
 												</div>
 												<div className="flex flex-col min-w-0">
-													<span className={cn("text-xs font-medium truncate", isActive && "text-primary")}>
+													<span
+														className={cn(
+															"text-xs font-medium truncate",
+															isActive && "text-primary",
+														)}
+													>
 														{item.label}
 													</span>
 												</div>

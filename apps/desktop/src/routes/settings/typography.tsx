@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Monitor, RotateCcw, Check } from "lucide-react";
+import { Check, Monitor, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -13,10 +13,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
+	CARD_SIZE_OPTIONS,
 	DEFAULT_UI_FONT,
 	POPULAR_FONTS,
 	UI_SCALE_OPTIONS,
-	CARD_SIZE_OPTIONS,
 	useFontSettings,
 } from "@/domain/font";
 
@@ -48,8 +48,8 @@ function TypographySettings() {
 
 	// 添加字体到列表
 	const addFont = (font: string) => {
-		const fonts = uiFontFamily.split(",").map(f => f.trim());
-		if (!fonts.some(f => f.replace(/['"]/g, "") === font)) {
+		const fonts = uiFontFamily.split(",").map((f) => f.trim());
+		if (!fonts.some((f) => f.replace(/['"]/g, "") === font)) {
 			setUiFontFamily(`'${font}', ${uiFontFamily}`);
 		}
 	};
@@ -108,18 +108,22 @@ function TypographySettings() {
 									const isIncluded = uiFontFamily.includes(font);
 									return (
 										<button
+											type="button"
 											key={font}
 											onClick={() => addFont(font)}
 											disabled={isIncluded}
 											className={`
 												px-1.5 py-0.5 text-[10px] rounded border transition-all
-												${isIncluded 
-													? "bg-primary/10 border-primary/30 text-primary cursor-default" 
-													: "border-border hover:bg-muted hover:border-primary/50"
+												${
+													isIncluded
+														? "bg-primary/10 border-primary/30 text-primary cursor-default"
+														: "border-border hover:bg-muted hover:border-primary/50"
 												}
 											`}
 										>
-											{isIncluded && <Check className="size-2.5 inline mr-0.5" />}
+											{isIncluded && (
+												<Check className="size-2.5 inline mr-0.5" />
+											)}
 											{font}
 										</button>
 									);
@@ -163,6 +167,7 @@ function TypographySettings() {
 							<div className="grid grid-cols-2 gap-2">
 								{UI_SCALE_OPTIONS.map((option) => (
 									<button
+										type="button"
 										key={option.value}
 										onClick={() => setUiScale(option.value)}
 										className={`
@@ -192,9 +197,7 @@ function TypographySettings() {
 							<Monitor className="size-4" />
 							UI Layout
 						</CardTitle>
-						<CardDescription>
-							Card sizes and layout spacing
-						</CardDescription>
+						<CardDescription>Card sizes and layout spacing</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
 						{/* Card Size */}
@@ -205,6 +208,7 @@ function TypographySettings() {
 							<div className="grid grid-cols-2 gap-2">
 								{CARD_SIZE_OPTIONS.map((option) => (
 									<button
+										type="button"
 										key={option.value}
 										onClick={() => setCardSize(option.value)}
 										className={`
@@ -256,11 +260,13 @@ function TypographySettings() {
 							<Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
 								Preview
 							</Label>
-							<div 
+							<div
 								className="p-4 border bg-card text-card-foreground transition-all"
 								style={{
 									borderRadius: `${cardBorderRadius}px`,
-									padding: CARD_SIZE_OPTIONS.find(c => c.value === cardSize)?.padding || "1rem",
+									padding:
+										CARD_SIZE_OPTIONS.find((c) => c.value === cardSize)
+											?.padding || "1rem",
 									fontFamily: uiFontFamily,
 								}}
 							>

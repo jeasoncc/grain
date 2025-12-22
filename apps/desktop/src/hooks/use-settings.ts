@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { CountMode } from "@/fn/word-count";
 
 interface SettingsState {
 	// General
@@ -7,6 +8,10 @@ interface SettingsState {
 	autoSave: boolean;
 	autoSaveInterval: number; // in seconds
 	spellCheck: boolean;
+
+	// Word Count
+	wordCountMode: CountMode;
+	showWordCountBadge: boolean;
 
 	// Editor
 	fontFamily: string;
@@ -19,6 +24,8 @@ interface SettingsState {
 	setAutoSave: (enable: boolean) => void;
 	setAutoSaveInterval: (interval: number) => void;
 	setSpellCheck: (enable: boolean) => void;
+	setWordCountMode: (mode: CountMode) => void;
+	setShowWordCountBadge: (show: boolean) => void;
 	setFontFamily: (font: string) => void;
 	setFontSize: (size: number) => void;
 	setLineHeight: (height: number) => void;
@@ -34,6 +41,10 @@ export const useSettings = create<SettingsState>()(
 			autoSaveInterval: 3, // 3秒更合理（之前是60秒太长）
 			spellCheck: false,
 
+			// Word Count
+			wordCountMode: "chinese" as CountMode,
+			showWordCountBadge: true,
+
 			fontFamily: "Merriweather",
 			fontSize: 16,
 			lineHeight: 1.6,
@@ -44,6 +55,9 @@ export const useSettings = create<SettingsState>()(
 			setAutoSave: (autoSave) => set({ autoSave }),
 			setAutoSaveInterval: (autoSaveInterval) => set({ autoSaveInterval }),
 			setSpellCheck: (spellCheck) => set({ spellCheck }),
+			setWordCountMode: (wordCountMode) => set({ wordCountMode }),
+			setShowWordCountBadge: (showWordCountBadge) =>
+				set({ showWordCountBadge }),
 
 			setFontFamily: (fontFamily) => set({ fontFamily }),
 			setFontSize: (fontSize) => set({ fontSize }),

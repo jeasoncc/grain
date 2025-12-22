@@ -1,6 +1,6 @@
 /**
  * Updater Domain
- * 
+ *
  * Provides auto-update functionality for the desktop app.
  */
 

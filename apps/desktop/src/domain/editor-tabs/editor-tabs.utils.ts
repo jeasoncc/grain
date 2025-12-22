@@ -1,16 +1,13 @@
 /**
  * Editor Tabs - Pure Utility Functions
- * 
+ *
  * 所有纯函数放在这个文件中，确保：
  * - 无副作用
  * - 相同输入 → 相同输出
  * - 不修改输入参数
  */
 
-import type {
-	EditorTab,
-	EditorInstanceState,
-} from "./editor-tabs.interface";
+import type { EditorInstanceState, EditorTab } from "./editor-tabs.interface";
 
 // ==============================
 // Tab Operations (Pure Functions)
@@ -33,7 +30,7 @@ export const createDefaultEditorState = (): EditorInstanceState => ({
  */
 export const findTabByNodeId = (
 	tabs: readonly EditorTab[],
-	nodeId: string
+	nodeId: string,
 ): EditorTab | undefined => tabs.find((t) => t.nodeId === nodeId);
 
 /**
@@ -41,7 +38,7 @@ export const findTabByNodeId = (
  */
 export const findTabById = (
 	tabs: readonly EditorTab[],
-	id: string
+	id: string,
 ): EditorTab | undefined => tabs.find((t) => t.id === id);
 
 /**
@@ -49,7 +46,7 @@ export const findTabById = (
  */
 export const getTabsByWorkspace = (
 	tabs: readonly EditorTab[],
-	workspaceId: string
+	workspaceId: string,
 ): readonly EditorTab[] => tabs.filter((t) => t.workspaceId === workspaceId);
 
 /**
@@ -58,7 +55,7 @@ export const getTabsByWorkspace = (
 export const calculateNextActiveTabId = (
 	tabs: readonly EditorTab[],
 	closedTabId: string,
-	currentActiveTabId: string | null
+	currentActiveTabId: string | null,
 ): string | null => {
 	// 如果关闭的不是当前活动标签，保持不变
 	if (currentActiveTabId !== closedTabId) {
@@ -86,7 +83,7 @@ export const calculateNextActiveTabId = (
  */
 export const addTab = (
 	tabs: readonly EditorTab[],
-	newTab: EditorTab
+	newTab: EditorTab,
 ): readonly EditorTab[] => [...tabs, newTab];
 
 /**
@@ -94,7 +91,7 @@ export const addTab = (
  */
 export const removeTab = (
 	tabs: readonly EditorTab[],
-	tabId: string
+	tabId: string,
 ): readonly EditorTab[] => tabs.filter((t) => t.id !== tabId);
 
 /**
@@ -103,7 +100,7 @@ export const removeTab = (
 export const updateTab = (
 	tabs: readonly EditorTab[],
 	tabId: string,
-	updates: Partial<EditorTab>
+	updates: Partial<EditorTab>,
 ): readonly EditorTab[] =>
 	tabs.map((t) => (t.id === tabId ? { ...t, ...updates } : t));
 
@@ -113,7 +110,7 @@ export const updateTab = (
 export const reorderTabs = (
 	tabs: readonly EditorTab[],
 	fromIndex: number,
-	toIndex: number
+	toIndex: number,
 ): readonly EditorTab[] => {
 	const result = [...tabs];
 	const [removed] = result.splice(fromIndex, 1);
@@ -131,7 +128,7 @@ export const reorderTabs = (
 export const updateEditorState = (
 	states: Readonly<Record<string, EditorInstanceState>>,
 	tabId: string,
-	updates: Partial<EditorInstanceState>
+	updates: Partial<EditorInstanceState>,
 ): Readonly<Record<string, EditorInstanceState>> => {
 	const existingState = states[tabId] ?? createDefaultEditorState();
 	return {
@@ -149,7 +146,7 @@ export const updateEditorState = (
  */
 export const removeEditorState = (
 	states: Readonly<Record<string, EditorInstanceState>>,
-	tabId: string
+	tabId: string,
 ): Readonly<Record<string, EditorInstanceState>> => {
 	const { [tabId]: _, ...rest } = states;
 	return rest;
@@ -166,7 +163,7 @@ export const evictLRUEditorStates = (
 	states: Readonly<Record<string, EditorInstanceState>>,
 	activeTabId: string | null,
 	openTabIds: ReadonlySet<string>,
-	maxStates: number
+	maxStates: number,
 ): Readonly<Record<string, EditorInstanceState>> => {
 	const entries = Object.entries(states);
 
@@ -177,7 +174,7 @@ export const evictLRUEditorStates = (
 
 	// 按 lastModified 排序（最旧的在前）
 	const sortedEntries = [...entries].sort(
-		([, a], [, b]) => (a.lastModified ?? 0) - (b.lastModified ?? 0)
+		([, a], [, b]) => (a.lastModified ?? 0) - (b.lastModified ?? 0),
 	);
 
 	// 计算需要清理的数量
@@ -201,9 +198,7 @@ export const evictLRUEditorStates = (
 	}
 
 	// 创建新对象，排除被清理的条目
-	return Object.fromEntries(
-		entries.filter(([id]) => !evictedIds.has(id))
-	);
+	return Object.fromEntries(entries.filter(([id]) => !evictedIds.has(id)));
 };
 
 // ==============================
@@ -230,5 +225,5 @@ export const isValidTab = (tab: unknown): tab is EditorTab => {
  */
 export const isValidTabIndex = (
 	tabs: readonly EditorTab[],
-	index: number
+	index: number,
 ): boolean => index >= 0 && index < tabs.length;

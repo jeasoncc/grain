@@ -1,5 +1,7 @@
 /**
  * 搜索面板 - 统一侧边栏中的搜索功能
+ *
+ * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  */
 
 import { useNavigate } from "@tanstack/react-router";
@@ -8,7 +10,6 @@ import {
 	ChevronRight,
 	FileText,
 	Filter,
-	Globe,
 	Loader2,
 	Search,
 	X,
@@ -24,14 +25,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 import {
 	type SearchResult,
 	type SearchResultType,
 	searchEngine,
-} from "@/services/search";
-import { useUnifiedSidebarStore } from "@/domain/sidebar";
+} from "@/domain/search";
+import { cn } from "@/lib/utils";
+import type { SearchPanelState } from "@/types/sidebar";
 
 const typeIcons: Record<SearchResultType, any> = {
 	project: FileText,
@@ -48,14 +48,29 @@ const typeColors: Record<SearchResultType, string> = {
 	node: "text-blue-500",
 };
 
-export function SearchPanel() {
+/**
+ * SearchPanel Props 接口
+ *
+ * 纯展示组件：所有数据和回调通过 props 传入
+ */
+export interface SearchPanelProps {
+	/** 搜索状态 */
+	readonly searchState: SearchPanelState;
+	/** 设置搜索查询回调 */
+	readonly onSetSearchQuery: (query: string) => void;
+	/** 设置搜索类型回调 */
+	readonly onSetSearchSelectedTypes: (types: string[]) => void;
+	/** 设置显示过滤器回调 */
+	readonly onSetSearchShowFilters: (show: boolean) => void;
+}
+
+export function SearchPanel({
+	searchState,
+	onSetSearchQuery,
+	onSetSearchSelectedTypes,
+	onSetSearchShowFilters,
+}: SearchPanelProps) {
 	const navigate = useNavigate();
-	const {
-		searchState,
-		setSearchQuery,
-		setSearchSelectedTypes,
-		setSearchShowFilters,
-	} = useUnifiedSidebarStore();
 
 	const [results, setResults] = useState<SearchResult[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -122,7 +137,7 @@ export function SearchPanel() {
 		const newTypes = searchState.selectedTypes.includes(type)
 			? searchState.selectedTypes.filter((t) => t !== type)
 			: [...searchState.selectedTypes, type];
-		setSearchSelectedTypes(newTypes);
+		onSetSearchSelectedTypes(newTypes);
 	};
 
 	// 高亮匹配文本
@@ -156,7 +171,7 @@ export function SearchPanel() {
 						variant="ghost"
 						size="icon"
 						className="size-7 hover:bg-sidebar-accent hover:text-foreground rounded-sm"
-						onClick={() => setSearchShowFilters(!searchState.showFilters)}
+						onClick={() => onSetSearchShowFilters(!searchState.showFilters)}
 						title="Toggle filters"
 					>
 						<Filter className="size-4" />
@@ -168,7 +183,7 @@ export function SearchPanel() {
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/70" />
 					<Input
 						value={searchState.query}
-						onChange={(e) => setSearchQuery(e.target.value)}
+						onChange={(e) => onSetSearchQuery(e.target.value)}
 						placeholder="Search..."
 						className="pl-9 pr-9 h-9 text-sm bg-background/50 focus:bg-background transition-colors"
 					/>
@@ -177,7 +192,7 @@ export function SearchPanel() {
 							size="icon"
 							variant="ghost"
 							className="absolute right-1 top-1/2 -translate-y-1/2 size-7 hover:bg-transparent"
-							onClick={() => setSearchQuery("")}
+							onClick={() => onSetSearchQuery("")}
 						>
 							<X className="size-4 text-muted-foreground hover:text-foreground" />
 						</Button>
@@ -187,9 +202,7 @@ export function SearchPanel() {
 				{/* 过滤器 */}
 				{searchState.showFilters && (
 					<div className="space-y-2 p-3 rounded-md border bg-muted/30 text-sm">
-						<p className="font-medium text-muted-foreground mb-2">
-							Scope
-						</p>
+						<p className="font-medium text-muted-foreground mb-2">Scope</p>
 						<div className="space-y-2">
 							{(["node", "wiki"] as SearchResultType[]).map((type) => (
 								<div key={type} className="flex items-center space-x-2">
@@ -288,12 +301,16 @@ function ResultGroup({
 				)}
 				<Icon className={cn("size-4", typeColors[type])} />
 				<span className="group-hover:text-foreground transition-colors">
-					{typeLabels[type]} <span className="opacity-50 ml-1 font-normal">({results.length})</span>
+					{typeLabels[type]}{" "}
+					<span className="opacity-50 ml-1 font-normal">
+						({results.length})
+					</span>
 				</span>
 			</CollapsibleTrigger>
 			<CollapsibleContent className="space-y-0.5 mt-0.5">
 				{results.map((result) => (
 					<button
+						type="button"
 						key={result.id}
 						onClick={() => onSelect(result)}
 						className="w-full text-left py-2 pl-9 pr-2 rounded-sm hover:bg-sidebar-accent transition-colors group/item"

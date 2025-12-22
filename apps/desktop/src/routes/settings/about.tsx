@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
 import { Github, Globe } from "lucide-react";
 import { UpdateChecker } from "@/components/blocks/update-checker";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/settings/about")({
 	component: AboutSettings,
@@ -26,7 +26,9 @@ function AboutSettings() {
 						<span className="text-4xl font-bold text-primary">G</span>
 					</div>
 					<div className="space-y-2 pt-1">
-						<h4 className="font-medium text-2xl tracking-tight">Grain / 小麦</h4>
+						<h4 className="font-medium text-2xl tracking-tight">
+							Grain / 小麦
+						</h4>
 						<div className="space-y-1 text-muted-foreground">
 							<p className="text-sm">Version {APP_VERSION}</p>
 						</div>

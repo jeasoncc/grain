@@ -11,10 +11,18 @@ import {
 
 const shortcuts = [
 	{ keys: ["Ctrl", "K"], description: "Command Palette", category: "Global" },
-	{ keys: ["Ctrl", "Shift", "F"], description: "Search Panel", category: "Global" },
+	{
+		keys: ["Ctrl", "Shift", "F"],
+		description: "Search Panel",
+		category: "Global",
+	},
 	{ keys: ["Ctrl", "B"], description: "File Panel", category: "Global" },
 	{ keys: ["Ctrl", "Tab"], description: "Next Tab", category: "Navigation" },
-	{ keys: ["Ctrl", "Shift", "Tab"], description: "Previous Tab", category: "Navigation" },
+	{
+		keys: ["Ctrl", "Shift", "Tab"],
+		description: "Previous Tab",
+		category: "Navigation",
+	},
 	{ keys: ["Ctrl", "S"], description: "Save", category: "Edit" },
 	{ keys: ["Ctrl", "B"], description: "Bold", category: "Format" },
 	{ keys: ["Ctrl", "I"], description: "Italic", category: "Format" },
@@ -25,14 +33,17 @@ const shortcuts = [
 
 export function KeyboardShortcutsHelp() {
 	// 按分类分组
-	const categories = shortcuts.reduce((acc, shortcut) => {
-		const category = shortcut.category;
-		if (!acc[category]) {
-			acc[category] = [];
-		}
-		acc[category].push(shortcut);
-		return acc;
-	}, {} as Record<string, typeof shortcuts>);
+	const categories = shortcuts.reduce(
+		(acc, shortcut) => {
+			const category = shortcut.category;
+			if (!acc[category]) {
+				acc[category] = [];
+			}
+			acc[category].push(shortcut);
+			return acc;
+		},
+		{} as Record<string, typeof shortcuts>,
+	);
 
 	return (
 		<Popover>
@@ -41,10 +52,15 @@ export function KeyboardShortcutsHelp() {
 					<Keyboard className="size-3.5" />
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent align="end" className="w-80 p-0 shadow-2xl border border-border/40 bg-popover/95 backdrop-blur-xl rounded-xl">
+			<PopoverContent
+				align="end"
+				className="w-80 p-0 shadow-2xl border border-border/40 bg-popover/95 backdrop-blur-xl rounded-xl"
+			>
 				<div className="flex flex-col py-1">
 					<div className="px-3 py-2 border-b border-border/40">
-						<h4 className="font-medium text-xs uppercase tracking-wider text-muted-foreground/80">Keyboard Shortcuts</h4>
+						<h4 className="font-medium text-xs uppercase tracking-wider text-muted-foreground/80">
+							Keyboard Shortcuts
+						</h4>
 					</div>
 					<div className="max-h-[400px] overflow-y-auto p-2 space-y-3 custom-scrollbar">
 						{Object.entries(categories).map(([category, items]) => (

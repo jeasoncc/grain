@@ -3,17 +3,21 @@
  */
 
 import { useState } from "react";
+import type { DrawingInterface } from "@/db/schema";
 import { DrawingList } from "./drawing-list";
 import { DrawingWorkspace } from "./drawing-workspace";
-import type { DrawingInterface } from "@/db/schema";
 
 interface DrawingManagerProps {
 	workspaceId: string | null;
 	className?: string;
 }
 
-export function DrawingManager({ workspaceId, className }: DrawingManagerProps) {
-	const [selectedDrawing, setSelectedDrawing] = useState<DrawingInterface | null>(null);
+export function DrawingManager({
+	workspaceId,
+	className,
+}: DrawingManagerProps) {
+	const [selectedDrawing, setSelectedDrawing] =
+		useState<DrawingInterface | null>(null);
 
 	const handleSelectDrawing = (drawing: DrawingInterface) => {
 		setSelectedDrawing(drawing);
@@ -27,7 +31,7 @@ export function DrawingManager({ workspaceId, className }: DrawingManagerProps) 
 
 	const handleRenameDrawing = (drawingId: string, newName: string) => {
 		if (selectedDrawing?.id === drawingId) {
-			setSelectedDrawing(prev => prev ? { ...prev, name: newName } : null);
+			setSelectedDrawing((prev) => (prev ? { ...prev, name: newName } : null));
 		}
 	};
 
@@ -56,7 +60,8 @@ export function DrawingManager({ workspaceId, className }: DrawingManagerProps) 
 						<div className="text-center">
 							<h3 className="text-lg font-medium mb-2">No Drawing Selected</h3>
 							<p className="text-sm">
-								Select a drawing from the sidebar or create a new one to get started.
+								Select a drawing from the sidebar or create a new one to get
+								started.
 							</p>
 						</div>
 					</div>

@@ -1,8 +1,6 @@
 import {
 	ArrowRight,
-	ArrowUpRightIcon,
 	BookPlus,
-	CalendarCheck,
 	LucideFolderOpen,
 	PenLine,
 	Stars,
@@ -26,7 +24,9 @@ export function EmptyProject({ onCreate, onImport }: EmptyProjectProps) {
 					<div className="inline-flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4">
 						<LucideFolderOpen className="size-6" />
 					</div>
-					<h1 className="text-2xl font-semibold mb-2">Welcome to Novel Editor</h1>
+					<h1 className="text-2xl font-semibold mb-2">
+						Welcome to Novel Editor
+					</h1>
 					<p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
 						Start writing your story, manage chapters, scenes and Wiki
 					</p>
@@ -58,14 +58,18 @@ export function EmptyProject({ onCreate, onImport }: EmptyProjectProps) {
 							<Users className="size-5" />
 						</div>
 						<h3 className="text-sm font-medium mb-1">Wiki Knowledge Base</h3>
-						<p className="text-xs text-muted-foreground">Manage characters, locations, items</p>
+						<p className="text-xs text-muted-foreground">
+							Manage characters, locations, items
+						</p>
 					</div>
 					<div className="group rounded-lg border border-border bg-card p-5 text-center hover:shadow-md transition-all duration-200">
 						<div className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-purple-500/10 text-purple-500 mb-3 group-hover:scale-110 transition-transform">
 							<Stars className="size-5" />
 						</div>
 						<h3 className="text-sm font-medium mb-1">Drawing Canvas</h3>
-						<p className="text-xs text-muted-foreground">Visual creation and mind maps</p>
+						<p className="text-xs text-muted-foreground">
+							Visual creation and mind maps
+						</p>
 					</div>
 				</div>
 

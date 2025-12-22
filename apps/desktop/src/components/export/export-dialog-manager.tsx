@@ -1,11 +1,30 @@
 /**
  * 全局Export对话框管理器
+ *
+ * 纯展示组件：通过 props 接收数据，不直接访问 Store/DB
  */
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ExportDialog } from "@/components/blocks/export-dialog";
-import { useSelectionStore } from "@/domain/selection";
-import { useAllWorkspaces } from "@/db/models";
+import type { WorkspaceInterface } from "@/types/workspace";
+
+// ==============================
+// Types
+// ==============================
+
+/**
+ * ExportDialogManager Props 接口
+ */
+export interface ExportDialogManagerProps {
+	/** 当前选中的工作区 ID */
+	readonly selectedWorkspaceId: string | null;
+	/** 所有工作区列表 */
+	readonly workspaces: readonly WorkspaceInterface[];
+}
+
+// ==============================
+// Global State (for dialog manager API)
+// ==============================
 
 // Global export dialog state
 let globalExportDialogState = {
@@ -16,6 +35,10 @@ let globalExportDialogState = {
 
 const exportDialogListeners: Array<() => void> = [];
 
+/**
+ * Export Dialog Manager API
+ * 提供全局的对话框控制接口
+ */
 export const exportDialogManager = {
 	open: (workspaceId?: string, workspaceTitle?: string) => {
 		globalExportDialogState = {
@@ -23,14 +46,14 @@ export const exportDialogManager = {
 			workspaceId: workspaceId || "",
 			workspaceTitle: workspaceTitle || "",
 		};
-		exportDialogListeners.forEach(listener => listener());
+		exportDialogListeners.forEach((listener) => listener());
 	},
-	
+
 	close: () => {
 		globalExportDialogState = { ...globalExportDialogState, isOpen: false };
-		exportDialogListeners.forEach(listener => listener());
+		exportDialogListeners.forEach((listener) => listener());
 	},
-	
+
 	subscribe: (listener: () => void) => {
 		exportDialogListeners.push(listener);
 		return () => {
@@ -40,10 +63,23 @@ export const exportDialogManager = {
 	},
 };
 
-export function ExportDialogManager() {
+// ==============================
+// Component
+// ==============================
+
+/**
+ * ExportDialogManager 组件
+ *
+ * 纯展示组件：
+ * - 通过 props 接收 selectedWorkspaceId 和 workspaces
+ * - 不直接访问 Store 或 DB
+ * - 只负责 UI 状态管理和对话框显示
+ */
+export function ExportDialogManager({
+	selectedWorkspaceId,
+	workspaces,
+}: ExportDialogManagerProps) {
 	const [dialogState, setDialogState] = useState(globalExportDialogState);
-	const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
-	const workspaces = useAllWorkspaces() ?? [];
 
 	useEffect(() => {
 		return exportDialogManager.subscribe(() => {
@@ -51,15 +87,28 @@ export function ExportDialogManager() {
 		});
 	}, []);
 
-	const effectiveWorkspaceId = dialogState.workspaceId || selectedWorkspaceId || "";
-	const currentWorkspace = workspaces.find(w => w.id === effectiveWorkspaceId);
-	const effectiveWorkspaceTitle = dialogState.workspaceTitle || currentWorkspace?.title || "Untitled Workspace";
+	// 确定有效的工作区 ID
+	const effectiveWorkspaceId =
+		dialogState.workspaceId || selectedWorkspaceId || "";
+
+	// 查找当前工作区
+	const currentWorkspace = workspaces.find(
+		(w) => w.id === effectiveWorkspaceId,
+	);
+
+	// 确定有效的工作区标题
+	const effectiveWorkspaceTitle =
+		dialogState.workspaceTitle ||
+		currentWorkspace?.title ||
+		"Untitled Workspace";
 
 	const handleOpenChange = (open: boolean) => {
-		if (open) exportDialogManager.open(effectiveWorkspaceId, effectiveWorkspaceTitle);
+		if (open)
+			exportDialogManager.open(effectiveWorkspaceId, effectiveWorkspaceTitle);
 		else exportDialogManager.close();
 	};
 
+	// 如果没有有效的工作区 ID，不渲染对话框
 	if (!effectiveWorkspaceId) return null;
 
 	return (

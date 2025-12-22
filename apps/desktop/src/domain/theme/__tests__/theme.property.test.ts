@@ -5,10 +5,14 @@
  * Uses fast-check for property-based testing.
  */
 
-import { describe, it, expect } from "vitest";
 import * as fc from "fast-check";
-import { getNextMode, getDefaultThemeKey, isThemeTypeMatch } from "../theme.utils";
+import { describe, expect, it } from "vitest";
 import type { ThemeMode } from "../theme.interface";
+import {
+	getDefaultThemeKey,
+	getNextMode,
+	isThemeTypeMatch,
+} from "../theme.utils";
 
 /**
  * **Feature: domain-driven-architecture, Property 1: Pure Functions Produce Consistent Output**
@@ -27,7 +31,7 @@ describe("Property 1: Pure Functions Produce Consistent Output", () => {
 				const result2 = getNextMode(mode);
 				expect(result1).toBe(result2);
 			}),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 
@@ -40,7 +44,7 @@ describe("Property 1: Pure Functions Produce Consistent Output", () => {
 				const result2 = getDefaultThemeKey(type);
 				expect(result1).toBe(result2);
 			}),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 
@@ -58,7 +62,7 @@ describe("Property 1: Pure Functions Produce Consistent Output", () => {
 				const result2 = isThemeTypeMatch(theme as any, expectedType);
 				expect(result1).toBe(result2);
 			}),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 

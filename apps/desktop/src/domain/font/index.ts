@@ -9,11 +9,11 @@
 // ==============================
 
 export type {
-	FontState,
+	CardSizeOption,
 	FontActions,
 	FontConfig,
+	FontState,
 	UIScaleOption,
-	CardSizeOption,
 } from "./font.interface";
 
 // ==============================
@@ -21,14 +21,14 @@ export type {
 // ==============================
 
 export {
-	DEFAULT_EDITOR_FONT,
-	DEFAULT_UI_FONT,
-	POPULAR_FONTS,
-	UI_SCALE_OPTIONS,
 	CARD_SIZE_OPTIONS,
-	FONT_CONSTRAINTS,
+	DEFAULT_EDITOR_FONT,
 	DEFAULT_FONT_CONFIG,
 	DEFAULT_FONT_STATE,
+	DEFAULT_UI_FONT,
+	FONT_CONSTRAINTS,
+	POPULAR_FONTS,
+	UI_SCALE_OPTIONS,
 } from "./font.interface";
 
 // ==============================
@@ -36,17 +36,17 @@ export {
 // ==============================
 
 export {
-	useFontStore,
+	useCardBorderRadius,
+	useCardSize,
+	useFirstLineIndent,
 	useFontFamily,
+	useFontSettings,
 	useFontSize,
-	useLineHeight,
+	useFontStore,
 	useLetterSpacing,
+	useLineHeight,
+	useParagraphSpacing,
 	useUiFontFamily,
 	useUiFontSize,
 	useUiScale,
-	useCardSize,
-	useCardBorderRadius,
-	useParagraphSpacing,
-	useFirstLineIndent,
-	useFontSettings,
 } from "./font.store";

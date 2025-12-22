@@ -1,23 +1,22 @@
 /**
  * Diary Domain
- * 
+ *
  * Provides diary creation and management functionality.
  */
 
+// Service
+export {
+	createDiaryInFileTree,
+	DIARY_ROOT_FOLDER,
+	type DiaryCreationResult,
+	type DiaryMetadata,
+} from "./diary.service";
 // Utils (pure functions)
 export {
-	getZodiacAnimal,
+	type DiaryFolderStructure,
+	generateDiaryContent,
 	getChineseEra,
 	getChineseHour,
 	getDiaryFolderStructure,
-	generateDiaryContent,
-	type DiaryFolderStructure,
+	getZodiacAnimal,
 } from "./diary.utils";
-
-// Service
-export {
-	DIARY_ROOT_FOLDER,
-	createDiaryInFileTree,
-	type DiaryMetadata,
-	type DiaryCreationResult,
-} from "./diary.service";

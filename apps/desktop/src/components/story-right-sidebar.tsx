@@ -1,44 +1,52 @@
 /**
  * StoryRightSidebar - 右侧边栏
- * 
+ *
  * 当 tabPosition 设置为 "right-sidebar" 时，显示编辑器标签页列表
+ *
+ * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  */
 
-import { useMemo } from "react";
-import { X, FileText, Calendar, Palette } from "lucide-react";
-import type { DrawingInterface } from "@/db/schema";
-import { useUIStore } from "@/domain/ui";
-import { useEditorTabsStore, type EditorTab } from "@/domain/editor-tabs";
-import { useSelectionStore } from "@/domain/selection";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Calendar, FileText, Palette, X } from "lucide-react";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { DrawingInterface } from "@/db/schema";
+import { cn } from "@/lib/utils";
+import type { EditorTab } from "@/types/editor-tab";
 
-interface StoryRightSidebarProps {
-	onSelectDrawing?: (drawing: DrawingInterface | null) => void;
-	selectedDrawing?: DrawingInterface | null;
+/**
+ * StoryRightSidebar Props 接口
+ *
+ * 纯展示组件：所有数据和回调通过 props 传入
+ */
+export interface StoryRightSidebarProps {
+	/** 标签页位置设置 */
+	readonly tabPosition: "top" | "right-sidebar";
+	/** 标签页数组 */
+	readonly tabs: EditorTab[];
+	/** 当前活动标签页 ID */
+	readonly activeTabId: string | null;
+	/** 设置活动标签页回调 */
+	readonly onSetActiveTab: (tabId: string) => void;
+	/** 关闭标签页回调 */
+	readonly onCloseTab: (tabId: string) => void;
+	/** 选择绘图回调（可选） */
+	readonly onSelectDrawing?: (drawing: DrawingInterface | null) => void;
+	/** 当前选中的绘图（可选） */
+	readonly selectedDrawing?: DrawingInterface | null;
 }
 
-export function StoryRightSidebar({ 
-	onSelectDrawing, 
-	selectedDrawing 
-}: StoryRightSidebarProps = {}) {
-	const tabPosition = useUIStore((s) => s.tabPosition);
-	const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
-	const allTabs = useEditorTabsStore((s) => s.tabs);
-	// 只显示当前 workspace 的标签
-	const tabs = useMemo(() => 
-		allTabs.filter(t => t.workspaceId === selectedWorkspaceId),
-		[allTabs, selectedWorkspaceId]
-	);
-	const activeTabId = useEditorTabsStore((s) => s.activeTabId);
-	const setActiveTab = useEditorTabsStore((s) => s.setActiveTab);
-	const closeTab = useEditorTabsStore((s) => s.closeTab);
-
+export function StoryRightSidebar({
+	tabPosition,
+	tabs,
+	activeTabId,
+	onSetActiveTab,
+	onCloseTab,
+	onSelectDrawing,
+	selectedDrawing,
+}: StoryRightSidebarProps) {
 	// 只有当 tabPosition 为 "right-sidebar" 时才显示
 	if (tabPosition !== "right-sidebar") {
 		return null;
@@ -80,41 +88,60 @@ export function StoryRightSidebar({
 						<Tooltip key={tab.id}>
 							<TooltipTrigger asChild>
 								<button
-									onClick={() => setActiveTab(tab.id)}
+									type="button"
+									onClick={() => onSetActiveTab(tab.id)}
 									className={cn(
 										"group w-full flex items-center gap-2.5 px-2.5 py-1 text-sm rounded-md transition-all duration-200",
 										isActive
 											? "bg-primary/10 text-primary font-medium shadow-sm scale-[1.02]"
-											: "text-muted-foreground/60 hover:text-foreground hover:bg-muted/60"
+											: "text-muted-foreground/60 hover:text-foreground hover:bg-muted/60",
 									)}
 								>
-									<div className={cn("relative flex items-center justify-center transition-opacity duration-200 group-hover/panel:opacity-100", (!isActive && "opacity-40"))}>
+									<div
+										className={cn(
+											"relative flex items-center justify-center transition-opacity duration-200 group-hover/panel:opacity-100",
+											!isActive && "opacity-40",
+										)}
+									>
 										{isActive && (
 											<div className="absolute inset-0 bg-primary/20 blur-[2px] rounded-full" />
 										)}
-										<div className={cn(isActive && "animate-[icon-glow_3s_ease-in-out_infinite]")}>
+										<div
+											className={cn(
+												isActive &&
+													"animate-[icon-glow_3s_ease-in-out_infinite]",
+											)}
+										>
 											{getTabIcon(tab.type)}
 										</div>
 									</div>
-									<span className={cn("flex-1 truncate text-left transition-opacity duration-200 group-hover/panel:opacity-100 text-sm", (!isActive && "opacity-40"))}>
-										{tab.isDirty && <span className="text-primary mr-1">●</span>}
+									<span
+										className={cn(
+											"flex-1 truncate text-left transition-opacity duration-200 group-hover/panel:opacity-100 text-sm",
+											!isActive && "opacity-40",
+										)}
+									>
+										{tab.isDirty && (
+											<span className="text-primary mr-1">●</span>
+										)}
 										{tab.title}
 									</span>
-									<div
-										role="button"
+									<button
+										type="button"
 										tabIndex={0}
 										className={cn(
 											"flex items-center justify-center size-5 rounded-full transition-all",
 											"opacity-0 group-hover:opacity-100 hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground",
-											isActive && "text-primary/60 hover:text-primary hover:bg-primary/10"
+											isActive &&
+												"text-primary/60 hover:text-primary hover:bg-primary/10",
 										)}
 										onClick={(e) => {
 											e.stopPropagation();
-											closeTab(tab.id);
+											onCloseTab(tab.id);
 										}}
 									>
 										<X className="size-3" />
-									</div>
+									</button>
 								</button>
 							</TooltipTrigger>
 							<TooltipContent side="left" className="text-xs">

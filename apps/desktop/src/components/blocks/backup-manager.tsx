@@ -1,5 +1,7 @@
 /**
- * Backup Manager Component
+ * Backup Manager Component - Pure Presentation
+ *
+ * 纯展示组件，所有数据和回调通过 props 传入
  */
 
 import dayjs from "dayjs";
@@ -22,8 +24,7 @@ import {
 	Trash2,
 	Upload,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -32,209 +33,57 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import {
-	autoBackupManager,
-	type BackupData,
-	exportBackup,
-	exportBackupZip,
-	getDatabaseStats,
-	restoreBackup,
-} from "@/services/backup";
-import { clearAllData, getStorageStats } from "@/services/clear-data";
-import { useConfirm } from "@/components/ui/confirm";
+import { formatBytes } from "@/fn/format";
+import type { DatabaseStats, LocalBackupRecord } from "@/types/backup";
+import type { StorageStats } from "@/types/storage";
 
 dayjs.extend(relativeTime);
 
-export function BackupManager() {
-	const [stats, setStats] = useState<{
-		userCount: number;
-		projectCount: number;
-		drawingCount: number;
-		attachmentCount: number;
-		nodeCount: number;
-		contentCount: number;
-		tagCount: number;
-	} | null>(null);
-	const [loading, setLoading] = useState(false);
-	const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
-	const [localBackups, setLocalBackups] = useState<
-		Array<{ timestamp: string; data: BackupData }>
-	>([]);
-	const [storageStats, setStorageStats] = useState<{
-		indexedDB: { size: number; tables: Record<string, number>; tableSizes: Record<string, number> };
-		localStorage: { size: number; keys: number };
-		sessionStorage: { size: number; keys: number };
-		cookies: { count: number };
-	} | null>(null);
+// ============================================================================
+// 类型定义
+// ============================================================================
 
-	// Format bytes to human-readable format
-	const formatBytes = (bytes: number): string => {
-		if (bytes === 0) return "0 B";
-		const k = 1024;
-		const sizes = ["B", "KB", "MB", "GB"];
-		const i = Math.floor(Math.log(bytes) / Math.log(k));
-		return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-	};
-	const confirm = useConfirm();
+/**
+ * BackupManager Props
+ */
+export interface BackupManagerProps {
+	readonly stats: DatabaseStats | null;
+	readonly storageStats: StorageStats | null;
+	readonly loading: boolean;
+	readonly autoBackupEnabled: boolean;
+	readonly localBackups: LocalBackupRecord[];
+	readonly onExportJson: () => void;
+	readonly onExportZip: () => void;
+	readonly onRestore: () => void;
+	readonly onToggleAutoBackup: (enabled: boolean) => void;
+	readonly onRestoreLocal: (timestamp: string) => void;
+	readonly onClearAllData: () => void;
+	readonly onClearDatabase: () => void;
+	readonly onClearSettings: () => void;
+}
 
-	const loadStats = useCallback(async () => {
-		try {
-			const data = await getDatabaseStats();
-			setStats(data);
+// ============================================================================
+// 组件
+// ============================================================================
 
-			const storage = await getStorageStats();
-			setStorageStats(storage);
-		} catch (error) {
-			console.error("Failed to load statistics:", error);
-		}
-	}, []);
-
-	const loadLocalBackups = useCallback(() => {
-		const backups = autoBackupManager.getLocalBackups();
-		setLocalBackups(backups);
-	}, []);
-
-	useEffect(() => {
-		loadStats();
-		loadLocalBackups();
-
-		const enabled = localStorage.getItem("auto-backup-enabled") === "true";
-		setAutoBackupEnabled(enabled);
-		if (enabled) {
-			autoBackupManager.start();
-		}
-	}, [loadStats, loadLocalBackups]);
-
-	const handleExportJson = async () => {
-		setLoading(true);
-		try {
-			await exportBackup();
-			toast.success("Backup exported successfully");
-		} catch (error) {
-			toast.error("Export failed");
-			console.error(error);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const handleExportZip = async () => {
-		setLoading(true);
-		try {
-			await exportBackupZip();
-			toast.success("Compressed backup exported successfully");
-		} catch (error) {
-			toast.error("Export failed");
-			console.error(error);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const handleRestore = async () => {
-		const confirmed = await confirm({
-			title: "Restore Backup",
-			description:
-				"Restoring a backup will overwrite current data. This action cannot be undone. We recommend exporting your current data first.",
-			confirmText: "Confirm Restore",
-			cancelText: "Cancel",
-		});
-
-		if (!confirmed) return;
-
-		const input = document.createElement("input");
-		input.type = "file";
-		input.accept = ".json,.zip";
-		input.onchange = async (e) => {
-			const file = (e.target as HTMLInputElement).files?.[0];
-			if (!file) return;
-
-			setLoading(true);
-			try {
-				await restoreBackup(file);
-				toast.success("Backup restored successfully");
-				await loadStats();
-				window.location.reload();
-			} catch (error) {
-				toast.error("Restore failed");
-				console.error(error);
-			} finally {
-				setLoading(false);
-			}
-		};
-		input.click();
-	};
-
-	const handleToggleAutoBackup = (enabled: boolean) => {
-		setAutoBackupEnabled(enabled);
-		localStorage.setItem("auto-backup-enabled", enabled.toString());
-
-		if (enabled) {
-			autoBackupManager.start();
-			toast.success("Auto backup enabled");
-		} else {
-			autoBackupManager.stop();
-			toast.info("Auto backup disabled");
-		}
-	};
-
-	const handleRestoreLocal = async (timestamp: string) => {
-		const confirmed = await confirm({
-			title: "Restore Local Backup",
-			description: `Are you sure you want to restore the backup from ${dayjs(timestamp).format("YYYY-MM-DD HH:mm:ss")}?`,
-			confirmText: "Confirm Restore",
-			cancelText: "Cancel",
-		});
-
-		if (!confirmed) return;
-
-		setLoading(true);
-		try {
-			await autoBackupManager.restoreLocalBackup(timestamp);
-			toast.success("Backup restored successfully");
-			await loadStats();
-			window.location.reload();
-		} catch (error) {
-			toast.error("Restore failed");
-			console.error(error);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const handleClearAllData = async () => {
-		const confirmed = await confirm({
-			title: "Clear All Data",
-			description:
-				"This will permanently delete all data including:\n• All projects, chapters, and scenes (IndexedDB)\n• App settings and preferences (localStorage)\n• Session data (sessionStorage)\n• Browser cookies\n• App cache\n\nThis action cannot be undone! We recommend exporting a backup first.",
-			confirmText: "Confirm Clear",
-			cancelText: "Cancel",
-		});
-
-		if (!confirmed) return;
-
-		setLoading(true);
-		try {
-			await clearAllData();
-			toast.success("All data cleared");
-			await loadStats();
-			setTimeout(() => {
-				window.location.reload();
-			}, 1500);
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Failed to clear data";
-			toast.error(errorMessage);
-			console.error("Failed to clear data:", error);
-		} finally {
-			setLoading(false);
-		}
-	};
-
+export const BackupManager = memo(function BackupManager({
+	stats,
+	storageStats,
+	loading,
+	autoBackupEnabled,
+	localBackups,
+	onExportJson,
+	onExportZip,
+	onRestore,
+	onToggleAutoBackup,
+	onRestoreLocal,
+	onClearAllData,
+	onClearDatabase,
+	onClearSettings,
+}: BackupManagerProps) {
 	return (
 		<div className="space-y-6">
 			{/* Data Statistics */}
@@ -259,9 +108,13 @@ export function BackupManager() {
 										<div className="absolute right-2 top-2 opacity-5 scale-150 group-hover:scale-125 transition-transform duration-500">
 											<BookOpen className="size-6" />
 										</div>
-										<p className="text-[10px] font-medium text-muted-foreground mb-0.5 uppercase tracking-wide relative z-10">Projects</p>
+										<p className="text-[10px] font-medium text-muted-foreground mb-0.5 uppercase tracking-wide relative z-10">
+											Projects
+										</p>
 										<div className="flex items-baseline gap-1 relative z-10">
-											<p className="text-xl font-bold text-foreground">{stats.projectCount}</p>
+											<p className="text-xl font-bold text-foreground">
+												{stats.projectCount}
+											</p>
 											<BookOpen className="size-3 text-muted-foreground opacity-50" />
 										</div>
 									</div>
@@ -269,9 +122,13 @@ export function BackupManager() {
 										<div className="absolute right-2 top-2 opacity-5 scale-150 group-hover:scale-125 transition-transform duration-500">
 											<FileText className="size-6" />
 										</div>
-										<p className="text-[10px] font-medium text-muted-foreground mb-0.5 uppercase tracking-wide relative z-10">File Nodes</p>
+										<p className="text-[10px] font-medium text-muted-foreground mb-0.5 uppercase tracking-wide relative z-10">
+											File Nodes
+										</p>
 										<div className="flex items-baseline gap-1 relative z-10">
-											<p className="text-xl font-bold text-foreground">{stats.nodeCount}</p>
+											<p className="text-xl font-bold text-foreground">
+												{stats.nodeCount}
+											</p>
 											<FileText className="size-3 text-muted-foreground opacity-50" />
 										</div>
 									</div>
@@ -279,9 +136,13 @@ export function BackupManager() {
 										<div className="absolute right-2 top-2 opacity-5 scale-150 group-hover:scale-125 transition-transform duration-500">
 											<Database className="size-6" />
 										</div>
-										<p className="text-[10px] font-medium text-muted-foreground mb-0.5 uppercase tracking-wide relative z-10">Records</p>
+										<p className="text-[10px] font-medium text-muted-foreground mb-0.5 uppercase tracking-wide relative z-10">
+											Records
+										</p>
 										<div className="flex items-baseline gap-1 relative z-10">
-											<p className="text-xl font-bold text-foreground">{stats.contentCount}</p>
+											<p className="text-xl font-bold text-foreground">
+												{stats.contentCount}
+											</p>
 											<Database className="size-3 text-muted-foreground opacity-50" />
 										</div>
 									</div>
@@ -289,9 +150,13 @@ export function BackupManager() {
 										<div className="absolute right-2 top-2 opacity-5 scale-150 group-hover:scale-125 transition-transform duration-500">
 											<Image className="size-6" />
 										</div>
-										<p className="text-[10px] font-medium text-muted-foreground mb-0.5 uppercase tracking-wide relative z-10">Drawings</p>
+										<p className="text-[10px] font-medium text-muted-foreground mb-0.5 uppercase tracking-wide relative z-10">
+											Drawings
+										</p>
 										<div className="flex items-baseline gap-1 relative z-10">
-											<p className="text-xl font-bold text-foreground">{stats.drawingCount}</p>
+											<p className="text-xl font-bold text-foreground">
+												{stats.drawingCount}
+											</p>
 											<Image className="size-3 text-muted-foreground opacity-50" />
 										</div>
 									</div>
@@ -299,9 +164,13 @@ export function BackupManager() {
 										<div className="absolute right-2 top-2 opacity-5 scale-150 group-hover:scale-125 transition-transform duration-500">
 											<Paperclip className="size-6" />
 										</div>
-										<p className="text-[10px] font-medium text-muted-foreground mb-0.5 uppercase tracking-wide relative z-10">Attachments</p>
+										<p className="text-[10px] font-medium text-muted-foreground mb-0.5 uppercase tracking-wide relative z-10">
+											Attachments
+										</p>
 										<div className="flex items-baseline gap-1 relative z-10">
-											<p className="text-xl font-bold text-foreground">{stats.attachmentCount}</p>
+											<p className="text-xl font-bold text-foreground">
+												{stats.attachmentCount}
+											</p>
 											<Paperclip className="size-3 text-muted-foreground opacity-50" />
 										</div>
 									</div>
@@ -309,9 +178,13 @@ export function BackupManager() {
 										<div className="absolute right-2 top-2 opacity-5 scale-150 group-hover:scale-125 transition-transform duration-500">
 											<Tag className="size-6" />
 										</div>
-										<p className="text-[10px] font-medium text-muted-foreground mb-0.5 uppercase tracking-wide relative z-10">Tags</p>
+										<p className="text-[10px] font-medium text-muted-foreground mb-0.5 uppercase tracking-wide relative z-10">
+											Tags
+										</p>
 										<div className="flex items-baseline gap-1 relative z-10">
-											<p className="text-xl font-bold text-foreground">{stats.tagCount}</p>
+											<p className="text-xl font-bold text-foreground">
+												{stats.tagCount}
+											</p>
 											<Tag className="size-3 text-muted-foreground opacity-50" />
 										</div>
 									</div>
@@ -335,12 +208,21 @@ export function BackupManager() {
 													</div>
 													<div>
 														<p className="text-sm font-medium">IndexedDB</p>
-														<p className="text-[10px] text-muted-foreground">Main database storage</p>
+														<p className="text-[10px] text-muted-foreground">
+															Main database storage
+														</p>
 													</div>
 												</div>
-												<p className="text-xl font-bold mb-1">{formatBytes(storageStats.indexedDB.size)}</p>
+												<p className="text-xl font-bold mb-1">
+													{formatBytes(storageStats.indexedDB.size)}
+												</p>
 												<p className="text-[10px] text-muted-foreground">
-													{(Object.values(storageStats.indexedDB.tables) as number[]).reduce((a, b) => a + b, 0)} total records
+													{(
+														Object.values(
+															storageStats.indexedDB.tables,
+														) as number[]
+													).reduce((a, b) => a + b, 0)}{" "}
+													total records
 												</p>
 											</div>
 
@@ -352,10 +234,14 @@ export function BackupManager() {
 													</div>
 													<div>
 														<p className="text-sm font-medium">localStorage</p>
-														<p className="text-[10px] text-muted-foreground">App settings & preferences</p>
+														<p className="text-[10px] text-muted-foreground">
+															App settings & preferences
+														</p>
 													</div>
 												</div>
-												<p className="text-xl font-bold mb-1">{formatBytes(storageStats.localStorage.size)}</p>
+												<p className="text-xl font-bold mb-1">
+													{formatBytes(storageStats.localStorage.size)}
+												</p>
 												<p className="text-[10px] text-muted-foreground">
 													{storageStats.localStorage.keys} keys stored
 												</p>
@@ -368,11 +254,17 @@ export function BackupManager() {
 														<FolderOpen className="size-4 text-purple-600" />
 													</div>
 													<div>
-														<p className="text-sm font-medium">sessionStorage</p>
-														<p className="text-[10px] text-muted-foreground">Temporary session data</p>
+														<p className="text-sm font-medium">
+															sessionStorage
+														</p>
+														<p className="text-[10px] text-muted-foreground">
+															Temporary session data
+														</p>
 													</div>
 												</div>
-												<p className="text-xl font-bold mb-1">{formatBytes(storageStats.sessionStorage.size)}</p>
+												<p className="text-xl font-bold mb-1">
+													{formatBytes(storageStats.sessionStorage.size)}
+												</p>
 												<p className="text-[10px] text-muted-foreground">
 													{storageStats.sessionStorage.keys} keys stored
 												</p>
@@ -386,10 +278,14 @@ export function BackupManager() {
 													</div>
 													<div>
 														<p className="text-sm font-medium">Cookies</p>
-														<p className="text-[10px] text-muted-foreground">Browser cookies</p>
+														<p className="text-[10px] text-muted-foreground">
+															Browser cookies
+														</p>
 													</div>
 												</div>
-												<p className="text-xl font-bold mb-1">{storageStats.cookies.count}</p>
+												<p className="text-xl font-bold mb-1">
+													{storageStats.cookies.count}
+												</p>
 												<p className="text-[10px] text-muted-foreground">
 													cookies stored
 												</p>
@@ -399,23 +295,34 @@ export function BackupManager() {
 
 									<Separator />
 									<div>
-										<h4 className="text-sm font-medium mb-4">IndexedDB Table Breakdown</h4>
+										<h4 className="text-sm font-medium mb-4">
+											IndexedDB Table Breakdown
+										</h4>
 										<div className="space-y-3">
 											{Object.entries(storageStats.indexedDB.tableSizes)
 												.sort(([, a], [, b]) => b - a)
 												.map(([table, size]) => {
-													const percentage = storageStats.indexedDB.size > 0 
-														? (size / storageStats.indexedDB.size) * 100 
-														: 0;
-													const recordCount = storageStats.indexedDB.tables[table] || 0;
+													const percentage =
+														storageStats.indexedDB.size > 0
+															? (size / storageStats.indexedDB.size) * 100
+															: 0;
+													const tables = storageStats.indexedDB
+														.tables as unknown as Record<string, number>;
+													const recordCount = tables[table] || 0;
 													return (
 														<div key={table} className="space-y-1.5">
 															<div className="flex justify-between items-center">
 																<div className="flex items-center gap-2">
-																	<span className="text-sm font-medium capitalize">{table}</span>
-																	<span className="text-xs text-muted-foreground">({recordCount} records)</span>
+																	<span className="text-sm font-medium capitalize">
+																		{table}
+																	</span>
+																	<span className="text-xs text-muted-foreground">
+																		({recordCount} records)
+																	</span>
 																</div>
-																<span className="text-sm font-semibold">{formatBytes(size)}</span>
+																<span className="text-sm font-semibold">
+																	{formatBytes(size)}
+																</span>
 															</div>
 															<Progress value={percentage} className="h-1.5" />
 														</div>
@@ -434,7 +341,6 @@ export function BackupManager() {
 				</CardContent>
 			</Card>
 
-
 			{/* Manual Backup */}
 			<Card className="overflow-hidden border-primary/20 bg-primary/5">
 				<CardHeader className="pb-3">
@@ -442,26 +348,47 @@ export function BackupManager() {
 						<Archive className="size-4 text-primary" />
 						Manual Backup
 					</CardTitle>
-					<CardDescription>Export your data to safeguard against loss.</CardDescription>
+					<CardDescription>
+						Export your data to safeguard against loss.
+					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
 					<div className="flex flex-wrap gap-3">
-						<Button onClick={handleExportJson} disabled={loading} className="flex-1 h-9" variant="default" size="sm">
+						<Button
+							onClick={onExportJson}
+							disabled={loading}
+							className="flex-1 h-9"
+							variant="default"
+							size="sm"
+						>
 							<Download className="size-3.5 mr-2" />
 							Export JSON
 						</Button>
-						<Button onClick={handleExportZip} disabled={loading} className="flex-1 h-9" variant="secondary" size="sm">
+						<Button
+							onClick={onExportZip}
+							disabled={loading}
+							className="flex-1 h-9"
+							variant="secondary"
+							size="sm"
+						>
 							<Archive className="size-3.5 mr-2" />
 							Export ZIP
 						</Button>
-						<Button onClick={handleRestore} disabled={loading} className="flex-1 h-9" variant="outline" size="sm">
+						<Button
+							onClick={onRestore}
+							disabled={loading}
+							className="flex-1 h-9"
+							variant="outline"
+							size="sm"
+						>
 							<Upload className="size-3.5 mr-2" />
 							Restore Backup
 						</Button>
 					</div>
 					<div className="flex items-center gap-2 p-2 rounded bg-background/50 text-[10px] text-muted-foreground border border-border/50">
 						<Settings className="size-3" />
-						ZIP format includes all project metadata and is recommended for full backups.
+						ZIP format includes all project metadata and is recommended for full
+						backups.
 					</div>
 				</CardContent>
 			</Card>
@@ -482,7 +409,7 @@ export function BackupManager() {
 						<Switch
 							id="auto-backup"
 							checked={autoBackupEnabled}
-							onCheckedChange={handleToggleAutoBackup}
+							onCheckedChange={onToggleAutoBackup}
 						/>
 					</div>
 				</CardHeader>
@@ -505,17 +432,20 @@ export function BackupManager() {
 											</div>
 											<div>
 												<p className="font-medium text-xs">
-													{dayjs(backup.timestamp).format("MMM D, YYYY · HH:mm:ss")}
+													{dayjs(backup.timestamp).format(
+														"MMM D, YYYY · HH:mm:ss",
+													)}
 												</p>
 												<p className="text-[10px] text-muted-foreground">
-													{dayjs(backup.timestamp).fromNow()} · {backup.data.metadata.projectCount} projects
+													{dayjs(backup.timestamp).fromNow()} ·{" "}
+													{backup.data.metadata.projectCount} projects
 												</p>
 											</div>
 										</div>
 										<Button
 											size="sm"
 											variant="secondary"
-											onClick={() => handleRestoreLocal(backup.timestamp)}
+											onClick={() => onRestoreLocal(backup.timestamp)}
 											disabled={loading}
 											className="h-7 text-xs"
 										>
@@ -529,7 +459,9 @@ export function BackupManager() {
 						<div className="flex flex-col items-center justify-center py-6 text-center text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
 							<Clock className="size-6 mb-2 opacity-50" />
 							<p className="text-xs">No local backups yet</p>
-							<p className="text-[10px] opacity-70">Enable auto backup to start saving automatically</p>
+							<p className="text-[10px] opacity-70">
+								Enable auto backup to start saving automatically
+							</p>
 						</div>
 					)}
 				</CardContent>
@@ -542,7 +474,9 @@ export function BackupManager() {
 						<Trash2 className="size-4" />
 						Danger Zone
 					</CardTitle>
-					<CardDescription className="text-destructive/70 text-xs">Irreversible actions. Please proceed with caution.</CardDescription>
+					<CardDescription className="text-destructive/70 text-xs">
+						Irreversible actions. Please proceed with caution.
+					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-2">
 					<div className="flex items-center justify-between p-2.5 rounded-lg border border-destructive/20 bg-background/50">
@@ -551,14 +485,18 @@ export function BackupManager() {
 								<Trash2 className="size-3.5" />
 							</div>
 							<div>
-								<div className="font-medium text-sm text-foreground">Clear All Data</div>
-								<div className="text-[10px] text-muted-foreground">Delete content, settings, and cache</div>
+								<div className="font-medium text-sm text-foreground">
+									Clear All Data
+								</div>
+								<div className="text-[10px] text-muted-foreground">
+									Delete content, settings, and cache
+								</div>
 							</div>
 						</div>
-						<Button 
-							variant="destructive" 
+						<Button
+							variant="destructive"
 							size="sm"
-							onClick={handleClearAllData} 
+							onClick={onClearAllData}
 							disabled={loading}
 							className="h-7 text-xs whitespace-nowrap"
 						>
@@ -572,40 +510,18 @@ export function BackupManager() {
 								<Database className="size-3.5" />
 							</div>
 							<div>
-								<div className="font-medium text-sm text-foreground">Clear Database</div>
-								<div className="text-[10px] text-muted-foreground">Delete projects only. Keep settings</div>
+								<div className="font-medium text-sm text-foreground">
+									Clear Database
+								</div>
+								<div className="text-[10px] text-muted-foreground">
+									Delete projects only. Keep settings
+								</div>
 							</div>
 						</div>
 						<Button
 							variant="outline"
 							size="sm"
-							onClick={async () => {
-								const confirmed = await confirm({
-									title: "Clear Database Only",
-									description:
-										"This will clear all projects, chapters, and scenes, but keep app settings.",
-									confirmText: "Confirm Clear",
-									cancelText: "Cancel",
-								});
-								if (!confirmed) return;
-
-								setLoading(true);
-								try {
-									await clearAllData({
-										clearIndexedDB: true,
-										clearLocalStorage: false,
-										clearSessionStorage: false,
-										clearCookies: false,
-									});
-									toast.success("Database cleared");
-									await loadStats();
-								} catch (error) {
-									toast.error("Clear failed");
-									console.error(error);
-								} finally {
-									setLoading(false);
-								}
-							}}
+							onClick={onClearDatabase}
 							disabled={loading}
 							className="h-7 text-xs whitespace-nowrap hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
 						>
@@ -619,39 +535,18 @@ export function BackupManager() {
 								<Settings className="size-3.5" />
 							</div>
 							<div>
-								<div className="font-medium text-sm text-foreground">Clear Settings</div>
-								<div className="text-[10px] text-muted-foreground">Reset preferences. Keep projects</div>
+								<div className="font-medium text-sm text-foreground">
+									Clear Settings
+								</div>
+								<div className="text-[10px] text-muted-foreground">
+									Reset preferences. Keep projects
+								</div>
 							</div>
 						</div>
 						<Button
 							variant="outline"
 							size="sm"
-							onClick={async () => {
-								const confirmed = await confirm({
-									title: "Clear Settings Only",
-									description: "This will clear app settings and preferences, but keep project data.",
-									confirmText: "Confirm Clear",
-									cancelText: "Cancel",
-								});
-								if (!confirmed) return;
-
-								setLoading(true);
-								try {
-									await clearAllData({
-										clearIndexedDB: false,
-										clearLocalStorage: true,
-										clearSessionStorage: true,
-										clearCookies: true,
-									});
-									toast.success("Settings cleared");
-									await loadStats();
-								} catch (error) {
-									toast.error("Clear failed");
-									console.error(error);
-								} finally {
-									setLoading(false);
-								}
-							}}
+							onClick={onClearSettings}
 							disabled={loading}
 							className="h-7 text-xs whitespace-nowrap hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
 						>
@@ -662,4 +557,4 @@ export function BackupManager() {
 			</Card>
 		</div>
 	);
-}
+});

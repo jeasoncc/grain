@@ -45,7 +45,7 @@ export function extractTextFromLexical(node: unknown): string {
 export function generateExcerpt(
 	content: string,
 	query: string,
-	contextLength = 100
+	contextLength = 100,
 ): string {
 	const lowerContent = content.toLowerCase();
 	const lowerQuery = query.toLowerCase();
@@ -59,7 +59,10 @@ export function generateExcerpt(
 	}
 
 	const start = Math.max(0, index - contextLength / 2);
-	const end = Math.min(content.length, index + query.length + contextLength / 2);
+	const end = Math.min(
+		content.length,
+		index + query.length + contextLength / 2,
+	);
 	let excerpt = content.slice(start, end);
 	if (start > 0) excerpt = "..." + excerpt;
 	if (end < content.length) excerpt = excerpt + "...";
@@ -76,7 +79,7 @@ export function generateExcerpt(
 export function extractHighlights(
 	content: string,
 	query: string,
-	maxHighlights = 3
+	maxHighlights = 3,
 ): string[] {
 	const highlights: string[] = [];
 	const lowerContent = content.toLowerCase();
@@ -105,7 +108,7 @@ export function extractHighlights(
 export function calculateSimpleScore(
 	title: string,
 	content: string,
-	query: string
+	query: string,
 ): number {
 	const lowerTitle = title.toLowerCase();
 	const lowerContent = content.toLowerCase();
@@ -115,7 +118,8 @@ export function calculateSimpleScore(
 	if (lowerTitle === lowerQuery) score += 100;
 	else if (lowerTitle.includes(lowerQuery)) score += 50;
 
-	const matches = (lowerContent.match(new RegExp(lowerQuery, "g")) || []).length;
+	const matches = (lowerContent.match(new RegExp(lowerQuery, "g")) || [])
+		.length;
 	score += matches * 10;
 
 	return score;

@@ -8,7 +8,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import type { FontState, FontActions } from "./font.interface";
+import type { FontActions, FontState } from "./font.interface";
 import {
 	DEFAULT_FONT_CONFIG,
 	DEFAULT_FONT_STATE,
@@ -57,7 +57,7 @@ export const useFontStore = create<FontStore>()(
 					state.fontSize = clamp(
 						fontSize,
 						FONT_CONSTRAINTS.fontSize.min,
-						FONT_CONSTRAINTS.fontSize.max
+						FONT_CONSTRAINTS.fontSize.max,
 					);
 				});
 			},
@@ -67,7 +67,7 @@ export const useFontStore = create<FontStore>()(
 					state.lineHeight = clamp(
 						lineHeight,
 						FONT_CONSTRAINTS.lineHeight.min,
-						FONT_CONSTRAINTS.lineHeight.max
+						FONT_CONSTRAINTS.lineHeight.max,
 					);
 				});
 			},
@@ -77,7 +77,7 @@ export const useFontStore = create<FontStore>()(
 					state.letterSpacing = clamp(
 						letterSpacing,
 						FONT_CONSTRAINTS.letterSpacing.min,
-						FONT_CONSTRAINTS.letterSpacing.max
+						FONT_CONSTRAINTS.letterSpacing.max,
 					);
 				});
 			},
@@ -93,7 +93,7 @@ export const useFontStore = create<FontStore>()(
 					state.uiFontSize = clamp(
 						uiFontSize,
 						FONT_CONSTRAINTS.uiFontSize.min,
-						FONT_CONSTRAINTS.uiFontSize.max
+						FONT_CONSTRAINTS.uiFontSize.max,
 					);
 				});
 			},
@@ -115,7 +115,7 @@ export const useFontStore = create<FontStore>()(
 					state.cardBorderRadius = clamp(
 						cardBorderRadius,
 						FONT_CONSTRAINTS.cardBorderRadius.min,
-						FONT_CONSTRAINTS.cardBorderRadius.max
+						FONT_CONSTRAINTS.cardBorderRadius.max,
 					);
 				});
 			},
@@ -125,7 +125,7 @@ export const useFontStore = create<FontStore>()(
 					state.paragraphSpacing = clamp(
 						paragraphSpacing,
 						FONT_CONSTRAINTS.paragraphSpacing.min,
-						FONT_CONSTRAINTS.paragraphSpacing.max
+						FONT_CONSTRAINTS.paragraphSpacing.max,
 					);
 				});
 			},
@@ -135,7 +135,7 @@ export const useFontStore = create<FontStore>()(
 					state.firstLineIndent = clamp(
 						firstLineIndent,
 						FONT_CONSTRAINTS.firstLineIndent.min,
-						FONT_CONSTRAINTS.firstLineIndent.max
+						FONT_CONSTRAINTS.firstLineIndent.max,
 					);
 				});
 			},
@@ -158,8 +158,8 @@ export const useFontStore = create<FontStore>()(
 		})),
 		{
 			name: DEFAULT_FONT_CONFIG.storageKey,
-		}
-	)
+		},
+	),
 );
 
 // ==============================

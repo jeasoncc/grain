@@ -8,17 +8,17 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import type { ThemeState, ThemeActions, ThemeMode } from "./theme.interface";
+import { getThemeByKey, type Theme, themes } from "@/lib/themes";
+import type { ThemeActions, ThemeMode, ThemeState } from "./theme.interface";
 import { DEFAULT_THEME_CONFIG, DEFAULT_THEME_STATE } from "./theme.interface";
 import {
-	getSystemTheme,
 	applyThemeWithTransition,
-	getNextMode,
-	getEffectiveThemeType,
 	getDefaultThemeKey,
+	getEffectiveThemeType,
+	getNextMode,
+	getSystemTheme,
 	isThemeTypeMatch,
 } from "./theme.utils";
-import { getThemeByKey, themes, type Theme } from "@/lib/themes";
 
 // ==============================
 // Internal State
@@ -126,8 +126,8 @@ export const useThemeStore = create<ThemeStore>()(
 				mode: state.mode,
 				enableTransition: state.enableTransition,
 			}),
-		}
-	)
+		},
+	),
 );
 
 // ==============================

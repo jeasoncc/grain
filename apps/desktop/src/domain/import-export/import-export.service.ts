@@ -8,24 +8,28 @@
  *
  * Requirements: 6.2
  */
+import * as E from "fp-ts/Either";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
-import { database } from "@/db/database";
 import {
-	ContentRepository,
-	WorkspaceRepository,
-	NodeRepository,
-	AttachmentRepository,
-	type WorkspaceInterface,
-	type NodeInterface,
-} from "@/db/models";
+	getAllAttachments,
+	getAllNodes,
+	getAllWorkspaces,
+	getAttachmentsByProject,
+	getContentsByNodeIds,
+	getNodesByWorkspace,
+	getWorkspaceById,
+} from "@/db";
+import { database } from "@/db/database";
+import type { NodeInterface } from "@/types/node";
+import type { WorkspaceInterface } from "@/types/workspace";
 
 // Re-export pure functions from utils
 export {
 	extractText,
-	triggerDownload,
-	triggerBlobDownload,
 	readFileAsText,
+	triggerBlobDownload,
+	triggerDownload,
 } from "./import-export.utils";
 
 import { extractText } from "./import-export.utils";
@@ -48,25 +52,40 @@ export interface ExportBundle {
  */
 export async function exportAll(workspaceId?: string): Promise<string> {
 	// 使用 Repository 获取工作区
-	const workspaces = workspaceId
-		? await WorkspaceRepository.getById(workspaceId).then(w => w ? [w] : [])
-		: await WorkspaceRepository.getAll();
+	let workspaces: WorkspaceInterface[];
+	if (workspaceId) {
+		const wsResult = await getWorkspaceById(workspaceId)();
+		workspaces = E.isRight(wsResult) && wsResult.right ? [wsResult.right] : [];
+	} else {
+		const wsResult = await getAllWorkspaces()();
+		workspaces = E.isRight(wsResult) ? wsResult.right : [];
+	}
 
 	// 使用 Repository 获取节点
-	const nodes = workspaceId
-		? await NodeRepository.getByWorkspace(workspaceId)
-		: await NodeRepository.getAll();
+	let nodes: NodeInterface[];
+	if (workspaceId) {
+		const nodesResult = await getNodesByWorkspace(workspaceId)();
+		nodes = E.isRight(nodesResult) ? nodesResult.right : [];
+	} else {
+		const nodesResult = await getAllNodes()();
+		nodes = E.isRight(nodesResult) ? nodesResult.right : [];
+	}
 
 	// 使用 Repository 获取内容
-	const nodeIds = nodes.map(n => n.id);
-	const contents = nodeIds.length > 0
-		? await ContentRepository.getByNodeIds(nodeIds)
-		: [];
+	const nodeIds = nodes.map((n) => n.id);
+	const contentsResult =
+		nodeIds.length > 0 ? await getContentsByNodeIds(nodeIds)() : E.right([]);
+	const contents = E.isRight(contentsResult) ? contentsResult.right : [];
 
 	// 使用 Repository 获取附件
-	const attachments = workspaceId
-		? await AttachmentRepository.getByProject(workspaceId)
-		: await AttachmentRepository.getAll();
+	let attachments;
+	if (workspaceId) {
+		const attachResult = await getAttachmentsByProject(workspaceId)();
+		attachments = E.isRight(attachResult) ? attachResult.right : [];
+	} else {
+		const attachResult = await getAllAttachments()();
+		attachments = E.isRight(attachResult) ? attachResult.right : [];
+	}
 
 	const bundle: ExportBundle = {
 		version: 4, // Bumped version - wiki entries now in nodes
@@ -131,7 +150,12 @@ export async function importFromJson(
 		const workspace = idMap.get(n.workspace as string) ?? n.workspace;
 		const parent = n.parent ? (idMap.get(n.parent) ?? n.parent) : null;
 		idMap.set(n.id as string, nid);
-		await database.nodes.put({ ...n, id: nid, workspace, parent } as NodeInterface);
+		await database.nodes.put({
+			...n,
+			id: nid,
+			workspace,
+			parent,
+		} as NodeInterface);
 	}
 
 	// 导入内容 - 使用直接数据库访问进行 put 操作
@@ -145,7 +169,8 @@ export async function importFromJson(
 
 	// 导入附件 - 使用直接数据库访问进行 put 操作
 	for (const a of attachments as Array<{ id: string; project?: string }>) {
-		const newWorkspace = a.project && idMap.has(a.project) ? idMap.get(a.project) : a.project;
+		const newWorkspace =
+			a.project && idMap.has(a.project) ? idMap.get(a.project) : a.project;
 		await database.attachments.put({ ...a, project: newWorkspace } as never);
 	}
 
@@ -160,17 +185,20 @@ export async function importFromJson(
  */
 export async function exportAsMarkdown(workspaceId: string): Promise<string> {
 	// 使用 Repository 获取工作区
-	const workspace = await WorkspaceRepository.getById(workspaceId);
+	const wsResult = await getWorkspaceById(workspaceId)();
+	const workspace = E.isRight(wsResult) ? wsResult.right : null;
 	if (!workspace) throw new Error("Workspace not found");
 
 	// 使用 Repository 获取节点
-	const nodes = await NodeRepository.getByWorkspace(workspaceId);
+	const nodesResult = await getNodesByWorkspace(workspaceId)();
+	const nodes = E.isRight(nodesResult) ? nodesResult.right : [];
 	const sortedNodes = nodes.sort((a, b) => a.order - b.order);
 
 	// 使用 Repository 获取内容
-	const nodeIds = nodes.map(n => n.id);
-	const contents = await ContentRepository.getByNodeIds(nodeIds);
-	const contentMap = new Map(contents.map(c => [c.nodeId, c.content]));
+	const nodeIds = nodes.map((n) => n.id);
+	const contentsResult = await getContentsByNodeIds(nodeIds)();
+	const contents = E.isRight(contentsResult) ? contentsResult.right : [];
+	const contentMap = new Map(contents.map((c) => [c.nodeId, c.content]));
 
 	const lines: string[] = [];
 	lines.push(`# ${workspace.title || "Untitled"}`);
@@ -200,11 +228,11 @@ export async function exportAsMarkdown(workspaceId: string): Promise<string> {
 				lines.push(content);
 			}
 		}
-		const children = sortedNodes.filter(n => n.parent === node.id);
+		const children = sortedNodes.filter((n) => n.parent === node.id);
 		for (const child of children) outputNode(child, depth + 1);
 	}
 
-	const rootNodes = sortedNodes.filter(n => !n.parent);
+	const rootNodes = sortedNodes.filter((n) => !n.parent);
 	for (const node of rootNodes) outputNode(node, 0);
 	return lines.join("\n");
 }

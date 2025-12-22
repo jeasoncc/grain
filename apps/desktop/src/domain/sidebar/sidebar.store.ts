@@ -10,15 +10,15 @@ import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import logger from "@/log";
 import {
-	type SidebarState,
-	type SidebarActions,
-	type SidebarPanel,
-	DEFAULT_SIDEBAR_STATE,
 	DEFAULT_SIDEBAR_CONFIG,
-	SIDEBAR_MIN_WIDTH,
-	SIDEBAR_MAX_WIDTH,
+	DEFAULT_SIDEBAR_STATE,
 	SIDEBAR_AUTO_COLLAPSE_THRESHOLD,
 	SIDEBAR_DEFAULT_WIDTH,
+	SIDEBAR_MAX_WIDTH,
+	SIDEBAR_MIN_WIDTH,
+	type SidebarActions,
+	type SidebarPanel,
+	type SidebarState,
 } from "./sidebar.interface";
 
 // ==============================
@@ -52,7 +52,7 @@ export const useSidebarStore = create<SidebarStore>()(
 				const state = get();
 				const newIsOpen = panel !== null ? true : state.isOpen;
 				logger.info(
-					`[Sidebar] setActivePanel: panel=${panel}, currentIsOpen=${state.isOpen}, newIsOpen=${newIsOpen}`
+					`[Sidebar] setActivePanel: panel=${panel}, currentIsOpen=${state.isOpen}, newIsOpen=${newIsOpen}`,
 				);
 				set((draft) => {
 					draft.activePanel = panel;
@@ -63,7 +63,7 @@ export const useSidebarStore = create<SidebarStore>()(
 			setIsOpen: (open: boolean) => {
 				const state = get();
 				logger.info(
-					`[Sidebar] setIsOpen: open=${open}, currentIsOpen=${state.isOpen}`
+					`[Sidebar] setIsOpen: open=${open}, currentIsOpen=${state.isOpen}`,
 				);
 				set((draft) => {
 					draft.isOpen = open;
@@ -73,7 +73,7 @@ export const useSidebarStore = create<SidebarStore>()(
 			toggleSidebar: () => {
 				const state = get();
 				logger.info(
-					`[Sidebar] toggleSidebar: currentIsOpen=${state.isOpen}, newIsOpen=${!state.isOpen}`
+					`[Sidebar] toggleSidebar: currentIsOpen=${state.isOpen}, newIsOpen=${!state.isOpen}`,
 				);
 				set((draft) => {
 					draft.isOpen = !draft.isOpen;
@@ -166,8 +166,8 @@ export const useSidebarStore = create<SidebarStore>()(
 				drawingsState: state.drawingsState,
 				fileTreeState: state.fileTreeState,
 			}),
-		}
-	)
+		},
+	),
 );
 
 // ==============================

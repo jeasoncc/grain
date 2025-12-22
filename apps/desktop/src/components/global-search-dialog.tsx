@@ -1,12 +1,13 @@
 /**
  * Global Search对话框
  * 支持跨项目的全文搜索
+ *
+ * 纯展示组件，通过 props 接收搜索函数
  */
 
 import { useNavigate } from "@tanstack/react-router";
 import { FileText, Loader2, Search } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import logger from "@/log";
 import { Badge } from "@/components/ui/badge";
 import {
 	Dialog,
@@ -19,18 +20,48 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { type SearchResult, searchEngine } from "@/services/search";
+
+/**
+ * 搜索结果类型
+ */
+export type SearchResultType = "project" | "node";
+
+/**
+ * 搜索结果
+ */
+export interface SearchResult {
+	id: string;
+	type: SearchResultType;
+	title: string;
+	content: string;
+	excerpt: string;
+	workspaceId?: string;
+	workspaceTitle?: string;
+	score: number;
+	highlights: string[];
+}
+
+/**
+ * 搜索选项
+ */
+export interface SearchOptions {
+	workspaceId?: string;
+	limit?: number;
+}
 
 interface GlobalSearchDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	workspaceId?: string;
+	/** 搜索函数 */
+	onSearch: (query: string, options?: SearchOptions) => Promise<SearchResult[]>;
 }
 
 export function GlobalSearchDialog({
 	open,
 	onOpenChange,
 	workspaceId,
+	onSearch,
 }: GlobalSearchDialogProps) {
 	const navigate = useNavigate();
 	const [query, setQuery] = useState("");
@@ -48,19 +79,19 @@ export function GlobalSearchDialog({
 
 			setIsSearching(true);
 			try {
-				const searchResults = await searchEngine.simpleSearch(searchQuery, {
+				const searchResults = await onSearch(searchQuery, {
 					workspaceId,
 					limit: 50,
 				});
 				setResults(searchResults);
 				setSelectedIndex(0);
 			} catch (error) {
-				logger.error("Search failed:", error);
+				console.error("Search failed:", error);
 			} finally {
 				setIsSearching(false);
 			}
 		},
-		[workspaceId],
+		[workspaceId, onSearch],
 	);
 
 	// Debounced Search
@@ -71,6 +102,23 @@ export function GlobalSearchDialog({
 
 		return () => clearTimeout(timer);
 	}, [query, performSearch]);
+
+	// Handle Result Click
+	const handleResultClick = useCallback(
+		(result: SearchResult) => {
+			onOpenChange(false);
+
+			// 根据类型导航到相应页面
+			switch (result.type) {
+				case "node":
+				case "project":
+					// Navigate to Home
+					navigate({ to: "/" });
+					break;
+			}
+		},
+		[onOpenChange, navigate],
+	);
 
 	// Keyboard Navigation
 	useEffect(() => {
@@ -99,21 +147,7 @@ export function GlobalSearchDialog({
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [open, results, selectedIndex]);
-
-	// Handle Result Click
-	const handleResultClick = (result: SearchResult) => {
-		onOpenChange(false);
-
-		// 根据类型导航到相应页面
-		switch (result.type) {
-			case "node":
-			case "project":
-				// Navigate to Home
-				navigate({ to: "/" });
-				break;
-		}
-	};
+	}, [open, results, selectedIndex, handleResultClick]);
 
 	// Get Type Icon
 	const getTypeIcon = (type: string) => {
@@ -144,6 +178,7 @@ export function GlobalSearchDialog({
 			<>
 				{parts.map((part, i) =>
 					part.toLowerCase() === query.toLowerCase() ? (
+						// biome-ignore lint/suspicious/noArrayIndexKey: 文本片段顺序稳定
 						<mark key={i} className="bg-yellow-200 dark:bg-yellow-900">
 							{part}
 						</mark>
@@ -193,6 +228,7 @@ export function GlobalSearchDialog({
 						<div className="space-y-1 p-2">
 							{results.map((result, index) => (
 								<button
+									type="button"
 									key={`${result.type}-${result.id}`}
 									onClick={() => handleResultClick(result)}
 									className={cn(
@@ -236,7 +272,8 @@ export function GlobalSearchDialog({
 					<>
 						<Separator />
 						<div className="px-6 py-3 text-xs text-muted-foreground">
-							Found {results.length} results · Use ↑↓ to navigate · Enter to open
+							Found {results.length} results · Use ↑↓ to navigate · Enter to
+							open
 						</div>
 					</>
 				)}

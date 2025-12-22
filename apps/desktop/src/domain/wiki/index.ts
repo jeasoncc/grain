@@ -1,26 +1,26 @@
 /**
  * Wiki Domain
- * 
+ *
  * Provides wiki file management using the tag-based file system.
  */
 
 // Wiki Service
 export {
-	WIKI_ROOT_FOLDER,
-	WIKI_TAG,
+	createWikiFile,
 	ensureWikiFolder,
 	generateWikiTemplate,
-	createWikiFile,
 	getWikiFiles,
 	useWikiFiles,
-	type WikiFileEntry,
+	WIKI_ROOT_FOLDER,
+	WIKI_TAG,
 	type WikiCreationResult,
+	type WikiFileEntry,
 } from "./wiki.service";
 
 // Wiki Migration Service
 export {
 	checkMigrationNeeded,
+	type MigrationResult,
 	migrateWikiEntriesToFiles,
 	runMigrationIfNeeded,
-	type MigrationResult,
 } from "./wiki-migration.service";

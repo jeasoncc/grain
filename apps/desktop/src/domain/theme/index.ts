@@ -9,10 +9,10 @@
 // ==============================
 
 export type {
-	ThemeMode,
-	ThemeState,
 	ThemeActions,
 	ThemeConfig,
+	ThemeMode,
+	ThemeState,
 } from "./theme.interface";
 
 export { DEFAULT_THEME_CONFIG, DEFAULT_THEME_STATE } from "./theme.interface";
@@ -22,11 +22,11 @@ export { DEFAULT_THEME_CONFIG, DEFAULT_THEME_STATE } from "./theme.interface";
 // ==============================
 
 export {
-	getSystemTheme,
 	applyThemeWithTransition,
-	getNextMode,
-	getEffectiveThemeType,
 	getDefaultThemeKey,
+	getEffectiveThemeType,
+	getNextMode,
+	getSystemTheme,
 	isThemeTypeMatch,
 } from "./theme.utils";
 
@@ -35,12 +35,12 @@ export {
 // ==============================
 
 export {
-	useThemeStore,
 	initializeTheme,
-	useThemeKey,
-	useThemeMode,
 	useEnableTransition,
 	useIsDarkTheme,
 	useIsSystemMode,
 	useTheme,
+	useThemeKey,
+	useThemeMode,
+	useThemeStore,
 } from "./theme.store";

@@ -1,265 +1,310 @@
 /**
  * FileTreePanel - 文件树面板
  * 使用新的 Node 结构管理工作空间内容
- * 
+ *
+ * 路由编排层：连接数据和展示组件
+ *
  * Requirements: 2.1, 2.3, 3.3, 1.1, 1.5, 3.1
  */
 
-import { useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { useConfirm } from "@/components/ui/confirm";
 import { FileTree } from "@/components/file-tree";
-import type { NodeType } from "@/db/schema";
-import { useSelectionStore } from "@/domain/selection";
-import { useEditorTabsStore } from "@/domain/editor-tabs";
+import { useConfirm } from "@/components/ui/confirm";
+import { createDiaryInFileTree } from "@/domain/diary";
+import { useNodesByWorkspace } from "@/hooks/use-node";
 import {
-  createNode,
-  deleteNode as deleteNodeService,
-  renameNode as renameNodeService,
-  moveNode as moveNodeService,
-  getNode,
+	createNode,
+	deleteNode as deleteNodeService,
+	getNode,
+	moveNode as moveNodeService,
+	renameNode as renameNodeService,
+	toggleNodeCollapsed,
 } from "@/services/nodes";
-import { createDiaryInFileTree } from "@/services/diary-v2";
+import { useEditorTabsStore } from "@/stores/editor-tabs.store";
+import { useSelectionStore } from "@/stores/selection.store";
+import type { NodeType } from "@/types/node";
 
 interface FileTreePanelProps {
-  /** Optional workspace ID override. If not provided, uses global selection */
-  workspaceId?: string | null;
+	/** Optional workspace ID override. If not provided, uses global selection */
+	workspaceId?: string | null;
 }
 
-export function FileTreePanel({ workspaceId: propWorkspaceId }: FileTreePanelProps) {
-  const navigate = useNavigate();
-  const confirm = useConfirm();
+export function FileTreePanel({
+	workspaceId: propWorkspaceId,
+}: FileTreePanelProps) {
+	const navigate = useNavigate();
+	const confirm = useConfirm();
 
-  // Global selection state
-  const globalSelectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
-  const workspaceId = propWorkspaceId ?? globalSelectedWorkspaceId;
+	// Global selection state
+	const globalSelectedWorkspaceId = useSelectionStore(
+		(s) => s.selectedWorkspaceId,
+	);
+	const workspaceId = propWorkspaceId ?? globalSelectedWorkspaceId;
 
-  // Selected node state - use global store for cross-component communication
-  const selectedNodeId = useSelectionStore((s) => s.selectedNodeId);
-  const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId);
+	// Selected node state - use global store for cross-component communication
+	const selectedNodeId = useSelectionStore((s) => s.selectedNodeId);
+	const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId);
 
-  // Clear selection when workspace changes
-  // Requirements: 3.3
-  const prevWorkspaceIdRef = useRef(workspaceId);
-  useEffect(() => {
-    if (prevWorkspaceIdRef.current !== workspaceId) {
-      setSelectedNodeId(null);
-      prevWorkspaceIdRef.current = workspaceId;
-    }
-  }, [workspaceId, setSelectedNodeId]);
+	// Clear selection when workspace changes
+	// Requirements: 3.3
+	const prevWorkspaceIdRef = useRef(workspaceId);
+	useEffect(() => {
+		if (prevWorkspaceIdRef.current !== workspaceId) {
+			setSelectedNodeId(null);
+			prevWorkspaceIdRef.current = workspaceId;
+		}
+	}, [workspaceId, setSelectedNodeId]);
 
-  // Editor tabs
-  const openTab = useEditorTabsStore((s) => s.openTab);
-  const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
-  const editorStates = useEditorTabsStore((s) => s.editorStates);
+	// 获取工作区节点数据
+	const nodes = useNodesByWorkspace(workspaceId) ?? [];
 
-  // Handle node selection - open file in editor
-  const handleSelectNode = useCallback(async (nodeId: string) => {
-    setSelectedNodeId(nodeId);
+	// Editor tabs
+	const openTab = useEditorTabsStore((s) => s.openTab);
+	const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
+	const editorStates = useEditorTabsStore((s) => s.editorStates);
 
-    // Get node details to open in editor
-    const node = await getNode(nodeId);
-    if (!node) return;
+	// Handle node selection - open file in editor
+	const handleSelectNode = useCallback(
+		async (nodeId: string) => {
+			setSelectedNodeId(nodeId);
 
-    // Only open files (not folders) in editor
-    if (node.type === "folder") return;
+			// Get node details to open in editor
+			const node = await getNode(nodeId);
+			if (!node) return;
 
-    if (workspaceId) {
-      // Pre-load content into editorStates if not already loaded
-      // This ensures the editor is initialized with the correct content
-      if (!editorStates[nodeId]?.serializedState) {
-        const { getNodeContent } = await import("@/services/nodes");
-        const content = await getNodeContent(nodeId);
-        if (content) {
-          try {
-            const parsed = JSON.parse(content);
-            updateEditorState(nodeId, { serializedState: parsed });
-          } catch {
-            // Ignore parse errors
-          }
-        }
-      }
+			// Only open files (not folders) in editor
+			if (node.type === "folder") return;
 
-      // Map node type to editor tab type
-      const tabType = node.type === "canvas" ? "canvas" : 
-                      node.type === "diary" ? "diary" : "file";
-      openTab({
-        workspaceId: workspaceId,
-        nodeId: nodeId,
-        title: node.title,
-        type: tabType,
-      });
-    }
+			if (workspaceId) {
+				// Pre-load content into editorStates if not already loaded
+				// This ensures the editor is initialized with the correct content
+				if (!editorStates[nodeId]?.serializedState) {
+					const { getNodeContent } = await import("@/services/nodes");
+					const content = await getNodeContent(nodeId);
+					if (content) {
+						try {
+							const parsed = JSON.parse(content);
+							updateEditorState(nodeId, { serializedState: parsed });
+						} catch {
+							// Ignore parse errors
+						}
+					}
+				}
 
-    // Navigate based on file type
-    if (node.type === "canvas") {
-      navigate({ to: "/canvas" });
-    } else {
-      navigate({ to: "/" });
-    }
-  }, [workspaceId, openTab, navigate, editorStates, updateEditorState]);
+				// Map node type to editor tab type
+				const tabType =
+					node.type === "canvas"
+						? "canvas"
+						: node.type === "diary"
+							? "diary"
+							: "file";
+				openTab({
+					workspaceId: workspaceId,
+					nodeId: nodeId,
+					title: node.title,
+					type: tabType,
+				});
+			}
 
-  // Handle folder creation
-  const handleCreateFolder = useCallback(async (parentId: string | null) => {
-    if (!workspaceId) {
-      toast.error("Please select a workspace first");
-      return;
-    }
+			// Navigate based on file type
+			if (node.type === "canvas") {
+				navigate({ to: "/canvas" });
+			} else {
+				navigate({ to: "/" });
+			}
+		},
+		[workspaceId, openTab, navigate, editorStates, updateEditorState],
+	);
 
-    try {
-      await createNode({
-        workspaceId,
-        parentId,
-        type: "folder",
-        title: "New Folder",
-      });
-      toast.success("Folder created");
-      // Note: No need to setActivePanel here as we're already in FileTreePanel
-      // which only renders when activePanel === "files"
-    } catch (error) {
-      console.error("Failed to create folder:", error);
-      toast.error("Failed to create folder");
-    }
-  }, [workspaceId]);
+	// Handle folder creation
+	const handleCreateFolder = useCallback(
+		async (parentId: string | null) => {
+			if (!workspaceId) {
+				toast.error("Please select a workspace first");
+				return;
+			}
 
-  // Handle file creation
-  const handleCreateFile = useCallback(async (parentId: string | null, type: NodeType) => {
-    if (!workspaceId) {
-      toast.error("Please select a workspace first");
-      return;
-    }
+			try {
+				await createNode({
+					workspaceId,
+					parentId,
+					type: "folder",
+					title: "New Folder",
+				});
+				toast.success("Folder created");
+				// Note: No need to setActivePanel here as we're already in FileTreePanel
+				// which only renders when activePanel === "files"
+			} catch (error) {
+				console.error("Failed to create folder:", error);
+				toast.error("Failed to create folder");
+			}
+		},
+		[workspaceId],
+	);
 
-    try {
-      const title = type === "canvas" ? "New Canvas" : "New File";
-      const content = type === "canvas" 
-        ? JSON.stringify({ elements: [], appState: {}, files: {} })
-        : "";
+	// Handle file creation
+	const handleCreateFile = useCallback(
+		async (parentId: string | null, type: NodeType) => {
+			if (!workspaceId) {
+				toast.error("Please select a workspace first");
+				return;
+			}
 
-      const newNode = await createNode({
-        workspaceId,
-        parentId,
-        type,
-        title,
-        content,
-      });
+			try {
+				const title = type === "canvas" ? "New Canvas" : "New File";
+				const content =
+					type === "canvas"
+						? JSON.stringify({ elements: [], appState: {}, files: {} })
+						: "";
 
-      toast.success(`${type === "canvas" ? "Canvas" : "File"} created`);
+				const newNode = await createNode({
+					workspaceId,
+					parentId,
+					type,
+					title,
+					content,
+				});
 
-      // Auto-select and open the new file
-      if (newNode && type !== "folder") {
-        handleSelectNode(newNode.id);
-      }
-    } catch (error) {
-      console.error("Failed to create file:", error);
-      toast.error("Failed to create file");
-    }
-  }, [workspaceId, handleSelectNode]);
+				toast.success(`${type === "canvas" ? "Canvas" : "File"} created`);
 
-  // Editor tabs for closing deleted files
-  const closeTab = useEditorTabsStore((s) => s.closeTab);
+				// Auto-select and open the new file
+				if (newNode && type !== "folder") {
+					handleSelectNode(newNode.id);
+				}
+			} catch (error) {
+				console.error("Failed to create file:", error);
+				toast.error("Failed to create file");
+			}
+		},
+		[workspaceId, handleSelectNode],
+	);
 
-  // Handle node deletion
-  const handleDeleteNode = useCallback(async (nodeId: string) => {
-    const node = await getNode(nodeId);
-    if (!node) return;
+	// Editor tabs for closing deleted files
+	const closeTab = useEditorTabsStore((s) => s.closeTab);
 
-    const isFolder = node.type === "folder";
-    const ok = await confirm({
-      title: `Delete ${isFolder ? "folder" : "file"}?`,
-      description: isFolder
-        ? `Are you sure you want to delete "${node.title}"? This will also delete all contents inside. This cannot be undone.`
-        : `Are you sure you want to delete "${node.title}"? This cannot be undone.`,
-      confirmText: "Delete",
-      cancelText: "Cancel",
-    });
+	// Handle node deletion
+	const handleDeleteNode = useCallback(
+		async (nodeId: string) => {
+			const node = await getNode(nodeId);
+			if (!node) return;
 
-    if (!ok) return;
+			const isFolder = node.type === "folder";
+			const ok = await confirm({
+				title: `Delete ${isFolder ? "folder" : "file"}?`,
+				description: isFolder
+					? `Are you sure you want to delete "${node.title}"? This will also delete all contents inside. This cannot be undone.`
+					: `Are you sure you want to delete "${node.title}"? This cannot be undone.`,
+				confirmText: "Delete",
+				cancelText: "Cancel",
+			});
 
-    try {
-      await deleteNodeService(nodeId);
-      
-      // Close the tab if the deleted node was open in editor
-      closeTab(nodeId);
-      
-      // Clear selection if deleted node was selected
-      if (selectedNodeId === nodeId) {
-        setSelectedNodeId(null);
-      }
-      
-      toast.success(`${isFolder ? "Folder" : "File"} deleted`);
-    } catch (error) {
-      console.error("Failed to delete node:", error);
-      toast.error("Failed to delete");
-    }
-  }, [confirm, selectedNodeId, closeTab, setSelectedNodeId]);
+			if (!ok) return;
 
-  // Handle node rename
-  const handleRenameNode = useCallback(async (nodeId: string, newTitle: string) => {
-    if (!newTitle.trim()) return;
+			try {
+				await deleteNodeService(nodeId);
 
-    try {
-      await renameNodeService(nodeId, newTitle.trim());
-    } catch (error) {
-      console.error("Failed to rename node:", error);
-      toast.error("Failed to rename");
-    }
-  }, []);
+				// Close the tab if the deleted node was open in editor
+				closeTab(nodeId);
 
-  // Handle node move (drag and drop)
-  const handleMoveNode = useCallback(async (
-    nodeId: string,
-    newParentId: string | null,
-    newIndex: number
-  ) => {
-    try {
-      await moveNodeService(nodeId, newParentId, newIndex);
-    } catch (error) {
-      console.error("Failed to move node:", error);
-      if (error instanceof Error && error.message.includes("descendants")) {
-        toast.error("Cannot move a folder into itself");
-      } else {
-        toast.error("Failed to move");
-      }
-    }
-  }, []);
+				// Clear selection if deleted node was selected
+				if (selectedNodeId === nodeId) {
+					setSelectedNodeId(null);
+				}
 
-  // Handle diary creation
-  // Requirements: 1.1, 1.5, 3.1
-  const handleCreateDiary = useCallback(async () => {
-    if (!workspaceId) {
-      toast.error("Please select a workspace first");
-      return;
-    }
+				toast.success(`${isFolder ? "Folder" : "File"} deleted`);
+			} catch (error) {
+				console.error("Failed to delete node:", error);
+				toast.error("Failed to delete");
+			}
+		},
+		[confirm, selectedNodeId, closeTab, setSelectedNodeId],
+	);
 
-    try {
-      // Create diary and get content in one call (avoids race condition)
-      const { node, parsedContent } = await createDiaryInFileTree(workspaceId);
+	// Handle node rename
+	const handleRenameNode = useCallback(
+		async (nodeId: string, newTitle: string) => {
+			if (!newTitle.trim()) return;
 
-      // Pre-load the diary content into editorStates BEFORE opening the tab
-      updateEditorState(node.id, { serializedState: parsedContent });
+			try {
+				await renameNodeService(nodeId, newTitle.trim());
+			} catch (error) {
+				console.error("Failed to rename node:", error);
+				toast.error("Failed to rename");
+			}
+		},
+		[],
+	);
 
-      toast.success("Diary created");
+	// Handle node move (drag and drop)
+	const handleMoveNode = useCallback(
+		async (nodeId: string, newParentId: string | null, newIndex: number) => {
+			try {
+				await moveNodeService(nodeId, newParentId, newIndex);
+			} catch (error) {
+				console.error("Failed to move node:", error);
+				if (error instanceof Error && error.message.includes("descendants")) {
+					toast.error("Cannot move a folder into itself");
+				} else {
+					toast.error("Failed to move");
+				}
+			}
+		},
+		[],
+	);
 
-      // Auto-select and open the new diary file
-      handleSelectNode(node.id);
-    } catch (error) {
-      console.error("Failed to create diary:", error);
-      toast.error("Failed to create diary");
-    }
-  }, [workspaceId, handleSelectNode, updateEditorState]);
+	// Handle diary creation
+	// Requirements: 1.1, 1.5, 3.1
+	const handleCreateDiary = useCallback(async () => {
+		if (!workspaceId) {
+			toast.error("Please select a workspace first");
+			return;
+		}
 
-  return (
-    <FileTree
-      workspaceId={workspaceId}
-      selectedNodeId={selectedNodeId}
-      onSelectNode={handleSelectNode}
-      onCreateFolder={handleCreateFolder}
-      onCreateFile={handleCreateFile}
-      onDeleteNode={handleDeleteNode}
-      onRenameNode={handleRenameNode}
-      onMoveNode={handleMoveNode}
-      onCreateDiary={handleCreateDiary}
-    />
-  );
+		try {
+			// Create diary and get content in one call (avoids race condition)
+			const { node, parsedContent } = await createDiaryInFileTree(workspaceId);
+
+			// Pre-load the diary content into editorStates BEFORE opening the tab
+			updateEditorState(node.id, { serializedState: parsedContent });
+
+			toast.success("Diary created");
+
+			// Auto-select and open the new diary file
+			handleSelectNode(node.id);
+		} catch (error) {
+			console.error("Failed to create diary:", error);
+			toast.error("Failed to create diary");
+		}
+	}, [workspaceId, handleSelectNode, updateEditorState]);
+
+	// Handle toggle collapsed state
+	// Requirements: 2.2
+	const handleToggleCollapsed = useCallback(
+		async (nodeId: string, collapsed: boolean) => {
+			try {
+				await toggleNodeCollapsed(nodeId, collapsed);
+			} catch (error) {
+				console.error("Failed to toggle collapsed:", error);
+			}
+		},
+		[],
+	);
+
+	return (
+		<FileTree
+			workspaceId={workspaceId}
+			nodes={nodes}
+			selectedNodeId={selectedNodeId}
+			onSelectNode={handleSelectNode}
+			onCreateFolder={handleCreateFolder}
+			onCreateFile={handleCreateFile}
+			onDeleteNode={handleDeleteNode}
+			onRenameNode={handleRenameNode}
+			onMoveNode={handleMoveNode}
+			onToggleCollapsed={handleToggleCollapsed}
+			onCreateDiary={handleCreateDiary}
+		/>
+	);
 }

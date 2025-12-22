@@ -7,17 +7,18 @@
  * @requirements 1.2, 4.1
  */
 
+import * as E from "fp-ts/Either";
 import {
-	DrawingRepository,
-	type DrawingInterface,
-	// Pure functions from drawing.utils.ts
-	sanitizeDrawingContent,
-	EMPTY_DRAWING_CONTENT,
-	// Hooks from drawing.hooks.ts
-	useDrawing,
-	useDrawingsByProject,
-} from "@/db/models";
+	addDrawing,
+	deleteDrawing as deleteDrawingDb,
+	getAllDrawings,
+	getDrawingById,
+	updateDrawing as updateDrawingDb,
+} from "@/db";
+import { EMPTY_DRAWING_CONTENT, sanitizeDrawingContent } from "@/fn/drawing";
+import { useDrawing, useDrawingsByProject } from "@/hooks";
 import logger from "@/log/index";
+import type { DrawingInterface } from "@/types/drawing";
 import { computeDrawingUpdates } from "./drawings.utils";
 
 // Re-export pure function for backward compatibility
@@ -31,8 +32,12 @@ export { sanitizeDrawingContent };
  */
 export async function cleanupAllDrawings(): Promise<number> {
 	try {
-		const allDrawings = await DrawingRepository.getAll();
-		const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+		const allDrawingsResult = await getAllDrawings()();
+		const allDrawings = E.isRight(allDrawingsResult)
+			? allDrawingsResult.right
+			: [];
+		const dpr =
+			typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
 		const maxSafeSize = Math.floor(4096 / dpr);
 
 		logger.info(`Cleanup drawings: dpr=${dpr}, maxSize=${maxSafeSize}`);
@@ -43,8 +48,13 @@ export async function cleanupAllDrawings(): Promise<number> {
 				id: drawing.id,
 				updates: computeDrawingUpdates(drawing, dpr, maxSafeSize),
 			}))
-			.filter((item): item is { id: string; updates: Partial<DrawingInterface> } => 
-				item.updates !== null
+			.filter(
+				(
+					item,
+				): item is {
+					id: string;
+					updates: { width?: number; height?: number; content?: string };
+				} => item.updates !== null,
 			);
 
 		// Log warnings for each update
@@ -55,9 +65,9 @@ export async function cleanupAllDrawings(): Promise<number> {
 
 		// Execute all updates in parallel
 		await Promise.all(
-			drawingsWithUpdates.map(({ id, updates }) => 
-				DrawingRepository.update(id, updates)
-			)
+			drawingsWithUpdates.map(({ id, updates }) =>
+				updateDrawingDb(id, updates)(),
+			),
 		);
 
 		const cleanedCount = drawingsWithUpdates.length;
@@ -77,11 +87,12 @@ export async function cleanupAllDrawings(): Promise<number> {
 /** Cleanup a specific drawing's data */
 export async function cleanupDrawing(drawingId: string): Promise<boolean> {
 	try {
-		const drawing = await DrawingRepository.getById(drawingId);
+		const drawingResult = await getDrawingById(drawingId)();
+		const drawing = E.isRight(drawingResult) ? drawingResult.right : null;
 		if (!drawing) return false;
 
 		const sanitizedContent = sanitizeDrawingContent(drawing.content || "");
-		await DrawingRepository.update(drawingId, { content: sanitizedContent });
+		await updateDrawingDb(drawingId, { content: sanitizedContent })();
 		logger.info(`Cleaned drawing ${drawingId}`);
 		return true;
 	} catch (error) {
@@ -93,7 +104,9 @@ export async function cleanupDrawing(drawingId: string): Promise<boolean> {
 /** Reset drawing to empty state */
 export async function resetDrawing(drawingId: string): Promise<boolean> {
 	try {
-		await DrawingRepository.update(drawingId, { content: EMPTY_DRAWING_CONTENT });
+		await updateDrawingDb(drawingId, {
+			content: EMPTY_DRAWING_CONTENT,
+		})();
 		logger.info(`Reset drawing ${drawingId} to empty state`);
 		return true;
 	} catch (error) {
@@ -104,24 +117,28 @@ export async function resetDrawing(drawingId: string): Promise<boolean> {
 
 /**
  * Hook to get a drawing by ID with live updates
- * Re-exports useDrawing from @/db/models for backward compatibility
+ * Re-exports useDrawing from @/hooks for backward compatibility
  *
  * @param drawingId - The drawing ID (can be null)
  * @returns The drawing or null if not found
  */
-export function useDrawingById(drawingId: string | null): DrawingInterface | null {
+export function useDrawingById(
+	drawingId: string | null,
+): DrawingInterface | null {
 	const drawing = useDrawing(drawingId);
 	return drawing ?? null;
 }
 
 /**
  * Hook to get all drawings for a workspace with live updates
- * Re-exports useDrawingsByProject from @/db/models for backward compatibility
+ * Re-exports useDrawingsByProject from @/hooks for backward compatibility
  *
  * @param workspaceId - The workspace/project ID (can be null)
  * @returns Array of drawings
  */
-export function useDrawingsByWorkspace(workspaceId: string | null): DrawingInterface[] {
+export function useDrawingsByWorkspace(
+	workspaceId: string | null,
+): DrawingInterface[] {
 	const drawings = useDrawingsByProject(workspaceId);
 	return drawings ?? [];
 }
@@ -132,26 +149,41 @@ export async function createDrawing(params: {
 	width?: number;
 	height?: number;
 }) {
-	return DrawingRepository.add(params.workspaceId, params.name || `Drawing ${Date.now()}`, {
-		width: params.width || 800,
-		height: params.height || 600,
-		content: JSON.stringify({ elements: [], appState: {}, files: {} }),
-	});
+	const result = await addDrawing(
+		params.workspaceId,
+		params.name || `Drawing ${Date.now()}`,
+		{
+			width: params.width || 800,
+			height: params.height || 600,
+			content: JSON.stringify({ elements: [], appState: {}, files: {} }),
+		},
+	)();
+	if (E.isLeft(result)) {
+		throw new Error(`Failed to create drawing: ${result.left.message}`);
+	}
+	return result.right;
 }
 
 export async function updateDrawing(
 	id: string,
 	updates: Partial<DrawingInterface>,
 ) {
-	return DrawingRepository.update(id, updates);
+	const result = await updateDrawingDb(id, updates)();
+	if (E.isLeft(result)) {
+		throw new Error(`Failed to update drawing: ${result.left.message}`);
+	}
+	return result.right;
 }
 
 export async function renameDrawing(id: string, name: string) {
-	return DrawingRepository.update(id, { name });
+	return updateDrawing(id, { name });
 }
 
 export async function deleteDrawing(id: string) {
-	return DrawingRepository.delete(id);
+	const result = await deleteDrawingDb(id)();
+	if (E.isLeft(result)) {
+		throw new Error(`Failed to delete drawing: ${result.left.message}`);
+	}
 }
 
 export async function saveDrawingContent(
@@ -160,8 +192,10 @@ export async function saveDrawingContent(
 	width?: number,
 	height?: number,
 ) {
-	const updates: Partial<DrawingInterface> = { content };
+	const updates: { content: string; width?: number; height?: number } = {
+		content,
+	};
 	if (width !== undefined) updates.width = width;
 	if (height !== undefined) updates.height = height;
-	return DrawingRepository.update(id, updates);
+	return updateDrawing(id, updates);
 }

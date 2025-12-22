@@ -11,9 +11,9 @@
 export type {
 	RightPanelView,
 	TabPosition,
-	UIState,
 	UIActions,
 	UIConfig,
+	UIState,
 } from "./ui.interface";
 
 export { DEFAULT_UI_CONFIG, DEFAULT_UI_STATE } from "./ui.interface";
@@ -23,12 +23,12 @@ export { DEFAULT_UI_CONFIG, DEFAULT_UI_STATE } from "./ui.interface";
 // ==============================
 
 export {
-	useUIStore,
-	useUISettingsStore,
+	useIsPanelViewActive,
+	useIsTabsAtTop,
+	useLocale,
 	useRightPanelView,
 	useRightSidebarOpen,
 	useTabPosition,
-	useLocale,
-	useIsPanelViewActive,
-	useIsTabsAtTop,
+	useUISettingsStore,
+	useUIStore,
 } from "./ui.store";

@@ -7,10 +7,10 @@
  * @requirements 3.3
  */
 
-import { describe, it, expect } from "vitest";
 import * as fc from "fast-check";
+import { describe, expect, it } from "vitest";
+import type { DrawingInterface } from "@/types/drawing";
 import { computeDrawingUpdates } from "../drawings.utils";
-import type { DrawingInterface } from "@/db/models";
 
 /**
  * Arbitrary generator for valid ISO date strings
@@ -36,7 +36,7 @@ const drawingArb = fc.record({
 				elements: [{ id: "1", x: 100, y: 100, width: 200, height: 200 }],
 				appState: { viewBackgroundColor: "#ffffff" },
 				files: {},
-			})
+			}),
 		),
 		// Invalid JSON
 		fc.constant("invalid json"),
@@ -48,20 +48,20 @@ const drawingArb = fc.record({
 				elements: [],
 				appState: { width: 100000, scrollX: 50000 },
 				files: {},
-			})
-		)
+			}),
+		),
 	),
 	width: fc.oneof(
 		fc.integer({ min: 100, max: 4096 }), // Valid range
 		fc.integer({ min: 1, max: 99 }), // Too small
 		fc.integer({ min: 5000, max: 10000 }), // Too large
-		fc.constant(0) // Zero
+		fc.constant(0), // Zero
 	),
 	height: fc.oneof(
 		fc.integer({ min: 100, max: 4096 }), // Valid range
 		fc.integer({ min: 1, max: 99 }), // Too small
 		fc.integer({ min: 5000, max: 10000 }), // Too large
-		fc.constant(0) // Zero
+		fc.constant(0), // Zero
 	),
 	createDate: isoDateArb,
 	updatedAt: isoDateArb,
@@ -87,44 +87,59 @@ const maxSafeSizeArb = fc.integer({ min: 1000, max: 8192 });
 describe("Property 2: Pure Functions Do Not Mutate Input", () => {
 	it("computeDrawingUpdates does not mutate the input drawing", () => {
 		fc.assert(
-			fc.property(drawingArb, dprArb, maxSafeSizeArb, (drawing, dpr, maxSafeSize) => {
-				// Deep clone the input to compare later
-				const originalDrawing = JSON.parse(JSON.stringify(drawing));
+			fc.property(
+				drawingArb,
+				dprArb,
+				maxSafeSizeArb,
+				(drawing, dpr, maxSafeSize) => {
+					// Deep clone the input to compare later
+					const originalDrawing = JSON.parse(JSON.stringify(drawing));
 
-				// Call the function
-				computeDrawingUpdates(drawing, dpr, maxSafeSize);
+					// Call the function
+					computeDrawingUpdates(drawing, dpr, maxSafeSize);
 
-				// Verify the input was not mutated
-				expect(drawing).toEqual(originalDrawing);
-			}),
-			{ numRuns: 100 }
+					// Verify the input was not mutated
+					expect(drawing).toEqual(originalDrawing);
+				},
+			),
+			{ numRuns: 100 },
 		);
 	});
 
 	it("computeDrawingUpdates returns a new object when updates are needed", () => {
 		fc.assert(
-			fc.property(drawingArb, dprArb, maxSafeSizeArb, (drawing, dpr, maxSafeSize) => {
-				const result = computeDrawingUpdates(drawing, dpr, maxSafeSize);
+			fc.property(
+				drawingArb,
+				dprArb,
+				maxSafeSizeArb,
+				(drawing, dpr, maxSafeSize) => {
+					const result = computeDrawingUpdates(drawing, dpr, maxSafeSize);
 
-				// If result is not null, it should be a different object reference
-				if (result !== null) {
-					expect(result).not.toBe(drawing);
-				}
-			}),
-			{ numRuns: 100 }
+					// If result is not null, it should be a different object reference
+					if (result !== null) {
+						expect(result).not.toBe(drawing);
+					}
+				},
+			),
+			{ numRuns: 100 },
 		);
 	});
 
 	it("computeDrawingUpdates produces consistent output for same input", () => {
 		fc.assert(
-			fc.property(drawingArb, dprArb, maxSafeSizeArb, (drawing, dpr, maxSafeSize) => {
-				const result1 = computeDrawingUpdates(drawing, dpr, maxSafeSize);
-				const result2 = computeDrawingUpdates(drawing, dpr, maxSafeSize);
+			fc.property(
+				drawingArb,
+				dprArb,
+				maxSafeSizeArb,
+				(drawing, dpr, maxSafeSize) => {
+					const result1 = computeDrawingUpdates(drawing, dpr, maxSafeSize);
+					const result2 = computeDrawingUpdates(drawing, dpr, maxSafeSize);
 
-				// Results should be deeply equal
-				expect(result1).toEqual(result2);
-			}),
-			{ numRuns: 100 }
+					// Results should be deeply equal
+					expect(result1).toEqual(result2);
+				},
+			),
+			{ numRuns: 100 },
 		);
 	});
 });

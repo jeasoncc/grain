@@ -4,8 +4,24 @@
  */
 
 import { Excalidraw, exportToBlob } from "@excalidraw/excalidraw";
-import { AlertTriangle, Download, Maximize2, Minimize2, RefreshCw, Save, Trash2 } from "lucide-react";
-import { Component, type ErrorInfo, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import {
+	AlertTriangle,
+	Download,
+	Maximize2,
+	Minimize2,
+	RefreshCw,
+	Save,
+	Trash2,
+} from "lucide-react";
+import {
+	Component,
+	type ErrorInfo,
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
@@ -23,14 +39,18 @@ interface ErrorBoundaryState {
 	isCanvasError: boolean;
 }
 
-class CanvasErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class CanvasErrorBoundary extends Component<
+	ErrorBoundaryProps,
+	ErrorBoundaryState
+> {
 	constructor(props: ErrorBoundaryProps) {
 		super(props);
 		this.state = { hasError: false, error: null, isCanvasError: false };
 	}
 
 	static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-		const isCanvasError = error.message?.includes("Canvas exceeds max size") || 
+		const isCanvasError =
+			error.message?.includes("Canvas exceeds max size") ||
 			error.name === "DOMException";
 		return { hasError: true, error, isCanvasError };
 	}
@@ -55,8 +75,8 @@ class CanvasErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySta
 				<div className="flex flex-col items-center justify-center h-full bg-muted/30 rounded-lg p-4 gap-3">
 					<AlertTriangle className="size-8 text-destructive" />
 					<span className="text-sm text-muted-foreground text-center">
-						{this.state.isCanvasError 
-							? "Drawing data error, canvas size exceeds limit" 
+						{this.state.isCanvasError
+							? "Drawing data error, canvas size exceeds limit"
 							: "Drawing component failed to load"}
 					</span>
 					<div className="flex gap-2">
@@ -132,10 +152,17 @@ export function CanvasEditor({
 			return {};
 		}
 		const sanitized: any = {};
-		if (appState.viewBackgroundColor && typeof appState.viewBackgroundColor === "string") {
+		if (
+			appState.viewBackgroundColor &&
+			typeof appState.viewBackgroundColor === "string"
+		) {
 			sanitized.viewBackgroundColor = appState.viewBackgroundColor;
 		}
-		if (typeof appState.gridSize === "number" && Number.isFinite(appState.gridSize) && appState.gridSize > 0) {
+		if (
+			typeof appState.gridSize === "number" &&
+			Number.isFinite(appState.gridSize) &&
+			appState.gridSize > 0
+		) {
 			sanitized.gridSize = appState.gridSize;
 		}
 		return sanitized;
@@ -154,8 +181,10 @@ export function CanvasEditor({
 			const height = el.height ?? 0;
 			if (!Number.isFinite(x) || Math.abs(x) > MAX_COORD) return false;
 			if (!Number.isFinite(y) || Math.abs(y) > MAX_COORD) return false;
-			if (!Number.isFinite(width) || width < 0 || width > MAX_SIZE) return false;
-			if (!Number.isFinite(height) || height < 0 || height > MAX_SIZE) return false;
+			if (!Number.isFinite(width) || width < 0 || width > MAX_SIZE)
+				return false;
+			if (!Number.isFinite(height) || height < 0 || height > MAX_SIZE)
+				return false;
 			return true;
 		});
 	};
@@ -321,7 +350,10 @@ export function CanvasEditor({
 				{/* Excalidraw 编辑器 */}
 				<div className="flex-1">
 					{isReady ? (
-						<CanvasErrorBoundary onReset={handleReset} onClearData={handleClearData}>
+						<CanvasErrorBoundary
+							onReset={handleReset}
+							onClearData={handleClearData}
+						>
 							<Excalidraw
 								excalidrawAPI={(api) => {
 									excalidrawRef.current = api;
@@ -396,7 +428,10 @@ export function CanvasEditor({
 			{/* Excalidraw 编辑器 */}
 			<div className="flex-1 min-h-0">
 				{isReady ? (
-					<CanvasErrorBoundary onReset={handleReset} onClearData={handleClearData}>
+					<CanvasErrorBoundary
+						onReset={handleReset}
+						onClearData={handleClearData}
+					>
 						<Excalidraw
 							excalidrawAPI={(api) => {
 								excalidrawRef.current = api;

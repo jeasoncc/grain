@@ -7,13 +7,13 @@
  * @requirements 1.1, 3.1, 3.2, 3.3
  */
 
-import type { DrawingInterface } from "@/db/models";
 import {
+	EMPTY_DRAWING_CONTENT,
 	getSafeDrawingDimensions,
 	hasInvalidAppState,
 	sanitizeDrawingContent,
-	EMPTY_DRAWING_CONTENT,
-} from "@/db/models";
+} from "@/fn/drawing";
+import type { DrawingInterface } from "@/types/drawing";
 
 /**
  * Compute required updates for a drawing based on validation rules
@@ -35,9 +35,13 @@ export function computeDrawingUpdates(
 	drawing: DrawingInterface,
 	dpr: number,
 	maxSafeSize: number,
-): Partial<DrawingInterface> | null {
-	const updates: Partial<DrawingInterface> = {};
-	const safeDimensions = getSafeDrawingDimensions(drawing.width, drawing.height, dpr);
+): { width?: number; height?: number; content?: string } | null {
+	const updates: { width?: number; height?: number; content?: string } = {};
+	const safeDimensions = getSafeDrawingDimensions(
+		drawing.width,
+		drawing.height,
+		dpr,
+	);
 
 	// Check dimensions
 	if (!drawing.width || drawing.width > maxSafeSize || drawing.width < 100) {

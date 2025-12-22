@@ -6,23 +6,20 @@
  * Requirements: 1.1, 5.1, 5.2, 5.3, 5.4, 5.5
  */
 
-import type { NodeInterface } from "@/db/models";
 import { createFileInTree } from "@/domain/file-creator";
+import type { NodeInterface } from "@/types/node";
 
 // Re-export pure functions from utils for backward compatibility
 export {
-	getZodiacAnimal,
+	type DiaryFolderStructure,
+	generateDiaryContent,
 	getChineseEra,
 	getChineseHour,
 	getDiaryFolderStructure,
-	generateDiaryContent,
-	type DiaryFolderStructure,
+	getZodiacAnimal,
 } from "./diary.utils";
 
-import {
-	getDiaryFolderStructure,
-	generateDiaryContent,
-} from "./diary.utils";
+import { generateDiaryContent, getDiaryFolderStructure } from "./diary.utils";
 
 // ==============================
 // Constants
@@ -40,8 +37,8 @@ export interface DiaryMetadata {
 	author: string;
 	email: string;
 	date: string;
-	year: string;         // "甲辰 Dragon"
-	createTime: string;   // "2024-12-14 14:30:00 未时"
+	year: string; // "甲辰 Dragon"
+	createTime: string; // "2024-12-14 14:30:00 未时"
 	device: string;
 	tags: string[];
 }
@@ -51,13 +48,13 @@ export interface DiaryMetadata {
 // ==============================
 
 export interface DiaryCreationResult {
-  /** The created diary node */
-  node: NodeInterface;
-  /** The generated content (Lexical JSON string) */
-  content: string;
-  /** The parsed content (Lexical JSON object) */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  parsedContent: any;
+	/** The created diary node */
+	node: NodeInterface;
+	/** The generated content (Lexical JSON string) */
+	content: string;
+	/** The parsed content (Lexical JSON object) */
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	parsedContent: any;
 }
 
 // ==============================
@@ -75,29 +72,29 @@ export interface DiaryCreationResult {
  * @returns The created diary node and its content
  */
 export async function createDiaryInFileTree(
-  workspaceId: string,
-  date: Date = new Date()
+	workspaceId: string,
+	date: Date = new Date(),
 ): Promise<DiaryCreationResult> {
-  const structure = getDiaryFolderStructure(date);
+	const structure = getDiaryFolderStructure(date);
 
-  // Generate diary content with date
-  const content = generateDiaryContent(date);
-  const parsedContent = JSON.parse(content);
+	// Generate diary content with date
+	const content = generateDiaryContent(date);
+	const parsedContent = JSON.parse(content);
 
-  // Create diary file using the unified file creator
-  const { node } = await createFileInTree({
-    workspaceId,
-    title: structure.filename,
-    folderPath: [
-      DIARY_ROOT_FOLDER,
-      structure.yearFolder,
-      structure.monthFolder,
-      structure.dayFolder,
-    ],
-    type: "diary",
-    tags: ["diary"],
-    content,
-  });
+	// Create diary file using the unified file creator
+	const { node } = await createFileInTree({
+		workspaceId,
+		title: structure.filename,
+		folderPath: [
+			DIARY_ROOT_FOLDER,
+			structure.yearFolder,
+			structure.monthFolder,
+			structure.dayFolder,
+		],
+		type: "diary",
+		tags: ["diary"],
+		content,
+	});
 
-  return { node, content, parsedContent };
+	return { node, content, parsedContent };
 }

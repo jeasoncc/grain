@@ -5,10 +5,10 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import logger from "@/log/index";
 import {
-	type EditorHistoryStore,
-	type EditorHistoryEntry,
-	MAX_HISTORY_SIZE,
 	EDITOR_HISTORY_STORAGE_KEY,
+	type EditorHistoryEntry,
+	type EditorHistoryStore,
+	MAX_HISTORY_SIZE,
 } from "./editor-history.interface";
 
 // ============================================================================

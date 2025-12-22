@@ -3,6 +3,7 @@
  * 用于验证焦点样式是否正确工作
  */
 import { createFileRoute } from "@tanstack/react-router";
+import { DevOnlyPage } from "@/components/dev-only";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -11,7 +12,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { DevOnlyPage } from "@/components/dev-only";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -79,18 +79,21 @@ function TestFocusPage() {
 				</CardHeader>
 				<CardContent className="space-y-2">
 					<div className="space-y-2">
-						<a href="#" className="text-primary hover:underline block">
+						<button
+							type="button"
+							className="text-primary hover:underline block text-left"
+						>
 							普通链接
-						</a>
-						<a
-							href="#"
-							className="text-muted-foreground hover:text-foreground block"
+						</button>
+						<button
+							type="button"
+							className="text-muted-foreground hover:text-foreground block text-left"
 						>
 							次要链接
-						</a>
-						<a href="#" className="underline block">
+						</button>
+						<button type="button" className="underline block text-left">
 							下划线链接
-						</a>
+						</button>
 					</div>
 				</CardContent>
 			</Card>

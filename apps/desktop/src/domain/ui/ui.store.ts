@@ -9,10 +9,10 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import type {
-	UIState,
-	UIActions,
 	RightPanelView,
 	TabPosition,
+	UIActions,
+	UIState,
 } from "./ui.interface";
 import { DEFAULT_UI_CONFIG, DEFAULT_UI_STATE } from "./ui.interface";
 
@@ -74,8 +74,8 @@ export const useUIStore = create<UIStore>()(
 				tabPosition: state.tabPosition,
 				locale: state.locale,
 			}),
-		}
-	)
+		},
+	),
 );
 
 // ==============================

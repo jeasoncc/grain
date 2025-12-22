@@ -20,7 +20,9 @@
 
 import Dexie, { type Table } from "dexie";
 import logger from "@/log/index.ts";
-
+// Import types from new architecture
+import type { NodeInterface } from "@/types/node";
+import type { TagInterface } from "@/types/tag";
 // Import interfaces from schema (legacy types)
 import type {
 	AttachmentInterface,
@@ -29,12 +31,6 @@ import type {
 	ProjectInterface,
 	UserInterface,
 } from "./schema.ts";
-
-// Import NodeInterface from models (has tags field)
-import type { NodeInterface } from "./models/node";
-
-// Import tag interfaces
-import type { TagInterface } from "./models/tag";
 
 /**
  * Content type for the contents table
@@ -53,7 +49,6 @@ export interface ContentInterface {
 	contentType: ContentType;
 	lastEdit: string;
 }
-
 
 /**
  * Novel Editor Database Class
@@ -103,7 +98,8 @@ export class GrainDatabase extends Dexie {
 			projects: "id, title, owner",
 			tags: "id, workspace, name, category",
 			nodeTags: "id, nodeId, tagId, [nodeId+tagId]",
-			tagRelations: "id, workspace, sourceTagId, targetTagId, [sourceTagId+targetTagId]",
+			tagRelations:
+				"id, workspace, sourceTagId, targetTagId, [sourceTagId+targetTagId]",
 		});
 
 		// Version 9: Simplified tag system (org-mode style)

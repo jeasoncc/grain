@@ -30,7 +30,10 @@ interface LexicalNode {
  * Pure function - no side effects
  */
 export const parseTagString = (value: string): string[] =>
-	value.split(",").map((t) => t.trim()).filter(Boolean);
+	value
+		.split(",")
+		.map((t) => t.trim())
+		.filter(Boolean);
 
 /**
  * Check if a node is a TAGS front-matter node
@@ -71,7 +74,9 @@ const deduplicate = <T>(arr: T[]): T[] => [...new Set(arr)];
  * @param content - The serialized Lexical editor state
  * @returns Array of unique tag strings
  */
-export const extractTagsFromContent = (content: SerializedEditorState): string[] =>
+export const extractTagsFromContent = (
+	content: SerializedEditorState,
+): string[] =>
 	content.root
 		? deduplicate(collectTags(content.root as unknown as LexicalNode))
 		: [];

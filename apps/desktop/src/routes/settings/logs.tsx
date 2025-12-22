@@ -1,8 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useLiveQuery } from "dexie-react-hooks";
-import { useState, useMemo } from "react";
-import { Search, Trash2, Filter, AlertTriangle, Info, CheckCircle2, Bug, XCircle, Box } from "lucide-react";
-import { logDB, type LogEntry } from "@/db/log-db";
+import {
+	AlertTriangle,
+	Box,
+	Bug,
+	CheckCircle2,
+	Filter,
+	Info,
+	Search,
+	Trash2,
+	XCircle,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,6 +21,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { type LogEntry, logDB } from "@/db/log-db";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings/logs")({
@@ -60,17 +70,20 @@ function LogsSettingsPage() {
 
 	const logs = useLiveQuery(
 		() => logDB.logs.orderBy("id").reverse().toArray(),
-		[]
+		[],
 	);
 
 	const filteredLogs = useMemo(() => {
 		if (!logs) return [];
-		
+
 		return logs.filter((log) => {
 			if (levelFilter !== "all" && log.level !== levelFilter) {
 				return false;
 			}
-			if (searchQuery && !log.message.toLowerCase().includes(searchQuery.toLowerCase())) {
+			if (
+				searchQuery &&
+				!log.message.toLowerCase().includes(searchQuery.toLowerCase())
+			) {
 				return false;
 			}
 			return true;
@@ -88,12 +101,12 @@ function LogsSettingsPage() {
 		try {
 			return new Date(timestamp).toLocaleString(undefined, {
 				hour12: false,
-				year: 'numeric',
-				month: '2-digit',
-				day: '2-digit',
-				hour: '2-digit',
-				minute: '2-digit',
-				second: '2-digit'
+				year: "numeric",
+				month: "2-digit",
+				day: "2-digit",
+				hour: "2-digit",
+				minute: "2-digit",
+				second: "2-digit",
 			});
 		} catch {
 			return timestamp;
@@ -161,28 +174,40 @@ function LogsSettingsPage() {
 						</div>
 					) : filteredLogs.length === 0 ? (
 						<div className="p-12 text-center text-muted-foreground text-sm">
-							{logs.length === 0 ? "No logs available" : "No logs match your filter"}
+							{logs.length === 0
+								? "No logs available"
+								: "No logs match your filter"}
 						</div>
 					) : (
 						<div className="max-h-[600px] overflow-y-auto custom-scrollbar">
 							<table className="w-full text-xs font-mono">
 								<thead className="bg-muted/40 sticky top-0 z-10 backdrop-blur-sm">
 									<tr>
-										<th className="text-left px-4 py-3 font-medium text-muted-foreground w-[170px]">Time</th>
-										<th className="text-left px-4 py-3 font-medium text-muted-foreground w-[100px]">Level</th>
-										<th className="text-left px-4 py-3 font-medium text-muted-foreground">Message</th>
+										<th className="text-left px-4 py-3 font-medium text-muted-foreground w-[170px]">
+											Time
+										</th>
+										<th className="text-left px-4 py-3 font-medium text-muted-foreground w-[100px]">
+											Level
+										</th>
+										<th className="text-left px-4 py-3 font-medium text-muted-foreground">
+											Message
+										</th>
 									</tr>
 								</thead>
 								<tbody className="divide-y divide-border/50">
 									{filteredLogs.map((log) => (
-										<LogRow key={log.id} log={log} formatTimestamp={formatTimestamp} />
+										<LogRow
+											key={log.id}
+											log={log}
+											formatTimestamp={formatTimestamp}
+										/>
 									))}
 								</tbody>
 							</table>
 						</div>
 					)}
 				</div>
-				
+
 				<div className="text-xs text-muted-foreground px-1">
 					Total: {logs?.length ?? 0} | Filtered: {filteredLogs.length}
 				</div>
@@ -199,17 +224,19 @@ interface LogRowProps {
 function LogRow({ log, formatTimestamp }: LogRowProps) {
 	const levelColor = LOG_LEVEL_COLORS[log.level] || "text-foreground";
 	const Icon = LOG_ICONS[log.level] || Info;
-	
+
 	return (
 		<tr className="hover:bg-muted/30 transition-colors group">
 			<td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap opacity-70 group-hover:opacity-100">
 				{formatTimestamp(log.timestamp)}
 			</td>
 			<td className="px-4 py-2.5">
-				<span className={cn(
-					"inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm font-medium border border-transparent",
-					levelColor
-				)}>
+				<span
+					className={cn(
+						"inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm font-medium border border-transparent",
+						levelColor,
+					)}
+				>
 					<Icon className="size-3" />
 					{log.level}
 				</span>

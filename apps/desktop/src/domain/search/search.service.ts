@@ -5,19 +5,21 @@
  * Requirements: 1.2, 4.1, 6.2
  */
 
+import * as E from "fp-ts/Either";
 import lunr from "lunr";
 import {
-	ContentRepository,
-	NodeRepository,
-	WorkspaceRepository,
-	type NodeInterface,
-} from "@/db/models";
+	getAllNodes,
+	getContentsByNodeIds,
+	getNodesByWorkspace,
+	getWorkspaceById,
+} from "@/db";
 import logger from "@/log/index";
+import type { NodeInterface } from "@/types/node";
 import {
+	calculateSimpleScore,
+	extractHighlights,
 	extractTextFromContent,
 	generateExcerpt,
-	extractHighlights,
-	calculateSimpleScore,
 } from "./search.utils";
 
 export type SearchResultType = "project" | "node";
@@ -53,11 +55,15 @@ export class SearchEngine {
 
 		try {
 			// Get all nodes using Repository pattern
-			const nodes = await NodeRepository.getAll();
+			const nodesResult = await getAllNodes()();
+			const nodes: NodeInterface[] = E.isRight(nodesResult)
+				? nodesResult.right
+				: [];
 
 			// Load content from contents table for nodes
 			const nodeIds = nodes.map((n: NodeInterface) => n.id);
-			const contents = await ContentRepository.getByNodeIds(nodeIds);
+			const contentsResult = await getContentsByNodeIds(nodeIds)();
+			const contents = E.isRight(contentsResult) ? contentsResult.right : [];
 
 			// Build content map
 			this.nodeContents.clear();
@@ -99,7 +105,7 @@ export class SearchEngine {
 
 	async search(
 		query: string,
-		options: SearchOptions = {}
+		options: SearchOptions = {},
 	): Promise<SearchResult[]> {
 		if (!query.trim()) return [];
 		if (!this.nodeIndex) await this.buildIndex();
@@ -116,7 +122,8 @@ export class SearchEngine {
 					if (!node) continue;
 					if (workspaceId && node.workspace !== workspaceId) continue;
 
-					const workspace = await WorkspaceRepository.getById(node.workspace);
+					const wsResult = await getWorkspaceById(node.workspace)();
+					const workspace = E.isRight(wsResult) ? wsResult.right : null;
 					const contentStr = this.nodeContents.get(node.id) || "";
 					const content = extractTextFromContent(contentStr);
 
@@ -144,7 +151,7 @@ export class SearchEngine {
 
 	async simpleSearch(
 		query: string,
-		options: SearchOptions = {}
+		options: SearchOptions = {},
 	): Promise<SearchResult[]> {
 		if (!query.trim()) return [];
 
@@ -155,13 +162,19 @@ export class SearchEngine {
 		try {
 			if (types.includes("node")) {
 				// Use Repository pattern for node access
-				const nodes = workspaceId
-					? await NodeRepository.getByWorkspace(workspaceId)
-					: await NodeRepository.getAll();
+				let nodes: NodeInterface[];
+				if (workspaceId) {
+					const nodesResult = await getNodesByWorkspace(workspaceId)();
+					nodes = E.isRight(nodesResult) ? nodesResult.right : [];
+				} else {
+					const nodesResult = await getAllNodes()();
+					nodes = E.isRight(nodesResult) ? nodesResult.right : [];
+				}
 
 				// Get content for all nodes
 				const nodeIds = nodes.map((n: NodeInterface) => n.id);
-				const contents = await ContentRepository.getByNodeIds(nodeIds);
+				const contentsResult = await getContentsByNodeIds(nodeIds)();
+				const contents = E.isRight(contentsResult) ? contentsResult.right : [];
 				const contentMap = new Map(contents.map((c) => [c.nodeId, c.content]));
 
 				for (const node of nodes) {
@@ -173,7 +186,8 @@ export class SearchEngine {
 						content.toLowerCase().includes(lowerQuery) ||
 						tagsStr.toLowerCase().includes(lowerQuery)
 					) {
-						const workspace = await WorkspaceRepository.getById(node.workspace);
+						const wsResult = await getWorkspaceById(node.workspace)();
+						const workspace = E.isRight(wsResult) ? wsResult.right : null;
 						results.push({
 							id: node.id,
 							type: "node",

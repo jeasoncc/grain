@@ -15,7 +15,6 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import {
 	Dialog,
 	DialogContent,
@@ -26,18 +25,18 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
+import { triggerBlobDownload, triggerDownload } from "@/fn/export";
+import {
+	exportAllAsync as exportAll,
+	exportAllAsZipAsync as exportAllAsZip,
+	exportAsMarkdownAsync as exportAsMarkdown,
+} from "@/routes/actions";
 import {
 	type ExportFormat,
 	type ExportOptions,
 	exportProject,
 } from "@/services/export";
-import {
-	exportAll,
-	exportAllAsZip,
-	exportAsMarkdown,
-	triggerBlobDownload,
-	triggerDownload,
-} from "@/services/import-export";
 
 interface ExportDialogProps {
 	open: boolean;
@@ -98,7 +97,11 @@ export function ExportDialog({
 			onOpenChange(false);
 		} catch (error) {
 			console.error("Export error:", error);
-			toast.error(error instanceof Error ? error.message : "Export failed, please try again");
+			toast.error(
+				error instanceof Error
+					? error.message
+					: "Export failed, please try again",
+			);
 		} finally {
 			setIsExporting(false);
 		}
@@ -128,7 +131,9 @@ export function ExportDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-[700px] shadow-2xl border border-border/40 bg-popover/95 backdrop-blur-xl rounded-xl">
 				<DialogHeader>
-					<DialogTitle className="text-lg font-medium tracking-tight">Export Workspace</DialogTitle>
+					<DialogTitle className="text-lg font-medium tracking-tight">
+						Export Workspace
+					</DialogTitle>
 					<DialogDescription className="text-muted-foreground/80">
 						Select export format and options to save your work locally.
 					</DialogDescription>
@@ -137,10 +142,14 @@ export function ExportDialog({
 				<div className="space-y-6 py-4">
 					{/* Format Selection */}
 					<div className="space-y-3">
-						<Label className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold pl-1">
+						<Label
+							htmlFor="export-format"
+							className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold pl-1"
+						>
 							Export Format
 						</Label>
 						<RadioGroup
+							id="export-format"
 							value={format}
 							onValueChange={(v) => setFormat(v as ExtendedExportFormat)}
 							className="grid grid-cols-4 gap-3"
@@ -168,10 +177,14 @@ export function ExportDialog({
 									`}
 								>
 									<RadioGroupItem value={f} className="sr-only" />
-									<div className={`transition-transform duration-200 ${format === f ? "scale-125" : "group-hover:scale-110"}`}>
+									<div
+										className={`transition-transform duration-200 ${format === f ? "scale-125" : "group-hover:scale-110"}`}
+									>
 										{formatIcons[f]}
 									</div>
-									<div className={`text-xs font-medium ${format === f ? "text-primary" : "text-foreground"}`}>
+									<div
+										className={`text-xs font-medium ${format === f ? "text-primary" : "text-foreground"}`}
+									>
 										{formatLabels[f]}
 									</div>
 								</label>
@@ -182,9 +195,9 @@ export function ExportDialog({
 					{/* Export Options - Only show for formats that need options */}
 					{format !== "json" && format !== "zip" && (
 						<div className="space-y-3">
-							<Label className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold pl-1">
+							<span className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold pl-1">
 								Options
-							</Label>
+							</span>
 							<div className="space-y-1 bg-muted/20 p-2 rounded-xl border border-border/40">
 								<div className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-muted/30 transition-colors">
 									<Label

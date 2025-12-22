@@ -1,16 +1,16 @@
 /**
  * Clear Data Module
- * 
+ *
  * Provides data clearing functionality for IndexedDB, localStorage, etc.
  */
 
 export {
+	type ClearDataOptions,
+	clearAllData,
+	clearCaches,
+	clearCookies,
 	clearIndexedDB,
 	clearLocalStorage,
 	clearSessionStorage,
-	clearCookies,
-	clearCaches,
-	clearAllData,
 	getStorageStats,
-	type ClearDataOptions,
 } from "./clear-data.service";

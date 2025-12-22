@@ -1,6 +1,6 @@
 /**
  * Editor Tabs - Interface Definitions
- * 
+ *
  * 所有接口和类型定义放在这个文件中
  */
 

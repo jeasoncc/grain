@@ -1,26 +1,26 @@
 /**
  * Editor Tabs - Zustand Store with Immer
- * 
+ *
  * 使用 Zustand + Immer 实现不可变状态管理
  */
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
+import { EditorStateBuilder, EditorTabBuilder } from "./editor-tabs.builder";
 import type {
-	EditorTab,
 	EditorInstanceState,
+	EditorTab,
 	EditorTabsState,
 	OpenTabPayload,
 } from "./editor-tabs.interface";
 import {
-	createDefaultEditorState,
-	findTabByNodeId,
 	calculateNextActiveTabId,
+	createDefaultEditorState,
 	evictLRUEditorStates,
+	findTabByNodeId,
 	getTabsByWorkspace,
 } from "./editor-tabs.utils";
-import { EditorTabBuilder, EditorStateBuilder } from "./editor-tabs.builder";
 
 // ==============================
 // Store Actions Interface
@@ -38,7 +38,10 @@ interface EditorTabsActions {
 	reorderTabs: (fromIndex: number, toIndex: number) => void;
 
 	// Editor State Operations
-	updateEditorState: (tabId: string, state: Partial<EditorInstanceState>) => void;
+	updateEditorState: (
+		tabId: string,
+		state: Partial<EditorInstanceState>,
+	) => void;
 	getEditorState: (tabId: string) => EditorInstanceState | undefined;
 
 	// Workspace Operations
@@ -111,7 +114,7 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 						state.editorStates,
 						state.activeTabId,
 						openTabIds,
-						MAX_EDITOR_STATES
+						MAX_EDITOR_STATES,
 					);
 				});
 			},
@@ -125,7 +128,7 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 					state.activeTabId = calculateNextActiveTabId(
 						state.tabs,
 						tabId,
-						state.activeTabId
+						state.activeTabId,
 					);
 
 					// 移除标签和编辑器状态
@@ -199,7 +202,8 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 
 			updateEditorState: (tabId, updates) => {
 				set((state) => {
-					const existingState = state.editorStates[tabId] || createDefaultEditorState();
+					const existingState =
+						state.editorStates[tabId] || createDefaultEditorState();
 					state.editorStates[tabId] = {
 						...existingState,
 						...updates,
@@ -212,7 +216,7 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 						state.editorStates,
 						state.activeTabId,
 						openTabIds,
-						MAX_EDITOR_STATES
+						MAX_EDITOR_STATES,
 					);
 				});
 			},
@@ -231,8 +235,12 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 
 			closeTabsByWorkspace: (workspaceId) => {
 				set((state) => {
-					const tabsToClose = state.tabs.filter((t) => t.workspaceId === workspaceId);
-					const remainingTabs = state.tabs.filter((t) => t.workspaceId !== workspaceId);
+					const tabsToClose = state.tabs.filter(
+						(t) => t.workspaceId === workspaceId,
+					);
+					const remainingTabs = state.tabs.filter(
+						(t) => t.workspaceId !== workspaceId,
+					);
 
 					// 清理编辑器状态
 					for (const tab of tabsToClose) {
@@ -240,8 +248,12 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 					}
 
 					// 更新活动标签
-					if (state.activeTabId && tabsToClose.some((t) => t.id === state.activeTabId)) {
-						state.activeTabId = remainingTabs.length > 0 ? remainingTabs[0].id : null;
+					if (
+						state.activeTabId &&
+						tabsToClose.some((t) => t.id === state.activeTabId)
+					) {
+						state.activeTabId =
+							remainingTabs.length > 0 ? remainingTabs[0].id : null;
 					}
 
 					state.tabs = remainingTabs;
@@ -251,8 +263,8 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 		{
 			name: "grain-editor-tabs-v2",
 			partialize: () => ({}), // 不持久化任何状态
-		}
-	)
+		},
+	),
 );
 
 // ==============================

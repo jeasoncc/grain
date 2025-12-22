@@ -1,7 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
+import {
+	AppWindow,
+	Clock,
+	Globe,
+	Languages,
+	LayoutTemplate,
+	Monitor,
+	Save,
+	SpellCheck,
+} from "lucide-react";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
 	Select,
 	SelectContent,
@@ -9,19 +25,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { type TabPosition, useUIStore } from "@/domain/ui";
 import { useSettings } from "@/hooks/use-settings";
-import { useUIStore, type TabPosition } from "@/domain/ui";
-import { 
-	Globe, 
-	LayoutTemplate, 
-	Save, 
-	Clock, 
-	SpellCheck, 
-	Monitor,
-	Languages,
-	AppWindow
-} from "lucide-react";
 
 export const Route = createFileRoute("/settings/general")({
 	component: GeneralSettings,
@@ -49,7 +55,7 @@ function GeneralSettings() {
 					Configure general preferences for the application.
 				</p>
 			</div>
-			
+
 			<div className="grid gap-6">
 				{/* Application Preferences */}
 				<Card>
@@ -160,7 +166,9 @@ function GeneralSettings() {
 									<div className="flex items-center gap-3">
 										<Clock className="size-4 text-muted-foreground" />
 										<div className="space-y-0.5">
-											<Label className="text-sm font-normal">Save Interval</Label>
+											<Label className="text-sm font-normal">
+												Save Interval
+											</Label>
 											<p className="text-xs text-muted-foreground">
 												How often to save (in seconds).
 											</p>
@@ -170,7 +178,9 @@ function GeneralSettings() {
 										<Input
 											type="number"
 											value={autoSaveInterval}
-											onChange={(e) => setAutoSaveInterval(Number(e.target.value))}
+											onChange={(e) =>
+												setAutoSaveInterval(Number(e.target.value))
+											}
 											min={10}
 											max={3600}
 											className="h-8 w-20 text-center"

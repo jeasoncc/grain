@@ -2,17 +2,23 @@
  * Export按钮组件 - 简单的Export触发器
  */
 
+import {
+	BookOpen,
+	ChevronDown,
+	Download,
+	FileText,
+	FileType,
+} from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { 
+import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Download, FileText, FileType, BookOpen, ChevronDown } from "lucide-react";
-import { exportProject, type ExportFormat } from "@/services/export";
-import { toast } from "sonner";
+import { type ExportFormat, exportProject } from "@/services/export";
 
 interface ExportButtonProps {
 	workspaceId: string;
@@ -49,9 +55,13 @@ export function ExportButton({
 		setIsExporting(true);
 		try {
 			await exportProject(workspaceId, format);
-			toast.success(`Export successful: ${workspaceTitle || "workspace"}.${format}`);
+			toast.success(
+				`Export successful: ${workspaceTitle || "workspace"}.${format}`,
+			);
 		} catch (error) {
-			toast.error(`Export failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+			toast.error(
+				`Export failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
 		} finally {
 			setIsExporting(false);
 		}
@@ -60,7 +70,12 @@ export function ExportButton({
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button variant={variant} size={size} disabled={isExporting} className={className}>
+				<Button
+					variant={variant}
+					size={size}
+					disabled={isExporting}
+					className={className}
+				>
 					<Download className="h-4 w-4 mr-2" />
 					{isExporting ? "Exporting..." : "Export"}
 					<ChevronDown className="h-4 w-4 ml-2" />

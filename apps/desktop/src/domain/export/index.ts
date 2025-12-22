@@ -1,6 +1,6 @@
 /**
  * Export Domain
- * 
+ *
  * 文档导出功能（PDF、Word、TXT、EPUB）
  */
 
@@ -9,14 +9,14 @@
 // ============================================================================
 
 export {
+	type ExportFormat,
+	type ExportOptions,
+	escapeHtml,
 	extractTextFromContent,
 	extractTextFromNode,
-	escapeHtml,
-	generatePrintHtml,
 	generateEpubChapterHtml,
+	generatePrintHtml,
 	getNodeContents,
-	type ExportOptions,
-	type ExportFormat,
 } from "./export.utils";
 
 // ============================================================================
@@ -24,11 +24,11 @@ export {
 // ============================================================================
 
 export {
+	exportProject,
+	exportToEpub,
+	exportToPdf,
 	exportToTxt,
 	exportToWord,
-	exportToPdf,
-	exportToEpub,
-	exportProject,
 } from "./export.service";
 
 // ============================================================================
@@ -36,21 +36,21 @@ export {
 // ============================================================================
 
 export {
-	isTauriEnvironment,
-	selectExportDirectory,
-	saveToPath,
-	getDownloadsDirectory,
-	getExportSettings,
-	saveExportSettings,
-	getDefaultExportPath,
-	setDefaultExportPath,
-	getLastUsedPath,
-	setLastUsedPath,
 	clearDefaultExportPath,
+	type ExportPathService,
+	type ExportSettings,
 	exportPathService,
 	exportWithPathSelection,
-	type ExportSettings,
-	type ExportPathService,
+	getDefaultExportPath,
+	getDownloadsDirectory,
+	getExportSettings,
+	getLastUsedPath,
+	isTauriEnvironment,
+	saveExportSettings,
+	saveToPath,
+	selectExportDirectory,
+	setDefaultExportPath,
+	setLastUsedPath,
 } from "./export-path.service";
 
 // ============================================================================
@@ -58,6 +58,4 @@ export {
 // 用于 services/index.ts 的向后兼容导出
 // ============================================================================
 
-export {
-	extractTextFromNode as exportExtractTextFromNode,
-} from "./export.utils";
+export { extractTextFromNode as exportExtractTextFromNode } from "./export.utils";

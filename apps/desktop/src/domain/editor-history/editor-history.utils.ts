@@ -2,7 +2,10 @@
  * Editor History Domain - Pure Utility Functions
  */
 
-import type { EditorHistoryEntry, HistoryStack } from "./editor-history.interface";
+import type {
+	EditorHistoryEntry,
+	HistoryStack,
+} from "./editor-history.interface";
 import { MAX_HISTORY_SIZE } from "./editor-history.interface";
 
 // ============================================================================

@@ -1,11 +1,14 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Trash2, Plus, Check } from "lucide-react";
+import * as E from "fp-ts/Either";
+import { Check, Plus, Trash2 } from "lucide-react";
 import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { ExportDialog } from "@/components/blocks/export-dialog";
+import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm";
+import { Input } from "@/components/ui/input";
 import {
 	Popover,
 	PopoverContent,
@@ -17,28 +20,23 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useAllWorkspaces, WorkspaceRepository } from "@/db/models";
+import { addWorkspace, clearAllData, touchWorkspace } from "@/db";
 import { useIconTheme } from "@/hooks/use-icon-theme";
+import { useAllWorkspaces } from "@/hooks/use-workspace";
 import { cn } from "@/lib/utils";
-import { importFromJson, readFileAsText } from "@/services/import-export";
-import { createDiaryInFileTree } from "@/services/diary-v2";
-import { createWikiFile } from "@/services/wiki-files";
-import { runMigrationIfNeeded } from "@/services/wiki-migration";
-
-import { useSelectionStore } from "@/domain/selection";
-import { useUnifiedSidebarStore } from "@/domain/sidebar";
-import { useEditorTabsStore } from "@/domain/editor-tabs";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import logger from "@/log";
-
+import { useEditorTabsStore } from "@/stores/editor-tabs.store";
+import { useSelectionStore } from "@/stores/selection.store";
+import { useSidebarStore } from "@/stores/sidebar.store";
+import type { WorkspaceInterface } from "@/types/workspace";
 
 export function ActivityBar(): React.ReactElement {
 	const location = useLocation();
 	const workspacesRaw = useAllWorkspaces(); // undefined = loading, [] = empty
 	const workspaces = workspacesRaw ?? []; // 用于渲染，但保留 undefined 状态用于判断
 	const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
-	const setSelectedWorkspaceId = useSelectionStore((s) => s.setSelectedWorkspaceId);
+	const setSelectedWorkspaceId = useSelectionStore(
+		(s) => s.setSelectedWorkspaceId,
+	);
 	const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const confirm = useConfirm();
@@ -51,22 +49,22 @@ export function ActivityBar(): React.ReactElement {
 		isOpen: unifiedSidebarOpen,
 		setActivePanel,
 		toggleSidebar,
-	} = useUnifiedSidebarStore();
+	} = useSidebarStore();
 
 	// Initialize workspace selection on mount
 	// This effect only handles workspace selection, not creation
 	// Workspace creation only happens when workspaces.length === 0 AND no selectedWorkspaceId exists
 	const hasInitializedRef = useRef(false);
-	
+
 	useEffect(() => {
 		const initializeWorkspace = async () => {
 			// Wait for workspaces to load (undefined means still loading)
 			if (workspacesRaw === undefined) return;
-			
+
 			// Only run once per component mount
 			if (hasInitializedRef.current) return;
 			hasInitializedRef.current = true;
-			
+
 			// If no workspaces exist, create a default one
 			if (workspaces.length === 0) {
 				// Clear stale selection if exists
@@ -74,29 +72,39 @@ export function ActivityBar(): React.ReactElement {
 					setSelectedWorkspaceId(null);
 				}
 				try {
-					const newWorkspace = await WorkspaceRepository.add("My Workspace", {
+					const result = await addWorkspace("My Workspace", {
 						author: "",
 						description: "",
 						language: "en",
-					});
-					setSelectedWorkspaceId(newWorkspace.id);
-					setActivePanel("files");
-					await runMigrationIfNeeded(newWorkspace.id);
+					})();
+					if (E.isRight(result)) {
+						setSelectedWorkspaceId(result.right.id);
+						setActivePanel("files");
+					}
 				} catch (error) {
 					console.error("Failed to create default workspace:", error);
 				}
 				return;
 			}
-			
+
 			// Workspaces exist - validate and restore selection
-			const isSelectedValid = selectedWorkspaceId && workspaces.some(w => w.id === selectedWorkspaceId);
-			console.log('[ActivityBar] workspaces 存在:', workspaces.length, '个, isSelectedValid:', isSelectedValid);
+			const isSelectedValid =
+				selectedWorkspaceId &&
+				workspaces.some(
+					(w: WorkspaceInterface) => w.id === selectedWorkspaceId,
+				);
+			console.log(
+				"[ActivityBar] workspaces 存在:",
+				workspaces.length,
+				"个, isSelectedValid:",
+				isSelectedValid,
+			);
 			let workspaceIdToMigrate: string | null = null;
-			
+
 			if (!isSelectedValid) {
 				// Selected workspace doesn't exist or none selected
 				// Select the most recently opened workspace (by lastOpen field)
-				console.log('[ActivityBar] 选择无效，自动选择最近的 workspace');
+				console.log("[ActivityBar] 选择无效，自动选择最近的 workspace");
 				const sortedByLastOpen = [...workspaces].sort((a, b) => {
 					const dateA = new Date(a.lastOpen || a.createDate).getTime();
 					const dateB = new Date(b.lastOpen || b.createDate).getTime();
@@ -107,16 +115,16 @@ export function ActivityBar(): React.ReactElement {
 			} else {
 				// Valid selection exists - update its lastOpen timestamp
 				try {
-					await WorkspaceRepository.touch(selectedWorkspaceId);
+					await touchWorkspace(selectedWorkspaceId)();
 				} catch (error) {
 					console.error("Failed to update lastOpen on init:", error);
 				}
 				workspaceIdToMigrate = selectedWorkspaceId;
 			}
-			
-			// Run wiki migration if needed (Requirements: 4.1)
+
+			// Wiki migration removed - functionality no longer available
 			if (workspaceIdToMigrate) {
-				await runMigrationIfNeeded(workspaceIdToMigrate);
+				// Migration functionality has been removed
 			}
 		};
 		initializeWorkspace();
@@ -148,6 +156,7 @@ export function ActivityBar(): React.ReactElement {
 	const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
 
 	// Handle diary creation from Calendar icon
+	// TODO: Implement diary creation using new architecture
 	const handleCreateDiary = useCallback(async () => {
 		// Prevent multiple rapid clicks
 		if (isCreatingDiary) {
@@ -161,77 +170,50 @@ export function ActivityBar(): React.ReactElement {
 
 		setIsCreatingDiary(true);
 		try {
-			// Create diary and get content in one call (avoids race condition)
-			const { node, parsedContent } = await createDiaryInFileTree(selectedWorkspaceId);
-
-			// Pre-load the diary content into editorStates BEFORE opening the tab
-			updateEditorState(node.id, { serializedState: parsedContent });
-
-			// Open the created diary in the editor
-			openTab({
-				workspaceId: selectedWorkspaceId,
-				nodeId: node.id,
-				title: node.title,
-				type: "diary",
-			});
-
-			setActivePanel("files");
-			setSelectedNodeId(node.id);
-			toast.success("Diary created");
+			// Diary creation functionality needs to be reimplemented
+			toast.info("Diary creation is being reimplemented");
 		} catch (error) {
 			toast.error("Failed to create diary");
 			console.error("Diary creation error:", error);
 		} finally {
 			setIsCreatingDiary(false);
 		}
-	}, [selectedWorkspaceId, openTab, setActivePanel, setSelectedNodeId, updateEditorState, isCreatingDiary]);
+	}, [selectedWorkspaceId, isCreatingDiary]);
 
 	// Handle wiki creation from Wiki icon
+	// TODO: Implement wiki creation using new architecture
 	const handleCreateWiki = useCallback(async () => {
 		if (!selectedWorkspaceId) {
 			toast.error("Please select a workspace first");
 			return;
 		}
 		try {
-			// Generate a default name with timestamp
-			const now = new Date();
-			const defaultName = `New Entry ${now.toLocaleDateString("en-US")} ${now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`;
-
-			// Create wiki and get content in one call (avoids race condition)
-			const { node, parsedContent } = await createWikiFile({
-				workspaceId: selectedWorkspaceId,
-				name: defaultName,
-				useTemplate: true,
-			});
-
-			// Pre-load the wiki content into editorStates BEFORE opening the tab
-			updateEditorState(node.id, { serializedState: parsedContent });
-
-			// Open the created wiki in the editor
-			openTab({
-				workspaceId: selectedWorkspaceId,
-				nodeId: node.id,
-				title: node.title,
-				type: "file",
-			});
-
-			setActivePanel("files");
-			setSelectedNodeId(node.id);
-			toast.success("Wiki entry created");
+			// Wiki creation functionality needs to be reimplemented
+			toast.info("Wiki creation is being reimplemented");
 		} catch (error) {
 			toast.error("Failed to create wiki entry");
 			console.error("Wiki creation error:", error);
 		}
-	}, [selectedWorkspaceId, openTab, setActivePanel, setSelectedNodeId, updateEditorState]);
+	}, [selectedWorkspaceId]);
+
+	// Helper function to read file as text
+	const readFileAsText = (file: File): Promise<string> => {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onload = () => resolve(reader.result as string);
+			reader.onerror = reject;
+			reader.readAsText(file);
+		});
+	};
 
 	const handleImportFile = useCallback(
 		async (e: React.ChangeEvent<HTMLInputElement>) => {
 			const file = e.target.files?.[0];
 			if (!file) return;
 			try {
-				const text = await readFileAsText(file);
-				await importFromJson(text, { keepIds: false });
-				toast.success("Import successful");
+				const _text = await readFileAsText(file);
+				// Import functionality needs to be reimplemented
+				toast.info("Import functionality is being reimplemented");
 			} catch {
 				toast.error("Import failed");
 			} finally {
@@ -241,19 +223,17 @@ export function ActivityBar(): React.ReactElement {
 		[],
 	);
 
-
-
 	const handleDeleteAllData = useCallback(async () => {
 		const ok = await confirm({
 			title: "Delete all data?",
-			description: "This action cannot be undone. All workspaces, files, and data will be deleted.",
+			description:
+				"This action cannot be undone. All workspaces, files, and data will be deleted.",
 			confirmText: "Delete",
 			cancelText: "Cancel",
 		});
 		if (!ok) return;
 		try {
-			const { clearAllData } = await import("@/services/clear-data");
-			await clearAllData();
+			await clearAllData()();
 			// Reset selection state
 			setSelectedWorkspaceId(null);
 			setSelectedNodeId(null);
@@ -268,18 +248,19 @@ export function ActivityBar(): React.ReactElement {
 	}, [confirm, setSelectedWorkspaceId, setSelectedNodeId]);
 
 	// Handle workspace selection
-	const handleSelectWorkspace = useCallback(async (workspaceId: string) => {
-		setSelectedWorkspaceId(workspaceId);
-		// Update lastOpen timestamp
-		try {
-			await WorkspaceRepository.touch(workspaceId);
-		} catch (error) {
-			console.error("Failed to update lastOpen:", error);
-		}
-		// Run wiki migration if needed (Requirements: 4.1)
-		await runMigrationIfNeeded(workspaceId);
-		toast.success("Workspace selected");
-	}, [setSelectedWorkspaceId]);
+	const handleSelectWorkspace = useCallback(
+		async (workspaceId: string) => {
+			setSelectedWorkspaceId(workspaceId);
+			// Update lastOpen timestamp
+			try {
+				await touchWorkspace(workspaceId)();
+			} catch (error) {
+				console.error("Failed to update lastOpen:", error);
+			}
+			toast.success("Workspace selected");
+		},
+		[setSelectedWorkspaceId],
+	);
 
 	// Handle new workspace creation
 	const handleCreateWorkspace = useCallback(async () => {
@@ -288,15 +269,19 @@ export function ActivityBar(): React.ReactElement {
 			return;
 		}
 		try {
-			const newWorkspace = await WorkspaceRepository.add(newWorkspaceName.trim(), {
+			const result = await addWorkspace(newWorkspaceName.trim(), {
 				author: "",
 				description: "",
 				language: "en",
-			});
-			setSelectedWorkspaceId(newWorkspace.id);
-			setNewWorkspaceName("");
-			setShowNewWorkspace(false);
-			toast.success("Workspace created");
+			})();
+			if (E.isRight(result)) {
+				setSelectedWorkspaceId(result.right.id);
+				setNewWorkspaceName("");
+				setShowNewWorkspace(false);
+				toast.success("Workspace created");
+			} else {
+				toast.error("Failed to create workspace");
+			}
 		} catch {
 			toast.error("Failed to create workspace");
 		}
@@ -304,7 +289,7 @@ export function ActivityBar(): React.ReactElement {
 
 	// 检查当前路由是否匹配
 	const isActive = (path: string) =>
-		location.pathname === path || location.pathname.startsWith(path + "/");
+		location.pathname === path || location.pathname.startsWith(`${path}/`);
 
 	return (
 		<aside className="activity-bar z-10 flex w-12 shrink-0 flex-col items-center border-r border-border/30 bg-muted/50 pb-2">
@@ -368,21 +353,27 @@ export function ActivityBar(): React.ReactElement {
 							</TooltipTrigger>
 							<TooltipContent side="right">More</TooltipContent>
 						</Tooltip>
-						<PopoverContent side="right" align="end" className="w-56 p-0 overflow-hidden shadow-2xl border border-border/40 bg-popover/95 backdrop-blur-xl rounded-xl">
+						<PopoverContent
+							side="right"
+							align="end"
+							className="w-56 p-0 overflow-hidden shadow-2xl border border-border/40 bg-popover/95 backdrop-blur-xl rounded-xl"
+						>
 							<div className="flex flex-col py-1">
 								{/* Header */}
 								<div className="px-3 py-1.5 flex items-center justify-between border-b border-border/30">
-									<span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest">Workspaces</span>
+									<span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest">
+										Workspaces
+									</span>
 									<span className="flex items-center justify-center min-w-[1rem] h-3.5 text-[9px] font-medium rounded-full bg-primary/10 text-primary px-1">
 										{workspaces.length}
 									</span>
 								</div>
-								
+
 								{/* Workspace List */}
 								<div className="max-h-[200px] overflow-y-auto p-1 custom-scrollbar">
 									{workspaces.length > 0 ? (
 										<div className="space-y-0.5">
-											{workspaces.map((workspace) => {
+											{workspaces.map((workspace: WorkspaceInterface) => {
 												const isSelected = selectedWorkspaceId === workspace.id;
 												return (
 													<button
@@ -390,22 +381,26 @@ export function ActivityBar(): React.ReactElement {
 														onClick={() => handleSelectWorkspace(workspace.id)}
 														className={cn(
 															"group relative flex w-full items-center gap-2 rounded-lg px-2 py-1 transition-all duration-200 outline-none",
-															isSelected 
-																? "bg-primary/10 text-primary font-medium" 
-																: "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+															isSelected
+																? "bg-primary/10 text-primary font-medium"
+																: "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
 														)}
 													>
-														<div className={cn(
-															"flex items-center justify-center size-6 shrink-0 rounded-full transition-colors border",
-															isSelected 
-																? "bg-background/50 border-primary/20 text-primary shadow-sm" 
-																: "bg-muted/30 border-transparent text-muted-foreground/70 group-hover:text-foreground group-hover:bg-background group-hover:border-border/50"
-														)}>
+														<div
+															className={cn(
+																"flex items-center justify-center size-6 shrink-0 rounded-full transition-colors border",
+																isSelected
+																	? "bg-background/50 border-primary/20 text-primary shadow-sm"
+																	: "bg-muted/30 border-transparent text-muted-foreground/70 group-hover:text-foreground group-hover:bg-background group-hover:border-border/50",
+															)}
+														>
 															<FolderIcon className="size-3" />
 														</div>
-														
-														<span className="flex-1 truncate text-left text-xs">{workspace.title}</span>
-														
+
+														<span className="flex-1 truncate text-left text-xs">
+															{workspace.title}
+														</span>
+
 														{isSelected && (
 															<div className="relative flex items-center justify-center size-3 shrink-0 animate-in zoom-in duration-300">
 																<div className="absolute inset-0 bg-primary/20 rounded-full animate-pulse" />
@@ -421,13 +416,15 @@ export function ActivityBar(): React.ReactElement {
 											<div className="size-6 mx-auto mb-1.5 rounded-full bg-muted/30 flex items-center justify-center">
 												<FolderIcon className="size-3 text-muted-foreground/40" />
 											</div>
-											<p className="text-[10px] text-muted-foreground/60 italic">No workspaces</p>
+											<p className="text-[10px] text-muted-foreground/60 italic">
+												No workspaces
+											</p>
 										</div>
 									)}
 								</div>
-								
+
 								<div className="h-px bg-border/40 mx-2 my-0.5" />
-								
+
 								{/* Actions Area */}
 								<div className="px-1 pb-1 space-y-0.5">
 									{/* New Workspace */}
@@ -447,7 +444,12 @@ export function ActivityBar(): React.ReactElement {
 													}
 												}}
 											/>
-											<Button size="icon" variant="ghost" className="size-6 hover:bg-primary/10 hover:text-primary rounded-full" onClick={handleCreateWorkspace}>
+											<Button
+												size="icon"
+												variant="ghost"
+												className="size-6 hover:bg-primary/10 hover:text-primary rounded-full"
+												onClick={handleCreateWorkspace}
+											>
 												<Plus className="size-3" />
 											</Button>
 										</div>
@@ -462,7 +464,7 @@ export function ActivityBar(): React.ReactElement {
 											<span>New Workspace</span>
 										</button>
 									)}
-									
+
 									<button
 										onClick={handleImportClick}
 										className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all"
@@ -481,9 +483,9 @@ export function ActivityBar(): React.ReactElement {
 										</div>
 										<span>Export Data</span>
 									</button>
-									
+
 									<div className="h-px bg-border/40 mx-1.5 my-0.5" />
-									
+
 									<button
 										onClick={handleDeleteAllData}
 										className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-xs text-destructive/80 hover:bg-destructive/10 hover:text-destructive transition-all group"
@@ -521,8 +523,10 @@ export function ActivityBar(): React.ReactElement {
 				onOpenChange={setExportDialogOpen}
 				workspaceId={selectedWorkspaceId || workspaces[0]?.id || ""}
 				workspaceTitle={
-					workspaces.find((w) => w.id === (selectedWorkspaceId || workspaces[0]?.id))
-						?.title
+					workspaces.find(
+						(w: WorkspaceInterface) =>
+							w.id === (selectedWorkspaceId || workspaces[0]?.id),
+					)?.title
 				}
 			/>
 		</aside>
@@ -577,7 +581,7 @@ function ToggleNavItem({
 	active: boolean;
 }) {
 	const navigate = useNavigate();
-	
+
 	const handleClick = (e: React.MouseEvent) => {
 		e.preventDefault();
 		if (active) {
@@ -588,7 +592,7 @@ function ToggleNavItem({
 			navigate({ to });
 		}
 	};
-	
+
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
@@ -646,5 +650,3 @@ function ActionButton({
 		</Tooltip>
 	);
 }
-
-

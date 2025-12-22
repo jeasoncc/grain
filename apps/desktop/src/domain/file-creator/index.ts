@@ -1,6 +1,6 @@
 /**
  * File Creator Domain
- * 
+ *
  * Provides unified file creation in the file tree.
  */
 

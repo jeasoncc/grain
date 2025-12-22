@@ -1,0 +1,137 @@
+/**
+ * @file error.types.ts
+ * @description 应用错误类型定义
+ *
+ * 功能说明：
+ * - 定义 AppError 联合类型，用于函数式错误处理
+ * - 提供类型守卫函数，用于错误类型判断
+ * - 与 fp-ts Either 类型配合使用
+ */
+
+/**
+ * 应用错误联合类型
+ *
+ * 用于 fp-ts Either 类型的错误处理，所有可能失败的操作
+ * 都应该返回 Either<AppError, T> 类型
+ */
+export type AppError =
+	| { type: "VALIDATION_ERROR"; message: string; field?: string }
+	| { type: "DB_ERROR"; message: string }
+	| { type: "NOT_FOUND"; message: string; id?: string }
+	| { type: "CYCLE_ERROR"; message: string }
+	| { type: "EXPORT_ERROR"; message: string }
+	| { type: "IMPORT_ERROR"; message: string };
+
+/**
+ * 错误类型枚举，用于类型安全的错误创建
+ */
+export const ErrorType = {
+	VALIDATION_ERROR: "VALIDATION_ERROR",
+	DB_ERROR: "DB_ERROR",
+	NOT_FOUND: "NOT_FOUND",
+	CYCLE_ERROR: "CYCLE_ERROR",
+	EXPORT_ERROR: "EXPORT_ERROR",
+	IMPORT_ERROR: "IMPORT_ERROR",
+} as const;
+
+// ============================================================================
+// 类型守卫函数
+// ============================================================================
+
+/**
+ * 判断是否为验证错误
+ */
+export const isValidationError = (
+	e: AppError,
+): e is { type: "VALIDATION_ERROR"; message: string; field?: string } =>
+	e.type === "VALIDATION_ERROR";
+
+/**
+ * 判断是否为数据库错误
+ */
+export const isDbError = (
+	e: AppError,
+): e is { type: "DB_ERROR"; message: string } => e.type === "DB_ERROR";
+
+/**
+ * 判断是否为未找到错误
+ */
+export const isNotFoundError = (
+	e: AppError,
+): e is { type: "NOT_FOUND"; message: string; id?: string } =>
+	e.type === "NOT_FOUND";
+
+/**
+ * 判断是否为循环引用错误
+ */
+export const isCycleError = (
+	e: AppError,
+): e is { type: "CYCLE_ERROR"; message: string } => e.type === "CYCLE_ERROR";
+
+/**
+ * 判断是否为导出错误
+ */
+export const isExportError = (
+	e: AppError,
+): e is { type: "EXPORT_ERROR"; message: string } => e.type === "EXPORT_ERROR";
+
+/**
+ * 判断是否为导入错误
+ */
+export const isImportError = (
+	e: AppError,
+): e is { type: "IMPORT_ERROR"; message: string } => e.type === "IMPORT_ERROR";
+
+// ============================================================================
+// 错误创建辅助函数
+// ============================================================================
+
+/**
+ * 创建验证错误
+ */
+export const validationError = (message: string, field?: string): AppError => ({
+	type: "VALIDATION_ERROR",
+	message,
+	field,
+});
+
+/**
+ * 创建数据库错误
+ */
+export const dbError = (message: string): AppError => ({
+	type: "DB_ERROR",
+	message,
+});
+
+/**
+ * 创建未找到错误
+ */
+export const notFoundError = (message: string, id?: string): AppError => ({
+	type: "NOT_FOUND",
+	message,
+	id,
+});
+
+/**
+ * 创建循环引用错误
+ */
+export const cycleError = (message: string): AppError => ({
+	type: "CYCLE_ERROR",
+	message,
+});
+
+/**
+ * 创建导出错误
+ */
+export const exportError = (message: string): AppError => ({
+	type: "EXPORT_ERROR",
+	message,
+});
+
+/**
+ * 创建导入错误
+ */
+export const importError = (message: string): AppError => ({
+	type: "IMPORT_ERROR",
+	message,
+});

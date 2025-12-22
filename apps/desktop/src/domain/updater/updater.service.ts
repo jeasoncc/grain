@@ -69,7 +69,7 @@ export async function downloadAndInstall(
 	try {
 		const { check } = await import("@tauri-apps/plugin-updater");
 		const { relaunch } = await import("@tauri-apps/plugin-process");
-		
+
 		const update = await check();
 
 		if (!update) {
@@ -86,11 +86,13 @@ export async function downloadAndInstall(
 					contentLength = event.data.contentLength || 0;
 					console.log(`Started downloading ${contentLength} bytes`);
 					break;
-				case "Progress":
+				case "Progress": {
 					downloaded += event.data.chunkLength;
-					const progress = contentLength > 0 ? (downloaded / contentLength) * 100 : 0;
+					const progress =
+						contentLength > 0 ? (downloaded / contentLength) * 100 : 0;
 					onProgress?.(progress);
 					break;
+				}
 				case "Finished":
 					console.log("Download finished");
 					break;

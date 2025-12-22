@@ -18,15 +18,17 @@ import {
 	TextRun,
 } from "docx";
 import { saveAs } from "file-saver";
+import * as E from "fp-ts/Either";
 import JSZip from "jszip";
+import { getContentsByNodeIds } from "@/db";
 import { database } from "@/db/database";
-import { ContentRepository } from "@/db/models";
+import type { ContentInterface } from "@/types/content";
 import {
-	type ExportOptions,
 	type ExportFormat,
+	type ExportOptions,
 	escapeHtml,
-	generatePrintHtml,
 	generateEpubChapterHtml,
+	generatePrintHtml,
 	getNodeContents,
 } from "./export.utils";
 
@@ -54,16 +56,19 @@ async function getProjectContent(projectId: string) {
 		.toArray();
 
 	// 获取所有节点的内容
-	const nodeIds = nodes.map(n => n.id);
-	const contents = await ContentRepository.getByNodeIds(nodeIds);
-	const contentMap = new Map(contents.map(c => [c.nodeId, c.content]));
+	const nodeIds = nodes.map((n) => n.id);
+	const contentsResult = await getContentsByNodeIds(nodeIds)();
+	const contents: ContentInterface[] = E.isRight(contentsResult)
+		? contentsResult.right
+		: [];
+	const contentMap = new Map(contents.map((c) => [c.nodeId, c.content]));
 
 	// 按 order 排序
 	nodes.sort((a, b) => a.order - b.order);
 
 	// 构建树结构
-	const rootNodes = nodes.filter(n => !n.parent);
-	
+	const rootNodes = nodes.filter((n) => !n.parent);
+
 	return { project, nodes, rootNodes, contentMap };
 }
 
@@ -76,7 +81,8 @@ export async function exportToTxt(
 	options: ExportOptions = {},
 ): Promise<void> {
 	const opts = { ...defaultOptions, ...options };
-	const { project, nodes, rootNodes, contentMap } = await getProjectContent(projectId);
+	const { project, nodes, rootNodes, contentMap } =
+		await getProjectContent(projectId);
 
 	const lines: string[] = [];
 
@@ -101,7 +107,7 @@ export async function exportToTxt(
 	// 内容
 	for (const rootNode of rootNodes) {
 		const contents = getNodeContents(rootNode, nodes, contentMap);
-		
+
 		for (const { node, depth, text } of contents) {
 			if (opts.includeChapterTitles && depth === 0) {
 				lines.push("");
@@ -142,7 +148,8 @@ export async function exportToWord(
 	options: ExportOptions = {},
 ): Promise<void> {
 	const opts = { ...defaultOptions, ...options };
-	const { project, nodes, rootNodes, contentMap } = await getProjectContent(projectId);
+	const { project, nodes, rootNodes, contentMap } =
+		await getProjectContent(projectId);
 
 	const children: Paragraph[] = [];
 
@@ -172,7 +179,7 @@ export async function exportToWord(
 	let isFirst = true;
 	for (const rootNode of rootNodes) {
 		const contents = getNodeContents(rootNode, nodes, contentMap);
-		
+
 		for (const { node, depth, text } of contents) {
 			// 章节分页
 			if (opts.pageBreakBetweenChapters && depth === 0 && !isFirst) {
@@ -286,14 +293,24 @@ export async function exportToPdf(
 	options: ExportOptions = {},
 ): Promise<void> {
 	const opts = { ...defaultOptions, ...options };
-	const { project, nodes, rootNodes, contentMap } = await getProjectContent(projectId);
+	const { project, nodes, rootNodes, contentMap } =
+		await getProjectContent(projectId);
 
 	const printWindow = window.open("", "_blank");
 	if (!printWindow) {
-		throw new Error("Unable to open print window, please check browser popup settings");
+		throw new Error(
+			"Unable to open print window, please check browser popup settings",
+		);
 	}
 
-	const html = generatePrintHtml(project, nodes, rootNodes, contentMap, opts, getNodeContents);
+	const html = generatePrintHtml(
+		project,
+		nodes,
+		rootNodes,
+		contentMap,
+		opts,
+		getNodeContents,
+	);
 
 	printWindow.document.write(html);
 	printWindow.document.close();
@@ -314,7 +331,8 @@ export async function exportToEpub(
 	options: ExportOptions = {},
 ): Promise<void> {
 	const opts = { ...defaultOptions, ...options };
-	const { project, nodes, rootNodes, contentMap } = await getProjectContent(projectId);
+	const { project, nodes, rootNodes, contentMap } =
+		await getProjectContent(projectId);
 
 	const zip = new JSZip();
 	const bookId = `grain-${Date.now()}`;
@@ -349,10 +367,10 @@ export async function exportToEpub(
 	let chapterIndex = 0;
 	for (const rootNode of rootNodes) {
 		const contents = getNodeContents(rootNode, nodes, contentMap);
-		
+
 		for (const { node, depth, text } of contents) {
 			if (depth > 0 && !opts.includeSceneTitles) continue;
-			
+
 			chapterIndex++;
 			const chapterId = `chapter-${chapterIndex}`;
 			const filename = `${chapterId}.xhtml`;
@@ -376,13 +394,25 @@ export async function exportToEpub(
 	}
 
 	// 样式表
-	zip.file("OEBPS/styles.css", `body { font-family: serif; line-height: 1.8; } .title-page { text-align: center; padding-top: 30%; } .chapter-title { text-align: center; margin: 2em 0; } p { text-indent: 2em; }`);
+	zip.file(
+		"OEBPS/styles.css",
+		`body { font-family: serif; line-height: 1.8; } .title-page { text-align: center; padding-top: 30%; } .chapter-title { text-align: center; margin: 2em 0; } p { text-indent: 2em; }`,
+	);
 
 	// content.opf
-	const manifestItems = chapters.map((ch) => `<item id="${ch.id}" href="${ch.filename}" media-type="application/xhtml+xml"/>`).join("\n");
-	const spineItems = chapters.map((ch) => `<itemref idref="${ch.id}"/>`).join("\n");
+	const manifestItems = chapters
+		.map(
+			(ch) =>
+				`<item id="${ch.id}" href="${ch.filename}" media-type="application/xhtml+xml"/>`,
+		)
+		.join("\n");
+	const spineItems = chapters
+		.map((ch) => `<itemref idref="${ch.id}"/>`)
+		.join("\n");
 
-	zip.file("OEBPS/content.opf", `<?xml version="1.0" encoding="UTF-8"?>
+	zip.file(
+		"OEBPS/content.opf",
+		`<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="BookId">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:identifier id="BookId">${bookId}</dc:identifier>
@@ -395,9 +425,13 @@ export async function exportToEpub(
     ${manifestItems}
   </manifest>
   <spine>${spineItems}</spine>
-</package>`);
+</package>`,
+	);
 
-	const blob = await zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
+	const blob = await zip.generateAsync({
+		type: "blob",
+		mimeType: "application/epub+zip",
+	});
 	saveAs(blob, `${title}.epub`);
 }
 

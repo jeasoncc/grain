@@ -3,12 +3,15 @@
  *
  * 统一导出入口，提供向后兼容性。
  *
- * @deprecated 建议直接从 domain 模块导入：
+ * @deprecated 建议直接从新架构模块导入：
+ * - @/fn/export - 导出纯函数
+ * - @/fn/import - 导入纯函数
+ * - @/fn/content - 内容处理纯函数
+ * - @/routes/actions - Action 函数
  * - @/domain/diary - 日记功能
  * - @/domain/search - 搜索功能
  * - @/domain/export - 导出功能
- * - @/domain/import-export - 导入导出功能
- * - @/domain/keyboard - 键盘快捷键
+ * - @/fn/keyboard - 键盘快捷键
  * - @/domain/wiki - Wiki 功能
  * - @/domain/updater - 自动更新
  * - @/domain/file-creator - 文件创建
@@ -23,46 +26,62 @@
 // ============================================================================
 
 export * from "@/domain/diary";
-export * from "@/domain/search";
-export * from "@/domain/import-export";
-export * from "@/domain/keyboard";
-export * from "@/domain/wiki";
-export * from "@/domain/updater";
-export * from "@/domain/file-creator";
-
-// Save (仅导出 service，store 在 domain/save 中)
-export { saveService, type SaveResult, type SaveService } from "@/domain/save";
-
 // Export (排除 extractTextFromContent 避免与 search 模块冲突)
 export {
-	extractTextFromNode,
+	type ExportFormat,
+	type ExportOptions,
 	escapeHtml,
-	generatePrintHtml,
-	generateEpubChapterHtml,
-	getNodeContents,
+	exportProject,
+	exportToEpub,
+	exportToPdf,
 	exportToTxt,
 	exportToWord,
-	exportToPdf,
-	exportToEpub,
-	exportProject,
-	isTauriEnvironment,
-	selectExportDirectory,
-	saveToPath,
-	getDownloadsDirectory,
-	getExportSettings,
-	saveExportSettings,
-	getDefaultExportPath,
-	setDefaultExportPath,
-	getLastUsedPath,
-	setLastUsedPath,
+	extractTextFromNode,
+	generateEpubChapterHtml,
+	generatePrintHtml,
+	getNodeContents,
+} from "@/domain/export";
+export * from "@/domain/file-creator";
+export * from "@/domain/search";
+export * from "@/domain/updater";
+export * from "@/domain/wiki";
+// Export Path (从 fn/export 重新导出)
+export {
 	clearDefaultExportPath,
+	type ExportPathService,
+	type ExportSettings,
 	exportPathService,
 	exportWithPathSelection,
-	type ExportOptions,
-	type ExportFormat,
-	type ExportSettings,
-	type ExportPathService,
-} from "@/domain/export";
+	getDefaultExportPath,
+	getDownloadsDirectory,
+	getExportSettings,
+	getLastUsedPath,
+	isTauriEnvironment,
+	saveExportSettings,
+	saveToPath,
+	selectExportDirectory,
+	setDefaultExportPath,
+	setLastUsedPath,
+} from "@/fn/export";
+export * from "@/fn/keyboard";
+// Save (从 fn/save 重新导出)
+export {
+	type SaveResult,
+	type SaveServiceInterface as SaveService,
+	saveService,
+} from "@/fn/save";
+// Import-Export (从新架构重新导出)
+export {
+	type ExportBundle,
+	exportAll,
+	exportAllAsZip,
+	exportAsMarkdown,
+	extractText,
+	importFromJson,
+	readFileAsText,
+	triggerBlobDownload,
+	triggerDownload,
+} from "./import-export";
 
 // ============================================================================
 // Database 模块
@@ -70,15 +89,15 @@ export {
 
 // Backup (排除 clearAllData 避免与 clear-data 模块冲突)
 export {
+	AutoBackupManager,
+	autoBackupManager,
+	type BackupData,
+	type BackupMetadata,
 	createBackup,
 	exportBackup,
 	exportBackupZip,
-	restoreBackup,
 	getDatabaseStats,
-	AutoBackupManager,
-	autoBackupManager,
-	type BackupMetadata,
-	type BackupData,
+	restoreBackup,
 } from "@/db/backup";
 
 export * from "@/db/clear-data";

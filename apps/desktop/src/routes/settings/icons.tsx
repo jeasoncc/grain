@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useTheme } from "@/hooks/use-theme";
-import { useIconTheme } from "@/hooks/use-icon-theme";
 import {
 	Tooltip,
 	TooltipContent,
@@ -13,6 +11,8 @@ import {
 	type IconTheme,
 	iconThemes,
 } from "@/domain/icon-theme";
+import { useIconTheme } from "@/hooks/use-icon-theme";
+import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings/icons")({
@@ -38,14 +38,16 @@ function IconSettings() {
 					Customize the style and appearance of all icons in the app.
 				</p>
 			</div>
-			
+
 			<div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
 				{/* Left: Icon Theme Selection */}
 				<div className="lg:col-span-5 space-y-10">
 					<div className="space-y-4">
 						<div className="flex items-center gap-2 text-muted-foreground">
 							<Sparkles className="size-4" />
-							<h4 className="text-sm font-medium uppercase tracking-wider">Icon Themes</h4>
+							<h4 className="text-sm font-medium uppercase tracking-wider">
+								Icon Themes
+							</h4>
 						</div>
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 							{iconThemes.map((theme) => (
@@ -198,9 +200,11 @@ function IconSettings() {
 										<div className="space-y-8">
 											{/* File System Icons */}
 											<div className="space-y-3">
-												<h3 
+												<h3
 													className="text-xs font-semibold uppercase tracking-wider opacity-50 px-1"
-													style={{ color: currentTheme?.colors.mutedForeground }}
+													style={{
+														color: currentTheme?.colors.mutedForeground,
+													}}
 												>
 													File System
 												</h3>
@@ -231,9 +235,11 @@ function IconSettings() {
 
 											{/* Interface Icons */}
 											<div className="space-y-3">
-												<h3 
+												<h3
 													className="text-xs font-semibold uppercase tracking-wider opacity-50 px-1"
-													style={{ color: currentTheme?.colors.mutedForeground }}
+													style={{
+														color: currentTheme?.colors.mutedForeground,
+													}}
 												>
 													Interface
 												</h3>
@@ -298,63 +304,62 @@ function IconThemeCard({ theme, isActive, onSelect }: IconThemeCardProps) {
 
 	return (
 		<button
+			type="button"
 			onClick={onSelect}
 			className={cn(
-						"relative flex flex-col rounded-xl border overflow-hidden transition-all duration-300 text-left group",
-						"hover:shadow-lg hover:-translate-y-1 hover:border-primary/50",
-						isActive
-							? "border-primary ring-2 ring-primary/20 shadow-md bg-accent/5 scale-[1.02]"
-							: "border-border/40 bg-card",
-					)}
+				"relative flex flex-col rounded-xl border overflow-hidden transition-all duration-300 text-left group",
+				"hover:shadow-lg hover:-translate-y-1 hover:border-primary/50",
+				isActive
+					? "border-primary ring-2 ring-primary/20 shadow-md bg-accent/5 scale-[1.02]"
+					: "border-border/40 bg-card",
+			)}
+		>
+			{/* Icon Preview */}
+			<div
+				className={cn(
+					"h-16 w-full flex items-center justify-center gap-4 border-b border-border/10 transition-colors relative overflow-hidden",
+					isActive ? "bg-primary/5" : "bg-muted/30 group-hover:bg-muted/50",
+				)}
+			>
+				{/* Subtle Gradient Overlay */}
+				<div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/5 pointer-events-none" />
+
+				<div className="p-2 rounded-lg bg-background shadow-sm ring-1 ring-border/10 group-hover:scale-110 transition-transform duration-300 relative z-10">
+					<ProjectIcon className="size-5 text-foreground/80" />
+				</div>
+				<div className="p-2 rounded-lg bg-background shadow-sm ring-1 ring-border/10 group-hover:scale-110 transition-transform duration-300 delay-75 relative z-10">
+					<FolderIcon className="size-5 text-foreground/80" />
+				</div>
+				<div className="p-2 rounded-lg bg-background shadow-sm ring-1 ring-border/10 group-hover:scale-110 transition-transform duration-300 delay-150 relative z-10">
+					<FileIcon className="size-5 text-foreground/80" />
+				</div>
+			</div>
+
+			{/* Theme Info */}
+			<div
+				className={cn(
+					"px-4 py-3 transition-colors w-full",
+					isActive ? "bg-primary/5" : "bg-transparent",
+				)}
+			>
+				<div className="text-sm font-semibold text-card-foreground mb-1 group-hover:text-primary transition-colors">
+					{theme.name}
+				</div>
+				<p className="text-[10px] text-muted-foreground line-clamp-1 opacity-70">
+					{theme.description}
+				</p>
+			</div>
+
+			{/* Selection Indicator */}
+			{isActive && (
+				<div
+					className="absolute top-2 right-2 size-5 rounded-full flex items-center justify-center shadow-sm animate-in fade-in zoom-in duration-200"
+					style={{ background: "hsl(var(--primary))" }}
 				>
-					{/* Icon Preview */}
-					<div
-						className={cn(
-							"h-16 w-full flex items-center justify-center gap-4 border-b border-border/10 transition-colors relative overflow-hidden",
-							isActive
-								? "bg-primary/5"
-								: "bg-muted/30 group-hover:bg-muted/50",
-						)}
-					>
-						{/* Subtle Gradient Overlay */}
-						<div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/5 pointer-events-none" />
-
-						<div className="p-2 rounded-lg bg-background shadow-sm ring-1 ring-border/10 group-hover:scale-110 transition-transform duration-300 relative z-10">
-							<ProjectIcon className="size-5 text-foreground/80" />
-						</div>
-						<div className="p-2 rounded-lg bg-background shadow-sm ring-1 ring-border/10 group-hover:scale-110 transition-transform duration-300 delay-75 relative z-10">
-							<FolderIcon className="size-5 text-foreground/80" />
-						</div>
-						<div className="p-2 rounded-lg bg-background shadow-sm ring-1 ring-border/10 group-hover:scale-110 transition-transform duration-300 delay-150 relative z-10">
-							<FileIcon className="size-5 text-foreground/80" />
-						</div>
-					</div>
-
-					{/* Theme Info */}
-					<div
-						className={cn(
-							"px-4 py-3 transition-colors w-full",
-							isActive ? "bg-primary/5" : "bg-transparent",
-						)}
-					>
-						<div className="text-sm font-semibold text-card-foreground mb-1 group-hover:text-primary transition-colors">
-							{theme.name}
-						</div>
-						<p className="text-[10px] text-muted-foreground line-clamp-1 opacity-70">
-							{theme.description}
-						</p>
-					</div>
-
-					{/* Selection Indicator */}
-					{isActive && (
-						<div
-							className="absolute top-2 right-2 size-5 rounded-full flex items-center justify-center shadow-sm animate-in fade-in zoom-in duration-200"
-							style={{ background: "hsl(var(--primary))" }}
-						>
-							<Check className="size-3 text-primary-foreground" />
-						</div>
-					)}
-				</button>
+					<Check className="size-3 text-primary-foreground" />
+				</div>
+			)}
+		</button>
 	);
 }
 
@@ -387,11 +392,18 @@ function FileItem({
 					: currentTheme?.colors.sidebarForeground,
 			}}
 		>
-			<Icon 
-				className="size-4 shrink-0" 
-				style={{ 
-					color: label.includes("Book") || label.includes("Character") ? currentTheme?.colors.folderColor : undefined,
-					fill: (label.includes("Book") || label.includes("Character")) && currentTheme?.colors.folderColor ? `${currentTheme.colors.folderColor}1A` : undefined
+			<Icon
+				className="size-4 shrink-0"
+				style={{
+					color:
+						label.includes("Book") || label.includes("Character")
+							? currentTheme?.colors.folderColor
+							: undefined,
+					fill:
+						(label.includes("Book") || label.includes("Character")) &&
+						currentTheme?.colors.folderColor
+							? `${currentTheme.colors.folderColor}1A`
+							: undefined,
 				}}
 			/>
 			<span className="truncate">{label}</span>
@@ -445,15 +457,13 @@ function ActivityBarIconItem({
 	const { currentTheme } = useTheme();
 
 	return (
-		<div
-			className="group flex flex-col items-center justify-center gap-2 p-2 rounded-xl transition-all duration-200 hover:bg-muted/20 hover:scale-105 cursor-default"
-		>
+		<div className="group flex flex-col items-center justify-center gap-2 p-2 rounded-xl transition-all duration-200 hover:bg-muted/20 hover:scale-105 cursor-default">
 			<div className="p-2 rounded-lg bg-muted/10 group-hover:bg-muted/20 transition-colors">
 				<Icon
 					className="size-5 transition-transform group-hover:-translate-y-0.5 duration-300"
-					style={{ 
+					style={{
 						color: color || currentTheme?.colors.foreground,
-						fill: color ? `${color}1A` : undefined
+						fill: color ? `${color}1A` : undefined,
 					}}
 				/>
 			</div>

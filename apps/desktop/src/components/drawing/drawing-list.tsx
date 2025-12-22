@@ -5,12 +5,16 @@
 import { PenTool, Plus, Search } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import logger from "@/log";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { createDrawing, deleteDrawing, useDrawingsByWorkspace } from "@/services/drawings";
 import type { DrawingInterface } from "@/db/schema";
+import logger from "@/log";
+import {
+	createDrawing,
+	deleteDrawing,
+	useDrawingsByWorkspace,
+} from "@/services/drawings";
 
 interface DrawingListProps {
 	workspaceId: string | null;
@@ -28,7 +32,7 @@ export function DrawingList({
 
 	// Filter drawings based on search
 	const filteredDrawings = drawings.filter((drawing) =>
-		drawing.name.toLowerCase().includes(searchQuery.toLowerCase())
+		drawing.name.toLowerCase().includes(searchQuery.toLowerCase()),
 	);
 
 	// Create new drawing
@@ -162,15 +166,13 @@ function DrawingListItem({
 				onDelete();
 			}
 		},
-		[drawing.name, onDelete]
+		[drawing.name, onDelete],
 	);
 
 	return (
 		<div
 			className={`group flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors ${
-				isSelected
-					? "bg-primary/10 text-primary"
-					: "hover:bg-muted/50"
+				isSelected ? "bg-primary/10 text-primary" : "hover:bg-muted/50"
 			}`}
 			onClick={onSelect}
 		>

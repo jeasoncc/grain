@@ -8,7 +8,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import type { SelectionState, SelectionActions } from "./selection.interface";
+import type { SelectionActions, SelectionState } from "./selection.interface";
 import { DEFAULT_SELECTION_CONFIG } from "./selection.interface";
 
 // ==============================
@@ -59,8 +59,8 @@ export const useSelectionStore = create<SelectionStore>()(
 				// Only persist workspace selection, not node selection
 				selectedWorkspaceId: state.selectedWorkspaceId,
 			}),
-		}
-	)
+		},
+	),
 );
 
 // ==============================
@@ -87,7 +87,9 @@ export const useSelectedNodeId = (): string | null => {
  * Check if a specific workspace is selected.
  */
 export const useIsWorkspaceSelected = (workspaceId: string): boolean => {
-	return useSelectionStore((state) => state.selectedWorkspaceId === workspaceId);
+	return useSelectionStore(
+		(state) => state.selectedWorkspaceId === workspaceId,
+	);
 };
 
 /**
@@ -102,6 +104,7 @@ export const useIsNodeSelected = (nodeId: string): boolean => {
  */
 export const useHasSelection = (): boolean => {
 	return useSelectionStore(
-		(state) => state.selectedWorkspaceId !== null || state.selectedNodeId !== null
+		(state) =>
+			state.selectedWorkspaceId !== null || state.selectedNodeId !== null,
 	);
 };

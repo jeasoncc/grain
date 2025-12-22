@@ -7,9 +7,9 @@
  * - Does not modify input parameters
  */
 
+import { applyTheme, type Theme } from "@/lib/themes";
 import type { ThemeMode } from "./theme.interface";
 import { DEFAULT_THEME_CONFIG } from "./theme.interface";
-import { applyTheme, type Theme } from "@/lib/themes";
 
 // ==============================
 // System Theme Detection
@@ -41,7 +41,7 @@ export const getSystemTheme = (): "light" | "dark" => {
  */
 export const applyThemeWithTransition = (
 	theme: Theme,
-	enableTransition: boolean
+	enableTransition: boolean,
 ): void => {
 	const root = document.documentElement;
 
@@ -118,7 +118,7 @@ export const getDefaultThemeKey = (type: "light" | "dark"): string => {
  */
 export const isThemeTypeMatch = (
 	theme: Theme,
-	expectedType: "light" | "dark"
+	expectedType: "light" | "dark",
 ): boolean => {
 	return theme.type === expectedType;
 };

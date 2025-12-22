@@ -5,7 +5,7 @@
  * Requirements: 1.1, 3.1, 3.2, 3.3
  */
 
-import type { WorkspaceInterface, NodeInterface } from "@/db/models";
+import type { NodeInterface, WorkspaceInterface } from "@/types";
 
 /**
  * Export options for customizing output format.
@@ -93,8 +93,8 @@ export function generatePrintHtml(
 		node: NodeInterface,
 		allNodes: NodeInterface[],
 		contentMap: Map<string, string>,
-		depth?: number
-	) => Array<{ node: NodeInterface; depth: number; text: string }>
+		depth?: number,
+	) => Array<{ node: NodeInterface; depth: number; text: string }>,
 ): string {
 	let content = "";
 
@@ -160,7 +160,10 @@ export function generatePrintHtml(
  * @param content - The HTML content for the chapter body
  * @returns Complete XHTML document string for EPUB
  */
-export function generateEpubChapterHtml(title: string, content: string): string {
+export function generateEpubChapterHtml(
+	title: string,
+	content: string,
+): string {
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -181,9 +184,10 @@ export function getNodeContents(
 	node: NodeInterface,
 	allNodes: NodeInterface[],
 	contentMap: Map<string, string>,
-	depth: number = 0
+	depth: number = 0,
 ): Array<{ node: NodeInterface; depth: number; text: string }> {
-	const results: Array<{ node: NodeInterface; depth: number; text: string }> = [];
+	const results: Array<{ node: NodeInterface; depth: number; text: string }> =
+		[];
 
 	// Only process file-type nodes
 	if (node.type === "file" || node.type === "diary") {

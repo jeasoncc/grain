@@ -1,27 +1,42 @@
 /**
  * 保存状态指示器 - 支持手动和自动保存状态显示
+ *
+ * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  */
 import { AlertCircle, Check, Loader2, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useSaveStore } from "@/domain/save";
 
-interface SaveStatusIndicatorProps {
-	className?: string;
-	showLastSaveTime?: boolean;
+/**
+ * SaveStatusIndicator Props 接口
+ *
+ * 纯展示组件：所有数据通过 props 传入
+ */
+export interface SaveStatusIndicatorProps {
+	/** 样式类名 */
+	readonly className?: string;
+	/** 是否显示最后保存时间 */
+	readonly showLastSaveTime?: boolean;
+	/** 保存状态 */
+	readonly status: "saved" | "saving" | "error" | "unsaved";
+	/** 最后保存时间戳 */
+	readonly lastSaveTime: number | null;
+	/** 错误信息 */
+	readonly errorMessage: string | null;
+	/** 是否有未保存的更改 */
+	readonly hasUnsavedChanges: boolean;
+	/** 是否正在手动保存 */
+	readonly isManualSaving: boolean;
 }
 
 export function SaveStatusIndicator({
 	className,
 	showLastSaveTime = false,
+	status,
+	lastSaveTime,
+	errorMessage,
+	hasUnsavedChanges,
+	isManualSaving,
 }: SaveStatusIndicatorProps) {
-	const {
-		status,
-		lastSaveTime,
-		errorMessage,
-		hasUnsavedChanges,
-		isManualSaving,
-	} = useSaveStore();
-
 	const getStatusDisplay = () => {
 		if (isManualSaving) {
 			return {

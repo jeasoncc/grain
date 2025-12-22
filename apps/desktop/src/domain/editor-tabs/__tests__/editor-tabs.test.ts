@@ -7,35 +7,44 @@
  * - LRU cache eviction logic
  */
 
-import { describe, it, expect } from "vitest";
 import * as fc from "fast-check";
+import { describe, expect, it } from "vitest";
 import {
-	EditorTabBuilder,
-	EditorStateBuilder,
-	createFileTab,
-	createDiaryTab,
 	createCanvasTab,
+	createDiaryTab,
+	createFileTab,
+	EditorStateBuilder,
+	EditorTabBuilder,
 } from "../editor-tabs.builder";
+import type {
+	EditorInstanceState,
+	EditorTab,
+	TabType,
+} from "../editor-tabs.interface";
 import {
+	addTab,
+	calculateNextActiveTabId,
+	createDefaultEditorState,
+	evictLRUEditorStates,
 	findTabByNodeId,
 	getTabsByWorkspace,
-	calculateNextActiveTabId,
-	addTab,
-	removeTab,
-	updateTab,
-	reorderTabs,
-	evictLRUEditorStates,
 	isValidTab,
 	isValidTabIndex,
-	createDefaultEditorState,
+	removeTab,
+	reorderTabs,
+	updateTab,
 } from "../editor-tabs.utils";
-import type { EditorTab, EditorInstanceState, TabType } from "../editor-tabs.interface";
 
 // ==============================
 // Arbitraries
 // ==============================
 
-const tabTypeArb = fc.constantFrom<TabType>("file", "diary", "canvas", "folder");
+const tabTypeArb = fc.constantFrom<TabType>(
+	"file",
+	"diary",
+	"canvas",
+	"folder",
+);
 
 const editorTabArb: fc.Arbitrary<EditorTab> = fc.record({
 	id: fc.uuid(),
@@ -59,7 +68,13 @@ describe("Property 4: Builder Method Chaining", () => {
 				fc.string({ minLength: 1 }),
 				tabTypeArb,
 				fc.boolean(),
-				(workspaceId: string, nodeId: string, title: string, type: TabType, isDirty: boolean) => {
+				(
+					workspaceId: string,
+					nodeId: string,
+					title: string,
+					type: TabType,
+					isDirty: boolean,
+				) => {
 					const builder = EditorTabBuilder.create();
 
 					// Each method should return the builder instance
@@ -68,9 +83,9 @@ describe("Property 4: Builder Method Chaining", () => {
 					expect(builder.title(title)).toBe(builder);
 					expect(builder.type(type)).toBe(builder);
 					expect(builder.dirty(isDirty)).toBe(builder);
-				}
+				},
 			),
-			{ numRuns: 50 }
+			{ numRuns: 50 },
 		);
 	});
 
@@ -86,9 +101,9 @@ describe("Property 4: Builder Method Chaining", () => {
 					expect(builder.scrollPosition(scrollTop, scrollLeft)).toBe(builder);
 					expect(builder.dirty(isDirty)).toBe(builder);
 					expect(builder.touch()).toBe(builder);
-				}
+				},
 			),
-			{ numRuns: 50 }
+			{ numRuns: 50 },
 		);
 	});
 
@@ -113,9 +128,9 @@ describe("Property 4: Builder Method Chaining", () => {
 					expect(tab.title).toBe(title);
 					expect(tab.type).toBe(type);
 					expect(tab.isDirty).toBe(true);
-				}
+				},
 			),
-			{ numRuns: 50 }
+			{ numRuns: 50 },
 		);
 	});
 });
@@ -139,7 +154,7 @@ describe("Property 5: Builder From Method Round Trip", () => {
 				expect(rebuilt.type).toBe(tab.type);
 				expect(rebuilt.isDirty).toBe(tab.isDirty);
 			}),
-			{ numRuns: 50 }
+			{ numRuns: 50 },
 		);
 	});
 });
@@ -182,9 +197,9 @@ describe("Property 6: Builder Validation", () => {
 
 					expect(tab).toBeDefined();
 					expect(tab.id).toBe(nodeId);
-				}
+				},
 			),
-			{ numRuns: 50 }
+			{ numRuns: 50 },
 		);
 	});
 });
@@ -242,9 +257,9 @@ describe("Pure Functions: No Mutation", () => {
 					expect(tabs).toEqual(original);
 					expect(result).not.toBe(tabs);
 					expect(result.length).toBe(tabs.length + 1);
-				}
+				},
 			),
-			{ numRuns: 50 }
+			{ numRuns: 50 },
 		);
 	});
 
@@ -259,9 +274,9 @@ describe("Pure Functions: No Mutation", () => {
 
 					expect(tabs).toEqual(original);
 					expect(result).not.toBe(tabs);
-				}
+				},
 			),
-			{ numRuns: 50 }
+			{ numRuns: 50 },
 		);
 	});
 
@@ -277,9 +292,9 @@ describe("Pure Functions: No Mutation", () => {
 
 					expect(tabs).toEqual(original);
 					expect(result).not.toBe(tabs);
-				}
+				},
 			),
-			{ numRuns: 50 }
+			{ numRuns: 50 },
 		);
 	});
 
@@ -293,9 +308,9 @@ describe("Pure Functions: No Mutation", () => {
 
 					expect(tabs).toEqual(original);
 					expect(result).not.toBe(tabs);
-				}
+				},
 			),
-			{ numRuns: 50 }
+			{ numRuns: 50 },
 		);
 	});
 });
@@ -315,9 +330,9 @@ describe("Pure Functions: Consistent Output", () => {
 					const result2 = findTabByNodeId(tabs, nodeId);
 
 					expect(result1).toEqual(result2);
-				}
+				},
 			),
-			{ numRuns: 50 }
+			{ numRuns: 50 },
 		);
 	});
 
@@ -333,9 +348,9 @@ describe("Pure Functions: Consistent Output", () => {
 					const result2 = calculateNextActiveTabId(tabs, closedId, activeId);
 
 					expect(result1).toBe(result2);
-				}
+				},
 			),
-			{ numRuns: 50 }
+			{ numRuns: 50 },
 		);
 	});
 
@@ -351,9 +366,9 @@ describe("Pure Functions: Consistent Output", () => {
 					for (const tab of result) {
 						expect(tab.workspaceId).toBe(workspaceId);
 					}
-				}
+				},
 			),
-			{ numRuns: 50 }
+			{ numRuns: 50 },
 		);
 	});
 });
@@ -403,8 +418,16 @@ describe("LRU Cache Eviction", () => {
 
 	it("does not evict dirty states", () => {
 		const states: Record<string, EditorInstanceState> = {
-			"tab-1": { ...createDefaultEditorState(), lastModified: 1000, isDirty: true },
-			"tab-2": { ...createDefaultEditorState(), lastModified: 2000, isDirty: false },
+			"tab-1": {
+				...createDefaultEditorState(),
+				lastModified: 1000,
+				isDirty: true,
+			},
+			"tab-2": {
+				...createDefaultEditorState(),
+				lastModified: 2000,
+				isDirty: false,
+			},
 		};
 
 		const result = evictLRUEditorStates(states, null, new Set(), 1);
@@ -437,7 +460,7 @@ describe("Validation Functions", () => {
 			fc.property(editorTabArb, (tab: EditorTab) => {
 				expect(isValidTab(tab)).toBe(true);
 			}),
-			{ numRuns: 50 }
+			{ numRuns: 50 },
 		);
 	});
 
@@ -453,7 +476,7 @@ describe("Validation Functions", () => {
 				nodeId: "node",
 				title: "t",
 				type: "invalid",
-			})
+			}),
 		).toBe(false);
 	});
 
@@ -466,9 +489,9 @@ describe("Validation Functions", () => {
 					const isValid = isValidTabIndex(tabs, index);
 					const expected = index >= 0 && index < tabs.length;
 					expect(isValid).toBe(expected);
-				}
+				},
 			),
-			{ numRuns: 50 }
+			{ numRuns: 50 },
 		);
 	});
 });

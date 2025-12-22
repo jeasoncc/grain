@@ -4,23 +4,23 @@
 
 // Types
 export type {
-	EditorHistoryEntry,
-	EditorHistoryState,
 	EditorHistoryActions,
+	EditorHistoryEntry,
 	EditorHistoryQueries,
+	EditorHistoryState,
 	EditorHistoryStore,
 	HistoryStack,
 } from "./editor-history.interface";
 
 // Constants
 export {
-	MAX_HISTORY_SIZE,
 	EDITOR_HISTORY_STORAGE_KEY,
+	MAX_HISTORY_SIZE,
 } from "./editor-history.interface";
 
 // Store and hooks
 export {
-	useEditorHistoryStore,
 	useCurrentNodeId,
 	useEditorHistory,
+	useEditorHistoryStore,
 } from "./editor-history.store";

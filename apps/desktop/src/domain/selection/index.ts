@@ -9,11 +9,11 @@
 // ==============================
 
 export type {
-	SelectionState,
 	SelectionActions,
-	SetWorkspacePayload,
-	SetNodePayload,
 	SelectionConfig,
+	SelectionState,
+	SetNodePayload,
+	SetWorkspacePayload,
 } from "./selection.interface";
 
 export { DEFAULT_SELECTION_CONFIG } from "./selection.interface";
@@ -23,10 +23,10 @@ export { DEFAULT_SELECTION_CONFIG } from "./selection.interface";
 // ==============================
 
 export {
-	useSelectionStore,
-	useSelectedWorkspaceId,
-	useSelectedNodeId,
-	useIsWorkspaceSelected,
-	useIsNodeSelected,
 	useHasSelection,
+	useIsNodeSelected,
+	useIsWorkspaceSelected,
+	useSelectedNodeId,
+	useSelectedWorkspaceId,
+	useSelectionStore,
 } from "./selection.store";

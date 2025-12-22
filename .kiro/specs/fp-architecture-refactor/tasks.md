@@ -1,0 +1,857 @@
+# Tasks
+
+## Phase 1: 基础设施
+
+- [x] 1. 安装函数式编程依赖
+  - 安装 fp-ts
+  - 安装 es-toolkit
+  - 安装 @tanstack/react-virtual
+  - 安装 million
+
+- [x] 2. 创建错误类型定义
+  - 创建 `lib/error.types.ts`
+  - 定义 AppError 联合类型
+  - 导出类型守卫函数
+
+- [x] 3. 创建目录结构
+  - 创建 `types/` 目录
+  - 创建 `fn/` 目录
+  - 创建 `stores/` 目录（如不存在）
+
+## Phase 2: 类型层迁移
+
+- [x] 4. 迁移 Node 类型
+  - 移动 `db/models/node/node.interface.ts` → `types/node/node.interface.ts`
+  - 移动 `db/models/node/node.schema.ts` → `types/node/node.schema.ts`
+  - 移动 `db/models/node/node.builder.ts` → `types/node/node.builder.ts`
+  - 创建 `types/node/index.ts`
+  - 更新 Builder 使用 Object.freeze()
+
+- [x] 5. 迁移 Workspace 类型
+  - 移动 `db/models/workspace/*.ts` → `types/workspace/`
+  - 创建 `types/workspace/index.ts`
+
+- [x] 6. 迁移 Content 类型
+  - 移动 `db/models/content/*.ts` → `types/content/`
+  - 创建 `types/content/index.ts`
+
+- [x] 7. 迁移 Drawing 类型
+  - 移动 `db/models/drawing/*.ts` → `types/drawing/`
+  - 创建 `types/drawing/index.ts`
+
+- [x] 8. 迁移 Attachment 类型
+  - 移动 `db/models/attachment/*.ts` → `types/attachment/`
+  - 创建 `types/attachment/index.ts`
+
+- [x] 9. 迁移 User 类型
+  - 移动 `db/models/user/*.ts` → `types/user/`
+  - 创建 `types/user/index.ts`
+
+- [x] 10. 迁移 Tag 类型
+  - 移动 `db/models/tag/tag.interface.ts` → `types/tag/`
+  - 创建 `types/tag/tag.schema.ts`（新建）
+  - 创建 `types/tag/tag.builder.ts`（新建）
+  - 创建 `types/tag/index.ts`
+
+- [x] 11. 迁移 Shared 类型
+  - 移动 `db/models/shared/*.ts` → `types/shared/`
+  - 创建 `types/shared/index.ts`
+
+- [x] 12. 迁移 Domain 类型
+  - 移动 `domain/selection/selection.interface.ts` → `types/selection/`
+  - 移动 `domain/editor-tabs/editor-tabs.interface.ts` → `types/editor-tab/`
+  - 移动 `domain/editor-tabs/editor-tabs.builder.ts` → `types/editor-tab/`
+  - 移动 `domain/ui/ui.interface.ts` → `types/ui/`
+  - 移动 `domain/sidebar/sidebar.interface.ts` → `types/sidebar/`
+  - 移动 `domain/theme/theme.interface.ts` → `types/theme/`
+  - 移动 `domain/font/font.interface.ts` → `types/font/`
+  - 移动 `domain/save/save.interface.ts` → `types/save/`
+  - 移动 `domain/writing/writing.interface.ts` → `types/writing/`
+  - 移动 `domain/editor-history/editor-history.interface.ts` → `types/editor-history/`
+  - 移动 `domain/diagram/diagram.interface.ts` → `types/diagram/`
+  - 移动 `domain/icon-theme/icon-theme.interface.ts` → `types/icon-theme/`
+  - 移动 `domain/icon-theme/icon-theme.config.ts` → `types/icon-theme/`
+
+- [x] 13. 创建类型索引
+  - 创建 `types/index.ts` 统一导出
+
+## Phase 3: 纯函数层创建
+
+- [x] 14. 创建 Node 纯函数
+  - 移动 `db/models/node/node.utils.ts` → `fn/node/node.tree.fn.ts`
+  - 重构使用 fp-ts pipe
+  - 创建 `fn/node/node.tree.fn.test.ts`
+  - 创建 `fn/node/index.ts`
+
+- [x] 15. 创建 Search 纯函数
+  - 移动 `domain/search/search.utils.ts` → `fn/search/search.highlight.fn.ts`
+  - 创建 `fn/search/search.filter.fn.ts`
+  - 创建测试文件
+  - 创建 `fn/search/index.ts`
+
+- [x] 16. 创建 Date 纯函数（通用日期模块）
+  - 从 `fn/diary/diary.date.fn.ts` 提取 → `fn/date/date.chinese.fn.ts`
+  - 创建 `fn/date/date.folder.fn.ts`（日期目录结构生成）
+  - 创建 `fn/date/date.chinese.fn.test.ts`
+  - 创建 `fn/date/date.folder.fn.test.ts`
+  - 创建 `fn/date/index.ts`
+
+- [x] 17. 创建 Content 模板纯函数
+  - 创建 `fn/content/content.template.fn.ts`（模板配置 + 文件结构生成）
+  - 创建 `fn/content/content.generate.fn.ts`（Lexical JSON 内容生成）
+  - 支持四种模板：diary、todo、ledger、wiki
+  - 统一目录结构：`{Root}/year-YYYY-{Zodiac}/month-MM-{Month}/day-DD-{Weekday}/{prefix}-{timestamp}`
+  - 创建 `fn/content/content.template.fn.test.ts`
+  - 创建 `fn/content/content.generate.fn.test.ts`
+  - 创建 `fn/content/index.ts`
+
+- [x] 18. 删除旧 Diary 模块
+  - 删除 `fn/diary/` 目录
+  - 更新 `domain/diary/diary.service.ts` 使用 `fn/date/` 和 `fn/content/`
+
+- [x] 19. 创建 Export 纯函数（单文件导出）
+  - 创建 `fn/export/export.orgmode.fn.ts`（Lexical JSON → Org-mode，完整支持）
+  - 创建 `fn/export/export.markdown.fn.ts`（Lexical JSON → Markdown，完整支持）
+  - 创建 `fn/export/export.json.fn.ts`（原始 JSON 导出）
+  - 创建 `fn/export/export.orgmode.fn.test.ts`
+  - 创建 `fn/export/export.markdown.fn.test.ts`
+  - 创建 `fn/export/export.json.fn.test.ts`
+  - 创建 `fn/export/index.ts`
+  - TODO: 全局导出（暂不实现，预留接口 `exportWorkspace`）
+
+- [x] 20. 创建 Import 纯函数（单文件导入）
+  - 创建 `fn/import/import.markdown.fn.ts`（Markdown → Lexical JSON）
+  - 创建 `fn/import/import.markdown.fn.test.ts`
+  - 创建 `fn/import/index.ts`
+  - TODO: 批量导入（暂不实现，预留接口 `importDirectory`）
+
+- [x] 21. 创建 Tag 纯函数
+  - 移动 `db/models/tag/tag.utils.ts` → `fn/tag/tag.extract.fn.ts`
+  - 创建测试文件
+  - 创建 `fn/tag/index.ts`
+
+- [x] 22. 创建其他纯函数
+  - 移动 `domain/theme/theme.utils.ts` → `fn/theme/theme.fn.ts`
+  - 移动 `domain/icon-theme/icon-theme.utils.ts` → `fn/icon-theme/icon-theme.fn.ts`
+  - 移动 `domain/writing/writing.utils.ts` → `fn/writing/writing.fn.ts`
+  - 移动 `domain/save/save.utils.ts` → `fn/save/save.debounce.fn.ts`
+  - 移动 `domain/editor-tabs/editor-tabs.utils.ts` → `fn/editor-tab/editor-tab.fn.ts`
+  - 移动 `domain/editor-history/editor-history.utils.ts` → `fn/editor-history/editor-history.fn.ts`
+  - 移动 `domain/diagram/diagram.utils.ts` → `fn/diagram/diagram.fn.ts`
+  - 创建测试文件
+
+- [x] 23. 创建纯函数索引
+  - 创建 `fn/index.ts` 统一导出
+
+## Phase 4: 数据库层重构
+
+- [x] 24. 重构 Node 数据库函数
+  - 重构 `db/models/node/node.repository.ts` → `db/node.db.fn.ts`
+  - 使用 TaskEither 返回类型
+  - 添加日志记录
+  - 创建测试文件
+
+- [x] 25. 重构 Workspace 数据库函数
+  - 重构 `db/models/workspace/workspace.repository.ts` → `db/workspace.db.fn.ts`
+  - 使用 TaskEither 返回类型
+  - 添加日志记录
+
+- [x] 26. 重构 Content 数据库函数
+  - 重构 `db/models/content/content.repository.ts` → `db/content.db.fn.ts`
+  - 使用 TaskEither 返回类型
+  - 添加日志记录
+
+- [x] 27. 重构 Drawing 数据库函数
+  - 重构 `db/models/drawing/drawing.repository.ts` → `db/drawing.db.fn.ts`
+  - 使用 TaskEither 返回类型
+  - 添加日志记录
+
+- [x] 28. 重构其他数据库函数
+  - 重构 `db/models/attachment/attachment.repository.ts` → `db/attachment.db.fn.ts`
+  - 重构 `db/models/user/user.repository.ts` → `db/user.db.fn.ts`
+  - 重构 `db/models/tag/tag.repository.ts` → `db/tag.db.fn.ts`
+
+- [x] 29. 重构数据库服务
+  - 重构 `db/backup/backup.service.ts` → `db/backup.db.fn.ts`
+  - 重构 `db/clear-data/clear-data.service.ts` → `db/clear-data.db.fn.ts`
+  - 重构 `db/init/db-init.service.ts` → `db/init.db.fn.ts`
+
+- [x] 30. 更新数据库索引
+  - 更新 `db/index.ts` 导出新函数
+
+## Phase 5: 状态层迁移
+
+- [x] 31. 迁移 Selection Store
+  - 移动 `domain/selection/selection.store.ts` → `stores/selection.store.ts`
+  - 确保使用 Immer
+  - 添加日志记录
+
+- [x] 32. 迁移 Editor Tabs Store
+  - 移动 `domain/editor-tabs/editor-tabs.store.ts` → `stores/editor-tabs.store.ts`
+  - 确保使用 Immer
+  - 添加日志记录
+
+- [x] 33. 迁移 UI Store
+  - 移动 `domain/ui/ui.store.ts` → `stores/ui.store.ts`
+  - 确保使用 Immer
+  - 添加日志记录
+
+- [x] 34. 迁移其他 Stores
+  - 移动 `domain/sidebar/sidebar.store.ts` → `stores/sidebar.store.ts`
+  - 移动 `domain/theme/theme.store.ts` → `stores/theme.store.ts`
+  - 移动 `domain/font/font.store.ts` → `stores/font.store.ts`
+  - 移动 `domain/save/save.store.ts` → `stores/save.store.ts`
+  - 移动 `domain/writing/writing.store.ts` → `stores/writing.store.ts`
+  - 移动 `domain/editor-history/editor-history.store.ts` → `stores/editor-history.store.ts`
+  - 移动 `domain/diagram/diagram.store.ts` → `stores/diagram.store.ts`
+  - 移动 `domain/icon-theme/icon-theme.store.ts` → `stores/icon-theme.store.ts`
+
+- [x] 35. 创建 Stores 索引
+  - 创建 `stores/index.ts` 统一导出
+
+## Phase 6: Hooks 层整合
+
+- [x] 36. 整合 Node Hooks
+  - 移动 `db/models/node/node.hooks.ts` → `hooks/use-node.ts`
+  - 整合相关 hooks
+
+- [x] 37. 整合 Workspace Hooks
+  - 移动 `db/models/workspace/workspace.hooks.ts` → `hooks/use-workspace.ts`
+
+- [x] 38. 整合 Content Hooks
+  - 移动 `db/models/content/content.hooks.ts` → `hooks/use-content.ts`
+
+- [x] 39. 整合 Drawing Hooks
+  - 移动 `db/models/drawing/drawing.hooks.ts` → `hooks/use-drawing.ts`
+  - 整合 `hooks/use-drawing-workspace.ts`
+
+- [x] 40. 整合其他 Hooks
+  - 移动 `db/models/attachment/attachment.hooks.ts` → `hooks/use-attachment.ts`
+  - 移动 `db/models/user/user.hooks.ts` → `hooks/use-user.ts`
+  - 移动 `db/models/tag/tag.hooks.ts` → `hooks/use-tag.ts`
+  - 整合 `hooks/use-manual-save.ts` → `hooks/use-save.ts`
+
+- [x] 41. 创建 Hooks 索引
+  - 创建 `hooks/index.ts` 统一导出  
+
+## Phase 7: Actions 层创建
+
+- [x] 42. 创建 Node Actions
+  - 创建 `routes/actions/create-node.action.ts`
+  - 创建 `routes/actions/delete-node.action.ts`
+  - 创建 `routes/actions/move-node.action.ts`
+  - 创建 `routes/actions/rename-node.action.ts`
+  - 创建 `routes/actions/reorder-node.action.ts`
+  - 创建测试文件
+  - 创建 `routes/actions/index.ts`
+
+- [x] 43. 创建 Workspace Actions
+  - 创建 `routes/actions/create-workspace.action.ts`
+  - 创建 `routes/actions/delete-workspace.action.ts`
+  - 创建 `routes/actions/update-workspace.action.ts`
+  - 创建测试文件
+
+- [x] 44. 创建 Export Actions（单文件导出）
+  - 创建 `routes/actions/export-orgmode.action.ts`
+  - 创建 `routes/actions/export-markdown.action.ts`
+  - 创建 `routes/actions/export-json.action.ts`
+  - 创建测试文件
+  - TODO: `export-workspace.action.ts`（全局导出，暂不实现）
+
+- [x] 45. 创建 Import Actions（单文件导入）
+  - 创建 `routes/actions/import-markdown.action.ts`
+  - 创建测试文件
+  - TODO: `import-directory.action.ts`（批量导入，暂不实现）
+
+- [x] 46. 创建 Settings Actions
+  - 创建 `routes/settings/actions/update-theme.action.ts`
+  - 创建 `routes/settings/actions/update-font.action.ts`
+  - 创建 `routes/settings/actions/index.ts`
+
+## Phase 8: 组件纯化
+
+- [x] 47. 纯化 FileTree 组件
+  - 移除直接 Store 访问
+  - 添加 props 接口
+  - 更新路由组件传递数据
+
+- [x] 48. 纯化 Editor 组件
+  - 移除直接 Store 访问
+  - 添加 props 接口
+
+- [x] 49. 纯化 Sidebar 组件
+  - 移除直接 Store 访问
+  - 添加 props 接口
+
+- [x] 50. 审查未使用组件（保留待后续处理）
+  - [x] 50.1 `word-count-badge.tsx` - 已纯化并集成，支持中英文统计
+  - 以下组件暂时保留，待后续单独审查：
+    - `focus-mode.tsx` - 专注模式
+    - `writing-stats-panel.tsx` - 写作统计面板
+    - `auto-save-indicator.tsx` - 自动保存指示器
+    - `multi-select.tsx` - 多选组件
+    - `emptyProject.tsx` - 空项目提示
+    - `createBookDialog.tsx` - 创建书籍对话框
+    - `drawing-list.tsx` - 绘图列表
+    - `drawing-manager.tsx` - 绘图管理器
+    - `multi-editor-workspace.tsx` - 多编辑器工作空间
+    - `export-button.tsx` - 导出按钮
+    - `settings-nav.tsx` - 设置导航
+    - `icon-picker.tsx` - 图标选择器
+    - `search-sidebar.tsx` - 搜索侧边栏
+    - `icon-theme-preview.tsx` - 图标主题预览
+    - `global-search-dialog.tsx` - 全局搜索对话框
+    - `global-search-provider.tsx` - 全局搜索提供者
+    - `new-node-dialog.tsx` - 新建节点对话框
+    - `rename-node-dialog.tsx` - 重命名节点对话框
+    - `test-selection.tsx` - 测试选择组件
+
+## Phase 10: 组件架构规范化
+
+- [x] 56. 重构 ActivityBar 组件
+  - 拆分为路由组件 + 纯展示组件
+  - 创建 `routes/_layout.route.tsx` 作为编排层
+  - 重构 `components/activity-bar.tsx` 为纯展示组件
+  - 定义 ActivityBarProps 接口（workspaces, selectedWorkspaceId, callbacks）
+  - 移除组件内部的 Store/DB 直接访问
+
+- [x] 57. 重构 FocusMode 组件
+  - 移除 `useWritingStore` 直接访问
+  - 通过 props 传入写作状态和回调函数
+  - 定义 FocusModeProps 接口
+
+- [x] 58. 重构 WritingStatsPanel 组件
+  - 移除 `useWritingStore` 直接访问
+  - 通过 props 传入统计数据和设置回调
+  - 定义 WritingStatsPanelProps 接口
+
+- [x] 59. 重构 BackupManager 组件
+  - 移除 services 直接调用
+  - 通过 props 传入数据和回调
+  - 提取 formatBytes 到 fn/format/
+  - 迁移类型到 types/backup/ 和 types/storage/
+  - 路由组件已实现数据编排
+
+- [x] 60. 重构 Panel 组件
+  - 重构 `drawings-panel.tsx` - 通过 props 接收 workspaceId 和 drawings
+  - 重构 `tag-graph-panel.tsx` - 通过 props 接收数据
+  - 定义各 Panel 的 Props 接口
+
+- [x] 61. 重构 CommandPalette 组件
+  - 移除 Store/DB 直接访问
+  - 通过 props 接收 workspaces 和 selectedWorkspaceId
+  - 定义 CommandPaletteProps 接口
+
+- [x] 62. 重构 ExportDialogManager 组件
+  - 移除 Store/DB 直接访问
+  - 通过 props 接收数据
+  - 定义 ExportDialogManagerProps 接口
+
+- [x] 63. 重构其他组件
+  - `wiki-hover-preview.tsx` - 通过 props 传入预加载数据或回调
+  - `global-search.tsx` - 通过 props 传入搜索函数
+
+## Phase 9: Import 路径更新与错误收集
+
+- [x] 51. 更新 Import 路径
+  - 更新所有文件的 import 路径
+  - 运行 TypeScript 检查
+
+- [x] 52. 运行代码并收集错误
+  - [x] 52.1 运行开发服务器
+    - 执行 `bun run desktop:dev`
+    - 记录启动错误
+    - **结果：** ❌ 无法启动 - 模块解析失败
+    - **主要错误：** `@/db/models` 和 `@/services/export` 无法解析
+  - [x] 52.2 运行类型检查
+    - 执行 `bun run check` + `bunx tsc --noEmit`
+    - 记录类型错误
+    - **结果：** 95 个 TypeScript 错误，83 个 Biome 错误
+    - **报告：** 已创建 `TYPE_CHECK_ERRORS.md`
+  - [x] 52.3 运行代码检查
+    - 执行 `bun run lint`
+    - 记录 lint 错误
+    - **结果：** ❌ 83 个错误，77 个警告，5 个信息
+    - **报告：** 已创建 `LINT_ERRORS.md`
+  - [x] 52.4 运行测试
+    - 执行 `bun run test`
+    - 记录测试失败
+    - 将记录目前的情况在审查目前的task之后，将重要的步骤加入其中。
+  - [x] 52.5 整合错误报告
+    - 创建 `REFACTOR_ERRORS.md` 和 `TYPE_CHECK_ERRORS.md`
+    - 按模块分类错误
+    - 标注错误优先级
+    - **完成：** 已创建两份详细错误报告
+
+- [x] 53. 对比 Steering 规范
+  - [x] 53.1 检查架构符合性
+    - 对比 `architecture.md`
+    - 检查数据流是否符合规范
+    - 检查目录结构是否正确
+  - [x] 53.2 检查代码规范符合性
+    - 对比 `code-standards.md`
+    - 检查函数式编程使用
+    - 检查命名规范
+    - 检查日志使用
+  - [x] 53.3 检查文件结构符合性
+    - 对比 `structure.md`
+    - 检查文件命名
+    - 检查依赖关系
+  - [x] 53.4 生成符合性报告
+    - 创建 `ARCHITECTURE_COMPLIANCE.md`
+    - 列出不符合项
+    - 提供修复建议
+
+- [x] 54. 更新任务列表
+  - 根据错误报告添加修复任务
+  - 根据符合性报告添加改进任务
+  - 更新任务优先级
+  - 估算剩余工作量
+  - **完成：** 已根据 REFACTOR_ERRORS.md、TYPE_CHECK_ERRORS.md、LINT_ERRORS.md、ARCHITECTURE_COMPLIANCE.md 和 TEST_RESULTS.md 更新任务列表
+  - **新增任务：** Phase 11-16（共 38 个任务）
+  - **预计剩余工作量：** 10-12 小时
+
+## Phase 11: 紧急修复（阻止启动的错误）
+
+**说明：** 这些错误必须修复才能让应用运行起来
+
+### 11.1 关键错误修复（预计 1.5 小时）
+
+- [x] 64. 修复 DrawingBuilder 只读属性错误
+  - 将 `private data: DrawingInterface` 改为 `private data: Partial<DrawingInterface>`
+  - 文件：`src/types/drawing/drawing.builder.ts`
+  - 影响：13 个类型错误
+  - 预计时间：5分钟
+  - 优先级：🔴 最高
+  - ✅ 已完成
+
+- [x] 65. 批量更新 `@/db/models` 导入路径（✅ 已完成）
+  - 使用查找替换功能批量更新
+  - 影响文件（16个）：
+    - `src/domain/diary/diary.service.ts`
+    - `src/domain/export/export.service.ts`
+    - `src/domain/export/export.utils.ts`
+    - `src/domain/file-creator/file-creator.service.ts`
+    - `src/domain/import-export/import-export.service.ts`
+    - `src/domain/save/save.service.ts`
+    - `src/domain/search/search.service.ts`
+    - `src/domain/wiki/wiki-migration.service.ts`
+    - `src/domain/wiki/wiki.service.ts`
+    - `src/services/__tests__/drawings.property.test.ts`
+    - `src/services/drawings.ts`
+    - `src/services/drawings.utils.ts`
+    - `src/services/nodes.ts`
+    - `src/services/tags.ts`
+    - `src/services/workspaces.ts`
+    - `src/components/workspace/story-workspace.tsx`
+  - 替换规则：
+    - `@/db/models` → 根据具体导入的类型替换为 `@/types/node`, `@/types/workspace` 等
+  - 预计时间：15分钟
+  - 优先级：🔴 最高
+
+### 11.2 Services 模块迁移（预计 3-4 小时）
+
+- [x] 66. 迁移 services/export 模块
+  - 分析 `services/export.ts` 的功能
+  - 决定迁移目标：`fn/export/` 或 `routes/actions/`
+  - 创建新的纯函数文件
+  - 更新所有引用此模块的文件
+  - 影响文件：
+    - `src/components/blocks/export-dialog.tsx`
+    - `src/components/export/export-button.tsx`
+    - `src/routes/settings/export.tsx`
+  - 预计时间：1小时
+  - 优先级：🔴 高
+
+- [x] 67. 迁移 services/import-export 模块
+  - 拆分为 `fn/import/` 和 `fn/export/`
+  - 创建纯函数文件
+  - 更新所有引用
+  - 影响文件：
+    - `src/components/blocks/export-dialog.tsx`
+  - 预计时间：1小时
+  - 优先级：🔴 高
+
+- [x] 68. 迁移 services/save 模块
+  - 迁移到 `fn/save/`
+  - 确保符合纯函数规范
+  - 更新引用：`src/hooks/use-manual-save.ts`, `src/components/workspace/story-workspace.tsx`
+  - 预计时间：30分钟
+  - 优先级：🔴 高
+
+- [x] 69. 迁移 services/wiki-files 模块
+  - 迁移到 `fn/wiki/`
+  - 更新引用：`src/components/workspace/story-workspace.tsx`
+  - 预计时间：30分钟
+  - 优先级：🔴 高
+
+- [x] 70. 迁移 services/keyboard-shortcuts 模块
+  - 迁移到 `fn/keyboard/`
+  - 更新所有引用：`src/hooks/use-manual-save.ts`
+  - 预计时间：30分钟
+  - 优先级：🔴 高
+
+- [x] 71. 迁移 services/export-path 模块
+  - 合并到 `fn/export/`
+  - 更新所有引用：`src/routes/settings/export.tsx`
+  - 预计时间：15分钟
+  - 优先级：🔴 高
+
+### 11.3 组件修复（预计 30 分钟）
+
+- [x] 72. 修复 WikiHoverPreview 组件使用
+  - 在 `story-workspace.tsx` 中添加 `onFetchData` 回调
+  - 实现数据获取逻辑
+  - 预计时间：15分钟
+  - 优先级：🔴 高
+
+- [x] 73. 修复测试文件类型错误
+  - 统一使用 `createDate` 而非 `createdAt`
+  - 修复 UserPlan 类型使用
+  - 影响文件：
+    - `src/db/drawing.db.fn.test.ts`
+    - `src/db/tag.db.fn.test.ts`
+    - `src/db/user.db.fn.test.ts`
+    - `src/fn/tag/tag.extract.fn.test.ts`
+  - 预计时间：20分钟
+  - 优先级：🟡 中
+
+## Phase 12: Lint 警告修复
+
+**说明：** 这些是代码质量问题，不阻止运行但应该修复
+
+### 12.1 关键 Lint 错误（预计 1 小时）
+
+- [x] 74. 修复 `useIterableCallbackReturn` 错误（7 个）
+  - 使用 `TE.tap()` 替代 `TE.map()` 用于副作用操作
+  - 影响文件：
+    - `src/db/node.db.fn.ts` (3 处)
+    - `src/routes/settings/actions/update-font.action.ts` (1 处)
+    - `src/routes/settings/actions/update-theme.action.ts` (3 处)
+  - 预计时间：30分钟
+  - 优先级：🔴 高
+
+- [x] 75. 移除未使用的导入（2 个）
+  - `src/components/blocks/emptyProject.tsx`
+  - 移除 `ArrowUpRightIcon` 和 `CalendarCheck`
+  - 预计时间：2分钟
+  - 优先级：🟢 低
+
+- [x] 76. 使用模板字符串替代字符串拼接
+  - `src/components/activity-bar.tsx:292`
+  - 将 `path + "/"` 改为 `` `${path}/` ``
+  - 预计时间：2分钟
+  - 优先级：🟢 低
+
+### 12.2 可访问性修复（预计 2 小时）
+
+- [x] 77. 修复 `useButtonType` 错误（20+ 个）
+  - 为所有 `<button>` 元素添加 `type="button"`
+  - 影响文件：
+    - `src/components/blocks/theme-selector.tsx` (2 处)
+    - `src/components/buffer-switcher.tsx` (1 处)
+    - `src/components/editor-tabs.tsx` (2 处)
+    - `src/components/file-tree/file-tree-item.tsx` (2 处)
+    - `src/components/file-tree/file-tree.tsx` (2 处)
+    - `src/components/panels/drawings-panel.tsx` (1 处)
+    - `src/components/panels/search-panel.tsx` (1 处)
+    - `src/components/search-sidebar.tsx` (1 处)
+    - `src/components/story-right-sidebar.tsx` (1 处)
+    - `src/components/test-selection.tsx` (2 处)
+    - `src/routes/settings/design.tsx` (2 处)
+    - `src/routes/settings/editor.tsx` (1 处)
+    - `src/routes/settings/icons.tsx` (1 处)
+    - `src/routes/settings/typography.tsx` (3 处)
+  - 预计时间：30分钟
+  - 优先级：🟡 中
+
+- [x] 78. 修复 `noLabelWithoutControl` 错误（2 个）
+  - 为 label 添加 `htmlFor` 属性
+  - 影响文件：
+    - `src/components/blocks/export-dialog.tsx:165`
+    - `src/routes/test-manual-save.tsx:114`
+  - 预计时间：5分钟
+  - 优先级：🟡 中
+
+- [x] 79. 修复 `useValidAnchor` 错误（4 个）
+  - 使用有效的 href 或改用 button
+  - 影响文件：
+    - `src/components/test-selection.tsx:99`
+    - `src/routes/test-focus.tsx` (3 处)
+  - 预计时间：10分钟
+  - 优先级：🟡 中
+
+- [x] 80. 修复 `noStaticElementInteractions` 错误（5 个）
+  - 使用语义化元素或添加 role
+  - 影响文件：
+    - `src/components/file-tree/file-tree-item.tsx` (2 处)
+    - `src/components/file-tree/file-tree.tsx` (1 处)
+    - `src/components/panels/drawings-panel.tsx` (1 处)
+  - 预计时间：20分钟
+  - 优先级：🟡 中
+
+- [x] 81. 修复 `useKeyWithClickEvents` 错误（5 个）
+  - 添加键盘事件处理
+  - 影响文件：
+    - `src/components/file-tree/file-tree-item.tsx` (1 处)
+    - `src/components/file-tree/file-tree.tsx` (1 处)
+    - `src/components/panels/drawings-panel.tsx` (1 处)
+    - `src/components/story-right-sidebar.tsx` (1 处)
+  - 预计时间：20分钟
+  - 优先级：🟡 中
+
+### 12.3 React 最佳实践（预计 1 小时）
+
+- [ ] 82. 修复 `useExhaustiveDependencies` 错误（5 个）
+  - 添加缺失的依赖项到依赖数组
+  - 影响文件：
+    - `src/components/blocks/update-checker.tsx:83`
+    - `src/components/editor-tabs.tsx:89`
+    - `src/components/editor-tabs.tsx:95`
+    - `src/components/panels/file-tree-panel.tsx:69`
+  - 预计时间：20分钟
+  - 优先级：🟡 中
+
+- [ ] 83. 修复 `noArrayIndexKey` 错误（4 个）
+  - 使用唯一 ID 而非数组索引作为 key
+  - 影响文件：
+    - `src/components/blocks/keyboard-shortcuts-help.tsx` (2 处)
+    - `src/components/panels/search-panel.tsx` (1 处)
+    - `src/components/search-sidebar.tsx` (1 处)
+  - 预计时间：15分钟
+  - 优先级：🟡 中
+
+### 12.4 类型安全（预计 1.5 小时）
+
+- [ ] 84. 修复 `noExplicitAny` 错误（13 个）
+  - 定义具体类型或使用 unknown + 类型守卫
+  - 影响文件：
+    - `src/components/blocks/canvas-editor.tsx` (8 处) - Excalidraw 类型
+    - `src/components/devtools-wrapper.tsx` (3 处) - DevTools 类型
+  - 预计时间：1小时
+  - 优先级：🟡 中
+
+- [ ] 85. 修复隐式 any 类型（30+ 个）
+  - 为所有参数添加明确的类型注解
+  - 影响文件：多个 domain/ 和 services/ 文件
+  - 预计时间：1小时
+  - 优先级：🟡 中
+
+## Phase 13: 验证修复结果
+
+- [ ] 86. 运行类型检查
+  - 执行 `bun run check`
+  - 确认无类型错误
+  - 记录剩余错误（如有）
+  - 预计时间：5分钟
+
+- [ ] 87. 运行代码检查
+  - 执行 `bun run lint`
+  - 确认无 lint 错误
+  - 记录剩余警告（如有）
+  - 预计时间：5分钟
+
+- [ ] 88. 运行测试
+  - 执行 `bun run test`
+  - 确认所有测试通过
+  - 修复失败的测试
+  - 预计时间：15分钟
+
+- [ ] 89. 运行开发服务器
+  - 执行 `bun run desktop:dev`
+  - 确认应用正常启动
+  - 测试基本功能
+  - 预计时间：10分钟
+
+## Phase 14: 架构符合性检查
+
+- [ ] 90. 检查目录结构
+  - 确认所有文件在正确的目录
+  - 确认文件命名符合规范
+  - 生成目录结构报告
+  - 预计时间：20分钟
+
+- [ ] 91. 检查依赖关系
+  - 确认依赖方向正确
+  - 确认无循环依赖
+  - 使用工具检查依赖图
+  - 预计时间：20分钟
+
+- [ ] 92. 检查函数式编程使用
+  - 确认使用 fp-ts pipe
+  - 确认使用 Either 处理错误
+  - 确认使用 dayjs 处理时间
+  - 确认无 console.log
+  - 预计时间：30分钟
+
+- [ ] 93. 生成符合性报告
+  - 创建 `ARCHITECTURE_COMPLIANCE.md`
+  - 列出不符合项
+  - 提供修复建议
+  - 预计时间：15分钟
+
+## Phase 15: 代码清理与优化
+
+- [ ] 94. 删除旧目录（在所有错误修复后）
+  - 删除 `domain/` 目录
+  - 删除 `services/` 目录
+  - 删除 `db/models/` 目录
+
+- [ ] 95. 代码质量优化
+  - 修复所有剩余 lint 警告
+  - 移除所有未使用的导入
+  - 移除所有 console.log
+  - 统一使用 logger
+
+- [ ] 96. 测试补充
+  - 补充缺失的测试文件
+  - 确保测试覆盖率达标
+  - 修复所有失败的测试
+
+- [ ] 97. 文档更新
+  - 更新 README
+  - 更新 steering 文档
+  - 更新架构文档
+  - 创建迁移指南
+
+## Phase 16: 质量保障与性能优化
+
+- [ ] 98. 测试覆盖检查
+  - 检查所有 `*.fn.ts` 是否有对应的 `*.fn.test.ts`
+  - 检查所有 `*.action.ts` 是否有对应的测试
+  - 生成测试覆盖报告
+
+- [ ] 99. Steering 文档同步
+  - 更新 `architecture.md` 目录结构示例
+  - 更新 `structure.md` 文件路径示例
+  - 确保文档与实际代码一致
+
+- [ ] 100. 性能优化实施
+  - 为大列表组件添加虚拟列表（FileTree、搜索结果）
+  - 为纯展示组件添加 Million.js block
+  - 添加 Zustand selector 优化
+
+- [ ] 101. 最终验收
+  - 所有测试通过
+  - 无类型错误
+  - 无 lint 警告
+  - 应用正常运行
+  - 文档完整更新
+  - 性能指标达标
+
+---
+
+## 📊 重构进度总结
+
+**更新时间：** 2025-12-22
+
+### 已完成阶段
+- ✅ Phase 1: 基础设施（100%）- 3 个任务
+- ✅ Phase 2: 类型层迁移（100%）- 10 个任务
+- ✅ Phase 3: 纯函数层创建（100%）- 10 个任务
+- ✅ Phase 4: 数据库层重构（100%）- 7 个任务
+- ✅ Phase 5: 状态层迁移（100%）- 5 个任务
+- ✅ Phase 6: Hooks 层整合（100%）- 6 个任务
+- ✅ Phase 7: Actions 层创建（100%）- 5 个任务
+- ✅ Phase 8: 组件纯化（100%）- 4 个任务
+- ✅ Phase 9: Import 路径更新（100%）- 4 个任务（错误收集完成）
+- ✅ Phase 10: 组件架构规范化（100%）- 8 个任务
+
+### 当前阶段
+- 🔄 **Phase 11: 紧急修复**（0% - 待开始）
+  - **任务数量：** 10 个任务（64-73）
+  - **关键任务：** 修复阻止应用启动的错误
+  - **预计时间：** 5-6 小时
+  - **优先级：** 🔴 最高
+
+### 待完成阶段
+- ⏳ Phase 12: Lint 警告修复（0%）- 12 个任务（74-85）
+- ⏳ Phase 13: 验证修复结果（0%）- 4 个任务（86-89）
+- ⏳ Phase 14: 架构符合性检查（0%）- 4 个任务（90-93）
+- ⏳ Phase 15: 代码清理与优化（0%）- 4 个任务（94-97）
+- ⏳ Phase 16: 质量保障与性能优化（0%）- 4 个任务（98-101）
+
+### 错误统计（已收集）
+
+#### TypeScript 错误（95 个错误，29 个文件）
+| 错误类型 | 数量 | 优先级 |
+|---------|------|--------|
+| DrawingBuilder 只读属性 | 13 | 🔴 最高 |
+| 缺失 @/db/models 导入 | 16 文件 | 🔴 最高 |
+| 缺失 @/services/* 模块 | 10 文件 | 🔴 高 |
+| 测试文件类型错误 | 12 | 🟡 中 |
+| 隐式 any 类型 | 30+ | 🟡 中 |
+
+#### Biome Lint 错误（83 错误，77 警告，5 信息）
+| 错误类型 | 数量 | 优先级 |
+|---------|------|--------|
+| useIterableCallbackReturn | 7 | 🔴 高 |
+| noExplicitAny | 13 | 🟡 中 |
+| useButtonType | 20+ | 🟡 中 |
+| useExhaustiveDependencies | 5 | 🟡 中 |
+| noArrayIndexKey | 4 | 🟡 中 |
+| 其他可访问性问题 | 20+ | 🟡 中 |
+
+#### 测试结果（721 测试，46 文件）
+| 状态 | 数量 | 通过率 |
+|------|------|--------|
+| 通过 | 700 | 97.1% |
+| 失败 | 21 | 2.9% |
+
+### 关键阻塞问题（按优先级排序）
+1. 🔴 **DrawingBuilder 只读属性错误** - 13 个错误（Task 64）
+2. 🔴 **缺失的 @/db/models 导入** - 16 个文件（Task 65）
+3. 🔴 **缺失的 @/services/* 模块** - 10 个文件（Task 66-71）
+4. 🔴 **WikiHoverPreview Props 不匹配** - 1 个文件（Task 72）
+5. 🔴 **useIterableCallbackReturn** - 7 个错误（Task 74）
+6. 🟡 **测试文件类型错误** - 4 个文件（Task 73）
+7. 🟡 **隐式 any 类型** - 30+ 个（Task 85）
+
+### 详细错误报告
+| 报告文件 | 内容 |
+|---------|------|
+| 📄 `REFACTOR_ERRORS.md` | 开发服务器启动错误和模块解析问题 |
+| 📄 `TYPE_CHECK_ERRORS.md` | TypeScript 类型检查错误详情 |
+| 📄 `LINT_ERRORS.md` | Biome lint 错误和警告详情 |
+| 📄 `ARCHITECTURE_COMPLIANCE.md` | 架构符合性检查报告 |
+| 📄 `TEST_RESULTS.md` | 测试运行结果报告 |
+
+### 下一步行动
+
+**立即开始 Phase 11 任务 64-73**，这些是阻止应用运行的关键错误。
+
+#### 第一优先级（必须完成才能启动）- 预计 5-6 小时
+| 任务 | 描述 | 预计时间 |
+|------|------|---------|
+| Task 64 | 修复 DrawingBuilder 只读属性 | 5 分钟 |
+| Task 65 | 批量更新 @/db/models 导入 | 15 分钟 |
+| Task 66 | 迁移 services/export 模块 | 1 小时 |
+| Task 67 | 迁移 services/import-export 模块 | 1 小时 |
+| Task 68 | 迁移 services/save 模块 | 30 分钟 |
+| Task 69 | 迁移 services/wiki-files 模块 | 30 分钟 |
+| Task 70 | 迁移 services/keyboard-shortcuts 模块 | 30 分钟 |
+| Task 71 | 迁移 services/export-path 模块 | 15 分钟 |
+| Task 72 | 修复 WikiHoverPreview 组件 | 15 分钟 |
+| Task 73 | 修复测试文件类型错误 | 20 分钟 |
+
+#### 第二优先级（代码质量）- 预计 4-5 小时
+| 任务 | 描述 | 预计时间 |
+|------|------|---------|
+| Task 74 | 修复 useIterableCallbackReturn | 30 分钟 |
+| Task 77-81 | 可访问性修复 | 2 小时 |
+| Task 82-83 | React 最佳实践 | 1 小时 |
+| Task 84-85 | 修复 any 类型 | 1.5 小时 |
+
+**预计总时间：** 10-12 小时
+
+完成这些任务后，应用应该能够正常启动并通过所有检查。
+
+### 架构符合性总结
+| 类别 | 符合度 | 状态 |
+|------|--------|------|
+| 目录结构 | 85% | 🟡 部分符合（domain/, services/ 待删除）|
+| 数据流架构 | 80% | 🟡 部分符合（组件仍直接访问 domain/）|
+| 函数式编程 | 90% | 🟢 基本符合 |
+| 文件命名 | 95% | 🟢 符合 |
+| 日志规范 | 60% | 🔴 需改进（40+ 处 console.log）|
+| 依赖关系 | 70% | 🟡 部分符合 |

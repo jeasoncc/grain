@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import logger from "@/log";
+import { DevOnlyPage } from "@/components/dev-only";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DevOnlyPage } from "@/components/dev-only";
+import logger from "@/log";
 import {
 	clearAllData,
 	clearCookies,

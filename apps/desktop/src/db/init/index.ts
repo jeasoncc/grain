@@ -1,6 +1,6 @@
 /**
  * Database Initialization Module
- * 
+ *
  * Provides database initialization functionality.
  */
 

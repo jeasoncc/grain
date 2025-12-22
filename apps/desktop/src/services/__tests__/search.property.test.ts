@@ -7,14 +7,14 @@
  * @requirements 3.1, 3.2
  */
 
-import { describe, it, expect } from "vitest";
 import * as fc from "fast-check";
+import { describe, expect, it } from "vitest";
 import {
+	calculateSimpleScore,
+	extractHighlights,
 	extractTextFromContent,
 	extractTextFromLexical,
 	generateExcerpt,
-	extractHighlights,
-	calculateSimpleScore,
 } from "@/domain/search/search.utils";
 
 /**
@@ -53,8 +53,15 @@ const lexicalContentArb = lexicalRootArb.map((obj) => JSON.stringify(obj));
  * Uses alphanumeric characters to avoid regex special character issues in calculateSimpleScore
  */
 const searchQueryArb: fc.Arbitrary<string> = fc
-	.array(fc.constantFrom(...'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('')), { minLength: 1, maxLength: 50 })
-	.map((chars) => chars.join(''))
+	.array(
+		fc.constantFrom(
+			..."abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(
+				"",
+			),
+		),
+		{ minLength: 1, maxLength: 50 },
+	)
+	.map((chars) => chars.join(""))
 	.filter((s) => s.length > 0);
 
 /**
@@ -82,7 +89,7 @@ describe("Property 1: Pure Functions Produce Consistent Output", () => {
 				const result2 = extractTextFromContent(content);
 				expect(result1).toEqual(result2);
 			}),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 
@@ -93,40 +100,55 @@ describe("Property 1: Pure Functions Produce Consistent Output", () => {
 				const result2 = extractTextFromLexical(lexicalObj.root);
 				expect(result1).toEqual(result2);
 			}),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 
 	it("generateExcerpt produces consistent output for same input", () => {
 		fc.assert(
-			fc.property(plainTextArb, searchQueryArb, fc.integer({ min: 10, max: 200 }), (content, query, contextLength) => {
-				const result1 = generateExcerpt(content, query, contextLength);
-				const result2 = generateExcerpt(content, query, contextLength);
-				expect(result1).toEqual(result2);
-			}),
-			{ numRuns: 100 }
+			fc.property(
+				plainTextArb,
+				searchQueryArb,
+				fc.integer({ min: 10, max: 200 }),
+				(content, query, contextLength) => {
+					const result1 = generateExcerpt(content, query, contextLength);
+					const result2 = generateExcerpt(content, query, contextLength);
+					expect(result1).toEqual(result2);
+				},
+			),
+			{ numRuns: 100 },
 		);
 	});
 
 	it("extractHighlights produces consistent output for same input", () => {
 		fc.assert(
-			fc.property(plainTextArb, searchQueryArb, fc.integer({ min: 1, max: 10 }), (content, query, maxHighlights) => {
-				const result1 = extractHighlights(content, query, maxHighlights);
-				const result2 = extractHighlights(content, query, maxHighlights);
-				expect(result1).toEqual(result2);
-			}),
-			{ numRuns: 100 }
+			fc.property(
+				plainTextArb,
+				searchQueryArb,
+				fc.integer({ min: 1, max: 10 }),
+				(content, query, maxHighlights) => {
+					const result1 = extractHighlights(content, query, maxHighlights);
+					const result2 = extractHighlights(content, query, maxHighlights);
+					expect(result1).toEqual(result2);
+				},
+			),
+			{ numRuns: 100 },
 		);
 	});
 
 	it("calculateSimpleScore produces consistent output for same input", () => {
 		fc.assert(
-			fc.property(titleArb, plainTextArb, searchQueryArb, (title, content, query) => {
-				const result1 = calculateSimpleScore(title, content, query);
-				const result2 = calculateSimpleScore(title, content, query);
-				expect(result1).toEqual(result2);
-			}),
-			{ numRuns: 100 }
+			fc.property(
+				titleArb,
+				plainTextArb,
+				searchQueryArb,
+				(title, content, query) => {
+					const result1 = calculateSimpleScore(title, content, query);
+					const result2 = calculateSimpleScore(title, content, query);
+					expect(result1).toEqual(result2);
+				},
+			),
+			{ numRuns: 100 },
 		);
 	});
 });
@@ -142,7 +164,12 @@ describe("Property 3: Text Extraction Round Trip Consistency", () => {
 	it("extracted text can be found in original content when searching", () => {
 		fc.assert(
 			fc.property(
-				fc.array(fc.string({ minLength: 1, maxLength: 50 }).filter((s) => s.trim().length > 0), { minLength: 1, maxLength: 5 }),
+				fc.array(
+					fc
+						.string({ minLength: 1, maxLength: 50 })
+						.filter((s) => s.trim().length > 0),
+					{ minLength: 1, maxLength: 5 },
+				),
 				(textParts) => {
 					// Build a Lexical structure with known text
 					const lexicalObj = {
@@ -163,9 +190,9 @@ describe("Property 3: Text Extraction Round Trip Consistency", () => {
 					for (const textPart of textParts) {
 						expect(extractedText).toContain(textPart);
 					}
-				}
+				},
 			),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 
@@ -182,9 +209,9 @@ describe("Property 3: Text Extraction Round Trip Consistency", () => {
 
 					// The excerpt should contain the query (case-insensitive match was used)
 					expect(excerpt.toLowerCase()).toContain(query.toLowerCase());
-				}
+				},
 			),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 
@@ -203,9 +230,9 @@ describe("Property 3: Text Extraction Round Trip Consistency", () => {
 					for (const highlight of highlights) {
 						expect(highlight.toLowerCase()).toContain(query.toLowerCase());
 					}
-				}
+				},
 			),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 
@@ -213,12 +240,16 @@ describe("Property 3: Text Extraction Round Trip Consistency", () => {
 		fc.assert(
 			fc.property(searchQueryArb, plainTextArb, (query, content) => {
 				const exactMatchScore = calculateSimpleScore(query, content, query);
-				const noMatchScore = calculateSimpleScore("completely_different_title_xyz", content, query);
+				const noMatchScore = calculateSimpleScore(
+					"completely_different_title_xyz",
+					content,
+					query,
+				);
 
 				// Exact title match should score higher than no match
 				expect(exactMatchScore).toBeGreaterThanOrEqual(noMatchScore);
 			}),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 });

@@ -5,10 +5,10 @@
  * Uses fast-check for property-based testing.
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
 import * as fc from "fast-check";
+import { beforeEach, describe, expect, it } from "vitest";
+import { DEFAULT_FONT_STATE, FONT_CONSTRAINTS } from "../font.interface";
 import { useFontStore } from "../font.store";
-import { FONT_CONSTRAINTS, DEFAULT_FONT_STATE } from "../font.interface";
 
 /**
  * **Feature: domain-driven-architecture, Property 10: Store Migration Preserves Functionality**
@@ -35,11 +35,11 @@ describe("Property 10: Store Migration Preserves Functionality", () => {
 				// Verify clamping logic
 				const expected = Math.max(
 					FONT_CONSTRAINTS.fontSize.min,
-					Math.min(FONT_CONSTRAINTS.fontSize.max, size)
+					Math.min(FONT_CONSTRAINTS.fontSize.max, size),
 				);
 				expect(result).toBe(expected);
 			}),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 
@@ -54,11 +54,11 @@ describe("Property 10: Store Migration Preserves Functionality", () => {
 
 				const expected = Math.max(
 					FONT_CONSTRAINTS.lineHeight.min,
-					Math.min(FONT_CONSTRAINTS.lineHeight.max, height)
+					Math.min(FONT_CONSTRAINTS.lineHeight.max, height),
 				);
 				expect(result).toBe(expected);
 			}),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 
@@ -68,16 +68,18 @@ describe("Property 10: Store Migration Preserves Functionality", () => {
 				useFontStore.getState().setLetterSpacing(spacing);
 				const result = useFontStore.getState().letterSpacing;
 
-				expect(result).toBeGreaterThanOrEqual(FONT_CONSTRAINTS.letterSpacing.min);
+				expect(result).toBeGreaterThanOrEqual(
+					FONT_CONSTRAINTS.letterSpacing.min,
+				);
 				expect(result).toBeLessThanOrEqual(FONT_CONSTRAINTS.letterSpacing.max);
 
 				const expected = Math.max(
 					FONT_CONSTRAINTS.letterSpacing.min,
-					Math.min(FONT_CONSTRAINTS.letterSpacing.max, spacing)
+					Math.min(FONT_CONSTRAINTS.letterSpacing.max, spacing),
 				);
 				expect(result).toBe(expected);
 			}),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 
@@ -92,11 +94,11 @@ describe("Property 10: Store Migration Preserves Functionality", () => {
 
 				const expected = Math.max(
 					FONT_CONSTRAINTS.uiFontSize.min,
-					Math.min(FONT_CONSTRAINTS.uiFontSize.max, size)
+					Math.min(FONT_CONSTRAINTS.uiFontSize.max, size),
 				);
 				expect(result).toBe(expected);
 			}),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 
@@ -106,16 +108,20 @@ describe("Property 10: Store Migration Preserves Functionality", () => {
 				useFontStore.getState().setCardBorderRadius(radius);
 				const result = useFontStore.getState().cardBorderRadius;
 
-				expect(result).toBeGreaterThanOrEqual(FONT_CONSTRAINTS.cardBorderRadius.min);
-				expect(result).toBeLessThanOrEqual(FONT_CONSTRAINTS.cardBorderRadius.max);
+				expect(result).toBeGreaterThanOrEqual(
+					FONT_CONSTRAINTS.cardBorderRadius.min,
+				);
+				expect(result).toBeLessThanOrEqual(
+					FONT_CONSTRAINTS.cardBorderRadius.max,
+				);
 
 				const expected = Math.max(
 					FONT_CONSTRAINTS.cardBorderRadius.min,
-					Math.min(FONT_CONSTRAINTS.cardBorderRadius.max, radius)
+					Math.min(FONT_CONSTRAINTS.cardBorderRadius.max, radius),
 				);
 				expect(result).toBe(expected);
 			}),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 
@@ -125,16 +131,20 @@ describe("Property 10: Store Migration Preserves Functionality", () => {
 				useFontStore.getState().setParagraphSpacing(spacing);
 				const result = useFontStore.getState().paragraphSpacing;
 
-				expect(result).toBeGreaterThanOrEqual(FONT_CONSTRAINTS.paragraphSpacing.min);
-				expect(result).toBeLessThanOrEqual(FONT_CONSTRAINTS.paragraphSpacing.max);
+				expect(result).toBeGreaterThanOrEqual(
+					FONT_CONSTRAINTS.paragraphSpacing.min,
+				);
+				expect(result).toBeLessThanOrEqual(
+					FONT_CONSTRAINTS.paragraphSpacing.max,
+				);
 
 				const expected = Math.max(
 					FONT_CONSTRAINTS.paragraphSpacing.min,
-					Math.min(FONT_CONSTRAINTS.paragraphSpacing.max, spacing)
+					Math.min(FONT_CONSTRAINTS.paragraphSpacing.max, spacing),
 				);
 				expect(result).toBe(expected);
 			}),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 
@@ -144,16 +154,20 @@ describe("Property 10: Store Migration Preserves Functionality", () => {
 				useFontStore.getState().setFirstLineIndent(indent);
 				const result = useFontStore.getState().firstLineIndent;
 
-				expect(result).toBeGreaterThanOrEqual(FONT_CONSTRAINTS.firstLineIndent.min);
-				expect(result).toBeLessThanOrEqual(FONT_CONSTRAINTS.firstLineIndent.max);
+				expect(result).toBeGreaterThanOrEqual(
+					FONT_CONSTRAINTS.firstLineIndent.min,
+				);
+				expect(result).toBeLessThanOrEqual(
+					FONT_CONSTRAINTS.firstLineIndent.max,
+				);
 
 				const expected = Math.max(
 					FONT_CONSTRAINTS.firstLineIndent.min,
-					Math.min(FONT_CONSTRAINTS.firstLineIndent.max, indent)
+					Math.min(FONT_CONSTRAINTS.firstLineIndent.max, indent),
 				);
 				expect(result).toBe(expected);
 			}),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 
@@ -180,12 +194,18 @@ describe("Property 10: Store Migration Preserves Functionality", () => {
 					expect(state.uiFontSize).toBe(DEFAULT_FONT_STATE.uiFontSize);
 					expect(state.uiScale).toBe(DEFAULT_FONT_STATE.uiScale);
 					expect(state.cardSize).toBe(DEFAULT_FONT_STATE.cardSize);
-					expect(state.cardBorderRadius).toBe(DEFAULT_FONT_STATE.cardBorderRadius);
-					expect(state.paragraphSpacing).toBe(DEFAULT_FONT_STATE.paragraphSpacing);
-					expect(state.firstLineIndent).toBe(DEFAULT_FONT_STATE.firstLineIndent);
-				}
+					expect(state.cardBorderRadius).toBe(
+						DEFAULT_FONT_STATE.cardBorderRadius,
+					);
+					expect(state.paragraphSpacing).toBe(
+						DEFAULT_FONT_STATE.paragraphSpacing,
+					);
+					expect(state.firstLineIndent).toBe(
+						DEFAULT_FONT_STATE.firstLineIndent,
+					);
+				},
 			),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		);
 	});
 });

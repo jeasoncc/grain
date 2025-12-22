@@ -3,7 +3,7 @@
  * 处理Global Search快捷键和状态
  */
 import { type ReactNode, useEffect, useState } from "react";
-import { GlobalSearchDialog } from "./global-search-dialog";
+import { GlobalSearchDialogConnected } from "./global-search-dialog-connected";
 
 interface GlobalSearchProviderProps {
 	children: ReactNode;
@@ -36,7 +36,7 @@ export function GlobalSearchProvider({
 	return (
 		<>
 			{children}
-			<GlobalSearchDialog
+			<GlobalSearchDialogConnected
 				open={isOpen}
 				onOpenChange={setIsOpen}
 				workspaceId={workspaceId}

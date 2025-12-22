@@ -10,20 +10,20 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import type {
-	WritingState,
 	WritingActions,
 	WritingGoal,
+	WritingState,
 } from "./writing.interface";
 import {
 	DEFAULT_WRITING_CONFIG,
-	DEFAULT_WRITING_STATE,
 	DEFAULT_WRITING_GOAL,
+	DEFAULT_WRITING_STATE,
 } from "./writing.interface";
 import {
-	getTodayDate,
-	createSession,
-	mergeWritingGoal,
 	calculateTodayWordCountUpdate,
+	createSession,
+	getTodayDate,
+	mergeWritingGoal,
 } from "./writing.utils";
 
 // ==============================
@@ -134,7 +134,7 @@ export const useWritingStore = create<WritingStore>()(
 				const { todayWordCount, todayDate } = calculateTodayWordCountUpdate(
 					currentState,
 					wordCount,
-					today
+					today,
 				);
 
 				set((state) => {
@@ -171,8 +171,8 @@ export const useWritingStore = create<WritingStore>()(
 				todayDate: state.todayDate,
 				minimalToolbar: state.minimalToolbar,
 			}),
-		}
-	)
+		},
+	),
 );
 
 // ==============================

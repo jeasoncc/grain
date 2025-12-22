@@ -64,7 +64,9 @@ function DiagramSettings() {
 			// If enabling and no URL set, suggest the official one
 			setTestUrl("https://kroki.io");
 		}
-		toast.success(checked ? "PlantUML support enabled" : "PlantUML support disabled");
+		toast.success(
+			checked ? "PlantUML support enabled" : "PlantUML support disabled",
+		);
 	};
 
 	return (
@@ -79,7 +81,9 @@ function DiagramSettings() {
 			<div className="space-y-12">
 				{/* Mermaid Section */}
 				<div className="space-y-4">
-					<h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Mermaid</h4>
+					<h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+						Mermaid
+					</h4>
 					<div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 p-3 rounded-md border border-dashed">
 						<CheckCircle2 className="h-4 w-4 text-green-500" />
 						<span>Mermaid is enabled by default (client-side rendering).</span>
@@ -90,7 +94,9 @@ function DiagramSettings() {
 				<div className="space-y-6">
 					<div className="flex items-center justify-between">
 						<div>
-							<h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-1">PlantUML (Kroki)</h4>
+							<h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-1">
+								PlantUML (Kroki)
+							</h4>
 							<p className="text-xs text-muted-foreground">
 								Render PlantUML diagrams via a Kroki server.
 							</p>
@@ -139,24 +145,33 @@ function DiagramSettings() {
 											{testResult ? (
 												<>
 													<CheckCircle2 className="h-4 w-4 text-green-500" />
-													<span className="text-green-600">Connected successfully</span>
+													<span className="text-green-600">
+														Connected successfully
+													</span>
 												</>
 											) : (
 												<>
 													<XCircle className="h-4 w-4 text-red-500" />
-													<span className="text-red-600">Connection failed</span>
+													<span className="text-red-600">
+														Connection failed
+													</span>
 												</>
 											)}
 										</div>
 									)}
 
 									<p className="text-xs text-muted-foreground">
-										Recommended: Official service (https://kroki.io) or self-hosted instance.
+										Recommended: Official service (https://kroki.io) or
+										self-hosted instance.
 									</p>
 								</div>
 
 								<div className="flex gap-2">
-									<Button onClick={handleSave} disabled={testUrl === krokiServerUrl} size="sm">
+									<Button
+										onClick={handleSave}
+										disabled={testUrl === krokiServerUrl}
+										size="sm"
+									>
 										Save Changes
 									</Button>
 									<Button
@@ -172,7 +187,8 @@ function DiagramSettings() {
 
 							<div className="space-y-2 text-sm text-muted-foreground pt-2">
 								<p>
-									Kroki is an open-source diagram rendering service supporting PlantUML, Mermaid, and more.
+									Kroki is an open-source diagram rendering service supporting
+									PlantUML, Mermaid, and more.
 								</p>
 								<div className="flex gap-4 text-xs">
 									<a

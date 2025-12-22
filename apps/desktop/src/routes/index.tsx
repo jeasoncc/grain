@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Spinner } from "@/components/ui/loading";
 import { StoryWorkspace } from "@/components/workspace/story-workspace";
-import { useAllWorkspaces } from "@/db/models";
+import { useAllWorkspaces } from "@/hooks/use-workspace";
 
 export const Route = createFileRoute("/")({
 	component: RouteComponent,

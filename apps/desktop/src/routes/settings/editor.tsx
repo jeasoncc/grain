@@ -1,11 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus, RotateCcw, Type, Check } from "lucide-react";
+import { Check, Minus, Plus, RotateCcw, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DebouncedSlider } from "@/components/ui/debounced-slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { DEFAULT_EDITOR_FONT, POPULAR_FONTS, useFontSettings } from "@/domain/font";
+import {
+	DEFAULT_EDITOR_FONT,
+	POPULAR_FONTS,
+	useFontSettings,
+} from "@/domain/font";
 
 export const Route = createFileRoute("/settings/editor")({
 	component: EditorSettings,
@@ -29,8 +33,8 @@ function EditorSettings() {
 
 	// 添加字体到列表
 	const addFont = (font: string) => {
-		const fonts = fontFamily.split(",").map(f => f.trim());
-		if (!fonts.some(f => f.replace(/['"]/g, "") === font)) {
+		const fonts = fontFamily.split(",").map((f) => f.trim());
+		if (!fonts.some((f) => f.replace(/['"]/g, "") === font)) {
 			setFontFamily(`'${font}', ${fontFamily}`);
 		}
 	};
@@ -48,7 +52,9 @@ function EditorSettings() {
 			<div className="space-y-6">
 				<div className="flex items-center gap-2 text-muted-foreground">
 					<Type className="size-4" />
-					<h4 className="text-sm font-medium uppercase tracking-wider">Typography</h4>
+					<h4 className="text-sm font-medium uppercase tracking-wider">
+						Typography
+					</h4>
 				</div>
 
 				{/* Font Family - VSCode style input */}
@@ -76,21 +82,23 @@ function EditorSettings() {
 						placeholder="'Font Name', 'Fallback Font', monospace"
 						className="font-mono text-sm"
 					/>
-					
+
 					{/* Quick add popular fonts */}
 					<div className="flex flex-wrap gap-1.5">
 						{POPULAR_FONTS.map((font) => {
 							const isIncluded = fontFamily.includes(font);
 							return (
 								<button
+									type="button"
 									key={font}
 									onClick={() => addFont(font)}
 									disabled={isIncluded}
 									className={`
 										px-2 py-1 text-xs rounded border transition-all
-										${isIncluded 
-											? "bg-primary/10 border-primary/30 text-primary cursor-default" 
-											: "border-border hover:bg-muted hover:border-primary/50"
+										${
+											isIncluded
+												? "bg-primary/10 border-primary/30 text-primary cursor-default"
+												: "border-border hover:bg-muted hover:border-primary/50"
 										}
 									`}
 								>
@@ -117,7 +125,9 @@ function EditorSettings() {
 						>
 							<Minus className="size-4" />
 						</Button>
-						<span className="w-12 text-center font-mono text-sm">{fontSize}px</span>
+						<span className="w-12 text-center font-mono text-sm">
+							{fontSize}px
+						</span>
 						<Button
 							variant="outline"
 							size="icon"
@@ -134,9 +144,13 @@ function EditorSettings() {
 					<div className="flex items-center justify-between">
 						<div>
 							<Label className="text-sm">Line Height</Label>
-							<p className="text-xs text-muted-foreground">Space between lines</p>
+							<p className="text-xs text-muted-foreground">
+								Space between lines
+							</p>
 						</div>
-						<span className="font-mono text-sm text-muted-foreground">{lineHeight.toFixed(1)}</span>
+						<span className="font-mono text-sm text-muted-foreground">
+							{lineHeight.toFixed(1)}
+						</span>
 					</div>
 					<DebouncedSlider
 						value={[lineHeight]}
@@ -152,9 +166,13 @@ function EditorSettings() {
 					<div className="flex items-center justify-between">
 						<div>
 							<Label className="text-sm">Letter Spacing</Label>
-							<p className="text-xs text-muted-foreground">Space between characters</p>
+							<p className="text-xs text-muted-foreground">
+								Space between characters
+							</p>
 						</div>
-						<span className="font-mono text-sm text-muted-foreground">{letterSpacing.toFixed(2)}em</span>
+						<span className="font-mono text-sm text-muted-foreground">
+							{letterSpacing.toFixed(2)}em
+						</span>
 					</div>
 					<DebouncedSlider
 						value={[letterSpacing]}
@@ -170,9 +188,13 @@ function EditorSettings() {
 					<div className="flex items-center justify-between">
 						<div>
 							<Label className="text-sm">Paragraph Spacing</Label>
-							<p className="text-xs text-muted-foreground">Space between paragraphs</p>
+							<p className="text-xs text-muted-foreground">
+								Space between paragraphs
+							</p>
 						</div>
-						<span className="font-mono text-sm text-muted-foreground">{paragraphSpacing.toFixed(1)}em</span>
+						<span className="font-mono text-sm text-muted-foreground">
+							{paragraphSpacing.toFixed(1)}em
+						</span>
 					</div>
 					<DebouncedSlider
 						value={[paragraphSpacing]}
@@ -187,11 +209,15 @@ function EditorSettings() {
 				<div className="flex items-center justify-between">
 					<div>
 						<Label className="text-sm">First Line Indent</Label>
-						<p className="text-xs text-muted-foreground">Indent first line of paragraphs</p>
+						<p className="text-xs text-muted-foreground">
+							Indent first line of paragraphs
+						</p>
 					</div>
 					<div className="flex items-center gap-3">
 						{firstLineIndent > 0 && (
-							<span className="text-sm text-muted-foreground">{firstLineIndent} chars</span>
+							<span className="text-sm text-muted-foreground">
+								{firstLineIndent} chars
+							</span>
 						)}
 						<Switch
 							checked={firstLineIndent > 0}
@@ -213,10 +239,21 @@ function EditorSettings() {
 						letterSpacing: `${letterSpacing}em`,
 					}}
 				>
-					<p style={{ textIndent: `${firstLineIndent}em`, marginBottom: `${paragraphSpacing}em` }}>
-						The old lighthouse stood defiant against the crashing waves, its beacon cutting through the thick fog.
+					<p
+						style={{
+							textIndent: `${firstLineIndent}em`,
+							marginBottom: `${paragraphSpacing}em`,
+						}}
+					>
+						The old lighthouse stood defiant against the crashing waves, its
+						beacon cutting through the thick fog.
 					</p>
-					<p style={{ textIndent: `${firstLineIndent}em`, marginBottom: `${paragraphSpacing}em` }}>
+					<p
+						style={{
+							textIndent: `${firstLineIndent}em`,
+							marginBottom: `${paragraphSpacing}em`,
+						}}
+					>
 						古老的灯塔傲然矗立，抵御着汹涌的海浪，它的光芒穿透浓雾。
 					</p>
 					<p style={{ textIndent: `${firstLineIndent}em` }}>

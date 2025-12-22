@@ -1,44 +1,135 @@
-import { createRootRoute, Outlet } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createRootRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { ActivityBar } from "@/components/activity-bar";
-import { GlobalSearch } from "@/components/blocks/global-search";
+import { toast } from "sonner";
+import { ActivityBar } from "@/components/activity-bar/index";
+import { GlobalSearchConnected } from "@/components/blocks/global-search-connected";
 import { BufferSwitcher } from "@/components/buffer-switcher";
 import { CommandPalette } from "@/components/command-palette";
-import { ExportDialogManager } from "@/components/export/export-dialog-manager";
 import { DevtoolsWrapper } from "@/components/devtools-wrapper";
+import { ExportDialogManager } from "@/components/export/export-dialog-manager";
 import { FontStyleInjector } from "@/components/font-style-injector";
 import { ConfirmProvider } from "@/components/ui/confirm";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { UnifiedSidebarContent } from "@/components/unified-sidebar";
-import { initializeTheme } from "@/hooks/use-theme";
-import { autoBackupManager } from "@/services/backup";
-import { useEditorTabsStore } from "@/domain/editor-tabs";
+import { autoBackupManager } from "@/db/backup/backup.service";
+import type { DrawingInterface } from "@/db/schema";
 import { useUnifiedSidebarStore } from "@/domain/sidebar";
+import { useDrawingsByWorkspace } from "@/hooks/use-drawing";
+import { useTagGraph } from "@/hooks/use-tag";
+import { initializeTheme } from "@/hooks/use-theme";
+import { useAllWorkspaces } from "@/hooks/use-workspace";
 import logger from "@/log";
+import { createDrawing, deleteDrawing } from "@/services/drawings";
+import { useEditorTabsStore } from "@/stores/editor-tabs.store";
+import { useSelectionStore } from "@/stores/selection.store";
 
 function RootComponent() {
+	const navigate = useNavigate();
 	const [commandOpen, setCommandOpen] = useState(false);
 	const [searchOpen, setSearchOpen] = useState(false);
 	const [bufferSwitcherOpen, setBufferSwitcherOpen] = useState(false);
-	const [bufferSwitcherDirection, setBufferSwitcherDirection] = useState<"forward" | "backward">("forward");
+	const [bufferSwitcherDirection, setBufferSwitcherDirection] = useState<
+		"forward" | "backward"
+	>("forward");
 
 	// Editor tabs state for buffer switcher
 	const tabs = useEditorTabsStore((s) => s.tabs);
 	const activeTabId = useEditorTabsStore((s) => s.activeTabId);
 	const setActiveTab = useEditorTabsStore((s) => s.setActiveTab);
 
+	// Get current workspace ID
+	const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
+
+	// Fetch workspaces for command palette
+	const workspaces = useAllWorkspaces() ?? [];
+
+	// Fetch drawings and tag graph data
+	const drawings = useDrawingsByWorkspace(selectedWorkspaceId) ?? [];
+	const tagGraphData = useTagGraph(selectedWorkspaceId ?? undefined) ?? {
+		nodes: [],
+		edges: [],
+	};
+
+	// Sidebar state
 	const {
 		activePanel,
 		isOpen: unifiedSidebarOpen,
+		drawingsState,
+		searchState,
 		setActivePanel,
 		toggleSidebar,
+		setSelectedDrawingId,
+		setSearchQuery,
+		setSearchSelectedTypes,
+		setSearchShowFilters,
 	} = useUnifiedSidebarStore();
-	
+
+	// Handle drawing selection - update store and navigate to canvas
+	const handleSelectDrawing = useCallback(
+		(drawing: DrawingInterface) => {
+			setSelectedDrawingId(drawing.id);
+			navigate({ to: "/canvas" });
+		},
+		[setSelectedDrawingId, navigate],
+	);
+
+	// Handle drawing creation
+	const handleCreateDrawing = useCallback(async () => {
+		if (!selectedWorkspaceId) {
+			toast.error("Please select a workspace first");
+			return;
+		}
+
+		try {
+			const newDrawing = await createDrawing({
+				workspaceId: selectedWorkspaceId,
+				name: `Drawing ${drawings.length + 1}`,
+			});
+			handleSelectDrawing(newDrawing);
+			toast.success("New drawing created");
+		} catch (error) {
+			logger.error("[Root] Failed to create drawing:", error);
+			toast.error("Failed to create drawing");
+		}
+	}, [selectedWorkspaceId, drawings.length, handleSelectDrawing]);
+
+	// Handle drawing deletion
+	const handleDeleteDrawing = useCallback(
+		async (drawingId: string, drawingName: string) => {
+			try {
+				await deleteDrawing(drawingId);
+				toast.success(`Drawing "${drawingName}" deleted`);
+			} catch (error) {
+				logger.error("[Root] Failed to delete drawing:", error);
+				toast.error("Failed to delete drawing");
+			}
+		},
+		[],
+	);
+
+	// Search callbacks
+	const handleSetSearchQuery = useCallback(
+		(query: string) => setSearchQuery(query),
+		[setSearchQuery],
+	);
+
+	const handleSetSearchSelectedTypes = useCallback(
+		(types: string[]) => setSearchSelectedTypes(types),
+		[setSearchSelectedTypes],
+	);
+
+	const handleSetSearchShowFilters = useCallback(
+		(show: boolean) => setSearchShowFilters(show),
+		[setSearchShowFilters],
+	);
+
 	// 日志：追踪侧边栏状态变化
 	useEffect(() => {
-		logger.info(`[Root] Sidebar state: isOpen=${unifiedSidebarOpen}, activePanel=${activePanel}, willRender=${unifiedSidebarOpen && activePanel !== null}`);
+		logger.info(
+			`[Root] Sidebar state: isOpen=${unifiedSidebarOpen}, activePanel=${activePanel}, willRender=${unifiedSidebarOpen && activePanel !== null}`,
+		);
 	}, [unifiedSidebarOpen, activePanel]);
 
 	// 初始化主题系统（包括系统主题监听）
@@ -55,7 +146,6 @@ function RootComponent() {
 		}
 		return () => autoBackupManager.stop();
 	}, []);
-
 
 	// 全局快捷键
 	useEffect(() => {
@@ -111,10 +201,7 @@ function RootComponent() {
 				<div className="flex h-screen w-full overflow-hidden bg-background">
 					<ActivityBar />
 					<div className="flex-1 flex h-full min-w-0 overflow-hidden">
-						<PanelGroup
-							direction="horizontal"
-							autoSaveId="grain-main-layout"
-						>
+						<PanelGroup direction="horizontal" autoSaveId="grain-main-layout">
 							{/* Sidebar Panel - only show when open */}
 							{unifiedSidebarOpen && activePanel && (
 								<>
@@ -126,7 +213,20 @@ function RootComponent() {
 										maxSize={40}
 										className="bg-sidebar flex flex-col"
 									>
-										<UnifiedSidebarContent />
+										<UnifiedSidebarContent
+											activePanel={activePanel}
+											workspaceId={selectedWorkspaceId}
+											drawings={drawings}
+											selectedDrawingId={drawingsState.selectedDrawingId}
+											onSelectDrawing={handleSelectDrawing}
+											onCreateDrawing={handleCreateDrawing}
+											onDeleteDrawing={handleDeleteDrawing}
+											tagGraphData={tagGraphData}
+											searchState={searchState}
+											onSetSearchQuery={handleSetSearchQuery}
+											onSetSearchSelectedTypes={handleSetSearchSelectedTypes}
+											onSetSearchShowFilters={handleSetSearchShowFilters}
+										/>
 									</Panel>
 									<PanelResizeHandle className="w-[1px] bg-border transition-colors hover:w-1 hover:bg-primary/50 data-[resize-handle-active]:w-1 data-[resize-handle-active]:bg-primary/70 z-10" />
 								</>
@@ -146,9 +246,14 @@ function RootComponent() {
 					</div>
 				</div>
 				{/* 命令面板 */}
-				<CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
+				<CommandPalette
+					open={commandOpen}
+					onOpenChange={setCommandOpen}
+					workspaces={workspaces}
+					selectedWorkspaceId={selectedWorkspaceId}
+				/>
 				{/* Global Search */}
-				<GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
+				<GlobalSearchConnected open={searchOpen} onOpenChange={setSearchOpen} />
 				{/* Buffer Switcher (Emacs-style tab switching) */}
 				<BufferSwitcher
 					open={bufferSwitcherOpen}
@@ -159,7 +264,10 @@ function RootComponent() {
 					initialDirection={bufferSwitcherDirection}
 				/>
 				{/* Export对话框管理器 */}
-				<ExportDialogManager />
+				<ExportDialogManager
+					selectedWorkspaceId={selectedWorkspaceId}
+					workspaces={workspaces}
+				/>
 				{/* 字体样式注入 */}
 				<FontStyleInjector />
 				{/* TanStack Devtools - 仅在开发模式下显示 */}

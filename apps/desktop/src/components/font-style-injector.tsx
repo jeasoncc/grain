@@ -1,6 +1,10 @@
 // Font Style Injector - Apply font settings globally
 import { useEffect, useRef } from "react";
-import { UI_SCALE_OPTIONS, CARD_SIZE_OPTIONS, useFontSettings } from "@/domain/font";
+import {
+	CARD_SIZE_OPTIONS,
+	UI_SCALE_OPTIONS,
+	useFontSettings,
+} from "@/domain/font";
 
 export function FontStyleInjector() {
 	const {
@@ -29,13 +33,17 @@ export function FontStyleInjector() {
 		// Use requestAnimationFrame to batch DOM updates
 		rafRef.current = requestAnimationFrame(() => {
 			const scaleOption = UI_SCALE_OPTIONS.find((s) => s.value === uiScale);
-			const cardSizeOption = CARD_SIZE_OPTIONS.find((c) => c.value === cardSize);
+			const cardSizeOption = CARD_SIZE_OPTIONS.find(
+				(c) => c.value === cardSize,
+			);
 			const scale = scaleOption?.scale || 1;
 			const cardPadding = cardSizeOption?.padding || "1rem";
 
 			// Create style element only once
 			if (!styleElRef.current) {
-				const existing = document.getElementById("font-settings-style") as HTMLStyleElement;
+				const existing = document.getElementById(
+					"font-settings-style",
+				) as HTMLStyleElement;
 				if (existing) {
 					styleElRef.current = existing;
 				} else {
@@ -143,7 +151,6 @@ export function FontStyleInjector() {
         background-color: var(--editor-selection);
       }
     `;
-
 		});
 
 		return () => {

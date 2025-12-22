@@ -3,8 +3,8 @@
  * 纯函数，用于获取图标
  */
 import type { LucideIcon } from "lucide-react";
-import type { IconTheme } from "./icon-theme.interface";
 import { iconThemes } from "./icon-theme.config";
+import type { IconTheme } from "./icon-theme.interface";
 import { useIconThemeStore } from "./icon-theme.store";
 
 // ============================================================================

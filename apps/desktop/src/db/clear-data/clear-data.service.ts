@@ -3,8 +3,8 @@
  * Includes IndexedDB, localStorage, sessionStorage, cookies, etc.
  */
 
-import logger from "@/log";
 import { database } from "@/db/database";
+import logger from "@/log";
 
 export interface ClearDataOptions {
 	clearIndexedDB?: boolean;
@@ -126,8 +126,10 @@ function initializeBasicSettings(): void {
 	try {
 		// Don't set any default values, let the app use code defaults
 		// This ensures complete clearing, app will auto-initialize
-		
-		logger.info("[Clear Data] Basic settings will be initialized by app on next load");
+
+		logger.info(
+			"[Clear Data] Basic settings will be initialized by app on next load",
+		);
 	} catch (error) {
 		logger.error("[Clear Data] Failed to initialize basic settings:", error);
 	}
@@ -222,22 +224,27 @@ function calculateDataSize(data: unknown[]): number {
  * Get storage usage statistics
  */
 export async function getStorageStats(): Promise<{
-	indexedDB: { size: number; tables: Record<string, number>; tableSizes: Record<string, number> };
+	indexedDB: {
+		size: number;
+		tables: Record<string, number>;
+		tableSizes: Record<string, number>;
+	};
 	localStorage: { size: number; keys: number };
 	sessionStorage: { size: number; keys: number };
 	cookies: { count: number };
 }> {
 	try {
 		// Get all data from each table to calculate sizes
-		const [users, workspaces, nodes, contents, drawings, attachments, tags] = await Promise.all([
-			database.users.toArray(),
-			database.workspaces.toArray(),
-			database.nodes.toArray(),
-			database.contents.toArray(),
-			database.drawings.toArray(),
-			database.attachments.toArray(),
-			database.tags.toArray(),
-		]);
+		const [users, workspaces, nodes, contents, drawings, attachments, tags] =
+			await Promise.all([
+				database.users.toArray(),
+				database.workspaces.toArray(),
+				database.nodes.toArray(),
+				database.contents.toArray(),
+				database.drawings.toArray(),
+				database.attachments.toArray(),
+				database.tags.toArray(),
+			]);
 
 		// Calculate sizes for each table
 		const tableSizes = {

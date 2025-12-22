@@ -3,16 +3,38 @@
  */
 
 import { Excalidraw, exportToBlob } from "@excalidraw/excalidraw";
-import { AlertTriangle, Download, Edit3, Eye, Maximize2, Minimize2, RefreshCw, Save, Trash2 } from "lucide-react";
-import { Component, type ErrorInfo, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import {
+	AlertTriangle,
+	Download,
+	Edit3,
+	Eye,
+	Maximize2,
+	Minimize2,
+	RefreshCw,
+	Save,
+	Trash2,
+} from "lucide-react";
+import {
+	Component,
+	type ErrorInfo,
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { toast } from "sonner";
-import logger from "@/log";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { DrawingInterface } from "@/db/schema";
 import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
-import { resetDrawing, saveDrawingContent, updateDrawing } from "@/services/drawings";
-import type { DrawingInterface } from "@/db/schema";
+import logger from "@/log";
+import {
+	resetDrawing,
+	saveDrawingContent,
+	updateDrawing,
+} from "@/services/drawings";
 
 // Error Boundary for Excalidraw component
 interface ErrorBoundaryProps {
@@ -27,14 +49,18 @@ interface ErrorBoundaryState {
 	isCanvasError: boolean;
 }
 
-class DrawingErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class DrawingErrorBoundary extends Component<
+	ErrorBoundaryProps,
+	ErrorBoundaryState
+> {
 	constructor(props: ErrorBoundaryProps) {
 		super(props);
 		this.state = { hasError: false, error: null, isCanvasError: false };
 	}
 
 	static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-		const isCanvasError = error.message?.includes("Canvas exceeds max size") || 
+		const isCanvasError =
+			error.message?.includes("Canvas exceeds max size") ||
 			error.name === "DOMException";
 		return { hasError: true, error, isCanvasError };
 	}
@@ -59,8 +85,8 @@ class DrawingErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 				<div className="flex flex-col items-center justify-center h-full bg-muted/30 rounded-lg p-4 gap-3">
 					<AlertTriangle className="size-8 text-destructive" />
 					<span className="text-sm text-muted-foreground text-center">
-						{this.state.isCanvasError 
-							? "Drawing data error, canvas size exceeded" 
+						{this.state.isCanvasError
+							? "Drawing data error, canvas size exceeded"
 							: "Failed to load drawing component"}
 					</span>
 					<div className="flex gap-2">
@@ -134,10 +160,17 @@ export function DrawingWorkspace({
 		}
 		// 只保留安全的属性，不传递可能导致 canvas 尺寸异常的值
 		const sanitized: any = {};
-		if (appState.viewBackgroundColor && typeof appState.viewBackgroundColor === "string") {
+		if (
+			appState.viewBackgroundColor &&
+			typeof appState.viewBackgroundColor === "string"
+		) {
 			sanitized.viewBackgroundColor = appState.viewBackgroundColor;
 		}
-		if (typeof appState.gridSize === "number" && Number.isFinite(appState.gridSize) && appState.gridSize > 0) {
+		if (
+			typeof appState.gridSize === "number" &&
+			Number.isFinite(appState.gridSize) &&
+			appState.gridSize > 0
+		) {
 			sanitized.gridSize = appState.gridSize;
 		}
 		return sanitized;
@@ -156,8 +189,10 @@ export function DrawingWorkspace({
 			const height = el.height ?? 0;
 			if (!Number.isFinite(x) || Math.abs(x) > MAX_COORD) return false;
 			if (!Number.isFinite(y) || Math.abs(y) > MAX_COORD) return false;
-			if (!Number.isFinite(width) || width < 0 || width > MAX_SIZE) return false;
-			if (!Number.isFinite(height) || height < 0 || height > MAX_SIZE) return false;
+			if (!Number.isFinite(width) || width < 0 || width > MAX_SIZE)
+				return false;
+			if (!Number.isFinite(height) || height < 0 || height > MAX_SIZE)
+				return false;
 			return true;
 		});
 	};
@@ -171,13 +206,13 @@ export function DrawingWorkspace({
 			const parsed = JSON.parse(drawing.content);
 			const sanitizedElements = sanitizeElements(parsed.elements || []);
 			const sanitizedAppState = sanitizeAppState(parsed.appState);
-			
+
 			// 额外检查：如果元素数量过多或有异常，返回空数据
 			if (sanitizedElements.length > 10000) {
 				logger.warn("Too many elements, resetting drawing data");
 				return { elements: [], appState: {}, files: {} };
 			}
-			
+
 			return {
 				elements: sanitizedElements,
 				appState: sanitizedAppState,
@@ -202,21 +237,31 @@ export function DrawingWorkspace({
 	// 考虑到 devicePixelRatio 可能是 2-3，我们需要更小的限制
 	const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
 	const MAX_CANVAS_SIZE = Math.floor(4096 / dpr); // 根据 DPR 动态计算安全尺寸
-	
+
 	useEffect(() => {
 		const updateSize = () => {
 			if (fillContainer && containerRef.current?.parentElement) {
 				// 填满父容器模式，但限制最大尺寸
-				const parentRect = containerRef.current.parentElement.getBoundingClientRect();
+				const parentRect =
+					containerRef.current.parentElement.getBoundingClientRect();
 				setContainerSize({
 					width: Math.min(MAX_CANVAS_SIZE, Math.max(400, parentRect.width - 8)),
-					height: Math.min(MAX_CANVAS_SIZE, Math.max(300, parentRect.height - 8)),
+					height: Math.min(
+						MAX_CANVAS_SIZE,
+						Math.max(300, parentRect.height - 8),
+					),
 				});
 			} else if (containerRef.current) {
 				const rect = containerRef.current.getBoundingClientRect();
-				const maxWidth = Math.min(MAX_CANVAS_SIZE, Math.max(600, rect.width - 32));
-				const maxHeight = Math.min(MAX_CANVAS_SIZE, Math.max(400, Math.min(800, window.innerHeight * 0.6)));
-				
+				const maxWidth = Math.min(
+					MAX_CANVAS_SIZE,
+					Math.max(600, rect.width - 32),
+				);
+				const maxHeight = Math.min(
+					MAX_CANVAS_SIZE,
+					Math.max(400, Math.min(800, window.innerHeight * 0.6)),
+				);
+
 				setContainerSize({
 					width: Math.min(drawing.width, maxWidth),
 					height: Math.min(drawing.height, maxHeight),
@@ -225,8 +270,8 @@ export function DrawingWorkspace({
 		};
 
 		updateSize();
-		window.addEventListener('resize', updateSize);
-		return () => window.removeEventListener('resize', updateSize);
+		window.addEventListener("resize", updateSize);
+		return () => window.removeEventListener("resize", updateSize);
 	}, [drawing.width, drawing.height, fillContainer]);
 
 	// Save drawing data
@@ -373,12 +418,12 @@ export function DrawingWorkspace({
 
 		return (
 			<DrawingErrorBoundary onReset={handleReset} onClearData={handleClearData}>
-				<div 
+				<div
 					className="pointer-events-none h-full"
-					style={{ 
-						maxWidth: MAX_CANVAS_SIZE, 
+					style={{
+						maxWidth: MAX_CANVAS_SIZE,
 						maxHeight: MAX_CANVAS_SIZE,
-						overflow: "hidden"
+						overflow: "hidden",
 					}}
 				>
 					<Excalidraw
@@ -415,12 +460,12 @@ export function DrawingWorkspace({
 
 		return (
 			<DrawingErrorBoundary onReset={handleReset} onClearData={handleClearData}>
-				<div 
+				<div
 					className="h-full"
-					style={{ 
-						maxWidth: MAX_CANVAS_SIZE, 
+					style={{
+						maxWidth: MAX_CANVAS_SIZE,
 						maxHeight: MAX_CANVAS_SIZE,
-						overflow: "hidden"
+						overflow: "hidden",
 					}}
 				>
 					<Excalidraw
@@ -501,15 +546,19 @@ export function DrawingWorkspace({
 				fillContainer && "w-full h-full",
 				className,
 			)}
-			style={fillContainer ? {
-				minWidth: 400,
-				minHeight: 300,
-			} : { 
-				width: containerSize.width, 
-				height: containerSize.height,
-				minWidth: 400,
-				minHeight: 300,
-			}}
+			style={
+				fillContainer
+					? {
+							minWidth: 400,
+							minHeight: 300,
+						}
+					: {
+							width: containerSize.width,
+							height: containerSize.height,
+							minWidth: 400,
+							minHeight: 300,
+						}
+			}
 		>
 			{/* Header with title and controls */}
 			<div className="absolute top-2 left-2 right-2 z-10 flex items-center justify-between">

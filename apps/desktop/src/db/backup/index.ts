@@ -1,20 +1,20 @@
 /**
  * Backup Module
- * 
+ *
  * 数据库备份和恢复功能
  */
 
 export {
+	AutoBackupManager,
+	autoBackupManager,
+	type BackupData,
+	type BackupMetadata,
+	clearAllData,
 	createBackup,
 	exportBackup,
 	exportBackupZip,
-	restoreBackup,
-	clearAllData,
 	getDatabaseStats,
-	AutoBackupManager,
-	autoBackupManager,
-	type BackupMetadata,
-	type BackupData,
+	restoreBackup,
 } from "./backup.service";
 
 // ============================================================================
@@ -23,11 +23,11 @@ export {
 // ============================================================================
 
 export {
+	AutoBackupManager as BackupAutoManager,
+	autoBackupManager as backupAutoManager,
 	createBackup as backupCreate,
 	exportBackup as backupExport,
 	exportBackupZip as backupExportZip,
-	restoreBackup as backupRestore,
 	getDatabaseStats as backupGetStats,
-	AutoBackupManager as BackupAutoManager,
-	autoBackupManager as backupAutoManager,
+	restoreBackup as backupRestore,
 } from "./backup.service";

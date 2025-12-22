@@ -10,9 +10,15 @@
  *
  * Requirements: 1.2, 5.3, 6.2
  */
+import * as E from "fp-ts/Either";
 import type { SerializedEditorState } from "lexical";
+import {
+	getNodeById,
+	syncTagCache,
+	updateContentByNodeId,
+	updateNode,
+} from "@/db";
 import logger from "@/log";
-import { ContentRepository, NodeRepository, TagRepository } from "@/db/models";
 import { extractTagsFromContent } from "./save.utils";
 
 export interface SaveResult {
@@ -64,16 +70,17 @@ class SaveServiceImpl implements SaveService {
 			const tags = extractTagsFromContent(content);
 
 			// Save content
-			await ContentRepository.updateByNodeId(documentId, contentString, "lexical");
-			
+			await updateContentByNodeId(documentId, contentString, "lexical")();
+
 			// Update node's tags array
 			if (tags.length > 0 || this.lastSavedContent.has(documentId)) {
-				await NodeRepository.update(documentId, { tags });
-				
+				await updateNode(documentId, { tags })();
+
 				// Get workspace for tag cache sync
-				const node = await NodeRepository.getById(documentId);
+				const nodeResult = await getNodeById(documentId)();
+				const node = E.isRight(nodeResult) ? nodeResult.right : null;
 				if (node) {
-					await TagRepository.syncCache(node.workspace, tags);
+					await syncTagCache(node.workspace, tags)();
 				}
 			}
 
@@ -132,7 +139,7 @@ class SaveServiceImpl implements SaveService {
 	clearDocument(documentId: string): void {
 		this.unsavedChanges.delete(documentId);
 		this.lastSavedContent.delete(documentId);
-		
+
 		const timer = this.debounceTimers.get(documentId);
 		if (timer) {
 			clearTimeout(timer);

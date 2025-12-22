@@ -1,22 +1,21 @@
 /**
  * Import/Export Domain
- * 
+ *
  * Provides data import and export functionality.
  */
 
+// Service
+export {
+	type ExportBundle,
+	exportAll,
+	exportAllAsZip,
+	exportAsMarkdown,
+	importFromJson,
+} from "./import-export.service";
 // Utils (pure functions)
 export {
 	extractText,
-	triggerDownload,
-	triggerBlobDownload,
 	readFileAsText,
+	triggerBlobDownload,
+	triggerDownload,
 } from "./import-export.utils";
-
-// Service
-export {
-	exportAll,
-	exportAllAsZip,
-	importFromJson,
-	exportAsMarkdown,
-	type ExportBundle,
-} from "./import-export.service";

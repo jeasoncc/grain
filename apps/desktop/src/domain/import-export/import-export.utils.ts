@@ -39,7 +39,7 @@ export function extractText(node: unknown): string {
 export function triggerDownload(
 	filename: string,
 	text: string,
-	mimeType = "application/json;charset=utf-8"
+	mimeType = "application/json;charset=utf-8",
 ): void {
 	const blob = new Blob([text], { type: mimeType });
 	const url = URL.createObjectURL(blob);

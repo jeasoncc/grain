@@ -1,6 +1,6 @@
 /**
  * Editor Tabs - Module Entry Point
- * 
+ *
  * 统一导出所有公共 API
  */
 
@@ -9,15 +9,15 @@
 // ==============================
 
 export type {
-	TabType,
-	EditorTab,
-	SelectionState,
 	EditorInstanceState,
+	EditorTab,
+	EditorTabsConfig,
 	EditorTabsState,
 	OpenTabPayload,
-	UpdateEditorStatePayload,
 	ReorderTabsPayload,
-	EditorTabsConfig,
+	SelectionState,
+	TabType,
+	UpdateEditorStatePayload,
 } from "./editor-tabs.interface";
 
 export { DEFAULT_CONFIG } from "./editor-tabs.interface";
@@ -27,11 +27,11 @@ export { DEFAULT_CONFIG } from "./editor-tabs.interface";
 // ==============================
 
 export {
-	EditorTabBuilder,
-	EditorStateBuilder,
-	createFileTab,
-	createDiaryTab,
 	createCanvasTab,
+	createDiaryTab,
+	createFileTab,
+	EditorStateBuilder,
+	EditorTabBuilder,
 } from "./editor-tabs.builder";
 
 // ==============================
@@ -39,20 +39,20 @@ export {
 // ==============================
 
 export {
-	createDefaultEditorState,
-	findTabByNodeId,
-	findTabById,
-	getTabsByWorkspace,
-	calculateNextActiveTabId,
 	addTab,
-	removeTab,
-	updateTab,
-	reorderTabs,
-	updateEditorState,
-	removeEditorState,
+	calculateNextActiveTabId,
+	createDefaultEditorState,
 	evictLRUEditorStates,
+	findTabById,
+	findTabByNodeId,
+	getTabsByWorkspace,
 	isValidTab,
 	isValidTabIndex,
+	removeEditorState,
+	removeTab,
+	reorderTabs,
+	updateEditorState,
+	updateTab,
 } from "./editor-tabs.utils";
 
 // ==============================
@@ -60,8 +60,8 @@ export {
 // ==============================
 
 export {
-	useEditorTabsStore,
 	useActiveTab,
-	useTabCount,
+	useEditorTabsStore,
 	useHasDirtyTabs,
+	useTabCount,
 } from "./editor-tabs.store";

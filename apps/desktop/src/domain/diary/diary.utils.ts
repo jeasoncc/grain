@@ -20,36 +20,106 @@ import dayjs from "dayjs";
 
 /** Zodiac animals (Chinese and English) */
 const ZODIAC_ANIMALS = [
-	"鼠", "牛", "虎", "兔", "龙", "蛇",
-	"马", "羊", "猴", "鸡", "狗", "猪"
+	"鼠",
+	"牛",
+	"虎",
+	"兔",
+	"龙",
+	"蛇",
+	"马",
+	"羊",
+	"猴",
+	"鸡",
+	"狗",
+	"猪",
 ];
 
 const ZODIAC_ANIMALS_EN = [
-	"Rat", "Ox", "Tiger", "Rabbit", "Dragon", "Snake",
-	"Horse", "Goat", "Monkey", "Rooster", "Dog", "Pig"
+	"Rat",
+	"Ox",
+	"Tiger",
+	"Rabbit",
+	"Dragon",
+	"Snake",
+	"Horse",
+	"Goat",
+	"Monkey",
+	"Rooster",
+	"Dog",
+	"Pig",
 ];
 
 /** Heavenly Stems (天干) */
-const HEAVENLY_STEMS = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+const HEAVENLY_STEMS = [
+	"甲",
+	"乙",
+	"丙",
+	"丁",
+	"戊",
+	"己",
+	"庚",
+	"辛",
+	"壬",
+	"癸",
+];
 
 /** Earthly Branches (地支) */
-const EARTHLY_BRANCHES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+const EARTHLY_BRANCHES = [
+	"子",
+	"丑",
+	"寅",
+	"卯",
+	"辰",
+	"巳",
+	"午",
+	"未",
+	"申",
+	"酉",
+	"戌",
+	"亥",
+];
 
 /** Chinese hours (十二时辰) */
 const CHINESE_HOURS = [
-	"子时", "丑时", "寅时", "卯时", "辰时", "巳时",
-	"午时", "未时", "申时", "酉时", "戌时", "亥时"
+	"子时",
+	"丑时",
+	"寅时",
+	"卯时",
+	"辰时",
+	"巳时",
+	"午时",
+	"未时",
+	"申时",
+	"酉时",
+	"戌时",
+	"亥时",
 ];
 
 /** Month names in English */
 const MONTH_NAMES = [
-	"January", "February", "March", "April", "May", "June",
-	"July", "August", "September", "October", "November", "December"
+	"January",
+	"February",
+	"March",
+	"April",
+	"May",
+	"June",
+	"July",
+	"August",
+	"September",
+	"October",
+	"November",
+	"December",
 ];
 
 /** Weekday names in English */
 const WEEKDAY_NAMES = [
-	"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+	"Sunday",
+	"Monday",
+	"Tuesday",
+	"Wednesday",
+	"Thursday",
+	"Friday",
+	"Saturday",
 ];
 
 // ==============================
@@ -57,10 +127,10 @@ const WEEKDAY_NAMES = [
 // ==============================
 
 export interface DiaryFolderStructure {
-	yearFolder: string;   // "year-2024-Dragon"
-	monthFolder: string;  // "month-12-December"
-	dayFolder: string;    // "day-14-Saturday"
-	filename: string;     // "diary-1734192000-14-30-00" (hyphens for cross-platform)
+	yearFolder: string; // "year-2024-Dragon"
+	monthFolder: string; // "month-12-December"
+	dayFolder: string; // "day-14-Saturday"
+	filename: string; // "diary-1734192000-14-30-00" (hyphens for cross-platform)
 }
 
 // ==============================
@@ -112,7 +182,9 @@ export function getChineseHour(hour: number): string {
  * @param date - 日期，默认为当前时间
  * @returns 日记文件夹结构
  */
-export function getDiaryFolderStructure(date: Date = new Date()): DiaryFolderStructure {
+export function getDiaryFolderStructure(
+	date: Date = new Date(),
+): DiaryFolderStructure {
 	const year = date.getFullYear();
 	const month = date.getMonth();
 	const day = date.getDate();

@@ -11,27 +11,25 @@
  * Requirements: 4.1, 4.2, 4.3, 4.5
  */
 
+import * as E from "fp-ts/Either";
+import { addContent, addNode, getNextOrder, updateNode } from "@/db";
 import { database } from "@/db/database";
-import {
-  NodeRepository,
-  ContentRepository,
-} from "@/db/models";
-import { ensureWikiFolder, WIKI_TAG } from "./wiki.service";
 import logger from "@/log/index";
+import { ensureWikiFolder, WIKI_TAG } from "./wiki.service";
 
 /**
  * Legacy WikiInterface for migration purposes
  * This matches the old wikiEntries table structure
  */
 interface LegacyWikiEntry {
-  id: string;
-  project: string;
-  name: string;
-  alias: string[];
-  tags: string[];
-  content: string;
-  createDate: string;
-  updatedAt: string;
+	id: string;
+	project: string;
+	name: string;
+	alias: string[];
+	tags: string[];
+	content: string;
+	createDate: string;
+	updatedAt: string;
 }
 
 // ==============================
@@ -42,10 +40,10 @@ interface LegacyWikiEntry {
  * Migration result interface
  */
 export interface MigrationResult {
-  /** Number of successfully migrated entries */
-  migrated: number;
-  /** Array of error messages for failed migrations */
-  errors: string[];
+	/** Number of successfully migrated entries */
+	migrated: number;
+	/** Array of error messages for failed migrations */
+	errors: string[];
 }
 
 // ==============================
@@ -62,25 +60,25 @@ export interface MigrationResult {
  * @returns True if migration is needed
  */
 export async function checkMigrationNeeded(
-  workspaceId: string
+	workspaceId: string,
 ): Promise<boolean> {
-  try {
-    // Access the legacy wikiEntries table directly
-    // The table may not exist if already migrated to v11
-    const table = database.table("wikiEntries");
-    if (!table) {
-      return false;
-    }
-    const count = await table.where("project").equals(workspaceId).count();
-    return count > 0;
-  } catch (error) {
-    // Table may not exist anymore after migration
-    logger.debug(
-      `Wiki entries table not found or empty for workspace ${workspaceId}:`,
-      error
-    );
-    return false;
-  }
+	try {
+		// Access the legacy wikiEntries table directly
+		// The table may not exist if already migrated to v11
+		const table = database.table("wikiEntries");
+		if (!table) {
+			return false;
+		}
+		const count = await table.where("project").equals(workspaceId).count();
+		return count > 0;
+	} catch (error) {
+		// Table may not exist anymore after migration
+		logger.debug(
+			`Wiki entries table not found or empty for workspace ${workspaceId}:`,
+			error,
+		);
+		return false;
+	}
 }
 
 /**
@@ -93,58 +91,61 @@ export async function checkMigrationNeeded(
  * @returns Migration result with count and errors
  */
 export async function migrateWikiEntriesToFiles(
-  workspaceId: string
+	workspaceId: string,
 ): Promise<MigrationResult> {
-  const result: MigrationResult = {
-    migrated: 0,
-    errors: [],
-  };
+	const result: MigrationResult = {
+		migrated: 0,
+		errors: [],
+	};
 
-  try {
-    // Get all wiki entries for this workspace from the legacy table
-    const table = database.table("wikiEntries");
-    if (!table) {
-      logger.info(`Wiki entries table not found for workspace ${workspaceId}`);
-      return result;
-    }
-    const wikiEntries = await table.where("project").equals(workspaceId).toArray() as LegacyWikiEntry[];
+	try {
+		// Get all wiki entries for this workspace from the legacy table
+		const table = database.table("wikiEntries");
+		if (!table) {
+			logger.info(`Wiki entries table not found for workspace ${workspaceId}`);
+			return result;
+		}
+		const wikiEntries = (await table
+			.where("project")
+			.equals(workspaceId)
+			.toArray()) as LegacyWikiEntry[];
 
-    if (wikiEntries.length === 0) {
-      logger.info(`No wiki entries to migrate for workspace ${workspaceId}`);
-      return result;
-    }
+		if (wikiEntries.length === 0) {
+			logger.info(`No wiki entries to migrate for workspace ${workspaceId}`);
+			return result;
+		}
 
-    logger.info(
-      `Starting migration of ${wikiEntries.length} wiki entries for workspace ${workspaceId}`
-    );
+		logger.info(
+			`Starting migration of ${wikiEntries.length} wiki entries for workspace ${workspaceId}`,
+		);
 
-    // Ensure wiki folder exists
-    const wikiFolder = await ensureWikiFolder(workspaceId);
+		// Ensure wiki folder exists
+		const wikiFolder = await ensureWikiFolder(workspaceId);
 
-    // Migrate each entry
-    for (const entry of wikiEntries) {
-      try {
-        await migrateWikiEntry(entry, wikiFolder.id, workspaceId);
-        result.migrated++;
-      } catch (error) {
-        const errorMessage = `Failed to migrate wiki entry "${entry.name}" (${entry.id}): ${error instanceof Error ? error.message : String(error)}`;
-        result.errors.push(errorMessage);
-        logger.error(errorMessage);
-        // Continue with remaining entries (Requirements: 4.5)
-      }
-    }
+		// Migrate each entry
+		for (const entry of wikiEntries) {
+			try {
+				await migrateWikiEntry(entry, wikiFolder.id, workspaceId);
+				result.migrated++;
+			} catch (error) {
+				const errorMessage = `Failed to migrate wiki entry "${entry.name}" (${entry.id}): ${error instanceof Error ? error.message : String(error)}`;
+				result.errors.push(errorMessage);
+				logger.error(errorMessage);
+				// Continue with remaining entries (Requirements: 4.5)
+			}
+		}
 
-    logger.success(
-      `Migration complete for workspace ${workspaceId}: ${result.migrated} migrated, ${result.errors.length} errors`
-    );
+		logger.success(
+			`Migration complete for workspace ${workspaceId}: ${result.migrated} migrated, ${result.errors.length} errors`,
+		);
 
-    return result;
-  } catch (error) {
-    const errorMessage = `Migration failed for workspace ${workspaceId}: ${error instanceof Error ? error.message : String(error)}`;
-    result.errors.push(errorMessage);
-    logger.error(errorMessage);
-    return result;
-  }
+		return result;
+	} catch (error) {
+		const errorMessage = `Migration failed for workspace ${workspaceId}: ${error instanceof Error ? error.message : String(error)}`;
+		result.errors.push(errorMessage);
+		logger.error(errorMessage);
+		return result;
+	}
 }
 
 /**
@@ -155,41 +156,49 @@ export async function migrateWikiEntriesToFiles(
  * @param workspaceId - The workspace ID
  */
 async function migrateWikiEntry(
-  entry: LegacyWikiEntry,
-  wikiFolderId: string,
-  workspaceId: string
+	entry: LegacyWikiEntry,
+	wikiFolderId: string,
+	workspaceId: string,
 ): Promise<void> {
-  // Get next order for the new file
-  const nextOrder = await NodeRepository.getNextOrder(wikiFolderId, workspaceId);
+	// Get next order for the new file
+	const nextOrderResult = await getNextOrder(wikiFolderId, workspaceId)();
+	const nextOrder = E.isRight(nextOrderResult) ? nextOrderResult.right : 0;
 
-  // Create the file node
-  // Requirements: 4.2 - Preserve title (name)
-  const node = await NodeRepository.add(workspaceId, entry.name, {
-    parent: wikiFolderId,
-    type: "file",
-    order: nextOrder,
-  });
+	// Create the file node
+	// Requirements: 4.2 - Preserve title (name)
+	const nodeResult = await addNode(workspaceId, entry.name, {
+		parent: wikiFolderId,
+		type: "file",
+		order: nextOrder,
+	})();
 
-  // Apply the "wiki" tag and preserve original tags
-  // Requirements: 4.3 - Apply "wiki" tag
-  const tags = entry.tags?.length > 0 
-    ? [...new Set([WIKI_TAG, ...entry.tags])] // Combine wiki tag with existing tags, dedupe
-    : [WIKI_TAG];
-  
-  await NodeRepository.update(node.id, { tags });
+	if (E.isLeft(nodeResult)) {
+		throw new Error(`Failed to create node: ${nodeResult.left.message}`);
+	}
 
-  // Create content record
-  // Requirements: 4.2 - Preserve content
-  await ContentRepository.add(node.id, entry.content || "", "lexical");
+	const node = nodeResult.right;
 
-  // Delete the original wiki entry after successful migration
-  // Requirements: 4.4 - Remove migrated entries
-  const table = database.table("wikiEntries");
-  if (table) {
-    await table.delete(entry.id);
-  }
+	// Apply the "wiki" tag and preserve original tags
+	// Requirements: 4.3 - Apply "wiki" tag
+	const tags =
+		entry.tags?.length > 0
+			? [...new Set([WIKI_TAG, ...entry.tags])] // Combine wiki tag with existing tags, dedupe
+			: [WIKI_TAG];
 
-  logger.debug(`Migrated wiki entry "${entry.name}" to node ${node.id}`);
+	await updateNode(node.id, { tags })();
+
+	// Create content record
+	// Requirements: 4.2 - Preserve content
+	await addContent(node.id, entry.content || "", "lexical")();
+
+	// Delete the original wiki entry after successful migration
+	// Requirements: 4.4 - Remove migrated entries
+	const table = database.table("wikiEntries");
+	if (table) {
+		await table.delete(entry.id);
+	}
+
+	logger.debug(`Migrated wiki entry "${entry.name}" to node ${node.id}`);
 }
 
 /**
@@ -202,14 +211,14 @@ async function migrateWikiEntry(
  * @returns Migration result or null if no migration was needed
  */
 export async function runMigrationIfNeeded(
-  workspaceId: string
+	workspaceId: string,
 ): Promise<MigrationResult | null> {
-  const needsMigration = await checkMigrationNeeded(workspaceId);
-  
-  if (!needsMigration) {
-    return null;
-  }
+	const needsMigration = await checkMigrationNeeded(workspaceId);
 
-  logger.info(`Wiki migration needed for workspace ${workspaceId}`);
-  return migrateWikiEntriesToFiles(workspaceId);
+	if (!needsMigration) {
+		return null;
+	}
+
+	logger.info(`Wiki migration needed for workspace ${workspaceId}`);
+	return migrateWikiEntriesToFiles(workspaceId);
 }

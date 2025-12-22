@@ -9,34 +9,36 @@
  * Used by diary, wiki, and other file creation features.
  */
 
-import { NodeRepository, ContentRepository, type NodeInterface } from "@/db/models";
+import * as E from "fp-ts/Either";
+import { addContent, addNode, getNextOrder, getNodesByWorkspace } from "@/db";
+import type { NodeInterface } from "@/types/node";
 
 // ==============================
 // Types
 // ==============================
 
 export interface FileCreationOptions {
-  /** Workspace ID */
-  workspaceId: string;
-  /** File title/name */
-  title: string;
-  /** Parent folder path (array of folder names from root) */
-  folderPath: string[];
-  /** Node type (file, diary, etc.) */
-  type?: "file" | "diary" | "canvas";
-  /** Tags to apply to the file */
-  tags?: string[];
-  /** Content to store (Lexical JSON string) */
-  content?: string;
-  /** Whether folders should be collapsed */
-  foldersCollapsed?: boolean;
+	/** Workspace ID */
+	workspaceId: string;
+	/** File title/name */
+	title: string;
+	/** Parent folder path (array of folder names from root) */
+	folderPath: string[];
+	/** Node type (file, diary, etc.) */
+	type?: "file" | "diary" | "canvas";
+	/** Tags to apply to the file */
+	tags?: string[];
+	/** Content to store (Lexical JSON string) */
+	content?: string;
+	/** Whether folders should be collapsed */
+	foldersCollapsed?: boolean;
 }
 
 export interface FileCreationResult {
-  /** The created file node */
-  node: NodeInterface;
-  /** The parent folder node */
-  parentFolder: NodeInterface;
+	/** The created file node */
+	node: NodeInterface;
+	/** The parent folder node */
+	parentFolder: NodeInterface;
 }
 
 // ==============================
@@ -47,25 +49,32 @@ export interface FileCreationResult {
  * Get or create a folder node by title under a parent
  */
 async function getOrCreateFolder(
-  workspaceId: string,
-  parentId: string | null,
-  title: string,
-  collapsed: boolean = false
+	workspaceId: string,
+	parentId: string | null,
+	title: string,
+	collapsed: boolean = false,
 ): Promise<NodeInterface> {
-  const nodes = await NodeRepository.getByWorkspace(workspaceId);
-  const existing = nodes.find(
-    (n) => n.parent === parentId && n.title === title && n.type === "folder"
-  );
+	const nodesResult = await getNodesByWorkspace(workspaceId)();
+	const nodes = E.isRight(nodesResult) ? nodesResult.right : [];
+	const existing = nodes.find(
+		(n) => n.parent === parentId && n.title === title && n.type === "folder",
+	);
 
-  if (existing) {
-    return existing;
-  }
+	if (existing) {
+		return existing;
+	}
 
-  return NodeRepository.add(workspaceId, title, {
-    parent: parentId,
-    type: "folder",
-    collapsed,
-  });
+	const nodeResult = await addNode(workspaceId, title, {
+		parent: parentId,
+		type: "folder",
+		collapsed,
+	})();
+
+	if (E.isLeft(nodeResult)) {
+		throw new Error(`Failed to create folder: ${nodeResult.left.message}`);
+	}
+
+	return nodeResult.right;
 }
 
 /**
@@ -76,23 +85,28 @@ async function getOrCreateFolder(
  * @returns The deepest folder node
  */
 async function ensureFolderPath(
-  workspaceId: string,
-  folderPath: string[],
-  collapsed: boolean = false
+	workspaceId: string,
+	folderPath: string[],
+	collapsed: boolean = false,
 ): Promise<NodeInterface> {
-  let parentId: string | null = null;
-  let currentFolder: NodeInterface | null = null;
+	let parentId: string | null = null;
+	let currentFolder: NodeInterface | null = null;
 
-  for (const folderName of folderPath) {
-    currentFolder = await getOrCreateFolder(workspaceId, parentId, folderName, collapsed);
-    parentId = currentFolder.id;
-  }
+	for (const folderName of folderPath) {
+		currentFolder = await getOrCreateFolder(
+			workspaceId,
+			parentId,
+			folderName,
+			collapsed,
+		);
+		parentId = currentFolder.id;
+	}
 
-  if (!currentFolder) {
-    throw new Error("Folder path cannot be empty");
-  }
+	if (!currentFolder) {
+		throw new Error("Folder path cannot be empty");
+	}
 
-  return currentFolder;
+	return currentFolder;
 }
 
 // ==============================
@@ -109,38 +123,49 @@ async function ensureFolderPath(
  * @returns The created file node and parent folder
  */
 export async function createFileInTree(
-  options: FileCreationOptions
+	options: FileCreationOptions,
 ): Promise<FileCreationResult> {
-  const {
-    workspaceId,
-    title,
-    folderPath,
-    type = "file",
-    tags,
-    content,
-    foldersCollapsed = false,
-  } = options;
+	const {
+		workspaceId,
+		title,
+		folderPath,
+		type = "file",
+		tags,
+		content,
+		foldersCollapsed = false,
+	} = options;
 
-  // Ensure folder hierarchy exists
-  const parentFolder = await ensureFolderPath(workspaceId, folderPath, foldersCollapsed);
+	// Ensure folder hierarchy exists
+	const parentFolder = await ensureFolderPath(
+		workspaceId,
+		folderPath,
+		foldersCollapsed,
+	);
 
-  // Get next order for the new file
-  const nextOrder = await NodeRepository.getNextOrder(parentFolder.id, workspaceId);
+	// Get next order for the new file
+	const nextOrderResult = await getNextOrder(parentFolder.id, workspaceId)();
+	const nextOrder = E.isRight(nextOrderResult) ? nextOrderResult.right : 0;
 
-  // Create the file node with tags
-  const node = await NodeRepository.add(workspaceId, title, {
-    parent: parentFolder.id,
-    type,
-    order: nextOrder,
-    tags,
-  });
+	// Create the file node with tags
+	const nodeResult = await addNode(workspaceId, title, {
+		parent: parentFolder.id,
+		type,
+		order: nextOrder,
+		tags,
+	})();
 
-  // Create content record if provided
-  if (content) {
-    await ContentRepository.add(node.id, content, "lexical");
-  }
+	if (E.isLeft(nodeResult)) {
+		throw new Error(`Failed to create file: ${nodeResult.left.message}`);
+	}
 
-  return { node, parentFolder };
+	const node = nodeResult.right;
+
+	// Create content record if provided
+	if (content) {
+		await addContent(node.id, content, "lexical")();
+	}
+
+	return { node, parentFolder };
 }
 
 /**
@@ -148,9 +173,9 @@ export async function createFileInTree(
  * Convenience function for simple folder structures
  */
 export async function ensureRootFolder(
-  workspaceId: string,
-  folderName: string,
-  collapsed: boolean = false
+	workspaceId: string,
+	folderName: string,
+	collapsed: boolean = false,
 ): Promise<NodeInterface> {
-  return getOrCreateFolder(workspaceId, null, folderName, collapsed);
+	return getOrCreateFolder(workspaceId, null, folderName, collapsed);
 }

@@ -1,6 +1,6 @@
 /**
  * Database Initialization Service
- * 
+ *
  * Initializes the database with default data (guest user, version tracking).
  * Uses the new database.ts instance instead of deprecated curd.ts.
  */

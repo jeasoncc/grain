@@ -6,45 +6,41 @@
 
 // Types
 export type {
-	SidebarPanel,
-	SearchPanelState,
 	DrawingsPanelState,
 	FileTreeState,
-	SidebarState,
+	SearchPanelState,
 	SidebarActions,
 	SidebarConfig,
+	SidebarPanel,
+	SidebarState,
 } from "./sidebar.interface";
 
 // Constants
 export {
-	SIDEBAR_MIN_WIDTH,
-	SIDEBAR_MAX_WIDTH,
-	SIDEBAR_AUTO_COLLAPSE_THRESHOLD,
-	SIDEBAR_DEFAULT_WIDTH,
-	DEFAULT_SIDEBAR_CONFIG,
-	DEFAULT_SEARCH_STATE,
 	DEFAULT_DRAWINGS_STATE,
 	DEFAULT_FILE_TREE_STATE,
+	DEFAULT_SEARCH_STATE,
+	DEFAULT_SIDEBAR_CONFIG,
 	DEFAULT_SIDEBAR_STATE,
+	SIDEBAR_AUTO_COLLAPSE_THRESHOLD,
+	SIDEBAR_DEFAULT_WIDTH,
+	SIDEBAR_MAX_WIDTH,
+	SIDEBAR_MIN_WIDTH,
 } from "./sidebar.interface";
-
 // Store
-export { useSidebarStore } from "./sidebar.store";
-
 // Selector Hooks
+// Action Hooks
+// Legacy Compatibility
 export {
 	useActivePanel,
-	useSidebarIsOpen,
-	useSidebarWidth,
-	useWasCollapsedByDrag,
-	useSearchPanelState,
 	useDrawingsPanelState,
-	useFileTreeState,
 	useExpandedFolders,
+	useFileTreeState,
+	useSearchPanelState,
+	useSidebarActions,
+	useSidebarIsOpen,
+	useSidebarStore,
+	useSidebarWidth,
+	useUnifiedSidebarStore,
+	useWasCollapsedByDrag,
 } from "./sidebar.store";
-
-// Action Hooks
-export { useSidebarActions } from "./sidebar.store";
-
-// Legacy Compatibility
-export { useUnifiedSidebarStore } from "./sidebar.store";

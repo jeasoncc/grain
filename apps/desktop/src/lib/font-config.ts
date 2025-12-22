@@ -1,5 +1,5 @@
 // Font Configuration Utilities
-import { UI_SCALE_OPTIONS, CARD_SIZE_OPTIONS } from "@/domain/font";
+import { CARD_SIZE_OPTIONS, UI_SCALE_OPTIONS } from "@/domain/font";
 
 export interface FontConfig {
 	fontFamily: string;
@@ -75,7 +75,7 @@ export class FontConfigManager {
 	 * Get UI scale value
 	 */
 	static getUIScale(scaleValue: string): number {
-		const option = UI_SCALE_OPTIONS.find(s => s.value === scaleValue);
+		const option = UI_SCALE_OPTIONS.find((s) => s.value === scaleValue);
 		return option?.scale || 1;
 	}
 
@@ -83,7 +83,7 @@ export class FontConfigManager {
 	 * Get card padding value
 	 */
 	static getCardPadding(cardSizeValue: string): string {
-		const option = CARD_SIZE_OPTIONS.find(c => c.value === cardSizeValue);
+		const option = CARD_SIZE_OPTIONS.find((c) => c.value === cardSizeValue);
 		return option?.padding || "1rem";
 	}
 }

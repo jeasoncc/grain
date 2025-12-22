@@ -1,15 +1,15 @@
 /**
  * Editor Tabs - Builder Pattern Implementation
- * 
+ *
  * 使用 Builder 模式构建复杂对象，支持链式调用
  */
 
 import type { SerializedEditorState } from "lexical";
 import type {
-	EditorTab,
 	EditorInstanceState,
-	TabType,
+	EditorTab,
 	SelectionState,
+	TabType,
 } from "./editor-tabs.interface";
 import { createDefaultEditorState } from "./editor-tabs.utils";
 
@@ -121,7 +121,10 @@ export class EditorStateBuilder {
 		return this;
 	}
 
-	selection(anchor: { key: string; offset: number }, focus: { key: string; offset: number }): this {
+	selection(
+		anchor: { key: string; offset: number },
+		focus: { key: string; offset: number },
+	): this {
 		this._selectionState = { anchor, focus };
 		return this;
 	}
@@ -141,12 +144,14 @@ export class EditorStateBuilder {
 	 * 从现有状态复制
 	 */
 	from(state: Partial<EditorInstanceState>): this {
-		if (state.serializedState !== undefined) this._serializedState = state.serializedState;
+		if (state.serializedState !== undefined)
+			this._serializedState = state.serializedState;
 		if (state.selectionState) this._selectionState = state.selectionState;
 		if (state.scrollTop !== undefined) this._scrollTop = state.scrollTop;
 		if (state.scrollLeft !== undefined) this._scrollLeft = state.scrollLeft;
 		if (state.isDirty !== undefined) this._isDirty = state.isDirty;
-		if (state.lastModified !== undefined) this._lastModified = state.lastModified;
+		if (state.lastModified !== undefined)
+			this._lastModified = state.lastModified;
 		return this;
 	}
 
@@ -180,7 +185,7 @@ export class EditorStateBuilder {
 export const createFileTab = (
 	workspaceId: string,
 	nodeId: string,
-	title: string
+	title: string,
 ): EditorTab =>
 	EditorTabBuilder.create()
 		.workspaceId(workspaceId)
@@ -195,7 +200,7 @@ export const createFileTab = (
 export const createDiaryTab = (
 	workspaceId: string,
 	nodeId: string,
-	title: string
+	title: string,
 ): EditorTab =>
 	EditorTabBuilder.create()
 		.workspaceId(workspaceId)
@@ -210,7 +215,7 @@ export const createDiaryTab = (
 export const createCanvasTab = (
 	workspaceId: string,
 	nodeId: string,
-	title: string
+	title: string,
 ): EditorTab =>
 	EditorTabBuilder.create()
 		.workspaceId(workspaceId)
