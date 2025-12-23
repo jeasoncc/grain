@@ -17,8 +17,8 @@ import {
 	DEFAULT_UI_FONT,
 	POPULAR_FONTS,
 	UI_SCALE_OPTIONS,
-	useFontSettings,
-} from "@/domain/font";
+} from "@/types/font";
+import { useFontSettings } from "@/stores/font.store";
 
 export const Route = createFileRoute("/settings/typography")({
 	component: TypographySettings,

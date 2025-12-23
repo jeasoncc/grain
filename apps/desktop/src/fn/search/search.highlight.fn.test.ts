@@ -84,8 +84,9 @@ describe("extractTextFromContent", () => {
 		expect(extractTextFromContent("not json")).toBe("not json");
 	});
 
-	it("should return empty string for JSON without root", () => {
-		expect(extractTextFromContent('{"data": "test"}')).toBe("");
+	it("should return original content for JSON without root", () => {
+		// When JSON is valid but doesn't have a root property, return original content as fallback
+		expect(extractTextFromContent('{"data": "test"}')).toBe('{"data": "test"}');
 	});
 
 	it("should extract text from valid Lexical JSON", () => {

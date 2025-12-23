@@ -12,7 +12,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import * as E from "fp-ts/Either";
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/db";
 import { database } from "@/db/database";
-import { createFileInTree, ensureRootFolder } from "@/domain/file-creator";
+import { createFileInTree, ensureRootFolderAsync } from "@/routes/actions";
 import type { NodeInterface } from "@/types/node";
 
 // ==============================
@@ -62,7 +62,7 @@ export interface WikiFileEntry {
 export async function ensureWikiFolder(
 	workspaceId: string,
 ): Promise<NodeInterface> {
-	return ensureRootFolder(workspaceId, WIKI_ROOT_FOLDER, false);
+	return ensureRootFolderAsync(workspaceId, WIKI_ROOT_FOLDER, false);
 }
 
 // ==============================

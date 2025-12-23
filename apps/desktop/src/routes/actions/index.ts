@@ -13,10 +13,20 @@
 // ============================================================================
 
 // 创建节点
-export { type CreateNodeParams, createNode } from "./create-node.action";
-
+export {
+	type CreateFileInTreeParams,
+	type CreateFileInTreeResult,
+	type CreateNodeParams,
+	createFileInTree,
+	createNode,
+} from "./create-node.action";
 // 删除节点
 export { deleteNode } from "./delete-node.action";
+// 确保文件夹存在
+export {
+	ensureRootFolder,
+	ensureRootFolderAsync,
+} from "./ensure-folder.action";
 
 // 移动节点
 export { type MoveNodeParams, moveNode } from "./move-node.action";

@@ -7,14 +7,13 @@
  * - @/fn/export - 导出纯函数
  * - @/fn/import - 导入纯函数
  * - @/fn/content - 内容处理纯函数
- * - @/routes/actions - Action 函数
+ * - @/fn/search - 搜索功能
+ * - @/routes/actions - Action 函数（包括文件创建）
  * - @/domain/diary - 日记功能
- * - @/domain/search - 搜索功能
  * - @/domain/export - 导出功能
  * - @/fn/keyboard - 键盘快捷键
  * - @/domain/wiki - Wiki 功能
  * - @/domain/updater - 自动更新
- * - @/domain/file-creator - 文件创建
  * - @/domain/save - 保存功能
  * - @/db/backup - 备份功能
  * - @/db/clear-data - 数据清理
@@ -41,8 +40,6 @@ export {
 	generatePrintHtml,
 	getNodeContents,
 } from "@/domain/export";
-export * from "@/domain/file-creator";
-export * from "@/domain/search";
 export * from "@/domain/updater";
 export * from "@/domain/wiki";
 // Export Path (从 fn/export 重新导出)
@@ -70,6 +67,27 @@ export {
 	type SaveServiceInterface as SaveService,
 	saveService,
 } from "@/fn/save";
+// Search (从 fn/search 重新导出)
+export {
+	calculateSimpleScore,
+	extractHighlights,
+	extractTextFromContent,
+	extractTextFromLexical,
+	generateExcerpt,
+	SearchEngine,
+	type SearchOptions,
+	type SearchResult,
+	type SearchResultType,
+	searchEngine,
+} from "@/fn/search";
+// File Creator (从 routes/actions 重新导出)
+export {
+	type CreateFileInTreeParams,
+	type CreateFileInTreeResult,
+	createFileInTree,
+	ensureRootFolder,
+	ensureRootFolderAsync,
+} from "@/routes/actions";
 // Import-Export (从新架构重新导出)
 export {
 	type ExportBundle,

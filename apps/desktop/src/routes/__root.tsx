@@ -15,7 +15,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { UnifiedSidebarContent } from "@/components/unified-sidebar";
 import { autoBackupManager } from "@/db/backup/backup.service";
 import type { DrawingInterface } from "@/db/schema";
-import { useUnifiedSidebarStore } from "@/domain/sidebar";
+import { useUnifiedSidebarStore } from "@/stores/sidebar.store";
 import { useDrawingsByWorkspace } from "@/hooks/use-drawing";
 import { useTagGraph } from "@/hooks/use-tag";
 import { initializeTheme } from "@/hooks/use-theme";

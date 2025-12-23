@@ -8,6 +8,14 @@
  * @requirements 1.1, 1.2, 3.1, 3.2, 3.3, 4.1, 6.2
  */
 
+// 搜索引擎
+export {
+	SearchEngine,
+	searchEngine,
+	type SearchOptions,
+	type SearchResult,
+	type SearchResultType,
+} from "./search.engine.fn";
 // 过滤相关函数
 export {
 	applySearchFilters,
@@ -21,8 +29,8 @@ export {
 	normalizeQuery,
 	type SearchableItem,
 	type SearchFilterOptions,
-	type SearchResult,
-	type SearchResultType,
+	type SearchResult as FilterSearchResult,
+	type SearchResultType as FilterSearchResultType,
 	sortByScore,
 	splitQueryTerms,
 } from "./search.filter.fn";

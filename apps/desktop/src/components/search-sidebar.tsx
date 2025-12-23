@@ -29,7 +29,7 @@ import {
 	type SearchResult,
 	type SearchResultType,
 	searchEngine,
-} from "@/domain/search";
+} from "@/fn/search";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
 

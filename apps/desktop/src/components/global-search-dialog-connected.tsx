@@ -5,7 +5,7 @@
  */
 
 import { useCallback } from "react";
-import { searchEngine } from "@/domain/search";
+import { searchEngine } from "@/fn/search";
 import {
 	GlobalSearchDialog,
 	type SearchOptions,

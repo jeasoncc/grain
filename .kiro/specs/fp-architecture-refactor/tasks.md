@@ -600,6 +600,258 @@
   - 预计时间：20分钟
   - 优先级：🟡 中
 
+### 12.2.1 Domain/Services 依赖清理（预计 4-5 小时）
+
+**说明：** 以下任务用于清理对 `domain/` 和 `services/` 目录的依赖，为最终删除这些目录做准备。
+
+#### Domain 依赖分析
+
+| 模块 | 引用数 | 状态 | 迁移目标 |
+|------|--------|------|----------|
+| `domain/search` | 6 | 🔴 需迁移 | `fn/search/` + `stores/search.store.ts` |
+| `domain/font` | 4 | 🔴 需迁移 | `types/font/` + `stores/font.store.ts` |
+| `domain/file-creator` | 3 | 🔴 需迁移 | `routes/actions/` |
+| `domain/diary` | 2 | 🔴 需迁移 | `fn/diary/` + `routes/actions/` |
+| `domain/editor-tabs` | 2 | 🔴 需迁移 | `types/editor-tab/` |
+| `domain/export` | 2 | 🔴 需迁移 | `fn/export/` |
+| `domain/icon-theme` | 2 | 🔴 需迁移 | `fn/icon-theme/` + `stores/icon-theme.store.ts` |
+| `domain/sidebar` | 2 | 🔴 需迁移 | `stores/sidebar.store.ts` |
+| `domain/ui` | 2 | 🔴 需迁移 | `stores/ui.store.ts` |
+| `domain/wiki` | 2 | 🔴 需迁移 | `fn/wiki/` |
+| `domain/diagram` | 1 | 🔴 需迁移 | `stores/diagram.store.ts` |
+| `domain/theme` | 1 | 🔴 需迁移 | `stores/theme.store.ts` |
+| `domain/updater` | 1 | 🔴 需迁移 | `fn/updater/` |
+| `domain/editor-history` | 0 | ✅ 可删除 | - |
+| `domain/import-export` | 0 | ✅ 可删除 | - |
+| `domain/keyboard` | 0 | ✅ 可删除 | - |
+| `domain/save` | 0 | ✅ 可删除 | - |
+| `domain/selection` | 0 | ✅ 可删除 | - |
+| `domain/writing` | 0 | ✅ 可删除 | - |
+
+#### Services 依赖分析
+
+| 文件 | 引用数 | 状态 | 迁移目标 |
+|------|--------|------|----------|
+| `services/drawings` | 4 | 🔴 需迁移 | `db/drawing.db.fn.ts` + `hooks/use-drawing.ts` |
+| `services/nodes` | 4 | 🔴 需迁移 | `db/node.db.fn.ts` + `hooks/use-node.ts` |
+| `services/export` | 2 | 🔴 需迁移 | `fn/export/` |
+| `services/updater` | 1 | 🔴 需迁移 | `fn/updater/` |
+| `services/clear-data` | 1 | 🔴 需迁移 | `db/clear-data.db.fn.ts` |
+| `services/index.ts` | 0 | ✅ 可删除 | - |
+| `services/drawings.utils.ts` | 0 | ✅ 可删除 | - |
+| `services/export-path.ts` | 0 | ✅ 可删除 | - |
+| `services/import-export.ts` | 0 | ✅ 可删除 | - |
+| `services/tags.ts` | 0 | ✅ 可删除 | - |
+| `services/workspaces.ts` | 0 | ✅ 可删除 | - |
+
+- [x] 81.1 迁移 `@/domain/search` 依赖（6 处）
+  - 影响文件：
+    - `src/components/blocks/global-search-connected.tsx` - searchEngine
+    - `src/components/global-search-dialog-connected.tsx` - searchEngine
+    - `src/components/panels/search-panel.tsx` - 多个导出
+    - `src/components/search-sidebar.tsx` - 多个导出
+    - `src/services/__tests__/search.property.test.ts` - search.utils
+    - `src/services/index.ts` - re-export
+  - 迁移方案：
+    - `searchEngine` → `fn/search/search.engine.fn.ts`
+    - `search.utils` → `fn/search/search.highlight.fn.ts`
+    - Store 相关 → `stores/search.store.ts`
+  - 预计时间：45分钟
+  - 优先级：🔴 高
+
+- [x] 81.2 迁移 `@/domain/font` 依赖（4 处）
+  - 影响文件：
+    - `src/components/font-style-injector.tsx`
+    - `src/lib/font-config.ts`
+    - `src/routes/settings/editor.tsx`
+    - `src/routes/settings/typography.tsx`
+  - 迁移方案：
+    - 常量 → `types/font/font.config.ts`
+    - Store → `stores/font.store.ts`（已存在）
+  - 预计时间：30分钟
+  - 优先级：🔴 高
+
+- [x] 81.3 迁移 `@/domain/file-creator` 依赖（3 处）
+  - 影响文件：
+    - `src/domain/diary/diary.service.ts` - createFileInTree
+    - `src/domain/wiki/wiki.service.ts` - createFileInTree, ensureRootFolder
+    - `src/services/index.ts` - re-export
+  - 迁移方案：
+    - `createFileInTree` → `routes/actions/create-node.action.ts`
+    - `ensureRootFolder` → `routes/actions/ensure-folder.action.ts`
+  - 预计时间：30分钟
+  - 优先级：🔴 高
+
+- [-] 81.4 迁移 `@/domain/sidebar` 依赖（2 处）
+  - 影响文件：
+    - `src/routes/canvas.tsx` - useUnifiedSidebarStore
+    - `src/routes/__root.tsx` - useUnifiedSidebarStore
+  - 迁移方案：
+    - `useUnifiedSidebarStore` → `stores/sidebar.store.ts`（已存在）
+  - 预计时间：15分钟
+  - 优先级：🔴 高
+
+- [ ] 81.5 迁移 `@/domain/ui` 依赖（2 处）
+  - 影响文件：
+    - `src/components/workspace/story-workspace.tsx` - useUIStore
+    - `src/routes/settings/general.tsx` - TabPosition, useUIStore
+  - 迁移方案：
+    - `useUIStore` → `stores/ui.store.ts`（已存在）
+    - `TabPosition` → `types/ui/ui.interface.ts`（已存在）
+  - 预计时间：15分钟
+  - 优先级：🔴 高
+
+- [ ] 81.6 迁移 `@/domain/wiki` 依赖（2 处）
+  - 影响文件：
+    - `src/components/workspace/story-workspace.tsx` - useWikiFiles
+    - `src/services/index.ts` - re-export
+  - 迁移方案：
+    - `useWikiFiles` → `hooks/use-wiki.ts`
+    - Wiki 服务 → `fn/wiki/`
+  - 预计时间：20分钟
+  - 优先级：🔴 高
+
+- [ ] 81.7 迁移 `@/domain/icon-theme` 依赖（2 处）
+  - 影响文件：
+    - `src/components/icon-theme-preview.tsx` - getCurrentIconTheme
+    - `src/routes/settings/icons.tsx` - 多个导出
+  - 迁移方案：
+    - `getCurrentIconTheme` → `fn/icon-theme/icon-theme.fn.ts`
+    - Store → `stores/icon-theme.store.ts`（已存在）
+  - 预计时间：20分钟
+  - 优先级：🔴 高
+
+- [ ] 81.8 迁移 `@/domain/editor-tabs` 依赖（2 处）
+  - 影响文件：
+    - `src/components/buffer-switcher.tsx` - EditorTab type
+    - `src/components/workspace/multi-editor-workspace.tsx` - EditorInstanceState, EditorTab
+  - 迁移方案：
+    - 类型 → `types/editor-tab/`（已存在）
+  - 预计时间：10分钟
+  - 优先级：🔴 高
+
+- [ ] 81.9 迁移 `@/domain/export` 依赖（2 处）
+  - 影响文件：
+    - `src/services/export.ts` - 多个导出
+    - `src/services/index.ts` - re-export
+  - 迁移方案：
+    - 导出函数 → `fn/export/`（已存在）
+  - 预计时间：15分钟
+  - 优先级：🔴 高
+
+- [ ] 81.10 迁移 `@/domain/diary` 依赖（2 处）
+  - 影响文件：
+    - `src/components/panels/file-tree-panel.tsx` - createDiaryInFileTree
+    - `src/services/index.ts` - re-export
+  - 迁移方案：
+    - `createDiaryInFileTree` → `routes/actions/create-diary.action.ts`
+  - 预计时间：20分钟
+  - 优先级：🔴 高
+
+- [ ] 81.11 迁移 `@/domain/diagram` 依赖（1 处）
+  - 影响文件：
+    - `src/routes/settings/diagrams.tsx` - useDiagramSettings
+  - 迁移方案：
+    - `useDiagramSettings` → `stores/diagram.store.ts`（已存在）
+  - 预计时间：10分钟
+  - 优先级：🟡 中
+
+- [ ] 81.12 迁移 `@/domain/theme` 依赖（1 处）
+  - 影响文件：
+    - `src/hooks/use-theme.ts` - 多个导出
+  - 迁移方案：
+    - Store → `stores/theme.store.ts`（已存在）
+    - 类型 → `types/theme/`（已存在）
+  - 预计时间：15分钟
+  - 优先级：🟡 中
+
+- [ ] 81.13 迁移 `@/domain/updater` 依赖（1 处）
+  - 影响文件：
+    - `src/services/index.ts` - re-export
+  - 迁移方案：
+    - 更新服务 → `fn/updater/`
+  - 预计时间：10分钟
+  - 优先级：🟡 中
+
+- [ ] 81.14 迁移 `@/services/drawings` 依赖（4 处）
+  - 影响文件：
+    - `src/routes/canvas.tsx` - useDrawingById
+    - `src/routes/__root.tsx` - createDrawing, deleteDrawing
+    - `src/components/drawing/drawing-workspace.tsx` - 多个导出
+    - `src/components/drawing/drawing-list.tsx` - 多个导出
+  - 迁移方案：
+    - Hooks → `hooks/use-drawing.ts`（已存在）
+    - CRUD → `db/drawing.db.fn.ts`（已存在）
+    - Actions → `routes/actions/`
+  - 预计时间：30分钟
+  - 优先级：🔴 高
+
+- [ ] 81.15 迁移 `@/services/nodes` 依赖（4 处）
+  - 影响文件：
+    - `src/components/panels/file-tree-panel.tsx` - 多个导出
+    - `src/components/blocks/wiki-hover-preview-connected.tsx` - getNode, getNodeContent
+    - `src/components/file-tree/file-tree-item.tsx` - TreeNode type
+    - `src/components/workspace/story-workspace.tsx` - getNodeContent
+  - 迁移方案：
+    - 类型 → `fn/node/node.tree.fn.ts`（TreeNode 已存在）
+    - Hooks → `hooks/use-node.ts`（已存在）
+    - 函数 → `db/node.db.fn.ts`（已存在）
+  - 预计时间：30分钟
+  - 优先级：🔴 高
+
+- [ ] 81.16 迁移 `@/services/export` 依赖（2 处）
+  - 影响文件：
+    - `src/components/blocks/export-dialog.tsx` - 多个导出
+    - `src/components/export/export-button.tsx` - ExportFormat, exportProject
+  - 迁移方案：
+    - 导出函数 → `fn/export/`（已存在）
+    - 类型 → `types/export/`
+  - 预计时间：20分钟
+  - 优先级：🔴 高
+
+- [ ] 81.17 迁移 `@/services/updater` 依赖（1 处）
+  - 影响文件：
+    - `src/components/blocks/update-checker.tsx` - 多个导出
+  - 迁移方案：
+    - 更新服务 → `fn/updater/`
+  - 预计时间：15分钟
+  - 优先级：🟡 中
+
+- [ ] 81.18 迁移 `@/services/clear-data` 依赖（1 处）
+  - 影响文件：
+    - `src/routes/test-clear-data.tsx` - 多个导出
+  - 迁移方案：
+    - 清理函数 → `db/clear-data.db.fn.ts`（已存在）
+  - 预计时间：10分钟
+  - 优先级：🟡 中
+
+- [ ] 81.19 删除无引用的 domain 模块
+  - 可删除模块：
+    - `domain/editor-history/` - 0 引用
+    - `domain/import-export/` - 0 引用
+    - `domain/keyboard/` - 0 引用
+    - `domain/save/` - 0 引用
+    - `domain/selection/` - 0 引用
+    - `domain/writing/` - 0 引用
+  - 预计时间：5分钟
+  - 优先级：🟢 低
+
+- [ ] 81.20 删除无引用的 services 文件
+  - 可删除文件：
+    - `services/drawings.utils.ts` - 0 引用
+    - `services/export-path.ts` - 0 引用
+    - `services/import-export.ts` - 0 引用
+    - `services/tags.ts` - 0 引用
+    - `services/workspaces.ts` - 0 引用
+  - 预计时间：5分钟
+  - 优先级：🟢 低
+
+- [ ] 81.21 更新 `services/index.ts` 重新导出
+  - 移除对已迁移模块的 re-export
+  - 添加对新位置的 re-export（向后兼容）
+  - 预计时间：15分钟
+  - 优先级：🟡 中
+
 ### 12.3 React 最佳实践（预计 1 小时）
 
 - [ ] 82. 修复 `useExhaustiveDependencies` 错误（5 个）
@@ -758,93 +1010,66 @@
 - ✅ Phase 10: 组件架构规范化（100%）- 8 个任务
 
 ### 当前阶段
-- 🔄 **Phase 11: 紧急修复**（0% - 待开始）
-  - **任务数量：** 10 个任务（64-73）
-  - **关键任务：** 修复阻止应用启动的错误
-  - **预计时间：** 5-6 小时
-  - **优先级：** 🔴 最高
+- 🔄 **Phase 12: Lint 警告修复**（进行中）
+  - **已完成：** Task 74-81（可访问性修复）
+  - **新增：** Task 81.1-81.21（Domain/Services 依赖清理）
+  - **待完成：** Task 82-85（React 最佳实践 + 类型安全）
 
 ### 待完成阶段
-- ⏳ Phase 12: Lint 警告修复（0%）- 12 个任务（74-85）
 - ⏳ Phase 13: 验证修复结果（0%）- 4 个任务（86-89）
 - ⏳ Phase 14: 架构符合性检查（0%）- 4 个任务（90-93）
 - ⏳ Phase 15: 代码清理与优化（0%）- 4 个任务（94-97）
 - ⏳ Phase 16: 质量保障与性能优化（0%）- 4 个任务（98-101）
 
-### 错误统计（已收集）
+### Domain/Services 依赖统计（新增）
 
-#### TypeScript 错误（95 个错误，29 个文件）
-| 错误类型 | 数量 | 优先级 |
-|---------|------|--------|
-| DrawingBuilder 只读属性 | 13 | 🔴 最高 |
-| 缺失 @/db/models 导入 | 16 文件 | 🔴 最高 |
-| 缺失 @/services/* 模块 | 10 文件 | 🔴 高 |
-| 测试文件类型错误 | 12 | 🟡 中 |
-| 隐式 any 类型 | 30+ | 🟡 中 |
+#### Domain 模块依赖（19 个模块）
+| 状态 | 数量 | 说明 |
+|------|------|------|
+| 🔴 需迁移 | 13 | 有外部引用，需要更新导入路径 |
+| ✅ 可删除 | 6 | 无外部引用，可直接删除 |
 
-#### Biome Lint 错误（83 错误，77 警告，5 信息）
-| 错误类型 | 数量 | 优先级 |
-|---------|------|--------|
-| useIterableCallbackReturn | 7 | 🔴 高 |
-| noExplicitAny | 13 | 🟡 中 |
-| useButtonType | 20+ | 🟡 中 |
-| useExhaustiveDependencies | 5 | 🟡 中 |
-| noArrayIndexKey | 4 | 🟡 中 |
-| 其他可访问性问题 | 20+ | 🟡 中 |
+**需迁移的 Domain 模块：**
+- `search` (6 引用) - 搜索引擎和工具函数
+- `font` (4 引用) - 字体配置和 Store
+- `file-creator` (3 引用) - 文件创建服务
+- `diary` (2 引用) - 日记创建服务
+- `editor-tabs` (2 引用) - 编辑器标签类型
+- `export` (2 引用) - 导出服务
+- `icon-theme` (2 引用) - 图标主题
+- `sidebar` (2 引用) - 侧边栏 Store
+- `ui` (2 引用) - UI Store
+- `wiki` (2 引用) - Wiki 服务
+- `diagram` (1 引用) - 图表设置
+- `theme` (1 引用) - 主题 Store
+- `updater` (1 引用) - 更新服务
 
-#### 测试结果（721 测试，46 文件）
-| 状态 | 数量 | 通过率 |
-|------|------|--------|
-| 通过 | 700 | 97.1% |
-| 失败 | 21 | 2.9% |
+**可直接删除的 Domain 模块：**
+- `editor-history`, `import-export`, `keyboard`, `save`, `selection`, `writing`
 
-### 关键阻塞问题（按优先级排序）
-1. 🔴 **DrawingBuilder 只读属性错误** - 13 个错误（Task 64）
-2. 🔴 **缺失的 @/db/models 导入** - 16 个文件（Task 65）
-3. 🔴 **缺失的 @/services/* 模块** - 10 个文件（Task 66-71）
-4. 🔴 **WikiHoverPreview Props 不匹配** - 1 个文件（Task 72）
-5. 🔴 **useIterableCallbackReturn** - 7 个错误（Task 74）
-6. 🟡 **测试文件类型错误** - 4 个文件（Task 73）
-7. 🟡 **隐式 any 类型** - 30+ 个（Task 85）
+#### Services 文件依赖（10 个文件）
+| 状态 | 数量 | 说明 |
+|------|------|------|
+| 🔴 需迁移 | 5 | 有外部引用，需要更新导入路径 |
+| ✅ 可删除 | 5 | 无外部引用，可直接删除 |
 
-### 详细错误报告
-| 报告文件 | 内容 |
-|---------|------|
-| 📄 `REFACTOR_ERRORS.md` | 开发服务器启动错误和模块解析问题 |
-| 📄 `TYPE_CHECK_ERRORS.md` | TypeScript 类型检查错误详情 |
-| 📄 `LINT_ERRORS.md` | Biome lint 错误和警告详情 |
-| 📄 `ARCHITECTURE_COMPLIANCE.md` | 架构符合性检查报告 |
-| 📄 `TEST_RESULTS.md` | 测试运行结果报告 |
+**需迁移的 Services 文件：**
+- `drawings` (4 引用) - 绘图服务
+- `nodes` (4 引用) - 节点服务
+- `export` (2 引用) - 导出服务
+- `updater` (1 引用) - 更新服务
+- `clear-data` (1 引用) - 数据清理
+
+**可直接删除的 Services 文件：**
+- `drawings.utils.ts`, `export-path.ts`, `import-export.ts`, `tags.ts`, `workspaces.ts`
 
 ### 下一步行动
 
-**立即开始 Phase 11 任务 64-73**，这些是阻止应用运行的关键错误。
+**完成 Task 81.1-81.21（Domain/Services 依赖清理）**
 
-#### 第一优先级（必须完成才能启动）- 预计 5-6 小时
-| 任务 | 描述 | 预计时间 |
-|------|------|---------|
-| Task 64 | 修复 DrawingBuilder 只读属性 | 5 分钟 |
-| Task 65 | 批量更新 @/db/models 导入 | 15 分钟 |
-| Task 66 | 迁移 services/export 模块 | 1 小时 |
-| Task 67 | 迁移 services/import-export 模块 | 1 小时 |
-| Task 68 | 迁移 services/save 模块 | 30 分钟 |
-| Task 69 | 迁移 services/wiki-files 模块 | 30 分钟 |
-| Task 70 | 迁移 services/keyboard-shortcuts 模块 | 30 分钟 |
-| Task 71 | 迁移 services/export-path 模块 | 15 分钟 |
-| Task 72 | 修复 WikiHoverPreview 组件 | 15 分钟 |
-| Task 73 | 修复测试文件类型错误 | 20 分钟 |
+预计时间：4-5 小时
 
-#### 第二优先级（代码质量）- 预计 4-5 小时
-| 任务 | 描述 | 预计时间 |
-|------|------|---------|
-| Task 74 | 修复 useIterableCallbackReturn | 30 分钟 |
-| Task 77-81 | 可访问性修复 | 2 小时 |
-| Task 82-83 | React 最佳实践 | 1 小时 |
-| Task 84-85 | 修复 any 类型 | 1.5 小时 |
-
-**预计总时间：** 10-12 小时
-
-完成这些任务后，应用应该能够正常启动并通过所有检查。
+完成这些任务后，可以安全删除 `domain/` 和 `services/` 目录。
 
 ### 架构符合性总结
 | 类别 | 符合度 | 状态 |

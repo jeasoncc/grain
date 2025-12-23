@@ -15,7 +15,7 @@ import {
 	extractTextFromContent,
 	extractTextFromLexical,
 	generateExcerpt,
-} from "@/domain/search/search.utils";
+} from "@/fn/search";
 
 /**
  * Arbitrary generator for valid Lexical text nodes
@@ -111,8 +111,8 @@ describe("Property 1: Pure Functions Produce Consistent Output", () => {
 				searchQueryArb,
 				fc.integer({ min: 10, max: 200 }),
 				(content, query, contextLength) => {
-					const result1 = generateExcerpt(content, query, contextLength);
-					const result2 = generateExcerpt(content, query, contextLength);
+					const result1 = generateExcerpt(content, query, { contextLength });
+					const result2 = generateExcerpt(content, query, { contextLength });
 					expect(result1).toEqual(result2);
 				},
 			),
@@ -127,8 +127,8 @@ describe("Property 1: Pure Functions Produce Consistent Output", () => {
 				searchQueryArb,
 				fc.integer({ min: 1, max: 10 }),
 				(content, query, maxHighlights) => {
-					const result1 = extractHighlights(content, query, maxHighlights);
-					const result2 = extractHighlights(content, query, maxHighlights);
+					const result1 = extractHighlights(content, query, { maxHighlights });
+					const result2 = extractHighlights(content, query, { maxHighlights });
 					expect(result1).toEqual(result2);
 				},
 			),
@@ -205,7 +205,7 @@ describe("Property 3: Text Extraction Round Trip Consistency", () => {
 				(prefix, query, contextLength) => {
 					// Create content that definitely contains the query
 					const content = prefix + query + prefix;
-					const excerpt = generateExcerpt(content, query, contextLength);
+					const excerpt = generateExcerpt(content, query, { contextLength });
 
 					// The excerpt should contain the query (case-insensitive match was used)
 					expect(excerpt.toLowerCase()).toContain(query.toLowerCase());
@@ -224,7 +224,7 @@ describe("Property 3: Text Extraction Round Trip Consistency", () => {
 				(prefix, query, maxHighlights) => {
 					// Create content that definitely contains the query
 					const content = prefix + query + prefix;
-					const highlights = extractHighlights(content, query, maxHighlights);
+					const highlights = extractHighlights(content, query, { maxHighlights });
 
 					// If we have highlights, each should contain the query
 					for (const highlight of highlights) {

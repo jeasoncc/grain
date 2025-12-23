@@ -1,5 +1,5 @@
 // Font Configuration Utilities
-import { CARD_SIZE_OPTIONS, UI_SCALE_OPTIONS } from "@/domain/font";
+import { CARD_SIZE_OPTIONS, UI_SCALE_OPTIONS } from "@/types/font";
 
 export interface FontConfig {
 	fontFamily: string;
