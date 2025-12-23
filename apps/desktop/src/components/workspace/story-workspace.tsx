@@ -11,6 +11,7 @@ import { type MentionEntry, MultiEditorContainer } from "@grain/editor";
 import type { SerializedEditorState } from "lexical";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import * as E from "fp-ts/Either";
 import { CanvasEditor } from "@/components/blocks/canvas-editor";
 import { KeyboardShortcutsHelp } from "@/components/blocks/keyboard-shortcuts-help";
 import { SaveStatusIndicator } from "@/components/blocks/save-status-indicator";
@@ -34,7 +35,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { useWikiFiles } from "@/hooks/use-wiki";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
 import logger from "@/log";
-import { getNodeContent } from "@/services/nodes";
+import { getContentByNodeId } from "@/db";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSaveStore } from "@/stores/save.store";
 import { useSelectionStore } from "@/stores/selection.store";
@@ -154,8 +155,9 @@ export function StoryWorkspace({
 
 		// 加载节点内容
 		if (activeTab.nodeId) {
-			getNodeContent(activeTab.nodeId).then((content) => {
-				if (content) {
+			getContentByNodeId(activeTab.nodeId)().then((result) => {
+				if (E.isRight(result) && result.right) {
+					const content = result.right.content;
 					try {
 						const parsed = JSON.parse(content);
 						setEditorInitialState(parsed);

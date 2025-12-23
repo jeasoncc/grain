@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import type { TreeNode } from "@/services/nodes";
+import type { TreeNode } from "@/fn/node";
 import type { NodeType } from "@/types/node";
 
 interface DragState {

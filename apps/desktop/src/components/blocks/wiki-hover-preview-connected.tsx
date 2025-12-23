@@ -5,7 +5,8 @@
  */
 
 import { useCallback } from "react";
-import { getNode, getNodeContent } from "@/services/nodes";
+import * as E from "fp-ts/Either";
+import { getNodeById, getContentByNodeId } from "@/db";
 import { WikiHoverPreview, type WikiPreviewData } from "./wiki-hover-preview";
 
 interface WikiHoverPreviewConnectedProps {
@@ -43,10 +44,15 @@ export function WikiHoverPreviewConnected({
 	const handleFetchData = useCallback(
 		async (id: string): Promise<WikiPreviewData> => {
 			try {
-				const [nodeContent, node] = await Promise.all([
-					getNodeContent(id),
-					getNode(id),
+				const [contentResult, nodeResult] = await Promise.all([
+					getContentByNodeId(id)(),
+					getNodeById(id)(),
 				]);
+				
+				const nodeContent = E.isRight(contentResult) && contentResult.right 
+					? contentResult.right.content 
+					: undefined;
+				const node = E.isRight(nodeResult) ? nodeResult.right : undefined;
 
 				const title = node?.title || "Unknown";
 

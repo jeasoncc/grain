@@ -92,3 +92,31 @@ bun run tag:all        # Create all release tags
 - Quote style: Double quotes (desktop), Single quotes (API)
 - Organize imports: Enabled
 - Recommended linting rules
+
+## Steering Files Usage
+
+### Always Loaded (Core Development Standards)
+- `architecture.md` - 函数式数据流架构设计
+- `code-standards.md` - 代码质量标准和规范
+- `structure.md` - 项目结构和文件组织
+- `tech.md` - 技术栈和构建系统 (this file)
+- `workflow.md` - 工作流程和提交规范
+
+### Manual Load (Specialized Knowledge)
+Use `#steering-filename` in chat to load specific knowledge:
+
+| File | When to Load | Usage |
+|------|-------------|-------|
+| `#e2e-testing` | E2E 测试开发 | Playwright 测试规范和最佳实践 |
+| `#release` | 发布流程 | 版本发布、打包、分发流程 |
+| `#git-hooks` | 版本/Hooks 问题 | Git Hooks 版本系统故障排除 |
+| `#troubleshooting` | 问题排查 | 常见问题和解决方案 |
+| `#decisions` | 技术决策 | 架构决策记录和背景 |
+| `#product` | 产品定义 | 产品功能和业务逻辑 |
+
+### Example Usage in Specs
+```markdown
+## Required Knowledge
+- Core: Always available (architecture, code-standards, structure, tech, workflow)
+- Specialized: Load `#release` for deployment tasks, `#e2e-testing` for test development
+```
