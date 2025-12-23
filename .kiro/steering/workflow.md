@@ -73,3 +73,54 @@ git commit -m "refactor: 重构节点解析函数为纯函数"
 - 库的包体积过大，影响性能
 - 业务逻辑高度定制，无通用库可用
 - 需要深度集成项目架构
+
+## 知识沉淀
+
+每次完成任务后，审查是否有重要知识需要沉淀到 steering 文件中。
+
+### 需要沉淀的知识类型
+
+| 类型 | 示例 | 存放位置 |
+|------|------|----------|
+| 架构决策 | 为什么选择 fp-ts | architecture.md 或 decisions.md |
+| 踩坑经验 | Git hooks 循环递增问题 | git-hooks.md |
+| 配置规范 | 版本同步文件列表 | 相关 steering 文件 |
+| 工作流程 | 发布流程、测试流程 | workflow.md |
+| 代码模式 | Builder 模式用法 | code-standards.md |
+
+### 沉淀流程
+
+1. 任务完成后，回顾是否遇到：
+   - 反复出现的问题
+   - 重要的配置细节
+   - 容易遗忘的操作步骤
+   - 项目特有的约定
+
+2. 判断知识归属：
+   - 已有 steering 文件 → 补充到对应文件
+   - 新领域知识 → 创建新的 steering 文件
+
+3. 知识格式要求：
+   - 简洁明了，避免冗余
+   - 包含具体命令或代码示例
+   - 说明「为什么」而不只是「怎么做」
+
+### 现有 steering 文件
+
+```
+.kiro/steering/
+├── architecture.md    # 函数式数据流架构
+├── code-standards.md  # 代码规范
+├── git-hooks.md       # Git Hooks 版本系统
+├── product.md         # 产品定义
+├── structure.md       # 项目结构
+├── tech.md            # 技术栈
+└── workflow.md        # 工作流程（本文件）
+```
+
+### 详细文档位置
+
+steering 文件是精简版知识，完整文档存放在 `docs/` 目录：
+- `docs/githooks/` - Git Hooks 详细文档
+- `docs/development/` - 开发相关文档
+- `docs/release/` - 发布相关文档
