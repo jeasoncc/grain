@@ -13,7 +13,7 @@
  * - @/domain/export - 导出功能
  * - @/fn/keyboard - 键盘快捷键
  * - @/fn/wiki - Wiki 功能
- * - @/domain/updater - 自动更新
+ * - @/fn/updater - 自动更新
  * - @/domain/save - 保存功能
  * - @/db/backup - 备份功能
  * - @/db/clear-data - 数据清理
@@ -46,7 +46,7 @@ export {
 	generatePrintHtml,
 	getNodeContents,
 } from "@/domain/export";
-export * from "@/domain/updater";
+export * from "@/fn/updater";
 export {
 	clearDefaultExportPath,
 	type ExportPathService,
