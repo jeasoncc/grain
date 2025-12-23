@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+import * as E from "fp-ts/Either";
 import { DevOnlyPage } from "@/components/dev-only";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +13,7 @@ import {
 	clearLocalStorage,
 	clearSessionStorage,
 	getStorageStats,
-} from "@/services/clear-data";
+} from "@/db/clear-data";
 
 export const Route = createFileRoute("/test-clear-data")({
 	component: () => (
@@ -33,8 +34,11 @@ function TestClearData() {
 
 	const loadStats = async () => {
 		try {
-			const stats = await getStorageStats();
-			setStorageStats(stats);
+			const result = await getStorageStats()();
+			if (E.isLeft(result)) {
+				throw new Error(result.left.message);
+			}
+			setStorageStats(result.right);
 		} catch (error) {
 			toast.error("Failed to load storage stats");
 			logger.error(error);
@@ -44,7 +48,10 @@ function TestClearData() {
 	const handleClearAll = async () => {
 		setLoading(true);
 		try {
-			await clearAllData();
+			const result = await clearAllData()();
+			if (E.isLeft(result)) {
+				throw new Error(result.left.message);
+			}
 			toast.success("All data cleared successfully");
 			await loadStats();
 		} catch (error) {
@@ -58,7 +65,10 @@ function TestClearData() {
 	const handleClearIndexedDB = async () => {
 		setLoading(true);
 		try {
-			await clearIndexedDB();
+			const result = await clearIndexedDB()();
+			if (E.isLeft(result)) {
+				throw new Error(result.left.message);
+			}
 			toast.success("IndexedDB cleared successfully");
 			await loadStats();
 		} catch (error) {
@@ -69,9 +79,12 @@ function TestClearData() {
 		}
 	};
 
-	const handleClearLocalStorage = () => {
+	const handleClearLocalStorage = async () => {
 		try {
-			clearLocalStorage();
+			const result = await clearLocalStorage()();
+			if (E.isLeft(result)) {
+				throw new Error(result.left.message);
+			}
 			toast.success("localStorage cleared successfully");
 			loadStats();
 		} catch (error) {
@@ -80,9 +93,12 @@ function TestClearData() {
 		}
 	};
 
-	const handleClearSessionStorage = () => {
+	const handleClearSessionStorage = async () => {
 		try {
-			clearSessionStorage();
+			const result = await clearSessionStorage()();
+			if (E.isLeft(result)) {
+				throw new Error(result.left.message);
+			}
 			toast.success("sessionStorage cleared successfully");
 			loadStats();
 		} catch (error) {
@@ -91,9 +107,12 @@ function TestClearData() {
 		}
 	};
 
-	const handleClearCookies = () => {
+	const handleClearCookies = async () => {
 		try {
-			clearCookies();
+			const result = await clearCookies()();
+			if (E.isLeft(result)) {
+				throw new Error(result.left.message);
+			}
 			toast.success("Cookies cleared successfully");
 			loadStats();
 		} catch (error) {
