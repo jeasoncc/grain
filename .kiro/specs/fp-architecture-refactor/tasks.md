@@ -787,7 +787,7 @@
   - 预计时间：30分钟
   - 优先级：🔴 高
 
-- [ ] 81.15 迁移 `@/services/nodes` 依赖（4 处）
+- [x] 81.15 迁移 `@/services/nodes` 依赖（4 处）
   - 影响文件：
     - `src/components/panels/file-tree-panel.tsx` - 多个导出
     - `src/components/blocks/wiki-hover-preview-connected.tsx` - getNode, getNodeContent
@@ -800,7 +800,7 @@
   - 预计时间：30分钟
   - 优先级：🔴 高
 
-- [ ] 81.16 迁移 `@/services/export` 依赖（2 处）
+- [x] 81.16 迁移 `@/services/export` 依赖（2 处）
   - 影响文件：
     - `src/components/blocks/export-dialog.tsx` - 多个导出
     - `src/components/export/export-button.tsx` - ExportFormat, exportProject
@@ -810,7 +810,7 @@
   - 预计时间：20分钟
   - 优先级：🔴 高
 
-- [ ] 81.17 迁移 `@/services/updater` 依赖（1 处）
+- [x] 81.17 迁移 `@/services/updater` 依赖（1 处）
   - 影响文件：
     - `src/components/blocks/update-checker.tsx` - 多个导出
   - 迁移方案：
@@ -818,7 +818,7 @@
   - 预计时间：15分钟
   - 优先级：🟡 中
 
-- [ ] 81.18 迁移 `@/services/clear-data` 依赖（1 处）
+- [x] 81.18 迁移 `@/services/clear-data` 依赖（1 处）
   - 影响文件：
     - `src/routes/test-clear-data.tsx` - 多个导出
   - 迁移方案：
