@@ -1,3 +1,7 @@
+---
+inclusion: manual
+---
+
 # Git Hooks 版本系统
 
 本项目使用 pre-commit hook 自动递增版本号。

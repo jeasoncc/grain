@@ -1,3 +1,7 @@
+---
+inclusion: manual
+---
+
 # Grain (小麦) - Product Overview
 
 Grain is a modern, cross-platform writing application designed for long-form writing, knowledge management, and creative expression.

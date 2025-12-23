@@ -1,3 +1,7 @@
+---
+inclusion: manual
+---
+
 # E2E 测试规范
 
 本项目使用 Playwright 进行端对端测试，仅在用户明确要求时触发。
