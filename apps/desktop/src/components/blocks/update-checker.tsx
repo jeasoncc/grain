@@ -8,6 +8,7 @@ import {
 	RefreshCw,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import * as E from "fp-ts/Either";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -20,9 +21,10 @@ import {
 import { Progress } from "@/components/ui/progress";
 import {
 	checkForUpdates,
-	downloadAndInstall,
+	downloadAndInstallUpdate,
 	type UpdateInfo,
-} from "@/services/updater";
+	type UpdateProgress,
+} from "@/fn/updater";
 
 type CheckStatus =
 	| "idle"
@@ -46,7 +48,11 @@ export function UpdateChecker() {
 		setCheckStatus("checking");
 		setErrorMessage("");
 		try {
-			const info = await checkForUpdates();
+			const result = await checkForUpdates()();
+			if (E.isLeft(result)) {
+				throw new Error(result.left.message);
+			}
+			const info = result.right;
 			setUpdateInfo(info);
 			if (info.available) {
 				setCheckStatus("update-available");
@@ -70,9 +76,12 @@ export function UpdateChecker() {
 		setIsDownloading(true);
 		setDownloadProgress(0);
 		try {
-			await downloadAndInstall((progress) => {
-				setDownloadProgress(progress);
-			});
+			const result = await downloadAndInstallUpdate((progress) => {
+				setDownloadProgress(progress.percentage);
+			})();
+			if (E.isLeft(result)) {
+				throw new Error(result.left.message);
+			}
 		} catch (error) {
 			console.error("Failed to download and install update:", error);
 			setIsDownloading(false);
