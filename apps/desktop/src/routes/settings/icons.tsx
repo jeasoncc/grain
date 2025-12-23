@@ -6,14 +6,12 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-	applyIconTheme,
-	type IconTheme,
-	iconThemes,
-} from "@/domain/icon-theme";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
+import { useIconThemeStore } from "@/stores/icon-theme.store";
+import type { IconTheme } from "@/types/icon-theme";
+import { iconThemes } from "@/types/icon-theme";
 
 export const Route = createFileRoute("/settings/icons")({
 	component: IconSettings,
@@ -25,7 +23,7 @@ function IconSettings() {
 
 	// Apply icon theme
 	const handleIconThemeChange = (themeKey: string) => {
-		applyIconTheme(themeKey);
+		useIconThemeStore.getState().setTheme(themeKey);
 		// Trigger re-render
 		window.dispatchEvent(new Event("icon-theme-changed"));
 	};

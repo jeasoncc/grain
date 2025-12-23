@@ -128,5 +128,7 @@ export { applyThemeWithTransition, getSystemTheme } from "./use-theme-dom";
 // Mobile Hook
 export { useIsMobile } from "./use-mobile";
 
+// Wiki Hooks
+export { useWikiFiles } from "./use-wiki";
 // Wiki Hover Preview Hook
 export { useWikiHoverPreview } from "./use-wiki-hover-preview";

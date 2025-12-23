@@ -26,15 +26,16 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { updateDrawingContent } from "@/db/drawing.db.fn";
 import type { DrawingInterface } from "@/db/schema";
 import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
 import {
-	resetDrawing,
+	deleteDrawing,
+	renameDrawing,
 	saveDrawingContent,
-	updateDrawing,
-} from "@/services/drawings";
+} from "@/routes/actions";
 
 // Error Boundary for Excalidraw component
 interface ErrorBoundaryProps {
@@ -288,13 +289,19 @@ export function DrawingWorkspace({
 			};
 
 			try {
-				await saveDrawingContent(
-					drawing.id,
-					JSON.stringify(dataToSave),
-					containerSize.width,
-					containerSize.height,
-				);
-				setHasUnsavedChanges(false);
+				const result = await saveDrawingContent({
+					drawingId: drawing.id,
+					content: JSON.stringify(dataToSave),
+					width: containerSize.width,
+					height: containerSize.height,
+				})();
+
+				if (result._tag === "Right") {
+					setHasUnsavedChanges(false);
+				} else {
+					logger.error("Failed to save drawing:", result.left);
+					toast.error("Failed to save drawing");
+				}
 			} catch (error) {
 				logger.error("Failed to save drawing:", error);
 				toast.error("Failed to save drawing");
@@ -307,9 +314,15 @@ export function DrawingWorkspace({
 	const handleRename = useCallback(async () => {
 		if (tempName.trim() && tempName !== drawing.name) {
 			try {
-				await updateDrawing(drawing.id, { name: tempName.trim() });
-				onRename?.(drawing.id, tempName.trim());
-				toast.success("Drawing renamed");
+				const result = await renameDrawing(drawing.id, tempName.trim())();
+
+				if (result._tag === "Right") {
+					onRename?.(drawing.id, tempName.trim());
+					toast.success("Drawing renamed");
+				} else {
+					logger.error("Failed to rename drawing:", result.left);
+					toast.error("Failed to rename drawing");
+				}
 			} catch (error) {
 				logger.error("Failed to rename drawing:", error);
 				toast.error("Failed to rename drawing");
@@ -319,9 +332,21 @@ export function DrawingWorkspace({
 	}, [drawing.id, drawing.name, tempName, onRename]);
 
 	// Handle delete
-	const handleDelete = useCallback(() => {
+	const handleDelete = useCallback(async () => {
 		if (window.confirm(`Are you sure you want to delete "${drawing.name}"?`)) {
-			onDelete?.(drawing.id);
+			try {
+				const result = await deleteDrawing(drawing.id)();
+
+				if (result._tag === "Right") {
+					onDelete?.(drawing.id);
+				} else {
+					logger.error("Failed to delete drawing:", result.left);
+					toast.error("Failed to delete drawing");
+				}
+			} catch (error) {
+				logger.error("Failed to delete drawing:", error);
+				toast.error("Failed to delete drawing");
+			}
 		}
 	}, [drawing.id, drawing.name, onDelete]);
 
@@ -389,11 +414,30 @@ export function DrawingWorkspace({
 
 	// 错误恢复 - 清空数据
 	const handleClearData = useCallback(async () => {
-		await resetDrawing(drawing.id);
-		setIsEditing(false);
-		setIsReady(false);
-		setTimeout(() => setIsReady(true), 100);
-		toast.success("Drawing reset");
+		try {
+			const EMPTY_DRAWING_CONTENT = JSON.stringify({
+				elements: [],
+				appState: {},
+				files: {},
+			});
+			const result = await updateDrawingContent(
+				drawing.id,
+				EMPTY_DRAWING_CONTENT,
+			)();
+
+			if (result._tag === "Right") {
+				setIsEditing(false);
+				setIsReady(false);
+				setTimeout(() => setIsReady(true), 100);
+				toast.success("Drawing reset");
+			} else {
+				logger.error("Failed to reset drawing:", result.left);
+				toast.error("Failed to reset drawing");
+			}
+		} catch (error) {
+			logger.error("Failed to reset drawing:", error);
+			toast.error("Failed to reset drawing");
+		}
 	}, [drawing.id]);
 
 	// Render preview mode

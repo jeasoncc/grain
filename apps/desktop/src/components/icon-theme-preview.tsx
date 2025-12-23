@@ -3,24 +3,11 @@
  * 展示当前图标主题的所有图标效果
  */
 
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getCurrentIconTheme } from "@/domain/icon-theme";
+import { useIconTheme } from "@/hooks/use-icon-theme";
 
 export function IconThemePreview() {
-	const [iconTheme, setIconTheme] = useState(getCurrentIconTheme());
-
-	// 监听图标主题变化
-	useEffect(() => {
-		const handleThemeChange = () => {
-			setIconTheme(getCurrentIconTheme());
-		};
-
-		window.addEventListener("icon-theme-changed", handleThemeChange);
-		return () => {
-			window.removeEventListener("icon-theme-changed", handleThemeChange);
-		};
-	}, []);
+	const iconTheme = useIconTheme();
 
 	const ProjectIcon = iconTheme.icons.project.default;
 	const ProjectOpenIcon = iconTheme.icons.project.open || ProjectIcon;

@@ -18,7 +18,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { type ExportFormat, exportProject } from "@/services/export";
+import { type ExportFormat, exportProject } from "@/domain/export";
 
 interface ExportButtonProps {
 	workspaceId: string;

@@ -12,13 +12,13 @@ import { DebouncedSlider } from "@/components/ui/debounced-slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { useFontSettings } from "@/stores/font.store";
 import {
 	CARD_SIZE_OPTIONS,
 	DEFAULT_UI_FONT,
 	POPULAR_FONTS,
 	UI_SCALE_OPTIONS,
 } from "@/types/font";
-import { useFontSettings } from "@/stores/font.store";
 
 export const Route = createFileRoute("/settings/typography")({
 	component: TypographySettings,

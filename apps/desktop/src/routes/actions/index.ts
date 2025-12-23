@@ -12,6 +12,14 @@
 // Node Actions
 // ============================================================================
 
+// 创建日记
+export {
+	type CreateDiaryParams,
+	createDiary,
+	createDiaryAsync,
+	DIARY_ROOT_FOLDER,
+	type DiaryCreationResult,
+} from "./create-diary.action";
 // 创建节点
 export {
 	type CreateFileInTreeParams,
@@ -55,6 +63,29 @@ export {
 	type UpdateWorkspaceParams,
 	updateWorkspace,
 } from "./update-workspace.action";
+
+// ============================================================================
+// Drawing Actions
+// ============================================================================
+
+// 创建绘图
+export {
+	type CreateDrawingParams,
+	createDrawing,
+	createDrawingAsync,
+} from "./create-drawing.action";
+
+// 删除绘图
+export { deleteDrawing } from "./delete-drawing.action";
+
+// 重命名绘图
+export { renameDrawing } from "./rename-drawing.action";
+
+// 保存绘图内容
+export {
+	type SaveDrawingContentParams,
+	saveDrawingContent,
+} from "./save-drawing-content.action";
 
 // ============================================================================
 // Export Actions

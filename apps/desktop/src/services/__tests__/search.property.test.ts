@@ -224,7 +224,9 @@ describe("Property 3: Text Extraction Round Trip Consistency", () => {
 				(prefix, query, maxHighlights) => {
 					// Create content that definitely contains the query
 					const content = prefix + query + prefix;
-					const highlights = extractHighlights(content, query, { maxHighlights });
+					const highlights = extractHighlights(content, query, {
+						maxHighlights,
+					});
 
 					// If we have highlights, each should contain the query
 					for (const highlight of highlights) {

@@ -15,15 +15,15 @@ import { Toaster } from "@/components/ui/sonner";
 import { UnifiedSidebarContent } from "@/components/unified-sidebar";
 import { autoBackupManager } from "@/db/backup/backup.service";
 import type { DrawingInterface } from "@/db/schema";
-import { useUnifiedSidebarStore } from "@/stores/sidebar.store";
 import { useDrawingsByWorkspace } from "@/hooks/use-drawing";
 import { useTagGraph } from "@/hooks/use-tag";
 import { initializeTheme } from "@/hooks/use-theme";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
 import logger from "@/log";
-import { createDrawing, deleteDrawing } from "@/services/drawings";
+import { createDrawing, deleteDrawing } from "@/routes/actions";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSelectionStore } from "@/stores/selection.store";
+import { useUnifiedSidebarStore } from "@/stores/sidebar.store";
 
 function RootComponent() {
 	const navigate = useNavigate();
@@ -83,12 +83,18 @@ function RootComponent() {
 		}
 
 		try {
-			const newDrawing = await createDrawing({
+			const result = await createDrawing({
 				workspaceId: selectedWorkspaceId,
 				name: `Drawing ${drawings.length + 1}`,
-			});
-			handleSelectDrawing(newDrawing);
-			toast.success("New drawing created");
+			})();
+
+			if (result._tag === "Right") {
+				handleSelectDrawing(result.right);
+				toast.success("New drawing created");
+			} else {
+				logger.error("[Root] Failed to create drawing:", result.left);
+				toast.error("Failed to create drawing");
+			}
 		} catch (error) {
 			logger.error("[Root] Failed to create drawing:", error);
 			toast.error("Failed to create drawing");
@@ -99,8 +105,14 @@ function RootComponent() {
 	const handleDeleteDrawing = useCallback(
 		async (drawingId: string, drawingName: string) => {
 			try {
-				await deleteDrawing(drawingId);
-				toast.success(`Drawing "${drawingName}" deleted`);
+				const result = await deleteDrawing(drawingId)();
+
+				if (result._tag === "Right") {
+					toast.success(`Drawing "${drawingName}" deleted`);
+				} else {
+					logger.error("[Root] Failed to delete drawing:", result.left);
+					toast.error("Failed to delete drawing");
+				}
 			} catch (error) {
 				logger.error("[Root] Failed to delete drawing:", error);
 				toast.error("Failed to delete drawing");

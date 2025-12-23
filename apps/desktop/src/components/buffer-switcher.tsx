@@ -6,8 +6,8 @@
 import { Calendar, FileText, Palette } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import type { EditorTab } from "@/domain/editor-tabs";
 import { cn } from "@/lib/utils";
+import type { EditorTab } from "@/types/editor-tab";
 
 interface BufferSwitcherProps {
 	open: boolean;

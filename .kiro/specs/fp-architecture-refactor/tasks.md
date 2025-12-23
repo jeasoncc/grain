@@ -682,16 +682,17 @@
   - 预计时间：30分钟
   - 优先级：🔴 高
 
-- [-] 81.4 迁移 `@/domain/sidebar` 依赖（2 处）
+- [x] 81.4 迁移 `@/domain/sidebar` 依赖（2 处）✅ 已完成
   - 影响文件：
-    - `src/routes/canvas.tsx` - useUnifiedSidebarStore
-    - `src/routes/__root.tsx` - useUnifiedSidebarStore
+    - `src/routes/canvas.tsx` - useUnifiedSidebarStore ✅
+    - `src/routes/__root.tsx` - useUnifiedSidebarStore ✅
   - 迁移方案：
     - `useUnifiedSidebarStore` → `stores/sidebar.store.ts`（已存在）
-  - 预计时间：15分钟
+  - 完成时间：已完成
   - 优先级：🔴 高
+  - 说明：两个文件都已正确导入 `@/stores/sidebar.store`，且 store 提供了向后兼容的 `useUnifiedSidebarStore` 导出
 
-- [ ] 81.5 迁移 `@/domain/ui` 依赖（2 处）
+- [x] 81.5 迁移 `@/domain/ui` 依赖（2 处）
   - 影响文件：
     - `src/components/workspace/story-workspace.tsx` - useUIStore
     - `src/routes/settings/general.tsx` - TabPosition, useUIStore
@@ -701,7 +702,7 @@
   - 预计时间：15分钟
   - 优先级：🔴 高
 
-- [ ] 81.6 迁移 `@/domain/wiki` 依赖（2 处）
+- [x] 81.6 迁移 `@/domain/wiki` 依赖（2 处）
   - 影响文件：
     - `src/components/workspace/story-workspace.tsx` - useWikiFiles
     - `src/services/index.ts` - re-export
@@ -711,7 +712,7 @@
   - 预计时间：20分钟
   - 优先级：🔴 高
 
-- [ ] 81.7 迁移 `@/domain/icon-theme` 依赖（2 处）
+- [x] 81.7 迁移 `@/domain/icon-theme` 依赖（2 处）
   - 影响文件：
     - `src/components/icon-theme-preview.tsx` - getCurrentIconTheme
     - `src/routes/settings/icons.tsx` - 多个导出
@@ -721,7 +722,7 @@
   - 预计时间：20分钟
   - 优先级：🔴 高
 
-- [ ] 81.8 迁移 `@/domain/editor-tabs` 依赖（2 处）
+- [x] 81.8 迁移 `@/domain/editor-tabs` 依赖（2 处）
   - 影响文件：
     - `src/components/buffer-switcher.tsx` - EditorTab type
     - `src/components/workspace/multi-editor-workspace.tsx` - EditorInstanceState, EditorTab
@@ -730,7 +731,7 @@
   - 预计时间：10分钟
   - 优先级：🔴 高
 
-- [ ] 81.9 迁移 `@/domain/export` 依赖（2 处）
+- [x] 81.9 迁移 `@/domain/export` 依赖（2 处）
   - 影响文件：
     - `src/services/export.ts` - 多个导出
     - `src/services/index.ts` - re-export
@@ -739,7 +740,7 @@
   - 预计时间：15分钟
   - 优先级：🔴 高
 
-- [ ] 81.10 迁移 `@/domain/diary` 依赖（2 处）
+- [x] 81.10 迁移 `@/domain/diary` 依赖（2 处）
   - 影响文件：
     - `src/components/panels/file-tree-panel.tsx` - createDiaryInFileTree
     - `src/services/index.ts` - re-export
@@ -773,7 +774,7 @@
   - 预计时间：10分钟
   - 优先级：🟡 中
 
-- [ ] 81.14 迁移 `@/services/drawings` 依赖（4 处）
+- [x] 81.14 迁移 `@/services/drawings` 依赖（4 处）
   - 影响文件：
     - `src/routes/canvas.tsx` - useDrawingById
     - `src/routes/__root.tsx` - createDrawing, deleteDrawing

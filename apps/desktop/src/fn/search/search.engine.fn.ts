@@ -146,7 +146,9 @@ export class SearchEngine {
 	 */
 	private async loadWorkspaces(workspaceIds: string[]): Promise<void> {
 		// 过滤出未缓存的 workspace
-		const uncachedIds = workspaceIds.filter((id) => !this.workspaceCache.has(id));
+		const uncachedIds = workspaceIds.filter(
+			(id) => !this.workspaceCache.has(id),
+		);
 		if (uncachedIds.length === 0) return;
 
 		// 并行获取所有未缓存的 workspace
@@ -164,7 +166,9 @@ export class SearchEngine {
 	/**
 	 * 从缓存获取 workspace
 	 */
-	private getWorkspaceFromCache(workspaceId: string): WorkspaceInterface | null {
+	private getWorkspaceFromCache(
+		workspaceId: string,
+	): WorkspaceInterface | null {
 		return this.workspaceCache.get(workspaceId) ?? null;
 	}
 

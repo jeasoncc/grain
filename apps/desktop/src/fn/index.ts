@@ -48,10 +48,9 @@ export * as searchFn from "./search";
 export * as tagFn from "./tag";
 // Theme 纯函数（主题相关）
 export * as themeFn from "./theme";
+// Wiki 纯函数（Wiki 文件管理和迁移）
+export * as wikiFn from "./wiki";
 // Word Count 纯函数（字数统计）
 export * as wordCountFn from "./word-count";
 // Writing 纯函数（写作状态）
 export * as writingFn from "./writing";
-
-// 以下模块将在后续任务中创建和导出
-// export * as wikiFn from "./wiki";

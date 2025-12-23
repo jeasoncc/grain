@@ -26,17 +26,18 @@ import {
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
-import { triggerBlobDownload, triggerDownload } from "@/fn/export";
+import { exportProject } from "@/domain/export";
+import {
+	type ExportFormat,
+	type ExportOptions,
+	triggerBlobDownload,
+	triggerDownload,
+} from "@/fn/export";
 import {
 	exportAllAsync as exportAll,
 	exportAllAsZipAsync as exportAllAsZip,
 	exportAsMarkdownAsync as exportAsMarkdown,
 } from "@/routes/actions";
-import {
-	type ExportFormat,
-	type ExportOptions,
-	exportProject,
-} from "@/services/export";
 
 interface ExportDialogProps {
 	open: boolean;

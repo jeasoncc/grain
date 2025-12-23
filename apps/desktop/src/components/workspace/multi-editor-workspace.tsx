@@ -8,9 +8,9 @@ import { Editor, type MentionEntry } from "@grain/editor";
 import type { SerializedEditorState } from "lexical";
 import { useCallback, useEffect, useRef } from "react";
 import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-preview-connected";
-import type { EditorInstanceState, EditorTab } from "@/domain/editor-tabs";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
 import { cn } from "@/lib/utils";
+import type { EditorInstanceState, EditorTab } from "@/types/editor-tab";
 
 interface MultiEditorWorkspaceProps {
 	/** 所有打开的标签页 */

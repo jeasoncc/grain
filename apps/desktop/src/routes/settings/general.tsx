@@ -26,8 +26,9 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { type TabPosition, useUIStore } from "@/domain/ui";
 import { useSettings } from "@/hooks/use-settings";
+import { useUIStore } from "@/stores/ui.store";
+import type { TabPosition } from "@/types/ui";
 
 export const Route = createFileRoute("/settings/general")({
 	component: GeneralSettings,

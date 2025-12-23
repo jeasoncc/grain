@@ -12,7 +12,7 @@
  * - @/domain/diary - 日记功能
  * - @/domain/export - 导出功能
  * - @/fn/keyboard - 键盘快捷键
- * - @/domain/wiki - Wiki 功能
+ * - @/fn/wiki - Wiki 功能
  * - @/domain/updater - 自动更新
  * - @/domain/save - 保存功能
  * - @/db/backup - 备份功能
@@ -24,11 +24,17 @@
 // Domain 模块
 // ============================================================================
 
-export * from "@/domain/diary";
-// Export (排除 extractTextFromContent 避免与 search 模块冲突)
+// 导出日记工具函数
 export {
-	type ExportFormat,
-	type ExportOptions,
+	type DiaryFolderStructure,
+	generateDiaryContent,
+	getChineseEra,
+	getChineseHour,
+	getDiaryFolderStructure,
+	getZodiacAnimal,
+} from "@/domain/diary/diary.utils";
+// 导出函数保留在 domain/export（暂未迁移到 fn/）
+export {
 	escapeHtml,
 	exportProject,
 	exportToEpub,
@@ -41,8 +47,6 @@ export {
 	getNodeContents,
 } from "@/domain/export";
 export * from "@/domain/updater";
-export * from "@/domain/wiki";
-// Export Path (从 fn/export 重新导出)
 export {
 	clearDefaultExportPath,
 	type ExportPathService,
@@ -80,14 +84,37 @@ export {
 	type SearchResultType,
 	searchEngine,
 } from "@/fn/search";
+// Wiki (从 fn/wiki 重新导出)
+export {
+	checkMigrationNeeded,
+	createWikiFile,
+	ensureWikiFolder,
+	generateWikiTemplate,
+	getWikiFiles,
+	type MigrationResult,
+	migrateWikiEntriesToFiles,
+	runMigrationIfNeeded,
+	WIKI_ROOT_FOLDER,
+	WIKI_TAG,
+	type WikiCreationResult,
+	type WikiFileEntry,
+} from "@/fn/wiki";
+// Diary (从 routes/actions 重新导出以保持向后兼容)
 // File Creator (从 routes/actions 重新导出)
 export {
+	type CreateDiaryParams,
 	type CreateFileInTreeParams,
 	type CreateFileInTreeResult,
+	createDiary,
+	createDiaryAsync,
 	createFileInTree,
+	DIARY_ROOT_FOLDER,
+	type DiaryCreationResult,
 	ensureRootFolder,
 	ensureRootFolderAsync,
 } from "@/routes/actions";
+// Export (从 fn/export 和 types/export 重新导出)
+export type { ExportFormat, ExportOptions } from "@/types/export";
 // Import-Export (从新架构重新导出)
 export {
 	type ExportBundle,

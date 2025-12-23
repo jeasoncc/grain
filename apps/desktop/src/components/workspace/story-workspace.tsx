@@ -27,17 +27,18 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useUIStore } from "@/domain/ui";
-import { useWikiFiles } from "@/domain/wiki";
 import { saveService } from "@/fn/save";
 import { countWordsFromLexicalState } from "@/fn/word-count";
 import { useManualSave } from "@/hooks/use-save";
 import { useSettings } from "@/hooks/use-settings";
+import { useWikiFiles } from "@/hooks/use-wiki";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
+import logger from "@/log";
 import { getNodeContent } from "@/services/nodes";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSaveStore } from "@/stores/save.store";
 import { useSelectionStore } from "@/stores/selection.store";
+import { useUIStore } from "@/stores/ui.store";
 import type { DrawingInterface, WorkspaceInterface } from "@/types";
 
 interface StoryWorkspaceProps {
@@ -208,7 +209,7 @@ export function StoryWorkspace({
 						setSaveStatus("saved");
 						markAsSaved();
 					} catch (error) {
-						console.error("Auto-save failed:", error);
+						logger.error("[StoryWorkspace] 自动保存失败:", error);
 						setSaveStatus("error");
 					}
 				}, autoSaveDelayMs);

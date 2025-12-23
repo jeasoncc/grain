@@ -11,10 +11,10 @@
 // 搜索引擎
 export {
 	SearchEngine,
-	searchEngine,
 	type SearchOptions,
 	type SearchResult,
 	type SearchResultType,
+	searchEngine,
 } from "./search.engine.fn";
 // 过滤相关函数
 export {

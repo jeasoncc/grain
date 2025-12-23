@@ -6,8 +6,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PenTool } from "lucide-react";
 import { useCallback } from "react";
 import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
+import { useDrawing } from "@/hooks/use-drawing";
 import { useUnifiedSidebarStore } from "@/stores/sidebar.store";
-import { useDrawingById } from "@/services/drawings";
 
 export const Route = createFileRoute("/canvas")({
 	component: CanvasPage,
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/canvas")({
 
 function CanvasPage() {
 	const { drawingsState, setSelectedDrawingId } = useUnifiedSidebarStore();
-	const selectedDrawing = useDrawingById(drawingsState.selectedDrawingId);
+	const selectedDrawing = useDrawing(drawingsState.selectedDrawingId);
 
 	const handleDeleteDrawing = useCallback(
 		(drawingId: string) => {

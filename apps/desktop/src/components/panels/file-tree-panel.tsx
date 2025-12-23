@@ -12,8 +12,8 @@ import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { FileTree } from "@/components/file-tree";
 import { useConfirm } from "@/components/ui/confirm";
-import { createDiaryInFileTree } from "@/domain/diary";
 import { useNodesByWorkspace } from "@/hooks/use-node";
+import { createDiaryAsync } from "@/routes/actions";
 import {
 	createNode,
 	deleteNode as deleteNodeService,
@@ -264,7 +264,9 @@ export function FileTreePanel({
 
 		try {
 			// Create diary and get content in one call (avoids race condition)
-			const { node, parsedContent } = await createDiaryInFileTree(workspaceId);
+			const { node, parsedContent } = await createDiaryAsync({
+				workspaceId,
+			});
 
 			// Pre-load the diary content into editorStates BEFORE opening the tab
 			updateEditorState(node.id, { serializedState: parsedContent });

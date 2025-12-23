@@ -14,6 +14,9 @@
  * TODO: 全局导出功能（exportWorkspace）暂不实现，预留接口
  */
 
+// 类型定义
+export type { ExportFormat, ExportOptions } from "@/types/export";
+
 // Bundle 导出（数据包）
 export {
 	createExportBundle,

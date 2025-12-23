@@ -43,6 +43,8 @@ export * from "./diagram";
 export * from "./editor-history";
 // Editor Tab 类型模块
 export * from "./editor-tab";
+// Export 类型模块
+export * from "./export";
 // Font 类型模块
 export * from "./font";
 // Icon Theme 类型模块
