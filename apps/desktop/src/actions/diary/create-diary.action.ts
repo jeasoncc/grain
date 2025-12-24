@@ -57,8 +57,7 @@ export interface DiaryCreationResult {
 	/** 生成的内容（Lexical JSON 字符串） */
 	readonly content: string;
 	/** 解析后的内容（Lexical JSON 对象） */
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	readonly parsedContent: any;
+	readonly parsedContent: unknown;
 }
 
 /**
@@ -129,20 +128,26 @@ export const createDiary = (
 		// 4. 创建文件
 		TE.chain(({ validParams, structure, content, parsedContent }) =>
 			pipe(
-				createFileInTree({
-					workspaceId: validParams.workspaceId,
-					title: structure.filename,
-					folderPath: [
-						DIARY_ROOT_FOLDER,
-						structure.yearFolder,
-						structure.monthFolder,
-						structure.dayFolder,
-					],
-					type: "diary",
-					tags: ["diary"],
-					content,
-					foldersCollapsed: true,
-				}),
+				TE.tryCatch(
+					() => createFileInTree({
+						workspaceId: validParams.workspaceId,
+						title: structure.filename,
+						folderPath: [
+							DIARY_ROOT_FOLDER,
+							structure.yearFolder,
+							structure.monthFolder,
+							structure.dayFolder,
+						],
+						type: "diary",
+						tags: ["diary"],
+						content,
+						foldersCollapsed: true,
+					}),
+					(error): AppError => ({
+						type: "DB_ERROR",
+						message: `创建文件失败: ${error instanceof Error ? error.message : String(error)}`,
+					}),
+				),
 				TE.map((result) => ({
 					node: result.node,
 					content,
