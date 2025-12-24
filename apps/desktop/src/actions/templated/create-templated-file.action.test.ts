@@ -107,6 +107,7 @@ const testTemplateParamsSchema = z.object({
 const createTestTemplateConfig = (
 	overrides: Partial<TemplateConfig<TestTemplateParams>> = {},
 ): TemplateConfig<TestTemplateParams> => ({
+	name: "测试模板",
 	rootFolder: "TestFolder",
 	fileType: "file",
 	tag: "test",
@@ -135,6 +136,7 @@ const createTestTemplateConfig = (
 	generateFolderPath: (params) => [params.category],
 	generateTitle: (params) => `${params.name} (${params.category})`,
 	paramsSchema: testTemplateParamsSchema,
+	foldersCollapsed: true,
 	...overrides,
 });
 

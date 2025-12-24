@@ -55,29 +55,33 @@ export const createWiki = (params) => {
 ```typescript
 // ✅ 高阶函数抽象
 interface TemplateConfig<T> {
+  readonly name: string;
   readonly rootFolder: string;
-  readonly fileType: NodeType;
+  readonly fileType: Exclude<NodeType, "folder">;     // 排除 folder 类型
   readonly tag: string;
   readonly generateTemplate: (params: T) => string;
   readonly generateFolderPath: (params: T) => string[];
   readonly generateTitle: (params: T) => string;
+  readonly paramsSchema: z.ZodSchema<T>;
+  readonly foldersCollapsed?: boolean;
 }
 
 const createTemplatedFile = <T>(config: TemplateConfig<T>) => 
-  (params: T & { workspaceId: string }): TE.TaskEither<AppError, CreationResult> =>
+  (params: TemplatedFileParams<T>): TE.TaskEither<AppError, TemplatedFileResult> =>
     pipe(
       TE.Do,
-      TE.bind("content", () => TE.of(config.generateTemplate(params))),
+      TE.bind("content", () => TE.of(config.generateTemplate(params.templateParams))),
       TE.bind("parsed", ({ content }) => parseJsonSafe(content)),
       TE.chain(({ content, parsed }) => 
         pipe(
           createFileInTree({
             workspaceId: params.workspaceId,
-            title: config.generateTitle(params),
-            folderPath: config.generateFolderPath(params),
+            title: config.generateTitle(params.templateParams),
+            folderPath: [config.rootFolder, ...config.generateFolderPath(params.templateParams)],
             type: config.fileType,
             tags: [config.tag],
             content,
+            foldersCollapsed: config.foldersCollapsed ?? true,
           }),
           TE.map(result => ({ node: result.node, content, parsedContent: parsed }))
         )
@@ -90,25 +94,31 @@ const createTemplatedFile = <T>(config: TemplateConfig<T>) =>
 ```typescript
 // Diary 配置
 const diaryConfig: TemplateConfig<CreateDiaryParams> = {
+  name: "日记",
   rootFolder: "Diary",
   fileType: "diary",
   tag: "diary",
   generateTemplate: (params) => generateDiaryContent(params.date || new Date()),
   generateFolderPath: (params) => {
     const s = getDiaryFolderStructure(params.date || new Date());
-    return ["Diary", s.yearFolder, s.monthFolder, s.dayFolder];
+    return [s.yearFolder, s.monthFolder, s.dayFolder];
   },
   generateTitle: (params) => getDiaryFolderStructure(params.date || new Date()).filename,
+  paramsSchema: createDiaryParamsSchema,
+  foldersCollapsed: true,
 };
 
 // Wiki 配置
 const wikiConfig: TemplateConfig<WikiCreationParams> = {
+  name: "Wiki",
   rootFolder: "Wiki",
   fileType: "file",
   tag: "wiki",
   generateTemplate: (params) => generateWikiTemplate(params.name),
-  generateFolderPath: () => ["Wiki"],
+  generateFolderPath: () => [],
   generateTitle: (params) => params.name,
+  paramsSchema: wikiCreationParamsSchema,
+  foldersCollapsed: true,
 };
 
 // 实例化

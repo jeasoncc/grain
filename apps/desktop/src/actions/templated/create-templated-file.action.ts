@@ -24,7 +24,7 @@ import { z } from "zod";
 import { createFileInTree } from "@/actions/node";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
-import type { NodeInterface } from "@/types/node";
+import type { NodeInterface, NodeType } from "@/types/node";
 
 // ==============================
 // Types
@@ -36,10 +36,12 @@ import type { NodeInterface } from "@/types/node";
  * 泛型 T 表示具体模板的参数类型
  */
 export interface TemplateConfig<T> {
+	/** 模块名称（用于日志） */
+	readonly name: string;
 	/** 根文件夹名称 */
 	readonly rootFolder: string;
-	/** 文件类型 */
-	readonly fileType: "file" | "diary" | "canvas";
+	/** 文件类型（排除 folder，因为模板只创建文件，不创建文件夹） */
+	readonly fileType: Exclude<NodeType, "folder">;
 	/** 默认标签 */
 	readonly tag: string;
 	/** 生成模板内容的函数 */
@@ -50,6 +52,8 @@ export interface TemplateConfig<T> {
 	readonly generateTitle: (params: T) => string;
 	/** 参数校验 Schema */
 	readonly paramsSchema: z.ZodSchema<T>;
+	/** 文件夹是否折叠（可选，默认 true） */
+	readonly foldersCollapsed?: boolean;
 }
 
 /**
@@ -129,7 +133,7 @@ export const createTemplatedFile = <T>(
 	return (
 		params: TemplatedFileParams<T>,
 	): TE.TaskEither<AppError, TemplatedFileResult> => {
-		logger.start(`[Action] 创建${config.rootFolder}文件...`);
+		logger.start(`[Action] 创建${config.name}...`);
 
 		return pipe(
 			// 1. 校验基础参数（工作区 ID）
@@ -201,7 +205,7 @@ export const createTemplatedFile = <T>(
 								type: config.fileType,
 								tags: [config.tag],
 								content,
-								foldersCollapsed: true,
+								foldersCollapsed: config.foldersCollapsed ?? true,
 							}),
 						(error): AppError => ({
 							type: "DB_ERROR",
@@ -217,7 +221,7 @@ export const createTemplatedFile = <T>(
 			),
 			// 6. 记录成功日志
 			TE.tap((result) => {
-				logger.success(`[Action] ${config.rootFolder}文件创建成功:`, result.node.id);
+				logger.success(`[Action] ${config.name}创建成功:`, result.node.id);
 				return TE.right(result);
 			}),
 		);

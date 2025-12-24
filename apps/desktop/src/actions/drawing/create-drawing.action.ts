@@ -28,7 +28,7 @@ import type { DrawingInterface } from "@/types/drawing";
  * 创建绘图参数 Schema
  */
 const createDrawingParamsSchema = z.object({
-	workspaceId: z.string().uuid("工作区 ID 必须是有效的 UUID"),
+	workspaceId: z.string().uuid({ message: "工作区 ID 必须是有效的 UUID" }),
 	name: z.string().min(1).max(200).optional(),
 	width: z.number().positive("宽度必须为正数").optional(),
 	height: z.number().positive("高度必须为正数").optional(),

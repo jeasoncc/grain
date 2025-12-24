@@ -1399,17 +1399,18 @@ src/fn/template/
 interface TemplateConfig<T> {
   readonly name: string;                              // 模块名称（用于日志）
   readonly rootFolder: string;                        // 根文件夹
-  readonly fileType: NodeType;                        // 文件类型
+  readonly fileType: Exclude<NodeType, "folder">;     // 文件类型（排除 folder）
   readonly tag: string;                               // 标签
   readonly generateTemplate: (params: T) => string;   // 模板生成函数
   readonly generateFolderPath: (params: T) => string[]; // 文件夹路径生成
   readonly generateTitle: (params: T) => string;      // 标题生成
+  readonly paramsSchema: z.ZodSchema<T>;              // 参数校验 Schema
   readonly foldersCollapsed?: boolean;                // 文件夹是否折叠
 }
 
 // 高阶函数
 const createTemplatedFile = <T>(config: TemplateConfig<T>) => 
-  (params: T & { workspaceId: string }): TE.TaskEither<AppError, CreationResult> => {
+  (params: TemplatedFileParams<T>): TE.TaskEither<AppError, TemplatedFileResult> => {
     logger.start(`[Action] 创建${config.name}...`);
     // ... 实现
   };
@@ -1418,5 +1419,13 @@ const createTemplatedFile = <T>(config: TemplateConfig<T>) =>
 export const createDiary = createTemplatedFile(diaryConfig);
 export const createWiki = createTemplatedFile(wikiConfig);
 export const createLedger = createTemplatedFile(ledgerConfig);
+```
+
+**设计说明：**
+- `fileType` 使用 `Exclude<NodeType, "folder">` 而不是完整的 `NodeType`
+- **原因**：模板化文件创建专门用于创建文件，不创建文件夹
+- **文件夹创建**：由内部的 `ensureFolderPath` 函数自动处理
+- **类型安全**：确保配置只能指定有效的文件类型（file, diary, canvas）
+- **扩展性**：当 `NodeType` 新增文件类型时，`TemplateConfig` 自动支持
 ```
 
