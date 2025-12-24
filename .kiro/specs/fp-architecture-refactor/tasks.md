@@ -1245,3 +1245,178 @@ src/
 | `routes/actions/create-diary.action.ts` | `actions/diary/` |
 | `routes/settings/actions/*` | `actions/settings/` |
 
+
+
+## Phase 18: 模板化文件创建重构
+
+**说明：** 将 diary、wiki 等相似的文件创建逻辑抽象为高阶函数，并新增记账模块。
+
+### 问题分析
+
+当前 diary 和 wiki 的创建逻辑几乎相同：
+1. 生成模板内容
+2. 解析 JSON
+3. 调用 createFileInTree
+4. 返回 { node, content, parsedContent }
+
+这违反了 DRY 原则，应该抽象为高阶函数。
+
+### 18.1 创建高阶函数
+
+- [ ] 114. 创建模板化文件创建高阶函数
+  - 创建 `actions/templated/create-templated-file.action.ts`
+  - 定义 `TemplateConfig<T>` 接口
+  - 实现 `createTemplatedFile<T>(config)` 高阶函数
+  - 创建测试文件
+  - 预计时间：30分钟
+  - 优先级：🔴 高
+
+- [ ] 115. 创建模板配置目录
+  - 创建 `actions/templated/configs/` 目录
+  - 创建 `diary.config.ts` - Diary 模板配置
+  - 创建 `wiki.config.ts` - Wiki 模板配置
+  - 创建 `actions/templated/configs/index.ts`
+  - 预计时间：20分钟
+  - 优先级：🔴 高
+
+### 18.2 重构现有模块
+
+- [ ] 116. 重构 Diary 创建
+  - 使用高阶函数重构 `create-diary.action.ts`
+  - 移动到 `actions/templated/create-diary.action.ts`
+  - 更新所有导入路径
+  - 确保测试通过
+  - 预计时间：20分钟
+  - 优先级：🔴 高
+
+- [ ] 117. 重构 Wiki 创建
+  - 使用高阶函数重构 wiki 创建逻辑
+  - 创建 `actions/templated/create-wiki.action.ts`
+  - 从 `fn/wiki/wiki.resolve.fn.ts` 移除 `createWikiFileAsync`
+  - 更新所有导入路径
+  - 确保测试通过
+  - 预计时间：20分钟
+  - 优先级：🔴 高
+
+### 18.3 新增记账模块
+
+- [ ] 118. 创建记账模板生成函数
+  - 创建 `fn/template/template.ledger.fn.ts`
+  - 生成记账 Lexical JSON 模板
+  - 模板结构：
+    - 标签行：#[ledger] #[日期]
+    - 标题：日期
+    - 收入表格
+    - 支出表格
+    - 余额汇总
+  - 创建测试文件
+  - 预计时间：30分钟
+  - 优先级：🟡 中
+
+- [ ] 119. 创建记账配置
+  - 创建 `actions/templated/configs/ledger.config.ts`
+  - 配置：
+    - rootFolder: "Ledger"
+    - fileType: "file"
+    - tag: "ledger"
+    - 文件夹结构：Ledger > year-YYYY > month-MM > ledger-YYYY-MM-DD
+  - 预计时间：15分钟
+  - 优先级：🟡 中
+
+- [ ] 120. 创建记账 Action
+  - 创建 `actions/templated/create-ledger.action.ts`
+  - 使用高阶函数实例化
+  - 导出 `createLedger` 和 `createLedgerAsync`
+  - 创建测试文件
+  - 预计时间：15分钟
+  - 优先级：🟡 中
+
+### 18.4 侧边栏集成
+
+- [ ] 121. 在侧边栏添加记账按钮
+  - 在 `components/activity-bar.tsx` 或相关侧边栏组件添加记账图标按钮
+  - 使用 Lucide 图标（如 `Wallet` 或 `Receipt`）
+  - 点击创建当日记账文件
+  - 预计时间：20分钟
+  - 优先级：🟡 中
+
+- [ ] 122. 添加记账面板（可选）
+  - 创建 `components/panels/ledger-panel.tsx`
+  - 显示当月记账列表
+  - 显示收支汇总
+  - 预计时间：40分钟
+  - 优先级：🟢 低
+
+### 18.5 更新导出和索引
+
+- [ ] 123. 更新 actions 索引
+  - 更新 `actions/templated/index.ts`
+  - 导出所有模板化创建函数
+  - 更新 `actions/index.ts`
+  - 预计时间：10分钟
+  - 优先级：🔴 高
+
+- [ ] 124. 验证重构结果
+  - 运行类型检查
+  - 运行测试
+  - 测试 diary、wiki、ledger 创建功能
+  - 预计时间：15分钟
+  - 优先级：🔴 高
+
+### 预计总时间：3.5-4 小时
+
+### 文件结构
+
+```
+src/actions/
+├── templated/
+│   ├── create-templated-file.action.ts      # 高阶函数
+│   ├── create-templated-file.action.test.ts
+│   ├── configs/
+│   │   ├── diary.config.ts
+│   │   ├── wiki.config.ts
+│   │   ├── ledger.config.ts
+│   │   └── index.ts
+│   ├── create-diary.action.ts               # 实例化
+│   ├── create-diary.action.test.ts
+│   ├── create-wiki.action.ts                # 实例化
+│   ├── create-wiki.action.test.ts
+│   ├── create-ledger.action.ts              # 实例化（新增）
+│   ├── create-ledger.action.test.ts
+│   └── index.ts
+└── index.ts
+
+src/fn/template/
+├── template.diary.fn.ts                     # Diary 模板生成
+├── template.wiki.fn.ts                      # Wiki 模板生成
+├── template.ledger.fn.ts                    # Ledger 模板生成（新增）
+└── index.ts
+```
+
+### 高阶函数接口设计
+
+```typescript
+interface TemplateConfig<T> {
+  readonly name: string;                              // 模块名称（用于日志）
+  readonly rootFolder: string;                        // 根文件夹
+  readonly fileType: NodeType;                        // 文件类型
+  readonly tag: string;                               // 标签
+  readonly generateTemplate: (params: T) => string;   // 模板生成函数
+  readonly generateFolderPath: (params: T) => string[]; // 文件夹路径生成
+  readonly generateTitle: (params: T) => string;      // 标题生成
+  readonly foldersCollapsed?: boolean;                // 文件夹是否折叠
+}
+
+// 高阶函数
+const createTemplatedFile = <T>(config: TemplateConfig<T>) => 
+  (params: T & { workspaceId: string }): TE.TaskEither<AppError, CreationResult> => {
+    logger.start(`[Action] 创建${config.name}...`);
+    // ... 实现
+  };
+
+// 实例化
+export const createDiary = createTemplatedFile(diaryConfig);
+export const createWiki = createTemplatedFile(wikiConfig);
+export const createLedger = createTemplatedFile(ledgerConfig);
+```
+
