@@ -17,5 +17,7 @@ export * from "./import";
 export * from "./node";
 // Settings actions
 export * from "./settings";
+// Templated actions
+export * from "./templated";
 // Workspace actions
 export * from "./workspace";
