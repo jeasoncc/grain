@@ -107,6 +107,7 @@ Use `#steering-filename` in chat to load specific knowledge:
 
 | File | When to Load | Usage |
 |------|-------------|-------|
+| `#design-patterns` | 代码重构/抽象 | 设计模式和抽象原则指导 |
 | `#e2e-testing` | E2E 测试开发 | Playwright 测试规范和最佳实践 |
 | `#release` | 发布流程 | 版本发布、打包、分发流程 |
 | `#git-hooks` | 版本/Hooks 问题 | Git Hooks 版本系统故障排除 |
