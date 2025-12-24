@@ -72,7 +72,7 @@ const mockNodes = [
 describe("moveNode", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		
+
 		// 设置默认 mock 返回值
 		vi.mocked(getNodeByIdOrFail).mockReturnValue(() =>
 			Promise.resolve(E.right(mockNode)),
@@ -81,9 +81,7 @@ describe("moveNode", () => {
 			Promise.resolve(E.right(mockNodes)),
 		);
 		vi.mocked(wouldCreateCycle).mockReturnValue(false);
-		vi.mocked(getNextOrder).mockReturnValue(() =>
-			Promise.resolve(E.right(1)),
-		);
+		vi.mocked(getNextOrder).mockReturnValue(() => Promise.resolve(E.right(1)));
 		vi.mocked(moveNodeDb).mockReturnValue(() =>
 			Promise.resolve(E.right(undefined)),
 		);
@@ -105,7 +103,11 @@ describe("moveNode", () => {
 		expect(E.isRight(result)).toBe(true);
 		expect(getNodeByIdOrFail).toHaveBeenCalledWith("node-1");
 		expect(getNodesByWorkspace).toHaveBeenCalledWith("ws-1");
-		expect(wouldCreateCycle).toHaveBeenCalledWith(mockNodes, "node-1", "node-2");
+		expect(wouldCreateCycle).toHaveBeenCalledWith(
+			mockNodes,
+			"node-1",
+			"node-2",
+		);
 		expect(moveNodeDb).toHaveBeenCalledWith("node-1", "node-2", 0);
 	});
 
@@ -137,7 +139,7 @@ describe("moveNode", () => {
 			expect(result.left.message).toContain("循环引用");
 			expect(result.left.type).toBe("CYCLE_ERROR");
 		}
-		
+
 		// 不应该执行移动
 		expect(moveNodeDb).not.toHaveBeenCalled();
 	});
@@ -191,12 +193,4 @@ describe("moveNode", () => {
 		expect(wouldCreateCycle).toHaveBeenCalledWith(mockNodes, "node-1", null);
 		expect(moveNodeDb).toHaveBeenCalledWith("node-1", null, 0);
 	});
-});import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/actions/move-node/action/test')({
-  component: RouteComponent,
-})
-
-function RouteComponent() {
-  return <div>Hello "/actions/move-node/action/test"!</div>
-}
+});

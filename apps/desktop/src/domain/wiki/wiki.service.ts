@@ -10,9 +10,9 @@
 
 import { useLiveQuery } from "dexie-react-hooks";
 import * as E from "fp-ts/Either";
+import { createFileInTree, ensureRootFolderAsync } from "@/actions/node";
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/db";
 import { database } from "@/db/database";
-import { createFileInTree, ensureRootFolderAsync } from "@/routes/actions";
 import type { NodeInterface } from "@/types/node";
 
 // ==============================

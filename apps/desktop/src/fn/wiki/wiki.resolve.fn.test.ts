@@ -47,9 +47,9 @@ vi.mock("@/log/index", () => ({
 	},
 }));
 
+import { createFileInTree } from "@/actions/node";
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/db";
 import { database } from "@/db/database";
-import { createFileInTree } from "@/routes/actions";
 
 // ============================================================================
 // Test Data

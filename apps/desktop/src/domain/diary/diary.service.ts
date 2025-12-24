@@ -6,7 +6,7 @@
  * Requirements: 1.1, 5.1, 5.2, 5.3, 5.4, 5.5
  */
 
-import { createFileInTree } from "@/routes/actions";
+import { createFileInTree } from "@/actions/node";
 import type { NodeInterface } from "@/types/node";
 
 // Re-export pure functions from utils for backward compatibility

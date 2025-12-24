@@ -22,7 +22,7 @@ import {
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
 import type { NodeInterface } from "@/types/node";
-import { createFileInTree } from "./create-node.action";
+import { createFileInTree } from "@/actions/node";
 
 // ==============================
 // Constants

@@ -11,11 +11,11 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
+import { createFileInTree, ensureRootFolder } from "@/actions/node";
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/db";
 import { database } from "@/db/database";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
-import { createFileInTree, ensureRootFolder } from "@/routes/actions";
 import type { NodeInterface } from "@/types/node";
 import { WikiFileEntryBuilder } from "./wiki.builder";
 import type {

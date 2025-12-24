@@ -12,6 +12,23 @@
 // Node Actions
 // ============================================================================
 
+// Node actions (从新位置导入)
+export {
+	type CreateFileInTreeParams,
+	type CreateFileInTreeResult,
+	type CreateNodeParams,
+	createFileInTree,
+	createNode,
+	deleteNode,
+	ensureRootFolder,
+	ensureRootFolderAsync,
+	type MoveNodeParams,
+	moveNode,
+	type RenameNodeParams,
+	type ReorderNodesParams,
+	renameNode,
+	reorderNodes,
+} from "@/actions/node";
 // 创建日记
 export {
 	type CreateDiaryParams,
@@ -20,30 +37,6 @@ export {
 	DIARY_ROOT_FOLDER,
 	type DiaryCreationResult,
 } from "./create-diary.action";
-// 创建节点
-export {
-	type CreateFileInTreeParams,
-	type CreateFileInTreeResult,
-	type CreateNodeParams,
-	createFileInTree,
-	createNode,
-} from "./create-node.action";
-// 删除节点
-export { deleteNode } from "./delete-node.action";
-// 确保文件夹存在
-export {
-	ensureRootFolder,
-	ensureRootFolderAsync,
-} from "./ensure-folder.action";
-
-// 移动节点
-export { type MoveNodeParams, moveNode } from "./move-node.action";
-
-// 重命名节点
-export { type RenameNodeParams, renameNode } from "./rename-node.action";
-
-// 重新排序节点
-export { type ReorderNodesParams, reorderNodes } from "./reorder-node.action";
 
 // ============================================================================
 // Workspace Actions

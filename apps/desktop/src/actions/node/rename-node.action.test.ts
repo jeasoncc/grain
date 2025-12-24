@@ -32,7 +32,7 @@ import { updateNodeTitle } from "@/db/node.db.fn";
 describe("renameNode", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		
+
 		// 设置默认 mock 返回值
 		vi.mocked(updateNodeTitle).mockReturnValue(() =>
 			Promise.resolve(E.right(undefined)),
@@ -68,7 +68,7 @@ describe("renameNode", () => {
 			expect(result.left.message).toBe("标题不能为空");
 			expect(result.left.type).toBe("VALIDATION_ERROR");
 		}
-		
+
 		// 不应该调用数据库函数
 		expect(updateNodeTitle).not.toHaveBeenCalled();
 	});
@@ -116,12 +116,4 @@ describe("renameNode", () => {
 			expect(result.left.message).toContain("更新失败");
 		}
 	});
-});import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/actions/rename-node/action/test')({
-  component: RouteComponent,
-})
-
-function RouteComponent() {
-  return <div>Hello "/actions/rename-node/action/test"!</div>
-}
+});
