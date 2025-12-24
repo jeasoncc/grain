@@ -1,6 +1,5 @@
 // Update checker component
 
-import * as E from "fp-ts/Either";
 import {
 	AlertCircle,
 	CheckCircle,
@@ -8,7 +7,6 @@ import {
 	Info,
 	RefreshCw,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -19,92 +17,21 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import {
-	checkForUpdates,
-	downloadAndInstallUpdate,
-	type UpdateInfo,
-} from "@/fn/updater";
-
-type CheckStatus =
-	| "idle"
-	| "checking"
-	| "up-to-date"
-	| "update-available"
-	| "error"
-	| "dev-mode";
+import { useUpdateChecker } from "@/hooks/use-update-checker";
 
 export function UpdateChecker() {
-	const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
-	const [isChecking, setIsChecking] = useState(false);
-	const [isDownloading, setIsDownloading] = useState(false);
-	const [downloadProgress, setDownloadProgress] = useState(0);
-	const [showDialog, setShowDialog] = useState(false);
-	const [checkStatus, setCheckStatus] = useState<CheckStatus>("idle");
-	const [errorMessage, setErrorMessage] = useState<string>("");
-
-	const handleCheckForUpdates = useCallback(async () => {
-		setIsChecking(true);
-		setCheckStatus("checking");
-		setErrorMessage("");
-		try {
-			const result = await checkForUpdates()();
-			if (E.isLeft(result)) {
-				throw new Error(result.left.message);
-			}
-			const info = result.right;
-			setUpdateInfo(info);
-			if (info.available) {
-				setCheckStatus("update-available");
-				setShowDialog(true);
-			} else if (info.currentVersion === "dev") {
-				// Running in browser, not Tauri
-				setCheckStatus("dev-mode");
-			} else {
-				setCheckStatus("up-to-date");
-			}
-		} catch (error) {
-			console.error("Failed to check for updates:", error);
-			setCheckStatus("error");
-			setErrorMessage(error instanceof Error ? error.message : "Unknown error");
-		} finally {
-			setIsChecking(false);
-		}
-	}, []);
-
-	const handleDownloadAndInstall = async () => {
-		setIsDownloading(true);
-		setDownloadProgress(0);
-		try {
-			const result = await downloadAndInstallUpdate((progress) => {
-				setDownloadProgress(progress.percentage);
-			})();
-			if (E.isLeft(result)) {
-				throw new Error(result.left.message);
-			}
-		} catch (error) {
-			console.error("Failed to download and install update:", error);
-			setIsDownloading(false);
-		}
-	};
-
-	// Check for updates on mount
-	useEffect(() => {
-		handleCheckForUpdates();
-	}, [handleCheckForUpdates]);
-
-	// Auto-clear status message after 5 seconds
-	useEffect(() => {
-		if (
-			checkStatus === "up-to-date" ||
-			checkStatus === "dev-mode" ||
-			checkStatus === "error"
-		) {
-			const timer = setTimeout(() => {
-				setCheckStatus("idle");
-			}, 5000);
-			return () => clearTimeout(timer);
-		}
-	}, [checkStatus]);
+	const {
+		updateInfo,
+		isChecking,
+		isDownloading,
+		downloadProgress,
+		showDialog,
+		checkStatus,
+		errorMessage,
+		handleCheckForUpdates,
+		handleDownloadAndInstall,
+		setShowDialog,
+	} = useUpdateChecker();
 
 	const renderStatusMessage = () => {
 		switch (checkStatus) {

@@ -127,6 +127,8 @@ export { applyThemeWithTransition, getSystemTheme } from "./use-theme-dom";
 
 // Mobile Hook
 export { useIsMobile } from "./use-mobile";
+// Update Checker Hook
+export { useUpdateChecker } from "./use-update-checker";
 
 // Wiki Hooks
 export { useWikiFiles } from "./use-wiki";
