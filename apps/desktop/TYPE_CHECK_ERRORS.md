@@ -74,7 +74,7 @@ Files trying to import from non-existent services:
 10. `src/routes/test-clear-data.tsx:15` - `@/services/clear-data`
 
 **Fix Required:** Migrate these services to new architecture:
-- `@/services/export` → `@/fn/export/` + `@/routes/actions/`
+- `@/services/export` → `@/fn/export/` + `@/actions/`
 - `@/services/import-export` → `@/fn/import/` + `@/fn/export/`
 - `@/services/save` → `@/fn/save/`
 - `@/services/wiki-files` → `@/fn/wiki/`

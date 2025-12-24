@@ -27,9 +27,6 @@ import { Route as SettingsDiagramsRouteImport } from './routes/settings/diagrams
 import { Route as SettingsDesignRouteImport } from './routes/settings/design'
 import { Route as SettingsDataRouteImport } from './routes/settings/data'
 import { Route as SettingsAboutRouteImport } from './routes/settings/about'
-import { Route as ActionsRenameNodeActionTestRouteImport } from './routes/actions/rename-node.action.test'
-import { Route as ActionsMoveNodeActionTestRouteImport } from './routes/actions/move-node.action.test'
-import { Route as ActionsCreateNodeActionTestRouteImport } from './routes/actions/create-node.action.test'
 
 const TestSelectionRoute = TestSelectionRouteImport.update({
   id: '/test-selection',
@@ -121,24 +118,6 @@ const SettingsAboutRoute = SettingsAboutRouteImport.update({
   path: '/about',
   getParentRoute: () => SettingsRoute,
 } as any)
-const ActionsRenameNodeActionTestRoute =
-  ActionsRenameNodeActionTestRouteImport.update({
-    id: '/actions/rename-node/action/test',
-    path: '/actions/rename-node/action/test',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ActionsMoveNodeActionTestRoute =
-  ActionsMoveNodeActionTestRouteImport.update({
-    id: '/actions/move-node/action/test',
-    path: '/actions/move-node/action/test',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ActionsCreateNodeActionTestRoute =
-  ActionsCreateNodeActionTestRouteImport.update({
-    id: '/actions/create-node/action/test',
-    path: '/actions/create-node/action/test',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -159,9 +138,6 @@ export interface FileRoutesByFullPath {
   '/settings/logs': typeof SettingsLogsRoute
   '/settings/typography': typeof SettingsTypographyRoute
   '/settings/': typeof SettingsIndexRoute
-  '/actions/create-node/action/test': typeof ActionsCreateNodeActionTestRoute
-  '/actions/move-node/action/test': typeof ActionsMoveNodeActionTestRoute
-  '/actions/rename-node/action/test': typeof ActionsRenameNodeActionTestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -181,9 +157,6 @@ export interface FileRoutesByTo {
   '/settings/logs': typeof SettingsLogsRoute
   '/settings/typography': typeof SettingsTypographyRoute
   '/settings': typeof SettingsIndexRoute
-  '/actions/create-node/action/test': typeof ActionsCreateNodeActionTestRoute
-  '/actions/move-node/action/test': typeof ActionsMoveNodeActionTestRoute
-  '/actions/rename-node/action/test': typeof ActionsRenameNodeActionTestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -205,9 +178,6 @@ export interface FileRoutesById {
   '/settings/logs': typeof SettingsLogsRoute
   '/settings/typography': typeof SettingsTypographyRoute
   '/settings/': typeof SettingsIndexRoute
-  '/actions/create-node/action/test': typeof ActionsCreateNodeActionTestRoute
-  '/actions/move-node/action/test': typeof ActionsMoveNodeActionTestRoute
-  '/actions/rename-node/action/test': typeof ActionsRenameNodeActionTestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -230,9 +200,6 @@ export interface FileRouteTypes {
     | '/settings/logs'
     | '/settings/typography'
     | '/settings/'
-    | '/actions/create-node/action/test'
-    | '/actions/move-node/action/test'
-    | '/actions/rename-node/action/test'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -252,9 +219,6 @@ export interface FileRouteTypes {
     | '/settings/logs'
     | '/settings/typography'
     | '/settings'
-    | '/actions/create-node/action/test'
-    | '/actions/move-node/action/test'
-    | '/actions/rename-node/action/test'
   id:
     | '__root__'
     | '/'
@@ -275,9 +239,6 @@ export interface FileRouteTypes {
     | '/settings/logs'
     | '/settings/typography'
     | '/settings/'
-    | '/actions/create-node/action/test'
-    | '/actions/move-node/action/test'
-    | '/actions/rename-node/action/test'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -288,9 +249,6 @@ export interface RootRouteChildren {
   TestFocusRoute: typeof TestFocusRoute
   TestManualSaveRoute: typeof TestManualSaveRoute
   TestSelectionRoute: typeof TestSelectionRoute
-  ActionsCreateNodeActionTestRoute: typeof ActionsCreateNodeActionTestRoute
-  ActionsMoveNodeActionTestRoute: typeof ActionsMoveNodeActionTestRoute
-  ActionsRenameNodeActionTestRoute: typeof ActionsRenameNodeActionTestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -421,27 +379,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsAboutRouteImport
       parentRoute: typeof SettingsRoute
     }
-    '/actions/rename-node/action/test': {
-      id: '/actions/rename-node/action/test'
-      path: '/actions/rename-node/action/test'
-      fullPath: '/actions/rename-node/action/test'
-      preLoaderRoute: typeof ActionsRenameNodeActionTestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/actions/move-node/action/test': {
-      id: '/actions/move-node/action/test'
-      path: '/actions/move-node/action/test'
-      fullPath: '/actions/move-node/action/test'
-      preLoaderRoute: typeof ActionsMoveNodeActionTestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/actions/create-node/action/test': {
-      id: '/actions/create-node/action/test'
-      path: '/actions/create-node/action/test'
-      fullPath: '/actions/create-node/action/test'
-      preLoaderRoute: typeof ActionsCreateNodeActionTestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -485,9 +422,6 @@ const rootRouteChildren: RootRouteChildren = {
   TestFocusRoute: TestFocusRoute,
   TestManualSaveRoute: TestManualSaveRoute,
   TestSelectionRoute: TestSelectionRoute,
-  ActionsCreateNodeActionTestRoute: ActionsCreateNodeActionTestRoute,
-  ActionsMoveNodeActionTestRoute: ActionsMoveNodeActionTestRoute,
-  ActionsRenameNodeActionTestRoute: ActionsRenameNodeActionTestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

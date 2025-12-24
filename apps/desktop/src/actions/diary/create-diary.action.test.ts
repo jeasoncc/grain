@@ -133,9 +133,11 @@ const validParams: CreateDiaryParams = {
 describe("createDiary", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		
+
 		// 设置默认 mock 返回值
-		vi.mocked(getDiaryFolderStructure).mockReturnValue(createMockFolderStructure());
+		vi.mocked(getDiaryFolderStructure).mockReturnValue(
+			createMockFolderStructure(),
+		);
 		vi.mocked(generateDiaryContent).mockReturnValue(createMockLexicalContent());
 		vi.mocked(createFileInTree).mockReturnValue(() =>
 			Promise.resolve(E.right(createMockDiaryResult())),
@@ -208,7 +210,9 @@ describe("createDiary", () => {
 
 			expect(E.isRight(result)).toBe(true);
 			if (E.isRight(result)) {
-				expect(result.right.node.id).toBe("550e8400-e29b-41d4-a716-446655440001");
+				expect(result.right.node.id).toBe(
+					"550e8400-e29b-41d4-a716-446655440001",
+				);
 				expect(result.right.node.type).toBe("diary");
 				expect(result.right.node.tags).toContain("diary");
 				expect(result.right.content).toBeDefined();
@@ -223,7 +227,9 @@ describe("createDiary", () => {
 				date: customDate,
 			})();
 
-			expect(vi.mocked(getDiaryFolderStructure)).toHaveBeenCalledWith(customDate);
+			expect(vi.mocked(getDiaryFolderStructure)).toHaveBeenCalledWith(
+				customDate,
+			);
 			expect(vi.mocked(generateDiaryContent)).toHaveBeenCalledWith(customDate);
 		});
 
@@ -271,7 +277,9 @@ describe("createDiary", () => {
 						children: [
 							{
 								type: "paragraph",
-								children: [{ type: "text", text: "今天是 2024-01-01", format: 0 }],
+								children: [
+									{ type: "text", text: "今天是 2024-01-01", format: 0 },
+								],
 							},
 						],
 						direction: "ltr",
@@ -385,7 +393,9 @@ describe("createDiary", () => {
 			})();
 
 			expect(E.isRight(result)).toBe(true);
-			expect(vi.mocked(getDiaryFolderStructure)).toHaveBeenCalledWith(extremeDate);
+			expect(vi.mocked(getDiaryFolderStructure)).toHaveBeenCalledWith(
+				extremeDate,
+			);
 		});
 
 		it("应该处理未来日期", async () => {
@@ -396,7 +406,9 @@ describe("createDiary", () => {
 			})();
 
 			expect(E.isRight(result)).toBe(true);
-			expect(vi.mocked(getDiaryFolderStructure)).toHaveBeenCalledWith(futureDate);
+			expect(vi.mocked(getDiaryFolderStructure)).toHaveBeenCalledWith(
+				futureDate,
+			);
 		});
 
 		it("应该处理空的生成内容", async () => {

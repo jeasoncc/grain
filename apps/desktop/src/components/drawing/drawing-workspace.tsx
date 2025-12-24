@@ -24,6 +24,7 @@ import {
 	useState,
 } from "react";
 import { toast } from "sonner";
+import { deleteDrawing, renameDrawing, saveDrawingContent } from "@/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { updateDrawingContent } from "@/db/drawing.db.fn";
@@ -31,11 +32,6 @@ import type { DrawingInterface } from "@/db/schema";
 import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
-import {
-	deleteDrawing,
-	renameDrawing,
-	saveDrawingContent,
-} from "@/actions";
 
 // Error Boundary for Excalidraw component
 interface ErrorBoundaryProps {

@@ -24,8 +24,16 @@
 // Domain 模块
 // ============================================================================
 
-// Diary (从 routes/actions 重新导出以保持向后兼容)
-// File Creator (从 routes/actions 重新导出)
+// Diary functions (从 actions 导入)
+export {
+	type CreateDiaryParams,
+	createDiary,
+	createDiaryAsync,
+	DIARY_ROOT_FOLDER,
+	type DiaryCreationResult,
+} from "@/actions/diary";
+// Diary (从 actions 重新导出以保持向后兼容)
+// File Creator (从 actions 重新导出)
 export {
 	type CreateFileInTreeParams,
 	type CreateFileInTreeResult,
@@ -108,14 +116,6 @@ export {
 	type WikiCreationResult,
 	type WikiFileEntry,
 } from "@/fn/wiki";
-// Diary functions (从 routes/actions 导入)
-export {
-	type CreateDiaryParams,
-	createDiary,
-	createDiaryAsync,
-	DIARY_ROOT_FOLDER,
-	type DiaryCreationResult,
-} from "@/actions/diary";
 // Export (从 fn/export 和 types/export 重新导出)
 export type { ExportFormat, ExportOptions } from "@/types/export";
 // Import-Export (从新架构重新导出)

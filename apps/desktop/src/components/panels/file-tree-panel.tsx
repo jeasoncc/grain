@@ -11,10 +11,6 @@ import { useNavigate } from "@tanstack/react-router";
 import * as E from "fp-ts/Either";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { FileTree } from "@/components/file-tree";
-import { useConfirm } from "@/components/ui/confirm";
-import { getContentByNodeId, getNodeById, setNodeCollapsed } from "@/db";
-import { useNodesByWorkspace } from "@/hooks/use-node";
 import {
 	createDiaryAsync,
 	createNode,
@@ -22,6 +18,10 @@ import {
 	moveNode,
 	renameNode,
 } from "@/actions";
+import { FileTree } from "@/components/file-tree";
+import { useConfirm } from "@/components/ui/confirm";
+import { getContentByNodeId, getNodeById, setNodeCollapsed } from "@/db";
+import { useNodesByWorkspace } from "@/hooks/use-node";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSelectionStore } from "@/stores/selection.store";
 import type { NodeType } from "@/types/node";

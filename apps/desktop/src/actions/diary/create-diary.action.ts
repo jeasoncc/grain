@@ -118,7 +118,12 @@ export const createDiary = (
 					}),
 				),
 				TE.fromEither,
-				TE.map((parsedContent) => ({ validParams, structure, content, parsedContent })),
+				TE.map((parsedContent) => ({
+					validParams,
+					structure,
+					content,
+					parsedContent,
+				})),
 			),
 		),
 		// 4. 创建文件

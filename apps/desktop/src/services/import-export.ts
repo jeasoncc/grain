@@ -2,7 +2,7 @@
  * @file services/import-export.ts
  * @description Import/Export 服务模块 - 向后兼容导出
  *
- * @deprecated 建议直接从 @/fn/export, @/fn/import, @/routes/actions 导入
+ * @deprecated 建议直接从 @/fn/export, @/fn/import, @/actions 导入
  *
  * 本文件提供向后兼容性，将导入导出功能从新架构重新导出。
  * 新代码应直接使用：
