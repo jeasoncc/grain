@@ -1,5 +1,5 @@
 /**
- * @file routes/actions/import-json.action.ts
+ * @file actions/import/import-json.action.ts
  * @description 从 JSON 导入数据 Action
  *
  * 功能说明：

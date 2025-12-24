@@ -11,6 +11,11 @@
  * - @/routes/actions - Action 函数
  */
 
+// 从 actions/export 重新导出 Action 函数（Promise 版本，向后兼容）
+export { exportAllAsync as exportAll } from "@/actions/export/export-all.action";
+export { exportAsMarkdownAsync as exportAsMarkdown } from "@/actions/export/export-workspace-markdown.action";
+export { exportAllAsZipAsync as exportAllAsZip } from "@/actions/export/export-zip.action";
+export { importFromJsonAsync as importFromJson } from "@/actions/import/import-json.action";
 // 从 fn/content 重新导出文本提取
 export { extractText } from "@/fn/content";
 // 从 fn/export 重新导出下载工具
@@ -19,9 +24,3 @@ export { triggerBlobDownload, triggerDownload } from "@/fn/export";
 export type { ExportBundle } from "@/fn/import";
 // 从 fn/import 重新导出文件读取
 export { readFileAsText } from "@/fn/import";
-
-// 从 actions/export 重新导出 Action 函数（Promise 版本，向后兼容）
-export { exportAllAsync as exportAll } from "@/actions/export/export-all.action";
-export { exportAsMarkdownAsync as exportAsMarkdown } from "@/actions/export/export-workspace-markdown.action";
-export { exportAllAsZipAsync as exportAllAsZip } from "@/actions/export/export-zip.action";
-export { importFromJsonAsync as importFromJson } from "@/routes/actions/import-json.action";

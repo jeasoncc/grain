@@ -1,5 +1,5 @@
 /**
- * @file import-markdown.action.test.ts
+ * @file actions/import/import-markdown.action.test.ts
  * @description Markdown 导入 Action 的单元测试
  *
  * 测试覆盖：
