@@ -69,18 +69,18 @@ export function KeyboardShortcutsHelp() {
 									{category}
 								</div>
 								<div className="space-y-0.5">
-									{items.map((shortcut, index) => (
+									{items.map((shortcut) => (
 										<div
-											key={index}
+											key={`${shortcut.category}-${shortcut.description}`}
 											className="flex items-center justify-between text-sm px-2 py-1.5 hover:bg-muted/50 rounded-md transition-colors"
 										>
 											<span className="text-muted-foreground text-xs">
 												{shortcut.description}
 											</span>
 											<div className="flex items-center gap-1">
-												{shortcut.keys.map((key, keyIndex) => (
+												{shortcut.keys.map((key) => (
 													<kbd
-														key={keyIndex}
+														key={`${shortcut.description}-${key}`}
 														className="px-1.5 py-0.5 text-xs font-mono bg-muted rounded border"
 													>
 														{key}

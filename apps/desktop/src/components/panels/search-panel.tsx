@@ -148,13 +148,13 @@ export function SearchPanel({
 		return parts.map((part, index) =>
 			part.toLowerCase() === query.toLowerCase() ? (
 				<mark
-					key={index}
+					key={`highlight-${query}-${index}-${part}`}
 					className="bg-yellow-200 dark:bg-yellow-900/50 text-foreground"
 				>
 					{part}
 				</mark>
 			) : (
-				part
+				<span key={`text-${index}-${part.slice(0, 10)}`}>{part}</span>
 			),
 		);
 	};
