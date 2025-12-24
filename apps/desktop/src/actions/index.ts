@@ -15,5 +15,7 @@ export * from "./export";
 export * from "./import";
 // Node actions
 export * from "./node";
+// Settings actions
+export * from "./settings";
 // Workspace actions
 export * from "./workspace";

@@ -129,20 +129,21 @@ export const createDiary = (
 		TE.chain(({ validParams, structure, content, parsedContent }) =>
 			pipe(
 				TE.tryCatch(
-					() => createFileInTree({
-						workspaceId: validParams.workspaceId,
-						title: structure.filename,
-						folderPath: [
-							DIARY_ROOT_FOLDER,
-							structure.yearFolder,
-							structure.monthFolder,
-							structure.dayFolder,
-						],
-						type: "diary",
-						tags: ["diary"],
-						content,
-						foldersCollapsed: true,
-					}),
+					() =>
+						createFileInTree({
+							workspaceId: validParams.workspaceId,
+							title: structure.filename,
+							folderPath: [
+								DIARY_ROOT_FOLDER,
+								structure.yearFolder,
+								structure.monthFolder,
+								structure.dayFolder,
+							],
+							type: "diary",
+							tags: ["diary"],
+							content,
+							foldersCollapsed: true,
+						}),
 					(error): AppError => ({
 						type: "DB_ERROR",
 						message: `创建文件失败: ${error instanceof Error ? error.message : String(error)}`,
