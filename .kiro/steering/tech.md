@@ -107,6 +107,7 @@ Use `#steering-filename` in chat to load specific knowledge:
 
 | File | When to Load | Usage |
 |------|-------------|-------|
+| `#fp-patterns` | 函数式编程开发 | fp-ts 核心模式和函数式编程最佳实践 |
 | `#design-patterns` | 代码重构/抽象 | 设计模式和抽象原则指导 |
 | `#e2e-testing` | E2E 测试开发 | Playwright 测试规范和最佳实践 |
 | `#release` | 发布流程 | 版本发布、打包、分发流程 |
