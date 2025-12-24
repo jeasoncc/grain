@@ -1194,7 +1194,7 @@ src/
   - 预计时间：20分钟
   - 优先级：🔴 高
 
-- [ ] 111. 删除旧的 routes/actions 目录
+- [-] 111. 删除旧的 routes/actions 目录
   - 确认所有文件已迁移
   - 确认所有导入已更新
   - 删除 `routes/actions/` 目录
@@ -1207,7 +1207,7 @@ src/
   - 预计时间：10分钟
   - 优先级：🟡 中
 
-- [-] 113. 验证迁移结果
+- [x] 113. 验证迁移结果
   - 运行类型检查：`bun run check`
   - 运行测试：`bun run test`
   - 运行开发服务器：`bun run desktop:dev`
