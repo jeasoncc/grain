@@ -36,7 +36,7 @@ export {
 	createDiaryAsync,
 	DIARY_ROOT_FOLDER,
 	type DiaryCreationResult,
-} from "./create-diary.action";
+} from "@/actions/diary";
 
 // ============================================================================
 // Workspace Actions

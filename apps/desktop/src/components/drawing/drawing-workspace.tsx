@@ -35,7 +35,7 @@ import {
 	deleteDrawing,
 	renameDrawing,
 	saveDrawingContent,
-} from "@/routes/actions";
+} from "@/actions";
 
 // Error Boundary for Excalidraw component
 interface ErrorBoundaryProps {

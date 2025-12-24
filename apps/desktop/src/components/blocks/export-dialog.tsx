@@ -37,7 +37,7 @@ import {
 	exportAllAsync as exportAll,
 	exportAllAsZipAsync as exportAllAsZip,
 	exportAsMarkdownAsync as exportAsMarkdown,
-} from "@/routes/actions";
+} from "@/actions";
 
 interface ExportDialogProps {
 	open: boolean;

@@ -10,3 +10,15 @@ export * from "./node";
 
 // Workspace actions
 export * from "./workspace";
+
+// Diary actions
+export * from "./diary";
+
+// Drawing actions
+export * from "./drawing";
+
+// Export actions
+export * from "./export";
+
+// Import actions
+export * from "./import";

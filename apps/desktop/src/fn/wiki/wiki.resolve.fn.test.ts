@@ -31,7 +31,7 @@ vi.mock("@/db/database", () => ({
 	},
 }));
 
-vi.mock("@/routes/actions", () => ({
+vi.mock("@/actions", () => ({
 	createFileInTree: vi.fn(),
 	ensureRootFolder: vi.fn(),
 }));

@@ -8,7 +8,7 @@
  * - @/fn/import - 导入纯函数
  * - @/fn/content - 内容处理纯函数
  * - @/fn/search - 搜索功能
- * - @/routes/actions - Action 函数（包括文件创建）
+ * - @/actions - Action 函数（包括文件创建）
  * - @/domain/diary - 日记功能
  * - @/domain/export - 导出功能
  * - @/fn/keyboard - 键盘快捷键
@@ -115,7 +115,7 @@ export {
 	createDiaryAsync,
 	DIARY_ROOT_FOLDER,
 	type DiaryCreationResult,
-} from "@/routes/actions/create-diary.action";
+} from "@/actions/diary";
 // Export (从 fn/export 和 types/export 重新导出)
 export type { ExportFormat, ExportOptions } from "@/types/export";
 // Import-Export (从新架构重新导出)

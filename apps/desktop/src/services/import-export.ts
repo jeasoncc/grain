@@ -8,7 +8,7 @@
  * 新代码应直接使用：
  * - @/fn/export - 纯函数导出
  * - @/fn/import - 纯函数导入
- * - @/routes/actions - Action 函数
+ * - @/actions - Action 函数
  */
 
 // 从 actions/export 重新导出 Action 函数（Promise 版本，向后兼容）

@@ -21,7 +21,7 @@ import {
 	deleteNode,
 	moveNode,
 	renameNode,
-} from "@/routes/actions";
+} from "@/actions";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSelectionStore } from "@/stores/selection.store";
 import type { NodeType } from "@/types/node";

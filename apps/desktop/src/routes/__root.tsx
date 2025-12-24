@@ -20,7 +20,7 @@ import { useTagGraph } from "@/hooks/use-tag";
 import { initializeTheme } from "@/hooks/use-theme";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
 import logger from "@/log";
-import { createDrawing, deleteDrawing } from "@/routes/actions";
+import { createDrawing, deleteDrawing } from "@/actions";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSelectionStore } from "@/stores/selection.store";
 import { useUnifiedSidebarStore } from "@/stores/sidebar.store";

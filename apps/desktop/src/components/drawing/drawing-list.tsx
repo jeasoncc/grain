@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import type { DrawingInterface } from "@/db/schema";
 import { useDrawingsByWorkspace } from "@/hooks/use-drawing";
 import logger from "@/log";
-import { createDrawing, deleteDrawing } from "@/routes/actions";
+import { createDrawing, deleteDrawing } from "@/actions";
 
 interface DrawingListProps {
 	workspaceId: string | null;
