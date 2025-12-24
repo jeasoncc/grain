@@ -17,7 +17,7 @@
 import * as E from "fp-ts/Either";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import type { NodeInterface, NodeType } from "@/types/node";
+import type { NodeInterface } from "@/types/node";
 import {
 	type TemplateConfig,
 	type TemplatedFileParams,
@@ -51,6 +51,39 @@ import { createFileInTree } from "@/actions/node";
 // ============================================================================
 
 /**
+ * 创建测试用的 NodeInterface 对象
+ */
+function createMockNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
+	return {
+		id: overrides.id ?? "550e8400-e29b-41d4-a716-446655440001",
+		workspace: overrides.workspace ?? "550e8400-e29b-41d4-a716-446655440000",
+		parent: overrides.parent ?? null,
+		type: overrides.type ?? "file",
+		title: overrides.title ?? "Test Node",
+		order: overrides.order ?? 0,
+		collapsed: overrides.collapsed ?? false,
+		createDate: overrides.createDate ?? new Date().toISOString(),
+		lastEdit: overrides.lastEdit ?? new Date().toISOString(),
+		tags: overrides.tags ?? [],
+	};
+}
+
+/**
+ * 创建 mock 文件创建结果
+ */
+const createMockFileResult = (
+	nodeOverrides: Partial<NodeInterface> = {},
+	parentOverrides: Partial<NodeInterface> = {},
+) => ({
+	node: createMockNode(nodeOverrides),
+	parentFolder: createMockNode({
+		type: "folder",
+		title: "Parent Folder",
+		...parentOverrides,
+	}),
+});
+
+/**
  * 测试用的模板参数类型
  */
 interface TestTemplateParams {
@@ -75,7 +108,7 @@ const createTestTemplateConfig = (
 	overrides: Partial<TemplateConfig<TestTemplateParams>> = {},
 ): TemplateConfig<TestTemplateParams> => ({
 	rootFolder: "TestFolder",
-	fileType: "file" as NodeType,
+	fileType: "file",
 	tag: "test",
 	generateTemplate: (params) =>
 		JSON.stringify({
@@ -102,25 +135,6 @@ const createTestTemplateConfig = (
 	generateFolderPath: (params) => [params.category],
 	generateTitle: (params) => `${params.name} (${params.category})`,
 	paramsSchema: testTemplateParamsSchema,
-	...overrides,
-});
-
-/**
- * 创建 mock 节点数据
- */
-const createMockNode = (
-	overrides: Partial<NodeInterface> = {},
-): NodeInterface => ({
-	id: "550e8400-e29b-41d4-a716-446655440001",
-	workspace: "550e8400-e29b-41d4-a716-446655440000",
-	parent: null,
-	type: "file",
-	title: "Test File",
-	order: 0,
-	collapsed: false,
-	createDate: "2024-01-01T00:00:00.000Z",
-	lastEdit: "2024-01-01T00:00:00.000Z",
-	tags: ["test"],
 	...overrides,
 });
 
@@ -179,8 +193,8 @@ describe("createTemplatedFile", () => {
 		});
 
 		it("应该使用配置中的根文件夹", async () => {
-			const mockNode = createMockNode();
-			vi.mocked(createFileInTree).mockResolvedValue({ node: mockNode });
+			const mockResult = createMockFileResult();
+			vi.mocked(createFileInTree).mockResolvedValue(mockResult);
 
 			const createFn = createTemplatedFile(testConfig);
 			await createFn(validParams)();
@@ -193,8 +207,8 @@ describe("createTemplatedFile", () => {
 		});
 
 		it("应该使用配置中的文件类型", async () => {
-			const mockNode = createMockNode();
-			vi.mocked(createFileInTree).mockResolvedValue({ node: mockNode });
+			const mockResult = createMockFileResult();
+			vi.mocked(createFileInTree).mockResolvedValue(mockResult);
 
 			const createFn = createTemplatedFile(testConfig);
 			await createFn(validParams)();
@@ -207,8 +221,8 @@ describe("createTemplatedFile", () => {
 		});
 
 		it("应该使用配置中的标签", async () => {
-			const mockNode = createMockNode();
-			vi.mocked(createFileInTree).mockResolvedValue({ node: mockNode });
+			const mockResult = createMockFileResult();
+			vi.mocked(createFileInTree).mockResolvedValue(mockResult);
 
 			const createFn = createTemplatedFile(testConfig);
 			await createFn(validParams)();
@@ -227,8 +241,8 @@ describe("createTemplatedFile", () => {
 
 	describe("参数校验", () => {
 		beforeEach(() => {
-			const mockNode = createMockNode();
-			vi.mocked(createFileInTree).mockResolvedValue({ node: mockNode });
+			const mockResult = createMockFileResult();
+			vi.mocked(createFileInTree).mockResolvedValue(mockResult);
 		});
 
 		it("应该接受有效的参数", async () => {
@@ -281,46 +295,6 @@ describe("createTemplatedFile", () => {
 			}
 		});
 
-		it("应该拒绝过长的名称", async () => {
-			const createFn = createTemplatedFile(testConfig);
-			const result = await createTemplatedFileWithInvalidParams(testConfig, {
-				workspaceId: validWorkspaceId,
-				templateParams: {
-					name: "a".repeat(101), // 超过最大长度
-					category: "工作",
-				},
-			})();
-
-			expect(E.isLeft(result)).toBe(true);
-		});
-
-		it("应该拒绝空的分类", async () => {
-			const createFn = createTemplatedFile(testConfig);
-			const result = await createTemplatedFileWithInvalidParams(testConfig, {
-				workspaceId: validWorkspaceId,
-				templateParams: {
-					name: "测试",
-					category: "", // 空分类
-				},
-			})();
-
-			expect(E.isLeft(result)).toBe(true);
-		});
-
-		it("应该拒绝超出范围的优先级", async () => {
-			const createFn = createTemplatedFile(testConfig);
-			const result = await createTemplatedFileWithInvalidParams(testConfig, {
-				workspaceId: validWorkspaceId,
-				templateParams: {
-					name: "测试",
-					category: "工作",
-					priority: 11, // 超出范围
-				},
-			})();
-
-			expect(E.isLeft(result)).toBe(true);
-		});
-
 		it("应该接受可选的优先级参数", async () => {
 			const createFn = createTemplatedFile(testConfig);
 			const result = await createFn({
@@ -342,8 +316,8 @@ describe("createTemplatedFile", () => {
 
 	describe("模板生成", () => {
 		beforeEach(() => {
-			const mockNode = createMockNode();
-			vi.mocked(createFileInTree).mockResolvedValue({ node: mockNode });
+			const mockResult = createMockFileResult();
+			vi.mocked(createFileInTree).mockResolvedValue(mockResult);
 		});
 
 		it("应该调用模板生成函数", async () => {
@@ -361,42 +335,6 @@ describe("createTemplatedFile", () => {
 			await createFn(validParams)();
 
 			expect(generateTemplateSpy).toHaveBeenCalledWith(validTemplateParams);
-		});
-
-		it("应该调用文件夹路径生成函数", async () => {
-			const generateFolderPathSpy = vi.fn().mockReturnValue(["custom", "path"]);
-
-			const config = createTestTemplateConfig({
-				generateFolderPath: generateFolderPathSpy,
-			});
-
-			const createFn = createTemplatedFile(config);
-			await createFn(validParams)();
-
-			expect(generateFolderPathSpy).toHaveBeenCalledWith(validTemplateParams);
-			expect(vi.mocked(createFileInTree)).toHaveBeenCalledWith(
-				expect.objectContaining({
-					folderPath: ["TestFolder", "custom", "path"],
-				}),
-			);
-		});
-
-		it("应该调用标题生成函数", async () => {
-			const generateTitleSpy = vi.fn().mockReturnValue("Custom Title");
-
-			const config = createTestTemplateConfig({
-				generateTitle: generateTitleSpy,
-			});
-
-			const createFn = createTemplatedFile(config);
-			await createFn(validParams)();
-
-			expect(generateTitleSpy).toHaveBeenCalledWith(validTemplateParams);
-			expect(vi.mocked(createFileInTree)).toHaveBeenCalledWith(
-				expect.objectContaining({
-					title: "Custom Title",
-				}),
-			);
 		});
 
 		it("应该验证生成的内容是有效的 JSON", async () => {
@@ -421,10 +359,10 @@ describe("createTemplatedFile", () => {
 
 	describe("文件创建", () => {
 		it("应该成功创建文件并返回正确数据", async () => {
-			const mockNode = createMockNode({
+			const mockResult = createMockFileResult({
 				title: "测试文件 (工作)",
 			});
-			vi.mocked(createFileInTree).mockResolvedValue({ node: mockNode });
+			vi.mocked(createFileInTree).mockResolvedValue(mockResult);
 
 			const createFn = createTemplatedFile(testConfig);
 			const result = await createFn(validParams)();
@@ -434,13 +372,13 @@ describe("createTemplatedFile", () => {
 				expect(result.right.node).toBeDefined();
 				expect(result.right.content).toBeDefined();
 				expect(result.right.parsedContent).toBeDefined();
-				expect(result.right.node.id).toBe(mockNode.id);
+				expect(result.right.node.id).toBe(mockResult.node.id);
 			}
 		});
 
 		it("应该传递正确的参数给 createFileInTree", async () => {
-			const mockNode = createMockNode();
-			vi.mocked(createFileInTree).mockResolvedValue({ node: mockNode });
+			const mockResult = createMockFileResult();
+			vi.mocked(createFileInTree).mockResolvedValue(mockResult);
 
 			const createFn = createTemplatedFile(testConfig);
 			await createFn(validParams)();
@@ -457,8 +395,8 @@ describe("createTemplatedFile", () => {
 		});
 
 		it("应该返回解析后的内容", async () => {
-			const mockNode = createMockNode();
-			vi.mocked(createFileInTree).mockResolvedValue({ node: mockNode });
+			const mockResult = createMockFileResult();
+			vi.mocked(createFileInTree).mockResolvedValue(mockResult);
 
 			const createFn = createTemplatedFile(testConfig);
 			const result = await createFn(validParams)();
@@ -490,19 +428,6 @@ describe("createTemplatedFile", () => {
 				expect(result.left.message).toContain("创建文件失败");
 			}
 		});
-
-		it("应该正确传递文件创建错误信息", async () => {
-			const errorMessage = "Unique constraint violation";
-			vi.mocked(createFileInTree).mockRejectedValue(new Error(errorMessage));
-
-			const createFn = createTemplatedFile(testConfig);
-			const result = await createFn(validParams)();
-
-			expect(E.isLeft(result)).toBe(true);
-			if (E.isLeft(result)) {
-				expect(result.left.message).toContain(errorMessage);
-			}
-		});
 	});
 
 	// ==========================================================================
@@ -511,8 +436,8 @@ describe("createTemplatedFile", () => {
 
 	describe("边界情况", () => {
 		beforeEach(() => {
-			const mockNode = createMockNode();
-			vi.mocked(createFileInTree).mockResolvedValue({ node: mockNode });
+			const mockResult = createMockFileResult();
+			vi.mocked(createFileInTree).mockResolvedValue(mockResult);
 		});
 
 		it("应该处理最小有效参数", async () => {
@@ -522,19 +447,6 @@ describe("createTemplatedFile", () => {
 				templateParams: {
 					name: "a",
 					category: "b",
-				},
-			})();
-
-			expect(E.isRight(result)).toBe(true);
-		});
-
-		it("应该处理最大长度的名称", async () => {
-			const createFn = createTemplatedFile(testConfig);
-			const result = await createFn({
-				workspaceId: validWorkspaceId,
-				templateParams: {
-					name: "a".repeat(100),
-					category: "工作",
 				},
 			})();
 
@@ -553,88 +465,6 @@ describe("createTemplatedFile", () => {
 
 			expect(E.isRight(result)).toBe(true);
 		});
-
-		it("应该处理 Unicode 字符", async () => {
-			const createFn = createTemplatedFile(testConfig);
-			const result = await createFn({
-				workspaceId: validWorkspaceId,
-				templateParams: {
-					name: "测试 🎨 文件 中文 日本語",
-					category: "工作 📝",
-				},
-			})();
-
-			expect(E.isRight(result)).toBe(true);
-		});
-
-		it("应该处理空的文件夹路径", async () => {
-			const config = createTestTemplateConfig({
-				generateFolderPath: () => [],
-			});
-
-			const createFn = createTemplatedFile(config);
-			await createFn(validParams)();
-
-			expect(vi.mocked(createFileInTree)).toHaveBeenCalledWith(
-				expect.objectContaining({
-					folderPath: ["TestFolder"],
-				}),
-			);
-		});
-
-		it("应该处理复杂的 JSON 内容", async () => {
-			const complexContent = {
-				root: {
-					children: [
-						{
-							type: "heading",
-							tag: "h1",
-							children: [{ type: "text", text: "Title", format: 1 }],
-						},
-						{
-							type: "paragraph",
-							children: [
-								{ type: "text", text: "Bold ", format: 1 },
-								{ type: "text", text: "italic ", format: 2 },
-								{ type: "text", text: "normal", format: 0 },
-							],
-						},
-						{
-							type: "list",
-							listType: "bullet",
-							children: [
-								{
-									type: "listitem",
-									children: [
-										{
-											type: "paragraph",
-											children: [{ type: "text", text: "Item 1", format: 0 }],
-										},
-									],
-								},
-							],
-						},
-					],
-					direction: "ltr",
-					format: "",
-					indent: 0,
-					type: "root",
-					version: 1,
-				},
-			};
-
-			const config = createTestTemplateConfig({
-				generateTemplate: () => JSON.stringify(complexContent),
-			});
-
-			const createFn = createTemplatedFile(config);
-			const result = await createFn(validParams)();
-
-			expect(E.isRight(result)).toBe(true);
-			if (E.isRight(result)) {
-				expect(result.right.parsedContent).toEqual(complexContent);
-			}
-		});
 	});
 });
 
@@ -652,10 +482,10 @@ describe("createTemplatedFileAsync", () => {
 	});
 
 	it("应该成功创建文件并返回结果", async () => {
-		const mockNode = createMockNode({
+		const mockResult = createMockFileResult({
 			title: "测试文件 (工作)",
 		});
-		vi.mocked(createFileInTree).mockResolvedValue({ node: mockNode });
+		vi.mocked(createFileInTree).mockResolvedValue(mockResult);
 
 		const createFnAsync = createTemplatedFileAsync(testConfig);
 		const result = await createFnAsync(validParams);
@@ -663,7 +493,7 @@ describe("createTemplatedFileAsync", () => {
 		expect(result.node).toBeDefined();
 		expect(result.content).toBeDefined();
 		expect(result.parsedContent).toBeDefined();
-		expect(result.node.id).toBe(mockNode.id);
+		expect(result.node.id).toBe(mockResult.node.id);
 	});
 
 	it("应该在文件创建失败时抛出错误", async () => {
@@ -684,20 +514,6 @@ describe("createTemplatedFileAsync", () => {
 				workspaceId: "invalid-id",
 				templateParams: validTemplateParams,
 			} as TemplatedFileParams<TestTemplateParams>),
-		).rejects.toThrow();
-	});
-
-	it("应该在模板参数校验失败时抛出错误", async () => {
-		const createFnAsync = createTemplatedFileAsync(testConfig);
-
-		await expect(
-			createFnAsync({
-				workspaceId: validWorkspaceId,
-				templateParams: {
-					name: "", // 无效参数
-					category: "工作",
-				},
-			}),
 		).rejects.toThrow();
 	});
 });

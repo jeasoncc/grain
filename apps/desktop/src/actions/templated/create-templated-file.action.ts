@@ -24,7 +24,7 @@ import { z } from "zod";
 import { createFileInTree } from "@/actions/node";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
-import type { NodeInterface, NodeType } from "@/types/node";
+import type { NodeInterface } from "@/types/node";
 
 // ==============================
 // Types
@@ -84,7 +84,7 @@ export interface TemplatedFileResult {
  * 基础参数 Schema（工作区 ID）
  */
 const baseParamsSchema = z.object({
-	workspaceId: z.string().uuid("工作区 ID 必须是有效的 UUID"),
+	workspaceId: z.string().uuid({ message: "工作区 ID 必须是有效的 UUID" }),
 });
 
 // ==============================

@@ -33,7 +33,7 @@ import type { NodeInterface } from "@/types/node";
  * 创建日记参数 Schema
  */
 const createDiaryParamsSchema = z.object({
-	workspaceId: z.string().uuid("工作区 ID 必须是有效的 UUID"),
+	workspaceId: z.string().uuid({ message: "工作区 ID 必须是有效的 UUID" }),
 	date: z.date().optional(),
 });
 
