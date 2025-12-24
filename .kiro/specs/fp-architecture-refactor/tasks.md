@@ -1081,3 +1081,167 @@
 | 文件命名 | 95% | 🟢 符合 |
 | 日志规范 | 60% | 🔴 需改进（40+ 处 console.log）|
 | 依赖关系 | 70% | 🟡 部分符合 |
+
+
+## Phase 17: Actions 目录重构（架构修正）
+
+**说明：** Actions 是业务逻辑层，不应该放在 routes 目录下。routes 目录应该只包含路由定义，不包含业务逻辑。
+
+### 问题分析
+
+当前结构（错误）：
+```
+src/routes/
+├── actions/           # ❌ 错误：业务逻辑不应该在路由目录
+│   ├── create-node.action.ts
+│   └── ...
+└── settings/
+```
+
+目标结构（正确）：
+```
+src/
+├── actions/           # ✅ 正确：独立的业务逻辑层
+│   ├── node/
+│   │   ├── create-node.action.ts
+│   │   └── ...
+│   ├── workspace/
+│   ├── drawing/
+│   ├── export/
+│   └── index.ts
+└── routes/            # 仅路由定义
+    ├── __root.tsx
+    └── ...
+```
+
+### 迁移任务
+
+- [ ] 102. 创建新的 actions 目录结构
+  - 创建 `src/actions/` 目录
+  - 创建子目录：`node/`, `workspace/`, `drawing/`, `export/`, `import/`
+  - 预计时间：5分钟
+  - 优先级：🔴 高
+
+- [ ] 103. 迁移 Node Actions
+  - 移动 `routes/actions/create-node.action.ts` → `actions/node/`
+  - 移动 `routes/actions/delete-node.action.ts` → `actions/node/`
+  - 移动 `routes/actions/rename-node.action.ts` → `actions/node/`
+  - 移动 `routes/actions/move-node.action.ts` → `actions/node/`
+  - 移动 `routes/actions/reorder-node.action.ts` → `actions/node/`
+  - 移动对应的测试文件
+  - 创建 `actions/node/index.ts`
+  - 预计时间：15分钟
+  - 优先级：🔴 高
+
+- [ ] 104. 迁移 Workspace Actions
+  - 移动 `routes/actions/create-workspace.action.ts` → `actions/workspace/`
+  - 移动 `routes/actions/delete-workspace.action.ts` → `actions/workspace/`
+  - 移动 `routes/actions/update-workspace.action.ts` → `actions/workspace/`
+  - 移动对应的测试文件
+  - 创建 `actions/workspace/index.ts`
+  - 预计时间：10分钟
+  - 优先级：🔴 高
+
+- [ ] 105. 迁移 Drawing Actions
+  - 移动 `routes/actions/create-drawing.action.ts` → `actions/drawing/`
+  - 移动 `routes/actions/delete-drawing.action.ts` → `actions/drawing/`
+  - 移动 `routes/actions/rename-drawing.action.ts` → `actions/drawing/`
+  - 移动 `routes/actions/save-drawing-content.action.ts` → `actions/drawing/`
+  - 移动对应的测试文件
+  - 创建 `actions/drawing/index.ts`
+  - 预计时间：10分钟
+  - 优先级：🔴 高
+
+- [ ] 106. 迁移 Export Actions
+  - 移动 `routes/actions/export-*.action.ts` → `actions/export/`
+  - 包括：export-json, export-markdown, export-orgmode, export-all, export-zip, export-workspace-markdown
+  - 移动对应的测试文件
+  - 创建 `actions/export/index.ts`
+  - 预计时间：10分钟
+  - 优先级：🔴 高
+
+- [ ] 107. 迁移 Import Actions
+  - 移动 `routes/actions/import-*.action.ts` → `actions/import/`
+  - 包括：import-json, import-markdown
+  - 移动对应的测试文件
+  - 创建 `actions/import/index.ts`
+  - 预计时间：5分钟
+  - 优先级：🔴 高
+
+- [ ] 108. 迁移其他 Actions
+  - 移动 `routes/actions/create-diary.action.ts` → `actions/diary/`
+  - 移动 `routes/actions/ensure-folder.action.ts` → `actions/node/`
+  - 创建 `actions/diary/index.ts`
+  - 预计时间：5分钟
+  - 优先级：🔴 高
+
+- [ ] 109. 创建 Actions 统一导出
+  - 创建 `actions/index.ts`
+  - 导出所有子模块
+  - 预计时间：5分钟
+  - 优先级：🔴 高
+
+- [ ] 110. 更新所有导入路径
+  - 批量替换 `@/routes/actions` → `@/actions`
+  - 影响文件：
+    - `src/components/panels/file-tree-panel.tsx`
+    - `src/components/blocks/export-dialog.tsx`
+    - `src/components/drawing/drawing-list.tsx`
+    - `src/components/drawing/drawing-workspace.tsx`
+    - `src/routes/__root.tsx`
+    - `src/routes/canvas.tsx`
+    - 其他引用 actions 的文件
+  - 预计时间：20分钟
+  - 优先级：🔴 高
+
+- [ ] 111. 删除旧的 routes/actions 目录
+  - 确认所有文件已迁移
+  - 确认所有导入已更新
+  - 删除 `routes/actions/` 目录
+  - 预计时间：5分钟
+  - 优先级：🔴 高
+
+- [ ] 112. 迁移 Settings Actions
+  - 移动 `routes/settings/actions/` → `actions/settings/`
+  - 更新导入路径
+  - 预计时间：10分钟
+  - 优先级：🟡 中
+
+- [ ] 113. 验证迁移结果
+  - 运行类型检查：`bun run check`
+  - 运行测试：`bun run test`
+  - 运行开发服务器：`bun run desktop:dev`
+  - 确认应用正常运行
+  - 预计时间：15分钟
+  - 优先级：🔴 高
+
+### 预计总时间：1.5-2 小时
+
+### 迁移文件清单
+
+| 源文件 | 目标位置 |
+|--------|----------|
+| `routes/actions/create-node.action.ts` | `actions/node/` |
+| `routes/actions/delete-node.action.ts` | `actions/node/` |
+| `routes/actions/rename-node.action.ts` | `actions/node/` |
+| `routes/actions/move-node.action.ts` | `actions/node/` |
+| `routes/actions/reorder-node.action.ts` | `actions/node/` |
+| `routes/actions/ensure-folder.action.ts` | `actions/node/` |
+| `routes/actions/create-workspace.action.ts` | `actions/workspace/` |
+| `routes/actions/delete-workspace.action.ts` | `actions/workspace/` |
+| `routes/actions/update-workspace.action.ts` | `actions/workspace/` |
+| `routes/actions/create-drawing.action.ts` | `actions/drawing/` |
+| `routes/actions/delete-drawing.action.ts` | `actions/drawing/` |
+| `routes/actions/rename-drawing.action.ts` | `actions/drawing/` |
+| `routes/actions/save-drawing-content.action.ts` | `actions/drawing/` |
+| `routes/actions/export-json.action.ts` | `actions/export/` |
+| `routes/actions/export-markdown.action.ts` | `actions/export/` |
+| `routes/actions/export-orgmode.action.ts` | `actions/export/` |
+| `routes/actions/export-all.action.ts` | `actions/export/` |
+| `routes/actions/export-zip.action.ts` | `actions/export/` |
+| `routes/actions/export-workspace-markdown.action.ts` | `actions/export/` |
+| `routes/actions/import-json.action.ts` | `actions/import/` |
+| `routes/actions/import-markdown.action.ts` | `actions/import/` |
+| `routes/actions/create-diary.action.ts` | `actions/diary/` |
+| `routes/settings/actions/*` | `actions/settings/` |
+

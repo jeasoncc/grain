@@ -56,6 +56,21 @@ src/
 │   ├── ui.store.fn.ts
 │   └── selection.store.fn.ts
 │
+├── actions/              # 业务操作函数（独立于路由）
+│   ├── node/
+│   │   ├── create-node.action.ts
+│   │   ├── delete-node.action.ts
+│   │   ├── rename-node.action.ts
+│   │   ├── move-node.action.ts
+│   │   └── index.ts
+│   ├── workspace/
+│   │   ├── create-workspace.action.ts
+│   │   └── index.ts
+│   ├── drawing/
+│   │   ├── create-drawing.action.ts
+│   │   └── index.ts
+│   └── index.ts
+│
 ├── hooks/                # React 绑定
 │   ├── use-node.ts
 │   └── use-workspace.ts
@@ -66,14 +81,10 @@ src/
 │   ├── panels/
 │   └── file-tree/
 │
-└── routes/               # TanStack Router
-    ├── nodes/
-    │   ├── nodes.route.tsx      # 路由组件（编排层）
-    │   ├── actions/             # 操作函数（实现层）
-    │   │   ├── create-node.action.ts
-    │   │   ├── delete-node.action.ts
-    │   │   └── index.ts
-    │   └── index.ts
+└── routes/               # TanStack Router（仅路由定义）
+    ├── __root.tsx
+    ├── index.tsx
+    ├── node.$nodeId.tsx
     └── settings/
 ```
 
@@ -94,7 +105,9 @@ src/
 - **Functions**: 纯函数管道（数据处理层）
 - **DB**: Dexie/IndexedDB（持久化层）
 - **Stores**: Zustand（运行时状态层）
+- **Actions**: 业务操作函数（业务逻辑层）
 - **Hooks**: React 绑定（响应式层）
+- **Routes**: TanStack Router（路由层，仅定义路由）
 
 ## File Naming Conventions
 

@@ -221,11 +221,32 @@ src/
 │   ├── settings.store.fn.ts            # 设置状态（持久化到 DB）
 │   └── index.ts
 │
+├── actions/                        ◀── 业务操作函数（独立于路由）
+│   ├── node/
+│   │   ├── create-node.action.ts       # 创建节点
+│   │   ├── delete-node.action.ts       # 删除节点
+│   │   ├── rename-node.action.ts       # 重命名节点
+│   │   ├── move-node.action.ts         # 移动节点
+│   │   └── index.ts
+│   ├── workspace/
+│   │   ├── create-workspace.action.ts
+│   │   └── index.ts
+│   ├── drawing/
+│   │   ├── create-drawing.action.ts
+│   │   └── index.ts
+│   └── index.ts
+│
 ├── hooks/                          ◀── React 绑定
 │   ├── use-node.ts
 │   ├── use-workspace.ts
 │   ├── use-editor.ts
 │   └── index.ts
+│
+├── routes/                         ◀── TanStack Router（仅路由定义）
+│   ├── __root.tsx
+│   ├── index.tsx
+│   ├── node.$nodeId.tsx
+│   └── settings/
 │
 └── components/                     ◀── UI 组件
     ├── file-tree/
@@ -275,15 +296,23 @@ src/
                                  │
                                  ▼
                           ┌────────────┐
-                          │   hooks/   │
-                          │ (React绑定) │
+                          │  actions/  │
+                          │ (业务操作)  │
                           └────────────┘
                                  │
                                  ▼
                           ┌────────────┐
-                          │components/ │
-                          │   (UI)     │
+                          │   hooks/   │
+                          │ (React绑定) │
                           └────────────┘
+                                 │
+                    ┌────────────┴────────────┐
+                    │                         │
+                    ▼                         ▼
+             ┌────────────┐            ┌────────────┐
+             │components/ │            │  routes/   │
+             │   (UI)     │            │  (路由)    │
+             └────────────┘            └────────────┘
 ```
 
 ### 依赖规则
@@ -293,8 +322,10 @@ src/
 - `db/` → 只依赖 `types/`
 - `stores/` → 只依赖 `types/`
 - `fn/` → 依赖 `types/`, `lib/`, `db/`, `stores/`
-- `hooks/` → 依赖 `fn/`, `stores/`
+- `actions/` → 依赖 `fn/`, `db/`, `stores/`, `types/`
+- `hooks/` → 依赖 `actions/`, `fn/`, `stores/`
 - `components/` → 依赖 `hooks/`, `types/`
+- `routes/` → 依赖 `hooks/`, `components/`（仅编排，不实现逻辑）
 
 ## 数据三层守卫
 
