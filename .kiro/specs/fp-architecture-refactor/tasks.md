@@ -865,7 +865,7 @@
   - 预计时间：20分钟
   - 优先级：🟡 中
 
-- [-] 83. 修复 `noArrayIndexKey` 错误（4 个）
+- [x] 83. 修复 `noArrayIndexKey` 错误（4 个）
   - 使用唯一 ID 而非数组索引作为 key
   - 影响文件：
     - `src/components/blocks/keyboard-shortcuts-help.tsx` (2 处)
@@ -1116,7 +1116,7 @@ src/
 
 ### 迁移任务
 
-- [ ] 102. 创建新的 actions 目录结构
+- [x] 102. 创建新的 actions 目录结构
   - 创建 `src/actions/` 目录
   - 创建子目录：`node/`, `workspace/`, `drawing/`, `export/`, `import/`
   - 预计时间：5分钟
