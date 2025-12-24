@@ -1,9 +1,9 @@
 /**
- * @file export-json.action.ts
- * @description JSON 导出 Action
+ * @file export-markdown.action.ts
+ * @description Markdown 导出 Action
  *
  * 功能说明：
- * - 将节点内容导出为 JSON 格式
+ * - 将节点内容导出为 Markdown 格式
  * - 支持单文件导出
  * - 使用 TaskEither 进行错误处理
  *
@@ -15,18 +15,18 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { getContentByNodeIdOrFail } from "@/db/content.db.fn";
 import { getNodeByIdOrFail } from "@/db/node.db.fn";
-import { exportToJson, type JsonExportOptions } from "@/fn/export";
+import { exportToMarkdown, type MarkdownExportOptions } from "@/fn/export";
 import { type AppError, exportError } from "@/lib/error.types";
 import logger from "@/log";
 
 /**
- * 导出节点内容为 JSON 格式参数
+ * 导出节点内容为 Markdown 格式参数
  */
-export interface ExportJsonParams {
+export interface ExportMarkdownParams {
 	/** 节点 ID */
 	readonly nodeId: string;
 	/** 导出选项 */
-	readonly options?: JsonExportOptions;
+	readonly options?: MarkdownExportOptions;
 }
 
 /**
@@ -42,17 +42,17 @@ export interface ExportResult {
 }
 
 /**
- * 导出节点内容为 JSON 格式
+ * 导出节点内容为 Markdown 格式
  *
- * 获取节点内容并转换为 JSON 格式。
+ * 获取节点内容并转换为 Markdown 格式。
  *
  * @param params - 导出参数
  * @returns TaskEither<AppError, ExportResult>
  */
-export const exportNodeToJson = (
-	params: ExportJsonParams,
+export const exportNodeToMarkdown = (
+	params: ExportMarkdownParams,
 ): TE.TaskEither<AppError, ExportResult> => {
-	logger.start("[Action] 导出 JSON...");
+	logger.start("[Action] 导出 Markdown...");
 
 	return pipe(
 		// 并行获取节点和内容
@@ -60,39 +60,36 @@ export const exportNodeToJson = (
 		TE.bind("node", () => getNodeByIdOrFail(params.nodeId)),
 		TE.bind("contentRecord", () => getContentByNodeIdOrFail(params.nodeId)),
 		TE.chain(({ node, contentRecord }) => {
-			// 设置导出选项，包含元数据
-			const exportOptions: JsonExportOptions = {
+			// 设置导出选项，包含标题
+			const exportOptions: MarkdownExportOptions = {
 				...params.options,
-				includeMetadata: params.options?.includeMetadata ?? true,
-				metadata: {
-					...params.options?.metadata,
-					title: params.options?.metadata?.title ?? node.title,
-				},
+				includeTitle: params.options?.includeTitle ?? true,
+				title: params.options?.title ?? node.title,
 			};
 
-			// 转换为 JSON
-			const result = exportToJson(contentRecord.content, exportOptions);
+			// 转换为 Markdown
+			const result = exportToMarkdown(contentRecord.content, exportOptions);
 
 			return pipe(
 				result,
-				E.mapLeft((err) => exportError(`JSON 导出失败: ${err.message}`)),
+				E.mapLeft((err) => exportError(`Markdown 导出失败: ${err.message}`)),
 				TE.fromEither,
 				TE.map((content) => ({
 					content,
 					filename: node.title,
-					extension: "json",
+					extension: "md",
 				})),
 			);
 		}),
 		TE.tap((result) => {
-			logger.success("[Action] JSON 导出成功:", result.filename);
+			logger.success("[Action] Markdown 导出成功:", result.filename);
 			return TE.right(result);
 		}),
 	);
 };
 
 /**
- * 直接导出内容为 JSON 格式（不从数据库获取）
+ * 直接导出内容为 Markdown 格式（不从数据库获取）
  *
  * 用于已有内容的直接转换。
  *
@@ -100,14 +97,14 @@ export const exportNodeToJson = (
  * @param options - 导出选项
  * @returns Either<AppError, string>
  */
-export const exportContentToJson = (
+export const exportContentToMarkdown = (
 	content: string,
-	options?: JsonExportOptions,
+	options?: MarkdownExportOptions,
 ): E.Either<AppError, string> => {
-	logger.info("[Action] 直接导出 JSON");
+	logger.info("[Action] 直接导出 Markdown");
 
 	return pipe(
-		exportToJson(content, options),
-		E.mapLeft((err) => exportError(`JSON 导出失败: ${err.message}`)),
+		exportToMarkdown(content, options),
+		E.mapLeft((err) => exportError(`Markdown 导出失败: ${err.message}`)),
 	);
 };

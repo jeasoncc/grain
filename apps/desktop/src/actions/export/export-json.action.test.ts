@@ -1,6 +1,6 @@
 /**
- * @file export-markdown.action.test.ts
- * @description Markdown 导出 Action 的单元测试
+ * @file export-json.action.test.ts
+ * @description JSON 导出 Action 的单元测试
  *
  * 测试覆盖：
  * - 节点内容导出
@@ -104,21 +104,18 @@ vi.mock("@/log", () => ({
 }));
 
 import logger from "@/log";
-import {
-	exportContentToMarkdown,
-	exportNodeToMarkdown,
-} from "./export-markdown.action";
+import { exportContentToJson, exportNodeToJson } from "./export-json.action";
 
 // ============================================================================
 // Unit Tests
 // ============================================================================
 
-describe("exportNodeToMarkdown", () => {
+describe("exportNodeToJson", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
-	it("should export node content to Markdown format", async () => {
+	it("should export node content to JSON format", async () => {
 		const testNode = createTestNode({ title: "My Document" });
 		const testContent = createTestContent({ nodeId: testNode.id });
 
@@ -129,19 +126,20 @@ describe("exportNodeToMarkdown", () => {
 			Promise.resolve(E.right(testContent)),
 		);
 
-		const result = await runTE(exportNodeToMarkdown({ nodeId: testNode.id }));
+		const result = await runTE(exportNodeToJson({ nodeId: testNode.id }));
 
 		expect(E.isRight(result)).toBe(true);
 		if (E.isRight(result)) {
 			expect(result.right.filename).toBe("My Document");
-			expect(result.right.extension).toBe("md");
-			expect(result.right.content).toContain("Hello World");
+			expect(result.right.extension).toBe("json");
+			// JSON 导出应该包含有效的 JSON
+			expect(() => JSON.parse(result.right.content)).not.toThrow();
 		}
 		expect(logger.start).toHaveBeenCalled();
 		expect(logger.success).toHaveBeenCalled();
 	});
 
-	it("should include title in export when option is set", async () => {
+	it("should include metadata in export when option is set", async () => {
 		const testNode = createTestNode({ title: "My Document" });
 		const testContent = createTestContent({ nodeId: testNode.id });
 
@@ -153,15 +151,17 @@ describe("exportNodeToMarkdown", () => {
 		);
 
 		const result = await runTE(
-			exportNodeToMarkdown({
+			exportNodeToJson({
 				nodeId: testNode.id,
-				options: { includeTitle: true },
+				options: { includeMetadata: true },
 			}),
 		);
 
 		expect(E.isRight(result)).toBe(true);
 		if (E.isRight(result)) {
-			expect(result.right.content).toContain("# My Document");
+			const parsed = JSON.parse(result.right.content);
+			expect(parsed.metadata).toBeDefined();
+			expect(parsed.metadata.title).toBe("My Document");
 		}
 	});
 
@@ -169,9 +169,7 @@ describe("exportNodeToMarkdown", () => {
 		const error = { type: "NOT_FOUND" as const, message: "Node not found" };
 		mockGetNodeByIdOrFail.mockReturnValue(() => Promise.resolve(E.left(error)));
 
-		const result = await runTE(
-			exportNodeToMarkdown({ nodeId: "non-existent" }),
-		);
+		const result = await runTE(exportNodeToJson({ nodeId: "non-existent" }));
 
 		expect(E.isLeft(result)).toBe(true);
 		if (E.isLeft(result)) {
@@ -190,7 +188,7 @@ describe("exportNodeToMarkdown", () => {
 			Promise.resolve(E.left(error)),
 		);
 
-		const result = await runTE(exportNodeToMarkdown({ nodeId: testNode.id }));
+		const result = await runTE(exportNodeToJson({ nodeId: testNode.id }));
 
 		expect(E.isLeft(result)).toBe(true);
 		if (E.isLeft(result)) {
@@ -199,8 +197,8 @@ describe("exportNodeToMarkdown", () => {
 	});
 });
 
-describe("exportContentToMarkdown", () => {
-	it("should export content directly to Markdown format", () => {
+describe("exportContentToJson", () => {
+	it("should export content directly to JSON format", () => {
 		const content = JSON.stringify({
 			root: {
 				children: [
@@ -217,16 +215,17 @@ describe("exportContentToMarkdown", () => {
 			},
 		});
 
-		const result = exportContentToMarkdown(content);
+		const result = exportContentToJson(content);
 
 		expect(E.isRight(result)).toBe(true);
 		if (E.isRight(result)) {
-			expect(result.right).toContain("Direct export");
+			// 应该是有效的 JSON
+			expect(() => JSON.parse(result.right)).not.toThrow();
 		}
 	});
 
 	it("should return Left for invalid content", () => {
-		const result = exportContentToMarkdown("invalid json");
+		const result = exportContentToJson("invalid json");
 
 		expect(E.isLeft(result)).toBe(true);
 		if (E.isLeft(result)) {
@@ -235,11 +234,37 @@ describe("exportContentToMarkdown", () => {
 	});
 
 	it("should return Left for empty content", () => {
-		const result = exportContentToMarkdown("");
+		const result = exportContentToJson("");
 
 		expect(E.isLeft(result)).toBe(true);
 		if (E.isLeft(result)) {
 			expect(result.left.type).toBe("EXPORT_ERROR");
+		}
+	});
+
+	it("should format JSON with pretty option", () => {
+		const content = JSON.stringify({
+			root: {
+				children: [
+					{
+						type: "paragraph",
+						children: [{ type: "text", text: "Test", format: 0 }],
+					},
+				],
+				direction: "ltr",
+				format: "",
+				indent: 0,
+				type: "root",
+				version: 1,
+			},
+		});
+
+		const result = exportContentToJson(content, { pretty: true, indent: 2 });
+
+		expect(E.isRight(result)).toBe(true);
+		if (E.isRight(result)) {
+			// Pretty JSON 应该包含换行符
+			expect(result.right).toContain("\n");
 		}
 	});
 });

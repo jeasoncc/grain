@@ -1142,7 +1142,7 @@ src/
   - 预计时间：10分钟
   - 优先级：🔴 高
 
-- [-] 105. 迁移 Drawing Actions
+- [x] 105. 迁移 Drawing Actions
   - 移动 `routes/actions/create-drawing.action.ts` → `actions/drawing/`
   - 移动 `routes/actions/delete-drawing.action.ts` → `actions/drawing/`
   - 移动 `routes/actions/rename-drawing.action.ts` → `actions/drawing/`
@@ -1152,7 +1152,7 @@ src/
   - 预计时间：10分钟
   - 优先级：🔴 高
 
-- [ ] 106. 迁移 Export Actions
+- [-] 106. 迁移 Export Actions
   - 移动 `routes/actions/export-*.action.ts` → `actions/export/`
   - 包括：export-json, export-markdown, export-orgmode, export-all, export-zip, export-workspace-markdown
   - 移动对应的测试文件

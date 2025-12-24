@@ -20,8 +20,8 @@ export type { ExportBundle } from "@/fn/import";
 // 从 fn/import 重新导出文件读取
 export { readFileAsText } from "@/fn/import";
 
-// 从 routes/actions 重新导出 Action 函数（Promise 版本，向后兼容）
-export { exportAllAsync as exportAll } from "@/routes/actions/export-all.action";
-export { exportAsMarkdownAsync as exportAsMarkdown } from "@/routes/actions/export-workspace-markdown.action";
-export { exportAllAsZipAsync as exportAllAsZip } from "@/routes/actions/export-zip.action";
+// 从 actions/export 重新导出 Action 函数（Promise 版本，向后兼容）
+export { exportAllAsync as exportAll } from "@/actions/export/export-all.action";
+export { exportAsMarkdownAsync as exportAsMarkdown } from "@/actions/export/export-workspace-markdown.action";
+export { exportAllAsZipAsync as exportAllAsZip } from "@/actions/export/export-zip.action";
 export { importFromJsonAsync as importFromJson } from "@/routes/actions/import-json.action";

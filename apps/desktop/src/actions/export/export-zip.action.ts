@@ -1,5 +1,5 @@
 /**
- * @file routes/actions/export-zip.action.ts
+ * @file export-zip.action.ts
  * @description 导出数据为 ZIP 压缩包 Action
  *
  * 功能说明：

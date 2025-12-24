@@ -1,5 +1,5 @@
 /**
- * @file routes/actions/export-workspace-markdown.action.ts
+ * @file export-workspace-markdown.action.ts
  * @description 导出工作区为 Markdown 格式 Action
  *
  * 功能说明：

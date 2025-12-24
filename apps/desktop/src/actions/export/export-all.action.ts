@@ -1,5 +1,5 @@
 /**
- * @file routes/actions/export-all.action.ts
+ * @file export-all.action.ts
  * @description 导出所有数据 Action
  *
  * 功能说明：
