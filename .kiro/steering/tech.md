@@ -1,124 +1,103 @@
-# Tech Stack & Build System
+# 技术栈
 
-## Monorepo Structure
+## Monorepo
 
-- **Package Manager**: bun (with workspaces)
-- **Build Orchestration**: Turborepo
+- **包管理器**: bun (with workspaces)
+- **构建编排**: Turborepo
 - **Node.js**: >= 20
-- **Bun**: >= 1.1.0 (for API server)
+- **Bun**: >= 1.1.0
 
-## Core Technologies
+## 核心技术
 
-| App | Framework | Build Tool | UI |
+| 应用 | 框架 | 构建工具 | UI |
 |-----|-----------|------------|-----|
 | Desktop | Tauri 2.x + React 19 | Vite 7 | shadcn/ui + Tailwind 4 |
 | Web | Next.js 15 | Next.js | shadcn/ui + Tailwind 4 |
 | Mobile | Expo + React Native | Expo | Custom |
 | Admin | React 19 | Vite 7 | shadcn/ui + Tailwind 4 |
 | API | Elysia | Bun | - |
-| Editor Package | React | Vite | Lexical |
 
-## Key Libraries
+## 关键库
 
-- **Editor**: Lexical (rich text)
-- **State Management**: Zustand + Immer (immutable state), Dexie (IndexedDB persistence)
-- **Routing**: TanStack Router (desktop/admin), Next.js App Router (web), Expo Router (mobile)
-- **Data Access**: Dexie React Hooks (IndexedDB 响应式绑定)
-- **Forms**: TanStack Form + Zod
-- **UI Components**: Radix UI primitives, Lucide icons
-- **Charts**: Mermaid, PlantUML
-- **Drawing**: Excalidraw
-- **Linting/Formatting**: Biome
+| 场景 | 库 |
+|------|-----|
+| 编辑器 | Lexical |
+| 状态管理 | Zustand + Immer |
+| 持久化 | Dexie (IndexedDB) |
+| 路由 | TanStack Router |
+| 表单 | TanStack Form + Zod |
+| UI 组件 | Radix UI, Lucide icons |
+| 图表 | Mermaid, PlantUML |
+| 画板 | Excalidraw |
+| 代码检查 | Biome |
 
-## Functional Programming Libraries
+## 函数式编程库
 
-- **fp-ts**: 函数式核心 (pipe, Option, Either, Task)
-- **es-toolkit**: 实用工具函数 (替代 lodash)
-- **Immer**: 不可变数据更新
-- **Zod**: 运行时数据校验
-- **dayjs**: 时间处理
+| 库 | 用途 |
+|---|------|
+| **fp-ts** | 函数式核心 (pipe, Option, Either, Task) |
+| **es-toolkit** | 工具函数 (替代 lodash) |
+| **Immer** | 不可变数据更新 |
+| **Zod** | 运行时数据校验 |
+| **dayjs** | 时间处理 |
 
-## Performance Libraries
+## 性能库
 
-- **Million.js**: React 编译优化，自动优化组件渲染
-- **@tanstack/react-virtual**: 虚拟列表，大量数据高性能渲染
+| 库 | 用途 |
+|---|------|
+| **Million.js** | React 编译优化 |
+| **@tanstack/react-virtual** | 虚拟列表 |
 
-## Architecture Patterns
-
-- **Immutable State**: Immer for safe state mutations
-- **Functional Programming**: Pure functions, higher-order functions, function composition
-- **Builder Pattern**: Complex object construction with method chaining
-- **Repository Pattern**: Data access abstraction layer
-
-## Common Commands
+## 常用命令
 
 ```bash
-# Install dependencies
+# 安装依赖
 bun install
 
-# Development
-bun run desktop:dev    # Desktop app
-bun run web:dev        # Web app
-bun run mobile:dev     # Mobile app
-bun run admin:dev      # Admin panel
-bun run api:dev        # API server
+# 开发
+bun run desktop:dev    # Desktop
+bun run web:dev        # Web
+bun run admin:dev      # Admin
+bun run api:dev        # API
 
-# Build
-bun run build                    # Build all
-bun run build:prod:desktop       # Production desktop build
-bun run build:prod:web           # Production web build
+# 构建
+bun run build                    # 全部
+bun run build:prod:desktop       # Desktop 生产
 
-# Linting & Formatting
-bun run lint           # Lint all packages
-bun run format         # Format all packages
-bun run check          # Check all packages
+# 检查
+bun run lint           # Lint
+bun run format         # 格式化
+bun run check          # 类型检查
+bun run test           # 测试
 
-# Version & Release
-bun run version:bump   # Bump version across packages
-bun run tag:desktop    # Create desktop release tag
-bun run tag:all        # Create all release tags
+# 版本发布
+bun run version:bump   # 递增版本
+bun run tag:desktop    # 创建 Desktop tag
 ```
 
-## TypeScript Configuration
+## Steering 文件使用
 
-- Target: ES2020
-- Module: ESNext with bundler resolution
-- Strict mode enabled
-- Path alias: `@/*` → `./src/*`
+### 始终加载（核心规范）
 
-## Biome Configuration
+| 文件 | 内容 |
+|------|------|
+| `architecture.md` | 数据流架构 |
+| `structure.md` | 目录结构 |
+| `tech.md` | 技术栈（本文件） |
+| `code-standards.md` | 代码规范 |
+| `workflow.md` | 工作流程 |
 
-- Indent: Tabs (desktop), Spaces (API)
-- Quote style: Double quotes (desktop), Single quotes (API)
-- Organize imports: Enabled
-- Recommended linting rules
+### 手动加载（专项知识）
 
-## Steering Files Usage
+使用 `#steering-filename` 加载：
 
-### Always Loaded (Core Development Standards)
-- `architecture.md` - 函数式数据流架构设计
-- `code-standards.md` - 代码质量标准和规范
-- `structure.md` - 项目结构和文件组织
-- `tech.md` - 技术栈和构建系统 (this file)
-- `workflow.md` - 工作流程和提交规范
-
-### Manual Load (Specialized Knowledge)
-Use `#steering-filename` in chat to load specific knowledge:
-
-| File | When to Load | Usage |
-|------|-------------|-------|
-| `#fp-patterns` | 函数式编程开发 | fp-ts 核心模式和函数式编程最佳实践 |
-| `#design-patterns` | 代码重构/抽象 | 设计模式和抽象原则指导 |
-| `#e2e-testing` | E2E 测试开发 | Playwright 测试规范和最佳实践 |
-| `#release` | 发布流程 | 版本发布、打包、分发流程 |
-| `#git-hooks` | 版本/Hooks 问题 | Git Hooks 版本系统故障排除 |
-| `#troubleshooting` | 问题排查 | 常见问题和解决方案 |
-| `#decisions` | 技术决策 | 架构决策记录和背景 |
-| `#product` | 产品定义 | 产品功能和业务逻辑 |
-
-### Example Usage in Specs
-```markdown
-## Required Knowledge
-- Core: Always available (architecture, code-standards, structure, tech, workflow)
-- Specialized: Load `#release` for deployment tasks, `#e2e-testing` for test development
-```
+| 文件 | 场景 |
+|------|------|
+| `#fp-patterns` | 函数式编程开发 |
+| `#design-patterns` | 代码重构/抽象 |
+| `#e2e-testing` | E2E 测试 |
+| `#release` | 发布流程 |
+| `#git-hooks` | 版本/Hooks 问题 |
+| `#troubleshooting` | 问题排查 |
+| `#decisions` | 技术决策 |
+| `#product` | 产品定义 |

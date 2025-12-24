@@ -6,39 +6,54 @@ inclusion: manual
 
 记录项目中重要的设计模式和抽象原则，避免重复实现相似功能。
 
-## 模板化文件创建模式
+## 业务逻辑抽象审查
 
-### 问题识别
+### 核心原则
 
-当发现多个 action 有相似的结构时，应该考虑抽象为高阶函数：
+**相似的业务逻辑必须抽象为高阶函数**，而不是复制粘贴。
+
+### 案例：模板化文件创建
+
+#### 问题识别
+
+Diary 和 Wiki 创建逻辑几乎相同：
 
 ```typescript
-// ❌ 重复的模式 - wiki 和 diary 都是这个结构
-export const createXxxFile = (params) => {
-  // 1. 生成模板内容
-  const content = generateXxxTemplate(params);
-  
-  // 2. 调用 createFileInTree
-  const result = await createFileInTree({
+// ❌ 重复模式 - diary
+export const createDiary = (params) => {
+  const content = generateDiaryContent(params.date);     // 1. 生成模板
+  const parsed = JSON.parse(content);                    // 2. 解析 JSON
+  const result = await createFileInTree({                // 3. 创建文件
     workspaceId: params.workspaceId,
-    title: params.title,
-    folderPath: [XXX_ROOT_FOLDER, ...],
-    type: "xxx",
-    tags: ["xxx"],
+    title: structure.filename,
+    folderPath: [DIARY_ROOT, yearFolder, monthFolder, dayFolder],
+    type: "diary",
+    tags: ["diary"],
     content,
   });
-  
-  // 3. 相同的错误处理和日志
-  return result;
+  return { node: result.node, content, parsedContent };  // 4. 返回结果
+};
+
+// ❌ 重复模式 - wiki（结构完全相同！）
+export const createWiki = (params) => {
+  const content = generateWikiTemplate(params.name);     // 1. 生成模板
+  const parsed = JSON.parse(content);                    // 2. 解析 JSON
+  const result = await createFileInTree({                // 3. 创建文件
+    workspaceId: params.workspaceId,
+    title: params.name,
+    folderPath: [WIKI_ROOT],
+    type: "file",
+    tags: ["wiki"],
+    content,
+  });
+  return { node: result.node, content, parsedContent };  // 4. 返回结果
 };
 ```
 
-### 抽象方案
-
-创建高阶函数 `createTemplatedFile`：
+#### 正确抽象
 
 ```typescript
-// ✅ 抽象后的高阶函数
+// ✅ 高阶函数抽象
 interface TemplateConfig<T> {
   readonly rootFolder: string;
   readonly fileType: NodeType;
@@ -49,42 +64,43 @@ interface TemplateConfig<T> {
 }
 
 const createTemplatedFile = <T>(config: TemplateConfig<T>) => 
-  (params: T & { workspaceId: string }): TE.TaskEither<AppError, CreationResult> => {
-    logger.start(`[Action] 创建${config.fileType}文件...`);
-    
-    return TE.tryCatch(
-      async () => {
-        const content = config.generateTemplate(params);
-        const parsedContent = JSON.parse(content);
-        
-        const result = await createFileInTree({
-          workspaceId: params.workspaceId,
-          title: config.generateTitle(params),
-          folderPath: config.generateFolderPath(params),
-          type: config.fileType,
-          tags: [config.tag],
-          content,
-        });
-        
-        logger.success(`[Action] ${config.fileType}文件创建成功:`, result.node.id);
-        
-        return {
-          node: result.node,
-          content,
-          parsedContent,
-        };
-      },
-      (error): AppError => ({
-        type: "DB_ERROR",
-        message: `创建${config.fileType}文件失败: ${error instanceof Error ? error.message : String(error)}`,
-      })
+  (params: T & { workspaceId: string }): TE.TaskEither<AppError, CreationResult> =>
+    pipe(
+      TE.Do,
+      TE.bind("content", () => TE.of(config.generateTemplate(params))),
+      TE.bind("parsed", ({ content }) => parseJsonSafe(content)),
+      TE.chain(({ content, parsed }) => 
+        pipe(
+          createFileInTree({
+            workspaceId: params.workspaceId,
+            title: config.generateTitle(params),
+            folderPath: config.generateFolderPath(params),
+            type: config.fileType,
+            tags: [config.tag],
+            content,
+          }),
+          TE.map(result => ({ node: result.node, content, parsedContent: parsed }))
+        )
+      )
     );
-  };
 ```
 
-### 具体实例化
+#### 配置实例化
 
 ```typescript
+// Diary 配置
+const diaryConfig: TemplateConfig<CreateDiaryParams> = {
+  rootFolder: "Diary",
+  fileType: "diary",
+  tag: "diary",
+  generateTemplate: (params) => generateDiaryContent(params.date || new Date()),
+  generateFolderPath: (params) => {
+    const s = getDiaryFolderStructure(params.date || new Date());
+    return ["Diary", s.yearFolder, s.monthFolder, s.dayFolder];
+  },
+  generateTitle: (params) => getDiaryFolderStructure(params.date || new Date()).filename,
+};
+
 // Wiki 配置
 const wikiConfig: TemplateConfig<WikiCreationParams> = {
   rootFolder: "Wiki",
@@ -95,69 +111,57 @@ const wikiConfig: TemplateConfig<WikiCreationParams> = {
   generateTitle: (params) => params.name,
 };
 
-// Diary 配置
-const diaryConfig: TemplateConfig<CreateDiaryParams> = {
-  rootFolder: "Diary",
-  fileType: "diary", 
-  tag: "diary",
-  generateTemplate: (params) => generateDiaryContent(params.date || new Date()),
-  generateFolderPath: (params) => {
-    const structure = getDiaryFolderStructure(params.date || new Date());
-    return ["Diary", structure.yearFolder, structure.monthFolder, structure.dayFolder];
-  },
-  generateTitle: (params) => {
-    const structure = getDiaryFolderStructure(params.date || new Date());
-    return structure.filename;
-  },
-};
-
-// 实例化具体函数
-export const createWikiFile = createTemplatedFile(wikiConfig);
+// 实例化
 export const createDiary = createTemplatedFile(diaryConfig);
+export const createWiki = createTemplatedFile(wikiConfig);
 ```
 
-## 其他可抽象的模式
+### 其他可抽象的模式
 
-### 1. 标准 CRUD Actions
-
-发现多个实体有相似的 CRUD 操作时，考虑抽象：
+#### 1. 标准 CRUD Actions
 
 ```typescript
 // ❌ 重复：createNode, createDrawing, createWorkspace
-// ✅ 抽象：createEntity<T>(entityConfig)
+// ✅ 抽象：
+const createEntity = <T, R>(config: EntityConfig<T, R>) => 
+  (params: T): TE.TaskEither<AppError, R> => /* ... */;
 ```
 
-### 2. 导出功能模式
-
-多种导出格式有相似结构时：
+#### 2. 导出功能
 
 ```typescript
-// ❌ 重复：exportToMarkdown, exportToJSON, exportToOrgmode  
-// ✅ 抽象：exportWithFormat<T>(formatConfig)
+// ❌ 重复：exportToMarkdown, exportToJSON, exportToOrgmode
+// ✅ 抽象：
+const exportWithFormat = <T>(config: ExportConfig<T>) => 
+  (content: Content): TE.TaskEither<AppError, string> => /* ... */;
 ```
 
-### 3. 搜索过滤模式
-
-不同类型的搜索有相似逻辑时：
+#### 3. 搜索过滤
 
 ```typescript
 // ❌ 重复：searchNodes, searchWorkspaces, searchDrawings
-// ✅ 抽象：searchEntities<T>(searchConfig)
+// ✅ 抽象：
+const searchEntities = <T>(config: SearchConfig<T>) => 
+  (query: string): TE.TaskEither<AppError, T[]> => /* ... */;
 ```
 
 ## 抽象原则
 
 ### 何时抽象
 
-- **3 次规则**：相同模式出现 3 次时考虑抽象
-- **结构相似度 > 80%**：大部分逻辑相同，只有参数不同
-- **未来扩展性**：预期会有更多相似的实现
+| 条件 | 行动 |
+|------|------|
+| 相同模式出现 3 次 | 必须抽象 |
+| 结构相似度 > 80% | 考虑抽象 |
+| 预期会有更多实例 | 提前抽象 |
 
 ### 何时不抽象
 
-- **过度工程**：只有 2 个实例且不太可能扩展
-- **强制抽象**：为了抽象而抽象，导致代码复杂度增加
-- **业务差异大**：看似相似但业务逻辑差异很大
+| 条件 | 原因 |
+|------|------|
+| 只有 2 个实例且不会扩展 | 过度工程 |
+| 业务逻辑差异大 | 强制抽象增加复杂度 |
+| 为了抽象而抽象 | 代码可读性下降 |
 
 ### 抽象层级
 
@@ -165,7 +169,7 @@ export const createDiary = createTemplatedFile(diaryConfig);
 具体实现 → 模板函数 → 高阶函数 → 通用框架
 ```
 
-选择合适的抽象层级，避免过度抽象。
+选择合适的层级，避免过度抽象。
 
 ## 重构指导
 
@@ -183,6 +187,21 @@ export const createDiary = createTemplatedFile(diaryConfig);
 3. **配置实例化**：为每个具体场景创建配置
 4. **渐进式迁移**：逐步替换现有实现
 5. **测试验证**：确保功能不变
+
+## 文件组织建议
+
+```
+src/actions/
+├── templated/                    # 模板化文件创建
+│   ├── create-templated-file.action.ts  # 高阶函数
+│   ├── configs/
+│   │   ├── diary.config.ts       # Diary 配置
+│   │   ├── wiki.config.ts        # Wiki 配置
+│   │   └── index.ts
+│   ├── create-diary.action.ts    # 实例化导出
+│   ├── create-wiki.action.ts     # 实例化导出
+│   └── index.ts
+```
 
 ---
 
