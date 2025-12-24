@@ -1168,14 +1168,14 @@ src/
   - 预计时间：5分钟
   - 优先级：🔴 高
 
-- [-] 108. 迁移其他 Actions
+- [x] 108. 迁移其他 Actions
   - 移动 `routes/actions/create-diary.action.ts` → `actions/diary/`
   - 移动 `routes/actions/ensure-folder.action.ts` → `actions/node/`
   - 创建 `actions/diary/index.ts`
   - 预计时间：5分钟
   - 优先级：🔴 高
 
-- [ ] 109. 创建 Actions 统一导出
+- [x] 109. 创建 Actions 统一导出
   - 创建 `actions/index.ts`
   - 导出所有子模块
   - 预计时间：5分钟

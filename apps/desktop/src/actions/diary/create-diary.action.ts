@@ -13,7 +13,9 @@
  */
 
 import * as E from "fp-ts/Either";
+import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
+import { z } from "zod";
 import { createFileInTree } from "@/actions/node";
 import {
 	generateDiaryContent,
@@ -22,6 +24,18 @@ import {
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
 import type { NodeInterface } from "@/types/node";
+
+// ==============================
+// Schema
+// ==============================
+
+/**
+ * 创建日记参数 Schema
+ */
+const createDiaryParamsSchema = z.object({
+	workspaceId: z.string().uuid("工作区 ID 必须是有效的 UUID"),
+	date: z.date().optional(),
+});
 
 // ==============================
 // Constants
@@ -75,56 +89,67 @@ export const createDiary = (
 ): TE.TaskEither<AppError, DiaryCreationResult> => {
 	logger.start("[Action] 创建日记...");
 
-	const date = params.date || new Date();
-	const structure = getDiaryFolderStructure(date);
-
-	// 生成日记内容
-	const content = generateDiaryContent(date);
-	let parsedContent: unknown;
-
-	try {
-		parsedContent = JSON.parse(content);
-	} catch (error) {
-		logger.error("[Action] 日记内容解析失败:", error);
-		return TE.left({
-			type: "VALIDATION_ERROR",
-			message: "日记内容生成失败",
-		});
-	}
-
-	// 使用 createFileInTree 创建日记文件
-	return TE.tryCatch(
-		async () => {
-			const result = await createFileInTree({
-				workspaceId: params.workspaceId,
-				title: structure.filename,
-				folderPath: [
-					DIARY_ROOT_FOLDER,
-					structure.yearFolder,
-					structure.monthFolder,
-					structure.dayFolder,
-				],
-				type: "diary",
-				tags: ["diary"],
-				content,
-				foldersCollapsed: true,
-			});
-
+	return pipe(
+		// 1. 校验参数
+		createDiaryParamsSchema.safeParse(params),
+		(result) =>
+			result.success
+				? E.right(result.data)
+				: E.left({
+						type: "VALIDATION_ERROR" as const,
+						message: `参数校验失败: ${result.error.issues[0]?.message || "未知错误"}`,
+					}),
+		TE.fromEither,
+		// 2. 准备数据
+		TE.map((validParams) => {
+			const date = validParams.date || new Date();
+			const structure = getDiaryFolderStructure(date);
+			const content = generateDiaryContent(date);
+			return { validParams, date, structure, content };
+		}),
+		// 3. 解析内容
+		TE.chain(({ validParams, structure, content }) =>
+			pipe(
+				E.tryCatch(
+					() => JSON.parse(content),
+					(error) => ({
+						type: "VALIDATION_ERROR" as const,
+						message: `内容解析失败: ${error instanceof Error ? error.message : String(error)}`,
+					}),
+				),
+				TE.fromEither,
+				TE.map((parsedContent) => ({ validParams, structure, content, parsedContent })),
+			),
+		),
+		// 4. 创建文件
+		TE.chain(({ validParams, structure, content, parsedContent }) =>
+			pipe(
+				createFileInTree({
+					workspaceId: validParams.workspaceId,
+					title: structure.filename,
+					folderPath: [
+						DIARY_ROOT_FOLDER,
+						structure.yearFolder,
+						structure.monthFolder,
+						structure.dayFolder,
+					],
+					type: "diary",
+					tags: ["diary"],
+					content,
+					foldersCollapsed: true,
+				}),
+				TE.map((result) => ({
+					node: result.node,
+					content,
+					parsedContent,
+				})),
+			),
+		),
+		// 5. 记录成功日志
+		TE.tap((result) => {
 			logger.success("[Action] 日记创建成功:", result.node.id);
-
-			return {
-				node: result.node,
-				content,
-				parsedContent,
-			};
-		},
-		(error): AppError => {
-			logger.error("[Action] 日记创建失败:", error);
-			return {
-				type: "DB_ERROR",
-				message: `日记创建失败: ${error instanceof Error ? error.message : String(error)}`,
-			};
-		},
+			return TE.right(result);
+		}),
 	);
 };
 
