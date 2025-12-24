@@ -42,20 +42,14 @@ export {
 // Workspace Actions
 // ============================================================================
 
-// 创建工作区
+// Workspace actions (从新位置导入)
 export {
 	type CreateWorkspaceParams,
 	createWorkspace,
-} from "./create-workspace.action";
-
-// 删除工作区
-export { deleteWorkspace } from "./delete-workspace.action";
-
-// 更新工作区
-export {
+	deleteWorkspace,
 	type UpdateWorkspaceParams,
 	updateWorkspace,
-} from "./update-workspace.action";
+} from "@/actions/workspace";
 
 // ============================================================================
 // Drawing Actions

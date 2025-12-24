@@ -7,3 +7,6 @@
 
 // Node actions
 export * from "./node";
+
+// Workspace actions
+export * from "./workspace";
