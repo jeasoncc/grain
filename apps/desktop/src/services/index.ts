@@ -33,15 +33,6 @@ export {
 	ensureRootFolder,
 	ensureRootFolderAsync,
 } from "@/actions/node";
-
-// Diary functions (从 routes/actions 导入)
-export {
-	type CreateDiaryParams,
-	createDiary,
-	createDiaryAsync,
-	DIARY_ROOT_FOLDER,
-	type DiaryCreationResult,
-} from "@/routes/actions/create-diary.action";
 // 导出日记工具函数
 export {
 	type DiaryFolderStructure,
@@ -117,6 +108,14 @@ export {
 	type WikiCreationResult,
 	type WikiFileEntry,
 } from "@/fn/wiki";
+// Diary functions (从 routes/actions 导入)
+export {
+	type CreateDiaryParams,
+	createDiary,
+	createDiaryAsync,
+	DIARY_ROOT_FOLDER,
+	type DiaryCreationResult,
+} from "@/routes/actions/create-diary.action";
 // Export (从 fn/export 和 types/export 重新导出)
 export type { ExportFormat, ExportOptions } from "@/types/export";
 // Import-Export (从新架构重新导出)

@@ -55,24 +55,16 @@ export {
 // Drawing Actions
 // ============================================================================
 
-// 创建绘图
+// Drawing actions (从新位置导入)
 export {
 	type CreateDrawingParams,
 	createDrawing,
 	createDrawingAsync,
-} from "./create-drawing.action";
-
-// 删除绘图
-export { deleteDrawing } from "./delete-drawing.action";
-
-// 重命名绘图
-export { renameDrawing } from "./rename-drawing.action";
-
-// 保存绘图内容
-export {
+	deleteDrawing,
+	renameDrawing,
 	type SaveDrawingContentParams,
 	saveDrawingContent,
-} from "./save-drawing-content.action";
+} from "@/actions/drawing";
 
 // ============================================================================
 // Export Actions

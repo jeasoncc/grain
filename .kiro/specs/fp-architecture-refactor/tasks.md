@@ -1133,7 +1133,7 @@ src/
   - 预计时间：15分钟
   - 优先级：🔴 高
 
-- [-] 104. 迁移 Workspace Actions
+- [x] 104. 迁移 Workspace Actions
   - 移动 `routes/actions/create-workspace.action.ts` → `actions/workspace/`
   - 移动 `routes/actions/delete-workspace.action.ts` → `actions/workspace/`
   - 移动 `routes/actions/update-workspace.action.ts` → `actions/workspace/`
@@ -1142,7 +1142,7 @@ src/
   - 预计时间：10分钟
   - 优先级：🔴 高
 
-- [ ] 105. 迁移 Drawing Actions
+- [-] 105. 迁移 Drawing Actions
   - 移动 `routes/actions/create-drawing.action.ts` → `actions/drawing/`
   - 移动 `routes/actions/delete-drawing.action.ts` → `actions/drawing/`
   - 移动 `routes/actions/rename-drawing.action.ts` → `actions/drawing/`
