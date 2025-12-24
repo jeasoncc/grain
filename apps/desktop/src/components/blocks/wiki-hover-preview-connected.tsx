@@ -4,9 +4,9 @@
  * 连接层：提供数据获取逻辑，将纯展示组件连接到数据源
  */
 
-import { useCallback } from "react";
 import * as E from "fp-ts/Either";
-import { getNodeById, getContentByNodeId } from "@/db";
+import { useCallback } from "react";
+import { getContentByNodeId, getNodeById } from "@/db";
 import { WikiHoverPreview, type WikiPreviewData } from "./wiki-hover-preview";
 
 interface WikiHoverPreviewConnectedProps {
@@ -48,10 +48,11 @@ export function WikiHoverPreviewConnected({
 					getContentByNodeId(id)(),
 					getNodeById(id)(),
 				]);
-				
-				const nodeContent = E.isRight(contentResult) && contentResult.right 
-					? contentResult.right.content 
-					: undefined;
+
+				const nodeContent =
+					E.isRight(contentResult) && contentResult.right
+						? contentResult.right.content
+						: undefined;
 				const node = E.isRight(nodeResult) ? nodeResult.right : undefined;
 
 				const title = node?.title || "Unknown";

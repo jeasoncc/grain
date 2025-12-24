@@ -74,7 +74,7 @@ export function EditorTabs({
 	const tabMaxWidth = useMemo(() => getTabMaxWidth(tabs.length), [tabs.length]);
 
 	// 检查是否需要显示滚动按钮
-	const checkScrollState = () => {
+	const checkScrollState = useCallback(() => {
 		const container = scrollContainerRef.current;
 		if (!container) return;
 
@@ -84,13 +84,13 @@ export function EditorTabs({
 		setCanScrollRight(
 			container.scrollLeft < container.scrollWidth - container.clientWidth - 1,
 		);
-	};
+	}, [tabs.length]); // Add tabs.length as dependency so it re-creates when tabs change
 
 	useEffect(() => {
 		checkScrollState();
 		window.addEventListener("resize", checkScrollState);
 		return () => window.removeEventListener("resize", checkScrollState);
-	}, [tabs.length]);
+	}, [checkScrollState]);
 
 	// 滚动到活动标签
 	useEffect(() => {

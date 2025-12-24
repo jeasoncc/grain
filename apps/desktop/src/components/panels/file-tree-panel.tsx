@@ -8,14 +8,20 @@
  */
 
 import { useNavigate } from "@tanstack/react-router";
+import * as E from "fp-ts/Either";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import * as E from "fp-ts/Either";
 import { FileTree } from "@/components/file-tree";
 import { useConfirm } from "@/components/ui/confirm";
+import { getContentByNodeId, getNodeById, setNodeCollapsed } from "@/db";
 import { useNodesByWorkspace } from "@/hooks/use-node";
-import { createDiaryAsync, createNode, deleteNode, moveNode, renameNode } from "@/routes/actions";
-import { getNodeById, setNodeCollapsed, getContentByNodeId } from "@/db";
+import {
+	createDiaryAsync,
+	createNode,
+	deleteNode,
+	moveNode,
+	renameNode,
+} from "@/routes/actions";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSelectionStore } from "@/stores/selection.store";
 import type { NodeType } from "@/types/node";
@@ -112,7 +118,14 @@ export function FileTreePanel({
 				navigate({ to: "/" });
 			}
 		},
-		[workspaceId, openTab, navigate, editorStates, updateEditorState],
+		[
+			workspaceId,
+			openTab,
+			navigate,
+			editorStates,
+			updateEditorState,
+			setSelectedNodeId,
+		],
 	);
 
 	// Handle folder creation
@@ -130,11 +143,11 @@ export function FileTreePanel({
 					type: "folder",
 					title: "New Folder",
 				})();
-				
+
 				if (E.isLeft(result)) {
 					throw new Error(result.left.message);
 				}
-				
+
 				toast.success("Folder created");
 				// Note: No need to setActivePanel here as we're already in FileTreePanel
 				// which only renders when activePanel === "files"
@@ -168,11 +181,11 @@ export function FileTreePanel({
 					title,
 					content,
 				})();
-				
+
 				if (E.isLeft(newNodeResult)) {
 					throw new Error(newNodeResult.left.message);
 				}
-				
+
 				const newNode = newNodeResult.right;
 
 				toast.success(`${type === "canvas" ? "Canvas" : "File"} created`);
@@ -213,7 +226,7 @@ export function FileTreePanel({
 
 			try {
 				const result = await deleteNode(nodeId)();
-				
+
 				if (E.isLeft(result)) {
 					throw new Error(result.left.message);
 				}
@@ -242,7 +255,7 @@ export function FileTreePanel({
 
 			try {
 				const result = await renameNode({ nodeId, title: newTitle.trim() })();
-				
+
 				if (E.isLeft(result)) {
 					throw new Error(result.left.message);
 				}
@@ -258,12 +271,12 @@ export function FileTreePanel({
 	const handleMoveNode = useCallback(
 		async (nodeId: string, newParentId: string | null, newIndex: number) => {
 			try {
-				const result = await moveNode({ 
-					nodeId, 
-					newParentId, 
-					newOrder: newIndex 
+				const result = await moveNode({
+					nodeId,
+					newParentId,
+					newOrder: newIndex,
 				})();
-				
+
 				if (E.isLeft(result)) {
 					throw new Error(result.left.message);
 				}
@@ -312,7 +325,7 @@ export function FileTreePanel({
 		async (nodeId: string, collapsed: boolean) => {
 			try {
 				const result = await setNodeCollapsed(nodeId, collapsed)();
-				
+
 				if (E.isLeft(result)) {
 					throw new Error(result.left.message);
 				}

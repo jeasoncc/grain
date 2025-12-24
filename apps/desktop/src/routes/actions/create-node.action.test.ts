@@ -55,11 +55,9 @@ const mockNode = {
 describe("createNode", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		
+
 		// 设置默认 mock 返回值
-		vi.mocked(getNextOrder).mockReturnValue(() =>
-			Promise.resolve(E.right(0)),
-		);
+		vi.mocked(getNextOrder).mockReturnValue(() => Promise.resolve(E.right(0)));
 		vi.mocked(addNode).mockReturnValue(() =>
 			Promise.resolve(E.right(mockNode)),
 		);
@@ -109,12 +107,14 @@ describe("createNode", () => {
 	it("应该成功创建文件夹节点", async () => {
 		// 重置 mock 以确保清洁状态
 		vi.clearAllMocks();
-		
+
 		// 设置文件夹节点的 mock
-		const folderNode = { ...mockNode, title: "测试文件夹", type: "folder" as const };
-		vi.mocked(getNextOrder).mockReturnValue(() =>
-			Promise.resolve(E.right(0)),
-		);
+		const folderNode = {
+			...mockNode,
+			title: "测试文件夹",
+			type: "folder" as const,
+		};
+		vi.mocked(getNextOrder).mockReturnValue(() => Promise.resolve(E.right(0)));
 		vi.mocked(addNode).mockReturnValue(() =>
 			Promise.resolve(E.right(folderNode)),
 		);
@@ -129,7 +129,7 @@ describe("createNode", () => {
 		const result = await createNode(params)();
 
 		expect(E.isRight(result)).toBe(true);
-		
+
 		// 文件夹不应该创建内容记录
 		expect(addContent).not.toHaveBeenCalled();
 	});

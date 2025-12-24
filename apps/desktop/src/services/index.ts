@@ -46,7 +46,6 @@ export {
 	generatePrintHtml,
 	getNodeContents,
 } from "@/domain/export";
-export * from "@/fn/updater";
 export {
 	clearDefaultExportPath,
 	type ExportPathService,
@@ -84,6 +83,7 @@ export {
 	type SearchResultType,
 	searchEngine,
 } from "@/fn/search";
+export * from "@/fn/updater";
 // Wiki (从 fn/wiki 重新导出)
 export {
 	checkMigrationNeeded,

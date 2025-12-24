@@ -8,10 +8,10 @@
  */
 
 import { type MentionEntry, MultiEditorContainer } from "@grain/editor";
+import * as E from "fp-ts/Either";
 import type { SerializedEditorState } from "lexical";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import * as E from "fp-ts/Either";
 import { CanvasEditor } from "@/components/blocks/canvas-editor";
 import { KeyboardShortcutsHelp } from "@/components/blocks/keyboard-shortcuts-help";
 import { SaveStatusIndicator } from "@/components/blocks/save-status-indicator";
@@ -28,6 +28,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getContentByNodeId } from "@/db";
 import { saveService } from "@/fn/save";
 import { countWordsFromLexicalState } from "@/fn/word-count";
 import { useManualSave } from "@/hooks/use-save";
@@ -35,7 +36,6 @@ import { useSettings } from "@/hooks/use-settings";
 import { useWikiFiles } from "@/hooks/use-wiki";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
 import logger from "@/log";
-import { getContentByNodeId } from "@/db";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSaveStore } from "@/stores/save.store";
 import { useSelectionStore } from "@/stores/selection.store";

@@ -1,11 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import * as E from "fp-ts/Either";
 import { useState } from "react";
 import { toast } from "sonner";
-import * as E from "fp-ts/Either";
 import { DevOnlyPage } from "@/components/dev-only";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import logger from "@/log";
 import {
 	clearAllData,
 	clearCookies,
@@ -14,6 +13,7 @@ import {
 	clearSessionStorage,
 	getStorageStats,
 } from "@/db/clear-data";
+import logger from "@/log";
 
 export const Route = createFileRoute("/test-clear-data")({
 	component: () => (

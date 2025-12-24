@@ -7,9 +7,9 @@
  * - 平滑过渡动画
  */
 
-export type { ThemeMode } from "@/types/theme";
 export {
 	initializeTheme,
 	useTheme,
 	useThemeStore,
 } from "@/stores/theme.store";
+export type { ThemeMode } from "@/types/theme";

@@ -855,7 +855,7 @@
 
 ### 12.3 React 最佳实践（预计 1 小时）
 
-- [ ] 82. 修复 `useExhaustiveDependencies` 错误（5 个）
+- [-] 82. 修复 `useExhaustiveDependencies` 错误（5 个）
   - 添加缺失的依赖项到依赖数组
   - 影响文件：
     - `src/components/blocks/update-checker.tsx:83`

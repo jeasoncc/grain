@@ -1,5 +1,6 @@
 // Update checker component
 
+import * as E from "fp-ts/Either";
 import {
 	AlertCircle,
 	CheckCircle,
@@ -7,8 +8,7 @@ import {
 	Info,
 	RefreshCw,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import * as E from "fp-ts/Either";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -23,7 +23,6 @@ import {
 	checkForUpdates,
 	downloadAndInstallUpdate,
 	type UpdateInfo,
-	type UpdateProgress,
 } from "@/fn/updater";
 
 type CheckStatus =
@@ -43,7 +42,7 @@ export function UpdateChecker() {
 	const [checkStatus, setCheckStatus] = useState<CheckStatus>("idle");
 	const [errorMessage, setErrorMessage] = useState<string>("");
 
-	const handleCheckForUpdates = async () => {
+	const handleCheckForUpdates = useCallback(async () => {
 		setIsChecking(true);
 		setCheckStatus("checking");
 		setErrorMessage("");
@@ -70,7 +69,7 @@ export function UpdateChecker() {
 		} finally {
 			setIsChecking(false);
 		}
-	};
+	}, []);
 
 	const handleDownloadAndInstall = async () => {
 		setIsDownloading(true);
@@ -91,7 +90,7 @@ export function UpdateChecker() {
 	// Check for updates on mount
 	useEffect(() => {
 		handleCheckForUpdates();
-	}, []);
+	}, [handleCheckForUpdates]);
 
 	// Auto-clear status message after 5 seconds
 	useEffect(() => {

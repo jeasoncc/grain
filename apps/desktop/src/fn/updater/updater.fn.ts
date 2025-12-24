@@ -7,8 +7,8 @@
  */
 
 import * as E from "fp-ts/Either";
-import * as TE from "fp-ts/TaskEither";
 import { pipe } from "fp-ts/function";
+import * as TE from "fp-ts/TaskEither";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
 
@@ -81,13 +81,20 @@ export const checkForUpdates = (): TE.TaskEither<AppError, UpdateInfo> =>
 				};
 			} catch (error) {
 				logger.error("[Updater] 检查更新失败:", error);
-				
+
 				// 提供更有用的错误信息
-				const errorMessage = error instanceof Error ? error.message : String(error);
-				if (errorMessage.includes("404") || errorMessage.includes("Not Found")) {
+				const errorMessage =
+					error instanceof Error ? error.message : String(error);
+				if (
+					errorMessage.includes("404") ||
+					errorMessage.includes("Not Found")
+				) {
 					throw new Error("尚未发布任何版本");
 				}
-				if (errorMessage.includes("network") || errorMessage.includes("fetch")) {
+				if (
+					errorMessage.includes("network") ||
+					errorMessage.includes("fetch")
+				) {
 					throw new Error("网络错误 - 请检查网络连接");
 				}
 				throw error;
@@ -96,14 +103,14 @@ export const checkForUpdates = (): TE.TaskEither<AppError, UpdateInfo> =>
 		(error): AppError => ({
 			type: "EXPORT_ERROR", // 使用现有的错误类型，或者可以扩展为 UPDATE_ERROR
 			message: `检查更新失败: ${error instanceof Error ? error.message : String(error)}`,
-		})
+		}),
 	);
 
 /**
  * 下载并安装更新
  */
 export const downloadAndInstallUpdate = (
-	onProgress?: (progress: UpdateProgress) => void
+	onProgress?: (progress: UpdateProgress) => void,
 ): TE.TaskEither<AppError, void> =>
 	TE.tryCatch(
 		async (): Promise<void> => {
@@ -134,14 +141,15 @@ export const downloadAndInstallUpdate = (
 						break;
 					case "Progress": {
 						downloaded += event.data.chunkLength;
-						const percentage = contentLength > 0 ? (downloaded / contentLength) * 100 : 0;
-						
+						const percentage =
+							contentLength > 0 ? (downloaded / contentLength) * 100 : 0;
+
 						const progress: UpdateProgress = {
 							downloaded,
 							total: contentLength,
 							percentage,
 						};
-						
+
 						onProgress?.(progress);
 						logger.info(`[Updater] 下载进度: ${percentage.toFixed(1)}%`);
 						break;
@@ -159,7 +167,7 @@ export const downloadAndInstallUpdate = (
 		(error): AppError => ({
 			type: "EXPORT_ERROR", // 使用现有的错误类型
 			message: `下载安装更新失败: ${error instanceof Error ? error.message : String(error)}`,
-		})
+		}),
 	);
 
 // ==============================
@@ -182,12 +190,12 @@ export const formatUpdateInfo = (updateInfo: UpdateInfo): string => {
  */
 export const formatProgress = (progress: UpdateProgress): string => {
 	const { downloaded, total, percentage } = progress;
-	
+
 	if (total > 0) {
 		const downloadedMB = (downloaded / 1024 / 1024).toFixed(1);
 		const totalMB = (total / 1024 / 1024).toFixed(1);
 		return `${downloadedMB}MB / ${totalMB}MB (${percentage.toFixed(1)}%)`;
 	}
-	
+
 	return `${(downloaded / 1024 / 1024).toFixed(1)}MB`;
 };

@@ -15,9 +15,9 @@
 import * as E from "fp-ts/Either";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+	type CreateDrawingParams,
 	createDrawing,
 	createDrawingAsync,
-	type CreateDrawingParams,
 } from "./create-drawing.action";
 
 // ============================================================================
@@ -55,14 +55,16 @@ const createDrawingWithInvalidParams = (params: unknown) =>
 /**
  * 创建 mock 绘图数据
  */
-const createMockDrawing = (overrides: Partial<{
-	id: string;
-	project: string;
-	name: string;
-	width: number;
-	height: number;
-	content: string;
-}> = {}) => ({
+const createMockDrawing = (
+	overrides: Partial<{
+		id: string;
+		project: string;
+		name: string;
+		width: number;
+		height: number;
+		content: string;
+	}> = {},
+) => ({
 	id: "550e8400-e29b-41d4-a716-446655440001",
 	project: "550e8400-e29b-41d4-a716-446655440000",
 	name: "测试绘图",

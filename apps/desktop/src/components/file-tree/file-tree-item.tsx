@@ -31,8 +31,8 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import type { TreeNode } from "@/fn/node";
+import { cn } from "@/lib/utils";
 import type { NodeType } from "@/types/node";
 
 interface DragState {

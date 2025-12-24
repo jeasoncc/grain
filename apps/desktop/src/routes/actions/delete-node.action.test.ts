@@ -32,7 +32,7 @@ import { deleteNodeWithChildren } from "@/db/node.db.fn";
 describe("deleteNode", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		
+
 		// 设置默认 mock 返回值
 		vi.mocked(deleteNodeWithChildren).mockReturnValue(() =>
 			Promise.resolve(E.right(undefined)),
