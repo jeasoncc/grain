@@ -12,17 +12,11 @@ export {
 	runMigrationIfNeeded,
 } from "./wiki.migrate.fn";
 export {
-	createWikiFile,
-	createWikiFileAsync,
-	ensureWikiFolderAsync,
 	generateWikiTemplate,
 	getWikiFiles,
 	getWikiFilesAsync,
 	WIKI_ROOT_FOLDER,
 	WIKI_TAG,
-	type WikiCreationParams,
-	type WikiCreationResult,
-	type WikiFileEntry,
 } from "./wiki.resolve.fn";
 export {
 	type WikiCreationParams as WikiCreationParamsType,
@@ -32,3 +26,6 @@ export {
 	wikiCreationResultSchema,
 	wikiFileEntrySchema,
 } from "./wiki.schema";
+
+// NOTE: Wiki file creation has been moved to actions/templated/create-wiki.action.ts
+// Use createWiki or createWikiAsync from that module instead.

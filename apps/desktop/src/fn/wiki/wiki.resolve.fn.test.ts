@@ -6,7 +6,6 @@
 import * as E from "fp-ts/Either";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-	createWikiFileAsync,
 	generateWikiTemplate,
 	getWikiFilesAsync,
 } from "./wiki.resolve.fn";
@@ -31,11 +30,6 @@ vi.mock("@/db/database", () => ({
 	},
 }));
 
-vi.mock("@/actions", () => ({
-	createFileInTree: vi.fn(),
-	ensureRootFolder: vi.fn(),
-}));
-
 vi.mock("@/log/index", () => ({
 	default: {
 		info: vi.fn(),
@@ -47,7 +41,6 @@ vi.mock("@/log/index", () => ({
 	},
 }));
 
-import { createFileInTree } from "@/actions/node";
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/db";
 import { database } from "@/db/database";
 
@@ -151,90 +144,7 @@ describe("Wiki Resolution Functions", () => {
 		});
 	});
 
-	// ==========================================================================
-	// createWikiFileAsync Tests
-	// ==========================================================================
-
-	describe("createWikiFileAsync", () => {
-		it("应该成功创建 Wiki 文件", async () => {
-			vi.mocked(createFileInTree).mockResolvedValue({
-				node: mockNode,
-				parentFolder: { ...mockNode, type: "folder" as const },
-			});
-
-			const result = await createWikiFileAsync({
-				workspaceId: "ws-1",
-				name: "测试 Wiki",
-			})();
-
-			expect(E.isRight(result)).toBe(true);
-			if (E.isRight(result)) {
-				expect(result.right.node.id).toBe("node-1");
-				expect(result.right.content).toBeDefined();
-				expect(result.right.parsedContent).toBeDefined();
-			}
-		});
-
-		it("应该使用提供的内容而不是模板", async () => {
-			const customContent = JSON.stringify({ root: { children: [] } });
-			vi.mocked(createFileInTree).mockResolvedValue({
-				node: mockNode,
-				parentFolder: { ...mockNode, type: "folder" as const },
-			});
-
-			const result = await createWikiFileAsync({
-				workspaceId: "ws-1",
-				name: "测试",
-				content: customContent,
-				useTemplate: false,
-			})();
-
-			expect(E.isRight(result)).toBe(true);
-			if (E.isRight(result)) {
-				expect(result.right.content).toBe(customContent);
-			}
-		});
-
-		it("应该处理无效的参数", async () => {
-			const result = await createWikiFileAsync({
-				workspaceId: "invalid-id",
-				name: "",
-			} as any)();
-
-			expect(E.isLeft(result)).toBe(true);
-			if (E.isLeft(result)) {
-				expect(result.left.type).toBe("VALIDATION_ERROR");
-			}
-		});
-
-		it("应该处理创建文件失败", async () => {
-			vi.mocked(createFileInTree).mockRejectedValue(new Error("创建失败"));
-
-			const result = await createWikiFileAsync({
-				workspaceId: "ws-1",
-				name: "测试",
-			})();
-
-			expect(E.isLeft(result)).toBe(true);
-			if (E.isLeft(result)) {
-				expect(result.left.type).toBe("DB_ERROR");
-			}
-		});
-
-		it("应该处理无效的 JSON 内容", async () => {
-			const result = await createWikiFileAsync({
-				workspaceId: "ws-1",
-				name: "测试",
-				content: "invalid json {",
-				useTemplate: false,
-			})();
-
-			expect(E.isLeft(result)).toBe(true);
-			if (E.isLeft(result)) {
-				expect(result.left.type).toBe("VALIDATION_ERROR");
-			}
-		});
-	});
+	// NOTE: createWikiFileAsync tests have been moved to actions/templated/create-wiki.action.test.ts
 
 	// ==========================================================================
 	// getWikiFilesAsync Tests

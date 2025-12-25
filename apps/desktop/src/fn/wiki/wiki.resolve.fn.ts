@@ -11,7 +11,6 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { createFileInTree, ensureRootFolder } from "@/actions/node";
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/db";
 import { database } from "@/db/database";
 import type { AppError } from "@/lib/error.types";
@@ -19,13 +18,7 @@ import logger from "@/log";
 import type { NodeInterface } from "@/types/node";
 import { WikiFileEntryBuilder } from "./wiki.builder";
 import type {
-	WikiCreationParams,
-	WikiCreationResult,
 	WikiFileEntry,
-} from "./wiki.schema";
-import {
-	wikiCreationParamsSchema,
-	wikiCreationResultSchema,
 } from "./wiki.schema";
 
 // ==============================
@@ -50,19 +43,19 @@ export const WIKI_TAG = "wiki";
  *
  * @param workspaceId - The workspace ID
  * @returns TaskEither<AppError, NodeInterface>
+ * 
+ * @deprecated Use ensureRootFolder from @/actions/node instead
  */
 export const ensureWikiFolderAsync = (
 	workspaceId: string,
 ): TE.TaskEither<AppError, NodeInterface> => {
 	logger.start("[Wiki] 确保 Wiki 文件夹存在...");
+	logger.warn("[Wiki] ensureWikiFolderAsync is deprecated. Use ensureRootFolder from @/actions/node instead.");
 
-	return pipe(
-		ensureRootFolder(workspaceId, WIKI_ROOT_FOLDER, false),
-		TE.tap((folder) => {
-			logger.success("[Wiki] Wiki 文件夹已就绪:", folder.id);
-			return TE.right(folder);
-		}),
-	);
+	return TE.left({
+		type: "VALIDATION_ERROR",
+		message: "ensureWikiFolderAsync is deprecated. Use ensureRootFolder from @/actions/node instead.",
+	});
 };
 
 // ==============================
@@ -317,81 +310,8 @@ function parseJsonContent(content: string): E.Either<AppError, unknown> {
 	}
 }
 
-/**
- * Create a new wiki file in the wiki folder with "wiki" tag
- *
- * Requirements: 1.2
- *
- * @param params - Creation parameters
- * @returns TaskEither<AppError, WikiCreationResult>
- */
-export const createWikiFileAsync = (
-	params: WikiCreationParams,
-): TE.TaskEither<AppError, WikiCreationResult> => {
-	logger.start("[Wiki] 创建 Wiki 文件...");
-
-	return TE.tryCatch(
-		async () => {
-			// 1. 校验参数
-			const validParams = wikiCreationParamsSchema.parse(params);
-
-			// 2. 生成内容
-			let finalContent = validParams.content || "";
-			if (!validParams.content && validParams.useTemplate !== false) {
-				finalContent = generateWikiTemplate(validParams.name);
-			}
-
-			// 3. 解析内容
-			const parsedContent = JSON.parse(finalContent || "{}");
-
-			// 4. 创建文件
-			const { node } = await createFileInTree({
-				workspaceId: validParams.workspaceId,
-				title: validParams.name,
-				folderPath: [WIKI_ROOT_FOLDER],
-				type: "file",
-				tags: [WIKI_TAG],
-				content: finalContent,
-			});
-
-			// 5. 校验结果
-			const result = wikiCreationResultSchema.parse({
-				node,
-				content: finalContent,
-				parsedContent,
-			});
-
-			logger.success("[Wiki] Wiki 文件创建成功:", node.id);
-			return result;
-		},
-		(error) =>
-			({
-				type:
-					error instanceof Error && error.message.includes("校验")
-						? "VALIDATION_ERROR"
-						: "DB_ERROR",
-				message: `创建 Wiki 文件失败: ${error instanceof Error ? error.message : "未知错误"}`,
-			}) as AppError,
-	);
-};
-
-/**
- * Create a new wiki file (async wrapper)
- *
- * @param params - Creation parameters
- * @returns Promise<WikiCreationResult>
- */
-export async function createWikiFile(
-	params: WikiCreationParams,
-): Promise<WikiCreationResult> {
-	const result = await createWikiFileAsync(params)();
-
-	if (E.isLeft(result)) {
-		throw new Error(`创建 Wiki 文件失败: ${result.left.message}`);
-	}
-
-	return result.right;
-}
+// NOTE: Wiki file creation has been moved to actions/templated/create-wiki.action.ts
+// Use createWiki or createWikiAsync from that module instead.
 
 // ==============================
 // Wiki File Queries

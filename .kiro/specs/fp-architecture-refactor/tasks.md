@@ -1281,7 +1281,7 @@ src/
 
 ### 18.2 重构现有模块
 
-- [-] 116. 重构 Diary 创建
+- [x] 116. 重构 Diary 创建
   - 使用高阶函数重构 `create-diary.action.ts`
   - 移动到 `actions/templated/create-diary.action.ts`
   - 更新所有导入路径
@@ -1289,7 +1289,7 @@ src/
   - 预计时间：20分钟
   - 优先级：🔴 高
 
-- [ ] 117. 重构 Wiki 创建
+- [x] 117. 重构 Wiki 创建
   - 使用高阶函数重构 wiki 创建逻辑
   - 创建 `actions/templated/create-wiki.action.ts`
   - 从 `fn/wiki/wiki.resolve.fn.ts` 移除 `createWikiFileAsync`

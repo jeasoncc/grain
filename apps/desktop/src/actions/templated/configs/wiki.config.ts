@@ -14,7 +14,7 @@
 import { z } from "zod";
 import dayjs from "dayjs";
 import type { TemplateConfig } from "../create-templated-file.action";
-import { generateWikiTemplate } from "@/fn/wiki/wiki.resolve.fn";
+import { generateWikiTemplate } from "@/fn/wiki";
 
 // ==============================
 // Types
