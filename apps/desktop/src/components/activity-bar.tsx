@@ -138,8 +138,6 @@ export function ActivityBar(): React.ReactElement {
 
 	// Editor tabs store for opening diary
 	const openTab = useEditorTabsStore((s) => s.openTab);
-
-	// Get icons
 	const FilesIcon = iconTheme.icons.activityBar.files;
 	const SearchIcon = iconTheme.icons.activityBar.search;
 	const DiaryIcon = iconTheme.icons.activityBar.diary;
@@ -154,9 +152,6 @@ export function ActivityBar(): React.ReactElement {
 	const handleImportClick = useCallback(() => {
 		fileInputRef.current?.click();
 	}, []);
-
-	// Get updateEditorState for pre-loading content
-	const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
 
 	// Handle diary creation from Calendar icon
 	// TODO: Implement diary creation using new architecture
