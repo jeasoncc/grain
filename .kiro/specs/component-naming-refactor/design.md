@@ -76,144 +76,189 @@ components/
 components/
 ├── activity-bar/
 │   ├── activity-bar.view.fn.tsx
+│   ├── activity-bar.view.fn.test.tsx
 │   ├── activity-bar.container.fn.tsx
+│   ├── activity-bar.container.fn.test.tsx
 │   ├── activity-bar.types.ts
 │   └── index.ts
 │
 ├── wiki-hover-preview/
 │   ├── wiki-hover-preview.view.fn.tsx
+│   ├── wiki-hover-preview.view.fn.test.tsx
 │   ├── wiki-hover-preview.container.fn.tsx
+│   ├── wiki-hover-preview.container.fn.test.tsx
 │   ├── wiki-hover-preview.types.ts
 │   └── index.ts
 │
 ├── global-search/
 │   ├── global-search.view.fn.tsx
+│   ├── global-search.view.fn.test.tsx
 │   ├── global-search.container.fn.tsx
+│   ├── global-search.container.fn.test.tsx
 │   ├── global-search.types.ts
 │   └── index.ts
 │
 ├── backup-manager/
 │   ├── backup-manager.view.fn.tsx
+│   ├── backup-manager.view.fn.test.tsx
 │   ├── backup-manager.container.fn.tsx
+│   ├── backup-manager.container.fn.test.tsx
 │   ├── backup-manager.types.ts
 │   └── index.ts
 │
 ├── canvas-editor/
 │   ├── canvas-editor.view.fn.tsx
+│   ├── canvas-editor.view.fn.test.tsx
 │   ├── canvas-editor.container.fn.tsx
+│   ├── canvas-editor.container.fn.test.tsx
 │   ├── canvas-editor.types.ts
 │   └── index.ts
 │
 ├── export-dialog/
 │   ├── export-dialog.view.fn.tsx
+│   ├── export-dialog.view.fn.test.tsx
 │   ├── export-dialog.container.fn.tsx
+│   ├── export-dialog.container.fn.test.tsx
 │   ├── export-dialog.types.ts
 │   └── index.ts
 │
 ├── keyboard-shortcuts-help/
 │   ├── keyboard-shortcuts-help.view.fn.tsx
+│   ├── keyboard-shortcuts-help.view.fn.test.tsx
 │   ├── keyboard-shortcuts-help.types.ts
 │   └── index.ts
 │
 ├── save-status-indicator/
 │   ├── save-status-indicator.view.fn.tsx
+│   ├── save-status-indicator.view.fn.test.tsx
 │   ├── save-status-indicator.types.ts
 │   └── index.ts
 │
 ├── theme-selector/
 │   ├── theme-selector.view.fn.tsx
+│   ├── theme-selector.view.fn.test.tsx
 │   ├── theme-selector.container.fn.tsx
+│   ├── theme-selector.container.fn.test.tsx
 │   ├── theme-selector.types.ts
 │   └── index.ts
 │
 ├── update-checker/
 │   ├── update-checker.view.fn.tsx
+│   ├── update-checker.view.fn.test.tsx
 │   ├── update-checker.container.fn.tsx
+│   ├── update-checker.container.fn.test.tsx
 │   ├── update-checker.types.ts
 │   └── index.ts
 │
 ├── word-count-badge/
 │   ├── word-count-badge.view.fn.tsx
+│   ├── word-count-badge.view.fn.test.tsx
 │   ├── word-count-badge.types.ts
 │   └── index.ts
 │
 ├── drawing-workspace/
 │   ├── drawing-workspace.view.fn.tsx
+│   ├── drawing-workspace.view.fn.test.tsx
 │   ├── drawing-workspace.container.fn.tsx
+│   ├── drawing-workspace.container.fn.test.tsx
 │   ├── drawing-workspace.types.ts
 │   └── index.ts
 │
 ├── export-button/
 │   ├── export-button.view.fn.tsx
+│   ├── export-button.view.fn.test.tsx
 │   ├── export-button.container.fn.tsx
+│   ├── export-button.container.fn.test.tsx
 │   ├── export-button.types.ts
 │   └── index.ts
 │
 ├── export-dialog-manager/
 │   ├── export-dialog-manager.container.fn.tsx
+│   ├── export-dialog-manager.container.fn.test.tsx
 │   ├── export-dialog-manager.types.ts
 │   └── index.ts
 │
 ├── file-tree/
 │   ├── file-tree.view.fn.tsx
+│   ├── file-tree.view.fn.test.tsx
 │   ├── file-tree.container.fn.tsx
+│   ├── file-tree.container.fn.test.tsx
 │   ├── file-tree-item.view.fn.tsx
+│   ├── file-tree-item.view.fn.test.tsx
 │   ├── file-tree.types.ts
 │   └── index.ts
 │
 ├── panels/
 │   ├── drawings-panel/
 │   │   ├── drawings-panel.view.fn.tsx
+│   │   ├── drawings-panel.view.fn.test.tsx
 │   │   ├── drawings-panel.container.fn.tsx
+│   │   ├── drawings-panel.container.fn.test.tsx
 │   │   ├── drawings-panel.types.ts
 │   │   └── index.ts
 │   ├── file-tree-panel/
 │   │   ├── file-tree-panel.container.fn.tsx
+│   │   ├── file-tree-panel.container.fn.test.tsx
 │   │   ├── file-tree-panel.types.ts
 │   │   └── index.ts
 │   ├── search-panel/
 │   │   ├── search-panel.view.fn.tsx
+│   │   ├── search-panel.view.fn.test.tsx
 │   │   ├── search-panel.container.fn.tsx
+│   │   ├── search-panel.container.fn.test.tsx
 │   │   ├── search-panel.types.ts
 │   │   └── index.ts
 │   └── tag-graph-panel/
 │       ├── tag-graph-panel.view.fn.tsx
+│       ├── tag-graph-panel.view.fn.test.tsx
 │       ├── tag-graph-panel.container.fn.tsx
+│       ├── tag-graph-panel.container.fn.test.tsx
 │       ├── tag-graph-panel.types.ts
 │       └── index.ts
 │
 ├── story-workspace/
 │   ├── story-workspace.container.fn.tsx
+│   ├── story-workspace.container.fn.test.tsx
 │   ├── story-workspace.types.ts
 │   └── index.ts
 │
 ├── buffer-switcher/
 │   ├── buffer-switcher.view.fn.tsx
+│   ├── buffer-switcher.view.fn.test.tsx
 │   ├── buffer-switcher.container.fn.tsx
+│   ├── buffer-switcher.container.fn.test.tsx
 │   ├── buffer-switcher.types.ts
 │   └── index.ts
 │
 ├── command-palette/
 │   ├── command-palette.view.fn.tsx
+│   ├── command-palette.view.fn.test.tsx
 │   ├── command-palette.container.fn.tsx
+│   ├── command-palette.container.fn.test.tsx
 │   ├── command-palette.types.ts
 │   └── index.ts
 │
 ├── editor-tabs/
 │   ├── editor-tabs.view.fn.tsx
+│   ├── editor-tabs.view.fn.test.tsx
 │   ├── editor-tabs.container.fn.tsx
+│   ├── editor-tabs.container.fn.test.tsx
 │   ├── editor-tabs.types.ts
 │   └── index.ts
 │
 ├── story-right-sidebar/
 │   ├── story-right-sidebar.view.fn.tsx
+│   ├── story-right-sidebar.view.fn.test.tsx
 │   ├── story-right-sidebar.container.fn.tsx
+│   ├── story-right-sidebar.container.fn.test.tsx
 │   ├── story-right-sidebar.types.ts
 │   └── index.ts
 │
 ├── unified-sidebar/
 │   ├── unified-sidebar.view.fn.tsx
+│   ├── unified-sidebar.view.fn.test.tsx
 │   ├── unified-sidebar.container.fn.tsx
+│   ├── unified-sidebar.container.fn.test.tsx
 │   ├── unified-sidebar.types.ts
 │   └── index.ts
 │
@@ -327,6 +372,77 @@ export { XxxView } from "./xxx.view.fn";
 export { XxxContainer } from "./xxx.container.fn";
 export { XxxContainer as Xxx } from "./xxx.container.fn"; // 默认导出 Container
 export type { XxxViewProps, XxxContainerProps } from "./xxx.types";
+```
+
+### 3.7 测试文件模板
+
+**View 组件测试：**
+
+```typescript
+// xxx.view.fn.test.tsx
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { XxxView } from './xxx.view.fn';
+import type { XxxViewProps } from './xxx.types';
+
+describe('XxxView', () => {
+  const defaultProps: XxxViewProps = {
+    data: [],
+    onAction: vi.fn(),
+  };
+
+  it('should render with props', () => {
+    render(<XxxView {...defaultProps} />);
+    expect(screen.getByRole('...')).toBeInTheDocument();
+  });
+
+  it('should call onAction when clicked', () => {
+    const onAction = vi.fn();
+    render(<XxxView {...defaultProps} onAction={onAction} />);
+    fireEvent.click(screen.getByRole('button'));
+    expect(onAction).toHaveBeenCalled();
+  });
+
+  it('should handle conditional rendering', () => {
+    render(<XxxView {...defaultProps} data={[]} />);
+    expect(screen.getByText('No data')).toBeInTheDocument();
+  });
+});
+```
+
+**Container 组件测试：**
+
+```typescript
+// xxx.container.fn.test.tsx
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { XxxContainer } from './xxx.container.fn';
+
+// Mock hooks and stores
+vi.mock('@/hooks/use-xxx', () => ({
+  useXxx: vi.fn(() => ({ data: [] })),
+}));
+
+vi.mock('@/stores/xxx.store', () => ({
+  useXxxStore: vi.fn(() => ({ state: 'idle', setState: vi.fn() })),
+}));
+
+describe('XxxContainer', () => {
+  it('should fetch data and pass to view', () => {
+    render(<XxxContainer />);
+    expect(screen.getByRole('...')).toBeInTheDocument();
+  });
+
+  it('should handle callbacks', () => {
+    const { useXxxStore } = await import('@/stores/xxx.store');
+    const setState = vi.fn();
+    vi.mocked(useXxxStore).mockReturnValue({ state: 'idle', setState });
+    
+    render(<XxxContainer />);
+    fireEvent.click(screen.getByRole('button'));
+    expect(setState).toHaveBeenCalled();
+  });
+});
 ```
 
 ## 4. 风险评估

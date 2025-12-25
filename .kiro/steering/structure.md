@@ -117,7 +117,9 @@ src/
 | 纯函数式容器组件 | `xxx.container.fn.tsx` | `file-tree.container.fn.tsx` | 连接 hooks/stores |
 | 组件类型定义 | `xxx.types.ts` | `file-tree.types.ts` | Props/State 类型 |
 | 组件工具函数 | `xxx.utils.ts` | `file-tree.utils.ts` | 组件专用工具 |
-| 组件测试 | `xxx.test.tsx` | `file-tree.view.fn.test.tsx` | 组件测试 |
+| View 组件测试 | `xxx.view.fn.test.tsx` | `file-tree.view.fn.test.tsx` | View 组件测试 |
+| Container 组件测试 | `xxx.container.fn.test.tsx` | `file-tree.container.fn.test.tsx` | Container 组件测试 |
+| 工具函数测试 | `xxx.utils.test.ts` | `file-tree.utils.test.ts` | 工具函数测试 |
 | 路由组件 | `xxx.route.tsx` | `settings.route.tsx` | 路由定义 |
 
 ### 组件目录结构
@@ -126,15 +128,19 @@ src/
 components/
 ├── file-tree/                      # 组件目录
 │   ├── file-tree.view.fn.tsx       # 纯函数式展示组件
+│   ├── file-tree.view.fn.test.tsx  # View 组件测试
 │   ├── file-tree.container.fn.tsx  # 纯函数式容器组件
+│   ├── file-tree.container.fn.test.tsx  # Container 组件测试
 │   ├── file-tree.types.ts          # 类型定义
 │   ├── file-tree.utils.ts          # 工具函数（可选）
-│   ├── file-tree.test.tsx          # 测试文件（可选）
+│   ├── file-tree.utils.test.ts     # 工具函数测试（可选）
 │   └── index.ts                    # 统一导出
 │
 ├── editor-tabs/
 │   ├── editor-tabs.view.fn.tsx
+│   ├── editor-tabs.view.fn.test.tsx
 │   ├── editor-tabs.container.fn.tsx
+│   ├── editor-tabs.container.fn.test.tsx
 │   ├── editor-tabs.types.ts
 │   └── index.ts
 │

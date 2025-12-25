@@ -11,11 +11,16 @@
     - _Requirements: 1.4_
   - [x] 1.4 更新所有导入路径
     - _Requirements: 1.3_
+  - [ ] 1.5 创建 `activity-bar.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 1.6 创建 `activity-bar.container.fn.test.tsx`
+    - _Requirements: 7.2_
 
 - [ ] 2. 验证 Phase 1
   - 运行 `bunx tsc --noEmit`
   - 确认无类型错误
-  - _Requirements: 7.1_
+  - 运行 `bunx vitest run` 确认测试通过
+  - _Requirements: 7.1, 7.2_
 
 ## Phase 2: 重构 blocks/ 目录中已有 View/Container 的组件
 
@@ -28,6 +33,10 @@
   - [ ] 3.4 创建 `wiki-hover-preview.types.ts`
   - [ ] 3.5 创建 `index.ts`
   - [ ] 3.6 更新所有导入路径
+  - [ ] 3.7 创建 `wiki-hover-preview.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 3.8 创建 `wiki-hover-preview.container.fn.test.tsx`
+    - _Requirements: 7.2_
 
 - [ ] 4. 重构 global-search 组件
   - [ ] 4.1 创建 `components/global-search/` 目录
@@ -38,11 +47,16 @@
   - [ ] 4.4 创建 `global-search.types.ts`
   - [ ] 4.5 创建 `index.ts`
   - [ ] 4.6 更新所有导入路径
+  - [ ] 4.7 创建 `global-search.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 4.8 创建 `global-search.container.fn.test.tsx`
+    - _Requirements: 7.2_
 
 - [ ] 5. 验证 Phase 2
   - 运行 `bunx tsc --noEmit`
   - 确认无类型错误
-  - _Requirements: 7.1_
+  - 运行 `bunx vitest run` 确认测试通过
+  - _Requirements: 7.1, 7.2_
 
 ## Phase 3: 重构 file-tree/ 目录
 
@@ -57,11 +71,18 @@
     - _Requirements: 3.2_
   - [ ] 6.5 更新 `index.ts`
   - [ ] 6.6 更新所有导入路径
+  - [ ] 6.7 创建 `file-tree.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 6.8 创建 `file-tree-item.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 6.9 如果创建了 Container，创建 `file-tree.container.fn.test.tsx`
+    - _Requirements: 7.2_
 
 - [ ] 7. 验证 Phase 3
   - 运行 `bunx tsc --noEmit`
   - 确认无类型错误
-  - _Requirements: 7.1_
+  - 运行 `bunx vitest run` 确认测试通过
+  - _Requirements: 7.1, 7.2_
 
 ## Phase 4: 重构 blocks/ 目录中的纯展示组件
 
@@ -71,6 +92,8 @@
   - [ ] 8.3 创建 `keyboard-shortcuts-help.types.ts`
   - [ ] 8.4 创建 `index.ts`
   - [ ] 8.5 更新所有导入路径
+  - [ ] 8.6 创建 `keyboard-shortcuts-help.view.fn.test.tsx`
+    - _Requirements: 7.2_
 
 - [ ] 9. 重构 save-status-indicator 组件
   - [ ] 9.1 创建 `components/save-status-indicator/` 目录
@@ -78,6 +101,8 @@
   - [ ] 9.3 创建 `save-status-indicator.types.ts`
   - [ ] 9.4 创建 `index.ts`
   - [ ] 9.5 更新所有导入路径
+  - [ ] 9.6 创建 `save-status-indicator.view.fn.test.tsx`
+    - _Requirements: 7.2_
 
 - [ ] 10. 重构 word-count-badge 组件
   - [ ] 10.1 创建 `components/word-count-badge/` 目录
@@ -85,11 +110,14 @@
   - [ ] 10.3 创建 `word-count-badge.types.ts`
   - [ ] 10.4 创建 `index.ts`
   - [ ] 10.5 更新所有导入路径
+  - [ ] 10.6 创建 `word-count-badge.view.fn.test.tsx`
+    - _Requirements: 7.2_
 
 - [ ] 11. 验证 Phase 4
   - 运行 `bunx tsc --noEmit`
   - 确认无类型错误
-  - _Requirements: 7.1_
+  - 运行 `bunx vitest run` 确认测试通过
+  - _Requirements: 7.1, 7.2_
 
 ## Phase 5: 重构 blocks/ 目录中的混合组件
 
@@ -102,7 +130,10 @@
   - [ ] 12.6 创建 `index.ts`
   - [ ] 12.7 删除原文件
   - [ ] 12.8 更新所有导入路径
-  - _Requirements: 2.5_
+  - [ ] 12.9 创建 `backup-manager.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 12.10 创建 `backup-manager.container.fn.test.tsx`
+    - _Requirements: 7.2, 2.5_
 
 - [ ] 13. 重构 canvas-editor 组件
   - [ ] 13.1 创建 `components/canvas-editor/` 目录
@@ -113,7 +144,10 @@
   - [ ] 13.6 创建 `index.ts`
   - [ ] 13.7 删除原文件
   - [ ] 13.8 更新所有导入路径
-  - _Requirements: 2.5_
+  - [ ] 13.9 创建 `canvas-editor.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 13.10 创建 `canvas-editor.container.fn.test.tsx`
+    - _Requirements: 7.2, 2.5_
 
 - [ ] 14. 重构 export-dialog 组件
   - [ ] 14.1 创建 `components/export-dialog/` 目录
@@ -124,7 +158,10 @@
   - [ ] 14.6 创建 `index.ts`
   - [ ] 14.7 删除原文件
   - [ ] 14.8 更新所有导入路径
-  - _Requirements: 2.5_
+  - [ ] 14.9 创建 `export-dialog.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 14.10 创建 `export-dialog.container.fn.test.tsx`
+    - _Requirements: 7.2, 2.5_
 
 - [ ] 15. 重构 theme-selector 组件
   - [ ] 15.1 创建 `components/theme-selector/` 目录
@@ -135,7 +172,10 @@
   - [ ] 15.6 创建 `index.ts`
   - [ ] 15.7 删除原文件
   - [ ] 15.8 更新所有导入路径
-  - _Requirements: 2.5_
+  - [ ] 15.9 创建 `theme-selector.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 15.10 创建 `theme-selector.container.fn.test.tsx`
+    - _Requirements: 7.2, 2.5_
 
 - [ ] 16. 重构 update-checker 组件
   - [ ] 16.1 创建 `components/update-checker/` 目录
@@ -146,12 +186,16 @@
   - [ ] 16.6 创建 `index.ts`
   - [ ] 16.7 删除原文件
   - [ ] 16.8 更新所有导入路径
-  - _Requirements: 2.5_
+  - [ ] 16.9 创建 `update-checker.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 16.10 创建 `update-checker.container.fn.test.tsx`
+    - _Requirements: 7.2, 2.5_
 
 - [ ] 17. 验证 Phase 5
   - 运行 `bunx tsc --noEmit`
   - 确认无类型错误
-  - _Requirements: 7.1_
+  - 运行 `bunx vitest run` 确认测试通过
+  - _Requirements: 7.1, 7.2_
 
 ## Phase 6: 重构 panels/ 目录
 
@@ -164,7 +208,10 @@
   - [ ] 18.6 创建 `index.ts`
   - [ ] 18.7 删除原文件
   - [ ] 18.8 更新所有导入路径
-  - _Requirements: 4.1, 4.2_
+  - [ ] 18.9 创建 `drawings-panel.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 18.10 创建 `drawings-panel.container.fn.test.tsx`
+    - _Requirements: 7.2, 4.1, 4.2_
 
 - [ ] 19. 重构 file-tree-panel 组件
   - [ ] 19.1 创建 `components/panels/file-tree-panel/` 目录
@@ -174,7 +221,8 @@
   - [ ] 19.5 创建 `index.ts`
   - [ ] 19.6 删除原文件
   - [ ] 19.7 更新所有导入路径
-  - _Requirements: 4.1, 4.2_
+  - [ ] 19.8 创建 `file-tree-panel.container.fn.test.tsx`
+    - _Requirements: 7.2, 4.1, 4.2_
 
 - [ ] 20. 重构 search-panel 组件
   - [ ] 20.1 创建 `components/panels/search-panel/` 目录
@@ -185,7 +233,10 @@
   - [ ] 20.6 创建 `index.ts`
   - [ ] 20.7 删除原文件
   - [ ] 20.8 更新所有导入路径
-  - _Requirements: 4.1, 4.2_
+  - [ ] 20.9 创建 `search-panel.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 20.10 创建 `search-panel.container.fn.test.tsx`
+    - _Requirements: 7.2, 4.1, 4.2_
 
 - [ ] 21. 重构 tag-graph-panel 组件
   - [ ] 21.1 创建 `components/panels/tag-graph-panel/` 目录
@@ -196,12 +247,16 @@
   - [ ] 21.6 创建 `index.ts`
   - [ ] 21.7 删除原文件
   - [ ] 21.8 更新所有导入路径
-  - _Requirements: 4.1, 4.2_
+  - [ ] 21.9 创建 `tag-graph-panel.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 21.10 创建 `tag-graph-panel.container.fn.test.tsx`
+    - _Requirements: 7.2, 4.1, 4.2_
 
 - [ ] 22. 验证 Phase 6
   - 运行 `bunx tsc --noEmit`
   - 确认无类型错误
-  - _Requirements: 7.1_
+  - 运行 `bunx vitest run` 确认测试通过
+  - _Requirements: 7.1, 7.2_
 
 ## Phase 7: 重构 export/ 和 drawing/ 目录
 
@@ -214,6 +269,10 @@
   - [ ] 23.6 创建 `index.ts`
   - [ ] 23.7 删除原文件和目录
   - [ ] 23.8 更新所有导入路径
+  - [ ] 23.9 创建 `export-button.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 23.10 创建 `export-button.container.fn.test.tsx`
+    - _Requirements: 7.2_
 
 - [ ] 24. 重构 export-dialog-manager 组件
   - [ ] 24.1 创建 `components/export-dialog-manager/` 目录
@@ -223,6 +282,8 @@
   - [ ] 24.5 创建 `index.ts`
   - [ ] 24.6 删除原文件和目录
   - [ ] 24.7 更新所有导入路径
+  - [ ] 24.8 创建 `export-dialog-manager.container.fn.test.tsx`
+    - _Requirements: 7.2_
 
 - [ ] 25. 重构 drawing-workspace 组件
   - [ ] 25.1 创建 `components/drawing-workspace/` 目录
@@ -233,11 +294,16 @@
   - [ ] 25.6 创建 `index.ts`
   - [ ] 25.7 删除原文件和目录
   - [ ] 25.8 更新所有导入路径
+  - [ ] 25.9 创建 `drawing-workspace.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 25.10 创建 `drawing-workspace.container.fn.test.tsx`
+    - _Requirements: 7.2_
 
 - [ ] 26. 验证 Phase 7
   - 运行 `bunx tsc --noEmit`
   - 确认无类型错误
-  - _Requirements: 7.1_
+  - 运行 `bunx vitest run` 确认测试通过
+  - _Requirements: 7.1, 7.2_
 
 ## Phase 8: 重构 workspace/ 目录
 
@@ -249,11 +315,14 @@
   - [ ] 27.5 创建 `index.ts`
   - [ ] 27.6 删除原文件和目录
   - [ ] 27.7 更新所有导入路径
+  - [ ] 27.8 创建 `story-workspace.container.fn.test.tsx`
+    - _Requirements: 7.2_
 
 - [ ] 28. 验证 Phase 8
   - 运行 `bunx tsc --noEmit`
   - 确认无类型错误
-  - _Requirements: 7.1_
+  - 运行 `bunx vitest run` 确认测试通过
+  - _Requirements: 7.1, 7.2_
 
 ## Phase 9: 重构根级组件
 
@@ -266,7 +335,10 @@
   - [ ] 29.6 创建 `index.ts`
   - [ ] 29.7 删除原文件
   - [ ] 29.8 更新所有导入路径
-  - _Requirements: 5.1, 5.2_
+  - [ ] 29.9 创建 `buffer-switcher.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 29.10 创建 `buffer-switcher.container.fn.test.tsx`
+    - _Requirements: 7.2, 5.1, 5.2_
 
 - [ ] 30. 重构 command-palette 组件
   - [ ] 30.1 创建 `components/command-palette/` 目录
@@ -277,7 +349,10 @@
   - [ ] 30.6 创建 `index.ts`
   - [ ] 30.7 删除原文件
   - [ ] 30.8 更新所有导入路径
-  - _Requirements: 5.1, 5.2_
+  - [ ] 30.9 创建 `command-palette.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 30.10 创建 `command-palette.container.fn.test.tsx`
+    - _Requirements: 7.2, 5.1, 5.2_
 
 - [ ] 31. 重构 editor-tabs 组件
   - [ ] 31.1 创建 `components/editor-tabs/` 目录
@@ -288,7 +363,10 @@
   - [ ] 31.6 创建 `index.ts`
   - [ ] 31.7 删除原文件
   - [ ] 31.8 更新所有导入路径
-  - _Requirements: 5.1, 5.2_
+  - [ ] 31.9 创建 `editor-tabs.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 31.10 创建 `editor-tabs.container.fn.test.tsx`
+    - _Requirements: 7.2, 5.1, 5.2_
 
 - [ ] 32. 重构 story-right-sidebar 组件
   - [ ] 32.1 创建 `components/story-right-sidebar/` 目录
@@ -299,7 +377,10 @@
   - [ ] 32.6 创建 `index.ts`
   - [ ] 32.7 删除原文件
   - [ ] 32.8 更新所有导入路径
-  - _Requirements: 5.1, 5.2_
+  - [ ] 32.9 创建 `story-right-sidebar.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 32.10 创建 `story-right-sidebar.container.fn.test.tsx`
+    - _Requirements: 7.2, 5.1, 5.2_
 
 - [ ] 33. 重构 unified-sidebar 组件
   - [ ] 33.1 创建 `components/unified-sidebar/` 目录
@@ -310,12 +391,16 @@
   - [ ] 33.6 创建 `index.ts`
   - [ ] 33.7 删除原文件
   - [ ] 33.8 更新所有导入路径
-  - _Requirements: 5.1, 5.2_
+  - [ ] 33.9 创建 `unified-sidebar.view.fn.test.tsx`
+    - _Requirements: 7.2_
+  - [ ] 33.10 创建 `unified-sidebar.container.fn.test.tsx`
+    - _Requirements: 7.2, 5.1, 5.2_
 
 - [ ] 34. 验证 Phase 9
   - 运行 `bunx tsc --noEmit`
   - 确认无类型错误
-  - _Requirements: 7.1_
+  - 运行 `bunx vitest run` 确认测试通过
+  - _Requirements: 7.1, 7.2_
 
 ## Phase 10: 处理工具组件
 
@@ -353,7 +438,7 @@
     - _Requirements: 7.1_
   - [ ] 39.2 运行测试
     - 执行 `bunx vitest run`
-    - 确认测试通过
+    - 确认所有测试通过（包括新增的组件测试）
     - _Requirements: 7.2_
   - [ ] 39.3 运行开发服务器
     - 执行 `bun run desktop:dev`
@@ -362,9 +447,13 @@
   - [ ] 39.4 验证 ui/ 目录未被修改
     - 确认 `components/ui/` 目录文件未变化
     - _Requirements: 6.1, 6.2_
+  - [ ] 39.5 验证测试覆盖率
+    - 确认所有 View 组件有对应测试
+    - 确认所有 Container 组件有对应测试
+    - _Requirements: 7.2_
 
 - [ ] 40. 提交重构结果
-  - 执行 `git add -A && git commit -m "refactor: 组件命名规范化，使用 .fn.tsx 后缀"`
+  - 执行 `git add -A && git commit -m "refactor: 组件命名规范化，使用 .fn.tsx 后缀，添加组件测试"`
   - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
 ---

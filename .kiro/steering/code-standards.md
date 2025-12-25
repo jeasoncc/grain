@@ -222,9 +222,12 @@ export const FileTreeContainer = memo(() => {
 components/
 ├── file-tree/
 │   ├── file-tree.view.fn.tsx       # 纯展示组件
+│   ├── file-tree.view.fn.test.tsx  # View 组件测试
 │   ├── file-tree.container.fn.tsx  # 容器组件
+│   ├── file-tree.container.fn.test.tsx  # Container 组件测试
 │   ├── file-tree.types.ts          # 类型定义
 │   ├── file-tree.utils.ts          # 工具函数（可选）
+│   ├── file-tree.utils.test.ts     # 工具函数测试（可选）
 │   └── index.ts                    # 统一导出
 ```
 
@@ -346,10 +349,51 @@ import { debounce } from "es-toolkit";
 | `*.fn.ts` | 必须有 `*.fn.test.ts` |
 | `*.action.ts` | 必须有 `*.action.test.ts` |
 | `*.db.fn.ts` | 必须有测试（可 mock DB） |
+| `*.view.fn.tsx` | 必须有 `*.view.fn.test.tsx` |
+| `*.container.fn.tsx` | 必须有 `*.container.fn.test.tsx` |
+| `*.utils.ts` | 必须有 `*.utils.test.ts` |
 
 ### 测试文件位置
 
 测试文件与源文件放在同一目录。
+
+### 组件测试策略
+
+**View 组件测试（`*.view.fn.test.tsx`）：**
+- 测试 props 渲染
+- 测试用户交互（点击、输入等）
+- 测试条件渲染
+- 使用 React Testing Library
+
+**Container 组件测试（`*.container.fn.test.tsx`）：**
+- 测试数据获取和传递
+- 测试回调函数调用
+- Mock hooks 和 stores
+- 验证与 View 组件的集成
+
+**测试示例：**
+
+```typescript
+// file-tree.view.fn.test.tsx
+import { render, screen, fireEvent } from '@testing-library/react';
+import { FileTreeView } from './file-tree.view.fn';
+
+describe('FileTreeView', () => {
+  it('should render nodes', () => {
+    const nodes = [{ id: '1', title: 'Test' }];
+    render(<FileTreeView nodes={nodes} selectedId={null} onSelect={vi.fn()} />);
+    expect(screen.getByText('Test')).toBeInTheDocument();
+  });
+
+  it('should call onSelect when node clicked', () => {
+    const onSelect = vi.fn();
+    const nodes = [{ id: '1', title: 'Test' }];
+    render(<FileTreeView nodes={nodes} selectedId={null} onSelect={onSelect} />);
+    fireEvent.click(screen.getByText('Test'));
+    expect(onSelect).toHaveBeenCalledWith('1');
+  });
+});
+```
 
 ## 注释规范
 
