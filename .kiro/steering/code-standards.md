@@ -119,35 +119,134 @@ export const createWiki = createTemplatedFile(wikiConfig);
 
 ## 组件规范
 
-### 组件分层
+### 组件分层架构
 
 ```
-Route (路由组件)     → 编排层：连接数据，调用 actions
+Route (路由组件)           → 编排层：仅路由定义
+  │
+  ▼
+Container (容器组件)       → 数据层：连接 hooks/stores
   │
   │ props (纯数据 + 回调函数)
   ▼
-Component (展示组件) → 展示层：只接收 props，无副作用
+View (展示组件)            → 展示层：只接收 props，无副作用
 ```
 
-### 纯展示组件
+### 组件命名规范
+
+**所有纯函数式组件使用 `.fn.tsx` 后缀：**
+
+| 类型 | 命名格式 | 说明 |
+|------|---------|------|
+| 纯展示组件 | `xxx.view.fn.tsx` | 只接收 props，无副作用 |
+| 容器组件 | `xxx.container.fn.tsx` | 连接 hooks/stores |
+| 类型定义 | `xxx.types.ts` | Props/State 类型 |
+| 工具函数 | `xxx.utils.ts` | 组件专用工具 |
+
+### 纯展示组件 (`.view.fn.tsx`)
 
 ```typescript
-// ✅ 推荐：纯展示组件
-interface NodeListProps {
-  readonly nodes: Node[];
+// file-tree.view.fn.tsx
+import { memo } from "react";
+
+interface FileTreeViewProps {
+  readonly nodes: TreeNode[];
+  readonly selectedId: string | null;
   readonly onSelect: (id: string) => void;
+  readonly onExpand: (id: string, expanded: boolean) => void;
 }
 
-const NodeList = memo(({ nodes, onSelect }: NodeListProps) => (
-  <div>{nodes.map(node => <NodeItem key={node.id} node={node} onSelect={onSelect} />)}</div>
-));
-
-// ❌ 禁止：组件内部获取数据
-const NodeList = () => {
-  const nodes = useNodes();  // 直接访问 store
-  return <div>{nodes.map(...)}</div>;
-};
+export const FileTreeView = memo(({ 
+  nodes, 
+  selectedId, 
+  onSelect,
+  onExpand 
+}: FileTreeViewProps) => {
+  // ✅ 允许：纯 UI 状态
+  const [isHovered, setIsHovered] = useState(false);
+  
+  // ❌ 禁止：业务数据状态
+  // const [nodes, setNodes] = useState([]);
+  
+  // ❌ 禁止：直接访问 store
+  // const nodes = useNodes();
+  
+  return (
+    <div onMouseEnter={() => setIsHovered(true)}>
+      {nodes.map(node => (
+        <TreeItem 
+          key={node.id} 
+          node={node} 
+          isSelected={node.id === selectedId}
+          onSelect={onSelect}
+        />
+      ))}
+    </div>
+  );
+});
 ```
+
+### 容器组件 (`.container.fn.tsx`)
+
+```typescript
+// file-tree.container.fn.tsx
+import { memo } from "react";
+import { FileTreeView } from "./file-tree.view.fn";
+import { useNodesByWorkspace } from "@/hooks/use-node";
+import { useSelectionStore } from "@/stores/selection.store";
+
+export const FileTreeContainer = memo(() => {
+  // ✅ 在容器组件中连接数据
+  const workspaceId = useSelectionStore(s => s.workspaceId);
+  const nodes = useNodesByWorkspace(workspaceId);
+  const { selectedId, setSelectedId } = useSelectionStore();
+  
+  // ✅ 在容器组件中处理回调
+  const handleSelect = useCallback((id: string) => {
+    setSelectedId(id);
+  }, [setSelectedId]);
+  
+  return (
+    <FileTreeView
+      nodes={nodes}
+      selectedId={selectedId}
+      onSelect={handleSelect}
+    />
+  );
+});
+```
+
+### 组件目录结构
+
+```
+components/
+├── file-tree/
+│   ├── file-tree.view.fn.tsx       # 纯展示组件
+│   ├── file-tree.container.fn.tsx  # 容器组件
+│   ├── file-tree.types.ts          # 类型定义
+│   ├── file-tree.utils.ts          # 工具函数（可选）
+│   └── index.ts                    # 统一导出
+```
+
+### index.ts 导出规范
+
+```typescript
+// index.ts
+export { FileTreeView } from './file-tree.view.fn';
+export { FileTreeContainer } from './file-tree.container.fn';
+export { FileTreeContainer as FileTree } from './file-tree.container.fn';
+export type { FileTreeViewProps } from './file-tree.types';
+```
+
+### 组件纯函数式要求
+
+**`.fn.tsx` 后缀的组件必须满足：**
+
+1. **无 class 组件** - 只使用函数组件
+2. **使用 memo()** - 所有组件用 `memo()` 包裹
+3. **无内部业务状态** - 只允许 UI 状态（isOpen、isHovered 等）
+4. **Props 驱动** - 所有数据和回调通过 props 传入
+5. **Props readonly** - Props 接口属性使用 `readonly`
 
 ### 允许的组件内部状态
 
@@ -155,10 +254,22 @@ const NodeList = () => {
 // ✅ 允许：纯 UI 状态
 const [isOpen, setIsOpen] = useState(false);
 const [isHovered, setIsHovered] = useState(false);
+const [isExpanded, setIsExpanded] = useState(true);
+const [inputValue, setInputValue] = useState(""); // 表单输入
 
 // ❌ 禁止：业务数据状态
 const [nodes, setNodes] = useState([]);
+const [user, setUser] = useState(null);
 ```
+
+### 旧组件命名（待迁移）
+
+| 旧命名 | 新命名 |
+|--------|--------|
+| `file-tree.tsx` | `file-tree.view.fn.tsx` |
+| `file-tree-connected.tsx` | `file-tree.container.fn.tsx` |
+| `wiki-hover-preview.tsx` | `wiki-hover-preview.view.fn.tsx` |
+| `wiki-hover-preview-connected.tsx` | `wiki-hover-preview.container.fn.tsx` |
 
 ## Actions 规范
 

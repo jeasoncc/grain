@@ -257,7 +257,7 @@
     - 未被任何文件引用
     - _Requirements: 4.1_
 
-- [ ] 24. 验证组件删除
+- [x] 24. 验证组件删除
   - 运行 `bunx tsc --noEmit`
   - 确认无类型错误
   - _Requirements: 7.1, 4.2_
