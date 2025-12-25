@@ -38,3 +38,12 @@ export {
 	exportAllAsZip,
 	exportAllAsZipAsync,
 } from "./export-zip.action";
+
+// 项目导出（PDF、Word、TXT、EPUB）
+export {
+	exportProject,
+	exportToPdf,
+	exportToWord,
+	exportToTxt,
+	exportToEpub,
+} from "./export-project.action";

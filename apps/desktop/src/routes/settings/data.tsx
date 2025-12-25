@@ -9,8 +9,8 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { BackupManager } from "@/components/blocks/backup-manager";
 import { useConfirm } from "@/components/ui/confirm";
-import { autoBackupManager } from "@/db/backup/backup.service";
 import {
+	autoBackupManager,
 	exportBackupJson,
 	exportBackupZip,
 	getDatabaseStats,

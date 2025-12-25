@@ -518,3 +518,81 @@ export const performAutoBackup = (
 		}),
 	);
 };
+
+// ============================================================================
+// 自动备份管理器（类形式，用于生命周期管理）
+// ============================================================================
+
+/**
+ * 自动备份管理器
+ * 提供定时自动备份功能
+ */
+export class AutoBackupManager {
+	private intervalId: number | null = null;
+
+	/**
+	 * 启动自动备份
+	 * @param intervalHours - 备份间隔小时数，默认 24 小时
+	 */
+	start(intervalHours = 24) {
+		if (this.intervalId) {
+			logger.warn("[DB] 自动备份已在运行");
+			return;
+		}
+
+		// 立即检查并执行备份
+		this.checkAndBackup();
+
+		// 设置定时器
+		this.intervalId = window.setInterval(
+			() => this.checkAndBackup(),
+			intervalHours * 60 * 60 * 1000,
+		);
+
+		logger.info(`[DB] 自动备份已启动，间隔: ${intervalHours} 小时`);
+	}
+
+	/**
+	 * 停止自动备份
+	 */
+	stop() {
+		if (this.intervalId) {
+			clearInterval(this.intervalId);
+			this.intervalId = null;
+			logger.info("[DB] 自动备份已停止");
+		}
+	}
+
+	/**
+	 * 检查并执行备份
+	 */
+	private async checkAndBackup() {
+		const result = await performAutoBackup()();
+		if (result._tag === "Left") {
+			logger.error("[DB] 自动备份失败:", result.left);
+		}
+	}
+
+	/**
+	 * 获取本地备份列表
+	 */
+	getLocalBackups() {
+		return getLocalBackups();
+	}
+
+	/**
+	 * 从本地备份恢复
+	 * @param timestamp - 备份时间戳
+	 */
+	async restoreLocalBackup(timestamp: string) {
+		const result = await restoreLocalBackup(timestamp)();
+		if (result._tag === "Left") {
+			throw new Error(result.left.message);
+		}
+	}
+}
+
+/**
+ * 自动备份管理器单例
+ */
+export const autoBackupManager = new AutoBackupManager();

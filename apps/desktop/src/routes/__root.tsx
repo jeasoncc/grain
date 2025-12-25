@@ -14,7 +14,7 @@ import { ConfirmProvider } from "@/components/ui/confirm";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { UnifiedSidebarContent } from "@/components/unified-sidebar";
-import { autoBackupManager } from "@/db/backup/backup.service";
+import { autoBackupManager } from "@/db/backup.db.fn";
 import type { DrawingInterface } from "@/db/schema";
 import { useDrawingsByWorkspace } from "@/hooks/use-drawing";
 import { useTagGraph } from "@/hooks/use-tag";

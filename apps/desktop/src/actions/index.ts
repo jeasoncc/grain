@@ -53,6 +53,11 @@ export {
 	exportNodeToJson,
 	exportNodeToMarkdown,
 	exportNodeToOrgmode,
+	exportProject,
+	exportToPdf,
+	exportToWord,
+	exportToTxt,
+	exportToEpub,
 } from "./export";
 
 // ==============================
@@ -164,12 +169,3 @@ export {
 	type UpdateWorkspaceParams,
 	updateWorkspace,
 } from "./workspace";
-
-// ==============================
-// Legacy Exports (向后兼容)
-// ==============================
-
-/**
- * @deprecated 使用 templated actions 代替
- */
-export { DIARY_ROOT_FOLDER } from "./diary";

@@ -9,10 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TestSelectionRouteImport } from './routes/test-selection'
-import { Route as TestManualSaveRouteImport } from './routes/test-manual-save'
-import { Route as TestFocusRouteImport } from './routes/test-focus'
-import { Route as TestClearDataRouteImport } from './routes/test-clear-data'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as CanvasRouteImport } from './routes/canvas'
 import { Route as IndexRouteImport } from './routes/index'
@@ -28,26 +24,6 @@ import { Route as SettingsDesignRouteImport } from './routes/settings/design'
 import { Route as SettingsDataRouteImport } from './routes/settings/data'
 import { Route as SettingsAboutRouteImport } from './routes/settings/about'
 
-const TestSelectionRoute = TestSelectionRouteImport.update({
-  id: '/test-selection',
-  path: '/test-selection',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TestManualSaveRoute = TestManualSaveRouteImport.update({
-  id: '/test-manual-save',
-  path: '/test-manual-save',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TestFocusRoute = TestFocusRouteImport.update({
-  id: '/test-focus',
-  path: '/test-focus',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TestClearDataRoute = TestClearDataRouteImport.update({
-  id: '/test-clear-data',
-  path: '/test-clear-data',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -123,10 +99,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/canvas': typeof CanvasRoute
   '/settings': typeof SettingsRouteWithChildren
-  '/test-clear-data': typeof TestClearDataRoute
-  '/test-focus': typeof TestFocusRoute
-  '/test-manual-save': typeof TestManualSaveRoute
-  '/test-selection': typeof TestSelectionRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/data': typeof SettingsDataRoute
   '/settings/design': typeof SettingsDesignRoute
@@ -142,10 +114,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/canvas': typeof CanvasRoute
-  '/test-clear-data': typeof TestClearDataRoute
-  '/test-focus': typeof TestFocusRoute
-  '/test-manual-save': typeof TestManualSaveRoute
-  '/test-selection': typeof TestSelectionRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/data': typeof SettingsDataRoute
   '/settings/design': typeof SettingsDesignRoute
@@ -163,10 +131,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/canvas': typeof CanvasRoute
   '/settings': typeof SettingsRouteWithChildren
-  '/test-clear-data': typeof TestClearDataRoute
-  '/test-focus': typeof TestFocusRoute
-  '/test-manual-save': typeof TestManualSaveRoute
-  '/test-selection': typeof TestSelectionRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/data': typeof SettingsDataRoute
   '/settings/design': typeof SettingsDesignRoute
@@ -185,10 +149,6 @@ export interface FileRouteTypes {
     | '/'
     | '/canvas'
     | '/settings'
-    | '/test-clear-data'
-    | '/test-focus'
-    | '/test-manual-save'
-    | '/test-selection'
     | '/settings/about'
     | '/settings/data'
     | '/settings/design'
@@ -204,10 +164,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/canvas'
-    | '/test-clear-data'
-    | '/test-focus'
-    | '/test-manual-save'
-    | '/test-selection'
     | '/settings/about'
     | '/settings/data'
     | '/settings/design'
@@ -224,10 +180,6 @@ export interface FileRouteTypes {
     | '/'
     | '/canvas'
     | '/settings'
-    | '/test-clear-data'
-    | '/test-focus'
-    | '/test-manual-save'
-    | '/test-selection'
     | '/settings/about'
     | '/settings/data'
     | '/settings/design'
@@ -245,42 +197,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CanvasRoute: typeof CanvasRoute
   SettingsRoute: typeof SettingsRouteWithChildren
-  TestClearDataRoute: typeof TestClearDataRoute
-  TestFocusRoute: typeof TestFocusRoute
-  TestManualSaveRoute: typeof TestManualSaveRoute
-  TestSelectionRoute: typeof TestSelectionRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/test-selection': {
-      id: '/test-selection'
-      path: '/test-selection'
-      fullPath: '/test-selection'
-      preLoaderRoute: typeof TestSelectionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/test-manual-save': {
-      id: '/test-manual-save'
-      path: '/test-manual-save'
-      fullPath: '/test-manual-save'
-      preLoaderRoute: typeof TestManualSaveRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/test-focus': {
-      id: '/test-focus'
-      path: '/test-focus'
-      fullPath: '/test-focus'
-      preLoaderRoute: typeof TestFocusRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/test-clear-data': {
-      id: '/test-clear-data'
-      path: '/test-clear-data'
-      fullPath: '/test-clear-data'
-      preLoaderRoute: typeof TestClearDataRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -418,10 +338,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CanvasRoute: CanvasRoute,
   SettingsRoute: SettingsRouteWithChildren,
-  TestClearDataRoute: TestClearDataRoute,
-  TestFocusRoute: TestFocusRoute,
-  TestManualSaveRoute: TestManualSaveRoute,
-  TestSelectionRoute: TestSelectionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

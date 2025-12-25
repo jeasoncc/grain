@@ -18,6 +18,7 @@ import {
 	exportAllAsync as exportAll,
 	exportAllAsZipAsync as exportAllAsZip,
 	exportAsMarkdownAsync as exportAsMarkdown,
+	exportProject,
 } from "@/actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +32,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
-import { exportProject } from "@/domain/export";
 import {
 	type ExportFormat,
 	type ExportOptions,
