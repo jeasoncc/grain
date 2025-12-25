@@ -238,14 +238,14 @@
     - 未被任何文件引用
     - _Requirements: 4.1_
 
-- [ ] 22. 删除全局搜索相关未使用组件
-  - [ ] 22.1 删除 `components/global-search-provider.tsx`
+- [x] 22. 删除全局搜索相关未使用组件
+  - [x] 22.1 删除 `components/global-search-provider.tsx`
     - 未被任何文件引用
     - _Requirements: 4.1_
-  - [ ] 22.2 删除 `components/global-search-dialog-connected.tsx`
+  - [x] 22.2 删除 `components/global-search-dialog-connected.tsx`
     - 仅被 global-search-provider.tsx 引用，一起删除
     - _Requirements: 4.1_
-  - [ ] 22.3 删除 `components/global-search-dialog.tsx`
+  - [x] 22.3 删除 `components/global-search-dialog.tsx`
     - 仅被 global-search-dialog-connected.tsx 引用，一起删除
     - _Requirements: 4.1_
 
