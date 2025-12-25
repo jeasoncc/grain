@@ -13,9 +13,10 @@
 
 import * as E from "fp-ts/Either";
 import { addContent, addNode, getNextOrder, updateNode } from "@/db";
+import { ensureRootFolderAsync } from "@/actions/node";
 import { database } from "@/db/database";
 import logger from "@/log/index";
-import { ensureWikiFolder, WIKI_TAG } from "./wiki.resolve.fn";
+import { WIKI_ROOT_FOLDER, WIKI_TAG } from "./wiki.resolve.fn";
 
 /**
  * Legacy WikiInterface for migration purposes
@@ -120,7 +121,7 @@ export async function migrateWikiEntriesToFiles(
 		);
 
 		// Ensure wiki folder exists
-		const wikiFolder = await ensureWikiFolder(workspaceId);
+		const wikiFolder = await ensureRootFolderAsync(workspaceId, WIKI_ROOT_FOLDER);
 
 		// Migrate each entry
 		for (const entry of wikiEntries) {
