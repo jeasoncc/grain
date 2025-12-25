@@ -102,28 +102,6 @@ export {
 	searchEngine,
 } from "@/fn/search";
 export * from "@/fn/updater";
-// Wiki (从 fn/wiki 和 actions/wiki 重新导出)
-export {
-	generateWikiTemplate,
-	getWikiFiles,
-	WIKI_ROOT_FOLDER,
-	WIKI_TAG,
-	type WikiFileEntryType as WikiFileEntry,
-} from "@/fn/wiki";
-export {
-	checkMigrationNeeded,
-	type MigrationResult,
-	migrateWikiEntriesToFiles,
-	runMigrationIfNeeded,
-} from "@/actions/wiki";
-// Wiki creation (从 actions/templated 重新导出)
-export {
-	createWikiAsync as createWikiFile,
-	type WikiTemplateParams as WikiCreationParams,
-	type TemplatedFileResult as WikiCreationResult,
-} from "@/actions/templated";
-// Wiki folder creation (从 actions/node 重新导出)
-export { ensureRootFolder as ensureWikiFolder } from "@/actions/node";
 // Export (从 fn/export 和 types/export 重新导出)
 export type { ExportFormat, ExportOptions } from "@/types/export";
 // Import-Export (从新架构重新导出)
