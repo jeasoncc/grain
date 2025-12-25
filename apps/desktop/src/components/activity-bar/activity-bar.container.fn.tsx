@@ -1,5 +1,5 @@
 /**
- * @file activity-bar-container.tsx
+ * @file activity-bar.container.fn.tsx
  * @description ActivityBar 容器组件（编排层）
  *
  * 负责数据获取、状态管理和业务逻辑。
@@ -22,7 +22,7 @@ import { useSelectionStore } from "@/stores/selection.store";
 import { useSidebarStore } from "@/stores/sidebar.store";
 import type { WorkspaceInterface } from "@/types/workspace";
 
-import { ActivityBarView } from "./activity-bar-view";
+import { ActivityBarView } from "./activity-bar.view.fn";
 
 /**
  * ActivityBar 容器组件

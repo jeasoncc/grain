@@ -2,14 +2,14 @@
 
 ## Phase 1: 重命名已有 View/Container 结构的组件
 
-- [ ] 1. 重构 activity-bar 组件
-  - [ ] 1.1 重命名 `activity-bar-view.tsx` → `activity-bar.view.fn.tsx`
+- [x] 1. 重构 activity-bar 组件
+  - [x] 1.1 重命名 `activity-bar-view.tsx` → `activity-bar.view.fn.tsx`
     - _Requirements: 1.1_
-  - [ ] 1.2 重命名 `activity-bar-container.tsx` → `activity-bar.container.fn.tsx`
+  - [x] 1.2 重命名 `activity-bar-container.tsx` → `activity-bar.container.fn.tsx`
     - _Requirements: 1.2_
-  - [ ] 1.3 更新 `index.ts` 导出
+  - [x] 1.3 更新 `index.ts` 导出
     - _Requirements: 1.4_
-  - [ ] 1.4 更新所有导入路径
+  - [x] 1.4 更新所有导入路径
     - _Requirements: 1.3_
 
 - [ ] 2. 验证 Phase 1

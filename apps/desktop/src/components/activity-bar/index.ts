@@ -16,6 +16,6 @@ export type {
 	WorkspaceItemProps,
 } from "./activity-bar.types";
 // 容器组件（默认导出）
-export { ActivityBarContainer as ActivityBar } from "./activity-bar-container";
+export { ActivityBarContainer as ActivityBar } from "./activity-bar.container.fn";
 // 纯展示组件
-export { ActivityBarView } from "./activity-bar-view";
+export { ActivityBarView } from "./activity-bar.view.fn";

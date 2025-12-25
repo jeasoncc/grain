@@ -1,5 +1,5 @@
 /**
- * @file activity-bar-view.tsx
+ * @file activity-bar.view.fn.tsx
  * @description ActivityBar 纯展示组件
  *
  * 纯展示组件，只通过 props 接收数据和回调函数。
