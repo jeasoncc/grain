@@ -107,15 +107,17 @@ export type { ExportFormat, ExportOptions } from "@/types/export";
 // Import-Export (从新架构重新导出)
 export {
 	type ExportBundle,
+	triggerBlobDownload,
+	triggerDownload,
+} from "@/fn/export";
+export { extractText } from "@/fn/content";
+export { readFileAsText } from "@/fn/import";
+export {
 	exportAll,
 	exportAllAsZip,
 	exportAsMarkdown,
-	extractText,
-	importFromJson,
-	readFileAsText,
-	triggerBlobDownload,
-	triggerDownload,
-} from "./import-export";
+} from "@/actions/export";
+export { importFromJson } from "@/actions/import";
 
 // ============================================================================
 // Database 模块
@@ -143,5 +145,3 @@ export * from "@/db/init";
 
 export * from "./drawings";
 export * from "./nodes";
-export * from "./tags";
-export * from "./workspaces";
