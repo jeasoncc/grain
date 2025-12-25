@@ -3,3 +3,4 @@
  */
 
 export * from "./create-templated-file.action";
+export * from "./create-diary.action";

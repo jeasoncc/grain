@@ -24,14 +24,15 @@
 // Domain 模块
 // ============================================================================
 
-// Diary functions (从 actions 导入)
+// Diary functions (从 templated actions 导入)
 export {
 	type CreateDiaryParams,
-	createDiary,
-	createDiaryAsync,
-	DIARY_ROOT_FOLDER,
+	createDiaryCompat as createDiary,
+	createDiaryCompatAsync as createDiaryAsync,
 	type DiaryCreationResult,
-} from "@/actions/diary";
+} from "@/actions/templated";
+// Diary root folder constant (从旧 action 导入)
+export { DIARY_ROOT_FOLDER } from "@/actions/diary";
 // Diary (从 actions 重新导出以保持向后兼容)
 // File Creator (从 actions 重新导出)
 export {

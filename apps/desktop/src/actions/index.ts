@@ -5,8 +5,6 @@
  * 每个子目录对应一个业务领域。
  */
 
-// Diary actions
-export * from "./diary";
 // Drawing actions
 export * from "./drawing";
 // Export actions
@@ -17,7 +15,12 @@ export * from "./import";
 export * from "./node";
 // Settings actions
 export * from "./settings";
-// Templated actions
+// Templated actions (includes new diary actions)
 export * from "./templated";
 // Workspace actions
 export * from "./workspace";
+
+// Legacy diary actions (deprecated - use templated actions instead)
+export {
+	DIARY_ROOT_FOLDER,
+} from "./diary";

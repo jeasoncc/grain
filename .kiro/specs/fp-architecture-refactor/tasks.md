@@ -1281,7 +1281,7 @@ src/
 
 ### 18.2 重构现有模块
 
-- [ ] 116. 重构 Diary 创建
+- [-] 116. 重构 Diary 创建
   - 使用高阶函数重构 `create-diary.action.ts`
   - 移动到 `actions/templated/create-diary.action.ts`
   - 更新所有导入路径
