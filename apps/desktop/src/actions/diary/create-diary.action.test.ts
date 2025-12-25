@@ -85,6 +85,18 @@ const createMockDiaryResult = (
 		tags: ["diary"],
 		...overrides,
 	},
+	parentFolder: {
+		id: "550e8400-e29b-41d4-a716-446655440002",
+		workspace: "550e8400-e29b-41d4-a716-446655440000",
+		parent: null,
+		type: "folder" as const,
+		title: "day-01-Monday",
+		order: 0,
+		collapsed: false,
+		createDate: "2024-01-01T00:00:00.000Z",
+		lastEdit: "2024-01-01T00:00:00.000Z",
+		tags: [],
+	},
 });
 
 /**
@@ -139,9 +151,7 @@ describe("createDiary", () => {
 			createMockFolderStructure(),
 		);
 		vi.mocked(generateDiaryContent).mockReturnValue(createMockLexicalContent());
-		vi.mocked(createFileInTree).mockReturnValue(() =>
-			Promise.resolve(E.right(createMockDiaryResult())),
-		);
+		vi.mocked(createFileInTree).mockResolvedValue(createMockDiaryResult());
 	});
 
 	afterEach(() => {
@@ -323,10 +333,8 @@ describe("createDiary", () => {
 		});
 
 		it("应该在文件创建失败时返回错误", async () => {
-			vi.mocked(createFileInTree).mockReturnValue(() =>
-				Promise.resolve(
-					E.left({ type: "DB_ERROR" as const, message: "数据库连接失败" }),
-				),
+			vi.mocked(createFileInTree).mockRejectedValue(
+				new Error("数据库连接失败"),
 			);
 
 			const result = await createDiary(validParams)();
@@ -354,10 +362,8 @@ describe("createDiary", () => {
 		});
 
 		it("应该在创建失败时抛出错误", async () => {
-			vi.mocked(createFileInTree).mockReturnValue(() =>
-				Promise.resolve(
-					E.left({ type: "DB_ERROR" as const, message: "数据库错误" }),
-				),
+			vi.mocked(createFileInTree).mockRejectedValue(
+				new Error("数据库错误"),
 			);
 
 			await expect(createDiaryAsync(validParams)).rejects.toThrow("数据库错误");

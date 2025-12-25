@@ -1271,7 +1271,7 @@ src/
   - 预计时间：30分钟
   - 优先级：🔴 高
 
-- [ ] 115. 创建模板配置目录
+- [x] 115. 创建模板配置目录
   - 创建 `actions/templated/configs/` 目录
   - 创建 `diary.config.ts` - Diary 模板配置
   - 创建 `wiki.config.ts` - Wiki 模板配置
