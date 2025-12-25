@@ -5,6 +5,7 @@ import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { createLedgerCompatAsync } from "@/actions/templated/create-ledger.action";
 import { ExportDialog } from "@/components/blocks/export-dialog";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm";
@@ -44,6 +45,7 @@ export function ActivityBar(): React.ReactElement {
 	const [showNewWorkspace, setShowNewWorkspace] = useState(false);
 	const [newWorkspaceName, setNewWorkspaceName] = useState("");
 	const [isCreatingDiary, setIsCreatingDiary] = useState(false);
+	const [isCreatingLedger, setIsCreatingLedger] = useState(false);
 	const {
 		activePanel,
 		isOpen: unifiedSidebarOpen,
@@ -141,6 +143,7 @@ export function ActivityBar(): React.ReactElement {
 	const FilesIcon = iconTheme.icons.activityBar.files;
 	const SearchIcon = iconTheme.icons.activityBar.search;
 	const DiaryIcon = iconTheme.icons.activityBar.diary;
+	const LedgerIcon = iconTheme.icons.activityBar.ledger;
 	const WikiIcon = iconTheme.icons.activityBar.library;
 	const SettingsIcon = iconTheme.icons.activityBar.settings;
 	const ImportIcon = iconTheme.icons.activityBar.import;
@@ -195,6 +198,40 @@ export function ActivityBar(): React.ReactElement {
 			console.error("Wiki creation error:", error);
 		}
 	}, [selectedWorkspaceId]);
+
+	// Handle ledger creation from Ledger icon
+	const handleCreateLedger = useCallback(async () => {
+		// Prevent multiple rapid clicks
+		if (isCreatingLedger) {
+			return;
+		}
+
+		if (!selectedWorkspaceId) {
+			toast.error("Please select a workspace first");
+			return;
+		}
+
+		setIsCreatingLedger(true);
+		try {
+			const result = await createLedgerCompatAsync({
+				workspaceId: selectedWorkspaceId,
+				date: new Date(),
+			});
+			// Open the created ledger in editor
+			openTab({
+				workspaceId: selectedWorkspaceId,
+				nodeId: result.node.id,
+				title: result.node.title,
+				type: "file",
+			});
+			toast.success("Ledger created");
+		} catch (error) {
+			toast.error("Failed to create ledger");
+			console.error("Ledger creation error:", error);
+		} finally {
+			setIsCreatingLedger(false);
+		}
+	}, [selectedWorkspaceId, isCreatingLedger, openTab]);
 
 	// Helper function to read file as text
 	const readFileAsText = (file: File): Promise<string> => {
@@ -295,7 +332,7 @@ export function ActivityBar(): React.ReactElement {
 		<aside className="activity-bar z-10 flex w-12 shrink-0 flex-col items-center border-r border-border/30 bg-muted/50 pb-2">
 			<TooltipProvider>
 				{/* 主导航 - 侧边栏面板切换 */}
-				{/* 顺序: Files → Calendar → Wiki → Search → Outline → Statistics → Settings */}
+				{/* 顺序: Files → Calendar → Wiki → Ledger → Search → Outline → Statistics → Settings */}
 				{/* Library 和 Diary 面板按钮已移除，日记功能整合到文件树中，但保留日历图标用于快速创建 */}
 				<nav className="flex flex-col items-center w-full">
 					{/* 1st: Files (Node-based File Tree) */}
@@ -323,7 +360,13 @@ export function ActivityBar(): React.ReactElement {
 						label="New Wiki"
 						onClick={handleCreateWiki}
 					/>
-					{/* 4th: Search */}
+					{/* 4th: Ledger - Quick Ledger Entry Creation */}
+					<ActionButton
+						icon={<LedgerIcon className="size-5" />}
+						label="New Ledger"
+						onClick={handleCreateLedger}
+					/>
+					{/* 5th: Search */}
 					<ActionButton
 						icon={<SearchIcon className="size-5" />}
 						label="Search (Ctrl+Shift+F)"

@@ -35,6 +35,7 @@ export interface IconThemeIcons {
 		chapters: LucideIcon;
 		files: LucideIcon;
 		diary: LucideIcon;
+		ledger: LucideIcon;
 		tags: LucideIcon;
 		statistics: LucideIcon;
 		settings: LucideIcon;
