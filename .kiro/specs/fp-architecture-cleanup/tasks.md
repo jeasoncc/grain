@@ -210,58 +210,126 @@
     - 确认符合规范
     - _Requirements: 7.4_
 
-- [-] 20. 提交清理结果
+- [x] 20. 提交清理结果
   - 执行 `git add -A && git commit -m "chore: 清理旧架构文件"`
+  - _Requirements: 7.1, 7.2, 7.3, 7.4_
+
+## Phase 9: 删除更多未使用组件
+
+**说明：** 根据 fp-architecture-refactor 任务 50 的审查，以下组件未被任何文件引用，应该删除。
+
+- [x] 21. 删除根级未使用组件
+  - [x] 21.1 删除 `components/activity-bar.tsx`
+    - 旧版 ActivityBar，已被 `components/activity-bar/` 目录替代
+    - _Requirements: 4.1_
+  - [x] 21.2 删除 `components/settings-nav.tsx`
+    - 未被任何文件引用
+    - _Requirements: 4.1_
+  - [x] 21.3 删除 `components/icon-picker.tsx`
+    - 未被任何文件引用
+    - _Requirements: 4.1_
+  - [x] 21.4 删除 `components/search-sidebar.tsx`
+    - 未被任何文件引用
+    - _Requirements: 4.1_
+  - [x] 21.5 删除 `components/icon-theme-preview.tsx`
+    - 未被任何文件引用
+    - _Requirements: 4.1_
+  - [x] 21.6 删除 `components/dev-only.tsx`
+    - 未被任何文件引用
+    - _Requirements: 4.1_
+
+- [ ] 22. 删除全局搜索相关未使用组件
+  - [ ] 22.1 删除 `components/global-search-provider.tsx`
+    - 未被任何文件引用
+    - _Requirements: 4.1_
+  - [ ] 22.2 删除 `components/global-search-dialog-connected.tsx`
+    - 仅被 global-search-provider.tsx 引用，一起删除
+    - _Requirements: 4.1_
+  - [ ] 22.3 删除 `components/global-search-dialog.tsx`
+    - 仅被 global-search-dialog-connected.tsx 引用，一起删除
+    - _Requirements: 4.1_
+
+- [ ] 23. 删除 file-tree/ 未使用组件
+  - [ ] 23.1 删除 `components/file-tree/new-node-dialog.tsx`
+    - 未被任何文件引用
+    - _Requirements: 4.1_
+  - [ ] 23.2 删除 `components/file-tree/rename-node-dialog.tsx`
+    - 未被任何文件引用
+    - _Requirements: 4.1_
+
+- [ ] 24. 验证组件删除
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1, 4.2_
+
+- [ ] 25. 提交清理结果
+  - 执行 `git add -A && git commit -m "chore: 删除更多未使用组件"`
   - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
 ---
 
 ## 📊 清理统计
 
-### 待删除目录
+### 已删除目录
 
 | 目录 | 文件数 | 状态 |
 |------|--------|------|
-| `domain/` | ~50 | ⏳ 待删除 |
-| `services/` | ~12 | ⏳ 待删除 |
-| `db/backup/` | 2 | ⏳ 待删除 |
-| `db/clear-data/` | 2 | ⏳ 待删除 |
-| `db/init/` | 2 | ⏳ 待删除 |
+| `domain/` | ~50 | ✅ 已删除 |
+| `services/` | ~12 | ✅ 已删除 |
+| `db/backup/` | 2 | ✅ 已删除 |
+| `db/clear-data/` | 2 | ✅ 已删除 |
+| `db/init/` | 2 | ✅ 已删除 |
+| `actions/diary/` | 3 | ✅ 已删除 |
+| `components/debug/` | 0 | ✅ 已删除 |
+| `utils/` | 0 | ✅ 已删除 |
 
-### 待删除组件
+### 已删除组件
 
 | 组件 | 文件 | 状态 |
 |------|------|------|
-| EmptyProject | `blocks/emptyProject.tsx` | ⏳ 待删除 |
-| CreateBookDialog | `blocks/createBookDialog.tsx` | ⏳ 待删除 |
-| FocusMode | `blocks/focus-mode.tsx` | ⏳ 待删除 |
-| WritingStatsPanel | `blocks/writing-stats-panel.tsx` | ⏳ 待删除 |
-| AutoSaveIndicator | `blocks/auto-save-indicator.tsx` | ⏳ 待删除 |
-| MultiSelect | `blocks/multi-select.tsx` | ⏳ 待删除 |
-| DrawingManager | `drawing/drawing-manager.tsx` | ⏳ 待删除 |
-| DrawingList | `drawing/drawing-list.tsx` | ⏳ 待删除 |
-| MultiEditorWorkspace | `workspace/multi-editor-workspace.tsx` | ⏳ 待删除 |
-| TestSelection | `test-selection.tsx` | ⏳ 待删除 |
+| EmptyProject | `blocks/emptyProject.tsx` | ✅ 已删除 |
+| CreateBookDialog | `blocks/createBookDialog.tsx` | ✅ 已删除 |
+| FocusMode | `blocks/focus-mode.tsx` | ✅ 已删除 |
+| WritingStatsPanel | `blocks/writing-stats-panel.tsx` | ✅ 已删除 |
+| AutoSaveIndicator | `blocks/auto-save-indicator.tsx` | ✅ 已删除 |
+| MultiSelect | `blocks/multi-select.tsx` | ✅ 已删除 |
+| DrawingManager | `drawing/drawing-manager.tsx` | ✅ 已删除 |
+| DrawingList | `drawing/drawing-list.tsx` | ✅ 已删除 |
+| MultiEditorWorkspace | `workspace/multi-editor-workspace.tsx` | ✅ 已删除 |
+| TestSelection | `test-selection.tsx` | ✅ 已删除 |
 
-### 待删除路由
+### 已删除路由
 
 | 路由 | 文件 | 状态 |
 |------|------|------|
-| /test-clear-data | `routes/test-clear-data.tsx` | ⏳ 待删除 |
-| /test-focus | `routes/test-focus.tsx` | ⏳ 待删除 |
-| /test-manual-save | `routes/test-manual-save.tsx` | ⏳ 待删除 |
-| /test-selection | `routes/test-selection.tsx` | ⏳ 待删除 |
+| /test-clear-data | `routes/test-clear-data.tsx` | ✅ 已删除 |
+| /test-focus | `routes/test-focus.tsx` | ✅ 已删除 |
+| /test-manual-save | `routes/test-manual-save.tsx` | ✅ 已删除 |
+| /test-selection | `routes/test-selection.tsx` | ✅ 已删除 |
 
-### 预计清理量
+### 待删除组件（Phase 9）
 
-- **目录**: 5 个
-- **文件**: ~70 个
-- **代码行数**: ~5000+ 行
+| 组件 | 文件 | 状态 |
+|------|------|------|
+| ActivityBar (旧) | `activity-bar.tsx` | ⏳ 待删除 |
+| SettingsNav | `settings-nav.tsx` | ⏳ 待删除 |
+| IconPicker | `icon-picker.tsx` | ⏳ 待删除 |
+| SearchSidebar | `search-sidebar.tsx` | ⏳ 待删除 |
+| IconThemePreview | `icon-theme-preview.tsx` | ⏳ 待删除 |
+| DevOnly | `dev-only.tsx` | ⏳ 待删除 |
+| GlobalSearchProvider | `global-search-provider.tsx` | ⏳ 待删除 |
+| GlobalSearchDialogConnected | `global-search-dialog-connected.tsx` | ⏳ 待删除 |
+| GlobalSearchDialog | `global-search-dialog.tsx` | ⏳ 待删除 |
+| NewNodeDialog | `file-tree/new-node-dialog.tsx` | ⏳ 待删除 |
+| RenameNodeDialog | `file-tree/rename-node-dialog.tsx` | ⏳ 待删除 |
 
-### 预计时间
+### 清理量统计
 
-- Phase 1-2: 30 分钟
-- Phase 3-4: 30 分钟
-- Phase 5-6: 20 分钟
-- Phase 7-8: 20 分钟
-- **总计**: ~1.5-2 小时
+**Phase 1-8 已完成：**
+- **目录**: 8 个
+- **文件**: 86 个
+- **代码行数**: ~13,000 行
+
+**Phase 9 待完成：**
+- **文件**: 11 个
+- **预计代码行数**: ~2,000 行
