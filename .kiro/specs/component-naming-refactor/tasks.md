@@ -11,7 +11,7 @@
     - _Requirements: 1.4_
   - [x] 1.4 更新所有导入路径
     - _Requirements: 1.3_
-  - [ ] 1.5 创建 `activity-bar.view.fn.test.tsx`
+  - [x] 1.5 创建 `activity-bar.view.fn.test.tsx`
     - _Requirements: 7.2_
   - [ ] 1.6 创建 `activity-bar.container.fn.test.tsx`
     - _Requirements: 7.2_
