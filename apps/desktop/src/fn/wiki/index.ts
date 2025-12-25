@@ -6,12 +6,6 @@
 
 export { WikiFileEntryBuilder } from "./wiki.builder";
 export {
-	checkMigrationNeeded,
-	type MigrationResult,
-	migrateWikiEntriesToFiles,
-	runMigrationIfNeeded,
-} from "./wiki.migrate.fn";
-export {
 	generateWikiTemplate,
 	getWikiFiles,
 	getWikiFilesAsync,
@@ -29,3 +23,6 @@ export {
 
 // NOTE: Wiki file creation has been moved to actions/templated/create-wiki.action.ts
 // Use createWiki or createWikiAsync from that module instead.
+
+// NOTE: Wiki migration has been moved to actions/wiki/migrate-wiki.action.ts
+// Use runMigrationIfNeeded from that module instead.

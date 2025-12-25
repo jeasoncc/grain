@@ -17,6 +17,8 @@ export * from "./node";
 export * from "./settings";
 // Templated actions (includes new diary actions)
 export * from "./templated";
+// Wiki actions (migration)
+export * from "./wiki";
 // Workspace actions
 export * from "./workspace";
 
