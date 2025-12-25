@@ -249,11 +249,11 @@
     - 仅被 global-search-dialog-connected.tsx 引用，一起删除
     - _Requirements: 4.1_
 
-- [ ] 23. 删除 file-tree/ 未使用组件
-  - [ ] 23.1 删除 `components/file-tree/new-node-dialog.tsx`
+- [x] 23. 删除 file-tree/ 未使用组件
+  - [x] 23.1 删除 `components/file-tree/new-node-dialog.tsx`
     - 未被任何文件引用
     - _Requirements: 4.1_
-  - [ ] 23.2 删除 `components/file-tree/rename-node-dialog.tsx`
+  - [x] 23.2 删除 `components/file-tree/rename-node-dialog.tsx`
     - 未被任何文件引用
     - _Requirements: 4.1_
 
