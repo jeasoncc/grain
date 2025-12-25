@@ -50,7 +50,7 @@ export const diaryParamsSchema = z.object({
  * 生成日记模板内容
  */
 const generateDiaryTemplate = (params: DiaryTemplateParams): string => {
-	const date = params.date || new Date();
+	const date = params.date || dayjs().toDate();
 	return generateDiaryContent(date);
 };
 
@@ -58,7 +58,7 @@ const generateDiaryTemplate = (params: DiaryTemplateParams): string => {
  * 生成日记文件夹路径
  */
 const generateDiaryFolderPath = (params: DiaryTemplateParams): string[] => {
-	const date = params.date || new Date();
+	const date = params.date || dayjs().toDate();
 	const structure = getDiaryFolderStructure(date);
 	
 	return [
@@ -72,7 +72,7 @@ const generateDiaryFolderPath = (params: DiaryTemplateParams): string[] => {
  * 生成日记文件标题
  */
 const generateDiaryTitle = (params: DiaryTemplateParams): string => {
-	const date = params.date || new Date();
+	const date = params.date || dayjs().toDate();
 	const structure = getDiaryFolderStructure(date);
 	return structure.filename;
 };
