@@ -4,28 +4,20 @@
  * 连接层：提供搜索逻辑，将纯展示组件连接到搜索引擎
  */
 
-import { useCallback } from "react";
+import { memo, useCallback } from "react";
 import { searchEngine } from "@/fn/search";
-import {
-	GlobalSearch,
-	type SearchOptions,
-	type SearchResult,
-} from "./global-search";
-
-interface GlobalSearchConnectedProps {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-}
+import { GlobalSearchView } from "./global-search.view.fn";
+import type { GlobalSearchContainerProps, SearchOptions, SearchResult } from "./global-search.types";
 
 /**
  * Global Search 连接组件
  *
  * 负责搜索逻辑，将搜索结果传递给纯展示组件
  */
-export function GlobalSearchConnected({
+export const GlobalSearchContainer = memo(({
 	open,
 	onOpenChange,
-}: GlobalSearchConnectedProps) {
+}: GlobalSearchContainerProps) => {
 	// 搜索函数
 	const handleSearch = useCallback(
 		async (query: string, options?: SearchOptions): Promise<SearchResult[]> => {
@@ -38,10 +30,12 @@ export function GlobalSearchConnected({
 	);
 
 	return (
-		<GlobalSearch
+		<GlobalSearchView
 			open={open}
 			onOpenChange={onOpenChange}
 			onSearch={handleSearch}
 		/>
 	);
-}
+});
+
+GlobalSearchContainer.displayName = "GlobalSearchContainer";

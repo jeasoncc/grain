@@ -6,7 +6,7 @@
 
 import { useNavigate } from "@tanstack/react-router";
 import { FileText, Loader2, Search, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,45 +19,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-
-/**
- * 搜索结果类型
- */
-export type SearchResultType = "project" | "node";
-
-/**
- * 搜索结果
- */
-export interface SearchResult {
-	id: string;
-	type: SearchResultType;
-	title: string;
-	content: string;
-	excerpt: string;
-	workspaceId?: string;
-	workspaceTitle?: string;
-	score: number;
-	highlights: string[];
-}
-
-/**
- * 搜索选项
- */
-export interface SearchOptions {
-	limit?: number;
-}
-
-/**
- * Global Search Props
- */
-interface GlobalSearchProps {
-	/** 是否打开 */
-	open: boolean;
-	/** 打开状态变化回调 */
-	onOpenChange: (open: boolean) => void;
-	/** 搜索函数 */
-	onSearch: (query: string, options?: SearchOptions) => Promise<SearchResult[]>;
-}
+import type { GlobalSearchViewProps, SearchResult, SearchResultType } from "./global-search.types";
 
 const typeIcons: Record<
 	SearchResultType,
@@ -77,11 +39,11 @@ const typeColors: Record<SearchResultType, string> = {
 	node: "bg-blue-500/10 text-blue-500",
 };
 
-export function GlobalSearch({
+export const GlobalSearchView = memo(({
 	open,
 	onOpenChange,
 	onSearch,
-}: GlobalSearchProps) {
+}: GlobalSearchViewProps) => {
 	const [query, setQuery] = useState("");
 	const [results, setResults] = useState<SearchResult[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -314,4 +276,6 @@ export function GlobalSearch({
 			</DialogContent>
 		</Dialog>
 	);
-}
+});
+
+GlobalSearchView.displayName = "GlobalSearchView";

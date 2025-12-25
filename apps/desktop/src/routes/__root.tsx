@@ -4,7 +4,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { toast } from "sonner";
 import { createDrawing, deleteDrawing } from "@/actions";
 import { ActivityBar } from "@/components/activity-bar/index";
-import { GlobalSearchConnected } from "@/components/blocks/global-search-connected";
+import { GlobalSearchContainer } from "@/components/global-search";
 import { BufferSwitcher } from "@/components/buffer-switcher";
 import { CommandPalette } from "@/components/command-palette";
 import { DevtoolsWrapper } from "@/components/devtools-wrapper";
@@ -265,7 +265,7 @@ function RootComponent() {
 					selectedWorkspaceId={selectedWorkspaceId}
 				/>
 				{/* Global Search */}
-				<GlobalSearchConnected open={searchOpen} onOpenChange={setSearchOpen} />
+				<GlobalSearchContainer open={searchOpen} onOpenChange={setSearchOpen} />
 				{/* Buffer Switcher (Emacs-style tab switching) */}
 				<BufferSwitcher
 					open={bufferSwitcherOpen}

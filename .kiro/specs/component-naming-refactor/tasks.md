@@ -24,7 +24,7 @@
 
 ## Phase 2: 重构 blocks/ 目录中已有 View/Container 的组件
 
-- [ ] 3. 重构 wiki-hover-preview 组件
+- [-] 3. 重构 wiki-hover-preview 组件
   - [ ] 3.1 创建 `components/wiki-hover-preview/` 目录
   - [ ] 3.2 移动并重命名 `wiki-hover-preview.tsx` → `wiki-hover-preview.view.fn.tsx`
     - _Requirements: 2.1_
@@ -38,18 +38,18 @@
   - [ ] 3.8 创建 `wiki-hover-preview.container.fn.test.tsx`
     - _Requirements: 7.2_
 
-- [ ] 4. 重构 global-search 组件
-  - [ ] 4.1 创建 `components/global-search/` 目录
-  - [ ] 4.2 移动并重命名 `global-search.tsx` → `global-search.view.fn.tsx`
+- [x] 4. 重构 global-search 组件
+  - [x] 4.1 创建 `components/global-search/` 目录
+  - [x] 4.2 移动并重命名 `global-search.tsx` → `global-search.view.fn.tsx`
     - _Requirements: 2.3_
-  - [ ] 4.3 移动并重命名 `global-search-connected.tsx` → `global-search.container.fn.tsx`
+  - [x] 4.3 移动并重命名 `global-search-connected.tsx` → `global-search.container.fn.tsx`
     - _Requirements: 2.4_
-  - [ ] 4.4 创建 `global-search.types.ts`
-  - [ ] 4.5 创建 `index.ts`
-  - [ ] 4.6 更新所有导入路径
-  - [ ] 4.7 创建 `global-search.view.fn.test.tsx`
+  - [x] 4.4 创建 `global-search.types.ts`
+  - [x] 4.5 创建 `index.ts`
+  - [x] 4.6 更新所有导入路径
+  - [x] 4.7 创建 `global-search.view.fn.test.tsx`
     - _Requirements: 7.2_
-  - [ ] 4.8 创建 `global-search.container.fn.test.tsx`
+  - [x] 4.8 创建 `global-search.container.fn.test.tsx`
     - _Requirements: 7.2_
 
 - [ ] 5. 验证 Phase 2
