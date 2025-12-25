@@ -13,10 +13,8 @@
 
 import dayjs from "dayjs";
 import { z } from "zod";
-import {
-	generateDiaryContent,
-	getDiaryFolderStructure,
-} from "@/domain/diary/diary.utils";
+import { generateDiaryContent } from "@/fn/content";
+import { getDateFolderStructureWithFilename } from "@/fn/date";
 import type { TemplateConfig } from "../create-templated-file.action";
 
 // ==============================
@@ -59,7 +57,7 @@ const generateDiaryTemplate = (params: DiaryTemplateParams): string => {
  */
 const generateDiaryFolderPath = (params: DiaryTemplateParams): string[] => {
 	const date = params.date || dayjs().toDate();
-	const structure = getDiaryFolderStructure(date);
+	const structure = getDateFolderStructureWithFilename(date, "diary");
 
 	return [structure.yearFolder, structure.monthFolder, structure.dayFolder];
 };
@@ -69,7 +67,7 @@ const generateDiaryFolderPath = (params: DiaryTemplateParams): string[] => {
  */
 const generateDiaryTitle = (params: DiaryTemplateParams): string => {
 	const date = params.date || dayjs().toDate();
-	const structure = getDiaryFolderStructure(date);
+	const structure = getDateFolderStructureWithFilename(date, "diary");
 	return structure.filename;
 };
 

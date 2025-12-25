@@ -17,10 +17,8 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { z } from "zod";
 import { createFileInTree } from "@/actions/node";
-import {
-	generateDiaryContent,
-	getDiaryFolderStructure,
-} from "@/domain/diary/diary.utils";
+import { generateDiaryContent } from "@/fn/content";
+import { getDateFolderStructureWithFilename } from "@/fn/date";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
 import type { NodeInterface } from "@/types/node";
@@ -102,7 +100,7 @@ export const createDiary = (
 		// 2. 准备数据
 		TE.map((validParams) => {
 			const date = validParams.date || new Date();
-			const structure = getDiaryFolderStructure(date);
+			const structure = getDateFolderStructureWithFilename(date, "diary");
 			const content = generateDiaryContent(date);
 			return { validParams, date, structure, content };
 		}),

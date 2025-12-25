@@ -29,9 +29,12 @@ vi.mock("@/actions/node", () => ({
 	createFileInTree: vi.fn(),
 }));
 
-vi.mock("@/domain/diary/diary.utils", () => ({
+vi.mock("@/fn/content", () => ({
 	generateDiaryContent: vi.fn(),
-	getDiaryFolderStructure: vi.fn(),
+}));
+
+vi.mock("@/fn/date", () => ({
+	getDateFolderStructureWithFilename: vi.fn(),
 }));
 
 vi.mock("@/log/index", () => ({
@@ -46,10 +49,8 @@ vi.mock("@/log/index", () => ({
 }));
 
 import { createFileInTree } from "@/actions/node";
-import {
-	generateDiaryContent,
-	getDiaryFolderStructure,
-} from "@/domain/diary/diary.utils";
+import { generateDiaryContent } from "@/fn/content";
+import { getDateFolderStructureWithFilename } from "@/fn/date";
 
 // ============================================================================
 // Test Helpers
@@ -147,7 +148,7 @@ describe("createDiary", () => {
 		vi.clearAllMocks();
 
 		// 设置默认 mock 返回值
-		vi.mocked(getDiaryFolderStructure).mockReturnValue(
+		vi.mocked(getDateFolderStructureWithFilename).mockReturnValue(
 			createMockFolderStructure(),
 		);
 		vi.mocked(generateDiaryContent).mockReturnValue(createMockLexicalContent());
@@ -237,8 +238,9 @@ describe("createDiary", () => {
 				date: customDate,
 			})();
 
-			expect(vi.mocked(getDiaryFolderStructure)).toHaveBeenCalledWith(
+			expect(vi.mocked(getDateFolderStructureWithFilename)).toHaveBeenCalledWith(
 				customDate,
+				"diary",
 			);
 			expect(vi.mocked(generateDiaryContent)).toHaveBeenCalledWith(customDate);
 		});
@@ -250,9 +252,9 @@ describe("createDiary", () => {
 			})();
 			const afterCall = new Date();
 
-			const calls = vi.mocked(getDiaryFolderStructure).mock.calls;
+			const calls = vi.mocked(getDateFolderStructureWithFilename).mock.calls;
 			expect(calls.length).toBe(1);
-			const usedDate = calls[0]?.[0];
+			const usedDate = calls[0]?.[0] as Date;
 			expect(usedDate).toBeInstanceOf(Date);
 			expect(usedDate.getTime()).toBeGreaterThanOrEqual(beforeCall.getTime());
 			expect(usedDate.getTime()).toBeLessThanOrEqual(afterCall.getTime());
@@ -397,8 +399,9 @@ describe("createDiary", () => {
 			})();
 
 			expect(E.isRight(result)).toBe(true);
-			expect(vi.mocked(getDiaryFolderStructure)).toHaveBeenCalledWith(
+			expect(vi.mocked(getDateFolderStructureWithFilename)).toHaveBeenCalledWith(
 				extremeDate,
+				"diary",
 			);
 		});
 
@@ -410,8 +413,9 @@ describe("createDiary", () => {
 			})();
 
 			expect(E.isRight(result)).toBe(true);
-			expect(vi.mocked(getDiaryFolderStructure)).toHaveBeenCalledWith(
+			expect(vi.mocked(getDateFolderStructureWithFilename)).toHaveBeenCalledWith(
 				futureDate,
+				"diary",
 			);
 		});
 

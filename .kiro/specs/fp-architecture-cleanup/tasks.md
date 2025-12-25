@@ -1,109 +1,267 @@
 # Implementation Plan
 
-## Phase 1: 验证并删除无引用的 Domain 模块
+## Phase 1: 更新导入路径
 
-- [x] 1. 验证 domain 模块无引用
-  - 运行 grep 检查每个模块的引用
-  - 记录任何意外的引用
-  - _Requirements: 1.1-1.6_
+- [x] 1. 更新 domain/diary 引用
+  - [x] 1.1 更新 `actions/templated/configs/diary.config.ts`
+    - 将 `@/domain/diary/diary.utils` 改为 `@/fn/date/`
+    - _Requirements: 6.1_
+  - [x] 1.2 更新 `actions/diary/create-diary.action.test.ts`
+    - 将 `@/domain/diary/diary.utils` 改为 `@/fn/date/`
+    - _Requirements: 6.1_
 
-- [x] 2. 删除无引用的 domain 模块
-  - [x] 2.1 删除 `domain/import-export/` 目录
-  - [x] 2.2 删除 `domain/keyboard/` 目录
-  - [x] 2.3 删除 `domain/save/` 目录
-  - [x] 2.4 删除 `domain/selection/` 目录
-  - [x] 2.5 删除 `domain/writing/` 目录
-  - 注：`domain/editor-history/` 不存在，跳过
-  - _Requirements: 1.1-1.6_
+- [ ] 2. 更新 domain/export 引用
+  - [ ] 2.1 更新 `components/blocks/export-dialog.tsx`
+    - 将 `@/domain/export` 改为 `@/fn/export/` 或 `@/actions/export/`
+    - _Requirements: 6.1_
+  - [ ] 2.2 更新 `components/export/export-button.tsx`
+    - 将 `@/domain/export` 改为 `@/fn/export/` 或 `@/actions/export/`
+    - _Requirements: 6.1_
 
-## Phase 2: 验证并删除无引用的 Services 文件
+- [ ] 3. 验证导入更新
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1_
 
-- [x] 3. 验证 services 文件无引用
-  - 运行 grep 检查每个文件的引用
-  - 记录任何意外的引用
-  - _Requirements: 2.1-2.5_
+## Phase 2: 删除 services/ 目录
 
-- [x] 4. 删除无引用的 services 文件
-  - [x] 4.1 删除 `services/export-path.ts`
-  - [x] 4.2 删除 `services/import-export.ts`
-  - [x] 4.3 删除 `services/tags.ts`
-  - [x] 4.4 删除 `services/workspaces.ts`
-  - 注：`services/drawings.utils.ts` 仍被 `drawings.ts` 使用，保留
-  - _Requirements: 2.1-2.5_
+- [ ] 4. 删除 services/ 目录
+  - [ ] 4.1 删除 `services/__tests__/` 目录
+    - _Requirements: 2.1_
+  - [ ] 4.2 删除 `services/drawings.ts`
+    - _Requirements: 2.1_
+  - [ ] 4.3 删除 `services/drawings.utils.ts`
+    - _Requirements: 2.1_
+  - [ ] 4.4 删除 `services/export-path.ts`
+    - _Requirements: 2.1_
+  - [ ] 4.5 删除 `services/export.ts`
+    - _Requirements: 2.1_
+  - [ ] 4.6 删除 `services/import-export.ts`
+    - _Requirements: 2.1_
+  - [ ] 4.7 删除 `services/index.ts`
+    - _Requirements: 2.1, 2.2, 2.3_
+  - [ ] 4.8 删除 `services/nodes.ts`
+    - _Requirements: 2.1_
+  - [ ] 4.9 删除 `services/tags.ts`
+    - _Requirements: 2.1_
+  - [ ] 4.10 删除 `services/workspaces.ts`
+    - _Requirements: 2.1_
 
-## Phase 3: 更新 Services 索引
+- [ ] 5. 验证 services 删除
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1_
 
-- [x] 5. 更新 services/index.ts
-  - 移除对已删除模块的 re-export
-  - 添加对新位置的 re-export（向后兼容）
-  - _Requirements: 3.1-3.2_
+## Phase 3: 删除 domain/ 目录
 
-## Phase 4: 验证功能
+- [ ] 6. 删除 domain/ 子目录
+  - [ ] 6.1 删除 `domain/diagram/`
+    - _Requirements: 1.1_
+  - [ ] 6.2 删除 `domain/diary/`
+    - _Requirements: 1.1, 1.3_
+  - [ ] 6.3 删除 `domain/editor-tabs/`
+    - _Requirements: 1.1_
+  - [ ] 6.4 删除 `domain/export/`
+    - _Requirements: 1.1, 1.4_
+  - [ ] 6.5 删除 `domain/file-creator/`
+    - _Requirements: 1.1_
+  - [ ] 6.6 删除 `domain/font/`
+    - _Requirements: 1.1_
+  - [ ] 6.7 删除 `domain/icon-theme/`
+    - _Requirements: 1.1_
+  - [ ] 6.8 删除 `domain/import-export/`
+    - _Requirements: 1.1_
+  - [ ] 6.9 删除 `domain/keyboard/`
+    - _Requirements: 1.1_
+  - [ ] 6.10 删除 `domain/save/`
+    - _Requirements: 1.1_
+  - [ ] 6.11 删除 `domain/search/`
+    - _Requirements: 1.1, 1.5_
+  - [ ] 6.12 删除 `domain/selection/`
+    - _Requirements: 1.1_
+  - [ ] 6.13 删除 `domain/sidebar/`
+    - _Requirements: 1.1_
+  - [ ] 6.14 删除 `domain/theme/`
+    - _Requirements: 1.1_
+  - [ ] 6.15 删除 `domain/ui/`
+    - _Requirements: 1.1_
+  - [ ] 6.16 删除 `domain/updater/`
+    - _Requirements: 1.1_
+  - [ ] 6.17 删除 `domain/wiki/`
+    - _Requirements: 1.1_
+  - [ ] 6.18 删除 `domain/writing/`
+    - _Requirements: 1.1_
 
-- [x] 6. 运行类型检查
-  - 执行 `bunx tsc --noEmit`
-  - 20 个预存在的类型错误（与清理无关）
-  - _Requirements: 4.1_
+- [ ] 7. 验证 domain 删除
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1_
 
-- [x] 7. 运行测试
-  - 执行 `bunx vitest run`
-  - 58 个测试文件通过，7 个失败（IndexedDB mock 问题，预存在）
-  - _Requirements: 4.1_
+## Phase 4: 删除 db/ 子目录
 
-- [ ] 8. 启动开发服务器
-  - 执行 `bun run desktop:dev`
-  - 确认应用正常启动
-  - _Requirements: 4.2_
+- [ ] 8. 删除 db/ 旧服务目录
+  - [ ] 8.1 删除 `db/backup/` 目录
+    - 包含 `backup.service.ts` 和 `index.ts`
+    - _Requirements: 3.1_
+  - [ ] 8.2 删除 `db/clear-data/` 目录
+    - 包含 `clear-data.service.ts` 和 `index.ts`
+    - _Requirements: 3.2_
+  - [ ] 8.3 删除 `db/init/` 目录
+    - 包含 `db-init.service.ts` 和 `index.ts`
+    - _Requirements: 3.3_
 
-- [ ] 9. 手动功能测试
-  - [ ] 9.1 测试创建日记
-  - [ ] 9.2 测试创建 Wiki
-  - [ ] 9.3 测试创建记账
-  - [ ] 9.4 测试文件树操作
-  - _Requirements: 4.3-4.4_
+- [ ] 9. 验证 db 子目录删除
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1_
 
-## Phase 5: 最终清理（可选）
+## Phase 5: 删除未使用组件
 
-- [ ] 10. 评估是否删除整个 domain 目录
-  - 检查剩余的 domain 模块是否还有引用
-  - 如果全部无引用，删除整个 domain/ 目录
-  - _Requirements: 5.1_
+- [ ] 10. 删除 blocks/ 未使用组件
+  - [ ] 10.1 删除 `components/blocks/emptyProject.tsx`
+    - 未被任何文件引用
+    - _Requirements: 4.1_
+  - [ ] 10.2 删除 `components/blocks/createBookDialog.tsx`
+    - 未被任何文件引用
+    - _Requirements: 4.1_
+  - [ ] 10.3 删除 `components/blocks/focus-mode.tsx`
+    - 未被任何文件引用
+    - _Requirements: 4.1_
+  - [ ] 10.4 删除 `components/blocks/writing-stats-panel.tsx`
+    - 未被任何文件引用
+    - _Requirements: 4.1_
+  - [ ] 10.5 删除 `components/blocks/auto-save-indicator.tsx`
+    - 未被任何文件引用
+    - _Requirements: 4.1_
+  - [ ] 10.6 删除 `components/blocks/multi-select.tsx`
+    - 未被任何文件引用
+    - _Requirements: 4.1_
 
-- [ ] 11. 评估是否删除整个 services 目录
-  - 检查剩余的 services 文件是否还有引用
-  - 如果全部无引用，删除整个 services/ 目录
-  - _Requirements: 5.2_
+- [ ] 11. 删除 drawing/ 未使用组件
+  - [ ] 11.1 删除 `components/drawing/drawing-manager.tsx`
+    - 未被任何文件引用
+    - _Requirements: 4.1_
+  - [ ] 11.2 删除 `components/drawing/drawing-list.tsx`
+    - 仅被 drawing-manager.tsx 引用，一起删除
+    - _Requirements: 4.1_
 
-- [ ] 12. 评估是否删除 db/models 目录
-  - 检查 db/models 是否还有引用
-  - 如果全部无引用，删除 db/models/ 目录
-  - _Requirements: 5.3_
+- [ ] 12. 删除 workspace/ 未使用组件
+  - [ ] 12.1 删除 `components/workspace/multi-editor-workspace.tsx`
+    - 未被任何文件引用
+    - _Requirements: 4.1_
 
-## Phase 6: 提交变更
+- [ ] 13. 验证组件删除
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1, 4.2_
 
-- [ ] 13. 提交清理变更
-  - git add -A
-  - git commit -m "chore: 删除已迁移的旧代码"
-  - _Requirements: 5.1-5.3_
+## Phase 6: 删除测试路由
+
+- [ ] 14. 删除测试路由文件
+  - [ ] 14.1 删除 `routes/test-clear-data.tsx`
+    - _Requirements: 5.1_
+  - [ ] 14.2 删除 `routes/test-focus.tsx`
+    - _Requirements: 5.1_
+  - [ ] 14.3 删除 `routes/test-manual-save.tsx`
+    - _Requirements: 5.1_
+  - [ ] 14.4 删除 `routes/test-selection.tsx`
+    - _Requirements: 5.1_
+
+- [ ] 15. 删除测试组件
+  - [ ] 15.1 删除 `components/test-selection.tsx`
+    - 仅被 test-selection.tsx 路由使用
+    - _Requirements: 4.1_
+
+- [ ] 16. 验证测试路由删除
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1, 5.2_
+
+## Phase 7: 删除空目录和清理
+
+- [ ] 17. 删除空目录
+  - [ ] 17.1 删除 `components/debug/` 目录（如果为空）
+    - _Requirements: 4.1_
+  - [ ] 17.2 删除 `utils/` 目录（如果为空）
+    - _Requirements: 4.1_
+
+- [ ] 18. 清理 actions/diary/ 目录
+  - [ ] 18.1 审查 `actions/diary/` 是否可以删除
+    - 如果功能已完全迁移到 `actions/templated/`
+    - _Requirements: 4.1_
+
+## Phase 8: 最终验证
+
+- [ ] 19. 运行完整验证
+  - [ ] 19.1 运行类型检查
+    - 执行 `bunx tsc --noEmit`
+    - 确认无类型错误
+    - _Requirements: 7.1_
+  - [ ] 19.2 运行测试
+    - 执行 `bunx vitest run`
+    - 确认测试通过
+    - _Requirements: 7.2_
+  - [ ] 19.3 运行开发服务器
+    - 执行 `bun run desktop:dev`
+    - 确认应用正常启动
+    - _Requirements: 7.3_
+  - [ ] 19.4 验证目录结构
+    - 对比 `structure.md` 中定义的结构
+    - 确认符合规范
+    - _Requirements: 7.4_
+
+- [ ] 20. 提交清理结果
+  - 执行 `git add -A && git commit -m "chore: 清理旧架构文件"`
+  - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
 ---
 
-## 📊 进度总结
+## 📊 清理统计
+
+### 待删除目录
+
+| 目录 | 文件数 | 状态 |
+|------|--------|------|
+| `domain/` | ~50 | ⏳ 待删除 |
+| `services/` | ~12 | ⏳ 待删除 |
+| `db/backup/` | 2 | ⏳ 待删除 |
+| `db/clear-data/` | 2 | ⏳ 待删除 |
+| `db/init/` | 2 | ⏳ 待删除 |
+
+### 待删除组件
+
+| 组件 | 文件 | 状态 |
+|------|------|------|
+| EmptyProject | `blocks/emptyProject.tsx` | ⏳ 待删除 |
+| CreateBookDialog | `blocks/createBookDialog.tsx` | ⏳ 待删除 |
+| FocusMode | `blocks/focus-mode.tsx` | ⏳ 待删除 |
+| WritingStatsPanel | `blocks/writing-stats-panel.tsx` | ⏳ 待删除 |
+| AutoSaveIndicator | `blocks/auto-save-indicator.tsx` | ⏳ 待删除 |
+| MultiSelect | `blocks/multi-select.tsx` | ⏳ 待删除 |
+| DrawingManager | `drawing/drawing-manager.tsx` | ⏳ 待删除 |
+| DrawingList | `drawing/drawing-list.tsx` | ⏳ 待删除 |
+| MultiEditorWorkspace | `workspace/multi-editor-workspace.tsx` | ⏳ 待删除 |
+| TestSelection | `test-selection.tsx` | ⏳ 待删除 |
+
+### 待删除路由
+
+| 路由 | 文件 | 状态 |
+|------|------|------|
+| /test-clear-data | `routes/test-clear-data.tsx` | ⏳ 待删除 |
+| /test-focus | `routes/test-focus.tsx` | ⏳ 待删除 |
+| /test-manual-save | `routes/test-manual-save.tsx` | ⏳ 待删除 |
+| /test-selection | `routes/test-selection.tsx` | ⏳ 待删除 |
+
+### 预计清理量
+
+- **目录**: 5 个
+- **文件**: ~70 个
+- **代码行数**: ~5000+ 行
 
 ### 预计时间
-- Phase 1: 15 分钟
-- Phase 2: 10 分钟
-- Phase 3: 10 分钟
-- Phase 4: 20 分钟
-- Phase 5: 15 分钟
-- Phase 6: 5 分钟
 
-**总计: 约 1.5 小时**
-
-### 风险评估
-
-| 风险 | 影响 | 缓解措施 |
-|------|------|----------|
-| 意外删除有引用的文件 | 高 | 删除前验证引用 |
-| 向后兼容性问题 | 中 | 保留 re-export |
-| 测试失败 | 中 | 逐步删除，每步验证 |
+- Phase 1-2: 30 分钟
+- Phase 3-4: 30 分钟
+- Phase 5-6: 20 分钟
+- Phase 7-8: 20 分钟
+- **总计**: ~1.5-2 小时

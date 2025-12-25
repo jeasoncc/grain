@@ -2,70 +2,88 @@
 
 ## Introduction
 
-本规范定义了 Grain Desktop 应用函数式架构重构的收尾工作。主要目标是：
-1. 删除已迁移但未清理的旧目录（domain/, services/）
-2. 确保应用功能完整可用
-3. 清理代码质量问题
+本规范定义了 Grain Desktop 应用架构清理的需求。目标是删除所有已迁移到新架构的旧文件，确保代码库符合 `architecture.md` 和 `structure.md` 中定义的目标结构。
 
 ## Glossary
 
-- **Domain**: 旧的领域逻辑目录，已迁移到 types/, fn/, stores/
-- **Services**: 旧的服务层目录，已迁移到 db/, fn/, actions/
-- **Dead Code**: 无引用的代码文件
+- **Domain**: 旧架构中的领域逻辑目录，应该被删除
+- **Services**: 旧架构中的服务层目录，应该被删除
+- **db/models**: 旧架构中的数据模型目录，已迁移到 types/
+- **Unused Component**: 未被任何其他文件引用的组件
 
 ## Requirements
 
-### Requirement 1: 删除无引用的 Domain 模块
+### Requirement 1: 删除 domain/ 目录
 
-**User Story:** As a developer, I want unused domain modules removed, so that the codebase is clean and maintainable.
-
-#### Acceptance Criteria
-
-1. WHEN the domain/editor-history/ directory has no external references THEN the System SHALL delete it
-2. WHEN the domain/import-export/ directory has no external references THEN the System SHALL delete it
-3. WHEN the domain/keyboard/ directory has no external references THEN the System SHALL delete it
-4. WHEN the domain/save/ directory has no external references THEN the System SHALL delete it
-5. WHEN the domain/selection/ directory has no external references THEN the System SHALL delete it
-6. WHEN the domain/writing/ directory has no external references THEN the System SHALL delete it
-
-### Requirement 2: 删除无引用的 Services 文件
-
-**User Story:** As a developer, I want unused services files removed, so that the codebase is clean.
+**User Story:** As a developer, I want the domain/ directory removed, so that the codebase follows the new architecture.
 
 #### Acceptance Criteria
 
-1. WHEN services/drawings.utils.ts has no external references THEN the System SHALL delete it
-2. WHEN services/export-path.ts has no external references THEN the System SHALL delete it
-3. WHEN services/import-export.ts has no external references THEN the System SHALL delete it
-4. WHEN services/tags.ts has no external references THEN the System SHALL delete it
-5. WHEN services/workspaces.ts has no external references THEN the System SHALL delete it
+1. WHEN the cleanup is complete THEN the System SHALL NOT have a `domain/` directory
+2. WHEN deleting domain/ THEN the System SHALL first update all imports to use new locations
+3. WHEN domain/diary is deleted THEN the System SHALL ensure diary functions are available from `fn/date/` and `actions/templated/`
+4. WHEN domain/export is deleted THEN the System SHALL ensure export functions are available from `fn/export/` and `actions/export/`
+5. WHEN domain/search is deleted THEN the System SHALL ensure search functions are available from `fn/search/`
 
-### Requirement 3: 更新 Services 索引
+### Requirement 2: 删除 services/ 目录
 
-**User Story:** As a developer, I want the services index updated for backward compatibility.
-
-#### Acceptance Criteria
-
-1. WHEN services/index.ts re-exports migrated modules THEN the System SHALL update to point to new locations
-2. WHEN backward compatibility is needed THEN the System SHALL provide re-exports from new locations
-
-### Requirement 4: 验证应用功能
-
-**User Story:** As a developer, I want to verify all features work correctly after cleanup.
+**User Story:** As a developer, I want the services/ directory removed, so that the codebase follows the new architecture.
 
 #### Acceptance Criteria
 
-1. WHEN running type check THEN the System SHALL have zero TypeScript errors
-2. WHEN running the application THEN the System SHALL start without errors
-3. WHEN creating diary/wiki/ledger THEN the System SHALL create files correctly
-4. WHEN using file tree operations THEN the System SHALL work correctly
+1. WHEN the cleanup is complete THEN the System SHALL NOT have a `services/` directory
+2. WHEN deleting services/ THEN the System SHALL first update all imports to use new locations
+3. WHEN services/index.ts is deleted THEN the System SHALL ensure all re-exports are available from their new locations
 
-### Requirement 5: 最终清理
+### Requirement 3: 删除 db/ 子目录中的旧服务
 
-**User Story:** As a developer, I want all old directories removed after verification.
+**User Story:** As a developer, I want the old service files in db/ subdirectories removed, so that only the new *.db.fn.ts files remain.
 
 #### Acceptance Criteria
 
-1. WHEN all domain modules are migrated THEN the System SHALL delete the domain/ directory
-2. WHEN all services are migrated THEN the System SHALL delete the services/ directory
-3. WHEN all db/models are migrated THEN the System SHALL delete the db/models/ directory
+1. WHEN the cleanup is complete THEN the System SHALL NOT have `db/backup/` directory
+2. WHEN the cleanup is complete THEN the System SHALL NOT have `db/clear-data/` directory
+3. WHEN the cleanup is complete THEN the System SHALL NOT have `db/init/` directory
+4. WHEN deleting these directories THEN the System SHALL ensure functions are available from `db/*.db.fn.ts` files
+
+### Requirement 4: 删除未使用的组件
+
+**User Story:** As a developer, I want unused components removed, so that the codebase is clean and maintainable.
+
+#### Acceptance Criteria
+
+1. WHEN a component has zero imports from other files THEN the System SHALL delete that component
+2. WHEN deleting components THEN the System SHALL verify no runtime errors occur
+3. WHEN the cleanup is complete THEN the System SHALL only contain actively used components
+
+### Requirement 5: 删除测试路由
+
+**User Story:** As a developer, I want test routes removed from production code, so that the application is clean.
+
+#### Acceptance Criteria
+
+1. WHEN the cleanup is complete THEN the System SHALL NOT have `routes/test-*.tsx` files
+2. WHEN deleting test routes THEN the System SHALL update the route tree
+
+### Requirement 6: 更新导入路径
+
+**User Story:** As a developer, I want all imports updated to use the new architecture paths, so that the code is consistent.
+
+#### Acceptance Criteria
+
+1. WHEN imports reference `@/domain/` THEN the System SHALL update them to the new location
+2. WHEN imports reference `@/services/` THEN the System SHALL update them to the new location
+3. WHEN imports reference `@/db/backup/` THEN the System SHALL update them to `@/db/backup.db.fn`
+4. WHEN imports reference `@/db/clear-data/` THEN the System SHALL update them to `@/db/clear-data.db.fn`
+5. WHEN imports reference `@/db/init/` THEN the System SHALL update them to `@/db/init.db.fn`
+
+### Requirement 7: 验证清理结果
+
+**User Story:** As a developer, I want the cleanup verified, so that the application still works correctly.
+
+#### Acceptance Criteria
+
+1. WHEN the cleanup is complete THEN the System SHALL pass TypeScript type checking
+2. WHEN the cleanup is complete THEN the System SHALL pass all existing tests
+3. WHEN the cleanup is complete THEN the System SHALL start without errors
+4. WHEN the cleanup is complete THEN the System SHALL match the structure defined in `structure.md`
