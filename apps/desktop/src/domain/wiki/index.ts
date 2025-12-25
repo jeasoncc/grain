@@ -21,7 +21,7 @@ export {
 	getWikiFiles,
 	WIKI_ROOT_FOLDER,
 	WIKI_TAG,
-	type WikiFileEntry,
+	type WikiFileEntryType as WikiFileEntry,
 } from "@/fn/wiki";
 
 // Wiki hooks (from existing service)

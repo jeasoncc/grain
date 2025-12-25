@@ -9,10 +9,11 @@
 
 import { useNavigate } from "@tanstack/react-router";
 import * as E from "fp-ts/Either";
+import type { SerializedEditorState } from "lexical";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
-	createDiaryAsync,
+	createDiaryCompatAsync,
 	createNode,
 	deleteNode,
 	moveNode,
@@ -302,12 +303,14 @@ export function FileTreePanel({
 
 		try {
 			// Create diary and get content in one call (avoids race condition)
-			const { node, parsedContent } = await createDiaryAsync({
+			const { node, parsedContent } = await createDiaryCompatAsync({
 				workspaceId,
 			});
 
 			// Pre-load the diary content into editorStates BEFORE opening the tab
-			updateEditorState(node.id, { serializedState: parsedContent });
+			updateEditorState(node.id, {
+				serializedState: parsedContent as SerializedEditorState,
+			});
 
 			toast.success("Diary created");
 

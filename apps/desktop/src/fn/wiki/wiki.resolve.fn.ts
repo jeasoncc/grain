@@ -422,4 +422,4 @@ function buildNodePath(
 // Exports
 // ==============================
 
-export type { WikiFileEntry, WikiCreationParams, WikiCreationResult };
+export type { WikiFileEntry };

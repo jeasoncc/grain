@@ -8,7 +8,7 @@
  */
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { getWikiFiles, type WikiFileEntry } from "@/fn/wiki";
+import { getWikiFiles, type WikiFileEntryType } from "@/fn/wiki";
 
 /**
  * Hook to get all wiki files for a workspace
@@ -19,7 +19,7 @@ import { getWikiFiles, type WikiFileEntry } from "@/fn/wiki";
  * @param workspaceId - The workspace ID (null returns empty array)
  * @returns Array of WikiFileEntry objects
  */
-export function useWikiFiles(workspaceId: string | null): WikiFileEntry[] {
+export function useWikiFiles(workspaceId: string | null): WikiFileEntryType[] {
 	return useLiveQuery(
 		async () => {
 			if (!workspaceId) return [];

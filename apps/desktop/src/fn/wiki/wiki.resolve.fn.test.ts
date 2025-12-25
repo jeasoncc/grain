@@ -16,14 +16,23 @@ vi.mock("@/db", () => ({
 	getNodesByWorkspace: vi.fn(),
 }));
 
+// 使用 vi.hoisted 来创建可以在 vi.mock 中使用的变量
+const { nodesMock } = vi.hoisted(() => {
+	const mock = {
+		where: vi.fn(),
+		equals: vi.fn(),
+		and: vi.fn(),
+		toArray: vi.fn(),
+	};
+	mock.where.mockReturnValue(mock);
+	mock.equals.mockReturnValue(mock);
+	mock.and.mockReturnValue(mock);
+	return { nodesMock: mock };
+});
+
 vi.mock("@/db/database", () => ({
 	database: {
-		nodes: {
-			where: vi.fn().mockReturnThis(),
-			equals: vi.fn().mockReturnThis(),
-			and: vi.fn().mockReturnThis(),
-			toArray: vi.fn(),
-		},
+		nodes: nodesMock,
 	},
 }));
 
@@ -39,17 +48,21 @@ vi.mock("@/log/index", () => ({
 }));
 
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/db";
-import { database } from "@/db/database";
 
 // ============================================================================
 // Test Data
 // ============================================================================
 
+// 使用有效的 UUID v4 格式
+const MOCK_NODE_ID = "a1111111-1111-4111-8111-111111111111";
+const MOCK_PARENT_ID = "b2222222-2222-4222-8222-222222222222";
+const MOCK_WORKSPACE_ID = "c3333333-3333-4333-8333-333333333333";
+
 const mockNode = {
-	id: "node-1",
+	id: MOCK_NODE_ID,
 	title: "测试 Wiki",
 	type: "file" as const,
-	workspace: "ws-1",
+	workspace: MOCK_WORKSPACE_ID,
 	parent: null,
 	order: 0,
 	collapsed: false,
@@ -59,8 +72,8 @@ const mockNode = {
 };
 
 const mockContent = {
-	id: "content-1",
-	nodeId: "node-1",
+	id: "d4444444-4444-4444-8444-444444444444",
+	nodeId: MOCK_NODE_ID,
 	content: JSON.stringify({
 		root: {
 			children: [
@@ -149,7 +162,7 @@ describe("Wiki Resolution Functions", () => {
 
 	describe("getWikiFilesAsync", () => {
 		it("应该成功获取 Wiki 文件列表", async () => {
-			vi.mocked(database.nodes.toArray).mockResolvedValue([mockNode]);
+			nodesMock.toArray.mockResolvedValue([mockNode]);
 			vi.mocked(getContentsByNodeIds).mockReturnValue(() =>
 				Promise.resolve(E.right([mockContent])),
 			);
@@ -157,19 +170,24 @@ describe("Wiki Resolution Functions", () => {
 				Promise.resolve(E.right([mockNode])),
 			);
 
-			const result = await getWikiFilesAsync("ws-1")();
+			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)();
+
+			// Debug: 打印结果
+			if (E.isLeft(result)) {
+				console.log("Error:", result.left);
+			}
 
 			expect(E.isRight(result)).toBe(true);
 			if (E.isRight(result)) {
 				expect(result.right).toBeInstanceOf(Array);
 				expect(result.right.length).toBe(1);
-				expect(result.right[0].id).toBe("node-1");
+				expect(result.right[0].id).toBe(MOCK_NODE_ID);
 				expect(result.right[0].name).toBe("测试 Wiki");
 			}
 		});
 
 		it("应该处理空的 Wiki 文件列表", async () => {
-			vi.mocked(database.nodes.toArray).mockResolvedValue([]);
+			nodesMock.toArray.mockResolvedValue([]);
 			vi.mocked(getContentsByNodeIds).mockReturnValue(() =>
 				Promise.resolve(E.right([])),
 			);
@@ -177,7 +195,7 @@ describe("Wiki Resolution Functions", () => {
 				Promise.resolve(E.right([])),
 			);
 
-			const result = await getWikiFilesAsync("ws-1")();
+			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)();
 
 			expect(E.isRight(result)).toBe(true);
 			if (E.isRight(result)) {
@@ -186,11 +204,11 @@ describe("Wiki Resolution Functions", () => {
 		});
 
 		it("应该处理数据库查询失败", async () => {
-			vi.mocked(database.nodes.toArray).mockRejectedValue(
+			nodesMock.toArray.mockRejectedValue(
 				new Error("查询失败"),
 			);
 
-			const result = await getWikiFilesAsync("ws-1")();
+			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)();
 
 			expect(E.isLeft(result)).toBe(true);
 			if (E.isLeft(result)) {
@@ -201,17 +219,17 @@ describe("Wiki Resolution Functions", () => {
 		it("应该构建正确的文件路径", async () => {
 			const parentNode = {
 				...mockNode,
-				id: "parent-1",
+				id: MOCK_PARENT_ID,
 				title: "Wiki",
 				type: "folder" as const,
 			};
 
 			const childNode = {
 				...mockNode,
-				parent: "parent-1",
+				parent: MOCK_PARENT_ID,
 			};
 
-			vi.mocked(database.nodes.toArray).mockResolvedValue([childNode]);
+			nodesMock.toArray.mockResolvedValue([childNode]);
 			vi.mocked(getContentsByNodeIds).mockReturnValue(() =>
 				Promise.resolve(E.right([mockContent])),
 			);
@@ -219,7 +237,7 @@ describe("Wiki Resolution Functions", () => {
 				Promise.resolve(E.right([parentNode, childNode])),
 			);
 
-			const result = await getWikiFilesAsync("ws-1")();
+			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)();
 
 			expect(E.isRight(result)).toBe(true);
 			if (E.isRight(result)) {
@@ -228,7 +246,7 @@ describe("Wiki Resolution Functions", () => {
 		});
 
 		it("应该处理缺失的内容", async () => {
-			vi.mocked(database.nodes.toArray).mockResolvedValue([mockNode]);
+			nodesMock.toArray.mockResolvedValue([mockNode]);
 			vi.mocked(getContentsByNodeIds).mockReturnValue(() =>
 				Promise.resolve(E.right([])),
 			);
@@ -236,7 +254,7 @@ describe("Wiki Resolution Functions", () => {
 				Promise.resolve(E.right([mockNode])),
 			);
 
-			const result = await getWikiFilesAsync("ws-1")();
+			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)();
 
 			expect(E.isRight(result)).toBe(true);
 			if (E.isRight(result)) {

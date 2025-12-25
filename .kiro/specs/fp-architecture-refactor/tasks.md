@@ -1348,14 +1348,14 @@ src/
 
 ### 18.5 更新导出和索引
 
-- [-] 123. 更新 actions 索引
+- [x] 123. 更新 actions 索引
   - 更新 `actions/templated/index.ts`
   - 导出所有模板化创建函数
   - 更新 `actions/index.ts`
   - 预计时间：10分钟
   - 优先级：🔴 高
 
-- [ ] 124. 验证重构结果
+- [-] 124. 验证重构结果
   - 运行类型检查
   - 运行测试
   - 测试 diary、wiki、ledger 创建功能
