@@ -182,6 +182,7 @@ export const ActivityBarView = memo(function ActivityBarView({
 	onToggleSidebar,
 	onCreateDiary,
 	onCreateWiki,
+	onCreateLedger,
 	onImportFile,
 	onOpenExportDialog,
 	onDeleteAllData,
@@ -196,6 +197,7 @@ export const ActivityBarView = memo(function ActivityBarView({
 	const SearchIcon = iconTheme.icons.activityBar.search;
 	const DiaryIcon = iconTheme.icons.activityBar.diary;
 	const WikiIcon = iconTheme.icons.activityBar.library;
+	const LedgerIcon = iconTheme.icons.activityBar.ledger;
 	const SettingsIcon = iconTheme.icons.activityBar.settings;
 	const ImportIcon = iconTheme.icons.activityBar.import;
 	const ExportIcon = iconTheme.icons.activityBar.export;
@@ -276,6 +278,12 @@ export const ActivityBarView = memo(function ActivityBarView({
 						icon={<WikiIcon className="size-5" />}
 						label="New Wiki"
 						onClick={onCreateWiki}
+					/>
+					{/* Ledger */}
+					<ActionButton
+						icon={<LedgerIcon className="size-5" />}
+						label="New Ledger"
+						onClick={onCreateLedger}
 					/>
 					{/* Search */}
 					<ActionButton

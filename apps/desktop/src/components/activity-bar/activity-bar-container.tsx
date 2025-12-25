@@ -19,7 +19,9 @@ import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
 import { useSelectionStore } from "@/stores/selection.store";
 import { useSidebarStore } from "@/stores/sidebar.store";
+import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import type { WorkspaceInterface } from "@/types/workspace";
+import { createLedgerCompatAsync } from "@/actions/templated/create-ledger.action";
 
 import { ActivityBarView } from "./activity-bar-view";
 
@@ -181,6 +183,31 @@ export function ActivityBarContainer(): React.ReactElement {
 		toast.info("Wiki creation is being reimplemented");
 	}, [selectedWorkspaceId]);
 
+	const openTab = useEditorTabsStore((s) => s.openTab);
+
+	const handleCreateLedger = useCallback(async () => {
+		if (!selectedWorkspaceId) {
+			toast.error("Please select a workspace first");
+			return;
+		}
+		try {
+			const result = await createLedgerCompatAsync({
+				workspaceId: selectedWorkspaceId,
+				date: new Date(),
+			});
+			// 打开新创建的记账文件
+			openTab({
+				id: result.node.id,
+				title: result.node.title,
+				type: result.node.type,
+			});
+			toast.success("Ledger created");
+		} catch (error) {
+			console.error("Failed to create ledger:", error);
+			toast.error("Failed to create ledger");
+		}
+	}, [selectedWorkspaceId, openTab]);
+
 	const handleImportFile = useCallback(async (_file: File) => {
 		try {
 			// TODO: 使用新架构实现导入
@@ -241,6 +268,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				onToggleSidebar={toggleSidebar}
 				onCreateDiary={handleCreateDiary}
 				onCreateWiki={handleCreateWiki}
+				onCreateLedger={handleCreateLedger}
 				onImportFile={handleImportFile}
 				onOpenExportDialog={handleOpenExportDialog}
 				onDeleteAllData={handleDeleteAllData}

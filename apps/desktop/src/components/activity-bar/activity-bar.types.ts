@@ -43,6 +43,8 @@ export interface ActivityBarProps {
 	readonly onCreateDiary: () => void;
 	/** 创建 Wiki */
 	readonly onCreateWiki: () => void;
+	/** 创建记账 */
+	readonly onCreateLedger: () => void;
 	/** 导入文件 */
 	readonly onImportFile: (file: File) => Promise<void>;
 	/** 打开导出对话框 */
