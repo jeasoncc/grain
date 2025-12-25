@@ -37,6 +37,8 @@ export * as iconThemeFn from "./icon-theme";
 // Import 纯函数（Markdown 导入）
 export * as importFn from "./import";
 // Keyboard 纯函数（键盘快捷键）
+// Ledger 纯函数（记账模板）
+export * as ledgerFn from "./ledger";
 export * as keyboardFn from "./keyboard";
 // Node 纯函数
 export * as nodeFn from "./node";

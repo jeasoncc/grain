@@ -31,6 +31,16 @@ export {
 } from "./wiki.config";
 
 // ==============================
+// Ledger Configuration
+// ==============================
+
+export {
+	ledgerConfig,
+	ledgerParamsSchema,
+	type LedgerTemplateParams,
+} from "./ledger.config";
+
+// ==============================
 // Configuration Registry
 // ==============================
 
@@ -40,6 +50,7 @@ export {
 export const templateConfigs = {
 	diary: () => import("./diary.config").then(m => m.diaryConfig),
 	wiki: () => import("./wiki.config").then(m => m.wikiConfig),
+	ledger: () => import("./ledger.config").then(m => m.ledgerConfig),
 } as const;
 
 /**
