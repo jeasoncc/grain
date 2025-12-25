@@ -1,0 +1,400 @@
+# Implementation Plan
+
+## Phase 1: 重命名已有 View/Container 结构的组件
+
+- [ ] 1. 重构 activity-bar 组件
+  - [ ] 1.1 重命名 `activity-bar-view.tsx` → `activity-bar.view.fn.tsx`
+    - _Requirements: 1.1_
+  - [ ] 1.2 重命名 `activity-bar-container.tsx` → `activity-bar.container.fn.tsx`
+    - _Requirements: 1.2_
+  - [ ] 1.3 更新 `index.ts` 导出
+    - _Requirements: 1.4_
+  - [ ] 1.4 更新所有导入路径
+    - _Requirements: 1.3_
+
+- [ ] 2. 验证 Phase 1
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1_
+
+## Phase 2: 重构 blocks/ 目录中已有 View/Container 的组件
+
+- [ ] 3. 重构 wiki-hover-preview 组件
+  - [ ] 3.1 创建 `components/wiki-hover-preview/` 目录
+  - [ ] 3.2 移动并重命名 `wiki-hover-preview.tsx` → `wiki-hover-preview.view.fn.tsx`
+    - _Requirements: 2.1_
+  - [ ] 3.3 移动并重命名 `wiki-hover-preview-connected.tsx` → `wiki-hover-preview.container.fn.tsx`
+    - _Requirements: 2.2_
+  - [ ] 3.4 创建 `wiki-hover-preview.types.ts`
+  - [ ] 3.5 创建 `index.ts`
+  - [ ] 3.6 更新所有导入路径
+
+- [ ] 4. 重构 global-search 组件
+  - [ ] 4.1 创建 `components/global-search/` 目录
+  - [ ] 4.2 移动并重命名 `global-search.tsx` → `global-search.view.fn.tsx`
+    - _Requirements: 2.3_
+  - [ ] 4.3 移动并重命名 `global-search-connected.tsx` → `global-search.container.fn.tsx`
+    - _Requirements: 2.4_
+  - [ ] 4.4 创建 `global-search.types.ts`
+  - [ ] 4.5 创建 `index.ts`
+  - [ ] 4.6 更新所有导入路径
+
+- [ ] 5. 验证 Phase 2
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1_
+
+## Phase 3: 重构 file-tree/ 目录
+
+- [ ] 6. 重构 file-tree 组件
+  - [ ] 6.1 重命名 `file-tree.tsx` → `file-tree.view.fn.tsx`
+    - _Requirements: 3.1_
+  - [ ] 6.2 重命名 `file-tree-item.tsx` → `file-tree-item.view.fn.tsx`
+    - _Requirements: 3.3_
+  - [ ] 6.3 创建 `file-tree.types.ts`
+    - _Requirements: 3.4_
+  - [ ] 6.4 分析是否需要 Container 组件
+    - _Requirements: 3.2_
+  - [ ] 6.5 更新 `index.ts`
+  - [ ] 6.6 更新所有导入路径
+
+- [ ] 7. 验证 Phase 3
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1_
+
+## Phase 4: 重构 blocks/ 目录中的纯展示组件
+
+- [ ] 8. 重构 keyboard-shortcuts-help 组件
+  - [ ] 8.1 创建 `components/keyboard-shortcuts-help/` 目录
+  - [ ] 8.2 移动并重命名为 `keyboard-shortcuts-help.view.fn.tsx`
+  - [ ] 8.3 创建 `keyboard-shortcuts-help.types.ts`
+  - [ ] 8.4 创建 `index.ts`
+  - [ ] 8.5 更新所有导入路径
+
+- [ ] 9. 重构 save-status-indicator 组件
+  - [ ] 9.1 创建 `components/save-status-indicator/` 目录
+  - [ ] 9.2 移动并重命名为 `save-status-indicator.view.fn.tsx`
+  - [ ] 9.3 创建 `save-status-indicator.types.ts`
+  - [ ] 9.4 创建 `index.ts`
+  - [ ] 9.5 更新所有导入路径
+
+- [ ] 10. 重构 word-count-badge 组件
+  - [ ] 10.1 创建 `components/word-count-badge/` 目录
+  - [ ] 10.2 移动并重命名为 `word-count-badge.view.fn.tsx`
+  - [ ] 10.3 创建 `word-count-badge.types.ts`
+  - [ ] 10.4 创建 `index.ts`
+  - [ ] 10.5 更新所有导入路径
+
+- [ ] 11. 验证 Phase 4
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1_
+
+## Phase 5: 重构 blocks/ 目录中的混合组件
+
+- [ ] 12. 重构 backup-manager 组件
+  - [ ] 12.1 创建 `components/backup-manager/` 目录
+  - [ ] 12.2 分析组件，拆分为 View 和 Container
+  - [ ] 12.3 创建 `backup-manager.view.fn.tsx`
+  - [ ] 12.4 创建 `backup-manager.container.fn.tsx`
+  - [ ] 12.5 创建 `backup-manager.types.ts`
+  - [ ] 12.6 创建 `index.ts`
+  - [ ] 12.7 删除原文件
+  - [ ] 12.8 更新所有导入路径
+  - _Requirements: 2.5_
+
+- [ ] 13. 重构 canvas-editor 组件
+  - [ ] 13.1 创建 `components/canvas-editor/` 目录
+  - [ ] 13.2 分析组件，拆分为 View 和 Container
+  - [ ] 13.3 创建 `canvas-editor.view.fn.tsx`
+  - [ ] 13.4 创建 `canvas-editor.container.fn.tsx`
+  - [ ] 13.5 创建 `canvas-editor.types.ts`
+  - [ ] 13.6 创建 `index.ts`
+  - [ ] 13.7 删除原文件
+  - [ ] 13.8 更新所有导入路径
+  - _Requirements: 2.5_
+
+- [ ] 14. 重构 export-dialog 组件
+  - [ ] 14.1 创建 `components/export-dialog/` 目录
+  - [ ] 14.2 分析组件，拆分为 View 和 Container
+  - [ ] 14.3 创建 `export-dialog.view.fn.tsx`
+  - [ ] 14.4 创建 `export-dialog.container.fn.tsx`
+  - [ ] 14.5 创建 `export-dialog.types.ts`
+  - [ ] 14.6 创建 `index.ts`
+  - [ ] 14.7 删除原文件
+  - [ ] 14.8 更新所有导入路径
+  - _Requirements: 2.5_
+
+- [ ] 15. 重构 theme-selector 组件
+  - [ ] 15.1 创建 `components/theme-selector/` 目录
+  - [ ] 15.2 分析组件，拆分为 View 和 Container
+  - [ ] 15.3 创建 `theme-selector.view.fn.tsx`
+  - [ ] 15.4 创建 `theme-selector.container.fn.tsx`
+  - [ ] 15.5 创建 `theme-selector.types.ts`
+  - [ ] 15.6 创建 `index.ts`
+  - [ ] 15.7 删除原文件
+  - [ ] 15.8 更新所有导入路径
+  - _Requirements: 2.5_
+
+- [ ] 16. 重构 update-checker 组件
+  - [ ] 16.1 创建 `components/update-checker/` 目录
+  - [ ] 16.2 分析组件，拆分为 View 和 Container
+  - [ ] 16.3 创建 `update-checker.view.fn.tsx`
+  - [ ] 16.4 创建 `update-checker.container.fn.tsx`
+  - [ ] 16.5 创建 `update-checker.types.ts`
+  - [ ] 16.6 创建 `index.ts`
+  - [ ] 16.7 删除原文件
+  - [ ] 16.8 更新所有导入路径
+  - _Requirements: 2.5_
+
+- [ ] 17. 验证 Phase 5
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1_
+
+## Phase 6: 重构 panels/ 目录
+
+- [ ] 18. 重构 drawings-panel 组件
+  - [ ] 18.1 创建 `components/panels/drawings-panel/` 目录
+  - [ ] 18.2 分析组件，拆分为 View 和 Container
+  - [ ] 18.3 创建 `drawings-panel.view.fn.tsx`
+  - [ ] 18.4 创建 `drawings-panel.container.fn.tsx`
+  - [ ] 18.5 创建 `drawings-panel.types.ts`
+  - [ ] 18.6 创建 `index.ts`
+  - [ ] 18.7 删除原文件
+  - [ ] 18.8 更新所有导入路径
+  - _Requirements: 4.1, 4.2_
+
+- [ ] 19. 重构 file-tree-panel 组件
+  - [ ] 19.1 创建 `components/panels/file-tree-panel/` 目录
+  - [ ] 19.2 分析组件（主要是 Container）
+  - [ ] 19.3 创建 `file-tree-panel.container.fn.tsx`
+  - [ ] 19.4 创建 `file-tree-panel.types.ts`
+  - [ ] 19.5 创建 `index.ts`
+  - [ ] 19.6 删除原文件
+  - [ ] 19.7 更新所有导入路径
+  - _Requirements: 4.1, 4.2_
+
+- [ ] 20. 重构 search-panel 组件
+  - [ ] 20.1 创建 `components/panels/search-panel/` 目录
+  - [ ] 20.2 分析组件，拆分为 View 和 Container
+  - [ ] 20.3 创建 `search-panel.view.fn.tsx`
+  - [ ] 20.4 创建 `search-panel.container.fn.tsx`
+  - [ ] 20.5 创建 `search-panel.types.ts`
+  - [ ] 20.6 创建 `index.ts`
+  - [ ] 20.7 删除原文件
+  - [ ] 20.8 更新所有导入路径
+  - _Requirements: 4.1, 4.2_
+
+- [ ] 21. 重构 tag-graph-panel 组件
+  - [ ] 21.1 创建 `components/panels/tag-graph-panel/` 目录
+  - [ ] 21.2 分析组件，拆分为 View 和 Container
+  - [ ] 21.3 创建 `tag-graph-panel.view.fn.tsx`
+  - [ ] 21.4 创建 `tag-graph-panel.container.fn.tsx`
+  - [ ] 21.5 创建 `tag-graph-panel.types.ts`
+  - [ ] 21.6 创建 `index.ts`
+  - [ ] 21.7 删除原文件
+  - [ ] 21.8 更新所有导入路径
+  - _Requirements: 4.1, 4.2_
+
+- [ ] 22. 验证 Phase 6
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1_
+
+## Phase 7: 重构 export/ 和 drawing/ 目录
+
+- [ ] 23. 重构 export-button 组件
+  - [ ] 23.1 创建 `components/export-button/` 目录
+  - [ ] 23.2 分析组件，拆分为 View 和 Container
+  - [ ] 23.3 创建 `export-button.view.fn.tsx`
+  - [ ] 23.4 创建 `export-button.container.fn.tsx`
+  - [ ] 23.5 创建 `export-button.types.ts`
+  - [ ] 23.6 创建 `index.ts`
+  - [ ] 23.7 删除原文件和目录
+  - [ ] 23.8 更新所有导入路径
+
+- [ ] 24. 重构 export-dialog-manager 组件
+  - [ ] 24.1 创建 `components/export-dialog-manager/` 目录
+  - [ ] 24.2 分析组件（主要是 Container）
+  - [ ] 24.3 创建 `export-dialog-manager.container.fn.tsx`
+  - [ ] 24.4 创建 `export-dialog-manager.types.ts`
+  - [ ] 24.5 创建 `index.ts`
+  - [ ] 24.6 删除原文件和目录
+  - [ ] 24.7 更新所有导入路径
+
+- [ ] 25. 重构 drawing-workspace 组件
+  - [ ] 25.1 创建 `components/drawing-workspace/` 目录
+  - [ ] 25.2 分析组件，拆分为 View 和 Container
+  - [ ] 25.3 创建 `drawing-workspace.view.fn.tsx`
+  - [ ] 25.4 创建 `drawing-workspace.container.fn.tsx`
+  - [ ] 25.5 创建 `drawing-workspace.types.ts`
+  - [ ] 25.6 创建 `index.ts`
+  - [ ] 25.7 删除原文件和目录
+  - [ ] 25.8 更新所有导入路径
+
+- [ ] 26. 验证 Phase 7
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1_
+
+## Phase 8: 重构 workspace/ 目录
+
+- [ ] 27. 重构 story-workspace 组件
+  - [ ] 27.1 创建 `components/story-workspace/` 目录
+  - [ ] 27.2 分析组件（主要是 Container）
+  - [ ] 27.3 创建 `story-workspace.container.fn.tsx`
+  - [ ] 27.4 创建 `story-workspace.types.ts`
+  - [ ] 27.5 创建 `index.ts`
+  - [ ] 27.6 删除原文件和目录
+  - [ ] 27.7 更新所有导入路径
+
+- [ ] 28. 验证 Phase 8
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1_
+
+## Phase 9: 重构根级组件
+
+- [ ] 29. 重构 buffer-switcher 组件
+  - [ ] 29.1 创建 `components/buffer-switcher/` 目录
+  - [ ] 29.2 分析组件，拆分为 View 和 Container
+  - [ ] 29.3 创建 `buffer-switcher.view.fn.tsx`
+  - [ ] 29.4 创建 `buffer-switcher.container.fn.tsx`
+  - [ ] 29.5 创建 `buffer-switcher.types.ts`
+  - [ ] 29.6 创建 `index.ts`
+  - [ ] 29.7 删除原文件
+  - [ ] 29.8 更新所有导入路径
+  - _Requirements: 5.1, 5.2_
+
+- [ ] 30. 重构 command-palette 组件
+  - [ ] 30.1 创建 `components/command-palette/` 目录
+  - [ ] 30.2 分析组件，拆分为 View 和 Container
+  - [ ] 30.3 创建 `command-palette.view.fn.tsx`
+  - [ ] 30.4 创建 `command-palette.container.fn.tsx`
+  - [ ] 30.5 创建 `command-palette.types.ts`
+  - [ ] 30.6 创建 `index.ts`
+  - [ ] 30.7 删除原文件
+  - [ ] 30.8 更新所有导入路径
+  - _Requirements: 5.1, 5.2_
+
+- [ ] 31. 重构 editor-tabs 组件
+  - [ ] 31.1 创建 `components/editor-tabs/` 目录
+  - [ ] 31.2 分析组件，拆分为 View 和 Container
+  - [ ] 31.3 创建 `editor-tabs.view.fn.tsx`
+  - [ ] 31.4 创建 `editor-tabs.container.fn.tsx`
+  - [ ] 31.5 创建 `editor-tabs.types.ts`
+  - [ ] 31.6 创建 `index.ts`
+  - [ ] 31.7 删除原文件
+  - [ ] 31.8 更新所有导入路径
+  - _Requirements: 5.1, 5.2_
+
+- [ ] 32. 重构 story-right-sidebar 组件
+  - [ ] 32.1 创建 `components/story-right-sidebar/` 目录
+  - [ ] 32.2 分析组件，拆分为 View 和 Container
+  - [ ] 32.3 创建 `story-right-sidebar.view.fn.tsx`
+  - [ ] 32.4 创建 `story-right-sidebar.container.fn.tsx`
+  - [ ] 32.5 创建 `story-right-sidebar.types.ts`
+  - [ ] 32.6 创建 `index.ts`
+  - [ ] 32.7 删除原文件
+  - [ ] 32.8 更新所有导入路径
+  - _Requirements: 5.1, 5.2_
+
+- [ ] 33. 重构 unified-sidebar 组件
+  - [ ] 33.1 创建 `components/unified-sidebar/` 目录
+  - [ ] 33.2 分析组件，拆分为 View 和 Container
+  - [ ] 33.3 创建 `unified-sidebar.view.fn.tsx`
+  - [ ] 33.4 创建 `unified-sidebar.container.fn.tsx`
+  - [ ] 33.5 创建 `unified-sidebar.types.ts`
+  - [ ] 33.6 创建 `index.ts`
+  - [ ] 33.7 删除原文件
+  - [ ] 33.8 更新所有导入路径
+  - _Requirements: 5.1, 5.2_
+
+- [ ] 34. 验证 Phase 9
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1_
+
+## Phase 10: 处理工具组件
+
+- [ ] 35. 移动工具组件
+  - [ ] 35.1 创建 `components/utils/` 目录
+  - [ ] 35.2 移动 `devtools-wrapper.tsx` → `utils/devtools-wrapper.tsx`
+  - [ ] 35.3 移动 `font-style-injector.tsx` → `utils/font-style-injector.tsx`
+  - [ ] 35.4 创建 `utils/index.ts`
+  - [ ] 35.5 更新所有导入路径
+
+- [ ] 36. 验证 Phase 10
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1_
+
+## Phase 11: 清理旧目录
+
+- [ ] 37. 清理空目录
+  - [ ] 37.1 删除空的 `blocks/` 目录（如果为空）
+  - [ ] 37.2 删除空的 `export/` 目录（如果为空）
+  - [ ] 37.3 删除空的 `drawing/` 目录（如果为空）
+  - [ ] 37.4 删除空的 `workspace/` 目录（如果为空）
+
+- [ ] 38. 验证 Phase 11
+  - 运行 `bunx tsc --noEmit`
+  - 确认无类型错误
+  - _Requirements: 7.1_
+
+## Phase 12: 最终验证
+
+- [ ] 39. 运行完整验证
+  - [ ] 39.1 运行类型检查
+    - 执行 `bunx tsc --noEmit`
+    - 确认无类型错误
+    - _Requirements: 7.1_
+  - [ ] 39.2 运行测试
+    - 执行 `bunx vitest run`
+    - 确认测试通过
+    - _Requirements: 7.2_
+  - [ ] 39.3 运行开发服务器
+    - 执行 `bun run desktop:dev`
+    - 确认应用正常启动
+    - _Requirements: 7.3_
+  - [ ] 39.4 验证 ui/ 目录未被修改
+    - 确认 `components/ui/` 目录文件未变化
+    - _Requirements: 6.1, 6.2_
+
+- [ ] 40. 提交重构结果
+  - 执行 `git add -A && git commit -m "refactor: 组件命名规范化，使用 .fn.tsx 后缀"`
+  - _Requirements: 7.1, 7.2, 7.3, 7.4_
+
+---
+
+## 📊 迁移统计
+
+### 组件分类
+
+| 类型 | 数量 | 状态 |
+|------|------|------|
+| 已有 View/Container | 3 | ⏳ 待重命名 |
+| 纯展示组件 | 5 | ⏳ 待重命名 |
+| 混合组件 | 15 | ⏳ 待拆分 |
+| 工具组件 | 2 | ⏳ 待移动 |
+| ui/ 组件 | 38 | ⚪ 不修改 |
+
+### 预计工作量
+
+| Phase | 任务数 | 预计时间 |
+|-------|--------|----------|
+| Phase 1 | 1 | 15 分钟 |
+| Phase 2 | 2 | 30 分钟 |
+| Phase 3 | 1 | 20 分钟 |
+| Phase 4 | 3 | 30 分钟 |
+| Phase 5 | 5 | 2 小时 |
+| Phase 6 | 4 | 1.5 小时 |
+| Phase 7 | 3 | 1 小时 |
+| Phase 8 | 1 | 30 分钟 |
+| Phase 9 | 5 | 2 小时 |
+| Phase 10 | 1 | 15 分钟 |
+| Phase 11 | 1 | 10 分钟 |
+| Phase 12 | 1 | 20 分钟 |
+| **总计** | **28** | **~9 小时** |
