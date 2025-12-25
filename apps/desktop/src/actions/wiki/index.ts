@@ -4,7 +4,7 @@
 
 export {
 	checkMigrationNeeded,
-	migrateWikiEntriesToFiles,
 	type MigrationResult,
+	migrateWikiEntriesToFiles,
 	runMigrationIfNeeded,
 } from "./migrate-wiki.action";

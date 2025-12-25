@@ -3,10 +3,14 @@
  * @description Wiki 条目创建 Action 测试
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
 import * as E from "fp-ts/Either";
-import { createWiki, createWikiAsync, type WikiTemplateParams } from "./create-wiki.action";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TemplatedFileParams } from "./create-templated-file.action";
+import {
+	createWiki,
+	createWikiAsync,
+	type WikiTemplateParams,
+} from "./create-wiki.action";
 
 // Mock dependencies
 vi.mock("@/actions/node", () => ({

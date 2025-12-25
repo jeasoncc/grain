@@ -24,13 +24,6 @@
 // Domain 模块
 // ============================================================================
 
-// Diary functions (从 templated actions 导入)
-export {
-	type CreateDiaryParams,
-	createDiaryCompat as createDiary,
-	createDiaryCompatAsync as createDiaryAsync,
-	type DiaryCreationResult,
-} from "@/actions/templated";
 // Diary root folder constant (从旧 action 导入)
 export { DIARY_ROOT_FOLDER } from "@/actions/diary";
 // Diary (从 actions 重新导出以保持向后兼容)
@@ -42,6 +35,13 @@ export {
 	ensureRootFolder,
 	ensureRootFolderAsync,
 } from "@/actions/node";
+// Diary functions (从 templated actions 导入)
+export {
+	type CreateDiaryParams,
+	createDiaryCompat as createDiary,
+	createDiaryCompatAsync as createDiaryAsync,
+	type DiaryCreationResult,
+} from "@/actions/templated";
 // 导出日记工具函数
 export {
 	type DiaryFolderStructure,

@@ -15,9 +15,9 @@
 // ==============================
 
 export {
+	type DiaryTemplateParams,
 	diaryConfig,
 	diaryParamsSchema,
-	type DiaryTemplateParams,
 } from "./diary.config";
 
 // ==============================
@@ -25,9 +25,9 @@ export {
 // ==============================
 
 export {
+	type WikiTemplateParams,
 	wikiConfig,
 	wikiParamsSchema,
-	type WikiTemplateParams,
 } from "./wiki.config";
 
 // ==============================
@@ -35,9 +35,9 @@ export {
 // ==============================
 
 export {
+	type LedgerTemplateParams,
 	ledgerConfig,
 	ledgerParamsSchema,
-	type LedgerTemplateParams,
 } from "./ledger.config";
 
 // ==============================
@@ -48,9 +48,9 @@ export {
  * 所有可用的模板配置
  */
 export const templateConfigs = {
-	diary: () => import("./diary.config").then(m => m.diaryConfig),
-	wiki: () => import("./wiki.config").then(m => m.wikiConfig),
-	ledger: () => import("./ledger.config").then(m => m.ledgerConfig),
+	diary: () => import("./diary.config").then((m) => m.diaryConfig),
+	wiki: () => import("./wiki.config").then((m) => m.wikiConfig),
+	ledger: () => import("./ledger.config").then((m) => m.ledgerConfig),
 } as const;
 
 /**
@@ -60,7 +60,7 @@ export type TemplateType = keyof typeof templateConfigs;
 
 /**
  * 获取模板配置
- * 
+ *
  * @param type - 模板类型
  * @returns 模板配置
  */
@@ -71,7 +71,7 @@ export async function getTemplateConfig(type: TemplateType) {
 
 /**
  * 检查是否为有效的模板类型
- * 
+ *
  * @param type - 要检查的类型
  * @returns 是否为有效的模板类型
  */

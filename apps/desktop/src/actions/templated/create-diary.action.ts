@@ -18,9 +18,15 @@
  */
 
 import * as E from "fp-ts/Either";
-import type { TemplatedFileParams, TemplatedFileResult } from "./create-templated-file.action";
-import { createTemplatedFile, createTemplatedFileAsync } from "./create-templated-file.action";
-import { diaryConfig, type DiaryTemplateParams } from "./configs/diary.config";
+import { type DiaryTemplateParams, diaryConfig } from "./configs/diary.config";
+import type {
+	TemplatedFileParams,
+	TemplatedFileResult,
+} from "./create-templated-file.action";
+import {
+	createTemplatedFile,
+	createTemplatedFileAsync,
+} from "./create-templated-file.action";
 
 // ==============================
 // Types
@@ -81,9 +87,9 @@ export const createDiaryAsync = createTemplatedFileAsync(diaryConfig);
 
 /**
  * 将 CreateDiaryParams 转换为 TemplatedFileParams<DiaryTemplateParams>
- * 
+ *
  * 这个函数用于适配旧的 API，保持向后兼容性。
- * 
+ *
  * @param params - 旧的日记创建参数
  * @returns 新的模板化文件参数
  */

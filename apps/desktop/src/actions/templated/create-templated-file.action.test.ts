@@ -19,10 +19,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import type { NodeInterface } from "@/types/node";
 import {
-	type TemplateConfig,
-	type TemplatedFileParams,
 	createTemplatedFile,
 	createTemplatedFileAsync,
+	type TemplateConfig,
+	type TemplatedFileParams,
 } from "./create-templated-file.action";
 
 // ============================================================================
@@ -499,9 +499,7 @@ describe("createTemplatedFileAsync", () => {
 	});
 
 	it("应该在文件创建失败时抛出错误", async () => {
-		vi.mocked(createFileInTree).mockRejectedValue(
-			new Error("Database error"),
-		);
+		vi.mocked(createFileInTree).mockRejectedValue(new Error("Database error"));
 
 		const createFnAsync = createTemplatedFileAsync(testConfig);
 

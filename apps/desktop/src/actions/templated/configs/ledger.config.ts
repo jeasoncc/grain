@@ -11,13 +11,10 @@
  * @requirements 119
  */
 
-import { z } from "zod";
 import dayjs from "dayjs";
+import { z } from "zod";
+import { generateLedgerContent, getLedgerFolderStructure } from "@/fn/ledger";
 import type { TemplateConfig } from "../create-templated-file.action";
-import {
-	generateLedgerContent,
-	getLedgerFolderStructure,
-} from "@/fn/ledger";
 
 // ==============================
 // Types

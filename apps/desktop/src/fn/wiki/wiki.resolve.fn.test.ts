@@ -5,10 +5,7 @@
 
 import * as E from "fp-ts/Either";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-	generateWikiTemplate,
-	getWikiFilesAsync,
-} from "./wiki.resolve.fn";
+import { generateWikiTemplate, getWikiFilesAsync } from "./wiki.resolve.fn";
 
 // ============================================================================
 // Mocks

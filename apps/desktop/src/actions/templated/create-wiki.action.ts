@@ -16,8 +16,11 @@
  * @requirements Wiki 条目创建功能
  */
 
-import { createTemplatedFile, createTemplatedFileAsync } from "./create-templated-file.action";
-import { wikiConfig, type WikiTemplateParams } from "./configs/wiki.config";
+import { type WikiTemplateParams, wikiConfig } from "./configs/wiki.config";
+import {
+	createTemplatedFile,
+	createTemplatedFileAsync,
+} from "./create-templated-file.action";
 
 // ==============================
 // Actions
@@ -25,7 +28,7 @@ import { wikiConfig, type WikiTemplateParams } from "./configs/wiki.config";
 
 /**
  * 创建 Wiki 条目（TaskEither 版本）
- * 
+ *
  * 使用高阶函数 createTemplatedFile 和 wikiConfig 配置
  * 返回 TaskEither 类型，支持函数式错误处理
  */
@@ -33,7 +36,7 @@ export const createWiki = createTemplatedFile(wikiConfig);
 
 /**
  * 创建 Wiki 条目（Promise 版本）
- * 
+ *
  * 使用高阶函数 createTemplatedFileAsync 和 wikiConfig 配置
  * 返回 Promise 类型，适用于组件中直接调用
  */

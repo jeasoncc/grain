@@ -11,10 +11,10 @@
  * @requirements Wiki 条目创建功能
  */
 
-import { z } from "zod";
 import dayjs from "dayjs";
-import type { TemplateConfig } from "../create-templated-file.action";
+import { z } from "zod";
 import { generateWikiTemplate } from "@/fn/wiki";
+import type { TemplateConfig } from "../create-templated-file.action";
 
 // ==============================
 // Types
@@ -55,7 +55,7 @@ const generateWikiTemplateContent = (params: WikiTemplateParams): string => {
 
 /**
  * 生成 Wiki 文件夹路径
- * 
+ *
  * Wiki 条目按年份和月份组织：
  * Wiki > year-YYYY > month-MM-MonthName
  */
@@ -63,28 +63,38 @@ const generateWikiFolderPath = (params: WikiTemplateParams): string[] => {
 	const date = params.date || new Date();
 	const year = date.getFullYear();
 	const month = date.getMonth();
-	
+
 	// Month names in English
 	const monthNames = [
-		"January", "February", "March", "April", "May", "June",
-		"July", "August", "September", "October", "November", "December"
+		"January",
+		"February",
+		"March",
+		"April",
+		"May",
+		"June",
+		"July",
+		"August",
+		"September",
+		"October",
+		"November",
+		"December",
 	];
-	
+
 	const yearFolder = `year-${year}`;
 	const monthFolder = `month-${String(month + 1).padStart(2, "0")}-${monthNames[month]}`;
-	
+
 	return [yearFolder, monthFolder];
 };
 
 /**
  * 生成 Wiki 文件标题
- * 
+ *
  * 格式：wiki-{timestamp}-{sanitized-title}
  */
 const generateWikiTitle = (params: WikiTemplateParams): string => {
 	const date = params.date || new Date();
 	const timestamp = Math.floor(date.getTime() / 1000);
-	
+
 	// Sanitize title for filename (remove special characters, replace spaces with hyphens)
 	const sanitizedTitle = params.title
 		.toLowerCase()
@@ -92,7 +102,7 @@ const generateWikiTitle = (params: WikiTemplateParams): string => {
 		.replace(/\s+/g, "-") // Replace spaces with hyphens
 		.replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
 		.replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
-	
+
 	return `wiki-${timestamp}-${sanitizedTitle}`;
 };
 

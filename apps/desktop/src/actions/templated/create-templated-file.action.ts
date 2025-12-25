@@ -32,7 +32,7 @@ import type { NodeInterface, NodeType } from "@/types/node";
 
 /**
  * 模板配置接口
- * 
+ *
  * 泛型 T 表示具体模板的参数类型
  */
 export interface TemplateConfig<T> {
@@ -58,7 +58,7 @@ export interface TemplateConfig<T> {
 
 /**
  * 模板化文件创建参数
- * 
+ *
  * 包含工作区 ID 和具体模板参数
  */
 export interface TemplatedFileParams<T> {
@@ -97,13 +97,13 @@ const baseParamsSchema = z.object({
 
 /**
  * 创建模板化文件的高阶函数
- * 
+ *
  * 这是一个高阶函数，接收模板配置，返回具体的文件创建函数。
  * 使用函数式编程模式，避免重复的模板文件创建逻辑。
- * 
+ *
  * @param config - 模板配置
  * @returns 具体的文件创建函数
- * 
+ *
  * @example
  * ```typescript
  * // 定义日记模板配置
@@ -116,17 +116,15 @@ const baseParamsSchema = z.object({
  *   generateTitle: (params) => getDiaryTitle(params.date),
  *   paramsSchema: diaryParamsSchema,
  * };
- * 
+ *
  * // 创建具体的日记创建函数
  * export const createDiary = createTemplatedFile(diaryConfig);
  * ```
  */
-export const createTemplatedFile = <T>(
-	config: TemplateConfig<T>,
-) => {
+export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 	/**
 	 * 具体的文件创建函数
-	 * 
+	 *
 	 * @param params - 包含工作区 ID 和模板参数的对象
 	 * @returns TaskEither<AppError, TemplatedFileResult>
 	 */
@@ -165,7 +163,7 @@ export const createTemplatedFile = <T>(
 				const content = config.generateTemplate(validTemplateParams);
 				const folderPath = config.generateFolderPath(validTemplateParams);
 				const title = config.generateTitle(validTemplateParams);
-				
+
 				return {
 					validTemplateParams,
 					content,
@@ -230,20 +228,18 @@ export const createTemplatedFile = <T>(
 
 /**
  * 创建模板化文件的异步版本
- * 
+ *
  * 用于在组件中直接调用，返回 Promise。
- * 
+ *
  * @param config - 模板配置
  * @returns 异步文件创建函数
  */
-export const createTemplatedFileAsync = <T>(
-	config: TemplateConfig<T>,
-) => {
+export const createTemplatedFileAsync = <T>(config: TemplateConfig<T>) => {
 	const createFn = createTemplatedFile(config);
-	
+
 	/**
 	 * 异步文件创建函数
-	 * 
+	 *
 	 * @param params - 创建参数
 	 * @returns Promise<TemplatedFileResult>
 	 * @throws Error 如果创建失败

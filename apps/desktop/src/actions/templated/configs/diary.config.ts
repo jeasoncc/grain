@@ -11,13 +11,13 @@
  * @requirements 1.1, 1.5, 3.1
  */
 
-import { z } from "zod";
 import dayjs from "dayjs";
-import type { TemplateConfig } from "../create-templated-file.action";
+import { z } from "zod";
 import {
 	generateDiaryContent,
 	getDiaryFolderStructure,
 } from "@/domain/diary/diary.utils";
+import type { TemplateConfig } from "../create-templated-file.action";
 
 // ==============================
 // Types
@@ -60,12 +60,8 @@ const generateDiaryTemplate = (params: DiaryTemplateParams): string => {
 const generateDiaryFolderPath = (params: DiaryTemplateParams): string[] => {
 	const date = params.date || dayjs().toDate();
 	const structure = getDiaryFolderStructure(date);
-	
-	return [
-		structure.yearFolder,
-		structure.monthFolder,
-		structure.dayFolder,
-	];
+
+	return [structure.yearFolder, structure.monthFolder, structure.dayFolder];
 };
 
 /**

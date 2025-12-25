@@ -45,7 +45,7 @@ describe("diaryConfig", () => {
 	describe("paramsSchema", () => {
 		it("应该接受空对象", () => {
 			const result = diaryParamsSchema.safeParse({});
-			
+
 			expect(result.success).toBe(true);
 			if (result.success) {
 				expect(result.data.date).toBeUndefined();
@@ -55,7 +55,7 @@ describe("diaryConfig", () => {
 		it("应该接受有效的日期", () => {
 			const validDate = new Date("2024-05-15T12:30:00.000Z");
 			const result = diaryParamsSchema.safeParse({ date: validDate });
-			
+
 			expect(result.success).toBe(true);
 			if (result.success) {
 				expect(result.data.date).toEqual(validDate);
@@ -94,7 +94,7 @@ describe("diaryConfig", () => {
 
 		it("应该生成一致的结果（纯函数特性）", () => {
 			const params: DiaryTemplateParams = { date: testDate };
-			
+
 			// 多次调用应该产生相同结果
 			const template1 = diaryConfig.generateTemplate(params);
 			const template2 = diaryConfig.generateTemplate(params);
@@ -102,7 +102,7 @@ describe("diaryConfig", () => {
 			const folderPath2 = diaryConfig.generateFolderPath(params);
 			const title1 = diaryConfig.generateTitle(params);
 			const title2 = diaryConfig.generateTitle(params);
-			
+
 			expect(template1).toBe(template2);
 			expect(folderPath1).toEqual(folderPath2);
 			expect(title1).toBe(title2);
@@ -110,21 +110,21 @@ describe("diaryConfig", () => {
 
 		it("应该生成有效的 JSON 模板", () => {
 			const params: DiaryTemplateParams = { date: testDate };
-			
+
 			const result = diaryConfig.generateTemplate(params);
-			
+
 			// 应该是有效的 JSON
 			expect(() => JSON.parse(result)).not.toThrow();
-			
+
 			const parsed = JSON.parse(result);
 			expect(parsed.root).toBeDefined();
 		});
 
 		it("应该生成正确的文件夹结构", () => {
 			const params: DiaryTemplateParams = { date: testDate };
-			
+
 			const result = diaryConfig.generateFolderPath(params);
-			
+
 			expect(Array.isArray(result)).toBe(true);
 			expect(result).toHaveLength(3);
 			expect(result[0]).toMatch(/^year-/);
@@ -134,9 +134,9 @@ describe("diaryConfig", () => {
 
 		it("应该生成有效的文件标题", () => {
 			const params: DiaryTemplateParams = { date: testDate };
-			
+
 			const result = diaryConfig.generateTitle(params);
-			
+
 			expect(typeof result).toBe("string");
 			expect(result.length).toBeGreaterThan(0);
 			expect(result).toMatch(/^diary-/);
@@ -148,7 +148,7 @@ describe("diaryConfig", () => {
 			// 验证配置对象包含高阶函数所需的所有字段
 			const requiredFields = [
 				"name",
-				"rootFolder", 
+				"rootFolder",
 				"fileType",
 				"tag",
 				"generateTemplate",
@@ -164,20 +164,22 @@ describe("diaryConfig", () => {
 		});
 
 		it("应该处理完整的创建流程", () => {
-			const params: DiaryTemplateParams = { date: new Date("2024-01-15T10:30:00.000Z") };
-			
+			const params: DiaryTemplateParams = {
+				date: new Date("2024-01-15T10:30:00.000Z"),
+			};
+
 			// 1. 校验参数
 			const validation = diaryConfig.paramsSchema.safeParse(params);
 			expect(validation.success).toBe(true);
-			
+
 			// 2. 生成模板
 			const template = diaryConfig.generateTemplate(params);
 			expect(() => JSON.parse(template)).not.toThrow();
-			
+
 			// 3. 生成路径
 			const folderPath = diaryConfig.generateFolderPath(params);
 			expect(folderPath).toHaveLength(3);
-			
+
 			// 4. 生成标题
 			const title = diaryConfig.generateTitle(params);
 			expect(title).toBeTruthy();

@@ -14,11 +14,11 @@
  */
 
 import * as E from "fp-ts/Either";
-import { addContent, addNode, getNextOrder, updateNode } from "@/db";
 import { ensureRootFolderAsync } from "@/actions/node";
+import { addContent, addNode, getNextOrder, updateNode } from "@/db";
 import { database } from "@/db/database";
-import logger from "@/log/index";
 import { WIKI_ROOT_FOLDER, WIKI_TAG } from "@/fn/wiki";
+import logger from "@/log/index";
 
 /**
  * 旧版 WikiInterface，用于迁移

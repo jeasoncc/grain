@@ -17,9 +17,7 @@ import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
 import type { NodeInterface } from "@/types/node";
 import { WikiFileEntryBuilder } from "./wiki.builder";
-import type {
-	WikiFileEntry,
-} from "./wiki.schema";
+import type { WikiFileEntry } from "./wiki.schema";
 
 // ==============================
 // Constants
@@ -43,18 +41,21 @@ export const WIKI_TAG = "wiki";
  *
  * @param workspaceId - The workspace ID
  * @returns TaskEither<AppError, NodeInterface>
- * 
+ *
  * @deprecated Use ensureRootFolder from @/actions/node instead
  */
 export const ensureWikiFolderAsync = (
 	workspaceId: string,
 ): TE.TaskEither<AppError, NodeInterface> => {
 	logger.start("[Wiki] 确保 Wiki 文件夹存在...");
-	logger.warn("[Wiki] ensureWikiFolderAsync is deprecated. Use ensureRootFolder from @/actions/node instead.");
+	logger.warn(
+		"[Wiki] ensureWikiFolderAsync is deprecated. Use ensureRootFolder from @/actions/node instead.",
+	);
 
 	return TE.left({
 		type: "VALIDATION_ERROR",
-		message: "ensureWikiFolderAsync is deprecated. Use ensureRootFolder from @/actions/node instead.",
+		message:
+			"ensureWikiFolderAsync is deprecated. Use ensureRootFolder from @/actions/node instead.",
 	});
 };
 

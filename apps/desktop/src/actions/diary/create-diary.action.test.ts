@@ -362,9 +362,7 @@ describe("createDiary", () => {
 		});
 
 		it("应该在创建失败时抛出错误", async () => {
-			vi.mocked(createFileInTree).mockRejectedValue(
-				new Error("数据库错误"),
-			);
+			vi.mocked(createFileInTree).mockRejectedValue(new Error("数据库错误"));
 
 			await expect(createDiaryAsync(validParams)).rejects.toThrow("数据库错误");
 		});

@@ -11,12 +11,18 @@
  * @requirements 120
  */
 
-import type { TemplatedFileParams, TemplatedFileResult } from "./create-templated-file.action";
+import {
+	type LedgerTemplateParams,
+	ledgerConfig,
+} from "./configs/ledger.config";
+import type {
+	TemplatedFileParams,
+	TemplatedFileResult,
+} from "./create-templated-file.action";
 import {
 	createTemplatedFile,
 	createTemplatedFileAsync,
 } from "./create-templated-file.action";
-import { ledgerConfig, type LedgerTemplateParams } from "./configs/ledger.config";
 
 // ==============================
 // Types
