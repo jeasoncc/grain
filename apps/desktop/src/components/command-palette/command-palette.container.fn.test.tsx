@@ -20,6 +20,25 @@ vi.mock("@/components/export-dialog-manager", () => ({
 	},
 }));
 
+vi.mock("@/stores/editor-tabs.store", () => ({
+	useEditorTabsStore: vi.fn((selector) => {
+		const store = {
+			openTab: vi.fn(),
+		};
+		return selector ? selector(store) : store;
+	}),
+}));
+
+vi.mock("@/actions/templated", () => ({
+	createExcalidrawCompatAsync: vi.fn(() =>
+		Promise.resolve({
+			node: { id: "node-1", title: "drawing-2024-01-15" },
+			content: "{}",
+			parsedContent: {},
+		}),
+	),
+}));
+
 describe("CommandPaletteContainer", () => {
 	const defaultProps = {
 		open: true,

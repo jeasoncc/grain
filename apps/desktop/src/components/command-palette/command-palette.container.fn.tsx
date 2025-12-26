@@ -1,10 +1,12 @@
 // 命令面板 - 快速访问所有功能（容器组件）
 
 import { useNavigate } from "@tanstack/react-router";
-import { Download, Moon, Search, Settings, Sun } from "lucide-react";
+import { Download, Moon, PenTool, Search, Settings, Sun } from "lucide-react";
 import { memo, useMemo } from "react";
+import { createExcalidrawCompatAsync } from "@/actions/templated";
 import { exportDialogManager } from "@/components/export-dialog-manager";
 import { useTheme } from "@/hooks/use-theme";
+import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { CommandPaletteView } from "./command-palette.view.fn";
 import type {
 	CommandGroup,
@@ -29,6 +31,7 @@ export const CommandPaletteContainer = memo(
 	}: CommandPaletteContainerProps) => {
 		const navigate = useNavigate();
 		const { theme, setTheme } = useTheme();
+		const openTab = useEditorTabsStore((s) => s.openTab);
 
 		const currentWorkspace = workspaces.find(
 			(w) => w.id === selectedWorkspaceId,
@@ -47,6 +50,33 @@ export const CommandPaletteContainer = memo(
 							onSelect: () => {
 								onOpenChange(false);
 								window.dispatchEvent(new CustomEvent("open-global-search"));
+							},
+						},
+						{
+							label: "Create Excalidraw Drawing",
+							icon: <PenTool className="size-4" />,
+							onSelect: async () => {
+								if (!selectedWorkspaceId) {
+									return;
+								}
+								onOpenChange(false);
+								try {
+									const result = await createExcalidrawCompatAsync({
+										workspaceId: selectedWorkspaceId,
+										date: new Date(),
+									});
+									// 打开新创建的 Excalidraw 文件标签页
+									openTab({
+										workspaceId: selectedWorkspaceId,
+										nodeId: result.node.id,
+										title: result.node.title,
+										type: "drawing",
+									});
+									// 导航到主工作区
+									navigate({ to: "/" });
+								} catch (error) {
+									console.error("Failed to create Excalidraw drawing:", error);
+								}
 							},
 						},
 						{
@@ -99,6 +129,7 @@ export const CommandPaletteContainer = memo(
 				onOpenChange,
 				selectedWorkspaceId,
 				currentWorkspace?.title,
+				openTab,
 			],
 		);
 

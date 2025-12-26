@@ -142,17 +142,17 @@
     - 更新或删除这些导入
     - _Requirements: 1.5_
 
-- [ ] 7. 更新 actions/index.ts
-  - [ ] 7.1 移除 drawing 相关导出
+- [x] 7. 更新 actions/index.ts
+  - [x] 7.1 移除 drawing 相关导出
     - 删除 `export * from "./drawing"`
     - _Requirements: 1.5_
   
-  - [ ] 7.2 确保 templated actions 已导出
+  - [x] 7.2 确保 templated actions 已导出
     - 验证 Excalidraw 相关函数可以被导入
     - _Requirements: 3.3, 3.4_
 
-- [ ] 8. 更新命令面板集成
-  - [ ] 8.1 在命令面板中添加 "Create Excalidraw Drawing" 命令
+- [-] 8. 更新命令面板集成
+  - [-] 8.1 在命令面板中添加 "Create Excalidraw Drawing" 命令
     - 找到命令面板配置文件
     - 添加新命令定义
     - 绑定到 `createExcalidrawAsync` 函数
