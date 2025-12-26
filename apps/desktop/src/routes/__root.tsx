@@ -6,7 +6,7 @@ import { createDrawing, deleteDrawing } from "@/actions";
 import { ActivityBar } from "@/components/activity-bar/index";
 import { GlobalSearchContainer } from "@/components/global-search";
 import { BufferSwitcher } from "@/components/buffer-switcher";
-import { CommandPalette } from "@/components/command-palette";
+import { CommandPalette } from "@/components/command-palette/index";
 import { DevtoolsWrapper } from "@/components/devtools-wrapper";
 import { ExportDialogManager } from "@/components/export/export-dialog-manager";
 import { FontStyleInjector } from "@/components/font-style-injector";

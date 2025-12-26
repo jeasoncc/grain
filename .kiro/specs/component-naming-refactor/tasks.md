@@ -326,7 +326,7 @@
 
 ## Phase 9: 重构根级组件
 
-- [-] 29. 重构 buffer-switcher 组件
+- [x] 29. 重构 buffer-switcher 组件
   - [x] 29.1 创建 `components/buffer-switcher/` 目录
   - [x] 29.2 分析组件，拆分为 View 和 Container
   - [x] 29.3 创建 `buffer-switcher.view.fn.tsx`
@@ -340,18 +340,18 @@
   - [x] 29.10 创建 `buffer-switcher.container.fn.test.tsx`
     - _Requirements: 7.2, 5.1, 5.2_
 
-- [ ] 30. 重构 command-palette 组件
-  - [ ] 30.1 创建 `components/command-palette/` 目录
-  - [ ] 30.2 分析组件，拆分为 View 和 Container
-  - [ ] 30.3 创建 `command-palette.view.fn.tsx`
-  - [ ] 30.4 创建 `command-palette.container.fn.tsx`
-  - [ ] 30.5 创建 `command-palette.types.ts`
-  - [ ] 30.6 创建 `index.ts`
-  - [ ] 30.7 删除原文件
-  - [ ] 30.8 更新所有导入路径
-  - [ ] 30.9 创建 `command-palette.view.fn.test.tsx`
+- [x] 30. 重构 command-palette 组件
+  - [x] 30.1 创建 `components/command-palette/` 目录
+  - [x] 30.2 分析组件，拆分为 View 和 Container
+  - [x] 30.3 创建 `command-palette.view.fn.tsx`
+  - [x] 30.4 创建 `command-palette.container.fn.tsx`
+  - [x] 30.5 创建 `command-palette.types.ts`
+  - [x] 30.6 创建 `index.ts`
+  - [x] 30.7 删除原文件
+  - [x] 30.8 更新所有导入路径
+  - [x] 30.9 创建 `command-palette.view.fn.test.tsx`
     - _Requirements: 7.2_
-  - [ ] 30.10 创建 `command-palette.container.fn.test.tsx`
+  - [x] 30.10 创建 `command-palette.container.fn.test.tsx`
     - _Requirements: 7.2, 5.1, 5.2_
 
 - [ ] 31. 重构 editor-tabs 组件

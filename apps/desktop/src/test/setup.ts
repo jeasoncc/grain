@@ -8,7 +8,19 @@
 import "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
-import { afterEach } from "vitest";
+import { afterEach, vi } from "vitest";
+
+// Mock ResizeObserver
+class ResizeObserverMock {
+	observe() {}
+	unobserve() {}
+	disconnect() {}
+}
+
+global.ResizeObserver = ResizeObserverMock as any;
+
+// Mock scrollIntoView
+Element.prototype.scrollIntoView = vi.fn();
 
 // 每个测试后自动清理
 afterEach(() => {
