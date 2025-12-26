@@ -10,7 +10,7 @@ import type { EditorInstanceState as BaseEditorInstanceState } from "@grain/edit
 // Tab Types
 // ==============================
 
-export type TabType = "file" | "diary" | "canvas" | "folder";
+export type TabType = "file" | "diary" | "canvas" | "folder" | "drawing";
 
 // ==============================
 // Editor Tab Interface

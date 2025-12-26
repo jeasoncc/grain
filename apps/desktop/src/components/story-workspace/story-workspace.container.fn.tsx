@@ -20,6 +20,7 @@ import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-previe
 import { WordCountBadge } from "@/components/word-count-badge";
 import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
 import { EditorTabs } from "@/components/editor-tabs";
+import { ExcalidrawEditorContainer } from "@/components/excalidraw-editor";
 import { StoryRightSidebar } from "@/components/story-right-sidebar";
 import { Button } from "@/components/ui/button";
 import {
@@ -172,6 +173,7 @@ export const StoryWorkspaceContainer = memo(
 		// 获取当前活动标签
 		const activeTab = tabs.find((t) => t.id === activeTabId);
 		const isCanvasTab = activeTab?.type === "canvas";
+		const isDrawingTab = activeTab?.type === "drawing";
 
 		const handleScrollChange = useCallback(
 			(tabId: string, scrollTop: number) => {
@@ -222,12 +224,12 @@ export const StoryWorkspaceContainer = memo(
 		);
 
 		const textEditorTabs = useMemo(() => {
-			return tabs.filter((tab) => tab.type !== "canvas");
+			return tabs.filter((tab) => tab.type !== "canvas" && tab.type !== "drawing");
 		}, [tabs]);
 
 		// 计算当前编辑器的字数
 		const wordCountResult = useMemo(() => {
-			if (!activeTabId || isCanvasTab) {
+			if (!activeTabId || isCanvasTab || isDrawingTab) {
 				return { chineseChars: 0, englishWords: 0, total: 0, characters: 0 };
 			}
 			const state = editorStates[activeTabId];
@@ -235,7 +237,7 @@ export const StoryWorkspaceContainer = memo(
 				return { chineseChars: 0, englishWords: 0, total: 0, characters: 0 };
 			}
 			return countWordsFromLexicalState(state.serializedState, wordCountMode);
-		}, [activeTabId, editorStates, isCanvasTab, wordCountMode]);
+		}, [activeTabId, editorStates, isCanvasTab, isDrawingTab, wordCountMode]);
 
 		const renderEditorContent = () => {
 			if (!activeTab) {
@@ -271,6 +273,17 @@ export const StoryWorkspaceContainer = memo(
 			if (isCanvasTab) {
 				return (
 					<CanvasEditor key={activeTab.id} nodeId={activeTab.nodeId || ""} />
+				);
+			}
+
+			// 处理 drawing 类型节点 - 使用 ExcalidrawEditorContainer
+			if (activeTab.type === "drawing") {
+				return (
+					<ExcalidrawEditorContainer
+						key={activeTab.id}
+						nodeId={activeTab.nodeId || ""}
+						className="flex-1"
+					/>
 				);
 			}
 
@@ -354,7 +367,7 @@ export const StoryWorkspaceContainer = memo(
 					<WordCountBadge
 						wordCountResult={wordCountResult}
 						countMode={wordCountMode}
-						show={showWordCountBadge && !isCanvasTab && !!activeTab}
+						show={showWordCountBadge && !isCanvasTab && !isDrawingTab && !!activeTab}
 						showDetail={wordCountMode === "mixed"}
 					/>
 				</div>

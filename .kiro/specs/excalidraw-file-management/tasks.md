@@ -106,8 +106,8 @@
     - 测试错误处理
     - _Requirements: 7.1_
 
-- [ ] 5. 更新路由以支持 Excalidraw 编辑器
-  - [ ] 5.1 更新 `routes/workspace/$nodeId.tsx`
+- [-] 5. 更新路由以支持 Excalidraw 编辑器
+  - [-] 5.1 更新 `routes/workspace/$nodeId.tsx`
     - 根据节点类型渲染不同编辑器
     - 当 `node.type === "drawing"` 时渲染 `ExcalidrawEditorContainer`
     - 保持其他类型节点的现有逻辑

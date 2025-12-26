@@ -40,6 +40,12 @@ vi.mock("@/components/editor-tabs", () => ({
 	EditorTabs: vi.fn(() => <div data-testid="editor-tabs" />),
 }));
 
+vi.mock("@/components/excalidraw-editor", () => ({
+	ExcalidrawEditorContainer: vi.fn(() => (
+		<div data-testid="excalidraw-editor" />
+	)),
+}));
+
 vi.mock("@/components/story-right-sidebar", () => ({
 	StoryRightSidebar: vi.fn(() => <div data-testid="right-sidebar" />),
 }));
