@@ -151,28 +151,28 @@
     - 验证 Excalidraw 相关函数可以被导入
     - _Requirements: 3.3, 3.4_
 
-- [-] 8. 更新命令面板集成
-  - [-] 8.1 在命令面板中添加 "Create Excalidraw Drawing" 命令
+- [x] 8. 更新命令面板集成
+  - [x] 8.1 在命令面板中添加 "Create Excalidraw Drawing" 命令
     - 找到命令面板配置文件
     - 添加新命令定义
     - 绑定到 `createExcalidrawAsync` 函数
     - 使用当前日期作为默认参数
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 9. 验证文件树和编辑器集成
-  - [ ] 9.1 验证 drawing 类型节点在文件树中正确显示
+- [x] 9. 验证文件树和编辑器集成
+  - [x] 9.1 验证 drawing 类型节点在文件树中正确显示
     - 确认图标正确
     - 确认可以点击打开
     - _Requirements: 5.1, 5.2_
   
-  - [ ] 9.2 验证 Excalidraw 编辑器正确加载
+  - [x] 9.2 验证 Excalidraw 编辑器正确加载
     - 确认路由正确处理 drawing 类型
     - 确认编辑器加载节点内容
     - 确认编辑器占据主编辑器区域
     - 确认保存功能正常
     - _Requirements: 5.2, 5.3, 5.4_
   
-  - [ ] 9.3 验证删除功能
+  - [x] 9.3 验证删除功能
     - 确认可以从文件树删除 Excalidraw 文件
     - _Requirements: 5.5_
 

@@ -12,7 +12,6 @@ import * as E from "fp-ts/Either";
 import type { SerializedEditorState } from "lexical";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CanvasEditor } from "@/components/blocks/canvas-editor";
 import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-preview-connected";
 import { EditorTabs } from "@/components/editor-tabs";
 import { ExcalidrawEditorContainer } from "@/components/excalidraw-editor";
@@ -267,7 +266,11 @@ export const StoryWorkspaceContainer = memo(
 
 			if (isCanvasTab) {
 				return (
-					<CanvasEditor key={activeTab.id} nodeId={activeTab.nodeId || ""} />
+					<ExcalidrawEditorContainer
+						key={activeTab.id}
+						nodeId={activeTab.nodeId || ""}
+						className="flex-1"
+					/>
 				);
 			}
 

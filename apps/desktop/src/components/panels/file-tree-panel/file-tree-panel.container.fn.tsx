@@ -107,12 +107,8 @@ export const FileTreePanelContainer = memo(
 					});
 				}
 
-				// Navigate based on file type
-				if (node.type === "canvas") {
-					navigate({ to: "/canvas" });
-				} else {
-					navigate({ to: "/" });
-				}
+				// Navigate to main workspace - all file types are handled there
+				navigate({ to: "/" });
 			},
 			[
 				workspaceId,
