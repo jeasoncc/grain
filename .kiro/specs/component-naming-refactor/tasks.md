@@ -86,13 +86,13 @@
 
 ## Phase 4: 重构 blocks/ 目录中的纯展示组件
 
-- [ ] 8. 重构 keyboard-shortcuts-help 组件
-  - [ ] 8.1 创建 `components/keyboard-shortcuts-help/` 目录
-  - [ ] 8.2 移动并重命名为 `keyboard-shortcuts-help.view.fn.tsx`
-  - [ ] 8.3 创建 `keyboard-shortcuts-help.types.ts`
-  - [ ] 8.4 创建 `index.ts`
-  - [ ] 8.5 更新所有导入路径
-  - [ ] 8.6 创建 `keyboard-shortcuts-help.view.fn.test.tsx`
+- [x] 8. 重构 keyboard-shortcuts-help 组件
+  - [x] 8.1 创建 `components/keyboard-shortcuts-help/` 目录
+  - [x] 8.2 移动并重命名为 `keyboard-shortcuts-help.view.fn.tsx`
+  - [x] 8.3 创建 `keyboard-shortcuts-help.types.ts`
+  - [x] 8.4 创建 `index.ts`
+  - [x] 8.5 更新所有导入路径
+  - [x] 8.6 创建 `keyboard-shortcuts-help.view.fn.test.tsx`
     - _Requirements: 7.2_
 
 - [ ] 9. 重构 save-status-indicator 组件
