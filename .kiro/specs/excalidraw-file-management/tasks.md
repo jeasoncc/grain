@@ -12,14 +12,14 @@
 
 ## Tasks
 
-- [ ] 1. 创建 Excalidraw 内容生成函数
-  - [ ] 1.1 创建 `fn/content/excalidraw.content.fn.ts`
+- [x] 1. 创建 Excalidraw 内容生成函数
+  - [x] 1.1 创建 `fn/content/excalidraw.content.fn.ts`
     - 实现 `generateExcalidrawContent` 函数
     - 生成有效的 Excalidraw JSON 结构
     - 支持自定义 width 和 height
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
   
-  - [ ] 1.2 创建 `fn/content/excalidraw.content.fn.test.ts`
+  - [x] 1.2 创建 `fn/content/excalidraw.content.fn.test.ts`
     - 测试默认内容生成
     - 测试自定义尺寸
     - 测试 JSON 格式有效性

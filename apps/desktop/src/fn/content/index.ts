@@ -6,8 +6,31 @@
  * - 四种模板类型：diary、todo、ledger、wiki
  * - 统一目录结构生成
  * - Lexical JSON 内容生成
+ * - Excalidraw JSON 内容生成
  * - 内容解析和提取
  */
+
+// Excalidraw 内容生成
+export {
+	// Types
+	type ExcalidrawAppState,
+	type ExcalidrawContentParams,
+	type ExcalidrawDocument,
+	type ExcalidrawElement,
+	type ExcalidrawFiles,
+	type ExcalidrawZoom,
+	// Constants
+	DEFAULT_HEIGHT,
+	DEFAULT_WIDTH,
+	EXCALIDRAW_SOURCE,
+	EXCALIDRAW_VERSION,
+	// Functions
+	createDefaultAppState,
+	createExcalidrawDocument,
+	generateExcalidrawContent,
+	isValidExcalidrawContent,
+	parseExcalidrawContent,
+} from "./excalidraw.content.fn";
 
 // 内容提取
 export {
