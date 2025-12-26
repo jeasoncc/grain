@@ -1,25 +1,9 @@
 /**
- * Export对话框组件
+ * Export Dialog 纯展示组件
  */
 
-import {
-	BookOpen,
-	File,
-	FileArchive,
-	FileCode,
-	FileJson,
-	FileText,
-	FileType,
-	Loader2,
-} from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-import {
-	exportAllAsync as exportAll,
-	exportAllAsZipAsync as exportAllAsZip,
-	exportAsMarkdownAsync as exportAsMarkdown,
-	exportProject,
-} from "@/actions";
+import { Loader2 } from "lucide-react";
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -32,102 +16,20 @@ import {
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
-import {
-	type ExportFormat,
-	type ExportOptions,
-	triggerBlobDownload,
-	triggerDownload,
-} from "@/fn/export";
+import type { ExportDialogViewProps, ExtendedExportFormat } from "./export-dialog.types";
 
-interface ExportDialogProps {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-	workspaceId: string;
-	workspaceTitle?: string;
-}
-
-type ExtendedExportFormat = ExportFormat | "markdown" | "json" | "zip";
-
-export function ExportDialog({
+export const ExportDialogView = memo(({
 	open,
 	onOpenChange,
-	workspaceId,
-	workspaceTitle,
-}: ExportDialogProps) {
-	const [format, setFormat] = useState<ExtendedExportFormat>("pdf");
-	const [isExporting, setIsExporting] = useState(false);
-	const [options, setOptions] = useState<ExportOptions>({
-		includeTitle: true,
-		includeAuthor: true,
-		includeChapterTitles: true,
-		includeSceneTitles: false,
-		pageBreakBetweenChapters: true,
-	});
-
-	const handleExport = async () => {
-		setIsExporting(true);
-		try {
-			// Handle Markdown and JSON export
-			if (format === "markdown") {
-				const md = await exportAsMarkdown(workspaceId);
-				triggerDownload(
-					`${workspaceTitle || "novel"}.md`,
-					md,
-					"text/markdown;charset=utf-8",
-				);
-				toast.success("Markdown export successful");
-			} else if (format === "json") {
-				const json = await exportAll();
-				triggerDownload(
-					`grain-backup-${new Date().toISOString().slice(0, 10)}.json`,
-					json,
-				);
-				toast.success("JSON backup export successful");
-			} else if (format === "zip") {
-				const zipBlob = await exportAllAsZip();
-				triggerBlobDownload(
-					`grain-backup-${new Date().toISOString().slice(0, 10)}.zip`,
-					zipBlob,
-				);
-				toast.success("ZIP archive export successful");
-			} else {
-				// Standard format export
-				await exportProject(workspaceId, format as ExportFormat, options);
-				toast.success(`${formatLabels[format]} export successful`);
-			}
-			onOpenChange(false);
-		} catch (error) {
-			console.error("Export error:", error);
-			toast.error(
-				error instanceof Error
-					? error.message
-					: "Export failed, please try again",
-			);
-		} finally {
-			setIsExporting(false);
-		}
-	};
-
-	const formatLabels: Record<ExtendedExportFormat, string> = {
-		pdf: "PDF",
-		docx: "Word",
-		txt: "Text",
-		epub: "EPUB",
-		markdown: "Markdown",
-		json: "JSON Backup",
-		zip: "ZIP Archive",
-	};
-
-	const formatIcons: Record<ExtendedExportFormat, React.ReactNode> = {
-		pdf: <FileText className="size-5 text-red-500" />,
-		docx: <FileType className="size-5 text-blue-500" />,
-		txt: <File className="size-5 text-gray-500" />,
-		epub: <BookOpen className="size-5 text-green-500" />,
-		markdown: <FileCode className="size-5 text-purple-500" />,
-		json: <FileJson className="size-5 text-orange-500" />,
-		zip: <FileArchive className="size-5 text-cyan-500" />,
-	};
-
+	format,
+	onFormatChange,
+	options,
+	onOptionsChange,
+	isExporting,
+	onExport,
+	formatLabels,
+	formatIcons,
+}: ExportDialogViewProps) => {
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-[700px] shadow-2xl border border-border/40 bg-popover/95 backdrop-blur-xl rounded-xl">
@@ -152,7 +54,7 @@ export function ExportDialog({
 						<RadioGroup
 							id="export-format"
 							value={format}
-							onValueChange={(v) => setFormat(v as ExtendedExportFormat)}
+							onValueChange={(v) => onFormatChange(v as ExtendedExportFormat)}
 							className="grid grid-cols-4 gap-3"
 						>
 							{(
@@ -211,7 +113,7 @@ export function ExportDialog({
 										id="includeTitle"
 										checked={options.includeTitle}
 										onCheckedChange={(checked) =>
-											setOptions({ ...options, includeTitle: !!checked })
+											onOptionsChange({ ...options, includeTitle: !!checked })
 										}
 										className="scale-90"
 									/>
@@ -228,7 +130,7 @@ export function ExportDialog({
 										id="includeAuthor"
 										checked={options.includeAuthor}
 										onCheckedChange={(checked) =>
-											setOptions({ ...options, includeAuthor: !!checked })
+											onOptionsChange({ ...options, includeAuthor: !!checked })
 										}
 										className="scale-90"
 									/>
@@ -245,7 +147,7 @@ export function ExportDialog({
 										id="includeChapterTitles"
 										checked={options.includeChapterTitles}
 										onCheckedChange={(checked) =>
-											setOptions({
+											onOptionsChange({
 												...options,
 												includeChapterTitles: !!checked,
 											})
@@ -265,7 +167,7 @@ export function ExportDialog({
 										id="includeSceneTitles"
 										checked={options.includeSceneTitles}
 										onCheckedChange={(checked) =>
-											setOptions({ ...options, includeSceneTitles: !!checked })
+											onOptionsChange({ ...options, includeSceneTitles: !!checked })
 										}
 										className="scale-90"
 									/>
@@ -283,7 +185,7 @@ export function ExportDialog({
 											id="pageBreakBetweenChapters"
 											checked={options.pageBreakBetweenChapters}
 											onCheckedChange={(checked) =>
-												setOptions({
+												onOptionsChange({
 													...options,
 													pageBreakBetweenChapters: !!checked,
 												})
@@ -305,7 +207,7 @@ export function ExportDialog({
 					>
 						Cancel
 					</Button>
-					<Button onClick={handleExport} disabled={isExporting}>
+					<Button onClick={onExport} disabled={isExporting}>
 						{isExporting ? (
 							<>
 								<Loader2 className="mr-2 size-4 animate-spin" />
@@ -319,4 +221,6 @@ export function ExportDialog({
 			</DialogContent>
 		</Dialog>
 	);
-}
+});
+
+ExportDialogView.displayName = "ExportDialogView";

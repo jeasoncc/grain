@@ -12,7 +12,7 @@ import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { createLedgerCompatAsync } from "@/actions/templated/create-ledger.action";
-import { ExportDialog } from "@/components/blocks/export-dialog";
+import { ExportDialog } from "@/components/export-dialog";
 import { useConfirm } from "@/components/ui/confirm";
 import { addWorkspace, clearAllData, touchWorkspace } from "@/db";
 import { useIconTheme } from "@/hooks/use-icon-theme";

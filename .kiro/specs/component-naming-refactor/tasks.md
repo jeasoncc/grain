@@ -149,18 +149,18 @@
   - [ ] 13.10 创建 `canvas-editor.container.fn.test.tsx`
     - _Requirements: 7.2, 2.5_
 
-- [ ] 14. 重构 export-dialog 组件
-  - [ ] 14.1 创建 `components/export-dialog/` 目录
-  - [ ] 14.2 分析组件，拆分为 View 和 Container
-  - [ ] 14.3 创建 `export-dialog.view.fn.tsx`
-  - [ ] 14.4 创建 `export-dialog.container.fn.tsx`
-  - [ ] 14.5 创建 `export-dialog.types.ts`
-  - [ ] 14.6 创建 `index.ts`
-  - [ ] 14.7 删除原文件
-  - [ ] 14.8 更新所有导入路径
-  - [ ] 14.9 创建 `export-dialog.view.fn.test.tsx`
+- [x] 14. 重构 export-dialog 组件
+  - [x] 14.1 创建 `components/export-dialog/` 目录
+  - [x] 14.2 分析组件，拆分为 View 和 Container
+  - [x] 14.3 创建 `export-dialog.view.fn.tsx`
+  - [x] 14.4 创建 `export-dialog.container.fn.tsx`
+  - [x] 14.5 创建 `export-dialog.types.ts`
+  - [x] 14.6 创建 `index.ts`
+  - [x] 14.7 删除原文件
+  - [x] 14.8 更新所有导入路径
+  - [x] 14.9 创建 `export-dialog.view.fn.test.tsx`
     - _Requirements: 7.2_
-  - [ ] 14.10 创建 `export-dialog.container.fn.test.tsx`
+  - [x] 14.10 创建 `export-dialog.container.fn.test.tsx`
     - _Requirements: 7.2, 2.5_
 
 - [ ] 15. 重构 theme-selector 组件

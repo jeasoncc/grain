@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { ExportDialog } from "@/components/blocks/export-dialog";
+import { ExportDialog } from "@/components/export-dialog";
 import type { WorkspaceInterface } from "@/types/workspace";
 
 // ==============================
