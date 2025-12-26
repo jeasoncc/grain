@@ -95,13 +95,13 @@
   - [x] 8.6 创建 `keyboard-shortcuts-help.view.fn.test.tsx`
     - _Requirements: 7.2_
 
-- [ ] 9. 重构 save-status-indicator 组件
-  - [ ] 9.1 创建 `components/save-status-indicator/` 目录
-  - [ ] 9.2 移动并重命名为 `save-status-indicator.view.fn.tsx`
-  - [ ] 9.3 创建 `save-status-indicator.types.ts`
-  - [ ] 9.4 创建 `index.ts`
-  - [ ] 9.5 更新所有导入路径
-  - [ ] 9.6 创建 `save-status-indicator.view.fn.test.tsx`
+- [x] 9. 重构 save-status-indicator 组件
+  - [x] 9.1 创建 `components/save-status-indicator/` 目录
+  - [x] 9.2 移动并重命名为 `save-status-indicator.view.fn.tsx`
+  - [x] 9.3 创建 `save-status-indicator.types.ts`
+  - [x] 9.4 创建 `index.ts`
+  - [x] 9.5 更新所有导入路径
+  - [x] 9.6 创建 `save-status-indicator.view.fn.test.tsx`
     - _Requirements: 7.2_
 
 - [ ] 10. 重构 word-count-badge 组件

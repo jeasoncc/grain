@@ -14,7 +14,7 @@ import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CanvasEditor } from "@/components/blocks/canvas-editor";
 import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help";
-import { SaveStatusIndicator } from "@/components/blocks/save-status-indicator";
+import { SaveStatusIndicator } from "@/components/save-status-indicator";
 import { ThemeSelector } from "@/components/blocks/theme-selector";
 import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-preview-connected";
 import { WordCountBadge } from "@/components/blocks/word-count-badge";
