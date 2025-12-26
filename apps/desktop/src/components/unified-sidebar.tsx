@@ -10,8 +10,7 @@ import type { SidebarPanel } from "@/types/sidebar";
 import { DrawingsPanel } from "./panels/drawings-panel";
 import { FileTreePanel } from "./panels/file-tree-panel/";
 import { SearchPanel } from "./panels/search-panel/";
-import type { TagGraphData } from "./panels/tag-graph-panel";
-import { TagGraphPanel } from "./panels/tag-graph-panel";
+import { TagGraphPanel } from "./panels/tag-graph-panel/";
 import { Button } from "./ui/button";
 
 /**
@@ -34,8 +33,6 @@ export interface UnifiedSidebarContentProps {
 	readonly onCreateDrawing: () => void;
 	/** 删除绘图回调 */
 	readonly onDeleteDrawing: (drawingId: string, drawingName: string) => void;
-	/** 标签图谱数据 */
-	readonly tagGraphData: TagGraphData | null;
 }
 
 /**
@@ -52,7 +49,6 @@ export function UnifiedSidebarContent({
 	onSelectDrawing,
 	onCreateDrawing,
 	onDeleteDrawing,
-	tagGraphData,
 }: UnifiedSidebarContentProps) {
 	return (
 		<div className="flex flex-col h-full w-full overflow-hidden">
@@ -68,9 +64,7 @@ export function UnifiedSidebarContent({
 				/>
 			)}
 			{activePanel === "files" && <FileTreePanel />}
-			{activePanel === "tags" && (
-				<TagGraphPanel workspaceId={workspaceId} graphData={tagGraphData} />
-			)}
+			{activePanel === "tags" && <TagGraphPanel />}
 		</div>
 	);
 }
@@ -101,8 +95,6 @@ export interface UnifiedSidebarProps {
 	readonly onCreateDrawing: () => void;
 	/** 删除绘图回调 */
 	readonly onDeleteDrawing: (drawingId: string, drawingName: string) => void;
-	/** 标签图谱数据 */
-	readonly tagGraphData: TagGraphData | null;
 }
 
 /**
@@ -123,7 +115,6 @@ export function UnifiedSidebar({
 	onSelectDrawing,
 	onCreateDrawing,
 	onDeleteDrawing,
-	tagGraphData,
 }: UnifiedSidebarProps) {
 	// Show restore button when collapsed by drag
 	if (!isOpen && wasCollapsedByDrag) {
@@ -155,7 +146,6 @@ export function UnifiedSidebar({
 			onSelectDrawing={onSelectDrawing}
 			onCreateDrawing={onCreateDrawing}
 			onDeleteDrawing={onDeleteDrawing}
-			tagGraphData={tagGraphData}
 		/>
 	);
 }

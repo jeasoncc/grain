@@ -17,7 +17,6 @@ import { UnifiedSidebarContent } from "@/components/unified-sidebar";
 import { autoBackupManager } from "@/db/backup.db.fn";
 import type { DrawingInterface } from "@/db/schema";
 import { useDrawingsByWorkspace } from "@/hooks/use-drawing";
-import { useTagGraph } from "@/hooks/use-tag";
 import { initializeTheme } from "@/hooks/use-theme";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
 import logger from "@/log";
@@ -45,12 +44,8 @@ function RootComponent() {
 	// Fetch workspaces for command palette
 	const workspaces = useAllWorkspaces() ?? [];
 
-	// Fetch drawings and tag graph data
+	// Fetch drawings
 	const drawings = useDrawingsByWorkspace(selectedWorkspaceId) ?? [];
-	const tagGraphData = useTagGraph(selectedWorkspaceId ?? undefined) ?? {
-		nodes: [],
-		edges: [],
-	};
 
 	// Sidebar state
 	const {
@@ -213,7 +208,6 @@ function RootComponent() {
 											onSelectDrawing={handleSelectDrawing}
 											onCreateDrawing={handleCreateDrawing}
 											onDeleteDrawing={handleDeleteDrawing}
-											tagGraphData={tagGraphData}
 										/>
 									</Panel>
 									<PanelResizeHandle className="w-[1px] bg-border transition-colors hover:w-1 hover:bg-primary/50 data-[resize-handle-active]:w-1 data-[resize-handle-active]:bg-primary/70 z-10" />

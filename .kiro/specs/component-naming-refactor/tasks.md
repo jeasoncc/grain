@@ -238,18 +238,18 @@
   - [x] 20.10 创建 `search-panel.container.fn.test.tsx`
     - _Requirements: 7.2, 4.1, 4.2_
 
-- [ ] 21. 重构 tag-graph-panel 组件
-  - [ ] 21.1 创建 `components/panels/tag-graph-panel/` 目录
-  - [ ] 21.2 分析组件，拆分为 View 和 Container
-  - [ ] 21.3 创建 `tag-graph-panel.view.fn.tsx`
-  - [ ] 21.4 创建 `tag-graph-panel.container.fn.tsx`
-  - [ ] 21.5 创建 `tag-graph-panel.types.ts`
-  - [ ] 21.6 创建 `index.ts`
-  - [ ] 21.7 删除原文件
-  - [ ] 21.8 更新所有导入路径
-  - [ ] 21.9 创建 `tag-graph-panel.view.fn.test.tsx`
+- [x] 21. 重构 tag-graph-panel 组件
+  - [x] 21.1 创建 `components/panels/tag-graph-panel/` 目录
+  - [x] 21.2 分析组件，拆分为 View 和 Container
+  - [x] 21.3 创建 `tag-graph-panel.view.fn.tsx`
+  - [x] 21.4 创建 `tag-graph-panel.container.fn.tsx`
+  - [x] 21.5 创建 `tag-graph-panel.types.ts`
+  - [x] 21.6 创建 `index.ts`
+  - [x] 21.7 删除原文件
+  - [x] 21.8 更新所有导入路径
+  - [x] 21.9 创建 `tag-graph-panel.view.fn.test.tsx`
     - _Requirements: 7.2_
-  - [ ] 21.10 创建 `tag-graph-panel.container.fn.test.tsx`
+  - [x] 21.10 创建 `tag-graph-panel.container.fn.test.tsx`
     - _Requirements: 7.2, 4.1, 4.2_
 
 - [ ] 22. 验证 Phase 6
