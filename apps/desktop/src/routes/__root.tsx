@@ -8,7 +8,7 @@ import { GlobalSearchContainer } from "@/components/global-search";
 import { BufferSwitcher } from "@/components/buffer-switcher";
 import { CommandPalette } from "@/components/command-palette/index";
 import { DevtoolsWrapper } from "@/components/devtools-wrapper";
-import { ExportDialogManager } from "@/components/export/export-dialog-manager";
+import { ExportDialogManager } from "@/components/export-dialog-manager";
 import { FontStyleInjector } from "@/components/font-style-injector";
 import { ConfirmProvider } from "@/components/ui/confirm";
 import { SidebarProvider } from "@/components/ui/sidebar";

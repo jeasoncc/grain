@@ -14,7 +14,7 @@ vi.mock("@/hooks/use-theme", () => ({
 	})),
 }));
 
-vi.mock("@/components/export/export-dialog-manager", () => ({
+vi.mock("@/components/export-dialog-manager", () => ({
 	exportDialogManager: {
 		open: vi.fn(),
 	},

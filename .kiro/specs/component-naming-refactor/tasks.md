@@ -274,15 +274,15 @@
   - [x] 23.10 创建 `export-button.container.fn.test.tsx`
     - _Requirements: 7.2_
 
-- [ ] 24. 重构 export-dialog-manager 组件
-  - [ ] 24.1 创建 `components/export-dialog-manager/` 目录
-  - [ ] 24.2 分析组件（主要是 Container）
-  - [ ] 24.3 创建 `export-dialog-manager.container.fn.tsx`
-  - [ ] 24.4 创建 `export-dialog-manager.types.ts`
-  - [ ] 24.5 创建 `index.ts`
-  - [ ] 24.6 删除原文件和目录
-  - [ ] 24.7 更新所有导入路径
-  - [ ] 24.8 创建 `export-dialog-manager.container.fn.test.tsx`
+- [x] 24. 重构 export-dialog-manager 组件
+  - [x] 24.1 创建 `components/export-dialog-manager/` 目录
+  - [x] 24.2 分析组件（主要是 Container）
+  - [x] 24.3 创建 `export-dialog-manager.container.fn.tsx`
+  - [x] 24.4 创建 `export-dialog-manager.types.ts`
+  - [x] 24.5 创建 `index.ts`
+  - [x] 24.6 删除原文件和目录
+  - [x] 24.7 更新所有导入路径
+  - [x] 24.8 创建 `export-dialog-manager.container.fn.test.tsx`
     - _Requirements: 7.2_
 
 - [ ] 25. 重构 drawing-workspace 组件

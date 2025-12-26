@@ -3,7 +3,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Download, Moon, Search, Settings, Sun } from "lucide-react";
 import { memo, useMemo } from "react";
-import { exportDialogManager } from "@/components/export/export-dialog-manager";
+import { exportDialogManager } from "@/components/export-dialog-manager";
 import { useTheme } from "@/hooks/use-theme";
 import { CommandPaletteView } from "./command-palette.view.fn";
 import type {
