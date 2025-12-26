@@ -16,7 +16,7 @@ function createTestTab(overrides?: Partial<EditorTab>): EditorTab {
 		workspaceId: "workspace-1",
 		nodeId: "node-1",
 		title: "Test Document",
-		type: "wiki",
+		type: "file",
 		isDirty: false,
 		createdAt: Date.now(),
 		...overrides,
@@ -109,7 +109,7 @@ describe("EditorTabsView", () => {
 
 	it("should render different icons for different tab types", () => {
 		const tabs = [
-			createTestTab({ id: "tab-1", type: "wiki" }),
+			createTestTab({ id: "tab-1", type: "file" }),
 			createTestTab({ id: "tab-2", type: "diary" }),
 			createTestTab({ id: "tab-3", type: "canvas" }),
 		];

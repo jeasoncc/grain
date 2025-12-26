@@ -23,7 +23,7 @@ function createTestTab(overrides?: Partial<EditorTab>): EditorTab {
 		workspaceId: "workspace-1",
 		nodeId: "node-1",
 		title: "Test Document",
-		type: "wiki",
+		type: "file",
 		isDirty: false,
 		createdAt: Date.now(),
 		...overrides,
