@@ -66,23 +66,23 @@
     - 导出 Excalidraw 相关函数和类型
     - _Requirements: 3.3, 3.4_
 
-- [ ] 4. 创建 Excalidraw 编辑器组件
-  - [ ] 4.1 创建 `components/excalidraw-editor/` 目录
+- [x] 4. 创建 Excalidraw 编辑器组件
+  - [x] 4.1 创建 `components/excalidraw-editor/` 目录
     - _Requirements: 5.2_
   
-  - [ ] 4.2 创建 `components/excalidraw-editor/excalidraw-editor.types.ts`
+  - [x] 4.2 创建 `components/excalidraw-editor/excalidraw-editor.types.ts`
     - 定义 `ExcalidrawEditorViewProps` 接口
     - 定义 `ExcalidrawEditorContainerProps` 接口
     - _Requirements: 5.2_
   
-  - [ ] 4.3 创建 `components/excalidraw-editor/excalidraw-editor.view.fn.tsx`
+  - [x] 4.3 创建 `components/excalidraw-editor/excalidraw-editor.view.fn.tsx`
     - 实现纯展示组件
     - 集成 `@excalidraw/excalidraw` 包
     - 支持主题切换
     - 支持 onChange 回调
     - _Requirements: 5.2_
   
-  - [ ] 4.4 创建 `components/excalidraw-editor/excalidraw-editor.container.fn.tsx`
+  - [x] 4.4 创建 `components/excalidraw-editor/excalidraw-editor.container.fn.tsx`
     - 实现容器组件
     - 从路由获取 nodeId
     - 使用 useNode hook 获取节点数据
@@ -90,17 +90,17 @@
     - 实现自动保存逻辑（debounced）
     - _Requirements: 5.2, 5.4_
   
-  - [ ] 4.5 创建 `components/excalidraw-editor/index.ts`
+  - [x] 4.5 创建 `components/excalidraw-editor/index.ts`
     - 导出 View 和 Container 组件
     - _Requirements: 5.2_
   
-  - [ ] 4.6 创建 `components/excalidraw-editor/excalidraw-editor.view.fn.test.tsx`
+  - [x] 4.6 创建 `components/excalidraw-editor/excalidraw-editor.view.fn.test.tsx`
     - 测试组件渲染
     - 测试 props 传递
     - 测试主题切换
     - _Requirements: 7.1_
   
-  - [ ] 4.7 创建 `components/excalidraw-editor/excalidraw-editor.container.fn.test.tsx`
+  - [x] 4.7 创建 `components/excalidraw-editor/excalidraw-editor.container.fn.test.tsx`
     - 测试数据加载
     - 测试保存逻辑
     - 测试错误处理
