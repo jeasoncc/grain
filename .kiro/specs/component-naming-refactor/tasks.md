@@ -307,15 +307,15 @@
 
 ## Phase 8: 重构 workspace/ 目录
 
-- [ ] 27. 重构 story-workspace 组件
-  - [ ] 27.1 创建 `components/story-workspace/` 目录
-  - [ ] 27.2 分析组件（主要是 Container）
-  - [ ] 27.3 创建 `story-workspace.container.fn.tsx`
-  - [ ] 27.4 创建 `story-workspace.types.ts`
-  - [ ] 27.5 创建 `index.ts`
-  - [ ] 27.6 删除原文件和目录
-  - [ ] 27.7 更新所有导入路径
-  - [ ] 27.8 创建 `story-workspace.container.fn.test.tsx`
+- [x] 27. 重构 story-workspace 组件
+  - [x] 27.1 创建 `components/story-workspace/` 目录
+  - [x] 27.2 分析组件（主要是 Container）
+  - [x] 27.3 创建 `story-workspace.container.fn.tsx`
+  - [x] 27.4 创建 `story-workspace.types.ts`
+  - [x] 27.5 创建 `index.ts`
+  - [x] 27.6 删除原文件和目录
+  - [x] 27.7 更新所有导入路径
+  - [x] 27.8 创建 `story-workspace.container.fn.test.tsx`
     - _Requirements: 7.2_
 
 - [ ] 28. 验证 Phase 8

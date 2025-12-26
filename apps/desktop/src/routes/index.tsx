@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Spinner } from "@/components/ui/loading";
-import { StoryWorkspace } from "@/components/workspace/story-workspace";
+import { StoryWorkspace } from "@/components/story-workspace";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
 
 export const Route = createFileRoute("/")({
