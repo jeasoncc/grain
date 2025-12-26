@@ -17,7 +17,7 @@ import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help";
 import { SaveStatusIndicator } from "@/components/save-status-indicator";
 import { ThemeSelector } from "@/components/blocks/theme-selector";
 import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-preview-connected";
-import { WordCountBadge } from "@/components/blocks/word-count-badge";
+import { WordCountBadge } from "@/components/word-count-badge";
 import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
 import { EditorTabs } from "@/components/editor-tabs";
 import { StoryRightSidebar } from "@/components/story-right-sidebar";

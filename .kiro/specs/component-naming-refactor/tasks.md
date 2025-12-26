@@ -104,13 +104,13 @@
   - [x] 9.6 创建 `save-status-indicator.view.fn.test.tsx`
     - _Requirements: 7.2_
 
-- [ ] 10. 重构 word-count-badge 组件
-  - [ ] 10.1 创建 `components/word-count-badge/` 目录
-  - [ ] 10.2 移动并重命名为 `word-count-badge.view.fn.tsx`
-  - [ ] 10.3 创建 `word-count-badge.types.ts`
-  - [ ] 10.4 创建 `index.ts`
-  - [ ] 10.5 更新所有导入路径
-  - [ ] 10.6 创建 `word-count-badge.view.fn.test.tsx`
+- [x] 10. 重构 word-count-badge 组件
+  - [x] 10.1 创建 `components/word-count-badge/` 目录
+  - [x] 10.2 移动并重命名为 `word-count-badge.view.fn.tsx`
+  - [x] 10.3 创建 `word-count-badge.types.ts`
+  - [x] 10.4 创建 `index.ts`
+  - [x] 10.5 更新所有导入路径
+  - [x] 10.6 创建 `word-count-badge.view.fn.test.tsx`
     - _Requirements: 7.2_
 
 - [ ] 11. 验证 Phase 4
