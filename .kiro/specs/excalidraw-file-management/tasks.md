@@ -26,8 +26,8 @@
     - 测试必需字段存在
     - _Requirements: 7.3_
 
-- [ ] 2. 创建 Excalidraw 模板配置
-  - [ ] 2.1 创建 `actions/templated/configs/excalidraw.config.ts`
+- [x] 2. 创建 Excalidraw 模板配置
+  - [x] 2.1 创建 `actions/templated/configs/excalidraw.config.ts`
     - 定义 `ExcalidrawTemplateParams` 接口（包含 title, date, width, height）
     - 创建 `excalidrawParamsSchema` Zod schema
     - 实现 `generateExcalidrawTemplate` 函数
@@ -36,7 +36,7 @@
     - 导出 `excalidrawConfig` 配置对象
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8_
   
-  - [ ] 2.2 创建 `actions/templated/configs/excalidraw.config.test.ts`
+  - [x] 2.2 创建 `actions/templated/configs/excalidraw.config.test.ts`
     - 测试配置对象结构
     - 测试 rootFolder 为 "excalidraw"
     - 测试 fileType 为 "drawing"
