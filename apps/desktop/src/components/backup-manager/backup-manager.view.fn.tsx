@@ -1,5 +1,5 @@
 /**
- * Backup Manager Component - Pure Presentation
+ * Backup Manager View Component - Pure Presentation
  *
  * 纯展示组件，所有数据和回调通过 props 传入
  */
@@ -37,39 +37,11 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { formatBytes } from "@/fn/format";
-import type { DatabaseStats, LocalBackupRecord } from "@/types/backup";
-import type { StorageStats } from "@/types/storage";
+import type { BackupManagerViewProps } from "./backup-manager.types";
 
 dayjs.extend(relativeTime);
 
-// ============================================================================
-// 类型定义
-// ============================================================================
-
-/**
- * BackupManager Props
- */
-export interface BackupManagerProps {
-	readonly stats: DatabaseStats | null;
-	readonly storageStats: StorageStats | null;
-	readonly loading: boolean;
-	readonly autoBackupEnabled: boolean;
-	readonly localBackups: LocalBackupRecord[];
-	readonly onExportJson: () => void;
-	readonly onExportZip: () => void;
-	readonly onRestore: () => void;
-	readonly onToggleAutoBackup: (enabled: boolean) => void;
-	readonly onRestoreLocal: (timestamp: string) => void;
-	readonly onClearAllData: () => void;
-	readonly onClearDatabase: () => void;
-	readonly onClearSettings: () => void;
-}
-
-// ============================================================================
-// 组件
-// ============================================================================
-
-export const BackupManager = memo(function BackupManager({
+export const BackupManagerView = memo(function BackupManagerView({
 	stats,
 	storageStats,
 	loading,
@@ -83,7 +55,7 @@ export const BackupManager = memo(function BackupManager({
 	onClearAllData,
 	onClearDatabase,
 	onClearSettings,
-}: BackupManagerProps) {
+}: BackupManagerViewProps) {
 	return (
 		<div className="space-y-6">
 			{/* Data Statistics */}
@@ -558,3 +530,5 @@ export const BackupManager = memo(function BackupManager({
 		</div>
 	);
 });
+
+BackupManagerView.displayName = "BackupManagerView";

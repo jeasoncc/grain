@@ -121,18 +121,18 @@
 
 ## Phase 5: 重构 blocks/ 目录中的混合组件
 
-- [ ] 12. 重构 backup-manager 组件
-  - [ ] 12.1 创建 `components/backup-manager/` 目录
-  - [ ] 12.2 分析组件，拆分为 View 和 Container
-  - [ ] 12.3 创建 `backup-manager.view.fn.tsx`
-  - [ ] 12.4 创建 `backup-manager.container.fn.tsx`
-  - [ ] 12.5 创建 `backup-manager.types.ts`
-  - [ ] 12.6 创建 `index.ts`
-  - [ ] 12.7 删除原文件
-  - [ ] 12.8 更新所有导入路径
-  - [ ] 12.9 创建 `backup-manager.view.fn.test.tsx`
+- [x] 12. 重构 backup-manager 组件
+  - [x] 12.1 创建 `components/backup-manager/` 目录
+  - [x] 12.2 分析组件，拆分为 View 和 Container
+  - [x] 12.3 创建 `backup-manager.view.fn.tsx`
+  - [x] 12.4 创建 `backup-manager.container.fn.tsx`
+  - [x] 12.5 创建 `backup-manager.types.ts`
+  - [x] 12.6 创建 `index.ts`
+  - [x] 12.7 删除原文件
+  - [x] 12.8 更新所有导入路径
+  - [x] 12.9 创建 `backup-manager.view.fn.test.tsx`
     - _Requirements: 7.2_
-  - [ ] 12.10 创建 `backup-manager.container.fn.test.tsx`
+  - [x] 12.10 创建 `backup-manager.container.fn.test.tsx`
     - _Requirements: 7.2, 2.5_
 
 - [ ] 13. 重构 canvas-editor 组件
