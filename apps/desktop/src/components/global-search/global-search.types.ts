@@ -35,10 +35,22 @@ export interface SearchOptions {
 export interface GlobalSearchViewProps {
 	/** 是否打开 */
 	readonly open: boolean;
+	/** 搜索关键词 */
+	readonly query: string;
+	/** 搜索结果 */
+	readonly results: SearchResult[];
+	/** 是否加载中 */
+	readonly loading: boolean;
+	/** 当前选中索引 */
+	readonly selectedIndex: number;
 	/** 打开状态变化回调 */
 	readonly onOpenChange: (open: boolean) => void;
-	/** 搜索函数 */
-	readonly onSearch: (query: string, options?: SearchOptions) => Promise<SearchResult[]>;
+	/** 搜索关键词变化回调 */
+	readonly onQueryChange: (query: string) => void;
+	/** 选择结果回调 */
+	readonly onSelectResult: (result: SearchResult) => void;
+	/** 键盘事件回调 */
+	readonly onKeyDown: (e: React.KeyboardEvent) => void;
 }
 
 /**

@@ -60,22 +60,22 @@
 
 ## Phase 3: 重构 file-tree/ 目录
 
-- [ ] 6. 重构 file-tree 组件
-  - [ ] 6.1 重命名 `file-tree.tsx` → `file-tree.view.fn.tsx`
+- [x] 6. 重构 file-tree 组件
+  - [x] 6.1 重命名 `file-tree.tsx` → `file-tree.view.fn.tsx`
     - _Requirements: 3.1_
-  - [ ] 6.2 重命名 `file-tree-item.tsx` → `file-tree-item.view.fn.tsx`
+  - [x] 6.2 重命名 `file-tree-item.tsx` → `file-tree-item.view.fn.tsx`
     - _Requirements: 3.3_
-  - [ ] 6.3 创建 `file-tree.types.ts`
+  - [x] 6.3 创建 `file-tree.types.ts`
     - _Requirements: 3.4_
-  - [ ] 6.4 分析是否需要 Container 组件
+  - [x] 6.4 分析是否需要 Container 组件
     - _Requirements: 3.2_
-  - [ ] 6.5 更新 `index.ts`
-  - [ ] 6.6 更新所有导入路径
-  - [ ] 6.7 创建 `file-tree.view.fn.test.tsx`
+  - [x] 6.5 更新 `index.ts`
+  - [x] 6.6 更新所有导入路径
+  - [x] 6.7 创建 `file-tree.view.fn.test.tsx`
     - _Requirements: 7.2_
-  - [ ] 6.8 创建 `file-tree-item.view.fn.test.tsx`
+  - [x] 6.8 创建 `file-tree-item.view.fn.test.tsx`
     - _Requirements: 7.2_
-  - [ ] 6.9 如果创建了 Container，创建 `file-tree.container.fn.test.tsx`
+  - [x] 6.9 如果创建了 Container，创建 `file-tree.container.fn.test.tsx`
     - _Requirements: 7.2_
 
 - [ ] 7. 验证 Phase 3

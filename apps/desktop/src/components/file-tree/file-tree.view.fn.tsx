@@ -34,48 +34,14 @@ import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import type { NodeInterface, NodeType } from "@/types/node";
+import type { FileTreeProps, TreeData } from "./file-tree.types";
 
 /**
  * FileTree Props 接口
  *
  * 纯展示组件：所有数据和回调通过 props 传入
  */
-export interface FileTreeProps {
-	/** 工作区 ID（用于显示空状态） */
-	readonly workspaceId: string | null;
-	/** 节点数据数组 */
-	readonly nodes: NodeInterface[];
-	/** 当前选中的节点 ID */
-	readonly selectedNodeId: string | null;
-	/** 节点选择回调 */
-	readonly onSelectNode: (nodeId: string) => void;
-	/** 创建文件夹回调 */
-	readonly onCreateFolder: (parentId: string | null) => void;
-	/** 创建文件回调 */
-	readonly onCreateFile: (parentId: string | null, type: NodeType) => void;
-	/** 删除节点回调 */
-	readonly onDeleteNode: (nodeId: string) => void;
-	/** 重命名节点回调 */
-	readonly onRenameNode: (nodeId: string, newTitle: string) => void;
-	/** 移动节点回调 */
-	readonly onMoveNode: (
-		nodeId: string,
-		newParentId: string | null,
-		newIndex: number,
-	) => void;
-	/** 切换节点折叠状态回调 */
-	readonly onToggleCollapsed: (nodeId: string, collapsed: boolean) => void;
-	/** 创建日记回调（可选） */
-	readonly onCreateDiary?: () => void;
-}
-
-interface TreeData {
-	id: string;
-	name: string;
-	type: NodeType;
-	collapsed: boolean;
-	children?: TreeData[];
-}
+export type { FileTreeProps, TreeData } from "./file-tree.types";
 
 function buildTreeData(
 	nodes: NodeInterface[],

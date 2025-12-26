@@ -1,39 +1,143 @@
 /**
- * Global Search 连接组件
+ * Global Search 容器组件
  *
- * 连接层：提供搜索逻辑，将纯展示组件连接到搜索引擎
+ * 负责搜索逻辑、状态管理和业务操作
  */
 
-import { memo, useCallback } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { memo, useCallback, useEffect, useState } from "react";
+import logger from "@/log";
 import { searchEngine } from "@/fn/search";
 import { GlobalSearchView } from "./global-search.view.fn";
-import type { GlobalSearchContainerProps, SearchOptions, SearchResult } from "./global-search.types";
+import type { GlobalSearchContainerProps, SearchResult } from "./global-search.types";
 
 /**
- * Global Search 连接组件
+ * Global Search 容器组件
  *
- * 负责搜索逻辑，将搜索结果传递给纯展示组件
+ * 负责：
+ * - 搜索状态管理（query, results, loading, selectedIndex）
+ * - 防抖搜索逻辑
+ * - 键盘导航
+ * - 结果选择和路由跳转
  */
 export const GlobalSearchContainer = memo(({
 	open,
 	onOpenChange,
 }: GlobalSearchContainerProps) => {
-	// 搜索函数
-	const handleSearch = useCallback(
-		async (query: string, options?: SearchOptions): Promise<SearchResult[]> => {
-			// 使用简单搜索（更快，适合实时搜索）
-			return searchEngine.simpleSearch(query, {
-				limit: options?.limit || 30,
+	const [query, setQuery] = useState("");
+	const [results, setResults] = useState<SearchResult[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [selectedIndex, setSelectedIndex] = useState(0);
+	const navigate = useNavigate();
+
+	// 执行搜索
+	const performSearch = useCallback(async (searchQuery: string) => {
+		if (!searchQuery.trim()) {
+			setResults([]);
+			return;
+		}
+
+		setLoading(true);
+		try {
+			logger.start("[GlobalSearch] 开始搜索", { query: searchQuery });
+			const searchResults = await searchEngine.simpleSearch(searchQuery, {
+				limit: 30,
 			});
+			setResults(searchResults);
+			setSelectedIndex(0);
+			logger.success("[GlobalSearch] 搜索完成", { count: searchResults.length });
+		} catch (error) {
+			logger.error("[GlobalSearch] 搜索失败", error);
+			setResults([]);
+		} finally {
+			setLoading(false);
+		}
+	}, []);
+
+	// 防抖搜索
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			performSearch(query);
+		}, 300);
+
+		return () => clearTimeout(timer);
+	}, [query, performSearch]);
+
+	// 处理搜索关键词变化
+	const handleQueryChange = useCallback((newQuery: string) => {
+		setQuery(newQuery);
+	}, []);
+
+	// 处理结果选择
+	const handleSelectResult = useCallback(
+		(result: SearchResult) => {
+			logger.info("[GlobalSearch] 选择结果", { id: result.id, type: result.type });
+			
+			onOpenChange(false);
+
+			// 根据类型导航到对应页面
+			switch (result.type) {
+				case "node":
+				case "project":
+					// Navigate to Home，通过文件树打开
+					navigate({ to: "/" });
+					break;
+			}
+
+			// 清空搜索
+			setQuery("");
+			setResults([]);
 		},
-		[],
+		[onOpenChange, navigate],
 	);
+
+	// 处理键盘事件
+	const handleKeyDown = useCallback(
+		(e: React.KeyboardEvent) => {
+			switch (e.key) {
+				case "ArrowDown":
+					e.preventDefault();
+					setSelectedIndex((prev) => Math.min(prev + 1, results.length - 1));
+					break;
+				case "ArrowUp":
+					e.preventDefault();
+					setSelectedIndex((prev) => Math.max(prev - 1, 0));
+					break;
+				case "Enter":
+					e.preventDefault();
+					if (results[selectedIndex]) {
+						handleSelectResult(results[selectedIndex]);
+					}
+					break;
+				case "Escape":
+					e.preventDefault();
+					onOpenChange(false);
+					break;
+			}
+		},
+		[results, selectedIndex, onOpenChange, handleSelectResult],
+	);
+
+	// 重置状态当对话框关闭时
+	useEffect(() => {
+		if (!open) {
+			setQuery("");
+			setResults([]);
+			setSelectedIndex(0);
+		}
+	}, [open]);
 
 	return (
 		<GlobalSearchView
 			open={open}
+			query={query}
+			results={results}
+			loading={loading}
+			selectedIndex={selectedIndex}
 			onOpenChange={onOpenChange}
-			onSearch={handleSearch}
+			onQueryChange={handleQueryChange}
+			onSelectResult={handleSelectResult}
+			onKeyDown={handleKeyDown}
 		/>
 	);
 });

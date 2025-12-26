@@ -33,32 +33,7 @@ import {
 import { Input } from "@/components/ui/input";
 import type { TreeNode } from "@/fn/node";
 import { cn } from "@/lib/utils";
-import type { NodeType } from "@/types/node";
-
-interface DragState {
-	draggedId: string;
-	targetId: string | null;
-	position: "before" | "after" | "inside" | null;
-}
-
-export interface FileTreeItemProps {
-	node: TreeNode;
-	selectedId: string | null;
-	renamingId: string | null;
-	dragState: DragState;
-	onSelect: (nodeId: string) => void;
-	onToggle: (nodeId: string, currentCollapsed: boolean) => void;
-	onStartRename: (nodeId: string) => void;
-	onRename: (nodeId: string, newTitle: string) => void;
-	onCancelRename: () => void;
-	onDelete: (nodeId: string) => void;
-	onCreateFolder: (parentId: string | null) => void;
-	onCreateFile: (parentId: string | null, type: NodeType) => void;
-	onDragStart: (e: React.DragEvent, nodeId: string) => void;
-	onDragOver: (e: React.DragEvent, nodeId: string, nodeType: NodeType) => void;
-	onDragEnd: () => void;
-	onDrop: (e: React.DragEvent, targetId: string, targetType: NodeType) => void;
-}
+import type { DragState, FileTreeItemProps } from "./file-tree.types";
 
 export function FileTreeItem({
 	node,

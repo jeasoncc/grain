@@ -1,12 +1,11 @@
 /**
  * Global Search 组件
  *
- * 纯展示组件，通过 props 接收搜索函数
+ * 纯展示组件，只负责 UI 渲染和用户交互
  */
 
-import { useNavigate } from "@tanstack/react-router";
 import { FileText, Loader2, Search, X } from "lucide-react";
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +18,11 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import type { GlobalSearchViewProps, SearchResult, SearchResultType } from "./global-search.types";
+import type {
+	GlobalSearchViewProps,
+	SearchResult,
+	SearchResultType,
+} from "./global-search.types";
 
 const typeIcons: Record<
 	SearchResultType,
@@ -41,106 +44,22 @@ const typeColors: Record<SearchResultType, string> = {
 
 export const GlobalSearchView = memo(({
 	open,
+	query,
+	results,
+	loading,
+	selectedIndex,
 	onOpenChange,
-	onSearch,
+	onQueryChange,
+	onSelectResult,
+	onKeyDown,
 }: GlobalSearchViewProps) => {
-	const [query, setQuery] = useState("");
-	const [results, setResults] = useState<SearchResult[]>([]);
-	const [loading, setLoading] = useState(false);
-	const [selectedIndex, setSelectedIndex] = useState(0);
-	const navigate = useNavigate();
-
-	// Execute Search
-	const performSearch = useCallback(
-		async (searchQuery: string) => {
-			if (!searchQuery.trim()) {
-				setResults([]);
-				return;
-			}
-
-			setLoading(true);
-			try {
-				const searchResults = await onSearch(searchQuery, { limit: 30 });
-				setResults(searchResults);
-				setSelectedIndex(0);
-			} catch (error) {
-				console.error("Search failed:", error);
-				setResults([]);
-			} finally {
-				setLoading(false);
-			}
-		},
-		[onSearch],
-	);
-
-	// Debounced Search
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			performSearch(query);
-		}, 300);
-
-		return () => clearTimeout(timer);
-	}, [query, performSearch]);
-
-	// 选择结果
-	const handleSelectResult = useCallback(
-		(result: SearchResult) => {
-			onOpenChange(false);
-
-			// 根据类型导航到对应页面
-			switch (result.type) {
-				case "node":
-				case "project":
-					// Navigate to Home，通过文件树打开
-					navigate({ to: "/" });
-					break;
-			}
-
-			// 清空搜索
-			setQuery("");
-			setResults([]);
-		},
-		[onOpenChange, navigate],
-	);
-
-	// Keyboard Navigation
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (!open) return;
-
-			switch (e.key) {
-				case "ArrowDown":
-					e.preventDefault();
-					setSelectedIndex((prev) => Math.min(prev + 1, results.length - 1));
-					break;
-				case "ArrowUp":
-					e.preventDefault();
-					setSelectedIndex((prev) => Math.max(prev - 1, 0));
-					break;
-				case "Enter":
-					e.preventDefault();
-					if (results[selectedIndex]) {
-						handleSelectResult(results[selectedIndex]);
-					}
-					break;
-				case "Escape":
-					e.preventDefault();
-					onOpenChange(false);
-					break;
-			}
-		};
-
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [open, results, selectedIndex, onOpenChange, handleSelectResult]);
-
 	// 高亮匹配文本
-	const highlightText = (text: string, query: string) => {
-		if (!query.trim()) return text;
+	const highlightText = (text: string, searchQuery: string) => {
+		if (!searchQuery.trim()) return text;
 
-		const parts = text.split(new RegExp(`(${query})`, "gi"));
-		return parts.map((part, index) =>
-			part.toLowerCase() === query.toLowerCase() ? (
+		const parts = text.split(new RegExp(`(${searchQuery})`, "gi"));
+		return parts.map((part: string, index: number) =>
+			part.toLowerCase() === searchQuery.toLowerCase() ? (
 				<mark
 					// biome-ignore lint/suspicious/noArrayIndexKey: 文本片段顺序稳定
 					key={index}
@@ -156,7 +75,10 @@ export const GlobalSearchView = memo(({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-2xl p-0 gap-0">
+			<DialogContent 
+				className="max-w-2xl p-0 gap-0"
+				onKeyDown={onKeyDown}
+			>
 				<DialogHeader className="px-4 pt-4 pb-0">
 					<DialogTitle className="sr-only">Global Search</DialogTitle>
 				</DialogHeader>
@@ -166,7 +88,7 @@ export const GlobalSearchView = memo(({
 					<Search className="absolute left-7 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
 					<Input
 						value={query}
-						onChange={(e) => setQuery(e.target.value)}
+						onChange={(e) => onQueryChange(e.target.value)}
 						placeholder="搜索文件..."
 						className="pl-9 pr-9"
 						autoFocus
@@ -176,7 +98,7 @@ export const GlobalSearchView = memo(({
 							size="icon"
 							variant="ghost"
 							className="absolute right-7 top-1/2 -translate-y-1/2 size-6"
-							onClick={() => setQuery("")}
+							onClick={() => onQueryChange("")}
 						>
 							<X className="size-3" />
 						</Button>
@@ -199,7 +121,7 @@ export const GlobalSearchView = memo(({
 									<button
 										type="button"
 										key={result.id}
-										onClick={() => handleSelectResult(result)}
+										onClick={() => onSelectResult(result)}
 										className={cn(
 											"w-full text-left p-3 rounded-lg transition-colors",
 											"hover:bg-accent",

@@ -3,5 +3,11 @@
  * Export all file tree related components for easy importing.
  */
 
-export { FileTree, type FileTreeProps } from "./file-tree";
-export { FileTreeItem, type FileTreeItemProps } from "./file-tree-item";
+export { FileTree } from "./file-tree.view.fn";
+export { FileTreeItem } from "./file-tree-item.view.fn";
+export type {
+	FileTreeProps,
+	FileTreeItemProps,
+	TreeData,
+	DragState,
+} from "./file-tree.types";
