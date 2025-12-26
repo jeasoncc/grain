@@ -404,12 +404,12 @@
 
 ## Phase 10: 处理工具组件
 
-- [ ] 35. 移动工具组件
-  - [ ] 35.1 创建 `components/utils/` 目录
-  - [ ] 35.2 移动 `devtools-wrapper.tsx` → `utils/devtools-wrapper.tsx`
-  - [ ] 35.3 移动 `font-style-injector.tsx` → `utils/font-style-injector.tsx`
-  - [ ] 35.4 创建 `utils/index.ts`
-  - [ ] 35.5 更新所有导入路径
+- [x] 35. 移动工具组件
+  - [x] 35.1 创建 `components/utils/` 目录
+  - [x] 35.2 移动 `devtools-wrapper.tsx` → `utils/devtools-wrapper.tsx`
+  - [x] 35.3 移动 `font-style-injector.tsx` → `utils/font-style-injector.tsx`
+  - [x] 35.4 创建 `utils/index.ts`
+  - [x] 35.5 更新所有导入路径
 
 - [ ] 36. 验证 Phase 10
   - 运行 `bunx tsc --noEmit`
