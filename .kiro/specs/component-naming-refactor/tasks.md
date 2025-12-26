@@ -213,15 +213,15 @@
   - [ ] 18.10 创建 `drawings-panel.container.fn.test.tsx`
     - _Requirements: 7.2, 4.1, 4.2_
 
-- [ ] 19. 重构 file-tree-panel 组件
-  - [ ] 19.1 创建 `components/panels/file-tree-panel/` 目录
-  - [ ] 19.2 分析组件（主要是 Container）
-  - [ ] 19.3 创建 `file-tree-panel.container.fn.tsx`
-  - [ ] 19.4 创建 `file-tree-panel.types.ts`
-  - [ ] 19.5 创建 `index.ts`
-  - [ ] 19.6 删除原文件
-  - [ ] 19.7 更新所有导入路径
-  - [ ] 19.8 创建 `file-tree-panel.container.fn.test.tsx`
+- [x] 19. 重构 file-tree-panel 组件
+  - [x] 19.1 创建 `components/panels/file-tree-panel/` 目录
+  - [x] 19.2 分析组件（主要是 Container）
+  - [x] 19.3 创建 `file-tree-panel.container.fn.tsx`
+  - [x] 19.4 创建 `file-tree-panel.types.ts`
+  - [x] 19.5 创建 `index.ts`
+  - [x] 19.6 删除原文件
+  - [x] 19.7 更新所有导入路径
+  - [x] 19.8 创建 `file-tree-panel.container.fn.test.tsx`
     - _Requirements: 7.2, 4.1, 4.2_
 
 - [ ] 20. 重构 search-panel 组件

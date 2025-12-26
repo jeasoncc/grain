@@ -8,7 +8,7 @@ import { PanelLeftOpen } from "lucide-react";
 import type { DrawingInterface } from "@/db/schema";
 import type { SearchPanelState, SidebarPanel } from "@/types/sidebar";
 import { DrawingsPanel } from "./panels/drawings-panel";
-import { FileTreePanel } from "./panels/file-tree-panel";
+import { FileTreePanel } from "./panels/file-tree-panel/";
 import { SearchPanel } from "./panels/search-panel";
 import type { TagGraphData } from "./panels/tag-graph-panel";
 import { TagGraphPanel } from "./panels/tag-graph-panel";
