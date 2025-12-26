@@ -7,7 +7,6 @@ import "@grain/editor/styles";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { database } from "./db/database";
-import { cleanupAllDrawings } from "./db/drawing.db.fn";
 import { initDatabase } from "./db/init.db.fn";
 
 // 开发环境下的调试工具已移除
@@ -33,9 +32,6 @@ const queryClient = new QueryClient();
 async function main() {
 	await database.open(); // 打开数据库
 	await initDatabase(); // 初始化默认数据
-
-	// 清理绘图数据中的异常值，防止 "Canvas exceeds max size" 错误
-	await cleanupAllDrawings();
 
 	// 确保数据库操作完成后再渲染应用
 	const rootElement = document.getElementById("app");
