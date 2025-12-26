@@ -224,18 +224,18 @@
   - [x] 19.8 创建 `file-tree-panel.container.fn.test.tsx`
     - _Requirements: 7.2, 4.1, 4.2_
 
-- [ ] 20. 重构 search-panel 组件
-  - [ ] 20.1 创建 `components/panels/search-panel/` 目录
-  - [ ] 20.2 分析组件，拆分为 View 和 Container
-  - [ ] 20.3 创建 `search-panel.view.fn.tsx`
-  - [ ] 20.4 创建 `search-panel.container.fn.tsx`
-  - [ ] 20.5 创建 `search-panel.types.ts`
-  - [ ] 20.6 创建 `index.ts`
-  - [ ] 20.7 删除原文件
-  - [ ] 20.8 更新所有导入路径
-  - [ ] 20.9 创建 `search-panel.view.fn.test.tsx`
+- [x] 20. 重构 search-panel 组件
+  - [x] 20.1 创建 `components/panels/search-panel/` 目录
+  - [x] 20.2 分析组件，拆分为 View 和 Container
+  - [x] 20.3 创建 `search-panel.view.fn.tsx`
+  - [x] 20.4 创建 `search-panel.container.fn.tsx`
+  - [x] 20.5 创建 `search-panel.types.ts`
+  - [x] 20.6 创建 `index.ts`
+  - [x] 20.7 删除原文件
+  - [x] 20.8 更新所有导入路径
+  - [x] 20.9 创建 `search-panel.view.fn.test.tsx`
     - _Requirements: 7.2_
-  - [ ] 20.10 创建 `search-panel.container.fn.test.tsx`
+  - [x] 20.10 创建 `search-panel.container.fn.test.tsx`
     - _Requirements: 7.2, 4.1, 4.2_
 
 - [ ] 21. 重构 tag-graph-panel 组件

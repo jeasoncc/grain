@@ -57,13 +57,9 @@ function RootComponent() {
 		activePanel,
 		isOpen: unifiedSidebarOpen,
 		drawingsState,
-		searchState,
 		setActivePanel,
 		toggleSidebar,
 		setSelectedDrawingId,
-		setSearchQuery,
-		setSearchSelectedTypes,
-		setSearchShowFilters,
 	} = useUnifiedSidebarStore();
 
 	// Handle drawing selection - update store and navigate to canvas
@@ -119,22 +115,6 @@ function RootComponent() {
 			}
 		},
 		[],
-	);
-
-	// Search callbacks
-	const handleSetSearchQuery = useCallback(
-		(query: string) => setSearchQuery(query),
-		[setSearchQuery],
-	);
-
-	const handleSetSearchSelectedTypes = useCallback(
-		(types: string[]) => setSearchSelectedTypes(types),
-		[setSearchSelectedTypes],
-	);
-
-	const handleSetSearchShowFilters = useCallback(
-		(show: boolean) => setSearchShowFilters(show),
-		[setSearchShowFilters],
 	);
 
 	// 日志：追踪侧边栏状态变化
@@ -234,10 +214,6 @@ function RootComponent() {
 											onCreateDrawing={handleCreateDrawing}
 											onDeleteDrawing={handleDeleteDrawing}
 											tagGraphData={tagGraphData}
-											searchState={searchState}
-											onSetSearchQuery={handleSetSearchQuery}
-											onSetSearchSelectedTypes={handleSetSearchSelectedTypes}
-											onSetSearchShowFilters={handleSetSearchShowFilters}
 										/>
 									</Panel>
 									<PanelResizeHandle className="w-[1px] bg-border transition-colors hover:w-1 hover:bg-primary/50 data-[resize-handle-active]:w-1 data-[resize-handle-active]:bg-primary/70 z-10" />

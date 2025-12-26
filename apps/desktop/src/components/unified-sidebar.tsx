@@ -6,10 +6,10 @@
 
 import { PanelLeftOpen } from "lucide-react";
 import type { DrawingInterface } from "@/db/schema";
-import type { SearchPanelState, SidebarPanel } from "@/types/sidebar";
+import type { SidebarPanel } from "@/types/sidebar";
 import { DrawingsPanel } from "./panels/drawings-panel";
 import { FileTreePanel } from "./panels/file-tree-panel/";
-import { SearchPanel } from "./panels/search-panel";
+import { SearchPanel } from "./panels/search-panel/";
 import type { TagGraphData } from "./panels/tag-graph-panel";
 import { TagGraphPanel } from "./panels/tag-graph-panel";
 import { Button } from "./ui/button";
@@ -36,14 +36,6 @@ export interface UnifiedSidebarContentProps {
 	readonly onDeleteDrawing: (drawingId: string, drawingName: string) => void;
 	/** 标签图谱数据 */
 	readonly tagGraphData: TagGraphData | null;
-	/** 搜索状态 */
-	readonly searchState: SearchPanelState;
-	/** 设置搜索查询回调 */
-	readonly onSetSearchQuery: (query: string) => void;
-	/** 设置搜索类型回调 */
-	readonly onSetSearchSelectedTypes: (types: string[]) => void;
-	/** 设置显示过滤器回调 */
-	readonly onSetSearchShowFilters: (show: boolean) => void;
 }
 
 /**
@@ -61,21 +53,10 @@ export function UnifiedSidebarContent({
 	onCreateDrawing,
 	onDeleteDrawing,
 	tagGraphData,
-	searchState,
-	onSetSearchQuery,
-	onSetSearchSelectedTypes,
-	onSetSearchShowFilters,
 }: UnifiedSidebarContentProps) {
 	return (
 		<div className="flex flex-col h-full w-full overflow-hidden">
-			{activePanel === "search" && (
-				<SearchPanel
-					searchState={searchState}
-					onSetSearchQuery={onSetSearchQuery}
-					onSetSearchSelectedTypes={onSetSearchSelectedTypes}
-					onSetSearchShowFilters={onSetSearchShowFilters}
-				/>
-			)}
+			{activePanel === "search" && <SearchPanel />}
 			{activePanel === "drawings" && (
 				<DrawingsPanel
 					workspaceId={workspaceId}
@@ -122,14 +103,6 @@ export interface UnifiedSidebarProps {
 	readonly onDeleteDrawing: (drawingId: string, drawingName: string) => void;
 	/** 标签图谱数据 */
 	readonly tagGraphData: TagGraphData | null;
-	/** 搜索状态 */
-	readonly searchState: SearchPanelState;
-	/** 设置搜索查询回调 */
-	readonly onSetSearchQuery: (query: string) => void;
-	/** 设置搜索类型回调 */
-	readonly onSetSearchSelectedTypes: (types: string[]) => void;
-	/** 设置显示过滤器回调 */
-	readonly onSetSearchShowFilters: (show: boolean) => void;
 }
 
 /**
@@ -151,10 +124,6 @@ export function UnifiedSidebar({
 	onCreateDrawing,
 	onDeleteDrawing,
 	tagGraphData,
-	searchState,
-	onSetSearchQuery,
-	onSetSearchSelectedTypes,
-	onSetSearchShowFilters,
 }: UnifiedSidebarProps) {
 	// Show restore button when collapsed by drag
 	if (!isOpen && wasCollapsedByDrag) {
@@ -187,10 +156,6 @@ export function UnifiedSidebar({
 			onCreateDrawing={onCreateDrawing}
 			onDeleteDrawing={onDeleteDrawing}
 			tagGraphData={tagGraphData}
-			searchState={searchState}
-			onSetSearchQuery={onSetSearchQuery}
-			onSetSearchSelectedTypes={onSetSearchSelectedTypes}
-			onSetSearchShowFilters={onSetSearchShowFilters}
 		/>
 	);
 }

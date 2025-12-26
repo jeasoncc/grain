@@ -1,10 +1,9 @@
 /**
- * 搜索面板 - 统一侧边栏中的搜索功能
+ * 搜索面板 - View 组件
  *
  * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  */
 
-import { useNavigate } from "@tanstack/react-router";
 import {
 	ChevronDown,
 	ChevronRight,
@@ -14,7 +13,7 @@ import {
 	Search,
 	X,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { memo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -25,13 +24,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-	type SearchResult,
-	type SearchResultType,
-	searchEngine,
-} from "@/fn/search";
+import type { SearchResult, SearchResultType } from "@/fn/search";
 import { cn } from "@/lib/utils";
-import type { SearchPanelState } from "@/types/sidebar";
+import type { ResultGroupProps, SearchPanelViewProps } from "./search-panel.types";
 
 const typeIcons: Record<SearchResultType, any> = {
 	project: FileText,
@@ -48,33 +43,15 @@ const typeColors: Record<SearchResultType, string> = {
 	node: "text-blue-500",
 };
 
-/**
- * SearchPanel Props 接口
- *
- * 纯展示组件：所有数据和回调通过 props 传入
- */
-export interface SearchPanelProps {
-	/** 搜索状态 */
-	readonly searchState: SearchPanelState;
-	/** 设置搜索查询回调 */
-	readonly onSetSearchQuery: (query: string) => void;
-	/** 设置搜索类型回调 */
-	readonly onSetSearchSelectedTypes: (types: string[]) => void;
-	/** 设置显示过滤器回调 */
-	readonly onSetSearchShowFilters: (show: boolean) => void;
-}
-
-export function SearchPanel({
+export const SearchPanelView = memo(({
 	searchState,
+	results,
+	loading,
 	onSetSearchQuery,
-	onSetSearchSelectedTypes,
+	onToggleType,
 	onSetSearchShowFilters,
-}: SearchPanelProps) {
-	const navigate = useNavigate();
-
-	const [results, setResults] = useState<SearchResult[]>([]);
-	const [loading, setLoading] = useState(false);
-
+	onSelectResult,
+}: SearchPanelViewProps) => {
 	// 按类型分组结果
 	const groupedResults = results.reduce(
 		(acc, result) => {
@@ -86,59 +63,6 @@ export function SearchPanel({
 		},
 		{} as Record<SearchResultType, SearchResult[]>,
 	);
-
-	// Execute Search
-	const performSearch = useCallback(
-		async (searchQuery: string) => {
-			if (!searchQuery.trim()) {
-				setResults([]);
-				return;
-			}
-
-			setLoading(true);
-			try {
-				const searchResults = await searchEngine.simpleSearch(searchQuery, {
-					types: searchState.selectedTypes as SearchResultType[],
-					limit: 100,
-				});
-				setResults(searchResults);
-			} catch (error) {
-				console.error("Search failed:", error);
-				setResults([]);
-			} finally {
-				setLoading(false);
-			}
-		},
-		[searchState.selectedTypes],
-	);
-
-	// Debounced Search
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			performSearch(searchState.query);
-		}, 300);
-
-		return () => clearTimeout(timer);
-	}, [searchState.query, performSearch]);
-
-	// 选择结果
-	const handleSelectResult = (result: SearchResult) => {
-		switch (result.type) {
-			case "node":
-			case "project":
-				// Navigate to Home
-				navigate({ to: "/" });
-				break;
-		}
-	};
-
-	// 切换类型过滤
-	const toggleType = (type: SearchResultType) => {
-		const newTypes = searchState.selectedTypes.includes(type)
-			? searchState.selectedTypes.filter((t) => t !== type)
-			: [...searchState.selectedTypes, type];
-		onSetSearchSelectedTypes(newTypes);
-	};
 
 	// 高亮匹配文本
 	const highlightText = (text: string, query: string) => {
@@ -209,7 +133,7 @@ export function SearchPanel({
 									<Checkbox
 										id={`type-${type}`}
 										checked={searchState.selectedTypes.includes(type)}
-										onCheckedChange={() => toggleType(type)}
+										onCheckedChange={() => onToggleType(type)}
 										className="size-4"
 									/>
 									<Label
@@ -253,7 +177,7 @@ export function SearchPanel({
 								type={type as SearchResultType}
 								results={typeResults}
 								query={searchState.query}
-								onSelect={handleSelectResult}
+								onSelect={onSelectResult}
 								highlightText={highlightText}
 							/>
 						))}
@@ -272,22 +196,18 @@ export function SearchPanel({
 			</ScrollArea>
 		</div>
 	);
-}
+});
+
+SearchPanelView.displayName = "SearchPanelView";
 
 // 结果分组组件
-function ResultGroup({
+const ResultGroup = memo(({
 	type,
 	results,
 	query,
 	onSelect,
 	highlightText,
-}: {
-	type: SearchResultType;
-	results: SearchResult[];
-	query: string;
-	onSelect: (result: SearchResult) => void;
-	highlightText: (text: string, query: string) => React.ReactNode;
-}) {
+}: ResultGroupProps) => {
 	const [isOpen, setIsOpen] = useState(true);
 	const Icon = typeIcons[type];
 
@@ -335,4 +255,6 @@ function ResultGroup({
 			</CollapsibleContent>
 		</Collapsible>
 	);
-}
+});
+
+ResultGroup.displayName = "ResultGroup";
