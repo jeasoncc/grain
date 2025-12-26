@@ -45,8 +45,8 @@
     - 测试文件夹路径生成（年/月/日结构）
     - _Requirements: 7.1_
 
-- [ ] 3. 创建 Excalidraw 文件创建 Action
-  - [ ] 3.1 创建 `actions/templated/create-excalidraw.action.ts`
+- [x] 3. 创建 Excalidraw 文件创建 Action
+  - [x] 3.1 创建 `actions/templated/create-excalidraw.action.ts`
     - 定义 `CreateExcalidrawParams` 接口
     - 使用 `createTemplatedFile` 高阶函数创建 `createExcalidraw`
     - 使用 `createTemplatedFileAsync` 创建 `createExcalidrawAsync`
@@ -54,7 +54,7 @@
     - 实现兼容函数 `createExcalidrawCompat` 和 `createExcalidrawCompatAsync`
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
   
-  - [ ] 3.2 创建 `actions/templated/create-excalidraw.action.test.ts`
+  - [x] 3.2 创建 `actions/templated/create-excalidraw.action.test.ts`
     - 测试文件创建成功
     - 测试文件位于 excalidraw/年/月/日 目录结构
     - 测试内容格式正确
@@ -62,7 +62,7 @@
     - 测试错误处理
     - _Requirements: 7.2_
   
-  - [ ] 3.3 更新 `actions/templated/index.ts`
+  - [x] 3.3 更新 `actions/templated/index.ts`
     - 导出 Excalidraw 相关函数和类型
     - _Requirements: 3.3, 3.4_
 

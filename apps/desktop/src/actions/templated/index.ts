@@ -62,6 +62,20 @@ export {
 } from "./create-ledger.action";
 
 // ==============================
+// Excalidraw 创建
+// ==============================
+
+export {
+	adaptExcalidrawParams,
+	type CreateExcalidrawParams,
+	createExcalidraw,
+	createExcalidrawAsync,
+	createExcalidrawCompat,
+	createExcalidrawCompatAsync,
+	type ExcalidrawCreationResult,
+} from "./create-excalidraw.action";
+
+// ==============================
 // 模板配置
 // ==============================
 
@@ -70,6 +84,10 @@ export {
 	// Diary config
 	diaryConfig,
 	diaryParamsSchema,
+	// Excalidraw config
+	type ExcalidrawTemplateParams,
+	excalidrawConfig,
+	excalidrawParamsSchema,
 	// Registry
 	getTemplateConfig,
 	isValidTemplateType,
