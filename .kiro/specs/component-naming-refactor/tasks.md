@@ -368,18 +368,18 @@
   - [x] 31.10 创建 `editor-tabs.container.fn.test.tsx`
     - _Requirements: 7.2, 5.1, 5.2_
 
-- [ ] 32. 重构 story-right-sidebar 组件
-  - [ ] 32.1 创建 `components/story-right-sidebar/` 目录
-  - [ ] 32.2 分析组件，拆分为 View 和 Container
-  - [ ] 32.3 创建 `story-right-sidebar.view.fn.tsx`
-  - [ ] 32.4 创建 `story-right-sidebar.container.fn.tsx`
-  - [ ] 32.5 创建 `story-right-sidebar.types.ts`
-  - [ ] 32.6 创建 `index.ts`
-  - [ ] 32.7 删除原文件
-  - [ ] 32.8 更新所有导入路径
-  - [ ] 32.9 创建 `story-right-sidebar.view.fn.test.tsx`
+- [x] 32. 重构 story-right-sidebar 组件
+  - [x] 32.1 创建 `components/story-right-sidebar/` 目录
+  - [x] 32.2 分析组件，拆分为 View 和 Container
+  - [x] 32.3 创建 `story-right-sidebar.view.fn.tsx`
+  - [x] 32.4 创建 `story-right-sidebar.container.fn.tsx`
+  - [x] 32.5 创建 `story-right-sidebar.types.ts`
+  - [x] 32.6 创建 `index.ts`
+  - [x] 32.7 删除原文件
+  - [x] 32.8 更新所有导入路径
+  - [x] 32.9 创建 `story-right-sidebar.view.fn.test.tsx`
     - _Requirements: 7.2_
-  - [ ] 32.10 创建 `story-right-sidebar.container.fn.test.tsx`
+  - [x] 32.10 创建 `story-right-sidebar.container.fn.test.tsx`
     - _Requirements: 7.2, 5.1, 5.2_
 
 - [ ] 33. 重构 unified-sidebar 组件

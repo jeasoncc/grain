@@ -353,13 +353,7 @@ export function StoryWorkspace({
 				</div>
 
 				{rightSidebarOpen && (
-					<StoryRightSidebar
-						tabPosition={tabPosition}
-						tabs={tabs}
-						activeTabId={activeTabId}
-						onSetActiveTab={setActiveTab}
-						onCloseTab={closeTab}
-					/>
+					<StoryRightSidebar workspaceId={selectedWorkspaceId} />
 				)}
 
 				{/* 字数统计徽章 */}
