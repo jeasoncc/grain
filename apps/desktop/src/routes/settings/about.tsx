@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Github, Globe } from "lucide-react";
-import { UpdateChecker } from "@/components/blocks/update-checker";
+import { UpdateChecker } from "@/components/update-checker";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/settings/about")({

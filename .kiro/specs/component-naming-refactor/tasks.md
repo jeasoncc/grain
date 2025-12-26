@@ -177,18 +177,18 @@
   - [x] 15.10 创建 `theme-selector.container.fn.test.tsx`
     - _Requirements: 7.2, 2.5_
 
-- [ ] 16. 重构 update-checker 组件
-  - [ ] 16.1 创建 `components/update-checker/` 目录
-  - [ ] 16.2 分析组件，拆分为 View 和 Container
-  - [ ] 16.3 创建 `update-checker.view.fn.tsx`
-  - [ ] 16.4 创建 `update-checker.container.fn.tsx`
-  - [ ] 16.5 创建 `update-checker.types.ts`
-  - [ ] 16.6 创建 `index.ts`
-  - [ ] 16.7 删除原文件
-  - [ ] 16.8 更新所有导入路径
-  - [ ] 16.9 创建 `update-checker.view.fn.test.tsx`
+- [x] 16. 重构 update-checker 组件
+  - [x] 16.1 创建 `components/update-checker/` 目录
+  - [x] 16.2 分析组件，拆分为 View 和 Container
+  - [x] 16.3 创建 `update-checker.view.fn.tsx`
+  - [x] 16.4 创建 `update-checker.container.fn.tsx`
+  - [x] 16.5 创建 `update-checker.types.ts`
+  - [x] 16.6 创建 `index.ts`
+  - [x] 16.7 删除原文件
+  - [x] 16.8 更新所有导入路径
+  - [x] 16.9 创建 `update-checker.view.fn.test.tsx`
     - _Requirements: 7.2_
-  - [ ] 16.10 创建 `update-checker.container.fn.test.tsx`
+  - [x] 16.10 创建 `update-checker.container.fn.test.tsx`
     - _Requirements: 7.2, 2.5_
 
 - [ ] 17. 验证 Phase 5
