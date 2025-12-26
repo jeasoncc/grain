@@ -3,14 +3,11 @@
  * @description GlobalSearchContainer 组件单元测试
  *
  * 测试覆盖：
- * - 数据获取和传递
- * - 回调函数调用
- * - 与搜索引擎的集成
- * - 搜索结果处理
- *
- * Mock 策略：
- * - 搜索引擎被 mock
- * - View 组件被 mock 为简单的按钮以便测试回调
+ * - 搜索状态管理
+ * - 防抖搜索逻辑
+ * - 键盘导航
+ * - 结果选择和路由跳转
+ * - 与 View 组件的集成
  *
  * @requirements 7.2
  */
@@ -18,7 +15,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { GlobalSearchContainer } from "./global-search.container.fn";
-import type { GlobalSearchViewProps, SearchResult } from "./global-search.types";
+import type { GlobalSearchViewProps } from "./global-search.types";
 
 // ============================================================================
 // Mocks
@@ -26,10 +23,25 @@ import type { GlobalSearchViewProps, SearchResult } from "./global-search.types"
 
 // Mock search engine
 const mockSimpleSearch = vi.fn();
-
 vi.mock("@/fn/search", () => ({
 	searchEngine: {
 		simpleSearch: (...args: any[]) => mockSimpleSearch(...args),
+	},
+}));
+
+// Mock TanStack Router
+const mockNavigate = vi.fn();
+vi.mock("@tanstack/react-router", () => ({
+	useNavigate: () => mockNavigate,
+}));
+
+// Mock logger
+vi.mock("@/log", () => ({
+	default: {
+		start: vi.fn(),
+		success: vi.fn(),
+		error: vi.fn(),
+		info: vi.fn(),
 	},
 }));
 
@@ -37,45 +49,31 @@ vi.mock("@/fn/search", () => ({
 vi.mock("./global-search.view.fn", () => ({
 	GlobalSearchView: (props: GlobalSearchViewProps) => (
 		<div data-testid="global-search-view">
-			<button onClick={() => props.onOpenChange(false)}>Close</button>
-			<button
-				onClick={async () => {
-					const results = await props.onSearch("test query", { limit: 30 });
-					// 显示结果数量以便测试
-					const resultCount = document.createElement("div");
-					resultCount.setAttribute("data-testid", "result-count");
-					resultCount.textContent = String(results.length);
-					document.body.appendChild(resultCount);
-				}}
-			>
-				Search
+			<div data-testid="open">{String(props.open)}</div>
+			<div data-testid="query">{props.query}</div>
+			<div data-testid="loading">{String(props.loading)}</div>
+			<div data-testid="results-count">{props.results.length}</div>
+			<div data-testid="selected-index">{props.selectedIndex}</div>
+			<button onClick={() => props.onQueryChange("test query")}>
+				Change Query
 			</button>
+			<button onClick={() => props.onSelectResult(props.results[0])}>
+				Select Result
+			</button>
+			<button
+				onClick={() =>
+					props.onKeyDown({
+						key: "ArrowDown",
+						preventDefault: vi.fn(),
+					} as any)
+				}
+			>
+				Key Down
+			</button>
+			<button onClick={() => props.onOpenChange(false)}>Close</button>
 		</div>
 	),
 }));
-
-// ============================================================================
-// Test Helpers
-// ============================================================================
-
-/**
- * 创建测试用的 SearchResult 对象
- */
-function createTestSearchResult(
-	overrides: Partial<SearchResult> = {},
-): SearchResult {
-	return {
-		id: overrides.id ?? "result-1",
-		type: overrides.type ?? "node",
-		title: overrides.title ?? "Test Result",
-		content: overrides.content ?? "Test content",
-		excerpt: overrides.excerpt ?? "Test excerpt",
-		workspaceId: overrides.workspaceId ?? "workspace-1",
-		workspaceTitle: overrides.workspaceTitle ?? "Test Workspace",
-		score: overrides.score ?? 1.0,
-		highlights: overrides.highlights ?? [],
-	};
-}
 
 // ============================================================================
 // Unit Tests
@@ -84,295 +82,255 @@ function createTestSearchResult(
 describe("GlobalSearchContainer", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-
-		// 设置默认 mock 返回值
 		mockSimpleSearch.mockResolvedValue([]);
 	});
 
 	describe("基本渲染", () => {
-		it("should render view component", () => {
-			render(<GlobalSearchContainer open={false} onOpenChange={vi.fn()} />);
+		it("should render GlobalSearchView with correct props", () => {
+			render(<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />);
 
 			expect(screen.getByTestId("global-search-view")).toBeInTheDocument();
+			expect(screen.getByTestId("open")).toHaveTextContent("true");
+			expect(screen.getByTestId("query")).toHaveTextContent("");
+			expect(screen.getByTestId("loading")).toHaveTextContent("false");
+			expect(screen.getByTestId("results-count")).toHaveTextContent("0");
+			expect(screen.getByTestId("selected-index")).toHaveTextContent("0");
 		});
 
 		it("should pass open prop to view", () => {
-			const { rerender } = render(
-				<GlobalSearchContainer open={false} onOpenChange={vi.fn()} />,
-			);
+			render(<GlobalSearchContainer open={false} onOpenChange={vi.fn()} />);
 
-			expect(screen.getByTestId("global-search-view")).toBeInTheDocument();
-
-			rerender(<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />);
-
-			expect(screen.getByTestId("global-search-view")).toBeInTheDocument();
-		});
-
-		it("should pass onOpenChange callback to view", () => {
-			const onOpenChange = vi.fn();
-			render(<GlobalSearchContainer open={true} onOpenChange={onOpenChange} />);
-
-			const closeButton = screen.getByText("Close");
-			closeButton.click();
-
-			expect(onOpenChange).toHaveBeenCalledWith(false);
+			expect(screen.getByTestId("open")).toHaveTextContent("false");
 		});
 	});
 
-	describe("搜索功能", () => {
-		it("should call searchEngine.simpleSearch when onSearch is called", async () => {
-			const results = [
-				createTestSearchResult({ id: "1", title: "Result 1" }),
-				createTestSearchResult({ id: "2", title: "Result 2" }),
+	describe("搜索逻辑", () => {
+		it("should perform search when query changes", async () => {
+			const mockResults = [
+				{
+					id: "1",
+					type: "node" as const,
+					title: "Test",
+					content: "",
+					excerpt: "",
+					score: 1,
+					highlights: [],
+				},
 			];
-			mockSimpleSearch.mockResolvedValue(results);
+			mockSimpleSearch.mockResolvedValue(mockResults);
 
 			render(<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />);
 
-			const searchButton = screen.getByText("Search");
-			searchButton.click();
+			// 触发查询变化
+			const changeButton = screen.getByText("Change Query");
+			changeButton.click();
+
+			// 等待防抖和搜索完成
+			await waitFor(
+				() => {
+					expect(mockSimpleSearch).toHaveBeenCalledWith("test query", {
+						limit: 30,
+					});
+				},
+				{ timeout: 500 },
+			);
 
 			await waitFor(() => {
-				expect(mockSimpleSearch).toHaveBeenCalledWith("test query", {
-					limit: 30,
-				});
+				expect(screen.getByTestId("results-count")).toHaveTextContent("1");
 			});
 		});
 
-		it("should return search results from searchEngine", async () => {
-			const results = [
-				createTestSearchResult({ id: "1", title: "Result 1" }),
-				createTestSearchResult({ id: "2", title: "Result 2" }),
-				createTestSearchResult({ id: "3", title: "Result 3" }),
-			];
-			mockSimpleSearch.mockResolvedValue(results);
+		it("should debounce search", async () => {
+			render(<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />);
+
+			const changeButton = screen.getByText("Change Query");
+
+			// 快速点击多次
+			changeButton.click();
+			changeButton.click();
+			changeButton.click();
+
+			// 等待防抖时间
+			await waitFor(
+				() => {
+					// 应该只调用一次
+					expect(mockSimpleSearch).toHaveBeenCalledTimes(1);
+				},
+				{ timeout: 500 },
+			);
+		});
+
+		it("should show loading state during search", async () => {
+			mockSimpleSearch.mockImplementation(
+				() => new Promise((resolve) => setTimeout(() => resolve([]), 100)),
+			);
 
 			render(<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />);
 
-			const searchButton = screen.getByText("Search");
-			searchButton.click();
+			const changeButton = screen.getByText("Change Query");
+			changeButton.click();
 
+			// 应该显示加载状态
 			await waitFor(() => {
-				const resultCount = screen.getByTestId("result-count");
-				expect(resultCount.textContent).toBe("3");
+				expect(screen.getByTestId("loading")).toHaveTextContent("true");
 			});
 		});
 
-		it("should handle empty search results", async () => {
-			mockSimpleSearch.mockResolvedValue([]);
-
-			render(<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />);
-
-			const searchButton = screen.getByText("Search");
-			searchButton.click();
-
-			await waitFor(() => {
-				const resultCount = screen.getByTestId("result-count");
-				expect(resultCount.textContent).toBe("0");
-			});
-		});
-
-		it("should use default limit when not specified", async () => {
-			mockSimpleSearch.mockResolvedValue([]);
-
-			render(<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />);
-
-			const searchButton = screen.getByText("Search");
-			searchButton.click();
-
-			await waitFor(() => {
-				expect(mockSimpleSearch).toHaveBeenCalledWith("test query", {
-					limit: 30,
-				});
-			});
-		});
-
-		it("should handle search errors gracefully", async () => {
+		it("should handle search error", async () => {
 			mockSimpleSearch.mockRejectedValue(new Error("Search failed"));
 
 			render(<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />);
 
-			const searchButton = screen.getByText("Search");
+			const changeButton = screen.getByText("Change Query");
+			changeButton.click();
 
-			// 不应该抛出错误
-			expect(() => searchButton.click()).not.toThrow();
+			await waitFor(
+				() => {
+					expect(screen.getByTestId("loading")).toHaveTextContent("false");
+					expect(screen.getByTestId("results-count")).toHaveTextContent("0");
+				},
+				{ timeout: 500 },
+			);
+		});
 
-			// 等待一小段时间确保错误被处理
-			await new Promise((resolve) => setTimeout(resolve, 100));
+		it("should not search when query is empty", async () => {
+			render(<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />);
+
+			// 初始状态，query 为空
+			await waitFor(
+				() => {
+					expect(mockSimpleSearch).not.toHaveBeenCalled();
+				},
+				{ timeout: 500 },
+			);
 		});
 	});
 
-	describe("搜索选项", () => {
-		it("should respect custom limit option", async () => {
-			mockSimpleSearch.mockResolvedValue([]);
-
-			render(<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />);
-
-			// 注意：这个测试验证默认行为，因为 mock 的 View 组件使用固定的 limit: 30
-			// 在实际使用中，View 组件会传递不同的 limit 值
-			const searchButton = screen.getByText("Search");
-			searchButton.click();
-
-			await waitFor(() => {
-				expect(mockSimpleSearch).toHaveBeenCalledWith("test query", {
-					limit: 30,
-				});
-			});
-		});
-	});
-
-	describe("组件生命周期", () => {
-		it("should handle multiple searches", async () => {
-			const results1 = [createTestSearchResult({ id: "1", title: "Result 1" })];
-			const results2 = [
-				createTestSearchResult({ id: "2", title: "Result 2" }),
-				createTestSearchResult({ id: "3", title: "Result 3" }),
-			];
-
-			mockSimpleSearch
-				.mockResolvedValueOnce(results1)
-				.mockResolvedValueOnce(results2);
-
-			render(<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />);
-
-			const searchButton = screen.getByText("Search");
-
-			// 第一次搜索
-			searchButton.click();
-			await waitFor(() => {
-				expect(mockSimpleSearch).toHaveBeenCalledTimes(1);
-			});
-
-			// 清理之前的结果显示
-			const oldResultCount = document.querySelector(
-				'[data-testid="result-count"]',
-			);
-			if (oldResultCount) {
-				oldResultCount.remove();
-			}
-
-			// 第二次搜索
-			searchButton.click();
-			await waitFor(() => {
-				expect(mockSimpleSearch).toHaveBeenCalledTimes(2);
-			});
-		});
-
-		it("should handle rapid consecutive searches", async () => {
-			mockSimpleSearch.mockResolvedValue([]);
-
-			render(<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />);
-
-			const searchButton = screen.getByText("Search");
-
-			// 快速连续点击
-			searchButton.click();
-			searchButton.click();
-			searchButton.click();
-
-			await waitFor(() => {
-				expect(mockSimpleSearch).toHaveBeenCalledTimes(3);
-			});
-		});
-	});
-
-	describe("Props 变化", () => {
-		it("should handle open state changes", () => {
-			const { rerender } = render(
-				<GlobalSearchContainer open={false} onOpenChange={vi.fn()} />,
-			);
-
-			expect(screen.getByTestId("global-search-view")).toBeInTheDocument();
-
-			rerender(<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />);
-
-			expect(screen.getByTestId("global-search-view")).toBeInTheDocument();
-		});
-
-		it("should handle onOpenChange callback changes", () => {
-			const onOpenChange1 = vi.fn();
-			const onOpenChange2 = vi.fn();
-
-			const { rerender } = render(
-				<GlobalSearchContainer open={true} onOpenChange={onOpenChange1} />,
-			);
-
-			const closeButton = screen.getByText("Close");
-			closeButton.click();
-
-			expect(onOpenChange1).toHaveBeenCalledWith(false);
-			expect(onOpenChange2).not.toHaveBeenCalled();
-
-			vi.clearAllMocks();
-
-			rerender(
-				<GlobalSearchContainer open={true} onOpenChange={onOpenChange2} />,
-			);
-
-			closeButton.click();
-
-			expect(onOpenChange1).not.toHaveBeenCalled();
-			expect(onOpenChange2).toHaveBeenCalledWith(false);
-		});
-	});
-
-	describe("搜索结果类型", () => {
-		it("should handle node type results", async () => {
-			const results = [
-				createTestSearchResult({ id: "1", type: "node", title: "Node 1" }),
-			];
-			mockSimpleSearch.mockResolvedValue(results);
-
-			render(<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />);
-
-			const searchButton = screen.getByText("Search");
-			searchButton.click();
-
-			await waitFor(() => {
-				expect(mockSimpleSearch).toHaveBeenCalled();
-			});
-		});
-
-		it("should handle project type results", async () => {
-			const results = [
-				createTestSearchResult({
+	describe("结果选择", () => {
+		it("should handle result selection", async () => {
+			const onOpenChange = vi.fn();
+			const mockResults = [
+				{
 					id: "1",
-					type: "project",
-					title: "Project 1",
-				}),
+					type: "node" as const,
+					title: "Test",
+					content: "",
+					excerpt: "",
+					score: 1,
+					highlights: [],
+				},
 			];
-			mockSimpleSearch.mockResolvedValue(results);
+			mockSimpleSearch.mockResolvedValue(mockResults);
+
+			render(<GlobalSearchContainer open={true} onOpenChange={onOpenChange} />);
+
+			// 触发搜索
+			const changeButton = screen.getByText("Change Query");
+			changeButton.click();
+
+			await waitFor(
+				() => {
+					expect(screen.getByTestId("results-count")).toHaveTextContent("1");
+				},
+				{ timeout: 500 },
+			);
+
+			// 选择结果
+			const selectButton = screen.getByText("Select Result");
+			selectButton.click();
+
+			// 应该关闭对话框
+			expect(onOpenChange).toHaveBeenCalledWith(false);
+
+			// 应该导航
+			expect(mockNavigate).toHaveBeenCalledWith({ to: "/" });
+		});
+	});
+
+	describe("键盘导航", () => {
+		it("should handle arrow down key", async () => {
+			const mockResults = [
+				{
+					id: "1",
+					type: "node" as const,
+					title: "Test 1",
+					content: "",
+					excerpt: "",
+					score: 1,
+					highlights: [],
+				},
+				{
+					id: "2",
+					type: "node" as const,
+					title: "Test 2",
+					content: "",
+					excerpt: "",
+					score: 1,
+					highlights: [],
+				},
+			];
+			mockSimpleSearch.mockResolvedValue(mockResults);
 
 			render(<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />);
 
-			const searchButton = screen.getByText("Search");
-			searchButton.click();
+			// 触发搜索
+			const changeButton = screen.getByText("Change Query");
+			changeButton.click();
+
+			await waitFor(
+				() => {
+					expect(screen.getByTestId("results-count")).toHaveTextContent("2");
+				},
+				{ timeout: 500 },
+			);
+
+			// 按下箭头键
+			const keyButton = screen.getByText("Key Down");
+			keyButton.click();
 
 			await waitFor(() => {
-				expect(mockSimpleSearch).toHaveBeenCalled();
+				expect(screen.getByTestId("selected-index")).toHaveTextContent("1");
 			});
 		});
+	});
 
-		it("should handle mixed type results", async () => {
-			const results = [
-				createTestSearchResult({ id: "1", type: "node", title: "Node 1" }),
-				createTestSearchResult({
-					id: "2",
-					type: "project",
-					title: "Project 1",
-				}),
-				createTestSearchResult({ id: "3", type: "node", title: "Node 2" }),
+	describe("状态重置", () => {
+		it("should reset state when dialog closes", async () => {
+			const mockResults = [
+				{
+					id: "1",
+					type: "node" as const,
+					title: "Test",
+					content: "",
+					excerpt: "",
+					score: 1,
+					highlights: [],
+				},
 			];
-			mockSimpleSearch.mockResolvedValue(results);
+			mockSimpleSearch.mockResolvedValue(mockResults);
 
-			render(<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />);
+			const { rerender } = render(
+				<GlobalSearchContainer open={true} onOpenChange={vi.fn()} />,
+			);
 
-			const searchButton = screen.getByText("Search");
-			searchButton.click();
+			// 触发搜索
+			const changeButton = screen.getByText("Change Query");
+			changeButton.click();
+
+			await waitFor(
+				() => {
+					expect(screen.getByTestId("results-count")).toHaveTextContent("1");
+				},
+				{ timeout: 500 },
+			);
+
+			// 关闭对话框
+			rerender(<GlobalSearchContainer open={false} onOpenChange={vi.fn()} />);
 
 			await waitFor(() => {
-				const resultCount = screen.getByTestId("result-count");
-				expect(resultCount.textContent).toBe("3");
+				expect(screen.getByTestId("query")).toHaveTextContent("");
+				expect(screen.getByTestId("results-count")).toHaveTextContent("0");
+				expect(screen.getByTestId("selected-index")).toHaveTextContent("0");
 			});
 		});
 	});
