@@ -326,18 +326,18 @@
 
 ## Phase 9: 重构根级组件
 
-- [ ] 29. 重构 buffer-switcher 组件
-  - [ ] 29.1 创建 `components/buffer-switcher/` 目录
-  - [ ] 29.2 分析组件，拆分为 View 和 Container
-  - [ ] 29.3 创建 `buffer-switcher.view.fn.tsx`
-  - [ ] 29.4 创建 `buffer-switcher.container.fn.tsx`
-  - [ ] 29.5 创建 `buffer-switcher.types.ts`
-  - [ ] 29.6 创建 `index.ts`
-  - [ ] 29.7 删除原文件
-  - [ ] 29.8 更新所有导入路径
-  - [ ] 29.9 创建 `buffer-switcher.view.fn.test.tsx`
+- [-] 29. 重构 buffer-switcher 组件
+  - [x] 29.1 创建 `components/buffer-switcher/` 目录
+  - [x] 29.2 分析组件，拆分为 View 和 Container
+  - [x] 29.3 创建 `buffer-switcher.view.fn.tsx`
+  - [x] 29.4 创建 `buffer-switcher.container.fn.tsx`
+  - [x] 29.5 创建 `buffer-switcher.types.ts`
+  - [x] 29.6 创建 `index.ts`
+  - [x] 29.7 删除原文件
+  - [x] 29.8 更新所有导入路径
+  - [x] 29.9 创建 `buffer-switcher.view.fn.test.tsx`
     - _Requirements: 7.2_
-  - [ ] 29.10 创建 `buffer-switcher.container.fn.test.tsx`
+  - [x] 29.10 创建 `buffer-switcher.container.fn.test.tsx`
     - _Requirements: 7.2, 5.1, 5.2_
 
 - [ ] 30. 重构 command-palette 组件
