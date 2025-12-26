@@ -354,18 +354,18 @@
   - [x] 30.10 创建 `command-palette.container.fn.test.tsx`
     - _Requirements: 7.2, 5.1, 5.2_
 
-- [ ] 31. 重构 editor-tabs 组件
-  - [ ] 31.1 创建 `components/editor-tabs/` 目录
-  - [ ] 31.2 分析组件，拆分为 View 和 Container
-  - [ ] 31.3 创建 `editor-tabs.view.fn.tsx`
-  - [ ] 31.4 创建 `editor-tabs.container.fn.tsx`
-  - [ ] 31.5 创建 `editor-tabs.types.ts`
-  - [ ] 31.6 创建 `index.ts`
-  - [ ] 31.7 删除原文件
-  - [ ] 31.8 更新所有导入路径
-  - [ ] 31.9 创建 `editor-tabs.view.fn.test.tsx`
+- [x] 31. 重构 editor-tabs 组件
+  - [x] 31.1 创建 `components/editor-tabs/` 目录
+  - [x] 31.2 分析组件，拆分为 View 和 Container
+  - [x] 31.3 创建 `editor-tabs.view.fn.tsx`
+  - [x] 31.4 创建 `editor-tabs.container.fn.tsx`
+  - [x] 31.5 创建 `editor-tabs.types.ts`
+  - [x] 31.6 创建 `index.ts`
+  - [x] 31.7 删除原文件
+  - [x] 31.8 更新所有导入路径
+  - [x] 31.9 创建 `editor-tabs.view.fn.test.tsx`
     - _Requirements: 7.2_
-  - [ ] 31.10 创建 `editor-tabs.container.fn.test.tsx`
+  - [x] 31.10 创建 `editor-tabs.container.fn.test.tsx`
     - _Requirements: 7.2, 5.1, 5.2_
 
 - [ ] 32. 重构 story-right-sidebar 组件

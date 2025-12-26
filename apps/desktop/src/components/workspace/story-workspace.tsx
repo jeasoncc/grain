@@ -346,12 +346,7 @@ export function StoryWorkspace({
 					{/* 编辑器区域 */}
 					<div className="flex flex-1 flex-col overflow-hidden">
 						{tabPosition === "top" && tabs.length > 0 && (
-							<EditorTabs
-								tabs={tabs}
-								activeTabId={activeTabId}
-								onSetActiveTab={setActiveTab}
-								onCloseTab={closeTab}
-							/>
+							<EditorTabs workspaceId={selectedWorkspaceId} />
 						)}
 						{renderEditorContent()}
 					</div>
