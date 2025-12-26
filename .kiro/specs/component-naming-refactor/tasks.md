@@ -163,18 +163,18 @@
   - [x] 14.10 创建 `export-dialog.container.fn.test.tsx`
     - _Requirements: 7.2, 2.5_
 
-- [ ] 15. 重构 theme-selector 组件
-  - [ ] 15.1 创建 `components/theme-selector/` 目录
-  - [ ] 15.2 分析组件，拆分为 View 和 Container
-  - [ ] 15.3 创建 `theme-selector.view.fn.tsx`
-  - [ ] 15.4 创建 `theme-selector.container.fn.tsx`
-  - [ ] 15.5 创建 `theme-selector.types.ts`
-  - [ ] 15.6 创建 `index.ts`
-  - [ ] 15.7 删除原文件
-  - [ ] 15.8 更新所有导入路径
-  - [ ] 15.9 创建 `theme-selector.view.fn.test.tsx`
+- [x] 15. 重构 theme-selector 组件
+  - [x] 15.1 创建 `components/theme-selector/` 目录
+  - [x] 15.2 分析组件，拆分为 View 和 Container
+  - [x] 15.3 创建 `theme-selector.view.fn.tsx`
+  - [x] 15.4 创建 `theme-selector.container.fn.tsx`
+  - [x] 15.5 创建 `theme-selector.types.ts`
+  - [x] 15.6 创建 `index.ts`
+  - [x] 15.7 删除原文件
+  - [x] 15.8 更新所有导入路径
+  - [x] 15.9 创建 `theme-selector.view.fn.test.tsx`
     - _Requirements: 7.2_
-  - [ ] 15.10 创建 `theme-selector.container.fn.test.tsx`
+  - [x] 15.10 创建 `theme-selector.container.fn.test.tsx`
     - _Requirements: 7.2, 2.5_
 
 - [ ] 16. 重构 update-checker 组件
