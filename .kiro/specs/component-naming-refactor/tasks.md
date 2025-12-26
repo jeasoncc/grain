@@ -260,18 +260,18 @@
 
 ## Phase 7: 重构 export/ 和 drawing/ 目录
 
-- [ ] 23. 重构 export-button 组件
-  - [ ] 23.1 创建 `components/export-button/` 目录
-  - [ ] 23.2 分析组件，拆分为 View 和 Container
-  - [ ] 23.3 创建 `export-button.view.fn.tsx`
-  - [ ] 23.4 创建 `export-button.container.fn.tsx`
-  - [ ] 23.5 创建 `export-button.types.ts`
-  - [ ] 23.6 创建 `index.ts`
-  - [ ] 23.7 删除原文件和目录
-  - [ ] 23.8 更新所有导入路径
-  - [ ] 23.9 创建 `export-button.view.fn.test.tsx`
+- [x] 23. 重构 export-button 组件
+  - [x] 23.1 创建 `components/export-button/` 目录
+  - [x] 23.2 分析组件，拆分为 View 和 Container
+  - [x] 23.3 创建 `export-button.view.fn.tsx`
+  - [x] 23.4 创建 `export-button.container.fn.tsx`
+  - [x] 23.5 创建 `export-button.types.ts`
+  - [x] 23.6 创建 `index.ts`
+  - [x] 23.7 删除原文件和目录
+  - [x] 23.8 更新所有导入路径
+  - [x] 23.9 创建 `export-button.view.fn.test.tsx`
     - _Requirements: 7.2_
-  - [ ] 23.10 创建 `export-button.container.fn.test.tsx`
+  - [x] 23.10 创建 `export-button.container.fn.test.tsx`
     - _Requirements: 7.2_
 
 - [ ] 24. 重构 export-dialog-manager 组件
