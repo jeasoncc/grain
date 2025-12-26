@@ -2,8 +2,8 @@
  * StoryRightSidebar 类型定义
  */
 
-import type { DrawingInterface } from "@/db/schema";
 import type { EditorTab } from "@/types/editor-tab";
+import type { NodeInterface } from "@/types/node";
 
 /**
  * StoryRightSidebar View Props 接口
@@ -22,9 +22,9 @@ export interface StoryRightSidebarViewProps {
 	/** 关闭标签页回调 */
 	readonly onCloseTab: (tabId: string) => void;
 	/** 选择绘图回调（可选） */
-	readonly onSelectDrawing?: (drawing: DrawingInterface | null) => void;
-	/** 当前选中的绘图（可选） */
-	readonly selectedDrawing?: DrawingInterface | null;
+	readonly onSelectDrawing?: (drawing: NodeInterface | null) => void;
+	/** 当前选中的绘图节点（可选） */
+	readonly selectedDrawing?: NodeInterface | null;
 }
 
 /**

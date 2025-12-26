@@ -6,31 +6,16 @@
  * 每个子目录对应一个业务领域。
  *
  * 目录结构：
- * - drawing/    - 绘图相关操作
  * - export/     - 导出相关操作
  * - import/     - 导入相关操作
  * - node/       - 节点相关操作
  * - settings/   - 设置相关操作
- * - templated/  - 模板化文件创建（日记、Wiki、记账）
+ * - templated/  - 模板化文件创建（日记、Wiki、记账、Excalidraw）
  * - wiki/       - Wiki 迁移操作
  * - workspace/  - 工作区相关操作
  *
  * @requirements 业务操作层统一导出
  */
-
-// ==============================
-// Drawing Actions
-// ==============================
-
-export {
-	type CreateDrawingParams,
-	createDrawing,
-	createDrawingAsync,
-	deleteDrawing,
-	renameDrawing,
-	type SaveDrawingContentParams,
-	saveDrawingContent,
-} from "./drawing";
 
 // ==============================
 // Export Actions
@@ -102,7 +87,7 @@ export {
 } from "./settings";
 
 // ==============================
-// Templated Actions (日记、Wiki、记账)
+// Templated Actions (日记、Wiki、记账、Excalidraw)
 // ==============================
 
 export {
@@ -110,8 +95,11 @@ export {
 	adaptDiaryParams,
 	// 记账
 	adaptLedgerParams,
+	// Excalidraw
+	adaptExcalidrawParams,
 	type CreateDiaryParams,
 	type CreateLedgerParams,
+	type CreateExcalidrawParams,
 	createDiary,
 	createDiaryAsync,
 	createDiaryCompat,
@@ -120,6 +108,11 @@ export {
 	createLedgerAsync,
 	createLedgerCompat,
 	createLedgerCompatAsync,
+	// Excalidraw
+	createExcalidraw,
+	createExcalidrawAsync,
+	createExcalidrawCompat,
+	createExcalidrawCompatAsync,
 	// 高阶函数
 	createTemplatedFile,
 	createTemplatedFileAsync,
@@ -130,6 +123,11 @@ export {
 	type DiaryTemplateParams,
 	diaryConfig,
 	diaryParamsSchema,
+	// Excalidraw config
+	type ExcalidrawCreationResult,
+	type ExcalidrawTemplateParams,
+	excalidrawConfig,
+	excalidrawParamsSchema,
 	// 配置注册表
 	getTemplateConfig,
 	isValidTemplateType,

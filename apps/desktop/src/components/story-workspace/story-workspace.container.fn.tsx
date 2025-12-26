@@ -13,15 +13,13 @@ import type { SerializedEditorState } from "lexical";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CanvasEditor } from "@/components/blocks/canvas-editor";
-import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help";
-import { SaveStatusIndicator } from "@/components/save-status-indicator";
-import { ThemeSelector } from "@/components/theme-selector";
 import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-preview-connected";
-import { WordCountBadge } from "@/components/word-count-badge";
-import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
 import { EditorTabs } from "@/components/editor-tabs";
 import { ExcalidrawEditorContainer } from "@/components/excalidraw-editor";
+import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help";
+import { SaveStatusIndicator } from "@/components/save-status-indicator";
 import { StoryRightSidebar } from "@/components/story-right-sidebar";
+import { ThemeSelector } from "@/components/theme-selector";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
@@ -29,6 +27,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { WordCountBadge } from "@/components/word-count-badge";
 import { getContentByNodeId } from "@/db";
 import { saveService } from "@/fn/save";
 import { countWordsFromLexicalState } from "@/fn/word-count";
@@ -41,7 +40,6 @@ import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSaveStore } from "@/stores/save.store";
 import { useSelectionStore } from "@/stores/selection.store";
 import { useUIStore } from "@/stores/ui.store";
-import type { DrawingInterface } from "@/types";
 import type { StoryWorkspaceContainerProps } from "./story-workspace.types";
 
 const DEFAULT_AUTO_SAVE_MS = 800;
@@ -68,9 +66,6 @@ export const StoryWorkspaceContainer = memo(
 		const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen);
 		const toggleRightSidebar = useUIStore((s) => s.toggleRightSidebar);
 		const tabPosition = useUIStore((s) => s.tabPosition);
-
-		// 绘图状态
-		const [selectedDrawing] = useState<DrawingInterface | null>(null);
 
 		// Wiki 数据 (用于编辑器插件)
 		const wikiFiles = useWikiFiles(selectedWorkspaceId);
@@ -285,10 +280,6 @@ export const StoryWorkspaceContainer = memo(
 						className="flex-1"
 					/>
 				);
-			}
-
-			if (selectedDrawing) {
-				return <DrawingWorkspace drawing={selectedDrawing} />;
 			}
 
 			return (

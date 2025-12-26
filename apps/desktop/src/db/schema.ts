@@ -121,21 +121,6 @@ export interface ProjectInterface {
 	owner?: string; // 项目拥有者ID，可选
 }
 
-// ---------- 绘图 ----------
-/**
- * 存储项目级别的绘图数据
- */
-export interface DrawingInterface {
-	id: string; // 绘图唯一标识，使用 UUID
-	project: string; // 所属项目 ID
-	name: string; // 绘图名称
-	content: string; // Excalidraw 数据，JSON 字符串格式
-	width: number; // 绘图宽度
-	height: number; // 绘图高度
-	createDate: string; // 创建时间
-	updatedAt: string; // 最近更新时间
-}
-
 // ---------- 附件 ----------
 /**
  * 存储项目相关的附件信息

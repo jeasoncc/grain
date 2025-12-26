@@ -6,11 +6,11 @@
 
 import { memo, useCallback } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import type { DrawingInterface } from "@/db/schema";
-import { useDrawingsByWorkspace } from "@/hooks/use-drawing";
+import { useDrawingNodes } from "@/hooks/use-drawing";
+import logger from "@/log";
 import { useSelectionStore } from "@/stores/selection.store";
 import { useSidebarStore } from "@/stores/sidebar.store";
-import logger from "@/log";
+import type { NodeInterface } from "@/types/node";
 import { UnifiedSidebarView } from "./unified-sidebar.view.fn";
 
 /**
@@ -37,14 +37,15 @@ export const UnifiedSidebarContainer = memo(() => {
 	} = useSidebarStore();
 
 	// Fetch drawings for current workspace
-	const drawings = useDrawingsByWorkspace(selectedWorkspaceId) ?? [];
+	const drawings = useDrawingNodes(selectedWorkspaceId) ?? [];
 
-	// Handle drawing selection - update store and navigate to canvas
+	// Handle drawing selection - update store and navigate to workspace
 	const handleSelectDrawing = useCallback(
-		(drawing: DrawingInterface) => {
+		(drawing: NodeInterface) => {
 			logger.info("[UnifiedSidebar] 选择绘图", { drawingId: drawing.id });
 			setSelectedDrawingId(drawing.id);
-			navigate({ to: "/canvas" });
+			// 导航到工作区编辑器，绘图节点会在主编辑器区域打开
+			navigate({ to: "/workspace/$nodeId", params: { nodeId: drawing.id } });
 		},
 		[setSelectedDrawingId, navigate],
 	);

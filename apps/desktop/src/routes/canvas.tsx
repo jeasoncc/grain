@@ -1,11 +1,15 @@
 /**
- * 绘图画布页面 - 集成的绘图管理系统
- * 使用 Unified Sidebar 中的 DrawingsPanel 进行绘图管理
+ * 绘图画布页面
+ *
+ * @deprecated 此路由已弃用。Excalidraw 绘图现在作为文件节点存储在文件树中，
+ * 点击文件树中的绘图节点会在主编辑器区域打开 ExcalidrawEditorContainer。
+ *
+ * 请使用 /workspace/$nodeId 路由来编辑绘图。
  */
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PenTool } from "lucide-react";
-import { useCallback } from "react";
-import { DrawingWorkspace } from "@/components/drawing/drawing-workspace";
+import { useEffect } from "react";
+import { ExcalidrawEditorContainer } from "@/components/excalidraw-editor";
 import { useDrawing } from "@/hooks/use-drawing";
 import { useUnifiedSidebarStore } from "@/stores/sidebar.store";
 
@@ -14,24 +18,19 @@ export const Route = createFileRoute("/canvas")({
 });
 
 function CanvasPage() {
-	const { drawingsState, setSelectedDrawingId } = useUnifiedSidebarStore();
+	const navigate = useNavigate();
+	const { drawingsState } = useUnifiedSidebarStore();
 	const selectedDrawing = useDrawing(drawingsState.selectedDrawingId);
 
-	const handleDeleteDrawing = useCallback(
-		(drawingId: string) => {
-			if (drawingsState.selectedDrawingId === drawingId) {
-				setSelectedDrawingId(null);
-			}
-		},
-		[drawingsState.selectedDrawingId, setSelectedDrawingId],
-	);
-
-	const handleRenameDrawing = useCallback(
-		(_drawingId: string, _newName: string) => {
-			// Drawing name is updated in the database, the live query will automatically update
-		},
-		[],
-	);
+	// 如果有选中的绘图，重定向到新的工作区路由
+	useEffect(() => {
+		if (selectedDrawing) {
+			navigate({
+				to: "/workspace/$nodeId",
+				params: { nodeId: selectedDrawing.id },
+			});
+		}
+	}, [selectedDrawing, navigate]);
 
 	return (
 		<div className="flex h-screen bg-background text-foreground">
@@ -46,7 +45,7 @@ function CanvasPage() {
 							<>
 								<span className="text-muted-foreground">/</span>
 								<span className="text-muted-foreground">
-									{selectedDrawing.name}
+									{selectedDrawing.title}
 								</span>
 							</>
 						)}
@@ -56,12 +55,9 @@ function CanvasPage() {
 				{/* 绘图内容区域 - 填满整个可用空间 */}
 				<div className="flex-1 overflow-hidden relative w-full p-4">
 					{selectedDrawing ? (
-						<DrawingWorkspace
-							drawing={selectedDrawing}
-							onDelete={handleDeleteDrawing}
-							onRename={handleRenameDrawing}
+						<ExcalidrawEditorContainer
+							nodeId={selectedDrawing.id}
 							className="w-full h-full"
-							fillContainer={true}
 						/>
 					) : (
 						<div className="flex flex-col items-center justify-center h-full text-muted-foreground">

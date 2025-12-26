@@ -2,26 +2,26 @@ import { createRootRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { toast } from "sonner";
-import { createDrawing, deleteDrawing } from "@/actions";
+import { createExcalidrawAsync, deleteNode } from "@/actions";
 import { ActivityBar } from "@/components/activity-bar/index";
-import { GlobalSearchContainer } from "@/components/global-search";
 import { BufferSwitcher } from "@/components/buffer-switcher";
 import { CommandPalette } from "@/components/command-palette/index";
 import { ExportDialogManager } from "@/components/export-dialog-manager";
-import { DevtoolsWrapper, FontStyleInjector } from "@/components/utils";
+import { GlobalSearchContainer } from "@/components/global-search";
 import { ConfirmProvider } from "@/components/ui/confirm";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { UnifiedSidebarContent } from "@/components/unified-sidebar/";
+import { DevtoolsWrapper, FontStyleInjector } from "@/components/utils";
 import { autoBackupManager } from "@/db/backup.db.fn";
-import type { DrawingInterface } from "@/db/schema";
-import { useDrawingsByWorkspace } from "@/hooks/use-drawing";
+import { useDrawingNodes } from "@/hooks/use-drawing";
 import { initializeTheme } from "@/hooks/use-theme";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
 import logger from "@/log";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSelectionStore } from "@/stores/selection.store";
 import { useUnifiedSidebarStore } from "@/stores/sidebar.store";
+import type { NodeInterface } from "@/types/node";
 
 function RootComponent() {
 	const navigate = useNavigate();
@@ -44,7 +44,7 @@ function RootComponent() {
 	const workspaces = useAllWorkspaces() ?? [];
 
 	// Fetch drawings
-	const drawings = useDrawingsByWorkspace(selectedWorkspaceId) ?? [];
+	const drawings = useDrawingNodes(selectedWorkspaceId) ?? [];
 
 	// Sidebar state
 	const {
@@ -58,16 +58,17 @@ function RootComponent() {
 		restoreFromCollapse,
 	} = useUnifiedSidebarStore();
 
-	// Handle drawing selection - update store and navigate to canvas
+	// Handle drawing selection - update store and navigate to workspace editor
 	const handleSelectDrawing = useCallback(
-		(drawing: DrawingInterface) => {
+		(drawing: NodeInterface) => {
 			setSelectedDrawingId(drawing.id);
-			navigate({ to: "/canvas" });
+			// 导航到工作区编辑器，绘图节点会在主编辑器区域打开
+			navigate({ to: "/workspace/$nodeId", params: { nodeId: drawing.id } });
 		},
 		[setSelectedDrawingId, navigate],
 	);
 
-	// Handle drawing creation
+	// Handle drawing creation using new templated action
 	const handleCreateDrawing = useCallback(async () => {
 		if (!selectedWorkspaceId) {
 			toast.error("Please select a workspace first");
@@ -75,29 +76,27 @@ function RootComponent() {
 		}
 
 		try {
-			const result = await createDrawing({
+			const result = await createExcalidrawAsync({
 				workspaceId: selectedWorkspaceId,
-				name: `Drawing ${drawings.length + 1}`,
-			})();
+			});
 
-			if (result._tag === "Right") {
-				handleSelectDrawing(result.right);
+			if (result) {
+				handleSelectDrawing(result.node);
 				toast.success("New drawing created");
 			} else {
-				logger.error("[Root] Failed to create drawing:", result.left);
 				toast.error("Failed to create drawing");
 			}
 		} catch (error) {
 			logger.error("[Root] Failed to create drawing:", error);
 			toast.error("Failed to create drawing");
 		}
-	}, [selectedWorkspaceId, drawings.length, handleSelectDrawing]);
+	}, [selectedWorkspaceId, handleSelectDrawing]);
 
-	// Handle drawing deletion
+	// Handle drawing deletion using node deletion
 	const handleDeleteDrawing = useCallback(
 		async (drawingId: string, drawingName: string) => {
 			try {
-				const result = await deleteDrawing(drawingId)();
+				const result = await deleteNode(drawingId)();
 
 				if (result._tag === "Right") {
 					toast.success(`Drawing "${drawingName}" deleted`);

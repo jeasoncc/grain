@@ -9,7 +9,6 @@
  * - nodes: File tree structure (with tags array for org-mode style tagging)
  * - contents: Document content (Lexical JSON, Excalidraw, etc.)
  * - workspaces: Project/workspace metadata
- * - drawings: Excalidraw drawings
  * - users: User information and settings
  * - attachments: File attachments
  * - tags: Tag aggregation cache (for statistics and graph visualization)
@@ -27,7 +26,6 @@ import type { TagInterface } from "@/types/tag";
 import type {
 	AttachmentInterface,
 	DBVersionInterface,
-	DrawingInterface,
 	ProjectInterface,
 	UserInterface,
 } from "./schema.ts";
@@ -61,7 +59,6 @@ export class GrainDatabase extends Dexie {
 	nodes!: Table<NodeInterface, string>;
 	contents!: Table<ContentInterface, string>;
 	workspaces!: Table<ProjectInterface, string>;
-	drawings!: Table<DrawingInterface, string>;
 	users!: Table<UserInterface, string>;
 	attachments!: Table<AttachmentInterface, string>;
 	dbVersions!: Table<DBVersionInterface, string>;
@@ -156,9 +153,24 @@ export class GrainDatabase extends Dexie {
 			wikiEntries: null,
 		});
 
+		// Version 12: Remove drawings table
+		// - Excalidraw drawings are now stored as file nodes with type "drawing"
+		// - Content stored in contents table with contentType "excalidraw"
+		this.version(12).stores({
+			nodes: "id, workspace, parent, type, order, *tags",
+			contents: "id, nodeId, contentType",
+			workspaces: "id, title, owner",
+			users: "id, username, email",
+			attachments: "id, project",
+			dbVersions: "id, version",
+			tags: "id, workspace, name",
+			// Remove drawings table - drawings are now file nodes with type "drawing"
+			drawings: null,
+		});
+
 		// Open database and log status
 		this.open()
-			.then(() => logger.success("GrainDatabase initialized (v11)"))
+			.then(() => logger.success("GrainDatabase initialized (v12)"))
 			.catch((err) => logger.error("Database open error:", err));
 	}
 }

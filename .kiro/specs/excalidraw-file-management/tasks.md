@@ -106,19 +106,19 @@
     - 测试错误处理
     - _Requirements: 7.1_
 
-- [-] 5. 更新路由以支持 Excalidraw 编辑器
-  - [-] 5.1 更新 `routes/workspace/$nodeId.tsx`
+- [x] 5. 更新路由以支持 Excalidraw 编辑器
+  - [x] 5.1 更新 `routes/workspace/$nodeId.tsx`
     - 根据节点类型渲染不同编辑器
     - 当 `node.type === "drawing"` 时渲染 `ExcalidrawEditorContainer`
     - 保持其他类型节点的现有逻辑
     - _Requirements: 5.2, 5.3_
 
-- [ ] 6. 删除旧的 Drawing 模块
-  - [ ] 6.1 删除 `components/drawing/` 目录
+- [x] 6. 删除旧的 Drawing 模块
+  - [x] 6.1 删除 `components/drawing/` 目录
     - 删除 `drawing-workspace.tsx`
     - _Requirements: 1.1_
   
-  - [ ] 6.2 删除 `actions/drawing/` 目录
+  - [x] 6.2 删除 `actions/drawing/` 目录
     - 删除 `create-drawing.action.ts`
     - 删除 `delete-drawing.action.ts`
     - 删除 `rename-drawing.action.ts`
@@ -127,15 +127,15 @@
     - 删除 `index.ts`
     - _Requirements: 1.2_
   
-  - [ ] 6.3 删除 `db/drawing.db.fn.ts` 中的 drawing 相关函数
+  - [x] 6.3 删除 `db/drawing.db.fn.ts` 中的 drawing 相关函数
     - 删除或注释掉 drawing 相关的数据库函数
     - _Requirements: 1.3_
   
-  - [ ] 6.4 删除 `db/schema.ts` 中的 drawing 相关类型
+  - [x] 6.4 删除 `db/schema.ts` 中的 drawing 相关类型
     - 删除或注释掉 `DrawingInterface` 和相关类型
     - _Requirements: 1.4_
   
-  - [ ] 6.5 搜索并更新所有导入旧 drawing 代码的文件
+  - [x] 6.5 搜索并更新所有导入旧 drawing 代码的文件
     - 搜索 `from "@/actions/drawing"`
     - 搜索 `from "@/components/drawing"`
     - 搜索 `from "@/db/drawing.db.fn"`

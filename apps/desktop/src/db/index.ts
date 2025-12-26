@@ -105,29 +105,6 @@ export {
 	updateContent,
 	updateContentByNodeId,
 } from "./content.db.fn";
-// Drawing 数据库函数
-export {
-	addDrawing,
-	cleanupAllDrawings,
-	countAllDrawings,
-	countDrawingsByProject,
-	deleteDrawing,
-	deleteDrawingsByProject,
-	drawingExists,
-	drawingExistsByName,
-	duplicateDrawing,
-	getAllDrawings,
-	getDrawingById,
-	getDrawingByIdOrFail,
-	getDrawingsByProject,
-	getRecentDrawings,
-	saveDrawing,
-	searchDrawings,
-	updateDrawing,
-	updateDrawingContent,
-	updateDrawingDimensions,
-	updateDrawingName,
-} from "./drawing.db.fn";
 // Init 数据库函数
 export {
 	createDefaultUser,
@@ -240,7 +217,6 @@ export {
 export type {
 	AttachmentInterface as LegacyAttachmentInterface,
 	DBVersionInterface,
-	DrawingInterface as LegacyDrawingInterface,
 	NodeInterface as LegacyNodeInterface,
 	NodeType as LegacyNodeType,
 	ProjectInterface,

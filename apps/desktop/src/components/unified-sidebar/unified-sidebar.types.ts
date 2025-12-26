@@ -4,7 +4,7 @@
  * 类型定义：组件的 Props 接口
  */
 
-import type { DrawingInterface } from "@/db/schema";
+import type { NodeInterface } from "@/types/node";
 import type { SidebarPanel } from "@/types/sidebar";
 
 /**
@@ -21,14 +21,14 @@ export interface UnifiedSidebarViewProps {
 	readonly wasCollapsedByDrag: boolean;
 	/** 当前工作区 ID */
 	readonly workspaceId: string | null;
-	/** 工作区的所有绘图 */
-	readonly drawings: DrawingInterface[];
+	/** 工作区的所有绘图节点 */
+	readonly drawings: NodeInterface[];
 	/** 选中的绘图 ID */
 	readonly selectedDrawingId: string | null;
 	/** 恢复折叠回调 */
 	readonly onRestoreFromCollapse: () => void;
 	/** 选择绘图回调 */
-	readonly onSelectDrawing: (drawing: DrawingInterface) => void;
+	readonly onSelectDrawing: (drawing: NodeInterface) => void;
 	/** 创建绘图回调 */
 	readonly onCreateDrawing: () => void;
 	/** 删除绘图回调 */

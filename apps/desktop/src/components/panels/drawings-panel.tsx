@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import type { DrawingInterface } from "@/types/drawing";
+import type { NodeInterface } from "@/types/node";
 
 /**
  * DrawingsPanel Props 接口
@@ -22,12 +22,12 @@ import type { DrawingInterface } from "@/types/drawing";
 export interface DrawingsPanelProps {
 	/** 当前工作区 ID */
 	readonly workspaceId: string | null;
-	/** 工作区的所有绘图 */
-	readonly drawings: DrawingInterface[];
+	/** 工作区的所有绘图节点 */
+	readonly drawings: NodeInterface[];
 	/** 选中的绘图 ID */
 	readonly selectedDrawingId: string | null;
 	/** 选择绘图回调 */
-	readonly onSelectDrawing: (drawing: DrawingInterface) => void;
+	readonly onSelectDrawing: (drawing: NodeInterface) => void;
 	/** 创建绘图回调 */
 	readonly onCreateDrawing: () => void;
 	/** 删除绘图回调 */
@@ -51,7 +51,7 @@ export function DrawingsPanel({
 
 	// Filter drawings based on search
 	const filteredDrawings = drawings.filter((drawing) =>
-		drawing.name.toLowerCase().includes(searchQuery.toLowerCase()),
+		drawing.title.toLowerCase().includes(searchQuery.toLowerCase()),
 	);
 
 	// Delete drawing handler
@@ -147,7 +147,7 @@ export function DrawingsPanel({
 									drawing={drawing}
 									isSelected={selectedDrawingId === drawing.id}
 									onSelect={() => onSelectDrawing(drawing)}
-									onDelete={() => handleDeleteDrawing(drawing.id, drawing.name)}
+									onDelete={() => handleDeleteDrawing(drawing.id, drawing.title)}
 								/>
 							))}
 
@@ -169,7 +169,7 @@ export function DrawingsPanel({
 }
 
 interface DrawingListItemProps {
-	drawing: DrawingInterface;
+	drawing: NodeInterface;
 	isSelected: boolean;
 	onSelect: () => void;
 	onDelete: () => void;
@@ -212,7 +212,7 @@ function DrawingListItem({
 			</div>
 			<div className="flex flex-col items-start gap-0.5 overflow-hidden flex-1">
 				<span className="text-sm font-medium leading-tight truncate w-full">
-					{drawing.name}
+					{drawing.title}
 				</span>
 				<span className="text-xs text-muted-foreground/70 truncate w-full font-light">
 					{new Date(drawing.updatedAt).toLocaleDateString()}

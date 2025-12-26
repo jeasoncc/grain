@@ -18,8 +18,6 @@ export * from "./attachment";
 export * from "./backup";
 // Content 类型模块
 export * from "./content";
-// Drawing 类型模块
-export * from "./drawing";
 // Node 类型模块
 export * from "./node";
 // Shared 基础类型模块
