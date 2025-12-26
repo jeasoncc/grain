@@ -382,18 +382,18 @@
   - [x] 32.10 创建 `story-right-sidebar.container.fn.test.tsx`
     - _Requirements: 7.2, 5.1, 5.2_
 
-- [ ] 33. 重构 unified-sidebar 组件
-  - [ ] 33.1 创建 `components/unified-sidebar/` 目录
-  - [ ] 33.2 分析组件，拆分为 View 和 Container
-  - [ ] 33.3 创建 `unified-sidebar.view.fn.tsx`
-  - [ ] 33.4 创建 `unified-sidebar.container.fn.tsx`
-  - [ ] 33.5 创建 `unified-sidebar.types.ts`
-  - [ ] 33.6 创建 `index.ts`
-  - [ ] 33.7 删除原文件
-  - [ ] 33.8 更新所有导入路径
-  - [ ] 33.9 创建 `unified-sidebar.view.fn.test.tsx`
+- [x] 33. 重构 unified-sidebar 组件
+  - [x] 33.1 创建 `components/unified-sidebar/` 目录
+  - [x] 33.2 分析组件，拆分为 View 和 Container
+  - [x] 33.3 创建 `unified-sidebar.view.fn.tsx`
+  - [x] 33.4 创建 `unified-sidebar.container.fn.tsx`
+  - [x] 33.5 创建 `unified-sidebar.types.ts`
+  - [x] 33.6 创建 `index.ts`
+  - [x] 33.7 删除原文件
+  - [x] 33.8 更新所有导入路径
+  - [x] 33.9 创建 `unified-sidebar.view.fn.test.tsx`
     - _Requirements: 7.2_
-  - [ ] 33.10 创建 `unified-sidebar.container.fn.test.tsx`
+  - [x] 33.10 创建 `unified-sidebar.container.fn.test.tsx`
     - _Requirements: 7.2, 5.1, 5.2_
 
 - [ ] 34. 验证 Phase 9

@@ -13,7 +13,7 @@ import { FontStyleInjector } from "@/components/font-style-injector";
 import { ConfirmProvider } from "@/components/ui/confirm";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
-import { UnifiedSidebarContent } from "@/components/unified-sidebar";
+import { UnifiedSidebarContent } from "@/components/unified-sidebar/";
 import { autoBackupManager } from "@/db/backup.db.fn";
 import type { DrawingInterface } from "@/db/schema";
 import { useDrawingsByWorkspace } from "@/hooks/use-drawing";
@@ -51,10 +51,12 @@ function RootComponent() {
 	const {
 		activePanel,
 		isOpen: unifiedSidebarOpen,
+		wasCollapsedByDrag,
 		drawingsState,
 		setActivePanel,
 		toggleSidebar,
 		setSelectedDrawingId,
+		restoreFromCollapse,
 	} = useUnifiedSidebarStore();
 
 	// Handle drawing selection - update store and navigate to canvas
@@ -202,9 +204,12 @@ function RootComponent() {
 									>
 										<UnifiedSidebarContent
 											activePanel={activePanel}
+											isOpen={unifiedSidebarOpen}
+											wasCollapsedByDrag={wasCollapsedByDrag}
 											workspaceId={selectedWorkspaceId}
 											drawings={drawings}
 											selectedDrawingId={drawingsState.selectedDrawingId}
+											onRestoreFromCollapse={restoreFromCollapse}
 											onSelectDrawing={handleSelectDrawing}
 											onCreateDrawing={handleCreateDrawing}
 											onDeleteDrawing={handleDeleteDrawing}
