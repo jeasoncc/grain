@@ -18,14 +18,14 @@
     - **Property 6: Ledger folder structure matches Diary format**
     - **Validates: Requirements 5.1, 5.2, 5.4**
 
-- [-] 2. 集成 Diary 创建功能
-  - [-] 2.1 修改 `activity-bar.container.fn.tsx` 中的 `handleCreateDiary`
+- [x] 2. 集成 Diary 创建功能
+  - [x] 2.1 修改 `activity-bar.container.fn.tsx` 中的 `handleCreateDiary`
     - 导入 `createDiaryCompatAsync` from `@/actions/templated`
     - 实现与 `handleCreateLedger` 相同的模式
     - 调用 `openTab` 打开新创建的文件
     - 显示成功/失败 toast
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
-  - [ ]* 2.2 添加 Diary 创建单元测试
+  - [-] 2.2 添加 Diary 创建单元测试
     - 测试 `handleCreateDiary` 调用正确的函数
     - 测试成功后调用 `openTab`
     - 测试错误处理

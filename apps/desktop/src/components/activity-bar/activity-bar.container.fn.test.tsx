@@ -32,13 +32,48 @@ import type { ActivityBarProps } from "./activity-bar.types";
 let mockSelectedWorkspaceId: string | null = null;
 
 // ============================================================================
+// Hoisted Mocks (必须在 vi.mock 之前定义)
+// ============================================================================
+
+const {
+	mockNavigate,
+	mockConfirm,
+	mockAddWorkspace,
+	mockClearAllData,
+	mockTouchWorkspace,
+	mockUseAllWorkspaces,
+	mockUseIconTheme,
+	mockCreateLedgerCompatAsync,
+	mockCreateDiaryCompatAsync,
+	mockSetSelectedWorkspaceId,
+	mockSetSelectedNodeId,
+	mockSetActivePanel,
+	mockToggleSidebar,
+	mockOpenTab,
+} = vi.hoisted(() => ({
+	mockNavigate: vi.fn(),
+	mockConfirm: vi.fn(),
+	mockAddWorkspace: vi.fn(),
+	mockClearAllData: vi.fn(),
+	mockTouchWorkspace: vi.fn(),
+	mockUseAllWorkspaces: vi.fn(),
+	mockUseIconTheme: vi.fn(),
+	mockCreateLedgerCompatAsync: vi.fn(),
+	mockCreateDiaryCompatAsync: vi.fn(),
+	mockSetSelectedWorkspaceId: vi.fn(),
+	mockSetSelectedNodeId: vi.fn(),
+	mockSetActivePanel: vi.fn(),
+	mockToggleSidebar: vi.fn(),
+	mockOpenTab: vi.fn(),
+}));
+
+const mockLocation = { pathname: "/" };
+
+// ============================================================================
 // Mocks
 // ============================================================================
 
 // Mock TanStack Router
-const mockNavigate = vi.fn();
-const mockLocation = { pathname: "/" };
-
 vi.mock("@tanstack/react-router", () => ({
 	useLocation: () => mockLocation,
 	useNavigate: () => mockNavigate,
@@ -54,7 +89,6 @@ vi.mock("sonner", () => ({
 }));
 
 // Mock confirm dialog
-const mockConfirm = vi.fn();
 vi.mock("@/components/ui/confirm", () => ({
 	useConfirm: () => mockConfirm,
 }));
@@ -67,10 +101,6 @@ vi.mock("@/components/blocks/export-dialog", () => ({
 }));
 
 // Mock database functions
-const mockAddWorkspace = vi.fn();
-const mockClearAllData = vi.fn();
-const mockTouchWorkspace = vi.fn();
-
 vi.mock("@/db", () => ({
 	addWorkspace: mockAddWorkspace,
 	clearAllData: mockClearAllData,
@@ -78,9 +108,6 @@ vi.mock("@/db", () => ({
 }));
 
 // Mock hooks
-const mockUseAllWorkspaces = vi.fn();
-const mockUseIconTheme = vi.fn();
-
 vi.mock("@/hooks/use-workspace", () => ({
 	useAllWorkspaces: () => mockUseAllWorkspaces(),
 }));
@@ -90,19 +117,15 @@ vi.mock("@/hooks/use-icon-theme", () => ({
 }));
 
 // Mock actions
-const mockCreateLedgerCompatAsync = vi.fn();
-
 vi.mock("@/actions/templated/create-ledger.action", () => ({
 	createLedgerCompatAsync: mockCreateLedgerCompatAsync,
 }));
 
-// Mock stores
-const mockSetSelectedWorkspaceId = vi.fn();
-const mockSetSelectedNodeId = vi.fn();
-const mockSetActivePanel = vi.fn();
-const mockToggleSidebar = vi.fn();
-const mockOpenTab = vi.fn();
+vi.mock("@/actions/templated/create-diary.action", () => ({
+	createDiaryCompatAsync: mockCreateDiaryCompatAsync,
+}));
 
+// Mock stores
 vi.mock("@/stores/selection.store", () => ({
 	useSelectionStore: (selector: (state: any) => any) => {
 		const state = {
@@ -414,8 +437,46 @@ describe("ActivityBarContainer", () => {
 	});
 
 	describe("文件创建操作", () => {
-		it("should show info message for diary creation", async () => {
+		/**
+		 * Property 1: Diary creation triggers correct function call
+		 * *For any* workspace ID and date, when `handleCreateDiary` is called,
+		 * `createDiaryCompatAsync` should be called with the correct workspace ID and current date.
+		 * **Validates: Requirements 1.1**
+		 */
+		it("should call createDiaryCompatAsync with correct params when creating diary", async () => {
 			renderWithSelectedWorkspace("ws-1");
+
+			mockCreateDiaryCompatAsync.mockResolvedValue({
+				node: { id: "diary-1", title: "Diary", type: "diary" },
+				content: "{}",
+				parsedContent: {},
+			});
+
+			const diaryButton = screen.getByText("Create Diary");
+			diaryButton.click();
+
+			await waitFor(() => {
+				expect(mockCreateDiaryCompatAsync).toHaveBeenCalledWith({
+					workspaceId: "ws-1",
+					date: expect.any(Date),
+				});
+			});
+		});
+
+		/**
+		 * Property 3: Successful creation opens file in EditorTabs
+		 * *For any* successful templated file creation (Diary, Wiki, or Ledger),
+		 * the `openTab` function should be called with the correct node information.
+		 * **Validates: Requirements 1.2**
+		 */
+		it("should open tab after successful diary creation", async () => {
+			renderWithSelectedWorkspace("ws-1");
+
+			mockCreateDiaryCompatAsync.mockResolvedValue({
+				node: { id: "diary-1", title: "Diary 2024-12-27", type: "diary" },
+				content: "{}",
+				parsedContent: {},
+			});
 
 			const { toast } = await import("sonner");
 
@@ -423,9 +484,37 @@ describe("ActivityBarContainer", () => {
 			diaryButton.click();
 
 			await waitFor(() => {
-				expect(toast.info).toHaveBeenCalledWith(
-					"Diary creation is being reimplemented",
-				);
+				expect(mockOpenTab).toHaveBeenCalledWith({
+					workspaceId: "ws-1",
+					nodeId: "diary-1",
+					title: "Diary 2024-12-27",
+					type: "diary",
+				});
+			});
+
+			await waitFor(() => {
+				expect(toast.success).toHaveBeenCalledWith("Diary created");
+			});
+		});
+
+		/**
+		 * 测试 Diary 创建失败时的错误处理
+		 * **Validates: Requirements 1.4**
+		 */
+		it("should handle diary creation failure", async () => {
+			renderWithSelectedWorkspace("ws-1");
+
+			mockCreateDiaryCompatAsync.mockRejectedValue(
+				new Error("Failed to create diary"),
+			);
+
+			const { toast } = await import("sonner");
+
+			const diaryButton = screen.getByText("Create Diary");
+			diaryButton.click();
+
+			await waitFor(() => {
+				expect(toast.error).toHaveBeenCalledWith("Failed to create diary");
 			});
 		});
 
@@ -495,7 +584,7 @@ describe("ActivityBarContainer", () => {
 			});
 		});
 
-		it("should show error when creating file without workspace", async () => {
+		it("should show error when creating diary without workspace", async () => {
 			mockUseAllWorkspaces.mockReturnValue([]);
 
 			const { toast } = await import("sonner");
@@ -510,6 +599,29 @@ describe("ActivityBarContainer", () => {
 					"Please select a workspace first",
 				);
 			});
+
+			// 确保没有调用创建函数
+			expect(mockCreateDiaryCompatAsync).not.toHaveBeenCalled();
+		});
+
+		it("should show error when creating ledger without workspace", async () => {
+			mockUseAllWorkspaces.mockReturnValue([]);
+
+			const { toast } = await import("sonner");
+
+			render(<ActivityBarContainer />);
+
+			const ledgerButton = screen.getByText("Create Ledger");
+			ledgerButton.click();
+
+			await waitFor(() => {
+				expect(toast.error).toHaveBeenCalledWith(
+					"Please select a workspace first",
+				);
+			});
+
+			// 确保没有调用创建函数
+			expect(mockCreateLedgerCompatAsync).not.toHaveBeenCalled();
 		});
 	});
 
