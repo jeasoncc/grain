@@ -89,13 +89,15 @@ const ActionButton = memo(function ActionButton({
 	label,
 	onClick,
 	active = false,
-}: ActionButtonProps) {
+	testId,
+}: ActionButtonProps & { testId?: string }) {
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
 				<button
 					type="button"
 					onClick={onClick}
+					data-testid={testId}
 					className={cn(
 						"relative flex w-full aspect-square items-center justify-center transition-all",
 						active
@@ -256,7 +258,10 @@ export const ActivityBarView = memo(function ActivityBarView({
 	}, [activePanel, isSidebarOpen, onToggleSidebar, onSetActivePanel]);
 
 	return (
-		<aside className="activity-bar z-10 flex w-12 shrink-0 flex-col items-center border-r border-border/30 bg-muted/50 pb-2">
+		<aside 
+			data-testid="activity-bar"
+			className="activity-bar z-10 flex w-12 shrink-0 flex-col items-center border-r border-border/30 bg-muted/50 pb-2"
+		>
 			<TooltipProvider>
 				{/* 主导航 */}
 				<nav className="flex flex-col items-center w-full">
@@ -272,18 +277,21 @@ export const ActivityBarView = memo(function ActivityBarView({
 						icon={<DiaryIcon className="size-5" />}
 						label="New Diary"
 						onClick={onCreateDiary}
+						testId="btn-new-diary"
 					/>
 					{/* Wiki */}
 					<ActionButton
 						icon={<WikiIcon className="size-5" />}
 						label="New Wiki"
 						onClick={onCreateWiki}
+						testId="btn-new-wiki"
 					/>
 					{/* Ledger */}
 					<ActionButton
 						icon={<LedgerIcon className="size-5" />}
 						label="New Ledger"
 						onClick={onCreateLedger}
+						testId="btn-new-ledger"
 					/>
 					{/* Search */}
 					<ActionButton

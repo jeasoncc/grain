@@ -131,6 +131,10 @@ function TreeNode({
 			tabIndex={0}
 			aria-selected={node.isSelected}
 			aria-expanded={isFolder ? node.isOpen : undefined}
+			data-testid="file-tree-item"
+			data-node-id={data.id}
+			data-title={data.name}
+			data-type={data.type}
 			className={cn(
 				"group flex items-center gap-1.5 py-1 pr-2 cursor-pointer px-2 rounded-md mx-1",
 				node.isSelected
@@ -415,7 +419,7 @@ export function FileTree({
 	}
 
 	return (
-		<div className="group/panel flex h-full w-full flex-col">
+		<div className="group/panel flex h-full w-full flex-col" data-testid="file-tree">
 			{/* Header */}
 			<div className="h-11 flex items-center justify-between px-4 shrink-0 group/header">
 				<span className="text-sm font-semibold text-foreground/80 tracking-wide pl-1">

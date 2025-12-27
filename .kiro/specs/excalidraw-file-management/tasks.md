@@ -195,7 +195,7 @@
     - 删除文件
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 6.1, 6.2, 6.3, 6.4_
 
-- [-] 11. 清理和文档
+- [x] 11. 清理和文档
   - [x] 11.1 搜索残留的 drawing 引用
     - 执行 `grep -r "from.*drawing" apps/desktop/src/`
     - 确认无旧代码引用
@@ -205,7 +205,7 @@
     - 更新功能说明
     - 更新架构文档
   
-  - [-] 11.3 提交所有更改
+  - [x] 11.3 提交所有更改
     - 执行 `git add -A && git commit -m "feat: 重构 drawing 为 Excalidraw 文件管理系统"`
 
 ---

@@ -123,6 +123,7 @@ export const EditorTabsView = memo(
 		return (
 			<>
 				<div
+					data-testid="editor-tabs"
 					className={cn(
 						"bg-muted/20 flex items-center min-w-0 overflow-hidden",
 						className,
@@ -157,7 +158,11 @@ export const EditorTabsView = memo(
 									<TooltipTrigger asChild>
 										<button
 											type="button"
+											data-testid="editor-tab"
 											data-tab-id={tab.id}
+											data-node-id={tab.nodeId}
+											data-title={tab.title}
+											data-active={activeTabId === tab.id}
 											onClick={() => onSetActiveTab(tab.id)}
 											className={cn(
 												"group flex items-center gap-1.5 px-3 py-1.5 text-sm shrink-0",
