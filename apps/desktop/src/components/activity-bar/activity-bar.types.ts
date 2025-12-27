@@ -49,6 +49,8 @@ export interface ActivityBarProps {
 	readonly onCreateTodo: () => void;
 	/** 创建笔记 */
 	readonly onCreateNote: () => void;
+	/** 创建 Excalidraw */
+	readonly onCreateExcalidraw: () => void;
 	/** 导入文件 */
 	readonly onImportFile: (file: File) => Promise<void>;
 	/** 打开导出对话框 */

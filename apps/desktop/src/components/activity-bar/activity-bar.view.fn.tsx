@@ -187,6 +187,7 @@ export const ActivityBarView = memo(function ActivityBarView({
 	onCreateLedger,
 	onCreateTodo,
 	onCreateNote,
+	onCreateExcalidraw,
 	onImportFile,
 	onOpenExportDialog,
 	onDeleteAllData,
@@ -204,6 +205,7 @@ export const ActivityBarView = memo(function ActivityBarView({
 	const LedgerIcon = iconTheme.icons.activityBar.ledger;
 	const TodoIcon = iconTheme.icons.activityBar.todo;
 	const NoteIcon = iconTheme.icons.activityBar.note;
+	const ExcalidrawIcon = iconTheme.icons.activityBar.canvas;
 	const SettingsIcon = iconTheme.icons.activityBar.settings;
 	const ImportIcon = iconTheme.icons.activityBar.import;
 	const ExportIcon = iconTheme.icons.activityBar.export;
@@ -310,6 +312,13 @@ export const ActivityBarView = memo(function ActivityBarView({
 						label="New Note"
 						onClick={onCreateNote}
 						testId="btn-new-note"
+					/>
+					{/* Excalidraw */}
+					<ActionButton
+						icon={<ExcalidrawIcon className="size-5" />}
+						label="New Excalidraw"
+						onClick={onCreateExcalidraw}
+						testId="btn-new-excalidraw"
 					/>
 					{/* Search */}
 					<ActionButton

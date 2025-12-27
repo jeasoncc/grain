@@ -13,6 +13,7 @@ import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { createDiaryCompatAsync } from "@/actions/templated/create-diary.action";
+import { createExcalidrawCompatAsync } from "@/actions/templated/create-excalidraw.action";
 import { createLedgerCompatAsync } from "@/actions/templated/create-ledger.action";
 import { createNoteCompatAsync } from "@/actions/templated/create-note.action";
 import { createTodoCompatAsync } from "@/actions/templated/create-todo.action";
@@ -368,6 +369,40 @@ export function ActivityBarContainer(): React.ReactElement {
 		}
 	}, [selectedWorkspaceId, openTab, updateEditorState, setSelectedNodeId, navigate, location.pathname]);
 
+	const handleCreateExcalidraw = useCallback(async () => {
+		if (!selectedWorkspaceId) {
+			toast.error("Please select a workspace first");
+			return;
+		}
+		try {
+			const result = await createExcalidrawCompatAsync({
+				workspaceId: selectedWorkspaceId,
+				date: new Date(),
+			});
+
+			// 打开新创建的 Excalidraw 文件
+			openTab({
+				workspaceId: selectedWorkspaceId,
+				nodeId: result.node.id,
+				title: result.node.title,
+				type: result.node.type,
+			});
+
+			// 在文件树中选中新创建的文件
+			setSelectedNodeId(result.node.id);
+
+			// 导航到主页面（如果当前不在主页面）
+			if (location.pathname !== "/") {
+				navigate({ to: "/" });
+			}
+
+			toast.success("Excalidraw created");
+		} catch (error) {
+			console.error("Failed to create excalidraw:", error);
+			toast.error("Failed to create excalidraw");
+		}
+	}, [selectedWorkspaceId, openTab, setSelectedNodeId, navigate, location.pathname]);
+
 	const handleImportFile = useCallback(async (_file: File) => {
 		try {
 			// TODO: 使用新架构实现导入
@@ -431,6 +466,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				onCreateLedger={handleCreateLedger}
 				onCreateTodo={handleCreateTodo}
 				onCreateNote={handleCreateNote}
+				onCreateExcalidraw={handleCreateExcalidraw}
 				onImportFile={handleImportFile}
 				onOpenExportDialog={handleOpenExportDialog}
 				onDeleteAllData={handleDeleteAllData}
