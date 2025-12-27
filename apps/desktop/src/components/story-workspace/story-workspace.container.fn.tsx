@@ -102,9 +102,6 @@ export const StoryWorkspaceContainer = memo(
 			markAsSaving,
 		} = useSaveStore();
 
-		// 标签页操作
-		const setActiveTab = useEditorTabsStore((s) => s.setActiveTab);
-		const closeTab = useEditorTabsStore((s) => s.closeTab);
 
 		// 获取当前编辑器内容
 		const currentContent = useMemo(() => {

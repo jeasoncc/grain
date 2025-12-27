@@ -4,7 +4,10 @@
  * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  * 集成 @excalidraw/excalidraw 包，支持主题切换和 onChange 回调
  *
- * 关键：必须使用固定像素尺寸，不能使用百分比，否则 Excalidraw 内部会计算出错误的尺寸
+ * 关键修复：
+ * 1. 必须使用固定像素尺寸，不能使用百分比
+ * 2. 使用 key 强制在尺寸变化时重新挂载组件
+ * 3. 限制 canvas 的最大尺寸防止溢出
  *
  * @requirements 5.2
  */
@@ -17,8 +20,10 @@ import {
 	lazy,
 	memo,
 	useCallback,
+	useEffect,
 	useMemo,
 	useRef,
+	useState,
 } from "react";
 import logger from "@/log";
 import type { ExcalidrawEditorViewProps } from "./excalidraw-editor.types";
@@ -33,6 +38,9 @@ const Excalidraw = lazy(() =>
 /** 元素坐标和尺寸的安全限制 */
 const MAX_COORD = 10000;
 const MAX_SIZE = 5000;
+
+/** Canvas 最大尺寸限制（防止浏览器崩溃） */
+const MAX_CANVAS_SIZE = 4096;
 
 /** 错误边界 Props */
 interface ErrorBoundaryProps {
@@ -132,6 +140,22 @@ export const ExcalidrawEditorView = memo(
 	}: ExcalidrawEditorViewProps) => {
 		// biome-ignore lint/suspicious/noExplicitAny: Excalidraw API 类型
 		const excalidrawAPIRef = useRef<any>(null);
+		const wrapperRef = useRef<HTMLDivElement>(null);
+		const [isReady, setIsReady] = useState(false);
+
+		// 计算安全的 canvas 尺寸（限制最大值防止溢出）
+		const safeSize = useMemo(() => ({
+			width: Math.min(containerSize.width, MAX_CANVAS_SIZE),
+			height: Math.min(containerSize.height, MAX_CANVAS_SIZE),
+		}), [containerSize.width, containerSize.height]);
+
+		// 延迟渲染 Excalidraw，确保 DOM 已经稳定
+		useEffect(() => {
+			const timer = setTimeout(() => {
+				setIsReady(true);
+			}, 100);
+			return () => clearTimeout(timer);
+		}, []);
 
 		// 包装 onChange 回调
 		const handleChange = useCallback(
@@ -150,6 +174,9 @@ export const ExcalidrawEditorView = memo(
 				scrollX: 0,
 				scrollY: 0,
 				zoom: { value: 1 },
+				// 关键：设置 canvas 的宽高限制
+				width: safeSize.width,
+				height: safeSize.height,
 			};
 
 			if (!initialData) {
@@ -167,36 +194,51 @@ export const ExcalidrawEditorView = memo(
 				},
 				files: initialData.files || {},
 			};
-		}, [initialData, theme]);
+		}, [initialData, theme, safeSize.width, safeSize.height]);
 
 		// 处理错误
 		const handleError = useCallback((error: Error) => {
 			logger.error("[ExcalidrawView] 捕获错误:", error.message);
 		}, []);
 
+		// 如果尺寸太小，显示提示
+		if (safeSize.width < 200 || safeSize.height < 200) {
+			return (
+				<div className="flex items-center justify-center h-full text-muted-foreground">
+					<span>Container too small for canvas</span>
+				</div>
+			);
+		}
+
 		return (
 			<div
+				ref={wrapperRef}
 				className="excalidraw-wrapper"
 				style={{
-					// 必须使用固定像素尺寸！不能使用百分比！
-					// 否则 Excalidraw 内部会计算出错误的尺寸（如 14548px）
-					width: `${containerSize.width}px`,
-					height: `${containerSize.height}px`,
+					// 必须使用固定像素尺寸！
+					width: `${safeSize.width}px`,
+					height: `${safeSize.height}px`,
 					position: "relative",
 					overflow: "hidden",
+					// 创建新的层叠上下文，隔离 Excalidraw 的 fixed 定位
+					isolation: "isolate",
+					contain: "strict",
 				}}
 			>
 				<ExcalidrawErrorBoundary fallback={<ErrorFallback />} onError={handleError}>
 					<Suspense fallback={<LoadingFallback />}>
-						<Excalidraw
-							excalidrawAPI={(api) => {
-								excalidrawAPIRef.current = api;
-							}}
-							initialData={excalidrawInitialData}
-							theme={theme}
-							viewModeEnabled={viewModeEnabled}
-							onChange={handleChange}
-						/>
+						{isReady && (
+							<Excalidraw
+								key={`excalidraw-${safeSize.width}-${safeSize.height}`}
+								excalidrawAPI={(api) => {
+									excalidrawAPIRef.current = api;
+								}}
+								initialData={excalidrawInitialData}
+								theme={theme}
+								viewModeEnabled={viewModeEnabled}
+								onChange={handleChange}
+							/>
+						)}
 					</Suspense>
 				</ExcalidrawErrorBoundary>
 			</div>

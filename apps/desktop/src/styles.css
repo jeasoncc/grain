@@ -1177,6 +1177,10 @@ hr,
 .excalidraw-wrapper {
   position: relative;
   overflow: hidden;
+  /* 创建新的层叠上下文 */
+  isolation: isolate;
+  /* 严格包含 - 防止子元素溢出影响布局 */
+  contain: strict;
 }
 
 /* Force Excalidraw to respect container bounds */
@@ -1189,34 +1193,59 @@ hr,
   right: 0 !important;
   bottom: 0 !important;
   overflow: hidden !important;
+  /* 防止 fixed 定位逃逸 */
+  transform: translateZ(0);
 }
 
-/* Fix the shapes-section overflow issue - this is the root cause! */
-.excalidraw-wrapper .excalidraw .shapes-section {
-  max-height: 400px !important;
-  overflow-y: auto !important;
-}
-
-/* Ensure the excalidraw container is bounded */
+/* 关键修复：限制 excalidraw-container 的尺寸 */
 .excalidraw-wrapper .excalidraw .excalidraw-container {
   width: 100% !important;
   height: 100% !important;
   max-width: 100% !important;
   max-height: 100% !important;
   overflow: hidden !important;
+  position: relative !important;
 }
 
-/* Ensure canvas layers are properly positioned and bounded */
+/* 修复 App-menu 和其他弹出层 */
+.excalidraw-wrapper .excalidraw .App-menu {
+  position: absolute !important;
+}
+
+/* Fix the shapes-section overflow issue */
+.excalidraw-wrapper .excalidraw .shapes-section {
+  max-height: 300px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* 限制 layer-ui__wrapper */
 .excalidraw-wrapper .excalidraw .layer-ui__wrapper {
   width: 100% !important;
   height: 100% !important;
+  max-width: 100% !important;
   max-height: 100% !important;
   overflow: hidden !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
 }
 
-/* Ensure canvas is interactive and bounded */
-.excalidraw-wrapper canvas {
+/* 限制 canvas 元素 */
+.excalidraw-wrapper .excalidraw canvas {
   pointer-events: auto !important;
   max-width: 100% !important;
   max-height: 100% !important;
+}
+
+/* 修复 Island 组件（工具栏等） */
+.excalidraw-wrapper .excalidraw .Island {
+  position: absolute !important;
+}
+
+/* 确保 main 区域不会溢出 */
+.excalidraw-wrapper .excalidraw main {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
 }

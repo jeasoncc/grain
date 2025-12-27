@@ -76,8 +76,9 @@ export const ExcalidrawEditorContainer = memo(
 		const [initialData, setInitialData] = useState<ExcalidrawInitialData | null>(null);
 		const isInitializedRef = useRef(false);
 
-		// 容器尺寸状态
+		// 容器尺寸状态 - 使用稳定的尺寸
 		const [containerSize, setContainerSize] = useState<ContainerSize | null>(null);
+		const sizeStableRef = useRef(false);
 
 		// 解析内容并设置初始数据
 		useEffect(() => {
@@ -92,31 +93,66 @@ export const ExcalidrawEditorContainer = memo(
 		// 当 nodeId 变化时重置
 		useEffect(() => {
 			isInitializedRef.current = false;
+			sizeStableRef.current = false;
 			setInitialData(null);
 			setContainerSize(null);
 		}, [nodeId]);
 
-		// 监听容器尺寸
+		// 监听容器尺寸 - 使用防抖确保尺寸稳定
 		useEffect(() => {
 			const container = containerRef.current;
 			if (!container) return;
+
+			let resizeTimeout: NodeJS.Timeout | null = null;
+			let lastWidth = 0;
+			let lastHeight = 0;
 
 			const updateSize = () => {
 				const rect = container.getBoundingClientRect();
 				const width = Math.floor(rect.width);
 				const height = Math.floor(rect.height);
 				
-				if (width > 100 && height > 100) {
-					setContainerSize({ width, height });
+				// 只有当尺寸有效且变化超过阈值时才更新
+				if (width > 200 && height > 200) {
+					const widthChanged = Math.abs(width - lastWidth) > 10;
+					const heightChanged = Math.abs(height - lastHeight) > 10;
+					
+					if (!sizeStableRef.current || widthChanged || heightChanged) {
+						lastWidth = width;
+						lastHeight = height;
+						
+						// 使用防抖，等待尺寸稳定
+						if (resizeTimeout) {
+							clearTimeout(resizeTimeout);
+						}
+						
+						resizeTimeout = setTimeout(() => {
+							setContainerSize({ width, height });
+							sizeStableRef.current = true;
+							logger.info("[ExcalidrawEditor] 容器尺寸:", { width, height });
+						}, 150);
+					}
 				}
 			};
 
-			updateSize();
+			// 初始延迟，等待布局稳定
+			const initialTimeout = setTimeout(updateSize, 100);
 
-			const resizeObserver = new ResizeObserver(updateSize);
+			const resizeObserver = new ResizeObserver(() => {
+				// 只有在尺寸已经稳定后才响应 resize
+				if (sizeStableRef.current) {
+					updateSize();
+				}
+			});
 			resizeObserver.observe(container);
 
-			return () => resizeObserver.disconnect();
+			return () => {
+				clearTimeout(initialTimeout);
+				if (resizeTimeout) {
+					clearTimeout(resizeTimeout);
+				}
+				resizeObserver.disconnect();
+			};
 		}, []);
 
 		// 保存内容
