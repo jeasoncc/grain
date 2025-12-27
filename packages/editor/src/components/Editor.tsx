@@ -116,7 +116,7 @@ export default function Editor({
           <RichTextPlugin
             contentEditable={
               <ContentEditable
-                className="min-h-full outline-none px-8 py-4 text-base leading-relaxed relative"
+                className="pl-8 pr-8 min-h-full outline-none px-8 py-4 text-base leading-relaxed relative"
                 style={{ caretColor: 'var(--primary)' }}
               />
             }

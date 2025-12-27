@@ -42,8 +42,13 @@ export {
 // ==============================
 
 export {
+	adaptWikiParams,
+	type CreateWikiParams,
 	createWiki,
 	createWikiAsync,
+	createWikiCompat,
+	createWikiCompatAsync,
+	type WikiCreationResult,
 	type WikiTemplateParams,
 } from "./create-wiki.action";
 

@@ -45,6 +45,7 @@ const {
 	mockUseIconTheme,
 	mockCreateLedgerCompatAsync,
 	mockCreateDiaryCompatAsync,
+	mockCreateWikiCompatAsync,
 	mockSetSelectedWorkspaceId,
 	mockSetSelectedNodeId,
 	mockSetActivePanel,
@@ -61,6 +62,7 @@ const {
 	mockUseIconTheme: vi.fn(),
 	mockCreateLedgerCompatAsync: vi.fn(),
 	mockCreateDiaryCompatAsync: vi.fn(),
+	mockCreateWikiCompatAsync: vi.fn(),
 	mockSetSelectedWorkspaceId: vi.fn(),
 	mockSetSelectedNodeId: vi.fn(),
 	mockSetActivePanel: vi.fn(),
@@ -121,6 +123,10 @@ vi.mock("@/hooks/use-icon-theme", () => ({
 // Mock actions
 vi.mock("@/actions/templated/create-ledger.action", () => ({
 	createLedgerCompatAsync: mockCreateLedgerCompatAsync,
+}));
+
+vi.mock("@/actions/templated/create-wiki.action", () => ({
+	createWikiCompatAsync: mockCreateWikiCompatAsync,
 }));
 
 vi.mock("@/actions/templated/create-diary.action", () => ({
@@ -566,8 +572,14 @@ describe("ActivityBarContainer", () => {
 			});
 		});
 
-		it("should show info message for wiki creation", async () => {
+		it("should handle wiki creation", async () => {
 			renderWithSelectedWorkspace("ws-1");
+
+			mockCreateWikiCompatAsync.mockResolvedValue({
+				node: { id: "wiki-1", title: "Wiki", type: "file" },
+				content: "{}",
+				parsedContent: {},
+			});
 
 			const { toast } = await import("sonner");
 
@@ -575,9 +587,40 @@ describe("ActivityBarContainer", () => {
 			wikiButton.click();
 
 			await waitFor(() => {
-				expect(toast.info).toHaveBeenCalledWith(
-					"Wiki creation is being reimplemented",
-				);
+				expect(mockCreateWikiCompatAsync).toHaveBeenCalledWith({
+					workspaceId: "ws-1",
+					date: expect.any(Date),
+				});
+			});
+
+			await waitFor(() => {
+				expect(mockOpenTab).toHaveBeenCalledWith({
+					workspaceId: "ws-1",
+					nodeId: "wiki-1",
+					title: "Wiki",
+					type: "file",
+				});
+			});
+
+			await waitFor(() => {
+				expect(toast.success).toHaveBeenCalledWith("Wiki created");
+			});
+		});
+
+		it("should handle wiki creation failure", async () => {
+			renderWithSelectedWorkspace("ws-1");
+
+			mockCreateWikiCompatAsync.mockRejectedValue(
+				new Error("Failed to create wiki"),
+			);
+
+			const { toast } = await import("sonner");
+
+			const wikiButton = screen.getByText("Create Wiki");
+			wikiButton.click();
+
+			await waitFor(() => {
+				expect(toast.error).toHaveBeenCalledWith("Failed to create wiki");
 			});
 		});
 

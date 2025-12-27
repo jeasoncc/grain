@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { createDiaryCompatAsync } from "@/actions/templated/create-diary.action";
 import { createLedgerCompatAsync } from "@/actions/templated/create-ledger.action";
+import { createWikiCompatAsync } from "@/actions/templated/create-wiki.action";
 import { ExportDialog } from "@/components/export-dialog";
 import { useConfirm } from "@/components/ui/confirm";
 import { addWorkspace, clearAllData, touchWorkspace } from "@/db";
@@ -214,9 +215,39 @@ export function ActivityBarContainer(): React.ReactElement {
 			toast.error("Please select a workspace first");
 			return;
 		}
-		// TODO: 使用新架构实现 Wiki 创建
-		toast.info("Wiki creation is being reimplemented");
-	}, [selectedWorkspaceId]);
+		try {
+			const result = await createWikiCompatAsync({
+				workspaceId: selectedWorkspaceId,
+				date: new Date(),
+			});
+
+			// 打开新创建的 Wiki 文件
+			openTab({
+				workspaceId: selectedWorkspaceId,
+				nodeId: result.node.id,
+				title: result.node.title,
+				type: result.node.type,
+			});
+
+			// 预加载内容到编辑器状态，确保编辑器能正确显示模板内容
+			updateEditorState(result.node.id, {
+				serializedState: result.parsedContent as SerializedEditorState,
+			});
+
+			// 在文件树中选中新创建的文件
+			setSelectedNodeId(result.node.id);
+
+			// 导航到主页面（如果当前不在主页面）
+			if (location.pathname !== "/") {
+				navigate({ to: "/" });
+			}
+
+			toast.success("Wiki created");
+		} catch (error) {
+			console.error("Failed to create wiki:", error);
+			toast.error("Failed to create wiki");
+		}
+	}, [selectedWorkspaceId, openTab, updateEditorState, setSelectedNodeId, navigate, location.pathname]);
 
 	const handleCreateLedger = useCallback(async () => {
 		if (!selectedWorkspaceId) {
