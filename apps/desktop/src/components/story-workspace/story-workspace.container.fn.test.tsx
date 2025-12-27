@@ -8,10 +8,6 @@ vi.mock("@grain/editor", () => ({
 	MultiEditorContainer: vi.fn(() => <div data-testid="multi-editor" />),
 }));
 
-vi.mock("@/components/blocks/canvas-editor", () => ({
-	CanvasEditor: vi.fn(() => <div data-testid="canvas-editor" />),
-}));
-
 vi.mock("@/components/keyboard-shortcuts-help", () => ({
 	KeyboardShortcutsHelp: vi.fn(() => <div data-testid="keyboard-shortcuts" />),
 }));
