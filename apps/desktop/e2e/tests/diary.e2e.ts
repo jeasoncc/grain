@@ -378,8 +378,9 @@ export async function runDiaryNoWorkspaceTest(): Promise<TestResult[]> {
   return results;
 }
 
-// 如果直接运行此文件
-if (require.main === module) {
+// 如果直接运行此文件（ES Module 方式）
+const isMainModule = import.meta.url === `file://${process.argv[1]}`;
+if (isMainModule) {
   runDiaryTests().then((results) => {
     console.log('\n📊 Diary 测试结果:');
     for (const result of results) {

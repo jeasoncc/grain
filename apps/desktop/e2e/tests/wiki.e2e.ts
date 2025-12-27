@@ -639,8 +639,9 @@ export async function runAllWikiTests(): Promise<TestResult[]> {
   return [...mainResults, ...cancelResults];
 }
 
-// 如果直接运行此文件
-if (require.main === module) {
+// 如果直接运行此文件（ES Module 方式）
+const isMainModule = import.meta.url === `file://${process.argv[1]}`;
+if (isMainModule) {
   runAllWikiTests().then((results) => {
     console.log('\n📊 Wiki 测试结果:');
     for (const result of results) {

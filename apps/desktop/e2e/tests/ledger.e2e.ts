@@ -431,8 +431,9 @@ export async function runAllLedgerTests(): Promise<TestResult[]> {
   return [...mainResults, ...noWorkspaceResults];
 }
 
-// 如果直接运行此文件
-if (require.main === module) {
+// 如果直接运行此文件（ES Module 方式）
+const isMainModule = import.meta.url === `file://${process.argv[1]}`;
+if (isMainModule) {
   runAllLedgerTests().then((results) => {
     console.log('\n📊 Ledger 测试结果:');
     for (const result of results) {

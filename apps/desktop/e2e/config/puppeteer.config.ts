@@ -31,7 +31,7 @@ export const defaultConfig: PuppeteerConfig = {
   slowMo: 50,
   defaultViewport: { width: 1280, height: 800 },
   timeout: 30000,
-  baseUrl: 'http://localhost:5173',
+  baseUrl: 'http://localhost:1420',
   screenshotDir: 'e2e/reports/screenshots',
   reportDir: 'e2e/reports',
 };
