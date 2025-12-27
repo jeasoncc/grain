@@ -7,7 +7,7 @@
 ## Tasks
 
 - [-] 1. 修复 Ledger 文件夹结构
-  - [-] 1.1 修改 `ledger.config.ts` 使用 `getDateFolderStructure`
+  - [x] 1.1 修改 `ledger.config.ts` 使用 `getDateFolderStructure`
     - 将 `import { getLedgerFolderStructure } from "@/fn/ledger"` 改为 `import { getDateFolderStructure } from "@/fn/date"`
     - 修改 `generateLedgerFolderPath` 函数使用 `getDateFolderStructure`
     - 删除 `getLedgerFolderStructure`
@@ -18,8 +18,8 @@
     - **Property 6: Ledger folder structure matches Diary format**
     - **Validates: Requirements 5.1, 5.2, 5.4**
 
-- [ ] 2. 集成 Diary 创建功能
-  - [ ] 2.1 修改 `activity-bar.container.fn.tsx` 中的 `handleCreateDiary`
+- [-] 2. 集成 Diary 创建功能
+  - [-] 2.1 修改 `activity-bar.container.fn.tsx` 中的 `handleCreateDiary`
     - 导入 `createDiaryCompatAsync` from `@/actions/templated`
     - 实现与 `handleCreateLedger` 相同的模式
     - 调用 `openTab` 打开新创建的文件

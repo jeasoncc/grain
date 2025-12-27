@@ -11,6 +11,7 @@ import * as E from "fp-ts/Either";
 import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { createDiaryCompatAsync } from "@/actions/templated/create-diary.action";
 import { createLedgerCompatAsync } from "@/actions/templated/create-ledger.action";
 import { ExportDialog } from "@/components/export-dialog";
 import { useConfirm } from "@/components/ui/confirm";
@@ -164,14 +165,31 @@ export function ActivityBarContainer(): React.ReactElement {
 		[setSelectedWorkspaceId],
 	);
 
+	const openTab = useEditorTabsStore((s) => s.openTab);
+
 	const handleCreateDiary = useCallback(async () => {
 		if (!selectedWorkspaceId) {
 			toast.error("Please select a workspace first");
 			return;
 		}
-		// TODO: 使用新架构实现日记创建
-		toast.info("Diary creation is being reimplemented");
-	}, [selectedWorkspaceId]);
+		try {
+			const result = await createDiaryCompatAsync({
+				workspaceId: selectedWorkspaceId,
+				date: new Date(),
+			});
+			// 打开新创建的日记文件
+			openTab({
+				workspaceId: selectedWorkspaceId,
+				nodeId: result.node.id,
+				title: result.node.title,
+				type: result.node.type,
+			});
+			toast.success("Diary created");
+		} catch (error) {
+			console.error("Failed to create diary:", error);
+			toast.error("Failed to create diary");
+		}
+	}, [selectedWorkspaceId, openTab]);
 
 	const handleCreateWiki = useCallback(async () => {
 		if (!selectedWorkspaceId) {
@@ -181,8 +199,6 @@ export function ActivityBarContainer(): React.ReactElement {
 		// TODO: 使用新架构实现 Wiki 创建
 		toast.info("Wiki creation is being reimplemented");
 	}, [selectedWorkspaceId]);
-
-	const openTab = useEditorTabsStore((s) => s.openTab);
 
 	const handleCreateLedger = useCallback(async () => {
 		if (!selectedWorkspaceId) {
