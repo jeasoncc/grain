@@ -2,11 +2,6 @@
  * Excalidraw 编辑器组件 - Container
  *
  * 容器组件：连接 hooks/stores，处理数据加载和保存逻辑
- * - 从路由获取 nodeId
- * - 使用 useContentByNodeId hook 获取内容数据
- * - 解析 Excalidraw JSON
- * - 实现自动保存逻辑（debounced）
- * - 使用 ResizeObserver 确保容器有有效尺寸后再渲染 Excalidraw
  *
  * @requirements 5.2, 5.4
  */
@@ -24,17 +19,6 @@ import { ExcalidrawEditorView } from "./excalidraw-editor.view.fn";
 /** 自动保存延迟时间（毫秒） */
 const AUTO_SAVE_DELAY = 2000;
 
-/** 最小有效容器尺寸 */
-const MIN_CONTAINER_SIZE = 100;
-
-/** 
- * 最大安全容器尺寸
- * 浏览器 canvas 最大尺寸约为 16384x16384 像素
- * 考虑 devicePixelRatio (最高可达 3-4)，我们限制为 4000px
- * 这样即使 DPR=4，实际 canvas 也只有 16000px
- */
-const MAX_CONTAINER_SIZE = 4000;
-
 /** Excalidraw 初始数据类型 */
 interface ExcalidrawInitialData {
 	readonly elements: readonly unknown[];
@@ -42,49 +26,20 @@ interface ExcalidrawInitialData {
 	readonly files: Record<string, unknown>;
 }
 
-/** 默认空 Excalidraw 数据 - 只包含最小必要属性 */
+/** 默认空 Excalidraw 数据 */
 const EMPTY_EXCALIDRAW_DATA: ExcalidrawInitialData = {
 	elements: [],
 	appState: {
 		viewBackgroundColor: "#ffffff",
+		scrollX: 0,
+		scrollY: 0,
+		zoom: { value: 1 },
 	},
 	files: {},
 };
 
 /**
- * 检查容器尺寸是否有效
- * 考虑 devicePixelRatio，确保实际 canvas 尺寸不超过浏览器限制
- */
-function isValidContainerSize(size: ContainerSize): boolean {
-	const dpr = Math.min(window.devicePixelRatio || 1, 2); // 限制 DPR 最大为 2
-	const maxSize = Math.floor(MAX_CONTAINER_SIZE / dpr);
-	
-	return (
-		size.width >= MIN_CONTAINER_SIZE &&
-		size.height >= MIN_CONTAINER_SIZE &&
-		size.width <= maxSize &&
-		size.height <= maxSize &&
-		Number.isFinite(size.width) &&
-		Number.isFinite(size.height)
-	);
-}
-
-/**
- * 限制容器尺寸在安全范围内
- */
-function clampContainerSize(size: ContainerSize): ContainerSize {
-	const dpr = Math.min(window.devicePixelRatio || 1, 2);
-	const maxSize = Math.floor(MAX_CONTAINER_SIZE / dpr);
-	
-	return {
-		width: Math.min(Math.max(size.width, MIN_CONTAINER_SIZE), maxSize),
-		height: Math.min(Math.max(size.height, MIN_CONTAINER_SIZE), maxSize),
-	};
-}
-
-/**
  * 解析 Excalidraw JSON 内容
- * 只保留安全的 appState 属性，避免 Canvas exceeds max size 错误
  */
 function parseExcalidrawContent(
 	content: string | undefined,
@@ -95,19 +50,14 @@ function parseExcalidrawContent(
 
 	try {
 		const parsed = JSON.parse(content);
-
-		// 只保留安全的 appState 属性
-		const safeAppState: Record<string, unknown> = {
-			viewBackgroundColor: "#ffffff",
-		};
-
-		if (parsed.appState?.viewBackgroundColor) {
-			safeAppState.viewBackgroundColor = parsed.appState.viewBackgroundColor;
-		}
-
 		return {
 			elements: Array.isArray(parsed.elements) ? parsed.elements : [],
-			appState: safeAppState,
+			appState: {
+				viewBackgroundColor: parsed.appState?.viewBackgroundColor || "#ffffff",
+				scrollX: 0,
+				scrollY: 0,
+				zoom: { value: 1 },
+			},
 			files: parsed.files || {},
 		};
 	} catch (error) {
@@ -123,16 +73,11 @@ export const ExcalidrawEditorContainer = memo(
 		const containerRef = useRef<HTMLDivElement>(null);
 
 		// 初始数据状态
-		const [initialData, setInitialData] =
-			useState<ExcalidrawInitialData | null>(null);
-
-		// 是否已初始化（防止重复设置初始数据）
+		const [initialData, setInitialData] = useState<ExcalidrawInitialData | null>(null);
 		const isInitializedRef = useRef(false);
 
 		// 容器尺寸状态
-		const [containerSize, setContainerSize] = useState<ContainerSize | null>(
-			null,
-		);
+		const [containerSize, setContainerSize] = useState<ContainerSize | null>(null);
 
 		// 解析内容并设置初始数据
 		useEffect(() => {
@@ -142,66 +87,49 @@ export const ExcalidrawEditorContainer = memo(
 				isInitializedRef.current = true;
 				logger.info("[ExcalidrawEditor] 初始化数据:", parsed);
 			}
-		}, [content, nodeId]);
+		}, [content]);
 
-		// 当 nodeId 变化时重置初始化状态
+		// 当 nodeId 变化时重置
 		useEffect(() => {
 			isInitializedRef.current = false;
 			setInitialData(null);
 			setContainerSize(null);
 		}, [nodeId]);
 
-		// 使用 ResizeObserver 监听容器尺寸变化
+		// 监听容器尺寸
 		useEffect(() => {
 			const container = containerRef.current;
 			if (!container) return;
 
 			const updateSize = () => {
 				const rect = container.getBoundingClientRect();
-				const rawSize: ContainerSize = {
-					width: Math.floor(rect.width),
-					height: Math.floor(rect.height),
-				};
-
-				// 使用 JSON.stringify 确保日志正确显示
-				logger.info(`[ExcalidrawContainer] 原始容器尺寸: width=${rawSize.width}, height=${rawSize.height}`);
-
-				// 限制尺寸在安全范围内
-				const clampedSize = clampContainerSize(rawSize);
+				const width = Math.floor(rect.width);
+				const height = Math.floor(rect.height);
 				
-				logger.info(`[ExcalidrawContainer] 限制后尺寸: width=${clampedSize.width}, height=${clampedSize.height}`);
-				
-				if (isValidContainerSize(clampedSize)) {
-					setContainerSize(clampedSize);
-				} else {
-					logger.warn(`[ExcalidrawContainer] 尺寸无效: width=${clampedSize.width}, height=${clampedSize.height}`);
+				if (width > 100 && height > 100) {
+					setContainerSize({ width, height });
 				}
 			};
 
-			// 初始检查
 			updateSize();
 
-			// 监听尺寸变化
-			const resizeObserver = new ResizeObserver(() => {
-				updateSize();
-			});
-
+			const resizeObserver = new ResizeObserver(updateSize);
 			resizeObserver.observe(container);
 
-			return () => {
-				resizeObserver.disconnect();
-			};
-		}, [initialData]);
+			return () => resizeObserver.disconnect();
+		}, []);
 
-		// 保存内容到数据库
+		// 保存内容
 		const saveContent = useCallback(
 			async (
 				elements: readonly unknown[],
 				appState: Record<string, unknown>,
 				files: Record<string, unknown>,
 			) => {
-				// 只保存安全的 appState 属性
 				const dataToSave = {
+					type: "excalidraw",
+					version: 2,
+					source: "grain-editor",
 					elements,
 					appState: {
 						viewBackgroundColor: appState.viewBackgroundColor || "#ffffff",
@@ -216,7 +144,7 @@ export const ExcalidrawEditorContainer = memo(
 				)();
 
 				if (result._tag === "Right") {
-					logger.debug("[ExcalidrawEditor] 内容已保存:", nodeId);
+					logger.debug("[ExcalidrawEditor] 内容已保存");
 				} else {
 					logger.error("[ExcalidrawEditor] 保存失败:", result.left);
 				}
@@ -224,13 +152,11 @@ export const ExcalidrawEditorContainer = memo(
 			[nodeId],
 		);
 
-		// 防抖保存函数
 		const debouncedSave = useMemo(
 			() => debounce(saveContent, AUTO_SAVE_DELAY),
 			[saveContent],
 		);
 
-		// 内容变化处理
 		const handleChange = useCallback(
 			(
 				elements: readonly unknown[],
@@ -242,28 +168,30 @@ export const ExcalidrawEditorContainer = memo(
 			[debouncedSave],
 		);
 
-		// 组件卸载时取消防抖
 		useEffect(() => {
-			return () => {
-				debouncedSave.cancel();
-			};
+			return () => debouncedSave.cancel();
 		}, [debouncedSave]);
 
-		// 是否可以渲染 Excalidraw
-		const canRenderExcalidraw =
-			initialData !== null && containerSize !== null;
-
-		// 内容加载中
+		// 加载中
 		if (content === undefined) {
 			return (
 				<div
 					ref={containerRef}
-					className={cn(
-						"flex items-center justify-center h-full w-full text-muted-foreground",
-						className,
-					)}
+					className={cn("flex items-center justify-center h-full w-full text-muted-foreground", className)}
 				>
 					<span>Loading...</span>
+				</div>
+			);
+		}
+
+		// 等待尺寸和数据
+		if (!containerSize || !initialData) {
+			return (
+				<div
+					ref={containerRef}
+					className={cn("flex items-center justify-center h-full w-full text-muted-foreground", className)}
+				>
+					<span>Preparing canvas...</span>
 				</div>
 			);
 		}
@@ -271,29 +199,15 @@ export const ExcalidrawEditorContainer = memo(
 		return (
 			<div
 				ref={containerRef}
-				className={cn("flex flex-col", className)}
-				style={{
-					// 使用 flex: 1 让容器填充父元素
-					flex: 1,
-					// 确保最小尺寸
-					minHeight: 0,
-					minWidth: 0,
-					overflow: "hidden",
-				}}
+				className={cn("h-full w-full", className)}
 			>
-				{canRenderExcalidraw ? (
-					<ExcalidrawEditorView
-						key={`${nodeId}-${containerSize.width}-${containerSize.height}`}
-						initialData={initialData}
-						theme={isDark ? "dark" : "light"}
-						onChange={handleChange}
-						containerSize={containerSize}
-					/>
-				) : (
-					<div className="flex items-center justify-center flex-1 text-muted-foreground">
-						<span>Preparing canvas...</span>
-					</div>
-				)}
+				<ExcalidrawEditorView
+					key={nodeId}
+					initialData={initialData}
+					theme={isDark ? "dark" : "light"}
+					onChange={handleChange}
+					containerSize={containerSize}
+				/>
 			</div>
 		);
 	},

@@ -4,10 +4,6 @@
  * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  * 集成 @excalidraw/excalidraw 包，支持主题切换和 onChange 回调
  *
- * 修复 Canvas exceeds max size 错误：
- * - 强制设置 width/height 属性
- * - 使用 scrollToContent 避免初始视口问题
- *
  * @requirements 5.2
  */
 
@@ -19,10 +15,8 @@ import {
 	lazy,
 	memo,
 	useCallback,
-	useEffect,
 	useMemo,
 	useRef,
-	useState,
 } from "react";
 import logger from "@/log";
 import type { ExcalidrawEditorViewProps } from "./excalidraw-editor.types";
@@ -134,48 +128,8 @@ export const ExcalidrawEditorView = memo(
 		viewModeEnabled = false,
 		containerSize,
 	}: ExcalidrawEditorViewProps) => {
-		const containerRef = useRef<HTMLDivElement>(null);
-		const [isReady, setIsReady] = useState(false);
-		const [hasError, setHasError] = useState(false);
 		// biome-ignore lint/suspicious/noExplicitAny: Excalidraw API 类型
 		const excalidrawAPIRef = useRef<any>(null);
-
-		// 等待容器挂载并设置好尺寸后再渲染 Excalidraw
-		useEffect(() => {
-			const container = containerRef.current;
-			if (!container) return;
-
-			let cancelled = false;
-			let attempts = 0;
-			const maxAttempts = 10;
-
-			const checkReady = () => {
-				if (cancelled) return;
-				
-				const rect = container.getBoundingClientRect();
-				logger.info(`[ExcalidrawView] 检查容器尺寸: width=${rect.width}, height=${rect.height}, expected=${containerSize.width}x${containerSize.height}, attempt=${attempts}`);
-
-				// 检查容器是否有有效尺寸
-				if (rect.width >= 100 && rect.height >= 100) {
-					setIsReady(true);
-				} else if (attempts < maxAttempts) {
-					attempts++;
-					requestAnimationFrame(checkReady);
-				} else {
-					logger.warn("[ExcalidrawView] 容器尺寸检查超时，强制渲染");
-					setIsReady(true);
-				}
-			};
-
-			const timer = setTimeout(() => {
-				requestAnimationFrame(checkReady);
-			}, 50);
-
-			return () => {
-				cancelled = true;
-				clearTimeout(timer);
-			};
-		}, [containerSize.width, containerSize.height]);
 
 		// 包装 onChange 回调
 		const handleChange = useCallback(
@@ -186,42 +140,29 @@ export const ExcalidrawEditorView = memo(
 			[onChange],
 		);
 
-		// 清理初始数据 - 设置安全的初始 appState
+		// 清理初始数据
 		// biome-ignore lint/suspicious/noExplicitAny: Excalidraw 类型复杂
 		const excalidrawInitialData: any = useMemo(() => {
-			// 强制使用安全的 appState，不使用任何可能导致问题的值
 			const safeAppState = {
 				viewBackgroundColor: theme === "dark" ? "#1e1e1e" : "#ffffff",
-				// 强制设置安全的初始视口 - 这些值必须是 0 和 1
 				scrollX: 0,
 				scrollY: 0,
 				zoom: { value: 1 },
-				// 不设置 width/height，让 Excalidraw 自己计算
 			};
 
 			if (!initialData) {
-				logger.info("[ExcalidrawView] 使用空白初始数据");
 				return {
 					elements: [],
 					appState: safeAppState,
 				};
 			}
 
-			// 过滤掉可能有问题的 appState 属性
-			const cleanedAppState = {
-				...safeAppState,
-				// 只保留背景色
-				viewBackgroundColor: initialData.appState?.viewBackgroundColor || safeAppState.viewBackgroundColor,
-			};
-
-			logger.info("[ExcalidrawView] 使用清理后的初始数据:", {
-				elementsCount: initialData.elements?.length || 0,
-				appState: cleanedAppState,
-			});
-
 			return {
 				elements: sanitizeElements([...(initialData.elements || [])]),
-				appState: cleanedAppState,
+				appState: {
+					...safeAppState,
+					viewBackgroundColor: initialData.appState?.viewBackgroundColor || safeAppState.viewBackgroundColor,
+				},
 				files: initialData.files || {},
 			};
 		}, [initialData, theme]);
@@ -229,51 +170,14 @@ export const ExcalidrawEditorView = memo(
 		// 处理错误
 		const handleError = useCallback((error: Error) => {
 			logger.error("[ExcalidrawView] 捕获错误:", error.message);
-			setHasError(true);
 		}, []);
-
-		// 如果有错误，显示错误状态
-		if (hasError) {
-			return (
-				<div
-					ref={containerRef}
-					style={{
-						width: containerSize.width,
-						height: containerSize.height,
-					}}
-				>
-					<ErrorFallback />
-				</div>
-			);
-		}
-
-		// 如果还没准备好，显示加载状态
-		if (!isReady) {
-			return (
-				<div
-					ref={containerRef}
-					style={{
-						width: containerSize.width,
-						height: containerSize.height,
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "center",
-					}}
-				>
-					<span className="text-muted-foreground">Initializing canvas...</span>
-				</div>
-			);
-		}
 
 		return (
 			<div
-				ref={containerRef}
 				className="excalidraw-wrapper"
 				style={{
 					width: containerSize.width,
 					height: containerSize.height,
-					position: "relative",
-					overflow: "hidden",
 				}}
 			>
 				<ExcalidrawErrorBoundary fallback={<ErrorFallback />} onError={handleError}>
@@ -286,12 +190,6 @@ export const ExcalidrawEditorView = memo(
 							theme={theme}
 							viewModeEnabled={viewModeEnabled}
 							onChange={handleChange}
-							UIOptions={{
-								canvasActions: {
-									loadScene: false,
-									saveToActiveFile: false,
-								},
-							}}
 						/>
 					</Suspense>
 				</ExcalidrawErrorBoundary>
