@@ -5,9 +5,9 @@
  * 集成 @excalidraw/excalidraw 包，支持主题切换和 onChange 回调
  *
  * 修复 Canvas exceeds max size 错误：
- * - 限制 devicePixelRatio 为最大 2
+ * - 强制设置安全的初始 appState（scrollX=0, scrollY=0, zoom=1）
+ * - 限制 devicePixelRatio 为最大 1（最保守的方案）
  * - 使用固定像素尺寸的容器
- * - 清理 appState 中可能导致问题的属性
  *
  * @requirements 5.2
  */
@@ -18,25 +18,22 @@ import { cn } from "@/lib/utils";
 import type { ExcalidrawEditorViewProps } from "./excalidraw-editor.types";
 
 /** 元素坐标和尺寸的安全限制 */
-const MAX_COORD = 32000;
-const MAX_SIZE = 8000;
-
-/** 最大允许的 devicePixelRatio，防止高 DPI 屏幕导致 canvas 过大 */
-const MAX_DEVICE_PIXEL_RATIO = 2;
+const MAX_COORD = 10000;
+const MAX_SIZE = 5000;
 
 /**
- * 清理 appState，只保留安全的属性
- * 避免 Canvas exceeds max size 错误
+ * 创建安全的 appState
+ * 强制设置 scrollX=0, scrollY=0, zoom=1 避免 canvas 尺寸计算异常
  */
 // biome-ignore lint/suspicious/noExplicitAny: Excalidraw 类型复杂
-function sanitizeAppState(appState: any): Record<string, unknown> {
-	if (!appState || typeof appState !== "object") {
-		return { viewBackgroundColor: "#ffffff" };
-	}
-
-	// 只保留最基本的属性，完全不传递可能导致问题的属性
+function createSafeAppState(appState: any): Record<string, unknown> {
 	return {
-		viewBackgroundColor: appState.viewBackgroundColor || "#ffffff",
+		viewBackgroundColor:
+			appState?.viewBackgroundColor || "#ffffff",
+		// 强制重置这些值，防止异常
+		scrollX: 0,
+		scrollY: 0,
+		zoom: { value: 1 },
 	};
 }
 
@@ -99,18 +96,16 @@ export const ExcalidrawEditorView = memo(
 		const containerRef = useRef<HTMLDivElement>(null);
 		const originalDPRRef = useRef<number | null>(null);
 
-		// 在组件挂载时限制 devicePixelRatio
+		// 在组件挂载时强制限制 devicePixelRatio 为 1
 		useEffect(() => {
 			// 保存原始值
 			originalDPRRef.current = window.devicePixelRatio;
 
-			// 如果 devicePixelRatio 过高，临时覆盖它
-			if (window.devicePixelRatio > MAX_DEVICE_PIXEL_RATIO) {
-				Object.defineProperty(window, "devicePixelRatio", {
-					get: () => MAX_DEVICE_PIXEL_RATIO,
-					configurable: true,
-				});
-			}
+			// 强制设置为 1，这是最保守的方案
+			Object.defineProperty(window, "devicePixelRatio", {
+				get: () => 1,
+				configurable: true,
+			});
 
 			return () => {
 				// 恢复原始值
@@ -138,14 +133,14 @@ export const ExcalidrawEditorView = memo(
 			if (!initialData) {
 				return {
 					elements: [],
-					appState: { viewBackgroundColor: "#ffffff" },
+					appState: createSafeAppState(null),
 					files: {},
 				};
 			}
 
 			return {
 				elements: sanitizeElements([...(initialData.elements || [])]),
-				appState: sanitizeAppState(initialData.appState),
+				appState: createSafeAppState(initialData.appState),
 				files: initialData.files || {},
 			};
 		}, [initialData]);
