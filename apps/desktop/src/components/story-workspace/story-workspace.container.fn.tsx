@@ -268,22 +268,26 @@ export const StoryWorkspaceContainer = memo(
 
 			if (isCanvasTab) {
 				return (
-					<ExcalidrawEditorContainer
-						key={activeTab.id}
-						nodeId={activeTab.nodeId || ""}
-						className="flex-1"
-					/>
+					<div className="flex-1 relative overflow-hidden">
+						<ExcalidrawEditorContainer
+							key={activeTab.id}
+							nodeId={activeTab.nodeId || ""}
+							className="absolute inset-0"
+						/>
+					</div>
 				);
 			}
 
 			// 处理 drawing 类型节点 - 使用 ExcalidrawEditorContainer
 			if (activeTab.type === "drawing") {
 				return (
-					<ExcalidrawEditorContainer
-						key={activeTab.id}
-						nodeId={activeTab.nodeId || ""}
-						className="flex-1"
-					/>
+					<div className="flex-1 relative overflow-hidden">
+						<ExcalidrawEditorContainer
+							key={activeTab.id}
+							nodeId={activeTab.nodeId || ""}
+							className="absolute inset-0"
+						/>
+					</div>
 				);
 			}
 

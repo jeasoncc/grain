@@ -6,6 +6,7 @@
  * - 使用 useContentByNodeId hook 获取内容数据
  * - 解析 Excalidraw JSON
  * - 实现自动保存逻辑（debounced）
+ * - 使用 ResizeObserver 确保容器有有效尺寸后再渲染 Excalidraw
  *
  * @requirements 5.2, 5.4
  */
@@ -23,6 +24,12 @@ import { ExcalidrawEditorView } from "./excalidraw-editor.view.fn";
 /** 自动保存延迟时间（毫秒） */
 const AUTO_SAVE_DELAY = 2000;
 
+/** 最小有效容器尺寸 */
+const MIN_CONTAINER_SIZE = 100;
+
+/** 最大安全容器尺寸（防止 Canvas exceeds max size） */
+const MAX_CONTAINER_SIZE = 16000;
+
 /** Excalidraw 初始数据类型 */
 interface ExcalidrawInitialData {
 	readonly elements: readonly unknown[];
@@ -30,15 +37,38 @@ interface ExcalidrawInitialData {
 	readonly files: Record<string, unknown>;
 }
 
-/** 默认空 Excalidraw 数据 */
+/** 容器尺寸类型 */
+interface ContainerSize {
+	readonly width: number;
+	readonly height: number;
+}
+
+/** 默认空 Excalidraw 数据 - 只包含最小必要属性 */
 const EMPTY_EXCALIDRAW_DATA: ExcalidrawInitialData = {
 	elements: [],
-	appState: {},
+	appState: {
+		viewBackgroundColor: "#ffffff",
+	},
 	files: {},
 };
 
 /**
+ * 检查容器尺寸是否有效
+ */
+function isValidContainerSize(size: ContainerSize): boolean {
+	return (
+		size.width >= MIN_CONTAINER_SIZE &&
+		size.height >= MIN_CONTAINER_SIZE &&
+		size.width <= MAX_CONTAINER_SIZE &&
+		size.height <= MAX_CONTAINER_SIZE &&
+		Number.isFinite(size.width) &&
+		Number.isFinite(size.height)
+	);
+}
+
+/**
  * 解析 Excalidraw JSON 内容
+ * 只保留安全的 appState 属性，避免 Canvas exceeds max size 错误
  */
 function parseExcalidrawContent(
 	content: string | undefined,
@@ -49,9 +79,19 @@ function parseExcalidrawContent(
 
 	try {
 		const parsed = JSON.parse(content);
+
+		// 只保留安全的 appState 属性
+		const safeAppState: Record<string, unknown> = {
+			viewBackgroundColor: "#ffffff",
+		};
+
+		if (parsed.appState?.viewBackgroundColor) {
+			safeAppState.viewBackgroundColor = parsed.appState.viewBackgroundColor;
+		}
+
 		return {
-			elements: parsed.elements || [],
-			appState: parsed.appState || {},
+			elements: Array.isArray(parsed.elements) ? parsed.elements : [],
+			appState: safeAppState,
 			files: parsed.files || {},
 		};
 	} catch (error) {
@@ -64,6 +104,7 @@ export const ExcalidrawEditorContainer = memo(
 	({ nodeId, className }: ExcalidrawEditorContainerProps) => {
 		const content = useContentByNodeId(nodeId);
 		const { isDark } = useTheme();
+		const containerRef = useRef<HTMLDivElement>(null);
 
 		// 初始数据状态
 		const [initialData, setInitialData] =
@@ -72,16 +113,18 @@ export const ExcalidrawEditorContainer = memo(
 		// 是否已初始化（防止重复设置初始数据）
 		const isInitializedRef = useRef(false);
 
+		// 容器尺寸状态
+		const [containerSize, setContainerSize] = useState<ContainerSize | null>(
+			null,
+		);
+
 		// 解析内容并设置初始数据
 		useEffect(() => {
 			if (content !== undefined && !isInitializedRef.current) {
 				const parsed = parseExcalidrawContent(content?.content);
 				setInitialData(parsed);
 				isInitializedRef.current = true;
-				logger.info("[ExcalidrawEditor] 初始化数据:", {
-					nodeId,
-					elementsCount: parsed.elements?.length || 0,
-				});
+				logger.info("[ExcalidrawEditor] 初始化数据:", parsed);
 			}
 		}, [content, nodeId]);
 
@@ -89,7 +132,41 @@ export const ExcalidrawEditorContainer = memo(
 		useEffect(() => {
 			isInitializedRef.current = false;
 			setInitialData(null);
+			setContainerSize(null);
 		}, [nodeId]);
+
+		// 使用 ResizeObserver 监听容器尺寸变化
+		useEffect(() => {
+			const container = containerRef.current;
+			if (!container) return;
+
+			const updateSize = () => {
+				const rect = container.getBoundingClientRect();
+				const newSize: ContainerSize = {
+					width: Math.floor(rect.width),
+					height: Math.floor(rect.height),
+				};
+
+				if (isValidContainerSize(newSize)) {
+					setContainerSize(newSize);
+					logger.debug("[ExcalidrawEditor] 容器尺寸:", newSize);
+				}
+			};
+
+			// 初始检查
+			updateSize();
+
+			// 监听尺寸变化
+			const resizeObserver = new ResizeObserver(() => {
+				updateSize();
+			});
+
+			resizeObserver.observe(container);
+
+			return () => {
+				resizeObserver.disconnect();
+			};
+		}, [initialData]);
 
 		// 保存内容到数据库
 		const saveContent = useCallback(
@@ -98,11 +175,11 @@ export const ExcalidrawEditorContainer = memo(
 				appState: Record<string, unknown>,
 				files: Record<string, unknown>,
 			) => {
+				// 只保存安全的 appState 属性
 				const dataToSave = {
 					elements,
 					appState: {
-						viewBackgroundColor: appState.viewBackgroundColor,
-						gridSize: appState.gridSize,
+						viewBackgroundColor: appState.viewBackgroundColor || "#ffffff",
 					},
 					files,
 				};
@@ -147,12 +224,17 @@ export const ExcalidrawEditorContainer = memo(
 			};
 		}, [debouncedSave]);
 
+		// 是否可以渲染 Excalidraw
+		const canRenderExcalidraw =
+			initialData !== null && containerSize !== null;
+
 		// 内容加载中
 		if (content === undefined) {
 			return (
 				<div
+					ref={containerRef}
 					className={cn(
-						"flex items-center justify-center h-full text-muted-foreground",
+						"flex items-center justify-center h-full w-full text-muted-foreground",
 						className,
 					)}
 				>
@@ -162,12 +244,42 @@ export const ExcalidrawEditorContainer = memo(
 		}
 
 		return (
-			<ExcalidrawEditorView
-				initialData={initialData}
-				theme={isDark ? "dark" : "light"}
-				onChange={handleChange}
-				className={className}
-			/>
+			<div
+				ref={containerRef}
+				className={cn("h-full w-full relative", className)}
+				style={{
+					// 确保容器有最小尺寸，防止 flex 布局导致尺寸为 0
+					minHeight: "400px",
+					minWidth: "400px",
+					// 限制最大尺寸，防止 Canvas exceeds max size
+					maxHeight: "100%",
+					maxWidth: "100%",
+				}}
+			>
+				{canRenderExcalidraw ? (
+					<div
+						style={{
+							position: "absolute",
+							top: 0,
+							left: 0,
+							width: containerSize.width,
+							height: containerSize.height,
+						}}
+					>
+						<ExcalidrawEditorView
+							key={`${nodeId}-${containerSize.width}-${containerSize.height}`}
+							initialData={initialData}
+							theme={isDark ? "dark" : "light"}
+							onChange={handleChange}
+							className="h-full w-full"
+						/>
+					</div>
+				) : (
+					<div className="flex items-center justify-center h-full text-muted-foreground">
+						<span>Preparing canvas...</span>
+					</div>
+				)}
+			</div>
 		);
 	},
 );

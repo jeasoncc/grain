@@ -133,17 +133,41 @@ export function CanvasEditor({
 }: CanvasEditorProps) {
 	// biome-ignore lint/suspicious/noExplicitAny: Excalidraw API 类型复杂
 	const excalidrawRef = useRef<any>(null);
+	const containerRef = useRef<HTMLDivElement>(null);
 	const { isDark } = useTheme();
 	const [isFullscreen, setIsFullscreen] = useState(false);
 	const [hasChanges, setHasChanges] = useState(false);
-	const [isReady, setIsReady] = useState(false); // 延迟渲染 Excalidraw
+	const [containerSize, setContainerSize] = useState<{
+		width: number;
+		height: number;
+	} | null>(null);
 
-	// 延迟渲染 Excalidraw，确保容器尺寸已经确定
+	// 使用 ResizeObserver 监听容器尺寸
 	useEffect(() => {
-		const timer = setTimeout(() => {
-			setIsReady(true);
-		}, 100);
-		return () => clearTimeout(timer);
+		const container = containerRef.current;
+		if (!container) return;
+
+		const updateSize = () => {
+			const rect = container.getBoundingClientRect();
+			const width = Math.floor(rect.width);
+			const height = Math.floor(rect.height);
+			// 确保尺寸有效且在安全范围内
+			if (width >= 100 && height >= 100 && width <= 16000 && height <= 16000) {
+				setContainerSize({ width, height });
+			}
+		};
+
+		updateSize();
+
+		const resizeObserver = new ResizeObserver(() => {
+			updateSize();
+		});
+
+		resizeObserver.observe(container);
+
+		return () => {
+			resizeObserver.disconnect();
+		};
 	}, []);
 
 	// 清理 appState 以避免 Canvas exceeds max size 错误
@@ -186,24 +210,41 @@ export function CanvasEditor({
 	// 清理 elements 数据
 	const sanitizeElements = (elements: any[]): any[] => {
 		if (!Array.isArray(elements)) return [];
-		const MAX_COORD = 50000;
-		const MAX_SIZE = 10000;
-		return elements.filter((el) => {
-			if (!el || typeof el !== "object") return false;
-			const x = el.x ?? 0;
-			const y = el.y ?? 0;
-			const width = el.width ?? 0;
-			const height = el.height ?? 0;
-			if (!Number.isFinite(x) || Math.abs(x) > MAX_COORD) return false;
-			if (!Number.isFinite(y) || Math.abs(y) > MAX_COORD) return false;
-			if (!Number.isFinite(width) || width < 0 || width > MAX_SIZE)
-				return false;
-			if (!Number.isFinite(height) || height < 0 || height > MAX_SIZE)
-				return false;
-			return true;
-		});
+		const MAX_COORD = 32000;
+		const MAX_SIZE = 8000;
+		return elements
+			.filter((el) => {
+				if (!el || typeof el !== "object") return false;
+				const x = el.x ?? 0;
+				const y = el.y ?? 0;
+				const width = el.width ?? 0;
+				const height = el.height ?? 0;
+				if (!Number.isFinite(x) || Math.abs(x) > MAX_COORD) return false;
+				if (!Number.isFinite(y) || Math.abs(y) > MAX_COORD) return false;
+				if (!Number.isFinite(width) || width < 0 || width > MAX_SIZE)
+					return false;
+				if (!Number.isFinite(height) || height < 0 || height > MAX_SIZE)
+					return false;
+				return true;
+			})
+			.map((el) => {
+				// 确保坐标在安全范围内
+				const clampedEl = { ...el };
+				if (typeof clampedEl.x === "number") {
+					clampedEl.x = Math.max(-MAX_COORD, Math.min(MAX_COORD, clampedEl.x));
+				}
+				if (typeof clampedEl.y === "number") {
+					clampedEl.y = Math.max(-MAX_COORD, Math.min(MAX_COORD, clampedEl.y));
+				}
+				if (typeof clampedEl.width === "number") {
+					clampedEl.width = Math.min(MAX_SIZE, Math.max(0, clampedEl.width));
+				}
+				if (typeof clampedEl.height === "number") {
+					clampedEl.height = Math.min(MAX_SIZE, Math.max(0, clampedEl.height));
+				}
+				return clampedEl;
+			});
 	};
-
 	// 解析并清理初始数据
 	const parsedInitialData: ExcalidrawSceneData | undefined = (() => {
 		if (!initialData) {
@@ -315,16 +356,36 @@ export function CanvasEditor({
 
 	// 错误恢复 - 重试
 	const handleReset = useCallback(() => {
-		setIsReady(false);
-		setTimeout(() => setIsReady(true), 100);
+		setContainerSize(null);
+		setTimeout(() => {
+			const container = containerRef.current;
+			if (container) {
+				const rect = container.getBoundingClientRect();
+				const width = Math.floor(rect.width);
+				const height = Math.floor(rect.height);
+				if (width >= 100 && height >= 100) {
+					setContainerSize({ width, height });
+				}
+			}
+		}, 100);
 	}, []);
 
 	// 错误恢复 - 清空数据
 	const handleClearData = useCallback(() => {
 		const emptyData = JSON.stringify({ elements: [], appState: {}, files: {} });
 		onSave?.(emptyData);
-		setIsReady(false);
-		setTimeout(() => setIsReady(true), 100);
+		setContainerSize(null);
+		setTimeout(() => {
+			const container = containerRef.current;
+			if (container) {
+				const rect = container.getBoundingClientRect();
+				const width = Math.floor(rect.width);
+				const height = Math.floor(rect.height);
+				if (width >= 100 && height >= 100) {
+					setContainerSize({ width, height });
+				}
+			}
+		}, 100);
 		toast.success("Drawing reset");
 	}, [onSave]);
 
@@ -386,29 +447,39 @@ export function CanvasEditor({
 					</div>
 				</div>
 				{/* Excalidraw 编辑器 */}
-				<div className="flex-1">
-					{isReady ? (
-						<CanvasErrorBoundary
-							onReset={handleReset}
-							onClearData={handleClearData}
+				<div className="flex-1 relative" ref={containerRef}>
+					{containerSize ? (
+						<div
+							style={{
+								position: "absolute",
+								top: 0,
+								left: 0,
+								width: containerSize.width,
+								height: containerSize.height,
+							}}
 						>
-							<Excalidraw
-								key={`excalidraw-fullscreen-${nodeId}`}
-								excalidrawAPI={(api) => {
-									excalidrawRef.current = api;
-								}}
-								initialData={parsedInitialData}
-								theme={isDark ? "dark" : "light"}
-								onChange={handleChange}
-								UIOptions={{
-									canvasActions: {
-										export: false,
-										loadScene: false,
-										saveToActiveFile: false,
-									},
-								}}
-							/>
-						</CanvasErrorBoundary>
+							<CanvasErrorBoundary
+								onReset={handleReset}
+								onClearData={handleClearData}
+							>
+								<Excalidraw
+									key={`excalidraw-fullscreen-${nodeId}-${containerSize.width}-${containerSize.height}`}
+									excalidrawAPI={(api) => {
+										excalidrawRef.current = api;
+									}}
+									initialData={parsedInitialData}
+									theme={isDark ? "dark" : "light"}
+									onChange={handleChange}
+									UIOptions={{
+										canvasActions: {
+											export: false,
+											loadScene: false,
+											saveToActiveFile: false,
+										},
+									}}
+								/>
+							</CanvasErrorBoundary>
+						</div>
 					) : (
 						<div className="flex items-center justify-center h-full text-muted-foreground">
 							<span>Loading...</span>
@@ -465,29 +536,39 @@ export function CanvasEditor({
 			</div>
 
 			{/* Excalidraw 编辑器 */}
-			<div className="flex-1 min-h-0">
-				{isReady ? (
-					<CanvasErrorBoundary
-						onReset={handleReset}
-						onClearData={handleClearData}
+			<div className="flex-1 min-h-0 relative" ref={!isFullscreen ? containerRef : undefined}>
+				{containerSize ? (
+					<div
+						style={{
+							position: "absolute",
+							top: 0,
+							left: 0,
+							width: containerSize.width,
+							height: containerSize.height,
+						}}
 					>
-						<Excalidraw
-							key={`excalidraw-${nodeId}`}
-							excalidrawAPI={(api) => {
-								excalidrawRef.current = api;
-							}}
-							initialData={parsedInitialData}
-							theme={isDark ? "dark" : "light"}
-							onChange={handleChange}
-							UIOptions={{
-								canvasActions: {
-									export: false,
-									loadScene: false,
-									saveToActiveFile: false,
-								},
-							}}
-						/>
-					</CanvasErrorBoundary>
+						<CanvasErrorBoundary
+							onReset={handleReset}
+							onClearData={handleClearData}
+						>
+							<Excalidraw
+								key={`excalidraw-${nodeId}-${containerSize.width}-${containerSize.height}`}
+								excalidrawAPI={(api) => {
+									excalidrawRef.current = api;
+								}}
+								initialData={parsedInitialData}
+								theme={isDark ? "dark" : "light"}
+								onChange={handleChange}
+								UIOptions={{
+									canvasActions: {
+										export: false,
+										loadScene: false,
+										saveToActiveFile: false,
+									},
+								}}
+							/>
+						</CanvasErrorBoundary>
+					</div>
 				) : (
 					<div className="flex items-center justify-center h-full text-muted-foreground">
 						<span>Loading...</span>
