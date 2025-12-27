@@ -1177,10 +1177,6 @@ hr,
 .excalidraw-wrapper {
   position: relative;
   overflow: hidden;
-  /* 创建新的层叠上下文 */
-  isolation: isolate;
-  /* 严格包含 - 防止子元素溢出影响布局 */
-  contain: strict;
 }
 
 /* Force Excalidraw to respect container bounds */
@@ -1190,62 +1186,36 @@ hr,
   position: absolute !important;
   top: 0 !important;
   left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
   overflow: hidden !important;
-  /* 防止 fixed 定位逃逸 */
-  transform: translateZ(0);
 }
 
-/* 关键修复：限制 excalidraw-container 的尺寸 */
+/* 限制 excalidraw-container 的尺寸 */
 .excalidraw-wrapper .excalidraw .excalidraw-container {
   width: 100% !important;
   height: 100% !important;
   max-width: 100% !important;
   max-height: 100% !important;
   overflow: hidden !important;
-  position: relative !important;
 }
 
-/* 修复 App-menu 和其他弹出层 */
-.excalidraw-wrapper .excalidraw .App-menu {
-  position: absolute !important;
-}
-
-/* Fix the shapes-section overflow issue */
+/* Fix the shapes-section overflow issue - 这是导致 14548px 高度的根源 */
 .excalidraw-wrapper .excalidraw .shapes-section {
   max-height: 300px !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
 }
 
-/* 限制 layer-ui__wrapper */
+/* 限制 layer-ui__wrapper 防止溢出 */
 .excalidraw-wrapper .excalidraw .layer-ui__wrapper {
   width: 100% !important;
   height: 100% !important;
   max-width: 100% !important;
   max-height: 100% !important;
   overflow: hidden !important;
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
 }
 
-/* 限制 canvas 元素 */
+/* 确保 canvas 元素可交互 */
 .excalidraw-wrapper .excalidraw canvas {
   pointer-events: auto !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
 }
-
-/* 修复 Island 组件（工具栏等） */
-.excalidraw-wrapper .excalidraw .Island {
-  position: absolute !important;
-}
-
-/* 确保 main 区域不会溢出 */
-.excalidraw-wrapper .excalidraw main {
-  width: 100% !important;
-  height: 100% !important;
-  overflow: hidden !important;
 }

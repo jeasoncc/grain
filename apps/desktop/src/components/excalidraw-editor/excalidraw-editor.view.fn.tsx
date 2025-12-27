@@ -220,9 +220,6 @@ export const ExcalidrawEditorView = memo(
 					height: `${safeSize.height}px`,
 					position: "relative",
 					overflow: "hidden",
-					// 创建新的层叠上下文，隔离 Excalidraw 的 fixed 定位
-					isolation: "isolate",
-					contain: "strict",
 				}}
 			>
 				<ExcalidrawErrorBoundary fallback={<ErrorFallback />} onError={handleError}>
