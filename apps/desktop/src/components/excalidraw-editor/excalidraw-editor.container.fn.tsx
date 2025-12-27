@@ -163,17 +163,18 @@ export const ExcalidrawEditorContainer = memo(
 					height: Math.floor(rect.height),
 				};
 
-				logger.info("[ExcalidrawContainer] 原始容器尺寸:", rawSize);
+				// 使用 JSON.stringify 确保日志正确显示
+				logger.info(`[ExcalidrawContainer] 原始容器尺寸: width=${rawSize.width}, height=${rawSize.height}`);
 
 				// 限制尺寸在安全范围内
 				const clampedSize = clampContainerSize(rawSize);
 				
-				logger.info("[ExcalidrawContainer] 限制后尺寸:", clampedSize);
+				logger.info(`[ExcalidrawContainer] 限制后尺寸: width=${clampedSize.width}, height=${clampedSize.height}`);
 				
 				if (isValidContainerSize(clampedSize)) {
 					setContainerSize(clampedSize);
 				} else {
-					logger.warn("[ExcalidrawContainer] 尺寸无效:", clampedSize);
+					logger.warn(`[ExcalidrawContainer] 尺寸无效: width=${clampedSize.width}, height=${clampedSize.height}`);
 				}
 			};
 
