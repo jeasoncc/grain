@@ -65,11 +65,11 @@ src/
 │   │   ├── delete-node.action.ts
 │   │   └── index.ts
 │   ├── workspace/
-│   ├── drawing/
 │   ├── templated/        # 模板化文件创建（高阶函数）
 │   │   ├── create-templated-file.action.ts
 │   │   ├── create-diary.action.ts    # 使用高阶函数
 │   │   ├── create-wiki.action.ts     # 使用高阶函数
+│   │   ├── create-excalidraw.action.ts  # Excalidraw 绘图
 │   │   └── index.ts
 │   └── index.ts
 │

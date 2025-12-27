@@ -18,12 +18,13 @@ Novel Editor follows a **data-driven architecture** where:
 | Data Type | Table | Description |
 |-----------|-------|-------------|
 | Workspaces | `workspaces` | Project/workspace metadata |
-| Nodes | `nodes` | File tree structure (folders, files, canvas, diary) |
+| Nodes | `nodes` | File tree structure (folders, files, canvas, diary, drawing) |
 | Contents | `contents` | Document content (Lexical JSON) - separate for performance |
 | Wiki Entries | `wikiEntries` | Character/location/item definitions |
-| Drawings | `drawings` | Excalidraw canvas data |
 | Users | `users` | User profiles |
 | Attachments | `attachments` | File attachments metadata |
+
+> **Note:** Excalidraw drawings are stored as nodes with `type: "drawing"` in the `nodes` table. The drawing content (Excalidraw JSON) is stored in the node's `content` field.
 
 **Access Pattern:**
 ```typescript
