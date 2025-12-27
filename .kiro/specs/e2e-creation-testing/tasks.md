@@ -116,8 +116,8 @@
     - 捕获控制台错误
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
 
-- [-] 7. 实现 Excalidraw 创建流程测试
-  - [-] 7.1 创建 Excalidraw 测试文件
+- [x] 7. 实现 Excalidraw 创建流程测试
+  - [x] 7.1 创建 Excalidraw 测试文件
     - 创建 `e2e/tests/excalidraw.e2e.ts`
     - 实现测试：触发创建 Excalidraw
     - 实现测试：验证文件夹结构
@@ -128,20 +128,20 @@
     - 捕获控制台错误
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 8. 创建测试入口和报告生成
-  - [ ] 8.1 创建测试入口文件
+- [x] 8. 创建测试入口和报告生成
+  - [x] 8.1 创建测试入口文件
     - 创建 `e2e/run-e2e.ts`
     - 实现服务器连接检查
     - 实现测试用例执行
     - 实现测试报告生成
     - _Requirements: 1.6, 8.1, 8.5_
 
-  - [ ] 8.2 创建问题记录模板
+  - [x] 8.2 创建问题记录模板
     - 创建 `e2e/reports/issues.md` 模板
     - 定义问题记录格式
     - _Requirements: 8.2, 8.4_
 
-  - [ ] 8.3 更新 package.json 添加测试脚本
+  - [x] 8.3 更新 package.json 添加测试脚本
     - 添加 `e2e` 脚本运行所有测试
     - 添加 `e2e:diary`, `e2e:wiki`, `e2e:ledger`, `e2e:excalidraw` 脚本
     - 添加 `e2e:debug` 脚本以非无头模式运行

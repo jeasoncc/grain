@@ -17,7 +17,14 @@
     "icon:generate": "tauri icon src-tauri/icons/my-new-icon.jpg",
     "icon:update": "bash ../../scripts/update-icons.sh",
     "test": "vitest --run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "e2e": "npx tsx e2e/run-e2e.ts",
+    "e2e:workspace": "npx tsx e2e/run-e2e.ts workspace",
+    "e2e:diary": "npx tsx e2e/run-e2e.ts diary",
+    "e2e:wiki": "npx tsx e2e/run-e2e.ts wiki",
+    "e2e:ledger": "npx tsx e2e/run-e2e.ts ledger",
+    "e2e:excalidraw": "npx tsx e2e/run-e2e.ts excalidraw",
+    "e2e:debug": "npx tsx e2e/run-e2e.ts --debug"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -116,6 +123,7 @@
     "fast-check": "^4.4.0",
     "jsdom": "^27.3.0",
     "postcss": "^8.5.6",
+    "tsx": "^4.19.0",
     "typescript": "~5.8.3",
     "vite": "^7.1.7",
     "vitest": "^4.0.16",
