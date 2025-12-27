@@ -5,9 +5,9 @@
  * 集成 @excalidraw/excalidraw 包，支持主题切换和 onChange 回调
  *
  * 修复 Canvas exceeds max size 错误：
- * - 使用 lazy 加载 Excalidraw
+ * - 使用容器传入的精确尺寸
  * - 添加错误边界
- * - 强制使用固定尺寸容器
+ * - 清理 appState 只保留安全属性
  *
  * @requirements 5.2
  */
@@ -22,7 +22,6 @@ import {
 	useCallback,
 	useMemo,
 } from "react";
-import { cn } from "@/lib/utils";
 import logger from "@/log";
 import type { ExcalidrawEditorViewProps } from "./excalidraw-editor.types";
 
@@ -142,7 +141,7 @@ export const ExcalidrawEditorView = memo(
 		theme,
 		onChange,
 		viewModeEnabled = false,
-		className,
+		containerSize,
 	}: ExcalidrawEditorViewProps) => {
 		// 包装 onChange 回调
 		const handleChange = useCallback(
@@ -173,11 +172,10 @@ export const ExcalidrawEditorView = memo(
 
 		return (
 			<div
-				className={cn("relative", className)}
 				style={{
-					// 使用固定尺寸而不是 100%
-					width: "800px",
-					height: "600px",
+					width: containerSize.width,
+					height: containerSize.height,
+					position: "relative",
 					overflow: "hidden",
 				}}
 			>

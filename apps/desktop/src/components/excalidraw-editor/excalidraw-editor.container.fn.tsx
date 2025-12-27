@@ -18,7 +18,7 @@ import { useContentByNodeId } from "@/hooks/use-content";
 import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
-import type { ExcalidrawEditorContainerProps } from "./excalidraw-editor.types";
+import type { ContainerSize, ExcalidrawEditorContainerProps } from "./excalidraw-editor.types";
 import { ExcalidrawEditorView } from "./excalidraw-editor.view.fn";
 
 /** 自动保存延迟时间（毫秒） */
@@ -40,12 +40,6 @@ interface ExcalidrawInitialData {
 	readonly elements: readonly unknown[];
 	readonly appState: Record<string, unknown>;
 	readonly files: Record<string, unknown>;
-}
-
-/** 容器尺寸类型 */
-interface ContainerSize {
-	readonly width: number;
-	readonly height: number;
 }
 
 /** 默认空 Excalidraw 数据 - 只包含最小必要属性 */
@@ -271,36 +265,26 @@ export const ExcalidrawEditorContainer = memo(
 		return (
 			<div
 				ref={containerRef}
-				className={cn("h-full w-full relative", className)}
+				className={cn("flex flex-col", className)}
 				style={{
-					// 确保容器有最小尺寸，防止 flex 布局导致尺寸为 0
-					minHeight: "400px",
-					minWidth: "400px",
-					// 限制最大尺寸，防止 Canvas exceeds max size
-					maxHeight: "100%",
-					maxWidth: "100%",
+					// 使用 flex: 1 让容器填充父元素
+					flex: 1,
+					// 确保最小尺寸
+					minHeight: 0,
+					minWidth: 0,
+					overflow: "hidden",
 				}}
 			>
 				{canRenderExcalidraw ? (
-					<div
-						style={{
-							position: "absolute",
-							top: 0,
-							left: 0,
-							width: containerSize.width,
-							height: containerSize.height,
-						}}
-					>
-						<ExcalidrawEditorView
-							key={`${nodeId}-${containerSize.width}-${containerSize.height}`}
-							initialData={initialData}
-							theme={isDark ? "dark" : "light"}
-							onChange={handleChange}
-							className="h-full w-full"
-						/>
-					</div>
+					<ExcalidrawEditorView
+						key={`${nodeId}-${containerSize.width}-${containerSize.height}`}
+						initialData={initialData}
+						theme={isDark ? "dark" : "light"}
+						onChange={handleChange}
+						containerSize={containerSize}
+					/>
 				) : (
-					<div className="flex items-center justify-center h-full text-muted-foreground">
+					<div className="flex items-center justify-center flex-1 text-muted-foreground">
 						<span>Preparing canvas...</span>
 					</div>
 				)}

@@ -14,6 +14,14 @@ export interface ExcalidrawData {
 }
 
 /**
+ * 容器尺寸类型
+ */
+export interface ContainerSize {
+	readonly width: number;
+	readonly height: number;
+}
+
+/**
  * ExcalidrawEditorView Props 接口
  *
  * 纯展示组件：所有数据和回调通过 props 传入
@@ -31,8 +39,8 @@ export interface ExcalidrawEditorViewProps {
 	) => void;
 	/** 是否为只读模式 */
 	readonly viewModeEnabled?: boolean;
-	/** 样式类名 */
-	readonly className?: string;
+	/** 容器尺寸 */
+	readonly containerSize: ContainerSize;
 }
 
 /**

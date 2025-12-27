@@ -266,34 +266,14 @@ export const StoryWorkspaceContainer = memo(
 				);
 			}
 
-			if (isCanvasTab) {
+			// 处理 canvas 和 drawing 类型节点 - 使用 ExcalidrawEditorContainer
+			if (isCanvasTab || activeTab.type === "drawing") {
 				return (
-					<div 
-						className="flex-1 relative overflow-hidden min-h-0"
-						style={{ height: "100%" }}
-					>
-						<ExcalidrawEditorContainer
-							key={activeTab.id}
-							nodeId={activeTab.nodeId || ""}
-							className="absolute inset-0"
-						/>
-					</div>
-				);
-			}
-
-			// 处理 drawing 类型节点 - 使用 ExcalidrawEditorContainer
-			if (activeTab.type === "drawing") {
-				return (
-					<div 
-						className="flex-1 relative overflow-hidden min-h-0"
-						style={{ height: "100%" }}
-					>
-						<ExcalidrawEditorContainer
-							key={activeTab.id}
-							nodeId={activeTab.nodeId || ""}
-							className="absolute inset-0"
-						/>
-					</div>
+					<ExcalidrawEditorContainer
+						key={activeTab.id}
+						nodeId={activeTab.nodeId || ""}
+						className="flex-1 min-h-0"
+					/>
 				);
 			}
 
