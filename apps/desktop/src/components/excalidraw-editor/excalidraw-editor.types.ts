@@ -39,7 +39,7 @@ export interface ExcalidrawEditorViewProps {
 	) => void;
 	/** 是否为只读模式 */
 	readonly viewModeEnabled?: boolean;
-	/** 容器尺寸 */
+	/** 容器尺寸 - 必须使用固定像素值 */
 	readonly containerSize: ContainerSize;
 }
 

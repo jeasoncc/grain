@@ -4,6 +4,8 @@
  * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  * 集成 @excalidraw/excalidraw 包，支持主题切换和 onChange 回调
  *
+ * 关键：必须使用固定像素尺寸，不能使用百分比，否则 Excalidraw 内部会计算出错误的尺寸
+ *
  * @requirements 5.2
  */
 
@@ -176,8 +178,12 @@ export const ExcalidrawEditorView = memo(
 			<div
 				className="excalidraw-wrapper"
 				style={{
-					width: containerSize.width,
-					height: containerSize.height,
+					// 必须使用固定像素尺寸！不能使用百分比！
+					// 否则 Excalidraw 内部会计算出错误的尺寸（如 14548px）
+					width: `${containerSize.width}px`,
+					height: `${containerSize.height}px`,
+					position: "relative",
+					overflow: "hidden",
 				}}
 			>
 				<ExcalidrawErrorBoundary fallback={<ErrorFallback />} onError={handleError}>
