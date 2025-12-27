@@ -50,6 +50,7 @@ const {
 	mockSetActivePanel,
 	mockToggleSidebar,
 	mockOpenTab,
+	mockUpdateEditorState,
 } = vi.hoisted(() => ({
 	mockNavigate: vi.fn(),
 	mockConfirm: vi.fn(),
@@ -65,6 +66,7 @@ const {
 	mockSetActivePanel: vi.fn(),
 	mockToggleSidebar: vi.fn(),
 	mockOpenTab: vi.fn(),
+	mockUpdateEditorState: vi.fn(),
 }));
 
 const mockLocation = { pathname: "/" };
@@ -150,6 +152,7 @@ vi.mock("@/stores/editor-tabs.store", () => ({
 	useEditorTabsStore: (selector: (state: any) => any) => {
 		const state = {
 			openTab: mockOpenTab,
+			updateEditorState: mockUpdateEditorState,
 		};
 		return selector ? selector(state) : state;
 	},
@@ -475,7 +478,7 @@ describe("ActivityBarContainer", () => {
 			mockCreateDiaryCompatAsync.mockResolvedValue({
 				node: { id: "diary-1", title: "Diary 2024-12-27", type: "diary" },
 				content: "{}",
-				parsedContent: {},
+				parsedContent: { root: { children: [] } },
 			});
 
 			const { toast } = await import("sonner");
@@ -494,6 +497,51 @@ describe("ActivityBarContainer", () => {
 
 			await waitFor(() => {
 				expect(toast.success).toHaveBeenCalledWith("Diary created");
+			});
+		});
+
+		/**
+		 * 测试 Diary 创建后预加载编辑器内容
+		 * **Validates: Requirements 1.2, 3.1**
+		 */
+		it("should preload editor content after diary creation", async () => {
+			renderWithSelectedWorkspace("ws-1");
+
+			const parsedContent = { root: { children: [] } };
+			mockCreateDiaryCompatAsync.mockResolvedValue({
+				node: { id: "diary-1", title: "Diary 2024-12-27", type: "diary" },
+				content: "{}",
+				parsedContent,
+			});
+
+			const diaryButton = screen.getByText("Create Diary");
+			diaryButton.click();
+
+			await waitFor(() => {
+				expect(mockUpdateEditorState).toHaveBeenCalledWith("diary-1", {
+					serializedState: parsedContent,
+				});
+			});
+		});
+
+		/**
+		 * 测试 Diary 创建后选中文件树中的新文件
+		 * **Validates: Requirements 1.3**
+		 */
+		it("should select new file in file tree after diary creation", async () => {
+			renderWithSelectedWorkspace("ws-1");
+
+			mockCreateDiaryCompatAsync.mockResolvedValue({
+				node: { id: "diary-1", title: "Diary 2024-12-27", type: "diary" },
+				content: "{}",
+				parsedContent: {},
+			});
+
+			const diaryButton = screen.getByText("Create Diary");
+			diaryButton.click();
+
+			await waitFor(() => {
+				expect(mockSetSelectedNodeId).toHaveBeenCalledWith("diary-1");
 			});
 		});
 
@@ -556,7 +604,8 @@ describe("ActivityBarContainer", () => {
 
 			await waitFor(() => {
 				expect(mockOpenTab).toHaveBeenCalledWith({
-					id: "ledger-1",
+					workspaceId: "ws-1",
+					nodeId: "ledger-1",
 					title: "Ledger",
 					type: "ledger",
 				});

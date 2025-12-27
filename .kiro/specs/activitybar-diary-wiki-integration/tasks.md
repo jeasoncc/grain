@@ -25,7 +25,7 @@
     - 调用 `openTab` 打开新创建的文件
     - 显示成功/失败 toast
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
-  - [-] 2.2 添加 Diary 创建单元测试
+  - [x] 2.2 添加 Diary 创建单元测试
     - 测试 `handleCreateDiary` 调用正确的函数
     - 测试成功后调用 `openTab`
     - 测试错误处理

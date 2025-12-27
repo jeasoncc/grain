@@ -8,6 +8,7 @@
 
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import * as E from "fp-ts/Either";
+import type { SerializedEditorState } from "lexical";
 import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -166,6 +167,7 @@ export function ActivityBarContainer(): React.ReactElement {
 	);
 
 	const openTab = useEditorTabsStore((s) => s.openTab);
+	const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
 
 	const handleCreateDiary = useCallback(async () => {
 		if (!selectedWorkspaceId) {
@@ -177,6 +179,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				workspaceId: selectedWorkspaceId,
 				date: new Date(),
 			});
+
 			// 打开新创建的日记文件
 			openTab({
 				workspaceId: selectedWorkspaceId,
@@ -184,12 +187,27 @@ export function ActivityBarContainer(): React.ReactElement {
 				title: result.node.title,
 				type: result.node.type,
 			});
+
+			// 预加载内容到编辑器状态，确保编辑器能正确显示模板内容
+			// 使用 nodeId 作为 tabId（与 openTab 内部逻辑一致）
+			updateEditorState(result.node.id, {
+				serializedState: result.parsedContent as SerializedEditorState,
+			});
+
+			// 在文件树中选中新创建的文件
+			setSelectedNodeId(result.node.id);
+
+			// 导航到主页面（如果当前不在主页面）
+			if (location.pathname !== "/") {
+				navigate({ to: "/" });
+			}
+
 			toast.success("Diary created");
 		} catch (error) {
 			console.error("Failed to create diary:", error);
 			toast.error("Failed to create diary");
 		}
-	}, [selectedWorkspaceId, openTab]);
+	}, [selectedWorkspaceId, openTab, updateEditorState, setSelectedNodeId, navigate, location.pathname]);
 
 	const handleCreateWiki = useCallback(async () => {
 		if (!selectedWorkspaceId) {
@@ -210,6 +228,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				workspaceId: selectedWorkspaceId,
 				date: new Date(),
 			});
+
 			// 打开新创建的记账文件
 			openTab({
 				workspaceId: selectedWorkspaceId,
@@ -217,12 +236,26 @@ export function ActivityBarContainer(): React.ReactElement {
 				title: result.node.title,
 				type: result.node.type,
 			});
+
+			// 预加载内容到编辑器状态，确保编辑器能正确显示模板内容
+			updateEditorState(result.node.id, {
+				serializedState: result.parsedContent as SerializedEditorState,
+			});
+
+			// 在文件树中选中新创建的文件
+			setSelectedNodeId(result.node.id);
+
+			// 导航到主页面（如果当前不在主页面）
+			if (location.pathname !== "/") {
+				navigate({ to: "/" });
+			}
+
 			toast.success("Ledger created");
 		} catch (error) {
 			console.error("Failed to create ledger:", error);
 			toast.error("Failed to create ledger");
 		}
-	}, [selectedWorkspaceId, openTab]);
+	}, [selectedWorkspaceId, openTab, updateEditorState, setSelectedNodeId, navigate, location.pathname]);
 
 	const handleImportFile = useCallback(async (_file: File) => {
 		try {
