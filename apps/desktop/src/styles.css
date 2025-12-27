@@ -1174,15 +1174,16 @@ hr,
    参考: https://github.com/excalidraw/excalidraw/issues/2991
    ======================================== */
 
-/* Excalidraw wrapper - 必须设置固定像素尺寸 */
+/* Excalidraw wrapper - 使用 transform 创建新的包含块来捕获 fixed 定位 */
 .excalidraw-wrapper {
   position: relative;
   overflow: hidden;
+  /* 关键：transform 会创建新的包含块，使 fixed 定位相对于此容器 */
+  transform: translate(0, 0);
 }
 
-/* 关键修复：将 Excalidraw 的定位改为 static，防止 fixed 定位逃逸 */
+/* Excalidraw 占满容器 */
 .excalidraw-wrapper .excalidraw {
-  position: static !important;
   width: 100% !important;
   height: 100% !important;
 }
