@@ -268,7 +268,7 @@ export const StoryWorkspaceContainer = memo(
 
 			if (isCanvasTab) {
 				return (
-					<div className="flex-1 relative overflow-hidden">
+					<div className="flex-1 relative overflow-hidden min-h-0">
 						<ExcalidrawEditorContainer
 							key={activeTab.id}
 							nodeId={activeTab.nodeId || ""}
@@ -281,7 +281,7 @@ export const StoryWorkspaceContainer = memo(
 			// 处理 drawing 类型节点 - 使用 ExcalidrawEditorContainer
 			if (activeTab.type === "drawing") {
 				return (
-					<div className="flex-1 relative overflow-hidden">
+					<div className="flex-1 relative overflow-hidden min-h-0">
 						<ExcalidrawEditorContainer
 							key={activeTab.id}
 							nodeId={activeTab.nodeId || ""}
@@ -351,7 +351,7 @@ export const StoryWorkspaceContainer = memo(
 						</div>
 
 						{/* 编辑器区域 */}
-						<div className="flex flex-1 flex-col overflow-hidden">
+						<div className="flex flex-1 flex-col overflow-hidden min-h-0">
 							{tabPosition === "top" && tabs.length > 0 && (
 								<EditorTabs workspaceId={selectedWorkspaceId} />
 							)}
