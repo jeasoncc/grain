@@ -12,6 +12,8 @@
  * @requirements 5.2
  */
 
+import "@excalidraw/excalidraw/index.css";
+
 import {
 	Component,
 	type ErrorInfo,
