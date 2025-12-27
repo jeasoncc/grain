@@ -173,13 +173,12 @@ export const ExcalidrawEditorView = memo(
 
 		return (
 			<div
-				className={cn("h-full w-full", className)}
+				className={cn("relative", className)}
 				style={{
-					position: "relative",
+					// 使用固定尺寸而不是 100%
+					width: "800px",
+					height: "600px",
 					overflow: "hidden",
-					// 使用固定的最小尺寸
-					minWidth: "400px",
-					minHeight: "400px",
 				}}
 			>
 				<ExcalidrawErrorBoundary fallback={<ErrorFallback />}>
