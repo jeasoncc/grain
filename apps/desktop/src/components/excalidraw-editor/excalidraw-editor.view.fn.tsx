@@ -5,16 +5,23 @@
  * 集成 @excalidraw/excalidraw 包，支持主题切换和 onChange 回调
  *
  * 修复 Canvas exceeds max size 错误：
- * - 强制设置安全的初始 appState（scrollX=0, scrollY=0, zoom=1）
- * - 限制 devicePixelRatio 为最大 1（最保守的方案）
- * - 使用固定像素尺寸的容器
+ * - 使用 excalidrawAPI 在挂载后重置视图
+ * - 延迟渲染直到容器有有效尺寸
  *
  * @requirements 5.2
  */
 
 import { Excalidraw } from "@excalidraw/excalidraw";
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import {
+	memo,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { cn } from "@/lib/utils";
+import logger from "@/log";
 import type { ExcalidrawEditorViewProps } from "./excalidraw-editor.types";
 
 /** 元素坐标和尺寸的安全限制 */
@@ -28,8 +35,7 @@ const MAX_SIZE = 5000;
 // biome-ignore lint/suspicious/noExplicitAny: Excalidraw 类型复杂
 function createSafeAppState(appState: any): Record<string, unknown> {
 	return {
-		viewBackgroundColor:
-			appState?.viewBackgroundColor || "#ffffff",
+		viewBackgroundColor: appState?.viewBackgroundColor || "#ffffff",
 		// 强制重置这些值，防止异常
 		scrollX: 0,
 		scrollY: 0,
@@ -94,27 +100,43 @@ export const ExcalidrawEditorView = memo(
 		className,
 	}: ExcalidrawEditorViewProps) => {
 		const containerRef = useRef<HTMLDivElement>(null);
-		const originalDPRRef = useRef<number | null>(null);
+		// biome-ignore lint/suspicious/noExplicitAny: Excalidraw API 类型复杂
+		const excalidrawAPIRef = useRef<any>(null);
+		const [containerReady, setContainerReady] = useState(false);
+		const [dimensions, setDimensions] = useState<{
+			width: number;
+			height: number;
+		} | null>(null);
 
-		// 在组件挂载时强制限制 devicePixelRatio 为 1
+		// 等待容器有有效尺寸后再渲染
 		useEffect(() => {
-			// 保存原始值
-			originalDPRRef.current = window.devicePixelRatio;
+			const container = containerRef.current;
+			if (!container) return;
 
-			// 强制设置为 1，这是最保守的方案
-			Object.defineProperty(window, "devicePixelRatio", {
-				get: () => 1,
-				configurable: true,
+			const checkSize = () => {
+				const rect = container.getBoundingClientRect();
+				logger.debug("[ExcalidrawView] 容器尺寸:", rect.width, "x", rect.height);
+
+				if (rect.width > 100 && rect.height > 100) {
+					// 限制最大尺寸为 2000px，确保安全
+					const safeWidth = Math.min(rect.width, 2000);
+					const safeHeight = Math.min(rect.height, 2000);
+					setDimensions({ width: safeWidth, height: safeHeight });
+					setContainerReady(true);
+				}
+			};
+
+			// 延迟检查，确保布局完成
+			const timer = setTimeout(checkSize, 200);
+
+			const resizeObserver = new ResizeObserver(() => {
+				checkSize();
 			});
+			resizeObserver.observe(container);
 
 			return () => {
-				// 恢复原始值
-				if (originalDPRRef.current !== null) {
-					Object.defineProperty(window, "devicePixelRatio", {
-						get: () => originalDPRRef.current,
-						configurable: true,
-					});
-				}
+				clearTimeout(timer);
+				resizeObserver.disconnect();
 			};
 		}, []);
 
@@ -126,6 +148,25 @@ export const ExcalidrawEditorView = memo(
 			},
 			[onChange],
 		);
+
+		// 处理 Excalidraw API
+		// biome-ignore lint/suspicious/noExplicitAny: Excalidraw API 类型复杂
+		const handleExcalidrawAPI = useCallback((api: any) => {
+			excalidrawAPIRef.current = api;
+			logger.debug("[ExcalidrawView] API 已获取");
+
+			// 在 API 可用后，尝试重置视图到安全状态
+			if (api) {
+				try {
+					api.scrollToContent(undefined, {
+						fitToContent: true,
+						animate: false,
+					});
+				} catch (e) {
+					logger.warn("[ExcalidrawView] scrollToContent 失败:", e);
+				}
+			}
+		}, []);
 
 		// 清理并转换为 Excalidraw 期望的格式
 		// biome-ignore lint/suspicious/noExplicitAny: Excalidraw 类型复杂
@@ -150,24 +191,39 @@ export const ExcalidrawEditorView = memo(
 				ref={containerRef}
 				className={cn("h-full w-full", className)}
 				style={{
-					// 确保容器不会超出视口
-					maxWidth: "100vw",
-					maxHeight: "100vh",
+					position: "relative",
 					overflow: "hidden",
 				}}
 			>
-				<Excalidraw
-					initialData={excalidrawInitialData}
-					theme={theme}
-					viewModeEnabled={viewModeEnabled}
-					onChange={handleChange}
-					UIOptions={{
-						canvasActions: {
-							loadScene: false,
-							saveToActiveFile: false,
-						},
-					}}
-				/>
+				{containerReady && dimensions ? (
+					<div
+						style={{
+							width: dimensions.width,
+							height: dimensions.height,
+							position: "absolute",
+							top: 0,
+							left: 0,
+						}}
+					>
+						<Excalidraw
+							excalidrawAPI={handleExcalidrawAPI}
+							initialData={excalidrawInitialData}
+							theme={theme}
+							viewModeEnabled={viewModeEnabled}
+							onChange={handleChange}
+							UIOptions={{
+								canvasActions: {
+									loadScene: false,
+									saveToActiveFile: false,
+								},
+							}}
+						/>
+					</div>
+				) : (
+					<div className="flex items-center justify-center h-full text-muted-foreground">
+						<span>Initializing canvas...</span>
+					</div>
+				)}
 			</div>
 		);
 	},
