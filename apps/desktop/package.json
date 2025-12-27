@@ -30,7 +30,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@excalidraw/excalidraw": "0.17.6",
+    "@excalidraw/excalidraw": "0.18.0",
     "@grain/editor": "workspace:*",
     "@lexical/code": "^0.38.2",
     "@lexical/file": "^0.38.2",

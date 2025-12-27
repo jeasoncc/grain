@@ -1169,27 +1169,12 @@ hr,
 
 
 /* ========================================
-   Excalidraw Canvas Size Fix
-   Fix for "Canvas exceeds max size" error and position issues
-   参考: https://github.com/excalidraw/excalidraw/issues/2991
+   Excalidraw 容器样式
+   Excalidraw 0.18.0+ 已有官方 CSS，这里只需要设置容器
    ======================================== */
 
-/* Excalidraw wrapper - 使用 transform 创建新的包含块来捕获 fixed 定位 */
+/* Excalidraw 容器 - 确保有明确的尺寸 */
 .excalidraw-wrapper {
   position: relative;
   overflow: hidden;
-  /* 关键：transform 会创建新的包含块，使 fixed 定位相对于此容器 */
-  transform: translate(0, 0);
-}
-
-/* Excalidraw 占满容器 */
-.excalidraw-wrapper .excalidraw {
-  width: 100% !important;
-  height: 100% !important;
-}
-
-/* Fix the shapes-section overflow issue */
-.excalidraw-wrapper .shapes-section {
-  max-height: 300px !important;
-  overflow-y: auto !important;
 }

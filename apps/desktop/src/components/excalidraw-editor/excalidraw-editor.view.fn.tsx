@@ -7,6 +7,9 @@
  * @requirements 5.2
  */
 
+// 必须导入 Excalidraw CSS（0.18.0+ 版本）
+import "@excalidraw/excalidraw/index.css";
+
 import { Excalidraw } from "@excalidraw/excalidraw";
 import { memo, useCallback } from "react";
 import type { ExcalidrawEditorViewProps } from "./excalidraw-editor.types";
@@ -50,7 +53,6 @@ export const ExcalidrawEditorView = memo(
 
 		return (
 			<div
-				className="excalidraw-wrapper"
 				style={{
 					width: `${containerSize.width}px`,
 					height: `${containerSize.height}px`,
