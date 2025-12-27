@@ -36,6 +36,8 @@ export interface IconThemeIcons {
 		files: LucideIcon;
 		diary: LucideIcon;
 		ledger: LucideIcon;
+		todo: LucideIcon;
+		note: LucideIcon;
 		tags: LucideIcon;
 		statistics: LucideIcon;
 		settings: LucideIcon;

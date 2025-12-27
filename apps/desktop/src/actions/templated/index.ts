@@ -53,6 +53,36 @@ export {
 } from "./create-wiki.action";
 
 // ==============================
+// Todo 创建
+// ==============================
+
+export {
+	adaptTodoParams,
+	type CreateTodoParams,
+	createTodo,
+	createTodoAsync,
+	createTodoCompat,
+	createTodoCompatAsync,
+	type TodoCreationResult,
+	type TodoTemplateParams,
+} from "./create-todo.action";
+
+// ==============================
+// Note 创建
+// ==============================
+
+export {
+	adaptNoteParams,
+	type CreateNoteParams,
+	createNote,
+	createNoteAsync,
+	createNoteCompat,
+	createNoteCompatAsync,
+	type NoteCreationResult,
+	type NoteTemplateParams,
+} from "./create-note.action";
+
+// ==============================
 // 记账创建
 // ==============================
 
@@ -100,8 +130,16 @@ export {
 	// Ledger config
 	ledgerConfig,
 	ledgerParamsSchema,
+	// Note config
+	type NoteTemplateParams,
+	noteConfig,
+	noteParamsSchema,
 	type TemplateType,
 	templateConfigs,
+	// Todo config
+	type TodoTemplateParams,
+	todoConfig,
+	todoParamsSchema,
 	// Wiki config
 	wikiConfig,
 	wikiParamsSchema,

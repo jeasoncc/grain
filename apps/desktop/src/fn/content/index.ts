@@ -40,6 +40,7 @@ export {
 	generateContentByType,
 	generateDiaryContent,
 	generateLedgerContent,
+	generateNoteContent,
 	generateTodoContent,
 	generateWikiContent,
 	type LexicalDocument,

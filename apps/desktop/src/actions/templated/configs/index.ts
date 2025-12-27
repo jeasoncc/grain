@@ -41,6 +41,26 @@ export {
 } from "./ledger.config";
 
 // ==============================
+// Todo Configuration
+// ==============================
+
+export {
+	type TodoTemplateParams,
+	todoConfig,
+	todoParamsSchema,
+} from "./todo.config";
+
+// ==============================
+// Note Configuration
+// ==============================
+
+export {
+	type NoteTemplateParams,
+	noteConfig,
+	noteParamsSchema,
+} from "./note.config";
+
+// ==============================
 // Excalidraw Configuration
 // ==============================
 
@@ -61,6 +81,8 @@ export const templateConfigs = {
 	diary: () => import("./diary.config").then((m) => m.diaryConfig),
 	wiki: () => import("./wiki.config").then((m) => m.wikiConfig),
 	ledger: () => import("./ledger.config").then((m) => m.ledgerConfig),
+	todo: () => import("./todo.config").then((m) => m.todoConfig),
+	note: () => import("./note.config").then((m) => m.noteConfig),
 	excalidraw: () =>
 		import("./excalidraw.config").then((m) => m.excalidrawConfig),
 } as const;

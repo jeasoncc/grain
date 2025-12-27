@@ -14,6 +14,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { createDiaryCompatAsync } from "@/actions/templated/create-diary.action";
 import { createLedgerCompatAsync } from "@/actions/templated/create-ledger.action";
+import { createNoteCompatAsync } from "@/actions/templated/create-note.action";
+import { createTodoCompatAsync } from "@/actions/templated/create-todo.action";
 import { createWikiCompatAsync } from "@/actions/templated/create-wiki.action";
 import { ExportDialog } from "@/components/export-dialog";
 import { useConfirm } from "@/components/ui/confirm";
@@ -288,6 +290,84 @@ export function ActivityBarContainer(): React.ReactElement {
 		}
 	}, [selectedWorkspaceId, openTab, updateEditorState, setSelectedNodeId, navigate, location.pathname]);
 
+	const handleCreateTodo = useCallback(async () => {
+		if (!selectedWorkspaceId) {
+			toast.error("Please select a workspace first");
+			return;
+		}
+		try {
+			const result = await createTodoCompatAsync({
+				workspaceId: selectedWorkspaceId,
+				date: new Date(),
+			});
+
+			// 打开新创建的 Todo 文件
+			openTab({
+				workspaceId: selectedWorkspaceId,
+				nodeId: result.node.id,
+				title: result.node.title,
+				type: result.node.type,
+			});
+
+			// 预加载内容到编辑器状态
+			updateEditorState(result.node.id, {
+				serializedState: result.parsedContent as SerializedEditorState,
+			});
+
+			// 在文件树中选中新创建的文件
+			setSelectedNodeId(result.node.id);
+
+			// 导航到主页面（如果当前不在主页面）
+			if (location.pathname !== "/") {
+				navigate({ to: "/" });
+			}
+
+			toast.success("Todo created");
+		} catch (error) {
+			console.error("Failed to create todo:", error);
+			toast.error("Failed to create todo");
+		}
+	}, [selectedWorkspaceId, openTab, updateEditorState, setSelectedNodeId, navigate, location.pathname]);
+
+	const handleCreateNote = useCallback(async () => {
+		if (!selectedWorkspaceId) {
+			toast.error("Please select a workspace first");
+			return;
+		}
+		try {
+			const result = await createNoteCompatAsync({
+				workspaceId: selectedWorkspaceId,
+				date: new Date(),
+			});
+
+			// 打开新创建的 Note 文件
+			openTab({
+				workspaceId: selectedWorkspaceId,
+				nodeId: result.node.id,
+				title: result.node.title,
+				type: result.node.type,
+			});
+
+			// 预加载内容到编辑器状态
+			updateEditorState(result.node.id, {
+				serializedState: result.parsedContent as SerializedEditorState,
+			});
+
+			// 在文件树中选中新创建的文件
+			setSelectedNodeId(result.node.id);
+
+			// 导航到主页面（如果当前不在主页面）
+			if (location.pathname !== "/") {
+				navigate({ to: "/" });
+			}
+
+			toast.success("Note created");
+		} catch (error) {
+			console.error("Failed to create note:", error);
+			toast.error("Failed to create note");
+		}
+	}, [selectedWorkspaceId, openTab, updateEditorState, setSelectedNodeId, navigate, location.pathname]);
+
 	const handleImportFile = useCallback(async (_file: File) => {
 		try {
 			// TODO: 使用新架构实现导入
@@ -349,6 +429,8 @@ export function ActivityBarContainer(): React.ReactElement {
 				onCreateDiary={handleCreateDiary}
 				onCreateWiki={handleCreateWiki}
 				onCreateLedger={handleCreateLedger}
+				onCreateTodo={handleCreateTodo}
+				onCreateNote={handleCreateNote}
 				onImportFile={handleImportFile}
 				onOpenExportDialog={handleOpenExportDialog}
 				onDeleteAllData={handleDeleteAllData}

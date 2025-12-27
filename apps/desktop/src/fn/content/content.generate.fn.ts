@@ -507,6 +507,51 @@ export function generateLedgerContent(
 }
 
 /**
+ * 生成笔记内容
+ *
+ * @param date - 日期
+ * @param options - 生成选项
+ * @returns Lexical JSON 字符串
+ */
+export function generateNoteContent(
+	date: Date = new Date(),
+	options: ContentGenerationOptions = {},
+): string {
+	const {
+		tags = ["note"],
+		headingLevel = "h2",
+		includeEmptyLines = true,
+		customTitle,
+	} = options;
+
+	const title = customTitle || `Note - ${formatShortDate(date)}`;
+	const children: LexicalRootChild[] = [];
+
+	// 添加标签行
+	if (tags.length > 0) {
+		children.push(createTagsLine(tags));
+	}
+
+	// 添加空行
+	if (includeEmptyLines) {
+		children.push(createParagraphNode());
+	}
+
+	// 添加标题
+	children.push(createHeadingNode(title, headingLevel));
+
+	// 添加空行
+	if (includeEmptyLines) {
+		children.push(createParagraphNode());
+	}
+
+	// 添加空段落供用户输入
+	children.push(createParagraphNode([createTextNode("")]));
+
+	return JSON.stringify(createDocument(children));
+}
+
+/**
  * 生成 Wiki 内容
  *
  * @param date - 日期
