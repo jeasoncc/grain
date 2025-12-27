@@ -1173,19 +1173,19 @@ hr,
    Fix for "Canvas exceeds max size" error
    ======================================== */
 
-/* Excalidraw wrapper - must have fixed pixel dimensions set via inline style */
+/* Excalidraw wrapper - 必须设置固定像素尺寸 */
 .excalidraw-wrapper {
   position: relative;
   overflow: hidden;
 }
 
-/* Force Excalidraw to respect container bounds - 只设置基本约束 */
-.excalidraw-wrapper > .excalidraw {
+/* Excalidraw 占满容器 */
+.excalidraw-wrapper .excalidraw {
   width: 100% !important;
   height: 100% !important;
 }
 
-/* Fix the shapes-section overflow issue - 这是导致 14548px 高度的根源 */
+/* Fix the shapes-section overflow issue */
 .excalidraw-wrapper .shapes-section {
   max-height: 300px !important;
   overflow-y: auto !important;

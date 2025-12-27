@@ -4,133 +4,12 @@
  * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  * 集成 @excalidraw/excalidraw 包，支持主题切换和 onChange 回调
  *
- * 关键修复：
- * 1. 必须使用固定像素尺寸，不能使用百分比
- * 2. 使用 key 强制在尺寸变化时重新挂载组件
- * 3. 限制 canvas 的最大尺寸防止溢出
- *
  * @requirements 5.2
  */
 
-import "@excalidraw/excalidraw/index.css";
-
-import {
-	Component,
-	type ErrorInfo,
-	type ReactNode,
-	Suspense,
-	lazy,
-	memo,
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
-import logger from "@/log";
+import { Excalidraw } from "@excalidraw/excalidraw";
+import { memo, useCallback } from "react";
 import type { ExcalidrawEditorViewProps } from "./excalidraw-editor.types";
-
-// 动态导入 Excalidraw
-const Excalidraw = lazy(() =>
-	import("@excalidraw/excalidraw").then((mod) => ({
-		default: mod.Excalidraw,
-	})),
-);
-
-/** 元素坐标和尺寸的安全限制 */
-const MAX_COORD = 10000;
-const MAX_SIZE = 5000;
-
-/** Canvas 最大尺寸限制（防止浏览器崩溃） */
-const MAX_CANVAS_SIZE = 4096;
-
-/** 错误边界 Props */
-interface ErrorBoundaryProps {
-	children: ReactNode;
-	fallback: ReactNode;
-	onError?: (error: Error) => void;
-}
-
-/** 错误边界 State */
-interface ErrorBoundaryState {
-	hasError: boolean;
-	error: Error | null;
-}
-
-/** Excalidraw 专用错误边界 */
-class ExcalidrawErrorBoundary extends Component<
-	ErrorBoundaryProps,
-	ErrorBoundaryState
-> {
-	constructor(props: ErrorBoundaryProps) {
-		super(props);
-		this.state = { hasError: false, error: null };
-	}
-
-	static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-		return { hasError: true, error };
-	}
-
-	componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-		logger.error("[ExcalidrawView] 渲染错误:", error, errorInfo);
-		this.props.onError?.(error);
-	}
-
-	render() {
-		if (this.state.hasError) {
-			return this.props.fallback;
-		}
-		return this.props.children;
-	}
-}
-
-/**
- * 清理 elements
- */
-// biome-ignore lint/suspicious/noExplicitAny: Excalidraw 类型复杂
-function sanitizeElements(elements: any[]): any[] {
-	if (!Array.isArray(elements)) return [];
-
-	return elements
-		.filter((el) => {
-			if (!el || typeof el !== "object") return false;
-			const x = el.x ?? 0;
-			const y = el.y ?? 0;
-			const width = el.width ?? 0;
-			const height = el.height ?? 0;
-			if (!Number.isFinite(x) || Math.abs(x) > MAX_COORD) return false;
-			if (!Number.isFinite(y) || Math.abs(y) > MAX_COORD) return false;
-			if (!Number.isFinite(width) || width < 0 || width > MAX_SIZE) return false;
-			if (!Number.isFinite(height) || height < 0 || height > MAX_SIZE)
-				return false;
-			return true;
-		})
-		.map((el) => ({
-			...el,
-			x: Math.max(-MAX_COORD, Math.min(MAX_COORD, el.x ?? 0)),
-			y: Math.max(-MAX_COORD, Math.min(MAX_COORD, el.y ?? 0)),
-			width: Math.min(MAX_SIZE, Math.max(0, el.width ?? 0)),
-			height: Math.min(MAX_SIZE, Math.max(0, el.height ?? 0)),
-		}));
-}
-
-/** 错误回退 UI */
-const ErrorFallback = memo(() => (
-	<div className="flex flex-col items-center justify-center h-full bg-muted/30 rounded-lg p-4 gap-3">
-		<span className="text-sm text-muted-foreground text-center">
-			Drawing canvas failed to load. Please try refreshing the page.
-		</span>
-	</div>
-));
-ErrorFallback.displayName = "ErrorFallback";
-
-/** 加载中 UI */
-const LoadingFallback = memo(() => (
-	<div className="flex items-center justify-center h-full text-muted-foreground">
-		<span>Loading canvas...</span>
-	</div>
-));
-LoadingFallback.displayName = "LoadingFallback";
 
 export const ExcalidrawEditorView = memo(
 	({
@@ -140,26 +19,16 @@ export const ExcalidrawEditorView = memo(
 		viewModeEnabled = false,
 		containerSize,
 	}: ExcalidrawEditorViewProps) => {
-		// biome-ignore lint/suspicious/noExplicitAny: Excalidraw API 类型
-		const excalidrawAPIRef = useRef<any>(null);
-		const wrapperRef = useRef<HTMLDivElement>(null);
-		const [isReady, setIsReady] = useState(false);
+		// 如果没有初始数据，显示加载状态
+		if (!initialData) {
+			return (
+				<div className="flex items-center justify-center h-full text-muted-foreground">
+					<span>Loading...</span>
+				</div>
+			);
+		}
 
-		// 计算安全的 canvas 尺寸（限制最大值防止溢出）
-		const safeSize = useMemo(() => ({
-			width: Math.min(containerSize.width, MAX_CANVAS_SIZE),
-			height: Math.min(containerSize.height, MAX_CANVAS_SIZE),
-		}), [containerSize.width, containerSize.height]);
-
-		// 延迟渲染 Excalidraw，确保 DOM 已经稳定
-		useEffect(() => {
-			const timer = setTimeout(() => {
-				setIsReady(true);
-			}, 100);
-			return () => clearTimeout(timer);
-		}, []);
-
-		// 包装 onChange 回调
+		// 包装 onChange 回调以适配 Excalidraw 的类型
 		const handleChange = useCallback(
 			// biome-ignore lint/suspicious/noExplicitAny: Excalidraw 类型复杂
 			(elements: readonly any[], appState: any, files: any) => {
@@ -168,78 +37,37 @@ export const ExcalidrawEditorView = memo(
 			[onChange],
 		);
 
-		// 清理初始数据
+		// 转换为 Excalidraw 期望的格式
 		// biome-ignore lint/suspicious/noExplicitAny: Excalidraw 类型复杂
-		const excalidrawInitialData: any = useMemo(() => {
-			const safeAppState = {
-				viewBackgroundColor: theme === "dark" ? "#1e1e1e" : "#ffffff",
-				scrollX: 0,
-				scrollY: 0,
-				zoom: { value: 1 },
-				// 关键：设置 canvas 的宽高限制
-				width: safeSize.width,
-				height: safeSize.height,
-			};
-
-			if (!initialData) {
-				return {
-					elements: [],
-					appState: safeAppState,
-				};
-			}
-
-			return {
-				elements: sanitizeElements([...(initialData.elements || [])]),
-				appState: {
-					...safeAppState,
-					viewBackgroundColor: initialData.appState?.viewBackgroundColor || safeAppState.viewBackgroundColor,
-				},
-				files: initialData.files || {},
-			};
-		}, [initialData, theme, safeSize.width, safeSize.height]);
-
-		// 处理错误
-		const handleError = useCallback((error: Error) => {
-			logger.error("[ExcalidrawView] 捕获错误:", error.message);
-		}, []);
-
-		// 如果尺寸太小，显示提示
-		if (safeSize.width < 200 || safeSize.height < 200) {
-			return (
-				<div className="flex items-center justify-center h-full text-muted-foreground">
-					<span>Container too small for canvas</span>
-				</div>
-			);
-		}
+		const excalidrawInitialData: any = {
+			elements: initialData.elements || [],
+			appState: {
+				...initialData.appState,
+				viewBackgroundColor: initialData.appState?.viewBackgroundColor || (theme === "dark" ? "#1e1e1e" : "#ffffff"),
+			},
+			files: initialData.files || {},
+		};
 
 		return (
 			<div
-				ref={wrapperRef}
 				className="excalidraw-wrapper"
 				style={{
-					// 必须使用固定像素尺寸！
-					width: `${safeSize.width}px`,
-					height: `${safeSize.height}px`,
-					position: "relative",
-					overflow: "hidden",
+					width: `${containerSize.width}px`,
+					height: `${containerSize.height}px`,
 				}}
 			>
-				<ExcalidrawErrorBoundary fallback={<ErrorFallback />} onError={handleError}>
-					<Suspense fallback={<LoadingFallback />}>
-						{isReady && (
-							<Excalidraw
-								key={`excalidraw-${safeSize.width}-${safeSize.height}`}
-								excalidrawAPI={(api) => {
-									excalidrawAPIRef.current = api;
-								}}
-								initialData={excalidrawInitialData}
-								theme={theme}
-								viewModeEnabled={viewModeEnabled}
-								onChange={handleChange}
-							/>
-						)}
-					</Suspense>
-				</ExcalidrawErrorBoundary>
+				<Excalidraw
+					initialData={excalidrawInitialData}
+					theme={theme}
+					viewModeEnabled={viewModeEnabled}
+					onChange={handleChange}
+					UIOptions={{
+						canvasActions: {
+							loadScene: false,
+							saveToActiveFile: false,
+						},
+					}}
+				/>
 			</div>
 		);
 	},
