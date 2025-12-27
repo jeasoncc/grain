@@ -204,9 +204,7 @@ describe("Wiki Resolution Functions", () => {
 		});
 
 		it("应该处理数据库查询失败", async () => {
-			nodesMock.toArray.mockRejectedValue(
-				new Error("查询失败"),
-			);
+			nodesMock.toArray.mockRejectedValue(new Error("查询失败"));
 
 			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)();
 

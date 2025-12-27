@@ -2,8 +2,7 @@
  * Export Dialog View 组件测试
  */
 
-import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 import {
 	BookOpen,
 	File,
@@ -13,8 +12,12 @@ import {
 	FileText,
 	FileType,
 } from "lucide-react";
+import { describe, expect, it, vi } from "vitest";
+import type {
+	ExportDialogViewProps,
+	ExtendedExportFormat,
+} from "./export-dialog.types";
 import { ExportDialogView } from "./export-dialog.view.fn";
-import type { ExportDialogViewProps, ExtendedExportFormat } from "./export-dialog.types";
 
 describe("ExportDialogView", () => {
 	const formatLabels: Record<ExtendedExportFormat, string> = {
@@ -79,13 +82,15 @@ describe("ExportDialogView", () => {
 
 	it("should call onFormatChange when format is selected", () => {
 		const onFormatChange = vi.fn();
-		render(<ExportDialogView {...defaultProps} onFormatChange={onFormatChange} />);
-		
+		render(
+			<ExportDialogView {...defaultProps} onFormatChange={onFormatChange} />,
+		);
+
 		const docxLabel = screen.getByText("Word").closest("label");
 		if (docxLabel) {
 			fireEvent.click(docxLabel);
 		}
-		
+
 		expect(onFormatChange).toHaveBeenCalled();
 	});
 
@@ -110,30 +115,34 @@ describe("ExportDialogView", () => {
 
 	it("should call onOptionsChange when option is toggled", () => {
 		const onOptionsChange = vi.fn();
-		render(<ExportDialogView {...defaultProps} onOptionsChange={onOptionsChange} />);
-		
-		const titleSwitch = screen.getByRole("switch", { name: /include book title/i });
+		render(
+			<ExportDialogView {...defaultProps} onOptionsChange={onOptionsChange} />,
+		);
+
+		const titleSwitch = screen.getByRole("switch", {
+			name: /include book title/i,
+		});
 		fireEvent.click(titleSwitch);
-		
+
 		expect(onOptionsChange).toHaveBeenCalled();
 	});
 
 	it("should call onExport when export button is clicked", () => {
 		const onExport = vi.fn();
 		render(<ExportDialogView {...defaultProps} onExport={onExport} />);
-		
+
 		const exportButton = screen.getByRole("button", { name: /export pdf/i });
 		fireEvent.click(exportButton);
-		
+
 		expect(onExport).toHaveBeenCalled();
 	});
 
 	it("should disable buttons when exporting", () => {
 		render(<ExportDialogView {...defaultProps} isExporting={true} />);
-		
+
 		const exportButton = screen.getByRole("button", { name: /exporting/i });
 		const cancelButton = screen.getByRole("button", { name: /cancel/i });
-		
+
 		expect(exportButton).toBeDisabled();
 		expect(cancelButton).toBeDisabled();
 	});
@@ -146,20 +155,24 @@ describe("ExportDialogView", () => {
 	it("should call onOpenChange when cancel is clicked", () => {
 		const onOpenChange = vi.fn();
 		render(<ExportDialogView {...defaultProps} onOpenChange={onOpenChange} />);
-		
+
 		const cancelButton = screen.getByRole("button", { name: /cancel/i });
 		fireEvent.click(cancelButton);
-		
+
 		expect(onOpenChange).toHaveBeenCalledWith(false);
 	});
 
 	it("should not show page break option for txt format", () => {
 		render(<ExportDialogView {...defaultProps} format="txt" />);
-		expect(screen.queryByText("Page Break Between Chapters")).not.toBeInTheDocument();
+		expect(
+			screen.queryByText("Page Break Between Chapters"),
+		).not.toBeInTheDocument();
 	});
 
 	it("should not show page break option for markdown format", () => {
 		render(<ExportDialogView {...defaultProps} format="markdown" />);
-		expect(screen.queryByText("Page Break Between Chapters")).not.toBeInTheDocument();
+		expect(
+			screen.queryByText("Page Break Between Chapters"),
+		).not.toBeInTheDocument();
 	});
 });

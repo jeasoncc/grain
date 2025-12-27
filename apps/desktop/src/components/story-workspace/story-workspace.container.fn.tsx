@@ -218,7 +218,9 @@ export const StoryWorkspaceContainer = memo(
 		);
 
 		const textEditorTabs = useMemo(() => {
-			return tabs.filter((tab) => tab.type !== "canvas" && tab.type !== "drawing");
+			return tabs.filter(
+				(tab) => tab.type !== "canvas" && tab.type !== "drawing",
+			);
 		}, [tabs]);
 
 		// 计算当前编辑器的字数
@@ -361,7 +363,9 @@ export const StoryWorkspaceContainer = memo(
 					<WordCountBadge
 						wordCountResult={wordCountResult}
 						countMode={wordCountMode}
-						show={showWordCountBadge && !isCanvasTab && !isDrawingTab && !!activeTab}
+						show={
+							showWordCountBadge && !isCanvasTab && !isDrawingTab && !!activeTab
+						}
 						showDetail={wordCountMode === "mixed"}
 					/>
 				</div>

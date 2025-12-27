@@ -1,8 +1,9 @@
 /**
  * 快捷键帮助面板
  */
-import { memo } from "react";
+
 import { Keyboard } from "lucide-react";
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Popover,

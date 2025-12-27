@@ -3,8 +3,8 @@
  * Type definitions for FileTree and FileTreeItem components
  */
 
-import type { NodeInterface, NodeType } from "@/types/node";
 import type { TreeNode } from "@/fn/node";
+import type { NodeInterface, NodeType } from "@/types/node";
 
 /**
  * FileTree Props 接口

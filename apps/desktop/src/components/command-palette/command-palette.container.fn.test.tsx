@@ -51,25 +51,18 @@ describe("CommandPaletteContainer", () => {
 	};
 
 	it("should render without crashing", () => {
-		const { container } = render(
-			<CommandPaletteContainer {...defaultProps} />,
-		);
+		const { container } = render(<CommandPaletteContainer {...defaultProps} />);
 		expect(container).toBeTruthy();
 	});
 
 	it("should pass props to view component", () => {
-		const { container } = render(
-			<CommandPaletteContainer {...defaultProps} />,
-		);
+		const { container } = render(<CommandPaletteContainer {...defaultProps} />);
 		expect(container).toBeTruthy();
 	});
 
 	it("should handle workspace selection", () => {
 		const { container } = render(
-			<CommandPaletteContainer
-				{...defaultProps}
-				selectedWorkspaceId="ws2"
-			/>,
+			<CommandPaletteContainer {...defaultProps} selectedWorkspaceId="ws2" />,
 		);
 		expect(container).toBeTruthy();
 	});

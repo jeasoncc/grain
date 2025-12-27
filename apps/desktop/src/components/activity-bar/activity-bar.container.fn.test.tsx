@@ -18,12 +18,12 @@
  */
 
 import { render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import * as E from "fp-ts/Either";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { IconTheme } from "@/types/icon-theme";
+import type { WorkspaceInterface } from "@/types/workspace";
 import { ActivityBarContainer } from "./activity-bar.container.fn";
 import type { ActivityBarProps } from "./activity-bar.types";
-import type { WorkspaceInterface } from "@/types/workspace";
-import type { IconTheme } from "@/types/icon-theme";
-import * as E from "fp-ts/Either";
 
 // ============================================================================
 // Mock State (可配置)
@@ -182,11 +182,44 @@ function createTestWorkspace(
 
 function createTestIconTheme(): IconTheme {
 	return {
-		id: "test-theme",
+		key: "test-theme",
 		name: "Test Theme",
+		description: "Test theme for testing",
 		icons: {
-			activityBar: {} as any,
-			fileTree: {} as any,
+			project: { default: {} as any },
+			folder: { default: {} as any },
+			file: { default: {} as any },
+			character: { default: {} as any },
+			world: { default: {} as any },
+			activityBar: {
+				library: {} as any,
+				search: {} as any,
+				outline: {} as any,
+				canvas: {} as any,
+				chapters: {} as any,
+				files: {} as any,
+				diary: {} as any,
+				ledger: {} as any,
+				tags: {} as any,
+				statistics: {} as any,
+				settings: {} as any,
+				create: {} as any,
+				import: {} as any,
+				export: {} as any,
+				more: {} as any,
+			},
+			settingsPage: {
+				appearance: {} as any,
+				icons: {} as any,
+				diagrams: {} as any,
+				general: {} as any,
+				editor: {} as any,
+				data: {} as any,
+				export: {} as any,
+				scroll: {} as any,
+				logs: {} as any,
+				about: {} as any,
+			},
 		},
 	};
 }
@@ -219,9 +252,7 @@ describe("ActivityBarContainer", () => {
 		mockAddWorkspace.mockReturnValue(() =>
 			Promise.resolve(E.right({ id: "new-ws" })),
 		);
-		mockClearAllData.mockReturnValue(() =>
-			Promise.resolve(E.right(undefined)),
-		);
+		mockClearAllData.mockReturnValue(() => Promise.resolve(E.right(undefined)));
 		mockTouchWorkspace.mockReturnValue(() =>
 			Promise.resolve(E.right(undefined)),
 		);

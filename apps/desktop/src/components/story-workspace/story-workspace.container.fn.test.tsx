@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { StoryWorkspaceContainer } from "./story-workspace.container.fn";
 import type { WorkspaceInterface } from "@/types/workspace";
+import { StoryWorkspaceContainer } from "./story-workspace.container.fn";
 
 // Mock all child components
 vi.mock("@grain/editor", () => ({

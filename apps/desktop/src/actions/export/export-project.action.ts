@@ -1,6 +1,6 @@
 /**
  * Export Project Action
- * 
+ *
  * 支持 PDF、Word、TXT、EPUB 格式导出
  * 从 domain/export/export.service.ts 迁移
  *
@@ -23,9 +23,9 @@ import * as E from "fp-ts/Either";
 import JSZip from "jszip";
 import { getContentsByNodeIds } from "@/db";
 import { database } from "@/db/database";
+import type { NodeInterface, WorkspaceInterface } from "@/types";
 import type { ContentInterface } from "@/types/content";
 import type { ExportFormat, ExportOptions } from "@/types/export";
-import type { NodeInterface, WorkspaceInterface } from "@/types";
 
 export type { ExportOptions, ExportFormat };
 
@@ -573,7 +573,7 @@ export async function exportToEpub(
 
 /**
  * 导出项目到指定格式
- * 
+ *
  * @param projectId - 项目/工作区 ID
  * @param format - 导出格式 (pdf, docx, txt, epub)
  * @param options - 导出选项

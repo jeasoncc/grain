@@ -1,7 +1,9 @@
-export { ThemeSelectorView } from "./theme-selector.view.fn";
-export { ThemeSelectorContainer } from "./theme-selector.container.fn";
-export { ThemeSelectorContainer as ThemeSelector } from "./theme-selector.container.fn";
+export {
+	ThemeSelectorContainer,
+	ThemeSelectorContainer as ThemeSelector,
+} from "./theme-selector.container.fn";
 export type {
-	ThemeSelectorViewProps,
 	ThemeCardProps,
+	ThemeSelectorViewProps,
 } from "./theme-selector.types";
+export { ThemeSelectorView } from "./theme-selector.view.fn";

@@ -277,10 +277,7 @@ export const FileTreePanelContainer = memo(
 					}
 				} catch (error) {
 					console.error("Failed to move node:", error);
-					if (
-						error instanceof Error &&
-						error.message.includes("descendants")
-					) {
+					if (error instanceof Error && error.message.includes("descendants")) {
 						toast.error("Cannot move a folder into itself");
 					} else {
 						toast.error("Failed to move");

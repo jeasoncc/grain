@@ -3,11 +3,11 @@
  * Tests for the FileTree pure view component
  */
 
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { FileTree } from "./file-tree.view.fn";
-import type { FileTreeProps } from "./file-tree.types";
 import type { NodeInterface } from "@/types/node";
+import type { FileTreeProps } from "./file-tree.types";
+import { FileTree } from "./file-tree.view.fn";
 
 // Mock hooks
 vi.mock("@/hooks/use-icon-theme", () => ({

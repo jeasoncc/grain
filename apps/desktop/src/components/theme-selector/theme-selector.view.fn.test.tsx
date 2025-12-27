@@ -1,8 +1,8 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { ThemeSelectorView } from "./theme-selector.view.fn";
-import type { ThemeSelectorViewProps } from "./theme-selector.types";
 import type { Theme } from "@/lib/themes";
+import type { ThemeSelectorViewProps } from "./theme-selector.types";
+import { ThemeSelectorView } from "./theme-selector.view.fn";
 
 describe("ThemeSelectorView", () => {
 	const mockLightTheme: Theme = {
@@ -161,9 +161,7 @@ describe("ThemeSelectorView", () => {
 	});
 
 	it("should highlight selected theme", () => {
-		render(
-			<ThemeSelectorView {...defaultProps} theme="light-default" />,
-		);
+		render(<ThemeSelectorView {...defaultProps} theme="light-default" />);
 		const button = screen.getByRole("button");
 		fireEvent.click(button);
 		const themeCard = screen.getByTitle("Default light theme");
@@ -171,9 +169,7 @@ describe("ThemeSelectorView", () => {
 	});
 
 	it("should display transition switch in correct state", () => {
-		render(
-			<ThemeSelectorView {...defaultProps} enableTransition={true} />,
-		);
+		render(<ThemeSelectorView {...defaultProps} enableTransition={true} />);
 		const button = screen.getByRole("button");
 		fireEvent.click(button);
 		const switchElement = screen.getByRole("switch");

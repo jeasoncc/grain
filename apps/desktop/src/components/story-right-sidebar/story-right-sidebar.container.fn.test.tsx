@@ -3,7 +3,7 @@
  */
 
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { StoryRightSidebarContainer } from "./story-right-sidebar.container.fn";
 
 // Mock stores
@@ -70,7 +70,7 @@ describe("StoryRightSidebarContainer", () => {
 	it("should not render when tabPosition is top", async () => {
 		const { useUIStore } = await import("@/stores/ui.store");
 		const originalMock = vi.mocked(useUIStore);
-		
+
 		vi.mocked(useUIStore).mockImplementation((selector: any) => {
 			const state = {
 				tabPosition: "top" as const,
@@ -80,7 +80,7 @@ describe("StoryRightSidebarContainer", () => {
 
 		render(<StoryRightSidebarContainer workspaceId="workspace-1" />);
 		expect(screen.queryByText("Open Tabs")).not.toBeInTheDocument();
-		
+
 		// Restore original mock
 		vi.mocked(useUIStore).mockImplementation((selector: any) => {
 			const state = {

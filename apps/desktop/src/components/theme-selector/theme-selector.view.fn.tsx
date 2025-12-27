@@ -6,8 +6,9 @@
  * - 系统主题跟随模式
  * - 过渡动画开关
  */
-import { memo } from "react";
+
 import { Check, Monitor, Moon, Palette, Sun } from "lucide-react";
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,8 +20,8 @@ import { Switch } from "@/components/ui/switch";
 import type { ThemeMode } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import type {
-	ThemeSelectorViewProps,
 	ThemeCardProps,
+	ThemeSelectorViewProps,
 } from "./theme-selector.types";
 
 // Mode configuration

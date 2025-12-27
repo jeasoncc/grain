@@ -3,7 +3,6 @@
  * @description 更新检查纯展示组件
  */
 
-import { memo } from "react";
 import {
 	AlertCircle,
 	CheckCircle,
@@ -11,6 +10,7 @@ import {
 	Info,
 	RefreshCw,
 } from "lucide-react";
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -98,7 +98,9 @@ export const UpdateCheckerView = memo(
 										<span className="text-muted-foreground">
 											Current Version:
 										</span>
-										<span className="font-mono">{updateInfo.currentVersion}</span>
+										<span className="font-mono">
+											{updateInfo.currentVersion}
+										</span>
 									</div>
 									<div className="flex justify-between text-sm">
 										<span className="text-muted-foreground">
@@ -141,10 +143,7 @@ export const UpdateCheckerView = memo(
 							>
 								Later
 							</Button>
-							<Button
-								onClick={onDownloadAndInstall}
-								disabled={isDownloading}
-							>
+							<Button onClick={onDownloadAndInstall} disabled={isDownloading}>
 								<Download className="size-4 mr-2" />
 								{isDownloading ? "Downloading..." : "Update Now"}
 							</Button>

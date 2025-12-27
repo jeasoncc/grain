@@ -27,6 +27,4 @@ export interface BackupManagerViewProps {
 /**
  * BackupManager Container Props
  */
-export interface BackupManagerContainerProps {
-	// Container 通常不需要 props，但如果需要可以定义
-}
+export type BackupManagerContainerProps = {};

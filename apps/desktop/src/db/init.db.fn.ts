@@ -265,7 +265,6 @@ export const resetDatabase = (
 					database.workspaces,
 					database.nodes,
 					database.contents,
-					database.drawings,
 					database.attachments,
 					database.tags,
 					database.dbVersions,
@@ -275,7 +274,6 @@ export const resetDatabase = (
 					await database.workspaces.clear();
 					await database.nodes.clear();
 					await database.contents.clear();
-					await database.drawings.clear();
 					await database.attachments.clear();
 					await database.tags.clear();
 					await database.dbVersions.clear();

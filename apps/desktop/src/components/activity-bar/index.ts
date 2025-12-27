@@ -7,6 +7,8 @@
  * - ActivityBarView: 纯展示组件，可用于测试或自定义场景
  */
 
+// 容器组件（默认导出）
+export { ActivityBarContainer as ActivityBar } from "./activity-bar.container.fn";
 // 类型定义
 export type {
 	ActionButtonProps,
@@ -15,7 +17,5 @@ export type {
 	ToggleNavItemProps,
 	WorkspaceItemProps,
 } from "./activity-bar.types";
-// 容器组件（默认导出）
-export { ActivityBarContainer as ActivityBar } from "./activity-bar.container.fn";
 // 纯展示组件
 export { ActivityBarView } from "./activity-bar.view.fn";

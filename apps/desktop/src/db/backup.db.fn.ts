@@ -12,9 +12,8 @@
  * 数据库表：
  * - users: 用户信息
  * - workspaces: 工作区元数据
- * - nodes: 文件树结构
- * - contents: 文档内容
- * - drawings: Excalidraw 绘图
+ * - nodes: 文件树结构（包含 drawing 类型节点）
+ * - contents: 文档内容（包含 Excalidraw 内容）
  * - attachments: 文件附件
  * - tags: 标签聚合缓存
  * - dbVersions: 数据库版本跟踪
@@ -56,7 +55,6 @@ export const createBackup = (): TE.TaskEither<AppError, BackupData> =>
 				workspaces,
 				nodes,
 				contents,
-				drawings,
 				attachments,
 				tags,
 				dbVersions,
@@ -65,7 +63,6 @@ export const createBackup = (): TE.TaskEither<AppError, BackupData> =>
 				database.workspaces.toArray(),
 				database.nodes.toArray(),
 				database.contents.toArray(),
-				database.drawings.toArray(),
 				database.attachments.toArray(),
 				database.tags.toArray(),
 				database.dbVersions.toArray(),
@@ -85,7 +82,7 @@ export const createBackup = (): TE.TaskEither<AppError, BackupData> =>
 				workspaces,
 				nodes,
 				contents,
-				drawings,
+				drawings: [], // 保留空数组以兼容旧备份格式
 				attachments,
 				tags,
 				dbVersions,
@@ -236,7 +233,6 @@ export const restoreBackup = (file: File): TE.TaskEither<AppError, void> =>
 					database.workspaces,
 					database.nodes,
 					database.contents,
-					database.drawings,
 					database.attachments,
 					database.tags,
 					database.dbVersions,
@@ -250,8 +246,7 @@ export const restoreBackup = (file: File): TE.TaskEither<AppError, void> =>
 						await database.nodes.bulkPut(backupData.nodes as never[]);
 					if (backupData.contents?.length)
 						await database.contents.bulkPut(backupData.contents as never[]);
-					if (backupData.drawings?.length)
-						await database.drawings.bulkPut(backupData.drawings as never[]);
+					// drawings 表已删除，跳过恢复（绘图现在存储在 nodes 表中）
 					if (backupData.attachments?.length)
 						await database.attachments.bulkPut(
 							backupData.attachments as never[],
@@ -297,7 +292,6 @@ export const restoreBackupData = (
 					database.workspaces,
 					database.nodes,
 					database.contents,
-					database.drawings,
 					database.attachments,
 					database.tags,
 				],
@@ -310,8 +304,7 @@ export const restoreBackupData = (
 						await database.nodes.bulkPut(backupData.nodes as never[]);
 					if (backupData.contents?.length)
 						await database.contents.bulkPut(backupData.contents as never[]);
-					if (backupData.drawings?.length)
-						await database.drawings.bulkPut(backupData.drawings as never[]);
+					// drawings 表已删除，跳过恢复（绘图现在存储在 nodes 表中）
 					if (backupData.attachments?.length)
 						await database.attachments.bulkPut(
 							backupData.attachments as never[],
@@ -348,7 +341,6 @@ export const getDatabaseStats = (): TE.TaskEither<AppError, DatabaseStats> =>
 				projectCount,
 				nodeCount,
 				contentCount,
-				drawingCount,
 				attachmentCount,
 				tagCount,
 			] = await Promise.all([
@@ -356,10 +348,15 @@ export const getDatabaseStats = (): TE.TaskEither<AppError, DatabaseStats> =>
 				database.workspaces.count(),
 				database.nodes.count(),
 				database.contents.count(),
-				database.drawings.count(),
 				database.attachments.count(),
 				database.tags.count(),
 			]);
+
+			// 计算 drawing 类型节点数量
+			const drawingCount = await database.nodes
+				.where("type")
+				.equals("drawing")
+				.count();
 
 			return {
 				userCount,

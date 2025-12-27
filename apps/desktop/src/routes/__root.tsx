@@ -1,4 +1,4 @@
-import { createRootRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { toast } from "sonner";
@@ -24,7 +24,6 @@ import { useUnifiedSidebarStore } from "@/stores/sidebar.store";
 import type { NodeInterface } from "@/types/node";
 
 function RootComponent() {
-	const navigate = useNavigate();
 	const [commandOpen, setCommandOpen] = useState(false);
 	const [searchOpen, setSearchOpen] = useState(false);
 	const [bufferSwitcherOpen, setBufferSwitcherOpen] = useState(false);
@@ -62,10 +61,10 @@ function RootComponent() {
 	const handleSelectDrawing = useCallback(
 		(drawing: NodeInterface) => {
 			setSelectedDrawingId(drawing.id);
-			// 导航到工作区编辑器，绘图节点会在主编辑器区域打开
-			navigate({ to: "/workspace/$nodeId", params: { nodeId: drawing.id } });
+			// 绘图节点通过 selection store 选中，在主编辑器区域打开
+			// 不需要导航，StoryWorkspace 会根据选中的节点渲染对应的编辑器
 		},
-		[setSelectedDrawingId, navigate],
+		[setSelectedDrawingId],
 	);
 
 	// Handle drawing creation using new templated action
@@ -78,6 +77,7 @@ function RootComponent() {
 		try {
 			const result = await createExcalidrawAsync({
 				workspaceId: selectedWorkspaceId,
+				templateParams: {},
 			});
 
 			if (result) {

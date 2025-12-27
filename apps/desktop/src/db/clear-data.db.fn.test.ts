@@ -358,7 +358,6 @@ describe("clear-data.db.fn", () => {
 			]);
 			vi.mocked(database.nodes.toArray).mockResolvedValue([]);
 			vi.mocked(database.contents.toArray).mockResolvedValue([]);
-			vi.mocked(database.drawings.toArray).mockResolvedValue([]);
 			vi.mocked(database.attachments.toArray).mockResolvedValue([]);
 			vi.mocked(database.tags.toArray).mockResolvedValue([]);
 

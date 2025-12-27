@@ -7,8 +7,8 @@
 import { memo, useMemo } from "react";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useUIStore } from "@/stores/ui.store";
-import { StoryRightSidebarView } from "./story-right-sidebar.view.fn";
 import type { StoryRightSidebarContainerProps } from "./story-right-sidebar.types";
+import { StoryRightSidebarView } from "./story-right-sidebar.view.fn";
 
 export const StoryRightSidebarContainer = memo(
 	({ workspaceId }: StoryRightSidebarContainerProps) => {

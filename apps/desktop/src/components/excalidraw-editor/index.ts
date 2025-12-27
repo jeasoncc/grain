@@ -4,11 +4,13 @@
  * @requirements 5.2
  */
 
-export { ExcalidrawEditorView } from "./excalidraw-editor.view.fn";
-export { ExcalidrawEditorContainer } from "./excalidraw-editor.container.fn";
-export { ExcalidrawEditorContainer as ExcalidrawEditor } from "./excalidraw-editor.container.fn";
+export {
+	ExcalidrawEditorContainer,
+	ExcalidrawEditorContainer as ExcalidrawEditor,
+} from "./excalidraw-editor.container.fn";
 export type {
-	ExcalidrawEditorViewProps,
-	ExcalidrawEditorContainerProps,
 	ExcalidrawData,
+	ExcalidrawEditorContainerProps,
+	ExcalidrawEditorViewProps,
 } from "./excalidraw-editor.types";
+export { ExcalidrawEditorView } from "./excalidraw-editor.view.fn";

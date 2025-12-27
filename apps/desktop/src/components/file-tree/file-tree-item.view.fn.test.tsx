@@ -3,11 +3,11 @@
  * Tests for the FileTreeItem pure view component
  */
 
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { FileTreeItem } from "./file-tree-item.view.fn";
-import type { FileTreeItemProps, DragState } from "./file-tree.types";
 import type { TreeNode } from "@/fn/node";
+import type { DragState, FileTreeItemProps } from "./file-tree.types";
+import { FileTreeItem } from "./file-tree-item.view.fn";
 
 describe("FileTreeItem", () => {
 	const mockFolderNode: TreeNode = {

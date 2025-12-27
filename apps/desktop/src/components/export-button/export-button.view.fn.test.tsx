@@ -1,7 +1,7 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { ExportButtonView } from "./export-button.view.fn";
 import type { ExportButtonViewProps } from "./export-button.types";
+import { ExportButtonView } from "./export-button.view.fn";
 
 describe("ExportButtonView", () => {
 	const defaultProps: ExportButtonViewProps = {
@@ -64,7 +64,7 @@ describe("ExportButtonView", () => {
 
 		// Wait for dropdown to open
 		const txtOption = await screen.findByText(/plain text/i);
-		
+
 		// All options should be disabled
 		expect(txtOption.closest("div[role='menuitem']")).toHaveAttribute(
 			"data-disabled",

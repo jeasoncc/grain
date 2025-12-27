@@ -45,7 +45,6 @@ export const clearIndexedDB = (): TE.TaskEither<AppError, void> =>
 					database.workspaces,
 					database.nodes,
 					database.contents,
-					database.drawings,
 					database.attachments,
 					database.tags,
 					database.dbVersions,
@@ -55,7 +54,6 @@ export const clearIndexedDB = (): TE.TaskEither<AppError, void> =>
 					await database.workspaces.clear();
 					await database.nodes.clear();
 					await database.contents.clear();
-					await database.drawings.clear();
 					await database.attachments.clear();
 					await database.tags.clear();
 					await database.dbVersions.clear();
@@ -290,16 +288,18 @@ export const getStorageStats = (): TE.TaskEither<AppError, StorageStats> =>
 			logger.debug("[DB] 获取存储统计信息...");
 
 			// 获取各表数据以计算大小
-			const [users, workspaces, nodes, contents, drawings, attachments, tags] =
+			const [users, workspaces, nodes, contents, attachments, tags] =
 				await Promise.all([
 					database.users.toArray(),
 					database.workspaces.toArray(),
 					database.nodes.toArray(),
 					database.contents.toArray(),
-					database.drawings.toArray(),
 					database.attachments.toArray(),
 					database.tags.toArray(),
 				]);
+
+			// 计算 drawing 类型节点（绘图现在存储在 nodes 表中）
+			const drawingNodes = nodes.filter((n) => n.type === "drawing");
 
 			// 计算各表大小
 			const tableSizes: TableSizes = {
@@ -307,7 +307,7 @@ export const getStorageStats = (): TE.TaskEither<AppError, StorageStats> =>
 				workspaces: calculateDataSize(workspaces),
 				nodes: calculateDataSize(nodes),
 				contents: calculateDataSize(contents),
-				drawings: calculateDataSize(drawings),
+				drawings: calculateDataSize(drawingNodes), // 使用 drawing 类型节点
 				attachments: calculateDataSize(attachments),
 				tags: calculateDataSize(tags),
 			};
@@ -325,7 +325,7 @@ export const getStorageStats = (): TE.TaskEither<AppError, StorageStats> =>
 					workspaces: workspaces.length,
 					nodes: nodes.length,
 					contents: contents.length,
-					drawings: drawings.length,
+					drawings: drawingNodes.length, // 使用 drawing 类型节点数量
 					attachments: attachments.length,
 					tags: tags.length,
 				},

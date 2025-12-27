@@ -2,10 +2,10 @@
  * Backup Manager View Component Tests
  */
 
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { BackupManagerView } from "./backup-manager.view.fn";
 import type { BackupManagerViewProps } from "./backup-manager.types";
+import { BackupManagerView } from "./backup-manager.view.fn";
 
 describe("BackupManagerView", () => {
 	const mockStats = {
@@ -201,10 +201,7 @@ describe("BackupManagerView", () => {
 	it("should call onClearAllData when Clear All button clicked", () => {
 		const onClearAllData = vi.fn();
 		render(
-			<BackupManagerView
-				{...defaultProps}
-				onClearAllData={onClearAllData}
-			/>,
+			<BackupManagerView {...defaultProps} onClearAllData={onClearAllData} />,
 		);
 		fireEvent.click(screen.getByText("Clear All"));
 		expect(onClearAllData).toHaveBeenCalled();
@@ -213,10 +210,7 @@ describe("BackupManagerView", () => {
 	it("should call onClearDatabase when Clear DB button clicked", () => {
 		const onClearDatabase = vi.fn();
 		render(
-			<BackupManagerView
-				{...defaultProps}
-				onClearDatabase={onClearDatabase}
-			/>,
+			<BackupManagerView {...defaultProps} onClearDatabase={onClearDatabase} />,
 		);
 		fireEvent.click(screen.getByText("Clear DB"));
 		expect(onClearDatabase).toHaveBeenCalled();
@@ -225,10 +219,7 @@ describe("BackupManagerView", () => {
 	it("should call onClearSettings when Reset Settings button clicked", () => {
 		const onClearSettings = vi.fn();
 		render(
-			<BackupManagerView
-				{...defaultProps}
-				onClearSettings={onClearSettings}
-			/>,
+			<BackupManagerView {...defaultProps} onClearSettings={onClearSettings} />,
 		);
 		fireEvent.click(screen.getByText("Reset Settings"));
 		expect(onClearSettings).toHaveBeenCalled();

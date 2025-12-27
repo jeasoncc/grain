@@ -4,8 +4,8 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { TagGraphPanelView } from "./tag-graph-panel.view.fn";
 import type { TagGraphPanelViewProps } from "./tag-graph-panel.types";
+import { TagGraphPanelView } from "./tag-graph-panel.view.fn";
 
 describe("TagGraphPanelView", () => {
 	const mockGraphData = {

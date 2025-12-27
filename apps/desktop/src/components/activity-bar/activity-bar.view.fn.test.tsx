@@ -11,13 +11,23 @@
  * @requirements 7.2
  */
 
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { ActivityBarView } from "./activity-bar.view.fn";
-import type { ActivityBarProps } from "./activity-bar.types";
-import type { WorkspaceInterface } from "@/types/workspace";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	BookOpen,
+	DollarSign,
+	Download,
+	FileText,
+	Folder,
+	MoreHorizontal,
+	Search,
+	Settings,
+	Upload,
+} from "lucide-react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IconTheme } from "@/types/icon-theme";
-import { Folder, Search, FileText, BookOpen, DollarSign, Settings, Upload, Download, MoreHorizontal } from "lucide-react";
+import type { WorkspaceInterface } from "@/types/workspace";
+import type { ActivityBarProps } from "./activity-bar.types";
+import { ActivityBarView } from "./activity-bar.view.fn";
 
 // ============================================================================
 // Test Helpers
@@ -48,28 +58,43 @@ function createTestWorkspace(
  */
 function createTestIconTheme(): IconTheme {
 	return {
-		id: "test-theme",
+		key: "test-theme",
 		name: "Test Theme",
+		description: "Test theme for testing",
 		icons: {
+			project: { default: Folder },
+			folder: { default: Folder },
+			file: { default: FileText },
+			character: { default: FileText },
+			world: { default: FileText },
 			activityBar: {
-				files: Folder,
-				search: Search,
-				diary: FileText,
 				library: BookOpen,
+				search: Search,
+				outline: FileText,
+				canvas: FileText,
+				chapters: FileText,
+				files: Folder,
+				diary: FileText,
 				ledger: DollarSign,
+				tags: FileText,
+				statistics: FileText,
 				settings: Settings,
+				create: FileText,
 				import: Upload,
 				export: Download,
 				more: MoreHorizontal,
 			},
-			fileTree: {
-				folder: Folder,
-				folderOpen: Folder,
-				file: FileText,
-				diary: FileText,
-				wiki: BookOpen,
-				ledger: DollarSign,
-				drawing: FileText,
+			settingsPage: {
+				appearance: Settings,
+				icons: FileText,
+				diagrams: FileText,
+				general: Settings,
+				editor: FileText,
+				data: FileText,
+				export: Download,
+				scroll: FileText,
+				logs: FileText,
+				about: FileText,
 			},
 		},
 	};
@@ -118,7 +143,7 @@ describe("ActivityBarView", () => {
 
 			// 验证主要元素存在
 			expect(container.querySelector(".activity-bar")).toBeInTheDocument();
-			
+
 			// 验证按钮数量（5个主导航 + 2个底部按钮）
 			const buttons = container.querySelectorAll("button");
 			expect(buttons.length).toBeGreaterThanOrEqual(7);
@@ -344,7 +369,7 @@ describe("ActivityBarView", () => {
 			fireEvent.keyDown(input, { key: "Enter" });
 
 			// 等待一小段时间确保没有调用
-			await new Promise(resolve => setTimeout(resolve, 100));
+			await new Promise((resolve) => setTimeout(resolve, 100));
 			expect(onCreateWorkspace).not.toHaveBeenCalled();
 		});
 
@@ -392,7 +417,9 @@ describe("ActivityBarView", () => {
 			fireEvent.click(moreButton!);
 
 			// 验证删除按钮被禁用
-			const deleteButton = screen.getByText(/delete all data/i).closest("button");
+			const deleteButton = screen
+				.getByText(/delete all data/i)
+				.closest("button");
 			expect(deleteButton).toBeDisabled();
 		});
 	});
@@ -412,7 +439,9 @@ describe("ActivityBarView", () => {
 			fireEvent.click(importButton);
 
 			// 获取隐藏的文件输入
-			const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+			const fileInput = document.querySelector(
+				'input[type="file"]',
+			) as HTMLInputElement;
 			expect(fileInput).toBeInTheDocument();
 
 			// 模拟文件选择

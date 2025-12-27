@@ -17,7 +17,9 @@ export const SearchPanelContainer = memo(() => {
 	// 连接 sidebar store
 	const searchState = useSidebarStore((s) => s.searchState);
 	const setSearchQuery = useSidebarStore((s) => s.setSearchQuery);
-	const setSearchSelectedTypes = useSidebarStore((s) => s.setSearchSelectedTypes);
+	const setSearchSelectedTypes = useSidebarStore(
+		(s) => s.setSearchSelectedTypes,
+	);
 	const setSearchShowFilters = useSidebarStore((s) => s.setSearchShowFilters);
 
 	// 本地状态：搜索结果和加载状态

@@ -2,10 +2,10 @@
  * StoryRightSidebarView 组件测试
  */
 
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { StoryRightSidebarView } from "./story-right-sidebar.view.fn";
 import type { StoryRightSidebarViewProps } from "./story-right-sidebar.types";
+import { StoryRightSidebarView } from "./story-right-sidebar.view.fn";
 
 describe("StoryRightSidebarView", () => {
 	const mockTabs = [
@@ -79,7 +79,10 @@ describe("StoryRightSidebarView", () => {
 	it("should call onSetActiveTab when tab is clicked", () => {
 		const onSetActiveTab = vi.fn();
 		render(
-			<StoryRightSidebarView {...defaultProps} onSetActiveTab={onSetActiveTab} />,
+			<StoryRightSidebarView
+				{...defaultProps}
+				onSetActiveTab={onSetActiveTab}
+			/>,
 		);
 
 		const tab2 = screen.getByText("Test Diary").closest("button");
@@ -91,17 +94,13 @@ describe("StoryRightSidebarView", () => {
 
 	it("should call onCloseTab when close button is clicked", () => {
 		const onCloseTab = vi.fn();
-		render(
-			<StoryRightSidebarView {...defaultProps} onCloseTab={onCloseTab} />,
-		);
+		render(<StoryRightSidebarView {...defaultProps} onCloseTab={onCloseTab} />);
 
 		const tab1 = screen.getByText("Test File 1").closest("button");
 		if (tab1) {
 			// Find the close button within the tab
 			const closeButtons = tab1.querySelectorAll("button");
-			const closeButton = Array.from(closeButtons).find(
-				(btn) => btn !== tab1,
-			);
+			const closeButton = Array.from(closeButtons).find((btn) => btn !== tab1);
 			if (closeButton) {
 				fireEvent.click(closeButton);
 			}

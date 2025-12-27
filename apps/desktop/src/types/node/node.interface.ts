@@ -15,10 +15,11 @@ import type { ISODateString, UUID } from "@/types/shared";
  * 定义文件树中不同类型的节点
  * - folder: 容器节点，可以包含子节点
  * - file: 使用 Lexical 编辑器的文本文档
- * - canvas: 使用 Excalidraw 的绘图
+ * - canvas: 使用 Excalidraw 的绘图（旧类型，保留兼容）
  * - diary: 日记条目
+ * - drawing: Excalidraw 绘图文件（新类型）
  */
-export type NodeType = "folder" | "file" | "canvas" | "diary";
+export type NodeType = "folder" | "file" | "canvas" | "diary" | "drawing";
 
 /**
  * 文件树结构的节点接口

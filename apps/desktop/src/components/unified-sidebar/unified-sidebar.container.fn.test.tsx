@@ -2,8 +2,8 @@
  * UnifiedSidebarContainer Component Tests
  */
 
-import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UnifiedSidebarContainer } from "./unified-sidebar.container.fn";
 
 // Mock dependencies
@@ -21,7 +21,7 @@ vi.mock("@/hooks/use-drawing", () => ({
 }));
 
 const mockSelectionStore = {
-	selectedWorkspaceId: "workspace-1",
+	selectedWorkspaceId: "workspace-1" as string | null,
 };
 vi.mock("@/stores/selection.store", () => ({
 	useSelectionStore: vi.fn((selector: any) => {

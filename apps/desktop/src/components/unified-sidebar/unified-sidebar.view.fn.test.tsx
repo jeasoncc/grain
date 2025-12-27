@@ -2,10 +2,10 @@
  * UnifiedSidebarView Component Tests
  */
 
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { UnifiedSidebarView } from "./unified-sidebar.view.fn";
 import type { UnifiedSidebarViewProps } from "./unified-sidebar.types";
+import { UnifiedSidebarView } from "./unified-sidebar.view.fn";
 
 // Mock child components
 vi.mock("../panels/drawings-panel", () => ({

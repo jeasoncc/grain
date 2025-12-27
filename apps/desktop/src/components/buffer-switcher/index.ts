@@ -1,7 +1,9 @@
-export { BufferSwitcherView } from "./buffer-switcher.view.fn";
-export { BufferSwitcherContainer } from "./buffer-switcher.container.fn";
-export { BufferSwitcherContainer as BufferSwitcher } from "./buffer-switcher.container.fn";
+export {
+	BufferSwitcherContainer,
+	BufferSwitcherContainer as BufferSwitcher,
+} from "./buffer-switcher.container.fn";
 export type {
-	BufferSwitcherViewProps,
 	BufferSwitcherContainerProps,
+	BufferSwitcherViewProps,
 } from "./buffer-switcher.types";
+export { BufferSwitcherView } from "./buffer-switcher.view.fn";

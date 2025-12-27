@@ -6,13 +6,17 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { ExcalidrawEditorView } from "./excalidraw-editor.view.fn";
 import type { ExcalidrawEditorViewProps } from "./excalidraw-editor.types";
+import { ExcalidrawEditorView } from "./excalidraw-editor.view.fn";
 
 // Mock Excalidraw 组件
 vi.mock("@excalidraw/excalidraw", () => ({
 	Excalidraw: vi.fn(({ theme, viewModeEnabled }) => (
-		<div data-testid="excalidraw-mock" data-theme={theme} data-view-mode={viewModeEnabled?.toString()}>
+		<div
+			data-testid="excalidraw-mock"
+			data-theme={theme}
+			data-view-mode={viewModeEnabled?.toString()}
+		>
 			Excalidraw Mock
 		</div>
 	)),

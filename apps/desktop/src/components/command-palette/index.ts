@@ -1,9 +1,11 @@
-export { CommandPaletteView } from "./command-palette.view.fn";
-export { CommandPaletteContainer } from "./command-palette.container.fn";
-export { CommandPaletteContainer as CommandPalette } from "./command-palette.container.fn";
+export {
+	CommandPaletteContainer,
+	CommandPaletteContainer as CommandPalette,
+} from "./command-palette.container.fn";
 export type {
-	CommandPaletteViewProps,
-	CommandPaletteContainerProps,
-	CommandItem,
 	CommandGroup,
+	CommandItem,
+	CommandPaletteContainerProps,
+	CommandPaletteViewProps,
 } from "./command-palette.types";
+export { CommandPaletteView } from "./command-palette.view.fn";

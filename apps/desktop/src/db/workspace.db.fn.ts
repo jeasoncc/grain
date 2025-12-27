@@ -155,7 +155,6 @@ export const deleteWorkspaceWithContents = (
 					database.workspaces,
 					database.nodes,
 					database.contents,
-					database.drawings,
 					database.attachments,
 				],
 				async () => {
@@ -171,11 +170,8 @@ export const deleteWorkspaceWithContents = (
 						await database.contents.where("nodeId").anyOf(nodeIds).delete();
 					}
 
-					// 删除节点（包括 wiki 文件，现在是带 "wiki" 标签的普通节点）
+					// 删除节点（包括 wiki 文件和 drawing 文件，现在都是普通节点）
 					await database.nodes.where("workspace").equals(id).delete();
-
-					// 删除绘图
-					await database.drawings.where("project").equals(id).delete();
 
 					// 删除附件
 					await database.attachments.where("project").equals(id).delete();

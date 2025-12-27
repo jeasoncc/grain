@@ -2,12 +2,12 @@
  * EditorTabsView 组件测试
  */
 
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { EditorTab } from "@/types/editor-tab";
-import { EditorTabsView } from "./editor-tabs.view.fn";
 import type { EditorTabsViewProps } from "./editor-tabs.types";
+import { EditorTabsView } from "./editor-tabs.view.fn";
 
 // 测试辅助函数：创建测试标签
 function createTestTab(overrides?: Partial<EditorTab>): EditorTab {
@@ -18,7 +18,6 @@ function createTestTab(overrides?: Partial<EditorTab>): EditorTab {
 		title: "Test Document",
 		type: "file",
 		isDirty: false,
-		createdAt: Date.now(),
 		...overrides,
 	};
 }

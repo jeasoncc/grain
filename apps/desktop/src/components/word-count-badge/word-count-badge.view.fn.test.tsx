@@ -5,11 +5,11 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { WordCountBadge, WordCountDisplay } from "./word-count-badge.view.fn";
 import type {
 	WordCountBadgeProps,
 	WordCountDisplayProps,
 } from "./word-count-badge.types";
+import { WordCountBadge, WordCountDisplay } from "./word-count-badge.view.fn";
 
 describe("WordCountBadge", () => {
 	const defaultProps: WordCountBadgeProps = {

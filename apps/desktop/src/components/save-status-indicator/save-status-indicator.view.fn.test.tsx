@@ -14,8 +14,8 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { SaveStatusIndicatorView } from "./save-status-indicator.view.fn";
 import type { SaveStatusIndicatorViewProps } from "./save-status-indicator.types";
+import { SaveStatusIndicatorView } from "./save-status-indicator.view.fn";
 
 // ============================================================================
 // Unit Tests
@@ -198,7 +198,9 @@ describe("SaveStatusIndicatorView", () => {
 				/>,
 			);
 
-			const element = container.querySelector('[title="Network error occurred"]');
+			const element = container.querySelector(
+				'[title="Network error occurred"]',
+			);
 			expect(element).toBeInTheDocument();
 		});
 
@@ -255,10 +257,7 @@ describe("SaveStatusIndicatorView", () => {
 
 		it("should render Loader2 icon when manually saving", () => {
 			const { container } = render(
-				<SaveStatusIndicatorView
-					{...defaultProps}
-					isManualSaving={true}
-				/>,
+				<SaveStatusIndicatorView {...defaultProps} isManualSaving={true} />,
 			);
 
 			// Loader2 图标应该存在且有 animate-spin 类

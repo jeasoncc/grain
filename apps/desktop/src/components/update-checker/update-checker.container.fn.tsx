@@ -4,8 +4,8 @@
  */
 
 import { memo } from "react";
-import { UpdateCheckerView } from "./update-checker.view.fn";
 import { useUpdateChecker } from "@/hooks/use-update-checker";
+import { UpdateCheckerView } from "./update-checker.view.fn";
 
 export const UpdateCheckerContainer = memo(() => {
 	const {

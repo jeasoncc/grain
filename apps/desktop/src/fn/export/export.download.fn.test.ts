@@ -90,17 +90,21 @@ describe("triggerDownload", () => {
 		triggerDownload("test.json", '{"key":"value"}');
 
 		expect(mockCreateObjectURL).toHaveBeenCalled();
-		const blobArg = mockCreateObjectURL.mock.calls[0][0] as Blob;
+		const calls = mockCreateObjectURL.mock.calls as unknown[][];
+		expect(calls.length).toBeGreaterThan(0);
+		const blobArg = calls[0]?.[0] as Blob | undefined;
 		expect(blobArg).toBeInstanceOf(Blob);
-		expect(blobArg.type).toBe("application/json;charset=utf-8");
+		expect(blobArg?.type).toBe("application/json;charset=utf-8");
 	});
 
 	it("should use custom mime type when provided", () => {
 		triggerDownload("test.md", "# Title", "text/markdown;charset=utf-8");
 
 		expect(mockCreateObjectURL).toHaveBeenCalled();
-		const blobArg = mockCreateObjectURL.mock.calls[0][0] as Blob;
-		expect(blobArg.type).toBe("text/markdown;charset=utf-8");
+		const calls = mockCreateObjectURL.mock.calls as unknown[][];
+		expect(calls.length).toBeGreaterThan(0);
+		const blobArg = calls[0]?.[0] as Blob | undefined;
+		expect(blobArg?.type).toBe("text/markdown;charset=utf-8");
 	});
 
 	it("should handle empty content", () => {

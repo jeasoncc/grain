@@ -40,6 +40,4 @@ export interface UnifiedSidebarViewProps {
  *
  * 容器组件通常不需要 props，因为它直接连接 stores
  */
-export interface UnifiedSidebarContainerProps {
-	// Container 组件不需要 props
-}
+export type UnifiedSidebarContainerProps = {};

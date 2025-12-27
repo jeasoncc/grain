@@ -69,7 +69,8 @@ export const EditorTabsView = memo(
 			setShowScrollButtons(hasOverflow);
 			setCanScrollLeft(container.scrollLeft > 0);
 			setCanScrollRight(
-				container.scrollLeft < container.scrollWidth - container.clientWidth - 1,
+				container.scrollLeft <
+					container.scrollWidth - container.clientWidth - 1,
 			);
 		}, [tabs.length]); // Add tabs.length as dependency so it re-creates when tabs change
 

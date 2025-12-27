@@ -3,8 +3,8 @@
  */
 
 import { render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
 import * as TE from "fp-ts/TaskEither";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BackupManagerContainer } from "./backup-manager.container.fn";
 
 // Mock dependencies

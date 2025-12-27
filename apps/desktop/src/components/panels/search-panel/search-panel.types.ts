@@ -28,9 +28,7 @@ export interface SearchPanelViewProps {
 /**
  * SearchPanel Container 组件 Props
  */
-export interface SearchPanelContainerProps {
-	// Container 通常不需要 props
-}
+export type SearchPanelContainerProps = {};
 
 /**
  * ResultGroup 组件 Props

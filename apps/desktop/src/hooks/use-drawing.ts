@@ -151,7 +151,7 @@ export function useRecentDrawings(
 			return nodes
 				.sort(
 					(a, b) =>
-						new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+						new Date(b.lastEdit).getTime() - new Date(a.lastEdit).getTime(),
 				)
 				.slice(0, limit);
 		},

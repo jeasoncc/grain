@@ -1,8 +1,8 @@
 import { render } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
 import { Search } from "lucide-react";
-import { CommandPaletteView } from "./command-palette.view.fn";
+import { describe, expect, it, vi } from "vitest";
 import type { CommandPaletteViewProps } from "./command-palette.types";
+import { CommandPaletteView } from "./command-palette.view.fn";
 
 describe("CommandPaletteView", () => {
 	const defaultProps: CommandPaletteViewProps = {

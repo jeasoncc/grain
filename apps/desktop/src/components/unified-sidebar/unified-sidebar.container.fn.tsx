@@ -5,7 +5,6 @@
  */
 
 import { memo, useCallback } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { useDrawingNodes } from "@/hooks/use-drawing";
 import logger from "@/log";
 import { useSelectionStore } from "@/stores/selection.store";
@@ -23,8 +22,6 @@ import { UnifiedSidebarView } from "./unified-sidebar.view.fn";
  * - 将数据传递给 View 组件
  */
 export const UnifiedSidebarContainer = memo(() => {
-	const navigate = useNavigate();
-
 	// Connect to stores
 	const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
 	const {
@@ -44,10 +41,10 @@ export const UnifiedSidebarContainer = memo(() => {
 		(drawing: NodeInterface) => {
 			logger.info("[UnifiedSidebar] 选择绘图", { drawingId: drawing.id });
 			setSelectedDrawingId(drawing.id);
-			// 导航到工作区编辑器，绘图节点会在主编辑器区域打开
-			navigate({ to: "/workspace/$nodeId", params: { nodeId: drawing.id } });
+			// 绘图节点通过 selection store 选中，在主编辑器区域打开
+			// 不需要导航，StoryWorkspace 会根据选中的节点渲染对应的编辑器
 		},
-		[setSelectedDrawingId, navigate],
+		[setSelectedDrawingId],
 	);
 
 	// Handle drawing creation

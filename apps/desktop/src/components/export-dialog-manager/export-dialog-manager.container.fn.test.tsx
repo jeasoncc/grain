@@ -1,10 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import type { WorkspaceInterface } from "@/types/workspace";
 import {
 	ExportDialogManagerContainer,
 	exportDialogManager,
 } from "./export-dialog-manager.container.fn";
-import type { WorkspaceInterface } from "@/types/workspace";
 
 // Mock ExportDialog component
 vi.mock("@/components/export-dialog", () => ({
@@ -93,7 +93,7 @@ describe("ExportDialogManagerContainer", () => {
 	it("should respond to exportDialogManager.open", () => {
 		// Start with closed dialog
 		exportDialogManager.close();
-		
+
 		const { rerender } = render(
 			<ExportDialogManagerContainer
 				selectedWorkspaceId="ws1"
@@ -102,9 +102,7 @@ describe("ExportDialogManagerContainer", () => {
 		);
 
 		// Initially closed
-		expect(
-			screen.queryByTestId("workspace-id"),
-		).not.toBeInTheDocument();
+		expect(screen.queryByTestId("workspace-id")).not.toBeInTheDocument();
 
 		// Open dialog
 		exportDialogManager.open("ws2", "Custom Title");

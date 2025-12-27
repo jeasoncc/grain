@@ -4,11 +4,10 @@
  * @deprecated 此路由已弃用。Excalidraw 绘图现在作为文件节点存储在文件树中，
  * 点击文件树中的绘图节点会在主编辑器区域打开 ExcalidrawEditorContainer。
  *
- * 请使用 /workspace/$nodeId 路由来编辑绘图。
+ * 此页面保留用于向后兼容，但建议通过文件树选择绘图节点来编辑。
  */
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { PenTool } from "lucide-react";
-import { useEffect } from "react";
 import { ExcalidrawEditorContainer } from "@/components/excalidraw-editor";
 import { useDrawing } from "@/hooks/use-drawing";
 import { useUnifiedSidebarStore } from "@/stores/sidebar.store";
@@ -18,19 +17,8 @@ export const Route = createFileRoute("/canvas")({
 });
 
 function CanvasPage() {
-	const navigate = useNavigate();
 	const { drawingsState } = useUnifiedSidebarStore();
 	const selectedDrawing = useDrawing(drawingsState.selectedDrawingId);
-
-	// 如果有选中的绘图，重定向到新的工作区路由
-	useEffect(() => {
-		if (selectedDrawing) {
-			navigate({
-				to: "/workspace/$nodeId",
-				params: { nodeId: selectedDrawing.id },
-			});
-		}
-	}, [selectedDrawing, navigate]);
 
 	return (
 		<div className="flex h-screen bg-background text-foreground">

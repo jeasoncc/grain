@@ -196,7 +196,8 @@ export function ActivityBarContainer(): React.ReactElement {
 			});
 			// 打开新创建的记账文件
 			openTab({
-				id: result.node.id,
+				workspaceId: selectedWorkspaceId,
+				nodeId: result.node.id,
 				title: result.node.title,
 				type: result.node.type,
 			});

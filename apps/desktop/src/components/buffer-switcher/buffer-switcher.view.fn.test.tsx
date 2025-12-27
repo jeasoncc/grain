@@ -1,8 +1,8 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { BufferSwitcherView } from "./buffer-switcher.view.fn";
-import type { BufferSwitcherViewProps } from "./buffer-switcher.types";
 import type { EditorTab } from "@/types/editor-tab";
+import type { BufferSwitcherViewProps } from "./buffer-switcher.types";
+import { BufferSwitcherView } from "./buffer-switcher.view.fn";
 
 describe("BufferSwitcherView", () => {
 	const mockTabs: EditorTab[] = [

@@ -13,7 +13,7 @@
  */
 
 import { render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GlobalSearchContainer } from "./global-search.container.fn";
 import type { GlobalSearchViewProps } from "./global-search.types";
 

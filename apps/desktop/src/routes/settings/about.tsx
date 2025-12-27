@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Github, Globe } from "lucide-react";
-import { UpdateChecker } from "@/components/update-checker";
 import { Button } from "@/components/ui/button";
+import { UpdateChecker } from "@/components/update-checker";
 
 export const Route = createFileRoute("/settings/about")({
 	component: AboutSettings,

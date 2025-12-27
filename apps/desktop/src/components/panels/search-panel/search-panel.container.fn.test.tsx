@@ -3,7 +3,7 @@
  */
 
 import { render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SearchPanelContainer } from "./search-panel.container.fn";
 
 // Mock dependencies
@@ -65,15 +65,17 @@ describe("SearchPanelContainer", () => {
 
 	it("should perform search when query changes", async () => {
 		const { searchEngine } = await import("@/fn/search");
-		const mockSearch = vi.fn(() => Promise.resolve([
-			{
-				id: "1",
-				type: "node",
-				title: "Test Result",
-				workspaceTitle: "Workspace",
-				excerpt: "Test excerpt",
-			},
-		]));
+		const mockSearch = vi.fn(() =>
+			Promise.resolve([
+				{
+					id: "1",
+					type: "node",
+					title: "Test Result",
+					workspaceTitle: "Workspace",
+					excerpt: "Test excerpt",
+				},
+			]),
+		);
 		(searchEngine.simpleSearch as any) = mockSearch;
 
 		const { useSidebarStore } = require("@/stores/sidebar.store");
@@ -93,12 +95,15 @@ describe("SearchPanelContainer", () => {
 
 		render(<SearchPanelContainer />);
 
-		await waitFor(() => {
-			expect(mockSearch).toHaveBeenCalledWith("test", {
-				types: ["node"],
-				limit: 100,
-			});
-		}, { timeout: 500 });
+		await waitFor(
+			() => {
+				expect(mockSearch).toHaveBeenCalledWith("test", {
+					types: ["node"],
+					limit: 100,
+				});
+			},
+			{ timeout: 500 },
+		);
 	});
 
 	it("should not search when query is empty", async () => {
@@ -108,9 +113,12 @@ describe("SearchPanelContainer", () => {
 
 		render(<SearchPanelContainer />);
 
-		await waitFor(() => {
-			expect(mockSearch).not.toHaveBeenCalled();
-		}, { timeout: 500 });
+		await waitFor(
+			() => {
+				expect(mockSearch).not.toHaveBeenCalled();
+			},
+			{ timeout: 500 },
+		);
 	});
 
 	it("should handle search errors gracefully", async () => {
@@ -118,7 +126,9 @@ describe("SearchPanelContainer", () => {
 		const mockSearch = vi.fn(() => Promise.reject(new Error("Search failed")));
 		(searchEngine.simpleSearch as any) = mockSearch;
 
-		const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => {});
 
 		const { useSidebarStore } = require("@/stores/sidebar.store");
 		useSidebarStore.mockImplementation((selector: any) => {
@@ -137,12 +147,15 @@ describe("SearchPanelContainer", () => {
 
 		render(<SearchPanelContainer />);
 
-		await waitFor(() => {
-			expect(consoleErrorSpy).toHaveBeenCalledWith(
-				"Search failed:",
-				expect.any(Error)
-			);
-		}, { timeout: 500 });
+		await waitFor(
+			() => {
+				expect(consoleErrorSpy).toHaveBeenCalledWith(
+					"Search failed:",
+					expect.any(Error),
+				);
+			},
+			{ timeout: 500 },
+		);
 
 		consoleErrorSpy.mockRestore();
 	});

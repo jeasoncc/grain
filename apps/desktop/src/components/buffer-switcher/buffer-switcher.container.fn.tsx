@@ -3,8 +3,8 @@
  */
 
 import { memo, useCallback, useEffect, useState } from "react";
-import { BufferSwitcherView } from "./buffer-switcher.view.fn";
 import type { BufferSwitcherContainerProps } from "./buffer-switcher.types";
+import { BufferSwitcherView } from "./buffer-switcher.view.fn";
 
 /**
  * Buffer Switcher 容器组件

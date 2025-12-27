@@ -7,11 +7,11 @@ import { createExcalidrawCompatAsync } from "@/actions/templated";
 import { exportDialogManager } from "@/components/export-dialog-manager";
 import { useTheme } from "@/hooks/use-theme";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
-import { CommandPaletteView } from "./command-palette.view.fn";
 import type {
 	CommandGroup,
 	CommandPaletteContainerProps,
 } from "./command-palette.types";
+import { CommandPaletteView } from "./command-palette.view.fn";
 
 /**
  * CommandPaletteContainer - 容器组件

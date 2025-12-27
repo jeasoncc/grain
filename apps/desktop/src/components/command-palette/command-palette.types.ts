@@ -50,7 +50,10 @@ export interface CommandPaletteContainerProps {
 	/** 对话框状态变化回调 */
 	readonly onOpenChange: (open: boolean) => void;
 	/** 所有工作区列表 */
-	readonly workspaces: readonly { readonly id: string; readonly title: string }[];
+	readonly workspaces: readonly {
+		readonly id: string;
+		readonly title: string;
+	}[];
 	/** 当前选中的工作区 ID */
 	readonly selectedWorkspaceId: string | null;
 }

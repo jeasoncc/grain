@@ -2,8 +2,8 @@
  * EditorTabsContainer 组件测试
  */
 
-import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { EditorTab } from "@/types/editor-tab";
 import { EditorTabsContainer } from "./editor-tabs.container.fn";
@@ -25,7 +25,6 @@ function createTestTab(overrides?: Partial<EditorTab>): EditorTab {
 		title: "Test Document",
 		type: "file",
 		isDirty: false,
-		createdAt: Date.now(),
 		...overrides,
 	};
 }
@@ -59,9 +58,7 @@ describe("EditorTabsContainer", () => {
 	});
 
 	it("should render tabs from store", () => {
-		renderWithTooltip(
-			<EditorTabsContainer workspaceId="workspace-1" />,
-		);
+		renderWithTooltip(<EditorTabsContainer workspaceId="workspace-1" />);
 
 		// 使用 getAllByText 因为有多个相同标题的标签
 		const tabs = screen.getAllByText("Test Document");
@@ -80,9 +77,7 @@ describe("EditorTabsContainer", () => {
 	});
 
 	it("should call setActiveTab when tab is clicked", () => {
-		renderWithTooltip(
-			<EditorTabsContainer workspaceId="workspace-1" />,
-		);
+		renderWithTooltip(<EditorTabsContainer workspaceId="workspace-1" />);
 
 		// 使用 getAllByText 获取第一个标签
 		const tabs = screen.getAllByText("Test Document");

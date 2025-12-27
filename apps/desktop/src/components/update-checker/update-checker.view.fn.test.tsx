@@ -3,10 +3,10 @@
  * @description 更新检查 View 组件测试
  */
 
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { UpdateCheckerView } from "./update-checker.view.fn";
 import type { UpdateCheckerViewProps } from "./update-checker.types";
+import { UpdateCheckerView } from "./update-checker.view.fn";
 
 describe("UpdateCheckerView", () => {
 	const defaultProps: UpdateCheckerViewProps = {
@@ -40,7 +40,10 @@ describe("UpdateCheckerView", () => {
 	it("should call onCheckForUpdates when button clicked", () => {
 		const onCheckForUpdates = vi.fn();
 		render(
-			<UpdateCheckerView {...defaultProps} onCheckForUpdates={onCheckForUpdates} />,
+			<UpdateCheckerView
+				{...defaultProps}
+				onCheckForUpdates={onCheckForUpdates}
+			/>,
 		);
 		fireEvent.click(screen.getByRole("button", { name: /check for updates/i }));
 		expect(onCheckForUpdates).toHaveBeenCalled();

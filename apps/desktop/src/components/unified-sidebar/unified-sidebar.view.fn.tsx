@@ -4,14 +4,14 @@
  * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  */
 
-import { memo } from "react";
 import { PanelLeftOpen } from "lucide-react";
-import type { UnifiedSidebarViewProps } from "./unified-sidebar.types";
+import { memo } from "react";
 import { DrawingsPanel } from "../panels/drawings-panel";
 import { FileTreePanel } from "../panels/file-tree-panel/";
 import { SearchPanel } from "../panels/search-panel/";
 import { TagGraphPanel } from "../panels/tag-graph-panel/";
 import { Button } from "../ui/button";
+import type { UnifiedSidebarViewProps } from "./unified-sidebar.types";
 
 /**
  * UnifiedSidebarView - 统一侧边栏纯展示组件

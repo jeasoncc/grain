@@ -12,10 +12,13 @@
  * @requirements 7.2
  */
 
-import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type {
+	GlobalSearchViewProps,
+	SearchResult,
+} from "./global-search.types";
 import { GlobalSearchView } from "./global-search.view.fn";
-import type { GlobalSearchViewProps, SearchResult } from "./global-search.types";
 
 // ============================================================================
 // Test Helpers
@@ -74,7 +77,9 @@ describe("GlobalSearchView", () => {
 			const { container } = render(<GlobalSearchView {...props} />);
 
 			// Dialog 不应该可见
-			expect(container.querySelector('[role="dialog"]')).not.toBeInTheDocument();
+			expect(
+				container.querySelector('[role="dialog"]'),
+			).not.toBeInTheDocument();
 		});
 
 		it("should render when open", () => {
@@ -89,7 +94,9 @@ describe("GlobalSearchView", () => {
 			const props = createDefaultProps({ open: true, query: "test query" });
 			render(<GlobalSearchView {...props} />);
 
-			const input = screen.getByPlaceholderText("搜索文件...") as HTMLInputElement;
+			const input = screen.getByPlaceholderText(
+				"搜索文件...",
+			) as HTMLInputElement;
 			expect(input.value).toBe("test query");
 		});
 	});
@@ -247,7 +254,9 @@ describe("GlobalSearchView", () => {
 		});
 
 		it("should display excerpt", () => {
-			const result = createTestSearchResult({ excerpt: "Test excerpt content" });
+			const result = createTestSearchResult({
+				excerpt: "Test excerpt content",
+			});
 			const props = createDefaultProps({ open: true, results: [result] });
 			render(<GlobalSearchView {...props} />);
 
@@ -286,7 +295,9 @@ describe("GlobalSearchView", () => {
 			const { container } = render(<GlobalSearchView {...props} />);
 
 			// 只有一个按钮（对话框关闭按钮）
-			const clearButtons = container.querySelectorAll('button[class*="size-6"]');
+			const clearButtons = container.querySelectorAll(
+				'button[class*="size-6"]',
+			);
 			expect(clearButtons.length).toBe(0);
 		});
 	});

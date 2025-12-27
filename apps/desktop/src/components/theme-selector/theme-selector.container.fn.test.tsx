@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { ThemeSelectorContainer } from "./theme-selector.container.fn";
 import type { Theme } from "@/lib/themes";
+import { ThemeSelectorContainer } from "./theme-selector.container.fn";
 
 // Mock hooks and libs
 vi.mock("@/hooks/use-theme", () => ({

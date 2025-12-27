@@ -27,9 +27,7 @@ export const TagGraphPanelContainer = memo(() => {
 		edges: [],
 	};
 
-	return (
-		<TagGraphPanelView workspaceId={workspaceId} graphData={graphData} />
-	);
+	return <TagGraphPanelView workspaceId={workspaceId} graphData={graphData} />;
 });
 
 TagGraphPanelContainer.displayName = "TagGraphPanelContainer";

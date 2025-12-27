@@ -5,7 +5,7 @@
  */
 
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ExcalidrawEditorContainer } from "./excalidraw-editor.container.fn";
 
 // Mock Excalidraw 组件
@@ -30,8 +30,8 @@ vi.mock("@/hooks/use-theme", () => ({
 
 // Mock db functions
 vi.mock("@/db/content.db.fn", () => ({
-	updateContentByNodeId: vi.fn(() => () =>
-		Promise.resolve({ _tag: "Right", right: {} }),
+	updateContentByNodeId: vi.fn(
+		() => () => Promise.resolve({ _tag: "Right", right: {} }),
 	),
 }));
 
@@ -61,7 +61,10 @@ describe("ExcalidrawEditorContainer", () => {
 		mockUseContentByNodeId.mockReturnValue(undefined);
 
 		const { container } = render(
-			<ExcalidrawEditorContainer nodeId="test-node-id" className="custom-class" />,
+			<ExcalidrawEditorContainer
+				nodeId="test-node-id"
+				className="custom-class"
+			/>,
 		);
 
 		const wrapper = container.firstChild as HTMLElement;
@@ -87,7 +90,9 @@ describe("ExcalidrawEditorContainer", () => {
 
 		mockUseContentByNodeId.mockReturnValue(mockContent);
 
-		const { container } = render(<ExcalidrawEditorContainer nodeId="test-node-id" />);
+		const { container } = render(
+			<ExcalidrawEditorContainer nodeId="test-node-id" />,
+		);
 
 		// 验证组件渲染了（不是容器级别的 Loading）
 		// 由于 initialData 初始为 null，View 组件会显示 Loading
@@ -99,7 +104,9 @@ describe("ExcalidrawEditorContainer", () => {
 		// 当 content 是 null（记录不存在）时，组件应该正常处理
 		mockUseContentByNodeId.mockReturnValue(null);
 
-		const { container } = render(<ExcalidrawEditorContainer nodeId="test-node-id" />);
+		const { container } = render(
+			<ExcalidrawEditorContainer nodeId="test-node-id" />,
+		);
 
 		// 组件应该渲染（content !== undefined）
 		expect(container.firstChild).toBeInTheDocument();

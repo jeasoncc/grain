@@ -147,7 +147,9 @@ export function DrawingsPanel({
 									drawing={drawing}
 									isSelected={selectedDrawingId === drawing.id}
 									onSelect={() => onSelectDrawing(drawing)}
-									onDelete={() => handleDeleteDrawing(drawing.id, drawing.title)}
+									onDelete={() =>
+										handleDeleteDrawing(drawing.id, drawing.title)
+									}
 								/>
 							))}
 
@@ -215,7 +217,7 @@ function DrawingListItem({
 					{drawing.title}
 				</span>
 				<span className="text-xs text-muted-foreground/70 truncate w-full font-light">
-					{new Date(drawing.updatedAt).toLocaleDateString()}
+					{new Date(drawing.lastEdit).toLocaleDateString()}
 				</span>
 			</div>
 			<Button

@@ -2,11 +2,11 @@
  * SearchPanelView 组件测试
  */
 
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { SearchResult } from "@/fn/search";
-import { SearchPanelView } from "./search-panel.view.fn";
 import type { SearchPanelViewProps } from "./search-panel.types";
+import { SearchPanelView } from "./search-panel.view.fn";
 
 describe("SearchPanelView", () => {
 	const defaultProps: SearchPanelViewProps = {
@@ -42,11 +42,13 @@ describe("SearchPanelView", () => {
 
 	it("should call onSetSearchQuery when input changes", () => {
 		const onSetSearchQuery = vi.fn();
-		render(<SearchPanelView {...defaultProps} onSetSearchQuery={onSetSearchQuery} />);
-		
+		render(
+			<SearchPanelView {...defaultProps} onSetSearchQuery={onSetSearchQuery} />,
+		);
+
 		const input = screen.getByPlaceholderText("Search...");
 		fireEvent.change(input, { target: { value: "new query" } });
-		
+
 		expect(onSetSearchQuery).toHaveBeenCalledWith("new query");
 	});
 
@@ -59,9 +61,9 @@ describe("SearchPanelView", () => {
 			},
 		};
 		render(<SearchPanelView {...props} />);
-		
+
 		const clearButtons = screen.getAllByRole("button");
-		const clearButton = clearButtons.find(btn => btn.querySelector("svg"));
+		const clearButton = clearButtons.find((btn) => btn.querySelector("svg"));
 		expect(clearButton).toBeInTheDocument();
 	});
 
@@ -76,12 +78,13 @@ describe("SearchPanelView", () => {
 			onSetSearchQuery,
 		};
 		render(<SearchPanelView {...props} />);
-		
+
 		const clearButtons = screen.getAllByRole("button");
-		const clearButton = clearButtons.find(btn => 
-			btn.className.includes("absolute") && btn.className.includes("right-1")
+		const clearButton = clearButtons.find(
+			(btn) =>
+				btn.className.includes("absolute") && btn.className.includes("right-1"),
 		);
-		
+
 		if (clearButton) {
 			fireEvent.click(clearButton);
 			expect(onSetSearchQuery).toHaveBeenCalledWith("");
@@ -90,11 +93,16 @@ describe("SearchPanelView", () => {
 
 	it("should toggle filters when filter button clicked", () => {
 		const onSetSearchShowFilters = vi.fn();
-		render(<SearchPanelView {...defaultProps} onSetSearchShowFilters={onSetSearchShowFilters} />);
-		
+		render(
+			<SearchPanelView
+				{...defaultProps}
+				onSetSearchShowFilters={onSetSearchShowFilters}
+			/>,
+		);
+
 		const filterButton = screen.getByTitle("Toggle filters");
 		fireEvent.click(filterButton);
-		
+
 		expect(onSetSearchShowFilters).toHaveBeenCalledWith(true);
 	});
 
@@ -107,7 +115,7 @@ describe("SearchPanelView", () => {
 			},
 		};
 		render(<SearchPanelView {...props} />);
-		
+
 		expect(screen.getByText("Scope")).toBeInTheDocument();
 	});
 
@@ -121,7 +129,7 @@ describe("SearchPanelView", () => {
 			loading: true,
 		};
 		render(<SearchPanelView {...props} />);
-		
+
 		expect(screen.getByText("Searching...")).toBeInTheDocument();
 	});
 
@@ -157,7 +165,7 @@ describe("SearchPanelView", () => {
 			results,
 		};
 		render(<SearchPanelView {...props} />);
-		
+
 		expect(screen.getByText("Found 2 results")).toBeInTheDocument();
 	});
 
@@ -171,13 +179,13 @@ describe("SearchPanelView", () => {
 			results: [],
 		};
 		render(<SearchPanelView {...props} />);
-		
+
 		expect(screen.getByText("No results found")).toBeInTheDocument();
 	});
 
 	it("should display type to search message when no query", () => {
 		render(<SearchPanelView {...defaultProps} />);
-		
+
 		expect(screen.getByText("Type to search")).toBeInTheDocument();
 	});
 
@@ -192,10 +200,10 @@ describe("SearchPanelView", () => {
 			onToggleType,
 		};
 		render(<SearchPanelView {...props} />);
-		
+
 		const nodeCheckbox = screen.getByLabelText("文件");
 		fireEvent.click(nodeCheckbox);
-		
+
 		expect(onToggleType).toHaveBeenCalledWith("node");
 	});
 
@@ -221,7 +229,7 @@ describe("SearchPanelView", () => {
 			results,
 		};
 		render(<SearchPanelView {...props} />);
-		
+
 		expect(screen.getByText("Test Node")).toBeInTheDocument();
 		expect(screen.getByText("Workspace")).toBeInTheDocument();
 	});
@@ -250,7 +258,7 @@ describe("SearchPanelView", () => {
 			onSelectResult,
 		};
 		render(<SearchPanelView {...props} />);
-		
+
 		const resultButton = screen.getByText("Test Node").closest("button");
 		if (resultButton) {
 			fireEvent.click(resultButton);

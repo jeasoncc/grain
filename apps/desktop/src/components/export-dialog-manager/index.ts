@@ -4,11 +4,11 @@
 
 export {
 	ExportDialogManagerContainer,
+	ExportDialogManagerContainer as ExportDialogManager,
 	exportDialogManager,
 } from "./export-dialog-manager.container.fn";
-export { ExportDialogManagerContainer as ExportDialogManager } from "./export-dialog-manager.container.fn";
 export type {
+	ExportDialogManagerAPI,
 	ExportDialogManagerProps,
 	ExportDialogState,
-	ExportDialogManagerAPI,
 } from "./export-dialog-manager.types";

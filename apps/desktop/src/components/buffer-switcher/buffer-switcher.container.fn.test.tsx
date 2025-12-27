@@ -1,7 +1,7 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { BufferSwitcherContainer } from "./buffer-switcher.container.fn";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EditorTab } from "@/types/editor-tab";
+import { BufferSwitcherContainer } from "./buffer-switcher.container.fn";
 
 describe("BufferSwitcherContainer", () => {
 	const mockTabs: EditorTab[] = [
@@ -68,10 +68,7 @@ describe("BufferSwitcherContainer", () => {
 
 	it("should initialize selected index to previous tab when direction is backward", async () => {
 		render(
-			<BufferSwitcherContainer
-				{...defaultProps}
-				initialDirection="backward"
-			/>,
+			<BufferSwitcherContainer {...defaultProps} initialDirection="backward" />,
 		);
 
 		await waitFor(() => {
@@ -120,9 +117,7 @@ describe("BufferSwitcherContainer", () => {
 	});
 
 	it("should wrap around when moving forward past last tab", async () => {
-		render(
-			<BufferSwitcherContainer {...defaultProps} activeTabId="tab-3" />,
-		);
+		render(<BufferSwitcherContainer {...defaultProps} activeTabId="tab-3" />);
 
 		// Wait for initial selection (should be tab-1, wrapping around)
 		await waitFor(() => {
