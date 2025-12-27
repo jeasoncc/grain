@@ -1170,7 +1170,8 @@ hr,
 
 /* ========================================
    Excalidraw Canvas Size Fix
-   Fix for "Canvas exceeds max size" error
+   Fix for "Canvas exceeds max size" error and position issues
+   参考: https://github.com/excalidraw/excalidraw/issues/2991
    ======================================== */
 
 /* Excalidraw wrapper - 必须设置固定像素尺寸 */
@@ -1179,8 +1180,9 @@ hr,
   overflow: hidden;
 }
 
-/* Excalidraw 占满容器 */
+/* 关键修复：将 Excalidraw 的定位改为 static，防止 fixed 定位逃逸 */
 .excalidraw-wrapper .excalidraw {
+  position: static !important;
   width: 100% !important;
   height: 100% !important;
 }
