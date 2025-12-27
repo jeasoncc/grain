@@ -2,7 +2,8 @@
  * @file screenshot.helper.ts
  * @description 截图辅助函数
  * 
- * 每个测试步骤都会截图，截图保存在 e2e/reports/screenshots/{test-name}/ 目录下。
+ * 每个测试步骤都会截图，截图保存在 e2e/reports/screenshots/{timestamp}/{test-name}/ 目录下。
+ * 使用时间戳作为中间目录，避免覆盖历史截图。
  */
 
 import * as fs from 'node:fs/promises';
@@ -22,6 +23,31 @@ export interface StepScreenshot {
 }
 
 /**
+ * 全局时间戳，确保同一次测试运行使用相同的时间戳目录
+ */
+let globalTimestamp: string | null = null;
+
+/**
+ * 获取当前运行的时间戳目录名
+ * 格式: YYYY-MM-DDTHH-mm-ss
+ */
+export function getRunTimestamp(): string {
+  if (!globalTimestamp) {
+    globalTimestamp = new Date().toISOString()
+      .replace(/:/g, '-')
+      .replace(/\.\d{3}Z$/, '');
+  }
+  return globalTimestamp;
+}
+
+/**
+ * 重置时间戳（用于新的测试运行）
+ */
+export function resetRunTimestamp(): void {
+  globalTimestamp = null;
+}
+
+/**
  * 截图管理器
  */
 export class ScreenshotManager {
@@ -29,14 +55,22 @@ export class ScreenshotManager {
   private stepCounter: number;
   private screenshots: StepScreenshot[];
   private baseDir: string;
+  private runTimestamp: string;
 
   constructor(testName: string) {
     this.testName = testName;
     this.stepCounter = 0;
     this.screenshots = [];
+    this.runTimestamp = getRunTimestamp();
     
     const config = getConfig();
-    this.baseDir = path.join(process.cwd(), config.screenshotDir, testName);
+    // 使用时间戳作为中间目录: screenshots/{timestamp}/{test-name}/
+    this.baseDir = path.join(
+      process.cwd(), 
+      config.screenshotDir, 
+      this.runTimestamp,
+      testName
+    );
   }
 
   /**
@@ -44,6 +78,21 @@ export class ScreenshotManager {
    */
   async init(): Promise<void> {
     await fs.mkdir(this.baseDir, { recursive: true });
+    
+    // 创建/更新 latest 符号链接
+    const config = getConfig();
+    const screenshotRoot = path.join(process.cwd(), config.screenshotDir);
+    const latestLink = path.join(screenshotRoot, 'latest');
+    const timestampDir = path.join(screenshotRoot, this.runTimestamp);
+    
+    try {
+      // 删除旧的符号链接
+      await fs.unlink(latestLink).catch(() => {});
+      // 创建新的符号链接
+      await fs.symlink(timestampDir, latestLink, 'dir');
+    } catch {
+      // 符号链接创建失败不影响测试
+    }
   }
 
   /**
@@ -108,6 +157,20 @@ export class ScreenshotManager {
    */
   getScreenshots(): StepScreenshot[] {
     return [...this.screenshots];
+  }
+
+  /**
+   * 获取截图目录路径
+   */
+  getBaseDir(): string {
+    return this.baseDir;
+  }
+
+  /**
+   * 获取运行时间戳
+   */
+  getRunTimestamp(): string {
+    return this.runTimestamp;
   }
 
   /**

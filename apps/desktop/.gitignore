@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 
 diff.txt
+
+# E2E 测试截图和报告
+e2e/reports/screenshots/
+e2e/reports/test-report.json
+e2e/reports/test-report.md

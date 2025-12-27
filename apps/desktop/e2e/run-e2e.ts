@@ -6,6 +6,7 @@
  * - 服务器连接检查
  * - 测试用例执行
  * - 测试报告生成
+ * - 时间戳目录管理
  * 
  * Requirements: 1.6, 8.1, 8.5
  */
@@ -14,6 +15,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { checkServerConnection } from './helpers/browser.helper';
 import { getConfig } from './config/puppeteer.config';
+import { resetRunTimestamp, getRunTimestamp } from './helpers/screenshot.helper';
 
 // 导入测试模块
 import { runWorkspaceTests } from './tests/workspace.e2e';
@@ -297,6 +299,11 @@ function printSummary(report: TestReport): void {
 async function main(): Promise<void> {
   console.log('🚀 Grain E2E 测试运行器');
   console.log('='.repeat(60));
+  
+  // 重置时间戳，确保每次运行使用新的时间戳目录
+  resetRunTimestamp();
+  const runTimestamp = getRunTimestamp();
+  console.log(`📁 截图目录: screenshots/${runTimestamp}/`);
   
   const { suites: suiteNames, debug } = parseArgs();
   
