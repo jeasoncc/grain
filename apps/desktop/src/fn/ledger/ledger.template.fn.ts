@@ -11,61 +11,8 @@
  */
 
 // ==============================
-// Constants
-// ==============================
-
-/** 月份名称（英文） */
-const MONTH_NAMES = [
-	"January",
-	"February",
-	"March",
-	"April",
-	"May",
-	"June",
-	"July",
-	"August",
-	"September",
-	"October",
-	"November",
-	"December",
-];
-
-// ==============================
-// Types
-// ==============================
-
-export interface LedgerFolderStructure {
-	/** 年份文件夹：year-2024 */
-	yearFolder: string;
-	/** 月份文件夹：month-12-December */
-	monthFolder: string;
-	/** 文件名：ledger-2024-12-25 */
-	filename: string;
-}
-
-// ==============================
 // Pure Functions
 // ==============================
-
-/**
- * 生成记账文件夹结构
- *
- * @param date - 日期，默认为当前时间
- * @returns 记账文件夹结构
- */
-export function getLedgerFolderStructure(
-	date: Date = new Date(),
-): LedgerFolderStructure {
-	const year = date.getFullYear();
-	const month = date.getMonth();
-	const day = date.getDate();
-
-	return {
-		yearFolder: `year-${year}`,
-		monthFolder: `month-${String(month + 1).padStart(2, "0")}-${MONTH_NAMES[month]}`,
-		filename: `ledger-${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
-	};
-}
 
 /**
  * 生成记账模板内容（Lexical JSON 格式）

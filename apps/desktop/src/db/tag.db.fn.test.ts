@@ -530,7 +530,9 @@ describe("tag.db.fn", () => {
 					typeof database.tags.where
 				>,
 			);
-			vi.mocked(database.tags.bulkAdd).mockResolvedValue([] as unknown as string);
+			vi.mocked(database.tags.bulkAdd).mockResolvedValue(
+				[] as unknown as string,
+			);
 
 			const result = await runTE(rebuildTagCache("workspace-1"));
 

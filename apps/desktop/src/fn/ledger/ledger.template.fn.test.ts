@@ -4,36 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import {
-	generateLedgerContent,
-	getLedgerFolderStructure,
-} from "./ledger.template.fn";
-
-describe("getLedgerFolderStructure", () => {
-	it("应该生成正确的文件夹结构", () => {
-		const date = new Date("2024-12-25T10:30:00");
-		const structure = getLedgerFolderStructure(date);
-
-		expect(structure.yearFolder).toBe("year-2024");
-		expect(structure.monthFolder).toBe("month-12-December");
-		expect(structure.filename).toBe("ledger-2024-12-25");
-	});
-
-	it("应该正确处理月份补零", () => {
-		const date = new Date("2024-03-05T10:30:00");
-		const structure = getLedgerFolderStructure(date);
-
-		expect(structure.monthFolder).toBe("month-03-March");
-		expect(structure.filename).toBe("ledger-2024-03-05");
-	});
-
-	it("应该使用当前日期作为默认值", () => {
-		const structure = getLedgerFolderStructure();
-		const now = new Date();
-
-		expect(structure.yearFolder).toContain(`year-${now.getFullYear()}`);
-	});
-});
+import { generateLedgerContent } from "./ledger.template.fn";
 
 describe("generateLedgerContent", () => {
 	it("应该生成有效的 JSON", () => {

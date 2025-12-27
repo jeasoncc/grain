@@ -419,7 +419,10 @@ export function FileTree({
 	}
 
 	return (
-		<div className="group/panel flex h-full w-full flex-col" data-testid="file-tree">
+		<div
+			className="group/panel flex h-full w-full flex-col"
+			data-testid="file-tree"
+		>
 			{/* Header */}
 			<div className="h-11 flex items-center justify-between px-4 shrink-0 group/header">
 				<span className="text-sm font-semibold text-foreground/80 tracking-wide pl-1">

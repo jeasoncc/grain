@@ -6,10 +6,11 @@
 
 ## Tasks
 
-- [ ] 1. 修复 Ledger 文件夹结构
-  - [ ] 1.1 修改 `ledger.config.ts` 使用 `getDateFolderStructure`
+- [-] 1. 修复 Ledger 文件夹结构
+  - [-] 1.1 修改 `ledger.config.ts` 使用 `getDateFolderStructure`
     - 将 `import { getLedgerFolderStructure } from "@/fn/ledger"` 改为 `import { getDateFolderStructure } from "@/fn/date"`
     - 修改 `generateLedgerFolderPath` 函数使用 `getDateFolderStructure`
+    - 删除 `getLedgerFolderStructure`
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
   - [ ]* 1.2 更新 Ledger 配置测试
     - 更新 `create-ledger.action.test.ts` 验证新的文件夹结构

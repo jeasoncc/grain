@@ -13,7 +13,8 @@
 
 import dayjs from "dayjs";
 import { z } from "zod";
-import { generateLedgerContent, getLedgerFolderStructure } from "@/fn/ledger";
+import { getDateFolderStructureWithFilename } from "@/fn/date";
+import { generateLedgerContent } from "@/fn/ledger";
 import type { TemplateConfig } from "../create-templated-file.action";
 
 // ==============================
@@ -56,7 +57,7 @@ const generateLedgerTemplate = (params: LedgerTemplateParams): string => {
  */
 const generateLedgerFolderPath = (params: LedgerTemplateParams): string[] => {
 	const date = params.date || dayjs().toDate();
-	const structure = getLedgerFolderStructure(date);
+	const structure = getDateFolderStructureWithFilename(date, "ledger");
 
 	return [structure.yearFolder, structure.monthFolder];
 };
@@ -66,7 +67,7 @@ const generateLedgerFolderPath = (params: LedgerTemplateParams): string[] => {
  */
 const generateLedgerTitle = (params: LedgerTemplateParams): string => {
 	const date = params.date || dayjs().toDate();
-	const structure = getLedgerFolderStructure(date);
+	const structure = getDateFolderStructureWithFilename(date, "ledger");
 	return structure.filename;
 };
 

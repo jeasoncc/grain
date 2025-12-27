@@ -258,7 +258,7 @@ export const ActivityBarView = memo(function ActivityBarView({
 	}, [activePanel, isSidebarOpen, onToggleSidebar, onSetActivePanel]);
 
 	return (
-		<aside 
+		<aside
 			data-testid="activity-bar"
 			className="activity-bar z-10 flex w-12 shrink-0 flex-col items-center border-r border-border/30 bg-muted/50 pb-2"
 		>
