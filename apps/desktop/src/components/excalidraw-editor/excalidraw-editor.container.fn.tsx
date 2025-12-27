@@ -27,8 +27,13 @@ const AUTO_SAVE_DELAY = 2000;
 /** 最小有效容器尺寸 */
 const MIN_CONTAINER_SIZE = 100;
 
-/** 最大安全容器尺寸（防止 Canvas exceeds max size） */
-const MAX_CONTAINER_SIZE = 16000;
+/** 
+ * 最大安全容器尺寸
+ * 浏览器 canvas 最大尺寸约为 16384x16384 像素
+ * 考虑 devicePixelRatio (最高可达 3-4)，我们限制为 4000px
+ * 这样即使 DPR=4，实际 canvas 也只有 16000px
+ */
+const MAX_CONTAINER_SIZE = 4000;
 
 /** Excalidraw 初始数据类型 */
 interface ExcalidrawInitialData {
@@ -54,16 +59,33 @@ const EMPTY_EXCALIDRAW_DATA: ExcalidrawInitialData = {
 
 /**
  * 检查容器尺寸是否有效
+ * 考虑 devicePixelRatio，确保实际 canvas 尺寸不超过浏览器限制
  */
 function isValidContainerSize(size: ContainerSize): boolean {
+	const dpr = Math.min(window.devicePixelRatio || 1, 2); // 限制 DPR 最大为 2
+	const maxSize = Math.floor(MAX_CONTAINER_SIZE / dpr);
+	
 	return (
 		size.width >= MIN_CONTAINER_SIZE &&
 		size.height >= MIN_CONTAINER_SIZE &&
-		size.width <= MAX_CONTAINER_SIZE &&
-		size.height <= MAX_CONTAINER_SIZE &&
+		size.width <= maxSize &&
+		size.height <= maxSize &&
 		Number.isFinite(size.width) &&
 		Number.isFinite(size.height)
 	);
+}
+
+/**
+ * 限制容器尺寸在安全范围内
+ */
+function clampContainerSize(size: ContainerSize): ContainerSize {
+	const dpr = Math.min(window.devicePixelRatio || 1, 2);
+	const maxSize = Math.floor(MAX_CONTAINER_SIZE / dpr);
+	
+	return {
+		width: Math.min(Math.max(size.width, MIN_CONTAINER_SIZE), maxSize),
+		height: Math.min(Math.max(size.height, MIN_CONTAINER_SIZE), maxSize),
+	};
 }
 
 /**
@@ -142,14 +164,17 @@ export const ExcalidrawEditorContainer = memo(
 
 			const updateSize = () => {
 				const rect = container.getBoundingClientRect();
-				const newSize: ContainerSize = {
+				const rawSize: ContainerSize = {
 					width: Math.floor(rect.width),
 					height: Math.floor(rect.height),
 				};
 
-				if (isValidContainerSize(newSize)) {
-					setContainerSize(newSize);
-					logger.debug("[ExcalidrawEditor] 容器尺寸:", newSize);
+				// 限制尺寸在安全范围内
+				const clampedSize = clampContainerSize(rawSize);
+				
+				if (isValidContainerSize(clampedSize)) {
+					setContainerSize(clampedSize);
+					logger.debug("[ExcalidrawEditor] 容器尺寸:", clampedSize);
 				}
 			};
 

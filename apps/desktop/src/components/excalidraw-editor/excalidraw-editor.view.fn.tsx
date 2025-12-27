@@ -4,17 +4,25 @@
  * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  * 集成 @excalidraw/excalidraw 包，支持主题切换和 onChange 回调
  *
+ * 修复 Canvas exceeds max size 错误：
+ * - 限制 devicePixelRatio 为最大 2
+ * - 使用固定像素尺寸的容器
+ * - 清理 appState 中可能导致问题的属性
+ *
  * @requirements 5.2
  */
 
 import { Excalidraw } from "@excalidraw/excalidraw";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
 import type { ExcalidrawEditorViewProps } from "./excalidraw-editor.types";
 
 /** 元素坐标和尺寸的安全限制 */
 const MAX_COORD = 32000;
 const MAX_SIZE = 8000;
+
+/** 最大允许的 devicePixelRatio，防止高 DPI 屏幕导致 canvas 过大 */
+const MAX_DEVICE_PIXEL_RATIO = 2;
 
 /**
  * 清理 appState，只保留安全的属性
@@ -88,6 +96,33 @@ export const ExcalidrawEditorView = memo(
 		viewModeEnabled = false,
 		className,
 	}: ExcalidrawEditorViewProps) => {
+		const containerRef = useRef<HTMLDivElement>(null);
+		const originalDPRRef = useRef<number | null>(null);
+
+		// 在组件挂载时限制 devicePixelRatio
+		useEffect(() => {
+			// 保存原始值
+			originalDPRRef.current = window.devicePixelRatio;
+
+			// 如果 devicePixelRatio 过高，临时覆盖它
+			if (window.devicePixelRatio > MAX_DEVICE_PIXEL_RATIO) {
+				Object.defineProperty(window, "devicePixelRatio", {
+					get: () => MAX_DEVICE_PIXEL_RATIO,
+					configurable: true,
+				});
+			}
+
+			return () => {
+				// 恢复原始值
+				if (originalDPRRef.current !== null) {
+					Object.defineProperty(window, "devicePixelRatio", {
+						get: () => originalDPRRef.current,
+						configurable: true,
+					});
+				}
+			};
+		}, []);
+
 		// 包装 onChange 回调以适配 Excalidraw 的类型
 		const handleChange = useCallback(
 			// biome-ignore lint/suspicious/noExplicitAny: Excalidraw 类型复杂
@@ -116,7 +151,16 @@ export const ExcalidrawEditorView = memo(
 		}, [initialData]);
 
 		return (
-			<div className={cn("h-full w-full", className)}>
+			<div
+				ref={containerRef}
+				className={cn("h-full w-full", className)}
+				style={{
+					// 确保容器不会超出视口
+					maxWidth: "100vw",
+					maxHeight: "100vh",
+					overflow: "hidden",
+				}}
+			>
 				<Excalidraw
 					initialData={excalidrawInitialData}
 					theme={theme}
