@@ -101,29 +101,15 @@ export const EXCALIDRAW_SOURCE = "grain-editor";
 /**
  * 创建默认的 Excalidraw 应用状态
  *
- * @returns Excalidraw 应用状态对象
+ * 注意：只保留必要的属性，避免 Canvas exceeds max size 错误
+ * 参考：https://github.com/excalidraw/excalidraw/issues/2723
+ *
+ * @returns Excalidraw 应用状态对象（最小化版本）
  */
-export function createDefaultAppState(): ExcalidrawAppState {
+export function createDefaultAppState(): Partial<ExcalidrawAppState> {
 	return {
 		viewBackgroundColor: "#ffffff",
-		currentItemStrokeColor: "#000000",
-		currentItemBackgroundColor: "transparent",
-		currentItemFillStyle: "hachure",
-		currentItemStrokeWidth: 1,
-		currentItemStrokeStyle: "solid",
-		currentItemRoughness: 1,
-		currentItemOpacity: 100,
-		currentItemFontFamily: 1,
-		currentItemFontSize: 20,
-		currentItemTextAlign: "left",
-		currentItemStartArrowhead: null,
-		currentItemEndArrowhead: "arrow",
-		scrollX: 0,
-		scrollY: 0,
-		zoom: { value: 1 },
-		currentItemRoundness: "round",
 		gridSize: null,
-		colorPalette: {},
 	};
 }
 
@@ -131,15 +117,17 @@ export function createDefaultAppState(): ExcalidrawAppState {
  * 创建 Excalidraw 文档对象
  *
  * @param elements - 绘图元素数组
- * @param appState - 应用状态
+ * @param appState - 应用状态（最小化版本）
  * @param files - 嵌入文件
  * @returns Excalidraw 文档对象
  */
 export function createExcalidrawDocument(
 	elements: ExcalidrawElement[] = [],
-	appState: ExcalidrawAppState = createDefaultAppState(),
+	appState: Partial<ExcalidrawAppState> = createDefaultAppState(),
 	files: ExcalidrawFiles = {},
-): ExcalidrawDocument {
+): Omit<ExcalidrawDocument, "appState"> & {
+	appState: Partial<ExcalidrawAppState>;
+} {
 	return {
 		type: "excalidraw",
 		version: EXCALIDRAW_VERSION,
