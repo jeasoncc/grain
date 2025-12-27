@@ -7,8 +7,8 @@
  * @requirements 5.2
  */
 
-// 必须导入 Excalidraw CSS（0.18.0+ 版本）
-import "@excalidraw/excalidraw/index.css";
+// 导入 Excalidraw CSS（0.18.0 版本）
+import "@excalidraw/excalidraw/dist/prod/index.css";
 
 import { Excalidraw } from "@excalidraw/excalidraw";
 import { memo, useCallback } from "react";
