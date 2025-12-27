@@ -545,8 +545,53 @@ export function generateWikiContent(
 		children.push(createParagraphNode());
 	}
 
-	// 添加简介段落
+	// 添加简介段落提示
+	children.push(
+		createParagraphNode([createTextNode("Write a brief introduction here...")]),
+	);
+
+	// 添加空行
+	if (includeEmptyLines) {
+		children.push(createParagraphNode());
+	}
+
+	// 添加 Overview 小节
+	children.push(createHeadingNode("Overview", "h3"));
+
+	if (includeEmptyLines) {
+		children.push(createParagraphNode());
+	}
+
 	children.push(createParagraphNode([createTextNode("")]));
+
+	// 添加空行
+	if (includeEmptyLines) {
+		children.push(createParagraphNode());
+	}
+
+	// 添加 Details 小节
+	children.push(createHeadingNode("Details", "h3"));
+
+	if (includeEmptyLines) {
+		children.push(createParagraphNode());
+	}
+
+	children.push(createParagraphNode([createTextNode("")]));
+
+	// 添加空行
+	if (includeEmptyLines) {
+		children.push(createParagraphNode());
+	}
+
+	// 添加 References 小节
+	children.push(createHeadingNode("References", "h3"));
+
+	if (includeEmptyLines) {
+		children.push(createParagraphNode());
+	}
+
+	// 添加空的列表用于参考链接
+	children.push(createListNode([""], "bullet"));
 
 	return JSON.stringify(createDocument(children));
 }
