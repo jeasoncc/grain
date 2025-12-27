@@ -103,8 +103,8 @@
     - 捕获控制台错误
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7_
 
-- [-] 6. 实现 Ledger 创建流程测试
-  - [-] 6.1 创建 Ledger 测试文件
+- [x] 6. 实现 Ledger 创建流程测试
+  - [x] 6.1 创建 Ledger 测试文件
     - 创建 `e2e/tests/ledger.e2e.ts`
     - 实现测试：点击按钮创建记账
     - 实现测试：验证文件夹结构
@@ -116,8 +116,8 @@
     - 捕获控制台错误
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6_
 
-- [ ] 7. 实现 Excalidraw 创建流程测试
-  - [ ] 7.1 创建 Excalidraw 测试文件
+- [-] 7. 实现 Excalidraw 创建流程测试
+  - [-] 7.1 创建 Excalidraw 测试文件
     - 创建 `e2e/tests/excalidraw.e2e.ts`
     - 实现测试：触发创建 Excalidraw
     - 实现测试：验证文件夹结构

@@ -68,6 +68,13 @@ export const SELECTORS = {
   sidebarToggle: '[data-testid="sidebar-toggle"]',
   
   // ==============================
+  // Command Palette
+  // ==============================
+  commandPalette: '[cmdk-root]',
+  commandPaletteInput: '[cmdk-input]',
+  commandPaletteItem: '[cmdk-item]',
+  
+  // ==============================
   // 通用
   // ==============================
   loading: '[data-testid="loading"]',
