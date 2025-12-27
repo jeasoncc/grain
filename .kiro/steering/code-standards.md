@@ -274,6 +274,87 @@ const [user, setUser] = useState(null);
 | `wiki-hover-preview.tsx` | `wiki-hover-preview.view.fn.tsx` |
 | `wiki-hover-preview-connected.tsx` | `wiki-hover-preview.container.fn.tsx` |
 
+## 模板化文件创建规范
+
+### 统一文件夹结构
+
+所有模板化文件（Diary、Wiki、Ledger 等）必须使用统一的文件夹结构：
+
+```
+{RootFolder}/
+├── year-YYYY-{Zodiac}/           # 年份文件夹（带生肖）
+│   └── month-MM-{MonthName}/     # 月份文件夹
+│       └── day-DD-{Weekday}/     # 日期文件夹（可选，仅 Diary）
+│           └── {prefix}-{timestamp}-{time}  # 文件名
+```
+
+**示例：**
+- Diary: `Diary/year-2024-Dragon/month-12-December/day-27-Friday/diary-1735315200-14-30-00`
+- Wiki: `Wiki/year-2024-Dragon/month-12-December/wiki-1735315200-14-30-00`
+- Ledger: `Ledger/year-2024-Dragon/month-12-December/ledger-1735315200-14-30-00`
+
+### 必须使用高阶函数
+
+所有模板化文件创建必须使用 `createTemplatedFile` 高阶函数：
+
+```typescript
+// ✅ 正确：使用高阶函数
+import { createTemplatedFile } from "@/actions/templated";
+export const createDiary = createTemplatedFile(diaryConfig);
+export const createWiki = createTemplatedFile(wikiConfig);
+export const createLedger = createTemplatedFile(ledgerConfig);
+
+// ❌ 错误：手动实现创建逻辑
+export const createDiary = async (params) => {
+  const content = generateDiaryContent(params.date);
+  // ... 重复的创建逻辑
+};
+```
+
+### 必须使用统一的日期函数
+
+所有模板配置必须使用 `@/fn/date` 中的函数生成文件夹结构：
+
+```typescript
+// ✅ 正确：使用统一的日期函数
+import { getDateFolderStructure } from "@/fn/date";
+
+const generateFolderPath = (params: DiaryTemplateParams): string[] => {
+  const structure = getDateFolderStructure(params.date);
+  return [structure.yearFolder, structure.monthFolder, structure.dayFolder];
+};
+
+// ❌ 错误：使用独立的文件夹结构函数
+import { getLedgerFolderStructure } from "@/fn/ledger";  // 不要使用
+```
+
+### 模板配置结构
+
+```typescript
+interface TemplateConfig<T> {
+  readonly name: string;           // 模块名称（用于日志）
+  readonly rootFolder: string;     // 根文件夹（Diary/Wiki/Ledger）
+  readonly fileType: NodeType;     // 文件类型
+  readonly tag: string;            // 默认标签
+  readonly generateTemplate: (params: T) => string;      // 生成内容
+  readonly generateFolderPath: (params: T) => string[];  // 生成文件夹路径
+  readonly generateTitle: (params: T) => string;         // 生成标题
+  readonly paramsSchema: z.ZodSchema<T>;                 // 参数校验
+  readonly foldersCollapsed?: boolean;                   // 文件夹是否折叠
+}
+```
+
+### 新增模板类型检查清单
+
+创建新的模板化文件类型时，必须检查：
+
+1. ✅ 使用 `createTemplatedFile` 高阶函数
+2. ✅ 使用 `getDateFolderStructure` 生成年份/月份文件夹
+3. ✅ 根文件夹名称唯一且有意义
+4. ✅ 文件类型正确（diary/file/canvas）
+5. ✅ 有对应的 Zod 参数校验 Schema
+6. ✅ 有对应的测试文件
+
 ## Actions 规范
 
 ### 文件组织
