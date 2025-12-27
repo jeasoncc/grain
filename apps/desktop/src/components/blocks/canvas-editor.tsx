@@ -149,22 +149,37 @@ export function CanvasEditor({
 	// 清理 appState 以避免 Canvas exceeds max size 错误
 	const sanitizeAppState = (appState: any): any => {
 		if (!appState || typeof appState !== "object") {
-			return {};
+			return {
+				viewBackgroundColor: "#ffffff",
+			};
 		}
-		const sanitized: any = {};
+		
+		// 只保留安全的属性，完全忽略可能导致问题的属性
+		const sanitized: any = {
+			viewBackgroundColor: "#ffffff",
+		};
+		
+		// 安全地复制背景色
 		if (
 			appState.viewBackgroundColor &&
 			typeof appState.viewBackgroundColor === "string"
 		) {
 			sanitized.viewBackgroundColor = appState.viewBackgroundColor;
 		}
+		
+		// 安全地复制网格大小
 		if (
 			typeof appState.gridSize === "number" &&
 			Number.isFinite(appState.gridSize) &&
-			appState.gridSize > 0
+			appState.gridSize > 0 &&
+			appState.gridSize <= 100
 		) {
 			sanitized.gridSize = appState.gridSize;
 		}
+		
+		// 不复制 scrollX, scrollY, zoom 等可能导致 canvas 尺寸问题的属性
+		// Excalidraw 会自动计算这些值
+		
 		return sanitized;
 	};
 
@@ -191,24 +206,47 @@ export function CanvasEditor({
 
 	// 解析并清理初始数据
 	const parsedInitialData: ExcalidrawSceneData | undefined = (() => {
-		if (!initialData) return undefined;
+		if (!initialData) {
+			// 返回空的初始数据
+			return {
+				elements: [],
+				appState: {
+					viewBackgroundColor: "#ffffff",
+				},
+				files: {},
+			};
+		}
 		try {
 			const parsed = JSON.parse(initialData);
 			// 检查是否是有效的 Excalidraw 数据
-			if (
-				parsed &&
-				typeof parsed === "object" &&
-				Array.isArray(parsed.elements)
-			) {
+			if (parsed && typeof parsed === "object") {
+				const elements = Array.isArray(parsed.elements) 
+					? sanitizeElements(parsed.elements) 
+					: [];
+				
 				return {
-					elements: sanitizeElements(parsed.elements),
+					elements,
 					appState: sanitizeAppState(parsed.appState),
 					files: parsed.files || {},
 				};
 			}
-			return undefined;
+			// 返回空的初始数据
+			return {
+				elements: [],
+				appState: {
+					viewBackgroundColor: "#ffffff",
+				},
+				files: {},
+			};
 		} catch {
-			return undefined;
+			// 解析失败，返回空的初始数据
+			return {
+				elements: [],
+				appState: {
+					viewBackgroundColor: "#ffffff",
+				},
+				files: {},
+			};
 		}
 	})();
 
@@ -355,6 +393,7 @@ export function CanvasEditor({
 							onClearData={handleClearData}
 						>
 							<Excalidraw
+								key={`excalidraw-fullscreen-${nodeId}`}
 								excalidrawAPI={(api) => {
 									excalidrawRef.current = api;
 								}}
@@ -433,6 +472,7 @@ export function CanvasEditor({
 						onClearData={handleClearData}
 					>
 						<Excalidraw
+							key={`excalidraw-${nodeId}`}
 							excalidrawAPI={(api) => {
 								excalidrawRef.current = api;
 							}}
