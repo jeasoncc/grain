@@ -38,14 +38,29 @@ describe("SearchPanelContainer", () => {
 		vi.clearAllMocks();
 	});
 
-	it("should render SearchPanelView", () => {
+	it("should render SearchPanelView", async () => {
+		const { useSidebarStore } = await import("@/stores/sidebar.store");
+		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
+			const state = {
+				searchState: {
+					query: "",
+					selectedTypes: ["node"],
+					showFilters: false,
+				},
+				setSearchQuery: vi.fn(),
+				setSearchSelectedTypes: vi.fn(),
+				setSearchShowFilters: vi.fn(),
+			};
+			return selector(state);
+		});
+
 		render(<SearchPanelContainer />);
 		expect(screen.getByPlaceholderText("Search...")).toBeInTheDocument();
 	});
 
-	it("should pass search state to view", () => {
-		const { useSidebarStore } = require("@/stores/sidebar.store");
-		useSidebarStore.mockImplementation((selector: any) => {
+	it("should pass search state to view", async () => {
+		const { useSidebarStore } = await import("@/stores/sidebar.store");
+		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
 			const state = {
 				searchState: {
 					query: "test query",
@@ -76,10 +91,10 @@ describe("SearchPanelContainer", () => {
 				},
 			]),
 		);
-		(searchEngine.simpleSearch as any) = mockSearch;
+		vi.mocked(searchEngine.simpleSearch).mockImplementation(mockSearch);
 
-		const { useSidebarStore } = require("@/stores/sidebar.store");
-		useSidebarStore.mockImplementation((selector: any) => {
+		const { useSidebarStore } = await import("@/stores/sidebar.store");
+		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
 			const state = {
 				searchState: {
 					query: "test",
@@ -109,7 +124,22 @@ describe("SearchPanelContainer", () => {
 	it("should not search when query is empty", async () => {
 		const { searchEngine } = await import("@/fn/search");
 		const mockSearch = vi.fn(() => Promise.resolve([]));
-		(searchEngine.simpleSearch as any) = mockSearch;
+		vi.mocked(searchEngine.simpleSearch).mockImplementation(mockSearch);
+
+		const { useSidebarStore } = await import("@/stores/sidebar.store");
+		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
+			const state = {
+				searchState: {
+					query: "",
+					selectedTypes: ["node"],
+					showFilters: false,
+				},
+				setSearchQuery: vi.fn(),
+				setSearchSelectedTypes: vi.fn(),
+				setSearchShowFilters: vi.fn(),
+			};
+			return selector(state);
+		});
 
 		render(<SearchPanelContainer />);
 
@@ -124,14 +154,14 @@ describe("SearchPanelContainer", () => {
 	it("should handle search errors gracefully", async () => {
 		const { searchEngine } = await import("@/fn/search");
 		const mockSearch = vi.fn(() => Promise.reject(new Error("Search failed")));
-		(searchEngine.simpleSearch as any) = mockSearch;
+		vi.mocked(searchEngine.simpleSearch).mockImplementation(mockSearch);
 
 		const consoleErrorSpy = vi
 			.spyOn(console, "error")
 			.mockImplementation(() => {});
 
-		const { useSidebarStore } = require("@/stores/sidebar.store");
-		useSidebarStore.mockImplementation((selector: any) => {
+		const { useSidebarStore } = await import("@/stores/sidebar.store");
+		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
 			const state = {
 				searchState: {
 					query: "test",
@@ -160,22 +190,18 @@ describe("SearchPanelContainer", () => {
 		consoleErrorSpy.mockRestore();
 	});
 
-	it("should connect to sidebar store actions", () => {
-		const { useSidebarStore } = require("@/stores/sidebar.store");
-		const setSearchQuery = vi.fn();
-		const setSearchSelectedTypes = vi.fn();
-		const setSearchShowFilters = vi.fn();
-
-		useSidebarStore.mockImplementation((selector: any) => {
+	it("should connect to sidebar store actions", async () => {
+		const { useSidebarStore } = await import("@/stores/sidebar.store");
+		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
 			const state = {
 				searchState: {
 					query: "",
 					selectedTypes: ["node"],
 					showFilters: false,
 				},
-				setSearchQuery,
-				setSearchSelectedTypes,
-				setSearchShowFilters,
+				setSearchQuery: vi.fn(),
+				setSearchSelectedTypes: vi.fn(),
+				setSearchShowFilters: vi.fn(),
 			};
 			return selector(state);
 		});

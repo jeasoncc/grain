@@ -160,7 +160,9 @@ describe("FileTreeItem", () => {
 			/>,
 		);
 
-		const chevron = screen.getByRole("button");
+		// 获取第一个按钮（chevron 按钮）
+		const buttons = screen.getAllByRole("button");
+		const chevron = buttons[0];
 		fireEvent.click(chevron);
 
 		expect(onToggle).toHaveBeenCalledWith("folder-1", false);

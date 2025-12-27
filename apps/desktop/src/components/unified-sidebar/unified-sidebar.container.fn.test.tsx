@@ -17,7 +17,7 @@ const mockDrawings = [
 	{ id: "2", name: "Drawing 2" },
 ];
 vi.mock("@/hooks/use-drawing", () => ({
-	useDrawingsByWorkspace: vi.fn(() => mockDrawings),
+	useDrawingNodes: vi.fn(() => mockDrawings),
 }));
 
 const mockSelectionStore = {
@@ -96,9 +96,9 @@ describe("UnifiedSidebarContainer", () => {
 	});
 
 	it("should fetch drawings for current workspace", () => {
-		const { useDrawingsByWorkspace } = require("@/hooks/use-drawing");
+		const { useDrawingNodes } = require("@/hooks/use-drawing");
 		render(<UnifiedSidebarContainer />);
-		expect(useDrawingsByWorkspace).toHaveBeenCalledWith("workspace-1");
+		expect(useDrawingNodes).toHaveBeenCalledWith("workspace-1");
 	});
 
 	it("should handle restore from collapse", () => {
@@ -142,8 +142,8 @@ describe("UnifiedSidebarContainer", () => {
 	});
 
 	it("should handle empty drawings array", () => {
-		const { useDrawingsByWorkspace } = require("@/hooks/use-drawing");
-		useDrawingsByWorkspace.mockReturnValue([]);
+		const { useDrawingNodes } = require("@/hooks/use-drawing");
+		useDrawingNodes.mockReturnValue([]);
 		render(<UnifiedSidebarContainer />);
 		expect(screen.getByTestId("unified-sidebar-view")).toBeInTheDocument();
 	});

@@ -230,7 +230,12 @@ describe("SearchPanelView", () => {
 		};
 		render(<SearchPanelView {...props} />);
 
-		expect(screen.getByText("Test Node")).toBeInTheDocument();
+		// 文本可能被高亮标记分割，使用函数匹配器
+		expect(
+			screen.getByText((content, element) => {
+				return element?.textContent === "Test Node";
+			}),
+		).toBeInTheDocument();
 		expect(screen.getByText("Workspace")).toBeInTheDocument();
 	});
 
@@ -259,7 +264,11 @@ describe("SearchPanelView", () => {
 		};
 		render(<SearchPanelView {...props} />);
 
-		const resultButton = screen.getByText("Test Node").closest("button");
+		// 文本可能被高亮标记分割，使用函数匹配器找到元素
+		const titleElement = screen.getByText((content, element) => {
+			return element?.textContent === "Test Node";
+		});
+		const resultButton = titleElement.closest("button");
 		if (resultButton) {
 			fireEvent.click(resultButton);
 			expect(onSelectResult).toHaveBeenCalledWith(results[0]);
