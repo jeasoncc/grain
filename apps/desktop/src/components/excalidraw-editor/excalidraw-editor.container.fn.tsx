@@ -163,12 +163,17 @@ export const ExcalidrawEditorContainer = memo(
 					height: Math.floor(rect.height),
 				};
 
+				logger.info("[ExcalidrawContainer] 原始容器尺寸:", rawSize);
+
 				// 限制尺寸在安全范围内
 				const clampedSize = clampContainerSize(rawSize);
 				
+				logger.info("[ExcalidrawContainer] 限制后尺寸:", clampedSize);
+				
 				if (isValidContainerSize(clampedSize)) {
 					setContainerSize(clampedSize);
-					logger.debug("[ExcalidrawEditor] 容器尺寸:", clampedSize);
+				} else {
+					logger.warn("[ExcalidrawContainer] 尺寸无效:", clampedSize);
 				}
 			};
 
