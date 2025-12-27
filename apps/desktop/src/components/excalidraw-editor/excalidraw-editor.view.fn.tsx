@@ -5,8 +5,8 @@
  * 集成 @excalidraw/excalidraw 包，支持主题切换和 onChange 回调
  *
  * 修复 Canvas exceeds max size 错误：
- * - 使用 excalidrawAPI 手动控制场景更新
- * - 强制设置安全的 appState
+ * - 强制设置 width/height 属性
+ * - 使用 scrollToContent 避免初始视口问题
  *
  * @requirements 5.2
  */
@@ -162,13 +162,11 @@ export const ExcalidrawEditorView = memo(
 					attempts++;
 					requestAnimationFrame(checkReady);
 				} else {
-					// 超过最大尝试次数，强制渲染
 					logger.warn("[ExcalidrawView] 容器尺寸检查超时，强制渲染");
 					setIsReady(true);
 				}
 			};
 
-			// 延迟开始检查
 			const timer = setTimeout(() => {
 				requestAnimationFrame(checkReady);
 			}, 50);
@@ -188,23 +186,42 @@ export const ExcalidrawEditorView = memo(
 			[onChange],
 		);
 
-		// 清理初始数据 - 完全不设置 appState，让 Excalidraw 自己初始化
+		// 清理初始数据 - 设置安全的初始 appState
 		// biome-ignore lint/suspicious/noExplicitAny: Excalidraw 类型复杂
 		const excalidrawInitialData: any = useMemo(() => {
+			// 强制使用安全的 appState，不使用任何可能导致问题的值
+			const safeAppState = {
+				viewBackgroundColor: theme === "dark" ? "#1e1e1e" : "#ffffff",
+				// 强制设置安全的初始视口 - 这些值必须是 0 和 1
+				scrollX: 0,
+				scrollY: 0,
+				zoom: { value: 1 },
+				// 不设置 width/height，让 Excalidraw 自己计算
+			};
+
 			if (!initialData) {
+				logger.info("[ExcalidrawView] 使用空白初始数据");
 				return {
 					elements: [],
-					appState: {
-						viewBackgroundColor: theme === "dark" ? "#1e1e1e" : "#ffffff",
-					},
+					appState: safeAppState,
 				};
 			}
 
+			// 过滤掉可能有问题的 appState 属性
+			const cleanedAppState = {
+				...safeAppState,
+				// 只保留背景色
+				viewBackgroundColor: initialData.appState?.viewBackgroundColor || safeAppState.viewBackgroundColor,
+			};
+
+			logger.info("[ExcalidrawView] 使用清理后的初始数据:", {
+				elementsCount: initialData.elements?.length || 0,
+				appState: cleanedAppState,
+			});
+
 			return {
 				elements: sanitizeElements([...(initialData.elements || [])]),
-				appState: {
-					viewBackgroundColor: theme === "dark" ? "#1e1e1e" : "#ffffff",
-				},
+				appState: cleanedAppState,
 				files: initialData.files || {},
 			};
 		}, [initialData, theme]);

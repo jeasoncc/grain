@@ -1166,3 +1166,33 @@ hr,
   border: none;
   height: 1px;
 }
+
+
+/* ========================================
+   Excalidraw Canvas Size Fix
+   Fix for "Canvas exceeds max size" error
+   ======================================== */
+
+/* Limit Excalidraw canvas size to prevent overflow */
+.excalidraw-wrapper .excalidraw,
+.excalidraw-wrapper .excalidraw-container {
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Force canvas to respect container bounds */
+.excalidraw-wrapper canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Ensure the excalidraw wrapper fills its container */
+.excalidraw-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.excalidraw-wrapper .excalidraw {
+  flex: 1;
+  min-height: 0;
+}

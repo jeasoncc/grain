@@ -101,7 +101,8 @@ export const EXCALIDRAW_SOURCE = "grain-editor";
 /**
  * 创建默认的 Excalidraw 应用状态
  *
- * 注意：只保留必要的属性，避免 Canvas exceeds max size 错误
+ * 注意：必须设置 scrollX, scrollY, zoom 为安全值
+ * 避免 Canvas exceeds max size 错误
  * 参考：https://github.com/excalidraw/excalidraw/issues/2723
  *
  * @returns Excalidraw 应用状态对象（最小化版本）
@@ -110,6 +111,10 @@ export function createDefaultAppState(): Partial<ExcalidrawAppState> {
 	return {
 		viewBackgroundColor: "#ffffff",
 		gridSize: null,
+		// 必须设置这些值为安全的初始值
+		scrollX: 0,
+		scrollY: 0,
+		zoom: { value: 1 },
 	};
 }
 
