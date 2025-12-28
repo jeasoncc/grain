@@ -69,5 +69,5 @@
 **Requirements:** All
 
 **Acceptance Criteria:**
-- [ ] 运行 `bun run check` 确保没有类型错误
+- [x] 运行 `bun run check` 确保没有类型错误
 - [ ] 确保所有导入正确解析
