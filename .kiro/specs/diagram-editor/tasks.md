@@ -5,17 +5,17 @@
 **Requirements:** 1.5, 2.5
 
 **Acceptance Criteria:**
-- [-] 创建 `diagram.content.fn.ts` 文件
-- [ ] 实现 `generateMermaidContent` 函数，返回默认 flowchart 模板
-- [ ] 实现 `generatePlantUMLContent` 函数，返回默认 sequence diagram 模板
-- [ ] 在 `fn/content/index.ts` 中导出新函数
+- [x] 创建 `diagram.content.fn.ts` 文件
+- [x] 实现 `generateMermaidContent` 函数，返回默认 flowchart 模板
+- [x] 实现 `generatePlantUMLContent` 函数，返回默认 sequence diagram 模板
+- [x] 在 `fn/content/index.ts` 中导出新函数
 
 ## Task 2: 创建 Mermaid 和 PlantUML 模板配置
 
 **Requirements:** 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4
 
 **Acceptance Criteria:**
-- [ ] 创建 `mermaid.config.ts` 使用 `createDateTemplateConfig` 工厂函数
+- [x] 创建 `mermaid.config.ts` 使用 `createDateTemplateConfig` 工厂函数
 - [ ] 创建 `plantuml.config.ts` 使用 `createDateTemplateConfig` 工厂函数
 - [ ] 在 `configs/index.ts` 中导出新配置
 - [ ] 在 `templateConfigs` 注册表中添加新配置

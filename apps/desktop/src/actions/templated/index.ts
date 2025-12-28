@@ -90,8 +90,8 @@ export {
 	createMermaidAsync,
 	createMermaidCompat,
 	createMermaidCompatAsync,
-	mermaidActions,
 	type MermaidCreationResult,
+	mermaidActions,
 } from "./create-mermaid.action";
 
 // ==============================
@@ -104,8 +104,8 @@ export {
 	createPlantUMLAsync,
 	createPlantUMLCompat,
 	createPlantUMLCompatAsync,
-	plantumlActions,
 	type PlantUMLCreationResult,
+	plantumlActions,
 } from "./create-plantuml.action";
 
 // ==============================
