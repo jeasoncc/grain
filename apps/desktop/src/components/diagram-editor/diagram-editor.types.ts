@@ -12,6 +12,29 @@
 export type DiagramType = "mermaid" | "plantuml";
 
 /**
+ * 错误类型
+ * - network: 网络错误（可重试）
+ * - syntax: 语法错误（需要修改代码）
+ * - server: 服务器错误（可重试）
+ * - unknown: 未知错误
+ */
+export type DiagramErrorType = "network" | "syntax" | "server" | "unknown";
+
+/**
+ * 图表渲染错误信息
+ */
+export interface DiagramError {
+	/** 错误类型 */
+	readonly type: DiagramErrorType;
+	/** 错误消息 */
+	readonly message: string;
+	/** 是否可重试 */
+	readonly retryable: boolean;
+	/** 重试次数 */
+	readonly retryCount: number;
+}
+
+/**
  * DiagramEditorView Props 接口
  *
  * 纯展示组件：所有数据和回调通过 props 传入
@@ -25,8 +48,8 @@ export interface DiagramEditorViewProps {
 	readonly previewSvg: string | null;
 	/** 是否正在加载预览 */
 	readonly isLoading: boolean;
-	/** 错误信息 */
-	readonly error: string | null;
+	/** 错误信息（增强版） */
+	readonly error: DiagramError | null;
 	/** Kroki 是否已配置 */
 	readonly isKrokiConfigured: boolean;
 	/** 代码变化回调 */

@@ -15,6 +15,8 @@ export {
 export type {
 	DiagramEditorContainerProps,
 	DiagramEditorViewProps,
+	DiagramError,
+	DiagramErrorType,
 	DiagramType,
 } from "./diagram-editor.types";
 // View 组件

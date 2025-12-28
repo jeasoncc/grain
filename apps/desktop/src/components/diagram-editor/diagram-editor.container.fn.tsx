@@ -26,6 +26,8 @@ import { useDiagramStore } from "@/stores/diagram.store";
 
 import type {
 	DiagramEditorContainerProps,
+	DiagramError,
+	DiagramErrorType,
 	DiagramType,
 } from "./diagram-editor.types";
 import { DiagramEditorView } from "./diagram-editor.view.fn";
@@ -39,6 +41,12 @@ const PREVIEW_DEBOUNCE_MS = 500;
 
 /** 自动保存防抖延迟（毫秒） */
 const AUTOSAVE_DEBOUNCE_MS = 1000;
+
+/** 最大重试次数 */
+const MAX_RETRY_COUNT = 3;
+
+/** 重试基础延迟（毫秒） */
+const RETRY_BASE_DELAY_MS = 1000;
 
 // ==============================
 // Helper Functions
@@ -57,29 +65,163 @@ const getKrokiUrl = (
 };
 
 /**
- * 调用 Kroki 服务渲染图表
+ * 判断错误类型
  */
-const renderDiagram = async (
+const classifyError = (
+	error: unknown,
+	statusCode?: number,
+): DiagramErrorType => {
+	// 网络错误
+	if (error instanceof TypeError && error.message.includes("fetch")) {
+		return "network";
+	}
+
+	// 根据 HTTP 状态码判断
+	if (statusCode) {
+		// 4xx 客户端错误通常是语法错误
+		if (statusCode >= 400 && statusCode < 500) {
+			return "syntax";
+		}
+		// 5xx 服务器错误
+		if (statusCode >= 500) {
+			return "server";
+		}
+	}
+
+	// 检查错误消息中的关键词
+	const errorMessage =
+		error instanceof Error ? error.message.toLowerCase() : "";
+	if (
+		errorMessage.includes("syntax") ||
+		errorMessage.includes("parse") ||
+		errorMessage.includes("invalid") ||
+		errorMessage.includes("unexpected")
+	) {
+		return "syntax";
+	}
+
+	if (
+		errorMessage.includes("network") ||
+		errorMessage.includes("connection") ||
+		errorMessage.includes("timeout") ||
+		errorMessage.includes("econnrefused")
+	) {
+		return "network";
+	}
+
+	return "unknown";
+};
+
+/**
+ * 创建错误对象
+ */
+const createDiagramError = (
+	error: unknown,
+	statusCode?: number,
+	retryCount = 0,
+): DiagramError => {
+	const type = classifyError(error, statusCode);
+	const message =
+		error instanceof Error ? error.message : "Unknown error occurred";
+
+	// 语法错误不可重试，其他错误在未达到最大重试次数时可重试
+	const retryable = type !== "syntax" && retryCount < MAX_RETRY_COUNT;
+
+	return {
+		type,
+		message,
+		retryable,
+		retryCount,
+	};
+};
+
+/**
+ * 计算重试延迟（指数退避）
+ */
+const getRetryDelay = (retryCount: number): number => {
+	return RETRY_BASE_DELAY_MS * 2 ** retryCount;
+};
+
+/**
+ * 延迟函数
+ */
+const delay = (ms: number): Promise<void> =>
+	new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * 调用 Kroki 服务渲染图表（带重试）
+ */
+const renderDiagramWithRetry = async (
 	code: string,
 	diagramType: DiagramType,
 	krokiServerUrl: string,
-): Promise<string> => {
+	retryCount = 0,
+	onRetryAttempt?: (count: number) => void,
+): Promise<{ svg: string } | { error: DiagramError }> => {
 	const url = getKrokiUrl(diagramType, krokiServerUrl);
 
-	const response = await fetch(url, {
-		method: "POST",
-		headers: {
-			"Content-Type": "text/plain",
-		},
-		body: code,
-	});
+	try {
+		const response = await fetch(url, {
+			method: "POST",
+			headers: {
+				"Content-Type": "text/plain",
+			},
+			body: code,
+		});
 
-	if (!response.ok) {
-		const errorText = await response.text();
-		throw new Error(errorText || `HTTP ${response.status}`);
+		if (!response.ok) {
+			const errorText = await response.text();
+			const error = new Error(errorText || `HTTP ${response.status}`);
+			const diagramError = createDiagramError(
+				error,
+				response.status,
+				retryCount,
+			);
+
+			// 如果可重试且未达到最大重试次数，自动重试
+			if (diagramError.retryable && retryCount < MAX_RETRY_COUNT) {
+				const delayMs = getRetryDelay(retryCount);
+				logger.info(
+					`[DiagramEditor] 重试渲染 (${retryCount + 1}/${MAX_RETRY_COUNT})，延迟 ${delayMs}ms`,
+				);
+				onRetryAttempt?.(retryCount + 1);
+				await delay(delayMs);
+				return renderDiagramWithRetry(
+					code,
+					diagramType,
+					krokiServerUrl,
+					retryCount + 1,
+					onRetryAttempt,
+				);
+			}
+
+			return { error: diagramError };
+		}
+
+		const svg = await response.text();
+		return { svg };
+	} catch (err) {
+		const diagramError = createDiagramError(err, undefined, retryCount);
+
+		// 如果是网络错误且未达到最大重试次数，自动重试
+		if (diagramError.retryable && retryCount < MAX_RETRY_COUNT) {
+			const delayMs = getRetryDelay(retryCount);
+			logger.info(
+				`[DiagramEditor] 网络错误，重试 (${retryCount + 1}/${MAX_RETRY_COUNT})，延迟 ${delayMs}ms`,
+			);
+			onRetryAttempt?.(retryCount + 1);
+			await delay(delayMs);
+			return renderDiagramWithRetry(
+				code,
+				diagramType,
+				krokiServerUrl,
+				retryCount + 1,
+				onRetryAttempt,
+			);
+		}
+
+		return { error: diagramError };
 	}
-
-	return response.text();
 };
 
 // ==============================
@@ -123,12 +265,15 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 	const [code, setCode] = useState("");
 	const [previewSvg, setPreviewSvg] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+	const [error, setError] = useState<DiagramError | null>(null);
 	const [isInitialized, setIsInitialized] = useState(false);
 
 	// 用于追踪是否有未保存的更改
 	const hasUnsavedChanges = useRef(false);
 	const lastSavedCode = useRef("");
+
+	// 用于取消正在进行的渲染请求
+	const abortControllerRef = useRef<AbortController | null>(null);
 
 	// ==============================
 	// 加载内容
@@ -204,29 +349,55 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 	// ==============================
 
 	const updatePreview = useCallback(
-		async (newCode: string) => {
+		async (newCode: string, isManualRetry = false) => {
 			if (!isKrokiConfigured || !newCode.trim()) {
 				setPreviewSvg(null);
 				setError(null);
 				return;
 			}
 
-			setIsLoading(true);
-			setError(null);
-
-			try {
-				const svg = await renderDiagram(newCode, diagramType, krokiServerUrl);
-				setPreviewSvg(svg);
-				logger.success("[DiagramEditor] 预览渲染成功");
-			} catch (err) {
-				const errorMessage =
-					err instanceof Error ? err.message : "Unknown error";
-				setError(errorMessage);
-				setPreviewSvg(null);
-				logger.error("[DiagramEditor] 预览渲染失败:", errorMessage);
-			} finally {
-				setIsLoading(false);
+			// 取消之前的请求
+			if (abortControllerRef.current) {
+				abortControllerRef.current.abort();
 			}
+			abortControllerRef.current = new AbortController();
+
+			setIsLoading(true);
+			// 手动重试时保留错误信息直到成功
+			if (!isManualRetry) {
+				setError(null);
+			}
+
+			const result = await renderDiagramWithRetry(
+				newCode,
+				diagramType,
+				krokiServerUrl,
+				0,
+				(retryCount) => {
+					// 更新错误状态以显示重试次数
+					setError((prev) => (prev ? { ...prev, retryCount } : null));
+				},
+			);
+
+			if ("svg" in result) {
+				setPreviewSvg(result.svg);
+				setError(null);
+				logger.success("[DiagramEditor] 预览渲染成功");
+			} else {
+				setError(result.error);
+				setPreviewSvg(null);
+				logger.error("[DiagramEditor] 预览渲染失败:", result.error.message);
+
+				// 如果是网络或服务器错误且已达到最大重试次数，显示 toast
+				if (
+					(result.error.type === "network" || result.error.type === "server") &&
+					result.error.retryCount >= MAX_RETRY_COUNT
+				) {
+					toast.error("Failed to render diagram after multiple attempts");
+				}
+			}
+
+			setIsLoading(false);
 		},
 		[isKrokiConfigured, diagramType, krokiServerUrl],
 	);
@@ -275,7 +446,9 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 
 	const handleRetry = useCallback(() => {
 		if (code) {
-			updatePreview(code);
+			// 重置错误状态的重试计数，允许重新开始重试
+			setError(null);
+			updatePreview(code, true);
 		}
 	}, [code, updatePreview]);
 
@@ -292,6 +465,10 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 			// 取消防抖
 			debouncedPreview.cancel();
 			debouncedSave.cancel();
+			// 取消正在进行的请求
+			if (abortControllerRef.current) {
+				abortControllerRef.current.abort();
+			}
 		};
 	}, [code, saveContent, debouncedPreview, debouncedSave]);
 
