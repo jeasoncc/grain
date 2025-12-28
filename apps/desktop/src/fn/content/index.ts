@@ -103,8 +103,3 @@ export {
 	isValidExcalidrawContent,
 	parseExcalidrawContent,
 } from "./excalidraw.content.fn";
-// 图表内容生成（Mermaid/PlantUML）
-export {
-	generateMermaidContent,
-	generatePlantUMLContent,
-} from "./diagram.content.fn";

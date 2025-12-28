@@ -5,7 +5,7 @@
 **Requirements:** 1.5, 2.5
 
 **Acceptance Criteria:**
-- [ ] 创建 `diagram.content.fn.ts` 文件
+- [-] 创建 `diagram.content.fn.ts` 文件
 - [ ] 实现 `generateMermaidContent` 函数，返回默认 flowchart 模板
 - [ ] 实现 `generatePlantUMLContent` 函数，返回默认 sequence diagram 模板
 - [ ] 在 `fn/content/index.ts` 中导出新函数
