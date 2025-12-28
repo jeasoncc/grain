@@ -232,6 +232,8 @@ function createTestIconTheme(): IconTheme {
 				files: {} as any,
 				diary: {} as any,
 				ledger: {} as any,
+				todo: {} as any,
+				note: {} as any,
 				tags: {} as any,
 				statistics: {} as any,
 				settings: {} as any,

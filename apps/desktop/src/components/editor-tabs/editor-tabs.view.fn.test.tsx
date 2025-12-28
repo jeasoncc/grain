@@ -110,7 +110,7 @@ describe("EditorTabsView", () => {
 		const tabs = [
 			createTestTab({ id: "tab-1", type: "file" }),
 			createTestTab({ id: "tab-2", type: "diary" }),
-			createTestTab({ id: "tab-3", type: "canvas" }),
+			createTestTab({ id: "tab-3", type: "drawing" }),
 		];
 
 		const { container } = renderWithTooltip(

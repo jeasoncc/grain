@@ -27,8 +27,8 @@ describe("StoryRightSidebarView", () => {
 		},
 		{
 			id: "tab-3",
-			title: "Test Canvas",
-			type: "canvas" as const,
+			title: "Test Drawing",
+			type: "drawing" as const,
 			nodeId: "node-3",
 			workspaceId: "workspace-1",
 			isDirty: false,
@@ -67,7 +67,7 @@ describe("StoryRightSidebarView", () => {
 		render(<StoryRightSidebarView {...defaultProps} />);
 		expect(screen.getByText("Test File 1")).toBeInTheDocument();
 		expect(screen.getByText("Test Diary")).toBeInTheDocument();
-		expect(screen.getByText("Test Canvas")).toBeInTheDocument();
+		expect(screen.getByText("Test Drawing")).toBeInTheDocument();
 	});
 
 	it("should show dirty indicator for unsaved tabs", () => {
@@ -126,9 +126,9 @@ describe("StoryRightSidebarView", () => {
 		expect(tab2?.querySelector("svg")).toBeInTheDocument();
 	});
 
-	it("should render correct icon for canvas type", () => {
+	it("should render correct icon for drawing type", () => {
 		render(<StoryRightSidebarView {...defaultProps} />);
-		const tab3 = screen.getByText("Test Canvas").closest("button");
+		const tab3 = screen.getByText("Test Drawing").closest("button");
 		expect(tab3?.querySelector("svg")).toBeInTheDocument();
 	});
 });

@@ -249,7 +249,7 @@ export function FileTreeItem({
 												文本文件
 											</DropdownMenuItem>
 											<DropdownMenuItem
-												onClick={() => onCreateFile(node.id, "canvas")}
+												onClick={() => onCreateFile(node.id, "drawing")}
 											>
 												<PenTool className="size-4 mr-2" />
 												画布

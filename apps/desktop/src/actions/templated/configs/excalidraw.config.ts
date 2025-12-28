@@ -114,7 +114,7 @@ const generateExcalidrawTitle = (params: ExcalidrawTemplateParams): string => {
 export const excalidrawConfig: TemplateConfig<ExcalidrawTemplateParams> = {
 	name: "Excalidraw 绘图",
 	rootFolder: "excalidraw",
-	fileType: "canvas",
+	fileType: "drawing",
 	tag: "excalidraw",
 	generateTemplate: generateExcalidrawTemplate,
 	generateFolderPath: generateExcalidrawFolderPath,

@@ -25,7 +25,7 @@ describe("BufferSwitcherView", () => {
 		{
 			id: "tab-3",
 			title: "Canvas Drawing",
-			type: "canvas",
+			type: "drawing",
 			workspaceId: "workspace-1",
 			nodeId: "node-3",
 			isDirty: false,
@@ -105,10 +105,10 @@ describe("BufferSwitcherView", () => {
 		expect(buttons[1].querySelector("svg")).toBeInTheDocument();
 	});
 
-	it("should render correct icon for canvas type", () => {
+	it("should render correct icon for drawing type", () => {
 		render(<BufferSwitcherView {...defaultProps} />);
 
-		// Palette icon should be present for canvas type
+		// Palette icon should be present for drawing type
 		const buttons = screen.getAllByRole("button");
 		expect(buttons[2].querySelector("svg")).toBeInTheDocument();
 	});

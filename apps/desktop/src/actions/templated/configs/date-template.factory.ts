@@ -13,7 +13,7 @@
 import dayjs from "dayjs";
 import { z } from "zod";
 import { getDateFolderStructureWithFilename } from "@/fn/date";
-import type { NodeType } from "@/types/node";
+import type { FileNodeType } from "@/types/node";
 import type { TemplateConfig } from "../create-templated-file.action";
 
 // ==============================
@@ -36,8 +36,8 @@ export interface DateTemplateOptions {
 	readonly name: string;
 	/** 根文件夹名称 */
 	readonly rootFolder: string;
-	/** 文件类型（排除 folder 和 drawing，因为日期模板只创建文本类文件） */
-	readonly fileType: Exclude<NodeType, "folder" | "drawing">;
+	/** 文件类型（使用 FileNodeType，排除 folder） */
+	readonly fileType: FileNodeType;
 	/** 默认标签 */
 	readonly tag: string;
 	/** 文件名前缀 */

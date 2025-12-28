@@ -1,7 +1,7 @@
 # Maintainer: Jeason <xiaomiquan@aliyun.com>
 
 pkgname=grain
-pkgver=0.1.166
+pkgver=0.1.167
 pkgrel=1
 pkgdesc="A minimalist writing sanctuary for long-form content"
 arch=('x86_64')

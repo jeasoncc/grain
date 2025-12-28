@@ -76,6 +76,8 @@ function createTestIconTheme(): IconTheme {
 				files: Folder,
 				diary: FileText,
 				ledger: DollarSign,
+				todo: FileText,
+				note: FileText,
 				tags: FileText,
 				statistics: FileText,
 				settings: Settings,

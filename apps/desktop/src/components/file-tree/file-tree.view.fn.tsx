@@ -309,7 +309,10 @@ export function FileTree({
 	const { currentTheme } = useTheme();
 
 	// Use window height as fallback to ensure tree renders immediately
-	const [dimensions, setDimensions] = useState({
+	const [dimensions, setDimensions] = useState<{
+		width: number | string;
+		height: number;
+	}>({
 		width: "100%",
 		height: typeof window !== "undefined" ? window.innerHeight - 100 : 600,
 	});
