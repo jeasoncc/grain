@@ -37,7 +37,7 @@
 **Acceptance Criteria:**
 - [x] 创建 `diagram-editor.types.ts` 定义组件类型
 - [x] 创建 `diagram-editor.view.fn.tsx` 纯展示组件
-- [ ] 创建 `diagram-editor.container.fn.tsx` 容器组件
+- [-] 创建 `diagram-editor.container.fn.tsx` 容器组件
 - [ ] 创建 `index.ts` 统一导出
 - [ ] 实现分屏布局（代码编辑区 + 预览区）
 - [ ] 实现 Kroki 服务调用和预览渲染
