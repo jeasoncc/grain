@@ -163,8 +163,8 @@ export const StoryWorkspaceContainer = memo(
 
 		// 获取当前活动标签
 		const activeTab = tabs.find((t) => t.id === activeTabId);
-		const isCanvasTab = activeTab?.type === "canvas";
-		const isDrawingTab = activeTab?.type === "drawing";
+		// canvas 和 drawing 类型都使用 Excalidraw 编辑器
+		const isExcalidrawTab = activeTab?.type === "canvas" || activeTab?.type === "drawing";
 
 		const handleScrollChange = useCallback(
 			(tabId: string, scrollTop: number) => {
@@ -222,7 +222,7 @@ export const StoryWorkspaceContainer = memo(
 
 		// 计算当前编辑器的字数
 		const wordCountResult = useMemo(() => {
-			if (!activeTabId || isCanvasTab || isDrawingTab) {
+			if (!activeTabId || isExcalidrawTab) {
 				return { chineseChars: 0, englishWords: 0, total: 0, characters: 0 };
 			}
 			const state = editorStates[activeTabId];
@@ -230,7 +230,7 @@ export const StoryWorkspaceContainer = memo(
 				return { chineseChars: 0, englishWords: 0, total: 0, characters: 0 };
 			}
 			return countWordsFromLexicalState(state.serializedState, wordCountMode);
-		}, [activeTabId, editorStates, isCanvasTab, isDrawingTab, wordCountMode]);
+		}, [activeTabId, editorStates, isExcalidrawTab, wordCountMode]);
 
 		const renderEditorContent = () => {
 			if (!activeTab) {
@@ -263,8 +263,8 @@ export const StoryWorkspaceContainer = memo(
 				);
 			}
 
-			// 处理 canvas 和 drawing 类型节点 - 使用 ExcalidrawEditorContainer
-			if (isCanvasTab || activeTab.type === "drawing") {
+			// 处理 Excalidraw 类型节点（canvas 和 drawing）
+			if (isExcalidrawTab) {
 				return (
 					<ExcalidrawEditorContainer
 						key={activeTab.id}
@@ -350,9 +350,7 @@ export const StoryWorkspaceContainer = memo(
 					<WordCountBadge
 						wordCountResult={wordCountResult}
 						countMode={wordCountMode}
-						show={
-							showWordCountBadge && !isCanvasTab && !isDrawingTab && !!activeTab
-						}
+						show={showWordCountBadge && !isExcalidrawTab && !!activeTab}
 						showDetail={wordCountMode === "mixed"}
 					/>
 				</div>
