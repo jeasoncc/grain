@@ -236,5 +236,5 @@ export const createCanvasTab = (
 		.workspaceId(workspaceId)
 		.nodeId(nodeId)
 		.title(title)
-		.type("canvas")
+		.type("drawing")
 		.build();

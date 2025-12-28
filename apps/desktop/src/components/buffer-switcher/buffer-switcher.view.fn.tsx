@@ -2,7 +2,15 @@
  * Buffer Switcher View - Emacs 风格的标签切换器展示组件
  */
 
-import { Calendar, FileText, Palette } from "lucide-react";
+import {
+	BookOpen,
+	Calendar,
+	CheckSquare,
+	DollarSign,
+	FileText,
+	Palette,
+	StickyNote,
+} from "lucide-react";
 import { memo } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -16,6 +24,14 @@ const getTabIcon = (type: EditorTab["type"]) => {
 	switch (type) {
 		case "diary":
 			return <Calendar className="size-4" />;
+		case "wiki":
+			return <BookOpen className="size-4" />;
+		case "todo":
+			return <CheckSquare className="size-4" />;
+		case "note":
+			return <StickyNote className="size-4" />;
+		case "ledger":
+			return <DollarSign className="size-4" />;
 		case "drawing":
 			return <Palette className="size-4" />;
 		default:

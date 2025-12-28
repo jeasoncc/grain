@@ -143,8 +143,20 @@ export interface AttachmentInterface {
  * - file: 文本文件，使用 Lexical 编辑器
  * - drawing: 画布文件，使用 Excalidraw
  * - diary: 日记文件
+ * - wiki: Wiki 文件
+ * - todo: 待办事项文件
+ * - note: 笔记文件
+ * - ledger: 记账文件
  */
-export type NodeType = "folder" | "file" | "drawing" | "diary";
+export type NodeType =
+	| "folder"
+	| "file"
+	| "drawing"
+	| "diary"
+	| "wiki"
+	| "todo"
+	| "note"
+	| "ledger";
 
 // ---------- 节点 ----------
 /**

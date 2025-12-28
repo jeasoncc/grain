@@ -7,12 +7,16 @@
  */
 
 import {
+	BookOpen,
 	Calendar,
+	CheckSquare,
 	ChevronLeft,
 	ChevronRight,
+	DollarSign,
 	FileText,
 	LayoutGrid,
 	Palette,
+	StickyNote,
 	X,
 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -113,6 +117,14 @@ export const EditorTabsView = memo(
 			switch (type) {
 				case "diary":
 					return <Calendar className="size-3.5 shrink-0" />;
+				case "wiki":
+					return <BookOpen className="size-3.5 shrink-0" />;
+				case "todo":
+					return <CheckSquare className="size-3.5 shrink-0" />;
+				case "note":
+					return <StickyNote className="size-3.5 shrink-0" />;
+				case "ledger":
+					return <DollarSign className="size-3.5 shrink-0" />;
 				case "drawing":
 					return <Palette className="size-3.5 shrink-0" />;
 				default:

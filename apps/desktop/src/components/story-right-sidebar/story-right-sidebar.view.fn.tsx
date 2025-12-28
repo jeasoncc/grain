@@ -6,7 +6,16 @@
  * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  */
 
-import { Calendar, FileText, Palette, X } from "lucide-react";
+import {
+	BookOpen,
+	Calendar,
+	CheckSquare,
+	DollarSign,
+	FileText,
+	Palette,
+	StickyNote,
+	X,
+} from "lucide-react";
 import { memo } from "react";
 import {
 	Tooltip,
@@ -39,6 +48,14 @@ export const StoryRightSidebarView = memo(
 			switch (type) {
 				case "diary":
 					return <Calendar className="size-4 shrink-0" />;
+				case "wiki":
+					return <BookOpen className="size-4 shrink-0" />;
+				case "todo":
+					return <CheckSquare className="size-4 shrink-0" />;
+				case "note":
+					return <StickyNote className="size-4 shrink-0" />;
+				case "ledger":
+					return <DollarSign className="size-4 shrink-0" />;
 				case "drawing":
 					return <Palette className="size-4 shrink-0" />;
 				default:
