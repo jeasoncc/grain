@@ -60,8 +60,8 @@
 **Acceptance Criteria:**
 - [x] 在 `activity-bar.types.ts` 中添加 `onCreateMermaid` 和 `onCreatePlantUML` 回调
 - [x] 在 `icon-theme.interface.ts` 中添加 `mermaid` 和 `plantuml` 图标
-- [-] 在 `activity-bar.view.fn.tsx` 中添加 Mermaid 和 PlantUML 按钮
-- [ ] 在 `activity-bar.container.fn.tsx` 中实现创建逻辑
+- [x] 在 `activity-bar.view.fn.tsx` 中添加 Mermaid 和 PlantUML 按钮
+- [-] 在 `activity-bar.container.fn.tsx` 中实现创建逻辑
 - [ ] 更新图标主题配置
 
 ## Task 7: 类型检查和测试

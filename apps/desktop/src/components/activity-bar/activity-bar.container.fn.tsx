@@ -20,6 +20,8 @@ import {
 	createWikiCompatAsync,
 } from "@/actions/templated/create-date-template.action";
 import { createExcalidrawCompatAsync } from "@/actions/templated/create-excalidraw.action";
+import { createMermaidCompatAsync } from "@/actions/templated/create-mermaid.action";
+import { createPlantUMLCompatAsync } from "@/actions/templated/create-plantuml.action";
 import type { TemplatedFileResult } from "@/actions/templated/create-templated-file.action";
 import { ExportDialog } from "@/components/export-dialog";
 import { useConfirm } from "@/components/ui/confirm";
@@ -341,6 +343,28 @@ export function ActivityBarContainer(): React.ReactElement {
 		[handleCreateTemplate],
 	);
 
+	const handleCreateMermaid = useCallback(
+		() =>
+			handleCreateTemplate({
+				creator: createMermaidCompatAsync,
+				successMessage: "Mermaid created",
+				errorMessage: "Failed to create mermaid",
+				preloadContent: false,
+			}),
+		[handleCreateTemplate],
+	);
+
+	const handleCreatePlantUML = useCallback(
+		() =>
+			handleCreateTemplate({
+				creator: createPlantUMLCompatAsync,
+				successMessage: "PlantUML created",
+				errorMessage: "Failed to create plantuml",
+				preloadContent: false,
+			}),
+		[handleCreateTemplate],
+	);
+
 	const handleImportFile = useCallback(async (_file: File) => {
 		try {
 			toast.info("Import functionality is being reimplemented");
@@ -404,6 +428,8 @@ export function ActivityBarContainer(): React.ReactElement {
 				onCreateTodo={handleCreateTodo}
 				onCreateNote={handleCreateNote}
 				onCreateExcalidraw={handleCreateExcalidraw}
+				onCreateMermaid={handleCreateMermaid}
+				onCreatePlantUML={handleCreatePlantUML}
 				onImportFile={handleImportFile}
 				onOpenExportDialog={handleOpenExportDialog}
 				onDeleteAllData={handleDeleteAllData}

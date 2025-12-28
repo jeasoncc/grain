@@ -241,6 +241,8 @@ function createTestIconTheme(): IconTheme {
 				import: {} as any,
 				export: {} as any,
 				more: {} as any,
+				mermaid: {} as any,
+				plantuml: {} as any,
 			},
 			settingsPage: {
 				appearance: {} as any,
