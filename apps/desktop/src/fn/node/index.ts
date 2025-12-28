@@ -22,3 +22,10 @@ export {
 	type TreeNode,
 	wouldCreateCycle,
 } from "./node.tree.fn";
+
+// 展开状态计算函数
+export {
+	type ExpandedFoldersMap,
+	calculateExpandedFoldersForNode,
+	mergeExpandedFoldersForNode,
+} from "./node.expand.fn";

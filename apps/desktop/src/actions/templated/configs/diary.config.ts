@@ -2,74 +2,25 @@
  * @file diary.config.ts
  * @description Diary 模板配置
  *
- * 功能说明：
- * - 定义日记模板的配置参数
- * - 包含模板生成、文件夹结构、标题生成等函数
- * - 支持自定义日期参数
- * - 使用 Zod 进行参数校验
+ * 使用 createDateTemplateConfig 工厂函数生成配置，
+ * 消除重复的文件夹路径和标题生成逻辑。
  *
  * @requirements 1.1, 1.5, 3.1
  */
 
-import dayjs from "dayjs";
-import { z } from "zod";
 import { generateDiaryContent } from "@/fn/content";
-import { getDateFolderStructureWithFilename } from "@/fn/date";
-import type { TemplateConfig } from "../create-templated-file.action";
+import {
+	type DateTemplateParams,
+	createDateTemplateConfig,
+	dateParamsSchema,
+} from "./date-template.factory";
 
 // ==============================
-// Types
+// Types (Re-export)
 // ==============================
 
-/**
- * 日记模板参数
- */
-export interface DiaryTemplateParams {
-	/** 日期（可选，默认为当前时间） */
-	readonly date?: Date;
-}
-
-// ==============================
-// Schema
-// ==============================
-
-/**
- * 日记模板参数校验 Schema
- */
-export const diaryParamsSchema = z.object({
-	date: z.date().optional(),
-});
-
-// ==============================
-// Template Functions
-// ==============================
-
-/**
- * 生成日记模板内容
- */
-const generateDiaryTemplate = (params: DiaryTemplateParams): string => {
-	const date = params.date || dayjs().toDate();
-	return generateDiaryContent(date);
-};
-
-/**
- * 生成日记文件夹路径
- */
-const generateDiaryFolderPath = (params: DiaryTemplateParams): string[] => {
-	const date = params.date || dayjs().toDate();
-	const structure = getDateFolderStructureWithFilename(date, "diary");
-
-	return [structure.yearFolder, structure.monthFolder, structure.dayFolder];
-};
-
-/**
- * 生成日记文件标题
- */
-const generateDiaryTitle = (params: DiaryTemplateParams): string => {
-	const date = params.date || dayjs().toDate();
-	const structure = getDateFolderStructureWithFilename(date, "diary");
-	return structure.filename;
-};
+export type DiaryTemplateParams = DateTemplateParams;
+export const diaryParamsSchema = dateParamsSchema;
 
 // ==============================
 // Configuration
@@ -77,15 +28,16 @@ const generateDiaryTitle = (params: DiaryTemplateParams): string => {
 
 /**
  * 日记模板配置
+ *
+ * 日记按年份、月份和日期组织：
+ * Diary > year-YYYY-{Zodiac} > month-MM-{MonthName} > day-DD-{Weekday}
  */
-export const diaryConfig: TemplateConfig<DiaryTemplateParams> = {
+export const diaryConfig = createDateTemplateConfig({
 	name: "日记",
 	rootFolder: "Diary",
 	fileType: "diary",
 	tag: "diary",
-	generateTemplate: generateDiaryTemplate,
-	generateFolderPath: generateDiaryFolderPath,
-	generateTitle: generateDiaryTitle,
-	paramsSchema: diaryParamsSchema,
-	foldersCollapsed: true,
-};
+	prefix: "diary",
+	generateContent: generateDiaryContent,
+	includeDayFolder: true,
+});

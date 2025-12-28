@@ -2,77 +2,25 @@
  * @file todo.config.ts
  * @description Todo 模板配置
  *
- * 功能说明：
- * - 定义待办模板的配置参数
- * - 包含模板生成、文件夹结构、标题生成等函数
- * - 支持自定义日期参数
- * - 使用 Zod 进行参数校验
+ * 使用 createDateTemplateConfig 工厂函数生成配置，
+ * 消除重复的文件夹路径和标题生成逻辑。
  *
  * @requirements Todo 创建功能
  */
 
-import dayjs from "dayjs";
-import { z } from "zod";
 import { generateTodoContent } from "@/fn/content";
-import { getDateFolderStructureWithFilename } from "@/fn/date";
-import type { TemplateConfig } from "../create-templated-file.action";
+import {
+	type DateTemplateParams,
+	createDateTemplateConfig,
+	dateParamsSchema,
+} from "./date-template.factory";
 
 // ==============================
-// Types
+// Types (Re-export)
 // ==============================
 
-/**
- * Todo 模板参数
- */
-export interface TodoTemplateParams {
-	/** 日期（可选，默认为当前时间） */
-	readonly date?: Date;
-}
-
-// ==============================
-// Schema
-// ==============================
-
-/**
- * Todo 模板参数校验 Schema
- */
-export const todoParamsSchema = z.object({
-	date: z.date().optional(),
-});
-
-// ==============================
-// Template Functions
-// ==============================
-
-/**
- * 生成 Todo 模板内容
- */
-const generateTodoTemplate = (params: TodoTemplateParams): string => {
-	const date = params.date || dayjs().toDate();
-	return generateTodoContent(date);
-};
-
-/**
- * 生成 Todo 文件夹路径
- *
- * Todo 按年份、月份和日期组织：
- * Todo > year-YYYY-{Zodiac} > month-MM-{MonthName} > day-DD-{Weekday}
- */
-const generateTodoFolderPath = (params: TodoTemplateParams): string[] => {
-	const date = params.date || dayjs().toDate();
-	const structure = getDateFolderStructureWithFilename(date, "todo");
-
-	return [structure.yearFolder, structure.monthFolder, structure.dayFolder];
-};
-
-/**
- * 生成 Todo 文件标题
- */
-const generateTodoTitle = (params: TodoTemplateParams): string => {
-	const date = params.date || dayjs().toDate();
-	const structure = getDateFolderStructureWithFilename(date, "todo");
-	return structure.filename;
-};
+export type TodoTemplateParams = DateTemplateParams;
+export const todoParamsSchema = dateParamsSchema;
 
 // ==============================
 // Configuration
@@ -80,15 +28,16 @@ const generateTodoTitle = (params: TodoTemplateParams): string => {
 
 /**
  * Todo 模板配置
+ *
+ * Todo 按年份、月份和日期组织：
+ * Todo > year-YYYY-{Zodiac} > month-MM-{MonthName} > day-DD-{Weekday}
  */
-export const todoConfig: TemplateConfig<TodoTemplateParams> = {
+export const todoConfig = createDateTemplateConfig({
 	name: "Todo",
 	rootFolder: "Todo",
 	fileType: "file",
 	tag: "todo",
-	generateTemplate: generateTodoTemplate,
-	generateFolderPath: generateTodoFolderPath,
-	generateTitle: generateTodoTitle,
-	paramsSchema: todoParamsSchema,
-	foldersCollapsed: true,
-};
+	prefix: "todo",
+	generateContent: generateTodoContent,
+	includeDayFolder: true,
+});

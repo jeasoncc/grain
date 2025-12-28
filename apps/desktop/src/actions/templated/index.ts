@@ -4,7 +4,7 @@
  *
  * 功能说明：
  * - 导出高阶函数 createTemplatedFile
- * - 导出所有模板化创建函数（日记、Wiki、记账）
+ * - 导出所有模板化创建函数（日记、Wiki、Todo、Note、记账、Excalidraw）
  * - 导出所有模板配置
  * - 提供统一的导入入口
  *
@@ -24,80 +24,50 @@ export {
 } from "./create-templated-file.action";
 
 // ==============================
-// 日记创建
+// 日期模板统一创建（Diary/Wiki/Todo/Note/Ledger）
 // ==============================
 
 export {
-	adaptDiaryParams,
-	type CreateDiaryParams,
+	// 工厂函数
+	createDateTemplateActions,
+	// 类型
+	type CreateDateTemplateParams,
+	type DateTemplateCreationResult,
+	// Actions 对象
+	diaryActions,
+	wikiActions,
+	todoActions,
+	noteActions,
+	ledgerActions,
+	// Diary
 	createDiary,
 	createDiaryAsync,
 	createDiaryCompat,
 	createDiaryCompatAsync,
-	type DiaryCreationResult,
-} from "./create-diary.action";
-
-// ==============================
-// Wiki 创建
-// ==============================
-
-export {
-	adaptWikiParams,
-	type CreateWikiParams,
+	// Wiki
 	createWiki,
 	createWikiAsync,
 	createWikiCompat,
 	createWikiCompatAsync,
-	type WikiCreationResult,
-	type WikiTemplateParams,
-} from "./create-wiki.action";
-
-// ==============================
-// Todo 创建
-// ==============================
-
-export {
-	adaptTodoParams,
-	type CreateTodoParams,
+	// Todo
 	createTodo,
 	createTodoAsync,
 	createTodoCompat,
 	createTodoCompatAsync,
-	type TodoCreationResult,
-	type TodoTemplateParams,
-} from "./create-todo.action";
-
-// ==============================
-// Note 创建
-// ==============================
-
-export {
-	adaptNoteParams,
-	type CreateNoteParams,
+	// Note
 	createNote,
 	createNoteAsync,
 	createNoteCompat,
 	createNoteCompatAsync,
-	type NoteCreationResult,
-	type NoteTemplateParams,
-} from "./create-note.action";
-
-// ==============================
-// 记账创建
-// ==============================
-
-export {
-	adaptLedgerParams,
-	type CreateLedgerParams,
+	// Ledger
 	createLedger,
 	createLedgerAsync,
 	createLedgerCompat,
 	createLedgerCompatAsync,
-	type LedgerCreationResult,
-} from "./create-ledger.action";
+} from "./create-date-template.action";
 
 // ==============================
-// Excalidraw 创建
+// Excalidraw 创建（有额外参数，单独处理）
 // ==============================
 
 export {
@@ -115,10 +85,31 @@ export {
 // ==============================
 
 export {
-	type DiaryTemplateParams,
+	// 工厂函数
+	type DateTemplateParams,
+	type DateTemplateOptions,
+	createDateTemplateConfig,
+	dateParamsSchema,
 	// Diary config
+	type DiaryTemplateParams,
 	diaryConfig,
 	diaryParamsSchema,
+	// Wiki config
+	type WikiTemplateParams,
+	wikiConfig,
+	wikiParamsSchema,
+	// Todo config
+	type TodoTemplateParams,
+	todoConfig,
+	todoParamsSchema,
+	// Note config
+	type NoteTemplateParams,
+	noteConfig,
+	noteParamsSchema,
+	// Ledger config
+	type LedgerTemplateParams,
+	ledgerConfig,
+	ledgerParamsSchema,
 	// Excalidraw config
 	type ExcalidrawTemplateParams,
 	excalidrawConfig,
@@ -126,21 +117,6 @@ export {
 	// Registry
 	getTemplateConfig,
 	isValidTemplateType,
-	type LedgerTemplateParams,
-	// Ledger config
-	ledgerConfig,
-	ledgerParamsSchema,
-	// Note config
-	type NoteTemplateParams,
-	noteConfig,
-	noteParamsSchema,
 	type TemplateType,
 	templateConfigs,
-	// Todo config
-	type TodoTemplateParams,
-	todoConfig,
-	todoParamsSchema,
-	// Wiki config
-	wikiConfig,
-	wikiParamsSchema,
 } from "./configs";

@@ -117,6 +117,72 @@ export const createWiki = createTemplatedFile(wikiConfig);
 - **结构相似度 > 80%**：大部分逻辑相同，只有参数不同
 - **不过度抽象**：只有 2 个实例且不太可能扩展时，可以不抽象
 
+### 禁止创建重复的 Action 文件
+
+当多个 action 文件结构完全相同，只是配置不同时，必须使用工厂函数：
+
+```typescript
+// ❌ 禁止：为每个模板创建独立的 action 文件
+// create-diary.action.ts
+// create-wiki.action.ts
+// create-todo.action.ts
+// create-note.action.ts
+// ... 每个文件 100+ 行，结构完全相同
+
+// ✅ 推荐：使用工厂函数统一生成
+// create-date-template.action.ts
+export const createDateTemplateActions = (config: TemplateConfig<DateTemplateParams>) => {
+  const create = createTemplatedFile(config);
+  const createAsync = createTemplatedFileAsync(config);
+  return {
+    create,
+    createAsync,
+    createCompat: (params) => create(adaptParams(params)),
+    createCompatAsync: async (params) => createAsync(adaptParams(params)),
+  };
+};
+
+// 一行代码生成所有 actions
+export const diaryActions = createDateTemplateActions(diaryConfig);
+export const wikiActions = createDateTemplateActions(wikiConfig);
+export const todoActions = createDateTemplateActions(todoConfig);
+```
+
+### 配置文件工厂化
+
+当多个配置文件有相同的结构时，使用工厂函数：
+
+```typescript
+// ❌ 禁止：每个配置文件重复相同的函数
+// wiki.config.ts - 50 行
+// todo.config.ts - 50 行
+// note.config.ts - 50 行
+// 每个文件都有 generateFolderPath、generateTitle 等相同逻辑
+
+// ✅ 推荐：使用工厂函数
+// date-template.factory.ts
+export const createDateTemplateConfig = (options: DateTemplateOptions) => ({
+  name: options.name,
+  rootFolder: options.rootFolder,
+  fileType: options.fileType,
+  tag: options.tag,
+  generateTemplate: (params) => options.generateContent(params.date || new Date()),
+  generateFolderPath: (params) => getDateFolderPath(params.date, options.prefix),
+  generateTitle: (params) => getDateTitle(params.date, options.prefix),
+  paramsSchema: dateParamsSchema,
+});
+
+// 配置文件只需要几行
+export const wikiConfig = createDateTemplateConfig({
+  name: "Wiki",
+  rootFolder: "Wiki",
+  fileType: "file",
+  tag: "wiki",
+  prefix: "wiki",
+  generateContent: generateWikiContent,
+});
+```
+
 ## 组件规范
 
 ### 组件分层架构

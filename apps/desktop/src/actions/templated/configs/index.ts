@@ -11,6 +11,17 @@
  */
 
 // ==============================
+// Factory Function
+// ==============================
+
+export {
+	type DateTemplateParams,
+	type DateTemplateOptions,
+	createDateTemplateConfig,
+	dateParamsSchema,
+} from "./date-template.factory";
+
+// ==============================
 // Diary Configuration
 // ==============================
 

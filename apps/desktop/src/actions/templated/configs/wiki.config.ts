@@ -2,77 +2,25 @@
  * @file wiki.config.ts
  * @description Wiki 模板配置
  *
- * 功能说明：
- * - 定义 Wiki 模板的配置参数
- * - 包含模板生成、文件夹结构、标题生成等函数
- * - 支持自定义日期参数
- * - 使用 Zod 进行参数校验
+ * 使用 createDateTemplateConfig 工厂函数生成配置，
+ * 消除重复的文件夹路径和标题生成逻辑。
  *
  * @requirements Wiki 条目创建功能
  */
 
-import dayjs from "dayjs";
-import { z } from "zod";
 import { generateWikiContent } from "@/fn/content";
-import { getDateFolderStructureWithFilename } from "@/fn/date";
-import type { TemplateConfig } from "../create-templated-file.action";
+import {
+	type DateTemplateParams,
+	createDateTemplateConfig,
+	dateParamsSchema,
+} from "./date-template.factory";
 
 // ==============================
-// Types
+// Types (Re-export)
 // ==============================
 
-/**
- * Wiki 模板参数
- */
-export interface WikiTemplateParams {
-	/** 创建日期（可选，默认为当前时间） */
-	readonly date?: Date;
-}
-
-// ==============================
-// Schema
-// ==============================
-
-/**
- * Wiki 模板参数校验 Schema
- */
-export const wikiParamsSchema = z.object({
-	date: z.date().optional(),
-});
-
-// ==============================
-// Template Functions
-// ==============================
-
-/**
- * 生成 Wiki 模板内容
- */
-const generateWikiTemplateContent = (params: WikiTemplateParams): string => {
-	const date = params.date || dayjs().toDate();
-	return generateWikiContent(date);
-};
-
-/**
- * 生成 Wiki 文件夹路径
- *
- * Wiki 条目按年份、月份和日期组织：
- * Wiki > year-YYYY-{Zodiac} > month-MM-{MonthName} > day-DD-{Weekday}
- */
-const generateWikiFolderPath = (params: WikiTemplateParams): string[] => {
-	const date = params.date || dayjs().toDate();
-	const structure = getDateFolderStructureWithFilename(date, "wiki");
-
-	return [structure.yearFolder, structure.monthFolder, structure.dayFolder];
-};
-
-/**
- * 生成 Wiki 文件标题
- */
-const generateWikiTitle = (params: WikiTemplateParams): string => {
-	const date = params.date || dayjs().toDate();
-	const structure = getDateFolderStructureWithFilename(date, "wiki");
-	return structure.filename;
-};
+export type WikiTemplateParams = DateTemplateParams;
+export const wikiParamsSchema = dateParamsSchema;
 
 // ==============================
 // Configuration
@@ -80,15 +28,16 @@ const generateWikiTitle = (params: WikiTemplateParams): string => {
 
 /**
  * Wiki 模板配置
+ *
+ * Wiki 条目按年份、月份和日期组织：
+ * Wiki > year-YYYY-{Zodiac} > month-MM-{MonthName} > day-DD-{Weekday}
  */
-export const wikiConfig: TemplateConfig<WikiTemplateParams> = {
+export const wikiConfig = createDateTemplateConfig({
 	name: "Wiki",
 	rootFolder: "Wiki",
 	fileType: "file",
 	tag: "wiki",
-	generateTemplate: generateWikiTemplateContent,
-	generateFolderPath: generateWikiFolderPath,
-	generateTitle: generateWikiTitle,
-	paramsSchema: wikiParamsSchema,
-	foldersCollapsed: true,
-};
+	prefix: "wiki",
+	generateContent: generateWikiContent,
+	includeDayFolder: true,
+});

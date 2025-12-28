@@ -12,16 +12,21 @@ import type { SerializedEditorState } from "lexical";
 import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { createDiaryCompatAsync } from "@/actions/templated/create-diary.action";
+import {
+	createDiaryCompatAsync,
+	createWikiCompatAsync,
+	createTodoCompatAsync,
+	createNoteCompatAsync,
+	createLedgerCompatAsync,
+} from "@/actions/templated/create-date-template.action";
 import { createExcalidrawCompatAsync } from "@/actions/templated/create-excalidraw.action";
-import { createLedgerCompatAsync } from "@/actions/templated/create-ledger.action";
-import { createNoteCompatAsync } from "@/actions/templated/create-note.action";
-import { createTodoCompatAsync } from "@/actions/templated/create-todo.action";
-import { createWikiCompatAsync } from "@/actions/templated/create-wiki.action";
+import type { TemplatedFileResult } from "@/actions/templated/create-templated-file.action";
 import { ExportDialog } from "@/components/export-dialog";
 import { useConfirm } from "@/components/ui/confirm";
 import { addWorkspace, clearAllData, touchWorkspace } from "@/db";
+import { calculateExpandedFoldersForNode } from "@/fn/node";
 import { useIconTheme } from "@/hooks/use-icon-theme";
+import { useNodesByWorkspace } from "@/hooks/use-node";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSelectionStore } from "@/stores/selection.store";
@@ -30,13 +35,31 @@ import type { WorkspaceInterface } from "@/types/workspace";
 
 import { ActivityBarView } from "./activity-bar.view.fn";
 
+// ==============================
+// Types
+// ==============================
+
+/**
+ * 模板文件创建函数类型
+ */
+type TemplateCreator = (params: {
+	workspaceId: string;
+	date: Date;
+}) => Promise<TemplatedFileResult>;
+
+/**
+ * 创建模板文件的选项
+ */
+interface CreateTemplateOptions {
+	readonly creator: TemplateCreator;
+	readonly successMessage: string;
+	readonly errorMessage: string;
+	readonly preloadContent?: boolean;
+}
+
+
 /**
  * ActivityBar 容器组件
- *
- * 编排层：连接数据源和展示组件。
- * - 使用 hooks 获取数据
- * - 调用 actions 执行操作
- * - 通过 props 传递给展示组件
  */
 export function ActivityBarContainer(): React.ReactElement {
 	const location = useLocation();
@@ -56,11 +79,15 @@ export function ActivityBarContainer(): React.ReactElement {
 	);
 	const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId);
 
+	// 获取当前工作区的所有节点（用于计算展开路径）
+	const nodes = useNodesByWorkspace(selectedWorkspaceId);
+
 	const {
 		activePanel,
 		isOpen: isSidebarOpen,
 		setActivePanel,
 		toggleSidebar,
+		setExpandedFolders,
 	} = useSidebarStore();
 
 	const iconTheme = useIconTheme();
@@ -173,239 +200,147 @@ export function ActivityBarContainer(): React.ReactElement {
 	const openTab = useEditorTabsStore((s) => s.openTab);
 	const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
 
-	const handleCreateDiary = useCallback(async () => {
-		if (!selectedWorkspaceId) {
-			toast.error("Please select a workspace first");
-			return;
-		}
-		try {
-			const result = await createDiaryCompatAsync({
-				workspaceId: selectedWorkspaceId,
-				date: new Date(),
-			});
 
-			// 打开新创建的日记文件
-			openTab({
-				workspaceId: selectedWorkspaceId,
-				nodeId: result.node.id,
-				title: result.node.title,
-				type: result.node.type,
-			});
-
-			// 预加载内容到编辑器状态，确保编辑器能正确显示模板内容
-			// 使用 nodeId 作为 tabId（与 openTab 内部逻辑一致）
-			updateEditorState(result.node.id, {
-				serializedState: result.parsedContent as SerializedEditorState,
-			});
-
-			// 在文件树中选中新创建的文件
-			setSelectedNodeId(result.node.id);
-
-			// 导航到主页面（如果当前不在主页面）
-			if (location.pathname !== "/") {
-				navigate({ to: "/" });
+	/**
+	 * 通用的模板文件创建处理函数
+	 *
+	 * 消除 handleCreateDiary/Wiki/Todo/Note/Ledger 的重复代码。
+	 * 创建文件后：
+	 * 1. 打开新标签页
+	 * 2. 预加载编辑器内容（可选）
+	 * 3. 选中新文件
+	 * 4. 展开文件路径，关闭其他文件夹
+	 * 5. 导航到主页面
+	 */
+	const handleCreateTemplate = useCallback(
+		async (options: CreateTemplateOptions) => {
+			if (!selectedWorkspaceId) {
+				toast.error("Please select a workspace first");
+				return;
 			}
 
-			toast.success("Diary created");
-		} catch (error) {
-			console.error("Failed to create diary:", error);
-			toast.error("Failed to create diary");
-		}
-	}, [selectedWorkspaceId, openTab, updateEditorState, setSelectedNodeId, navigate, location.pathname]);
+			const { creator, successMessage, errorMessage, preloadContent = true } = options;
 
-	const handleCreateWiki = useCallback(async () => {
-		if (!selectedWorkspaceId) {
-			toast.error("Please select a workspace first");
-			return;
-		}
-		try {
-			const result = await createWikiCompatAsync({
-				workspaceId: selectedWorkspaceId,
-				date: new Date(),
-			});
+			try {
+				const result = await creator({
+					workspaceId: selectedWorkspaceId,
+					date: new Date(),
+				});
 
-			// 打开新创建的 Wiki 文件
-			openTab({
-				workspaceId: selectedWorkspaceId,
-				nodeId: result.node.id,
-				title: result.node.title,
-				type: result.node.type,
-			});
+				// 1. 打开新创建的文件标签页
+				openTab({
+					workspaceId: selectedWorkspaceId,
+					nodeId: result.node.id,
+					title: result.node.title,
+					type: result.node.type,
+				});
 
-			// 预加载内容到编辑器状态，确保编辑器能正确显示模板内容
-			updateEditorState(result.node.id, {
-				serializedState: result.parsedContent as SerializedEditorState,
-			});
+				// 2. 预加载内容到编辑器状态（Excalidraw 不需要）
+				if (preloadContent && result.parsedContent) {
+					updateEditorState(result.node.id, {
+						serializedState: result.parsedContent as SerializedEditorState,
+					});
+				}
 
-			// 在文件树中选中新创建的文件
-			setSelectedNodeId(result.node.id);
+				// 3. 在文件树中选中新创建的文件
+				setSelectedNodeId(result.node.id);
 
-			// 导航到主页面（如果当前不在主页面）
-			if (location.pathname !== "/") {
-				navigate({ to: "/" });
+				// 4. 展开文件路径，关闭其他文件夹
+				if (nodes) {
+					const expandedFolders = calculateExpandedFoldersForNode(
+						nodes,
+						result.node.id,
+					);
+					setExpandedFolders(expandedFolders);
+				}
+
+				// 5. 导航到主页面（如果当前不在主页面）
+				if (location.pathname !== "/") {
+					navigate({ to: "/" });
+				}
+
+				toast.success(successMessage);
+			} catch (error) {
+				console.error("Failed to create template:", error);
+				toast.error(errorMessage);
 			}
+		},
+		[
+			selectedWorkspaceId,
+			openTab,
+			updateEditorState,
+			setSelectedNodeId,
+			nodes,
+			setExpandedFolders,
+			navigate,
+			location.pathname,
+		],
+	);
 
-			toast.success("Wiki created");
-		} catch (error) {
-			console.error("Failed to create wiki:", error);
-			toast.error("Failed to create wiki");
-		}
-	}, [selectedWorkspaceId, openTab, updateEditorState, setSelectedNodeId, navigate, location.pathname]);
+	const handleCreateDiary = useCallback(
+		() =>
+			handleCreateTemplate({
+				creator: createDiaryCompatAsync,
+				successMessage: "Diary created",
+				errorMessage: "Failed to create diary",
+			}),
+		[handleCreateTemplate],
+	);
 
-	const handleCreateLedger = useCallback(async () => {
-		if (!selectedWorkspaceId) {
-			toast.error("Please select a workspace first");
-			return;
-		}
-		try {
-			const result = await createLedgerCompatAsync({
-				workspaceId: selectedWorkspaceId,
-				date: new Date(),
-			});
+	const handleCreateWiki = useCallback(
+		() =>
+			handleCreateTemplate({
+				creator: createWikiCompatAsync,
+				successMessage: "Wiki created",
+				errorMessage: "Failed to create wiki",
+			}),
+		[handleCreateTemplate],
+	);
 
-			// 打开新创建的记账文件
-			openTab({
-				workspaceId: selectedWorkspaceId,
-				nodeId: result.node.id,
-				title: result.node.title,
-				type: result.node.type,
-			});
+	const handleCreateLedger = useCallback(
+		() =>
+			handleCreateTemplate({
+				creator: createLedgerCompatAsync,
+				successMessage: "Ledger created",
+				errorMessage: "Failed to create ledger",
+			}),
+		[handleCreateTemplate],
+	);
 
-			// 预加载内容到编辑器状态，确保编辑器能正确显示模板内容
-			updateEditorState(result.node.id, {
-				serializedState: result.parsedContent as SerializedEditorState,
-			});
+	const handleCreateTodo = useCallback(
+		() =>
+			handleCreateTemplate({
+				creator: createTodoCompatAsync,
+				successMessage: "Todo created",
+				errorMessage: "Failed to create todo",
+			}),
+		[handleCreateTemplate],
+	);
 
-			// 在文件树中选中新创建的文件
-			setSelectedNodeId(result.node.id);
+	const handleCreateNote = useCallback(
+		() =>
+			handleCreateTemplate({
+				creator: createNoteCompatAsync,
+				successMessage: "Note created",
+				errorMessage: "Failed to create note",
+			}),
+		[handleCreateTemplate],
+	);
 
-			// 导航到主页面（如果当前不在主页面）
-			if (location.pathname !== "/") {
-				navigate({ to: "/" });
-			}
+	const handleCreateExcalidraw = useCallback(
+		() =>
+			handleCreateTemplate({
+				creator: createExcalidrawCompatAsync,
+				successMessage: "Excalidraw created",
+				errorMessage: "Failed to create excalidraw",
+				preloadContent: false,
+			}),
+		[handleCreateTemplate],
+	);
 
-			toast.success("Ledger created");
-		} catch (error) {
-			console.error("Failed to create ledger:", error);
-			toast.error("Failed to create ledger");
-		}
-	}, [selectedWorkspaceId, openTab, updateEditorState, setSelectedNodeId, navigate, location.pathname]);
-
-	const handleCreateTodo = useCallback(async () => {
-		if (!selectedWorkspaceId) {
-			toast.error("Please select a workspace first");
-			return;
-		}
-		try {
-			const result = await createTodoCompatAsync({
-				workspaceId: selectedWorkspaceId,
-				date: new Date(),
-			});
-
-			// 打开新创建的 Todo 文件
-			openTab({
-				workspaceId: selectedWorkspaceId,
-				nodeId: result.node.id,
-				title: result.node.title,
-				type: result.node.type,
-			});
-
-			// 预加载内容到编辑器状态
-			updateEditorState(result.node.id, {
-				serializedState: result.parsedContent as SerializedEditorState,
-			});
-
-			// 在文件树中选中新创建的文件
-			setSelectedNodeId(result.node.id);
-
-			// 导航到主页面（如果当前不在主页面）
-			if (location.pathname !== "/") {
-				navigate({ to: "/" });
-			}
-
-			toast.success("Todo created");
-		} catch (error) {
-			console.error("Failed to create todo:", error);
-			toast.error("Failed to create todo");
-		}
-	}, [selectedWorkspaceId, openTab, updateEditorState, setSelectedNodeId, navigate, location.pathname]);
-
-	const handleCreateNote = useCallback(async () => {
-		if (!selectedWorkspaceId) {
-			toast.error("Please select a workspace first");
-			return;
-		}
-		try {
-			const result = await createNoteCompatAsync({
-				workspaceId: selectedWorkspaceId,
-				date: new Date(),
-			});
-
-			// 打开新创建的 Note 文件
-			openTab({
-				workspaceId: selectedWorkspaceId,
-				nodeId: result.node.id,
-				title: result.node.title,
-				type: result.node.type,
-			});
-
-			// 预加载内容到编辑器状态
-			updateEditorState(result.node.id, {
-				serializedState: result.parsedContent as SerializedEditorState,
-			});
-
-			// 在文件树中选中新创建的文件
-			setSelectedNodeId(result.node.id);
-
-			// 导航到主页面（如果当前不在主页面）
-			if (location.pathname !== "/") {
-				navigate({ to: "/" });
-			}
-
-			toast.success("Note created");
-		} catch (error) {
-			console.error("Failed to create note:", error);
-			toast.error("Failed to create note");
-		}
-	}, [selectedWorkspaceId, openTab, updateEditorState, setSelectedNodeId, navigate, location.pathname]);
-
-	const handleCreateExcalidraw = useCallback(async () => {
-		if (!selectedWorkspaceId) {
-			toast.error("Please select a workspace first");
-			return;
-		}
-		try {
-			const result = await createExcalidrawCompatAsync({
-				workspaceId: selectedWorkspaceId,
-				date: new Date(),
-			});
-
-			// 打开新创建的 Excalidraw 文件
-			openTab({
-				workspaceId: selectedWorkspaceId,
-				nodeId: result.node.id,
-				title: result.node.title,
-				type: result.node.type,
-			});
-
-			// 在文件树中选中新创建的文件
-			setSelectedNodeId(result.node.id);
-
-			// 导航到主页面（如果当前不在主页面）
-			if (location.pathname !== "/") {
-				navigate({ to: "/" });
-			}
-
-			toast.success("Excalidraw created");
-		} catch (error) {
-			console.error("Failed to create excalidraw:", error);
-			toast.error("Failed to create excalidraw");
-		}
-	}, [selectedWorkspaceId, openTab, setSelectedNodeId, navigate, location.pathname]);
 
 	const handleImportFile = useCallback(async (_file: File) => {
 		try {
-			// TODO: 使用新架构实现导入
 			toast.info("Import functionality is being reimplemented");
 		} catch {
 			toast.error("Import failed");
