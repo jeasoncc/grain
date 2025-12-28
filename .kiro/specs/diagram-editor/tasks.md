@@ -41,7 +41,7 @@
 - [x] 创建 `index.ts` 统一导出
 - [x] 实现分屏布局（代码编辑区 + 预览区）
 - [x] 实现 Kroki 服务调用和预览渲染
-- [ ] 实现防抖更新预览
+- [x] 实现防抖更新预览
 - [ ] 实现错误处理和重试
 
 ## Task 5: 集成 DiagramEditor 到 StoryWorkspace
