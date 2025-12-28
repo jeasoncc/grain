@@ -133,10 +133,18 @@ export {
 	type LedgerTemplateParams,
 	ledgerConfig,
 	ledgerParamsSchema,
+	// Mermaid config
+	type MermaidTemplateParams,
+	mermaidConfig,
+	mermaidParamsSchema,
 	// Note config
 	type NoteTemplateParams,
 	noteConfig,
 	noteParamsSchema,
+	// PlantUML config
+	type PlantUMLTemplateParams,
+	plantumlConfig,
+	plantumlParamsSchema,
 	type TemplateType,
 	// Todo config
 	type TodoTemplateParams,
