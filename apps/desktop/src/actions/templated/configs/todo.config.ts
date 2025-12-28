@@ -35,7 +35,7 @@ export const todoParamsSchema = dateParamsSchema;
 export const todoConfig = createDateTemplateConfig({
 	name: "Todo",
 	rootFolder: "Todo",
-	fileType: "file",
+	fileType: "todo",
 	tag: "todo",
 	prefix: "todo",
 	generateContent: generateTodoContent,

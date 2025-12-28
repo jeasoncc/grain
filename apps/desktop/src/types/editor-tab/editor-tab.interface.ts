@@ -18,6 +18,8 @@ export type TabType =
 	| "note"
 	| "ledger"
 	| "drawing"
+	| "plantuml"
+	| "mermaid"
 	| "folder";
 
 // ==============================

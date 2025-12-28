@@ -35,7 +35,7 @@ export const wikiParamsSchema = dateParamsSchema;
 export const wikiConfig = createDateTemplateConfig({
 	name: "Wiki",
 	rootFolder: "Wiki",
-	fileType: "file",
+	fileType: "wiki",
 	tag: "wiki",
 	prefix: "wiki",
 	generateContent: generateWikiContent,

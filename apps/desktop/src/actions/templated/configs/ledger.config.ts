@@ -35,7 +35,7 @@ export const ledgerParamsSchema = dateParamsSchema;
 export const ledgerConfig = createDateTemplateConfig({
 	name: "记账",
 	rootFolder: "Ledger",
-	fileType: "file",
+	fileType: "ledger",
 	tag: "ledger",
 	prefix: "ledger",
 	generateContent: generateLedgerContent,

@@ -23,20 +23,20 @@
     - 确保 NodeType 和 FileNodeType 正确导出
     - _Requirements: 4.3_
 
-- [ ] 2. 更新模板配置文件
-  - [ ] 2.1 更新 `wiki.config.ts` 使用 `"wiki"` 作为 fileType
+- [x] 2. 更新模板配置文件
+  - [x] 2.1 更新 `wiki.config.ts` 使用 `"wiki"` 作为 fileType
     - _Requirements: 2.1_
 
-  - [ ] 2.2 更新 `todo.config.ts` 使用 `"todo"` 作为 fileType
+  - [x] 2.2 更新 `todo.config.ts` 使用 `"todo"` 作为 fileType
     - _Requirements: 2.2_
 
-  - [ ] 2.3 更新 `note.config.ts` 使用 `"note"` 作为 fileType
+  - [x] 2.3 更新 `note.config.ts` 使用 `"note"` 作为 fileType
     - _Requirements: 2.3_
 
-  - [ ] 2.4 更新 `ledger.config.ts` 使用 `"ledger"` 作为 fileType
+  - [x] 2.4 更新 `ledger.config.ts` 使用 `"ledger"` 作为 fileType
     - _Requirements: 2.4_
 
-  - [ ] 2.5 更新 `date-template.factory.ts` 使用 FileNodeType
+  - [x] 2.5 更新 `date-template.factory.ts` 使用 FileNodeType
     - 将 `Exclude<NodeType, "folder">` 替换为 `FileNodeType`
     - _Requirements: 4.1_
 

@@ -35,7 +35,7 @@ export const noteParamsSchema = dateParamsSchema;
 export const noteConfig = createDateTemplateConfig({
 	name: "Note",
 	rootFolder: "Note",
-	fileType: "file",
+	fileType: "note",
 	tag: "note",
 	prefix: "note",
 	generateContent: generateNoteContent,
