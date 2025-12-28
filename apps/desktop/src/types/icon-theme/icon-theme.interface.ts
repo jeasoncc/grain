@@ -38,6 +38,8 @@ export interface IconThemeIcons {
 		ledger: LucideIcon;
 		todo: LucideIcon;
 		note: LucideIcon;
+		mermaid: LucideIcon;
+		plantuml: LucideIcon;
 		tags: LucideIcon;
 		statistics: LucideIcon;
 		settings: LucideIcon;
