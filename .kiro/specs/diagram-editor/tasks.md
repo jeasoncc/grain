@@ -35,8 +35,8 @@
 **Requirements:** 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5
 
 **Acceptance Criteria:**
-- [-] 创建 `diagram-editor.types.ts` 定义组件类型
-- [ ] 创建 `diagram-editor.view.fn.tsx` 纯展示组件
+- [x] 创建 `diagram-editor.types.ts` 定义组件类型
+- [x] 创建 `diagram-editor.view.fn.tsx` 纯展示组件
 - [ ] 创建 `diagram-editor.container.fn.tsx` 容器组件
 - [ ] 创建 `index.ts` 统一导出
 - [ ] 实现分屏布局（代码编辑区 + 预览区）
