@@ -42,16 +42,16 @@
 - [x] 实现分屏布局（代码编辑区 + 预览区）
 - [x] 实现 Kroki 服务调用和预览渲染
 - [x] 实现防抖更新预览
-- [-] 实现错误处理和重试
+- [x] 实现错误处理和重试
 
 ## Task 5: 集成 DiagramEditor 到 StoryWorkspace
 
 **Requirements:** 5.1, 5.2, 5.3, 5.4
 
 **Acceptance Criteria:**
-- [ ] 在 `story-workspace.container.fn.tsx` 中添加 mermaid/plantuml 类型判断
-- [ ] 渲染 `DiagramEditorContainer` 组件
-- [ ] 确保内容加载和保存正常工作
+- [x] 在 `story-workspace.container.fn.tsx` 中添加 mermaid/plantuml 类型判断
+- [x] 渲染 `DiagramEditorContainer` 组件
+- [x] 确保内容加载和保存正常工作
 
 ## Task 6: 添加 Activity Bar 图标按钮
 

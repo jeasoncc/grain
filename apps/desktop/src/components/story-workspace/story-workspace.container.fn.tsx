@@ -13,6 +13,7 @@ import type { SerializedEditorState } from "lexical";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-preview-connected";
+import { DiagramEditorContainer } from "@/components/diagram-editor";
 import { EditorTabs } from "@/components/editor-tabs";
 import { ExcalidrawEditorContainer } from "@/components/excalidraw-editor";
 import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help";
@@ -164,6 +165,9 @@ export const StoryWorkspaceContainer = memo(
 		const activeTab = tabs.find((t) => t.id === activeTabId);
 		// drawing 类型使用 Excalidraw 编辑器
 		const isExcalidrawTab = activeTab?.type === "drawing";
+		// mermaid/plantuml 类型使用 DiagramEditor
+		const isDiagramTab =
+			activeTab?.type === "mermaid" || activeTab?.type === "plantuml";
 
 		const handleScrollChange = useCallback(
 			(tabId: string, scrollTop: number) => {
@@ -214,12 +218,17 @@ export const StoryWorkspaceContainer = memo(
 		);
 
 		const textEditorTabs = useMemo(() => {
-			return tabs.filter((tab) => tab.type !== "drawing");
+			return tabs.filter(
+				(tab) =>
+					tab.type !== "drawing" &&
+					tab.type !== "mermaid" &&
+					tab.type !== "plantuml",
+			);
 		}, [tabs]);
 
 		// 计算当前编辑器的字数
 		const wordCountResult = useMemo(() => {
-			if (!activeTabId || isExcalidrawTab) {
+			if (!activeTabId || isExcalidrawTab || isDiagramTab) {
 				return { chineseChars: 0, englishWords: 0, total: 0, characters: 0 };
 			}
 			const state = editorStates[activeTabId];
@@ -227,7 +236,13 @@ export const StoryWorkspaceContainer = memo(
 				return { chineseChars: 0, englishWords: 0, total: 0, characters: 0 };
 			}
 			return countWordsFromLexicalState(state.serializedState, wordCountMode);
-		}, [activeTabId, editorStates, isExcalidrawTab, wordCountMode]);
+		}, [
+			activeTabId,
+			editorStates,
+			isExcalidrawTab,
+			isDiagramTab,
+			wordCountMode,
+		]);
 
 		const renderEditorContent = () => {
 			if (!activeTab) {
@@ -266,6 +281,18 @@ export const StoryWorkspaceContainer = memo(
 					<ExcalidrawEditorContainer
 						key={activeTab.id}
 						nodeId={activeTab.nodeId || ""}
+						className="flex-1 min-h-0"
+					/>
+				);
+			}
+
+			// 处理 Mermaid/PlantUML 类型节点
+			if (isDiagramTab) {
+				return (
+					<DiagramEditorContainer
+						key={activeTab.id}
+						nodeId={activeTab.nodeId || ""}
+						diagramType={activeTab.type as "mermaid" | "plantuml"}
 						className="flex-1 min-h-0"
 					/>
 				);
@@ -347,7 +374,12 @@ export const StoryWorkspaceContainer = memo(
 					<WordCountBadge
 						wordCountResult={wordCountResult}
 						countMode={wordCountMode}
-						show={showWordCountBadge && !isExcalidrawTab && !!activeTab}
+						show={
+							showWordCountBadge &&
+							!isExcalidrawTab &&
+							!isDiagramTab &&
+							!!activeTab
+						}
 						showDetail={wordCountMode === "mixed"}
 					/>
 				</div>
