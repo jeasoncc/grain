@@ -24,7 +24,7 @@ import { z } from "zod";
 import { createFileInTree } from "@/actions/node";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
-import type { NodeInterface, NodeType } from "@/types/node";
+import type { FileNodeType, NodeInterface, NodeType } from "@/types/node";
 
 // ==============================
 // Types
@@ -40,8 +40,8 @@ export interface TemplateConfig<T> {
 	readonly name: string;
 	/** 根文件夹名称 */
 	readonly rootFolder: string;
-	/** 文件类型（排除 folder 和 drawing，因为模板只创建文本类文件） */
-	readonly fileType: Exclude<NodeType, "folder" | "drawing">;
+	/** 文件类型（使用 FileNodeType，排除 folder） */
+	readonly fileType: FileNodeType;
 	/** 默认标签 */
 	readonly tag: string;
 	/** 生成模板内容的函数 */

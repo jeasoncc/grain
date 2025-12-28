@@ -47,7 +47,7 @@
     - 添加废弃注释指向新位置
     - _Requirements: 3.1_
 
-- [-] 4. Checkpoint - 类型检查
+- [x] 4. Checkpoint - 类型检查
   - 运行 `bun run check` 确保没有类型错误
   - 确保所有导入正确解析
   - 如有问题，询问用户

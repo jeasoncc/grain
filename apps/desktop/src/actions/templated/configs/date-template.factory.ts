@@ -36,8 +36,8 @@ export interface DateTemplateOptions {
 	readonly name: string;
 	/** 根文件夹名称 */
 	readonly rootFolder: string;
-	/** 文件类型（使用 FileNodeType，排除 folder） */
-	readonly fileType: FileNodeType;
+	/** 文件类型（日期模板只支持文本类文件，排除 folder 和 drawing） */
+	readonly fileType: Exclude<FileNodeType, "drawing">;
 	/** 默认标签 */
 	readonly tag: string;
 	/** 文件名前缀 */

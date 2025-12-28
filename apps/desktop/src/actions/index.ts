@@ -91,15 +91,10 @@ export {
 // ==============================
 
 export {
-	// 日记
-	adaptDiaryParams,
 	// Excalidraw
 	adaptExcalidrawParams,
-	// 记账
-	adaptLedgerParams,
-	type CreateDiaryParams,
+	type CreateDateTemplateParams,
 	type CreateExcalidrawParams,
-	type CreateLedgerParams,
 	createDiary,
 	createDiaryAsync,
 	createDiaryCompat,
@@ -113,13 +108,23 @@ export {
 	createLedgerAsync,
 	createLedgerCompat,
 	createLedgerCompatAsync,
+	// Note
+	createNote,
+	createNoteAsync,
+	createNoteCompat,
+	createNoteCompatAsync,
 	// 高阶函数
 	createTemplatedFile,
 	createTemplatedFileAsync,
+	// Todo
+	createTodo,
+	createTodoAsync,
+	createTodoCompat,
+	createTodoCompatAsync,
 	// Wiki
 	createWiki,
 	createWikiAsync,
-	type DiaryCreationResult,
+	type DateTemplateCreationResult,
 	type DiaryTemplateParams,
 	diaryConfig,
 	diaryParamsSchema,
@@ -131,15 +136,20 @@ export {
 	// 配置注册表
 	getTemplateConfig,
 	isValidTemplateType,
-	type LedgerCreationResult,
 	type LedgerTemplateParams,
 	ledgerConfig,
 	ledgerParamsSchema,
+	type NoteTemplateParams,
+	noteConfig,
+	noteParamsSchema,
 	type TemplateConfig,
 	type TemplatedFileParams,
 	type TemplatedFileResult,
 	type TemplateType,
+	type TodoTemplateParams,
 	templateConfigs,
+	todoConfig,
+	todoParamsSchema,
 	type WikiTemplateParams,
 	wikiConfig,
 	wikiParamsSchema,
