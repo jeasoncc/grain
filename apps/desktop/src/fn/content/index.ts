@@ -77,6 +77,11 @@ export {
 	TODO_TEMPLATE,
 	WIKI_TEMPLATE,
 } from "./content.template.fn";
+// 图表内容生成（Mermaid/PlantUML）
+export {
+	generateMermaidContent,
+	generatePlantUMLContent,
+} from "./diagram.content.fn";
 // Excalidraw 内容生成
 export {
 	// Functions
@@ -98,3 +103,8 @@ export {
 	isValidExcalidrawContent,
 	parseExcalidrawContent,
 } from "./excalidraw.content.fn";
+// 图表内容生成（Mermaid/PlantUML）
+export {
+	generateMermaidContent,
+	generatePlantUMLContent,
+} from "./diagram.content.fn";

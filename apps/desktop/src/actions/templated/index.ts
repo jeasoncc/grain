@@ -81,6 +81,34 @@ export {
 } from "./create-excalidraw.action";
 
 // ==============================
+// Mermaid 创建
+// ==============================
+
+export {
+	type CreateMermaidParams,
+	createMermaid,
+	createMermaidAsync,
+	createMermaidCompat,
+	createMermaidCompatAsync,
+	mermaidActions,
+	type MermaidCreationResult,
+} from "./create-mermaid.action";
+
+// ==============================
+// PlantUML 创建
+// ==============================
+
+export {
+	type CreatePlantUMLParams,
+	createPlantUML,
+	createPlantUMLAsync,
+	createPlantUMLCompat,
+	createPlantUMLCompatAsync,
+	plantumlActions,
+	type PlantUMLCreationResult,
+} from "./create-plantuml.action";
+
+// ==============================
 // 模板配置
 // ==============================
 

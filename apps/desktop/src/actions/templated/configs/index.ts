@@ -82,6 +82,26 @@ export {
 } from "./excalidraw.config";
 
 // ==============================
+// Mermaid Configuration
+// ==============================
+
+export {
+	type MermaidTemplateParams,
+	mermaidConfig,
+	mermaidParamsSchema,
+} from "./mermaid.config";
+
+// ==============================
+// PlantUML Configuration
+// ==============================
+
+export {
+	type PlantUMLTemplateParams,
+	plantumlConfig,
+	plantumlParamsSchema,
+} from "./plantuml.config";
+
+// ==============================
 // Configuration Registry
 // ==============================
 
@@ -96,6 +116,8 @@ export const templateConfigs = {
 	note: () => import("./note.config").then((m) => m.noteConfig),
 	excalidraw: () =>
 		import("./excalidraw.config").then((m) => m.excalidrawConfig),
+	mermaid: () => import("./mermaid.config").then((m) => m.mermaidConfig),
+	plantuml: () => import("./plantuml.config").then((m) => m.plantumlConfig),
 } as const;
 
 /**
