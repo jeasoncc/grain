@@ -210,17 +210,43 @@ export {
 } from "./workspace.db.fn";
 
 // ============================================================================
-// Legacy schema types for backward compatibility
+// Legacy types re-exported for backward compatibility
 // @deprecated Use types from "@/types" instead
 // ============================================================================
 
-export type {
-	AttachmentInterface as LegacyAttachmentInterface,
-	DBVersionInterface,
-	NodeInterface as LegacyNodeInterface,
-	NodeType as LegacyNodeType,
-	ProjectInterface,
-	SettingInterface,
-	StateInterface,
-	UserInterface as LegacyUserInterface,
-} from "./schema";
+export type { AttachmentInterface as LegacyAttachmentInterface } from "@/types/attachment";
+export type { NodeInterface as LegacyNodeInterface } from "@/types/node";
+export type { NodeType as LegacyNodeType } from "@/types/node";
+export type { UserInterface as LegacyUserInterface } from "@/types/user";
+export type { WorkspaceInterface as ProjectInterface } from "@/types/workspace";
+
+// Database-specific types
+export type { DBVersionInterface } from "./database";
+
+/**
+ * @deprecated Legacy StateInterface - no longer used
+ */
+export interface StateInterface {
+	lastLocation: string;
+	currentProject: string;
+	currentChapter: string;
+	currentScene: string;
+	currentTitle: string;
+	currentTyping: string;
+	lastCloudSave: string;
+	lastLocalSave: string;
+	isUserLoggedIn: boolean;
+}
+
+/**
+ * @deprecated Legacy SettingInterface - use UserSettings from @/types/user instead
+ */
+export interface SettingInterface {
+	theme: string;
+	language: string;
+	autosave?: boolean;
+	spellCheck?: boolean;
+	lastLocation?: boolean;
+	fontSize: string;
+}
+

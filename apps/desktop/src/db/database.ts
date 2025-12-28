@@ -20,15 +20,21 @@
 import Dexie, { type Table } from "dexie";
 import logger from "@/log/index.ts";
 // Import types from new architecture
+import type { AttachmentInterface } from "@/types/attachment";
 import type { NodeInterface } from "@/types/node";
 import type { TagInterface } from "@/types/tag";
-// Import interfaces from schema (legacy types)
-import type {
-	AttachmentInterface,
-	DBVersionInterface,
-	ProjectInterface,
-	UserInterface,
-} from "./schema";
+import type { UserInterface } from "@/types/user";
+import type { WorkspaceInterface } from "@/types/workspace";
+
+/**
+ * Database version info interface
+ */
+export interface DBVersionInterface {
+	id: string;
+	version: string;
+	updatedAt: string;
+	migrationNotes?: string;
+}
 
 /**
  * Content type for the contents table
@@ -58,7 +64,7 @@ export class GrainDatabase extends Dexie {
 	// Core tables
 	nodes!: Table<NodeInterface, string>;
 	contents!: Table<ContentInterface, string>;
-	workspaces!: Table<ProjectInterface, string>;
+	workspaces!: Table<WorkspaceInterface, string>;
 	users!: Table<UserInterface, string>;
 	attachments!: Table<AttachmentInterface, string>;
 	dbVersions!: Table<DBVersionInterface, string>;
