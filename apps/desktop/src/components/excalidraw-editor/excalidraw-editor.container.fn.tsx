@@ -13,7 +13,10 @@ import { useContentByNodeId } from "@/hooks/use-content";
 import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
-import type { ContainerSize, ExcalidrawEditorContainerProps } from "./excalidraw-editor.types";
+import type {
+	ContainerSize,
+	ExcalidrawEditorContainerProps,
+} from "./excalidraw-editor.types";
 import { ExcalidrawEditorView } from "./excalidraw-editor.view.fn";
 
 /** 自动保存延迟时间（毫秒） */
@@ -73,11 +76,14 @@ export const ExcalidrawEditorContainer = memo(
 		const containerRef = useRef<HTMLDivElement>(null);
 
 		// 初始数据状态
-		const [initialData, setInitialData] = useState<ExcalidrawInitialData | null>(null);
+		const [initialData, setInitialData] =
+			useState<ExcalidrawInitialData | null>(null);
 		const isInitializedRef = useRef(false);
 
 		// 容器尺寸状态 - 使用稳定的尺寸
-		const [containerSize, setContainerSize] = useState<ContainerSize | null>(null);
+		const [containerSize, setContainerSize] = useState<ContainerSize | null>(
+			null,
+		);
 		const sizeStableRef = useRef(false);
 
 		// 解析内容并设置初始数据
@@ -111,21 +117,21 @@ export const ExcalidrawEditorContainer = memo(
 				const rect = container.getBoundingClientRect();
 				const width = Math.floor(rect.width);
 				const height = Math.floor(rect.height);
-				
+
 				// 只有当尺寸有效且变化超过阈值时才更新
 				if (width > 200 && height > 200) {
 					const widthChanged = Math.abs(width - lastWidth) > 10;
 					const heightChanged = Math.abs(height - lastHeight) > 10;
-					
+
 					if (!sizeStableRef.current || widthChanged || heightChanged) {
 						lastWidth = width;
 						lastHeight = height;
-						
+
 						// 使用防抖，等待尺寸稳定
 						if (resizeTimeout) {
 							clearTimeout(resizeTimeout);
 						}
-						
+
 						resizeTimeout = setTimeout(() => {
 							setContainerSize({ width, height });
 							sizeStableRef.current = true;
@@ -213,7 +219,10 @@ export const ExcalidrawEditorContainer = memo(
 			return (
 				<div
 					ref={containerRef}
-					className={cn("flex items-center justify-center h-full w-full text-muted-foreground", className)}
+					className={cn(
+						"flex items-center justify-center h-full w-full text-muted-foreground",
+						className,
+					)}
 				>
 					<span>Loading...</span>
 				</div>
@@ -225,7 +234,10 @@ export const ExcalidrawEditorContainer = memo(
 			return (
 				<div
 					ref={containerRef}
-					className={cn("flex items-center justify-center h-full w-full text-muted-foreground", className)}
+					className={cn(
+						"flex items-center justify-center h-full w-full text-muted-foreground",
+						className,
+					)}
 				>
 					<span>Preparing canvas...</span>
 				</div>
@@ -233,10 +245,7 @@ export const ExcalidrawEditorContainer = memo(
 		}
 
 		return (
-			<div
-				ref={containerRef}
-				className={cn("h-full w-full", className)}
-			>
+			<div ref={containerRef} className={cn("h-full w-full", className)}>
 				<ExcalidrawEditorView
 					key={nodeId}
 					initialData={initialData}

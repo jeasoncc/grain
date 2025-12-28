@@ -14,10 +14,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
 	createDiaryCompatAsync,
-	createWikiCompatAsync,
-	createTodoCompatAsync,
-	createNoteCompatAsync,
 	createLedgerCompatAsync,
+	createNoteCompatAsync,
+	createTodoCompatAsync,
+	createWikiCompatAsync,
 } from "@/actions/templated/create-date-template.action";
 import { createExcalidrawCompatAsync } from "@/actions/templated/create-excalidraw.action";
 import type { TemplatedFileResult } from "@/actions/templated/create-templated-file.action";
@@ -56,7 +56,6 @@ interface CreateTemplateOptions {
 	readonly errorMessage: string;
 	readonly preloadContent?: boolean;
 }
-
 
 /**
  * ActivityBar 容器组件
@@ -200,7 +199,6 @@ export function ActivityBarContainer(): React.ReactElement {
 	const openTab = useEditorTabsStore((s) => s.openTab);
 	const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
 
-
 	/**
 	 * 通用的模板文件创建处理函数
 	 *
@@ -219,7 +217,12 @@ export function ActivityBarContainer(): React.ReactElement {
 				return;
 			}
 
-			const { creator, successMessage, errorMessage, preloadContent = true } = options;
+			const {
+				creator,
+				successMessage,
+				errorMessage,
+				preloadContent = true,
+			} = options;
 
 			try {
 				const result = await creator({
@@ -337,7 +340,6 @@ export function ActivityBarContainer(): React.ReactElement {
 			}),
 		[handleCreateTemplate],
 	);
-
 
 	const handleImportFile = useCallback(async (_file: File) => {
 		try {

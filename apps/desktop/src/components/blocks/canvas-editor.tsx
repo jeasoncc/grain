@@ -177,12 +177,12 @@ export function CanvasEditor({
 				viewBackgroundColor: "#ffffff",
 			};
 		}
-		
+
 		// 只保留安全的属性，完全忽略可能导致问题的属性
 		const sanitized: any = {
 			viewBackgroundColor: "#ffffff",
 		};
-		
+
 		// 安全地复制背景色
 		if (
 			appState.viewBackgroundColor &&
@@ -190,7 +190,7 @@ export function CanvasEditor({
 		) {
 			sanitized.viewBackgroundColor = appState.viewBackgroundColor;
 		}
-		
+
 		// 安全地复制网格大小
 		if (
 			typeof appState.gridSize === "number" &&
@@ -200,10 +200,10 @@ export function CanvasEditor({
 		) {
 			sanitized.gridSize = appState.gridSize;
 		}
-		
+
 		// 不复制 scrollX, scrollY, zoom 等可能导致 canvas 尺寸问题的属性
 		// Excalidraw 会自动计算这些值
-		
+
 		return sanitized;
 	};
 
@@ -261,10 +261,10 @@ export function CanvasEditor({
 			const parsed = JSON.parse(initialData);
 			// 检查是否是有效的 Excalidraw 数据
 			if (parsed && typeof parsed === "object") {
-				const elements = Array.isArray(parsed.elements) 
-					? sanitizeElements(parsed.elements) 
+				const elements = Array.isArray(parsed.elements)
+					? sanitizeElements(parsed.elements)
 					: [];
-				
+
 				return {
 					elements,
 					appState: sanitizeAppState(parsed.appState),
@@ -536,7 +536,10 @@ export function CanvasEditor({
 			</div>
 
 			{/* Excalidraw 编辑器 */}
-			<div className="flex-1 min-h-0 relative" ref={!isFullscreen ? containerRef : undefined}>
+			<div
+				className="flex-1 min-h-0 relative"
+				ref={!isFullscreen ? containerRef : undefined}
+			>
 				{containerSize ? (
 					<div
 						style={{

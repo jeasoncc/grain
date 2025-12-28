@@ -102,7 +102,6 @@ export const StoryWorkspaceContainer = memo(
 			markAsSaving,
 		} = useSaveStore();
 
-
 		// 获取当前编辑器内容
 		const currentContent = useMemo(() => {
 			if (!activeTabId) return null;
@@ -164,7 +163,8 @@ export const StoryWorkspaceContainer = memo(
 		// 获取当前活动标签
 		const activeTab = tabs.find((t) => t.id === activeTabId);
 		// canvas 和 drawing 类型都使用 Excalidraw 编辑器
-		const isExcalidrawTab = activeTab?.type === "canvas" || activeTab?.type === "drawing";
+		const isExcalidrawTab =
+			activeTab?.type === "canvas" || activeTab?.type === "drawing";
 
 		const handleScrollChange = useCallback(
 			(tabId: string, scrollTop: number) => {

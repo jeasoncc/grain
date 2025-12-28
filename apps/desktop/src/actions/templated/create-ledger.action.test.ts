@@ -11,8 +11,8 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { type CreateDateTemplateParams } from "./create-date-template.action";
 import { ledgerConfig } from "./configs/ledger.config";
+import type { CreateDateTemplateParams } from "./create-date-template.action";
 
 // ============================================================================
 // Tests

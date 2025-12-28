@@ -48,7 +48,7 @@ const nodeArbitrary = (
 			id: fc.uuid(),
 			workspace: fc.uuid(),
 			parent: fc.option(fc.uuid(), { nil: null }),
-			type: fc.constantFrom<NodeType>("folder", "file", "canvas", "diary"),
+			type: fc.constantFrom<NodeType>("folder", "file", "drawing", "diary"),
 			title: fc.string({ minLength: 1, maxLength: 200 }),
 			order: fc.nat({ max: 1000 }),
 			collapsed: fc.boolean(),
@@ -501,7 +501,7 @@ describe("Property-Based Tests", () => {
 			fc.assert(
 				fc.property(
 					fc.array(nodeArbitrary(), { minLength: 0, maxLength: 20 }),
-					fc.constantFrom<NodeType>("folder", "file", "canvas", "diary"),
+					fc.constantFrom<NodeType>("folder", "file", "drawing", "diary"),
 					(nodes, type) => {
 						const filtered = filterByType(nodes, type);
 						return filtered.every((n) => n.type === type);
@@ -515,7 +515,7 @@ describe("Property-Based Tests", () => {
 			fc.assert(
 				fc.property(
 					fc.array(nodeArbitrary(), { minLength: 0, maxLength: 20 }),
-					fc.constantFrom<NodeType>("folder", "file", "canvas", "diary"),
+					fc.constantFrom<NodeType>("folder", "file", "drawing", "diary"),
 					(nodes, type) => {
 						const filtered = filterByType(nodes, type);
 						const expected = nodes.filter((n) => n.type === type);

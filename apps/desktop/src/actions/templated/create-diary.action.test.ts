@@ -11,11 +11,11 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { diaryConfig } from "./configs/diary.config";
 import {
 	type CreateDateTemplateParams,
 	createDiaryCompatAsync,
 } from "./create-date-template.action";
-import { diaryConfig } from "./configs/diary.config";
 
 // ============================================================================
 // Test Data

@@ -9,17 +9,17 @@
  */
 
 import type { ISODateString, UUID } from "@/types/shared";
+// 从 schema 导入 NodeType，确保单一来源
+import type { NodeType } from "./node.schema";
+
+// 重新导出 NodeType，方便外部使用
+export type { NodeType };
 
 /**
- * 节点类型枚举
- * 定义文件树中不同类型的节点
- * - folder: 容器节点，可以包含子节点
- * - file: 使用 Lexical 编辑器的文本文档
- * - canvas: 使用 Excalidraw 的绘图（旧类型，保留兼容）
- * - diary: 日记条目
- * - drawing: Excalidraw 绘图文件（新类型）
+ * 文件类型（排除 folder）
+ * 用于模板配置等只接受文件类型的场景
  */
-export type NodeType = "folder" | "file" | "canvas" | "diary" | "drawing";
+export type FileNodeType = Exclude<NodeType, "folder">;
 
 /**
  * 文件树结构的节点接口

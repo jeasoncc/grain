@@ -310,7 +310,7 @@ export function FileTree({
 
 	// Use window height as fallback to ensure tree renders immediately
 	const [dimensions, setDimensions] = useState({
-		width: '100%',
+		width: "100%",
 		height: typeof window !== "undefined" ? window.innerHeight - 100 : 600,
 	});
 

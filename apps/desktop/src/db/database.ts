@@ -28,7 +28,7 @@ import type {
 	DBVersionInterface,
 	ProjectInterface,
 	UserInterface,
-} from "./schema.ts";
+} from "./schema";
 
 /**
  * Content type for the contents table

@@ -15,12 +15,12 @@
  * @requirements 代码复用，函数式编程规范
  */
 
+import type { DateTemplateParams } from "./configs/date-template.factory";
 import type { TemplateConfig } from "./create-templated-file.action";
 import {
 	createTemplatedFile,
 	createTemplatedFileAsync,
 } from "./create-templated-file.action";
-import type { DateTemplateParams } from "./configs/date-template.factory";
 
 // ==============================
 // Types
@@ -108,10 +108,10 @@ export const createDateTemplateActions = (
 
 // 导入所有配置
 import { diaryConfig } from "./configs/diary.config";
-import { wikiConfig } from "./configs/wiki.config";
-import { todoConfig } from "./configs/todo.config";
-import { noteConfig } from "./configs/note.config";
 import { ledgerConfig } from "./configs/ledger.config";
+import { noteConfig } from "./configs/note.config";
+import { todoConfig } from "./configs/todo.config";
+import { wikiConfig } from "./configs/wiki.config";
 
 /** Diary actions */
 export const diaryActions = createDateTemplateActions(diaryConfig);

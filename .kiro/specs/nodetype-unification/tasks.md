@@ -6,20 +6,20 @@
 
 ## Tasks
 
-- [ ] 1. 更新 NodeType 定义（单一来源）
-  - [ ] 1.1 更新 `node.schema.ts` 中的 NodeTypeSchema
+- [x] 1. 更新 NodeType 定义（单一来源）
+  - [x] 1.1 更新 `node.schema.ts` 中的 NodeTypeSchema
     - 添加新类型：wiki, todo, note, ledger, plantuml, mermaid
     - 保留现有类型：folder, file, diary, drawing
     - 移除废弃类型：canvas（如果存在）
     - _Requirements: 1.1, 1.3_
 
-  - [ ] 1.2 更新 `node.interface.ts` 从 schema 导入 NodeType
+  - [x] 1.2 更新 `node.interface.ts` 从 schema 导入 NodeType
     - 从 `node.schema.ts` 导入 NodeType 类型
     - 添加 FileNodeType 类型定义
     - 删除重复的 NodeType 定义
     - _Requirements: 4.3_
 
-  - [ ] 1.3 更新 `node/index.ts` 导出
+  - [x] 1.3 更新 `node/index.ts` 导出
     - 确保 NodeType 和 FileNodeType 正确导出
     - _Requirements: 4.3_
 

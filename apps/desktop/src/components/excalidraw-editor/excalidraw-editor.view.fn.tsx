@@ -46,7 +46,9 @@ export const ExcalidrawEditorView = memo(
 			elements: initialData.elements || [],
 			appState: {
 				...initialData.appState,
-				viewBackgroundColor: initialData.appState?.viewBackgroundColor || (theme === "dark" ? "#1e1e1e" : "#ffffff"),
+				viewBackgroundColor:
+					initialData.appState?.viewBackgroundColor ||
+					(theme === "dark" ? "#1e1e1e" : "#ffffff"),
 			},
 			files: initialData.files || {},
 		};

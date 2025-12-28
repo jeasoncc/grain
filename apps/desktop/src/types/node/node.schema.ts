@@ -12,10 +12,34 @@ import { z } from "zod";
 import { ISODateTimeSchema, UUIDSchema } from "@/types/shared";
 
 /**
- * 节点类型 schema
- * 验证类型是否为允许的值之一
+ * 节点类型 Zod Schema（单一来源）
+ *
+ * 所有 NodeType 的定义都从这里派生，确保一致性。
+ *
+ * 类型说明：
+ * - folder: 容器节点，可以包含子节点
+ * - file: 通用文本文件，使用 Lexical 编辑器
+ * - diary: 日记条目
+ * - wiki: Wiki 知识条目
+ * - todo: 待办事项
+ * - note: 笔记
+ * - ledger: 记账条目
+ * - drawing: Excalidraw 绘图文件
+ * - plantuml: PlantUML 图表
+ * - mermaid: Mermaid 图表
  */
-export const NodeTypeSchema = z.enum(["folder", "file", "canvas", "diary"]);
+export const NodeTypeSchema = z.enum([
+	"folder",
+	"file",
+	"diary",
+	"wiki",
+	"todo",
+	"note",
+	"ledger",
+	"drawing",
+	"plantuml",
+	"mermaid",
+]);
 
 /**
  * 完整的 Node schema
@@ -119,4 +143,8 @@ export const NodeUpdateSchema = z.object({
 export type NodeSchemaType = z.infer<typeof NodeSchema>;
 export type NodeCreateSchemaType = z.infer<typeof NodeCreateSchema>;
 export type NodeUpdateSchemaType = z.infer<typeof NodeUpdateSchema>;
-export type NodeTypeSchemaType = z.infer<typeof NodeTypeSchema>;
+
+/**
+ * 从 Schema 推断的 NodeType 类型（单一来源）
+ */
+export type NodeType = z.infer<typeof NodeTypeSchema>;

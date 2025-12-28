@@ -15,9 +15,9 @@
 // ==============================
 
 export {
-	type DateTemplateParams,
-	type DateTemplateOptions,
 	createDateTemplateConfig,
+	type DateTemplateOptions,
+	type DateTemplateParams,
 	dateParamsSchema,
 } from "./date-template.factory";
 

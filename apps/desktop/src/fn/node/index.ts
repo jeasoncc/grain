@@ -8,6 +8,12 @@
  * @requirements 2.1, 1.4
  */
 
+// 展开状态计算函数
+export {
+	calculateExpandedFoldersForNode,
+	type ExpandedFoldersMap,
+	mergeExpandedFoldersForNode,
+} from "./node.expand.fn";
 // Tree 操作函数
 export {
 	buildTree,
@@ -22,10 +28,3 @@ export {
 	type TreeNode,
 	wouldCreateCycle,
 } from "./node.tree.fn";
-
-// 展开状态计算函数
-export {
-	type ExpandedFoldersMap,
-	calculateExpandedFoldersForNode,
-	mergeExpandedFoldersForNode,
-} from "./node.expand.fn";

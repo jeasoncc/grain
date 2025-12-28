@@ -94,7 +94,7 @@ export const FileTreePanelContainer = memo(
 
 					// Map node type to editor tab type
 					const tabType =
-						node.type === "canvas"
+						node.type === "drawing"
 							? "canvas"
 							: node.type === "diary"
 								? "diary"
@@ -160,9 +160,9 @@ export const FileTreePanelContainer = memo(
 				}
 
 				try {
-					const title = type === "canvas" ? "New Canvas" : "New File";
+					const title = type === "drawing" ? "New Canvas" : "New File";
 					const content =
-						type === "canvas"
+						type === "drawing"
 							? JSON.stringify({ elements: [], appState: {}, files: {} })
 							: "";
 
@@ -180,7 +180,7 @@ export const FileTreePanelContainer = memo(
 
 					const newNode = newNodeResult.right;
 
-					toast.success(`${type === "canvas" ? "Canvas" : "File"} created`);
+					toast.success(`${type === "drawing" ? "Canvas" : "File"} created`);
 
 					// Auto-select and open the new file
 					if (newNode && type !== "folder") {
