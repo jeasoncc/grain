@@ -162,9 +162,8 @@ export const StoryWorkspaceContainer = memo(
 
 		// 获取当前活动标签
 		const activeTab = tabs.find((t) => t.id === activeTabId);
-		// canvas 和 drawing 类型都使用 Excalidraw 编辑器
-		const isExcalidrawTab =
-			activeTab?.type === "canvas" || activeTab?.type === "drawing";
+		// drawing 类型使用 Excalidraw 编辑器
+		const isExcalidrawTab = activeTab?.type === "drawing";
 
 		const handleScrollChange = useCallback(
 			(tabId: string, scrollTop: number) => {
@@ -215,9 +214,7 @@ export const StoryWorkspaceContainer = memo(
 		);
 
 		const textEditorTabs = useMemo(() => {
-			return tabs.filter(
-				(tab) => tab.type !== "canvas" && tab.type !== "drawing",
-			);
+			return tabs.filter((tab) => tab.type !== "drawing");
 		}, [tabs]);
 
 		// 计算当前编辑器的字数
@@ -263,7 +260,7 @@ export const StoryWorkspaceContainer = memo(
 				);
 			}
 
-			// 处理 Excalidraw 类型节点（canvas 和 drawing）
+			// 处理 Excalidraw 类型节点（drawing）
 			if (isExcalidrawTab) {
 				return (
 					<ExcalidrawEditorContainer

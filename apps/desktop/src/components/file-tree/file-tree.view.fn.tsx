@@ -99,7 +99,7 @@ function TreeNode({
 				/>
 			);
 		}
-		if (data.type === "canvas") {
+		if (data.type === "drawing") {
 			const CanvasIcon = iconTheme.icons.activityBar.canvas;
 			return (
 				<CanvasIcon
@@ -260,7 +260,7 @@ function TreeNode({
 											Text File
 										</DropdownMenuItem>
 										<DropdownMenuItem
-											onClick={() => onCreateFile(node.id, "canvas")}
+											onClick={() => onCreateFile(node.id, "drawing")}
 										>
 											<FileText className="size-4 mr-2" />
 											Canvas

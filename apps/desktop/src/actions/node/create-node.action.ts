@@ -50,7 +50,7 @@ export interface CreateFileInTreeParams {
 	/** 文件夹路径（从根目录开始的文件夹名称数组） */
 	readonly folderPath: string[];
 	/** 节点类型（默认 file） */
-	readonly type?: "file" | "diary" | "canvas" | "drawing";
+	readonly type?: NodeType;
 	/** 标签 */
 	readonly tags?: string[];
 	/** 内容（Lexical JSON 字符串） */

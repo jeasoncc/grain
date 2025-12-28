@@ -1,7 +1,7 @@
 /**
  * FileTreeItem Component
  * Recursive component for rendering individual nodes in the file tree.
- * Supports folders with expand/collapse, files, and canvas types.
+ * Supports folders with expand/collapse, files, and drawing types.
  *
  * Requirements: 2.1, 2.2
  */
@@ -70,7 +70,7 @@ export function FileTreeItem({
 				) : (
 					<FolderOpen className="size-4 shrink-0 text-blue-500" />
 				);
-			case "canvas":
+			case "drawing":
 				return <PenTool className="size-4 shrink-0 text-purple-500/70" />;
 			case "file":
 			default:

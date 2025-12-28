@@ -16,7 +16,7 @@ const getTabIcon = (type: EditorTab["type"]) => {
 	switch (type) {
 		case "diary":
 			return <Calendar className="size-4" />;
-		case "canvas":
+		case "drawing":
 			return <Palette className="size-4" />;
 		default:
 			return <FileText className="size-4" />;

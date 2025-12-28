@@ -93,12 +93,7 @@ export const FileTreePanelContainer = memo(
 					}
 
 					// Map node type to editor tab type
-					const tabType =
-						node.type === "drawing"
-							? "canvas"
-							: node.type === "diary"
-								? "diary"
-								: "file";
+					const tabType = node.type === "diary" ? "diary" : node.type;
 					openTab({
 						workspaceId: workspaceId,
 						nodeId: nodeId,

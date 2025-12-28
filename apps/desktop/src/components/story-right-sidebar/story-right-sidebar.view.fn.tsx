@@ -39,7 +39,7 @@ export const StoryRightSidebarView = memo(
 			switch (type) {
 				case "diary":
 					return <Calendar className="size-4 shrink-0" />;
-				case "canvas":
+				case "drawing":
 					return <Palette className="size-4 shrink-0" />;
 				default:
 					return <FileText className="size-4 shrink-0" />;
