@@ -18,15 +18,15 @@
 - [x] 创建 `mermaid.config.ts` 使用 `createDateTemplateConfig` 工厂函数
 - [x] 创建 `plantuml.config.ts` 使用 `createDateTemplateConfig` 工厂函数
 - [x] 在 `configs/index.ts` 中导出新配置
-- [-] 在 `templateConfigs` 注册表中添加新配置
+- [x] 在 `templateConfigs` 注册表中添加新配置
 
 ## Task 3: 创建 Mermaid 和 PlantUML 创建 Actions
 
 **Requirements:** 1.1, 2.1
 
 **Acceptance Criteria:**
-- [ ] 创建 `create-mermaid.action.ts` 使用 `createDateTemplateActions` 工厂函数
-- [ ] 创建 `create-plantuml.action.ts` 使用 `createDateTemplateActions` 工厂函数
+- [x] 创建 `create-mermaid.action.ts` 使用 `createDateTemplateActions` 工厂函数
+- [-] 创建 `create-plantuml.action.ts` 使用 `createDateTemplateActions` 工厂函数
 - [ ] 在 `actions/templated/index.ts` 中导出新 actions
 - [ ] 导出 `createMermaidCompatAsync` 和 `createPlantUMLCompatAsync`
 
