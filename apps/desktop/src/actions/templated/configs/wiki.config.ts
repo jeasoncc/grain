@@ -55,14 +55,14 @@ const generateWikiTemplateContent = (params: WikiTemplateParams): string => {
 /**
  * 生成 Wiki 文件夹路径
  *
- * Wiki 条目按年份和月份组织：
- * Wiki > year-YYYY-{Zodiac} > month-MM-{MonthName}
+ * Wiki 条目按年份、月份和日期组织：
+ * Wiki > year-YYYY-{Zodiac} > month-MM-{MonthName} > day-DD-{Weekday}
  */
 const generateWikiFolderPath = (params: WikiTemplateParams): string[] => {
 	const date = params.date || dayjs().toDate();
 	const structure = getDateFolderStructureWithFilename(date, "wiki");
 
-	return [structure.yearFolder, structure.monthFolder];
+	return [structure.yearFolder, structure.monthFolder, structure.dayFolder];
 };
 
 /**

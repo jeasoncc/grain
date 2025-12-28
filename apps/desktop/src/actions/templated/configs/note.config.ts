@@ -54,12 +54,15 @@ const generateNoteTemplate = (params: NoteTemplateParams): string => {
 
 /**
  * 生成 Note 文件夹路径
+ *
+ * Note 按年份、月份和日期组织：
+ * Note > year-YYYY-{Zodiac} > month-MM-{MonthName} > day-DD-{Weekday}
  */
 const generateNoteFolderPath = (params: NoteTemplateParams): string[] => {
 	const date = params.date || dayjs().toDate();
 	const structure = getDateFolderStructureWithFilename(date, "note");
 
-	return [structure.yearFolder, structure.monthFolder];
+	return [structure.yearFolder, structure.monthFolder, structure.dayFolder];
 };
 
 /**

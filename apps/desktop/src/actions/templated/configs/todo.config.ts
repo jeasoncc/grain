@@ -54,12 +54,15 @@ const generateTodoTemplate = (params: TodoTemplateParams): string => {
 
 /**
  * 生成 Todo 文件夹路径
+ *
+ * Todo 按年份、月份和日期组织：
+ * Todo > year-YYYY-{Zodiac} > month-MM-{MonthName} > day-DD-{Weekday}
  */
 const generateTodoFolderPath = (params: TodoTemplateParams): string[] => {
 	const date = params.date || dayjs().toDate();
 	const structure = getDateFolderStructureWithFilename(date, "todo");
 
-	return [structure.yearFolder, structure.monthFolder];
+	return [structure.yearFolder, structure.monthFolder, structure.dayFolder];
 };
 
 /**
