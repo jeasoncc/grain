@@ -51,6 +51,10 @@ export interface ActivityBarProps {
 	readonly onCreateNote: () => void;
 	/** 创建 Excalidraw */
 	readonly onCreateExcalidraw: () => void;
+	/** 创建 Mermaid 图表 */
+	readonly onCreateMermaid: () => void;
+	/** 创建 PlantUML 图表 */
+	readonly onCreatePlantUML: () => void;
 	/** 导入文件 */
 	readonly onImportFile: (file: File) => Promise<void>;
 	/** 打开导出对话框 */

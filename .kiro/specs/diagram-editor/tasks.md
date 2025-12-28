@@ -51,14 +51,14 @@
 **Acceptance Criteria:**
 - [x] 在 `story-workspace.container.fn.tsx` 中添加 mermaid/plantuml 类型判断
 - [x] 渲染 `DiagramEditorContainer` 组件
-- [-] 确保内容加载和保存正常工作
+- [x] 确保内容加载和保存正常工作
 
 ## Task 6: 添加 Activity Bar 图标按钮
 
 **Requirements:** 6.1, 6.2, 6.3, 6.4, 6.5
 
 **Acceptance Criteria:**
-- [ ] 在 `activity-bar.types.ts` 中添加 `onCreateMermaid` 和 `onCreatePlantUML` 回调
+- [-] 在 `activity-bar.types.ts` 中添加 `onCreateMermaid` 和 `onCreatePlantUML` 回调
 - [ ] 在 `icon-theme.interface.ts` 中添加 `mermaid` 和 `plantuml` 图标
 - [ ] 在 `activity-bar.view.fn.tsx` 中添加 Mermaid 和 PlantUML 按钮
 - [ ] 在 `activity-bar.container.fn.tsx` 中实现创建逻辑
