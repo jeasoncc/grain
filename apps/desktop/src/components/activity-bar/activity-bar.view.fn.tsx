@@ -188,6 +188,8 @@ export const ActivityBarView = memo(function ActivityBarView({
 	onCreateTodo,
 	onCreateNote,
 	onCreateExcalidraw,
+	onCreateMermaid,
+	onCreatePlantUML,
 	onImportFile,
 	onOpenExportDialog,
 	onDeleteAllData,
@@ -206,6 +208,8 @@ export const ActivityBarView = memo(function ActivityBarView({
 	const TodoIcon = iconTheme.icons.activityBar.todo;
 	const NoteIcon = iconTheme.icons.activityBar.note;
 	const ExcalidrawIcon = iconTheme.icons.activityBar.canvas;
+	const MermaidIcon = iconTheme.icons.activityBar.mermaid;
+	const PlantUMLIcon = iconTheme.icons.activityBar.plantuml;
 	const SettingsIcon = iconTheme.icons.activityBar.settings;
 	const ImportIcon = iconTheme.icons.activityBar.import;
 	const ExportIcon = iconTheme.icons.activityBar.export;
@@ -319,6 +323,20 @@ export const ActivityBarView = memo(function ActivityBarView({
 						label="New Excalidraw"
 						onClick={onCreateExcalidraw}
 						testId="btn-new-excalidraw"
+					/>
+					{/* Mermaid */}
+					<ActionButton
+						icon={<MermaidIcon className="size-5" />}
+						label="New Mermaid"
+						onClick={onCreateMermaid}
+						testId="btn-new-mermaid"
+					/>
+					{/* PlantUML */}
+					<ActionButton
+						icon={<PlantUMLIcon className="size-5" />}
+						label="New PlantUML"
+						onClick={onCreatePlantUML}
+						testId="btn-new-plantuml"
 					/>
 					{/* Search */}
 					<ActionButton
