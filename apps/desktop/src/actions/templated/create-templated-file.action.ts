@@ -40,8 +40,8 @@ export interface TemplateConfig<T> {
 	readonly name: string;
 	/** 根文件夹名称 */
 	readonly rootFolder: string;
-	/** 文件类型（排除 folder，因为模板只创建文件，不创建文件夹） */
-	readonly fileType: Exclude<NodeType, "folder">;
+	/** 文件类型（排除 folder 和 drawing，因为模板只创建文本类文件） */
+	readonly fileType: Exclude<NodeType, "folder" | "drawing">;
 	/** 默认标签 */
 	readonly tag: string;
 	/** 生成模板内容的函数 */

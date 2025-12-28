@@ -70,7 +70,7 @@ export const createXxxFile = (params) => {
 interface TemplateConfig<T> {
   readonly name: string;
   readonly rootFolder: string;
-  readonly fileType: Exclude<NodeType, "folder">;     // 排除 folder 类型
+  readonly fileType: Exclude<NodeType, "folder" | "drawing">;  // 排除 folder 和 drawing 类型
   readonly tag: string;
   readonly generateTemplate: (params: T) => string;
   readonly generateFolderPath: (params: T) => string[];
