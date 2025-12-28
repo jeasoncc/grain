@@ -317,14 +317,8 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 
 			logger.info("[DiagramEditor] 保存内容:", nodeId);
 
-			// 根据图表类型选择内容类型
-			const contentType = diagramType === "mermaid" ? "mermaid" : "plantuml";
-
-			const result = await updateContentByNodeId(
-				nodeId,
-				newCode,
-				contentType as "lexical" | "excalidraw",
-			)();
+			// 图表内容使用 "text" 类型存储（纯文本 Mermaid/PlantUML 语法）
+			const result = await updateContentByNodeId(nodeId, newCode, "text")();
 
 			if (E.isRight(result)) {
 				lastSavedCode.current = newCode;
@@ -335,7 +329,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 				toast.error("Failed to save diagram");
 			}
 		},
-		[nodeId, diagramType],
+		[nodeId],
 	);
 
 	// 防抖保存

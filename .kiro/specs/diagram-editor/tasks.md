@@ -51,7 +51,7 @@
 **Acceptance Criteria:**
 - [x] 在 `story-workspace.container.fn.tsx` 中添加 mermaid/plantuml 类型判断
 - [x] 渲染 `DiagramEditorContainer` 组件
-- [x] 确保内容加载和保存正常工作
+- [-] 确保内容加载和保存正常工作
 
 ## Task 6: 添加 Activity Bar 图标按钮
 
