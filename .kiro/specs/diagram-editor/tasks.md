@@ -26,9 +26,9 @@
 
 **Acceptance Criteria:**
 - [x] 创建 `create-mermaid.action.ts` 使用 `createDateTemplateActions` 工厂函数
-- [-] 创建 `create-plantuml.action.ts` 使用 `createDateTemplateActions` 工厂函数
-- [ ] 在 `actions/templated/index.ts` 中导出新 actions
-- [ ] 导出 `createMermaidCompatAsync` 和 `createPlantUMLCompatAsync`
+- [x] 创建 `create-plantuml.action.ts` 使用 `createDateTemplateActions` 工厂函数
+- [x] 在 `actions/templated/index.ts` 中导出新 actions
+- [x] 导出 `createMermaidCompatAsync` 和 `createPlantUMLCompatAsync`
 
 ## Task 4: 创建 DiagramEditor 组件
 
