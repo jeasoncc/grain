@@ -82,7 +82,10 @@ const toMermaidTheme = (
  */
 interface MermaidErrorPattern {
 	readonly pattern: RegExp | string;
-	readonly getMessage: (match: RegExpMatchArray | null, original: string) => string;
+	readonly getMessage: (
+		match: RegExpMatchArray | null,
+		original: string,
+	) => string;
 }
 
 /**

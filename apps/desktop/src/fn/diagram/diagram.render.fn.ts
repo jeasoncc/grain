@@ -196,7 +196,10 @@ const delay = (ms: number): Promise<void> =>
  */
 interface MermaidErrorPattern {
 	readonly pattern: RegExp | string;
-	readonly getMessage: (match: RegExpMatchArray | null, original: string) => string;
+	readonly getMessage: (
+		match: RegExpMatchArray | null,
+		original: string,
+	) => string;
 }
 
 /**
@@ -275,7 +278,12 @@ const parseMermaidError = (error: unknown): string => {
 		}
 	}
 
-	return message.replace(/^Error:\s*/i, "").replace(/^Mermaid:\s*/i, "").trim() || "Mermaid render failed";
+	return (
+		message
+			.replace(/^Error:\s*/i, "")
+			.replace(/^Mermaid:\s*/i, "")
+			.trim() || "Mermaid render failed"
+	);
 };
 
 /**

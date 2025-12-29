@@ -3,12 +3,35 @@
  *
  * 基于 Monaco Editor 的纯展示组件
  * 提供语法高亮、自动补全、快捷键支持等专业代码编辑体验
+ *
+ * 性能优化：
+ * - Monaco Editor 通过 CDN 懒加载，减少初始包体积
+ * - 使用 memo 优化渲染性能
+ * - 支持预加载提升后续使用体验
+ *
+ * @requirements 7.1, 7.5 - 性能优化
  */
 import Editor, { type Monaco, type OnMount } from "@monaco-editor/react";
+import { Loader2 } from "lucide-react";
 import type { editor } from "monaco-editor";
-import { memo, useCallback, useRef } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 import { registerAllLanguages } from "./code-editor.languages";
 import type { CodeEditorViewProps } from "./code-editor.types";
+import { configureMonacoLoader } from "./monaco.config";
+
+/**
+ * 加载状态指示器组件
+ *
+ * 在 Monaco Editor 加载时显示
+ */
+const LoadingIndicator = memo(function LoadingIndicator() {
+	return (
+		<div className="flex h-full w-full flex-col items-center justify-center gap-3 text-muted-foreground">
+			<Loader2 className="size-6 animate-spin" />
+			<span className="text-sm">加载编辑器中...</span>
+		</div>
+	);
+});
 
 /**
  * CodeEditorView - 纯函数式代码编辑器展示组件
@@ -19,6 +42,7 @@ import type { CodeEditorViewProps } from "./code-editor.types";
  * - 支持 Ctrl+S 快捷键保存
  * - 自动布局适应容器大小
  * - 使用 memo 优化渲染性能
+ * - Monaco 通过 CDN 懒加载，减少初始包体积
  *
  * @example
  * ```tsx
@@ -43,6 +67,11 @@ export const CodeEditorView = memo(function CodeEditorView({
 	// 保存 Monaco 实例引用，用于后续操作
 	const monacoRef = useRef<Monaco | null>(null);
 	const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+
+	// 配置 Monaco 懒加载（只执行一次）
+	useEffect(() => {
+		configureMonacoLoader();
+	}, []);
 
 	/**
 	 * 处理编辑器挂载
@@ -153,11 +182,7 @@ export const CodeEditorView = memo(function CodeEditorView({
 				...options,
 			}}
 			// 加载状态显示
-			loading={
-				<div className="flex h-full w-full items-center justify-center text-muted-foreground">
-					加载编辑器中...
-				</div>
-			}
+			loading={<LoadingIndicator />}
 		/>
 	);
 });

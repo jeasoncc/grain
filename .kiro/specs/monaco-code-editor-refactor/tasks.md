@@ -181,9 +181,9 @@ bun add @monaco-editor/react
 **Requirements:** 7.1, 7.5
 
 **Acceptance Criteria:**
-- [ ] 配置 Monaco Editor 懒加载
-- [ ] 验证首次加载时间改善
-- [ ] 添加加载状态指示器
+- [x] 配置 Monaco Editor 懒加载
+- [x] 验证首次加载时间改善
+- [x] 添加加载状态指示器
 
 ## Task 17: 实现 Mermaid 客户端渲染
 
@@ -194,7 +194,7 @@ bun add @monaco-editor/react
 - [x] 实现 `initMermaid` 函数，支持 light/dark 主题
 - [x] 实现 `renderMermaid` 函数，返回 SVG 或错误
 - [x] 配置 mermaid.js 安全设置（securityLevel）
-- [-] 处理语法错误并返回友好的错误信息
+- [x] 处理语法错误并返回友好的错误信息
 
 ## Task 18: 实现 PlantUML Kroki 渲染
 
