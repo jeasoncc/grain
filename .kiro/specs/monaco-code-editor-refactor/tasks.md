@@ -141,10 +141,10 @@ bun add @monaco-editor/react
 **Requirements:** 4.1
 
 **Acceptance Criteria:**
-- [ ] 更新 `diagram-editor.types.ts`
-- [ ] 添加 theme prop 到 DiagramEditorViewProps
-- [ ] 添加 onSave prop 到 DiagramEditorViewProps
-- [ ] 移除不再需要的类型
+- [x] 更新 `diagram-editor.types.ts`
+- [x] 添加 theme prop 到 DiagramEditorViewProps
+- [x] 添加 onSave prop 到 DiagramEditorViewProps
+- [x] 移除不再需要的类型
 
 ## Task 14: 更新 StoryWorkspace 集成
 
