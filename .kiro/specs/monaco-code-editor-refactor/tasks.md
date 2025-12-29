@@ -119,11 +119,11 @@ bun add @monaco-editor/react
 **Requirements:** 4.1, 4.2, 4.6
 
 **Acceptance Criteria:**
-- [ ] 修改 `diagram-editor.view.fn.tsx`
-- [ ] 替换 textarea 为 CodeEditorView 组件
-- [ ] 保持分屏布局（左侧代码，右侧预览）
-- [ ] 传递正确的 language prop (mermaid/plantuml)
-- [ ] 传递 onSave 回调支持 Ctrl+S
+- [x] 修改 `diagram-editor.view.fn.tsx`
+- [x] 替换 textarea 为 CodeEditorView 组件
+- [x] 保持分屏布局（左侧代码，右侧预览）
+- [x] 传递正确的 language prop (mermaid/plantuml)
+- [x] 传递 onSave 回调支持 Ctrl+S
 
 ## Task 12: 重构 DiagramEditorContainer 使用统一保存逻辑
 
