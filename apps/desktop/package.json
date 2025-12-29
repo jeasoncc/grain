@@ -32,6 +32,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@excalidraw/excalidraw": "0.18.0",
     "@grain/editor": "workspace:*",
+    "@monaco-editor/react": "^4.7.0",
     "@lexical/code": "^0.38.2",
     "@lexical/file": "^0.38.2",
     "@lexical/hashtag": "^0.38.2",
