@@ -257,8 +257,7 @@ export const renderPlantUML = async (
 			if (!response.ok) {
 				const errorText = await response.text();
 				const errorType = getErrorTypeFromStatus(response.status);
-				const retryable =
-					isRetryableError(errorType) && attempt < maxRetries;
+				const retryable = isRetryableError(errorType) && attempt < maxRetries;
 
 				// 如果可重试，执行重试
 				if (retryable) {
@@ -289,8 +288,7 @@ export const renderPlantUML = async (
 				return attemptRender(attempt + 1);
 			}
 
-			const message =
-				error instanceof Error ? error.message : "未知错误";
+			const message = error instanceof Error ? error.message : "未知错误";
 
 			return {
 				error: `网络错误：${message}`,
