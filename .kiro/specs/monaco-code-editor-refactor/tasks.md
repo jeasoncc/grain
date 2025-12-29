@@ -20,7 +20,7 @@ bun add @monaco-editor/react
 **Requirements:** 2.1, 2.2
 
 **Acceptance Criteria:**
-- [ ] 创建 `components/code-editor/code-editor.types.ts`
+- [-] 创建 `components/code-editor/code-editor.types.ts`
 - [ ] 定义 `CodeLanguage` 类型，支持 plantuml、mermaid、json、markdown
 - [ ] 定义 `CodeEditorViewProps` 接口
 - [ ] 定义 `CodeEditorContainerProps` 接口
