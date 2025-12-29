@@ -233,10 +233,10 @@ bun add @monaco-editor/react
 **Requirements:** 8.1, 8.5
 
 **Acceptance Criteria:**
-- [ ] 创建 `fn/diagram/mermaid.render.fn.test.ts`
-- [ ] 测试有效 Mermaid 代码渲染
-- [ ] 测试无效语法错误处理
-- [ ] 测试主题切换
+- [x] 创建 `fn/diagram/mermaid.render.fn.test.ts`
+- [x] 测试有效 Mermaid 代码渲染
+- [x] 测试无效语法错误处理
+- [x] 测试主题切换
 
 ## Task 22: 类型检查和代码清理
 
