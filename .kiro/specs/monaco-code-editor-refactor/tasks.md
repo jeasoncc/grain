@@ -190,7 +190,7 @@ bun add @monaco-editor/react
 **Requirements:** 8.1, 8.2, 8.4, 8.5, 8.6
 
 **Acceptance Criteria:**
-- [ ] 创建 `fn/diagram/mermaid.render.fn.ts`
+- [-] 创建 `fn/diagram/mermaid.render.fn.ts`
 - [ ] 实现 `initMermaid` 函数，支持 light/dark 主题
 - [ ] 实现 `renderMermaid` 函数，返回 SVG 或错误
 - [ ] 配置 mermaid.js 安全设置（securityLevel）

@@ -27,8 +27,10 @@ import {
 const mockUpdateContentByNodeId = vi.fn();
 
 vi.mock("@/db", () => ({
-	updateContentByNodeId: (...args: unknown[]) => () =>
-		mockUpdateContentByNodeId(...args),
+	updateContentByNodeId:
+		(...args: unknown[]) =>
+		() =>
+			mockUpdateContentByNodeId(...args),
 }));
 
 // Mock logger
