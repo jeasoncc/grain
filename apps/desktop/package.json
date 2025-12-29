@@ -14,7 +14,7 @@
     "lint": "biome lint",
     "check": "biome check --write",
     "diff": "git diff --staged > diff.txt",
-    "icon:generate": "tauri icon src-tauri/icons/my-new-icon.jpg",
+    "icon:generate": "tauri icon src-tauri/icons/my-new-icon.png",
     "icon:update": "bash ../../scripts/update-icons.sh",
     "test": "vitest --run",
     "test:watch": "vitest",

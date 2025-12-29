@@ -38,7 +38,7 @@
     "tag:all": "bash scripts/create-tag.sh all",
     "tag:help": "bash scripts/create-tag.sh help",
     "icons:update": "bash scripts/update-icons.sh",
-    "icons:generate": "cd apps/desktop && bun run tauri icon src-tauri/icons/my-new-icon.jpg",
+    "icons:generate": "cd apps/desktop && bun run tauri icon src-tauri/icons/my-new-icon.png",
     "version:bump": "bash scripts/bump-version.sh",
     "stats:check": "bash scripts/check-download-stats.sh",
     "verify:install": "bash scripts/verify-install.sh",
