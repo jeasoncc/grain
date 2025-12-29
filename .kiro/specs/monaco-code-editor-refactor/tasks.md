@@ -40,12 +40,12 @@ bun add @monaco-editor/react
 **Requirements:** 2.1, 2.3, 2.4, 1.4, 1.6
 
 **Acceptance Criteria:**
-- [ ] 创建 `components/code-editor/code-editor.view.fn.tsx`
-- [ ] 使用 `@monaco-editor/react` 的 Editor 组件
-- [ ] 支持 theme prop 切换 light/dark 主题
-- [ ] 实现 Ctrl+S 快捷键保存
-- [ ] 配置合理的编辑器选项（minimap、wordWrap 等）
-- [ ] 使用 memo 包裹组件
+- [x] 创建 `components/code-editor/code-editor.view.fn.tsx`
+- [x] 使用 `@monaco-editor/react` 的 Editor 组件
+- [x] 支持 theme prop 切换 light/dark 主题
+- [x] 实现 Ctrl+S 快捷键保存
+- [x] 配置合理的编辑器选项（minimap、wordWrap 等）
+- [x] 使用 memo 包裹组件
 
 ## Task 5: 创建 CodeEditorContainer 组件
 

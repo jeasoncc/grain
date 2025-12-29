@@ -17,7 +17,8 @@ export type {
 	CodeLanguage,
 	MonacoEditorOptions,
 } from "./code-editor.types";
+// 组件导出
+export { CodeEditorView } from "./code-editor.view.fn";
 
-// 组件导出将在后续任务中添加
-// export { CodeEditorView } from "./code-editor.view.fn";
+// Container 组件导出将在后续任务中添加
 // export { CodeEditorContainer } from "./code-editor.container.fn";
