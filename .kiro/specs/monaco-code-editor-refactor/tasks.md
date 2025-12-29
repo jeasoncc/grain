@@ -222,7 +222,7 @@ bun add @monaco-editor/react
 **Requirements:** 8.1, 8.2, 8.3, 8.4, 8.5
 
 **Acceptance Criteria:**
-- [ ] 修改 `diagram-editor.container.fn.tsx`
+- [x] 修改 `diagram-editor.container.fn.tsx`
 - [x] 使用 `renderDiagram` 替代直接调用 Kroki
 - [x] Mermaid 类型不再检查 Kroki 配置
 - [x] PlantUML 类型保持 Kroki 配置检查
