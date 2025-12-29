@@ -5,24 +5,32 @@
  * 负责数据获取、状态管理和业务逻辑。
  * 将数据通过 props 传递给纯展示组件 DiagramEditorView。
  *
+ * 渲染策略：
+ * - Mermaid: 默认使用客户端渲染（mermaid.js），无需配置
+ * - PlantUML: 需要 Kroki 服务器渲染
+ *
  * @requirements 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4
  */
 
 import { useNavigate } from "@tanstack/react-router";
 import { debounce } from "es-toolkit";
 import * as E from "fp-ts/Either";
+import mermaid from "mermaid";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { getContentByNodeId, updateContentByNodeId } from "@/db";
-import {
-	getKrokiMermaidUrl,
-	getKrokiPlantUMLUrl,
-	isKrokiEnabled,
-} from "@/fn/diagram/diagram.fn";
+import { getKrokiPlantUMLUrl, isKrokiEnabled } from "@/fn/diagram/diagram.fn";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
 import { useDiagramStore } from "@/stores/diagram.store";
+
+// 初始化 Mermaid 配置
+mermaid.initialize({
+	startOnLoad: false,
+	theme: "default",
+	securityLevel: "loose",
+});
 
 import type {
 	DiagramEditorContainerProps,
@@ -52,17 +60,7 @@ const RETRY_BASE_DELAY_MS = 1000;
 // Helper Functions
 // ==============================
 
-/**
- * 根据图表类型获取 Kroki URL
- */
-const getKrokiUrl = (
-	diagramType: DiagramType,
-	krokiServerUrl: string,
-): string => {
-	return diagramType === "mermaid"
-		? getKrokiMermaidUrl(krokiServerUrl)
-		: getKrokiPlantUMLUrl(krokiServerUrl);
-};
+
 
 /**
  * 判断错误类型
@@ -158,7 +156,7 @@ const renderDiagramWithRetry = async (
 	retryCount = 0,
 	onRetryAttempt?: (count: number) => void,
 ): Promise<{ svg: string } | { error: DiagramError }> => {
-	const url = getKrokiUrl(diagramType, krokiServerUrl);
+	const url = getKrokiPlantUMLUrl(krokiServerUrl);
 
 	try {
 		const response = await fetch(url, {

@@ -4,3 +4,4 @@
  */
 
 export * from "./diagram.fn";
+export * from "./diagram.render.fn";
