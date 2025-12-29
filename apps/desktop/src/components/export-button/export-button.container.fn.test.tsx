@@ -75,7 +75,7 @@ describe("ExportButtonContainer", () => {
 
 	it("should show loading state during export", async () => {
 		const { exportProject } = await import("@/actions");
-		let resolveExport: () => void;
+		let resolveExport: (() => void) | undefined;
 		const exportPromise = new Promise<void>((resolve) => {
 			resolveExport = resolve;
 		});

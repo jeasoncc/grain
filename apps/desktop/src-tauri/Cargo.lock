@@ -1404,7 +1404,7 @@ dependencies = [
 
 [[package]]
 name = "grain"
-version = "0.1.203"
+version = "0.1.204"
 dependencies = [
  "dirs 5.0.1",
  "serde",

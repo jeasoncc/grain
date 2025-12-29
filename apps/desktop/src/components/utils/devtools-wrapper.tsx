@@ -6,9 +6,7 @@ import logger from "@/log";
 
 // 类型定义
 type DevtoolsModules = {
-	TanStackDevtools: React.ComponentType<any>;
-	TanStackRouterDevtoolsPanel: React.ComponentType<any>;
-	FormDevtoolsPlugin: () => any;
+	TanStackRouterDevtoolsPanel: React.ComponentType;
 } | null;
 
 export function DevtoolsWrapper() {
@@ -21,18 +19,12 @@ export function DevtoolsWrapper() {
 			return;
 		}
 
-		// 动态导入 Devtools（仅在开发环境）
-		Promise.all([
-			import("@tanstack/react-devtools"),
-			import("@tanstack/react-router-devtools"),
-			import("@tanstack/react-form-devtools"),
-		])
-			.then(([devtools, routerDevtools, formDevtools]) => {
+		// 动态导入 Router Devtools（仅在开发环境）
+		import("@tanstack/react-router-devtools")
+			.then((routerDevtools) => {
 				setDevtoolsModules({
-					TanStackDevtools: devtools.TanStackDevtools,
 					TanStackRouterDevtoolsPanel:
 						routerDevtools.TanStackRouterDevtoolsPanel,
-					FormDevtoolsPlugin: formDevtools.FormDevtoolsPlugin,
 				});
 			})
 			.catch((error) => {
@@ -46,21 +38,7 @@ export function DevtoolsWrapper() {
 		return null;
 	}
 
-	const { TanStackDevtools, TanStackRouterDevtoolsPanel, FormDevtoolsPlugin } =
-		devtoolsModules;
+	const { TanStackRouterDevtoolsPanel } = devtoolsModules;
 
-	return (
-		<TanStackDevtools
-			config={{
-				position: "top-right",
-			}}
-			plugins={[
-				{
-					name: "Tanstack Router",
-					render: <TanStackRouterDevtoolsPanel />,
-				},
-				FormDevtoolsPlugin(),
-			]}
-		/>
-	);
+	return <TanStackRouterDevtoolsPanel />;
 }

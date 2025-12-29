@@ -120,11 +120,11 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 				state.editorStates[newTab.id] = newEditorState;
 
 				// LRU 清理
-				const openTabIds = new Set(state.tabs.map((t) => t.id));
+				const openTabIds = new Set(state.tabs.map((t: EditorTab) => t.id));
 				state.editorStates = evictLRUEditorStates(
 					state.editorStates,
 					state.activeTabId,
-					openTabIds,
+					openTabIds as ReadonlySet<string>,
 					MAX_EDITOR_STATES,
 				);
 			});
@@ -135,7 +135,7 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 		closeTab: (tabId) => {
 			logger.info("[Store] 关闭标签:", tabId);
 			set((state) => {
-				const tabIndex = state.tabs.findIndex((t) => t.id === tabId);
+				const tabIndex = state.tabs.findIndex((t: EditorTab) => t.id === tabId);
 				if (tabIndex === -1) {
 					logger.warn("[Store] 标签不存在:", tabId);
 					return;
@@ -159,7 +159,7 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 		closeOtherTabs: (tabId) => {
 			logger.info("[Store] 关闭其他标签，保留:", tabId);
 			set((state) => {
-				const tab = state.tabs.find((t) => t.id === tabId);
+				const tab = state.tabs.find((t: EditorTab) => t.id === tabId);
 				if (!tab) {
 					logger.warn("[Store] 标签不存在:", tabId);
 					return;
@@ -190,7 +190,7 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 		setActiveTab: (tabId) => {
 			logger.info("[Store] 设置活动标签:", tabId);
 			set((state) => {
-				if (state.tabs.some((t) => t.id === tabId)) {
+				if (state.tabs.some((t: EditorTab) => t.id === tabId)) {
 					state.activeTabId = tabId;
 					if (state.editorStates[tabId]) {
 						state.editorStates[tabId].lastModified = dayjs().valueOf();
@@ -204,7 +204,7 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 		updateTabTitle: (tabId, title) => {
 			logger.info("[Store] 更新标签标题:", tabId, title);
 			set((state) => {
-				const tab = state.tabs.find((t) => t.id === tabId);
+				const tab = state.tabs.find((t: EditorTab) => t.id === tabId);
 				if (tab) {
 					tab.title = title;
 				}
@@ -214,7 +214,7 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 		setTabDirty: (tabId, isDirty) => {
 			logger.debug("[Store] 设置标签脏状态:", tabId, isDirty);
 			set((state) => {
-				const tab = state.tabs.find((t) => t.id === tabId);
+				const tab = state.tabs.find((t: EditorTab) => t.id === tabId);
 				if (tab) {
 					tab.isDirty = isDirty;
 				}
@@ -245,11 +245,11 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 				};
 
 				// LRU 清理
-				const openTabIds = new Set(state.tabs.map((t) => t.id));
+				const openTabIds = new Set(state.tabs.map((t: EditorTab) => t.id));
 				state.editorStates = evictLRUEditorStates(
 					state.editorStates,
 					state.activeTabId,
-					openTabIds,
+					openTabIds as ReadonlySet<string>,
 					MAX_EDITOR_STATES,
 				);
 			});
@@ -274,10 +274,10 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 			logger.info("[Store] 关闭工作区标签:", workspaceId);
 			set((state) => {
 				const tabsToClose = state.tabs.filter(
-					(t) => t.workspaceId === workspaceId,
+					(t: EditorTab) => t.workspaceId === workspaceId,
 				);
 				const remainingTabs = state.tabs.filter(
-					(t) => t.workspaceId !== workspaceId,
+					(t: EditorTab) => t.workspaceId !== workspaceId,
 				);
 
 				// 清理编辑器状态
@@ -288,7 +288,7 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 				// 更新活动标签
 				if (
 					state.activeTabId &&
-					tabsToClose.some((t) => t.id === state.activeTabId)
+					tabsToClose.some((t: EditorTab) => t.id === state.activeTabId)
 				) {
 					state.activeTabId =
 						remainingTabs.length > 0 ? remainingTabs[0].id : null;
