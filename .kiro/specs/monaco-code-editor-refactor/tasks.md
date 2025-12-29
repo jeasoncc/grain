@@ -173,7 +173,7 @@ bun add @monaco-editor/react
 - [x] 创建 `editor-save.service.test.ts`
 - [x] 测试 updateContent 防抖逻辑
 - [x] 测试 saveNow 立即保存
-- [ ] 测试 hasUnsavedChanges 状态
+- [x] 测试 hasUnsavedChanges 状态
 - [ ] 测试 dispose 清理
 
 ## Task 16: 性能优化 - Monaco 懒加载
