@@ -113,16 +113,15 @@ describe("renderMermaid", () => {
 		}
 	});
 
-	it("should initialize mermaid only once", async () => {
+	it("should call mermaid render for each call", async () => {
 		const mermaid = await getMermaidMock();
 		mermaid.render.mockResolvedValue({ svg: "<svg></svg>" });
 
 		await renderMermaid("flowchart TD\n  A --> B");
 		await renderMermaid("flowchart TD\n  C --> D");
 
-		// initialize 应该只被调用一次（模块级别的初始化）
-		// 注意：由于模块缓存，这个测试可能需要调整
-		expect(mermaid.initialize).toHaveBeenCalled();
+		// render 应该被调用两次
+		expect(mermaid.render).toHaveBeenCalledTimes(2);
 	});
 });
 
@@ -341,14 +340,27 @@ describe("Error Classification", () => {
 	});
 
 	it("should classify 500 errors as server errors", async () => {
+		vi.useFakeTimers();
 		mockFetch.mockResolvedValue(createErrorResponse(500, "Internal error"));
 
-		const result = await renderPlantUML(
+		const resultPromise = renderPlantUML(
 			"@startuml\n@enduml",
 			"https://kroki.io",
 		);
 
+		// 快进所有重试延迟
+		await vi.advanceTimersByTimeAsync(1000); // 第一次重试
+		await vi.advanceTimersByTimeAsync(2000); // 第二次重试
+		await vi.advanceTimersByTimeAsync(4000); // 第三次重试
+
+		const result = await resultPromise;
+
 		// 由于重试，需要等待所有重试完成
 		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error.type).toBe("server");
+		}
+
+		vi.useRealTimers();
 	});
 });
