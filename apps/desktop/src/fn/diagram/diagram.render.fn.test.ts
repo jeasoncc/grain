@@ -107,7 +107,8 @@ describe("renderMermaid", () => {
 		expect(result.success).toBe(false);
 		if (!result.success) {
 			expect(result.error.type).toBe("syntax");
-			expect(result.error.message).toBe("Parse error");
+			// 错误消息现在会被解析为更友好的格式
+			expect(result.error.message).toContain("Parse error");
 			expect(result.error.retryable).toBe(false);
 		}
 	});

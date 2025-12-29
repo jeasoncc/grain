@@ -78,33 +78,168 @@ const toMermaidTheme = (
 };
 
 /**
+ * Mermaid 错误模式及其友好提示
+ */
+interface MermaidErrorPattern {
+	readonly pattern: RegExp | string;
+	readonly getMessage: (match: RegExpMatchArray | null, original: string) => string;
+}
+
+/**
+ * 常见 Mermaid 错误模式列表
+ * 按优先级排序，更具体的模式在前
+ */
+const MERMAID_ERROR_PATTERNS: readonly MermaidErrorPattern[] = [
+	// 未知图表类型
+	{
+		pattern: /Unknown diagram type/i,
+		getMessage: () =>
+			"未知的图表类型。请在代码开头使用有效的图表声明，如：flowchart、sequenceDiagram、classDiagram、stateDiagram、erDiagram、gantt、pie、mindmap 等",
+	},
+	// 未检测到图表类型
+	{
+		pattern: /No diagram type detected/i,
+		getMessage: () =>
+			"未检测到图表类型。请在代码第一行添加图表类型声明，例如：\n• flowchart TD\n• sequenceDiagram\n• classDiagram",
+	},
+	// 语法错误（带行号）
+	{
+		pattern: /Syntax error.*?line\s*(\d+)/i,
+		getMessage: (match, original) => {
+			const lineNum = match?.[1] || "未知";
+			const cleanMsg = original.replace(/Syntax error.*?:\s*/i, "").trim();
+			return `语法错误（第 ${lineNum} 行）：${cleanMsg || "请检查该行的语法"}`;
+		},
+	},
+	// 解析错误（带行号）
+	{
+		pattern: /Parse error.*?line\s*(\d+)/i,
+		getMessage: (match, original) => {
+			const lineNum = match?.[1] || "未知";
+			const cleanMsg = original.replace(/Parse error.*?:\s*/i, "").trim();
+			return `解析错误（第 ${lineNum} 行）：${cleanMsg || "请检查该行的语法结构"}`;
+		},
+	},
+	// 词法错误
+	{
+		pattern: /Lexical error/i,
+		getMessage: (_, original) => {
+			const cleanMsg = original.replace(/Lexical error.*?:\s*/i, "").trim();
+			return `词法错误：${cleanMsg || "代码中包含无法识别的字符或关键字"}`;
+		},
+	},
+	// 一般语法错误
+	{
+		pattern: /Syntax error/i,
+		getMessage: (_, original) => {
+			const cleanMsg = original.replace(/Syntax error.*?:\s*/i, "").trim();
+			return `语法错误：${cleanMsg || "请检查代码语法"}`;
+		},
+	},
+	// 一般解析错误
+	{
+		pattern: /Parse error/i,
+		getMessage: (_, original) => {
+			const cleanMsg = original.replace(/Parse error.*?:\s*/i, "").trim();
+			return `解析错误：${cleanMsg || "请检查代码结构"}`;
+		},
+	},
+	// 意外的 token
+	{
+		pattern: /Unexpected token/i,
+		getMessage: (_, original) => {
+			return `意外的符号：${original.replace(/Unexpected token/i, "").trim() || "代码中存在意外的字符或符号"}`;
+		},
+	},
+	// 期望某个 token
+	{
+		pattern: /Expected\s+(.+?)\s+but\s+got\s+(.+)/i,
+		getMessage: (match) => {
+			const expected = match?.[1] || "某个符号";
+			const got = match?.[2] || "其他内容";
+			return `语法错误：期望 ${expected}，但得到了 ${got}`;
+		},
+	},
+	// 未闭合的引号
+	{
+		pattern: /unterminated string|unclosed quote/i,
+		getMessage: () => "字符串未闭合：请检查引号是否成对出现",
+	},
+	// 未闭合的括号
+	{
+		pattern: /unclosed bracket|unmatched bracket/i,
+		getMessage: () => "括号未闭合：请检查括号是否成对出现",
+	},
+	// 无效的箭头
+	{
+		pattern: /invalid arrow|unknown arrow/i,
+		getMessage: () =>
+			"无效的箭头符号。常用箭头：\n• --> 实线箭头\n• ---> 长实线箭头\n• -.-> 虚线箭头\n• ==> 粗箭头",
+	},
+	// 无效的节点 ID
+	{
+		pattern: /invalid node id|invalid identifier/i,
+		getMessage: () =>
+			"无效的节点 ID：节点 ID 不能以数字开头，不能包含特殊字符（除了下划线）",
+	},
+	// 重复定义
+	{
+		pattern: /duplicate|already defined/i,
+		getMessage: (_, original) => `重复定义：${original}`,
+	},
+	// 子图错误
+	{
+		pattern: /subgraph/i,
+		getMessage: (_, original) => {
+			if (original.toLowerCase().includes("end")) {
+				return "子图未正确闭合：请确保每个 subgraph 都有对应的 end";
+			}
+			return `子图错误：${original}`;
+		},
+	},
+];
+
+/**
  * 解析 Mermaid 错误信息，返回友好的错误描述
+ *
+ * @param error - 原始错误对象
+ * @returns 用户友好的错误描述
  */
 const parseMermaidError = (error: unknown): string => {
-	if (error instanceof Error) {
-		const message = error.message;
-
-		// 常见语法错误的友好提示
-		if (message.includes("Syntax error")) {
-			return `语法错误: ${message.replace(/Syntax error.*?:\s*/, "")}`;
-		}
-		if (message.includes("Parse error")) {
-			return `解析错误: ${message.replace(/Parse error.*?:\s*/, "")}`;
-		}
-		if (message.includes("Lexical error")) {
-			return `词法错误: ${message.replace(/Lexical error.*?:\s*/, "")}`;
-		}
-		if (message.includes("Unknown diagram type")) {
-			return "未知的图表类型，请检查图表声明（如 graph、flowchart、sequenceDiagram 等）";
-		}
-		if (message.includes("No diagram type detected")) {
-			return "未检测到图表类型，请在代码开头添加图表类型声明";
-		}
-
-		return message;
+	// 非 Error 对象的情况
+	if (!(error instanceof Error)) {
+		return "Mermaid 渲染失败：未知错误";
 	}
 
-	return "Mermaid 渲染失败";
+	const message = error.message;
+
+	// 空消息
+	if (!message || message.trim() === "") {
+		return "Mermaid 渲染失败：未知错误";
+	}
+
+	// 遍历错误模式，找到匹配的模式
+	for (const { pattern, getMessage } of MERMAID_ERROR_PATTERNS) {
+		if (typeof pattern === "string") {
+			if (message.includes(pattern)) {
+				return getMessage(null, message);
+			}
+		} else {
+			const match = message.match(pattern);
+			if (match) {
+				return getMessage(match, message);
+			}
+		}
+	}
+
+	// 如果没有匹配的模式，返回原始消息（但添加前缀）
+	// 清理一些常见的技术性前缀
+	const cleanedMessage = message
+		.replace(/^Error:\s*/i, "")
+		.replace(/^Mermaid:\s*/i, "")
+		.trim();
+
+	return cleanedMessage || "Mermaid 渲染失败：未知错误";
 };
 
 // ============================================================================

@@ -192,6 +192,93 @@ const delay = (ms: number): Promise<void> =>
 // ============================================================================
 
 /**
+ * Mermaid 错误模式及其友好提示
+ */
+interface MermaidErrorPattern {
+	readonly pattern: RegExp | string;
+	readonly getMessage: (match: RegExpMatchArray | null, original: string) => string;
+}
+
+/**
+ * 常见 Mermaid 错误模式列表
+ */
+const MERMAID_ERROR_PATTERNS: readonly MermaidErrorPattern[] = [
+	{
+		pattern: /Unknown diagram type/i,
+		getMessage: () =>
+			"Unknown diagram type. Use: flowchart, sequenceDiagram, classDiagram, etc.",
+	},
+	{
+		pattern: /No diagram type detected/i,
+		getMessage: () =>
+			"No diagram type detected. Add a type declaration like 'flowchart TD' at the start.",
+	},
+	{
+		pattern: /Syntax error.*?line\s*(\d+)/i,
+		getMessage: (match, original) => {
+			const lineNum = match?.[1] || "unknown";
+			return `Syntax error at line ${lineNum}: ${original.replace(/Syntax error.*?:\s*/i, "").trim() || "check syntax"}`;
+		},
+	},
+	{
+		pattern: /Parse error.*?line\s*(\d+)/i,
+		getMessage: (match, original) => {
+			const lineNum = match?.[1] || "unknown";
+			return `Parse error at line ${lineNum}: ${original.replace(/Parse error.*?:\s*/i, "").trim() || "check structure"}`;
+		},
+	},
+	{
+		pattern: /Lexical error/i,
+		getMessage: (_, original) =>
+			`Lexical error: ${original.replace(/Lexical error.*?:\s*/i, "").trim() || "unrecognized character"}`,
+	},
+	{
+		pattern: /Syntax error/i,
+		getMessage: (_, original) =>
+			`Syntax error: ${original.replace(/Syntax error.*?:\s*/i, "").trim() || "check syntax"}`,
+	},
+	{
+		pattern: /Parse error/i,
+		getMessage: (_, original) =>
+			`Parse error: ${original.replace(/Parse error.*?:\s*/i, "").trim() || "check structure"}`,
+	},
+	{
+		pattern: /Unexpected token/i,
+		getMessage: (_, original) =>
+			`Unexpected token: ${original.replace(/Unexpected token/i, "").trim() || "unexpected character"}`,
+	},
+];
+
+/**
+ * 解析 Mermaid 错误信息，返回友好的错误描述
+ */
+const parseMermaidError = (error: unknown): string => {
+	if (!(error instanceof Error)) {
+		return "Mermaid render failed";
+	}
+
+	const message = error.message;
+	if (!message?.trim()) {
+		return "Mermaid render failed";
+	}
+
+	for (const { pattern, getMessage } of MERMAID_ERROR_PATTERNS) {
+		if (typeof pattern === "string") {
+			if (message.includes(pattern)) {
+				return getMessage(null, message);
+			}
+		} else {
+			const match = message.match(pattern);
+			if (match) {
+				return getMessage(match, message);
+			}
+		}
+	}
+
+	return message.replace(/^Error:\s*/i, "").replace(/^Mermaid:\s*/i, "").trim() || "Mermaid render failed";
+};
+
+/**
  * 使用 Mermaid.js 客户端渲染图表
  *
  * @param code - Mermaid 代码
@@ -217,8 +304,7 @@ export const renderMermaid = async (code: string): Promise<RenderResult> => {
 		const { svg } = await mermaid.render(id, code);
 		return { success: true, svg };
 	} catch (err) {
-		const message =
-			err instanceof Error ? err.message : "Mermaid render failed";
+		const message = parseMermaidError(err);
 		return {
 			success: false,
 			error: {
