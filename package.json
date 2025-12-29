@@ -4,7 +4,7 @@
   "author": "Jeason",
   "description": "A minimalist writing sanctuary for long-form content. Pure, elegant, and distraction-free.",
   "email": "xiaomiquan@aliyun.com",
-  "version": "0.1.203",
+  "version": "0.1.204",
   "license": "MIT",
   "homepage": "https://github.com/jeasoncc/grain",
   "repository": {
@@ -37,8 +37,7 @@
     "tag:linux": "bash scripts/create-tag.sh linux",
     "tag:all": "bash scripts/create-tag.sh all",
     "tag:help": "bash scripts/create-tag.sh help",
-    "icons:update": "bash scripts/update-icons.sh",
-    "icons:generate": "bun run --cwd apps/desktop icon:generate",
+    "icons": "bash scripts/update-icons.sh",
     "version:bump": "bash scripts/bump-version.sh",
     "stats:check": "bash scripts/check-download-stats.sh",
     "verify:install": "bash scripts/verify-install.sh",
