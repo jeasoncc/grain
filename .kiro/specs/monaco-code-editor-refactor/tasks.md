@@ -75,7 +75,7 @@ bun add @monaco-editor/react
 **Acceptance Criteria:**
 - [x] 创建 `fn/save/editor-save.service.ts`
 - [x] 实现 `createEditorSaveService` 工厂函数
-- [x] 支持配置 autoSaveDelay
+- [-] 支持配置 autoSaveDelay
 - [x] 实现 updateContent、saveNow、setInitialContent、dispose 方法
 - [x] 实现 hasUnsavedChanges 方法
 - [x] 在 `fn/save/index.ts` 中导出
@@ -85,12 +85,12 @@ bun add @monaco-editor/react
 **Requirements:** 3.1, 3.2, 3.3, 3.4, 3.5, 7.1, 7.2, 7.3, 7.4, 7.5
 
 **Acceptance Criteria:**
-- [ ] 创建 `hooks/use-editor-save.ts`
-- [ ] 封装 createEditorSaveService 的使用
-- [ ] 自动连接 useSaveStore 更新状态
-- [ ] 处理组件卸载时的清理逻辑
-- [ ] 返回 updateContent、saveNow、hasUnsavedChanges
-- [ ] 支持 onSave 回调供编辑器快捷键调用
+- [x] 创建 `hooks/use-editor-save.ts`
+- [x] 封装 createEditorSaveService 的使用
+- [x] 自动连接 useSaveStore 更新状态
+- [x] 处理组件卸载时的清理逻辑
+- [x] 返回 updateContent、saveNow、hasUnsavedChanges
+- [x] 支持 onSave 回调供编辑器快捷键调用
 
 ## Task 9: 统一快捷键事件流
 
