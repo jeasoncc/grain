@@ -144,16 +144,16 @@ bun add @monaco-editor/react
 - [x] 更新 `diagram-editor.types.ts`
 - [x] 添加 theme prop 到 DiagramEditorViewProps
 - [x] 添加 onSave prop 到 DiagramEditorViewProps
-- [-] 移除不再需要的类型
+- [x] 移除不再需要的类型
 
 ## Task 14: 更新 StoryWorkspace 集成
 
 **Requirements:** 5.1, 5.2, 5.3
 
 **Acceptance Criteria:**
-- [ ] 验证 DiagramEditorContainer 在 StoryWorkspace 中正常工作
-- [ ] 确保保存状态指示器正确显示
-- [ ] 确保标签切换时状态正确保存和恢复
+- [x] 验证 DiagramEditorContainer 在 StoryWorkspace 中正常工作 
+- [x] 确保保存状态指示器正确显示
+- [x] 确保标签切换时状态正确保存和恢复
 
 ## Task 15: 添加 CodeEditor 单元测试
 
