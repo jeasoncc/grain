@@ -171,8 +171,8 @@ bun add @monaco-editor/react
 
 **Acceptance Criteria:**
 - [x] 创建 `editor-save.service.test.ts`
-- [-] 测试 updateContent 防抖逻辑
-- [ ] 测试 saveNow 立即保存
+- [x] 测试 updateContent 防抖逻辑
+- [x] 测试 saveNow 立即保存
 - [ ] 测试 hasUnsavedChanges 状态
 - [ ] 测试 dispose 清理
 
