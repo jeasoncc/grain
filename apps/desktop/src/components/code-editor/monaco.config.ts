@@ -1,30 +1,17 @@
 /**
  * Monaco Editor 配置
  *
- * 配置 Monaco Editor 的懒加载和 CDN 路径
- * 使用 CDN 加载可以减少初始包体积，提升首次加载速度
+ * 配置 Monaco Editor 从本地加载（不使用 CDN）
+ * 适用于离线桌面应用场景
  *
  * @requirements 7.1, 7.5 - 性能优化
  */
 import { loader } from "@monaco-editor/react";
+import * as monaco from "monaco-editor";
 
-/**
- * Monaco CDN 版本
- * 使用固定版本确保稳定性
- */
-const MONACO_VERSION = "0.52.0";
-
-/**
- * Monaco CDN 基础路径
- * 使用 jsDelivr CDN，国内访问速度较快
- */
-const MONACO_CDN_BASE = `https://cdn.jsdelivr.net/npm/monaco-editor@${MONACO_VERSION}/min/vs`;
-
-/**
- * 备用 CDN 路径（unpkg）
- * 当主 CDN 不可用时使用
- */
-const MONACO_CDN_FALLBACK = `https://unpkg.com/monaco-editor@${MONACO_VERSION}/min/vs`;
+// 配置 Monaco Editor Worker
+// 这是让 Monaco 在本地正常工作的关键配置
+import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 
 /**
  * Monaco 加载配置状态
@@ -32,11 +19,11 @@ const MONACO_CDN_FALLBACK = `https://unpkg.com/monaco-editor@${MONACO_VERSION}/m
 let isConfigured = false;
 
 /**
- * 配置 Monaco Editor 懒加载
+ * 配置 Monaco Editor 本地加载
  *
  * 特性：
- * - 使用 CDN 加载 Monaco 核心文件，减少打包体积
- * - 支持 Web Workers 提升编辑器性能
+ * - 从本地 node_modules 加载 Monaco，支持离线使用
+ * - 不依赖外部 CDN，适合桌面应用
  * - 配置只执行一次，避免重复配置
  *
  * @example
@@ -51,31 +38,18 @@ export const configureMonacoLoader = (): void => {
 		return;
 	}
 
-	loader.config({
-		paths: {
-			vs: MONACO_CDN_BASE,
+	// 配置 Monaco Worker
+	// 对于简单的代码编辑（PlantUML、Mermaid），只需要基础的 editor worker
+	self.MonacoEnvironment = {
+		getWorker(_: unknown, _label: string) {
+			return new editorWorker();
 		},
-		// Monaco 配置选项
-		"vs/nls": {
-			// 使用英文界面，避免加载额外的语言包
-			availableLanguages: {},
-		},
-	});
+	};
+
+	// 使用本地 monaco-editor 实例
+	loader.config({ monaco });
 
 	isConfigured = true;
-};
-
-/**
- * 使用备用 CDN 配置 Monaco
- *
- * 当主 CDN 加载失败时调用
- */
-export const configureMonacoFallback = (): void => {
-	loader.config({
-		paths: {
-			vs: MONACO_CDN_FALLBACK,
-		},
-	});
 };
 
 /**
@@ -104,21 +78,14 @@ export const preloadMonaco = (): void => {
 		window.requestIdleCallback(
 			() => {
 				// 触发 Monaco 加载
-				loader.init().catch(() => {
-					// 主 CDN 失败，尝试备用 CDN
-					configureMonacoFallback();
-					loader.init().catch(console.error);
-				});
+				loader.init().catch(console.error);
 			},
 			{ timeout: 5000 },
 		);
 	} else {
 		// 降级：使用 setTimeout
 		setTimeout(() => {
-			loader.init().catch(() => {
-				configureMonacoFallback();
-				loader.init().catch(console.error);
-			});
+			loader.init().catch(console.error);
 		}, 1000);
 	}
 };

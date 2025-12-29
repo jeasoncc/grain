@@ -4,7 +4,7 @@
  * 基于 Monaco Editor 的代码编辑器组件
  *
  * 性能优化：
- * - Monaco 通过 CDN 懒加载，减少初始包体积
+ * - Monaco 从本地加载，支持离线使用
  * - 支持预加载提升后续使用体验
  */
 
@@ -30,7 +30,6 @@ export type {
 export { CodeEditorView } from "./code-editor.view.fn";
 // Monaco 配置导出
 export {
-	configureMonacoFallback,
 	configureMonacoLoader,
 	isMonacoConfigured,
 	preloadMonaco,
