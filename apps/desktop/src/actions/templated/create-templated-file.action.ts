@@ -24,7 +24,7 @@ import { z } from "zod";
 import { createFileInTree } from "@/actions/node";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
-import type { FileNodeType, NodeInterface, NodeType } from "@/types/node";
+import type { FileNodeType, NodeInterface } from "@/types/node";
 
 // ==============================
 // Types
@@ -54,6 +54,8 @@ export interface TemplateConfig<T> {
 	readonly paramsSchema: z.ZodSchema<T>;
 	/** 文件夹是否折叠（可选，默认 true） */
 	readonly foldersCollapsed?: boolean;
+	/** 是否跳过 JSON 解析（用于纯文本内容如 Mermaid/PlantUML，可选，默认 false） */
+	readonly skipJsonParse?: boolean;
 }
 
 /**
@@ -171,9 +173,21 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 					title,
 				};
 			}),
-			// 4. 解析内容（验证 JSON 格式）
-			TE.chain(({ validTemplateParams, content, folderPath, title }) =>
-				pipe(
+			// 4. 解析内容（验证 JSON 格式，或跳过解析）
+			TE.chain(({ validTemplateParams, content, folderPath, title }) => {
+				// 如果配置了跳过 JSON 解析（如 Mermaid/PlantUML 纯文本内容）
+				if (config.skipJsonParse) {
+					return TE.right({
+						validTemplateParams,
+						content,
+						folderPath,
+						title,
+						parsedContent: content, // 纯文本内容直接使用原始字符串
+					});
+				}
+
+				// 默认：解析 JSON 内容
+				return pipe(
 					E.tryCatch(
 						() => JSON.parse(content),
 						(error) => ({
@@ -189,8 +203,8 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 						title,
 						parsedContent,
 					})),
-				),
-			),
+				);
+			}),
 			// 5. 创建文件
 			TE.chain(({ content, folderPath, title, parsedContent }) =>
 				pipe(

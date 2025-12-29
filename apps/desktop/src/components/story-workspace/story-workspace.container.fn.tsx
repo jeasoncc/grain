@@ -111,9 +111,14 @@ export const StoryWorkspaceContainer = memo(
 			return editorInitialState || null;
 		}, [activeTabId, editorStates, editorInitialState]);
 
+		// 获取当前活动标签（提前定义，供 useManualSave 使用）
+		const activeTab = tabs.find((t) => t.id === activeTabId);
+
 		// 手动保存 hook
+		// 注意：需要使用 activeTab.nodeId 而不是 activeTabId
+		// activeTabId 是标签页 ID，nodeId 才是数据库中的节点 ID
 		useManualSave({
-			nodeId: activeTabId,
+			nodeId: activeTab?.nodeId ?? null,
 			currentContent,
 			onSaveSuccess: () => setSaveStatus("saved"),
 			onSaveError: () => setSaveStatus("error"),
@@ -161,8 +166,6 @@ export const StoryWorkspaceContainer = memo(
 		// 自动保存定时器引用
 		const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-		// 获取当前活动标签
-		const activeTab = tabs.find((t) => t.id === activeTabId);
 		// drawing 类型使用 Excalidraw 编辑器
 		const isExcalidrawTab = activeTab?.type === "drawing";
 		// mermaid/plantuml 类型使用 DiagramEditor

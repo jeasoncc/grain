@@ -40,4 +40,5 @@ export const plantumlConfig = createDateTemplateConfig({
 	prefix: "plantuml",
 	generateContent: generatePlantUMLContent,
 	includeDayFolder: false,
+	skipJsonParse: true,
 });

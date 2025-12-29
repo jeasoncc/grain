@@ -40,4 +40,5 @@ export const mermaidConfig = createDateTemplateConfig({
 	prefix: "mermaid",
 	generateContent: generateMermaidContent,
 	includeDayFolder: false,
+	skipJsonParse: true,
 });

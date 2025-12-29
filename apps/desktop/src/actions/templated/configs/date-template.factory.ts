@@ -48,6 +48,8 @@ export interface DateTemplateOptions {
 	readonly includeDayFolder?: boolean;
 	/** 文件夹是否折叠 */
 	readonly foldersCollapsed?: boolean;
+	/** 是否跳过 JSON 解析（用于纯文本内容如 Mermaid/PlantUML） */
+	readonly skipJsonParse?: boolean;
 }
 
 // ==============================
@@ -100,6 +102,7 @@ export const createDateTemplateConfig = (
 		generateContent,
 		includeDayFolder = true,
 		foldersCollapsed = true,
+		skipJsonParse = false,
 	} = options;
 
 	/**
@@ -141,5 +144,6 @@ export const createDateTemplateConfig = (
 		generateTitle,
 		paramsSchema: dateParamsSchema,
 		foldersCollapsed,
+		skipJsonParse,
 	};
 };
