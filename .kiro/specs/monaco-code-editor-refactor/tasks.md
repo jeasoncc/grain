@@ -170,7 +170,7 @@ bun add @monaco-editor/react
 **Requirements:** 3.1, 3.2, 3.3, 3.4, 3.5
 
 **Acceptance Criteria:**
-- [ ] 创建 `editor-save.service.test.ts`
+- [x] 创建 `editor-save.service.test.ts`
 - [ ] 测试 updateContent 防抖逻辑
 - [ ] 测试 saveNow 立即保存
 - [ ] 测试 hasUnsavedChanges 状态
