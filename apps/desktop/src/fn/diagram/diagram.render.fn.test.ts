@@ -1,12 +1,12 @@
 /**
  * @file diagram.render.fn.test.ts
- * @description 图表渲染纯函数测试
+ * @description 图表渲染统一接口测试
  *
  * 测试覆盖：
  * - renderMermaid: Mermaid 客户端渲染
  * - renderPlantUML: PlantUML Kroki 服务器渲染
  * - renderDiagram: 统一渲染入口
- * - 错误处理和重试逻辑
+ * - 错误处理
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -20,40 +20,36 @@ import {
 // Mocks
 // ============================================================================
 
-// Mock mermaid
-vi.mock("mermaid", () => ({
-	default: {
-		initialize: vi.fn(),
-		render: vi.fn().mockResolvedValue({ svg: "<svg></svg>" }),
-	},
+// Mock mermaid.render.fn.ts
+vi.mock("./mermaid.render.fn", () => ({
+	initMermaid: vi.fn(),
+	renderMermaid: vi.fn().mockResolvedValue({ svg: "<svg></svg>" }),
+	getCurrentMermaidTheme: vi.fn().mockReturnValue("light"),
 }));
 
-// Mock fetch for PlantUML tests
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
+// Mock plantuml.render.fn.ts
+vi.mock("./plantuml.render.fn", () => ({
+	renderPlantUML: vi.fn().mockResolvedValue({ svg: "<svg></svg>" }),
+}));
 
 // ============================================================================
 // Test Helpers
 // ============================================================================
 
 const getMermaidMock = async () => {
-	const mermaid = await import("mermaid");
-	return mermaid.default as unknown as {
-		initialize: ReturnType<typeof vi.fn>;
-		render: ReturnType<typeof vi.fn>;
+	const mermaidModule = await import("./mermaid.render.fn");
+	return {
+		initMermaid: mermaidModule.initMermaid as ReturnType<typeof vi.fn>,
+		renderMermaid: mermaidModule.renderMermaid as ReturnType<typeof vi.fn>,
 	};
 };
 
-const createSuccessResponse = (svg: string) => ({
-	ok: true,
-	text: () => Promise.resolve(svg),
-});
-
-const createErrorResponse = (status: number, message: string) => ({
-	ok: false,
-	status,
-	text: () => Promise.resolve(message),
-});
+const getPlantUMLMock = async () => {
+	const plantUMLModule = await import("./plantuml.render.fn");
+	return {
+		renderPlantUML: plantUMLModule.renderPlantUML as ReturnType<typeof vi.fn>,
+	};
+};
 
 // ============================================================================
 // renderMermaid Tests
@@ -70,7 +66,7 @@ describe("renderMermaid", () => {
 		expect(result.success).toBe(false);
 		if (!result.success) {
 			expect(result.error.type).toBe("syntax");
-			expect(result.error.message).toBe("Empty diagram code");
+			expect(result.error.message).toBe("图表代码为空");
 			expect(result.error.retryable).toBe(false);
 		}
 	});
@@ -87,7 +83,7 @@ describe("renderMermaid", () => {
 	it("should render valid mermaid code successfully", async () => {
 		const mermaid = await getMermaidMock();
 		const mockSvg = "<svg>test</svg>";
-		mermaid.render.mockResolvedValue({ svg: mockSvg });
+		mermaid.renderMermaid.mockResolvedValue({ svg: mockSvg });
 
 		const result = await renderMermaid("flowchart TD\n  A --> B");
 
@@ -95,33 +91,42 @@ describe("renderMermaid", () => {
 		if (result.success) {
 			expect(result.svg).toBe(mockSvg);
 		}
-		expect(mermaid.initialize).toHaveBeenCalled();
+		expect(mermaid.initMermaid).toHaveBeenCalledWith("light");
 	});
 
-	it("should return syntax error when mermaid throws", async () => {
+	it("should initialize mermaid with dark theme", async () => {
 		const mermaid = await getMermaidMock();
-		mermaid.render.mockRejectedValue(new Error("Parse error"));
+		mermaid.renderMermaid.mockResolvedValue({ svg: "<svg></svg>" });
+
+		await renderMermaid("flowchart TD\n  A --> B", "dark");
+
+		expect(mermaid.initMermaid).toHaveBeenCalledWith("dark");
+	});
+
+	it("should return syntax error when mermaid returns error", async () => {
+		const mermaid = await getMermaidMock();
+		mermaid.renderMermaid.mockResolvedValue({ error: "Parse error" });
 
 		const result = await renderMermaid("invalid mermaid code");
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
 			expect(result.error.type).toBe("syntax");
-			// 错误消息现在会被解析为更友好的格式
-			expect(result.error.message).toContain("Parse error");
+			expect(result.error.message).toBe("Parse error");
 			expect(result.error.retryable).toBe(false);
 		}
 	});
 
-	it("should call mermaid render for each call", async () => {
+	it("should pass containerId to mermaid render", async () => {
 		const mermaid = await getMermaidMock();
-		mermaid.render.mockResolvedValue({ svg: "<svg></svg>" });
+		mermaid.renderMermaid.mockResolvedValue({ svg: "<svg></svg>" });
 
-		await renderMermaid("flowchart TD\n  A --> B");
-		await renderMermaid("flowchart TD\n  C --> D");
+		await renderMermaid("flowchart TD\n  A --> B", "light", "my-container");
 
-		// render 应该被调用两次
-		expect(mermaid.render).toHaveBeenCalledTimes(2);
+		expect(mermaid.renderMermaid).toHaveBeenCalledWith(
+			"flowchart TD\n  A --> B",
+			"my-container",
+		);
 	});
 });
 
@@ -132,11 +137,6 @@ describe("renderMermaid", () => {
 describe("renderPlantUML", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockFetch.mockReset();
-	});
-
-	afterEach(() => {
-		vi.useRealTimers();
 	});
 
 	it("should return error for empty code", async () => {
@@ -145,7 +145,7 @@ describe("renderPlantUML", () => {
 		expect(result.success).toBe(false);
 		if (!result.success) {
 			expect(result.error.type).toBe("syntax");
-			expect(result.error.message).toBe("Empty diagram code");
+			expect(result.error.message).toBe("图表代码为空");
 		}
 	});
 
@@ -154,14 +154,15 @@ describe("renderPlantUML", () => {
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
-			expect(result.error.type).toBe("network");
-			expect(result.error.message).toBe("Kroki server URL not configured");
+			expect(result.error.type).toBe("config");
+			expect(result.error.message).toBe("Kroki 服务器 URL 未配置");
 		}
 	});
 
 	it("should render valid PlantUML code successfully", async () => {
+		const plantUML = await getPlantUMLMock();
 		const mockSvg = "<svg>plantuml</svg>";
-		mockFetch.mockResolvedValue(createSuccessResponse(mockSvg));
+		plantUML.renderPlantUML.mockResolvedValue({ svg: mockSvg });
 
 		const result = await renderPlantUML(
 			"@startuml\nAlice -> Bob\n@enduml",
@@ -172,195 +173,234 @@ describe("renderPlantUML", () => {
 		if (result.success) {
 			expect(result.svg).toBe(mockSvg);
 		}
-		expect(mockFetch).toHaveBeenCalledWith(
-			"https://kroki.io/plantuml/svg",
+		expect(plantUML.renderPlantUML).toHaveBeenCalledWith(
+			"@startuml\nAlice -> Bob\n@enduml",
 			expect.objectContaining({
-				method: "POST",
-				body: "@startuml\nAlice -> Bob\n@enduml",
+				krokiServerUrl: "https://kroki.io",
 			}),
 		);
 	});
 
-	it("should return syntax error for 4xx responses", async () => {
-		mockFetch.mockResolvedValue(createErrorResponse(400, "Syntax error"));
+	it("should return error when plantuml render fails", async () => {
+		const plantUML = await getPlantUMLMock();
+		plantUML.renderPlantUML.mockResolvedValue({
+			error: "Syntax error",
+			errorType: "syntax",
+			retryable: false,
+		});
 
 		const result = await renderPlantUML("invalid plantuml", "https://kroki.io");
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
 			expect(result.error.type).toBe("syntax");
+			expect(result.error.message).toBe("Syntax error");
 			expect(result.error.retryable).toBe(false);
 		}
 	});
 
-	it("should return server error for 5xx responses and retry", async () => {
-		vi.useFakeTimers();
-
-		// 第一次失败，第二次成功
-		mockFetch
-			.mockResolvedValueOnce(createErrorResponse(500, "Server error"))
-			.mockResolvedValueOnce(createSuccessResponse("<svg>success</svg>"));
+	it("should pass onRetryAttempt callback", async () => {
+		const plantUML = await getPlantUMLMock();
+		plantUML.renderPlantUML.mockResolvedValue({ svg: "<svg></svg>" });
 
 		const onRetryAttempt = vi.fn();
-		const resultPromise = renderPlantUML(
+		await renderPlantUML(
 			"@startuml\nAlice -> Bob\n@enduml",
 			"https://kroki.io",
-			0,
 			onRetryAttempt,
 		);
 
-		// 快进时间以触发重试
-		await vi.advanceTimersByTimeAsync(1000);
-
-		const result = await resultPromise;
-
-		expect(result.success).toBe(true);
-		expect(onRetryAttempt).toHaveBeenCalledWith(1);
-		expect(mockFetch).toHaveBeenCalledTimes(2);
-	});
-
-	it("should stop retrying after max attempts", async () => {
-		vi.useFakeTimers();
-
-		// 所有请求都失败
-		mockFetch.mockResolvedValue(createErrorResponse(500, "Server error"));
-
-		const onRetryAttempt = vi.fn();
-		const resultPromise = renderPlantUML(
+		expect(plantUML.renderPlantUML).toHaveBeenCalledWith(
 			"@startuml\nAlice -> Bob\n@enduml",
-			"https://kroki.io",
-			0,
-			onRetryAttempt,
+			expect.objectContaining({
+				krokiServerUrl: "https://kroki.io",
+				onRetryAttempt,
+			}),
 		);
-
-		// 快进所有重试延迟
-		await vi.advanceTimersByTimeAsync(1000); // 第一次重试
-		await vi.advanceTimersByTimeAsync(2000); // 第二次重试
-		await vi.advanceTimersByTimeAsync(4000); // 第三次重试
-
-		const result = await resultPromise;
-
-		expect(result.success).toBe(false);
-		if (!result.success) {
-			expect(result.error.type).toBe("server");
-			expect(result.error.retryable).toBe(false);
-			expect(result.error.retryCount).toBe(3);
-		}
-	});
-
-	it("should handle network errors and retry", async () => {
-		vi.useFakeTimers();
-
-		// 第一次网络错误，第二次成功
-		mockFetch
-			.mockRejectedValueOnce(new TypeError("Failed to fetch"))
-			.mockResolvedValueOnce(createSuccessResponse("<svg>success</svg>"));
-
-		const resultPromise = renderPlantUML(
-			"@startuml\nAlice -> Bob\n@enduml",
-			"https://kroki.io",
-		);
-
-		await vi.advanceTimersByTimeAsync(1000);
-
-		const result = await resultPromise;
-
-		expect(result.success).toBe(true);
 	});
 });
 
 // ============================================================================
-// renderDiagram Tests
+// renderDiagram Tests (Unified Interface)
 // ============================================================================
 
 describe("renderDiagram", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockFetch.mockReset();
 	});
 
 	it("should use renderMermaid for mermaid type", async () => {
 		const mermaid = await getMermaidMock();
-		mermaid.render.mockResolvedValue({ svg: "<svg>mermaid</svg>" });
+		mermaid.renderMermaid.mockResolvedValue({ svg: "<svg>mermaid</svg>" });
 
-		const result = await renderDiagram("flowchart TD\n  A --> B", "mermaid");
+		const result = await renderDiagram({
+			code: "flowchart TD\n  A --> B",
+			diagramType: "mermaid",
+		});
 
 		expect(result.success).toBe(true);
 		if (result.success) {
 			expect(result.svg).toBe("<svg>mermaid</svg>");
 		}
+		expect(mermaid.renderMermaid).toHaveBeenCalled();
 	});
 
 	it("should use renderPlantUML for plantuml type", async () => {
-		mockFetch.mockResolvedValue(createSuccessResponse("<svg>plantuml</svg>"));
+		const plantUML = await getPlantUMLMock();
+		plantUML.renderPlantUML.mockResolvedValue({ svg: "<svg>plantuml</svg>" });
 
-		const result = await renderDiagram(
-			"@startuml\nAlice -> Bob\n@enduml",
-			"plantuml",
-			"https://kroki.io",
-		);
+		const result = await renderDiagram({
+			code: "@startuml\nAlice -> Bob\n@enduml",
+			diagramType: "plantuml",
+			krokiServerUrl: "https://kroki.io",
+		});
 
 		expect(result.success).toBe(true);
 		if (result.success) {
 			expect(result.svg).toBe("<svg>plantuml</svg>");
 		}
+		expect(plantUML.renderPlantUML).toHaveBeenCalled();
+	});
+
+	it("should pass theme to mermaid renderer", async () => {
+		const mermaid = await getMermaidMock();
+		mermaid.renderMermaid.mockResolvedValue({ svg: "<svg></svg>" });
+
+		await renderDiagram({
+			code: "flowchart TD\n  A --> B",
+			diagramType: "mermaid",
+			theme: "dark",
+		});
+
+		expect(mermaid.initMermaid).toHaveBeenCalledWith("dark");
+	});
+
+	it("should pass containerId to mermaid renderer", async () => {
+		const mermaid = await getMermaidMock();
+		mermaid.renderMermaid.mockResolvedValue({ svg: "<svg></svg>" });
+
+		await renderDiagram({
+			code: "flowchart TD\n  A --> B",
+			diagramType: "mermaid",
+			containerId: "preview-123",
+		});
+
+		expect(mermaid.renderMermaid).toHaveBeenCalledWith(
+			"flowchart TD\n  A --> B",
+			"preview-123",
+		);
 	});
 
 	it("should return error for plantuml without kroki URL", async () => {
-		const result = await renderDiagram(
-			"@startuml\nAlice -> Bob\n@enduml",
-			"plantuml",
-		);
+		const result = await renderDiagram({
+			code: "@startuml\nAlice -> Bob\n@enduml",
+			diagramType: "plantuml",
+		});
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
-			expect(result.error.type).toBe("network");
+			expect(result.error.type).toBe("config");
 		}
+	});
+
+	it("should pass onRetryAttempt to plantuml renderer", async () => {
+		const plantUML = await getPlantUMLMock();
+		plantUML.renderPlantUML.mockResolvedValue({ svg: "<svg></svg>" });
+
+		const onRetryAttempt = vi.fn();
+		await renderDiagram({
+			code: "@startuml\nAlice -> Bob\n@enduml",
+			diagramType: "plantuml",
+			krokiServerUrl: "https://kroki.io",
+			onRetryAttempt,
+		});
+
+		expect(plantUML.renderPlantUML).toHaveBeenCalledWith(
+			"@startuml\nAlice -> Bob\n@enduml",
+			expect.objectContaining({
+				onRetryAttempt,
+			}),
+		);
+	});
+
+	it("should use default light theme for mermaid", async () => {
+		const mermaid = await getMermaidMock();
+		mermaid.renderMermaid.mockResolvedValue({ svg: "<svg></svg>" });
+
+		await renderDiagram({
+			code: "flowchart TD\n  A --> B",
+			diagramType: "mermaid",
+		});
+
+		expect(mermaid.initMermaid).toHaveBeenCalledWith("light");
 	});
 });
 
 // ============================================================================
-// Error Classification Tests
+// Error Handling Tests
 // ============================================================================
 
-describe("Error Classification", () => {
+describe("Error Handling", () => {
 	beforeEach(() => {
-		mockFetch.mockReset();
+		vi.clearAllMocks();
 	});
 
-	it("should classify 400 errors as syntax errors", async () => {
-		mockFetch.mockResolvedValue(createErrorResponse(400, "Bad request"));
+	it("should handle mermaid syntax errors", async () => {
+		const mermaid = await getMermaidMock();
+		mermaid.renderMermaid.mockResolvedValue({
+			error: "Unknown diagram type",
+		});
 
-		const result = await renderPlantUML("invalid", "https://kroki.io");
+		const result = await renderDiagram({
+			code: "invalid",
+			diagramType: "mermaid",
+		});
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
 			expect(result.error.type).toBe("syntax");
+			expect(result.error.retryable).toBe(false);
 		}
 	});
 
-	it("should classify 500 errors as server errors", async () => {
-		vi.useFakeTimers();
-		mockFetch.mockResolvedValue(createErrorResponse(500, "Internal error"));
+	it("should handle plantuml network errors", async () => {
+		const plantUML = await getPlantUMLMock();
+		plantUML.renderPlantUML.mockResolvedValue({
+			error: "Network error",
+			errorType: "network",
+			retryable: true,
+		});
 
-		const resultPromise = renderPlantUML(
-			"@startuml\n@enduml",
-			"https://kroki.io",
-		);
+		const result = await renderDiagram({
+			code: "@startuml\n@enduml",
+			diagramType: "plantuml",
+			krokiServerUrl: "https://kroki.io",
+		});
 
-		// 快进所有重试延迟
-		await vi.advanceTimersByTimeAsync(1000); // 第一次重试
-		await vi.advanceTimersByTimeAsync(2000); // 第二次重试
-		await vi.advanceTimersByTimeAsync(4000); // 第三次重试
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error.type).toBe("network");
+			expect(result.error.retryable).toBe(true);
+		}
+	});
 
-		const result = await resultPromise;
+	it("should handle plantuml server errors", async () => {
+		const plantUML = await getPlantUMLMock();
+		plantUML.renderPlantUML.mockResolvedValue({
+			error: "Server error",
+			errorType: "server",
+			retryable: false,
+		});
 
-		// 由于重试，需要等待所有重试完成
+		const result = await renderDiagram({
+			code: "@startuml\n@enduml",
+			diagramType: "plantuml",
+			krokiServerUrl: "https://kroki.io",
+		});
+
 		expect(result.success).toBe(false);
 		if (!result.success) {
 			expect(result.error.type).toBe("server");
 		}
-
-		vi.useRealTimers();
 	});
 });

@@ -211,11 +211,11 @@ bun add @monaco-editor/react
 **Requirements:** 8.1, 8.2, 8.3
 
 **Acceptance Criteria:**
-- [ ] 更新 `fn/diagram/diagram.render.fn.ts`
-- [ ] 实现 `renderDiagram` 统一接口
-- [ ] 根据 diagramType 自动选择渲染策略
-- [ ] Mermaid 使用客户端渲染，PlantUML 使用 Kroki
-- [ ] 在 `fn/diagram/index.ts` 中导出
+- [x] 更新 `fn/diagram/diagram.render.fn.ts`
+- [x] 实现 `renderDiagram` 统一接口
+- [x] 根据 diagramType 自动选择渲染策略
+- [x] Mermaid 使用客户端渲染，PlantUML 使用 Kroki
+- [x] 在 `fn/diagram/index.ts` 中导出
 
 ## Task 20: 更新 DiagramEditorContainer 使用新渲染逻辑
 
