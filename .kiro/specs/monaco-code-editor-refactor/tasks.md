@@ -108,11 +108,11 @@ bun add @monaco-editor/react
 **Requirements:** 4.3, 4.4
 
 **Acceptance Criteria:**
-- [-] 创建 `components/diagram-editor/diagram-preview.view.fn.tsx`
-- [ ] 从现有 DiagramEditorView 中提取预览相关代码
-- [ ] 支持 SVG 内容渲染
-- [ ] 支持加载状态显示
-- [ ] 支持错误状态显示和重试
+- [x] 创建 `components/diagram-editor/diagram-preview.view.fn.tsx`
+- [x] 从现有 DiagramEditorView 中提取预览相关代码
+- [x] 支持 SVG 内容渲染
+- [x] 支持加载状态显示
+- [x] 支持错误状态显示和重试
 
 ## Task 11: 重构 DiagramEditorView 使用 CodeEditor
 
