@@ -7,43 +7,35 @@
  * 支持 Ctrl+S 快捷键立即保存。
  *
  * 渲染策略：
- * - Mermaid: 默认使用客户端渲染（mermaid.js），无需配置
+ * - Mermaid: 客户端渲染（mermaid.js），无需 Kroki 配置，支持主题切换
  * - PlantUML: 需要 Kroki 服务器渲染
  *
  * 数据流（保存）：
  * Editor → useEditorSave → EditorSaveService → DB → SaveStore → UI 反馈
  *
- * @requirements 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 7.2
+ * @requirements 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 7.2, 8.1, 8.2, 8.3, 8.4, 8.5
  */
 
 import { useNavigate } from "@tanstack/react-router";
 import { debounce } from "es-toolkit";
 import * as E from "fp-ts/Either";
-import mermaid from "mermaid";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { getContentByNodeId } from "@/db";
-import { getKrokiPlantUMLUrl, isKrokiEnabled } from "@/fn/diagram/diagram.fn";
+import {
+	type DiagramError,
+	initMermaid,
+	isKrokiEnabled,
+	renderDiagram,
+} from "@/fn/diagram";
 import { useEditorSave } from "@/hooks/use-editor-save";
 import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
 import { useDiagramStore } from "@/stores/diagram.store";
 
-// 初始化 Mermaid 配置
-mermaid.initialize({
-	startOnLoad: false,
-	theme: "default",
-	securityLevel: "loose",
-});
-
-import type {
-	DiagramEditorContainerProps,
-	DiagramError,
-	DiagramErrorType,
-	DiagramType,
-} from "./diagram-editor.types";
+import type { DiagramEditorContainerProps } from "./diagram-editor.types";
 import { DiagramEditorView } from "./diagram-editor.view.fn";
 
 // ==============================
@@ -52,176 +44,6 @@ import { DiagramEditorView } from "./diagram-editor.view.fn";
 
 /** 预览更新防抖延迟（毫秒） */
 const PREVIEW_DEBOUNCE_MS = 500;
-
-/** 最大重试次数 */
-const MAX_RETRY_COUNT = 3;
-
-/** 重试基础延迟（毫秒） */
-const RETRY_BASE_DELAY_MS = 1000;
-
-// ==============================
-// Helper Functions
-// ==============================
-
-/**
- * 判断错误类型
- */
-const classifyError = (
-	error: unknown,
-	statusCode?: number,
-): DiagramErrorType => {
-	// 网络错误
-	if (error instanceof TypeError && error.message.includes("fetch")) {
-		return "network";
-	}
-
-	// 根据 HTTP 状态码判断
-	if (statusCode) {
-		// 4xx 客户端错误通常是语法错误
-		if (statusCode >= 400 && statusCode < 500) {
-			return "syntax";
-		}
-		// 5xx 服务器错误
-		if (statusCode >= 500) {
-			return "server";
-		}
-	}
-
-	// 检查错误消息中的关键词
-	const errorMessage =
-		error instanceof Error ? error.message.toLowerCase() : "";
-	if (
-		errorMessage.includes("syntax") ||
-		errorMessage.includes("parse") ||
-		errorMessage.includes("invalid") ||
-		errorMessage.includes("unexpected")
-	) {
-		return "syntax";
-	}
-
-	if (
-		errorMessage.includes("network") ||
-		errorMessage.includes("connection") ||
-		errorMessage.includes("timeout") ||
-		errorMessage.includes("econnrefused")
-	) {
-		return "network";
-	}
-
-	return "unknown";
-};
-
-/**
- * 创建错误对象
- */
-const createDiagramError = (
-	error: unknown,
-	statusCode?: number,
-	retryCount = 0,
-): DiagramError => {
-	const type = classifyError(error, statusCode);
-	const message =
-		error instanceof Error ? error.message : "Unknown error occurred";
-
-	// 语法错误不可重试，其他错误在未达到最大重试次数时可重试
-	const retryable = type !== "syntax" && retryCount < MAX_RETRY_COUNT;
-
-	return {
-		type,
-		message,
-		retryable,
-		retryCount,
-	};
-};
-
-/**
- * 计算重试延迟（指数退避）
- */
-const getRetryDelay = (retryCount: number): number => {
-	return RETRY_BASE_DELAY_MS * 2 ** retryCount;
-};
-
-/**
- * 延迟函数
- */
-const delay = (ms: number): Promise<void> =>
-	new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * 调用 Kroki 服务渲染图表（带重试）
- */
-const renderDiagramWithRetry = async (
-	code: string,
-	diagramType: DiagramType,
-	krokiServerUrl: string,
-	retryCount = 0,
-	onRetryAttempt?: (count: number) => void,
-): Promise<{ svg: string } | { error: DiagramError }> => {
-	const url = getKrokiPlantUMLUrl(krokiServerUrl);
-
-	try {
-		const response = await fetch(url, {
-			method: "POST",
-			headers: {
-				"Content-Type": "text/plain",
-			},
-			body: code,
-		});
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			const error = new Error(errorText || `HTTP ${response.status}`);
-			const diagramError = createDiagramError(
-				error,
-				response.status,
-				retryCount,
-			);
-
-			// 如果可重试且未达到最大重试次数，自动重试
-			if (diagramError.retryable && retryCount < MAX_RETRY_COUNT) {
-				const delayMs = getRetryDelay(retryCount);
-				logger.info(
-					`[DiagramEditor] 重试渲染 (${retryCount + 1}/${MAX_RETRY_COUNT})，延迟 ${delayMs}ms`,
-				);
-				onRetryAttempt?.(retryCount + 1);
-				await delay(delayMs);
-				return renderDiagramWithRetry(
-					code,
-					diagramType,
-					krokiServerUrl,
-					retryCount + 1,
-					onRetryAttempt,
-				);
-			}
-
-			return { error: diagramError };
-		}
-
-		const svg = await response.text();
-		return { svg };
-	} catch (err) {
-		const diagramError = createDiagramError(err, undefined, retryCount);
-
-		// 如果是网络错误且未达到最大重试次数，自动重试
-		if (diagramError.retryable && retryCount < MAX_RETRY_COUNT) {
-			const delayMs = getRetryDelay(retryCount);
-			logger.info(
-				`[DiagramEditor] 网络错误，重试 (${retryCount + 1}/${MAX_RETRY_COUNT})，延迟 ${delayMs}ms`,
-			);
-			onRetryAttempt?.(retryCount + 1);
-			await delay(delayMs);
-			return renderDiagramWithRetry(
-				code,
-				diagramType,
-				krokiServerUrl,
-				retryCount + 1,
-				onRetryAttempt,
-			);
-		}
-
-		return { error: diagramError };
-	}
-};
 
 // ==============================
 // Container Component
@@ -253,10 +75,18 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 	const krokiServerUrl = useDiagramStore((s) => s.krokiServerUrl);
 	const enableKroki = useDiagramStore((s) => s.enableKroki);
 
-	// 检查 Kroki 是否已配置
+	// 检查 Kroki 是否已配置（仅 PlantUML 需要）
 	const isKrokiConfigured = useMemo(
 		() => isKrokiEnabled({ krokiServerUrl, enableKroki }),
 		[krokiServerUrl, enableKroki],
+	);
+
+	// 判断是否可以渲染预览
+	// - Mermaid: 始终可以渲染（客户端渲染，无需 Kroki）
+	// - PlantUML: 需要 Kroki 配置
+	const canRenderPreview = useMemo(
+		() => diagramType === "mermaid" || isKrokiConfigured,
+		[diagramType, isKrokiConfigured],
 	);
 
 	// ==============================
@@ -321,12 +151,22 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 	}, [nodeId, setInitialContent]);
 
 	// ==============================
+	// 初始化 Mermaid（根据主题）
+	// ==============================
+
+	useEffect(() => {
+		// 根据当前主题初始化 Mermaid
+		initMermaid(isDark ? "dark" : "light");
+	}, [isDark]);
+
+	// ==============================
 	// 渲染预览（防抖）
 	// ==============================
 
 	const updatePreview = useCallback(
 		async (newCode: string, isManualRetry = false) => {
-			if (!isKrokiConfigured || !newCode.trim()) {
+			// 检查是否可以渲染
+			if (!canRenderPreview || !newCode.trim()) {
 				setPreviewSvg(null);
 				setError(null);
 				return;
@@ -344,18 +184,21 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 				setError(null);
 			}
 
-			const result = await renderDiagramWithRetry(
-				newCode,
+			// 使用统一渲染接口
+			const result = await renderDiagram({
+				code: newCode,
 				diagramType,
-				krokiServerUrl,
-				0,
-				(retryCount) => {
+				theme: isDark ? "dark" : "light",
+				krokiServerUrl: diagramType === "plantuml" ? krokiServerUrl : undefined,
+				containerId: `diagram-preview-${nodeId}`,
+				onRetryAttempt: (attempt, maxRetries) => {
 					// 更新错误状态以显示重试次数
-					setError((prev) => (prev ? { ...prev, retryCount } : null));
+					logger.info(`[DiagramEditor] 重试渲染 (${attempt}/${maxRetries})`);
+					setError((prev) => (prev ? { ...prev, retryCount: attempt } : null));
 				},
-			);
+			});
 
-			if ("svg" in result) {
+			if (result.success) {
 				setPreviewSvg(result.svg);
 				setError(null);
 				logger.success("[DiagramEditor] 预览渲染成功");
@@ -364,18 +207,15 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 				setPreviewSvg(null);
 				logger.error("[DiagramEditor] 预览渲染失败:", result.error.message);
 
-				// 如果是网络或服务器错误且已达到最大重试次数，显示 toast
-				if (
-					(result.error.type === "network" || result.error.type === "server") &&
-					result.error.retryCount >= MAX_RETRY_COUNT
-				) {
+				// 如果是网络或服务器错误，显示 toast
+				if (result.error.type === "network" || result.error.type === "server") {
 					toast.error("Failed to render diagram after multiple attempts");
 				}
 			}
 
 			setIsLoading(false);
 		},
-		[isKrokiConfigured, diagramType, krokiServerUrl],
+		[canRenderPreview, diagramType, isDark, krokiServerUrl, nodeId],
 	);
 
 	// 防抖预览更新
@@ -389,10 +229,10 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 	// ==============================
 
 	useEffect(() => {
-		if (isInitialized && code && isKrokiConfigured) {
+		if (isInitialized && code && canRenderPreview) {
 			updatePreview(code);
 		}
-	}, [isInitialized, isKrokiConfigured]); // 只在初始化和配置变化时触发
+	}, [isInitialized, canRenderPreview]); // 只在初始化和配置变化时触发
 
 	// ==============================
 	// 代码变化处理
@@ -461,6 +301,11 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 	// 渲染
 	// ==============================
 
+	// 对于 View 组件，isKrokiConfigured 的含义：
+	// - Mermaid: 始终为 true（不需要 Kroki）
+	// - PlantUML: 取决于实际的 Kroki 配置
+	const showKrokiConfigured = diagramType === "mermaid" || isKrokiConfigured;
+
 	return (
 		<div className={cn("h-full w-full", className)}>
 			<DiagramEditorView
@@ -469,7 +314,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 				previewSvg={previewSvg}
 				isLoading={isLoading}
 				error={error}
-				isKrokiConfigured={isKrokiConfigured}
+				isKrokiConfigured={showKrokiConfigured}
 				theme={isDark ? "dark" : "light"}
 				onCodeChange={handleCodeChange}
 				onSave={handleManualSave}

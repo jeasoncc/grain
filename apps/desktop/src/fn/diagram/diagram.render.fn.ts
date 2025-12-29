@@ -17,12 +17,12 @@
 
 import {
 	initMermaid,
-	renderMermaid as renderMermaidWithTheme,
 	type MermaidTheme,
+	renderMermaid as renderMermaidWithTheme,
 } from "./mermaid.render.fn";
 import {
-	renderPlantUML as renderPlantUMLWithRetry,
 	type PlantUMLRenderConfig,
+	renderPlantUML as renderPlantUMLWithRetry,
 } from "./plantuml.render.fn";
 
 // ============================================================================
@@ -33,7 +33,12 @@ import {
 export type DiagramType = "mermaid" | "plantuml";
 
 /** 错误类型 */
-export type DiagramErrorType = "syntax" | "network" | "server" | "config" | "unknown";
+export type DiagramErrorType =
+	| "syntax"
+	| "network"
+	| "server"
+	| "config"
+	| "unknown";
 
 /** 图表渲染错误 */
 export interface DiagramError {

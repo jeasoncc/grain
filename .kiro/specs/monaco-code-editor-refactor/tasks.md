@@ -163,7 +163,7 @@ bun add @monaco-editor/react
 - [x] 创建 `code-editor.view.fn.test.tsx`
 - [x] 测试组件渲染
 - [x] 测试 onChange 回调
-- [x] 测试主题切换
+- [ ] 测试主题切换
 
 ## Task 15: 添加 EditorSaveService 单元测试
 
@@ -223,10 +223,10 @@ bun add @monaco-editor/react
 
 **Acceptance Criteria:**
 - [ ] 修改 `diagram-editor.container.fn.tsx`
-- [ ] 使用 `renderDiagram` 替代直接调用 Kroki
-- [ ] Mermaid 类型不再检查 Kroki 配置
-- [ ] PlantUML 类型保持 Kroki 配置检查
-- [ ] 根据主题初始化 Mermaid
+- [x] 使用 `renderDiagram` 替代直接调用 Kroki
+- [x] Mermaid 类型不再检查 Kroki 配置
+- [x] PlantUML 类型保持 Kroki 配置检查
+- [x] 根据主题初始化 Mermaid
 
 ## Task 21: 添加 Mermaid 渲染测试
 

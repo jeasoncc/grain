@@ -20,13 +20,6 @@ export * from "./diagram.fn";
 // ============================================================================
 
 export {
-	// 统一接口
-	renderDiagram,
-	// 单独渲染函数
-	renderMermaid,
-	renderPlantUML,
-	// 向后兼容
-	renderDiagramSimple,
 	// 类型
 	type DiagramError,
 	type DiagramErrorType,
@@ -35,6 +28,13 @@ export {
 	type RenderFailure,
 	type RenderResult,
 	type RenderSuccess,
+	// 统一接口
+	renderDiagram,
+	// 向后兼容
+	renderDiagramSimple,
+	// 单独渲染函数
+	renderMermaid,
+	renderPlantUML,
 } from "./diagram.render.fn";
 
 // ============================================================================
@@ -42,12 +42,9 @@ export {
 // ============================================================================
 
 export {
+	getCurrentMermaidTheme,
 	// 初始化和状态
 	initMermaid,
-	getCurrentMermaidTheme,
-	resetMermaidState,
-	// 验证
-	validateMermaidCode,
 	// 类型
 	type MermaidInitConfig,
 	type MermaidRenderError,
@@ -56,6 +53,9 @@ export {
 	type MermaidTheme,
 	// 重命名导出以避免与统一接口冲突
 	renderMermaid as renderMermaidWithTheme,
+	resetMermaidState,
+	// 验证
+	validateMermaidCode,
 } from "./mermaid.render.fn";
 
 // ============================================================================
@@ -65,8 +65,6 @@ export {
 export {
 	// 健康检查
 	checkKrokiServerHealth,
-	// 简化版渲染
-	renderPlantUMLSimple,
 	// 类型
 	type PlantUMLErrorType,
 	type PlantUMLRenderConfig,
@@ -75,4 +73,6 @@ export {
 	type PlantUMLRenderSuccess,
 	// 重命名导出以避免与统一接口冲突
 	renderPlantUML as renderPlantUMLWithRetry,
+	// 简化版渲染
+	renderPlantUMLSimple,
 } from "./plantuml.render.fn";
