@@ -232,7 +232,7 @@ describe("SearchPanelView", () => {
 
 		// 文本可能被高亮标记分割，使用函数匹配器
 		expect(
-			screen.getByText((content, element) => {
+			screen.getByText((_content, element) => {
 				return element?.textContent === "Test Node";
 			}),
 		).toBeInTheDocument();
@@ -265,7 +265,7 @@ describe("SearchPanelView", () => {
 		render(<SearchPanelView {...props} />);
 
 		// 文本可能被高亮标记分割，使用函数匹配器找到元素
-		const titleElement = screen.getByText((content, element) => {
+		const titleElement = screen.getByText((_content, element) => {
 			return element?.textContent === "Test Node";
 		});
 		const resultButton = titleElement.closest("button");

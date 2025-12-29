@@ -9,7 +9,6 @@
  */
 
 import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/db";
 import { database } from "@/db/database";
@@ -45,7 +44,7 @@ export const WIKI_TAG = "wiki";
  * @deprecated Use ensureRootFolder from @/actions/node instead
  */
 export const ensureWikiFolderAsync = (
-	workspaceId: string,
+	_workspaceId: string,
 ): TE.TaskEither<AppError, NodeInterface> => {
 	logger.start("[Wiki] 确保 Wiki 文件夹存在...");
 	logger.warn(
@@ -298,7 +297,7 @@ export function generateWikiTemplate(title: string): string {
  * @param content - JSON string to parse
  * @returns Either<AppError, unknown>
  */
-function parseJsonContent(content: string): E.Either<AppError, unknown> {
+function _parseJsonContent(content: string): E.Either<AppError, unknown> {
 	try {
 		const parsed = JSON.parse(content || "{}");
 		return E.right(parsed);

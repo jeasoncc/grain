@@ -208,7 +208,7 @@ export const TagGraphPanelView = memo(
 				// 节点圆
 				ctx.beginPath();
 				ctx.arc(node.x, node.y, node.radius, 0, 2 * Math.PI);
-				ctx.fillStyle = node.color + "40";
+				ctx.fillStyle = `${node.color}40`;
 				ctx.fill();
 				ctx.strokeStyle = node.color;
 				ctx.lineWidth = 2;

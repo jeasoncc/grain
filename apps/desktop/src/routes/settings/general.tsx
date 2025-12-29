@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
 	AppWindow,
 	Clock,
-	Globe,
 	Languages,
 	LayoutTemplate,
 	Monitor,

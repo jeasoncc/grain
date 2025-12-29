@@ -76,7 +76,7 @@ export const EditorTabsView = memo(
 				container.scrollLeft <
 					container.scrollWidth - container.clientWidth - 1,
 			);
-		}, [tabs.length]); // Add tabs.length as dependency so it re-creates when tabs change
+		}, []); // Add tabs.length as dependency so it re-creates when tabs change
 
 		useEffect(() => {
 			checkScrollState();

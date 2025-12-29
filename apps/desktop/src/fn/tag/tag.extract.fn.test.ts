@@ -15,7 +15,6 @@ import {
 	getTotalTagUsage,
 	getUniqueTagNames,
 	MAX_TAG_NAME_LENGTH,
-	MIN_TAG_NAME_LENGTH,
 	normalizeTagName,
 	sortTagsAlphabetically,
 	sortTagsByCount,

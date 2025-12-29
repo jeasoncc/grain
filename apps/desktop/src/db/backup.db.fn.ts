@@ -30,7 +30,6 @@ import { type AppError, dbError, importError } from "@/lib/error.types";
 import logger from "@/log";
 import type {
 	BackupData,
-	BackupMetadata,
 	DatabaseStats,
 	LocalBackupRecord,
 } from "@/types/backup";

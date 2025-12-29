@@ -70,7 +70,7 @@ describe("deleteNode", () => {
 	it("应该处理空节点 ID", async () => {
 		const nodeId = "";
 
-		const result = await deleteNode(nodeId)();
+		const _result = await deleteNode(nodeId)();
 
 		expect(deleteNodeWithChildren).toHaveBeenCalledWith("");
 	});

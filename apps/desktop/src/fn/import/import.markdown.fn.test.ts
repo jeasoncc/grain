@@ -53,7 +53,7 @@ tags:
   - tag3
 ---
 Content`;
-			const [fm, remaining] = parseFrontMatter(content);
+			const [fm, _remaining] = parseFrontMatter(content);
 
 			expect(fm?.title).toBe("Test");
 			expect(fm?.tags).toEqual(["tag1", "tag2", "tag3"]);

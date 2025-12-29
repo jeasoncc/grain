@@ -21,7 +21,7 @@ import {
 // Test Data
 // ============================================================================
 
-const validParams: CreateExcalidrawParams = {
+const _validParams: CreateExcalidrawParams = {
 	workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 	date: new Date("2024-01-15T12:00:00.000Z"),
 	title: "测试绘图",

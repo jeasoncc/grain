@@ -1,10 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Moon, Sun } from "lucide-react";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useTheme } from "@/hooks/use-theme";
 import { getDarkThemes, getLightThemes, type Theme } from "@/lib/themes";

@@ -69,7 +69,7 @@ describe("StoryRightSidebarContainer", () => {
 
 	it("should not render when tabPosition is top", async () => {
 		const { useUIStore } = await import("@/stores/ui.store");
-		const originalMock = vi.mocked(useUIStore);
+		const _originalMock = vi.mocked(useUIStore);
 
 		vi.mocked(useUIStore).mockImplementation((selector: any) => {
 			const state = {

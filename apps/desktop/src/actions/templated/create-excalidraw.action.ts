@@ -23,7 +23,6 @@ import {
 } from "./configs/excalidraw.config";
 import type {
 	TemplatedFileParams,
-	TemplatedFileResult,
 } from "./create-templated-file.action";
 import {
 	createTemplatedFile,

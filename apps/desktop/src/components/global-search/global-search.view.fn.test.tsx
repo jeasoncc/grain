@@ -273,7 +273,7 @@ describe("GlobalSearchView", () => {
 			render(<GlobalSearchView {...props} />);
 
 			// 应该显示结果标题（包含高亮部分）
-			const titleElement = screen.getByText((content, element) => {
+			const titleElement = screen.getByText((_content, element) => {
 				return element?.textContent === "Test Result";
 			});
 			expect(titleElement).toBeInTheDocument();

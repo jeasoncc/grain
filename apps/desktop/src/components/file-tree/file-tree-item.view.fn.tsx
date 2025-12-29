@@ -31,9 +31,8 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import type { TreeNode } from "@/fn/node";
 import { cn } from "@/lib/utils";
-import type { DragState, FileTreeItemProps } from "./file-tree.types";
+import type { FileTreeItemProps } from "./file-tree.types";
 
 export function FileTreeItem({
 	node,
@@ -72,7 +71,6 @@ export function FileTreeItem({
 				);
 			case "drawing":
 				return <PenTool className="size-4 shrink-0 text-purple-500/70" />;
-			case "file":
 			default:
 				return <FileText className="size-4 shrink-0 text-muted-foreground" />;
 		}

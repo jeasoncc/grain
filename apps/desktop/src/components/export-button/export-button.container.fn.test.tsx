@@ -98,7 +98,7 @@ describe("ExportButtonContainer", () => {
 		});
 
 		// Resolve export
-		resolveExport!();
+		resolveExport?.();
 
 		// Should return to normal state
 		await waitFor(() => {

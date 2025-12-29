@@ -119,7 +119,7 @@ export const ExcalidrawEditorContainer = memo(
 			sizeStableRef.current = false;
 			setInitialData(null);
 			setContainerSize(null);
-		}, [nodeId]);
+		}, []);
 
 		// 监听容器尺寸 - 使用防抖确保尺寸稳定
 		useEffect(() => {

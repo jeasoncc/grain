@@ -2265,7 +2265,7 @@ function toKebabCase(str: string): string {
 }
 
 // 将十六进制颜色转换为 HSL 格式（用于 Tailwind CSS 变量）
-function hexToHSL(hex: string): string {
+function _hexToHSL(hex: string): string {
 	// 移除 # 号
 	hex = hex.replace(/^#/, "");
 

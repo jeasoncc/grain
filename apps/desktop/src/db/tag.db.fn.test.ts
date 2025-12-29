@@ -49,7 +49,7 @@ async function runTE<Err, A>(
 const createWhereChain = (
 	toArrayResult: unknown[] = [],
 	countResult = 0,
-	filterFn?: (item: unknown) => boolean,
+	_filterFn?: (item: unknown) => boolean,
 ) => ({
 	equals: vi.fn().mockReturnValue({
 		toArray: vi.fn().mockResolvedValue(toArrayResult),

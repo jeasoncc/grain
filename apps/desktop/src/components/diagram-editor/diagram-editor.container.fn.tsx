@@ -232,7 +232,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 		if (isInitialized && code && canRenderPreview) {
 			updatePreview(code);
 		}
-	}, [isInitialized, canRenderPreview]); // 只在初始化和配置变化时触发
+	}, [isInitialized, canRenderPreview, code, updatePreview]); // 只在初始化和配置变化时触发
 
 	// ==============================
 	// 代码变化处理

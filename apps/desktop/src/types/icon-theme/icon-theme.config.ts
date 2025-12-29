@@ -40,7 +40,6 @@ import {
 	FolderOutput,
 	FolderTree,
 	Gauge,
-	GitBranch,
 	GitFork,
 	Globe,
 	Grid,

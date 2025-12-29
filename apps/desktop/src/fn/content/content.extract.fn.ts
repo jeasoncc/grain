@@ -58,7 +58,7 @@ export function extractTextWithNewlines(node: unknown): string {
 		const text = Array.isArray(n.children)
 			? n.children.map(extractText).join("")
 			: "";
-		return text + "\n";
+		return `${text}\n`;
 	}
 
 	if (Array.isArray(n.children)) {

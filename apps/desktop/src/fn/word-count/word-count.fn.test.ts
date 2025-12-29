@@ -12,7 +12,6 @@
 
 import { describe, expect, it } from "vitest";
 import {
-	type CountMode,
 	countCharacters,
 	countChineseChars,
 	countEnglishWords,

@@ -4,7 +4,6 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { EditorHistoryEntry, HistoryStack } from "@/types/editor-history";
 import {
 	clearNodeFromStack,
 	createEmptyStack,

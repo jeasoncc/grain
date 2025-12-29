@@ -20,7 +20,6 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import type {
 	GlobalSearchViewProps,
-	SearchResult,
 	SearchResultType,
 } from "./global-search.types";
 

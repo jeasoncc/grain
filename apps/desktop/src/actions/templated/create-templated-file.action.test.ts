@@ -254,7 +254,7 @@ describe("createTemplatedFile", () => {
 		});
 
 		it("应该拒绝无效的工作区 ID", async () => {
-			const createFn = createTemplatedFile(testConfig);
+			const _createFn = createTemplatedFile(testConfig);
 			const result = await createTemplatedFileWithInvalidParams(testConfig, {
 				workspaceId: "invalid-id",
 				templateParams: validTemplateParams,
@@ -268,7 +268,7 @@ describe("createTemplatedFile", () => {
 		});
 
 		it("应该拒绝空的工作区 ID", async () => {
-			const createFn = createTemplatedFile(testConfig);
+			const _createFn = createTemplatedFile(testConfig);
 			const result = await createTemplatedFileWithInvalidParams(testConfig, {
 				workspaceId: "",
 				templateParams: validTemplateParams,
@@ -281,7 +281,7 @@ describe("createTemplatedFile", () => {
 		});
 
 		it("应该拒绝无效的模板参数", async () => {
-			const createFn = createTemplatedFile(testConfig);
+			const _createFn = createTemplatedFile(testConfig);
 			const result = await createTemplatedFileWithInvalidParams(testConfig, {
 				workspaceId: validWorkspaceId,
 				templateParams: {
