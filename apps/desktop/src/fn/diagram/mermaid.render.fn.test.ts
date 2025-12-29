@@ -239,7 +239,9 @@ describe("mermaid.render.fn", () => {
 
 		it("should return friendly error for parse error", async () => {
 			const mermaid = await getMermaidMock();
-			mermaid.render.mockRejectedValue(new Error("Parse error: invalid syntax"));
+			mermaid.render.mockRejectedValue(
+				new Error("Parse error: invalid syntax"),
+			);
 
 			const result = await renderMermaid("flowchart TD\n  A -->");
 

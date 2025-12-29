@@ -36,6 +36,7 @@ describe("ExcalidrawEditorView", () => {
 		initialData: createTestData(),
 		theme: "light",
 		onChange: vi.fn(),
+		containerSize: { width: 800, height: 600 },
 	};
 
 	it("should render loading state when initialData is null", () => {
@@ -74,7 +75,9 @@ describe("ExcalidrawEditorView", () => {
 
 	it("should apply custom className", () => {
 		const { container } = render(
-			<ExcalidrawEditorView {...defaultProps} className="custom-class" />,
+			<div className="custom-class">
+				<ExcalidrawEditorView {...defaultProps} />
+			</div>,
 		);
 		const wrapper = container.firstChild as HTMLElement;
 		expect(wrapper).toHaveClass("custom-class");
@@ -82,11 +85,12 @@ describe("ExcalidrawEditorView", () => {
 
 	it("should apply className to loading state", () => {
 		const { container } = render(
-			<ExcalidrawEditorView
-				{...defaultProps}
-				initialData={null}
-				className="custom-class"
-			/>,
+			<div className="custom-class">
+				<ExcalidrawEditorView
+					{...defaultProps}
+					initialData={null}
+				/>
+			</div>,
 		);
 		const wrapper = container.firstChild as HTMLElement;
 		expect(wrapper).toHaveClass("custom-class");

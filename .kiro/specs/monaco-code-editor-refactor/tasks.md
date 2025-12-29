@@ -243,7 +243,7 @@ bun add @monaco-editor/react
 **Requirements:** All
 
 **Acceptance Criteria:**
-- [ ] 运行 `bun run check` 确保没有类型错误
+- [-] 运行 `bun run check` 确保没有类型错误
 - [ ] 运行 `bun run lint` 确保没有 lint 错误
 - [ ] 移除未使用的导入和代码
 - [ ] 更新相关文档注释

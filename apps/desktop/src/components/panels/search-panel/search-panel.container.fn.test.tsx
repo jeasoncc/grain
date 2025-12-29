@@ -84,10 +84,13 @@ describe("SearchPanelContainer", () => {
 			Promise.resolve([
 				{
 					id: "1",
-					type: "node",
+					type: "node" as const,
 					title: "Test Result",
+					content: "Test content",
 					workspaceTitle: "Workspace",
 					excerpt: "Test excerpt",
+					score: 1.0,
+					highlights: ["Test"],
 				},
 			]),
 		);
