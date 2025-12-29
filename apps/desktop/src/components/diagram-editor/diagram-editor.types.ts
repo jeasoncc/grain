@@ -1,38 +1,18 @@
 /**
  * DiagramEditor 组件类型定义
  *
+ * 类型说明：
+ * - DiagramType, DiagramErrorType, DiagramError 从 @/fn/diagram 导入
+ * - 组件专用的 Props 接口在此定义
+ *
  * @requirements 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5
  */
 
-/**
- * 图表类型
- * - mermaid: Mermaid 图表
- * - plantuml: PlantUML 图表
- */
-export type DiagramType = "mermaid" | "plantuml";
+// 从 fn/diagram 导入共享类型（避免重复定义）
+import type { DiagramError, DiagramErrorType, DiagramType } from "@/fn/diagram";
 
-/**
- * 错误类型
- * - network: 网络错误（可重试）
- * - syntax: 语法错误（需要修改代码）
- * - server: 服务器错误（可重试）
- * - unknown: 未知错误
- */
-export type DiagramErrorType = "network" | "syntax" | "server" | "unknown";
-
-/**
- * 图表渲染错误信息
- */
-export interface DiagramError {
-	/** 错误类型 */
-	readonly type: DiagramErrorType;
-	/** 错误消息 */
-	readonly message: string;
-	/** 是否可重试 */
-	readonly retryable: boolean;
-	/** 重试次数 */
-	readonly retryCount: number;
-}
+// 重新导出供外部使用
+export type { DiagramError, DiagramErrorType, DiagramType };
 
 /**
  * DiagramEditorView Props 接口

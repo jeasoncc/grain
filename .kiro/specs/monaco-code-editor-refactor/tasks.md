@@ -144,7 +144,7 @@ bun add @monaco-editor/react
 - [x] 更新 `diagram-editor.types.ts`
 - [x] 添加 theme prop 到 DiagramEditorViewProps
 - [x] 添加 onSave prop 到 DiagramEditorViewProps
-- [x] 移除不再需要的类型
+- [-] 移除不再需要的类型
 
 ## Task 14: 更新 StoryWorkspace 集成
 
