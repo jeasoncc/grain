@@ -74,11 +74,11 @@ bun add @monaco-editor/react
 
 **Acceptance Criteria:**
 - [x] 创建 `fn/save/editor-save.service.ts`
-- [ ] 实现 `createEditorSaveService` 工厂函数
-- [ ] 支持配置 autoSaveDelay
-- [ ] 实现 updateContent、saveNow、setInitialContent、dispose 方法
-- [ ] 实现 hasUnsavedChanges 方法
-- [ ] 在 `fn/save/index.ts` 中导出
+- [x] 实现 `createEditorSaveService` 工厂函数
+- [x] 支持配置 autoSaveDelay
+- [x] 实现 updateContent、saveNow、setInitialContent、dispose 方法
+- [x] 实现 hasUnsavedChanges 方法
+- [x] 在 `fn/save/index.ts` 中导出
 
 ## Task 8: 创建 useEditorSave Hook
 

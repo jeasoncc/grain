@@ -9,12 +9,17 @@
  * - 统一编辑器保存服务 (editor-save.service.ts)
  */
 
+// 统一编辑器保存服务（Monaco、Excalidraw 等）
+export {
+	createEditorSaveService,
+	type EditorSaveConfig,
+	type EditorSaveServiceInterface,
+} from "./editor-save.service";
 // 标签提取纯函数
 export {
 	extractTagsFromContent,
 	parseTagString,
 } from "./save.debounce.fn";
-
 // 文档保存纯函数
 export {
 	createErrorResult,
@@ -27,17 +32,9 @@ export {
 	saveDocumentAsync,
 	serializeContent,
 } from "./save.document.fn";
-
 // 保存服务（Lexical 专用）
 export {
 	createSaveService,
 	type SaveServiceInterface,
 	saveService,
 } from "./save.service.fn";
-
-// 统一编辑器保存服务（Monaco、Excalidraw 等）
-export {
-	createEditorSaveService,
-	type EditorSaveConfig,
-	type EditorSaveServiceInterface,
-} from "./editor-save.service";
