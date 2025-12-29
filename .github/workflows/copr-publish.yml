@@ -16,7 +16,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Extract version
         id: version
@@ -202,7 +202,7 @@ jobs:
           echo "   sudo dnf install grain"
 
       - name: Upload COPR artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: copr-package
           path: "copr-package/*"
