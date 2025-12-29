@@ -163,7 +163,7 @@ bun add @monaco-editor/react
 - [x] 创建 `code-editor.view.fn.test.tsx`
 - [x] 测试组件渲染
 - [x] 测试 onChange 回调
-- [ ] 测试主题切换
+- [x] 测试主题切换
 
 ## Task 15: 添加 EditorSaveService 单元测试
 

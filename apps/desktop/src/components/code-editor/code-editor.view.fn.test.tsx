@@ -20,59 +20,18 @@ import { CodeEditorView } from "./code-editor.view.fn";
 // Monaco Editor Mock
 // ============================================================================
 
-// Mock Monaco Editor 组件
-// Monaco Editor 需要浏览器环境和 Web Workers，在测试中需要 mock
+// Monaco Editor 的全局 mock 在 setup.ts 中配置
+// 这里只需要获取 mock 函数的引用用于测试验证
 const mockOnChange = vi.fn();
-const mockOnMount = vi.fn();
-const mockBeforeMount = vi.fn();
-
-vi.mock("@monaco-editor/react", () => ({
-	default: ({
-		value,
-		language,
-		theme,
-		onChange,
-		onMount,
-		beforeMount,
-		options,
-		loading,
-	}: {
-		value: string;
-		language: string;
-		theme: string;
-		onChange: (value: string | undefined) => void;
-		onMount: (editor: unknown, monaco: unknown) => void;
-		beforeMount: (monaco: unknown) => void;
-		options: Record<string, unknown>;
-		loading: React.ReactNode;
-	}) => {
-		// 保存回调以便测试调用
-		mockOnChange.mockImplementation(onChange);
-		mockOnMount.mockImplementation(onMount);
-		mockBeforeMount.mockImplementation(beforeMount);
-
-		return (
-			<div
-				data-testid="monaco-editor"
-				data-value={value}
-				data-language={language}
-				data-theme={theme}
-				data-readonly={options?.readOnly ? "true" : "false"}
-			>
-				<textarea
-					data-testid="monaco-textarea"
-					value={value}
-					onChange={(e) => onChange(e.target.value)}
-					readOnly={options?.readOnly as boolean}
-				/>
-			</div>
-		);
-	},
-}));
 
 // Mock 语言注册函数
 vi.mock("./code-editor.languages", () => ({
 	registerAllLanguages: vi.fn(),
+}));
+
+// Mock monaco.config
+vi.mock("./monaco.config", () => ({
+	configureMonacoLoader: vi.fn(),
 }));
 
 // ============================================================================
