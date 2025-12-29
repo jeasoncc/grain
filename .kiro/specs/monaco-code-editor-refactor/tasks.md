@@ -6,8 +6,8 @@
 
 **Acceptance Criteria:**
 - [x] 在 `apps/desktop/package.json` 中添加 `@monaco-editor/react` 依赖
-- [-] 运行 `bun install` 安装依赖
-- [ ] 验证 Monaco Editor 可以正常导入
+- [x] 运行 `bun install` 安装依赖
+- [x] 验证 Monaco Editor 可以正常导入
 
 **Implementation Notes:**
 ```bash
