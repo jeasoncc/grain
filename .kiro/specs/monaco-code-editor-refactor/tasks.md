@@ -192,7 +192,7 @@ bun add @monaco-editor/react
 **Acceptance Criteria:**
 - [x] 创建 `fn/diagram/mermaid.render.fn.ts`
 - [x] 实现 `initMermaid` 函数，支持 light/dark 主题
-- [ ] 实现 `renderMermaid` 函数，返回 SVG 或错误
+- [x] 实现 `renderMermaid` 函数，返回 SVG 或错误
 - [ ] 配置 mermaid.js 安全设置（securityLevel）
 - [ ] 处理语法错误并返回友好的错误信息
 
