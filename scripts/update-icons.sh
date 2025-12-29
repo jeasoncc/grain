@@ -16,7 +16,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 # 默认图标文件
-ICON_FILE="${1:-apps/desktop/src-tauri/icons/my-new-icon.jpg}"
+ICON_FILE="${1:-apps/desktop/src-tauri/icons/my-new-icon.png}"
 
 if [ ! -f "$ICON_FILE" ]; then
     echo -e "${RED}错误: 图标文件不存在: $ICON_FILE${NC}"
