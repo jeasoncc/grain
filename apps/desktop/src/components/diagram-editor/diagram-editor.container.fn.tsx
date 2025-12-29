@@ -10,6 +10,9 @@
  * - Mermaid: 默认使用客户端渲染（mermaid.js），无需配置
  * - PlantUML: 需要 Kroki 服务器渲染
  *
+ * 数据流（保存）：
+ * Editor → useEditorSave → EditorSaveService → DB → SaveStore → UI 反馈
+ *
  * @requirements 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 7.2
  */
 
@@ -20,13 +23,13 @@ import mermaid from "mermaid";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { getContentByNodeId, updateContentByNodeId } from "@/db";
+import { getContentByNodeId } from "@/db";
 import { getKrokiPlantUMLUrl, isKrokiEnabled } from "@/fn/diagram/diagram.fn";
+import { useEditorSave } from "@/hooks/use-editor-save";
 import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
 import { useDiagramStore } from "@/stores/diagram.store";
-import { useSaveStore } from "@/stores/save.store";
 
 // 初始化 Mermaid 配置
 mermaid.initialize({
@@ -234,7 +237,7 @@ const renderDiagramWithRetry = async (
  * - 从数据库加载图表内容
  * - 管理编辑器状态（代码、预览、加载、错误）
  * - 调用 Kroki 服务渲染预览
- * - 自动保存内容到数据库
+ * - 使用 useEditorSave hook 统一保存逻辑
  * - 处理防抖更新
  * - 支持 Ctrl+S 快捷键立即保存
  */
@@ -253,10 +256,6 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 	const krokiServerUrl = useDiagramStore((s) => s.krokiServerUrl);
 	const enableKroki = useDiagramStore((s) => s.enableKroki);
 
-	// 保存状态管理
-	const { markAsUnsaved, markAsSaving, markAsSaved, markAsError } =
-		useSaveStore();
-
 	// 检查 Kroki 是否已配置
 	const isKrokiConfigured = useMemo(
 		() => isKrokiEnabled({ krokiServerUrl, enableKroki }),
@@ -273,12 +272,26 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 	const [error, setError] = useState<DiagramError | null>(null);
 	const [isInitialized, setIsInitialized] = useState(false);
 
-	// 用于追踪是否有未保存的更改
-	const hasUnsavedChanges = useRef(false);
-	const lastSavedCode = useRef("");
-
 	// 用于取消正在进行的渲染请求
 	const abortControllerRef = useRef<AbortController | null>(null);
+
+	// ==============================
+	// 统一保存逻辑（使用 useEditorSave hook）
+	// ==============================
+
+	const { updateContent, saveNow, hasUnsavedChanges, setInitialContent } =
+		useEditorSave({
+			nodeId,
+			contentType: "text", // 图表内容使用 "text" 类型存储（纯文本 Mermaid/PlantUML 语法）
+			autoSaveDelay: AUTOSAVE_DEBOUNCE_MS,
+			onSaveSuccess: () => {
+				logger.success("[DiagramEditor] 内容保存成功");
+			},
+			onSaveError: (error) => {
+				logger.error("[DiagramEditor] 保存内容失败:", error);
+				toast.error("Failed to save diagram");
+			},
+		});
 
 	// ==============================
 	// 加载内容
@@ -294,7 +307,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 				const content = result.right;
 				if (content) {
 					setCode(content.content);
-					lastSavedCode.current = content.content;
+					setInitialContent(content.content);
 					logger.success("[DiagramEditor] 内容加载成功");
 				} else {
 					logger.info("[DiagramEditor] 内容为空，使用默认值");
@@ -308,43 +321,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 		};
 
 		loadContent();
-	}, [nodeId]);
-
-	// ==============================
-	// 保存内容（防抖）
-	// ==============================
-
-	const saveContent = useCallback(
-		async (newCode: string) => {
-			if (newCode === lastSavedCode.current) {
-				return;
-			}
-
-			logger.info("[DiagramEditor] 保存内容:", nodeId);
-			markAsSaving();
-
-			// 图表内容使用 "text" 类型存储（纯文本 Mermaid/PlantUML 语法）
-			const result = await updateContentByNodeId(nodeId, newCode, "text")();
-
-			if (E.isRight(result)) {
-				lastSavedCode.current = newCode;
-				hasUnsavedChanges.current = false;
-				markAsSaved();
-				logger.success("[DiagramEditor] 内容保存成功");
-			} else {
-				markAsError(result.left.message || "保存失败");
-				logger.error("[DiagramEditor] 保存内容失败:", result.left);
-				toast.error("Failed to save diagram");
-			}
-		},
-		[nodeId, markAsSaving, markAsSaved, markAsError],
-	);
-
-	// 防抖保存
-	const debouncedSave = useMemo(
-		() => debounce(saveContent, AUTOSAVE_DEBOUNCE_MS),
-		[saveContent],
-	);
+	}, [nodeId, setInitialContent]);
 
 	// ==============================
 	// 渲染预览（防抖）
@@ -427,34 +404,29 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 	const handleCodeChange = useCallback(
 		(newCode: string) => {
 			setCode(newCode);
-			hasUnsavedChanges.current = true;
-			markAsUnsaved();
 
 			// 防抖更新预览
 			debouncedPreview(newCode);
 
-			// 防抖保存
-			debouncedSave(newCode);
+			// 使用统一保存逻辑（触发防抖保存）
+			updateContent(newCode);
 		},
-		[debouncedPreview, debouncedSave, markAsUnsaved],
+		[debouncedPreview, updateContent],
 	);
 
 	/**
 	 * 手动保存处理器 (Ctrl+S)
-	 * 取消防抖，立即保存当前内容
+	 * 使用 useEditorSave hook 的 saveNow 方法
 	 */
 	const handleManualSave = useCallback(async () => {
-		// 取消防抖的自动保存
-		debouncedSave.cancel();
-
-		if (!hasUnsavedChanges.current && code === lastSavedCode.current) {
+		if (!hasUnsavedChanges()) {
 			toast.info("No changes to save");
 			return;
 		}
 
 		logger.info("[DiagramEditor] 手动保存触发");
-		await saveContent(code);
-	}, [debouncedSave, code, saveContent]);
+		await saveNow();
+	}, [hasUnsavedChanges, saveNow]);
 
 	// ==============================
 	// 回调函数
@@ -478,19 +450,15 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 
 	useEffect(() => {
 		return () => {
-			// 组件卸载时，如果有未保存的更改，立即保存
-			if (hasUnsavedChanges.current) {
-				saveContent(code);
-			}
-			// 取消防抖
+			// 取消防抖预览
 			debouncedPreview.cancel();
-			debouncedSave.cancel();
 			// 取消正在进行的请求
 			if (abortControllerRef.current) {
 				abortControllerRef.current.abort();
 			}
+			// 注意：useEditorSave hook 会自动处理组件卸载时的保存和清理
 		};
-	}, [code, saveContent, debouncedPreview, debouncedSave]);
+	}, [debouncedPreview]);
 
 	// ==============================
 	// 渲染
