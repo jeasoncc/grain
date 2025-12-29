@@ -53,7 +53,7 @@ bun add @monaco-editor/react
 
 **Acceptance Criteria:**
 - [x] 创建 `components/code-editor/code-editor.container.fn.tsx`
-- [-] 连接 useContentByNodeId hook 加载内容
+- [x] 连接 useContentByNodeId hook 加载内容
 - [x] 连接 useTheme hook 获取主题
 - [x] 实现内容变化时的防抖保存
 - [x] 实现组件卸载时保存未保存的更改
