@@ -4,6 +4,11 @@
  * 基于 Monaco Editor 的代码编辑器组件
  */
 
+// 默认导出容器组件
+export {
+	CodeEditorContainer,
+	CodeEditorContainer as CodeEditor,
+} from "./code-editor.container.fn";
 // 语言注册函数导出
 export {
 	registerAllLanguages,
@@ -19,6 +24,3 @@ export type {
 } from "./code-editor.types";
 // 组件导出
 export { CodeEditorView } from "./code-editor.view.fn";
-
-// Container 组件导出将在后续任务中添加
-// export { CodeEditorContainer } from "./code-editor.container.fn";

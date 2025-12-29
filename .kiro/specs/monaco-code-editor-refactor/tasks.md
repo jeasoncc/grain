@@ -52,21 +52,21 @@ bun add @monaco-editor/react
 **Requirements:** 2.5, 3.1, 3.2, 3.3, 3.4
 
 **Acceptance Criteria:**
-- [ ] 创建 `components/code-editor/code-editor.container.fn.tsx`
-- [ ] 连接 useContentByNodeId hook 加载内容
-- [ ] 连接 useTheme hook 获取主题
-- [ ] 实现内容变化时的防抖保存
-- [ ] 实现组件卸载时保存未保存的更改
+- [x] 创建 `components/code-editor/code-editor.container.fn.tsx`
+- [x] 连接 useContentByNodeId hook 加载内容
+- [x] 连接 useTheme hook 获取主题
+- [x] 实现内容变化时的防抖保存
+- [x] 实现组件卸载时保存未保存的更改
 
 ## Task 6: 创建 CodeEditor index 导出
 
 **Requirements:** 2.5
 
 **Acceptance Criteria:**
-- [ ] 创建 `components/code-editor/index.ts`
-- [ ] 导出 CodeEditorView、CodeEditorContainer
-- [ ] 导出类型定义
-- [ ] 导出语言注册函数
+- [x] 创建 `components/code-editor/index.ts`
+- [x] 导出 CodeEditorView、CodeEditorContainer
+- [x] 导出类型定义
+- [x] 导出语言注册函数
 
 ## Task 7: 重构 EditorSaveService
 
