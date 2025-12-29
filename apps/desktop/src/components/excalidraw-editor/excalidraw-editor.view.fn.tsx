@@ -3,15 +3,16 @@
  *
  * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  * 集成 @excalidraw/excalidraw 包，支持主题切换和 onChange 回调
+ * 支持 Ctrl+S 快捷键保存
  *
- * @requirements 5.2
+ * @requirements 5.2, 7.4
  */
 
 // 必须导入 Excalidraw CSS（0.18.0+ 版本）
 import "@excalidraw/excalidraw/index.css";
 
 import { Excalidraw } from "@excalidraw/excalidraw";
-import { memo, useCallback } from "react";
+import { memo, useCallback, useEffect } from "react";
 import type { ExcalidrawEditorViewProps } from "./excalidraw-editor.types";
 
 export const ExcalidrawEditorView = memo(
@@ -19,9 +20,33 @@ export const ExcalidrawEditorView = memo(
 		initialData,
 		theme,
 		onChange,
+		onSave,
 		viewModeEnabled = false,
 		containerSize,
 	}: ExcalidrawEditorViewProps) => {
+		/**
+		 * 注册 Ctrl+S 快捷键
+		 * 阻止浏览器默认保存对话框，调用 onSave 回调
+		 */
+		useEffect(() => {
+			const handleKeyDown = (event: KeyboardEvent) => {
+				// 检查是否为 Ctrl+S 或 Cmd+S
+				if (
+					(event.ctrlKey || event.metaKey) &&
+					event.key.toLowerCase() === "s"
+				) {
+					event.preventDefault();
+					event.stopPropagation();
+					onSave?.();
+				}
+			};
+
+			window.addEventListener("keydown", handleKeyDown);
+			return () => {
+				window.removeEventListener("keydown", handleKeyDown);
+			};
+		}, [onSave]);
+
 		// 如果没有初始数据，显示加载状态
 		if (!initialData) {
 			return (

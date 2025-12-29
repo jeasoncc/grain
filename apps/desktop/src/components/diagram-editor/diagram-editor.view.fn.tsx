@@ -4,8 +4,9 @@
  *
  * 纯展示组件，只通过 props 接收数据和回调函数。
  * 不直接访问 Store 或 DB，遵循函数式架构原则。
+ * 使用 Monaco Editor (CodeEditorView) 提供语法高亮和 Ctrl+S 保存支持。
  *
- * @requirements 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5
+ * @requirements 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 7.2
  */
 
 import {
@@ -18,11 +19,11 @@ import {
 } from "lucide-react";
 import { memo } from "react";
 
+import { CodeEditorView } from "@/components/code-editor";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/loading";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
 
 import type {
 	DiagramEditorViewProps,
@@ -211,40 +212,6 @@ const PreviewArea = memo(function PreviewArea({
 	);
 });
 
-/**
- * 代码编辑区组件
- */
-const CodeEditor = memo(function CodeEditor({
-	code,
-	diagramType,
-	onCodeChange,
-}: {
-	readonly code: string;
-	readonly diagramType: "mermaid" | "plantuml";
-	readonly onCodeChange: (code: string) => void;
-}) {
-	const placeholder =
-		diagramType === "mermaid"
-			? "Enter Mermaid diagram code...\n\nExample:\nflowchart TD\n    A[Start] --> B{Decision}\n    B -->|Yes| C[Action]\n    B -->|No| D[End]"
-			: "Enter PlantUML diagram code...\n\nExample:\n@startuml\nAlice -> Bob: Hello\nBob --> Alice: Hi\n@enduml";
-
-	return (
-		<textarea
-			value={code}
-			onChange={(e) => onCodeChange(e.target.value)}
-			className={cn(
-				"w-full h-full p-4 resize-none",
-				"font-mono text-sm leading-relaxed",
-				"bg-muted/30 border-none outline-none",
-				"placeholder:text-muted-foreground/50",
-				"focus:bg-muted/50 transition-colors",
-			)}
-			placeholder={placeholder}
-			spellCheck={false}
-		/>
-	);
-});
-
 // ==============================
 // 主组件
 // ==============================
@@ -252,8 +219,9 @@ const CodeEditor = memo(function CodeEditor({
 /**
  * DiagramEditor 纯展示组件
  *
- * 分屏布局：左侧代码编辑区，右侧预览区
+ * 分屏布局：左侧代码编辑区（Monaco Editor），右侧预览区
  * 只通过 props 接收数据，不直接访问 Store/DB。
+ * 支持 Ctrl+S 快捷键保存。
  */
 export const DiagramEditorView = memo(function DiagramEditorView({
 	code,
@@ -262,7 +230,9 @@ export const DiagramEditorView = memo(function DiagramEditorView({
 	isLoading,
 	error,
 	isKrokiConfigured,
+	theme = "light",
 	onCodeChange,
+	onSave,
 	onOpenSettings,
 	onRetry,
 }: DiagramEditorViewProps) {
@@ -273,12 +243,14 @@ export const DiagramEditorView = memo(function DiagramEditorView({
 
 	return (
 		<div className="flex h-full w-full" data-testid="diagram-editor">
-			{/* 代码编辑区 */}
+			{/* 代码编辑区 - 使用 Monaco Editor */}
 			<div className="flex-1 border-r border-border/50 overflow-hidden">
-				<CodeEditor
-					code={code}
-					diagramType={diagramType}
-					onCodeChange={onCodeChange}
+				<CodeEditorView
+					value={code}
+					language={diagramType}
+					theme={theme}
+					onChange={onCodeChange}
+					onSave={onSave}
 				/>
 			</div>
 

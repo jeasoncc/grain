@@ -52,8 +52,12 @@ export interface DiagramEditorViewProps {
 	readonly error: DiagramError | null;
 	/** Kroki 是否已配置 */
 	readonly isKrokiConfigured: boolean;
+	/** 主题 */
+	readonly theme?: "light" | "dark";
 	/** 代码变化回调 */
 	readonly onCodeChange: (code: string) => void;
+	/** 手动保存回调 (Ctrl+S) */
+	readonly onSave?: () => void;
 	/** 打开设置回调 */
 	readonly onOpenSettings: () => void;
 	/** 重试回调 */

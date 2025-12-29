@@ -97,11 +97,11 @@ bun add @monaco-editor/react
 **Requirements:** 7.1, 7.2, 7.3, 7.4, 7.5, 7.6
 
 **Acceptance Criteria:**
-- [ ] Monaco Editor 中注册 Ctrl+S 快捷键，调用 onSave 回调
-- [ ] 确保 Lexical Editor 的 Ctrl+S 流向统一保存服务
-- [ ] 确保 Excalidraw Editor 的 Ctrl+S 流向统一保存服务
-- [ ] 阻止浏览器默认的保存对话框
-- [ ] 验证快捷键事件流：Editor → Hook → SaveService → DB → Store → UI
+- [x] Monaco Editor 中注册 Ctrl+S 快捷键，调用 onSave 回调
+- [x] 确保 Lexical Editor 的 Ctrl+S 流向统一保存服务
+- [x] 确保 Excalidraw Editor 的 Ctrl+S 流向统一保存服务
+- [x] 阻止浏览器默认的保存对话框
+- [x] 验证快捷键事件流：Editor → Hook → SaveService → DB → Store → UI
 
 ## Task 10: 提取 DiagramPreview 组件
 

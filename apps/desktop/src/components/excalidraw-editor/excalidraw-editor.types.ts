@@ -37,6 +37,8 @@ export interface ExcalidrawEditorViewProps {
 		appState: Record<string, unknown>,
 		files: Record<string, unknown>,
 	) => void;
+	/** 手动保存回调 (Ctrl+S) */
+	readonly onSave?: () => void;
 	/** 是否为只读模式 */
 	readonly viewModeEnabled?: boolean;
 	/** 容器尺寸 - 必须使用固定像素值 */
