@@ -21,9 +21,9 @@ bun add @monaco-editor/react
 
 **Acceptance Criteria:**
 - [x] 创建 `components/code-editor/code-editor.types.ts`
-- [-] 定义 `CodeLanguage` 类型，支持 plantuml、mermaid、json、markdown
-- [ ] 定义 `CodeEditorViewProps` 接口
-- [ ] 定义 `CodeEditorContainerProps` 接口
+- [x] 定义 `CodeLanguage` 类型，支持 plantuml、mermaid、json、markdown
+- [x] 定义 `CodeEditorViewProps` 接口
+- [x] 定义 `CodeEditorContainerProps` 接口
 
 ## Task 3: 创建 Monaco 语言定义
 
