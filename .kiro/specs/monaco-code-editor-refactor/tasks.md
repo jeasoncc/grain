@@ -131,8 +131,8 @@ bun add @monaco-editor/react
 
 **Acceptance Criteria:**
 - [ ] 修改 `diagram-editor.container.fn.tsx`
-- [-] 使用 useEditorSave hook 替代手动保存逻辑
-- [ ] 移除重复的防抖保存代码
+- [x] 使用 useEditorSave hook 替代手动保存逻辑
+- [-] 移除重复的防抖保存代码
 - [ ] 保持预览更新逻辑
 - [ ] 连接 useSaveStore 更新保存状态
 

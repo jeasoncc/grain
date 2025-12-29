@@ -53,9 +53,6 @@ import { DiagramEditorView } from "./diagram-editor.view.fn";
 /** 预览更新防抖延迟（毫秒） */
 const PREVIEW_DEBOUNCE_MS = 500;
 
-/** 自动保存防抖延迟（毫秒） */
-const AUTOSAVE_DEBOUNCE_MS = 1000;
-
 /** 最大重试次数 */
 const MAX_RETRY_COUNT = 3;
 
@@ -283,7 +280,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 		useEditorSave({
 			nodeId,
 			contentType: "text", // 图表内容使用 "text" 类型存储（纯文本 Mermaid/PlantUML 语法）
-			autoSaveDelay: AUTOSAVE_DEBOUNCE_MS,
+			// autoSaveDelay 使用默认值 1000ms
 			onSaveSuccess: () => {
 				logger.success("[DiagramEditor] 内容保存成功");
 			},
