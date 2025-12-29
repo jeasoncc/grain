@@ -185,6 +185,34 @@ describe("CodeEditorView", () => {
 			// dark 主题在 Monaco 中对应 "vs-dark"
 			expect(editor).toHaveAttribute("data-theme", "vs-dark");
 		});
+
+		it("should update theme when prop changes from light to dark", () => {
+			const props = createDefaultProps({ theme: "light" });
+			const { rerender } = render(<CodeEditorView {...props} />);
+
+			// 初始为 light 主题
+			let editor = screen.getByTestId("monaco-editor");
+			expect(editor).toHaveAttribute("data-theme", "light");
+
+			// 切换到 dark 主题
+			rerender(<CodeEditorView {...props} theme="dark" />);
+			editor = screen.getByTestId("monaco-editor");
+			expect(editor).toHaveAttribute("data-theme", "vs-dark");
+		});
+
+		it("should update theme when prop changes from dark to light", () => {
+			const props = createDefaultProps({ theme: "dark" });
+			const { rerender } = render(<CodeEditorView {...props} />);
+
+			// 初始为 dark 主题
+			let editor = screen.getByTestId("monaco-editor");
+			expect(editor).toHaveAttribute("data-theme", "vs-dark");
+
+			// 切换到 light 主题
+			rerender(<CodeEditorView {...props} theme="light" />);
+			editor = screen.getByTestId("monaco-editor");
+			expect(editor).toHaveAttribute("data-theme", "light");
+		});
 	});
 
 	describe("onChange 回调", () => {
