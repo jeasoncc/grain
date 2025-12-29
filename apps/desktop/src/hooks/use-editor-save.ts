@@ -105,7 +105,9 @@ const DEFAULT_AUTOSAVE_DELAY = 1000;
  * }
  * ```
  */
-export function useEditorSave(options: UseEditorSaveOptions): UseEditorSaveReturn {
+export function useEditorSave(
+	options: UseEditorSaveOptions,
+): UseEditorSaveReturn {
 	const {
 		nodeId,
 		contentType,
@@ -176,7 +178,14 @@ export function useEditorSave(options: UseEditorSaveOptions): UseEditorSaveRetur
 		logger.debug("[useEditorSave] 保存服务已创建:", { nodeId, contentType });
 
 		return service;
-	}, [nodeId, contentType, autoSaveDelay, markAsSaving, markAsSaved, markAsError]);
+	}, [
+		nodeId,
+		contentType,
+		autoSaveDelay,
+		markAsSaving,
+		markAsSaved,
+		markAsError,
+	]);
 
 	// ==============================
 	// 初始化内容

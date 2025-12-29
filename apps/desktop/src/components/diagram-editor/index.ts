@@ -21,3 +21,12 @@ export type {
 } from "./diagram-editor.types";
 // View 组件
 export { DiagramEditorView } from "./diagram-editor.view.fn";
+export type { DiagramPreviewViewProps } from "./diagram-preview.view.fn";
+// Preview 组件
+export {
+	DiagramEmptyState,
+	DiagramErrorDisplay,
+	DiagramLoadingState,
+	DiagramPreviewView,
+	DiagramSvgContent,
+} from "./diagram-preview.view.fn";

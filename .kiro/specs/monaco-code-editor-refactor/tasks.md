@@ -108,7 +108,7 @@ bun add @monaco-editor/react
 **Requirements:** 4.3, 4.4
 
 **Acceptance Criteria:**
-- [ ] 创建 `components/diagram-editor/diagram-preview.view.fn.tsx`
+- [-] 创建 `components/diagram-editor/diagram-preview.view.fn.tsx`
 - [ ] 从现有 DiagramEditorView 中提取预览相关代码
 - [ ] 支持 SVG 内容渲染
 - [ ] 支持加载状态显示
