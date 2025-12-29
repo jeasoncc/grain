@@ -56,7 +56,7 @@ bun add @monaco-editor/react
 - [x] 连接 useContentByNodeId hook 加载内容
 - [x] 连接 useTheme hook 获取主题
 - [x] 实现内容变化时的防抖保存
-- [x] 实现组件卸载时保存未保存的更改
+- [-] 实现组件卸载时保存未保存的更改
 
 ## Task 6: 创建 CodeEditor index 导出
 

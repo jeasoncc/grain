@@ -104,7 +104,9 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 			setCode(initialCode);
 			lastSavedCode.current = initialCode;
 			setIsInitialized(true);
-			logger.success("[CodeEditor] 内容加载成功（通过 useContentByNodeId hook）");
+			logger.success(
+				"[CodeEditor] 内容加载成功（通过 useContentByNodeId hook）",
+			);
 		}
 	}, [content, isInitialized]);
 

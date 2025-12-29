@@ -87,12 +87,15 @@ export const ExcalidrawEditorContainer = memo(
 			useState<ExcalidrawInitialData | null>(null);
 		const isInitializedRef = useRef(false);
 
-		// 当前数据引用（用于手动保存）
+		// 当前数据引用（用于手动保存和卸载时保存）
 		const currentDataRef = useRef<{
 			elements: readonly unknown[];
 			appState: Record<string, unknown>;
 			files: Record<string, unknown>;
 		} | null>(null);
+
+		// 用于追踪是否有未保存的更改
+		const hasUnsavedChanges = useRef(false);
 
 		// 容器尺寸状态 - 使用稳定的尺寸
 		const [containerSize, setContainerSize] = useState<ContainerSize | null>(
@@ -223,8 +226,9 @@ export const ExcalidrawEditorContainer = memo(
 				appState: Record<string, unknown>,
 				files: Record<string, unknown>,
 			) => {
-				// 保存当前数据引用（用于手动保存）
+				// 保存当前数据引用（用于手动保存和卸载时保存）
 				currentDataRef.current = { elements, appState, files };
+				hasUnsavedChanges.current = true;
 				markAsUnsaved();
 				debouncedSave(elements, appState, files);
 			},
@@ -240,18 +244,30 @@ export const ExcalidrawEditorContainer = memo(
 			debouncedSave.cancel();
 
 			const data = currentDataRef.current;
-			if (!data) {
+			if (!data || !hasUnsavedChanges.current) {
 				toast.info("No changes to save");
 				return;
 			}
 
 			logger.info("[ExcalidrawEditor] 手动保存触发");
 			await saveContent(data.elements, data.appState, data.files);
+			hasUnsavedChanges.current = false;
 		}, [debouncedSave, saveContent]);
 
+		// 清理：组件卸载时保存未保存的更改
 		useEffect(() => {
-			return () => debouncedSave.cancel();
-		}, [debouncedSave]);
+			return () => {
+				// 取消防抖
+				debouncedSave.cancel();
+
+				// 组件卸载时，如果有未保存的更改，立即保存
+				const data = currentDataRef.current;
+				if (data && hasUnsavedChanges.current) {
+					logger.info("[ExcalidrawEditor] 组件卸载，保存未保存的更改");
+					saveContent(data.elements, data.appState, data.files);
+				}
+			};
+		}, [debouncedSave, saveContent]);
 
 		// 加载中
 		if (content === undefined) {
