@@ -39,6 +39,21 @@ export type MermaidRenderResult = MermaidRenderSuccess | MermaidRenderError;
 export interface MermaidInitConfig {
 	readonly theme: MermaidTheme;
 	readonly fontFamily?: string;
+	/**
+	 * Mermaid 安全级别：
+	 *
+	 * - "strict": 最严格，禁用所有 HTML 标签和点击事件
+	 *   适用于：不信任的用户输入、公共网站
+	 *
+	 * - "antiscript": 禁用 script 标签，但允许其他 HTML
+	 *   适用于：需要一些 HTML 格式但要防止 XSS
+	 *
+	 * - "loose": 允许 HTML 标签和点击事件
+	 *   适用于：桌面应用、受信任的环境（默认值）
+	 *
+	 * - "sandbox": 在 iframe sandbox 中渲染
+	 *   适用于：需要完全隔离的场景
+	 */
 	readonly securityLevel?: "strict" | "loose" | "antiscript" | "sandbox";
 }
 

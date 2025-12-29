@@ -49,18 +49,54 @@ const MAX_RETRY_COUNT = 3;
 const RETRY_BASE_DELAY_MS = 1000;
 
 // ============================================================================
+// Mermaid 安全配置
+// ============================================================================
+
+/**
+ * Mermaid 安全级别说明：
+ *
+ * - "strict": 最严格，禁用所有 HTML 标签和点击事件
+ *   适用于：不信任的用户输入、公共网站
+ *
+ * - "antiscript": 禁用 script 标签，但允许其他 HTML
+ *   适用于：需要一些 HTML 格式但要防止 XSS
+ *
+ * - "loose": 允许 HTML 标签和点击事件
+ *   适用于：桌面应用、受信任的环境
+ *
+ * - "sandbox": 在 iframe sandbox 中渲染
+ *   适用于：需要完全隔离的场景
+ *
+ * 当前配置：使用 "loose" 因为这是桌面应用，
+ * 用户输入的内容是自己的，不存在 XSS 风险。
+ */
+type MermaidSecurityLevel = "strict" | "loose" | "antiscript" | "sandbox";
+
+/** 默认安全级别 - 桌面应用使用 loose 以支持交互功能 */
+const DEFAULT_SECURITY_LEVEL: MermaidSecurityLevel = "loose";
+
+// ============================================================================
 // Mermaid 初始化
 // ============================================================================
 
 // 初始化 Mermaid 配置（只执行一次）
 let mermaidInitialized = false;
 
-const initMermaid = (): void => {
+/**
+ * 初始化 Mermaid 配置
+ *
+ * @param securityLevel - 安全级别，默认为 "loose"
+ */
+const initMermaid = (
+	securityLevel: MermaidSecurityLevel = DEFAULT_SECURITY_LEVEL,
+): void => {
 	if (mermaidInitialized) return;
 	mermaid.initialize({
 		startOnLoad: false,
 		theme: "default",
-		securityLevel: "loose",
+		securityLevel,
+		// 禁用日志以避免控制台噪音
+		logLevel: "error",
 	});
 	mermaidInitialized = true;
 };
