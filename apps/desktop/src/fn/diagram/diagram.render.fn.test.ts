@@ -184,10 +184,7 @@ describe("renderPlantUML", () => {
 	it("should return syntax error for 4xx responses", async () => {
 		mockFetch.mockResolvedValue(createErrorResponse(400, "Syntax error"));
 
-		const result = await renderPlantUML(
-			"invalid plantuml",
-			"https://kroki.io",
-		);
+		const result = await renderPlantUML("invalid plantuml", "https://kroki.io");
 
 		expect(result.success).toBe(false);
 		if (!result.success) {
@@ -345,7 +342,10 @@ describe("Error Classification", () => {
 	it("should classify 500 errors as server errors", async () => {
 		mockFetch.mockResolvedValue(createErrorResponse(500, "Internal error"));
 
-		const result = await renderPlantUML("@startuml\n@enduml", "https://kroki.io");
+		const result = await renderPlantUML(
+			"@startuml\n@enduml",
+			"https://kroki.io",
+		);
 
 		// 由于重试，需要等待所有重试完成
 		expect(result.success).toBe(false);

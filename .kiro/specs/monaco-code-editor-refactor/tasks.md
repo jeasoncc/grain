@@ -30,10 +30,10 @@ bun add @monaco-editor/react
 **Requirements:** 1.2, 1.3
 
 **Acceptance Criteria:**
-- [ ] 创建 `components/code-editor/code-editor.languages.ts`
-- [ ] 实现 `registerPlantUMLLanguage` 函数
-- [ ] 实现 `registerMermaidLanguage` 函数
-- [ ] 定义关键字、操作符、注释等 token 规则
+- [x] 创建 `components/code-editor/code-editor.languages.ts`
+- [x] 实现 `registerPlantUMLLanguage` 函数
+- [x] 实现 `registerMermaidLanguage` 函数
+- [x] 定义关键字、操作符、注释等 token 规则
 
 ## Task 4: 创建 CodeEditorView 组件
 

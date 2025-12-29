@@ -16,12 +16,12 @@ import type { editor } from "monaco-editor";
  * - typescript: TypeScript 代码
  */
 export type CodeLanguage =
-  | "plantuml"
-  | "mermaid"
-  | "json"
-  | "markdown"
-  | "javascript"
-  | "typescript";
+	| "plantuml"
+	| "mermaid"
+	| "json"
+	| "markdown"
+	| "javascript"
+	| "typescript";
 
 /**
  * Monaco 编辑器选项
@@ -36,22 +36,22 @@ export type MonacoEditorOptions = editor.IStandaloneEditorConstructionOptions;
  * 纯展示组件的属性定义，只接收数据和回调
  */
 export interface CodeEditorViewProps {
-  /** 代码内容 */
-  readonly value: string;
-  /** 代码语言 */
-  readonly language: CodeLanguage;
-  /** 主题 */
-  readonly theme: "light" | "dark";
-  /** 内容变化回调 */
-  readonly onChange: (value: string) => void;
-  /** 保存回调 (Ctrl+S) */
-  readonly onSave?: () => void;
-  /** 是否只读 */
-  readonly readOnly?: boolean;
-  /** 占位符文本 */
-  readonly placeholder?: string;
-  /** 编辑器选项 */
-  readonly options?: MonacoEditorOptions;
+	/** 代码内容 */
+	readonly value: string;
+	/** 代码语言 */
+	readonly language: CodeLanguage;
+	/** 主题 */
+	readonly theme: "light" | "dark";
+	/** 内容变化回调 */
+	readonly onChange: (value: string) => void;
+	/** 保存回调 (Ctrl+S) */
+	readonly onSave?: () => void;
+	/** 是否只读 */
+	readonly readOnly?: boolean;
+	/** 占位符文本 */
+	readonly placeholder?: string;
+	/** 编辑器选项 */
+	readonly options?: MonacoEditorOptions;
 }
 
 /**
@@ -60,10 +60,10 @@ export interface CodeEditorViewProps {
  * 容器组件的属性定义，连接 hooks/stores
  */
 export interface CodeEditorContainerProps {
-  /** 节点 ID */
-  readonly nodeId: string;
-  /** 代码语言 */
-  readonly language: CodeLanguage;
-  /** 样式类名 */
-  readonly className?: string;
+	/** 节点 ID */
+	readonly nodeId: string;
+	/** 代码语言 */
+	readonly language: CodeLanguage;
+	/** 样式类名 */
+	readonly className?: string;
 }
