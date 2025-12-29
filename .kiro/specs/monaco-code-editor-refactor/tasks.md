@@ -160,7 +160,7 @@ bun add @monaco-editor/react
 **Requirements:** 2.5
 
 **Acceptance Criteria:**
-- [ ] 创建 `code-editor.view.fn.test.tsx`
+- [-] 创建 `code-editor.view.fn.test.tsx`
 - [ ] 测试组件渲染
 - [ ] 测试 onChange 回调
 - [ ] 测试主题切换
