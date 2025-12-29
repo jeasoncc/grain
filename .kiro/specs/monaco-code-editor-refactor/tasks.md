@@ -130,7 +130,7 @@ bun add @monaco-editor/react
 **Requirements:** 4.2, 4.5, 5.2
 
 **Acceptance Criteria:**
-- [ ] 修改 `diagram-editor.container.fn.tsx`
+- [x] 修改 `diagram-editor.container.fn.tsx`
 - [x] 使用 useEditorSave hook 替代手动保存逻辑
 - [x] 移除重复的防抖保存代码
 - [x] 保持预览更新逻辑
