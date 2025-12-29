@@ -17,7 +17,8 @@ import * as E from "fp-ts/Either";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { getContentByNodeId, updateContentByNodeId } from "@/db";
+import { updateContentByNodeId } from "@/db";
+import { useContentByNodeId } from "@/hooks/use-content";
 import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
@@ -41,7 +42,7 @@ const AUTOSAVE_DEBOUNCE_MS = 1000;
  * CodeEditor 容器组件
  *
  * 职责：
- * - 从数据库加载代码内容
+ * - 使用 useContentByNodeId hook 加载代码内容（响应式）
  * - 管理编辑器状态（代码内容）
  * - 自动保存内容到数据库（防抖）
  * - 支持 Ctrl+S 快捷键立即保存
@@ -64,6 +65,12 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 	const { isDark } = useTheme();
 
 	// ==============================
+	// 使用 useContentByNodeId hook 加载内容（响应式）
+	// ==============================
+
+	const content = useContentByNodeId(nodeId);
+
+	// ==============================
 	// Store 连接
 	// ==============================
 
@@ -82,34 +89,24 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 	const lastSavedCode = useRef("");
 
 	// ==============================
-	// 加载内容
+	// 初始化内容（当 content 从 hook 加载完成时）
 	// ==============================
 
 	useEffect(() => {
-		const loadContent = async () => {
-			logger.info("[CodeEditor] 加载内容:", nodeId);
+		// content 为 undefined 表示正在加载
+		if (content === undefined) {
+			return;
+		}
 
-			const result = await getContentByNodeId(nodeId)();
-
-			if (E.isRight(result)) {
-				const content = result.right;
-				if (content) {
-					setCode(content.content);
-					lastSavedCode.current = content.content;
-					logger.success("[CodeEditor] 内容加载成功");
-				} else {
-					logger.info("[CodeEditor] 内容为空，使用默认值");
-				}
-			} else {
-				logger.error("[CodeEditor] 加载内容失败:", result.left);
-				toast.error("加载内容失败");
-			}
-
+		// 只在首次加载时初始化
+		if (!isInitialized) {
+			const initialCode = content?.content ?? "";
+			setCode(initialCode);
+			lastSavedCode.current = initialCode;
 			setIsInitialized(true);
-		};
-
-		loadContent();
-	}, [nodeId]);
+			logger.success("[CodeEditor] 内容加载成功（通过 useContentByNodeId hook）");
+		}
+	}, [content, isInitialized]);
 
 	// ==============================
 	// 保存内容
