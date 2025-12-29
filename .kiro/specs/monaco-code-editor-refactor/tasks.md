@@ -153,7 +153,7 @@ bun add @monaco-editor/react
 **Acceptance Criteria:**
 - [x] 验证 DiagramEditorContainer 在 StoryWorkspace 中正常工作 
 - [x] 确保保存状态指示器正确显示
-- [ ] 确保标签切换时状态正确保存和恢复
+- [x] 确保标签切换时状态正确保存和恢复
 
 ## Task 15: 添加 CodeEditor 单元测试
 
