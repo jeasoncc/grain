@@ -134,7 +134,7 @@ bun add @monaco-editor/react
 - [x] 使用 useEditorSave hook 替代手动保存逻辑
 - [x] 移除重复的防抖保存代码
 - [x] 保持预览更新逻辑
-- [ ] 连接 useSaveStore 更新保存状态
+- [x] 连接 useSaveStore 更新保存状态
 
 ## Task 13: 更新 DiagramEditor 类型定义
 
