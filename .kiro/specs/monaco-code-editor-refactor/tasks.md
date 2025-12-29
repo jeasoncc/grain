@@ -201,10 +201,10 @@ bun add @monaco-editor/react
 **Requirements:** 8.3
 
 **Acceptance Criteria:**
-- [ ] 创建 `fn/diagram/plantuml.render.fn.ts`
-- [ ] 实现 `renderPlantUML` 函数，调用 Kroki API
-- [ ] 处理网络错误和服务器错误
-- [ ] 支持重试逻辑
+- [x] 创建 `fn/diagram/plantuml.render.fn.ts`
+- [x] 实现 `renderPlantUML` 函数，调用 Kroki API
+- [x] 处理网络错误和服务器错误
+- [x] 支持重试逻辑
 
 ## Task 19: 创建统一渲染接口
 

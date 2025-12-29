@@ -5,6 +5,7 @@
 
 export * from "./diagram.fn";
 export * from "./diagram.render.fn";
+
 // Mermaid 专用函数（带主题支持）
 // 重命名导出以避免与 diagram.render.fn 中的 renderMermaid 冲突
 export {
@@ -19,3 +20,16 @@ export {
 	resetMermaidState,
 	validateMermaidCode,
 } from "./mermaid.render.fn";
+
+// PlantUML 专用函数（带重试支持）
+// 重命名导出以避免与 diagram.render.fn 中的 renderPlantUML 冲突
+export {
+	checkKrokiServerHealth,
+	type PlantUMLErrorType,
+	type PlantUMLRenderConfig,
+	type PlantUMLRenderError,
+	type PlantUMLRenderResult,
+	type PlantUMLRenderSuccess,
+	renderPlantUML as renderPlantUMLWithRetry,
+	renderPlantUMLSimple,
+} from "./plantuml.render.fn";
