@@ -464,18 +464,47 @@ describe("Property-Based Tests", () => {
 	describe("Property: Unknown Extension Fallback to Plaintext", () => {
 		// 定义已知扩展名集合
 		const knownExtensions = new Set([
-			".js", ".jsx", ".ts", ".tsx",
-			".html", ".htm", ".css", ".scss", ".less",
-			".json", ".yaml", ".yml", ".toml", ".xml",
-			".md", ".markdown",
-			".sh", ".bash", ".zsh",
-			".py", ".pyw",
-			".rs", ".go", ".java",
-			".c", ".h", ".cpp", ".cc", ".cxx", ".hpp", ".hxx",
-			".sql", ".graphql", ".gql",
-			".dockerfile", ".txt",
-			".mermaid", ".plantuml", ".puml",
-			".grain", ".excalidraw",
+			".js",
+			".jsx",
+			".ts",
+			".tsx",
+			".html",
+			".htm",
+			".css",
+			".scss",
+			".less",
+			".json",
+			".yaml",
+			".yml",
+			".toml",
+			".xml",
+			".md",
+			".markdown",
+			".sh",
+			".bash",
+			".zsh",
+			".py",
+			".pyw",
+			".rs",
+			".go",
+			".java",
+			".c",
+			".h",
+			".cpp",
+			".cc",
+			".cxx",
+			".hpp",
+			".hxx",
+			".sql",
+			".graphql",
+			".gql",
+			".dockerfile",
+			".txt",
+			".mermaid",
+			".plantuml",
+			".puml",
+			".grain",
+			".excalidraw",
 		]);
 
 		it("should return plaintext for any unknown extension", () => {
@@ -489,7 +518,8 @@ describe("Property-Based Tests", () => {
 						.string({ minLength: 2, maxLength: 10 })
 						.filter(
 							(s) =>
-								/^[a-z]+$/.test(s) && !knownExtensions.has(`.${s.toLowerCase()}`),
+								/^[a-z]+$/.test(s) &&
+								!knownExtensions.has(`.${s.toLowerCase()}`),
 						),
 					(prefix, unknownExt) => {
 						const filename = `${prefix}.${unknownExt}`;
@@ -540,7 +570,16 @@ describe("Property-Based Tests", () => {
 	 */
 	describe("Property: Case Insensitivity", () => {
 		const knownExtensions = [
-			".js", ".ts", ".py", ".json", ".md", ".html", ".css", ".sql", ".sh", ".yaml",
+			".js",
+			".ts",
+			".py",
+			".json",
+			".md",
+			".html",
+			".css",
+			".sql",
+			".sh",
+			".yaml",
 		];
 
 		it("should return same Monaco language regardless of extension case", () => {

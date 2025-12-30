@@ -35,9 +35,8 @@ import {
 	getEditorTypeByFilename,
 } from "@/fn/editor";
 import { countWordsFromLexicalState } from "@/fn/word-count";
-import { useEditorSave } from "@/hooks/use-editor-save";
-import { useManualSave } from "@/hooks/use-save";
 import { useSettings } from "@/hooks/use-settings";
+import { useUnifiedSave } from "@/hooks/use-unified-save";
 import { useWikiFiles } from "@/hooks/use-wiki";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
 import logger from "@/log";
@@ -106,14 +105,15 @@ export const StoryWorkspaceContainer = memo(
 			return editorInitialState || null;
 		}, [activeTabId, editorStates, editorInitialState]);
 
-		// 获取当前活动标签（提前定义，供 useEditorSave 和 useManualSave 使用）
+		// 获取当前活动标签（提前定义，供 useUnifiedSave 使用）
 		const activeTab = tabs.find((t) => t.id === activeTabId);
 
 		// ==============================
-		// 统一保存逻辑（使用 useEditorSave hook）
+		// 统一保存逻辑（使用 useUnifiedSave hook）
+		// 自动保存和手动保存（Ctrl+S）都通过同一个 hook 处理
 		// ==============================
 
-		const { updateContent } = useEditorSave({
+		const { updateContent } = useUnifiedSave({
 			nodeId: activeTab?.nodeId ?? "",
 			contentType: "lexical",
 			tabId: activeTabId ?? undefined,
@@ -123,16 +123,6 @@ export const StoryWorkspaceContainer = memo(
 			onSaveError: (error) => {
 				logger.error("[StoryWorkspace] 保存失败:", error);
 			},
-		});
-
-		// 手动保存 hook（Ctrl+S 快捷键）
-		// 注意：需要使用 activeTab.nodeId 而不是 activeTabId
-		// activeTabId 是标签页 ID，nodeId 才是数据库中的节点 ID
-		useManualSave({
-			nodeId: activeTab?.nodeId ?? null,
-			currentContent,
-			onSaveSuccess: () => logger.success("[StoryWorkspace] 手动保存成功"),
-			onSaveError: () => logger.error("[StoryWorkspace] 手动保存失败"),
 		});
 
 		// 初始化工作空间选择

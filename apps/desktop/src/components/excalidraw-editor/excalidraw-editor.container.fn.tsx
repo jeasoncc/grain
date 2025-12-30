@@ -4,7 +4,8 @@
  * 容器组件：连接 hooks/stores，处理数据加载和保存逻辑
  * 支持 Ctrl+S 快捷键立即保存
  *
- * 使用 useEditorSave hook 统一保存逻辑，与其他编辑器保持一致
+ * 使用 useUnifiedSave hook 统一保存逻辑，与其他编辑器保持一致
+ * 自动保存和手动保存都通过同一个 hook 处理
  *
  * 性能优化：
  * - 使用 refs 存储非渲染数据（currentDataRef）
@@ -18,8 +19,8 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useContentByNodeId } from "@/hooks/use-content";
-import { useEditorSave } from "@/hooks/use-editor-save";
 import { useTheme } from "@/hooks/use-theme";
+import { useUnifiedSave } from "@/hooks/use-unified-save";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
@@ -130,14 +131,16 @@ export const ExcalidrawEditorContainer = memo(
 		const prevNodeIdRef = useRef<string | null>(null);
 
 		// ==============================
-		// 统一保存逻辑（使用 useEditorSave hook）
+		// 统一保存逻辑（使用 useUnifiedSave hook）
+		// 自动保存和手动保存（Ctrl+S）都通过同一个 hook 处理
 		// ==============================
 
 		const { updateContent, saveNow, hasUnsavedChanges, setInitialContent } =
-			useEditorSave({
+			useUnifiedSave({
 				nodeId,
 				contentType: "excalidraw",
 				tabId: activeTabId ?? undefined,
+				registerShortcut: false, // Excalidraw 有自己的快捷键处理
 				onSaveSuccess: () => {
 					logger.success("[ExcalidrawEditor] 内容保存成功");
 				},
@@ -256,7 +259,7 @@ export const ExcalidrawEditorContainer = memo(
 
 		/**
 		 * onChange 回调处理器
-		 * 使用 useEditorSave hook 的 updateContent
+		 * 使用 useUnifiedSave hook 的 updateContent
 		 */
 		const handleChange = useCallback(
 			(
@@ -276,7 +279,7 @@ export const ExcalidrawEditorContainer = memo(
 
 		/**
 		 * 手动保存处理器 (Ctrl+S)
-		 * 使用 useEditorSave hook 的 saveNow
+		 * 使用 useUnifiedSave hook 的 saveNow
 		 */
 		const handleManualSave = useCallback(async () => {
 			if (!hasUnsavedChanges()) {
@@ -301,7 +304,7 @@ export const ExcalidrawEditorContainer = memo(
 				sizeStableRef.current = false;
 				prevNodeIdRef.current = null;
 
-				// 注意：useEditorSave hook 会自动处理组件卸载时的保存和清理
+				// 注意：useUnifiedSave hook 会自动处理组件卸载时的保存和清理
 
 				logger.info("[ExcalidrawEditor] 资源清理完成");
 			};

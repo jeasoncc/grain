@@ -339,7 +339,8 @@ describe("Property-Based Tests", () => {
 						.string({ minLength: 2, maxLength: 10 })
 						.filter(
 							(s) =>
-								/^[a-z]+$/.test(s) && !knownExtensions.has(`.${s.toLowerCase()}`),
+								/^[a-z]+$/.test(s) &&
+								!knownExtensions.has(`.${s.toLowerCase()}`),
 						),
 					(prefix, unknownExt) => {
 						const filename = `${prefix}.${unknownExt}`;

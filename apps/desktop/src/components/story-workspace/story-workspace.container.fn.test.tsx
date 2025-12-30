@@ -68,8 +68,13 @@ vi.mock("@/hooks/use-wiki-hover-preview", () => ({
 	useWikiHoverPreview: vi.fn(),
 }));
 
-vi.mock("@/hooks/use-save", () => ({
-	useManualSave: vi.fn(),
+vi.mock("@/hooks/use-unified-save", () => ({
+	useUnifiedSave: vi.fn(() => ({
+		updateContent: vi.fn(),
+		saveNow: vi.fn(),
+		hasUnsavedChanges: vi.fn(() => false),
+		setInitialContent: vi.fn(),
+	})),
 }));
 
 // Mock stores

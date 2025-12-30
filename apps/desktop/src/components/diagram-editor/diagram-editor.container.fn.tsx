@@ -11,7 +11,7 @@
  * - PlantUML: 需要 Kroki 服务器渲染
  *
  * 数据流（保存）：
- * Editor → useEditorSave → EditorSaveService → DB → SaveStore → UI 反馈
+ * Editor → useUnifiedSave → UnifiedSaveService → DB → Tab.isDirty → SaveStore → UI 反馈
  *
  * @requirements 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 7.2, 8.1, 8.2, 8.3, 8.4, 8.5
  */
@@ -28,8 +28,8 @@ import {
 	isKrokiEnabled,
 	renderDiagram,
 } from "@/fn/diagram";
-import { useEditorSave } from "@/hooks/use-editor-save";
 import { useTheme } from "@/hooks/use-theme";
+import { useUnifiedSave } from "@/hooks/use-unified-save";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
 import { useDiagramStore } from "@/stores/diagram.store";
@@ -55,7 +55,7 @@ import { DiagramEditorView } from "./diagram-editor.view.fn";
  * - 从数据库加载图表内容
  * - 管理编辑器状态（代码、预览、加载、错误）
  * - 调用 Kroki 服务渲染预览
- * - 使用 useEditorSave hook 统一保存逻辑
+ * - 使用 useUnifiedSave hook 统一保存逻辑
  * - 预览只在保存后触发（避免输入时频繁渲染）
  * - 支持 Ctrl+S 快捷键立即保存
  */
@@ -105,7 +105,8 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 	const abortControllerRef = useRef<AbortController | null>(null);
 
 	// ==============================
-	// 统一保存逻辑（使用 useEditorSave hook）
+	// 统一保存逻辑（使用 useUnifiedSave hook）
+	// 自动保存和手动保存（Ctrl+S）都通过同一个 hook 处理
 	// ==============================
 
 	// 用于在 onSaveSuccess 中访问最新的 code
@@ -115,10 +116,11 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 	}, [code]);
 
 	const { updateContent, saveNow, hasUnsavedChanges, setInitialContent } =
-		useEditorSave({
+		useUnifiedSave({
 			nodeId,
 			contentType: "text", // 图表内容使用 "text" 类型存储（纯文本 Mermaid/PlantUML 语法）
 			tabId: activeTabId ?? undefined, // 传递 tabId 用于同步 isDirty 状态
+			registerShortcut: false, // DiagramEditor 有自己的快捷键处理
 			onSaveSuccess: () => {
 				logger.success("[DiagramEditor] 内容保存成功");
 				// 保存成功后触发预览渲染
@@ -256,7 +258,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 
 	/**
 	 * 手动保存处理器 (Ctrl+S)
-	 * 使用 useEditorSave hook 的 saveNow 方法
+	 * 使用 useUnifiedSave hook 的 saveNow 方法
 	 * 保存成功后会通过 onSaveSuccess 回调触发预览渲染
 	 */
 	const handleManualSave = useCallback(async () => {
@@ -295,7 +297,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 			if (abortControllerRef.current) {
 				abortControllerRef.current.abort();
 			}
-			// 注意：useEditorSave hook 会自动处理组件卸载时的保存和清理
+			// 注意：useUnifiedSave hook 会自动处理组件卸载时的保存和清理
 		};
 	}, []);
 
