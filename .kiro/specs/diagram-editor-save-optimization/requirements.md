@@ -2,51 +2,72 @@
 
 ## Introduction
 
-本规范定义了 Grain Desktop 应用中 DiagramEditor（图表编辑器）的保存和渲染优化需求。当前实现中，每次代码变化都会触发实时渲染，导致编辑体验不佳。本规范旨在优化保存策略，使渲染只在保存后触发，而非每次输入时触发。
+本规范定义了 Grain Desktop 应用中编辑器统一保存机制的优化需求。当前项目有两类编辑器：
+- **Lexical 编辑器**：用于 diary、wiki、note、todo、ledger（富文本编辑）
+- **Monaco 编辑器**：用于 plantuml、mermaid（图表代码编辑）
+
+### 当前状态分析
+
+**已有的基础设施：**
+- `useSettings` Store：已有 `autoSave` 和 `autoSaveInterval` 字段
+- `useEditorSave` Hook：统一的编辑器保存逻辑，但未使用 Settings 中的配置
+- `SaveStore`：全局保存状态管理（status、hasUnsavedChanges）
+- `EditorTab.isDirty`：标签页脏状态，用于显示 ● 指示器
+- General 设置页面：已有自动保存开关和间隔配置 UI
+
+**需要解决的问题：**
+1. **两套自动保存逻辑**：
+   - StoryWorkspaceContainer（Lexical）：直接使用 `useSettings` 的配置，自己实现定时器
+   - DiagramEditorContainer（Monaco）：使用 `useEditorSave` hook，但 hook 未读取 Settings
+2. DiagramEditorContainer 同时做实时预览渲染，导致输入时频繁渲染
+3. `EditorTab.isDirty` 与 `SaveStore.hasUnsavedChanges` 需要同步
+4. 设置页面的 autoSaveInterval 范围（10-3600）与实际需求（1-60）不匹配
 
 ## Glossary
 
-- **DiagramEditor**: 图表编辑器组件，支持 Mermaid 和 PlantUML 语法
+- **Editor**: 编辑器组件，包括 Lexical 编辑器和 Monaco 编辑器
 - **Auto_Save**: 自动保存功能，在用户停止编辑后自动保存内容
-- **Idle_Detection**: 空闲检测，检测用户是否停止编辑
-- **Preview_Render**: 预览渲染，将图表代码渲染为 SVG 图像
-- **Debounce**: 防抖，延迟执行直到一段时间内没有新的调用
+- **Save_Store**: 全局保存状态管理 Store，管理 status、hasUnsavedChanges 等状态
+- **Settings_Store**: 用户设置 Store（useSettings），包含 autoSave 和 autoSaveInterval
+- **Editor_Tab**: 编辑器标签页，包含 isDirty 字段表示是否有未保存更改
+- **useEditorSave**: 统一的编辑器保存 Hook，封装 EditorSaveService
+- **EditorSaveService**: 编辑器保存服务，处理防抖保存逻辑
 
 ## Requirements
 
-### Requirement 1: 自动保存默认关闭
+### Requirement 1: useEditorSave 读取全局设置
 
-**User Story:** As a user, I want auto-save to be disabled by default for diagram editors, so that I can control when my changes are saved and rendered.
-
-#### Acceptance Criteria
-
-1. WHEN the DiagramEditor initializes THEN the System SHALL disable auto-save by default
-2. THE System SHALL provide a setting to enable/disable auto-save for diagram editors
-3. WHEN auto-save is disabled THEN the System SHALL only save content when the user manually triggers save (Ctrl+S)
-
-### Requirement 2: 空闲检测保存
-
-**User Story:** As a user, I want the system to save my diagram only when I stop editing, so that the preview doesn't constantly update while I'm typing.
+**User Story:** As a user, I want my auto-save settings to apply to all editors, so that I have a consistent editing experience.
 
 #### Acceptance Criteria
 
-1. WHEN auto-save is enabled THEN the System SHALL detect when the user stops editing
-2. WHEN the user stops editing for the configured idle time THEN the System SHALL trigger auto-save
-3. WHEN the user is actively editing THEN the System SHALL NOT trigger auto-save
-4. THE System SHALL define "actively editing" as having typed within the last idle timeout period
-5. WHEN the user resumes editing after an idle period THEN the System SHALL reset the idle timer
+1. THE useEditorSave Hook SHALL read `autoSave` setting from Settings_Store
+2. THE useEditorSave Hook SHALL read `autoSaveInterval` setting from Settings_Store
+3. WHEN autoSave is disabled THEN the System SHALL only save on manual trigger (Ctrl+S)
+4. WHEN autoSaveInterval changes THEN the System SHALL apply the new delay to subsequent saves
+5. THE useEditorSave Hook SHALL convert autoSaveInterval from seconds to milliseconds
 
-### Requirement 3: 可配置的保存延迟
+### Requirement 2: 自动保存延迟范围验证
 
-**User Story:** As a user, I want to configure the auto-save delay time, so that I can balance between save frequency and editing experience.
+**User Story:** As a user, I want the auto-save delay to be within a reasonable range, so that I can balance between save frequency and editing experience.
 
 #### Acceptance Criteria
 
-1. THE System SHALL provide a configurable auto-save delay setting for diagram editors
-2. THE System SHALL set the default auto-save delay to 60 seconds
-3. WHEN the user changes the auto-save delay THEN the System SHALL apply the new delay immediately
-4. THE System SHALL enforce a minimum auto-save delay of 10 seconds
-5. THE System SHALL enforce a maximum auto-save delay of 300 seconds (5 minutes)
+1. THE Settings_Store SHALL enforce a minimum autoSaveInterval of 1 second
+2. THE Settings_Store SHALL enforce a maximum autoSaveInterval of 60 seconds
+3. THE Settings_Store SHALL set the default autoSaveInterval to 3 seconds
+4. THE Settings_Store SHALL set the default autoSave to true
+
+### Requirement 3: Tab isDirty 状态同步
+
+**User Story:** As a user, I want to see a consistent unsaved indicator on tabs, so that I know which files have pending changes.
+
+#### Acceptance Criteria
+
+1. WHEN useEditorSave marks content as unsaved THEN the System SHALL update EditorTab.isDirty to true
+2. WHEN useEditorSave marks content as saved THEN the System SHALL update EditorTab.isDirty to false
+3. THE System SHALL use the same ● indicator style for all editor types
+4. THE useEditorSave Hook SHALL accept a tabId parameter for updating tab dirty state
 
 ### Requirement 4: 基于保存的预览渲染
 
@@ -54,29 +75,18 @@
 
 #### Acceptance Criteria
 
-1. WHEN content is saved (manually or auto-save) THEN the System SHALL trigger preview rendering
-2. WHEN the user is typing THEN the System SHALL NOT trigger preview rendering
-3. THE System SHALL provide visual feedback indicating unsaved changes
-4. WHEN the user presses Ctrl+S THEN the System SHALL immediately save and render the preview
+1. WHEN content is saved (manually or auto-save) THEN the DiagramEditor SHALL trigger preview rendering
+2. WHEN the user is typing THEN the DiagramEditor SHALL NOT trigger preview rendering
+3. THE DiagramEditorContainer SHALL remove the debouncedPreview call from handleCodeChange
+4. THE DiagramEditorContainer SHALL use onSaveSuccess callback to trigger preview rendering
 
-### Requirement 5: 保存状态指示
+### Requirement 5: 设置界面范围调整
 
-**User Story:** As a user, I want to see the save status of my diagram, so that I know when my changes are saved.
-
-#### Acceptance Criteria
-
-1. THE System SHALL display a visual indicator when there are unsaved changes
-2. THE System SHALL display a visual indicator when saving is in progress
-3. THE System SHALL display a visual indicator when content is saved
-4. WHEN auto-save is disabled THEN the System SHALL clearly indicate this to the user
-
-### Requirement 6: 设置界面
-
-**User Story:** As a user, I want to configure diagram editor save settings in the settings page, so that I can customize my editing experience.
+**User Story:** As a user, I want the auto-save interval input to have a reasonable range, so that I can set a shorter delay for faster feedback.
 
 #### Acceptance Criteria
 
-1. THE System SHALL provide diagram editor settings in the settings page
-2. THE System SHALL allow toggling auto-save on/off
-3. THE System SHALL allow configuring auto-save delay (when auto-save is enabled)
-4. THE System SHALL persist these settings across sessions
+1. THE Settings page SHALL set the minimum autoSaveInterval input to 1 second (currently 10)
+2. THE Settings page SHALL set the maximum autoSaveInterval input to 60 seconds (currently 3600)
+3. THE Settings page SHALL display the current interval value in the input field
+

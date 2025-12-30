@@ -1,261 +1,339 @@
 # Design Document
 
-## Introduction
+## Overview
 
-本设计文档描述了 DiagramEditor 保存优化功能的技术实现方案。核心目标是将实时渲染改为基于保存的渲染，减少编辑时的性能开销和视觉干扰。
+本设计文档描述了编辑器统一保存机制的技术实现方案。核心目标是让 `useEditorSave` hook 读取全局设置，并确保 Monaco 编辑器（DiagramEditor）和 Lexical 编辑器使用一致的保存逻辑。
 
-## Architecture Overview
+### 设计目标
+
+1. **统一配置**：`useEditorSave` 读取 `useSettings` 中的 `autoSave` 和 `autoSaveInterval`
+2. **状态同步**：保存状态与 `EditorTab.isDirty` 同步
+3. **基于保存的渲染**：DiagramEditor 的预览只在保存后触发
+4. **范围验证**：autoSaveInterval 限制在 1-60 秒
+
+## Architecture
 
 ### 当前架构
 
 ```
-用户输入 → handleCodeChange → debouncedPreview (500ms) → renderDiagram
-                           → updateContent → EditorSaveService (1000ms) → DB
-```
+┌─────────────────────────────────────────────────────────────────┐
+│                    StoryWorkspaceContainer                       │
+│  (Lexical 编辑器)                                                │
+│                                                                  │
+│  useSettings() ──► autoSave, autoSaveInterval                   │
+│       │                                                          │
+│       ▼                                                          │
+│  自己实现的定时器逻辑 ──► saveService.saveDocument()            │
+└─────────────────────────────────────────────────────────────────┘
 
-问题：每次输入都会触发预览渲染，即使使用了 500ms 防抖，频繁输入仍会导致多次渲染。
+┌─────────────────────────────────────────────────────────────────┐
+│                    DiagramEditorContainer                        │
+│  (Monaco 编辑器)                                                 │
+│                                                                  │
+│  useEditorSave({ autoSaveDelay: 1000 }) ◄── 硬编码延迟          │
+│       │                                                          │
+│       ▼                                                          │
+│  EditorSaveService ──► updateContentByNodeId()                  │
+│                                                                  │
+│  debouncedPreview() ◄── 实时预览（问题：输入时频繁渲染）        │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ### 目标架构
 
 ```
-用户输入 → handleCodeChange → updateContent (标记未保存)
-                                    ↓
-                           [空闲检测 / 手动保存]
-                                    ↓
-                              saveContent → DB
-                                    ↓
-                              renderPreview → SVG
+┌─────────────────────────────────────────────────────────────────┐
+│                       useSettings Store                          │
+│  autoSave: boolean (default: true)                              │
+│  autoSaveInterval: number (default: 3, range: 1-60 seconds)     │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                       useEditorSave Hook                         │
+│                                                                  │
+│  1. 读取 useSettings 的 autoSave 和 autoSaveInterval            │
+│  2. 转换 autoSaveInterval 为毫秒                                │
+│  3. 当 autoSave=false 时禁用自动保存                            │
+│  4. 更新 EditorTab.isDirty 状态                                 │
+│  5. 提供 onSaveSuccess 回调                                     │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │
+           ┌───────────────┴───────────────┐
+           │                               │
+           ▼                               ▼
+┌─────────────────────┐         ┌─────────────────────┐
+│ DiagramEditor       │         │ 其他编辑器          │
+│                     │         │ (未来可迁移)        │
+│ - 移除实时预览      │         │                     │
+│ - onSaveSuccess     │         │                     │
+│   触发渲染          │         │                     │
+└─────────────────────┘         └─────────────────────┘
 ```
-
-关键变化：
-1. 预览渲染只在保存后触发
-2. 自动保存使用空闲检测而非简单防抖
-3. 自动保存默认关闭
 
 ## Components
 
-### 1. DiagramStore 扩展
+### 1. useEditorSave Hook 修改
 
-扩展现有 `DiagramStore` 添加保存相关设置：
-
-```typescript
-// types/diagram/diagram.interface.ts
-export interface DiagramState {
-  readonly krokiServerUrl: string;
-  readonly enableKroki: boolean;
-  // 新增
-  readonly diagramAutoSave: boolean;        // 是否启用自动保存，默认 false
-  readonly diagramAutoSaveDelay: number;    // 自动保存延迟（秒），默认 60
-}
-
-export interface DiagramActions {
-  setKrokiServerUrl: (url: string) => void;
-  setEnableKroki: (enabled: boolean) => void;
-  testKrokiConnection: () => Promise<boolean>;
-  // 新增
-  setDiagramAutoSave: (enabled: boolean) => void;
-  setDiagramAutoSaveDelay: (delay: number) => void;
-}
-```
-
-### 2. useIdleSave Hook
-
-新建 Hook 实现空闲检测保存逻辑：
+修改 `useEditorSave` hook 以读取全局设置：
 
 ```typescript
-// hooks/use-idle-save.ts
-export interface UseIdleSaveOptions {
+// hooks/use-editor-save.ts
+
+export interface UseEditorSaveOptions {
   readonly nodeId: string;
   readonly contentType: ContentType;
-  readonly enabled: boolean;              // 是否启用自动保存
-  readonly idleTimeout: number;           // 空闲超时（毫秒）
+  /** @deprecated 使用全局设置代替 */
+  readonly autoSaveDelay?: number;
+  readonly initialContent?: string;
   readonly onSaveSuccess?: () => void;
   readonly onSaveError?: (error: Error) => void;
-  readonly onSaveComplete?: () => void;   // 保存完成回调（用于触发渲染）
+  /** 标签页 ID，用于更新 isDirty 状态 */
+  readonly tabId?: string;
 }
 
-export interface UseIdleSaveReturn {
-  updateContent: (content: string) => void;
-  saveNow: () => Promise<void>;
-  hasUnsavedChanges: () => boolean;
-  setInitialContent: (content: string) => void;
-  isIdle: boolean;                        // 当前是否处于空闲状态
+export function useEditorSave(options: UseEditorSaveOptions): UseEditorSaveReturn {
+  // 读取全局设置
+  const { autoSave, autoSaveInterval } = useSettings();
+  
+  // 转换为毫秒，如果禁用自动保存则设为 0
+  const effectiveDelay = autoSave 
+    ? autoSaveInterval * 1000 
+    : 0; // 0 表示禁用自动保存
+  
+  // 获取 tab dirty 状态更新函数
+  const setTabDirty = useEditorTabsStore((s) => s.setTabDirty);
+  
+  // ... 现有逻辑，使用 effectiveDelay 替代 autoSaveDelay
+  
+  // 在 markAsUnsaved 时同步更新 tab dirty 状态
+  const updateContent = useCallback((content: string) => {
+    markAsUnsaved();
+    if (options.tabId) {
+      setTabDirty(options.tabId, true);
+    }
+    saveService.updateContent(content);
+  }, [/* deps */]);
+  
+  // 在保存成功时同步更新 tab dirty 状态
+  // ... 在 onSaved 回调中添加 setTabDirty(tabId, false)
 }
 ```
 
-空闲检测逻辑：
-1. 用户输入时重置空闲计时器
-2. 计时器到期时标记为空闲状态
-3. 空闲状态下触发自动保存
-4. 保存完成后调用 `onSaveComplete` 回调
+### 2. EditorSaveService 修改
 
-### 3. DiagramEditorContainer 修改
-
-更新容器组件使用新的保存和渲染策略：
+修改 `createEditorSaveService` 以支持禁用自动保存：
 
 ```typescript
-// 关键变化
-const { diagramAutoSave, diagramAutoSaveDelay } = useDiagramStore();
+// fn/save/editor-save.service.ts
 
-// 使用 useIdleSave 替代 useEditorSave
-const { updateContent, saveNow, hasUnsavedChanges, setInitialContent } = useIdleSave({
+export const createEditorSaveService = (config: EditorSaveConfig) => {
+  const { autoSaveDelay = DEFAULT_AUTOSAVE_DELAY } = config;
+  
+  // 如果 autoSaveDelay 为 0，禁用自动保存
+  const isAutoSaveEnabled = autoSaveDelay > 0;
+  
+  const debouncedSave = isAutoSaveEnabled
+    ? debounce(saveContent, autoSaveDelay)
+    : { 
+        // 空操作，不触发自动保存
+        cancel: () => {},
+        (...args: any[]) => {} 
+      };
+  
+  return {
+    updateContent: (content: string): void => {
+      pendingContent = content;
+      if (isAutoSaveEnabled) {
+        debouncedSave(content);
+      }
+      // 如果禁用自动保存，只更新 pendingContent，不触发保存
+    },
+    // ... 其他方法保持不变
+  };
+};
+```
+
+### 3. useSettings Store 修改
+
+添加范围验证：
+
+```typescript
+// hooks/use-settings.ts
+
+export const useSettings = create<SettingsState>()(
+  persist(
+    (set) => ({
+      // 默认值
+      autoSave: true,
+      autoSaveInterval: 3, // 默认 3 秒
+      
+      // Setter with validation
+      setAutoSaveInterval: (interval: number) => {
+        // 范围限制：1-60 秒
+        const validated = Math.max(1, Math.min(60, interval));
+        set({ autoSaveInterval: validated });
+      },
+      // ...
+    }),
+    { name: "grain-settings" }
+  )
+);
+```
+
+### 4. DiagramEditorContainer 修改
+
+移除实时预览，改为保存后渲染：
+
+```typescript
+// components/diagram-editor/diagram-editor.container.fn.tsx
+
+export const DiagramEditorContainer = memo(function DiagramEditorContainer({
   nodeId,
-  contentType: "text",
-  enabled: diagramAutoSave,
-  idleTimeout: diagramAutoSaveDelay * 1000,
-  onSaveComplete: () => {
-    // 保存完成后触发渲染
-    updatePreview(code);
-  },
+  diagramType,
+  className,
+}: DiagramEditorContainerProps) {
+  // ... 现有代码
+  
+  // 获取当前 tab ID
+  const activeTabId = useEditorTabsStore((s) => s.activeTabId);
+  
+  const { updateContent, saveNow, hasUnsavedChanges, setInitialContent } =
+    useEditorSave({
+      nodeId,
+      contentType: "text",
+      tabId: activeTabId ?? undefined, // 传递 tabId
+      onSaveSuccess: () => {
+        logger.success("[DiagramEditor] 内容保存成功");
+        // 保存成功后触发预览渲染
+        updatePreview(code);
+      },
+      onSaveError: (error) => {
+        logger.error("[DiagramEditor] 保存内容失败:", error);
+        toast.error("Failed to save diagram");
+      },
+    });
+  
+  // 代码变化处理 - 移除实时预览
+  const handleCodeChange = useCallback(
+    (newCode: string) => {
+      setCode(newCode);
+      // 移除: debouncedPreview(newCode);
+      updateContent(newCode);
+    },
+    [updateContent],
+  );
+  
+  // 手动保存后也触发预览
+  const handleManualSave = useCallback(async () => {
+    if (!hasUnsavedChanges()) {
+      toast.info("No changes to save");
+      return;
+    }
+    logger.info("[DiagramEditor] 手动保存触发");
+    await saveNow();
+    // onSaveSuccess 会触发 updatePreview
+  }, [hasUnsavedChanges, saveNow]);
+  
+  // ...
 });
-
-// 移除 debouncedPreview 调用
-const handleCodeChange = useCallback((newCode: string) => {
-  setCode(newCode);
-  updateContent(newCode);
-  // 不再调用 debouncedPreview
-}, [updateContent]);
-
-// 手动保存时也触发渲染
-const handleManualSave = useCallback(async () => {
-  await saveNow();
-  updatePreview(code);
-}, [saveNow, code, updatePreview]);
 ```
 
-### 4. 保存状态指示组件
+### 5. Settings Page 修改
 
-新建组件显示保存状态：
-
-```typescript
-// components/diagram-editor/save-status-indicator.view.fn.tsx
-export interface SaveStatusIndicatorProps {
-  readonly hasUnsavedChanges: boolean;
-  readonly isSaving: boolean;
-  readonly autoSaveEnabled: boolean;
-}
-
-export const SaveStatusIndicator = memo(({ 
-  hasUnsavedChanges, 
-  isSaving, 
-  autoSaveEnabled 
-}: SaveStatusIndicatorProps) => {
-  // 显示状态：
-  // - 未保存变更：黄色圆点 + "Unsaved"
-  // - 保存中：旋转图标 + "Saving..."
-  // - 已保存：绿色勾 + "Saved"
-  // - 自动保存关闭：灰色图标 + "Auto-save off"
-});
-```
-
-### 5. 设置界面扩展
-
-在 `/settings/diagrams` 页面添加保存设置：
+调整 autoSaveInterval 输入范围：
 
 ```typescript
-// routes/settings/diagrams.tsx
-// 新增 Auto-save Section
-<div className="space-y-6">
-  <h4>Auto-save Settings</h4>
-  
-  {/* 启用/禁用自动保存 */}
-  <div className="flex items-center justify-between">
-    <Label>Enable auto-save for diagrams</Label>
-    <Switch checked={diagramAutoSave} onCheckedChange={setDiagramAutoSave} />
-  </div>
-  
-  {/* 自动保存延迟（仅在启用时显示） */}
-  {diagramAutoSave && (
-    <div className="space-y-2">
-      <Label>Auto-save delay (seconds)</Label>
-      <Slider 
-        min={10} 
-        max={300} 
-        value={diagramAutoSaveDelay}
-        onChange={setDiagramAutoSaveDelay}
-      />
-      <p className="text-xs text-muted-foreground">
-        Save after {diagramAutoSaveDelay} seconds of inactivity
-      </p>
-    </div>
-  )}
-</div>
+// routes/settings/general.tsx
+
+<Input
+  type="number"
+  value={autoSaveInterval}
+  onChange={(e) => setAutoSaveInterval(Number(e.target.value))}
+  min={1}   // 从 10 改为 1
+  max={60}  // 从 3600 改为 60
+  className="h-8 w-20 text-center"
+/>
 ```
 
 ## Data Models
 
-### DiagramState 扩展
+### UseEditorSaveOptions 扩展
 
 ```typescript
-interface DiagramState {
-  // 现有字段
-  readonly krokiServerUrl: string;
-  readonly enableKroki: boolean;
-  
-  // 新增字段
-  readonly diagramAutoSave: boolean;      // 默认: false
-  readonly diagramAutoSaveDelay: number;  // 默认: 60 (秒)
+export interface UseEditorSaveOptions {
+  readonly nodeId: string;
+  readonly contentType: ContentType;
+  /** @deprecated 使用全局设置代替，保留用于向后兼容 */
+  readonly autoSaveDelay?: number;
+  readonly initialContent?: string;
+  readonly onSaveSuccess?: () => void;
+  readonly onSaveError?: (error: Error) => void;
+  /** 标签页 ID，用于更新 isDirty 状态 */
+  readonly tabId?: string;
 }
 ```
 
-### 持久化
+### SettingsState 约束
 
-设置通过 Zustand persist 中间件自动持久化到 localStorage，key 为 `diagram-settings`。
+```typescript
+interface SettingsState {
+  autoSave: boolean;           // 默认: true
+  autoSaveInterval: number;    // 默认: 3, 范围: 1-60 秒
+  // ... 其他字段
+}
+```
+
+
 
 ## Correctness Properties
 
-### Property 1: 自动保存默认关闭
+*A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
 
-```
-INVARIANT: 新安装或重置设置后，diagramAutoSave === false
-```
+### Property 1: Settings Reading and Conversion
 
-### Property 2: 空闲检测准确性
+*For any* autoSaveInterval value in Settings_Store, the useEditorSave hook SHALL read this value and convert it to milliseconds (value * 1000) for use in the debounce delay.
 
-```
-INVARIANT: 
-  IF 用户在 idleTimeout 时间内有输入
-  THEN 不触发自动保存
-  
-INVARIANT:
-  IF 用户停止输入超过 idleTimeout 时间 AND diagramAutoSave === true
-  THEN 触发自动保存
-```
+**Validates: Requirements 1.1, 1.2, 1.5**
 
-### Property 3: 预览渲染时机
+### Property 2: Range Validation
 
-```
-INVARIANT:
-  预览渲染 ONLY 在以下情况触发:
-  1. 初始加载完成
-  2. 手动保存 (Ctrl+S) 完成
-  3. 自动保存完成
-  
-INVARIANT:
-  用户输入时 NOT 触发预览渲染
-```
+*For any* input value to setAutoSaveInterval, the Settings_Store SHALL clamp the value to the range [1, 60]. Values less than 1 become 1, values greater than 60 become 60.
 
-### Property 4: 保存延迟范围
+**Validates: Requirements 2.1, 2.2**
 
-```
-INVARIANT: 10 <= diagramAutoSaveDelay <= 300
-```
+### Property 3: Auto-save Disabled Behavior
 
-### Property 5: 手动保存始终可用
+*For any* content update when autoSave is false, the system SHALL NOT trigger automatic save. Only manual save (saveNow) SHALL persist content to the database.
 
-```
-INVARIANT:
-  无论 diagramAutoSave 设置如何，Ctrl+S 始终触发立即保存和渲染
-```
+**Validates: Requirements 1.3**
+
+### Property 4: Dirty State Synchronization
+
+*For any* content update through useEditorSave, the corresponding EditorTab.isDirty SHALL be true. *For any* successful save operation, the corresponding EditorTab.isDirty SHALL be false.
+
+**Validates: Requirements 3.1, 3.2**
+
+### Property 5: Preview Rendering Timing
+
+*For any* content change in DiagramEditor, preview rendering SHALL only be triggered after a successful save operation (manual or auto-save). Content changes without save SHALL NOT trigger preview rendering.
+
+**Validates: Requirements 4.1, 4.2**
 
 ## Error Handling
 
 ### 保存失败
 
 1. 显示 toast 错误提示
-2. 保留未保存状态指示
+2. 保留 `isDirty = true` 状态
 3. 不触发预览渲染
-4. 用户可重试手动保存
+4. 用户可重试手动保存 (Ctrl+S)
+
+### 设置读取失败
+
+1. 使用默认值（autoSave: true, autoSaveInterval: 3）
+2. 记录警告日志
+3. 不影响编辑器正常使用
 
 ### 渲染失败
 
@@ -263,76 +341,91 @@ INVARIANT:
 2. 提供重试按钮
 3. 不影响保存状态
 
-## Performance Considerations
-
-### 优化点
-
-1. **减少渲染次数**: 从每次输入渲染改为仅保存后渲染
-2. **减少网络请求**: PlantUML 渲染请求大幅减少
-3. **减少 CPU 使用**: Mermaid 客户端渲染次数减少
-
-### 预期改进
-
-- 输入延迟: 消除渲染导致的卡顿
-- 网络流量: PlantUML 请求减少 90%+
-- 电池消耗: 减少不必要的计算
-
-## Migration Strategy
-
-### 向后兼容
-
-1. 新增字段使用默认值，不影响现有用户
-2. 现有 `useEditorSave` hook 保持不变，其他编辑器不受影响
-3. 渐进式迁移：先实现功能，后续可扩展到其他编辑器
-
-### 数据迁移
-
-无需数据迁移，新字段通过 Zustand persist 自动处理默认值。
-
 ## Testing Strategy
 
 ### 单元测试
 
-1. `useIdleSave` hook 测试
-   - 空闲检测逻辑
-   - 保存触发时机
-   - 回调调用
+1. **useSettings Store 测试**
+   - 测试默认值（autoSave: true, autoSaveInterval: 3）
+   - 测试 setAutoSaveInterval 范围限制（1-60）
+   - 测试设置持久化
 
-2. `DiagramStore` 测试
-   - 新增 actions 测试
-   - 默认值测试
-   - 范围限制测试
+2. **useEditorSave Hook 测试**
+   - 测试读取 Settings 配置
+   - 测试 autoSave=false 时禁用自动保存
+   - 测试 tabId 参数更新 isDirty 状态
+   - 测试 onSaveSuccess 回调调用
+
+3. **EditorSaveService 测试**
+   - 测试 autoSaveDelay=0 时禁用自动保存
+   - 测试防抖逻辑
+
+### 属性测试
+
+使用 fast-check 进行属性测试：
+
+1. **Property 2: Range Validation**
+   ```typescript
+   // Feature: diagram-editor-save-optimization, Property 2: Range Validation
+   fc.assert(
+     fc.property(fc.integer(), (input) => {
+       setAutoSaveInterval(input);
+       const result = useSettings.getState().autoSaveInterval;
+       return result >= 1 && result <= 60;
+     }),
+     { numRuns: 100 }
+   );
+   ```
+
+2. **Property 3: Auto-save Disabled Behavior**
+   ```typescript
+   // Feature: diagram-editor-save-optimization, Property 3: Auto-save Disabled
+   fc.assert(
+     fc.property(fc.string(), (content) => {
+       // Setup: autoSave = false
+       useSettings.setState({ autoSave: false });
+       const { updateContent } = useEditorSave({ nodeId: 'test', contentType: 'text' });
+       
+       updateContent(content);
+       // Advance timers
+       vi.advanceTimersByTime(10000);
+       
+       // Verify: no save was triggered
+       return mockSave.mock.calls.length === 0;
+     }),
+     { numRuns: 100 }
+   );
+   ```
 
 ### 集成测试
 
-1. `DiagramEditorContainer` 测试
-   - 保存后渲染触发
-   - 输入时不渲染
-   - 手动保存流程
+1. **DiagramEditorContainer 测试**
+   - 测试输入时不触发预览渲染
+   - 测试保存后触发预览渲染
+   - 测试手动保存 (Ctrl+S) 流程
 
 ### E2E 测试
 
-1. 设置页面测试
-   - 开关自动保存
-   - 调整延迟时间
-   - 设置持久化
+1. **设置页面测试**
+   - 测试修改 autoSaveInterval 范围
+   - 测试开关 autoSave
+   - 测试设置持久化
 
-## File Structure
+## File Changes
 
 ```
 apps/desktop/src/
-├── types/diagram/
-│   └── diagram.interface.ts          # 修改：添加新字段
-├── stores/
-│   └── diagram.store.ts              # 修改：添加新 actions
 ├── hooks/
-│   ├── use-editor-save.ts            # 保持不变
-│   └── use-idle-save.ts              # 新增：空闲检测保存 hook
+│   └── use-editor-save.ts              # 修改：读取 useSettings，添加 tabId 参数
+│   └── use-settings.ts                 # 修改：添加范围验证
+├── fn/save/
+│   └── editor-save.service.ts          # 修改：支持 autoSaveDelay=0 禁用自动保存
 ├── components/diagram-editor/
-│   ├── diagram-editor.container.fn.tsx  # 修改：使用新保存策略
-│   ├── diagram-editor.view.fn.tsx       # 修改：添加保存状态显示
-│   ├── diagram-editor.types.ts          # 修改：添加新 props
-│   └── save-status-indicator.view.fn.tsx # 新增：保存状态指示组件
+│   └── diagram-editor.container.fn.tsx # 修改：移除实时预览，使用 onSaveSuccess
 └── routes/settings/
-    └── diagrams.tsx                  # 修改：添加保存设置 UI
+    └── general.tsx                     # 修改：调整 input min/max 范围
 ```
+
+## Migration Notes
+
+无需数据迁移。Settings Store 使用 Zustand persist，新字段会自动使用默认值。
