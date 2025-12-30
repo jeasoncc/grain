@@ -4,10 +4,10 @@
 
 - [x] 在 `apps/desktop/src/components/code-editor/` 创建 `monaco-theme.fn.test.ts`
 - [x] 测试 `getMonacoThemeName` 函数
-- [ ] 测试 `generateMonacoTheme` 函数（验证颜色映射）
-- [ ] 测试 `registerMonacoTheme` 函数（验证缓存机制）
-- [ ] 测试 `clearRegisteredThemes` 函数
-- [ ] 测试 `isThemeRegistered` 函数
+- [x] 测试 `generateMonacoTheme` 函数（验证颜色映射）
+- [x] 测试 `registerMonacoTheme` 函数（验证缓存机制）
+- [x] 测试 `clearRegisteredThemes` 函数
+- [x] 测试 `isThemeRegistered` 函数
 
 **Requirements:** 4.1, 4.2
 
@@ -18,9 +18,9 @@
 
 ## Task 2: 更新 CodeEditorView 类型定义
 
-- [ ] 修改 `code-editor.types.ts` 中的 `CodeEditorViewProps`
-- [ ] 将 `theme` 属性从 `"light" | "dark"` 改为 `Theme | undefined`
-- [ ] 添加 `Theme` 类型导入
+- [x] 修改 `code-editor.types.ts` 中的 `CodeEditorViewProps`
+- [x] 将 `theme` 属性从 `"light" | "dark"` 改为 `Theme | undefined`
+- [x] 添加 `Theme` 类型导入
 
 **Requirements:** 1.1, 1.2, 3.1
 
@@ -126,3 +126,4 @@
 
 **Files:**
 - N/A (verification only)
+    

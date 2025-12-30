@@ -4,6 +4,7 @@
  * 基于 Monaco Editor 的代码编辑器组件类型
  */
 import type { editor } from "monaco-editor";
+import type { Theme } from "@/lib/themes";
 
 /**
  * 支持的代码语言
@@ -40,8 +41,8 @@ export interface CodeEditorViewProps {
 	readonly value: string;
 	/** 代码语言 */
 	readonly language: CodeLanguage;
-	/** 主题 */
-	readonly theme: "light" | "dark";
+	/** 主题（完整 Theme 对象，用于 Monaco 主题同步） */
+	readonly theme?: Theme;
 	/** 内容变化回调 */
 	readonly onChange: (value: string) => void;
 	/** 保存回调 (Ctrl+S) */
