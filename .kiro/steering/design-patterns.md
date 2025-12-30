@@ -213,6 +213,169 @@ src/actions/
 │   └── index.ts
 ```
 
+## 统一保存架构
+
+### 核心原则
+
+**不管是自动保存还是手动保存，都调用同一个保存函数。**
+
+手动保存是核心功能，自动保存是辅助功能。所有编辑器（Lexical、Excalidraw、Diagram、Code）共用同一套保存逻辑。
+
+### 架构图
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        触发保存的方式                            │
+│                                                                  │
+│   ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│   │  Ctrl+S      │    │  自动保存     │    │  组件卸载    │      │
+│   │  (手动)      │    │  (防抖)      │    │  (清理)      │      │
+│   └──────┬───────┘    └──────┬───────┘    └──────┬───────┘      │
+│          │                   │                   │               │
+│          └───────────────────┼───────────────────┘               │
+│                              │                                   │
+│                              ▼                                   │
+│                    ┌─────────────────┐                          │
+│                    │   saveContent   │  ← 核心保存函数           │
+│                    │   (统一入口)    │                          │
+│                    └────────┬────────┘                          │
+│                             │                                    │
+│              ┌──────────────┼──────────────┐                    │
+│              ▼              ▼              ▼                    │
+│        ┌──────────┐  ┌──────────┐  ┌──────────┐                │
+│        │ 更新 DB  │  │ 更新 Tab │  │ 更新 UI  │                │
+│        │          │  │ isDirty  │  │ SaveStore│                │
+│        └──────────┘  └──────────┘  └──────────┘                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 数据流
+
+```
+Editor onChange
+       │
+       ▼
+┌─────────────────┐
+│  updateContent  │ ← 更新待保存内容 + 标记 isDirty
+└────────┬────────┘
+         │
+         ├──────────────────────────────────┐
+         │                                  │
+         ▼                                  ▼
+┌─────────────────┐                ┌─────────────────┐
+│  debouncedSave  │                │    saveNow      │
+│  (自动保存)     │                │  (Ctrl+S)       │
+└────────┬────────┘                └────────┬────────┘
+         │                                  │
+         └──────────────┬───────────────────┘
+                        │
+                        ▼
+              ┌─────────────────┐
+              │   saveContent   │ ← 核心保存函数（唯一入口）
+              └────────┬────────┘
+                       │
+         ┌─────────────┼─────────────┐
+         │             │             │
+         ▼             ▼             ▼
+   ┌──────────┐  ┌──────────┐  ┌──────────┐
+   │ DB 更新  │  │ Tab 状态 │  │ UI 状态  │
+   │          │  │ isDirty  │  │ SaveStore│
+   └──────────┘  └──────────┘  └──────────┘
+```
+
+### 实现结构
+
+```typescript
+// fn/save/unified-save.service.ts - 核心保存服务
+interface UnifiedSaveConfig {
+  nodeId: string;
+  contentType: ContentType;
+  autoSaveDelay?: number;      // 0 = 禁用自动保存
+  tabId?: string;              // 用于更新 isDirty
+  setTabDirty?: (tabId: string, isDirty: boolean) => void;
+  onSaving?: () => void;
+  onSaved?: () => void;
+  onError?: (error: Error) => void;
+}
+
+const createUnifiedSaveService = (config: UnifiedSaveConfig) => {
+  // 核心保存函数 - 所有保存操作的唯一入口
+  const saveContent = async (content: string): Promise<boolean> => {
+    // 1. 更新 DB
+    // 2. 更新 Tab.isDirty = false
+    // 3. 通知 SaveStore
+  };
+
+  return {
+    updateContent,      // 触发防抖自动保存
+    saveNow,           // 立即保存（Ctrl+S）
+    hasUnsavedChanges,
+    setInitialContent,
+    dispose,
+  };
+};
+```
+
+```typescript
+// hooks/use-unified-save.ts - React Hook
+const useUnifiedSave = (options: UseUnifiedSaveOptions) => {
+  // 1. 读取全局设置（autoSave, autoSaveInterval）
+  // 2. 创建 UnifiedSaveService 实例
+  // 3. 注册 Ctrl+S 快捷键
+  // 4. 组件卸载时自动保存
+  
+  return {
+    updateContent,
+    saveNow,
+    hasUnsavedChanges,
+    setInitialContent,
+  };
+};
+```
+
+### 使用示例
+
+```typescript
+// 所有编辑器统一使用方式
+function MyEditor({ nodeId, tabId }: Props) {
+  const { updateContent, saveNow, hasUnsavedChanges } = useUnifiedSave({
+    nodeId,
+    tabId,
+    contentType: "lexical", // 或 "excalidraw", "text"
+    onSaveSuccess: () => console.log("保存成功"),
+  });
+
+  const handleChange = (newContent: string) => {
+    updateContent(newContent); // 触发防抖自动保存
+  };
+
+  // Ctrl+S 会自动调用 saveNow()
+
+  return <Editor onChange={handleChange} />;
+}
+```
+
+### 关键设计决策
+
+| 决策 | 原因 |
+|------|------|
+| 单一保存函数 | 确保所有保存操作产生相同的副作用 |
+| Hook 内注册快捷键 | 避免多个 Hook 处理同一快捷键 |
+| Tab.isDirty 在保存函数内更新 | 确保状态同步，避免遗漏 |
+| 自动保存可禁用 | 用户可能只想手动保存 |
+
+### 避免的反模式
+
+```typescript
+// ❌ 错误：两套独立的保存逻辑
+useEditorSave({ ... });  // 自动保存
+useManualSave({ ... });  // 手动保存（Ctrl+S）
+// 问题：两者使用不同的保存函数，状态不同步
+
+// ✅ 正确：统一的保存逻辑
+useUnifiedSave({ ... });  // 自动保存 + 手动保存都在这里
+```
+
 ---
 
 **使用场景**：当发现代码重复或相似模式时，参考此文件进行抽象设计。
