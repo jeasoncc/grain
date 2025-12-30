@@ -115,7 +115,7 @@ const draculaTheme: Theme = {
 
 /**
  * 创建默认的 CodeEditorViewProps
- * 
+ *
  * @param overrides - 覆盖默认值的属性
  * @returns CodeEditorViewProps
  */

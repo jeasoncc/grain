@@ -24,7 +24,7 @@ import { DiagramEditorView } from "./diagram-editor.view.fn";
 
 // Mock CodeEditorView
 vi.mock("@/components/code-editor", () => ({
-	CodeEditorView: vi.fn(({ value, language, theme, onChange, onSave }) => {
+	CodeEditorView: vi.fn(({ value, language, theme }) => {
 		const React = require("react");
 		return React.createElement("div", {
 			"data-testid": "code-editor-view",
@@ -37,7 +37,7 @@ vi.mock("@/components/code-editor", () => ({
 
 // Mock DiagramPreviewView
 vi.mock("./diagram-preview.view.fn", () => ({
-	DiagramPreviewView: vi.fn(({ previewSvg, isLoading, error, onRetry, className }) => {
+	DiagramPreviewView: vi.fn(({ previewSvg, isLoading, error, className }) => {
 		const React = require("react");
 		return React.createElement("div", {
 			"data-testid": "diagram-preview-view",
@@ -51,36 +51,40 @@ vi.mock("./diagram-preview.view.fn", () => ({
 
 // Mock react-resizable-panels
 vi.mock("react-resizable-panels", () => ({
-	PanelGroup: vi.fn(({ children, direction, autoSaveId, className, ...props }) => {
-		const React = require("react");
-		return React.createElement(
-			"div",
-			{
-				"data-testid": "panel-group",
-				"data-direction": direction,
-				"data-auto-save-id": autoSaveId,
-				className,
-				...props,
-			},
-			children,
-		);
-	}),
-	Panel: vi.fn(({ children, id, order, defaultSize, minSize, maxSize, className }) => {
-		const React = require("react");
-		return React.createElement(
-			"div",
-			{
-				"data-testid": `panel-${id}`,
-				"data-panel-id": id,
-				"data-order": order,
-				"data-default-size": defaultSize,
-				"data-min-size": minSize,
-				"data-max-size": maxSize,
-				className,
-			},
-			children,
-		);
-	}),
+	PanelGroup: vi.fn(
+		({ children, direction, autoSaveId, className, ...props }) => {
+			const React = require("react");
+			return React.createElement(
+				"div",
+				{
+					"data-testid": "panel-group",
+					"data-direction": direction,
+					"data-auto-save-id": autoSaveId,
+					className,
+					...props,
+				},
+				children,
+			);
+		},
+	),
+	Panel: vi.fn(
+		({ children, id, order, defaultSize, minSize, maxSize, className }) => {
+			const React = require("react");
+			return React.createElement(
+				"div",
+				{
+					"data-testid": `panel-${id}`,
+					"data-panel-id": id,
+					"data-order": order,
+					"data-default-size": defaultSize,
+					"data-min-size": minSize,
+					"data-max-size": maxSize,
+					className,
+				},
+				children,
+			);
+		},
+	),
 	PanelResizeHandle: vi.fn(({ className, ...props }) => {
 		const React = require("react");
 		return React.createElement("div", {
@@ -198,7 +202,10 @@ describe("DiagramEditorView", () => {
 			render(<DiagramEditorView {...props} />);
 
 			const panelGroup = screen.getByTestId("diagram-editor");
-			expect(panelGroup).toHaveAttribute("data-auto-save-id", "diagram-editor-layout");
+			expect(panelGroup).toHaveAttribute(
+				"data-auto-save-id",
+				"diagram-editor-layout",
+			);
 		});
 
 		it("should render code-editor panel", () => {
@@ -329,14 +336,18 @@ describe("DiagramEditorView", () => {
 			expect(screen.queryByTestId("panel-group")).not.toBeInTheDocument();
 
 			// 应该显示配置提示
-			expect(screen.getByText("Kroki Server Not Configured")).toBeInTheDocument();
+			expect(
+				screen.getByText("Kroki Server Not Configured"),
+			).toBeInTheDocument();
 		});
 
 		it("should show Configure Kroki button when not configured", () => {
 			const props = createDefaultProps({ isKrokiConfigured: false });
 			render(<DiagramEditorView {...props} />);
 
-			expect(screen.getByRole("button", { name: /Configure Kroki/i })).toBeInTheDocument();
+			expect(
+				screen.getByRole("button", { name: /Configure Kroki/i }),
+			).toBeInTheDocument();
 		});
 
 		it("should call onOpenSettings when Configure Kroki button is clicked", async () => {
