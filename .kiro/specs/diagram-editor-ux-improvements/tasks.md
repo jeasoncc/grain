@@ -60,11 +60,11 @@
 ## Task 5: 更新 DiagramEditorView 实现可拖动面板
 
 - [x] 导入 `Panel`, `PanelGroup`, `PanelResizeHandle` 从 `react-resizable-panels`
-- [-] 将现有 flex 布局替换为 `PanelGroup` 布局
-- [ ] 设置 `autoSaveId="diagram-editor-layout"` 实现尺寸持久化
-- [ ] 设置代码编辑器面板 `minSize={20}` `maxSize={80}`
-- [ ] 设置预览面板 `minSize={20}` `maxSize={80}`
-- [ ] 添加 `PanelResizeHandle` 并设置样式（hover 反馈）
+- [x] 将现有 flex 布局替换为 `PanelGroup` 布局
+- [x] 设置 `autoSaveId="diagram-editor-layout"` 实现尺寸持久化
+- [x] 设置代码编辑器面板 `minSize={20}` `maxSize={80}`
+- [x] 设置预览面板 `minSize={20}` `maxSize={80}`
+- [-] 添加 `PanelResizeHandle` 并设置样式（hover 反馈）
 
 **Requirements:** 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7
 

@@ -107,7 +107,10 @@ export const DiagramEditorView = memo(function DiagramEditorView({
 			</Panel>
 
 			{/* 可拖动调整大小的分隔条 */}
-			<PanelResizeHandle className="w-1.5 bg-border/50 hover:bg-primary/50 active:bg-primary transition-colors cursor-col-resize" />
+			<PanelResizeHandle
+				className="w-1 bg-border/50 transition-all cursor-col-resize hover:w-1.5 hover:bg-primary/50 data-[resize-handle-active]:w-1.5 data-[resize-handle-active]:bg-primary/70"
+				data-testid="diagram-editor-resize-handle"
+			/>
 
 			{/* 预览区 - 使用 DiagramPreviewView 组件 */}
 			<Panel
