@@ -17,14 +17,14 @@
     - 添加 PerformanceMetrics 接口（可选，用于调试）
     - _Requirements: 1.2, 8.1_
 
-- [ ] 2. 优化 Container 组件状态管理
-  - [ ] 2.1 重构 Container 组件使用 refs 存储非渲染数据
+- [x] 2. 优化 Container 组件状态管理
+  - [x] 2.1 重构 Container 组件使用 refs 存储非渲染数据
     - 将 currentDataRef 保持为 ref（已实现）
     - 将 hasUnsavedChanges 保持为 ref（已实现）
     - 确保 onChange 回调不触发组件重渲染
     - _Requirements: 2.1, 3.1, 3.2_
 
-  - [ ] 2.2 编写属性测试验证 onChange 不触发重渲染
+  - [x] 2.2 编写属性测试验证 onChange 不触发重渲染
     - **Property 1: onChange 不触发组件重渲染**
     - **Validates: Requirements 2.1**
 

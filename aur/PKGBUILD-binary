@@ -2,7 +2,7 @@
 # Local test version - uses pre-built binary
 
 pkgname=grain
-pkgver=0.1.205
+pkgver=0.1.206
 pkgrel=1
 pkgdesc="A minimalist writing sanctuary for long-form content"
 arch=('x86_64')

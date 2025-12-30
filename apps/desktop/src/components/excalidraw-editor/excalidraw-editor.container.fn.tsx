@@ -4,10 +4,15 @@
  * 容器组件：连接 hooks/stores，处理数据加载和保存逻辑
  * 支持 Ctrl+S 快捷键立即保存
  *
- * @requirements 5.2, 5.4, 7.4
+ * 性能优化：
+ * - 使用 refs 存储非渲染数据（currentDataRef, hasUnsavedChanges）
+ * - onChange 回调不触发组件重渲染
+ * - 状态更新使用节流控制
+ *
+ * @requirements 2.1, 3.1, 3.2, 5.2, 5.4, 7.4
  */
 
-import { debounce } from "es-toolkit";
+import { debounce, throttle } from "es-toolkit";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { updateContentByNodeId } from "@/db/content.db.fn";
@@ -16,14 +21,12 @@ import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
 import { useSaveStore } from "@/stores/save.store";
+import { EXCALIDRAW_PERFORMANCE_CONFIG } from "./excalidraw-editor.config";
 import type {
 	ContainerSize,
 	ExcalidrawEditorContainerProps,
 } from "./excalidraw-editor.types";
 import { ExcalidrawEditorView } from "./excalidraw-editor.view.fn";
-
-/** 自动保存延迟时间（毫秒） */
-const AUTO_SAVE_DELAY = 2000;
 
 /** Excalidraw 初始数据类型 */
 interface ExcalidrawInitialData {
@@ -216,10 +219,31 @@ export const ExcalidrawEditorContainer = memo(
 		);
 
 		const debouncedSave = useMemo(
-			() => debounce(saveContent, AUTO_SAVE_DELAY),
+			() =>
+				debounce(saveContent, EXCALIDRAW_PERFORMANCE_CONFIG.AUTO_SAVE_DELAY),
 			[saveContent],
 		);
 
+		// 节流的状态更新函数，避免频繁更新 store
+		// 使用 useMemo 确保节流函数在组件生命周期内保持稳定
+		const throttledMarkAsUnsaved = useMemo(
+			() =>
+				throttle(
+					markAsUnsaved,
+					EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE,
+				),
+			[markAsUnsaved],
+		);
+
+		/**
+		 * onChange 回调处理器
+		 *
+		 * 性能优化：
+		 * - 使用 refs 存储数据，不触发组件重渲染
+		 * - 使用节流的 markAsUnsaved，减少 store 更新频率
+		 *
+		 * @requirements 2.1, 3.1, 3.2
+		 */
 		const handleChange = useCallback(
 			(
 				elements: readonly unknown[],
@@ -227,12 +251,17 @@ export const ExcalidrawEditorContainer = memo(
 				files: Record<string, unknown>,
 			) => {
 				// 保存当前数据引用（用于手动保存和卸载时保存）
+				// 使用 ref 不触发重渲染
 				currentDataRef.current = { elements, appState, files };
 				hasUnsavedChanges.current = true;
-				markAsUnsaved();
+
+				// 使用节流的状态更新，减少 store 更新频率
+				throttledMarkAsUnsaved();
+
+				// 防抖保存
 				debouncedSave(elements, appState, files);
 			},
-			[debouncedSave, markAsUnsaved],
+			[debouncedSave, throttledMarkAsUnsaved],
 		);
 
 		/**
@@ -257,8 +286,9 @@ export const ExcalidrawEditorContainer = memo(
 		// 清理：组件卸载时保存未保存的更改
 		useEffect(() => {
 			return () => {
-				// 取消防抖
+				// 取消防抖和节流
 				debouncedSave.cancel();
+				throttledMarkAsUnsaved.cancel();
 
 				// 组件卸载时，如果有未保存的更改，立即保存
 				const data = currentDataRef.current;
@@ -267,7 +297,7 @@ export const ExcalidrawEditorContainer = memo(
 					saveContent(data.elements, data.appState, data.files);
 				}
 			};
-		}, [debouncedSave, saveContent]);
+		}, [debouncedSave, throttledMarkAsUnsaved, saveContent]);
 
 		// 加载中
 		if (content === undefined) {
