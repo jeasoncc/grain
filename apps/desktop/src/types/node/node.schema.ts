@@ -27,6 +27,7 @@ import { ISODateTimeSchema, UUIDSchema } from "@/types/shared";
  * - drawing: Excalidraw 绘图文件
  * - plantuml: PlantUML 图表
  * - mermaid: Mermaid 图表
+ * - code: 代码文件，使用 Monaco 编辑器
  */
 export const NodeTypeSchema = z.enum([
 	"folder",
@@ -39,6 +40,7 @@ export const NodeTypeSchema = z.enum([
 	"drawing",
 	"plantuml",
 	"mermaid",
+	"code",
 ]);
 
 /**
