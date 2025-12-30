@@ -2,7 +2,7 @@
 
 ## Task 1: 创建 monaco-theme.fn.test.ts 测试文件
 
-- [ ] 在 `apps/desktop/src/components/code-editor/` 创建 `monaco-theme.fn.test.ts`
+- [-] 在 `apps/desktop/src/components/code-editor/` 创建 `monaco-theme.fn.test.ts`
 - [ ] 测试 `getMonacoThemeName` 函数
 - [ ] 测试 `generateMonacoTheme` 函数（验证颜色映射）
 - [ ] 测试 `registerMonacoTheme` 函数（验证缓存机制）
