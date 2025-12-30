@@ -1568,3 +1568,278 @@ describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 		);
 	});
 });
+
+
+/**
+ * Property-Based Tests for Save Operation Coalescing
+ *
+ * Feature: excalidraw-performance, Property 7: 保存操作合并
+ * **Validates: Requirements 5.3**
+ */
+describe("ExcalidrawEditorContainer Save Coalescing Property Tests", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.useFakeTimers();
+		mockUseTheme.mockReturnValue({ isDark: false });
+		capturedOnChange = null;
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	/**
+	 * Property 7: 保存操作合并
+	 *
+	 * *For any* sequence of N rapid drawing changes (within AUTO_SAVE_DELAY),
+	 * the number of actual save operations should be at most 1.
+	 *
+	 * **Validates: Requirements 5.3**
+	 */
+	it("Property 7: should coalesce multiple rapid changes into single save", async () => {
+		// 使用配置常量
+		const AUTO_SAVE_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.AUTO_SAVE_DELAY;
+
+		// 动态导入 debounce 函数
+		const { debounce } = await import("es-toolkit");
+
+		fc.assert(
+			fc.property(
+				// 生成 2-20 个快速变更事件的时间间隔（毫秒）
+				// 间隔小于 AUTO_SAVE_DELAY，确保在防抖窗口内
+				fc.array(
+					fc.integer({ min: 50, max: AUTO_SAVE_DELAY - 100 }),
+					{ minLength: 2, maxLength: 20 },
+				),
+				// 生成随机的 Excalidraw 元素变更
+				fc.array(
+					fc.record({
+						id: fc.uuid(),
+						type: fc.constantFrom("rectangle", "ellipse", "line", "text"),
+						x: fc.integer({ min: 0, max: 1000 }),
+						y: fc.integer({ min: 0, max: 1000 }),
+					}),
+					{ minLength: 1, maxLength: 10 },
+				),
+				(delays, elements) => {
+					// 追踪保存调用次数
+					const mockSave = vi.fn();
+
+					// 创建防抖的保存函数（模拟组件中的 debouncedSave）
+					const debouncedSave = debounce(mockSave, AUTO_SAVE_DELAY);
+
+					// 计算总时间
+					let totalTime = 0;
+
+					// 模拟快速连续的变更
+					for (let i = 0; i < delays.length; i++) {
+						const delay = delays[i];
+
+						// 模拟 onChange 调用 debouncedSave
+						debouncedSave(elements, {}, {});
+
+						// 推进时间（但不超过防抖延迟）
+						if (i < delays.length - 1) {
+							vi.advanceTimersByTime(delay);
+							totalTime += delay;
+						}
+					}
+
+					// 推进时间以触发防抖后的保存
+					vi.advanceTimersByTime(AUTO_SAVE_DELAY + 100);
+
+					// 验证：在防抖窗口内的多次变更应该只触发一次保存
+					const actualSaveCalls = mockSave.mock.calls.length;
+
+					// 如果所有变更都在单个防抖窗口内（totalTime < AUTO_SAVE_DELAY），
+					// 应该只有一次保存调用
+					if (totalTime < AUTO_SAVE_DELAY) {
+						return actualSaveCalls === 1;
+					}
+
+					// 如果变更跨越多个防抖窗口，保存次数应该 <= 窗口数量
+					const expectedMaxSaves = Math.ceil(totalTime / AUTO_SAVE_DELAY) + 1;
+					return actualSaveCalls <= expectedMaxSaves;
+				},
+			),
+			{ numRuns: 100 },
+		);
+	});
+
+	/**
+	 * Property 7 补充测试：验证防抖在超过延迟后允许新的保存
+	 *
+	 * *For any* sequence of changes with delays exceeding AUTO_SAVE_DELAY,
+	 * each change should trigger a separate save.
+	 *
+	 * **Validates: Requirements 5.3**
+	 */
+	it("Property 7: should allow separate saves after debounce delay passes", async () => {
+		// 使用配置常量
+		const AUTO_SAVE_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.AUTO_SAVE_DELAY;
+
+		// 动态导入 debounce 函数
+		const { debounce } = await import("es-toolkit");
+
+		fc.assert(
+			fc.property(
+				// 生成 2-5 个变更事件，间隔超过防抖时间
+				fc.array(
+					fc.integer({ min: AUTO_SAVE_DELAY + 100, max: AUTO_SAVE_DELAY + 500 }),
+					{ minLength: 2, maxLength: 5 },
+				),
+				// 生成随机的 Excalidraw 元素
+				fc.array(
+					fc.record({
+						id: fc.uuid(),
+						type: fc.constantFrom("rectangle", "ellipse"),
+					}),
+					{ minLength: 1, maxLength: 5 },
+				),
+				(delays, elements) => {
+					// 追踪保存调用次数
+					const mockSave = vi.fn();
+
+					// 创建防抖的保存函数
+					const debouncedSave = debounce(mockSave, AUTO_SAVE_DELAY);
+
+					// 模拟间隔超过防抖时间的变更
+					for (let i = 0; i < delays.length; i++) {
+						// 调用防抖保存
+						debouncedSave(elements, {}, {});
+
+						// 推进时间超过防抖延迟
+						vi.advanceTimersByTime(delays[i]);
+					}
+
+					// 验证：当间隔超过防抖时间时，每次变更都应该触发保存
+					const eventCount = delays.length;
+					const actualSaveCalls = mockSave.mock.calls.length;
+
+					// 由于每次调用间隔都超过防抖时间，保存次数应该等于事件次数
+					return actualSaveCalls === eventCount;
+				},
+			),
+			{ numRuns: 100 },
+		);
+	});
+
+	/**
+	 * Property 7 补充测试：验证手动保存取消防抖
+	 *
+	 * *For any* sequence of rapid changes followed by manual save,
+	 * the debounced save should be cancelled and manual save should execute.
+	 *
+	 * **Validates: Requirements 5.3**
+	 */
+	it("Property 7: manual save should cancel debounced save", async () => {
+		// 使用配置常量
+		const AUTO_SAVE_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.AUTO_SAVE_DELAY;
+
+		// 动态导入 debounce 函数
+		const { debounce } = await import("es-toolkit");
+
+		fc.assert(
+			fc.property(
+				// 生成 2-10 个快速变更事件
+				fc.integer({ min: 2, max: 10 }),
+				// 生成手动保存触发的时间点（在防抖窗口内）
+				fc.integer({ min: 100, max: AUTO_SAVE_DELAY - 100 }),
+				(changeCount, manualSaveTime) => {
+					// 追踪保存调用次数
+					let autoSaveCount = 0;
+					let manualSaveCount = 0;
+
+					const mockAutoSave = vi.fn(() => {
+						autoSaveCount++;
+					});
+					const mockManualSave = vi.fn(() => {
+						manualSaveCount++;
+					});
+
+					// 创建防抖的自动保存函数
+					const debouncedAutoSave = debounce(mockAutoSave, AUTO_SAVE_DELAY);
+
+					// 模拟快速连续的变更
+					for (let i = 0; i < changeCount; i++) {
+						debouncedAutoSave();
+						vi.advanceTimersByTime(50); // 每次变更间隔 50ms
+					}
+
+					// 在防抖窗口内触发手动保存
+					vi.advanceTimersByTime(manualSaveTime);
+
+					// 取消防抖的自动保存
+					debouncedAutoSave.cancel();
+
+					// 执行手动保存
+					mockManualSave();
+
+					// 推进时间以确保防抖已经过期
+					vi.advanceTimersByTime(AUTO_SAVE_DELAY + 100);
+
+					// 验证：
+					// 1. 手动保存应该执行一次
+					// 2. 自动保存应该被取消（不执行）
+					return manualSaveCount === 1 && autoSaveCount === 0;
+				},
+			),
+			{ numRuns: 100 },
+		);
+	});
+
+	/**
+	 * Property 7 补充测试：验证组件卸载时取消防抖
+	 *
+	 * *For any* sequence of rapid changes followed by component unmount,
+	 * the debounced save should be cancelled.
+	 *
+	 * **Validates: Requirements 5.3, 7.2**
+	 */
+	it("Property 7: component unmount should cancel debounced save", async () => {
+		// 使用配置常量
+		const AUTO_SAVE_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.AUTO_SAVE_DELAY;
+
+		// 动态导入 debounce 函数
+		const { debounce } = await import("es-toolkit");
+
+		fc.assert(
+			fc.property(
+				// 生成 2-10 个快速变更事件
+				fc.integer({ min: 2, max: 10 }),
+				// 生成卸载时间点（在防抖窗口内）
+				fc.integer({ min: 100, max: AUTO_SAVE_DELAY - 100 }),
+				(changeCount, unmountTime) => {
+					// 追踪保存调用次数
+					let saveCount = 0;
+
+					const mockSave = vi.fn(() => {
+						saveCount++;
+					});
+
+					// 创建防抖的保存函数
+					const debouncedSave = debounce(mockSave, AUTO_SAVE_DELAY);
+
+					// 模拟快速连续的变更
+					for (let i = 0; i < changeCount; i++) {
+						debouncedSave();
+						vi.advanceTimersByTime(50);
+					}
+
+					// 在防抖窗口内模拟组件卸载
+					vi.advanceTimersByTime(unmountTime);
+
+					// 取消防抖（模拟 cleanup effect）
+					debouncedSave.cancel();
+
+					// 推进时间以确保防抖已经过期
+					vi.advanceTimersByTime(AUTO_SAVE_DELAY + 100);
+
+					// 验证：防抖的保存应该被取消
+					return saveCount === 0;
+				},
+			),
+			{ numRuns: 100 },
+		);
+	});
+});

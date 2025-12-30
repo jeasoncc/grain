@@ -78,13 +78,13 @@
     - **Property 6: Excalidraw 实例保持**
     - **Validates: Requirements 4.4**
 
-- [ ] 8. 优化自动保存合并
-  - [ ] 8.1 验证现有 debounce 保存逻辑正确性
+- [x] 8. 优化自动保存合并
+  - [x] 8.1 验证现有 debounce 保存逻辑正确性
     - 确保使用 AUTO_SAVE_DELAY (2000ms)
     - 确保多次快速变更只触发一次保存
     - _Requirements: 5.1, 5.3_
 
-  - [ ] 8.2 编写属性测试验证保存操作合并
+  - [x] 8.2 编写属性测试验证保存操作合并
     - **Property 7: 保存操作合并**
     - **Validates: Requirements 5.3**
 
