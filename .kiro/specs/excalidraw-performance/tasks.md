@@ -28,8 +28,8 @@
     - **Property 1: onChange 不触发组件重渲染**
     - **Validates: Requirements 2.1**
 
-- [ ] 3. 优化 ResizeObserver 处理
-  - [ ] 3.1 重构 ResizeObserver 逻辑使用配置常量
+- [-] 3. 优化 ResizeObserver 处理
+  - [-] 3.1 重构 ResizeObserver 逻辑使用配置常量
     - 使用 RESIZE_DEBOUNCE_DELAY (200ms) 替代硬编码的 150ms
     - 使用 SIZE_CHANGE_THRESHOLD (10px) 替代硬编码的 10
     - 使用 MIN_VALID_SIZE (200px) 替代硬编码的 200

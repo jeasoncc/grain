@@ -125,9 +125,17 @@ export const ExcalidrawEditorContainer = memo(
 		}, []);
 
 		// 监听容器尺寸 - 使用防抖确保尺寸稳定
+		// @requirements 4.1, 4.2
 		useEffect(() => {
 			const container = containerRef.current;
 			if (!container) return;
+
+			const {
+				RESIZE_DEBOUNCE_DELAY,
+				SIZE_CHANGE_THRESHOLD,
+				MIN_VALID_SIZE,
+				INITIAL_LAYOUT_DELAY,
+			} = EXCALIDRAW_PERFORMANCE_CONFIG;
 
 			let resizeTimeout: NodeJS.Timeout | null = null;
 			let lastWidth = 0;
@@ -139,9 +147,9 @@ export const ExcalidrawEditorContainer = memo(
 				const height = Math.floor(rect.height);
 
 				// 只有当尺寸有效且变化超过阈值时才更新
-				if (width > 200 && height > 200) {
-					const widthChanged = Math.abs(width - lastWidth) > 10;
-					const heightChanged = Math.abs(height - lastHeight) > 10;
+				if (width > MIN_VALID_SIZE && height > MIN_VALID_SIZE) {
+					const widthChanged = Math.abs(width - lastWidth) > SIZE_CHANGE_THRESHOLD;
+					const heightChanged = Math.abs(height - lastHeight) > SIZE_CHANGE_THRESHOLD;
 
 					if (!sizeStableRef.current || widthChanged || heightChanged) {
 						lastWidth = width;
@@ -156,13 +164,13 @@ export const ExcalidrawEditorContainer = memo(
 							setContainerSize({ width, height });
 							sizeStableRef.current = true;
 							logger.info("[ExcalidrawEditor] 容器尺寸:", { width, height });
-						}, 150);
+						}, RESIZE_DEBOUNCE_DELAY);
 					}
 				}
 			};
 
 			// 初始延迟，等待布局稳定
-			const initialTimeout = setTimeout(updateSize, 100);
+			const initialTimeout = setTimeout(updateSize, INITIAL_LAYOUT_DELAY);
 
 			const resizeObserver = new ResizeObserver(() => {
 				// 只有在尺寸已经稳定后才响应 resize
