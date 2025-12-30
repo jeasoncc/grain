@@ -110,7 +110,7 @@
     - 配置 UIOptions 减少不必要的 UI 元素
     - _Requirements: 6.4_
 
-- [ ] 11. Final Checkpoint - 确保所有测试通过
+- [x] 11. Final Checkpoint - 确保所有测试通过
   - 运行 `bun run test` 确保所有测试通过
   - 运行 `bun run check` 确保类型检查通过
   - 如有问题，询问用户
