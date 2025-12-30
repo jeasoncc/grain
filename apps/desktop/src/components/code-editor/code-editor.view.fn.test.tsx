@@ -5,14 +5,15 @@
  * 测试覆盖：
  * - Props 渲染
  * - 用户交互（onChange 回调）
- * - 主题切换
+ * - 主题切换（Theme 对象）
  * - 回调函数调用
  *
- * @requirements 2.1, 2.3, 2.5
+ * @requirements 2.1, 2.3, 2.5, 4.2, 4.4
  */
 
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Theme, ThemeColors } from "@/lib/themes";
 import type { CodeEditorViewProps, CodeLanguage } from "./code-editor.types";
 import { CodeEditorView } from "./code-editor.view.fn";
 
@@ -35,11 +36,88 @@ vi.mock("./monaco.config", () => ({
 }));
 
 // ============================================================================
+// Test Fixtures - Theme 对象
+// ============================================================================
+
+/**
+ * 创建测试用的 ThemeColors
+ */
+const createTestThemeColors = (type: "light" | "dark"): ThemeColors => ({
+	background: type === "light" ? "#ffffff" : "#1e1e1e",
+	foreground: type === "light" ? "#1f2937" : "#d4d4d4",
+	card: type === "light" ? "#ffffff" : "#252526",
+	cardForeground: type === "light" ? "#1f2937" : "#d4d4d4",
+	popover: type === "light" ? "#ffffff" : "#252526",
+	popoverForeground: type === "light" ? "#1f2937" : "#d4d4d4",
+	primary: type === "light" ? "#2563eb" : "#569cd6",
+	primaryForeground: "#ffffff",
+	secondary: type === "light" ? "#f3f4f6" : "#3c3c3c",
+	secondaryForeground: type === "light" ? "#1f2937" : "#d4d4d4",
+	muted: type === "light" ? "#f3f4f6" : "#3c3c3c",
+	mutedForeground: type === "light" ? "#6b7280" : "#808080",
+	accent: type === "light" ? "#eff6ff" : "#264f78",
+	accentForeground: type === "light" ? "#1f2937" : "#ffffff",
+	border: type === "light" ? "#e5e7eb" : "#3c3c3c",
+	input: type === "light" ? "#ffffff" : "#3c3c3c",
+	ring: type === "light" ? "#2563eb" : "#569cd6",
+	sidebar: type === "light" ? "#f9fafb" : "#252526",
+	sidebarForeground: type === "light" ? "#1f2937" : "#d4d4d4",
+	sidebarPrimary: type === "light" ? "#2563eb" : "#569cd6",
+	sidebarPrimaryForeground: "#ffffff",
+	sidebarAccent: type === "light" ? "#eff6ff" : "#264f78",
+	sidebarAccentForeground: type === "light" ? "#1f2937" : "#ffffff",
+	sidebarBorder: type === "light" ? "#e5e7eb" : "#3c3c3c",
+	folderColor: type === "light" ? "#f59e0b" : "#dcb67a",
+	editorSelection: type === "light" ? "#add6ff" : "#264f78",
+});
+
+/**
+ * 测试用浅色主题
+ */
+const lightTheme: Theme = {
+	key: "default-light",
+	name: "Default Light",
+	description: "The default light theme",
+	type: "light",
+	colors: createTestThemeColors("light"),
+};
+
+/**
+ * 测试用深色主题
+ */
+const darkTheme: Theme = {
+	key: "default-dark",
+	name: "Default Dark",
+	description: "The default dark theme",
+	type: "dark",
+	colors: createTestThemeColors("dark"),
+};
+
+/**
+ * 测试用 Dracula 主题
+ */
+const draculaTheme: Theme = {
+	key: "dracula",
+	name: "Dracula",
+	description: "A dark theme inspired by Dracula",
+	type: "dark",
+	colors: {
+		...createTestThemeColors("dark"),
+		background: "#282a36",
+		foreground: "#f8f8f2",
+		primary: "#bd93f9",
+	},
+};
+
+// ============================================================================
 // Test Helpers
 // ============================================================================
 
 /**
  * 创建默认的 CodeEditorViewProps
+ * 
+ * @param overrides - 覆盖默认值的属性
+ * @returns CodeEditorViewProps
  */
 function createDefaultProps(
 	overrides: Partial<CodeEditorViewProps> = {},
@@ -47,7 +125,7 @@ function createDefaultProps(
 	return {
 		value: overrides.value ?? "",
 		language: overrides.language ?? "mermaid",
-		theme: overrides.theme ?? "light",
+		theme: overrides.theme, // Theme 对象或 undefined
 		onChange: overrides.onChange ?? vi.fn(),
 		onSave: overrides.onSave ?? vi.fn(),
 		readOnly: overrides.readOnly ?? false,
@@ -127,50 +205,80 @@ describe("CodeEditorView", () => {
 	});
 
 	describe("主题切换", () => {
-		it("should render with light theme", () => {
-			const props = createDefaultProps({ theme: "light" });
+		it("should render with light theme object", () => {
+			const props = createDefaultProps({ theme: lightTheme });
 			render(<CodeEditorView {...props} />);
 
 			const editor = screen.getByTestId("monaco-editor");
-			// light 主题在 Monaco 中对应 "light"
-			expect(editor).toHaveAttribute("data-theme", "light");
+			// 使用 Theme 对象时，Monaco 主题名称为 grain-{theme.key}
+			expect(editor).toHaveAttribute("data-theme", "grain-default-light");
 		});
 
-		it("should render with dark theme", () => {
-			const props = createDefaultProps({ theme: "dark" });
+		it("should render with dark theme object", () => {
+			const props = createDefaultProps({ theme: darkTheme });
 			render(<CodeEditorView {...props} />);
 
 			const editor = screen.getByTestId("monaco-editor");
-			// dark 主题在 Monaco 中对应 "vs-dark"
-			expect(editor).toHaveAttribute("data-theme", "vs-dark");
+			expect(editor).toHaveAttribute("data-theme", "grain-default-dark");
+		});
+
+		it("should render with custom theme (Dracula)", () => {
+			const props = createDefaultProps({ theme: draculaTheme });
+			render(<CodeEditorView {...props} />);
+
+			const editor = screen.getByTestId("monaco-editor");
+			expect(editor).toHaveAttribute("data-theme", "grain-dracula");
+		});
+
+		it("should render with default theme when theme is undefined", () => {
+			const props = createDefaultProps({ theme: undefined });
+			render(<CodeEditorView {...props} />);
+
+			const editor = screen.getByTestId("monaco-editor");
+			// 未传入 theme 时，使用默认的 "vs" 主题
+			expect(editor).toHaveAttribute("data-theme", "vs");
 		});
 
 		it("should update theme when prop changes from light to dark", () => {
-			const props = createDefaultProps({ theme: "light" });
+			const props = createDefaultProps({ theme: lightTheme });
 			const { rerender } = render(<CodeEditorView {...props} />);
 
 			// 初始为 light 主题
 			let editor = screen.getByTestId("monaco-editor");
-			expect(editor).toHaveAttribute("data-theme", "light");
+			expect(editor).toHaveAttribute("data-theme", "grain-default-light");
 
 			// 切换到 dark 主题
-			rerender(<CodeEditorView {...props} theme="dark" />);
+			rerender(<CodeEditorView {...props} theme={darkTheme} />);
 			editor = screen.getByTestId("monaco-editor");
-			expect(editor).toHaveAttribute("data-theme", "vs-dark");
+			expect(editor).toHaveAttribute("data-theme", "grain-default-dark");
 		});
 
 		it("should update theme when prop changes from dark to light", () => {
-			const props = createDefaultProps({ theme: "dark" });
+			const props = createDefaultProps({ theme: darkTheme });
 			const { rerender } = render(<CodeEditorView {...props} />);
 
 			// 初始为 dark 主题
 			let editor = screen.getByTestId("monaco-editor");
-			expect(editor).toHaveAttribute("data-theme", "vs-dark");
+			expect(editor).toHaveAttribute("data-theme", "grain-default-dark");
 
 			// 切换到 light 主题
-			rerender(<CodeEditorView {...props} theme="light" />);
+			rerender(<CodeEditorView {...props} theme={lightTheme} />);
 			editor = screen.getByTestId("monaco-editor");
-			expect(editor).toHaveAttribute("data-theme", "light");
+			expect(editor).toHaveAttribute("data-theme", "grain-default-light");
+		});
+
+		it("should update theme when switching to custom theme", () => {
+			const props = createDefaultProps({ theme: lightTheme });
+			const { rerender } = render(<CodeEditorView {...props} />);
+
+			// 初始为 light 主题
+			let editor = screen.getByTestId("monaco-editor");
+			expect(editor).toHaveAttribute("data-theme", "grain-default-light");
+
+			// 切换到 Dracula 主题
+			rerender(<CodeEditorView {...props} theme={draculaTheme} />);
+			editor = screen.getByTestId("monaco-editor");
+			expect(editor).toHaveAttribute("data-theme", "grain-dracula");
 		});
 	});
 
@@ -235,7 +343,7 @@ describe("CodeEditorView", () => {
 			const props: CodeEditorViewProps = {
 				value: "",
 				language: "mermaid",
-				theme: "light",
+				theme: lightTheme,
 				onChange: vi.fn(),
 				onSave: vi.fn(),
 				// readOnly 未设置，应该默认为 false

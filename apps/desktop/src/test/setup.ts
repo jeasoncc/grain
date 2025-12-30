@@ -42,6 +42,7 @@ vi.mock("@monaco-editor/react", () => ({
 				"data-testid": "monaco-editor",
 				"data-value": value,
 				"data-language": language,
+				// theme 现在是 Monaco 主题名称字符串（如 "grain-dracula" 或 "vs"）
 				"data-theme": theme,
 				"data-readonly": options?.readOnly ? "true" : "false",
 			},
@@ -57,4 +58,13 @@ vi.mock("@monaco-editor/react", () => ({
 	loader: {
 		config: vi.fn(),
 	},
+}));
+
+// Mock monaco-theme.fn 模块
+vi.mock("@/components/code-editor/monaco-theme.fn", () => ({
+	registerMonacoTheme: vi.fn((_monaco, theme) => `grain-${theme?.key || "default"}`),
+	getMonacoThemeName: vi.fn((key) => `grain-${key}`),
+	generateMonacoTheme: vi.fn(),
+	clearRegisteredThemes: vi.fn(),
+	isThemeRegistered: vi.fn(() => false),
 }));
