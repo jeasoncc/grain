@@ -190,6 +190,41 @@ export const ExcalidrawEditorContainer = memo(
 			};
 		}, []);
 
+		/**
+		 * 节流的状态更新函数，避免频繁更新 store
+		 *
+		 * 使用 useMemo 确保节流函数在组件生命周期内保持稳定
+		 * 包装 markAsUnsaved, markAsSaving, markAsSaved 调用
+		 *
+		 * @requirements 3.3, 3.4
+		 */
+		const throttledMarkAsUnsaved = useMemo(
+			() =>
+				throttle(
+					markAsUnsaved,
+					EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE,
+				),
+			[markAsUnsaved],
+		);
+
+		const throttledMarkAsSaving = useMemo(
+			() =>
+				throttle(
+					markAsSaving,
+					EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE,
+				),
+			[markAsSaving],
+		);
+
+		const throttledMarkAsSaved = useMemo(
+			() =>
+				throttle(
+					markAsSaved,
+					EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE,
+				),
+			[markAsSaved],
+		);
+
 		// 保存内容
 		const saveContent = useCallback(
 			async (
@@ -208,7 +243,7 @@ export const ExcalidrawEditorContainer = memo(
 					files,
 				};
 
-				markAsSaving();
+				throttledMarkAsSaving();
 
 				const result = await updateContentByNodeId(
 					nodeId,
@@ -217,31 +252,20 @@ export const ExcalidrawEditorContainer = memo(
 				)();
 
 				if (result._tag === "Right") {
-					markAsSaved();
+					throttledMarkAsSaved();
 					logger.debug("[ExcalidrawEditor] 内容已保存");
 				} else {
 					markAsError(result.left.message || "保存失败");
 					logger.error("[ExcalidrawEditor] 保存失败:", result.left);
 				}
 			},
-			[nodeId, markAsSaving, markAsSaved, markAsError],
+			[nodeId, throttledMarkAsSaving, throttledMarkAsSaved, markAsError],
 		);
 
 		const debouncedSave = useMemo(
 			() =>
 				debounce(saveContent, EXCALIDRAW_PERFORMANCE_CONFIG.AUTO_SAVE_DELAY),
 			[saveContent],
-		);
-
-		// 节流的状态更新函数，避免频繁更新 store
-		// 使用 useMemo 确保节流函数在组件生命周期内保持稳定
-		const throttledMarkAsUnsaved = useMemo(
-			() =>
-				throttle(
-					markAsUnsaved,
-					EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE,
-				),
-			[markAsUnsaved],
 		);
 
 		/**
@@ -298,6 +322,8 @@ export const ExcalidrawEditorContainer = memo(
 				// 取消防抖和节流
 				debouncedSave.cancel();
 				throttledMarkAsUnsaved.cancel();
+				throttledMarkAsSaving.cancel();
+				throttledMarkAsSaved.cancel();
 
 				// 组件卸载时，如果有未保存的更改，立即保存
 				const data = currentDataRef.current;
@@ -306,7 +332,7 @@ export const ExcalidrawEditorContainer = memo(
 					saveContent(data.elements, data.appState, data.files);
 				}
 			};
-		}, [debouncedSave, throttledMarkAsUnsaved, saveContent]);
+		}, [debouncedSave, throttledMarkAsUnsaved, throttledMarkAsSaving, throttledMarkAsSaved, saveContent]);
 
 		// 加载中
 		if (content === undefined) {

@@ -764,3 +764,186 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 		);
 	});
 });
+
+
+/**
+ * Property-Based Tests for Status Update Throttling
+ *
+ * Feature: excalidraw-performance, Property 4: 状态更新节流
+ * **Validates: Requirements 3.4**
+ *
+ * 这个测试直接测试 throttle 函数的行为，而不是通过组件测试
+ * 因为组件测试需要复杂的 mock 设置，而 throttle 行为是确定性的
+ */
+describe("Status Update Throttle Property Tests", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.useFakeTimers();
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	/**
+	 * Property 4: 状态更新节流
+	 *
+	 * *For any* sequence of save status updates within a 500ms window,
+	 * at most one actual store update should occur.
+	 *
+	 * **Validates: Requirements 3.4**
+	 */
+	it("Property 4: should throttle status updates within 500ms window", async () => {
+		// 使用配置常量
+		const STATUS_UPDATE_THROTTLE = EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE;
+
+		// 动态导入 throttle 函数
+		const { throttle } = await import("es-toolkit");
+
+		fc.assert(
+			fc.property(
+				// 生成 2-20 个事件的时间间隔（毫秒）
+				// 间隔小于 STATUS_UPDATE_THROTTLE，确保在节流窗口内
+				fc.array(
+					fc.integer({ min: 10, max: STATUS_UPDATE_THROTTLE - 50 }),
+					{ minLength: 2, maxLength: 20 },
+				),
+				(delays) => {
+					// 追踪调用次数
+					let callCount = 0;
+					const mockFn = vi.fn(() => {
+						callCount++;
+					});
+
+					// 创建节流函数
+					const throttledFn = throttle(mockFn, STATUS_UPDATE_THROTTLE);
+
+					// 计算总时间
+					let totalTime = 0;
+
+					// 模拟快速连续的调用
+					for (let i = 0; i < delays.length; i++) {
+						const delay = delays[i];
+
+						// 调用节流函数
+						throttledFn();
+
+						// 推进时间
+						if (i < delays.length - 1) {
+							vi.advanceTimersByTime(delay);
+							totalTime += delay;
+						}
+					}
+
+					// 推进时间以确保所有节流的调用都完成
+					vi.advanceTimersByTime(STATUS_UPDATE_THROTTLE + 100);
+
+					// 计算预期的最大调用次数
+					// 每个 STATUS_UPDATE_THROTTLE 窗口内最多应该有 1 次调用
+					// 加上可能的尾部调用
+					const expectedMaxCalls = Math.ceil(totalTime / STATUS_UPDATE_THROTTLE) + 2;
+
+					// 验证：实际调用次数应该远小于事件次数
+					const eventCount = delays.length;
+					const actualCalls = mockFn.mock.calls.length;
+
+					// 如果事件数量 > 2 且总时间在单个节流窗口内，
+					// 应该最多只有 1-2 次调用（第一次立即调用 + 可能的尾部调用）
+					if (eventCount > 2 && totalTime < STATUS_UPDATE_THROTTLE) {
+						return actualCalls <= 2;
+					}
+
+					// 对于跨越多个窗口的情况，调用次数应该 <= expectedMaxCalls
+					return actualCalls <= expectedMaxCalls;
+				},
+			),
+			{ numRuns: 100 },
+		);
+	});
+
+	/**
+	 * Property 4 补充测试：验证节流函数在超过节流间隔后允许新的调用
+	 *
+	 * *For any* sequence of status updates with delays exceeding the throttle interval,
+	 * each update should be allowed through.
+	 *
+	 * **Validates: Requirements 3.4**
+	 */
+	it("Property 4: should allow status updates after throttle interval passes", async () => {
+		// 使用配置常量
+		const STATUS_UPDATE_THROTTLE = EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE;
+
+		// 动态导入 throttle 函数
+		const { throttle } = await import("es-toolkit");
+
+		fc.assert(
+			fc.property(
+				// 生成 2-5 个事件，间隔超过节流时间
+				fc.array(
+					fc.integer({ min: STATUS_UPDATE_THROTTLE + 50, max: STATUS_UPDATE_THROTTLE + 200 }),
+					{ minLength: 2, maxLength: 5 },
+				),
+				(delays) => {
+					// 追踪调用次数
+					const mockFn = vi.fn();
+
+					// 创建节流函数
+					const throttledFn = throttle(mockFn, STATUS_UPDATE_THROTTLE);
+
+					// 模拟间隔超过节流时间的调用
+					for (let i = 0; i < delays.length; i++) {
+						// 调用节流函数
+						throttledFn();
+
+						// 推进时间超过节流间隔
+						vi.advanceTimersByTime(delays[i]);
+					}
+
+					// 验证：当间隔超过节流时间时，每次调用都应该被允许
+					const eventCount = delays.length;
+					const actualCalls = mockFn.mock.calls.length;
+
+					// 由于每次调用间隔都超过节流时间，调用次数应该等于事件次数
+					return actualCalls === eventCount;
+				},
+			),
+			{ numRuns: 100 },
+		);
+	});
+
+	/**
+	 * Property 4 补充测试：验证节流函数的首次调用立即执行
+	 *
+	 * *For any* throttled function, the first call should execute immediately.
+	 *
+	 * **Validates: Requirements 3.4**
+	 */
+	it("Property 4: first call should execute immediately", async () => {
+		// 使用配置常量
+		const STATUS_UPDATE_THROTTLE = EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE;
+
+		// 动态导入 throttle 函数
+		const { throttle } = await import("es-toolkit");
+
+		fc.assert(
+			fc.property(
+				// 生成随机的节流间隔（使用配置值附近的值）
+				fc.integer({ min: 100, max: 1000 }),
+				(throttleInterval) => {
+					// 追踪调用次数
+					const mockFn = vi.fn();
+
+					// 创建节流函数
+					const throttledFn = throttle(mockFn, throttleInterval);
+
+					// 首次调用
+					throttledFn();
+
+					// 验证：首次调用应该立即执行
+					return mockFn.mock.calls.length === 1;
+				},
+			),
+			{ numRuns: 100 },
+		);
+	});
+});

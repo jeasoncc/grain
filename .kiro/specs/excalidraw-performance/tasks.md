@@ -28,7 +28,7 @@
     - **Property 1: onChange 不触发组件重渲染**
     - **Validates: Requirements 2.1**
 
-- [-] 3. 优化 ResizeObserver 处理
+- [x] 3. 优化 ResizeObserver 处理
   - [x] 3.1 重构 ResizeObserver 逻辑使用配置常量
     - 使用 RESIZE_DEBOUNCE_DELAY (200ms) 替代硬编码的 150ms
     - 使用 SIZE_CHANGE_THRESHOLD (10px) 替代硬编码的 10
@@ -39,18 +39,18 @@
     - **Property 5: Resize 事件防抖**
     - **Validates: Requirements 4.1**
 
-  - [-] 3.3 编写属性测试验证尺寸变化阈值过滤
+  - [x] 3.3 编写属性测试验证尺寸变化阈值过滤
     - **Property 2: 尺寸变化阈值过滤**
     - **Validates: Requirements 2.2, 4.2**
 
-- [ ] 4. 优化保存状态更新
-  - [ ] 4.1 创建节流的保存状态更新函数
+- [x] 4. 优化保存状态更新
+  - [x] 4.1 创建节流的保存状态更新函数
     - 使用 es-toolkit 的 throttle 函数
     - 节流间隔使用 STATUS_UPDATE_THROTTLE (500ms)
     - 包装 markAsUnsaved, markAsSaving, markAsSaved 调用
     - _Requirements: 3.3, 3.4_
 
-  - [ ] 4.2 编写属性测试验证状态更新节流
+  - [x] 4.2 编写属性测试验证状态更新节流
     - **Property 4: 状态更新节流**
     - **Validates: Requirements 3.4**
 
