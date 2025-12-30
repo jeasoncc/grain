@@ -75,8 +75,8 @@
 
 ## Task 6: 更新 DiagramEditorContainer 传递完整主题
 
-- [-] 修改 `useTheme()` 调用，获取 `currentTheme` 而非 `isDark`
-- [ ] 将 `currentTheme` 传递给 `DiagramEditorView` 的 `theme` prop
+- [x] 修改 `useTheme()` 调用，获取 `currentTheme` 而非 `isDark`
+- [x] 将 `currentTheme` 传递给 `DiagramEditorView` 的 `theme` prop
 
 **Requirements:** 1.1, 1.2
 
