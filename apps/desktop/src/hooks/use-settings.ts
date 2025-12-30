@@ -36,8 +36,8 @@ export const useSettings = create<SettingsState>()(
 	persist(
 		(set) => ({
 			// Defaults
-			language: "zh",
-			autoSave: true,
+			language: "en",
+			autoSave: false,
 			autoSaveInterval: 3, // 3秒更合理（之前是60秒太长）
 			spellCheck: false,
 
