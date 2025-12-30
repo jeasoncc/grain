@@ -52,11 +52,11 @@
     - _Requirements: 4.2, 4.3_
 
 - [x] 5. 单元测试（可选，已跳过）
-  - [-] 5.1 编写 get-editor-type.fn.test.ts
+  - [x] 5.1 编写 get-editor-type.fn.test.ts
     - **Property 1: Extension to Editor Type Mapping**
     - **Property 2: Unknown Extension Fallback**
     - **Validates: Requirements 2.2, 2.3, 2.4, 2.5, 2.6**
-  - [ ] 5.2 编写 get-monaco-language.fn.test.ts
+  - [x] 5.2 编写 get-monaco-language.fn.test.ts
     - **Property 4: Monaco Language Detection**
     - **Validates: Requirements 5.2-5.12**
 
