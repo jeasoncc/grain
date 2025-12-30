@@ -62,7 +62,9 @@ vi.mock("@monaco-editor/react", () => ({
 
 // Mock monaco-theme.fn 模块
 vi.mock("@/components/code-editor/monaco-theme.fn", () => ({
-	registerMonacoTheme: vi.fn((_monaco, theme) => `grain-${theme?.key || "default"}`),
+	registerMonacoTheme: vi.fn(
+		(_monaco, theme) => `grain-${theme?.key || "default"}`,
+	),
 	getMonacoThemeName: vi.fn((key) => `grain-${key}`),
 	generateMonacoTheme: vi.fn(),
 	clearRegisteredThemes: vi.fn(),
