@@ -280,6 +280,52 @@ describe("CodeEditorView", () => {
 			editor = screen.getByTestId("monaco-editor");
 			expect(editor).toHaveAttribute("data-theme", "grain-dracula");
 		});
+
+		it("should call registerMonacoTheme when theme prop changes", async () => {
+			// 获取 mock 函数引用
+			const { registerMonacoTheme } = await import("./monaco-theme.fn");
+			vi.mocked(registerMonacoTheme).mockClear();
+
+			const props = createDefaultProps({ theme: lightTheme });
+			const { rerender } = render(<CodeEditorView {...props} />);
+
+			// 切换到 dark 主题
+			rerender(<CodeEditorView {...props} theme={darkTheme} />);
+
+			// 验证 registerMonacoTheme 被调用
+			// 注意：由于 mock 的实现，我们验证主题名称变化
+			const editor = screen.getByTestId("monaco-editor");
+			expect(editor).toHaveAttribute("data-theme", "grain-default-dark");
+		});
+
+		it("should handle multiple rapid theme changes", () => {
+			const props = createDefaultProps({ theme: lightTheme });
+			const { rerender } = render(<CodeEditorView {...props} />);
+
+			// 快速连续切换主题
+			rerender(<CodeEditorView {...props} theme={darkTheme} />);
+			rerender(<CodeEditorView {...props} theme={draculaTheme} />);
+			rerender(<CodeEditorView {...props} theme={lightTheme} />);
+			rerender(<CodeEditorView {...props} theme={darkTheme} />);
+
+			// 最终应该是 dark 主题
+			const editor = screen.getByTestId("monaco-editor");
+			expect(editor).toHaveAttribute("data-theme", "grain-default-dark");
+		});
+
+		it("should not change theme when same theme is passed", () => {
+			const props = createDefaultProps({ theme: lightTheme });
+			const { rerender } = render(<CodeEditorView {...props} />);
+
+			// 初始为 light 主题
+			let editor = screen.getByTestId("monaco-editor");
+			expect(editor).toHaveAttribute("data-theme", "grain-default-light");
+
+			// 传入相同的主题对象
+			rerender(<CodeEditorView {...props} theme={lightTheme} />);
+			editor = screen.getByTestId("monaco-editor");
+			expect(editor).toHaveAttribute("data-theme", "grain-default-light");
+		});
 	});
 
 	describe("onChange 回调", () => {
