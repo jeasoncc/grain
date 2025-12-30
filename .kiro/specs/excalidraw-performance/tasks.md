@@ -35,11 +35,11 @@
     - 使用 MIN_VALID_SIZE (200px) 替代硬编码的 200
     - _Requirements: 4.1, 4.2_
 
-  - [-] 3.2 编写属性测试验证 Resize 事件防抖
+  - [x] 3.2 编写属性测试验证 Resize 事件防抖
     - **Property 5: Resize 事件防抖**
     - **Validates: Requirements 4.1**
 
-  - [ ] 3.3 编写属性测试验证尺寸变化阈值过滤
+  - [-] 3.3 编写属性测试验证尺寸变化阈值过滤
     - **Property 2: 尺寸变化阈值过滤**
     - **Validates: Requirements 2.2, 4.2**
 
