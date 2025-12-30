@@ -6,13 +6,13 @@
 
 ## Tasks
 
-- [ ] 1. 创建性能配置常量和类型定义
-  - [ ] 1.1 创建 `excalidraw-editor.config.ts` 文件定义性能常量
+- [x] 1. 创建性能配置常量和类型定义
+  - [x] 1.1 创建 `excalidraw-editor.config.ts` 文件定义性能常量
     - 定义 AUTO_SAVE_DELAY, STATUS_UPDATE_THROTTLE, RESIZE_DEBOUNCE_DELAY 等常量
     - 使用 `as const` 确保类型安全
     - _Requirements: 3.4, 4.1, 5.3_
 
-  - [ ] 1.2 更新 `excalidraw-editor.types.ts` 添加性能相关类型
+  - [x] 1.2 更新 `excalidraw-editor.types.ts` 添加性能相关类型
     - 添加 PerformanceConfig 接口
     - 添加 PerformanceMetrics 接口（可选，用于调试）
     - _Requirements: 1.2, 8.1_
