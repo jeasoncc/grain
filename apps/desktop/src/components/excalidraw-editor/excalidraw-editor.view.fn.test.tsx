@@ -86,10 +86,7 @@ describe("ExcalidrawEditorView", () => {
 	it("should apply className to loading state", () => {
 		const { container } = render(
 			<div className="custom-class">
-				<ExcalidrawEditorView
-					{...defaultProps}
-					initialData={null}
-				/>
+				<ExcalidrawEditorView {...defaultProps} initialData={null} />
 			</div>,
 		);
 		const wrapper = container.firstChild as HTMLElement;

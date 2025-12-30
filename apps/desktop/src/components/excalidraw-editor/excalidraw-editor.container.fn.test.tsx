@@ -19,11 +19,13 @@ class MockResizeObserver {
 vi.stubGlobal("ResizeObserver", MockResizeObserver);
 
 // 用于追踪 onChange 回调
-let capturedOnChange: ((
-	elements: readonly unknown[],
-	appState: Record<string, unknown>,
-	files: Record<string, unknown>,
-) => void) | null = null;
+let capturedOnChange:
+	| ((
+			elements: readonly unknown[],
+			appState: Record<string, unknown>,
+			files: Record<string, unknown>,
+	  ) => void)
+	| null = null;
 
 // Mock Excalidraw 组件，捕获 onChange 回调
 vi.mock("@excalidraw/excalidraw", () => ({
@@ -62,6 +64,7 @@ vi.mock("@/log", () => ({
 		info: vi.fn(),
 		debug: vi.fn(),
 		error: vi.fn(),
+		warn: vi.fn(),
 	},
 }));
 
@@ -161,9 +164,7 @@ describe("ExcalidrawEditorContainer Property Tests", () => {
 		let renderCount = 0;
 
 		// 创建一个包装组件来追踪渲染
-		const RenderTracker = ({
-			children,
-		}: { children: React.ReactNode }) => {
+		const RenderTracker = ({ children }: { children: React.ReactNode }) => {
 			renderCount++;
 			return <>{children}</>;
 		};
@@ -210,7 +211,14 @@ describe("ExcalidrawEditorContainer Property Tests", () => {
 				),
 				// 生成随机的 appState
 				fc.record({
-					viewBackgroundColor: fc.constantFrom("#ffffff", "#000000", "#ff0000", "#00ff00", "#0000ff", "#1e1e1e"),
+					viewBackgroundColor: fc.constantFrom(
+						"#ffffff",
+						"#000000",
+						"#ff0000",
+						"#00ff00",
+						"#0000ff",
+						"#1e1e1e",
+					),
 					scrollX: fc.integer({ min: -1000, max: 1000 }),
 					scrollY: fc.integer({ min: -1000, max: 1000 }),
 				}),
@@ -271,10 +279,12 @@ describe("ExcalidrawEditorContainer Resize Debounce Property Tests", () => {
 	 */
 	it("Property 5: should debounce resize events within 200ms window", () => {
 		// 使用配置常量
-		const RESIZE_DEBOUNCE_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_DELAY;
+		const RESIZE_DEBOUNCE_DELAY =
+			EXCALIDRAW_PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_DELAY;
 
 		// 追踪 ResizeObserver 回调
-		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null = null;
+		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null =
+			null;
 		let sizeUpdateCount = 0;
 
 		// 创建自定义 ResizeObserver mock
@@ -399,7 +409,6 @@ describe("ExcalidrawEditorContainer Resize Debounce Property Tests", () => {
 	});
 });
 
-
 /**
  * Property-Based Tests for Size Change Threshold Filtering
  *
@@ -429,12 +438,16 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 	 */
 	it("Property 2: should filter out size changes below threshold", () => {
 		// 使用配置常量
-		const SIZE_CHANGE_THRESHOLD = EXCALIDRAW_PERFORMANCE_CONFIG.SIZE_CHANGE_THRESHOLD;
-		const RESIZE_DEBOUNCE_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_DELAY;
-		const INITIAL_LAYOUT_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.INITIAL_LAYOUT_DELAY;
+		const SIZE_CHANGE_THRESHOLD =
+			EXCALIDRAW_PERFORMANCE_CONFIG.SIZE_CHANGE_THRESHOLD;
+		const RESIZE_DEBOUNCE_DELAY =
+			EXCALIDRAW_PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_DELAY;
+		const INITIAL_LAYOUT_DELAY =
+			EXCALIDRAW_PERFORMANCE_CONFIG.INITIAL_LAYOUT_DELAY;
 
 		// 追踪 ResizeObserver 回调和尺寸更新
-		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null = null;
+		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null =
+			null;
 		let containerElement: HTMLDivElement | null = null;
 
 		// 创建自定义 ResizeObserver mock
@@ -475,8 +488,14 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 				// 生成小于阈值的尺寸变化（-9 到 9 像素）
 				fc.array(
 					fc.record({
-						deltaWidth: fc.integer({ min: -SIZE_CHANGE_THRESHOLD + 1, max: SIZE_CHANGE_THRESHOLD - 1 }),
-						deltaHeight: fc.integer({ min: -SIZE_CHANGE_THRESHOLD + 1, max: SIZE_CHANGE_THRESHOLD - 1 }),
+						deltaWidth: fc.integer({
+							min: -SIZE_CHANGE_THRESHOLD + 1,
+							max: SIZE_CHANGE_THRESHOLD - 1,
+						}),
+						deltaHeight: fc.integer({
+							min: -SIZE_CHANGE_THRESHOLD + 1,
+							max: SIZE_CHANGE_THRESHOLD - 1,
+						}),
 					}),
 					{ minLength: 1, maxLength: 5 },
 				),
@@ -526,8 +545,8 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 					}
 
 					// 记录当前状态
-					let currentWidth = initialSize.width;
-					let currentHeight = initialSize.height;
+					const currentWidth = initialSize.width;
+					const currentHeight = initialSize.height;
 
 					// 模拟小于阈值的尺寸变化
 					for (const change of smallChanges) {
@@ -573,7 +592,10 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 							const heightChange = Math.abs(newHeight - currentHeight);
 
 							// 验证：如果变化小于阈值，应该被过滤
-							if (widthChange <= SIZE_CHANGE_THRESHOLD && heightChange <= SIZE_CHANGE_THRESHOLD) {
+							if (
+								widthChange <= SIZE_CHANGE_THRESHOLD &&
+								heightChange <= SIZE_CHANGE_THRESHOLD
+							) {
 								// 变化被过滤，这是预期行为
 								// currentWidth 和 currentHeight 保持不变
 							}
@@ -601,12 +623,16 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 	 */
 	it("Property 2: should allow size changes exceeding threshold", () => {
 		// 使用配置常量
-		const SIZE_CHANGE_THRESHOLD = EXCALIDRAW_PERFORMANCE_CONFIG.SIZE_CHANGE_THRESHOLD;
-		const RESIZE_DEBOUNCE_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_DELAY;
-		const INITIAL_LAYOUT_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.INITIAL_LAYOUT_DELAY;
+		const SIZE_CHANGE_THRESHOLD =
+			EXCALIDRAW_PERFORMANCE_CONFIG.SIZE_CHANGE_THRESHOLD;
+		const RESIZE_DEBOUNCE_DELAY =
+			EXCALIDRAW_PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_DELAY;
+		const INITIAL_LAYOUT_DELAY =
+			EXCALIDRAW_PERFORMANCE_CONFIG.INITIAL_LAYOUT_DELAY;
 
 		// 追踪 ResizeObserver 回调
-		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null = null;
+		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null =
+			null;
 		let containerElement: HTMLDivElement | null = null;
 
 		// 创建自定义 ResizeObserver mock
@@ -746,7 +772,10 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 						const heightChange = Math.abs(newHeight - currentHeight);
 
 						// 如果变化超过阈值，应该更新
-						if (widthChange > SIZE_CHANGE_THRESHOLD || heightChange > SIZE_CHANGE_THRESHOLD) {
+						if (
+							widthChange > SIZE_CHANGE_THRESHOLD ||
+							heightChange > SIZE_CHANGE_THRESHOLD
+						) {
 							// 更新当前尺寸（模拟状态更新）
 							currentWidth = newWidth;
 							currentHeight = newHeight;
@@ -764,7 +793,6 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 		);
 	});
 });
-
 
 /**
  * Property-Based Tests for Status Update Throttling
@@ -795,7 +823,8 @@ describe("Status Update Throttle Property Tests", () => {
 	 */
 	it("Property 4: should throttle status updates within 500ms window", async () => {
 		// 使用配置常量
-		const STATUS_UPDATE_THROTTLE = EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE;
+		const STATUS_UPDATE_THROTTLE =
+			EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE;
 
 		// 动态导入 throttle 函数
 		const { throttle } = await import("es-toolkit");
@@ -804,10 +833,10 @@ describe("Status Update Throttle Property Tests", () => {
 			fc.property(
 				// 生成 2-20 个事件的时间间隔（毫秒）
 				// 间隔小于 STATUS_UPDATE_THROTTLE，确保在节流窗口内
-				fc.array(
-					fc.integer({ min: 10, max: STATUS_UPDATE_THROTTLE - 50 }),
-					{ minLength: 2, maxLength: 20 },
-				),
+				fc.array(fc.integer({ min: 10, max: STATUS_UPDATE_THROTTLE - 50 }), {
+					minLength: 2,
+					maxLength: 20,
+				}),
 				(delays) => {
 					// 追踪调用次数
 					let callCount = 0;
@@ -841,7 +870,8 @@ describe("Status Update Throttle Property Tests", () => {
 					// 计算预期的最大调用次数
 					// 每个 STATUS_UPDATE_THROTTLE 窗口内最多应该有 1 次调用
 					// 加上可能的尾部调用
-					const expectedMaxCalls = Math.ceil(totalTime / STATUS_UPDATE_THROTTLE) + 2;
+					const expectedMaxCalls =
+						Math.ceil(totalTime / STATUS_UPDATE_THROTTLE) + 2;
 
 					// 验证：实际调用次数应该远小于事件次数
 					const eventCount = delays.length;
@@ -871,7 +901,8 @@ describe("Status Update Throttle Property Tests", () => {
 	 */
 	it("Property 4: should allow status updates after throttle interval passes", async () => {
 		// 使用配置常量
-		const STATUS_UPDATE_THROTTLE = EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE;
+		const STATUS_UPDATE_THROTTLE =
+			EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE;
 
 		// 动态导入 throttle 函数
 		const { throttle } = await import("es-toolkit");
@@ -880,7 +911,10 @@ describe("Status Update Throttle Property Tests", () => {
 			fc.property(
 				// 生成 2-5 个事件，间隔超过节流时间
 				fc.array(
-					fc.integer({ min: STATUS_UPDATE_THROTTLE + 50, max: STATUS_UPDATE_THROTTLE + 200 }),
+					fc.integer({
+						min: STATUS_UPDATE_THROTTLE + 50,
+						max: STATUS_UPDATE_THROTTLE + 200,
+					}),
 					{ minLength: 2, maxLength: 5 },
 				),
 				(delays) => {
@@ -920,7 +954,8 @@ describe("Status Update Throttle Property Tests", () => {
 	 */
 	it("Property 4: first call should execute immediately", async () => {
 		// 使用配置常量
-		const STATUS_UPDATE_THROTTLE = EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE;
+		const STATUS_UPDATE_THROTTLE =
+			EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE;
 
 		// 动态导入 throttle 函数
 		const { throttle } = await import("es-toolkit");
@@ -947,7 +982,6 @@ describe("Status Update Throttle Property Tests", () => {
 		);
 	});
 });
-
 
 /**
  * Property-Based Tests for Content Parsing Cache
@@ -990,7 +1024,11 @@ describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () =>
 						{ minLength: 0, maxLength: 10 },
 					),
 					appState: fc.record({
-						viewBackgroundColor: fc.constantFrom("#ffffff", "#000000", "#1e1e1e"),
+						viewBackgroundColor: fc.constantFrom(
+							"#ffffff",
+							"#000000",
+							"#1e1e1e",
+						),
 					}),
 					files: fc.constant({}),
 				}),
@@ -1008,7 +1046,7 @@ describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () =>
 					};
 
 					// 追踪 useEffect 执行次数
-					let effectExecutionCount = 0;
+					const effectExecutionCount = 0;
 					const originalUseEffect = vi.fn();
 
 					// 设置 mock
@@ -1079,7 +1117,7 @@ describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () =>
 					if (effectiveLength < 2) return true;
 
 					// 创建 mock 内容映射
-					const contentMap = new Map<string, typeof contents[0]>();
+					const contentMap = new Map<string, (typeof contents)[0]>();
 					for (let i = 0; i < effectiveLength; i++) {
 						contentMap.set(nodeIds[i], contents[i]);
 					}
@@ -1161,7 +1199,11 @@ describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () =>
 						{ minLength: 0, maxLength: 10 },
 					),
 					appState: fc.record({
-						viewBackgroundColor: fc.constantFrom("#ffffff", "#000000", "#1e1e1e"),
+						viewBackgroundColor: fc.constantFrom(
+							"#ffffff",
+							"#000000",
+							"#1e1e1e",
+						),
 					}),
 					files: fc.constant({}),
 				}),
@@ -1206,7 +1248,6 @@ describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () =>
 	});
 });
 
-
 /**
  * Property-Based Tests for Excalidraw Instance Stability
  *
@@ -1240,11 +1281,14 @@ describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 	 */
 	it("Property 6: should keep Excalidraw instance stable during resize", () => {
 		// 使用配置常量
-		const RESIZE_DEBOUNCE_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_DELAY;
-		const INITIAL_LAYOUT_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.INITIAL_LAYOUT_DELAY;
+		const RESIZE_DEBOUNCE_DELAY =
+			EXCALIDRAW_PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_DELAY;
+		const INITIAL_LAYOUT_DELAY =
+			EXCALIDRAW_PERFORMANCE_CONFIG.INITIAL_LAYOUT_DELAY;
 
 		// 追踪 ResizeObserver 回调
-		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null = null;
+		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null =
+			null;
 		let containerElement: HTMLDivElement | null = null;
 
 		// 创建自定义 ResizeObserver mock
@@ -1396,11 +1440,14 @@ describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 	 */
 	it("Property 6: should recreate Excalidraw instance when nodeId changes", () => {
 		// 使用配置常量
-		const RESIZE_DEBOUNCE_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_DELAY;
-		const INITIAL_LAYOUT_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.INITIAL_LAYOUT_DELAY;
+		const RESIZE_DEBOUNCE_DELAY =
+			EXCALIDRAW_PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_DELAY;
+		const INITIAL_LAYOUT_DELAY =
+			EXCALIDRAW_PERFORMANCE_CONFIG.INITIAL_LAYOUT_DELAY;
 
 		// 追踪 ResizeObserver 回调
-		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null = null;
+		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null =
+			null;
 		let containerElement: HTMLDivElement | null = null;
 
 		// 创建自定义 ResizeObserver mock
@@ -1445,7 +1492,9 @@ describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 					});
 
 					// 设置初始 mock
-					mockUseContentByNodeId.mockReturnValue(createMockContent(uniqueNodeIds[0]));
+					mockUseContentByNodeId.mockReturnValue(
+						createMockContent(uniqueNodeIds[0]),
+					);
 
 					// 渲染组件
 					const { rerender, unmount } = render(
@@ -1494,14 +1543,18 @@ describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 						const newNodeId = uniqueNodeIds[i];
 
 						// 更新 mock 返回值
-						mockUseContentByNodeId.mockReturnValue(createMockContent(newNodeId));
+						mockUseContentByNodeId.mockReturnValue(
+							createMockContent(newNodeId),
+						);
 
 						// 重渲染组件
 						rerender(<ExcalidrawEditorContainer nodeId={newNodeId} />);
 
 						// 等待状态更新
 						act(() => {
-							vi.advanceTimersByTime(INITIAL_LAYOUT_DELAY + RESIZE_DEBOUNCE_DELAY + 50);
+							vi.advanceTimersByTime(
+								INITIAL_LAYOUT_DELAY + RESIZE_DEBOUNCE_DELAY + 50,
+							);
 						});
 					}
 
@@ -1569,7 +1622,6 @@ describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 	});
 });
 
-
 /**
  * Property-Based Tests for Save Operation Coalescing
  *
@@ -1607,10 +1659,10 @@ describe("ExcalidrawEditorContainer Save Coalescing Property Tests", () => {
 			fc.property(
 				// 生成 2-20 个快速变更事件的时间间隔（毫秒）
 				// 间隔小于 AUTO_SAVE_DELAY，确保在防抖窗口内
-				fc.array(
-					fc.integer({ min: 50, max: AUTO_SAVE_DELAY - 100 }),
-					{ minLength: 2, maxLength: 20 },
-				),
+				fc.array(fc.integer({ min: 50, max: AUTO_SAVE_DELAY - 100 }), {
+					minLength: 2,
+					maxLength: 20,
+				}),
 				// 生成随机的 Excalidraw 元素变更
 				fc.array(
 					fc.record({
@@ -1685,7 +1737,10 @@ describe("ExcalidrawEditorContainer Save Coalescing Property Tests", () => {
 			fc.property(
 				// 生成 2-5 个变更事件，间隔超过防抖时间
 				fc.array(
-					fc.integer({ min: AUTO_SAVE_DELAY + 100, max: AUTO_SAVE_DELAY + 500 }),
+					fc.integer({
+						min: AUTO_SAVE_DELAY + 100,
+						max: AUTO_SAVE_DELAY + 500,
+					}),
 					{ minLength: 2, maxLength: 5 },
 				),
 				// 生成随机的 Excalidraw 元素
@@ -1844,7 +1899,6 @@ describe("ExcalidrawEditorContainer Save Coalescing Property Tests", () => {
 	});
 });
 
-
 /**
  * Property-Based Tests for Resource Cleanup on Unmount
  *
@@ -1875,12 +1929,15 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 	it("Property 8: should cleanup all resources on unmount", () => {
 		// 使用配置常量
 		const AUTO_SAVE_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.AUTO_SAVE_DELAY;
-		const INITIAL_LAYOUT_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.INITIAL_LAYOUT_DELAY;
-		const RESIZE_DEBOUNCE_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_DELAY;
+		const INITIAL_LAYOUT_DELAY =
+			EXCALIDRAW_PERFORMANCE_CONFIG.INITIAL_LAYOUT_DELAY;
+		const RESIZE_DEBOUNCE_DELAY =
+			EXCALIDRAW_PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_DELAY;
 
 		// 追踪 ResizeObserver 的 disconnect 调用
 		let disconnectCalled = false;
-		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null = null;
+		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null =
+			null;
 		let containerElement: HTMLDivElement | null = null;
 
 		// 创建自定义 ResizeObserver mock
@@ -1914,7 +1971,11 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 						{ minLength: 0, maxLength: 10 },
 					),
 					appState: fc.record({
-						viewBackgroundColor: fc.constantFrom("#ffffff", "#000000", "#1e1e1e"),
+						viewBackgroundColor: fc.constantFrom(
+							"#ffffff",
+							"#000000",
+							"#1e1e1e",
+						),
 					}),
 					files: fc.constant({}),
 				}),
@@ -2096,7 +2157,8 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 	 */
 	it("Property 8: should cancel pending throttled operations on unmount", async () => {
 		// 使用配置常量
-		const STATUS_UPDATE_THROTTLE = EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE;
+		const STATUS_UPDATE_THROTTLE =
+			EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE;
 
 		// 动态导入 throttle 函数
 		const { throttle } = await import("es-toolkit");
@@ -2175,7 +2237,10 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 				fc.uuid(),
 				// 生成随机的内容
 				fc.record({
-					elements: fc.array(fc.record({ id: fc.uuid() }), { minLength: 0, maxLength: 5 }),
+					elements: fc.array(fc.record({ id: fc.uuid() }), {
+						minLength: 0,
+						maxLength: 5,
+					}),
 					appState: fc.record({ viewBackgroundColor: fc.constant("#ffffff") }),
 					files: fc.constant({}),
 				}),
@@ -2222,11 +2287,14 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 	 */
 	it("Property 8: should save unsaved changes on unmount", () => {
 		// 使用配置常量
-		const INITIAL_LAYOUT_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.INITIAL_LAYOUT_DELAY;
-		const RESIZE_DEBOUNCE_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_DELAY;
+		const INITIAL_LAYOUT_DELAY =
+			EXCALIDRAW_PERFORMANCE_CONFIG.INITIAL_LAYOUT_DELAY;
+		const RESIZE_DEBOUNCE_DELAY =
+			EXCALIDRAW_PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_DELAY;
 
 		// 追踪 ResizeObserver 回调
-		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null = null;
+		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null =
+			null;
 		let containerElement: HTMLDivElement | null = null;
 
 		// 创建自定义 ResizeObserver mock

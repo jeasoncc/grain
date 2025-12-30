@@ -3,7 +3,7 @@
  *
  * 集中管理所有性能相关的配置参数，便于调优和维护
  *
- * @requirements 3.4, 4.1, 5.3
+ * @requirements 3.4, 4.1, 5.3, 6.4
  */
 
 /**
@@ -64,6 +64,62 @@ export const EXCALIDRAW_PERFORMANCE_CONFIG = {
 } as const;
 
 /**
+ * Excalidraw UIOptions 配置
+ *
+ * 优化 UI 选项以减少不必要的 UI 元素，提升性能
+ * @requirements 6.4
+ */
+export const EXCALIDRAW_UI_OPTIONS = {
+	/**
+	 * Canvas 操作配置
+	 * 禁用不需要的功能以减少 UI 复杂度
+	 */
+	canvasActions: {
+		/** 禁用加载场景功能（我们使用自己的文件管理） */
+		loadScene: false,
+		/** 禁用保存到活动文件（我们使用自己的保存逻辑） */
+		saveToActiveFile: false,
+		/** 禁用导出功能（可以通过其他方式导出） */
+		export: false,
+		/** 禁用清除画布按钮（防止误操作） */
+		clearCanvas: false,
+		/** 禁用主题切换（由应用控制） */
+		toggleTheme: false,
+	},
+	/**
+	 * 欢迎屏幕配置
+	 * 禁用欢迎屏幕以加快加载速度
+	 */
+	welcomeScreen: false,
+} as const;
+
+/**
+ * Excalidraw 渲染优化配置
+ *
+ * 针对 Tauri WebView 的最优渲染设置
+ * @requirements 6.4
+ */
+export const EXCALIDRAW_RENDER_CONFIG = {
+	/**
+	 * 是否检测滚动
+	 * 在 Tauri 中通常不需要，可以禁用以提升性能
+	 */
+	detectScroll: true,
+
+	/**
+	 * 是否全局处理键盘事件
+	 * 禁用以避免与应用其他快捷键冲突
+	 */
+	handleKeyboardGlobally: false,
+
+	/**
+	 * 是否自动聚焦
+	 * 禁用以避免页面加载时的焦点问题
+	 */
+	autoFocus: false,
+} as const;
+
+/**
  * 性能配置类型
  * 从常量对象推导出类型
  */
@@ -74,3 +130,13 @@ export type ExcalidrawPerformanceConfig = typeof EXCALIDRAW_PERFORMANCE_CONFIG;
  */
 export type ExcalidrawPerformanceConfigKey =
 	keyof typeof EXCALIDRAW_PERFORMANCE_CONFIG;
+
+/**
+ * UIOptions 类型
+ */
+export type ExcalidrawUIOptions = typeof EXCALIDRAW_UI_OPTIONS;
+
+/**
+ * 渲染配置类型
+ */
+export type ExcalidrawRenderConfig = typeof EXCALIDRAW_RENDER_CONFIG;

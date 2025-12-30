@@ -21,9 +21,7 @@ import {
 	type ExcalidrawTemplateParams,
 	excalidrawConfig,
 } from "./configs/excalidraw.config";
-import type {
-	TemplatedFileParams,
-} from "./create-templated-file.action";
+import type { TemplatedFileParams } from "./create-templated-file.action";
 import {
 	createTemplatedFile,
 	createTemplatedFileAsync,

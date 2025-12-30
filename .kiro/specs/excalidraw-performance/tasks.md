@@ -99,13 +99,13 @@
     - **Property 8: 卸载时资源清理**
     - **Validates: Requirements 7.1, 7.2, 7.3**
 
-- [ ] 10. Tauri WebView 优化
-  - [ ] 10.1 添加硬件加速检测和日志
+- [x] 10. Tauri WebView 优化
+  - [x] 10.1 添加硬件加速检测和日志
     - 检测 WebView 是否启用硬件加速
     - 如果未启用，记录警告日志
     - _Requirements: 6.1, 6.3_
 
-  - [ ] 10.2 配置 Excalidraw 最优渲染设置
+  - [x] 10.2 配置 Excalidraw 最优渲染设置
     - 设置 Canvas 渲染选项
     - 配置 UIOptions 减少不必要的 UI 元素
     - _Requirements: 6.4_

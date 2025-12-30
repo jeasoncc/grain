@@ -12,9 +12,7 @@
 
 import { describe, expect, it } from "vitest";
 import { diaryConfig } from "./configs/diary.config";
-import type {
-	CreateDateTemplateParams,
-} from "./create-date-template.action";
+import type { CreateDateTemplateParams } from "./create-date-template.action";
 
 // ============================================================================
 // Test Data

@@ -18,39 +18,42 @@ type DevtoolsModules = {
  * Devtools 包装容器组件
  * 仅在开发环境下渲染 TanStack Router Devtools
  */
-export const DevtoolsWrapperContainer = memo(function DevtoolsWrapperContainer() {
-	const [devtoolsModules, setDevtoolsModules] = useState<DevtoolsModules>(null);
+export const DevtoolsWrapperContainer = memo(
+	function DevtoolsWrapperContainer() {
+		const [devtoolsModules, setDevtoolsModules] =
+			useState<DevtoolsModules>(null);
 
-	useEffect(() => {
-		// 仅在开发环境下动态加载 Devtools
-		// Vite 会在生产构建时进行 tree-shaking
-		if (!import.meta.env.DEV) {
-			return;
+		useEffect(() => {
+			// 仅在开发环境下动态加载 Devtools
+			// Vite 会在生产构建时进行 tree-shaking
+			if (!import.meta.env.DEV) {
+				return;
+			}
+
+			// 动态导入 Router Devtools（仅在开发环境）
+			import("@tanstack/react-router-devtools")
+				.then((routerDevtools) => {
+					setDevtoolsModules({
+						TanStackRouterDevtoolsPanel:
+							routerDevtools.TanStackRouterDevtoolsPanel,
+					});
+				})
+				.catch((error) => {
+					// 静默失败（开发环境下可能缺少依赖）
+					logger.warn("[Devtools] 加载失败:", error);
+				});
+		}, []);
+
+		// 仅在开发模式下渲染
+		if (!import.meta.env.DEV || !devtoolsModules) {
+			return null;
 		}
 
-		// 动态导入 Router Devtools（仅在开发环境）
-		import("@tanstack/react-router-devtools")
-			.then((routerDevtools) => {
-				setDevtoolsModules({
-					TanStackRouterDevtoolsPanel:
-						routerDevtools.TanStackRouterDevtoolsPanel,
-				});
-			})
-			.catch((error) => {
-				// 静默失败（开发环境下可能缺少依赖）
-				logger.warn("[Devtools] 加载失败:", error);
-			});
-	}, []);
+		const { TanStackRouterDevtoolsPanel } = devtoolsModules;
 
-	// 仅在开发模式下渲染
-	if (!import.meta.env.DEV || !devtoolsModules) {
-		return null;
-	}
-
-	const { TanStackRouterDevtoolsPanel } = devtoolsModules;
-
-	return <TanStackRouterDevtoolsPanel />;
-});
+		return <TanStackRouterDevtoolsPanel />;
+	},
+);
 
 // 默认导出
 export { DevtoolsWrapperContainer as DevtoolsWrapper };

@@ -5,7 +5,11 @@
  * 集成 @excalidraw/excalidraw 包，支持主题切换和 onChange 回调
  * 支持 Ctrl+S 快捷键保存
  *
- * @requirements 5.2, 7.4
+ * 性能优化：
+ * - 使用优化的 UIOptions 减少不必要的 UI 元素
+ * - 配置最优渲染设置以适配 Tauri WebView
+ *
+ * @requirements 5.2, 6.4, 7.4
  */
 
 // 必须导入 Excalidraw CSS（0.18.0+ 版本）
@@ -13,6 +17,10 @@ import "@excalidraw/excalidraw/index.css";
 
 import { Excalidraw } from "@excalidraw/excalidraw";
 import { memo, useCallback, useEffect } from "react";
+import {
+	EXCALIDRAW_RENDER_CONFIG,
+	EXCALIDRAW_UI_OPTIONS,
+} from "./excalidraw-editor.config";
 import type { ExcalidrawEditorViewProps } from "./excalidraw-editor.types";
 
 export const ExcalidrawEditorView = memo(
@@ -90,12 +98,12 @@ export const ExcalidrawEditorView = memo(
 					theme={theme}
 					viewModeEnabled={viewModeEnabled}
 					onChange={handleChange}
-					UIOptions={{
-						canvasActions: {
-							loadScene: false,
-							saveToActiveFile: false,
-						},
-					}}
+					UIOptions={EXCALIDRAW_UI_OPTIONS}
+					detectScroll={EXCALIDRAW_RENDER_CONFIG.detectScroll}
+					handleKeyboardGlobally={
+						EXCALIDRAW_RENDER_CONFIG.handleKeyboardGlobally
+					}
+					autoFocus={EXCALIDRAW_RENDER_CONFIG.autoFocus}
 				/>
 			</div>
 		);

@@ -28,6 +28,7 @@ import type {
 	ContainerSize,
 	ExcalidrawEditorContainerProps,
 } from "./excalidraw-editor.types";
+import { getHardwareAccelerationStatus } from "./excalidraw-editor.utils";
 import { ExcalidrawEditorView } from "./excalidraw-editor.view.fn";
 
 /** Excalidraw 初始数据类型 */
@@ -112,6 +113,19 @@ export const ExcalidrawEditorContainer = memo(
 		const prevNodeIdRef = useRef<string | null>(null);
 
 		/**
+		 * 硬件加速检测
+		 *
+		 * 在组件首次挂载时检测 WebView 硬件加速状态
+		 * 如果未启用硬件加速，记录警告日志并提供解决建议
+		 *
+		 * @requirements 6.1, 6.3
+		 */
+		useEffect(() => {
+			// 检测硬件加速状态（带缓存，只会在首次调用时执行检测）
+			getHardwareAccelerationStatus();
+		}, []);
+
+		/**
 		 * 解析内容并设置初始数据
 		 *
 		 * 性能优化：
@@ -122,7 +136,8 @@ export const ExcalidrawEditorContainer = memo(
 		 */
 		useEffect(() => {
 			// 检测 nodeId 是否变化
-			const nodeIdChanged = prevNodeIdRef.current !== null && prevNodeIdRef.current !== nodeId;
+			const nodeIdChanged =
+				prevNodeIdRef.current !== null && prevNodeIdRef.current !== nodeId;
 
 			// 如果 nodeId 变化，重置状态
 			if (nodeIdChanged) {
@@ -172,8 +187,10 @@ export const ExcalidrawEditorContainer = memo(
 
 				// 只有当尺寸有效且变化超过阈值时才更新
 				if (width > MIN_VALID_SIZE && height > MIN_VALID_SIZE) {
-					const widthChanged = Math.abs(width - lastWidth) > SIZE_CHANGE_THRESHOLD;
-					const heightChanged = Math.abs(height - lastHeight) > SIZE_CHANGE_THRESHOLD;
+					const widthChanged =
+						Math.abs(width - lastWidth) > SIZE_CHANGE_THRESHOLD;
+					const heightChanged =
+						Math.abs(height - lastHeight) > SIZE_CHANGE_THRESHOLD;
 
 					if (!sizeStableRef.current || widthChanged || heightChanged) {
 						lastWidth = width;
@@ -378,7 +395,13 @@ export const ExcalidrawEditorContainer = memo(
 
 				logger.info("[ExcalidrawEditor] 资源清理完成");
 			};
-		}, [debouncedSave, throttledMarkAsUnsaved, throttledMarkAsSaving, throttledMarkAsSaved, saveContent]);
+		}, [
+			debouncedSave,
+			throttledMarkAsUnsaved,
+			throttledMarkAsSaving,
+			throttledMarkAsSaved,
+			saveContent,
+		]);
 
 		// 加载中
 		if (content === undefined) {
