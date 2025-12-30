@@ -70,7 +70,7 @@ export const DiagramEditorView = memo(function DiagramEditorView({
 	isLoading,
 	error,
 	isKrokiConfigured,
-	theme = "light",
+	theme,
 	onCodeChange,
 	onSave,
 	onOpenSettings,
@@ -82,9 +82,21 @@ export const DiagramEditorView = memo(function DiagramEditorView({
 	}
 
 	return (
-		<div className="flex h-full w-full" data-testid="diagram-editor">
+		<PanelGroup
+			direction="horizontal"
+			autoSaveId="diagram-editor-layout"
+			className="h-full w-full"
+			data-testid="diagram-editor"
+		>
 			{/* 代码编辑区 - 使用 Monaco Editor */}
-			<div className="flex-1 border-r border-border/50 overflow-hidden">
+			<Panel
+				id="code-editor"
+				order={1}
+				defaultSize={50}
+				minSize={20}
+				maxSize={80}
+				className="overflow-hidden"
+			>
 				<CodeEditorView
 					value={code}
 					language={diagramType}
@@ -92,10 +104,20 @@ export const DiagramEditorView = memo(function DiagramEditorView({
 					onChange={onCodeChange}
 					onSave={onSave}
 				/>
-			</div>
+			</Panel>
+
+			{/* 可拖动调整大小的分隔条 */}
+			<PanelResizeHandle className="w-1.5 bg-border/50 hover:bg-primary/50 active:bg-primary transition-colors cursor-col-resize" />
 
 			{/* 预览区 - 使用 DiagramPreviewView 组件 */}
-			<div className="flex-1 overflow-hidden bg-background">
+			<Panel
+				id="preview"
+				order={2}
+				defaultSize={50}
+				minSize={20}
+				maxSize={80}
+				className="overflow-hidden bg-background"
+			>
 				<DiagramPreviewView
 					previewSvg={previewSvg}
 					isLoading={isLoading}
@@ -103,7 +125,7 @@ export const DiagramEditorView = memo(function DiagramEditorView({
 					onRetry={onRetry}
 					className="h-full"
 				/>
-			</div>
-		</div>
+			</Panel>
+		</PanelGroup>
 	);
 });
