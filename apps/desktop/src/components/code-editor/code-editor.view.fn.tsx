@@ -10,6 +10,7 @@
  * - 支持预加载提升后续使用体验
  *
  * @requirements 7.1, 7.5 - 性能优化
+ * @requirements 1.1, 1.2, 1.3, 1.5 - Monaco 主题同步
  */
 import Editor, { type Monaco, type OnMount } from "@monaco-editor/react";
 import { Loader2 } from "lucide-react";
@@ -18,6 +19,7 @@ import { memo, useCallback, useEffect, useRef } from "react";
 import { registerAllLanguages } from "./code-editor.languages";
 import type { CodeEditorViewProps } from "./code-editor.types";
 import { configureMonacoLoader } from "./monaco.config";
+import { registerMonacoTheme } from "./monaco-theme.fn";
 
 /**
  * 加载状态指示器组件
@@ -74,12 +76,26 @@ export const CodeEditorView = memo(function CodeEditorView({
 	}, []);
 
 	/**
+	 * 监听主题变化，动态更新 Monaco 主题
+	 *
+	 * 当 theme prop 变化时，注册新主题并应用
+	 * 无需刷新页面即可切换主题
+	 */
+	useEffect(() => {
+		if (monacoRef.current && theme) {
+			const themeName = registerMonacoTheme(monacoRef.current, theme);
+			monacoRef.current.editor.setTheme(themeName);
+		}
+	}, [theme]);
+
+	/**
 	 * 处理编辑器挂载
 	 *
 	 * 在编辑器挂载时：
 	 * 1. 注册自定义语言（PlantUML、Mermaid）
-	 * 2. 注册 Ctrl+S 快捷键
-	 * 3. 阻止浏览器默认保存对话框
+	 * 2. 注册并应用当前主题
+	 * 3. 注册 Ctrl+S 快捷键
+	 * 4. 阻止浏览器默认保存对话框
 	 */
 	const handleEditorMount: OnMount = useCallback(
 		(editor, monaco) => {
@@ -89,6 +105,12 @@ export const CodeEditorView = memo(function CodeEditorView({
 
 			// 注册自定义语言
 			registerAllLanguages(monaco);
+
+			// 注册并应用当前主题
+			if (theme) {
+				const themeName = registerMonacoTheme(monaco, theme);
+				monaco.editor.setTheme(themeName);
+			}
 
 			// 注册 Ctrl+S 保存快捷键
 			// KeyMod.CtrlCmd 在 Windows/Linux 上是 Ctrl，在 macOS 上是 Cmd
@@ -100,7 +122,7 @@ export const CodeEditorView = memo(function CodeEditorView({
 			// 聚焦编辑器
 			editor.focus();
 		},
-		[onSave],
+		[onSave, theme],
 	);
 
 	/**
@@ -124,11 +146,26 @@ export const CodeEditorView = memo(function CodeEditorView({
 		registerAllLanguages(monaco);
 	}, []);
 
+	/**
+	 * 获取 Monaco 主题名称
+	 *
+	 * 如果传入了完整 Theme 对象，使用自定义主题
+	 * 否则回退到默认的 vs/vs-dark 主题
+	 */
+	const getEditorTheme = (): string => {
+		if (theme) {
+			// 使用自定义主题（在 handleEditorMount 或 useEffect 中注册）
+			return `grain-${theme.key}`;
+		}
+		// 向后兼容：未传入 theme 时使用默认 light 主题
+		return "vs";
+	};
+
 	return (
 		<Editor
 			value={value}
 			language={language}
-			theme={theme === "dark" ? "vs-dark" : "light"}
+			theme={getEditorTheme()}
 			onChange={handleChange}
 			onMount={handleEditorMount}
 			beforeMount={handleBeforeMount}

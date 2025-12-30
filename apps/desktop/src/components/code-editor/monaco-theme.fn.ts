@@ -55,8 +55,7 @@ export const generateMonacoTheme = (theme: Theme): MonacoThemeData => {
 		// 选择和高亮
 		"editor.selectionBackground": colors.editorSelection,
 		"editor.lineHighlightBackground":
-			colors.editorLineHighlight ||
-			(type === "light" ? "#f5f5f5" : "#2a2a2a"),
+			colors.editorLineHighlight || (type === "light" ? "#f5f5f5" : "#2a2a2a"),
 
 		// 光标
 		"editorCursor.foreground": colors.editorCursor || colors.primary,
@@ -75,8 +74,7 @@ export const generateMonacoTheme = (theme: Theme): MonacoThemeData => {
 		"editorBracketMatch.border": colors.primary,
 
 		// 滚动条
-		"scrollbarSlider.background":
-			type === "light" ? "#00000020" : "#ffffff20",
+		"scrollbarSlider.background": type === "light" ? "#00000020" : "#ffffff20",
 		"scrollbarSlider.hoverBackground":
 			type === "light" ? "#00000040" : "#ffffff40",
 		"scrollbarSlider.activeBackground":

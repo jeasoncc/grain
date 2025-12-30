@@ -31,11 +31,11 @@
 
 ## Task 3: 更新 CodeEditorView 组件实现主题同步
 
-- [ ] 导入 `registerMonacoTheme` 和 `getMonacoThemeName` 函数
-- [ ] 在 `handleEditorMount` 中注册并应用当前主题
-- [ ] 添加 `useEffect` 监听 `theme` prop 变化
-- [ ] 主题变化时调用 `registerMonacoTheme` 并更新 Monaco 主题
-- [ ] 保持向后兼容：未传入 theme 时使用默认 light/dark
+- [x] 导入 `registerMonacoTheme` 和 `getMonacoThemeName` 函数
+- [x] 在 `handleEditorMount` 中注册并应用当前主题
+- [x] 添加 `useEffect` 监听 `theme` prop 变化
+- [x] 主题变化时调用 `registerMonacoTheme` 并更新 Monaco 主题
+- [x] 保持向后兼容：未传入 theme 时使用默认 light/dark
 
 **Requirements:** 1.1, 1.2, 1.3, 1.5, 3.2
 
