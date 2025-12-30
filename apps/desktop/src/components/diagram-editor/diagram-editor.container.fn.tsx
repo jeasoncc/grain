@@ -17,7 +17,6 @@
  */
 
 import { useNavigate } from "@tanstack/react-router";
-import { debounce } from "es-toolkit";
 import * as E from "fp-ts/Either";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -34,6 +33,7 @@ import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
 import { useDiagramStore } from "@/stores/diagram.store";
+import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 
 import type { DiagramEditorContainerProps } from "./diagram-editor.types";
 import { DiagramEditorView } from "./diagram-editor.view.fn";
@@ -42,8 +42,7 @@ import { DiagramEditorView } from "./diagram-editor.view.fn";
 // Constants
 // ==============================
 
-/** 预览更新防抖延迟（毫秒） */
-const PREVIEW_DEBOUNCE_MS = 500;
+// 移除：预览更新防抖延迟（现在只在保存后渲染）
 
 // ==============================
 // Container Component
@@ -57,7 +56,7 @@ const PREVIEW_DEBOUNCE_MS = 500;
  * - 管理编辑器状态（代码、预览、加载、错误）
  * - 调用 Kroki 服务渲染预览
  * - 使用 useEditorSave hook 统一保存逻辑
- * - 处理防抖更新
+ * - 预览只在保存后触发（避免输入时频繁渲染）
  * - 支持 Ctrl+S 快捷键立即保存
  */
 export const DiagramEditorContainer = memo(function DiagramEditorContainer({
@@ -74,6 +73,9 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 
 	const krokiServerUrl = useDiagramStore((s) => s.krokiServerUrl);
 	const enableKroki = useDiagramStore((s) => s.enableKroki);
+
+	// 获取当前活动 tab ID（用于同步 isDirty 状态）
+	const activeTabId = useEditorTabsStore((s) => s.activeTabId);
 
 	// 检查 Kroki 是否已配置（仅 PlantUML 需要）
 	const isKrokiConfigured = useMemo(
@@ -106,13 +108,23 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 	// 统一保存逻辑（使用 useEditorSave hook）
 	// ==============================
 
+	// 用于在 onSaveSuccess 中访问最新的 code
+	const codeRef = useRef(code);
+	useEffect(() => {
+		codeRef.current = code;
+	}, [code]);
+
 	const { updateContent, saveNow, hasUnsavedChanges, setInitialContent } =
 		useEditorSave({
 			nodeId,
 			contentType: "text", // 图表内容使用 "text" 类型存储（纯文本 Mermaid/PlantUML 语法）
-			// autoSaveDelay 使用默认值 1000ms
+			tabId: activeTabId ?? undefined, // 传递 tabId 用于同步 isDirty 状态
 			onSaveSuccess: () => {
 				logger.success("[DiagramEditor] 内容保存成功");
+				// 保存成功后触发预览渲染
+				if (codeRef.current && canRenderPreview) {
+					updatePreview(codeRef.current);
+				}
 			},
 			onSaveError: (error) => {
 				logger.error("[DiagramEditor] 保存内容失败:", error);
@@ -160,7 +172,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 	}, [isDark]);
 
 	// ==============================
-	// 渲染预览（防抖）
+	// 渲染预览（只在保存后触发）
 	// ==============================
 
 	const updatePreview = useCallback(
@@ -218,12 +230,6 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 		[canRenderPreview, diagramType, isDark, krokiServerUrl, nodeId],
 	);
 
-	// 防抖预览更新
-	const debouncedPreview = useMemo(
-		() => debounce(updatePreview, PREVIEW_DEBOUNCE_MS),
-		[updatePreview],
-	);
-
 	// ==============================
 	// 初始化预览
 	// ==============================
@@ -232,28 +238,26 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 		if (isInitialized && code && canRenderPreview) {
 			updatePreview(code);
 		}
-	}, [isInitialized, canRenderPreview, code, updatePreview]); // 只在初始化和配置变化时触发
+	}, [isInitialized, canRenderPreview]); // 只在初始化和配置变化时触发，不依赖 code
 
 	// ==============================
-	// 代码变化处理
+	// 代码变化处理（不触发实时预览）
 	// ==============================
 
 	const handleCodeChange = useCallback(
 		(newCode: string) => {
 			setCode(newCode);
-
-			// 防抖更新预览
-			debouncedPreview(newCode);
-
-			// 使用统一保存逻辑（触发防抖保存）
+			// 移除实时预览：debouncedPreview(newCode);
+			// 使用统一保存逻辑（触发防抖保存，保存成功后会触发预览）
 			updateContent(newCode);
 		},
-		[debouncedPreview, updateContent],
+		[updateContent],
 	);
 
 	/**
 	 * 手动保存处理器 (Ctrl+S)
 	 * 使用 useEditorSave hook 的 saveNow 方法
+	 * 保存成功后会通过 onSaveSuccess 回调触发预览渲染
 	 */
 	const handleManualSave = useCallback(async () => {
 		if (!hasUnsavedChanges()) {
@@ -287,15 +291,13 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 
 	useEffect(() => {
 		return () => {
-			// 取消防抖预览
-			debouncedPreview.cancel();
 			// 取消正在进行的请求
 			if (abortControllerRef.current) {
 				abortControllerRef.current.abort();
 			}
 			// 注意：useEditorSave hook 会自动处理组件卸载时的保存和清理
 		};
-	}, [debouncedPreview]);
+	}, []);
 
 	// ==============================
 	// 渲染

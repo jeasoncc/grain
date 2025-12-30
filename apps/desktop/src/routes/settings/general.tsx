@@ -181,8 +181,8 @@ function GeneralSettings() {
 											onChange={(e) =>
 												setAutoSaveInterval(Number(e.target.value))
 											}
-											min={10}
-											max={3600}
+											min={1}
+											max={60}
 											className="h-8 w-20 text-center"
 										/>
 										<span className="text-sm text-muted-foreground">sec</span>

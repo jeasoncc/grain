@@ -118,6 +118,9 @@ export const createEditorSaveService = (
 	let lastSavedContent = "";
 	let pendingContent: string | null = null;
 
+	// 是否启用自动保存（autoSaveDelay > 0 时启用）
+	const isAutoSaveEnabled = autoSaveDelay > 0;
+
 	/**
 	 * 执行保存操作
 	 * 内部函数，被防抖包装和直接调用
@@ -148,18 +151,24 @@ export const createEditorSaveService = (
 
 	/**
 	 * 防抖保存函数
+	 * 当 autoSaveDelay = 0 时禁用自动保存
 	 */
-	const debouncedSave = debounce(saveContent, autoSaveDelay);
+	const debouncedSave = isAutoSaveEnabled
+		? debounce(saveContent, autoSaveDelay)
+		: null;
 
 	return {
 		/**
 		 * 更新内容（触发防抖保存）
 		 *
 		 * 每次调用都会重置防抖定时器，只有在用户停止输入后才会触发保存。
+		 * 当 autoSaveDelay = 0 时，只更新 pendingContent，不触发自动保存。
 		 */
 		updateContent: (content: string): void => {
 			pendingContent = content;
-			debouncedSave(content);
+			if (debouncedSave) {
+				debouncedSave(content);
+			}
 		},
 
 		/**
@@ -170,7 +179,7 @@ export const createEditorSaveService = (
 		 */
 		saveNow: async (): Promise<void> => {
 			// 取消防抖定时器
-			debouncedSave.cancel();
+			debouncedSave?.cancel();
 
 			// 如果有待保存的内容，立即保存
 			if (pendingContent !== null) {
@@ -195,7 +204,7 @@ export const createEditorSaveService = (
 		 * 注意：不会自动保存未保存的内容，调用者需要先调用 saveNow()。
 		 */
 		dispose: (): void => {
-			debouncedSave.cancel();
+			debouncedSave?.cancel();
 			logger.debug("[EditorSaveService] 资源已清理:", nodeId);
 		},
 

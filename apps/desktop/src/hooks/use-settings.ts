@@ -53,7 +53,11 @@ export const useSettings = create<SettingsState>()(
 			// Setters
 			setLanguage: (language) => set({ language }),
 			setAutoSave: (autoSave) => set({ autoSave }),
-			setAutoSaveInterval: (autoSaveInterval) => set({ autoSaveInterval }),
+			setAutoSaveInterval: (interval) => {
+				// 范围限制：1-60 秒
+				const validated = Math.max(1, Math.min(60, interval));
+				set({ autoSaveInterval: validated });
+			},
 			setSpellCheck: (spellCheck) => set({ spellCheck }),
 			setWordCountMode: (wordCountMode) => set({ wordCountMode }),
 			setShowWordCountBadge: (showWordCountBadge) =>

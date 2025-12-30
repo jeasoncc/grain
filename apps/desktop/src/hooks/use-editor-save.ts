@@ -8,6 +8,10 @@
  * 数据流：
  * Editor → useEditorSave → EditorSaveService → DB → SaveStore → UI 反馈
  *
+ * 配置来源：
+ * - autoSave 和 autoSaveInterval 从 useSettings 全局设置读取
+ * - tabId 用于同步 EditorTab.isDirty 状态
+ *
  * @requirements 3.1, 3.2, 3.3, 3.4, 3.5, 7.1, 7.2, 7.3, 7.4, 7.5
  */
 
@@ -19,8 +23,11 @@ import {
 	type EditorSaveServiceInterface,
 } from "@/fn/save";
 import logger from "@/log";
+import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSaveStore } from "@/stores/save.store";
 import type { ContentType } from "@/types/content/content.interface";
+
+import { useSettings } from "./use-settings";
 
 // ============================================================================
 // Types
@@ -34,14 +41,14 @@ export interface UseEditorSaveOptions {
 	readonly nodeId: string;
 	/** 内容类型 */
 	readonly contentType: ContentType;
-	/** 自动保存防抖延迟（毫秒），默认 1000ms */
-	readonly autoSaveDelay?: number;
 	/** 初始内容（用于设置保存基准） */
 	readonly initialContent?: string;
 	/** 保存成功回调 */
 	readonly onSaveSuccess?: () => void;
 	/** 保存失败回调 */
 	readonly onSaveError?: (error: Error) => void;
+	/** 标签页 ID，用于更新 isDirty 状态 */
+	readonly tabId?: string;
 }
 
 /**
@@ -62,8 +69,8 @@ export interface UseEditorSaveReturn {
 // Constants
 // ============================================================================
 
-/** 默认自动保存防抖延迟（毫秒） */
-const DEFAULT_AUTOSAVE_DELAY = 1000;
+/** 默认自动保存防抖延迟（秒） - 仅作为 fallback */
+const DEFAULT_AUTOSAVE_INTERVAL = 3;
 
 // ============================================================================
 // Hook Implementation
@@ -111,11 +118,23 @@ export function useEditorSave(
 	const {
 		nodeId,
 		contentType,
-		autoSaveDelay = DEFAULT_AUTOSAVE_DELAY,
 		initialContent,
 		onSaveSuccess,
 		onSaveError,
+		tabId,
 	} = options;
+
+	// ==============================
+	// 读取全局设置
+	// ==============================
+
+	const { autoSave, autoSaveInterval } = useSettings();
+
+	// 计算有效的自动保存延迟（毫秒）
+	// 当 autoSave=false 时，设为 0 禁用自动保存
+	const effectiveDelay = autoSave
+		? (autoSaveInterval ?? DEFAULT_AUTOSAVE_INTERVAL) * 1000
+		: 0;
 
 	// ==============================
 	// Store 连接
@@ -123,6 +142,8 @@ export function useEditorSave(
 
 	const { markAsUnsaved, markAsSaving, markAsSaved, markAsError } =
 		useSaveStore();
+
+	const setTabDirty = useEditorTabsStore((s) => s.setTabDirty);
 
 	// ==============================
 	// Refs
@@ -158,12 +179,16 @@ export function useEditorSave(
 		const config: EditorSaveConfig = {
 			nodeId,
 			contentType,
-			autoSaveDelay,
+			autoSaveDelay: effectiveDelay,
 			onSaving: () => {
 				markAsSaving();
 			},
 			onSaved: () => {
 				markAsSaved();
+				// 保存成功后清除 tab dirty 状态
+				if (tabId) {
+					setTabDirty(tabId, false);
+				}
 				callbacksRef.current.onSaveSuccess?.();
 			},
 			onError: (error) => {
@@ -175,13 +200,20 @@ export function useEditorSave(
 		const service = createEditorSaveService(config);
 		serviceRef.current = service;
 
-		logger.debug("[useEditorSave] 保存服务已创建:", { nodeId, contentType });
+		logger.debug("[useEditorSave] 保存服务已创建:", {
+			nodeId,
+			contentType,
+			autoSaveDelay: effectiveDelay,
+			autoSaveEnabled: effectiveDelay > 0,
+		});
 
 		return service;
 	}, [
 		nodeId,
 		contentType,
-		autoSaveDelay,
+		effectiveDelay,
+		tabId,
+		setTabDirty,
 		markAsSaving,
 		markAsSaved,
 		markAsError,
@@ -232,9 +264,13 @@ export function useEditorSave(
 	const updateContent = useCallback(
 		(content: string) => {
 			markAsUnsaved();
+			// 同步更新 tab dirty 状态
+			if (tabId) {
+				setTabDirty(tabId, true);
+			}
 			saveService.updateContent(content);
 		},
-		[saveService, markAsUnsaved],
+		[saveService, markAsUnsaved, tabId, setTabDirty],
 	);
 
 	/**
