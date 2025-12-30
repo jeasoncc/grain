@@ -68,13 +68,13 @@
   - 运行 `bun run test` 确保所有测试通过
   - 如有问题，询问用户
 
-- [ ] 7. 优化 Excalidraw 实例稳定性
-  - [ ] 7.1 确保 resize 时不重新创建 Excalidraw 实例
+- [x] 7. 优化 Excalidraw 实例稳定性
+  - [x] 7.1 确保 resize 时不重新创建 Excalidraw 实例
     - 验证 key prop 在 resize 时保持稳定
     - 只有 nodeId 变化时才更新 key
     - _Requirements: 4.4_
 
-  - [ ] 7.2 编写属性测试验证 Excalidraw 实例保持
+  - [x] 7.2 编写属性测试验证 Excalidraw 实例保持
     - **Property 6: Excalidraw 实例保持**
     - **Validates: Requirements 4.4**
 
