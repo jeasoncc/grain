@@ -1,15 +1,24 @@
-// Devtools 包装组件
-// 仅在开发模式下加载和显示 TanStack Devtools
+/**
+ * @file devtools-wrapper.container.fn.tsx
+ * @description Devtools 包装容器组件
+ *
+ * 仅在开发模式下加载和显示 TanStack Router Devtools。
+ * 使用动态导入实现生产环境的 tree-shaking。
+ */
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import logger from "@/log";
 
 // 类型定义
 type DevtoolsModules = {
-	TanStackRouterDevtoolsPanel: React.ComponentType;
+	readonly TanStackRouterDevtoolsPanel: React.ComponentType;
 } | null;
 
-export function DevtoolsWrapper() {
+/**
+ * Devtools 包装容器组件
+ * 仅在开发环境下渲染 TanStack Router Devtools
+ */
+export const DevtoolsWrapperContainer = memo(function DevtoolsWrapperContainer() {
 	const [devtoolsModules, setDevtoolsModules] = useState<DevtoolsModules>(null);
 
 	useEffect(() => {
@@ -29,7 +38,7 @@ export function DevtoolsWrapper() {
 			})
 			.catch((error) => {
 				// 静默失败（开发环境下可能缺少依赖）
-				logger.warn("Failed to load Devtools:", error);
+				logger.warn("[Devtools] 加载失败:", error);
 			});
 	}, []);
 
@@ -41,4 +50,7 @@ export function DevtoolsWrapper() {
 	const { TanStackRouterDevtoolsPanel } = devtoolsModules;
 
 	return <TanStackRouterDevtoolsPanel />;
-}
+});
+
+// 默认导出
+export { DevtoolsWrapperContainer as DevtoolsWrapper };
