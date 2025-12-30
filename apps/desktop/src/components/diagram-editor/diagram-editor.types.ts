@@ -10,6 +10,7 @@
 
 // 从 fn/diagram 导入共享类型（避免重复定义）
 import type { DiagramError, DiagramErrorType, DiagramType } from "@/fn/diagram";
+import type { Theme } from "@/lib/themes";
 
 // 重新导出供外部使用
 export type { DiagramError, DiagramErrorType, DiagramType };
@@ -32,8 +33,8 @@ export interface DiagramEditorViewProps {
 	readonly error: DiagramError | null;
 	/** Kroki 是否已配置 */
 	readonly isKrokiConfigured: boolean;
-	/** 主题 */
-	readonly theme?: "light" | "dark";
+	/** 主题（完整 Theme 对象，用于 Monaco 主题同步） */
+	readonly theme?: Theme;
 	/** 代码变化回调 */
 	readonly onCodeChange: (code: string) => void;
 	/** 手动保存回调 (Ctrl+S) */

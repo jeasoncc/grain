@@ -46,7 +46,7 @@
 
 ## Task 4: 更新 DiagramEditorView 类型定义
 
-- [ ] 修改 `diagram-editor.types.ts` 中的 `DiagramEditorViewProps`
+- [-] 修改 `diagram-editor.types.ts` 中的 `DiagramEditorViewProps`
 - [ ] 将 `theme` 属性从 `"light" | "dark"` 改为 `Theme | undefined`
 - [ ] 添加 `Theme` 类型导入
 
