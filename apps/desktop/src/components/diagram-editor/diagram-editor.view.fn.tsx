@@ -12,6 +12,7 @@
 
 import { Settings } from "lucide-react";
 import { memo } from "react";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
 import { CodeEditorView } from "@/components/code-editor";
 import { Button } from "@/components/ui/button";

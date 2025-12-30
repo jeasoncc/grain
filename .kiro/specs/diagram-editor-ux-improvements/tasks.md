@@ -33,7 +33,7 @@
 
 - [x] 导入 `registerMonacoTheme` 和 `getMonacoThemeName` 函数
 - [x] 在 `handleEditorMount` 中注册并应用当前主题
-- [x] 添加 `useEffect` 监听 `theme` prop 变化
+- [x] 添加 `useEffect` 监听 `theme` prop 变化   
 - [x] 主题变化时调用 `registerMonacoTheme` 并更新 Monaco 主题
 - [x] 保持向后兼容：未传入 theme 时使用默认 light/dark
 
@@ -46,7 +46,7 @@
 
 ## Task 4: 更新 DiagramEditorView 类型定义
 
-- [-] 修改 `diagram-editor.types.ts` 中的 `DiagramEditorViewProps`
+- [x] 修改 `diagram-editor.types.ts` 中的 `DiagramEditorViewProps`
 - [ ] 将 `theme` 属性从 `"light" | "dark"` 改为 `Theme | undefined`
 - [ ] 添加 `Theme` 类型导入
 
@@ -59,7 +59,7 @@
 
 ## Task 5: 更新 DiagramEditorView 实现可拖动面板
 
-- [ ] 导入 `Panel`, `PanelGroup`, `PanelResizeHandle` 从 `react-resizable-panels`
+- [-] 导入 `Panel`, `PanelGroup`, `PanelResizeHandle` 从 `react-resizable-panels`
 - [ ] 将现有 flex 布局替换为 `PanelGroup` 布局
 - [ ] 设置 `autoSaveId="diagram-editor-layout"` 实现尺寸持久化
 - [ ] 设置代码编辑器面板 `minSize={20}` `maxSize={80}`
