@@ -107,23 +107,45 @@ export const ExcalidrawEditorContainer = memo(
 		);
 		const sizeStableRef = useRef(false);
 
-		// 解析内容并设置初始数据
+		// 追踪上一个 nodeId，用于检测 nodeId 变化
+		const prevNodeIdRef = useRef<string | null>(null);
+
+		/**
+		 * 解析内容并设置初始数据
+		 *
+		 * 性能优化：
+		 * - 使用 isInitializedRef 确保 parseExcalidrawContent 只在初始化时调用一次
+		 * - 当 nodeId 变化时，重置 isInitializedRef 以允许重新解析
+		 *
+		 * @requirements 2.4
+		 */
 		useEffect(() => {
+			// 检测 nodeId 是否变化
+			const nodeIdChanged = prevNodeIdRef.current !== null && prevNodeIdRef.current !== nodeId;
+
+			// 如果 nodeId 变化，重置状态
+			if (nodeIdChanged) {
+				logger.info("[ExcalidrawEditor] nodeId 变化，重置状态:", {
+					from: prevNodeIdRef.current,
+					to: nodeId,
+				});
+				isInitializedRef.current = false;
+				sizeStableRef.current = false;
+				setInitialData(null);
+				setContainerSize(null);
+			}
+
+			// 更新 prevNodeIdRef
+			prevNodeIdRef.current = nodeId;
+
+			// 只有在未初始化且 content 已加载时才解析内容
 			if (content !== undefined && !isInitializedRef.current) {
 				const parsed = parseExcalidrawContent(content?.content);
 				setInitialData(parsed);
 				isInitializedRef.current = true;
 				logger.info("[ExcalidrawEditor] 初始化数据:", parsed);
 			}
-		}, [content]);
-
-		// 当 nodeId 变化时重置
-		useEffect(() => {
-			isInitializedRef.current = false;
-			sizeStableRef.current = false;
-			setInitialData(null);
-			setContainerSize(null);
-		}, []);
+		}, [content, nodeId]);
 
 		// 监听容器尺寸 - 使用防抖确保尺寸稳定
 		// @requirements 4.1, 4.2

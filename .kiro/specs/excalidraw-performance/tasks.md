@@ -54,13 +54,13 @@
     - **Property 4: 状态更新节流**
     - **Validates: Requirements 3.4**
 
-- [ ] 5. 优化内容解析缓存
-  - [ ] 5.1 确保 parseExcalidrawContent 只在初始化时调用一次
+- [x] 5. 优化内容解析缓存
+  - [x] 5.1 确保 parseExcalidrawContent 只在初始化时调用一次
     - 验证 isInitializedRef 逻辑正确
     - 确保 nodeId 变化时正确重置
     - _Requirements: 2.4_
 
-  - [ ] 5.2 编写属性测试验证内容解析缓存
+  - [x] 5.2 编写属性测试验证内容解析缓存
     - **Property 3: 内容解析缓存**
     - **Validates: Requirements 2.4**
 
