@@ -62,7 +62,7 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 	language,
 	className,
 }: CodeEditorContainerProps) {
-	const { isDark } = useTheme();
+	const { currentTheme } = useTheme();
 
 	// ==============================
 	// 使用 useContentByNodeId hook 加载内容（响应式）
@@ -217,7 +217,7 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 			<CodeEditorView
 				value={code}
 				language={language}
-				theme={isDark ? "dark" : "light"}
+				theme={currentTheme}
 				onChange={handleCodeChange}
 				onSave={handleManualSave}
 			/>

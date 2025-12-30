@@ -64,7 +64,7 @@
 - [x] 设置 `autoSaveId="diagram-editor-layout"` 实现尺寸持久化
 - [x] 设置代码编辑器面板 `minSize={20}` `maxSize={80}`
 - [x] 设置预览面板 `minSize={20}` `maxSize={80}`
-- [-] 添加 `PanelResizeHandle` 并设置样式（hover 反馈）
+- [x] 添加 `PanelResizeHandle` 并设置样式（hover 反馈）
 
 **Requirements:** 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7
 
@@ -75,7 +75,7 @@
 
 ## Task 6: 更新 DiagramEditorContainer 传递完整主题
 
-- [ ] 修改 `useTheme()` 调用，获取 `currentTheme` 而非 `isDark`
+- [-] 修改 `useTheme()` 调用，获取 `currentTheme` 而非 `isDark`
 - [ ] 将 `currentTheme` 传递给 `DiagramEditorView` 的 `theme` prop
 
 **Requirements:** 1.1, 1.2

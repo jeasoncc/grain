@@ -66,7 +66,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 	className,
 }: DiagramEditorContainerProps) {
 	const navigate = useNavigate();
-	const { isDark } = useTheme();
+	const { currentTheme, isDark } = useTheme();
 
 	// ==============================
 	// Store 连接
@@ -315,7 +315,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 				isLoading={isLoading}
 				error={error}
 				isKrokiConfigured={showKrokiConfigured}
-				theme={isDark ? "dark" : "light"}
+				theme={currentTheme}
 				onCodeChange={handleCodeChange}
 				onSave={handleManualSave}
 				onOpenSettings={handleOpenSettings}
