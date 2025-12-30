@@ -1,16 +1,16 @@
 # Implementation Tasks
 
-## Task 1: 修改 useSettings Store 添加范围验证
+## Task 1: 修改 useSettings Store 添加范围验证 ✅
 
 **File:** `apps/desktop/src/hooks/use-settings.ts`
 
 **Requirements:** REQ-2
 
 **Acceptance Criteria:**
-- [ ] `autoSaveInterval` 默认值为 3 秒
-- [ ] `autoSave` 默认值为 true
-- [ ] `setAutoSaveInterval` 方法限制范围在 1-60 秒
-- [ ] 小于 1 的值被设为 1，大于 60 的值被设为 60
+- [x] `autoSaveInterval` 默认值为 3 秒
+- [x] `autoSave` 默认值为 true
+- [x] `setAutoSaveInterval` 方法限制范围在 1-60 秒
+- [x] 小于 1 的值被设为 1，大于 60 的值被设为 60
 
 **Implementation:**
 ```typescript
@@ -21,22 +21,22 @@ setAutoSaveInterval: (interval: number) => {
 ```
 
 **Tests:**
-- [ ] 测试默认值
-- [ ] 测试范围限制（使用 fast-check 属性测试）
-- [ ] 测试设置持久化
+- [x] 测试默认值
+- [x] 测试范围限制（使用 fast-check 属性测试）
+- [x] 测试设置持久化
 
 ---
 
-## Task 2: 修改 EditorSaveService 支持禁用自动保存
+## Task 2: 修改 EditorSaveService 支持禁用自动保存 ✅
 
 **File:** `apps/desktop/src/fn/save/editor-save.service.ts`
 
 **Requirements:** REQ-1.3
 
 **Acceptance Criteria:**
-- [ ] 当 `autoSaveDelay = 0` 时禁用自动保存
-- [ ] 禁用时 `updateContent` 只更新 pendingContent，不触发 debounce
-- [ ] 手动保存 (`saveNow`) 仍然正常工作
+- [x] 当 `autoSaveDelay = 0` 时禁用自动保存
+- [x] 禁用时 `updateContent` 只更新 pendingContent，不触发 debounce
+- [x] 手动保存 (`saveNow`) 仍然正常工作
 
 **Implementation:**
 ```typescript
@@ -44,36 +44,36 @@ const isAutoSaveEnabled = autoSaveDelay > 0;
 
 const debouncedSave = isAutoSaveEnabled
   ? debounce(saveContent, autoSaveDelay)
-  : { cancel: () => {} };
+  : null;
 
 updateContent: (content: string): void => {
   pendingContent = content;
-  if (isAutoSaveEnabled) {
+  if (debouncedSave) {
     debouncedSave(content);
   }
 },
 ```
 
 **Tests:**
-- [ ] 测试 autoSaveDelay=0 时不触发自动保存
-- [ ] 测试 autoSaveDelay>0 时正常触发自动保存
-- [ ] 测试手动保存在两种模式下都正常工作
+- [x] 测试 autoSaveDelay=0 时不触发自动保存
+- [x] 测试 autoSaveDelay>0 时正常触发自动保存
+- [x] 测试手动保存在两种模式下都正常工作
 
 ---
 
-## Task 3: 修改 useEditorSave Hook 读取全局设置
+## Task 3: 修改 useEditorSave Hook 读取全局设置 ✅
 
 **File:** `apps/desktop/src/hooks/use-editor-save.ts`
 
 **Requirements:** REQ-1, REQ-3
 
 **Acceptance Criteria:**
-- [ ] 读取 `useSettings` 的 `autoSave` 和 `autoSaveInterval`
-- [ ] 将 `autoSaveInterval` 转换为毫秒
-- [ ] 当 `autoSave=false` 时传递 `autoSaveDelay=0` 给 service
-- [ ] 添加 `tabId` 参数用于更新 tab dirty 状态
-- [ ] 在 `markAsUnsaved` 时设置 `EditorTab.isDirty = true`
-- [ ] 在保存成功时设置 `EditorTab.isDirty = false`
+- [x] 读取 `useSettings` 的 `autoSave` 和 `autoSaveInterval`
+- [x] 将 `autoSaveInterval` 转换为毫秒
+- [x] 当 `autoSave=false` 时传递 `autoSaveDelay=0` 给 service
+- [x] 添加 `tabId` 参数用于更新 tab dirty 状态
+- [x] 在 `markAsUnsaved` 时设置 `EditorTab.isDirty = true`
+- [x] 在保存成功时设置 `EditorTab.isDirty = false`
 
 **Implementation:**
 ```typescript
@@ -105,17 +105,17 @@ export function useEditorSave(options: UseEditorSaveOptions): UseEditorSaveRetur
 
 ---
 
-## Task 4: 修改 DiagramEditorContainer 移除实时预览
+## Task 4: 修改 DiagramEditorContainer 移除实时预览 ✅
 
 **File:** `apps/desktop/src/components/diagram-editor/diagram-editor.container.fn.tsx`
 
 **Requirements:** REQ-4
 
 **Acceptance Criteria:**
-- [ ] 移除 `handleCodeChange` 中的 `debouncedPreview` 调用
-- [ ] 在 `onSaveSuccess` 回调中触发 `updatePreview`
-- [ ] 传递 `tabId` 给 `useEditorSave`
-- [ ] 手动保存后也触发预览渲染
+- [x] 移除 `handleCodeChange` 中的 `debouncedPreview` 调用
+- [x] 在 `onSaveSuccess` 回调中触发 `updatePreview`
+- [x] 传递 `tabId` 给 `useEditorSave`
+- [x] 手动保存后也触发预览渲染
 
 **Implementation:**
 ```typescript
@@ -145,16 +145,16 @@ const handleCodeChange = useCallback((newCode: string) => {
 
 ---
 
-## Task 5: 修改设置页面 autoSaveInterval 范围
+## Task 5: 修改设置页面 autoSaveInterval 范围 ✅
 
 **File:** `apps/desktop/src/routes/settings/general.tsx`
 
 **Requirements:** REQ-5
 
 **Acceptance Criteria:**
-- [ ] 将 `min` 从 10 改为 1
-- [ ] 将 `max` 从 3600 改为 60
-- [ ] 显示当前值
+- [x] 将 `min` 从 10 改为 1
+- [x] 将 `max` 从 3600 改为 60
+- [x] 显示当前值
 
 **Implementation:**
 ```tsx
@@ -174,15 +174,15 @@ const handleCodeChange = useCallback((newCode: string) => {
 
 ---
 
-## Task 6: 添加属性测试
+## Task 6: 添加属性测试 ✅
 
-**File:** `apps/desktop/src/hooks/use-settings.test.ts` (新建)
+**File:** `apps/desktop/src/hooks/use-settings.test.ts`, `apps/desktop/src/fn/save/editor-save.service.test.ts`
 
 **Requirements:** Property 2, Property 3
 
 **Acceptance Criteria:**
-- [ ] 使用 fast-check 测试 autoSaveInterval 范围验证
-- [ ] 使用 fast-check 测试 autoSave=false 时禁用自动保存
+- [x] 使用 fast-check 测试 autoSaveInterval 范围验证
+- [x] 使用 fast-check 测试 autoSave=false 时禁用自动保存
 
 **Implementation:**
 ```typescript
@@ -219,16 +219,20 @@ Task 6 (属性测试) ── 依赖 Task 1, Task 3
 
 ## Execution Order
 
-1. **Phase 1 (并行)**
-   - Task 1: useSettings 范围验证
-   - Task 2: EditorSaveService 禁用支持
-   - Task 5: Settings UI 范围调整
+1. **Phase 1 (并行)** ✅
+   - Task 1: useSettings 范围验证 ✅
+   - Task 2: EditorSaveService 禁用支持 ✅
+   - Task 5: Settings UI 范围调整 ✅
 
-2. **Phase 2**
-   - Task 3: useEditorSave 读取全局设置
+2. **Phase 2** ✅
+   - Task 3: useEditorSave 读取全局设置 ✅
 
-3. **Phase 3**
-   - Task 4: DiagramEditorContainer 移除实时预览
+3. **Phase 3** ✅
+   - Task 4: DiagramEditorContainer 移除实时预览 ✅
 
-4. **Phase 4**
-   - Task 6: 属性测试
+4. **Phase 4** ✅
+   - Task 6: 属性测试 ✅
+
+## Summary
+
+所有 6 个任务已完成，51 个测试全部通过。
