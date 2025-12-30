@@ -563,7 +563,8 @@ describe("EditorSaveService", () => {
 
 						// 延迟前不应该保存
 						await vi.advanceTimersByTimeAsync(delay - 1);
-						const notSavedYet = mockUpdateContentByNodeId.mock.calls.length === 0;
+						const notSavedYet =
+							mockUpdateContentByNodeId.mock.calls.length === 0;
 
 						// 延迟后应该保存
 						await vi.advanceTimersByTimeAsync(2);

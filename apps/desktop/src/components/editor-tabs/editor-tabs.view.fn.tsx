@@ -188,7 +188,9 @@ export const EditorTabsView = memo(
 											{getTabIcon(tab.type)}
 											<span className="truncate flex-1 text-left text-xs">
 												{tab.isDirty && (
-													<span className="text-primary mr-0.5 text-[8px]">●</span>
+													<span className="text-primary mr-0.5 text-[8px]">
+														●
+													</span>
 												)}
 												{tab.title}
 											</span>

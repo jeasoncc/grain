@@ -11,7 +11,7 @@ import { type MentionEntry, MultiEditorContainer } from "@grain/editor";
 import * as E from "fp-ts/Either";
 import type { SerializedEditorState } from "lexical";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-preview-connected";
 import { DiagramEditorContainer } from "@/components/diagram-editor";
 import { EditorTabs } from "@/components/editor-tabs";
@@ -29,8 +29,8 @@ import {
 } from "@/components/ui/tooltip";
 import { WordCountBadge } from "@/components/word-count-badge";
 import { getContentByNodeId } from "@/db";
-import { saveService } from "@/fn/save";
 import { countWordsFromLexicalState } from "@/fn/word-count";
+import { useEditorSave } from "@/hooks/use-editor-save";
 import { useManualSave } from "@/hooks/use-save";
 import { useSettings } from "@/hooks/use-settings";
 import { useWikiFiles } from "@/hooks/use-wiki";
@@ -42,8 +42,6 @@ import { useSelectionStore } from "@/stores/selection.store";
 import { useUIStore } from "@/stores/ui.store";
 import type { StoryWorkspaceContainerProps } from "./story-workspace.types";
 
-const DEFAULT_AUTO_SAVE_MS = 800;
-
 export const StoryWorkspaceContainer = memo(
 	({ workspaces, activeWorkspaceId }: StoryWorkspaceContainerProps) => {
 		const initialWorkspaceId = activeWorkspaceId ?? workspaces[0]?.id ?? null;
@@ -52,15 +50,10 @@ export const StoryWorkspaceContainer = memo(
 			(s) => s.setSelectedWorkspaceId,
 		);
 
-		const { autoSave, autoSaveInterval, wordCountMode, showWordCountBadge } =
-			useSettings();
-		const autoSaveDelayMs = autoSave
-			? Math.max(DEFAULT_AUTO_SAVE_MS, autoSaveInterval * 1000)
-			: 0;
+		const { wordCountMode, showWordCountBadge } = useSettings();
 
 		const [editorInitialState, setEditorInitialState] =
 			useState<SerializedEditorState>();
-		const [, setSaveStatus] = useState<"saved" | "saving" | "error">("saved");
 
 		// UI 状态
 		const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen);
@@ -91,16 +84,13 @@ export const StoryWorkspaceContainer = memo(
 		const editorStates = useEditorTabsStore((s) => s.editorStates);
 		const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
 
-		// 保存状态管理
+		// 保存状态管理（用于 UI 显示）
 		const {
 			status: saveStatus,
 			lastSaveTime,
 			errorMessage,
 			hasUnsavedChanges,
 			isManualSaving,
-			markAsUnsaved,
-			markAsSaved,
-			markAsSaving,
 		} = useSaveStore();
 
 		// 获取当前编辑器内容
@@ -111,17 +101,33 @@ export const StoryWorkspaceContainer = memo(
 			return editorInitialState || null;
 		}, [activeTabId, editorStates, editorInitialState]);
 
-		// 获取当前活动标签（提前定义，供 useManualSave 使用）
+		// 获取当前活动标签（提前定义，供 useEditorSave 和 useManualSave 使用）
 		const activeTab = tabs.find((t) => t.id === activeTabId);
 
-		// 手动保存 hook
+		// ==============================
+		// 统一保存逻辑（使用 useEditorSave hook）
+		// ==============================
+
+		const { updateContent } = useEditorSave({
+			nodeId: activeTab?.nodeId ?? "",
+			contentType: "lexical",
+			tabId: activeTabId ?? undefined,
+			onSaveSuccess: () => {
+				logger.success("[StoryWorkspace] 内容保存成功");
+			},
+			onSaveError: (error) => {
+				logger.error("[StoryWorkspace] 保存失败:", error);
+			},
+		});
+
+		// 手动保存 hook（Ctrl+S 快捷键）
 		// 注意：需要使用 activeTab.nodeId 而不是 activeTabId
 		// activeTabId 是标签页 ID，nodeId 才是数据库中的节点 ID
 		useManualSave({
 			nodeId: activeTab?.nodeId ?? null,
 			currentContent,
-			onSaveSuccess: () => setSaveStatus("saved"),
-			onSaveError: () => setSaveStatus("error"),
+			onSaveSuccess: () => logger.success("[StoryWorkspace] 手动保存成功"),
+			onSaveError: () => logger.error("[StoryWorkspace] 手动保存失败"),
 		});
 
 		// 初始化工作空间选择
@@ -163,9 +169,6 @@ export const StoryWorkspaceContainer = memo(
 			}
 		}, [activeTabId, allTabs, editorStates, updateEditorState]);
 
-		// 自动保存定时器引用
-		const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-
 		// drawing 类型使用 Excalidraw 编辑器
 		const isExcalidrawTab = activeTab?.type === "drawing";
 		// mermaid/plantuml 类型使用 DiagramEditor
@@ -181,43 +184,17 @@ export const StoryWorkspaceContainer = memo(
 
 		const handleMultiEditorContentChange = useCallback(
 			(tabId: string, state: SerializedEditorState) => {
+				// 更新编辑器状态
 				updateEditorState(tabId, { serializedState: state });
-				markAsUnsaved();
 
-				if (autoSaveTimerRef.current) {
-					clearTimeout(autoSaveTimerRef.current);
-				}
-
-				if (autoSaveDelayMs > 0) {
-					autoSaveTimerRef.current = setTimeout(async () => {
-						const tab = tabs.find((t) => t.id === tabId);
-						if (!tab) return;
-
-						setSaveStatus("saving");
-						markAsSaving();
-
-						try {
-							const documentId = tab.nodeId;
-							if (documentId) {
-								await saveService.saveDocument(documentId, state);
-							}
-							setSaveStatus("saved");
-							markAsSaved();
-						} catch (error) {
-							logger.error("[StoryWorkspace] 自动保存失败:", error);
-							setSaveStatus("error");
-						}
-					}, autoSaveDelayMs);
+				// 只有当前活动标签页才触发保存
+				if (tabId === activeTabId) {
+					// 序列化并通过 hook 更新内容（触发防抖保存）
+					const serialized = JSON.stringify(state);
+					updateContent(serialized);
 				}
 			},
-			[
-				autoSaveDelayMs,
-				tabs,
-				updateEditorState,
-				markAsUnsaved,
-				markAsSaving,
-				markAsSaved,
-			],
+			[activeTabId, updateEditorState, updateContent],
 		);
 
 		const textEditorTabs = useMemo(() => {

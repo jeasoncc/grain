@@ -5,22 +5,19 @@
  */
 
 import type { EditorInstanceState as BaseEditorInstanceState } from "@grain/editor";
+import type { NodeType } from "@/types/node";
 
 // ==============================
 // Tab Types
 // ==============================
 
-export type TabType =
-	| "file"
-	| "diary"
-	| "wiki"
-	| "todo"
-	| "note"
-	| "ledger"
-	| "drawing"
-	| "plantuml"
-	| "mermaid"
-	| "folder";
+/**
+ * TabType 复用 NodeType，排除 folder
+ *
+ * 当 NodeType 新增类型时，TabType 自动包含（除了 folder）
+ * 这确保了类型定义的单一来源，避免重复维护
+ */
+export type TabType = Exclude<NodeType, "folder">;
 
 // ==============================
 // Editor Tab Interface
