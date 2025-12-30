@@ -8,8 +8,9 @@
  * - 使用 refs 存储非渲染数据（currentDataRef, hasUnsavedChanges）
  * - onChange 回调不触发组件重渲染
  * - 状态更新使用节流控制
+ * - ResizeObserver 使用防抖和阈值过滤
  *
- * @requirements 2.1, 3.1, 3.2, 5.2, 5.4, 7.4
+ * @requirements 2.1, 3.1, 3.2, 4.1, 4.2, 5.2, 5.4, 7.4
  */
 
 import { debounce, throttle } from "es-toolkit";

@@ -29,13 +29,13 @@
     - **Validates: Requirements 2.1**
 
 - [-] 3. 优化 ResizeObserver 处理
-  - [-] 3.1 重构 ResizeObserver 逻辑使用配置常量
+  - [x] 3.1 重构 ResizeObserver 逻辑使用配置常量
     - 使用 RESIZE_DEBOUNCE_DELAY (200ms) 替代硬编码的 150ms
     - 使用 SIZE_CHANGE_THRESHOLD (10px) 替代硬编码的 10
     - 使用 MIN_VALID_SIZE (200px) 替代硬编码的 200
     - _Requirements: 4.1, 4.2_
 
-  - [ ] 3.2 编写属性测试验证 Resize 事件防抖
+  - [-] 3.2 编写属性测试验证 Resize 事件防抖
     - **Property 5: Resize 事件防抖**
     - **Validates: Requirements 4.1**
 
