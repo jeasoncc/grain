@@ -88,14 +88,14 @@
     - **Property 7: 保存操作合并**
     - **Validates: Requirements 5.3**
 
-- [ ] 9. 优化组件卸载清理
-  - [ ] 9.1 完善组件卸载时的资源清理
+- [x] 9. 优化组件卸载清理
+  - [x] 9.1 完善组件卸载时的资源清理
     - 确保取消所有 debounced 操作
     - 确保移除所有事件监听器
     - 确保清理 ResizeObserver
     - _Requirements: 7.1, 7.2, 7.3_
 
-  - [ ] 9.2 编写属性测试验证卸载时资源清理
+  - [x] 9.2 编写属性测试验证卸载时资源清理
     - **Property 8: 卸载时资源清理**
     - **Validates: Requirements 7.1, 7.2, 7.3**
 

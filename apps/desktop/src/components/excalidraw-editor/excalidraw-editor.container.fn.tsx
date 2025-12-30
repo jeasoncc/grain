@@ -9,8 +9,9 @@
  * - onChange 回调不触发组件重渲染
  * - 状态更新使用节流控制
  * - ResizeObserver 使用防抖和阈值过滤
+ * - 组件卸载时完整清理所有资源
  *
- * @requirements 2.1, 3.1, 3.2, 4.1, 4.2, 5.2, 5.4, 7.4
+ * @requirements 2.1, 3.1, 3.2, 4.1, 4.2, 5.2, 5.4, 7.1, 7.2, 7.3, 7.4
  */
 
 import { debounce, throttle } from "es-toolkit";
@@ -338,21 +339,44 @@ export const ExcalidrawEditorContainer = memo(
 			hasUnsavedChanges.current = false;
 		}, [debouncedSave, saveContent]);
 
-		// 清理：组件卸载时保存未保存的更改
+		/**
+		 * 清理：组件卸载时的资源清理
+		 *
+		 * 性能优化：
+		 * - 取消所有 debounced 操作
+		 * - 取消所有 throttled 操作
+		 * - 清理所有 refs
+		 * - 保存未保存的更改
+		 *
+		 * @requirements 7.1, 7.2, 7.3
+		 */
 		useEffect(() => {
 			return () => {
-				// 取消防抖和节流
+				logger.info("[ExcalidrawEditor] 组件卸载，开始清理资源");
+
+				// 1. 取消防抖和节流操作
+				// @requirements 7.2
 				debouncedSave.cancel();
 				throttledMarkAsUnsaved.cancel();
 				throttledMarkAsSaving.cancel();
 				throttledMarkAsSaved.cancel();
 
-				// 组件卸载时，如果有未保存的更改，立即保存
+				// 2. 组件卸载时，如果有未保存的更改，立即保存
 				const data = currentDataRef.current;
 				if (data && hasUnsavedChanges.current) {
 					logger.info("[ExcalidrawEditor] 组件卸载，保存未保存的更改");
 					saveContent(data.elements, data.appState, data.files);
 				}
+
+				// 3. 清理 refs
+				// @requirements 7.3
+				currentDataRef.current = null;
+				hasUnsavedChanges.current = false;
+				isInitializedRef.current = false;
+				sizeStableRef.current = false;
+				prevNodeIdRef.current = null;
+
+				logger.info("[ExcalidrawEditor] 资源清理完成");
 			};
 		}, [debouncedSave, throttledMarkAsUnsaved, throttledMarkAsSaving, throttledMarkAsSaved, saveContent]);
 
