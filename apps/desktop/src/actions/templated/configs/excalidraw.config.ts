@@ -15,6 +15,7 @@ import dayjs from "dayjs";
 import { z } from "zod";
 import { generateExcalidrawContent } from "@/fn/content";
 import { getDateFolderStructureWithFilename } from "@/fn/date";
+import { FILE_EXTENSIONS } from "@/fn/editor";
 import type { TemplateConfig } from "../create-templated-file.action";
 
 // ==============================
@@ -87,21 +88,25 @@ const generateExcalidrawFolderPath = (
 };
 
 /**
- * 生成 Excalidraw 文件标题
+ * 生成 Excalidraw 文件标题（包含扩展名）
  *
  * 如果提供了自定义标题，则使用自定义标题。
- * 否则使用日期生成的默认标题（如：drawing-1703145600-14-30-00）
+ * 否则使用日期生成的默认标题（如：drawing-1703145600-14-30-00.excalidraw）
  *
  * @param params - 模板参数
  * @returns 文件标题
  */
 const generateExcalidrawTitle = (params: ExcalidrawTemplateParams): string => {
 	if (params.title) {
+		// 如果自定义标题没有扩展名，添加扩展名
+		if (!params.title.endsWith(FILE_EXTENSIONS.EXCALIDRAW)) {
+			return `${params.title}${FILE_EXTENSIONS.EXCALIDRAW}`;
+		}
 		return params.title;
 	}
 	const date = params.date || dayjs().toDate();
 	const structure = getDateFolderStructureWithFilename(date, "drawing");
-	return structure.filename;
+	return `${structure.filename}${FILE_EXTENSIONS.EXCALIDRAW}`;
 };
 
 // ==============================

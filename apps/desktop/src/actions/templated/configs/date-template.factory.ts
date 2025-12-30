@@ -13,6 +13,7 @@
 import dayjs from "dayjs";
 import { z } from "zod";
 import { getDateFolderStructureWithFilename } from "@/fn/date";
+import { NODE_TYPE_TO_EXTENSION_MAP } from "@/fn/editor";
 import type { FileNodeType } from "@/types/node";
 import type { TemplateConfig } from "../create-templated-file.action";
 
@@ -126,12 +127,14 @@ export const createDateTemplateConfig = (
 	};
 
 	/**
-	 * 生成文件标题
+	 * 生成文件标题（包含扩展名）
 	 */
 	const generateTitle = (params: DateTemplateParams): string => {
 		const date = params.date || dayjs().toDate();
 		const structure = getDateFolderStructureWithFilename(date, prefix);
-		return structure.filename;
+		// 添加扩展名
+		const extension = NODE_TYPE_TO_EXTENSION_MAP[fileType] ?? ".grain";
+		return `${structure.filename}${extension}`;
 	};
 
 	return {
