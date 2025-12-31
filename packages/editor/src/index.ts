@@ -60,14 +60,19 @@ export {
   MentionsPlugin,
   MentionTooltipPlugin,
   TagTransformPlugin,
+  CodeHighlightPlugin,
   // Re-exported Lexical plugins
   HistoryPlugin,
   RichTextPlugin,
   ListPlugin,
   LinkPlugin,
+  CheckListPlugin,
+  TablePlugin,
   MarkdownShortcutPlugin,
   TabIndentationPlugin,
   OnChangePlugin,
+  ClearEditorPlugin,
+  AutoLinkPlugin,
 } from "./plugins";
 
 export type {
