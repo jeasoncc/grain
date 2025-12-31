@@ -376,6 +376,130 @@ useManualSave({ ... });  // 手动保存（Ctrl+S）
 useUnifiedSave({ ... });  // 自动保存 + 手动保存都在这里
 ```
 
+## 编辑器主题颜色传递
+
+### 核心原则
+
+**应用层有 30+ 主题，但编辑器组件只需要 light/dark 基础主题 + 自定义颜色。**
+
+编辑器包（packages）是独立的，不应该依赖应用的主题系统。通过 `themeColors` prop 传递颜色配置。
+
+### 架构图
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     主题颜色传递架构                             │
+│                                                                  │
+│   应用层（30+ 主题）                                              │
+│   ┌──────────────────────────────────────────────────────────┐  │
+│   │  Theme { colors: ThemeColors }                           │  │
+│   │  - background, foreground, editorSelection, ...          │  │
+│   └────────────────────────┬─────────────────────────────────┘  │
+│                            │                                     │
+│                            ▼                                     │
+│   ┌──────────────────────────────────────────────────────────┐  │
+│   │  getEditorThemeColors(theme)                             │  │
+│   │  提取编辑器需要的颜色子集                                  │  │
+│   └────────────────────────┬─────────────────────────────────┘  │
+│                            │                                     │
+│                            ▼                                     │
+│   Container 组件                                                 │
+│   ┌──────────────────────────────────────────────────────────┐  │
+│   │  const { currentTheme } = useTheme();                    │  │
+│   │  const themeColors = getEditorThemeColors(currentTheme); │  │
+│   └────────────────────────┬─────────────────────────────────┘  │
+│                            │                                     │
+│            ┌───────────────┴───────────────┐                    │
+│            ▼                               ▼                    │
+│   DiagramEditorContainer          CodeEditorContainer           │
+│   ┌──────────────────┐            ┌──────────────────┐         │
+│   │ themeColors={...}│            │ themeColors={...}│         │
+│   └────────┬─────────┘            └────────┬─────────┘         │
+│            │                               │                    │
+│            ▼                               ▼                    │
+│   DiagramEditorView               CodeEditorView                │
+│   ┌──────────────────┐            ┌──────────────────┐         │
+│   │ 透传给内部       │            │ 注册 Monaco 主题 │         │
+│   │ CodeEditorView   │            │ 应用自定义颜色   │         │
+│   └──────────────────┘            └──────────────────┘         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 颜色接口
+
+```typescript
+// packages/code-editor/src/code-editor.types.ts
+interface EditorThemeColors {
+  readonly background?: string;      // 编辑器背景色
+  readonly foreground?: string;      // 文本颜色
+  readonly selection?: string;       // 选中文本背景色
+  readonly lineHighlight?: string;   // 当前行高亮
+  readonly cursor?: string;          // 光标颜色
+  readonly lineNumber?: string;      // 行号颜色
+  readonly lineNumberActive?: string; // 活动行号颜色
+}
+```
+
+### 颜色提取函数
+
+```typescript
+// apps/desktop/src/fn/theme/editor-theme.fn.ts
+const getEditorThemeColors = (theme: Theme | undefined): EditorThemeColors | undefined => {
+  if (!theme) return undefined;
+  const { colors } = theme;
+  return {
+    background: colors.background,
+    foreground: colors.foreground,
+    selection: colors.editorSelection,
+    lineHighlight: colors.editorLineHighlight,
+    cursor: colors.editorCursor,
+    lineNumber: colors.mutedForeground,
+    lineNumberActive: colors.foreground,
+  };
+};
+```
+
+### 使用示例
+
+```typescript
+// Container 组件
+function CodeEditorContainer({ nodeId }: Props) {
+  const { isDark, currentTheme } = useTheme();
+  const themeColors = useMemo(
+    () => getEditorThemeColors(currentTheme),
+    [currentTheme],
+  );
+
+  return (
+    <CodeEditorView
+      theme={isDark ? "dark" : "light"}
+      themeColors={themeColors}
+      // ...
+    />
+  );
+}
+
+// DiagramEditor 透传给内部的 CodeEditor
+function DiagramEditorView({ theme, themeColors, ... }: Props) {
+  return (
+    <CodeEditorView
+      theme={theme}
+      themeColors={themeColors}
+      // ...
+    />
+  );
+}
+```
+
+### 关键设计决策
+
+| 决策 | 原因 |
+|------|------|
+| packages 只接受 light/dark | 第三方库（Monaco、Mermaid）只支持两种基础主题 |
+| themeColors 可选 | 不传时使用默认主题颜色 |
+| Container 负责提取颜色 | 保持 View 组件纯净，不依赖应用层 |
+| DiagramEditor 透传颜色 | 父子组件共享同一套颜色配置 |
+
 ---
 
 **使用场景**：当发现代码重复或相似模式时，参考此文件进行抽象设计。
