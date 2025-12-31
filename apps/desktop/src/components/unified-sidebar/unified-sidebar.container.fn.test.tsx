@@ -7,10 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UnifiedSidebarContainer } from "./unified-sidebar.container.fn";
 
 // Mock dependencies
-const mockNavigate = vi.fn();
-vi.mock("@tanstack/react-router", () => ({
-	useNavigate: () => mockNavigate,
-}));
+vi.mock("@tanstack/react-router", () => ({}));
 
 const mockDrawings = [
 	{ id: "1", name: "Drawing 1" },
@@ -83,7 +80,6 @@ vi.mock("./unified-sidebar.view.fn", () => ({
 describe("UnifiedSidebarContainer", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockNavigate.mockClear();
 		mockSidebarStore.restoreFromCollapse.mockClear();
 		mockSidebarStore.setSelectedDrawingId.mockClear();
 	});
@@ -108,15 +104,15 @@ describe("UnifiedSidebarContainer", () => {
 		expect(mockSidebarStore.restoreFromCollapse).toHaveBeenCalledTimes(1);
 	});
 
-	it("should handle drawing selection and navigate", () => {
+	it("should handle drawing selection and update store", () => {
 		render(<UnifiedSidebarContainer />);
 		const button = screen.getByText("Select Drawing");
 		fireEvent.click(button);
 
+		// 绘图选择只更新 store，不再导航到 /canvas
 		expect(mockSidebarStore.setSelectedDrawingId).toHaveBeenCalledWith(
 			"drawing-1",
 		);
-		expect(mockNavigate).toHaveBeenCalledWith({ to: "/canvas" });
 	});
 
 	it("should handle drawing creation", () => {
