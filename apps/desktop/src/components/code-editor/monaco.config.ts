@@ -12,6 +12,7 @@ import * as monaco from "monaco-editor";
 // 配置 Monaco Editor Worker
 // 这是让 Monaco 在本地正常工作的关键配置
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
+import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 
 /**
  * Monaco 加载配置状态
@@ -39,9 +40,14 @@ export const configureMonacoLoader = (): void => {
 	}
 
 	// 配置 Monaco Worker
-	// 对于简单的代码编辑（PlantUML、Mermaid），只需要基础的 editor worker
+	// 根据语言类型返回对应的 worker
 	self.MonacoEnvironment = {
-		getWorker(_: unknown, _label: string) {
+		getWorker(_: unknown, label: string) {
+			// JavaScript/TypeScript 需要专用的 ts worker
+			if (label === "typescript" || label === "javascript") {
+				return new tsWorker();
+			}
+			// 其他语言使用基础 editor worker
 			return new editorWorker();
 		},
 	};
