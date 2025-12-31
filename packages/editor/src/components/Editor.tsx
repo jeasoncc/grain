@@ -38,6 +38,7 @@ import MentionsPlugin, { type MentionEntry } from "../plugins/mentions-plugin";
 import MentionTooltipPlugin, { type MentionTooltipPluginProps } from "../plugins/mention-tooltip-plugin";
 import TagTransformPlugin from "../plugins/tag-transform-plugin";
 import CodeHighlightPlugin from "../plugins/code-highlight-plugin";
+import CodeBlockShortcutPlugin from "../plugins/code-block-shortcut-plugin";
 import theme from "../themes/PlaygroundEditorTheme";
 import "../themes/PlaygroundEditorTheme.css";
 
@@ -164,6 +165,7 @@ export default function Editor({
         )}
         <TagTransformPlugin />
         <CodeHighlightPlugin />
+        <CodeBlockShortcutPlugin />
       </div>
     </LexicalComposer>
   );

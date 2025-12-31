@@ -61,6 +61,7 @@ export {
   MentionTooltipPlugin,
   TagTransformPlugin,
   CodeHighlightPlugin,
+  CodeBlockShortcutPlugin,
   // Re-exported Lexical plugins
   HistoryPlugin,
   RichTextPlugin,

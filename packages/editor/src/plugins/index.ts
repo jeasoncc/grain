@@ -23,6 +23,7 @@ export type {
 export { default as TagTransformPlugin } from "./tag-transform-plugin";
 
 export { default as CodeHighlightPlugin } from "./code-highlight-plugin";
+export { default as CodeBlockShortcutPlugin } from "./code-block-shortcut-plugin";
 
 // Re-export commonly used Lexical plugins for convenience
 // 只导出实际在 Editor 中使用的插件
