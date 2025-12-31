@@ -11,7 +11,6 @@
  * - 使用 refs 存储非渲染数据（currentDataRef）
  * - onChange 回调不触发组件重渲染
  * - ResizeObserver 使用防抖和阈值过滤
- * - 组件卸载时完整清理所有资源
  *
  * @requirements 2.1, 3.1, 3.2, 4.1, 4.2, 5.2, 5.4, 7.1, 7.2, 7.3, 7.4
  */
@@ -20,7 +19,7 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useContentByNodeId } from "@/hooks/use-content";
 import { useTheme } from "@/hooks/use-theme";
 import { useUnifiedSave } from "@/hooks/use-unified-save";
-import { saveQueueService } from "@/lib/save-queue";
+import { saveServiceManager } from "@/lib/save-service-manager";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
@@ -114,9 +113,6 @@ export const ExcalidrawEditorContainer = memo(
 			useState<ExcalidrawInitialData | null>(null);
 		const isInitializedRef = useRef(false);
 
-		// 等待保存完成状态
-		const [isSaveWaited, setIsSaveWaited] = useState(false);
-
 		// 当前数据引用（用于手动保存）
 		const currentDataRef = useRef<{
 			elements: readonly unknown[];
@@ -159,29 +155,9 @@ export const ExcalidrawEditorContainer = memo(
 		}, []);
 
 		/**
-		 * 等待该节点的待处理保存完成（解决 Tab 切换时的竞态条件）
-		 */
-		useEffect(() => {
-			const waitForPendingSave = async () => {
-				logger.info("[ExcalidrawEditor] 等待保存完成:", nodeId);
-				await saveQueueService.waitForSave(nodeId);
-				setIsSaveWaited(true);
-			};
-
-			// 重置状态
-			setIsSaveWaited(false);
-			waitForPendingSave();
-		}, [nodeId]);
-
-		/**
 		 * 解析内容并设置初始数据
 		 */
 		useEffect(() => {
-			// 必须先等待保存完成
-			if (!isSaveWaited) {
-				return;
-			}
-
 			// 检测 nodeId 是否变化
 			const nodeIdChanged =
 				prevNodeIdRef.current !== null && prevNodeIdRef.current !== nodeId;
@@ -201,6 +177,16 @@ export const ExcalidrawEditorContainer = memo(
 			// 更新 prevNodeIdRef
 			prevNodeIdRef.current = nodeId;
 
+			// 检查是否有待保存的内容（单例模式下，model 可能已存在）
+			const pendingContent = saveServiceManager.getPendingContent(nodeId);
+			if (pendingContent !== null && !isInitializedRef.current) {
+				logger.info("[ExcalidrawEditor] 使用待保存的内容");
+				const parsed = parseExcalidrawContent(pendingContent);
+				setInitialData(parsed);
+				isInitializedRef.current = true;
+				return;
+			}
+
 			// 只有在未初始化且 content 已加载时才解析内容
 			if (content !== undefined && !isInitializedRef.current) {
 				const parsed = parseExcalidrawContent(content?.content);
@@ -214,7 +200,7 @@ export const ExcalidrawEditorContainer = memo(
 
 				logger.info("[ExcalidrawEditor] 初始化数据:", parsed);
 			}
-		}, [content, nodeId, setInitialContent, isSaveWaited]);
+		}, [content, nodeId, setInitialContent]);
 
 		// 监听容器尺寸 - 使用防抖确保尺寸稳定
 		useEffect(() => {
@@ -299,21 +285,19 @@ export const ExcalidrawEditorContainer = memo(
 		);
 
 		/**
-		 * 清理：组件卸载时的资源清理
+		 * 清理：组件卸载时的资源清理（只清理本地 refs，不清理 SaveModel）
 		 */
 		useEffect(() => {
 			return () => {
-				logger.info("[ExcalidrawEditor] 组件卸载，开始清理资源");
+				logger.info("[ExcalidrawEditor] 组件卸载，清理本地资源");
 
-				// 清理 refs
+				// 清理本地 refs
 				currentDataRef.current = null;
 				isInitializedRef.current = false;
 				sizeStableRef.current = false;
 				prevNodeIdRef.current = null;
 
-				// 注意：useUnifiedSave hook 会自动处理组件卸载时的保存和清理
-
-				logger.info("[ExcalidrawEditor] 资源清理完成");
+				// 注意：不清理 SaveModel，它会保留以便 Tab 切换时使用
 			};
 		}, []);
 

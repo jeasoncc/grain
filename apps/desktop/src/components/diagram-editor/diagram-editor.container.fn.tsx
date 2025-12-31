@@ -11,7 +11,7 @@
  * - PlantUML: 需要 Kroki 服务器渲染
  *
  * 数据流（保存）：
- * Editor → useUnifiedSave → UnifiedSaveService → DB → Tab.isDirty → SaveStore → UI 反馈
+ * Editor → useUnifiedSave → SaveServiceManager → DB → Tab.isDirty → SaveStore → UI 反馈
  *
  * @requirements 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 7.2, 8.1, 8.2, 8.3, 8.4, 8.5
  */
@@ -25,7 +25,7 @@ import { initMermaid, isKrokiEnabled, renderDiagram } from "@/fn/diagram";
 import { getEditorThemeColors } from "@/fn/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useUnifiedSave } from "@/hooks/use-unified-save";
-import { saveQueueService } from "@/lib/save-queue";
+import { saveServiceManager } from "@/lib/save-service-manager";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
 import { useDiagramStore } from "@/stores/diagram.store";
@@ -145,9 +145,16 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 		const loadContent = async () => {
 			logger.info("[DiagramEditor] 加载内容:", nodeId);
 
-			// 等待该节点的待处理保存完成（解决 Tab 切换时的竞态条件）
-			await saveQueueService.waitForSave(nodeId);
+			// 检查是否有待保存的内容（单例模式下，model 可能已存在）
+			const pendingContent = saveServiceManager.getPendingContent(nodeId);
+			if (pendingContent !== null) {
+				logger.info("[DiagramEditor] 使用待保存的内容");
+				setCode(pendingContent);
+				setIsInitialized(true);
+				return;
+			}
 
+			// 从数据库加载内容
 			const result = await getContentByNodeId(nodeId)();
 
 			if (E.isRight(result)) {

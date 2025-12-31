@@ -1,31 +1,24 @@
 /**
  * @file hooks/use-unified-save.ts
- * @description 统一编辑器保存 Hook
+ * @description 统一编辑器保存 Hook（单例模式）
  *
  * 核心设计原则：
- * - 不管是自动保存还是手动保存，都调用同一个保存函数
- * - 手动保存是核心功能，自动保存是辅助功能
+ * - 组件只连接 SaveServiceManager，不创建/销毁服务
+ * - 组件卸载时 model 保留，Tab 关闭时才清理
  * - 所有编辑器（Lexical、Excalidraw、Diagram、Code）共用此 hook
  *
  * 功能：
  * - 自动保存（防抖，可配置间隔，可禁用）
  * - 手动保存（Ctrl+S 快捷键）
  * - isDirty 状态同步（Tab 圆点显示）
- * - 组件卸载时自动保存
  *
  * 数据流：
- * Editor → useUnifiedSave → UnifiedSaveService → DB + Tab.isDirty + SaveStore
- *
- * @requirements 3.1, 3.2, 3.3, 3.4, 3.5, 7.1, 7.2, 7.3, 7.4, 7.5
+ * Editor → useUnifiedSave → SaveServiceManager → DB + Tab.isDirty + SaveStore
  */
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { keyboardShortcutManager } from "@/fn/keyboard";
-import {
-	createUnifiedSaveService,
-	type UnifiedSaveServiceInterface,
-} from "@/fn/save/unified-save.service";
-import { saveQueueService } from "@/lib/save-queue";
+import { saveServiceManager } from "@/lib/save-service-manager";
 import logger from "@/log";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSaveStore } from "@/stores/save.store";
@@ -83,36 +76,15 @@ const DEFAULT_AUTOSAVE_INTERVAL = 3;
 // ============================================================================
 
 /**
- * 统一编辑器保存 Hook
+ * 统一编辑器保存 Hook（单例模式）
  *
- * 所有编辑器共用此 hook，确保保存行为一致：
- * - 自动保存和手动保存调用同一个保存函数
- * - 保存成功后统一更新 DB、Tab.isDirty、SaveStore
- * - 支持 Ctrl+S 快捷键
- * - 组件卸载时自动保存未保存的更改
+ * 组件只负责连接 SaveServiceManager，不负责创建/销毁服务：
+ * - 组件挂载时注册/更新 model
+ * - 组件卸载时不清理 model（model 保留）
+ * - Tab 关闭时由 store 调用 dispose 清理
  *
  * @param options - Hook 配置选项
  * @returns 保存相关的函数和状态
- *
- * @example
- * ```tsx
- * function MyEditor({ nodeId, tabId }: Props) {
- *   const { updateContent, saveNow, hasUnsavedChanges } = useUnifiedSave({
- *     nodeId,
- *     tabId,
- *     contentType: "lexical",
- *     onSaveSuccess: () => console.log("保存成功"),
- *   });
- *
- *   const handleChange = (newContent: string) => {
- *     updateContent(newContent); // 触发防抖自动保存
- *   };
- *
- *   // Ctrl+S 会自动调用 saveNow()
- *
- *   return <Editor onChange={handleChange} />;
- * }
- * ```
  */
 export function useUnifiedSave(
 	options: UseUnifiedSaveOptions,
@@ -134,7 +106,6 @@ export function useUnifiedSave(
 	const { autoSave, autoSaveInterval } = useSettings();
 
 	// 计算有效的自动保存延迟（毫秒）
-	// 当 autoSave=false 时，设为 0 禁用自动保存
 	const effectiveDelay = autoSave
 		? (autoSaveInterval ?? DEFAULT_AUTOSAVE_INTERVAL) * 1000
 		: 0;
@@ -149,19 +120,14 @@ export function useUnifiedSave(
 	const setTabDirty = useEditorTabsStore((s) => s.setTabDirty);
 
 	// ==============================
-	// Refs
+	// Refs（用于回调）
 	// ==============================
 
-	// 保存服务实例引用
-	const serviceRef = useRef<UnifiedSaveServiceInterface | null>(null);
-
-	// 用于追踪最新的回调函数（避免闭包陷阱）
 	const callbacksRef = useRef({
 		onSaveSuccess,
 		onSaveError,
 	});
 
-	// 更新回调引用
 	useEffect(() => {
 		callbacksRef.current = {
 			onSaveSuccess,
@@ -170,25 +136,13 @@ export function useUnifiedSave(
 	}, [onSaveSuccess, onSaveError]);
 
 	// ==============================
-	// 创建保存服务
+	// 注册/更新 model（组件挂载时）
 	// ==============================
 
-	const saveService = useMemo(() => {
-		// 如果已有服务实例，先处理未保存的更改再清理
-		if (serviceRef.current) {
-			const oldService = serviceRef.current;
-			const oldNodeId = nodeId; // 捕获当前 nodeId
-			
-			// 如果有未保存的更改，入队保存
-			if (oldService.hasUnsavedChanges()) {
-				logger.info(`[useUnifiedSave] 服务重建前，入队保存未保存的更改: ${oldNodeId}`);
-				saveQueueService.enqueueSave(oldNodeId, () => oldService.saveNow());
-			}
-			
-			oldService.dispose();
-		}
+	useEffect(() => {
+		logger.debug(`[useUnifiedSave] 注册 model: ${nodeId}`);
 
-		const service = createUnifiedSaveService({
+		saveServiceManager.getOrCreate({
 			nodeId,
 			contentType,
 			autoSaveDelay: effectiveDelay,
@@ -207,59 +161,18 @@ export function useUnifiedSave(
 			},
 		});
 
-		serviceRef.current = service;
-
-		logger.debug("[useUnifiedSave] 保存服务已创建:", {
-			nodeId,
-			contentType,
-			autoSaveDelay: effectiveDelay,
-			autoSaveEnabled: effectiveDelay > 0,
-			tabId,
-		});
-
-		return service;
-	}, [
-		nodeId,
-		contentType,
-		effectiveDelay,
-		tabId,
-		setTabDirty,
-		markAsSaving,
-		markAsSaved,
-		markAsError,
-	]);
+		// 注意：组件卸载时不清理 model！
+	}, [nodeId, contentType, effectiveDelay, tabId, setTabDirty, markAsSaving, markAsSaved, markAsError]);
 
 	// ==============================
-	// 初始化内容
+	// 设置初始内容
 	// ==============================
 
 	useEffect(() => {
 		if (initialContent !== undefined) {
-			saveService.setInitialContent(initialContent);
+			saveServiceManager.setInitialContent(nodeId, initialContent);
 		}
-	}, [saveService, initialContent]);
-
-	// ==============================
-	// 手动保存函数（Ctrl+S 调用）
-	// ==============================
-
-	// 注意：performManualSave 使用 saveService 而不是 saveNow
-	// 因为 saveNow 在这个时候还没有定义（useCallback 的顺序问题）
-	const performManualSave = useCallback(async () => {
-		if (!nodeId) {
-			logger.debug("[useUnifiedSave] 没有可保存的内容");
-			return;
-		}
-
-		// 检查是否有未保存的更改
-		if (!saveService.hasUnsavedChanges()) {
-			logger.debug("[useUnifiedSave] 没有需要保存的更改");
-			return;
-		}
-
-		logger.info("[useUnifiedSave] 执行手动保存 (Ctrl+S)");
-		await saveService.saveNow();
-	}, [nodeId, saveService]);
+	}, [nodeId, initialContent]);
 
 	// ==============================
 	// 注册 Ctrl+S 快捷键
@@ -268,75 +181,27 @@ export function useUnifiedSave(
 	useEffect(() => {
 		if (!registerShortcut || !nodeId) return;
 
+		const handleSave = async () => {
+			// 检查是否有未保存的更改
+			if (!saveServiceManager.hasUnsavedChanges(nodeId)) {
+				logger.debug("[useUnifiedSave] 没有需要保存的更改");
+				return;
+			}
+			logger.info("[useUnifiedSave] 执行手动保存 (Ctrl+S)");
+			await saveServiceManager.saveNow(nodeId);
+		};
+
 		const shortcutKey = "ctrl+s";
 		const metaShortcutKey = "meta+s"; // Mac 的 Cmd+S
 
-		keyboardShortcutManager.registerShortcut(shortcutKey, performManualSave);
-		keyboardShortcutManager.registerShortcut(
-			metaShortcutKey,
-			performManualSave,
-		);
+		keyboardShortcutManager.registerShortcut(shortcutKey, handleSave);
+		keyboardShortcutManager.registerShortcut(metaShortcutKey, handleSave);
 
 		return () => {
 			keyboardShortcutManager.unregisterShortcut(shortcutKey);
 			keyboardShortcutManager.unregisterShortcut(metaShortcutKey);
 		};
-	}, [registerShortcut, nodeId, performManualSave]);
-
-	// ==============================
-	// 清理（组件卸载时保存）
-	// ==============================
-
-	// 使用 ref 存储最新的 nodeId 和 tabId，供清理函数使用
-	const cleanupDataRef = useRef({ nodeId, tabId, setTabDirty });
-	useEffect(() => {
-		cleanupDataRef.current = { nodeId, tabId, setTabDirty };
-	}, [nodeId, tabId, setTabDirty]);
-
-	useEffect(() => {
-		// 组件卸载时的清理函数
-		return () => {
-			const { nodeId: currentNodeId, tabId: currentTabId, setTabDirty: currentSetTabDirty } = cleanupDataRef.current;
-			
-			logger.info(`[useUnifiedSave] ========== 组件卸载清理 ==========`);
-			logger.info(`[useUnifiedSave] nodeId: ${currentNodeId}`);
-			logger.info(`[useUnifiedSave] tabId: ${currentTabId}`);
-			logger.info(`[useUnifiedSave] serviceRef.current 存在: ${!!serviceRef.current}`);
-
-			if (serviceRef.current) {
-				const service = serviceRef.current;
-				const hasChanges = service.hasUnsavedChanges();
-
-				logger.info(`[useUnifiedSave] hasUnsavedChanges: ${hasChanges}`);
-
-				// 如果有未保存的更改，入队保存（fire-and-forget）
-				if (hasChanges) {
-					logger.info(`[useUnifiedSave] 有未保存更改，准备入队保存: ${currentNodeId}`);
-					saveQueueService.enqueueSave(currentNodeId, () => {
-						logger.info(`[useUnifiedSave] 队列执行保存函数: ${currentNodeId}`);
-						return service.saveNow();
-					});
-					logger.info(`[useUnifiedSave] 已入队保存: ${currentNodeId}`);
-
-					// 清除 isDirty 状态（因为已入队）
-					if (currentTabId && currentSetTabDirty) {
-						currentSetTabDirty(currentTabId, false);
-						logger.info(`[useUnifiedSave] 已清除 isDirty 状态: ${currentTabId}`);
-					}
-				} else {
-					logger.info(`[useUnifiedSave] 没有未保存更改，跳过入队: ${currentNodeId}`);
-				}
-
-				// 清理资源
-				logger.info(`[useUnifiedSave] 清理服务资源: ${currentNodeId}`);
-				service.dispose();
-				serviceRef.current = null;
-				logger.info(`[useUnifiedSave] 清理完成: ${currentNodeId}`);
-			} else {
-				logger.info(`[useUnifiedSave] serviceRef.current 为空，跳过清理`);
-			}
-		};
-	}, []); // 空依赖数组，只在组件卸载时执行
+	}, [registerShortcut, nodeId]);
 
 	// ==============================
 	// 返回的函数
@@ -348,52 +213,40 @@ export function useUnifiedSave(
 	const updateContent = useCallback(
 		(content: string) => {
 			markAsUnsaved();
-			saveService.updateContent(content);
+			saveServiceManager.updateContent(nodeId, content);
 		},
-		[saveService, markAsUnsaved],
+		[nodeId, markAsUnsaved],
 	);
 
 	/**
 	 * 立即保存当前内容（手动保存）
-	 *
-	 * 统一的手动保存入口，包含：
-	 * - 检查是否有未保存的更改
-	 * - 执行保存
-	 * - 日志记录
-	 *
-	 * 编辑器组件直接调用此函数，无需自己做任何检查
 	 */
 	const saveNow = useCallback(async (): Promise<boolean> => {
-		if (!nodeId) {
-			logger.debug("[useUnifiedSave] 没有可保存的内容");
-			return true;
-		}
-
 		// 检查是否有未保存的更改
-		if (!saveService.hasUnsavedChanges()) {
+		if (!saveServiceManager.hasUnsavedChanges(nodeId)) {
 			logger.debug("[useUnifiedSave] 没有需要保存的更改");
 			return true;
 		}
 
 		logger.info("[useUnifiedSave] 执行手动保存");
-		return await saveService.saveNow();
-	}, [nodeId, saveService]);
+		return await saveServiceManager.saveNow(nodeId);
+	}, [nodeId]);
 
 	/**
 	 * 是否有未保存的更改
 	 */
 	const hasUnsavedChanges = useCallback(() => {
-		return saveService.hasUnsavedChanges();
-	}, [saveService]);
+		return saveServiceManager.hasUnsavedChanges(nodeId);
+	}, [nodeId]);
 
 	/**
 	 * 设置初始内容（不触发保存）
 	 */
 	const setInitialContent = useCallback(
 		(content: string) => {
-			saveService.setInitialContent(content);
+			saveServiceManager.setInitialContent(nodeId, content);
 		},
-		[saveService],
+		[nodeId],
 	);
 
 	return {
