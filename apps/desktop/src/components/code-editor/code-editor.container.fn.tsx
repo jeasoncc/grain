@@ -22,6 +22,7 @@ import { getMonacoLanguage } from "@/fn/editor";
 import { getEditorThemeColors } from "@/fn/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useUnifiedSave } from "@/hooks/use-unified-save";
+import { saveQueueService } from "@/lib/save-queue";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
@@ -104,6 +105,9 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 	useEffect(() => {
 		const loadContent = async () => {
 			logger.info("[CodeEditor] 加载内容:", nodeId);
+
+			// 等待该节点的待处理保存完成（解决 Tab 切换时的竞态条件）
+			await saveQueueService.waitForSave(nodeId);
 
 			const result = await getContentByNodeId(nodeId)();
 

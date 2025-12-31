@@ -48,23 +48,23 @@
   - 运行测试确保所有测试通过
   - 如有问题，询问用户
 
-- [-] 4. 修改 useUnifiedSave hook
+- [x] 4. 修改 useUnifiedSave hook
   - [x] 4.1 导入 saveQueueService
     - 在 `apps/desktop/src/hooks/use-unified-save.ts` 中导入
     - _Requirements: 2.1_
-  - [-] 4.2 修改 cleanup effect 使用队列
+  - [x] 4.2 修改 cleanup effect 使用队列
     - 将 `saveNow()` 改为 `enqueueSave(nodeId, saveFn)`
     - 入队后清除 isDirty 状态
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 4.2_
 
-- [ ] 5. 修改编辑器容器组件
-  - [ ] 5.1 修改 CodeEditorContainer
+- [x] 5. 修改编辑器容器组件
+  - [x] 5.1 修改 CodeEditorContainer
     - 在 `loadContent` 前调用 `waitForSave(nodeId)`
     - _Requirements: 3.1, 3.2, 3.3, 3.4_
-  - [ ] 5.2 修改 DiagramEditorContainer
+  - [x] 5.2 修改 DiagramEditorContainer
     - 在 `loadContent` 前调用 `waitForSave(nodeId)`
     - _Requirements: 3.1, 3.2, 3.3, 3.4_
-  - [ ] 5.3 修改 ExcalidrawEditorContainer
+  - [x] 5.3 修改 ExcalidrawEditorContainer
     - 在内容加载前调用 `waitForSave(nodeId)`
     - _Requirements: 3.1, 3.2, 3.3, 3.4_
 

@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { useContentByNodeId } from "@/hooks/use-content";
 import { useTheme } from "@/hooks/use-theme";
 import { useUnifiedSave } from "@/hooks/use-unified-save";
+import { saveQueueService } from "@/lib/save-queue";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
@@ -114,6 +115,9 @@ export const ExcalidrawEditorContainer = memo(
 			useState<ExcalidrawInitialData | null>(null);
 		const isInitializedRef = useRef(false);
 
+		// 等待保存完成状态
+		const [isSaveWaited, setIsSaveWaited] = useState(false);
+
 		// 当前数据引用（用于手动保存）
 		const currentDataRef = useRef<{
 			elements: readonly unknown[];
@@ -158,9 +162,29 @@ export const ExcalidrawEditorContainer = memo(
 		}, []);
 
 		/**
+		 * 等待该节点的待处理保存完成（解决 Tab 切换时的竞态条件）
+		 */
+		useEffect(() => {
+			const waitForPendingSave = async () => {
+				logger.info("[ExcalidrawEditor] 等待保存完成:", nodeId);
+				await saveQueueService.waitForSave(nodeId);
+				setIsSaveWaited(true);
+			};
+
+			// 重置状态
+			setIsSaveWaited(false);
+			waitForPendingSave();
+		}, [nodeId]);
+
+		/**
 		 * 解析内容并设置初始数据
 		 */
 		useEffect(() => {
+			// 必须先等待保存完成
+			if (!isSaveWaited) {
+				return;
+			}
+
 			// 检测 nodeId 是否变化
 			const nodeIdChanged =
 				prevNodeIdRef.current !== null && prevNodeIdRef.current !== nodeId;
@@ -193,7 +217,7 @@ export const ExcalidrawEditorContainer = memo(
 
 				logger.info("[ExcalidrawEditor] 初始化数据:", parsed);
 			}
-		}, [content, nodeId, setInitialContent]);
+		}, [content, nodeId, setInitialContent, isSaveWaited]);
 
 		// 监听容器尺寸 - 使用防抖确保尺寸稳定
 		useEffect(() => {
