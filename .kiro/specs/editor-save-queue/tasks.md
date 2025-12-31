@@ -44,7 +44,7 @@
     - **Property 7: 非阻塞入队**
     - **Validates: Requirements 6.1**
 
-- [ ] 3. Checkpoint - 确保队列服务测试通过
+- [x] 3. Checkpoint - 确保队列服务测试通过
   - 运行测试确保所有测试通过
   - 如有问题，询问用户
 
@@ -68,18 +68,18 @@
     - 在内容加载前调用 `waitForSave(nodeId)`
     - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 6. Checkpoint - 集成测试
+- [-] 6. Checkpoint - 集成测试
   - 手动测试 Tab 切换场景
   - 验证内容不丢失
   - 验证 isDirty 状态正确显示
   - 如有问题，询问用户
 
-- [ ] 7. 最终验证
-  - [ ] 7.1 运行类型检查
+- [x] 7. 最终验证
+  - [x] 7.1 运行类型检查
     - 运行 `bun run check` 确保无类型错误
-  - [ ] 7.2 运行 lint
+  - [x] 7.2 运行 lint
     - 运行 `bun run lint` 确保代码规范
-  - [ ] 7.3 运行所有测试
+  - [x] 7.3 运行所有测试
     - 运行 `bun run test` 确保测试通过
 
 ## Notes
