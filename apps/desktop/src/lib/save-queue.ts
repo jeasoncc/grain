@@ -87,6 +87,9 @@ export const createSaveQueueService = (): SaveQueueService => {
 	 * 执行保存任务
 	 */
 	const executeSave = async (nodeId: string): Promise<void> => {
+		logger.info(`[SaveQueue] 开始执行保存任务: ${nodeId}`);
+		logger.info(`[SaveQueue] 当前队列状态: pending=${pendingSaves.size}, pendingIds=[${Array.from(pendingSaves.keys()).join(", ")}]`);
+
 		// 使用 queueMicrotask 确保所有同步的 enqueueSave 调用完成后再获取 ref
 		// 这样可以保证获取到最新的保存函数
 		await new Promise<void>((resolve) => queueMicrotask(resolve));
@@ -98,9 +101,10 @@ export const createSaveQueueService = (): SaveQueueService => {
 			return;
 		}
 
+		logger.info(`[SaveQueue] 调用保存函数: ${nodeId}`);
 		try {
-			await saveFnRef.current();
-			logger.success(`[SaveQueue] 保存成功: ${nodeId}`);
+			const result = await saveFnRef.current();
+			logger.success(`[SaveQueue] 保存成功: ${nodeId}, result=${result}`);
 		} catch (error) {
 			logger.error(`[SaveQueue] 保存失败: ${nodeId}`, error);
 			// 不抛出异常，允许后续操作继续
@@ -108,6 +112,7 @@ export const createSaveQueueService = (): SaveQueueService => {
 			// 无论成功失败，都从 pending 中移除
 			pendingSaves.delete(nodeId);
 			pendingSaveFnRefs.delete(nodeId);
+			logger.info(`[SaveQueue] 任务完成，移除: ${nodeId}, 剩余队列: [${Array.from(pendingSaves.keys()).join(", ")}]`);
 		}
 	};
 
@@ -115,7 +120,10 @@ export const createSaveQueueService = (): SaveQueueService => {
 	 * 将保存任务入队
 	 */
 	const enqueueSave = (nodeId: string, saveFn: SaveFunction): void => {
-		logger.info(`[SaveQueue] 入队保存: ${nodeId}`);
+		logger.info(`[SaveQueue] ========== 入队保存请求 ==========`);
+		logger.info(`[SaveQueue] nodeId: ${nodeId}`);
+		logger.info(`[SaveQueue] saveFn 是否存在: ${!!saveFn}`);
+		logger.info(`[SaveQueue] 当前队列: pending=${pendingSaves.size}, ids=[${Array.from(pendingSaves.keys()).join(", ")}]`);
 
 		// 如果已有待处理任务，只更新保存函数（去重：只保留最新的）
 		const existingRef = pendingSaveFnRefs.get(nodeId);
@@ -137,6 +145,9 @@ export const createSaveQueueService = (): SaveQueueService => {
 			promise,
 			saveFn,
 		});
+
+		logger.info(`[SaveQueue] 新任务已入队: ${nodeId}`);
+		logger.info(`[SaveQueue] 更新后队列: pending=${pendingSaves.size}, ids=[${Array.from(pendingSaves.keys()).join(", ")}]`);
 	};
 
 	/**

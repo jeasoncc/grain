@@ -285,23 +285,42 @@ export function useUnifiedSave(
 		const currentSetTabDirty = setTabDirty;
 
 		return () => {
+			logger.info(`[useUnifiedSave] ========== 组件卸载清理 ==========`);
+			logger.info(`[useUnifiedSave] nodeId: ${currentNodeId}`);
+			logger.info(`[useUnifiedSave] tabId: ${currentTabId}`);
+			logger.info(`[useUnifiedSave] serviceRef.current 存在: ${!!serviceRef.current}`);
+
 			if (serviceRef.current) {
 				const service = serviceRef.current;
+				const hasChanges = service.hasUnsavedChanges();
+
+				logger.info(`[useUnifiedSave] hasUnsavedChanges: ${hasChanges}`);
 
 				// 如果有未保存的更改，入队保存（fire-and-forget）
-				if (service.hasUnsavedChanges()) {
-					logger.info("[useUnifiedSave] 组件卸载，入队保存");
-					saveQueueService.enqueueSave(currentNodeId, () => service.saveNow());
+				if (hasChanges) {
+					logger.info(`[useUnifiedSave] 有未保存更改，准备入队保存: ${currentNodeId}`);
+					saveQueueService.enqueueSave(currentNodeId, () => {
+						logger.info(`[useUnifiedSave] 队列执行保存函数: ${currentNodeId}`);
+						return service.saveNow();
+					});
+					logger.info(`[useUnifiedSave] 已入队保存: ${currentNodeId}`);
 
 					// 清除 isDirty 状态（因为已入队）
 					if (currentTabId && currentSetTabDirty) {
 						currentSetTabDirty(currentTabId, false);
+						logger.info(`[useUnifiedSave] 已清除 isDirty 状态: ${currentTabId}`);
 					}
+				} else {
+					logger.info(`[useUnifiedSave] 没有未保存更改，跳过入队: ${currentNodeId}`);
 				}
 
 				// 清理资源
+				logger.info(`[useUnifiedSave] 清理服务资源: ${currentNodeId}`);
 				service.dispose();
 				serviceRef.current = null;
+				logger.info(`[useUnifiedSave] 清理完成: ${currentNodeId}`);
+			} else {
+				logger.info(`[useUnifiedSave] serviceRef.current 为空，跳过清理`);
 			}
 		};
 	}, [nodeId, tabId, setTabDirty]);
