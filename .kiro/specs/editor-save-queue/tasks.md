@@ -21,26 +21,26 @@
     - 测试单例、入队、去重、等待、超时、错误处理
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
 
-- [ ] 2. 编写属性测试
-  - [ ] 2.1 Property 1: 单例一致性
+- [x] 2. 编写属性测试
+  - [x] 2.1 Property 1: 单例一致性
     - **Property 1: 单例一致性**
     - **Validates: Requirements 1.1**
-  - [ ] 2.2 Property 2: 相同 nodeId 去重
+  - [x] 2.2 Property 2: 相同 nodeId 去重
     - **Property 2: 相同 nodeId 去重**
     - **Validates: Requirements 1.5**
-  - [ ] 2.3 Property 3: 顺序执行
+  - [x] 2.3 Property 3: 顺序执行
     - **Property 3: 顺序执行**
     - **Validates: Requirements 1.6**
-  - [ ] 2.4 Property 4: waitForSave 行为
+  - [x] 2.4 Property 4: waitForSave 行为
     - **Property 4: waitForSave 行为**
     - **Validates: Requirements 3.2, 3.3**
-  - [ ] 2.5 Property 5: 错误恢复
+  - [x] 2.5 Property 5: 错误恢复
     - **Property 5: 错误恢复**
     - **Validates: Requirements 5.2, 5.3, 5.4**
-  - [ ] 2.6 Property 6: 超时保护
+  - [x] 2.6 Property 6: 超时保护
     - **Property 6: 超时保护**
     - **Validates: Requirements 6.2, 6.3**
-  - [ ] 2.7 Property 7: 非阻塞入队
+  - [x] 2.7 Property 7: 非阻塞入队
     - **Property 7: 非阻塞入队**
     - **Validates: Requirements 6.1**
 
