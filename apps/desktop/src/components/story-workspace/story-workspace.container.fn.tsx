@@ -42,7 +42,6 @@ import { useWikiFiles } from "@/hooks/use-wiki";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
 import logger from "@/log";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
-import { useSaveStore } from "@/stores/save.store";
 import { useSelectionStore } from "@/stores/selection.store";
 import { useUIStore } from "@/stores/ui.store";
 import type { StoryWorkspaceContainerProps } from "./story-workspace.types";
@@ -88,15 +87,6 @@ export const StoryWorkspaceContainer = memo(
 		const activeTabId = useEditorTabsStore((s) => s.activeTabId);
 		const editorStates = useEditorTabsStore((s) => s.editorStates);
 		const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
-
-		// 保存状态管理（用于 UI 显示）
-		const {
-			status: saveStatus,
-			lastSaveTime,
-			errorMessage,
-			hasUnsavedChanges,
-			isManualSaving,
-		} = useSaveStore();
 
 		// 获取当前活动标签（提前定义，供 useUnifiedSave 使用）
 		const activeTab = tabs.find((t) => t.id === activeTabId);
@@ -312,13 +302,7 @@ export const StoryWorkspaceContainer = memo(
 						{/* 顶部工具栏 */}
 						<div className="flex h-12 items-center justify-between px-4 shrink-0">
 							<div className="flex items-center gap-2">
-								<SaveStatusIndicator
-									status={saveStatus}
-									lastSaveTime={lastSaveTime}
-									errorMessage={errorMessage}
-									hasUnsavedChanges={hasUnsavedChanges}
-									isManualSaving={isManualSaving}
-								/>
+								<SaveStatusIndicator />
 							</div>
 
 							<div className="flex items-center gap-1">
