@@ -109,10 +109,28 @@ export {
 } from "./create-plantuml.action";
 
 // ==============================
+// Code 创建
+// ==============================
+
+export {
+	type CodeCreationResult,
+	type CreateCodeParams,
+	codeActions,
+	createCode,
+	createCodeAsync,
+	createCodeCompat,
+	createCodeCompatAsync,
+} from "./create-code.action";
+
+// ==============================
 // 模板配置
 // ==============================
 
 export {
+	// Code config
+	type CodeTemplateParams,
+	codeConfig,
+	codeParamsSchema,
 	createDateTemplateConfig,
 	type DateTemplateOptions,
 	// 工厂函数

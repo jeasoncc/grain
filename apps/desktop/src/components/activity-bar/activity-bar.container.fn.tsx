@@ -12,6 +12,7 @@ import type { SerializedEditorState } from "lexical";
 import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { createCodeCompatAsync } from "@/actions/templated/create-code.action";
 import {
 	createDiaryCompatAsync,
 	createLedgerCompatAsync,
@@ -237,7 +238,8 @@ export function ActivityBarContainer(): React.ReactElement {
 					workspaceId: selectedWorkspaceId,
 					nodeId: result.node.id,
 					title: result.node.title,
-					type: result.node.type,
+					// 模板创建的文件永远不会是 folder，安全断言为 TabType
+					type: result.node.type as Exclude<typeof result.node.type, "folder">,
 				});
 
 				// 2. 预加载内容到编辑器状态（Excalidraw 不需要）
@@ -365,6 +367,17 @@ export function ActivityBarContainer(): React.ReactElement {
 		[handleCreateTemplate],
 	);
 
+	const handleCreateCode = useCallback(
+		() =>
+			handleCreateTemplate({
+				creator: createCodeCompatAsync,
+				successMessage: "Code file created",
+				errorMessage: "Failed to create code file",
+				preloadContent: false,
+			}),
+		[handleCreateTemplate],
+	);
+
 	const handleImportFile = useCallback(async (_file: File) => {
 		try {
 			toast.info("Import functionality is being reimplemented");
@@ -430,6 +443,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				onCreateExcalidraw={handleCreateExcalidraw}
 				onCreateMermaid={handleCreateMermaid}
 				onCreatePlantUML={handleCreatePlantUML}
+				onCreateCode={handleCreateCode}
 				onImportFile={handleImportFile}
 				onOpenExportDialog={handleOpenExportDialog}
 				onDeleteAllData={handleDeleteAllData}

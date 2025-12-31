@@ -102,6 +102,16 @@ export {
 } from "./plantuml.config";
 
 // ==============================
+// Code Configuration
+// ==============================
+
+export {
+	type CodeTemplateParams,
+	codeConfig,
+	codeParamsSchema,
+} from "./code.config";
+
+// ==============================
 // Configuration Registry
 // ==============================
 
@@ -118,6 +128,7 @@ export const templateConfigs = {
 		import("./excalidraw.config").then((m) => m.excalidrawConfig),
 	mermaid: () => import("./mermaid.config").then((m) => m.mermaidConfig),
 	plantuml: () => import("./plantuml.config").then((m) => m.plantumlConfig),
+	code: () => import("./code.config").then((m) => m.codeConfig),
 } as const;
 
 /**

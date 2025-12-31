@@ -13,6 +13,7 @@ import type { SerializedEditorState } from "lexical";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-preview-connected";
+import { CodeEditorContainer } from "@/components/code-editor";
 import { DiagramEditorContainer } from "@/components/diagram-editor";
 import { EditorTabs } from "@/components/editor-tabs";
 import { ExcalidrawEditorContainer } from "@/components/excalidraw-editor";
@@ -96,14 +97,6 @@ export const StoryWorkspaceContainer = memo(
 			hasUnsavedChanges,
 			isManualSaving,
 		} = useSaveStore();
-
-		// 获取当前编辑器内容
-		const currentContent = useMemo(() => {
-			if (!activeTabId) return null;
-			const state = editorStates[activeTabId];
-			if (state?.serializedState) return state.serializedState;
-			return editorInitialState || null;
-		}, [activeTabId, editorStates, editorInitialState]);
 
 		// 获取当前活动标签（提前定义，供 useUnifiedSave 使用）
 		const activeTab = tabs.find((t) => t.id === activeTabId);
@@ -279,6 +272,17 @@ export const StoryWorkspaceContainer = memo(
 						key={activeTab.id}
 						nodeId={activeTab.nodeId || ""}
 						diagramType={diagramType}
+						className="flex-1 min-h-0"
+					/>
+				);
+			}
+
+			// 处理 Code 类型节点（基于扩展名）
+			if (isCodeTab) {
+				return (
+					<CodeEditorContainer
+						key={activeTab.id}
+						nodeId={activeTab.nodeId || ""}
 						className="flex-1 min-h-0"
 					/>
 				);

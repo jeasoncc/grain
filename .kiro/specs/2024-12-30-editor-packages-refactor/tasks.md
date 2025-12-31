@@ -95,23 +95,23 @@
   - 如有问题，询问用户
 
 - [ ] 9. 迁移 DiagramEditor 到 packages（可选）
-  - [ ]* 9.1 创建 packages/diagram-editor 目录结构
+  - [ ] 9.1 创建 packages/diagram-editor 目录结构
     - _Requirements: 1.1_
-  - [ ]* 9.2 迁移 DiagramEditorView 组件
+  - [ ] 9.2 迁移 DiagramEditorView 组件
     - _Requirements: 1.4_
-  - [ ]* 9.3 更新 apps/desktop 导入路径
+  - [ ] 9.3 更新 apps/desktop 导入路径
     - _Requirements: 1.6_
 
 - [ ] 10. 迁移 ExcalidrawEditor 到 packages（可选）
-  - [ ]* 10.1 创建 packages/excalidraw-editor 目录结构
+  - [ ] 10.1 创建 packages/excalidraw-editor 目录结构
     - _Requirements: 1.2_
-  - [ ]* 10.2 迁移 ExcalidrawEditorView 组件
+  - [ ] 10.2 迁移 ExcalidrawEditorView 组件
     - _Requirements: 1.4_
-  - [ ]* 10.3 更新 apps/desktop 导入路径
+  - [ ] 10.3 更新 apps/desktop 导入路径
     - _Requirements: 1.6_
 
 - [ ] 11. 属性测试
-  - [ ]* 11.1 编写 code.config.test.ts
+  - [ ] 11.1 编写 code.config.test.ts
     - **Property 1: Code Template Generation**
     - **Validates: Requirements 3.3, 3.4, 3.5**
 

@@ -243,6 +243,7 @@ function createTestIconTheme(): IconTheme {
 				more: {} as any,
 				mermaid: {} as any,
 				plantuml: {} as any,
+				code: {} as any,
 			},
 			settingsPage: {
 				appearance: {} as any,

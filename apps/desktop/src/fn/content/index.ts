@@ -10,6 +10,8 @@
  * - 内容解析和提取
  */
 
+// 代码文件内容生成
+export { generateCodeContent } from "./code.content.fn";
 // 内容提取
 export {
 	extractText,

@@ -40,6 +40,7 @@ export interface IconThemeIcons {
 		note: LucideIcon;
 		mermaid: LucideIcon;
 		plantuml: LucideIcon;
+		code: LucideIcon;
 		tags: LucideIcon;
 		statistics: LucideIcon;
 		settings: LucideIcon;

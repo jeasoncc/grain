@@ -10,11 +10,10 @@
  * @requirements 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 7.2
  */
 
+import { CodeEditorView } from "@grain/code-editor";
 import { Settings } from "lucide-react";
 import { memo } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-
-import { CodeEditorView } from "@/components/code-editor";
 import { Button } from "@/components/ui/button";
 
 import type { DiagramEditorViewProps } from "./diagram-editor.types";
@@ -98,11 +97,11 @@ export const DiagramEditorView = memo(function DiagramEditorView({
 				className="overflow-hidden"
 			>
 				<CodeEditorView
-					value={code}
-					language={diagramType}
-					theme={theme}
-					onChange={onCodeChange}
-					onSave={onSave}
+					code={code}
+					language="plaintext"
+					theme={theme?.type === "dark" ? "dark" : "light"}
+					onCodeChange={onCodeChange}
+					onSave={onSave ?? (() => {})}
 				/>
 			</Panel>
 

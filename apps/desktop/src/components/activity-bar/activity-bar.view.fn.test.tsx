@@ -87,6 +87,7 @@ function createTestIconTheme(): IconTheme {
 				more: MoreHorizontal,
 				mermaid: FileText,
 				plantuml: FileText,
+				code: FileText,
 			},
 			settingsPage: {
 				appearance: Settings,
@@ -133,6 +134,7 @@ function createDefaultProps(
 		onOpenExportDialog: overrides.onOpenExportDialog ?? vi.fn(),
 		onDeleteAllData: overrides.onDeleteAllData ?? vi.fn(),
 		onNavigate: overrides.onNavigate ?? vi.fn(),
+		onCreateCode: overrides.onCreateCode ?? vi.fn(),
 	};
 }
 

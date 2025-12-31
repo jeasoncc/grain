@@ -55,6 +55,8 @@ export interface ActivityBarProps {
 	readonly onCreateMermaid: () => void;
 	/** 创建 PlantUML 图表 */
 	readonly onCreatePlantUML: () => void;
+	/** 创建代码文件 */
+	readonly onCreateCode: () => void;
 	/** 导入文件 */
 	readonly onImportFile: (file: File) => Promise<void>;
 	/** 打开导出对话框 */
