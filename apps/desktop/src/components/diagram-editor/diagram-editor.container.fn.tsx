@@ -20,7 +20,6 @@ import type { DiagramError } from "@grain/diagram-editor";
 import { useNavigate } from "@tanstack/react-router";
 import * as E from "fp-ts/Either";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import { getContentByNodeId } from "@/db";
 import { initMermaid, isKrokiEnabled, renderDiagram } from "@/fn/diagram";
 import { getEditorThemeColors } from "@/fn/theme";
@@ -136,7 +135,6 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 			},
 			onSaveError: (error) => {
 				logger.error("[DiagramEditor] 保存内容失败:", error);
-				toast.error("Failed to save diagram");
 			},
 		});
 
@@ -164,7 +162,6 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 				}
 			} else {
 				logger.error("[DiagramEditor] 加载内容失败:", result.left);
-				toast.error("Failed to load diagram content");
 			}
 
 			setIsInitialized(true);
@@ -231,11 +228,6 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 				setError(result.error);
 				setPreviewSvg(null);
 				logger.error("[DiagramEditor] 预览渲染失败:", result.error.message);
-
-				// 如果是网络或服务器错误，显示 toast
-				if (result.error.type === "network" || result.error.type === "server") {
-					toast.error("Failed to render diagram after multiple attempts");
-				}
 			}
 
 			setIsLoading(false);
@@ -274,7 +266,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 	 */
 	const handleManualSave = useCallback(async () => {
 		if (!hasUnsavedChanges()) {
-			toast.info("No changes to save");
+			logger.debug("[DiagramEditor] 没有需要保存的更改");
 			return;
 		}
 

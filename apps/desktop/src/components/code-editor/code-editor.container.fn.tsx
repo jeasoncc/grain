@@ -15,7 +15,6 @@
 import { CodeEditorView } from "@grain/code-editor";
 import * as E from "fp-ts/Either";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 
 import { getContentByNodeId } from "@/db";
 import { getMonacoLanguage } from "@/fn/editor";
@@ -94,7 +93,6 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 			},
 			onSaveError: (error) => {
 				logger.error("[CodeEditor] 保存内容失败:", error);
-				toast.error("Failed to save code");
 			},
 		});
 
@@ -122,7 +120,6 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 				}
 			} else {
 				logger.error("[CodeEditor] 加载内容失败:", result.left);
-				toast.error("Failed to load code content");
 			}
 
 			setIsInitialized(true);
@@ -148,7 +145,7 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 	 */
 	const handleManualSave = useCallback(async () => {
 		if (!hasUnsavedChanges()) {
-			toast.info("No changes to save");
+			logger.debug("[CodeEditor] 没有需要保存的更改");
 			return;
 		}
 

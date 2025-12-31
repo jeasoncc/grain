@@ -20,7 +20,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { toast } from "sonner";
 import { keyboardShortcutManager } from "@/fn/keyboard";
 import {
 	createUnifiedSaveService,
@@ -237,22 +236,18 @@ export function useUnifiedSave(
 
 	const performManualSave = useCallback(async () => {
 		if (!nodeId) {
-			toast.info("没有可保存的内容");
+			logger.debug("[useUnifiedSave] 没有可保存的内容");
 			return;
 		}
 
 		// 检查是否有未保存的更改
 		if (!saveService.hasUnsavedChanges()) {
-			toast.info("没有需要保存的更改");
+			logger.debug("[useUnifiedSave] 没有需要保存的更改");
 			return;
 		}
 
 		logger.info("[useUnifiedSave] 执行手动保存");
-		const success = await saveService.saveNow();
-
-		if (!success) {
-			toast.error("保存失败，请重试");
-		}
+		await saveService.saveNow();
 	}, [nodeId, saveService]);
 
 	// ==============================

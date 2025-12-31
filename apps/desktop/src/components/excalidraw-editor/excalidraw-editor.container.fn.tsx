@@ -17,7 +17,6 @@
  */
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { useContentByNodeId } from "@/hooks/use-content";
 import { useTheme } from "@/hooks/use-theme";
 import { useUnifiedSave } from "@/hooks/use-unified-save";
@@ -150,7 +149,6 @@ export const ExcalidrawEditorContainer = memo(
 				},
 				onSaveError: (error) => {
 					logger.error("[ExcalidrawEditor] 保存失败:", error);
-					toast.error("Failed to save drawing");
 				},
 			});
 
@@ -307,7 +305,7 @@ export const ExcalidrawEditorContainer = memo(
 		 */
 		const handleManualSave = useCallback(async () => {
 			if (!hasUnsavedChanges()) {
-				toast.info("No changes to save");
+				logger.debug("[ExcalidrawEditor] 没有需要保存的更改");
 				return;
 			}
 
