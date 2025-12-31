@@ -503,3 +503,198 @@ function DiagramEditorView({ theme, themeColors, ... }: Props) {
 ---
 
 **使用场景**：当发现代码重复或相似模式时，参考此文件进行抽象设计。
+
+
+## 编辑器状态管理架构
+
+### 核心原则
+
+**所有编辑器使用统一的状态管理机制，避免多套架构并存。**
+
+使用 `react-freeze` 统一管理所有编辑器（Lexical、Excalidraw、Code、Diagram）的 tab 状态，完全阻止非活动编辑器的 reconciliation，保留所有状态。
+
+### 架构图
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     统一编辑器池架构                             │
+└─────────────────────────────────────────────────────────────────┘
+
+StoryWorkspaceContainer
+└── UnifiedEditorPool
+    ├── 所有编辑器同时渲染
+    ├── 使用 react-freeze 冻结非活动编辑器
+    └── 使用 CSS 控制显示/隐藏
+    
+    ├── <Freeze freeze={!isActive}>
+    │   ├── LexicalEditor (Tab A)
+    │   ├── LexicalEditor (Tab B)
+    │   ├── ExcalidrawEditor (Tab C)
+    │   ├── CodeEditor (Tab D)
+    │   └── DiagramEditor (Tab E)
+    │
+    └── 性能优势
+        ├── 完全阻止 reconciliation（0 计算开销）
+        ├── 保留所有状态（包括 Effects）
+        ├── 切换瞬间完成（< 16ms）
+        └── 架构统一，易于维护
+```
+
+### Tab 切换数据流
+
+```
+用户点击 Tab B
+    │
+    ▼
+setActiveTab("tab-b")
+    │
+    ▼
+所有 EditorWithFreeze 响应
+    │
+    ├─▶ Tab A: freeze={true}  (冻结渲染)
+    │   └─▶ visibility: hidden, z-index: -1
+    │
+    ├─▶ Tab B: freeze={false} (恢复渲染) ✅
+    │   └─▶ visibility: visible, z-index: 1
+    │
+    ├─▶ Tab C: freeze={true}  (保持冻结)
+    └─▶ Tab D: freeze={true}  (保持冻结)
+    
+结果：
+- Tab B 立即显示（< 16ms）
+- 所有状态完整保留（滚动、光标、撤销历史、画布状态）
+- 无需重新加载数据
+```
+
+### 核心组件
+
+#### EditorWithFreeze（通用包装器）
+
+```typescript
+import { memo } from 'react';
+import { Freeze } from 'react-freeze';
+
+interface EditorWithFreezeProps {
+  readonly isActive: boolean;
+  readonly children: React.ReactNode;
+}
+
+export const EditorWithFreeze = memo(({ isActive, children }: EditorWithFreezeProps) => {
+  return (
+    <Freeze freeze={!isActive}>
+      <div 
+        className="absolute inset-0"
+        style={{ 
+          visibility: isActive ? 'visible' : 'hidden',
+          pointerEvents: isActive ? 'auto' : 'none',
+          zIndex: isActive ? 1 : -1,
+        }}
+      >
+        {children}
+      </div>
+    </Freeze>
+  );
+});
+```
+
+#### 使用方式
+
+```typescript
+// 所有编辑器统一使用方式
+{lexicalTabs.map(tab => (
+  <EditorWithFreeze key={tab.id} isActive={tab.id === activeTabId}>
+    <LexicalEditorInstance nodeId={tab.nodeId} tabId={tab.id} />
+  </EditorWithFreeze>
+))}
+
+{excalidrawTabs.map(tab => (
+  <EditorWithFreeze key={tab.id} isActive={tab.id === activeTabId}>
+    <ExcalidrawEditorContainer nodeId={tab.nodeId} />
+  </EditorWithFreeze>
+))}
+
+{codeTabs.map(tab => (
+  <EditorWithFreeze key={tab.id} isActive={tab.id === activeTabId}>
+    <CodeEditorContainer nodeId={tab.nodeId} />
+  </EditorWithFreeze>
+))}
+
+{diagramTabs.map(tab => (
+  <EditorWithFreeze key={tab.id} isActive={tab.id === activeTabId}>
+    <DiagramEditorContainer nodeId={tab.nodeId} diagramType={...} />
+  </EditorWithFreeze>
+))}
+```
+
+### 关键设计决策
+
+| 决策 | 原因 |
+|------|------|
+| 使用 react-freeze 而非 React Activity | freeze 保留 Effects，Activity 销毁 Effects |
+| 所有编辑器同时渲染 | 状态完整保留，切换无延迟 |
+| 移除 MultiEditorContainer | 统一架构，避免两套机制 |
+| 移除 key={activeTab.id} | 避免销毁重建，保留状态 |
+| CSS absolute + z-index | 确保编辑器不重叠 |
+
+### 状态保留清单
+
+| 编辑器 | 保留的状态 |
+|--------|-----------|
+| Lexical | 光标位置、滚动位置、撤销历史、选中文本 |
+| Excalidraw | 画布状态（缩放、平移、选中元素）、撤销历史 |
+| Code (Monaco) | 光标位置、滚动位置、撤销历史、折叠状态 |
+| Diagram | 渲染结果、滚动位置 |
+
+### 与 useUnifiedSave 的兼容性
+
+`react-freeze` 不销毁 Effects，因此与 `useUnifiedSave` 完全兼容：
+
+```typescript
+// useUnifiedSave 内部的 Effects 保留
+useEffect(() => {
+  // 注册 Ctrl+S 快捷键
+  keyboardShortcutManager.registerShortcut(shortcutKey, performManualSave);
+  
+  return () => {
+    // 清理快捷键
+    keyboardShortcutManager.unregisterShortcut(shortcutKey);
+  };
+}, [registerShortcut, nodeId, performManualSave]);
+
+// 冻结时：Effects 保留，快捷键仍然注册
+// 解冻时：无需重新注册，立即可用
+```
+
+### 避免的反模式
+
+```typescript
+// ❌ 错误：使用 key 导致销毁重建
+<ExcalidrawEditor key={activeTab.id} nodeId={activeTab.nodeId} />
+
+// ❌ 错误：条件渲染导致卸载
+{isActive && <ExcalidrawEditor nodeId={nodeId} />}
+
+// ❌ 错误：多套管理机制
+<MultiEditorContainer />  // Lexical 专用
+<ExcalidrawEditor key={...} />  // 销毁重建
+
+// ✅ 正确：统一使用 Freeze
+{tabs.map(tab => (
+  <EditorWithFreeze key={tab.id} isActive={tab.id === activeTabId}>
+    <Editor nodeId={tab.nodeId} />
+  </EditorWithFreeze>
+))}
+```
+
+### 性能指标
+
+| 指标 | 目标 | 说明 |
+|------|------|------|
+| Tab 切换耗时 | < 16ms | 一帧内完成 |
+| 内存占用 | < 500MB (10 tabs) | 合理范围 |
+| 状态保留率 | 100% | 所有状态完整保留 |
+| reconciliation | 0 次 | 冻结时完全阻止 |
+
+---
+
+**使用场景**：实现编辑器 tab 管理、多实例状态保留时，参考此架构。
