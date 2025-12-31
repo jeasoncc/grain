@@ -174,9 +174,18 @@ export function useUnifiedSave(
 	// ==============================
 
 	const saveService = useMemo(() => {
-		// 如果已有服务实例，先清理
+		// 如果已有服务实例，先处理未保存的更改再清理
 		if (serviceRef.current) {
-			serviceRef.current.dispose();
+			const oldService = serviceRef.current;
+			const oldNodeId = nodeId; // 捕获当前 nodeId
+			
+			// 如果有未保存的更改，入队保存
+			if (oldService.hasUnsavedChanges()) {
+				logger.info(`[useUnifiedSave] 服务重建前，入队保存未保存的更改: ${oldNodeId}`);
+				saveQueueService.enqueueSave(oldNodeId, () => oldService.saveNow());
+			}
+			
+			oldService.dispose();
 		}
 
 		const service = createUnifiedSaveService({
@@ -278,13 +287,17 @@ export function useUnifiedSave(
 	// 清理（组件卸载时保存）
 	// ==============================
 
+	// 使用 ref 存储最新的 nodeId 和 tabId，供清理函数使用
+	const cleanupDataRef = useRef({ nodeId, tabId, setTabDirty });
 	useEffect(() => {
-		// 捕获当前的 nodeId、tabId 和 setTabDirty，避免闭包问题
-		const currentNodeId = nodeId;
-		const currentTabId = tabId;
-		const currentSetTabDirty = setTabDirty;
+		cleanupDataRef.current = { nodeId, tabId, setTabDirty };
+	}, [nodeId, tabId, setTabDirty]);
 
+	useEffect(() => {
+		// 组件卸载时的清理函数
 		return () => {
+			const { nodeId: currentNodeId, tabId: currentTabId, setTabDirty: currentSetTabDirty } = cleanupDataRef.current;
+			
 			logger.info(`[useUnifiedSave] ========== 组件卸载清理 ==========`);
 			logger.info(`[useUnifiedSave] nodeId: ${currentNodeId}`);
 			logger.info(`[useUnifiedSave] tabId: ${currentTabId}`);
@@ -323,7 +336,7 @@ export function useUnifiedSave(
 				logger.info(`[useUnifiedSave] serviceRef.current 为空，跳过清理`);
 			}
 		};
-	}, [nodeId, tabId, setTabDirty]);
+	}, []); // 空依赖数组，只在组件卸载时执行
 
 	// ==============================
 	// 返回的函数
