@@ -25,14 +25,11 @@ export { default as TagTransformPlugin } from "./tag-transform-plugin";
 export { default as CodeHighlightPlugin } from "./code-highlight-plugin";
 
 // Re-export commonly used Lexical plugins for convenience
+// 只导出实际在 Editor 中使用的插件
 export { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 export { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 export { ListPlugin } from "@lexical/react/LexicalListPlugin";
 export { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
-export { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
-export { TablePlugin } from "@lexical/react/LexicalTablePlugin";
 export { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 export { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
 export { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
-export { ClearEditorPlugin } from "@lexical/react/LexicalClearEditorPlugin";
-export { AutoLinkPlugin } from "@lexical/react/LexicalAutoLinkPlugin";

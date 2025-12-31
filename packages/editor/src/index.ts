@@ -66,13 +66,9 @@ export {
   RichTextPlugin,
   ListPlugin,
   LinkPlugin,
-  CheckListPlugin,
-  TablePlugin,
   MarkdownShortcutPlugin,
   TabIndentationPlugin,
   OnChangePlugin,
-  ClearEditorPlugin,
-  AutoLinkPlugin,
 } from "./plugins";
 
 export type {
