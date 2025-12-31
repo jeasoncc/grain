@@ -61,7 +61,7 @@ interface SaveModel {
 	/** 是否正在保存 */
 	isSaving: boolean;
 	/** 防抖保存函数 */
-	debouncedSave: DebouncedFunction<[string], Promise<boolean>> | null;
+	debouncedSave: DebouncedFunction<(content: string) => Promise<boolean>> | null;
 	/** 自动保存延迟 */
 	autoSaveDelay: number;
 	/** 更新 Tab isDirty 状态的函数 */
@@ -230,7 +230,7 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 	const createDebouncedSave = (
 		nodeId: string,
 		delay: number,
-	): DebouncedFunction<[string], Promise<boolean>> | null => {
+	): DebouncedFunction<(content: string) => Promise<boolean>> | null => {
 		if (delay <= 0) return null;
 		return debounce(
 			(_content: string) => saveContent(nodeId),

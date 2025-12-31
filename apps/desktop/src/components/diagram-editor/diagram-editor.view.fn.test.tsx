@@ -14,7 +14,6 @@
 
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Theme, ThemeColors } from "@/lib/themes";
 import type { DiagramEditorViewProps } from "./diagram-editor.types";
 import { DiagramEditorView } from "./diagram-editor.view.fn";
 
@@ -94,64 +93,6 @@ vi.mock("react-resizable-panels", () => ({
 		});
 	}),
 }));
-
-// ============================================================================
-// Test Fixtures
-// ============================================================================
-
-/**
- * 创建测试用的 ThemeColors
- */
-const createTestThemeColors = (type: "light" | "dark"): ThemeColors => ({
-	background: type === "light" ? "#ffffff" : "#1e1e1e",
-	foreground: type === "light" ? "#1f2937" : "#d4d4d4",
-	card: type === "light" ? "#ffffff" : "#252526",
-	cardForeground: type === "light" ? "#1f2937" : "#d4d4d4",
-	popover: type === "light" ? "#ffffff" : "#252526",
-	popoverForeground: type === "light" ? "#1f2937" : "#d4d4d4",
-	primary: type === "light" ? "#2563eb" : "#569cd6",
-	primaryForeground: "#ffffff",
-	secondary: type === "light" ? "#f3f4f6" : "#3c3c3c",
-	secondaryForeground: type === "light" ? "#1f2937" : "#d4d4d4",
-	muted: type === "light" ? "#f3f4f6" : "#3c3c3c",
-	mutedForeground: type === "light" ? "#6b7280" : "#808080",
-	accent: type === "light" ? "#eff6ff" : "#264f78",
-	accentForeground: type === "light" ? "#1f2937" : "#ffffff",
-	border: type === "light" ? "#e5e7eb" : "#3c3c3c",
-	input: type === "light" ? "#ffffff" : "#3c3c3c",
-	ring: type === "light" ? "#2563eb" : "#569cd6",
-	sidebar: type === "light" ? "#f9fafb" : "#252526",
-	sidebarForeground: type === "light" ? "#1f2937" : "#d4d4d4",
-	sidebarPrimary: type === "light" ? "#2563eb" : "#569cd6",
-	sidebarPrimaryForeground: "#ffffff",
-	sidebarAccent: type === "light" ? "#eff6ff" : "#264f78",
-	sidebarAccentForeground: type === "light" ? "#1f2937" : "#ffffff",
-	sidebarBorder: type === "light" ? "#e5e7eb" : "#3c3c3c",
-	folderColor: type === "light" ? "#f59e0b" : "#dcb67a",
-	editorSelection: type === "light" ? "#add6ff" : "#264f78",
-});
-
-/**
- * 测试用浅色主题
- */
-const lightTheme: Theme = {
-	key: "default-light",
-	name: "Default Light",
-	description: "The default light theme",
-	type: "light",
-	colors: createTestThemeColors("light"),
-};
-
-/**
- * 测试用深色主题
- */
-const darkTheme: Theme = {
-	key: "default-dark",
-	name: "Default Dark",
-	description: "The default dark theme",
-	type: "dark",
-	colors: createTestThemeColors("dark"),
-};
 
 // ============================================================================
 // Test Helpers
@@ -367,19 +308,19 @@ describe("DiagramEditorView", () => {
 
 	describe("主题传递", () => {
 		it("should pass theme to CodeEditorView", () => {
-			const props = createDefaultProps({ theme: darkTheme });
+			const props = createDefaultProps({ theme: "dark" });
 			render(<DiagramEditorView {...props} />);
 
 			const codeEditor = screen.getByTestId("code-editor-view");
-			expect(codeEditor).toHaveAttribute("data-theme", "default-dark");
+			expect(codeEditor).toHaveAttribute("data-theme", "dark");
 		});
 
 		it("should pass light theme to CodeEditorView", () => {
-			const props = createDefaultProps({ theme: lightTheme });
+			const props = createDefaultProps({ theme: "light" });
 			render(<DiagramEditorView {...props} />);
 
 			const codeEditor = screen.getByTestId("code-editor-view");
-			expect(codeEditor).toHaveAttribute("data-theme", "default-light");
+			expect(codeEditor).toHaveAttribute("data-theme", "light");
 		});
 
 		it("should handle undefined theme", () => {
