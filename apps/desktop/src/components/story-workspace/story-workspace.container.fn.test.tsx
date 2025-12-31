@@ -131,13 +131,6 @@ vi.mock("@/db", () => ({
 	getContentByNodeId: vi.fn(() => () => Promise.resolve({ _tag: "Left" })),
 }));
 
-// Mock services
-vi.mock("@/fn/save", () => ({
-	saveService: {
-		saveDocument: vi.fn(),
-	},
-}));
-
 vi.mock("@/fn/word-count", () => ({
 	countWordsFromLexicalState: vi.fn(() => ({
 		chineseChars: 0,
