@@ -1,7 +1,7 @@
 {
   "name": "desktop",
   "private": true,
-  "version": "0.1.224",
+  "version": "0.1.225",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -32,7 +32,9 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@excalidraw/excalidraw": "0.18.0",
     "@grain/code-editor": "workspace:*",
+    "@grain/diagram-editor": "workspace:*",
     "@grain/editor": "workspace:*",
+    "@grain/excalidraw-editor": "workspace:*",
     "@lexical/code": "^0.38.2",
     "@lexical/file": "^0.38.2",
     "@lexical/hashtag": "^0.38.2",

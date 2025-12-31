@@ -22,8 +22,8 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { getContentByNodeId } from "@/db";
+import type { DiagramError } from "@grain/diagram-editor";
 import {
-	type DiagramError,
 	initMermaid,
 	isKrokiEnabled,
 	renderDiagram,
@@ -65,7 +65,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 	className,
 }: DiagramEditorContainerProps) {
 	const navigate = useNavigate();
-	const { currentTheme, isDark } = useTheme();
+	const { isDark } = useTheme();
 
 	// ==============================
 	// Store 连接
@@ -208,7 +208,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 				onRetryAttempt: (attempt, maxRetries) => {
 					// 更新错误状态以显示重试次数
 					logger.info(`[DiagramEditor] 重试渲染 (${attempt}/${maxRetries})`);
-					setError((prev) => (prev ? { ...prev, retryCount: attempt } : null));
+					setError((prev: DiagramError | null) => (prev ? { ...prev, retryCount: attempt } : null));
 				},
 			});
 
@@ -319,7 +319,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 				isLoading={isLoading}
 				error={error}
 				isKrokiConfigured={showKrokiConfigured}
-				theme={currentTheme}
+				theme={isDark ? "dark" : "light"}
 				onCodeChange={handleCodeChange}
 				onSave={handleManualSave}
 				onOpenSettings={handleOpenSettings}
