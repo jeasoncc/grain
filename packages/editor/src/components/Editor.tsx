@@ -39,6 +39,7 @@ import MentionTooltipPlugin, { type MentionTooltipPluginProps } from "../plugins
 import TagTransformPlugin from "../plugins/tag-transform-plugin";
 import CodeHighlightPlugin from "../plugins/code-highlight-plugin";
 import CodeBlockShortcutPlugin from "../plugins/code-block-shortcut-plugin";
+import PrismLanguagesPlugin from "../plugins/prism-languages-plugin";
 import theme from "../themes/PlaygroundEditorTheme";
 import "../themes/PlaygroundEditorTheme.css";
 
@@ -166,6 +167,7 @@ export default function Editor({
         <TagTransformPlugin />
         <CodeHighlightPlugin />
         <CodeBlockShortcutPlugin />
+        <PrismLanguagesPlugin />
       </div>
     </LexicalComposer>
   );

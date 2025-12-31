@@ -62,6 +62,7 @@ export {
   TagTransformPlugin,
   CodeHighlightPlugin,
   CodeBlockShortcutPlugin,
+  PrismLanguagesPlugin,
   // Re-exported Lexical plugins
   HistoryPlugin,
   RichTextPlugin,
