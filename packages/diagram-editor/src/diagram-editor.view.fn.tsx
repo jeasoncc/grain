@@ -144,6 +144,7 @@ export const DiagramEditorView = memo(function DiagramEditorView({
 	error,
 	isKrokiConfigured,
 	theme,
+	themeColors,
 	onCodeChange,
 	onSave,
 	onOpenSettings,
@@ -174,6 +175,7 @@ export const DiagramEditorView = memo(function DiagramEditorView({
 					code={code}
 					language="plaintext"
 					theme={theme ?? "light"}
+					themeColors={themeColors}
 					onCodeChange={onCodeChange}
 					onSave={onSave ?? (() => {})}
 				/>

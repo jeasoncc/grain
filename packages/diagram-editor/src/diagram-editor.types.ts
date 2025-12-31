@@ -4,6 +4,8 @@
  * 独立包类型定义，不依赖 apps/desktop 的内部类型
  */
 
+import type { EditorThemeColors } from "@grain/code-editor";
+
 /**
  * 图表类型
  */
@@ -46,8 +48,10 @@ export interface DiagramEditorViewProps {
 	readonly error: DiagramError | null;
 	/** Kroki 是否已配置 */
 	readonly isKrokiConfigured: boolean;
-	/** 主题：light 或 dark */
+	/** 基础主题：light 或 dark */
 	readonly theme?: "light" | "dark";
+	/** 自定义主题颜色（可选），透传给内部的 CodeEditor */
+	readonly themeColors?: EditorThemeColors;
 	/** 代码变化回调 */
 	readonly onCodeChange: (code: string) => void;
 	/** 手动保存回调 (Ctrl+S) */

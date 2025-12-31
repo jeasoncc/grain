@@ -16,3 +16,5 @@ export {
 	// Theme Validation
 	isThemeTypeMatch,
 } from "./theme.fn";
+
+export { getEditorThemeColors } from "./editor-theme.fn";

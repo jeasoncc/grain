@@ -14,11 +14,12 @@
 
 import { CodeEditorView } from "@grain/code-editor";
 import * as E from "fp-ts/Either";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { getContentByNodeId } from "@/db";
 import { getMonacoLanguage } from "@/fn/editor";
+import { getEditorThemeColors } from "@/fn/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useUnifiedSave } from "@/hooks/use-unified-save";
 import { cn } from "@/lib/utils";
@@ -44,7 +45,16 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 	nodeId,
 	className,
 }: CodeEditorContainerProps) {
-	const { isDark } = useTheme();
+	const { isDark, currentTheme } = useTheme();
+
+	// ==============================
+	// 主题颜色
+	// ==============================
+
+	const themeColors = useMemo(
+		() => getEditorThemeColors(currentTheme),
+		[currentTheme],
+	);
 
 	// ==============================
 	// Store 连接
@@ -171,6 +181,7 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 				code={code}
 				language={language as Parameters<typeof CodeEditorView>[0]["language"]}
 				theme={isDark ? "dark" : "light"}
+				themeColors={themeColors}
 				onCodeChange={handleCodeChange}
 				onSave={handleManualSave}
 			/>

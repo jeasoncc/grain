@@ -8,5 +8,6 @@
 export { CodeEditorView } from "./code-editor.view.fn";
 export type {
 	CodeEditorViewProps,
+	EditorThemeColors,
 	MonacoLanguage,
 } from "./code-editor.types";
