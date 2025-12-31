@@ -8,6 +8,7 @@
  * 注意：有副作用的函数（DOM 操作、系统检测）在 hooks/use-theme-dom.ts 中
  */
 
+export { getEditorThemeColors } from "./editor-theme.fn";
 export {
 	getDefaultThemeKey,
 	getEffectiveThemeType,
@@ -16,5 +17,3 @@ export {
 	// Theme Validation
 	isThemeTypeMatch,
 } from "./theme.fn";
-
-export { getEditorThemeColors } from "./editor-theme.fn";

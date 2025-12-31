@@ -13,8 +13,8 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-	type SaveQueueService,
 	createSaveQueueService,
+	type SaveQueueService,
 	saveQueueService,
 } from "./save-queue";
 
@@ -290,9 +290,11 @@ describe("SaveQueueService", () => {
 
 	describe("getPendingNodeIds", () => {
 		it("应返回所有待处理的 nodeId", () => {
-			const saveFn = vi.fn().mockImplementation(
-				() => new Promise((resolve) => setTimeout(() => resolve(true), 100)),
-			);
+			const saveFn = vi
+				.fn()
+				.mockImplementation(
+					() => new Promise((resolve) => setTimeout(() => resolve(true), 100)),
+				);
 
 			service.enqueueSave("node-1", saveFn);
 			service.enqueueSave("node-2", saveFn);

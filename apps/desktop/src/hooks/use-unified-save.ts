@@ -26,6 +26,7 @@ import {
 	createUnifiedSaveService,
 	type UnifiedSaveServiceInterface,
 } from "@/fn/save/unified-save.service";
+import { saveQueueService } from "@/lib/save-queue";
 import logger from "@/log";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSaveStore } from "@/stores/save.store";
@@ -281,16 +282,24 @@ export function useUnifiedSave(
 	// ==============================
 
 	useEffect(() => {
+		// 捕获当前的 nodeId、tabId 和 setTabDirty，避免闭包问题
+		const currentNodeId = nodeId;
+		const currentTabId = tabId;
+		const currentSetTabDirty = setTabDirty;
+
 		return () => {
 			if (serviceRef.current) {
 				const service = serviceRef.current;
 
-				// 如果有未保存的更改，立即保存
+				// 如果有未保存的更改，入队保存（fire-and-forget）
 				if (service.hasUnsavedChanges()) {
-					logger.info("[useUnifiedSave] 组件卸载，保存未保存的更改");
-					service.saveNow().catch((error) => {
-						logger.error("[useUnifiedSave] 卸载时保存失败:", error);
-					});
+					logger.info("[useUnifiedSave] 组件卸载，入队保存");
+					saveQueueService.enqueueSave(currentNodeId, () => service.saveNow());
+
+					// 清除 isDirty 状态（因为已入队）
+					if (currentTabId && currentSetTabDirty) {
+						currentSetTabDirty(currentTabId, false);
+					}
 				}
 
 				// 清理资源
@@ -298,7 +307,7 @@ export function useUnifiedSave(
 				serviceRef.current = null;
 			}
 		};
-	}, []);
+	}, [nodeId, tabId, setTabDirty]);
 
 	// ==============================
 	// 返回的函数

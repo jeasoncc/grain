@@ -7,11 +7,11 @@
  * Feature: editor-save-queue
  */
 
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import * as fc from "fast-check";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-	type SaveQueueService,
 	createSaveQueueService,
+	type SaveQueueService,
 	saveQueueService,
 } from "./save-queue";
 
@@ -170,35 +170,31 @@ describe("SaveQueueService 属性测试", () => {
 			);
 		});
 
-		it(
-			"*For any* nodeId with pending save, waitForSave SHALL wait for it to complete",
-			async () => {
-				await fc.assert(
-					fc.asyncProperty(
-						fc.string({ minLength: 1, maxLength: 50 }),
-						fc.integer({ min: 10, max: 30 }),
-						async (nodeId, delay) => {
-							const service = createSaveQueueService();
-							let saveCompleted = false;
+		it("*For any* nodeId with pending save, waitForSave SHALL wait for it to complete", async () => {
+			await fc.assert(
+				fc.asyncProperty(
+					fc.string({ minLength: 1, maxLength: 50 }),
+					fc.integer({ min: 10, max: 30 }),
+					async (nodeId, delay) => {
+						const service = createSaveQueueService();
+						let saveCompleted = false;
 
-							const saveFn = vi.fn().mockImplementation(async () => {
-								await new Promise((resolve) => setTimeout(resolve, delay));
-								saveCompleted = true;
-								return true;
-							});
+						const saveFn = vi.fn().mockImplementation(async () => {
+							await new Promise((resolve) => setTimeout(resolve, delay));
+							saveCompleted = true;
+							return true;
+						});
 
-							service.enqueueSave(nodeId, saveFn);
-							expect(saveCompleted).toBe(false);
+						service.enqueueSave(nodeId, saveFn);
+						expect(saveCompleted).toBe(false);
 
-							await service.waitForSave(nodeId);
-							expect(saveCompleted).toBe(true);
-						},
-					),
-					{ numRuns: 100 },
-				);
-			},
-			30000,
-		);
+						await service.waitForSave(nodeId);
+						expect(saveCompleted).toBe(true);
+					},
+				),
+				{ numRuns: 100 },
+			);
+		}, 30000);
 	});
 
 	// ============================================================================
@@ -264,42 +260,38 @@ describe("SaveQueueService 属性测试", () => {
 	// ============================================================================
 
 	describe("Property 6: 超时保护", () => {
-		it(
-			"*For any* waitForSave call with timeout, if pending save takes longer, function SHALL resolve after timeout",
-			async () => {
-				await fc.assert(
-					fc.asyncProperty(
-						fc.string({ minLength: 1, maxLength: 50 }),
-						fc.integer({ min: 50, max: 100 }),
-						async (nodeId, timeout) => {
-							const service = createSaveQueueService();
+		it("*For any* waitForSave call with timeout, if pending save takes longer, function SHALL resolve after timeout", async () => {
+			await fc.assert(
+				fc.asyncProperty(
+					fc.string({ minLength: 1, maxLength: 50 }),
+					fc.integer({ min: 50, max: 100 }),
+					async (nodeId, timeout) => {
+						const service = createSaveQueueService();
 
-							// 创建一个永远不会完成的保存函数
-							const saveFn = vi.fn().mockImplementation(
-								() =>
-									new Promise((resolve) => {
-										// 设置一个很长的延迟，远超超时时间
-										setTimeout(() => resolve(true), 10000);
-									}),
-							);
+						// 创建一个永远不会完成的保存函数
+						const saveFn = vi.fn().mockImplementation(
+							() =>
+								new Promise((resolve) => {
+									// 设置一个很长的延迟，远超超时时间
+									setTimeout(() => resolve(true), 10000);
+								}),
+						);
 
-							service.enqueueSave(nodeId, saveFn);
+						service.enqueueSave(nodeId, saveFn);
 
-							const startTime = Date.now();
-							await service.waitForSave(nodeId, timeout);
-							const endTime = Date.now();
+						const startTime = Date.now();
+						await service.waitForSave(nodeId, timeout);
+						const endTime = Date.now();
 
-							// 应该在超时后返回
-							const elapsed = endTime - startTime;
-							expect(elapsed).toBeGreaterThanOrEqual(timeout - 10); // 允许 10ms 误差
-							expect(elapsed).toBeLessThan(timeout + 100); // 不应该等太久
-						},
-					),
-					{ numRuns: 100 },
-				);
-			},
-			30000,
-		);
+						// 应该在超时后返回
+						const elapsed = endTime - startTime;
+						expect(elapsed).toBeGreaterThanOrEqual(timeout - 10); // 允许 10ms 误差
+						expect(elapsed).toBeLessThan(timeout + 100); // 不应该等太久
+					},
+				),
+				{ numRuns: 100 },
+			);
+		}, 30000);
 	});
 
 	// ============================================================================

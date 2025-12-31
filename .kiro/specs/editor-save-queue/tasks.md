@@ -48,11 +48,11 @@
   - 运行测试确保所有测试通过
   - 如有问题，询问用户
 
-- [ ] 4. 修改 useUnifiedSave hook
-  - [ ] 4.1 导入 saveQueueService
+- [-] 4. 修改 useUnifiedSave hook
+  - [x] 4.1 导入 saveQueueService
     - 在 `apps/desktop/src/hooks/use-unified-save.ts` 中导入
     - _Requirements: 2.1_
-  - [ ] 4.2 修改 cleanup effect 使用队列
+  - [-] 4.2 修改 cleanup effect 使用队列
     - 将 `saveNow()` 改为 `enqueueSave(nodeId, saveFn)`
     - 入队后清除 isDirty 状态
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 4.2_
