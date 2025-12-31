@@ -6,17 +6,17 @@
 
 ## Tasks
 
-- [ ] 1. 安装依赖并创建保存队列服务
-  - [ ] 1.1 安装 p-queue 依赖
+- [x] 1. 安装依赖并创建保存队列服务
+  - [x] 1.1 安装 p-queue 依赖
     - 运行 `bun add p-queue` 在 apps/desktop 目录
     - _Requirements: 1.1_
-  - [ ] 1.2 创建 save-queue.ts 服务文件
+  - [x] 1.2 创建 save-queue.ts 服务文件
     - 创建 `apps/desktop/src/lib/save-queue.ts`
     - 实现 `SaveQueueService` 接口
     - 实现 `createSaveQueueService` 工厂函数
     - 导出单例 `saveQueueService`
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
-  - [ ] 1.3 编写 save-queue 单元测试
+  - [x] 1.3 编写 save-queue 单元测试
     - 创建 `apps/desktop/src/lib/save-queue.test.ts`
     - 测试单例、入队、去重、等待、超时、错误处理
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
