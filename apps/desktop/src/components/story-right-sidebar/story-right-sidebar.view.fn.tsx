@@ -121,8 +121,8 @@ export const StoryRightSidebarView = memo(
 											)}
 											{tab.title}
 										</span>
-										<button
-											type="button"
+										<span
+											role="button"
 											tabIndex={0}
 											className={cn(
 												"flex items-center justify-center size-5 rounded-full transition-all",
@@ -134,9 +134,15 @@ export const StoryRightSidebarView = memo(
 												e.stopPropagation();
 												onCloseTab(tab.id);
 											}}
+											onKeyDown={(e) => {
+												if (e.key === "Enter" || e.key === " ") {
+													e.stopPropagation();
+													onCloseTab(tab.id);
+												}
+											}}
 										>
 											<X className="size-3" />
-										</button>
+										</span>
 									</button>
 								</TooltipTrigger>
 								<TooltipContent side="left" className="text-xs">
