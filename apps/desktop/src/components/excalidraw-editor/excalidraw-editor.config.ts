@@ -8,10 +8,10 @@
 
 export {
 	EXCALIDRAW_PERFORMANCE_CONFIG,
-	EXCALIDRAW_UI_OPTIONS,
 	EXCALIDRAW_RENDER_CONFIG,
+	EXCALIDRAW_UI_OPTIONS,
 	type ExcalidrawPerformanceConfig,
 	type ExcalidrawPerformanceConfigKey,
-	type ExcalidrawUIOptions,
 	type ExcalidrawRenderConfig,
+	type ExcalidrawUIOptions,
 } from "@grain/excalidraw-editor";

@@ -16,18 +16,13 @@
  * @requirements 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 7.2, 8.1, 8.2, 8.3, 8.4, 8.5
  */
 
+import type { DiagramError } from "@grain/diagram-editor";
 import { useNavigate } from "@tanstack/react-router";
 import * as E from "fp-ts/Either";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-
 import { getContentByNodeId } from "@/db";
-import type { DiagramError } from "@grain/diagram-editor";
-import {
-	initMermaid,
-	isKrokiEnabled,
-	renderDiagram,
-} from "@/fn/diagram";
+import { initMermaid, isKrokiEnabled, renderDiagram } from "@/fn/diagram";
 import { useTheme } from "@/hooks/use-theme";
 import { useUnifiedSave } from "@/hooks/use-unified-save";
 import { cn } from "@/lib/utils";
@@ -208,7 +203,9 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 				onRetryAttempt: (attempt, maxRetries) => {
 					// 更新错误状态以显示重试次数
 					logger.info(`[DiagramEditor] 重试渲染 (${attempt}/${maxRetries})`);
-					setError((prev: DiagramError | null) => (prev ? { ...prev, retryCount: attempt } : null));
+					setError((prev: DiagramError | null) =>
+						prev ? { ...prev, retryCount: attempt } : null,
+					);
 				},
 			});
 

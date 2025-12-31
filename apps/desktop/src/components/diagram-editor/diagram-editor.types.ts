@@ -8,15 +8,15 @@
 
 // 从包重新导出 View 组件相关类型
 export type {
-	DiagramType,
-	DiagramErrorType,
-	DiagramError,
 	DiagramEditorViewProps,
+	DiagramError,
+	DiagramErrorType,
+	DiagramType,
 } from "@grain/diagram-editor";
 
 /**
  * DiagramEditorContainer Props 接口
- * 
+ *
  * Container 组件专用类型，不在包中定义
  */
 export interface DiagramEditorContainerProps {

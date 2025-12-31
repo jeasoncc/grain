@@ -10,6 +10,10 @@ export {
 	EXCALIDRAW_PERFORMANCE_CONFIG,
 	EXCALIDRAW_UI_OPTIONS,
 	EXCALIDRAW_RENDER_CONFIG,
+	type ExcalidrawPerformanceConfig,
+	type ExcalidrawPerformanceConfigKey,
+	type ExcalidrawUIOptions,
+	type ExcalidrawRenderConfig,
 } from "./excalidraw-editor.config";
 export type {
 	ExcalidrawEditorViewProps,
@@ -17,11 +21,4 @@ export type {
 	ContainerSize,
 	PerformanceConfig,
 	PerformanceMetrics,
-	ExcalidrawPerformanceConfig,
-	ExcalidrawPerformanceConfigKey,
-	ExcalidrawUIOptions,
-	ExcalidrawRenderConfig,
 } from "./excalidraw-editor.types";
-export type {
-	ExcalidrawPerformanceConfig as PerformanceConfigType,
-} from "./excalidraw-editor.config";
