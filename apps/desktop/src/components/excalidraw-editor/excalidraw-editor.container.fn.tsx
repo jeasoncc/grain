@@ -138,19 +138,18 @@ export const ExcalidrawEditorContainer = memo(
 		// 自动保存和手动保存（Ctrl+S）都通过同一个 hook 处理
 		// ==============================
 
-		const { updateContent, saveNow, hasUnsavedChanges, setInitialContent } =
-			useUnifiedSave({
-				nodeId,
-				contentType: "excalidraw",
-				tabId: activeTabId ?? undefined,
-				registerShortcut: false, // Excalidraw 有自己的快捷键处理
-				onSaveSuccess: () => {
-					logger.success("[ExcalidrawEditor] 内容保存成功");
-				},
-				onSaveError: (error) => {
-					logger.error("[ExcalidrawEditor] 保存失败:", error);
-				},
-			});
+		const { updateContent, saveNow, setInitialContent } = useUnifiedSave({
+			nodeId,
+			contentType: "excalidraw",
+			tabId: activeTabId ?? undefined,
+			registerShortcut: false, // Excalidraw 有自己的快捷键处理
+			onSaveSuccess: () => {
+				logger.success("[ExcalidrawEditor] 内容保存成功");
+			},
+			onSaveError: (error) => {
+				logger.error("[ExcalidrawEditor] 保存失败:", error);
+			},
+		});
 
 		/**
 		 * 硬件加速检测
@@ -300,20 +299,6 @@ export const ExcalidrawEditorContainer = memo(
 		);
 
 		/**
-		 * 手动保存处理器 (Ctrl+S)
-		 * 使用 useUnifiedSave hook 的 saveNow
-		 */
-		const handleManualSave = useCallback(async () => {
-			if (!hasUnsavedChanges()) {
-				logger.debug("[ExcalidrawEditor] 没有需要保存的更改");
-				return;
-			}
-
-			logger.info("[ExcalidrawEditor] 手动保存触发");
-			await saveNow();
-		}, [hasUnsavedChanges, saveNow]);
-
-		/**
 		 * 清理：组件卸载时的资源清理
 		 */
 		useEffect(() => {
@@ -369,7 +354,7 @@ export const ExcalidrawEditorContainer = memo(
 					initialData={initialData}
 					theme={isDark ? "dark" : "light"}
 					onChange={handleChange}
-					onSave={handleManualSave}
+					onSave={saveNow}
 					containerSize={containerSize}
 				/>
 			</div>

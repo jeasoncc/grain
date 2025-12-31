@@ -120,23 +120,22 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 		codeRef.current = code;
 	}, [code]);
 
-	const { updateContent, saveNow, hasUnsavedChanges, setInitialContent } =
-		useUnifiedSave({
-			nodeId,
-			contentType: "text", // 图表内容使用 "text" 类型存储（纯文本 Mermaid/PlantUML 语法）
-			tabId: activeTabId ?? undefined, // 传递 tabId 用于同步 isDirty 状态
-			registerShortcut: false, // DiagramEditor 有自己的快捷键处理
-			onSaveSuccess: () => {
-				logger.success("[DiagramEditor] 内容保存成功");
-				// 保存成功后触发预览渲染
-				if (codeRef.current && canRenderPreview) {
-					updatePreview(codeRef.current);
-				}
-			},
-			onSaveError: (error) => {
-				logger.error("[DiagramEditor] 保存内容失败:", error);
-			},
-		});
+	const { updateContent, saveNow, setInitialContent } = useUnifiedSave({
+		nodeId,
+		contentType: "text", // 图表内容使用 "text" 类型存储（纯文本 Mermaid/PlantUML 语法）
+		tabId: activeTabId ?? undefined, // 传递 tabId 用于同步 isDirty 状态
+		registerShortcut: false, // DiagramEditor 有自己的快捷键处理
+		onSaveSuccess: () => {
+			logger.success("[DiagramEditor] 内容保存成功");
+			// 保存成功后触发预览渲染
+			if (codeRef.current && canRenderPreview) {
+				updatePreview(codeRef.current);
+			}
+		},
+		onSaveError: (error) => {
+			logger.error("[DiagramEditor] 保存内容失败:", error);
+		},
+	});
 
 	// ==============================
 	// 加载内容
@@ -259,21 +258,6 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 		[updateContent],
 	);
 
-	/**
-	 * 手动保存处理器 (Ctrl+S)
-	 * 使用 useUnifiedSave hook 的 saveNow 方法
-	 * 保存成功后会通过 onSaveSuccess 回调触发预览渲染
-	 */
-	const handleManualSave = useCallback(async () => {
-		if (!hasUnsavedChanges()) {
-			logger.debug("[DiagramEditor] 没有需要保存的更改");
-			return;
-		}
-
-		logger.info("[DiagramEditor] 手动保存触发");
-		await saveNow();
-	}, [hasUnsavedChanges, saveNow]);
-
 	// ==============================
 	// 回调函数
 	// ==============================
@@ -325,7 +309,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 				theme={isDark ? "dark" : "light"}
 				themeColors={themeColors}
 				onCodeChange={handleCodeChange}
-				onSave={handleManualSave}
+				onSave={saveNow}
 				onOpenSettings={handleOpenSettings}
 				onRetry={handleRetry}
 			/>

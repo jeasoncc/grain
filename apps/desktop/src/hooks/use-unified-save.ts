@@ -234,6 +234,8 @@ export function useUnifiedSave(
 	// 手动保存函数（Ctrl+S 调用）
 	// ==============================
 
+	// 注意：performManualSave 使用 saveService 而不是 saveNow
+	// 因为 saveNow 在这个时候还没有定义（useCallback 的顺序问题）
 	const performManualSave = useCallback(async () => {
 		if (!nodeId) {
 			logger.debug("[useUnifiedSave] 没有可保存的内容");
@@ -246,7 +248,7 @@ export function useUnifiedSave(
 			return;
 		}
 
-		logger.info("[useUnifiedSave] 执行手动保存");
+		logger.info("[useUnifiedSave] 执行手动保存 (Ctrl+S)");
 		await saveService.saveNow();
 	}, [nodeId, saveService]);
 
@@ -320,11 +322,30 @@ export function useUnifiedSave(
 	);
 
 	/**
-	 * 立即保存当前内容
+	 * 立即保存当前内容（手动保存）
+	 *
+	 * 统一的手动保存入口，包含：
+	 * - 检查是否有未保存的更改
+	 * - 执行保存
+	 * - 日志记录
+	 *
+	 * 编辑器组件直接调用此函数，无需自己做任何检查
 	 */
-	const saveNow = useCallback(async () => {
+	const saveNow = useCallback(async (): Promise<boolean> => {
+		if (!nodeId) {
+			logger.debug("[useUnifiedSave] 没有可保存的内容");
+			return true;
+		}
+
+		// 检查是否有未保存的更改
+		if (!saveService.hasUnsavedChanges()) {
+			logger.debug("[useUnifiedSave] 没有需要保存的更改");
+			return true;
+		}
+
+		logger.info("[useUnifiedSave] 执行手动保存");
 		return await saveService.saveNow();
-	}, [saveService]);
+	}, [nodeId, saveService]);
 
 	/**
 	 * 是否有未保存的更改

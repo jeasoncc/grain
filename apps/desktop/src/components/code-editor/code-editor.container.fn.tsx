@@ -82,19 +82,18 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 	// 统一保存逻辑（使用 useUnifiedSave hook）
 	// ==============================
 
-	const { updateContent, saveNow, hasUnsavedChanges, setInitialContent } =
-		useUnifiedSave({
-			nodeId,
-			contentType: "text",
-			tabId: activeTabId ?? undefined,
-			registerShortcut: false, // CodeEditor 有自己的快捷键处理（Monaco 内置）
-			onSaveSuccess: () => {
-				logger.success("[CodeEditor] 内容保存成功");
-			},
-			onSaveError: (error) => {
-				logger.error("[CodeEditor] 保存内容失败:", error);
-			},
-		});
+	const { updateContent, saveNow, setInitialContent } = useUnifiedSave({
+		nodeId,
+		contentType: "text",
+		tabId: activeTabId ?? undefined,
+		registerShortcut: false, // CodeEditor 有自己的快捷键处理（Monaco 内置）
+		onSaveSuccess: () => {
+			logger.success("[CodeEditor] 内容保存成功");
+		},
+		onSaveError: (error) => {
+			logger.error("[CodeEditor] 保存内容失败:", error);
+		},
+	});
 
 	// ==============================
 	// 加载内容
@@ -140,19 +139,6 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 		[updateContent],
 	);
 
-	/**
-	 * 手动保存处理器 (Ctrl+S)
-	 */
-	const handleManualSave = useCallback(async () => {
-		if (!hasUnsavedChanges()) {
-			logger.debug("[CodeEditor] 没有需要保存的更改");
-			return;
-		}
-
-		logger.info("[CodeEditor] 手动保存触发");
-		await saveNow();
-	}, [hasUnsavedChanges, saveNow]);
-
 	// ==============================
 	// 语言检测
 	// ==============================
@@ -184,7 +170,7 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 				theme={isDark ? "dark" : "light"}
 				themeColors={themeColors}
 				onCodeChange={handleCodeChange}
-				onSave={handleManualSave}
+				onSave={saveNow}
 			/>
 		</div>
 	);
