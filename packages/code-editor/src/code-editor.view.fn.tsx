@@ -187,6 +187,13 @@ export const CodeEditorView = memo(function CodeEditorView({
 		insertSpaces: false,
 		renderWhitespace: "selection",
 		bracketPairColorization: { enabled: true },
+		// 禁用依赖 TypeScript Worker 的高级功能，避免控制台错误
+		inlayHints: { enabled: "off" },
+		stickyScroll: { enabled: false },
+		codeLens: false,
+		quickSuggestions: false,
+		suggestOnTriggerCharacters: false,
+		parameterHints: { enabled: false },
 		...options,
 	};
 
