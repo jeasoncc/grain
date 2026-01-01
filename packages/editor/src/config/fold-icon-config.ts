@@ -1,8 +1,8 @@
 /**
- * 折叠图标配置
+ * Fold Icon Configuration
  * 
- * 提供多种字母/符号风格供用户选择
- * 所有字母列表统一为 8 个，以兼容八卦和 H1-H6+ 标题层级
+ * Provides multiple letter/symbol styles for user selection
+ * All letter lists are unified to 8 items to support Bagua and H1-H6+ heading levels
  */
 
 export type FoldIconStyle = 
@@ -36,206 +36,182 @@ export type FoldIconStyle =
 export interface FoldIconOption {
   readonly id: FoldIconStyle;
   readonly name: string;
-  readonly nameEn: string;
   readonly letters: readonly string[];
   readonly preview: string;
-  /** 年代描述 */
+  /** Era description */
   readonly era?: string;
 }
 
 /**
- * 所有可用的折叠图标风格
+ * All available fold icon styles
  */
 export const FOLD_ICON_OPTIONS: readonly FoldIconOption[] = [
   // ==============================
-  // 古代文字
+  // Ancient Scripts
   // ==============================
   {
     id: 'sumerian',
-    name: '苏美尔楔形文字',
-    nameEn: 'Sumerian Cuneiform',
+    name: 'Sumerian Cuneiform',
     letters: ['𒀀', '𒀁', '𒀂', '𒀃', '𒀄', '𒀅', '𒀆', '𒀇'],
     preview: '𒀀 𒀁 𒀂',
-    era: '公元前3400年',
+    era: '3400 BCE',
   },
   {
     id: 'egyptian',
-    name: '埃及象形文字',
-    nameEn: 'Egyptian Hieroglyphs',
+    name: 'Egyptian Hieroglyphs',
     letters: ['𓀀', '𓀁', '𓀂', '𓀃', '𓀄', '𓀅', '𓀆', '𓀇'],
     preview: '𓀀 𓀁 𓀂',
-    era: '公元前3200年',
+    era: '3200 BCE',
   },
   {
     id: 'linear-b',
-    name: '线形文字B',
-    nameEn: 'Linear B',
+    name: 'Linear B',
     letters: ['𐀀', '𐀁', '𐀂', '𐀃', '𐀄', '𐀅', '𐀆', '𐀇'],
     preview: '𐀀 𐀁 𐀂',
-    era: '公元前1450年',
+    era: '1450 BCE',
   },
   {
     id: 'phoenician',
-    name: '腓尼基字母',
-    nameEn: 'Phoenician',
+    name: 'Phoenician',
     letters: ['𐤀', '𐤁', '𐤂', '𐤃', '𐤄', '𐤅', '𐤆', '𐤇'],
     preview: '𐤀 𐤁 𐤂',
-    era: '公元前1050年',
+    era: '1050 BCE',
   },
   {
     id: 'old-persian',
-    name: '古波斯楔形文字',
-    nameEn: 'Old Persian',
+    name: 'Old Persian',
     letters: ['𐎠', '𐎡', '𐎢', '𐎣', '𐎤', '𐎥', '𐎦', '𐎧'],
     preview: '𐎠 𐎡 𐎢',
-    era: '公元前525年',
+    era: '525 BCE',
   },
   {
     id: 'coptic',
-    name: '科普特字母',
-    nameEn: 'Coptic',
+    name: 'Coptic',
     letters: ['Ⲁ', 'Ⲃ', 'Ⲅ', 'Ⲇ', 'Ⲉ', 'Ⲋ', 'Ⲍ', 'Ⲏ'],
     preview: 'Ⲁ Ⲃ Ⲅ',
-    era: '公元2世纪',
+    era: '2nd century',
   },
   {
     id: 'runic',
-    name: '卢恩文',
-    nameEn: 'Runic',
+    name: 'Runic',
     letters: ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ'],
     preview: 'ᚠ ᚢ ᚦ',
-    era: '公元2世纪',
+    era: '2nd century',
   },
   {
     id: 'gothic',
-    name: '哥特字母',
-    nameEn: 'Gothic',
+    name: 'Gothic',
     letters: ['𐌰', '𐌱', '𐌲', '𐌳', '𐌴', '𐌵', '𐌶', '𐌷'],
     preview: '𐌰 𐌱 𐌲',
-    era: '公元4世纪',
+    era: '4th century',
   },
   // ==============================
-  // 中文符号
+  // Chinese Symbols
   // ==============================
   {
     id: 'bagua',
-    name: '八卦',
-    nameEn: 'Bagua (Eight Trigrams)',
+    name: 'Bagua (Eight Trigrams)',
     letters: ['☰', '☱', '☲', '☳', '☴', '☵', '☶', '☷'],
     preview: '☰ ☱ ☲',
-    era: '周朝',
+    era: 'Zhou Dynasty',
   },
   {
     id: 'suzhou',
-    name: '苏州码子',
-    nameEn: 'Suzhou Numerals',
+    name: 'Suzhou Numerals',
     letters: ['〇', '〡', '〢', '〣', '〤', '〥', '〦', '〧'],
     preview: '〡 〢 〣',
-    era: '商周时期',
+    era: 'Shang-Zhou Era',
   },
   {
     id: 'chinese-number',
-    name: '中文数字',
-    nameEn: 'Chinese Numerals',
+    name: 'Chinese Numerals',
     letters: ['一', '二', '三', '四', '五', '六', '七', '八'],
     preview: '一 二 三',
   },
   {
     id: 'chinese-number-upper',
-    name: '中文大写数字',
-    nameEn: 'Chinese Upper Numerals',
+    name: 'Chinese Formal Numerals',
     letters: ['壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌'],
     preview: '壹 贰 叁',
   },
   // ==============================
-  // 现代文字
+  // Modern Scripts
   // ==============================
   {
     id: 'arabic',
-    name: '阿拉伯文',
-    nameEn: 'Arabic',
+    name: 'Arabic',
     letters: ['ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د'],
     preview: 'ا ب ت',
   },
   {
     id: 'hebrew',
-    name: '希伯来文',
-    nameEn: 'Hebrew',
+    name: 'Hebrew',
     letters: ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח'],
     preview: 'א ב ג',
   },
   {
     id: 'greek-lower',
-    name: '希腊字母 (小写)',
-    nameEn: 'Greek Lowercase',
+    name: 'Greek Lowercase',
     letters: ['α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ'],
     preview: 'α β γ',
   },
   {
     id: 'greek-upper',
-    name: '希腊字母 (大写)',
-    nameEn: 'Greek Uppercase',
+    name: 'Greek Uppercase',
     letters: ['Α', 'Β', 'Γ', 'Δ', 'Ε', 'Ζ', 'Η', 'Θ'],
     preview: 'Α Β Γ',
   },
   {
     id: 'devanagari-vowel',
-    name: '天城文 (元音)',
-    nameEn: 'Devanagari Vowels',
+    name: 'Devanagari Vowels',
     letters: ['अ', 'आ', 'इ', 'ई', 'उ', 'ऊ', 'ऋ', 'ए'],
     preview: 'अ आ इ',
   },
   {
     id: 'devanagari-consonant',
-    name: '天城文 (辅音)',
-    nameEn: 'Devanagari Consonants',
+    name: 'Devanagari Consonants',
     letters: ['क', 'ख', 'ग', 'घ', 'ङ', 'च', 'छ', 'ज'],
     preview: 'क ख ग',
   },
   {
     id: 'tamil',
-    name: '泰米尔文',
-    nameEn: 'Tamil',
+    name: 'Tamil',
     letters: ['அ', 'ஆ', 'இ', 'ஈ', 'உ', 'ஊ', 'எ', 'ஏ'],
     preview: 'அ ஆ இ',
   },
   {
     id: 'tibetan',
-    name: '藏文',
-    nameEn: 'Tibetan',
+    name: 'Tibetan',
     letters: ['ཀ', 'ཁ', 'ག', 'ང', 'ཅ', 'ཆ', 'ཇ', 'ཉ'],
     preview: 'ཀ ཁ ག',
   },
   {
     id: 'hiragana',
-    name: '平假名',
-    nameEn: 'Hiragana',
+    name: 'Hiragana',
     letters: ['あ', 'い', 'う', 'え', 'お', 'か', 'き', 'く'],
     preview: 'あ い う',
   },
   {
     id: 'katakana',
-    name: '片假名',
-    nameEn: 'Katakana',
+    name: 'Katakana',
     letters: ['ア', 'イ', 'ウ', 'エ', 'オ', 'カ', 'キ', 'ク'],
     preview: 'ア イ ウ',
   },
   {
     id: 'korean',
-    name: '韩文',
-    nameEn: 'Korean',
+    name: 'Korean',
     letters: ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ'],
     preview: 'ㄱ ㄴ ㄷ',
   },
 ] as const;
 
 /**
- * 默认折叠图标风格
+ * Default fold icon style
  */
 export const DEFAULT_FOLD_ICON_STYLE: FoldIconStyle = 'bagua';
 
 /**
- * 根据风格 ID 获取字母列表
+ * Get letter list by style ID
  */
 export function getFoldIconLetters(style: FoldIconStyle): readonly string[] {
   const option = FOLD_ICON_OPTIONS.find(o => o.id === style);
@@ -243,7 +219,7 @@ export function getFoldIconLetters(style: FoldIconStyle): readonly string[] {
 }
 
 /**
- * 根据风格 ID 获取选项
+ * Get option by style ID
  */
 export function getFoldIconOption(style: FoldIconStyle): FoldIconOption | undefined {
   return FOLD_ICON_OPTIONS.find(o => o.id === style);
