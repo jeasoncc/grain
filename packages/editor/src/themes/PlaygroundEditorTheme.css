@@ -257,8 +257,6 @@
 
 .PlaygroundEditorTheme__listItemChecked {
   color: var(--muted-foreground);
-  text-decoration: line-through;
-  text-decoration-color: color-mix(in srgb, var(--muted-foreground) 50%, transparent);
 }
 
 .PlaygroundEditorTheme__listItemUnchecked::before,
