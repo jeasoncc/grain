@@ -52,5 +52,5 @@ export const DEFAULT_EDITOR_SETTINGS_CONFIG: EditorSettingsConfig = {
 // ==============================
 
 export const DEFAULT_EDITOR_SETTINGS_STATE: EditorSettingsState = {
-  foldIconStyle: "arabic",
+  foldIconStyle: "bagua",
 } as const;
