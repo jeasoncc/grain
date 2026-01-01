@@ -61,15 +61,48 @@ inclusion: manual
 - TypeScript 原生支持
 - API 与 lodash 兼容，迁移成本低
 
-### 为什么选择 Dexie 而不是直接操作 IndexedDB
+### 为什么从 IndexedDB 迁移到 SQLite + Rust 后端
 
-**决策**：使用 Dexie 作为 IndexedDB 封装层
+**决策**：将数据存储从前端 IndexedDB (Dexie) 迁移到 Rust 后端 SQLite (SQLCipher)
+
+**日期**：2026-01-01
+
+**原因**：
+- **数据加密**：SQLCipher 提供透明的数据库级加密，保护用户隐私
+- **后端能力**：Rust 后端可以执行复杂的数据处理、全文搜索、批量操作
+- **性能**：SQLite 在大数据量下性能优于 IndexedDB
+- **数据完整性**：SQLite 的 ACID 事务更可靠
+- **跨平台一致性**：避免不同浏览器 IndexedDB 实现差异
+- **备份/导出**：单文件数据库更易于备份和迁移
+
+**迁移策略**：
+1. 保留前端 Dexie 作为缓存层（可选）
+2. 所有持久化操作通过 Tauri Commands 调用 Rust 后端
+3. 前端 `db/` 层逐步迁移为调用后端 API
+4. 提供数据迁移工具，将现有 IndexedDB 数据导入 SQLite
+
+**替代方案**：
+- 继续使用 IndexedDB：无法实现数据加密，后端能力受限
+- tauri-plugin-sql：功能有限，不支持 SQLCipher 加密
+- 云端数据库：增加网络依赖，隐私风险
+
+**架构变化**：
+```
+迁移前：React → Dexie → IndexedDB
+迁移后：React → Tauri invoke() → Rust Services → SQLite (加密)
+```
+
+### [历史] 为什么选择 Dexie 而不是直接操作 IndexedDB
+
+**决策**：使用 Dexie 作为 IndexedDB 封装层（已迁移到 SQLite）
 
 **原因**：
 - API 更友好，Promise-based
 - 支持响应式查询（useLiveQuery）
 - 事务管理更简单
 - 迁移和版本管理内置支持
+
+**状态**：已废弃，迁移到 SQLite + Rust 后端
 
 ### 为什么选择 Zustand 而不是 Redux
 

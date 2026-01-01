@@ -23,13 +23,28 @@
 |------|-----|
 | 编辑器 | Lexical |
 | 状态管理 | Zustand + Immer |
-| 持久化 | Dexie (IndexedDB) |
+| 持久化 (前端) | Dexie (IndexedDB) → 迁移中 |
+| 持久化 (后端) | SQLite + SQLCipher (加密) |
 | 路由 | TanStack Router |
 | 表单 | TanStack Form + Zod |
 | UI 组件 | Radix UI, Lucide icons |
 | 图表 | Mermaid, PlantUML |
 | 画板 | Excalidraw |
 | 代码检查 | Biome |
+
+## Rust 后端技术栈
+
+| 场景 | 库 |
+|------|-----|
+| 框架 | Tauri 2.x |
+| 数据库 | sqlx / rusqlite + SQLCipher |
+| 序列化 | serde + serde_json |
+| 异步运行时 | tokio |
+| 错误处理 | thiserror + anyhow |
+| 日志 | tracing |
+| 加密 | ring / aes-gcm |
+| UUID | uuid |
+| 时间 | chrono |
 
 ## 函数式编程库
 
@@ -95,6 +110,7 @@ bun run tag:desktop    # 创建 Desktop tag
 |------|------|
 | `#fp-patterns` | 函数式编程开发 |
 | `#design-patterns` | 代码重构/抽象 |
+| `#rust-backend` | Rust 后端开发 |
 | `#e2e-testing` | E2E 测试 |
 | `#release` | 发布流程 |
 | `#git-hooks` | 版本/Hooks 问题 |

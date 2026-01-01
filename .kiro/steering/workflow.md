@@ -84,6 +84,7 @@ git commit -m "feat/fix/refactor: 简短描述变更内容"
 └── 【Manual Load】
     ├── fp-patterns.md     # 函数式编程
     ├── design-patterns.md # 设计模式
+    ├── rust-backend.md    # Rust 后端规范
     ├── e2e-testing.md     # E2E 测试
     ├── release.md         # 发布流程
     ├── git-hooks.md       # Git Hooks

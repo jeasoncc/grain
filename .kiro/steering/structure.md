@@ -49,7 +49,7 @@ src/
 │   ├── error.types.ts
 │   └── index.ts
 │
-├── db/                   # 持久化层
+├── db/                   # 持久化层（迁移中 → Rust 后端）
 │   ├── database.ts
 │   ├── node.db.fn.ts
 │   └── workspace.db.fn.ts
@@ -91,6 +91,54 @@ src/
     ├── __root.tsx
     ├── index.tsx
     └── settings/
+```
+
+## Rust 后端结构 (`apps/desktop/src-tauri/src/`)
+
+```
+src/
+├── main.rs                    # 入口点
+├── lib.rs                     # Tauri 应用配置
+│
+├── types/                     # 数据定义层
+│   ├── mod.rs
+│   ├── node.rs               # Node 结构体
+│   ├── workspace.rs          # Workspace 结构体
+│   ├── error.rs              # AppError 定义
+│   └── config.rs             # 配置结构体
+│
+├── fn/                        # 纯函数层
+│   ├── mod.rs
+│   ├── node/
+│   │   ├── mod.rs
+│   │   ├── parse.rs          # 解析函数
+│   │   ├── transform.rs      # 转换函数
+│   │   └── validate.rs       # 校验函数
+│   ├── crypto/
+│   │   ├── mod.rs
+│   │   └── encrypt.rs        # 加密函数
+│   └── export/
+│       ├── mod.rs
+│       └── markdown.rs       # Markdown 导出
+│
+├── db/                        # 持久化层
+│   ├── mod.rs
+│   ├── connection.rs         # 数据库连接（SQLCipher）
+│   ├── migrations/           # 数据库迁移
+│   ├── node_repo.rs          # Node 仓库
+│   └── workspace_repo.rs     # Workspace 仓库
+│
+├── services/                  # 服务层（组合纯函数）
+│   ├── mod.rs
+│   ├── node_service.rs
+│   ├── workspace_service.rs
+│   └── crypto_service.rs     # 加密服务
+│
+└── commands/                  # Tauri Commands（副作用边界）
+    ├── mod.rs
+    ├── node_commands.rs
+    ├── workspace_commands.rs
+    └── file_commands.rs
 ```
 
 ## 文件命名规范
