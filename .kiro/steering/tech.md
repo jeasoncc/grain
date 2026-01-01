@@ -34,17 +34,33 @@
 
 ## Rust 后端技术栈
 
-| 场景 | 库 |
-|------|-----|
-| 框架 | Tauri 2.x |
-| 数据库 | sqlx / rusqlite + SQLCipher |
-| 序列化 | serde + serde_json |
-| 异步运行时 | tokio |
-| 错误处理 | thiserror + anyhow |
-| 日志 | tracing |
-| 加密 | ring / aes-gcm |
-| UUID | uuid |
-| 时间 | chrono |
+| 场景 | 库 | 版本 |
+|------|-----|------|
+| 框架 | Tauri | 2.x |
+| ORM | SeaORM | 1.1 |
+| 数据库 | SQLite | - |
+| 序列化 | serde + serde_json | 1.x |
+| 异步运行时 | tokio | 1.x |
+| 错误处理 | thiserror | 2.x |
+| 日志 | tracing | 0.1 |
+| 密钥管理 | keyring | 3.x |
+| UUID | uuid | 1.x |
+| 时间 | chrono | 0.4 |
+| 文件系统 | walkdir + notify + zip | - |
+
+### Rust 后端目录结构
+
+```
+src-tauri/src/
+├── types/       # 错误类型、配置
+├── entity/      # SeaORM 实体定义
+├── migration/   # 数据库迁移
+├── repo/        # 数据访问层 (CRUD)
+├── services/    # 业务逻辑层
+└── commands/    # Tauri Commands (前端入口)
+```
+
+详细文档: `docs/rust-backend-guide.md`
 
 ## 函数式编程库
 

@@ -1,119 +1,128 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-use std::fs;
-use std::path::PathBuf;
-use tauri_plugin_dialog::DialogExt;
+//! Grain Desktop 应用
+//!
+//! 基于 Tauri 2.x 的桌面应用后端
 
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+pub mod commands;
+pub mod db;
+pub mod entity;
+pub mod migration;
+pub mod repo;
+pub mod services;
+pub mod types;
+
+use db::DbConnection;
+use migration::Migrator;
+use sea_orm_migration::MigratorTrait;
+use tauri::Manager;
+use tracing::{error, info};
+use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+use types::config::AppConfig;
+
+/// 初始化日志系统
+fn init_logging() {
+    let filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| EnvFilter::new("info,grain=debug,sea_orm=warn"));
+
+    tracing_subscriber::registry()
+        .with(filter)
+        .with(fmt::layer().with_target(true).with_thread_ids(false))
+        .init();
+
+    info!("日志系统初始化完成");
 }
 
-/// Select a directory using the system's native directory picker dialog
-/// 
-/// # Arguments
-/// * `initial_directory` - Optional initial directory to open the dialog in
-#[tauri::command]
-async fn select_directory(app: tauri::AppHandle, initial_directory: Option<String>) -> Result<Option<String>, String> {
-    let mut dialog = app
-        .dialog()
-        .file()
-        .set_title("选择导出目录");
-    
-    // Set initial directory if provided and exists
-    if let Some(ref dir) = initial_directory {
-        let path = PathBuf::from(dir);
-        if path.exists() && path.is_dir() {
-            dialog = dialog.set_directory(path);
-        }
-    }
-    
-    let result = dialog.blocking_pick_folder();
-    
-    match result {
-        Some(path) => Ok(Some(path.to_string())),
-        None => Ok(None),
-    }
-}
+/// 初始化数据库
+async fn init_database(config: &AppConfig) -> Result<sea_orm::DatabaseConnection, String> {
+    // 连接数据库
+    let db = DbConnection::connect(config)
+        .await
+        .map_err(|e| format!("数据库连接失败: {}", e))?;
 
-/// Save file content to a specified path
-#[tauri::command]
-async fn save_file(path: String, filename: String, content: Vec<u8>) -> Result<(), String> {
-    let full_path = PathBuf::from(&path).join(&filename);
-    
-    // Ensure the directory exists
-    if let Some(parent) = full_path.parent() {
-        fs::create_dir_all(parent).map_err(|e| format!("Failed to create directory: {}", e))?;
-    }
-    
-    // Write the file
-    fs::write(&full_path, content).map_err(|e| format!("Failed to write file: {}", e))?;
-    
-    Ok(())
-}
+    // 运行迁移
+    info!("运行数据库迁移...");
+    Migrator::up(&db, None)
+        .await
+        .map_err(|e| format!("数据库迁移失败: {}", e))?;
 
-/// Get the system's downloads directory
-#[tauri::command]
-fn get_downloads_dir() -> Result<String, String> {
-    dirs::download_dir()
-        .map(|p| p.to_string_lossy().to_string())
-        .ok_or_else(|| "Could not determine downloads directory".to_string())
-}
-
-/// Get the user's home directory
-#[tauri::command]
-fn get_home_dir() -> Result<String, String> {
-    dirs::home_dir()
-        .map(|p| p.to_string_lossy().to_string())
-        .ok_or_else(|| "Could not determine home directory".to_string())
-}
-
-/// Ensure directory exists and save text file
-/// Supports ~ expansion for home directory
-#[tauri::command]
-async fn ensure_directory_and_save(
-    directory: String,
-    filename: String,
-    content: String,
-    expand_home: bool,
-) -> Result<String, String> {
-    // Expand ~ to home directory if needed
-    let dir_path = if expand_home && directory.starts_with('~') {
-        let home = dirs::home_dir()
-            .ok_or_else(|| "Could not determine home directory".to_string())?;
-        let rest = directory.strip_prefix("~/").unwrap_or(&directory[1..]);
-        home.join(rest)
-    } else {
-        PathBuf::from(&directory)
-    };
-
-    // Create directory recursively
-    fs::create_dir_all(&dir_path)
-        .map_err(|e| format!("Failed to create directory {}: {}", dir_path.display(), e))?;
-
-    // Write the file
-    let full_path = dir_path.join(&filename);
-    fs::write(&full_path, content.as_bytes())
-        .map_err(|e| format!("Failed to write file: {}", e))?;
-
-    Ok(full_path.to_string_lossy().to_string())
+    info!("数据库初始化完成");
+    Ok(db)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // 初始化日志
+    init_logging();
+
+    info!("启动 Grain Desktop 应用...");
+
+    // 创建应用配置
+    let config = AppConfig::default();
+    info!("数据目录: {:?}", config.data_dir);
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .setup(move |app| {
+            let config_clone = config.clone();
+
+            // 使用 tauri::async_runtime 运行异步初始化
+            let db = tauri::async_runtime::block_on(async {
+                init_database(&config_clone).await
+            });
+
+            match db {
+                Ok(db) => {
+                    // 注入数据库连接和配置到 State
+                    app.manage(db);
+                    app.manage(config_clone);
+                    info!("应用初始化完成");
+                }
+                Err(e) => {
+                    error!("应用初始化失败: {}", e);
+                    // 在开发环境下 panic，生产环境可以考虑显示错误对话框
+                    #[cfg(debug_assertions)]
+                    panic!("数据库初始化失败: {}", e);
+                }
+            }
+
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
-            greet,
-            select_directory,
-            save_file,
-            get_downloads_dir,
-            get_home_dir,
-            ensure_directory_and_save
+            // 文件系统命令
+            commands::select_directory,
+            commands::save_file,
+            commands::get_downloads_dir,
+            commands::get_home_dir,
+            commands::ensure_directory_and_save,
+            // 工作区命令
+            commands::get_workspaces,
+            commands::get_workspace,
+            commands::create_workspace,
+            commands::update_workspace,
+            commands::delete_workspace,
+            // 节点命令
+            commands::get_nodes_by_workspace,
+            commands::get_node,
+            commands::get_child_nodes,
+            commands::create_node,
+            commands::update_node,
+            commands::move_node,
+            commands::delete_node,
+            commands::duplicate_node,
+            // 内容命令
+            commands::get_content,
+            commands::save_content,
+            commands::get_content_version,
+            // 备份命令
+            commands::create_backup,
+            commands::restore_backup,
+            commands::list_backups,
+            commands::delete_backup,
+            commands::cleanup_old_backups,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("启动 Tauri 应用失败");
 }
