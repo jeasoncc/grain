@@ -7,7 +7,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import * as TE from "fp-ts/TaskEither";
 import type { AppError } from "@/lib/error.types";
-import { createDatabaseError } from "@/lib/error.types";
+import { dbError } from "@/lib/error.types";
 import type {
   BackupInfo,
   ContentResponse,
@@ -42,7 +42,7 @@ const invokeTE = <T>(
     },
     (error) => {
       logger.error(`[RustAPI] 失败: ${cmd}`, error);
-      return createDatabaseError(`${cmd} 失败: ${error}`);
+      return dbError(`${cmd} 失败: ${error}`);
     }
   );
 
@@ -129,6 +129,51 @@ export const duplicateNode = (
 ): TE.TaskEither<AppError, NodeResponse> =>
   invokeTE("duplicate_node", { id, newTitle });
 
+/** 获取根节点（parent_id 为 null） */
+export const getRootNodes = (
+  workspaceId: string
+): TE.TaskEither<AppError, NodeResponse[]> =>
+  invokeTE("get_root_nodes", { workspaceId });
+
+/** 按父节点获取子节点（支持 null 表示根节点） */
+export const getNodesByParent = (
+  workspaceId: string,
+  parentId: string | null
+): TE.TaskEither<AppError, NodeResponse[]> =>
+  invokeTE("get_nodes_by_parent", { workspaceId, parentId });
+
+/** 按类型获取节点 */
+export const getNodesByType = (
+  workspaceId: string,
+  nodeType: string
+): TE.TaskEither<AppError, NodeResponse[]> =>
+  invokeTE("get_nodes_by_type", { workspaceId, nodeType });
+
+/** 获取节点的所有后代 */
+export const getDescendants = (
+  nodeId: string
+): TE.TaskEither<AppError, NodeResponse[]> =>
+  invokeTE("get_descendants", { nodeId });
+
+/** 获取下一个排序号 */
+export const getNextSortOrder = (
+  workspaceId: string,
+  parentId: string | null
+): TE.TaskEither<AppError, number> =>
+  invokeTE("get_next_sort_order", { workspaceId, parentId });
+
+/** 批量重排序节点 */
+export const reorderNodes = (
+  nodeIds: string[]
+): TE.TaskEither<AppError, void> =>
+  invokeTE("reorder_nodes", { nodeIds });
+
+/** 批量删除节点 */
+export const deleteNodesBatch = (
+  nodeIds: string[]
+): TE.TaskEither<AppError, void> =>
+  invokeTE("delete_nodes_batch", { nodeIds });
+
 // ============================================
 // Content API
 // ============================================
@@ -207,3 +252,43 @@ export const saveContentAsync = (
 export const getContentAsync = (
   nodeId: string
 ): Promise<ContentResponse | null> => invoke("get_content", { nodeId });
+
+/** 获取根节点 (Promise 版本) */
+export const getRootNodesAsync = (
+  workspaceId: string
+): Promise<NodeResponse[]> => invoke("get_root_nodes", { workspaceId });
+
+/** 按父节点获取子节点 (Promise 版本) */
+export const getNodesByParentAsync = (
+  workspaceId: string,
+  parentId: string | null
+): Promise<NodeResponse[]> =>
+  invoke("get_nodes_by_parent", { workspaceId, parentId });
+
+/** 按类型获取节点 (Promise 版本) */
+export const getNodesByTypeAsync = (
+  workspaceId: string,
+  nodeType: string
+): Promise<NodeResponse[]> =>
+  invoke("get_nodes_by_type", { workspaceId, nodeType });
+
+/** 获取节点的所有后代 (Promise 版本) */
+export const getDescendantsAsync = (
+  nodeId: string
+): Promise<NodeResponse[]> => invoke("get_descendants", { nodeId });
+
+/** 获取下一个排序号 (Promise 版本) */
+export const getNextSortOrderAsync = (
+  workspaceId: string,
+  parentId: string | null
+): Promise<number> => invoke("get_next_sort_order", { workspaceId, parentId });
+
+/** 批量重排序节点 (Promise 版本) */
+export const reorderNodesAsync = (
+  nodeIds: string[]
+): Promise<void> => invoke("reorder_nodes", { nodeIds });
+
+/** 批量删除节点 (Promise 版本) */
+export const deleteNodesBatchAsync = (
+  nodeIds: string[]
+): Promise<void> => invoke("delete_nodes_batch", { nodeIds });

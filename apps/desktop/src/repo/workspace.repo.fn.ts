@@ -1,0 +1,79 @@
+/**
+ * Workspace Repository - 工作区数据访问层
+ *
+ * 纯函数 + TaskEither 封装，返回前端类型 (WorkspaceInterface)。
+ * 通过 Codec 层进行类型转换，确保前后端类型解耦。
+ */
+
+import { pipe } from "fp-ts/function";
+import * as TE from "fp-ts/TaskEither";
+import * as rustApi from "@/db/rust-api.fn";
+import {
+  decodeWorkspace,
+  decodeWorkspaces,
+  encodeCreateWorkspace,
+  encodeUpdateWorkspace,
+} from "@/types/codec";
+import type {
+  WorkspaceInterface,
+  WorkspaceCreateInput,
+  WorkspaceUpdateInput,
+} from "@/types/workspace";
+import type { AppError } from "@/lib/error.types";
+
+// ============================================
+// 查询操作
+// ============================================
+
+/**
+ * 获取所有工作区
+ */
+export const getWorkspaces = (): TE.TaskEither<AppError, WorkspaceInterface[]> =>
+  pipe(rustApi.getWorkspaces(), TE.map(decodeWorkspaces));
+
+/**
+ * 获取单个工作区
+ */
+export const getWorkspace = (
+  workspaceId: string
+): TE.TaskEither<AppError, WorkspaceInterface | null> =>
+  pipe(
+    rustApi.getWorkspace(workspaceId),
+    TE.map((response) => (response ? decodeWorkspace(response) : null))
+  );
+
+// ============================================
+// 写入操作
+// ============================================
+
+/**
+ * 创建工作区
+ */
+export const createWorkspace = (
+  input: WorkspaceCreateInput
+): TE.TaskEither<AppError, WorkspaceInterface> =>
+  pipe(
+    TE.of(encodeCreateWorkspace(input)),
+    TE.chain(rustApi.createWorkspace),
+    TE.map(decodeWorkspace)
+  );
+
+/**
+ * 更新工作区
+ */
+export const updateWorkspace = (
+  workspaceId: string,
+  input: WorkspaceUpdateInput
+): TE.TaskEither<AppError, WorkspaceInterface> =>
+  pipe(
+    TE.of(encodeUpdateWorkspace(input)),
+    TE.chain((request) => rustApi.updateWorkspace(workspaceId, request)),
+    TE.map(decodeWorkspace)
+  );
+
+/**
+ * 删除工作区
+ */
+export const deleteWorkspace = (
+  workspaceId: string
+): TE.TaskEither<AppError, void> => rustApi.deleteWorkspace(workspaceId);

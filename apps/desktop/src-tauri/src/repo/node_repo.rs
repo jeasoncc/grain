@@ -59,6 +59,67 @@ impl NodeRepo {
         Ok(nodes)
     }
 
+    /// 按父节点查询子节点（支持 None 表示根节点）
+    pub async fn find_by_parent(
+        db: &DatabaseConnection,
+        workspace_id: &str,
+        parent_id: Option<&str>,
+    ) -> AppResult<Vec<node::Model>> {
+        let nodes = match parent_id {
+            Some(pid) => {
+                Node::find()
+                    .filter(node::Column::WorkspaceId.eq(workspace_id))
+                    .filter(node::Column::ParentId.eq(pid))
+                    .order_by_asc(node::Column::SortOrder)
+                    .all(db)
+                    .await?
+            }
+            None => {
+                Node::find()
+                    .filter(node::Column::WorkspaceId.eq(workspace_id))
+                    .filter(node::Column::ParentId.is_null())
+                    .order_by_asc(node::Column::SortOrder)
+                    .all(db)
+                    .await?
+            }
+        };
+        Ok(nodes)
+    }
+
+    /// 按类型查询节点
+    pub async fn find_by_type(
+        db: &DatabaseConnection,
+        workspace_id: &str,
+        node_type: NodeType,
+    ) -> AppResult<Vec<node::Model>> {
+        let nodes = Node::find()
+            .filter(node::Column::WorkspaceId.eq(workspace_id))
+            .filter(node::Column::NodeType.eq(node_type))
+            .order_by_asc(node::Column::SortOrder)
+            .all(db)
+            .await?;
+        Ok(nodes)
+    }
+
+    /// 获取节点的所有后代（递归）
+    pub async fn find_descendants(
+        db: &DatabaseConnection,
+        node_id: &str,
+    ) -> AppResult<Vec<node::Model>> {
+        let mut descendants = Vec::new();
+        let mut stack = vec![node_id.to_string()];
+
+        while let Some(current_id) = stack.pop() {
+            let children = Self::find_children(db, &current_id).await?;
+            for child in children {
+                stack.push(child.id.clone());
+                descendants.push(child);
+            }
+        }
+
+        Ok(descendants)
+    }
+
     /// 创建节点
     pub async fn create(
         db: &DatabaseConnection,
@@ -72,7 +133,7 @@ impl NodeRepo {
         let now = chrono::Utc::now().timestamp_millis();
 
         // 计算排序顺序（放在同级节点的最后）
-        let sort_order = Self::get_next_sort_order(db, &workspace_id, parent_id.as_deref()).await?;
+        let sort_order = Self::get_next_sort_order_pub(db, &workspace_id, parent_id.as_deref()).await?;
 
         let model = node::ActiveModel {
             id: Set(id),
@@ -92,8 +153,8 @@ impl NodeRepo {
         Ok(node)
     }
 
-    /// 获取下一个排序顺序
-    async fn get_next_sort_order(
+    /// 获取下一个排序顺序（公开方法）
+    pub async fn get_next_sort_order_pub(
         db: &DatabaseConnection,
         workspace_id: &str,
         parent_id: Option<&str>,
@@ -105,6 +166,50 @@ impl NodeRepo {
 
         let max_order = siblings.iter().map(|n| n.sort_order).max().unwrap_or(-1);
         Ok(max_order + 1)
+    }
+
+    /// 批量重排序节点
+    /// 
+    /// 按照传入的 ID 顺序更新 sort_order
+    pub async fn reorder_nodes(
+        db: &DatabaseConnection,
+        node_ids: Vec<String>,
+    ) -> AppResult<()> {
+        let now = chrono::Utc::now().timestamp_millis();
+
+        for (index, node_id) in node_ids.iter().enumerate() {
+            let existing = Self::find_by_id(db, node_id).await?.ok_or_else(|| AppError::NotFound {
+                entity: "Node".to_string(),
+                id: node_id.to_string(),
+            })?;
+
+            let mut model: node::ActiveModel = existing.into();
+            model.sort_order = Set(index as i32);
+            model.updated_at = Set(now);
+            model.update(db).await?;
+        }
+
+        info!("批量重排序 {} 个节点", node_ids.len());
+        Ok(())
+    }
+
+    /// 批量删除节点（含级联删除子节点和内容）
+    pub async fn delete_batch(
+        db: &DatabaseConnection,
+        node_ids: Vec<String>,
+    ) -> AppResult<()> {
+        for node_id in &node_ids {
+            // 先递归删除所有子节点
+            let descendants = Self::find_descendants(db, node_id).await?;
+            for descendant in descendants {
+                Node::delete_by_id(&descendant.id).exec(db).await?;
+            }
+            // 删除节点本身
+            Node::delete_by_id(node_id).exec(db).await?;
+        }
+
+        info!("批量删除 {} 个节点", node_ids.len());
+        Ok(())
     }
 
     /// 更新节点

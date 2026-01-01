@@ -544,12 +544,12 @@ export const EditorWithFreeze = memo(({ isActive, children }: EditorWithFreezePr
 | Code (Monaco) | 光标位置、滚动位置、撤销历史、折叠状态 |
 | Diagram | 渲染结果、滚动位置 |
 
-### 与 useUnifiedSave 的兼容性
+### 与保存服务的兼容性
 
-`react-freeze` 不销毁 Effects，因此与 `useUnifiedSave` 完全兼容：
+`react-freeze` 不销毁 Effects，因此与保存服务完全兼容：
 
 ```typescript
-// useUnifiedSave 内部的 Effects 保留
+// 保存服务内部的 Effects 保留
 useEffect(() => {
   // 注册 Ctrl+S 快捷键
   keyboardShortcutManager.registerShortcut(shortcutKey, performManualSave);
@@ -597,3 +597,330 @@ useEffect(() => {
 ---
 
 **使用场景**：实现编辑器 tab 管理、多实例状态保留时，参考此架构。
+
+
+## 异步保存服务模式
+
+### 问题背景
+
+编辑器内容保存涉及多个异步步骤和状态管理：
+1. 内容变化检测
+2. 防抖控制（自动保存）
+3. 数据库写入
+4. UI 状态更新（isDirty、toast）
+
+传统的 async/await 模式会导致：
+- 副作用分散在各处
+- 错误处理不一致
+- 状态管理混乱
+- 难以测试和组合
+
+### 解决方案：TaskEither 保存管道
+
+```
+内容变化
+    │
+    ▼
+updateContent(content)
+    │
+    ├── 更新 pendingContent
+    ├── 更新 Tab isDirty (IO)
+    └── 触发 debouncedSave
+            │
+            ▼ (防抖后)
+┌───────────────────────────────────────────────────────────────────────────┐
+│                        TaskEither 保存管道                                 │
+│                                                                           │
+│   saveContent(content)                                                    │
+│        │                                                                  │
+│        ▼                                                                  │
+│   fromPredicate ──chain──▶ contentRepo.update ──chainFirstIOK──▶ 更新状态 │
+│   (检查是否需要保存)           (数据库写入)           (内部状态 + Tab)      │
+│        │                          │                      │                │
+│   Left/Right               Left/Right              Left/Right            │
+│        │                          │                      │                │
+│        └──────────────────────────┼──────────────────────┘                │
+│                                   │                                       │
+│                          任何一步 Left                                     │
+│                          整个管道短路                                       │
+└───────────────────────────────────────────────────────────────────────────┘
+        │
+        ▼
+    fold 分流
+        │
+        ├── Left ──▶ onError callback
+        │
+        └── Right ──▶ onSaved callback
+```
+
+### 核心实现
+
+```typescript
+// fn/save/save.service.fn.ts
+
+import { pipe } from 'fp-ts/function';
+import * as TE from 'fp-ts/TaskEither';
+import { debounce } from 'es-toolkit';
+import type { AppError } from '@/lib/error.types';
+
+interface SaveConfig {
+  readonly nodeId: string;
+  readonly contentType: ContentType;
+  readonly autoSaveDelay?: number;
+  readonly tabId?: string;
+  readonly setTabDirty?: (tabId: string, isDirty: boolean) => void;
+  readonly onSaving?: () => void;
+  readonly onSaved?: () => void;
+  readonly onError?: (error: AppError) => void;
+}
+
+interface SaveResult {
+  readonly success: boolean;
+  readonly nodeId: string;
+  readonly skipped?: boolean;
+}
+
+/**
+ * 创建保存服务
+ * 
+ * 核心设计：
+ * - saveContent 是 TaskEither 管道
+ * - 所有副作用通过 chainFirstIOK 集中管理
+ * - 防抖只是触发机制，不改变保存逻辑
+ */
+export const createSaveService = (config: SaveConfig) => {
+  const {
+    nodeId,
+    contentType,
+    autoSaveDelay = 3000,
+    tabId,
+    setTabDirty,
+    onSaving,
+    onSaved,
+    onError,
+  } = config;
+
+  // 内部状态
+  let lastSavedContent = "";
+  let pendingContent: string | null = null;
+
+  /**
+   * 核心保存函数 - TaskEither 版本
+   */
+  const saveContent = (
+    content: string
+  ): TE.TaskEither<AppError, SaveResult> =>
+    pipe(
+      // 1. 检查是否需要保存
+      TE.fromPredicate(
+        () => content !== lastSavedContent,
+        (): AppError => ({ type: 'SKIP', message: '内容未变化' })
+      )(content),
+
+      // 2. 通知开始保存（IO 副作用）
+      TE.chainFirstIOK(() => () => {
+        onSaving?.();
+      }),
+
+      // 3. 执行数据库保存
+      TE.chain(() => 
+        contentRepo.updateContentByNodeId(nodeId, content, contentType)
+      ),
+
+      // 4. 成功后更新内部状态（IO 副作用）
+      TE.chainFirstIOK(() => () => {
+        lastSavedContent = content;
+        pendingContent = null;
+      }),
+
+      // 5. 成功后更新 Tab 状态（IO 副作用）
+      TE.chainFirstIOK(() => () => {
+        if (tabId && setTabDirty) {
+          setTabDirty(tabId, false);
+        }
+      }),
+
+      // 6. 成功后通知（IO 副作用）
+      TE.chainFirstIOK(() => () => {
+        onSaved?.();
+      }),
+
+      // 7. 返回保存结果
+      TE.map(() => ({ success: true, nodeId })),
+
+      // 8. 错误处理（不中断管道，转换为结果）
+      TE.orElse(error => {
+        if (error.type === 'SKIP') {
+          return TE.right({ success: true, nodeId, skipped: true });
+        }
+        onError?.(error);
+        return TE.left(error);
+      }),
+    );
+
+  /**
+   * 防抖保存
+   */
+  const debouncedSave = autoSaveDelay > 0
+    ? debounce(
+        (content: string) => {
+          pipe(
+            saveContent(content),
+            TE.fold(
+              error => TE.fromIO(() => logger.error('[Save] 自动保存失败', error)),
+              () => TE.fromIO(() => logger.debug('[Save] 自动保存成功')),
+            ),
+          )();
+        },
+        autoSaveDelay
+      )
+    : null;
+
+  return {
+    /**
+     * 更新内容（触发防抖自动保存）
+     */
+    updateContent: (content: string): void => {
+      pendingContent = content;
+
+      // 标记为脏
+      if (tabId && setTabDirty && content !== lastSavedContent) {
+        setTabDirty(tabId, true);
+      }
+
+      // 触发防抖保存
+      debouncedSave?.(content);
+    },
+
+    /**
+     * 立即保存 - 返回 TaskEither
+     * 
+     * 入口窄：返回 TaskEither
+     * 出口宽：调用方使用 fold 处理
+     */
+    saveNow: (): TE.TaskEither<AppError, SaveResult> => {
+      debouncedSave?.cancel();
+
+      if (pendingContent === null) {
+        return TE.right({ success: true, nodeId, skipped: true });
+      }
+
+      return saveContent(pendingContent);
+    },
+
+    /**
+     * 设置初始内容（不触发保存）
+     */
+    setInitialContent: (content: string): void => {
+      lastSavedContent = content;
+    },
+
+    /**
+     * 清理资源
+     */
+    dispose: (): void => {
+      debouncedSave?.cancel();
+    },
+
+    /**
+     * 是否有未保存的更改
+     */
+    hasUnsavedChanges: (): boolean => {
+      return pendingContent !== null && pendingContent !== lastSavedContent;
+    },
+  };
+};
+```
+
+### 组件中使用
+
+```typescript
+// 在编辑器组件中
+const saveService = useMemo(
+  () => createSaveService({
+    nodeId,
+    contentType: 'lexical',
+    tabId,
+    setTabDirty: useEditorTabsStore.getState().setTabDirty,
+    onSaving: () => setSaveStatus('saving'),
+    onSaved: () => setSaveStatus('saved'),
+    onError: (error) => toast.error(`保存失败: ${error.message}`),
+  }),
+  [nodeId, tabId]
+);
+
+// 内容变化时
+const handleChange = (content: string) => {
+  saveService.updateContent(content);
+};
+
+// 手动保存（Ctrl+S）
+const handleManualSave = () => {
+  pipe(
+    saveService.saveNow(),
+    TE.fold(
+      error => TE.fromIO(() => toast.error(`保存失败: ${error.message}`)),
+      result => TE.fromIO(() => {
+        if (!result.skipped) {
+          toast.success('保存成功');
+        }
+      }),
+    ),
+  )();
+};
+
+// 组件卸载时
+useEffect(() => {
+  return () => {
+    // 先保存未保存的内容
+    if (saveService.hasUnsavedChanges()) {
+      saveService.saveNow()();
+    }
+    saveService.dispose();
+  };
+}, [saveService]);
+```
+
+### 与创建流程的对比
+
+| 方面 | 创建流程 | 保存流程 |
+|------|---------|---------|
+| 触发方式 | 用户点击 | 内容变化 + 防抖 |
+| 异步模式 | TaskEither ✅ | TaskEither ✅ |
+| 错误处理 | fold 分流 ✅ | fold 分流 ✅ |
+| 副作用 | chainFirstIOK ✅ | chainFirstIOK ✅ |
+| 返回类型 | TaskEither | TaskEither |
+
+### 禁止的模式
+
+```typescript
+// ❌ 禁止：async/await 保存
+const saveContent = async (content: string) => {
+  try {
+    await updateContentByNodeId(nodeId, content)();
+    setTabDirty(tabId, false);
+    onSaved?.();
+  } catch (e) {
+    onError?.(e);
+  }
+};
+
+// ❌ 禁止：手动解包 TaskEither
+const result = await updateContentByNodeId(nodeId, content)();
+if (E.isRight(result)) {
+  // ...
+} else {
+  // ...
+}
+
+// ✅ 正确：TaskEither 管道
+pipe(
+  contentRepo.updateContentByNodeId(nodeId, content),
+  TE.chainFirstIOK(() => () => setTabDirty(tabId, false)),
+  TE.fold(onError, onSaved),
+)();
+```
+
+---
+
+**使用场景**：实现编辑器内容保存、自动保存、手动保存时，参考此模式。

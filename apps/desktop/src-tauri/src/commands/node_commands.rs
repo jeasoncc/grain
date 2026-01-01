@@ -204,3 +204,91 @@ pub async fn duplicate_node(
         .map(NodeResponse::from)
         .map_err(|e| e.to_string())
 }
+
+/// 获取根节点（parent_id 为 null）
+#[tauri::command]
+pub async fn get_root_nodes(
+    db: State<'_, DatabaseConnection>,
+    workspace_id: String,
+) -> Result<Vec<NodeResponse>, String> {
+    NodeRepo::find_root_nodes(&db, &workspace_id)
+        .await
+        .map(|nodes| nodes.into_iter().map(NodeResponse::from).collect())
+        .map_err(|e| e.to_string())
+}
+
+/// 按父节点获取子节点（支持 None 表示根节点）
+#[tauri::command]
+pub async fn get_nodes_by_parent(
+    db: State<'_, DatabaseConnection>,
+    workspace_id: String,
+    parent_id: Option<String>,
+) -> Result<Vec<NodeResponse>, String> {
+    NodeRepo::find_by_parent(&db, &workspace_id, parent_id.as_deref())
+        .await
+        .map(|nodes| nodes.into_iter().map(NodeResponse::from).collect())
+        .map_err(|e| e.to_string())
+}
+
+/// 按类型获取节点
+#[tauri::command]
+pub async fn get_nodes_by_type(
+    db: State<'_, DatabaseConnection>,
+    workspace_id: String,
+    node_type: String,
+) -> Result<Vec<NodeResponse>, String> {
+    let parsed_type: NodeType = node_type
+        .parse()
+        .unwrap_or(NodeType::File);
+    
+    NodeRepo::find_by_type(&db, &workspace_id, parsed_type)
+        .await
+        .map(|nodes| nodes.into_iter().map(NodeResponse::from).collect())
+        .map_err(|e| e.to_string())
+}
+
+/// 获取节点的所有后代
+#[tauri::command]
+pub async fn get_descendants(
+    db: State<'_, DatabaseConnection>,
+    node_id: String,
+) -> Result<Vec<NodeResponse>, String> {
+    NodeRepo::find_descendants(&db, &node_id)
+        .await
+        .map(|nodes| nodes.into_iter().map(NodeResponse::from).collect())
+        .map_err(|e| e.to_string())
+}
+
+/// 获取下一个排序号
+#[tauri::command]
+pub async fn get_next_sort_order(
+    db: State<'_, DatabaseConnection>,
+    workspace_id: String,
+    parent_id: Option<String>,
+) -> Result<i32, String> {
+    NodeRepo::get_next_sort_order_pub(&db, &workspace_id, parent_id.as_deref())
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// 批量重排序节点
+#[tauri::command]
+pub async fn reorder_nodes(
+    db: State<'_, DatabaseConnection>,
+    node_ids: Vec<String>,
+) -> Result<(), String> {
+    NodeRepo::reorder_nodes(&db, node_ids)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// 批量删除节点
+#[tauri::command]
+pub async fn delete_nodes_batch(
+    db: State<'_, DatabaseConnection>,
+    node_ids: Vec<String>,
+) -> Result<(), String> {
+    NodeRepo::delete_batch(&db, node_ids)
+        .await
+        .map_err(|e| e.to_string())
+}

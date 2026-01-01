@@ -42,8 +42,19 @@ export interface WorkspaceResponse {
 // Node 类型
 // ============================================
 
-/** 节点类型 */
-export type NodeTypeValue = "folder" | "file" | "diary" | "drawing" | "canvas";
+/** 节点类型（与前端 NodeType 保持一致） */
+export type NodeTypeValue =
+  | "folder"
+  | "file"
+  | "diary"
+  | "wiki"
+  | "todo"
+  | "note"
+  | "ledger"
+  | "drawing"
+  | "plantuml"
+  | "mermaid"
+  | "code";
 
 /** 创建节点请求 */
 export interface CreateNodeRequest {
