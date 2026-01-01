@@ -7,21 +7,25 @@
  * - 支持自定义模板生成、文件夹结构、标题生成
  * - 使用函数式编程模式，避免重复代码
  * - 支持类型安全的参数传递
+ * - 通过 createFile action 确保文件操作通过队列执行
  *
  * 设计理念：
  * - 高阶函数：接收配置，返回具体的创建函数
  * - 函数式组合：使用 fp-ts pipe 进行数据流处理
  * - 类型安全：泛型支持不同类型的参数
  * - 错误处理：使用 TaskEither 进行显式错误处理
+ * - 队列执行：通过 createFile action 确保串行执行
  *
  * @requirements 抽象重复模式，提高代码复用性
+ * @see .kiro/specs/editor-tabs-dataflow-refactor/design.md Property 8
  */
 
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { z } from "zod";
-import { createFileInTree } from "@/actions/node";
+import { createFile } from "@/actions/file";
+import { ensureFolderPath } from "@/actions/node";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
 import type { FileNodeType, NodeInterface } from "@/types/node";
@@ -205,24 +209,38 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 					})),
 				);
 			}),
-			// 5. 创建文件
+			// 5. 确保文件夹路径存在，然后通过 createFile action 创建文件（通过队列执行）
 			TE.chain(({ content, folderPath, title, parsedContent }) =>
 				pipe(
-					TE.tryCatch(
-						() =>
-							createFileInTree({
-								workspaceId: params.workspaceId,
-								title,
-								folderPath: [config.rootFolder, ...folderPath],
-								type: config.fileType,
-								tags: [config.tag],
-								content,
-								foldersCollapsed: config.foldersCollapsed ?? true,
+					// 5.1 确保文件夹路径存在
+					ensureFolderPath(
+						params.workspaceId,
+						[config.rootFolder, ...folderPath],
+						config.foldersCollapsed ?? true,
+					),
+					// 5.2 通过 createFile action 创建文件（通过队列串行执行）
+					TE.chain((parentFolder) =>
+						TE.tryCatch(
+							async () => {
+								const result = await createFile({
+									workspaceId: params.workspaceId,
+									parentId: parentFolder.id,
+									title,
+									type: config.fileType,
+									content,
+									tags: [config.tag],
+									collapsed: true,
+								});
+								if (!result) {
+									throw new Error("createFile 返回 undefined");
+								}
+								return result;
+							},
+							(error): AppError => ({
+								type: "DB_ERROR",
+								message: `创建文件失败: ${error instanceof Error ? error.message : String(error)}`,
 							}),
-						(error): AppError => ({
-							type: "DB_ERROR",
-							message: `创建文件失败: ${error instanceof Error ? error.message : String(error)}`,
-						}),
+						),
 					),
 					TE.map((result) => ({
 						node: result.node,

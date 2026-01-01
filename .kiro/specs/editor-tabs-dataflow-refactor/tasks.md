@@ -69,7 +69,7 @@
     - 使用 openFile action 替代直接调用
     - 更新 handleCreateTemplate 使用新的 action
     - _Requirements: 6.5, 7.7_
-  - [ ] 5.3 重构 CommandPaletteContainer
+  - [x] 5.3 重构 CommandPaletteContainer
     - 使用 openFile action 替代直接调用 store
     - _Requirements: 8.5_
 
@@ -77,8 +77,8 @@
   - 手动测试文件创建和打开功能
   - 如有问题请询问用户
 
-- [ ] 7. 重构模板文件创建
-  - [ ] 7.1 更新 createTemplatedFile 高阶函数
+- [x] 7. 重构模板文件创建
+  - [x] 7.1 更新 createTemplatedFile 高阶函数
     - 内部使用 createFile action
     - 确保通过队列执行
     - _Requirements: 9.1, 9.2, 9.4, 9.5_

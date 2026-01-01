@@ -3,10 +3,11 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Download, Moon, PenTool, Search, Settings, Sun } from "lucide-react";
 import { memo, useMemo } from "react";
+import { openFile } from "@/actions";
 import { createExcalidrawCompatAsync } from "@/actions/templated";
 import { exportDialogManager } from "@/components/export-dialog-manager";
 import { useTheme } from "@/hooks/use-theme";
-import { useEditorTabsStore } from "@/stores/editor-tabs.store";
+import type { TabType } from "@/types/editor-tab";
 import type {
 	CommandGroup,
 	CommandPaletteContainerProps,
@@ -31,7 +32,6 @@ export const CommandPaletteContainer = memo(
 	}: CommandPaletteContainerProps) => {
 		const navigate = useNavigate();
 		const { theme, setTheme } = useTheme();
-		const openTab = useEditorTabsStore((s) => s.openTab);
 
 		const currentWorkspace = workspaces.find(
 			(w) => w.id === selectedWorkspaceId,
@@ -65,12 +65,12 @@ export const CommandPaletteContainer = memo(
 										workspaceId: selectedWorkspaceId,
 										date: new Date(),
 									});
-									// 打开新创建的 Excalidraw 文件标签页
-									openTab({
+									// 使用 openFile action 打开新创建的 Excalidraw 文件（通过队列执行）
+									await openFile({
 										workspaceId: selectedWorkspaceId,
 										nodeId: result.node.id,
 										title: result.node.title,
-										type: "drawing",
+										type: result.node.type as TabType,
 									});
 									// 导航到主工作区
 									navigate({ to: "/" });
@@ -129,7 +129,6 @@ export const CommandPaletteContainer = memo(
 				onOpenChange,
 				selectedWorkspaceId,
 				currentWorkspace?.title,
-				openTab,
 			],
 		);
 

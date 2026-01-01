@@ -157,12 +157,14 @@ const getOrCreateFolder = (
 /**
  * 确保文件夹路径存在
  *
+ * 递归创建文件夹层级结构，如果文件夹已存在则复用。
+ *
  * @param workspaceId - 工作区 ID
  * @param folderPath - 文件夹路径数组
  * @param collapsed - 新建文件夹是否折叠
  * @returns TaskEither<AppError, NodeInterface> 最深层的文件夹节点
  */
-const ensureFolderPath = (
+export const ensureFolderPath = (
 	workspaceId: string,
 	folderPath: string[],
 	collapsed: boolean = false,
