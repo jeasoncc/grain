@@ -2,7 +2,7 @@
 
 use sea_orm_migration::prelude::*;
 
-use super::m20240101_000002_create_node::Node;
+use super::m20240101_000002_create_node::Nodes;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -14,34 +14,34 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(Content::Table)
+                    .table(Contents::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Content::Id)
+                        ColumnDef::new(Contents::Id)
                             .string()
                             .not_null()
                             .primary_key(),
                     )
                     .col(
-                        ColumnDef::new(Content::NodeId)
+                        ColumnDef::new(Contents::NodeId)
                             .string()
                             .not_null()
                             .unique_key(),
                     )
-                    .col(ColumnDef::new(Content::Content).text().not_null())
+                    .col(ColumnDef::new(Contents::Content).text().not_null())
                     .col(
-                        ColumnDef::new(Content::Version)
+                        ColumnDef::new(Contents::Version)
                             .integer()
                             .not_null()
                             .default(1),
                     )
-                    .col(ColumnDef::new(Content::CreatedAt).big_integer().not_null())
-                    .col(ColumnDef::new(Content::UpdatedAt).big_integer().not_null())
+                    .col(ColumnDef::new(Contents::CreatedAt).big_integer().not_null())
+                    .col(ColumnDef::new(Contents::UpdatedAt).big_integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_content_node")
-                            .from(Content::Table, Content::NodeId)
-                            .to(Node::Table, Node::Id)
+                            .from(Contents::Table, Contents::NodeId)
+                            .to(Nodes::Table, Nodes::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
@@ -53,8 +53,8 @@ impl MigrationTrait for Migration {
             .create_index(
                 Index::create()
                     .name("idx_content_node")
-                    .table(Content::Table)
-                    .col(Content::NodeId)
+                    .table(Contents::Table)
+                    .col(Contents::NodeId)
                     .to_owned(),
             )
             .await
@@ -62,13 +62,14 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(Content::Table).to_owned())
+            .drop_table(Table::drop().table(Contents::Table).to_owned())
             .await
     }
 }
 
 #[derive(Iden)]
-enum Content {
+enum Contents {
+    #[iden = "contents"]
     Table,
     Id,
     NodeId,

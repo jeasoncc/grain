@@ -2,7 +2,7 @@
 
 use sea_orm_migration::prelude::*;
 
-use super::m20240101_000001_create_workspace::Workspace;
+use super::m20240101_000001_create_workspace::Workspaces;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -14,38 +14,38 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(Node::Table)
+                    .table(Nodes::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Node::Id).string().not_null().primary_key())
-                    .col(ColumnDef::new(Node::WorkspaceId).string().not_null())
-                    .col(ColumnDef::new(Node::ParentId).string())
-                    .col(ColumnDef::new(Node::Title).string().not_null())
+                    .col(ColumnDef::new(Nodes::Id).string().not_null().primary_key())
+                    .col(ColumnDef::new(Nodes::WorkspaceId).string().not_null())
+                    .col(ColumnDef::new(Nodes::ParentId).string())
+                    .col(ColumnDef::new(Nodes::Title).string().not_null())
                     .col(
-                        ColumnDef::new(Node::NodeType)
+                        ColumnDef::new(Nodes::NodeType)
                             .string()
                             .not_null()
                             .default("file"),
                     )
                     .col(
-                        ColumnDef::new(Node::IsCollapsed)
+                        ColumnDef::new(Nodes::IsCollapsed)
                             .boolean()
                             .not_null()
                             .default(false),
                     )
                     .col(
-                        ColumnDef::new(Node::SortOrder)
+                        ColumnDef::new(Nodes::SortOrder)
                             .integer()
                             .not_null()
                             .default(0),
                     )
-                    .col(ColumnDef::new(Node::Tags).text())
-                    .col(ColumnDef::new(Node::CreatedAt).big_integer().not_null())
-                    .col(ColumnDef::new(Node::UpdatedAt).big_integer().not_null())
+                    .col(ColumnDef::new(Nodes::Tags).text())
+                    .col(ColumnDef::new(Nodes::CreatedAt).big_integer().not_null())
+                    .col(ColumnDef::new(Nodes::UpdatedAt).big_integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_node_workspace")
-                            .from(Node::Table, Node::WorkspaceId)
-                            .to(Workspace::Table, Workspace::Id)
+                            .from(Nodes::Table, Nodes::WorkspaceId)
+                            .to(Workspaces::Table, Workspaces::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
@@ -57,8 +57,8 @@ impl MigrationTrait for Migration {
             .create_index(
                 Index::create()
                     .name("idx_node_workspace")
-                    .table(Node::Table)
-                    .col(Node::WorkspaceId)
+                    .table(Nodes::Table)
+                    .col(Nodes::WorkspaceId)
                     .to_owned(),
             )
             .await?;
@@ -68,8 +68,8 @@ impl MigrationTrait for Migration {
             .create_index(
                 Index::create()
                     .name("idx_node_parent")
-                    .table(Node::Table)
-                    .col(Node::ParentId)
+                    .table(Nodes::Table)
+                    .col(Nodes::ParentId)
                     .to_owned(),
             )
             .await
@@ -77,13 +77,14 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(Node::Table).to_owned())
+            .drop_table(Table::drop().table(Nodes::Table).to_owned())
             .await
     }
 }
 
 #[derive(Iden)]
-pub enum Node {
+pub enum Nodes {
+    #[iden = "nodes"]
     Table,
     Id,
     WorkspaceId,
