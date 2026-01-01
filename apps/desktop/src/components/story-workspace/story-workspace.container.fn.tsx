@@ -41,6 +41,7 @@ import { useUnifiedSave } from "@/hooks/use-unified-save";
 import { useWikiFiles } from "@/hooks/use-wiki";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
 import logger from "@/log";
+import { useEditorSettingsStore } from "@/stores/editor-settings.store";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSelectionStore } from "@/stores/selection.store";
 import { useUIStore } from "@/stores/ui.store";
@@ -55,6 +56,9 @@ export const StoryWorkspaceContainer = memo(
 		);
 
 		const { wordCountMode, showWordCountBadge } = useSettings();
+
+		// 编辑器设置
+		const foldIconStyle = useEditorSettingsStore((s) => s.foldIconStyle);
 
 		const [editorInitialState, setEditorInitialState] =
 			useState<SerializedEditorState>();
@@ -290,6 +294,7 @@ export const StoryWorkspaceContainer = memo(
 						mentionEntries={mentionEntries}
 						useWikiHoverPreview={useWikiHoverPreview}
 						WikiHoverPreview={WikiHoverPreviewConnected}
+						foldIconStyle={foldIconStyle}
 					/>
 				</div>
 			);

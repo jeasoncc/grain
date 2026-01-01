@@ -30,3 +30,5 @@ export * from "./theme.store";
 export * from "./ui.store";
 // Writing Store - 写作状态
 export * from "./writing.store";
+// Editor Settings Store - 编辑器设置状态
+export * from "./editor-settings.store";

@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Minus, Plus, RotateCcw, Type } from "lucide-react";
+import { Check, Minus, Plus, RotateCcw, Type, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DebouncedSlider } from "@/components/ui/debounced-slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useFontSettings } from "@/stores/font.store";
+import { useEditorSettings } from "@/stores/editor-settings.store";
 import { DEFAULT_EDITOR_FONT, POPULAR_FONTS } from "@/types/font";
+import { FOLD_ICON_OPTIONS, type FoldIconStyle } from "@grain/editor";
 
 export const Route = createFileRoute("/settings/editor")({
 	component: EditorSettings,
@@ -27,6 +29,8 @@ function EditorSettings() {
 		setParagraphSpacing,
 		setFirstLineIndent,
 	} = useFontSettings();
+
+	const { foldIconStyle, setFoldIconStyle } = useEditorSettings();
 
 	// 添加字体到列表
 	const addFont = (font: string) => {
@@ -220,6 +224,57 @@ function EditorSettings() {
 							checked={firstLineIndent > 0}
 							onCheckedChange={(checked) => setFirstLineIndent(checked ? 2 : 0)}
 						/>
+					</div>
+				</div>
+			</div>
+
+			{/* Behavior Settings */}
+			<div className="space-y-6">
+				<div className="flex items-center gap-2 text-muted-foreground">
+					<Sparkles className="size-4" />
+					<h4 className="text-sm font-medium uppercase tracking-wider">
+						Behavior
+					</h4>
+				</div>
+
+				{/* Fold Icon Style */}
+				<div className="space-y-3">
+					<div>
+						<Label className="text-sm">Heading Fold Icons</Label>
+						<p className="text-xs text-muted-foreground">
+							Symbol style for heading fold indicators
+						</p>
+					</div>
+					<div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+						{FOLD_ICON_OPTIONS.map((option) => {
+							const isSelected = foldIconStyle === option.id;
+							return (
+								<button
+									type="button"
+									key={option.id}
+									onClick={() => setFoldIconStyle(option.id)}
+									className={`
+										flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all
+										${
+											isSelected
+												? "bg-primary/10 border-primary/50 ring-1 ring-primary/20"
+												: "border-border hover:bg-muted hover:border-primary/30"
+										}
+									`}
+								>
+									<span className="text-lg font-serif min-w-[3rem] text-center opacity-80">
+										{option.preview}
+									</span>
+									<div className="flex-1 min-w-0">
+										<div className="text-xs font-medium truncate">{option.name}</div>
+										<div className="text-[10px] text-muted-foreground truncate">{option.nameEn}</div>
+									</div>
+									{isSelected && (
+										<Check className="size-4 text-primary shrink-0" />
+									)}
+								</button>
+							);
+						})}
 					</div>
 				</div>
 			</div>

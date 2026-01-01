@@ -19,6 +19,7 @@ import type { SerializedEditorState } from "lexical";
 import type React from "react";
 import { useCallback, useEffect, useRef } from "react";
 
+import type { FoldIconStyle } from "../config/fold-icon-config";
 import Editor, { type EditorProps } from "./Editor";
 
 export interface EditorInstanceProps {
@@ -46,6 +47,8 @@ export interface EditorInstanceProps {
   useWikiHoverPreview?: EditorProps["useWikiHoverPreview"];
   /** Wiki 悬浮预览组件 */
   WikiHoverPreview?: EditorProps["WikiHoverPreview"];
+  /** 标题折叠图标风格 */
+  foldIconStyle?: FoldIconStyle;
 }
 
 /**
@@ -67,6 +70,7 @@ export function EditorInstance({
   wikiEntries,
   useWikiHoverPreview,
   WikiHoverPreview,
+  foldIconStyle,
 }: EditorInstanceProps): React.ReactElement {
   // Support both new and deprecated prop names
   const entries = mentionEntries ?? wikiEntries;
@@ -175,6 +179,7 @@ export function EditorInstance({
           mentionEntries={entries}
           useWikiHoverPreview={useWikiHoverPreview}
           WikiHoverPreview={WikiHoverPreview}
+          foldIconStyle={foldIconStyle}
         />
       </div>
     </div>
