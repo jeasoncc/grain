@@ -111,3 +111,18 @@ export type {
   EditorTab,
   EditorInstanceState,
 } from "./types";
+
+// ============================================================================
+// Config
+// ============================================================================
+export {
+  FOLD_ICON_OPTIONS,
+  DEFAULT_FOLD_ICON_STYLE,
+  getFoldIconLetters,
+  getFoldIconOption,
+} from "./config/fold-icon-config";
+
+export type {
+  FoldIconStyle,
+  FoldIconOption,
+} from "./config/fold-icon-config";

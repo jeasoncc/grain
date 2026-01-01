@@ -53,6 +53,9 @@ import TableShortcutPlugin from "../plugins/table-shortcut-plugin";
 import HorizontalRuleShortcutPlugin from "../plugins/horizontal-rule-shortcut-plugin";
 import TableActionsPlugin from "../plugins/table-actions-plugin";
 import EmojiPlugin from "../plugins/emoji-plugin";
+import CollapsiblePlugin from "../plugins/collapsible-plugin";
+import HeadingFoldPlugin from "../plugins/heading-fold-plugin";
+import type { FoldIconStyle } from "../config/fold-icon-config";
 import theme from "../themes/PlaygroundEditorTheme";
 import "../themes/PlaygroundEditorTheme.css";
 
@@ -75,6 +78,8 @@ export interface EditorProps {
   useWikiHoverPreview?: MentionTooltipPluginProps["useWikiHoverPreview"];
   /** Wiki 悬浮预览组件 (可选) */
   WikiHoverPreview?: MentionTooltipPluginProps["WikiHoverPreview"];
+  /** 标题折叠图标风格 */
+  foldIconStyle?: FoldIconStyle;
 }
 
 /**
@@ -137,6 +142,7 @@ export default function Editor({
   wikiEntries,
   useWikiHoverPreview,
   WikiHoverPreview,
+  foldIconStyle,
 }: EditorProps): React.ReactElement {
   // Support both new and deprecated prop names
   const entries = mentionEntries ?? wikiEntries;
@@ -232,6 +238,8 @@ export default function Editor({
         <TableActionsPlugin />
         <HorizontalRuleShortcutPlugin />
         <EmojiPlugin />
+        <CollapsiblePlugin />
+        <HeadingFoldPlugin foldIconStyle={foldIconStyle} />
       </div>
     </LexicalComposer>
   );

@@ -789,3 +789,68 @@
 }
 
 
+
+
+/* ========================================
+   Collapsible (折叠块)
+   ======================================== */
+
+.Collapsible__container {
+  margin: 0.75rem 0;
+  border-radius: 0.375rem;
+  overflow: hidden;
+  border-left: 3px solid var(--primary);
+  background-color: transparent;
+}
+
+.Collapsible__container[open] {
+  background-color: transparent;
+}
+
+.Collapsible__title {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-weight: 500;
+  user-select: none;
+  list-style: none;
+  background-color: color-mix(in srgb, var(--primary) 8%, transparent);
+  transition: background-color 0.15s ease;
+  gap: 0.5rem;
+}
+
+.Collapsible__title::-webkit-details-marker {
+  display: none;
+}
+
+.Collapsible__title::before {
+  content: '▶';
+  font-size: 0.625rem;
+  color: var(--primary);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  width: 0.75rem;
+  text-align: center;
+}
+
+.Collapsible__container[open] > .Collapsible__title::before {
+  transform: rotate(90deg);
+}
+
+.Collapsible__title:hover {
+  background-color: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+.Collapsible__content {
+  padding: 0.5rem 0.75rem 0.5rem 1.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--primary) 15%, transparent);
+}
+
+.Collapsible__content > *:first-child {
+  margin-top: 0;
+}
+
+.Collapsible__content > *:last-child {
+  margin-bottom: 0;
+}

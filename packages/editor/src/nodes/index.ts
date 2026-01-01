@@ -20,6 +20,11 @@ import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 // 自定义节点
 import { MentionNode } from "./mention-node";
 import { TagNode } from "./tag-node";
+import {
+  CollapsibleContainerNode,
+  CollapsibleTitleNode,
+  CollapsibleContentNode,
+} from "./collapsible-nodes";
 
 /**
  * 编辑器节点配置
@@ -55,6 +60,9 @@ export const EditorNodes: Array<Klass<LexicalNode>> = [
   // 自定义节点
   MentionNode,
   TagNode,
+  CollapsibleContainerNode,
+  CollapsibleTitleNode,
+  CollapsibleContentNode,
 ];
 
 // 导出自定义节点及其辅助函数
@@ -71,3 +79,15 @@ export {
   $isTagNode,
   type SerializedTagNode,
 } from "./tag-node";
+
+export {
+  CollapsibleContainerNode,
+  CollapsibleTitleNode,
+  CollapsibleContentNode,
+  $createCollapsibleContainerNode,
+  $createCollapsibleTitleNode,
+  $createCollapsibleContentNode,
+  $isCollapsibleContainerNode,
+  $isCollapsibleTitleNode,
+  $isCollapsibleContentNode,
+} from "./collapsible-nodes";
