@@ -51,6 +51,8 @@ import PrismLanguagesPlugin from "../plugins/prism-languages-plugin";
 import ChecklistShortcutPlugin from "../plugins/checklist-shortcut-plugin";
 import TableShortcutPlugin from "../plugins/table-shortcut-plugin";
 import HorizontalRuleShortcutPlugin from "../plugins/horizontal-rule-shortcut-plugin";
+import TableActionsPlugin from "../plugins/table-actions-plugin";
+import EmojiPlugin from "../plugins/emoji-plugin";
 import theme from "../themes/PlaygroundEditorTheme";
 import "../themes/PlaygroundEditorTheme.css";
 
@@ -227,7 +229,9 @@ export default function Editor({
         <PrismLanguagesPlugin />
         <ChecklistShortcutPlugin />
         <TableShortcutPlugin />
+        <TableActionsPlugin />
         <HorizontalRuleShortcutPlugin />
+        <EmojiPlugin />
       </div>
     </LexicalComposer>
   );
