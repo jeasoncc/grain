@@ -8,10 +8,10 @@
 
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import * as E from "fp-ts/Either";
-import type { SerializedEditorState } from "lexical";
 import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { openFile } from "@/actions";
 import { createCodeCompatAsync } from "@/actions/templated/create-code.action";
 import {
 	createDiaryCompatAsync,
@@ -31,9 +31,9 @@ import { calculateExpandedFoldersForNode } from "@/fn/node";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useNodesByWorkspace } from "@/hooks/use-node";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
-import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSelectionStore } from "@/stores/selection.store";
 import { useSidebarStore } from "@/stores/sidebar.store";
+import type { TabType } from "@/types/editor-tab";
 import type { WorkspaceInterface } from "@/types/workspace";
 
 import { ActivityBarView } from "./activity-bar.view.fn";
@@ -57,7 +57,6 @@ interface CreateTemplateOptions {
 	readonly creator: TemplateCreator;
 	readonly successMessage: string;
 	readonly errorMessage: string;
-	readonly preloadContent?: boolean;
 }
 
 /**
@@ -199,19 +198,15 @@ export function ActivityBarContainer(): React.ReactElement {
 		[setSelectedWorkspaceId],
 	);
 
-	const openTab = useEditorTabsStore((s) => s.openTab);
-	const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
-
 	/**
 	 * 通用的模板文件创建处理函数
 	 *
 	 * 消除 handleCreateDiary/Wiki/Todo/Note/Ledger 的重复代码。
 	 * 创建文件后：
-	 * 1. 打开新标签页
-	 * 2. 预加载编辑器内容（可选）
-	 * 3. 选中新文件
-	 * 4. 展开文件路径，关闭其他文件夹
-	 * 5. 导航到主页面
+	 * 1. 使用 openFile action 打开新标签页（通过队列执行）
+	 * 2. 选中新文件
+	 * 3. 展开文件路径，关闭其他文件夹
+	 * 4. 导航到主页面
 	 */
 	const handleCreateTemplate = useCallback(
 		async (options: CreateTemplateOptions) => {
@@ -220,12 +215,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				return;
 			}
 
-			const {
-				creator,
-				successMessage,
-				errorMessage,
-				preloadContent = true,
-			} = options;
+			const { creator, successMessage, errorMessage } = options;
 
 			try {
 				const result = await creator({
@@ -233,26 +223,19 @@ export function ActivityBarContainer(): React.ReactElement {
 					date: new Date(),
 				});
 
-				// 1. 打开新创建的文件标签页
-				openTab({
+				// 1. 使用 openFile action 打开新创建的文件（通过队列执行）
+				// openFile 内部会处理：从 DB 加载内容 → 创建 tab → 设置 editorState
+				await openFile({
 					workspaceId: selectedWorkspaceId,
 					nodeId: result.node.id,
 					title: result.node.title,
-					// 模板创建的文件永远不会是 folder，安全断言为 TabType
-					type: result.node.type as Exclude<typeof result.node.type, "folder">,
+					type: result.node.type as TabType,
 				});
 
-				// 2. 预加载内容到编辑器状态（Excalidraw 不需要）
-				if (preloadContent && result.parsedContent) {
-					updateEditorState(result.node.id, {
-						serializedState: result.parsedContent as SerializedEditorState,
-					});
-				}
-
-				// 3. 在文件树中选中新创建的文件
+				// 2. 在文件树中选中新创建的文件
 				setSelectedNodeId(result.node.id);
 
-				// 4. 展开文件路径，关闭其他文件夹
+				// 3. 展开文件路径，关闭其他文件夹
 				if (nodes) {
 					const expandedFolders = calculateExpandedFoldersForNode(
 						nodes,
@@ -261,7 +244,7 @@ export function ActivityBarContainer(): React.ReactElement {
 					setExpandedFolders(expandedFolders);
 				}
 
-				// 5. 导航到主页面（如果当前不在主页面）
+				// 4. 导航到主页面（如果当前不在主页面）
 				if (location.pathname !== "/") {
 					navigate({ to: "/" });
 				}
@@ -274,8 +257,6 @@ export function ActivityBarContainer(): React.ReactElement {
 		},
 		[
 			selectedWorkspaceId,
-			openTab,
-			updateEditorState,
 			setSelectedNodeId,
 			nodes,
 			setExpandedFolders,

@@ -4,14 +4,15 @@
  *
  * 路由编排层：连接数据和展示组件
  *
+ * 内容加载已在 openFile action 中处理，此组件只负责渲染。
+ *
  * @see Requirements 1.4, 3.1, 4.1, 6.4
  */
 
 import { type MentionEntry, MultiEditorContainer } from "@grain/editor";
-import * as E from "fp-ts/Either";
 import type { SerializedEditorState } from "lexical";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo } from "react";
 import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-preview-connected";
 import { CodeEditorContainer } from "@/components/code-editor";
 import { DiagramEditorContainer } from "@/components/diagram-editor";
@@ -29,7 +30,6 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { WordCountBadge } from "@/components/word-count-badge";
-import { getContentByNodeId } from "@/db";
 import {
 	type EditorType,
 	getDiagramTypeByFilename,
@@ -59,9 +59,6 @@ export const StoryWorkspaceContainer = memo(
 
 		// 编辑器设置
 		const foldIconStyle = useEditorSettingsStore((s) => s.foldIconStyle);
-
-		const [editorInitialState, setEditorInitialState] =
-			useState<SerializedEditorState>();
 
 		// UI 状态
 		const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen);
@@ -119,37 +116,12 @@ export const StoryWorkspaceContainer = memo(
 			}
 		}, [selectedWorkspaceId, initialWorkspaceId, setSelectedWorkspaceId]);
 
-		// 当标签切换时，加载节点内容
-		// 使用 allTabs 而不是过滤后的 tabs，确保能找到活动标签
-		useEffect(() => {
-			if (!activeTabId) return;
-			const activeTab = allTabs.find((t) => t.id === activeTabId);
-			if (!activeTab) return;
-
-			// 检查是否已经有编辑器状态
-			const existingState = editorStates[activeTabId];
-			if (existingState?.serializedState) {
-				return;
-			}
-
-			// 加载节点内容
-			if (activeTab.nodeId) {
-				getContentByNodeId(activeTab.nodeId)().then((result) => {
-					if (E.isRight(result) && result.right) {
-						const content = result.right.content;
-						try {
-							const parsed = JSON.parse(content);
-							setEditorInitialState(parsed);
-							updateEditorState(activeTabId, { serializedState: parsed });
-						} catch {
-							setEditorInitialState(undefined);
-						}
-					} else {
-						setEditorInitialState(undefined);
-					}
-				});
-			}
-		}, [activeTabId, allTabs, editorStates, updateEditorState]);
+		// 注意：内容加载已在 openFile action 中处理
+		// 当用户点击文件时，openFile 会：
+		// 1. 从 DB 加载内容
+		// 2. 创建 tab
+		// 3. 设置 editorState
+		// 因此这里不需要额外的内容加载逻辑
 
 		// 根据文件名扩展名确定编辑器类型
 		const editorType: EditorType = useMemo(() => {
