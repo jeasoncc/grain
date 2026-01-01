@@ -191,3 +191,210 @@ const handleClick = () => {
   // 队列内部处理所有异步操作
 };
 ```
+
+
+## 异步数据流哲学：入口窄出口宽
+
+### 核心理念
+
+传统的 `async/await` 和 `Promise` 模式存在根本性问题：
+
+```typescript
+// ❌ async/await：扁平化的假象，实际是「出口窄入口宽」
+async function create() {
+  const a = await stepA();  // 等待，阻塞
+  const b = await stepB(a); // 等待，阻塞
+  const c = await stepC(b); // 等待，阻塞
+  return c;                 // 最后才知道结果
+}
+// 问题：
+// 1. 错误处理靠 try-catch 包裹，丑陋且容易遗漏
+// 2. 顺序执行的假象，实际上每一步都在「等待」
+// 3. 类型系统无法强制正确的时序
+```
+
+**正确的异步数据流应该是「入口窄出口宽」：**
+
+```
+入口窄：一个未执行的函数（状态机）
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    管道内部（柯里化组合）                      │
+│                                                             │
+│   stepA ──chain──▶ stepB ──chain──▶ stepC                  │
+│     │                │                │                     │
+│     ▼                ▼                ▼                     │
+│   Left/Right      Left/Right      Left/Right               │
+│   (失败/成功)      (失败/成功)      (失败/成功)               │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+  │                                                         │
+  ▼                                                         ▼
+出口宽：两个明确的分支
+  ├── Left (错误) ──▶ 错误处理函数
+  └── Right (成功) ──▶ 成功处理函数
+```
+
+### TaskEither：函数即状态机
+
+`TaskEither<E, A>` 的本质是：
+- **Task**：一个未执行的异步函数 `() => Promise<...>`
+- **Either**：执行后的两种状态 `Left<E>` 或 `Right<A>`
+
+```typescript
+// TaskEither 是一个「未执行的状态机」
+type TaskEither<E, A> = () => Promise<Either<E, A>>
+
+// 它不会立即执行，只有调用 () 时才运行
+const task: TaskEither<Error, User> = () => fetchUser();
+
+// 组合多个状态机，形成管道
+const pipeline = pipe(
+  fetchUser,                    // () => Promise<Either<E, User>>
+  TE.chain(user =>              // User => TaskEither<E, Profile>
+    fetchProfile(user.id)
+  ),
+  TE.chain(profile =>           // Profile => TaskEither<E, Settings>
+    fetchSettings(profile.id)
+  ),
+);
+
+// 最后执行，两个出口
+pipe(
+  pipeline,
+  TE.fold(
+    error => handleError(error),   // Left 分支
+    result => handleSuccess(result) // Right 分支
+  )
+)();  // ← 只在这里执行
+```
+
+### chain：管道的口在上一个管道里面
+
+`chain` 的关键在于：**只有前一步成功，才会执行下一步**
+
+```typescript
+// chain 的类型签名
+// chain: (f: (a: A) => TaskEither<E, B>) => (ma: TaskEither<E, A>) => TaskEither<E, B>
+
+// 视觉化：管道嵌套
+pipe(
+  stepA,                          // TaskEither<E, A>
+  TE.chain(a =>                   // 只有 stepA 成功，才进入这里
+    pipe(
+      stepB(a),                   // TaskEither<E, B>
+      TE.chain(b =>               // 只有 stepB 成功，才进入这里
+        stepC(b)                  // TaskEither<E, C>
+      )
+    )
+  )
+)
+
+// 等价于扁平写法
+pipe(
+  stepA,
+  TE.chain(a => stepB(a)),
+  TE.chain(b => stepC(b)),
+)
+```
+
+### IO：同步副作用的函子
+
+对于同步副作用（toast、setState、console.log），使用 `IO`：
+
+```typescript
+// IO<A> = () => A
+// 一个未执行的同步函数
+
+const showToast = (msg: string): IO.IO<void> => 
+  () => toast.success(msg);
+
+const setState = (value: string): IO.IO<void> =>
+  () => setSelectedNodeId(value);
+
+// 在 TaskEither 管道中使用 IO
+pipe(
+  createFile(params),
+  TE.chainFirstIOK(result =>      // 执行 IO 副作用，保留原值
+    showToast("File created")
+  ),
+  TE.chainFirstIOK(result =>
+    setState(result.node.id)
+  ),
+)
+```
+
+### 项目中的应用
+
+```typescript
+// ✅ 正确：使用 TaskEither + chain
+const handleCreateTemplate = (creator: TemplateCreator) => {
+  pipe(
+    // 1. 创建文件（返回 TaskEither）
+    creator({ workspaceId, templateParams: { date: new Date() } }),
+    
+    // 2. 成功后，打开文件
+    TE.chain(result => 
+      pipe(
+        openFile({ ...result.node }),
+        TE.map(() => result)  // 保留 result
+      )
+    ),
+    
+    // 3. 成功后，执行 UI 副作用
+    TE.chainFirstIOK(result => () => {
+      setSelectedNodeId(result.node.id);
+      setExpandedFolders(calculatePath(result.node.id));
+    }),
+    
+    // 4. 两个出口：成功或失败
+    TE.fold(
+      error => TE.fromIO(() => toast.error("Failed")),
+      result => TE.fromIO(() => toast.success("Created"))
+    )
+  )();  // ← 只在这里执行
+};
+```
+
+### 类型对照表
+
+| 类型 | 同步/异步 | 有无错误 | 用途 |
+|------|----------|---------|------|
+| `IO<A>` | 同步 | 无 | 同步副作用（toast, setState） |
+| `IOEither<E, A>` | 同步 | 有 | 同步副作用 + 可能失败 |
+| `Task<A>` | 异步 | 无 | 异步操作（永不失败） |
+| `TaskEither<E, A>` | 异步 | 有 | 异步操作 + 可能失败（DB, API） |
+
+### 禁止的模式
+
+```typescript
+// ❌ 禁止：async/await 顺序执行
+const handleClick = async () => {
+  try {
+    const a = await stepA();
+    const b = await stepB(a);
+    toast.success("Done");
+  } catch (e) {
+    toast.error("Failed");
+  }
+};
+
+// ❌ 禁止：Promise.then 链
+stepA()
+  .then(a => stepB(a))
+  .then(b => stepC(b))
+  .then(() => toast.success("Done"))
+  .catch(() => toast.error("Failed"));
+
+// ✅ 正确：TaskEither + chain + fold
+pipe(
+  stepA,
+  TE.chain(a => stepB(a)),
+  TE.chain(b => stepC(b)),
+  TE.fold(
+    () => TE.fromIO(() => toast.error("Failed")),
+    () => TE.fromIO(() => toast.success("Done"))
+  )
+)();
+```
