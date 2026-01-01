@@ -1,10 +1,13 @@
 // 命令面板 - 快速访问所有功能（容器组件）
 
 import { useNavigate } from "@tanstack/react-router";
+import * as E from "fp-ts/Either";
+import { pipe } from "fp-ts/function";
+import * as TE from "fp-ts/TaskEither";
 import { Download, Moon, PenTool, Search, Settings, Sun } from "lucide-react";
 import { memo, useMemo } from "react";
 import { openFile } from "@/actions";
-import { createExcalidrawCompatAsync } from "@/actions/templated";
+import { createExcalidraw } from "@/actions/templated";
 import { exportDialogManager } from "@/components/export-dialog-manager";
 import { useTheme } from "@/hooks/use-theme";
 import type { TabType } from "@/types/editor-tab";
@@ -55,28 +58,51 @@ export const CommandPaletteContainer = memo(
 						{
 							label: "Create Excalidraw Drawing",
 							icon: <PenTool className="size-4" />,
-							onSelect: async () => {
+							onSelect: () => {
 								if (!selectedWorkspaceId) {
 									return;
 								}
 								onOpenChange(false);
-								try {
-									const result = await createExcalidrawCompatAsync({
+
+								// 使用 TaskEither + chain 确保时序正确性
+								const task = pipe(
+									// 1. 创建 Excalidraw 文件
+									createExcalidraw({
 										workspaceId: selectedWorkspaceId,
-										date: new Date(),
-									});
-									// 使用 openFile action 打开新创建的 Excalidraw 文件（通过队列执行）
-									await openFile({
-										workspaceId: selectedWorkspaceId,
-										nodeId: result.node.id,
-										title: result.node.title,
-										type: result.node.type as TabType,
-									});
-									// 导航到主工作区
-									navigate({ to: "/" });
-								} catch (error) {
-									console.error("Failed to create Excalidraw drawing:", error);
-								}
+										templateParams: { date: new Date() },
+									}),
+									// 2. 成功后，打开文件
+									TE.chain((result) =>
+										pipe(
+											openFile({
+												workspaceId: selectedWorkspaceId,
+												nodeId: result.node.id,
+												title: result.node.title,
+												type: result.node.type as TabType,
+											}),
+											TE.map(() => result),
+										),
+									),
+									// 3. 成功后，导航到主工作区
+									TE.tap(() => {
+										navigate({ to: "/" });
+										return TE.right(undefined);
+									}),
+									// 4. 错误处理
+									TE.fold(
+										(error) => {
+											console.error(
+												"Failed to create Excalidraw drawing:",
+												error,
+											);
+											return TE.of(undefined as void);
+										},
+										() => TE.of(undefined as void),
+									),
+								);
+
+								// 执行 TaskEither
+								task();
 							},
 						},
 						{

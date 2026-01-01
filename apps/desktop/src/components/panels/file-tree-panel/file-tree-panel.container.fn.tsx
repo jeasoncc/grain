@@ -13,10 +13,10 @@ import { memo, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
 	createDiaryCompatAsync,
-	createFile,
+	createFileAsync,
 	deleteNode,
 	moveNode,
-	openFile,
+	openFileAsync,
 	renameNode,
 } from "@/actions";
 import { FileTree } from "@/components/file-tree";
@@ -71,11 +71,11 @@ export const FileTreePanelContainer = memo(
 				if (node.type === "folder") return;
 
 				if (workspaceId) {
-					// 使用 openFile action，内部处理：
+					// 使用 openFileAsync，内部处理：
 					// 1. 从 DB 加载内容
 					// 2. 创建 tab
 					// 3. 设置 editorState
-					await openFile({
+					await openFileAsync({
 						workspaceId,
 						nodeId,
 						title: node.title,
@@ -90,7 +90,7 @@ export const FileTreePanelContainer = memo(
 		);
 
 		// Handle folder creation
-		// 使用 createFile action 通过队列执行
+		// 使用 createFileAsync 通过队列执行
 		const handleCreateFolder = useCallback(
 			async (parentId: string | null) => {
 				if (!workspaceId) {
@@ -99,7 +99,7 @@ export const FileTreePanelContainer = memo(
 				}
 
 				try {
-					await createFile({
+					await createFileAsync({
 						workspaceId,
 						parentId,
 						type: "folder",
@@ -116,7 +116,7 @@ export const FileTreePanelContainer = memo(
 		);
 
 		// Handle file creation
-		// 使用 createFile action 通过队列执行
+		// 使用 createFileAsync 通过队列执行
 		const handleCreateFile = useCallback(
 			async (parentId: string | null, type: NodeType) => {
 				if (!workspaceId) {
@@ -131,7 +131,7 @@ export const FileTreePanelContainer = memo(
 							? JSON.stringify({ elements: [], appState: {}, files: {} })
 							: "";
 
-					const result = await createFile({
+					const result = await createFileAsync({
 						workspaceId,
 						parentId,
 						type,
@@ -141,7 +141,7 @@ export const FileTreePanelContainer = memo(
 
 					toast.success(`${type === "drawing" ? "Canvas" : "File"} created`);
 
-					// Auto-select the new file (createFile 已经打开了 tab)
+					// Auto-select the new file (createFileAsync 已经打开了 tab)
 					if (result && type !== "folder") {
 						setSelectedNodeId(result.node.id);
 						navigate({ to: "/" });

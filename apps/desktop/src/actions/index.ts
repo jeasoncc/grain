@@ -23,9 +23,11 @@
 
 export {
 	createFile,
+	createFileAsync,
 	type CreateFileParams,
 	type CreateFileResult,
 	openFile,
+	openFileAsync,
 	type OpenFileParams,
 	type OpenFileResult,
 } from "./file";

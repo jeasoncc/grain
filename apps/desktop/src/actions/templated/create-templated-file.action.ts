@@ -218,35 +218,26 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 						[config.rootFolder, ...folderPath],
 						config.foldersCollapsed ?? true,
 					),
-					// 5.2 通过 createFile action 创建文件（通过队列串行执行）
+					// 5.2 成功后，通过 createFile action 创建文件（通过队列串行执行）
 					TE.chain((parentFolder) =>
-						TE.tryCatch(
-							async () => {
-								const result = await createFile({
-									workspaceId: params.workspaceId,
-									parentId: parentFolder.id,
-									title,
-									type: config.fileType,
-									content,
-									tags: [config.tag],
-									collapsed: true,
-								});
-								if (!result) {
-									throw new Error("createFile 返回 undefined");
-								}
-								return result;
-							},
-							(error): AppError => ({
-								type: "DB_ERROR",
-								message: `创建文件失败: ${error instanceof Error ? error.message : String(error)}`,
+						pipe(
+							createFile({
+								workspaceId: params.workspaceId,
+								parentId: parentFolder.id,
+								title,
+								type: config.fileType,
+								content,
+								tags: [config.tag],
+								collapsed: true,
 							}),
+							// 5.3 成功后，组装返回结果
+							TE.map((result) => ({
+								node: result.node,
+								content,
+								parsedContent,
+							})),
 						),
 					),
-					TE.map((result) => ({
-						node: result.node,
-						content,
-						parsedContent,
-					})),
 				),
 			),
 			// 6. 记录成功日志
