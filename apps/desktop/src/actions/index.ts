@@ -18,6 +18,21 @@
  */
 
 // ==============================
+// File Actions (文件操作队列)
+// ==============================
+
+export {
+	createFile,
+	createFileAsync,
+	type CreateFileParams,
+	type CreateFileResult,
+	openFile,
+	openFileAsync,
+	type OpenFileParams,
+	type OpenFileResult,
+} from "./file";
+
+// ==============================
 // Export Actions
 // ==============================
 

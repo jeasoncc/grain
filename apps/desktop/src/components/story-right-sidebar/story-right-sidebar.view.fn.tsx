@@ -82,11 +82,18 @@ export const StoryRightSidebarView = memo(
 						return (
 							<Tooltip key={tab.id}>
 								<TooltipTrigger asChild>
-									<button
-										type="button"
+									<div
+										role="button"
+										tabIndex={0}
 										onClick={() => onSetActiveTab(tab.id)}
+										onKeyDown={(e) => {
+											if (e.key === "Enter" || e.key === " ") {
+												e.preventDefault();
+												onSetActiveTab(tab.id);
+											}
+										}}
 										className={cn(
-											"group w-full flex items-center gap-2.5 px-2.5 py-1 text-sm rounded-md transition-all duration-200",
+											"group w-full flex items-center gap-2.5 px-2.5 py-1 text-sm rounded-md transition-all duration-200 cursor-pointer",
 											isActive
 												? "bg-primary/10 text-primary font-medium shadow-sm scale-[1.02]"
 												: "text-muted-foreground/60 hover:text-foreground hover:bg-muted/60",
@@ -121,9 +128,8 @@ export const StoryRightSidebarView = memo(
 											)}
 											{tab.title}
 										</span>
-										<span
-											role="button"
-											tabIndex={0}
+										<button
+											type="button"
 											className={cn(
 												"flex items-center justify-center size-5 rounded-full transition-all",
 												"opacity-0 group-hover:opacity-100 hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground",
@@ -142,8 +148,8 @@ export const StoryRightSidebarView = memo(
 											}}
 										>
 											<X className="size-3" />
-										</span>
-									</button>
+										</button>
+									</div>
 								</TooltipTrigger>
 								<TooltipContent side="left" className="text-xs">
 									{tab.title}

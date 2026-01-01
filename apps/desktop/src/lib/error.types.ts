@@ -20,7 +20,8 @@ export type AppError =
 	| { type: "NOT_FOUND"; message: string; id?: string }
 	| { type: "CYCLE_ERROR"; message: string }
 	| { type: "EXPORT_ERROR"; message: string }
-	| { type: "IMPORT_ERROR"; message: string };
+	| { type: "IMPORT_ERROR"; message: string }
+	| { type: "UNKNOWN_ERROR"; message: string };
 
 /**
  * 错误类型枚举，用于类型安全的错误创建
@@ -32,6 +33,7 @@ export const ErrorType = {
 	CYCLE_ERROR: "CYCLE_ERROR",
 	EXPORT_ERROR: "EXPORT_ERROR",
 	IMPORT_ERROR: "IMPORT_ERROR",
+	UNKNOWN_ERROR: "UNKNOWN_ERROR",
 } as const;
 
 // ============================================================================
@@ -133,5 +135,22 @@ export const exportError = (message: string): AppError => ({
  */
 export const importError = (message: string): AppError => ({
 	type: "IMPORT_ERROR",
+	message,
+});
+
+
+/**
+ * 判断是否为未知错误
+ */
+export const isUnknownError = (
+	e: AppError,
+): e is { type: "UNKNOWN_ERROR"; message: string } =>
+	e.type === "UNKNOWN_ERROR";
+
+/**
+ * 创建未知错误
+ */
+export const unknownError = (message: string): AppError => ({
+	type: "UNKNOWN_ERROR",
 	message,
 });

@@ -14,6 +14,7 @@ import type { SerializedEditorState } from "lexical";
 import type React from "react";
 import { useCallback, useMemo } from "react";
 
+import type { FoldIconStyle } from "../config/fold-icon-config";
 import type { EditorTab, EditorInstanceState } from "../types";
 import { EditorInstance, type EditorInstanceProps } from "./EditorInstance";
 
@@ -42,6 +43,8 @@ export interface MultiEditorContainerProps {
   useWikiHoverPreview?: EditorInstanceProps["useWikiHoverPreview"];
   /** Wiki 悬浮预览组件 */
   WikiHoverPreview?: EditorInstanceProps["WikiHoverPreview"];
+  /** 标题折叠图标风格 */
+  foldIconStyle?: FoldIconStyle;
 }
 
 /**
@@ -67,6 +70,7 @@ export function MultiEditorContainer({
   wikiEntries,
   useWikiHoverPreview,
   WikiHoverPreview,
+  foldIconStyle,
 }: MultiEditorContainerProps): React.ReactElement {
   // Support both new and deprecated prop names
   const entries = mentionEntries ?? wikiEntries;
@@ -145,6 +149,7 @@ export function MultiEditorContainer({
           mentionEntries={entries}
           useWikiHoverPreview={useWikiHoverPreview}
           WikiHoverPreview={WikiHoverPreview}
+          foldIconStyle={foldIconStyle}
         />
       );
     });
@@ -160,6 +165,7 @@ export function MultiEditorContainer({
     entries,
     useWikiHoverPreview,
     WikiHoverPreview,
+    foldIconStyle,
   ]);
 
   // 如果没有打开的标签，显示空状态

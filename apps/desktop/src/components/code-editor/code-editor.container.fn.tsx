@@ -7,7 +7,7 @@
  * 支持 Ctrl+S 快捷键立即保存。
  *
  * 数据流（保存）：
- * Editor → useUnifiedSave → UnifiedSaveService → DB → Tab.isDirty → SaveStore → UI 反馈
+ * Editor → useUnifiedSave → SaveServiceManager → DB → Tab.isDirty → SaveStore → UI 反馈
  *
  * @requirements 5.2, 5.3, 5.5
  */
@@ -15,13 +15,13 @@
 import { CodeEditorView } from "@grain/code-editor";
 import * as E from "fp-ts/Either";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 
 import { getContentByNodeId } from "@/db";
 import { getMonacoLanguage } from "@/fn/editor";
 import { getEditorThemeColors } from "@/fn/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useUnifiedSave } from "@/hooks/use-unified-save";
+import { saveServiceManager } from "@/lib/save-service-manager";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
@@ -82,20 +82,18 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 	// 统一保存逻辑（使用 useUnifiedSave hook）
 	// ==============================
 
-	const { updateContent, saveNow, hasUnsavedChanges, setInitialContent } =
-		useUnifiedSave({
-			nodeId,
-			contentType: "text",
-			tabId: activeTabId ?? undefined,
-			registerShortcut: false, // CodeEditor 有自己的快捷键处理（Monaco 内置）
-			onSaveSuccess: () => {
-				logger.success("[CodeEditor] 内容保存成功");
-			},
-			onSaveError: (error) => {
-				logger.error("[CodeEditor] 保存内容失败:", error);
-				toast.error("Failed to save code");
-			},
-		});
+	const { updateContent, saveNow, setInitialContent } = useUnifiedSave({
+		nodeId,
+		contentType: "text",
+		tabId: activeTabId ?? undefined,
+		registerShortcut: false, // CodeEditor 有自己的快捷键处理（Monaco 内置）
+		onSaveSuccess: () => {
+			logger.success("[CodeEditor] 内容保存成功");
+		},
+		onSaveError: (error) => {
+			logger.error("[CodeEditor] 保存内容失败:", error);
+		},
+	});
 
 	// ==============================
 	// 加载内容
@@ -105,6 +103,16 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 		const loadContent = async () => {
 			logger.info("[CodeEditor] 加载内容:", nodeId);
 
+			// 检查是否有待保存的内容（单例模式下，model 可能已存在）
+			const pendingContent = saveServiceManager.getPendingContent(nodeId);
+			if (pendingContent !== null) {
+				logger.info("[CodeEditor] 使用待保存的内容");
+				setCode(pendingContent);
+				setIsInitialized(true);
+				return;
+			}
+
+			// 从数据库加载内容
 			const result = await getContentByNodeId(nodeId)();
 
 			if (E.isRight(result)) {
@@ -118,7 +126,6 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 				}
 			} else {
 				logger.error("[CodeEditor] 加载内容失败:", result.left);
-				toast.error("Failed to load code content");
 			}
 
 			setIsInitialized(true);
@@ -138,19 +145,6 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 		},
 		[updateContent],
 	);
-
-	/**
-	 * 手动保存处理器 (Ctrl+S)
-	 */
-	const handleManualSave = useCallback(async () => {
-		if (!hasUnsavedChanges()) {
-			toast.info("No changes to save");
-			return;
-		}
-
-		logger.info("[CodeEditor] 手动保存触发");
-		await saveNow();
-	}, [hasUnsavedChanges, saveNow]);
 
 	// ==============================
 	// 语言检测
@@ -183,7 +177,7 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 				theme={isDark ? "dark" : "light"}
 				themeColors={themeColors}
 				onCodeChange={handleCodeChange}
-				onSave={handleManualSave}
+				onSave={saveNow}
 			/>
 		</div>
 	);

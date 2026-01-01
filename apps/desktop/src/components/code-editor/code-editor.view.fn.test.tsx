@@ -14,7 +14,7 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Theme, ThemeColors } from "@/lib/themes";
-import type { CodeEditorViewProps, CodeLanguage } from "./code-editor.types";
+import type { CodeEditorViewProps, MonacoLanguage } from "./code-editor.types";
 import { CodeEditorView } from "./code-editor.view.fn";
 
 // ============================================================================
@@ -124,7 +124,7 @@ function createDefaultProps(
 ): CodeEditorViewProps {
 	return {
 		value: overrides.value ?? "",
-		language: overrides.language ?? "mermaid",
+		language: overrides.language ?? "json",
 		theme: overrides.theme, // Theme 对象或 undefined
 		onChange: overrides.onChange ?? vi.fn(),
 		onSave: overrides.onSave ?? vi.fn(),
@@ -170,13 +170,13 @@ describe("CodeEditorView", () => {
 	});
 
 	describe("语言支持", () => {
-		const languages: CodeLanguage[] = [
-			"plantuml",
-			"mermaid",
+		const languages: MonacoLanguage[] = [
 			"json",
 			"markdown",
 			"javascript",
 			"typescript",
+			"python",
+			"yaml",
 		];
 
 		it.each(languages)("should render with %s language", (language) => {
@@ -187,20 +187,20 @@ describe("CodeEditorView", () => {
 			expect(editor).toHaveAttribute("data-language", language);
 		});
 
-		it("should pass mermaid language to monaco", () => {
-			const props = createDefaultProps({ language: "mermaid" });
+		it("should pass json language to monaco", () => {
+			const props = createDefaultProps({ language: "json" });
 			render(<CodeEditorView {...props} />);
 
 			const editor = screen.getByTestId("monaco-editor");
-			expect(editor).toHaveAttribute("data-language", "mermaid");
+			expect(editor).toHaveAttribute("data-language", "json");
 		});
 
-		it("should pass plantuml language to monaco", () => {
-			const props = createDefaultProps({ language: "plantuml" });
+		it("should pass markdown language to monaco", () => {
+			const props = createDefaultProps({ language: "markdown" });
 			render(<CodeEditorView {...props} />);
 
 			const editor = screen.getByTestId("monaco-editor");
-			expect(editor).toHaveAttribute("data-language", "plantuml");
+			expect(editor).toHaveAttribute("data-language", "markdown");
 		});
 	});
 
@@ -388,7 +388,7 @@ describe("CodeEditorView", () => {
 			// 创建不带 readOnly 的 props
 			const props: CodeEditorViewProps = {
 				value: "",
-				language: "mermaid",
+				language: "json",
 				theme: lightTheme,
 				onChange: vi.fn(),
 				onSave: vi.fn(),

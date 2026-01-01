@@ -4,14 +4,15 @@
  *
  * 路由编排层：连接数据和展示组件
  *
+ * 内容加载已在 openFile action 中处理，此组件只负责渲染。
+ *
  * @see Requirements 1.4, 3.1, 4.1, 6.4
  */
 
 import { type MentionEntry, MultiEditorContainer } from "@grain/editor";
-import * as E from "fp-ts/Either";
 import type { SerializedEditorState } from "lexical";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo } from "react";
 import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-preview-connected";
 import { CodeEditorContainer } from "@/components/code-editor";
 import { DiagramEditorContainer } from "@/components/diagram-editor";
@@ -29,7 +30,6 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { WordCountBadge } from "@/components/word-count-badge";
-import { getContentByNodeId } from "@/db";
 import {
 	type EditorType,
 	getDiagramTypeByFilename,
@@ -41,8 +41,8 @@ import { useUnifiedSave } from "@/hooks/use-unified-save";
 import { useWikiFiles } from "@/hooks/use-wiki";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
 import logger from "@/log";
+import { useEditorSettingsStore } from "@/stores/editor-settings.store";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
-import { useSaveStore } from "@/stores/save.store";
 import { useSelectionStore } from "@/stores/selection.store";
 import { useUIStore } from "@/stores/ui.store";
 import type { StoryWorkspaceContainerProps } from "./story-workspace.types";
@@ -57,8 +57,8 @@ export const StoryWorkspaceContainer = memo(
 
 		const { wordCountMode, showWordCountBadge } = useSettings();
 
-		const [editorInitialState, setEditorInitialState] =
-			useState<SerializedEditorState>();
+		// 编辑器设置
+		const foldIconStyle = useEditorSettingsStore((s) => s.foldIconStyle);
 
 		// UI 状态
 		const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen);
@@ -89,15 +89,6 @@ export const StoryWorkspaceContainer = memo(
 		const editorStates = useEditorTabsStore((s) => s.editorStates);
 		const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
 
-		// 保存状态管理（用于 UI 显示）
-		const {
-			status: saveStatus,
-			lastSaveTime,
-			errorMessage,
-			hasUnsavedChanges,
-			isManualSaving,
-		} = useSaveStore();
-
 		// 获取当前活动标签（提前定义，供 useUnifiedSave 使用）
 		const activeTab = tabs.find((t) => t.id === activeTabId);
 
@@ -125,37 +116,12 @@ export const StoryWorkspaceContainer = memo(
 			}
 		}, [selectedWorkspaceId, initialWorkspaceId, setSelectedWorkspaceId]);
 
-		// 当标签切换时，加载节点内容
-		// 使用 allTabs 而不是过滤后的 tabs，确保能找到活动标签
-		useEffect(() => {
-			if (!activeTabId) return;
-			const activeTab = allTabs.find((t) => t.id === activeTabId);
-			if (!activeTab) return;
-
-			// 检查是否已经有编辑器状态
-			const existingState = editorStates[activeTabId];
-			if (existingState?.serializedState) {
-				return;
-			}
-
-			// 加载节点内容
-			if (activeTab.nodeId) {
-				getContentByNodeId(activeTab.nodeId)().then((result) => {
-					if (E.isRight(result) && result.right) {
-						const content = result.right.content;
-						try {
-							const parsed = JSON.parse(content);
-							setEditorInitialState(parsed);
-							updateEditorState(activeTabId, { serializedState: parsed });
-						} catch {
-							setEditorInitialState(undefined);
-						}
-					} else {
-						setEditorInitialState(undefined);
-					}
-				});
-			}
-		}, [activeTabId, allTabs, editorStates, updateEditorState]);
+		// 注意：内容加载已在 openFile action 中处理
+		// 当用户点击文件时，openFile 会：
+		// 1. 从 DB 加载内容
+		// 2. 创建 tab
+		// 3. 设置 editorState
+		// 因此这里不需要额外的内容加载逻辑
 
 		// 根据文件名扩展名确定编辑器类型
 		const editorType: EditorType = useMemo(() => {
@@ -300,6 +266,7 @@ export const StoryWorkspaceContainer = memo(
 						mentionEntries={mentionEntries}
 						useWikiHoverPreview={useWikiHoverPreview}
 						WikiHoverPreview={WikiHoverPreviewConnected}
+						foldIconStyle={foldIconStyle}
 					/>
 				</div>
 			);
@@ -312,13 +279,7 @@ export const StoryWorkspaceContainer = memo(
 						{/* 顶部工具栏 */}
 						<div className="flex h-12 items-center justify-between px-4 shrink-0">
 							<div className="flex items-center gap-2">
-								<SaveStatusIndicator
-									status={saveStatus}
-									lastSaveTime={lastSaveTime}
-									errorMessage={errorMessage}
-									hasUnsavedChanges={hasUnsavedChanges}
-									isManualSaving={isManualSaving}
-								/>
+								<SaveStatusIndicator />
 							</div>
 
 							<div className="flex items-center gap-1">

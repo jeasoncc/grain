@@ -286,9 +286,6 @@ function VisitorsPage() {
 	const browsers = Array.from(
 		new Set(visitors.map((v) => v.browser).filter(Boolean)),
 	);
-	const devices = Array.from(
-		new Set(visitors.map((v) => v.device).filter(Boolean)),
-	);
 
 	return (
 		<Layout>

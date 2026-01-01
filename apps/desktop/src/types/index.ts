@@ -59,3 +59,5 @@ export * from "./theme";
 export * from "./ui";
 // Writing 类型模块
 export * from "./writing";
+// Editor Settings 类型模块
+export * from "./editor-settings";

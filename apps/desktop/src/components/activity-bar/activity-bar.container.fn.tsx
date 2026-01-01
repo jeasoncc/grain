@@ -8,32 +8,36 @@
 
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import * as E from "fp-ts/Either";
-import type { SerializedEditorState } from "lexical";
+import { pipe } from "fp-ts/function";
+import * as TE from "fp-ts/TaskEither";
 import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { createCodeCompatAsync } from "@/actions/templated/create-code.action";
+import { openFile } from "@/actions";
 import {
-	createDiaryCompatAsync,
-	createLedgerCompatAsync,
-	createNoteCompatAsync,
-	createTodoCompatAsync,
-	createWikiCompatAsync,
+	createDiary,
+	createLedger,
+	createNote,
+	createTodo,
+	createWiki,
 } from "@/actions/templated/create-date-template.action";
-import { createExcalidrawCompatAsync } from "@/actions/templated/create-excalidraw.action";
-import { createMermaidCompatAsync } from "@/actions/templated/create-mermaid.action";
-import { createPlantUMLCompatAsync } from "@/actions/templated/create-plantuml.action";
+import { createCode } from "@/actions/templated/create-code.action";
+import { createExcalidraw } from "@/actions/templated/create-excalidraw.action";
+import { createMermaid } from "@/actions/templated/create-mermaid.action";
+import { createPlantUML } from "@/actions/templated/create-plantuml.action";
 import type { TemplatedFileResult } from "@/actions/templated/create-templated-file.action";
 import { ExportDialog } from "@/components/export-dialog";
 import { useConfirm } from "@/components/ui/confirm";
 import { addWorkspace, clearAllData, touchWorkspace } from "@/db";
 import { calculateExpandedFoldersForNode } from "@/fn/node";
+import type { AppError } from "@/lib/error.types";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useNodesByWorkspace } from "@/hooks/use-node";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
-import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSelectionStore } from "@/stores/selection.store";
 import { useSidebarStore } from "@/stores/sidebar.store";
+import type { TabType } from "@/types/editor-tab";
+import type { NodeInterface } from "@/types/node";
 import type { WorkspaceInterface } from "@/types/workspace";
 
 import { ActivityBarView } from "./activity-bar.view.fn";
@@ -43,21 +47,25 @@ import { ActivityBarView } from "./activity-bar.view.fn";
 // ==============================
 
 /**
- * 模板文件创建函数类型
+ * 模板文件创建函数类型（TaskEither 版本）
+ *
+ * 接收工作区 ID 和日期，返回 TaskEither
  */
 type TemplateCreator = (params: {
 	workspaceId: string;
-	date: Date;
-}) => Promise<TemplatedFileResult>;
+	templateParams: { date: Date };
+}) => TE.TaskEither<AppError, TemplatedFileResult>;
 
 /**
  * 创建模板文件的选项
  */
 interface CreateTemplateOptions {
+	/** 模板创建函数（TaskEither 版本） */
 	readonly creator: TemplateCreator;
+	/** 成功消息 */
 	readonly successMessage: string;
+	/** 错误消息 */
 	readonly errorMessage: string;
-	readonly preloadContent?: boolean;
 }
 
 /**
@@ -199,83 +207,87 @@ export function ActivityBarContainer(): React.ReactElement {
 		[setSelectedWorkspaceId],
 	);
 
-	const openTab = useEditorTabsStore((s) => s.openTab);
-	const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
-
 	/**
-	 * 通用的模板文件创建处理函数
+	 * 通用的模板文件创建处理函数（高阶函数）
 	 *
-	 * 消除 handleCreateDiary/Wiki/Todo/Note/Ledger 的重复代码。
-	 * 创建文件后：
-	 * 1. 打开新标签页
-	 * 2. 预加载编辑器内容（可选）
-	 * 3. 选中新文件
-	 * 4. 展开文件路径，关闭其他文件夹
-	 * 5. 导航到主页面
+	 * 使用 TaskEither + chain 确保时序正确性：
+	 * 1. 创建文件 → 成功后
+	 * 2. 打开文件 → 成功后
+	 * 3. 更新 UI 状态（选中、展开、导航）
+	 *
+	 * 只有每一步成功，才会执行下一步。
 	 */
 	const handleCreateTemplate = useCallback(
-		async (options: CreateTemplateOptions) => {
+		(options: CreateTemplateOptions) => {
 			if (!selectedWorkspaceId) {
 				toast.error("Please select a workspace first");
 				return;
 			}
 
-			const {
-				creator,
-				successMessage,
-				errorMessage,
-				preloadContent = true,
-			} = options;
+			const { creator, successMessage, errorMessage } = options;
 
-			try {
-				const result = await creator({
+			// 构建 TaskEither 管道
+			const task = pipe(
+				// 1. 创建模板文件
+				creator({
 					workspaceId: selectedWorkspaceId,
-					date: new Date(),
-				});
+					templateParams: { date: new Date() },
+				}),
+				// 2. 成功后，打开文件（通过队列执行）
+				TE.chain((result) =>
+					pipe(
+						openFile({
+							workspaceId: selectedWorkspaceId,
+							nodeId: result.node.id,
+							title: result.node.title,
+							type: result.node.type as TabType,
+						}),
+						// 保留 result 用于后续处理
+						TE.map(() => result),
+					),
+				),
+				// 3. 成功后，更新 UI 状态（副作用，不改变值）
+				TE.tap((result) => {
+					// 在文件树中选中新创建的文件
+					setSelectedNodeId(result.node.id);
 
-				// 1. 打开新创建的文件标签页
-				openTab({
-					workspaceId: selectedWorkspaceId,
-					nodeId: result.node.id,
-					title: result.node.title,
-					// 模板创建的文件永远不会是 folder，安全断言为 TabType
-					type: result.node.type as Exclude<typeof result.node.type, "folder">,
-				});
+					// 展开文件路径，关闭其他文件夹
+					if (nodes) {
+						const expandedFolders = calculateExpandedFoldersForNode(
+							nodes,
+							result.node.id,
+						);
+						setExpandedFolders(expandedFolders);
+					}
 
-				// 2. 预加载内容到编辑器状态（Excalidraw 不需要）
-				if (preloadContent && result.parsedContent) {
-					updateEditorState(result.node.id, {
-						serializedState: result.parsedContent as SerializedEditorState,
-					});
-				}
+					// 导航到主页面（如果当前不在主页面）
+					if (location.pathname !== "/") {
+						navigate({ to: "/" });
+					}
 
-				// 3. 在文件树中选中新创建的文件
-				setSelectedNodeId(result.node.id);
+					return TE.right(result);
+				}),
+				// 4. 最终处理：成功或失败
+				TE.fold(
+					// 失败分支
+					(error) => {
+						console.error("Failed to create template:", error);
+						toast.error(errorMessage);
+						return TE.of(undefined as void);
+					},
+					// 成功分支
+					() => {
+						toast.success(successMessage);
+						return TE.of(undefined as void);
+					},
+				),
+			);
 
-				// 4. 展开文件路径，关闭其他文件夹
-				if (nodes) {
-					const expandedFolders = calculateExpandedFoldersForNode(
-						nodes,
-						result.node.id,
-					);
-					setExpandedFolders(expandedFolders);
-				}
-
-				// 5. 导航到主页面（如果当前不在主页面）
-				if (location.pathname !== "/") {
-					navigate({ to: "/" });
-				}
-
-				toast.success(successMessage);
-			} catch (error) {
-				console.error("Failed to create template:", error);
-				toast.error(errorMessage);
-			}
+			// 执行 TaskEither
+			task();
 		},
 		[
 			selectedWorkspaceId,
-			openTab,
-			updateEditorState,
 			setSelectedNodeId,
 			nodes,
 			setExpandedFolders,
@@ -287,7 +299,7 @@ export function ActivityBarContainer(): React.ReactElement {
 	const handleCreateDiary = useCallback(
 		() =>
 			handleCreateTemplate({
-				creator: createDiaryCompatAsync,
+				creator: createDiary,
 				successMessage: "Diary created",
 				errorMessage: "Failed to create diary",
 			}),
@@ -297,7 +309,7 @@ export function ActivityBarContainer(): React.ReactElement {
 	const handleCreateWiki = useCallback(
 		() =>
 			handleCreateTemplate({
-				creator: createWikiCompatAsync,
+				creator: createWiki,
 				successMessage: "Wiki created",
 				errorMessage: "Failed to create wiki",
 			}),
@@ -307,7 +319,7 @@ export function ActivityBarContainer(): React.ReactElement {
 	const handleCreateLedger = useCallback(
 		() =>
 			handleCreateTemplate({
-				creator: createLedgerCompatAsync,
+				creator: createLedger,
 				successMessage: "Ledger created",
 				errorMessage: "Failed to create ledger",
 			}),
@@ -317,7 +329,7 @@ export function ActivityBarContainer(): React.ReactElement {
 	const handleCreateTodo = useCallback(
 		() =>
 			handleCreateTemplate({
-				creator: createTodoCompatAsync,
+				creator: createTodo,
 				successMessage: "Todo created",
 				errorMessage: "Failed to create todo",
 			}),
@@ -327,7 +339,7 @@ export function ActivityBarContainer(): React.ReactElement {
 	const handleCreateNote = useCallback(
 		() =>
 			handleCreateTemplate({
-				creator: createNoteCompatAsync,
+				creator: createNote,
 				successMessage: "Note created",
 				errorMessage: "Failed to create note",
 			}),
@@ -337,10 +349,9 @@ export function ActivityBarContainer(): React.ReactElement {
 	const handleCreateExcalidraw = useCallback(
 		() =>
 			handleCreateTemplate({
-				creator: createExcalidrawCompatAsync,
+				creator: createExcalidraw,
 				successMessage: "Excalidraw created",
 				errorMessage: "Failed to create excalidraw",
-				preloadContent: false,
 			}),
 		[handleCreateTemplate],
 	);
@@ -348,10 +359,9 @@ export function ActivityBarContainer(): React.ReactElement {
 	const handleCreateMermaid = useCallback(
 		() =>
 			handleCreateTemplate({
-				creator: createMermaidCompatAsync,
+				creator: createMermaid,
 				successMessage: "Mermaid created",
 				errorMessage: "Failed to create mermaid",
-				preloadContent: false,
 			}),
 		[handleCreateTemplate],
 	);
@@ -359,10 +369,9 @@ export function ActivityBarContainer(): React.ReactElement {
 	const handleCreatePlantUML = useCallback(
 		() =>
 			handleCreateTemplate({
-				creator: createPlantUMLCompatAsync,
+				creator: createPlantUML,
 				successMessage: "PlantUML created",
 				errorMessage: "Failed to create plantuml",
-				preloadContent: false,
 			}),
 		[handleCreateTemplate],
 	);
@@ -370,10 +379,9 @@ export function ActivityBarContainer(): React.ReactElement {
 	const handleCreateCode = useCallback(
 		() =>
 			handleCreateTemplate({
-				creator: createCodeCompatAsync,
+				creator: createCode,
 				successMessage: "Code file created",
 				errorMessage: "Failed to create code file",
-				preloadContent: false,
 			}),
 		[handleCreateTemplate],
 	);

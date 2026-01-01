@@ -11,7 +11,7 @@
  * - PlantUML: 需要 Kroki 服务器渲染
  *
  * 数据流（保存）：
- * Editor → useUnifiedSave → UnifiedSaveService → DB → Tab.isDirty → SaveStore → UI 反馈
+ * Editor → useUnifiedSave → SaveServiceManager → DB → Tab.isDirty → SaveStore → UI 反馈
  *
  * @requirements 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 7.2, 8.1, 8.2, 8.3, 8.4, 8.5
  */
@@ -20,12 +20,12 @@ import type { DiagramError } from "@grain/diagram-editor";
 import { useNavigate } from "@tanstack/react-router";
 import * as E from "fp-ts/Either";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import { getContentByNodeId } from "@/db";
 import { initMermaid, isKrokiEnabled, renderDiagram } from "@/fn/diagram";
 import { getEditorThemeColors } from "@/fn/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useUnifiedSave } from "@/hooks/use-unified-save";
+import { saveServiceManager } from "@/lib/save-service-manager";
 import { cn } from "@/lib/utils";
 import logger from "@/log";
 import { useDiagramStore } from "@/stores/diagram.store";
@@ -120,24 +120,22 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 		codeRef.current = code;
 	}, [code]);
 
-	const { updateContent, saveNow, hasUnsavedChanges, setInitialContent } =
-		useUnifiedSave({
-			nodeId,
-			contentType: "text", // 图表内容使用 "text" 类型存储（纯文本 Mermaid/PlantUML 语法）
-			tabId: activeTabId ?? undefined, // 传递 tabId 用于同步 isDirty 状态
-			registerShortcut: false, // DiagramEditor 有自己的快捷键处理
-			onSaveSuccess: () => {
-				logger.success("[DiagramEditor] 内容保存成功");
-				// 保存成功后触发预览渲染
-				if (codeRef.current && canRenderPreview) {
-					updatePreview(codeRef.current);
-				}
-			},
-			onSaveError: (error) => {
-				logger.error("[DiagramEditor] 保存内容失败:", error);
-				toast.error("Failed to save diagram");
-			},
-		});
+	const { updateContent, saveNow, setInitialContent } = useUnifiedSave({
+		nodeId,
+		contentType: "text", // 图表内容使用 "text" 类型存储（纯文本 Mermaid/PlantUML 语法）
+		tabId: activeTabId ?? undefined, // 传递 tabId 用于同步 isDirty 状态
+		registerShortcut: false, // DiagramEditor 有自己的快捷键处理
+		onSaveSuccess: () => {
+			logger.success("[DiagramEditor] 内容保存成功");
+			// 保存成功后触发预览渲染
+			if (codeRef.current && canRenderPreview) {
+				updatePreview(codeRef.current);
+			}
+		},
+		onSaveError: (error) => {
+			logger.error("[DiagramEditor] 保存内容失败:", error);
+		},
+	});
 
 	// ==============================
 	// 加载内容
@@ -147,6 +145,16 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 		const loadContent = async () => {
 			logger.info("[DiagramEditor] 加载内容:", nodeId);
 
+			// 检查是否有待保存的内容（单例模式下，model 可能已存在）
+			const pendingContent = saveServiceManager.getPendingContent(nodeId);
+			if (pendingContent !== null) {
+				logger.info("[DiagramEditor] 使用待保存的内容");
+				setCode(pendingContent);
+				setIsInitialized(true);
+				return;
+			}
+
+			// 从数据库加载内容
 			const result = await getContentByNodeId(nodeId)();
 
 			if (E.isRight(result)) {
@@ -160,7 +168,6 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 				}
 			} else {
 				logger.error("[DiagramEditor] 加载内容失败:", result.left);
-				toast.error("Failed to load diagram content");
 			}
 
 			setIsInitialized(true);
@@ -227,11 +234,6 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 				setError(result.error);
 				setPreviewSvg(null);
 				logger.error("[DiagramEditor] 预览渲染失败:", result.error.message);
-
-				// 如果是网络或服务器错误，显示 toast
-				if (result.error.type === "network" || result.error.type === "server") {
-					toast.error("Failed to render diagram after multiple attempts");
-				}
 			}
 
 			setIsLoading(false);
@@ -262,21 +264,6 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 		},
 		[updateContent],
 	);
-
-	/**
-	 * 手动保存处理器 (Ctrl+S)
-	 * 使用 useUnifiedSave hook 的 saveNow 方法
-	 * 保存成功后会通过 onSaveSuccess 回调触发预览渲染
-	 */
-	const handleManualSave = useCallback(async () => {
-		if (!hasUnsavedChanges()) {
-			toast.info("No changes to save");
-			return;
-		}
-
-		logger.info("[DiagramEditor] 手动保存触发");
-		await saveNow();
-	}, [hasUnsavedChanges, saveNow]);
 
 	// ==============================
 	// 回调函数
@@ -329,7 +316,7 @@ export const DiagramEditorContainer = memo(function DiagramEditorContainer({
 				theme={isDark ? "dark" : "light"}
 				themeColors={themeColors}
 				onCodeChange={handleCodeChange}
-				onSave={handleManualSave}
+				onSave={saveNow}
 				onOpenSettings={handleOpenSettings}
 				onRetry={handleRetry}
 			/>

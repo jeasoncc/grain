@@ -9,19 +9,19 @@
 
 import { useNavigate } from "@tanstack/react-router";
 import * as E from "fp-ts/Either";
-import type { SerializedEditorState } from "lexical";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
 	createDiaryCompatAsync,
-	createNode,
+	createFileAsync,
 	deleteNode,
 	moveNode,
+	openFileAsync,
 	renameNode,
 } from "@/actions";
 import { FileTree } from "@/components/file-tree";
 import { useConfirm } from "@/components/ui/confirm";
-import { getContentByNodeId, getNodeById, setNodeCollapsed } from "@/db";
+import { getNodeById, setNodeCollapsed } from "@/db";
 import { useNodesByWorkspace } from "@/hooks/use-node";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSelectionStore } from "@/stores/selection.store";
@@ -56,12 +56,8 @@ export const FileTreePanelContainer = memo(
 		// 获取工作区节点数据
 		const nodes = useNodesByWorkspace(workspaceId) ?? [];
 
-		// Editor tabs
-		const openTab = useEditorTabsStore((s) => s.openTab);
-		const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
-		const editorStates = useEditorTabsStore((s) => s.editorStates);
-
 		// Handle node selection - open file in editor
+		// 使用 openFile action 通过队列执行，确保数据先于渲染
 		const handleSelectNode = useCallback(
 			async (nodeId: string) => {
 				setSelectedNodeId(nodeId);
@@ -75,47 +71,26 @@ export const FileTreePanelContainer = memo(
 				if (node.type === "folder") return;
 
 				if (workspaceId) {
-					// Pre-load content into editorStates if not already loaded
-					// This ensures the editor is initialized with the correct content
-					if (!editorStates[nodeId]?.serializedState) {
-						const contentResult = await getContentByNodeId(nodeId)();
-						if (E.isRight(contentResult) && contentResult.right) {
-							const content = contentResult.right.content;
-							if (content) {
-								try {
-									const parsed = JSON.parse(content);
-									updateEditorState(nodeId, { serializedState: parsed });
-								} catch {
-									// Ignore parse errors
-								}
-							}
-						}
-					}
-
-					// Map node type to editor tab type
-					const tabType = node.type === "diary" ? "diary" : node.type;
-					openTab({
-						workspaceId: workspaceId,
-						nodeId: nodeId,
+					// 使用 openFileAsync，内部处理：
+					// 1. 从 DB 加载内容
+					// 2. 创建 tab
+					// 3. 设置 editorState
+					await openFileAsync({
+						workspaceId,
+						nodeId,
 						title: node.title,
-						type: tabType,
+						type: node.type,
 					});
 				}
 
 				// Navigate to main workspace - all file types are handled there
 				navigate({ to: "/" });
 			},
-			[
-				workspaceId,
-				openTab,
-				navigate,
-				editorStates,
-				updateEditorState,
-				setSelectedNodeId,
-			],
+			[workspaceId, navigate, setSelectedNodeId],
 		);
 
 		// Handle folder creation
+		// 使用 createFileAsync 通过队列执行
 		const handleCreateFolder = useCallback(
 			async (parentId: string | null) => {
 				if (!workspaceId) {
@@ -124,20 +99,14 @@ export const FileTreePanelContainer = memo(
 				}
 
 				try {
-					const result = await createNode({
+					await createFileAsync({
 						workspaceId,
 						parentId,
 						type: "folder",
 						title: "New Folder",
-					})();
-
-					if (E.isLeft(result)) {
-						throw new Error(result.left.message);
-					}
+					});
 
 					toast.success("Folder created");
-					// Note: No need to setActivePanel here as we're already in FileTreePanel
-					// which only renders when activePanel === "files"
 				} catch (error) {
 					console.error("Failed to create folder:", error);
 					toast.error("Failed to create folder");
@@ -147,6 +116,7 @@ export const FileTreePanelContainer = memo(
 		);
 
 		// Handle file creation
+		// 使用 createFileAsync 通过队列执行
 		const handleCreateFile = useCallback(
 			async (parentId: string | null, type: NodeType) => {
 				if (!workspaceId) {
@@ -161,32 +131,27 @@ export const FileTreePanelContainer = memo(
 							? JSON.stringify({ elements: [], appState: {}, files: {} })
 							: "";
 
-					const newNodeResult = await createNode({
+					const result = await createFileAsync({
 						workspaceId,
 						parentId,
 						type,
 						title,
 						content,
-					})();
-
-					if (E.isLeft(newNodeResult)) {
-						throw new Error(newNodeResult.left.message);
-					}
-
-					const newNode = newNodeResult.right;
+					});
 
 					toast.success(`${type === "drawing" ? "Canvas" : "File"} created`);
 
-					// Auto-select and open the new file
-					if (newNode && type !== "folder") {
-						handleSelectNode(newNode.id);
+					// Auto-select the new file (createFileAsync 已经打开了 tab)
+					if (result && type !== "folder") {
+						setSelectedNodeId(result.node.id);
+						navigate({ to: "/" });
 					}
 				} catch (error) {
 					console.error("Failed to create file:", error);
 					toast.error("Failed to create file");
 				}
 			},
-			[workspaceId, handleSelectNode],
+			[workspaceId, setSelectedNodeId, navigate],
 		);
 
 		// Editor tabs for closing deleted files
@@ -284,6 +249,7 @@ export const FileTreePanelContainer = memo(
 
 		// Handle diary creation
 		// Requirements: 1.1, 1.5, 3.1
+		// 使用 createDiaryCompatAsync，内部已通过队列处理
 		const handleCreateDiary = useCallback(async () => {
 			if (!workspaceId) {
 				toast.error("Please select a workspace first");
@@ -291,25 +257,21 @@ export const FileTreePanelContainer = memo(
 			}
 
 			try {
-				// Create diary and get content in one call (avoids race condition)
-				const { node, parsedContent } = await createDiaryCompatAsync({
+				// Create diary and get content in one call
+				const { node } = await createDiaryCompatAsync({
 					workspaceId,
-				});
-
-				// Pre-load the diary content into editorStates BEFORE opening the tab
-				updateEditorState(node.id, {
-					serializedState: parsedContent as SerializedEditorState,
 				});
 
 				toast.success("Diary created");
 
-				// Auto-select and open the new diary file
-				handleSelectNode(node.id);
+				// Auto-select the new diary file
+				setSelectedNodeId(node.id);
+				navigate({ to: "/" });
 			} catch (error) {
 				console.error("Failed to create diary:", error);
 				toast.error("Failed to create diary");
 			}
-		}, [workspaceId, handleSelectNode, updateEditorState]);
+		}, [workspaceId, setSelectedNodeId, navigate]);
 
 		// Handle toggle collapsed state
 		// Requirements: 2.2
