@@ -12,7 +12,7 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { addWorkspace } from "@/db/workspace.db.fn";
+import * as workspaceRepo from "@/repo/workspace.repo.fn";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
 import type { WorkspaceInterface } from "@/types/workspace";
@@ -41,6 +41,7 @@ export interface CreateWorkspaceParams {
  * 创建新工作区
  *
  * 创建一个新的工作区，支持设置可选的元数据。
+ * 使用 Repository 层访问数据，通过 Rust 后端持久化。
  *
  * @param params - 创建工作区参数
  * @returns TaskEither<AppError, WorkspaceInterface>
@@ -51,7 +52,8 @@ export const createWorkspace = (
 	logger.start("[Action] 创建工作区...");
 
 	return pipe(
-		addWorkspace(params.title, {
+		workspaceRepo.createWorkspace({
+			title: params.title,
 			author: params.author,
 			description: params.description,
 			publisher: params.publisher,

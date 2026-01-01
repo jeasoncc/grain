@@ -11,133 +11,133 @@
 
 ## 阶段 1: Rust API 补充
 
-### 任务 1.1: 添加节点查询 API
-- [ ] 实现 `get_root_nodes` - 获取工作区根节点
-- [ ] 实现 `get_nodes_by_parent` - 按父节点获取子节点
-- [ ] 实现 `get_nodes_by_type` - 按类型获取节点
-- [ ] 实现 `get_descendants` - 获取节点所有后代
-- [ ] 添加对应的 Service 层函数
-- [ ] 注册到 Tauri commands
+### 任务 1.1: 添加节点查询 API ✅
+- [x] 实现 `get_root_nodes` - 获取工作区根节点
+- [x] 实现 `get_nodes_by_parent` - 按父节点获取子节点
+- [x] 实现 `get_nodes_by_type` - 按类型获取节点
+- [x] 实现 `get_descendants` - 获取节点所有后代
+- [x] 添加对应的 Service 层函数
+- [x] 注册到 Tauri commands
 - _Requirements: 1.1, 1.2, 1.3, 1.8_
 
-### 任务 1.2: 添加节点操作 API
-- [ ] 实现 `get_next_sort_order` - 获取下一个排序号
-- [ ] 实现 `reorder_nodes` - 批量重排序节点
-- [ ] 实现 `delete_nodes_batch` - 批量删除节点（含级联删除）
-- [ ] 添加对应的 Service 层函数
-- [ ] 注册到 Tauri commands
+### 任务 1.2: 添加节点操作 API ✅
+- [x] 实现 `get_next_sort_order` - 获取下一个排序号
+- [x] 实现 `reorder_nodes` - 批量重排序节点
+- [x] 实现 `delete_nodes_batch` - 批量删除节点（含级联删除）
+- [x] 添加对应的 Service 层函数
+- [x] 注册到 Tauri commands
 - _Requirements: 1.4, 1.5, 1.6, 1.7, 1.9_
 
-### 任务 1.3: 更新前端 Rust API 封装
-- [ ] 在 `rust-api.ts` 添加新 API 类型定义（后端类型）
-- [ ] 在 `rust-api.fn.ts` 添加新 API 调用函数（返回 TaskEither）
+### 任务 1.3: 更新前端 Rust API 封装 ✅
+- [x] 在 `rust-api.ts` 添加新 API 类型定义（后端类型）
+- [x] 在 `rust-api.fn.ts` 添加新 API 调用函数（返回 TaskEither）
 - [ ] 添加单元测试
 - _Requirements: 1.1-1.9_
 
-## 阶段 2: Codec 层创建
+## 阶段 2: Codec 层创建 ✅
 
-### 任务 2.1: 创建 Node Codec
-- [ ] 创建 `src/types/codec/node.codec.ts`
-- [ ] 实现 `decodeNode` - NodeResponse → NodeInterface
-- [ ] 实现 `decodeNodes` - 批量解码
-- [ ] 实现 `encodeCreateNode` - NodeInterface → CreateNodeRequest
-- [ ] 实现 `encodeUpdateNode` - NodeInterface → UpdateNodeRequest
+### 任务 2.1: 创建 Node Codec ✅
+- [x] 创建 `src/types/codec/node.codec.ts`
+- [x] 实现 `decodeNode` - NodeResponse → NodeInterface
+- [x] 实现 `decodeNodes` - 批量解码
+- [x] 实现 `encodeCreateNode` - NodeInterface → CreateNodeRequest
+- [x] 实现 `encodeUpdateNode` - NodeInterface → UpdateNodeRequest
 - [ ] 添加单元测试
 - _Requirements: 7.1_
 
-### 任务 2.2: 创建 Workspace Codec
-- [ ] 创建 `src/types/codec/workspace.codec.ts`
-- [ ] 实现 `decodeWorkspace` - WorkspaceResponse → WorkspaceInterface
-- [ ] 实现 `decodeWorkspaces` - 批量解码
-- [ ] 实现 `encodeCreateWorkspace` - WorkspaceInterface → CreateWorkspaceRequest
-- [ ] 实现 `encodeUpdateWorkspace` - WorkspaceInterface → UpdateWorkspaceRequest
+### 任务 2.2: 创建 Workspace Codec ✅
+- [x] 创建 `src/types/codec/workspace.codec.ts`
+- [x] 实现 `decodeWorkspace` - WorkspaceResponse → WorkspaceInterface
+- [x] 实现 `decodeWorkspaces` - 批量解码
+- [x] 实现 `encodeCreateWorkspace` - WorkspaceInterface → CreateWorkspaceRequest
+- [x] 实现 `encodeUpdateWorkspace` - WorkspaceInterface → UpdateWorkspaceRequest
 - [ ] 添加单元测试
 - _Requirements: 7.2_
 
-### 任务 2.3: 创建 Content Codec
-- [ ] 创建 `src/types/codec/content.codec.ts`
-- [ ] 实现 `decodeContent` - ContentResponse → ContentInterface
-- [ ] 实现 `encodeCreateContent` - ContentInterface → CreateContentRequest
-- [ ] 实现 `encodeUpdateContent` - ContentInterface → UpdateContentRequest
+### 任务 2.3: 创建 Content Codec ✅
+- [x] 创建 `src/types/codec/content.codec.ts`
+- [x] 实现 `decodeContent` - ContentResponse → ContentInterface
+- [x] 实现 `encodeCreateContent` - ContentInterface → CreateContentRequest
+- [x] 实现 `encodeUpdateContent` - ContentInterface → UpdateContentRequest
 - [ ] 添加单元测试
 - _Requirements: 7.3_
 
-### 任务 2.4: 创建 Codec 索引
-- [ ] 创建 `src/types/codec/index.ts`
-- [ ] 统一导出所有 codec 函数
+### 任务 2.4: 创建 Codec 索引 ✅
+- [x] 创建 `src/types/codec/index.ts`
+- [x] 统一导出所有 codec 函数
 - _Requirements: 7.4, 7.5_
 
-## 阶段 3: Repository 层创建
+## 阶段 3: Repository 层创建 ✅
 
-### 任务 3.1: 创建 Node Repository
-- [ ] 创建 `src/repo/node.repo.fn.ts`
-- [ ] 实现 `getNodesByWorkspace` - 返回 TaskEither<AppError, NodeInterface[]>
-- [ ] 实现 `getRootNodes` - 返回 TaskEither<AppError, NodeInterface[]>
-- [ ] 实现 `getChildNodes` - 返回 TaskEither<AppError, NodeInterface[]>
-- [ ] 实现 `getNode` - 返回 TaskEither<AppError, NodeInterface | null>
-- [ ] 实现 `createNode` - 返回 TaskEither<AppError, NodeInterface>
-- [ ] 实现 `updateNode` - 返回 TaskEither<AppError, NodeInterface>
-- [ ] 实现 `deleteNode` - 返回 TaskEither<AppError, void>
-- [ ] 实现 `moveNode` - 返回 TaskEither<AppError, NodeInterface>
-- [ ] 实现 `reorderNodes` - 返回 TaskEither<AppError, void>
+### 任务 3.1: 创建 Node Repository ✅
+- [x] 创建 `src/repo/node.repo.fn.ts`
+- [x] 实现 `getNodesByWorkspace` - 返回 TaskEither<AppError, NodeInterface[]>
+- [x] 实现 `getRootNodes` - 返回 TaskEither<AppError, NodeInterface[]>
+- [x] 实现 `getChildNodes` - 返回 TaskEither<AppError, NodeInterface[]>
+- [x] 实现 `getNode` - 返回 TaskEither<AppError, NodeInterface | null>
+- [x] 实现 `createNode` - 返回 TaskEither<AppError, NodeInterface>
+- [x] 实现 `updateNode` - 返回 TaskEither<AppError, NodeInterface>
+- [x] 实现 `deleteNode` - 返回 TaskEither<AppError, void>
+- [x] 实现 `moveNode` - 返回 TaskEither<AppError, NodeInterface>
+- [x] 实现 `reorderNodes` - 返回 TaskEither<AppError, void>
 - [ ] 添加单元测试
 - _Requirements: 4.1-4.10_
 
-### 任务 3.2: 创建 Workspace Repository
-- [ ] 创建 `src/repo/workspace.repo.fn.ts`
-- [ ] 实现 `getWorkspaces` - 返回 TaskEither<AppError, WorkspaceInterface[]>
-- [ ] 实现 `getWorkspace` - 返回 TaskEither<AppError, WorkspaceInterface | null>
-- [ ] 实现 `createWorkspace` - 返回 TaskEither<AppError, WorkspaceInterface>
-- [ ] 实现 `updateWorkspace` - 返回 TaskEither<AppError, WorkspaceInterface>
-- [ ] 实现 `deleteWorkspace` - 返回 TaskEither<AppError, void>
+### 任务 3.2: 创建 Workspace Repository ✅
+- [x] 创建 `src/repo/workspace.repo.fn.ts`
+- [x] 实现 `getWorkspaces` - 返回 TaskEither<AppError, WorkspaceInterface[]>
+- [x] 实现 `getWorkspace` - 返回 TaskEither<AppError, WorkspaceInterface | null>
+- [x] 实现 `createWorkspace` - 返回 TaskEither<AppError, WorkspaceInterface>
+- [x] 实现 `updateWorkspace` - 返回 TaskEither<AppError, WorkspaceInterface>
+- [x] 实现 `deleteWorkspace` - 返回 TaskEither<AppError, void>
 - [ ] 添加单元测试
 - _Requirements: 3.1-3.7_
 
-### 任务 3.3: 创建 Content Repository
-- [ ] 创建 `src/repo/content.repo.fn.ts`
-- [ ] 实现 `getContentByNodeId` - 返回 TaskEither<AppError, ContentInterface | null>
-- [ ] 实现 `createContent` - 返回 TaskEither<AppError, ContentInterface>
-- [ ] 实现 `updateContentByNodeId` - 返回 TaskEither<AppError, ContentInterface>
+### 任务 3.3: 创建 Content Repository ✅
+- [x] 创建 `src/repo/content.repo.fn.ts`
+- [x] 实现 `getContentByNodeId` - 返回 TaskEither<AppError, ContentInterface | null>
+- [x] 实现 `createContent` - 返回 TaskEither<AppError, ContentInterface>
+- [x] 实现 `updateContentByNodeId` - 返回 TaskEither<AppError, ContentInterface>
 - [ ] 添加单元测试
 - _Requirements: 5.1-5.5_
 
-### 任务 3.4: 创建 Repository 索引
-- [ ] 创建 `src/repo/index.ts`
-- [ ] 统一导出所有 repository 函数
+### 任务 3.4: 创建 Repository 索引 ✅
+- [x] 创建 `src/repo/index.ts`
+- [x] 统一导出所有 repository 函数
 
-## 阶段 4: TanStack Query 集成（读取）
+## 阶段 4: TanStack Query 集成（读取） ✅
 
-### 任务 4.1: 创建 Query Key 工厂
-- [ ] 创建 `src/queries/query-keys.ts`
-- [ ] 定义 workspaces、nodes、contents 的 query keys
-- [ ] 导出类型安全的 key 工厂函数
+### 任务 4.1: 创建 Query Key 工厂 ✅
+- [x] 创建 `src/queries/query-keys.ts`
+- [x] 定义 workspaces、nodes、contents 的 query keys
+- [x] 导出类型安全的 key 工厂函数
 - _Requirements: 2.1_
 
-### 任务 4.2: 创建 Workspace Queries
-- [ ] 创建 `src/queries/workspace.queries.ts`
-- [ ] 实现 `useWorkspaces` - 获取所有工作区（包装 repo.getWorkspaces）
-- [ ] 实现 `useWorkspace` - 获取单个工作区（包装 repo.getWorkspace）
-- [ ] 配置 staleTime 和 cacheTime
+### 任务 4.2: 创建 Workspace Queries ✅
+- [x] 创建 `src/queries/workspace.queries.ts`
+- [x] 实现 `useWorkspaces` - 获取所有工作区（包装 repo.getWorkspaces）
+- [x] 实现 `useWorkspace` - 获取单个工作区（包装 repo.getWorkspace）
+- [x] 配置 staleTime 和 cacheTime
 - _Requirements: 2.2, 2.8_
 
-### 任务 4.3: 创建 Node Queries
-- [ ] 创建 `src/queries/node.queries.ts`
-- [ ] 实现 `useNodesByWorkspace` - 获取工作区所有节点
-- [ ] 实现 `useRootNodes` - 获取根节点
-- [ ] 实现 `useChildNodes` - 获取子节点
-- [ ] 实现 `useNode` - 获取单个节点
-- [ ] 配置 staleTime 和 cacheTime
+### 任务 4.3: 创建 Node Queries ✅
+- [x] 创建 `src/queries/node.queries.ts`
+- [x] 实现 `useNodesByWorkspace` - 获取工作区所有节点
+- [x] 实现 `useRootNodes` - 获取根节点
+- [x] 实现 `useChildNodes` - 获取子节点
+- [x] 实现 `useNode` - 获取单个节点
+- [x] 配置 staleTime 和 cacheTime
 - _Requirements: 2.3, 2.8_
 
-### 任务 4.4: 创建 Content Queries
-- [ ] 创建 `src/queries/content.queries.ts`
-- [ ] 实现 `useContent` - 获取节点内容（包装 repo.getContentByNodeId）
-- [ ] 配置 staleTime 和 cacheTime
+### 任务 4.4: 创建 Content Queries ✅
+- [x] 创建 `src/queries/content.queries.ts`
+- [x] 实现 `useContent` - 获取节点内容（包装 repo.getContentByNodeId）
+- [x] 配置 staleTime 和 cacheTime
 - _Requirements: 2.4, 2.8_
 
-### 任务 4.5: 创建 Queries 索引
-- [ ] 创建 `src/queries/index.ts`
-- [ ] 统一导出所有 queries
+### 任务 4.5: 创建 Queries 索引 ✅
+- [x] 创建 `src/queries/index.ts`
+- [x] 统一导出所有 queries
 - _Requirements: 2.1-2.8_
 
 ## 阶段 5: Actions 迁移（写入）

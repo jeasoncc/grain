@@ -12,7 +12,7 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { reorderNodes as reorderNodesDb } from "@/db/node.db.fn";
+import * as nodeRepo from "@/repo/node.repo.fn";
 import { type AppError, validationError } from "@/lib/error.types";
 import logger from "@/log";
 
@@ -29,6 +29,7 @@ export interface ReorderNodesParams {
  *
  * 根据提供的节点 ID 数组顺序更新节点的排序位置。
  * 数组中的第一个节点 order 为 0，依次递增。
+ * 使用 Repository 层访问数据，通过 Rust 后端持久化。
  *
  * @param params - 重新排序参数
  * @returns TaskEither<AppError, void>
@@ -52,7 +53,7 @@ export const reorderNodes = (
 	}
 
 	return pipe(
-		reorderNodesDb([...params.nodeIds]),
+		nodeRepo.reorderNodes([...params.nodeIds]),
 		TE.tap(() => {
 			logger.success("[Action] 节点重新排序成功:", {
 				count: params.nodeIds.length,

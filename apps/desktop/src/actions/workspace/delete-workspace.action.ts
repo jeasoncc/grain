@@ -12,7 +12,7 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { deleteWorkspaceWithContents } from "@/db/workspace.db.fn";
+import * as workspaceRepo from "@/repo/workspace.repo.fn";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
 
@@ -25,6 +25,8 @@ import logger from "@/log";
  * - 绘图（Excalidraw 画布）
  * - 附件（文件）
  *
+ * 使用 Repository 层访问数据，通过 Rust 后端持久化。
+ *
  * @param workspaceId - 要删除的工作区 ID
  * @returns TaskEither<AppError, void>
  */
@@ -34,7 +36,7 @@ export const deleteWorkspace = (
 	logger.start("[Action] 删除工作区:", workspaceId);
 
 	return pipe(
-		deleteWorkspaceWithContents(workspaceId),
+		workspaceRepo.deleteWorkspace(workspaceId),
 		TE.tap(() => {
 			logger.success("[Action] 工作区删除成功:", workspaceId);
 			return TE.right(undefined);

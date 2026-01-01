@@ -12,14 +12,9 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import {
-	getNextOrder,
-	getNodeByIdOrFail,
-	getNodesByWorkspace,
-	moveNode as moveNodeDb,
-} from "@/db/node.db.fn";
+import * as nodeRepo from "@/repo/node.repo.fn";
 import { wouldCreateCycle } from "@/fn/node/node.tree.fn";
-import { type AppError, cycleError } from "@/lib/error.types";
+import { type AppError, cycleError, notFoundError } from "@/lib/error.types";
 import logger from "@/log";
 
 /**
@@ -39,6 +34,7 @@ export interface MoveNodeParams {
  *
  * 移动节点前会检查是否会创建循环引用。
  * 如果不指定 newOrder，节点会被追加到新父节点的子节点末尾。
+ * 使用 Repository 层访问数据，通过 Rust 后端持久化。
  *
  * @param params - 移动节点参数
  * @returns TaskEither<AppError, void>
@@ -50,11 +46,16 @@ export const moveNode = (
 
 	return pipe(
 		// 1. 获取节点信息
-		getNodeByIdOrFail(params.nodeId),
+		nodeRepo.getNode(params.nodeId),
+		TE.chain((node) =>
+			node
+				? TE.right(node)
+				: TE.left(notFoundError("节点不存在", params.nodeId)),
+		),
 		// 2. 获取工作区所有节点用于循环检测
 		TE.chain((node) =>
 			pipe(
-				getNodesByWorkspace(node.workspace),
+				nodeRepo.getNodesByWorkspace(node.workspace),
 				TE.map((nodes) => ({ node, nodes })),
 			),
 		),
@@ -69,16 +70,23 @@ export const moveNode = (
 		// 4. 计算新的排序位置（如果未指定）
 		TE.chain((node) => {
 			if (params.newOrder !== undefined) {
-				return TE.right(params.newOrder);
+				return TE.right({ node, order: params.newOrder });
 			}
-			return getNextOrder(params.newParentId, node.workspace);
+			return pipe(
+				nodeRepo.getNextSortOrder(node.workspace, params.newParentId),
+				TE.map((order) => ({ node, order })),
+			);
 		}),
 		// 5. 执行移动
-		TE.chain((order) => moveNodeDb(params.nodeId, params.newParentId, order)),
+		TE.chain(({ order }) =>
+			nodeRepo.moveNode(params.nodeId, params.newParentId, order),
+		),
 		// 6. 记录成功日志
 		TE.tap(() => {
 			logger.success("[Action] 节点移动成功:", params.nodeId);
 			return TE.right(undefined);
 		}),
+		// 7. 返回 void
+		TE.map(() => undefined),
 	);
 };

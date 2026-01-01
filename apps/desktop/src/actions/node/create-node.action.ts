@@ -15,8 +15,8 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { addContent } from "@/db/content.db.fn";
-import { addNode, getNextOrder, getNodesByWorkspace } from "@/db/node.db.fn";
+import * as nodeRepo from "@/repo/node.repo.fn";
+import * as contentRepo from "@/repo/content.repo.fn";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
 import type { NodeInterface, NodeType } from "@/types/node";
@@ -73,6 +73,7 @@ export interface CreateFileInTreeResult {
  * 创建新节点
  *
  * 创建节点并为非文件夹类型自动创建关联的内容记录。
+ * 使用 Repository 层访问数据，通过 Rust 后端持久化。
  *
  * @param params - 创建节点参数
  * @returns TaskEither<AppError, NodeInterface>
@@ -83,26 +84,18 @@ export const createNode = (
 	logger.start("[Action] 创建节点...");
 
 	return pipe(
-		// 1. 获取下一个排序号
-		getNextOrder(params.parentId, params.workspaceId),
-		// 2. 创建节点
-		TE.chain((order) =>
-			addNode(params.workspaceId, params.title, {
+		// 1. 创建节点（Rust 后端会自动处理排序号和内容创建）
+		nodeRepo.createNode(
+			{
+				workspace: params.workspaceId,
 				parent: params.parentId,
 				type: params.type,
-				order,
+				title: params.title,
 				collapsed: true,
-				tags: params.tags,
-			}),
+			},
+			params.content,
 		),
-		// 3. 为非文件夹类型创建内容记录
-		TE.chainFirst((node) => {
-			if (node.type !== "folder") {
-				return addContent(node.id, params.content || "");
-			}
-			return TE.right(undefined);
-		}),
-		// 4. 记录成功日志
+		// 2. 记录成功日志
 		TE.tap((node) => {
 			logger.success("[Action] 节点创建成功:", node.id);
 			return TE.right(node);
@@ -126,7 +119,7 @@ const getOrCreateFolder = (
 	collapsed: boolean = false,
 ): TE.TaskEither<AppError, NodeInterface> => {
 	return pipe(
-		getNodesByWorkspace(workspaceId),
+		nodeRepo.getNodesByWorkspace(workspaceId),
 		TE.chain((nodes) => {
 			// 查找已存在的文件夹
 			const existing = nodes.find(
@@ -139,17 +132,13 @@ const getOrCreateFolder = (
 			}
 
 			// 创建新文件夹
-			return pipe(
-				getNextOrder(parentId, workspaceId),
-				TE.chain((order) =>
-					addNode(workspaceId, title, {
-						parent: parentId,
-						type: "folder",
-						collapsed,
-						order,
-					}),
-				),
-			);
+			return nodeRepo.createNode({
+				workspace: workspaceId,
+				parent: parentId,
+				type: "folder",
+				title,
+				collapsed,
+			});
 		}),
 	);
 };
@@ -239,17 +228,16 @@ export async function createFileInTree(
 
 	const parentFolder = parentFolderResult.right;
 
-	// 获取下一个排序号
-	const nextOrderResult = await getNextOrder(parentFolder.id, workspaceId)();
-	const nextOrder = E.isRight(nextOrderResult) ? nextOrderResult.right : 0;
-
-	// 创建文件节点
-	const nodeResult = await addNode(workspaceId, title, {
-		parent: parentFolder.id,
-		type,
-		order: nextOrder,
-		tags,
-	})();
+	// 创建文件节点（Rust 后端会自动处理排序号）
+	const nodeResult = await nodeRepo.createNode(
+		{
+			workspace: workspaceId,
+			parent: parentFolder.id,
+			type,
+			title,
+		},
+		content,
+	)();
 
 	if (E.isLeft(nodeResult)) {
 		throw new Error(`创建文件失败: ${nodeResult.left.message}`);
@@ -257,12 +245,8 @@ export async function createFileInTree(
 
 	const node = nodeResult.right;
 
-	// 创建内容记录
-	if (content) {
-		await addContent(node.id, content)();
-	}
-
 	logger.success("[Action] 文件创建成功:", node.id);
 
 	return { node, parentFolder };
 }
+

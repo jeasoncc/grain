@@ -12,8 +12,8 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { updateWorkspace as dbUpdateWorkspace } from "@/db/workspace.db.fn";
-import { type AppError, notFoundError } from "@/lib/error.types";
+import * as workspaceRepo from "@/repo/workspace.repo.fn";
+import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
 import type { WorkspaceUpdateInput } from "@/types/workspace";
 
@@ -32,6 +32,7 @@ export interface UpdateWorkspaceParams {
  *
  * 更新工作区的元数据，支持部分更新。
  * 只有提供的字段会被更新，其他字段保持不变。
+ * 使用 Repository 层访问数据，通过 Rust 后端持久化。
  *
  * @param params - 更新工作区参数
  * @returns TaskEither<AppError, void>
@@ -42,21 +43,11 @@ export const updateWorkspace = (
 	logger.start("[Action] 更新工作区:", params.workspaceId);
 
 	return pipe(
-		dbUpdateWorkspace(params.workspaceId, params.updates),
-		TE.chain((count) => {
-			if (count === 0) {
-				return TE.left(
-					notFoundError(
-						`工作区不存在: ${params.workspaceId}`,
-						params.workspaceId,
-					),
-				);
-			}
-			return TE.right(undefined);
-		}),
+		workspaceRepo.updateWorkspace(params.workspaceId, params.updates),
 		TE.tap(() => {
 			logger.success("[Action] 工作区更新成功:", params.workspaceId);
 			return TE.right(undefined);
 		}),
+		TE.map(() => undefined),
 	);
 };

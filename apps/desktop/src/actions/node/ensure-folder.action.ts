@@ -12,7 +12,7 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { addNode, getNextOrder, getNodesByWorkspace } from "@/db/node.db.fn";
+import * as nodeRepo from "@/repo/node.repo.fn";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
 import type { NodeInterface } from "@/types/node";
@@ -21,6 +21,7 @@ import type { NodeInterface } from "@/types/node";
  * 确保根级文件夹存在
  *
  * 如果文件夹已存在则返回现有文件夹，否则创建新文件夹。
+ * 使用 Repository 层访问数据，通过 Rust 后端持久化。
  *
  * @param workspaceId - 工作区 ID
  * @param folderName - 文件夹名称
@@ -35,7 +36,7 @@ export const ensureRootFolder = (
 	logger.info("[Action] 确保根级文件夹存在:", folderName);
 
 	return pipe(
-		getNodesByWorkspace(workspaceId),
+		nodeRepo.getNodesByWorkspace(workspaceId),
 		TE.chain((nodes) => {
 			// 查找已存在的根级文件夹
 			const existing = nodes.find(
@@ -51,15 +52,13 @@ export const ensureRootFolder = (
 			// 创建新文件夹
 			logger.info("[Action] 创建新文件夹:", folderName);
 			return pipe(
-				getNextOrder(null, workspaceId),
-				TE.chain((order) =>
-					addNode(workspaceId, folderName, {
-						parent: null,
-						type: "folder",
-						collapsed,
-						order,
-					}),
-				),
+				nodeRepo.createNode({
+					workspace: workspaceId,
+					parent: null,
+					type: "folder",
+					title: folderName,
+					collapsed,
+				}),
 				TE.tap((folder) => {
 					logger.success("[Action] 文件夹创建成功:", folder.id);
 					return TE.right(folder);
@@ -92,3 +91,4 @@ export async function ensureRootFolderAsync(
 
 	return result.right;
 }
+

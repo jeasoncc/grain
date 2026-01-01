@@ -12,7 +12,7 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { updateNodeTitle } from "@/db/node.db.fn";
+import * as nodeRepo from "@/repo/node.repo.fn";
 import { type AppError, validationError } from "@/lib/error.types";
 import logger from "@/log";
 
@@ -30,6 +30,7 @@ export interface RenameNodeParams {
  * 重命名节点
  *
  * 更新节点的标题。标题不能为空。
+ * 使用 Repository 层访问数据，通过 Rust 后端持久化。
  *
  * @param params - 重命名节点参数
  * @returns TaskEither<AppError, void>
@@ -47,7 +48,7 @@ export const renameNode = (
 	}
 
 	return pipe(
-		updateNodeTitle(params.nodeId, trimmedTitle),
+		nodeRepo.updateNode(params.nodeId, { title: trimmedTitle }),
 		TE.tap(() => {
 			logger.success("[Action] 节点重命名成功:", {
 				nodeId: params.nodeId,
@@ -55,5 +56,6 @@ export const renameNode = (
 			});
 			return TE.right(undefined);
 		}),
+		TE.map(() => undefined),
 	);
 };
