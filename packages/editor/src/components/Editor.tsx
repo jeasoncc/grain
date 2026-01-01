@@ -24,11 +24,19 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
+import { CheckListPlugin } from "@lexical/react/LexicalCheckListPlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
-import { TRANSFORMERS } from "@lexical/markdown";
+import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
+import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
+import { AutoLinkPlugin } from "@lexical/react/LexicalAutoLinkPlugin";
+import { ClearEditorPlugin } from "@lexical/react/LexicalClearEditorPlugin";
+import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
+import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
+import { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin";
+import { TRANSFORMERS, CHECK_LIST } from "@lexical/markdown";
 import type { EditorState, SerializedEditorState } from "lexical";
 import type React from "react";
 import { useCallback } from "react";
@@ -40,6 +48,9 @@ import TagTransformPlugin from "../plugins/tag-transform-plugin";
 import CodeHighlightPlugin from "../plugins/code-highlight-plugin";
 import CodeBlockShortcutPlugin from "../plugins/code-block-shortcut-plugin";
 import PrismLanguagesPlugin from "../plugins/prism-languages-plugin";
+import ChecklistShortcutPlugin from "../plugins/checklist-shortcut-plugin";
+import TableShortcutPlugin from "../plugins/table-shortcut-plugin";
+import HorizontalRuleShortcutPlugin from "../plugins/horizontal-rule-shortcut-plugin";
 import theme from "../themes/PlaygroundEditorTheme";
 import "../themes/PlaygroundEditorTheme.css";
 
@@ -70,6 +81,44 @@ export interface EditorProps {
 function onError(error: Error): void {
   console.error("[Editor Error]", error);
 }
+
+/**
+ * URL 匹配正则表达式
+ * 用于 AutoLinkPlugin 自动识别链接
+ */
+const URL_REGEX =
+	/((https?:\/\/(www\.)?)|(www\.))[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/;
+
+const EMAIL_REGEX =
+	/(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))/;
+
+/**
+ * AutoLink 匹配器配置
+ */
+const MATCHERS = [
+	(text: string) => {
+		const match = URL_REGEX.exec(text);
+		if (match === null) return null;
+		const fullMatch = match[0];
+		return {
+			index: match.index,
+			length: fullMatch.length,
+			text: fullMatch,
+			url: fullMatch.startsWith("http") ? fullMatch : `https://${fullMatch}`,
+		};
+	},
+	(text: string) => {
+		const match = EMAIL_REGEX.exec(text);
+		if (match === null) return null;
+		const fullMatch = match[0];
+		return {
+			index: match.index,
+			length: fullMatch.length,
+			text: fullMatch,
+			url: `mailto:${fullMatch}`,
+		};
+	},
+];
 
 
 
@@ -147,8 +196,16 @@ export default function Editor({
           @see Requirements 6.3
         */}
         <HistoryPlugin />
+        <AutoFocusPlugin />
         <ListPlugin />
-        <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+        <CheckListPlugin />
+        <LinkPlugin />
+        <ClickableLinkPlugin />
+        <AutoLinkPlugin matchers={MATCHERS} />
+        <HorizontalRulePlugin />
+        <TablePlugin />
+        <ClearEditorPlugin />
+        <MarkdownShortcutPlugin transformers={[...TRANSFORMERS, CHECK_LIST]} />
         <TabIndentationPlugin />
 
         {/* Content change listener */}
@@ -168,6 +225,9 @@ export default function Editor({
         <CodeHighlightPlugin />
         <CodeBlockShortcutPlugin />
         <PrismLanguagesPlugin />
+        <ChecklistShortcutPlugin />
+        <TableShortcutPlugin />
+        <HorizontalRuleShortcutPlugin />
       </div>
     </LexicalComposer>
   );
