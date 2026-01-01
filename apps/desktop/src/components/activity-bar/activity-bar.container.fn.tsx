@@ -321,7 +321,6 @@ export function ActivityBarContainer(): React.ReactElement {
 				creator: createExcalidrawCompatAsync,
 				successMessage: "Excalidraw created",
 				errorMessage: "Failed to create excalidraw",
-				preloadContent: false,
 			}),
 		[handleCreateTemplate],
 	);
@@ -332,7 +331,6 @@ export function ActivityBarContainer(): React.ReactElement {
 				creator: createMermaidCompatAsync,
 				successMessage: "Mermaid created",
 				errorMessage: "Failed to create mermaid",
-				preloadContent: false,
 			}),
 		[handleCreateTemplate],
 	);
@@ -343,7 +341,6 @@ export function ActivityBarContainer(): React.ReactElement {
 				creator: createPlantUMLCompatAsync,
 				successMessage: "PlantUML created",
 				errorMessage: "Failed to create plantuml",
-				preloadContent: false,
 			}),
 		[handleCreateTemplate],
 	);
@@ -354,7 +351,6 @@ export function ActivityBarContainer(): React.ReactElement {
 				creator: createCodeCompatAsync,
 				successMessage: "Code file created",
 				errorMessage: "Failed to create code file",
-				preloadContent: false,
 			}),
 		[handleCreateTemplate],
 	);
