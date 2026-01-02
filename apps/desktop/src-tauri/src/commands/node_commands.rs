@@ -1,10 +1,13 @@
 //! Node Tauri Commands
 //!
 //! 节点相关的前端可调用命令
+//!
+//! 薄层设计：仅负责 Tauri State 注入和错误转换，
+//! 所有业务逻辑委托给 rust_core
 
-use crate::db::node_db_fn;
-use crate::r#fn::node::node_service_fn;
-use crate::types::{CreateNodeRequest, MoveNodeRequest, NodeResponse, NodeType, UpdateNodeRequest};
+use rust_core::db::node_db_fn;
+use rust_core::r#fn::node::node_service_fn;
+use rust_core::{CreateNodeRequest, MoveNodeRequest, NodeResponse, NodeType, UpdateNodeRequest};
 use sea_orm::DatabaseConnection;
 use tauri::State;
 
@@ -51,14 +54,11 @@ pub async fn create_node(
     request: CreateNodeRequest,
 ) -> Result<NodeResponse, String> {
     let id = uuid::Uuid::new_v4().to_string();
-
-    // 使用统一的 NodeType
     let node_type = request.node_type.unwrap_or(NodeType::File);
+    let tags = request
+        .tags
+        .map(|t| serde_json::to_string(&t).unwrap_or_default());
 
-    // 序列化 tags: Option<Vec<String>> -> Option<String>
-    let tags = request.tags.map(|t| serde_json::to_string(&t).unwrap_or_default());
-
-    // 创建节点，带 tags 和 initial_content
     node_service_fn::create_node_with_content(
         &db,
         id,
@@ -81,8 +81,9 @@ pub async fn update_node(
     id: String,
     request: UpdateNodeRequest,
 ) -> Result<NodeResponse, String> {
-    // 序列化 tags: Option<Vec<String>> -> Option<Option<String>>
-    let tags = request.tags.map(|t| Some(serde_json::to_string(&t).unwrap_or_default()));
+    let tags = request
+        .tags
+        .map(|t| Some(serde_json::to_string(&t).unwrap_or_default()));
 
     node_db_fn::update(
         &db,
@@ -112,10 +113,7 @@ pub async fn move_node(
 
 /// 删除节点（递归删除子节点）
 #[tauri::command]
-pub async fn delete_node(
-    db: State<'_, DatabaseConnection>,
-    id: String,
-) -> Result<(), String> {
+pub async fn delete_node(db: State<'_, DatabaseConnection>, id: String) -> Result<(), String> {
     node_service_fn::delete_node_recursive(&db, &id)
         .await
         .map_err(|e| e.to_string())
@@ -166,9 +164,7 @@ pub async fn get_nodes_by_type(
     workspace_id: String,
     node_type: String,
 ) -> Result<Vec<NodeResponse>, String> {
-    let parsed_type: NodeType = node_type
-        .parse()
-        .unwrap_or(NodeType::File);
+    let parsed_type: NodeType = node_type.parse().unwrap_or(NodeType::File);
 
     node_db_fn::find_by_type(&db, &workspace_id, parsed_type)
         .await

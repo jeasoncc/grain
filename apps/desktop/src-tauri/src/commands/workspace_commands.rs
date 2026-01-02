@@ -1,9 +1,12 @@
 //! Workspace Tauri Commands
 //!
 //! 工作区相关的前端可调用命令
+//!
+//! 薄层设计：仅负责 Tauri State 注入和错误转换，
+//! 所有业务逻辑委托给 rust_core
 
-use crate::db::workspace_db_fn;
-use crate::types::{CreateWorkspaceRequest, UpdateWorkspaceRequest, WorkspaceResponse};
+use rust_core::db::workspace_db_fn;
+use rust_core::{CreateWorkspaceRequest, UpdateWorkspaceRequest, WorkspaceResponse};
 use sea_orm::DatabaseConnection;
 use tauri::State;
 
@@ -38,7 +41,6 @@ pub async fn create_workspace(
 ) -> Result<WorkspaceResponse, String> {
     let id = uuid::Uuid::new_v4().to_string();
 
-    // 使用 title 字段（前端使用 title，后端 Entity 使用 name）
     workspace_db_fn::create(&db, id, request.title, request.description)
         .await
         .map(WorkspaceResponse::from)
@@ -52,7 +54,6 @@ pub async fn update_workspace(
     id: String,
     request: UpdateWorkspaceRequest,
 ) -> Result<WorkspaceResponse, String> {
-    // 使用 title 字段（前端使用 title，后端 Entity 使用 name）
     workspace_db_fn::update(&db, &id, request.title, request.description)
         .await
         .map(WorkspaceResponse::from)

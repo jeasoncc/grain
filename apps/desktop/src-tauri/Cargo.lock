@@ -1920,7 +1920,7 @@ dependencies = [
 
 [[package]]
 name = "grain"
-version = "0.1.256"
+version = "0.1.258"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1932,6 +1932,7 @@ dependencies = [
  "notify",
  "proptest",
  "rand 0.8.5",
+ "rust-core",
  "sea-orm",
  "sea-orm-migration",
  "serde",
@@ -4356,6 +4357,30 @@ dependencies = [
  "spki",
  "subtle",
  "zeroize",
+]
+
+[[package]]
+name = "rust-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "chrono",
+ "dirs 5.0.1",
+ "keyring",
+ "rand 0.8.5",
+ "sea-orm",
+ "sea-orm-migration",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+ "uuid",
+ "walkdir",
+ "zip 2.4.2",
 ]
 
 [[package]]

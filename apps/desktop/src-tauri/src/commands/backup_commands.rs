@@ -1,9 +1,12 @@
 //! Backup Tauri Commands
 //!
 //! 备份相关的前端可调用命令
+//!
+//! 薄层设计：仅负责 Tauri State 注入和错误转换，
+//! 所有业务逻辑委托给 rust_core
 
-use crate::r#fn::backup::backup_fn::{self, BackupInfo};
-use crate::types::config::AppConfig;
+use rust_core::r#fn::backup::backup_fn::{self, BackupInfo};
+use rust_core::AppConfig;
 use std::path::PathBuf;
 use tauri::State;
 

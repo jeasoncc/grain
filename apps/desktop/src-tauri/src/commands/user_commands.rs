@@ -1,17 +1,18 @@
 //! User Tauri Commands
 //!
 //! 用户相关的前端可调用命令
+//!
+//! 薄层设计：仅负责 Tauri State 注入和错误转换，
+//! 所有业务逻辑委托给 rust_core
 
-use crate::db::user_db_fn;
-use crate::types::{CreateUserRequest, UpdateUserRequest, UserResponse};
+use rust_core::db::user_db_fn;
+use rust_core::{CreateUserRequest, UpdateUserRequest, UserResponse};
 use sea_orm::DatabaseConnection;
 use tauri::State;
 
 /// 获取所有用户
 #[tauri::command]
-pub async fn get_users(
-    db: State<'_, DatabaseConnection>,
-) -> Result<Vec<UserResponse>, String> {
+pub async fn get_users(db: State<'_, DatabaseConnection>) -> Result<Vec<UserResponse>, String> {
     user_db_fn::find_all(&db)
         .await
         .map(|users| users.into_iter().map(UserResponse::from).collect())
@@ -133,10 +134,7 @@ pub async fn update_user_last_login(
 
 /// 删除用户
 #[tauri::command]
-pub async fn delete_user(
-    db: State<'_, DatabaseConnection>,
-    id: String,
-) -> Result<(), String> {
+pub async fn delete_user(db: State<'_, DatabaseConnection>, id: String) -> Result<(), String> {
     user_db_fn::delete(&db, &id)
         .await
         .map_err(|e| e.to_string())

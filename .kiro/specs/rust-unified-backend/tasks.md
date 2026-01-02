@@ -78,34 +78,34 @@
   - 确保无 Tauri/Warp 依赖
   - _Requirements: 1.7_
 
-- [ ] 6. 重构 Tauri Commands 为薄层
-  - [ ] 6.1 更新 `src-tauri/Cargo.toml` 依赖 rust-core
+- [x] 6. 重构 Tauri Commands 为薄层
+  - [x] 6.1 更新 `src-tauri/Cargo.toml` 依赖 rust-core
     - 添加 `rust-core = { path = "../../../packages/rust-core" }`
     - _Requirements: 2.4_
-  - [ ] 6.2 重构 workspace_commands.rs
+  - [x] 6.2 重构 workspace_commands.rs
     - 移除业务逻辑，改为调用 rust_core
     - 保持命令名称和签名不变
     - _Requirements: 2.1, 2.3, 2.5_
-  - [ ] 6.3 重构 node_commands.rs
+  - [x] 6.3 重构 node_commands.rs
     - 移除业务逻辑，改为调用 rust_core
     - _Requirements: 2.1_
-  - [ ] 6.4 重构 content_commands.rs
+  - [x] 6.4 重构 content_commands.rs
     - 移除业务逻辑，改为调用 rust_core
     - _Requirements: 2.1_
-  - [ ] 6.5 重构 tag_commands.rs、user_commands.rs、attachment_commands.rs
+  - [x] 6.5 重构 tag_commands.rs、user_commands.rs、attachment_commands.rs
     - 移除业务逻辑，改为调用 rust_core
     - _Requirements: 2.1_
-  - [ ] 6.6 重构 backup_commands.rs、file_commands.rs
+  - [x] 6.6 重构 backup_commands.rs、file_commands.rs
     - 移除业务逻辑，改为调用 rust_core
     - _Requirements: 2.1_
-  - [ ] 6.7 更新 lib.rs 导入
+  - [x] 6.7 更新 lib.rs 导入
     - 从 rust_core 导入类型
     - _Requirements: 2.1_
   - [ ] 6.8 编写 Tauri Commands 委托测试
     - **Property 1: Tauri Commands Delegation**
     - **Validates: Requirements 2.1**
 
-- [ ] 7. Checkpoint - 验证 Tauri 编译和运行
+- [x] 7. Checkpoint - 验证 Tauri 编译和运行
   - 运行 `cargo check -p grain`
   - 运行 `bun run desktop:dev` 验证功能正常
   - _Requirements: 2.3_

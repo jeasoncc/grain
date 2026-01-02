@@ -1,17 +1,20 @@
 //! Grain Desktop 应用
 //!
 //! 基于 Tauri 2.x 的桌面应用后端
+//!
+//! 薄层设计：所有业务逻辑委托给 rust_core，
+//! 本模块仅负责 Tauri 集成和应用初始化
 
 pub mod commands;
-pub mod db;
-pub mod r#fn;
-pub mod types;
 
-use db::DbConnection;
+// 保留本地模块用于 Tauri 特定功能（如果需要）
+// 大部分功能已迁移到 rust_core
+
+use rust_core::db::connection::DbConnection;
+use rust_core::AppConfig;
 use tauri::Manager;
 use tracing::{error, info};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
-use types::config::AppConfig;
 
 /// 初始化日志系统
 fn init_logging() {
@@ -28,7 +31,6 @@ fn init_logging() {
 
 /// 初始化数据库
 async fn init_database(config: &AppConfig) -> Result<sea_orm::DatabaseConnection, String> {
-    // 连接数据库并创建表
     let db = DbConnection::connect(config)
         .await
         .map_err(|e| format!("数据库连接失败: {}", e))?;
@@ -57,21 +59,16 @@ pub fn run() {
         .setup(move |app| {
             let config_clone = config.clone();
 
-            // 使用 tauri::async_runtime 运行异步初始化
-            let db = tauri::async_runtime::block_on(async {
-                init_database(&config_clone).await
-            });
+            let db = tauri::async_runtime::block_on(async { init_database(&config_clone).await });
 
             match db {
                 Ok(db) => {
-                    // 注入数据库连接和配置到 State
                     app.manage(db);
                     app.manage(config_clone);
                     info!("应用初始化完成");
                 }
                 Err(e) => {
                     error!("应用初始化失败: {}", e);
-                    // 在开发环境下 panic，生产环境可以考虑显示错误对话框
                     #[cfg(debug_assertions)]
                     panic!("数据库初始化失败: {}", e);
                 }

@@ -2,11 +2,10 @@
 //!
 //! 运行: cargo run --bin test_db
 
-use grain_lib::db::{
-    content_db_fn, node_db_fn, workspace_db_fn, DbConnection,
-};
-use grain_lib::types::config::AppConfig;
-use grain_lib::types::node::node_interface::NodeType;
+use rust_core::db::{content_db_fn, node_db_fn, workspace_db_fn, DbConnection};
+use rust_core::types::node::node_entity;
+use rust_core::types::workspace::workspace_entity;
+use rust_core::{AppConfig, NodeType};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -102,7 +101,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 查询工作区节点
     println!("\n7. 查询工作区节点...");
-    let nodes = node_db_fn::find_by_workspace(&db, &workspace_id).await?;
+    let nodes: Vec<node_entity::Model> =
+        node_db_fn::find_by_workspace(&db, &workspace_id).await?;
     println!("   ✓ 找到 {} 个节点:", nodes.len());
     for node in &nodes {
         println!("     - {} ({:?})", node.title, node.node_type);
@@ -110,7 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 查询所有工作区
     println!("\n8. 查询所有工作区...");
-    let workspaces = workspace_db_fn::find_all(&db).await?;
+    let workspaces: Vec<workspace_entity::Model> = workspace_db_fn::find_all(&db).await?;
     println!("   ✓ 找到 {} 个工作区", workspaces.len());
 
     // 清理测试数据
@@ -119,7 +119,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("   ✓ 工作区已删除（级联删除节点和内容）");
 
     // 验证删除
-    let remaining = node_db_fn::find_by_workspace(&db, &workspace_id).await?;
+    let remaining: Vec<node_entity::Model> =
+        node_db_fn::find_by_workspace(&db, &workspace_id).await?;
     println!("   ✓ 剩余节点数: {}", remaining.len());
 
     println!("\n=== 测试完成 ===");

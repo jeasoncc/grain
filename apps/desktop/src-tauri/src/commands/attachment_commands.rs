@@ -1,9 +1,14 @@
 //! Attachment Tauri Commands
 //!
 //! 附件相关的前端可调用命令
+//!
+//! 薄层设计：仅负责 Tauri State 注入和错误转换，
+//! 所有业务逻辑委托给 rust_core
 
-use crate::db::attachment_db_fn;
-use crate::types::{AttachmentResponse, AttachmentType, CreateAttachmentRequest, UpdateAttachmentRequest};
+use rust_core::db::attachment_db_fn;
+use rust_core::{
+    AttachmentResponse, AttachmentType, CreateAttachmentRequest, UpdateAttachmentRequest,
+};
 use sea_orm::DatabaseConnection;
 use tauri::State;
 
@@ -15,7 +20,12 @@ pub async fn get_attachments_by_project(
 ) -> Result<Vec<AttachmentResponse>, String> {
     attachment_db_fn::find_by_project(&db, &project_id)
         .await
-        .map(|attachments| attachments.into_iter().map(AttachmentResponse::from).collect())
+        .map(|attachments| {
+            attachments
+                .into_iter()
+                .map(AttachmentResponse::from)
+                .collect()
+        })
         .map_err(|e| e.to_string())
 }
 
@@ -40,7 +50,12 @@ pub async fn get_attachments_by_type(
 ) -> Result<Vec<AttachmentResponse>, String> {
     attachment_db_fn::find_by_type(&db, &project_id, attachment_type)
         .await
-        .map(|attachments| attachments.into_iter().map(AttachmentResponse::from).collect())
+        .map(|attachments| {
+            attachments
+                .into_iter()
+                .map(AttachmentResponse::from)
+                .collect()
+        })
         .map_err(|e| e.to_string())
 }
 

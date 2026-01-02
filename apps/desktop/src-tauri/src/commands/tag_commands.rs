@@ -1,9 +1,12 @@
 //! Tag Tauri Commands
 //!
 //! 标签相关的前端可调用命令
+//!
+//! 薄层设计：仅负责 Tauri State 注入和错误转换，
+//! 所有业务逻辑委托给 rust_core
 
-use crate::db::tag_db_fn;
-use crate::types::{CreateTagRequest, TagResponse, UpdateTagRequest};
+use rust_core::db::tag_db_fn;
+use rust_core::{CreateTagRequest, TagResponse, UpdateTagRequest};
 use sea_orm::DatabaseConnection;
 use tauri::State;
 
@@ -123,13 +126,8 @@ pub async fn decrement_tag_count(
 
 /// 删除标签
 #[tauri::command]
-pub async fn delete_tag(
-    db: State<'_, DatabaseConnection>,
-    id: String,
-) -> Result<(), String> {
-    tag_db_fn::delete(&db, &id)
-        .await
-        .map_err(|e| e.to_string())
+pub async fn delete_tag(db: State<'_, DatabaseConnection>, id: String) -> Result<(), String> {
+    tag_db_fn::delete(&db, &id).await.map_err(|e| e.to_string())
 }
 
 /// 删除工作区所有标签

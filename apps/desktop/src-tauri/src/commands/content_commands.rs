@@ -1,9 +1,12 @@
 //! Content Tauri Commands
 //!
 //! 内容相关的前端可调用命令
+//!
+//! 薄层设计：仅负责 Tauri State 注入和错误转换，
+//! 所有业务逻辑委托给 rust_core
 
-use crate::db::content_db_fn;
-use crate::types::{ContentResponse, SaveContentRequest};
+use rust_core::db::content_db_fn;
+use rust_core::{ContentResponse, SaveContentRequest};
 use sea_orm::DatabaseConnection;
 use tauri::State;
 
@@ -25,21 +28,21 @@ pub async fn save_content(
     db: State<'_, DatabaseConnection>,
     request: SaveContentRequest,
 ) -> Result<ContentResponse, String> {
-    // 检查是否已存在内容
     let existing = content_db_fn::find_by_node_id(&db, &request.node_id)
         .await
         .map_err(|e| e.to_string())?;
 
     match existing {
-        Some(_) => {
-            // 更新现有内容
-            content_db_fn::update(&db, &request.node_id, request.content, request.expected_version)
-                .await
-                .map(ContentResponse::from)
-                .map_err(|e| e.to_string())
-        }
+        Some(_) => content_db_fn::update(
+            &db,
+            &request.node_id,
+            request.content,
+            request.expected_version,
+        )
+        .await
+        .map(ContentResponse::from)
+        .map_err(|e| e.to_string()),
         None => {
-            // 创建新内容
             let id = uuid::Uuid::new_v4().to_string();
             content_db_fn::create(&db, id, request.node_id, request.content)
                 .await
