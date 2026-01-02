@@ -3,7 +3,7 @@
 ## Task 1: 修复 activity-bar.container.fn.tsx 代码规范问题
 
 **Priority**: High  
-**Status**: Done
+**Status**: Done ✅
 
 ### Description
 修复已迁移文件中的代码规范问题。
@@ -12,9 +12,17 @@
 - [x] 移除未使用的 `NodeInterface` import
 - [x] 将 `console.error` 替换为 `logger.error`
 - [x] 确保所有注释为中文
+- [x] 使用 `@/actions/workspace` 而非 `@/db`
+- [x] 使用 TaskEither 和 fp-ts pipe
 
-### Files to Modify
+### Files Modified
 - `apps/desktop/src/components/activity-bar/activity-bar.container.fn.tsx`
+- `apps/desktop/src/actions/workspace/update-workspace.action.ts`
+- `apps/desktop/src/actions/workspace/create-workspace.action.ts`
+
+### Verification
+- 代码诊断无错误
+- workspace 操作已完全迁移到 Rust 后端
 
 ---
 
