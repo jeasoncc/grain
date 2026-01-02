@@ -138,53 +138,85 @@ src/
 
 ## Rust Core 共享库 (`packages/rust-core/src/`)
 
-> **核心原则**：所有业务逻辑集中在 rust-core，Tauri 和 Warp 只是边界适配器。
+> **核心原则**：
+> - 所有数据类型在 `types/` 定义，对象不可变，只有构建方法
+> - 所有操作在 `fn/` 以纯函数形式定义，接收对象返回新对象
+> - 纯函数文件以 `_fn.rs` 后缀标识（与前端 `.fn.ts` 对应）
+> - 无 service/repo 层（面向对象思维），只有 types + fn + db
 
 ```
 src/
 ├── lib.rs                     # 库入口，导出所有模块
 │
-├── types/                     # 数据定义层（共享类型）
+├── types/                     # 数据定义层（不可变对象）
 │   ├── mod.rs
 │   ├── error.rs              # AppError、AppResult 定义
 │   ├── config.rs             # 配置结构体
-│   ├── workspace/            # Workspace 类型
+│   │
+│   ├── workspace/            # Workspace 模块类型
 │   │   ├── mod.rs
-│   │   ├── workspace.rs      # Workspace 结构体
-│   │   └── request.rs        # CreateWorkspaceRequest 等
-│   ├── node/                 # Node 类型
+│   │   ├── entity.rs         # Workspace 实体（数据库映射）
+│   │   ├── model.rs          # Workspace 领域模型
+│   │   ├── request.rs        # CreateWorkspaceRequest 等
+│   │   ├── response.rs       # WorkspaceResponse 等
+│   │   └── builder.rs        # WorkspaceBuilder（构建者模式）
+│   │
+│   ├── node/                 # Node 模块类型
 │   │   ├── mod.rs
-│   │   ├── node.rs           # Node 结构体
-│   │   └── request.rs        # CreateNodeRequest 等
-│   ├── content/              # Content 类型
-│   ├── tag/                  # Tag 类型
-│   ├── user/                 # User 类型
-│   └── attachment/           # Attachment 类型
+│   │   ├── entity.rs         # Node 实体
+│   │   ├── model.rs          # Node 领域模型
+│   │   ├── request.rs        # CreateNodeRequest 等
+│   │   ├── response.rs       # NodeResponse 等
+│   │   └── builder.rs        # NodeBuilder
+│   │
+│   ├── content/              # Content 模块类型
+│   │   ├── mod.rs
+│   │   ├── entity.rs
+│   │   ├── model.rs
+│   │   ├── request.rs
+│   │   └── response.rs
+│   │
+│   ├── tag/                  # Tag 模块类型
+│   ├── user/                 # User 模块类型
+│   └── attachment/           # Attachment 模块类型
 │
-├── db/                        # 持久化层（数据库操作）
+├── fn/                        # 纯函数层（所有业务逻辑）
+│   ├── mod.rs
+│   │
+│   ├── workspace/            # Workspace 纯函数
+│   │   ├── mod.rs
+│   │   ├── validate_fn.rs    # 校验函数（纯函数）
+│   │   └── transform_fn.rs   # 转换函数（纯函数）
+│   │
+│   ├── node/                 # Node 纯函数
+│   │   ├── mod.rs
+│   │   ├── parse_fn.rs       # 解析函数（纯函数）
+│   │   ├── validate_fn.rs    # 校验函数（纯函数）
+│   │   ├── transform_fn.rs   # 转换函数（纯函数）
+│   │   └── tree_fn.rs        # 树操作函数（纯函数）
+│   │
+│   ├── content/              # Content 纯函数
+│   │   ├── mod.rs
+│   │   └── transform_fn.rs
+│   │
+│   ├── crypto/               # 加密纯函数
+│   │   ├── mod.rs
+│   │   └── encrypt_fn.rs
+│   │
+│   └── backup/               # 备份纯函数
+│       ├── mod.rs
+│       └── backup_fn.rs
+│
+├── db/                        # 数据库层（副作用边界）
 │   ├── mod.rs
 │   ├── connection.rs         # 数据库连接管理
 │   ├── test_utils.rs         # 测试工具
-│   ├── workspace_db_fn.rs    # Workspace CRUD
+│   ├── workspace_db_fn.rs    # Workspace CRUD（副作用函数）
 │   ├── node_db_fn.rs         # Node CRUD
 │   ├── content_db_fn.rs      # Content CRUD
 │   ├── tag_db_fn.rs          # Tag CRUD
 │   ├── user_db_fn.rs         # User CRUD
 │   └── attachment_db_fn.rs   # Attachment CRUD
-│
-├── fn/                        # 纯函数层（业务逻辑）
-│   ├── mod.rs
-│   ├── node/                 # 节点相关函数
-│   │   ├── mod.rs
-│   │   ├── parse.rs          # 解析函数
-│   │   ├── transform.rs      # 转换函数
-│   │   └── validate.rs       # 校验函数
-│   ├── crypto/               # 加密函数
-│   │   ├── mod.rs
-│   │   └── encrypt.rs
-│   └── backup/               # 备份函数
-│       ├── mod.rs
-│       └── backup.rs
 │
 ├── api/                       # API 端点定义（计划中）
 │   ├── mod.rs                # ApiEndpoint trait 定义
@@ -277,17 +309,32 @@ src/
 
 ### Rust 文件命名
 
-| 类型 | 命名格式 | 示例 |
-|------|---------|------|
-| 模块入口 | `mod.rs` | `types/mod.rs` |
-| 类型定义 | `xxx.rs` | `workspace.rs` |
-| 请求类型 | `request.rs` | `types/workspace/request.rs` |
-| 数据库函数 | `xxx_db_fn.rs` | `workspace_db_fn.rs` |
-| 纯函数 | `xxx.rs` | `parse.rs`, `transform.rs` |
-| API 端点 | `xxx.rs` | `api/workspace.rs` |
-| 测试文件 | `xxx.rs` | `tests/schema_consistency.rs` |
-| 错误类型 | `error.rs` | `types/error.rs` |
-| 配置 | `config.rs` | `types/config.rs` |
+> **纯函数标识**：与前端 `.fn.ts` 对应，Rust 纯函数文件使用 `_fn.rs` 后缀
+
+| 类型 | 命名格式 | 示例 | 说明 |
+|------|---------|------|------|
+| 模块入口 | `mod.rs` | `types/mod.rs` | 模块导出 |
+| 实体定义 | `entity.rs` | `types/node/entity.rs` | 数据库映射 |
+| 领域模型 | `model.rs` | `types/node/model.rs` | 业务模型 |
+| 请求类型 | `request.rs` | `types/node/request.rs` | API 请求 |
+| 响应类型 | `response.rs` | `types/node/response.rs` | API 响应 |
+| 构建者 | `builder.rs` | `types/node/builder.rs` | 构建者模式 |
+| **纯函数** | `xxx_fn.rs` | `parse_fn.rs` | **纯函数，无副作用** |
+| 数据库函数 | `xxx_db_fn.rs` | `workspace_db_fn.rs` | 副作用函数 |
+| API 端点 | `xxx.rs` | `api/workspace.rs` | 端点定义 |
+| 测试文件 | `xxx.rs` | `tests/schema_consistency.rs` | 测试 |
+| 错误类型 | `error.rs` | `types/error.rs` | 错误定义 |
+| 配置 | `config.rs` | `types/config.rs` | 配置结构 |
+
+### 前后端命名对照
+
+| 概念 | TypeScript | Rust |
+|------|-----------|------|
+| 纯函数 | `xxx.fn.ts` | `xxx_fn.rs` |
+| 数据库函数 | `xxx.db.fn.ts` | `xxx_db_fn.rs` |
+| 接口/类型 | `xxx.interface.ts` | `entity.rs` / `model.rs` |
+| 请求类型 | `xxx.schema.ts` | `request.rs` |
+| 构建者 | `xxx.builder.ts` | `builder.rs` |
 
 ### 组件文件命名
 
