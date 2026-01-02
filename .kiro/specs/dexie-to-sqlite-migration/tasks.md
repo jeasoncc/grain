@@ -382,6 +382,56 @@
 - [ ] 迁移 use-attachment.ts
 - _Requirements: 9.3_
 
+### 任务 O.4: Rust 后端类型重构（Interface + Builder 模式）
+- [ ] 创建 `types/node.rs` - 将 DTO 从 commands 移出
+  - [ ] 定义 `CreateNodeRequest`, `UpdateNodeRequest`, `MoveNodeRequest`
+  - [ ] 定义 `NodeResponse`
+  - [ ] 实现 `NodeBuilder`
+  - [ ] 实现 `From<entity::node::Model> for NodeResponse`
+- [ ] 创建 `types/workspace.rs` - 将 DTO 从 commands 移出
+  - [ ] 定义 `CreateWorkspaceRequest`, `UpdateWorkspaceRequest`
+  - [ ] 定义 `WorkspaceResponse`
+  - [ ] 实现 `WorkspaceBuilder`
+  - [ ] 实现 `From<entity::workspace::Model> for WorkspaceResponse`
+- [ ] 创建 `types/content.rs` - 将 DTO 从 commands 移出
+  - [ ] 定义 `CreateContentRequest`, `UpdateContentRequest`
+  - [ ] 定义 `ContentResponse`
+  - [ ] 实现 `ContentBuilder`
+  - [ ] 实现 `From<entity::content::Model> for ContentResponse`
+- [ ] 更新 `types/mod.rs` - 导出所有 DTO 和 Builder
+- [ ] 更新 `commands/node_commands.rs` - 使用 types 中的 DTO
+- [ ] 更新 `commands/workspace_commands.rs` - 使用 types 中的 DTO
+- [ ] 更新 `commands/content_commands.rs` - 使用 types 中的 DTO
+- [ ] 运行 `cargo check` 验证编译通过
+- _Requirements: 10.1_
+
+**当前 Rust 后端问题：**
+1. DTO 类型（Request/Response）散落在 commands 文件中
+2. 缺少 Builder 模式来构建复杂对象
+3. Entity 和 DTO 职责混淆
+
+**重构目标：**
+```
+src-tauri/src/
+├── types/                     # DTO + Builder 层
+│   ├── mod.rs
+│   ├── error.rs              # AppError（已有）
+│   ├── config.rs             # 配置（已有）
+│   ├── node.rs               # Node DTO + Builder（新增）
+│   ├── workspace.rs          # Workspace DTO + Builder（新增）
+│   └── content.rs            # Content DTO + Builder（新增）
+│
+├── entity/                    # Entity 层 - SeaORM（保持不变）
+│   ├── node.rs               # 数据库实体
+│   ├── workspace.rs
+│   └── content.rs
+│
+└── commands/                  # 只保留命令逻辑，DTO 移到 types
+    ├── node_commands.rs      # 使用 types::node::*
+    ├── workspace_commands.rs
+    └── content_commands.rs
+```
+
 ## 依赖关系
 
 ```

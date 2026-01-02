@@ -19,12 +19,45 @@ inclusion: manual
 
 | TypeScript | Rust | 说明 |
 |------------|------|------|
-| `interface` | `struct` | 数据定义 |
-| `Zod Schema` | `serde` + 自定义校验 | 运行时校验 |
+| `interface` | `struct` (DTO) | 数据定义 |
+| `Builder` | `XxxBuilder` | 构建复杂对象 |
+| `Zod Schema` | `serde` + `validator` | 运行时校验 |
 | `fp-ts Either` | `Result<T, E>` | 错误处理 |
 | `fp-ts TaskEither` | `async fn -> Result` | 异步错误处理 |
 | `pipe()` | `.map().and_then()` | 管道组合 |
 | `Option` | `Option<T>` | 可空值 |
+
+## 类型分层原则
+
+与前端一致，Rust 后端也采用三层类型定义：
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        类型分层架构                              │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Entity 层     │     │    DTO 层       │     │   Builder 层    │
+│  (数据库实体)    │     │  (数据传输对象)  │     │  (对象构建器)    │
+├─────────────────┤     ├─────────────────┤     ├─────────────────┤
+│ entity/node.rs  │────▶│ types/node.rs   │◀────│ types/node.rs   │
+│ Model (SeaORM)  │     │ NodeResponse    │     │ NodeBuilder     │
+│                 │     │ CreateNodeReq   │     │                 │
+│                 │     │ UpdateNodeReq   │     │                 │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+        │                       │                       │
+        │                       │                       │
+        ▼                       ▼                       ▼
+   数据库存储              API 边界                 复杂对象构建
+```
+
+### 类型职责
+
+| 层级 | 文件位置 | 职责 | 示例 |
+|------|----------|------|------|
+| **Entity** | `entity/*.rs` | 数据库表映射 | `node::Model` |
+| **DTO** | `types/*.rs` | API 请求/响应 | `NodeResponse`, `CreateNodeRequest` |
+| **Builder** | `types/*.rs` | 构建复杂对象 | `NodeBuilder` |
 
 ## 数据流架构图
 
@@ -93,14 +126,21 @@ apps/desktop/src-tauri/src/
 ├── main.rs                    # 入口点
 ├── lib.rs                     # Tauri 应用配置
 │
-├── types/                     # 数据定义层
+├── types/                     # 【DTO + Builder 层】
 │   ├── mod.rs
-│   ├── node.rs               # Node 结构体
-│   ├── workspace.rs          # Workspace 结构体
 │   ├── error.rs              # AppError 定义
-│   └── config.rs             # 配置结构体
+│   ├── config.rs             # 配置结构体
+│   ├── node.rs               # Node DTO + Builder
+│   ├── workspace.rs          # Workspace DTO + Builder
+│   └── content.rs            # Content DTO + Builder
 │
-├── fn/                        # 纯函数层
+├── entity/                    # 【Entity 层 - SeaORM】
+│   ├── mod.rs
+│   ├── node.rs               # Node 数据库实体
+│   ├── workspace.rs          # Workspace 数据库实体
+│   └── content.rs            # Content 数据库实体
+│
+├── fn/                        # 【纯函数层】
 │   ├── mod.rs
 │   ├── node/
 │   │   ├── mod.rs
@@ -114,120 +154,253 @@ apps/desktop/src-tauri/src/
 │       ├── mod.rs
 │       └── markdown.rs       # Markdown 导出
 │
-├── db/                        # 持久化层
+├── repo/                      # 【Repository 层】
 │   ├── mod.rs
-│   ├── connection.rs         # 数据库连接
-│   ├── migrations/           # 数据库迁移
 │   ├── node_repo.rs          # Node 仓库
-│   └── workspace_repo.rs     # Workspace 仓库
+│   ├── workspace_repo.rs     # Workspace 仓库
+│   └── content_repo.rs       # Content 仓库
 │
-├── services/                  # 服务层（组合纯函数）
+├── services/                  # 【Service 层】
 │   ├── mod.rs
 │   ├── node_service.rs
 │   └── workspace_service.rs
 │
-└── commands/                  # Tauri Commands（副作用边界）
+└── commands/                  # 【Tauri Commands - 副作用边界】
     ├── mod.rs
     ├── node_commands.rs
     ├── workspace_commands.rs
-    └── file_commands.rs
+    └── content_commands.rs
 ```
 
 ## 文件命名规范
 
 | 类型 | 命名格式 | 示例 |
 |------|---------|------|
-| 类型定义 | `{entity}.rs` | `node.rs`, `workspace.rs` |
-| 纯函数 | `{action}.rs` | `parse.rs`, `transform.rs` |
-| 数据库仓库 | `{entity}_repo.rs` | `node_repo.rs` |
-| 服务 | `{entity}_service.rs` | `node_service.rs` |
-| Tauri 命令 | `{entity}_commands.rs` | `node_commands.rs` |
+| DTO + Builder | `types/{entity}.rs` | `types/node.rs` |
+| 数据库实体 | `entity/{entity}.rs` | `entity/node.rs` |
+| 纯函数 | `fn/{domain}/{action}.rs` | `fn/node/parse.rs` |
+| 数据库仓库 | `repo/{entity}_repo.rs` | `repo/node_repo.rs` |
+| 服务 | `services/{entity}_service.rs` | `services/node_service.rs` |
+| Tauri 命令 | `commands/{entity}_commands.rs` | `commands/node_commands.rs` |
 | 测试 | `{module}_test.rs` 或内联 `#[cfg(test)]` | |
 
-## 类型定义规范
+## DTO 类型定义规范
 
-### 不可变结构体
+### 请求/响应 DTO
+
+DTO（Data Transfer Object）用于 API 边界，与前端 TypeScript 类型对应：
 
 ```rust
 // types/node.rs
 use serde::{Deserialize, Serialize};
 
-/// 节点数据结构
-/// 所有字段都是不可变的，更新时创建新实例
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct Node {
-    pub id: String,
-    pub title: String,
-    pub content: String,
-    pub node_type: NodeType,
-    pub parent_id: Option<String>,
+// ============================================================================
+// 请求 DTO（对应前端 CreateNodeInput, UpdateNodeInput）
+// ============================================================================
+
+/// 创建节点请求
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateNodeRequest {
     pub workspace_id: String,
+    pub parent_id: Option<String>,
+    pub title: String,
+    pub node_type: String,
+    pub tags: Option<Vec<String>>,
+    pub initial_content: Option<String>,
+}
+
+/// 更新节点请求
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateNodeRequest {
+    pub title: Option<String>,
+    pub is_collapsed: Option<bool>,
+    pub sort_order: Option<i32>,
+    pub tags: Option<Option<Vec<String>>>,
+}
+
+/// 移动节点请求
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MoveNodeRequest {
+    pub new_parent_id: Option<String>,
+    pub new_sort_order: i32,
+}
+
+// ============================================================================
+// 响应 DTO（对应前端 NodeInterface）
+// ============================================================================
+
+/// 节点响应
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NodeResponse {
+    pub id: String,
+    pub workspace_id: String,
+    pub parent_id: Option<String>,
+    pub title: String,
+    pub node_type: String,
+    pub is_collapsed: bool,
+    pub sort_order: i32,
+    pub tags: Option<Vec<String>>,
     pub created_at: i64,
     pub updated_at: i64,
-    pub order: i32,
-    pub collapsed: bool,
-    pub tags: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "snake_case")]
-pub enum NodeType {
-    File,
-    Folder,
-    Diary,
-    Drawing,
-    Code,
-    Diagram,
-}
-
-impl Node {
-    /// 创建新节点（Builder 模式的简化版）
-    pub fn new(
-        title: impl Into<String>,
-        node_type: NodeType,
-        workspace_id: impl Into<String>,
-    ) -> Self {
-        let now = chrono::Utc::now().timestamp_millis();
+// Entity -> DTO 转换
+impl From<crate::entity::node::Model> for NodeResponse {
+    fn from(model: crate::entity::node::Model) -> Self {
+        let tags = model.tags.and_then(|t| serde_json::from_str(&t).ok());
         Self {
-            id: uuid::Uuid::new_v4().to_string(),
-            title: title.into(),
-            content: String::new(),
-            node_type,
-            parent_id: None,
-            workspace_id: workspace_id.into(),
-            created_at: now,
-            updated_at: now,
-            order: 0,
-            collapsed: false,
-            tags: Vec::new(),
+            id: model.id,
+            workspace_id: model.workspace_id,
+            parent_id: model.parent_id,
+            title: model.title,
+            node_type: model.node_type.to_string(),
+            is_collapsed: model.is_collapsed,
+            sort_order: model.sort_order,
+            tags,
+            created_at: model.created_at,
+            updated_at: model.updated_at,
         }
     }
+}
+```
 
+### Builder 模式
+
+对于复杂对象的构建，使用 Builder 模式：
+
+```rust
+// types/node.rs (续)
+
+// ============================================================================
+// Builder 模式
+// ============================================================================
+
+/// Node Builder - 用于构建复杂的节点对象
+#[derive(Debug, Clone, Default)]
+pub struct NodeBuilder {
+    workspace_id: Option<String>,
+    parent_id: Option<String>,
+    title: Option<String>,
+    node_type: Option<String>,
+    tags: Option<Vec<String>>,
+    is_collapsed: bool,
+    sort_order: i32,
+}
+
+impl NodeBuilder {
+    /// 创建新的 Builder
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// 设置工作区 ID（必填）
+    pub fn workspace_id(mut self, workspace_id: impl Into<String>) -> Self {
+        self.workspace_id = Some(workspace_id.into());
+        self
+    }
+
+    /// 设置父节点 ID
+    pub fn parent_id(mut self, parent_id: Option<String>) -> Self {
+        self.parent_id = parent_id;
+        self
+    }
+
+    /// 设置标题（必填）
+    pub fn title(mut self, title: impl Into<String>) -> Self {
+        self.title = Some(title.into());
+        self
+    }
+
+    /// 设置节点类型（必填）
+    pub fn node_type(mut self, node_type: impl Into<String>) -> Self {
+        self.node_type = Some(node_type.into());
+        self
+    }
+
+    /// 设置标签
+    pub fn tags(mut self, tags: Vec<String>) -> Self {
+        self.tags = Some(tags);
+        self
+    }
+
+    /// 设置折叠状态
+    pub fn collapsed(mut self, collapsed: bool) -> Self {
+        self.is_collapsed = collapsed;
+        self
+    }
+
+    /// 设置排序顺序
+    pub fn sort_order(mut self, order: i32) -> Self {
+        self.sort_order = order;
+        self
+    }
+
+    /// 构建 CreateNodeRequest
+    pub fn build(self) -> Result<CreateNodeRequest, String> {
+        Ok(CreateNodeRequest {
+            workspace_id: self.workspace_id.ok_or("workspace_id is required")?,
+            parent_id: self.parent_id,
+            title: self.title.ok_or("title is required")?,
+            node_type: self.node_type.ok_or("node_type is required")?,
+            tags: self.tags,
+            initial_content: None,
+        })
+    }
+
+    /// 构建带内容的 CreateNodeRequest
+    pub fn build_with_content(self, content: String) -> Result<CreateNodeRequest, String> {
+        Ok(CreateNodeRequest {
+            workspace_id: self.workspace_id.ok_or("workspace_id is required")?,
+            parent_id: self.parent_id,
+            title: self.title.ok_or("title is required")?,
+            node_type: self.node_type.ok_or("node_type is required")?,
+            tags: self.tags,
+            initial_content: Some(content),
+        })
+    }
+}
+
+// 使用示例：
+// let request = NodeBuilder::new()
+//     .workspace_id("ws-123")
+//     .title("My Note")
+//     .node_type("file")
+//     .tags(vec!["tag1".into(), "tag2".into()])
+//     .build()?;
+```
+
+### 不可变更新模式
+
+对于需要更新的对象，使用 `with_*` 方法返回新实例：
+
+```rust
+// types/node.rs (续)
+
+impl NodeResponse {
     /// 不可变更新 - 返回新实例
     pub fn with_title(self, title: impl Into<String>) -> Self {
         Self {
             title: title.into(),
-            updated_at: chrono::Utc::now().timestamp_millis(),
             ..self
         }
     }
 
-    pub fn with_content(self, content: impl Into<String>) -> Self {
+    pub fn with_collapsed(self, collapsed: bool) -> Self {
         Self {
-            content: content.into(),
-            updated_at: chrono::Utc::now().timestamp_millis(),
+            is_collapsed: collapsed,
             ..self
         }
     }
 
-    pub fn with_parent(self, parent_id: Option<String>) -> Self {
-        Self {
-            parent_id,
-            updated_at: chrono::Utc::now().timestamp_millis(),
-            ..self
-        }
+    pub fn with_tags(self, tags: Option<Vec<String>>) -> Self {
+        Self { tags, ..self }
     }
 }
+```
 ```
 
 ### 错误类型
