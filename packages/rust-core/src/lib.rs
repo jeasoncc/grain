@@ -4,6 +4,7 @@
 //!
 //! ## 模块结构
 //!
+//! - `api/` - API 端点定义（ApiEndpoint trait 实现）
 //! - `types/` - 类型定义（Interface + Builder + Entity）
 //! - `db/` - 数据库操作函数
 //! - `fn/` - 纯函数
@@ -15,9 +16,14 @@
 //!     AppError, AppResult,
 //!     CreateWorkspaceRequest, WorkspaceResponse,
 //!     db::workspace_db_fn,
+//!     api::{ApiEndpoint, GetWorkspaces},
 //! };
+//!
+//! // 直接调用端点
+//! let workspaces = GetWorkspaces::execute(&db, ()).await?;
 //! ```
 
+pub mod api;
 pub mod db;
 pub mod r#fn;
 pub mod types;
