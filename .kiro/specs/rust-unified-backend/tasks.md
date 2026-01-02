@@ -44,24 +44,24 @@
     - **Property 2: JSON Serialization Round-Trip**
     - **Validates: Requirements 3.4, 8.1, 8.2**
 
-- [ ] 3. 迁移数据库函数到 rust-core
-  - [ ] 3.1 迁移 connection.rs
+- [x] 3. 迁移数据库函数到 rust-core
+  - [x] 3.1 迁移 connection.rs
     - 复制数据库连接管理代码
     - 添加可配置数据库路径支持
     - _Requirements: 6.1, 6.2_
-  - [ ] 3.2 迁移 workspace_db_fn.rs
+  - [x] 3.2 迁移 workspace_db_fn.rs
     - 复制工作区数据库操作函数
     - _Requirements: 1.3_
-  - [ ] 3.3 迁移 node_db_fn.rs
+  - [x] 3.3 迁移 node_db_fn.rs
     - 复制节点数据库操作函数
     - _Requirements: 1.3_
-  - [ ] 3.4 迁移 content_db_fn.rs
+  - [x] 3.4 迁移 content_db_fn.rs
     - 复制内容数据库操作函数
     - _Requirements: 1.3_
-  - [ ] 3.5 迁移 tag_db_fn.rs、user_db_fn.rs、attachment_db_fn.rs
+  - [x] 3.5 迁移 tag_db_fn.rs、user_db_fn.rs、attachment_db_fn.rs
     - 复制剩余数据库操作函数
     - _Requirements: 1.3_
-  - [ ] 3.6 创建 `src/db/mod.rs` 统一导出
+  - [x] 3.6 创建 `src/db/mod.rs` 统一导出
     - 重新导出所有数据库函数
     - _Requirements: 1.5_
 
