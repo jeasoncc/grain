@@ -1,9 +1,10 @@
 [package]
 name = "grain"
-version = "0.1.252"
+version = "0.1.253"
 description = "A minimalist writing sanctuary for long-form content. Pure, elegant, and distraction-free."
 authors = ["Jeason"]
 edition = "2021"
+default-run = "grain"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

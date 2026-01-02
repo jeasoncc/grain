@@ -40,9 +40,8 @@ linker = "lld-link"
 # 并行编译任务数（默认为 CPU 核心数）
 # jobs = 8
 
-# 使用 sccache 作为编译缓存（需要先安装 sccache）
-# 取消注释以启用: cargo install sccache
-# rustc-wrapper = "sccache"
+# 使用 sccache 作为编译缓存
+rustc-wrapper = "sccache"
 
 # ============================================
 # 环境变量
