@@ -49,77 +49,77 @@ impl DbConnection {
     async fn create_tables(db: &DatabaseConnection) -> AppResult<()> {
         info!("创建数据库表结构...");
 
-        // 创建 workspace 表
+        // 创建 workspaces 表（复数，与 SeaORM Entity 一致）
         db.execute(Statement::from_string(
             db.get_database_backend(),
             r#"
-            CREATE TABLE IF NOT EXISTS workspace (
+            CREATE TABLE IF NOT EXISTS workspaces (
                 id TEXT PRIMARY KEY NOT NULL,
                 name TEXT NOT NULL,
                 description TEXT,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
             )
             "#.to_string(),
         ))
         .await?;
 
-        // 创建 node 表
+        // 创建 nodes 表（复数，与 SeaORM Entity 一致）
         db.execute(Statement::from_string(
             db.get_database_backend(),
             r#"
-            CREATE TABLE IF NOT EXISTS node (
+            CREATE TABLE IF NOT EXISTS nodes (
                 id TEXT PRIMARY KEY NOT NULL,
                 workspace_id TEXT NOT NULL,
                 parent_id TEXT,
                 title TEXT NOT NULL,
                 node_type TEXT NOT NULL,
-                tags TEXT,
+                is_collapsed INTEGER NOT NULL DEFAULT 0,
                 sort_order INTEGER NOT NULL DEFAULT 0,
-                collapsed INTEGER NOT NULL DEFAULT 0,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                FOREIGN KEY (workspace_id) REFERENCES workspace(id) ON DELETE CASCADE,
-                FOREIGN KEY (parent_id) REFERENCES node(id) ON DELETE CASCADE
+                tags TEXT,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
+                FOREIGN KEY (parent_id) REFERENCES nodes(id) ON DELETE CASCADE
             )
             "#.to_string(),
         ))
         .await?;
 
-        // 创建 node 表索引
+        // 创建 nodes 表索引
         db.execute(Statement::from_string(
             db.get_database_backend(),
-            "CREATE INDEX IF NOT EXISTS idx_node_workspace ON node(workspace_id)".to_string(),
+            "CREATE INDEX IF NOT EXISTS idx_nodes_workspace ON nodes(workspace_id)".to_string(),
         ))
         .await?;
 
         db.execute(Statement::from_string(
             db.get_database_backend(),
-            "CREATE INDEX IF NOT EXISTS idx_node_parent ON node(parent_id)".to_string(),
+            "CREATE INDEX IF NOT EXISTS idx_nodes_parent ON nodes(parent_id)".to_string(),
         ))
         .await?;
 
-        // 创建 content 表
+        // 创建 contents 表（复数，与 SeaORM Entity 一致）
         db.execute(Statement::from_string(
             db.get_database_backend(),
             r#"
-            CREATE TABLE IF NOT EXISTS content (
+            CREATE TABLE IF NOT EXISTS contents (
                 id TEXT PRIMARY KEY NOT NULL,
                 node_id TEXT NOT NULL UNIQUE,
                 content TEXT NOT NULL,
                 version INTEGER NOT NULL DEFAULT 1,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                FOREIGN KEY (node_id) REFERENCES node(id) ON DELETE CASCADE
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE
             )
             "#.to_string(),
         ))
         .await?;
 
-        // 创建 content 表索引
+        // 创建 contents 表索引
         db.execute(Statement::from_string(
             db.get_database_backend(),
-            "CREATE INDEX IF NOT EXISTS idx_content_node ON content(node_id)".to_string(),
+            "CREATE INDEX IF NOT EXISTS idx_contents_node ON contents(node_id)".to_string(),
         ))
         .await?;
 

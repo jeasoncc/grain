@@ -2,10 +2,11 @@
 //!
 //! 运行: cargo run --bin test_db
 
-use grain_lib::db::DbConnection;
-use grain_lib::repo::{ContentRepo, NodeRepo, WorkspaceRepo};
-use grain_lib::types::NodeType;
+use grain_lib::db::{
+    content_db_fn, node_db_fn, workspace_db_fn, DbConnection,
+};
 use grain_lib::types::config::AppConfig;
+use grain_lib::types::node::node_interface::NodeType;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -37,7 +38,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 创建工作区
     println!("\n2. 创建工作区...");
     let workspace_id = uuid::Uuid::new_v4().to_string();
-    let workspace = WorkspaceRepo::create(
+    let workspace = workspace_db_fn::create(
         &db,
         workspace_id.clone(),
         "测试工作区".to_string(),
@@ -49,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 创建文件夹节点
     println!("\n3. 创建文件夹节点...");
     let folder_id = uuid::Uuid::new_v4().to_string();
-    let folder = NodeRepo::create(
+    let folder = node_db_fn::create(
         &db,
         folder_id.clone(),
         workspace_id.clone(),
@@ -64,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 创建文件节点
     println!("\n4. 创建文件节点...");
     let file_id = uuid::Uuid::new_v4().to_string();
-    let file = NodeRepo::create(
+    let file = node_db_fn::create(
         &db,
         file_id.clone(),
         workspace_id.clone(),
@@ -79,7 +80,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 创建内容
     println!("\n5. 创建文件内容...");
     let content_id = uuid::Uuid::new_v4().to_string();
-    let content = ContentRepo::create(
+    let content = content_db_fn::create(
         &db,
         content_id,
         file_id.clone(),
@@ -90,7 +91,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 更新内容
     println!("\n6. 更新文件内容...");
-    let updated_content = ContentRepo::update(
+    let updated_content = content_db_fn::update(
         &db,
         &file_id,
         r#"{"root":{"children":[{"type":"paragraph","children":[{"text":"这是更新后的第一章内容！"}]}]}}"#.to_string(),
@@ -101,7 +102,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 查询工作区节点
     println!("\n7. 查询工作区节点...");
-    let nodes = NodeRepo::find_by_workspace(&db, &workspace_id).await?;
+    let nodes = node_db_fn::find_by_workspace(&db, &workspace_id).await?;
     println!("   ✓ 找到 {} 个节点:", nodes.len());
     for node in &nodes {
         println!("     - {} ({:?})", node.title, node.node_type);
@@ -109,16 +110,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 查询所有工作区
     println!("\n8. 查询所有工作区...");
-    let workspaces = WorkspaceRepo::find_all(&db).await?;
+    let workspaces = workspace_db_fn::find_all(&db).await?;
     println!("   ✓ 找到 {} 个工作区", workspaces.len());
 
     // 清理测试数据
     println!("\n9. 清理测试数据...");
-    WorkspaceRepo::delete(&db, &workspace_id).await?;
+    workspace_db_fn::delete(&db, &workspace_id).await?;
     println!("   ✓ 工作区已删除（级联删除节点和内容）");
 
     // 验证删除
-    let remaining = NodeRepo::find_by_workspace(&db, &workspace_id).await?;
+    let remaining = node_db_fn::find_by_workspace(&db, &workspace_id).await?;
     println!("   ✓ 剩余节点数: {}", remaining.len());
 
     println!("\n=== 测试完成 ===");

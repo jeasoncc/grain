@@ -4,8 +4,7 @@
 
 pub mod commands;
 pub mod db;
-pub mod repo;
-pub mod services;
+pub mod r#fn;
 pub mod types;
 
 use db::DbConnection;

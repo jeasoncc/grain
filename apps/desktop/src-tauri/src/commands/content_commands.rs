@@ -2,7 +2,7 @@
 //!
 //! 内容相关的前端可调用命令
 
-use crate::repo::ContentRepo;
+use crate::db::content_db_fn;
 use crate::types::{ContentResponse, SaveContentRequest};
 use sea_orm::DatabaseConnection;
 use tauri::State;
@@ -13,7 +13,7 @@ pub async fn get_content(
     db: State<'_, DatabaseConnection>,
     node_id: String,
 ) -> Result<Option<ContentResponse>, String> {
-    ContentRepo::find_by_node_id(&db, &node_id)
+    content_db_fn::find_by_node_id(&db, &node_id)
         .await
         .map(|opt| opt.map(ContentResponse::from))
         .map_err(|e| e.to_string())
@@ -26,14 +26,14 @@ pub async fn save_content(
     request: SaveContentRequest,
 ) -> Result<ContentResponse, String> {
     // 检查是否已存在内容
-    let existing = ContentRepo::find_by_node_id(&db, &request.node_id)
+    let existing = content_db_fn::find_by_node_id(&db, &request.node_id)
         .await
         .map_err(|e| e.to_string())?;
 
     match existing {
         Some(_) => {
             // 更新现有内容
-            ContentRepo::update(&db, &request.node_id, request.content, request.expected_version)
+            content_db_fn::update(&db, &request.node_id, request.content, request.expected_version)
                 .await
                 .map(ContentResponse::from)
                 .map_err(|e| e.to_string())
@@ -41,7 +41,7 @@ pub async fn save_content(
         None => {
             // 创建新内容
             let id = uuid::Uuid::new_v4().to_string();
-            ContentRepo::create(&db, id, request.node_id, request.content)
+            content_db_fn::create(&db, id, request.node_id, request.content)
                 .await
                 .map(ContentResponse::from)
                 .map_err(|e| e.to_string())
@@ -55,7 +55,7 @@ pub async fn get_content_version(
     db: State<'_, DatabaseConnection>,
     node_id: String,
 ) -> Result<Option<i32>, String> {
-    ContentRepo::find_by_node_id(&db, &node_id)
+    content_db_fn::find_by_node_id(&db, &node_id)
         .await
         .map(|opt| opt.map(|c| c.version))
         .map_err(|e| e.to_string())
