@@ -2,10 +2,10 @@
 //!
 //! 节点相关的前端可调用命令
 
-use crate::entity::node::NodeType;
+use crate::entity::node::NodeType as EntityNodeType;
 use crate::repo::NodeRepo;
 use crate::services::NodeService;
-use crate::types::{CreateNodeRequest, UpdateNodeRequest, MoveNodeRequest, NodeResponse};
+use crate::types::{CreateNodeRequest, MoveNodeRequest, NodeResponse, UpdateNodeRequest};
 use sea_orm::DatabaseConnection;
 use tauri::State;
 
@@ -53,17 +53,13 @@ pub async fn create_node(
 ) -> Result<NodeResponse, String> {
     let id = uuid::Uuid::new_v4().to_string();
 
-    // 解析节点类型
-    let node_type: NodeType = request
+    // 转换节点类型：DTO NodeType -> Entity NodeType
+    let node_type: EntityNodeType = request
         .node_type
-        .parse()
-        .unwrap_or(NodeType::File);
+        .map(|t| t.into())
+        .unwrap_or(EntityNodeType::File);
 
-    // 序列化 tags
-    let tags = request
-        .tags
-        .map(|t| serde_json::to_string(&t).unwrap_or_default());
-
+    // 创建节点时不带 tags 和 initial_content（需要通过 update 添加）
     NodeService::create_node_with_content(
         &db,
         id,
@@ -71,8 +67,8 @@ pub async fn create_node(
         request.parent_id,
         request.title,
         node_type,
-        tags,
-        request.initial_content,
+        None, // tags
+        None, // initial_content
     )
     .await
     .map(NodeResponse::from)
@@ -86,8 +82,8 @@ pub async fn update_node(
     id: String,
     request: UpdateNodeRequest,
 ) -> Result<NodeResponse, String> {
-    // 序列化 tags
-    let tags = request.tags.map(|opt| opt.map(|t| serde_json::to_string(&t).unwrap_or_default()));
+    // 序列化 tags: Option<Vec<String>> -> Option<Option<String>>
+    let tags = request.tags.map(|t| Some(serde_json::to_string(&t).unwrap_or_default()));
 
     NodeRepo::update(
         &db,
@@ -171,10 +167,10 @@ pub async fn get_nodes_by_type(
     workspace_id: String,
     node_type: String,
 ) -> Result<Vec<NodeResponse>, String> {
-    let parsed_type: NodeType = node_type
+    let parsed_type: EntityNodeType = node_type
         .parse()
-        .unwrap_or(NodeType::File);
-    
+        .unwrap_or(EntityNodeType::File);
+
     NodeRepo::find_by_type(&db, &workspace_id, parsed_type)
         .await
         .map(|nodes| nodes.into_iter().map(NodeResponse::from).collect())

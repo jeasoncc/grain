@@ -38,7 +38,8 @@ pub async fn create_workspace(
 ) -> Result<WorkspaceResponse, String> {
     let id = uuid::Uuid::new_v4().to_string();
 
-    WorkspaceRepo::create(&db, id, request.name, request.description)
+    // 使用 title 字段（前端使用 title，后端 Entity 使用 name）
+    WorkspaceRepo::create(&db, id, request.title, request.description)
         .await
         .map(WorkspaceResponse::from)
         .map_err(|e| e.to_string())
@@ -51,7 +52,8 @@ pub async fn update_workspace(
     id: String,
     request: UpdateWorkspaceRequest,
 ) -> Result<WorkspaceResponse, String> {
-    WorkspaceRepo::update(&db, &id, request.name, request.description)
+    // 使用 title 字段（前端使用 title，后端 Entity 使用 name）
+    WorkspaceRepo::update(&db, &id, request.title, request.description)
         .await
         .map(WorkspaceResponse::from)
         .map_err(|e| e.to_string())
