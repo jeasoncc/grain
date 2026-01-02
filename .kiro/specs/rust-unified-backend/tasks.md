@@ -110,15 +110,15 @@
   - 运行 `bun run desktop:dev` 验证功能正常
   - _Requirements: 2.3_
 
-- [ ] 8. 创建 Warp HTTP 服务器
-  - [ ] 8.1 创建 `apps/api-rust/` 目录和 Cargo.toml
+- [x] 8. 创建 Warp HTTP 服务器
+  - [x] 8.1 创建 `apps/api-rust/` 目录和 Cargo.toml
     - 配置依赖：rust-core、warp、tokio、serde、tracing
     - _Requirements: 3.1_
-  - [ ] 8.2 创建 `src/main.rs` 入口点
+  - [x] 8.2 创建 `src/main.rs` 入口点
     - 初始化日志、配置、数据库连接
     - 构建路由树并启动服务器
     - _Requirements: 3.7, 7.3_
-  - [ ] 8.3 创建 `src/rejection.rs` 错误处理
+  - [x] 8.3 创建 `src/rejection.rs` 错误处理
     - 定义 AppRejection 类型
     - 实现 handle_rejection 函数
     - _Requirements: 3.8, 5.3_
@@ -126,51 +126,51 @@
     - **Property 3: Error Handling Consistency**
     - **Validates: Requirements 5.2, 5.3, 5.4, 5.5**
 
-- [ ] 9. 创建 Warp Filters（Filter 组合子模式）
-  - [ ] 9.1 创建 `src/filters/mod.rs` 和通用 Filter
+- [x] 9. 创建 Warp Filters（Filter 组合子模式）
+  - [x] 9.1 创建 `src/filters/mod.rs` 和通用 Filter
     - 定义 with_db Filter
     - _Requirements: 3.3_
-  - [ ] 9.2 创建 `src/filters/workspace_filters.rs`
+  - [x] 9.2 创建 `src/filters/workspace_filters.rs`
     - 使用 `and()`, `or()` 组合子构建路由
     - GET/POST/PUT/DELETE /api/workspaces
     - _Requirements: 3.2, 3.3_
-  - [ ] 9.3 创建 `src/filters/node_filters.rs`
+  - [x] 9.3 创建 `src/filters/node_filters.rs`
     - Node 相关路由
     - _Requirements: 3.2_
-  - [ ] 9.4 创建 `src/filters/content_filters.rs`
+  - [x] 9.4 创建 `src/filters/content_filters.rs`
     - Content 相关路由
     - _Requirements: 3.2_
-  - [ ] 9.5 创建 `src/filters/tag_filters.rs`、`user_filters.rs`、`attachment_filters.rs`
+  - [x] 9.5 创建 `src/filters/tag_filters.rs`、`user_filters.rs`、`attachment_filters.rs`
     - 剩余实体路由
     - _Requirements: 3.2_
-  - [ ] 9.6 创建 `src/filters/backup_filters.rs`
+  - [x] 9.6 创建 `src/filters/backup_filters.rs`
     - Backup 相关路由
     - _Requirements: 3.2_
 
-- [ ] 10. 创建 Warp Handlers
-  - [ ] 10.1 创建 `src/handlers/mod.rs`
+- [x] 10. 创建 Warp Handlers
+  - [x] 10.1 创建 `src/handlers/mod.rs`
     - _Requirements: 3.5_
-  - [ ] 10.2 创建 `src/handlers/workspace_handlers.rs`
+  - [x] 10.2 创建 `src/handlers/workspace_handlers.rs`
     - 调用 rust_core 函数
     - _Requirements: 3.5_
-  - [ ] 10.3 创建 `src/handlers/node_handlers.rs`
+  - [x] 10.3 创建 `src/handlers/node_handlers.rs`
     - _Requirements: 3.5_
-  - [ ] 10.4 创建 `src/handlers/content_handlers.rs`
+  - [x] 10.4 创建 `src/handlers/content_handlers.rs`
     - _Requirements: 3.5_
-  - [ ] 10.5 创建剩余 handlers
+  - [x] 10.5 创建剩余 handlers
     - tag、user、attachment、backup handlers
     - _Requirements: 3.5_
 
-- [ ] 11. 配置 CORS 和日志
-  - [ ] 11.1 添加 CORS 支持
+- [x] 11. 配置 CORS 和日志
+  - [x] 11.1 添加 CORS 支持
     - 使用 `warp::cors()` 配置
     - _Requirements: 3.6_
-  - [ ] 11.2 添加请求日志
+  - [x] 11.2 添加请求日志
     - 使用 `warp::log()` 记录请求
     - _Requirements: 7.2_
 
 - [ ] 12. Checkpoint - 验证 Warp 服务器
-  - 运行 `cargo run -p api-rust`
+  - 运行 `cargo run -p grain-api`
   - 使用 curl 测试 API 端点
   - _Requirements: 3.4_
 
