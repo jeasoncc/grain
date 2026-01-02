@@ -89,3 +89,23 @@ pub use types::attachment::{
 // ============================================
 
 pub use db::connection::DbConnection;
+
+// ============================================
+// 重新导出纯函数
+// ============================================
+
+pub use r#fn::backup::{
+    cleanup_old_backups, create_backup, delete_backup, extract_backup_info,
+    generate_backup_filename, is_valid_backup_filename, list_backups, restore_backup, BackupInfo,
+};
+
+pub use r#fn::crypto::{delete_key, generate_key, get_or_create_key, key_exists};
+
+#[cfg(debug_assertions)]
+pub use r#fn::crypto::get_dev_key;
+
+pub use r#fn::node::{
+    create_node_with_content, delete_node_recursive, duplicate_node, extract_tags,
+    generate_copy_title, is_folder, is_root_node, node_type_needs_content, serialize_tags,
+    transform_title,
+};

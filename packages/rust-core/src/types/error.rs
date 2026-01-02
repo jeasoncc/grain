@@ -45,6 +45,14 @@ pub enum AppError {
     /// 序列化错误
     #[error("序列化错误: {0}")]
     SerializationError(String),
+
+    /// 备份错误
+    #[error("备份错误: {0}")]
+    BackupError(String),
+
+    /// 密钥链错误
+    #[error("密钥链错误: {0}")]
+    KeyringError(String),
 }
 
 /// 应用结果类型别名
@@ -71,6 +79,8 @@ impl AppError {
             AppError::InternalError(_) => 500,
             AppError::IoError(_) => 500,
             AppError::SerializationError(_) => 400,
+            AppError::BackupError(_) => 500,
+            AppError::KeyringError(_) => 500,
         }
     }
 
@@ -84,6 +94,8 @@ impl AppError {
             AppError::InternalError(_) => "INTERNAL_ERROR",
             AppError::IoError(_) => "IO_ERROR",
             AppError::SerializationError(_) => "SERIALIZATION_ERROR",
+            AppError::BackupError(_) => "BACKUP_ERROR",
+            AppError::KeyringError(_) => "KEYRING_ERROR",
         }
     }
 
@@ -110,6 +122,16 @@ impl AppError {
     /// 创建内部错误
     pub fn internal(msg: impl Into<String>) -> Self {
         AppError::InternalError(msg.into())
+    }
+
+    /// 创建备份错误
+    pub fn backup_error(msg: impl Into<String>) -> Self {
+        AppError::BackupError(msg.into())
+    }
+
+    /// 创建密钥链错误
+    pub fn keyring_error(msg: impl Into<String>) -> Self {
+        AppError::KeyringError(msg.into())
     }
 }
 
@@ -141,6 +163,18 @@ impl From<anyhow::Error> for AppError {
     }
 }
 
+impl From<walkdir::Error> for AppError {
+    fn from(err: walkdir::Error) -> Self {
+        AppError::IoError(err.to_string())
+    }
+}
+
+impl From<zip::result::ZipError> for AppError {
+    fn from(err: zip::result::ZipError) -> Self {
+        AppError::BackupError(err.to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -156,6 +190,8 @@ mod tests {
         assert_eq!(AppError::InternalError("test".into()).status_code(), 500);
         assert_eq!(AppError::IoError("test".into()).status_code(), 500);
         assert_eq!(AppError::SerializationError("test".into()).status_code(), 400);
+        assert_eq!(AppError::BackupError("test".into()).status_code(), 500);
+        assert_eq!(AppError::KeyringError("test".into()).status_code(), 500);
     }
 
     #[test]
@@ -177,6 +213,8 @@ mod tests {
             AppError::InternalError("test".into()).error_code(),
             "INTERNAL_ERROR"
         );
+        assert_eq!(AppError::BackupError("test".into()).error_code(), "BACKUP_ERROR");
+        assert_eq!(AppError::KeyringError("test".into()).error_code(), "KEYRING_ERROR");
     }
 
     #[test]

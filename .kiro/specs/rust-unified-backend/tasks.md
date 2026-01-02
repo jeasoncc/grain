@@ -65,11 +65,11 @@
     - 重新导出所有数据库函数
     - _Requirements: 1.5_
 
-- [ ] 4. 迁移纯函数到 rust-core
-  - [ ] 4.1 迁移 `src-tauri/src/fn/` 目录
+- [x] 4. 迁移纯函数到 rust-core
+  - [x] 4.1 迁移 `src-tauri/src/fn/` 目录
     - 复制所有纯函数
     - _Requirements: 1.4_
-  - [ ] 4.2 创建 `src/fn/mod.rs` 统一导出
+  - [x] 4.2 创建 `src/fn/mod.rs` 统一导出
     - _Requirements: 1.5_
 
 - [x] 5. Checkpoint - 验证 rust-core 编译
