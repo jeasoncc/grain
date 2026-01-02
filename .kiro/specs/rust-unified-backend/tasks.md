@@ -6,38 +6,38 @@
 
 ## Tasks
 
-- [ ] 1. 创建 rust-core 共享 crate 基础结构
-  - [ ] 1.1 创建 `packages/rust-core/` 目录和 Cargo.toml
+- [x] 1. 创建 rust-core 共享 crate 基础结构
+  - [x] 1.1 创建 `packages/rust-core/` 目录和 Cargo.toml
     - 配置 crate 名称、版本、依赖
     - 添加 sea-orm、serde、thiserror、uuid、chrono、tokio 依赖
     - _Requirements: 1.1, 1.7_
-  - [ ] 1.2 创建 `src/lib.rs` 公共 API 导出
+  - [x] 1.2 创建 `src/lib.rs` 公共 API 导出
     - 定义模块结构：types、db、fn
     - 重新导出所有公共类型
     - _Requirements: 1.5_
-  - [ ] 1.3 创建 `src/types/error.rs` 统一错误类型
+  - [x] 1.3 创建 `src/types/error.rs` 统一错误类型
     - 定义 AppError 枚举（NotFound、ValidationError、DatabaseError、Unauthorized、InternalError）
     - 实现 status_code() 方法
     - _Requirements: 5.1_
-  - [ ] 1.4 编写 AppError 单元测试
+  - [x] 1.4 编写 AppError 单元测试
     - **Property 6: HTTP Status Code Mapping**
     - **Validates: Requirements 3.8**
 
-- [ ] 2. 迁移类型定义到 rust-core
-  - [ ] 2.1 迁移 workspace 类型
+- [x] 2. 迁移类型定义到 rust-core
+  - [x] 2.1 迁移 workspace 类型
     - 复制 `src-tauri/src/types/workspace/` 到 `rust-core/src/types/workspace/`
     - 更新 mod.rs 导出
     - _Requirements: 1.2, 1.6_
-  - [ ] 2.2 迁移 node 类型
+  - [x] 2.2 迁移 node 类型
     - 复制 `src-tauri/src/types/node/` 到 `rust-core/src/types/node/`
     - _Requirements: 1.2_
-  - [ ] 2.3 迁移 content 类型
+  - [x] 2.3 迁移 content 类型
     - 复制 `src-tauri/src/types/content/` 到 `rust-core/src/types/content/`
     - _Requirements: 1.2_
-  - [ ] 2.4 迁移 tag、user、attachment 类型
+  - [x] 2.4 迁移 tag、user、attachment 类型
     - 复制剩余类型目录
     - _Requirements: 1.2_
-  - [ ] 2.5 创建 `src/types/mod.rs` 统一导出
+  - [x] 2.5 创建 `src/types/mod.rs` 统一导出
     - 重新导出所有类型
     - _Requirements: 1.5_
   - [ ] 2.6 编写类型序列化属性测试
@@ -72,7 +72,7 @@
   - [ ] 4.2 创建 `src/fn/mod.rs` 统一导出
     - _Requirements: 1.5_
 
-- [ ] 5. Checkpoint - 验证 rust-core 编译
+- [x] 5. Checkpoint - 验证 rust-core 编译
   - 运行 `cargo check -p rust-core`
   - 确保所有模块正确导出
   - 确保无 Tauri/Warp 依赖
