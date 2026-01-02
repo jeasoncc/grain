@@ -1,5 +1,61 @@
 # 任务清单：IndexedDB (Dexie) 到 SQLite 迁移
 
+## 当前状态审查（2026-01-02）
+
+### 已完成迁移的文件 ✅
+
+**Hooks（使用 TanStack Query）：**
+- `use-workspace.ts` - 使用 `useWorkspaces`, `useWorkspace`
+- `use-node.ts` - 使用 `useNodesByWorkspace`, `useRootNodes`, `useChildNodes`, `useNode`
+- `use-content.ts` - 使用 `useContent`
+- `use-drawing.ts` - 使用 `useContent`
+- `use-wiki.ts` - 使用 `useNodesByWorkspace`
+
+**Actions（使用 Repository 层）：**
+- Node Actions: `create-node`, `delete-node`, `move-node`, `rename-node`, `reorder-node`, `ensure-folder`
+- Workspace Actions: `create-workspace`, `update-workspace`, `delete-workspace`
+- File Actions: `create-file`, `open-file`
+- Templated Actions: `create-templated-file` (及 diary, wiki 等)
+
+**Services：**
+- `save-service.ts` - 使用 `contentRepo.updateContentByNodeId`
+
+### 仍在使用 Dexie 的文件 ❌
+
+**Hooks（使用 useLiveQuery + database）：**
+- `use-tag.ts` - 使用 `database.tags`
+- `use-user.ts` - 使用 `database.users`
+- `use-attachment.ts` - 使用 `database.attachments`
+
+**Actions（使用 @/db/*.db.fn.ts）：**
+- `export-markdown.action.ts` - 使用 `getContentByNodeIdOrFail`, `getNodeByIdOrFail`
+- `export-json.action.ts` - 使用 `getContentByNodeIdOrFail`, `getNodeByIdOrFail`
+- `export-orgmode.action.ts` - 使用 `getContentByNodeIdOrFail`, `getNodeByIdOrFail`
+- `export-project.action.ts` - 使用 `getContentsByNodeIds`, `database`
+- `import-json.action.ts` - 使用 `database`
+- `import-markdown.action.ts` - 使用 `addContent`, `addNode`, `getNextOrder`
+- `migrate-wiki.action.ts` - 使用 `addContent`, `addNode`, `getNextOrder`, `updateNode`, `database`
+
+**Functions（使用 @/db）：**
+- `wiki.resolve.fn.ts` - 使用 `getContentsByNodeIds`, `getNodesByWorkspace`, `database`
+
+**其他：**
+- `log/index.ts` - 使用 `logDB`（日志数据库，可保留）
+
+### 迁移优先级
+
+| 优先级 | 文件 | 原因 |
+|--------|------|------|
+| P0 | Export Actions | 核心导出功能 |
+| P0 | Import Actions | 核心导入功能 |
+| P1 | `wiki.resolve.fn.ts` | Wiki 链接解析 |
+| P2 | `use-tag.ts` | 标签功能 |
+| P2 | `use-user.ts` | 用户功能 |
+| P3 | `use-attachment.ts` | 附件功能 |
+| P3 | `migrate-wiki.action.ts` | 旧数据迁移 |
+
+---
+
 ## 概述
 
 本任务清单基于「入口窄出口宽」的函数式异步数据流设计，将数据层从 Dexie/IndexedDB 迁移到 SQLite/TanStack Query。
@@ -157,9 +213,9 @@
 - [x] 迁移 `delete-workspace.action.ts` - 使用 repo + TaskEither 管道
 - _Requirements: 6.1-6.5_
 
-### 任务 5.3: 迁移 File Actions - 待完成
-- [ ] 迁移 `create-file.action.ts` - 仍使用 `addContent, addNode, getNextOrder`
-- [ ] 迁移 `open-file.action.ts` - 仍使用 `getContentByNodeId`
+### 任务 5.3: 迁移 File Actions ✅
+- [x] 迁移 `create-file.action.ts` - 使用 nodeRepo.createNode + nodeRepo.updateNode
+- [x] 迁移 `open-file.action.ts` - 使用 contentRepo.getContentByNodeId
 - _Requirements: 6.1-6.5_
 
 ### 任务 5.4: 迁移 Templated Actions ✅
@@ -167,15 +223,16 @@
 - [x] 验证 diary、wiki 等模板创建功能
 - _Requirements: 6.1-6.5_
 
-### 任务 5.5: 迁移 Export Actions - 部分完成
-- [x] 迁移 `export-markdown.action.ts` - 使用 repo + TaskEither 管道
-- [ ] 迁移 `export-workspace-markdown.action.ts` - 仍使用 Dexie
-- [ ] 迁移 `export-all.action.ts` - 仍使用 Dexie
-- [ ] 迁移 `export-project.action.ts` - 仍使用 Dexie
+### 任务 5.5: 迁移 Export Actions - 待完成
+- [ ] 迁移 `export-markdown.action.ts` - 仍使用 `getContentByNodeIdOrFail`, `getNodeByIdOrFail`
+- [ ] 迁移 `export-json.action.ts` - 仍使用 `getContentByNodeIdOrFail`, `getNodeByIdOrFail`
+- [ ] 迁移 `export-orgmode.action.ts` - 仍使用 `getContentByNodeIdOrFail`, `getNodeByIdOrFail`
+- [ ] 迁移 `export-project.action.ts` - 仍使用 `getContentsByNodeIds`, `database`
 - _Requirements: 6.1-6.5_
 
 ### 任务 5.6: 迁移 Import Actions - 待完成
-- [ ] 迁移 `import-json.action.ts` - 仍使用 Dexie database
+- [ ] 迁移 `import-json.action.ts` - 仍使用 `database`
+- [ ] 迁移 `import-markdown.action.ts` - 仍使用 `addContent`, `addNode`, `getNextOrder`
 - _Requirements: 6.1-6.5_
 
 ### 任务 5.7: 迁移 Wiki Actions - 待完成

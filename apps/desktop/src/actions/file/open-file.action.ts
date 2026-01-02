@@ -9,6 +9,10 @@
  *
  * 使用 TaskEither 确保时序正确性：只有成功才继续执行后续操作
  *
+ * 迁移说明：
+ * - 从 Dexie 迁移到 Repository 层
+ * - 使用 contentRepo 访问 SQLite 数据
+ *
  * @see .kiro/steering/design-patterns.md
  * @see .kiro/specs/editor-tabs-dataflow-refactor/design.md
  */
@@ -16,10 +20,10 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { getContentByNodeId } from "@/db";
 import type { AppError } from "@/lib/error.types";
 import { fileOperationQueue } from "@/lib/file-operation-queue";
 import logger from "@/log";
+import * as contentRepo from "@/repo/content.repo.fn";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import type { TabType } from "@/types/editor-tab";
 
@@ -83,7 +87,7 @@ export const openFile = (
 
 					// 2. 从 DB 加载内容
 					logger.info("[OpenFile] 从 DB 加载内容...");
-					const contentResult = await getContentByNodeId(nodeId)();
+					const contentResult = await contentRepo.getContentByNodeId(nodeId)();
 
 					// 3. 创建 tab
 					openTab({

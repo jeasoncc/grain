@@ -9,6 +9,10 @@
  *
  * 使用 TaskEither 确保时序正确性：只有成功才继续执行后续操作
  *
+ * 迁移说明：
+ * - 从 Dexie 迁移到 Repository 层
+ * - 使用 nodeRepo 和 contentRepo 访问 SQLite 数据
+ *
  * @see .kiro/steering/design-patterns.md
  * @see .kiro/specs/editor-tabs-dataflow-refactor/design.md
  */
@@ -16,10 +20,10 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { addContent, addNode, getNextOrder } from "@/db";
 import type { AppError } from "@/lib/error.types";
 import { fileOperationQueue } from "@/lib/file-operation-queue";
 import logger from "@/log";
+import * as nodeRepo from "@/repo/node.repo.fn";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import type { TabType } from "@/types/editor-tab";
 import type { NodeInterface, NodeType } from "@/types/node";
@@ -86,17 +90,24 @@ export const createFile = (
 					logger.start("[CreateFile] 创建文件:", title, type);
 
 					// 1. 获取排序号
-					const orderResult = await getNextOrder(parentId, workspaceId)();
+					const orderResult = await nodeRepo.getNextSortOrder(
+						workspaceId,
+						parentId,
+					)();
 					const order = E.isRight(orderResult) ? orderResult.right : 0;
 
-					// 2. 创建节点
-					const nodeResult = await addNode(workspaceId, title, {
-						parent: parentId,
-						type,
-						order,
-						collapsed,
-						tags,
-					})();
+					// 2. 创建节点（带初始内容，如果不是文件夹）
+					const nodeResult = await nodeRepo.createNode(
+						{
+							workspace: workspaceId,
+							title,
+							parent: parentId,
+							type,
+							order,
+							collapsed,
+						},
+						type !== "folder" ? content : undefined,
+					)();
 
 					if (E.isLeft(nodeResult)) {
 						logger.error("[CreateFile] 创建节点失败:", nodeResult.left.message);
@@ -106,17 +117,16 @@ export const createFile = (
 					const node = nodeResult.right;
 					logger.info("[CreateFile] 节点创建成功:", node.id);
 
-					// 3. 创建内容（非文件夹）
-					if (type !== "folder") {
-						const contentResult = await addContent(node.id, content)();
-						if (E.isLeft(contentResult)) {
+					// 3. 如果有 tags，更新节点添加 tags
+					if (tags && tags.length > 0) {
+						const updateResult = await nodeRepo.updateNode(node.id, {
+							tags,
+						})();
+						if (E.isLeft(updateResult)) {
 							logger.warn(
-								"[CreateFile] 创建内容失败:",
-								contentResult.left.message,
+								"[CreateFile] 更新标签失败:",
+								updateResult.left.message,
 							);
-							// 内容创建失败不阻塞，继续执行
-						} else {
-							logger.info("[CreateFile] 内容创建成功");
 						}
 					}
 
