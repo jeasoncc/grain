@@ -13,8 +13,11 @@ pub mod config;
 pub mod error;
 
 // DTO + Builder + Entity 模块（按实体分目录）
+pub mod attachment;
 pub mod content;
 pub mod node;
+pub mod tag;
+pub mod user;
 pub mod workspace;
 
 // 重新导出核心类型
@@ -38,4 +41,22 @@ pub use content::{
     ContentActiveModel, ContentBuilder, ContentColumn, ContentEntity, ContentModel,
     ContentRelation, ContentResponse, ContentType, CreateContentRequest, SaveContentRequest,
     UpdateContentRequest,
+};
+
+// 重新导出 Tag 类型
+pub use tag::{
+    CreateTagRequest, TagActiveModel, TagColumn, TagEntity, TagModel, TagResponse,
+    UpdateTagRequest,
+};
+
+// 重新导出 User 类型
+pub use user::{
+    CreateUserRequest, UpdateUserRequest, UserActiveModel, UserColumn, UserEntity, UserModel,
+    UserPlan, UserResponse,
+};
+
+// 重新导出 Attachment 类型
+pub use attachment::{
+    AttachmentActiveModel, AttachmentColumn, AttachmentEntity, AttachmentModel, AttachmentResponse,
+    AttachmentType, CreateAttachmentRequest, UpdateAttachmentRequest,
 };

@@ -99,3 +99,39 @@ tempfile = "3"
 proptest = "1"
 fake = { version = "3", features = ["derive"] }
 tokio-test = "0.4"
+
+# ============================================
+# Profile 配置 - 优化编译速度
+# ============================================
+
+# 开发配置 - 优化编译速度
+[profile.dev]
+opt-level = 0              # 不优化，加快编译
+debug = 1                  # 减少调试信息（2 = 完整，1 = 行号，0 = 无）
+incremental = true         # 启用增量编译
+codegen-units = 256        # 更多并行编译单元
+split-debuginfo = "unpacked"  # Linux 上更快的链接
+
+# 开发依赖 - 使用优化减少运行时开销
+[profile.dev.package."*"]
+opt-level = 2              # 依赖使用优化级别 2
+debug = false              # 依赖不生成调试信息
+
+# 发布配置 - 优化运行性能
+[profile.release]
+opt-level = 3              # 最高优化级别
+lto = "thin"               # 薄 LTO，平衡编译时间和性能
+codegen-units = 1          # 单一编译单元，更好的优化
+strip = true               # 移除符号，减小二进制大小
+panic = "abort"            # panic 时直接终止，减小二进制
+
+# 测试配置 - 平衡编译速度和运行速度
+[profile.test]
+opt-level = 1              # 轻度优化，测试运行更快
+debug = 1                  # 保留行号信息用于调试
+incremental = true         # 启用增量编译
+
+# 构建脚本配置
+[profile.dev.build-override]
+opt-level = 0              # 构建脚本不优化
+codegen-units = 256        # 并行编译

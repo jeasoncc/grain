@@ -118,6 +118,37 @@ pub fn run() {
             commands::list_backups,
             commands::delete_backup,
             commands::cleanup_old_backups,
+            // 标签命令
+            commands::get_tags_by_workspace,
+            commands::get_tag,
+            commands::get_tag_by_name,
+            commands::get_top_tags,
+            commands::create_tag,
+            commands::update_tag,
+            commands::get_or_create_tag,
+            commands::increment_tag_count,
+            commands::decrement_tag_count,
+            commands::delete_tag,
+            commands::delete_tags_by_workspace,
+            // 用户命令
+            commands::get_users,
+            commands::get_user,
+            commands::get_user_by_username,
+            commands::get_user_by_email,
+            commands::get_current_user,
+            commands::create_user,
+            commands::update_user,
+            commands::update_user_last_login,
+            commands::delete_user,
+            // 附件命令
+            commands::get_attachments_by_project,
+            commands::get_attachment,
+            commands::get_attachments_by_type,
+            commands::get_attachment_by_path,
+            commands::create_attachment,
+            commands::update_attachment,
+            commands::delete_attachment,
+            commands::delete_attachments_by_project,
         ])
         .run(tauri::generate_context!())
         .expect("启动 Tauri 应用失败");

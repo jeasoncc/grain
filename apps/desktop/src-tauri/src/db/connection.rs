@@ -123,6 +123,100 @@ impl DbConnection {
         ))
         .await?;
 
+        // 创建 tags 表
+        db.execute(Statement::from_string(
+            db.get_database_backend(),
+            r#"
+            CREATE TABLE IF NOT EXISTS tags (
+                id TEXT PRIMARY KEY NOT NULL,
+                name TEXT NOT NULL,
+                workspace_id TEXT NOT NULL,
+                count INTEGER NOT NULL DEFAULT 1,
+                last_used INTEGER NOT NULL,
+                created_at INTEGER NOT NULL,
+                FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+            )
+            "#.to_string(),
+        ))
+        .await?;
+
+        // 创建 tags 表索引
+        db.execute(Statement::from_string(
+            db.get_database_backend(),
+            "CREATE INDEX IF NOT EXISTS idx_tags_workspace ON tags(workspace_id)".to_string(),
+        ))
+        .await?;
+
+        // 创建 users 表
+        db.execute(Statement::from_string(
+            db.get_database_backend(),
+            r#"
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY NOT NULL,
+                username TEXT NOT NULL,
+                display_name TEXT,
+                avatar TEXT,
+                email TEXT,
+                last_login INTEGER NOT NULL,
+                created_at INTEGER NOT NULL,
+                plan TEXT NOT NULL DEFAULT 'free',
+                plan_start_date INTEGER,
+                plan_expires_at INTEGER,
+                trial_expires_at INTEGER,
+                token TEXT,
+                server_message TEXT,
+                features TEXT,
+                state TEXT,
+                settings TEXT
+            )
+            "#.to_string(),
+        ))
+        .await?;
+
+        // 创建 users 表索引
+        db.execute(Statement::from_string(
+            db.get_database_backend(),
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username)".to_string(),
+        ))
+        .await?;
+
+        db.execute(Statement::from_string(
+            db.get_database_backend(),
+            "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)".to_string(),
+        ))
+        .await?;
+
+        // 创建 attachments 表
+        db.execute(Statement::from_string(
+            db.get_database_backend(),
+            r#"
+            CREATE TABLE IF NOT EXISTS attachments (
+                id TEXT PRIMARY KEY NOT NULL,
+                project_id TEXT,
+                attachment_type TEXT NOT NULL DEFAULT 'file',
+                file_name TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                uploaded_at INTEGER NOT NULL,
+                size INTEGER,
+                mime_type TEXT
+            )
+            "#.to_string(),
+        ))
+        .await?;
+
+        // 创建 attachments 表索引
+        db.execute(Statement::from_string(
+            db.get_database_backend(),
+            "CREATE INDEX IF NOT EXISTS idx_attachments_project ON attachments(project_id)".to_string(),
+        ))
+        .await?;
+
+        db.execute(Statement::from_string(
+            db.get_database_backend(),
+            "CREATE INDEX IF NOT EXISTS idx_attachments_type ON attachments(attachment_type)".to_string(),
+        ))
+        .await?;
+
         info!("数据库表结构创建完成");
         Ok(())
     }
