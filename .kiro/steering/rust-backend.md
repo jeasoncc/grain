@@ -27,9 +27,183 @@ inclusion: manual
 | `pipe()` | `.map().and_then()` | 管道组合 |
 | `Option` | `Option<T>` | 可空值 |
 
-## 类型分层原则
+## 测试优先原则（TDD）
 
-与前端一致，Rust 后端也采用三层类型定义：
+**Rust 后端必须遵循测试优先开发**：
+
+### 开发流程
+
+```
+1. 先写测试 → 2. 运行测试（失败）→ 3. 写实现 → 4. 运行测试（通过）→ 5. 重构
+```
+
+### 测试规范
+
+| 类型 | 位置 | 命名 |
+|------|------|------|
+| 单元测试 | 同文件 `#[cfg(test)]` 模块 | `test_xxx` |
+| 集成测试 | `tests/` 目录 | `xxx_test.rs` |
+| 属性测试 | 同文件或 `tests/` | 使用 `proptest` 或 `quickcheck` |
+
+### 测试示例
+
+```rust
+// fn/node/transform_fn.rs
+
+/// 转换节点标题
+pub fn transform_title(title: &str) -> String {
+    title.trim().to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ✅ 先写测试
+    #[test]
+    fn test_transform_title_trims_whitespace() {
+        assert_eq!(transform_title("  hello  "), "hello");
+    }
+
+    #[test]
+    fn test_transform_title_empty_string() {
+        assert_eq!(transform_title(""), "");
+    }
+
+    #[test]
+    fn test_transform_title_preserves_inner_spaces() {
+        assert_eq!(transform_title("  hello world  "), "hello world");
+    }
+}
+```
+
+### 异步测试
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_create_node() {
+        // 准备测试数据
+        let db = setup_test_db().await;
+        
+        // 执行
+        let result = create_node(&db, "测试节点").await;
+        
+        // 断言
+        assert!(result.is_ok());
+        let node = result.unwrap();
+        assert_eq!(node.title, "测试节点");
+    }
+}
+```
+
+### 测试覆盖要求
+
+| 文件类型 | 测试要求 |
+|---------|---------|
+| `*_fn.rs` | **必须** 有单元测试 |
+| `*_db_fn.rs` | **必须** 有集成测试 |
+| `types/*.rs` | 建议有 Builder 测试 |
+| `commands/*.rs` | 可选（通过 E2E 测试覆盖）|
+
+## 文件命名规范
+
+### 纯函数后缀 `_fn`
+
+**与前端 `.fn.ts` 对应，Rust 使用 `_fn.rs` 后缀标识纯函数文件**：
+
+| 类型 | 命名格式 | 示例 |
+|------|---------|------|
+| 纯函数 | `{domain}_{action}_fn.rs` | `node_transform_fn.rs` |
+| 数据库函数 | `{domain}_db_fn.rs` | `node_db_fn.rs` |
+| 类型定义 | `{domain}_interface.rs` | `node_interface.rs` |
+| Entity | `{domain}_entity.rs` | `node_entity.rs` |
+| Builder | `{domain}_builder.rs` | `node_builder.rs` |
+| Tauri 命令 | `{domain}_commands.rs` | `node_commands.rs` |
+
+### 前后端命名对照
+
+| 前端 (TypeScript) | 后端 (Rust) |
+|-------------------|-------------|
+| `node.interface.ts` | `node_interface.rs` |
+| `node.schema.ts` | `node_interface.rs` (serde) |
+| `node.builder.ts` | `node_builder.rs` |
+| `node.parse.fn.ts` | `node_parse_fn.rs` |
+| `node.transform.fn.ts` | `node_transform_fn.rs` |
+| `node.db.fn.ts` | `node_db_fn.rs` |
+
+### 纯函数文件要求
+
+`*_fn.rs` 文件必须满足：
+
+1. **无副作用** - 不直接操作 IO、数据库、文件系统
+2. **确定性** - 相同输入总是产生相同输出
+3. **不可变** - 不修改输入参数，返回新值
+4. **可测试** - 必须有对应的单元测试
+
+```rust
+// ✅ node_transform_fn.rs - 纯函数
+pub fn transform_node_title(title: &str) -> String {
+    title.trim().to_string()
+}
+
+// ❌ 不应该在 _fn.rs 中
+pub async fn save_node(db: &Database, node: &Node) -> Result<()> {
+    // 这是副作用操作，应该放在 _db_fn.rs 或 commands 中
+}
+```
+
+## 目录结构
+
+```
+apps/desktop/src-tauri/src/
+├── main.rs                    # 入口点
+├── lib.rs                     # Tauri 应用配置
+│
+├── types/                     # 【类型定义层】
+│   ├── mod.rs
+│   ├── error.rs              # AppError 定义
+│   ├── config.rs             # 配置结构体
+│   ├── node/
+│   │   ├── mod.rs
+│   │   ├── node_entity.rs    # SeaORM Entity
+│   │   ├── node_interface.rs # DTO 定义
+│   │   └── node_builder.rs   # Builder 模式
+│   ├── workspace/
+│   └── content/
+│
+├── fn/                        # 【纯函数层】
+│   ├── mod.rs
+│   ├── node/
+│   │   ├── mod.rs
+│   │   ├── node_parse_fn.rs      # 解析函数
+│   │   ├── node_transform_fn.rs  # 转换函数
+│   │   └── node_validate_fn.rs   # 校验函数
+│   ├── crypto/
+│   │   ├── mod.rs
+│   │   └── encrypt_fn.rs         # 加密函数
+│   └── export/
+│       ├── mod.rs
+│       └── markdown_fn.rs        # Markdown 导出
+│
+├── db/                        # 【数据库层】
+│   ├── mod.rs
+│   ├── connection.rs         # 数据库连接
+│   ├── node_db_fn.rs         # Node 数据库操作
+│   ├── workspace_db_fn.rs    # Workspace 数据库操作
+│   └── content_db_fn.rs      # Content 数据库操作
+│
+└── commands/                  # 【Tauri Commands - 副作用边界】
+    ├── mod.rs
+    ├── node_commands.rs
+    ├── workspace_commands.rs
+    └── content_commands.rs
+```
+
+## 类型分层原则
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -40,24 +214,14 @@ inclusion: manual
 │   Entity 层     │     │    DTO 层       │     │   Builder 层    │
 │  (数据库实体)    │     │  (数据传输对象)  │     │  (对象构建器)    │
 ├─────────────────┤     ├─────────────────┤     ├─────────────────┤
-│ entity/node.rs  │────▶│ types/node.rs   │◀────│ types/node.rs   │
-│ Model (SeaORM)  │     │ NodeResponse    │     │ NodeBuilder     │
+│ node_entity.rs  │────▶│node_interface.rs│◀────│ node_builder.rs │
+│ Model (SeaORM)  │     │ NodeDto         │     │ NodeBuilder     │
 │                 │     │ CreateNodeReq   │     │                 │
-│                 │     │ UpdateNodeReq   │     │                 │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
-        │                       │                       │
         │                       │                       │
         ▼                       ▼                       ▼
    数据库存储              API 边界                 复杂对象构建
 ```
-
-### 类型职责
-
-| 层级 | 文件位置 | 职责 | 示例 |
-|------|----------|------|------|
-| **Entity** | `entity/*.rs` | 数据库表映射 | `node::Model` |
-| **DTO** | `types/*.rs` | API 请求/响应 | `NodeResponse`, `CreateNodeRequest` |
-| **Builder** | `types/*.rs` | 构建复杂对象 | `NodeBuilder` |
 
 ## 数据流架构图
 
@@ -98,7 +262,7 @@ inclusion: manual
 │                                                                                    │
 │    ┌──────────┐      ┌──────────┐      ┌──────────┐      ┌──────────┐             │
 │    │  parse   │─────▶│ validate │─────▶│transform │─────▶│  format  │             │
-│    │          │  ->  │          │  ->  │          │  ->  │          │             │
+│    │  _fn.rs  │  ->  │  _fn.rs  │  ->  │  _fn.rs  │  ->  │  _fn.rs  │             │
 │    └──────────┘      └──────────┘      └──────────┘      └──────────┘             │
 │                                                                                    │
 │    使用 Result 链式调用：.map().and_then().map_err()                               │
@@ -108,352 +272,14 @@ inclusion: manual
                     │                                        │                        │
                     ▼                                        ▼                        ▼
      ┌─────────────────────────┐          ┌─────────────────────────┐    ┌───────────────────┐
-     │     DB Repository       │          │    Crypto Service       │    │  Export Service   │
-     │   (SQLite + SQLCipher)  │          │     (加密/解密)          │    │    (导出)         │
+     │     DB Functions        │          │    Crypto Functions     │    │ Export Functions  │
+     │   node_db_fn.rs         │          │    encrypt_fn.rs        │    │  markdown_fn.rs   │
      └────────────┬────────────┘          └─────────────────────────┘    └───────────────────┘
                   │
                   ▼
      ┌─────────────────────────┐
      │   SQLite (加密存储)      │
-     │   SQLCipher / sqlx      │
      └─────────────────────────┘
-```
-
-## 目录结构
-
-```
-apps/desktop/src-tauri/src/
-├── main.rs                    # 入口点
-├── lib.rs                     # Tauri 应用配置
-│
-├── types/                     # 【DTO + Builder 层】
-│   ├── mod.rs
-│   ├── error.rs              # AppError 定义
-│   ├── config.rs             # 配置结构体
-│   ├── node.rs               # Node DTO + Builder
-│   ├── workspace.rs          # Workspace DTO + Builder
-│   └── content.rs            # Content DTO + Builder
-│
-├── entity/                    # 【Entity 层 - SeaORM】
-│   ├── mod.rs
-│   ├── node.rs               # Node 数据库实体
-│   ├── workspace.rs          # Workspace 数据库实体
-│   └── content.rs            # Content 数据库实体
-│
-├── fn/                        # 【纯函数层】
-│   ├── mod.rs
-│   ├── node/
-│   │   ├── mod.rs
-│   │   ├── parse.rs          # 解析函数
-│   │   ├── transform.rs      # 转换函数
-│   │   └── validate.rs       # 校验函数
-│   ├── crypto/
-│   │   ├── mod.rs
-│   │   └── encrypt.rs        # 加密函数
-│   └── export/
-│       ├── mod.rs
-│       └── markdown.rs       # Markdown 导出
-│
-├── repo/                      # 【Repository 层】
-│   ├── mod.rs
-│   ├── node_repo.rs          # Node 仓库
-│   ├── workspace_repo.rs     # Workspace 仓库
-│   └── content_repo.rs       # Content 仓库
-│
-├── services/                  # 【Service 层】
-│   ├── mod.rs
-│   ├── node_service.rs
-│   └── workspace_service.rs
-│
-└── commands/                  # 【Tauri Commands - 副作用边界】
-    ├── mod.rs
-    ├── node_commands.rs
-    ├── workspace_commands.rs
-    └── content_commands.rs
-```
-
-## 文件命名规范
-
-| 类型 | 命名格式 | 示例 |
-|------|---------|------|
-| DTO + Builder | `types/{entity}.rs` | `types/node.rs` |
-| 数据库实体 | `entity/{entity}.rs` | `entity/node.rs` |
-| 纯函数 | `fn/{domain}/{action}.rs` | `fn/node/parse.rs` |
-| 数据库仓库 | `repo/{entity}_repo.rs` | `repo/node_repo.rs` |
-| 服务 | `services/{entity}_service.rs` | `services/node_service.rs` |
-| Tauri 命令 | `commands/{entity}_commands.rs` | `commands/node_commands.rs` |
-| 测试 | `{module}_test.rs` 或内联 `#[cfg(test)]` | |
-
-## DTO 类型定义规范
-
-### 请求/响应 DTO
-
-DTO（Data Transfer Object）用于 API 边界，与前端 TypeScript 类型对应：
-
-```rust
-// types/node.rs
-use serde::{Deserialize, Serialize};
-
-// ============================================================================
-// 请求 DTO（对应前端 CreateNodeInput, UpdateNodeInput）
-// ============================================================================
-
-/// 创建节点请求
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CreateNodeRequest {
-    pub workspace_id: String,
-    pub parent_id: Option<String>,
-    pub title: String,
-    pub node_type: String,
-    pub tags: Option<Vec<String>>,
-    pub initial_content: Option<String>,
-}
-
-/// 更新节点请求
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UpdateNodeRequest {
-    pub title: Option<String>,
-    pub is_collapsed: Option<bool>,
-    pub sort_order: Option<i32>,
-    pub tags: Option<Option<Vec<String>>>,
-}
-
-/// 移动节点请求
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MoveNodeRequest {
-    pub new_parent_id: Option<String>,
-    pub new_sort_order: i32,
-}
-
-// ============================================================================
-// 响应 DTO（对应前端 NodeInterface）
-// ============================================================================
-
-/// 节点响应
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct NodeResponse {
-    pub id: String,
-    pub workspace_id: String,
-    pub parent_id: Option<String>,
-    pub title: String,
-    pub node_type: String,
-    pub is_collapsed: bool,
-    pub sort_order: i32,
-    pub tags: Option<Vec<String>>,
-    pub created_at: i64,
-    pub updated_at: i64,
-}
-
-// Entity -> DTO 转换
-impl From<crate::entity::node::Model> for NodeResponse {
-    fn from(model: crate::entity::node::Model) -> Self {
-        let tags = model.tags.and_then(|t| serde_json::from_str(&t).ok());
-        Self {
-            id: model.id,
-            workspace_id: model.workspace_id,
-            parent_id: model.parent_id,
-            title: model.title,
-            node_type: model.node_type.to_string(),
-            is_collapsed: model.is_collapsed,
-            sort_order: model.sort_order,
-            tags,
-            created_at: model.created_at,
-            updated_at: model.updated_at,
-        }
-    }
-}
-```
-
-### Builder 模式
-
-对于复杂对象的构建，使用 Builder 模式：
-
-```rust
-// types/node.rs (续)
-
-// ============================================================================
-// Builder 模式
-// ============================================================================
-
-/// Node Builder - 用于构建复杂的节点对象
-#[derive(Debug, Clone, Default)]
-pub struct NodeBuilder {
-    workspace_id: Option<String>,
-    parent_id: Option<String>,
-    title: Option<String>,
-    node_type: Option<String>,
-    tags: Option<Vec<String>>,
-    is_collapsed: bool,
-    sort_order: i32,
-}
-
-impl NodeBuilder {
-    /// 创建新的 Builder
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// 设置工作区 ID（必填）
-    pub fn workspace_id(mut self, workspace_id: impl Into<String>) -> Self {
-        self.workspace_id = Some(workspace_id.into());
-        self
-    }
-
-    /// 设置父节点 ID
-    pub fn parent_id(mut self, parent_id: Option<String>) -> Self {
-        self.parent_id = parent_id;
-        self
-    }
-
-    /// 设置标题（必填）
-    pub fn title(mut self, title: impl Into<String>) -> Self {
-        self.title = Some(title.into());
-        self
-    }
-
-    /// 设置节点类型（必填）
-    pub fn node_type(mut self, node_type: impl Into<String>) -> Self {
-        self.node_type = Some(node_type.into());
-        self
-    }
-
-    /// 设置标签
-    pub fn tags(mut self, tags: Vec<String>) -> Self {
-        self.tags = Some(tags);
-        self
-    }
-
-    /// 设置折叠状态
-    pub fn collapsed(mut self, collapsed: bool) -> Self {
-        self.is_collapsed = collapsed;
-        self
-    }
-
-    /// 设置排序顺序
-    pub fn sort_order(mut self, order: i32) -> Self {
-        self.sort_order = order;
-        self
-    }
-
-    /// 构建 CreateNodeRequest
-    pub fn build(self) -> Result<CreateNodeRequest, String> {
-        Ok(CreateNodeRequest {
-            workspace_id: self.workspace_id.ok_or("workspace_id is required")?,
-            parent_id: self.parent_id,
-            title: self.title.ok_or("title is required")?,
-            node_type: self.node_type.ok_or("node_type is required")?,
-            tags: self.tags,
-            initial_content: None,
-        })
-    }
-
-    /// 构建带内容的 CreateNodeRequest
-    pub fn build_with_content(self, content: String) -> Result<CreateNodeRequest, String> {
-        Ok(CreateNodeRequest {
-            workspace_id: self.workspace_id.ok_or("workspace_id is required")?,
-            parent_id: self.parent_id,
-            title: self.title.ok_or("title is required")?,
-            node_type: self.node_type.ok_or("node_type is required")?,
-            tags: self.tags,
-            initial_content: Some(content),
-        })
-    }
-}
-
-// 使用示例：
-// let request = NodeBuilder::new()
-//     .workspace_id("ws-123")
-//     .title("My Note")
-//     .node_type("file")
-//     .tags(vec!["tag1".into(), "tag2".into()])
-//     .build()?;
-```
-
-### 不可变更新模式
-
-对于需要更新的对象，使用 `with_*` 方法返回新实例：
-
-```rust
-// types/node.rs (续)
-
-impl NodeResponse {
-    /// 不可变更新 - 返回新实例
-    pub fn with_title(self, title: impl Into<String>) -> Self {
-        Self {
-            title: title.into(),
-            ..self
-        }
-    }
-
-    pub fn with_collapsed(self, collapsed: bool) -> Self {
-        Self {
-            is_collapsed: collapsed,
-            ..self
-        }
-    }
-
-    pub fn with_tags(self, tags: Option<Vec<String>>) -> Self {
-        Self { tags, ..self }
-    }
-}
-```
-```
-
-### 错误类型
-
-```rust
-// types/error.rs
-use serde::Serialize;
-use thiserror::Error;
-
-/// 应用错误类型 - 对应 TypeScript 的 AppError
-#[derive(Debug, Error, Serialize)]
-#[serde(tag = "type", content = "message")]
-pub enum AppError {
-    #[error("验证错误: {0}")]
-    ValidationError(String),
-
-    #[error("数据库错误: {0}")]
-    DatabaseError(String),
-
-    #[error("未找到: {0}")]
-    NotFound(String),
-
-    #[error("加密错误: {0}")]
-    CryptoError(String),
-
-    #[error("IO 错误: {0}")]
-    IoError(String),
-
-    #[error("序列化错误: {0}")]
-    SerializationError(String),
-}
-
-// 实现从其他错误类型的转换
-impl From<sqlx::Error> for AppError {
-    fn from(err: sqlx::Error) -> Self {
-        AppError::DatabaseError(err.to_string())
-    }
-}
-
-impl From<std::io::Error> for AppError {
-    fn from(err: std::io::Error) -> Self {
-        AppError::IoError(err.to_string())
-    }
-}
-
-impl From<serde_json::Error> for AppError {
-    fn from(err: serde_json::Error) -> Self {
-        AppError::SerializationError(err.to_string())
-    }
-}
-
-/// Result 类型别名
-pub type AppResult<T> = Result<T, AppError>;
 ```
 
 ## 纯函数规范
@@ -463,7 +289,10 @@ pub type AppResult<T> = Result<T, AppError>;
 ```rust
 // ✅ 推荐：纯函数，接收不可变引用，返回新值
 fn transform_node(node: &Node, new_title: &str) -> Node {
-    node.clone().with_title(new_title)
+    Node {
+        title: new_title.to_string(),
+        ..node.clone()
+    }
 }
 
 // ✅ 推荐：返回 Result 处理可能的错误
@@ -481,7 +310,7 @@ fn bad_transform(node: &mut Node, new_title: &str) {
 ### 管道组合
 
 ```rust
-// fn/node/transform.rs
+// fn/node/node_transform_fn.rs
 
 /// 使用 Result 链式调用实现管道
 pub fn process_node(raw_content: &str) -> AppResult<ProcessedNode> {
@@ -491,31 +320,22 @@ pub fn process_node(raw_content: &str) -> AppResult<ProcessedNode> {
         .map(enrich_metadata)
 }
 
-/// 解析内容
-fn parse_content(raw: &str) -> AppResult<RawContent> {
-    serde_json::from_str(raw)
-        .map_err(|e| AppError::SerializationError(e.to_string()))
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-/// 校验内容
-fn validate_content(content: RawContent) -> AppResult<ValidatedContent> {
-    if content.title.is_empty() {
-        return Err(AppError::ValidationError("标题不能为空".into()));
+    #[test]
+    fn test_process_node_valid_content() {
+        let content = r#"{"title": "测试", "type": "file"}"#;
+        let result = process_node(content);
+        assert!(result.is_ok());
     }
-    Ok(ValidatedContent::from(content))
-}
 
-/// 转换为节点
-fn transform_to_node(content: ValidatedContent) -> Node {
-    Node::new(content.title, content.node_type, content.workspace_id)
-}
-
-/// 丰富元数据
-fn enrich_metadata(node: Node) -> ProcessedNode {
-    ProcessedNode {
-        node,
-        word_count: 0,
-        // ...
+    #[test]
+    fn test_process_node_invalid_json() {
+        let content = "invalid json";
+        let result = process_node(content);
+        assert!(result.is_err());
     }
 }
 ```
@@ -549,132 +369,101 @@ fn bad_get_parent_title(node: &Node, nodes: &[Node]) -> Option<String> {
 }
 ```
 
-## 数据库层规范
+## 数据库函数规范
 
-### Repository 模式
+数据库操作放在 `*_db_fn.rs` 文件中，虽然有副作用，但保持函数式风格：
 
 ```rust
-// db/node_repo.rs
-use sqlx::{Pool, Sqlite};
-use crate::types::{AppResult, Node};
+// db/node_db_fn.rs
+use sea_orm::{DatabaseConnection, EntityTrait};
+use crate::types::{AppResult, NodeDto};
+use crate::types::node::node_entity;
 
-/// Node 仓库 - 封装所有数据库操作
-pub struct NodeRepository {
-    pool: Pool<Sqlite>,
+/// 根据 ID 查找节点
+pub async fn find_node_by_id(
+    db: &DatabaseConnection,
+    id: &str,
+) -> AppResult<Option<NodeDto>> {
+    node_entity::Entity::find_by_id(id)
+        .one(db)
+        .await
+        .map(|opt| opt.map(NodeDto::from))
+        .map_err(|e| AppError::DatabaseError(e.to_string()))
 }
 
-impl NodeRepository {
-    pub fn new(pool: Pool<Sqlite>) -> Self {
-        Self { pool }
-    }
-
-    /// 获取单个节点
-    pub async fn get_by_id(&self, id: &str) -> AppResult<Option<Node>> {
-        sqlx::query_as!(
-            Node,
-            r#"SELECT * FROM nodes WHERE id = ?"#,
-            id
-        )
-        .fetch_optional(&self.pool)
+/// 查找工作区下所有节点
+pub async fn find_nodes_by_workspace(
+    db: &DatabaseConnection,
+    workspace_id: &str,
+) -> AppResult<Vec<NodeDto>> {
+    node_entity::Entity::find()
+        .filter(node_entity::Column::WorkspaceId.eq(workspace_id))
+        .all(db)
         .await
-        .map_err(Into::into)
-    }
+        .map(|nodes| nodes.into_iter().map(NodeDto::from).collect())
+        .map_err(|e| AppError::DatabaseError(e.to_string()))
+}
 
-    /// 获取工作区下所有节点
-    pub async fn get_by_workspace(&self, workspace_id: &str) -> AppResult<Vec<Node>> {
-        sqlx::query_as!(
-            Node,
-            r#"SELECT * FROM nodes WHERE workspace_id = ? ORDER BY "order""#,
-            workspace_id
-        )
-        .fetch_all(&self.pool)
+/// 创建节点
+pub async fn create_node(
+    db: &DatabaseConnection,
+    node: node_entity::ActiveModel,
+) -> AppResult<NodeDto> {
+    node_entity::Entity::insert(node)
+        .exec_with_returning(db)
         .await
-        .map_err(Into::into)
+        .map(NodeDto::from)
+        .map_err(|e| AppError::DatabaseError(e.to_string()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::test_utils::setup_test_db;
+
+    #[tokio::test]
+    async fn test_find_node_by_id_not_found() {
+        let db = setup_test_db().await;
+        let result = find_node_by_id(&db, "non-existent").await;
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
     }
 
-    /// 创建节点
-    pub async fn create(&self, node: &Node) -> AppResult<()> {
-        sqlx::query!(
-            r#"
-            INSERT INTO nodes (id, title, content, node_type, parent_id, workspace_id, created_at, updated_at, "order", collapsed, tags)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            "#,
-            node.id,
-            node.title,
-            node.content,
-            node.node_type,
-            node.parent_id,
-            node.workspace_id,
-            node.created_at,
-            node.updated_at,
-            node.order,
-            node.collapsed,
-            node.tags,
-        )
-        .execute(&self.pool)
-        .await
-        .map(|_| ())
-        .map_err(Into::into)
-    }
-
-    /// 更新节点
-    pub async fn update(&self, node: &Node) -> AppResult<()> {
-        sqlx::query!(
-            r#"
-            UPDATE nodes SET
-                title = ?,
-                content = ?,
-                parent_id = ?,
-                updated_at = ?,
-                "order" = ?,
-                collapsed = ?,
-                tags = ?
-            WHERE id = ?
-            "#,
-            node.title,
-            node.content,
-            node.parent_id,
-            node.updated_at,
-            node.order,
-            node.collapsed,
-            node.tags,
-            node.id,
-        )
-        .execute(&self.pool)
-        .await
-        .map(|_| ())
-        .map_err(Into::into)
-    }
-
-    /// 删除节点
-    pub async fn delete(&self, id: &str) -> AppResult<()> {
-        sqlx::query!("DELETE FROM nodes WHERE id = ?", id)
-            .execute(&self.pool)
-            .await
-            .map(|_| ())
-            .map_err(Into::into)
+    #[tokio::test]
+    async fn test_create_and_find_node() {
+        let db = setup_test_db().await;
+        
+        // 创建节点
+        let node = create_test_node_model("test-1", "测试节点");
+        let created = create_node(&db, node).await.unwrap();
+        
+        // 查找节点
+        let found = find_node_by_id(&db, "test-1").await.unwrap();
+        assert!(found.is_some());
+        assert_eq!(found.unwrap().title, "测试节点");
     }
 }
 ```
 
 ## Tauri Commands 规范
 
-### 命令作为副作用边界
+Commands 是副作用边界，组合纯函数和数据库函数：
 
 ```rust
 // commands/node_commands.rs
 use tauri::State;
-use crate::services::NodeService;
-use crate::types::{AppResult, Node};
+use sea_orm::DatabaseConnection;
+use crate::db::node_db_fn;
+use crate::fn::node::node_validate_fn;
+use crate::types::{AppResult, NodeDto, CreateNodeRequest};
 
 /// 获取节点 - Tauri Command
 #[tauri::command]
 pub async fn get_node(
     id: String,
-    service: State<'_, NodeService>,
-) -> Result<Option<Node>, String> {
-    service
-        .get_node(&id)
+    db: State<'_, DatabaseConnection>,
+) -> Result<Option<NodeDto>, String> {
+    node_db_fn::find_node_by_id(&db, &id)
         .await
         .map_err(|e| e.to_string())
 }
@@ -682,206 +471,20 @@ pub async fn get_node(
 /// 创建节点 - Tauri Command
 #[tauri::command]
 pub async fn create_node(
-    title: String,
-    node_type: String,
-    workspace_id: String,
-    parent_id: Option<String>,
-    service: State<'_, NodeService>,
-) -> Result<Node, String> {
-    service
-        .create_node(&title, &node_type, &workspace_id, parent_id.as_deref())
-        .await
-        .map_err(|e| e.to_string())
-}
-
-/// 更新节点内容 - Tauri Command
-#[tauri::command]
-pub async fn update_node_content(
-    id: String,
-    content: String,
-    service: State<'_, NodeService>,
-) -> Result<Node, String> {
-    service
-        .update_content(&id, &content)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-/// 删除节点 - Tauri Command
-#[tauri::command]
-pub async fn delete_node(
-    id: String,
-    service: State<'_, NodeService>,
-) -> Result<(), String> {
-    service
-        .delete_node(&id)
-        .await
-        .map_err(|e| e.to_string())
-}
-```
-
-### 注册命令
-
-```rust
-// lib.rs
-mod commands;
-mod db;
-mod fn;
-mod services;
-mod types;
-
-use commands::node_commands::*;
-use services::NodeService;
-
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_fs::init())
-        .setup(|app| {
-            // 初始化数据库和服务
-            let db_pool = db::init_database(app)?;
-            let node_service = NodeService::new(db_pool.clone());
-            
-            app.manage(node_service);
-            Ok(())
-        })
-        .invoke_handler(tauri::generate_handler![
-            get_node,
-            create_node,
-            update_node_content,
-            delete_node,
-        ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
-}
-```
-
-## 加密存储规范
-
-### SQLCipher 集成
-
-```rust
-// db/connection.rs
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
-use std::str::FromStr;
-
-/// 初始化加密数据库连接
-pub async fn init_encrypted_database(
-    db_path: &str,
-    encryption_key: &str,
-) -> AppResult<Pool<Sqlite>> {
-    let options = SqliteConnectOptions::from_str(db_path)?
-        .pragma("key", encryption_key)  // SQLCipher 加密密钥
-        .pragma("cipher_page_size", "4096")
-        .pragma("kdf_iter", "256000")
-        .pragma("cipher_hmac_algorithm", "HMAC_SHA512")
-        .pragma("cipher_kdf_algorithm", "PBKDF2_HMAC_SHA512")
-        .create_if_missing(true);
-
-    SqlitePoolOptions::new()
-        .max_connections(5)
-        .connect_with(options)
-        .await
-        .map_err(Into::into)
-}
-```
-
-### 密钥管理
-
-```rust
-// services/crypto_service.rs
-use crate::types::AppResult;
-
-/// 加密服务
-pub struct CryptoService {
-    // 使用系统密钥链存储主密钥
-}
-
-impl CryptoService {
-    /// 获取或生成数据库加密密钥
-    pub fn get_database_key(&self) -> AppResult<String> {
-        // 1. 尝试从系统密钥链读取
-        // 2. 如果不存在，生成新密钥并存储
-        // 3. 返回密钥
-        todo!()
-    }
-
-    /// 加密敏感数据
-    pub fn encrypt(&self, plaintext: &[u8]) -> AppResult<Vec<u8>> {
-        todo!()
-    }
-
-    /// 解密敏感数据
-    pub fn decrypt(&self, ciphertext: &[u8]) -> AppResult<Vec<u8>> {
-        todo!()
-    }
-}
-```
-
-## 日志规范
-
-```rust
-// 使用 tracing 进行结构化日志
-use tracing::{info, warn, error, debug, instrument};
-
-/// 使用 #[instrument] 自动记录函数调用
-#[instrument(skip(content))]
-pub async fn create_node(
-    title: &str,
-    content: &str,
-    workspace_id: &str,
-) -> AppResult<Node> {
-    info!("[Node] 创建节点: {}", title);
+    request: CreateNodeRequest,
+    db: State<'_, DatabaseConnection>,
+) -> Result<NodeDto, String> {
+    // 1. 校验（纯函数）
+    node_validate_fn::validate_create_request(&request)
+        .map_err(|e| e.to_string())?;
     
-    // ... 业务逻辑
+    // 2. 转换为 ActiveModel
+    let model = request.into_active_model();
     
-    info!("[Node] 节点创建成功: {}", node.id);
-    Ok(node)
-}
-
-// 错误日志
-fn handle_error(err: AppError) {
-    error!("[Error] 操作失败: {:?}", err);
-}
-```
-
-## 测试规范
-
-```rust
-// 内联测试模块
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_node_creation() {
-        let node = Node::new("测试标题", NodeType::File, "workspace-1");
-        
-        assert_eq!(node.title, "测试标题");
-        assert_eq!(node.node_type, NodeType::File);
-        assert!(!node.id.is_empty());
-    }
-
-    #[test]
-    fn test_node_immutable_update() {
-        let node = Node::new("原标题", NodeType::File, "workspace-1");
-        let original_id = node.id.clone();
-        
-        let updated = node.with_title("新标题");
-        
-        assert_eq!(updated.id, original_id);  // ID 不变
-        assert_eq!(updated.title, "新标题");
-    }
-
-    #[tokio::test]
-    async fn test_parse_content() {
-        let content = r#"{"title": "测试"}"#;
-        let result = parse_content(content);
-        
-        assert!(result.is_ok());
-    }
+    // 3. 保存到数据库
+    node_db_fn::create_node(&db, model)
+        .await
+        .map_err(|e| e.to_string())
 }
 ```
 
@@ -891,9 +494,28 @@ mod tests {
 |------|--------|------|
 | `types/` | 无 | 最底层，纯数据定义 |
 | `fn/` | `types/` | 纯函数，无副作用 |
-| `db/` | `types/` | 数据库操作 |
-| `services/` | `types/`, `fn/`, `db/` | 组合业务逻辑 |
-| `commands/` | `services/`, `types/` | Tauri 命令，副作用边界 |
+| `db/` | `types/`, `fn/` | 数据库操作 |
+| `commands/` | `types/`, `fn/`, `db/` | Tauri 命令，副作用边界 |
+
+## 日志规范
+
+```rust
+use tracing::{info, warn, error, debug, instrument};
+
+/// 使用 #[instrument] 自动记录函数调用
+#[instrument(skip(db))]
+pub async fn create_node(
+    db: &DatabaseConnection,
+    title: &str,
+) -> AppResult<NodeDto> {
+    info!("[Node] 创建节点: {}", title);
+    
+    // ... 业务逻辑
+    
+    info!("[Node] 节点创建成功: {}", node.id);
+    Ok(node)
+}
+```
 
 ## 推荐依赖
 
@@ -907,16 +529,13 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # 数据库
-sqlx = { version = "0.7", features = ["runtime-tokio", "sqlite"] }
-# 或使用 rusqlite + sqlcipher
-rusqlite = { version = "0.31", features = ["bundled-sqlcipher"] }
+sea-orm = { version = "1", features = ["sqlx-sqlite", "runtime-tokio-native-tls"] }
 
 # 异步运行时
 tokio = { version = "1", features = ["full"] }
 
 # 错误处理
-thiserror = "1"
-anyhow = "1"
+thiserror = "2"
 
 # 日志
 tracing = "0.1"
@@ -926,18 +545,21 @@ tracing-subscriber = "0.3"
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 
-# 加密
-ring = "0.17"  # 或 aes-gcm
+[dev-dependencies]
+# 测试
+tokio-test = "0.4"
+tempfile = "3"
 ```
 
 ## 与前端的对应关系
 
 | 前端 (TypeScript) | 后端 (Rust) |
 |-------------------|-------------|
-| `types/node/node.interface.ts` | `types/node.rs` |
-| `fn/node/node.parse.fn.ts` | `fn/node/parse.rs` |
-| `db/node.db.fn.ts` | `db/node_repo.rs` |
-| `actions/node/create-node.action.ts` | `services/node_service.rs` |
+| `types/node/node.interface.ts` | `types/node/node_interface.rs` |
+| `types/node/node.builder.ts` | `types/node/node_builder.rs` |
+| `fn/node/node.parse.fn.ts` | `fn/node/node_parse_fn.rs` |
+| `fn/node/node.transform.fn.ts` | `fn/node/node_transform_fn.rs` |
+| `db/node.db.fn.ts` | `db/node_db_fn.rs` |
 | Tauri `invoke()` | `commands/node_commands.rs` |
 
 ---
