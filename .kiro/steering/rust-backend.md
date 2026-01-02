@@ -565,3 +565,319 @@ tempfile = "3"
 ---
 
 **使用场景**：开发 Rust 后端代码时，参考此规范确保与前端架构一致。
+
+---
+
+## 错误处理统一规范
+
+### 后端 AppError 定义
+
+```rust
+// rust-core/src/types/error.rs
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
+/// 错误码枚举
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ErrorCode {
+    // 通用错误
+    InternalError,
+    ValidationError,
+    NotFound,
+    AlreadyExists,
+    Unauthorized,
+    Forbidden,
+    
+    // 数据库错误
+    DatabaseError,
+    ConnectionError,
+    TransactionError,
+    
+    // 业务错误
+    InvalidNodeType,
+    InvalidWorkspace,
+    CircularReference,
+    
+    // 序列化错误
+    SerializationError,
+    DeserializationError,
+}
+
+/// 统一错误类型
+#[derive(Debug, Error, Serialize, Deserialize)]
+pub struct AppError {
+    /// 错误码
+    pub code: ErrorCode,
+    /// 错误消息
+    pub message: String,
+    /// 详细信息（可选）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub details: Option<String>,
+}
+
+impl std::fmt::Display for AppError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{:?}] {}", self.code, self.message)
+    }
+}
+
+impl AppError {
+    pub fn new(code: ErrorCode, message: impl Into<String>) -> Self {
+        Self {
+            code,
+            message: message.into(),
+            details: None,
+        }
+    }
+    
+    pub fn with_details(mut self, details: impl Into<String>) -> Self {
+        self.details = Some(details.into());
+        self
+    }
+    
+    // 便捷构造函数
+    pub fn not_found(entity: &str, id: &str) -> Self {
+        Self::new(ErrorCode::NotFound, format!("{} not found: {}", entity, id))
+    }
+    
+    pub fn validation(message: impl Into<String>) -> Self {
+        Self::new(ErrorCode::ValidationError, message)
+    }
+    
+    pub fn database(message: impl Into<String>) -> Self {
+        Self::new(ErrorCode::DatabaseError, message)
+    }
+}
+
+/// Result 类型别名
+pub type AppResult<T> = Result<T, AppError>;
+```
+
+### JSON 序列化格式
+
+后端错误序列化为 JSON 时的格式：
+
+```json
+// 成功响应
+{
+  "success": true,
+  "data": { ... }
+}
+
+// 错误响应
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Node not found: abc-123",
+    "details": null
+  }
+}
+```
+
+### 前端 AppError 定义
+
+```typescript
+// lib/error.types.ts
+import * as E from "fp-ts/Either";
+
+// 错误码枚举（与后端对应）
+export type ErrorCode =
+  | "INTERNAL_ERROR"
+  | "VALIDATION_ERROR"
+  | "NOT_FOUND"
+  | "ALREADY_EXISTS"
+  | "UNAUTHORIZED"
+  | "FORBIDDEN"
+  | "DATABASE_ERROR"
+  | "CONNECTION_ERROR"
+  | "TRANSACTION_ERROR"
+  | "INVALID_NODE_TYPE"
+  | "INVALID_WORKSPACE"
+  | "CIRCULAR_REFERENCE"
+  | "SERIALIZATION_ERROR"
+  | "DESERIALIZATION_ERROR";
+
+// 统一错误类型
+export interface AppError {
+  readonly code: ErrorCode;
+  readonly message: string;
+  readonly details?: string;
+}
+
+// 错误构造函数
+export const AppError = {
+  create: (code: ErrorCode, message: string, details?: string): AppError => ({
+    code,
+    message,
+    details,
+  }),
+  
+  notFound: (entity: string, id: string): AppError => ({
+    code: "NOT_FOUND",
+    message: `${entity} not found: ${id}`,
+  }),
+  
+  validation: (message: string): AppError => ({
+    code: "VALIDATION_ERROR",
+    message,
+  }),
+  
+  // 从未知错误转换
+  fromUnknown: (error: unknown): AppError => {
+    if (isAppError(error)) return error;
+    if (error instanceof Error) {
+      return { code: "INTERNAL_ERROR", message: error.message };
+    }
+    return { code: "INTERNAL_ERROR", message: String(error) };
+  },
+  
+  // 从后端响应解析
+  fromResponse: (response: unknown): AppError => {
+    if (typeof response === "object" && response !== null) {
+      const r = response as Record<string, unknown>;
+      if (r.error && typeof r.error === "object") {
+        const e = r.error as Record<string, unknown>;
+        return {
+          code: (e.code as ErrorCode) || "INTERNAL_ERROR",
+          message: (e.message as string) || "Unknown error",
+          details: e.details as string | undefined,
+        };
+      }
+    }
+    return { code: "INTERNAL_ERROR", message: "Unknown error" };
+  },
+};
+
+// 类型守卫
+export const isAppError = (error: unknown): error is AppError =>
+  typeof error === "object" &&
+  error !== null &&
+  "code" in error &&
+  "message" in error;
+```
+
+### 错误码对应表
+
+| 后端 (Rust) | 前端 (TypeScript) | 说明 |
+|------------|------------------|------|
+| `ErrorCode::InternalError` | `"INTERNAL_ERROR"` | 内部错误 |
+| `ErrorCode::ValidationError` | `"VALIDATION_ERROR"` | 校验失败 |
+| `ErrorCode::NotFound` | `"NOT_FOUND"` | 资源不存在 |
+| `ErrorCode::AlreadyExists` | `"ALREADY_EXISTS"` | 资源已存在 |
+| `ErrorCode::Unauthorized` | `"UNAUTHORIZED"` | 未授权 |
+| `ErrorCode::Forbidden` | `"FORBIDDEN"` | 禁止访问 |
+| `ErrorCode::DatabaseError` | `"DATABASE_ERROR"` | 数据库错误 |
+| `ErrorCode::ConnectionError` | `"CONNECTION_ERROR"` | 连接错误 |
+| `ErrorCode::TransactionError` | `"TRANSACTION_ERROR"` | 事务错误 |
+
+### Tauri Command 错误处理
+
+```rust
+// commands/node_commands.rs
+#[tauri::command]
+pub async fn get_node(
+    id: String,
+    db: State<'_, DatabaseConnection>,
+) -> Result<Option<NodeResponse>, AppError> {
+    // 直接返回 AppError，Tauri 会自动序列化为 JSON
+    node_db_fn::find_by_id(&db, &id).await
+}
+
+#[tauri::command]
+pub async fn create_node(
+    request: CreateNodeRequest,
+    db: State<'_, DatabaseConnection>,
+) -> Result<NodeResponse, AppError> {
+    // 校验
+    validate_fn::validate_create_request(&request)?;
+    
+    // 创建
+    node_db_fn::create(&db, &request).await
+}
+```
+
+### 前端错误处理
+
+```typescript
+// repo/node.repo.fn.ts
+import { invoke } from "@tauri-apps/api/core";
+import * as TE from "fp-ts/TaskEither";
+import { AppError } from "@/lib/error.types";
+
+export const getNode = (id: string): TE.TaskEither<AppError, Node | null> =>
+  TE.tryCatch(
+    () => invoke<Node | null>("get_node", { id }),
+    (error) => AppError.fromUnknown(error)
+  );
+
+// actions/node/get-node.action.ts
+import { pipe } from "fp-ts/function";
+import * as TE from "fp-ts/TaskEither";
+import * as T from "fp-ts/Task";
+import { getNode } from "@/repo/node.repo.fn";
+
+export const getNodeAction = (id: string) =>
+  pipe(
+    getNode(id),
+    TE.fold(
+      (error) => T.of({ success: false as const, error }),
+      (node) => T.of({ success: true as const, data: node })
+    )
+  );
+
+// 在组件中使用
+const handleGetNode = async (id: string) => {
+  const result = await getNodeAction(id)();
+  
+  if (result.success) {
+    // 处理成功
+    console.log("Node:", result.data);
+  } else {
+    // 处理错误
+    switch (result.error.code) {
+      case "NOT_FOUND":
+        showToast("节点不存在");
+        break;
+      case "DATABASE_ERROR":
+        showToast("数据库错误，请重试");
+        break;
+      default:
+        showToast(result.error.message);
+    }
+  }
+};
+```
+
+### Warp 错误处理
+
+```rust
+// rust-core/src/macros/rejection.rs
+use warp::{reject::Reject, Reply};
+use crate::types::AppError;
+
+impl Reject for AppError {}
+
+/// Warp rejection 处理
+pub async fn handle_rejection(err: warp::Rejection) -> Result<impl Reply, warp::Rejection> {
+    if let Some(app_error) = err.find::<AppError>() {
+        let json = warp::reply::json(&serde_json::json!({
+            "success": false,
+            "error": app_error
+        }));
+        
+        let status = match app_error.code {
+            ErrorCode::NotFound => warp::http::StatusCode::NOT_FOUND,
+            ErrorCode::ValidationError => warp::http::StatusCode::BAD_REQUEST,
+            ErrorCode::Unauthorized => warp::http::StatusCode::UNAUTHORIZED,
+            ErrorCode::Forbidden => warp::http::StatusCode::FORBIDDEN,
+            _ => warp::http::StatusCode::INTERNAL_SERVER_ERROR,
+        };
+        
+        Ok(warp::reply::with_status(json, status))
+    } else {
+        Err(err)
+    }
+}
+```

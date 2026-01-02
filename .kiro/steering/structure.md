@@ -51,10 +51,15 @@ src/
 │   ├── error.types.ts
 │   └── index.ts
 │
-├── db/                   # 持久化层（迁移中 → Rust 后端）
-│   ├── database.ts
-│   ├── node.db.fn.ts
-│   └── workspace.db.fn.ts
+├── repo/                 # 数据仓库层（Rust 后端适配）
+│   ├── workspace.repo.fn.ts   # Workspace 仓库
+│   ├── node.repo.fn.ts        # Node 仓库
+│   ├── content.repo.fn.ts     # Content 仓库
+│   └── index.ts
+│
+├── db/                   # 持久化层（API 客户端）
+│   ├── api-client.fn.ts       # Rust 后端 API 客户端
+│   └── index.ts
 │
 ├── stores/               # 状态层
 │   ├── editor.store.ts
@@ -93,6 +98,50 @@ src/
     ├── __root.tsx
     ├── index.tsx
     └── settings/
+```
+
+### Repo 层说明
+
+`repo/` 是前端调用 Rust 后端的适配层，封装了 Tauri invoke 调用：
+
+```typescript
+// repo/node.repo.fn.ts
+import { invoke } from "@tauri-apps/api/core";
+import * as TE from "fp-ts/TaskEither";
+import { AppError } from "@/lib/error.types";
+import type { Node, CreateNodeRequest } from "@/types/node";
+
+// 获取节点
+export const getNode = (id: string): TE.TaskEither<AppError, Node | null> =>
+  TE.tryCatch(
+    () => invoke<Node | null>("get_node", { id }),
+    (error) => AppError.fromUnknown(error)
+  );
+
+// 创建节点
+export const createNode = (request: CreateNodeRequest): TE.TaskEither<AppError, Node> =>
+  TE.tryCatch(
+    () => invoke<Node>("create_node", { request }),
+    (error) => AppError.fromUnknown(error)
+  );
+
+// 更新节点
+export const updateNode = (id: string, request: UpdateNodeRequest): TE.TaskEither<AppError, Node> =>
+  TE.tryCatch(
+    () => invoke<Node>("update_node", { id, request }),
+    (error) => AppError.fromUnknown(error)
+  );
+```
+
+**Repo 层职责**：
+- 封装 Tauri `invoke()` 调用
+- 将 Promise 转换为 `TaskEither`
+- 统一错误处理
+- 类型安全的 API 调用
+
+**数据流**：
+```
+Action → Repo → invoke() → Tauri Command → rust-core → SQLite
 ```
 
 ## Rust 后端结构 (`apps/desktop/src-tauri/src/`)
@@ -429,3 +478,75 @@ export type { FileTreeViewProps, FileTreeContainerProps } from './file-tree.type
 
 - `@/*` → `./src/*` (所有应用)
 - `@grain/editor` → 共享编辑器包
+
+---
+
+## 前后端类型对应表
+
+### Node 模块
+
+| 概念 | 前端 (TypeScript) | 后端 (Rust) |
+|-----|------------------|-------------|
+| 实体定义 | `types/node/node.interface.ts` | `types/node/entity.rs` |
+| 领域模型 | `types/node/node.interface.ts` | `types/node/model.rs` |
+| 创建请求 | `types/node/node.schema.ts` | `types/node/request.rs` |
+| API 响应 | (同 interface) | `types/node/response.rs` |
+| 构建者 | `types/node/node.builder.ts` | `types/node/builder.rs` |
+| 解析函数 | `fn/node/node.parse.fn.ts` | `fn/node/parse_fn.rs` |
+| 转换函数 | `fn/node/node.transform.fn.ts` | `fn/node/transform_fn.rs` |
+| 校验函数 | (Zod schema) | `fn/node/validate_fn.rs` |
+| 数据库操作 | `repo/node.repo.fn.ts` | `db/node_db_fn.rs` |
+| API 调用 | `repo/node.repo.fn.ts` | `commands/node_commands.rs` |
+
+### Workspace 模块
+
+| 概念 | 前端 (TypeScript) | 后端 (Rust) |
+|-----|------------------|-------------|
+| 实体定义 | `types/workspace/workspace.interface.ts` | `types/workspace/entity.rs` |
+| 创建请求 | `types/workspace/workspace.schema.ts` | `types/workspace/request.rs` |
+| 数据库操作 | `repo/workspace.repo.fn.ts` | `db/workspace_db_fn.rs` |
+
+### Content 模块
+
+| 概念 | 前端 (TypeScript) | 后端 (Rust) |
+|-----|------------------|-------------|
+| 实体定义 | `types/content/content.interface.ts` | `types/content/entity.rs` |
+| 数据库操作 | `repo/content.repo.fn.ts` | `db/content_db_fn.rs` |
+
+### 类型映射规则
+
+| TypeScript 类型 | Rust 类型 | 说明 |
+|----------------|-----------|------|
+| `string` | `String` | 字符串 |
+| `number` | `i32` / `i64` / `f64` | 数字 |
+| `boolean` | `bool` | 布尔值 |
+| `Date` | `chrono::DateTime<Utc>` | 日期时间 |
+| `string \| null` | `Option<String>` | 可空字符串 |
+| `T[]` | `Vec<T>` | 数组 |
+| `Record<K, V>` | `HashMap<K, V>` | 字典 |
+| `interface` | `struct` | 结构体 |
+| `enum` | `enum` | 枚举 |
+
+### JSON 序列化对应
+
+```typescript
+// 前端 TypeScript
+interface Node {
+  id: string;
+  title: string;
+  parentId: string | null;  // camelCase
+  createdAt: string;        // ISO 8601 字符串
+}
+```
+
+```rust
+// 后端 Rust
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]  // 自动转换为 camelCase
+pub struct Node {
+    pub id: String,
+    pub title: String,
+    pub parent_id: Option<String>,  // snake_case → camelCase
+    pub created_at: DateTime<Utc>,  // 自动序列化为 ISO 8601
+}
+```
