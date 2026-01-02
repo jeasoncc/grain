@@ -15,11 +15,11 @@
 - **函数是管道**：所有操作都是纯函数，通过 pipe 组合
 - **不可变性**：数据一旦创建就不可修改，更新产生新对象
 
-## 数据流架构图
+## 数据流架构图（同步）
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                              Grain 函数式数据流架构                                   │
+│                              Grain 函数式数据流架构（同步）                            │
 └─────────────────────────────────────────────────────────────────────────────────────┘
 
                                     ┌─────────────────┐
@@ -87,6 +87,181 @@
                                                          │
                                                          └──────────────▶ 回到顶部
 ```
+
+---
+
+## 前端异步数据流架构图
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                         Grain 前端异步数据流架构                                      │
+│                      （使用 fp-ts TaskEither 处理异步操作）                           │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+                                    ┌─────────────────┐
+                                    │   用户操作触发   │
+                                    │  (点击/输入等)   │
+                                    └────────┬────────┘
+                                             │
+                                             ▼
+                          ┌─────────────────────────────────────┐
+                          │           Action 层                 │
+                          │      (actions/*.action.ts)          │
+                          └──────────────────┬──────────────────┘
+                                             │
+                                             ▼
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│                    TaskEither Pipeline (异步纯函数管道)                              │
+│                                                                                    │
+│    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐   │
+│    │   TE.Do      │───▶│  TE.bind    │───▶│  TE.chain   │───▶│   TE.map    │   │
+│    │  (开始管道)   │    │ (绑定变量)   │    │ (链式调用)   │    │  (转换结果)  │   │
+│    └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘   │
+│                                                                                    │
+│    特点：                                                                          │
+│    - TaskEither<AppError, T> 封装异步操作                                          │
+│    - Left = 错误，Right = 成功                                                     │
+│    - 错误自动传递，无需 try-catch                                                   │
+│    - 惰性求值，调用时才执行                                                         │
+└────────────────────────────────────────────────────────────────────────────────────┘
+                                             │
+               ┌─────────────────────────────┼─────────────────────────────┐
+               │                             │                             │
+               ▼                             ▼                             ▼
+      ┌─────────────────┐          ┌─────────────────┐          ┌─────────────────┐
+      │  Rust Backend   │          │   Local Store   │          │   File System   │
+      │  (Tauri/Warp)   │          │   (Zustand)     │          │   (导出/导入)    │
+      └────────┬────────┘          └────────┬────────┘          └────────┬────────┘
+               │                             │                             │
+               │ invoke/fetch                │ setState                    │ writeFile
+               │ (异步 IO)                   │ (同步)                      │ (异步 IO)
+               ▼                             ▼                             ▼
+      ┌─────────────────┐          ┌─────────────────┐          ┌─────────────────┐
+      │    SQLite       │          │  Memory State   │          │   Local Files   │
+      │  (持久化存储)    │          │   (运行时状态)   │          │   (文件系统)    │
+      └────────┬────────┘          └────────┬────────┘          └─────────────────┘
+               │                             │
+               └─────────────────────────────┘
+                                             │
+                                             ▼
+                          ┌─────────────────────────────────────┐
+                          │         执行 TaskEither             │
+                          │    pipe(task, TE.fold(...))()       │
+                          └──────────────────┬──────────────────┘
+                                             │
+                               ┌─────────────┴─────────────┐
+                               │                           │
+                          ❌ Left (错误)              ✅ Right (成功)
+                               │                           │
+                               ▼                           ▼
+                    ┌─────────────────┐         ┌─────────────────────────┐
+                    │   错误处理       │         │    更新 UI 状态         │
+                    │  - Toast 提示   │         │  - Store 更新           │
+                    │  - 日志记录     │         │  - 触发重渲染           │
+                    └─────────────────┘         └────────────┬────────────┘
+                                                             │
+                                                             ▼
+                              ┌─────────────────────────────────────────────────────┐
+                              │                   React Hooks (响应式绑定)            │
+                              │                                                     │
+                              │  useQuery / useMutation / useStore                  │
+                              └──────────────────────────┬──────────────────────────┘
+                                                         │
+                                                         ▼
+                              ┌─────────────────────────────────────────────────────┐
+                              │                   Components (UI 组件)               │
+                              │                                                     │
+                              │  - Loading 状态                                     │
+                              │  - Error 状态                                       │
+                              │  - Success 状态                                     │
+                              └─────────────────────────────────────────────────────┘
+```
+
+### 异步 Action 示例
+
+```typescript
+// actions/node/create-node.action.ts
+import { pipe } from "fp-ts/function";
+import * as TE from "fp-ts/TaskEither";
+import { AppError } from "@/lib/error.types";
+
+// 异步 Action 返回 TaskEither
+export const createNode = (
+  params: CreateNodeParams
+): TE.TaskEither<AppError, Node> =>
+  pipe(
+    // 1. 校验输入（同步纯函数）
+    TE.fromEither(validateNodeParams(params)),
+    
+    // 2. 转换为请求对象（同步纯函数）
+    TE.map(validated => toCreateNodeRequest(validated)),
+    
+    // 3. 调用 Rust 后端（异步 IO）
+    TE.chain(request => 
+      TE.tryCatch(
+        () => invoke<Node>("create_node", { request }),
+        (error) => AppError.fromUnknown(error)
+      )
+    ),
+    
+    // 4. 更新本地状态（副作用）
+    TE.tap(node => 
+      TE.fromIO(() => useNodeStore.getState().addNode(node))
+    ),
+    
+    // 5. 记录日志（副作用）
+    TE.tap(node => 
+      TE.fromIO(() => logger.success(`[Node] 创建成功: ${node.id}`))
+    )
+  );
+
+// 在组件中使用
+const handleCreate = async () => {
+  const result = await pipe(
+    createNode({ title: "新节点", workspaceId }),
+    TE.fold(
+      (error) => T.of(showErrorToast(error.message)),
+      (node) => T.of(showSuccessToast(`创建成功: ${node.title}`))
+    )
+  )();
+};
+```
+
+### 异步数据流类型签名
+
+```typescript
+// 同步纯函数：Input → Output
+type SyncPureFn<A, B> = (a: A) => B;
+
+// 同步纯函数（可能失败）：Input → Either<Error, Output>
+type SyncPureFnE<A, B> = (a: A) => E.Either<AppError, B>;
+
+// 异步纯函数：Input → TaskEither<Error, Output>
+type AsyncPureFn<A, B> = (a: A) => TE.TaskEither<AppError, B>;
+
+// Action 签名（异步，有副作用边界）
+type Action<Params, Result> = (params: Params) => TE.TaskEither<AppError, Result>;
+```
+
+### 前端异步流程对照表
+
+| 同步流程 | 异步流程 | 说明 |
+|---------|---------|------|
+| `pipe(a, fn1, fn2)` | `pipe(a, TE.map(fn1), TE.chain(fn2))` | 函数组合 |
+| `Either<E, A>` | `TaskEither<E, A>` | 错误容器 |
+| `E.map` | `TE.map` | 转换成功值 |
+| `E.chain` | `TE.chain` | 链式调用 |
+| `E.fold` | `TE.fold` | 处理结果 |
+| 立即执行 | `()` 调用执行 | 惰性求值 |
+
+### 异步操作分类
+
+| 操作类型 | 返回类型 | 示例 |
+|---------|---------|------|
+| 同步纯函数 | `A → B` | `validateParams`, `transformNode` |
+| 同步可失败 | `A → Either<E, B>` | `parseJson`, `validateSchema` |
+| 异步 IO | `A → TaskEither<E, B>` | `invoke`, `fetch`, `readFile` |
+| 副作用 | `A → IO<void>` | `setState`, `logger.info` |
 
 ## 依赖关系图
 
