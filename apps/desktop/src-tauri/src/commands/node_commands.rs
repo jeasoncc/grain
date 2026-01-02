@@ -55,7 +55,10 @@ pub async fn create_node(
     // 使用统一的 NodeType
     let node_type = request.node_type.unwrap_or(NodeType::File);
 
-    // 创建节点时不带 tags 和 initial_content（需要通过 update 添加）
+    // 序列化 tags: Option<Vec<String>> -> Option<String>
+    let tags = request.tags.map(|t| serde_json::to_string(&t).unwrap_or_default());
+
+    // 创建节点，带 tags 和 initial_content
     node_service_fn::create_node_with_content(
         &db,
         id,
@@ -63,8 +66,8 @@ pub async fn create_node(
         request.parent_id,
         request.title,
         node_type,
-        None, // tags
-        None, // initial_content
+        tags,
+        request.initial_content,
     )
     .await
     .map(NodeResponse::from)

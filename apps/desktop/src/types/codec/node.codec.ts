@@ -54,12 +54,13 @@ export const decodeNodes = (responses: NodeResponse[]): NodeInterface[] =>
 export const encodeCreateNode = (
 	input: NodeCreateInput,
 	initialContent?: string,
+	tags?: string[],
 ): CreateNodeRequest => ({
 	workspaceId: input.workspace,
 	parentId: input.parent ?? null,
 	title: input.title,
 	nodeType: input.type ?? "file",
-	tags: undefined,
+	tags,
 	initialContent,
 });
 

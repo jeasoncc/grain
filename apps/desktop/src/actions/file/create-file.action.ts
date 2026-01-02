@@ -63,9 +63,8 @@ export interface CreateFileResult {
  *
  * 通过队列串行执行，确保操作顺序：
  * 1. 获取排序号
- * 2. 创建节点
- * 3. 创建内容（非文件夹）
- * 4. 更新 Store（非文件夹）
+ * 2. 创建节点（带初始内容和标签）
+ * 3. 更新 Store（非文件夹）
  *
  * @param params - 创建文件参数
  * @returns TaskEither<AppError, CreateFileResult>
@@ -96,7 +95,7 @@ export const createFile = (
 					)();
 					const order = E.isRight(orderResult) ? orderResult.right : 0;
 
-					// 2. 创建节点（带初始内容，如果不是文件夹）
+					// 2. 创建节点（带初始内容和标签）
 					const nodeResult = await nodeRepo.createNode(
 						{
 							workspace: workspaceId,
@@ -107,6 +106,7 @@ export const createFile = (
 							collapsed,
 						},
 						type !== "folder" ? content : undefined,
+						tags,
 					)();
 
 					if (E.isLeft(nodeResult)) {
@@ -117,20 +117,7 @@ export const createFile = (
 					const node = nodeResult.right;
 					logger.info("[CreateFile] 节点创建成功:", node.id);
 
-					// 3. 如果有 tags，更新节点添加 tags
-					if (tags && tags.length > 0) {
-						const updateResult = await nodeRepo.updateNode(node.id, {
-							tags,
-						})();
-						if (E.isLeft(updateResult)) {
-							logger.warn(
-								"[CreateFile] 更新标签失败:",
-								updateResult.left.message,
-							);
-						}
-					}
-
-					// 4. 更新 Store（非文件夹）
+					// 3. 更新 Store（非文件夹）
 					let tabId: string | null = null;
 					if (type !== "folder") {
 						const { openTab, updateEditorState } =

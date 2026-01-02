@@ -24,6 +24,7 @@ pub struct NodeBuilder {
     sort_order: Option<i32>,
     is_collapsed: Option<bool>,
     tags: Option<Vec<String>>,
+    initial_content: Option<String>,
 }
 
 impl NodeBuilder {
@@ -74,6 +75,12 @@ impl NodeBuilder {
         self
     }
 
+    /// 设置初始内容
+    pub fn initial_content(mut self, content: impl Into<String>) -> Self {
+        self.initial_content = Some(content.into());
+        self
+    }
+
     /// 构建 CreateNodeRequest
     pub fn build(self) -> Result<CreateNodeRequest, String> {
         Ok(CreateNodeRequest {
@@ -83,6 +90,8 @@ impl NodeBuilder {
             title: self.title.ok_or("title is required")?,
             sort_order: self.sort_order,
             is_collapsed: self.is_collapsed,
+            tags: self.tags,
+            initial_content: self.initial_content,
         })
     }
 
@@ -107,6 +116,7 @@ impl NodeBuilder {
         self.sort_order = None;
         self.is_collapsed = None;
         self.tags = None;
+        self.initial_content = None;
         self
     }
 }

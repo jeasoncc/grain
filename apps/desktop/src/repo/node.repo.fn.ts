@@ -119,9 +119,10 @@ export const getNextSortOrder = (
 export const createNode = (
 	input: NodeCreateInput,
 	initialContent?: string,
+	tags?: string[],
 ): TE.TaskEither<AppError, NodeInterface> =>
 	pipe(
-		TE.of(encodeCreateNode(input, initialContent)),
+		TE.of(encodeCreateNode(input, initialContent, tags)),
 		TE.chain(rustApi.createNode),
 		TE.map(decodeNode),
 	);

@@ -113,6 +113,12 @@ pub struct CreateNodeRequest {
 
     /// 是否折叠（默认 true）
     pub is_collapsed: Option<bool>,
+
+    /// 标签数组
+    pub tags: Option<Vec<String>>,
+
+    /// 初始内容（JSON 字符串）
+    pub initial_content: Option<String>,
 }
 
 /// 更新节点请求
