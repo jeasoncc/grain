@@ -1920,7 +1920,7 @@ dependencies = [
 
 [[package]]
 name = "grain"
-version = "0.1.252"
+version = "0.1.254"
 dependencies = [
  "anyhow",
  "async-trait",

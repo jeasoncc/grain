@@ -51,3 +51,25 @@ export const updateWorkspace = (
 		TE.map(() => undefined),
 	);
 };
+
+/**
+ * 更新工作区的最后打开时间
+ *
+ * 将工作区的 lastOpen 字段更新为当前时间。
+ * 用于记录用户最近访问的工作区。
+ *
+ * @param workspaceId - 工作区 ID
+ * @returns TaskEither<AppError, void>
+ */
+export const touchWorkspace = (
+	workspaceId: string,
+): TE.TaskEither<AppError, void> => {
+	logger.info("[Action] 更新工作区最后打开时间:", workspaceId);
+
+	return pipe(
+		workspaceRepo.updateWorkspace(workspaceId, {
+			lastOpen: new Date().toISOString(),
+		}),
+		TE.map(() => undefined),
+	);
+};

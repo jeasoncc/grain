@@ -28,7 +28,9 @@ import { createPlantUML } from "@/actions/templated/create-plantuml.action";
 import type { TemplatedFileResult } from "@/actions/templated/create-templated-file.action";
 import { ExportDialog } from "@/components/export-dialog";
 import { useConfirm } from "@/components/ui/confirm";
-import { addWorkspace, clearAllData, touchWorkspace } from "@/db";
+import { createWorkspace } from "@/actions/workspace/create-workspace.action";
+import { touchWorkspace } from "@/actions/workspace/update-workspace.action";
+import { clearAllData } from "@/db";
 import { calculateExpandedFoldersForNode } from "@/fn/node";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useNodesByWorkspace } from "@/hooks/use-node";
@@ -120,7 +122,8 @@ export function ActivityBarContainer(): React.ReactElement {
 					setSelectedWorkspaceId(null);
 				}
 				try {
-					const result = await addWorkspace("My Workspace", {
+					const result = await createWorkspace({
+						title: "My Workspace",
 						author: "",
 						description: "",
 						language: "en",
@@ -189,7 +192,8 @@ export function ActivityBarContainer(): React.ReactElement {
 				return;
 			}
 			try {
-				const result = await addWorkspace(name.trim(), {
+				const result = await createWorkspace({
+					title: name.trim(),
 					author: "",
 					description: "",
 					language: "en",
