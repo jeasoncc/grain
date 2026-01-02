@@ -1,14 +1,14 @@
+import { FOLD_ICON_OPTIONS, getFoldIconLetters } from "@grain/editor";
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Minus, Plus, RotateCcw, Type, Sparkles } from "lucide-react";
+import { Check, Minus, Plus, RotateCcw, Sparkles, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DebouncedSlider } from "@/components/ui/debounced-slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useFontSettings } from "@/stores/font.store";
 import { useEditorSettings } from "@/stores/editor-settings.store";
+import { useFontSettings } from "@/stores/font.store";
 import { DEFAULT_EDITOR_FONT, POPULAR_FONTS } from "@/types/font";
-import { FOLD_ICON_OPTIONS, getFoldIconLetters } from "@grain/editor";
 
 export const Route = createFileRoute("/settings/editor")({
 	component: EditorSettings,
@@ -269,9 +269,13 @@ function EditorSettings() {
 										{option.preview}
 									</span>
 									<div className="flex-1 min-w-0">
-										<div className="text-xs font-medium truncate">{option.name}</div>
+										<div className="text-xs font-medium truncate">
+											{option.name}
+										</div>
 										{option.era && (
-											<div className="text-[10px] text-muted-foreground truncate">{option.era}</div>
+											<div className="text-[10px] text-muted-foreground truncate">
+												{option.era}
+											</div>
 										)}
 									</div>
 									{isSelected && (
@@ -299,15 +303,21 @@ function EditorSettings() {
 					{/* Heading Preview with Fold Icons */}
 					<div className="space-y-2 mb-4 pb-4 border-b border-border/50">
 						<div className="flex items-center gap-2">
-							<span className="text-sm font-serif opacity-60 w-4">{currentLetters[0]}</span>
+							<span className="text-sm font-serif opacity-60 w-4">
+								{currentLetters[0]}
+							</span>
 							<h1 className="text-xl font-bold">Heading 1</h1>
 						</div>
 						<div className="flex items-center gap-2">
-							<span className="text-sm font-serif opacity-60 w-4">{currentLetters[1]}</span>
+							<span className="text-sm font-serif opacity-60 w-4">
+								{currentLetters[1]}
+							</span>
 							<h2 className="text-lg font-semibold">Heading 2</h2>
 						</div>
 						<div className="flex items-center gap-2">
-							<span className="text-sm font-serif opacity-60 w-4">{currentLetters[2]}</span>
+							<span className="text-sm font-serif opacity-60 w-4">
+								{currentLetters[2]}
+							</span>
 							<h3 className="text-base font-medium">Heading 3</h3>
 						</div>
 					</div>

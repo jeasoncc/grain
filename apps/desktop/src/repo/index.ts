@@ -30,46 +30,42 @@
  * ```
  */
 
+// Content Repository
+export * as contentRepo from "./content.repo.fn";
+export {
+	createContent,
+	getContentByNodeId,
+	getContentVersion,
+	saveContent,
+	updateContentByNodeId,
+} from "./content.repo.fn";
 // Node Repository
 export * as nodeRepo from "./node.repo.fn";
 
-// Workspace Repository
-export * as workspaceRepo from "./workspace.repo.fn";
-
-// Content Repository
-export * as contentRepo from "./content.repo.fn";
-
 // 也导出单独的函数，方便直接使用
 export {
-  getNodesByWorkspace,
-  getRootNodes,
-  getNodesByParent,
-  getChildNodes,
-  getNode,
-  getNodesByType,
-  getDescendants,
-  getNextSortOrder,
-  createNode,
-  updateNode,
-  moveNode,
-  deleteNode,
-  deleteNodesBatch,
-  duplicateNode,
-  reorderNodes,
+	createNode,
+	deleteNode,
+	deleteNodesBatch,
+	duplicateNode,
+	getChildNodes,
+	getDescendants,
+	getNextSortOrder,
+	getNode,
+	getNodesByParent,
+	getNodesByType,
+	getNodesByWorkspace,
+	getRootNodes,
+	moveNode,
+	reorderNodes,
+	updateNode,
 } from "./node.repo.fn";
-
+// Workspace Repository
+export * as workspaceRepo from "./workspace.repo.fn";
 export {
-  getWorkspaces,
-  getWorkspace,
-  createWorkspace,
-  updateWorkspace,
-  deleteWorkspace,
+	createWorkspace,
+	deleteWorkspace,
+	getWorkspace,
+	getWorkspaces,
+	updateWorkspace,
 } from "./workspace.repo.fn";
-
-export {
-  getContentByNodeId,
-  getContentVersion,
-  createContent,
-  updateContentByNodeId,
-  saveContent,
-} from "./content.repo.fn";

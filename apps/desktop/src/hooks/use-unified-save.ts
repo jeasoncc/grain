@@ -162,7 +162,16 @@ export function useUnifiedSave(
 		});
 
 		// 注意：组件卸载时不清理 model！
-	}, [nodeId, contentType, effectiveDelay, tabId, setTabDirty, markAsSaving, markAsSaved, markAsError]);
+	}, [
+		nodeId,
+		contentType,
+		effectiveDelay,
+		tabId,
+		setTabDirty,
+		markAsSaving,
+		markAsSaved,
+		markAsError,
+	]);
 
 	// ==============================
 	// 设置初始内容

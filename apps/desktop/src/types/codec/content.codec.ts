@@ -6,9 +6,9 @@
  */
 
 import type {
-  ContentInterface,
-  ContentCreateInput,
-  ContentType,
+	ContentCreateInput,
+	ContentInterface,
+	ContentType,
 } from "@/types/content";
 import type { ContentResponse, SaveContentRequest } from "@/types/rust-api";
 
@@ -21,20 +21,20 @@ import type { ContentResponse, SaveContentRequest } from "@/types/rust-api";
  * 根据内容格式判断是 lexical、excalidraw 还是 text
  */
 const inferContentType = (content: string): ContentType => {
-  try {
-    const parsed = JSON.parse(content);
-    // Excalidraw 内容有 type: "excalidraw" 或 elements 数组
-    if (parsed.type === "excalidraw" || Array.isArray(parsed.elements)) {
-      return "excalidraw";
-    }
-    // Lexical 内容有 root 节点
-    if (parsed.root) {
-      return "lexical";
-    }
-    return "text";
-  } catch {
-    return "text";
-  }
+	try {
+		const parsed = JSON.parse(content);
+		// Excalidraw 内容有 type: "excalidraw" 或 elements 数组
+		if (parsed.type === "excalidraw" || Array.isArray(parsed.elements)) {
+			return "excalidraw";
+		}
+		// Lexical 内容有 root 节点
+		if (parsed.root) {
+			return "lexical";
+		}
+		return "text";
+	} catch {
+		return "text";
+	}
 };
 
 /**
@@ -43,18 +43,18 @@ const inferContentType = (content: string): ContentType => {
  * 将 Rust 后端返回的内容数据转换为前端使用的接口类型
  */
 export const decodeContent = (response: ContentResponse): ContentInterface => ({
-  id: response.id,
-  nodeId: response.nodeId,
-  content: response.content,
-  contentType: inferContentType(response.content),
-  lastEdit: new Date(response.updatedAt).toISOString(),
+	id: response.id,
+	nodeId: response.nodeId,
+	content: response.content,
+	contentType: inferContentType(response.content),
+	lastEdit: new Date(response.updatedAt).toISOString(),
 });
 
 /**
  * 解码可选内容：ContentResponse | null → ContentInterface | null
  */
 export const decodeContentOptional = (
-  response: ContentResponse | null
+	response: ContentResponse | null,
 ): ContentInterface | null => (response ? decodeContent(response) : null);
 
 // ============================================
@@ -65,33 +65,33 @@ export const decodeContentOptional = (
  * 编码保存内容请求：ContentCreateInput → SaveContentRequest
  */
 export const encodeCreateContent = (
-  input: ContentCreateInput
+	input: ContentCreateInput,
 ): SaveContentRequest => ({
-  nodeId: input.nodeId,
-  content: input.content ?? "",
+	nodeId: input.nodeId,
+	content: input.content ?? "",
 });
 
 /**
  * 编码更新内容请求
  */
 export const encodeUpdateContent = (
-  nodeId: string,
-  content: string,
-  expectedVersion?: number
+	nodeId: string,
+	content: string,
+	expectedVersion?: number,
 ): SaveContentRequest => ({
-  nodeId,
-  content,
-  expectedVersion,
+	nodeId,
+	content,
+	expectedVersion,
 });
 
 /**
  * 从 ContentInterface 编码保存请求
  */
 export const encodeContentToSaveRequest = (
-  content: Partial<ContentInterface>,
-  expectedVersion?: number
+	content: Partial<ContentInterface>,
+	expectedVersion?: number,
 ): SaveContentRequest => ({
-  nodeId: content.nodeId!,
-  content: content.content ?? "",
-  expectedVersion,
+	nodeId: content.nodeId!,
+	content: content.content ?? "",
+	expectedVersion,
 });

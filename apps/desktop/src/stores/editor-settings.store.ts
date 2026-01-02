@@ -6,14 +6,17 @@
  * 使用 Zustand + Immer 实现不可变状态管理
  */
 
+import type { FoldIconStyle } from "@grain/editor";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import type { FoldIconStyle } from "@grain/editor";
-import type { EditorSettingsActions, EditorSettingsState } from "@/types/editor-settings";
+import type {
+	EditorSettingsActions,
+	EditorSettingsState,
+} from "@/types/editor-settings";
 import {
-  DEFAULT_EDITOR_SETTINGS_CONFIG,
-  DEFAULT_EDITOR_SETTINGS_STATE,
+	DEFAULT_EDITOR_SETTINGS_CONFIG,
+	DEFAULT_EDITOR_SETTINGS_STATE,
 } from "@/types/editor-settings";
 
 // ==============================
@@ -27,31 +30,31 @@ type EditorSettingsStore = EditorSettingsState & EditorSettingsActions;
 // ==============================
 
 export const useEditorSettingsStore = create<EditorSettingsStore>()(
-  persist(
-    immer((set) => ({
-      // Initial State
-      ...DEFAULT_EDITOR_SETTINGS_STATE,
+	persist(
+		immer((set) => ({
+			// Initial State
+			...DEFAULT_EDITOR_SETTINGS_STATE,
 
-      // ==============================
-      // Actions
-      // ==============================
+			// ==============================
+			// Actions
+			// ==============================
 
-      setFoldIconStyle: (style: FoldIconStyle) => {
-        set((state) => {
-          state.foldIconStyle = style;
-        });
-      },
+			setFoldIconStyle: (style: FoldIconStyle) => {
+				set((state) => {
+					state.foldIconStyle = style;
+				});
+			},
 
-      reset: () => {
-        set((state) => {
-          state.foldIconStyle = DEFAULT_EDITOR_SETTINGS_STATE.foldIconStyle;
-        });
-      },
-    })),
-    {
-      name: DEFAULT_EDITOR_SETTINGS_CONFIG.storageKey,
-    },
-  ),
+			reset: () => {
+				set((state) => {
+					state.foldIconStyle = DEFAULT_EDITOR_SETTINGS_STATE.foldIconStyle;
+				});
+			},
+		})),
+		{
+			name: DEFAULT_EDITOR_SETTINGS_CONFIG.storageKey,
+		},
+	),
 );
 
 // ==============================
@@ -62,7 +65,7 @@ export const useEditorSettingsStore = create<EditorSettingsStore>()(
  * 获取当前折叠图标风格
  */
 export const useFoldIconStyle = (): FoldIconStyle => {
-  return useEditorSettingsStore((state) => state.foldIconStyle);
+	return useEditorSettingsStore((state) => state.foldIconStyle);
 };
 
 // ==============================
@@ -73,5 +76,5 @@ export const useFoldIconStyle = (): FoldIconStyle => {
  * 便捷 hook，提供所有编辑器设置状态和 actions
  */
 export function useEditorSettings() {
-  return useEditorSettingsStore();
+	return useEditorSettingsStore();
 }

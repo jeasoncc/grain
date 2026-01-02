@@ -11,7 +11,7 @@
  * @requirements 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 2.1, 2.2, 2.3, 2.4, 2.5
  */
 
-import { debounce, type DebouncedFunction } from "es-toolkit";
+import { type DebouncedFunction, debounce } from "es-toolkit";
 import * as E from "fp-ts/Either";
 
 import { updateContentByNodeId } from "@/db";
@@ -61,7 +61,9 @@ interface SaveModel {
 	/** 是否正在保存 */
 	isSaving: boolean;
 	/** 防抖保存函数 */
-	debouncedSave: DebouncedFunction<(content: string) => Promise<boolean>> | null;
+	debouncedSave: DebouncedFunction<
+		(content: string) => Promise<boolean>
+	> | null;
 	/** 自动保存延迟 */
 	autoSaveDelay: number;
 	/** 更新 Tab isDirty 状态的函数 */
@@ -232,10 +234,7 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 		delay: number,
 	): DebouncedFunction<(content: string) => Promise<boolean>> | null => {
 		if (delay <= 0) return null;
-		return debounce(
-			(_content: string) => saveContent(nodeId),
-			delay,
-		);
+		return debounce((_content: string) => saveContent(nodeId), delay);
 	};
 
 	return {
@@ -307,7 +306,11 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 			model.pendingContent = content;
 
 			// 更新 Tab isDirty 状态
-			if (model.tabId && model.setTabDirty && content !== model.lastSavedContent) {
+			if (
+				model.tabId &&
+				model.setTabDirty &&
+				content !== model.lastSavedContent
+			) {
 				model.setTabDirty(model.tabId, true);
 			}
 
@@ -345,7 +348,9 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 
 			model.lastSavedContent = content;
 			// 不设置 pendingContent，因为这是已保存的内容
-			logger.debug(`[SaveManager] 设置初始内容: ${nodeId}, 长度: ${content.length}`);
+			logger.debug(
+				`[SaveManager] 设置初始内容: ${nodeId}, 长度: ${content.length}`,
+			);
 		},
 
 		/**
@@ -354,7 +359,10 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 		hasUnsavedChanges: (nodeId: string): boolean => {
 			const model = models.get(nodeId);
 			if (!model) return false;
-			return model.pendingContent !== null && model.pendingContent !== model.lastSavedContent;
+			return (
+				model.pendingContent !== null &&
+				model.pendingContent !== model.lastSavedContent
+			);
 		},
 
 		/**
@@ -394,7 +402,10 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 		getUnsavedNodeIds: (): string[] => {
 			const unsaved: string[] = [];
 			for (const [nodeId, model] of models) {
-				if (model.pendingContent !== null && model.pendingContent !== model.lastSavedContent) {
+				if (
+					model.pendingContent !== null &&
+					model.pendingContent !== model.lastSavedContent
+				) {
 					unsaved.push(nodeId);
 				}
 			}
@@ -407,7 +418,10 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 		saveAll: async (): Promise<void> => {
 			const unsavedIds = [];
 			for (const [nodeId, model] of models) {
-				if (model.pendingContent !== null && model.pendingContent !== model.lastSavedContent) {
+				if (
+					model.pendingContent !== null &&
+					model.pendingContent !== model.lastSavedContent
+				) {
 					unsavedIds.push(nodeId);
 				}
 			}

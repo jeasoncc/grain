@@ -18,12 +18,12 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
+import logger from "@/log";
 import {
-	useNodesByWorkspace,
 	useNode as useNodeQuery,
 	useNodesByType,
+	useNodesByWorkspace,
 } from "@/queries/node.queries";
-import logger from "@/log";
 import type { NodeInterface } from "@/types/node";
 
 // ============================================================================

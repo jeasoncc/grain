@@ -11,8 +11,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import * as nodeRepo from "@/repo/node.repo.fn";
-import { queryKeys } from "./query-keys";
 import type { NodeInterface } from "@/types/node";
+import { queryKeys } from "./query-keys";
 
 // ============================================
 // 默认配置
@@ -36,19 +36,19 @@ const DEFAULT_STALE_TIME = 30 * 1000;
  * ```
  */
 export const useNodesByWorkspace = (workspaceId: string | null | undefined) => {
-  return useQuery({
-    queryKey: queryKeys.nodes.byWorkspace(workspaceId ?? ""),
-    queryFn: async (): Promise<NodeInterface[]> => {
-      if (!workspaceId) return [];
+	return useQuery({
+		queryKey: queryKeys.nodes.byWorkspace(workspaceId ?? ""),
+		queryFn: async (): Promise<NodeInterface[]> => {
+			if (!workspaceId) return [];
 
-      const result = await nodeRepo.getNodesByWorkspace(workspaceId)();
+			const result = await nodeRepo.getNodesByWorkspace(workspaceId)();
 
-      if (result._tag === "Left") throw result.left;
-      return result.right;
-    },
-    enabled: !!workspaceId,
-    staleTime: DEFAULT_STALE_TIME,
-  });
+			if (result._tag === "Left") throw result.left;
+			return result.right;
+		},
+		enabled: !!workspaceId,
+		staleTime: DEFAULT_STALE_TIME,
+	});
 };
 
 /**
@@ -57,19 +57,19 @@ export const useNodesByWorkspace = (workspaceId: string | null | undefined) => {
  * @param workspaceId - 工作区 ID，为空时禁用查询
  */
 export const useRootNodes = (workspaceId: string | null | undefined) => {
-  return useQuery({
-    queryKey: queryKeys.nodes.rootNodes(workspaceId ?? ""),
-    queryFn: async (): Promise<NodeInterface[]> => {
-      if (!workspaceId) return [];
+	return useQuery({
+		queryKey: queryKeys.nodes.rootNodes(workspaceId ?? ""),
+		queryFn: async (): Promise<NodeInterface[]> => {
+			if (!workspaceId) return [];
 
-      const result = await nodeRepo.getRootNodes(workspaceId)();
+			const result = await nodeRepo.getRootNodes(workspaceId)();
 
-      if (result._tag === "Left") throw result.left;
-      return result.right;
-    },
-    enabled: !!workspaceId,
-    staleTime: DEFAULT_STALE_TIME,
-  });
+			if (result._tag === "Left") throw result.left;
+			return result.right;
+		},
+		enabled: !!workspaceId,
+		staleTime: DEFAULT_STALE_TIME,
+	});
 };
 
 /**
@@ -78,19 +78,19 @@ export const useRootNodes = (workspaceId: string | null | undefined) => {
  * @param parentId - 父节点 ID，为空时禁用查询
  */
 export const useChildNodes = (parentId: string | null | undefined) => {
-  return useQuery({
-    queryKey: queryKeys.nodes.children(parentId ?? ""),
-    queryFn: async (): Promise<NodeInterface[]> => {
-      if (!parentId) return [];
+	return useQuery({
+		queryKey: queryKeys.nodes.children(parentId ?? ""),
+		queryFn: async (): Promise<NodeInterface[]> => {
+			if (!parentId) return [];
 
-      const result = await nodeRepo.getChildNodes(parentId)();
+			const result = await nodeRepo.getChildNodes(parentId)();
 
-      if (result._tag === "Left") throw result.left;
-      return result.right;
-    },
-    enabled: !!parentId,
-    staleTime: DEFAULT_STALE_TIME,
-  });
+			if (result._tag === "Left") throw result.left;
+			return result.right;
+		},
+		enabled: !!parentId,
+		staleTime: DEFAULT_STALE_TIME,
+	});
 };
 
 /**
@@ -100,22 +100,22 @@ export const useChildNodes = (parentId: string | null | undefined) => {
  * @param parentId - 父节点 ID，null 表示根节点
  */
 export const useNodesByParent = (
-  workspaceId: string | null | undefined,
-  parentId: string | null
+	workspaceId: string | null | undefined,
+	parentId: string | null,
 ) => {
-  return useQuery({
-    queryKey: queryKeys.nodes.byParent(workspaceId ?? "", parentId),
-    queryFn: async (): Promise<NodeInterface[]> => {
-      if (!workspaceId) return [];
+	return useQuery({
+		queryKey: queryKeys.nodes.byParent(workspaceId ?? "", parentId),
+		queryFn: async (): Promise<NodeInterface[]> => {
+			if (!workspaceId) return [];
 
-      const result = await nodeRepo.getNodesByParent(workspaceId, parentId)();
+			const result = await nodeRepo.getNodesByParent(workspaceId, parentId)();
 
-      if (result._tag === "Left") throw result.left;
-      return result.right;
-    },
-    enabled: !!workspaceId,
-    staleTime: DEFAULT_STALE_TIME,
-  });
+			if (result._tag === "Left") throw result.left;
+			return result.right;
+		},
+		enabled: !!workspaceId,
+		staleTime: DEFAULT_STALE_TIME,
+	});
 };
 
 /**
@@ -124,19 +124,19 @@ export const useNodesByParent = (
  * @param nodeId - 节点 ID，为空时禁用查询
  */
 export const useNode = (nodeId: string | null | undefined) => {
-  return useQuery({
-    queryKey: queryKeys.nodes.detail(nodeId ?? ""),
-    queryFn: async (): Promise<NodeInterface | null> => {
-      if (!nodeId) return null;
+	return useQuery({
+		queryKey: queryKeys.nodes.detail(nodeId ?? ""),
+		queryFn: async (): Promise<NodeInterface | null> => {
+			if (!nodeId) return null;
 
-      const result = await nodeRepo.getNode(nodeId)();
+			const result = await nodeRepo.getNode(nodeId)();
 
-      if (result._tag === "Left") throw result.left;
-      return result.right;
-    },
-    enabled: !!nodeId,
-    staleTime: DEFAULT_STALE_TIME,
-  });
+			if (result._tag === "Left") throw result.left;
+			return result.right;
+		},
+		enabled: !!nodeId,
+		staleTime: DEFAULT_STALE_TIME,
+	});
 };
 
 /**
@@ -146,22 +146,22 @@ export const useNode = (nodeId: string | null | undefined) => {
  * @param nodeType - 节点类型
  */
 export const useNodesByType = (
-  workspaceId: string | null | undefined,
-  nodeType: string
+	workspaceId: string | null | undefined,
+	nodeType: string,
 ) => {
-  return useQuery({
-    queryKey: queryKeys.nodes.byType(workspaceId ?? "", nodeType),
-    queryFn: async (): Promise<NodeInterface[]> => {
-      if (!workspaceId) return [];
+	return useQuery({
+		queryKey: queryKeys.nodes.byType(workspaceId ?? "", nodeType),
+		queryFn: async (): Promise<NodeInterface[]> => {
+			if (!workspaceId) return [];
 
-      const result = await nodeRepo.getNodesByType(workspaceId, nodeType)();
+			const result = await nodeRepo.getNodesByType(workspaceId, nodeType)();
 
-      if (result._tag === "Left") throw result.left;
-      return result.right;
-    },
-    enabled: !!workspaceId,
-    staleTime: DEFAULT_STALE_TIME,
-  });
+			if (result._tag === "Left") throw result.left;
+			return result.right;
+		},
+		enabled: !!workspaceId,
+		staleTime: DEFAULT_STALE_TIME,
+	});
 };
 
 /**
@@ -170,17 +170,17 @@ export const useNodesByType = (
  * @param nodeId - 节点 ID，为空时禁用查询
  */
 export const useDescendants = (nodeId: string | null | undefined) => {
-  return useQuery({
-    queryKey: queryKeys.nodes.descendants(nodeId ?? ""),
-    queryFn: async (): Promise<NodeInterface[]> => {
-      if (!nodeId) return [];
+	return useQuery({
+		queryKey: queryKeys.nodes.descendants(nodeId ?? ""),
+		queryFn: async (): Promise<NodeInterface[]> => {
+			if (!nodeId) return [];
 
-      const result = await nodeRepo.getDescendants(nodeId)();
+			const result = await nodeRepo.getDescendants(nodeId)();
 
-      if (result._tag === "Left") throw result.left;
-      return result.right;
-    },
-    enabled: !!nodeId,
-    staleTime: DEFAULT_STALE_TIME,
-  });
+			if (result._tag === "Left") throw result.left;
+			return result.right;
+		},
+		enabled: !!nodeId,
+		staleTime: DEFAULT_STALE_TIME,
+	});
 };

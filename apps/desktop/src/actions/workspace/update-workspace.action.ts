@@ -12,9 +12,9 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import * as workspaceRepo from "@/repo/workspace.repo.fn";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
+import * as workspaceRepo from "@/repo/workspace.repo.fn";
 import type { WorkspaceUpdateInput } from "@/types/workspace";
 
 /**

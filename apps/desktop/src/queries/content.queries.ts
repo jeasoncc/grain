@@ -11,8 +11,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import * as contentRepo from "@/repo/content.repo.fn";
-import { queryKeys } from "./query-keys";
 import type { ContentInterface } from "@/types/content";
+import { queryKeys } from "./query-keys";
 
 // ============================================
 // 默认配置
@@ -36,19 +36,19 @@ const DEFAULT_STALE_TIME = 60 * 1000;
  * ```
  */
 export const useContent = (nodeId: string | null | undefined) => {
-  return useQuery({
-    queryKey: queryKeys.contents.byNode(nodeId ?? ""),
-    queryFn: async (): Promise<ContentInterface | null> => {
-      if (!nodeId) return null;
+	return useQuery({
+		queryKey: queryKeys.contents.byNode(nodeId ?? ""),
+		queryFn: async (): Promise<ContentInterface | null> => {
+			if (!nodeId) return null;
 
-      const result = await contentRepo.getContentByNodeId(nodeId)();
+			const result = await contentRepo.getContentByNodeId(nodeId)();
 
-      if (result._tag === "Left") throw result.left;
-      return result.right;
-    },
-    enabled: !!nodeId,
-    staleTime: DEFAULT_STALE_TIME,
-  });
+			if (result._tag === "Left") throw result.left;
+			return result.right;
+		},
+		enabled: !!nodeId,
+		staleTime: DEFAULT_STALE_TIME,
+	});
 };
 
 /**
@@ -57,17 +57,17 @@ export const useContent = (nodeId: string | null | undefined) => {
  * @param nodeId - 节点 ID，为空时禁用查询
  */
 export const useContentVersion = (nodeId: string | null | undefined) => {
-  return useQuery({
-    queryKey: queryKeys.contents.version(nodeId ?? ""),
-    queryFn: async (): Promise<number | null> => {
-      if (!nodeId) return null;
+	return useQuery({
+		queryKey: queryKeys.contents.version(nodeId ?? ""),
+		queryFn: async (): Promise<number | null> => {
+			if (!nodeId) return null;
 
-      const result = await contentRepo.getContentVersion(nodeId)();
+			const result = await contentRepo.getContentVersion(nodeId)();
 
-      if (result._tag === "Left") throw result.left;
-      return result.right;
-    },
-    enabled: !!nodeId,
-    staleTime: DEFAULT_STALE_TIME,
-  });
+			if (result._tag === "Left") throw result.left;
+			return result.right;
+		},
+		enabled: !!nodeId,
+		staleTime: DEFAULT_STALE_TIME,
+	});
 };

@@ -12,8 +12,8 @@
  */
 
 import { useMemo } from "react";
-import { useNodesByWorkspace } from "@/queries/node.queries";
 import { WikiFileEntryBuilder, type WikiFileEntryType } from "@/fn/wiki";
+import { useNodesByWorkspace } from "@/queries/node.queries";
 import type { NodeInterface } from "@/types/node";
 
 /** Wiki tag name */

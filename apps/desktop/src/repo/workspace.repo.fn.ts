@@ -8,18 +8,18 @@
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import * as rustApi from "@/db/rust-api.fn";
+import type { AppError } from "@/lib/error.types";
 import {
-  decodeWorkspace,
-  decodeWorkspaces,
-  encodeCreateWorkspace,
-  encodeUpdateWorkspace,
+	decodeWorkspace,
+	decodeWorkspaces,
+	encodeCreateWorkspace,
+	encodeUpdateWorkspace,
 } from "@/types/codec";
 import type {
-  WorkspaceInterface,
-  WorkspaceCreateInput,
-  WorkspaceUpdateInput,
+	WorkspaceCreateInput,
+	WorkspaceInterface,
+	WorkspaceUpdateInput,
 } from "@/types/workspace";
-import type { AppError } from "@/lib/error.types";
 
 // ============================================
 // 查询操作
@@ -28,19 +28,21 @@ import type { AppError } from "@/lib/error.types";
 /**
  * 获取所有工作区
  */
-export const getWorkspaces = (): TE.TaskEither<AppError, WorkspaceInterface[]> =>
-  pipe(rustApi.getWorkspaces(), TE.map(decodeWorkspaces));
+export const getWorkspaces = (): TE.TaskEither<
+	AppError,
+	WorkspaceInterface[]
+> => pipe(rustApi.getWorkspaces(), TE.map(decodeWorkspaces));
 
 /**
  * 获取单个工作区
  */
 export const getWorkspace = (
-  workspaceId: string
+	workspaceId: string,
 ): TE.TaskEither<AppError, WorkspaceInterface | null> =>
-  pipe(
-    rustApi.getWorkspace(workspaceId),
-    TE.map((response) => (response ? decodeWorkspace(response) : null))
-  );
+	pipe(
+		rustApi.getWorkspace(workspaceId),
+		TE.map((response) => (response ? decodeWorkspace(response) : null)),
+	);
 
 // ============================================
 // 写入操作
@@ -50,30 +52,30 @@ export const getWorkspace = (
  * 创建工作区
  */
 export const createWorkspace = (
-  input: WorkspaceCreateInput
+	input: WorkspaceCreateInput,
 ): TE.TaskEither<AppError, WorkspaceInterface> =>
-  pipe(
-    TE.of(encodeCreateWorkspace(input)),
-    TE.chain(rustApi.createWorkspace),
-    TE.map(decodeWorkspace)
-  );
+	pipe(
+		TE.of(encodeCreateWorkspace(input)),
+		TE.chain(rustApi.createWorkspace),
+		TE.map(decodeWorkspace),
+	);
 
 /**
  * 更新工作区
  */
 export const updateWorkspace = (
-  workspaceId: string,
-  input: WorkspaceUpdateInput
+	workspaceId: string,
+	input: WorkspaceUpdateInput,
 ): TE.TaskEither<AppError, WorkspaceInterface> =>
-  pipe(
-    TE.of(encodeUpdateWorkspace(input)),
-    TE.chain((request) => rustApi.updateWorkspace(workspaceId, request)),
-    TE.map(decodeWorkspace)
-  );
+	pipe(
+		TE.of(encodeUpdateWorkspace(input)),
+		TE.chain((request) => rustApi.updateWorkspace(workspaceId, request)),
+		TE.map(decodeWorkspace),
+	);
 
 /**
  * 删除工作区
  */
 export const deleteWorkspace = (
-  workspaceId: string
+	workspaceId: string,
 ): TE.TaskEither<AppError, void> => rustApi.deleteWorkspace(workspaceId);

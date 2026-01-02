@@ -140,7 +140,7 @@
 - [x] 统一导出所有 queries
 - _Requirements: 2.1-2.8_
 
-## 阶段 5: Actions 迁移（写入） ✅
+## 阶段 5: Actions 迁移（写入） - 部分完成
 
 ### 任务 5.1: 迁移 Node Actions ✅
 - [x] 迁移 `create-node.action.ts` - 使用 repo + TaskEither 管道
@@ -157,9 +157,9 @@
 - [x] 迁移 `delete-workspace.action.ts` - 使用 repo + TaskEither 管道
 - _Requirements: 6.1-6.5_
 
-### 任务 5.3: 迁移 File Actions ✅
-- [x] 迁移 `create-file.action.ts` - 已使用 createNode action
-- [x] 迁移 `open-file.action.ts` - 已使用 createNode action
+### 任务 5.3: 迁移 File Actions - 待完成
+- [ ] 迁移 `create-file.action.ts` - 仍使用 `addContent, addNode, getNextOrder`
+- [ ] 迁移 `open-file.action.ts` - 仍使用 `getContentByNodeId`
 - _Requirements: 6.1-6.5_
 
 ### 任务 5.4: 迁移 Templated Actions ✅
@@ -167,15 +167,22 @@
 - [x] 验证 diary、wiki 等模板创建功能
 - _Requirements: 6.1-6.5_
 
-### 任务 5.5: 迁移 Export Actions ✅
+### 任务 5.5: 迁移 Export Actions - 部分完成
 - [x] 迁移 `export-markdown.action.ts` - 使用 repo + TaskEither 管道
+- [ ] 迁移 `export-workspace-markdown.action.ts` - 仍使用 Dexie
+- [ ] 迁移 `export-all.action.ts` - 仍使用 Dexie
+- [ ] 迁移 `export-project.action.ts` - 仍使用 Dexie
 - _Requirements: 6.1-6.5_
 
-### 任务 5.6: 迁移 Import Actions ✅
-- [x] 迁移 `import-markdown.action.ts` - 已使用 createNode action
+### 任务 5.6: 迁移 Import Actions - 待完成
+- [ ] 迁移 `import-json.action.ts` - 仍使用 Dexie database
 - _Requirements: 6.1-6.5_
 
-## 阶段 6: 保存服务重构 ✅
+### 任务 5.7: 迁移 Wiki Actions - 待完成
+- [ ] 迁移 `migrate-wiki.action.ts` - 仍使用 Dexie
+- _Requirements: 6.1-6.5_
+
+## 阶段 6: 保存服务重构 - 部分完成
 
 ### 任务 6.1: 重构保存服务 ✅
 - [x] 更新 `src/services/save-service.ts` 使用 Repository 层
@@ -186,19 +193,35 @@
 - [x] 实现 `getPendingSaveCount` - 获取待保存数量
 - _Requirements: 5.2, 5.3_
 
-### 任务 6.2: 更新编辑器组件使用新保存服务
+### 任务 6.2: 迁移其他保存相关文件 - 待完成
+- [ ] 迁移 `save.document.fn.ts` - 仍使用 `updateContentByNodeId, updateNode`
+- [ ] 迁移 `unified-save.service.ts` - 仍使用 `updateContentByNodeId`
+- [ ] 迁移 `save-service-manager.ts` - 仍使用 `updateContentByNodeId`
+- _Requirements: 5.2, 5.3_
+
+### 任务 6.3: 更新编辑器组件使用新保存服务
 - [ ] 更新 Lexical 编辑器使用新 saveService
 - [ ] 更新 Excalidraw 编辑器使用新 saveService
 - [ ] 更新 Code 编辑器使用新 saveService
 - [ ] 更新 Diagram 编辑器使用新 saveService
 - _Requirements: 5.5_
 
-### 任务 6.3: 移除旧保存服务
+### 任务 6.4: 移除旧保存服务
 - [ ] 移除 `unified-save.service.ts`
 - [ ] 更新所有 import 语句
 - _Requirements: 8.1_
 
-## 阶段 7: Hooks 迁移 ✅
+## 阶段 6.5: 迁移其他函数 - 新增
+
+### 任务 6.5.1: 迁移搜索引擎
+- [ ] 迁移 `search.engine.fn.ts` - 仍使用 `getNodesByWorkspace, getWorkspaceById`
+- _Requirements: 6.1-6.5_
+
+### 任务 6.5.2: 迁移 Wiki 解析
+- [ ] 迁移 `wiki.resolve.fn.ts` - 仍使用 `getContentsByNodeIds, getNodesByWorkspace, database`
+- _Requirements: 6.1-6.5_
+
+## 阶段 7: Hooks 迁移 - 部分完成
 
 ### 任务 7.1: 迁移 use-workspace.ts ✅
 - [x] 替换 `useLiveQuery` 为 TanStack Query hooks

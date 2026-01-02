@@ -12,9 +12,9 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import * as nodeRepo from "@/repo/node.repo.fn";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
+import * as nodeRepo from "@/repo/node.repo.fn";
 
 /**
  * 删除节点及其子节点

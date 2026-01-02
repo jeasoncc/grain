@@ -14,6 +14,7 @@ import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { openFile } from "@/actions";
+import { createCode } from "@/actions/templated/create-code.action";
 import {
 	createDiary,
 	createLedger,
@@ -21,7 +22,6 @@ import {
 	createTodo,
 	createWiki,
 } from "@/actions/templated/create-date-template.action";
-import { createCode } from "@/actions/templated/create-code.action";
 import { createExcalidraw } from "@/actions/templated/create-excalidraw.action";
 import { createMermaid } from "@/actions/templated/create-mermaid.action";
 import { createPlantUML } from "@/actions/templated/create-plantuml.action";
@@ -30,10 +30,10 @@ import { ExportDialog } from "@/components/export-dialog";
 import { useConfirm } from "@/components/ui/confirm";
 import { addWorkspace, clearAllData, touchWorkspace } from "@/db";
 import { calculateExpandedFoldersForNode } from "@/fn/node";
-import type { AppError } from "@/lib/error.types";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useNodesByWorkspace } from "@/hooks/use-node";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
+import type { AppError } from "@/lib/error.types";
 import { useSelectionStore } from "@/stores/selection.store";
 import { useSidebarStore } from "@/stores/sidebar.store";
 import type { TabType } from "@/types/editor-tab";

@@ -12,6 +12,8 @@
 export * from "./diagram.store";
 // Editor History Store - 编辑器历史状态
 export * from "./editor-history.store";
+// Editor Settings Store - 编辑器设置状态
+export * from "./editor-settings.store";
 // Editor Tabs Store - 编辑器标签页状态
 export * from "./editor-tabs.store";
 // Font Store - 字体设置状态
@@ -30,5 +32,3 @@ export * from "./theme.store";
 export * from "./ui.store";
 // Writing Store - 写作状态
 export * from "./writing.store";
-// Editor Settings Store - 编辑器设置状态
-export * from "./editor-settings.store";

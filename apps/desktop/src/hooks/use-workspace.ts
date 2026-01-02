@@ -14,8 +14,8 @@
 
 import { useMemo } from "react";
 import {
-	useWorkspaces as useWorkspacesQuery,
 	useWorkspace as useWorkspaceQuery,
+	useWorkspaces as useWorkspacesQuery,
 } from "@/queries/workspace.queries";
 import type { WorkspaceInterface } from "@/types/workspace";
 
@@ -51,8 +51,7 @@ export function useAllWorkspaces(): WorkspaceInterface[] | undefined {
 	return useMemo(() => {
 		if (isLoading || !workspaces) return undefined;
 		return [...workspaces].sort(
-			(a, b) =>
-				new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime(),
+			(a, b) => new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime(),
 		);
 	}, [workspaces, isLoading]);
 }
@@ -170,8 +169,7 @@ export function useWorkspaceSearch(
 		if (isLoading || !workspaces) return undefined;
 
 		const sorted = [...workspaces].sort(
-			(a, b) =>
-				new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime(),
+			(a, b) => new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime(),
 		);
 
 		if (!query || query.trim() === "") {

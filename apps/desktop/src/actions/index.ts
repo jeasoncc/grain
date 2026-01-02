@@ -22,14 +22,14 @@
 // ==============================
 
 export {
-	createFile,
-	createFileAsync,
 	type CreateFileParams,
 	type CreateFileResult,
-	openFile,
-	openFileAsync,
+	createFile,
+	createFileAsync,
 	type OpenFileParams,
 	type OpenFileResult,
+	openFile,
+	openFileAsync,
 } from "./file";
 
 // ==============================

@@ -39,6 +39,8 @@ export * from "./workspace";
 export * from "./diagram";
 // Editor History 类型模块
 export * from "./editor-history";
+// Editor Settings 类型模块
+export * from "./editor-settings";
 // Editor Tab 类型模块
 export * from "./editor-tab";
 // Export 类型模块
@@ -59,5 +61,3 @@ export * from "./theme";
 export * from "./ui";
 // Writing 类型模块
 export * from "./writing";
-// Editor Settings 类型模块
-export * from "./editor-settings";

@@ -68,9 +68,7 @@ export const SaveStatusIndicatorContainer = memo(
 		// 计算最终显示的状态
 		// 如果当前 Tab 没有未保存更改，但全局状态是 unsaved，则显示 saved
 		const effectiveStatus: SaveStatusIndicatorViewProps["status"] =
-			globalStatus === "unsaved" && !hasUnsavedChanges
-				? "saved"
-				: globalStatus;
+			globalStatus === "unsaved" && !hasUnsavedChanges ? "saved" : globalStatus;
 
 		return (
 			<SaveStatusIndicatorView
