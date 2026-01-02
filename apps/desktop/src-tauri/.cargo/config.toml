@@ -40,12 +40,13 @@ linker = "lld-link"
 # 并行编译任务数（默认为 CPU 核心数）
 # jobs = 8
 
-# 使用 sccache 作为编译缓存
-rustc-wrapper = "sccache"
+# sccache 和增量编译不兼容，开发时优先使用增量编译
+# 如需使用 sccache（CI/全量构建），取消下行注释并设置 CARGO_INCREMENTAL=0
+# rustc-wrapper = "sccache"
 
 # ============================================
 # 环境变量
 # ============================================
 [env]
-# 启用增量编译
+# 启用增量编译（开发时更快）
 CARGO_INCREMENTAL = "1"
