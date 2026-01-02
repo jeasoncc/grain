@@ -4,15 +4,11 @@
 
 pub mod commands;
 pub mod db;
-pub mod entity;
-pub mod migration;
 pub mod repo;
 pub mod services;
 pub mod types;
 
 use db::DbConnection;
-use migration::Migrator;
-use sea_orm_migration::MigratorTrait;
 use tauri::Manager;
 use tracing::{error, info};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
@@ -33,16 +29,10 @@ fn init_logging() {
 
 /// 初始化数据库
 async fn init_database(config: &AppConfig) -> Result<sea_orm::DatabaseConnection, String> {
-    // 连接数据库
+    // 连接数据库并创建表
     let db = DbConnection::connect(config)
         .await
         .map_err(|e| format!("数据库连接失败: {}", e))?;
-
-    // 运行迁移
-    info!("运行数据库迁移...");
-    Migrator::up(&db, None)
-        .await
-        .map_err(|e| format!("数据库迁移失败: {}", e))?;
 
     info!("数据库初始化完成");
     Ok(db)

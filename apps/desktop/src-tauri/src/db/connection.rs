@@ -4,7 +4,7 @@
 
 use crate::types::config::AppConfig;
 use crate::types::error::AppResult;
-use sea_orm::{ConnectOptions, Database, DatabaseConnection};
+use sea_orm::{ConnectionTrait, ConnectOptions, Database, DatabaseConnection, Statement};
 use std::path::PathBuf;
 use std::time::Duration;
 use tracing::info;
@@ -39,7 +39,92 @@ impl DbConnection {
         info!("连接数据库: {:?}", db_path);
         let db = Database::connect(opt).await?;
 
+        // 创建表结构
+        Self::create_tables(&db).await?;
+
         Ok(db)
+    }
+
+    /// 创建数据库表结构
+    async fn create_tables(db: &DatabaseConnection) -> AppResult<()> {
+        info!("创建数据库表结构...");
+
+        // 创建 workspace 表
+        db.execute(Statement::from_string(
+            db.get_database_backend(),
+            r#"
+            CREATE TABLE IF NOT EXISTS workspace (
+                id TEXT PRIMARY KEY NOT NULL,
+                name TEXT NOT NULL,
+                description TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            "#.to_string(),
+        ))
+        .await?;
+
+        // 创建 node 表
+        db.execute(Statement::from_string(
+            db.get_database_backend(),
+            r#"
+            CREATE TABLE IF NOT EXISTS node (
+                id TEXT PRIMARY KEY NOT NULL,
+                workspace_id TEXT NOT NULL,
+                parent_id TEXT,
+                title TEXT NOT NULL,
+                node_type TEXT NOT NULL,
+                tags TEXT,
+                sort_order INTEGER NOT NULL DEFAULT 0,
+                collapsed INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (workspace_id) REFERENCES workspace(id) ON DELETE CASCADE,
+                FOREIGN KEY (parent_id) REFERENCES node(id) ON DELETE CASCADE
+            )
+            "#.to_string(),
+        ))
+        .await?;
+
+        // 创建 node 表索引
+        db.execute(Statement::from_string(
+            db.get_database_backend(),
+            "CREATE INDEX IF NOT EXISTS idx_node_workspace ON node(workspace_id)".to_string(),
+        ))
+        .await?;
+
+        db.execute(Statement::from_string(
+            db.get_database_backend(),
+            "CREATE INDEX IF NOT EXISTS idx_node_parent ON node(parent_id)".to_string(),
+        ))
+        .await?;
+
+        // 创建 content 表
+        db.execute(Statement::from_string(
+            db.get_database_backend(),
+            r#"
+            CREATE TABLE IF NOT EXISTS content (
+                id TEXT PRIMARY KEY NOT NULL,
+                node_id TEXT NOT NULL UNIQUE,
+                content TEXT NOT NULL,
+                version INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (node_id) REFERENCES node(id) ON DELETE CASCADE
+            )
+            "#.to_string(),
+        ))
+        .await?;
+
+        // 创建 content 表索引
+        db.execute(Statement::from_string(
+            db.get_database_backend(),
+            "CREATE INDEX IF NOT EXISTS idx_content_node ON content(node_id)".to_string(),
+        ))
+        .await?;
+
+        info!("数据库表结构创建完成");
+        Ok(())
     }
 
     /// 构建数据库连接 URL

@@ -2,7 +2,7 @@
 //!
 //! 封装节点相关的数据库操作
 
-use crate::entity::node::{self, Entity as Node, NodeType};
+use crate::types::node::{node_entity as node, NodeEntity as Node, NodeType};
 use crate::types::error::{AppError, AppResult};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, Set,

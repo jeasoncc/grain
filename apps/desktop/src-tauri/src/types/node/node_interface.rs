@@ -18,21 +18,38 @@
 //! | lastEdit | updated_at | 更新时间（毫秒时间戳） |
 //! | tags | tags | 标签数组（JSON） |
 
+use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 // ============================================================================
-// 节点类型枚举
+// 节点类型枚举（统一定义，同时用于 Entity 和 DTO）
 // ============================================================================
 
 /// 节点类型
 /// 对应前端 NodeType: "folder" | "file" | "canvas" | "diary" | "drawing"
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// 同时用于 SeaORM Entity 和 DTO
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(rs_type = "String", db_type = "Text")]
 #[serde(rename_all = "lowercase")]
 pub enum NodeType {
+    /// 文件夹
+    #[sea_orm(string_value = "folder")]
     Folder,
+
+    /// 普通文件
+    #[sea_orm(string_value = "file")]
     File,
+
+    /// 画布
+    #[sea_orm(string_value = "canvas")]
     Canvas,
+
+    /// 日记
+    #[sea_orm(string_value = "diary")]
     Diary,
+
+    /// 绘图 (Excalidraw)
+    #[sea_orm(string_value = "drawing")]
     Drawing,
 }
 
@@ -65,32 +82,6 @@ impl std::str::FromStr for NodeType {
             "diary" => Ok(NodeType::Diary),
             "drawing" => Ok(NodeType::Drawing),
             _ => Err(format!("未知的节点类型: {}", s)),
-        }
-    }
-}
-
-/// 从 Entity NodeType 转换
-impl From<crate::entity::node::NodeType> for NodeType {
-    fn from(entity_type: crate::entity::node::NodeType) -> Self {
-        match entity_type {
-            crate::entity::node::NodeType::Folder => NodeType::Folder,
-            crate::entity::node::NodeType::File => NodeType::File,
-            crate::entity::node::NodeType::Canvas => NodeType::Canvas,
-            crate::entity::node::NodeType::Diary => NodeType::Diary,
-            crate::entity::node::NodeType::Drawing => NodeType::Drawing,
-        }
-    }
-}
-
-/// 转换为 Entity NodeType
-impl From<NodeType> for crate::entity::node::NodeType {
-    fn from(dto_type: NodeType) -> Self {
-        match dto_type {
-            NodeType::Folder => crate::entity::node::NodeType::Folder,
-            NodeType::File => crate::entity::node::NodeType::File,
-            NodeType::Canvas => crate::entity::node::NodeType::Canvas,
-            NodeType::Diary => crate::entity::node::NodeType::Diary,
-            NodeType::Drawing => crate::entity::node::NodeType::Drawing,
         }
     }
 }
@@ -200,8 +191,8 @@ pub struct NodeResponse {
 }
 
 /// Entity -> DTO 转换
-impl From<crate::entity::node::Model> for NodeResponse {
-    fn from(model: crate::entity::node::Model) -> Self {
+impl From<super::node_entity::Model> for NodeResponse {
+    fn from(model: super::node_entity::Model) -> Self {
         // 解析 tags JSON 字符串为 Vec<String>
         let tags = model.tags.and_then(|t| serde_json::from_str(&t).ok());
 
@@ -209,7 +200,7 @@ impl From<crate::entity::node::Model> for NodeResponse {
             id: model.id,
             workspace_id: model.workspace_id,
             parent_id: model.parent_id,
-            node_type: model.node_type.into(),
+            node_type: model.node_type,
             title: model.title,
             sort_order: model.sort_order,
             is_collapsed: model.is_collapsed,

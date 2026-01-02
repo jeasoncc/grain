@@ -126,8 +126,8 @@ pub struct WorkspaceResponse {
 
 /// Entity -> DTO 转换
 /// 注意：当前 Entity 缺少部分字段，使用默认值填充
-impl From<crate::entity::workspace::Model> for WorkspaceResponse {
-    fn from(model: crate::entity::workspace::Model) -> Self {
+impl From<super::workspace_entity::Model> for WorkspaceResponse {
+    fn from(model: super::workspace_entity::Model) -> Self {
         Self {
             id: model.id,
             // Entity 使用 name，DTO 使用 title

@@ -1,6 +1,7 @@
 //! Content 实体定义
 //!
-//! 存储节点的编辑器内容 (Lexical JSON 状态)
+//! 存储节点的编辑器内容 (Lexical JSON 状态)。
+//! SeaORM Entity 定义，对应数据库 `contents` 表。
 
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -36,14 +37,14 @@ pub struct Model {
 pub enum Relation {
     /// 内容属于一个节点
     #[sea_orm(
-        belongs_to = "super::node::Entity",
+        belongs_to = "crate::types::node::node_entity::Entity",
         from = "Column::NodeId",
-        to = "super::node::Column::Id"
+        to = "crate::types::node::node_entity::Column::Id"
     )]
     Node,
 }
 
-impl Related<super::node::Entity> for Entity {
+impl Related<crate::types::node::node_entity::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Node.def()
     }

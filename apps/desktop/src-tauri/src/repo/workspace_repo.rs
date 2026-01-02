@@ -2,7 +2,7 @@
 //!
 //! 封装工作区相关的数据库操作
 
-use crate::entity::workspace::{self, Entity as Workspace};
+use crate::types::workspace::{workspace_entity as workspace, WorkspaceEntity as Workspace};
 use crate::types::error::{AppError, AppResult};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 use tracing::info;

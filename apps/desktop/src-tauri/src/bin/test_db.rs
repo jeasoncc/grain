@@ -3,11 +3,9 @@
 //! 运行: cargo run --bin test_db
 
 use grain_lib::db::DbConnection;
-use grain_lib::migration::Migrator;
 use grain_lib::repo::{ContentRepo, NodeRepo, WorkspaceRepo};
-use grain_lib::entity::node::NodeType;
+use grain_lib::types::NodeType;
 use grain_lib::types::config::AppConfig;
-use sea_orm_migration::MigratorTrait;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -36,13 +34,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db = DbConnection::connect(&config).await?;
     println!("   ✓ 连接成功");
 
-    // 运行迁移
-    println!("\n2. 运行数据库迁移...");
-    Migrator::up(&db, None).await?;
-    println!("   ✓ 迁移完成");
-
     // 创建工作区
-    println!("\n3. 创建工作区...");
+    println!("\n2. 创建工作区...");
     let workspace_id = uuid::Uuid::new_v4().to_string();
     let workspace = WorkspaceRepo::create(
         &db,
@@ -54,7 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("   ✓ 工作区创建成功: {} ({})", workspace.name, workspace.id);
 
     // 创建文件夹节点
-    println!("\n4. 创建文件夹节点...");
+    println!("\n3. 创建文件夹节点...");
     let folder_id = uuid::Uuid::new_v4().to_string();
     let folder = NodeRepo::create(
         &db,
@@ -69,7 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("   ✓ 文件夹创建成功: {} ({})", folder.title, folder.id);
 
     // 创建文件节点
-    println!("\n5. 创建文件节点...");
+    println!("\n4. 创建文件节点...");
     let file_id = uuid::Uuid::new_v4().to_string();
     let file = NodeRepo::create(
         &db,
@@ -84,7 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("   ✓ 文件创建成功: {} ({})", file.title, file.id);
 
     // 创建内容
-    println!("\n6. 创建文件内容...");
+    println!("\n5. 创建文件内容...");
     let content_id = uuid::Uuid::new_v4().to_string();
     let content = ContentRepo::create(
         &db,
@@ -96,7 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("   ✓ 内容创建成功: version={}", content.version);
 
     // 更新内容
-    println!("\n7. 更新文件内容...");
+    println!("\n6. 更新文件内容...");
     let updated_content = ContentRepo::update(
         &db,
         &file_id,
@@ -107,7 +100,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("   ✓ 内容更新成功: version={}", updated_content.version);
 
     // 查询工作区节点
-    println!("\n8. 查询工作区节点...");
+    println!("\n7. 查询工作区节点...");
     let nodes = NodeRepo::find_by_workspace(&db, &workspace_id).await?;
     println!("   ✓ 找到 {} 个节点:", nodes.len());
     for node in &nodes {
@@ -115,12 +108,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // 查询所有工作区
-    println!("\n9. 查询所有工作区...");
+    println!("\n8. 查询所有工作区...");
     let workspaces = WorkspaceRepo::find_all(&db).await?;
     println!("   ✓ 找到 {} 个工作区", workspaces.len());
 
     // 清理测试数据
-    println!("\n10. 清理测试数据...");
+    println!("\n9. 清理测试数据...");
     WorkspaceRepo::delete(&db, &workspace_id).await?;
     println!("   ✓ 工作区已删除（级联删除节点和内容）");
 

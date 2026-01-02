@@ -2,10 +2,9 @@
 //!
 //! 节点相关的前端可调用命令
 
-use crate::entity::node::NodeType as EntityNodeType;
 use crate::repo::NodeRepo;
 use crate::services::NodeService;
-use crate::types::{CreateNodeRequest, MoveNodeRequest, NodeResponse, UpdateNodeRequest};
+use crate::types::{CreateNodeRequest, MoveNodeRequest, NodeResponse, NodeType, UpdateNodeRequest};
 use sea_orm::DatabaseConnection;
 use tauri::State;
 
@@ -53,11 +52,8 @@ pub async fn create_node(
 ) -> Result<NodeResponse, String> {
     let id = uuid::Uuid::new_v4().to_string();
 
-    // 转换节点类型：DTO NodeType -> Entity NodeType
-    let node_type: EntityNodeType = request
-        .node_type
-        .map(|t| t.into())
-        .unwrap_or(EntityNodeType::File);
+    // 使用统一的 NodeType
+    let node_type = request.node_type.unwrap_or(NodeType::File);
 
     // 创建节点时不带 tags 和 initial_content（需要通过 update 添加）
     NodeService::create_node_with_content(
@@ -167,9 +163,9 @@ pub async fn get_nodes_by_type(
     workspace_id: String,
     node_type: String,
 ) -> Result<Vec<NodeResponse>, String> {
-    let parsed_type: EntityNodeType = node_type
+    let parsed_type: NodeType = node_type
         .parse()
-        .unwrap_or(EntityNodeType::File);
+        .unwrap_or(NodeType::File);
 
     NodeRepo::find_by_type(&db, &workspace_id, parsed_type)
         .await

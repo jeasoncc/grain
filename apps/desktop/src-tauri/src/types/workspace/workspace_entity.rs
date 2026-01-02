@@ -1,6 +1,7 @@
 //! Workspace 实体定义
 //!
-//! 工作区是节点的顶层容器
+//! 工作区是节点的顶层容器。
+//! SeaORM Entity 定义，对应数据库 `workspaces` 表。
 
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -31,11 +32,11 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     /// 工作区包含多个节点
-    #[sea_orm(has_many = "super::node::Entity")]
+    #[sea_orm(has_many = "crate::types::node::node_entity::Entity")]
     Nodes,
 }
 
-impl Related<super::node::Entity> for Entity {
+impl Related<crate::types::node::node_entity::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Nodes.def()
     }

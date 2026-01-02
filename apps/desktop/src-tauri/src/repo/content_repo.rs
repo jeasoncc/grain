@@ -2,7 +2,7 @@
 //!
 //! 封装内容相关的数据库操作
 
-use crate::entity::content::{self, Entity as Content};
+use crate::types::content::{content_entity as content, ContentEntity as Content};
 use crate::types::error::{AppError, AppResult};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use tracing::info;

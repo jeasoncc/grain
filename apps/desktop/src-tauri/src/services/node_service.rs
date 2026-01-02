@@ -2,7 +2,7 @@
 //!
 //! 组合 Repository 操作，实现节点相关业务逻辑
 
-use crate::entity::node::NodeType;
+use crate::types::node::{node_entity, NodeType};
 use crate::repo::{ContentRepo, NodeRepo};
 use crate::types::error::AppResult;
 use sea_orm::DatabaseConnection;
@@ -24,7 +24,7 @@ impl NodeService {
         node_type: NodeType,
         tags: Option<String>,
         initial_content: Option<String>,
-    ) -> AppResult<crate::entity::node::Model> {
+    ) -> AppResult<node_entity::Model> {
         // 创建节点
         let node = NodeRepo::create(
             db,
@@ -71,7 +71,7 @@ impl NodeService {
         db: &DatabaseConnection,
         source_id: &str,
         new_title: Option<String>,
-    ) -> AppResult<crate::entity::node::Model> {
+    ) -> AppResult<node_entity::Model> {
         // 获取源节点
         let source = NodeRepo::find_by_id(db, source_id)
             .await?

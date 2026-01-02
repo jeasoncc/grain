@@ -146,8 +146,8 @@ pub struct ContentResponse {
 
 /// Entity -> DTO 转换
 /// 注意：当前 Entity 缺少 content_type 字段，使用默认值
-impl From<crate::entity::content::Model> for ContentResponse {
-    fn from(model: crate::entity::content::Model) -> Self {
+impl From<super::content_entity::Model> for ContentResponse {
+    fn from(model: super::content_entity::Model) -> Self {
         Self {
             id: model.id,
             node_id: model.node_id,

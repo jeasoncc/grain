@@ -1,18 +1,18 @@
 //! 类型定义模块
 //!
-//! 包含错误类型、配置结构体、DTO 和 Builder 等核心类型定义。
+//! 包含错误类型、配置结构体、DTO、Builder 和 Entity 等核心类型定义。
 //!
 //! ## 类型分层
 //!
-//! - **Entity** (`entity/`): 数据库实体，SeaORM Model
-//! - **DTO** (`types/`): 数据传输对象，用于 API 边界
-//! - **Builder** (`types/`): 构建复杂对象的 Builder 模式
+//! - **Entity** (`xxx_entity.rs`): 数据库实体，SeaORM Model
+//! - **DTO** (`xxx_interface.rs`): 数据传输对象，用于 API 边界
+//! - **Builder** (`xxx_builder.rs`): 构建复杂对象的 Builder 模式
 
 // 核心类型
 pub mod config;
 pub mod error;
 
-// DTO + Builder 模块（按实体分目录）
+// DTO + Builder + Entity 模块（按实体分目录）
 pub mod content;
 pub mod node;
 pub mod workspace;
@@ -21,18 +21,21 @@ pub mod workspace;
 pub use config::AppConfig;
 pub use error::{AppError, AppResult};
 
-// 重新导出 Node DTO + Builder
+// 重新导出 Node 类型
 pub use node::{
-    CreateNodeRequest, MoveNodeRequest, NodeBuilder, NodeResponse, NodeType, UpdateNodeRequest,
+    CreateNodeRequest, MoveNodeRequest, NodeActiveModel, NodeBuilder, NodeColumn, NodeEntity,
+    NodeModel, NodeRelation, NodeResponse, NodeType, UpdateNodeRequest,
 };
 
-// 重新导出 Workspace DTO + Builder
+// 重新导出 Workspace 类型
 pub use workspace::{
-    CreateWorkspaceRequest, UpdateWorkspaceRequest, WorkspaceBuilder, WorkspaceResponse,
+    CreateWorkspaceRequest, UpdateWorkspaceRequest, WorkspaceActiveModel, WorkspaceBuilder,
+    WorkspaceColumn, WorkspaceEntity, WorkspaceModel, WorkspaceRelation, WorkspaceResponse,
 };
 
-// 重新导出 Content DTO + Builder
+// 重新导出 Content 类型
 pub use content::{
-    ContentBuilder, ContentResponse, ContentType, CreateContentRequest, SaveContentRequest,
+    ContentActiveModel, ContentBuilder, ContentColumn, ContentEntity, ContentModel,
+    ContentRelation, ContentResponse, ContentType, CreateContentRequest, SaveContentRequest,
     UpdateContentRequest,
 };

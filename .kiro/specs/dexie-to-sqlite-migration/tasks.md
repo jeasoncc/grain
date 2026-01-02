@@ -384,6 +384,52 @@
 
 ### 任务 O.4: Rust 后端类型重构（Interface + Builder 模式） ✅
 
+### 任务 O.5: Entity 迁移到 types 目录 ✅
+
+**目标：** 将 SeaORM Entity 定义从 `entity/` 移动到 `types/` 目录，统一类型管理。
+
+**任务清单：**
+
+- [x] 5.1 移动 Node Entity
+  - [x] 创建 `types/node/node_entity.rs`
+  - [x] 更新 `types/node/mod.rs` 导出
+  - [x] 统一 `NodeType` 枚举（消除重复）
+
+- [x] 5.2 移动 Workspace Entity
+  - [x] 创建 `types/workspace/workspace_entity.rs`
+  - [x] 更新 `types/workspace/mod.rs` 导出
+
+- [x] 5.3 移动 Content Entity
+  - [x] 创建 `types/content/content_entity.rs`
+  - [x] 更新 `types/content/mod.rs` 导出
+
+- [x] 5.4 更新 `entity/mod.rs` 重新导出
+
+- [x] 5.5 更新所有 `crate::entity::*` 导入
+
+- [x] 5.6 运行 `cargo check` 验证
+
+**最终结构：**
+```
+types/
+├── mod.rs
+├── node/
+│   ├── mod.rs
+│   ├── node_entity.rs      # SeaORM Entity
+│   ├── node_interface.rs   # DTO
+│   └── node_builder.rs     # Builder
+├── workspace/
+│   ├── mod.rs
+│   ├── workspace_entity.rs
+│   ├── workspace_interface.rs
+│   └── workspace_builder.rs
+└── content/
+    ├── mod.rs
+    ├── content_entity.rs
+    ├── content_interface.rs
+    └── content_builder.rs
+```
+
 **当前状态审查：**
 - 前端有 6 个核心实体：Node, Workspace, Content, Tag, User, Attachment
 - Rust 后端目前只有 3 个实体：Node, Workspace, Content
