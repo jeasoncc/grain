@@ -36,10 +36,10 @@ import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useNodesByWorkspace } from "@/hooks/use-node";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
 import type { AppError } from "@/lib/error.types";
+import logger from "@/log";
 import { useSelectionStore } from "@/stores/selection.store";
 import { useSidebarStore } from "@/stores/sidebar.store";
 import type { TabType } from "@/types/editor-tab";
-import type { NodeInterface } from "@/types/node";
 import type { WorkspaceInterface } from "@/types/workspace";
 
 import { ActivityBarView } from "./activity-bar.view.fn";
@@ -133,7 +133,7 @@ export function ActivityBarContainer(): React.ReactElement {
 						setActivePanel("files");
 					}
 				} catch (error) {
-					console.error("Failed to create default workspace:", error);
+					logger.error("[ActivityBar] 创建默认工作区失败:", error);
 				}
 				return;
 			}
@@ -155,7 +155,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				try {
 					await touchWorkspace(selectedWorkspaceId)();
 				} catch (error) {
-					console.error("Failed to update lastOpen on init:", error);
+					logger.error("[ActivityBar] 更新 lastOpen 失败:", error);
 				}
 			}
 		};
@@ -178,7 +178,7 @@ export function ActivityBarContainer(): React.ReactElement {
 			try {
 				await touchWorkspace(workspaceId)();
 			} catch (error) {
-				console.error("Failed to update lastOpen:", error);
+				logger.error("[ActivityBar] 更新 lastOpen 失败:", error);
 			}
 			toast.success("Workspace selected");
 		},
@@ -275,7 +275,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				TE.fold(
 					// 失败分支
 					(error) => {
-						console.error("Failed to create template:", error);
+						logger.error("[ActivityBar] 创建模板失败:", error);
 						toast.error(errorMessage);
 						return TE.of(undefined as void);
 					},
