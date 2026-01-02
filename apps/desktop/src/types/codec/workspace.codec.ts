@@ -3,6 +3,8 @@
  *
  * 负责 Rust 后端类型 (WorkspaceResponse) 与前端类型 (WorkspaceInterface) 之间的转换。
  * 这是类型边界层，确保前后端类型解耦。
+ *
+ * 注意：前端和后端现在使用相同的字段名（title），无需转换。
  */
 
 import type {
@@ -24,19 +26,20 @@ import type {
  * 解码单个工作区：WorkspaceResponse → WorkspaceInterface
  *
  * 将 Rust 后端返回的工作区数据转换为前端使用的接口类型
- * 注意：后端只存储 name 和 description，其他字段使用默认值
  */
 export const decodeWorkspace = (
 	response: WorkspaceResponse,
 ): WorkspaceInterface => ({
 	id: response.id,
-	title: response.name,
-	description: response.description ?? "",
-	author: "",
-	publisher: "",
-	language: "zh",
-	lastOpen: new Date(response.updatedAt).toISOString(),
+	title: response.title,
+	author: response.author,
+	description: response.description,
+	publisher: response.publisher,
+	language: response.language,
+	lastOpen: new Date(response.lastOpen).toISOString(),
 	createDate: new Date(response.createdAt).toISOString(),
+	members: response.members,
+	owner: response.owner,
 });
 
 /**
@@ -52,12 +55,19 @@ export const decodeWorkspaces = (
 
 /**
  * 编码创建工作区请求：WorkspaceCreateInput → CreateWorkspaceRequest
+ *
+ * 前端和后端使用相同的字段名，直接传递
  */
 export const encodeCreateWorkspace = (
 	input: WorkspaceCreateInput,
 ): CreateWorkspaceRequest => ({
-	name: input.title,
+	title: input.title,
+	author: input.author,
 	description: input.description,
+	publisher: input.publisher,
+	language: input.language,
+	members: input.members,
+	owner: input.owner,
 });
 
 /**
@@ -66,8 +76,14 @@ export const encodeCreateWorkspace = (
 export const encodeUpdateWorkspace = (
 	input: WorkspaceUpdateInput,
 ): UpdateWorkspaceRequest => ({
-	name: input.title,
+	title: input.title,
+	author: input.author,
 	description: input.description,
+	publisher: input.publisher,
+	language: input.language,
+	lastOpen: input.lastOpen ? new Date(input.lastOpen).getTime() : undefined,
+	members: input.members,
+	owner: input.owner,
 });
 
 /**
@@ -76,8 +92,13 @@ export const encodeUpdateWorkspace = (
 export const encodeWorkspaceToCreateRequest = (
 	workspace: Partial<WorkspaceInterface>,
 ): CreateWorkspaceRequest => ({
-	name: workspace.title!,
+	title: workspace.title!,
+	author: workspace.author,
 	description: workspace.description,
+	publisher: workspace.publisher,
+	language: workspace.language,
+	members: workspace.members,
+	owner: workspace.owner,
 });
 
 /**
@@ -86,6 +107,14 @@ export const encodeWorkspaceToCreateRequest = (
 export const encodeWorkspaceToUpdateRequest = (
 	workspace: Partial<WorkspaceInterface>,
 ): UpdateWorkspaceRequest => ({
-	name: workspace.title,
+	title: workspace.title,
+	author: workspace.author,
 	description: workspace.description,
+	publisher: workspace.publisher,
+	language: workspace.language,
+	lastOpen: workspace.lastOpen
+		? new Date(workspace.lastOpen).getTime()
+		: undefined,
+	members: workspace.members,
+	owner: workspace.owner,
 });

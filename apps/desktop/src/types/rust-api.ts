@@ -5,37 +5,71 @@
  */
 
 // ============================================
-// Workspace 类型
+// Workspace 类型（与 Rust 后端 workspace_interface.rs 对应）
 // ============================================
 
-/** 创建工作区请求 */
+/** 创建工作区请求 - 对应 Rust CreateWorkspaceRequest */
 export interface CreateWorkspaceRequest {
-	/** 工作区名称 */
-	name: string;
-	/** 工作区描述 */
+	/** 工作区标题 */
+	title: string;
+	/** 作者名称 */
+	author?: string;
+	/** 项目描述 */
 	description?: string;
+	/** 出版商信息 */
+	publisher?: string;
+	/** 项目语言（如 "zh", "en"） */
+	language?: string;
+	/** 团队成员（用户 ID 数组） */
+	members?: string[];
+	/** 所有者用户 ID */
+	owner?: string;
 }
 
-/** 更新工作区请求 */
+/** 更新工作区请求 - 对应 Rust UpdateWorkspaceRequest */
 export interface UpdateWorkspaceRequest {
-	/** 工作区名称 */
-	name?: string;
-	/** 工作区描述 (null 表示清除) */
+	/** 工作区标题 */
+	title?: string;
+	/** 作者名称 */
+	author?: string;
+	/** 项目描述 (null 表示清除) */
 	description?: string | null;
+	/** 出版商信息 */
+	publisher?: string;
+	/** 项目语言 */
+	language?: string;
+	/** 最后打开时间（毫秒时间戳） */
+	lastOpen?: number;
+	/** 团队成员 */
+	members?: string[];
+	/** 所有者用户 ID */
+	owner?: string;
 }
 
-/** 工作区响应 */
+/** 工作区响应 - 对应 Rust WorkspaceResponse */
 export interface WorkspaceResponse {
 	/** 工作区 ID (UUID) */
 	id: string;
-	/** 工作区名称 */
-	name: string;
-	/** 工作区描述 */
-	description: string | null;
+	/** 工作区标题 */
+	title: string;
+	/** 作者名称 */
+	author: string;
+	/** 项目描述 */
+	description: string;
+	/** 出版商信息 */
+	publisher: string;
+	/** 项目语言 */
+	language: string;
+	/** 最后打开时间（毫秒时间戳） */
+	lastOpen: number;
 	/** 创建时间戳 (毫秒) */
 	createdAt: number;
 	/** 更新时间戳 (毫秒) */
 	updatedAt: number;
+	/** 团队成员（用户 ID 数组） */
+	members?: string[];
+	/** 所有者用户 ID */
+	owner?: string;
 }
 
 // ============================================
