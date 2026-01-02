@@ -2,50 +2,10 @@
 //!
 //! 工作区相关的前端可调用命令
 
-use crate::entity::workspace;
 use crate::repo::WorkspaceRepo;
+use crate::types::{CreateWorkspaceRequest, UpdateWorkspaceRequest, WorkspaceResponse};
 use sea_orm::DatabaseConnection;
-use serde::{Deserialize, Serialize};
 use tauri::State;
-
-/// 创建工作区请求
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CreateWorkspaceRequest {
-    pub name: String,
-    pub description: Option<String>,
-}
-
-/// 更新工作区请求
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UpdateWorkspaceRequest {
-    pub name: Option<String>,
-    pub description: Option<Option<String>>,
-}
-
-/// 工作区响应
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WorkspaceResponse {
-    pub id: String,
-    pub name: String,
-    pub description: Option<String>,
-    pub created_at: i64,
-    pub updated_at: i64,
-}
-
-impl From<workspace::Model> for WorkspaceResponse {
-    fn from(model: workspace::Model) -> Self {
-        Self {
-            id: model.id,
-            name: model.name,
-            description: model.description,
-            created_at: model.created_at,
-            updated_at: model.updated_at,
-        }
-    }
-}
 
 /// 获取所有工作区
 #[tauri::command]

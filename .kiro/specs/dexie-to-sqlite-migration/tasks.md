@@ -382,33 +382,44 @@
 - [ ] 迁移 use-attachment.ts
 - _Requirements: 9.3_
 
-### 任务 O.4: Rust 后端类型重构（Interface + Builder 模式）
-- [ ] 创建 `types/node.rs` - 将 DTO 从 commands 移出
-  - [ ] 定义 `CreateNodeRequest`, `UpdateNodeRequest`, `MoveNodeRequest`
-  - [ ] 定义 `NodeResponse`
-  - [ ] 实现 `NodeBuilder`
-  - [ ] 实现 `From<entity::node::Model> for NodeResponse`
-- [ ] 创建 `types/workspace.rs` - 将 DTO 从 commands 移出
-  - [ ] 定义 `CreateWorkspaceRequest`, `UpdateWorkspaceRequest`
-  - [ ] 定义 `WorkspaceResponse`
-  - [ ] 实现 `WorkspaceBuilder`
-  - [ ] 实现 `From<entity::workspace::Model> for WorkspaceResponse`
-- [ ] 创建 `types/content.rs` - 将 DTO 从 commands 移出
-  - [ ] 定义 `CreateContentRequest`, `UpdateContentRequest`
-  - [ ] 定义 `ContentResponse`
-  - [ ] 实现 `ContentBuilder`
-  - [ ] 实现 `From<entity::content::Model> for ContentResponse`
-- [ ] 更新 `types/mod.rs` - 导出所有 DTO 和 Builder
-- [ ] 更新 `commands/node_commands.rs` - 使用 types 中的 DTO
-- [ ] 更新 `commands/workspace_commands.rs` - 使用 types 中的 DTO
-- [ ] 更新 `commands/content_commands.rs` - 使用 types 中的 DTO
-- [ ] 运行 `cargo check` 验证编译通过
-- _Requirements: 10.1_
+### 任务 O.4: Rust 后端类型重构（Interface + Builder 模式） ✅
 
-**当前 Rust 后端问题：**
-1. DTO 类型（Request/Response）散落在 commands 文件中
-2. 缺少 Builder 模式来构建复杂对象
-3. Entity 和 DTO 职责混淆
+**当前状态审查：**
+- 前端有 6 个核心实体：Node, Workspace, Content, Tag, User, Attachment
+- Rust 后端目前只有 3 个实体：Node, Workspace, Content
+- DTO 类型散落在 commands 文件中，需要移到 types 目录
+
+**任务清单：**
+
+- [x] 4.1 创建 `types/node.rs` - Node DTO + Builder
+  - [x] 定义 `CreateNodeRequest`, `UpdateNodeRequest`, `MoveNodeRequest`
+  - [x] 定义 `NodeResponse`
+  - [x] 实现 `NodeBuilder`
+  - [x] 实现 `From<entity::node::Model> for NodeResponse`
+  - _从 commands/node_commands.rs 移出_
+
+- [x] 4.2 创建 `types/workspace.rs` - Workspace DTO + Builder
+  - [x] 定义 `CreateWorkspaceRequest`, `UpdateWorkspaceRequest`
+  - [x] 定义 `WorkspaceResponse`
+  - [x] 实现 `WorkspaceBuilder`
+  - [x] 实现 `From<entity::workspace::Model> for WorkspaceResponse`
+  - _从 commands/workspace_commands.rs 移出_
+
+- [x] 4.3 创建 `types/content.rs` - Content DTO + Builder
+  - [x] 定义 `SaveContentRequest`, `CreateContentRequest`, `UpdateContentRequest`
+  - [x] 定义 `ContentResponse`
+  - [x] 实现 `ContentBuilder`
+  - [x] 实现 `From<entity::content::Model> for ContentResponse`
+  - _从 commands/content_commands.rs 移出_
+
+- [x] 4.4 更新 `types/mod.rs` - 导出所有 DTO 和 Builder
+
+- [x] 4.5 更新 commands 文件使用 types 中的 DTO
+  - [x] 更新 `commands/node_commands.rs`
+  - [x] 更新 `commands/workspace_commands.rs`
+  - [x] 更新 `commands/content_commands.rs`
+
+- [x] 4.6 运行 `cargo check` 验证编译通过
 
 **重构目标：**
 ```

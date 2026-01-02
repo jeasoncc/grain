@@ -2,45 +2,10 @@
 //!
 //! 内容相关的前端可调用命令
 
-use crate::entity::content;
 use crate::repo::ContentRepo;
+use crate::types::{ContentResponse, SaveContentRequest};
 use sea_orm::DatabaseConnection;
-use serde::{Deserialize, Serialize};
 use tauri::State;
-
-/// 保存内容请求
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SaveContentRequest {
-    pub node_id: String,
-    pub content: String,
-    pub expected_version: Option<i32>,
-}
-
-/// 内容响应
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ContentResponse {
-    pub id: String,
-    pub node_id: String,
-    pub content: String,
-    pub version: i32,
-    pub created_at: i64,
-    pub updated_at: i64,
-}
-
-impl From<content::Model> for ContentResponse {
-    fn from(model: content::Model) -> Self {
-        Self {
-            id: model.id,
-            node_id: model.node_id,
-            content: model.content,
-            version: model.version,
-            created_at: model.created_at,
-            updated_at: model.updated_at,
-        }
-    }
-}
 
 /// 获取节点内容
 #[tauri::command]
