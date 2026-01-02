@@ -169,70 +169,70 @@
     - 使用 `warp::log()` 记录请求
     - _Requirements: 7.2_
 
-- [ ] 12. Checkpoint - 验证 Warp 服务器
+- [x] 12. Checkpoint - 验证 Warp 服务器
   - 运行 `cargo run -p grain-api`
   - 使用 curl 测试 API 端点
   - _Requirements: 3.4_
 
-- [ ] 13. 创建前端统一 API 客户端
-  - [ ] 13.1 创建 `apps/desktop/src/db/api-client.fn.ts`
+- [x] 13. 创建前端统一 API 客户端
+  - [x] 13.1 创建 `apps/desktop/src/db/api-client.fn.ts`
     - 实现环境检测（isTauri）
     - 实现 invokeTE 和 fetchTE 封装
     - _Requirements: 4.1, 4.2_
-  - [ ] 13.2 实现 createApiClient 高阶函数
+  - [x] 13.2 实现 createApiClient 高阶函数
     - 返回统一 API 接口
     - 所有方法返回 TaskEither
     - _Requirements: 4.1, 4.3_
-  - [ ] 13.3 实现 Workspace API 方法
+  - [x] 13.3 实现 Workspace API 方法
     - getWorkspaces、getWorkspace、createWorkspace、updateWorkspace、deleteWorkspace
     - _Requirements: 4.4, 4.5, 4.6_
-  - [ ] 13.4 实现 Node API 方法
+  - [x] 13.4 实现 Node API 方法
     - getNodesByWorkspace、getNode、createNode、updateNode、moveNode、deleteNode
     - _Requirements: 4.4_
-  - [ ] 13.5 实现 Content API 方法
+  - [x] 13.5 实现 Content API 方法
     - getContent、saveContent
     - _Requirements: 4.4_
-  - [ ] 13.6 实现 Backup API 方法
+  - [x] 13.6 实现 Backup API 方法
     - createBackup、listBackups
     - _Requirements: 4.4_
-  - [ ] 13.7 导出单例客户端
+  - [x] 13.7 导出单例客户端
     - `export const api = createApiClient()`
     - _Requirements: 4.7_
   - [ ] 13.8 编写 API Client 属性测试
     - **Property 4: API Client Signature Consistency**
     - **Validates: Requirements 4.3, 4.4**
 
-- [ ] 14. 迁移现有代码使用新 API 客户端
-  - [ ] 14.1 更新 `workspace.repo.fn.ts`
+- [x] 14. 迁移现有代码使用新 API 客户端
+  - [x] 14.1 更新 `workspace.repo.fn.ts`
     - 从 `api-client.fn.ts` 导入
     - _Requirements: 4.8_
-  - [ ] 14.2 更新其他 repo 文件
+  - [x] 14.2 更新其他 repo 文件
     - 使用新的 api 客户端
     - _Requirements: 4.8_
-  - [ ] 14.3 删除旧的 `rust-api.fn.ts`（可选，保留兼容）
+  - [x] 14.3 删除旧的 `rust-api.fn.ts`（可选，保留兼容）
     - _Requirements: 4.8_
 
-- [ ] 15. 配置开发脚本
-  - [ ] 15.1 更新 `package.json` 添加 api-rust 脚本
-    - `api-rust:dev`: `cargo watch -x 'run -p api-rust'`
-    - `api-rust:build`: `cargo build -p api-rust --release`
+- [x] 15. 配置开发脚本
+  - [x] 15.1 更新 `package.json` 添加 api-rust 脚本
+    - `api-rust:dev`: `cargo run --manifest-path apps/api-rust/Cargo.toml`
+    - `api-rust:build`: `cargo build --manifest-path apps/api-rust/Cargo.toml --release`
     - _Requirements: 7.1, 7.4, 7.5_
-  - [ ] 15.2 配置环境变量
+  - [x] 15.2 配置环境变量
     - 添加 `VITE_API_URL` 环境变量
     - _Requirements: 6.4_
 
-- [ ] 16. Checkpoint - 端到端验证
+- [x] 16. Checkpoint - 端到端验证
   - 启动 Warp 服务器：`bun run api-rust:dev`
   - 启动 Web 应用：`bun run web:dev`
   - 验证 Web 应用能正常调用 API
   - _Requirements: 4.5, 4.6_
 
-- [ ] 17. 数据库一致性验证
-  - [ ] 17.1 编写数据库 Schema 一致性测试
+- [x] 17. 数据库一致性验证
+  - [x] 17.1 编写数据库 Schema 一致性测试
     - **Property 5: Database Schema Consistency**
     - **Validates: Requirements 6.5**
 
-- [ ] 18. Final Checkpoint - 全面测试
+- [x] 18. Final Checkpoint - 全面测试
   - 运行所有 Rust 测试：`cargo test --workspace`
   - 运行前端测试：`bun run test`
   - 验证 Tauri Desktop 功能正常

@@ -4,7 +4,7 @@
   "author": "Jeason",
   "description": "A minimalist writing sanctuary for long-form content. Pure, elegant, and distraction-free.",
   "email": "xiaomiquan@aliyun.com",
-  "version": "0.1.258",
+  "version": "0.1.259",
   "license": "MIT",
   "homepage": "https://github.com/jeasoncc/grain",
   "repository": {
@@ -25,6 +25,9 @@
     "mobile:dev": "turbo run dev --filter=mobile",
     "admin:dev": "turbo run dev --filter=admin",
     "api:dev": "turbo run dev --filter=api",
+    "api-rust:dev": "cargo run --manifest-path apps/api-rust/Cargo.toml",
+    "api-rust:build": "cargo build --manifest-path apps/api-rust/Cargo.toml --release",
+    "api-rust:check": "cargo check --manifest-path apps/api-rust/Cargo.toml",
     "build:prod:desktop": "NODE_ENV=production turbo run build:prod --filter=desktop",
     "build:prod:web": "NODE_ENV=production turbo run build:prod --filter=web",
     "build:prod:mobile": "NODE_ENV=production turbo run build:prod --filter=mobile",
