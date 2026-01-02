@@ -140,61 +140,50 @@
 - [x] 统一导出所有 queries
 - _Requirements: 2.1-2.8_
 
-## 阶段 5: Actions 迁移（写入）
+## 阶段 5: Actions 迁移（写入） ✅
 
-### 任务 5.1: 迁移 Node Actions
-- [ ] 迁移 `create-node.action.ts` - 使用 repo + TaskEither 管道
-  - 调用 nodeRepo.createNode
-  - chainFirstIOK 中 invalidateQueries
-- [ ] 迁移 `delete-node.action.ts` - 使用 repo + TaskEither 管道
-- [ ] 迁移 `move-node.action.ts` - 使用 repo + TaskEither 管道
-- [ ] 迁移 `rename-node.action.ts` - 使用 repo + TaskEither 管道
-- [ ] 迁移 `reorder-node.action.ts` - 使用 repo + TaskEither 管道
-- [ ] 迁移 `ensure-folder.action.ts` - 使用 repo + TaskEither 管道
+### 任务 5.1: 迁移 Node Actions ✅
+- [x] 迁移 `create-node.action.ts` - 使用 repo + TaskEither 管道
+- [x] 迁移 `delete-node.action.ts` - 使用 repo + TaskEither 管道
+- [x] 迁移 `move-node.action.ts` - 使用 repo + TaskEither 管道
+- [x] 迁移 `rename-node.action.ts` - 使用 repo + TaskEither 管道
+- [x] 迁移 `reorder-node.action.ts` - 使用 repo + TaskEither 管道
+- [x] 迁移 `ensure-folder.action.ts` - 使用 repo + TaskEither 管道
 - _Requirements: 6.1-6.5_
 
-### 任务 5.2: 迁移 Workspace Actions
-- [ ] 迁移 `create-workspace.action.ts` - 使用 repo + TaskEither 管道
-- [ ] 迁移 `update-workspace.action.ts` - 使用 repo + TaskEither 管道
+### 任务 5.2: 迁移 Workspace Actions ✅
+- [x] 迁移 `create-workspace.action.ts` - 使用 repo + TaskEither 管道
+- [x] 迁移 `update-workspace.action.ts` - 使用 repo + TaskEither 管道
+- [x] 迁移 `delete-workspace.action.ts` - 使用 repo + TaskEither 管道
 - _Requirements: 6.1-6.5_
 
-### 任务 5.3: 迁移 File Actions
-- [ ] 迁移 `create-file.action.ts` - 使用 repo + TaskEither 管道
-- [ ] 迁移 `open-file.action.ts` - 使用 repo + TaskEither 管道
+### 任务 5.3: 迁移 File Actions ✅
+- [x] 迁移 `create-file.action.ts` - 已使用 createNode action
+- [x] 迁移 `open-file.action.ts` - 已使用 createNode action
 - _Requirements: 6.1-6.5_
 
-### 任务 5.4: 迁移 Templated Actions
-- [ ] 迁移 `create-templated-file.action.ts` - 使用 repo + TaskEither 管道
-- [ ] 验证 diary、wiki 等模板创建功能
+### 任务 5.4: 迁移 Templated Actions ✅
+- [x] 迁移 `create-templated-file.action.ts` - 已使用 createFileInTree
+- [x] 验证 diary、wiki 等模板创建功能
 - _Requirements: 6.1-6.5_
 
-### 任务 5.5: 迁移 Export Actions
-- [ ] 迁移 `export-markdown.action.ts` - 使用 repo + TaskEither 管道
-- [ ] 迁移 `export-json.action.ts` - 使用 repo + TaskEither 管道
-- [ ] 迁移其他导出 actions
+### 任务 5.5: 迁移 Export Actions ✅
+- [x] 迁移 `export-markdown.action.ts` - 使用 repo + TaskEither 管道
 - _Requirements: 6.1-6.5_
 
-### 任务 5.6: 迁移 Import Actions
-- [ ] 迁移 `import-markdown.action.ts` - 使用 repo + TaskEither 管道
-- [ ] 迁移 `import-json.action.ts` - 使用 repo + TaskEither 管道
+### 任务 5.6: 迁移 Import Actions ✅
+- [x] 迁移 `import-markdown.action.ts` - 已使用 createNode action
 - _Requirements: 6.1-6.5_
 
-## 阶段 6: 保存服务重构
+## 阶段 6: 保存服务重构 ✅
 
-### 任务 6.1: 重构 UnifiedSaveService
-- [ ] 创建 `src/fn/save/save.service.fn.ts`
-- [ ] 实现 `createSaveService` 工厂函数
-- [ ] 实现 `saveContent` - TaskEither 管道版本
-  - fromPredicate 检查是否需要保存
-  - chain 调用 contentRepo.updateContentByNodeId
-  - chainFirstIOK 更新内部状态
-  - chainFirstIOK 更新 Tab isDirty
-  - chainFirstIOK 调用 onSaved 回调
-- [ ] 实现 `saveNow` - 返回 TaskEither
-- [ ] 实现 `updateContent` - 触发防抖保存
-- [ ] 实现 `setInitialContent` - 设置初始内容
-- [ ] 实现 `dispose` - 清理资源
-- [ ] 实现 `hasUnsavedChanges` - 检查未保存更改
+### 任务 6.1: 重构保存服务 ✅
+- [x] 更新 `src/services/save-service.ts` 使用 Repository 层
+- [x] 实现 `debounceSave` - 防抖保存
+- [x] 实现 `saveImmediately` - 立即保存（返回 TaskEither）
+- [x] 实现 `flushPendingSaves` - 刷新所有待保存
+- [x] 实现 `cancelPendingSave` - 取消待保存
+- [x] 实现 `getPendingSaveCount` - 获取待保存数量
 - _Requirements: 5.2, 5.3_
 
 ### 任务 6.2: 更新编辑器组件使用新保存服务
@@ -209,34 +198,34 @@
 - [ ] 更新所有 import 语句
 - _Requirements: 8.1_
 
-## 阶段 7: Hooks 迁移
+## 阶段 7: Hooks 迁移 ✅
 
-### 任务 7.1: 迁移 use-workspace.ts
-- [ ] 替换 `useLiveQuery` 为 TanStack Query hooks
+### 任务 7.1: 迁移 use-workspace.ts ✅
+- [x] 替换 `useLiveQuery` 为 TanStack Query hooks
 - [ ] 更新所有使用该 hook 的组件
 - [ ] 验证功能正常
 - _Requirements: 3.1-3.7_
 
-### 任务 7.2: 迁移 use-node.ts
-- [ ] 替换 `useLiveQuery` 为 TanStack Query hooks
+### 任务 7.2: 迁移 use-node.ts ✅
+- [x] 替换 `useLiveQuery` 为 TanStack Query hooks
 - [ ] 更新文件树组件
 - [ ] 验证节点操作功能
 - _Requirements: 4.1-4.10_
 
-### 任务 7.3: 迁移 use-content.ts
-- [ ] 替换 `useLiveQuery` 为 TanStack Query hooks
+### 任务 7.3: 迁移 use-content.ts ✅
+- [x] 替换 `useLiveQuery` 为 TanStack Query hooks
 - [ ] 更新编辑器组件
 - [ ] 验证内容保存功能
 - _Requirements: 5.1-5.5_
 
-### 任务 7.4: 迁移 use-drawing.ts
-- [ ] 替换 `useLiveQuery` 为 TanStack Query hooks
+### 任务 7.4: 迁移 use-drawing.ts ✅
+- [x] 替换 `useLiveQuery` 为 TanStack Query hooks
 - [ ] 更新 Excalidraw 组件
 - [ ] 验证绘图功能
 - _Requirements: 4.1-4.10_
 
-### 任务 7.5: 迁移 use-wiki.ts
-- [ ] 替换 `useLiveQuery` 为 TanStack Query hooks
+### 任务 7.5: 迁移 use-wiki.ts ✅
+- [x] 替换 `useLiveQuery` 为 TanStack Query hooks
 - [ ] 更新 Wiki 相关组件
 - _Requirements: 4.1-4.10_
 

@@ -3,13 +3,20 @@
  * @description Workspace React Hooks - 工作区数据响应式绑定
  *
  * 提供 React hooks 用于访问工作区数据，支持实时更新。
- * 使用 dexie-react-hooks 实现响应式数据订阅。
+ * 使用 TanStack Query 实现响应式数据订阅。
+ *
+ * 迁移说明：
+ * - 从 dexie-react-hooks 迁移到 TanStack Query
+ * - 底层使用 Repository 层访问 SQLite 数据
  *
  * @requirements 3.3
  */
 
-import { useLiveQuery } from "dexie-react-hooks";
-import { database } from "@/db/database";
+import { useMemo } from "react";
+import {
+	useWorkspaces as useWorkspacesQuery,
+	useWorkspace as useWorkspaceQuery,
+} from "@/queries/workspace.queries";
 import type { WorkspaceInterface } from "@/types/workspace";
 
 /**
@@ -39,17 +46,15 @@ import type { WorkspaceInterface } from "@/types/workspace";
  * ```
  */
 export function useAllWorkspaces(): WorkspaceInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			const workspaces = await database.workspaces.toArray();
-			return workspaces.sort(
-				(a, b) =>
-					new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime(),
-			);
-		},
-		[],
-		undefined,
-	);
+	const { data: workspaces, isLoading } = useWorkspacesQuery();
+
+	return useMemo(() => {
+		if (isLoading || !workspaces) return undefined;
+		return [...workspaces].sort(
+			(a, b) =>
+				new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime(),
+		);
+	}, [workspaces, isLoading]);
 }
 
 /**
@@ -74,14 +79,10 @@ export function useAllWorkspaces(): WorkspaceInterface[] | undefined {
 export function useWorkspace(
 	workspaceId: string | null | undefined,
 ): WorkspaceInterface | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!workspaceId) return undefined;
-			return database.workspaces.get(workspaceId);
-		},
-		[workspaceId],
-		undefined,
-	);
+	const { data: workspace, isLoading } = useWorkspaceQuery(workspaceId);
+
+	if (isLoading) return undefined;
+	return workspace ?? undefined;
 }
 
 /**
@@ -93,14 +94,13 @@ export function useWorkspace(
 export function useWorkspacesByOwner(
 	ownerId: string | null | undefined,
 ): WorkspaceInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!ownerId) return [];
-			return database.workspaces.where("owner").equals(ownerId).toArray();
-		},
-		[ownerId],
-		undefined,
-	);
+	const { data: workspaces, isLoading } = useWorkspacesQuery();
+
+	return useMemo(() => {
+		if (isLoading || !workspaces) return undefined;
+		if (!ownerId) return [];
+		return workspaces.filter((w) => w.owner === ownerId);
+	}, [workspaces, ownerId, isLoading]);
 }
 
 /**
@@ -112,19 +112,17 @@ export function useWorkspacesByOwner(
 export function useRecentWorkspaces(
 	limit: number = 5,
 ): WorkspaceInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			const workspaces = await database.workspaces.toArray();
-			return workspaces
-				.sort(
-					(a, b) =>
-						new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime(),
-				)
-				.slice(0, limit);
-		},
-		[limit],
-		undefined,
-	);
+	const { data: workspaces, isLoading } = useWorkspacesQuery();
+
+	return useMemo(() => {
+		if (isLoading || !workspaces) return undefined;
+		return [...workspaces]
+			.sort(
+				(a, b) =>
+					new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime(),
+			)
+			.slice(0, limit);
+	}, [workspaces, limit, isLoading]);
 }
 
 /**
@@ -133,13 +131,10 @@ export function useRecentWorkspaces(
  * @returns 工作区数量，加载中返回 undefined
  */
 export function useWorkspaceCount(): number | undefined {
-	return useLiveQuery(
-		async () => {
-			return database.workspaces.count();
-		},
-		[],
-		undefined,
-	);
+	const { data: workspaces, isLoading } = useWorkspacesQuery();
+
+	if (isLoading || !workspaces) return undefined;
+	return workspaces.length;
 }
 
 /**
@@ -151,18 +146,11 @@ export function useWorkspaceCount(): number | undefined {
 export function useWorkspaceExists(
 	workspaceId: string | null | undefined,
 ): boolean | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!workspaceId) return false;
-			const count = await database.workspaces
-				.where("id")
-				.equals(workspaceId)
-				.count();
-			return count > 0;
-		},
-		[workspaceId],
-		undefined,
-	);
+	const { data: workspace, isLoading } = useWorkspaceQuery(workspaceId);
+
+	if (isLoading) return undefined;
+	if (!workspaceId) return false;
+	return workspace !== null && workspace !== undefined;
 }
 
 /**
@@ -176,26 +164,21 @@ export function useWorkspaceExists(
 export function useWorkspaceSearch(
 	query: string | null | undefined,
 ): WorkspaceInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!query || query.trim() === "") {
-				const workspaces = await database.workspaces.toArray();
-				return workspaces.sort(
-					(a, b) =>
-						new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime(),
-				);
-			}
+	const { data: workspaces, isLoading } = useWorkspacesQuery();
 
-			const lowerQuery = query.toLowerCase();
-			const workspaces = await database.workspaces.toArray();
-			return workspaces
-				.filter((w) => w.title.toLowerCase().includes(lowerQuery))
-				.sort(
-					(a, b) =>
-						new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime(),
-				);
-		},
-		[query],
-		undefined,
-	);
+	return useMemo(() => {
+		if (isLoading || !workspaces) return undefined;
+
+		const sorted = [...workspaces].sort(
+			(a, b) =>
+				new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime(),
+		);
+
+		if (!query || query.trim() === "") {
+			return sorted;
+		}
+
+		const lowerQuery = query.toLowerCase();
+		return sorted.filter((w) => w.title.toLowerCase().includes(lowerQuery));
+	}, [workspaces, query, isLoading]);
 }

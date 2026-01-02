@@ -3,13 +3,23 @@
  * @description Node React Hooks - 节点数据响应式绑定
  *
  * 提供 React hooks 用于访问节点数据，支持实时更新。
- * 使用 dexie-react-hooks 实现响应式数据订阅。
+ * 使用 TanStack Query 实现响应式数据订阅。
+ *
+ * 迁移说明：
+ * - 从 dexie-react-hooks 迁移到 TanStack Query
+ * - 底层使用 Repository 层访问 SQLite 数据
  *
  * @requirements 3.3
  */
 
-import { useLiveQuery } from "dexie-react-hooks";
-import { database } from "@/db/database";
+import { useMemo } from "react";
+import {
+	useNodesByWorkspace as useNodesByWorkspaceQuery,
+	useNode as useNodeQuery,
+	useRootNodes as useRootNodesQuery,
+	useNodesByParent,
+	useNodesByType as useNodesByTypeQuery,
+} from "@/queries/node.queries";
 import type { NodeInterface, NodeType } from "@/types/node";
 
 /**
@@ -34,14 +44,10 @@ import type { NodeInterface, NodeType } from "@/types/node";
 export function useNodesByWorkspace(
 	workspaceId: string | null | undefined,
 ): NodeInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!workspaceId) return [];
-			return database.nodes.where("workspace").equals(workspaceId).toArray();
-		},
-		[workspaceId],
-		undefined,
-	);
+	const { data: nodes, isLoading } = useNodesByWorkspaceQuery(workspaceId);
+
+	if (isLoading) return undefined;
+	return nodes ?? [];
 }
 
 /**
@@ -53,14 +59,10 @@ export function useNodesByWorkspace(
 export function useNode(
 	nodeId: string | null | undefined,
 ): NodeInterface | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!nodeId) return undefined;
-			return database.nodes.get(nodeId);
-		},
-		[nodeId],
-		undefined,
-	);
+	const { data: node, isLoading } = useNodeQuery(nodeId);
+
+	if (isLoading) return undefined;
+	return node ?? undefined;
 }
 
 /**
@@ -76,22 +78,13 @@ export function useChildNodes(
 	parentId: string | null,
 	workspaceId: string | null | undefined,
 ): NodeInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!workspaceId) return [];
+	const { data: nodes, isLoading } = useNodesByParent(workspaceId, parentId);
 
-			const allNodes = await database.nodes
-				.where("workspace")
-				.equals(workspaceId)
-				.toArray();
-
-			return allNodes
-				.filter((n) => n.parent === parentId)
-				.sort((a, b) => a.order - b.order);
-		},
-		[parentId, workspaceId],
-		undefined,
-	);
+	return useMemo(() => {
+		if (isLoading) return undefined;
+		if (!nodes) return [];
+		return [...nodes].sort((a, b) => a.order - b.order);
+	}, [nodes, isLoading]);
 }
 
 /**
@@ -105,7 +98,13 @@ export function useChildNodes(
 export function useRootNodes(
 	workspaceId: string | null | undefined,
 ): NodeInterface[] | undefined {
-	return useChildNodes(null, workspaceId);
+	const { data: nodes, isLoading } = useRootNodesQuery(workspaceId);
+
+	return useMemo(() => {
+		if (isLoading) return undefined;
+		if (!nodes) return [];
+		return [...nodes].sort((a, b) => a.order - b.order);
+	}, [nodes, isLoading]);
 }
 
 /**
@@ -119,18 +118,10 @@ export function useNodesByType(
 	workspaceId: string | null | undefined,
 	type: NodeType,
 ): NodeInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!workspaceId) return [];
-			return database.nodes
-				.where("workspace")
-				.equals(workspaceId)
-				.and((n) => n.type === type)
-				.toArray();
-		},
-		[workspaceId, type],
-		undefined,
-	);
+	const { data: nodes, isLoading } = useNodesByTypeQuery(workspaceId, type);
+
+	if (isLoading) return undefined;
+	return nodes ?? [];
 }
 
 /**
@@ -142,14 +133,10 @@ export function useNodesByType(
 export function useNodeCount(
 	workspaceId: string | null | undefined,
 ): number | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!workspaceId) return 0;
-			return database.nodes.where("workspace").equals(workspaceId).count();
-		},
-		[workspaceId],
-		undefined,
-	);
+	const { data: nodes, isLoading } = useNodesByWorkspaceQuery(workspaceId);
+
+	if (isLoading) return undefined;
+	return nodes?.length ?? 0;
 }
 
 /**
@@ -161,15 +148,11 @@ export function useNodeCount(
 export function useNodeExists(
 	nodeId: string | null | undefined,
 ): boolean | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!nodeId) return false;
-			const count = await database.nodes.where("id").equals(nodeId).count();
-			return count > 0;
-		},
-		[nodeId],
-		undefined,
-	);
+	const { data: node, isLoading } = useNodeQuery(nodeId);
+
+	if (isLoading) return undefined;
+	if (!nodeId) return false;
+	return node !== null && node !== undefined;
 }
 
 /**
@@ -179,12 +162,14 @@ export function useNodeExists(
  * @returns 节点数组
  */
 export function useNodesByIds(nodeIds: string[]): NodeInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!nodeIds || nodeIds.length === 0) return [];
-			return database.nodes.where("id").anyOf(nodeIds).toArray();
-		},
-		[nodeIds],
-		undefined,
-	);
+	// 注意：这里暂时使用工作区查询 + 过滤的方式
+	// 如果需要更高效的实现，可以添加专门的批量查询 API
+	const { data: nodes, isLoading } = useNodesByWorkspaceQuery(undefined);
+
+	return useMemo(() => {
+		if (isLoading) return undefined;
+		if (!nodes || !nodeIds || nodeIds.length === 0) return [];
+		const idSet = new Set(nodeIds);
+		return nodes.filter((n) => idSet.has(n.id));
+	}, [nodes, nodeIds, isLoading]);
 }

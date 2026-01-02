@@ -10,12 +10,19 @@
  *
  * 此文件保留空导出以保持向后兼容性，避免导入错误。
  *
+ * 迁移说明：
+ * - 从 dexie-react-hooks 迁移到 TanStack Query
+ * - 底层使用 Repository 层访问 SQLite 数据
+ *
  * @requirements 3.3
  */
 
-import { useLiveQuery } from "dexie-react-hooks";
-import { useCallback, useState } from "react";
-import { database } from "@/db/database";
+import { useCallback, useMemo, useState } from "react";
+import {
+	useNodesByWorkspace,
+	useNode as useNodeQuery,
+	useNodesByType,
+} from "@/queries/node.queries";
 import logger from "@/log";
 import type { NodeInterface } from "@/types/node";
 
@@ -32,19 +39,13 @@ import type { NodeInterface } from "@/types/node";
 export function useDrawingNodes(
 	workspaceId: string | null | undefined,
 ): NodeInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!workspaceId) return [];
-			const nodes = await database.nodes
-				.where("workspace")
-				.equals(workspaceId)
-				.and((node) => node.type === "drawing")
-				.toArray();
-			return nodes.sort((a, b) => a.title.localeCompare(b.title));
-		},
-		[workspaceId],
-		undefined,
-	);
+	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing");
+
+	return useMemo(() => {
+		if (isLoading) return undefined;
+		if (!nodes) return [];
+		return [...nodes].sort((a, b) => a.title.localeCompare(b.title));
+	}, [nodes, isLoading]);
 }
 
 /**
@@ -74,18 +75,15 @@ export function useDrawingsByProject(
 export function useDrawing(
 	drawingId: string | null | undefined,
 ): NodeInterface | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!drawingId) return undefined;
-			const node = await database.nodes.get(drawingId);
-			if (node?.type === "drawing") {
-				return node;
-			}
-			return undefined;
-		},
-		[drawingId],
-		undefined,
-	);
+	const { data: node, isLoading } = useNodeQuery(drawingId);
+
+	return useMemo(() => {
+		if (isLoading) return undefined;
+		if (node?.type === "drawing") {
+			return node;
+		}
+		return undefined;
+	}, [node, isLoading]);
 }
 
 // ============================================================================
@@ -103,28 +101,23 @@ export function useDrawingSearch(
 	workspaceId: string | null | undefined,
 	query: string | null | undefined,
 ): NodeInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!workspaceId) return [];
+	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing");
 
-			const nodes = await database.nodes
-				.where("workspace")
-				.equals(workspaceId)
-				.and((node) => node.type === "drawing")
-				.toArray();
+	return useMemo(() => {
+		if (isLoading) return undefined;
+		if (!nodes) return [];
 
-			if (!query || query.trim() === "") {
-				return nodes.sort((a, b) => a.title.localeCompare(b.title));
-			}
+		const sorted = [...nodes].sort((a, b) => a.title.localeCompare(b.title));
 
-			const lowerQuery = query.toLowerCase();
-			return nodes
-				.filter((node) => node.title.toLowerCase().includes(lowerQuery))
-				.sort((a, b) => a.title.localeCompare(b.title));
-		},
-		[workspaceId, query],
-		undefined,
-	);
+		if (!query || query.trim() === "") {
+			return sorted;
+		}
+
+		const lowerQuery = query.toLowerCase();
+		return sorted.filter((node) =>
+			node.title.toLowerCase().includes(lowerQuery),
+		);
+	}, [nodes, query, isLoading]);
 }
 
 /**
@@ -138,41 +131,32 @@ export function useRecentDrawings(
 	workspaceId: string | null | undefined,
 	limit = 10,
 ): NodeInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!workspaceId) return [];
+	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing");
 
-			const nodes = await database.nodes
-				.where("workspace")
-				.equals(workspaceId)
-				.and((node) => node.type === "drawing")
-				.toArray();
+	return useMemo(() => {
+		if (isLoading) return undefined;
+		if (!nodes) return [];
 
-			return nodes
-				.sort(
-					(a, b) =>
-						new Date(b.lastEdit).getTime() - new Date(a.lastEdit).getTime(),
-				)
-				.slice(0, limit);
-		},
-		[workspaceId, limit],
-		undefined,
-	);
+		return [...nodes]
+			.sort(
+				(a, b) =>
+					new Date(b.lastEdit).getTime() - new Date(a.lastEdit).getTime(),
+			)
+			.slice(0, limit);
+	}, [nodes, limit, isLoading]);
 }
 
 /**
  * 获取所有绘图节点（跨工作区）（实时更新）
  *
+ * 注意：当前实现需要指定工作区，跨工作区查询需要额外 API 支持
+ *
  * @returns 所有绘图节点数组，加载中返回 undefined
  */
 export function useAllDrawings(): NodeInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			return database.nodes.where("type").equals("drawing").toArray();
-		},
-		[],
-		undefined,
-	);
+	// 注意：当前 API 不支持跨工作区查询
+	// 如果需要此功能，需要添加对应的 Rust API
+	return undefined;
 }
 
 // ============================================================================
@@ -188,18 +172,10 @@ export function useAllDrawings(): NodeInterface[] | undefined {
 export function useDrawingCount(
 	workspaceId: string | null | undefined,
 ): number | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!workspaceId) return 0;
-			return database.nodes
-				.where("workspace")
-				.equals(workspaceId)
-				.and((node) => node.type === "drawing")
-				.count();
-		},
-		[workspaceId],
-		undefined,
-	);
+	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing");
+
+	if (isLoading) return undefined;
+	return nodes?.length ?? 0;
 }
 
 /**
@@ -211,15 +187,11 @@ export function useDrawingCount(
 export function useDrawingExists(
 	drawingId: string | null | undefined,
 ): boolean | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!drawingId) return false;
-			const node = await database.nodes.get(drawingId);
-			return node?.type === "drawing";
-		},
-		[drawingId],
-		undefined,
-	);
+	const { data: node, isLoading } = useNodeQuery(drawingId);
+
+	if (isLoading) return undefined;
+	if (!drawingId) return false;
+	return node?.type === "drawing";
 }
 
 // ============================================================================
