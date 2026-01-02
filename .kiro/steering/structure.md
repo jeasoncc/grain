@@ -6,11 +6,13 @@
 grain-editor-monorepo/
 ├── apps/
 │   ├── desktop/          # Tauri 桌面应用（主应用）
+│   ├── api-rust/         # Warp HTTP API 服务器（Rust）
 │   ├── web/              # Next.js 网站
 │   ├── mobile/           # Expo React Native 应用
 │   ├── admin/            # 管理面板 (Vite + React)
-│   └── api/              # Elysia API 服务器 (Bun)
+│   └── api/              # Elysia API 服务器 (Bun) - 已弃用
 ├── packages/
+│   ├── rust-core/        # Rust 核心库（共享业务逻辑）
 │   └── editor/           # 共享 Lexical 编辑器包
 ├── docs/                 # 文档
 ├── scripts/              # 构建和发布脚本
@@ -95,55 +97,170 @@ src/
 
 ## Rust 后端结构 (`apps/desktop/src-tauri/src/`)
 
+> **注意**：Tauri 后端正在迁移到使用 `rust-core` 共享库。
+> 重构完成后，`commands/` 目录将由宏自动生成。
+
 ```
 src/
 ├── main.rs                    # 入口点
-├── lib.rs                     # Tauri 应用配置
+├── lib.rs                     # Tauri 应用配置 + 宏生成的 commands
 │
-├── types/                     # 数据定义层
+├── commands/                  # Tauri Commands（将由宏生成）
 │   ├── mod.rs
-│   ├── node.rs               # Node 结构体
-│   ├── workspace.rs          # Workspace 结构体
+│   ├── workspace_commands.rs
+│   ├── node_commands.rs
+│   ├── content_commands.rs
+│   ├── tag_commands.rs
+│   ├── user_commands.rs
+│   ├── attachment_commands.rs
+│   ├── backup_commands.rs
+│   └── file_commands.rs
+│
+├── db/                        # 本地数据库操作（调用 rust-core）
+│   ├── mod.rs
+│   ├── connection.rs         # 数据库连接
+│   └── test_utils.rs         # 测试工具
+│
+├── fn/                        # 本地纯函数（调用 rust-core）
+│   ├── mod.rs
+│   ├── backup/               # 备份函数
+│   ├── crypto/               # 加密函数
+│   └── node/                 # 节点函数
+│
+├── types/                     # 本地类型定义（调用 rust-core）
+│   ├── mod.rs
 │   ├── error.rs              # AppError 定义
 │   └── config.rs             # 配置结构体
 │
-├── fn/                        # 纯函数层
+└── bin/                       # 二进制工具
+    └── test_db.rs            # 数据库测试工具
+```
+
+## Rust Core 共享库 (`packages/rust-core/src/`)
+
+> **核心原则**：所有业务逻辑集中在 rust-core，Tauri 和 Warp 只是边界适配器。
+
+```
+src/
+├── lib.rs                     # 库入口，导出所有模块
+│
+├── types/                     # 数据定义层（共享类型）
 │   ├── mod.rs
-│   ├── node/
+│   ├── error.rs              # AppError、AppResult 定义
+│   ├── config.rs             # 配置结构体
+│   ├── workspace/            # Workspace 类型
+│   │   ├── mod.rs
+│   │   ├── workspace.rs      # Workspace 结构体
+│   │   └── request.rs        # CreateWorkspaceRequest 等
+│   ├── node/                 # Node 类型
+│   │   ├── mod.rs
+│   │   ├── node.rs           # Node 结构体
+│   │   └── request.rs        # CreateNodeRequest 等
+│   ├── content/              # Content 类型
+│   ├── tag/                  # Tag 类型
+│   ├── user/                 # User 类型
+│   └── attachment/           # Attachment 类型
+│
+├── db/                        # 持久化层（数据库操作）
+│   ├── mod.rs
+│   ├── connection.rs         # 数据库连接管理
+│   ├── test_utils.rs         # 测试工具
+│   ├── workspace_db_fn.rs    # Workspace CRUD
+│   ├── node_db_fn.rs         # Node CRUD
+│   ├── content_db_fn.rs      # Content CRUD
+│   ├── tag_db_fn.rs          # Tag CRUD
+│   ├── user_db_fn.rs         # User CRUD
+│   └── attachment_db_fn.rs   # Attachment CRUD
+│
+├── fn/                        # 纯函数层（业务逻辑）
+│   ├── mod.rs
+│   ├── node/                 # 节点相关函数
 │   │   ├── mod.rs
 │   │   ├── parse.rs          # 解析函数
 │   │   ├── transform.rs      # 转换函数
 │   │   └── validate.rs       # 校验函数
-│   ├── crypto/
+│   ├── crypto/               # 加密函数
 │   │   ├── mod.rs
-│   │   └── encrypt.rs        # 加密函数
-│   └── export/
+│   │   └── encrypt.rs
+│   └── backup/               # 备份函数
 │       ├── mod.rs
-│       └── markdown.rs       # Markdown 导出
+│       └── backup.rs
 │
-├── db/                        # 持久化层
-│   ├── mod.rs
-│   ├── connection.rs         # 数据库连接（SQLCipher）
-│   ├── migrations/           # 数据库迁移
-│   ├── node_repo.rs          # Node 仓库
-│   └── workspace_repo.rs     # Workspace 仓库
+├── api/                       # API 端点定义（计划中）
+│   ├── mod.rs                # ApiEndpoint trait 定义
+│   ├── inputs.rs             # 通用输入类型
+│   ├── workspace.rs          # Workspace 端点
+│   ├── node.rs               # Node 端点
+│   ├── content.rs            # Content 端点
+│   ├── transaction.rs        # 事务端点
+│   ├── tag.rs                # Tag 端点
+│   ├── user.rs               # User 端点
+│   ├── attachment.rs         # Attachment 端点
+│   └── backup.rs             # Backup 端点
 │
-├── services/                  # 服务层（组合纯函数）
-│   ├── mod.rs
-│   ├── node_service.rs
-│   ├── workspace_service.rs
-│   └── crypto_service.rs     # 加密服务
+├── macros/                    # 宏定义（计划中）
+│   ├── mod.rs                # warp_routes! 和 tauri_commands! 宏
+│   └── rejection.rs          # Warp rejection 处理
 │
-└── commands/                  # Tauri Commands（副作用边界）
+└── tests/                     # 测试
     ├── mod.rs
-    ├── node_commands.rs
-    ├── workspace_commands.rs
-    └── file_commands.rs
+    └── schema_consistency.rs # 数据库 schema 一致性测试
+```
+
+## Warp HTTP API 服务器 (`apps/api-rust/src/`)
+
+> **注意**：正在迁移到使用 `rust-core` 宏生成。
+> 重构完成后，`filters/` 和 `handlers/` 目录将被删除。
+
+```
+src/
+├── main.rs                    # 入口点 + 路由注册（将使用宏）
+├── rejection.rs               # 错误处理（将移至 rust-core）
+│
+├── filters/                   # Warp Filters（将由宏生成）
+│   ├── mod.rs
+│   ├── workspace_filters.rs
+│   ├── node_filters.rs
+│   ├── content_filters.rs
+│   ├── tag_filters.rs
+│   ├── user_filters.rs
+│   ├── attachment_filters.rs
+│   └── backup_filters.rs
+│
+└── handlers/                  # Warp Handlers（将由宏生成）
+    ├── mod.rs
+    ├── workspace_handlers.rs
+    ├── node_handlers.rs
+    ├── content_handlers.rs
+    ├── tag_handlers.rs
+    ├── user_handlers.rs
+    ├── attachment_handlers.rs
+    └── backup_handlers.rs
+```
+
+### 重构后的目标结构
+
+重构完成后，api-rust 将简化为：
+
+```
+src/
+├── main.rs                    # 入口点，使用 warp_routes! 宏
+└── (无其他文件)               # 所有代码由宏从 rust-core 生成
+```
+
+Tauri 将简化为：
+
+```
+src/
+├── main.rs                    # 入口点
+├── lib.rs                     # 使用 tauri_commands! 宏
+├── db/connection.rs           # 本地数据库连接
+└── (无 commands/ 目录)        # 所有 commands 由宏生成
 ```
 
 ## 文件命名规范
 
-### 通用文件命名
+### TypeScript 文件命名
 
 | 类型 | 命名格式 | 示例 |
 |------|---------|------|
@@ -152,10 +269,25 @@ src/
 | Builder | `xxx.builder.ts` | `node.builder.ts` |
 | 纯函数 | `xxx.fn.ts` | `node.parse.fn.ts` |
 | 数据库函数 | `xxx.db.fn.ts` | `node.db.fn.ts` |
+| API 客户端 | `xxx.fn.ts` | `api-client.fn.ts` |
 | 状态 Store | `xxx.store.ts` | `editor.store.ts` |
 | React Hook | `use-xxx.ts` | `use-node.ts` |
 | Action 函数 | `xxx-yyy.action.ts` | `create-node.action.ts` |
 | 测试文件 | `xxx.test.ts` | `node.fn.test.ts` |
+
+### Rust 文件命名
+
+| 类型 | 命名格式 | 示例 |
+|------|---------|------|
+| 模块入口 | `mod.rs` | `types/mod.rs` |
+| 类型定义 | `xxx.rs` | `workspace.rs` |
+| 请求类型 | `request.rs` | `types/workspace/request.rs` |
+| 数据库函数 | `xxx_db_fn.rs` | `workspace_db_fn.rs` |
+| 纯函数 | `xxx.rs` | `parse.rs`, `transform.rs` |
+| API 端点 | `xxx.rs` | `api/workspace.rs` |
+| 测试文件 | `xxx.rs` | `tests/schema_consistency.rs` |
+| 错误类型 | `error.rs` | `types/error.rs` |
+| 配置 | `config.rs` | `types/config.rs` |
 
 ### 组件文件命名
 

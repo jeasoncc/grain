@@ -14,10 +14,9 @@ Grain is a modern, cross-platform writing application designed for long-form wri
 - **Icon Themes**: 6 preset themes (VSCode-style icon theming)
 - **Outline & Charts**: Mermaid and PlantUML diagram support
 - **Tag System**: Content organization with `#[tags]`
-- **Wiki Links**: Quick references via `@` symbol with hover preview
 - **Daily Journal**: Built-in diary system
 - **Export**: JSON, ZIP, Markdown, DOCX formats
-- **Offline Storage**: IndexedDB + Dexie for local persistence
+- **Offline Storage**: sqlite  persistence
 
 ## Target Platforms
 
