@@ -219,12 +219,12 @@
     - 只保留日志相关函数导出
     - 添加 repo 层的重新导出（兼容性）
     - _Requirements: 7.4_
-  - [ ] 11.3 更新 init.db.fn.ts
+  - [x] 11.3 更新 init.db.fn.ts
     - 移除 Dexie 初始化逻辑
     - 改为调用 Rust 后端初始化
     - 使用 repo 层函数
     - _Requirements: 11.1, 11.2, 11.3, 11.4_
-  - [ ] 11.4 实现数据迁移工具
+  - [x] 11.4 实现数据迁移工具
     - 创建 `fn/migration/dexie-to-sqlite.migration.fn.ts`
     - 实现检测 Dexie 数据是否存在
     - 实现读取 Dexie 数据
@@ -232,7 +232,7 @@
     - 实现迁移状态标记
     - 实现回滚逻辑
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6_
-  - [ ] 11.5 编写数据迁移测试
+  - [x] 11.5 编写数据迁移测试
     - **Property 8: Migration Data Preservation**
     - **Property 9: Migration Rollback**
     - **Validates: Requirements 10.2, 10.3, 10.4, 10.5**
