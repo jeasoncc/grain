@@ -10,7 +10,7 @@
 
 import * as E from "fp-ts/Either";
 import * as TE from "fp-ts/TaskEither";
-import { database } from "@/db/database";
+import { legacyDatabase } from "@/db/legacy-database";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/repo";
@@ -334,7 +334,7 @@ export const getWikiFilesAsync = (
 	return TE.tryCatch(
 		async () => {
 			// Query nodes with "wiki" tag using multi-entry index
-			const nodes = await database.nodes
+			const nodes = await legacyDatabase.nodes
 				.where("tags")
 				.equals(WIKI_TAG)
 				.and((node) => node.workspace === workspaceId)

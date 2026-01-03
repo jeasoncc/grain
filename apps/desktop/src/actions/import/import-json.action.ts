@@ -12,7 +12,7 @@ import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { toast } from "sonner";
-import { database } from "@/db/database";
+import { legacyDatabase } from "@/db/legacy-database";
 import {
 	type JsonImportOptions,
 	parseImportData,
@@ -54,25 +54,25 @@ export function importFromJson(
 				async () => {
 					// 导入工作区
 					for (const w of data.workspaces) {
-						await database.workspaces.put(w as WorkspaceInterface);
+						await legacyDatabase.workspaces.put(w as WorkspaceInterface);
 					}
 					logger.info("[Import] 工作区导入完成:", data.workspaces.length);
 
 					// 导入节点
 					for (const n of data.nodes) {
-						await database.nodes.put(n as NodeInterface);
+						await legacyDatabase.nodes.put(n as NodeInterface);
 					}
 					logger.info("[Import] 节点导入完成:", data.nodes.length);
 
 					// 导入内容
 					for (const c of data.contents) {
-						await database.contents.put(c as never);
+						await legacyDatabase.contents.put(c as never);
 					}
 					logger.info("[Import] 内容导入完成:", data.contents.length);
 
 					// 导入附件
 					for (const a of data.attachments) {
-						await database.attachments.put(a as never);
+						await legacyDatabase.attachments.put(a as never);
 					}
 					logger.info("[Import] 附件导入完成:", data.attachments.length);
 

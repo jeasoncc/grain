@@ -41,7 +41,7 @@ import type { UserInterface, UserPlan } from "@/types/user";
 export function useAllUsers(): UserInterface[] | undefined {
 	return useLiveQuery(
 		async () => {
-			const users = await database.users.toArray();
+			const users = await legacyDatabase.users.toArray();
 			return users.sort(
 				(a, b) =>
 					new Date(b.lastLogin).getTime() - new Date(a.lastLogin).getTime(),
@@ -77,7 +77,7 @@ export function useUser(
 	return useLiveQuery(
 		async () => {
 			if (!userId) return undefined;
-			return database.users.get(userId);
+			return legacyDatabase.users.get(userId);
 		},
 		[userId],
 		undefined,
@@ -96,7 +96,7 @@ export function useUserByUsername(
 	return useLiveQuery(
 		async () => {
 			if (!username) return undefined;
-			return database.users.where("username").equals(username).first();
+			return legacyDatabase.users.where("username").equals(username).first();
 		},
 		[username],
 		undefined,
@@ -115,7 +115,7 @@ export function useUserByEmail(
 	return useLiveQuery(
 		async () => {
 			if (!email) return undefined;
-			return database.users.where("email").equals(email).first();
+			return legacyDatabase.users.where("email").equals(email).first();
 		},
 		[email],
 		undefined,
@@ -132,7 +132,7 @@ export function useUserByEmail(
 export function useCurrentUser(): UserInterface | undefined {
 	return useLiveQuery(
 		async () => {
-			const users = await database.users.toArray();
+			const users = await legacyDatabase.users.toArray();
 			if (users.length === 0) return undefined;
 			return users.sort(
 				(a, b) =>
@@ -156,7 +156,7 @@ export function useUsersByPlan(
 	return useLiveQuery(
 		async () => {
 			if (!plan) return [];
-			const users = await database.users.toArray();
+			const users = await legacyDatabase.users.toArray();
 			return users.filter((u) => u.plan === plan);
 		},
 		[plan],
@@ -172,7 +172,7 @@ export function useUsersByPlan(
 export function useUserCount(): number | undefined {
 	return useLiveQuery(
 		async () => {
-			return database.users.count();
+			return legacyDatabase.users.count();
 		},
 		[],
 		undefined,
@@ -191,7 +191,7 @@ export function useUserExists(
 	return useLiveQuery(
 		async () => {
 			if (!userId) return false;
-			const count = await database.users.where("id").equals(userId).count();
+			const count = await legacyDatabase.users.where("id").equals(userId).count();
 			return count > 0;
 		},
 		[userId],
@@ -211,7 +211,7 @@ export function useUsernameExists(
 	return useLiveQuery(
 		async () => {
 			if (!username) return false;
-			const count = await database.users
+			const count = await legacyDatabase.users
 				.where("username")
 				.equals(username)
 				.count();
@@ -239,7 +239,7 @@ export function useUserSubscription(userId: string | null | undefined):
 	return useLiveQuery(
 		async () => {
 			if (!userId) return undefined;
-			const user = await database.users.get(userId);
+			const user = await legacyDatabase.users.get(userId);
 			if (!user) return undefined;
 
 			const isPremium = user.plan === "premium";
@@ -271,7 +271,7 @@ export function useUserFeatures(
 	return useLiveQuery(
 		async () => {
 			if (!userId) return undefined;
-			const user = await database.users.get(userId);
+			const user = await legacyDatabase.users.get(userId);
 			return user?.features;
 		},
 		[userId],
@@ -291,7 +291,7 @@ export function useUserSettings(
 	return useLiveQuery(
 		async () => {
 			if (!userId) return undefined;
-			const user = await database.users.get(userId);
+			const user = await legacyDatabase.users.get(userId);
 			return user?.settings;
 		},
 		[userId],

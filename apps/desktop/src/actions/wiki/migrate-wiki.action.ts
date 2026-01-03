@@ -15,7 +15,7 @@
 
 import * as E from "fp-ts/Either";
 import { ensureRootFolderAsync } from "@/actions/node";
-import { database } from "@/db/database";
+import { legacyDatabase } from "@/db/legacy-database";
 import { WIKI_ROOT_FOLDER, WIKI_TAG } from "@/fn/wiki";
 import logger from "@/log/index";
 import { addContent, addNode, getNextOrder, updateNode } from "@/repo";
@@ -66,7 +66,7 @@ export async function checkMigrationNeeded(
 	try {
 		// 直接访问旧的 wikiEntries 表
 		// 如果已迁移到 v11，该表可能不存在
-		const table = database.table("wikiEntries");
+		const table = legacyDatabase.table("wikiEntries");
 		if (!table) {
 			return false;
 		}
@@ -99,7 +99,7 @@ export async function migrateWikiEntriesToFiles(
 
 	try {
 		// 从旧表获取此工作区的所有 wiki 条目
-		const table = database.table("wikiEntries");
+		const table = legacyDatabase.table("wikiEntries");
 		if (!table) {
 			logger.info(`Wiki entries table not found for workspace ${workspaceId}`);
 			return result;
@@ -191,7 +191,7 @@ async function migrateWikiEntry(
 	await addContent(node.id, entry.content || "", "lexical")();
 
 	// 成功迁移后删除原始 wiki 条目
-	const table = database.table("wikiEntries");
+	const table = legacyDatabase.table("wikiEntries");
 	if (table) {
 		await table.delete(entry.id);
 	}

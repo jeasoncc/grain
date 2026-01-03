@@ -21,7 +21,7 @@ import {
 import { saveAs } from "file-saver";
 import * as E from "fp-ts/Either";
 import JSZip from "jszip";
-import { database } from "@/db/database";
+import { legacyDatabase } from "@/db/legacy-database";
 import { getContentsByNodeIds } from "@/repo";
 import type { NodeInterface, WorkspaceInterface } from "@/types";
 import type { ContentInterface } from "@/types/content";
@@ -203,10 +203,10 @@ function generateEpubChapterHtml(title: string, content: string): string {
  * 获取项目的完整内容数据（基于 Node 结构）
  */
 async function getProjectContent(projectId: string) {
-	const project = await database.workspaces.get(projectId);
+	const project = await legacyDatabase.workspaces.get(projectId);
 	if (!project) throw new Error("Project not found");
 
-	const nodes = await database.nodes
+	const nodes = await legacyDatabase.nodes
 		.where("workspace")
 		.equals(projectId)
 		.toArray();
