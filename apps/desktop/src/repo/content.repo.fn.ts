@@ -15,7 +15,7 @@ import {
 	encodeCreateContent,
 	encodeUpdateContent,
 } from "@/types/codec";
-import type { ContentCreateInput, ContentInterface } from "@/types/content";
+import type { ContentCreateInput, ContentInterface, ContentType } from "@/types/content";
 
 // ============================================
 // 查询操作
@@ -54,14 +54,18 @@ export const createContent = (
 
 /**
  * 更新节点内容
+ * 
+ * @param nodeId - 节点 ID
+ * @param content - 内容字符串
+ * @param contentType - 内容类型（可选，目前后端不使用，保留兼容性）
  */
 export const updateContentByNodeId = (
 	nodeId: string,
 	content: string,
-	expectedVersion?: number,
+	_contentType?: ContentType,
 ): TE.TaskEither<AppError, ContentInterface> =>
 	pipe(
-		TE.of(encodeUpdateContent(nodeId, content, expectedVersion)),
+		TE.of(encodeUpdateContent(nodeId, content)),
 		TE.chain(rustApi.saveContent),
 		TE.map(decodeContent),
 	);
@@ -75,4 +79,8 @@ export const saveContent = (
 	content: string,
 	expectedVersion?: number,
 ): TE.TaskEither<AppError, ContentInterface> =>
-	updateContentByNodeId(nodeId, content, expectedVersion);
+	pipe(
+		TE.of(encodeUpdateContent(nodeId, content, expectedVersion)),
+		TE.chain(rustApi.saveContent),
+		TE.map(decodeContent),
+	);

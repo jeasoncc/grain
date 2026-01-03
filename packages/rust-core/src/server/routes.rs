@@ -9,12 +9,12 @@ use warp::Filter;
 use crate::api::{
     content::{GetContent, SaveContent},
     node::{
-        CreateNode, DeleteNode, GetChildNodes, GetNode, GetNodesByWorkspace, GetRootNodes,
+        CreateNode, DeleteNode, GetChildNodes, GetNextSortOrder, GetNode, GetNodesByWorkspace, GetRootNodes,
         MoveNode, UpdateNode,
     },
     transaction::{CreateNodeWithContent, CreateNodeWithContentRequest, DeleteNodeRecursive},
     workspace::{CreateWorkspace, DeleteWorkspace, GetWorkspace, GetWorkspaces, UpdateWorkspace},
-    ApiEndpoint, IdInput, IdWithBodyInput, NodeIdInput, ParentIdInput, WorkspaceIdInput,
+    ApiEndpoint, IdInput, IdWithBodyInput, NextSortOrderInput, NodeIdInput, ParentIdInput, WorkspaceIdInput,
 };
 use crate::macros::AppRejection;
 use crate::{
@@ -74,6 +74,7 @@ pub fn build_routes(
                 "DELETE /api/workspaces/:id",
                 "GET /api/workspaces/:workspace_id/nodes",
                 "GET /api/workspaces/:workspace_id/nodes/root",
+                "GET /api/workspaces/:workspace_id/nodes/next-sort-order",
                 "GET /api/nodes/:id",
                 "GET /api/nodes/:id/children",
                 "POST /api/nodes",
@@ -209,6 +210,7 @@ fn node_routes(
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     get_nodes_by_workspace(db.clone())
         .or(get_root_nodes(db.clone()))
+        .or(get_next_sort_order(db.clone()))
         .or(get_node(db.clone()))
         .or(get_child_nodes(db.clone()))
         .or(create_node(db.clone()))
@@ -242,6 +244,32 @@ fn get_root_nodes(
         .and_then(
             |workspace_id: String, db: Arc<DatabaseConnection>| async move {
                 GetRootNodes::execute(&db, WorkspaceIdInput::new(&workspace_id))
+                    .await
+                    .map(|r| warp::reply::json(&r))
+                    .map_err(|e| warp::reject::custom(AppRejection::from(e)))
+            },
+        )
+}
+
+fn get_next_sort_order(
+    db: Arc<DatabaseConnection>,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    warp::path!("api" / "workspaces" / String / "nodes" / "next-sort-order")
+        .and(warp::get())
+        .and(warp::query::<std::collections::HashMap<String, String>>())
+        .and(with_db(db))
+        .and_then(
+            |workspace_id: String, query: std::collections::HashMap<String, String>, db: Arc<DatabaseConnection>| async move {
+                // 解析 parentId 查询参数，"null" 字符串转为 None
+                let parent_id = query.get("parentId").and_then(|v| {
+                    if v == "null" || v.is_empty() {
+                        None
+                    } else {
+                        Some(v.clone())
+                    }
+                });
+                
+                GetNextSortOrder::execute(&db, NextSortOrderInput::new(&workspace_id, parent_id))
                     .await
                     .map(|r| warp::reply::json(&r))
                     .map_err(|e| warp::reject::custom(AppRejection::from(e)))

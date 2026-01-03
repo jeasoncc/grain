@@ -102,6 +102,29 @@ impl NodeIdInput {
     }
 }
 
+/// 获取下一个排序顺序的输入
+///
+/// 用于 GetNextSortOrder 端点
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NextSortOrderInput {
+    /// 工作区 ID
+    pub workspace_id: String,
+
+    /// 父节点 ID（null 表示根级别）
+    pub parent_id: Option<String>,
+}
+
+impl NextSortOrderInput {
+    /// 创建新的 NextSortOrderInput
+    pub fn new(workspace_id: impl Into<String>, parent_id: Option<String>) -> Self {
+        Self {
+            workspace_id: workspace_id.into(),
+            parent_id,
+        }
+    }
+}
+
 // ============================================================================
 // 带请求体的输入
 // ============================================================================

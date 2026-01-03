@@ -18,9 +18,9 @@ import type { SerializedEditorState } from "lexical";
 import {
 	getNodeById,
 	syncTagCache,
-	updateContentByNodeId,
 	updateNode,
 } from "@/db";
+import { updateContentByNodeId } from "@/repo/content.repo.fn";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
 import { extractTagsFromContent } from "./save.debounce.fn";

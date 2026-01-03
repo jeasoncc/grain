@@ -10,6 +10,7 @@
 //! | GetNode | GET | /api/nodes/:id | 获取单个节点 |
 //! | GetRootNodes | GET | /api/workspaces/:id/nodes/root | 获取根节点 |
 //! | GetChildNodes | GET | /api/nodes/:id/children | 获取子节点 |
+//! | GetNextSortOrder | GET | /api/workspaces/:id/nodes/next-sort-order | 获取下一个排序顺序 |
 //! | CreateNode | POST | /api/nodes | 创建节点 |
 //! | UpdateNode | PUT | /api/nodes/:id | 更新节点 |
 //! | MoveNode | PUT | /api/nodes/:id/move | 移动节点 |
@@ -17,7 +18,7 @@
 
 use sea_orm::DatabaseConnection;
 
-use super::{ApiEndpoint, IdInput, IdWithBodyInput, NoOutput, ParentIdInput, WorkspaceIdInput};
+use super::{ApiEndpoint, IdInput, IdWithBodyInput, NextSortOrderInput, NoOutput, ParentIdInput, WorkspaceIdInput};
 use crate::db::node_db_fn;
 use crate::types::node::{
     CreateNodeRequest, MoveNodeRequest, NodeResponse, NodeType, UpdateNodeRequest,
@@ -153,6 +154,38 @@ impl ApiEndpoint for GetChildNodes {
         node_db_fn::find_children(db, &input.parent_id)
             .await
             .map(|v| v.into_iter().map(Into::into).collect())
+    }
+}
+
+// ============================================================================
+// GetNextSortOrder - 获取下一个排序顺序
+// ============================================================================
+
+/// 获取指定父节点下的下一个排序顺序
+///
+/// ## HTTP
+/// - Method: GET
+/// - Path: /api/workspaces/:workspace_id/nodes/next-sort-order?parentId=xxx
+///
+/// ## Tauri
+/// - Command: get_next_sort_order
+///
+/// ## 参数
+/// - workspace_id: 工作区 ID
+/// - parent_id: 父节点 ID（null 表示根级别）
+///
+/// ## 返回
+/// - 成功: i32 (下一个排序顺序)
+/// - 失败: DatabaseError
+pub struct GetNextSortOrder;
+
+impl ApiEndpoint for GetNextSortOrder {
+    type Input = NextSortOrderInput;
+    type Output = i32;
+    const NAME: &'static str = "get_next_sort_order";
+
+    async fn execute(db: &DatabaseConnection, input: Self::Input) -> AppResult<Self::Output> {
+        node_db_fn::get_next_sort_order(db, &input.workspace_id, input.parent_id.as_deref()).await
     }
 }
 

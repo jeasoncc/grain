@@ -26,7 +26,7 @@ use serde::{Deserialize, Serialize};
 // ============================================================================
 
 /// 节点类型
-/// 对应前端 NodeType: "folder" | "file" | "canvas" | "diary" | "drawing"
+/// 对应前端 NodeType: "folder" | "file" | "canvas" | "diary" | "drawing" | "wiki" | "todo" | "note" | "ledger" | "plantuml" | "mermaid" | "code"
 /// 同时用于 SeaORM Entity 和 DTO
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "Text")]
@@ -51,6 +51,34 @@ pub enum NodeType {
     /// 绘图 (Excalidraw)
     #[sea_orm(string_value = "drawing")]
     Drawing,
+
+    /// Wiki 文档
+    #[sea_orm(string_value = "wiki")]
+    Wiki,
+
+    /// 待办事项
+    #[sea_orm(string_value = "todo")]
+    Todo,
+
+    /// 笔记
+    #[sea_orm(string_value = "note")]
+    Note,
+
+    /// 记账
+    #[sea_orm(string_value = "ledger")]
+    Ledger,
+
+    /// PlantUML 图表
+    #[sea_orm(string_value = "plantuml")]
+    Plantuml,
+
+    /// Mermaid 图表
+    #[sea_orm(string_value = "mermaid")]
+    Mermaid,
+
+    /// 代码文件
+    #[sea_orm(string_value = "code")]
+    Code,
 }
 
 impl Default for NodeType {
@@ -67,6 +95,13 @@ impl std::fmt::Display for NodeType {
             NodeType::Canvas => write!(f, "canvas"),
             NodeType::Diary => write!(f, "diary"),
             NodeType::Drawing => write!(f, "drawing"),
+            NodeType::Wiki => write!(f, "wiki"),
+            NodeType::Todo => write!(f, "todo"),
+            NodeType::Note => write!(f, "note"),
+            NodeType::Ledger => write!(f, "ledger"),
+            NodeType::Plantuml => write!(f, "plantuml"),
+            NodeType::Mermaid => write!(f, "mermaid"),
+            NodeType::Code => write!(f, "code"),
         }
     }
 }
@@ -81,6 +116,13 @@ impl std::str::FromStr for NodeType {
             "canvas" => Ok(NodeType::Canvas),
             "diary" => Ok(NodeType::Diary),
             "drawing" => Ok(NodeType::Drawing),
+            "wiki" => Ok(NodeType::Wiki),
+            "todo" => Ok(NodeType::Todo),
+            "note" => Ok(NodeType::Note),
+            "ledger" => Ok(NodeType::Ledger),
+            "plantuml" => Ok(NodeType::Plantuml),
+            "mermaid" => Ok(NodeType::Mermaid),
+            "code" => Ok(NodeType::Code),
             _ => Err(format!("未知的节点类型: {}", s)),
         }
     }
@@ -265,6 +307,13 @@ mod tests {
         assert_eq!(NodeType::Canvas.to_string(), "canvas");
         assert_eq!(NodeType::Diary.to_string(), "diary");
         assert_eq!(NodeType::Drawing.to_string(), "drawing");
+        assert_eq!(NodeType::Wiki.to_string(), "wiki");
+        assert_eq!(NodeType::Todo.to_string(), "todo");
+        assert_eq!(NodeType::Note.to_string(), "note");
+        assert_eq!(NodeType::Ledger.to_string(), "ledger");
+        assert_eq!(NodeType::Plantuml.to_string(), "plantuml");
+        assert_eq!(NodeType::Mermaid.to_string(), "mermaid");
+        assert_eq!(NodeType::Code.to_string(), "code");
     }
 
     #[test]
@@ -274,6 +323,13 @@ mod tests {
         assert_eq!("canvas".parse::<NodeType>().unwrap(), NodeType::Canvas);
         assert_eq!("diary".parse::<NodeType>().unwrap(), NodeType::Diary);
         assert_eq!("drawing".parse::<NodeType>().unwrap(), NodeType::Drawing);
+        assert_eq!("wiki".parse::<NodeType>().unwrap(), NodeType::Wiki);
+        assert_eq!("todo".parse::<NodeType>().unwrap(), NodeType::Todo);
+        assert_eq!("note".parse::<NodeType>().unwrap(), NodeType::Note);
+        assert_eq!("ledger".parse::<NodeType>().unwrap(), NodeType::Ledger);
+        assert_eq!("plantuml".parse::<NodeType>().unwrap(), NodeType::Plantuml);
+        assert_eq!("mermaid".parse::<NodeType>().unwrap(), NodeType::Mermaid);
+        assert_eq!("code".parse::<NodeType>().unwrap(), NodeType::Code);
     }
 
     #[test]
