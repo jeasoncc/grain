@@ -17,11 +17,11 @@
 
 import type {
 	CreateUserRequest,
-	UpdateUserRequest,
-	UserResponse,
 	UserFeatures as RustUserFeatures,
 	UserSettings as RustUserSettings,
 	UserState as RustUserState,
+	UpdateUserRequest,
+	UserResponse,
 } from "@/types/rust-api";
 import type {
 	UserCreateInput,
@@ -55,7 +55,9 @@ const decodeUserFeatures = (
 /**
  * 解码用户应用状态
  */
-const decodeUserState = (state: RustUserState | null): UserState | undefined => {
+const decodeUserState = (
+	state: RustUserState | null,
+): UserState | undefined => {
 	if (!state) return undefined;
 	return {
 		lastLocation: state.lastLocation ?? "",
@@ -188,7 +190,9 @@ const encodeUserSettings = (
  * 编码创建用户请求
  * 前端 UserCreateInput → Rust CreateUserRequest
  */
-export const encodeCreateUser = (input: UserCreateInput): CreateUserRequest => ({
+export const encodeCreateUser = (
+	input: UserCreateInput,
+): CreateUserRequest => ({
 	username: input.username,
 	displayName: input.displayName,
 	avatar: input.avatar,
@@ -202,7 +206,9 @@ export const encodeCreateUser = (input: UserCreateInput): CreateUserRequest => (
  * 编码更新用户请求
  * 前端 UserUpdateInput → Rust UpdateUserRequest
  */
-export const encodeUpdateUser = (input: UserUpdateInput): UpdateUserRequest => ({
+export const encodeUpdateUser = (
+	input: UserUpdateInput,
+): UpdateUserRequest => ({
 	username: input.username,
 	displayName: input.displayName !== undefined ? input.displayName : undefined,
 	avatar: input.avatar !== undefined ? input.avatar : undefined,
@@ -219,8 +225,15 @@ export const encodeUpdateUser = (input: UserUpdateInput): UpdateUserRequest => (
 		? new Date(input.trialExpiresAt).getTime()
 		: undefined,
 	token: input.token !== undefined ? input.token : undefined,
-	serverMessage: input.serverMessage !== undefined ? input.serverMessage : undefined,
-	features: input.features !== undefined ? encodeUserFeatures(input.features) : undefined,
+	serverMessage:
+		input.serverMessage !== undefined ? input.serverMessage : undefined,
+	features:
+		input.features !== undefined
+			? encodeUserFeatures(input.features)
+			: undefined,
 	state: input.state !== undefined ? encodeUserState(input.state) : undefined,
-	settings: input.settings !== undefined ? encodeUserSettings(input.settings) : undefined,
+	settings:
+		input.settings !== undefined
+			? encodeUserSettings(input.settings)
+			: undefined,
 });

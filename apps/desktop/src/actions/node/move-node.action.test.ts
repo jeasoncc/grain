@@ -30,13 +30,13 @@ vi.mock("@/log/index", () => ({
 	},
 }));
 
+import { wouldCreateCycle } from "@/fn/node/node.tree.fn";
 import {
 	getNextSortOrder,
 	getNode,
 	getNodesByWorkspace,
 	moveNode as moveNodeRepo,
 } from "@/repo/node.repo.fn";
-import { wouldCreateCycle } from "@/fn/node/node.tree.fn";
 
 // ============================================================================
 // Test Data
@@ -81,7 +81,9 @@ describe("moveNode", () => {
 			Promise.resolve(E.right(mockNodes)),
 		);
 		vi.mocked(wouldCreateCycle).mockReturnValue(false);
-		vi.mocked(getNextSortOrder).mockReturnValue(() => Promise.resolve(E.right(1)));
+		vi.mocked(getNextSortOrder).mockReturnValue(() =>
+			Promise.resolve(E.right(1)),
+		);
 		vi.mocked(moveNodeRepo).mockReturnValue(() =>
 			Promise.resolve(E.right(mockNode)),
 		);
@@ -145,9 +147,7 @@ describe("moveNode", () => {
 	});
 
 	it("应该处理节点不存在", async () => {
-		vi.mocked(getNode).mockReturnValue(() =>
-			Promise.resolve(E.right(null)),
-		);
+		vi.mocked(getNode).mockReturnValue(() => Promise.resolve(E.right(null)));
 
 		const params = {
 			nodeId: "nonexistent",

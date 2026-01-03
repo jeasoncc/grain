@@ -17,13 +17,9 @@ import * as TE from "fp-ts/TaskEither";
 import type { SerializedEditorState } from "lexical";
 // TODO: Phase 4 - 迁移到 repo/tag.repo.fn.ts
 import { syncTagCache } from "@/db";
-import {
-	getNode,
-	updateNode,
-	updateContentByNodeId,
-} from "@/repo";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
+import { getNode, updateContentByNodeId, updateNode } from "@/repo";
 import { extractTagsFromContent } from "./save.debounce.fn";
 
 // ============================================================================

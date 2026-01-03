@@ -15,10 +15,10 @@
 
 import * as E from "fp-ts/Either";
 import { ensureRootFolderAsync } from "@/actions/node";
-import { addContent, addNode, getNextOrder, updateNode } from "@/repo";
 import { database } from "@/db/database";
 import { WIKI_ROOT_FOLDER, WIKI_TAG } from "@/fn/wiki";
 import logger from "@/log/index";
+import { addContent, addNode, getNextOrder, updateNode } from "@/repo";
 
 /**
  * 旧版 WikiInterface，用于迁移

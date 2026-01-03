@@ -16,6 +16,14 @@
  * ```
  */
 
+// Attachment Codec
+export {
+	decodeAttachment,
+	decodeAttachmentOptional,
+	decodeAttachments,
+	encodeCreateAttachment,
+	encodeUpdateAttachment,
+} from "./attachment.codec";
 // Content Codec
 export {
 	decodeContent,
@@ -33,6 +41,14 @@ export {
 	encodeNodeToUpdateRequest,
 	encodeUpdateNode,
 } from "./node.codec";
+// User Codec
+export {
+	decodeUser,
+	decodeUserOptional,
+	decodeUsers,
+	encodeCreateUser,
+	encodeUpdateUser,
+} from "./user.codec";
 // Workspace Codec
 export {
 	decodeWorkspace,
@@ -42,19 +58,3 @@ export {
 	encodeWorkspaceToCreateRequest,
 	encodeWorkspaceToUpdateRequest,
 } from "./workspace.codec";
-// User Codec
-export {
-	decodeUser,
-	decodeUsers,
-	decodeUserOptional,
-	encodeCreateUser,
-	encodeUpdateUser,
-} from "./user.codec";
-// Attachment Codec
-export {
-	decodeAttachment,
-	decodeAttachments,
-	decodeAttachmentOptional,
-	encodeCreateAttachment,
-	encodeUpdateAttachment,
-} from "./attachment.codec";

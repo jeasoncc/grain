@@ -26,38 +26,65 @@
 
 export {
 	database,
-	logDatabase,
-	LogDatabase,
 	GrainDatabase,
-	NovelEditorDatabase,
+	LogDatabase,
 	type LogEntry,
+	logDatabase,
+	NovelEditorDatabase,
 } from "./database";
 
 // ============================================================================
 // 日志数据库操作
 // ============================================================================
 
-export { logDB, LogDB, type LogEntry as LogDBEntry } from "./log-db";
+export { LogDB, type LogEntry as LogDBEntry, logDB } from "./log-db";
 
 // ============================================================================
 // API 客户端（Rust 后端通信）
 // ============================================================================
 
-export { api, createApiClient, type ApiClient } from "./api-client.fn";
+export { type ApiClient, api, createApiClient } from "./api-client.fn";
 
 // ============================================================================
 // Repo 层重新导出（兼容性）
 // ============================================================================
 
 // Node Repository - 从 @/repo 重新导出
+// Content Repository - 从 @/repo 重新导出
+// Workspace Repository - 从 @/repo 重新导出
+// User Repository - 从 @/repo 重新导出
+// Backup Repository - 从 @/repo 重新导出
+// Clear Data Repository - 从 @/repo 重新导出
 export {
+	addContent,
 	addNode,
+	addUser,
+	cleanupOldBackups,
+	clearAllData,
+	clearAllDataKeepUsers,
+	clearLogs,
+	clearSqliteData,
+	clearSqliteDataKeepUsers,
+	createBackup,
+	createContent,
 	createNode,
+	createUser,
+	createWorkspace,
+	deleteBackup,
 	deleteNode,
 	deleteNodesBatch,
+	deleteUser,
+	deleteWorkspace,
 	duplicateNode,
 	getAllNodes,
+	getAllWorkspaces,
 	getChildNodes,
+	getContentByNodeId,
+	getContentByNodeIdOrFail,
+	getContentsByNodeIds,
+	getContentVersion,
+	getCurrentUser,
+	getCurrentUserOrFail,
 	getDescendants,
 	getNextOrder,
 	getNextSortOrder,
@@ -69,68 +96,26 @@ export {
 	getNodesByType,
 	getNodesByWorkspace,
 	getRootNodes,
-	moveNode,
-	reorderNodes,
-	updateNode,
-} from "@/repo";
-
-// Content Repository - 从 @/repo 重新导出
-export {
-	addContent,
-	createContent,
-	getContentByNodeId,
-	getContentByNodeIdOrFail,
-	getContentsByNodeIds,
-	getContentVersion,
-	saveContent,
-	updateContentByNodeId,
-} from "@/repo";
-
-// Workspace Repository - 从 @/repo 重新导出
-export {
-	createWorkspace,
-	deleteWorkspace,
-	getAllWorkspaces,
+	getUser,
+	getUserByEmail,
+	getUserById,
+	getUserByIdOrNull,
+	getUserByUsername,
+	getUserOrFail,
+	getUsers,
 	getWorkspace,
 	getWorkspaceById,
 	getWorkspaces,
-	updateWorkspace,
-} from "@/repo";
-
-// User Repository - 从 @/repo 重新导出
-export {
-	addUser,
-	createUser,
-	deleteUser,
-	getCurrentUser,
-	getCurrentUserOrFail,
-	getUser,
-	getUserById,
-	getUserByIdOrNull,
-	getUserByEmail,
-	getUserByUsername,
-	getUsers,
-	getUserOrFail,
+	listBackups,
+	moveNode,
+	reorderNodes,
+	restoreBackup,
+	saveContent,
+	updateContentByNodeId,
+	updateNode,
 	updateUser,
 	updateUserLastLogin,
-} from "@/repo";
-
-// Backup Repository - 从 @/repo 重新导出
-export {
-	cleanupOldBackups,
-	createBackup,
-	deleteBackup,
-	listBackups,
-	restoreBackup,
-} from "@/repo";
-
-// Clear Data Repository - 从 @/repo 重新导出
-export {
-	clearAllData,
-	clearAllDataKeepUsers,
-	clearLogs,
-	clearSqliteData,
-	clearSqliteDataKeepUsers,
+	updateWorkspace,
 } from "@/repo";
 
 // ============================================================================

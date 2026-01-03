@@ -23,19 +23,19 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import * as api from "@/db/api-client.fn";
 import type { AppError } from "@/lib/error.types";
-import {
-	decodeAttachment,
-	decodeAttachments,
-	decodeAttachmentOptional,
-	encodeCreateAttachment,
-	encodeUpdateAttachment,
-} from "@/types/codec";
 import type {
 	AttachmentCreateInput,
 	AttachmentInterface,
 	AttachmentType,
 	AttachmentUpdateInput,
 } from "@/types/attachment";
+import {
+	decodeAttachment,
+	decodeAttachmentOptional,
+	decodeAttachments,
+	encodeCreateAttachment,
+	encodeUpdateAttachment,
+} from "@/types/codec";
 
 // ============================================
 // 查询操作
@@ -44,8 +44,10 @@ import type {
 /**
  * 获取所有附件
  */
-export const getAttachments = (): TE.TaskEither<AppError, AttachmentInterface[]> =>
-	pipe(api.getAttachments(), TE.map(decodeAttachments));
+export const getAttachments = (): TE.TaskEither<
+	AppError,
+	AttachmentInterface[]
+> => pipe(api.getAttachments(), TE.map(decodeAttachments));
 
 /**
  * 获取项目下的所有附件

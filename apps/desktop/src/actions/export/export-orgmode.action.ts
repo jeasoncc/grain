@@ -13,10 +13,10 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { getContentByNodeIdOrFail, getNodeByIdOrFail } from "@/repo";
 import { exportToOrgmode, type OrgmodeExportOptions } from "@/fn/export";
 import { type AppError, exportError } from "@/lib/error.types";
 import logger from "@/log";
+import { getContentByNodeIdOrFail, getNodeByIdOrFail } from "@/repo";
 
 /**
  * 导出节点内容为 Org-mode 格式参数

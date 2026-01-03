@@ -5,8 +5,8 @@
  * 通过 Codec 层进行类型转换，确保前后端类型解耦。
  */
 
-import { pipe } from "fp-ts/function";
 import * as A from "fp-ts/Array";
+import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import * as rustApi from "@/db/api-client.fn";
 import type { AppError } from "@/lib/error.types";
@@ -16,7 +16,11 @@ import {
 	encodeCreateContent,
 	encodeUpdateContent,
 } from "@/types/codec";
-import type { ContentCreateInput, ContentInterface, ContentType } from "@/types/content";
+import type {
+	ContentCreateInput,
+	ContentInterface,
+	ContentType,
+} from "@/types/content";
 
 // ============================================
 // 查询操作
@@ -73,7 +77,7 @@ export const createContent = (
 
 /**
  * 添加内容（别名，兼容旧 API）
- * 
+ *
  * @param nodeId - 节点 ID
  * @param content - 内容字符串
  * @param contentType - 内容类型（可选，默认 "lexical"）
@@ -91,7 +95,7 @@ export const addContent = (
 
 /**
  * 更新节点内容
- * 
+ *
  * @param nodeId - 节点 ID
  * @param content - 内容字符串
  * @param contentType - 内容类型（可选，目前后端不使用，保留兼容性）
@@ -122,12 +126,11 @@ export const saveContent = (
 		TE.map(decodeContent),
 	);
 
-
 /**
  * 批量获取多个节点的内容
- * 
+ *
  * 由于 Rust 后端没有批量获取 API，这里通过并行调用单个 API 实现
- * 
+ *
  * @param nodeIds - 节点 ID 数组
  * @returns TaskEither<AppError, ContentInterface[]>
  */
@@ -147,6 +150,8 @@ export const getContentsByNodeIds = (
 			),
 		),
 		A.sequence(TE.ApplicativePar),
-		TE.map((results) => results.filter((c): c is ContentInterface => c !== null)),
+		TE.map((results) =>
+			results.filter((c): c is ContentInterface => c !== null),
+		),
 	);
 };

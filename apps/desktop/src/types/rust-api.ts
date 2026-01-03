@@ -341,7 +341,6 @@ export interface UserResponse {
 	settings: UserSettings | null;
 }
 
-
 // ============================================
 // Attachment 类型（与 Rust 后端 attachment_interface.rs 对应）
 // ============================================

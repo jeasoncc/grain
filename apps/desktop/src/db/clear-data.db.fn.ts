@@ -14,19 +14,19 @@
  * @requirements 3.2
  */
 
-import * as TE from "fp-ts/TaskEither";
 import { pipe } from "fp-ts/function";
+import * as TE from "fp-ts/TaskEither";
 import { type AppError, dbError } from "@/lib/error.types";
 import logger from "@/log";
+import type { ClearDataResult } from "@/types/rust-api";
 import type {
 	ClearDataOptions,
 	IndexedDBStats,
 	StorageStats,
 	TableSizes,
 } from "@/types/storage";
-import type { ClearDataResult } from "@/types/rust-api";
-import { database } from "./database";
 import { clearSqliteData as clearSqliteDataApi } from "./api-client.fn";
+import { database } from "./database";
 
 // ============================================================================
 // SQLite 清理（通过 Rust 后端）

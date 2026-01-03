@@ -140,15 +140,14 @@ export const getNextSortOrder = (
 
 /**
  * 获取下一个排序号（别名，兼容旧 API）
- * 
+ *
  * @param parentId - 父节点 ID（null 表示根级）
  * @param workspaceId - 工作区 ID
  */
 export const getNextOrder = (
 	parentId: string | null,
 	workspaceId: string,
-): TE.TaskEither<AppError, number> =>
-	getNextSortOrder(workspaceId, parentId);
+): TE.TaskEither<AppError, number> => getNextSortOrder(workspaceId, parentId);
 
 // ============================================
 // 写入操作
@@ -170,7 +169,7 @@ export const createNode = (
 
 /**
  * 添加节点（别名，兼容旧 API）
- * 
+ *
  * @param workspace - 工作区 ID
  * @param title - 节点标题
  * @param options - 可选的节点属性
@@ -254,10 +253,9 @@ export const reorderNodes = (
 	nodeIds: string[],
 ): TE.TaskEither<AppError, void> => rustApi.reorderNodes(nodeIds);
 
-
 /**
  * 获取所有节点（跨工作区）
- * 
+ *
  * 注意：此函数需要先获取所有工作区，然后获取每个工作区的节点
  * 由于 Rust 后端没有直接的 getAllNodes API
  */

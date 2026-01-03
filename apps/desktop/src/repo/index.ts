@@ -30,6 +30,25 @@
  * ```
  */
 
+// Attachment Repository
+export * as attachmentRepo from "./attachment.repo.fn";
+export {
+	addAttachment,
+	createAttachment,
+	deleteAttachment,
+	deleteAttachmentsByProject,
+	getAttachment,
+	getAttachmentById,
+	getAttachmentByIdOrNull,
+	getAttachmentByPath,
+	getAttachmentOrFail,
+	getAttachments,
+	getAttachmentsByProject,
+	getAttachmentsByType,
+	getAudioFilesByProject,
+	getImagesByProject,
+	updateAttachment,
+} from "./attachment.repo.fn";
 // Backup Repository (Rust 后端 SQLite 文件级备份)
 export * as backupRepo from "./backup.repo.fn";
 export {
@@ -39,7 +58,6 @@ export {
 	listBackups,
 	restoreBackup,
 } from "./backup.repo.fn";
-
 // Clear Data Repository (Rust 后端 SQLite 清理 + 日志清理)
 export * as clearDataRepo from "./clear-data.repo.fn";
 export {
@@ -49,7 +67,6 @@ export {
 	clearSqliteData,
 	clearSqliteDataKeepUsers,
 } from "./clear-data.repo.fn";
-
 // Content Repository
 export * as contentRepo from "./content.repo.fn";
 export {
@@ -64,7 +81,6 @@ export {
 } from "./content.repo.fn";
 // Node Repository
 export * as nodeRepo from "./node.repo.fn";
-
 // 也导出单独的函数，方便直接使用
 export {
 	addNode,
@@ -89,6 +105,25 @@ export {
 	reorderNodes,
 	updateNode,
 } from "./node.repo.fn";
+
+// User Repository
+export * as userRepo from "./user.repo.fn";
+export {
+	addUser,
+	createUser,
+	deleteUser,
+	getCurrentUser,
+	getCurrentUserOrFail,
+	getUser,
+	getUserByEmail,
+	getUserById,
+	getUserByIdOrNull,
+	getUserByUsername,
+	getUserOrFail,
+	getUsers,
+	updateUser,
+	updateUserLastLogin,
+} from "./user.repo.fn";
 // Workspace Repository
 export * as workspaceRepo from "./workspace.repo.fn";
 export {
@@ -100,42 +135,3 @@ export {
 	getWorkspaces,
 	updateWorkspace,
 } from "./workspace.repo.fn";
-
-// User Repository
-export * as userRepo from "./user.repo.fn";
-export {
-	addUser,
-	createUser,
-	deleteUser,
-	getCurrentUser,
-	getCurrentUserOrFail,
-	getUser,
-	getUserById,
-	getUserByIdOrNull,
-	getUserByEmail,
-	getUserByUsername,
-	getUsers,
-	getUserOrFail,
-	updateUser,
-	updateUserLastLogin,
-} from "./user.repo.fn";
-
-// Attachment Repository
-export * as attachmentRepo from "./attachment.repo.fn";
-export {
-	addAttachment,
-	createAttachment,
-	deleteAttachment,
-	deleteAttachmentsByProject,
-	getAttachment,
-	getAttachmentById,
-	getAttachmentByIdOrNull,
-	getAttachmentByPath,
-	getAttachmentOrFail,
-	getAttachments,
-	getAttachmentsByProject,
-	getAttachmentsByType,
-	getAudioFilesByProject,
-	getImagesByProject,
-	updateAttachment,
-} from "./attachment.repo.fn";

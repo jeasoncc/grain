@@ -16,17 +16,17 @@
  */
 
 import type {
-	AttachmentResponse,
-	AttachmentType as RustAttachmentType,
-	CreateAttachmentRequest,
-	UpdateAttachmentRequest,
-} from "@/types/rust-api";
-import type {
 	AttachmentCreateInput,
 	AttachmentInterface,
 	AttachmentType,
 	AttachmentUpdateInput,
 } from "@/types/attachment";
+import type {
+	AttachmentResponse,
+	CreateAttachmentRequest,
+	AttachmentType as RustAttachmentType,
+	UpdateAttachmentRequest,
+} from "@/types/rust-api";
 
 // ============================================
 // 解码函数 (Rust → 前端)

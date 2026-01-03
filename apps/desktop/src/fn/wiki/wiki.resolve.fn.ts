@@ -10,10 +10,10 @@
 
 import * as E from "fp-ts/Either";
 import * as TE from "fp-ts/TaskEither";
-import { getContentsByNodeIds, getNodesByWorkspace } from "@/repo";
 import { database } from "@/db/database";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
+import { getContentsByNodeIds, getNodesByWorkspace } from "@/repo";
 import type { NodeInterface } from "@/types/node";
 import { WikiFileEntryBuilder } from "./wiki.builder";
 import type { WikiFileEntry } from "./wiki.schema";

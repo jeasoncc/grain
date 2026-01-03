@@ -12,17 +12,7 @@ import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 // TODO: Phase 5 - 迁移到 repo/attachment.repo.fn.ts
-import {
-	getAllAttachments,
-	getAttachmentsByProject,
-} from "@/db";
-import {
-	getAllNodes,
-	getAllWorkspaces,
-	getContentsByNodeIds,
-	getNodesByWorkspace,
-	getWorkspaceById,
-} from "@/repo";
+import { getAllAttachments, getAttachmentsByProject } from "@/db";
 import {
 	createExportBundle,
 	serializeBundle,
@@ -30,6 +20,13 @@ import {
 import type { AttachmentData, ContentData } from "@/fn/import/import.json.fn";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
+import {
+	getAllNodes,
+	getAllWorkspaces,
+	getContentsByNodeIds,
+	getNodesByWorkspace,
+	getWorkspaceById,
+} from "@/repo";
 import type { AttachmentInterface } from "@/types/attachment";
 
 /**

@@ -25,8 +25,8 @@ import * as api from "@/db/api-client.fn";
 import type { AppError } from "@/lib/error.types";
 import {
 	decodeUser,
-	decodeUsers,
 	decodeUserOptional,
+	decodeUsers,
 	encodeCreateUser,
 	encodeUpdateUser,
 } from "@/types/codec";
@@ -91,13 +91,18 @@ export const getUserByEmail = (
 /**
  * 获取当前用户（最后登录的用户）
  */
-export const getCurrentUser = (): TE.TaskEither<AppError, UserInterface | null> =>
-	pipe(api.getCurrentUser(), TE.map(decodeUserOptional));
+export const getCurrentUser = (): TE.TaskEither<
+	AppError,
+	UserInterface | null
+> => pipe(api.getCurrentUser(), TE.map(decodeUserOptional));
 
 /**
  * 获取当前用户（不存在时抛出错误）
  */
-export const getCurrentUserOrFail = (): TE.TaskEither<AppError, UserInterface> =>
+export const getCurrentUserOrFail = (): TE.TaskEither<
+	AppError,
+	UserInterface
+> =>
 	pipe(
 		getCurrentUser(),
 		TE.chain((user) =>

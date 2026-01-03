@@ -146,7 +146,9 @@ export interface ApiClient {
 	) => TE.TaskEither<AppError, NodeResponse[]>;
 	getNode: (id: string) => TE.TaskEither<AppError, NodeResponse | null>;
 	getChildNodes: (parentId: string) => TE.TaskEither<AppError, NodeResponse[]>;
-	getRootNodes: (workspaceId: string) => TE.TaskEither<AppError, NodeResponse[]>;
+	getRootNodes: (
+		workspaceId: string,
+	) => TE.TaskEither<AppError, NodeResponse[]>;
 	getNodesByParent: (
 		workspaceId: string,
 		parentId: string | null,
@@ -186,9 +188,7 @@ export interface ApiClient {
 	saveContent: (
 		request: SaveContentRequest,
 	) => TE.TaskEither<AppError, ContentResponse>;
-	getContentVersion: (
-		nodeId: string,
-	) => TE.TaskEither<AppError, number | null>;
+	getContentVersion: (nodeId: string) => TE.TaskEither<AppError, number | null>;
 
 	// Backup API
 	createBackup: () => TE.TaskEither<AppError, BackupInfo>;
@@ -204,47 +204,101 @@ export interface ApiClient {
 	// User API
 	getUsers: () => TE.TaskEither<AppError, UserResponse[]>;
 	getUser: (id: string) => TE.TaskEither<AppError, UserResponse | null>;
-	getUserByUsername: (username: string) => TE.TaskEither<AppError, UserResponse | null>;
-	getUserByEmail: (email: string) => TE.TaskEither<AppError, UserResponse | null>;
+	getUserByUsername: (
+		username: string,
+	) => TE.TaskEither<AppError, UserResponse | null>;
+	getUserByEmail: (
+		email: string,
+	) => TE.TaskEither<AppError, UserResponse | null>;
 	getCurrentUser: () => TE.TaskEither<AppError, UserResponse | null>;
-	createUser: (request: CreateUserRequest) => TE.TaskEither<AppError, UserResponse>;
-	updateUser: (id: string, request: UpdateUserRequest) => TE.TaskEither<AppError, UserResponse>;
+	createUser: (
+		request: CreateUserRequest,
+	) => TE.TaskEither<AppError, UserResponse>;
+	updateUser: (
+		id: string,
+		request: UpdateUserRequest,
+	) => TE.TaskEither<AppError, UserResponse>;
 	updateUserLastLogin: (id: string) => TE.TaskEither<AppError, UserResponse>;
 	deleteUser: (id: string) => TE.TaskEither<AppError, void>;
 
 	// Attachment API
 	getAttachments: () => TE.TaskEither<AppError, AttachmentResponse[]>;
-	getAttachmentsByProject: (projectId: string) => TE.TaskEither<AppError, AttachmentResponse[]>;
-	getAttachment: (id: string) => TE.TaskEither<AppError, AttachmentResponse | null>;
-	getAttachmentsByType: (projectId: string, attachmentType: AttachmentType) => TE.TaskEither<AppError, AttachmentResponse[]>;
-	getImagesByProject: (projectId: string) => TE.TaskEither<AppError, AttachmentResponse[]>;
-	getAudioFilesByProject: (projectId: string) => TE.TaskEither<AppError, AttachmentResponse[]>;
-	getAttachmentByPath: (filePath: string) => TE.TaskEither<AppError, AttachmentResponse | null>;
-	createAttachment: (request: CreateAttachmentRequest) => TE.TaskEither<AppError, AttachmentResponse>;
-	updateAttachment: (id: string, request: UpdateAttachmentRequest) => TE.TaskEither<AppError, AttachmentResponse>;
+	getAttachmentsByProject: (
+		projectId: string,
+	) => TE.TaskEither<AppError, AttachmentResponse[]>;
+	getAttachment: (
+		id: string,
+	) => TE.TaskEither<AppError, AttachmentResponse | null>;
+	getAttachmentsByType: (
+		projectId: string,
+		attachmentType: AttachmentType,
+	) => TE.TaskEither<AppError, AttachmentResponse[]>;
+	getImagesByProject: (
+		projectId: string,
+	) => TE.TaskEither<AppError, AttachmentResponse[]>;
+	getAudioFilesByProject: (
+		projectId: string,
+	) => TE.TaskEither<AppError, AttachmentResponse[]>;
+	getAttachmentByPath: (
+		filePath: string,
+	) => TE.TaskEither<AppError, AttachmentResponse | null>;
+	createAttachment: (
+		request: CreateAttachmentRequest,
+	) => TE.TaskEither<AppError, AttachmentResponse>;
+	updateAttachment: (
+		id: string,
+		request: UpdateAttachmentRequest,
+	) => TE.TaskEither<AppError, AttachmentResponse>;
 	deleteAttachment: (id: string) => TE.TaskEither<AppError, void>;
-	deleteAttachmentsByProject: (projectId: string) => TE.TaskEither<AppError, number>;
+	deleteAttachmentsByProject: (
+		projectId: string,
+	) => TE.TaskEither<AppError, number>;
 
 	// Tag API
-	getTagsByWorkspace: (workspaceId: string) => TE.TaskEither<AppError, TagResponse[]>;
+	getTagsByWorkspace: (
+		workspaceId: string,
+	) => TE.TaskEither<AppError, TagResponse[]>;
 	getTag: (id: string) => TE.TaskEither<AppError, TagResponse | null>;
-	getTagByName: (workspaceId: string, name: string) => TE.TaskEither<AppError, TagResponse | null>;
-	getTopTags: (workspaceId: string, limit: number) => TE.TaskEither<AppError, TagResponse[]>;
-	searchTags: (workspaceId: string, query: string) => TE.TaskEither<AppError, TagResponse[]>;
-	getNodesByTag: (workspaceId: string, tagName: string) => TE.TaskEither<AppError, string[]>;
-	getTagGraphData: (workspaceId: string) => TE.TaskEither<AppError, TagGraphData>;
-	createTag: (request: CreateTagRequest) => TE.TaskEither<AppError, TagResponse>;
-	updateTag: (id: string, request: UpdateTagRequest) => TE.TaskEither<AppError, TagResponse>;
-	getOrCreateTag: (workspaceId: string, name: string) => TE.TaskEither<AppError, TagResponse>;
+	getTagByName: (
+		workspaceId: string,
+		name: string,
+	) => TE.TaskEither<AppError, TagResponse | null>;
+	getTopTags: (
+		workspaceId: string,
+		limit: number,
+	) => TE.TaskEither<AppError, TagResponse[]>;
+	searchTags: (
+		workspaceId: string,
+		query: string,
+	) => TE.TaskEither<AppError, TagResponse[]>;
+	getNodesByTag: (
+		workspaceId: string,
+		tagName: string,
+	) => TE.TaskEither<AppError, string[]>;
+	getTagGraphData: (
+		workspaceId: string,
+	) => TE.TaskEither<AppError, TagGraphData>;
+	createTag: (
+		request: CreateTagRequest,
+	) => TE.TaskEither<AppError, TagResponse>;
+	updateTag: (
+		id: string,
+		request: UpdateTagRequest,
+	) => TE.TaskEither<AppError, TagResponse>;
+	getOrCreateTag: (
+		workspaceId: string,
+		name: string,
+	) => TE.TaskEither<AppError, TagResponse>;
 	incrementTagCount: (id: string) => TE.TaskEither<AppError, TagResponse>;
 	decrementTagCount: (id: string) => TE.TaskEither<AppError, TagResponse>;
 	deleteTag: (id: string) => TE.TaskEither<AppError, void>;
-	deleteTagsByWorkspace: (workspaceId: string) => TE.TaskEither<AppError, number>;
+	deleteTagsByWorkspace: (
+		workspaceId: string,
+	) => TE.TaskEither<AppError, number>;
 	syncTagCache: (workspaceId: string) => TE.TaskEither<AppError, void>;
 	rebuildTagCache: (workspaceId: string) => TE.TaskEither<AppError, void>;
 	recalculateTagCounts: (workspaceId: string) => TE.TaskEither<AppError, void>;
 }
-
 
 // ============================================
 // 创建 API 客户端（高阶函数）
@@ -264,9 +318,7 @@ export const createApiClient = (): ApiClient => {
 		// Workspace API
 		// ============================================
 		getWorkspaces: () =>
-			isTauri
-				? invokeTE("get_workspaces")
-				: fetchTE("/api/workspaces"),
+			isTauri ? invokeTE("get_workspaces") : fetchTE("/api/workspaces"),
 
 		getWorkspace: (id: string) =>
 			isTauri
@@ -303,9 +355,7 @@ export const createApiClient = (): ApiClient => {
 				: fetchTE(`/api/workspaces/${workspaceId}/nodes`),
 
 		getNode: (id: string) =>
-			isTauri
-				? invokeTE("get_node", { id })
-				: fetchTE(`/api/nodes/${id}`),
+			isTauri ? invokeTE("get_node", { id }) : fetchTE(`/api/nodes/${id}`),
 
 		getChildNodes: (parentId: string) =>
 			isTauri
@@ -432,9 +482,7 @@ export const createApiClient = (): ApiClient => {
 					}),
 
 		listBackups: () =>
-			isTauri
-				? invokeTE("list_backups")
-				: fetchTE("/api/backups"),
+			isTauri ? invokeTE("list_backups") : fetchTE("/api/backups"),
 
 		deleteBackup: (backupPath: string) =>
 			isTauri
@@ -467,15 +515,10 @@ export const createApiClient = (): ApiClient => {
 		// ============================================
 		// User API
 		// ============================================
-		getUsers: () =>
-			isTauri
-				? invokeTE("get_users")
-				: fetchTE("/api/users"),
+		getUsers: () => (isTauri ? invokeTE("get_users") : fetchTE("/api/users")),
 
 		getUser: (id: string) =>
-			isTauri
-				? invokeTE("get_user", { id })
-				: fetchTE(`/api/users/${id}`),
+			isTauri ? invokeTE("get_user", { id }) : fetchTE(`/api/users/${id}`),
 
 		getUserByUsername: (username: string) =>
 			isTauri
@@ -488,9 +531,7 @@ export const createApiClient = (): ApiClient => {
 				: fetchTE(`/api/users/by-email/${encodeURIComponent(email)}`),
 
 		getCurrentUser: () =>
-			isTauri
-				? invokeTE("get_current_user")
-				: fetchTE("/api/users/current"),
+			isTauri ? invokeTE("get_current_user") : fetchTE("/api/users/current"),
 
 		createUser: (request: CreateUserRequest) =>
 			isTauri
@@ -522,9 +563,7 @@ export const createApiClient = (): ApiClient => {
 		// Attachment API
 		// ============================================
 		getAttachments: () =>
-			isTauri
-				? invokeTE("get_attachments")
-				: fetchTE("/api/attachments"),
+			isTauri ? invokeTE("get_attachments") : fetchTE("/api/attachments"),
 
 		getAttachmentsByProject: (projectId: string) =>
 			isTauri
@@ -536,10 +575,15 @@ export const createApiClient = (): ApiClient => {
 				? invokeTE("get_attachment", { id })
 				: fetchTE(`/api/attachments/${id}`),
 
-		getAttachmentsByType: (projectId: string, attachmentType: AttachmentType) =>
+		getAttachmentsByType: (
+			projectId: string,
+			attachmentType: AttachmentType,
+		) =>
 			isTauri
 				? invokeTE("get_attachments_by_type", { projectId, attachmentType })
-				: fetchTE(`/api/projects/${projectId}/attachments?type=${attachmentType}`),
+				: fetchTE(
+						`/api/projects/${projectId}/attachments?type=${attachmentType}`,
+					),
 
 		getImagesByProject: (projectId: string) =>
 			isTauri
@@ -580,7 +624,122 @@ export const createApiClient = (): ApiClient => {
 		deleteAttachmentsByProject: (projectId: string) =>
 			isTauri
 				? invokeTE("delete_attachments_by_project", { projectId })
-				: fetchTE(`/api/projects/${projectId}/attachments`, { method: "DELETE" }),
+				: fetchTE(`/api/projects/${projectId}/attachments`, {
+						method: "DELETE",
+					}),
+
+		// ============================================
+		// Tag API
+		// ============================================
+		getTagsByWorkspace: (workspaceId: string) =>
+			isTauri
+				? invokeTE("get_tags_by_workspace", { workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/tags`),
+
+		getTag: (id: string) =>
+			isTauri
+				? invokeTE("get_tag", { id })
+				: fetchTE(`/api/tags/${encodeURIComponent(id)}`),
+
+		getTagByName: (workspaceId: string, name: string) =>
+			isTauri
+				? invokeTE("get_tag_by_name", { workspaceId, name })
+				: fetchTE(
+						`/api/workspaces/${workspaceId}/tags/by-name/${encodeURIComponent(name)}`,
+					),
+
+		getTopTags: (workspaceId: string, limit: number) =>
+			isTauri
+				? invokeTE("get_top_tags", { workspaceId, limit })
+				: fetchTE(`/api/workspaces/${workspaceId}/tags/top?limit=${limit}`),
+
+		searchTags: (workspaceId: string, query: string) =>
+			isTauri
+				? invokeTE("search_tags", { workspaceId, query })
+				: fetchTE(
+						`/api/workspaces/${workspaceId}/tags/search?q=${encodeURIComponent(query)}`,
+					),
+
+		getNodesByTag: (workspaceId: string, tagName: string) =>
+			isTauri
+				? invokeTE("get_nodes_by_tag", { workspaceId, tagName })
+				: fetchTE(
+						`/api/workspaces/${workspaceId}/tags/${encodeURIComponent(tagName)}/nodes`,
+					),
+
+		getTagGraphData: (workspaceId: string) =>
+			isTauri
+				? invokeTE("get_tag_graph_data", { workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/tags/graph`),
+
+		createTag: (request: CreateTagRequest) =>
+			isTauri
+				? invokeTE("create_tag", { request })
+				: fetchTE("/api/tags", {
+						method: "POST",
+						body: JSON.stringify(request),
+					}),
+
+		updateTag: (id: string, request: UpdateTagRequest) =>
+			isTauri
+				? invokeTE("update_tag", { id, request })
+				: fetchTE(`/api/tags/${encodeURIComponent(id)}`, {
+						method: "PUT",
+						body: JSON.stringify(request),
+					}),
+
+		getOrCreateTag: (workspaceId: string, name: string) =>
+			isTauri
+				? invokeTE("get_or_create_tag", { workspaceId, name })
+				: fetchTE(`/api/workspaces/${workspaceId}/tags/get-or-create`, {
+						method: "POST",
+						body: JSON.stringify({ name }),
+					}),
+
+		incrementTagCount: (id: string) =>
+			isTauri
+				? invokeTE("increment_tag_count", { id })
+				: fetchTE(`/api/tags/${encodeURIComponent(id)}/increment`, {
+						method: "POST",
+					}),
+
+		decrementTagCount: (id: string) =>
+			isTauri
+				? invokeTE("decrement_tag_count", { id })
+				: fetchTE(`/api/tags/${encodeURIComponent(id)}/decrement`, {
+						method: "POST",
+					}),
+
+		deleteTag: (id: string) =>
+			isTauri
+				? invokeTE("delete_tag", { id })
+				: fetchTE(`/api/tags/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+		deleteTagsByWorkspace: (workspaceId: string) =>
+			isTauri
+				? invokeTE("delete_tags_by_workspace", { workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/tags`, { method: "DELETE" }),
+
+		syncTagCache: (workspaceId: string) =>
+			isTauri
+				? invokeTE("sync_tag_cache", { workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/tags/sync`, {
+						method: "POST",
+					}),
+
+		rebuildTagCache: (workspaceId: string) =>
+			isTauri
+				? invokeTE("rebuild_tag_cache", { workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/tags/rebuild`, {
+						method: "POST",
+					}),
+
+		recalculateTagCounts: (workspaceId: string) =>
+			isTauri
+				? invokeTE("recalculate_tag_counts", { workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/tags/recalculate`, {
+						method: "POST",
+					}),
 	};
 };
 
@@ -659,12 +818,31 @@ export const updateAttachment = api.updateAttachment;
 export const deleteAttachment = api.deleteAttachment;
 export const deleteAttachmentsByProject = api.deleteAttachmentsByProject;
 
+// Tag API
+export const getTagsByWorkspace = api.getTagsByWorkspace;
+export const getTag = api.getTag;
+export const getTagByName = api.getTagByName;
+export const getTopTags = api.getTopTags;
+export const searchTags = api.searchTags;
+export const getNodesByTag = api.getNodesByTag;
+export const getTagGraphData = api.getTagGraphData;
+export const createTag = api.createTag;
+export const updateTag = api.updateTag;
+export const getOrCreateTag = api.getOrCreateTag;
+export const incrementTagCount = api.incrementTagCount;
+export const decrementTagCount = api.decrementTagCount;
+export const deleteTag = api.deleteTag;
+export const deleteTagsByWorkspace = api.deleteTagsByWorkspace;
+export const syncTagCache = api.syncTagCache;
+export const rebuildTagCache = api.rebuildTagCache;
+export const recalculateTagCounts = api.recalculateTagCounts;
+
 // ============================================
 // Promise 版本（兼容性）
 // ============================================
 
-import { pipe } from "fp-ts/function";
 import * as E from "fp-ts/Either";
+import { pipe } from "fp-ts/function";
 
 /** 将 TaskEither 转换为 Promise */
 const toPromise = <T>(te: TE.TaskEither<AppError, T>): Promise<T> =>

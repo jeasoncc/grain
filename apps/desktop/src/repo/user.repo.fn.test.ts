@@ -92,8 +92,8 @@ import {
 	getUser,
 	getUserByEmail,
 	getUserByUsername,
-	getUsers,
 	getUserOrFail,
+	getUsers,
 	updateUser,
 	updateUserLastLogin,
 } from "./user.repo.fn";
@@ -128,7 +128,9 @@ describe("user.repo.fn", () => {
 				createTestUserResponse({ id: "user-1", username: "user1" }),
 				createTestUserResponse({ id: "user-2", username: "user2" }),
 			];
-			mockApi.getUsers.mockReturnValue(() => Promise.resolve(E.right(testUsers)));
+			mockApi.getUsers.mockReturnValue(() =>
+				Promise.resolve(E.right(testUsers)),
+			);
 
 			const result = await runTE(getUsers());
 
@@ -423,7 +425,10 @@ describe("user.repo.fn", () => {
 		});
 
 		it("should return Left with error on API failure", async () => {
-			const error = { type: "DB_ERROR", message: "Failed to update last login" };
+			const error = {
+				type: "DB_ERROR",
+				message: "Failed to update last login",
+			};
 			mockApi.updateUserLastLogin.mockReturnValue(() =>
 				Promise.resolve(E.left(error)),
 			);

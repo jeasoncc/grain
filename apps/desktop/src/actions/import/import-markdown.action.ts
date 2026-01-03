@@ -13,13 +13,13 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { addContent, addNode, getNextOrder } from "@/repo";
 import {
 	importFromMarkdown,
 	type MarkdownImportOptions,
 } from "@/fn/import/import.markdown.fn";
 import { type AppError, importError } from "@/lib/error.types";
 import logger from "@/log";
+import { addContent, addNode, getNextOrder } from "@/repo";
 import type { NodeInterface } from "@/types/node";
 
 /**

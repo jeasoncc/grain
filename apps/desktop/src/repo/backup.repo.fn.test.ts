@@ -101,7 +101,9 @@ describe("backup.repo.fn", () => {
 	describe("createBackup", () => {
 		it("should return Right with BackupInfo on success", async () => {
 			const testBackup = createTestBackupInfo();
-			mockApi.createBackup.mockReturnValue(() => Promise.resolve(E.right(testBackup)));
+			mockApi.createBackup.mockReturnValue(() =>
+				Promise.resolve(E.right(testBackup)),
+			);
 
 			const result = await runTE(createBackup());
 
@@ -115,7 +117,9 @@ describe("backup.repo.fn", () => {
 
 		it("should return Left with error on API failure", async () => {
 			const error = { type: "DB_ERROR", message: "Backup creation failed" };
-			mockApi.createBackup.mockReturnValue(() => Promise.resolve(E.left(error)));
+			mockApi.createBackup.mockReturnValue(() =>
+				Promise.resolve(E.left(error)),
+			);
 
 			const result = await runTE(createBackup());
 
@@ -133,7 +137,9 @@ describe("backup.repo.fn", () => {
 
 	describe("restoreBackup", () => {
 		it("should return Right on successful restore", async () => {
-			mockApi.restoreBackup.mockReturnValue(() => Promise.resolve(E.right(undefined)));
+			mockApi.restoreBackup.mockReturnValue(() =>
+				Promise.resolve(E.right(undefined)),
+			);
 
 			const result = await runTE(restoreBackup("/path/to/backup.db"));
 
@@ -143,7 +149,9 @@ describe("backup.repo.fn", () => {
 
 		it("should return Left with error on restore failure", async () => {
 			const error = { type: "DB_ERROR", message: "Restore failed" };
-			mockApi.restoreBackup.mockReturnValue(() => Promise.resolve(E.left(error)));
+			mockApi.restoreBackup.mockReturnValue(() =>
+				Promise.resolve(E.left(error)),
+			);
 
 			const result = await runTE(restoreBackup("/path/to/backup.db"));
 
@@ -154,7 +162,9 @@ describe("backup.repo.fn", () => {
 		});
 
 		it("should pass correct backup path to API", async () => {
-			mockApi.restoreBackup.mockReturnValue(() => Promise.resolve(E.right(undefined)));
+			mockApi.restoreBackup.mockReturnValue(() =>
+				Promise.resolve(E.right(undefined)),
+			);
 
 			const backupPath = "/custom/path/backup-2024-01-15.db";
 			await runTE(restoreBackup(backupPath));
@@ -185,7 +195,9 @@ describe("backup.repo.fn", () => {
 				createTestBackupInfo({ filename: "backup-2.db" }),
 				createTestBackupInfo({ filename: "backup-3.db" }),
 			];
-			mockApi.listBackups.mockReturnValue(() => Promise.resolve(E.right(testBackups)));
+			mockApi.listBackups.mockReturnValue(() =>
+				Promise.resolve(E.right(testBackups)),
+			);
 
 			const result = await runTE(listBackups());
 
@@ -217,7 +229,9 @@ describe("backup.repo.fn", () => {
 
 	describe("deleteBackup", () => {
 		it("should return Right on successful deletion", async () => {
-			mockApi.deleteBackup.mockReturnValue(() => Promise.resolve(E.right(undefined)));
+			mockApi.deleteBackup.mockReturnValue(() =>
+				Promise.resolve(E.right(undefined)),
+			);
 
 			const result = await runTE(deleteBackup("/path/to/backup.db"));
 
@@ -227,7 +241,9 @@ describe("backup.repo.fn", () => {
 
 		it("should return Left with error on deletion failure", async () => {
 			const error = { type: "DB_ERROR", message: "Delete failed" };
-			mockApi.deleteBackup.mockReturnValue(() => Promise.resolve(E.left(error)));
+			mockApi.deleteBackup.mockReturnValue(() =>
+				Promise.resolve(E.left(error)),
+			);
 
 			const result = await runTE(deleteBackup("/path/to/backup.db"));
 
@@ -238,7 +254,9 @@ describe("backup.repo.fn", () => {
 		});
 
 		it("should pass correct backup path to API", async () => {
-			mockApi.deleteBackup.mockReturnValue(() => Promise.resolve(E.right(undefined)));
+			mockApi.deleteBackup.mockReturnValue(() =>
+				Promise.resolve(E.right(undefined)),
+			);
 
 			const backupPath = "/custom/path/old-backup.db";
 			await runTE(deleteBackup(backupPath));
@@ -253,7 +271,9 @@ describe("backup.repo.fn", () => {
 
 	describe("cleanupOldBackups", () => {
 		it("should return Right with deleted count on success", async () => {
-			mockApi.cleanupOldBackups.mockReturnValue(() => Promise.resolve(E.right(5)));
+			mockApi.cleanupOldBackups.mockReturnValue(() =>
+				Promise.resolve(E.right(5)),
+			);
 
 			const result = await runTE(cleanupOldBackups(3));
 
@@ -265,7 +285,9 @@ describe("backup.repo.fn", () => {
 		});
 
 		it("should return Right with 0 when no backups to delete", async () => {
-			mockApi.cleanupOldBackups.mockReturnValue(() => Promise.resolve(E.right(0)));
+			mockApi.cleanupOldBackups.mockReturnValue(() =>
+				Promise.resolve(E.right(0)),
+			);
 
 			const result = await runTE(cleanupOldBackups(10));
 
@@ -277,7 +299,9 @@ describe("backup.repo.fn", () => {
 
 		it("should return Left with error on cleanup failure", async () => {
 			const error = { type: "DB_ERROR", message: "Cleanup failed" };
-			mockApi.cleanupOldBackups.mockReturnValue(() => Promise.resolve(E.left(error)));
+			mockApi.cleanupOldBackups.mockReturnValue(() =>
+				Promise.resolve(E.left(error)),
+			);
 
 			const result = await runTE(cleanupOldBackups(3));
 
@@ -288,7 +312,9 @@ describe("backup.repo.fn", () => {
 		});
 
 		it("should pass correct keepCount to API", async () => {
-			mockApi.cleanupOldBackups.mockReturnValue(() => Promise.resolve(E.right(2)));
+			mockApi.cleanupOldBackups.mockReturnValue(() =>
+				Promise.resolve(E.right(2)),
+			);
 
 			await runTE(cleanupOldBackups(5));
 

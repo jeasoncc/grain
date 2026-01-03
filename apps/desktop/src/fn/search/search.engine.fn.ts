@@ -10,13 +10,13 @@
 
 import * as E from "fp-ts/Either";
 import lunr from "lunr";
+import logger from "@/log/index";
 import {
 	getAllNodes,
 	getContentsByNodeIds,
 	getNodesByWorkspace,
 	getWorkspaceById,
 } from "@/repo";
-import logger from "@/log/index";
 import type { NodeInterface } from "@/types/node";
 import type { WorkspaceInterface } from "@/types/workspace";
 import {

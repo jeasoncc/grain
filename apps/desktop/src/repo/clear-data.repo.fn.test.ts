@@ -166,7 +166,10 @@ describe("clear-data.repo.fn", () => {
 		});
 
 		it("should return Left with error on API failure", async () => {
-			const error = { type: "DB_ERROR", message: "Clear data keep users failed" };
+			const error = {
+				type: "DB_ERROR",
+				message: "Clear data keep users failed",
+			};
 			mockApi.clearSqliteDataKeepUsers.mockReturnValue(() =>
 				Promise.resolve(E.left(error)),
 			);
@@ -312,7 +315,10 @@ describe("clear-data.repo.fn", () => {
 		});
 
 		it("should return Left if SQLite clear fails", async () => {
-			const error = { type: "DB_ERROR", message: "SQLite clear keep users failed" };
+			const error = {
+				type: "DB_ERROR",
+				message: "SQLite clear keep users failed",
+			};
 			mockApi.clearSqliteDataKeepUsers.mockReturnValue(() =>
 				Promise.resolve(E.left(error)),
 			);

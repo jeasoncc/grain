@@ -80,7 +80,6 @@ export const deleteWorkspace = (
 	workspaceId: string,
 ): TE.TaskEither<AppError, void> => rustApi.deleteWorkspace(workspaceId);
 
-
 /**
  * 获取所有工作区（别名，与 getWorkspaces 相同）
  */

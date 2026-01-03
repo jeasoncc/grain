@@ -15,9 +15,8 @@
 
 import { debounce } from "es-toolkit";
 import * as E from "fp-ts/Either";
-
-import { updateContentByNodeId } from "@/repo/content.repo.fn";
 import logger from "@/log";
+import { updateContentByNodeId } from "@/repo/content.repo.fn";
 import type { ContentType } from "@/types/content/content.interface";
 
 // ============================================================================

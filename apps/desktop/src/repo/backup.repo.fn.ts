@@ -10,9 +10,9 @@
  * @requirements 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
  */
 
-import * as TE from "fp-ts/TaskEither";
-import type { AppError } from "@/lib/error.types";
+import type * as TE from "fp-ts/TaskEither";
 import { api } from "@/db/api-client.fn";
+import type { AppError } from "@/lib/error.types";
 import type { BackupInfo } from "@/types/rust-api";
 
 // ============================================================================
