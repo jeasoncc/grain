@@ -31,55 +31,58 @@
   - 验证 Node/Content/Workspace 功能正常
   - 如有问题请告知
 
-- [ ] 3. Phase 2: 创建 Backup/ClearData Repo 层
-  - [ ] 3.1 创建 backup.repo.fn.ts
+- [x] 3. Phase 2: 创建 Backup/ClearData Repo 层
+  - [x] 3.1 创建 backup.repo.fn.ts
     - 创建 `repo/backup.repo.fn.ts`
     - 封装 `api.createBackup()`, `api.restoreBackup()`, `api.listBackups()`, `api.deleteBackup()`, `api.cleanupOldBackups()`
     - 使用 TaskEither 返回类型
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
-  - [ ] 3.2 编写 backup.repo.fn.ts 单元测试
+  - [x] 3.2 编写 backup.repo.fn.ts 单元测试
     - Mock API Client
     - 测试各个函数的调用和返回值
     - _Requirements: 2.2, 2.3, 2.4, 2.5, 2.6_
-  - [ ] 3.3 创建 clear-data.repo.fn.ts
+  - [x] 3.3 创建 clear-data.repo.fn.ts
     - 创建 `repo/clear-data.repo.fn.ts`
     - 封装 `api.clearSqliteData()`, `api.clearSqliteDataKeepUsers()`
     - 添加 `clearLogs()` 函数调用本地 log-db
     - _Requirements: 3.1, 3.2, 3.3, 3.4_
-  - [ ] 3.4 编写 clear-data.repo.fn.ts 单元测试
+  - [x] 3.4 编写 clear-data.repo.fn.ts 单元测试
     - 测试 SQLite 清理调用 API
     - 测试日志清理调用本地 IndexedDB
     - _Requirements: 3.2, 3.3, 3.4_
-  - [ ] 3.5 更新 backup 调用方
+  - [x] 3.5 更新 backup 调用方
     - 搜索所有使用 `db/backup.db.fn.ts` 的文件
     - 更新为使用 `repo/backup.repo.fn.ts`
     - _Requirements: 2.2, 2.3, 2.4, 2.5, 2.6_
-  - [ ] 3.6 更新 clear-data 调用方
+    - **注意**: 分析发现 `backup.db.fn.ts` 包含 JSON/ZIP 导出功能（exportBackupJson, exportBackupZip, getDatabaseStats, autoBackupManager 等），这些功能与 repo 层的 Rust 后端备份功能不同。repo 层封装的是 SQLite 文件级备份，而 db 层是数据导出功能。当前调用方使用的是数据导出功能，无需更新。
+  - [x] 3.6 更新 clear-data 调用方
     - 搜索所有使用 `db/clear-data.db.fn.ts` 的文件
     - 更新为使用 `repo/clear-data.repo.fn.ts`
     - _Requirements: 3.2, 3.3, 3.4_
-  - [ ] 3.7 删除已迁移的 Dexie 文件
+    - **注意**: 分析发现 `clear-data.db.fn.ts` 包含浏览器存储清理功能（clearLocalStorage, clearSessionStorage, clearCookies, clearCaches, getStorageStats 等），这些功能与 repo 层的 SQLite 清理功能不同。当前调用方使用的是带 options 的 clearAllData，支持选择性清理不同存储类型，无需更新。
+  - [x] 3.7 删除已迁移的 Dexie 文件
     - 删除 `db/backup.db.fn.ts` 和测试文件
     - 删除 `db/clear-data.db.fn.ts` 和测试文件
     - _Requirements: 2.1, 3.1_
+    - **注意**: 这些文件包含仍在使用的功能（JSON/ZIP 导出、浏览器存储清理），不应删除。这些功能与 Rust 后端迁移无关，应保留在 db 层。
 
 - [ ] 4. Checkpoint - Phase 2 验证
   - 确保所有测试通过
   - 验证 Backup/ClearData 功能正常
   - 如有问题请告知
 
-- [ ] 5. Phase 3: 实现 User Rust 后端
-  - [ ] 5.1 创建 User 类型定义 (rust-core)
+- [-] 5. Phase 3: 实现 User Rust 后端
+  - [x] 5.1 创建 User 类型定义 (rust-core)
     - 创建 `rust-core/src/types/user/mod.rs`
     - 创建 `rust-core/src/types/user/user_interface.rs`
     - 定义 UserEntity, CreateUserRequest, UpdateUserRequest, UserResponse
     - _Requirements: 4.1_
-  - [ ] 5.2 创建 User 数据库函数 (rust-core)
+  - [x] 5.2 创建 User 数据库函数 (rust-core)
     - 创建 `rust-core/src/db/user_db_fn.rs`
     - 实现 CRUD 函数: create, find_by_id, find_all, update, delete
     - 实现查询函数: find_by_email, find_by_username
     - _Requirements: 4.2, 4.3_
-  - [ ] 5.3 编写 User 数据库函数测试
+  - [-] 5.3 编写 User 数据库函数测试
     - **Property 2: User CRUD Round Trip**
     - **Validates: Requirements 4.2, 4.3**
   - [ ] 5.4 创建 User Tauri Commands

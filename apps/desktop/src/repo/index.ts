@@ -30,6 +30,26 @@
  * ```
  */
 
+// Backup Repository (Rust 后端 SQLite 文件级备份)
+export * as backupRepo from "./backup.repo.fn";
+export {
+	cleanupOldBackups,
+	createBackup,
+	deleteBackup,
+	listBackups,
+	restoreBackup,
+} from "./backup.repo.fn";
+
+// Clear Data Repository (Rust 后端 SQLite 清理 + 日志清理)
+export * as clearDataRepo from "./clear-data.repo.fn";
+export {
+	clearAllData,
+	clearAllDataKeepUsers,
+	clearLogs,
+	clearSqliteData,
+	clearSqliteDataKeepUsers,
+} from "./clear-data.repo.fn";
+
 // Content Repository
 export * as contentRepo from "./content.repo.fn";
 export {
