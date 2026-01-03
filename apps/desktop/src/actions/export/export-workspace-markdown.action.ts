@@ -15,7 +15,7 @@ import {
 	getContentsByNodeIds,
 	getNodesByWorkspace,
 	getWorkspaceById,
-} from "@/db";
+} from "@/repo";
 import { exportWorkspaceToMarkdown } from "@/fn/export/export.bundle.fn";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";

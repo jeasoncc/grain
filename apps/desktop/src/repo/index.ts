@@ -33,8 +33,11 @@
 // Content Repository
 export * as contentRepo from "./content.repo.fn";
 export {
+	addContent,
 	createContent,
 	getContentByNodeId,
+	getContentByNodeIdOrFail,
+	getContentsByNodeIds,
 	getContentVersion,
 	saveContent,
 	updateContentByNodeId,
@@ -44,14 +47,20 @@ export * as nodeRepo from "./node.repo.fn";
 
 // 也导出单独的函数，方便直接使用
 export {
+	addNode,
 	createNode,
 	deleteNode,
 	deleteNodesBatch,
 	duplicateNode,
+	getAllNodes,
 	getChildNodes,
 	getDescendants,
+	getNextOrder,
 	getNextSortOrder,
 	getNode,
+	getNodeById,
+	getNodeByIdOrFail,
+	getNodeByIdOrNull,
 	getNodesByParent,
 	getNodesByType,
 	getNodesByWorkspace,
@@ -65,7 +74,9 @@ export * as workspaceRepo from "./workspace.repo.fn";
 export {
 	createWorkspace,
 	deleteWorkspace,
+	getAllWorkspaces,
 	getWorkspace,
+	getWorkspaceById,
 	getWorkspaces,
 	updateWorkspace,
 } from "./workspace.repo.fn";

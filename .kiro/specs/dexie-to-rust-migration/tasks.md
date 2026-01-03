@@ -6,21 +6,21 @@
 
 ## Tasks
 
-- [ ] 1. Phase 1: 统一已迁移模块的调用路径
-  - [ ] 1.1 更新 Node 相关调用
+- [x] 1. Phase 1: 统一已迁移模块的调用路径
+  - [x] 1.1 更新 Node 相关调用
     - 搜索所有从 `@/db` 导入 Node 函数的文件
     - 将导入改为从 `@/repo` 导入
     - 更新函数调用签名（TaskEither vs Promise）
     - _Requirements: 1.1_
-  - [ ] 1.2 更新 Content 相关调用
+  - [x] 1.2 更新 Content 相关调用
     - 搜索所有从 `@/db` 导入 Content 函数的文件
     - 将导入改为从 `@/repo` 导入
     - _Requirements: 1.2_
-  - [ ] 1.3 更新 Workspace 相关调用
+  - [x] 1.3 更新 Workspace 相关调用
     - 搜索所有从 `@/db` 导入 Workspace 函数的文件
     - 将导入改为从 `@/repo` 导入
     - _Requirements: 1.3_
-  - [ ] 1.4 删除已迁移的 Dexie 文件
+  - [x] 1.4 删除已迁移的 Dexie 文件
     - 删除 `db/node.db.fn.ts` 和测试文件
     - 删除 `db/content.db.fn.ts` 和测试文件
     - 删除 `db/workspace.db.fn.ts` 和测试文件
@@ -255,4 +255,3 @@
 - Checkpoints ensure incremental validation
 - Property tests validate universal correctness properties
 - Unit tests validate specific examples and edge cases
-- 迁移过程中保持向后兼容，确保用户数据不丢失

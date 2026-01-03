@@ -13,8 +13,7 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { addContent } from "@/db/content.db.fn";
-import { addNode, getNextOrder } from "@/db/node.db.fn";
+import { addContent, addNode, getNextOrder } from "@/repo";
 import {
 	importFromMarkdown,
 	type MarkdownImportOptions,

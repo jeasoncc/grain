@@ -13,8 +13,8 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { getContentByNodeIdOrFail } from "@/db/content.db.fn";
-import { getNodeByIdOrFail } from "@/db/node.db.fn";
+import { getContentByNodeIdOrFail } from "@/repo";
+import { getNodeByIdOrFail } from "@/repo";
 import { exportToMarkdown, type MarkdownExportOptions } from "@/fn/export";
 import { type AppError, exportError } from "@/lib/error.types";
 import logger from "@/log";

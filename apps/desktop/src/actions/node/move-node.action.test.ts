@@ -11,9 +11,9 @@ import { moveNode } from "./move-node.action";
 // Mocks
 // ============================================================================
 
-vi.mock("@/db/node.db.fn", () => ({
-	getNextOrder: vi.fn(),
-	getNodeByIdOrFail: vi.fn(),
+vi.mock("@/repo/node.repo.fn", () => ({
+	getNextSortOrder: vi.fn(),
+	getNode: vi.fn(),
 	getNodesByWorkspace: vi.fn(),
 	moveNode: vi.fn(),
 }));
@@ -31,11 +31,11 @@ vi.mock("@/log/index", () => ({
 }));
 
 import {
-	getNextOrder,
-	getNodeByIdOrFail,
+	getNextSortOrder,
+	getNode,
 	getNodesByWorkspace,
-	moveNode as moveNodeDb,
-} from "@/db/node.db.fn";
+	moveNode as moveNodeRepo,
+} from "@/repo/node.repo.fn";
 import { wouldCreateCycle } from "@/fn/node/node.tree.fn";
 
 // ============================================================================
@@ -74,16 +74,16 @@ describe("moveNode", () => {
 		vi.clearAllMocks();
 
 		// 设置默认 mock 返回值
-		vi.mocked(getNodeByIdOrFail).mockReturnValue(() =>
+		vi.mocked(getNode).mockReturnValue(() =>
 			Promise.resolve(E.right(mockNode)),
 		);
 		vi.mocked(getNodesByWorkspace).mockReturnValue(() =>
 			Promise.resolve(E.right(mockNodes)),
 		);
 		vi.mocked(wouldCreateCycle).mockReturnValue(false);
-		vi.mocked(getNextOrder).mockReturnValue(() => Promise.resolve(E.right(1)));
-		vi.mocked(moveNodeDb).mockReturnValue(() =>
-			Promise.resolve(E.right(undefined)),
+		vi.mocked(getNextSortOrder).mockReturnValue(() => Promise.resolve(E.right(1)));
+		vi.mocked(moveNodeRepo).mockReturnValue(() =>
+			Promise.resolve(E.right(mockNode)),
 		);
 	});
 
@@ -101,14 +101,14 @@ describe("moveNode", () => {
 		const result = await moveNode(params)();
 
 		expect(E.isRight(result)).toBe(true);
-		expect(getNodeByIdOrFail).toHaveBeenCalledWith("node-1");
+		expect(getNode).toHaveBeenCalledWith("node-1");
 		expect(getNodesByWorkspace).toHaveBeenCalledWith("ws-1");
 		expect(wouldCreateCycle).toHaveBeenCalledWith(
 			mockNodes,
 			"node-1",
 			"node-2",
 		);
-		expect(moveNodeDb).toHaveBeenCalledWith("node-1", "node-2", 0);
+		expect(moveNodeRepo).toHaveBeenCalledWith("node-1", "node-2", 0);
 	});
 
 	it("应该在未指定排序时自动计算", async () => {
@@ -120,8 +120,8 @@ describe("moveNode", () => {
 		const result = await moveNode(params)();
 
 		expect(E.isRight(result)).toBe(true);
-		expect(getNextOrder).toHaveBeenCalledWith("node-2", "ws-1");
-		expect(moveNodeDb).toHaveBeenCalledWith("node-1", "node-2", 1);
+		expect(getNextSortOrder).toHaveBeenCalledWith("ws-1", "node-2");
+		expect(moveNodeRepo).toHaveBeenCalledWith("node-1", "node-2", 1);
 	});
 
 	it("应该检测循环引用", async () => {
@@ -141,12 +141,12 @@ describe("moveNode", () => {
 		}
 
 		// 不应该执行移动
-		expect(moveNodeDb).not.toHaveBeenCalled();
+		expect(moveNodeRepo).not.toHaveBeenCalled();
 	});
 
 	it("应该处理节点不存在", async () => {
-		vi.mocked(getNodeByIdOrFail).mockReturnValue(() =>
-			Promise.resolve(E.left({ type: "NOT_FOUND", message: "节点不存在" })),
+		vi.mocked(getNode).mockReturnValue(() =>
+			Promise.resolve(E.right(null)),
 		);
 
 		const params = {
@@ -191,6 +191,6 @@ describe("moveNode", () => {
 
 		expect(E.isRight(result)).toBe(true);
 		expect(wouldCreateCycle).toHaveBeenCalledWith(mockNodes, "node-1", null);
-		expect(moveNodeDb).toHaveBeenCalledWith("node-1", null, 0);
+		expect(moveNodeRepo).toHaveBeenCalledWith("node-1", null, 0);
 	});
 });

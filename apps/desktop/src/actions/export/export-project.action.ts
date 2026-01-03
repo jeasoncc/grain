@@ -21,7 +21,7 @@ import {
 import { saveAs } from "file-saver";
 import * as E from "fp-ts/Either";
 import JSZip from "jszip";
-import { getContentsByNodeIds } from "@/db";
+import { getContentsByNodeIds } from "@/repo";
 import { database } from "@/db/database";
 import type { NodeInterface, WorkspaceInterface } from "@/types";
 import type { ContentInterface } from "@/types/content";

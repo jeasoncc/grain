@@ -1,3 +1,6 @@
+---
+inclusion: manual
+---
 
 # 函数式编程模式指南
 

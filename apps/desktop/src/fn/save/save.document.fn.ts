@@ -15,12 +15,13 @@ import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import type { SerializedEditorState } from "lexical";
+// TODO: Phase 4 - 迁移到 repo/tag.repo.fn.ts
+import { syncTagCache } from "@/db";
 import {
-	getNodeById,
-	syncTagCache,
+	getNode,
 	updateNode,
-} from "@/db";
-import { updateContentByNodeId } from "@/repo/content.repo.fn";
+	updateContentByNodeId,
+} from "@/repo";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
 import { extractTagsFromContent } from "./save.debounce.fn";
@@ -170,17 +171,8 @@ const getWorkspaceId = (
 	documentId: string,
 ): TE.TaskEither<AppError, string | null> =>
 	pipe(
-		TE.tryCatch(
-			async () => {
-				const nodeResult = await getNodeById(documentId)();
-				const node = E.isRight(nodeResult) ? nodeResult.right : null;
-				return node?.workspace ?? null;
-			},
-			(error): AppError => ({
-				type: "DB_ERROR",
-				message: `获取节点失败: ${error}`,
-			}),
-		),
+		getNode(documentId),
+		TE.map((node) => node?.workspace ?? null),
 	);
 
 // ============================================================================

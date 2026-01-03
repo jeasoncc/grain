@@ -10,7 +10,7 @@
 
 import * as E from "fp-ts/Either";
 import * as TE from "fp-ts/TaskEither";
-import { getContentsByNodeIds, getNodesByWorkspace } from "@/db";
+import { getContentsByNodeIds, getNodesByWorkspace } from "@/repo";
 import { database } from "@/db/database";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";

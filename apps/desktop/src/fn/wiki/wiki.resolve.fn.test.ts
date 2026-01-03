@@ -11,7 +11,7 @@ import { generateWikiTemplate, getWikiFilesAsync } from "./wiki.resolve.fn";
 // Mocks
 // ============================================================================
 
-vi.mock("@/db", () => ({
+vi.mock("@/repo", () => ({
 	getContentsByNodeIds: vi.fn(),
 	getNodesByWorkspace: vi.fn(),
 }));
@@ -47,7 +47,7 @@ vi.mock("@/log/index", () => ({
 	},
 }));
 
-import { getContentsByNodeIds, getNodesByWorkspace } from "@/db";
+import { getContentsByNodeIds, getNodesByWorkspace } from "@/repo";
 
 // ============================================================================
 // Test Data

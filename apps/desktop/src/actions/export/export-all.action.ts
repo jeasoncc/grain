@@ -11,15 +11,18 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
+// TODO: Phase 5 - 迁移到 repo/attachment.repo.fn.ts
 import {
 	getAllAttachments,
+	getAttachmentsByProject,
+} from "@/db";
+import {
 	getAllNodes,
 	getAllWorkspaces,
-	getAttachmentsByProject,
 	getContentsByNodeIds,
 	getNodesByWorkspace,
 	getWorkspaceById,
-} from "@/db";
+} from "@/repo";
 import {
 	createExportBundle,
 	serializeBundle,

@@ -11,8 +11,8 @@ import { deleteNode } from "./delete-node.action";
 // Mocks
 // ============================================================================
 
-vi.mock("@/db/node.db.fn", () => ({
-	deleteNodeWithChildren: vi.fn(),
+vi.mock("@/repo/node.repo.fn", () => ({
+	deleteNode: vi.fn(),
 }));
 
 vi.mock("@/log/index", () => ({
@@ -23,7 +23,7 @@ vi.mock("@/log/index", () => ({
 	},
 }));
 
-import { deleteNodeWithChildren } from "@/db/node.db.fn";
+import { deleteNode as deleteNodeRepo } from "@/repo/node.repo.fn";
 
 // ============================================================================
 // Tests
@@ -34,7 +34,7 @@ describe("deleteNode", () => {
 		vi.clearAllMocks();
 
 		// 设置默认 mock 返回值
-		vi.mocked(deleteNodeWithChildren).mockReturnValue(() =>
+		vi.mocked(deleteNodeRepo).mockReturnValue(() =>
 			Promise.resolve(E.right(undefined)),
 		);
 	});
@@ -49,11 +49,11 @@ describe("deleteNode", () => {
 		const result = await deleteNode(nodeId)();
 
 		expect(E.isRight(result)).toBe(true);
-		expect(deleteNodeWithChildren).toHaveBeenCalledWith(nodeId);
+		expect(deleteNodeRepo).toHaveBeenCalledWith(nodeId);
 	});
 
 	it("应该处理删除失败", async () => {
-		vi.mocked(deleteNodeWithChildren).mockReturnValue(() =>
+		vi.mocked(deleteNodeRepo).mockReturnValue(() =>
 			Promise.resolve(E.left({ type: "DB_ERROR", message: "删除失败" })),
 		);
 
@@ -72,6 +72,6 @@ describe("deleteNode", () => {
 
 		const _result = await deleteNode(nodeId)();
 
-		expect(deleteNodeWithChildren).toHaveBeenCalledWith("");
+		expect(deleteNodeRepo).toHaveBeenCalledWith("");
 	});
 });

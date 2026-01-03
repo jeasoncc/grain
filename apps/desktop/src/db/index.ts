@@ -85,26 +85,8 @@ export {
 	clearSessionStorage,
 	getStorageStats,
 } from "./clear-data.db.fn";
-// Content 数据库函数
-export {
-	addContent,
-	contentExistsForNode,
-	countContents,
-	deleteContent,
-	deleteContentByNodeId,
-	deleteContents,
-	deleteContentsByNodeIds,
-	getAllContents,
-	getContentById,
-	getContentByIdOrFail,
-	getContentByNodeId,
-	getContentByNodeIdOrFail,
-	getContentsByNodeIds,
-	saveContent,
-	saveContents,
-	updateContent,
-	updateContentByNodeId,
-} from "./content.db.fn";
+// Content 数据库函数 - 已迁移到 @/repo/content.repo.fn.ts
+// 请使用 import { ... } from "@/repo" 代替
 // Init 数据库函数
 export {
 	createDefaultUser,
@@ -118,29 +100,8 @@ export {
 	resetDatabase,
 	setDBVersion,
 } from "./init.db.fn";
-// Node 数据库函数
-export {
-	addNode,
-	countNodesByWorkspace,
-	deleteNode,
-	deleteNodeWithChildren,
-	getAllNodes,
-	getDescendants,
-	getNextOrder,
-	getNodeById,
-	getNodeByIdOrFail,
-	getNodesByParent,
-	getNodesByType,
-	getNodesByWorkspace,
-	getRootNodes,
-	moveNode,
-	nodeExists,
-	reorderNodes,
-	saveNode,
-	setNodeCollapsed,
-	updateNode,
-	updateNodeTitle,
-} from "./node.db.fn";
+// Node 数据库函数 - 已迁移到 @/repo/node.repo.fn.ts
+// 请使用 import { ... } from "@/repo" 代替
 // Tag 数据库函数
 export {
 	countTagsByWorkspace,
@@ -187,24 +148,5 @@ export {
 	userExists,
 	usernameExists,
 } from "./user.db.fn";
-// Workspace 数据库函数
-export {
-	addWorkspace,
-	addWorkspaceMember,
-	countWorkspaces,
-	deleteWorkspace,
-	deleteWorkspaceWithContents,
-	getAllWorkspaces,
-	getRecentWorkspaces,
-	getWorkspaceById,
-	getWorkspaceByIdOrFail,
-	getWorkspacesByOwner,
-	removeWorkspaceMember,
-	saveWorkspace,
-	searchWorkspacesByTitle,
-	touchWorkspace,
-	updateWorkspace,
-	updateWorkspaceDescription,
-	updateWorkspaceTitle,
-	workspaceExists,
-} from "./workspace.db.fn";
+// Workspace 数据库函数 - 已迁移到 @/repo/workspace.repo.fn.ts
+// 请使用 import { ... } from "@/repo" 代替

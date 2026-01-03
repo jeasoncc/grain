@@ -11,8 +11,8 @@ import { renameNode } from "./rename-node.action";
 // Mocks
 // ============================================================================
 
-vi.mock("@/db/node.db.fn", () => ({
-	updateNodeTitle: vi.fn(),
+vi.mock("@/repo/node.repo.fn", () => ({
+	updateNode: vi.fn(),
 }));
 
 vi.mock("@/log/index", () => ({
@@ -23,7 +23,24 @@ vi.mock("@/log/index", () => ({
 	},
 }));
 
-import { updateNodeTitle } from "@/db/node.db.fn";
+import { updateNode } from "@/repo/node.repo.fn";
+
+// ============================================================================
+// Mock Data
+// ============================================================================
+
+const mockNode = {
+	id: "node-1",
+	title: "新标题",
+	type: "file" as const,
+	workspace: "ws-1",
+	parent: null,
+	order: 0,
+	collapsed: false,
+	tags: [],
+	createDate: "2024-01-01T00:00:00.000Z",
+	lastEdit: "2024-01-01T00:00:00.000Z",
+};
 
 // ============================================================================
 // Tests
@@ -34,8 +51,8 @@ describe("renameNode", () => {
 		vi.clearAllMocks();
 
 		// 设置默认 mock 返回值
-		vi.mocked(updateNodeTitle).mockReturnValue(() =>
-			Promise.resolve(E.right(undefined)),
+		vi.mocked(updateNode).mockReturnValue(() =>
+			Promise.resolve(E.right(mockNode)),
 		);
 	});
 
@@ -52,7 +69,7 @@ describe("renameNode", () => {
 		const result = await renameNode(params)();
 
 		expect(E.isRight(result)).toBe(true);
-		expect(updateNodeTitle).toHaveBeenCalledWith("node-1", "新标题");
+		expect(updateNode).toHaveBeenCalledWith("node-1", { title: "新标题" });
 	});
 
 	it("应该处理空标题", async () => {
@@ -70,7 +87,7 @@ describe("renameNode", () => {
 		}
 
 		// 不应该调用数据库函数
-		expect(updateNodeTitle).not.toHaveBeenCalled();
+		expect(updateNode).not.toHaveBeenCalled();
 	});
 
 	it("应该处理只有空格的标题", async () => {
@@ -96,11 +113,11 @@ describe("renameNode", () => {
 		const result = await renameNode(params)();
 
 		expect(E.isRight(result)).toBe(true);
-		expect(updateNodeTitle).toHaveBeenCalledWith("node-1", "新标题");
+		expect(updateNode).toHaveBeenCalledWith("node-1", { title: "新标题" });
 	});
 
 	it("应该处理数据库更新失败", async () => {
-		vi.mocked(updateNodeTitle).mockReturnValue(() =>
+		vi.mocked(updateNode).mockReturnValue(() =>
 			Promise.resolve(E.left({ type: "DB_ERROR", message: "更新失败" })),
 		);
 
