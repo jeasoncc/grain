@@ -9,7 +9,7 @@
  */
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { database } from "@/db/database";
+import { legacyDatabase } from "@/db/legacy-database";
 import type { TagInterface } from "@/types/tag";
 
 /**
@@ -25,7 +25,7 @@ export function useTagsByWorkspace(
 		useLiveQuery(
 			async () => {
 				if (!workspaceId) return [];
-				return database.tags.where("workspace").equals(workspaceId).toArray();
+				return legacyDatabase.tags.where("workspace").equals(workspaceId).toArray();
 			},
 			[workspaceId],
 			[],
@@ -47,7 +47,7 @@ export function useNodesByTag(
 	return useLiveQuery(
 		async () => {
 			if (!workspaceId || !tagName) return [];
-			return database.nodes
+			return legacyDatabase.nodes
 				.where("tags")
 				.equals(tagName)
 				.and((node) => node.workspace === workspaceId)
@@ -69,11 +69,11 @@ export function useTagGraph(workspaceId: string | undefined) {
 		async () => {
 			if (!workspaceId) return { nodes: [], edges: [] };
 
-			const tags = await database.tags
+			const tags = await legacyDatabase.tags
 				.where("workspace")
 				.equals(workspaceId)
 				.toArray();
-			const nodes = await database.nodes
+			const nodes = await legacyDatabase.nodes
 				.where("workspace")
 				.equals(workspaceId)
 				.toArray();
@@ -155,7 +155,7 @@ export function useTagSearch(
 			async () => {
 				if (!workspaceId || !query) return [];
 				const lowerQuery = query.toLowerCase();
-				return database.tags
+				return legacyDatabase.tags
 					.where("workspace")
 					.equals(workspaceId)
 					.filter((tag) => tag.name.toLowerCase().includes(lowerQuery))
@@ -177,7 +177,7 @@ export function useTag(tagId: string | undefined): TagInterface | undefined {
 	return useLiveQuery(
 		async () => {
 			if (!tagId) return undefined;
-			return database.tags.get(tagId);
+			return legacyDatabase.tags.get(tagId);
 		},
 		[tagId],
 		undefined,

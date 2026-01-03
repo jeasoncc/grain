@@ -322,12 +322,12 @@ export const getStorageStats = (): TE.TaskEither<AppError, StorageStats> =>
 			// 获取各表数据以计算大小
 			const [users, workspaces, nodes, contents, attachments, tags] =
 				await Promise.all([
-					database.users.toArray(),
-					database.workspaces.toArray(),
-					database.nodes.toArray(),
-					database.contents.toArray(),
-					database.attachments.toArray(),
-					database.tags.toArray(),
+					legacyDatabase.users.toArray(),
+					legacyDatabase.workspaces.toArray(),
+					legacyDatabase.nodes.toArray(),
+					legacyDatabase.contents.toArray(),
+					legacyDatabase.attachments.toArray(),
+					legacyDatabase.tags.toArray(),
 				]);
 
 			// 计算 drawing 类型节点（绘图现在存储在 nodes 表中）

@@ -195,7 +195,7 @@
     - Mock API Client
     - 测试类型转换正确性
     - _Requirements: 6.4_
-  - [ ] 9.8 更新 use-attachment.ts Hook
+  - [x] 9.8 更新 use-attachment.ts Hook
     - 移除 `useLiveQuery` 和 Dexie 依赖
     - 改为使用 `repo/attachment.repo.fn.ts`
     - _Requirements: 8.3_
