@@ -195,3 +195,23 @@ export interface BackupInfo {
 	/** 文件大小 (字节) */
 	size: number;
 }
+
+// ============================================
+// Clear Data 类型
+// ============================================
+
+/** 清除数据结果 - 对应 Rust ClearDataResult */
+export interface ClearDataResult {
+	/** 删除的用户数 */
+	usersDeleted: number;
+	/** 删除的工作区数 */
+	workspacesDeleted: number;
+	/** 删除的节点数 */
+	nodesDeleted: number;
+	/** 删除的内容数 */
+	contentsDeleted: number;
+	/** 删除的标签数 */
+	tagsDeleted: number;
+	/** 删除的附件数 */
+	attachmentsDeleted: number;
+}

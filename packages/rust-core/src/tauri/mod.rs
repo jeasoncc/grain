@@ -128,6 +128,9 @@ pub fn create_builder() -> tauri::Builder<tauri::Wry> {
             list_backups,
             delete_backup,
             cleanup_old_backups,
+            // 清除数据命令
+            clear_sqlite_data,
+            clear_sqlite_data_keep_users,
             // 标签命令
             get_tags_by_workspace,
             get_tag,

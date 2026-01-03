@@ -3,6 +3,7 @@
  * @description 数据清理函数
  *
  * 功能说明：
+ * - 清理 SQLite 数据（通过 Rust 后端）
  * - 清理 IndexedDB 数据
  * - 清理 localStorage
  * - 清理 sessionStorage
@@ -14,6 +15,7 @@
  */
 
 import * as TE from "fp-ts/TaskEither";
+import { pipe } from "fp-ts/function";
 import { type AppError, dbError } from "@/lib/error.types";
 import logger from "@/log";
 import type {
@@ -22,7 +24,28 @@ import type {
 	StorageStats,
 	TableSizes,
 } from "@/types/storage";
+import type { ClearDataResult } from "@/types/rust-api";
 import { database } from "./database";
+import { clearSqliteData as clearSqliteDataApi } from "./api-client.fn";
+
+// ============================================================================
+// SQLite 清理（通过 Rust 后端）
+// ============================================================================
+
+/**
+ * 清理 SQLite 数据（通过 Rust 后端）
+ *
+ * @returns TaskEither<AppError, ClearDataResult>
+ */
+export const clearSqliteData = (): TE.TaskEither<AppError, ClearDataResult> =>
+	pipe(
+		clearSqliteDataApi(),
+		TE.tap(() => TE.fromIO(() => logger.success("[DB] SQLite 数据清理成功"))),
+		TE.mapLeft((error) => {
+			logger.error("[DB] 清理 SQLite 数据失败:", error);
+			return error;
+		}),
+	);
 
 // ============================================================================
 // IndexedDB 清理
@@ -194,6 +217,7 @@ export const clearAllData = (
 	TE.tryCatch(
 		async () => {
 			const {
+				clearSqlite: shouldClearSqlite = true,
 				clearIndexedDB: shouldClearIndexedDB = true,
 				clearLocalStorage: shouldClearLocalStorage = true,
 				clearSessionStorage: shouldClearSessionStorage = true,
@@ -203,6 +227,14 @@ export const clearAllData = (
 
 			logger.info("[DB] 清理所有数据...", options);
 			const errors: string[] = [];
+
+			// 清理 SQLite（通过 Rust 后端）
+			if (shouldClearSqlite) {
+				const result = await clearSqliteData()();
+				if (result._tag === "Left") {
+					errors.push(result.left.message);
+				}
+			}
 
 			// 清理 IndexedDB
 			if (shouldClearIndexedDB) {

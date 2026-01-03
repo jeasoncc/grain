@@ -22,6 +22,7 @@ import { dbError } from "@/lib/error.types";
 import logger from "@/log";
 import type {
 	BackupInfo,
+	ClearDataResult,
 	ContentResponse,
 	CreateNodeRequest,
 	CreateWorkspaceRequest,
@@ -184,6 +185,10 @@ export interface ApiClient {
 	listBackups: () => TE.TaskEither<AppError, BackupInfo[]>;
 	deleteBackup: (backupPath: string) => TE.TaskEither<AppError, void>;
 	cleanupOldBackups: (keepCount: number) => TE.TaskEither<AppError, number>;
+
+	// Clear Data API
+	clearSqliteData: () => TE.TaskEither<AppError, ClearDataResult>;
+	clearSqliteDataKeepUsers: () => TE.TaskEither<AppError, ClearDataResult>;
 }
 
 
@@ -391,6 +396,19 @@ export const createApiClient = (): ApiClient => {
 						method: "POST",
 						body: JSON.stringify({ keepCount }),
 					}),
+
+		// ============================================
+		// Clear Data API
+		// ============================================
+		clearSqliteData: () =>
+			isTauri
+				? invokeTE("clear_sqlite_data")
+				: fetchTE("/api/data/clear", { method: "DELETE" }),
+
+		clearSqliteDataKeepUsers: () =>
+			isTauri
+				? invokeTE("clear_sqlite_data_keep_users")
+				: fetchTE("/api/data/clear?keepUsers=true", { method: "DELETE" }),
 	};
 };
 
@@ -440,6 +458,10 @@ export const restoreBackup = api.restoreBackup;
 export const listBackups = api.listBackups;
 export const deleteBackup = api.deleteBackup;
 export const cleanupOldBackups = api.cleanupOldBackups;
+
+// Clear Data API
+export const clearSqliteData = api.clearSqliteData;
+export const clearSqliteDataKeepUsers = api.clearSqliteDataKeepUsers;
 
 // ============================================
 // Promise 版本（兼容性）

@@ -6,6 +6,7 @@
 
 mod attachment_commands;
 mod backup_commands;
+mod clear_data_commands;
 mod content_commands;
 mod file_commands;
 mod node_commands;
@@ -15,6 +16,7 @@ mod workspace_commands;
 
 pub use attachment_commands::*;
 pub use backup_commands::*;
+pub use clear_data_commands::*;
 pub use content_commands::*;
 pub use file_commands::*;
 pub use node_commands::*;
