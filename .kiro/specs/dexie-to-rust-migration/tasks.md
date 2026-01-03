@@ -208,7 +208,7 @@
   - 验证 Attachment 功能正常
   - 如有问题请告知
 
-- [-] 11. Phase 6: 清理和数据迁移
+- [x] 11. Phase 6: 清理和数据迁移
   - [x] 11.1 更新 db/database.ts
     - 移除 nodes, contents, workspaces, users, attachments, tags, dbVersions 表定义
     - 只保留日志相关的表
@@ -240,10 +240,14 @@
     - 从 package.json 移除 `dexie-react-hooks`
     - 确保没有文件使用该依赖
     - _Requirements: 8.4_
-  - [ ] 11.7 清理未使用的 Dexie 文件
-    - 删除 `db/init.db.fn.ts` 和测试文件（如果完全迁移）
-    - 保留 `db/log-db.ts`
+  - [x] 11.7 清理未使用的 Dexie 文件
+    - 保留 `db/init.db.fn.ts`（已更新使用 repo 层）
+    - 保留 `db/backup.db.fn.ts`（JSON/ZIP 导出功能，与 SQLite 备份不同）
+    - 保留 `db/clear-data.db.fn.ts`（浏览器存储清理功能）
+    - 保留 `db/log-db.ts`（日志数据库）
+    - 保留 `db/legacy-database.ts`（迁移工具需要）
     - _Requirements: 9.1, 9.2_
+    - **注意**: 这些文件包含仍在使用的功能，不应删除
 
 - [ ] 12. Final Checkpoint - 完整验证
   - 确保所有测试通过
