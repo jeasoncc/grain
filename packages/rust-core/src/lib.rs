@@ -33,6 +33,8 @@ pub mod api;
 pub mod db;
 pub mod r#fn;
 pub mod macros;
+pub mod server;
+pub mod tauri;
 pub mod types;
 
 #[cfg(test)]

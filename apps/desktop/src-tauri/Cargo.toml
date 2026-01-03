@@ -1,6 +1,6 @@
 [package]
 name = "grain"
-version = "0.1.261"
+version = "0.1.262"
 description = "A minimalist writing sanctuary for long-form content. Pure, elegant, and distraction-free."
 authors = ["Jeason"]
 edition = "2021"
@@ -14,10 +14,6 @@ default-run = "grain"
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
 name = "grain_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
-
-[[bin]]
-name = "test_db"
-path = "src/bin/test_db.rs"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
