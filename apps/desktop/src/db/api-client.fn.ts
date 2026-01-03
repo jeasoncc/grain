@@ -21,16 +21,23 @@ import type { AppError } from "@/lib/error.types";
 import { dbError } from "@/lib/error.types";
 import logger from "@/log";
 import type {
+	AttachmentResponse,
+	AttachmentType,
 	BackupInfo,
 	ClearDataResult,
 	ContentResponse,
+	CreateAttachmentRequest,
 	CreateNodeRequest,
+	CreateUserRequest,
 	CreateWorkspaceRequest,
 	MoveNodeRequest,
 	NodeResponse,
 	SaveContentRequest,
+	UpdateAttachmentRequest,
 	UpdateNodeRequest,
+	UpdateUserRequest,
 	UpdateWorkspaceRequest,
+	UserResponse,
 	WorkspaceResponse,
 } from "@/types/rust-api";
 
@@ -189,6 +196,30 @@ export interface ApiClient {
 	// Clear Data API
 	clearSqliteData: () => TE.TaskEither<AppError, ClearDataResult>;
 	clearSqliteDataKeepUsers: () => TE.TaskEither<AppError, ClearDataResult>;
+
+	// User API
+	getUsers: () => TE.TaskEither<AppError, UserResponse[]>;
+	getUser: (id: string) => TE.TaskEither<AppError, UserResponse | null>;
+	getUserByUsername: (username: string) => TE.TaskEither<AppError, UserResponse | null>;
+	getUserByEmail: (email: string) => TE.TaskEither<AppError, UserResponse | null>;
+	getCurrentUser: () => TE.TaskEither<AppError, UserResponse | null>;
+	createUser: (request: CreateUserRequest) => TE.TaskEither<AppError, UserResponse>;
+	updateUser: (id: string, request: UpdateUserRequest) => TE.TaskEither<AppError, UserResponse>;
+	updateUserLastLogin: (id: string) => TE.TaskEither<AppError, UserResponse>;
+	deleteUser: (id: string) => TE.TaskEither<AppError, void>;
+
+	// Attachment API
+	getAttachments: () => TE.TaskEither<AppError, AttachmentResponse[]>;
+	getAttachmentsByProject: (projectId: string) => TE.TaskEither<AppError, AttachmentResponse[]>;
+	getAttachment: (id: string) => TE.TaskEither<AppError, AttachmentResponse | null>;
+	getAttachmentsByType: (projectId: string, attachmentType: AttachmentType) => TE.TaskEither<AppError, AttachmentResponse[]>;
+	getImagesByProject: (projectId: string) => TE.TaskEither<AppError, AttachmentResponse[]>;
+	getAudioFilesByProject: (projectId: string) => TE.TaskEither<AppError, AttachmentResponse[]>;
+	getAttachmentByPath: (filePath: string) => TE.TaskEither<AppError, AttachmentResponse | null>;
+	createAttachment: (request: CreateAttachmentRequest) => TE.TaskEither<AppError, AttachmentResponse>;
+	updateAttachment: (id: string, request: UpdateAttachmentRequest) => TE.TaskEither<AppError, AttachmentResponse>;
+	deleteAttachment: (id: string) => TE.TaskEither<AppError, void>;
+	deleteAttachmentsByProject: (projectId: string) => TE.TaskEither<AppError, number>;
 }
 
 
@@ -409,6 +440,124 @@ export const createApiClient = (): ApiClient => {
 			isTauri
 				? invokeTE("clear_sqlite_data_keep_users")
 				: fetchTE("/api/data/clear?keepUsers=true", { method: "DELETE" }),
+
+		// ============================================
+		// User API
+		// ============================================
+		getUsers: () =>
+			isTauri
+				? invokeTE("get_users")
+				: fetchTE("/api/users"),
+
+		getUser: (id: string) =>
+			isTauri
+				? invokeTE("get_user", { id })
+				: fetchTE(`/api/users/${id}`),
+
+		getUserByUsername: (username: string) =>
+			isTauri
+				? invokeTE("get_user_by_username", { username })
+				: fetchTE(`/api/users/by-username/${encodeURIComponent(username)}`),
+
+		getUserByEmail: (email: string) =>
+			isTauri
+				? invokeTE("get_user_by_email", { email })
+				: fetchTE(`/api/users/by-email/${encodeURIComponent(email)}`),
+
+		getCurrentUser: () =>
+			isTauri
+				? invokeTE("get_current_user")
+				: fetchTE("/api/users/current"),
+
+		createUser: (request: CreateUserRequest) =>
+			isTauri
+				? invokeTE("create_user", { request })
+				: fetchTE("/api/users", {
+						method: "POST",
+						body: JSON.stringify(request),
+					}),
+
+		updateUser: (id: string, request: UpdateUserRequest) =>
+			isTauri
+				? invokeTE("update_user", { id, request })
+				: fetchTE(`/api/users/${id}`, {
+						method: "PUT",
+						body: JSON.stringify(request),
+					}),
+
+		updateUserLastLogin: (id: string) =>
+			isTauri
+				? invokeTE("update_user_last_login", { id })
+				: fetchTE(`/api/users/${id}/last-login`, { method: "PUT" }),
+
+		deleteUser: (id: string) =>
+			isTauri
+				? invokeTE("delete_user", { id })
+				: fetchTE(`/api/users/${id}`, { method: "DELETE" }),
+
+		// ============================================
+		// Attachment API
+		// ============================================
+		getAttachments: () =>
+			isTauri
+				? invokeTE("get_attachments")
+				: fetchTE("/api/attachments"),
+
+		getAttachmentsByProject: (projectId: string) =>
+			isTauri
+				? invokeTE("get_attachments_by_project", { projectId })
+				: fetchTE(`/api/projects/${projectId}/attachments`),
+
+		getAttachment: (id: string) =>
+			isTauri
+				? invokeTE("get_attachment", { id })
+				: fetchTE(`/api/attachments/${id}`),
+
+		getAttachmentsByType: (projectId: string, attachmentType: AttachmentType) =>
+			isTauri
+				? invokeTE("get_attachments_by_type", { projectId, attachmentType })
+				: fetchTE(`/api/projects/${projectId}/attachments?type=${attachmentType}`),
+
+		getImagesByProject: (projectId: string) =>
+			isTauri
+				? invokeTE("get_images_by_project", { projectId })
+				: fetchTE(`/api/projects/${projectId}/attachments?type=image`),
+
+		getAudioFilesByProject: (projectId: string) =>
+			isTauri
+				? invokeTE("get_audio_files_by_project", { projectId })
+				: fetchTE(`/api/projects/${projectId}/attachments?type=audio`),
+
+		getAttachmentByPath: (filePath: string) =>
+			isTauri
+				? invokeTE("get_attachment_by_path", { filePath })
+				: fetchTE(`/api/attachments/by-path/${encodeURIComponent(filePath)}`),
+
+		createAttachment: (request: CreateAttachmentRequest) =>
+			isTauri
+				? invokeTE("create_attachment", { request })
+				: fetchTE("/api/attachments", {
+						method: "POST",
+						body: JSON.stringify(request),
+					}),
+
+		updateAttachment: (id: string, request: UpdateAttachmentRequest) =>
+			isTauri
+				? invokeTE("update_attachment", { id, request })
+				: fetchTE(`/api/attachments/${id}`, {
+						method: "PUT",
+						body: JSON.stringify(request),
+					}),
+
+		deleteAttachment: (id: string) =>
+			isTauri
+				? invokeTE("delete_attachment", { id })
+				: fetchTE(`/api/attachments/${id}`, { method: "DELETE" }),
+
+		deleteAttachmentsByProject: (projectId: string) =>
+			isTauri
+				? invokeTE("delete_attachments_by_project", { projectId })
+				: fetchTE(`/api/projects/${projectId}/attachments`, { method: "DELETE" }),
 	};
 };
 
@@ -462,6 +611,30 @@ export const cleanupOldBackups = api.cleanupOldBackups;
 // Clear Data API
 export const clearSqliteData = api.clearSqliteData;
 export const clearSqliteDataKeepUsers = api.clearSqliteDataKeepUsers;
+
+// User API
+export const getUsers = api.getUsers;
+export const getUser = api.getUser;
+export const getUserByUsername = api.getUserByUsername;
+export const getUserByEmail = api.getUserByEmail;
+export const getCurrentUser = api.getCurrentUser;
+export const createUser = api.createUser;
+export const updateUser = api.updateUser;
+export const updateUserLastLogin = api.updateUserLastLogin;
+export const deleteUser = api.deleteUser;
+
+// Attachment API
+export const getAttachments = api.getAttachments;
+export const getAttachmentsByProject = api.getAttachmentsByProject;
+export const getAttachment = api.getAttachment;
+export const getAttachmentsByType = api.getAttachmentsByType;
+export const getImagesByProject = api.getImagesByProject;
+export const getAudioFilesByProject = api.getAudioFilesByProject;
+export const getAttachmentByPath = api.getAttachmentByPath;
+export const createAttachment = api.createAttachment;
+export const updateAttachment = api.updateAttachment;
+export const deleteAttachment = api.deleteAttachment;
+export const deleteAttachmentsByProject = api.deleteAttachmentsByProject;
 
 // ============================================
 // Promise 版本（兼容性）

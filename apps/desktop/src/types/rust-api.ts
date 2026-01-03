@@ -215,3 +215,184 @@ export interface ClearDataResult {
 	/** 删除的附件数 */
 	attachmentsDeleted: number;
 }
+
+// ============================================
+// User 类型（与 Rust 后端 user_interface.rs 对应）
+// ============================================
+
+/** 用户订阅计划 */
+export type UserPlan = "free" | "premium";
+
+/** 用户功能权限 */
+export interface UserFeatures {
+	canUseAllScenes?: boolean;
+	canExportPdf?: boolean;
+	canUseCloudSync?: boolean;
+	showAds?: boolean;
+	reminderInterval?: number;
+}
+
+/** 用户应用状态 */
+export interface UserState {
+	lastLocation?: string;
+	currentProject?: string;
+	currentChapter?: string;
+	currentScene?: string;
+	currentTitle?: string;
+	currentTyping?: string;
+	lastCloudSave?: string;
+	lastLocalSave?: string;
+	isUserLoggedIn?: boolean;
+}
+
+/** 用户设置 */
+export interface UserSettings {
+	theme?: string;
+	language?: string;
+	autosave?: boolean;
+	spellCheck?: boolean;
+	lastLocation?: boolean;
+	fontSize?: string;
+}
+
+/** 创建用户请求 - 对应 Rust CreateUserRequest */
+export interface CreateUserRequest {
+	/** 用户名 */
+	username: string;
+	/** 显示名称 */
+	displayName?: string;
+	/** 头像 URL */
+	avatar?: string;
+	/** 邮箱 */
+	email?: string;
+	/** 订阅计划 */
+	plan?: UserPlan;
+	/** 功能权限 */
+	features?: UserFeatures;
+	/** 用户设置 */
+	settings?: UserSettings;
+}
+
+/** 更新用户请求 - 对应 Rust UpdateUserRequest */
+export interface UpdateUserRequest {
+	/** 用户名 */
+	username?: string;
+	/** 显示名称 (null 表示清除) */
+	displayName?: string | null;
+	/** 头像 URL (null 表示清除) */
+	avatar?: string | null;
+	/** 邮箱 (null 表示清除) */
+	email?: string | null;
+	/** 最后登录时间戳（毫秒） */
+	lastLogin?: number;
+	/** 订阅计划 */
+	plan?: UserPlan;
+	/** 订阅开始时间戳（毫秒） */
+	planStartDate?: number | null;
+	/** 订阅到期时间戳（毫秒） */
+	planExpiresAt?: number | null;
+	/** 试用到期时间戳（毫秒） */
+	trialExpiresAt?: number | null;
+	/** 认证 Token (null 表示清除) */
+	token?: string | null;
+	/** 服务器消息 (null 表示清除) */
+	serverMessage?: string | null;
+	/** 功能权限 (null 表示清除) */
+	features?: UserFeatures | null;
+	/** 应用状态 (null 表示清除) */
+	state?: UserState | null;
+	/** 用户设置 (null 表示清除) */
+	settings?: UserSettings | null;
+}
+
+/** 用户响应 - 对应 Rust UserResponse */
+export interface UserResponse {
+	/** 用户 ID (UUID) */
+	id: string;
+	/** 用户名 */
+	username: string;
+	/** 显示名称 */
+	displayName: string | null;
+	/** 头像 URL */
+	avatar: string | null;
+	/** 邮箱 */
+	email: string | null;
+	/** 最后登录时间戳（毫秒） */
+	lastLogin: number;
+	/** 创建时间戳（毫秒） */
+	createdAt: number;
+	/** 订阅计划 */
+	plan: UserPlan;
+	/** 订阅开始时间戳（毫秒） */
+	planStartDate: number | null;
+	/** 订阅到期时间戳（毫秒） */
+	planExpiresAt: number | null;
+	/** 试用到期时间戳（毫秒） */
+	trialExpiresAt: number | null;
+	/** 认证 Token */
+	token: string | null;
+	/** 服务器消息 */
+	serverMessage: string | null;
+	/** 功能权限 */
+	features: UserFeatures | null;
+	/** 应用状态 */
+	state: UserState | null;
+	/** 用户设置 */
+	settings: UserSettings | null;
+}
+
+
+// ============================================
+// Attachment 类型（与 Rust 后端 attachment_interface.rs 对应）
+// ============================================
+
+/** 附件类型 */
+export type AttachmentType = "image" | "audio" | "file";
+
+/** 创建附件请求 - 对应 Rust CreateAttachmentRequest */
+export interface CreateAttachmentRequest {
+	/** 关联的项目/工作区 ID */
+	projectId?: string;
+	/** 附件类型 */
+	attachmentType: AttachmentType;
+	/** 原始文件名 */
+	fileName: string;
+	/** 文件存储路径 */
+	filePath: string;
+	/** 文件大小（字节） */
+	size?: number;
+	/** MIME 类型 */
+	mimeType?: string;
+}
+
+/** 更新附件请求 - 对应 Rust UpdateAttachmentRequest */
+export interface UpdateAttachmentRequest {
+	/** 原始文件名 */
+	fileName?: string;
+	/** 文件存储路径 */
+	filePath?: string;
+	/** 文件大小（字节） (null 表示清除) */
+	size?: number | null;
+	/** MIME 类型 (null 表示清除) */
+	mimeType?: string | null;
+}
+
+/** 附件响应 - 对应 Rust AttachmentResponse */
+export interface AttachmentResponse {
+	/** 附件 ID (UUID) */
+	id: string;
+	/** 关联的项目/工作区 ID */
+	projectId: string | null;
+	/** 附件类型 */
+	attachmentType: AttachmentType;
+	/** 原始文件名 */
+	fileName: string;
+	/** 文件存储路径 */
+	filePath: string;
+	/** 上传时间戳（毫秒） */
+	uploadedAt: number;
+	/** 文件大小（字节） */
+	size: number | null;
+	/** MIME 类型 */
+	mimeType: string | null;
+}

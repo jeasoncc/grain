@@ -154,9 +154,12 @@ pub fn create_builder() -> tauri::Builder<tauri::Wry> {
             update_user_last_login,
             delete_user,
             // 附件命令
+            get_attachments,
             get_attachments_by_project,
             get_attachment,
             get_attachments_by_type,
+            get_images_by_project,
+            get_audio_files_by_project,
             get_attachment_by_path,
             create_attachment,
             update_attachment,

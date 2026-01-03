@@ -21,7 +21,8 @@ import { type AppError, dbError, notFoundError } from "@/lib/error.types";
 import logger from "@/log";
 import { TagBuilder } from "@/types/tag/tag.builder";
 import type { TagInterface } from "@/types/tag/tag.interface";
-import { database } from "./database";
+// Use legacy database until Tag module is migrated to Rust (Phase 4)
+import { legacyDatabase as database } from "./legacy-database";
 
 // ============================================================================
 // 基础 CRUD 操作

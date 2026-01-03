@@ -2,36 +2,150 @@
  * @file index.ts
  * @description Database Module - Unified Exports
  *
- * This file provides a single entry point for all database-related exports.
- * Import from '@/db' to access database instance, types, and models.
+ * This file provides a single entry point for database-related exports.
  *
- * 数据库层架构：
- * - database.ts: Dexie 数据库实例
- * - *.db.fn.ts: 函数式数据库操作（使用 TaskEither）
+ * 架构说明：
+ * - 业务数据（nodes, contents, workspaces, users, attachments, tags）
+ *   已迁移到 Rust 后端 (SQLite)，请使用 @/repo 导入
+ * - 日志数据保留在 IndexedDB (Dexie)，用于高频写入
  *
- * 类型定义请从 @/types 导入
+ * 迁移指南：
+ * - Node 操作: import { ... } from "@/repo"
+ * - Content 操作: import { ... } from "@/repo"
+ * - Workspace 操作: import { ... } from "@/repo"
+ * - User 操作: import { ... } from "@/repo"
+ * - Backup 操作: import { ... } from "@/repo"
+ * - Clear Data 操作: import { ... } from "@/repo"
  *
- * @requirements 2.1, 3.1, 3.2, 3.3
+ * @requirements 7.4, 9.1, 9.2
  */
 
 // ============================================================================
-// 数据库实例
+// 日志数据库实例（保留在 IndexedDB）
 // ============================================================================
 
-export { database, GrainDatabase, NovelEditorDatabase } from "./database";
+export {
+	database,
+	logDatabase,
+	LogDatabase,
+	GrainDatabase,
+	NovelEditorDatabase,
+	type LogEntry,
+} from "./database";
 
 // ============================================================================
-// 函数式数据库操作（新架构）
+// 日志数据库操作
 // ============================================================================
 
-// Backup 类型（从 types 重新导出）
+export { logDB, LogDB, type LogEntry as LogDBEntry } from "./log-db";
+
+// ============================================================================
+// API 客户端（Rust 后端通信）
+// ============================================================================
+
+export { api, createApiClient, type ApiClient } from "./api-client.fn";
+
+// ============================================================================
+// Repo 层重新导出（兼容性）
+// ============================================================================
+
+// Node Repository - 从 @/repo 重新导出
+export {
+	addNode,
+	createNode,
+	deleteNode,
+	deleteNodesBatch,
+	duplicateNode,
+	getAllNodes,
+	getChildNodes,
+	getDescendants,
+	getNextOrder,
+	getNextSortOrder,
+	getNode,
+	getNodeById,
+	getNodeByIdOrFail,
+	getNodeByIdOrNull,
+	getNodesByParent,
+	getNodesByType,
+	getNodesByWorkspace,
+	getRootNodes,
+	moveNode,
+	reorderNodes,
+	updateNode,
+} from "@/repo";
+
+// Content Repository - 从 @/repo 重新导出
+export {
+	addContent,
+	createContent,
+	getContentByNodeId,
+	getContentByNodeIdOrFail,
+	getContentsByNodeIds,
+	getContentVersion,
+	saveContent,
+	updateContentByNodeId,
+} from "@/repo";
+
+// Workspace Repository - 从 @/repo 重新导出
+export {
+	createWorkspace,
+	deleteWorkspace,
+	getAllWorkspaces,
+	getWorkspace,
+	getWorkspaceById,
+	getWorkspaces,
+	updateWorkspace,
+} from "@/repo";
+
+// User Repository - 从 @/repo 重新导出
+export {
+	addUser,
+	createUser,
+	deleteUser,
+	getCurrentUser,
+	getCurrentUserOrFail,
+	getUser,
+	getUserById,
+	getUserByIdOrNull,
+	getUserByEmail,
+	getUserByUsername,
+	getUsers,
+	getUserOrFail,
+	updateUser,
+	updateUserLastLogin,
+} from "@/repo";
+
+// Backup Repository - 从 @/repo 重新导出
+export {
+	cleanupOldBackups,
+	createBackup,
+	deleteBackup,
+	listBackups,
+	restoreBackup,
+} from "@/repo";
+
+// Clear Data Repository - 从 @/repo 重新导出
+export {
+	clearAllData,
+	clearAllDataKeepUsers,
+	clearLogs,
+	clearSqliteData,
+	clearSqliteDataKeepUsers,
+} from "@/repo";
+
+// ============================================================================
+// 类型重新导出（兼容性）
+// ============================================================================
+
+// Backup 类型
 export type {
 	BackupData,
 	BackupMetadata,
 	DatabaseStats,
 	LocalBackupRecord,
 } from "@/types/backup";
-// Storage 类型（从 types 重新导出）
+
+// Storage 类型
 export type {
 	ClearDataOptions,
 	IndexedDBStats,
@@ -39,114 +153,3 @@ export type {
 	TableSizes,
 	TableStats,
 } from "@/types/storage";
-// Attachment 数据库函数
-export {
-	addAttachment,
-	attachmentExists,
-	countAttachments,
-	countAttachmentsByProject,
-	deleteAttachment,
-	deleteAttachmentsByProject,
-	getAllAttachments,
-	getAttachmentById,
-	getAttachmentByIdOrFail,
-	getAttachmentsByProject,
-	getAttachmentsByProjectAndType,
-	getAttachmentsByType,
-	getAudioFilesByProject,
-	getGlobalAttachments,
-	getImagesByProject,
-	getTotalSizeByProject,
-	saveAttachment,
-	updateAttachment,
-} from "./attachment.db.fn";
-// Backup 数据库函数
-export {
-	createBackup,
-	exportBackupJson,
-	exportBackupZip,
-	getDatabaseStats,
-	getLastBackupTime,
-	getLocalBackups,
-	performAutoBackup,
-	restoreBackup,
-	restoreBackupData,
-	restoreLocalBackup,
-	saveLocalBackup,
-	shouldAutoBackup,
-} from "./backup.db.fn";
-// Clear Data 数据库函数
-export {
-	clearAllData,
-	clearCaches,
-	clearCookies,
-	clearIndexedDB,
-	clearLocalStorage,
-	clearSessionStorage,
-	getStorageStats,
-} from "./clear-data.db.fn";
-// Content 数据库函数 - 已迁移到 @/repo/content.repo.fn.ts
-// 请使用 import { ... } from "@/repo" 代替
-// Init 数据库函数
-export {
-	createDefaultUser,
-	type DBVersionRecord,
-	type DefaultUserConfig,
-	getDBVersion,
-	hasDBVersion,
-	hasUsers,
-	initDatabase,
-	isDatabaseInitialized,
-	resetDatabase,
-	setDBVersion,
-} from "./init.db.fn";
-// Node 数据库函数 - 已迁移到 @/repo/node.repo.fn.ts
-// 请使用 import { ... } from "@/repo" 代替
-// Tag 数据库函数
-export {
-	countTagsByWorkspace,
-	deleteTag,
-	deleteTagsByWorkspace,
-	getNodesByTag,
-	getTagById,
-	getTagByIdOrFail,
-	getTagGraphData,
-	getTagsByWorkspace,
-	rebuildTagCache,
-	recalculateTagCounts,
-	saveTag,
-	searchTags,
-	syncTagCache,
-	type TagGraphData,
-	type TagGraphEdge,
-	type TagGraphNode,
-	tagExists,
-	upsertTag,
-} from "./tag.db.fn";
-// User 数据库函数
-export {
-	addUser,
-	countUsers,
-	deleteUser,
-	emailExists,
-	getAllUsers,
-	getCurrentUser,
-	getOrCreateDefaultUser,
-	getUserByEmail,
-	getUserById,
-	getUserByIdOrFail,
-	getUserByUsername,
-	getUsersByPlan,
-	saveUser,
-	touchUser,
-	updateUser,
-	updateUserFeatures,
-	updateUserPlan,
-	updateUserSettings,
-	updateUserState,
-	updateUserToken,
-	userExists,
-	usernameExists,
-} from "./user.db.fn";
-// Workspace 数据库函数 - 已迁移到 @/repo/workspace.repo.fn.ts
-// 请使用 import { ... } from "@/repo" 代替

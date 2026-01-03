@@ -8,6 +8,21 @@ use sea_orm::DatabaseConnection;
 use tauri::State;
 
 #[tauri::command]
+pub async fn get_attachments(
+    db: State<'_, DatabaseConnection>,
+) -> Result<Vec<AttachmentResponse>, String> {
+    attachment_db_fn::find_all(&db)
+        .await
+        .map(|attachments| {
+            attachments
+                .into_iter()
+                .map(AttachmentResponse::from)
+                .collect()
+        })
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn get_attachments_by_project(
     db: State<'_, DatabaseConnection>,
     project_id: String,
@@ -41,6 +56,38 @@ pub async fn get_attachments_by_type(
     attachment_type: AttachmentType,
 ) -> Result<Vec<AttachmentResponse>, String> {
     attachment_db_fn::find_by_type(&db, &project_id, attachment_type)
+        .await
+        .map(|attachments| {
+            attachments
+                .into_iter()
+                .map(AttachmentResponse::from)
+                .collect()
+        })
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_images_by_project(
+    db: State<'_, DatabaseConnection>,
+    project_id: String,
+) -> Result<Vec<AttachmentResponse>, String> {
+    attachment_db_fn::find_images_by_project(&db, &project_id)
+        .await
+        .map(|attachments| {
+            attachments
+                .into_iter()
+                .map(AttachmentResponse::from)
+                .collect()
+        })
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_audio_files_by_project(
+    db: State<'_, DatabaseConnection>,
+    project_id: String,
+) -> Result<Vec<AttachmentResponse>, String> {
+    attachment_db_fn::find_audio_by_project(&db, &project_id)
         .await
         .map(|attachments| {
             attachments

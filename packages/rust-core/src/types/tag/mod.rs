@@ -8,4 +8,6 @@ mod tag_interface;
 pub use tag_entity::{
     ActiveModel as TagActiveModel, Column as TagColumn, Entity as TagEntity, Model as TagModel,
 };
-pub use tag_interface::{CreateTagRequest, TagResponse, UpdateTagRequest};
+pub use tag_interface::{
+    CreateTagRequest, TagGraphData, TagGraphEdge, TagGraphNode, TagResponse, UpdateTagRequest,
+};

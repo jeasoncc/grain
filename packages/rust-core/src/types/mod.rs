@@ -45,8 +45,8 @@ pub use content::{
 
 // 重新导出 Tag 类型
 pub use tag::{
-    CreateTagRequest, TagActiveModel, TagColumn, TagEntity, TagModel, TagResponse,
-    UpdateTagRequest,
+    CreateTagRequest, TagActiveModel, TagColumn, TagEntity, TagGraphData, TagGraphEdge,
+    TagGraphNode, TagModel, TagResponse, UpdateTagRequest,
 };
 
 // 重新导出 User 类型

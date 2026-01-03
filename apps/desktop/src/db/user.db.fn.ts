@@ -26,7 +26,9 @@ import type {
 	UserState,
 	UserUpdateInput,
 } from "@/types/user/user.interface";
-import { database } from "./database";
+// Use legacy database until User module is fully migrated to Rust (Phase 3)
+// Note: User repo layer exists but hooks still use Dexie
+import { legacyDatabase as database } from "./legacy-database";
 
 // ============================================================================
 // 基础 CRUD 操作

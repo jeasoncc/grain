@@ -15,7 +15,8 @@ import * as TE from "fp-ts/TaskEither";
 import { v4 as uuidv4 } from "uuid";
 import { type AppError, dbError } from "@/lib/error.types";
 import logger from "@/log";
-import { database } from "./database";
+// Use legacy database for init functions until fully migrated
+import { legacyDatabase as database } from "./legacy-database";
 
 // ============================================================================
 // 类型定义

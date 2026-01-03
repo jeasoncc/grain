@@ -21,7 +21,8 @@ import type {
 	AttachmentType,
 	AttachmentUpdateInput,
 } from "@/types/attachment/attachment.interface";
-import { database } from "./database";
+// Use legacy database until Attachment module is migrated to Rust (Phase 5)
+import { legacyDatabase as database } from "./legacy-database";
 
 // ============================================================================
 // 基础 CRUD 操作

@@ -85,23 +85,23 @@
   - [-] 5.3 编写 User 数据库函数测试
     - **Property 2: User CRUD Round Trip**
     - **Validates: Requirements 4.2, 4.3**
-  - [ ] 5.4 创建 User Tauri Commands
+  - [x] 5.4 创建 User Tauri Commands
     - 创建 `rust-core/src/tauri/commands/user_commands.rs`
     - 实现 get_users, get_user, create_user, update_user, delete_user
     - 实现 get_user_by_email, get_user_by_username, get_current_user
     - 注册到 Tauri handler
     - _Requirements: 4.2, 4.3_
-  - [ ] 5.5 更新 API Client
+  - [x] 5.5 更新 API Client
     - 在 `db/api-client.fn.ts` 添加 User 相关方法
     - 添加 getUsers, getUser, createUser, updateUser, deleteUser
     - 添加 getUserByEmail, getUserByUsername, getCurrentUser
     - _Requirements: 4.5_
-  - [ ] 5.6 创建 user.repo.fn.ts
+  - [x] 5.6 创建 user.repo.fn.ts
     - 创建 `repo/user.repo.fn.ts`
     - 封装 API Client 调用
     - 添加 Codec 层类型转换
     - _Requirements: 4.4_
-  - [ ] 5.7 编写 user.repo.fn.ts 单元测试
+  - [x] 5.7 编写 user.repo.fn.ts 单元测试
     - Mock API Client
     - 测试类型转换正确性
     - _Requirements: 4.4_
@@ -119,20 +119,20 @@
   - 验证 User 功能正常
   - 如有问题请告知
 
-- [ ] 7. Phase 4: 实现 Tag Rust 后端
-  - [ ] 7.1 创建 Tag 类型定义 (rust-core)
+- [-] 7. Phase 4: 实现 Tag Rust 后端
+  - [x] 7.1 创建 Tag 类型定义 (rust-core)
     - 创建 `rust-core/src/types/tag/mod.rs`
     - 创建 `rust-core/src/types/tag/tag_interface.rs`
     - 定义 TagEntity, CreateTagRequest, UpdateTagRequest, TagResponse
     - 定义 TagGraphData, TagGraphNode, TagGraphEdge
     - _Requirements: 5.1_
-  - [ ] 7.2 创建 Tag 数据库函数 (rust-core)
+  - [x] 7.2 创建 Tag 数据库函数 (rust-core)
     - 创建 `rust-core/src/db/tag_db_fn.rs`
     - 实现 CRUD 函数
     - 实现查询函数: search_tags, get_nodes_by_tag, get_tag_graph_data
     - 实现同步函数: sync_tag_cache, rebuild_tag_cache, recalculate_tag_counts
     - _Requirements: 5.2, 5.3, 5.4_
-  - [ ] 7.3 编写 Tag 数据库函数测试
+  - [x] 7.3 编写 Tag 数据库函数测试
     - **Property 3: Tag CRUD Round Trip**
     - **Property 4: Tag Count Consistency**
     - **Validates: Requirements 5.2, 5.4**
@@ -165,29 +165,29 @@
   - 验证 Tag 功能正常
   - 如有问题请告知
 
-- [ ] 9. Phase 5: 实现 Attachment Rust 后端
-  - [ ] 9.1 创建 Attachment 类型定义 (rust-core)
+- [-] 9. Phase 5: 实现 Attachment Rust 后端
+  - [x] 9.1 创建 Attachment 类型定义 (rust-core)
     - 创建 `rust-core/src/types/attachment/mod.rs`
     - 创建 `rust-core/src/types/attachment/attachment_interface.rs`
     - 定义 AttachmentEntity, CreateAttachmentRequest, UpdateAttachmentRequest, AttachmentResponse
     - _Requirements: 6.1_
-  - [ ] 9.2 创建 Attachment 数据库函数 (rust-core)
+  - [x] 9.2 创建 Attachment 数据库函数 (rust-core)
     - 创建 `rust-core/src/db/attachment_db_fn.rs`
     - 实现 CRUD 函数
     - 实现查询函数: get_attachments_by_project, get_attachments_by_type, get_images_by_project, get_audio_files_by_project
     - _Requirements: 6.2, 6.3_
-  - [ ] 9.3 编写 Attachment 数据库函数测试
+  - [x] 9.3 编写 Attachment 数据库函数测试
     - **Property 5: Attachment CRUD Round Trip**
     - **Validates: Requirements 6.2**
-  - [ ] 9.4 创建 Attachment Tauri Commands
+  - [x] 9.4 创建 Attachment Tauri Commands
     - 创建 `rust-core/src/tauri/commands/attachment_commands.rs`
     - 实现所有 Attachment 相关命令
     - 注册到 Tauri handler
     - _Requirements: 6.2, 6.3_
-  - [ ] 9.5 更新 API Client
+  - [x] 9.5 更新 API Client
     - 在 `db/api-client.fn.ts` 添加 Attachment 相关方法
     - _Requirements: 6.5_
-  - [ ] 9.6 创建 attachment.repo.fn.ts
+  - [x] 9.6 创建 attachment.repo.fn.ts
     - 创建 `repo/attachment.repo.fn.ts`
     - 封装 API Client 调用
     - _Requirements: 6.4_
@@ -208,13 +208,13 @@
   - 验证 Attachment 功能正常
   - 如有问题请告知
 
-- [ ] 11. Phase 6: 清理和数据迁移
-  - [ ] 11.1 更新 db/database.ts
+- [-] 11. Phase 6: 清理和数据迁移
+  - [x] 11.1 更新 db/database.ts
     - 移除 nodes, contents, workspaces, users, attachments, tags, dbVersions 表定义
     - 只保留日志相关的表
     - 重命名 `GrainDatabase` 为 `LogDatabase`
     - _Requirements: 7.1, 7.2, 7.3_
-  - [ ] 11.2 更新 db/index.ts
+  - [x] 11.2 更新 db/index.ts
     - 移除所有已迁移模块的导出
     - 只保留日志相关函数导出
     - 添加 repo 层的重新导出（兼容性）

@@ -100,3 +100,22 @@ export {
 	getWorkspaces,
 	updateWorkspace,
 } from "./workspace.repo.fn";
+
+// User Repository
+export * as userRepo from "./user.repo.fn";
+export {
+	addUser,
+	createUser,
+	deleteUser,
+	getCurrentUser,
+	getCurrentUserOrFail,
+	getUser,
+	getUserById,
+	getUserByIdOrNull,
+	getUserByEmail,
+	getUserByUsername,
+	getUsers,
+	getUserOrFail,
+	updateUser,
+	updateUserLastLogin,
+} from "./user.repo.fn";

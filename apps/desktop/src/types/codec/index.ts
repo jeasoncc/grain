@@ -42,3 +42,11 @@ export {
 	encodeWorkspaceToCreateRequest,
 	encodeWorkspaceToUpdateRequest,
 } from "./workspace.codec";
+// User Codec
+export {
+	decodeUser,
+	decodeUsers,
+	decodeUserOptional,
+	encodeCreateUser,
+	encodeUpdateUser,
+} from "./user.codec";
