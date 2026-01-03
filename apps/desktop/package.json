@@ -4,7 +4,9 @@
   "version": "0.1.262",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -n vite,api -c blue,green \"vite\" \"cargo run --manifest-path src-tauri/../../../apps/api-rust/Cargo.toml\"",
+    "dev:vite": "vite",
+    "dev:api": "cargo run --manifest-path ../../apps/api-rust/Cargo.toml",
     "build": "tsc && vite build",
     "build:prod": "tsc && vite build --mode production",
     "build:test": "tsc && vite build --mode development",
@@ -127,6 +129,7 @@
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.1",
     "fast-check": "^4.4.0",
     "jsdom": "^27.3.0",
     "postcss": "^8.5.6",
