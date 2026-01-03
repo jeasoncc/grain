@@ -119,3 +119,23 @@ export {
 	updateUser,
 	updateUserLastLogin,
 } from "./user.repo.fn";
+
+// Attachment Repository
+export * as attachmentRepo from "./attachment.repo.fn";
+export {
+	addAttachment,
+	createAttachment,
+	deleteAttachment,
+	deleteAttachmentsByProject,
+	getAttachment,
+	getAttachmentById,
+	getAttachmentByIdOrNull,
+	getAttachmentByPath,
+	getAttachmentOrFail,
+	getAttachments,
+	getAttachmentsByProject,
+	getAttachmentsByType,
+	getAudioFilesByProject,
+	getImagesByProject,
+	updateAttachment,
+} from "./attachment.repo.fn";

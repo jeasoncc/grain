@@ -396,3 +396,69 @@ export interface AttachmentResponse {
 	/** MIME 类型 */
 	mimeType: string | null;
 }
+
+// ============================================
+// Tag 类型（与 Rust 后端 tag_interface.rs 对应）
+// ============================================
+
+/** 创建标签请求 - 对应 Rust CreateTagRequest */
+export interface CreateTagRequest {
+	/** 标签名称 */
+	name: string;
+	/** 所属工作区 ID */
+	workspaceId: string;
+}
+
+/** 更新标签请求 - 对应 Rust UpdateTagRequest */
+export interface UpdateTagRequest {
+	/** 标签名称 */
+	name?: string;
+	/** 使用计数 */
+	count?: number;
+	/** 最后使用时间戳（毫秒） */
+	lastUsed?: number;
+}
+
+/** 标签响应 - 对应 Rust TagResponse */
+export interface TagResponse {
+	/** 标签 ID (格式: workspaceId:name) */
+	id: string;
+	/** 标签名称 */
+	name: string;
+	/** 所属工作区 ID */
+	workspaceId: string;
+	/** 使用计数 */
+	count: number;
+	/** 最后使用时间戳（毫秒） */
+	lastUsed: number;
+	/** 创建时间戳（毫秒） */
+	createdAt: number;
+}
+
+/** 标签图形节点 - 对应 Rust TagGraphNode */
+export interface TagGraphNode {
+	/** 标签 ID */
+	id: string;
+	/** 标签名称 */
+	name: string;
+	/** 使用此标签的文档数量 */
+	count: number;
+}
+
+/** 标签图形边 - 对应 Rust TagGraphEdge */
+export interface TagGraphEdge {
+	/** 源标签 ID */
+	source: string;
+	/** 目标标签 ID */
+	target: string;
+	/** 权重（共同出现的次数） */
+	weight: number;
+}
+
+/** 标签图形数据 - 对应 Rust TagGraphData */
+export interface TagGraphData {
+	/** 图形节点（标签） */
+	nodes: TagGraphNode[];
+	/** 图形边（标签之间的关系） */
+	edges: TagGraphEdge[];
+}

@@ -28,13 +28,17 @@ import type {
 	ContentResponse,
 	CreateAttachmentRequest,
 	CreateNodeRequest,
+	CreateTagRequest,
 	CreateUserRequest,
 	CreateWorkspaceRequest,
 	MoveNodeRequest,
 	NodeResponse,
 	SaveContentRequest,
+	TagGraphData,
+	TagResponse,
 	UpdateAttachmentRequest,
 	UpdateNodeRequest,
+	UpdateTagRequest,
 	UpdateUserRequest,
 	UpdateWorkspaceRequest,
 	UserResponse,
@@ -220,6 +224,25 @@ export interface ApiClient {
 	updateAttachment: (id: string, request: UpdateAttachmentRequest) => TE.TaskEither<AppError, AttachmentResponse>;
 	deleteAttachment: (id: string) => TE.TaskEither<AppError, void>;
 	deleteAttachmentsByProject: (projectId: string) => TE.TaskEither<AppError, number>;
+
+	// Tag API
+	getTagsByWorkspace: (workspaceId: string) => TE.TaskEither<AppError, TagResponse[]>;
+	getTag: (id: string) => TE.TaskEither<AppError, TagResponse | null>;
+	getTagByName: (workspaceId: string, name: string) => TE.TaskEither<AppError, TagResponse | null>;
+	getTopTags: (workspaceId: string, limit: number) => TE.TaskEither<AppError, TagResponse[]>;
+	searchTags: (workspaceId: string, query: string) => TE.TaskEither<AppError, TagResponse[]>;
+	getNodesByTag: (workspaceId: string, tagName: string) => TE.TaskEither<AppError, string[]>;
+	getTagGraphData: (workspaceId: string) => TE.TaskEither<AppError, TagGraphData>;
+	createTag: (request: CreateTagRequest) => TE.TaskEither<AppError, TagResponse>;
+	updateTag: (id: string, request: UpdateTagRequest) => TE.TaskEither<AppError, TagResponse>;
+	getOrCreateTag: (workspaceId: string, name: string) => TE.TaskEither<AppError, TagResponse>;
+	incrementTagCount: (id: string) => TE.TaskEither<AppError, TagResponse>;
+	decrementTagCount: (id: string) => TE.TaskEither<AppError, TagResponse>;
+	deleteTag: (id: string) => TE.TaskEither<AppError, void>;
+	deleteTagsByWorkspace: (workspaceId: string) => TE.TaskEither<AppError, number>;
+	syncTagCache: (workspaceId: string) => TE.TaskEither<AppError, void>;
+	rebuildTagCache: (workspaceId: string) => TE.TaskEither<AppError, void>;
+	recalculateTagCounts: (workspaceId: string) => TE.TaskEither<AppError, void>;
 }
 
 

@@ -50,3 +50,11 @@ export {
 	encodeCreateUser,
 	encodeUpdateUser,
 } from "./user.codec";
+// Attachment Codec
+export {
+	decodeAttachment,
+	decodeAttachments,
+	decodeAttachmentOptional,
+	encodeCreateAttachment,
+	encodeUpdateAttachment,
+} from "./attachment.codec";
