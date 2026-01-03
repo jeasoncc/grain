@@ -71,7 +71,7 @@
   - 验证 Backup/ClearData 功能正常
   - 如有问题请告知
 
-- [-] 5. Phase 3: 实现 User Rust 后端
+- [x] 5. Phase 3: 实现 User Rust 后端
   - [x] 5.1 创建 User 类型定义 (rust-core)
     - 创建 `rust-core/src/types/user/mod.rs`
     - 创建 `rust-core/src/types/user/user_interface.rs`
@@ -105,12 +105,12 @@
     - Mock API Client
     - 测试类型转换正确性
     - _Requirements: 4.4_
-  - [ ] 5.8 更新 use-user.ts Hook
+  - [x] 5.8 更新 use-user.ts Hook
     - 移除 `useLiveQuery` 和 Dexie 依赖
     - 改为使用 `repo/user.repo.fn.ts`
     - 使用 React Query 或自定义 Hook 管理状态
     - _Requirements: 8.1_
-  - [ ] 5.9 删除 User Dexie 文件
+  - [x] 5.9 删除 User Dexie 文件
     - 删除 `db/user.db.fn.ts` 和测试文件
     - _Requirements: 4.6_
 
@@ -236,7 +236,7 @@
     - **Property 8: Migration Data Preservation**
     - **Property 9: Migration Rollback**
     - **Validates: Requirements 10.2, 10.3, 10.4, 10.5**
-  - [ ] 11.6 移除 dexie-react-hooks 依赖
+  - [x] 11.6 移除 dexie-react-hooks 依赖
     - 从 package.json 移除 `dexie-react-hooks`
     - 确保没有文件使用该依赖
     - _Requirements: 8.4_

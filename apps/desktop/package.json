@@ -85,7 +85,6 @@
     "consola": "^3.4.2",
     "dayjs": "^1.11.19",
     "dexie": "^4.2.1",
-    "dexie-react-hooks": "^4.2.0",
     "docx": "^9.5.1",
     "driver.js": "^1.4.0",
     "es-toolkit": "^1.43.0",

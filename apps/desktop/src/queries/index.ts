@@ -58,6 +58,7 @@ export type {
 	ContentQueryKey,
 	NodeQueryKey,
 	TagQueryKey,
+	UserQueryKey,
 	WorkspaceQueryKey,
 } from "./query-keys";
 // Query Keys
@@ -72,5 +73,14 @@ export {
 	useTagSearch,
 	useTopTags,
 } from "./tag.queries";
+// User Queries
+export {
+	useCurrentUser as useCurrentUserQuery,
+	useUser as useUserQuery,
+	useUserByEmail as useUserByEmailQuery,
+	useUserByUsername as useUserByUsernameQuery,
+	useUsers as useUsersQuery,
+	useUsersByPlan as useUsersByPlanQuery,
+} from "./user.queries";
 // Workspace Queries
 export { useWorkspace, useWorkspaces } from "./workspace.queries";

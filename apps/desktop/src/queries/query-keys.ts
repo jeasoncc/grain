@@ -104,6 +104,24 @@ export const queryKeys = {
 		/** 标签图形数据 */
 		graph: (workspaceId: string) => ["tags", "graph", workspaceId] as const,
 	},
+
+	// ============================================
+	// User Keys
+	// ============================================
+	users: {
+		/** 所有用户 */
+		all: ["users"] as const,
+		/** 单个用户 */
+		detail: (id: string) => ["users", id] as const,
+		/** 按用户名 */
+		byUsername: (username: string) => ["users", "username", username] as const,
+		/** 按邮箱 */
+		byEmail: (email: string) => ["users", "email", email] as const,
+		/** 当前用户 */
+		current: ["users", "current"] as const,
+		/** 按计划类型 */
+		byPlan: (plan: string) => ["users", "plan", plan] as const,
+	},
 } as const;
 
 // ============================================
@@ -150,3 +168,12 @@ export type TagQueryKey =
 	| ReturnType<typeof queryKeys.tags.search>
 	| ReturnType<typeof queryKeys.tags.nodesByTag>
 	| ReturnType<typeof queryKeys.tags.graph>;
+
+/** User query key 类型 */
+export type UserQueryKey =
+	| typeof queryKeys.users.all
+	| ReturnType<typeof queryKeys.users.detail>
+	| ReturnType<typeof queryKeys.users.byUsername>
+	| ReturnType<typeof queryKeys.users.byEmail>
+	| typeof queryKeys.users.current
+	| ReturnType<typeof queryKeys.users.byPlan>;
