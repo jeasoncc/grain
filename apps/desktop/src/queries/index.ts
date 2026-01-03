@@ -57,9 +57,20 @@ export type {
 	AttachmentQueryKey,
 	ContentQueryKey,
 	NodeQueryKey,
+	TagQueryKey,
 	WorkspaceQueryKey,
 } from "./query-keys";
 // Query Keys
 export { queryKeys } from "./query-keys";
+// Tag Queries
+export {
+	useNodesByTag,
+	useTag,
+	useTagByName,
+	useTagGraph,
+	useTagsByWorkspace,
+	useTagSearch,
+	useTopTags,
+} from "./tag.queries";
 // Workspace Queries
 export { useWorkspace, useWorkspaces } from "./workspace.queries";

@@ -79,6 +79,31 @@ export const queryKeys = {
 		/** 按路径 */
 		byPath: (filePath: string) => ["attachments", "path", filePath] as const,
 	},
+
+	// ============================================
+	// Tag Keys
+	// ============================================
+	tags: {
+		/** 工作区下的所有标签 */
+		byWorkspace: (workspaceId: string) =>
+			["tags", "workspace", workspaceId] as const,
+		/** 单个标签 */
+		detail: (id: string) => ["tags", id] as const,
+		/** 按名称 */
+		byName: (workspaceId: string, name: string) =>
+			["tags", "name", workspaceId, name] as const,
+		/** 热门标签 */
+		top: (workspaceId: string, limit: number) =>
+			["tags", "top", workspaceId, limit] as const,
+		/** 搜索标签 */
+		search: (workspaceId: string, query: string) =>
+			["tags", "search", workspaceId, query] as const,
+		/** 包含指定标签的节点 */
+		nodesByTag: (workspaceId: string, tagName: string) =>
+			["tags", "nodes", workspaceId, tagName] as const,
+		/** 标签图形数据 */
+		graph: (workspaceId: string) => ["tags", "graph", workspaceId] as const,
+	},
 } as const;
 
 // ============================================
@@ -115,3 +140,13 @@ export type AttachmentQueryKey =
 	| ReturnType<typeof queryKeys.attachments.imagesByProject>
 	| ReturnType<typeof queryKeys.attachments.audioByProject>
 	| ReturnType<typeof queryKeys.attachments.byPath>;
+
+/** Tag query key 类型 */
+export type TagQueryKey =
+	| ReturnType<typeof queryKeys.tags.byWorkspace>
+	| ReturnType<typeof queryKeys.tags.detail>
+	| ReturnType<typeof queryKeys.tags.byName>
+	| ReturnType<typeof queryKeys.tags.top>
+	| ReturnType<typeof queryKeys.tags.search>
+	| ReturnType<typeof queryKeys.tags.nodesByTag>
+	| ReturnType<typeof queryKeys.tags.graph>;

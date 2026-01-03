@@ -2,15 +2,23 @@
  * @file hooks/use-tag.ts
  * @description Tag React Hooks
  *
- * Provides React hooks for accessing tag data with live updates.
- * Uses dexie-react-hooks for reactive data subscriptions.
+ * Provides React hooks for accessing tag data.
+ * Uses TanStack Query for data fetching from Rust backend.
  *
- * @requirements 3.3
+ * @requirements 8.2
  */
 
-import { useLiveQuery } from "dexie-react-hooks";
-import { legacyDatabase } from "@/db/legacy-database";
+import {
+	useNodesByTag as useNodesByTagQuery,
+	useTag as useTagQuery,
+	useTagByName as useTagByNameQuery,
+	useTagGraph as useTagGraphQuery,
+	useTagsByWorkspace as useTagsByWorkspaceQuery,
+	useTagSearch as useTagSearchQuery,
+	useTopTags as useTopTagsQuery,
+} from "@/queries";
 import type { TagInterface } from "@/types/tag";
+import type { TagGraphData } from "@/types/codec";
 
 /**
  * Hook to get all tags for a workspace
@@ -21,41 +29,23 @@ import type { TagInterface } from "@/types/tag";
 export function useTagsByWorkspace(
 	workspaceId: string | undefined,
 ): TagInterface[] {
-	return (
-		useLiveQuery(
-			async () => {
-				if (!workspaceId) return [];
-				return legacyDatabase.tags.where("workspace").equals(workspaceId).toArray();
-			},
-			[workspaceId],
-			[],
-		) ?? []
-	);
+	const { data } = useTagsByWorkspaceQuery(workspaceId);
+	return data ?? [];
 }
 
 /**
- * Hook to get nodes by tag
+ * Hook to get node IDs by tag
  *
  * @param workspaceId - The workspace ID
  * @param tagName - The tag name to filter by
- * @returns Array of nodes with the specified tag
+ * @returns Array of node IDs with the specified tag
  */
 export function useNodesByTag(
 	workspaceId: string | undefined,
 	tagName: string | undefined,
-) {
-	return useLiveQuery(
-		async () => {
-			if (!workspaceId || !tagName) return [];
-			return legacyDatabase.nodes
-				.where("tags")
-				.equals(tagName)
-				.and((node) => node.workspace === workspaceId)
-				.toArray();
-		},
-		[workspaceId, tagName],
-		[],
-	);
+): string[] {
+	const { data } = useNodesByTagQuery(workspaceId, tagName);
+	return data ?? [];
 }
 
 /**
@@ -64,79 +54,11 @@ export function useNodesByTag(
  * @param workspaceId - The workspace ID
  * @returns Graph data with nodes and edges
  */
-export function useTagGraph(workspaceId: string | undefined) {
-	return useLiveQuery(
-		async () => {
-			if (!workspaceId) return { nodes: [], edges: [] };
-
-			const tags = await legacyDatabase.tags
-				.where("workspace")
-				.equals(workspaceId)
-				.toArray();
-			const nodes = await legacyDatabase.nodes
-				.where("workspace")
-				.equals(workspaceId)
-				.toArray();
-
-			// Build co-occurrence matrix
-			const coOccurrence = new Map<string, Map<string, number>>();
-
-			for (const node of nodes) {
-				if (!node.tags || node.tags.length < 2) continue;
-
-				for (let i = 0; i < node.tags.length; i++) {
-					for (let j = i + 1; j < node.tags.length; j++) {
-						const tag1 = node.tags[i];
-						const tag2 = node.tags[j];
-
-						if (!coOccurrence.has(tag1)) {
-							coOccurrence.set(tag1, new Map());
-						}
-						if (!coOccurrence.has(tag2)) {
-							coOccurrence.set(tag2, new Map());
-						}
-
-						const map1 = coOccurrence.get(tag1);
-						const map2 = coOccurrence.get(tag2);
-
-						if (map1 && map2) {
-							map1.set(tag2, (map1.get(tag2) || 0) + 1);
-							map2.set(tag1, (map2.get(tag1) || 0) + 1);
-						}
-					}
-				}
-			}
-
-			// Build graph nodes and edges
-			const graphNodes = tags.map((tag) => ({
-				id: tag.id,
-				name: tag.name,
-				count: tag.count,
-			}));
-
-			const edges: Array<{ source: string; target: string; weight: number }> =
-				[];
-			const addedEdges = new Set<string>();
-
-			for (const [tag1, connections] of coOccurrence) {
-				for (const [tag2, weight] of connections) {
-					const edgeKey = [tag1, tag2].sort().join(":");
-					if (!addedEdges.has(edgeKey)) {
-						edges.push({
-							source: `${workspaceId}:${tag1}`,
-							target: `${workspaceId}:${tag2}`,
-							weight,
-						});
-						addedEdges.add(edgeKey);
-					}
-				}
-			}
-
-			return { nodes: graphNodes, edges };
-		},
-		[workspaceId],
-		{ nodes: [], edges: [] },
-	);
+export function useTagGraph(
+	workspaceId: string | undefined,
+): TagGraphData {
+	const { data } = useTagGraphQuery(workspaceId);
+	return data ?? { nodes: [], edges: [] };
 }
 
 /**
@@ -150,21 +72,8 @@ export function useTagSearch(
 	workspaceId: string | undefined,
 	query: string,
 ): TagInterface[] {
-	return (
-		useLiveQuery(
-			async () => {
-				if (!workspaceId || !query) return [];
-				const lowerQuery = query.toLowerCase();
-				return legacyDatabase.tags
-					.where("workspace")
-					.equals(workspaceId)
-					.filter((tag) => tag.name.toLowerCase().includes(lowerQuery))
-					.toArray();
-			},
-			[workspaceId, query],
-			[],
-		) ?? []
-	);
+	const { data } = useTagSearchQuery(workspaceId, query || undefined);
+	return data ?? [];
 }
 
 /**
@@ -174,14 +83,23 @@ export function useTagSearch(
  * @returns The tag or undefined
  */
 export function useTag(tagId: string | undefined): TagInterface | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!tagId) return undefined;
-			return legacyDatabase.tags.get(tagId);
-		},
-		[tagId],
-		undefined,
-	);
+	const { data } = useTagQuery(tagId);
+	return data ?? undefined;
+}
+
+/**
+ * Hook to get a tag by name
+ *
+ * @param workspaceId - The workspace ID
+ * @param name - The tag name
+ * @returns The tag or undefined
+ */
+export function useTagByName(
+	workspaceId: string | undefined,
+	name: string | undefined,
+): TagInterface | undefined {
+	const { data } = useTagByNameQuery(workspaceId, name);
+	return data ?? undefined;
 }
 
 /**
@@ -191,16 +109,8 @@ export function useTag(tagId: string | undefined): TagInterface | undefined {
  * @returns The count of tags
  */
 export function useTagCount(workspaceId: string | undefined): number {
-	return (
-		useLiveQuery(
-			async () => {
-				if (!workspaceId) return 0;
-				return legacyDatabase.tags.where("workspace").equals(workspaceId).count();
-			},
-			[workspaceId],
-			0,
-		) ?? 0
-	);
+	const { data } = useTagsByWorkspaceQuery(workspaceId);
+	return data?.length ?? 0;
 }
 
 /**
@@ -214,20 +124,8 @@ export function usePopularTags(
 	workspaceId: string | undefined,
 	limit = 10,
 ): TagInterface[] {
-	return (
-		useLiveQuery(
-			async () => {
-				if (!workspaceId) return [];
-				const tags = await legacyDatabase.tags
-					.where("workspace")
-					.equals(workspaceId)
-					.toArray();
-				return tags.sort((a, b) => b.count - a.count).slice(0, limit);
-			},
-			[workspaceId, limit],
-			[],
-		) ?? []
-	);
+	const { data } = useTopTagsQuery(workspaceId, limit);
+	return data ?? [];
 }
 
 /**
@@ -241,23 +139,13 @@ export function useRecentTags(
 	workspaceId: string | undefined,
 	limit = 10,
 ): TagInterface[] {
-	return (
-		useLiveQuery(
-			async () => {
-				if (!workspaceId) return [];
-				const tags = await legacyDatabase.tags
-					.where("workspace")
-					.equals(workspaceId)
-					.toArray();
-				return tags
-					.sort(
-						(a, b) =>
-							new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime(),
-					)
-					.slice(0, limit);
-			},
-			[workspaceId, limit],
-			[],
-		) ?? []
-	);
+	const { data } = useTagsByWorkspaceQuery(workspaceId);
+	if (!data) return [];
+	// Sort by lastUsed and take top N
+	return [...data]
+		.sort(
+			(a, b) =>
+				new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime(),
+		)
+		.slice(0, limit);
 }
