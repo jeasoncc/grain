@@ -15,11 +15,14 @@ import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import type { SerializedEditorState } from "lexical";
-// TODO: Phase 4 - 迁移到 repo/tag.repo.fn.ts
-import { syncTagCache } from "@/db";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
-import { getNode, updateContentByNodeId, updateNode } from "@/repo";
+import {
+	getNode,
+	syncTagCache,
+	updateContentByNodeId,
+	updateNode,
+} from "@/repo";
 import { extractTagsFromContent } from "./save.debounce.fn";
 
 // ============================================================================
@@ -143,15 +146,16 @@ const updateNodeTags = (
 
 /**
  * 同步标签缓存
+ * 注意：新的 Rust 后端 syncTagCache 会自动从 nodes 表同步所有标签
  */
 const syncTagCacheForWorkspace = (
 	workspaceId: string,
-	tags: string[],
+	_tags: string[],
 ): TE.TaskEither<AppError, void> =>
 	pipe(
 		TE.tryCatch(
 			async () => {
-				await syncTagCache(workspaceId, tags)();
+				await syncTagCache(workspaceId)();
 			},
 			(error): AppError => ({
 				type: "DB_ERROR",

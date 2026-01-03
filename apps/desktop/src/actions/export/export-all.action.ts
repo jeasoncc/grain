@@ -11,8 +11,6 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-// TODO: Phase 5 - 迁移到 repo/attachment.repo.fn.ts
-import { getAllAttachments, getAttachmentsByProject } from "@/db";
 import {
 	createExportBundle,
 	serializeBundle,
@@ -23,6 +21,8 @@ import logger from "@/log";
 import {
 	getAllNodes,
 	getAllWorkspaces,
+	getAttachments,
+	getAttachmentsByProject,
 	getContentsByNodeIds,
 	getNodesByWorkspace,
 	getWorkspaceById,
@@ -98,7 +98,7 @@ export function exportAll(
 					TE.map(toAttachmentData),
 				);
 			}
-			return pipe(getAllAttachments(), TE.map(toAttachmentData));
+			return pipe(getAttachments(), TE.map(toAttachmentData));
 		}),
 		// 创建导出包
 		TE.map(({ workspaces, nodes, contents, attachments }) => {
