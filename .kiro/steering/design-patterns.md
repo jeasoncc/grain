@@ -1,6 +1,3 @@
----
-inclusion: manual
----
 
 # 设计模式
 

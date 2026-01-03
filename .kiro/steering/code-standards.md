@@ -1,3 +1,6 @@
+---
+inclusion: manual
+---
 # 代码规范
 
 本文档定义 Grain 项目的代码质量标准。
