@@ -8,6 +8,7 @@
 //! - `types/` - 类型定义（Interface + Builder + Entity）
 //! - `db/` - 数据库操作函数
 //! - `fn/` - 纯函数
+//! - `macros/` - 声明式宏（Warp routes 和 Tauri commands）
 //!
 //! ## 使用示例
 //!
@@ -21,11 +22,17 @@
 //!
 //! // 直接调用端点
 //! let workspaces = GetWorkspaces::execute(&db, ()).await?;
+//!
+//! // 使用宏生成 Warp 路由
+//! let routes = warp_routes!(db,
+//!     GetWorkspaces => GET "/api/workspaces",
+//! );
 //! ```
 
 pub mod api;
 pub mod db;
 pub mod r#fn;
+pub mod macros;
 pub mod types;
 
 #[cfg(test)]
