@@ -21,11 +21,7 @@ import type {
 	TagResponse,
 	UpdateTagRequest,
 } from "@/types/rust-api";
-import type {
-	TagCreateInput,
-	TagInterface,
-	TagUpdateInput,
-} from "@/types/tag";
+import type { TagCreateInput, TagInterface, TagUpdateInput } from "@/types/tag";
 
 // ============================================
 // 解码函数 (Rust → 前端)

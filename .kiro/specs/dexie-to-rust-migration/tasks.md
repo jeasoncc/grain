@@ -191,7 +191,7 @@
     - 创建 `repo/attachment.repo.fn.ts`
     - 封装 API Client 调用
     - _Requirements: 6.4_
-  - [ ] 9.7 编写 attachment.repo.fn.ts 单元测试
+  - [x] 9.7 编写 attachment.repo.fn.ts 单元测试
     - Mock API Client
     - 测试类型转换正确性
     - _Requirements: 6.4_

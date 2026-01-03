@@ -112,7 +112,9 @@ describe("attachment.repo.fn", () => {
 
 	describe("getAttachments", () => {
 		it("should return Right with empty array when no attachments exist", async () => {
-			mockApi.getAttachments.mockReturnValue(() => Promise.resolve(E.right([])));
+			mockApi.getAttachments.mockReturnValue(() =>
+				Promise.resolve(E.right([])),
+			);
 
 			const result = await runTE(getAttachments());
 
@@ -144,7 +146,9 @@ describe("attachment.repo.fn", () => {
 
 		it("should return Left with error on API failure", async () => {
 			const error = { type: "DB_ERROR", message: "Failed to get attachments" };
-			mockApi.getAttachments.mockReturnValue(() => Promise.resolve(E.left(error)));
+			mockApi.getAttachments.mockReturnValue(() =>
+				Promise.resolve(E.left(error)),
+			);
 
 			const result = await runTE(getAttachments());
 
@@ -198,7 +202,9 @@ describe("attachment.repo.fn", () => {
 
 	describe("getAttachment", () => {
 		it("should return Right with null when attachment not found", async () => {
-			mockApi.getAttachment.mockReturnValue(() => Promise.resolve(E.right(null)));
+			mockApi.getAttachment.mockReturnValue(() =>
+				Promise.resolve(E.right(null)),
+			);
 
 			const result = await runTE(getAttachment("non-existent"));
 
@@ -227,7 +233,9 @@ describe("attachment.repo.fn", () => {
 
 		it("should return Left with error on API failure", async () => {
 			const error = { type: "DB_ERROR", message: "Failed to get attachment" };
-			mockApi.getAttachment.mockReturnValue(() => Promise.resolve(E.left(error)));
+			mockApi.getAttachment.mockReturnValue(() =>
+				Promise.resolve(E.left(error)),
+			);
 
 			const result = await runTE(getAttachment("attachment-test-1"));
 
@@ -255,7 +263,9 @@ describe("attachment.repo.fn", () => {
 		});
 
 		it("should return Left with NOT_FOUND error when attachment not found", async () => {
-			mockApi.getAttachment.mockReturnValue(() => Promise.resolve(E.right(null)));
+			mockApi.getAttachment.mockReturnValue(() =>
+				Promise.resolve(E.right(null)),
+			);
 
 			const result = await runTE(getAttachmentOrFail("non-existent"));
 
@@ -417,7 +427,10 @@ describe("attachment.repo.fn", () => {
 		});
 
 		it("should return Left with error on API failure", async () => {
-			const error = { type: "DB_ERROR", message: "Failed to create attachment" };
+			const error = {
+				type: "DB_ERROR",
+				message: "Failed to create attachment",
+			};
 			mockApi.createAttachment.mockReturnValue(() =>
 				Promise.resolve(E.left(error)),
 			);
@@ -461,7 +474,10 @@ describe("attachment.repo.fn", () => {
 		});
 
 		it("should return Left with error on API failure", async () => {
-			const error = { type: "DB_ERROR", message: "Failed to update attachment" };
+			const error = {
+				type: "DB_ERROR",
+				message: "Failed to update attachment",
+			};
 			mockApi.updateAttachment.mockReturnValue(() =>
 				Promise.resolve(E.left(error)),
 			);
@@ -489,11 +505,16 @@ describe("attachment.repo.fn", () => {
 			const result = await runTE(deleteAttachment("attachment-test-1"));
 
 			expect(E.isRight(result)).toBe(true);
-			expect(mockApi.deleteAttachment).toHaveBeenCalledWith("attachment-test-1");
+			expect(mockApi.deleteAttachment).toHaveBeenCalledWith(
+				"attachment-test-1",
+			);
 		});
 
 		it("should return Left with error on deletion failure", async () => {
-			const error = { type: "DB_ERROR", message: "Failed to delete attachment" };
+			const error = {
+				type: "DB_ERROR",
+				message: "Failed to delete attachment",
+			};
 			mockApi.deleteAttachment.mockReturnValue(() =>
 				Promise.resolve(E.left(error)),
 			);

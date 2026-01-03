@@ -105,7 +105,30 @@ export {
 	reorderNodes,
 	updateNode,
 } from "./node.repo.fn";
-
+// Tag Repository
+export * as tagRepo from "./tag.repo.fn";
+export {
+	addTag,
+	createTag,
+	decrementTagCount,
+	deleteTag,
+	deleteTagsByWorkspace,
+	getNodesByTag,
+	getOrCreateTag,
+	getTag,
+	getTagById,
+	getTagByName,
+	getTagGraphData,
+	getTagOrFail,
+	getTagsByWorkspace,
+	getTopTags,
+	incrementTagCount,
+	rebuildTagCache,
+	recalculateTagCounts,
+	searchTags,
+	syncTagCache,
+	updateTag,
+} from "./tag.repo.fn";
 // User Repository
 export * as userRepo from "./user.repo.fn";
 export {
@@ -124,6 +147,7 @@ export {
 	updateUser,
 	updateUserLastLogin,
 } from "./user.repo.fn";
+
 // Workspace Repository
 export * as workspaceRepo from "./workspace.repo.fn";
 export {
