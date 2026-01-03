@@ -1,223 +1,258 @@
-# Implementation Tasks
-
-## Task 1: 修复 activity-bar.container.fn.tsx 代码规范问题
-
-**Priority**: High  
-**Status**: Done ✅
-
-### Description
-修复已迁移文件中的代码规范问题。
-
-### Acceptance Criteria
-- [x] 移除未使用的 `NodeInterface` import
-- [x] 将 `console.error` 替换为 `logger.error`
-- [x] 确保所有注释为中文
-- [x] 使用 `@/actions/workspace` 而非 `@/db`
-- [x] 使用 TaskEither 和 fp-ts pipe
-
-### Files Modified
-- `apps/desktop/src/components/activity-bar/activity-bar.container.fn.tsx`
-- `apps/desktop/src/actions/workspace/update-workspace.action.ts`
-- `apps/desktop/src/actions/workspace/create-workspace.action.ts`
-
-### Verification
-- 代码诊断无错误
-- workspace 操作已完全迁移到 Rust 后端
-
----
-
-## Task 2: 迁移 file-tree-panel.container.fn.tsx
-
-**Priority**: High  
-**Status**: Pending
-
-### Description
-将 file-tree-panel 组件从 Dexie 迁移到 Rust 后端。
-
-### Acceptance Criteria
-- [ ] 将 `getNodeById` 从 `@/db` 迁移到 `@/repo`
-- [ ] 将 `setNodeCollapsed` 从 `@/db` 迁移到 `@/repo`
-- [ ] 使用 TaskEither 处理错误
-- [ ] 添加中文注释
-
-### Files to Modify
-- `apps/desktop/src/components/panels/file-tree-panel/file-tree-panel.container.fn.tsx`
-
-### Dependencies
-- 需要在 `@/repo/node.repo.fn.ts` 中添加 `setNodeCollapsed` 函数
-
----
-
-## Task 3: 迁移 wiki-hover-preview-connected.tsx
-
-**Priority**: High  
-**Status**: Pending
-
-### Description
-将 wiki-hover-preview 组件从 Dexie 迁移到 Rust 后端。
-
-### Acceptance Criteria
-- [ ] 将 `getContentByNodeId` 从 `@/db` 迁移到 `@/repo`
-- [ ] 将 `getNodeById` 从 `@/db` 迁移到 `@/repo`
-- [ ] 使用 TaskEither 处理错误
-
-### Files to Modify
-- `apps/desktop/src/components/blocks/wiki-hover-preview-connected.tsx`
-
----
-
-## Task 4: 迁移 diagram-editor.container.fn.tsx
-
-**Priority**: High  
-**Status**: Pending
-
-### Description
-将 diagram-editor 组件从 Dexie 迁移到 Rust 后端。
-
-### Acceptance Criteria
-- [ ] 将 `getContentByNodeId` 从 `@/db` 迁移到 `@/repo`
-- [ ] 使用 TaskEither 处理错误
-
-### Files to Modify
-- `apps/desktop/src/components/diagram-editor/diagram-editor.container.fn.tsx`
-
----
-
-## Task 5: 迁移 code-editor.container.fn.tsx
-
-**Priority**: High  
-**Status**: Pending
-
-### Description
-将 code-editor 组件从 Dexie 迁移到 Rust 后端。
-
-### Acceptance Criteria
-- [ ] 将 `getContentByNodeId` 从 `@/db` 迁移到 `@/repo`
-- [ ] 使用 TaskEither 处理错误
-
-### Files to Modify
-- `apps/desktop/src/components/code-editor/code-editor.container.fn.tsx`
-
----
-
-## Task 6: 迁移 save.document.fn.ts
-
-**Priority**: Medium  
-**Status**: Pending
-
-### Description
-将文档保存功能从 Dexie 迁移到 Rust 后端。
-
-### Acceptance Criteria
-- [ ] 将 `updateContentByNodeId` 从 `@/db` 迁移到 `@/repo`
-- [ ] 将 `updateNode` 从 `@/db` 迁移到 `@/repo`
-- [ ] 使用 TaskEither 处理错误
-
-### Files to Modify
-- `apps/desktop/src/fn/save/save.document.fn.ts`
-- `apps/desktop/src/fn/save/unified-save.service.ts`
-- `apps/desktop/src/lib/save-service-manager.ts`
-
----
-
-## Task 7: 迁移 search.engine.fn.ts
-
-**Priority**: Medium  
-**Status**: Pending
-
-### Description
-将搜索功能从 Dexie 迁移到 Rust 后端。
-
-### Acceptance Criteria
-- [ ] 将 `getNodesByWorkspace` 从 `@/db` 迁移到 `@/repo`
-- [ ] 将 `getWorkspaceById` 从 `@/db` 迁移到 `@/repo`
-- [ ] 使用 TaskEither 处理错误
-
-### Files to Modify
-- `apps/desktop/src/fn/search/search.engine.fn.ts`
-
----
-
-## Task 8: 迁移 wiki.resolve.fn.ts
-
-**Priority**: Medium  
-**Status**: Pending
-
-### Description
-将 Wiki 解析功能从 Dexie 迁移到 Rust 后端。
-
-### Acceptance Criteria
-- [ ] 将 `getContentsByNodeIds` 从 `@/db` 迁移到 `@/repo`
-- [ ] 将 `getNodesByWorkspace` 从 `@/db` 迁移到 `@/repo`
-- [ ] 使用 TaskEither 处理错误
-
-### Files to Modify
-- `apps/desktop/src/fn/wiki/wiki.resolve.fn.ts`
-
----
-
-## Task 9: 迁移 export actions
-
-**Priority**: Low  
-**Status**: Pending
-
-### Description
-将导出功能从 Dexie 迁移到 Rust 后端。
-
-### Acceptance Criteria
-- [ ] 迁移 `export-workspace-markdown.action.ts`
-- [ ] 迁移 `export-json.action.ts`
-- [ ] 迁移 `export-markdown.action.ts`
-- [ ] 迁移 `export-all.action.ts`
-- [ ] 迁移 `export-orgmode.action.ts`
-- [ ] 迁移 `export-project.action.ts`
-
-### Files to Modify
-- `apps/desktop/src/actions/export/*.ts`
-
----
-
-## Task 10: 迁移 import actions
-
-**Priority**: Low  
-**Status**: Pending
-
-### Description
-将导入功能从 Dexie 迁移到 Rust 后端。
-
-### Acceptance Criteria
-- [ ] 迁移 `import-json.action.ts`
-- [ ] 迁移 `import-markdown.action.ts`
-
-### Files to Modify
-- `apps/desktop/src/actions/import/*.ts`
-
----
-
-## Task 11: 添加 Repository 层缺失函数
-
-**Priority**: High  
-**Status**: Pending
-
-### Description
-在 Repository 层添加迁移所需的函数。
-
-### Acceptance Criteria
-- [ ] 添加 `setNodeCollapsed` 到 `node.repo.fn.ts`
-- [ ] 添加 `getContentsByNodeIds` 到 `content.repo.fn.ts`
-- [ ] 确保所有函数返回 TaskEither
-
-### Files to Modify
-- `apps/desktop/src/repo/node.repo.fn.ts`
-- `apps/desktop/src/repo/content.repo.fn.ts`
-
----
-
-## Summary
-
-| Priority | Task Count | Status |
-|----------|------------|--------|
-| High | 6 | 1 Done, 5 Pending |
-| Medium | 3 | Pending |
-| Low | 2 | Pending |
-| **Total** | **11** | **1 Done** |
+# Implementation Plan: Dexie to Rust Migration
+
+## Overview
+
+本实现计划将前端 Dexie (IndexedDB) 数据层迁移到 Rust 后端 (SQLite)。采用渐进式迁移策略，分 6 个阶段完成，确保每个阶段可独立验证。
+
+## Tasks
+
+- [ ] 1. Phase 1: 统一已迁移模块的调用路径
+  - [ ] 1.1 更新 Node 相关调用
+    - 搜索所有从 `@/db` 导入 Node 函数的文件
+    - 将导入改为从 `@/repo` 导入
+    - 更新函数调用签名（TaskEither vs Promise）
+    - _Requirements: 1.1_
+  - [ ] 1.2 更新 Content 相关调用
+    - 搜索所有从 `@/db` 导入 Content 函数的文件
+    - 将导入改为从 `@/repo` 导入
+    - _Requirements: 1.2_
+  - [ ] 1.3 更新 Workspace 相关调用
+    - 搜索所有从 `@/db` 导入 Workspace 函数的文件
+    - 将导入改为从 `@/repo` 导入
+    - _Requirements: 1.3_
+  - [ ] 1.4 删除已迁移的 Dexie 文件
+    - 删除 `db/node.db.fn.ts` 和测试文件
+    - 删除 `db/content.db.fn.ts` 和测试文件
+    - 删除 `db/workspace.db.fn.ts` 和测试文件
+    - _Requirements: 1.4_
+
+- [ ] 2. Checkpoint - Phase 1 验证
+  - 确保所有测试通过
+  - 验证 Node/Content/Workspace 功能正常
+  - 如有问题请告知
+
+- [ ] 3. Phase 2: 创建 Backup/ClearData Repo 层
+  - [ ] 3.1 创建 backup.repo.fn.ts
+    - 创建 `repo/backup.repo.fn.ts`
+    - 封装 `api.createBackup()`, `api.restoreBackup()`, `api.listBackups()`, `api.deleteBackup()`, `api.cleanupOldBackups()`
+    - 使用 TaskEither 返回类型
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
+  - [ ] 3.2 编写 backup.repo.fn.ts 单元测试
+    - Mock API Client
+    - 测试各个函数的调用和返回值
+    - _Requirements: 2.2, 2.3, 2.4, 2.5, 2.6_
+  - [ ] 3.3 创建 clear-data.repo.fn.ts
+    - 创建 `repo/clear-data.repo.fn.ts`
+    - 封装 `api.clearSqliteData()`, `api.clearSqliteDataKeepUsers()`
+    - 添加 `clearLogs()` 函数调用本地 log-db
+    - _Requirements: 3.1, 3.2, 3.3, 3.4_
+  - [ ] 3.4 编写 clear-data.repo.fn.ts 单元测试
+    - 测试 SQLite 清理调用 API
+    - 测试日志清理调用本地 IndexedDB
+    - _Requirements: 3.2, 3.3, 3.4_
+  - [ ] 3.5 更新 backup 调用方
+    - 搜索所有使用 `db/backup.db.fn.ts` 的文件
+    - 更新为使用 `repo/backup.repo.fn.ts`
+    - _Requirements: 2.2, 2.3, 2.4, 2.5, 2.6_
+  - [ ] 3.6 更新 clear-data 调用方
+    - 搜索所有使用 `db/clear-data.db.fn.ts` 的文件
+    - 更新为使用 `repo/clear-data.repo.fn.ts`
+    - _Requirements: 3.2, 3.3, 3.4_
+  - [ ] 3.7 删除已迁移的 Dexie 文件
+    - 删除 `db/backup.db.fn.ts` 和测试文件
+    - 删除 `db/clear-data.db.fn.ts` 和测试文件
+    - _Requirements: 2.1, 3.1_
+
+- [ ] 4. Checkpoint - Phase 2 验证
+  - 确保所有测试通过
+  - 验证 Backup/ClearData 功能正常
+  - 如有问题请告知
+
+- [ ] 5. Phase 3: 实现 User Rust 后端
+  - [ ] 5.1 创建 User 类型定义 (rust-core)
+    - 创建 `rust-core/src/types/user/mod.rs`
+    - 创建 `rust-core/src/types/user/user_interface.rs`
+    - 定义 UserEntity, CreateUserRequest, UpdateUserRequest, UserResponse
+    - _Requirements: 4.1_
+  - [ ] 5.2 创建 User 数据库函数 (rust-core)
+    - 创建 `rust-core/src/db/user_db_fn.rs`
+    - 实现 CRUD 函数: create, find_by_id, find_all, update, delete
+    - 实现查询函数: find_by_email, find_by_username
+    - _Requirements: 4.2, 4.3_
+  - [ ] 5.3 编写 User 数据库函数测试
+    - **Property 2: User CRUD Round Trip**
+    - **Validates: Requirements 4.2, 4.3**
+  - [ ] 5.4 创建 User Tauri Commands
+    - 创建 `rust-core/src/tauri/commands/user_commands.rs`
+    - 实现 get_users, get_user, create_user, update_user, delete_user
+    - 实现 get_user_by_email, get_user_by_username, get_current_user
+    - 注册到 Tauri handler
+    - _Requirements: 4.2, 4.3_
+  - [ ] 5.5 更新 API Client
+    - 在 `db/api-client.fn.ts` 添加 User 相关方法
+    - 添加 getUsers, getUser, createUser, updateUser, deleteUser
+    - 添加 getUserByEmail, getUserByUsername, getCurrentUser
+    - _Requirements: 4.5_
+  - [ ] 5.6 创建 user.repo.fn.ts
+    - 创建 `repo/user.repo.fn.ts`
+    - 封装 API Client 调用
+    - 添加 Codec 层类型转换
+    - _Requirements: 4.4_
+  - [ ] 5.7 编写 user.repo.fn.ts 单元测试
+    - Mock API Client
+    - 测试类型转换正确性
+    - _Requirements: 4.4_
+  - [ ] 5.8 更新 use-user.ts Hook
+    - 移除 `useLiveQuery` 和 Dexie 依赖
+    - 改为使用 `repo/user.repo.fn.ts`
+    - 使用 React Query 或自定义 Hook 管理状态
+    - _Requirements: 8.1_
+  - [ ] 5.9 删除 User Dexie 文件
+    - 删除 `db/user.db.fn.ts` 和测试文件
+    - _Requirements: 4.6_
+
+- [ ] 6. Checkpoint - Phase 3 验证
+  - 确保所有测试通过
+  - 验证 User 功能正常
+  - 如有问题请告知
+
+- [ ] 7. Phase 4: 实现 Tag Rust 后端
+  - [ ] 7.1 创建 Tag 类型定义 (rust-core)
+    - 创建 `rust-core/src/types/tag/mod.rs`
+    - 创建 `rust-core/src/types/tag/tag_interface.rs`
+    - 定义 TagEntity, CreateTagRequest, UpdateTagRequest, TagResponse
+    - 定义 TagGraphData, TagGraphNode, TagGraphEdge
+    - _Requirements: 5.1_
+  - [ ] 7.2 创建 Tag 数据库函数 (rust-core)
+    - 创建 `rust-core/src/db/tag_db_fn.rs`
+    - 实现 CRUD 函数
+    - 实现查询函数: search_tags, get_nodes_by_tag, get_tag_graph_data
+    - 实现同步函数: sync_tag_cache, rebuild_tag_cache, recalculate_tag_counts
+    - _Requirements: 5.2, 5.3, 5.4_
+  - [ ] 7.3 编写 Tag 数据库函数测试
+    - **Property 3: Tag CRUD Round Trip**
+    - **Property 4: Tag Count Consistency**
+    - **Validates: Requirements 5.2, 5.4**
+  - [ ] 7.4 创建 Tag Tauri Commands
+    - 创建 `rust-core/src/tauri/commands/tag_commands.rs`
+    - 实现所有 Tag 相关命令
+    - 注册到 Tauri handler
+    - _Requirements: 5.2, 5.3, 5.4_
+  - [ ] 7.5 更新 API Client
+    - 在 `db/api-client.fn.ts` 添加 Tag 相关方法
+    - _Requirements: 5.6_
+  - [ ] 7.6 创建 tag.repo.fn.ts
+    - 创建 `repo/tag.repo.fn.ts`
+    - 封装 API Client 调用
+    - _Requirements: 5.5_
+  - [ ] 7.7 编写 tag.repo.fn.ts 单元测试
+    - Mock API Client
+    - 测试类型转换正确性
+    - _Requirements: 5.5_
+  - [ ] 7.8 更新 use-tag.ts Hook
+    - 移除 `useLiveQuery` 和 Dexie 依赖
+    - 改为使用 `repo/tag.repo.fn.ts`
+    - _Requirements: 8.2_
+  - [ ] 7.9 删除 Tag Dexie 文件
+    - 删除 `db/tag.db.fn.ts` 和测试文件
+    - _Requirements: 5.7_
+
+- [ ] 8. Checkpoint - Phase 4 验证
+  - 确保所有测试通过
+  - 验证 Tag 功能正常
+  - 如有问题请告知
+
+- [ ] 9. Phase 5: 实现 Attachment Rust 后端
+  - [ ] 9.1 创建 Attachment 类型定义 (rust-core)
+    - 创建 `rust-core/src/types/attachment/mod.rs`
+    - 创建 `rust-core/src/types/attachment/attachment_interface.rs`
+    - 定义 AttachmentEntity, CreateAttachmentRequest, UpdateAttachmentRequest, AttachmentResponse
+    - _Requirements: 6.1_
+  - [ ] 9.2 创建 Attachment 数据库函数 (rust-core)
+    - 创建 `rust-core/src/db/attachment_db_fn.rs`
+    - 实现 CRUD 函数
+    - 实现查询函数: get_attachments_by_project, get_attachments_by_type, get_images_by_project, get_audio_files_by_project
+    - _Requirements: 6.2, 6.3_
+  - [ ] 9.3 编写 Attachment 数据库函数测试
+    - **Property 5: Attachment CRUD Round Trip**
+    - **Validates: Requirements 6.2**
+  - [ ] 9.4 创建 Attachment Tauri Commands
+    - 创建 `rust-core/src/tauri/commands/attachment_commands.rs`
+    - 实现所有 Attachment 相关命令
+    - 注册到 Tauri handler
+    - _Requirements: 6.2, 6.3_
+  - [ ] 9.5 更新 API Client
+    - 在 `db/api-client.fn.ts` 添加 Attachment 相关方法
+    - _Requirements: 6.5_
+  - [ ] 9.6 创建 attachment.repo.fn.ts
+    - 创建 `repo/attachment.repo.fn.ts`
+    - 封装 API Client 调用
+    - _Requirements: 6.4_
+  - [ ] 9.7 编写 attachment.repo.fn.ts 单元测试
+    - Mock API Client
+    - 测试类型转换正确性
+    - _Requirements: 6.4_
+  - [ ] 9.8 更新 use-attachment.ts Hook
+    - 移除 `useLiveQuery` 和 Dexie 依赖
+    - 改为使用 `repo/attachment.repo.fn.ts`
+    - _Requirements: 8.3_
+  - [ ] 9.9 删除 Attachment Dexie 文件
+    - 删除 `db/attachment.db.fn.ts` 和测试文件
+    - _Requirements: 6.6_
+
+- [ ] 10. Checkpoint - Phase 5 验证
+  - 确保所有测试通过
+  - 验证 Attachment 功能正常
+  - 如有问题请告知
+
+- [ ] 11. Phase 6: 清理和数据迁移
+  - [ ] 11.1 更新 db/database.ts
+    - 移除 nodes, contents, workspaces, users, attachments, tags, dbVersions 表定义
+    - 只保留日志相关的表
+    - 重命名 `GrainDatabase` 为 `LogDatabase`
+    - _Requirements: 7.1, 7.2, 7.3_
+  - [ ] 11.2 更新 db/index.ts
+    - 移除所有已迁移模块的导出
+    - 只保留日志相关函数导出
+    - 添加 repo 层的重新导出（兼容性）
+    - _Requirements: 7.4_
+  - [ ] 11.3 更新 init.db.fn.ts
+    - 移除 Dexie 初始化逻辑
+    - 改为调用 Rust 后端初始化
+    - 使用 repo 层函数
+    - _Requirements: 11.1, 11.2, 11.3, 11.4_
+  - [ ] 11.4 实现数据迁移工具
+    - 创建 `fn/migration/dexie-to-sqlite.migration.fn.ts`
+    - 实现检测 Dexie 数据是否存在
+    - 实现读取 Dexie 数据
+    - 实现写入 SQLite（通过 repo 层）
+    - 实现迁移状态标记
+    - 实现回滚逻辑
+    - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6_
+  - [ ] 11.5 编写数据迁移测试
+    - **Property 8: Migration Data Preservation**
+    - **Property 9: Migration Rollback**
+    - **Validates: Requirements 10.2, 10.3, 10.4, 10.5**
+  - [ ] 11.6 移除 dexie-react-hooks 依赖
+    - 从 package.json 移除 `dexie-react-hooks`
+    - 确保没有文件使用该依赖
+    - _Requirements: 8.4_
+  - [ ] 11.7 清理未使用的 Dexie 文件
+    - 删除 `db/init.db.fn.ts` 和测试文件（如果完全迁移）
+    - 保留 `db/log-db.ts`
+    - _Requirements: 9.1, 9.2_
+
+- [ ] 12. Final Checkpoint - 完整验证
+  - 确保所有测试通过
+  - 验证所有功能正常
+  - 验证数据迁移工具正常
+  - 如有问题请告知
+
+## Notes
+
+- All tasks are required for comprehensive testing
+- Each task references specific requirements for traceability
+- Checkpoints ensure incremental validation
+- Property tests validate universal correctness properties
+- Unit tests validate specific examples and edge cases
+- 迁移过程中保持向后兼容，确保用户数据不丢失

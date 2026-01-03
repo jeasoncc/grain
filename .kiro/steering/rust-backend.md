@@ -1,6 +1,3 @@
----
-inclusion: manual
----
 
 # Rust 后端架构规范
 
