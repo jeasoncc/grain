@@ -80,8 +80,8 @@ pub use types::content::{
 // ============================================
 
 pub use types::tag::{
-    CreateTagRequest, TagActiveModel, TagColumn, TagEntity, TagModel, TagResponse,
-    UpdateTagRequest,
+    CreateTagRequest, TagActiveModel, TagColumn, TagEntity, TagGraphData, TagGraphEdge,
+    TagGraphNode, TagModel, TagResponse, UpdateTagRequest,
 };
 
 // ============================================

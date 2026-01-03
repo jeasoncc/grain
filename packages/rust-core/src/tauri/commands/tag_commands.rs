@@ -1,7 +1,7 @@
 //! Tag Tauri Commands
 
 use crate::db::tag_db_fn;
-use crate::{CreateTagRequest, TagResponse, UpdateTagRequest};
+use crate::{CreateTagRequest, TagGraphData, TagResponse, UpdateTagRequest};
 use sea_orm::DatabaseConnection;
 use tauri::State;
 
@@ -120,6 +120,77 @@ pub async fn delete_tags_by_workspace(
     workspace_id: String,
 ) -> Result<u64, String> {
     tag_db_fn::delete_by_workspace(&db, &workspace_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+// ============================================================================
+// 查询命令
+// ============================================================================
+
+#[tauri::command]
+pub async fn search_tags(
+    db: State<'_, DatabaseConnection>,
+    workspace_id: String,
+    query: String,
+) -> Result<Vec<TagResponse>, String> {
+    tag_db_fn::search_tags(&db, &workspace_id, &query)
+        .await
+        .map(|tags| tags.into_iter().map(TagResponse::from).collect())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_nodes_by_tag(
+    db: State<'_, DatabaseConnection>,
+    workspace_id: String,
+    tag_name: String,
+) -> Result<Vec<String>, String> {
+    tag_db_fn::get_nodes_by_tag(&db, &workspace_id, &tag_name)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_tag_graph_data(
+    db: State<'_, DatabaseConnection>,
+    workspace_id: String,
+) -> Result<TagGraphData, String> {
+    tag_db_fn::get_tag_graph_data(&db, &workspace_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+// ============================================================================
+// 同步命令
+// ============================================================================
+
+#[tauri::command]
+pub async fn sync_tag_cache(
+    db: State<'_, DatabaseConnection>,
+    workspace_id: String,
+) -> Result<(), String> {
+    tag_db_fn::sync_tag_cache(&db, &workspace_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn rebuild_tag_cache(
+    db: State<'_, DatabaseConnection>,
+    workspace_id: String,
+) -> Result<(), String> {
+    tag_db_fn::rebuild_tag_cache(&db, &workspace_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn recalculate_tag_counts(
+    db: State<'_, DatabaseConnection>,
+    workspace_id: String,
+) -> Result<(), String> {
+    tag_db_fn::recalculate_tag_counts(&db, &workspace_id)
         .await
         .map_err(|e| e.to_string())
 }

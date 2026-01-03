@@ -143,6 +143,12 @@ pub fn create_builder() -> tauri::Builder<tauri::Wry> {
             decrement_tag_count,
             delete_tag,
             delete_tags_by_workspace,
+            search_tags,
+            get_nodes_by_tag,
+            get_tag_graph_data,
+            sync_tag_cache,
+            rebuild_tag_cache,
+            recalculate_tag_counts,
             // 用户命令
             get_users,
             get_user,
