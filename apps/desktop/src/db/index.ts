@@ -111,6 +111,7 @@ export {
 	reorderNodes,
 	restoreBackup,
 	saveContent,
+	setNodeCollapsed,
 	updateContentByNodeId,
 	updateNode,
 	updateUser,

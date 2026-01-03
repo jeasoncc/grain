@@ -103,6 +103,7 @@ export {
 	getRootNodes,
 	moveNode,
 	reorderNodes,
+	setNodeCollapsed,
 	updateNode,
 } from "./node.repo.fn";
 // Tag Repository

@@ -254,6 +254,18 @@ export const reorderNodes = (
 ): TE.TaskEither<AppError, void> => rustApi.reorderNodes(nodeIds);
 
 /**
+ * 设置节点折叠状态
+ *
+ * @param nodeId - 节点 ID
+ * @param collapsed - 是否折叠
+ */
+export const setNodeCollapsed = (
+	nodeId: string,
+	collapsed: boolean,
+): TE.TaskEither<AppError, NodeInterface> =>
+	updateNode(nodeId, { collapsed });
+
+/**
  * 获取所有节点（跨工作区）
  *
  * 注意：此函数需要先获取所有工作区，然后获取每个工作区的节点
