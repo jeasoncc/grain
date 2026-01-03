@@ -165,7 +165,7 @@
   - 验证 Tag 功能正常
   - 如有问题请告知
 
-- [-] 9. Phase 5: 实现 Attachment Rust 后端
+- [x] 9. Phase 5: 实现 Attachment Rust 后端
   - [x] 9.1 创建 Attachment 类型定义 (rust-core)
     - 创建 `rust-core/src/types/attachment/mod.rs`
     - 创建 `rust-core/src/types/attachment/attachment_interface.rs`
@@ -199,7 +199,7 @@
     - 移除 `useLiveQuery` 和 Dexie 依赖
     - 改为使用 `repo/attachment.repo.fn.ts`
     - _Requirements: 8.3_
-  - [ ] 9.9 删除 Attachment Dexie 文件
+  - [x] 9.9 删除 Attachment Dexie 文件
     - 删除 `db/attachment.db.fn.ts` 和测试文件
     - _Requirements: 6.6_
 

@@ -9,7 +9,7 @@
  */
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { database } from "@/db/database";
+import { legacyDatabase } from "@/db/legacy-database";
 import type { UserInterface, UserPlan } from "@/types/user";
 
 /**

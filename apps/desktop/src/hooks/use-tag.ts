@@ -195,7 +195,7 @@ export function useTagCount(workspaceId: string | undefined): number {
 		useLiveQuery(
 			async () => {
 				if (!workspaceId) return 0;
-				return database.tags.where("workspace").equals(workspaceId).count();
+				return legacyDatabase.tags.where("workspace").equals(workspaceId).count();
 			},
 			[workspaceId],
 			0,
@@ -218,7 +218,7 @@ export function usePopularTags(
 		useLiveQuery(
 			async () => {
 				if (!workspaceId) return [];
-				const tags = await database.tags
+				const tags = await legacyDatabase.tags
 					.where("workspace")
 					.equals(workspaceId)
 					.toArray();
@@ -245,7 +245,7 @@ export function useRecentTags(
 		useLiveQuery(
 			async () => {
 				if (!workspaceId) return [];
-				const tags = await database.tags
+				const tags = await legacyDatabase.tags
 					.where("workspace")
 					.equals(workspaceId)
 					.toArray();
