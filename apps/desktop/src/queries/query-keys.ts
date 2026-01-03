@@ -55,6 +55,30 @@ export const queryKeys = {
 		/** 内容版本 */
 		version: (nodeId: string) => ["contents", "version", nodeId] as const,
 	},
+
+	// ============================================
+	// Attachment Keys
+	// ============================================
+	attachments: {
+		/** 所有附件 */
+		all: ["attachments"] as const,
+		/** 单个附件 */
+		detail: (id: string) => ["attachments", id] as const,
+		/** 项目下的附件 */
+		byProject: (projectId: string) =>
+			["attachments", "project", projectId] as const,
+		/** 按类型 */
+		byType: (projectId: string, type: string) =>
+			["attachments", "type", projectId, type] as const,
+		/** 项目下的图片 */
+		imagesByProject: (projectId: string) =>
+			["attachments", "images", projectId] as const,
+		/** 项目下的音频 */
+		audioByProject: (projectId: string) =>
+			["attachments", "audio", projectId] as const,
+		/** 按路径 */
+		byPath: (filePath: string) => ["attachments", "path", filePath] as const,
+	},
 } as const;
 
 // ============================================
@@ -81,3 +105,13 @@ export type NodeQueryKey =
 export type ContentQueryKey =
 	| ReturnType<typeof queryKeys.contents.byNode>
 	| ReturnType<typeof queryKeys.contents.version>;
+
+/** Attachment query key 类型 */
+export type AttachmentQueryKey =
+	| typeof queryKeys.attachments.all
+	| ReturnType<typeof queryKeys.attachments.detail>
+	| ReturnType<typeof queryKeys.attachments.byProject>
+	| ReturnType<typeof queryKeys.attachments.byType>
+	| ReturnType<typeof queryKeys.attachments.imagesByProject>
+	| ReturnType<typeof queryKeys.attachments.audioByProject>
+	| ReturnType<typeof queryKeys.attachments.byPath>;

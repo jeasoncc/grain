@@ -26,7 +26,7 @@ import type {
 	TableSizes,
 } from "@/types/storage";
 import { clearSqliteData as clearSqliteDataApi } from "./api-client.fn";
-import { database } from "./database";
+import { legacyDatabase } from "./legacy-database";
 
 // ============================================================================
 // SQLite 清理（通过 Rust 后端）
@@ -61,25 +61,25 @@ export const clearIndexedDB = (): TE.TaskEither<AppError, void> =>
 		async () => {
 			logger.info("[DB] 清理 IndexedDB...");
 
-			await database.transaction(
+			await legacyDatabase.transaction(
 				"rw",
 				[
-					database.users,
-					database.workspaces,
-					database.nodes,
-					database.contents,
-					database.attachments,
-					database.tags,
-					database.dbVersions,
+					legacyDatabase.users,
+					legacyDatabase.workspaces,
+					legacyDatabase.nodes,
+					legacyDatabase.contents,
+					legacyDatabase.attachments,
+					legacyDatabase.tags,
+					legacyDatabase.dbVersions,
 				],
 				async () => {
-					await database.users.clear();
-					await database.workspaces.clear();
-					await database.nodes.clear();
-					await database.contents.clear();
-					await database.attachments.clear();
-					await database.tags.clear();
-					await database.dbVersions.clear();
+					await legacyDatabase.users.clear();
+					await legacyDatabase.workspaces.clear();
+					await legacyDatabase.nodes.clear();
+					await legacyDatabase.contents.clear();
+					await legacyDatabase.attachments.clear();
+					await legacyDatabase.tags.clear();
+					await legacyDatabase.dbVersions.clear();
 				},
 			);
 

@@ -31,6 +31,16 @@
  * ```
  */
 
+// Attachment Queries
+export {
+	useAttachment,
+	useAttachmentByPath,
+	useAttachments,
+	useAttachmentsByProject,
+	useAttachmentsByType,
+	useAudioFilesByProject,
+	useImagesByProject,
+} from "./attachment.queries";
 // Content Queries
 export { useContent, useContentVersion } from "./content.queries";
 // Node Queries
@@ -44,6 +54,7 @@ export {
 	useRootNodes,
 } from "./node.queries";
 export type {
+	AttachmentQueryKey,
 	ContentQueryKey,
 	NodeQueryKey,
 	WorkspaceQueryKey,

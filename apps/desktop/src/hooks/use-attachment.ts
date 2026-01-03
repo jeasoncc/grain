@@ -2,18 +2,24 @@
  * @file hooks/use-attachment.ts
  * @description Attachment React Hooks
  *
- * Provides React hooks for accessing attachment data with live updates.
- * Uses dexie-react-hooks for reactive data subscriptions.
+ * Provides React hooks for accessing attachment data.
+ * Uses TanStack Query for data fetching from Rust backend.
  *
- * @requirements 3.3
+ * @requirements 8.3
  */
 
-import { useLiveQuery } from "dexie-react-hooks";
-import { database } from "@/db/database";
+import {
+	useAttachment as useAttachmentQuery,
+	useAttachments as useAttachmentsQuery,
+	useAttachmentsByProject as useAttachmentsByProjectQuery,
+	useAttachmentsByType as useAttachmentsByTypeQuery,
+	useAudioFilesByProject as useAudioFilesByProjectQuery,
+	useImagesByProject as useImagesByProjectQuery,
+} from "@/queries";
 import type { AttachmentInterface, AttachmentType } from "@/types/attachment";
 
 /**
- * Hook to get all attachments with live updates
+ * Hook to get all attachments
  *
  * Returns attachments sorted by uploadedAt (most recent first).
  *
@@ -39,21 +45,12 @@ import type { AttachmentInterface, AttachmentType } from "@/types/attachment";
  * ```
  */
 export function useAllAttachments(): AttachmentInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			const attachments = await database.attachments.toArray();
-			return attachments.sort(
-				(a, b) =>
-					new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
-			);
-		},
-		[],
-		undefined,
-	);
+	const { data } = useAttachmentsQuery();
+	return data;
 }
 
 /**
- * Hook to get a single attachment by ID with live updates
+ * Hook to get a single attachment by ID
  *
  * @param attachmentId - The attachment ID (can be null/undefined)
  * @returns The attachment or undefined
@@ -74,18 +71,12 @@ export function useAllAttachments(): AttachmentInterface[] | undefined {
 export function useAttachment(
 	attachmentId: string | null | undefined,
 ): AttachmentInterface | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!attachmentId) return undefined;
-			return database.attachments.get(attachmentId);
-		},
-		[attachmentId],
-		undefined,
-	);
+	const { data } = useAttachmentQuery(attachmentId);
+	return data ?? undefined;
 }
 
 /**
- * Hook to get attachments by project ID with live updates
+ * Hook to get attachments by project ID
  *
  * @param projectId - The project ID (can be null/undefined)
  * @returns Array of attachments for the project
@@ -106,25 +97,12 @@ export function useAttachment(
 export function useAttachmentsByProject(
 	projectId: string | null | undefined,
 ): AttachmentInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!projectId) return [];
-			const attachments = await database.attachments
-				.where("project")
-				.equals(projectId)
-				.toArray();
-			return attachments.sort(
-				(a, b) =>
-					new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
-			);
-		},
-		[projectId],
-		undefined,
-	);
+	const { data } = useAttachmentsByProjectQuery(projectId);
+	return data;
 }
 
 /**
- * Hook to get attachments by type with live updates
+ * Hook to get attachments by type
  *
  * @param type - The attachment type (can be null/undefined)
  * @returns Array of attachments of the specified type
@@ -132,24 +110,14 @@ export function useAttachmentsByProject(
 export function useAttachmentsByType(
 	type: AttachmentType | null | undefined,
 ): AttachmentInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!type) return [];
-			const attachments = await database.attachments.toArray();
-			return attachments
-				.filter((a) => a.type === type)
-				.sort(
-					(a, b) =>
-						new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
-				);
-		},
-		[type],
-		undefined,
-	);
+	// For global type filtering, we get all attachments and filter
+	const { data: allAttachments } = useAttachmentsQuery();
+	if (!type || !allAttachments) return allAttachments;
+	return allAttachments.filter((a) => a.type === type);
 }
 
 /**
- * Hook to get attachments by project and type with live updates
+ * Hook to get attachments by project and type
  *
  * @param projectId - The project ID
  * @param type - The attachment type
@@ -159,23 +127,8 @@ export function useAttachmentsByProjectAndType(
 	projectId: string | null | undefined,
 	type: AttachmentType | null | undefined,
 ): AttachmentInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!projectId || !type) return [];
-			const attachments = await database.attachments
-				.where("project")
-				.equals(projectId)
-				.toArray();
-			return attachments
-				.filter((a) => a.type === type)
-				.sort(
-					(a, b) =>
-						new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
-				);
-		},
-		[projectId, type],
-		undefined,
-	);
+	const { data } = useAttachmentsByTypeQuery(projectId, type);
+	return data;
 }
 
 /**
@@ -187,7 +140,8 @@ export function useAttachmentsByProjectAndType(
 export function useProjectImages(
 	projectId: string | null | undefined,
 ): AttachmentInterface[] | undefined {
-	return useAttachmentsByProjectAndType(projectId, "image");
+	const { data } = useImagesByProjectQuery(projectId);
+	return data;
 }
 
 /**
@@ -199,7 +153,8 @@ export function useProjectImages(
 export function useProjectAudioFiles(
 	projectId: string | null | undefined,
 ): AttachmentInterface[] | undefined {
-	return useAttachmentsByProjectAndType(projectId, "audio");
+	const { data } = useAudioFilesByProjectQuery(projectId);
+	return data;
 }
 
 /**
@@ -208,19 +163,9 @@ export function useProjectAudioFiles(
  * @returns Array of global attachments
  */
 export function useGlobalAttachments(): AttachmentInterface[] | undefined {
-	return useLiveQuery(
-		async () => {
-			const attachments = await database.attachments.toArray();
-			return attachments
-				.filter((a) => !a.project)
-				.sort(
-					(a, b) =>
-						new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
-				);
-		},
-		[],
-		undefined,
-	);
+	const { data: allAttachments } = useAttachmentsQuery();
+	if (!allAttachments) return undefined;
+	return allAttachments.filter((a) => !a.project);
 }
 
 /**
@@ -229,13 +174,8 @@ export function useGlobalAttachments(): AttachmentInterface[] | undefined {
  * @returns The count of attachments or undefined while loading
  */
 export function useAttachmentCount(): number | undefined {
-	return useLiveQuery(
-		async () => {
-			return database.attachments.count();
-		},
-		[],
-		undefined,
-	);
+	const { data: allAttachments } = useAttachmentsQuery();
+	return allAttachments?.length;
 }
 
 /**
@@ -247,14 +187,8 @@ export function useAttachmentCount(): number | undefined {
 export function useAttachmentCountByProject(
 	projectId: string | null | undefined,
 ): number | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!projectId) return 0;
-			return database.attachments.where("project").equals(projectId).count();
-		},
-		[projectId],
-		undefined,
-	);
+	const { data: attachments } = useAttachmentsByProjectQuery(projectId);
+	return attachments?.length;
 }
 
 /**
@@ -266,18 +200,9 @@ export function useAttachmentCountByProject(
 export function useAttachmentExists(
 	attachmentId: string | null | undefined,
 ): boolean | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!attachmentId) return false;
-			const count = await database.attachments
-				.where("id")
-				.equals(attachmentId)
-				.count();
-			return count > 0;
-		},
-		[attachmentId],
-		undefined,
-	);
+	const { data, isLoading } = useAttachmentQuery(attachmentId);
+	if (isLoading) return undefined;
+	return data !== null && data !== undefined;
 }
 
 /**
@@ -289,16 +214,7 @@ export function useAttachmentExists(
 export function useProjectAttachmentSize(
 	projectId: string | null | undefined,
 ): number | undefined {
-	return useLiveQuery(
-		async () => {
-			if (!projectId) return 0;
-			const attachments = await database.attachments
-				.where("project")
-				.equals(projectId)
-				.toArray();
-			return attachments.reduce((total, a) => total + (a.size || 0), 0);
-		},
-		[projectId],
-		undefined,
-	);
+	const { data: attachments } = useAttachmentsByProjectQuery(projectId);
+	if (!attachments) return undefined;
+	return attachments.reduce((total, a) => total + (a.size || 0), 0);
 }
