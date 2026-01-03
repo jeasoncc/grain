@@ -41,6 +41,16 @@ export {
 	encodeNodeToUpdateRequest,
 	encodeUpdateNode,
 } from "./node.codec";
+// Tag Codec
+export {
+	decodeTag,
+	decodeTagGraphData,
+	decodeTagOptional,
+	decodeTags,
+	encodeCreateTag,
+	encodeUpdateTag,
+	type TagGraphData,
+} from "./tag.codec";
 // User Codec
 export {
 	decodeUser,
