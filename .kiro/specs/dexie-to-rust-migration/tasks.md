@@ -119,7 +119,7 @@
   - 验证 User 功能正常
   - 如有问题请告知
 
-- [-] 7. Phase 4: 实现 Tag Rust 后端
+- [x] 7. Phase 4: 实现 Tag Rust 后端
   - [x] 7.1 创建 Tag 类型定义 (rust-core)
     - 创建 `rust-core/src/types/tag/mod.rs`
     - 创建 `rust-core/src/types/tag/tag_interface.rs`
@@ -136,27 +136,27 @@
     - **Property 3: Tag CRUD Round Trip**
     - **Property 4: Tag Count Consistency**
     - **Validates: Requirements 5.2, 5.4**
-  - [ ] 7.4 创建 Tag Tauri Commands
+  - [x] 7.4 创建 Tag Tauri Commands
     - 创建 `rust-core/src/tauri/commands/tag_commands.rs`
     - 实现所有 Tag 相关命令
     - 注册到 Tauri handler
     - _Requirements: 5.2, 5.3, 5.4_
-  - [ ] 7.5 更新 API Client
+  - [x] 7.5 更新 API Client
     - 在 `db/api-client.fn.ts` 添加 Tag 相关方法
     - _Requirements: 5.6_
-  - [ ] 7.6 创建 tag.repo.fn.ts
+  - [x] 7.6 创建 tag.repo.fn.ts
     - 创建 `repo/tag.repo.fn.ts`
     - 封装 API Client 调用
     - _Requirements: 5.5_
-  - [ ] 7.7 编写 tag.repo.fn.ts 单元测试
+  - [x] 7.7 编写 tag.repo.fn.ts 单元测试
     - Mock API Client
     - 测试类型转换正确性
     - _Requirements: 5.5_
-  - [ ] 7.8 更新 use-tag.ts Hook
+  - [x] 7.8 更新 use-tag.ts Hook
     - 移除 `useLiveQuery` 和 Dexie 依赖
     - 改为使用 `repo/tag.repo.fn.ts`
     - _Requirements: 8.2_
-  - [ ] 7.9 删除 Tag Dexie 文件
+  - [x] 7.9 删除 Tag Dexie 文件
     - 删除 `db/tag.db.fn.ts` 和测试文件
     - _Requirements: 5.7_
 
