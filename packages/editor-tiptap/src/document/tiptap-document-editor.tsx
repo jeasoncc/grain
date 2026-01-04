@@ -2,7 +2,7 @@
  * TiptapDocumentEditor - Rich text editor component using Tiptap
  * @module @grain/editor-tiptap/document
  * 
- * 包含所有可用的 Tiptap 官方扩展
+ * 包含稳定的 Tiptap 官方扩展
  */
 
 import {
@@ -14,10 +14,7 @@ import {
 } from "react";
 import { useEditor, EditorContent, BubbleMenu, FloatingMenu } from "@tiptap/react";
 
-// Core extensions
-// Note: StarterKit already includes Document, Paragraph, Text, Heading, HardBreak,
-// HorizontalRule, History, Dropcursor, Gapcursor, Bold, Italic, Strike, Code,
-// Blockquote, BulletList, ListItem
+// Core extensions - StarterKit includes most basic extensions
 import StarterKit from "@tiptap/starter-kit";
 
 // Text formatting extensions
@@ -28,15 +25,12 @@ import Underline from "@tiptap/extension-underline";
 import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
 import TextAlign from "@tiptap/extension-text-align";
-import FontFamily from "@tiptap/extension-font-family";
-import Typography from "@tiptap/extension-typography";
 
 // Link and media extensions
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
-import Youtube from "@tiptap/extension-youtube";
 
-// List extensions (BulletList and ListItem are in StarterKit)
+// List extensions
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 
@@ -49,7 +43,6 @@ import TableHeader from "@tiptap/extension-table-header";
 // Utility extensions
 import Placeholder from "@tiptap/extension-placeholder";
 import CharacterCount from "@tiptap/extension-character-count";
-import Focus from "@tiptap/extension-focus";
 
 import { createJsonContent } from "@grain/editor-core";
 import type { SerializedContent } from "@grain/editor-core";
@@ -61,46 +54,7 @@ import type {
 /**
  * TiptapDocumentEditor component
  * 
- * A rich text editor built on Tiptap with comprehensive extension support:
- * 
- * Text Formatting:
- * - Bold, Italic, Strike, Code (from StarterKit)
- * - Underline, Subscript, Superscript
- * - Text Color, Highlight/Background Color
- * - Font Family, Text Alignment
- * - Typography (smart quotes, dashes, etc.)
- * 
- * Structure:
- * - Headings (H1-H6)
- * - Paragraphs, Hard Breaks
- * - Horizontal Rules
- * - Blockquotes (from StarterKit)
- * 
- * Lists:
- * - Bullet Lists (from StarterKit)
- * - Ordered Lists
- * - Task Lists (checkboxes)
- * 
- * Tables:
- * - Full table support with headers
- * - Resizable columns
- * 
- * Media:
- * - Links with preview
- * - Images
- * - YouTube embeds
- * 
- * Code:
- * - Inline code (from StarterKit)
- * - Code blocks with syntax highlighting (lowlight)
- * 
- * Utilities:
- * - Character count
- * - Placeholder text
- * - Focus styles
- * - Drag and drop cursor
- * - Gap cursor for tables
- * - History (undo/redo)
+ * A rich text editor built on Tiptap with stable extension support
  */
 export const TiptapDocumentEditor = memo(
   forwardRef<TiptapDocumentEditorHandle, TiptapDocumentEditorProps>(
@@ -136,20 +90,19 @@ export const TiptapDocumentEditor = memo(
         return undefined;
       }, [initialContent]);
 
-      // Initialize Tiptap editor with all extensions
+      // Initialize Tiptap editor with stable extensions
       const editor = useEditor({
         extensions: [
           // StarterKit includes: Document, Paragraph, Text, Bold, Italic, Strike, 
-          // Code, Heading, Blockquote, BulletList, ListItem, HardBreak, 
+          // Code, Heading, Blockquote, BulletList, OrderedList, ListItem, HardBreak, 
           // HorizontalRule, History, Dropcursor, Gapcursor, CodeBlock
           StarterKit.configure({
-            // Configure heading levels
             heading: {
               levels: [1, 2, 3, 4, 5, 6],
             },
           }),
 
-          // Text Style (required for Color and FontFamily)
+          // Text Style (required for Color)
           TextStyle,
 
           // Text Color
@@ -177,14 +130,6 @@ export const TiptapDocumentEditor = memo(
             alignments: ["left", "center", "right", "justify"],
           }),
 
-          // Font Family
-          FontFamily.configure({
-            types: ["textStyle"],
-          }),
-
-          // Typography (smart quotes, dashes, ellipsis, etc.)
-          Typography,
-
           // Link
           Link.configure({
             openOnClick: false,
@@ -202,15 +147,6 @@ export const TiptapDocumentEditor = memo(
             allowBase64: true,
             HTMLAttributes: {
               class: "tiptap-image",
-            },
-          }),
-
-          // YouTube
-          Youtube.configure({
-            inline: false,
-            nocookie: true,
-            HTMLAttributes: {
-              class: "tiptap-youtube",
             },
           }),
 
@@ -248,12 +184,6 @@ export const TiptapDocumentEditor = memo(
           // Character Count
           CharacterCount.configure({
             limit: characterLimit,
-          }),
-
-          // Focus
-          Focus.configure({
-            className: "has-focus",
-            mode: "all",
           }),
         ],
         content: getInitialContent(),
@@ -364,10 +294,6 @@ export const TiptapDocumentEditor = memo(
           setHighlight: (color: string) => 
             editor?.chain().focus().toggleHighlight({ color }).run(),
           unsetHighlight: () => editor?.chain().focus().unsetHighlight().run(),
-          // Font commands
-          setFontFamily: (fontFamily: string) =>
-            editor?.chain().focus().setFontFamily(fontFamily).run(),
-          unsetFontFamily: () => editor?.chain().focus().unsetFontFamily().run(),
           // Link commands
           setLink: (url: string) => 
             editor?.chain().focus().setLink({ href: url }).run(),
@@ -375,9 +301,6 @@ export const TiptapDocumentEditor = memo(
           // Image commands
           insertImage: (src: string, alt?: string, title?: string) =>
             editor?.chain().focus().setImage({ src, alt, title }).run(),
-          // YouTube commands
-          insertYoutube: (src: string) =>
-            editor?.chain().focus().setYoutubeVideo({ src }).run(),
           // Table commands
           insertTable: (rows = 3, cols = 3) =>
             editor?.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run(),
@@ -536,7 +459,4 @@ export const TiptapDocumentEditor = memo(
 
 TiptapDocumentEditor.displayName = "TiptapDocumentEditor";
 
-/**
- * Default export with display name
- */
 export const TiptapDocumentEditorDefault = TiptapDocumentEditor;
