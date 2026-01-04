@@ -1,7 +1,7 @@
 {
   "name": "desktop",
   "private": true,
-  "version": "0.1.279",
+  "version": "0.1.280",
   "type": "module",
   "scripts": {
     "dev": "concurrently -n vite,api -c blue,green \"vite\" \"cargo run --manifest-path src-tauri/../../../apps/api-rust/Cargo.toml\"",
@@ -33,9 +33,11 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@excalidraw/excalidraw": "0.18.0",
+    "@grain/editor-codemirror": "workspace:*",
     "@grain/editor-core": "workspace:*",
     "@grain/editor-lexical": "workspace:*",
     "@grain/editor-monaco": "workspace:*",
+    "@grain/editor-tiptap": "workspace:*",
     "@grain/excalidraw-editor": "workspace:*",
     "@lexical/code": "^0.38.2",
     "@lexical/file": "^0.38.2",

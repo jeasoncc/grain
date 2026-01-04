@@ -15,6 +15,7 @@ import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo } from "react";
 import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-preview-connected";
 import { CodeEditorContainer } from "@/components/code-editor";
+import { CodeMirrorEditorContainer } from "@/components/codemirror-editor";
 import { DiagramEditorContainer } from "@/components/diagram-editor";
 import { EditorTabs } from "@/components/editor-tabs";
 import { ExcalidrawEditorContainer } from "@/components/excalidraw-editor";
@@ -22,6 +23,7 @@ import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help";
 import { SaveStatusIndicator } from "@/components/save-status-indicator";
 import { StoryRightSidebar } from "@/components/story-right-sidebar";
 import { ThemeSelector } from "@/components/theme-selector";
+import { TiptapEditorContainer } from "@/components/tiptap-editor";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
@@ -266,6 +268,8 @@ export const StoryWorkspaceContainer = memo(
 
 			// 处理 Mermaid/PlantUML 类型节点（基于扩展名）
 			if (isDiagramTab && diagramType) {
+				// TODO: 根据 diagramEditorType 选择不同的图表编辑器
+				// 目前只支持 Monaco
 				return (
 					<DiagramEditorContainer
 						key={activeTab.id}
@@ -278,6 +282,9 @@ export const StoryWorkspaceContainer = memo(
 
 			// 处理 Code 类型节点（基于扩展名）
 			if (isCodeTab) {
+				// TODO: 根据 codeEditorType 选择不同的代码编辑器
+				// 目前只支持 Monaco
+				logger.info("[StoryWorkspace] 渲染代码编辑器:", { codeEditorType });
 				return (
 					<CodeEditorContainer
 						key={activeTab.id}
@@ -287,6 +294,31 @@ export const StoryWorkspaceContainer = memo(
 				);
 			}
 
+			// 处理文档类型节点（.grain 文件）
+			// 根据用户设置选择编辑器
+			logger.info("[StoryWorkspace] 渲染文档编辑器:", { documentEditorType });
+
+			if (documentEditorType === "tiptap") {
+				return (
+					<TiptapEditorContainer
+						key={activeTab.id}
+						nodeId={activeTab.nodeId || ""}
+						className="flex-1 min-h-0"
+					/>
+				);
+			}
+
+			if (documentEditorType === "codemirror") {
+				return (
+					<CodeMirrorEditorContainer
+						key={activeTab.id}
+						nodeId={activeTab.nodeId || ""}
+						className="flex-1 min-h-0"
+					/>
+				);
+			}
+
+			// 默认使用 Lexical 编辑器
 			return (
 				<div className="flex-1 overflow-hidden">
 					<MultiEditorContainer
