@@ -1,10 +1,12 @@
 /**
- * @grain/editor
+ * @grain/editor-lexical
  * 
  * A reusable Lexical-based rich text editor package for the Grain monorepo.
  * 
  * This package provides:
- * - Core editor components (Editor, EditorInstance, MultiEditorContainer)
+ * - Document editor (rich text editing with Lexical)
+ * - Code editor (syntax highlighting with Prism)
+ * - Diagram editor (Mermaid/PlantUML preview)
  * - Custom Lexical nodes (MentionNode, TagNode)
  * - Editor plugins (mentions, tags, tooltips)
  * - Editor themes and styling
@@ -19,7 +21,52 @@
 import "./themes/PlaygroundEditorTheme.css";
 
 // ============================================================================
-// Components
+// Document Editor (Rich Text)
+// ============================================================================
+export {
+  LexicalDocumentEditor,
+  LexicalDocumentAdapter,
+  createLexicalDocumentAdapter,
+} from "./document";
+
+export type {
+  LexicalDocumentEditorProps,
+  LexicalDocumentEditorHandle,
+  LexicalDocumentAdapterConfig,
+} from "./document";
+
+// ============================================================================
+// Code Editor
+// ============================================================================
+export {
+  LexicalCodeEditor,
+  LexicalCodeAdapter,
+  createLexicalCodeAdapter,
+} from "./code";
+
+export type {
+  LexicalCodeEditorProps,
+  LexicalCodeEditorHandle,
+  LexicalCodeAdapterConfig,
+} from "./code";
+
+// ============================================================================
+// Diagram Editor
+// ============================================================================
+export {
+  LexicalDiagramEditor,
+  LexicalDiagramAdapter,
+  createLexicalDiagramAdapter,
+} from "./diagram";
+
+export type {
+  LexicalDiagramEditorProps,
+  LexicalDiagramEditorHandle,
+  LexicalDiagramAdapterConfig,
+} from "./diagram";
+
+// ============================================================================
+// Legacy Components (Backward Compatibility)
 // ============================================================================
 export {
   Editor,

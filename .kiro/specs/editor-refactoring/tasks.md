@@ -43,80 +43,80 @@
     - 创建 `src/index.ts` 统一导出所有类型和组件
     - 配置 package.json exports
 
-- [ ] 2. Checkpoint - 确保 editor-core 编译通过
+- [x] 2. Checkpoint - 确保 editor-core 编译通过
   - 运行 `bun run build` 验证包构建
   - 确保所有类型导出正确
 
-- [ ] 3. 重命名 editor 包为 editor-lexical
-  - [ ] 3.1 重命名包目录和更新 package.json
+- [x] 3. 重命名 editor 包为 editor-lexical
+  - [x] 3.1 重命名包目录和更新 package.json
     - 将 `packages/editor` 重命名为 `packages/editor-lexical`
     - 更新 package.json 中的 name 为 `@grain/editor-lexical`
     - 添加 `@grain/editor-core` 为 peerDependency
     - _Requirements: 2.1_
 
-  - [ ] 3.2 重组 Lexical 包目录结构
+  - [x] 3.2 重组 Lexical 包目录结构
     - 创建 `src/document/` 目录，移动富文本相关代码
     - 创建 `src/code/` 目录，移动代码编辑相关代码
     - 创建 `src/diagram/` 目录，创建图表编辑组件
     - _Requirements: 3.1, 3.2, 3.3_
 
-  - [ ] 3.3 实现 LexicalDocumentEditor 适配器
+  - [x] 3.3 实现 LexicalDocumentEditor 适配器
     - 创建 `src/document/lexical-document-adapter.ts`
     - 实现 DocumentEditorAdapter 接口
     - 保留现有 mentions, tags, wiki links 功能
     - _Requirements: 3.1, 3.4, 3.5_
 
-  - [ ] 3.4 实现 LexicalCodeEditor 适配器
+  - [x] 3.4 实现 LexicalCodeEditor 适配器
     - 创建 `src/code/lexical-code-adapter.ts`
     - 实现 CodeEditorAdapter 接口
     - 使用 @lexical/code 提供代码高亮
     - _Requirements: 3.2_
 
-  - [ ] 3.5 实现 LexicalDiagramEditor 适配器
+  - [x] 3.5 实现 LexicalDiagramEditor 适配器
     - 创建 `src/diagram/lexical-diagram-adapter.ts`
     - 实现 DiagramEditorAdapter 接口
     - 集成 Mermaid 预览
     - _Requirements: 3.3_
 
-  - [ ] 3.6 配置 subpath exports
+  - [x] 3.6 配置 subpath exports
     - 更新 package.json exports 支持 `/document`, `/code`, `/diagram`
     - _Requirements: 3.6_
 
-- [ ] 4. 重命名 code-editor 包为 editor-monaco
-  - [ ] 4.1 重命名包目录和更新 package.json
+- [x] 4. 重命名 code-editor 包为 editor-monaco
+  - [x] 4.1 重命名包目录和更新 package.json
     - 将 `packages/code-editor` 重命名为 `packages/editor-monaco`
     - 更新 package.json 中的 name 为 `@grain/editor-monaco`
     - 添加 `@grain/editor-core` 为 peerDependency
     - _Requirements: 2.2_
 
-  - [ ] 4.2 重组 Monaco 包目录结构
+  - [x] 4.2 重组 Monaco 包目录结构
     - 创建 `src/document/` 目录，实现 Markdown 分屏预览
     - 创建 `src/code/` 目录，移动现有代码编辑器
     - 创建 `src/diagram/` 目录，移动图表编辑器（从 diagram-editor 包）
     - _Requirements: 5.1, 5.4, 5.7_
 
-  - [ ] 4.3 实现 MonacoDocumentEditor 适配器
+  - [x] 4.3 实现 MonacoDocumentEditor 适配器
     - 创建 `src/document/monaco-document-adapter.ts`
     - 实现 MarkdownDocumentEditorAdapter 接口
     - 实现 Markdown 实时预览和同步滚动
     - _Requirements: 5.1, 5.2, 5.3_
 
-  - [ ] 4.4 实现 MonacoCodeEditor 适配器
+  - [x] 4.4 实现 MonacoCodeEditor 适配器
     - 创建 `src/code/monaco-code-adapter.ts`
     - 实现 CodeEditorAdapter 接口
     - _Requirements: 5.4, 5.5, 5.6_
 
-  - [ ] 4.5 实现 MonacoDiagramEditor 适配器
+  - [x] 4.5 实现 MonacoDiagramEditor 适配器
     - 创建 `src/diagram/monaco-diagram-adapter.ts`
     - 实现 DiagramEditorAdapter 接口
     - 迁移 diagram-editor 包的功能
     - _Requirements: 5.7_
 
-  - [ ] 4.6 配置 subpath exports
+  - [x] 4.6 配置 subpath exports
     - 更新 package.json exports 支持 `/document`, `/code`, `/diagram`
     - _Requirements: 5.9_
 
-- [ ] 5. Checkpoint - 确保 Lexical 和 Monaco 包编译通过
+- [x] 5. Checkpoint - 确保 Lexical 和 Monaco 包编译通过
   - 运行 `bun run build` 验证包构建
   - 确保所有导出正确
 

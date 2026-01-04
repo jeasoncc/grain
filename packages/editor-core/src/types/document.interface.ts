@@ -196,8 +196,20 @@ export interface MarkdownDocumentEditorAdapter extends DocumentEditorAdapter {
   setPreviewPosition(position: PreviewPosition): void;
 
   /**
+   * Get the current position of the preview pane
+   * @returns The current preview position
+   */
+  getPreviewPosition(): PreviewPosition;
+
+  /**
    * Enable or disable synchronized scrolling between editor and preview
    * @param enabled - Whether sync scroll should be enabled
    */
   enableSyncScroll(enabled: boolean): void;
+
+  /**
+   * Check if synchronized scrolling is enabled
+   * @returns true if sync scroll is enabled
+   */
+  isSyncScrollEnabled(): boolean;
 }
