@@ -268,11 +268,29 @@
     - 在 story-workspace.container.fn.tsx 添加编辑器选择日志
     - _完成日期: 2026-01-04_
 
-  - [x] 15.2 实现编辑器切换逻辑
+  - [x] 15.2 实现文档编辑器切换逻辑
     - 创建 TiptapEditorContainer 组件
     - 创建 CodeMirrorEditorContainer 组件
     - 修改 renderEditorContent() 根据 documentEditorType 选择编辑器
     - 添加 @grain/editor-tiptap 和 @grain/editor-codemirror 依赖
+    - _完成日期: 2026-01-04_
+
+  - [x] 15.3 修复 Tiptap 编辑器 CSS 样式
+    - 移除 prose 类依赖，使用自定义 tiptap-editor-content 类
+    - 在 styles.css 添加完整的 Tiptap 编辑器样式
+    - 添加 CodeMirror 编辑器基础样式
+    - _完成日期: 2026-01-04_
+
+  - [x] 15.4 实现代码编辑器切换逻辑
+    - 创建 CodeMirrorCodeEditorContainer 组件
+    - 修改 renderEditorContent() 根据 codeEditorType 选择编辑器
+    - 支持 Monaco 和 CodeMirror 两种代码编辑器
+    - _完成日期: 2026-01-04_
+
+  - [x] 15.5 实现图表编辑器切换逻辑
+    - 创建 CodeMirrorDiagramEditorContainer 组件
+    - 修改 renderEditorContent() 根据 diagramEditorType 选择编辑器
+    - 支持 Monaco 和 CodeMirror 两种图表编辑器
     - _完成日期: 2026-01-04_
 
 ## Notes
