@@ -30,8 +30,8 @@
     - 验证 renderEditorContent 逻辑
     - _Requirements: 1.4, 6.3, 6.4, 6.5_
 
-- [ ] 3. 验证 Settings 页面
-  - [ ] 3.1 审查 routes/settings/editor.tsx 确保无编辑器选择配置
+- [x] 3. 验证 Settings 页面
+  - [x] 3.1 审查 routes/settings/editor.tsx 确保无编辑器选择配置
     - 验证只保留排版设置和行为设置
     - _Requirements: 3.1, 3.2, 3.3_
 
