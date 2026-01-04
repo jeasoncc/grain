@@ -58,20 +58,20 @@
   - [x] 6.4 确认 packages/editor-lexical 目录存在且完整
     - _Requirements: 4.4_
 
-- [ ] 7. 验证 Editor Core 接口完整性
-  - [ ] 7.1 审查 packages/editor-core/src/types/document.interface.ts
+- [x] 7. 验证 Editor Core 接口完整性
+  - [x] 7.1 审查 packages/editor-core/src/types/document.interface.ts
     - 验证 DocumentEditorAdapter 接口定义完整
     - _Requirements: 5.1_
-  - [ ] 7.2 审查 packages/editor-core/src/types/code.interface.ts
+  - [x] 7.2 审查 packages/editor-core/src/types/code.interface.ts
     - 验证 CodeEditorAdapter 接口定义完整
     - _Requirements: 5.2_
-  - [ ] 7.3 审查 packages/editor-core/src/types/diagram.interface.ts
+  - [x] 7.3 审查 packages/editor-core/src/types/diagram.interface.ts
     - 验证 DiagramEditorAdapter 接口定义完整
     - _Requirements: 5.3_
-  - [ ] 7.4 审查 packages/editor-core/src/types/file-type.interface.ts
+  - [x] 7.4 审查 packages/editor-core/src/types/file-type.interface.ts
     - 验证 FileTypeMapping 导出
     - _Requirements: 5.4_
-  - [ ] 7.5 审查 packages/editor-core/src/utils/content-converter.ts
+  - [x] 7.5 审查 packages/editor-core/src/utils/content-converter.ts
     - 验证内容转换工具函数
     - _Requirements: 5.5_
 
