@@ -1,6 +1,8 @@
 /**
  * Editor core types
  * @module @grain/editor-core/types
+ *
+ * Note: Multi-editor config types have been removed. Grain now uses Lexical exclusively.
  */
 
 // Content types
@@ -52,24 +54,6 @@ export {
   isEditorType,
   getExtensionsForEditorType,
 } from "./file-type.interface";
-
-// Config types
-export type {
-  DocumentEditorType,
-  CodeEditorType,
-  DiagramEditorType,
-  EditorConfig,
-  EditorFactory,
-  EditorRegistry,
-} from "./config.interface";
-
-export {
-  DEFAULT_EDITOR_CONFIG,
-  createEditorRegistry,
-  registerDocumentEditor,
-  registerCodeEditor,
-  registerDiagramEditor,
-} from "./config.interface";
 
 // Error types
 export type {

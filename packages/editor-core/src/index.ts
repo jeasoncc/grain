@@ -2,8 +2,9 @@
  * @grain/editor-core
  *
  * Unified editor interfaces and types for Grain editor packages.
- * Provides a pluggable architecture supporting multiple editor implementations
- * (Lexical, Tiptap, Monaco, CodeMirror) with a consistent API.
+ * Provides core types and utilities for the Lexical editor.
+ *
+ * Note: Multi-editor support has been removed. Grain now uses Lexical exclusively.
  *
  * @packageDocumentation
  */
@@ -62,24 +63,6 @@ export {
   getExtensionsForEditorType,
 } from "./types/file-type.interface";
 
-// Config types
-export type {
-  DocumentEditorType,
-  CodeEditorType,
-  DiagramEditorType,
-  EditorConfig,
-  EditorFactory,
-  EditorRegistry,
-} from "./types/config.interface";
-
-export {
-  DEFAULT_EDITOR_CONFIG,
-  createEditorRegistry,
-  registerDocumentEditor,
-  registerCodeEditor,
-  registerDiagramEditor,
-} from "./types/config.interface";
-
 // Error types
 export type {
   EditorErrorCode,
@@ -96,36 +79,6 @@ export {
   renderError,
   migrationError,
 } from "./types/error.interface";
-
-// ============================================
-// Components
-// ============================================
-
-export {
-  EditorProvider,
-  useEditorConfig,
-  useEditorConfigSafe,
-  useDocumentEditorType,
-  useCodeEditorType,
-  useDiagramEditorType,
-} from "./components/editor-provider";
-
-export type { EditorProviderProps } from "./components/editor-provider";
-
-export {
-  EditorSelector,
-  createLazyEditorRegistry,
-  useLazyEditor,
-} from "./components/editor-selector";
-
-export type {
-  DocumentEditorProps,
-  CodeEditorProps,
-  DiagramEditorProps,
-  EditorComponentRegistry,
-  LazyEditorRegistry,
-  EditorSelectorProps,
-} from "./components/editor-selector";
 
 // ============================================
 // Utils

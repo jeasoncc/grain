@@ -22,7 +22,6 @@ export default defineConfig({
       entry: {
         index: resolve(__dirname, "src/index.ts"),
         types: resolve(__dirname, "src/types/index.ts"),
-        components: resolve(__dirname, "src/components/index.ts"),
       },
       name: "GrainEditorCore",
       formats: ["es"],

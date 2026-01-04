@@ -6,6 +6,8 @@
  *
  * 内容加载已在 openFile action 中处理，此组件只负责渲染。
  *
+ * 统一使用 Lexical 编辑器，移除多编辑器选择逻辑。
+ *
  * @see Requirements 1.4, 3.1, 4.1, 6.4
  */
 
@@ -15,9 +17,6 @@ import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo } from "react";
 import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-preview-connected";
 import { CodeEditorContainer } from "@/components/code-editor";
-import { CodeMirrorEditorContainer } from "@/components/codemirror-editor";
-import { CodeMirrorCodeEditorContainer } from "@/components/codemirror-code-editor";
-import { CodeMirrorDiagramEditorContainer } from "@/components/codemirror-diagram-editor";
 import { DiagramEditorContainer } from "@/components/diagram-editor";
 import { EditorTabs } from "@/components/editor-tabs";
 import { ExcalidrawEditorContainer } from "@/components/excalidraw-editor";
@@ -25,7 +24,6 @@ import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help";
 import { SaveStatusIndicator } from "@/components/save-status-indicator";
 import { StoryRightSidebar } from "@/components/story-right-sidebar";
 import { ThemeSelector } from "@/components/theme-selector";
-import { TiptapEditorContainer } from "@/components/tiptap-editor";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
@@ -45,7 +43,7 @@ import { useUnifiedSave } from "@/hooks/use-unified-save";
 import { useWikiFiles } from "@/hooks/use-wiki";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
 import logger from "@/log";
-import { useEditorSettingsStore } from "@/stores/editor-settings.store";
+import { useFoldIconStyle } from "@/stores/editor-settings.store";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSelectionStore } from "@/stores/selection.store";
 import { useUIStore } from "@/stores/ui.store";
@@ -61,23 +59,8 @@ export const StoryWorkspaceContainer = memo(
 
 		const { wordCountMode, showWordCountBadge } = useSettings();
 
-		// 编辑器设置
-		const foldIconStyle = useEditorSettingsStore((s) => s.foldIconStyle);
-		const documentEditorType = useEditorSettingsStore(
-			(s) => s.documentEditorType,
-		);
-		const codeEditorType = useEditorSettingsStore((s) => s.codeEditorType);
-		const diagramEditorType = useEditorSettingsStore((s) => s.diagramEditorType);
-
-		// 日志：编辑器设置
-		useEffect(() => {
-			logger.info("[StoryWorkspace] 编辑器设置:", {
-				documentEditorType,
-				codeEditorType,
-				diagramEditorType,
-				foldIconStyle,
-			});
-		}, [documentEditorType, codeEditorType, diagramEditorType, foldIconStyle]);
+		// 编辑器设置 - 只保留折叠图标风格
+		const foldIconStyle = useFoldIconStyle();
 
 		// UI 状态
 		const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen);
@@ -209,24 +192,6 @@ export const StoryWorkspaceContainer = memo(
 		]);
 
 		const renderEditorContent = () => {
-			// 日志：当前编辑器状态
-			logger.info("[StoryWorkspace] renderEditorContent:", {
-				activeTab: activeTab
-					? { id: activeTab.id, title: activeTab.title, nodeId: activeTab.nodeId }
-					: null,
-				editorType,
-				isExcalidrawTab,
-				isDiagramTab,
-				isCodeTab,
-				diagramType,
-				// 用户选择的编辑器类型
-				userSettings: {
-					documentEditorType,
-					codeEditorType,
-					diagramEditorType,
-				},
-			});
-
 			if (!activeTab) {
 				// Check if there are any files in the workspace
 				const hasFiles = wikiFiles.length > 0;
@@ -269,22 +234,8 @@ export const StoryWorkspaceContainer = memo(
 			}
 
 			// 处理 Mermaid/PlantUML 类型节点（基于扩展名）
+			// 统一使用 Monaco 图表编辑器
 			if (isDiagramTab && diagramType) {
-				logger.info("[StoryWorkspace] 渲染图表编辑器:", { diagramEditorType });
-				
-				// 根据用户设置选择图表编辑器
-				if (diagramEditorType === "codemirror") {
-					return (
-						<CodeMirrorDiagramEditorContainer
-							key={activeTab.id}
-							nodeId={activeTab.nodeId || ""}
-							diagramType={diagramType}
-							className="flex-1 min-h-0"
-						/>
-					);
-				}
-				
-				// 默认使用 Monaco 图表编辑器
 				return (
 					<DiagramEditorContainer
 						key={activeTab.id}
@@ -296,21 +247,8 @@ export const StoryWorkspaceContainer = memo(
 			}
 
 			// 处理 Code 类型节点（基于扩展名）
+			// 统一使用 Monaco 代码编辑器
 			if (isCodeTab) {
-				logger.info("[StoryWorkspace] 渲染代码编辑器:", { codeEditorType });
-				
-				// 根据用户设置选择代码编辑器
-				if (codeEditorType === "codemirror") {
-					return (
-						<CodeMirrorCodeEditorContainer
-							key={activeTab.id}
-							nodeId={activeTab.nodeId || ""}
-							className="flex-1 min-h-0"
-						/>
-					);
-				}
-				
-				// 默认使用 Monaco 代码编辑器
 				return (
 					<CodeEditorContainer
 						key={activeTab.id}
@@ -321,30 +259,7 @@ export const StoryWorkspaceContainer = memo(
 			}
 
 			// 处理文档类型节点（.grain 文件）
-			// 根据用户设置选择编辑器
-			logger.info("[StoryWorkspace] 渲染文档编辑器:", { documentEditorType });
-
-			if (documentEditorType === "tiptap") {
-				return (
-					<TiptapEditorContainer
-						key={activeTab.id}
-						nodeId={activeTab.nodeId || ""}
-						className="flex-1 min-h-0"
-					/>
-				);
-			}
-
-			if (documentEditorType === "codemirror") {
-				return (
-					<CodeMirrorEditorContainer
-						key={activeTab.id}
-						nodeId={activeTab.nodeId || ""}
-						className="flex-1 min-h-0"
-					/>
-				);
-			}
-
-			// 默认使用 Lexical 编辑器
+			// 统一使用 Lexical 编辑器
 			return (
 				<div className="flex-1 overflow-hidden">
 					<MultiEditorContainer
