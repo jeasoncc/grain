@@ -111,3 +111,42 @@ export {
 } from "./components/editor-provider";
 
 export type { EditorProviderProps } from "./components/editor-provider";
+
+export {
+  EditorSelector,
+  createLazyEditorRegistry,
+  useLazyEditor,
+} from "./components/editor-selector";
+
+export type {
+  DocumentEditorProps,
+  CodeEditorProps,
+  DiagramEditorProps,
+  EditorComponentRegistry,
+  LazyEditorRegistry,
+  EditorSelectorProps,
+} from "./components/editor-selector";
+
+// ============================================
+// Utils
+// ============================================
+
+export type {
+  ConversionResult,
+  ContentConverter,
+} from "./utils/content-converter";
+
+export {
+  conversionSuccess,
+  conversionFailure,
+  jsonToMarkdownConverter,
+  markdownToJsonConverter,
+  jsonToHtmlConverter,
+  htmlToJsonConverter,
+  markdownToHtmlConverter,
+  htmlToMarkdownConverter,
+  converters,
+  findConverter,
+  convertContent,
+  convertContentWithFallback,
+} from "./utils/content-converter";

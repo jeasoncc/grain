@@ -13,3 +13,18 @@ export {
 } from "./editor-provider";
 
 export type { EditorProviderProps } from "./editor-provider";
+
+export {
+  EditorSelector,
+  createLazyEditorRegistry,
+  useLazyEditor,
+} from "./editor-selector";
+
+export type {
+  DocumentEditorProps,
+  CodeEditorProps,
+  DiagramEditorProps,
+  EditorComponentRegistry,
+  LazyEditorRegistry,
+  EditorSelectorProps,
+} from "./editor-selector";
