@@ -1,7 +1,7 @@
 {
   "name": "desktop",
   "private": true,
-  "version": "0.1.276",
+  "version": "0.1.277",
   "type": "module",
   "scripts": {
     "dev": "concurrently -n vite,api -c blue,green \"vite\" \"cargo run --manifest-path src-tauri/../../../apps/api-rust/Cargo.toml\"",

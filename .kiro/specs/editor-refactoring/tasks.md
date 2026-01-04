@@ -160,28 +160,28 @@
     - 更新 package.json exports
     - _Requirements: 4.9_
 
-- [ ] 7. 创建 editor-codemirror 包
-  - [ ] 7.1 初始化 `packages/editor-codemirror` 包结构
+- [x] 7. 创建 editor-codemirror 包
+  - [x] 7.1 初始化 `packages/editor-codemirror` 包结构
     - 创建 package.json、tsconfig.json、vite.config.ts
     - 配置 peerDependencies: @codemirror/state, @codemirror/view, etc.
     - _Requirements: 2.5_
 
-  - [ ] 7.2 实现 CodeMirrorDocumentEditor 组件
+  - [x] 7.2 实现 CodeMirrorDocumentEditor 组件
     - 创建 `src/document/codemirror-document-editor.tsx`
     - 实现 Markdown 编辑 + 实时预览
     - _Requirements: 6.1, 6.2_
 
-  - [ ] 7.3 实现 CodeMirrorCodeEditor 组件
+  - [x] 7.3 实现 CodeMirrorCodeEditor 组件
     - 创建 `src/code/codemirror-code-editor.tsx`
     - 配置语言支持包
     - _Requirements: 6.3, 6.4_
 
-  - [ ] 7.4 实现 CodeMirrorDiagramEditor 组件
+  - [x] 7.4 实现 CodeMirrorDiagramEditor 组件
     - 创建 `src/diagram/codemirror-diagram-editor.tsx`
     - 集成 Mermaid 预览
     - _Requirements: 6.5_
 
-  - [ ] 7.5 配置 subpath exports
+  - [x] 7.5 配置 subpath exports
     - 更新 package.json exports
     - _Requirements: 6.7_
 
