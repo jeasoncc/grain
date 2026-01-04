@@ -20,7 +20,6 @@ import Table from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { createJsonContent } from "@grain/editor-core";
 import type { SerializedContent } from "@grain/editor-core";
 import type {
@@ -75,7 +74,12 @@ export const TiptapDocumentEditor = memo(
       const editor = useEditor({
         extensions: [
           StarterKit.configure({
-            codeBlock: false, // Use CodeBlockLowlight instead
+            // Use built-in code block (no syntax highlighting, but works without lowlight)
+            codeBlock: {
+              HTMLAttributes: {
+                class: "bg-gray-100 dark:bg-gray-800 rounded p-2 font-mono text-sm",
+              },
+            },
           }),
           Link.configure({
             openOnClick: false,
@@ -96,9 +100,6 @@ export const TiptapDocumentEditor = memo(
           TableRow,
           TableCell,
           TableHeader,
-          CodeBlockLowlight.configure({
-            defaultLanguage: "plaintext",
-          }),
         ],
         content: getInitialContent(),
         editable: !readOnly,
