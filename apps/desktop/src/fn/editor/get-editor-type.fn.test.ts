@@ -202,10 +202,109 @@ describe("isLexicalFile", () => {
 });
 
 // ============================================================================
-// Property-Based Tests
+// Property-Based Tests - Lexical Unified Editor
 // ============================================================================
 
-describe("Property-Based Tests", () => {
+describe("Property-Based Tests - Lexical Unified Editor", () => {
+	/**
+	 * **Feature: lexical-unified-editor, Property 1: Editor Type Selection Correctness**
+	 * **Validates: Requirements 1.1, 1.2, 1.3, 1.4**
+	 *
+	 * *For any* filename with extension, `getEditorTypeByFilename` SHALL return
+	 * `"excalidraw"` if and only if the extension is `.excalidraw`,
+	 * otherwise it SHALL return `"lexical"`.
+	 *
+	 * This property ensures:
+	 * - Req 1.1: Desktop_App uses Lexical_Editor for all text file types
+	 * - Req 1.2: Desktop_App uses Excalidraw_Editor only for .excalidraw files
+	 * - Req 1.3: New files from ActivityBar open with Lexical_Editor (except .excalidraw)
+	 * - Req 1.4: Any text file renders using MultiEditorContainer with Lexical_Editor
+	 */
+	describe("Property 1: Editor Type Selection Correctness", () => {
+		it("should return excalidraw if and only if extension is .excalidraw", () => {
+			fc.assert(
+				fc.property(
+					// 生成随机文件名前缀（非空，只包含有效字符）
+					fc
+						.string({ minLength: 1, maxLength: 50 })
+						.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+					// 生成随机扩展名（包括 .excalidraw 和其他扩展名）
+					fc.oneof(
+						// 50% 概率生成 .excalidraw
+						fc.constant(".excalidraw"),
+						// 50% 概率生成其他扩展名
+						fc
+							.string({ minLength: 1, maxLength: 15 })
+							.filter((s) => /^[a-z]+$/.test(s) && s !== "excalidraw")
+							.map((s) => `.${s}`),
+					),
+					(prefix, extension) => {
+						const filename = `${prefix}${extension}`;
+						const result = getEditorTypeByFilename(filename);
+
+						// 核心属性：excalidraw 当且仅当扩展名是 .excalidraw
+						const isExcalidrawExtension =
+							extension.toLowerCase() === ".excalidraw";
+						const isExcalidrawResult = result === "excalidraw";
+
+						// 双向蕴含：isExcalidrawExtension ⟺ isExcalidrawResult
+						return isExcalidrawExtension === isExcalidrawResult;
+					},
+				),
+				{ numRuns: 100 },
+			);
+		});
+
+		it("should return lexical for all non-excalidraw files", () => {
+			// 所有已知的非 excalidraw 扩展名
+			const nonExcalidrawExtensions = Object.entries(EXTENSION_TO_EDITOR_MAP)
+				.filter(([_, type]) => type === "lexical")
+				.map(([ext]) => ext);
+
+			fc.assert(
+				fc.property(
+					fc
+						.string({ minLength: 1, maxLength: 50 })
+						.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+					fc.constantFrom(...nonExcalidrawExtensions),
+					(prefix, extension) => {
+						const filename = `${prefix}${extension}`;
+						return getEditorTypeByFilename(filename) === "lexical";
+					},
+				),
+				{ numRuns: 100 },
+			);
+		});
+
+		it("should return excalidraw only for .excalidraw files regardless of prefix", () => {
+			fc.assert(
+				fc.property(
+					// 生成各种可能的文件名前缀
+					fc.oneof(
+						fc
+							.string({ minLength: 1, maxLength: 50 })
+							.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+						fc.constant("drawing"),
+						fc.constant("sketch"),
+						fc.constant("diagram"),
+						fc.constant("whiteboard"),
+					),
+					(prefix) => {
+						const filename = `${prefix}.excalidraw`;
+						return getEditorTypeByFilename(filename) === "excalidraw";
+					},
+				),
+				{ numRuns: 100 },
+			);
+		});
+	});
+});
+
+// ============================================================================
+// Property-Based Tests - File Extension System
+// ============================================================================
+
+describe("Property-Based Tests - File Extension System", () => {
 	/**
 	 * **Feature: file-extension-system, Property 1: Extension to Editor Type Mapping**
 	 * **Validates: Requirements 2.2, 2.3, 2.4, 2.5**
