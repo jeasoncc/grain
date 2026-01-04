@@ -262,6 +262,19 @@
   - 注：存在预先存在的类型错误（与编辑器重构无关），需要单独修复
   - 编辑器包构建成功，设置 UI 已添加
 
+- [x] 15. 编辑器设置生效实现
+  - [x] 15.1 添加调试日志
+    - 在 editor-settings.store.ts 添加设置变更日志
+    - 在 story-workspace.container.fn.tsx 添加编辑器选择日志
+    - _完成日期: 2026-01-04_
+
+  - [x] 15.2 实现编辑器切换逻辑
+    - 创建 TiptapEditorContainer 组件
+    - 创建 CodeMirrorEditorContainer 组件
+    - 修改 renderEditorContent() 根据 documentEditorType 选择编辑器
+    - 添加 @grain/editor-tiptap 和 @grain/editor-codemirror 依赖
+    - _完成日期: 2026-01-04_
+
 ## Notes
 
 - 任务按顺序执行，每个 Checkpoint 确保阶段性成果可用
