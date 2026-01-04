@@ -24,8 +24,8 @@
     - **Property 1: Editor Type Selection Correctness**
     - **Validates: Requirements 1.1, 1.2, 1.3, 1.4**
 
-- [ ] 2. 验证 StoryWorkspace 容器组件
-  - [ ] 2.1 审查 story-workspace.container.fn.tsx 确保只使用 Lexical 和 Excalidraw
+- [x] 2. 验证 StoryWorkspace 容器组件
+  - [x] 2.1 审查 story-workspace.container.fn.tsx 确保只使用 Lexical 和 Excalidraw
     - 验证 import 语句只引用 @grain/editor-lexical
     - 验证 renderEditorContent 逻辑
     - _Requirements: 1.4, 6.3, 6.4, 6.5_
