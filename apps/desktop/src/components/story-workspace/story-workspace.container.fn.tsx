@@ -16,6 +16,8 @@ import { memo, useCallback, useEffect, useMemo } from "react";
 import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-preview-connected";
 import { CodeEditorContainer } from "@/components/code-editor";
 import { CodeMirrorEditorContainer } from "@/components/codemirror-editor";
+import { CodeMirrorCodeEditorContainer } from "@/components/codemirror-code-editor";
+import { CodeMirrorDiagramEditorContainer } from "@/components/codemirror-diagram-editor";
 import { DiagramEditorContainer } from "@/components/diagram-editor";
 import { EditorTabs } from "@/components/editor-tabs";
 import { ExcalidrawEditorContainer } from "@/components/excalidraw-editor";
@@ -269,8 +271,20 @@ export const StoryWorkspaceContainer = memo(
 			// 处理 Mermaid/PlantUML 类型节点（基于扩展名）
 			if (isDiagramTab && diagramType) {
 				logger.info("[StoryWorkspace] 渲染图表编辑器:", { diagramEditorType });
-				// 目前图表编辑器只支持 Monaco，其他类型暂不支持
-				// TODO: 实现 CodeMirror 图表编辑器
+				
+				// 根据用户设置选择图表编辑器
+				if (diagramEditorType === "codemirror") {
+					return (
+						<CodeMirrorDiagramEditorContainer
+							key={activeTab.id}
+							nodeId={activeTab.nodeId || ""}
+							diagramType={diagramType}
+							className="flex-1 min-h-0"
+						/>
+					);
+				}
+				
+				// 默认使用 Monaco 图表编辑器
 				return (
 					<DiagramEditorContainer
 						key={activeTab.id}
@@ -284,8 +298,19 @@ export const StoryWorkspaceContainer = memo(
 			// 处理 Code 类型节点（基于扩展名）
 			if (isCodeTab) {
 				logger.info("[StoryWorkspace] 渲染代码编辑器:", { codeEditorType });
-				// 目前代码编辑器只支持 Monaco，其他类型暂不支持
-				// TODO: 实现 CodeMirror 代码编辑器
+				
+				// 根据用户设置选择代码编辑器
+				if (codeEditorType === "codemirror") {
+					return (
+						<CodeMirrorCodeEditorContainer
+							key={activeTab.id}
+							nodeId={activeTab.nodeId || ""}
+							className="flex-1 min-h-0"
+						/>
+					);
+				}
+				
+				// 默认使用 Monaco 代码编辑器
 				return (
 					<CodeEditorContainer
 						key={activeTab.id}
