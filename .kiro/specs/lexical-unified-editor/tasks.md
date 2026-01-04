@@ -75,8 +75,8 @@
     - 验证内容转换工具函数
     - _Requirements: 5.5_
 
-- [ ] 8. 验证文件创建流程
-  - [ ] 8.1 审查 ActivityBar 文件创建相关 actions
+- [x] 8. 验证文件创建流程
+  - [x] 8.1 审查 ActivityBar 文件创建相关 actions
     - 验证新建文件使用正确的编辑器类型
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
