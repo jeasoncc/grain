@@ -1178,3 +1178,265 @@ hr,
   position: relative;
   overflow: hidden;
 }
+
+/* ========================================
+   Tiptap Editor Styles
+   ======================================== */
+
+/* Tiptap Editor Content - Typography Styles */
+.tiptap-editor-content {
+  font-family: var(--font-editor, system-ui, sans-serif);
+  font-size: var(--editor-font-size, 15px);
+  line-height: var(--editor-line-height, 1.75);
+  color: var(--foreground);
+}
+
+/* Tiptap Editor - Focus Styles */
+.tiptap-editor-content .ProseMirror {
+  outline: none;
+  min-height: 200px;
+}
+
+.tiptap-editor-content .ProseMirror:focus {
+  outline: none;
+}
+
+/* Tiptap Editor - Placeholder */
+.tiptap-editor-content .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  height: 0;
+}
+
+/* Tiptap Editor - Headings */
+.tiptap-editor-content h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--foreground);
+}
+
+.tiptap-editor-content h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--foreground);
+}
+
+.tiptap-editor-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--foreground);
+}
+
+.tiptap-editor-content h4,
+.tiptap-editor-content h5,
+.tiptap-editor-content h6 {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+  color: var(--foreground);
+}
+
+/* Tiptap Editor - Paragraphs */
+.tiptap-editor-content p {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+/* Tiptap Editor - Lists */
+.tiptap-editor-content ul,
+.tiptap-editor-content ol {
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.tiptap-editor-content ul {
+  list-style-type: disc;
+}
+
+.tiptap-editor-content ol {
+  list-style-type: decimal;
+}
+
+.tiptap-editor-content li {
+  margin-bottom: 0.25rem;
+}
+
+.tiptap-editor-content li p {
+  margin-bottom: 0;
+}
+
+/* Tiptap Editor - Task Lists */
+.tiptap-editor-content ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.tiptap-editor-content ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.tiptap-editor-content ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.tiptap-editor-content ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+/* Tiptap Editor - Blockquotes */
+.tiptap-editor-content blockquote {
+  border-left: 4px solid var(--border);
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-right: 0;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+/* Tiptap Editor - Code */
+.tiptap-editor-content code {
+  background-color: var(--muted);
+  color: var(--destructive);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  font-size: 0.875em;
+}
+
+.tiptap-editor-content pre {
+  background-color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  overflow-x: auto;
+}
+
+.tiptap-editor-content pre code {
+  background: none;
+  padding: 0;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Tiptap Editor - Links */
+.tiptap-editor-content a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  transition: text-decoration-color 0.2s;
+}
+
+.tiptap-editor-content a:hover {
+  text-decoration-color: var(--primary);
+}
+
+/* Tiptap Editor - Horizontal Rule */
+.tiptap-editor-content hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Tiptap Editor - Tables */
+.tiptap-editor-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.tiptap-editor-content th,
+.tiptap-editor-content td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.tiptap-editor-content th {
+  background-color: var(--muted);
+  font-weight: 600;
+}
+
+.tiptap-editor-content tr:nth-child(even) {
+  background-color: color-mix(in srgb, var(--muted) 30%, transparent);
+}
+
+/* Tiptap Editor - Images */
+.tiptap-editor-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Tiptap Editor - Strong and Emphasis */
+.tiptap-editor-content strong {
+  font-weight: 600;
+}
+
+.tiptap-editor-content em {
+  font-style: italic;
+}
+
+/* Tiptap Editor - Strikethrough */
+.tiptap-editor-content s {
+  text-decoration: line-through;
+}
+
+/* Tiptap Editor - Selection */
+.tiptap-editor-content ::selection {
+  background-color: var(--editor-selection);
+}
+
+/* ========================================
+   CodeMirror Editor Styles
+   ======================================== */
+
+/* CodeMirror Editor Container */
+.codemirror-editor-content {
+  font-family: var(--font-editor, system-ui, sans-serif);
+  font-size: var(--editor-font-size, 15px);
+  line-height: var(--editor-line-height, 1.75);
+}
+
+.codemirror-editor-content .cm-editor {
+  height: 100%;
+  outline: none;
+}
+
+.codemirror-editor-content .cm-editor.cm-focused {
+  outline: none;
+}
+
+.codemirror-editor-content .cm-scroller {
+  font-family: inherit;
+  line-height: inherit;
+}
+
+.codemirror-editor-content .cm-content {
+  padding: 1rem;
+}

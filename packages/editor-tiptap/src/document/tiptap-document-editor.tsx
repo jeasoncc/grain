@@ -183,7 +183,7 @@ export const TiptapDocumentEditor = memo(
         <div className={className}>
           <EditorContent
             editor={editor}
-            className="prose prose-sm max-w-none focus:outline-none"
+            className="tiptap-editor-content max-w-none focus:outline-none"
           />
         </div>
       );

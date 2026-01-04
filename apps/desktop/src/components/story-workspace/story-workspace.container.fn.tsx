@@ -268,8 +268,9 @@ export const StoryWorkspaceContainer = memo(
 
 			// 处理 Mermaid/PlantUML 类型节点（基于扩展名）
 			if (isDiagramTab && diagramType) {
-				// TODO: 根据 diagramEditorType 选择不同的图表编辑器
-				// 目前只支持 Monaco
+				logger.info("[StoryWorkspace] 渲染图表编辑器:", { diagramEditorType });
+				// 目前图表编辑器只支持 Monaco，其他类型暂不支持
+				// TODO: 实现 CodeMirror 图表编辑器
 				return (
 					<DiagramEditorContainer
 						key={activeTab.id}
@@ -282,9 +283,9 @@ export const StoryWorkspaceContainer = memo(
 
 			// 处理 Code 类型节点（基于扩展名）
 			if (isCodeTab) {
-				// TODO: 根据 codeEditorType 选择不同的代码编辑器
-				// 目前只支持 Monaco
 				logger.info("[StoryWorkspace] 渲染代码编辑器:", { codeEditorType });
+				// 目前代码编辑器只支持 Monaco，其他类型暂不支持
+				// TODO: 实现 CodeMirror 代码编辑器
 				return (
 					<CodeEditorContainer
 						key={activeTab.id}
