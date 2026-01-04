@@ -6,40 +6,40 @@
 
 ## Tasks
 
-- [ ] 1. 创建 editor-core 包
-  - [ ] 1.1 初始化 `packages/editor-core` 包结构
+- [x] 1. 创建 editor-core 包
+  - [x] 1.1 初始化 `packages/editor-core` 包结构
     - 创建 package.json、tsconfig.json、vite.config.ts
     - 配置 peerDependencies: react, react-dom
     - _Requirements: 1.1, 1.2, 1.3_
 
-  - [ ] 1.2 实现编辑器接口定义
+  - [x] 1.2 实现编辑器接口定义
     - 创建 `src/types/document.interface.ts` - DocumentEditorAdapter
     - 创建 `src/types/code.interface.ts` - CodeEditorAdapter
     - 创建 `src/types/diagram.interface.ts` - DiagramEditorAdapter
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-  - [ ] 1.3 实现内容序列化类型
+  - [x] 1.3 实现内容序列化类型
     - 创建 `src/types/content.interface.ts` - SerializedContent
     - 实现 createJsonContent, createMarkdownContent, createHtmlContent
     - _Requirements: 1.6_
 
-  - [ ] 1.4 实现文件类型解析器
+  - [x] 1.4 实现文件类型解析器
     - 创建 `src/types/file-type.interface.ts` - FileTypeResolver
     - 实现 FILE_TYPE_MAPPINGS 配置
     - 实现 resolveFileType, getEditorType 函数
     - _Requirements: 1.8, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6_
 
-  - [ ] 1.5 实现编辑器配置类型
+  - [x] 1.5 实现编辑器配置类型
     - 创建 `src/types/config.interface.ts` - EditorConfig
     - 定义 DocumentEditorType, CodeEditorType, DiagramEditorType
     - _Requirements: 1.7_
 
-  - [ ] 1.6 实现 EditorProvider 组件
+  - [x] 1.6 实现 EditorProvider 组件
     - 创建 `src/components/editor-provider.tsx`
     - 实现 EditorConfigContext 和 useEditorConfig hook
     - _Requirements: 8.1_
 
-  - [ ] 1.7 创建包导出入口
+  - [x] 1.7 创建包导出入口
     - 创建 `src/index.ts` 统一导出所有类型和组件
     - 配置 package.json exports
 
