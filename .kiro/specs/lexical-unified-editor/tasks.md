@@ -80,7 +80,7 @@
     - 验证新建文件使用正确的编辑器类型
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 9. Checkpoint - 运行测试验证
+- [x] 9. Checkpoint - 运行测试验证
   - 运行 `bun run test` 确保所有测试通过
   - 运行 `bun run check` 确保类型检查通过
   - 如有问题，询问用户
