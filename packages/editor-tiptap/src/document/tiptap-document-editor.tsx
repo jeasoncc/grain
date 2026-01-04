@@ -51,19 +51,12 @@ import Placeholder from "@tiptap/extension-placeholder";
 import CharacterCount from "@tiptap/extension-character-count";
 import Focus from "@tiptap/extension-focus";
 
-// Code extensions
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
-import { common, createLowlight } from "lowlight";
-
 import { createJsonContent } from "@grain/editor-core";
 import type { SerializedContent } from "@grain/editor-core";
 import type {
   TiptapDocumentEditorProps,
   TiptapDocumentEditorHandle,
 } from "./tiptap-document-editor.types";
-
-// Create lowlight instance with common languages
-const lowlight = createLowlight(common);
 
 /**
  * TiptapDocumentEditor component
@@ -148,10 +141,8 @@ export const TiptapDocumentEditor = memo(
         extensions: [
           // StarterKit includes: Document, Paragraph, Text, Bold, Italic, Strike, 
           // Code, Heading, Blockquote, BulletList, ListItem, HardBreak, 
-          // HorizontalRule, History, Dropcursor, Gapcursor
+          // HorizontalRule, History, Dropcursor, Gapcursor, CodeBlock
           StarterKit.configure({
-            // Disable code block from StarterKit, we use CodeBlockLowlight instead
-            codeBlock: false,
             // Configure heading levels
             heading: {
               levels: [1, 2, 3, 4, 5, 6],
@@ -246,14 +237,6 @@ export const TiptapDocumentEditor = memo(
           TableRow,
           TableCell,
           TableHeader,
-
-          // Code Block with Syntax Highlighting
-          CodeBlockLowlight.configure({
-            lowlight,
-            HTMLAttributes: {
-              class: "tiptap-code-block",
-            },
-          }),
 
           // Placeholder
           Placeholder.configure({
