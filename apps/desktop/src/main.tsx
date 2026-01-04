@@ -6,7 +6,6 @@ import "./styles.css";
 import "@grain/editor-lexical/styles";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { preloadMonaco } from "./components/code-editor/monaco.config";
 import { database } from "./db/database";
 import { initDatabase } from "./db/init.db.fn";
 
@@ -45,10 +44,6 @@ async function main() {
 				</QueryClientProvider>
 			</StrictMode>,
 		);
-
-		// 在应用渲染后，空闲时预加载 Monaco Editor
-		// 这样可以减少首次打开代码编辑器时的加载时间
-		preloadMonaco();
 	}
 }
 
