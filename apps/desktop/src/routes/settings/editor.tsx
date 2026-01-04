@@ -11,11 +11,13 @@ import {
 	Sparkles,
 	Type,
 } from "lucide-react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { DebouncedSlider } from "@/components/ui/debounced-slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import logger from "@/log";
 import { useEditorSettings } from "@/stores/editor-settings.store";
 import { useFontSettings } from "@/stores/font.store";
 import { DEFAULT_EDITOR_FONT, POPULAR_FONTS } from "@/types/font";
@@ -55,6 +57,16 @@ function EditorSettings() {
 		diagramEditorType,
 		setDiagramEditorType,
 	} = useEditorSettings();
+
+	// 日志：当前编辑器设置
+	useEffect(() => {
+		logger.info("[EditorSettings] 当前编辑器设置:", {
+			documentEditorType,
+			codeEditorType,
+			diagramEditorType,
+			foldIconStyle,
+		});
+	}, [documentEditorType, codeEditorType, diagramEditorType, foldIconStyle]);
 
 	// 获取当前选中风格的字母列表
 	const currentLetters = getFoldIconLetters(foldIconStyle);

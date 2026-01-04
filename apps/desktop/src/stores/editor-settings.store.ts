@@ -15,6 +15,7 @@ import type {
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
+import logger from "@/log";
 import type {
 	EditorSettingsActions,
 	EditorSettingsState,
@@ -51,18 +52,21 @@ export const useEditorSettingsStore = create<EditorSettingsStore>()(
 			},
 
 			setDocumentEditorType: (type: DocumentEditorType) => {
+				logger.info("[EditorSettings] 设置文档编辑器类型:", type);
 				set((state) => {
 					state.documentEditorType = type;
 				});
 			},
 
 			setCodeEditorType: (type: CodeEditorType) => {
+				logger.info("[EditorSettings] 设置代码编辑器类型:", type);
 				set((state) => {
 					state.codeEditorType = type;
 				});
 			},
 
 			setDiagramEditorType: (type: DiagramEditorType) => {
+				logger.info("[EditorSettings] 设置图表编辑器类型:", type);
 				set((state) => {
 					state.diagramEditorType = type;
 				});

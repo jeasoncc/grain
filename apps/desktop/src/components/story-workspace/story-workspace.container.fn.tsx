@@ -59,6 +59,21 @@ export const StoryWorkspaceContainer = memo(
 
 		// 编辑器设置
 		const foldIconStyle = useEditorSettingsStore((s) => s.foldIconStyle);
+		const documentEditorType = useEditorSettingsStore(
+			(s) => s.documentEditorType,
+		);
+		const codeEditorType = useEditorSettingsStore((s) => s.codeEditorType);
+		const diagramEditorType = useEditorSettingsStore((s) => s.diagramEditorType);
+
+		// 日志：编辑器设置
+		useEffect(() => {
+			logger.info("[StoryWorkspace] 编辑器设置:", {
+				documentEditorType,
+				codeEditorType,
+				diagramEditorType,
+				foldIconStyle,
+			});
+		}, [documentEditorType, codeEditorType, diagramEditorType, foldIconStyle]);
 
 		// UI 状态
 		const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen);
@@ -190,6 +205,24 @@ export const StoryWorkspaceContainer = memo(
 		]);
 
 		const renderEditorContent = () => {
+			// 日志：当前编辑器状态
+			logger.info("[StoryWorkspace] renderEditorContent:", {
+				activeTab: activeTab
+					? { id: activeTab.id, title: activeTab.title, nodeId: activeTab.nodeId }
+					: null,
+				editorType,
+				isExcalidrawTab,
+				isDiagramTab,
+				isCodeTab,
+				diagramType,
+				// 用户选择的编辑器类型
+				userSettings: {
+					documentEditorType,
+					codeEditorType,
+					diagramEditorType,
+				},
+			});
+
 			if (!activeTab) {
 				// Check if there are any files in the workspace
 				const hasFiles = wikiFiles.length > 0;
