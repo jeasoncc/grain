@@ -224,13 +224,13 @@
     - 支持为 document/code/diagram 分别选择编辑器
     - _Requirements: 8.7, 7.7_
 
-- [ ] 11. 删除旧包
-  - [ ] 11.1 删除 diagram-editor 包
+- [x] 11. 删除旧包
+  - [x] 11.1 删除 diagram-editor 包
     - 确认功能已迁移到 editor-monaco
     - 删除 `packages/diagram-editor` 目录
     - _Requirements: 2.8_
 
-  - [ ] 11.2 更新 workspace 配置
+  - [x] 11.2 更新 workspace 配置
     - 更新根 package.json 的 workspaces 配置
     - 更新 turbo.json 配置
     - _Requirements: 2.7_
