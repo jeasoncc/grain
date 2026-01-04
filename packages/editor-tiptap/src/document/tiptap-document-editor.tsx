@@ -1,6 +1,8 @@
 /**
  * TiptapDocumentEditor - Rich text editor component using Tiptap
  * @module @grain/editor-tiptap/document
+ * 
+ * 包含所有可用的 Tiptap 官方扩展
  */
 
 import {
@@ -10,16 +12,49 @@ import {
   useCallback,
   memo,
 } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, BubbleMenu, FloatingMenu } from "@tiptap/react";
+
+// Core extensions
+// Note: StarterKit already includes Document, Paragraph, Text, Heading, HardBreak,
+// HorizontalRule, History, Dropcursor, Gapcursor, Bold, Italic, Strike, Code,
+// Blockquote, BulletList, ListItem
 import StarterKit from "@tiptap/starter-kit";
+
+// Text formatting extensions
+import TextStyle from "@tiptap/extension-text-style";
+import Color from "@tiptap/extension-color";
+import Highlight from "@tiptap/extension-highlight";
+import Underline from "@tiptap/extension-underline";
+import Subscript from "@tiptap/extension-subscript";
+import Superscript from "@tiptap/extension-superscript";
+import TextAlign from "@tiptap/extension-text-align";
+import FontFamily from "@tiptap/extension-font-family";
+import Typography from "@tiptap/extension-typography";
+
+// Link and media extensions
 import Link from "@tiptap/extension-link";
-import Placeholder from "@tiptap/extension-placeholder";
+import Image from "@tiptap/extension-image";
+import Youtube from "@tiptap/extension-youtube";
+
+// List extensions (BulletList and ListItem are in StarterKit)
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
+
+// Table extensions
 import Table from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
+
+// Utility extensions
+import Placeholder from "@tiptap/extension-placeholder";
+import CharacterCount from "@tiptap/extension-character-count";
+import Focus from "@tiptap/extension-focus";
+
+// Code extensions
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { common, createLowlight } from "lowlight";
+
 import { createJsonContent } from "@grain/editor-core";
 import type { SerializedContent } from "@grain/editor-core";
 import type {
@@ -27,16 +62,52 @@ import type {
   TiptapDocumentEditorHandle,
 } from "./tiptap-document-editor.types";
 
+// Create lowlight instance with common languages
+const lowlight = createLowlight(common);
+
 /**
  * TiptapDocumentEditor component
  * 
- * A rich text editor built on Tiptap with support for:
- * - Rich text formatting (bold, italic, strike, code)
+ * A rich text editor built on Tiptap with comprehensive extension support:
+ * 
+ * Text Formatting:
+ * - Bold, Italic, Strike, Code (from StarterKit)
+ * - Underline, Subscript, Superscript
+ * - Text Color, Highlight/Background Color
+ * - Font Family, Text Alignment
+ * - Typography (smart quotes, dashes, etc.)
+ * 
+ * Structure:
  * - Headings (H1-H6)
- * - Lists (bullet, ordered, task)
- * - Tables
- * - Code blocks with syntax highlighting
- * - Links
+ * - Paragraphs, Hard Breaks
+ * - Horizontal Rules
+ * - Blockquotes (from StarterKit)
+ * 
+ * Lists:
+ * - Bullet Lists (from StarterKit)
+ * - Ordered Lists
+ * - Task Lists (checkboxes)
+ * 
+ * Tables:
+ * - Full table support with headers
+ * - Resizable columns
+ * 
+ * Media:
+ * - Links with preview
+ * - Images
+ * - YouTube embeds
+ * 
+ * Code:
+ * - Inline code (from StarterKit)
+ * - Code blocks with syntax highlighting (lowlight)
+ * 
+ * Utilities:
+ * - Character count
+ * - Placeholder text
+ * - Focus styles
+ * - Drag and drop cursor
+ * - Gap cursor for tables
+ * - History (undo/redo)
  */
 export const TiptapDocumentEditor = memo(
   forwardRef<TiptapDocumentEditorHandle, TiptapDocumentEditorProps>(
@@ -46,10 +117,12 @@ export const TiptapDocumentEditor = memo(
         placeholder = "Start writing...",
         readOnly = false,
         autoFocus = false,
+        characterLimit,
         onChange,
         onFocus,
         onBlur,
         onSave,
+        onCharacterCountChange,
         className,
       },
       ref
@@ -70,36 +143,135 @@ export const TiptapDocumentEditor = memo(
         return undefined;
       }, [initialContent]);
 
-      // Initialize Tiptap editor
+      // Initialize Tiptap editor with all extensions
       const editor = useEditor({
         extensions: [
+          // StarterKit includes: Document, Paragraph, Text, Bold, Italic, Strike, 
+          // Code, Heading, Blockquote, BulletList, ListItem, HardBreak, 
+          // HorizontalRule, History, Dropcursor, Gapcursor
           StarterKit.configure({
-            // Use built-in code block (no syntax highlighting, but works without lowlight)
-            codeBlock: {
-              HTMLAttributes: {
-                class: "bg-gray-100 dark:bg-gray-800 rounded p-2 font-mono text-sm",
-              },
+            // Disable code block from StarterKit, we use CodeBlockLowlight instead
+            codeBlock: false,
+            // Configure heading levels
+            heading: {
+              levels: [1, 2, 3, 4, 5, 6],
             },
           }),
+
+          // Text Style (required for Color and FontFamily)
+          TextStyle,
+
+          // Text Color
+          Color.configure({
+            types: ["textStyle"],
+          }),
+
+          // Highlight / Background Color
+          Highlight.configure({
+            multicolor: true,
+          }),
+
+          // Underline
+          Underline,
+
+          // Subscript
+          Subscript,
+
+          // Superscript
+          Superscript,
+
+          // Text Alignment
+          TextAlign.configure({
+            types: ["heading", "paragraph"],
+            alignments: ["left", "center", "right", "justify"],
+          }),
+
+          // Font Family
+          FontFamily.configure({
+            types: ["textStyle"],
+          }),
+
+          // Typography (smart quotes, dashes, ellipsis, etc.)
+          Typography,
+
+          // Link
           Link.configure({
             openOnClick: false,
+            autolink: true,
+            linkOnPaste: true,
             HTMLAttributes: {
-              class: "text-blue-500 underline cursor-pointer",
+              class: "tiptap-link",
+              rel: "noopener noreferrer",
             },
           }),
-          Placeholder.configure({
-            placeholder,
+
+          // Image
+          Image.configure({
+            inline: false,
+            allowBase64: true,
+            HTMLAttributes: {
+              class: "tiptap-image",
+            },
           }),
-          TaskList,
+
+          // YouTube
+          Youtube.configure({
+            inline: false,
+            nocookie: true,
+            HTMLAttributes: {
+              class: "tiptap-youtube",
+            },
+          }),
+
+          // Task List
+          TaskList.configure({
+            HTMLAttributes: {
+              class: "tiptap-task-list",
+            },
+          }),
           TaskItem.configure({
             nested: true,
+            HTMLAttributes: {
+              class: "tiptap-task-item",
+            },
           }),
+
+          // Table
           Table.configure({
             resizable: true,
+            HTMLAttributes: {
+              class: "tiptap-table",
+            },
           }),
           TableRow,
           TableCell,
           TableHeader,
+
+          // Code Block with Syntax Highlighting
+          CodeBlockLowlight.configure({
+            lowlight,
+            HTMLAttributes: {
+              class: "tiptap-code-block",
+            },
+          }),
+
+          // Placeholder
+          Placeholder.configure({
+            placeholder,
+            emptyEditorClass: "is-editor-empty",
+            emptyNodeClass: "is-empty",
+          }),
+
+          // Character Count
+          CharacterCount.configure({
+            limit: characterLimit,
+          }),
+
+          // Focus
+          Focus.configure({
+            className: "has-focus",
+            mode: "all",
+          }),
         ],
         content: getInitialContent(),
         editable: !readOnly,
@@ -108,6 +280,13 @@ export const TiptapDocumentEditor = memo(
           if (onChange) {
             const content = createJsonContent(editor.getJSON());
             onChange(content);
+          }
+          if (onCharacterCountChange) {
+            const count = editor.storage.characterCount;
+            onCharacterCountChange({
+              characters: count.characters(),
+              words: count.words(),
+            });
           }
         },
         onFocus: () => {
@@ -167,6 +346,76 @@ export const TiptapDocumentEditor = memo(
           isEmpty: () => {
             return editor?.isEmpty ?? true;
           },
+          getCharacterCount: () => {
+            if (!editor) return { characters: 0, words: 0 };
+            const count = editor.storage.characterCount;
+            return {
+              characters: count.characters(),
+              words: count.words(),
+            };
+          },
+          // Text formatting commands
+          toggleBold: () => editor?.chain().focus().toggleBold().run(),
+          toggleItalic: () => editor?.chain().focus().toggleItalic().run(),
+          toggleStrike: () => editor?.chain().focus().toggleStrike().run(),
+          toggleUnderline: () => editor?.chain().focus().toggleUnderline().run(),
+          toggleSubscript: () => editor?.chain().focus().toggleSubscript().run(),
+          toggleSuperscript: () => editor?.chain().focus().toggleSuperscript().run(),
+          toggleCode: () => editor?.chain().focus().toggleCode().run(),
+          toggleCodeBlock: () => editor?.chain().focus().toggleCodeBlock().run(),
+          toggleBlockquote: () => editor?.chain().focus().toggleBlockquote().run(),
+          // Heading commands
+          setHeading: (level: 1 | 2 | 3 | 4 | 5 | 6) => 
+            editor?.chain().focus().toggleHeading({ level }).run(),
+          setParagraph: () => editor?.chain().focus().setParagraph().run(),
+          // List commands
+          toggleBulletList: () => editor?.chain().focus().toggleBulletList().run(),
+          toggleOrderedList: () => editor?.chain().focus().toggleOrderedList().run(),
+          toggleTaskList: () => editor?.chain().focus().toggleTaskList().run(),
+          // Alignment commands
+          setTextAlign: (align: "left" | "center" | "right" | "justify") =>
+            editor?.chain().focus().setTextAlign(align).run(),
+          // Color commands
+          setColor: (color: string) => editor?.chain().focus().setColor(color).run(),
+          unsetColor: () => editor?.chain().focus().unsetColor().run(),
+          setHighlight: (color: string) => 
+            editor?.chain().focus().toggleHighlight({ color }).run(),
+          unsetHighlight: () => editor?.chain().focus().unsetHighlight().run(),
+          // Font commands
+          setFontFamily: (fontFamily: string) =>
+            editor?.chain().focus().setFontFamily(fontFamily).run(),
+          unsetFontFamily: () => editor?.chain().focus().unsetFontFamily().run(),
+          // Link commands
+          setLink: (url: string) => 
+            editor?.chain().focus().setLink({ href: url }).run(),
+          unsetLink: () => editor?.chain().focus().unsetLink().run(),
+          // Image commands
+          insertImage: (src: string, alt?: string, title?: string) =>
+            editor?.chain().focus().setImage({ src, alt, title }).run(),
+          // YouTube commands
+          insertYoutube: (src: string) =>
+            editor?.chain().focus().setYoutubeVideo({ src }).run(),
+          // Table commands
+          insertTable: (rows = 3, cols = 3) =>
+            editor?.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run(),
+          addColumnBefore: () => editor?.chain().focus().addColumnBefore().run(),
+          addColumnAfter: () => editor?.chain().focus().addColumnAfter().run(),
+          deleteColumn: () => editor?.chain().focus().deleteColumn().run(),
+          addRowBefore: () => editor?.chain().focus().addRowBefore().run(),
+          addRowAfter: () => editor?.chain().focus().addRowAfter().run(),
+          deleteRow: () => editor?.chain().focus().deleteRow().run(),
+          deleteTable: () => editor?.chain().focus().deleteTable().run(),
+          mergeCells: () => editor?.chain().focus().mergeCells().run(),
+          splitCell: () => editor?.chain().focus().splitCell().run(),
+          // History commands
+          undo: () => editor?.chain().focus().undo().run(),
+          redo: () => editor?.chain().focus().redo().run(),
+          // Horizontal rule
+          insertHorizontalRule: () => editor?.chain().focus().setHorizontalRule().run(),
+          // Hard break
+          insertHardBreak: () => editor?.chain().focus().setHardBreak().run(),
+          // Clear formatting
+          clearFormatting: () => editor?.chain().focus().clearNodes().unsetAllMarks().run(),
         }),
         [editor]
       );
@@ -181,6 +430,117 @@ export const TiptapDocumentEditor = memo(
 
       return (
         <div className={className}>
+          {/* Bubble Menu - appears when text is selected */}
+          <BubbleMenu 
+            editor={editor} 
+            tippyOptions={{ duration: 100 }}
+            className="tiptap-bubble-menu"
+          >
+            <div className="flex gap-1 p-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().toggleBold().run()}
+                className={`px-2 py-1 rounded text-sm ${editor.isActive("bold") ? "bg-gray-200 dark:bg-gray-600" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              >
+                B
+              </button>
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().toggleItalic().run()}
+                className={`px-2 py-1 rounded text-sm italic ${editor.isActive("italic") ? "bg-gray-200 dark:bg-gray-600" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              >
+                I
+              </button>
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().toggleUnderline().run()}
+                className={`px-2 py-1 rounded text-sm underline ${editor.isActive("underline") ? "bg-gray-200 dark:bg-gray-600" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              >
+                U
+              </button>
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().toggleStrike().run()}
+                className={`px-2 py-1 rounded text-sm line-through ${editor.isActive("strike") ? "bg-gray-200 dark:bg-gray-600" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              >
+                S
+              </button>
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().toggleCode().run()}
+                className={`px-2 py-1 rounded text-sm font-mono ${editor.isActive("code") ? "bg-gray-200 dark:bg-gray-600" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              >
+                {"</>"}
+              </button>
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().toggleHighlight().run()}
+                className={`px-2 py-1 rounded text-sm ${editor.isActive("highlight") ? "bg-yellow-200 dark:bg-yellow-600" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              >
+                H
+              </button>
+            </div>
+          </BubbleMenu>
+
+          {/* Floating Menu - appears on empty lines */}
+          <FloatingMenu 
+            editor={editor} 
+            tippyOptions={{ duration: 100 }}
+            className="tiptap-floating-menu"
+          >
+            <div className="flex gap-1 p-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                H1
+              </button>
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                H2
+              </button>
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().toggleBulletList().run()}
+                className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                •
+              </button>
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                1.
+              </button>
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().toggleTaskList().run()}
+                className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                ☐
+              </button>
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+                className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                {"</>"}
+              </button>
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                "
+              </button>
+            </div>
+          </FloatingMenu>
+
           <EditorContent
             editor={editor}
             className="tiptap-editor-content max-w-none focus:outline-none"
