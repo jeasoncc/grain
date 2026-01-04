@@ -117,6 +117,12 @@ export interface TiptapDocumentEditorHandle {
   /** Remove highlight */
   unsetHighlight: () => boolean | undefined;
 
+  // Font commands
+  /** Set font family */
+  setFontFamily: (fontFamily: string) => boolean | undefined;
+  /** Remove font family */
+  unsetFontFamily: () => boolean | undefined;
+
   // Link commands
   /** Set link URL */
   setLink: (url: string) => boolean | undefined;
@@ -126,6 +132,10 @@ export interface TiptapDocumentEditorHandle {
   // Image commands
   /** Insert image */
   insertImage: (src: string, alt?: string, title?: string) => boolean | undefined;
+
+  // YouTube commands
+  /** Insert YouTube video */
+  insertYoutube: (src: string) => boolean | undefined;
 
   // Table commands
   /** Insert table */
@@ -148,6 +158,12 @@ export interface TiptapDocumentEditorHandle {
   mergeCells: () => boolean | undefined;
   /** Split merged cell */
   splitCell: () => boolean | undefined;
+  /** Toggle header row */
+  toggleHeaderRow: () => boolean | undefined;
+  /** Toggle header column */
+  toggleHeaderColumn: () => boolean | undefined;
+  /** Toggle header cell */
+  toggleHeaderCell: () => boolean | undefined;
 
   // History commands
   /** Undo last action */

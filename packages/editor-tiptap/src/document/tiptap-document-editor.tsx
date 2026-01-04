@@ -2,7 +2,7 @@
  * TiptapDocumentEditor - Rich text editor component using Tiptap
  * @module @grain/editor-tiptap/document
  * 
- * 包含稳定的 Tiptap 官方扩展
+ * 包含所有稳定的 Tiptap 官方扩展
  */
 
 import {
@@ -25,10 +25,13 @@ import Underline from "@tiptap/extension-underline";
 import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
 import TextAlign from "@tiptap/extension-text-align";
+import FontFamily from "@tiptap/extension-font-family";
+import Typography from "@tiptap/extension-typography";
 
 // Link and media extensions
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
+import Youtube from "@tiptap/extension-youtube";
 
 // List extensions
 import TaskList from "@tiptap/extension-task-list";
@@ -54,7 +57,54 @@ import type {
 /**
  * TiptapDocumentEditor component
  * 
- * A rich text editor built on Tiptap with stable extension support
+ * 已安装的扩展：
+ * 
+ * 【文本格式化】
+ * - Bold, Italic, Strike, Code (StarterKit)
+ * - Underline - 下划线
+ * - Subscript - 下标
+ * - Superscript - 上标
+ * - TextStyle + Color - 文字颜色
+ * - Highlight - 高亮/背景色
+ * - TextAlign - 文本对齐
+ * - FontFamily - 字体
+ * - Typography - 智能排版（引号、破折号等）
+ * 
+ * 【结构】
+ * - Heading (H1-H6)
+ * - Paragraph
+ * - Blockquote - 引用块
+ * - HorizontalRule - 分隔线
+ * - HardBreak - 换行
+ * 
+ * 【列表】
+ * - BulletList - 无序列表
+ * - OrderedList - 有序列表
+ * - TaskList + TaskItem - 任务列表（复选框）
+ * 
+ * 【表格】
+ * - Table - 表格（可调整大小）
+ * - TableRow - 表格行
+ * - TableCell - 表格单元格
+ * - TableHeader - 表格表头
+ * 
+ * 【媒体】
+ * - Link - 链接
+ * - Image - 图片
+ * - Youtube - YouTube 视频嵌入
+ * 
+ * 【代码】
+ * - Code - 行内代码
+ * - CodeBlock - 代码块
+ * 
+ * 【工具】
+ * - Placeholder - 占位符
+ * - CharacterCount - 字符计数
+ * - History - 撤销/重做
+ * - Dropcursor - 拖放光标
+ * - Gapcursor - 间隙光标
+ * - BubbleMenu - 气泡菜单
+ * - FloatingMenu - 浮动菜单
  */
 export const TiptapDocumentEditor = memo(
   forwardRef<TiptapDocumentEditorHandle, TiptapDocumentEditorProps>(
@@ -90,7 +140,7 @@ export const TiptapDocumentEditor = memo(
         return undefined;
       }, [initialContent]);
 
-      // Initialize Tiptap editor with stable extensions
+      // Initialize Tiptap editor with all stable extensions
       const editor = useEditor({
         extensions: [
           // StarterKit includes: Document, Paragraph, Text, Bold, Italic, Strike, 
@@ -102,7 +152,7 @@ export const TiptapDocumentEditor = memo(
             },
           }),
 
-          // Text Style (required for Color)
+          // Text Style (required for Color and FontFamily)
           TextStyle,
 
           // Text Color
@@ -130,6 +180,14 @@ export const TiptapDocumentEditor = memo(
             alignments: ["left", "center", "right", "justify"],
           }),
 
+          // Font Family
+          FontFamily.configure({
+            types: ["textStyle"],
+          }),
+
+          // Typography (smart quotes, dashes, ellipsis)
+          Typography,
+
           // Link
           Link.configure({
             openOnClick: false,
@@ -147,6 +205,15 @@ export const TiptapDocumentEditor = memo(
             allowBase64: true,
             HTMLAttributes: {
               class: "tiptap-image",
+            },
+          }),
+
+          // YouTube
+          Youtube.configure({
+            inline: false,
+            nocookie: true,
+            HTMLAttributes: {
+              class: "tiptap-youtube",
             },
           }),
 
@@ -294,6 +361,10 @@ export const TiptapDocumentEditor = memo(
           setHighlight: (color: string) => 
             editor?.chain().focus().toggleHighlight({ color }).run(),
           unsetHighlight: () => editor?.chain().focus().unsetHighlight().run(),
+          // Font commands
+          setFontFamily: (fontFamily: string) =>
+            editor?.chain().focus().setFontFamily(fontFamily).run(),
+          unsetFontFamily: () => editor?.chain().focus().unsetFontFamily().run(),
           // Link commands
           setLink: (url: string) => 
             editor?.chain().focus().setLink({ href: url }).run(),
@@ -301,6 +372,9 @@ export const TiptapDocumentEditor = memo(
           // Image commands
           insertImage: (src: string, alt?: string, title?: string) =>
             editor?.chain().focus().setImage({ src, alt, title }).run(),
+          // YouTube commands
+          insertYoutube: (src: string) =>
+            editor?.chain().focus().setYoutubeVideo({ src }).run(),
           // Table commands
           insertTable: (rows = 3, cols = 3) =>
             editor?.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run(),
@@ -313,6 +387,9 @@ export const TiptapDocumentEditor = memo(
           deleteTable: () => editor?.chain().focus().deleteTable().run(),
           mergeCells: () => editor?.chain().focus().mergeCells().run(),
           splitCell: () => editor?.chain().focus().splitCell().run(),
+          toggleHeaderRow: () => editor?.chain().focus().toggleHeaderRow().run(),
+          toggleHeaderColumn: () => editor?.chain().focus().toggleHeaderColumn().run(),
+          toggleHeaderCell: () => editor?.chain().focus().toggleHeaderCell().run(),
           // History commands
           undo: () => editor?.chain().focus().undo().run(),
           redo: () => editor?.chain().focus().redo().run(),
@@ -346,7 +423,7 @@ export const TiptapDocumentEditor = memo(
               <button
                 type="button"
                 onClick={() => editor.chain().focus().toggleBold().run()}
-                className={`px-2 py-1 rounded text-sm ${editor.isActive("bold") ? "bg-gray-200 dark:bg-gray-600" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                className={`px-2 py-1 rounded text-sm font-bold ${editor.isActive("bold") ? "bg-gray-200 dark:bg-gray-600" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
               >
                 B
               </button>
@@ -385,6 +462,18 @@ export const TiptapDocumentEditor = memo(
               >
                 H
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const url = window.prompt("Enter URL:");
+                  if (url) {
+                    editor.chain().focus().setLink({ href: url }).run();
+                  }
+                }}
+                className={`px-2 py-1 rounded text-sm ${editor.isActive("link") ? "bg-blue-200 dark:bg-blue-600" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+              >
+                🔗
+              </button>
             </div>
           </BubbleMenu>
 
@@ -399,6 +488,7 @@ export const TiptapDocumentEditor = memo(
                 type="button"
                 onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
                 className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Heading 1"
               >
                 H1
               </button>
@@ -406,13 +496,23 @@ export const TiptapDocumentEditor = memo(
                 type="button"
                 onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
                 className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Heading 2"
               >
                 H2
               </button>
               <button
                 type="button"
+                onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Heading 3"
+              >
+                H3
+              </button>
+              <button
+                type="button"
                 onClick={() => editor.chain().focus().toggleBulletList().run()}
                 className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Bullet List"
               >
                 •
               </button>
@@ -420,6 +520,7 @@ export const TiptapDocumentEditor = memo(
                 type="button"
                 onClick={() => editor.chain().focus().toggleOrderedList().run()}
                 className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Numbered List"
               >
                 1.
               </button>
@@ -427,6 +528,7 @@ export const TiptapDocumentEditor = memo(
                 type="button"
                 onClick={() => editor.chain().focus().toggleTaskList().run()}
                 className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Task List"
               >
                 ☐
               </button>
@@ -434,6 +536,7 @@ export const TiptapDocumentEditor = memo(
                 type="button"
                 onClick={() => editor.chain().focus().toggleCodeBlock().run()}
                 className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Code Block"
               >
                 {"</>"}
               </button>
@@ -441,8 +544,25 @@ export const TiptapDocumentEditor = memo(
                 type="button"
                 onClick={() => editor.chain().focus().toggleBlockquote().run()}
                 className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Blockquote"
               >
                 "
+              </button>
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+                className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Insert Table"
+              >
+                ⊞
+              </button>
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                className="px-2 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Horizontal Rule"
+              >
+                ―
               </button>
             </div>
           </FloatingMenu>
