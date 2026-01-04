@@ -6,7 +6,8 @@
  *
  * 内容加载已在 openFile action 中处理，此组件只负责渲染。
  *
- * 统一使用 Lexical 编辑器，移除多编辑器选择逻辑。
+ * 统一使用 Lexical 编辑器处理所有文本文件。
+ * 只有 .excalidraw 文件使用 Excalidraw 绘图编辑器。
  *
  * @see Requirements 1.4, 3.1, 4.1, 6.4
  */
@@ -16,8 +17,6 @@ import type { SerializedEditorState } from "lexical";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo } from "react";
 import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-preview-connected";
-import { CodeEditorContainer } from "@/components/code-editor";
-import { DiagramEditorContainer } from "@/components/diagram-editor";
 import { EditorTabs } from "@/components/editor-tabs";
 import { ExcalidrawEditorContainer } from "@/components/excalidraw-editor";
 import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help";
@@ -32,11 +31,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { WordCountBadge } from "@/components/word-count-badge";
-import {
-	type EditorType,
-	getDiagramTypeByFilename,
-	getEditorTypeByFilename,
-} from "@/fn/editor";
+import { type EditorType, getEditorTypeByFilename } from "@/fn/editor";
 import { countWordsFromLexicalState } from "@/fn/word-count";
 import { useSettings } from "@/hooks/use-settings";
 import { useUnifiedSave } from "@/hooks/use-unified-save";
@@ -126,21 +121,14 @@ export const StoryWorkspaceContainer = memo(
 		// 因此这里不需要额外的内容加载逻辑
 
 		// 根据文件名扩展名确定编辑器类型
+		// 只有两种类型：lexical 和 excalidraw
 		const editorType: EditorType = useMemo(() => {
 			if (!activeTab?.title) return "lexical";
 			return getEditorTypeByFilename(activeTab.title);
 		}, [activeTab?.title]);
 
-		// 获取图表类型（仅对 diagram 编辑器有效）
-		const diagramType = useMemo(() => {
-			if (!activeTab?.title) return null;
-			return getDiagramTypeByFilename(activeTab.title);
-		}, [activeTab?.title]);
-
-		// 编辑器类型判断
+		// 编辑器类型判断 - 只区分 Excalidraw
 		const isExcalidrawTab = editorType === "excalidraw";
-		const isDiagramTab = editorType === "diagram";
-		const isCodeTab = editorType === "code";
 
 		const handleScrollChange = useCallback(
 			(tabId: string, scrollTop: number) => {
@@ -164,8 +152,8 @@ export const StoryWorkspaceContainer = memo(
 			[activeTabId, updateEditorState, updateContent],
 		);
 
-		const textEditorTabs = useMemo(() => {
-			// 过滤出使用 Lexical 编辑器的标签页
+		// 所有非 Excalidraw 标签都使用 Lexical 编辑器
+		const lexicalTabs = useMemo(() => {
 			return tabs.filter((tab) => {
 				const tabEditorType = getEditorTypeByFilename(tab.title);
 				return tabEditorType === "lexical";
@@ -174,7 +162,7 @@ export const StoryWorkspaceContainer = memo(
 
 		// 计算当前编辑器的字数（仅对 Lexical 编辑器有效）
 		const wordCountResult = useMemo(() => {
-			if (!activeTabId || isExcalidrawTab || isDiagramTab || isCodeTab) {
+			if (!activeTabId || isExcalidrawTab) {
 				return { chineseChars: 0, englishWords: 0, total: 0, characters: 0 };
 			}
 			const state = editorStates[activeTabId];
@@ -182,14 +170,7 @@ export const StoryWorkspaceContainer = memo(
 				return { chineseChars: 0, englishWords: 0, total: 0, characters: 0 };
 			}
 			return countWordsFromLexicalState(state.serializedState, wordCountMode);
-		}, [
-			activeTabId,
-			editorStates,
-			isExcalidrawTab,
-			isDiagramTab,
-			isCodeTab,
-			wordCountMode,
-		]);
+		}, [activeTabId, editorStates, isExcalidrawTab, wordCountMode]);
 
 		const renderEditorContent = () => {
 			if (!activeTab) {
@@ -233,37 +214,12 @@ export const StoryWorkspaceContainer = memo(
 				);
 			}
 
-			// 处理 Mermaid/PlantUML 类型节点（基于扩展名）
-			// 统一使用 Monaco 图表编辑器
-			if (isDiagramTab && diagramType) {
-				return (
-					<DiagramEditorContainer
-						key={activeTab.id}
-						nodeId={activeTab.nodeId || ""}
-						diagramType={diagramType}
-						className="flex-1 min-h-0"
-					/>
-				);
-			}
-
-			// 处理 Code 类型节点（基于扩展名）
-			// 统一使用 Monaco 代码编辑器
-			if (isCodeTab) {
-				return (
-					<CodeEditorContainer
-						key={activeTab.id}
-						nodeId={activeTab.nodeId || ""}
-						className="flex-1 min-h-0"
-					/>
-				);
-			}
-
-			// 处理文档类型节点（.grain 文件）
-			// 统一使用 Lexical 编辑器
+			// 所有其他文件类型都使用 Lexical 编辑器
+			// 包括：.grain, .mermaid, .plantuml, .js, .ts, .md 等
 			return (
 				<div className="flex-1 overflow-hidden">
 					<MultiEditorContainer
-						tabs={textEditorTabs}
+						tabs={lexicalTabs}
 						activeTabId={activeTabId}
 						editorStates={editorStates}
 						onContentChange={handleMultiEditorContentChange}
@@ -331,13 +287,7 @@ export const StoryWorkspaceContainer = memo(
 					<WordCountBadge
 						wordCountResult={wordCountResult}
 						countMode={wordCountMode}
-						show={
-							showWordCountBadge &&
-							!isExcalidrawTab &&
-							!isDiagramTab &&
-							!isCodeTab &&
-							!!activeTab
-						}
+						show={showWordCountBadge && !isExcalidrawTab && !!activeTab}
 						showDetail={wordCountMode === "mixed"}
 					/>
 				</div>

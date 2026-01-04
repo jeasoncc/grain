@@ -2,8 +2,8 @@
  * @file editor-extension.const.ts
  * @description 文件扩展名与编辑器类型映射常量
  *
- * 定义文件扩展名到编辑器类型的映射关系，
- * 支持扩展名驱动的编辑器选择机制。
+ * 定义文件扩展名到编辑器类型的映射关系。
+ * 统一使用 Lexical 编辑器处理所有文本文件。
  *
  * @requirements 1.1, 1.2, 1.3, 1.4, 1.5
  */
@@ -15,15 +15,13 @@
 /**
  * 编辑器类型
  *
- * - lexical: Lexical 富文本编辑器（.grain 文件）
+ * - lexical: Lexical 富文本编辑器（所有文本文件）
  * - excalidraw: Excalidraw 绘图编辑器（.excalidraw 文件）
- * - diagram: 图表编辑器（.mermaid, .plantuml 文件）
- * - code: Monaco 代码编辑器（.js, .ts, .md 等代码文件）
  */
-export type EditorType = "lexical" | "excalidraw" | "diagram" | "code";
+export type EditorType = "lexical" | "excalidraw";
 
 /**
- * 图表类型
+ * 图表类型（用于内容识别，不影响编辑器选择）
  */
 export type DiagramType = "mermaid" | "plantuml";
 
@@ -76,45 +74,44 @@ export const FILE_EXTENSIONS = {
 
 /**
  * 扩展名到编辑器类型的映射
+ *
+ * 统一使用 Lexical 编辑器处理所有文本文件，
+ * 只有 .excalidraw 文件使用 Excalidraw 编辑器。
  */
 export const EXTENSION_TO_EDITOR_MAP: Record<string, EditorType> = {
-	// Lexical 富文本编辑器
-	[FILE_EXTENSIONS.GRAIN]: "lexical",
-
 	// Excalidraw 绘图编辑器
 	[FILE_EXTENSIONS.EXCALIDRAW]: "excalidraw",
 
-	// 图表编辑器
-	[FILE_EXTENSIONS.MERMAID]: "diagram",
-	[FILE_EXTENSIONS.PLANTUML]: "diagram",
-
-	// 代码编辑器（所有其他扩展名）
-	[FILE_EXTENSIONS.JS]: "code",
-	[FILE_EXTENSIONS.TS]: "code",
-	[FILE_EXTENSIONS.JSX]: "code",
-	[FILE_EXTENSIONS.TSX]: "code",
-	[FILE_EXTENSIONS.JSON]: "code",
-	[FILE_EXTENSIONS.MD]: "code",
-	[FILE_EXTENSIONS.HTML]: "code",
-	[FILE_EXTENSIONS.CSS]: "code",
-	[FILE_EXTENSIONS.SCSS]: "code",
-	[FILE_EXTENSIONS.LESS]: "code",
-	[FILE_EXTENSIONS.YAML]: "code",
-	[FILE_EXTENSIONS.YML]: "code",
-	[FILE_EXTENSIONS.TOML]: "code",
-	[FILE_EXTENSIONS.XML]: "code",
-	[FILE_EXTENSIONS.SQL]: "code",
-	[FILE_EXTENSIONS.SH]: "code",
-	[FILE_EXTENSIONS.BASH]: "code",
-	[FILE_EXTENSIONS.PY]: "code",
-	[FILE_EXTENSIONS.RS]: "code",
-	[FILE_EXTENSIONS.GO]: "code",
-	[FILE_EXTENSIONS.JAVA]: "code",
-	[FILE_EXTENSIONS.C]: "code",
-	[FILE_EXTENSIONS.CPP]: "code",
-	[FILE_EXTENSIONS.H]: "code",
-	[FILE_EXTENSIONS.HPP]: "code",
-	[FILE_EXTENSIONS.TXT]: "code",
+	// 所有其他文件类型都使用 Lexical 编辑器
+	[FILE_EXTENSIONS.GRAIN]: "lexical",
+	[FILE_EXTENSIONS.MERMAID]: "lexical",
+	[FILE_EXTENSIONS.PLANTUML]: "lexical",
+	[FILE_EXTENSIONS.JS]: "lexical",
+	[FILE_EXTENSIONS.TS]: "lexical",
+	[FILE_EXTENSIONS.JSX]: "lexical",
+	[FILE_EXTENSIONS.TSX]: "lexical",
+	[FILE_EXTENSIONS.JSON]: "lexical",
+	[FILE_EXTENSIONS.MD]: "lexical",
+	[FILE_EXTENSIONS.HTML]: "lexical",
+	[FILE_EXTENSIONS.CSS]: "lexical",
+	[FILE_EXTENSIONS.SCSS]: "lexical",
+	[FILE_EXTENSIONS.LESS]: "lexical",
+	[FILE_EXTENSIONS.YAML]: "lexical",
+	[FILE_EXTENSIONS.YML]: "lexical",
+	[FILE_EXTENSIONS.TOML]: "lexical",
+	[FILE_EXTENSIONS.XML]: "lexical",
+	[FILE_EXTENSIONS.SQL]: "lexical",
+	[FILE_EXTENSIONS.SH]: "lexical",
+	[FILE_EXTENSIONS.BASH]: "lexical",
+	[FILE_EXTENSIONS.PY]: "lexical",
+	[FILE_EXTENSIONS.RS]: "lexical",
+	[FILE_EXTENSIONS.GO]: "lexical",
+	[FILE_EXTENSIONS.JAVA]: "lexical",
+	[FILE_EXTENSIONS.C]: "lexical",
+	[FILE_EXTENSIONS.CPP]: "lexical",
+	[FILE_EXTENSIONS.H]: "lexical",
+	[FILE_EXTENSIONS.HPP]: "lexical",
+	[FILE_EXTENSIONS.TXT]: "lexical",
 };
 
 /**
@@ -142,10 +139,10 @@ export const NODE_TYPE_TO_EXTENSION_MAP: Record<string, string> = {
 	// 绘图类型
 	drawing: FILE_EXTENSIONS.EXCALIDRAW,
 
-	// 图表类型
+	// 图表类型（使用 Lexical 编辑器）
 	mermaid: FILE_EXTENSIONS.MERMAID,
 	plantuml: FILE_EXTENSIONS.PLANTUML,
 
-	// 代码类型（默认 .js）
+	// 代码类型（使用 Lexical 编辑器）
 	code: FILE_EXTENSIONS.JS,
 };

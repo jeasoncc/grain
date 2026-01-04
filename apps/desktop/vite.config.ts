@@ -22,10 +22,6 @@ export default defineConfig(async () => ({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-  // Monaco Editor 优化配置
-  optimizeDeps: {
-    include: ['monaco-editor'],
-  },
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors

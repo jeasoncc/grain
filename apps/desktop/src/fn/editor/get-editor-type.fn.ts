@@ -3,6 +3,7 @@
  * @description 根据文件名获取编辑器类型的纯函数
  *
  * 实现扩展名驱动的编辑器选择机制。
+ * 统一使用 Lexical 编辑器处理所有文本文件。
  *
  * @requirements 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
  */
@@ -47,10 +48,8 @@ export const getFileExtension = (filename: string): string => {
  * 根据文件名获取编辑器类型
  *
  * 映射规则：
- * - .grain → lexical（Lexical 富文本编辑器）
  * - .excalidraw → excalidraw（Excalidraw 绘图编辑器）
- * - .mermaid, .plantuml → diagram（图表编辑器）
- * - 其他扩展名 → code（Monaco 代码编辑器）
+ * - 所有其他文件 → lexical（Lexical 编辑器）
  *
  * @param filename - 文件名
  * @returns 编辑器类型
@@ -58,26 +57,27 @@ export const getFileExtension = (filename: string): string => {
  * @example
  * getEditorTypeByFilename("diary-123.grain") // "lexical"
  * getEditorTypeByFilename("drawing.excalidraw") // "excalidraw"
- * getEditorTypeByFilename("flowchart.mermaid") // "diagram"
- * getEditorTypeByFilename("script.js") // "code"
- * getEditorTypeByFilename("unknown") // "code"
+ * getEditorTypeByFilename("flowchart.mermaid") // "lexical"
+ * getEditorTypeByFilename("script.js") // "lexical"
+ * getEditorTypeByFilename("unknown") // "lexical"
  */
 export const getEditorTypeByFilename = (filename: string): EditorType => {
 	const extension = getFileExtension(filename);
 
-	// 如果没有扩展名，默认使用代码编辑器
+	// 如果没有扩展名，默认使用 Lexical 编辑器
 	if (!extension) {
-		return "code";
+		return "lexical";
 	}
 
-	// 查找映射，未知扩展名默认使用代码编辑器
-	return EXTENSION_TO_EDITOR_MAP[extension] ?? "code";
+	// 查找映射，未知扩展名默认使用 Lexical 编辑器
+	return EXTENSION_TO_EDITOR_MAP[extension] ?? "lexical";
 };
 
 /**
  * 根据文件名获取图表类型
  *
  * 仅对图表文件有效，其他文件返回 null
+ * 注意：图表文件也使用 Lexical 编辑器，此函数仅用于内容识别
  *
  * @param filename - 文件名
  * @returns 图表类型，如果不是图表文件则返回 null
@@ -120,7 +120,9 @@ export const isExcalidrawFile = (filename: string): boolean => {
 };
 
 /**
- * 检查文件是否为图表文件
+ * 检查文件是否为图表文件（Mermaid/PlantUML）
+ *
+ * 注意：图表文件也使用 Lexical 编辑器
  *
  * @param filename - 文件名
  * @returns 是否为 .mermaid 或 .plantuml 文件
@@ -130,11 +132,11 @@ export const isDiagramFile = (filename: string): boolean => {
 };
 
 /**
- * 检查文件是否为代码文件
+ * 检查文件是否使用 Lexical 编辑器
  *
  * @param filename - 文件名
- * @returns 是否为代码文件（非 grain/excalidraw/diagram）
+ * @returns 是否使用 Lexical 编辑器（除 Excalidraw 外的所有文件）
  */
-export const isCodeFile = (filename: string): boolean => {
-	return getEditorTypeByFilename(filename) === "code";
+export const isLexicalFile = (filename: string): boolean => {
+	return getEditorTypeByFilename(filename) === "lexical";
 };
