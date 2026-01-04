@@ -15,8 +15,8 @@
 
 ## Tasks
 
-- [ ] 1. 验证并完善编辑器类型判断函数
-  - [ ] 1.1 审查 get-editor-type.fn.ts 确保只返回 "lexical" | "excalidraw"
+- [x] 1. 验证并完善编辑器类型判断函数
+  - [-] 1.1 审查 get-editor-type.fn.ts 确保只返回 "lexical" | "excalidraw"
     - 验证 EditorType 类型定义
     - 验证 EXTENSION_TO_EDITOR_MAP 映射
     - _Requirements: 1.1, 1.2, 1.5_

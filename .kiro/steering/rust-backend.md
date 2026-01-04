@@ -1,4 +1,6 @@
-
+---
+inclusion: manual
+---
 # Rust 后端架构规范
 
 本文档定义 Grain 项目 Rust 后端的架构设计，与前端 TypeScript 保持一致的函数式编程理念。
