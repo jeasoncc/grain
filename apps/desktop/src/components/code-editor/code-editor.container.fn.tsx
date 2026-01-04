@@ -12,7 +12,7 @@
  * @requirements 5.2, 5.3, 5.5
  */
 
-import { CodeEditorView } from "@grain/code-editor";
+import { CodeEditorView } from "@grain/editor-monaco";
 import * as E from "fp-ts/Either";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 

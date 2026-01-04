@@ -5,7 +5,7 @@
  * @requirements 5.5
  */
 
-import type { MonacoLanguage } from "@grain/code-editor";
+import type { MonacoLanguage } from "@grain/editor-monaco";
 import type { Theme } from "@/lib/themes";
 
 /**

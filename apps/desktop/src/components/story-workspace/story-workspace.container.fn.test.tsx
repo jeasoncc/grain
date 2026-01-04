@@ -4,7 +4,7 @@ import type { WorkspaceInterface } from "@/types/workspace";
 import { StoryWorkspaceContainer } from "./story-workspace.container.fn";
 
 // Mock all child components
-vi.mock("@grain/editor", () => ({
+vi.mock("@grain/editor-lexical", () => ({
 	MultiEditorContainer: vi.fn(() => <div data-testid="multi-editor" />),
 }));
 

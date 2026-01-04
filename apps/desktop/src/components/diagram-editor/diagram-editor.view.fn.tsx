@@ -6,4 +6,4 @@
  * 保持 apps/desktop 中的导入路径不变。
  */
 
-export { DiagramEditorView } from "@grain/diagram-editor";
+export { DiagramEditorView } from "@grain/editor-monaco";

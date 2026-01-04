@@ -5,7 +5,7 @@
  * 包括折叠图标风格等编辑器功能配置
  */
 
-import type { FoldIconStyle } from "@grain/editor";
+import type { FoldIconStyle } from "@grain/editor-lexical";
 
 // ==============================
 // State Interface

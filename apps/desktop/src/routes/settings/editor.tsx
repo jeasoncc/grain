@@ -1,4 +1,4 @@
-import { FOLD_ICON_OPTIONS, getFoldIconLetters } from "@grain/editor";
+import { FOLD_ICON_OPTIONS, getFoldIconLetters } from "@grain/editor-lexical";
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Minus, Plus, RotateCcw, Sparkles, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";

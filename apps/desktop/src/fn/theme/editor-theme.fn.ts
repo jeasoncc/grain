@@ -5,7 +5,7 @@
  * 从应用主题中提取编辑器组件需要的颜色配置。
  */
 
-import type { EditorThemeColors } from "@grain/code-editor";
+import type { EditorThemeColors } from "@grain/editor-monaco";
 import type { Theme } from "@/lib/themes";
 
 /**

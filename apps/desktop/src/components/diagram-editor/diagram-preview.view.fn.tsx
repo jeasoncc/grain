@@ -6,11 +6,11 @@
  * 保持 apps/desktop 中的导入路径不变。
  */
 
-export type { DiagramPreviewViewProps } from "@grain/diagram-editor";
+export type { DiagramPreviewViewProps } from "@grain/editor-monaco";
 export {
 	DiagramEmptyState,
 	DiagramErrorDisplay,
 	DiagramLoadingState,
 	DiagramPreviewView,
 	DiagramSvgContent,
-} from "@grain/diagram-editor";
+} from "@grain/editor-monaco";

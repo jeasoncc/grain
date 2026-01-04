@@ -12,7 +12,7 @@ export type {
 	DiagramError,
 	DiagramErrorType,
 	DiagramType,
-} from "@grain/diagram-editor";
+} from "@grain/editor-monaco";
 
 /**
  * DiagramEditorContainer Props 接口

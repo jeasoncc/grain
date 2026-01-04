@@ -6,7 +6,7 @@
  * 使用 Zustand + Immer 实现不可变状态管理
  */
 
-import type { FoldIconStyle } from "@grain/editor";
+import type { FoldIconStyle } from "@grain/editor-lexical";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";

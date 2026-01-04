@@ -185,25 +185,25 @@
     - 更新 package.json exports
     - _Requirements: 6.7_
 
-- [ ] 8. Checkpoint - 确保所有编辑器包编译通过
+- [x] 8. Checkpoint - 确保所有编辑器包编译通过
   - 运行 `bun run build` 验证所有包构建
   - 确保所有导出正确
 
-- [ ] 9. 更新 apps/desktop 导入路径
-  - [ ] 9.1 更新 @grain/editor 导入为 @grain/editor-lexical
+- [x] 9. 更新 apps/desktop 导入路径
+  - [x] 9.1 更新 @grain/editor 导入为 @grain/editor-lexical
     - 搜索并替换所有 `@grain/editor` 导入
     - 更新为对应的 subpath 导入
     - _Requirements: 2.6_
 
-  - [ ] 9.2 更新 @grain/code-editor 导入为 @grain/editor-monaco
+  - [x] 9.2 更新 @grain/code-editor 导入为 @grain/editor-monaco
     - 搜索并替换所有 `@grain/code-editor` 导入
     - _Requirements: 2.6_
 
-  - [ ] 9.3 更新 @grain/diagram-editor 导入
+  - [x] 9.3 更新 @grain/diagram-editor 导入
     - 将 diagram-editor 导入迁移到 editor-monaco/diagram
     - _Requirements: 2.8_
 
-  - [ ] 9.4 更新 package.json 依赖
+  - [x] 9.4 更新 package.json 依赖
     - 更新 apps/desktop/package.json 中的依赖名称
     - 添加新包依赖
     - _Requirements: 2.6_

@@ -4,7 +4,7 @@
  * 所有接口和类型定义放在这个文件中
  */
 
-import type { EditorInstanceState as BaseEditorInstanceState } from "@grain/editor";
+import type { EditorInstanceState as BaseEditorInstanceState } from "@grain/editor-lexical";
 import type { NodeType } from "@/types/node";
 
 // ==============================

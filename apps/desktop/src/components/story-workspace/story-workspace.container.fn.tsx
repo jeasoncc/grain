@@ -9,7 +9,7 @@
  * @see Requirements 1.4, 3.1, 4.1, 6.4
  */
 
-import { type MentionEntry, MultiEditorContainer } from "@grain/editor";
+import { type MentionEntry, MultiEditorContainer } from "@grain/editor-lexical";
 import type { SerializedEditorState } from "lexical";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo } from "react";
