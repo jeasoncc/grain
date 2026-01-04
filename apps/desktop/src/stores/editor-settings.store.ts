@@ -2,11 +2,16 @@
  * @file stores/editor-settings.store.ts
  * @description 编辑器设置状态管理
  *
- * 管理编辑器行为设置，如折叠图标风格等
+ * 管理编辑器行为设置，如折叠图标风格、编辑器类型选择等
  * 使用 Zustand + Immer 实现不可变状态管理
  */
 
 import type { FoldIconStyle } from "@grain/editor-lexical";
+import type {
+	DocumentEditorType,
+	CodeEditorType,
+	DiagramEditorType,
+} from "@grain/editor-core";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
@@ -45,9 +50,32 @@ export const useEditorSettingsStore = create<EditorSettingsStore>()(
 				});
 			},
 
+			setDocumentEditorType: (type: DocumentEditorType) => {
+				set((state) => {
+					state.documentEditorType = type;
+				});
+			},
+
+			setCodeEditorType: (type: CodeEditorType) => {
+				set((state) => {
+					state.codeEditorType = type;
+				});
+			},
+
+			setDiagramEditorType: (type: DiagramEditorType) => {
+				set((state) => {
+					state.diagramEditorType = type;
+				});
+			},
+
 			reset: () => {
 				set((state) => {
 					state.foldIconStyle = DEFAULT_EDITOR_SETTINGS_STATE.foldIconStyle;
+					state.documentEditorType =
+						DEFAULT_EDITOR_SETTINGS_STATE.documentEditorType;
+					state.codeEditorType = DEFAULT_EDITOR_SETTINGS_STATE.codeEditorType;
+					state.diagramEditorType =
+						DEFAULT_EDITOR_SETTINGS_STATE.diagramEditorType;
 				});
 			},
 		})),
@@ -66,6 +94,27 @@ export const useEditorSettingsStore = create<EditorSettingsStore>()(
  */
 export const useFoldIconStyle = (): FoldIconStyle => {
 	return useEditorSettingsStore((state) => state.foldIconStyle);
+};
+
+/**
+ * 获取当前文档编辑器类型
+ */
+export const useDocumentEditorType = (): DocumentEditorType => {
+	return useEditorSettingsStore((state) => state.documentEditorType);
+};
+
+/**
+ * 获取当前代码编辑器类型
+ */
+export const useCodeEditorType = (): CodeEditorType => {
+	return useEditorSettingsStore((state) => state.codeEditorType);
+};
+
+/**
+ * 获取当前图表编辑器类型
+ */
+export const useDiagramEditorType = (): DiagramEditorType => {
+	return useEditorSettingsStore((state) => state.diagramEditorType);
 };
 
 // ==============================

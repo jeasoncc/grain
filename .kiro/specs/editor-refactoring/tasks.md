@@ -208,13 +208,13 @@
     - 添加新包依赖
     - _Requirements: 2.6_
 
-- [ ] 10. 实现编辑器切换机制（可选增强）
-  - [ ] 10.1 创建 EditorSelector 组件
+- [x] 10. 实现编辑器切换机制（可选增强）
+  - [x] 10.1 创建 EditorSelector 组件
     - 根据 EditorConfig 动态加载对应编辑器
     - 实现懒加载以优化包大小
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-  - [ ] 10.2 实现内容转换工具
+  - [x] 10.2 实现内容转换工具
     - 创建 content-converter.ts
     - 实现不同编辑器格式之间的转换
     - _Requirements: 8.6_

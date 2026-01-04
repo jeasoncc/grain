@@ -1,6 +1,16 @@
 import { FOLD_ICON_OPTIONS, getFoldIconLetters } from "@grain/editor-lexical";
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Minus, Plus, RotateCcw, Sparkles, Type } from "lucide-react";
+import {
+	Check,
+	Code2,
+	FileText,
+	GitBranch,
+	Minus,
+	Plus,
+	RotateCcw,
+	Sparkles,
+	Type,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DebouncedSlider } from "@/components/ui/debounced-slider";
 import { Input } from "@/components/ui/input";
@@ -9,6 +19,11 @@ import { Switch } from "@/components/ui/switch";
 import { useEditorSettings } from "@/stores/editor-settings.store";
 import { useFontSettings } from "@/stores/font.store";
 import { DEFAULT_EDITOR_FONT, POPULAR_FONTS } from "@/types/font";
+import {
+	DOCUMENT_EDITOR_OPTIONS,
+	CODE_EDITOR_OPTIONS,
+	DIAGRAM_EDITOR_OPTIONS,
+} from "@/types/editor-settings";
 
 export const Route = createFileRoute("/settings/editor")({
 	component: EditorSettings,
@@ -30,7 +45,16 @@ function EditorSettings() {
 		setFirstLineIndent,
 	} = useFontSettings();
 
-	const { foldIconStyle, setFoldIconStyle } = useEditorSettings();
+	const {
+		foldIconStyle,
+		setFoldIconStyle,
+		documentEditorType,
+		setDocumentEditorType,
+		codeEditorType,
+		setCodeEditorType,
+		diagramEditorType,
+		setDiagramEditorType,
+	} = useEditorSettings();
 
 	// 获取当前选中风格的字母列表
 	const currentLetters = getFoldIconLetters(foldIconStyle);
@@ -49,6 +73,156 @@ function EditorSettings() {
 				<h3 className="text-lg font-medium">Editor</h3>
 				<p className="text-sm text-muted-foreground">
 					Customize the writing experience. Changes are saved automatically.
+				</p>
+			</div>
+
+			{/* Editor Type Selection */}
+			<div className="space-y-6">
+				<div className="flex items-center gap-2 text-muted-foreground">
+					<Code2 className="size-4" />
+					<h4 className="text-sm font-medium uppercase tracking-wider">
+						Editor Engines
+					</h4>
+				</div>
+
+				{/* Document Editor */}
+				<div className="space-y-3">
+					<div className="flex items-center gap-2">
+						<FileText className="size-4 text-muted-foreground" />
+						<div>
+							<Label className="text-sm">Document Editor</Label>
+							<p className="text-xs text-muted-foreground">
+								Editor for rich text documents (.grain, .note)
+							</p>
+						</div>
+					</div>
+					<div className="grid grid-cols-2 gap-2">
+						{DOCUMENT_EDITOR_OPTIONS.map((option) => {
+							const isSelected = documentEditorType === option.id;
+							return (
+								<button
+									type="button"
+									key={option.id}
+									onClick={() => setDocumentEditorType(option.id)}
+									className={`
+										flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all
+										${
+											isSelected
+												? "bg-primary/10 border-primary/50 ring-1 ring-primary/20"
+												: "border-border hover:bg-muted hover:border-primary/30"
+										}
+									`}
+								>
+									<div className="flex-1 min-w-0">
+										<div className="text-xs font-medium truncate">
+											{option.name}
+										</div>
+										<div className="text-[10px] text-muted-foreground truncate">
+											{option.description}
+										</div>
+									</div>
+									{isSelected && (
+										<Check className="size-4 text-primary shrink-0" />
+									)}
+								</button>
+							);
+						})}
+					</div>
+				</div>
+
+				{/* Code Editor */}
+				<div className="space-y-3">
+					<div className="flex items-center gap-2">
+						<Code2 className="size-4 text-muted-foreground" />
+						<div>
+							<Label className="text-sm">Code Editor</Label>
+							<p className="text-xs text-muted-foreground">
+								Editor for code files (.js, .ts, .py, etc.)
+							</p>
+						</div>
+					</div>
+					<div className="grid grid-cols-2 gap-2">
+						{CODE_EDITOR_OPTIONS.map((option) => {
+							const isSelected = codeEditorType === option.id;
+							return (
+								<button
+									type="button"
+									key={option.id}
+									onClick={() => setCodeEditorType(option.id)}
+									className={`
+										flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all
+										${
+											isSelected
+												? "bg-primary/10 border-primary/50 ring-1 ring-primary/20"
+												: "border-border hover:bg-muted hover:border-primary/30"
+										}
+									`}
+								>
+									<div className="flex-1 min-w-0">
+										<div className="text-xs font-medium truncate">
+											{option.name}
+										</div>
+										<div className="text-[10px] text-muted-foreground truncate">
+											{option.description}
+										</div>
+									</div>
+									{isSelected && (
+										<Check className="size-4 text-primary shrink-0" />
+									)}
+								</button>
+							);
+						})}
+					</div>
+				</div>
+
+				{/* Diagram Editor */}
+				<div className="space-y-3">
+					<div className="flex items-center gap-2">
+						<GitBranch className="size-4 text-muted-foreground" />
+						<div>
+							<Label className="text-sm">Diagram Editor</Label>
+							<p className="text-xs text-muted-foreground">
+								Editor for diagrams (.mermaid, .plantuml)
+							</p>
+						</div>
+					</div>
+					<div className="grid grid-cols-2 gap-2">
+						{DIAGRAM_EDITOR_OPTIONS.map((option) => {
+							const isSelected = diagramEditorType === option.id;
+							return (
+								<button
+									type="button"
+									key={option.id}
+									onClick={() => setDiagramEditorType(option.id)}
+									className={`
+										flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all
+										${
+											isSelected
+												? "bg-primary/10 border-primary/50 ring-1 ring-primary/20"
+												: "border-border hover:bg-muted hover:border-primary/30"
+										}
+									`}
+								>
+									<div className="flex-1 min-w-0">
+										<div className="text-xs font-medium truncate">
+											{option.name}
+										</div>
+										<div className="text-[10px] text-muted-foreground truncate">
+											{option.description}
+										</div>
+									</div>
+									{isSelected && (
+										<Check className="size-4 text-primary shrink-0" />
+									)}
+								</button>
+							);
+						})}
+					</div>
+				</div>
+
+				<p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+					Note: Changing editor engines requires reopening files. Some features
+					may vary between editors.
 				</p>
 			</div>
 
