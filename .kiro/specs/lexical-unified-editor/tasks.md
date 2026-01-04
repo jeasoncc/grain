@@ -48,14 +48,14 @@
     - 验证无 monaco-editor
     - _Requirements: 2.3_
 
-- [ ] 6. 验证后备编辑器包完整性
-  - [ ] 6.1 确认 packages/editor-monaco 目录存在且完整
+- [x] 6. 验证后备编辑器包完整性
+  - [x] 6.1 确认 packages/editor-monaco 目录存在且完整
     - _Requirements: 4.1_
-  - [ ] 6.2 确认 packages/editor-tiptap 目录存在且完整
+  - [x] 6.2 确认 packages/editor-tiptap 目录存在且完整
     - _Requirements: 4.2_
-  - [ ] 6.3 确认 packages/editor-codemirror 目录存在且完整
+  - [x] 6.3 确认 packages/editor-codemirror 目录存在且完整
     - _Requirements: 4.3_
-  - [ ] 6.4 确认 packages/editor-lexical 目录存在且完整
+  - [x] 6.4 确认 packages/editor-lexical 目录存在且完整
     - _Requirements: 4.4_
 
 - [ ] 7. 验证 Editor Core 接口完整性
