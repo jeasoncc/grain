@@ -42,8 +42,8 @@
   - [x] 4.2 审查 editor-settings.interface.ts 确保无编辑器类型选择类型
     - _Requirements: 3.5_
 
-- [ ] 5. 验证 package.json 依赖
-  - [ ] 5.1 确认 apps/desktop/package.json 无 Monaco 相关依赖
+- [x] 5. 验证 package.json 依赖
+  - [x] 5.1 确认 apps/desktop/package.json 无 Monaco 相关依赖
     - 验证无 @monaco-editor/react
     - 验证无 monaco-editor
     - _Requirements: 2.3_
