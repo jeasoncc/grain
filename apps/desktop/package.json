@@ -35,7 +35,7 @@
     "@excalidraw/excalidraw": "0.18.0",
     "@grain/code-editor": "workspace:*",
     "@grain/diagram-editor": "workspace:*",
-    "@grain/editor": "workspace:*",
+    "@grain/editor-lexical": "workspace:*",
     "@grain/excalidraw-editor": "workspace:*",
     "@lexical/code": "^0.38.2",
     "@lexical/file": "^0.38.2",

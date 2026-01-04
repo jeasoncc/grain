@@ -120,43 +120,43 @@
   - 运行 `bun run build` 验证包构建
   - 确保所有导出正确
 
-- [ ] 6. 创建 editor-tiptap 包
-  - [ ] 6.1 初始化 `packages/editor-tiptap` 包结构
+- [x] 6. 创建 editor-tiptap 包
+  - [x] 6.1 初始化 `packages/editor-tiptap` 包结构
     - 创建 package.json、tsconfig.json、vite.config.ts
     - 配置 peerDependencies: @tiptap/core, @tiptap/react, @tiptap/starter-kit
     - _Requirements: 2.4_
 
-  - [ ] 6.2 实现 TiptapDocumentEditor 组件
+  - [x] 6.2 实现 TiptapDocumentEditor 组件
     - 创建 `src/document/tiptap-document-editor.tsx`
     - 配置 StarterKit 扩展
     - 实现富文本格式化功能
     - _Requirements: 4.1, 4.2_
 
-  - [ ] 6.3 实现 TiptapDocumentAdapter
+  - [x] 6.3 实现 TiptapDocumentAdapter
     - 创建 `src/document/tiptap-document-adapter.ts`
     - 实现 DocumentEditorAdapter 接口
     - _Requirements: 4.1, 4.7_
 
-  - [ ] 6.4 配置 Tiptap 表格扩展
+  - [x] 6.4 配置 Tiptap 表格扩展
     - 安装 @tiptap/extension-table
     - 实现 insertTable 功能
     - _Requirements: 4.3_
 
-  - [ ] 6.5 配置 Markdown 快捷键
+  - [x] 6.5 配置 Markdown 快捷键
     - 配置 markdown shortcuts
     - _Requirements: 4.4_
 
-  - [ ] 6.6 实现 TiptapCodeEditor 组件
+  - [x] 6.6 实现 TiptapCodeEditor 组件
     - 创建 `src/code/tiptap-code-editor.tsx`
     - 使用 @tiptap/extension-code-block-lowlight
     - _Requirements: 4.5_
 
-  - [ ] 6.7 实现 TiptapDiagramEditor 组件
+  - [x] 6.7 实现 TiptapDiagramEditor 组件
     - 创建 `src/diagram/tiptap-diagram-editor.tsx`
     - 集成 Mermaid 预览
     - _Requirements: 4.6_
 
-  - [ ] 6.8 配置 subpath exports
+  - [x] 6.8 配置 subpath exports
     - 更新 package.json exports
     - _Requirements: 4.9_
 
