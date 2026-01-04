@@ -1,12 +1,42 @@
 /**
  * @file code-editor.types.ts
- * @description CodeEditor Container 类型定义
+ * @description CodeEditor 类型定义
  *
  * @requirements 5.5
  */
 
-import type { MonacoLanguage } from "@grain/editor-monaco";
 import type { Theme } from "@/lib/themes";
+
+/**
+ * Monaco 支持的语言类型
+ */
+export type MonacoLanguage =
+	| "plaintext"
+	| "json"
+	| "javascript"
+	| "typescript"
+	| "html"
+	| "css"
+	| "markdown"
+	| "yaml"
+	| "xml"
+	| "sql"
+	| "python"
+	| "rust"
+	| "go"
+	| "java"
+	| "c"
+	| "cpp"
+	| "csharp"
+	| "php"
+	| "ruby"
+	| "swift"
+	| "kotlin"
+	| "shell"
+	| "powershell"
+	| "dockerfile"
+	| "mermaid"
+	| "plantuml";
 
 /**
  * CodeEditorContainer Props
@@ -42,8 +72,3 @@ export interface CodeEditorViewProps {
  * 代码语言类型（兼容别名）
  */
 export type CodeLanguage = MonacoLanguage;
-
-/**
- * 重新导出 MonacoLanguage 类型
- */
-export type { MonacoLanguage };

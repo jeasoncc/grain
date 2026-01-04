@@ -69,8 +69,8 @@ export {
 	useTag,
 	useTagByName,
 	useTagGraph,
-	useTagsByWorkspace,
 	useTagSearch,
+	useTagsByWorkspace,
 	useTopTags,
 } from "./tag.queries";
 // User Queries

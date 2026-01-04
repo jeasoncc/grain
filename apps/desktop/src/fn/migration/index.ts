@@ -4,25 +4,25 @@
  */
 
 export {
-	// Types
-	type MigrationStatus,
-	type MigrationResult,
+	// Cleanup
+	clearDexieData,
+	clearMigrationStatus,
 	type DexieDataSnapshot,
-	type IdMapping,
 	// Status management
 	getMigrationStatus,
-	setMigrationStatus,
-	clearMigrationStatus,
 	// Detection
 	hasDexieData,
+	type IdMapping,
+	type MigrationResult,
+	// Types
+	type MigrationStatus,
+	migrateAndCleanup,
+	migrateData,
 	needsMigration,
 	// Data operations
 	readDexieData,
-	migrateData,
+	resetMigrationStatus,
 	// Rollback
 	rollbackMigration,
-	resetMigrationStatus,
-	// Cleanup
-	clearDexieData,
-	migrateAndCleanup,
+	setMigrationStatus,
 } from "./dexie-to-sqlite.migration.fn";

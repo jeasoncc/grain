@@ -10,9 +10,9 @@
 
 import {
 	useAttachment as useAttachmentQuery,
-	useAttachments as useAttachmentsQuery,
 	useAttachmentsByProject as useAttachmentsByProjectQuery,
 	useAttachmentsByType as useAttachmentsByTypeQuery,
+	useAttachments as useAttachmentsQuery,
 	useAudioFilesByProject as useAudioFilesByProjectQuery,
 	useImagesByProject as useImagesByProjectQuery,
 } from "@/queries";

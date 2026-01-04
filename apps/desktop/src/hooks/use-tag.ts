@@ -10,15 +10,15 @@
 
 import {
 	useNodesByTag as useNodesByTagQuery,
-	useTag as useTagQuery,
 	useTagByName as useTagByNameQuery,
 	useTagGraph as useTagGraphQuery,
-	useTagsByWorkspace as useTagsByWorkspaceQuery,
+	useTag as useTagQuery,
 	useTagSearch as useTagSearchQuery,
+	useTagsByWorkspace as useTagsByWorkspaceQuery,
 	useTopTags as useTopTagsQuery,
 } from "@/queries";
-import type { TagInterface } from "@/types/tag";
 import type { TagGraphData } from "@/types/codec";
+import type { TagInterface } from "@/types/tag";
 
 /**
  * Hook to get all tags for a workspace
@@ -54,9 +54,7 @@ export function useNodesByTag(
  * @param workspaceId - The workspace ID
  * @returns Graph data with nodes and edges
  */
-export function useTagGraph(
-	workspaceId: string | undefined,
-): TagGraphData {
+export function useTagGraph(workspaceId: string | undefined): TagGraphData {
 	const { data } = useTagGraphQuery(workspaceId);
 	return data ?? { nodes: [], edges: [] };
 }
@@ -144,8 +142,7 @@ export function useRecentTags(
 	// Sort by lastUsed and take top N
 	return [...data]
 		.sort(
-			(a, b) =>
-				new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime(),
+			(a, b) => new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime(),
 		)
 		.slice(0, limit);
 }

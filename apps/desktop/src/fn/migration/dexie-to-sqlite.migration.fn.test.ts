@@ -12,10 +12,10 @@
 import * as E from "fp-ts/Either";
 import type * as TE from "fp-ts/TaskEither";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { NodeInterface } from "@/types/node";
-import type { WorkspaceInterface } from "@/types/workspace";
-import type { UserInterface } from "@/types/user";
 import type { ContentInterface } from "@/types/content";
+import type { NodeInterface } from "@/types/node";
+import type { UserInterface } from "@/types/user";
+import type { WorkspaceInterface } from "@/types/workspace";
 
 // ============================================================================
 // Test Helpers
@@ -215,17 +215,17 @@ Object.defineProperty(global, "localStorage", {
 
 // Import after mocking
 import {
-	getMigrationStatus,
-	setMigrationStatus,
+	clearDexieData,
 	clearMigrationStatus,
+	getMigrationStatus,
 	hasDexieData,
+	type MigrationStatus,
+	migrateData,
 	needsMigration,
 	readDexieData,
-	migrateData,
-	rollbackMigration,
 	resetMigrationStatus,
-	clearDexieData,
-	type MigrationStatus,
+	rollbackMigration,
+	setMigrationStatus,
 } from "./dexie-to-sqlite.migration.fn";
 
 // ============================================================================

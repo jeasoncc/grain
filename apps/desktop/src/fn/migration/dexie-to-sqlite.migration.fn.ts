@@ -20,21 +20,16 @@
  * @requirements 10.1, 10.2, 10.3, 10.4, 10.5, 10.6
  */
 
+import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import * as E from "fp-ts/Either";
 import { type AppError, dbError } from "@/lib/error.types";
 import logger from "@/log";
-import {
-	createWorkspace,
-	createNode,
-	createContent,
-	createUser,
-} from "@/repo";
-import type { NodeInterface } from "@/types/node";
-import type { WorkspaceInterface } from "@/types/workspace";
-import type { UserInterface } from "@/types/user";
+import { createContent, createNode, createUser, createWorkspace } from "@/repo";
 import type { ContentInterface } from "@/types/content";
+import type { NodeInterface } from "@/types/node";
+import type { UserInterface } from "@/types/user";
+import type { WorkspaceInterface } from "@/types/workspace";
 
 // ============================================================================
 // 类型定义

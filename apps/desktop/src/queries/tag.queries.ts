@@ -11,8 +11,8 @@
 import { useQuery } from "@tanstack/react-query";
 import * as E from "fp-ts/Either";
 import * as tagRepo from "@/repo/tag.repo.fn";
-import type { TagInterface } from "@/types/tag";
 import type { TagGraphData } from "@/types/codec";
+import type { TagInterface } from "@/types/tag";
 import { queryKeys } from "./query-keys";
 
 /**

@@ -149,9 +149,7 @@ describe("init.db.fn", () => {
 		});
 
 		it("should return Right(false) when no users exist", async () => {
-			mockUserRepo.getUsers.mockReturnValue(() =>
-				Promise.resolve(E.right([])),
-			);
+			mockUserRepo.getUsers.mockReturnValue(() => Promise.resolve(E.right([])));
 
 			const result = await runTE(hasUsers());
 
@@ -250,9 +248,7 @@ describe("init.db.fn", () => {
 
 	describe("initDatabase", () => {
 		it("should create default user when no users exist", async () => {
-			mockUserRepo.getUsers.mockReturnValue(() =>
-				Promise.resolve(E.right([])),
-			);
+			mockUserRepo.getUsers.mockReturnValue(() => Promise.resolve(E.right([])));
 			const newUser = createTestUser({ username: "guest" });
 			mockUserRepo.createUser.mockReturnValue(() =>
 				Promise.resolve(E.right(newUser)),
@@ -276,9 +272,7 @@ describe("init.db.fn", () => {
 		});
 
 		it("should use custom config", async () => {
-			mockUserRepo.getUsers.mockReturnValue(() =>
-				Promise.resolve(E.right([])),
-			);
+			mockUserRepo.getUsers.mockReturnValue(() => Promise.resolve(E.right([])));
 			const newUser = createTestUser({ username: "admin" });
 			mockUserRepo.createUser.mockReturnValue(() =>
 				Promise.resolve(E.right(newUser)),
@@ -331,9 +325,7 @@ describe("init.db.fn", () => {
 		});
 
 		it("should return false when no users exist", async () => {
-			mockUserRepo.getUsers.mockReturnValue(() =>
-				Promise.resolve(E.right([])),
-			);
+			mockUserRepo.getUsers.mockReturnValue(() => Promise.resolve(E.right([])));
 
 			const result = await runTE(isDatabaseInitialized());
 

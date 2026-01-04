@@ -18,11 +18,7 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { type AppError, dbError } from "@/lib/error.types";
 import logger from "@/log";
-import {
-	createUser,
-	getCurrentUser,
-	getUsers,
-} from "@/repo/user.repo.fn";
+import { createUser, getCurrentUser, getUsers } from "@/repo/user.repo.fn";
 import type { UserCreateInput } from "@/types/user";
 
 // ============================================================================
@@ -123,9 +119,7 @@ export const initDatabase = (
 			}
 			return TE.right(undefined);
 		}),
-		TE.tap(() =>
-			TE.fromIO(() => logger.success("[DB] 🎉 数据库初始化成功!")),
-		),
+		TE.tap(() => TE.fromIO(() => logger.success("[DB] 🎉 数据库初始化成功!"))),
 		TE.mapLeft((error) => {
 			logger.error("[DB] ❌ 数据库初始化失败:", error);
 			return error;

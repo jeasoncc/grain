@@ -12,7 +12,7 @@
  * @requirements 5.2, 5.3, 5.5
  */
 
-import { CodeEditorView } from "@grain/editor-monaco";
+import { CodeEditorView } from "./code-editor.view.fn";
 import * as E from "fp-ts/Either";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -172,11 +172,10 @@ export const CodeEditorContainer = memo(function CodeEditorContainer({
 	return (
 		<div className={cn("h-full w-full", className)}>
 			<CodeEditorView
-				code={code}
+				value={code}
 				language={language as Parameters<typeof CodeEditorView>[0]["language"]}
-				theme={isDark ? "dark" : "light"}
-				themeColors={themeColors}
-				onCodeChange={handleCodeChange}
+				theme={currentTheme}
+				onChange={handleCodeChange}
 				onSave={saveNow}
 			/>
 		</div>

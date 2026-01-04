@@ -262,8 +262,7 @@ export const reorderNodes = (
 export const setNodeCollapsed = (
 	nodeId: string,
 	collapsed: boolean,
-): TE.TaskEither<AppError, NodeInterface> =>
-	updateNode(nodeId, { collapsed });
+): TE.TaskEither<AppError, NodeInterface> => updateNode(nodeId, { collapsed });
 
 /**
  * 获取所有节点（跨工作区）

@@ -69,9 +69,7 @@ function createTestTagGraphData(): TagGraphData {
 			{ id: "ws-1:rust", name: "rust", count: 5 },
 			{ id: "ws-1:programming", name: "programming", count: 10 },
 		],
-		edges: [
-			{ source: "ws-1:programming", target: "ws-1:rust", weight: 3 },
-		],
+		edges: [{ source: "ws-1:programming", target: "ws-1:rust", weight: 3 }],
 	};
 }
 
