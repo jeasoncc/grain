@@ -35,11 +35,11 @@
     - 验证只保留排版设置和行为设置
     - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 4. 验证 editor-settings store
-  - [ ] 4.1 审查 editor-settings.store.ts 确保无编辑器类型选择状态
+- [x] 4. 验证 editor-settings store
+  - [x] 4.1 审查 editor-settings.store.ts 确保无编辑器类型选择状态
     - 验证只保留 foldIconStyle 设置
     - _Requirements: 3.4_
-  - [ ] 4.2 审查 editor-settings.interface.ts 确保无编辑器类型选择类型
+  - [x] 4.2 审查 editor-settings.interface.ts 确保无编辑器类型选择类型
     - _Requirements: 3.5_
 
 - [ ] 5. 验证 package.json 依赖
