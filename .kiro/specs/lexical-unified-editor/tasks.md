@@ -85,13 +85,13 @@
   - 运行 `bun run check` 确保类型检查通过
   - 如有问题，询问用户
 
-- [-] 10. 清理残留引用（如有）
+- [x] 10. 清理残留引用（如有）
   - [x] 10.1 搜索并移除任何对 @grain/editor-monaco 的引用
     - _Requirements: 2.1, 2.2_
-  - [-] 10.2 搜索并移除任何对 @monaco-editor/react 的引用
+  - [x] 10.2 搜索并移除任何对 @monaco-editor/react 的引用
     - _Requirements: 2.1_
 
-- [ ] 11. Final Checkpoint - 构建验证
+- [x] 11. Final Checkpoint - 构建验证
   - 运行 `bun run build` 确保构建成功
   - 确保无 Monaco 相关代码被打包
   - 如有问题，询问用户
