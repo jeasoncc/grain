@@ -87,6 +87,9 @@ bun run test           # 测试
 
 | 文件 | 场景 | 说明 |
 |------|------|------|
+| `#data-flow-frontend` | 前端数据流 | 同步/异步数据流、TaskEither |
+| `#data-flow-backend` | 后端数据流 | Rust API 端点、宏生成 |
+| `#data-flow-e2e` | 端到端数据流 | 完整请求路径、时序图 |
 | `#code-standards` | 写代码时 | 代码规范、组件规范 |
 | `#fp-patterns` | 函数式编程 | TaskEither、pipe 用法 |
 | `#rust-backend` | Rust 开发 | Rust 后端规范 |
