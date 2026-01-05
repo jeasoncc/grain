@@ -66,7 +66,34 @@
 
 ---
 
-## Task 5: 重构 ActivityBar 初始化逻辑
+## Task 5: 创建 deleteAllData Action 和 Hook（架构重构）
+
+### Description
+将删除数据的业务逻辑从组件中抽离到 Action 层，遵循正确的数据流架构：
+```
+Component → Hook (useMutation) → Action (业务逻辑) → Repo → API
+```
+
+当前问题：`handleDeleteAllData` 直接调用 Repo 层的 `clearAllData()`，业务逻辑（重置状态、清除缓存）散落在组件中。
+
+### Files to Create
+- `apps/desktop/src/actions/data/delete-all-data.action.ts` - 删除数据 Action
+- `apps/desktop/src/hooks/use-delete-all-data.ts` - 删除数据 Hook（使用 useMutation）
+- `apps/desktop/src/actions/data/index.ts` - 导出
+
+### Files to Modify
+- `apps/desktop/src/actions/index.ts` - 添加导出
+
+### Acceptance Criteria
+- [ ] Action 封装所有业务逻辑（调用 Repo、清除缓存、重置状态）
+- [ ] Action 返回 TaskEither，遵循函数式模式
+- [ ] Hook 使用 `useMutation` 包装 Action
+- [ ] Hook 提供 `mutate`、`isPending`、`isError` 等状态
+- [ ] 组件只调用 Hook，不直接调用 Repo
+
+---
+
+## Task 6: 重构 ActivityBar 初始化逻辑
 
 ### Description
 使用持久化的初始化状态替代组件级 ref，防止工作区重复创建。
@@ -82,26 +109,23 @@
 
 ---
 
-## Task 6: 修复删除数据功能
+## Task 7: 重构 ActivityBar 删除数据逻辑
 
 ### Description
-确保删除数据时正确调用 Rust 后端，并清除所有前端状态。
+使用 Task 5 创建的 Hook 替换组件中的直接 Repo 调用。
 
 ### Files to Modify
 - `apps/desktop/src/components/activity-bar/activity-bar.container.fn.tsx`
-- `apps/desktop/src/db/index.ts` (检查导出)
 
 ### Acceptance Criteria
-- [ ] 调用 Rust 后端删除 SQLite 数据
-- [ ] 清除 TanStack Query 缓存
-- [ ] 重置 Zustand stores
-- [ ] 重置初始化状态
-- [ ] 清除 localStorage（保留必要设置）
-- [ ] 显示操作结果
+- [ ] 使用 `useDeleteAllData` Hook 替换直接调用
+- [ ] 移除组件中的业务逻辑代码
+- [ ] 保留 UI 交互逻辑（确认对话框、toast 提示）
+- [ ] 删除成功后调用 `resetInitializationState()`
 
 ---
 
-## Task 7: 验证和测试
+## Task 8: 验证和测试
 
 ### Description
 使用 SQLite MCP 验证数据库状态，进行手动测试。
@@ -121,16 +145,17 @@
 ## 任务依赖关系
 
 ```
-Task 1 (DevTools) ─────────────────────────────────────┐
-                                                       │
-Task 2 (随机名称) ──┬──▶ Task 4 (初始化逻辑) ──┐        │
-                   │                          │        │
-Task 3 (状态管理) ──┴──▶ Task 5 (ActivityBar) ─┼──▶ Task 7 (测试)
-                                              │        │
-                       Task 6 (删除功能) ──────┘        │
-                                                       │
-                                                       ▼
-                                                   完成
+Task 1 (DevTools) ──────────────────────────────────────────────┐
+                                                                │
+Task 2 (随机名称) ──┬──▶ Task 4 (初始化逻辑) ──┐                 │
+                   │                          │                 │
+Task 3 (状态管理) ──┼──▶ Task 6 (ActivityBar   │                 │
+                   │     初始化重构)  ─────────┼──▶ Task 8 (测试)
+                   │                          │                 │
+                   └──▶ Task 5 (Action/Hook) ─┼──▶ Task 7       │
+                                              │   (删除重构)     │
+                                              │                 │
+                                              └─────────────────┘
 ```
 
 ## 执行顺序
@@ -139,6 +164,7 @@ Task 3 (状态管理) ──┴──▶ Task 5 (ActivityBar) ─┼──▶ Ta
 2. Task 2 - 创建随机名称函数（独立）
 3. Task 3 - 创建状态管理模块（独立）
 4. Task 4 - 修改初始化逻辑（依赖 Task 2）
-5. Task 5 - 重构 ActivityBar（依赖 Task 2, 3）
-6. Task 6 - 修复删除功能（依赖 Task 3）
-7. Task 7 - 验证测试（依赖所有）
+5. Task 5 - 创建 Action 和 Hook（依赖 Task 3）
+6. Task 6 - 重构 ActivityBar 初始化（依赖 Task 2, 3）
+7. Task 7 - 重构 ActivityBar 删除（依赖 Task 5, 6）
+8. Task 8 - 验证测试（依赖所有）

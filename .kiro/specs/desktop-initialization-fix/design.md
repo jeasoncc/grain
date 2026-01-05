@@ -245,17 +245,157 @@ const createDefaultWorkspace = async () => {
 
 ---
 
-### 6. 删除后清除前端状态
+### 6. 删除后清除前端状态（架构重构）
 
-**当前状态**：删除后只重置了部分状态。
+**当前问题**：
+- `handleDeleteAllData` 直接调用 Repo 层的 `clearAllData()`
+- 业务逻辑（重置状态、清除缓存）散落在组件中
+- 违反了正确的数据流架构
+
+**正确的架构**：
+```
+Component → Hook (useMutation) → Action (业务逻辑) → Repo → API
+```
 
 **解决方案**：
+
+#### 6.1 创建 deleteAllData Action
+
+**新增文件**：`apps/desktop/src/actions/data/delete-all-data.action.ts`
+
+```typescript
+import { pipe } from 'fp-ts/function';
+import * as TE from 'fp-ts/TaskEither';
+import * as IO from 'fp-ts/IO';
+import type { QueryClient } from '@tanstack/react-query';
+import { clearAllData } from '@/repo/clear-data.repo.fn';
+import { resetInitializationState } from '@/lib/initialization-state';
+import type { AppError } from '@/lib/error.types';
+import { logger } from '@/lib/logger';
+
+interface DeleteAllDataDeps {
+  readonly queryClient: QueryClient;
+  readonly resetStores: () => void;
+}
+
+interface DeleteAllDataResult {
+  readonly success: boolean;
+  readonly deletedTables: string[];
+}
+
+/**
+ * 删除所有数据 Action
+ * 
+ * 职责：
+ * 1. 调用 Repo 删除 SQLite 数据
+ * 2. 清除 TanStack Query 缓存
+ * 3. 重置 Zustand stores
+ * 4. 重置初始化状态
+ * 5. 清除 localStorage（保留必要设置）
+ */
+export const deleteAllData = (
+  deps: DeleteAllDataDeps
+): TE.TaskEither<AppError, DeleteAllDataResult> =>
+  pipe(
+    // 1. 调用 Repo 删除 SQLite 数据
+    clearAllData(),
+    
+    // 2. 成功后清除 Query 缓存（IO 副作用）
+    TE.chainFirstIOK(() => () => {
+      deps.queryClient.clear();
+      logger.info('[DeleteAllData] Query 缓存已清除');
+    }),
+    
+    // 3. 重置 Zustand stores（IO 副作用）
+    TE.chainFirstIOK(() => () => {
+      deps.resetStores();
+      logger.info('[DeleteAllData] Stores 已重置');
+    }),
+    
+    // 4. 重置初始化状态（IO 副作用）
+    TE.chainFirstIOK(() => () => {
+      resetInitializationState();
+      logger.info('[DeleteAllData] 初始化状态已重置');
+    }),
+    
+    // 5. 清除 localStorage（IO 副作用）
+    TE.chainFirstIOK(() => () => {
+      const keysToKeep = ['grain:theme', 'grain:language', 'grain:editor-settings'];
+      const allKeys = Object.keys(localStorage);
+      for (const key of allKeys) {
+        if (!keysToKeep.includes(key) && key.startsWith('grain:')) {
+          localStorage.removeItem(key);
+        }
+      }
+      logger.info('[DeleteAllData] localStorage 已清理');
+    }),
+    
+    // 6. 返回结果
+    TE.map((result) => ({
+      success: true,
+      deletedTables: result.deletedTables || ['users', 'workspaces', 'nodes', 'contents', 'tags', 'attachments'],
+    })),
+  );
+```
+
+#### 6.2 创建 useDeleteAllData Hook
+
+**新增文件**：`apps/desktop/src/hooks/use-delete-all-data.ts`
+
+```typescript
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { deleteAllData } from '@/actions/data/delete-all-data.action';
+import { useSelectionStore } from '@/stores/selection.store';
+import { useEditorTabsStore } from '@/stores/editor-tabs.store';
+import * as E from 'fp-ts/Either';
+
+/**
+ * 删除所有数据 Hook
+ * 
+ * 使用 useMutation 包装 Action，提供：
+ * - mutate / mutateAsync: 触发删除
+ * - isPending: 是否正在删除
+ * - isError: 是否出错
+ * - error: 错误信息
+ */
+export const useDeleteAllData = () => {
+  const queryClient = useQueryClient();
+  const resetSelectionStore = useSelectionStore((s) => s.reset);
+  const resetEditorTabsStore = useEditorTabsStore((s) => s.reset);
+  
+  const resetStores = () => {
+    resetSelectionStore();
+    resetEditorTabsStore();
+    // 添加其他需要重置的 stores
+  };
+  
+  return useMutation({
+    mutationFn: async () => {
+      const result = await deleteAllData({ queryClient, resetStores })();
+      
+      if (E.isLeft(result)) {
+        throw new Error(result.left.message);
+      }
+      
+      return result.right;
+    },
+    onSuccess: () => {
+      // 刷新页面
+      setTimeout(() => window.location.reload(), 1000);
+    },
+  });
+};
+```
+
+#### 6.3 组件中使用 Hook
 
 **修改文件**：`apps/desktop/src/components/activity-bar/activity-bar.container.fn.tsx`
 
 ```typescript
-import { useQueryClient } from '@tanstack/react-query';
-import { resetInitializationState } from '@/lib/initialization-state';
+import { useDeleteAllData } from '@/hooks/use-delete-all-data';
+
+// 在组件中
+const { mutate: deleteAllData, isPending: isDeleting } = useDeleteAllData();
 
 const handleDeleteAllData = useCallback(async () => {
   const ok = await confirm({
@@ -267,46 +407,26 @@ const handleDeleteAllData = useCallback(async () => {
   
   if (!ok) return;
   
-  try {
-    // 1. 调用 Rust 后端删除 SQLite 数据
-    const result = await clearAllData()();
-    
-    if (E.isLeft(result)) {
-      toast.error('Delete failed: ' + result.left.message);
-      return;
-    }
-    
-    // 2. 清除 TanStack Query 缓存
-    queryClient.clear();
-    
-    // 3. 重置 Zustand stores
-    setSelectedWorkspaceId(null);
-    setSelectedNodeId(null);
-    // 重置其他 stores...
-    
-    // 4. 重置初始化状态
-    resetInitializationState();
-    
-    // 5. 清除 localStorage（保留必要设置）
-    const keysToKeep = ['grain:theme', 'grain:language'];
-    const allKeys = Object.keys(localStorage);
-    for (const key of allKeys) {
-      if (!keysToKeep.includes(key)) {
-        localStorage.removeItem(key);
-      }
-    }
-    
-    toast.success('All data deleted');
-    
-    // 6. 刷新页面
-    setTimeout(() => window.location.reload(), 1000);
-    
-  } catch (error) {
-    toast.error('Delete failed');
-    logger.error('[ActivityBar] 删除数据失败:', error);
-  }
-}, [confirm, queryClient, setSelectedWorkspaceId, setSelectedNodeId]);
+  deleteAllData(undefined, {
+    onSuccess: () => {
+      toast.success('All data deleted');
+    },
+    onError: (error) => {
+      toast.error(`Delete failed: ${error.message}`);
+    },
+  });
+}, [confirm, deleteAllData]);
 ```
+
+**架构对比**：
+
+| 方面 | 重构前 | 重构后 |
+|------|--------|--------|
+| 调用链 | Component → Repo | Component → Hook → Action → Repo |
+| 业务逻辑位置 | 散落在组件中 | 集中在 Action 中 |
+| 状态管理 | 手动调用多个 setter | Action 统一处理 |
+| 可测试性 | 难以测试 | Action 可独立测试 |
+| 复用性 | 无法复用 | Action 可被多处调用 |
 
 ---
 
@@ -412,9 +532,16 @@ ActivityBarContainer 挂载
 | `apps/desktop/src/main.tsx` | 修改 | 添加 DevTools 组件 |
 | `apps/desktop/src/lib/initialization-state.ts` | 新增 | 初始化状态管理 |
 | `apps/desktop/src/fn/user/random-name.fn.ts` | 新增 | 随机友好名称生成 |
+| `apps/desktop/src/fn/user/random-name.fn.test.ts` | 新增 | 随机名称单元测试 |
+| `apps/desktop/src/fn/user/index.ts` | 新增 | 导出 |
+| `apps/desktop/src/actions/data/delete-all-data.action.ts` | 新增 | 删除数据 Action |
+| `apps/desktop/src/actions/data/index.ts` | 新增 | 导出 |
+| `apps/desktop/src/hooks/use-delete-all-data.ts` | 新增 | 删除数据 Hook |
 | `apps/desktop/src/db/init.db.fn.ts` | 修改 | 使用随机名称创建用户 |
 | `apps/desktop/src/db/index.ts` | 检查 | 确保正确导出 clearAllData |
 | `apps/desktop/src/components/activity-bar/activity-bar.container.fn.tsx` | 修改 | 重构初始化和删除逻辑 |
+| `apps/desktop/src/stores/selection.store.ts` | 修改 | 添加 reset 方法 |
+| `apps/desktop/src/stores/editor-tabs.store.ts` | 修改 | 添加 reset 方法 |
 
 ---
 
