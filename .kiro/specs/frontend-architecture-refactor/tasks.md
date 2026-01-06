@@ -57,7 +57,7 @@
 ### Task 2.4: 创建 io/file/
 - [ ] 创建 `io/file/dialog.file.ts`（从现有代码提取）
 - [ ] 创建 `io/file/download.file.ts`（从现有代码提取）
-- [ ] 创建 `io/file/index.ts`
+- [x] 创建 `io/file/index.ts`
 
 **Requirements**: REQ-1, REQ-2
 

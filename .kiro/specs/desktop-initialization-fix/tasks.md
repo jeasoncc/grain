@@ -13,7 +13,7 @@
 - [ ] `@tanstack/react-query` 作为显式依赖安装
 - [x] `@tanstack/react-query-devtools` 作为开发依赖安装
 - [x] DevTools 在开发环境中可见
-- [ ] DevTools 在生产构建中不包含
+- [x] DevTools 在生产构建中不包含
 
 ---
 
