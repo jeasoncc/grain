@@ -8,7 +8,6 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import logger from "@/log";
 import type { DiagramStore } from "@/types/diagram";
 
 // ============================================================================
@@ -24,12 +23,10 @@ export const useDiagramStore = create<DiagramStore>()(
 
 			// Actions
 			setKrokiServerUrl: (url: string) => {
-				logger.info("[Store] Diagram setKrokiServerUrl:", url);
 				set({ krokiServerUrl: url.trim() });
 			},
 
 			setEnableKroki: (enabled: boolean) => {
-				logger.info("[Store] Diagram setEnableKroki:", enabled);
 				set({ enableKroki: enabled });
 			},
 
@@ -50,8 +47,7 @@ export const useDiagramStore = create<DiagramStore>()(
 					});
 
 					return response.ok;
-				} catch (error) {
-					logger.error("[Store] Kroki connection test failed:", error);
+				} catch {
 					return false;
 				}
 			},

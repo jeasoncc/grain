@@ -8,7 +8,6 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import logger from "@/log";
 import type { IconThemeStore } from "@/types/icon-theme";
 
 // ============================================================================
@@ -30,7 +29,6 @@ export const useIconThemeStore = create<IconThemeStore>()(
 
 			// Actions
 			setTheme: (key: string) => {
-				logger.info("[Store] Icon theme setTheme:", key);
 				set({ currentThemeKey: key });
 			},
 		}),

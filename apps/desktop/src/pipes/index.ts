@@ -40,3 +40,9 @@ export * as wikiPipe from "./wiki";
 
 // Word Count 管道（字数统计）
 export * as wordCountPipe from "./word-count";
+
+// Writing 管道（写作状态纯函数）
+export * as writingPipe from "./writing";
+
+// Theme 管道（主题纯函数）
+export * as themePipe from "./theme";

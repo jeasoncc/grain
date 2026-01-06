@@ -116,33 +116,34 @@
 - [x] 使用 fp-ts pipe 组合
 - [x] 命名符合 `*.pipe.ts` 或 `*.fn.ts` 规范
 
-### Task 2.5: 审核 state/ 层 ❌
+### Task 2.5: 审核 state/ 层 ⚠️ 部分完成
 **职责**: Zustand 状态管理，无 IO
 
 | 文件 | 状态 | 问题 |
 |------|------|------|
-| `selection.state.ts` | ❌ | 依赖 `@/log` |
-| `editor-tabs.state.ts` | ❌ | 依赖 `@/log` 和 `@/views/editor-tabs` |
+| `selection.state.ts` | ✅ | 已修复：移除 logger |
+| `editor-tabs.state.ts` | ✅ | 已修复：移除 logger，改用 pipes/ |
 | `editor-settings.state.ts` | ⏳ | 待检查 |
 | `editor-history.state.ts` | ⏳ | 待检查 |
-| `sidebar.state.ts` | ⏳ | 待检查 |
-| `theme.state.ts` | ⏳ | 待检查 |
+| `sidebar.state.ts` | ✅ | 已修复：移除 logger |
+| `theme.state.ts` | ❌ | 依赖 views/, hooks/, utils/ - 需要重构 |
 | `icon-theme.state.ts` | ⏳ | 待检查 |
 | `font.state.ts` | ⏳ | 待检查 |
-| `ui.state.ts` | ⏳ | 待检查 |
+| `ui.state.ts` | ✅ | 已修复：移除 logger |
 | `save.state.ts` | ✅ | 只依赖 types/ |
 | `writing.state.ts` | ⏳ | 待检查 |
 | `diagram.state.ts` | ⏳ | 待检查 |
 
 **检查项**:
-- [ ] 只依赖 `types/` - 发现违规
+- [x] 只依赖 `types/` - 大部分已修复，theme.state 待处理
 - [x] 无 IO 操作
 - [x] 使用 Zustand + Immer
 - [x] 命名符合 `*.state.ts` 规范
 
 **修复计划**:
-1. 移除 state/ 中的 logger 调用（或改用 console.log）
-2. 将 `editor-tabs.state.ts` 中的纯函数移到 `pipes/`
+1. ✅ 移除 state/ 中的 logger 调用
+2. ✅ 将 `editor-tabs.state.ts` 中的纯函数移到 `pipes/`
+3. ⏳ 重构 `theme.state.ts` 的依赖关系（复杂，需要单独处理）
 
 ### Task 2.6: 审核 flows/ 层 ✅
 **职责**: 组合 pipes + io，形成业务流程
@@ -372,10 +373,10 @@
 | 层 | 状态 | 问题数 | 说明 |
 |---|------|-------|------|
 | `types/` | ✅ | 0 | 纯类型定义 |
-| `utils/` | ❌ | 1 | save-service-manager 有 IO |
-| `io/` | ⚠️ | 1 | client.api 依赖 log |
+| `utils/` | ✅ | 0 | save-service-manager 已移动 |
+| `io/` | ⚠️ | 1 | client.api 依赖 log（可接受） |
 | `pipes/` | ✅ | 0 | 纯函数，符合规范 |
-| `state/` | ❌ | 2 | 依赖 log 和 views |
+| `state/` | ⚠️ | 1 | theme.state 需要重构 |
 | `flows/` | ✅ | 0 | 允许有 IO 和日志 |
 | `hooks/` | ❌ | 2 | 依赖 queries/ |
 | `views/` | ⏳ | - | 待审核 |

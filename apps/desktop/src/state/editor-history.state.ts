@@ -8,7 +8,6 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import logger from "@/log/index";
 import {
 	EDITOR_HISTORY_STORAGE_KEY,
 	type EditorHistoryEntry,
@@ -53,10 +52,6 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 					// Clear redo stack on new action
 					redoStack.delete(nodeId);
 
-					logger.debug(
-						`[Store] History saved: ${nodeId}, stack size: ${nodeHistory.length}`,
-					);
-
 					return { undoStack, redoStack };
 				});
 			},
@@ -68,7 +63,6 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 
 				const nodeHistory = undoStack.get(nodeId) || [];
 				if (nodeHistory.length === 0) {
-					logger.warn(`[Store] Cannot undo: ${nodeId} has no history`);
 					return null;
 				}
 
@@ -85,7 +79,6 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 
 				set({ undoStack, redoStack });
 
-				logger.info(`[Store] Undo: ${nodeId}`);
 				return entry;
 			},
 
@@ -96,7 +89,6 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 
 				const nodeRedoHistory = redoStack.get(nodeId) || [];
 				if (nodeRedoHistory.length === 0) {
-					logger.warn(`[Store] Cannot redo: ${nodeId} has no redo history`);
 					return null;
 				}
 
@@ -113,7 +105,6 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 
 				set({ undoStack, redoStack });
 
-				logger.info(`[Store] Redo: ${nodeId}`);
 				return entry;
 			},
 
@@ -125,8 +116,6 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 					undoStack.delete(nodeId);
 					redoStack.delete(nodeId);
 
-					logger.info(`[Store] Cleared history: ${nodeId}`);
-
 					return { undoStack, redoStack };
 				});
 			},
@@ -136,7 +125,6 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 					undoStack: new Map(),
 					redoStack: new Map(),
 				});
-				logger.info("[Store] Cleared all history");
 			},
 
 			setCurrentNode: (nodeId) => {

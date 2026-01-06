@@ -15,7 +15,7 @@ import {
 	createSession,
 	getTodayDate,
 	mergeWritingGoal,
-} from "@/views/writing";
+} from "@/pipes/writing";
 import type {
 	WritingActions,
 	WritingGoal,

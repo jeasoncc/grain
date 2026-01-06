@@ -1,19 +1,14 @@
 /**
- * @file fn/theme/index.ts
- * @description Theme 纯函数模块统一导出
+ * @file views/theme/index.ts
+ * @description Theme 模块导出
  *
- * 导出所有主题相关的纯函数。
- * 这些函数无副作用，可组合，可测试。
- *
- * 注意：有副作用的函数（DOM 操作、系统检测）在 hooks/use-theme-dom.ts 中
+ * 纯函数已移动到 pipes/theme/，此处重新导出以保持向后兼容
  */
 
 export { getEditorThemeColors } from "./editor-theme.fn";
 export {
 	getDefaultThemeKey,
 	getEffectiveThemeType,
-	// Mode Calculations
 	getNextMode,
-	// Theme Validation
 	isThemeTypeMatch,
-} from "./theme.fn";
+} from "@/pipes/theme";
