@@ -29,7 +29,7 @@ import {
 // Mocks
 // ============================================================================
 
-vi.mock("@/actions/node", () => ({
+vi.mock("@/flows/node", () => ({
 	createFileInTree: vi.fn(),
 }));
 
@@ -44,7 +44,7 @@ vi.mock("@/log/index", () => ({
 	},
 }));
 
-import { createFileInTree } from "@/actions/node";
+import { createFileInTree } from "@/flows/node";
 
 // ============================================================================
 // Test Helpers

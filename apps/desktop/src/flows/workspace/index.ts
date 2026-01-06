@@ -10,4 +10,5 @@ export { deleteWorkspace } from "./delete-workspace.action";
 export {
 	type UpdateWorkspaceParams,
 	updateWorkspace,
+	touchWorkspace,
 } from "./update-workspace.action";

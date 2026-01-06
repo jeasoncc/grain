@@ -29,7 +29,7 @@ vi.mock("@/state/editor-tabs.state", () => ({
 	}),
 }));
 
-vi.mock("@/actions/templated", () => ({
+vi.mock("@/flows/templated", () => ({
 	createExcalidrawCompatAsync: vi.fn(() =>
 		Promise.resolve({
 			node: { id: "node-1", title: "drawing-2024-01-15" },

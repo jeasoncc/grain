@@ -4,7 +4,7 @@
  *
  * @deprecated 此文件已弃用。Excalidraw 绘图现在作为文件节点存储在文件树中。
  * 请使用以下替代方案：
- * - 创建绘图：使用 createExcalidrawAsync from "@/actions/templated"
+ * - 创建绘图：使用 createExcalidrawAsync from "@/flows/templated"
  * - 查询绘图：使用 useNodesByType("drawing") from "@/hooks/use-node"
  * - 编辑绘图：点击文件树中的绘图节点，在主编辑器区域打开
  *

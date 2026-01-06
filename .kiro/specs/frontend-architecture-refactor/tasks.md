@@ -192,7 +192,7 @@
 - [x] 更新所有 `@/db/` → `@/io/api/`
 - [x] 更新所有 `@/repo/` → `@/io/api/`
 - [x] 更新所有 `@/stores/` → `@/state/`
-- [ ] 更新所有 `@/actions/` → `@/flows/`
+- [x] 更新所有 `@/actions/` → `@/flows/`
 - [ ] 更新所有 `@/queries/` → `@/hooks/`
 - [ ] 更新所有 `@/components/` → `@/views/`
 - [ ] 更新所有 `@/fn/` → `@/pipes/` 或 `@/utils/`

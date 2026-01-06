@@ -41,20 +41,20 @@ export const WIKI_TAG = "wiki";
  * @param workspaceId - The workspace ID
  * @returns TaskEither<AppError, NodeInterface>
  *
- * @deprecated Use ensureRootFolder from @/actions/node instead
+ * @deprecated Use ensureRootFolder from @/flows/node instead
  */
 export const ensureWikiFolderAsync = (
 	_workspaceId: string,
 ): TE.TaskEither<AppError, NodeInterface> => {
 	logger.start("[Wiki] 确保 Wiki 文件夹存在...");
 	logger.warn(
-		"[Wiki] ensureWikiFolderAsync is deprecated. Use ensureRootFolder from @/actions/node instead.",
+		"[Wiki] ensureWikiFolderAsync is deprecated. Use ensureRootFolder from @/flows/node instead.",
 	);
 
 	return TE.left({
 		type: "VALIDATION_ERROR",
 		message:
-			"ensureWikiFolderAsync is deprecated. Use ensureRootFolder from @/actions/node instead.",
+			"ensureWikiFolderAsync is deprecated. Use ensureRootFolder from @/flows/node instead.",
 	});
 };
 

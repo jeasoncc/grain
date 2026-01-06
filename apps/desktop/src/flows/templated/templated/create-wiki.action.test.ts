@@ -10,7 +10,7 @@ import { createWiki, createWikiAsync } from "./create-date-template.action";
 import type { TemplatedFileParams } from "./create-templated-file.action";
 
 // Mock dependencies
-vi.mock("@/actions/node", () => ({
+vi.mock("@/flows/node", () => ({
 	createFileInTree: vi.fn().mockResolvedValue({
 		node: {
 			id: "test-wiki-id",

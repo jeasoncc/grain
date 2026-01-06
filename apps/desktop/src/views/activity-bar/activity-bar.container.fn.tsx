@@ -13,21 +13,21 @@ import * as TE from "fp-ts/TaskEither";
 import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { openFile } from "@/actions";
-import { createCode } from "@/actions/templated/create-code.action";
+import { openFile } from "@/flows";
+import { createCode } from "@/flows/templated/create-code.action";
 import {
 	createDiary,
 	createLedger,
 	createNote,
 	createTodo,
 	createWiki,
-} from "@/actions/templated/create-date-template.action";
-import { createExcalidraw } from "@/actions/templated/create-excalidraw.action";
-import { createMermaid } from "@/actions/templated/create-mermaid.action";
-import { createPlantUML } from "@/actions/templated/create-plantuml.action";
-import type { TemplatedFileResult } from "@/actions/templated/create-templated-file.action";
-import { createWorkspace } from "@/actions/workspace/create-workspace.action";
-import { touchWorkspace } from "@/actions/workspace/update-workspace.action";
+} from "@/flows/templated/create-date-template.action";
+import { createExcalidraw } from "@/flows/templated/create-excalidraw.action";
+import { createMermaid } from "@/flows/templated/create-mermaid.action";
+import { createPlantUML } from "@/flows/templated/create-plantuml.action";
+import type { TemplatedFileResult } from "@/flows/templated/create-templated-file.action";
+import { createWorkspace } from "@/flows/workspace/create-workspace.action";
+import { touchWorkspace } from "@/flows/workspace/update-workspace.action";
 import { ExportDialog } from "@/components/export-dialog";
 import { useConfirm } from "@/components/ui/confirm";
 import { clearAllData } from "@/db";
