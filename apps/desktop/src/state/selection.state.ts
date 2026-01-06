@@ -9,7 +9,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import logger from "@/log";
 import type { SelectionActions, SelectionState } from "@/types/selection";
 import { DEFAULT_SELECTION_CONFIG } from "@/types/selection";
 
@@ -35,7 +34,6 @@ export const useSelectionStore = create<SelectionStore>()(
 			// ==============================
 
 			setSelectedWorkspaceId: (id) => {
-				logger.info("[Store] 设置工作区:", id);
 				set((state) => {
 					state.selectedWorkspaceId = id;
 					// 切换工作区时清除节点选择
@@ -44,14 +42,12 @@ export const useSelectionStore = create<SelectionStore>()(
 			},
 
 			setSelectedNodeId: (id) => {
-				logger.info("[Store] 设置节点:", id);
 				set((state) => {
 					state.selectedNodeId = id;
 				});
 			},
 
 			clearSelection: () => {
-				logger.info("[Store] 清除选择状态");
 				set((state) => {
 					state.selectedWorkspaceId = null;
 					state.selectedNodeId = null;

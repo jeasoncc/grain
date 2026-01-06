@@ -14,7 +14,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import logger from "@/log";
 import type {
 	RightPanelView,
 	TabPosition,
@@ -44,36 +43,30 @@ export const useUIStore = create<UIStore>()(
 			// ==============================
 
 			setRightPanelView: (view: RightPanelView) => {
-				logger.info("[Store] 设置右侧面板视图:", view);
 				set((state) => {
 					state.rightPanelView = view;
 				});
 			},
 
 			setRightSidebarOpen: (open: boolean) => {
-				logger.info("[Store] 设置右侧边栏状态:", open);
 				set((state) => {
 					state.rightSidebarOpen = open;
 				});
 			},
 
 			toggleRightSidebar: () => {
-				logger.info("[Store] 切换右侧边栏状态");
 				set((state) => {
 					state.rightSidebarOpen = !state.rightSidebarOpen;
-					logger.debug("[Store] 右侧边栏新状态:", state.rightSidebarOpen);
 				});
 			},
 
 			setTabPosition: (position: TabPosition) => {
-				logger.info("[Store] 设置标签页位置:", position);
 				set((state) => {
 					state.tabPosition = position;
 				});
 			},
 
 			setLocale: (locale: string) => {
-				logger.info("[Store] 设置应用语言:", locale);
 				set((state) => {
 					state.locale = locale;
 				});

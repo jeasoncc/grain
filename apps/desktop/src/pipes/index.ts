@@ -14,6 +14,9 @@
 // Content 管道（模板和内容生成）
 export * as contentPipe from "./content";
 
+// Editor Tab 管道（编辑器标签页操作）
+export * as editorTabPipe from "./editor-tab";
+
 // Export 管道（JSON、Markdown、Org-mode 导出）
 export * as exportPipe from "./export";
 

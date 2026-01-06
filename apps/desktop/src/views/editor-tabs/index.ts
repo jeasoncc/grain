@@ -1,6 +1,10 @@
 /**
- * @file fn/editor-tab/index.ts
- * @description Editor Tab 纯函数模块导出
+ * @file views/editor-tabs/index.ts
+ * @description Editor Tab 模块导出
+ *
+ * 纯函数已移动到 pipes/editor-tab/
+ * 此文件保留用于向后兼容
  */
 
-export * from "./editor-tab.fn";
+// Re-export from pipes for backward compatibility
+export * from "@/pipes/editor-tab";

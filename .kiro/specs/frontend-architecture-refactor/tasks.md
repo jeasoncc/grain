@@ -358,11 +358,11 @@
 |------|---------|---------|------|
 | `utils/save-service-manager.util.ts` | ❌ 违规：依赖 `@/io/api/content.api` 和 `@/log`，utils/ 不应有 IO | 移动到 `flows/save/` | ✅ 已修复 |
 | `io/api/client.api.ts` | ⚠️ 违规：依赖 `@/log`，io/ 只能依赖 types/ | 移除 logger 或将 log 移到 io/log/ | ⏳ |
-| `state/selection.state.ts` | ❌ 违规：依赖 `@/log`，state/ 只能依赖 types/ | 移除 logger 调用 | ⏳ |
-| `state/editor-tabs.state.ts` | ❌ 违规：依赖 `@/log` 和 `@/views/editor-tabs`，state/ 只能依赖 types/ | 移除违规依赖，将纯函数移到 pipes/ | ⏳ |
-| `state/sidebar.state.ts` | ❌ 违规：依赖 `@/log`，state/ 只能依赖 types/ | 移除 logger 调用 | ⏳ |
+| `state/selection.state.ts` | ❌ 违规：依赖 `@/log`，state/ 只能依赖 types/ | 移除 logger 调用 | ✅ 已修复 |
+| `state/editor-tabs.state.ts` | ❌ 违规：依赖 `@/log` 和 `@/views/editor-tabs`，state/ 只能依赖 types/ | 移除违规依赖，将纯函数移到 pipes/ | ✅ 已修复 |
+| `state/sidebar.state.ts` | ❌ 违规：依赖 `@/log`，state/ 只能依赖 types/ | 移除 logger 调用 | ✅ 已修复 |
 | `state/theme.state.ts` | ❌ 违规：依赖 `@/views/theme`, `@/hooks/use-theme-dom`, `@/utils/themes.util` | 重构依赖关系 | ⏳ |
-| `state/ui.state.ts` | ❌ 违规：依赖 `@/log`，state/ 只能依赖 types/ | 移除 logger 调用 | ⏳ |
+| `state/ui.state.ts` | ❌ 违规：依赖 `@/log`，state/ 只能依赖 types/ | 移除 logger 调用 | ✅ 已修复 |
 | `hooks/use-node.ts` | ❌ 违规：依赖 `@/queries/`，hooks/ 只能依赖 flows/, state/, types/ | 将 queries/ 合并到 hooks/ 或 flows/ | ⏳ |
 | `hooks/use-workspace.ts` | ❌ 违规：依赖 `@/queries/`，hooks/ 只能依赖 flows/, state/, types/ | 将 queries/ 合并到 hooks/ 或 flows/ | ⏳ |
 | `log/index.ts` | ⚠️ 位置错误：log/ 有 IO（写入 IndexedDB），应在 io/log/ | 移动到 `io/log/` | ⏳ |
@@ -385,6 +385,11 @@
 | 文件 | 问题描述 | 修复日期 |
 |------|---------|----------|
 | `utils/save-service-manager.util.ts` | 移动到 `flows/save/save-service-manager.flow.ts` | 2026-01-07 |
+| `state/selection.state.ts` | 移除 logger 依赖 | 2026-01-07 |
+| `state/sidebar.state.ts` | 移除 logger 依赖 | 2026-01-07 |
+| `state/ui.state.ts` | 移除 logger 依赖 | 2026-01-07 |
+| `state/editor-tabs.state.ts` | 移除 logger 依赖，改用 pipes/editor-tab | 2026-01-07 |
+| `views/editor-tabs/editor-tab.fn.ts` | 纯函数移动到 `pipes/editor-tab/` | 2026-01-07 |
 
 ---
 

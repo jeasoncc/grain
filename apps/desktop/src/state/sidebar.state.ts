@@ -9,7 +9,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import logger from "@/log";
 import {
 	DEFAULT_SIDEBAR_CONFIG,
 	DEFAULT_SIDEBAR_STATE,
@@ -52,9 +51,6 @@ export const useSidebarStore = create<SidebarStore>()(
 			setActivePanel: (panel: SidebarPanel) => {
 				const state = get();
 				const newIsOpen = panel !== null ? true : state.isOpen;
-				logger.info(
-					`[Store] Sidebar setActivePanel: panel=${panel}, currentIsOpen=${state.isOpen}, newIsOpen=${newIsOpen}`,
-				);
 				set((draft) => {
 					draft.activePanel = panel;
 					draft.isOpen = newIsOpen;
@@ -62,20 +58,12 @@ export const useSidebarStore = create<SidebarStore>()(
 			},
 
 			setIsOpen: (open: boolean) => {
-				const state = get();
-				logger.info(
-					`[Store] Sidebar setIsOpen: open=${open}, currentIsOpen=${state.isOpen}`,
-				);
 				set((draft) => {
 					draft.isOpen = open;
 				});
 			},
 
 			toggleSidebar: () => {
-				const state = get();
-				logger.info(
-					`[Store] Sidebar toggleSidebar: currentIsOpen=${state.isOpen}, newIsOpen=${!state.isOpen}`,
-				);
 				set((draft) => {
 					draft.isOpen = !draft.isOpen;
 					draft.wasCollapsedByDrag = false;
