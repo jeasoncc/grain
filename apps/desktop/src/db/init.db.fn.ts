@@ -18,7 +18,7 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { type AppError, dbError } from "@/lib/error.types";
 import logger from "@/log";
-import { createUser, getCurrentUser, getUsers } from "@/repo/user.repo.fn";
+import { createUser, getCurrentUser, getUsers } from "@/io/api/user.api";
 import type { UserCreateInput } from "@/types/user";
 
 // ============================================================================
@@ -191,6 +191,6 @@ export const resetDatabase = (
 ): TE.TaskEither<AppError, void> =>
 	TE.left(
 		dbError(
-			"resetDatabase is deprecated. Use clearAllData from @/repo instead.",
+			"resetDatabase is deprecated. Use clearAllData from @/io/api instead.",
 		),
 	);

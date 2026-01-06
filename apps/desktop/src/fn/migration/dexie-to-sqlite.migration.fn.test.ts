@@ -176,7 +176,7 @@ const { mockRepo, mockLogger, mockLegacyDatabase } = vi.hoisted(() => {
 });
 
 // Mock repo
-vi.mock("@/repo", () => ({
+vi.mock("@/io/api", () => ({
 	createUser: mockRepo.createUser,
 	createWorkspace: mockRepo.createWorkspace,
 	createNode: mockRepo.createNode,

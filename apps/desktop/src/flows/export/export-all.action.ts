@@ -26,7 +26,7 @@ import {
 	getContentsByNodeIds,
 	getNodesByWorkspace,
 	getWorkspaceById,
-} from "@/repo";
+} from "@/io/api";
 import type { AttachmentInterface } from "@/types/attachment";
 
 /**

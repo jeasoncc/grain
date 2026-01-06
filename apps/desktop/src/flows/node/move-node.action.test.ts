@@ -11,7 +11,7 @@ import { moveNode } from "./move-node.action";
 // Mocks
 // ============================================================================
 
-vi.mock("@/repo/node.repo.fn", () => ({
+vi.mock("@/io/api/node.api", () => ({
 	getNextSortOrder: vi.fn(),
 	getNode: vi.fn(),
 	getNodesByWorkspace: vi.fn(),
@@ -36,7 +36,7 @@ import {
 	getNode,
 	getNodesByWorkspace,
 	moveNode as moveNodeRepo,
-} from "@/repo/node.repo.fn";
+} from "@/io/api/node.api";
 
 // ============================================================================
 // Test Data

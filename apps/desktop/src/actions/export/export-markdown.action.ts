@@ -16,7 +16,7 @@ import * as TE from "fp-ts/TaskEither";
 import { exportToMarkdown, type MarkdownExportOptions } from "@/fn/export";
 import { type AppError, exportError } from "@/lib/error.types";
 import logger from "@/log";
-import { getContentByNodeIdOrFail, getNodeByIdOrFail } from "@/repo";
+import { getContentByNodeIdOrFail, getNodeByIdOrFail } from "@/io/api";
 
 /**
  * 导出节点内容为 Markdown 格式参数

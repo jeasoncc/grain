@@ -34,7 +34,7 @@ import type {
 	LocalBackupRecord,
 } from "@/types/backup";
 // Use legacy database for backup functions (JSON/ZIP export)
-// Note: SQLite file-level backup uses @/repo/backup.repo.fn.ts
+// Note: SQLite file-level backup uses @/io/api/backup.api.ts
 import { legacyDatabase as database } from "./legacy-database";
 
 // ============================================================================

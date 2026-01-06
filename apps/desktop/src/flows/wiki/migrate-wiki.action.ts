@@ -18,7 +18,7 @@ import { ensureRootFolderAsync } from "@/actions/node";
 import { legacyDatabase } from "@/db/legacy-database";
 import { WIKI_ROOT_FOLDER, WIKI_TAG } from "@/fn/wiki";
 import logger from "@/log/index";
-import { addContent, addNode, getNextOrder, updateNode } from "@/repo";
+import { addContent, addNode, getNextOrder, updateNode } from "@/io/api";
 
 /**
  * 旧版 WikiInterface，用于迁移

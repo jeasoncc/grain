@@ -10,7 +10,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import * as E from "fp-ts/Either";
-import * as attachmentRepo from "@/repo/attachment.repo.fn";
+import * as attachmentRepo from "@/io/api/attachment.api";
 import type { AttachmentInterface, AttachmentType } from "@/types/attachment";
 import { queryKeys } from "./query-keys";
 

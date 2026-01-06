@@ -28,3 +28,6 @@ export * from "./date.util";
 
 // 键盘快捷键工具
 export * from "./keyboard.util";
+
+// 保存服务管理器
+export * from "./save-service-manager.util";

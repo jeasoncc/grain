@@ -10,7 +10,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import * as workspaceRepo from "@/repo/workspace.repo.fn";
+import * as workspaceRepo from "@/io/api/workspace.api";
 import type { WorkspaceInterface } from "@/types/workspace";
 import { queryKeys } from "./query-keys";
 

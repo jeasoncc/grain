@@ -11,7 +11,7 @@ import { deleteNode } from "./delete-node.action";
 // Mocks
 // ============================================================================
 
-vi.mock("@/repo/node.repo.fn", () => ({
+vi.mock("@/io/api/node.api", () => ({
 	deleteNode: vi.fn(),
 }));
 
@@ -23,7 +23,7 @@ vi.mock("@/log/index", () => ({
 	},
 }));
 
-import { deleteNode as deleteNodeRepo } from "@/repo/node.repo.fn";
+import { deleteNode as deleteNodeRepo } from "@/io/api/node.api";
 
 // ============================================================================
 // Tests

@@ -22,7 +22,7 @@ import { saveAs } from "file-saver";
 import * as E from "fp-ts/Either";
 import JSZip from "jszip";
 import { legacyDatabase } from "@/db/legacy-database";
-import { getContentsByNodeIds } from "@/repo";
+import { getContentsByNodeIds } from "@/io/api";
 import type { NodeInterface, WorkspaceInterface } from "@/types";
 import type { ContentInterface } from "@/types/content";
 import type { ExportFormat, ExportOptions } from "@/types/export";

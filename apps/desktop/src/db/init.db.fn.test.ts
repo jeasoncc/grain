@@ -102,7 +102,7 @@ vi.mock("@/log", () => ({
 }));
 
 // Mock user repo
-vi.mock("@/repo/user.repo.fn", () => ({
+vi.mock("@/io/api/user.api", () => ({
 	getUsers: mockUserRepo.getUsers,
 	createUser: mockUserRepo.createUser,
 	getCurrentUser: mockUserRepo.getCurrentUser,

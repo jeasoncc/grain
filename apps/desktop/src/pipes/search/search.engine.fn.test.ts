@@ -18,8 +18,8 @@ import { SearchEngine } from "./search.engine.fn";
 // Mocks
 // ============================================================================
 
-// Mock @/repo 模块
-vi.mock("@/repo", () => ({
+// Mock @/io/api 模块
+vi.mock("@/io/api", () => ({
 	getAllNodes: vi.fn(),
 	getNodesByWorkspace: vi.fn(),
 	getContentsByNodeIds: vi.fn(),
@@ -44,7 +44,7 @@ import {
 	getContentsByNodeIds,
 	getNodesByWorkspace,
 	getWorkspaceById,
-} from "@/repo";
+} from "@/io/api";
 
 // ============================================================================
 // Test Data

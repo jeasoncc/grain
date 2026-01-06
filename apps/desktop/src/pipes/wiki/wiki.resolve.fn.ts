@@ -13,7 +13,7 @@ import * as TE from "fp-ts/TaskEither";
 import { legacyDatabase } from "@/db/legacy-database";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
-import { getContentsByNodeIds, getNodesByWorkspace } from "@/repo";
+import { getContentsByNodeIds, getNodesByWorkspace } from "@/io/api";
 import type { NodeInterface } from "@/types/node";
 import { WikiFileEntryBuilder } from "./wiki.builder";
 import type { WikiFileEntry } from "./wiki.schema";

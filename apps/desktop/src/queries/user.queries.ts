@@ -12,7 +12,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import * as E from "fp-ts/Either";
-import * as userRepo from "@/repo/user.repo.fn";
+import * as userRepo from "@/io/api/user.api";
 import type { UserInterface, UserPlan } from "@/types/user";
 import { queryKeys } from "./query-keys";
 

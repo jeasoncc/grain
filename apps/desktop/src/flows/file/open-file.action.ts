@@ -23,7 +23,7 @@ import * as TE from "fp-ts/TaskEither";
 import type { AppError } from "@/lib/error.types";
 import { fileOperationQueue } from "@/lib/file-operation-queue";
 import logger from "@/log";
-import * as contentRepo from "@/repo/content.repo.fn";
+import * as contentRepo from "@/io/api/content.api";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import type { TabType } from "@/types/editor-tab";
 

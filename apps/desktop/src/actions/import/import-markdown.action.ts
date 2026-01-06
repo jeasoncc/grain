@@ -19,7 +19,7 @@ import {
 } from "@/fn/import/import.markdown.fn";
 import { type AppError, importError } from "@/lib/error.types";
 import logger from "@/log";
-import { addContent, addNode, getNextOrder } from "@/repo";
+import { addContent, addNode, getNextOrder } from "@/io/api";
 import type { NodeInterface } from "@/types/node";
 
 /**

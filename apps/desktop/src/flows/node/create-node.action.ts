@@ -17,8 +17,8 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import type { AppError } from "@/lib/error.types";
 import logger from "@/log";
-import * as contentRepo from "@/repo/content.repo.fn";
-import * as nodeRepo from "@/repo/node.repo.fn";
+import * as contentRepo from "@/io/api/content.api";
+import * as nodeRepo from "@/io/api/node.api";
 import type { NodeInterface, NodeType } from "@/types/node";
 
 /**

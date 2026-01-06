@@ -11,7 +11,7 @@ import { renameNode } from "./rename-node.action";
 // Mocks
 // ============================================================================
 
-vi.mock("@/repo/node.repo.fn", () => ({
+vi.mock("@/io/api/node.api", () => ({
 	updateNode: vi.fn(),
 }));
 
@@ -23,7 +23,7 @@ vi.mock("@/log/index", () => ({
 	},
 }));
 
-import { updateNode } from "@/repo/node.repo.fn";
+import { updateNode } from "@/io/api/node.api";
 
 // ============================================================================
 // Mock Data

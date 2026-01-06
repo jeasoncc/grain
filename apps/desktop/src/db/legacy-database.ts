@@ -5,16 +5,16 @@
  * been migrated to the Rust backend yet.
  *
  * MIGRATION STATUS:
- * - ✅ nodes: Migrated to Rust (use @/repo/node.repo.fn.ts)
- * - ✅ contents: Migrated to Rust (use @/repo/content.repo.fn.ts)
- * - ✅ workspaces: Migrated to Rust (use @/repo/workspace.repo.fn.ts)
- * - ✅ users: Migrated to Rust (use @/repo/user.repo.fn.ts)
+ * - ✅ nodes: Migrated to Rust (use @/io/api/node.api.ts)
+ * - ✅ contents: Migrated to Rust (use @/io/api/content.api.ts)
+ * - ✅ workspaces: Migrated to Rust (use @/io/api/workspace.api.ts)
+ * - ✅ users: Migrated to Rust (use @/io/api/user.api.ts)
  * - ⏳ tags: Pending migration (Phase 4)
  * - ⏳ attachments: Pending migration (Phase 5)
  *
  * This file will be removed once all modules are migrated.
  *
- * @deprecated Use @/repo for migrated modules
+ * @deprecated Use @/io/api for migrated modules
  */
 
 import Dexie, { type Table } from "dexie";
@@ -55,7 +55,7 @@ export interface ContentInterface {
  * Legacy Database Class
  *
  * @deprecated This database is for backward compatibility only.
- * New code should use @/repo for data access.
+ * New code should use @/io/api for data access.
  */
 export class LegacyDatabase extends Dexie {
 	// Core tables (for backward compatibility during migration)
@@ -93,6 +93,6 @@ export class LegacyDatabase extends Dexie {
 /**
  * Legacy database singleton instance
  *
- * @deprecated Use @/repo for data access
+ * @deprecated Use @/io/api for data access
  */
 export const legacyDatabase = new LegacyDatabase();

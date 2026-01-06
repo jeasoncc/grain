@@ -6,16 +6,16 @@
  *
  * 架构说明：
  * - 业务数据（nodes, contents, workspaces, users, attachments, tags）
- *   已迁移到 Rust 后端 (SQLite)，请使用 @/repo 导入
+ *   已迁移到 Rust 后端 (SQLite)，请使用 @/io/api 导入
  * - 日志数据保留在 IndexedDB (Dexie)，用于高频写入
  *
  * 迁移指南：
- * - Node 操作: import { ... } from "@/repo"
- * - Content 操作: import { ... } from "@/repo"
- * - Workspace 操作: import { ... } from "@/repo"
- * - User 操作: import { ... } from "@/repo"
- * - Backup 操作: import { ... } from "@/repo"
- * - Clear Data 操作: import { ... } from "@/repo"
+ * - Node 操作: import { ... } from "@/io/api"
+ * - Content 操作: import { ... } from "@/io/api"
+ * - Workspace 操作: import { ... } from "@/io/api"
+ * - User 操作: import { ... } from "@/io/api"
+ * - Backup 操作: import { ... } from "@/io/api"
+ * - Clear Data 操作: import { ... } from "@/io/api"
  *
  * @requirements 7.4, 9.1, 9.2
  */
@@ -49,12 +49,12 @@ export { type ApiClient, api, createApiClient } from "./api-client.fn";
 // Repo 层重新导出（兼容性）
 // ============================================================================
 
-// Node Repository - 从 @/repo 重新导出
-// Content Repository - 从 @/repo 重新导出
-// Workspace Repository - 从 @/repo 重新导出
-// User Repository - 从 @/repo 重新导出
-// Backup Repository - 从 @/repo 重新导出
-// Clear Data Repository - 从 @/repo 重新导出
+// Node Repository - 从 @/io/api 重新导出
+// Content Repository - 从 @/io/api 重新导出
+// Workspace Repository - 从 @/io/api 重新导出
+// User Repository - 从 @/io/api 重新导出
+// Backup Repository - 从 @/io/api 重新导出
+// Clear Data Repository - 从 @/io/api 重新导出
 export {
 	addContent,
 	addNode,
@@ -117,7 +117,7 @@ export {
 	updateUser,
 	updateUserLastLogin,
 	updateWorkspace,
-} from "@/repo";
+} from "@/io/api";
 
 // ============================================================================
 // 类型重新导出（兼容性）

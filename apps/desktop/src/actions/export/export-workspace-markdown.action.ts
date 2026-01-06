@@ -18,7 +18,7 @@ import {
 	getContentsByNodeIds,
 	getNodesByWorkspace,
 	getWorkspaceById,
-} from "@/repo";
+} from "@/io/api";
 
 /**
  * 导出工作区为 Markdown 格式

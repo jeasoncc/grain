@@ -10,7 +10,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import * as nodeRepo from "@/repo/node.repo.fn";
+import * as nodeRepo from "@/io/api/node.api";
 import type { NodeInterface } from "@/types/node";
 import { queryKeys } from "./query-keys";
 

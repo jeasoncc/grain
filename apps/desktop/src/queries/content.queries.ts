@@ -10,7 +10,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import * as contentRepo from "@/repo/content.repo.fn";
+import * as contentRepo from "@/io/api/content.api";
 import type { ContentInterface } from "@/types/content";
 import { queryKeys } from "./query-keys";
 

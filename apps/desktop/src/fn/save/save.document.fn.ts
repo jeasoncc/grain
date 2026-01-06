@@ -22,7 +22,7 @@ import {
 	syncTagCache,
 	updateContentByNodeId,
 	updateNode,
-} from "@/repo";
+} from "@/io/api";
 import { extractTagsFromContent } from "./save.debounce.fn";
 
 // ============================================================================

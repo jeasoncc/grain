@@ -25,7 +25,7 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { type AppError, dbError } from "@/lib/error.types";
 import logger from "@/log";
-import { createContent, createNode, createUser, createWorkspace } from "@/repo";
+import { createContent, createNode, createUser, createWorkspace } from "@/io/api";
 import type { ContentInterface } from "@/types/content";
 import type { NodeInterface } from "@/types/node";
 import type { UserInterface } from "@/types/user";

@@ -16,7 +16,7 @@ import {
 	getContentsByNodeIds,
 	getNodesByWorkspace,
 	getWorkspaceById,
-} from "@/repo";
+} from "@/io/api";
 import type { NodeInterface } from "@/types/node";
 import type { WorkspaceInterface } from "@/types/workspace";
 import {
