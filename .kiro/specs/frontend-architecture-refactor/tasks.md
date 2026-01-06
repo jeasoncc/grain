@@ -203,15 +203,18 @@
 
 ## 阶段 6: 清理和验证
 
-### Task 6.1: 删除旧目录
-- [ ] 删除 `lib/` 目录（确认无引用后）
-- [ ] 删除 `db/` 目录（确认无引用后）
-- [x] 删除 `repo/` 目录（确认无引用后）
-- [ ] 删除 `stores/` 目录（确认无引用后）
-- [ ] 删除 `actions/` 目录（确认无引用后）
-- [ ] 删除 `queries/` 目录（确认无引用后）
-- [ ] 删除 `components/` 目录（确认无引用后）
-- [ ] 删除 `fn/` 目录（确认无引用后）
+### Task 6.1: 删除旧目录（关键清理任务）
+
+**前置条件**: 确保所有导入路径已更新到新目录
+
+- [ ] 删除 `components/` 目录（已复制到 `views/`）
+- [ ] 删除 `actions/` 目录（已复制到 `flows/`）
+- [ ] 删除 `fn/` 目录（已分散到 `pipes/`, `views/`, `flows/`, `utils/`）
+- [ ] 删除 `stores/` 目录（已复制到 `state/`）
+- [ ] 删除 `lib/` 目录（已复制到 `utils/`）
+- [ ] 删除 `queries/` 目录（需先合并到 `hooks/`）
+- [ ] 删除 `db/` 目录（需先迁移到 `io/db/`）
+- [ ] 删除 `log/` 目录（需先迁移到 `io/log/`）
 
 **Requirements**: REQ-4
 
@@ -233,34 +236,64 @@
 
 ## 迁移状态总结
 
+### 当前问题（2026-01-06 审查）
+
+⚠️ **严重问题：存在大量重复目录**
+
+迁移过程中使用了复制而非移动，导致以下目录同时存在：
+
+| 旧目录 | 新目录 | 状态 |
+|--------|--------|------|
+| `components/` | `views/` | ❌ 重复存在，内容相同 |
+| `actions/` | `flows/` | ❌ 重复存在，内容相同 |
+| `fn/` | `pipes/`, `views/`, `flows/`, `utils/` | ❌ 重复存在 |
+| `stores/` | `state/` | ❌ 重复存在，内容相同 |
+| `queries/` | `hooks/` | ❌ 未合并，仍独立存在 |
+| `lib/` | `utils/` | ❌ 未删除 |
+| `db/` | `io/api/` | ❌ 未迁移到 io/db/ |
+| `log/` | `io/log/` | ❌ 未迁移 |
+
 ### 已完成
 - ✅ 阶段 1: 创建新目录结构
-- ✅ Task 2.1: lib/ → utils/
-- ✅ Task 2.2: db/ + repo/ → io/api/
-- ✅ Task 3.1-3.4: fn/ → pipes/, flows/, views/, utils/
-- ✅ Task 3.5: stores/ → state/
-- ✅ Task 4.1: actions/ → flows/
-- ✅ Task 4.2: queries/ → hooks/ (query-keys)
-- ✅ Task 4.3: components/ → views/
+- ✅ Task 2.1: lib/ → utils/ (已复制，原目录未删除)
+- ✅ Task 2.2: db/ + repo/ → io/api/ (部分完成)
+- ✅ Task 3.1-3.4: fn/ → pipes/, flows/, views/, utils/ (已复制，原目录未删除)
+- ✅ Task 3.5: stores/ → state/ (已复制，原目录未删除)
+- ✅ Task 4.1: actions/ → flows/ (已复制，原目录未删除)
+- ✅ Task 4.3: components/ → views/ (已复制，原目录未删除)
 - ✅ Task 5.1: 路径别名检查
 
-### 待完成
-- ⏳ Task 2.3-2.4: io/storage/, io/file/ (可选，按需创建)
-- ⏳ Task 5.2: 批量更新导入路径
-- ⏳ Task 6.1: 删除旧目录
-- ⏳ Task 6.2-6.3: 验证和文档更新
+### 待完成（关键清理任务）
+
+#### 优先级 1：删除重复目录
+- [ ] 更新所有导入路径指向新目录
+- [ ] 删除 `components/` 目录
+- [ ] 删除 `actions/` 目录
+- [ ] 删除 `fn/` 目录
+- [ ] 删除 `stores/` 目录
+- [ ] 删除 `lib/` 目录
+
+#### 优先级 2：完成未完成的迁移
+- [ ] 合并 `queries/` 到 `hooks/`，删除 `queries/`
+- [ ] 迁移 `db/` 到 `io/db/`，删除 `db/`
+- [ ] 迁移 `log/` 到 `io/log/`，删除 `log/`
+
+#### 优先级 3：验证和文档
+- [ ] 运行 `bun run lint` 检查代码规范
+- [ ] 运行 `bun run test` 运行所有测试
+- [ ] 运行 `bun run desktop:dev` 验证应用正常运行
+- [ ] 更新 `.kiro/steering/structure.md` 反映新结构
 
 ### 注意事项
 
-1. **渐进式迁移**: 每完成一个 Task 后提交代码，确保可回滚
-2. **兼容性**: 通过 index.ts 重导出保持旧路径可用
-3. **测试优先**: 每次迁移后运行测试确保功能正常
-4. **依赖顺序**: 按照依赖关系从底层向上迁移
+1. **渐进式清理**: 每删除一个目录后提交代码，确保可回滚
+2. **先更新导入**: 删除目录前必须确保所有导入已更新
+3. **测试优先**: 每次删除后运行测试确保功能正常
 
 ## Git 提交规范
 
-每个 Task 完成后：
+每个清理任务完成后：
 ```bash
 git add -A
-git commit -m "refactor: 迁移 xxx 到新架构"
+git commit -m "refactor: 删除重复的 xxx 目录"
 ```
