@@ -2,6 +2,9 @@
  * @file index.ts
  * @description Actions 业务操作层
  *
+ * @deprecated 请使用 @/flows 代替
+ * 此文件保留用于向后兼容
+ *
  * 这个目录包含所有业务操作函数，独立于路由层。
  * 每个子目录对应一个业务领域。
  *
