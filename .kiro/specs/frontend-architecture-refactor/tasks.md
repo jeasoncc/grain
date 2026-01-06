@@ -1,299 +1,363 @@
 # 前端架构重构任务
 
-## 阶段 1: 创建新目录结构
+## 当前状态概述
 
-### Task 1.1: 创建基础目录
-- [x] 创建 `src/views/` 目录
-- [x] 创建 `src/flows/` 目录
-- [x] 创建 `src/pipes/` 目录
-- [x] 创建 `src/io/` 目录
-- [x] 创建 `src/io/api/` 目录
-- [x] 创建 `src/io/storage/` 目录
-- [x] 创建 `src/io/file/` 目录
-- [x] 创建 `src/state/` 目录
-- [x] 创建 `src/utils/` 目录
+迁移工作已完成文件复制，但存在以下待处理事项：
 
-**Requirements**: REQ-1
+1. **新旧目录并存** - 旧目录作为兼容层保留，待验证后删除
+2. **代码逻辑审核** - 需逐个检查文件是否符合架构规范
+3. **依赖规则验证** - 需确保各层依赖关系正确
 
 ---
 
-## 阶段 2: 迁移底层（types, utils, io）
+## 阶段 1: 验证迁移正确性
 
-### Task 2.1: 迁移 lib/ → utils/
-- [x] 移动 `lib/error.types.ts` → `utils/error.util.ts`
-- [x] 移动 `lib/utils.ts` → `utils/cn.util.ts`
-- [x] 移动 `lib/font-config.ts` → `utils/font.util.ts`
-- [x] 移动 `lib/icons.ts` → `utils/icons.util.ts`
-- [x] 移动 `lib/themes.ts` → `utils/themes.util.ts`
-- [x] 移动 `lib/file-operation-queue.ts` → `utils/queue.util.ts`
-- [x] 创建 `utils/index.ts` 重导出
-- [x] 创建 `lib/index.ts` 兼容重导出
+### Task 1.1: 编译验证
+- [ ] 运行 `bun run lint` 检查代码规范
+- [ ] 运行 TypeScript 编译检查
+- [ ] 运行 `bun run desktop:dev` 验证应用启动
 
-**Requirements**: REQ-2, REQ-4
+### Task 1.2: 功能测试
+- [ ] 运行 `bun run test` 执行单元测试
+- [ ] 手动测试核心功能（创建/编辑/删除节点）
+- [ ] 手动测试导入/导出功能
 
-### Task 2.2: 迁移 db/ + repo/ → io/api/
-- [x] 移动 `db/api-client.fn.ts` → `io/api/client.api.ts`
-- [x] 合并 `repo/workspace.repo.fn.ts` 到 `io/api/workspace.api.ts`
-- [x] 合并 `repo/node.repo.fn.ts` 到 `io/api/node.api.ts`
-- [x] 合并 `repo/content.repo.fn.ts` 到 `io/api/content.api.ts`
-- [x] 合并 `repo/user.repo.fn.ts` 到 `io/api/user.api.ts`
-- [x] 合并 `repo/tag.repo.fn.ts` 到 `io/api/tag.api.ts`
-- [x] 合并 `repo/attachment.repo.fn.ts` 到 `io/api/attachment.api.ts`
-- [x] 合并 `repo/backup.repo.fn.ts` 到 `io/api/backup.api.ts`
-- [x] 合并 `repo/clear-data.repo.fn.ts` 到 `io/api/clear-data.api.ts`
-- [x] 创建 `io/api/index.ts` 重导出
-- [x] 创建 `io/index.ts` 重导出
-- [x] 创建 `db/index.ts` 兼容重导出
-- [x] 创建 `repo/index.ts` 兼容重导出
-
-**Requirements**: REQ-2, REQ-4
-
-### Task 2.3: 创建 io/storage/
-- [x] 创建 `io/storage/settings.storage.ts`（从现有代码提取）
-- [x] 创建 `io/storage/index.ts`
-
-**Requirements**: REQ-1, REQ-2
-
-### Task 2.4: 创建 io/file/
-- [ ] 创建 `io/file/dialog.file.ts`（从现有代码提取）
-- [ ] 创建 `io/file/download.file.ts`（从现有代码提取）
-- [x] 创建 `io/file/index.ts`
-
-**Requirements**: REQ-1, REQ-2
+**验收标准**: 应用能正常运行，所有测试通过
 
 ---
 
-## 阶段 3: 迁移中间层（pipes, state）
+## 阶段 2: 代码逻辑审核
 
-### Task 3.1: 迁移 fn/ → pipes/（纯业务函数）
-- [x] 移动 `fn/node/` → `pipes/node/`
-- [x] 移动 `fn/content/` → `pipes/content/`
-- [x] 移动 `fn/tag/` → `pipes/tag/`
-- [x] 移动 `fn/export/` → `pipes/export/`
-- [x] 移动 `fn/import/` → `pipes/import/`
-- [x] 移动 `fn/search/` → `pipes/search/`
-- [x] 移动 `fn/format/` → `pipes/format/`
-- [x] 移动 `fn/wiki/` → `pipes/wiki/`
-- [x] 移动 `fn/word-count/` → `pipes/word-count/`
-- [x] 创建 `pipes/index.ts` 重导出
+按架构层级从底层到上层逐个审核，确保每个文件符合其所在层的职责。
 
-**Requirements**: REQ-2, REQ-4
+### Task 2.1: 审核 types/ 层
+**职责**: 纯类型定义，无运行时代码
 
-### Task 3.2: 迁移 fn/ → utils/（通用工具函数）
-- [x] 移动 `fn/date/` → `utils/date.util.ts`
-- [x] 移动 `fn/keyboard/` → `utils/keyboard.util.ts`
+- [ ] 检查所有 `.ts` 文件只包含类型定义
+- [ ] 检查无 IO 操作、无副作用
+- [ ] 检查命名规范
 
-**Requirements**: REQ-2, REQ-4
+### Task 2.2: 审核 utils/ 层
+**职责**: 通用纯函数，无 IO，无业务逻辑
 
-### Task 3.3: 迁移 fn/ → flows/（含 IO 的函数）
-- [x] 移动 `fn/save/` → `flows/save/`
-- [x] 移动 `fn/updater/` → `flows/updater/`
-- [x] 移动 `fn/migration/` → `flows/migration/`
+| 文件 | 状态 | 问题 |
+|------|------|------|
+| `cn.util.ts` | ⏳ | |
+| `date.util.ts` | ⏳ | |
+| `keyboard.util.ts` | ⏳ | |
+| `error.util.ts` | ⏳ | |
+| `font.util.ts` | ⏳ | |
+| `icons.util.ts` | ⏳ | |
+| `themes.util.ts` | ⏳ | |
+| `queue.util.ts` | ⏳ | |
+| `save-service-manager.util.ts` | ⏳ | 可能包含 IO |
 
-**Requirements**: REQ-2, REQ-4
+**检查项**:
+- [ ] 无 IO 操作（无 fetch、invoke、localStorage）
+- [ ] 无业务逻辑依赖
+- [ ] 纯函数（相同输入相同输出）
+- [ ] 命名符合 `*.util.ts` 规范
 
-### Task 3.4: 迁移 fn/ → views/（UI 相关）
-- [x] 移动 `fn/editor/` → `views/editor/`
-- [x] 移动 `fn/editor-tab/` → `views/editor-tabs/`
-- [x] 移动 `fn/editor-history/` → `views/editor-history/`
-- [x] 移动 `fn/diagram/` → `views/diagram/`
-- [x] 移动 `fn/drawing/` → `views/drawing/`
-- [x] 移动 `fn/theme/` → `views/theme/`
-- [x] 移动 `fn/icon-theme/` → `views/icon-theme/`
-- [x] 移动 `fn/writing/` → `views/writing/`
-- [x] 移动 `fn/ledger/` → `views/ledger/`
+### Task 2.3: 审核 io/ 层
+**职责**: 与外部世界交互，封装 IO 操作
 
-**Requirements**: REQ-2, REQ-4
+#### io/api/ - Rust 后端 API
+| 文件 | 状态 | 问题 |
+|------|------|------|
+| `client.api.ts` | ⏳ | |
+| `workspace.api.ts` | ⏳ | |
+| `node.api.ts` | ⏳ | |
+| `content.api.ts` | ⏳ | |
+| `user.api.ts` | ⏳ | |
+| `tag.api.ts` | ⏳ | |
+| `attachment.api.ts` | ⏳ | |
+| `backup.api.ts` | ⏳ | |
+| `clear-data.api.ts` | ⏳ | |
 
-### Task 3.5: 迁移 stores/ → state/
-- [x] 移动 `stores/selection.store.ts` → `state/selection.state.ts`
-- [x] 移动 `stores/editor-tabs.store.ts` → `state/editor-tabs.state.ts`
-- [x] 移动 `stores/editor-settings.store.ts` → `state/editor-settings.state.ts`
-- [x] 移动 `stores/editor-history.store.ts` → `state/editor-history.state.ts`
-- [x] 移动 `stores/sidebar.store.ts` → `state/sidebar.state.ts`
-- [x] 移动 `stores/theme.store.ts` → `state/theme.state.ts`
-- [x] 移动 `stores/icon-theme.store.ts` → `state/icon-theme.state.ts`
-- [x] 移动 `stores/font.store.ts` → `state/font.state.ts`
-- [x] 移动 `stores/ui.store.ts` → `state/ui.state.ts`
-- [x] 移动 `stores/save.store.ts` → `state/save.state.ts`
-- [x] 移动 `stores/writing.store.ts` → `state/writing.state.ts`
-- [x] 移动 `stores/diagram.store.ts` → `state/diagram.state.ts`
-- [x] 创建 `state/index.ts` 重导出
-- [x] 创建 `stores/index.ts` 兼容重导出
+#### io/storage/ - 浏览器存储
+| 文件 | 状态 | 问题 |
+|------|------|------|
+| `settings.storage.ts` | ⏳ | |
 
-**Requirements**: REQ-2, REQ-4
+#### io/file/ - 文件系统
+| 文件 | 状态 | 问题 |
+|------|------|------|
+| `dialog.file.ts` | ⏳ | |
+
+**检查项**:
+- [ ] 只依赖 `types/`
+- [ ] 封装所有外部交互
+- [ ] 使用 TaskEither 处理错误
+- [ ] 命名符合 `*.api.ts` / `*.storage.ts` / `*.file.ts` 规范
+
+### Task 2.4: 审核 pipes/ 层
+**职责**: 纯业务数据转换，无 IO，无副作用
+
+| 目录 | 状态 | 问题 |
+|------|------|------|
+| `pipes/node/` | ⏳ | |
+| `pipes/content/` | ⏳ | |
+| `pipes/export/` | ⏳ | |
+| `pipes/import/` | ⏳ | |
+| `pipes/search/` | ⏳ | |
+| `pipes/tag/` | ⏳ | |
+| `pipes/wiki/` | ⏳ | |
+| `pipes/word-count/` | ⏳ | |
+| `pipes/format/` | ⏳ | |
+
+**检查项**:
+- [ ] 只依赖 `utils/`, `types/`
+- [ ] 无 IO 操作
+- [ ] 纯函数（相同输入相同输出）
+- [ ] 使用 fp-ts pipe 组合
+- [ ] 命名符合 `*.pipe.ts` 或 `*.fn.ts` 规范
+
+### Task 2.5: 审核 state/ 层
+**职责**: Zustand 状态管理，无 IO
+
+| 文件 | 状态 | 问题 |
+|------|------|------|
+| `selection.state.ts` | ⏳ | |
+| `editor-tabs.state.ts` | ⏳ | |
+| `editor-settings.state.ts` | ⏳ | |
+| `editor-history.state.ts` | ⏳ | |
+| `sidebar.state.ts` | ⏳ | |
+| `theme.state.ts` | ⏳ | |
+| `icon-theme.state.ts` | ⏳ | |
+| `font.state.ts` | ⏳ | |
+| `ui.state.ts` | ⏳ | |
+| `save.state.ts` | ⏳ | |
+| `writing.state.ts` | ⏳ | |
+| `diagram.state.ts` | ⏳ | |
+
+**检查项**:
+- [ ] 只依赖 `types/`
+- [ ] 无 IO 操作
+- [ ] 使用 Zustand + Immer
+- [ ] 命名符合 `*.state.ts` 规范
+
+### Task 2.6: 审核 flows/ 层
+**职责**: 组合 pipes + io，形成业务流程
+
+| 目录 | 状态 | 问题 |
+|------|------|------|
+| `flows/workspace/` | ⏳ | |
+| `flows/node/` | ⏳ | |
+| `flows/export/` | ⏳ | |
+| `flows/import/` | ⏳ | |
+| `flows/file/` | ⏳ | |
+| `flows/settings/` | ⏳ | |
+| `flows/wiki/` | ⏳ | |
+| `flows/templated/` | ⏳ | |
+| `flows/save/` | ⏳ | |
+| `flows/updater/` | ⏳ | |
+| `flows/migration/` | ⏳ | |
+
+**检查项**:
+- [ ] 只依赖 `pipes/`, `io/`, `state/`, `types/`
+- [ ] 不依赖 `views/`, `hooks/`
+- [ ] 使用 TaskEither 处理错误
+- [ ] 命名符合 `*.flow.ts` 或 `*.action.ts` 规范
+
+### Task 2.7: 审核 hooks/ 层
+**职责**: React 生命周期绑定，连接 flows 和 views
+
+| 文件 | 状态 | 问题 |
+|------|------|------|
+| `use-node.ts` | ⏳ | 依赖 queries/ |
+| `use-workspace.ts` | ⏳ | |
+| `use-content.ts` | ⏳ | |
+| `use-theme.ts` | ⏳ | |
+| `use-icon-theme.ts` | ⏳ | |
+| `query-keys.ts` | ⏳ | |
+
+**检查项**:
+- [ ] 只依赖 `flows/`, `state/`, `types/`
+- [ ] 不直接依赖 `io/`, `pipes/`
+- [ ] 使用 TanStack Query
+- [ ] 命名符合 `use-*.ts` 规范
+
+### Task 2.8: 审核 views/ 层
+**职责**: UI 渲染，纯展示组件
+
+| 目录 | 状态 | 问题 |
+|------|------|------|
+| `views/ui/` | ⏳ | shadcn/ui 组件 |
+| `views/file-tree/` | ⏳ | |
+| `views/editor-tabs/` | ⏳ | |
+| `views/activity-bar/` | ⏳ | |
+| `views/command-palette/` | ⏳ | |
+| `views/global-search/` | ⏳ | |
+| `views/theme-selector/` | ⏳ | |
+| `views/unified-sidebar/` | ⏳ | |
+| `views/story-workspace/` | ⏳ | |
+| `views/story-right-sidebar/` | ⏳ | |
+| `views/panels/` | ⏳ | |
+| `views/backup-manager/` | ⏳ | |
+| `views/buffer-switcher/` | ⏳ | |
+| `views/excalidraw-editor/` | ⏳ | |
+| `views/export-button/` | ⏳ | |
+| `views/export-dialog/` | ⏳ | |
+| `views/export-dialog-manager/` | ⏳ | |
+| `views/keyboard-shortcuts-help/` | ⏳ | |
+| `views/save-status-indicator/` | ⏳ | |
+| `views/update-checker/` | ⏳ | |
+| `views/word-count-badge/` | ⏳ | |
+| `views/blocks/` | ⏳ | |
+| `views/utils/` | ⏳ | |
+| `views/diagram/` | ⏳ | 从 fn/ 迁移 |
+| `views/drawing/` | ⏳ | 从 fn/ 迁移 |
+| `views/editor/` | ⏳ | 从 fn/ 迁移 |
+| `views/editor-history/` | ⏳ | 从 fn/ 迁移 |
+| `views/theme/` | ⏳ | 从 fn/ 迁移 |
+| `views/icon-theme/` | ⏳ | 从 fn/ 迁移 |
+| `views/writing/` | ⏳ | 从 fn/ 迁移 |
+| `views/ledger/` | ⏳ | 从 fn/ 迁移 |
+
+**检查项**:
+- [ ] 只依赖 `hooks/`, `types/`
+- [ ] 不直接依赖 `flows/`, `io/`, `pipes/`, `state/`
+- [ ] 纯展示组件，数据通过 props 传入
+- [ ] 命名符合 `*.view.tsx` / `*.container.fn.tsx` 规范
 
 ---
 
-## 阶段 4: 迁移上层（flows, hooks, views）
+## 阶段 3: 依赖规则验证
 
-### Task 4.1: 迁移 actions/ → flows/
-- [x] 移动 `actions/workspace/` → `flows/workspace/`
-- [x] 移动 `actions/node/` → `flows/node/`
-- [x] 移动 `actions/export/` → `flows/export/`
-- [x] 移动 `actions/import/` → `flows/import/`
-- [x] 移动 `actions/file/` → `flows/file/`
-- [x] 移动 `actions/settings/` → `flows/settings/`
-- [x] 移动 `actions/wiki/` → `flows/wiki/`
-- [x] 移动 `actions/templated/` → `flows/templated/`
-- [x] 创建 `flows/index.ts` 重导出
-- [x] 创建 `actions/index.ts` 兼容重导出
+### Task 3.1: 创建依赖检查脚本
+- [ ] 创建脚本检查各层依赖关系
+- [ ] 输出违规依赖报告
 
-**Requirements**: REQ-2, REQ-4
+### Task 3.2: 修复违规依赖
+根据审核结果修复违规依赖：
 
-### Task 4.2: 合并 queries/ 到 hooks/
-- [x] 移动 `queries/query-keys.ts` → `hooks/query-keys.ts`
-- [x] 更新 `hooks/index.ts` 重导出
-- [x] 创建 `queries/index.ts` 兼容重导出
-
-**Requirements**: REQ-2, REQ-4
-
-### Task 4.3: 迁移 components/ → views/
-- [x] 移动 `components/activity-bar/` → `views/activity-bar/`
-- [x] 移动 `components/backup-manager/` → `views/backup-manager/`
-- [x] 移动 `components/blocks/` → `views/blocks/`
-- [x] 移动 `components/buffer-switcher/` → `views/buffer-switcher/`
-- [x] 移动 `components/command-palette/` → `views/command-palette/`
-- [x] 移动 `components/editor-tabs/` → `views/editor-tabs/`
-- [x] 移动 `components/excalidraw-editor/` → `views/excalidraw-editor/`
-- [x] 移动 `components/export-button/` → `views/export-button/`
-- [x] 移动 `components/export-dialog/` → `views/export-dialog/`
-- [x] 移动 `components/export-dialog-manager/` → `views/export-dialog-manager/`
-- [x] 移动 `components/file-tree/` → `views/file-tree/`
-- [x] 移动 `components/global-search/` → `views/global-search/`
-- [x] 移动 `components/keyboard-shortcuts-help/` → `views/keyboard-shortcuts-help/`
-- [x] 移动 `components/panels/` → `views/panels/`
-- [x] 移动 `components/save-status-indicator/` → `views/save-status-indicator/`
-- [x] 移动 `components/story-right-sidebar/` → `views/story-right-sidebar/`
-- [x] 移动 `components/story-workspace/` → `views/story-workspace/`
-- [x] 移动 `components/theme-selector/` → `views/theme-selector/`
-- [x] 移动 `components/ui/` → `views/ui/`
-- [x] 移动 `components/unified-sidebar/` → `views/unified-sidebar/`
-- [x] 移动 `components/update-checker/` → `views/update-checker/`
-- [x] 移动 `components/utils/` → `views/utils/`
-- [x] 移动 `components/word-count-badge/` → `views/word-count-badge/`
-- [x] 创建 `views/index.ts` 重导出
-- [x] 创建 `components/index.ts` 兼容重导出
-
-**Requirements**: REQ-2, REQ-4
+| 层 | 允许依赖 | 禁止依赖 |
+|---|---------|---------|
+| `views/` | `hooks/`, `types/` | `flows/`, `io/`, `pipes/`, `state/` |
+| `hooks/` | `flows/`, `state/`, `types/` | `io/`, `pipes/` |
+| `flows/` | `pipes/`, `io/`, `state/`, `types/` | `views/`, `hooks/` |
+| `pipes/` | `utils/`, `types/` | `io/`, `state/`, `flows/`, `hooks/`, `views/` |
+| `io/` | `types/` | 其他所有 |
+| `state/` | `types/` | 其他所有 |
+| `utils/` | `types/` | 其他所有 |
 
 ---
 
-## 阶段 5: 更新导入路径
+## 阶段 4: 文件命名规范化
 
-### Task 5.1: 更新 TypeScript 路径别名
-- [x] 检查 `tsconfig.json` 路径别名（已支持 @/* → ./src/*）
-- [x] 检查 `vite.config.ts` 路径别名（已支持）
+### Task 4.1: 重命名不符合规范的文件
 
-**Requirements**: REQ-1
+**命名规范**:
+| 目录 | 后缀 | 示例 |
+|------|------|------|
+| `io/api/` | `.api.ts` | `workspace.api.ts` |
+| `io/storage/` | `.storage.ts` | `settings.storage.ts` |
+| `io/file/` | `.file.ts` | `dialog.file.ts` |
+| `pipes/` | `.pipe.ts` | `node.tree.pipe.ts` |
+| `flows/` | `.flow.ts` | `create-workspace.flow.ts` |
+| `hooks/` | `use-*.ts` | `use-workspace.ts` |
+| `views/` | `.view.tsx` | `file-tree.view.tsx` |
+| `state/` | `.state.ts` | `selection.state.ts` |
+| `utils/` | `.util.ts` | `date.util.ts` |
 
-### Task 5.2: 批量更新导入路径
-- [x] 更新所有 `@/lib/` → `@/utils/`
-- [x] 更新所有 `@/db/` → `@/io/api/`
-- [x] 更新所有 `@/repo/` → `@/io/api/`
-- [x] 更新所有 `@/stores/` → `@/state/`
-- [x] 更新所有 `@/actions/` → `@/flows/`
-- [x] 更新所有 `@/queries/` → `@/hooks/`
-- [x] 更新所有 `@/components/` → `@/views/`
-- [x] 更新所有 `@/fn/` → `@/pipes/` 或 `@/utils/`
-
-**Requirements**: REQ-4
-
----
-
-## 阶段 6: 清理和验证
-
-### Task 6.1: 删除旧目录（关键清理任务）
-
-**前置条件**: 确保所有导入路径已更新到新目录
-
-- [ ] 删除 `components/` 目录（已复制到 `views/`）
-- [ ] 删除 `actions/` 目录（已复制到 `flows/`）
-- [ ] 删除 `fn/` 目录（已分散到 `pipes/`, `views/`, `flows/`, `utils/`）
-- [ ] 删除 `stores/` 目录（已复制到 `state/`）
-- [ ] 删除 `lib/` 目录（已复制到 `utils/`）
-- [ ] 删除 `queries/` 目录（需先合并到 `hooks/`）
-- [ ] 删除 `db/` 目录（需先迁移到 `io/db/`）
-- [ ] 删除 `log/` 目录（需先迁移到 `io/log/`）
-
-**Requirements**: REQ-4
-
-### Task 6.2: 验证
-- [x] 运行 `bun run lint` 检查代码规范
-- [ ] 运行 `bun run test` 运行所有测试
-- [ ] 运行 `bun run desktop:dev` 验证应用正常运行
-- [ ] 手动测试核心功能
-
-**Requirements**: REQ-5
-
-### Task 6.3: 更新文档
-- [ ] 更新 `.kiro/steering/structure.md` 反映新结构
-- [ ] 更新 README 中的项目结构说明
-
-**Requirements**: REQ-1
+**待重命名文件**:
+- [ ] `pipes/` 中的 `*.fn.ts` → `*.pipe.ts`
+- [ ] `flows/` 中的 `*.action.ts` → `*.flow.ts`
 
 ---
 
-## 迁移状态总结
+## 阶段 5: 完成未完成的迁移
 
-### 当前问题（2026-01-06 审查）
+### Task 5.1: 合并 queries/ 到 hooks/
+- [ ] 移动 `queries/*.queries.ts` 到 `hooks/`
+- [ ] 更新导入路径
+- [ ] 验证功能正常
 
-⚠️ **严重问题：存在大量重复目录**
+### Task 5.2: 迁移 db/ 到 io/db/
+- [ ] 移动 `db/*.ts` 到 `io/db/`
+- [ ] 更新导入路径
+- [ ] 验证功能正常
 
-迁移过程中使用了复制而非移动，导致以下目录同时存在：
+### Task 5.3: 迁移 log/ 到 io/log/
+- [ ] 移动 `log/*.ts` 到 `io/log/`
+- [ ] 更新导入路径
+- [ ] 验证功能正常
 
-| 旧目录 | 新目录 | 状态 |
-|--------|--------|------|
-| `components/` | `views/` | ❌ 重复存在，内容相同 |
-| `actions/` | `flows/` | ❌ 重复存在，内容相同 |
-| `fn/` | `pipes/`, `views/`, `flows/`, `utils/` | ❌ 重复存在 |
-| `stores/` | `state/` | ❌ 重复存在，内容相同 |
-| `queries/` | `hooks/` | ❌ 未合并，仍独立存在 |
-| `lib/` | `utils/` | ❌ 未删除 |
-| `db/` | `io/api/` | ❌ 未迁移到 io/db/ |
-| `log/` | `io/log/` | ❌ 未迁移 |
+---
 
-### 已完成
-- ✅ 阶段 1: 创建新目录结构
-- ✅ Task 2.1: lib/ → utils/ (已复制，原目录未删除)
-- ✅ Task 2.2: db/ + repo/ → io/api/ (部分完成)
-- ✅ Task 3.1-3.4: fn/ → pipes/, flows/, views/, utils/ (已复制，原目录未删除)
-- ✅ Task 3.5: stores/ → state/ (已复制，原目录未删除)
-- ✅ Task 4.1: actions/ → flows/ (已复制，原目录未删除)
-- ✅ Task 4.3: components/ → views/ (已复制，原目录未删除)
-- ✅ Task 5.1: 路径别名检查
+## 阶段 6: 清理旧目录
 
-### 待完成（关键清理任务）
+**前置条件**: 阶段 1-5 全部完成，所有测试通过
 
-#### 优先级 1：删除重复目录
-- [ ] 更新所有导入路径指向新目录
+### Task 6.1: 删除旧目录
 - [ ] 删除 `components/` 目录
 - [ ] 删除 `actions/` 目录
 - [ ] 删除 `fn/` 目录
 - [ ] 删除 `stores/` 目录
 - [ ] 删除 `lib/` 目录
+- [ ] 删除 `queries/` 目录（Task 5.1 完成后）
+- [ ] 删除 `db/` 目录（Task 5.2 完成后）
+- [ ] 删除 `log/` 目录（Task 5.3 完成后）
 
-#### 优先级 2：完成未完成的迁移
-- [ ] 合并 `queries/` 到 `hooks/`，删除 `queries/`
-- [ ] 迁移 `db/` 到 `io/db/`，删除 `db/`
-- [ ] 迁移 `log/` 到 `io/log/`，删除 `log/`
+### Task 6.2: 最终验证
+- [ ] 运行 `bun run lint`
+- [ ] 运行 `bun run test`
+- [ ] 运行 `bun run desktop:dev`
+- [ ] 手动测试核心功能
 
-#### 优先级 3：验证和文档
-- [ ] 运行 `bun run lint` 检查代码规范
-- [ ] 运行 `bun run test` 运行所有测试
-- [ ] 运行 `bun run desktop:dev` 验证应用正常运行
-- [ ] 更新 `.kiro/steering/structure.md` 反映新结构
+---
 
-### 注意事项
+## 阶段 7: 文档更新
 
-1. **渐进式清理**: 每删除一个目录后提交代码，确保可回滚
-2. **先更新导入**: 删除目录前必须确保所有导入已更新
-3. **测试优先**: 每次删除后运行测试确保功能正常
+### Task 7.1: 更新项目文档
+- [ ] 更新 `.kiro/steering/structure.md`
+- [ ] 更新 README 中的项目结构说明
+
+---
+
+## 进度跟踪
+
+| 阶段 | 状态 | 完成日期 |
+|------|------|----------|
+| 阶段 1: 验证迁移正确性 | ⏳ 待开始 | - |
+| 阶段 2: 代码逻辑审核 | ⏳ 待开始 | - |
+| 阶段 3: 依赖规则验证 | ⏳ 待开始 | - |
+| 阶段 4: 文件命名规范化 | ⏳ 待开始 | - |
+| 阶段 5: 完成未完成的迁移 | ⏳ 待开始 | - |
+| 阶段 6: 清理旧目录 | ⏳ 待开始 | - |
+| 阶段 7: 文档更新 | ⏳ 待开始 | - |
+
+---
+
+## 审核记录
+
+### 发现的问题
+
+（审核过程中记录发现的问题）
+
+| 文件 | 问题描述 | 修复方案 | 状态 |
+|------|---------|---------|------|
+| | | | |
+
+### 已修复的问题
+
+（记录已修复的问题）
+
+| 文件 | 问题描述 | 修复日期 |
+|------|---------|----------|
+| | | |
+
+---
 
 ## Git 提交规范
 
-每个清理任务完成后：
+每个任务完成后：
 ```bash
 git add -A
-git commit -m "refactor: 删除重复的 xxx 目录"
+git commit -m "refactor: [阶段X] 任务描述"
 ```
+
+示例：
+- `refactor: [阶段2] 审核 pipes/ 层，修复依赖问题`
+- `refactor: [阶段4] 重命名 flows/ 文件为 *.flow.ts`
+- `refactor: [阶段6] 删除旧的 components/ 目录`
