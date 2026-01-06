@@ -195,7 +195,7 @@
 - [x] 更新所有 `@/actions/` → `@/flows/`
 - [x] 更新所有 `@/queries/` → `@/hooks/`
 - [x] 更新所有 `@/components/` → `@/views/`
-- [ ] 更新所有 `@/fn/` → `@/pipes/` 或 `@/utils/`
+- [x] 更新所有 `@/fn/` → `@/pipes/` 或 `@/utils/`
 
 **Requirements**: REQ-4
 
