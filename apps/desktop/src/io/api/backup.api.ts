@@ -12,7 +12,7 @@
 
 import type * as TE from "fp-ts/TaskEither";
 import { api } from "@/db/api-client.fn";
-import type { AppError } from "@/lib/error.types";
+import type { AppError } from "@/utils/error.util";
 import type { BackupInfo } from "@/types/rust-api";
 
 // ============================================================================

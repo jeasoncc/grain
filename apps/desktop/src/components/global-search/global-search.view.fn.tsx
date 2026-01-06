@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn.util";
 import type {
 	GlobalSearchViewProps,
 	SearchResultType,

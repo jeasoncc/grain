@@ -32,7 +32,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useTheme } from "@/hooks/use-theme";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn.util";
 import type { NodeInterface, NodeType } from "@/types/node";
 import type { FileTreeProps, TreeData } from "./file-tree.types";
 

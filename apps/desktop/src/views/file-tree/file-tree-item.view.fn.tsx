@@ -31,7 +31,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn.util";
 import type { FileTreeItemProps } from "./file-tree.types";
 
 export function FileTreeItem({

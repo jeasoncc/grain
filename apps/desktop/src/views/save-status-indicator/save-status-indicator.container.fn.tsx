@@ -7,7 +7,7 @@
  */
 
 import { memo, useSyncExternalStore } from "react";
-import { saveServiceManager } from "@/lib/save-service-manager";
+import { saveServiceManager } from "@/utils/save-service-manager.util";
 import { useEditorTabsStore } from "@/stores/editor-tabs.store";
 import { useSaveStore } from "@/stores/save.store";
 import type { SaveStatusIndicatorViewProps } from "./save-status-indicator.types";

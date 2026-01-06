@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn.util";
 
 interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
 	initials?: string;

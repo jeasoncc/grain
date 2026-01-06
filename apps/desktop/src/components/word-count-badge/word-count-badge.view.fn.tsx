@@ -12,7 +12,7 @@
 import { FileText } from "lucide-react";
 import { memo, useEffect, useState } from "react";
 import { formatWordCount, formatWordCountDetail } from "@/fn/word-count";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn.util";
 import type {
 	WordCountBadgeProps,
 	WordCountDisplayProps,

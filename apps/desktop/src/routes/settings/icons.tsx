@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Check, Sparkles } from "lucide-react";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useTheme } from "@/hooks/use-theme";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn.util";
 import { useIconThemeStore } from "@/stores/icon-theme.store";
 import type { IconTheme } from "@/types/icon-theme";
 import { iconThemes } from "@/types/icon-theme";

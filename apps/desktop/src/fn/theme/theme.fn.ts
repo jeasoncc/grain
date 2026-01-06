@@ -10,7 +10,7 @@
  * 注意：有副作用的函数（DOM 操作、系统检测）已移至 hooks/use-theme-dom.ts
  */
 
-import type { Theme } from "@/lib/themes";
+import type { Theme } from "@/utils/themes.util";
 import type { ThemeMode } from "@/types/theme";
 
 // ==============================

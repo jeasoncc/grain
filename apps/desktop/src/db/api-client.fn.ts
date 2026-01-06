@@ -17,8 +17,8 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import * as TE from "fp-ts/TaskEither";
-import type { AppError } from "@/lib/error.types";
-import { dbError } from "@/lib/error.types";
+import type { AppError } from "@/utils/error.util";
+import { dbError } from "@/utils/error.util";
 import logger from "@/log";
 import type {
 	AttachmentResponse,

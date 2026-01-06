@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { Theme } from "@/lib/themes";
+import type { Theme } from "@/utils/themes.util";
 import type { ThemeSelectorViewProps } from "./theme-selector.types";
 import { ThemeSelectorView } from "./theme-selector.view.fn";
 

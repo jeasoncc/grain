@@ -16,7 +16,7 @@ import {
 	serializeBundle,
 } from "@/fn/export/export.bundle.fn";
 import type { AttachmentData, ContentData } from "@/fn/import/import.json.fn";
-import type { AppError } from "@/lib/error.types";
+import type { AppError } from "@/utils/error.util";
 import logger from "@/log";
 import {
 	getAllNodes,

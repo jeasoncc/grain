@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { SearchResult, SearchResultType } from "@/fn/search";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn.util";
 import type {
 	ResultGroupProps,
 	SearchPanelViewProps,

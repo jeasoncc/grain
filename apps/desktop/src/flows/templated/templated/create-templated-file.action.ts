@@ -26,7 +26,7 @@ import * as TE from "fp-ts/TaskEither";
 import { z } from "zod";
 import { createFile } from "@/actions/file";
 import { ensureFolderPath } from "@/actions/node";
-import type { AppError } from "@/lib/error.types";
+import type { AppError } from "@/utils/error.util";
 import logger from "@/log";
 import type { FileNodeType, NodeInterface } from "@/types/node";
 

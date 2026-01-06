@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn.util";
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
 	variant?: "default" | "secondary" | "outline" | "muted" | "success" | "warning";

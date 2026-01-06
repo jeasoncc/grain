@@ -14,7 +14,7 @@ import {
 	applyThemeWithTransition,
 	getSystemTheme,
 } from "@/hooks/use-theme-dom";
-import { getThemeByKey, themes } from "@/lib/themes";
+import { getThemeByKey, themes } from "@/utils/themes.util";
 import type { ThemeActions, ThemeMode, ThemeState } from "@/types/theme";
 import { DEFAULT_THEME_CONFIG, DEFAULT_THEME_STATE } from "@/types/theme";
 

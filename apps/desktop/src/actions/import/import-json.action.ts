@@ -17,7 +17,7 @@ import {
 	type JsonImportOptions,
 	parseImportData,
 } from "@/fn/import/import.json.fn";
-import type { AppError } from "@/lib/error.types";
+import type { AppError } from "@/utils/error.util";
 import logger from "@/log";
 import type { NodeInterface } from "@/types/node";
 import type { WorkspaceInterface } from "@/types/workspace";

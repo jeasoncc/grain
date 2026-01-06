@@ -5,7 +5,7 @@
  * 从应用主题中提取编辑器组件需要的颜色配置。
  */
 
-import type { Theme } from "@/lib/themes";
+import type { Theme } from "@/utils/themes.util";
 
 /**
  * 编辑器主题颜色配置

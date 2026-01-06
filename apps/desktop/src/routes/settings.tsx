@@ -7,7 +7,7 @@ import {
 import { ArrowLeft } from "lucide-react";
 import { useMemo } from "react";
 import { useIconTheme } from "@/hooks/use-icon-theme";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn.util";
 
 export const Route = createFileRoute("/settings")({
 	component: SettingsLayout,

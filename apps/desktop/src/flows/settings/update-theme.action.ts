@@ -12,7 +12,7 @@
  */
 
 import * as E from "fp-ts/Either";
-import { type AppError, validationError } from "@/lib/error.types";
+import { type AppError, validationError } from "@/utils/error.util";
 import logger from "@/log";
 import { useThemeStore } from "@/stores/theme.store";
 import type { ThemeMode } from "@/types/theme";

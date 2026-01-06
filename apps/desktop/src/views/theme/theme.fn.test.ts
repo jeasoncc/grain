@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import type { Theme } from "@/lib/themes";
+import type { Theme } from "@/utils/themes.util";
 import {
 	getDefaultThemeKey,
 	getEffectiveThemeType,

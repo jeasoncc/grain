@@ -188,7 +188,7 @@
 **Requirements**: REQ-1
 
 ### Task 5.2: 批量更新导入路径
-- [ ] 更新所有 `@/lib/` → `@/utils/`
+- [-] 更新所有 `@/lib/` → `@/utils/`
 - [ ] 更新所有 `@/db/` → `@/io/api/`
 - [ ] 更新所有 `@/repo/` → `@/io/api/`
 - [ ] 更新所有 `@/stores/` → `@/state/`

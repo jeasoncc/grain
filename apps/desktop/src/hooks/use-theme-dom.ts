@@ -9,7 +9,7 @@
  * 这些函数不是纯函数，因此放在 hooks 层而非 fn 层
  */
 
-import { applyTheme, type Theme } from "@/lib/themes";
+import { applyTheme, type Theme } from "@/utils/themes.util";
 import { DEFAULT_THEME_CONFIG } from "@/types/theme";
 
 // ==============================

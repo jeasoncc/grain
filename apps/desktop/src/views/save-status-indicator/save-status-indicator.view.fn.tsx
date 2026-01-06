@@ -6,7 +6,7 @@
 
 import { AlertCircle, Check, Loader2, Save } from "lucide-react";
 import { memo } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn.util";
 import type { SaveStatusIndicatorViewProps } from "./save-status-indicator.types";
 
 export const SaveStatusIndicatorView = memo(

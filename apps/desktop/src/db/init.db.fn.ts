@@ -16,7 +16,7 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { type AppError, dbError } from "@/lib/error.types";
+import { type AppError, dbError } from "@/utils/error.util";
 import logger from "@/log";
 import { createUser, getCurrentUser, getUsers } from "@/io/api/user.api";
 import type { UserCreateInput } from "@/types/user";

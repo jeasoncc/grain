@@ -1,5 +1,5 @@
 import type { ThemeMode } from "@/hooks/use-theme";
-import type { Theme } from "@/lib/themes";
+import type { Theme } from "@/utils/themes.util";
 
 /**
  * ThemeSelector View 组件的 Props

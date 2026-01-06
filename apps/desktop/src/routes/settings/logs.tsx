@@ -22,7 +22,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { type LogEntry, logDB } from "@/db/log-db";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn.util";
 
 export const Route = createFileRoute("/settings/logs")({
 	component: LogsSettingsPage,

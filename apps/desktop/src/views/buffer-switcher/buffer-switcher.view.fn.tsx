@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { memo } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn.util";
 import type { EditorTab } from "@/types/editor-tab";
 import type { BufferSwitcherViewProps } from "./buffer-switcher.types";
 

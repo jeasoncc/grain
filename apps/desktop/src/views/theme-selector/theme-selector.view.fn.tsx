@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import type { ThemeMode } from "@/hooks/use-theme";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn.util";
 import type {
 	ThemeCardProps,
 	ThemeSelectorViewProps,

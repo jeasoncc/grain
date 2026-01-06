@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn.util";
 
 interface ResizeHandleProps {
   onResize: (deltaX: number) => void;

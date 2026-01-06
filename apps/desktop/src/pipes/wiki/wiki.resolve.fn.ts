@@ -11,7 +11,7 @@
 import * as E from "fp-ts/Either";
 import * as TE from "fp-ts/TaskEither";
 import { legacyDatabase } from "@/db/legacy-database";
-import type { AppError } from "@/lib/error.types";
+import type { AppError } from "@/utils/error.util";
 import logger from "@/log";
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/io/api";
 import type { NodeInterface } from "@/types/node";

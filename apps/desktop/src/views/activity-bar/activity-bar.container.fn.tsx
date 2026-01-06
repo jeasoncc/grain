@@ -35,7 +35,7 @@ import { calculateExpandedFoldersForNode } from "@/fn/node";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useNodesByWorkspace } from "@/hooks/use-node";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
-import type { AppError } from "@/lib/error.types";
+import type { AppError } from "@/utils/error.util";
 import logger from "@/log";
 import { useSelectionStore } from "@/stores/selection.store";
 import { useSidebarStore } from "@/stores/sidebar.store";

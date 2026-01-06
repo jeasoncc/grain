@@ -13,7 +13,7 @@
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { api } from "@/db/api-client.fn";
-import { type AppError, dbError } from "@/lib/error.types";
+import { type AppError, dbError } from "@/utils/error.util";
 import logger from "@/log";
 import type { ClearDataResult } from "@/types/rust-api";
 

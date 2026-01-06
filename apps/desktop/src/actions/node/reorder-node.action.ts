@@ -12,7 +12,7 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { type AppError, validationError } from "@/lib/error.types";
+import { type AppError, validationError } from "@/utils/error.util";
 import logger from "@/log";
 import * as nodeRepo from "@/io/api/node.api";
 

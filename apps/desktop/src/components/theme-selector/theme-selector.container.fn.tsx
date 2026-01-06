@@ -5,7 +5,7 @@
  */
 import { memo } from "react";
 import { useTheme } from "@/hooks/use-theme";
-import { getDarkThemes, getLightThemes } from "@/lib/themes";
+import { getDarkThemes, getLightThemes } from "@/utils/themes.util";
 import { ThemeSelectorView } from "./theme-selector.view.fn";
 
 export const ThemeSelectorContainer = memo(() => {
