@@ -6,10 +6,9 @@ import "./styles.css";
 import "@grain/editor-lexical/styles";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { database } from "./db/database";
 import { initDatabase } from "./db/init.db.fn";
-
-// 开发环境下的调试工具已移除
 
 // Create the router instance
 const router = createRouter({
@@ -41,6 +40,7 @@ async function main() {
 			<StrictMode>
 				<QueryClientProvider client={queryClient}>
 					<RouterProvider router={router} />
+					{import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
 				</QueryClientProvider>
 			</StrictMode>,
 		);
