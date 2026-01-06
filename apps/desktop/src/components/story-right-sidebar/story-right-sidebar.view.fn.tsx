@@ -21,7 +21,7 @@ import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/views/ui/tooltip";
 import { cn } from "@/utils/cn.util";
 import type { EditorTab } from "@/types/editor-tab";
 import type { StoryRightSidebarViewProps } from "./story-right-sidebar.types";

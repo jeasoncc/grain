@@ -2,10 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2, ExternalLink, Loader2, XCircle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Button } from "@/views/ui/button";
+import { Input } from "@/views/ui/input";
+import { Label } from "@/views/ui/label";
+import { Switch } from "@/views/ui/switch";
 import { useDiagramSettings } from "@/state/diagram.state";
 
 export const Route = createFileRoute("/settings/diagrams")({

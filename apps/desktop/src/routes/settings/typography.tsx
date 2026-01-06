@@ -1,17 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Monitor, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/views/ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card";
-import { DebouncedSlider } from "@/components/ui/debounced-slider";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+} from "@/views/ui/card";
+import { DebouncedSlider } from "@/views/ui/debounced-slider";
+import { Input } from "@/views/ui/input";
+import { Label } from "@/views/ui/label";
+import { Separator } from "@/views/ui/separator";
 import { useFontSettings } from "@/state/font.state";
 import {
 	CARD_SIZE_OPTIONS,

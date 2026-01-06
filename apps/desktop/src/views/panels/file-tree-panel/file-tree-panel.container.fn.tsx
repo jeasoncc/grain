@@ -19,8 +19,8 @@ import {
 	openFileAsync,
 	renameNode,
 } from "@/actions";
-import { FileTree } from "@/components/file-tree";
-import { useConfirm } from "@/components/ui/confirm";
+import { FileTree } from "@/views/file-tree";
+import { useConfirm } from "@/views/ui/confirm";
 import { getNodeById, setNodeCollapsed } from "@/db";
 import { useNodesByWorkspace } from "@/hooks/use-node";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";

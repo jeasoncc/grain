@@ -12,7 +12,7 @@
  */
 
 import { useMemo } from "react";
-import { WikiFileEntryBuilder, type WikiFileEntryType } from "@/fn/wiki";
+import { WikiFileEntryBuilder, type WikiFileEntryType } from "@/pipes/wiki";
 import { useNodesByWorkspace } from "@/queries/node.queries";
 import type { NodeInterface } from "@/types/node";
 

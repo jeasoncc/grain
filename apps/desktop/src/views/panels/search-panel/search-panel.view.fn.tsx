@@ -14,17 +14,17 @@ import {
 	X,
 } from "lucide-react";
 import { memo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/views/ui/button";
+import { Checkbox } from "@/views/ui/checkbox";
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import type { SearchResult, SearchResultType } from "@/fn/search";
+} from "@/views/ui/collapsible";
+import { Input } from "@/views/ui/input";
+import { Label } from "@/views/ui/label";
+import { ScrollArea } from "@/views/ui/scroll-area";
+import type { SearchResult, SearchResultType } from "@/pipes/search";
 import { cn } from "@/utils/cn.util";
 import type {
 	ResultGroupProps,

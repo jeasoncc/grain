@@ -20,18 +20,18 @@ import {
 	X,
 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/views/ui/button";
 import {
 	Dialog,
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/views/ui/dialog";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/views/ui/tooltip";
 import { cn } from "@/utils/cn.util";
 import type { EditorTab } from "@/types/editor-tab";
 import type { EditorTabsViewProps } from "./editor-tabs.types";

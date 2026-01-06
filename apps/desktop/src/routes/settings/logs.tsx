@@ -12,15 +12,15 @@ import {
 	XCircle,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/views/ui/button";
+import { Input } from "@/views/ui/input";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select";
+} from "@/views/ui/select";
 import { type LogEntry, logDB } from "@/db/log-db";
 import { cn } from "@/utils/cn.util";
 

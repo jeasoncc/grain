@@ -6,17 +6,17 @@
 
 import { FileText, Loader2, Search, X } from "lucide-react";
 import { memo } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/views/ui/badge";
+import { Button } from "@/views/ui/button";
 import {
 	Dialog,
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+} from "@/views/ui/dialog";
+import { Input } from "@/views/ui/input";
+import { ScrollArea } from "@/views/ui/scroll-area";
+import { Separator } from "@/views/ui/separator";
 import { cn } from "@/utils/cn.util";
 import type {
 	GlobalSearchViewProps,

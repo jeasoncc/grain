@@ -16,23 +16,23 @@ import { type MentionEntry, MultiEditorContainer } from "@grain/editor-lexical";
 import type { SerializedEditorState } from "lexical";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo } from "react";
-import { WikiHoverPreviewConnected } from "@/components/blocks/wiki-hover-preview-connected";
-import { EditorTabs } from "@/components/editor-tabs";
-import { ExcalidrawEditorContainer } from "@/components/excalidraw-editor";
-import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help";
-import { SaveStatusIndicator } from "@/components/save-status-indicator";
-import { StoryRightSidebar } from "@/components/story-right-sidebar";
-import { ThemeSelector } from "@/components/theme-selector";
-import { Button } from "@/components/ui/button";
+import { WikiHoverPreviewConnected } from "@/views/blocks/wiki-hover-preview-connected";
+import { EditorTabs } from "@/views/editor-tabs";
+import { ExcalidrawEditorContainer } from "@/views/excalidraw-editor";
+import { KeyboardShortcutsHelp } from "@/views/keyboard-shortcuts-help";
+import { SaveStatusIndicator } from "@/views/save-status-indicator";
+import { StoryRightSidebar } from "@/views/story-right-sidebar";
+import { ThemeSelector } from "@/views/theme-selector";
+import { Button } from "@/views/ui/button";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { WordCountBadge } from "@/components/word-count-badge";
-import { type EditorType, getEditorTypeByFilename } from "@/fn/editor";
-import { countWordsFromLexicalState } from "@/fn/word-count";
+} from "@/views/ui/tooltip";
+import { WordCountBadge } from "@/views/word-count-badge";
+import { type EditorType, getEditorTypeByFilename } from "@/views/editor";
+import { countWordsFromLexicalState } from "@/pipes/word-count";
 import { useSettings } from "@/hooks/use-settings";
 import { useUnifiedSave } from "@/hooks/use-unified-save";
 import { useWikiFiles } from "@/hooks/use-wiki";

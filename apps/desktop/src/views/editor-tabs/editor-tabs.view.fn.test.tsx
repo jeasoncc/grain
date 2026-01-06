@@ -4,7 +4,7 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/views/ui/tooltip";
 import type { EditorTab } from "@/types/editor-tab";
 import type { EditorTabsViewProps } from "./editor-tabs.types";
 import { EditorTabsView } from "./editor-tabs.view.fn";

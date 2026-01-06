@@ -7,10 +7,10 @@
 
 import { PenTool, Plus, Search, Trash2 } from "lucide-react";
 import { useCallback, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@/views/ui/button";
+import { Input } from "@/views/ui/input";
+import { ScrollArea } from "@/views/ui/scroll-area";
+import { Separator } from "@/views/ui/separator";
 import { cn } from "@/utils/cn.util";
 import type { NodeInterface } from "@/types/node";
 

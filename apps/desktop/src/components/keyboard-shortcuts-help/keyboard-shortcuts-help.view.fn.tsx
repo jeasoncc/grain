@@ -4,12 +4,12 @@
 
 import { Keyboard } from "lucide-react";
 import { memo } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/views/ui/button";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/views/ui/popover";
 import type { KeyboardShortcutsHelpViewProps } from "./keyboard-shortcuts-help.types";
 
 const shortcuts = [

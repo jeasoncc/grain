@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type NodeApi, type NodeRendererProps, Tree } from "react-arborist";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/views/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -28,8 +28,8 @@ import {
 	DropdownMenuSubContent,
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+} from "@/views/ui/dropdown-menu";
+import { Input } from "@/views/ui/input";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/utils/cn.util";

@@ -14,17 +14,17 @@ import {
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/views/ui/card";
+import { Input } from "@/views/ui/input";
+import { Label } from "@/views/ui/label";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+} from "@/views/ui/select";
+import { Switch } from "@/views/ui/switch";
 import { useSettings } from "@/hooks/use-settings";
 import { useUIStore } from "@/state/ui.state";
 import type { TabPosition } from "@/types/ui";

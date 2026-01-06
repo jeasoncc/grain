@@ -5,7 +5,7 @@
  */
 
 import { memo, useEffect, useState } from "react";
-import { ExportDialog } from "@/components/export-dialog";
+import { ExportDialog } from "@/views/export-dialog";
 import type {
 	ExportDialogManagerAPI,
 	ExportDialogManagerProps,

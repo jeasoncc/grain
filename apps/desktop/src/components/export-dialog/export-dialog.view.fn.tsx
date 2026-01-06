@@ -4,7 +4,7 @@
 
 import { Loader2 } from "lucide-react";
 import { memo } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/views/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -12,10 +12,10 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Switch } from "@/components/ui/switch";
+} from "@/views/ui/dialog";
+import { Label } from "@/views/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/views/ui/radio-group";
+import { Switch } from "@/views/ui/switch";
 import type {
 	ExportDialogViewProps,
 	ExtendedExportFormat,

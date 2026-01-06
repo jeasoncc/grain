@@ -11,7 +11,7 @@ import {
 	RefreshCw,
 } from "lucide-react";
 import { memo } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/views/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -19,8 +19,8 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
+} from "@/views/ui/dialog";
+import { Progress } from "@/views/ui/progress";
 import type { UpdateCheckerViewProps } from "./update-checker.types";
 
 export const UpdateCheckerView = memo(

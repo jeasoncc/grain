@@ -11,13 +11,13 @@ import {
 	FileType,
 } from "lucide-react";
 import { memo } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/views/ui/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/views/ui/dropdown-menu";
 import type { ExportFormat } from "@/types/export";
 import type { ExportButtonViewProps } from "./export-button.types";
 

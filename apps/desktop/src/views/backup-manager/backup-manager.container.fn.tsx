@@ -6,7 +6,7 @@
 
 import { memo, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useConfirm } from "@/components/ui/confirm";
+import { useConfirm } from "@/views/ui/confirm";
 import {
 	autoBackupManager,
 	exportBackupJson,

@@ -8,7 +8,7 @@ import { Download, Moon, PenTool, Search, Settings, Sun } from "lucide-react";
 import { memo, useMemo } from "react";
 import { openFile } from "@/flows";
 import { createExcalidraw } from "@/flows/templated";
-import { exportDialogManager } from "@/components/export-dialog-manager";
+import { exportDialogManager } from "@/views/export-dialog-manager";
 import { useTheme } from "@/hooks/use-theme";
 import type { TabType } from "@/types/editor-tab";
 import type {

@@ -11,7 +11,7 @@
 
 import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/views/ui/button";
 import type { TagGraphPanelViewProps } from "./tag-graph-panel.types";
 
 interface GraphNode {

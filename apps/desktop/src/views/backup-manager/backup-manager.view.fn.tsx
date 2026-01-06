@@ -25,18 +25,18 @@ import {
 	Upload,
 } from "lucide-react";
 import { memo } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/views/ui/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { formatBytes } from "@/fn/format";
+} from "@/views/ui/card";
+import { Progress } from "@/views/ui/progress";
+import { Separator } from "@/views/ui/separator";
+import { Switch } from "@/views/ui/switch";
+import { formatBytes } from "@/pipes/format";
 import type { BackupManagerViewProps } from "./backup-manager.types";
 
 dayjs.extend(relativeTime);

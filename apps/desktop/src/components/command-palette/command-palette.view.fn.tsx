@@ -8,7 +8,7 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
-} from "@/components/ui/command";
+} from "@/views/ui/command";
 import type { CommandPaletteViewProps } from "./command-palette.types";
 
 /**

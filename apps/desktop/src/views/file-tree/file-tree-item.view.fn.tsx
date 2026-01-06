@@ -29,8 +29,8 @@ import {
 	DropdownMenuSubContent,
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+} from "@/views/ui/dropdown-menu";
+import { Input } from "@/views/ui/input";
 import { cn } from "@/utils/cn.util";
 import type { FileTreeItemProps } from "./file-tree.types";
 

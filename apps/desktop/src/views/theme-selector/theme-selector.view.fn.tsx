@@ -9,14 +9,14 @@
 
 import { Check, Monitor, Moon, Palette, Sun } from "lucide-react";
 import { memo } from "react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/views/ui/button";
+import { Label } from "@/views/ui/label";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from "@/components/ui/popover";
-import { Switch } from "@/components/ui/switch";
+} from "@/views/ui/popover";
+import { Switch } from "@/views/ui/switch";
 import type { ThemeMode } from "@/hooks/use-theme";
 import { cn } from "@/utils/cn.util";
 import type {
