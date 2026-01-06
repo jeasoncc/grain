@@ -1,13 +1,14 @@
 /**
- * IO/Storage - 浏览器存储层
+ * @file io/storage/index.ts
+ * @description Storage 层统一导出
  *
- * 职责：与 localStorage 交互
+ * 职责：重导出所有 storage 相关模块
  * 依赖：types/
  */
 
-// 通用存储操作
+// Settings storage - localStorage 操作
 export {
-	// 常量
+	// 存储键常量
 	STORAGE_KEYS,
 	type StorageKey,
 	// 字符串操作
@@ -15,7 +16,7 @@ export {
 	setString,
 	remove,
 	clearAll,
-	// JSON 操作
+	// JSON 操作（类型安全）
 	getJson,
 	setJson,
 	getJsonUnsafe,
