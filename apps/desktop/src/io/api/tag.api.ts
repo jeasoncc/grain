@@ -21,7 +21,7 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import * as api from "@/db/api-client.fn";
+import * as api from "./client.api";
 import type { AppError } from "@/utils/error.util";
 import {
 	decodeTag,

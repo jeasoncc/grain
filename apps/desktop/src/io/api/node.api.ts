@@ -21,7 +21,7 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import * as rustApi from "@/db/api-client.fn";
+import * as rustApi from "./client.api";
 import type { AppError } from "@/utils/error.util";
 import {
 	decodeNode,

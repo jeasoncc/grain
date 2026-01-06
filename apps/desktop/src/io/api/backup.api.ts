@@ -11,7 +11,7 @@
  */
 
 import type * as TE from "fp-ts/TaskEither";
-import { api } from "@/db/api-client.fn";
+import { api } from "./client.api";
 import type { AppError } from "@/utils/error.util";
 import type { BackupInfo } from "@/types/rust-api";
 
