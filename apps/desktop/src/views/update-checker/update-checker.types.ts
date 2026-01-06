@@ -3,7 +3,7 @@
  * @description 更新检查组件类型定义
  */
 
-import type { UpdateInfo } from "@/fn/updater";
+import type { UpdateInfo } from "@/flows/updater";
 
 export type CheckStatus =
 	| "idle"

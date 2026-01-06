@@ -8,7 +8,7 @@
  * @requirements Todo 创建功能
  */
 
-import { generateTodoContent } from "@/fn/content";
+import { generateTodoContent } from "@/pipes/content";
 import {
 	createDateTemplateConfig,
 	type DateTemplateParams,

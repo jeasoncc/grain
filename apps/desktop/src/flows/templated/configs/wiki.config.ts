@@ -8,7 +8,7 @@
  * @requirements Wiki 条目创建功能
  */
 
-import { generateWikiContent } from "@/fn/content";
+import { generateWikiContent } from "@/pipes/content";
 import {
 	createDateTemplateConfig,
 	type DateTemplateParams,

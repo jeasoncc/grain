@@ -13,9 +13,9 @@
 
 import dayjs from "dayjs";
 import { z } from "zod";
-import { generateExcalidrawContent } from "@/fn/content";
-import { getDateFolderStructureWithFilename } from "@/fn/date";
-import { FILE_EXTENSIONS } from "@/fn/editor";
+import { generateExcalidrawContent } from "@/pipes/content";
+import { getDateFolderStructureWithFilename } from "@/utils/date.util";
+import { FILE_EXTENSIONS } from "@/views/editor";
 import type { TemplateConfig } from "../create-templated-file.action";
 
 // ==============================

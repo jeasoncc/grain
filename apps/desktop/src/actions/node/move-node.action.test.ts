@@ -18,7 +18,7 @@ vi.mock("@/io/api/node.api", () => ({
 	moveNode: vi.fn(),
 }));
 
-vi.mock("@/fn/node/node.tree.fn", () => ({
+vi.mock("@/pipes/node/node.tree.fn", () => ({
 	wouldCreateCycle: vi.fn(),
 }));
 
@@ -30,7 +30,7 @@ vi.mock("@/log/index", () => ({
 	},
 }));
 
-import { wouldCreateCycle } from "@/fn/node/node.tree.fn";
+import { wouldCreateCycle } from "@/pipes/node/node.tree.fn";
 import {
 	getNextSortOrder,
 	getNode,

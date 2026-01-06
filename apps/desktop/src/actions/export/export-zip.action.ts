@@ -11,7 +11,7 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { createZipBundle } from "@/fn/export/export.bundle.fn";
+import { createZipBundle } from "@/pipes/export/export.bundle.fn";
 import type { AppError } from "@/utils/error.util";
 import logger from "@/log";
 import { exportAll } from "./export-all.action";

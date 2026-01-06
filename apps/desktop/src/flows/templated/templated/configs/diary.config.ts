@@ -8,7 +8,7 @@
  * @requirements 1.1, 1.5, 3.1
  */
 
-import { generateDiaryContent } from "@/fn/content";
+import { generateDiaryContent } from "@/pipes/content";
 import {
 	createDateTemplateConfig,
 	type DateTemplateParams,

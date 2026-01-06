@@ -10,8 +10,8 @@
  * 这些函数处理数据转换，不直接访问数据库。
  */
 
-import { extractText } from "@/fn/content/content.extract.fn";
-import type { AttachmentData, ContentData } from "@/fn/import/import.json.fn";
+import { extractText } from "@/pipes/content/content.extract.fn";
+import type { AttachmentData, ContentData } from "@/pipes/import/import.json.fn";
 import type { NodeInterface } from "@/types/node";
 import type { WorkspaceInterface } from "@/types/workspace";
 

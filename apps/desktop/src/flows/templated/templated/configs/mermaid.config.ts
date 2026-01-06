@@ -8,7 +8,7 @@
  * @requirements 1.1, 1.2, 1.3, 1.4, 1.5
  */
 
-import { generateMermaidContent } from "@/fn/content";
+import { generateMermaidContent } from "@/pipes/content";
 import {
 	createDateTemplateConfig,
 	type DateTemplateParams,

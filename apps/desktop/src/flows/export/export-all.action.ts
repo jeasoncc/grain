@@ -14,8 +14,8 @@ import * as TE from "fp-ts/TaskEither";
 import {
 	createExportBundle,
 	serializeBundle,
-} from "@/fn/export/export.bundle.fn";
-import type { AttachmentData, ContentData } from "@/fn/import/import.json.fn";
+} from "@/pipes/export/export.bundle.fn";
+import type { AttachmentData, ContentData } from "@/pipes/import/import.json.fn";
 import type { AppError } from "@/utils/error.util";
 import logger from "@/log";
 import {

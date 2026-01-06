@@ -30,7 +30,7 @@ vi.mock("@/log", () => ({
 const mockLogger = vi.mocked(await import("@/log")).default;
 
 // Mock fn/editor-tab 纯函数
-vi.mock("@/fn/editor-tab", () => ({
+vi.mock("@/views/editor-tabs", () => ({
 	findTabByNodeId: vi.fn((tabs, nodeId) =>
 		tabs.find((t: { nodeId: string }) => t.nodeId === nodeId),
 	),

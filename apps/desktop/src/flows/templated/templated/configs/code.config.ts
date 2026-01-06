@@ -8,7 +8,7 @@
  * @requirements 4.1, 4.2, 4.3, 4.4, 4.5
  */
 
-import { generateCodeContent } from "@/fn/content";
+import { generateCodeContent } from "@/pipes/content";
 import {
 	createDateTemplateConfig,
 	type DateTemplateParams,

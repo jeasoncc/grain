@@ -9,7 +9,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import { getDefaultThemeKey, getNextMode, isThemeTypeMatch } from "@/fn/theme";
+import { getDefaultThemeKey, getNextMode, isThemeTypeMatch } from "@/views/theme";
 import {
 	applyThemeWithTransition,
 	getSystemTheme,

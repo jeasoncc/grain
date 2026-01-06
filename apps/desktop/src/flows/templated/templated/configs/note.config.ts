@@ -8,7 +8,7 @@
  * @requirements Note 创建功能
  */
 
-import { generateNoteContent } from "@/fn/content";
+import { generateNoteContent } from "@/pipes/content";
 import {
 	createDateTemplateConfig,
 	type DateTemplateParams,

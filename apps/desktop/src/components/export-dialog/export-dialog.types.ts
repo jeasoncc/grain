@@ -2,7 +2,7 @@
  * Export Dialog 组件类型定义
  */
 
-import type { ExportFormat, ExportOptions } from "@/fn/export";
+import type { ExportFormat, ExportOptions } from "@/pipes/export";
 
 export type ExtendedExportFormat = ExportFormat | "markdown" | "json" | "zip";
 

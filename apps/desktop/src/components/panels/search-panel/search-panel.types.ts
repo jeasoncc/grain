@@ -2,7 +2,7 @@
  * SearchPanel 类型定义
  */
 
-import type { SearchResult, SearchResultType } from "@/fn/search";
+import type { SearchResult, SearchResultType } from "@/pipes/search";
 import type { SearchPanelState } from "@/types/sidebar";
 
 /**

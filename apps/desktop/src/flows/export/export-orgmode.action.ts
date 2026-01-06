@@ -13,7 +13,7 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { exportToOrgmode, type OrgmodeExportOptions } from "@/fn/export";
+import { exportToOrgmode, type OrgmodeExportOptions } from "@/pipes/export";
 import { type AppError, exportError } from "@/utils/error.util";
 import logger from "@/log";
 import { getContentByNodeIdOrFail, getNodeByIdOrFail } from "@/io/api";

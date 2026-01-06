@@ -16,7 +16,7 @@ import { legacyDatabase } from "@/db/legacy-database";
 import {
 	type JsonImportOptions,
 	parseImportData,
-} from "@/fn/import/import.json.fn";
+} from "@/pipes/import/import.json.fn";
 import type { AppError } from "@/utils/error.util";
 import logger from "@/log";
 import type { NodeInterface } from "@/types/node";

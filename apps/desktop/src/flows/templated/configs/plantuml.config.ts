@@ -8,7 +8,7 @@
  * @requirements 2.1, 2.2, 2.3, 2.4, 2.5
  */
 
-import { generatePlantUMLContent } from "@/fn/content";
+import { generatePlantUMLContent } from "@/pipes/content";
 import {
 	createDateTemplateConfig,
 	type DateTemplateParams,

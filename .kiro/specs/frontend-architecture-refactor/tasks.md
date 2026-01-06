@@ -193,8 +193,8 @@
 - [x] 更新所有 `@/repo/` → `@/io/api/`
 - [x] 更新所有 `@/stores/` → `@/state/`
 - [x] 更新所有 `@/actions/` → `@/flows/`
-- [ ] 更新所有 `@/queries/` → `@/hooks/`
-- [ ] 更新所有 `@/components/` → `@/views/`
+- [x] 更新所有 `@/queries/` → `@/hooks/`
+- [x] 更新所有 `@/components/` → `@/views/`
 - [ ] 更新所有 `@/fn/` → `@/pipes/` 或 `@/utils/`
 
 **Requirements**: REQ-4

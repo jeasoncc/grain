@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useEffect, useRef } from "react";
-import { keyboardShortcutManager } from "@/fn/keyboard";
+import { keyboardShortcutManager } from "@/utils/keyboard.util";
 import { saveServiceManager } from "@/utils/save-service-manager.util";
 import logger from "@/log";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";

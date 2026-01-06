@@ -14,7 +14,7 @@ import {
 	checkForUpdates,
 	downloadAndInstallUpdate,
 	type UpdateInfo,
-} from "@/fn/updater";
+} from "@/flows/updater";
 import logger from "@/log";
 
 type CheckStatus =

@@ -151,7 +151,7 @@ vi.mock("@/log", () => ({
 	default: mockLogger,
 }));
 
-import { formatBytes } from "@/fn/format";
+import { formatBytes } from "@/pipes/format";
 // Import after mocking
 import {
 	clearAllData,

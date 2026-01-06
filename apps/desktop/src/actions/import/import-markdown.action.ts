@@ -16,7 +16,7 @@ import * as TE from "fp-ts/TaskEither";
 import {
 	importFromMarkdown,
 	type MarkdownImportOptions,
-} from "@/fn/import/import.markdown.fn";
+} from "@/pipes/import/import.markdown.fn";
 import { type AppError, importError } from "@/utils/error.util";
 import logger from "@/log";
 import { addContent, addNode, getNextOrder } from "@/io/api";

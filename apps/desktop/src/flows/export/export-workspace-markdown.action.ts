@@ -11,7 +11,7 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { exportWorkspaceToMarkdown } from "@/fn/export/export.bundle.fn";
+import { exportWorkspaceToMarkdown } from "@/pipes/export/export.bundle.fn";
 import type { AppError } from "@/utils/error.util";
 import logger from "@/log";
 import {

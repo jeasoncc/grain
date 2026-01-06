@@ -3,7 +3,7 @@
  * @description 字数统计徽章组件类型定义
  */
 
-import type { CountMode, WordCountResult } from "@/fn/word-count";
+import type { CountMode, WordCountResult } from "@/pipes/word-count";
 
 export interface WordCountBadgeProps {
 	/** 字数统计结果 */

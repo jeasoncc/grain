@@ -18,7 +18,7 @@ import {
 	evictLRUEditorStates,
 	findTabByNodeId,
 	getTabsByWorkspace,
-} from "@/fn/editor-tab";
+} from "@/views/editor-tabs";
 import logger from "@/log";
 import type {
 	EditorInstanceState,
