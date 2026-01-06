@@ -1,33 +1,11 @@
 /**
  * Repository 层 - 数据访问层
  *
+ * @deprecated 请使用 @/io/api 代替
+ * 此文件保留用于向后兼容
+ *
  * 纯函数 + TaskEither 封装，返回前端类型。
  * 通过 Codec 层进行类型转换，确保前后端类型解耦。
- *
- * 架构位置：
- * ```
- * Actions / Query Hooks
- *       │
- *       ▼
- * Repository Layer ← 你在这里
- *       │
- *       ▼
- * Codec Layer (类型转换)
- *       │
- *       ▼
- * rust-api.fn.ts
- * ```
- *
- * 使用示例：
- * ```typescript
- * import * as nodeRepo from '@/repo';
- *
- * // 获取工作区节点
- * const nodes = await nodeRepo.getNodesByWorkspace(workspaceId)();
- *
- * // 创建节点
- * const result = await nodeRepo.createNode({ workspace, title, type })();
- * ```
  */
 
 // Attachment Repository
