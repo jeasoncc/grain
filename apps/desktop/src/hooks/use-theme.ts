@@ -11,5 +11,5 @@ export {
 	initializeTheme,
 	useTheme,
 	useThemeStore,
-} from "@/stores/theme.store";
+} from "@/state/theme.state";
 export type { ThemeMode } from "@/types/theme";

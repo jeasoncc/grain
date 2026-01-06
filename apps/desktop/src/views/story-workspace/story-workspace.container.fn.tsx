@@ -38,10 +38,10 @@ import { useUnifiedSave } from "@/hooks/use-unified-save";
 import { useWikiFiles } from "@/hooks/use-wiki";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
 import logger from "@/log";
-import { useFoldIconStyle } from "@/stores/editor-settings.store";
-import { useEditorTabsStore } from "@/stores/editor-tabs.store";
-import { useSelectionStore } from "@/stores/selection.store";
-import { useUIStore } from "@/stores/ui.store";
+import { useFoldIconStyle } from "@/state/editor-settings.state";
+import { useEditorTabsStore } from "@/state/editor-tabs.state";
+import { useSelectionStore } from "@/state/selection.state";
+import { useUIStore } from "@/state/ui.state";
 import type { StoryWorkspaceContainerProps } from "./story-workspace.types";
 
 export const StoryWorkspaceContainer = memo(

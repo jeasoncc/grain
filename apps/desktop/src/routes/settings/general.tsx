@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/hooks/use-settings";
-import { useUIStore } from "@/stores/ui.store";
+import { useUIStore } from "@/state/ui.state";
 import type { TabPosition } from "@/types/ui";
 
 export const Route = createFileRoute("/settings/general")({

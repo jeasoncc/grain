@@ -8,7 +8,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useState } from "react";
 import type { SearchResult, SearchResultType } from "@/fn/search";
 import { searchEngine } from "@/fn/search";
-import { useSidebarStore } from "@/stores/sidebar.store";
+import { useSidebarStore } from "@/state/sidebar.state";
 import { SearchPanelView } from "./search-panel.view.fn";
 
 export const SearchPanelContainer = memo(() => {

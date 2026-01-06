@@ -13,7 +13,7 @@ import {
 	useIsManualSaving,
 	useSaveStatus,
 	useSaveStore,
-} from "@/stores/save.store";
+} from "@/state/save.state";
 
 /**
  * Hook to get save status

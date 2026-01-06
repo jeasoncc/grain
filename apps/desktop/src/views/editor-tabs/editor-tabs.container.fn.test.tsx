@@ -9,12 +9,12 @@ import type { EditorTab } from "@/types/editor-tab";
 import { EditorTabsContainer } from "./editor-tabs.container.fn";
 
 // Mock the store
-vi.mock("@/stores/editor-tabs.store", () => ({
+vi.mock("@/state/editor-tabs.state", () => ({
 	useEditorTabsStore: vi.fn(),
 }));
 
 // Import after mocking
-import { useEditorTabsStore } from "@/stores/editor-tabs.store";
+import { useEditorTabsStore } from "@/state/editor-tabs.state";
 
 // 测试辅助函数：创建测试标签
 function createTestTab(overrides?: Partial<EditorTab>): EditorTab {

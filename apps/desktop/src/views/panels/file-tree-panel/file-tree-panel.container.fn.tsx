@@ -23,8 +23,8 @@ import { FileTree } from "@/components/file-tree";
 import { useConfirm } from "@/components/ui/confirm";
 import { getNodeById, setNodeCollapsed } from "@/db";
 import { useNodesByWorkspace } from "@/hooks/use-node";
-import { useEditorTabsStore } from "@/stores/editor-tabs.store";
-import { useSelectionStore } from "@/stores/selection.store";
+import { useEditorTabsStore } from "@/state/editor-tabs.state";
+import { useSelectionStore } from "@/state/selection.state";
 import type { NodeType } from "@/types/node";
 import type { FileTreePanelContainerProps } from "./file-tree-panel.types";
 

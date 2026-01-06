@@ -22,7 +22,7 @@ import { useUnifiedSave } from "@/hooks/use-unified-save";
 import { saveServiceManager } from "@/utils/save-service-manager.util";
 import { cn } from "@/utils/cn.util";
 import logger from "@/log";
-import { useEditorTabsStore } from "@/stores/editor-tabs.store";
+import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import { EXCALIDRAW_PERFORMANCE_CONFIG } from "./excalidraw-editor.config";
 import type {
 	ContainerSize,

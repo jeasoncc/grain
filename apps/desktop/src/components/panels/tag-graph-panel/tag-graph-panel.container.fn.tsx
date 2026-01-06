@@ -6,7 +6,7 @@
 
 import { memo } from "react";
 import { useTagGraph } from "@/hooks";
-import { useSelectionStore } from "@/stores/selection.store";
+import { useSelectionStore } from "@/state/selection.state";
 import { TagGraphPanelView } from "./tag-graph-panel.view.fn";
 
 /**

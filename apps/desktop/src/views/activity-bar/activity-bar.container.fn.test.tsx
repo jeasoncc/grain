@@ -134,7 +134,7 @@ vi.mock("@/actions/templated/create-diary.action", () => ({
 }));
 
 // Mock stores
-vi.mock("@/stores/selection.store", () => ({
+vi.mock("@/state/selection.state", () => ({
 	useSelectionStore: (selector: (state: any) => any) => {
 		const state = {
 			selectedWorkspaceId: mockSelectedWorkspaceId,
@@ -145,7 +145,7 @@ vi.mock("@/stores/selection.store", () => ({
 	},
 }));
 
-vi.mock("@/stores/sidebar.store", () => ({
+vi.mock("@/state/sidebar.state", () => ({
 	useSidebarStore: () => ({
 		activePanel: "files",
 		isOpen: true,
@@ -154,7 +154,7 @@ vi.mock("@/stores/sidebar.store", () => ({
 	}),
 }));
 
-vi.mock("@/stores/editor-tabs.store", () => ({
+vi.mock("@/state/editor-tabs.state", () => ({
 	useEditorTabsStore: (selector: (state: any) => any) => {
 		const state = {
 			openTab: mockOpenTab,

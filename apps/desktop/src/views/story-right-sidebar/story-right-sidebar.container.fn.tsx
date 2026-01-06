@@ -5,8 +5,8 @@
  */
 
 import { memo, useMemo } from "react";
-import { useEditorTabsStore } from "@/stores/editor-tabs.store";
-import { useUIStore } from "@/stores/ui.store";
+import { useEditorTabsStore } from "@/state/editor-tabs.state";
+import { useUIStore } from "@/state/ui.state";
 import type { StoryRightSidebarContainerProps } from "./story-right-sidebar.types";
 import { StoryRightSidebarView } from "./story-right-sidebar.view.fn";
 

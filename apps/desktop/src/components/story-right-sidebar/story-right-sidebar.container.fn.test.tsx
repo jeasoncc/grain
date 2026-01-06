@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { StoryRightSidebarContainer } from "./story-right-sidebar.container.fn";
 
 // Mock stores
-vi.mock("@/stores/ui.store", () => ({
+vi.mock("@/state/ui.state", () => ({
 	useUIStore: vi.fn((selector) => {
 		const state = {
 			tabPosition: "right-sidebar" as const,
@@ -16,7 +16,7 @@ vi.mock("@/stores/ui.store", () => ({
 	}),
 }));
 
-vi.mock("@/stores/editor-tabs.store", () => ({
+vi.mock("@/state/editor-tabs.state", () => ({
 	useEditorTabsStore: vi.fn((selector) => {
 		const state = {
 			tabs: [
@@ -68,7 +68,7 @@ describe("StoryRightSidebarContainer", () => {
 	});
 
 	it("should not render when tabPosition is top", async () => {
-		const { useUIStore } = await import("@/stores/ui.store");
+		const { useUIStore } = await import("@/state/ui.state");
 		const _originalMock = vi.mocked(useUIStore);
 
 		vi.mocked(useUIStore).mockImplementation((selector: any) => {

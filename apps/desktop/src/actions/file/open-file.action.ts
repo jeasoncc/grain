@@ -24,7 +24,7 @@ import type { AppError } from "@/utils/error.util";
 import { fileOperationQueue } from "@/utils/queue.util";
 import logger from "@/log";
 import * as contentRepo from "@/io/api/content.api";
-import { useEditorTabsStore } from "@/stores/editor-tabs.store";
+import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import type { TabType } from "@/types/editor-tab";
 
 /**

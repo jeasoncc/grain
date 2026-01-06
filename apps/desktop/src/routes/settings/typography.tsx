@@ -12,7 +12,7 @@ import { DebouncedSlider } from "@/components/ui/debounced-slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useFontSettings } from "@/stores/font.store";
+import { useFontSettings } from "@/state/font.state";
 import {
 	CARD_SIZE_OPTIONS,
 	DEFAULT_UI_FONT,

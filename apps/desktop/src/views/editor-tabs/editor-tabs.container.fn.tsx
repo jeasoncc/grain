@@ -4,7 +4,7 @@
  */
 
 import { memo, useCallback, useMemo } from "react";
-import { useEditorTabsStore } from "@/stores/editor-tabs.store";
+import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import type { EditorTabsContainerProps } from "./editor-tabs.types";
 import { EditorTabsView } from "./editor-tabs.view.fn";
 

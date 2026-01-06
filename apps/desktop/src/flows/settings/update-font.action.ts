@@ -14,7 +14,7 @@
 import * as E from "fp-ts/Either";
 import { type AppError, validationError } from "@/utils/error.util";
 import logger from "@/log";
-import { useFontStore } from "@/stores/font.store";
+import { useFontStore } from "@/state/font.state";
 import { FONT_CONSTRAINTS, type FontState } from "@/types/font";
 
 // ============================================================================

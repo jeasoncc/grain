@@ -18,9 +18,9 @@ import { useDrawingNodes } from "@/hooks/use-drawing";
 import { initializeTheme } from "@/hooks/use-theme";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
 import logger from "@/log";
-import { useEditorTabsStore } from "@/stores/editor-tabs.store";
-import { useSelectionStore } from "@/stores/selection.store";
-import { useUnifiedSidebarStore } from "@/stores/sidebar.store";
+import { useEditorTabsStore } from "@/state/editor-tabs.state";
+import { useSelectionStore } from "@/state/selection.state";
+import { useUnifiedSidebarStore } from "@/state/sidebar.state";
 import type { NodeInterface } from "@/types/node";
 
 function RootComponent() {

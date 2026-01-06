@@ -19,7 +19,7 @@ vi.mock("@/hooks/use-node", () => ({
 	useNodesByWorkspace: vi.fn(() => []),
 }));
 
-vi.mock("@/stores/editor-tabs.store", () => ({
+vi.mock("@/state/editor-tabs.state", () => ({
 	useEditorTabsStore: vi.fn((selector) => {
 		const store = {
 			openTab: vi.fn(),
@@ -31,7 +31,7 @@ vi.mock("@/stores/editor-tabs.store", () => ({
 	}),
 }));
 
-vi.mock("@/stores/selection.store", () => ({
+vi.mock("@/state/selection.state", () => ({
 	useSelectionStore: vi.fn((selector) => {
 		const store = {
 			selectedWorkspaceId: "workspace-1",

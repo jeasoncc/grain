@@ -25,7 +25,7 @@ const mockToggleMode = vi.fn();
 const mockSetEnableTransition = vi.fn();
 const mockGetState = vi.fn();
 
-vi.mock("@/stores/theme.store", () => ({
+vi.mock("@/state/theme.state", () => ({
 	useThemeStore: {
 		getState: () => mockGetState(),
 	},

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useDiagramSettings } from "@/stores/diagram.store";
+import { useDiagramSettings } from "@/state/diagram.state";
 
 export const Route = createFileRoute("/settings/diagrams")({
 	component: DiagramSettings,

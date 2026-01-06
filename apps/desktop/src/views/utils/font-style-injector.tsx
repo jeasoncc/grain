@@ -1,6 +1,6 @@
 // Font Style Injector - Apply font settings globally
 import { useEffect, useRef } from "react";
-import { useFontSettings } from "@/stores/font.store";
+import { useFontSettings } from "@/state/font.state";
 import { CARD_SIZE_OPTIONS, UI_SCALE_OPTIONS } from "@/types/font";
 
 export function FontStyleInjector() {

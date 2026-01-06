@@ -20,7 +20,7 @@ vi.mock("@/hooks/use-drawing", () => ({
 const mockSelectionStore = {
 	selectedWorkspaceId: "workspace-1" as string | null,
 };
-vi.mock("@/stores/selection.store", () => ({
+vi.mock("@/state/selection.state", () => ({
 	useSelectionStore: vi.fn((selector: any) => {
 		if (typeof selector === "function") {
 			return selector(mockSelectionStore);
@@ -37,7 +37,7 @@ const mockSidebarStore = {
 	restoreFromCollapse: vi.fn(),
 	setSelectedDrawingId: vi.fn(),
 };
-vi.mock("@/stores/sidebar.store", () => ({
+vi.mock("@/state/sidebar.state", () => ({
 	useSidebarStore: vi.fn((selector: any) => {
 		if (typeof selector === "function") {
 			return selector(mockSidebarStore);

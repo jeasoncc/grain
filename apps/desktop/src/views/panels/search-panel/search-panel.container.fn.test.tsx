@@ -17,7 +17,7 @@ vi.mock("@/fn/search", () => ({
 	},
 }));
 
-vi.mock("@/stores/sidebar.store", () => ({
+vi.mock("@/state/sidebar.state", () => ({
 	useSidebarStore: vi.fn((selector) => {
 		const state = {
 			searchState: {
@@ -39,7 +39,7 @@ describe("SearchPanelContainer", () => {
 	});
 
 	it("should render SearchPanelView", async () => {
-		const { useSidebarStore } = await import("@/stores/sidebar.store");
+		const { useSidebarStore } = await import("@/state/sidebar.state");
 		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
 			const state = {
 				searchState: {
@@ -59,7 +59,7 @@ describe("SearchPanelContainer", () => {
 	});
 
 	it("should pass search state to view", async () => {
-		const { useSidebarStore } = await import("@/stores/sidebar.store");
+		const { useSidebarStore } = await import("@/state/sidebar.state");
 		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
 			const state = {
 				searchState: {
@@ -96,7 +96,7 @@ describe("SearchPanelContainer", () => {
 		);
 		vi.mocked(searchEngine.simpleSearch).mockImplementation(mockSearch);
 
-		const { useSidebarStore } = await import("@/stores/sidebar.store");
+		const { useSidebarStore } = await import("@/state/sidebar.state");
 		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
 			const state = {
 				searchState: {
@@ -129,7 +129,7 @@ describe("SearchPanelContainer", () => {
 		const mockSearch = vi.fn(() => Promise.resolve([]));
 		vi.mocked(searchEngine.simpleSearch).mockImplementation(mockSearch);
 
-		const { useSidebarStore } = await import("@/stores/sidebar.store");
+		const { useSidebarStore } = await import("@/state/sidebar.state");
 		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
 			const state = {
 				searchState: {
@@ -163,7 +163,7 @@ describe("SearchPanelContainer", () => {
 			.spyOn(console, "error")
 			.mockImplementation(() => {});
 
-		const { useSidebarStore } = await import("@/stores/sidebar.store");
+		const { useSidebarStore } = await import("@/state/sidebar.state");
 		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
 			const state = {
 				searchState: {
@@ -194,7 +194,7 @@ describe("SearchPanelContainer", () => {
 	});
 
 	it("should connect to sidebar store actions", async () => {
-		const { useSidebarStore } = await import("@/stores/sidebar.store");
+		const { useSidebarStore } = await import("@/state/sidebar.state");
 		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
 			const state = {
 				searchState: {

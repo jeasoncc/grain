@@ -37,8 +37,8 @@ import { useNodesByWorkspace } from "@/hooks/use-node";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
 import type { AppError } from "@/utils/error.util";
 import logger from "@/log";
-import { useSelectionStore } from "@/stores/selection.store";
-import { useSidebarStore } from "@/stores/sidebar.store";
+import { useSelectionStore } from "@/state/selection.state";
+import { useSidebarStore } from "@/state/sidebar.state";
 import type { TabType } from "@/types/editor-tab";
 import type { WorkspaceInterface } from "@/types/workspace";
 

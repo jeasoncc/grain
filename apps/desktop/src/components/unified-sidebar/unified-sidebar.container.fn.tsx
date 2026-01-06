@@ -7,8 +7,8 @@
 import { memo, useCallback } from "react";
 import { useDrawingNodes } from "@/hooks/use-drawing";
 import logger from "@/log";
-import { useSelectionStore } from "@/stores/selection.store";
-import { useSidebarStore } from "@/stores/sidebar.store";
+import { useSelectionStore } from "@/state/selection.state";
+import { useSidebarStore } from "@/state/sidebar.state";
 import type { NodeInterface } from "@/types/node";
 import { UnifiedSidebarView } from "./unified-sidebar.view.fn";
 

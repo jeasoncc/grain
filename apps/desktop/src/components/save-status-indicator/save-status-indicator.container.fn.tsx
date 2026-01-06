@@ -8,8 +8,8 @@
 
 import { memo, useSyncExternalStore } from "react";
 import { saveServiceManager } from "@/utils/save-service-manager.util";
-import { useEditorTabsStore } from "@/stores/editor-tabs.store";
-import { useSaveStore } from "@/stores/save.store";
+import { useEditorTabsStore } from "@/state/editor-tabs.state";
+import { useSaveStore } from "@/state/save.state";
 import type { SaveStatusIndicatorViewProps } from "./save-status-indicator.types";
 import { SaveStatusIndicatorView } from "./save-status-indicator.view.fn";
 

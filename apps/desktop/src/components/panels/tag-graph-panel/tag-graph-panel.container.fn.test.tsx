@@ -17,7 +17,7 @@ vi.mock("@/hooks", () => ({
 	})),
 }));
 
-vi.mock("@/stores/selection.store", () => ({
+vi.mock("@/state/selection.state", () => ({
 	useSelectionStore: vi.fn((selector) =>
 		selector({ selectedWorkspaceId: "workspace-1" }),
 	),
@@ -32,7 +32,7 @@ describe("TagGraphPanelContainer", () => {
 	});
 
 	it("should handle null workspace", async () => {
-		const { useSelectionStore } = await import("@/stores/selection.store");
+		const { useSelectionStore } = await import("@/state/selection.state");
 		vi.mocked(useSelectionStore).mockImplementation((selector: any) =>
 			selector({ selectedWorkspaceId: null }),
 		);
@@ -45,7 +45,7 @@ describe("TagGraphPanelContainer", () => {
 
 	it("should handle empty graph data", async () => {
 		const { useTagGraph } = await import("@/hooks");
-		const { useSelectionStore } = await import("@/stores/selection.store");
+		const { useSelectionStore } = await import("@/state/selection.state");
 
 		// Reset to valid workspace but empty data
 		vi.mocked(useSelectionStore).mockImplementation((selector: any) =>

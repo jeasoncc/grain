@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getIconThemeOrDefault } from "@/fn/icon-theme";
-import { useIconThemeStore } from "@/stores/icon-theme.store";
+import { useIconThemeStore } from "@/state/icon-theme.state";
 import type { IconTheme } from "@/types/icon-theme";
 
 /**

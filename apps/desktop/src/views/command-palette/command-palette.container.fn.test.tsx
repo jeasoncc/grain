@@ -20,7 +20,7 @@ vi.mock("@/components/export-dialog-manager", () => ({
 	},
 }));
 
-vi.mock("@/stores/editor-tabs.store", () => ({
+vi.mock("@/state/editor-tabs.state", () => ({
 	useEditorTabsStore: vi.fn((selector) => {
 		const store = {
 			openTab: vi.fn(),

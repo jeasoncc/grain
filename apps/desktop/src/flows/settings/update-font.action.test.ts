@@ -56,7 +56,7 @@ const mockFontStore = {
 	firstLineIndent: 0,
 };
 
-vi.mock("@/stores/font.store", () => ({
+vi.mock("@/state/font.state", () => ({
 	useFontStore: {
 		getState: () => mockFontStore,
 	},

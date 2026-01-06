@@ -78,7 +78,7 @@ vi.mock("@/hooks/use-unified-save", () => ({
 }));
 
 // Mock stores
-vi.mock("@/stores/selection.store", () => ({
+vi.mock("@/state/selection.state", () => ({
 	useSelectionStore: vi.fn((selector) => {
 		const state = {
 			selectedWorkspaceId: "ws1",
@@ -88,7 +88,7 @@ vi.mock("@/stores/selection.store", () => ({
 	}),
 }));
 
-vi.mock("@/stores/ui.store", () => ({
+vi.mock("@/state/ui.state", () => ({
 	useUIStore: vi.fn((selector) => {
 		const state = {
 			rightSidebarOpen: false,
@@ -99,7 +99,7 @@ vi.mock("@/stores/ui.store", () => ({
 	}),
 }));
 
-vi.mock("@/stores/editor-tabs.store", () => ({
+vi.mock("@/state/editor-tabs.state", () => ({
 	useEditorTabsStore: vi.fn((selector) => {
 		const state = {
 			tabs: [],
@@ -113,7 +113,7 @@ vi.mock("@/stores/editor-tabs.store", () => ({
 	}),
 }));
 
-vi.mock("@/stores/save.store", () => ({
+vi.mock("@/state/save.state", () => ({
 	useSaveStore: vi.fn(() => ({
 		status: "saved",
 		lastSaveTime: null,
