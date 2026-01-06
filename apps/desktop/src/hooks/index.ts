@@ -133,3 +133,17 @@ export { useUpdateChecker } from "./use-update-checker";
 export { useWikiFiles } from "./use-wiki";
 // Wiki Hover Preview Hook
 export { useWikiHoverPreview } from "./use-wiki-hover-preview";
+
+// ============================================================================
+// Query Keys (从 queries/ 合并)
+// ============================================================================
+
+export type {
+	AttachmentQueryKey,
+	ContentQueryKey,
+	NodeQueryKey,
+	TagQueryKey,
+	UserQueryKey,
+	WorkspaceQueryKey,
+} from "./query-keys";
+export { queryKeys } from "./query-keys";

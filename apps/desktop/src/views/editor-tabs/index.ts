@@ -1,13 +1,6 @@
 /**
- * EditorTabs 组件统一导出
+ * @file fn/editor-tab/index.ts
+ * @description Editor Tab 纯函数模块导出
  */
 
-export {
-	EditorTabsContainer,
-	EditorTabsContainer as EditorTabs,
-} from "./editor-tabs.container.fn";
-export type {
-	EditorTabsContainerProps,
-	EditorTabsViewProps,
-} from "./editor-tabs.types";
-export { EditorTabsView } from "./editor-tabs.view.fn";
+export * from "./editor-tab.fn";

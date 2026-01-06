@@ -1,0 +1,54 @@
+/**
+ * @file fn/export/export.download.fn.ts
+ * @description 文件下载纯函数
+ *
+ * 功能说明：
+ * - 触发文件下载
+ * - 触发 Blob 下载
+ *
+ * 注意：这些函数有副作用（DOM 操作），但被封装为独立的工具函数
+ */
+
+// ==============================
+// Download Functions
+// ==============================
+
+/**
+ * 触发文件下载
+ *
+ * @param filename - 下载的文件名
+ * @param text - 文件内容
+ * @param mimeType - MIME 类型，默认为 JSON
+ */
+export function triggerDownload(
+	filename: string,
+	text: string,
+	mimeType = "application/json;charset=utf-8",
+): void {
+	const blob = new Blob([text], { type: mimeType });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = filename;
+	document.body.appendChild(a);
+	a.click();
+	a.remove();
+	URL.revokeObjectURL(url);
+}
+
+/**
+ * 触发 Blob 文件下载
+ *
+ * @param filename - 下载的文件名
+ * @param blob - Blob 对象
+ */
+export function triggerBlobDownload(filename: string, blob: Blob): void {
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = filename;
+	document.body.appendChild(a);
+	a.click();
+	a.remove();
+	URL.revokeObjectURL(url);
+}

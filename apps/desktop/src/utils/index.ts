@@ -22,3 +22,9 @@ export * from "./themes.util";
 
 // 队列工具
 export * from "./queue.util";
+
+// 日期工具
+export * from "./date.util";
+
+// 键盘快捷键工具
+export * from "./keyboard.util";

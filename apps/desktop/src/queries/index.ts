@@ -1,35 +1,21 @@
 /**
- * TanStack Query Hooks - 数据查询层
+ * @file queries/index.ts
+ * @deprecated 此目录已合并到 hooks/，请使用新路径：
  *
- * 使用 TanStack Query 包装 Repository 层的 TaskEither。
- * 这里是唯一允许「解包」TaskEither 的地方。
- *
- * 架构位置：
- * ```
- * Components (读取数据)
- *       │
- *       ▼
- * Query Hooks ← 你在这里
- *       │
- *       ▼
- * Repository Layer
- * ```
- *
- * 设计原则：
- * - 读取操作使用 useQuery（本文件）
- * - 写入操作使用纯 TaskEither 管道（在 actions 中）
+ * - queries/*.queries.ts → hooks/use-*.ts
+ * - queries/query-keys.ts → hooks/query-keys.ts
  *
  * 使用示例：
  * ```tsx
- * import { useNodesByWorkspace, useWorkspaces } from '@/queries';
+ * // 旧方式（已废弃）
+ * import { useWorkspaces, queryKeys } from '@/queries';
  *
- * const MyComponent = () => {
- *   const { data: workspaces } = useWorkspaces();
- *   const { data: nodes } = useNodesByWorkspace(workspaceId);
- *   // ...
- * };
+ * // 新方式
+ * import { useAllWorkspaces, queryKeys } from '@/hooks';
  * ```
  */
+
+// 兼容性重导出（将在未来版本移除）
 
 // Attachment Queries
 export {
@@ -41,8 +27,10 @@ export {
 	useAudioFilesByProject,
 	useImagesByProject,
 } from "./attachment.queries";
+
 // Content Queries
 export { useContent, useContentVersion } from "./content.queries";
+
 // Node Queries
 export {
 	useChildNodes,
@@ -53,6 +41,8 @@ export {
 	useNodesByWorkspace,
 	useRootNodes,
 } from "./node.queries";
+
+// Query Keys
 export type {
 	AttachmentQueryKey,
 	ContentQueryKey,
@@ -61,8 +51,8 @@ export type {
 	UserQueryKey,
 	WorkspaceQueryKey,
 } from "./query-keys";
-// Query Keys
 export { queryKeys } from "./query-keys";
+
 // Tag Queries
 export {
 	useNodesByTag,
@@ -73,6 +63,7 @@ export {
 	useTagsByWorkspace,
 	useTopTags,
 } from "./tag.queries";
+
 // User Queries
 export {
 	useCurrentUser as useCurrentUserQuery,
@@ -82,5 +73,6 @@ export {
 	useUsers as useUsersQuery,
 	useUsersByPlan as useUsersByPlanQuery,
 } from "./user.queries";
+
 // Workspace Queries
 export { useWorkspace, useWorkspaces } from "./workspace.queries";
