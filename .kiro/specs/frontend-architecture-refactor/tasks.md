@@ -49,8 +49,8 @@
 **Requirements**: REQ-2, REQ-4
 
 ### Task 2.3: 创建 io/storage/
-- [ ] 创建 `io/storage/settings.storage.ts`（从现有代码提取）
-- [ ] 创建 `io/storage/index.ts`
+- [x] 创建 `io/storage/settings.storage.ts`（从现有代码提取）
+- [x] 创建 `io/storage/index.ts`
 
 **Requirements**: REQ-1, REQ-2
 
@@ -206,7 +206,7 @@
 ### Task 6.1: 删除旧目录
 - [ ] 删除 `lib/` 目录（确认无引用后）
 - [ ] 删除 `db/` 目录（确认无引用后）
-- [-] 删除 `repo/` 目录（确认无引用后）
+- [x] 删除 `repo/` 目录（确认无引用后）
 - [ ] 删除 `stores/` 目录（确认无引用后）
 - [ ] 删除 `actions/` 目录（确认无引用后）
 - [ ] 删除 `queries/` 目录（确认无引用后）
