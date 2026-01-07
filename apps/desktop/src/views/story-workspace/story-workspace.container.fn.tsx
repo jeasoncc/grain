@@ -39,7 +39,6 @@ import {
 } from "@/pipes/word-count";
 import { useSettings } from "@/hooks/use-settings";
 import { useUnifiedSave } from "@/hooks/use-unified-save";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWikiFiles } from "@/hooks/use-wiki";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
 import { useFoldIconStyle } from "@/state/editor-settings.state";
