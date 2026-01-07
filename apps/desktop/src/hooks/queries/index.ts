@@ -1,21 +1,17 @@
 /**
- * @file queries/index.ts
- * @deprecated 此目录已合并到 hooks/，请使用新路径：
+ * @file hooks/queries/index.ts
+ * @description TanStack Query hooks - 数据获取层
  *
- * - queries/*.queries.ts → hooks/use-*.ts
- * - queries/query-keys.ts → hooks/query-keys.ts
+ * 此目录包含所有 TanStack Query hooks，用于从 Rust 后端获取数据。
+ * 这是架构中唯一允许 hooks 直接访问 io/api 的地方（TanStack Query 特例）。
  *
  * 使用示例：
  * ```tsx
- * // 旧方式（已废弃）
- * import { useWorkspaces, queryKeys } from '@/queries';
- *
- * // 新方式
- * import { useAllWorkspaces, queryKeys } from '@/hooks';
+ * import { useWorkspaces, queryKeys } from '@/hooks/queries';
+ * // 或者
+ * import { useAllWorkspaces } from '@/hooks';
  * ```
  */
-
-// 兼容性重导出（将在未来版本移除）
 
 // Attachment Queries
 export {

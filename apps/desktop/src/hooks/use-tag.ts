@@ -16,7 +16,7 @@ import {
 	useTagSearch as useTagSearchQuery,
 	useTagsByWorkspace as useTagsByWorkspaceQuery,
 	useTopTags as useTopTagsQuery,
-} from "@/queries";
+} from '@/hooks/queries";
 import type { TagGraphData } from "@/types/codec";
 import type { TagInterface } from "@/types/tag";
 
