@@ -54,7 +54,7 @@ export const clearLogs = (): TE.TaskEither<AppError, void> =>
 			logger.info("[ClearData] 清除日志数据库...");
 
 			// 动态导入日志数据库，避免循环依赖
-			const { logDatabase } = await import("@/db/log-db");
+			const { logDatabase } = await import("@/io/db/log-db");
 
 			// 清除日志表
 			await logDatabase.logs.clear();

@@ -26,11 +26,11 @@ function buildNodePath(
 	nodeMap: Map<string, NodeInterface>,
 ): string {
 	const parts: string[] = [node.title];
-	let current = node.parentId ? nodeMap.get(node.parentId) : undefined;
+	let current = node.parent ? nodeMap.get(node.parent) : undefined;
 
 	while (current) {
 		parts.unshift(current.title);
-		current = current.parentId ? nodeMap.get(current.parentId) : undefined;
+		current = current.parent ? nodeMap.get(current.parent) : undefined;
 	}
 
 	return parts.join("/");

@@ -136,7 +136,7 @@ export const hasDexieData = (): TE.TaskEither<AppError, boolean> =>
 	TE.tryCatch(
 		async () => {
 			// 动态导入 legacy database
-			const { legacyDatabase } = await import("@/db/legacy-database");
+			const { legacyDatabase } = await import("@/io/db/legacy-database");
 
 			const [workspaceCount, nodeCount, userCount] = await Promise.all([
 				legacyDatabase.workspaces.count(),
@@ -188,7 +188,7 @@ export const readDexieData = (): TE.TaskEither<AppError, DexieDataSnapshot> =>
 		async () => {
 			logger.info("[Migration] 读取 Dexie 数据...");
 
-			const { legacyDatabase } = await import("@/db/legacy-database");
+			const { legacyDatabase } = await import("@/io/db/legacy-database");
 
 			const [workspaces, nodes, contents, users] = await Promise.all([
 				legacyDatabase.workspaces.toArray(),
@@ -537,7 +537,7 @@ export const clearDexieData = (): TE.TaskEither<AppError, void> =>
 		async () => {
 			logger.info("[Migration] 清理 Dexie 数据...");
 
-			const { legacyDatabase } = await import("@/db/legacy-database");
+			const { legacyDatabase } = await import("@/io/db/legacy-database");
 
 			await legacyDatabase.transaction(
 				"rw",

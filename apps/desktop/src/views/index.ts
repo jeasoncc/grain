@@ -59,8 +59,8 @@ export * from "./story-workspace";
 // Theme Selector
 export * from "./theme-selector";
 
-// UI Components
-export * from "./ui";
+// UI Components - Not re-exported to avoid naming conflicts
+// Import directly from @/views/ui/* when needed
 
 // Unified Sidebar
 export * from "./unified-sidebar";
