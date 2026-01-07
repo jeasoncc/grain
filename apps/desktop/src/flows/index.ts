@@ -199,3 +199,15 @@ export * as updaterFlow from "./updater";
 // ==============================
 
 export * as migrationFlow from "./migration";
+
+// ==============================
+// Search Flows (搜索引擎)
+// ==============================
+
+export {
+	SearchEngine,
+	type SearchOptions,
+	type SearchResult,
+	type SearchResultType,
+	searchEngine,
+} from "./search";

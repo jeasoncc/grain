@@ -8,14 +8,14 @@
  * @requirements 1.1, 1.2, 3.1, 3.2, 3.3, 4.1, 6.2
  */
 
-// 搜索引擎
+// 搜索引擎（实际实现在 flows/search/，此处保留导出用于向后兼容）
 export {
 	SearchEngine,
 	type SearchOptions,
 	type SearchResult,
 	type SearchResultType,
 	searchEngine,
-} from "./search.engine.fn";
+} from "@/flows/search/search-engine.flow";
 // 过滤相关函数
 export {
 	applySearchFilters,

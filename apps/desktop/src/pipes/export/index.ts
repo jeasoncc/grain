@@ -67,6 +67,8 @@ export {
 } from "./export.orgmode.fn";
 
 // Path 管理（路径选择、文件保存、设置管理）
+// 注意：实际实现已移动到 flows/export/export-path.flow.ts
+// 此处保留导出用于向后兼容
 export {
 	clearDefaultExportPath,
 	type ExportPathService,
@@ -85,7 +87,7 @@ export {
 	selectExportDirectory,
 	setDefaultExportPath,
 	setLastUsedPath,
-} from "./export.path.fn";
+} from "@/flows/export/export-path.flow";
 
 // ==============================
 // TODO: 全局导出接口（暂不实现）

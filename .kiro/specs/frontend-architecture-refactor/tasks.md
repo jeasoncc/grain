@@ -395,6 +395,8 @@ Container 组件需要访问 state 和调用 flows，这是 React 应用的常�
 | `hooks/use-node.ts` | ❌ 违规：依赖 `@/queries/`，hooks/ 只能依赖 flows/, state/, types/ | 将 queries/ 合并到 hooks/ 或 flows/ | ⏳ |
 | `hooks/use-workspace.ts` | ❌ 违规：依赖 `@/queries/`，hooks/ 只能依赖 flows/, state/, types/ | 将 queries/ 合并到 hooks/ 或 flows/ | ⏳ |
 | `log/index.ts` | ⚠️ 位置错误：log/ 有 IO（写入 IndexedDB），应在 io/log/ | 移动到 `io/log/` | ⏳ |
+| `pipes/export/export.path.fn.ts` | ❌ 违规：依赖 `@/log` 且有 IO（invoke、localStorage） | 移动到 `flows/export/` | ✅ 已修复 |
+| `pipes/search/search.engine.fn.ts` | ❌ 违规：依赖 `@/log` 和 `@/io/api` | 移动到 `flows/search/` | ✅ 已修复 |
 
 ### 层级审核状态
 
@@ -426,6 +428,8 @@ Container 组件需要访问 state 和调用 flows，这是 React 应用的常�
 | `views/editor-tabs/index.ts` | 重新导出 pipes/editor-tab + 组件 | 2026-01-07 |
 | `views/writing/index.ts` | 重新导出 pipes/writing | 2026-01-07 |
 | `views/theme/index.ts` | 重新导出 pipes/theme | 2026-01-07 |
+| `pipes/export/export.path.fn.ts` | 移动到 `flows/export/export-path.flow.ts` | 2026-01-07 |
+| `pipes/search/search.engine.fn.ts` | 移动到 `flows/search/search-engine.flow.ts` | 2026-01-07 |
 
 ### 导入路径迁移 ✅ 已完成
 

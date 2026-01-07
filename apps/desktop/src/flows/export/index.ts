@@ -2,6 +2,28 @@
  * Export 相关的业务操作
  */
 
+// Path 管理（路径选择、文件保存、设置管理）
+export {
+	clearDefaultExportPath,
+	type ExportPathService,
+	type ExportResult as PathExportResult,
+	type ExportSettings,
+	type ExportWithPathOptions,
+	exportPathService,
+	exportSettingsSchema,
+	exportWithPathSelection,
+	getDefaultExportPath,
+	getDownloadsDirectory,
+	getExportSettings,
+	getLastUsedPath,
+	isTauriEnvironment,
+	saveExportSettings,
+	saveToPath,
+	selectExportDirectory,
+	setDefaultExportPath,
+	setLastUsedPath,
+} from "./export-path.flow";
+
 // 全量导出
 export {
 	exportAll,
