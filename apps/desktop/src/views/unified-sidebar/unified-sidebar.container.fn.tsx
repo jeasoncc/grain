@@ -6,7 +6,6 @@
 
 import { memo, useCallback } from "react";
 import { useDrawingNodes } from "@/hooks/use-drawing";
-import logger from "@/log";
 import { useSelectionStore } from "@/state/selection.state";
 import { useSidebarStore } from "@/state/sidebar.state";
 import type { NodeInterface } from "@/types/node";
@@ -39,7 +38,7 @@ export const UnifiedSidebarContainer = memo(() => {
 	// Handle drawing selection - update store and navigate to workspace
 	const handleSelectDrawing = useCallback(
 		(drawing: NodeInterface) => {
-			logger.info("[UnifiedSidebar] 选择绘图", { drawingId: drawing.id });
+			console.log("[UnifiedSidebar] 选择绘图", { drawingId: drawing.id });
 			setSelectedDrawingId(drawing.id);
 			// 绘图节点通过 selection store 选中，在主编辑器区域打开
 			// 不需要导航，StoryWorkspace 会根据选中的节点渲染对应的编辑器
@@ -49,7 +48,7 @@ export const UnifiedSidebarContainer = memo(() => {
 
 	// Handle drawing creation
 	const handleCreateDrawing = useCallback(() => {
-		logger.info("[UnifiedSidebar] 创建新绘图");
+		console.log("[UnifiedSidebar] 创建新绘图");
 		// The DrawingsPanel handles the actual creation logic
 		// This is just a pass-through callback
 	}, []);
@@ -57,7 +56,7 @@ export const UnifiedSidebarContainer = memo(() => {
 	// Handle drawing deletion
 	const handleDeleteDrawing = useCallback(
 		(drawingId: string, drawingName: string) => {
-			logger.info("[UnifiedSidebar] 删除绘图", { drawingId, drawingName });
+			console.log("[UnifiedSidebar] 删除绘图", { drawingId, drawingName });
 			// The DrawingsPanel handles the actual deletion logic
 			// This is just a pass-through callback
 		},
@@ -66,7 +65,7 @@ export const UnifiedSidebarContainer = memo(() => {
 
 	// Handle restore from collapse
 	const handleRestoreFromCollapse = useCallback(() => {
-		logger.info("[UnifiedSidebar] 恢复侧边栏");
+		console.log("[UnifiedSidebar] 恢复侧边栏");
 		restoreFromCollapse();
 	}, [restoreFromCollapse]);
 

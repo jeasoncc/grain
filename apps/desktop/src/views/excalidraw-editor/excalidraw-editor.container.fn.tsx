@@ -21,7 +21,6 @@ import { useTheme } from "@/hooks/use-theme";
 import { useUnifiedSave } from "@/hooks/use-unified-save";
 import { saveServiceManager } from "@/flows/save";
 import { cn } from "@/utils/cn.util";
-import logger from "@/log";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import { EXCALIDRAW_PERFORMANCE_CONFIG } from "./excalidraw-editor.config";
 import type {
@@ -73,7 +72,7 @@ function parseExcalidrawContent(
 			files: parsed.files || {},
 		};
 	} catch (error) {
-		logger.error("[ExcalidrawEditor] 解析内容失败:", error);
+		console.error("[ExcalidrawEditor] 解析内容失败:", error);
 		return EMPTY_EXCALIDRAW_DATA;
 	}
 }
@@ -140,10 +139,10 @@ export const ExcalidrawEditorContainer = memo(
 			tabId: activeTabId ?? undefined,
 			registerShortcut: false, // Excalidraw 有自己的快捷键处理
 			onSaveSuccess: () => {
-				logger.success("[ExcalidrawEditor] 内容保存成功");
+				console.log("[ExcalidrawEditor] 内容保存成功");
 			},
 			onSaveError: (error) => {
-				logger.error("[ExcalidrawEditor] 保存失败:", error);
+				console.error("[ExcalidrawEditor] 保存失败:", error);
 			},
 		});
 
@@ -164,7 +163,7 @@ export const ExcalidrawEditorContainer = memo(
 
 			// 如果 nodeId 变化，重置状态
 			if (nodeIdChanged) {
-				logger.info("[ExcalidrawEditor] nodeId 变化，重置状态:", {
+				console.log("[ExcalidrawEditor] nodeId 变化，重置状态:", {
 					from: prevNodeIdRef.current,
 					to: nodeId,
 				});
@@ -180,7 +179,7 @@ export const ExcalidrawEditorContainer = memo(
 			// 检查是否有待保存的内容（单例模式下，model 可能已存在）
 			const pendingContent = saveServiceManager.getPendingContent(nodeId);
 			if (pendingContent !== null && !isInitializedRef.current) {
-				logger.info("[ExcalidrawEditor] 使用待保存的内容");
+				console.log("[ExcalidrawEditor] 使用待保存的内容");
 				const parsed = parseExcalidrawContent(pendingContent);
 				setInitialData(parsed);
 				isInitializedRef.current = true;
@@ -198,7 +197,7 @@ export const ExcalidrawEditorContainer = memo(
 					setInitialContent(content.content);
 				}
 
-				logger.info("[ExcalidrawEditor] 初始化数据:", parsed);
+				console.log("[ExcalidrawEditor] 初始化数据:", parsed);
 			}
 		}, [content, nodeId, setInitialContent]);
 
@@ -240,7 +239,7 @@ export const ExcalidrawEditorContainer = memo(
 						resizeTimeout = setTimeout(() => {
 							setContainerSize({ width, height });
 							sizeStableRef.current = true;
-							logger.info("[ExcalidrawEditor] 容器尺寸:", { width, height });
+							console.log("[ExcalidrawEditor] 容器尺寸:", { width, height });
 						}, RESIZE_DEBOUNCE_DELAY);
 					}
 				}
@@ -289,7 +288,7 @@ export const ExcalidrawEditorContainer = memo(
 		 */
 		useEffect(() => {
 			return () => {
-				logger.info("[ExcalidrawEditor] 组件卸载，清理本地资源");
+				console.log("[ExcalidrawEditor] 组件卸载，清理本地资源");
 
 				// 清理本地 refs
 				currentDataRef.current = null;

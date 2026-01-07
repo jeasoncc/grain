@@ -39,9 +39,9 @@ import {
 } from "@/pipes/word-count";
 import { useSettings } from "@/hooks/use-settings";
 import { useUnifiedSave } from "@/hooks/use-unified-save";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWikiFiles } from "@/hooks/use-wiki";
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
-import logger from "@/log";
 import { useFoldIconStyle } from "@/state/editor-settings.state";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import { useSelectionStore } from "@/state/selection.state";
@@ -103,10 +103,10 @@ export const StoryWorkspaceContainer = memo(
 			contentType: "lexical",
 			tabId: activeTabId ?? undefined,
 			onSaveSuccess: () => {
-				logger.success("[StoryWorkspace] 内容保存成功");
+				console.log("[StoryWorkspace] 内容保存成功");
 			},
 			onSaveError: (error) => {
-				logger.error("[StoryWorkspace] 保存失败:", error);
+				console.error("[StoryWorkspace] 保存失败:", error);
 			},
 		});
 

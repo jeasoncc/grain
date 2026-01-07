@@ -7,7 +7,6 @@
  */
 
 import { memo, useEffect, useState } from "react";
-import logger from "@/log";
 
 // 类型定义
 type DevtoolsModules = {
@@ -40,7 +39,7 @@ export const DevtoolsWrapperContainer = memo(
 				})
 				.catch((error) => {
 					// 静默失败（开发环境下可能缺少依赖）
-					logger.warn("[Devtools] 加载失败:", error);
+					console.warn("[Devtools] 加载失败:", error);
 				});
 		}, []);
 

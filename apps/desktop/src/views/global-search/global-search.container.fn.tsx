@@ -7,7 +7,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useState } from "react";
 import { searchEngine } from "@/flows/search";
-import logger from "@/log";
 import type {
 	GlobalSearchContainerProps,
 	SearchResult,
@@ -40,17 +39,17 @@ export const GlobalSearchContainer = memo(
 
 			setLoading(true);
 			try {
-				logger.start("[GlobalSearch] 开始搜索", { query: searchQuery });
+				console.log("[GlobalSearch] 开始搜索", { query: searchQuery });
 				const searchResults = await searchEngine.simpleSearch(searchQuery, {
 					limit: 30,
 				});
 				setResults(searchResults);
 				setSelectedIndex(0);
-				logger.success("[GlobalSearch] 搜索完成", {
+				console.log("[GlobalSearch] 搜索完成", {
 					count: searchResults.length,
 				});
 			} catch (error) {
-				logger.error("[GlobalSearch] 搜索失败", error);
+				console.error("[GlobalSearch] 搜索失败", error);
 				setResults([]);
 			} finally {
 				setLoading(false);
@@ -74,7 +73,7 @@ export const GlobalSearchContainer = memo(
 		// 处理结果选择
 		const handleSelectResult = useCallback(
 			(result: SearchResult) => {
-				logger.info("[GlobalSearch] 选择结果", {
+				console.log("[GlobalSearch] 选择结果", {
 					id: result.id,
 					type: result.type,
 				});

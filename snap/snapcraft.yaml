@@ -1,6 +1,6 @@
 name: grain-editor
 base: core22
-version: '0.1.308'
+version: '0.1.309'
 summary: Modern writing tool for long-form content and knowledge management
 description: |
   Grain (小麦) is a professional writing application designed for long-form 

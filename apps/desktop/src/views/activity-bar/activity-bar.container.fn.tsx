@@ -36,7 +36,6 @@ import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useNodesByWorkspace } from "@/hooks/use-node";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
 import type { AppError } from "@/utils/error.util";
-import logger from "@/log";
 import { useSelectionStore } from "@/state/selection.state";
 import { useSidebarStore } from "@/state/sidebar.state";
 import type { TabType } from "@/types/editor-tab";
@@ -133,7 +132,7 @@ export function ActivityBarContainer(): React.ReactElement {
 						setActivePanel("files");
 					}
 				} catch (error) {
-					logger.error("[ActivityBar] 创建默认工作区失败:", error);
+					console.error("[ActivityBar] 创建默认工作区失败:", error);
 				}
 				return;
 			}
@@ -275,7 +274,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				TE.fold(
 					// 失败分支
 					(error) => {
-						logger.error("[ActivityBar] 创建模板失败:", error);
+						console.error("[ActivityBar] 创建模板失败:", error);
 						toast.error(errorMessage);
 						return TE.of(undefined as void);
 					},

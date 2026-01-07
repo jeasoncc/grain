@@ -15,9 +15,8 @@ import {
 	getLocalBackups,
 	restoreBackup,
 	restoreLocalBackup,
-} from "@/db/backup.db.fn";
-import { clearAllData, getStorageStats } from "@/db/clear-data.db.fn";
-import logger from "@/log";
+} from "@/flows/backup";
+import { clearAllData, getStorageStats } from "@/flows/backup";
 import type { DatabaseStats, LocalBackupRecord } from "@/types/backup";
 import type { ClearDataOptions, StorageStats } from "@/types/storage";
 import { BackupManagerView } from "./backup-manager.view.fn";
@@ -51,7 +50,7 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 				setStorageStats(storageResult.right);
 			}
 		} catch (error) {
-			logger.error("[BackupManager] 加载统计信息失败:", error);
+			console.error("[BackupManager] 加载统计信息失败:", error);
 		}
 	}, []);
 
@@ -86,7 +85,7 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 			}
 		} catch (error) {
 			toast.error("导出失败");
-			logger.error("[BackupManager] 导出 JSON 失败:", error);
+			console.error("[BackupManager] 导出 JSON 失败:", error);
 		} finally {
 			setLoading(false);
 		}
@@ -103,7 +102,7 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 			}
 		} catch (error) {
 			toast.error("导出失败");
-			logger.error("[BackupManager] 导出 ZIP 失败:", error);
+			console.error("[BackupManager] 导出 ZIP 失败:", error);
 		} finally {
 			setLoading(false);
 		}
@@ -139,7 +138,7 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 				}
 			} catch (error) {
 				toast.error("恢复失败");
-				logger.error("[BackupManager] 恢复备份失败:", error);
+				console.error("[BackupManager] 恢复备份失败:", error);
 			} finally {
 				setLoading(false);
 			}
@@ -183,7 +182,7 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 				}
 			} catch (error) {
 				toast.error("恢复失败");
-				logger.error("[BackupManager] 恢复本地备份失败:", error);
+				console.error("[BackupManager] 恢复本地备份失败:", error);
 			} finally {
 				setLoading(false);
 			}
@@ -218,7 +217,7 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 			const errorMessage =
 				error instanceof Error ? error.message : "清除数据失败";
 			toast.error(errorMessage);
-			logger.error("[BackupManager] 清除所有数据失败:", error);
+			console.error("[BackupManager] 清除所有数据失败:", error);
 		} finally {
 			setLoading(false);
 		}
@@ -251,7 +250,7 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 			}
 		} catch (error) {
 			toast.error("清除失败");
-			logger.error("[BackupManager] 清除数据库失败:", error);
+			console.error("[BackupManager] 清除数据库失败:", error);
 		} finally {
 			setLoading(false);
 		}
@@ -284,7 +283,7 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 			}
 		} catch (error) {
 			toast.error("清除失败");
-			logger.error("[BackupManager] 清除设置失败:", error);
+			console.error("[BackupManager] 清除设置失败:", error);
 		} finally {
 			setLoading(false);
 		}
