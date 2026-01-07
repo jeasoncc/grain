@@ -5,17 +5,12 @@
  * 导出所有搜索相关的纯函数。
  * 这些函数无副作用，可组合，可测试。
  *
+ * 注意：SearchEngine 类已移动到 flows/search/search-engine.flow.ts
+ * 请直接从 @/flows/search 导入 SearchEngine
+ *
  * @requirements 1.1, 1.2, 3.1, 3.2, 3.3, 4.1, 6.2
  */
 
-// 搜索引擎（实际实现在 flows/search/，此处保留导出用于向后兼容）
-export {
-	SearchEngine,
-	type SearchOptions,
-	type SearchResult,
-	type SearchResultType,
-	searchEngine,
-} from "@/flows/search/search-engine.flow";
 // 过滤相关函数
 export {
 	applySearchFilters,
@@ -29,8 +24,8 @@ export {
 	normalizeQuery,
 	type SearchableItem,
 	type SearchFilterOptions,
-	type SearchResult as FilterSearchResult,
-	type SearchResultType as FilterSearchResultType,
+	type SearchResult,
+	type SearchResultType,
 	sortByScore,
 	splitQueryTerms,
 } from "./search.filter.fn";

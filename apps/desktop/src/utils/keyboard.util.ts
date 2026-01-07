@@ -1,9 +1,9 @@
 /**
  * @file utils/keyboard.util.ts
  * @description 键盘快捷键工具函数
+ *
+ * 纯函数层，不应有 IO 操作
  */
-
-import logger from "@/log";
 
 // ============================================================================
 // Types
@@ -64,24 +64,20 @@ class KeyboardShortcutManager implements KeyboardShortcutHandler {
 	}
 
 	registerShortcut(key: string, handler: () => void): void {
-		logger.debug("[Keyboard] 注册快捷键:", key);
 		this.shortcuts.set(key, handler);
 
 		if (!this.isListening) {
 			window.addEventListener("keydown", this.handleKeyDown);
 			this.isListening = true;
-			logger.debug("[Keyboard] 开始监听键盘事件");
 		}
 	}
 
 	unregisterShortcut(key: string): void {
-		logger.debug("[Keyboard] 注销快捷键:", key);
 		this.shortcuts.delete(key);
 
 		if (this.shortcuts.size === 0 && this.isListening) {
 			window.removeEventListener("keydown", this.handleKeyDown);
 			this.isListening = false;
-			logger.debug("[Keyboard] 停止监听键盘事件");
 		}
 	}
 
@@ -99,7 +95,6 @@ class KeyboardShortcutManager implements KeyboardShortcutHandler {
 
 		if (handler) {
 			event.preventDefault();
-			logger.debug("[Keyboard] 触发快捷键:", shortcutKey);
 			handler();
 		}
 	}
@@ -110,7 +105,6 @@ class KeyboardShortcutManager implements KeyboardShortcutHandler {
 			this.isListening = false;
 		}
 		this.shortcuts.clear();
-		logger.debug("[Keyboard] 管理器已销毁");
 	}
 
 	get shortcutCount(): number {

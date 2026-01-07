@@ -1,30 +1,14 @@
 /**
  * @file pipes/export/export.path.fn.ts
- * @description 兼容层 - 重导出 flows/export/export-path.flow.ts
+ * @description 导出路径相关的纯函数
  *
- * 此文件保留用于向后兼容。
- * 实际实现已移动到 flows/export/export-path.flow.ts
+ * 注意：IO 相关的函数已移动到 flows/export/export-path.flow.ts
+ * 此文件只保留纯函数（如果有的话）
  *
- * @deprecated 请直接从 @/flows/export 导入
+ * @deprecated 请直接从 @/flows/export 导入 IO 相关函数
  */
 
-export {
-	clearDefaultExportPath,
-	type ExportPathService,
-	type ExportResult,
-	type ExportSettings,
-	type ExportWithPathOptions,
-	exportPathService,
-	exportSettingsSchema,
-	exportWithPathSelection,
-	getDefaultExportPath,
-	getDownloadsDirectory,
-	getExportSettings,
-	getLastUsedPath,
-	isTauriEnvironment,
-	saveExportSettings,
-	saveToPath,
-	selectExportDirectory,
-	setDefaultExportPath,
-	setLastUsedPath,
-} from "@/flows/export/export-path.flow";
+// 此文件已废弃，所有功能已移动到 flows/export/export-path.flow.ts
+// 为避免反向依赖，不再从 flows 重导出
+
+export {};

@@ -1,16 +1,14 @@
 /**
  * @file utils/save-service-manager.util.ts
- * @description 兼容层 - 重导出 flows/save/save-service-manager.flow.ts
+ * @description 兼容层说明
  *
- * 此文件保留用于向后兼容。
+ * 此文件已废弃。
  * 实际实现已移动到 flows/save/save-service-manager.flow.ts
  *
  * @deprecated 请直接从 @/flows/save 导入
  */
 
-export {
-	createSaveServiceManager,
-	type SaveModelConfig,
-	saveServiceManager,
-	type SaveServiceManagerInterface,
-} from "@/flows/save/save-service-manager.flow";
+// 为避免反向依赖（utils 不应依赖 flows），不再从 flows 重导出
+// 请直接使用: import { saveServiceManager } from "@/flows/save";
+
+export {};

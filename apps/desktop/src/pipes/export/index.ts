@@ -68,26 +68,8 @@ export {
 
 // Path 管理（路径选择、文件保存、设置管理）
 // 注意：实际实现已移动到 flows/export/export-path.flow.ts
-// 此处保留导出用于向后兼容
-export {
-	clearDefaultExportPath,
-	type ExportPathService,
-	type ExportResult,
-	type ExportSettings,
-	type ExportWithPathOptions,
-	exportPathService,
-	exportWithPathSelection,
-	getDefaultExportPath,
-	getDownloadsDirectory,
-	getExportSettings,
-	getLastUsedPath,
-	isTauriEnvironment,
-	saveExportSettings,
-	saveToPath,
-	selectExportDirectory,
-	setDefaultExportPath,
-	setLastUsedPath,
-} from "@/flows/export/export-path.flow";
+// 请直接从 @/flows/export 导入这些函数
+// 此处不再重导出以避免反向依赖
 
 // ==============================
 // TODO: 全局导出接口（暂不实现）
