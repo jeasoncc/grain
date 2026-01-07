@@ -431,6 +431,9 @@ Container 组件需要访问 state 和调用 flows，这是 React 应用的常�
 | `pipes/export/export.path.fn.ts` | 移动到 `flows/export/export-path.flow.ts` | 2026-01-07 |
 | `pipes/search/search.engine.fn.ts` | 移动到 `flows/search/search-engine.flow.ts` | 2026-01-07 |
 | `utils/save-service-manager.util.ts` | 转换为重导出 `flows/save/` | 2026-01-07 |
+| `views/editor/` | 纯函数移动到 `pipes/editor/` | 2026-01-07 |
+| `views/ledger/` | 纯函数移动到 `pipes/ledger/` | 2026-01-07 |
+| `flows/templated/configs/*.ts` | 导入从 `@/views/` 改为 `@/pipes/` | 2026-01-07 |
 
 ### 导入路径迁移 ✅ 已完成
 
@@ -478,6 +481,8 @@ Container 组件需要访问 state 和调用 flows，这是 React 应用的常�
 | `pipes/editor-tab/` | `views/editor-tabs/editor-tab.fn.ts` | 编辑器标签页纯函数 |
 | `pipes/writing/` | `views/writing/writing.fn.ts` | 写作状态纯函数 |
 | `pipes/theme/` | `views/theme/theme.fn.ts` | 主题纯函数 |
+| `pipes/editor/` | `views/editor/` | 编辑器类型判断纯函数 |
+| `pipes/ledger/` | `views/ledger/` | 记账模板纯函数 |
 
 ### 架构决策记录
 
