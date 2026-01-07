@@ -7,7 +7,7 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import * as rustApi from "./client.api";
+import { api } from "./client.api";
 import type { AppError } from "@/types/error";
 import {
 	decodeWorkspace,
@@ -31,7 +31,7 @@ import type {
 export const getWorkspaces = (): TE.TaskEither<
 	AppError,
 	WorkspaceInterface[]
-> => pipe(rustApi.getWorkspaces(), TE.map(decodeWorkspaces));
+> => pipe(api.getWorkspaces(), TE.map(decodeWorkspaces));
 
 /**
  * 获取单个工作区
@@ -40,7 +40,7 @@ export const getWorkspace = (
 	workspaceId: string,
 ): TE.TaskEither<AppError, WorkspaceInterface | null> =>
 	pipe(
-		rustApi.getWorkspace(workspaceId),
+		api.getWorkspace(workspaceId),
 		TE.map((response) => (response ? decodeWorkspace(response) : null)),
 	);
 

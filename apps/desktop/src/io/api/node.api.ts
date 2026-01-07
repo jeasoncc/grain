@@ -21,7 +21,7 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import * as rustApi from "./client.api";
+import { api } from "./client.api";
 import type { AppError } from "@/types/error";
 import {
 	decodeNode,
@@ -46,7 +46,7 @@ import type {
 export const getNodesByWorkspace = (
 	workspaceId: string,
 ): TE.TaskEither<AppError, NodeInterface[]> =>
-	pipe(rustApi.getNodesByWorkspace(workspaceId), TE.map(decodeNodes));
+	pipe(api.getNodesByWorkspace(workspaceId), TE.map(decodeNodes));
 
 /**
  * 获取根节点（parent_id 为 null）
@@ -54,7 +54,7 @@ export const getNodesByWorkspace = (
 export const getRootNodes = (
 	workspaceId: string,
 ): TE.TaskEither<AppError, NodeInterface[]> =>
-	pipe(rustApi.getRootNodes(workspaceId), TE.map(decodeNodes));
+	pipe(api.getRootNodes(workspaceId), TE.map(decodeNodes));
 
 /**
  * 按父节点获取子节点
@@ -63,7 +63,7 @@ export const getNodesByParent = (
 	workspaceId: string,
 	parentId: string | null,
 ): TE.TaskEither<AppError, NodeInterface[]> =>
-	pipe(rustApi.getNodesByParent(workspaceId, parentId), TE.map(decodeNodes));
+	pipe(api.getNodesByParent(workspaceId, parentId), TE.map(decodeNodes));
 
 /**
  * 获取子节点（通过父节点 ID）
@@ -71,7 +71,7 @@ export const getNodesByParent = (
 export const getChildNodes = (
 	parentId: string,
 ): TE.TaskEither<AppError, NodeInterface[]> =>
-	pipe(rustApi.getChildNodes(parentId), TE.map(decodeNodes));
+	pipe(api.getChildNodes(parentId), TE.map(decodeNodes));
 
 /**
  * 获取单个节点
@@ -80,7 +80,7 @@ export const getNode = (
 	nodeId: string,
 ): TE.TaskEither<AppError, NodeInterface | null> =>
 	pipe(
-		rustApi.getNode(nodeId),
+		api.getNode(nodeId),
 		TE.map((response) => (response ? decodeNode(response) : null)),
 	);
 
@@ -119,7 +119,7 @@ export const getNodesByType = (
 	workspaceId: string,
 	nodeType: string,
 ): TE.TaskEither<AppError, NodeInterface[]> =>
-	pipe(rustApi.getNodesByType(workspaceId, nodeType), TE.map(decodeNodes));
+	pipe(api.getNodesByType(workspaceId, nodeType), TE.map(decodeNodes));
 
 /**
  * 获取节点的所有后代
@@ -127,7 +127,7 @@ export const getNodesByType = (
 export const getDescendants = (
 	nodeId: string,
 ): TE.TaskEither<AppError, NodeInterface[]> =>
-	pipe(rustApi.getDescendants(nodeId), TE.map(decodeNodes));
+	pipe(api.getDescendants(nodeId), TE.map(decodeNodes));
 
 /**
  * 获取下一个排序号
@@ -136,7 +136,7 @@ export const getNextSortOrder = (
 	workspaceId: string,
 	parentId: string | null,
 ): TE.TaskEither<AppError, number> =>
-	rustApi.getNextSortOrder(workspaceId, parentId);
+	api.getNextSortOrder(workspaceId, parentId);
 
 /**
  * 获取下一个排序号（别名，兼容旧 API）
@@ -163,7 +163,7 @@ export const createNode = (
 ): TE.TaskEither<AppError, NodeInterface> =>
 	pipe(
 		TE.of(encodeCreateNode(input, initialContent, tags)),
-		TE.chain(rustApi.createNode),
+		TE.chain(api.createNode),
 		TE.map(decodeNode),
 	);
 
@@ -207,7 +207,7 @@ export const updateNode = (
 ): TE.TaskEither<AppError, NodeInterface> =>
 	pipe(
 		TE.of(encodeUpdateNode(input)),
-		TE.chain((request) => rustApi.updateNode(nodeId, request)),
+		TE.chain((request) => api.updateNode(nodeId, request)),
 		TE.map(decodeNode),
 	);
 
@@ -220,7 +220,7 @@ export const moveNode = (
 	newSortOrder: number,
 ): TE.TaskEither<AppError, NodeInterface> =>
 	pipe(
-		rustApi.moveNode(nodeId, { newParentId, newSortOrder }),
+		api.moveNode(nodeId, { newParentId, newSortOrder }),
 		TE.map(decodeNode),
 	);
 
@@ -228,14 +228,14 @@ export const moveNode = (
  * 删除节点（递归删除子节点）
  */
 export const deleteNode = (nodeId: string): TE.TaskEither<AppError, void> =>
-	rustApi.deleteNode(nodeId);
+	api.deleteNode(nodeId);
 
 /**
  * 批量删除节点
  */
 export const deleteNodesBatch = (
 	nodeIds: string[],
-): TE.TaskEither<AppError, void> => rustApi.deleteNodesBatch(nodeIds);
+): TE.TaskEither<AppError, void> => api.deleteNodesBatch(nodeIds);
 
 /**
  * 复制节点
@@ -244,14 +244,14 @@ export const duplicateNode = (
 	nodeId: string,
 	newTitle?: string,
 ): TE.TaskEither<AppError, NodeInterface> =>
-	pipe(rustApi.duplicateNode(nodeId, newTitle), TE.map(decodeNode));
+	pipe(api.duplicateNode(nodeId, newTitle), TE.map(decodeNode));
 
 /**
  * 批量重排序节点
  */
 export const reorderNodes = (
 	nodeIds: string[],
-): TE.TaskEither<AppError, void> => rustApi.reorderNodes(nodeIds);
+): TE.TaskEither<AppError, void> => api.reorderNodes(nodeIds);
 
 /**
  * 设置节点折叠状态
@@ -272,7 +272,7 @@ export const setNodeCollapsed = (
  */
 export const getAllNodes = (): TE.TaskEither<AppError, NodeInterface[]> =>
 	pipe(
-		rustApi.getWorkspaces(),
+		api.getWorkspaces(),
 		TE.chain((workspaces) => {
 			if (workspaces.length === 0) {
 				return TE.right<AppError, NodeInterface[]>([]);
@@ -284,7 +284,7 @@ export const getAllNodes = (): TE.TaskEither<AppError, NodeInterface[]> =>
 						acc,
 						TE.chain((allNodes) =>
 							pipe(
-								rustApi.getNodesByWorkspace(ws.id),
+								api.getNodesByWorkspace(ws.id),
 								TE.map((nodes) => [...allNodes, ...decodeNodes(nodes)]),
 							),
 						),
