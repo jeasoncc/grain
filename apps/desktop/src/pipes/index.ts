@@ -46,3 +46,9 @@ export * as writingPipe from "./writing";
 
 // Theme 管道（主题纯函数）
 export * as themePipe from "./theme";
+
+// Editor 管道（编辑器类型判断）
+export * as editorPipe from "./editor";
+
+// Ledger 管道（记账模板）
+export * as ledgerPipe from "./ledger";
