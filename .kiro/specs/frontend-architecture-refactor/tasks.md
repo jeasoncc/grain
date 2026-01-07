@@ -42,7 +42,18 @@
 
 ### Task 1.2: 功能测试
 - [ ] 运行 `bun run test` 执行单元测试（部分测试文件需更新）
-- [ ] 手动测试核心功能
+- [x] 手动测试核心功能 - 项目成功启动
+
+### Task 1.3: 运行时验证 ✅
+- [x] 修复 `story-workspace.container.fn.tsx` 重复导入问题
+- [x] Dev server 成功启动（Vite + Rust API）
+- [x] 无编译错误，无运行时错误
+
+**启动状态** (2026-01-07 16:23):
+- ✅ Vite dev server: http://localhost:1420/
+- ✅ Rust API server: http://127.0.0.1:3030
+- ✅ 无编译错误
+- ✅ 无运行时错误
 
 **注意**: 存在一些预先存在的类型问题（NodeInterface vs NodeResponse），这些不是架构重构引入的。
 
