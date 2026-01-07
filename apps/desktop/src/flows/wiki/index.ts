@@ -8,3 +8,5 @@ export {
 	migrateWikiEntriesToFiles,
 	runMigrationIfNeeded,
 } from "./migrate-wiki.action";
+
+export { getWikiFiles, getWikiFilesAsync } from "./get-wiki-files.flow";

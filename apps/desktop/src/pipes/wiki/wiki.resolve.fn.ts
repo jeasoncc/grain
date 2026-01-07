@@ -1,20 +1,12 @@
 /**
- * Wiki Resolution Functions
+ * Wiki Resolution Functions - Pure Functions Only
  *
- * Provides wiki file management using the tag-based file system.
- * Wiki entries are regular files stored in a `wiki/` folder with a "wiki" tag.
- * This replaces the separate wikiEntries table with a unified file-based approach.
+ * Provides wiki-related pure functions for data transformation.
+ * IO operations have been moved to @/flows/wiki.
  *
  * Requirements: 1.1, 1.2, 2.1
  */
 
-import * as E from "fp-ts/Either";
-import * as TE from "fp-ts/TaskEither";
-import { legacyDatabase } from "@/db/legacy-database";
-import type { AppError } from "@/utils/error.util";
-import logger from "@/log";
-import { getContentsByNodeIds, getNodesByWorkspace } from "@/io/api";
-import type { NodeInterface } from "@/types/node";
 import { WikiFileEntryBuilder } from "./wiki.builder";
 import type { WikiFileEntry } from "./wiki.schema";
 
@@ -27,36 +19,6 @@ export const WIKI_ROOT_FOLDER = "Wiki";
 
 /** Wiki tag name */
 export const WIKI_TAG = "wiki";
-
-// ==============================
-// Folder Management
-// ==============================
-
-/**
- * Ensure wiki folder exists at root level
- * Creates the wiki folder if it doesn't exist
- *
- * Requirements: 1.1
- *
- * @param workspaceId - The workspace ID
- * @returns TaskEither<AppError, NodeInterface>
- *
- * @deprecated Use ensureRootFolder from @/flows/node instead
- */
-export const ensureWikiFolderAsync = (
-	_workspaceId: string,
-): TE.TaskEither<AppError, NodeInterface> => {
-	logger.start("[Wiki] 确保 Wiki 文件夹存在...");
-	logger.warn(
-		"[Wiki] ensureWikiFolderAsync is deprecated. Use ensureRootFolder from @/flows/node instead.",
-	);
-
-	return TE.left({
-		type: "VALIDATION_ERROR",
-		message:
-			"ensureWikiFolderAsync is deprecated. Use ensureRootFolder from @/flows/node instead.",
-	});
-};
 
 // ==============================
 // Wiki File Operations
@@ -291,130 +253,67 @@ export function generateWikiTemplate(title: string): string {
 	return JSON.stringify(template);
 }
 
-/**
- * Parse JSON content safely
- *
- * @param content - JSON string to parse
- * @returns Either<AppError, unknown>
- */
-function _parseJsonContent(content: string): E.Either<AppError, unknown> {
-	try {
-		const parsed = JSON.parse(content || "{}");
-		return E.right(parsed);
-	} catch (error) {
-		logger.warn("[Wiki] JSON 解析失败:", error);
-		return E.left({
-			type: "VALIDATION_ERROR",
-			message: `无效的 JSON 内容: ${error instanceof Error ? error.message : "未知错误"}`,
-		});
-	}
-}
-
 // NOTE: Wiki file creation has been moved to actions/templated/create-wiki.action.ts
 // Use createWiki or createWikiAsync from that module instead.
 
 // ==============================
-// Wiki File Queries
+// Pure Helper Functions
 // ==============================
 
 /**
- * Get all files with "wiki" tag for a workspace
- * Used for @ operator autocomplete
- *
- * Requirements: 2.1
- *
- * @param workspaceId - The workspace ID
- * @returns TaskEither<AppError, WikiFileEntry[]>
+ * Node-like type for path building (accepts both NodeInterface and NodeResponse)
  */
-export const getWikiFilesAsync = (
-	workspaceId: string,
-): TE.TaskEither<AppError, WikiFileEntry[]> => {
-	logger.info("[Wiki] 获取 Wiki 文件列表...");
-
-	return TE.tryCatch(
-		async () => {
-			// Query nodes with "wiki" tag using multi-entry index
-			const nodes = await legacyDatabase.nodes
-				.where("tags")
-				.equals(WIKI_TAG)
-				.and((node) => node.workspace === workspaceId)
-				.toArray();
-
-			logger.info("[Wiki] 找到 Wiki 文件:", { count: nodes.length });
-
-			// Get content for all wiki files
-			const nodeIds = nodes.map((n) => n.id);
-			const contentsResult = await getContentsByNodeIds(nodeIds)();
-			const contents = E.isRight(contentsResult) ? contentsResult.right : [];
-			const contentMap = new Map(contents.map((c) => [c.nodeId, c.content]));
-
-			// Get all nodes for path building
-			const allNodesResult = await getNodesByWorkspace(workspaceId)();
-			const allNodes = E.isRight(allNodesResult) ? allNodesResult.right : [];
-			const nodeMap = new Map(allNodes.map((n) => [n.id, n]));
-
-			// Build WikiFileEntry array
-			const entries = nodes.map((node) =>
-				new WikiFileEntryBuilder()
-					.id(node.id)
-					.name(node.title)
-					.alias([])
-					.content(contentMap.get(node.id) || "")
-					.path(buildNodePath(node, nodeMap))
-					.build(),
-			);
-
-			logger.success("[Wiki] Wiki 文件列表获取成功:", {
-				count: entries.length,
-			});
-			return entries;
-		},
-		(error) => ({
-			type: "DB_ERROR" as const,
-			message: `获取 Wiki 文件列表失败: ${error instanceof Error ? error.message : "未知错误"}`,
-		}),
-	);
-};
-
-/**
- * Get all files with "wiki" tag for a workspace (async wrapper)
- *
- * @param workspaceId - The workspace ID
- * @returns Promise<WikiFileEntry[]>
- */
-export async function getWikiFiles(
-	workspaceId: string,
-): Promise<WikiFileEntry[]> {
-	const result = await getWikiFilesAsync(workspaceId)();
-
-	if (E.isLeft(result)) {
-		logger.error("[Wiki] 获取 Wiki 文件列表失败:", result.left);
-		return [];
-	}
-
-	return result.right;
+interface NodeLike {
+	readonly id: string;
+	readonly title: string;
+	readonly parent?: string | null;
+	readonly parentId?: string | null;
 }
 
 /**
- * Build the path string for a node
+ * Build the path string for a node (pure function)
  *
  * @param node - The node to build path for
  * @param nodeMap - Map of all nodes by ID
  * @returns Path string (e.g., "wiki/Character.md")
  */
-function buildNodePath(
-	node: NodeInterface,
-	nodeMap: Map<string, NodeInterface>,
+export function buildNodePath<T extends NodeLike>(
+	node: T,
+	nodeMap: Map<string, T>,
 ): string {
 	const parts: string[] = [node.title];
-	let current = node.parent ? nodeMap.get(node.parent) : undefined;
+	const parentId = node.parent ?? node.parentId;
+	let current = parentId ? nodeMap.get(parentId) : undefined;
 
 	while (current) {
 		parts.unshift(current.title);
-		current = current.parent ? nodeMap.get(current.parent) : undefined;
+		const nextParentId = current.parent ?? current.parentId;
+		current = nextParentId ? nodeMap.get(nextParentId) : undefined;
 	}
 
 	return parts.join("/");
+}
+
+/**
+ * Build WikiFileEntry from node data (pure function)
+ *
+ * @param node - The node (must have id and title)
+ * @param content - The content string
+ * @param path - The path string
+ * @returns WikiFileEntry
+ */
+export function buildWikiFileEntry(
+	node: { readonly id: string; readonly title: string },
+	content: string,
+	path: string,
+): WikiFileEntry {
+	return new WikiFileEntryBuilder()
+		.id(node.id)
+		.name(node.title)
+		.alias([])
+		.content(content)
+		.path(path)
+		.build();
 }
 
 // ==============================
