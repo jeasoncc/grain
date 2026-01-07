@@ -1,162 +1,29 @@
 {
-  "timestamp": "2025-12-27T13:10:33.121Z",
-  "totalTests": 31,
-  "passed": 19,
-  "failed": 3,
-  "skipped": 9,
-  "duration": 150649,
+  "timestamp": "2026-01-07T08:38:50.425Z",
+  "totalTests": 1,
+  "passed": 0,
+  "failed": 0,
+  "skipped": 1,
+  "duration": 205890,
   "suites": [
     {
       "suiteName": "Workspace",
-      "results": [
-        {
-          "name": "Activity Bar Visible",
-          "status": "passed",
-          "duration": 432
-        },
-        {
-          "name": "Create Buttons Exist",
-          "status": "passed",
-          "duration": 1365
-        },
-        {
-          "name": "Workspace Loaded",
-          "status": "passed",
-          "duration": 2533
-        },
-        {
-          "name": "File Tree Visible",
-          "status": "passed",
-          "duration": 459
-        }
-      ],
-      "duration": 10252
+      "results": [],
+      "duration": 37793
     },
     {
       "suiteName": "Diary",
-      "results": [
-        {
-          "name": "New Diary Button Exists",
-          "status": "passed",
-          "duration": 447
-        },
-        {
-          "name": "Click New Diary Button",
-          "status": "passed",
-          "duration": 3072
-        },
-        {
-          "name": "Success Toast Displayed",
-          "status": "passed",
-          "duration": 6004
-        },
-        {
-          "name": "Diary Folder Structure Created",
-          "status": "failed",
-          "duration": 6360,
-          "error": "Diary folder not found in File Tree"
-        },
-        {
-          "name": "Diary File Appears in File Tree",
-          "status": "failed",
-          "duration": 10300,
-          "error": "File not found in tree: 27"
-        },
-        {
-          "name": "Diary File Auto Opened",
-          "status": "failed",
-          "duration": 5150,
-          "error": "Editor tabs container not found"
-        }
-      ],
-      "duration": 36446
+      "results": [],
+      "duration": 33782
     },
     {
       "suiteName": "Wiki",
-      "results": [
-        {
-          "name": "New Wiki Button Exists",
-          "status": "passed",
-          "duration": 447
-        },
-        {
-          "name": "Click New Wiki Button Opens Dialog",
-          "status": "passed",
-          "duration": 9070
-        },
-        {
-          "name": "Enter Wiki Title and Confirm",
-          "status": "skipped",
-          "duration": 51,
-          "error": "No dialog present - Wiki creation may use different flow"
-        },
-        {
-          "name": "Success Toast Displayed",
-          "status": "passed",
-          "duration": 7010
-        },
-        {
-          "name": "Wiki Folder Structure Created",
-          "status": "skipped",
-          "duration": 6145,
-          "error": "Wiki folder not found in File Tree - feature may not be implemented"
-        },
-        {
-          "name": "Wiki File Appears in File Tree",
-          "status": "skipped",
-          "duration": 5003,
-          "error": "Wiki file not found in File Tree - feature may not be implemented"
-        },
-        {
-          "name": "Wiki File Auto Opened",
-          "status": "skipped",
-          "duration": 5004,
-          "error": "Editor tabs container not found"
-        },
-        {
-          "name": "Cancel Wiki Creation Does Not Create File",
-          "status": "skipped",
-          "duration": 5128,
-          "error": "No dialog present - Wiki creation may use different flow"
-        }
-      ],
-      "duration": 48471
+      "results": [],
+      "duration": 67352
     },
     {
       "suiteName": "Ledger",
       "results": [
-        {
-          "name": "New Ledger Button Exists",
-          "status": "passed",
-          "duration": 441
-        },
-        {
-          "name": "Click New Ledger Button",
-          "status": "passed",
-          "duration": 3057
-        },
-        {
-          "name": "Success Toast Displayed",
-          "status": "passed",
-          "duration": 501
-        },
-        {
-          "name": "Ledger Folder Structure Created",
-          "status": "passed",
-          "duration": 1590
-        },
-        {
-          "name": "Ledger File Appears in File Tree",
-          "status": "skipped",
-          "duration": 6005,
-          "error": "Ledger file not found in File Tree - feature may not be implemented"
-        },
-        {
-          "name": "Ledger File Auto Opened",
-          "status": "skipped",
-          "duration": 5006,
-          "error": "Editor tabs container not found"
-        },
         {
           "name": "No Workspace Error Handling",
           "status": "skipped",
@@ -164,44 +31,12 @@
           "error": "Test requires special environment setup (no workspace)"
         }
       ],
-      "duration": 21705
+      "duration": 33485
     },
     {
       "suiteName": "Excalidraw",
-      "results": [
-        {
-          "name": "Command Palette Opens",
-          "status": "passed",
-          "duration": 1682
-        },
-        {
-          "name": "Trigger Excalidraw Creation",
-          "status": "passed",
-          "duration": 7236
-        },
-        {
-          "name": "Success Toast Displayed",
-          "status": "passed",
-          "duration": 7003
-        },
-        {
-          "name": "Excalidraw Folder Structure Created",
-          "status": "passed",
-          "duration": 1587
-        },
-        {
-          "name": "Excalidraw File Appears in File Tree",
-          "status": "passed",
-          "duration": 6446
-        },
-        {
-          "name": "Excalidraw File Auto Opened",
-          "status": "skipped",
-          "duration": 5003,
-          "error": "Editor tabs container not found"
-        }
-      ],
-      "duration": 33775
+      "results": [],
+      "duration": 33478
     }
   ]
 }
