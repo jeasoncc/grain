@@ -18,7 +18,7 @@ import {
 	type MarkdownImportOptions,
 } from "@/pipes/import/import.markdown.fn";
 import { type AppError, importError } from "@/utils/error.util";
-import logger from "@/log";
+import logger from '@/io/log';
 import { addContent, addNode, getNextOrder } from "@/io/api";
 import type { NodeInterface } from "@/types/node";
 

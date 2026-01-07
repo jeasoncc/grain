@@ -15,7 +15,7 @@
 
 import * as E from "fp-ts/Either";
 import { type AppError, validationError } from "@/utils/error.util";
-import logger from "@/log";
+import logger from '@/io/log';
 import { applyThemeWithTransition, getSystemTheme } from "@/io/dom/theme.dom";
 import { getDefaultThemeKey, getNextMode, isThemeTypeMatch } from "@/pipes/theme";
 import { useThemeStore } from "@/state/theme.state";

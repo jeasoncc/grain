@@ -19,7 +19,7 @@ import { invoke } from "@tauri-apps/api/core";
 import * as TE from "fp-ts/TaskEither";
 import type { AppError } from "@/types/error";
 import { dbError } from "@/types/error";
-import logger from "@/log";
+import logger from '@/io/log';
 import type {
 	AttachmentResponse,
 	AttachmentType,

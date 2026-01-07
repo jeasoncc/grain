@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { keyboardShortcutManager } from "@/utils/keyboard.util";
 import { saveServiceManager } from "@/flows/save";
-import logger from "@/log";
+import logger from '@/io/log';
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import { useSaveStore } from "@/state/save.state";
 import type { ContentType } from "@/types/content/content.interface";

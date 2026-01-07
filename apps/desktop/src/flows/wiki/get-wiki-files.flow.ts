@@ -9,9 +9,9 @@
 
 import * as E from "fp-ts/Either";
 import * as TE from "fp-ts/TaskEither";
-import { legacyDatabase } from "@/db/legacy-database";
+import { legacyDatabase } from "@/io/db/legacy-database";
 import type { AppError } from "@/utils/error.util";
-import logger from "@/log";
+import logger from "@/io/log";
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/io/api";
 import type { NodeResponse } from "@/types/node";
 import { WikiFileEntryBuilder } from "@/pipes/wiki/wiki.builder";

@@ -69,7 +69,7 @@ vi.mock("@/log", () => ({
 	},
 }));
 
-import logger from "@/log";
+import logger from '@/io/log';
 import { createWorkspace } from "./create-workspace.action";
 
 // ============================================================================

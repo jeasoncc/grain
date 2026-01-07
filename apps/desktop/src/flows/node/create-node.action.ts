@@ -16,7 +16,7 @@ import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import type { AppError } from "@/utils/error.util";
-import logger from "@/log";
+import logger from '@/io/log';
 import * as contentRepo from "@/io/api/content.api";
 import * as nodeRepo from "@/io/api/node.api";
 import type { NodeInterface, NodeType } from "@/types/node";

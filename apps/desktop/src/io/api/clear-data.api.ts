@@ -14,7 +14,7 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { api } from "./client.api";
 import { type AppError, dbError } from "@/types/error";
-import logger from "@/log";
+import logger from '@/io/log';
 import type { ClearDataResult } from "@/types/rust-api";
 
 // ============================================================================

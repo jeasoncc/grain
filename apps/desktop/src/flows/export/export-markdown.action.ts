@@ -15,7 +15,7 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { exportToMarkdown, type MarkdownExportOptions } from "@/pipes/export";
 import { type AppError, exportError } from "@/utils/error.util";
-import logger from "@/log";
+import logger from '@/io/log';
 import { getContentByNodeIdOrFail, getNodeByIdOrFail } from "@/io/api";
 
 /**

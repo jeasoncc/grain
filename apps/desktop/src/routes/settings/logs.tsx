@@ -21,7 +21,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/views/ui/select";
-import { type LogEntry, logDB } from "@/db/log-db";
+import { type LogEntry, logDB } from "@/io/db/log-db";
 import { cn } from "@/utils/cn.util";
 
 export const Route = createFileRoute("/settings/logs")({

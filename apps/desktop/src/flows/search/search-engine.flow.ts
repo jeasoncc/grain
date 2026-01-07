@@ -10,7 +10,7 @@
 
 import * as E from "fp-ts/Either";
 import lunr from "lunr";
-import logger from "@/log/index";
+import logger from '@/io/log';
 import {
 	getAllNodes,
 	getContentsByNodeIds,

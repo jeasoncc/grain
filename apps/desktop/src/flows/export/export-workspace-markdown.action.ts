@@ -13,7 +13,7 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { exportWorkspaceToMarkdown } from "@/pipes/export/export.bundle.fn";
 import type { AppError } from "@/utils/error.util";
-import logger from "@/log";
+import logger from '@/io/log';
 import {
 	getContentsByNodeIds,
 	getNodesByWorkspace,

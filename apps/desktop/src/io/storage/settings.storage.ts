@@ -12,7 +12,7 @@
  */
 
 import { z } from "zod";
-import logger from "@/log";
+import logger from '@/io/log';
 
 // ============================================================================
 // 存储键常量

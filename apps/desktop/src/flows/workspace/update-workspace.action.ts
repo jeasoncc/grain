@@ -13,7 +13,7 @@
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import type { AppError } from "@/utils/error.util";
-import logger from "@/log";
+import logger from '@/io/log';
 import * as workspaceRepo from "@/io/api/workspace.api";
 import type { WorkspaceUpdateInput } from "@/types/workspace";
 

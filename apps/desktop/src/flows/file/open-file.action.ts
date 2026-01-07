@@ -22,7 +22,7 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import type { AppError } from "@/utils/error.util";
 import { fileOperationQueue } from "@/utils/queue.util";
-import logger from "@/log";
+import logger from '@/io/log';
 import * as contentRepo from "@/io/api/content.api";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import {

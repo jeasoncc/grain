@@ -16,7 +16,7 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import type { SerializedEditorState } from "lexical";
 import type { AppError } from "@/utils/error.util";
-import logger from "@/log";
+import logger from '@/io/log';
 import {
 	getNode,
 	syncTagCache,

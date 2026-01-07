@@ -15,7 +15,7 @@ import {
 	downloadAndInstallUpdate,
 	type UpdateInfo,
 } from "@/flows/updater";
-import logger from "@/log";
+import logger from '@/io/log';
 
 type CheckStatus =
 	| "idle"

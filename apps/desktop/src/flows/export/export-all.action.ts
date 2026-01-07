@@ -17,7 +17,7 @@ import {
 } from "@/pipes/export/export.bundle.fn";
 import type { AttachmentData, ContentData } from "@/pipes/import/import.json.fn";
 import type { AppError } from "@/utils/error.util";
-import logger from "@/log";
+import logger from '@/io/log';
 import {
 	getAllNodes,
 	getAllWorkspaces,

@@ -12,13 +12,13 @@ import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { toast } from "sonner";
-import { legacyDatabase } from "@/db/legacy-database";
+import { legacyDatabase } from "@/io/db/legacy-database";
 import {
 	type JsonImportOptions,
 	parseImportData,
 } from "@/pipes/import/import.json.fn";
 import type { AppError } from "@/utils/error.util";
-import logger from "@/log";
+import logger from "@/io/log";
 import type { NodeInterface } from "@/types/node";
 import type { WorkspaceInterface } from "@/types/workspace";
 

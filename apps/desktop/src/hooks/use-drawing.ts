@@ -18,7 +18,7 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import logger from "@/log";
+import logger from '@/io/log';
 import {
 	useNode as useNodeQuery,
 	useNodesByType,

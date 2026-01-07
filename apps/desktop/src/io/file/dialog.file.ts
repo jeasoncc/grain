@@ -10,7 +10,7 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
-import logger from "@/log";
+import logger from '@/io/log';
 
 // ============================================================================
 // 类型定义
