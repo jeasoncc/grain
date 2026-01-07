@@ -40,28 +40,50 @@ The requested module '/src/io/api/index.ts' contains conflicting star exports fo
 
 ---
 
-## 错误 2: 应用停留在加载状态 ⏳ 调查中
+## 错误 2: API 导入问题 ✅ 已修复
 
 ### 现象
-- 页面显示 "Hello __root"! 和加载动画
+- 应用停留在加载状态（显示 "Hello __root"!）
 - 路由的 `<Outlet />` 没有渲染子组件
-- `index.tsx` 路由一直显示 `<Spinner />`
+- `index.tsx` 路由一直显示空白
 
-### 可能原因
-1. `useAllWorkspaces()` 返回 `undefined` 或空数组
-2. Workspace 数据加载失败
-3. TanStack Query 没有正确获取数据
+### 原因
+在修复错误 1 时，我们从 `client.api.ts` 中移除了重复的导出（如 `export const getWorkspaces = ...`），但专用 API 文件（`workspace.api.ts`, `node.api.ts` 等）仍然使用 `import * as rustApi from "./client.api"` 来导入这些函数。
 
-### 需要检查
-- [ ] `useAllWorkspaces` hook 的实现
-- [ ] Workspace API 调用是否成功
-- [ ] 数据库是否有初始数据
-- [ ] TanStack Query 的状态
+由于这些导出已被移除，导致 `rustApi.getWorkspaces()` 等调用失败，数据无法加载。
 
-### 当前状态
+### 修复方案 ✅
+将所有专用 API 文件的导入从 `import * as rustApi` 改为 `import { api }`，直接使用 `api` 对象：
+
+**修改的文件**:
+- `workspace.api.ts` - `rustApi.getWorkspaces()` → `api.getWorkspaces()`
+- `node.api.ts` - 导入改为 `import { api }`
+- `content.api.ts` - 导入改为 `import { api }`
+- `user.api.ts` - `import * as api` → `import { api }`
+- `tag.api.ts` - `import * as api` → `import { api }`
+- `attachment.api.ts` - `import * as api` → `import { api }`
+
+### 架构合规性 ✅
+- 所有 API 文件现在统一使用 `api` 对象
+- 符合架构规范：`io/api/` 层只依赖 `types/`
+- `client.api.ts` 作为内部实现，导出 `api` 对象供其他 API 文件使用
+
+**提交**: `fix: 修复所有 API 文件的导入 - 统一使用 api 对象而非 rustApi`
+
+---
+
+## 测试结果 ✅ 成功
+
+### 最终状态
+- ✅ 应用成功加载
+- ✅ API 调用正常（GET /api/workspaces）
+- ✅ 欢迎界面正确显示
 - ✅ 无 JavaScript 错误
 - ✅ 无模块导出冲突
-- ⏳ 应用卡在加载状态
+
+### 截图
+- 应用正常工作：`app-working.png`
+- 显示欢迎信息和创建文件提示
 
 ---
 
