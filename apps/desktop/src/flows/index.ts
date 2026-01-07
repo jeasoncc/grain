@@ -211,3 +211,9 @@ export {
 	type SearchResultType,
 	searchEngine,
 } from "./search";
+
+// ==============================
+// Data Flows (数据管理)
+// ==============================
+
+export { clearAllData } from "./data";

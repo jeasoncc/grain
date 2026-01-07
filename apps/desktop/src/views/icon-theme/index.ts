@@ -1,6 +1,9 @@
 /**
- * @file fn/icon-theme/index.ts
- * @description Icon Theme 纯函数模块导出
+ * @file views/icon-theme/index.ts
+ * @description Icon Theme 模块导出
+ *
+ * @deprecated 纯函数已迁移到 @/pipes/icon-theme
+ * 此文件保留作为兼容层
  */
 
-export * from "./icon-theme.fn";
+export * from "@/pipes/icon-theme";

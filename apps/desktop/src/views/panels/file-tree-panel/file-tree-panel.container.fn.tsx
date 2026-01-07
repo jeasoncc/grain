@@ -21,7 +21,7 @@ import {
 } from "@/flows";
 import { FileTree } from "@/views/file-tree";
 import { useConfirm } from "@/views/ui/confirm";
-import { getNodeById, setNodeCollapsed } from "@/io/api";
+import { useGetNodeById, useSetNodeCollapsed } from "@/hooks/use-node-operations";
 import { useNodesByWorkspace } from "@/hooks/use-node";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import { useSelectionStore } from "@/state/selection.state";
@@ -32,6 +32,10 @@ export const FileTreePanelContainer = memo(
 	({ workspaceId: propWorkspaceId }: FileTreePanelContainerProps) => {
 		const navigate = useNavigate();
 		const confirm = useConfirm();
+
+		// Node operations hooks
+		const { getNode } = useGetNodeById();
+		const { setCollapsed } = useSetNodeCollapsed();
 
 		// Global selection state
 		const globalSelectedWorkspaceId = useSelectionStore(
@@ -63,9 +67,8 @@ export const FileTreePanelContainer = memo(
 				setSelectedNodeId(nodeId);
 
 				// Get node details to open in editor
-				const nodeResult = await getNodeById(nodeId)();
-				if (E.isLeft(nodeResult) || !nodeResult.right) return;
-				const node = nodeResult.right;
+				const node = await getNode(nodeId);
+				if (!node) return;
 
 				// Only open files (not folders) in editor
 				if (node.type === "folder") return;
@@ -86,7 +89,7 @@ export const FileTreePanelContainer = memo(
 				// Navigate to main workspace - all file types are handled there
 				navigate({ to: "/" });
 			},
-			[workspaceId, navigate, setSelectedNodeId],
+			[workspaceId, navigate, setSelectedNodeId, getNode],
 		);
 
 		// Handle folder creation
@@ -160,9 +163,8 @@ export const FileTreePanelContainer = memo(
 		// Handle node deletion
 		const handleDeleteNode = useCallback(
 			async (nodeId: string) => {
-				const nodeResult = await getNodeById(nodeId)();
-				if (E.isLeft(nodeResult) || !nodeResult.right) return;
-				const node = nodeResult.right;
+				const node = await getNode(nodeId);
+				if (!node) return;
 
 				const isFolder = node.type === "folder";
 				const ok = await confirm({
@@ -197,7 +199,7 @@ export const FileTreePanelContainer = memo(
 					toast.error("Failed to delete");
 				}
 			},
-			[confirm, selectedNodeId, closeTab, setSelectedNodeId],
+			[confirm, selectedNodeId, closeTab, setSelectedNodeId, getNode],
 		);
 
 		// Handle node rename
@@ -278,16 +280,15 @@ export const FileTreePanelContainer = memo(
 		const handleToggleCollapsed = useCallback(
 			async (nodeId: string, collapsed: boolean) => {
 				try {
-					const result = await setNodeCollapsed(nodeId, collapsed)();
-
-					if (E.isLeft(result)) {
-						throw new Error(result.left.message);
+					const success = await setCollapsed(nodeId, collapsed);
+					if (!success) {
+						console.error("Failed to toggle collapsed");
 					}
 				} catch (error) {
 					console.error("Failed to toggle collapsed:", error);
 				}
 			},
-			[],
+			[setCollapsed],
 		);
 
 		return (

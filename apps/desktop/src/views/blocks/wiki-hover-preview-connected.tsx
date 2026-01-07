@@ -4,30 +4,13 @@
  * 连接层：提供数据获取逻辑，将纯展示组件连接到数据源
  */
 
-import * as E from "fp-ts/Either";
-import { useCallback } from "react";
-import { getContentByNodeId, getNodeById } from "@/io/api";
+import { useWikiPreviewFetcher } from "@/hooks/use-wiki-preview";
 import { WikiHoverPreview, type WikiPreviewData } from "./wiki-hover-preview";
 
 interface WikiHoverPreviewConnectedProps {
 	entryId: string;
 	anchorElement: HTMLElement;
 	onClose: () => void;
-}
-
-/**
- * 从 Lexical JSON 提取纯文本
- */
-function extractTextFromLexical(node: unknown): string {
-	if (!node) return "";
-	if (typeof node === "object" && node !== null) {
-		const nodeObj = node as { text?: string; children?: unknown[] };
-		if (typeof nodeObj.text === "string") return nodeObj.text;
-		if (Array.isArray(nodeObj.children)) {
-			return nodeObj.children.map(extractTextFromLexical).join(" ");
-		}
-	}
-	return "";
 }
 
 /**
@@ -40,52 +23,14 @@ export function WikiHoverPreviewConnected({
 	anchorElement,
 	onClose,
 }: WikiHoverPreviewConnectedProps) {
-	// 数据获取函数
-	const handleFetchData = useCallback(
-		async (id: string): Promise<WikiPreviewData> => {
-			try {
-				const [contentResult, nodeResult] = await Promise.all([
-					getContentByNodeId(id)(),
-					getNodeById(id)(),
-				]);
-
-				const nodeContent =
-					E.isRight(contentResult) && contentResult.right
-						? contentResult.right.content
-						: undefined;
-				const node = E.isRight(nodeResult) ? nodeResult.right : undefined;
-
-				const title = node?.title || "Unknown";
-
-				// 提取纯文本预览
-				let content = "No content";
-				if (nodeContent) {
-					try {
-						const parsed = JSON.parse(nodeContent);
-						const text = extractTextFromLexical(parsed.root);
-						content = text.slice(0, 150) + (text.length > 150 ? "..." : "");
-					} catch {
-						content = "Preview not available";
-					}
-				}
-
-				return { title, content };
-			} catch (_error) {
-				return {
-					title: "Unknown",
-					content: "Failed to load content",
-				};
-			}
-		},
-		[],
-	);
+	const { fetchWikiPreview } = useWikiPreviewFetcher();
 
 	return (
 		<WikiHoverPreview
 			entryId={entryId}
 			anchorElement={anchorElement}
 			onClose={onClose}
-			onFetchData={handleFetchData}
+			onFetchData={fetchWikiPreview}
 		/>
 	);
 }
