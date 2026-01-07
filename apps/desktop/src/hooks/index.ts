@@ -99,6 +99,18 @@ export {
 // 状态管理 Hooks
 // ============================================================================
 
+// Editor Tabs Hooks
+export {
+	useActiveTab,
+	useActiveTabId,
+	useEditorState,
+	useEditorStates,
+	useEditorTabs,
+	useHasDirtyTabs,
+	useIsActiveTab,
+	useTabCount,
+	useTabs,
+} from "./use-editor-tabs";
 // Icon Theme Hook
 export { useIconTheme } from "./use-icon-theme";
 // Save Hooks
@@ -112,13 +124,28 @@ export {
 export { useSettings } from "./use-settings";
 // Theme Hooks
 export {
-	initializeTheme,
-	type ThemeMode,
+	useEnableTransition,
+	useIsDarkTheme,
+	useIsSystemMode,
 	useTheme,
-	useThemeStore,
+	useThemeInitialization,
+	useThemeKey,
+	useThemeMode,
 } from "./use-theme";
-// Theme DOM Hooks
+// Theme DOM Hooks (re-export from io for backward compatibility)
 export { applyThemeWithTransition, getSystemTheme } from "./use-theme-dom";
+// Writing Hooks
+export {
+	useFocusMode,
+	useHasActiveSession,
+	useMinimalToolbar,
+	useTodayDate,
+	useTodayWordCount,
+	useTypewriterMode,
+	useWriting,
+	useWritingGoal,
+	useWritingSession,
+} from "./use-writing";
 
 // ============================================================================
 // UI 工具 Hooks

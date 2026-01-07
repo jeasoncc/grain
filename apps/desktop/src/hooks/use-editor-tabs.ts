@@ -1,0 +1,181 @@
+/**
+ * @file hooks/use-editor-tabs.ts
+ * @description Editor Tabs React 绑定
+ *
+ * 连接 state 和 flows，提供 React 组件使用的编辑器标签功能。
+ *
+ * 依赖规则：hooks/ 只能依赖 flows/, state/, types/
+ */
+
+import { useCallback } from "react";
+import {
+	closeOtherTabsFlow,
+	closeTabFlow,
+	closeTabsByWorkspaceFlow,
+	getTabsByWorkspaceFlow,
+	openTabFlow,
+	reorderTabsFlow,
+	setActiveTabFlow,
+	updateEditorStateFlow,
+} from "@/flows/editor-tabs";
+import {
+	useActiveTab,
+	useActiveTabId,
+	useEditorState,
+	useEditorStates,
+	useEditorTabsStore,
+	useHasDirtyTabs,
+	useIsActiveTab,
+	useTabCount,
+	useTabs,
+} from "@/state/editor-tabs.state";
+import type {
+	EditorInstanceState,
+	EditorTab,
+	OpenTabPayload,
+} from "@/types/editor-tab";
+
+// ==============================
+// Editor Tabs Hook
+// ==============================
+
+/**
+ * Main editor tabs hook providing all tab-related state and actions.
+ */
+export function useEditorTabs() {
+	const store = useEditorTabsStore();
+	const tabs = useTabs();
+	const activeTabId = useActiveTabId();
+	const activeTab = useActiveTab();
+
+	// Open tab
+	const openTab = useCallback(
+		(payload: OpenTabPayload) => {
+			openTabFlow(payload, store.getState());
+		},
+		[store],
+	);
+
+	// Close tab
+	const closeTab = useCallback(
+		(tabId: string) => {
+			closeTabFlow(tabId, store.getState());
+		},
+		[store],
+	);
+
+	// Close other tabs
+	const closeOtherTabs = useCallback(
+		(tabId: string) => {
+			closeOtherTabsFlow(tabId, store.getState());
+		},
+		[store],
+	);
+
+	// Close all tabs
+	const closeAllTabs = useCallback(() => {
+		store.setTabs([]);
+		store.setActiveTabId(null);
+		store.setEditorStates({});
+	}, [store]);
+
+	// Set active tab
+	const setActiveTab = useCallback(
+		(tabId: string) => {
+			setActiveTabFlow(tabId, store.getState());
+		},
+		[store],
+	);
+
+	// Update tab title
+	const updateTabTitle = useCallback(
+		(tabId: string, title: string) => {
+			store.updateTab(tabId, { title });
+		},
+		[store],
+	);
+
+	// Set tab dirty
+	const setTabDirty = useCallback(
+		(tabId: string, isDirty: boolean) => {
+			store.updateTab(tabId, { isDirty });
+		},
+		[store],
+	);
+
+	// Reorder tabs
+	const reorderTabs = useCallback(
+		(fromIndex: number, toIndex: number) => {
+			reorderTabsFlow(fromIndex, toIndex, store.getState());
+		},
+		[store],
+	);
+
+	// Update editor state
+	const updateEditorState = useCallback(
+		(tabId: string, updates: Partial<EditorInstanceState>) => {
+			updateEditorStateFlow(tabId, updates, store.getState());
+		},
+		[store],
+	);
+
+	// Get editor state
+	const getEditorState = useCallback(
+		(tabId: string): EditorInstanceState | undefined => {
+			return store.getState().editorStates[tabId];
+		},
+		[store],
+	);
+
+	// Get tabs by workspace
+	const getTabsByWorkspace = useCallback(
+		(workspaceId: string): EditorTab[] => {
+			return getTabsByWorkspaceFlow(
+				workspaceId,
+				store.getState().tabs as EditorTab[],
+			) as EditorTab[];
+		},
+		[store],
+	);
+
+	// Close tabs by workspace
+	const closeTabsByWorkspace = useCallback(
+		(workspaceId: string) => {
+			closeTabsByWorkspaceFlow(workspaceId, store.getState());
+		},
+		[store],
+	);
+
+	return {
+		// State
+		tabs,
+		activeTabId,
+		activeTab,
+
+		// Actions
+		openTab,
+		closeTab,
+		closeOtherTabs,
+		closeAllTabs,
+		setActiveTab,
+		updateTabTitle,
+		setTabDirty,
+		reorderTabs,
+		updateEditorState,
+		getEditorState,
+		getTabsByWorkspace,
+		closeTabsByWorkspace,
+	};
+}
+
+// Re-export state selectors for convenience
+export {
+	useActiveTab,
+	useActiveTabId,
+	useEditorState,
+	useEditorStates,
+	useHasDirtyTabs,
+	useIsActiveTab,
+	useTabCount,
+	useTabs,
+} from "@/state/editor-tabs.state";

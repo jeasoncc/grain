@@ -223,3 +223,46 @@ export { clearAllData } from "./data";
 // ==============================
 
 export { getCurrentIconTheme, getIconThemeByKey } from "./icon-theme";
+
+// ==============================
+// Theme Flows (主题)
+// ==============================
+
+export {
+	applyThemeFlow,
+	getNextModeFlow,
+	getThemeByKey,
+	getThemes,
+	handleSystemThemeChangeFlow,
+	initializeThemeFlow,
+	setModeFlow,
+} from "./theme";
+
+// ==============================
+// Editor Tabs Flows (编辑器标签)
+// ==============================
+
+export {
+	closeOtherTabsFlow,
+	closeTabFlow,
+	closeTabsByWorkspaceFlow,
+	findTabByNodeIdFlow,
+	getTabsByWorkspaceFlow,
+	openTabFlow,
+	reorderTabsFlow,
+	setActiveTabFlow,
+	updateEditorStateFlow,
+} from "./editor-tabs";
+
+// ==============================
+// Writing Flows (写作)
+// ==============================
+
+export {
+	addTodayWordsFlow,
+	getTodayDate,
+	resetTodayIfNeededFlow,
+	setWritingGoalFlow,
+	startSessionFlow,
+	updateSessionWordCountFlow,
+} from "./writing";

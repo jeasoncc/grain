@@ -8,14 +8,19 @@
  * - 切换主题模式
  * - 更新过渡动画设置
  *
+ * 依赖规则：flows/ 只能依赖 pipes/, io/, state/, types/
+ *
  * @requirements 4.1, 4.2, 4.3, 4.4
  */
 
 import * as E from "fp-ts/Either";
 import { type AppError, validationError } from "@/utils/error.util";
 import logger from "@/log";
+import { applyThemeWithTransition, getSystemTheme } from "@/io/dom/theme.dom";
+import { getDefaultThemeKey, getNextMode, isThemeTypeMatch } from "@/pipes/theme";
 import { useThemeStore } from "@/state/theme.state";
 import type { ThemeMode } from "@/types/theme";
+import { getThemeByKey } from "@/utils/themes.util";
 
 // ============================================================================
 // Types
@@ -66,7 +71,16 @@ export const updateTheme = (
 		return E.left(validationError("主题 key 不能为空", "themeKey"));
 	}
 
-	useThemeStore.getState().setTheme(params.themeKey);
+	const theme = getThemeByKey(params.themeKey);
+	if (!theme) {
+		return E.left(validationError(`主题不存在: ${params.themeKey}`, "themeKey"));
+	}
+
+	const store = useThemeStore.getState();
+	store.setThemeKey(params.themeKey);
+	store.setMode(theme.type);
+	applyThemeWithTransition(theme, store.enableTransition);
+
 	logger.success("[Action] 主题更新成功:", params.themeKey);
 	return E.right(undefined);
 };
@@ -90,7 +104,36 @@ export const updateThemeMode = (
 		return E.left(validationError(`无效的主题模式: ${params.mode}`, "mode"));
 	}
 
-	useThemeStore.getState().setMode(params.mode);
+	const store = useThemeStore.getState();
+	const currentTheme = getThemeByKey(store.themeKey);
+
+	store.setMode(params.mode);
+
+	if (params.mode === "system") {
+		const systemType = getSystemTheme();
+		if (currentTheme && !isThemeTypeMatch(currentTheme, systemType)) {
+			const defaultThemeKey = getDefaultThemeKey(systemType);
+			const newTheme = getThemeByKey(defaultThemeKey);
+			if (newTheme) {
+				store.setThemeKey(defaultThemeKey);
+				applyThemeWithTransition(newTheme, store.enableTransition);
+			}
+		} else if (currentTheme) {
+			applyThemeWithTransition(currentTheme, store.enableTransition);
+		}
+	} else {
+		if (currentTheme && !isThemeTypeMatch(currentTheme, params.mode)) {
+			const defaultThemeKey = getDefaultThemeKey(params.mode);
+			const newTheme = getThemeByKey(defaultThemeKey);
+			if (newTheme) {
+				store.setThemeKey(defaultThemeKey);
+				applyThemeWithTransition(newTheme, store.enableTransition);
+			}
+		} else if (currentTheme) {
+			applyThemeWithTransition(currentTheme, store.enableTransition);
+		}
+	}
+
 	logger.success("[Action] 主题模式更新成功:", params.mode);
 	return E.right(undefined);
 };
@@ -105,8 +148,15 @@ export const updateThemeMode = (
 export const toggleThemeMode = (): E.Either<AppError, ThemeMode> => {
 	logger.start("[Action] 切换主题模式");
 
-	useThemeStore.getState().toggleMode();
-	const newMode = useThemeStore.getState().mode;
+	const store = useThemeStore.getState();
+	const newMode = getNextMode(store.mode);
+
+	// Use updateThemeMode to handle the mode change with theme switching
+	const result = updateThemeMode({ mode: newMode });
+	if (E.isLeft(result)) {
+		return result;
+	}
+
 	logger.success("[Action] 主题模式切换成功:", newMode);
 	return E.right(newMode);
 };

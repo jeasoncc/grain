@@ -1,4 +1,4 @@
-import type { ThemeMode } from "@/hooks/use-theme";
+import type { ThemeMode } from "@/types/theme";
 import type { Theme } from "@/utils/themes.util";
 
 /**

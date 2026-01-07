@@ -1,33 +1,53 @@
 /**
- * @file stores/writing.store.ts
+ * @file state/writing.state.ts
  * @description Writing 状态管理
  *
- * Manages writing state including focus mode, typewriter mode,
- * writing goals, and session tracking.
- * Uses Zustand + Immer for immutable state management.
+ * 只存储写作状态数据，不包含业务逻辑。
+ * 业务逻辑在 hooks/use-writing.ts 中。
+ *
+ * 依赖规则：state/ 只能依赖 types/
  */
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import {
-	calculateTodayWordCountUpdate,
-	createSession,
-	getTodayDate,
-	mergeWritingGoal,
-} from "@/pipes/writing";
 import type {
-	WritingActions,
 	WritingGoal,
+	WritingSession,
 	WritingState,
 } from "@/types/writing";
 import { DEFAULT_WRITING_CONFIG, DEFAULT_WRITING_STATE } from "@/types/writing";
 
 // ==============================
+// Store Actions Interface
+// ==============================
+
+interface WritingStoreActions {
+	// Focus Mode
+	setFocusMode: (enabled: boolean) => void;
+
+	// Typewriter Mode
+	setTypewriterMode: (enabled: boolean) => void;
+
+	// Writing Goal
+	setWritingGoal: (goal: WritingGoal) => void;
+
+	// Today Word Count
+	setTodayWordCount: (count: number) => void;
+	setTodayDate: (date: string) => void;
+
+	// Session
+	setSession: (session: WritingSession | null) => void;
+
+	// Toolbar
+	setMinimalToolbar: (enabled: boolean) => void;
+}
+
+// ==============================
 // Store Type
 // ==============================
 
-type WritingStore = WritingState & WritingActions;
+type WritingStore = WritingState & WritingStoreActions;
 
 // ==============================
 // Store Implementation
@@ -35,125 +55,52 @@ type WritingStore = WritingState & WritingActions;
 
 export const useWritingStore = create<WritingStore>()(
 	persist(
-		immer((set, get) => ({
+		immer((set) => ({
 			// Initial State
 			...DEFAULT_WRITING_STATE,
-			todayDate: getTodayDate(),
+			todayDate: "",
 
 			// ==============================
-			// Focus Mode Actions
+			// Pure State Setters (no business logic)
 			// ==============================
 
-			setFocusMode: (enabled: boolean) => {
+			setFocusMode: (enabled) => {
 				set((state) => {
 					state.focusMode = enabled;
 				});
 			},
 
-			toggleFocusMode: () => {
-				set((state) => {
-					state.focusMode = !state.focusMode;
-				});
-			},
-
-			// ==============================
-			// Typewriter Mode Actions
-			// ==============================
-
-			setTypewriterMode: (enabled: boolean) => {
+			setTypewriterMode: (enabled) => {
 				set((state) => {
 					state.typewriterMode = enabled;
 				});
 			},
 
-			toggleTypewriterMode: () => {
+			setWritingGoal: (goal) => {
 				set((state) => {
-					state.typewriterMode = !state.typewriterMode;
+					state.writingGoal = goal;
 				});
 			},
 
-			// ==============================
-			// Writing Goal Actions
-			// ==============================
-
-			setWritingGoal: (goal: Partial<WritingGoal>) => {
+			setTodayWordCount: (count) => {
 				set((state) => {
-					state.writingGoal = mergeWritingGoal(state.writingGoal, goal);
+					state.todayWordCount = count;
 				});
 			},
 
-			// ==============================
-			// Today Word Count Actions
-			// ==============================
-
-			addTodayWords: (count: number) => {
+			setTodayDate: (date) => {
 				set((state) => {
-					const today = getTodayDate();
-					if (state.todayDate !== today) {
-						// New day, reset count
-						state.todayWordCount = count;
-						state.todayDate = today;
-					} else {
-						state.todayWordCount += count;
-					}
+					state.todayDate = date;
 				});
 			},
 
-			resetTodayIfNeeded: () => {
-				const today = getTodayDate();
-				const { todayDate } = get();
-				if (todayDate !== today) {
-					set((state) => {
-						state.todayWordCount = 0;
-						state.todayDate = today;
-					});
-				}
-			},
-
-			// ==============================
-			// Session Actions
-			// ==============================
-
-			startSession: (wordCount: number) => {
+			setSession: (session) => {
 				set((state) => {
-					state.session = createSession(wordCount);
+					state.session = session;
 				});
 			},
 
-			updateSessionWordCount: (wordCount: number) => {
-				const currentState = get();
-				if (!currentState.session) return;
-
-				// Avoid redundant updates
-				if (currentState.session.currentWordCount === wordCount) return;
-
-				const today = getTodayDate();
-				const { todayWordCount, todayDate } = calculateTodayWordCountUpdate(
-					currentState,
-					wordCount,
-					today,
-				);
-
-				set((state) => {
-					if (state.session) {
-						state.session.currentWordCount = wordCount;
-					}
-					state.todayWordCount = todayWordCount;
-					state.todayDate = todayDate;
-				});
-			},
-
-			endSession: () => {
-				set((state) => {
-					state.session = null;
-				});
-			},
-
-			// ==============================
-			// Toolbar Actions
-			// ==============================
-
-			setMinimalToolbar: (enabled: boolean) => {
+			setMinimalToolbar: (enabled) => {
 				set((state) => {
 					state.minimalToolbar = enabled;
 				});
@@ -205,9 +152,16 @@ export const useTodayWordCount = (): number => {
 };
 
 /**
+ * Get today's date.
+ */
+export const useTodayDate = (): string => {
+	return useWritingStore((state) => state.todayDate);
+};
+
+/**
  * Get current writing session.
  */
-export const useWritingSession = () => {
+export const useWritingSession = (): WritingSession | null => {
 	return useWritingStore((state) => state.session);
 };
 
@@ -224,38 +178,3 @@ export const useMinimalToolbar = (): boolean => {
 export const useHasActiveSession = (): boolean => {
 	return useWritingStore((state) => state.session !== null);
 };
-
-// ==============================
-// Convenience Hook
-// ==============================
-
-/**
- * Convenience hook providing all writing-related state and actions.
- */
-export function useWriting() {
-	const store = useWritingStore();
-
-	return {
-		// State
-		focusMode: store.focusMode,
-		typewriterMode: store.typewriterMode,
-		writingGoal: store.writingGoal,
-		todayWordCount: store.todayWordCount,
-		todayDate: store.todayDate,
-		session: store.session,
-		minimalToolbar: store.minimalToolbar,
-
-		// Actions
-		setFocusMode: store.setFocusMode,
-		toggleFocusMode: store.toggleFocusMode,
-		setTypewriterMode: store.setTypewriterMode,
-		toggleTypewriterMode: store.toggleTypewriterMode,
-		setWritingGoal: store.setWritingGoal,
-		addTodayWords: store.addTodayWords,
-		resetTodayIfNeeded: store.resetTodayIfNeeded,
-		startSession: store.startSession,
-		updateSessionWordCount: store.updateSessionWordCount,
-		endSession: store.endSession,
-		setMinimalToolbar: store.setMinimalToolbar,
-	};
-}
