@@ -2,7 +2,7 @@
 
 ## 当前状态概述
 
-✅ **架构重构已完成 - io/ 层违规已修复**
+✅ **架构重构完成 - 所有层级符合规范**
 
 主要完成事项：
 1. **state/ 层重构** - 移除所有非 types/ 依赖，业务逻辑移到 flows/
@@ -10,14 +10,27 @@
 3. **flows/ 层扩展** - 添加 editor-tabs, writing, theme 等 flow 模块
 4. **组件更新** - 所有 container 组件改用 hooks 而非直接访问 state
 5. **兼容层维护** - actions/, fn/ 等旧目录转为重导出
-6. **io/ 层修复** - 错误类型移到 types/error，DOM 操作移到 io/dom ✨ NEW
+6. **io/ 层修复** - 错误类型移到 types/error，DOM 操作移到 io/dom
+7. **types/ 层完善** - 主题类型移到 types/theme ✨ NEW
 
 **最新修复（2026-01-07）**：
 - ✅ 创建 `types/error/` 模块 - AppError 类型和工厂函数
+- ✅ 创建 `types/theme/theme.types.ts` - Theme 和 ThemeColors 类型
 - ✅ 更新所有 `io/api/*.api.ts` 文件使用 `@/types/error`
+- ✅ 更新 `io/dom/theme.dom.ts` 使用 `@/types/theme`
 - ✅ 移动 `applyTheme` 函数到 `io/dom/theme.dom.ts`
 - ✅ 清理 `utils/themes.util.ts` - 只保留纯数据和纯函数
-- ✅ `utils/error.util.ts` 转为兼容层重导出
+- ✅ `utils/error.util.ts` 和 `utils/themes.util.ts` 转为兼容层重导出
+
+**架构合规性验证**：
+- ✅ `types/` - 纯类型定义
+- ✅ `utils/` - 纯函数，无 IO
+- ✅ `io/` - 只依赖 types/
+- ✅ `pipes/` - 只依赖 utils/ 和 types/
+- ✅ `state/` - 只依赖 types/
+- ✅ `flows/` - 依赖 pipes/, io/, state/, types/
+- ✅ `hooks/` - 依赖 flows/, state/, types/
+- ✅ `views/` - 只依赖 hooks/, types/（container 组件允许依赖 state/, flows/, pipes/）
 
 ---
 
@@ -470,9 +483,11 @@
 | `views/unified-sidebar.container.fn.tsx` | 移除 logger，改用 console | 2026-01-07 |
 | `views/utils/devtools-wrapper.container.fn.tsx` | 移除 logger，改用 console | 2026-01-07 |
 | `types/error/error.types.ts` | 新建，从 utils/error.util 迁移 | 2026-01-07 |
+| `types/theme/theme.types.ts` | 新建，从 utils/themes.util 迁移类型 | 2026-01-07 |
 | `utils/error.util.ts` | 转换为重导出 `types/error` | 2026-01-07 |
+| `utils/themes.util.ts` | 移除类型定义，重导出 `types/theme` | 2026-01-07 |
 | `io/api/*.api.ts` (9个文件) | 改用 `@/types/error` 导入 | 2026-01-07 |
-| `io/dom/theme.dom.ts` | 移入 applyTheme 函数（含 DOM 操作） | 2026-01-07 |
+| `io/dom/theme.dom.ts` | 移入 applyTheme 函数，改用 `@/types/theme` | 2026-01-07 |
 | `utils/themes.util.ts` | 移除 applyTheme，只保留纯数据和纯函数 | 2026-01-07 |
 
 ### 导入路径迁移 ✅ 已完成
