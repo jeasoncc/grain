@@ -1,6 +1,5 @@
 /**
  * StoryWorkspace - 简化版工作空间
- * 基于新的 Node 结构，移除旧的 chapter/scene 依赖
  *
  * 路由编排层：连接数据和展示组件
  *

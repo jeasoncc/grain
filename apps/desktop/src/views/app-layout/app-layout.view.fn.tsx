@@ -13,11 +13,8 @@
 import type { ReactNode } from "react";
 import { ActivityBar } from "@/views/activity-bar";
 import { UnifiedSidebar } from "@/views/unified-sidebar";
-import type { WorkspaceInterface } from "@/types/workspace";
 
 export interface AppLayoutProps {
-	/** 工作区列表 */
-	readonly workspaces: WorkspaceInterface[];
 	/** 主内容区域 */
 	readonly children: ReactNode;
 }
@@ -33,11 +30,11 @@ export interface AppLayoutProps {
  * └──────────────────────────────────────┘
  * ```
  */
-export function AppLayout({ workspaces, children }: AppLayoutProps) {
+export function AppLayout({ children }: AppLayoutProps) {
 	return (
 		<div className="flex h-screen w-screen overflow-hidden">
 			{/* 左侧：ActivityBar（窄栏，固定宽度） */}
-			<ActivityBar workspaces={workspaces} />
+			<ActivityBar />
 
 			{/* 左侧：UnifiedSidebar（文件树等） */}
 			<UnifiedSidebar />
