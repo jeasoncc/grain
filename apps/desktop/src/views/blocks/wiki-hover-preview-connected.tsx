@@ -6,7 +6,7 @@
 
 import * as E from "fp-ts/Either";
 import { useCallback } from "react";
-import { getContentByNodeId, getNodeById } from "@/db";
+import { getContentByNodeId, getNodeById } from "@/io/api";
 import { WikiHoverPreview, type WikiPreviewData } from "./wiki-hover-preview";
 
 interface WikiHoverPreviewConnectedProps {

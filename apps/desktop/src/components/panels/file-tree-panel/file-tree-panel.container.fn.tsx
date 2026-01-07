@@ -18,10 +18,10 @@ import {
 	moveNode,
 	openFileAsync,
 	renameNode,
-} from "@/actions";
+} from "@/flows";
 import { FileTree } from "@/views/file-tree";
 import { useConfirm } from "@/views/ui/confirm";
-import { getNodeById, setNodeCollapsed } from "@/db";
+import { getNodeById, setNodeCollapsed } from "@/io/api";
 import { useNodesByWorkspace } from "@/hooks/use-node";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import { useSelectionStore } from "@/state/selection.state";

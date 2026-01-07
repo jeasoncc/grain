@@ -18,7 +18,7 @@ import {
 	exportAllAsZipAsync as exportAllAsZip,
 	exportAsMarkdownAsync as exportAsMarkdown,
 	exportProject,
-} from "@/actions";
+} from "@/flows";
 import type { ExportFormat, ExportOptions } from "@/pipes/export";
 import { triggerBlobDownload, triggerDownload } from "@/pipes/export";
 import type {
