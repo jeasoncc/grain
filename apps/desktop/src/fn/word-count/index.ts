@@ -1,17 +1,6 @@
 /**
  * @file fn/word-count/index.ts
- * @description 字数统计纯函数导出
+ * @deprecated 此模块已迁移到 @/pipes/word-count，请使用新路径
  */
 
-export {
-	type CountMode,
-	countCharacters,
-	countChineseChars,
-	countEnglishWords,
-	countWords,
-	countWordsFromLexicalState,
-	extractTextFromLexicalState,
-	formatWordCount,
-	formatWordCountDetail,
-	type WordCountResult,
-} from "./word-count.fn";
+export * from "@/pipes/word-count";

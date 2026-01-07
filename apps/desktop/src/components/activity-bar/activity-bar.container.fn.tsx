@@ -31,7 +31,7 @@ import { touchWorkspace } from "@/flows/workspace/update-workspace.action";
 import { ExportDialog } from "@/views/export-dialog";
 import { useConfirm } from "@/views/ui/confirm";
 import { clearAllData } from "@/db";
-import { calculateExpandedFoldersForNode } from "@/fn/node";
+import { calculateExpandedFoldersForNode } from "@/pipes/node";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useNodesByWorkspace } from "@/hooks/use-node";
 import { useAllWorkspaces } from "@/hooks/use-workspace";

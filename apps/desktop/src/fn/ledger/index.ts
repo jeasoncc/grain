@@ -1,6 +1,6 @@
 /**
- * @file index.ts
- * @description Ledger 模块导出
+ * @file fn/ledger/index.ts
+ * @deprecated 此模块已迁移到 @/views/ledger，请使用新路径
  */
 
-export { generateLedgerContent } from "./ledger.template.fn";
+export * from "@/views/ledger";

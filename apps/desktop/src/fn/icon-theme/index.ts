@@ -1,6 +1,6 @@
 /**
  * @file fn/icon-theme/index.ts
- * @description Icon Theme 纯函数模块导出
+ * @deprecated 此模块已迁移到 @/views/icon-theme，请使用新路径
  */
 
-export * from "./icon-theme.fn";
+export * from "@/views/icon-theme";

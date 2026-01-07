@@ -1,6 +1,6 @@
 /**
  * @file fn/editor-history/index.ts
- * @description Editor History 纯函数模块导出
+ * @deprecated 此模块已迁移到 @/views/editor-history，请使用新路径
  */
 
-export * from "./editor-history.fn";
+export * from "@/views/editor-history";

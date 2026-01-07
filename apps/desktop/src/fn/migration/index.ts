@@ -1,28 +1,6 @@
 /**
- * @file index.ts
- * @description Migration Module Exports
+ * @file fn/migration/index.ts
+ * @deprecated 此模块已迁移到 @/flows/migration，请使用新路径
  */
 
-export {
-	// Cleanup
-	clearDexieData,
-	clearMigrationStatus,
-	type DexieDataSnapshot,
-	// Status management
-	getMigrationStatus,
-	// Detection
-	hasDexieData,
-	type IdMapping,
-	type MigrationResult,
-	// Types
-	type MigrationStatus,
-	migrateAndCleanup,
-	migrateData,
-	needsMigration,
-	// Data operations
-	readDexieData,
-	resetMigrationStatus,
-	// Rollback
-	rollbackMigration,
-	setMigrationStatus,
-} from "./dexie-to-sqlite.migration.fn";
+export * from "@/flows/migration";

@@ -6,8 +6,8 @@
 
 import { useNavigate } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useState } from "react";
-import type { SearchResult, SearchResultType } from "@/fn/search";
-import { searchEngine } from "@/fn/search";
+import type { SearchResult, SearchResultType } from "@/pipes/search";
+import { searchEngine } from "@/pipes/search";
 import { useSidebarStore } from "@/state/sidebar.state";
 import { SearchPanelView } from "./search-panel.view.fn";
 

@@ -6,7 +6,7 @@
 
 import { useNavigate } from "@tanstack/react-router";
 import { memo, useCallback, useEffect, useState } from "react";
-import { searchEngine } from "@/fn/search";
+import { searchEngine } from "@/pipes/search";
 import logger from "@/log";
 import type {
 	GlobalSearchContainerProps,

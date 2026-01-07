@@ -12,7 +12,7 @@ import {
 	isTauriEnvironment,
 	selectExportDirectory,
 	setDefaultExportPath,
-} from "@/fn/export";
+} from "@/pipes/export";
 
 // Org-mode settings (simplified)
 interface OrgmodeSettings {

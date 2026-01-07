@@ -5,7 +5,7 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { TreeNode } from "@/fn/node";
+import type { TreeNode } from "@/pipes/node";
 import type { DragState, FileTreeItemProps } from "./file-tree.types";
 import { FileTreeItem } from "./file-tree-item.view.fn";
 

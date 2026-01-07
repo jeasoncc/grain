@@ -4,7 +4,7 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { SearchResult } from "@/fn/search";
+import type { SearchResult } from "@/pipes/search";
 import type { SearchPanelViewProps } from "./search-panel.types";
 import { SearchPanelView } from "./search-panel.view.fn";
 

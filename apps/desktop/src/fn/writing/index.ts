@@ -1,6 +1,6 @@
 /**
  * @file fn/writing/index.ts
- * @description Writing 纯函数模块导出
+ * @deprecated 此模块已迁移到 @/pipes/writing，请使用新路径
  */
 
-export * from "./writing.fn";
+export * from "@/pipes/writing";

@@ -19,8 +19,8 @@ import {
 	exportAsMarkdownAsync as exportAsMarkdown,
 	exportProject,
 } from "@/actions";
-import type { ExportFormat, ExportOptions } from "@/fn/export";
-import { triggerBlobDownload, triggerDownload } from "@/fn/export";
+import type { ExportFormat, ExportOptions } from "@/pipes/export";
+import { triggerBlobDownload, triggerDownload } from "@/pipes/export";
 import type {
 	ExportDialogContainerProps,
 	ExtendedExportFormat,

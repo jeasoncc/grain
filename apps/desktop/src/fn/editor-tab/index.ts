@@ -1,6 +1,6 @@
 /**
  * @file fn/editor-tab/index.ts
- * @description Editor Tab 纯函数模块导出
+ * @deprecated 此模块已迁移到 @/pipes/editor-tab，请使用新路径
  */
 
-export * from "./editor-tab.fn";
+export * from "@/pipes/editor-tab";

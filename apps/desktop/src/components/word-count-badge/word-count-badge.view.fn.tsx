@@ -11,7 +11,7 @@
 
 import { FileText } from "lucide-react";
 import { memo, useEffect, useState } from "react";
-import { formatWordCount, formatWordCountDetail } from "@/fn/word-count";
+import { formatWordCount, formatWordCountDetail } from "@/pipes/word-count";
 import { cn } from "@/utils/cn.util";
 import type {
 	WordCountBadgeProps,

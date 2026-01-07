@@ -1,6 +1,6 @@
 /**
- * @file index.ts
- * @description 格式化函数统一导出
+ * @file fn/format/index.ts
+ * @deprecated 此模块已迁移到 @/pipes/format，请使用新路径
  */
 
-export { formatBytes } from "./format.bytes.fn";
+export * from "@/pipes/format";
