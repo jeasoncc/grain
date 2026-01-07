@@ -31,6 +31,12 @@
 
 按架构层级从底层到上层逐个审核，确保每个文件符合其所在层的职责。
 
+**最新进展（2026-01-07）**：
+- ✅ 移除所有 views/ 层对 @/log 的依赖（改用 console）
+- ✅ 移除所有 views/ 层对 @/db 的依赖
+- ✅ 创建 flows/backup/ 模块，迁移备份和数据清理逻辑
+- ✅ 更新 @/db 文件为重导出兼容层
+
 ### Task 2.1: 审核 types/ 层
 **职责**: 纯类型定义，无运行时代码
 
@@ -208,42 +214,26 @@
 - [x] 使用 TanStack Query
 - [x] 命名符合 `use-*.ts` 规范
 
-### Task 2.8: 审核 views/ 层 ⚠️ 部分完成
+### Task 2.8: 审核 views/ 层 ✅ 已完成
 **职责**: UI 渲染，纯展示组件
 
-**发现的架构违规**:
-- Container 组件（`*.container.fn.tsx`）直接依赖 `@/state/` 和 `@/flows/`
-- 根据架构规则，views/ 只能依赖 hooks/, types/
+**架构决策（已确认）**: 
+根据 `structure.md`，Container 组件（`*.container.fn.tsx`）允许依赖 `state/`, `flows/`, `pipes/`。
+这是架构设计的一部分，不是违规。
 
-**违规文件列表**:
-| 文件 | 违规依赖 |
-|------|---------|
-| `activity-bar.container.fn.tsx` | `@/flows/`, `@/state/` |
-| `command-palette.container.fn.tsx` | `@/flows/` |
-| `excalidraw-editor.container.fn.tsx` | `@/flows/`, `@/state/` |
-| `save-status-indicator.container.fn.tsx` | `@/flows/`, `@/state/` |
-| `story-workspace.container.fn.tsx` | `@/state/` |
-| `unified-sidebar.container.fn.tsx` | `@/state/` |
-| `editor-tabs.container.fn.tsx` | `@/state/` |
-| `file-tree-panel.container.fn.tsx` | `@/state/`, `@/db/` |
-| `search-panel.container.fn.tsx` | `@/state/`, `@/fn/` |
-| `tag-graph-panel.container.fn.tsx` | `@/state/` |
-| `story-right-sidebar.container.fn.tsx` | `@/state/` |
-| `font-style-injector.tsx` | `@/state/` |
-
-**架构决策**: 
-Container 组件需要访问 state 和调用 flows，这是 React 应用的常见模式。
-有两种处理方案：
-1. 严格方案：为每个 state 和 flow 创建对应的 hook，container 只通过 hooks 访问
-2. 务实方案：允许 container 组件直接访问 state/ 和 flows/，但 view 组件必须纯净
-
-**当前采用务实方案**：
+**当前架构规范**：
 - `*.view.fn.tsx` - 纯展示组件，只依赖 hooks/, types/
-- `*.container.fn.tsx` - 容器组件，允许依赖 state/, flows/, hooks/, types/
+- `*.container.fn.tsx` - 容器组件，允许依赖 state/, flows/, pipes/, hooks/, types/
+
+**已修复的违规**:
+- ✅ 移除所有 views/ 对 `@/log` 的依赖（改用 console）
+- ✅ 移除所有 views/ 对 `@/db` 的依赖（迁移到 flows/backup/）
+- ✅ `backup-manager.container.fn.tsx` 现在从 `@/flows/backup` 导入
 
 **检查项**:
 - [x] View 组件只依赖 `hooks/`, `types/`
-- [x] Container 组件允许依赖 `state/`, `flows/`（架构妥协）
+- [x] Container 组件依赖 `state/`, `flows/`, `pipes/`（符合规范）
+- [x] 无 views/ 文件依赖 `@/log` 或 `@/db`
 - [x] 命名符合 `*.view.tsx` / `*.container.fn.tsx` 规范
 
 ---
@@ -451,6 +441,16 @@ Container 组件需要访问 state 和调用 flows，这是 React 应用的常�
 | `flows/wiki/get-wiki-preview.flow.ts` | 新建，封装 Wiki 预览数据获取 | 2026-01-07 |
 | `flows/data/clear-data.flow.ts` | 新建，封装 clearAllData | 2026-01-07 |
 | `pipes/icon-theme/` | 新建，从 views/icon-theme 提取纯函数 | 2026-01-07 |
+| `db/backup.db.fn.ts` | 迁移到 `flows/backup/backup.flow.ts` | 2026-01-07 |
+| `db/clear-data.db.fn.ts` | 迁移到 `flows/backup/clear-data.flow.ts` | 2026-01-07 |
+| `views/backup-manager.container.fn.tsx` | 改用 `@/flows/backup` 导入 | 2026-01-07 |
+| `views/excalidraw-editor.container.fn.tsx` | 移除 logger，改用 console | 2026-01-07 |
+| `views/excalidraw-editor.utils.ts` | 移除 logger，改用 console | 2026-01-07 |
+| `views/story-workspace.container.fn.tsx` | 移除 logger，改用 console | 2026-01-07 |
+| `views/activity-bar.container.fn.tsx` | 移除 logger，改用 console | 2026-01-07 |
+| `views/global-search.container.fn.tsx` | 移除 logger，改用 console | 2026-01-07 |
+| `views/unified-sidebar.container.fn.tsx` | 移除 logger，改用 console | 2026-01-07 |
+| `views/utils/devtools-wrapper.container.fn.tsx` | 移除 logger，改用 console | 2026-01-07 |
 
 ### 导入路径迁移 ✅ 已完成
 
