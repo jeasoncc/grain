@@ -56,7 +56,7 @@ export const createWorkspace = (
 ): TE.TaskEither<AppError, WorkspaceInterface> =>
 	pipe(
 		TE.of(encodeCreateWorkspace(input)),
-		TE.chain(rustApi.createWorkspace),
+		TE.chain(api.createWorkspace),
 		TE.map(decodeWorkspace),
 	);
 
@@ -69,7 +69,7 @@ export const updateWorkspace = (
 ): TE.TaskEither<AppError, WorkspaceInterface> =>
 	pipe(
 		TE.of(encodeUpdateWorkspace(input)),
-		TE.chain((request) => rustApi.updateWorkspace(workspaceId, request)),
+		TE.chain((request) => api.updateWorkspace(workspaceId, request)),
 		TE.map(decodeWorkspace),
 	);
 
@@ -78,7 +78,7 @@ export const updateWorkspace = (
  */
 export const deleteWorkspace = (
 	workspaceId: string,
-): TE.TaskEither<AppError, void> => rustApi.deleteWorkspace(workspaceId);
+): TE.TaskEither<AppError, void> => api.deleteWorkspace(workspaceId);
 
 /**
  * 获取所有工作区（别名，与 getWorkspaces 相同）

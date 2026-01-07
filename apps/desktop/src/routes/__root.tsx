@@ -1,15 +1,25 @@
-import * as React from 'react'
-import { Outlet, createRootRoute } from '@tanstack/react-router'
+import { Outlet, createRootRoute } from "@tanstack/react-router";
+import { ActivityBar } from "@/views/activity-bar";
+import { useAllWorkspaces } from "@/hooks/use-workspace";
+import { ConfirmProvider } from "@/views/ui/confirm";
 
 export const Route = createRootRoute({
-  component: RootComponent,
-})
+	component: RootComponent,
+});
 
 function RootComponent() {
-  return (
-    <React.Fragment>
-      <div>Hello "__root"!</div>
-      <Outlet />
-    </React.Fragment>
-  )
+	const workspaces = useAllWorkspaces();
+
+	return (
+		<ConfirmProvider>
+			<div className="flex h-screen w-screen overflow-hidden">
+				{workspaces && workspaces.length > 0 && (
+					<ActivityBar workspaces={workspaces} />
+				)}
+				<div className="flex-1 overflow-hidden">
+					<Outlet />
+				</div>
+			</div>
+		</ConfirmProvider>
+	);
 }
