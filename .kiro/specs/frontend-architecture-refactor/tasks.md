@@ -50,15 +50,15 @@
 | `icons.util.ts` | ✅ | 纯函数和配置 |
 | `themes.util.ts` | ✅ | 纯配置数据 |
 | `queue.util.ts` | ⚠️ | 包含单例状态（PQueue）- 可接受 |
-| `save-service-manager.util.ts` | ❌ | **违规：依赖 `@/io/api/content.api` 和 `@/log`** |
+| `save-service-manager.util.ts` | ✅ | 已转换为重导出 `flows/save/` |
 
 **检查项**:
-- [x] 无 IO 操作（无 fetch、invoke、localStorage）- 除 save-service-manager
+- [x] 无 IO 操作（无 fetch、invoke、localStorage）
 - [x] 无业务逻辑依赖
 - [x] 纯函数（相同输入相同输出）
 - [x] 命名符合 `*.util.ts` 规范
 
-**修复计划**: 将 `save-service-manager.util.ts` 移动到 `flows/save/`
+**已修复**: `save-service-manager.util.ts` 已移动到 `flows/save/save-service-manager.flow.ts`，原文件转为重导出
 
 ### Task 2.3: 审核 io/ 层 ✅
 **职责**: 与外部世界交互，封装 IO 操作
@@ -430,6 +430,7 @@ Container 组件需要访问 state 和调用 flows，这是 React 应用的常�
 | `views/theme/index.ts` | 重新导出 pipes/theme | 2026-01-07 |
 | `pipes/export/export.path.fn.ts` | 移动到 `flows/export/export-path.flow.ts` | 2026-01-07 |
 | `pipes/search/search.engine.fn.ts` | 移动到 `flows/search/search-engine.flow.ts` | 2026-01-07 |
+| `utils/save-service-manager.util.ts` | 转换为重导出 `flows/save/` | 2026-01-07 |
 
 ### 导入路径迁移 ✅ 已完成
 
