@@ -1,13 +1,11 @@
 /**
- * @file fn/editor/index.ts
- * @description 编辑器相关纯函数模块导出
+ * @file views/editor/index.ts
+ * @description 兼容层 - 重导出 pipes/editor
  *
- * Grain 统一使用 Lexical 编辑器处理所有文本文件。
- * 只有 .excalidraw 文件使用 Excalidraw 绘图编辑器。
+ * 此文件保留用于向后兼容。
+ * 实际实现已移动到 pipes/editor/
  *
- * 包含：
- * - 文件扩展名常量和映射
- * - 编辑器类型判断函数
+ * @deprecated 请直接从 @/pipes/editor 导入
  */
 
 // 常量和类型
@@ -18,7 +16,7 @@ export {
 	EXTENSION_TO_EDITOR_MAP,
 	FILE_EXTENSIONS,
 	NODE_TYPE_TO_EXTENSION_MAP,
-} from "./editor-extension.const";
+} from "@/pipes/editor";
 
 // 编辑器类型判断函数
 export {
@@ -29,4 +27,4 @@ export {
 	isExcalidrawFile,
 	isGrainFile,
 	isLexicalFile,
-} from "./get-editor-type.fn";
+} from "@/pipes/editor";

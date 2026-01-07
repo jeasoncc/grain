@@ -8,7 +8,7 @@
  * @requirements 119
  */
 
-import { generateLedgerContent } from "@/views/ledger";
+import { generateLedgerContent } from "@/pipes/ledger";
 import {
 	createDateTemplateConfig,
 	type DateTemplateParams,

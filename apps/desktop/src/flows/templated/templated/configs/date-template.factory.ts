@@ -13,7 +13,7 @@
 import dayjs from "dayjs";
 import { z } from "zod";
 import { getDateFolderStructureWithFilename } from "@/utils/date.util";
-import { NODE_TYPE_TO_EXTENSION_MAP } from "@/views/editor";
+import { NODE_TYPE_TO_EXTENSION_MAP } from "@/pipes/editor";
 import type { FileNodeType } from "@/types/node";
 import type { TemplateConfig } from "../create-templated-file.action";
 
