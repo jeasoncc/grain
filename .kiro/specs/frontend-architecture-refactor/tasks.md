@@ -21,6 +21,12 @@
 - ✅ 移动 `applyTheme` 函数到 `io/dom/theme.dom.ts`
 - ✅ 清理 `utils/themes.util.ts` - 只保留纯数据和纯函数
 - ✅ `utils/error.util.ts` 和 `utils/themes.util.ts` 转为兼容层重导出
+- ✅ 修复 `io/api/client.api.ts` 模块导出冲突 - 移除重复导出
+- ✅ 修复所有 API 文件导入 - 统一使用 `api` 对象
+- ✅ 修复 `content.api.ts` 中的 `rustApi` 引用
+- ✅ 创建 `AppLayout` 布局组件 - 统一管理 ActivityBar、侧边栏和主内容区域
+- ✅ 更新 `__root.tsx` 使用 AppLayout 组件
+- ✅ E2E 测试验证 - 应用完全正常工作
 
 **架构合规性验证**：
 - ✅ `types/` - 纯类型定义
