@@ -754,88 +754,17 @@ export const api = createApiClient();
 // 兼容性导出（与 rust-api.fn.ts 保持一致）
 // ============================================
 
-// Workspace API
-export const getWorkspaces = api.getWorkspaces;
-export const getWorkspace = api.getWorkspace;
-export const createWorkspace = api.createWorkspace;
-export const updateWorkspace = api.updateWorkspace;
-export const deleteWorkspace = api.deleteWorkspace;
-
-// Node API
-export const getNodesByWorkspace = api.getNodesByWorkspace;
-export const getNode = api.getNode;
-export const getChildNodes = api.getChildNodes;
-export const getRootNodes = api.getRootNodes;
-export const getNodesByParent = api.getNodesByParent;
-export const getNodesByType = api.getNodesByType;
-export const getDescendants = api.getDescendants;
-export const getNextSortOrder = api.getNextSortOrder;
-export const createNode = api.createNode;
-export const updateNode = api.updateNode;
-export const moveNode = api.moveNode;
-export const deleteNode = api.deleteNode;
-export const duplicateNode = api.duplicateNode;
-export const reorderNodes = api.reorderNodes;
-export const deleteNodesBatch = api.deleteNodesBatch;
-
-// Content API
-export const getContent = api.getContent;
-export const saveContent = api.saveContent;
-export const getContentVersion = api.getContentVersion;
-
-// Backup API
-export const createBackup = api.createBackup;
-export const restoreBackup = api.restoreBackup;
-export const listBackups = api.listBackups;
-export const deleteBackup = api.deleteBackup;
-export const cleanupOldBackups = api.cleanupOldBackups;
-
-// Clear Data API
-export const clearSqliteData = api.clearSqliteData;
-export const clearSqliteDataKeepUsers = api.clearSqliteDataKeepUsers;
-
-// User API
-export const getUsers = api.getUsers;
-export const getUser = api.getUser;
-export const getUserByUsername = api.getUserByUsername;
-export const getUserByEmail = api.getUserByEmail;
-export const getCurrentUser = api.getCurrentUser;
-export const createUser = api.createUser;
-export const updateUser = api.updateUser;
-export const updateUserLastLogin = api.updateUserLastLogin;
-export const deleteUser = api.deleteUser;
-
-// Attachment API
-export const getAttachments = api.getAttachments;
-export const getAttachmentsByProject = api.getAttachmentsByProject;
-export const getAttachment = api.getAttachment;
-export const getAttachmentsByType = api.getAttachmentsByType;
-export const getImagesByProject = api.getImagesByProject;
-export const getAudioFilesByProject = api.getAudioFilesByProject;
-export const getAttachmentByPath = api.getAttachmentByPath;
-export const createAttachment = api.createAttachment;
-export const updateAttachment = api.updateAttachment;
-export const deleteAttachment = api.deleteAttachment;
-export const deleteAttachmentsByProject = api.deleteAttachmentsByProject;
-
-// Tag API
-export const getTagsByWorkspace = api.getTagsByWorkspace;
-export const getTag = api.getTag;
-export const getTagByName = api.getTagByName;
-export const getTopTags = api.getTopTags;
-export const searchTags = api.searchTags;
-export const getNodesByTag = api.getNodesByTag;
-export const getTagGraphData = api.getTagGraphData;
-export const createTag = api.createTag;
-export const updateTag = api.updateTag;
-export const getOrCreateTag = api.getOrCreateTag;
-export const incrementTagCount = api.incrementTagCount;
-export const decrementTagCount = api.decrementTagCount;
-export const deleteTag = api.deleteTag;
-export const deleteTagsByWorkspace = api.deleteTagsByWorkspace;
-export const syncTagCache = api.syncTagCache;
-export const rebuildTagCache = api.rebuildTagCache;
-export const recalculateTagCounts = api.recalculateTagCounts;
+// 注意：这些导出已移动到各自的专用 API 文件中
+// - workspace.api.ts
+// - node.api.ts
+// - content.api.ts
+// - backup.api.ts
+// - clear-data.api.ts
+// - user.api.ts
+// - tag.api.ts
+// - attachment.api.ts
+// 
+// 请从 @/io/api 导入，它会自动从正确的文件导入
 
 // ============================================
 // Promise 版本（兼容性）

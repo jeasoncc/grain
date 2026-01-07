@@ -9,142 +9,118 @@
 
 ---
 
-## 错误 1: 所有测试套件超时 - 无法找到 activity-bar 元素
+## 错误 1: 模块导出冲突 ✅ 已修复
 
 ### 错误信息
 ```
-TimeoutError: Waiting for selector `[data-testid="activity-bar"]` failed
-Waiting failed: 30000ms exceeded
+The requested module '/src/io/api/index.ts' contains conflicting star exports for name 'updateNode'
+The requested module '/src/io/api/index.ts' contains conflicting star exports for name 'syncTagCache'
 ```
 
-### 影响范围
-- ❌ Workspace 测试套件
-- ❌ Diary 测试套件
-- ❌ Wiki 测试套件
-- ❌ Ledger 测试套件（推测）
-- ❌ Excalidraw 测试套件（推测）
+### 原因
+`client.api.ts` 中有旧的导出（从 `api` 对象重新导出），而专用 API 文件（`node.api.ts`, `tag.api.ts` 等）中也有新的独立函数定义。当 `io/api/index.ts` 使用 `export *` 时，两个文件都导出了相同的名字，导致冲突。
 
-### 详细堆栈
-```
-at Function.waitFor (/home/lotus/project/book2/novel-editor/node_modules/puppeteer-core/src/common/QueryHandler.ts:213:36)
-at async CdpFrame.waitForSelector (/home/lotus/project/book2/novel-editor/node_modules/puppeteer-core/src/api/Frame.ts:741:13)
-at async CdpPage.waitForSelector (/home/lotus/project/book2/novel-editor/node_modules/puppeteer-core/src/api/Page.ts:3058:12)
-at async waitForAppReady (/home/lotus/project/book2/novel-editor/apps/desktop/e2e/helpers/browser.helper.ts:89:3)
-```
+### 修复方案 ✅
+从 `client.api.ts` 中移除所有与专用 API 文件冲突的导出：
+- Workspace API 导出（已在 `workspace.api.ts` 中）
+- Node API 导出（已在 `node.api.ts` 中）
+- Content API 导出（已在 `content.api.ts` 中）
+- Backup API 导出（已在 `backup.api.ts` 中）
+- Clear Data API 导出（已在 `clear-data.api.ts` 中）
+- User API 导出（已在 `user.api.ts` 中）
+- Tag API 导出（已在 `tag.api.ts` 中）
+- Attachment API 导出（已在 `attachment.api.ts` 中）
 
-### 问题分析
+### 架构合规性 ✅
+- 修复符合架构规范
+- 每个 API 功能现在只在一个文件中导出
+- `client.api.ts` 保留为内部实现，不再重复导出
 
-1. **元素存在性验证** ✅
-   - `data-testid="activity-bar"` 存在于代码中
-   - 位置：`apps/desktop/src/views/activity-bar/activity-bar.view.fn.tsx:274`
+**文件**: `apps/desktop/src/io/api/client.api.ts`
 
-2. **可能的原因**：
-   - ❓ 应用初始化失败（JavaScript 错误）
-   - ❓ 路由问题（activity-bar 未渲染）
-   - ❓ React 渲染错误
-   - ❓ 数据加载失败导致组件未挂载
-   - ❓ CSS 问题导致元素不可见
+---
 
-3. **需要检查**：
-   - [ ] 浏览器控制台错误（JavaScript 错误）
-   - [ ] 网络请求失败
-   - [ ] React 组件渲染错误
-   - [ ] 路由配置问题
+## 错误 2: 应用停留在加载状态 ⏳ 调查中
 
-### 截图信息
-- 应用加载截图：`screenshots/2026-01-07T08-35-24/01-app-loaded.png`
-- 失败截图：`screenshots/2026-01-07T08-35-24/99-failure.png`
+### 现象
+- 页面显示 "Hello __root"! 和加载动画
+- 路由的 `<Outlet />` 没有渲染子组件
+- `index.tsx` 路由一直显示 `<Spinner />`
 
-### 下一步行动
+### 可能原因
+1. `useAllWorkspaces()` 返回 `undefined` 或空数组
+2. Workspace 数据加载失败
+3. TanStack Query 没有正确获取数据
 
-1. **查看失败截图** - 确认页面实际渲染状态
-2. **检查浏览器控制台** - 查找 JavaScript 错误
-3. **检查网络请求** - 确认 API 调用是否成功
-4. **手动测试** - 在浏览器中打开 http://localhost:1420 验证
+### 需要检查
+- [ ] `useAllWorkspaces` hook 的实现
+- [ ] Workspace API 调用是否成功
+- [ ] 数据库是否有初始数据
+- [ ] TanStack Query 的状态
+
+### 当前状态
+- ✅ 无 JavaScript 错误
+- ✅ 无模块导出冲突
+- ⏳ 应用卡在加载状态
 
 ---
 
 ## 测试执行流程
 
-### Workspace 测试套件
+### 初始测试（失败）
 ```
-✅ 浏览器启动成功
-✅ 新页面创建成功
-✅ 控制台监听器已设置
-✅ 导航到 http://localhost:1420
-📸 截图: 01-app-loaded.png
-⏳ 等待应用加载...
 ❌ 超时：等待 [data-testid="activity-bar"] 30秒后失败
-📸 失败截图: 99-failure.png
-✅ 浏览器已关闭
+原因：模块导出冲突导致应用无法加载
 ```
 
-### Diary 测试套件
+### 修复后测试（部分成功）
 ```
-✅ 浏览器启动成功
-✅ 新页面创建成功
-✅ 控制台监听器已设置
-✅ 导航到 http://localhost:1420
-📸 截图: 01-app-loaded.png
-⏳ 等待应用加载...
-❌ 超时：等待 [data-testid="activity-bar"] 30秒后失败
-📸 失败截图: 99-failure.png
-✅ 浏览器已关闭
-```
-
-### Wiki 测试套件
-```
-🚀 开始 Wiki E2E 测试...
-✅ 浏览器启动成功
-✅ 新页面创建成功
-✅ 控制台监听器已设置
-✅ 导航到 http://localhost:1420
-📸 截图: 01-app-loaded.png
-⏳ 等待应用加载...
-❌ 超时：等待 [data-testid="activity-bar"] 30秒后失败
-📸 失败截图: 99-failure.png
-✅ 浏览器已关闭
+✅ 页面加载成功
+✅ 无 JavaScript 错误
+⏳ 应用停留在加载状态（Spinner）
 ```
 
 ---
 
-## 架构合规性检查
+## 修复记录
 
-### 相关文件检查
+### 修复 1: 移除 client.api.ts 中的重复导出 ✅
+**日期**: 2026-01-07  
+**提交**: 待提交
 
-| 文件 | 架构层 | 状态 | 说明 |
-|------|--------|------|------|
-| `activity-bar.view.fn.tsx` | views/ | ✅ | 有 data-testid 属性 |
-| `activity-bar.container.fn.tsx` | views/ | ✅ | Container 组件 |
-| `__root.tsx` | routes/ | ❓ | 需要检查路由配置 |
+**修改内容**:
+- 移除 `client.api.ts` 中所有与专用 API 文件冲突的导出
+- 添加注释说明这些导出已移动到专用文件
+- 保留 `api` 对象本身（内部使用）
 
-### 可能的架构相关问题
-
-1. **路由初始化** - 检查 `__root.tsx` 是否正确渲染 ActivityBar
-2. **状态初始化** - 检查 state/ 层的初始化是否有问题
-3. **数据加载** - 检查 flows/ 层的数据加载是否阻塞渲染
-
----
-
-## 待办事项
-
-- [ ] 查看 e2e 失败截图
-- [ ] 检查浏览器控制台日志
-- [ ] 手动访问 http://localhost:1420 验证
-- [ ] 检查 __root.tsx 路由配置
-- [ ] 检查应用初始化流程
-- [ ] 修复发现的问题
-- [ ] 重新运行 e2e 测试
+**影响**:
+- 解决了模块导出冲突
+- 应用可以正常加载（无错误）
+- 符合架构规范（每个功能只在一个地方导出）
 
 ---
 
-## 结论
+## 下一步行动
 
-E2E 测试失败，所有测试套件都无法找到 `activity-bar` 元素。这表明应用可能没有正确加载或渲染。需要进一步调查：
+1. **调查 Workspace 加载问题**
+   - 检查 `useAllWorkspaces` hook
+   - 检查 Workspace API 调用
+   - 检查数据库初始化
 
-1. 查看失败截图确认页面状态
-2. 检查浏览器控制台是否有 JavaScript 错误
-3. 验证路由配置是否正确
-4. 确认应用初始化流程
+2. **验证修复**
+   - 重新运行 E2E 测试
+   - 确认 activity-bar 可以正常显示
 
-**注意**：这可能不是架构重构引入的问题，需要对比重构前的 e2e 测试结果。
+3. **提交修复**
+   - 提交 client.api.ts 的修改
+   - 更新错误记录文档
+
+---
+
+## 架构合规性验证 ✅
+
+所有修复都符合架构规范：
+- `io/api/` 层只依赖 `types/`
+- 每个 API 功能只在一个文件中定义和导出
+- 使用 `export *` 从 `index.ts` 统一导出
+- 没有违反依赖规则
