@@ -17,7 +17,7 @@ import dayjs from "dayjs";
 import {
 	type DateFolderStructure,
 	getDateFolderStructure,
-} from "@/fn/date/date.folder.fn";
+} from "@/utils/date.util";
 
 // ==============================
 // Types
