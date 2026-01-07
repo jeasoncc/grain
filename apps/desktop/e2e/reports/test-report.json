@@ -1,29 +1,61 @@
 {
-  "timestamp": "2026-01-07T08:38:50.425Z",
-  "totalTests": 1,
-  "passed": 0,
-  "failed": 0,
-  "skipped": 1,
-  "duration": 205890,
+  "timestamp": "2026-01-07T11:03:23.530Z",
+  "totalTests": 13,
+  "passed": 7,
+  "failed": 1,
+  "skipped": 5,
+  "duration": 218582,
   "suites": [
     {
       "suiteName": "Workspace",
       "results": [],
-      "duration": 37793
+      "duration": 33613
     },
     {
       "suiteName": "Diary",
       "results": [],
-      "duration": 33782
+      "duration": 33775
     },
     {
       "suiteName": "Wiki",
       "results": [],
-      "duration": 67352
+      "duration": 67285
     },
     {
       "suiteName": "Ledger",
       "results": [
+        {
+          "name": "New Ledger Button Exists",
+          "status": "passed",
+          "duration": 448
+        },
+        {
+          "name": "Click New Ledger Button",
+          "status": "passed",
+          "duration": 3121
+        },
+        {
+          "name": "Success Toast Displayed",
+          "status": "passed",
+          "duration": 7005
+        },
+        {
+          "name": "Ledger Folder Structure Created",
+          "status": "passed",
+          "duration": 1583
+        },
+        {
+          "name": "Ledger File Appears in File Tree",
+          "status": "skipped",
+          "duration": 6007,
+          "error": "Ledger file not found in File Tree - feature may not be implemented"
+        },
+        {
+          "name": "Ledger File Auto Opened",
+          "status": "skipped",
+          "duration": 5005,
+          "error": "Editor tabs container not found"
+        },
         {
           "name": "No Workspace Error Handling",
           "status": "skipped",
@@ -31,12 +63,46 @@
           "error": "Test requires special environment setup (no workspace)"
         }
       ],
-      "duration": 33485
+      "duration": 47156
     },
     {
       "suiteName": "Excalidraw",
-      "results": [],
-      "duration": 33478
+      "results": [
+        {
+          "name": "Command Palette Opens",
+          "status": "failed",
+          "duration": 4012,
+          "error": "Command palette did not open"
+        },
+        {
+          "name": "Trigger Excalidraw Creation",
+          "status": "skipped",
+          "duration": 5972,
+          "error": "Could not trigger Excalidraw creation via command palette"
+        },
+        {
+          "name": "Success Toast Displayed",
+          "status": "passed",
+          "duration": 7009
+        },
+        {
+          "name": "Excalidraw Folder Structure Created",
+          "status": "passed",
+          "duration": 1614
+        },
+        {
+          "name": "Excalidraw File Appears in File Tree",
+          "status": "passed",
+          "duration": 6448
+        },
+        {
+          "name": "Excalidraw File Auto Opened",
+          "status": "skipped",
+          "duration": 5003,
+          "error": "Editor tabs container not found"
+        }
+      ],
+      "duration": 36753
     }
   ]
 }

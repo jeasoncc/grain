@@ -1,7 +1,8 @@
 import { Outlet, createRootRoute } from "@tanstack/react-router";
-import { ActivityBar } from "@/views/activity-bar";
+import { AppLayout } from "@/views/app-layout";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
 import { ConfirmProvider } from "@/views/ui/confirm";
+import { Spinner } from "@/views/ui/loading";
 
 export const Route = createRootRoute({
 	component: RootComponent,
@@ -10,16 +11,30 @@ export const Route = createRootRoute({
 function RootComponent() {
 	const workspaces = useAllWorkspaces();
 
+	// 加载中状态
+	if (workspaces === undefined) {
+		return (
+			<div className="flex h-screen w-screen items-center justify-center">
+				<Spinner />
+			</div>
+		);
+	}
+
+	// 无工作区状态（等待 ActivityBar 自动创建）
+	if (workspaces.length === 0) {
+		return (
+			<div className="flex h-screen w-screen items-center justify-center">
+				<Spinner />
+			</div>
+		);
+	}
+
+	// 正常状态：显示完整布局
 	return (
 		<ConfirmProvider>
-			<div className="flex h-screen w-screen overflow-hidden">
-				{workspaces && workspaces.length > 0 && (
-					<ActivityBar workspaces={workspaces} />
-				)}
-				<div className="flex-1 overflow-hidden">
-					<Outlet />
-				</div>
-			</div>
+			<AppLayout workspaces={workspaces}>
+				<Outlet />
+			</AppLayout>
 		</ConfirmProvider>
 	);
 }
