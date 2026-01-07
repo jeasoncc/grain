@@ -423,9 +423,48 @@ Container 组件需要访问 state 和调用 flows，这是 React 应用的常�
 | `state/diagram.state.ts` | 移除 logger 依赖 | 2026-01-07 |
 | `state/writing.state.ts` | 改用 pipes/writing 替代 views/writing | 2026-01-07 |
 | `state/theme.state.ts` | 改用 pipes/theme 替代 views/theme | 2026-01-07 |
-| `views/editor-tabs/index.ts` | 重新导出 pipes/editor-tab | 2026-01-07 |
+| `views/editor-tabs/index.ts` | 重新导出 pipes/editor-tab + 组件 | 2026-01-07 |
 | `views/writing/index.ts` | 重新导出 pipes/writing | 2026-01-07 |
 | `views/theme/index.ts` | 重新导出 pipes/theme | 2026-01-07 |
+
+### 导入路径迁移 ✅ 已完成
+
+所有 `@/fn/` 导入已更新为新路径：
+
+| 旧路径 | 新路径 | 更新文件数 |
+|--------|--------|-----------|
+| `@/fn/word-count` | `@/pipes/word-count` | 2 |
+| `@/fn/search` | `@/pipes/search` | 6 |
+| `@/fn/node` | `@/pipes/node` | 4 |
+| `@/fn/export` | `@/pipes/export` | 3 |
+
+`fn/` 子模块已更新为重导出新位置：
+
+| fn/ 子模块 | 重导出到 |
+|-----------|---------|
+| `fn/search/` | `@/pipes/search` |
+| `fn/export/` | `@/pipes/export` |
+| `fn/node/` | `@/pipes/node` |
+| `fn/word-count/` | `@/pipes/word-count` |
+| `fn/content/` | `@/pipes/content` |
+| `fn/tag/` | `@/pipes/tag` |
+| `fn/wiki/` | `@/pipes/wiki` |
+| `fn/import/` | `@/pipes/import` |
+| `fn/format/` | `@/pipes/format` |
+| `fn/date/` | `@/utils/date.util` |
+| `fn/keyboard/` | `@/utils/keyboard.util` |
+| `fn/save/` | `@/flows/save` |
+| `fn/updater/` | `@/flows/updater` |
+| `fn/migration/` | `@/flows/migration` |
+| `fn/editor-tab/` | `@/pipes/editor-tab` |
+| `fn/writing/` | `@/pipes/writing` |
+| `fn/theme/` | `@/pipes/theme` |
+| `fn/editor/` | `@/views/editor` |
+| `fn/editor-history/` | `@/views/editor-history` |
+| `fn/icon-theme/` | `@/views/icon-theme` |
+| `fn/diagram/` | `@/views/diagram` |
+| `fn/drawing/` | `@/views/drawing` |
+| `fn/ledger/` | `@/views/ledger` |
 
 ### 新增的 pipes 模块
 
