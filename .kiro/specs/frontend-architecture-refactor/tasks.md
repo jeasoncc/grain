@@ -443,6 +443,15 @@ Container 组件需要访问 state 和调用 flows，这是 React 应用的常�
 | `views/editor/` | 纯函数移动到 `pipes/editor/` | 2026-01-07 |
 | `views/ledger/` | 纯函数移动到 `pipes/ledger/` | 2026-01-07 |
 | `flows/templated/configs/*.ts` | 导入从 `@/views/` 改为 `@/pipes/` | 2026-01-07 |
+| `views/blocks/wiki-hover-preview-connected.tsx` | 移除直接 io/api 依赖，改用 hooks | 2026-01-07 |
+| `views/panels/file-tree-panel.container.fn.tsx` | 移除直接 io/api 依赖，改用 hooks | 2026-01-07 |
+| `views/activity-bar.container.fn.tsx` | 从 flows 导入 clearAllData | 2026-01-07 |
+| `hooks/use-node-operations.ts` | 新建，从 flows 导入而非 io/api | 2026-01-07 |
+| `hooks/use-wiki-preview.ts` | 新建，从 flows 导入而非 io/api | 2026-01-07 |
+| `flows/node/get-node.flow.ts` | 新建，封装 getNodeById 和 setNodeCollapsed | 2026-01-07 |
+| `flows/wiki/get-wiki-preview.flow.ts` | 新建，封装 Wiki 预览数据获取 | 2026-01-07 |
+| `flows/data/clear-data.flow.ts` | 新建，封装 clearAllData | 2026-01-07 |
+| `pipes/icon-theme/` | 新建，从 views/icon-theme 提取纯函数 | 2026-01-07 |
 
 ### 导入路径迁移 ✅ 已完成
 
