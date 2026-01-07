@@ -41,8 +41,14 @@ src/
 │   │   └── ...
 │   ├── storage/          # 浏览器存储
 │   │   └── settings.storage.ts
-│   └── file/             # 文件系统
-│       └── dialog.file.ts
+│   ├── file/             # 文件系统
+│   │   └── dialog.file.ts
+│   ├── log/              # 日志系统
+│   │   ├── logger.ts
+│   │   └── log-db.ts
+│   └── db/               # 数据库（IndexedDB）
+│       ├── log-db.ts
+│       └── legacy-database.ts
 │
 ├── pipes/                # 纯管道（业务数据转换）
 │   ├── node/
@@ -109,13 +115,13 @@ src/
 
 ```
 src/
-├── fn/                   # → 迁移到 pipes/, utils/, flows/, views/
-├── components/           # → 迁移到 views/
-├── actions/              # → 迁移到 flows/
-├── stores/               # → 迁移到 state/
-├── lib/                  # → 迁移到 utils/
-├── db/                   # → 待迁移到 io/db/
-└── log/                  # → 待迁移到 io/log/
+├── fn/                   # → 已迁移到 pipes/, utils/, flows/, views/
+├── components/           # → 已迁移到 views/
+├── actions/              # → 已迁移到 flows/
+├── stores/               # → 已迁移到 state/
+├── lib/                  # → 已迁移到 utils/
+├── db/                   # → 已迁移到 io/db/（保留为重导出兼容层）
+└── log/                  # → 已迁移到 io/log/（保留为重导出兼容层）
 ```
 
 ## Rust Core 结构 (`packages/rust-core/src/`)

@@ -116,6 +116,14 @@ io/
 │   ├── dialog.file.ts
 │   ├── download.file.ts
 │   └── index.ts
+├── log/              # 日志系统（控制台 + IndexedDB）
+│   ├── logger.ts
+│   ├── log-db.ts
+│   └── index.ts
+├── db/               # 数据库（IndexedDB/Dexie）
+│   ├── log-db.ts
+│   ├── legacy-database.ts
+│   └── index.ts
 └── index.ts
 ```
 
@@ -126,6 +134,8 @@ io/
 | `api/` | Rust 后端 | 跨进程，异步，可能失败 |
 | `storage/` | 浏览器 localStorage | 同步，持久化 |
 | `file/` | 文件系统 | 需要用户交互 |
+| `log/` | 控制台 + IndexedDB | 日志记录，高频写入 |
+| `db/` | IndexedDB (Dexie) | 遗留数据库，向后兼容 |
 
 ---
 
