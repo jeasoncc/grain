@@ -32,7 +32,7 @@ import type {
 export const getContentByNodeId = (
 	nodeId: string,
 ): TE.TaskEither<AppError, ContentInterface | null> =>
-	pipe(rustApi.getContent(nodeId), TE.map(decodeContentOptional));
+	pipe(api.getContent(nodeId), TE.map(decodeContentOptional));
 
 /**
  * 获取节点内容（不存在时抛出错误）
@@ -57,7 +57,7 @@ export const getContentByNodeIdOrFail = (
  */
 export const getContentVersion = (
 	nodeId: string,
-): TE.TaskEither<AppError, number | null> => rustApi.getContentVersion(nodeId);
+): TE.TaskEither<AppError, number | null> => api.getContentVersion(nodeId);
 
 // ============================================
 // 写入操作
@@ -71,7 +71,7 @@ export const createContent = (
 ): TE.TaskEither<AppError, ContentInterface> =>
 	pipe(
 		TE.of(encodeCreateContent(input)),
-		TE.chain(rustApi.saveContent),
+		TE.chain(api.saveContent),
 		TE.map(decodeContent),
 	);
 
@@ -107,7 +107,7 @@ export const updateContentByNodeId = (
 ): TE.TaskEither<AppError, ContentInterface> =>
 	pipe(
 		TE.of(encodeUpdateContent(nodeId, content)),
-		TE.chain(rustApi.saveContent),
+		TE.chain(api.saveContent),
 		TE.map(decodeContent),
 	);
 
@@ -122,7 +122,7 @@ export const saveContent = (
 ): TE.TaskEither<AppError, ContentInterface> =>
 	pipe(
 		TE.of(encodeUpdateContent(nodeId, content, expectedVersion)),
-		TE.chain(rustApi.saveContent),
+		TE.chain(api.saveContent),
 		TE.map(decodeContent),
 	);
 
@@ -145,7 +145,7 @@ export const getContentsByNodeIds = (
 		nodeIds,
 		A.map((nodeId) =>
 			pipe(
-				rustApi.getContent(nodeId),
+				api.getContent(nodeId),
 				TE.map((response) => (response ? decodeContent(response) : null)),
 			),
 		),
