@@ -9,7 +9,7 @@ import * as A from "fp-ts/Array";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import * as rustApi from "./client.api";
-import type { AppError } from "@/utils/error.util";
+import type { AppError } from "@/types/error";
 import {
 	decodeContent,
 	decodeContentOptional,

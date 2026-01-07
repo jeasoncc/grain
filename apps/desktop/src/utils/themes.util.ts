@@ -2259,124 +2259,34 @@ export const themes: Theme[] = [
 	},
 ];
 
-// 将 camelCase 转换为 kebab-case
-function toKebabCase(str: string): string {
-	return str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
-}
+// ============================================================================
+// 纯函数：主题查询和过滤
+// ============================================================================
 
-// 将十六进制颜色转换为 HSL 格式（用于 Tailwind CSS 变量）
-function _hexToHSL(hex: string): string {
-	// 移除 # 号
-	hex = hex.replace(/^#/, "");
-
-	// 处理 3 位十六进制
-	if (hex.length === 3) {
-		hex = hex
-			.split("")
-			.map((char) => char + char)
-			.join("");
-	}
-
-	// 转换为 RGB
-	const r = Number.parseInt(hex.substring(0, 2), 16) / 255;
-	const g = Number.parseInt(hex.substring(2, 4), 16) / 255;
-	const b = Number.parseInt(hex.substring(4, 6), 16) / 255;
-
-	const max = Math.max(r, g, b);
-	const min = Math.min(r, g, b);
-	let h = 0;
-	let s = 0;
-	const l = (max + min) / 2;
-
-	if (max !== min) {
-		const d = max - min;
-		s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-
-		switch (max) {
-			case r:
-				h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-				break;
-			case g:
-				h = ((b - r) / d + 2) / 6;
-				break;
-			case b:
-				h = ((r - g) / d + 4) / 6;
-				break;
-		}
-	}
-
-	// 转换为度数和百分比
-	h = Math.round(h * 360);
-	s = Math.round(s * 100);
-	const lPercent = Math.round(l * 100);
-
-	// 返回 Tailwind CSS 格式：h s% l%
-	return `${h} ${s}% ${lPercent}%`;
-}
-
-// 生成默认的扩展颜色
-function getExtendedColors(
-	colors: ThemeColors,
-	type: "light" | "dark",
-): Required<ThemeColors> {
-	return {
-		...colors,
-		// 编辑器颜色
-		editorCursor: colors.editorCursor || colors.primary,
-		editorSelection: colors.editorSelection || colors.accent,
-		editorLineHighlight:
-			colors.editorLineHighlight || (type === "light" ? "#f5f5f5" : "#2a2a2a"),
-
-		// Toast 颜色
-		toastBackground: colors.toastBackground || colors.popover,
-		toastForeground: colors.toastForeground || colors.popoverForeground,
-		toastBorder: colors.toastBorder || colors.border,
-
-		// 状态颜色
-		success: colors.success || (type === "light" ? "#22c55e" : "#4ade80"),
-		warning: colors.warning || (type === "light" ? "#f59e0b" : "#fbbf24"),
-		error: colors.error || (type === "light" ? "#ef4444" : "#f87171"),
-		info: colors.info || colors.primary,
-
-		// 语法高亮
-		syntaxHeading: colors.syntaxHeading || colors.primary,
-		syntaxBold: colors.syntaxBold || (type === "light" ? "#1f2937" : "#f1f5f9"),
-		syntaxItalic: colors.syntaxItalic || colors.mutedForeground,
-		syntaxLink: colors.syntaxLink || colors.primary,
-		syntaxCode: colors.syntaxCode || (type === "light" ? "#dc2626" : "#f87171"),
-		syntaxQuote: colors.syntaxQuote || colors.mutedForeground,
-		syntaxComment: colors.syntaxComment || colors.mutedForeground,
-	};
-}
-
-// 应用主题
-export function applyTheme(theme: Theme): void {
-	const root = document.documentElement;
-
-	// 设置主题类型
-	root.classList.remove("light", "dark");
-	root.classList.add(theme.type);
-
-	// 获取完整的颜色配置（包括默认扩展颜色）
-	const fullColors = getExtendedColors(theme.colors, theme.type);
-
-	// 应用所有颜色变量（直接使用十六进制颜色）
-	Object.entries(fullColors).forEach(([key, value]) => {
-		root.style.setProperty(`--${toKebabCase(key)}`, value);
-	});
-}
-
-// 获取主题
+/**
+ * 根据 key 获取主题
+ * 
+ * @param key - 主题 key
+ * @returns 主题对象，如果未找到则返回 undefined
+ */
 export function getThemeByKey(key: string): Theme | undefined {
 	return themes.find((t) => t.key === key);
 }
 
-// 获取浅色主题
+/**
+ * 获取所有浅色主题
+ * 
+ * @returns 浅色主题数组
+ */
 export function getLightThemes(): Theme[] {
 	return themes.filter((t) => t.type === "light");
 }
 
-// 获取深色主题
+/**
+ * 获取所有深色主题
+ * 
+ * @returns 深色主题数组
+ */
 export function getDarkThemes(): Theme[] {
 	return themes.filter((t) => t.type === "dark");
 }

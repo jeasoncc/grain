@@ -67,21 +67,21 @@
 
 **已修复**: `save-service-manager.util.ts` 已移动到 `flows/save/save-service-manager.flow.ts`，原文件转为重导出
 
-### Task 2.3: 审核 io/ 层 ✅
+### Task 2.3: 审核 io/ 层 ✅ 已完成
 **职责**: 与外部世界交互，封装 IO 操作
 
 #### io/api/ - Rust 后端 API
 | 文件 | 状态 | 问题 |
 |------|------|------|
-| `client.api.ts` | ⚠️ | 依赖 `@/log`（应只依赖 types/） |
-| `workspace.api.ts` | ✅ | 符合规范 |
-| `node.api.ts` | ✅ | 符合规范 |
-| `content.api.ts` | ✅ | 符合规范 |
-| `user.api.ts` | ✅ | 符合规范 |
-| `tag.api.ts` | ✅ | 符合规范 |
-| `attachment.api.ts` | ✅ | 符合规范 |
-| `backup.api.ts` | ✅ | 符合规范 |
-| `clear-data.api.ts` | ✅ | 符合规范 |
+| `client.api.ts` | ✅ | 已修复：改用 @/types/error |
+| `workspace.api.ts` | ✅ | 已修复：改用 @/types/error |
+| `node.api.ts` | ✅ | 已修复：改用 @/types/error |
+| `content.api.ts` | ✅ | 已修复：改用 @/types/error |
+| `user.api.ts` | ✅ | 已修复：改用 @/types/error |
+| `tag.api.ts` | ✅ | 已修复：改用 @/types/error |
+| `attachment.api.ts` | ✅ | 已修复：改用 @/types/error |
+| `backup.api.ts` | ✅ | 已修复：改用 @/types/error |
+| `clear-data.api.ts` | ✅ | 已修复：改用 @/types/error |
 
 #### io/storage/ - 浏览器存储
 | 文件 | 状态 | 问题 |
@@ -93,13 +93,23 @@
 |------|------|------|
 | `dialog.file.ts` | ✅ | 符合规范 |
 
+#### io/dom/ - DOM 操作
+| 文件 | 状态 | 问题 |
+|------|------|------|
+| `theme.dom.ts` | ✅ | 已修复：applyTheme 移入此文件 |
+
 **检查项**:
-- [x] 只依赖 `types/` - 除 client.api 依赖 log
+- [x] 只依赖 `types/` - 全部已修复
 - [x] 封装所有外部交互
 - [x] 使用 TaskEither 处理错误
 - [x] 命名符合 `*.api.ts` / `*.storage.ts` / `*.file.ts` 规范
 
-**修复计划**: 将 `log/` 移动到 `io/log/`，或在 io/ 层允许日志依赖
+**已完成修复**:
+1. ✅ 创建 `types/error/error.types.ts` - 移动 AppError 类型和工厂函数
+2. ✅ 更新 `utils/error.util.ts` 为重导出兼容层
+3. ✅ 更新所有 `io/api/*.api.ts` 文件导入 `@/types/error`
+4. ✅ 移动 `applyTheme` 函数到 `io/dom/theme.dom.ts`
+5. ✅ 清理 `utils/themes.util.ts` - 只保留纯数据和纯函数
 
 ### Task 2.4: 审核 pipes/ 层 ✅
 **职责**: 纯业务数据转换，无 IO，无副作用
@@ -451,6 +461,11 @@
 | `views/global-search.container.fn.tsx` | 移除 logger，改用 console | 2026-01-07 |
 | `views/unified-sidebar.container.fn.tsx` | 移除 logger，改用 console | 2026-01-07 |
 | `views/utils/devtools-wrapper.container.fn.tsx` | 移除 logger，改用 console | 2026-01-07 |
+| `types/error/error.types.ts` | 新建，从 utils/error.util 迁移 | 2026-01-07 |
+| `utils/error.util.ts` | 转换为重导出 `types/error` | 2026-01-07 |
+| `io/api/*.api.ts` (9个文件) | 改用 `@/types/error` 导入 | 2026-01-07 |
+| `io/dom/theme.dom.ts` | 移入 applyTheme 函数（含 DOM 操作） | 2026-01-07 |
+| `utils/themes.util.ts` | 移除 applyTheme，只保留纯数据和纯函数 | 2026-01-07 |
 
 ### 导入路径迁移 ✅ 已完成
 

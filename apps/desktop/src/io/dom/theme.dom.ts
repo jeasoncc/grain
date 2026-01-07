@@ -9,7 +9,7 @@
  * 这些函数有 IO 副作用，因此放在 io/dom 层
  */
 
-import { applyTheme, type Theme } from "@/utils/themes.util";
+import type { Theme, ThemeColors } from "@/utils/themes.util";
 import { DEFAULT_THEME_CONFIG } from "@/types/theme";
 
 // ==============================
@@ -32,8 +32,75 @@ export const getSystemTheme = (): "light" | "dark" => {
 };
 
 // ==============================
-// Theme Application
+// Theme Application (DOM Operations)
 // ==============================
+
+/**
+ * 将 camelCase 转换为 kebab-case
+ */
+function toKebabCase(str: string): string {
+	return str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+}
+
+/**
+ * 生成默认的扩展颜色
+ */
+function getExtendedColors(
+	colors: ThemeColors,
+	type: "light" | "dark",
+): Required<ThemeColors> {
+	return {
+		...colors,
+		// 编辑器颜色
+		editorCursor: colors.editorCursor || colors.primary,
+		editorSelection: colors.editorSelection || colors.accent,
+		editorLineHighlight:
+			colors.editorLineHighlight || (type === "light" ? "#f5f5f5" : "#2a2a2a"),
+
+		// Toast 颜色
+		toastBackground: colors.toastBackground || colors.popover,
+		toastForeground: colors.toastForeground || colors.popoverForeground,
+		toastBorder: colors.toastBorder || colors.border,
+
+		// 状态颜色
+		success: colors.success || (type === "light" ? "#22c55e" : "#4ade80"),
+		warning: colors.warning || (type === "light" ? "#f59e0b" : "#fbbf24"),
+		error: colors.error || (type === "light" ? "#ef4444" : "#f87171"),
+		info: colors.info || colors.primary,
+
+		// 语法高亮
+		syntaxHeading: colors.syntaxHeading || colors.primary,
+		syntaxBold: colors.syntaxBold || (type === "light" ? "#1f2937" : "#f1f5f9"),
+		syntaxItalic: colors.syntaxItalic || colors.mutedForeground,
+		syntaxLink: colors.syntaxLink || colors.primary,
+		syntaxCode: colors.syntaxCode || (type === "light" ? "#dc2626" : "#f87171"),
+		syntaxQuote: colors.syntaxQuote || colors.mutedForeground,
+		syntaxComment: colors.syntaxComment || colors.mutedForeground,
+	};
+}
+
+/**
+ * 应用主题到 DOM
+ * 
+ * 注意：此函数有副作用（操作 DOM），不是纯函数
+ *
+ * @param theme - 要应用的主题
+ */
+export function applyTheme(theme: Theme): void {
+	const root = document.documentElement;
+
+	// 设置主题类型
+	root.classList.remove("light", "dark");
+	root.classList.add(theme.type);
+
+	// 获取完整的颜色配置（包括默认扩展颜色）
+	const fullColors = getExtendedColors(theme.colors, theme.type);
+
+	// 应用所有颜色变量（直接使用十六进制颜色）
+	Object.entries(fullColors).forEach(([key, value]) => {
+		root.style.setProperty(`--${toKebabCase(key)}`, value);
+	});
+}
 
 /**
  * 应用主题，可选过渡动画
