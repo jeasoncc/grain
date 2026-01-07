@@ -2,7 +2,7 @@
 
 ## 当前状态概述
 
-✅ **架构重构已完成**
+✅ **架构重构已完成 - io/ 层违规已修复**
 
 主要完成事项：
 1. **state/ 层重构** - 移除所有非 types/ 依赖，业务逻辑移到 flows/
@@ -10,6 +10,14 @@
 3. **flows/ 层扩展** - 添加 editor-tabs, writing, theme 等 flow 模块
 4. **组件更新** - 所有 container 组件改用 hooks 而非直接访问 state
 5. **兼容层维护** - actions/, fn/ 等旧目录转为重导出
+6. **io/ 层修复** - 错误类型移到 types/error，DOM 操作移到 io/dom ✨ NEW
+
+**最新修复（2026-01-07）**：
+- ✅ 创建 `types/error/` 模块 - AppError 类型和工厂函数
+- ✅ 更新所有 `io/api/*.api.ts` 文件使用 `@/types/error`
+- ✅ 移动 `applyTheme` 函数到 `io/dom/theme.dom.ts`
+- ✅ 清理 `utils/themes.util.ts` - 只保留纯数据和纯函数
+- ✅ `utils/error.util.ts` 转为兼容层重导出
 
 ---
 
