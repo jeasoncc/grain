@@ -20,7 +20,7 @@ import {
 	exportProject,
 } from "@/flows";
 import type { ExportFormat, ExportOptions } from "@/pipes/export";
-import { triggerBlobDownload, triggerDownload } from "@/pipes/export";
+import { triggerBlobDownload, triggerDownload } from "@/io/file";
 import type {
 	ExportDialogContainerProps,
 	ExtendedExportFormat,

@@ -8,24 +8,9 @@
  * - 混合：分别统计中文字符和英文单词
  */
 
-/**
- * 统计模式
- */
-export type CountMode = "chinese" | "english" | "mixed";
-
-/**
- * 字数统计结果
- */
-export interface WordCountResult {
-	/** 中文字符数 */
-	readonly chineseChars: number;
-	/** 英文单词数 */
-	readonly englishWords: number;
-	/** 总计（根据模式返回不同值） */
-	readonly total: number;
-	/** 字符总数（不含空格） */
-	readonly characters: number;
-}
+// 从 types 层导入类型
+export type { CountMode, WordCountResult } from "@/types/word-count";
+import type { CountMode, WordCountResult } from "@/types/word-count";
 
 /**
  * 中文字符正则表达式

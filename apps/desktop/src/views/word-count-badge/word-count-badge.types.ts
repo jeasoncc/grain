@@ -3,7 +3,7 @@
  * @description 字数统计徽章组件类型定义
  */
 
-import type { CountMode, WordCountResult } from "@/pipes/word-count";
+import type { CountMode, WordCountResult } from "@/types/word-count";
 
 export interface WordCountBadgeProps {
 	/** 字数统计结果 */
@@ -16,6 +16,8 @@ export interface WordCountBadgeProps {
 	readonly showDetail?: boolean;
 	/** 自定义类名 */
 	readonly className?: string;
+	/** 格式化后的显示文本（由父组件传入） */
+	readonly displayText?: string;
 }
 
 export interface WordCountDisplayProps {
@@ -29,4 +31,6 @@ export interface WordCountDisplayProps {
 	readonly showIcon?: boolean;
 	/** 自定义类名 */
 	readonly className?: string;
+	/** 格式化后的显示文本（由父组件传入） */
+	readonly displayText?: string;
 }

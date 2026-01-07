@@ -12,7 +12,7 @@
  */
 
 import { useMemo } from "react";
-import { WikiFileEntryBuilder, type WikiFileEntryType } from "@/pipes/wiki";
+import { WikiFileEntryBuilder, type WikiFileEntry } from "@/types/wiki";
 import { useNodesByWorkspace } from "@/queries/node.queries";
 import type { NodeInterface } from "@/types/node";
 
@@ -46,7 +46,7 @@ function buildNodePath(
  * @param workspaceId - The workspace ID (null returns empty array)
  * @returns Array of WikiFileEntry objects
  */
-export function useWikiFiles(workspaceId: string | null): WikiFileEntryType[] {
+export function useWikiFiles(workspaceId: string | null): WikiFileEntry[] {
 	const { data: allNodes, isLoading } = useNodesByWorkspace(workspaceId);
 
 	return useMemo(() => {

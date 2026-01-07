@@ -217,3 +217,9 @@ export {
 // ==============================
 
 export { clearAllData } from "./data";
+
+// ==============================
+// Icon Theme Flows (图标主题)
+// ==============================
+
+export { getCurrentIconTheme, getIconThemeByKey } from "./icon-theme";

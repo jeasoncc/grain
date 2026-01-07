@@ -32,7 +32,11 @@ import {
 } from "@/views/ui/tooltip";
 import { WordCountBadge } from "@/views/word-count-badge";
 import { type EditorType, getEditorTypeByFilename } from "@/views/editor";
-import { countWordsFromLexicalState } from "@/pipes/word-count";
+import {
+	countWordsFromLexicalState,
+	formatWordCount,
+	formatWordCountDetail,
+} from "@/pipes/word-count";
 import { useSettings } from "@/hooks/use-settings";
 import { useUnifiedSave } from "@/hooks/use-unified-save";
 import { useWikiFiles } from "@/hooks/use-wiki";
@@ -289,6 +293,11 @@ export const StoryWorkspaceContainer = memo(
 						countMode={wordCountMode}
 						show={showWordCountBadge && !isExcalidrawTab && !!activeTab}
 						showDetail={wordCountMode === "mixed"}
+						displayText={
+							wordCountMode === "mixed"
+								? formatWordCountDetail(wordCountResult, wordCountMode)
+								: formatWordCount(wordCountResult.total, wordCountMode)
+						}
 					/>
 				</div>
 			</TooltipProvider>

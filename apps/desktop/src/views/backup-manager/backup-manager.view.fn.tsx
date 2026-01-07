@@ -36,7 +36,7 @@ import {
 import { Progress } from "@/views/ui/progress";
 import { Separator } from "@/views/ui/separator";
 import { Switch } from "@/views/ui/switch";
-import { formatBytes } from "@/pipes/format";
+import { formatBytes } from "@/utils/format.util";
 import type { BackupManagerViewProps } from "./backup-manager.types";
 
 dayjs.extend(relativeTime);

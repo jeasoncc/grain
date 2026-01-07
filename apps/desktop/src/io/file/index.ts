@@ -6,7 +6,7 @@
  *
  * 包含：
  * - dialog.file.ts: 文件/目录选择对话框
- * - download.file.ts: 文件下载功能（待实现）
+ * - download.file.ts: 文件下载功能
  */
 
 // Dialog 相关导出
@@ -28,5 +28,5 @@ export {
 	getHomeDirectory,
 } from "./dialog.file";
 
-// Download 相关导出（待实现）
-// export * from "./download.file";
+// Download 相关导出
+export { triggerBlobDownload, triggerDownload } from "./download.file";

@@ -7,11 +7,13 @@
  * - 英文模式：只统计英文单词数
  *
  * 字数变化时短暂显示，2秒后自动隐藏
+ *
+ * 注意：格式化逻辑由父组件（container）处理，
+ * 此组件只负责展示，符合 views 层只依赖 hooks/types 的架构规则
  */
 
 import { FileText } from "lucide-react";
 import { memo, useEffect, useState } from "react";
-import { formatWordCount, formatWordCountDetail } from "@/pipes/word-count";
 import { cn } from "@/utils/cn.util";
 import type {
 	WordCountBadgeProps,
@@ -21,9 +23,8 @@ import type {
 export const WordCountBadge = memo(
 	({
 		wordCountResult,
-		countMode,
 		show = true,
-		showDetail = false,
+		displayText = "",
 		className,
 	}: WordCountBadgeProps) => {
 		const [visible, setVisible] = useState(false);
@@ -44,10 +45,6 @@ export const WordCountBadge = memo(
 		}, [wordCountResult.total, lastTotal, show]);
 
 		if (!show) return null;
-
-		const displayText = showDetail
-			? formatWordCountDetail(wordCountResult, countMode)
-			: formatWordCount(wordCountResult.total, countMode);
 
 		return (
 			<div
@@ -79,16 +76,10 @@ WordCountBadge.displayName = "WordCountBadge";
  */
 export const WordCountDisplay = memo(
 	({
-		wordCountResult,
-		countMode,
-		showDetail = false,
+		displayText = "",
 		showIcon = true,
 		className,
 	}: WordCountDisplayProps) => {
-		const displayText = showDetail
-			? formatWordCountDetail(wordCountResult, countMode)
-			: formatWordCount(wordCountResult.total, countMode);
-
 		return (
 			<div
 				className={cn(

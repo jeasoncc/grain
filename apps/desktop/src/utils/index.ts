@@ -29,5 +29,8 @@ export * from "./date.util";
 // 键盘快捷键工具
 export * from "./keyboard.util";
 
+// 格式化工具
+export * from "./format.util";
+
 // NOTE: save-service-manager 已移动到 flows/save/
 // 请使用: import { saveServiceManager } from "@/flows/save";

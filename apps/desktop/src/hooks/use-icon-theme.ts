@@ -1,18 +1,6 @@
 import { useEffect, useState } from "react";
-import { getIconThemeOrDefault } from "@/pipes/icon-theme";
-import { useIconThemeStore } from "@/state/icon-theme.state";
+import { getCurrentIconTheme } from "@/flows/icon-theme";
 import type { IconTheme } from "@/types/icon-theme";
-
-/**
- * 获取当前选中的图标主题
- * 此函数读取 store 状态，有副作用
- *
- * @returns 当前图标主题
- */
-export const getCurrentIconTheme = (): IconTheme => {
-	const currentKey = useIconThemeStore.getState().currentThemeKey;
-	return getIconThemeOrDefault(currentKey);
-};
 
 /**
  * React Hook：订阅图标主题变化
@@ -32,3 +20,6 @@ export function useIconTheme(): IconTheme {
 
 	return iconTheme;
 }
+
+// 重导出 getCurrentIconTheme 供外部使用
+export { getCurrentIconTheme } from "@/flows/icon-theme";

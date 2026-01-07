@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CountMode } from "@/pipes/word-count";
+import type { CountMode } from "@/types/word-count";
 
 interface SettingsState {
 	// General

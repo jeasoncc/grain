@@ -9,11 +9,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
+import { applyThemeWithTransition, getSystemTheme } from "@/io/dom/theme.dom";
 import { getDefaultThemeKey, getNextMode, isThemeTypeMatch } from "@/pipes/theme";
-import {
-	applyThemeWithTransition,
-	getSystemTheme,
-} from "@/hooks/use-theme-dom";
 import { getThemeByKey, themes } from "@/utils/themes.util";
 import type { ThemeActions, ThemeMode, ThemeState } from "@/types/theme";
 import { DEFAULT_THEME_CONFIG, DEFAULT_THEME_STATE } from "@/types/theme";
