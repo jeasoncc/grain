@@ -28,6 +28,7 @@ import { createPlantUML } from "@/flows/templated/create-plantuml.action";
 import type { TemplatedFileResult } from "@/flows/templated/create-templated-file.action";
 import { createWorkspace } from "@/flows/workspace/create-workspace.action";
 import { touchWorkspace } from "@/flows/workspace/update-workspace.action";
+import logger from "@/io/log";
 import { ExportDialog } from "@/views/export-dialog";
 import { useConfirm } from "@/views/ui/confirm";
 import { clearAllData } from "@/flows";

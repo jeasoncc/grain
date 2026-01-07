@@ -13,7 +13,7 @@
 
 import { useMemo } from "react";
 import { WikiFileEntryBuilder, type WikiFileEntry } from "@/types/wiki";
-import { useNodesByWorkspace } from '@/hooks/queries/node.queries";
+import { useNodesByWorkspace } from '@/hooks/queries/node.queries';
 import type { NodeInterface } from "@/types/node";
 
 /** Wiki tag name */

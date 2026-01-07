@@ -7,8 +7,7 @@ import "@grain/editor-lexical/styles";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { database } from "./db/database";
-import { initDatabase } from "./db/init.db.fn";
+import { legacyDatabase } from "@/io/db/legacy-database";
 
 // Create the router instance
 const router = createRouter({
@@ -29,8 +28,8 @@ declare module "@tanstack/react-router" {
 const queryClient = new QueryClient();
 
 async function main() {
-	await database.open(); // 打开数据库
-	await initDatabase(); // 初始化默认数据
+	// Legacy database opens automatically in constructor
+	// No need to call open() or initDatabase() - Rust backend handles initialization
 
 	// 确保数据库操作完成后再渲染应用
 	const rootElement = document.getElementById("app");

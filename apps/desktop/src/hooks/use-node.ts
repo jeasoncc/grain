@@ -19,7 +19,7 @@ import {
 	useNodesByType as useNodesByTypeQuery,
 	useNodesByWorkspace as useNodesByWorkspaceQuery,
 	useRootNodes as useRootNodesQuery,
-} from '@/hooks/queries/node.queries";
+} from '@/hooks/queries/node.queries';
 import type { NodeInterface, NodeType } from "@/types/node";
 
 /**

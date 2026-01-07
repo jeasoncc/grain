@@ -15,7 +15,7 @@ import {
 	useUserQuery,
 	useUsersByPlanQuery,
 	useUsersQuery,
-} from '@/hooks/queries";
+} from '@/hooks/queries';
 import type { UserInterface, UserPlan } from "@/types/user";
 
 /**

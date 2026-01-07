@@ -23,7 +23,7 @@ import {
 	useNode as useNodeQuery,
 	useNodesByType,
 	useNodesByWorkspace,
-} from '@/hooks/queries/node.queries";
+} from '@/hooks/queries/node.queries';
 import type { NodeInterface } from "@/types/node";
 
 // ============================================================================
