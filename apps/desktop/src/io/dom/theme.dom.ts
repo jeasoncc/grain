@@ -9,7 +9,7 @@
  * 这些函数有 IO 副作用，因此放在 io/dom 层
  */
 
-import type { Theme, ThemeColors } from "@/utils/themes.util";
+import type { Theme, ThemeColors } from "@/types/theme/theme.types";
 import { DEFAULT_THEME_CONFIG } from "@/types/theme";
 
 // ==============================
