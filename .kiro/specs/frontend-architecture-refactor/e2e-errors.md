@@ -122,27 +122,138 @@ The requested module '/src/io/api/index.ts' contains conflicting star exports fo
 
 ---
 
-## 下一步行动
+---
 
-1. **调查 Workspace 加载问题**
-   - 检查 `useAllWorkspaces` hook
-   - 检查 Workspace API 调用
-   - 检查数据库初始化
+## 错误 3: 缺失的 ConfirmProvider ✅ 已修复
 
-2. **验证修复**
-   - 重新运行 E2E 测试
-   - 确认 activity-bar 可以正常显示
+### 错误信息
+```
+useConfirm must be used within ConfirmProvider
+```
 
-3. **提交修复**
-   - 提交 client.api.ts 的修改
-   - 更新错误记录文档
+### 原因
+ActivityBar 组件使用了 `useConfirm` hook，但应用根组件 `__root.tsx` 中没有设置 `ConfirmProvider`。
+
+### 修复方案 ✅
+在 `__root.tsx` 中添加 `ConfirmProvider` 包裹整个应用：
+
+```tsx
+import { ConfirmProvider } from "@/views/ui/confirm-dialog.view.fn";
+
+export const Route = createRootRoute({
+  component: RootComponent,
+});
+
+function RootComponent() {
+  return (
+    <ConfirmProvider>
+      {/* 应用内容 */}
+    </ConfirmProvider>
+  );
+}
+```
+
+### 架构合规性 ✅
+- 符合架构规范：`routes/` 可以依赖 `views/`
+- Provider 正确放置在根组件中
+- 所有子组件现在可以使用 `useConfirm` hook
+
+**文件**: `apps/desktop/src/routes/__root.tsx`
 
 ---
 
-## 架构合规性验证 ✅
+## 错误 4: 缺失的 ActivityBar ✅ 已修复
+
+### 现象
+- 应用加载成功，但左侧没有 ActivityBar
+- 只显示欢迎信息，无法访问工作区列表
+
+### 原因
+`__root.tsx` 只有简单的 "Hello __root!" 文本和 `<Outlet />`，没有渲染 ActivityBar 组件。
+
+### 修复方案 ✅
+在 `__root.tsx` 中添加 ActivityBar 组件和正确的布局结构：
+
+```tsx
+import { ActivityBar } from "@/views/activity-bar/activity-bar.container.fn";
+import { useAllWorkspaces } from "@/hooks/use-workspace";
+
+function RootComponent() {
+  const { data: workspaces = [] } = useAllWorkspaces();
+
+  return (
+    <ConfirmProvider>
+      <div className="flex h-screen w-screen overflow-hidden">
+        <ActivityBar workspaces={workspaces} />
+        <div className="flex-1 overflow-hidden">
+          <Outlet />
+        </div>
+      </div>
+    </ConfirmProvider>
+  );
+}
+```
+
+### 架构合规性 ✅
+- 符合架构规范：`routes/` → `views/`, `hooks/`
+- 使用 `useAllWorkspaces` hook 获取工作区数据
+- 正确的 flex 布局结构
+
+**文件**: `apps/desktop/src/routes/__root.tsx`
+
+---
+
+## 最终测试结果 ✅ 完全成功
+
+### 应用状态
+- ✅ 应用成功加载
+- ✅ ActivityBar 正常显示（左侧工作区图标列表）
+- ✅ API 调用正常（GET /api/workspaces 返回 20 个工作区）
+- ✅ 欢迎界面正确显示
+- ✅ 无 JavaScript 错误
+- ✅ 无模块导出冲突
+- ✅ 无 Provider 错误
+
+### 截图
+- ActivityBar 正常显示：`activitybar-fixed.png`
+- 显示所有工作区图标和欢迎信息
+
+### Console 日志
+```
+[INFO] [API:HTTP] GET /api/workspaces 成功
+[INFO] [Action] 更新工作区最后打开时间
+[INFO] [API:HTTP] PUT /api/workspaces/{id} 成功
+```
+
+---
+
+## 修复总结
+
+### 修复的问题
+1. ✅ 模块导出冲突（client.api.ts 重复导出）
+2. ✅ API 导入问题（rustApi → api）
+3. ✅ 缺失的 ConfirmProvider
+4. ✅ 缺失的 ActivityBar 组件
+
+### Git 提交
+```bash
+fix: 修复模块导出冲突和缺失的 ConfirmProvider - ActivityBar 现已正常显示
+```
+
+### 架构合规性验证 ✅
 
 所有修复都符合架构规范：
 - `io/api/` 层只依赖 `types/`
+- `routes/` 层可以依赖 `views/`, `hooks/`
 - 每个 API 功能只在一个文件中定义和导出
 - 使用 `export *` 从 `index.ts` 统一导出
 - 没有违反依赖规则
+
+---
+
+## 下一步行动
+
+1. ✅ **所有错误已修复**
+2. ✅ **应用正常运行**
+3. ✅ **架构规范符合要求**
+4. ⏭️ **可以继续开发新功能**
