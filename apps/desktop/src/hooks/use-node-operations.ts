@@ -2,14 +2,14 @@
  * @file use-node-operations.ts
  * @description Node 操作 Hooks
  *
- * 封装节点相关的 IO 操作，
+ * 封装节点相关的操作，
  * 使 views 层不直接依赖 io/api
  */
 
 import * as E from "fp-ts/Either";
 import { useCallback } from "react";
-import { getNodeById, setNodeCollapsed } from "@/io/api";
-import type { NodeResponse } from "@/types/node";
+import { getNodeById, setNodeCollapsed } from "@/flows/node";
+import type { NodeInterface } from "@/types/node";
 
 /**
  * 获取节点详情 Hook
@@ -18,7 +18,7 @@ import type { NodeResponse } from "@/types/node";
  */
 export function useGetNodeById() {
 	const getNode = useCallback(
-		async (nodeId: string): Promise<NodeResponse | null> => {
+		async (nodeId: string): Promise<NodeInterface | null> => {
 			const result = await getNodeById(nodeId)();
 			if (E.isRight(result)) {
 				return result.right;
