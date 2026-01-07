@@ -13,7 +13,7 @@ import { legacyDatabase } from "@/io/db/legacy-database";
 import type { AppError } from "@/utils/error.util";
 import logger from "@/io/log";
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/io/api";
-import type { NodeResponse } from "@/types/node";
+import type { NodeInterface } from "@/types/node";
 import { WikiFileEntryBuilder } from "@/pipes/wiki/wiki.builder";
 import { WIKI_TAG } from "@/pipes/wiki/wiki.resolve.fn";
 import type { WikiFileEntry } from "@/pipes/wiki/wiki.schema";
@@ -22,8 +22,8 @@ import type { WikiFileEntry } from "@/pipes/wiki/wiki.schema";
  * Build the path string for a node
  */
 function buildNodePath(
-	node: NodeResponse,
-	nodeMap: Map<string, NodeResponse>,
+	node: NodeInterface,
+	nodeMap: Map<string, NodeInterface>,
 ): string {
 	const parts: string[] = [node.title];
 	let current = node.parentId ? nodeMap.get(node.parentId) : undefined;
