@@ -117,7 +117,10 @@ export function useUnifiedSave(
 	const { markAsUnsaved, markAsSaving, markAsSaved, markAsError } =
 		useSaveStore();
 
-	const setTabDirty = useEditorTabsStore((s) => s.setTabDirty);
+	// Use a callback to set tab dirty via the store
+	const setTabDirty = useCallback((tabId: string, isDirty: boolean) => {
+		useEditorTabsStore.getState().updateTab(tabId, { isDirty });
+	}, []);
 
 	// ==============================
 	// Refs（用于回调）

@@ -43,7 +43,6 @@ import type {
  * Main editor tabs hook providing all tab-related state and actions.
  */
 export function useEditorTabs() {
-	const store = useEditorTabsStore();
 	const tabs = useTabs();
 	const activeTabId = useActiveTabId();
 	const activeTab = useActiveTab();
@@ -51,80 +50,81 @@ export function useEditorTabs() {
 	// Open tab
 	const openTab = useCallback(
 		(payload: OpenTabPayload) => {
-			openTabFlow(payload, store.getState());
+			openTabFlow(payload, useEditorTabsStore.getState());
 		},
-		[store],
+		[],
 	);
 
 	// Close tab
 	const closeTab = useCallback(
 		(tabId: string) => {
-			closeTabFlow(tabId, store.getState());
+			closeTabFlow(tabId, useEditorTabsStore.getState());
 		},
-		[store],
+		[],
 	);
 
 	// Close other tabs
 	const closeOtherTabs = useCallback(
 		(tabId: string) => {
-			closeOtherTabsFlow(tabId, store.getState());
+			closeOtherTabsFlow(tabId, useEditorTabsStore.getState());
 		},
-		[store],
+		[],
 	);
 
 	// Close all tabs
 	const closeAllTabs = useCallback(() => {
-		store.setTabs([]);
-		store.setActiveTabId(null);
-		store.setEditorStates({});
-	}, [store]);
+		const state = useEditorTabsStore.getState();
+		state.setTabs([]);
+		state.setActiveTabId(null);
+		state.setEditorStates({});
+	}, []);
 
 	// Set active tab
 	const setActiveTab = useCallback(
 		(tabId: string) => {
-			setActiveTabFlow(tabId, store.getState());
+			setActiveTabFlow(tabId, useEditorTabsStore.getState());
 		},
-		[store],
+		[],
 	);
 
 	// Update tab title
 	const updateTabTitle = useCallback(
 		(tabId: string, title: string) => {
-			store.updateTab(tabId, { title });
+			useEditorTabsStore.getState().updateTab(tabId, { title });
 		},
-		[store],
+		[],
 	);
 
 	// Set tab dirty
 	const setTabDirty = useCallback(
 		(tabId: string, isDirty: boolean) => {
-			store.updateTab(tabId, { isDirty });
+			useEditorTabsStore.getState().updateTab(tabId, { isDirty });
 		},
-		[store],
+		[],
 	);
 
 	// Reorder tabs
 	const reorderTabs = useCallback(
 		(fromIndex: number, toIndex: number) => {
-			reorderTabsFlow(fromIndex, toIndex, store.getState());
+			reorderTabsFlow(fromIndex, toIndex, useEditorTabsStore.getState());
 		},
-		[store],
+		[],
 	);
 
 	// Update editor state
 	const updateEditorState = useCallback(
 		(tabId: string, updates: Partial<EditorInstanceState>) => {
-			updateEditorStateFlow(tabId, updates, store.getState());
+			updateEditorStateFlow(tabId, updates, useEditorTabsStore.getState());
 		},
-		[store],
+		[],
 	);
 
 	// Get editor state
 	const getEditorState = useCallback(
 		(tabId: string): EditorInstanceState | undefined => {
-			return store.getState().editorStates[tabId];
+			return useEditorTabsStore.getState().editorStates[tabId];
 		},
-		[store],
+		[],
 	);
 
 	// Get tabs by workspace
@@ -132,18 +132,18 @@ export function useEditorTabs() {
 		(workspaceId: string): EditorTab[] => {
 			return getTabsByWorkspaceFlow(
 				workspaceId,
-				store.getState().tabs as EditorTab[],
+				useEditorTabsStore.getState().tabs as EditorTab[],
 			) as EditorTab[];
 		},
-		[store],
+		[],
 	);
 
 	// Close tabs by workspace
 	const closeTabsByWorkspace = useCallback(
 		(workspaceId: string) => {
-			closeTabsByWorkspaceFlow(workspaceId, store.getState());
+			closeTabsByWorkspaceFlow(workspaceId, useEditorTabsStore.getState());
 		},
-		[store],
+		[],
 	);
 
 	return {

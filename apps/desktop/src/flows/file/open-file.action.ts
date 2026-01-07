@@ -25,6 +25,11 @@ import { fileOperationQueue } from "@/utils/queue.util";
 import logger from "@/log";
 import * as contentRepo from "@/io/api/content.api";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
+import {
+	openTabFlow,
+	setActiveTabFlow,
+	updateEditorStateFlow,
+} from "@/flows/editor-tabs";
 import type { TabType } from "@/types/editor-tab";
 
 /**
@@ -70,14 +75,13 @@ export const openFile = (
 					const { workspaceId, nodeId, title, type } = params;
 					logger.start("[OpenFile] 打开文件:", title);
 
-					const { tabs, openTab, updateEditorState, setActiveTab } =
-						useEditorTabsStore.getState();
+					const store = useEditorTabsStore.getState();
 
 					// 1. 检查是否已打开
-					const existingTab = tabs.find((t) => t.nodeId === nodeId);
+					const existingTab = store.tabs.find((t) => t.nodeId === nodeId);
 					if (existingTab) {
 						logger.info("[OpenFile] 文件已打开，切换到标签:", existingTab.id);
-						setActiveTab(existingTab.id);
+						setActiveTabFlow(existingTab.id, store);
 						return {
 							tabId: existingTab.id,
 							isNewTab: false,
@@ -90,12 +94,12 @@ export const openFile = (
 					const contentResult = await contentRepo.getContentByNodeId(nodeId)();
 
 					// 3. 创建 tab
-					openTab({
+					openTabFlow({
 						workspaceId,
 						nodeId,
 						title,
 						type,
-					});
+					}, useEditorTabsStore.getState());
 
 					// 获取新创建的 tab ID
 					const newTabs = useEditorTabsStore.getState().tabs;
@@ -107,7 +111,7 @@ export const openFile = (
 					if (E.isRight(contentResult) && contentResult.right) {
 						try {
 							const parsed = JSON.parse(contentResult.right.content);
-							updateEditorState(tabId, { serializedState: parsed });
+							updateEditorStateFlow(tabId, { serializedState: parsed }, useEditorTabsStore.getState());
 							hasContent = true;
 							logger.success("[OpenFile] 内容加载成功");
 						} catch {

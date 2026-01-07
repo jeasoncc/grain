@@ -4,19 +4,14 @@
  */
 
 import { memo, useCallback, useMemo } from "react";
-import { useEditorTabsStore } from "@/state/editor-tabs.state";
+import { useEditorTabs } from "@/hooks/use-editor-tabs";
 import type { EditorTabsContainerProps } from "./editor-tabs.types";
 import { EditorTabsView } from "./editor-tabs.view.fn";
 
 export const EditorTabsContainer = memo(
 	({ className, workspaceId }: EditorTabsContainerProps) => {
-		// 获取所有标签和活动标签 ID
-		const allTabs = useEditorTabsStore((s) => s.tabs);
-		const activeTabId = useEditorTabsStore((s) => s.activeTabId);
-
-		// 获取标签操作
-		const setActiveTab = useEditorTabsStore((s) => s.setActiveTab);
-		const closeTab = useEditorTabsStore((s) => s.closeTab);
+		// 使用 useEditorTabs hook
+		const { tabs: allTabs, activeTabId, setActiveTab, closeTab } = useEditorTabs();
 
 		// 过滤当前工作区的标签
 		const tabs = useMemo(

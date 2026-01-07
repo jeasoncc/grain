@@ -25,6 +25,10 @@ import { fileOperationQueue } from "@/utils/queue.util";
 import logger from "@/log";
 import * as nodeRepo from "@/io/api/node.api";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
+import {
+	openTabFlow,
+	updateEditorStateFlow,
+} from "@/flows/editor-tabs";
 import type { TabType } from "@/types/editor-tab";
 import type { NodeInterface, NodeType } from "@/types/node";
 
@@ -120,15 +124,14 @@ export const createFile = (
 					// 3. 更新 Store（非文件夹）
 					let tabId: string | null = null;
 					if (type !== "folder") {
-						const { openTab, updateEditorState } =
-							useEditorTabsStore.getState();
+						const store = useEditorTabsStore.getState();
 
-						openTab({
+						openTabFlow({
 							workspaceId,
 							nodeId: node.id,
 							title,
 							type: type as TabType,
-						});
+						}, store);
 
 						// 获取新创建的 tab ID
 						const newTabs = useEditorTabsStore.getState().tabs;
@@ -139,7 +142,7 @@ export const createFile = (
 						if (content) {
 							try {
 								const parsed = JSON.parse(content);
-								updateEditorState(tabId, { serializedState: parsed });
+								updateEditorStateFlow(tabId, { serializedState: parsed }, useEditorTabsStore.getState());
 							} catch {
 								// 非 JSON 内容，跳过
 								logger.debug("[CreateFile] 内容非 JSON，跳过 editorState 设置");

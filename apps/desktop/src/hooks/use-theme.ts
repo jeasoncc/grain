@@ -191,3 +191,6 @@ export const useIsSystemMode = (): boolean => {
 
 // Re-export state selectors for convenience
 export { useEnableTransition, useThemeKey, useThemeMode } from "@/state/theme.state";
+
+// Re-export types for convenience
+export type { ThemeMode } from "@/types/theme";

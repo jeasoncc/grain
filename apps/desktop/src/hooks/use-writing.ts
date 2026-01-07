@@ -36,7 +36,6 @@ import type { WritingGoal } from "@/types/writing";
  * Main writing hook providing all writing-related state and actions.
  */
 export function useWriting() {
-	const store = useWritingStore();
 	const focusMode = useFocusMode();
 	const typewriterMode = useTypewriterMode();
 	const writingGoal = useWritingGoal();
@@ -47,41 +46,41 @@ export function useWriting() {
 
 	// Toggle focus mode
 	const toggleFocusMode = useCallback(() => {
-		store.setFocusMode(!focusMode);
-	}, [store, focusMode]);
+		useWritingStore.getState().setFocusMode(!focusMode);
+	}, [focusMode]);
 
 	// Toggle typewriter mode
 	const toggleTypewriterMode = useCallback(() => {
-		store.setTypewriterMode(!typewriterMode);
-	}, [store, typewriterMode]);
+		useWritingStore.getState().setTypewriterMode(!typewriterMode);
+	}, [typewriterMode]);
 
 	// Set writing goal
 	const setWritingGoal = useCallback(
 		(goal: Partial<WritingGoal>) => {
-			setWritingGoalFlow(writingGoal, goal, store.getState());
+			setWritingGoalFlow(writingGoal, goal, useWritingStore.getState());
 		},
-		[store, writingGoal],
+		[writingGoal],
 	);
 
 	// Add today words
 	const addTodayWords = useCallback(
 		(count: number) => {
-			addTodayWordsFlow(count, todayDate, todayWordCount, store.getState());
+			addTodayWordsFlow(count, todayDate, todayWordCount, useWritingStore.getState());
 		},
-		[store, todayDate, todayWordCount],
+		[todayDate, todayWordCount],
 	);
 
 	// Reset today if needed
 	const resetTodayIfNeeded = useCallback(() => {
-		resetTodayIfNeededFlow(todayDate, store.getState());
-	}, [store, todayDate]);
+		resetTodayIfNeededFlow(todayDate, useWritingStore.getState());
+	}, [todayDate]);
 
 	// Start session
 	const startSession = useCallback(
 		(wordCount: number) => {
-			startSessionFlow(wordCount, store.getState());
+			startSessionFlow(wordCount, useWritingStore.getState());
 		},
-		[store],
+		[],
 	);
 
 	// Update session word count
@@ -92,16 +91,16 @@ export function useWriting() {
 				session,
 				todayWordCount,
 				todayDate,
-				store.getState(),
+				useWritingStore.getState(),
 			);
 		},
-		[store, session, todayWordCount, todayDate],
+		[session, todayWordCount, todayDate],
 	);
 
 	// End session
 	const endSession = useCallback(() => {
-		store.setSession(null);
-	}, [store]);
+		useWritingStore.getState().setSession(null);
+	}, []);
 
 	return {
 		// State
@@ -114,9 +113,9 @@ export function useWriting() {
 		minimalToolbar,
 
 		// Actions
-		setFocusMode: store.setFocusMode,
+		setFocusMode: useWritingStore.getState().setFocusMode,
 		toggleFocusMode,
-		setTypewriterMode: store.setTypewriterMode,
+		setTypewriterMode: useWritingStore.getState().setTypewriterMode,
 		toggleTypewriterMode,
 		setWritingGoal,
 		addTodayWords,
@@ -124,7 +123,7 @@ export function useWriting() {
 		startSession,
 		updateSessionWordCount,
 		endSession,
-		setMinimalToolbar: store.setMinimalToolbar,
+		setMinimalToolbar: useWritingStore.getState().setMinimalToolbar,
 	};
 }
 

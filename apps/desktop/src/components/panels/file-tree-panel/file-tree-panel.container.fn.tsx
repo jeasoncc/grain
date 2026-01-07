@@ -23,7 +23,7 @@ import { FileTree } from "@/views/file-tree";
 import { useConfirm } from "@/views/ui/confirm";
 import { getNodeById, setNodeCollapsed } from "@/io/api";
 import { useNodesByWorkspace } from "@/hooks/use-node";
-import { useEditorTabsStore } from "@/state/editor-tabs.state";
+import { useEditorTabs } from "@/hooks/use-editor-tabs";
 import { useSelectionStore } from "@/state/selection.state";
 import type { NodeType } from "@/types/node";
 import type { FileTreePanelContainerProps } from "./file-tree-panel.types";
@@ -155,7 +155,7 @@ export const FileTreePanelContainer = memo(
 		);
 
 		// Editor tabs for closing deleted files
-		const closeTab = useEditorTabsStore((s) => s.closeTab);
+		const { closeTab } = useEditorTabs();
 
 		// Handle node deletion
 		const handleDeleteNode = useCallback(

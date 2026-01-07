@@ -122,32 +122,30 @@
 | 文件 | 状态 | 问题 |
 |------|------|------|
 | `selection.state.ts` | ✅ | 已修复：移除 logger |
-| `editor-tabs.state.ts` | ✅ | 已修复：移除 logger，改用 pipes/ |
+| `editor-tabs.state.ts` | ✅ | 已重构：只存储纯数据，业务逻辑移到 flows/editor-tabs/ |
 | `editor-settings.state.ts` | ✅ | 只依赖 types/ |
 | `editor-history.state.ts` | ✅ | 已修复：移除 logger |
 | `sidebar.state.ts` | ✅ | 已修复：移除 logger |
-| `theme.state.ts` | ⚠️ | 依赖 hooks/, utils/ - 架构特例（需要 DOM 操作） |
+| `theme.state.ts` | ✅ | 已重构：只存储纯数据，业务逻辑移到 flows/theme/ |
 | `icon-theme.state.ts` | ✅ | 已修复：移除 logger |
 | `font.state.ts` | ✅ | 只依赖 types/ |
 | `ui.state.ts` | ✅ | 已修复：移除 logger |
 | `save.state.ts` | ✅ | 只依赖 types/ |
-| `writing.state.ts` | ✅ | 已修复：改用 pipes/writing |
+| `writing.state.ts` | ✅ | 已重构：只存储纯数据，业务逻辑移到 flows/writing/ |
 | `diagram.state.ts` | ✅ | 已修复：移除 logger |
 
 **检查项**:
-- [x] 只依赖 `types/` - 大部分已修复
+- [x] 只依赖 `types/` - 全部已修复
 - [x] 无 IO 操作
 - [x] 使用 Zustand + Immer
 - [x] 命名符合 `*.state.ts` 规范
 
 **已完成修复**:
 1. ✅ 移除 state/ 中的 logger 调用
-2. ✅ 将 `editor-tabs.state.ts` 中的纯函数移到 `pipes/editor-tab/`
-3. ✅ 将 `writing.state.ts` 中的纯函数移到 `pipes/writing/`
-4. ✅ 将 `theme.state.ts` 中的纯函数移到 `pipes/theme/`
-
-**架构特例**: `theme.state.ts` 需要调用 DOM 操作函数（应用主题），这是一个已知的架构妥协。
-理想方案是将 DOM 操作移到 flows/theme/，但当前保持现状以避免大规模重构。
+2. ✅ 将 `editor-tabs.state.ts` 重构为纯数据存储，业务逻辑移到 `flows/editor-tabs/`
+3. ✅ 将 `writing.state.ts` 重构为纯数据存储，业务逻辑移到 `flows/writing/`
+4. ✅ 将 `theme.state.ts` 重构为纯数据存储，业务逻辑移到 `flows/theme/`
+5. ✅ 创建对应的 hooks: `use-theme.ts`, `use-editor-tabs.ts`, `use-writing.ts`
 
 ### Task 2.6: 审核 flows/ 层 ✅
 **职责**: 组合 pipes + io，形成业务流程
