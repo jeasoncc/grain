@@ -1,0 +1,20 @@
+# Bun 配置文件
+
+[install]
+# 使用国内镜像
+registry = "https://registry.npmmirror.com"
+
+# 性能优化
+cache = true
+frozenLockfile = false
+production = false
+
+# 依赖解析
+exact = false
+dev = true
+optional = true
+peer = true
+
+[install.scopes]
+# 可以为特定 scope 配置不同的 registry
+# "@myorg" = "https://custom-registry.com"

@@ -93,3 +93,7 @@ scripts/snapcraft-login/output/
 # MCP 配置文件（可能包含敏感信息）
 .kiro/settings/mcp.json
 **/.kiro/settings/mcp.json
+
+# 用户特定配置（不提交）
+.zshrc-grain.local
+.env.local

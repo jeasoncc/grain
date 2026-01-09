@@ -59,7 +59,7 @@
     "node": ">=20",
     "bun": ">=1.1.0"
   },
-  "packageManager": "npm@10.2.4",
+  "packageManager": "bun@1.1.0",
   "workspaces": [
     "apps/*",
     "packages/*"

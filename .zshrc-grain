@@ -1,0 +1,360 @@
+# ============================================================================
+# Grain 项目专用 zsh 配置
+# ============================================================================
+# 在 ~/.zshrc 中添加: source /path/to/grain-editor-monorepo/.zshrc-grain
+
+# ============================================================================
+# 性能优化 - 启动时间测量
+# ============================================================================
+# 取消注释以测量启动时间: zmodload zsh/zprof
+
+# ============================================================================
+# 环境变量
+# ============================================================================
+
+# Bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+# Rust
+export PATH="$HOME/.cargo/bin:$PATH"
+export RUSTUP_DIST_SERVER="https://rsproxy.cn"
+export RUSTUP_UPDATE_ROOT="https://rsproxy.cn/rustup"
+
+# Node.js 性能优化
+export NODE_OPTIONS="--max-old-space-size=8192"  # 8GB 内存限制
+export NODE_ENV="${NODE_ENV:-development}"
+
+# Turbo 优化
+export TURBO_TELEMETRY_DISABLED=1
+export TURBO_FORCE=false
+export TURBO_CACHE_DIR=".turbo"
+
+# 编译优化
+export MAKEFLAGS="-j$(nproc)"  # 并行编译
+
+# ============================================================================
+# Zsh 配置
+# ============================================================================
+
+# 历史记录
+HISTFILE=~/.zsh_history
+HISTSIZE=50000
+SAVEHIST=50000
+setopt EXTENDED_HISTORY          # 记录时间戳
+setopt HIST_EXPIRE_DUPS_FIRST    # 优先删除重复
+setopt HIST_IGNORE_DUPS          # 忽略连续重复
+setopt HIST_IGNORE_SPACE         # 忽略空格开头
+setopt HIST_VERIFY               # 历史展开时先显示
+setopt SHARE_HISTORY             # 多终端共享历史
+
+# 目录导航
+setopt AUTO_CD                   # 输入目录名自动 cd
+setopt AUTO_PUSHD                # cd 自动 pushd
+setopt PUSHD_IGNORE_DUPS         # pushd 忽略重复
+setopt PUSHD_SILENT              # pushd 静默
+
+# 补全
+setopt COMPLETE_IN_WORD          # 在单词中间补全
+setopt ALWAYS_TO_END             # 补全后光标移到末尾
+setopt AUTO_MENU                 # 自动菜单补全
+setopt AUTO_LIST                 # 自动列出选项
+
+# 其他
+setopt INTERACTIVE_COMMENTS      # 允许注释
+setopt MULTIOS                   # 多重重定向
+setopt EXTENDED_GLOB             # 扩展通配符
+
+# ============================================================================
+# 补全系统
+# ============================================================================
+
+autoload -Uz compinit
+# 每天只检查一次补全缓存
+if [[ -n ${ZDOTDIR}/.zcompdump(#qN.mh+24) ]]; then
+  compinit
+else
+  compinit -C
+fi
+
+# 补全样式
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+zstyle ':completion:*' special-dirs true
+zstyle ':completion:*' squeeze-slashes true
+
+# ============================================================================
+# 键绑定
+# ============================================================================
+
+# Emacs 模式
+bindkey -e
+
+# 历史搜索
+bindkey '^P' up-line-or-search
+bindkey '^N' down-line-or-search
+bindkey '^R' history-incremental-search-backward
+
+# 编辑
+bindkey '^A' beginning-of-line
+bindkey '^E' end-of-line
+bindkey '^K' kill-line
+bindkey '^U' backward-kill-line
+bindkey '^W' backward-kill-word
+bindkey '^Y' yank
+
+# ============================================================================
+# 项目别名 - 开发
+# ============================================================================
+
+# 快速启动
+alias gd="bun run desktop:dev"
+alias gw="bun run web:dev"
+alias gm="bun run mobile:dev"
+alias ga="bun run admin:dev"
+alias gapi="bun run api:dev"
+alias gr="bun run api-rust:dev"
+
+# 构建
+alias gb="bun run build:prod"
+alias gbd="bun run build:prod:desktop"
+alias gbw="bun run build:prod:web"
+alias gbt="bun run build:test:desktop"
+
+# 代码质量
+alias gl="bun run lint"
+alias gf="bun run format"
+alias gc="bun run check"
+alias gt="bun run test"
+alias gtd="bun run test:desktop"
+
+# 版本管理
+alias gv="bun run version:bump"
+alias gtag="bun run tag:help"
+
+# ============================================================================
+# 项目别名 - Cargo/Rust
+# ============================================================================
+
+alias cr="cargo run --manifest-path apps/api-rust/Cargo.toml"
+alias cb="cargo build --release --manifest-path apps/api-rust/Cargo.toml"
+alias cch="cargo check --manifest-path apps/api-rust/Cargo.toml"
+alias ct="cargo test --manifest-path apps/api-rust/Cargo.toml"
+alias cw="cargo watch -x check -x test"
+alias cc="cargo clippy --manifest-path apps/api-rust/Cargo.toml"
+
+# ============================================================================
+# 项目别名 - 清理
+# ============================================================================
+
+alias clean-node="rm -rf node_modules apps/*/node_modules packages/*/node_modules"
+alias clean-turbo="rm -rf .turbo apps/*/.turbo packages/*/.turbo"
+alias clean-rust="cargo clean --manifest-path apps/api-rust/Cargo.toml"
+alias clean-all="clean-node && clean-turbo && clean-rust && bun install"
+alias clean-cache="clean-turbo && rm -rf ~/.cache/turbo"
+
+# ============================================================================
+# 通用别名 - 文件操作
+# ============================================================================
+
+# eza (ls 替代)
+alias ls='eza --icons --group-directories-first'
+alias ll='eza -l --icons --git --time-style=long-iso'
+alias la='eza -la --icons --git'
+alias lt='eza -T --icons --level=3 --git-ignore'
+alias lz='eza -l --icons --sort=size'
+alias lm='eza -l --icons --sort=modified'
+
+# 安全操作
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
+
+# 快速导航
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias ~='cd ~'
+alias -- -='cd -'
+
+# ============================================================================
+# 通用别名 - 开发工具
+# ============================================================================
+
+# Git 增强
+alias g='git'
+alias gs='git status'
+alias ga='git add'
+alias gc='git commit'
+alias gp='git push'
+alias gl='git pull'
+alias gd='git diff'
+alias gco='git checkout'
+alias gb='git branch'
+alias glog='git log --oneline --graph --decorate'
+
+# 搜索增强
+alias grep='rg'
+alias cat='bat'
+alias find='fd'
+
+# 系统信息
+alias df='df -h'
+alias du='du -h'
+alias free='free -h'
+alias ports='netstat -tulanp'
+
+# ============================================================================
+# 函数
+# ============================================================================
+
+# 创建目录并进入
+mkcd() {
+  mkdir -p "$1" && cd "$1"
+}
+
+# 快速查找文件
+ff() {
+  fd "$1" | fzf --preview 'bat --color=always {}'
+}
+
+# 快速查找内容
+rgg() {
+  rg --color=always --line-number --no-heading --smart-case "$@" | fzf --ansi --preview "bat --color=always {1} --highlight-line {2}"
+}
+
+# Git 快速提交
+gac() {
+  git add -A && git commit -m "$1"
+}
+
+# 查看端口占用
+port() {
+  lsof -i :"$1"
+}
+
+# 快速备份
+backup() {
+  cp "$1" "$1.backup.$(date +%Y%m%d_%H%M%S)"
+}
+
+# 解压任意格式
+extract() {
+  if [ -f "$1" ]; then
+    case "$1" in
+      *.tar.bz2)   tar xjf "$1"     ;;
+      *.tar.gz)    tar xzf "$1"     ;;
+      *.bz2)       bunzip2 "$1"     ;;
+      *.rar)       unrar x "$1"     ;;
+      *.gz)        gunzip "$1"      ;;
+      *.tar)       tar xf "$1"      ;;
+      *.tbz2)      tar xjf "$1"     ;;
+      *.tgz)       tar xzf "$1"     ;;
+      *.zip)       unzip "$1"       ;;
+      *.Z)         uncompress "$1"  ;;
+      *.7z)        7z x "$1"        ;;
+      *)           echo "'$1' 无法解压" ;;
+    esac
+  else
+    echo "'$1' 不是有效文件"
+  fi
+}
+
+# 显示开发工具版本
+dev-info() {
+  echo "📦 开发环境信息"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "🔧 Bun:      $(bun --version 2>/dev/null || echo '未安装')"
+  echo "🟢 Node:     $(node --version 2>/dev/null || echo '未安装')"
+  echo "📦 npm:      $(npm --version 2>/dev/null || echo '未安装')"
+  echo "🦀 Rust:     $(rustc --version 2>/dev/null | cut -d' ' -f2 || echo '未安装')"
+  echo "📦 Cargo:    $(cargo --version 2>/dev/null | cut -d' ' -f2 || echo '未安装')"
+  echo "⚡ Turbo:    $(turbo --version 2>/dev/null || echo '未安装')"
+  echo "🎨 Biome:    $(biome --version 2>/dev/null || echo '未安装')"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+}
+
+# 项目状态检查
+grain-status() {
+  echo "🌾 Grain 项目状态"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "📂 当前目录: $(pwd)"
+  echo "🌿 Git 分支: $(git branch --show-current 2>/dev/null || echo '非 Git 仓库')"
+  echo "📝 Git 状态: $(git status -s 2>/dev/null | wc -l) 个文件变更"
+  echo "📦 Node 模块: $([ -d node_modules ] && echo '已安装' || echo '未安装')"
+  echo "🦀 Rust 构建: $([ -d apps/api-rust/target ] && echo '已构建' || echo '未构建')"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+}
+
+# ============================================================================
+# FZF 配置
+# ============================================================================
+
+if command -v fzf &> /dev/null; then
+  # FZF 默认选项
+  export FZF_DEFAULT_OPTS="
+    --height 40%
+    --layout=reverse
+    --border
+    --inline-info
+    --color=fg:#d0d0d0,bg:#121212,hl:#5f87af
+    --color=fg+:#d0d0d0,bg+:#262626,hl+:#5fd7ff
+    --color=info:#afaf87,prompt:#d7005f,pointer:#af5fff
+    --color=marker:#87ff00,spinner:#af5fff,header:#87afaf
+  "
+
+  # 使用 fd 作为默认命令
+  if command -v fd &> /dev/null; then
+    export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+    export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+    export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+  fi
+
+  # 预览
+  export FZF_CTRL_T_OPTS="--preview 'bat --color=always --line-range :500 {}'"
+  export FZF_ALT_C_OPTS="--preview 'eza -T --icons --level=2 {}'"
+
+  # 键绑定
+  source /usr/share/fzf/key-bindings.zsh 2>/dev/null
+  source /usr/share/fzf/completion.zsh 2>/dev/null
+fi
+
+# ============================================================================
+# 工具初始化
+# ============================================================================
+
+# Starship 提示符
+if command -v starship &> /dev/null; then
+  eval "$(starship init zsh)"
+fi
+
+# Zoxide (智能 cd)
+if command -v zoxide &> /dev/null; then
+  eval "$(zoxide init zsh)"
+  alias cd='z'
+fi
+
+# fnm (Node 版本管理)
+if command -v fnm &> /dev/null; then
+  eval "$(fnm env --use-on-cd)"
+fi
+
+# Bun 补全
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
+
+# Kiro 集成
+[[ "$TERM_PROGRAM" == "kiro" ]] && . "$(kiro --locate-shell-integration-path zsh)" 2>/dev/null
+
+# ============================================================================
+# 欢迎信息
+# ============================================================================
+
+echo "✨ Grain 开发环境已加载"
+echo "💡 输入 'dev-info' 查看工具版本"
+echo "📊 输入 'grain-status' 查看项目状态"
+
+# ============================================================================
+# 性能分析 - 取消注释以查看启动时间
+# ============================================================================
+# zprof
