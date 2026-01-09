@@ -30,7 +30,7 @@
     - 定义 `ThemeMode`, `ThemeState`, `ThemeActions`
     - _Requirements: 9.1, 9.2, 9.3_
 
-- [ ] 3. 创建状态管理
+- [x] 3. 创建状态管理
   - [x] 3.1 创建布局状态
     - 创建 `state/layout.state.ts`
     - 实现 `useLayoutStore` with Zustand
@@ -64,7 +64,7 @@
     - 测试主题切换逻辑
     - _Requirements: 9.3, 9.4_
 
-- [ ] 4. 创建 IO 层函数
+- [x] 4. 创建 IO 层函数
   - [x] 4.1 创建布局状态持久化
     - 创建 `io/storage/layout.storage.ts`
     - 实现 `saveLayoutState`, `loadLayoutState`
@@ -75,7 +75,7 @@
     - 测试保存和加载逻辑
     - _Requirements: 13.1, 13.2_
 
-- [ ] 5. 创建 Flows 层
+- [x] 5. 创建 Flows 层
   - [x] 5.1 创建布局初始化 flow
     - 创建 `flows/layout/init-layout.flow.ts`
     - 实现布局状态加载和恢复逻辑
@@ -98,7 +98,7 @@
     - 测试主题初始化和同步
     - _Requirements: 9.3_
 
-- [ ] 6. 创建 Hooks
+- [x] 6. 创建 Hooks
   - [x] 6.1 创建布局 hook
     - 创建 `hooks/use-layout.ts`
     - 封装布局状态和操作
@@ -114,8 +114,8 @@
     - 封装主题状态和操作
     - _Requirements: 9.1, 9.2_
 
-- [ ] 7. 更新 AppLayout 组件
-  - [ ] 7.1 更新 AppLayout 视图组件
+- [x] 7. 更新 AppLayout 组件
+  - [x] 7.1 更新 AppLayout 视图组件
     - 修改 `views/app-layout/app-layout.view.fn.tsx`
     - 引入 `PanelGroup`, `Panel`, `PanelResizeHandle`
     - 实现条件渲染侧边栏
@@ -127,8 +127,8 @@
     - 测试面板调整和折叠
     - _Requirements: 1.1, 1.4_
 
-- [ ] 8. 更新 __root.tsx
-  - [ ] 8.1 添加全局组件
+- [x] 8. 更新 __root.tsx
+  - [x] 8.1 添加全局组件
     - 修改 `routes/__root.tsx`
     - 添加 `<Toaster />`
     - 添加 `<CommandPalette />`
@@ -139,12 +139,12 @@
     - 添加 `<DevtoolsWrapper />` (仅开发模式)
     - _Requirements: 2.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.1, 12.1_
   
-  - [ ] 8.2 添加全局状态管理
+  - [x] 8.2 添加全局状态管理
     - 在 `__root.tsx` 中添加全局组件状态
     - 使用 `useGlobalUIStore` 管理开关状态
     - _Requirements: 2.1, 2.2_
   
-  - [ ] 8.3 添加初始化逻辑
+  - [x] 8.3 添加初始化逻辑
     - 调用 `initLayoutFlow()` 初始化布局
     - 调用 `initThemeFlow()` 初始化主题
     - 启动自动备份管理器（如果启用）

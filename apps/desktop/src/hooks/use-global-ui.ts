@@ -47,27 +47,35 @@ export function useGlobalUI() {
 	return {
 		// Command Palette
 		commandPalette: {
-			open: commandPaletteOpen,
-			...commandPaletteActions,
+			isOpen: commandPaletteOpen,
+			open: commandPaletteActions.open,
+			close: commandPaletteActions.close,
+			toggle: commandPaletteActions.toggle,
 		},
 
 		// Global Search
 		globalSearch: {
-			open: globalSearchOpen,
-			...globalSearchActions,
+			isOpen: globalSearchOpen,
+			open: globalSearchActions.open,
+			close: globalSearchActions.close,
+			toggle: globalSearchActions.toggle,
 		},
 
 		// Buffer Switcher
 		bufferSwitcher: {
-			open: bufferSwitcherOpen,
+			isOpen: bufferSwitcherOpen,
 			direction: bufferSwitcherDirection,
-			...bufferSwitcherActions,
+			open: bufferSwitcherActions.open,
+			close: bufferSwitcherActions.close,
+			setDirection: bufferSwitcherActions.setDirection,
 		},
 
 		// Export Dialog
 		exportDialog: {
-			open: exportDialogOpen,
-			...exportDialogActions,
+			isOpen: exportDialogOpen,
+			open: exportDialogActions.open,
+			close: exportDialogActions.close,
+			toggle: exportDialogActions.toggle,
 		},
 	};
 }
