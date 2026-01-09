@@ -21,11 +21,13 @@ import { GlobalSearchContainer } from "@/views/global-search";
 import { BufferSwitcherContainer } from "@/views/buffer-switcher";
 import { ExportDialogManagerContainer } from "@/views/export-dialog-manager";
 import { FontStyleInjector } from "@/views/utils/font-style-injector";
+import { DevtoolsWrapper } from "@/views/utils/devtools-wrapper.container.fn";
 import { useGlobalUI } from "@/hooks/use-global-ui";
 import { useLayoutInit } from "@/hooks/use-layout";
 import { useThemeInitialization } from "@/hooks/use-theme";
 import { useWorkspaces } from "@/hooks/queries";
 import { useSelectedWorkspaceId } from "@/state/selection.state";
+import { useLayoutStore } from "@/state/layout.state";
 import { useEditorTabs } from "@/hooks/use-editor-tabs";
 
 export const Route = createRootRoute({
@@ -85,6 +87,15 @@ function RootComponent() {
 			if (modKey && e.shiftKey && e.key === "F") {
 				e.preventDefault();
 				globalSearch.toggle();
+				return;
+			}
+
+			// Cmd/Ctrl+B - Toggle Sidebar (Files Panel)
+			if (modKey && e.key === "b") {
+				e.preventDefault();
+				// Import layout actions to toggle sidebar
+				const { toggleSidebar } = useLayoutStore.getState();
+				toggleSidebar();
 				return;
 			}
 
@@ -163,11 +174,7 @@ function RootComponent() {
 			/>
 
 			{/* Devtools - Only in development */}
-			{import.meta.env.DEV && (
-				<>
-					{/* TanStack Router Devtools will be lazy loaded if needed */}
-				</>
-			)}
+			<DevtoolsWrapper />
 		</ConfirmProvider>
 	);
 }

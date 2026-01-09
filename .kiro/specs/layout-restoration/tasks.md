@@ -150,13 +150,14 @@
     - 启动自动备份管理器（如果启用）
     - _Requirements: 9.1, 10.1, 10.2_
 
-- [ ] 9. 实现全局快捷键
+- [x] 9. 实现全局快捷键
   - [ ] 9.1 创建快捷键管理 hook
     - 创建 `hooks/use-keyboard-shortcuts.ts`
     - 实现快捷键注册和处理逻辑
     - _Requirements: 3.1, 4.1, 5.1, 11.1_
+    - _Note: 已在 __root.tsx 中直接实现，无需单独 hook_
   
-  - [ ] 9.2 在 __root.tsx 中注册快捷键
+  - [x] 9.2 在 __root.tsx 中注册快捷键
     - 注册 Ctrl/Cmd+K → 打开命令面板
     - 注册 Ctrl/Cmd+Shift+F → 切换全局搜索
     - 注册 Ctrl/Cmd+B → 切换文件面板
@@ -169,31 +170,32 @@
     - 测试快捷键触发和冲突处理
     - _Requirements: 3.1, 4.1_
 
-- [ ] 10. 实现 FontStyleInjector
-  - [ ] 10.1 创建 FontStyleInjector 组件
+- [x] 10. 实现 FontStyleInjector
+  - [x] 10.1 创建 FontStyleInjector 组件
     - 创建 `views/utils/font-style-injector.tsx`
     - 从设置读取字体配置
     - 动态注入 CSS 样式
     - _Requirements: 7.1, 7.2, 7.3_
+    - _Note: 组件已存在并已在 __root.tsx 中使用_
   
   - [ ]* 10.2 编写 FontStyleInjector 测试
     - 创建 `views/utils/font-style-injector.test.tsx`
     - 测试样式注入和更新
     - _Requirements: 7.2, 7.3_
 
-- [ ] 11. 实现 DevtoolsWrapper
-  - [ ] 11.1 创建 DevtoolsWrapper 组件
+- [x] 11. 实现 DevtoolsWrapper
+  - [x] 11.1 创建 DevtoolsWrapper 组件
     - 创建 `views/utils/devtools-wrapper.container.fn.tsx`
     - 仅在开发模式下加载 TanStack Devtools
     - _Requirements: 12.1, 12.2_
 
-- [ ] 12. 实现响应式布局
-  - [ ] 12.1 添加窗口大小监听
+- [x] 12. 实现响应式布局
+  - [x] 12.1 添加窗口大小监听
     - 在 AppLayout 中监听窗口大小变化
     - 实现自动折叠逻辑（< 768px）
     - _Requirements: 15.1, 15.2_
   
-  - [ ] 12.2 添加面板宽度约束
+  - [x] 12.2 添加面板宽度约束
     - 设置侧边栏 maxSize={40}（40%）
     - 确保主内容区最小宽度 400px
     - _Requirements: 15.3, 15.4_

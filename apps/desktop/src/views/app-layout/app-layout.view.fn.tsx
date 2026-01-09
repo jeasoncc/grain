@@ -13,7 +13,7 @@
  * 依赖规则：views/ 只能依赖 hooks/, types/
  */
 
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useLayout } from "@/hooks/use-layout";
 import { ActivityBar } from "@/views/activity-bar";
@@ -36,10 +36,11 @@ export interface AppLayoutProps {
  * ```
  *
  * 特性：
- * - 侧边栏可拖拽调整宽度（20%-40%）
+ * - 侧边栏可拖拽调整宽度（15%-40%）
  * - 拖拽到最小宽度时自动折叠
  * - 布局状态自动持久化到 localStorage
  * - 支持条件渲染侧边栏（根据 activePanel）
+ * - 响应式布局：窗口宽度 < 768px 时自动折叠侧边栏
  */
 export function AppLayout({ children }: AppLayoutProps) {
 	const {
@@ -48,6 +49,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 		setSidebarWidth,
 		setSidebarCollapsedByDrag,
 		restoreFromCollapse,
+		toggleSidebar,
 	} = useLayout();
 
 	/**
@@ -77,6 +79,28 @@ export function AppLayout({ children }: AppLayoutProps) {
 	const handleExpand = () => {
 		restoreFromCollapse();
 	};
+
+	/**
+	 * Responsive layout: Auto-collapse sidebar on small screens
+	 * Threshold: 768px (tablet breakpoint)
+	 */
+	useEffect(() => {
+		const handleResize = () => {
+			const isSmallScreen = window.innerWidth < 768;
+
+			// Auto-collapse on small screens
+			if (isSmallScreen && isSidebarOpen) {
+				toggleSidebar();
+			}
+		};
+
+		// Check on mount
+		handleResize();
+
+		// Listen to window resize
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, [isSidebarOpen, toggleSidebar]);
 
 	return (
 		<div className="flex h-screen w-screen overflow-hidden">

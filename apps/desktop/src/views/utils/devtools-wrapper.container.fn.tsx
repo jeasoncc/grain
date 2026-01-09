@@ -1,58 +1,43 @@
 /**
  * @file devtools-wrapper.container.fn.tsx
- * @description Devtools 包装容器组件
+ * @description Devtools Wrapper - Lazy load TanStack devtools in development
  *
- * 仅在开发模式下加载和显示 TanStack Router Devtools。
- * 使用动态导入实现生产环境的 tree-shaking。
+ * 职责：
+ * - 仅在开发模式下加载 TanStack Router Devtools
+ * - 使用懒加载避免影响生产构建
+ *
+ * 依赖规则：views/ 只能依赖 hooks/, types/
  */
 
-import { memo, useEffect, useState } from "react";
+import { lazy, Suspense } from "react";
 
-// 类型定义
-type DevtoolsModules = {
-	readonly TanStackRouterDevtoolsPanel: React.ComponentType;
-} | null;
+// Lazy load TanStack Router Devtools
+const TanStackRouterDevtools =
+	import.meta.env.MODE === "production"
+		? () => null
+		: lazy(() =>
+				import("@tanstack/react-router-devtools").then((res) => ({
+					default: res.TanStackRouterDevtools,
+				})),
+			);
 
 /**
- * Devtools 包装容器组件
- * 仅在开发环境下渲染 TanStack Router Devtools
+ * Devtools Wrapper Component
+ *
+ * Conditionally renders TanStack Router Devtools in development mode.
+ * Uses lazy loading to avoid including devtools in production bundle.
+ *
+ * @returns Devtools component or null
  */
-export const DevtoolsWrapperContainer = memo(
-	function DevtoolsWrapperContainer() {
-		const [devtoolsModules, setDevtoolsModules] =
-			useState<DevtoolsModules>(null);
+export function DevtoolsWrapper() {
+	// Don't render anything in production
+	if (import.meta.env.MODE === "production") {
+		return null;
+	}
 
-		useEffect(() => {
-			// 仅在开发环境下动态加载 Devtools
-			// Vite 会在生产构建时进行 tree-shaking
-			if (!import.meta.env.DEV) {
-				return;
-			}
-
-			// 动态导入 Router Devtools（仅在开发环境）
-			import("@tanstack/react-router-devtools")
-				.then((routerDevtools) => {
-					setDevtoolsModules({
-						TanStackRouterDevtoolsPanel:
-							routerDevtools.TanStackRouterDevtoolsPanel,
-					});
-				})
-				.catch((error) => {
-					// 静默失败（开发环境下可能缺少依赖）
-					console.warn("[Devtools] 加载失败:", error);
-				});
-		}, []);
-
-		// 仅在开发模式下渲染
-		if (!import.meta.env.DEV || !devtoolsModules) {
-			return null;
-		}
-
-		const { TanStackRouterDevtoolsPanel } = devtoolsModules;
-
-		return <TanStackRouterDevtoolsPanel />;
-	},
-);
-
-// 默认导出
-export { DevtoolsWrapperContainer as DevtoolsWrapper };
+	return (
+		<Suspense fallback={null}>
+			<TanStackRouterDevtools />
+		</Suspense>
+	);
+}
