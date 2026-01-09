@@ -17,12 +17,16 @@ import {
 	initializeThemeFlow,
 	setModeFlow,
 } from "@/flows/theme";
+import { initThemeFlow } from "@/flows/theme/init-theme.flow";
 import {
 	useEnableTransition,
 	useIsThemeInitialized,
 	useThemeKey,
 	useThemeMode,
+	useSystemTheme,
+	useEffectiveTheme,
 	useThemeStore,
+	useThemeActions,
 } from "@/state/theme.state";
 import type { ThemeMode } from "@/types/theme";
 
@@ -36,10 +40,12 @@ import type { ThemeMode } from "@/types/theme";
 export function useTheme() {
 	const themeKey = useThemeKey();
 	const mode = useThemeMode();
+	const systemTheme = useSystemTheme();
+	const effectiveTheme = useEffectiveTheme();
 	const enableTransition = useEnableTransition();
 	const isInitialized = useIsThemeInitialized();
 
-	const store = useThemeStore();
+	const actions = useThemeActions();
 	const currentTheme = getThemeByKey(themeKey);
 
 	// Set theme
@@ -48,45 +54,50 @@ export function useTheme() {
 			const theme = getThemeByKey(key);
 			if (!theme) return;
 
-			store.setThemeKey(key);
-			store.setMode(theme.type);
+			actions.setTheme(key);
 			applyThemeFlow(key, enableTransition);
 		},
-		[store, enableTransition],
+		[actions, enableTransition],
 	);
 
 	// Set mode
 	const setMode = useCallback(
 		(newMode: ThemeMode) => {
-			store.setMode(newMode);
+			actions.setMode(newMode);
 			const newThemeKey = setModeFlow(newMode, themeKey, enableTransition);
 			if (newThemeKey !== themeKey) {
-				store.setThemeKey(newThemeKey);
+				actions.setTheme(newThemeKey);
 			}
 		},
-		[store, themeKey, enableTransition],
+		[actions, themeKey, enableTransition],
 	);
 
 	// Toggle mode
 	const toggleMode = useCallback(() => {
-		const newMode = getNextModeFlow(mode);
-		setMode(newMode);
-	}, [mode, setMode]);
+		actions.toggleMode();
+		const newMode = useThemeStore.getState().mode;
+		const newThemeKey = setModeFlow(newMode, themeKey, enableTransition);
+		if (newThemeKey !== themeKey) {
+			actions.setTheme(newThemeKey);
+		}
+	}, [actions, themeKey, enableTransition]);
 
 	// Set enable transition
 	const setEnableTransition = useCallback(
 		(enable: boolean) => {
-			store.setEnableTransition(enable);
+			actions.setEnableTransition(enable);
 		},
-		[store],
+		[actions],
 	);
 
 	return {
 		theme: themeKey,
 		mode,
+		systemTheme,
+		effectiveTheme,
 		currentTheme,
 		themes: getThemes(),
-		isDark: currentTheme?.type === "dark",
+		isDark: effectiveTheme === "dark",
 		isSystem: mode === "system",
 		enableTransition,
 		isInitialized,
@@ -106,66 +117,26 @@ export function useTheme() {
  * Should be called once at the root component.
  */
 export function useThemeInitialization(): void {
-	const store = useThemeStore();
 	const isInitialized = useIsThemeInitialized();
-	const themeKey = useThemeKey();
-	const mode = useThemeMode();
-	const enableTransition = useEnableTransition();
 
-	// Use ref to track if we've set up the listener
-	const listenerRef = useRef<(() => void) | null>(null);
+	// Use ref to track cleanup function
+	const cleanupRef = useRef<(() => void) | null>(null);
 
 	// Initialize theme
 	useEffect(() => {
 		if (isInitialized) return;
 
-		const { newThemeKey } = initializeThemeFlow(themeKey, mode);
-
-		if (newThemeKey !== themeKey) {
-			store.setThemeKey(newThemeKey);
-		}
-
-		store.setInitialized(true);
-	}, [isInitialized, themeKey, mode, store]);
-
-	// Set up system theme change listener
-	useEffect(() => {
-		if (typeof window === "undefined") return;
-
-		// Clean up previous listener
-		if (listenerRef.current) {
-			listenerRef.current();
-		}
-
-		const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-
-		const handleChange = (e: MediaQueryListEvent) => {
-			const currentMode = useThemeStore.getState().mode;
-			const currentEnableTransition =
-				useThemeStore.getState().enableTransition;
-
-			const newThemeKey = handleSystemThemeChangeFlow(
-				currentMode,
-				currentEnableTransition,
-				e.matches,
-			);
-
-			if (newThemeKey) {
-				useThemeStore.getState().setThemeKey(newThemeKey);
-			}
-		};
-
-		mediaQuery.addEventListener("change", handleChange);
-		listenerRef.current = () =>
-			mediaQuery.removeEventListener("change", handleChange);
+		// Initialize theme system (sets up listeners and applies theme)
+		const cleanup = initThemeFlow();
+		cleanupRef.current = cleanup;
 
 		return () => {
-			if (listenerRef.current) {
-				listenerRef.current();
-				listenerRef.current = null;
+			if (cleanupRef.current) {
+				cleanupRef.current();
+				cleanupRef.current = null;
 			}
 		};
-	}, []);
+	}, [isInitialized]);
 }
 
 // ==============================
@@ -176,9 +147,8 @@ export function useThemeInitialization(): void {
  * Check if the current theme is dark.
  */
 export const useIsDarkTheme = (): boolean => {
-	const themeKey = useThemeKey();
-	const theme = getThemeByKey(themeKey);
-	return theme?.type === "dark";
+	const effectiveTheme = useEffectiveTheme();
+	return effectiveTheme === "dark";
 };
 
 /**
@@ -190,7 +160,14 @@ export const useIsSystemMode = (): boolean => {
 };
 
 // Re-export state selectors for convenience
-export { useEnableTransition, useThemeKey, useThemeMode } from "@/state/theme.state";
+export {
+	useEnableTransition,
+	useThemeKey,
+	useThemeMode,
+	useSystemTheme,
+	useEffectiveTheme,
+} from "@/state/theme.state";
 
 // Re-export types for convenience
 export type { ThemeMode } from "@/types/theme";
+

@@ -25,3 +25,12 @@ export {
 	getAllKeys,
 	has,
 } from "./settings.storage";
+
+// Layout storage - 布局状态持久化
+export {
+	LAYOUT_STORAGE_KEY,
+	saveLayoutState,
+	loadLayoutState,
+	clearLayoutState,
+	hasLayoutState,
+} from "./layout.storage";

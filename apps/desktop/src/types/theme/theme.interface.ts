@@ -30,6 +30,10 @@ export interface ThemeState {
 	readonly themeKey: string;
 	/** Theme mode: light, dark, or system */
 	readonly mode: ThemeMode;
+	/** Current system theme preference (detected from OS) */
+	readonly systemTheme: "light" | "dark";
+	/** Effective theme being applied (resolved from mode and systemTheme) */
+	readonly effectiveTheme: "light" | "dark";
 	/** Whether to enable transition animations when switching themes */
 	readonly enableTransition: boolean;
 }
@@ -53,6 +57,12 @@ export interface ThemeActions {
 	 * May trigger theme change if current theme doesn't match mode.
 	 */
 	setMode: (mode: ThemeMode) => void;
+
+	/**
+	 * Set the system theme preference (detected from OS).
+	 * Updates effectiveTheme if mode is "system".
+	 */
+	setSystemTheme: (theme: "light" | "dark") => void;
 
 	/**
 	 * Toggle between light, dark, and system modes.
@@ -92,5 +102,7 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
 export const DEFAULT_THEME_STATE: ThemeState = {
 	themeKey: "default-dark",
 	mode: "dark",
+	systemTheme: "dark",
+	effectiveTheme: "dark",
 	enableTransition: true,
 } as const;

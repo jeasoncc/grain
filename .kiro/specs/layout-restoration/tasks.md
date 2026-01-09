@@ -8,30 +8,30 @@
 
 ## Tasks
 
-- [ ] 1. 安装依赖和准备工作
+- [x] 1. 安装依赖和准备工作
   - 检查并安装 `react-resizable-panels`
   - 检查并安装 `fast-check` (开发依赖)
   - 验证现有依赖版本兼容性
   - _Requirements: 所有需求的基础_
 
-- [ ] 2. 创建类型定义
-  - [ ] 2.1 创建布局相关类型
+- [x] 2. 创建类型定义
+  - [x] 2.1 创建布局相关类型
     - 创建 `types/layout.interface.ts`
     - 定义 `LayoutState`, `SidebarPanel`, `LayoutActions`
     - _Requirements: 1.1, 1.2, 1.3, 11.1_
   
-  - [ ] 2.2 创建全局 UI 类型
+  - [x] 2.2 创建全局 UI 类型
     - 创建 `types/global-ui.interface.ts`
     - 定义 `GlobalUIState`, `GlobalUIActions`
     - _Requirements: 2.1, 3.1, 4.1, 5.1_
   
-  - [ ] 2.3 创建主题类型
+  - [x] 2.3 创建主题类型
     - 创建 `types/theme.interface.ts`
     - 定义 `ThemeMode`, `ThemeState`, `ThemeActions`
     - _Requirements: 9.1, 9.2, 9.3_
 
 - [ ] 3. 创建状态管理
-  - [ ] 3.1 创建布局状态
+  - [x] 3.1 创建布局状态
     - 创建 `state/layout.state.ts`
     - 实现 `useLayoutStore` with Zustand
     - 实现 `setActivePanel`, `toggleSidebar`, `restoreFromCollapse`
@@ -42,7 +42,7 @@
     - 测试所有状态操作
     - _Requirements: 1.1, 11.1_
   
-  - [ ] 3.3 创建全局 UI 状态
+  - [x] 3.3 创建全局 UI 状态
     - 创建 `state/global-ui.state.ts`
     - 实现 `useGlobalUIStore`
     - 实现命令面板、搜索、切换器的开关逻辑
@@ -53,7 +53,7 @@
     - 测试所有状态操作
     - _Requirements: 2.1, 3.1_
   
-  - [ ] 3.5 创建主题状态
+  - [x] 3.5 创建主题状态
     - 创建 `state/theme.state.ts`
     - 实现 `useThemeStore`
     - 实现 `setMode`, `setSystemTheme`
@@ -65,7 +65,7 @@
     - _Requirements: 9.3, 9.4_
 
 - [ ] 4. 创建 IO 层函数
-  - [ ] 4.1 创建布局状态持久化
+  - [x] 4.1 创建布局状态持久化
     - 创建 `io/storage/layout.storage.ts`
     - 实现 `saveLayoutState`, `loadLayoutState`
     - _Requirements: 1.2, 1.3, 13.1, 13.2_
@@ -76,7 +76,7 @@
     - _Requirements: 13.1, 13.2_
 
 - [ ] 5. 创建 Flows 层
-  - [ ] 5.1 创建布局初始化 flow
+  - [x] 5.1 创建布局初始化 flow
     - 创建 `flows/layout/init-layout.flow.ts`
     - 实现布局状态加载和恢复逻辑
     - 处理加载失败的降级策略
@@ -87,7 +87,7 @@
     - 测试正常加载和错误处理
     - _Requirements: 13.2, 13.4_
   
-  - [ ] 5.3 创建主题初始化 flow
+  - [x] 5.3 创建主题初始化 flow
     - 创建 `flows/theme/init-theme.flow.ts`
     - 实现主题系统初始化
     - 监听系统主题变化
@@ -99,17 +99,17 @@
     - _Requirements: 9.3_
 
 - [ ] 6. 创建 Hooks
-  - [ ] 6.1 创建布局 hook
+  - [x] 6.1 创建布局 hook
     - 创建 `hooks/use-layout.ts`
     - 封装布局状态和操作
     - _Requirements: 1.1, 11.1_
   
-  - [ ] 6.2 创建全局 UI hook
+  - [x] 6.2 创建全局 UI hook
     - 创建 `hooks/use-global-ui.ts`
     - 封装全局组件状态和操作
     - _Requirements: 2.1, 3.1, 4.1_
   
-  - [ ] 6.3 创建主题 hook
+  - [x] 6.3 创建主题 hook
     - 创建 `hooks/use-theme.ts`
     - 封装主题状态和操作
     - _Requirements: 9.1, 9.2_

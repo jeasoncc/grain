@@ -4,3 +4,4 @@
  */
 
 export * from "./apply-theme.flow";
+export * from "./init-theme.flow";

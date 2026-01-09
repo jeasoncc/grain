@@ -47,8 +47,12 @@ export * from "./editor-tab";
 export * from "./export";
 // Font 类型模块
 export * from "./font";
+// Global UI 类型模块
+export * from "./global-ui";
 // Icon Theme 类型模块
 export * from "./icon-theme";
+// Layout 类型模块
+export * from "./layout";
 // Save 类型模块
 export * from "./save";
 // Selection 类型模块
