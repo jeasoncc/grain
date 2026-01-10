@@ -27,7 +27,6 @@ import * as nodeRepo from "@/io/api/node.api";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import {
 	openTabFlow,
-	updateEditorStateFlow,
 } from "@/flows/editor-tabs";
 import type { TabType } from "@/types/editor-tab";
 import type { NodeInterface, NodeType } from "@/types/node";
@@ -144,35 +143,17 @@ export const createFile = (
 						logger.debug("[CreateFile] 开始更新编辑器状态...");
 						const store = useEditorTabsStore.getState();
 
-						openTabFlow({
-							workspaceId,
-							nodeId: node.id,
-							title,
-							type: type as TabType,
-						}, store);
-						logger.debug("[CreateFile] Tab 已打开");
-
-						// 获取新创建的 tab ID
-						const newTabs = useEditorTabsStore.getState().tabs;
-						const newTab = newTabs.find((t) => t.nodeId === node.id);
-						tabId = newTab?.id ?? node.id;
-						logger.debug("[CreateFile] Tab ID:", tabId);
-
-						// 设置初始内容
+						// 解析内容（如果有）
+						let parsedContent: unknown = undefined;
 						if (content) {
-							logger.debug("[CreateFile] 开始设置初始内容...");
 							try {
-								const parsed = JSON.parse(content);
-								logger.debug("[CreateFile] 内容解析成功，设置 editorState");
-								updateEditorStateFlow(tabId, { serializedState: parsed }, useEditorTabsStore.getState());
-								logger.success("[CreateFile] editorState 设置成功");
+								parsedContent = JSON.parse(content);
+								logger.debug("[CreateFile] 内容解析成功");
 							} catch (error) {
-								// 内容解析失败，使用空文档作为降级策略
 								logger.warn("[CreateFile] 内容解析失败，使用空文档");
 								logger.debug("[CreateFile] 解析错误:", error);
-								
-								// 创建一个最小的有效 Lexical 文档
-								const fallbackDoc = {
+								// 创建一个最小的有效 Lexical 文档作为降级策略
+								parsedContent = {
 									root: {
 										children: [{
 											children: [],
@@ -189,12 +170,24 @@ export const createFile = (
 										version: 1,
 									},
 								};
-								updateEditorStateFlow(tabId, { serializedState: fallbackDoc as any }, useEditorTabsStore.getState());
-								logger.info("[CreateFile] 已设置降级文档");
 							}
-						} else {
-							logger.debug("[CreateFile] 无初始内容");
 						}
+
+						// 打开 tab 时直接传入初始内容
+						openTabFlow({
+							workspaceId,
+							nodeId: node.id,
+							title,
+							type: type as TabType,
+							initialContent: parsedContent,
+						}, store);
+						logger.debug("[CreateFile] Tab 已打开，内容已设置");
+
+						// 获取新创建的 tab ID
+						const newTabs = useEditorTabsStore.getState().tabs;
+						const newTab = newTabs.find((t) => t.nodeId === node.id);
+						tabId = newTab?.id ?? node.id;
+						logger.debug("[CreateFile] Tab ID:", tabId);
 					}
 
 					logger.success("[CreateFile] 文件创建完成:", node.id);

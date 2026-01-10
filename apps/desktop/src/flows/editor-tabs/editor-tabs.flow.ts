@@ -65,7 +65,12 @@ export const openTabFlow = (
 		.type(payload.type)
 		.build();
 
-	const newEditorState = EditorStateBuilder.fromDefault().build();
+	// 如果有初始内容，使用它；否则创建空状态
+	const newEditorState = payload.initialContent
+		? EditorStateBuilder.fromDefault()
+				.serializedState(payload.initialContent as any)
+				.build()
+		: EditorStateBuilder.fromDefault().build();
 
 	store.addTab(newTab as EditorTab);
 	store.setActiveTabId(newTab.id);

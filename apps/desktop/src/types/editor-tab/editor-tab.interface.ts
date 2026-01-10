@@ -67,6 +67,8 @@ export interface OpenTabPayload {
 	readonly nodeId: string;
 	readonly title: string;
 	readonly type: TabType;
+	/** 初始内容（已解析的 Lexical 状态对象） */
+	readonly initialContent?: unknown;
 }
 
 export interface UpdateEditorStatePayload {

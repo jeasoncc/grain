@@ -28,7 +28,6 @@ import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import {
 	openTabFlow,
 	setActiveTabFlow,
-	updateEditorStateFlow,
 } from "@/flows/editor-tabs";
 import type { TabType } from "@/types/editor-tab";
 
@@ -93,44 +92,25 @@ export const openFile = (
 					logger.info("[OpenFile] 从 DB 加载内容...");
 					const contentResult = await contentRepo.getContentByNodeId(nodeId)();
 					
+					let parsedContent: unknown = undefined;
+					let hasContent = false;
+					
 					if (E.isRight(contentResult) && contentResult.right) {
 						logger.debug("[OpenFile] 内容加载成功:", {
 							contentLength: contentResult.right.content.length,
 							contentPreview: contentResult.right.content.substring(0, 100),
 						});
-					} else {
-						logger.warn("[OpenFile] 内容加载失败或为空");
-					}
-
-					// 3. 创建 tab
-					openTabFlow({
-						workspaceId,
-						nodeId,
-						title,
-						type,
-					}, useEditorTabsStore.getState());
-
-					// 获取新创建的 tab ID
-					const newTabs = useEditorTabsStore.getState().tabs;
-					const newTab = newTabs.find((t) => t.nodeId === nodeId);
-					const tabId = newTab?.id ?? nodeId;
-
-					// 4. 设置编辑器内容
-					let hasContent = false;
-					if (E.isRight(contentResult) && contentResult.right) {
-						logger.debug("[OpenFile] 开始解析和设置内容...");
+						
+						// 解析内容
 						try {
-							const parsed = JSON.parse(contentResult.right.content);
-							logger.debug("[OpenFile] 内容解析成功，类型:", typeof parsed);
-							updateEditorStateFlow(tabId, { serializedState: parsed }, useEditorTabsStore.getState());
+							parsedContent = JSON.parse(contentResult.right.content);
 							hasContent = true;
-							logger.success("[OpenFile] 内容加载成功");
+							logger.debug("[OpenFile] 内容解析成功");
 						} catch (error) {
 							logger.warn("[OpenFile] 内容解析失败，使用空文档");
 							logger.debug("[OpenFile] 解析错误:", error);
-							
 							// 创建一个最小的有效 Lexical 文档作为降级策略
-							const fallbackDoc = {
+							parsedContent = {
 								root: {
 									children: [{
 										children: [],
@@ -147,12 +127,24 @@ export const openFile = (
 									version: 1,
 								},
 							};
-							updateEditorStateFlow(tabId, { serializedState: fallbackDoc as any }, useEditorTabsStore.getState());
-							logger.info("[OpenFile] 已设置降级文档");
 						}
 					} else {
-						logger.info("[OpenFile] 无内容，使用空编辑器");
+						logger.warn("[OpenFile] 内容加载失败或为空");
 					}
+
+					// 3. 创建 tab（带初始内容）
+					openTabFlow({
+						workspaceId,
+						nodeId,
+						title,
+						type,
+						initialContent: parsedContent,
+					}, useEditorTabsStore.getState());
+
+					// 获取新创建的 tab ID
+					const newTabs = useEditorTabsStore.getState().tabs;
+					const newTab = newTabs.find((t) => t.nodeId === nodeId);
+					const tabId = newTab?.id ?? nodeId;
 
 					return {
 						tabId,
