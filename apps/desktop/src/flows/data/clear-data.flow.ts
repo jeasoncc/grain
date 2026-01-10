@@ -5,7 +5,7 @@
  * 封装数据清理操作，供 views 层使用
  */
 
-import * as TE from "fp-ts/TaskEither";
+import type * as TE from "fp-ts/TaskEither";
 import { clearAllData as clearAllDataApi } from "@/io/api";
 import type { AppError } from "@/utils/error.util";
 import type { ClearDataResult } from "@/types/rust-api";

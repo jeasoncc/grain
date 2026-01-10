@@ -1,5 +1,5 @@
 // src/components/Spinner.tsx
-import React from 'react';
+import type React from 'react';
 
 interface SpinnerProps {
   size?: number;         // 控制宽高，默认 8 (Tailwind 单位)

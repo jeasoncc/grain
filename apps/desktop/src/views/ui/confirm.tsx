@@ -1,4 +1,5 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
+import type React from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { Button } from "@/views/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/views/ui/dialog";
 

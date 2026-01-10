@@ -7,7 +7,6 @@ import "@grain/editor-lexical/styles";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { legacyDatabase } from "@/io/db/legacy-database";
 
 // Create the router instance
 const router = createRouter({
@@ -42,7 +41,7 @@ async function main() {
 					{import.meta.env.DEV && (
 						<ReactQueryDevtools
 							initialIsOpen={false}
-							position="left"
+							position="bottom-left"
 						/>
 					)}
 				</QueryClientProvider>

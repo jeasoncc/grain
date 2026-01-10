@@ -13,7 +13,7 @@ import {
 	getTodayDate,
 	mergeWritingGoal,
 } from "@/pipes/writing";
-import { useWritingStore } from "@/state/writing.state";
+import type { useWritingStore } from "@/state/writing.state";
 import type { WritingGoal, WritingSession } from "@/types/writing";
 
 // ==============================

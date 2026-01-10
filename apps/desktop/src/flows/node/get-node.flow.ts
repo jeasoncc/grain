@@ -5,7 +5,7 @@
  * 封装节点获取操作
  */
 
-import * as TE from "fp-ts/TaskEither";
+import type * as TE from "fp-ts/TaskEither";
 import { getNodeById as getNodeByIdApi, setNodeCollapsed as setNodeCollapsedApi } from "@/io/api";
 import type { AppError } from "@/utils/error.util";
 import type { NodeInterface } from "@/types/node";

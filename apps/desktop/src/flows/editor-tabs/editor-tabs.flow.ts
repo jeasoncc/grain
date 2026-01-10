@@ -14,7 +14,7 @@ import {
 	findTabByNodeId,
 	getTabsByWorkspace,
 } from "@/pipes/editor-tab";
-import { useEditorTabsStore } from "@/state/editor-tabs.state";
+import type { useEditorTabsStore } from "@/state/editor-tabs.state";
 import type {
 	EditorInstanceState,
 	EditorTab,

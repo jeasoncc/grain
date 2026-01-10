@@ -5,7 +5,6 @@
  * 依赖规则：flows/ 只能依赖 pipes/, io/, state/, types/
  */
 
-import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { type AppError, dbError } from "@/utils/error.util";
 import type { ClearDataResult } from "@/types/rust-api";
