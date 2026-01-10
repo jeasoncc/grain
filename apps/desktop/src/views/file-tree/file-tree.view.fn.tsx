@@ -300,10 +300,13 @@ export function FileTree({
 	onRenameNode,
 	onMoveNode,
 	onToggleCollapsed,
+	treeRef: externalTreeRef,
 }: FileTreeProps) {
 	const treeData = useMemo(() => buildTreeData(nodes), [nodes]);
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const treeRef = useRef<any>(null);
+	const internalTreeRef = useRef<any>(null);
+	// Use external ref if provided, otherwise use internal ref
+	const treeRef = externalTreeRef || internalTreeRef;
 	const containerRef = useRef<HTMLDivElement>(null);
 	const iconTheme = useIconTheme();
 	const { currentTheme } = useTheme();

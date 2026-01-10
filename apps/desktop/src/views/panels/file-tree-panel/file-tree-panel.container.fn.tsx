@@ -25,6 +25,7 @@ import {
 	createParagraphNode,
 	createTextNode,
 } from "@/pipes/content";
+import { autoExpandAndScrollToNode } from "@/utils/file-tree-navigation.util";
 import { FileTree } from "@/views/file-tree";
 import { useConfirm } from "@/views/ui/confirm";
 import { useGetNodeById, useSetNodeCollapsed } from "@/hooks/use-node-operations";
@@ -52,6 +53,10 @@ export const FileTreePanelContainer = memo(
 		// Selected node state - use global store for cross-component communication
 		const selectedNodeId = useSelectionStore((s) => s.selectedNodeId);
 		const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId);
+
+		// Tree ref for scrolling to nodes
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const treeRef = useRef<any>(null);
 
 		/**
 		 * Generate default content for new files
@@ -120,7 +125,7 @@ export const FileTreePanelContainer = memo(
 				}
 
 				try {
-					await createFileAsync({
+					const result = await createFileAsync({
 						workspaceId,
 						parentId,
 						type: "folder",
@@ -128,12 +133,27 @@ export const FileTreePanelContainer = memo(
 					});
 
 					toast.success("Folder created");
+
+					// Auto-expand and scroll to new folder
+					// Requirements: 2.1, 2.2, 2.3, 2.4
+					if (result && result.node) {
+						// Select the new folder
+						setSelectedNodeId(result.node.id);
+
+						// Auto-expand ancestors and scroll to the new folder
+						await autoExpandAndScrollToNode(
+							nodes,
+							result.node.id,
+							setCollapsed,
+							treeRef,
+						);
+					}
 				} catch (error) {
 					console.error("Failed to create folder:", error);
 					toast.error("Failed to create folder");
 				}
 			},
-			[workspaceId],
+			[workspaceId, nodes, setCollapsed, setSelectedNodeId],
 		);
 
 		// Handle file creation
@@ -187,8 +207,18 @@ export const FileTreePanelContainer = memo(
 					toast.success(`${type === "drawing" ? "Canvas" : "File"} created`);
 
 					// Auto-select the new file (createFileAsync 已经打开了 tab)
+					// Requirements: 2.1, 2.2, 2.3, 2.4, 2.5
 					if (result && type !== "folder") {
 						setSelectedNodeId(result.node.id);
+
+						// Auto-expand ancestors and scroll to the new file
+						await autoExpandAndScrollToNode(
+							nodes,
+							result.node.id,
+							setCollapsed,
+							treeRef,
+						);
+
 						navigate({ to: "/" });
 					}
 				} catch (error) {
@@ -196,7 +226,7 @@ export const FileTreePanelContainer = memo(
 					toast.error("Failed to create file");
 				}
 			},
-			[workspaceId, setSelectedNodeId, navigate, generateDefaultFileContent],
+			[workspaceId, setSelectedNodeId, navigate, generateDefaultFileContent, nodes, setCollapsed],
 		);
 
 		// Editor tabs for closing deleted files
@@ -309,13 +339,23 @@ export const FileTreePanelContainer = memo(
 				toast.success("Diary created");
 
 				// Auto-select the new diary file
+				// Requirements: 2.1, 2.2, 2.3, 2.4
 				setSelectedNodeId(node.id);
+
+				// Auto-expand ancestors and scroll to the new diary
+				await autoExpandAndScrollToNode(
+					nodes,
+					node.id,
+					setCollapsed,
+					treeRef,
+				);
+
 				navigate({ to: "/" });
 			} catch (error) {
 				console.error("Failed to create diary:", error);
 				toast.error("Failed to create diary");
 			}
-		}, [workspaceId, setSelectedNodeId, navigate]);
+		}, [workspaceId, setSelectedNodeId, navigate, nodes, setCollapsed]);
 
 		// Handle toggle collapsed state
 		// Requirements: 2.2
@@ -346,6 +386,7 @@ export const FileTreePanelContainer = memo(
 				onMoveNode={handleMoveNode}
 				onToggleCollapsed={handleToggleCollapsed}
 				onCreateDiary={handleCreateDiary}
+				treeRef={treeRef}
 			/>
 		);
 	},

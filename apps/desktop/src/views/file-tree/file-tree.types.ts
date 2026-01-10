@@ -38,6 +38,9 @@ export interface FileTreeProps {
 	readonly onToggleCollapsed: (nodeId: string, collapsed: boolean) => void;
 	/** 创建日记回调（可选） */
 	readonly onCreateDiary?: () => void;
+	/** Tree ref for scrolling (可选) */
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	readonly treeRef?: React.RefObject<any>;
 }
 
 /**

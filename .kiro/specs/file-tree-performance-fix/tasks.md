@@ -64,22 +64,22 @@
     - 测试创建日记文件（验证日期和内容显示）
     - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 3. 实现文件树自动展开和定位
-  - [ ] 3.1 创建自动展开工具函数
+- [x] 3. 实现文件树自动展开和定位
+  - [x] 3.1 创建自动展开工具函数
     - 创建 `utils/file-tree-navigation.util.ts`
     - 实现 `calculateAncestorPath` - 计算从根到目标节点的路径
     - 实现 `expandAncestors` - 展开所有祖先节点
     - 实现 `scrollToNode` - 滚动到目标节点
     - _Requirements: 2.1, 2.3, 2.4_
   
-  - [ ] 3.2 集成到文件创建流程
+  - [x] 3.2 集成到文件创建流程
     - 在 `FileTreePanelContainer` 的 `handleCreateFile` 中调用自动展开
     - 在文件创建成功后展开祖先节点
     - 选中新创建的节点
     - 滚动到新节点位置
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
   
-  - [ ] 3.3 处理边界情况
+  - [x] 3.3 处理边界情况
     - 处理根节点创建（无需展开）
     - 处理深层嵌套节点创建
     - 处理节点不在可见区域的情况
