@@ -288,7 +288,56 @@ export const reorderNodes = (
 export const setNodeCollapsed = (
 	nodeId: string,
 	collapsed: boolean,
-): TE.TaskEither<AppError, NodeInterface> => updateNode(nodeId, { collapsed });
+): TE.TaskEither<AppError, NodeInterface> => {
+	// Performance monitoring - Requirements: 10.1, 10.2, 10.3
+	const startTime = performance.now();
+	console.log("[API Performance] setNodeCollapsed started", {
+		nodeId,
+		collapsed,
+		timestamp: new Date().toISOString(),
+	});
+
+	return pipe(
+		updateNode(nodeId, { collapsed }),
+		TE.map((result) => {
+			const endTime = performance.now();
+			const duration = endTime - startTime;
+
+			console.log("[API Performance] setNodeCollapsed completed", {
+				nodeId,
+				collapsed,
+				duration: `${duration.toFixed(2)}ms`,
+				timestamp: new Date().toISOString(),
+			});
+
+			// Warning for slow API calls (> 50ms threshold)
+			if (duration > 50) {
+				console.warn("[API Performance] Slow API call detected", {
+					operation: "setNodeCollapsed",
+					nodeId,
+					duration: `${duration.toFixed(2)}ms`,
+					threshold: "50ms",
+				});
+			}
+
+			return result;
+		}),
+		TE.mapLeft((error) => {
+			const endTime = performance.now();
+			const duration = endTime - startTime;
+
+			console.error("[API Performance] setNodeCollapsed failed", {
+				nodeId,
+				collapsed,
+				error,
+				duration: `${duration.toFixed(2)}ms`,
+				timestamp: new Date().toISOString(),
+			});
+
+			return error;
+		}),
+	);
+};
 
 /**
  * 获取所有节点（跨工作区）

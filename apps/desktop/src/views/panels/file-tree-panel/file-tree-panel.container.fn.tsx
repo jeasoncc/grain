@@ -28,7 +28,8 @@ import {
 import { autoExpandAndScrollToNode } from "@/utils/file-tree-navigation.util";
 import { FileTree } from "@/views/file-tree";
 import { useConfirm } from "@/views/ui/confirm";
-import { useGetNodeById, useSetNodeCollapsed } from "@/hooks/use-node-operations";
+import { useGetNodeById } from "@/hooks/use-node-operations";
+import { useOptimisticCollapse } from "@/hooks/use-optimistic-collapse";
 import { useNodesByWorkspace } from "@/hooks/use-node";
 import { useEditorTabs } from "@/hooks/use-editor-tabs";
 import { useSelectionStore } from "@/state/selection.state";
@@ -40,15 +41,32 @@ export const FileTreePanelContainer = memo(
 		const navigate = useNavigate();
 		const confirm = useConfirm();
 
-		// Node operations hooks
-		const { getNode } = useGetNodeById();
-		const { setCollapsed } = useSetNodeCollapsed();
-
 		// Global selection state
 		const globalSelectedWorkspaceId = useSelectionStore(
 			(s) => s.selectedWorkspaceId,
 		);
 		const workspaceId = propWorkspaceId ?? globalSelectedWorkspaceId;
+
+		// Node operations hooks
+		const { getNode } = useGetNodeById();
+
+		// Optimistic collapse hook - Requirements: 1.1, 1.2, 1.3, 1.4, 1.5
+		const { toggleCollapsed: optimisticToggleCollapsed } = useOptimisticCollapse({
+			workspaceId,
+		});
+
+		// Wrapper for autoExpandAndScrollToNode compatibility
+		const setCollapsed = useCallback(
+			async (nodeId: string, collapsed: boolean): Promise<boolean> => {
+				try {
+					await optimisticToggleCollapsed(nodeId, collapsed);
+					return true;
+				} catch {
+					return false;
+				}
+			},
+			[optimisticToggleCollapsed],
+		);
 
 		// Selected node state - use global store for cross-component communication
 		const selectedNodeId = useSelectionStore((s) => s.selectedNodeId);
@@ -358,19 +376,57 @@ export const FileTreePanelContainer = memo(
 		}, [workspaceId, setSelectedNodeId, navigate, nodes, setCollapsed]);
 
 		// Handle toggle collapsed state
-		// Requirements: 2.2
+		// Handle toggle collapsed state
+		// Requirements: 2.2, 1.1, 1.2, 1.3, 1.4, 1.5
 		const handleToggleCollapsed = useCallback(
 			async (nodeId: string, collapsed: boolean) => {
+				// Performance monitoring - Requirements: 1.5, 10.1, 10.2, 10.3
+				const startTime = performance.now();
+				console.log("[FileTree Performance] Toggle collapsed started", {
+					nodeId,
+					collapsed,
+					timestamp: new Date().toISOString(),
+				});
+
 				try {
-					const success = await setCollapsed(nodeId, collapsed);
-					if (!success) {
-						console.error("Failed to toggle collapsed");
+					// Use optimistic update - Requirements: 1.1, 1.2, 1.3, 1.4
+					await optimisticToggleCollapsed(nodeId, collapsed);
+
+					const endTime = performance.now();
+					const totalDuration = endTime - startTime;
+
+					// Log performance metrics
+					console.log("[FileTree Performance] Toggle collapsed completed", {
+						nodeId,
+						collapsed,
+						totalDuration: `${totalDuration.toFixed(2)}ms`,
+						timestamp: new Date().toISOString(),
+					});
+
+					// Warning for slow operations (> 100ms threshold)
+					// Note: With optimistic updates, this should rarely trigger
+					if (totalDuration > 100) {
+						console.warn("[FileTree Performance] Slow toggle operation detected", {
+							nodeId,
+							totalDuration: `${totalDuration.toFixed(2)}ms`,
+							threshold: "100ms",
+							note: "This is unexpected with optimistic updates",
+						});
 					}
 				} catch (error) {
-					console.error("Failed to toggle collapsed:", error);
+					const errorTime = performance.now();
+					const totalDuration = errorTime - startTime;
+
+					console.error("[FileTree Performance] Toggle collapsed failed", {
+						nodeId,
+						collapsed,
+						error,
+						totalDuration: `${totalDuration.toFixed(2)}ms`,
+						timestamp: new Date().toISOString(),
+					});
 				}
 			},
-			[setCollapsed],
+			[optimisticToggleCollapsed],
 		);
 
 		return (

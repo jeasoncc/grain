@@ -166,6 +166,9 @@ export { useWikiPreviewFetcher, type WikiPreviewData } from "./use-wiki-preview"
 // Node Operations Hooks
 export { useGetNodeById, useSetNodeCollapsed } from "./use-node-operations";
 
+// Optimistic Update Hooks
+export { useOptimisticCollapse } from "./use-optimistic-collapse";
+
 // ============================================================================
 // Query Keys (从 queries/ 合并)
 // ============================================================================

@@ -92,28 +92,28 @@
     - 验证滚动行为正确
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 4. 优化节点展开性能
-  - [ ] 4.1 分析当前性能瓶颈
+- [x] 4. 优化节点展开性能
+  - [x] 4.1 分析当前性能瓶颈
     - 添加性能监控日志
     - 测量 `handleToggleCollapsed` 的耗时
     - 测量后端 API 调用的耗时
     - 识别主要的性能瓶颈
     - _Requirements: 1.5, 10.1, 10.2, 10.3_
   
-  - [ ] 4.2 实现乐观更新策略
+  - [x] 4.2 实现乐观更新策略
     - 创建 `hooks/use-optimistic-collapse.ts`
     - 立即更新 UI 状态（不等待后端）
     - 异步调用后端 API 保存状态
     - 失败时回滚 UI 状态
     - _Requirements: 1.1, 1.2, 1.3, 1.4_
   
-  - [ ] 4.3 添加防抖优化
+  - [x] 4.3 添加防抖优化
     - 对连续的展开/折叠操作进行防抖
     - 设置 300ms 的防抖延迟
     - 确保页面卸载时立即执行
     - _Requirements: 1.5, 6.1, 6.4, 6.5_
   
-  - [ ] 4.4 集成到 FileTreePanel
+  - [x] 4.4 集成到 FileTreePanel
     - 在 `FileTreePanelContainer` 中使用乐观更新 Hook
     - 替换现有的 `handleToggleCollapsed` 实现
     - 添加错误处理和用户反馈
