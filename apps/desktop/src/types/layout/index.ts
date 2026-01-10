@@ -9,3 +9,6 @@ export type {
 } from "./layout.interface";
 
 export { DEFAULT_LAYOUT_STATE, DEFAULT_LAYOUT_CONFIG } from "./layout.interface";
+
+// Re-export SidebarPanel for convenience
+export type { SidebarPanel } from "../sidebar/sidebar.interface";

@@ -91,6 +91,16 @@ export const createFile = (
 					} = params;
 
 					logger.start("[CreateFile] 创建文件:", title, type);
+					logger.debug("[CreateFile] 参数详情:", {
+						workspaceId,
+						parentId,
+						title,
+						type,
+						contentLength: content.length,
+						contentPreview: content.substring(0, 100),
+						tags,
+						collapsed,
+					});
 
 					// 1. 获取排序号
 					const orderResult = await nodeRepo.getNextSortOrder(
@@ -120,10 +130,18 @@ export const createFile = (
 
 					const node = nodeResult.right;
 					logger.info("[CreateFile] 节点创建成功:", node.id);
+					logger.debug("[CreateFile] 节点详情:", {
+						id: node.id,
+						title: node.title,
+						type: node.type,
+						workspace: node.workspace,
+						parent: node.parent,
+					});
 
 					// 3. 更新 Store（非文件夹）
 					let tabId: string | null = null;
 					if (type !== "folder") {
+						logger.debug("[CreateFile] 开始更新编辑器状态...");
 						const store = useEditorTabsStore.getState();
 
 						openTabFlow({
@@ -132,21 +150,50 @@ export const createFile = (
 							title,
 							type: type as TabType,
 						}, store);
+						logger.debug("[CreateFile] Tab 已打开");
 
 						// 获取新创建的 tab ID
 						const newTabs = useEditorTabsStore.getState().tabs;
 						const newTab = newTabs.find((t) => t.nodeId === node.id);
 						tabId = newTab?.id ?? node.id;
+						logger.debug("[CreateFile] Tab ID:", tabId);
 
 						// 设置初始内容
 						if (content) {
+							logger.debug("[CreateFile] 开始设置初始内容...");
 							try {
 								const parsed = JSON.parse(content);
+								logger.debug("[CreateFile] 内容解析成功，设置 editorState");
 								updateEditorStateFlow(tabId, { serializedState: parsed }, useEditorTabsStore.getState());
-							} catch {
-								// 非 JSON 内容，跳过
-								logger.debug("[CreateFile] 内容非 JSON，跳过 editorState 设置");
+								logger.success("[CreateFile] editorState 设置成功");
+							} catch (error) {
+								// 内容解析失败，使用空文档作为降级策略
+								logger.warn("[CreateFile] 内容解析失败，使用空文档");
+								logger.debug("[CreateFile] 解析错误:", error);
+								
+								// 创建一个最小的有效 Lexical 文档
+								const fallbackDoc = {
+									root: {
+										children: [{
+											children: [],
+											direction: "ltr" as const,
+											format: "" as const,
+											indent: 0,
+											type: "paragraph" as const,
+											version: 1,
+										}],
+										direction: "ltr" as const,
+										format: "" as const,
+										indent: 0,
+										type: "root" as const,
+										version: 1,
+									},
+								};
+								updateEditorStateFlow(tabId, { serializedState: fallbackDoc as any }, useEditorTabsStore.getState());
+								logger.info("[CreateFile] 已设置降级文档");
 							}
+						} else {
+							logger.debug("[CreateFile] 无初始内容");
 						}
 					}
 

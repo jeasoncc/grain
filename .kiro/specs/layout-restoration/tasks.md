@@ -212,6 +212,12 @@
   - ✅ 验证主题系统工作
   - ✅ 运行所有诊断检查
   - ✅ 所有核心功能正常工作
+  - ✅ **修复命名冲突**: 重命名 sidebar.state.ts 中的冲突导出
+    - `useActivePanel` → `useSidebarActivePanel` (legacy)
+    - `useSidebarWidth` → `useLegacySidebarWidth` (legacy)
+    - `useWasCollapsedByDrag` → `useLegacyWasCollapsedByDrag` (legacy)
+    - 新代码应使用 layout.state.ts 中的对应 hooks
+    - 添加 `SidebarPanel` 类型到 layout types 导出
 
 - [ ] 14. 属性测试实现
   - [ ]* 14.1 编写布局状态持久化属性测试

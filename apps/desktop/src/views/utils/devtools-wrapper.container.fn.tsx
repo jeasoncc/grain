@@ -26,6 +26,7 @@ const TanStackRouterDevtools =
  *
  * Conditionally renders TanStack Router Devtools in development mode.
  * Uses lazy loading to avoid including devtools in production bundle.
+ * Positioned at bottom-right to avoid overlap with Query Devtools (bottom-left).
  *
  * @returns Devtools component or null
  */
@@ -37,7 +38,7 @@ export function DevtoolsWrapper() {
 
 	return (
 		<Suspense fallback={null}>
-			<TanStackRouterDevtools />
+			<TanStackRouterDevtools position="bottom-right" />
 		</Suspense>
 	);
 }

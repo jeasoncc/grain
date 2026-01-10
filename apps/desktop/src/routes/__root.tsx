@@ -72,8 +72,8 @@ function RootComponent() {
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			// Detect Mac platform
-			const isMac = /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform);
+			// Detect Mac platform using userAgent (platform is deprecated)
+			const isMac = /(Mac|iPhone|iPod|iPad)/i.test(navigator.userAgent);
 			const modKey = isMac ? e.metaKey : e.ctrlKey;
 
 			// Cmd/Ctrl+K - Toggle Command Palette

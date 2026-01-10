@@ -163,17 +163,17 @@ export const useSidebarStore = create<SidebarStore>()(
 // Selector Hooks
 // ==============================
 
-/** Select active panel */
-export const useActivePanel = () => useSidebarStore((s) => s.activePanel);
+/** Select active panel (legacy - use useActivePanel from layout.state.ts for new code) */
+export const useSidebarActivePanel = () => useSidebarStore((s) => s.activePanel);
 
 /** Select sidebar open state */
 export const useSidebarIsOpen = () => useSidebarStore((s) => s.isOpen);
 
-/** Select sidebar width */
-export const useSidebarWidth = () => useSidebarStore((s) => s.width);
+/** Select sidebar width (legacy - use useSidebarWidth from layout.state.ts for new code) */
+export const useLegacySidebarWidth = () => useSidebarStore((s) => s.width);
 
-/** Select whether collapsed by drag */
-export const useWasCollapsedByDrag = () =>
+/** Select whether collapsed by drag (legacy - use useWasCollapsedByDrag from layout.state.ts for new code) */
+export const useLegacyWasCollapsedByDrag = () =>
 	useSidebarStore((s) => s.wasCollapsedByDrag);
 
 /** Select search panel state */

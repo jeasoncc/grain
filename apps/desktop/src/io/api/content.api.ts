@@ -31,8 +31,27 @@ import type {
  */
 export const getContentByNodeId = (
 	nodeId: string,
-): TE.TaskEither<AppError, ContentInterface | null> =>
-	pipe(api.getContent(nodeId), TE.map(decodeContentOptional));
+): TE.TaskEither<AppError, ContentInterface | null> => {
+	console.log("[ContentAPI] 获取内容:", nodeId);
+	
+	return pipe(
+		api.getContent(nodeId),
+		TE.map((response) => {
+			const content = decodeContentOptional(response);
+			if (content) {
+				console.log("[ContentAPI] 内容获取成功:", {
+					nodeId: content.nodeId,
+					contentLength: content.content.length,
+					contentType: content.contentType,
+					version: content.version,
+				});
+			} else {
+				console.log("[ContentAPI] 内容不存在");
+			}
+			return content;
+		}),
+	);
+};
 
 /**
  * 获取节点内容（不存在时抛出错误）

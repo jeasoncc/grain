@@ -160,12 +160,38 @@ export const createNode = (
 	input: NodeCreateInput,
 	initialContent?: string,
 	tags?: string[],
-): TE.TaskEither<AppError, NodeInterface> =>
-	pipe(
+): TE.TaskEither<AppError, NodeInterface> => {
+	console.log("[NodeAPI] 创建节点:", {
+		title: input.title,
+		type: input.type,
+		workspace: input.workspace,
+		parent: input.parent,
+		hasInitialContent: !!initialContent,
+		contentLength: initialContent?.length ?? 0,
+		tags,
+	});
+	
+	return pipe(
 		TE.of(encodeCreateNode(input, initialContent, tags)),
-		TE.chain(api.createNode),
-		TE.map(decodeNode),
+		TE.chain((encoded) => {
+			console.log("[NodeAPI] 编码后的请求:", {
+				title: encoded.title,
+				type: encoded.type,
+				hasContent: !!encoded.content,
+			});
+			return api.createNode(encoded);
+		}),
+		TE.map((response) => {
+			const node = decodeNode(response);
+			console.log("[NodeAPI] 节点创建成功:", {
+				id: node.id,
+				title: node.title,
+				type: node.type,
+			});
+			return node;
+		}),
 	);
+};
 
 /**
  * 添加节点（别名，兼容旧 API）

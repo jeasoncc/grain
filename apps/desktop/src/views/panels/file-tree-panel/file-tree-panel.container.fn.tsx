@@ -19,6 +19,12 @@ import {
 	openFileAsync,
 	renameNode,
 } from "@/flows";
+import {
+	createDocument,
+	createHeadingNode,
+	createParagraphNode,
+	createTextNode,
+} from "@/pipes/content";
 import { FileTree } from "@/views/file-tree";
 import { useConfirm } from "@/views/ui/confirm";
 import { useGetNodeById, useSetNodeCollapsed } from "@/hooks/use-node-operations";
@@ -46,6 +52,18 @@ export const FileTreePanelContainer = memo(
 		// Selected node state - use global store for cross-component communication
 		const selectedNodeId = useSelectionStore((s) => s.selectedNodeId);
 		const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId);
+
+		/**
+		 * Generate default content for new files
+		 * Creates a simple Lexical document with a title and empty paragraph
+		 */
+		const generateDefaultFileContent = useCallback((title: string): string => {
+			const doc = createDocument([
+				createHeadingNode(title, "h2"),
+				createParagraphNode([createTextNode("")]),
+			]);
+			return JSON.stringify(doc);
+		}, []);
 
 		// Clear selection when workspace changes
 		// Requirements: 3.3
@@ -129,10 +147,29 @@ export const FileTreePanelContainer = memo(
 
 				try {
 					const title = type === "drawing" ? "New Canvas" : "New File";
-					const content =
-						type === "drawing"
-							? JSON.stringify({ elements: [], appState: {}, files: {} })
-							: "";
+					
+					// Generate appropriate content based on type
+					let content: string;
+					if (type === "drawing") {
+						// Excalidraw canvas content
+						content = JSON.stringify({ 
+							elements: [], 
+							appState: {}, 
+							files: {} 
+						});
+					} else {
+						// Regular file - generate Lexical template content
+						content = generateDefaultFileContent(title);
+					}
+
+					console.log("[FileTreePanel] 创建文件:", {
+						workspaceId,
+						parentId,
+						type,
+						title,
+						contentLength: content.length,
+						hasContent: !!content,
+					});
 
 					const result = await createFileAsync({
 						workspaceId,
@@ -140,6 +177,11 @@ export const FileTreePanelContainer = memo(
 						type,
 						title,
 						content,
+					});
+
+					console.log("[FileTreePanel] 文件创建成功:", {
+						nodeId: result.node.id,
+						tabId: result.tabId,
 					});
 
 					toast.success(`${type === "drawing" ? "Canvas" : "File"} created`);
@@ -154,7 +196,7 @@ export const FileTreePanelContainer = memo(
 					toast.error("Failed to create file");
 				}
 			},
-			[workspaceId, setSelectedNodeId, navigate],
+			[workspaceId, setSelectedNodeId, navigate, generateDefaultFileContent],
 		);
 
 		// Editor tabs for closing deleted files

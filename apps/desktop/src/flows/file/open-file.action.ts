@@ -92,6 +92,15 @@ export const openFile = (
 					// 2. 从 DB 加载内容
 					logger.info("[OpenFile] 从 DB 加载内容...");
 					const contentResult = await contentRepo.getContentByNodeId(nodeId)();
+					
+					if (E.isRight(contentResult) && contentResult.right) {
+						logger.debug("[OpenFile] 内容加载成功:", {
+							contentLength: contentResult.right.content.length,
+							contentPreview: contentResult.right.content.substring(0, 100),
+						});
+					} else {
+						logger.warn("[OpenFile] 内容加载失败或为空");
+					}
 
 					// 3. 创建 tab
 					openTabFlow({
@@ -109,13 +118,37 @@ export const openFile = (
 					// 4. 设置编辑器内容
 					let hasContent = false;
 					if (E.isRight(contentResult) && contentResult.right) {
+						logger.debug("[OpenFile] 开始解析和设置内容...");
 						try {
 							const parsed = JSON.parse(contentResult.right.content);
+							logger.debug("[OpenFile] 内容解析成功，类型:", typeof parsed);
 							updateEditorStateFlow(tabId, { serializedState: parsed }, useEditorTabsStore.getState());
 							hasContent = true;
 							logger.success("[OpenFile] 内容加载成功");
-						} catch {
-							logger.warn("[OpenFile] 内容解析失败，使用空内容");
+						} catch (error) {
+							logger.warn("[OpenFile] 内容解析失败，使用空文档");
+							logger.debug("[OpenFile] 解析错误:", error);
+							
+							// 创建一个最小的有效 Lexical 文档作为降级策略
+							const fallbackDoc = {
+								root: {
+									children: [{
+										children: [],
+										direction: "ltr" as const,
+										format: "" as const,
+										indent: 0,
+										type: "paragraph" as const,
+										version: 1,
+									}],
+									direction: "ltr" as const,
+									format: "" as const,
+									indent: 0,
+									type: "root" as const,
+									version: 1,
+								},
+							};
+							updateEditorStateFlow(tabId, { serializedState: fallbackDoc as any }, useEditorTabsStore.getState());
+							logger.info("[OpenFile] 已设置降级文档");
 						}
 					} else {
 						logger.info("[OpenFile] 无内容，使用空编辑器");
