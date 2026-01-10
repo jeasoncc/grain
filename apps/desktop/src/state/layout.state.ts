@@ -31,7 +31,7 @@ type LayoutStore = LayoutState & LayoutActions;
 
 export const useLayoutStore = create<LayoutStore>()(
 	persist(
-		immer((set, get) => ({
+		immer((set) => ({
 			// Initial state
 			...DEFAULT_LAYOUT_STATE,
 
