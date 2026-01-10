@@ -72,9 +72,9 @@ export const openTabFlow = (
 				.build()
 		: EditorStateBuilder.fromDefault().build();
 
-	store.addTab(newTab as EditorTab);
-	store.setActiveTabId(newTab.id);
-	store.setEditorState(newTab.id, newEditorState);
+	// 使用原子操作同时添加 tab、设置 editorState 和激活 tab
+	// 避免多次渲染导致 Lexical 初始化时 initialState 为空的问题
+	store.addTabWithState(newTab as EditorTab, newEditorState);
 
 	// LRU eviction
 	evictEditorStatesFlow(store);

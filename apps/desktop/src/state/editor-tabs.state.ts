@@ -23,6 +23,7 @@ import type {
 interface EditorTabsStoreActions {
 	// Tab Operations
 	addTab: (tab: EditorTab) => void;
+	addTabWithState: (tab: EditorTab, editorState: EditorInstanceState) => void;
 	removeTab: (tabId: string) => void;
 	setTabs: (tabs: EditorTab[]) => void;
 	setActiveTabId: (tabId: string | null) => void;
@@ -62,6 +63,18 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 		addTab: (tab) => {
 			set((state) => {
 				state.tabs.push(tab as EditorTab);
+			});
+		},
+
+		/**
+		 * 原子操作：同时添加 tab 和设置 editorState
+		 * 避免多次渲染导致的时序问题
+		 */
+		addTabWithState: (tab, editorState) => {
+			set((state) => {
+				state.tabs.push(tab as EditorTab);
+				state.editorStates[tab.id] = editorState;
+				state.activeTabId = tab.id;
 			});
 		},
 
