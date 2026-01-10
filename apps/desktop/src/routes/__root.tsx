@@ -23,11 +23,10 @@ import { ExportDialogManagerContainer } from "@/views/export-dialog-manager";
 import { FontStyleInjector } from "@/views/utils/font-style-injector";
 import { DevtoolsWrapper } from "@/views/utils/devtools-wrapper.container.fn";
 import { useGlobalUI } from "@/hooks/use-global-ui";
-import { useLayoutInit } from "@/hooks/use-layout";
+import { useLayoutInit, useLayout } from "@/hooks/use-layout";
 import { useThemeInitialization } from "@/hooks/use-theme";
 import { useWorkspaces } from "@/hooks/queries";
 import { useSelectedWorkspaceId } from "@/state/selection.state";
-import { useLayoutStore } from "@/state/layout.state";
 import { useEditorTabs } from "@/hooks/use-editor-tabs";
 
 export const Route = createRootRoute({
@@ -66,6 +65,9 @@ function RootComponent() {
 		bufferSwitcher,
 	} = useGlobalUI();
 
+	// Layout actions (获取在组件顶层，避免在事件处理器中调用 getState)
+	const { toggleSidebar } = useLayout();
+
 	// ==============================
 	// Global Keyboard Shortcuts
 	// ==============================
@@ -93,8 +95,6 @@ function RootComponent() {
 			// Cmd/Ctrl+B - Toggle Sidebar (Files Panel)
 			if (modKey && e.key === "b") {
 				e.preventDefault();
-				// Import layout actions to toggle sidebar
-				const { toggleSidebar } = useLayoutStore.getState();
 				toggleSidebar();
 				return;
 			}
@@ -116,7 +116,7 @@ function RootComponent() {
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [commandPalette, globalSearch, bufferSwitcher]);
+	}, [commandPalette, globalSearch, bufferSwitcher, toggleSidebar]);
 
 	// ==============================
 	// Render

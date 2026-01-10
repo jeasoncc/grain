@@ -74,6 +74,11 @@ export interface ThemeActions {
 	 * Enable or disable transition animations.
 	 */
 	setEnableTransition: (enable: boolean) => void;
+
+	/**
+	 * Mark theme system as initialized.
+	 */
+	setInitialized: (initialized: boolean) => void;
 }
 
 // ==============================

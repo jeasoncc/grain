@@ -110,14 +110,14 @@ export const useThemeStore = create<ThemeStore>()(
 			},
 
 			setEnableTransition: (enable: boolean) => {
-				set((state) => {
-					state.enableTransition = enable;
+				set((draft) => {
+					draft.enableTransition = enable;
 				});
 			},
 
 			setInitialized: (initialized: boolean) => {
-				set((state) => {
-					state._initialized = initialized;
+				set((draft) => {
+					draft._initialized = initialized;
 				});
 			},
 		})),

@@ -10,10 +10,16 @@
 // ==============================
 
 /**
- * Available sidebar panel types.
- * null represents no active panel.
+ * Available sidebar panel types as const array.
+ * Used for Zod schema validation and type derivation.
  */
-export type SidebarPanel = "search" | "drawings" | "files" | "tags" | null;
+export const SIDEBAR_PANELS = ["search", "drawings", "files", "tags"] as const;
+
+/**
+ * Available sidebar panel types.
+ * Derived from SIDEBAR_PANELS constant for type safety.
+ */
+export type SidebarPanel = (typeof SIDEBAR_PANELS)[number];
 
 /**
  * Search panel state.

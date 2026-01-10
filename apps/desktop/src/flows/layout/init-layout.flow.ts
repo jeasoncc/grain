@@ -14,7 +14,7 @@
 import logger from "@/io/log";
 import { loadLayoutState } from "@/io/storage";
 import { useLayoutStore } from "@/state";
-import type { LayoutState } from "@/types/layout";
+import { DEFAULT_LAYOUT_STATE, type LayoutState } from "@/types/layout";
 
 // ============================================================================
 // Layout Initialization Flow
@@ -26,7 +26,7 @@ import type { LayoutState } from "@/types/layout";
  * Flow:
  * 1. Load layout state from localStorage
  * 2. Validate loaded state (handled by loadLayoutState)
- * 3. Apply state to store
+ * 3. Apply state to store (batch update)
  * 4. Log result
  *
  * Error handling:
@@ -42,25 +42,13 @@ export function initLayoutFlow(): LayoutState {
 		// Load state from localStorage (with validation)
 		const loadedState = loadLayoutState();
 
-		// Apply to store
-		const store = useLayoutStore.getState();
-
-		// Update each property individually to trigger proper state updates
-		if (loadedState.activePanel !== store.activePanel) {
-			store.setActivePanel(loadedState.activePanel);
-		}
-
-		if (loadedState.isSidebarOpen !== store.isSidebarOpen) {
-			store.toggleSidebar();
-		}
-
-		if (loadedState.wasCollapsedByDrag !== store.wasCollapsedByDrag) {
-			store.setSidebarCollapsedByDrag(loadedState.wasCollapsedByDrag);
-		}
-
-		if (loadedState.sidebarWidth !== store.sidebarWidth) {
-			store.setSidebarWidth(loadedState.sidebarWidth);
-		}
+		// Apply to store using batch update (避免多次触发状态更新)
+		useLayoutStore.setState({
+			isSidebarOpen: loadedState.isSidebarOpen,
+			activePanel: loadedState.activePanel,
+			wasCollapsedByDrag: loadedState.wasCollapsedByDrag,
+			sidebarWidth: loadedState.sidebarWidth,
+		});
 
 		logger.info("[Layout Flow] Layout initialized successfully", loadedState);
 
@@ -82,19 +70,10 @@ export function resetLayoutFlow(): LayoutState {
 	try {
 		logger.info("[Layout Flow] Resetting layout to default...");
 
-		const store = useLayoutStore.getState();
-
-		// Reset to default values
-		store.setActivePanel("files");
-		store.setSidebarWidth(20);
-
-		if (!store.isSidebarOpen) {
-			store.toggleSidebar();
-		}
-
-		if (store.wasCollapsedByDrag) {
-			store.setSidebarCollapsedByDrag(false);
-		}
+		// Reset to default values using batch update
+		useLayoutStore.setState({
+			...DEFAULT_LAYOUT_STATE,
+		});
 
 		const currentState = useLayoutStore.getState();
 		logger.info("[Layout Flow] Layout reset successfully", currentState);

@@ -9,6 +9,7 @@ import * as A from "fp-ts/Array";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { api } from "./client.api";
+import logger from "@/io/log";
 import type { AppError } from "@/types/error";
 import {
 	decodeContent,
@@ -32,21 +33,20 @@ import type {
 export const getContentByNodeId = (
 	nodeId: string,
 ): TE.TaskEither<AppError, ContentInterface | null> => {
-	console.log("[ContentAPI] 获取内容:", nodeId);
+	logger.debug("[ContentAPI] 获取内容:", nodeId);
 	
 	return pipe(
 		api.getContent(nodeId),
 		TE.map((response) => {
 			const content = decodeContentOptional(response);
 			if (content) {
-				console.log("[ContentAPI] 内容获取成功:", {
+				logger.debug("[ContentAPI] 内容获取成功:", {
 					nodeId: content.nodeId,
 					contentLength: content.content.length,
 					contentType: content.contentType,
-					version: content.version,
 				});
 			} else {
-				console.log("[ContentAPI] 内容不存在");
+				logger.debug("[ContentAPI] 内容不存在");
 			}
 			return content;
 		}),

@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { debounce } from "es-toolkit";
 import { setNodeCollapsed as setNodeCollapsedApi } from "@/io/api/node.api";
+import logger from "@/io/log";
 import { queryKeys } from "@/hooks/queries/query-keys";
 import type { NodeInterface } from "@/types/node";
 
@@ -54,29 +55,46 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 	 * Requirements: 1.2, 6.1, 6.4
 	 */
 	const syncToBackend = useCallback(
-		async (nodeId: string, collapsed: boolean, previousData: NodeInterface[] | undefined) => {
+		(nodeId: string, collapsed: boolean, previousData: NodeInterface[] | undefined): void => {
 			if (!workspaceId) return;
 
 			const queryKey = queryKeys.nodes.byWorkspace(workspaceId);
 			const syncStartTime = performance.now();
 
-			console.log("[OptimisticCollapse] Syncing to backend (debounced)", {
+			logger.debug("[OptimisticCollapse] Syncing to backend (debounced)", {
 				nodeId,
 				collapsed,
 				timestamp: new Date().toISOString(),
 			});
 
-			try {
-				const result = await setNodeCollapsedApi(nodeId, collapsed)();
-
+			// 使用 TaskEither 的函数式风格执行
+			setNodeCollapsedApi(nodeId, collapsed)().then((result) => {
 				const syncEndTime = performance.now();
 				const syncDuration = syncEndTime - syncStartTime;
 
 				if (result._tag === "Left") {
-					throw new Error(result.left.message);
+					logger.error("[OptimisticCollapse] Backend sync failed, rolling back", {
+						nodeId,
+						collapsed,
+						error: result.left,
+						syncDuration: `${syncDuration.toFixed(2)}ms`,
+						timestamp: new Date().toISOString(),
+					});
+
+					// 回滚到之前的数据 - Requirements: 1.3
+					if (previousData) {
+						queryClient.setQueryData(queryKey, previousData);
+					}
+
+					// 显示错误提示
+					toast.error("Failed to update folder state");
+
+					// 清除待处理的更新
+					pendingUpdatesRef.current.delete(nodeId);
+					return;
 				}
 
-				console.log("[OptimisticCollapse] Backend sync completed", {
+				logger.debug("[OptimisticCollapse] Backend sync completed", {
 					nodeId,
 					collapsed,
 					syncDuration: `${syncDuration.toFixed(2)}ms`,
@@ -94,29 +112,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 
 				// 清除待处理的更新
 				pendingUpdatesRef.current.delete(nodeId);
-			} catch (error) {
-				const errorTime = performance.now();
-				const syncDuration = errorTime - syncStartTime;
-
-				console.error("[OptimisticCollapse] Backend sync failed, rolling back", {
-					nodeId,
-					collapsed,
-					error,
-					syncDuration: `${syncDuration.toFixed(2)}ms`,
-					timestamp: new Date().toISOString(),
-				});
-
-				// 回滚到之前的数据 - Requirements: 1.3
-				if (previousData) {
-					queryClient.setQueryData(queryKey, previousData);
-				}
-
-				// 显示错误提示
-				toast.error("Failed to update folder state");
-
-				// 清除待处理的更新
-				pendingUpdatesRef.current.delete(nodeId);
-			}
+			});
 		},
 		[workspaceId, queryClient],
 	);
@@ -134,7 +130,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 	// 组件卸载时立即执行所有待处理的更新 - Requirements: 6.5
 	useEffect(() => {
 		return () => {
-			console.log("[OptimisticCollapse] Component unmounting, flushing pending updates");
+			logger.debug("[OptimisticCollapse] Component unmounting, flushing pending updates");
 			
 			// 取消防抖并立即执行所有待处理的更新
 			debouncedSyncRef.current.cancel();
@@ -152,9 +148,9 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 	 * Requirements: 1.1, 1.2, 1.3, 1.4, 6.1
 	 */
 	const toggleCollapsed = useCallback(
-		async (nodeId: string, collapsed: boolean): Promise<void> => {
+		(nodeId: string, collapsed: boolean): void => {
 			if (!workspaceId) {
-				console.error("[OptimisticCollapse] No workspace ID provided");
+				logger.error("[OptimisticCollapse] No workspace ID provided");
 				return;
 			}
 
@@ -165,7 +161,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 
 			// Performance monitoring
 			const startTime = performance.now();
-			console.log("[OptimisticCollapse] Starting optimistic update", {
+			logger.debug("[OptimisticCollapse] Starting optimistic update", {
 				nodeId,
 				collapsed,
 				timestamp: new Date().toISOString(),
@@ -181,7 +177,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			});
 
 			const uiUpdateTime = performance.now();
-			console.log("[OptimisticCollapse] UI updated optimistically", {
+			logger.debug("[OptimisticCollapse] UI updated optimistically", {
 				nodeId,
 				collapsed,
 				uiUpdateDuration: `${(uiUpdateTime - startTime).toFixed(2)}ms`,

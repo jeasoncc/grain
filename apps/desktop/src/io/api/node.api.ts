@@ -22,6 +22,7 @@
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { api } from "./client.api";
+import logger from "@/io/log";
 import type { AppError } from "@/types/error";
 import {
 	decodeNode,
@@ -161,7 +162,7 @@ export const createNode = (
 	initialContent?: string,
 	tags?: string[],
 ): TE.TaskEither<AppError, NodeInterface> => {
-	console.log("[NodeAPI] 创建节点:", {
+	logger.debug("[NodeAPI] 创建节点:", {
 		title: input.title,
 		type: input.type,
 		workspace: input.workspace,
@@ -174,16 +175,15 @@ export const createNode = (
 	return pipe(
 		TE.of(encodeCreateNode(input, initialContent, tags)),
 		TE.chain((encoded) => {
-			console.log("[NodeAPI] 编码后的请求:", {
+			logger.debug("[NodeAPI] 编码后的请求:", {
 				title: encoded.title,
-				type: encoded.type,
-				hasContent: !!encoded.content,
+				hasContent: !!initialContent,
 			});
 			return api.createNode(encoded);
 		}),
 		TE.map((response) => {
 			const node = decodeNode(response);
-			console.log("[NodeAPI] 节点创建成功:", {
+			logger.debug("[NodeAPI] 节点创建成功:", {
 				id: node.id,
 				title: node.title,
 				type: node.type,
@@ -291,7 +291,7 @@ export const setNodeCollapsed = (
 ): TE.TaskEither<AppError, NodeInterface> => {
 	// Performance monitoring - Requirements: 10.1, 10.2, 10.3
 	const startTime = performance.now();
-	console.log("[API Performance] setNodeCollapsed started", {
+	logger.debug("[API Performance] setNodeCollapsed started", {
 		nodeId,
 		collapsed,
 		timestamp: new Date().toISOString(),
@@ -303,7 +303,7 @@ export const setNodeCollapsed = (
 			const endTime = performance.now();
 			const duration = endTime - startTime;
 
-			console.log("[API Performance] setNodeCollapsed completed", {
+			logger.debug("[API Performance] setNodeCollapsed completed", {
 				nodeId,
 				collapsed,
 				duration: `${duration.toFixed(2)}ms`,
@@ -312,7 +312,7 @@ export const setNodeCollapsed = (
 
 			// Warning for slow API calls (> 50ms threshold)
 			if (duration > 50) {
-				console.warn("[API Performance] Slow API call detected", {
+				logger.warn("[API Performance] Slow API call detected", {
 					operation: "setNodeCollapsed",
 					nodeId,
 					duration: `${duration.toFixed(2)}ms`,
@@ -326,7 +326,7 @@ export const setNodeCollapsed = (
 			const endTime = performance.now();
 			const duration = endTime - startTime;
 
-			console.error("[API Performance] setNodeCollapsed failed", {
+			logger.error("[API Performance] setNodeCollapsed failed", {
 				nodeId,
 				collapsed,
 				error,

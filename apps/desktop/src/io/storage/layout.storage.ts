@@ -15,6 +15,7 @@ import { z } from "zod";
 import logger from "@/io/log";
 import type { LayoutState } from "@/types/layout";
 import { DEFAULT_LAYOUT_STATE } from "@/types/layout";
+import { SIDEBAR_PANELS } from "@/types/sidebar";
 
 // ============================================================================
 // 存储键
@@ -28,10 +29,11 @@ export const LAYOUT_STORAGE_KEY = "grain-layout-state";
 
 /**
  * Layout state schema for validation
+ * 使用 SIDEBAR_PANELS 常量确保与类型定义同步
  */
 const LayoutStateSchema = z.object({
 	isSidebarOpen: z.boolean(),
-	activePanel: z.enum(["files", "search", "drawings", "tags"]).nullable(),
+	activePanel: z.enum(SIDEBAR_PANELS),
 	wasCollapsedByDrag: z.boolean(),
 	sidebarWidth: z.number().min(15).max(40),
 });
@@ -73,7 +75,7 @@ export function loadLayoutState(): LayoutState {
 			return DEFAULT_LAYOUT_STATE;
 		}
 
-		const parsed = JSON.parse(stored);
+		const parsed: unknown = JSON.parse(stored);
 		const result = LayoutStateSchema.safeParse(parsed);
 
 		if (result.success) {
