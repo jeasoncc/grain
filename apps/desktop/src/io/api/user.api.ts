@@ -21,8 +21,6 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { api } from "./client.api";
-import type { AppError } from "@/types/error";
 import {
 	decodeUser,
 	decodeUserOptional,
@@ -30,11 +28,13 @@ import {
 	encodeCreateUser,
 	encodeUpdateUser,
 } from "@/types/codec";
+import type { AppError } from "@/types/error";
 import type {
 	UserCreateInput,
 	UserInterface,
 	UserUpdateInput,
 } from "@/types/user";
+import { api } from "./client.api";
 
 // ============================================
 // 查询操作

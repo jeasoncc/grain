@@ -7,8 +7,8 @@
 
 import type * as TE from "fp-ts/TaskEither";
 import { clearAllData as clearAllDataApi } from "@/io/api";
-import type { AppError } from "@/utils/error.util";
 import type { ClearDataResult } from "@/types/rust-api";
+import type { AppError } from "@/utils/error.util";
 
 /**
  * 清除所有数据

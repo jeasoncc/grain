@@ -238,7 +238,10 @@ export async function autoExpandAndScrollToNode(
 		// 边界情况：节点不在可见区域（react-arborist 自动处理）
 		scrollToNode(treeRef, targetNodeId);
 	} catch (error) {
-		console.error("[FileTreeNavigation] Failed to auto-expand and scroll:", error);
+		console.error(
+			"[FileTreeNavigation] Failed to auto-expand and scroll:",
+			error,
+		);
 		// 不抛出错误，避免影响文件创建流程
 	}
 }

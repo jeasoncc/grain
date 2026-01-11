@@ -2195,7 +2195,7 @@ export const themes: Theme[] = [
 
 /**
  * 根据 key 获取主题
- * 
+ *
  * @param key - 主题 key
  * @returns 主题对象，如果未找到则返回 undefined
  */
@@ -2205,7 +2205,7 @@ export function getThemeByKey(key: string): Theme | undefined {
 
 /**
  * 获取所有浅色主题
- * 
+ *
  * @returns 浅色主题数组
  */
 export function getLightThemes(): Theme[] {
@@ -2214,7 +2214,7 @@ export function getLightThemes(): Theme[] {
 
 /**
  * 获取所有深色主题
- * 
+ *
  * @returns 深色主题数组
  */
 export function getDarkThemes(): Theme[] {

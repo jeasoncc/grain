@@ -75,11 +75,7 @@ WordCountBadge.displayName = "WordCountBadge";
  * 用于工具栏等固定位置显示
  */
 export const WordCountDisplay = memo(
-	({
-		displayText = "",
-		showIcon = true,
-		className,
-	}: WordCountDisplayProps) => {
+	({ displayText = "", showIcon = true, className }: WordCountDisplayProps) => {
 		return (
 			<div
 				className={cn(

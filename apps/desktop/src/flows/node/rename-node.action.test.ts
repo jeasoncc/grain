@@ -5,7 +5,7 @@
 
 import * as E from "fp-ts/Either";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { renameNode } from "./rename-node.action";
+import { renameNode } from "./rename-node.flow";
 
 // ============================================================================
 // Mocks

@@ -8,9 +8,13 @@
  */
 
 import { applyThemeWithTransition, getSystemTheme } from "@/io/dom/theme.dom";
-import { getDefaultThemeKey, getNextMode, isThemeTypeMatch } from "@/pipes/theme";
-import { getThemeByKey, themes } from "@/utils/themes.util";
+import {
+	getDefaultThemeKey,
+	getNextMode,
+	isThemeTypeMatch,
+} from "@/pipes/theme";
 import type { ThemeMode } from "@/types/theme";
+import { getThemeByKey, themes } from "@/utils/themes.util";
 
 // ==============================
 // Theme Application Flow
@@ -99,7 +103,7 @@ export const initializeThemeFlow = (
 	if (typeof window !== "undefined") {
 		const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
-		const handleChange = (e: MediaQueryListEvent) => {
+		const handleChange = (_e: MediaQueryListEvent) => {
 			// This will be called by the hook with current state
 		};
 

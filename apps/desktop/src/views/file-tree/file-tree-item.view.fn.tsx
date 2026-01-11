@@ -20,6 +20,7 @@ import {
 	Trash2,
 } from "lucide-react";
 import { useCallback } from "react";
+import { cn } from "@/utils/cn.util";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -31,7 +32,6 @@ import {
 	DropdownMenuTrigger,
 } from "@/views/ui/dropdown-menu";
 import { Input } from "@/views/ui/input";
-import { cn } from "@/utils/cn.util";
 import type { FileTreeItemProps } from "./file-tree.types";
 
 export function FileTreeItem({

@@ -8,6 +8,9 @@ import {
 	Save,
 	SpellCheck,
 } from "lucide-react";
+import { useSettings } from "@/hooks/use-settings";
+import { useUIStore } from "@/state/ui.state";
+import type { TabPosition } from "@/types/ui";
 import {
 	Card,
 	CardContent,
@@ -25,9 +28,6 @@ import {
 	SelectValue,
 } from "@/views/ui/select";
 import { Switch } from "@/views/ui/switch";
-import { useSettings } from "@/hooks/use-settings";
-import { useUIStore } from "@/state/ui.state";
-import type { TabPosition } from "@/types/ui";
 
 export const Route = createFileRoute("/settings/general")({
 	component: GeneralSettings,

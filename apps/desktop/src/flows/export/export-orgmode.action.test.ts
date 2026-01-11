@@ -103,11 +103,11 @@ vi.mock("@/log", () => ({
 	},
 }));
 
-import logger from '@/io/log';
+import logger from "@/io/log";
 import {
 	exportContentToOrgmode,
 	exportNodeToOrgmode,
-} from "./export-orgmode.action";
+} from "./export-orgmode.flow";
 
 // ============================================================================
 // Unit Tests

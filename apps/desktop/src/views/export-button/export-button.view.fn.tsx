@@ -11,6 +11,7 @@ import {
 	FileType,
 } from "lucide-react";
 import { memo } from "react";
+import type { ExportFormat } from "@/types/export";
 import { Button } from "@/views/ui/button";
 import {
 	DropdownMenu,
@@ -18,7 +19,6 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/views/ui/dropdown-menu";
-import type { ExportFormat } from "@/types/export";
 import type { ExportButtonViewProps } from "./export-button.types";
 
 const formatIcons: Record<ExportFormat, any> = {

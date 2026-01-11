@@ -15,19 +15,20 @@ import { describe, expect, it } from "vitest";
 import {
 	adaptExcalidrawParams,
 	type CreateExcalidrawParams,
-} from "./create-excalidraw.action";
+} from "./create-excalidraw.flow";
 
 // ============================================================================
 // Test Data
 // ============================================================================
 
-const _validParams: CreateExcalidrawParams = {
-	workspaceId: "550e8400-e29b-41d4-a716-446655440000",
-	date: new Date("2024-01-15T12:00:00.000Z"),
-	title: "测试绘图",
-	width: 1920,
-	height: 1080,
-};
+// Valid params for type checking (not used in tests but ensures type compatibility)
+// const validParams: CreateExcalidrawParams = {
+// 	workspaceId: "550e8400-e29b-41d4-a716-446655440000",
+// 	date: new Date("2024-01-15T12:00:00.000Z"),
+// 	title: "测试绘图",
+// 	width: 1920,
+// 	height: 1080,
+// };
 
 // ============================================================================
 // Tests

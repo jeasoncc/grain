@@ -21,21 +21,21 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { api } from "./client.api";
 import logger from "@/io/log";
-import type { AppError } from "@/types/error";
 import {
 	decodeNode,
 	decodeNodes,
 	encodeCreateNode,
 	encodeUpdateNode,
 } from "@/types/codec";
+import type { AppError } from "@/types/error";
 import type {
 	NodeCreateInput,
 	NodeInterface,
 	NodeType,
 	NodeUpdateInput,
 } from "@/types/node";
+import { api } from "./client.api";
 
 // ============================================
 // 查询操作
@@ -171,7 +171,7 @@ export const createNode = (
 		contentLength: initialContent?.length ?? 0,
 		tags,
 	});
-	
+
 	return pipe(
 		TE.of(encodeCreateNode(input, initialContent, tags)),
 		TE.chain((encoded) => {
@@ -245,10 +245,7 @@ export const moveNode = (
 	newParentId: string | null,
 	newSortOrder: number,
 ): TE.TaskEither<AppError, NodeInterface> =>
-	pipe(
-		api.moveNode(nodeId, { newParentId, newSortOrder }),
-		TE.map(decodeNode),
-	);
+	pipe(api.moveNode(nodeId, { newParentId, newSortOrder }), TE.map(decodeNode));
 
 /**
  * 删除节点（递归删除子节点）

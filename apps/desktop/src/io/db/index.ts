@@ -10,11 +10,11 @@
  * @module io/db
  */
 
-export { LogDB, logDB, type LogEntry } from "./log-db";
 export {
-	LegacyDatabase,
-	legacyDatabase,
 	type ContentInterface,
 	type ContentType,
 	type DBVersionInterface,
+	LegacyDatabase,
+	legacyDatabase,
 } from "./legacy-database";
+export { LogDB, type LogEntry, logDB } from "./log-db";

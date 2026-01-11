@@ -2,10 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AlertCircle, FolderOpen } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/views/ui/button";
-import { Input } from "@/views/ui/input";
-import { Label } from "@/views/ui/label";
-import { Switch } from "@/views/ui/switch";
 import {
 	getDefaultExportPath,
 	getDownloadsDirectory,
@@ -13,6 +9,10 @@ import {
 	selectExportDirectory,
 	setDefaultExportPath,
 } from "@/pipes/export";
+import { Button } from "@/views/ui/button";
+import { Input } from "@/views/ui/input";
+import { Label } from "@/views/ui/label";
+import { Switch } from "@/views/ui/switch";
 
 // Org-mode settings (simplified)
 interface OrgmodeSettings {

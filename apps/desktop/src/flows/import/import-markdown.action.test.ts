@@ -88,8 +88,8 @@ vi.mock("@/log", () => ({
 	},
 }));
 
-import logger from '@/io/log';
-import { importMarkdown, importMarkdownToJson } from "./import-markdown.action";
+import logger from "@/io/log";
+import { importMarkdown, importMarkdownToJson } from "./import-markdown.flow";
 
 // ============================================================================
 // Unit Tests

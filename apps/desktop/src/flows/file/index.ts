@@ -8,7 +8,7 @@
  * @see .kiro/steering/design-patterns.md
  */
 
-export type { CreateFileParams, CreateFileResult } from "./create-file.action";
-export { createFile, createFileAsync } from "./create-file.action";
-export type { OpenFileParams, OpenFileResult } from "./open-file.action";
-export { openFile, openFileAsync } from "./open-file.action";
+export type { CreateFileParams, CreateFileResult } from "./create-file.flow";
+export { createFile, createFileAsync } from "./create-file.flow";
+export type { OpenFileParams, OpenFileResult } from "./open-file.flow";
+export { openFile, openFileAsync } from "./open-file.flow";

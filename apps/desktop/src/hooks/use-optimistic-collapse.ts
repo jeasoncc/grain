@@ -11,12 +11,12 @@
  */
 
 import { useQueryClient } from "@tanstack/react-query";
+import { debounce } from "es-toolkit";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { debounce } from "es-toolkit";
+import { queryKeys } from "@/hooks/queries/query-keys";
 import { setNodeCollapsed as setNodeCollapsedApi } from "@/io/api/node.api";
 import logger from "@/io/log";
-import { queryKeys } from "@/hooks/queries/query-keys";
 import type { NodeInterface } from "@/types/node";
 
 interface UseOptimisticCollapseOptions {
@@ -55,7 +55,11 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 	 * Requirements: 1.2, 6.1, 6.4
 	 */
 	const syncToBackend = useCallback(
-		(nodeId: string, collapsed: boolean, previousData: NodeInterface[] | undefined): void => {
+		(
+			nodeId: string,
+			collapsed: boolean,
+			previousData: NodeInterface[] | undefined,
+		): void => {
 			if (!workspaceId) return;
 
 			const queryKey = queryKeys.nodes.byWorkspace(workspaceId);
@@ -73,13 +77,16 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 				const syncDuration = syncEndTime - syncStartTime;
 
 				if (result._tag === "Left") {
-					logger.error("[OptimisticCollapse] Backend sync failed, rolling back", {
-						nodeId,
-						collapsed,
-						error: result.left,
-						syncDuration: `${syncDuration.toFixed(2)}ms`,
-						timestamp: new Date().toISOString(),
-					});
+					logger.error(
+						"[OptimisticCollapse] Backend sync failed, rolling back",
+						{
+							nodeId,
+							collapsed,
+							error: result.left,
+							syncDuration: `${syncDuration.toFixed(2)}ms`,
+							timestamp: new Date().toISOString(),
+						},
+					);
 
 					// 回滚到之前的数据 - Requirements: 1.3
 					if (previousData) {
@@ -118,9 +125,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 	);
 
 	// 创建防抖的同步函数 - Requirements: 6.1, 6.4
-	const debouncedSyncRef = useRef(
-		debounce(syncToBackend, debounceMs),
-	);
+	const debouncedSyncRef = useRef(debounce(syncToBackend, debounceMs));
 
 	// 更新防抖函数的引用
 	useEffect(() => {
@@ -130,11 +135,13 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 	// 组件卸载时立即执行所有待处理的更新 - Requirements: 6.5
 	useEffect(() => {
 		return () => {
-			logger.debug("[OptimisticCollapse] Component unmounting, flushing pending updates");
-			
+			logger.debug(
+				"[OptimisticCollapse] Component unmounting, flushing pending updates",
+			);
+
 			// 取消防抖并立即执行所有待处理的更新
 			debouncedSyncRef.current.cancel();
-			
+
 			// 立即同步所有待处理的更新
 			for (const [nodeId, update] of pendingUpdatesRef.current.entries()) {
 				syncToBackend(nodeId, update.collapsed, update.previousData);

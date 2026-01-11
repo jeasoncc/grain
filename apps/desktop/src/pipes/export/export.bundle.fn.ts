@@ -11,7 +11,10 @@
  */
 
 import { extractText } from "@/pipes/content/content.extract.fn";
-import type { AttachmentData, ContentData } from "@/pipes/import/import.json.fn";
+import type {
+	AttachmentData,
+	ContentData,
+} from "@/pipes/import/import.json.fn";
 import type { NodeInterface } from "@/types/node";
 import type { WorkspaceInterface } from "@/types/workspace";
 

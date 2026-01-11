@@ -8,16 +8,16 @@
 
 import { useCallback } from "react";
 import {
-	useGlobalUIStore,
-	useCommandPaletteOpen,
-	useGlobalSearchOpen,
-	useBufferSwitcherOpen,
-	useBufferSwitcherDirection,
-	useExportDialogOpen,
-	useCommandPaletteActions,
-	useGlobalSearchActions,
 	useBufferSwitcherActions,
+	useBufferSwitcherDirection,
+	useBufferSwitcherOpen,
+	useCommandPaletteActions,
+	useCommandPaletteOpen,
 	useExportDialogActions,
+	useExportDialogOpen,
+	useGlobalSearchActions,
+	useGlobalSearchOpen,
+	useGlobalUIStore,
 } from "@/state";
 import type { BufferSwitcherDirection } from "@/types/global-ui";
 

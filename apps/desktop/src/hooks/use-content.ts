@@ -12,7 +12,7 @@
  * @requirements 3.3, 5.2
  */
 
-import { useContent as useContentQuery } from '@/hooks/queries/content.queries';
+import { useContent as useContentQuery } from "@/hooks/queries/content.queries";
 import type { ContentInterface } from "@/types/content";
 
 /**

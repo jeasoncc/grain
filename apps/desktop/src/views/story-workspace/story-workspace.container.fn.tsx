@@ -15,7 +15,21 @@ import { type MentionEntry, MultiEditorContainer } from "@grain/editor-lexical";
 import type { SerializedEditorState } from "lexical";
 import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo } from "react";
+import { useSettings } from "@/hooks/use-settings";
+import { useUnifiedSave } from "@/hooks/use-unified-save";
+import { useWikiFiles } from "@/hooks/use-wiki";
+import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
+import {
+	countWordsFromLexicalState,
+	formatWordCount,
+	formatWordCountDetail,
+} from "@/pipes/word-count";
+import { useFoldIconStyle } from "@/state/editor-settings.state";
+import { useEditorTabsStore } from "@/state/editor-tabs.state";
+import { useSelectionStore } from "@/state/selection.state";
+import { useUIStore } from "@/state/ui.state";
 import { WikiHoverPreviewConnected } from "@/views/blocks/wiki-hover-preview-connected";
+import { type EditorType, getEditorTypeByFilename } from "@/views/editor";
 import { EditorTabs } from "@/views/editor-tabs";
 import { ExcalidrawEditorContainer } from "@/views/excalidraw-editor";
 import { KeyboardShortcutsHelp } from "@/views/keyboard-shortcuts-help";
@@ -30,20 +44,6 @@ import {
 	TooltipTrigger,
 } from "@/views/ui/tooltip";
 import { WordCountBadge } from "@/views/word-count-badge";
-import { type EditorType, getEditorTypeByFilename } from "@/views/editor";
-import {
-	countWordsFromLexicalState,
-	formatWordCount,
-	formatWordCountDetail,
-} from "@/pipes/word-count";
-import { useSettings } from "@/hooks/use-settings";
-import { useUnifiedSave } from "@/hooks/use-unified-save";
-import { useWikiFiles } from "@/hooks/use-wiki";
-import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
-import { useFoldIconStyle } from "@/state/editor-settings.state";
-import { useEditorTabsStore } from "@/state/editor-tabs.state";
-import { useSelectionStore } from "@/state/selection.state";
-import { useUIStore } from "@/state/ui.state";
 import type { StoryWorkspaceContainerProps } from "./story-workspace.types";
 
 export const StoryWorkspaceContainer = memo(

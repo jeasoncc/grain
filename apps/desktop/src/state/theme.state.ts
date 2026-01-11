@@ -195,4 +195,3 @@ export const useThemeActions = () => ({
 	setEnableTransition: useThemeStore((s) => s.setEnableTransition),
 	setInitialized: useThemeStore((s) => s.setInitialized),
 });
-

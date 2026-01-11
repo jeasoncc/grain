@@ -5,7 +5,7 @@
 
 import * as E from "fp-ts/Either";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { deleteNode } from "./delete-node.action";
+import { deleteNode } from "./delete-node.flow";
 
 // ============================================================================
 // Mocks
@@ -70,7 +70,7 @@ describe("deleteNode", () => {
 	it("应该处理空节点 ID", async () => {
 		const nodeId = "";
 
-		const _result = await deleteNode(nodeId)();
+		await deleteNode(nodeId)();
 
 		expect(deleteNodeRepo).toHaveBeenCalledWith("");
 	});

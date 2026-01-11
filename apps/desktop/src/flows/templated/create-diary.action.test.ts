@@ -12,16 +12,7 @@
 
 import { describe, expect, it } from "vitest";
 import { diaryConfig } from "./configs/diary.config";
-import type { CreateDateTemplateParams } from "./create-date-template.action";
-
-// ============================================================================
-// Test Data
-// ============================================================================
-
-const _validParams: CreateDateTemplateParams = {
-	workspaceId: "550e8400-e29b-41d4-a716-446655440000",
-	date: new Date("2024-01-01T12:00:00.000Z"),
-};
+import type { CreateDateTemplateParams } from "./create-date-template.flow";
 
 // ============================================================================
 // Tests

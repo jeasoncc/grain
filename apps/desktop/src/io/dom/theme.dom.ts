@@ -9,8 +9,8 @@
  * 这些函数有 IO 副作用，因此放在 io/dom 层
  */
 
-import type { Theme, ThemeColors } from "@/types/theme/theme.types";
 import { DEFAULT_THEME_CONFIG } from "@/types/theme";
+import type { Theme, ThemeColors } from "@/types/theme/theme.types";
 
 // ==============================
 // System Theme Detection
@@ -81,7 +81,7 @@ function getExtendedColors(
 
 /**
  * 应用主题到 DOM
- * 
+ *
  * 注意：此函数有副作用（操作 DOM），不是纯函数
  *
  * @param theme - 要应用的主题

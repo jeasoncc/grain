@@ -8,9 +8,7 @@
 import * as A from "fp-ts/Array";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { api } from "./client.api";
 import logger from "@/io/log";
-import type { AppError } from "@/types/error";
 import {
 	decodeContent,
 	decodeContentOptional,
@@ -22,6 +20,8 @@ import type {
 	ContentInterface,
 	ContentType,
 } from "@/types/content";
+import type { AppError } from "@/types/error";
+import { api } from "./client.api";
 
 // ============================================
 // 查询操作
@@ -34,7 +34,7 @@ export const getContentByNodeId = (
 	nodeId: string,
 ): TE.TaskEither<AppError, ContentInterface | null> => {
 	logger.debug("[ContentAPI] 获取内容:", nodeId);
-	
+
 	return pipe(
 		api.getContent(nodeId),
 		TE.map((response) => {

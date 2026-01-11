@@ -13,7 +13,7 @@
  * 依赖规则：views/ 只能依赖 hooks/, types/
  */
 
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useLayout } from "@/hooks/use-layout";
 import { ActivityBar } from "@/views/activity-bar";

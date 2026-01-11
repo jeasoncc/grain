@@ -14,6 +14,8 @@ import {
 	X,
 } from "lucide-react";
 import { memo, useState } from "react";
+import type { SearchResult, SearchResultType } from "@/flows/search";
+import { cn } from "@/utils/cn.util";
 import { Button } from "@/views/ui/button";
 import { Checkbox } from "@/views/ui/checkbox";
 import {
@@ -24,8 +26,6 @@ import {
 import { Input } from "@/views/ui/input";
 import { Label } from "@/views/ui/label";
 import { ScrollArea } from "@/views/ui/scroll-area";
-import type { SearchResult, SearchResultType } from "@/flows/search";
-import { cn } from "@/utils/cn.util";
 import type {
 	ResultGroupProps,
 	SearchPanelViewProps,

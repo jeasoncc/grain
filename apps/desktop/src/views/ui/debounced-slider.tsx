@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Slider } from "./slider";
 
 interface DebouncedSliderProps {
@@ -46,7 +46,7 @@ export function DebouncedSlider({
 				isInteractingRef.current = false;
 			}, debounceMs);
 		},
-		[onValueChange, debounceMs]
+		[onValueChange, debounceMs],
 	);
 
 	// Cleanup on unmount
@@ -58,5 +58,7 @@ export function DebouncedSlider({
 		};
 	}, []);
 
-	return <Slider value={localValue} onValueChange={handleValueChange} {...props} />;
+	return (
+		<Slider value={localValue} onValueChange={handleValueChange} {...props} />
+	);
 }

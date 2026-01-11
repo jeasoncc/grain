@@ -4,4 +4,4 @@
  *
  * @module io/log/log-db
  */
-export { LogDB, logDB, type LogEntry } from "@/io/db/log-db";
+export { LogDB, type LogEntry, logDB } from "@/io/db/log-db";

@@ -15,6 +15,7 @@ pub mod error;
 // DTO + Builder + Entity 模块（按实体分目录）
 pub mod attachment;
 pub mod content;
+pub mod log;
 pub mod node;
 pub mod tag;
 pub mod user;
@@ -59,4 +60,10 @@ pub use user::{
 pub use attachment::{
     AttachmentActiveModel, AttachmentColumn, AttachmentEntity, AttachmentModel, AttachmentResponse,
     AttachmentType, CreateAttachmentRequest, UpdateAttachmentRequest,
+};
+
+// 重新导出 Log 类型
+pub use log::{
+    CreateLogEntryRequest, LogQueryOptions, LogEntryResponse, LogQueryResult, LogStats,
+    LogLevel, LogEntity, LogModel,
 };

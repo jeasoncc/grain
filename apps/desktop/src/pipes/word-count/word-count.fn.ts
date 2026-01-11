@@ -10,6 +10,7 @@
 
 // 从 types 层导入类型
 export type { CountMode, WordCountResult } from "@/types/word-count";
+
 import type { CountMode, WordCountResult } from "@/types/word-count";
 
 /**

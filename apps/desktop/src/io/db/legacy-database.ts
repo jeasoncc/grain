@@ -84,7 +84,9 @@ export class LegacyDatabase extends Dexie {
 		});
 
 		// Open database silently (logger would cause circular dependency)
-		this.open().catch((err) => console.error("Legacy database open error:", err));
+		this.open().catch((err) =>
+			console.error("Legacy database open error:", err),
+		);
 	}
 }
 

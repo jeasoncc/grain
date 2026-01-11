@@ -18,6 +18,10 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type NodeApi, type NodeRendererProps, Tree } from "react-arborist";
+import { useIconTheme } from "@/hooks/use-icon-theme";
+import { useTheme } from "@/hooks/use-theme";
+import type { NodeInterface, NodeType } from "@/types/node";
+import { cn } from "@/utils/cn.util";
 import { Button } from "@/views/ui/button";
 import {
 	DropdownMenu,
@@ -30,10 +34,6 @@ import {
 	DropdownMenuTrigger,
 } from "@/views/ui/dropdown-menu";
 import { Input } from "@/views/ui/input";
-import { useIconTheme } from "@/hooks/use-icon-theme";
-import { useTheme } from "@/hooks/use-theme";
-import { cn } from "@/utils/cn.util";
-import type { NodeInterface, NodeType } from "@/types/node";
 import type { FileTreeProps, TreeData } from "./file-tree.types";
 
 /**

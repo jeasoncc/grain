@@ -7,15 +7,15 @@
  */
 
 import { useCallback, useEffect } from "react";
-import {
-	useLayoutStore,
-	useIsSidebarOpen,
-	useActivePanel,
-	useWasCollapsedByDrag,
-	useSidebarWidth,
-	useLayoutActions,
-} from "@/state";
 import { initLayoutFlow } from "@/flows/layout";
+import {
+	useActivePanel,
+	useIsSidebarOpen,
+	useLayoutActions,
+	useLayoutStore,
+	useSidebarWidth,
+	useWasCollapsedByDrag,
+} from "@/state";
 import type { SidebarPanel } from "@/types/sidebar";
 
 // ============================================================================

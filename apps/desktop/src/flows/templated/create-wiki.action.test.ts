@@ -6,8 +6,8 @@
 import * as E from "fp-ts/Either";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type WikiTemplateParams, wikiConfig } from "./configs/wiki.config";
-import { createWiki, createWikiAsync } from "./create-date-template.action";
-import type { TemplatedFileParams } from "./create-templated-file.action";
+import { createWiki, createWikiAsync } from "./create-date-template.flow";
+import type { TemplatedFileParams } from "./create-templated-file.flow";
 
 // Mock dependencies
 vi.mock("@/flows/node", () => ({

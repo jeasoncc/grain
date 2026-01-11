@@ -16,7 +16,7 @@ import { useMemo } from "react";
 import {
 	useWorkspace as useWorkspaceQuery,
 	useWorkspaces as useWorkspacesQuery,
-} from '@/hooks/queries/workspace.queries';
+} from "@/hooks/queries/workspace.queries";
 import type { WorkspaceInterface } from "@/types/workspace";
 
 /**

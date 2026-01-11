@@ -1,9 +1,13 @@
-import { createRouter, Router, RouterProvider } from "@tanstack/react-router";
-import { StrictMode } from "react";
-import ReactDOM from "react-dom/client";
+import {
+	createRouter,
+	type Router,
+	RouterProvider,
+} from "@tanstack/react-router";
 import { pipe } from "fp-ts/function";
 import * as O from "fp-ts/Option";
 import * as TE from "fp-ts/TaskEither";
+import { StrictMode } from "react";
+import ReactDOM from "react-dom/client";
 import { routeTree } from "./routeTree.gen";
 import "./styles.css";
 import "@grain/editor-lexical/styles";
@@ -49,7 +53,7 @@ const getRootElement = (): O.Option<RootElement> =>
 		O.map((element) => ({
 			element,
 			isEmpty: !element.innerHTML,
-		}))
+		})),
 	);
 
 // 纯函数：创建 React 应用
@@ -68,28 +72,29 @@ const createApp = (config: AppConfig) => (
 );
 
 // IO 函数：渲染应用
-const renderApp = (rootElement: RootElement, config: AppConfig): TE.TaskEither<Error, void> =>
+const renderApp = (
+	rootElement: RootElement,
+	config: AppConfig,
+): TE.TaskEither<Error, void> =>
 	TE.tryCatch(
 		async () => {
 			const root = ReactDOM.createRoot(rootElement.element);
 			root.render(createApp(config));
 		},
-		(error) => new Error(`Failed to render app: ${error}`)
+		(error) => new Error(`Failed to render app: ${error}`),
 	);
 
 // 主流程：函数式管道
 const main = (): TE.TaskEither<Error, void> =>
-	pipe(
-		createAppConfig(),
-		(config) =>
-			pipe(
-				getRootElement(),
-				O.filter((root) => root.isEmpty),
-				O.fold(
-					() => TE.left(new Error("Root element not found or already rendered")),
-					(rootElement) => renderApp(rootElement, config)
-				)
-			)
+	pipe(createAppConfig(), (config) =>
+		pipe(
+			getRootElement(),
+			O.filter((root) => root.isEmpty),
+			O.fold(
+				() => TE.left(new Error("Root element not found or already rendered")),
+				(rootElement) => renderApp(rootElement, config),
+			),
+		),
 	);
 
 // 启动应用
@@ -97,6 +102,6 @@ pipe(
 	main(),
 	TE.fold(
 		(error) => async () => console.error("App initialization failed:", error),
-		() => async () => console.log("App initialized successfully")
-	)
+		() => async () => console.log("App initialized successfully"),
+	),
 )();

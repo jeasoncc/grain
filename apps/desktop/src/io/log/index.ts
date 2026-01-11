@@ -1,11 +1,14 @@
 /**
- * IO Log - 日志模块
- *
- * 职责：提供应用日志功能，包括控制台输出和 IndexedDB 持久化
- * 依赖：types/（通过 Dexie）
- *
- * @module io/log
+ * @file io/log/index.ts
+ * @description 日志 IO 模块导出
  */
 
-export { default as logger, default, ICONS } from "./logger";
-export { LogDB, logDB, type LogEntry } from "./log-db";
+// 新的函数式日志 API
+export * from './logger.api';
+
+// SQLite 存储 API
+export * from './log.storage.api';
+
+// 旧的日志系统（向后兼容，标记为废弃）
+/** @deprecated 使用 logger.api.ts 中的新函数式接口 */
+export { default as legacyLogger } from './logger';

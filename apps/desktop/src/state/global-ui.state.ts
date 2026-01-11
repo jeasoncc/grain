@@ -11,8 +11,8 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import {
-	DEFAULT_GLOBAL_UI_STATE,
 	type BufferSwitcherDirection,
+	DEFAULT_GLOBAL_UI_STATE,
 	type GlobalUIActions,
 	type GlobalUIState,
 } from "@/types/global-ui";

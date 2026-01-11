@@ -11,10 +11,13 @@
  * - 应用主题到 DOM
  */
 
-import logger from "@/io/log";
 import { getSystemTheme } from "@/io/dom/theme.dom";
+import logger from "@/io/log";
 import { useThemeStore } from "@/state";
-import { initializeThemeFlow, handleSystemThemeChangeFlow } from "./apply-theme.flow";
+import {
+	handleSystemThemeChangeFlow,
+	initializeThemeFlow,
+} from "./apply-theme.flow";
 
 // ============================================================================
 // Theme Initialization Flow

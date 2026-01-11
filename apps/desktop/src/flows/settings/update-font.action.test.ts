@@ -24,7 +24,7 @@ import {
 	updateEditorFont,
 	updateTypography,
 	updateUiFont,
-} from "./update-font.action";
+} from "./update-font.flow";
 
 // ============================================================================
 // Mocks

@@ -17,13 +17,9 @@ import {
 	X,
 } from "lucide-react";
 import { memo } from "react";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/views/ui/tooltip";
-import { cn } from "@/utils/cn.util";
 import type { EditorTab } from "@/types/editor-tab";
+import { cn } from "@/utils/cn.util";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/views/ui/tooltip";
 import type { StoryRightSidebarViewProps } from "./story-right-sidebar.types";
 
 export const StoryRightSidebarView = memo(

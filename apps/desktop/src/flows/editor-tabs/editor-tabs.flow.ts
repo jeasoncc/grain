@@ -112,7 +112,9 @@ export const closeOtherTabsFlow = (
 
 	store.setTabs([tab as EditorTab]);
 	store.setActiveTabId(tabId);
-	store.setEditorStates(currentEditorState ? { [tabId]: currentEditorState } : {});
+	store.setEditorStates(
+		currentEditorState ? { [tabId]: currentEditorState } : {},
+	);
 };
 
 /**

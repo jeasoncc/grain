@@ -5,10 +5,10 @@
  * 纯函数已移动到 pipes/theme/，此处重新导出以保持向后兼容
  */
 
-export { getEditorThemeColors } from "./editor-theme.fn";
 export {
 	getDefaultThemeKey,
 	getEffectiveThemeType,
 	getNextMode,
 	isThemeTypeMatch,
 } from "@/pipes/theme";
+export { getEditorThemeColors } from "./editor-theme.fn";

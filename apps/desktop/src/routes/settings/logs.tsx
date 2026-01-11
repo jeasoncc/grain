@@ -12,6 +12,8 @@ import {
 	XCircle,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { type LogEntry, logDB } from "@/io/db/log-db";
+import { cn } from "@/utils/cn.util";
 import { Button } from "@/views/ui/button";
 import { Input } from "@/views/ui/input";
 import {
@@ -21,8 +23,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/views/ui/select";
-import { type LogEntry, logDB } from "@/io/db/log-db";
-import { cn } from "@/utils/cn.util";
 
 export const Route = createFileRoute("/settings/logs")({
 	component: LogsSettingsPage,

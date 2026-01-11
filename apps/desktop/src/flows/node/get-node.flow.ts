@@ -6,9 +6,12 @@
  */
 
 import type * as TE from "fp-ts/TaskEither";
-import { getNodeById as getNodeByIdApi, setNodeCollapsed as setNodeCollapsedApi } from "@/io/api";
-import type { AppError } from "@/utils/error.util";
+import {
+	getNodeById as getNodeByIdApi,
+	setNodeCollapsed as setNodeCollapsedApi,
+} from "@/io/api";
 import type { NodeInterface } from "@/types/node";
+import type { AppError } from "@/utils/error.util";
 
 /**
  * 获取节点详情

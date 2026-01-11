@@ -9,14 +9,14 @@
 
 import * as E from "fp-ts/Either";
 import * as TE from "fp-ts/TaskEither";
-import { legacyDatabase } from "@/io/db/legacy-database";
-import type { AppError } from "@/utils/error.util";
-import logger from "@/io/log";
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/io/api";
-import type { NodeInterface } from "@/types/node";
+import { legacyDatabase } from "@/io/db/legacy-database";
+import logger from "@/io/log";
 import { WikiFileEntryBuilder } from "@/pipes/wiki/wiki.builder";
 import { WIKI_TAG } from "@/pipes/wiki/wiki.resolve.fn";
 import type { WikiFileEntry } from "@/pipes/wiki/wiki.schema";
+import type { NodeInterface } from "@/types/node";
+import type { AppError } from "@/utils/error.util";
 
 /**
  * Build the path string for a node

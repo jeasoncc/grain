@@ -15,14 +15,14 @@ import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import type { SerializedEditorState } from "lexical";
-import type { AppError } from "@/utils/error.util";
-import logger from '@/io/log';
 import {
 	getNode,
 	syncTagCache,
 	updateContentByNodeId,
 	updateNode,
 } from "@/io/api";
+import logger from "@/io/log";
+import type { AppError } from "@/utils/error.util";
 import { extractTagsFromContent } from "./save.debounce.fn";
 
 // ============================================================================

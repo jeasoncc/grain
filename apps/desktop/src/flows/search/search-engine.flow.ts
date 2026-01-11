@@ -10,21 +10,21 @@
 
 import * as E from "fp-ts/Either";
 import lunr from "lunr";
-import logger from '@/io/log';
 import {
 	getAllNodes,
 	getContentsByNodeIds,
 	getNodesByWorkspace,
 	getWorkspaceById,
 } from "@/io/api";
-import type { NodeInterface } from "@/types/node";
-import type { WorkspaceInterface } from "@/types/workspace";
+import logger from "@/io/log";
 import {
 	calculateSimpleScore,
 	extractHighlights,
 	extractTextFromContent,
 	generateExcerpt,
 } from "@/pipes/search/search.highlight.fn";
+import type { NodeInterface } from "@/types/node";
+import type { WorkspaceInterface } from "@/types/workspace";
 
 // ============================================================================
 // Types

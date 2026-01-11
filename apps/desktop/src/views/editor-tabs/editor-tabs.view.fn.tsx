@@ -20,6 +20,8 @@ import {
 	X,
 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { EditorTab } from "@/types/editor-tab";
+import { cn } from "@/utils/cn.util";
 import { Button } from "@/views/ui/button";
 import {
 	Dialog,
@@ -27,13 +29,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/views/ui/dialog";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/views/ui/tooltip";
-import { cn } from "@/utils/cn.util";
-import type { EditorTab } from "@/types/editor-tab";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/views/ui/tooltip";
 import type { EditorTabsViewProps } from "./editor-tabs.types";
 
 // 根据标签数量计算最大宽度

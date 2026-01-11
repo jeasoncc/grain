@@ -121,15 +121,15 @@ vi.mock("@/hooks/use-icon-theme", () => ({
 }));
 
 // Mock actions
-vi.mock("@/flows/templated/create-ledger.action", () => ({
+vi.mock("@/flows/templated/create-ledger.flow", () => ({
 	createLedgerCompatAsync: mockCreateLedgerCompatAsync,
 }));
 
-vi.mock("@/flows/templated/create-wiki.action", () => ({
+vi.mock("@/flows/templated/create-wiki.flow", () => ({
 	createWikiCompatAsync: mockCreateWikiCompatAsync,
 }));
 
-vi.mock("@/flows/templated/create-diary.action", () => ({
+vi.mock("@/flows/templated/create-diary.flow", () => ({
 	createDiaryCompatAsync: mockCreateDiaryCompatAsync,
 }));
 

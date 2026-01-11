@@ -177,9 +177,9 @@ export {
 	type CreateWorkspaceParams,
 	createWorkspace,
 	deleteWorkspace,
+	touchWorkspace,
 	type UpdateWorkspaceParams,
 	updateWorkspace,
-	touchWorkspace,
 } from "./workspace";
 
 // ==============================

@@ -2,10 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Check, Sparkles } from "lucide-react";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useTheme } from "@/hooks/use-theme";
-import { cn } from "@/utils/cn.util";
 import { useIconThemeStore } from "@/state/icon-theme.state";
 import type { IconTheme } from "@/types/icon-theme";
 import { iconThemes } from "@/types/icon-theme";
+import { cn } from "@/utils/cn.util";
 
 export const Route = createFileRoute("/settings/icons")({
 	component: IconSettings,

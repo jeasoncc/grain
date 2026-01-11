@@ -7,8 +7,8 @@
  */
 
 import * as TE from "fp-ts/TaskEither";
+import logger from "@/io/log";
 import type { AppError } from "@/utils/error.util";
-import logger from '@/io/log';
 
 // ==============================
 // Types

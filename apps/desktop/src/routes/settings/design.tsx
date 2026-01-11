@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Check, Moon, Sun } from "lucide-react";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useTheme } from "@/hooks/use-theme";
-import { getDarkThemes, getLightThemes, type Theme } from "@/utils/themes.util";
 import { cn } from "@/utils/cn.util";
+import { getDarkThemes, getLightThemes, type Theme } from "@/utils/themes.util";
 
 export const Route = createFileRoute("/settings/design")({
 	component: DesignSettings,

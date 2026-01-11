@@ -1,5 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Monitor, RotateCcw } from "lucide-react";
+import { useFontSettings } from "@/state/font.state";
+import {
+	CARD_SIZE_OPTIONS,
+	DEFAULT_UI_FONT,
+	POPULAR_FONTS,
+	UI_SCALE_OPTIONS,
+} from "@/types/font";
 import { Button } from "@/views/ui/button";
 import {
 	Card,
@@ -12,13 +19,6 @@ import { DebouncedSlider } from "@/views/ui/debounced-slider";
 import { Input } from "@/views/ui/input";
 import { Label } from "@/views/ui/label";
 import { Separator } from "@/views/ui/separator";
-import { useFontSettings } from "@/state/font.state";
-import {
-	CARD_SIZE_OPTIONS,
-	DEFAULT_UI_FONT,
-	POPULAR_FONTS,
-	UI_SCALE_OPTIONS,
-} from "@/types/font";
 
 export const Route = createFileRoute("/settings/typography")({
 	component: TypographySettings,

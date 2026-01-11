@@ -5,10 +5,10 @@
 export {
 	type CreateWorkspaceParams,
 	createWorkspace,
-} from "./create-workspace.action";
-export { deleteWorkspace } from "./delete-workspace.action";
+} from "./create-workspace.flow";
+export { deleteWorkspace } from "./delete-workspace.flow";
 export {
+	touchWorkspace,
 	type UpdateWorkspaceParams,
 	updateWorkspace,
-	touchWorkspace,
-} from "./update-workspace.action";
+} from "./update-workspace.flow";

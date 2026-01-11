@@ -17,7 +17,6 @@ import {
 } from "@/flows/writing";
 import {
 	useFocusMode,
-	useHasActiveSession,
 	useMinimalToolbar,
 	useTodayDate,
 	useTodayWordCount,
@@ -65,7 +64,12 @@ export function useWriting() {
 	// Add today words
 	const addTodayWords = useCallback(
 		(count: number) => {
-			addTodayWordsFlow(count, todayDate, todayWordCount, useWritingStore.getState());
+			addTodayWordsFlow(
+				count,
+				todayDate,
+				todayWordCount,
+				useWritingStore.getState(),
+			);
 		},
 		[todayDate, todayWordCount],
 	);
@@ -76,12 +80,9 @@ export function useWriting() {
 	}, [todayDate]);
 
 	// Start session
-	const startSession = useCallback(
-		(wordCount: number) => {
-			startSessionFlow(wordCount, useWritingStore.getState());
-		},
-		[],
-	);
+	const startSession = useCallback((wordCount: number) => {
+		startSessionFlow(wordCount, useWritingStore.getState());
+	}, []);
 
 	// Update session word count
 	const updateSessionWordCount = useCallback(
@@ -130,7 +131,6 @@ export function useWriting() {
 // Re-export state selectors for convenience
 export {
 	useFocusMode,
-	useHasActiveSession,
 	useMinimalToolbar,
 	useTodayDate,
 	useTodayWordCount,

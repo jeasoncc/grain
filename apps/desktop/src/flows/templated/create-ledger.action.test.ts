@@ -12,7 +12,7 @@
 
 import { describe, expect, it } from "vitest";
 import { ledgerConfig } from "./configs/ledger.config";
-import type { CreateDateTemplateParams } from "./create-date-template.action";
+import type { CreateDateTemplateParams } from "./create-date-template.flow";
 
 // ============================================================================
 // Tests

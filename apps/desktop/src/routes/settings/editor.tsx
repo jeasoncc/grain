@@ -1,14 +1,14 @@
 import { FOLD_ICON_OPTIONS, getFoldIconLetters } from "@grain/editor-lexical";
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Minus, Plus, RotateCcw, Sparkles, Type } from "lucide-react";
+import { useEditorSettings } from "@/state/editor-settings.state";
+import { useFontSettings } from "@/state/font.state";
+import { DEFAULT_EDITOR_FONT, POPULAR_FONTS } from "@/types/font";
 import { Button } from "@/views/ui/button";
 import { DebouncedSlider } from "@/views/ui/debounced-slider";
 import { Input } from "@/views/ui/input";
 import { Label } from "@/views/ui/label";
 import { Switch } from "@/views/ui/switch";
-import { useEditorSettings } from "@/state/editor-settings.state";
-import { useFontSettings } from "@/state/font.state";
-import { DEFAULT_EDITOR_FONT, POPULAR_FONTS } from "@/types/font";
 
 export const Route = createFileRoute("/settings/editor")({
 	component: EditorSettings,

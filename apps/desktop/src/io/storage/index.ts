@@ -6,31 +6,30 @@
  * 依赖：types/
  */
 
+// Layout storage - 布局状态持久化
+export {
+	clearLayoutState,
+	hasLayoutState,
+	LAYOUT_STORAGE_KEY,
+	loadLayoutState,
+	saveLayoutState,
+} from "./layout.storage";
 // Settings storage - localStorage 操作
 export {
-	// 存储键常量
-	STORAGE_KEYS,
-	type StorageKey,
-	// 字符串操作
-	getString,
-	setString,
-	remove,
 	clearAll,
+	getAllKeys,
 	// JSON 操作（类型安全）
 	getJson,
-	setJson,
 	getJsonUnsafe,
 	// 存储信息
 	getStorageStats,
-	getAllKeys,
+	// 字符串操作
+	getString,
 	has,
+	remove,
+	// 存储键常量
+	STORAGE_KEYS,
+	type StorageKey,
+	setJson,
+	setString,
 } from "./settings.storage";
-
-// Layout storage - 布局状态持久化
-export {
-	LAYOUT_STORAGE_KEY,
-	saveLayoutState,
-	loadLayoutState,
-	clearLayoutState,
-	hasLayoutState,
-} from "./layout.storage";

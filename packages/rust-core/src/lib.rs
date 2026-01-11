@@ -103,6 +103,15 @@ pub use types::attachment::{
 };
 
 // ============================================
+// 重新导出 Log 类型
+// ============================================
+
+pub use types::log::{
+    CreateLogEntryRequest, LogQueryOptions, LogEntryResponse, LogQueryResult, LogStats,
+    LogLevel, LogEntity, LogModel,
+};
+
+// ============================================
 // 重新导出数据库函数
 // ============================================
 

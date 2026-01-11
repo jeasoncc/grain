@@ -5,7 +5,7 @@
 
 import * as E from "fp-ts/Either";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { moveNode } from "./move-node.action";
+import { moveNode } from "./move-node.flow";
 
 // ============================================================================
 // Mocks
@@ -30,13 +30,13 @@ vi.mock("@/log/index", () => ({
 	},
 }));
 
-import { wouldCreateCycle } from "@/pipes/node/node.tree.fn";
 import {
 	getNextSortOrder,
 	getNode,
 	getNodesByWorkspace,
 	moveNode as moveNodeRepo,
 } from "@/io/api/node.api";
+import { wouldCreateCycle } from "@/pipes/node/node.tree.fn";
 
 // ============================================================================
 // Test Data

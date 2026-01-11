@@ -7,19 +7,19 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { api } from "./client.api";
-import type { AppError } from "@/types/error";
 import {
 	decodeWorkspace,
 	decodeWorkspaces,
 	encodeCreateWorkspace,
 	encodeUpdateWorkspace,
 } from "@/types/codec";
+import type { AppError } from "@/types/error";
 import type {
 	WorkspaceCreateInput,
 	WorkspaceInterface,
 	WorkspaceUpdateInput,
 } from "@/types/workspace";
+import { api } from "./client.api";
 
 // ============================================
 // 查询操作

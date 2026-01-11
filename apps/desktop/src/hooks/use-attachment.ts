@@ -15,7 +15,7 @@ import {
 	useAttachments as useAttachmentsQuery,
 	useAudioFilesByProject as useAudioFilesByProjectQuery,
 	useImagesByProject as useImagesByProjectQuery,
-} from '@/hooks/queries';
+} from "@/hooks/queries";
 import type { AttachmentInterface, AttachmentType } from "@/types/attachment";
 
 /**

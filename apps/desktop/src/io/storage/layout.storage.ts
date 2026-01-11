@@ -69,9 +69,7 @@ export function loadLayoutState(): LayoutState {
 		const stored = localStorage.getItem(LAYOUT_STORAGE_KEY);
 
 		if (!stored) {
-			logger.info(
-				"[Layout Storage] No saved state found, using default",
-			);
+			logger.info("[Layout Storage] No saved state found, using default");
 			return DEFAULT_LAYOUT_STATE;
 		}
 

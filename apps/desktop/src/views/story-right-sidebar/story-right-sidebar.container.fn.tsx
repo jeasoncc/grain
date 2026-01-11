@@ -14,7 +14,12 @@ export const StoryRightSidebarContainer = memo(
 	({ workspaceId }: StoryRightSidebarContainerProps) => {
 		// 从 stores 获取数据
 		const tabPosition = useUIStore((s) => s.tabPosition);
-		const { tabs: allTabs, activeTabId, setActiveTab, closeTab } = useEditorTabs();
+		const {
+			tabs: allTabs,
+			activeTabId,
+			setActiveTab,
+			closeTab,
+		} = useEditorTabs();
 
 		// 过滤当前工作空间的标签页
 		const tabs = useMemo(

@@ -103,11 +103,11 @@ vi.mock("@/log", () => ({
 	},
 }));
 
-import logger from '@/io/log';
+import logger from "@/io/log";
 import {
 	exportContentToMarkdown,
 	exportNodeToMarkdown,
-} from "./export-markdown.action";
+} from "./export-markdown.flow";
 
 // ============================================================================
 // Unit Tests

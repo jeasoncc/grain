@@ -11,21 +11,21 @@
 
 // Dialog 相关导出
 export {
+	type DirectorySelectOptions,
 	// 类型
 	type DirectorySelectResult,
 	type FileFilter,
 	type FileSelectOptions,
-	type DirectorySelectOptions,
+	getDesktopDirectory,
+	getDocumentsDirectory,
+	// 系统目录
+	getDownloadsDirectory,
+	getHomeDirectory,
 	// 环境检测
 	isTauriEnvironment,
 	// 目录选择
 	selectDirectory,
 	selectDirectoryWithResult,
-	// 系统目录
-	getDownloadsDirectory,
-	getDocumentsDirectory,
-	getDesktopDirectory,
-	getHomeDirectory,
 } from "./dialog.file";
 
 // Download 相关导出

@@ -6,6 +6,7 @@
 
 import { FileText, Loader2, Search, X } from "lucide-react";
 import { memo } from "react";
+import { cn } from "@/utils/cn.util";
 import { Badge } from "@/views/ui/badge";
 import { Button } from "@/views/ui/button";
 import {
@@ -17,7 +18,6 @@ import {
 import { Input } from "@/views/ui/input";
 import { ScrollArea } from "@/views/ui/scroll-area";
 import { Separator } from "@/views/ui/separator";
-import { cn } from "@/utils/cn.util";
 import type {
 	GlobalSearchViewProps,
 	SearchResultType,

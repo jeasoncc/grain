@@ -11,7 +11,12 @@ import { EditorTabsView } from "./editor-tabs.view.fn";
 export const EditorTabsContainer = memo(
 	({ className, workspaceId }: EditorTabsContainerProps) => {
 		// 使用 useEditorTabs hook
-		const { tabs: allTabs, activeTabId, setActiveTab, closeTab } = useEditorTabs();
+		const {
+			tabs: allTabs,
+			activeTabId,
+			setActiveTab,
+			closeTab,
+		} = useEditorTabs();
 
 		// 过滤当前工作区的标签
 		const tabs = useMemo(

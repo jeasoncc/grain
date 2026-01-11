@@ -49,8 +49,8 @@ vi.mock("@/log", () => ({
 	},
 }));
 
-import logger from '@/io/log';
-import { deleteWorkspace } from "./delete-workspace.action";
+import logger from "@/io/log";
+import { deleteWorkspace } from "./delete-workspace.flow";
 
 // ============================================================================
 // Unit Tests

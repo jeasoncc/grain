@@ -164,8 +164,10 @@ export function generateExcalidrawContent(
 	params: ExcalidrawContentParams = {},
 ): string {
 	// 解构参数，使用默认值
-	const _width = params.width ?? DEFAULT_WIDTH;
-	const _height = params.height ?? DEFAULT_HEIGHT;
+	// Note: width and height are currently not used in document creation
+	// but are kept for future extensibility
+	params.width ?? DEFAULT_WIDTH;
+	params.height ?? DEFAULT_HEIGHT;
 
 	// 创建文档对象
 	const document = createExcalidrawDocument();

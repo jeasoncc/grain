@@ -21,8 +21,6 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { api } from "./client.api";
-import type { AppError } from "@/types/error";
 import {
 	decodeTag,
 	decodeTagGraphData,
@@ -32,7 +30,9 @@ import {
 	encodeUpdateTag,
 	type TagGraphData,
 } from "@/types/codec";
+import type { AppError } from "@/types/error";
 import type { TagCreateInput, TagInterface, TagUpdateInput } from "@/types/tag";
+import { api } from "./client.api";
 
 // ============================================
 // 查询操作

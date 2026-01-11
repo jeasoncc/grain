@@ -49,7 +49,6 @@ export const useSidebarStore = create<SidebarStore>()(
 
 			// Main sidebar actions
 			setActivePanel: (panel: SidebarPanel) => {
-				const state = get();
 				const newIsOpen = true; // 选择面板时总是打开侧边栏
 				set((draft) => {
 					draft.activePanel = panel;
@@ -164,7 +163,8 @@ export const useSidebarStore = create<SidebarStore>()(
 // ==============================
 
 /** Select active panel (legacy - use useActivePanel from layout.state.ts for new code) */
-export const useSidebarActivePanel = () => useSidebarStore((s) => s.activePanel);
+export const useSidebarActivePanel = () =>
+	useSidebarStore((s) => s.activePanel);
 
 /** Select sidebar open state */
 export const useSidebarIsOpen = () => useSidebarStore((s) => s.isOpen);

@@ -20,7 +20,7 @@ export {
 	updateTheme,
 	updateThemeMode,
 	updateThemeTransition,
-} from "./update-theme.action";
+} from "./update-theme.flow";
 
 // ============================================================================
 // Font Actions
@@ -35,4 +35,4 @@ export {
 	updateEditorFont,
 	updateTypography,
 	updateUiFont,
-} from "./update-font.action";
+} from "./update-font.flow";

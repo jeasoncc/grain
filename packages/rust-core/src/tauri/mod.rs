@@ -171,5 +171,16 @@ pub fn create_builder() -> tauri::Builder<tauri::Wry> {
             update_attachment,
             delete_attachment,
             delete_attachments_by_project,
+            // 日志命令
+            init_log_database,
+            check_log_database_exists,
+            save_log_entry,
+            save_logs_batch,
+            query_logs,
+            get_log_stats,
+            clear_old_logs,
+            clear_all_logs,
+            check_needs_migration,
+            mark_migration_complete,
         ])
 }

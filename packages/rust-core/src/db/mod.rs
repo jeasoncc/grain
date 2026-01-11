@@ -6,6 +6,7 @@ pub mod attachment_db_fn;
 pub mod clear_data_db_fn;
 pub mod connection;
 pub mod content_db_fn;
+pub mod log_db_fn;
 pub mod node_db_fn;
 pub mod tag_db_fn;
 pub mod user_db_fn;

@@ -6,7 +6,8 @@
  */
 
 import * as TE from "fp-ts/TaskEither";
-import { type AppError, dbError } from "@/utils/error.util";
+import { clearSqliteData as clearSqliteDataApi } from "@/io/api/clear-data.api";
+import { legacyDatabase } from "@/io/db/legacy-database";
 import type { ClearDataResult } from "@/types/rust-api";
 import type {
 	ClearDataOptions,
@@ -14,8 +15,7 @@ import type {
 	StorageStats,
 	TableSizes,
 } from "@/types/storage";
-import { clearSqliteData as clearSqliteDataApi } from "@/io/api/clear-data.api";
-import { legacyDatabase } from "@/io/db/legacy-database";
+import { type AppError, dbError } from "@/utils/error.util";
 
 // ============================================================================
 // SQLite 清理

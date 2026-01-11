@@ -103,8 +103,8 @@ vi.mock("@/log", () => ({
 	},
 }));
 
-import logger from '@/io/log';
-import { exportContentToJson, exportNodeToJson } from "./export-json.action";
+import logger from "@/io/log";
+import { exportContentToJson, exportNodeToJson } from "./export-json.flow";
 
 // ============================================================================
 // Unit Tests

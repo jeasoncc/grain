@@ -21,7 +21,7 @@ export {
 	type TemplateConfig,
 	type TemplatedFileParams,
 	type TemplatedFileResult,
-} from "./create-templated-file.action";
+} from "./create-templated-file.flow";
 
 // ==============================
 // 日期模板统一创建（Diary/Wiki/Todo/Note/Ledger）
@@ -64,7 +64,7 @@ export {
 	noteActions,
 	todoActions,
 	wikiActions,
-} from "./create-date-template.action";
+} from "./create-date-template.flow";
 
 // ==============================
 // Excalidraw 创建（有额外参数，单独处理）
@@ -78,7 +78,7 @@ export {
 	createExcalidrawCompat,
 	createExcalidrawCompatAsync,
 	type ExcalidrawCreationResult,
-} from "./create-excalidraw.action";
+} from "./create-excalidraw.flow";
 
 // ==============================
 // Mermaid 创建
@@ -92,7 +92,7 @@ export {
 	createMermaidCompatAsync,
 	type MermaidCreationResult,
 	mermaidActions,
-} from "./create-mermaid.action";
+} from "./create-mermaid.flow";
 
 // ==============================
 // PlantUML 创建
@@ -106,7 +106,7 @@ export {
 	createPlantUMLCompatAsync,
 	type PlantUMLCreationResult,
 	plantumlActions,
-} from "./create-plantuml.action";
+} from "./create-plantuml.flow";
 
 // ==============================
 // Code 创建
@@ -120,7 +120,7 @@ export {
 	createCodeAsync,
 	createCodeCompat,
 	createCodeCompatAsync,
-} from "./create-code.action";
+} from "./create-code.flow";
 
 // ==============================
 // 模板配置

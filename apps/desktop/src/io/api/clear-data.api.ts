@@ -12,10 +12,10 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { api } from "./client.api";
+import logger from "@/io/log";
 import { type AppError, dbError } from "@/types/error";
-import logger from '@/io/log';
 import type { ClearDataResult } from "@/types/rust-api";
+import { api } from "./client.api";
 
 // ============================================================================
 // SQLite 数据清理（通过 Rust 后端）

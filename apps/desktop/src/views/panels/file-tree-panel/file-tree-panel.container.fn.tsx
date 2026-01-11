@@ -19,21 +19,21 @@ import {
 	openFileAsync,
 	renameNode,
 } from "@/flows";
+import { useEditorTabs } from "@/hooks/use-editor-tabs";
+import { useNodesByWorkspace } from "@/hooks/use-node";
+import { useGetNodeById } from "@/hooks/use-node-operations";
+import { useOptimisticCollapse } from "@/hooks/use-optimistic-collapse";
 import {
 	createDocument,
 	createHeadingNode,
 	createParagraphNode,
 	createTextNode,
 } from "@/pipes/content";
+import { useSelectionStore } from "@/state/selection.state";
+import type { NodeType } from "@/types/node";
 import { autoExpandAndScrollToNode } from "@/utils/file-tree-navigation.util";
 import { FileTree } from "@/views/file-tree";
 import { useConfirm } from "@/views/ui/confirm";
-import { useGetNodeById } from "@/hooks/use-node-operations";
-import { useOptimisticCollapse } from "@/hooks/use-optimistic-collapse";
-import { useNodesByWorkspace } from "@/hooks/use-node";
-import { useEditorTabs } from "@/hooks/use-editor-tabs";
-import { useSelectionStore } from "@/state/selection.state";
-import type { NodeType } from "@/types/node";
 import type { FileTreePanelContainerProps } from "./file-tree-panel.types";
 
 export const FileTreePanelContainer = memo(
@@ -51,9 +51,10 @@ export const FileTreePanelContainer = memo(
 		const { getNode } = useGetNodeById();
 
 		// Optimistic collapse hook - Requirements: 1.1, 1.2, 1.3, 1.4, 1.5
-		const { toggleCollapsed: optimisticToggleCollapsed } = useOptimisticCollapse({
-			workspaceId,
-		});
+		const { toggleCollapsed: optimisticToggleCollapsed } =
+			useOptimisticCollapse({
+				workspaceId,
+			});
 
 		// Wrapper for autoExpandAndScrollToNode compatibility
 		const setCollapsed = useCallback(
@@ -185,15 +186,15 @@ export const FileTreePanelContainer = memo(
 
 				try {
 					const title = type === "drawing" ? "New Canvas" : "New File";
-					
+
 					// Generate appropriate content based on type
 					let content: string;
 					if (type === "drawing") {
 						// Excalidraw canvas content
-						content = JSON.stringify({ 
-							elements: [], 
-							appState: {}, 
-							files: {} 
+						content = JSON.stringify({
+							elements: [],
+							appState: {},
+							files: {},
 						});
 					} else {
 						// Regular file - generate Lexical template content
@@ -244,7 +245,14 @@ export const FileTreePanelContainer = memo(
 					toast.error("Failed to create file");
 				}
 			},
-			[workspaceId, setSelectedNodeId, navigate, generateDefaultFileContent, nodes, setCollapsed],
+			[
+				workspaceId,
+				setSelectedNodeId,
+				navigate,
+				generateDefaultFileContent,
+				nodes,
+				setCollapsed,
+			],
 		);
 
 		// Editor tabs for closing deleted files
@@ -361,12 +369,7 @@ export const FileTreePanelContainer = memo(
 				setSelectedNodeId(node.id);
 
 				// Auto-expand ancestors and scroll to the new diary
-				await autoExpandAndScrollToNode(
-					nodes,
-					node.id,
-					setCollapsed,
-					treeRef,
-				);
+				await autoExpandAndScrollToNode(nodes, node.id, setCollapsed, treeRef);
 
 				navigate({ to: "/" });
 			} catch (error) {
@@ -406,12 +409,15 @@ export const FileTreePanelContainer = memo(
 					// Warning for slow operations (> 100ms threshold)
 					// Note: With optimistic updates, this should rarely trigger
 					if (totalDuration > 100) {
-						console.warn("[FileTree Performance] Slow toggle operation detected", {
-							nodeId,
-							totalDuration: `${totalDuration.toFixed(2)}ms`,
-							threshold: "100ms",
-							note: "This is unexpected with optimistic updates",
-						});
+						console.warn(
+							"[FileTree Performance] Slow toggle operation detected",
+							{
+								nodeId,
+								totalDuration: `${totalDuration.toFixed(2)}ms`,
+								threshold: "100ms",
+								note: "This is unexpected with optimistic updates",
+							},
+						);
 					}
 				} catch (error) {
 					const errorTime = performance.now();

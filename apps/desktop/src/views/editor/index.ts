@@ -9,17 +9,13 @@
  */
 
 // 常量和类型
+// 编辑器类型判断函数
 export {
 	type DiagramType,
 	type EditorType,
 	EXTENSION_TO_DIAGRAM_TYPE_MAP,
 	EXTENSION_TO_EDITOR_MAP,
 	FILE_EXTENSIONS,
-	NODE_TYPE_TO_EXTENSION_MAP,
-} from "@/pipes/editor";
-
-// 编辑器类型判断函数
-export {
 	getDiagramTypeByFilename,
 	getEditorTypeByFilename,
 	getFileExtension,
@@ -27,4 +23,5 @@ export {
 	isExcalidrawFile,
 	isGrainFile,
 	isLexicalFile,
+	NODE_TYPE_TO_EXTENSION_MAP,
 } from "@/pipes/editor";

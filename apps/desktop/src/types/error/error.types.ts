@@ -22,6 +22,9 @@ export type AppError =
 	| { type: "CYCLE_ERROR"; message: string }
 	| { type: "EXPORT_ERROR"; message: string }
 	| { type: "IMPORT_ERROR"; message: string }
+	| { type: "LOG_STORAGE_ERROR"; message: string; originalError?: unknown }
+	| { type: "LOG_FORMAT_ERROR"; message: string; originalError?: unknown }
+	| { type: "LOG_CONFIG_ERROR"; message: string; originalError?: unknown }
 	| { type: "UNKNOWN_ERROR"; message: string };
 
 /**
@@ -34,6 +37,9 @@ export const ErrorType = {
 	CYCLE_ERROR: "CYCLE_ERROR",
 	EXPORT_ERROR: "EXPORT_ERROR",
 	IMPORT_ERROR: "IMPORT_ERROR",
+	LOG_STORAGE_ERROR: "LOG_STORAGE_ERROR",
+	LOG_FORMAT_ERROR: "LOG_FORMAT_ERROR",
+	LOG_CONFIG_ERROR: "LOG_CONFIG_ERROR",
 	UNKNOWN_ERROR: "UNKNOWN_ERROR",
 } as const;
 
@@ -153,4 +159,31 @@ export const importError = (message: string): AppError => ({
 export const unknownError = (message: string): AppError => ({
 	type: "UNKNOWN_ERROR",
 	message,
+});
+
+/**
+ * 创建日志存储错误
+ */
+export const logStorageError = (message: string, originalError?: unknown): AppError => ({
+	type: "LOG_STORAGE_ERROR",
+	message,
+	originalError,
+});
+
+/**
+ * 创建日志格式错误
+ */
+export const logFormatError = (message: string, originalError?: unknown): AppError => ({
+	type: "LOG_FORMAT_ERROR",
+	message,
+	originalError,
+});
+
+/**
+ * 创建日志配置错误
+ */
+export const logConfigError = (message: string, originalError?: unknown): AppError => ({
+	type: "LOG_CONFIG_ERROR",
+	message,
+	originalError,
 });

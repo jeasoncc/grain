@@ -3,13 +3,13 @@
  */
 
 export type {
-	GlobalUIState,
+	BufferSwitcherDirection,
 	GlobalUIActions,
 	GlobalUIConfig,
-	BufferSwitcherDirection,
+	GlobalUIState,
 } from "./global-ui.interface";
 
 export {
-	DEFAULT_GLOBAL_UI_STATE,
 	DEFAULT_GLOBAL_UI_CONFIG,
+	DEFAULT_GLOBAL_UI_STATE,
 } from "./global-ui.interface";

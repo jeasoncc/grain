@@ -4,8 +4,8 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { TooltipProvider } from "@/views/ui/tooltip";
 import type { EditorTab } from "@/types/editor-tab";
+import { TooltipProvider } from "@/views/ui/tooltip";
 import { EditorTabsContainer } from "./editor-tabs.container.fn";
 
 // Mock the store

@@ -10,13 +10,13 @@ import { saveAs } from "file-saver";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import JSZip from "jszip";
-import { type AppError, dbError, importError } from "@/utils/error.util";
+import { legacyDatabase as database } from "@/io/db/legacy-database";
 import type {
 	BackupData,
 	DatabaseStats,
 	LocalBackupRecord,
 } from "@/types/backup";
-import { legacyDatabase as database } from "@/io/db/legacy-database";
+import { type AppError, dbError, importError } from "@/utils/error.util";
 
 // ============================================================================
 // 备份操作

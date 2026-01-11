@@ -48,13 +48,13 @@ import {
 	updateTheme,
 	updateThemeMode,
 	updateThemeTransition,
-} from "./update-theme.action";
+} from "./update-theme.flow";
 
 // ============================================================================
 // Unit Tests
 // ============================================================================
 
-describe("update-theme.action", () => {
+describe("update-theme.flow", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockGetState.mockReturnValue({

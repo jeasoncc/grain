@@ -17,9 +17,9 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import * as TE from "fp-ts/TaskEither";
+import logger from "@/io/log";
 import type { AppError } from "@/types/error";
 import { dbError } from "@/types/error";
-import logger from '@/io/log';
 import type {
 	AttachmentResponse,
 	AttachmentType,
@@ -763,7 +763,7 @@ export const api = createApiClient();
 // - user.api.ts
 // - tag.api.ts
 // - attachment.api.ts
-// 
+//
 // 请从 @/io/api 导入，它会自动从正确的文件导入
 
 // ============================================

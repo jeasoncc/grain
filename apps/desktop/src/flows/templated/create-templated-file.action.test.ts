@@ -23,7 +23,7 @@ import {
 	createTemplatedFileAsync,
 	type TemplateConfig,
 	type TemplatedFileParams,
-} from "./create-templated-file.action";
+} from "./create-templated-file.flow";
 
 // ============================================================================
 // Mocks
