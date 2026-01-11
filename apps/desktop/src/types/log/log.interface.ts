@@ -6,10 +6,17 @@
  * 所有类型都是不可变的，符合函数式编程原则。
  */
 
+import { z } from "zod";
+
 /**
  * 日志级别枚举
  */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'success' | 'trace';
+
+/**
+ * 日志级别 Zod Schema
+ */
+export const LogLevelSchema = z.enum(['debug', 'info', 'warn', 'error', 'success', 'trace']);
 
 /**
  * 日志条目接口
@@ -32,6 +39,20 @@ export interface LogEntry {
 }
 
 /**
+ * 日志条目 Zod Schema
+ */
+export const LogEntrySchema = z.object({
+  id: z.string().optional(),
+  timestamp: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Invalid timestamp format",
+  }),
+  level: LogLevelSchema,
+  message: z.string().min(1, "日志消息不能为空"),
+  context: z.record(z.string(), z.unknown()).optional(),
+  source: z.string().optional(),
+});
+
+/**
  * 日志配置接口
  * 
  * 控制日志系统的行为
@@ -52,6 +73,23 @@ export interface LogConfig {
 }
 
 /**
+ * 日志配置 Zod Schema
+ */
+export const LogConfigSchema = z.object({
+  enableConsole: z.boolean(),
+  enableStorage: z.boolean(),
+  minLevel: LogLevelSchema,
+  maxEntries: z.number().int().positive().max(100000, "最大条目数不能超过100000"),
+  batchSize: z.number().int().positive().max(1000, "批量大小不能超过1000"),
+  batchDelay: z.number().int().min(0).max(60000, "批量延迟不能超过60秒"),
+});
+
+/**
+ * 部分日志配置 Zod Schema（用于更新配置）
+ */
+export const PartialLogConfigSchema = LogConfigSchema.partial();
+
+/**
  * 日志查询选项
  */
 export interface LogQueryOptions {
@@ -70,6 +108,23 @@ export interface LogQueryOptions {
   /** 消息关键词搜索 */
   readonly messageSearch?: string;
 }
+
+/**
+ * 日志查询选项 Zod Schema
+ */
+export const LogQueryOptionsSchema = z.object({
+  limit: z.number().int().positive().max(10000).optional(),
+  offset: z.number().int().min(0).optional(),
+  levelFilter: z.array(LogLevelSchema).optional(),
+  startTime: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Invalid start time format",
+  }).optional(),
+  endTime: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Invalid end time format",
+  }).optional(),
+  sourceFilter: z.string().optional(),
+  messageSearch: z.string().optional(),
+});
 
 /**
  * 日志查询结果
@@ -132,12 +187,22 @@ export const LOG_LEVEL_ICONS: Record<LogLevel, string> = {
 } as const;
 
 /**
+ * 日志配置验证结果
+ */
+export interface LogConfigValidationResult {
+  readonly isValid: boolean;
+  readonly errors: string[];
+  readonly warnings?: string[];
+}
+
+/**
  * 日志错误类型
  */
 export interface LogError {
-  readonly type: 'LOG_STORAGE_ERROR' | 'LOG_FORMAT_ERROR' | 'LOG_CONFIG_ERROR';
+  readonly type: 'LOG_STORAGE_ERROR' | 'LOG_FORMAT_ERROR' | 'LOG_CONFIG_ERROR' | 'LOG_VALIDATION_ERROR';
   readonly message: string;
   readonly originalError?: unknown;
+  readonly field?: string;
 }
 
 /**

@@ -8,7 +8,7 @@
 
 import * as TE from "fp-ts/TaskEither";
 import { pipe } from "fp-ts/function";
-import type { LogLevel, LogConfig } from "@/types/log/log.interface";
+import type { LogLevel, LogConfig, LogConfigValidationResult } from "@/types/log/log.interface";
 import type { AppError } from "@/types/error/error.types";
 import { logConfigError } from "@/types/error/error.types";
 import { DEFAULT_LOG_CONFIG, LOG_LEVEL_PRIORITY } from "@/types/log/log.interface";
@@ -223,55 +223,60 @@ export const getCurrentLogConfig = (): ExtendedLogConfig =>
  * 验证日志配置
  * 
  * @param config - 要验证的配置
- * @returns 验证结果
+ * @returns TaskEither<AppError, LogConfigValidationResult>
  */
-export const validateLogConfig = (
+export const validateLogConfigFlow = (
   config: Partial<ExtendedLogConfig>,
-): ConfigValidationResult => {
-  const errors: string[] = [];
-  const warnings: string[] = [];
+): TE.TaskEither<AppError, LogConfigValidationResult> => {
+  return TE.tryCatch(
+    async () => {
+      const errors: string[] = [];
+      const warnings: string[] = [];
 
-  // 使用 Zod 进行基础验证
-  const mergedConfig = { ...DEFAULT_EXTENDED_LOG_CONFIG, ...config };
-  const validation = ExtendedLogConfigSchema.safeParse(mergedConfig);
+      // 使用 Zod 进行基础验证
+      const mergedConfig = { ...DEFAULT_EXTENDED_LOG_CONFIG, ...config };
+      const validation = ExtendedLogConfigSchema.safeParse(mergedConfig);
 
-  if (!validation.success) {
-    errors.push(...validation.error.issues.map(err => 
-      `${err.path.join('.')}: ${err.message}`
-    ));
-  }
+      if (!validation.success) {
+        errors.push(...validation.error.issues.map(err => 
+          `${err.path.join('.')}: ${err.message}`
+        ));
+      }
 
-  // 自定义验证规则
-  if (config.batchSize && config.batchDelay !== undefined) {
-    if (config.batchSize > 1 && config.batchDelay === 0) {
-      warnings.push("批量大小 > 1 但延迟为 0，将使用异步队列模式");
-    }
-  }
+      // 自定义验证规则
+      if (config.batchSize && config.batchDelay !== undefined) {
+        if (config.batchSize > 1 && config.batchDelay === 0) {
+          warnings.push("批量大小 > 1 但延迟为 0，将使用异步队列模式");
+        }
+      }
 
-  if (config.maxEntries && config.autoCleanup?.maxEntries) {
-    if (config.autoCleanup.maxEntries > config.maxEntries) {
-      warnings.push("自动清理的最大条目数大于日志配置的最大条目数");
-    }
-  }
+      if (config.maxEntries && config.autoCleanup?.maxEntries) {
+        if (config.autoCleanup.maxEntries > config.maxEntries) {
+          warnings.push("自动清理的最大条目数大于日志配置的最大条目数");
+        }
+      }
 
-  if (config.minLevel) {
-    const levelPriority = LOG_LEVEL_PRIORITY[config.minLevel];
-    if (levelPriority >= LOG_LEVEL_PRIORITY.warn) {
-      warnings.push(`最小日志级别设置为 ${config.minLevel}，可能会丢失重要的调试信息`);
-    }
-  }
+      if (config.minLevel) {
+        const levelPriority = LOG_LEVEL_PRIORITY[config.minLevel];
+        if (levelPriority >= LOG_LEVEL_PRIORITY.warn) {
+          warnings.push(`最小日志级别设置为 ${config.minLevel}，可能会丢失重要的调试信息`);
+        }
+      }
 
-  if (config.autoCleanup?.enabled === false && config.maxEntries) {
-    if (config.maxEntries > 50000) {
-      warnings.push("禁用自动清理且最大条目数较大，可能导致存储空间不足");
-    }
-  }
+      if (config.autoCleanup?.enabled === false && config.maxEntries) {
+        if (config.maxEntries > 50000) {
+          warnings.push("禁用自动清理且最大条目数较大，可能导致存储空间不足");
+        }
+      }
 
-  return {
-    isValid: errors.length === 0,
-    errors,
-    warnings,
-  };
+      return {
+        isValid: errors.length === 0,
+        errors,
+        warnings,
+      };
+    },
+    (error) => logConfigError(`Configuration validation failed: ${String(error)}`)
+  );
 };
 
 /**
@@ -283,39 +288,43 @@ export const validateLogConfig = (
 export const updateLogConfig = (
   config: Partial<ExtendedLogConfig>,
 ): TE.TaskEither<AppError, ExtendedLogConfig> => {
-  const currentConfig = getCurrentLogConfig();
-  const newConfig = { ...currentConfig, ...config };
+  return pipe(
+    validateLogConfigFlow(config),
+    TE.chain((validation) => {
+      if (!validation.isValid) {
+        return TE.left(logConfigError(
+          `Invalid log configuration: ${validation.errors.join(", ")}`
+        ));
+      }
 
-  // 验证配置
-  const validation = validateLogConfig(newConfig);
-  if (!validation.isValid) {
-    return TE.left({
-      type: "LOG_CONFIG_ERROR",
-      message: `Invalid log configuration: ${validation.errors.join(", ")}`,
-    });
-  }
+      const currentConfig = getCurrentLogConfig();
+      const newConfig = { ...currentConfig, ...config };
 
-  // 保存配置
-  const success = setJson(STORAGE_KEYS.LOG_CONFIG, newConfig);
-  if (!success) {
-    return TE.left({
-      type: "LOG_CONFIG_ERROR",
-      message: "Failed to save log configuration",
-    });
-  }
+      // 保存配置
+      const success = setJson(STORAGE_KEYS.LOG_CONFIG, newConfig);
+      if (!success) {
+        return TE.left(logConfigError(
+          "Failed to save log configuration"
+        ));
+      }
 
-  // 如果自动清理配置有变化，更新自动清理系统
-  if (config.autoCleanup) {
-    return pipe(
-      updateAutoCleanupConfig(config.autoCleanup),
-      TE.map(() => {
-        restartAutoCleanupTimer(newConfig.autoCleanup);
-        return newConfig;
-      }),
-    );
-  }
+      // 如果自动清理配置有变化，更新自动清理系统
+      if (config.autoCleanup) {
+        return pipe(
+          updateAutoCleanupConfig(config.autoCleanup),
+          TE.mapLeft((error) => logConfigError(
+            `Failed to update auto cleanup config: ${error.message}`
+          )),
+          TE.map(() => {
+            restartAutoCleanupTimer(newConfig.autoCleanup);
+            return newConfig;
+          }),
+        );
+      }
 
-  return TE.right(newConfig);
+      return TE.right(newConfig);
+    })
+  );
 };
 
 /**
@@ -362,10 +371,9 @@ export const applyLogConfigPreset = (
   const preset = presets.find(p => p.name === presetName);
 
   if (!preset) {
-    return TE.left({
-      type: "LOG_CONFIG_ERROR",
-      message: `Configuration preset '${presetName}' not found`,
-    });
+    return TE.left(logConfigError(
+      `Configuration preset '${presetName}' not found`
+    ));
   }
 
   return updateLogConfig(preset.config as Partial<ExtendedLogConfig>);
@@ -380,49 +388,51 @@ export const applyLogConfigPreset = (
 export const saveLogConfigPreset = (
   preset: LogConfigPreset,
 ): TE.TaskEither<AppError, void> => {
-  // 验证预设配置
-  const validation = validateLogConfig(preset.config as Partial<ExtendedLogConfig>);
-  if (!validation.isValid) {
-    return TE.left({
-      type: "LOG_CONFIG_ERROR",
-      message: `Invalid preset configuration: ${validation.errors.join(", ")}`,
-    });
-  }
+  return pipe(
+    validateLogConfigFlow(preset.config as Partial<ExtendedLogConfig>),
+    TE.chain((validation) => {
+      if (!validation.isValid) {
+        return TE.left(logConfigError(
+          `Invalid preset configuration: ${validation.errors.join(", ")}`
+        ));
+      }
 
-  // 检查是否与内置预设重名
-  const builtinNames = BUILTIN_CONFIG_PRESETS.map(p => p.name);
-  if (builtinNames.includes(preset.name)) {
-    return TE.left(logConfigError(
-      `Cannot override builtin preset '${preset.name}'`
-    ));
-  }
+      // 检查是否与内置预设重名
+      const builtinNames = BUILTIN_CONFIG_PRESETS.map(p => p.name);
+      if (builtinNames.includes(preset.name)) {
+        return TE.left(logConfigError(
+          `Cannot override builtin preset '${preset.name}'`
+        ));
+      }
 
-  const customPresets = getJson(
-    STORAGE_KEYS.LOG_CONFIG_PRESETS,
-    z.array(z.object({
-      name: z.string(),
-      description: z.string(),
-      config: z.record(z.unknown()),
-    })),
-    [] as Array<{ name: string; description: string; config: Record<string, unknown> }>,
+      const customPresets = getJson(
+        STORAGE_KEYS.LOG_CONFIG_PRESETS,
+        z.array(z.object({
+          name: z.string(),
+          description: z.string(),
+          config: z.record(z.string(), z.unknown()),
+        })),
+        [] as Array<{ name: string; description: string; config: Record<string, unknown> }>,
+      );
+
+      // 更新或添加预设
+      const existingIndex = customPresets.findIndex(p => p.name === preset.name);
+      if (existingIndex >= 0) {
+        customPresets[existingIndex] = preset;
+      } else {
+        customPresets.push(preset);
+      }
+
+      const success = setJson(STORAGE_KEYS.LOG_CONFIG_PRESETS, customPresets);
+      if (!success) {
+        return TE.left(logConfigError(
+          "Failed to save configuration preset"
+        ));
+      }
+
+      return TE.right(undefined);
+    })
   );
-
-  // 更新或添加预设
-  const existingIndex = customPresets.findIndex(p => p.name === preset.name);
-  if (existingIndex >= 0) {
-    customPresets[existingIndex] = preset;
-  } else {
-    customPresets.push(preset);
-  }
-
-  const success = setJson(STORAGE_KEYS.LOG_CONFIG_PRESETS, customPresets);
-  if (!success) {
-    return TE.left(logConfigError(
-      "Failed to save configuration preset"
-    ));
-  }
-
-  return TE.right(undefined);
 };
 
 /**
@@ -437,10 +447,9 @@ export const deleteLogConfigPreset = (
   // 检查是否为内置预设
   const builtinNames = BUILTIN_CONFIG_PRESETS.map(p => p.name);
   if (builtinNames.includes(presetName)) {
-    return TE.left({
-      type: "LOG_CONFIG_ERROR",
-      message: `Cannot delete builtin preset '${presetName}'`,
-    });
+    return TE.left(logConfigError(
+      `Cannot delete builtin preset '${presetName}'`
+    ));
   }
 
   const customPresets = getJson(
@@ -456,18 +465,16 @@ export const deleteLogConfigPreset = (
   const filteredPresets = customPresets.filter(p => p.name !== presetName);
   
   if (filteredPresets.length === customPresets.length) {
-    return TE.left({
-      type: "LOG_CONFIG_ERROR",
-      message: `Configuration preset '${presetName}' not found`,
-    });
+    return TE.left(logConfigError(
+      `Configuration preset '${presetName}' not found`
+    ));
   }
 
   const success = setJson(STORAGE_KEYS.LOG_CONFIG_PRESETS, filteredPresets);
   if (!success) {
-    return TE.left({
-      type: "LOG_CONFIG_ERROR",
-      message: "Failed to delete configuration preset",
-    });
+    return TE.left(logConfigError(
+      "Failed to delete configuration preset"
+    ));
   }
 
   return TE.right(undefined);
@@ -500,10 +507,9 @@ export const importLogConfig = (
     const config = JSON.parse(configJson) as Partial<ExtendedLogConfig>;
     return updateLogConfig(config);
   } catch (error) {
-    return TE.left({
-      type: "LOG_CONFIG_ERROR",
-      message: `Invalid configuration JSON: ${String(error)}`,
-    });
+    return TE.left(logConfigError(
+      `Invalid configuration JSON: ${String(error)}`
+    ));
   }
 };
 

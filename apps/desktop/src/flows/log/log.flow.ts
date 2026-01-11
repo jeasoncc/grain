@@ -58,7 +58,7 @@ import {
 import {
   getCurrentLogConfig as getCurrentExtendedLogConfig,
   updateLogConfig as updateExtendedLogConfig,
-  validateLogConfig,
+  validateLogConfigFlow as validateLogConfig,
   applyLogConfigPreset,
   getLogConfigPresets,
 } from "./config.flow";
@@ -399,11 +399,9 @@ export const updateExtendedLogConfigFlow = (config: any) => updateExtendedLogCon
  * 验证日志配置
  * 
  * @param config - 要验证的配置
- * @returns 验证结果
+ * @returns TaskEither<AppError, LogConfigValidationResult>
  */
-export const validateLogConfigFlow = (config: any) => {
-  return TE.right(validateLogConfig(config));
-};
+export const validateLogConfigFlow = (config: any) => validateLogConfig(config);
 
 /**
  * 应用日志配置预设

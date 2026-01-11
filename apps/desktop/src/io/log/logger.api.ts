@@ -23,7 +23,6 @@ import {
   getRecentErrorsFlow,
   getLogsBySourceFlow,
   autoCleanupLogFlow,
-  validateLogConfigFlow,
   handleLogErrorFlow,
   flushPendingLogsFlow,
   getLogBufferStatusFlow,
@@ -42,6 +41,7 @@ import {
   applyLogConfigPresetFlow,
   getLogConfigPresetsFlow,
 } from "@/flows/log/log.flow";
+import { validateLogConfigFlow } from "@/flows/log/config.flow";
 
 // ============================================================================
 // 全局日志配置
@@ -80,18 +80,18 @@ export const updateLogConfig = (config: Partial<LogConfig>): TE.TaskEither<AppEr
 export const getCurrentLogConfig = (): LogConfig => currentConfig;
 
 // ============================================================================
-// 基础日志记录函数
+// 异步日志记录函数（返回 TaskEither）
 // ============================================================================
 
 /**
- * 记录调试日志
+ * 异步记录调试日志
  * 
  * @param message - 日志消息
  * @param context - 上下文信息
  * @param source - 日志来源
  * @returns TaskEither<AppError, void>
  */
-export const logDebug = (
+export const logDebugAsync = (
   message: string,
   context?: Record<string, unknown>,
   source?: string,
@@ -107,14 +107,14 @@ export const logDebug = (
   );
 
 /**
- * 记录信息日志
+ * 异步记录信息日志
  * 
  * @param message - 日志消息
  * @param context - 上下文信息
  * @param source - 日志来源
  * @returns TaskEither<AppError, void>
  */
-export const logInfo = (
+export const logInfoAsync = (
   message: string,
   context?: Record<string, unknown>,
   source?: string,
@@ -130,14 +130,14 @@ export const logInfo = (
   );
 
 /**
- * 记录成功日志
+ * 异步记录成功日志
  * 
  * @param message - 日志消息
  * @param context - 上下文信息
  * @param source - 日志来源
  * @returns TaskEither<AppError, void>
  */
-export const logSuccess = (
+export const logSuccessAsync = (
   message: string,
   context?: Record<string, unknown>,
   source?: string,
@@ -153,14 +153,14 @@ export const logSuccess = (
   );
 
 /**
- * 记录警告日志
+ * 异步记录警告日志
  * 
  * @param message - 日志消息
  * @param context - 上下文信息
  * @param source - 日志来源
  * @returns TaskEither<AppError, void>
  */
-export const logWarn = (
+export const logWarnAsync = (
   message: string,
   context?: Record<string, unknown>,
   source?: string,
@@ -176,14 +176,14 @@ export const logWarn = (
   );
 
 /**
- * 记录错误日志
+ * 异步记录错误日志
  * 
  * @param message - 日志消息
  * @param context - 上下文信息
  * @param source - 日志来源
  * @returns TaskEither<AppError, void>
  */
-export const logError = (
+export const logErrorAsync = (
   message: string,
   context?: Record<string, unknown>,
   source?: string,
@@ -199,14 +199,14 @@ export const logError = (
   );
 
 /**
- * 记录跟踪日志
+ * 异步记录跟踪日志
  * 
  * @param message - 日志消息
  * @param context - 上下文信息
  * @param source - 日志来源
  * @returns TaskEither<AppError, void>
  */
-export const logTrace = (
+export const logTraceAsync = (
   message: string,
   context?: Record<string, unknown>,
   source?: string,
@@ -222,7 +222,41 @@ export const logTrace = (
   );
 
 // ============================================================================
-// 便捷的同步日志函数（Fire-and-forget）
+// 向后兼容的异步函数别名
+// ============================================================================
+
+/**
+ * @deprecated 使用 logDebugAsync 代替
+ */
+export const logDebug = logDebugAsync;
+
+/**
+ * @deprecated 使用 logInfoAsync 代替
+ */
+export const logInfo = logInfoAsync;
+
+/**
+ * @deprecated 使用 logSuccessAsync 代替
+ */
+export const logSuccess = logSuccessAsync;
+
+/**
+ * @deprecated 使用 logWarnAsync 代替
+ */
+export const logWarn = logWarnAsync;
+
+/**
+ * @deprecated 使用 logErrorAsync 代替
+ */
+export const logError = logErrorAsync;
+
+/**
+ * @deprecated 使用 logTraceAsync 代替
+ */
+export const logTrace = logTraceAsync;
+
+// ============================================================================
+// 同步日志函数（Fire-and-forget，主要使用接口）
 // ============================================================================
 
 /**
@@ -237,7 +271,7 @@ export const debug = (
   context?: Record<string, unknown>,
   source?: string,
 ): void => {
-  logDebug(message, context, source)();
+  logDebugAsync(message, context, source)();
 };
 
 /**
@@ -252,7 +286,7 @@ export const info = (
   context?: Record<string, unknown>,
   source?: string,
 ): void => {
-  logInfo(message, context, source)();
+  logInfoAsync(message, context, source)();
 };
 
 /**
@@ -267,7 +301,7 @@ export const success = (
   context?: Record<string, unknown>,
   source?: string,
 ): void => {
-  logSuccess(message, context, source)();
+  logSuccessAsync(message, context, source)();
 };
 
 /**
@@ -282,7 +316,7 @@ export const warn = (
   context?: Record<string, unknown>,
   source?: string,
 ): void => {
-  logWarn(message, context, source)();
+  logWarnAsync(message, context, source)();
 };
 
 /**
@@ -297,7 +331,7 @@ export const error = (
   context?: Record<string, unknown>,
   source?: string,
 ): void => {
-  logError(message, context, source)();
+  logErrorAsync(message, context, source)();
 };
 
 /**
@@ -312,7 +346,7 @@ export const trace = (
   context?: Record<string, unknown>,
   source?: string,
 ): void => {
-  logTrace(message, context, source)();
+  logTraceAsync(message, context, source)();
 };
 
 // ============================================================================
