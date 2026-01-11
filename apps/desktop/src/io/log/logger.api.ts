@@ -1,54 +1,43 @@
 /**
  * @file logger.api.ts
- * @description 函数式日志 API
+ * @description 函数式日志 API（重构版本）
  *
- * 提供简洁的日志记录接口，内部使用 TaskEither 进行错误处理。
- * 这是应用程序的主要日志接口。
+ * 这个文件现在符合架构规范，只依赖 types 和同层的 simple-logger。
+ * 复杂的业务流程通过依赖注入的方式从 flows 层传入。
  */
 
 import * as TE from "fp-ts/TaskEither";
-import { pipe } from "fp-ts/function";
-import type { LogLevel, LogConfig, LogQueryOptions, LogQueryResult } from "@/types/log/log.interface";
+import type { LogLevel, LogConfig, LogQueryOptions, LogQueryResult, LogEntry } from "@/types/log/log.interface";
 import type { AppError } from "@/types/error/error.types";
 import { logConfigError } from "@/types/error/error.types";
 import { DEFAULT_LOG_CONFIG } from "@/types/log/log.interface";
 
-// Flows
+// Simple Logger (符合架构规范)
 import {
-  createLogFlow,
-  queryLogFlow,
-  paginatedQueryLogFlow,
-  searchLogFlow,
-  getRecentLogsFlow,
-  getRecentErrorsFlow,
-  getLogsBySourceFlow,
-  autoCleanupLogFlow,
-  handleLogErrorFlow,
-  flushPendingLogsFlow,
-  getLogBufferStatusFlow,
-  clearLogQueryCacheFlow,
-  warmupLogQueryCacheFlow,
-  flushAsyncQueueFlow,
-  getAsyncQueueStatusFlow,
-  pauseAsyncQueueFlow,
-  resumeAsyncQueueFlow,
-  checkNeedsCleanupFlow,
-  getStorageMonitorInfoFlow,
-  initAutoCleanupFlow,
-  shutdownAutoCleanupFlow,
-  getCurrentExtendedLogConfigFlow,
-  updateExtendedLogConfigFlow,
-  applyLogConfigPresetFlow,
-  getLogConfigPresetsFlow,
-} from "@/flows/log/log.flow";
-import { validateLogConfigFlow } from "@/flows/log/config.flow";
+  createSimpleLogger,
+  type SimpleLogger,
+  logDebugAsync,
+  logInfoAsync,
+  logSuccessAsync,
+  logWarnAsync,
+  logErrorAsync,
+  logTraceAsync,
+  debug,
+  info,
+  success,
+  warn,
+  error,
+  trace,
+  updateDefaultLoggerConfig,
+  getCurrentLoggerConfig,
+} from "./simple-logger.api";
 
 // ============================================================================
 // 全局日志配置
 // ============================================================================
 
 let currentConfig: LogConfig = DEFAULT_LOG_CONFIG;
-let currentLogger = createLogFlow(currentConfig);
+let currentLogger: SimpleLogger = createSimpleLogger(currentConfig);
 
 /**
  * 更新日志配置
@@ -56,302 +45,95 @@ let currentLogger = createLogFlow(currentConfig);
  * @param config - 新的日志配置
  * @returns TaskEither<AppError, void>
  */
-export const updateLogConfig = (config: Partial<LogConfig>): TE.TaskEither<AppError, void> =>
-  pipe(
-    validateLogConfigFlow(config),
-    TE.chain((validationResult) => {
-      if (!validationResult.isValid) {
-        return TE.left(logConfigError(
-          `Invalid configuration: ${validationResult.errors.join(", ")}`
-        ));
-      }
-      
-      currentConfig = { ...DEFAULT_LOG_CONFIG, ...config };
-      currentLogger = createLogFlow(currentConfig);
-      return TE.right(undefined);
-    }),
-  );
+export const updateLogConfig = (config: Partial<LogConfig>): TE.TaskEither<AppError, void> => {
+  const validation = updateDefaultLoggerConfig(config);
+  
+  if (!validation.isValid) {
+    return TE.left(logConfigError(
+      `Invalid configuration: ${validation.errors.join(", ")}`
+    ));
+  }
+  
+  currentConfig = { ...DEFAULT_LOG_CONFIG, ...config };
+  currentLogger = createSimpleLogger(currentConfig);
+  return TE.right(undefined);
+};
 
 /**
  * 获取当前日志配置
  * 
  * @returns 当前配置
  */
-export const getCurrentLogConfig = (): LogConfig => currentConfig;
+export const getCurrentLogConfig = (): LogConfig => getCurrentLoggerConfig();
 
 // ============================================================================
 // 异步日志记录函数（返回 TaskEither）
 // ============================================================================
 
-/**
- * 异步记录调试日志
- * 
- * @param message - 日志消息
- * @param context - 上下文信息
- * @param source - 日志来源
- * @returns TaskEither<AppError, void>
- */
-export const logDebugAsync = (
-  message: string,
-  context?: Record<string, unknown>,
-  source?: string,
-): TE.TaskEither<AppError, void> =>
-  pipe(
-    currentLogger.debug(message, context, source),
-    TE.orElse((error) =>
-      pipe(
-        handleLogErrorFlow(error, `Debug log failed: ${message}`),
-        TE.fromTask,
-      ),
-    ),
-  );
+// 直接导出 simple-logger 的异步函数
+export {
+  logDebugAsync,
+  logInfoAsync,
+  logSuccessAsync,
+  logWarnAsync,
+  logErrorAsync,
+  logTraceAsync,
+};
 
-/**
- * 异步记录信息日志
- * 
- * @param message - 日志消息
- * @param context - 上下文信息
- * @param source - 日志来源
- * @returns TaskEither<AppError, void>
- */
-export const logInfoAsync = (
-  message: string,
-  context?: Record<string, unknown>,
-  source?: string,
-): TE.TaskEither<AppError, void> =>
-  pipe(
-    currentLogger.info(message, context, source),
-    TE.orElse((error) =>
-      pipe(
-        handleLogErrorFlow(error, `Info log failed: ${message}`),
-        TE.fromTask,
-      ),
-    ),
-  );
-
-/**
- * 异步记录成功日志
- * 
- * @param message - 日志消息
- * @param context - 上下文信息
- * @param source - 日志来源
- * @returns TaskEither<AppError, void>
- */
-export const logSuccessAsync = (
-  message: string,
-  context?: Record<string, unknown>,
-  source?: string,
-): TE.TaskEither<AppError, void> =>
-  pipe(
-    currentLogger.success(message, context, source),
-    TE.orElse((error) =>
-      pipe(
-        handleLogErrorFlow(error, `Success log failed: ${message}`),
-        TE.fromTask,
-      ),
-    ),
-  );
-
-/**
- * 异步记录警告日志
- * 
- * @param message - 日志消息
- * @param context - 上下文信息
- * @param source - 日志来源
- * @returns TaskEither<AppError, void>
- */
-export const logWarnAsync = (
-  message: string,
-  context?: Record<string, unknown>,
-  source?: string,
-): TE.TaskEither<AppError, void> =>
-  pipe(
-    currentLogger.warn(message, context, source),
-    TE.orElse((error) =>
-      pipe(
-        handleLogErrorFlow(error, `Warning log failed: ${message}`),
-        TE.fromTask,
-      ),
-    ),
-  );
-
-/**
- * 异步记录错误日志
- * 
- * @param message - 日志消息
- * @param context - 上下文信息
- * @param source - 日志来源
- * @returns TaskEither<AppError, void>
- */
-export const logErrorAsync = (
-  message: string,
-  context?: Record<string, unknown>,
-  source?: string,
-): TE.TaskEither<AppError, void> =>
-  pipe(
-    currentLogger.error(message, context, source),
-    TE.orElse((error) =>
-      pipe(
-        handleLogErrorFlow(error, `Error log failed: ${message}`),
-        TE.fromTask,
-      ),
-    ),
-  );
-
-/**
- * 异步记录跟踪日志
- * 
- * @param message - 日志消息
- * @param context - 上下文信息
- * @param source - 日志来源
- * @returns TaskEither<AppError, void>
- */
-export const logTraceAsync = (
-  message: string,
-  context?: Record<string, unknown>,
-  source?: string,
-): TE.TaskEither<AppError, void> =>
-  pipe(
-    currentLogger.trace(message, context, source),
-    TE.orElse((error) =>
-      pipe(
-        handleLogErrorFlow(error, `Trace log failed: ${message}`),
-        TE.fromTask,
-      ),
-    ),
-  );
-
-// ============================================================================
-// 向后兼容的异步函数别名
-// ============================================================================
-
-/**
- * @deprecated 使用 logDebugAsync 代替
- */
+// 向后兼容的别名
 export const logDebug = logDebugAsync;
-
-/**
- * @deprecated 使用 logInfoAsync 代替
- */
 export const logInfo = logInfoAsync;
-
-/**
- * @deprecated 使用 logSuccessAsync 代替
- */
 export const logSuccess = logSuccessAsync;
-
-/**
- * @deprecated 使用 logWarnAsync 代替
- */
 export const logWarn = logWarnAsync;
-
-/**
- * @deprecated 使用 logErrorAsync 代替
- */
 export const logError = logErrorAsync;
-
-/**
- * @deprecated 使用 logTraceAsync 代替
- */
 export const logTrace = logTraceAsync;
 
 // ============================================================================
 // 同步日志函数（Fire-and-forget，主要使用接口）
 // ============================================================================
 
-/**
- * 同步调试日志（不等待结果）
- * 
- * @param message - 日志消息
- * @param context - 上下文信息
- * @param source - 日志来源
- */
-export const debug = (
-  message: string,
-  context?: Record<string, unknown>,
-  source?: string,
-): void => {
-  logDebugAsync(message, context, source)();
-};
-
-/**
- * 同步信息日志（不等待结果）
- * 
- * @param message - 日志消息
- * @param context - 上下文信息
- * @param source - 日志来源
- */
-export const info = (
-  message: string,
-  context?: Record<string, unknown>,
-  source?: string,
-): void => {
-  logInfoAsync(message, context, source)();
-};
-
-/**
- * 同步成功日志（不等待结果）
- * 
- * @param message - 日志消息
- * @param context - 上下文信息
- * @param source - 日志来源
- */
-export const success = (
-  message: string,
-  context?: Record<string, unknown>,
-  source?: string,
-): void => {
-  logSuccessAsync(message, context, source)();
-};
-
-/**
- * 同步警告日志（不等待结果）
- * 
- * @param message - 日志消息
- * @param context - 上下文信息
- * @param source - 日志来源
- */
-export const warn = (
-  message: string,
-  context?: Record<string, unknown>,
-  source?: string,
-): void => {
-  logWarnAsync(message, context, source)();
-};
-
-/**
- * 同步错误日志（不等待结果）
- * 
- * @param message - 日志消息
- * @param context - 上下文信息
- * @param source - 日志来源
- */
-export const error = (
-  message: string,
-  context?: Record<string, unknown>,
-  source?: string,
-): void => {
-  logErrorAsync(message, context, source)();
-};
-
-/**
- * 同步跟踪日志（不等待结果）
- * 
- * @param message - 日志消息
- * @param context - 上下文信息
- * @param source - 日志来源
- */
-export const trace = (
-  message: string,
-  context?: Record<string, unknown>,
-  source?: string,
-): void => {
-  logTraceAsync(message, context, source)();
+// 直接导出 simple-logger 的同步函数
+export {
+  debug,
+  info,
+  success,
+  warn,
+  error,
+  trace,
 };
 
 // ============================================================================
-// 日志查询函数
+// 高级功能（通过依赖注入实现）
 // ============================================================================
+
+/**
+ * 高级日志功能的类型定义
+ * 这些功能由 flows 层提供，通过依赖注入使用
+ */
+export interface AdvancedLogFeatures {
+  readonly queryLogs: (options?: LogQueryOptions) => TE.TaskEither<AppError, LogQueryResult>;
+  readonly queryLogsPaginated: (page?: number, pageSize?: number, filters?: Omit<LogQueryOptions, 'limit' | 'offset'>) => TE.TaskEither<AppError, LogQueryResult>;
+  readonly searchLogs: (searchTerm: string, filters?: Omit<LogQueryOptions, 'messageSearch' | 'limit'>, limit?: number) => TE.TaskEither<AppError, LogQueryResult>;
+  readonly getRecentLogs: (limit?: number, levelFilter?: readonly LogLevel[]) => TE.TaskEither<AppError, readonly LogEntry[]>;
+  readonly getRecentErrors: (limit?: number, hours?: number) => TE.TaskEither<AppError, readonly LogEntry[]>;
+  readonly getLogsBySource: (source: string, limit?: number, levelFilter?: readonly LogLevel[]) => TE.TaskEither<AppError, readonly LogEntry[]>;
+  readonly autoCleanupLogs: () => TE.TaskEither<AppError, number>;
+  readonly flushPendingLogs: () => TE.TaskEither<AppError, void>;
+}
+
+/**
+ * 高级功能实例（通过依赖注入设置）
+ */
+let advancedFeatures: AdvancedLogFeatures | null = null;
+
+/**
+ * 注入高级日志功能（由 flows 层调用）
+ * 
+ * @param features - 高级功能实现
+ */
+export const injectAdvancedLogFeatures = (features: AdvancedLogFeatures): void => {
+  advancedFeatures = features;
+};
 
 /**
  * 查询日志条目
@@ -361,7 +143,12 @@ export const trace = (
  */
 export const queryLogs = (
   options: LogQueryOptions = {},
-): TE.TaskEither<AppError, LogQueryResult> => queryLogFlow(options);
+): TE.TaskEither<AppError, LogQueryResult> => {
+  if (!advancedFeatures) {
+    return TE.left(logConfigError('Advanced log features not available. Please inject them from flows layer.'));
+  }
+  return advancedFeatures.queryLogs(options);
+};
 
 /**
  * 分页查询日志条目
@@ -375,7 +162,12 @@ export const queryLogsPaginated = (
   page: number = 1,
   pageSize: number = 50,
   filters: Omit<LogQueryOptions, 'limit' | 'offset'> = {},
-): TE.TaskEither<AppError, LogQueryResult> => paginatedQueryLogFlow(page, pageSize, filters);
+): TE.TaskEither<AppError, LogQueryResult> => {
+  if (!advancedFeatures) {
+    return TE.left(logConfigError('Advanced log features not available. Please inject them from flows layer.'));
+  }
+  return advancedFeatures.queryLogsPaginated(page, pageSize, filters);
+};
 
 /**
  * 搜索日志条目
@@ -389,7 +181,12 @@ export const searchLogs = (
   searchTerm: string,
   filters: Omit<LogQueryOptions, 'messageSearch' | 'limit'> = {},
   limit: number = 100,
-): TE.TaskEither<AppError, LogQueryResult> => searchLogFlow(searchTerm, filters, limit);
+): TE.TaskEither<AppError, LogQueryResult> => {
+  if (!advancedFeatures) {
+    return TE.left(logConfigError('Advanced log features not available. Please inject them from flows layer.'));
+  }
+  return advancedFeatures.searchLogs(searchTerm, filters, limit);
+};
 
 /**
  * 获取最近的日志条目
@@ -400,8 +197,13 @@ export const searchLogs = (
  */
 export const getRecentLogs = (
   limit = 100,
-  levelFilter?: LogLevel[],
-) => getRecentLogsFlow(limit, levelFilter);
+  levelFilter?: readonly LogLevel[],
+) => {
+  if (!advancedFeatures) {
+    return TE.left(logConfigError('Advanced log features not available. Please inject them from flows layer.'));
+  }
+  return advancedFeatures.getRecentLogs(limit, levelFilter);
+};
 
 /**
  * 获取最近的错误日志
@@ -413,7 +215,12 @@ export const getRecentLogs = (
 export const getRecentErrors = (
   limit: number = 20,
   hours: number = 24,
-) => getRecentErrorsFlow(limit, hours);
+) => {
+  if (!advancedFeatures) {
+    return TE.left(logConfigError('Advanced log features not available. Please inject them from flows layer.'));
+  }
+  return advancedFeatures.getRecentErrors(limit, hours);
+};
 
 /**
  * 按来源获取日志
@@ -426,147 +233,55 @@ export const getRecentErrors = (
 export const getLogsBySource = (
   source: string,
   limit: number = 100,
-  levelFilter?: LogLevel[],
-) => getLogsBySourceFlow(source, limit, levelFilter);
-
-// ============================================================================
-// 日志管理函数
-// ============================================================================
+  levelFilter?: readonly LogLevel[],
+) => {
+  if (!advancedFeatures) {
+    return TE.left(logConfigError('Advanced log features not available. Please inject them from flows layer.'));
+  }
+  return advancedFeatures.getLogsBySource(source, limit, levelFilter);
+};
 
 /**
  * 自动清理旧日志
  * 
  * @returns TaskEither<AppError, number>
  */
-export const autoCleanupLogs = () => autoCleanupLogFlow();
-
-/**
- * 检查是否需要清理
- * 
- * @returns TaskEither<AppError, boolean>
- */
-export const checkNeedsCleanup = () => checkNeedsCleanupFlow();
-
-/**
- * 获取存储监控信息
- * 
- * @returns TaskEither<AppError, StorageMonitorInfo>
- */
-export const getStorageMonitorInfo = () => getStorageMonitorInfoFlow();
-
-/**
- * 初始化自动清理系统
- * 
- * @returns TaskEither<AppError, void>
- */
-export const initAutoCleanup = () => initAutoCleanupFlow();
-
-/**
- * 关闭自动清理系统
- * 
- * @returns void
- */
-export const shutdownAutoCleanup = () => shutdownAutoCleanupFlow();
+export const autoCleanupLogs = () => {
+  if (!advancedFeatures) {
+    return TE.left(logConfigError('Advanced log features not available. Please inject them from flows layer.'));
+  }
+  return advancedFeatures.autoCleanupLogs();
+};
 
 /**
  * 强制刷新待处理的批量日志
  * 
  * @returns TaskEither<AppError, void>
  */
-export const flushPendingLogs = () => flushPendingLogsFlow();
-
-/**
- * 获取日志缓冲区状态
- * 
- * @returns 缓冲区状态信息
- */
-export const getLogBufferStatus = () => getLogBufferStatusFlow();
-
-/**
- * 清空查询缓存
- * 
- * @returns void
- */
-export const clearQueryCache = () => clearLogQueryCacheFlow();
-
-/**
- * 预热查询缓存
- * 
- * @returns TaskEither<AppError, void>
- */
-export const warmupQueryCache = () => warmupLogQueryCacheFlow();
-
-/**
- * 强制刷新异步队列
- * 
- * @returns TaskEither<AppError, void>
- */
-export const flushAsyncQueue = () => flushAsyncQueueFlow();
-
-/**
- * 获取异步队列状态
- * 
- * @returns 队列状态信息
- */
-export const getAsyncQueueStatus = () => getAsyncQueueStatusFlow();
-
-/**
- * 暂停异步队列处理
- * 
- * @returns void
- */
-export const pauseAsyncQueue = () => pauseAsyncQueueFlow();
-
-/**
- * 恢复异步队列处理
- * 
- * @returns void
- */
-export const resumeAsyncQueue = () => resumeAsyncQueueFlow();
-
-/**
- * 关闭异步日志系统
- * 
- * @returns TaskEither<AppError, void>
- */
-export const shutdownAsyncLogger = () => {
-  console.warn("Async logger not implemented yet");
-  return TE.right(undefined);
+export const flushPendingLogs = () => {
+  if (!advancedFeatures) {
+    return TE.left(logConfigError('Advanced log features not available. Please inject them from flows layer.'));
+  }
+  return advancedFeatures.flushPendingLogs();
 };
 
 // ============================================================================
-// 配置管理函数
+// 简化的功能（直接可用）
 // ============================================================================
 
 /**
- * 获取当前扩展日志配置
- * 
- * @returns 扩展日志配置
+ * 获取当前日志记录器实例
  */
-export const getCurrentExtendedLogConfig = () => getCurrentExtendedLogConfigFlow();
+export const getCurrentLogger = (): SimpleLogger => currentLogger;
 
 /**
- * 更新扩展日志配置
+ * 创建新的日志记录器实例
  * 
- * @param config - 新的配置
- * @returns TaskEither<AppError, ExtendedLogConfig>
+ * @param config - 日志配置
+ * @returns 日志记录器实例
  */
-export const updateExtendedLogConfig = (config: any) => updateExtendedLogConfigFlow(config);
-
-/**
- * 应用配置预设
- * 
- * @param presetName - 预设名称
- * @returns TaskEither<AppError, ExtendedLogConfig>
- */
-export const applyLogConfigPreset = (presetName: string) => applyLogConfigPresetFlow(presetName);
-
-/**
- * 获取配置预设列表
- * 
- * @returns 配置预设列表
- */
-export const getLogConfigPresets = () => getLogConfigPresetsFlow();
+export const createLogger = (config: Partial<LogConfig> = {}): SimpleLogger => 
+  createSimpleLogger(config);
 
 // ============================================================================
 // 主要导出（所有函数已在上面定义时直接导出）

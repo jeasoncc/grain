@@ -21,7 +21,11 @@ import {
   filterByLevel,
 } from "@/pipes/log/log.format.pipe";
 
-// IO
+// IO (符合架构规范)
+import {
+  createSimpleLogger,
+  type SimpleLogger,
+} from "@/io/log/simple-logger.api";
 import {
   saveLogToSQLite,
   saveLogsBatchToSQLite,
@@ -74,6 +78,9 @@ import {
  * @returns 日志记录函数
  */
 export const createLogFlow = (config: LogConfig = DEFAULT_LOG_CONFIG) => {
+  // 使用简化的日志记录器（符合架构规范）
+  const simpleLogger = createSimpleLogger(config);
+  
   // 根据配置决定使用哪种日志模式
   const useBatchLogging = config.batchSize > 1 && config.batchDelay > 0;
   const useAsyncLogging = config.batchDelay === 0; // 如果延迟为0，使用异步队列模式
@@ -88,57 +95,14 @@ export const createLogFlow = (config: LogConfig = DEFAULT_LOG_CONFIG) => {
     return createBatchLogFlow(config);
   }
 
-  /**
-   * 记录日志的核心流程（直接写入模式）
-   * 
-   * @param level - 日志级别
-   * @param message - 日志消息
-   * @param context - 上下文信息
-   * @param source - 日志来源
-   * @returns TaskEither<AppError, void>
-   */
-  const logEntry = (
-    level: LogLevel,
-    message: string,
-    context?: Record<string, unknown>,
-    source?: string,
-  ): TE.TaskEither<AppError, void> => {
-    // 检查是否应该记录此级别的日志
-    if (!shouldLog(level, config.minLevel)) {
-      return TE.right(undefined);
-    }
-
-    // 格式化日志条目
-    const entry = formatLogEntry(level, message, context, source);
-
-    // 控制台输出（如果启用）
-    if (config.enableConsole) {
-      const consoleOutput = addConsoleColors(entry);
-      console.log(consoleOutput);
-    }
-
-    // 持久化存储（如果启用）
-    if (config.enableStorage) {
-      return saveLogToSQLite(entry);
-    }
-
-    return TE.right(undefined);
-  };
-
   return {
-    logEntry,
-    debug: (message: string, context?: Record<string, unknown>, source?: string) =>
-      logEntry('debug', message, context, source),
-    info: (message: string, context?: Record<string, unknown>, source?: string) =>
-      logEntry('info', message, context, source),
-    success: (message: string, context?: Record<string, unknown>, source?: string) =>
-      logEntry('success', message, context, source),
-    warn: (message: string, context?: Record<string, unknown>, source?: string) =>
-      logEntry('warn', message, context, source),
-    error: (message: string, context?: Record<string, unknown>, source?: string) =>
-      logEntry('error', message, context, source),
-    trace: (message: string, context?: Record<string, unknown>, source?: string) =>
-      logEntry('trace', message, context, source),
+    logEntry: simpleLogger.log,
+    debug: simpleLogger.debug,
+    info: simpleLogger.info,
+    success: simpleLogger.success,
+    warn: simpleLogger.warn,
+    error: simpleLogger.error,
+    trace: simpleLogger.trace,
   };
 };
 

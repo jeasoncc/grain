@@ -34,7 +34,7 @@ import { quickTestLogSystem } from "@/flows/log/test-logger.flow";
  * 示例 1: 基本日志记录（异步版本）
  */
 export const basicLoggingExample = async () => {
-  console.log("=== 基本日志记录示例 ===");
+  info("=== 基本日志记录示例 ===");
 
   // 使用 TaskEither 进行错误处理的异步日志
   const result = await pipe(
@@ -45,9 +45,9 @@ export const basicLoggingExample = async () => {
   )();
 
   if (result._tag === 'Right') {
-    console.log("✅ 所有日志记录成功");
+    info("✅ 所有日志记录成功");
   } else {
-    console.error("❌ 日志记录失败:", result.left);
+    error("❌ 日志记录失败", { error: result.left });
   }
 };
 
@@ -55,7 +55,7 @@ export const basicLoggingExample = async () => {
  * 示例 2: 便捷的同步日志记录（Fire-and-forget）
  */
 export const convenientLoggingExample = () => {
-  console.log("=== 便捷日志记录示例 ===");
+  info("=== 便捷日志记录示例 ===");
 
   // 不需要等待结果的同步日志记录
   debug("调试信息：用户点击了按钮", { buttonId: "submit" }, "ui");
@@ -64,29 +64,29 @@ export const convenientLoggingExample = () => {
   warn("磁盘空间不足", { available: "100MB" }, "system");
   error("API 调用失败", { endpoint: "/api/users", status: 500 }, "api");
 
-  console.log("📝 同步日志已发送（不等待结果）");
+  info("📝 同步日志已发送（不等待结果）");
 };
 
 /**
  * 示例 3: 日志查询
  */
 export const logQueryExample = async () => {
-  console.log("=== 日志查询示例 ===");
+  info("=== 日志查询示例 ===");
 
   const result = await queryLogs({
     limit: 5,
-    level_filter: ['error', 'warn'],
-    source_filter: 'api',
+    levelFilter: ['error', 'warn'],
+    sourceFilter: 'api',
   })();
 
   if (result._tag === 'Right') {
     const logs = result.right;
-    console.log(`找到 ${logs.entries.length} 条日志:`);
+    info(`找到 ${logs.entries.length} 条日志`);
     logs.entries.forEach(log => {
-      console.log(`  [${log.level}] ${log.message} (${log.source})`);
+      info(`  [${log.level}] ${log.message} (${log.source})`);
     });
   } else {
-    console.error("查询失败:", result.left);
+    error("查询失败", { error: result.left });
   }
 };
 
@@ -98,30 +98,28 @@ export const logQueryExample = async () => {
  * 示例 4: 在业务流程中使用日志
  */
 export const businessFlowWithLoggingExample = async () => {
-  console.log("=== 业务流程日志示例 ===");
+  info("=== 业务流程日志示例 ===");
 
   // 模拟一个用户注册流程
-  const registerUser = (userData: { email: string; username: string }) =>
+  const registerUser = (userData: { readonly email: string; readonly username: string }) =>
     pipe(
       logInfo("开始用户注册流程", userData, "user-registration"),
       TE.chain(() => {
         // 模拟验证邮箱
         if (!userData.email.includes('@')) {
-          return pipe(
-            logError("邮箱格式无效", { email: userData.email }, "validation"),
-            TE.chain(() => TE.left({ type: "VALIDATION_ERROR" as const, message: "Invalid email" }))
-          );
+          error("邮箱格式无效", { email: userData.email }, "validation");
+          return TE.left({ type: "VALIDATION_ERROR" as const, message: "Invalid email" });
         }
         return logInfo("邮箱验证通过", { email: userData.email }, "validation");
       }),
-      TE.chain(() => {
+      TE.chain(() => 
         // 模拟保存到数据库
-        return logInfo("保存用户到数据库", { username: userData.username }, "database");
-      }),
-      TE.chain(() => {
+        logInfo("保存用户到数据库", { username: userData.username }, "database")
+      ),
+      TE.chain(() => 
         // 模拟发送欢迎邮件
-        return logInfo("发送欢迎邮件", { email: userData.email }, "email");
-      }),
+        logInfo("发送欢迎邮件", { email: userData.email }, "email")
+      ),
       TE.chain(() => logSuccess("用户注册完成", userData, "user-registration")),
     );
 
@@ -132,9 +130,9 @@ export const businessFlowWithLoggingExample = async () => {
   })();
 
   if (result._tag === 'Right') {
-    console.log("✅ 用户注册成功");
+    info("✅ 用户注册成功");
   } else {
-    console.error("❌ 用户注册失败:", result.left);
+    error("❌ 用户注册失败", { error: result.left });
   }
 };
 
@@ -142,7 +140,7 @@ export const businessFlowWithLoggingExample = async () => {
  * 示例 5: 错误处理和降级
  */
 export const errorHandlingExample = async () => {
-  console.log("=== 错误处理示例 ===");
+  info("=== 错误处理示例 ===");
 
   // 模拟一个可能失败的操作
   const riskyOperation = () =>
@@ -155,13 +153,17 @@ export const errorHandlingExample = async () => {
         }
         return TE.right("success");
       }),
-      TE.chain(() => logSuccess("风险操作成功", {}, "risky-op")),
+      TE.chainFirst(() => logSuccess("风险操作成功", {}, "risky-op")),
       // 错误处理：即使主操作失败，也要记录错误日志
-      TE.orElse((error) =>
+      TE.orElse((error) => 
         pipe(
-          logError("风险操作失败，启用降级方案", { error: error.message }, "risky-op"),
-          TE.chain(() => logInfo("使用缓存数据", {}, "fallback")),
-          TE.map(() => "fallback-success")
+          TE.right("fallback-success"),
+          TE.chainFirst(() => TE.fromTask(() => Promise.resolve(
+            logError("风险操作失败，启用降级方案", { error: error.message }, "risky-op")()
+          ))),
+          TE.chainFirst(() => TE.fromTask(() => Promise.resolve(
+            logInfo("使用缓存数据", {}, "fallback")()
+          )))
         )
       )
     );
@@ -169,9 +171,9 @@ export const errorHandlingExample = async () => {
   const result = await riskyOperation()();
   
   if (result._tag === 'Right') {
-    console.log("✅ 操作完成:", result.right);
+    info("✅ 操作完成", { result: result.right });
   } else {
-    console.error("❌ 操作失败:", result.left);
+    error("❌ 操作失败", { error: result.left });
   }
 };
 
@@ -185,8 +187,8 @@ export const errorHandlingExample = async () => {
  * 注意：由于系统尚未发布，不需要迁移功能
  */
 export const migrationExample = async () => {
-  console.log("=== 日志迁移示例 ===");
-  console.log("ℹ️ 迁移功能已移除 - 系统尚未发布，无需迁移");
+  info("=== 日志迁移示例 ===");
+  info("ℹ️ 迁移功能已移除 - 系统尚未发布，无需迁移");
 };
 
 // ============================================================================
@@ -196,40 +198,41 @@ export const migrationExample = async () => {
 /**
  * 运行所有示例
  */
-export const runAllExamples = async () => {
-  console.log("🚀 开始运行函数式日志系统示例...\n");
+export const runAllExamples = (): Promise<void> => {
+  info("🚀 开始运行函数式日志系统示例...");
 
-  try {
-    // 首先测试日志系统
-    console.log("1. 测试日志系统...");
-    quickTestLogSystem();
-    
-    // 等待一下让测试完成
-    await new Promise(resolve => setTimeout(resolve, 2000));
+  const delay = (ms: number) => new Promise(resolve => globalThis.setTimeout(resolve, ms));
 
-    // 运行各种示例
-    await basicLoggingExample();
-    console.log();
+  return TE.tryCatch(
+    async () => {
+      // 首先测试日志系统
+      info("1. 测试日志系统...");
+      quickTestLogSystem();
+      
+      // 等待一下让测试完成
+      await delay(2000);
 
-    convenientLoggingExample();
-    console.log();
+      // 运行各种示例
+      await basicLoggingExample();
 
-    await logQueryExample();
-    console.log();
+      convenientLoggingExample();
 
-    await businessFlowWithLoggingExample();
-    console.log();
+      await logQueryExample();
 
-    await errorHandlingExample();
-    console.log();
+      await businessFlowWithLoggingExample();
 
-    await migrationExample();
-    console.log();
+      await errorHandlingExample();
 
-    console.log("🎉 所有示例运行完成！");
-  } catch (error) {
-    console.error("💥 示例运行过程中发生错误:", error);
-  }
+      await migrationExample();
+
+      info("🎉 所有示例运行完成！");
+    },
+    (error) => ({ type: "EXAMPLE_ERROR" as const, message: String(error) })
+  )().then(result => {
+    if (result._tag === 'Left') {
+      error("💥 示例运行过程中发生错误", { error: result.left });
+    }
+  });
 };
 
 // ============================================================================
@@ -240,11 +243,11 @@ export const runAllExamples = async () => {
  * 对比旧的命令式日志和新的函数式日志
  */
 export const comparisonExample = () => {
-  console.log("=== 旧 vs 新日志方式对比 ===");
+  info("=== 旧 vs 新日志方式对比 ===");
 
   // 旧的方式（命令式）
-  console.log("❌ 旧的命令式方式:");
-  console.log(`
+  info("❌ 旧的命令式方式:");
+  info(`
     import logger from "@/io/log/logger";
     
     // 命令式，有副作用
@@ -257,8 +260,8 @@ export const comparisonExample = () => {
   `);
 
   // 新的方式（函数式）
-  console.log("✅ 新的函数式方式:");
-  console.log(`
+  info("✅ 新的函数式方式:");
+  info(`
     import { logInfo, logError, info, error } from "@/io/log/logger.api";
     import { pipe } from "fp-ts/function";
     import * as TE from "fp-ts/TaskEither";
@@ -288,6 +291,8 @@ export const comparisonExample = () => {
 };
 
 // 如果直接运行此文件，执行所有示例
-if (typeof window === 'undefined' && require.main === module) {
+// Note: This is for Node.js environments only
+if (typeof globalThis !== 'undefined' && typeof window === 'undefined') {
+  // Only run in Node.js environment
   runAllExamples();
 }

@@ -42,7 +42,7 @@ export default [
       'grain/no-console-log': 'error',
       'grain/no-date-constructor': 'error',
       'grain/no-lodash': 'error',
-      // 'grain/no-mutation': 'error',
+      'grain/no-mutation': 'error',
       
       // 架构层级规则
       'grain/layer-dependencies': 'error',

@@ -12,7 +12,7 @@ import noTryCatch from './rules/no-try-catch.js';
 import noConsoleLog from './rules/no-console-log.js';
 import noDateConstructor from './rules/no-date-constructor.js';
 import noLodash from './rules/no-lodash.js';
-// import noMutation from './rules/no-mutation.js';
+import noMutation from './rules/no-mutation.js';
 import layerDependencies from './rules/layer-dependencies.js';
 import noReactInPureLayers from './rules/no-react-in-pure-layers.js';
 import noSideEffectsInPipes from './rules/no-side-effects-in-pipes.js';
@@ -51,7 +51,7 @@ const plugin = {
     'no-console-log': noConsoleLog,
     'no-date-constructor': noDateConstructor,
     'no-lodash': noLodash,
-    // 'no-mutation': noMutation,
+    'no-mutation': noMutation,
     
     // Architecture Layer Rules
     'layer-dependencies': layerDependencies,
@@ -94,7 +94,7 @@ const plugin = {
         'grain/no-console-log': 'error',
         'grain/no-date-constructor': 'error',
         'grain/no-lodash': 'error',
-        // 'grain/no-mutation': 'error',
+        'grain/no-mutation': 'error',
         'grain/layer-dependencies': 'error',
         'grain/no-react-in-pure-layers': 'error',
         'grain/no-side-effects-in-pipes': 'error',
@@ -108,7 +108,7 @@ const plugin = {
         'grain/no-console-log': 'error',
         'grain/no-date-constructor': 'error',
         'grain/no-lodash': 'error',
-        // 'grain/no-mutation': 'error',
+        'grain/no-mutation': 'error',
         'grain/layer-dependencies': 'error',
         'grain/no-react-in-pure-layers': 'error',
         'grain/no-side-effects-in-pipes': 'error',
