@@ -1,6 +1,9 @@
-import { createRouter, RouterProvider } from "@tanstack/react-router";
+import { createRouter, Router, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
+import { pipe } from "fp-ts/function";
+import * as O from "fp-ts/Option";
+import * as TE from "fp-ts/TaskEither";
 import { routeTree } from "./routeTree.gen";
 import "./styles.css";
 import "@grain/editor-lexical/styles";
@@ -8,46 +11,92 @@ import "@grain/editor-lexical/styles";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
-// Create the router instance
-const router = createRouter({
-	routeTree,
-	context: {},
-	defaultPreload: "intent",
-	scrollRestoration: true,
-});
+// 类型定义
+interface AppConfig {
+	readonly router: ReturnType<typeof createRouter>;
+	readonly queryClient: QueryClient;
+	readonly isDev: boolean;
+}
+
+interface RootElement {
+	readonly element: HTMLElement;
+	readonly isEmpty: boolean;
+}
 
 // 注册类型（类型提示）
 declare module "@tanstack/react-router" {
 	interface Register {
-		router: typeof router;
+		router: typeof Router;
 	}
 }
 
-// 创建 QueryClient
-const queryClient = new QueryClient();
+// 纯函数：创建应用配置
+const createAppConfig = (): AppConfig => ({
+	router: createRouter({
+		routeTree,
+		context: {},
+		defaultPreload: "intent",
+		scrollRestoration: true,
+	}),
+	queryClient: new QueryClient(),
+	isDev: import.meta.env.DEV,
+});
 
-async function main() {
-	// Legacy database opens automatically in constructor
-	// No need to call open() or initDatabase() - Rust backend handles initialization
+// 纯函数：获取根元素
+const getRootElement = (): O.Option<RootElement> =>
+	pipe(
+		O.fromNullable(document.getElementById("app")),
+		O.map((element) => ({
+			element,
+			isEmpty: !element.innerHTML,
+		}))
+	);
 
-	// 确保数据库操作完成后再渲染应用
-	const rootElement = document.getElementById("app");
-	if (rootElement && !rootElement.innerHTML) {
-		const root = ReactDOM.createRoot(rootElement);
-		root.render(
-			<StrictMode>
-				<QueryClientProvider client={queryClient}>
-					<RouterProvider router={router} />
-					{import.meta.env.DEV && (
-						<ReactQueryDevtools
-							initialIsOpen={false}
-							buttonPosition="bottom-left"
-						/>
-					)}
-				</QueryClientProvider>
-			</StrictMode>,
-		);
-	}
-}
+// 纯函数：创建 React 应用
+const createApp = (config: AppConfig) => (
+	<StrictMode>
+		<QueryClientProvider client={config.queryClient}>
+			<RouterProvider router={config.router} />
+			{config.isDev && (
+				<ReactQueryDevtools
+					initialIsOpen={false}
+					buttonPosition="bottom-left"
+				/>
+			)}
+		</QueryClientProvider>
+	</StrictMode>
+);
 
-main();
+// IO 函数：渲染应用
+const renderApp = (rootElement: RootElement, config: AppConfig): TE.TaskEither<Error, void> =>
+	TE.tryCatch(
+		async () => {
+			const root = ReactDOM.createRoot(rootElement.element);
+			root.render(createApp(config));
+		},
+		(error) => new Error(`Failed to render app: ${error}`)
+	);
+
+// 主流程：函数式管道
+const main = (): TE.TaskEither<Error, void> =>
+	pipe(
+		createAppConfig(),
+		(config) =>
+			pipe(
+				getRootElement(),
+				O.filter((root) => root.isEmpty),
+				O.fold(
+					() => TE.left(new Error("Root element not found or already rendered")),
+					(rootElement) => renderApp(rootElement, config)
+				)
+			)
+	);
+
+// 启动应用
+pipe(
+	main(),
+	TE.fold(
+		(error) => async () => console.error("App initialization failed:", error),
+		() => async () => console.log("App initialized successfully")
+	)
+)();
