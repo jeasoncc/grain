@@ -5,6 +5,7 @@
 
 // 新的函数式日志 API
 export * from './logger.api';
+export { default } from './logger.api';
 
 // SQLite 存储 API
 export * from './log.storage.api';

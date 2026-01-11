@@ -25,6 +25,7 @@ export type AppError =
 	| { type: "LOG_STORAGE_ERROR"; message: string; originalError?: unknown }
 	| { type: "LOG_FORMAT_ERROR"; message: string; originalError?: unknown }
 	| { type: "LOG_CONFIG_ERROR"; message: string; originalError?: unknown }
+	| { type: "LOG_QUEUE_ERROR"; message: string; originalError?: unknown }
 	| { type: "UNKNOWN_ERROR"; message: string };
 
 /**
@@ -40,6 +41,7 @@ export const ErrorType = {
 	LOG_STORAGE_ERROR: "LOG_STORAGE_ERROR",
 	LOG_FORMAT_ERROR: "LOG_FORMAT_ERROR",
 	LOG_CONFIG_ERROR: "LOG_CONFIG_ERROR",
+	LOG_QUEUE_ERROR: "LOG_QUEUE_ERROR",
 	UNKNOWN_ERROR: "UNKNOWN_ERROR",
 } as const;
 
@@ -184,6 +186,15 @@ export const logFormatError = (message: string, originalError?: unknown): AppErr
  */
 export const logConfigError = (message: string, originalError?: unknown): AppError => ({
 	type: "LOG_CONFIG_ERROR",
+	message,
+	originalError,
+});
+
+/**
+ * 创建日志队列错误
+ */
+export const logQueueError = (message: string, originalError?: unknown): AppError => ({
+	type: "LOG_QUEUE_ERROR",
 	message,
 	originalError,
 });

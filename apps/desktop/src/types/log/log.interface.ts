@@ -145,6 +145,22 @@ export interface LogError {
  */
 export interface LogStats {
   /** 总日志条目数 */
+  readonly total_entries: number;
+  /** 按级别分组的统计 */
+  readonly by_level: Record<LogLevel, number>;
+  /** 最早日志时间 */
+  readonly earliest_entry?: string;
+  /** 最新日志时间 */
+  readonly latest_entry?: string;
+  /** 存储大小（字节） */
+  readonly storage_size: number;
+}
+
+/**
+ * 日志统计信息（前端友好格式）
+ */
+export interface LogStatsFormatted {
+  /** 总日志条目数 */
   readonly totalEntries: number;
   /** 按级别分组的统计 */
   readonly byLevel: Record<LogLevel, number>;

@@ -19,17 +19,49 @@ import {
   addConsoleColors,
   shouldLog,
   filterByLevel,
-  sortByTimestamp,
-  isValidLogConfig,
 } from "@/pipes/log/log.format.pipe";
 
 // IO
 import {
   saveLogToSQLite,
   saveLogsBatchToSQLite,
-  queryLogsFromSQLite,
-  clearOldLogsFromSQLite,
 } from "@/io/log/log.storage.api";
+
+// Batch logging
+import {
+  createBatchLogFlow,
+  forceFlushAllLogs,
+  getBufferStatus,
+} from "./batch-log.flow";
+
+// Query optimization
+import {
+  optimizedQueryLogsFlow,
+  paginatedQueryLogsFlow,
+  searchLogsFlow,
+  getRecentErrorLogsFlow,
+  getLogsBySourceFlow as getLogsBySourceOptimizedFlow,
+  clearQueryCache,
+  warmupQueryCache,
+} from "./query-optimization.flow";
+
+// Auto-cleanup
+import {
+  executeAutoCleanup,
+  checkNeedsCleanup,
+  getStorageMonitorInfo,
+  initAutoCleanup,
+  shutdownAutoCleanup,
+} from "./auto-cleanup.flow";
+
+// Configuration
+import {
+  getCurrentLogConfig as getCurrentExtendedLogConfig,
+  updateLogConfig as updateExtendedLogConfig,
+  validateLogConfig,
+  applyLogConfigPreset,
+  getLogConfigPresets,
+} from "./config.flow";
 
 // ============================================================================
 // 日志记录流程
@@ -42,8 +74,22 @@ import {
  * @returns 日志记录函数
  */
 export const createLogFlow = (config: LogConfig = DEFAULT_LOG_CONFIG) => {
+  // 根据配置决定使用哪种日志模式
+  const useBatchLogging = config.batchSize > 1 && config.batchDelay > 0;
+  const useAsyncLogging = config.batchDelay === 0; // 如果延迟为0，使用异步队列模式
+  
+  if (useAsyncLogging) {
+    // 使用异步队列日志流程 - 需要实现
+    console.warn("Async logging not yet implemented, falling back to direct mode");
+  }
+  
+  if (useBatchLogging) {
+    // 使用批量日志流程
+    return createBatchLogFlow(config);
+  }
+
   /**
-   * 记录日志的核心流程
+   * 记录日志的核心流程（直接写入模式）
    * 
    * @param level - 日志级别
    * @param message - 日志消息
@@ -130,7 +176,7 @@ export const saveBatchLogFlow = (
 // ============================================================================
 
 /**
- * 查询日志条目流程
+ * 查询日志条目流程（优化版本）
  * 
  * @param options - 查询选项
  * @returns TaskEither<AppError, LogQueryResult>
@@ -138,16 +184,37 @@ export const saveBatchLogFlow = (
 export const queryLogFlow = (
   options: LogQueryOptions = {},
 ): TE.TaskEither<AppError, LogQueryResult> =>
-  pipe(
-    queryLogsFromSQLite(options),
-    TE.map((result) => ({
-      ...result,
-      entries: pipe(
-        result.entries,
-        (entries) => sortByTimestamp(entries, false), // 最新的在前
-      ),
-    })),
-  );
+  optimizedQueryLogsFlow(options);
+
+/**
+ * 分页查询日志条目
+ * 
+ * @param page - 页码（从1开始）
+ * @param pageSize - 每页大小
+ * @param filters - 过滤条件
+ * @returns TaskEither<AppError, LogQueryResult>
+ */
+export const paginatedQueryLogFlow = (
+  page: number = 1,
+  pageSize: number = 50,
+  filters: Omit<LogQueryOptions, 'limit' | 'offset'> = {},
+): TE.TaskEither<AppError, LogQueryResult> =>
+  paginatedQueryLogsFlow(page, pageSize, filters);
+
+/**
+ * 搜索日志条目
+ * 
+ * @param searchTerm - 搜索关键词
+ * @param filters - 其他过滤条件
+ * @param limit - 结果限制
+ * @returns TaskEither<AppError, LogQueryResult>
+ */
+export const searchLogFlow = (
+  searchTerm: string,
+  filters: Omit<LogQueryOptions, 'messageSearch' | 'limit'> = {},
+  limit: number = 100,
+): TE.TaskEither<AppError, LogQueryResult> =>
+  searchLogsFlow(searchTerm, filters, limit);
 
 /**
  * 获取最近的日志条目
@@ -161,7 +228,7 @@ export const getRecentLogsFlow = (
   levelFilter?: LogLevel[],
 ): TE.TaskEither<AppError, LogEntry[]> =>
   pipe(
-    queryLogsFromSQLite({
+    optimizedQueryLogsFlow({
       limit,
       levelFilter,
       offset: 0,
@@ -169,48 +236,189 @@ export const getRecentLogsFlow = (
     TE.map((result) => result.entries),
   );
 
+/**
+ * 获取最近的错误日志
+ * 
+ * @param limit - 限制数量
+ * @param hours - 最近几小时
+ * @returns TaskEither<AppError, LogEntry[]>
+ */
+export const getRecentErrorsFlow = (
+  limit: number = 20,
+  hours: number = 24,
+): TE.TaskEither<AppError, LogEntry[]> =>
+  getRecentErrorLogsFlow(limit, hours);
+
+/**
+ * 按来源获取日志
+ * 
+ * @param source - 日志来源
+ * @param limit - 限制数量
+ * @param levelFilter - 级别过滤
+ * @returns TaskEither<AppError, LogEntry[]>
+ */
+export const getLogsBySourceFlow = (
+  source: string,
+  limit: number = 100,
+  levelFilter?: LogLevel[],
+): TE.TaskEither<AppError, LogEntry[]> =>
+  getLogsBySourceOptimizedFlow(source, limit, levelFilter);
+
 // ============================================================================
-// 日志清理流程
+// 日志管理函数
 // ============================================================================
 
 /**
  * 自动清理旧日志流程
  * 
- * @param config - 日志配置
  * @returns TaskEither<AppError, number> 返回清理的条目数
  */
-export const autoCleanupLogFlow = (): TE.TaskEither<AppError, number> => {
-  // 计算清理日期（保留最近的 maxEntries 条目对应的时间范围）
-  const cleanupDate = new Date();
-  cleanupDate.setDate(cleanupDate.getDate() - 30); // 默认保留30天
+export const autoCleanupLogFlow = (): TE.TaskEither<AppError, number> =>
+  pipe(
+    executeAutoCleanup(),
+    TE.map((stats) => stats.entriesRemoved),
+  );
 
-  return clearOldLogsFromSQLite(cleanupDate.toISOString());
+/**
+ * 检查是否需要清理
+ * 
+ * @returns TaskEither<AppError, boolean>
+ */
+export const checkNeedsCleanupFlow = (): TE.TaskEither<AppError, boolean> =>
+  checkNeedsCleanup();
+
+/**
+ * 获取存储监控信息
+ * 
+ * @returns TaskEither<AppError, StorageMonitorInfo>
+ */
+export const getStorageMonitorInfoFlow = () => getStorageMonitorInfo();
+
+/**
+ * 初始化自动清理系统
+ * 
+ * @returns TaskEither<AppError, void>
+ */
+export const initAutoCleanupFlow = () => initAutoCleanup();
+
+/**
+ * 关闭自动清理系统
+ * 
+ * @returns void
+ */
+export const shutdownAutoCleanupFlow = () => shutdownAutoCleanup();
+
+/**
+ * 强制刷新所有待处理的批量日志
+ * 
+ * @returns TaskEither<AppError, void>
+ */
+export const flushPendingLogsFlow = (): TE.TaskEither<AppError, void> =>
+  forceFlushAllLogs();
+
+/**
+ * 获取日志缓冲区状态
+ * 
+ * @returns 缓冲区状态信息
+ */
+export const getLogBufferStatusFlow = () => getBufferStatus();
+
+/**
+ * 清空查询缓存
+ * 
+ * @returns void
+ */
+export const clearLogQueryCacheFlow = () => clearQueryCache();
+
+/**
+ * 预热查询缓存
+ * 
+ * @returns TaskEither<AppError, void>
+ */
+export const warmupLogQueryCacheFlow = () => warmupQueryCache();
+
+/**
+ * 强制刷新异步队列
+ * 
+ * @returns TaskEither<AppError, void>
+ */
+export const flushAsyncQueueFlow = () => {
+  console.warn("Async queue not implemented yet");
+  return TE.right(undefined);
+};
+
+/**
+ * 获取异步队列状态
+ * 
+ * @returns 队列状态信息
+ */
+export const getAsyncQueueStatusFlow = () => ({
+  queueSize: 0,
+  isProcessing: false,
+  totalProcessed: 0,
+});
+
+/**
+ * 暂停异步队列处理
+ * 
+ * @returns void
+ */
+export const pauseAsyncQueueFlow = () => {
+  console.warn("Async queue not implemented yet");
+};
+
+/**
+ * 恢复异步队列处理
+ * 
+ * @returns void
+ */
+export const resumeAsyncQueueFlow = () => {
+  console.warn("Async queue not implemented yet");
 };
 
 // ============================================================================
-// 配置验证流程
+// 配置管理流程
 // ============================================================================
 
 /**
- * 验证并应用日志配置
+ * 获取当前扩展日志配置
  * 
- * @param config - 日志配置
- * @returns TaskEither<AppError, LogConfig>
+ * @returns 扩展日志配置
  */
-export const validateLogConfigFlow = (
-  config: Partial<LogConfig>,
-): TE.TaskEither<AppError, LogConfig> => {
-  const mergedConfig = { ...DEFAULT_LOG_CONFIG, ...config };
+export const getCurrentExtendedLogConfigFlow = () => getCurrentExtendedLogConfig();
 
-  if (!isValidLogConfig(mergedConfig)) {
-    return TE.left({
-      type: "LOG_CONFIG_ERROR",
-      message: "Invalid log configuration provided",
-    });
-  }
+/**
+ * 更新扩展日志配置
+ * 
+ * @param config - 新的配置
+ * @returns TaskEither<AppError, ExtendedLogConfig>
+ */
+export const updateExtendedLogConfigFlow = (config: any) => updateExtendedLogConfig(config);
 
-  return TE.right(mergedConfig);
+/**
+ * 验证日志配置
+ * 
+ * @param config - 要验证的配置
+ * @returns 验证结果
+ */
+export const validateLogConfigFlow = (config: any) => {
+  return TE.right(validateLogConfig(config));
 };
+
+/**
+ * 应用日志配置预设
+ * 
+ * @param presetName - 预设名称
+ * @returns TaskEither<AppError, ExtendedLogConfig>
+ */
+export const applyLogConfigPresetFlow = (presetName: string) => applyLogConfigPreset(presetName);
+
+/**
+ * 获取所有日志配置预设
+ * 
+ * @returns 配置预设列表
+ */
+export const getLogConfigPresetsFlow = () => getLogConfigPresets();
 
 // ============================================================================
 // 错误处理流程
@@ -229,7 +437,7 @@ export const handleLogErrorFlow = (
   error: AppError,
   fallbackMessage?: string,
 ): T.Task<void> =>
-  T.of(() => {
+  T.fromIO(() => {
     // 降级到控制台输出
     const message = fallbackMessage || `Log operation failed: ${error.message}`;
     console.warn(`⚠️ [LOG_FALLBACK] ${message}`);

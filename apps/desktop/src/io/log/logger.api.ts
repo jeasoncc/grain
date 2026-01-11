@@ -10,16 +10,37 @@ import * as TE from "fp-ts/TaskEither";
 import { pipe } from "fp-ts/function";
 import type { LogLevel, LogConfig, LogQueryOptions, LogQueryResult } from "@/types/log/log.interface";
 import type { AppError } from "@/types/error/error.types";
+import { logConfigError } from "@/types/error/error.types";
 import { DEFAULT_LOG_CONFIG } from "@/types/log/log.interface";
 
 // Flows
 import {
   createLogFlow,
   queryLogFlow,
+  paginatedQueryLogFlow,
+  searchLogFlow,
   getRecentLogsFlow,
+  getRecentErrorsFlow,
+  getLogsBySourceFlow,
   autoCleanupLogFlow,
   validateLogConfigFlow,
   handleLogErrorFlow,
+  flushPendingLogsFlow,
+  getLogBufferStatusFlow,
+  clearLogQueryCacheFlow,
+  warmupLogQueryCacheFlow,
+  flushAsyncQueueFlow,
+  getAsyncQueueStatusFlow,
+  pauseAsyncQueueFlow,
+  resumeAsyncQueueFlow,
+  checkNeedsCleanupFlow,
+  getStorageMonitorInfoFlow,
+  initAutoCleanupFlow,
+  shutdownAutoCleanupFlow,
+  getCurrentExtendedLogConfigFlow,
+  updateExtendedLogConfigFlow,
+  applyLogConfigPresetFlow,
+  getLogConfigPresetsFlow,
 } from "@/flows/log/log.flow";
 
 // ============================================================================
@@ -38,9 +59,16 @@ let currentLogger = createLogFlow(currentConfig);
 export const updateLogConfig = (config: Partial<LogConfig>): TE.TaskEither<AppError, void> =>
   pipe(
     validateLogConfigFlow(config),
-    TE.map((validConfig) => {
-      currentConfig = validConfig;
-      currentLogger = createLogFlow(validConfig);
+    TE.chain((validationResult) => {
+      if (!validationResult.isValid) {
+        return TE.left(logConfigError(
+          `Invalid configuration: ${validationResult.errors.join(", ")}`
+        ));
+      }
+      
+      currentConfig = { ...DEFAULT_LOG_CONFIG, ...config };
+      currentLogger = createLogFlow(currentConfig);
+      return TE.right(undefined);
     }),
   );
 
@@ -302,6 +330,34 @@ export const queryLogs = (
 ): TE.TaskEither<AppError, LogQueryResult> => queryLogFlow(options);
 
 /**
+ * 分页查询日志条目
+ * 
+ * @param page - 页码（从1开始）
+ * @param pageSize - 每页大小
+ * @param filters - 过滤条件
+ * @returns TaskEither<AppError, LogQueryResult>
+ */
+export const queryLogsPaginated = (
+  page: number = 1,
+  pageSize: number = 50,
+  filters: Omit<LogQueryOptions, 'limit' | 'offset'> = {},
+): TE.TaskEither<AppError, LogQueryResult> => paginatedQueryLogFlow(page, pageSize, filters);
+
+/**
+ * 搜索日志条目
+ * 
+ * @param searchTerm - 搜索关键词
+ * @param filters - 其他过滤条件
+ * @param limit - 结果限制
+ * @returns TaskEither<AppError, LogQueryResult>
+ */
+export const searchLogs = (
+  searchTerm: string,
+  filters: Omit<LogQueryOptions, 'messageSearch' | 'limit'> = {},
+  limit: number = 100,
+): TE.TaskEither<AppError, LogQueryResult> => searchLogFlow(searchTerm, filters, limit);
+
+/**
  * 获取最近的日志条目
  * 
  * @param limit - 限制数量
@@ -313,6 +369,32 @@ export const getRecentLogs = (
   levelFilter?: LogLevel[],
 ) => getRecentLogsFlow(limit, levelFilter);
 
+/**
+ * 获取最近的错误日志
+ * 
+ * @param limit - 限制数量
+ * @param hours - 最近几小时
+ * @returns TaskEither<AppError, LogEntry[]>
+ */
+export const getRecentErrors = (
+  limit: number = 20,
+  hours: number = 24,
+) => getRecentErrorsFlow(limit, hours);
+
+/**
+ * 按来源获取日志
+ * 
+ * @param source - 日志来源
+ * @param limit - 限制数量
+ * @param levelFilter - 级别过滤
+ * @returns TaskEither<AppError, LogEntry[]>
+ */
+export const getLogsBySource = (
+  source: string,
+  limit: number = 100,
+  levelFilter?: LogLevel[],
+) => getLogsBySourceFlow(source, limit, levelFilter);
+
 // ============================================================================
 // 日志管理函数
 // ============================================================================
@@ -322,7 +404,135 @@ export const getRecentLogs = (
  * 
  * @returns TaskEither<AppError, number>
  */
-export const autoCleanupLogs = () => autoCleanupLogFlow(currentConfig);
+export const autoCleanupLogs = () => autoCleanupLogFlow();
+
+/**
+ * 检查是否需要清理
+ * 
+ * @returns TaskEither<AppError, boolean>
+ */
+export const checkNeedsCleanup = () => checkNeedsCleanupFlow();
+
+/**
+ * 获取存储监控信息
+ * 
+ * @returns TaskEither<AppError, StorageMonitorInfo>
+ */
+export const getStorageMonitorInfo = () => getStorageMonitorInfoFlow();
+
+/**
+ * 初始化自动清理系统
+ * 
+ * @returns TaskEither<AppError, void>
+ */
+export const initAutoCleanup = () => initAutoCleanupFlow();
+
+/**
+ * 关闭自动清理系统
+ * 
+ * @returns void
+ */
+export const shutdownAutoCleanup = () => shutdownAutoCleanupFlow();
+
+/**
+ * 强制刷新待处理的批量日志
+ * 
+ * @returns TaskEither<AppError, void>
+ */
+export const flushPendingLogs = () => flushPendingLogsFlow();
+
+/**
+ * 获取日志缓冲区状态
+ * 
+ * @returns 缓冲区状态信息
+ */
+export const getLogBufferStatus = () => getLogBufferStatusFlow();
+
+/**
+ * 清空查询缓存
+ * 
+ * @returns void
+ */
+export const clearQueryCache = () => clearLogQueryCacheFlow();
+
+/**
+ * 预热查询缓存
+ * 
+ * @returns TaskEither<AppError, void>
+ */
+export const warmupQueryCache = () => warmupLogQueryCacheFlow();
+
+/**
+ * 强制刷新异步队列
+ * 
+ * @returns TaskEither<AppError, void>
+ */
+export const flushAsyncQueue = () => flushAsyncQueueFlow();
+
+/**
+ * 获取异步队列状态
+ * 
+ * @returns 队列状态信息
+ */
+export const getAsyncQueueStatus = () => getAsyncQueueStatusFlow();
+
+/**
+ * 暂停异步队列处理
+ * 
+ * @returns void
+ */
+export const pauseAsyncQueue = () => pauseAsyncQueueFlow();
+
+/**
+ * 恢复异步队列处理
+ * 
+ * @returns void
+ */
+export const resumeAsyncQueue = () => resumeAsyncQueueFlow();
+
+/**
+ * 关闭异步日志系统
+ * 
+ * @returns TaskEither<AppError, void>
+ */
+export const shutdownAsyncLogger = () => {
+  console.warn("Async logger not implemented yet");
+  return TE.right(undefined);
+};
+
+// ============================================================================
+// 配置管理函数
+// ============================================================================
+
+/**
+ * 获取当前扩展日志配置
+ * 
+ * @returns 扩展日志配置
+ */
+export const getCurrentExtendedLogConfig = () => getCurrentExtendedLogConfigFlow();
+
+/**
+ * 更新扩展日志配置
+ * 
+ * @param config - 新的配置
+ * @returns TaskEither<AppError, ExtendedLogConfig>
+ */
+export const updateExtendedLogConfig = (config: any) => updateExtendedLogConfigFlow(config);
+
+/**
+ * 应用配置预设
+ * 
+ * @param presetName - 预设名称
+ * @returns TaskEither<AppError, ExtendedLogConfig>
+ */
+export const applyLogConfigPreset = (presetName: string) => applyLogConfigPresetFlow(presetName);
+
+/**
+ * 获取配置预设列表
+ * 
+ * @returns 配置预设列表
+ */
+export const getLogConfigPresets = () => getLogConfigPresetsFlow();
 
 // ============================================================================
 // 默认导出（向后兼容）
@@ -347,8 +557,32 @@ export default {
   logTrace,
   // 查询和管理
   queryLogs,
+  queryLogsPaginated,
+  searchLogs,
   getRecentLogs,
+  getRecentErrors,
+  getLogsBySource,
   autoCleanupLogs,
+  flushPendingLogs,
+  getLogBufferStatus,
+  clearQueryCache,
+  warmupQueryCache,
+  // 异步队列管理
+  flushAsyncQueue,
+  getAsyncQueueStatus,
+  pauseAsyncQueue,
+  resumeAsyncQueue,
+  shutdownAsyncLogger,
+  // 自动清理管理
+  checkNeedsCleanup,
+  getStorageMonitorInfo,
+  initAutoCleanup,
+  shutdownAutoCleanup,
+  // 配置管理
   updateLogConfig,
   getCurrentLogConfig,
+  getCurrentExtendedLogConfig,
+  updateExtendedLogConfig,
+  applyLogConfigPreset,
+  getLogConfigPresets,
 };

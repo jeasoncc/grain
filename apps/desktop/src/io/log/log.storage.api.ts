@@ -9,7 +9,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import * as TE from "fp-ts/TaskEither";
 import { pipe } from "fp-ts/function";
-import type { LogEntry, LogQueryOptions, LogQueryResult } from "@/types/log/log.interface";
+import type { LogEntry, LogQueryOptions, LogQueryResult, LogStats, LogStatsFormatted } from "@/types/log/log.interface";
 import type { AppError } from "@/types/error/error.types";
 
 // ============================================================================
@@ -79,18 +79,25 @@ export const queryLogsFromSQLite = (
 /**
  * 获取日志统计信息
  * 
- * @returns TaskEither<AppError, LogStats>
+ * @returns TaskEither<AppError, LogStatsFormatted>
  */
-export const getLogStatsFromSQLite = (): TE.TaskEither<AppError, any> =>
+export const getLogStatsFromSQLite = (): TE.TaskEither<AppError, LogStatsFormatted> =>
   pipe(
     TE.tryCatch(
-      () => invoke<any>("get_log_stats"),
+      () => invoke<LogStats>("get_log_stats"),
       (error): AppError => ({
         type: "LOG_STORAGE_ERROR",
         message: `Failed to get log stats: ${String(error)}`,
         originalError: error,
       }),
     ),
+    TE.map((stats): LogStatsFormatted => ({
+      totalEntries: stats.total_entries,
+      byLevel: stats.by_level,
+      earliestEntry: stats.earliest_entry,
+      latestEntry: stats.latest_entry,
+      storageSize: stats.storage_size,
+    })),
   );
 
 // ============================================================================

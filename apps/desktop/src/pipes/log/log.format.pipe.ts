@@ -245,6 +245,15 @@ export const searchByMessage = (entries: LogEntry[], searchTerm: string): LogEnt
     ),
   );
 
+/**
+ * 在消息中搜索（别名函数，用于查询优化）
+ * 
+ * @param entries - 日志条目数组
+ * @param searchTerm - 搜索关键词
+ * @returns 匹配的日志条目数组
+ */
+export const searchInMessage = searchByMessage;
+
 // ============================================================================
 // 排序和分页
 // ============================================================================
