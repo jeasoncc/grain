@@ -13,7 +13,7 @@
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import * as nodeRepo from "@/io/api/node.api";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import { type AppError, validationError } from "@/utils/error.util";
 
 /**
@@ -37,27 +37,27 @@ export interface ReorderNodesParams {
 export const reorderNodes = (
 	params: ReorderNodesParams,
 ): TE.TaskEither<AppError, void> => {
-	logger.start("[Action] 重新排序节点:", { count: params.nodeIds.length });
+	info("[Action] 重新排序节点", { count: params.nodeIds.length }, "reorder-node.flow");
 
 	// 验证参数
 	if (params.nodeIds.length === 0) {
-		logger.warn("[Action] 重新排序节点: 节点列表为空");
+		warn("[Action] 重新排序节点: 节点列表为空");
 		return TE.right(undefined);
 	}
 
 	// 检查是否有重复的节点 ID
 	const uniqueIds = new Set(params.nodeIds);
 	if (uniqueIds.size !== params.nodeIds.length) {
-		logger.error("[Action] 重新排序节点失败: 存在重复的节点 ID");
+		error("[Action] 重新排序节点失败: 存在重复的节点 ID");
 		return TE.left(validationError("节点 ID 列表中存在重复项", "nodeIds"));
 	}
 
 	return pipe(
 		nodeRepo.reorderNodes([...params.nodeIds]),
 		TE.tap(() => {
-			logger.success("[Action] 节点重新排序成功:", {
+			success("[Action] 节点重新排序成功", {
 				count: params.nodeIds.length,
-			});
+			}, "reorder-node");
 			return TE.right(undefined);
 		}),
 	);

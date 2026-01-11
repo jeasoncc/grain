@@ -24,7 +24,7 @@ import {
 
 // 测试和迁移
 import { quickTestLogSystem } from "@/flows/log/test-logger.flow";
-import { migrateWithProgressFlow } from "@/flows/log/migration.flow";
+// Migration removed - no longer needed since system hasn't been published
 
 // ============================================================================
 // 基本使用示例
@@ -180,24 +180,13 @@ export const errorHandlingExample = async () => {
 // ============================================================================
 
 /**
- * 示例 6: 执行日志迁移
+ * 示例 6: 日志迁移已移除
+ * 
+ * 注意：由于系统尚未发布，不需要迁移功能
  */
 export const migrationExample = async () => {
   console.log("=== 日志迁移示例 ===");
-
-  const result = await migrateWithProgressFlow((progress) => {
-    console.log(`📊 迁移进度: ${progress.progress}% - ${progress.message}`);
-    if (progress.processedCount !== undefined && progress.totalCount !== undefined) {
-      console.log(`   处理进度: ${progress.processedCount}/${progress.totalCount}`);
-    }
-  })();
-
-  if (result._tag === 'Right') {
-    const migrationResult = result.right;
-    console.log("✅ 迁移完成:", migrationResult);
-  } else {
-    console.error("❌ 迁移失败:", result.left);
-  }
+  console.log("ℹ️ 迁移功能已移除 - 系统尚未发布，无需迁移");
 };
 
 // ============================================================================
@@ -270,11 +259,15 @@ export const comparisonExample = () => {
   // 新的方式（函数式）
   console.log("✅ 新的函数式方式:");
   console.log(`
-    import { logInfo, logError } from "@/io/log/logger.api";
+    import { logInfo, logError, info, error } from "@/io/log/logger.api";
     import { pipe } from "fp-ts/function";
     import * as TE from "fp-ts/TaskEither";
     
-    // 函数式，可组合
+    // 便捷的同步方式
+    info("用户登录", { userId: 123 }, "auth");
+    error("登录失败", { error: "invalid password" }, "auth");
+    
+    // 函数式组合方式
     const loginFlow = (credentials) => pipe(
       logInfo("开始登录流程", credentials, "auth"),
       TE.chain(() => validateCredentials(credentials)),
@@ -290,6 +283,7 @@ export const comparisonExample = () => {
     // - 一致的 TaskEither 接口
     // - 纯函数，无副作用
     // - 支持函数式编程模式
+    // - 按需导入，无默认导出
   `);
 };
 

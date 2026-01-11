@@ -11,7 +11,7 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import logger from "@/io/log";
+import { info, success } from "@/io/log/logger.api";
 import { createZipBundle } from "@/pipes/export/export.bundle.fn";
 import type { AppError } from "@/utils/error.util";
 import { exportAll } from "./export-all.flow";
@@ -25,7 +25,7 @@ import { exportAll } from "./export-all.flow";
 export function exportAllAsZip(
 	workspaceId?: string,
 ): TE.TaskEither<AppError, Blob> {
-	logger.start("[Export] 开始导出 ZIP 压缩包...");
+	info("[Export] 开始导出 ZIP 压缩包...", {}, "export-zip");
 
 	return pipe(
 		exportAll(workspaceId),
@@ -33,7 +33,7 @@ export function exportAllAsZip(
 			TE.tryCatch(
 				async () => {
 					const blob = await createZipBundle(jsonData);
-					logger.success("[Export] ZIP 压缩包导出成功");
+					success("[Export] ZIP 压缩包导出成功");
 					return blob;
 				},
 				(error): AppError => ({

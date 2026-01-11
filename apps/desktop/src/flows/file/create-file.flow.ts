@@ -22,7 +22,7 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { openTabFlow } from "@/flows/editor-tabs";
 import * as nodeRepo from "@/io/api/node.api";
-import logger from "@/io/log";
+import { info, debug, success } from "@/io/log/logger.api";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import type { TabType } from "@/types/editor-tab";
 import type { NodeInterface, NodeType } from "@/types/node";
@@ -87,8 +87,8 @@ export const createFile = (
 						collapsed = true,
 					} = params;
 
-					logger.start("[CreateFile] 创建文件:", title, type);
-					logger.debug("[CreateFile] 参数详情:", {
+					info("[CreateFile] 创建文件", { title, type }, "create-file");
+					debug("[CreateFile] 参数详情", {
 						workspaceId,
 						parentId,
 						title,
@@ -121,24 +121,24 @@ export const createFile = (
 					)();
 
 					if (E.isLeft(nodeResult)) {
-						logger.error("[CreateFile] 创建节点失败:", nodeResult.left.message);
+						error("[CreateFile] 创建节点失败", { message: nodeResult.left.message }, "create-file");
 						throw new Error(nodeResult.left.message);
 					}
 
 					const node = nodeResult.right;
-					logger.info("[CreateFile] 节点创建成功:", node.id);
-					logger.debug("[CreateFile] 节点详情:", {
+					info("[CreateFile] 节点创建成功", { nodeId: node.id }, "create-file");
+					debug("[CreateFile] 节点详情", {
 						id: node.id,
 						title: node.title,
 						type: node.type,
 						workspace: node.workspace,
 						parent: node.parent,
-					});
+					}, "create-file");
 
 					// 3. 更新 Store（非文件夹）
 					let tabId: string | null = null;
 					if (type !== "folder") {
-						logger.debug("[CreateFile] 开始更新编辑器状态...");
+						debug("[CreateFile] 开始更新编辑器状态...");
 						const store = useEditorTabsStore.getState();
 
 						// 解析内容（如果有）
@@ -146,10 +146,10 @@ export const createFile = (
 						if (content) {
 							try {
 								parsedContent = JSON.parse(content);
-								logger.debug("[CreateFile] 内容解析成功");
+								debug("[CreateFile] 内容解析成功");
 							} catch (error) {
-								logger.warn("[CreateFile] 内容解析失败，使用空文档");
-								logger.debug("[CreateFile] 解析错误:", error);
+								warn("[CreateFile] 内容解析失败，使用空文档");
+								debug("[CreateFile] 解析错误", { error }, "create-file");
 								// 创建一个最小的有效 Lexical 文档作为降级策略
 								parsedContent = {
 									root: {
@@ -184,16 +184,16 @@ export const createFile = (
 							},
 							store,
 						);
-						logger.debug("[CreateFile] Tab 已打开，内容已设置");
+						debug("[CreateFile] Tab 已打开，内容已设置");
 
 						// 获取新创建的 tab ID
 						const newTabs = useEditorTabsStore.getState().tabs;
 						const newTab = newTabs.find((t) => t.nodeId === node.id);
 						tabId = newTab?.id ?? node.id;
-						logger.debug("[CreateFile] Tab ID:", tabId);
+						debug("[CreateFile] Tab ID", { tabId }, "create-file");
 					}
 
-					logger.success("[CreateFile] 文件创建完成:", node.id);
+					success("[CreateFile] 文件创建完成", { nodeId: node.id }, "create-file");
 
 					return {
 						node,

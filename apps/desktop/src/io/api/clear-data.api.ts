@@ -12,7 +12,7 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import logger from "@/io/log";
+import { info, debug, warn, error, success } from "@/io/log/logger.api";
 import { type AppError, dbError } from "@/types/error";
 import type { ClearDataResult } from "@/types/rust-api";
 import { api } from "./client.api";
@@ -51,18 +51,16 @@ export const clearSqliteDataKeepUsers = (): TE.TaskEither<
 export const clearLogs = (): TE.TaskEither<AppError, void> =>
 	TE.tryCatch(
 		async () => {
-			logger.info("[ClearData] 清除日志数据库...");
+			info("[ClearData] 清除日志数据库...", {}, "clear-data");
 
-			// 动态导入日志数据库，避免循环依赖
-			const { logDatabase } = await import("@/io/db/log-db");
+			// 使用新的 SQLite 日志系统清除日志
+			const { invoke } = await import("@tauri-apps/api/core");
+			await invoke("clear_old_logs", { days: 0 }); // 清除所有日志
 
-			// 清除日志表
-			await logDatabase.logs.clear();
-
-			logger.success("[ClearData] 日志数据库清除成功");
+			success("[ClearData] 日志数据库清除成功", {}, "clear-data");
 		},
 		(error): AppError => {
-			logger.error("[ClearData] 清除日志数据库失败:", error);
+			error("[ClearData] 清除日志数据库失败", { error }, "clear-data");
 			return dbError(`清除日志数据库失败: ${error}`);
 		},
 	);

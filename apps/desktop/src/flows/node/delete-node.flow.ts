@@ -13,7 +13,7 @@
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import * as nodeRepo from "@/io/api/node.api";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import type { AppError } from "@/utils/error.util";
 
 /**
@@ -26,12 +26,12 @@ import type { AppError } from "@/utils/error.util";
  * @returns TaskEither<AppError, void>
  */
 export const deleteNode = (nodeId: string): TE.TaskEither<AppError, void> => {
-	logger.start("[Action] 删除节点:", nodeId);
+	info("[Action] 删除节点", { nodeId }, "delete-node.flow");
 
 	return pipe(
 		nodeRepo.deleteNode(nodeId),
 		TE.tap(() => {
-			logger.success("[Action] 节点删除成功:", nodeId);
+			success("[Action] 节点删除成功", { nodeId }, "delete-node");
 			return TE.right(undefined);
 		}),
 	);
@@ -46,12 +46,12 @@ export const deleteNode = (nodeId: string): TE.TaskEither<AppError, void> => {
 export const deleteNodesBatch = (
 	nodeIds: string[],
 ): TE.TaskEither<AppError, void> => {
-	logger.start("[Action] 批量删除节点:", nodeIds.length);
+	info("[Action] 批量删除节点", { count: nodeIds.length }, "delete-node.flow");
 
 	return pipe(
 		nodeRepo.deleteNodesBatch(nodeIds),
 		TE.tap(() => {
-			logger.success("[Action] 批量删除成功:", nodeIds.length);
+			success("[Action] 批量删除成功", { count: nodeIds.length }, "delete-node");
 			return TE.right(undefined);
 		}),
 	);

@@ -13,7 +13,7 @@
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import * as nodeRepo from "@/io/api/node.api";
-import logger from "@/io/log";
+import { info, debug, warn, error, success } from "@/io/log/logger.api";
 import type { NodeInterface } from "@/types/node";
 import type { AppError } from "@/utils/error.util";
 
@@ -33,7 +33,7 @@ export const ensureRootFolder = (
 	folderName: string,
 	collapsed: boolean = false,
 ): TE.TaskEither<AppError, NodeInterface> => {
-	logger.info("[Action] 确保根级文件夹存在:", folderName);
+	info("[Action] 确保根级文件夹存在", { folderName }, "ensure-folder.flow");
 
 	return pipe(
 		nodeRepo.getNodesByWorkspace(workspaceId),
@@ -45,12 +45,12 @@ export const ensureRootFolder = (
 			);
 
 			if (existing) {
-				logger.info("[Action] 文件夹已存在:", existing.id);
+				info("[Action] 文件夹已存在", { folderId: existing.id }, "ensure-folder.flow");
 				return TE.right(existing);
 			}
 
 			// 创建新文件夹
-			logger.info("[Action] 创建新文件夹:", folderName);
+			info("[Action] 创建新文件夹", { folderName }, "ensure-folder.flow");
 			return pipe(
 				nodeRepo.createNode({
 					workspace: workspaceId,
@@ -60,7 +60,7 @@ export const ensureRootFolder = (
 					collapsed,
 				}),
 				TE.tap((folder) => {
-					logger.success("[Action] 文件夹创建成功:", folder.id);
+					success("[Action] 文件夹创建成功", { folderId: folder.id }, "ensure-folder");
 					return TE.right(folder);
 				}),
 			);

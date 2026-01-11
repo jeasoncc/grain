@@ -12,7 +12,7 @@
  */
 
 import { getSystemTheme } from "@/io/dom/theme.dom";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import { useThemeStore } from "@/state";
 import {
 	handleSystemThemeChangeFlow,
@@ -37,7 +37,7 @@ import {
  */
 export function initThemeFlow(): () => void {
 	try {
-		logger.info("[Theme Flow] Initializing theme system...");
+		info("[Theme Flow] Initializing theme system...");
 
 		const store = useThemeStore.getState();
 		const { themeKey, mode } = store;
@@ -64,7 +64,7 @@ export function initThemeFlow(): () => void {
 				const isDark = e.matches;
 				const newSystemTheme = isDark ? "dark" : "light";
 
-				logger.info("[Theme Flow] System theme changed:", newSystemTheme);
+				info("[Theme Flow] System theme changed", { newSystemTheme }, "init-theme.flow");
 
 				// Update system theme in store
 				store.setSystemTheme(newSystemTheme);
@@ -90,7 +90,7 @@ export function initThemeFlow(): () => void {
 		// Mark as initialized
 		store.setInitialized(true);
 
-		logger.info("[Theme Flow] Theme system initialized successfully");
+		info("[Theme Flow] Theme system initialized successfully");
 
 		// Return combined cleanup function
 		return () => {
@@ -98,7 +98,7 @@ export function initThemeFlow(): () => void {
 			systemThemeCleanup?.();
 		};
 	} catch (error) {
-		logger.error("[Theme Flow] Failed to initialize theme system:", error);
+		error("[Theme Flow] Failed to initialize theme system", { error }, "init-theme.flow");
 
 		// Return no-op cleanup
 		return () => {};
@@ -110,7 +110,7 @@ export function initThemeFlow(): () => void {
  */
 export function resetThemeFlow(): void {
 	try {
-		logger.info("[Theme Flow] Resetting theme to default...");
+		info("[Theme Flow] Resetting theme to default...");
 
 		const store = useThemeStore.getState();
 
@@ -123,8 +123,8 @@ export function resetThemeFlow(): void {
 		const systemTheme = getSystemTheme();
 		store.setSystemTheme(systemTheme);
 
-		logger.info("[Theme Flow] Theme reset successfully");
+		info("[Theme Flow] Theme reset successfully");
 	} catch (error) {
-		logger.error("[Theme Flow] Failed to reset theme:", error);
+		error("[Theme Flow] Failed to reset theme", { error }, "init-theme.flow");
 	}
 }

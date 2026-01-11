@@ -8,7 +8,7 @@
 import * as A from "fp-ts/Array";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import {
 	decodeContent,
 	decodeContentOptional,
@@ -33,20 +33,20 @@ import { api } from "./client.api";
 export const getContentByNodeId = (
 	nodeId: string,
 ): TE.TaskEither<AppError, ContentInterface | null> => {
-	logger.debug("[ContentAPI] 获取内容:", nodeId);
+	debug("[ContentAPI] 获取内容", { nodeId }, "content.api");
 
 	return pipe(
 		api.getContent(nodeId),
 		TE.map((response) => {
 			const content = decodeContentOptional(response);
 			if (content) {
-				logger.debug("[ContentAPI] 内容获取成功:", {
+				debug("[ContentAPI] 内容获取成功", {
 					nodeId: content.nodeId,
 					contentLength: content.content.length,
 					contentType: content.contentType,
-				});
+				}, "content.api");
 			} else {
-				logger.debug("[ContentAPI] 内容不存在");
+				debug("[ContentAPI] 内容不存在");
 			}
 			return content;
 		}),

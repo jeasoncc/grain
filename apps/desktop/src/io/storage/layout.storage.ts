@@ -12,7 +12,7 @@
  */
 
 import { z } from "zod";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import type { LayoutState } from "@/types/layout";
 import { DEFAULT_LAYOUT_STATE } from "@/types/layout";
 import { SIDEBAR_PANELS } from "@/types/sidebar";
@@ -51,10 +51,10 @@ const LayoutStateSchema = z.object({
 export function saveLayoutState(state: LayoutState): boolean {
 	try {
 		localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(state));
-		logger.info("[Layout Storage] State saved", state);
+		info("[Layout Storage] State saved", { state }, "layout.storage");
 		return true;
 	} catch (error) {
-		logger.error("[Layout Storage] Failed to save state:", error);
+		error("[Layout Storage] Failed to save state", { error }, "layout.storage");
 		return false;
 	}
 }
@@ -69,7 +69,7 @@ export function loadLayoutState(): LayoutState {
 		const stored = localStorage.getItem(LAYOUT_STORAGE_KEY);
 
 		if (!stored) {
-			logger.info("[Layout Storage] No saved state found, using default");
+			info("[Layout Storage] No saved state found, using default");
 			return DEFAULT_LAYOUT_STATE;
 		}
 
@@ -77,17 +77,17 @@ export function loadLayoutState(): LayoutState {
 		const result = LayoutStateSchema.safeParse(parsed);
 
 		if (result.success) {
-			logger.info("[Layout Storage] State loaded", result.data);
+			info("[Layout Storage] State loaded", { data: result.data }, "layout.storage");
 			return result.data;
 		}
 
-		logger.warn(
+		warn(
 			"[Layout Storage] Invalid state format, using default:",
 			result.error,
 		);
 		return DEFAULT_LAYOUT_STATE;
 	} catch (error) {
-		logger.error("[Layout Storage] Failed to load state:", error);
+		error("[Layout Storage] Failed to load state", { error }, "layout.storage");
 		return DEFAULT_LAYOUT_STATE;
 	}
 }
@@ -100,10 +100,10 @@ export function loadLayoutState(): LayoutState {
 export function clearLayoutState(): boolean {
 	try {
 		localStorage.removeItem(LAYOUT_STORAGE_KEY);
-		logger.info("[Layout Storage] State cleared");
+		info("[Layout Storage] State cleared");
 		return true;
 	} catch (error) {
-		logger.error("[Layout Storage] Failed to clear state:", error);
+		error("[Layout Storage] Failed to clear state", { error }, "layout.storage");
 		return false;
 	}
 }
@@ -117,7 +117,7 @@ export function hasLayoutState(): boolean {
 	try {
 		return localStorage.getItem(LAYOUT_STORAGE_KEY) !== null;
 	} catch (error) {
-		logger.error("[Layout Storage] Failed to check state:", error);
+		error("[Layout Storage] Failed to check state", { error }, "layout.storage");
 		return false;
 	}
 }

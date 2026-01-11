@@ -22,7 +22,7 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { openTabFlow, setActiveTabFlow } from "@/flows/editor-tabs";
 import * as contentRepo from "@/io/api/content.api";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import type { TabType } from "@/types/editor-tab";
 import type { AppError } from "@/utils/error.util";
@@ -69,14 +69,14 @@ export const openFile = (
 			() =>
 				fileOperationQueue.add(async () => {
 					const { workspaceId, nodeId, title, type } = params;
-					logger.start("[OpenFile] 打开文件:", title);
+					info("[OpenFile] 打开文件", { title }, "open-file.flow");
 
 					const store = useEditorTabsStore.getState();
 
 					// 1. 检查是否已打开
 					const existingTab = store.tabs.find((t) => t.nodeId === nodeId);
 					if (existingTab) {
-						logger.info("[OpenFile] 文件已打开，切换到标签:", existingTab.id);
+						info("[OpenFile] 文件已打开，切换到标签", { tabId: existingTab.id }, "open-file.flow");
 						setActiveTabFlow(existingTab.id, store);
 						return {
 							tabId: existingTab.id,
@@ -86,26 +86,26 @@ export const openFile = (
 					}
 
 					// 2. 从 DB 加载内容
-					logger.info("[OpenFile] 从 DB 加载内容...");
+					info("[OpenFile] 从 DB 加载内容...");
 					const contentResult = await contentRepo.getContentByNodeId(nodeId)();
 
 					let parsedContent: unknown;
 					let hasContent = false;
 
 					if (E.isRight(contentResult) && contentResult.right) {
-						logger.debug("[OpenFile] 内容加载成功:", {
+						debug("[OpenFile] 内容加载成功", {
 							contentLength: contentResult.right.content.length,
-							contentPreview: contentResult.right.content.substring(0, 100),
-						});
+							contentPreview: contentResult.right.content.substring(0, 100)
+						}, "open-file.flow");
 
 						// 解析内容
 						try {
 							parsedContent = JSON.parse(contentResult.right.content);
 							hasContent = true;
-							logger.debug("[OpenFile] 内容解析成功");
+							debug("[OpenFile] 内容解析成功");
 						} catch (error) {
-							logger.warn("[OpenFile] 内容解析失败，使用空文档");
-							logger.debug("[OpenFile] 解析错误:", error);
+							warn("[OpenFile] 内容解析失败，使用空文档");
+							debug("[OpenFile] 解析错误", { error }, "open-file.flow");
 							// 创建一个最小的有效 Lexical 文档作为降级策略
 							parsedContent = {
 								root: {
@@ -128,7 +128,7 @@ export const openFile = (
 							};
 						}
 					} else {
-						logger.warn("[OpenFile] 内容加载失败或为空");
+						warn("[OpenFile] 内容加载失败或为空");
 					}
 
 					// 3. 创建 tab（带初始内容）

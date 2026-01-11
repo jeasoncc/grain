@@ -18,7 +18,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { saveServiceManager } from "@/flows/save";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import { useSaveStore } from "@/state/save.state";
 import type { ContentType } from "@/types/content/content.interface";
@@ -143,7 +143,7 @@ export function useUnifiedSave(
 	// ==============================
 
 	useEffect(() => {
-		logger.debug(`[useUnifiedSave] 注册 model: ${nodeId}`);
+		debug(`[useUnifiedSave] 注册 model: ${nodeId}`);
 
 		saveServiceManager.getOrCreate({
 			nodeId,
@@ -196,10 +196,10 @@ export function useUnifiedSave(
 		const handleSave = async () => {
 			// 检查是否有未保存的更改
 			if (!saveServiceManager.hasUnsavedChanges(nodeId)) {
-				logger.debug("[useUnifiedSave] 没有需要保存的更改");
+				debug("[useUnifiedSave] 没有需要保存的更改");
 				return;
 			}
-			logger.info("[useUnifiedSave] 执行手动保存 (Ctrl+S)");
+			info("[useUnifiedSave] 执行手动保存 (Ctrl+S)");
 			await saveServiceManager.saveNow(nodeId);
 		};
 
@@ -236,11 +236,11 @@ export function useUnifiedSave(
 	const saveNow = useCallback(async (): Promise<boolean> => {
 		// 检查是否有未保存的更改
 		if (!saveServiceManager.hasUnsavedChanges(nodeId)) {
-			logger.debug("[useUnifiedSave] 没有需要保存的更改");
+			debug("[useUnifiedSave] 没有需要保存的更改");
 			return true;
 		}
 
-		logger.info("[useUnifiedSave] 执行手动保存");
+		info("[useUnifiedSave] 执行手动保存");
 		return await saveServiceManager.saveNow(nodeId);
 	}, [nodeId]);
 

@@ -21,7 +21,7 @@ import {
 	updateContentByNodeId,
 	updateNode,
 } from "@/io/api";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import type { AppError } from "@/utils/error.util";
 import { extractTagsFromContent } from "./save.debounce.fn";
 
@@ -201,14 +201,14 @@ export const saveDocument = (
 
 	// 如果内容没有变化，直接返回成功
 	if (!hasContentChanged(contentString, previousContent)) {
-		logger.info("[Save] 内容无变化，跳过保存:", documentId);
+		info("[Save] 内容无变化，跳过保存", { documentId }, "save.document.fn");
 		return TE.right(createNoChangeResult(documentId));
 	}
 
 	// 提取标签
 	const tags = extractTagsFromContent(content);
 
-	logger.start("[Save] 开始保存文档:", documentId);
+	info("[Save] 开始保存文档", { documentId }, "save.document.fn");
 
 	return pipe(
 		// 1. 保存内容
@@ -232,7 +232,7 @@ export const saveDocument = (
 		),
 		// 4. 返回成功结果
 		TE.map(() => {
-			logger.success(
+			success(
 				"[Save] 文档保存成功:",
 				documentId,
 				`(${tags.length} 个标签)`,
@@ -241,7 +241,7 @@ export const saveDocument = (
 		}),
 		// 5. 错误处理
 		TE.mapLeft((error) => {
-			logger.error("[Save] 文档保存失败:", documentId, error);
+			error("[Save] 文档保存失败", { documentId, error }, "save.document.fn");
 			return error;
 		}),
 	);

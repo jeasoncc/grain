@@ -16,7 +16,7 @@ import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import * as nodeRepo from "@/io/api/node.api";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import type { NodeInterface, NodeType } from "@/types/node";
 import type { AppError } from "@/utils/error.util";
 
@@ -80,7 +80,7 @@ export interface CreateFileInTreeResult {
 export const createNode = (
 	params: CreateNodeParams,
 ): TE.TaskEither<AppError, NodeInterface> => {
-	logger.start("[Action] 创建节点...");
+	info("[Action] 创建节点...", {}, "create-node.flow");
 
 	return pipe(
 		// 1. 创建节点（Rust 后端会自动处理排序号和内容创建）
@@ -96,7 +96,7 @@ export const createNode = (
 		),
 		// 2. 记录成功日志
 		TE.tap((node) => {
-			logger.success("[Action] 节点创建成功:", node.id);
+			success("[Action] 节点创建成功", { nodeId: node.id }, "create-node");
 			return TE.right(node);
 		}),
 	);
@@ -244,7 +244,7 @@ export async function createFileInTree(
 
 	const node = nodeResult.right;
 
-	logger.success("[Action] 文件创建成功:", node.id);
+	success("[Action] 文件创建成功", { nodeId: node.id }, "create-node");
 
 	return { node, parentFolder };
 }

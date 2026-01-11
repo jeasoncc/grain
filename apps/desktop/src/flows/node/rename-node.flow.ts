@@ -13,7 +13,7 @@
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import * as nodeRepo from "@/io/api/node.api";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import { type AppError, validationError } from "@/utils/error.util";
 
 /**
@@ -38,22 +38,22 @@ export interface RenameNodeParams {
 export const renameNode = (
 	params: RenameNodeParams,
 ): TE.TaskEither<AppError, void> => {
-	logger.start("[Action] 重命名节点:", params.nodeId);
+	info("[Action] 重命名节点", { nodeId: params.nodeId }, "rename-node.flow");
 
 	// 验证标题
 	const trimmedTitle = params.title.trim();
 	if (!trimmedTitle) {
-		logger.error("[Action] 重命名节点失败: 标题不能为空");
+		error("[Action] 重命名节点失败: 标题不能为空");
 		return TE.left(validationError("标题不能为空", "title"));
 	}
 
 	return pipe(
 		nodeRepo.updateNode(params.nodeId, { title: trimmedTitle }),
 		TE.tap(() => {
-			logger.success("[Action] 节点重命名成功:", {
+			success("[Action] 节点重命名成功", {
 				nodeId: params.nodeId,
 				title: trimmedTitle,
-			});
+			}, "rename-node");
 			return TE.right(undefined);
 		}),
 		TE.map(() => undefined),

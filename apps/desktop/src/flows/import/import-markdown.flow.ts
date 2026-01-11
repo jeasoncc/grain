@@ -14,7 +14,7 @@ import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { addContent, addNode, getNextOrder } from "@/io/api";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import {
 	importFromMarkdown,
 	type MarkdownImportOptions,
@@ -59,7 +59,7 @@ export interface ImportResult {
 export const importMarkdown = (
 	params: ImportMarkdownParams,
 ): TE.TaskEither<AppError, ImportResult> => {
-	logger.start("[Action] 导入 Markdown...");
+	info("[Action] 导入 Markdown...", {}, "import-markdown.flow");
 
 	return pipe(
 		// 1. 解析 Markdown 内容
@@ -105,7 +105,7 @@ export const importMarkdown = (
 		}),
 		// 6. 记录成功日志
 		TE.tap((result) => {
-			logger.success("[Action] Markdown 导入成功:", result.node.id);
+			success("[Action] Markdown 导入成功", { nodeId: result.node.id }, "import-markdown");
 			return TE.right(result);
 		}),
 	);
@@ -124,7 +124,7 @@ export const importMarkdownToJson = (
 	content: string,
 	options?: MarkdownImportOptions,
 ): E.Either<AppError, string> => {
-	logger.info("[Action] 直接导入 Markdown 为 JSON");
+	info("[Action] 直接导入 Markdown 为 JSON");
 
 	return pipe(
 		importFromMarkdown(content, options),

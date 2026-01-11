@@ -14,7 +14,7 @@ import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { getContentByNodeIdOrFail, getNodeByIdOrFail } from "@/io/api";
-import logger from "@/io/log";
+import { info } from "@/io/log/logger.api";
 import { exportToJson, type JsonExportOptions } from "@/pipes/export";
 import { type AppError, exportError } from "@/utils/error.util";
 
@@ -51,7 +51,7 @@ export interface ExportResult {
 export const exportNodeToJson = (
 	params: ExportJsonParams,
 ): TE.TaskEither<AppError, ExportResult> => {
-	logger.start("[Action] 导出 JSON...");
+	info("[Action] 导出 JSON...", {}, "export-json");
 
 	return pipe(
 		// 并行获取节点和内容
@@ -84,7 +84,7 @@ export const exportNodeToJson = (
 			);
 		}),
 		TE.tap((result) => {
-			logger.success("[Action] JSON 导出成功:", result.filename);
+			success("[Action] JSON 导出成功", { filename: result.filename }, "export-json");
 			return TE.right(result);
 		}),
 	);
@@ -103,7 +103,7 @@ export const exportContentToJson = (
 	content: string,
 	options?: JsonExportOptions,
 ): E.Either<AppError, string> => {
-	logger.info("[Action] 直接导出 JSON");
+	info("[Action] 直接导出 JSON");
 
 	return pipe(
 		exportToJson(content, options),

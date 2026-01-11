@@ -23,7 +23,7 @@ import {
 
 // 初始化和迁移
 import { initLogDatabase } from "@/io/log/log.storage.api";
-import { executeLogMigrationFlow } from "./migration.flow";
+// Migration removed - no longer needed since system hasn't been published
 
 // ============================================================================
 // 测试函数
@@ -91,12 +91,12 @@ export const runCompleteLogSystemTestFlow = (): TE.TaskEither<AppError, TestResu
       return true;
     }),
     TE.chain((initSuccess) =>
-      // 2. 执行迁移
+      // 2. 迁移已移除 - 直接进行测试
       pipe(
-        executeLogMigrationFlow(),
-        TE.map((migrationResult) => {
-          console.log(`✅ 日志迁移完成，迁移了 ${migrationResult.migratedCount} 条日志`);
-          return { initSuccess, migrationCount: migrationResult.migratedCount };
+        TE.right({ initSuccess, migrationCount: 0 }),
+        TE.map((result) => {
+          console.log("ℹ️ 跳过迁移 - 系统尚未发布");
+          return result;
         }),
       )
     ),

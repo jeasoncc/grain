@@ -11,7 +11,7 @@
  * - 错误处理：记录错误但不阻塞应用启动
  */
 
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import { loadLayoutState } from "@/io/storage";
 import { useLayoutStore } from "@/state";
 import { DEFAULT_LAYOUT_STATE, type LayoutState } from "@/types/layout";
@@ -37,7 +37,7 @@ import { DEFAULT_LAYOUT_STATE, type LayoutState } from "@/types/layout";
  */
 export function initLayoutFlow(): LayoutState {
 	try {
-		logger.info("[Layout Flow] Initializing layout...");
+		info("[Layout Flow] Initializing layout...");
 
 		// Load state from localStorage (with validation)
 		const loadedState = loadLayoutState();
@@ -50,11 +50,11 @@ export function initLayoutFlow(): LayoutState {
 			sidebarWidth: loadedState.sidebarWidth,
 		});
 
-		logger.info("[Layout Flow] Layout initialized successfully", loadedState);
+		info("[Layout Flow] Layout initialized successfully", { loadedState }, "init-layout");
 
 		return loadedState;
 	} catch (error) {
-		logger.error("[Layout Flow] Failed to initialize layout:", error);
+		error("[Layout Flow] Failed to initialize layout", { error }, "init-layout.flow");
 
 		// Return current store state as fallback
 		return useLayoutStore.getState();
@@ -68,7 +68,7 @@ export function initLayoutFlow(): LayoutState {
  */
 export function resetLayoutFlow(): LayoutState {
 	try {
-		logger.info("[Layout Flow] Resetting layout to default...");
+		info("[Layout Flow] Resetting layout to default...");
 
 		// Reset to default values using batch update
 		useLayoutStore.setState({
@@ -76,11 +76,11 @@ export function resetLayoutFlow(): LayoutState {
 		});
 
 		const currentState = useLayoutStore.getState();
-		logger.info("[Layout Flow] Layout reset successfully", currentState);
+		info("[Layout Flow] Layout reset successfully", { currentState }, "init-layout");
 
 		return currentState;
 	} catch (error) {
-		logger.error("[Layout Flow] Failed to reset layout:", error);
+		error("[Layout Flow] Failed to reset layout", { error }, "init-layout.flow");
 		return useLayoutStore.getState();
 	}
 }

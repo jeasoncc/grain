@@ -69,7 +69,7 @@ vi.mock("@/log", () => ({
 	},
 }));
 
-import logger from "@/io/log";
+// Logger removed - not needed in tests
 import { createWorkspace } from "./create-workspace.flow";
 
 // ============================================================================

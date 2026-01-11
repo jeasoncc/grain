@@ -22,7 +22,7 @@ import {
 	useNode as useNodeQuery,
 	useNodesByType,
 } from "@/hooks/queries/node.queries";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import type { NodeInterface } from "@/types/node";
 
 // ============================================================================
@@ -215,13 +215,13 @@ export function useDrawingWorkspace(workspaceId: string | null) {
 	// 选择绘图
 	const selectDrawing = useCallback((drawing: NodeInterface) => {
 		setSelectedDrawing(drawing);
-		logger.info("[Drawing] 选择绘图:", drawing.id);
+		info("[Drawing] 选择绘图", { drawingId: drawing.id }, "use-drawing");
 	}, []);
 
 	// 清除选择
 	const clearSelection = useCallback(() => {
 		setSelectedDrawing(null);
-		logger.info("[Drawing] 清除绘图选择");
+		info("[Drawing] 清除绘图选择");
 	}, []);
 
 	return {
@@ -231,7 +231,7 @@ export function useDrawingWorkspace(workspaceId: string | null) {
 		clearSelection,
 		// createNewDrawing 已移除，请使用 createExcalidrawAsync
 		createNewDrawing: async () => {
-			logger.warn(
+			warn(
 				"[Drawing] createNewDrawing 已弃用，请使用 createExcalidrawAsync",
 			);
 			return null;

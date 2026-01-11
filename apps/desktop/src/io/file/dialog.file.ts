@@ -10,7 +10,7 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 
 // ============================================================================
 // 类型定义
@@ -78,7 +78,7 @@ export async function selectDirectory(
 	options?: DirectorySelectOptions,
 ): Promise<string | null> {
 	if (!isTauriEnvironment()) {
-		logger.warn("[Dialog] selectDirectory: 非 Tauri 环境，返回 null");
+		warn("[Dialog] selectDirectory: 非 Tauri 环境，返回 null");
 		return null;
 	}
 
@@ -88,7 +88,7 @@ export async function selectDirectory(
 		});
 		return result;
 	} catch (error) {
-		logger.error("[Dialog] 目录选择失败:", error);
+		error("[Dialog] 目录选择失败", { error }, "dialog.file");
 		throw new Error(`目录选择失败: ${error}`);
 	}
 }
@@ -127,7 +127,7 @@ export async function getDownloadsDirectory(): Promise<string> {
 		const result = await invoke<string>("get_downloads_dir");
 		return result;
 	} catch (error) {
-		logger.error("[Dialog] 获取下载目录失败:", error);
+		error("[Dialog] 获取下载目录失败", { error }, "dialog.file");
 		return "";
 	}
 }
@@ -146,7 +146,7 @@ export async function getDocumentsDirectory(): Promise<string> {
 		const result = await invoke<string>("get_documents_dir");
 		return result;
 	} catch (error) {
-		logger.error("[Dialog] 获取文档目录失败:", error);
+		error("[Dialog] 获取文档目录失败", { error }, "dialog.file");
 		return "";
 	}
 }
@@ -165,7 +165,7 @@ export async function getDesktopDirectory(): Promise<string> {
 		const result = await invoke<string>("get_desktop_dir");
 		return result;
 	} catch (error) {
-		logger.error("[Dialog] 获取桌面目录失败:", error);
+		error("[Dialog] 获取桌面目录失败", { error }, "dialog.file");
 		return "";
 	}
 }
@@ -184,7 +184,7 @@ export async function getHomeDirectory(): Promise<string> {
 		const result = await invoke<string>("get_home_dir");
 		return result;
 	} catch (error) {
-		logger.error("[Dialog] 获取主目录失败:", error);
+		error("[Dialog] 获取主目录失败", { error }, "dialog.file");
 		return "";
 	}
 }

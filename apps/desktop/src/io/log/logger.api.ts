@@ -535,54 +535,5 @@ export const applyLogConfigPreset = (presetName: string) => applyLogConfigPreset
 export const getLogConfigPresets = () => getLogConfigPresetsFlow();
 
 // ============================================================================
-// 默认导出（向后兼容）
+// 主要导出（所有函数已在上面定义时直接导出）
 // ============================================================================
-
-/**
- * 默认日志对象（向后兼容旧的 logger 接口）
- */
-export default {
-  debug,
-  info,
-  success,
-  warn,
-  error,
-  trace,
-  // 异步版本
-  logDebug,
-  logInfo,
-  logSuccess,
-  logWarn,
-  logError,
-  logTrace,
-  // 查询和管理
-  queryLogs,
-  queryLogsPaginated,
-  searchLogs,
-  getRecentLogs,
-  getRecentErrors,
-  getLogsBySource,
-  autoCleanupLogs,
-  flushPendingLogs,
-  getLogBufferStatus,
-  clearQueryCache,
-  warmupQueryCache,
-  // 异步队列管理
-  flushAsyncQueue,
-  getAsyncQueueStatus,
-  pauseAsyncQueue,
-  resumeAsyncQueue,
-  shutdownAsyncLogger,
-  // 自动清理管理
-  checkNeedsCleanup,
-  getStorageMonitorInfo,
-  initAutoCleanup,
-  shutdownAutoCleanup,
-  // 配置管理
-  updateLogConfig,
-  getCurrentLogConfig,
-  getCurrentExtendedLogConfig,
-  updateExtendedLogConfig,
-  applyLogConfigPreset,
-  getLogConfigPresets,
-};

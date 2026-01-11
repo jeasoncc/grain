@@ -13,7 +13,7 @@
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import * as workspaceRepo from "@/io/api/workspace.api";
-import logger from "@/io/log";
+import { info, success } from "@/io/log/logger.api";
 import type { WorkspaceInterface } from "@/types/workspace";
 import type { AppError } from "@/utils/error.util";
 
@@ -49,7 +49,7 @@ export interface CreateWorkspaceParams {
 export const createWorkspace = (
 	params: CreateWorkspaceParams,
 ): TE.TaskEither<AppError, WorkspaceInterface> => {
-	logger.start("[Action] 创建工作区...");
+	info("[Action] 创建工作区...", {}, "create-workspace");
 
 	return pipe(
 		workspaceRepo.createWorkspace({
@@ -62,7 +62,7 @@ export const createWorkspace = (
 			owner: params.owner,
 		}),
 		TE.tap((workspace) => {
-			logger.success("[Action] 工作区创建成功:", workspace.id);
+			success("[Action] 工作区创建成功", { workspaceId: workspace.id }, "create-workspace");
 			return TE.right(workspace);
 		}),
 	);

@@ -17,7 +17,7 @@ import * as E from "fp-ts/Either";
 import { ensureRootFolderAsync } from "@/flows/node";
 import { addContent, addNode, getNextOrder, updateNode } from "@/io/api";
 import { legacyDatabase } from "@/io/db/legacy-database";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import { WIKI_ROOT_FOLDER, WIKI_TAG } from "@/pipes/wiki";
 
 /**
@@ -74,7 +74,7 @@ export async function checkMigrationNeeded(
 		return count > 0;
 	} catch (error) {
 		// 迁移后表可能不存在
-		logger.debug(
+		debug(
 			`Wiki entries table not found or empty for workspace ${workspaceId}:`,
 			error,
 		);
@@ -101,7 +101,7 @@ export async function migrateWikiEntriesToFiles(
 		// 从旧表获取此工作区的所有 wiki 条目
 		const table = legacyDatabase.table("wikiEntries");
 		if (!table) {
-			logger.info(`Wiki entries table not found for workspace ${workspaceId}`);
+			info(`Wiki entries table not found for workspace ${workspaceId}`);
 			return result;
 		}
 		const wikiEntries = (await table
@@ -110,11 +110,11 @@ export async function migrateWikiEntriesToFiles(
 			.toArray()) as LegacyWikiEntry[];
 
 		if (wikiEntries.length === 0) {
-			logger.info(`No wiki entries to migrate for workspace ${workspaceId}`);
+			info(`No wiki entries to migrate for workspace ${workspaceId}`);
 			return result;
 		}
 
-		logger.info(
+		info(
 			`Starting migration of ${wikiEntries.length} wiki entries for workspace ${workspaceId}`,
 		);
 
@@ -132,12 +132,12 @@ export async function migrateWikiEntriesToFiles(
 			} catch (error) {
 				const errorMessage = `Failed to migrate wiki entry "${entry.name}" (${entry.id}): ${error instanceof Error ? error.message : String(error)}`;
 				result.errors.push(errorMessage);
-				logger.error(errorMessage);
+				error(errorMessage);
 				// 继续处理剩余条目
 			}
 		}
 
-		logger.success(
+		success(
 			`Migration complete for workspace ${workspaceId}: ${result.migrated} migrated, ${result.errors.length} errors`,
 		);
 
@@ -145,7 +145,7 @@ export async function migrateWikiEntriesToFiles(
 	} catch (error) {
 		const errorMessage = `Migration failed for workspace ${workspaceId}: ${error instanceof Error ? error.message : String(error)}`;
 		result.errors.push(errorMessage);
-		logger.error(errorMessage);
+		error(errorMessage);
 		return result;
 	}
 }
@@ -196,7 +196,7 @@ async function migrateWikiEntry(
 		await table.delete(entry.id);
 	}
 
-	logger.debug(`Migrated wiki entry "${entry.name}" to node ${node.id}`);
+	debug(`Migrated wiki entry "${entry.name}" to node ${node.id}`);
 }
 
 /**
@@ -215,6 +215,6 @@ export async function runMigrationIfNeeded(
 		return null;
 	}
 
-	logger.info(`Wiki migration needed for workspace ${workspaceId}`);
+	info(`Wiki migration needed for workspace ${workspaceId}`);
 	return migrateWikiEntriesToFiles(workspaceId);
 }

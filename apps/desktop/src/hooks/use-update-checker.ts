@@ -15,7 +15,7 @@ import {
 	downloadAndInstallUpdate,
 	type UpdateInfo,
 } from "@/flows/updater";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 
 type CheckStatus =
 	| "idle"
@@ -78,7 +78,7 @@ export function useUpdateChecker(): UseUpdateCheckerReturn {
 				setCheckStatus("up-to-date");
 			}
 		} catch (error) {
-			logger.error("[UpdateChecker] 检查更新失败:", error);
+			error("[UpdateChecker] 检查更新失败", { error }, "use-update-checker");
 			setCheckStatus("error");
 			setErrorMessage(error instanceof Error ? error.message : "Unknown error");
 		} finally {
@@ -99,7 +99,7 @@ export function useUpdateChecker(): UseUpdateCheckerReturn {
 				throw new Error(result.left.message);
 			}
 		} catch (error) {
-			logger.error("[UpdateChecker] 下载安装更新失败:", error);
+			error("[UpdateChecker] 下载安装更新失败", { error }, "use-update-checker");
 			setIsDownloading(false);
 		}
 	}, []);

@@ -13,7 +13,7 @@
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import * as workspaceRepo from "@/io/api/workspace.api";
-import logger from "@/io/log";
+import { info, success } from "@/io/log/logger.api";
 import type { WorkspaceUpdateInput } from "@/types/workspace";
 import type { AppError } from "@/utils/error.util";
 
@@ -40,12 +40,12 @@ export interface UpdateWorkspaceParams {
 export const updateWorkspace = (
 	params: UpdateWorkspaceParams,
 ): TE.TaskEither<AppError, void> => {
-	logger.start("[Action] 更新工作区:", params.workspaceId);
+	info("[Action] 更新工作区", { workspaceId: params.workspaceId }, "update-workspace");
 
 	return pipe(
 		workspaceRepo.updateWorkspace(params.workspaceId, params.updates),
 		TE.tap(() => {
-			logger.success("[Action] 工作区更新成功:", params.workspaceId);
+			success("[Action] 工作区更新成功", { workspaceId: params.workspaceId }, "update-workspace");
 			return TE.right(undefined);
 		}),
 		TE.map(() => undefined),
@@ -64,7 +64,7 @@ export const updateWorkspace = (
 export const touchWorkspace = (
 	workspaceId: string,
 ): TE.TaskEither<AppError, void> => {
-	logger.info("[Action] 更新工作区最后打开时间:", workspaceId);
+	info("[Action] 更新工作区最后打开时间", { workspaceId }, "update-workspace");
 
 	return pipe(
 		workspaceRepo.updateWorkspace(workspaceId, {

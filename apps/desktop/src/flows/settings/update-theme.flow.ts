@@ -15,7 +15,7 @@
 
 import * as E from "fp-ts/Either";
 import { applyThemeWithTransition, getSystemTheme } from "@/io/dom/theme.dom";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import {
 	getDefaultThemeKey,
 	getNextMode,
@@ -69,7 +69,7 @@ export interface UpdateTransitionParams {
 export const updateTheme = (
 	params: UpdateThemeParams,
 ): E.Either<AppError, void> => {
-	logger.start("[Action] 更新主题:", params.themeKey);
+	info("[Action] 更新主题", { themeKey: params.themeKey }, "update-theme.flow");
 
 	if (!params.themeKey || params.themeKey.trim() === "") {
 		return E.left(validationError("主题 key 不能为空", "themeKey"));
@@ -87,7 +87,7 @@ export const updateTheme = (
 	store.setMode(theme.type);
 	applyThemeWithTransition(theme, store.enableTransition);
 
-	logger.success("[Action] 主题更新成功:", params.themeKey);
+	success("[Action] 主题更新成功", { themeKey: params.themeKey }, "update-theme");
 	return E.right(undefined);
 };
 
@@ -103,7 +103,7 @@ export const updateTheme = (
 export const updateThemeMode = (
 	params: UpdateThemeModeParams,
 ): E.Either<AppError, void> => {
-	logger.start("[Action] 更新主题模式:", params.mode);
+	info("[Action] 更新主题模式", { mode: params.mode }, "update-theme.flow");
 
 	const validModes: ThemeMode[] = ["light", "dark", "system"];
 	if (!validModes.includes(params.mode)) {
@@ -140,7 +140,7 @@ export const updateThemeMode = (
 		}
 	}
 
-	logger.success("[Action] 主题模式更新成功:", params.mode);
+	success("[Action] 主题模式更新成功", { mode: params.mode }, "update-theme");
 	return E.right(undefined);
 };
 
@@ -152,7 +152,7 @@ export const updateThemeMode = (
  * @returns Either<AppError, ThemeMode> - 返回新的主题模式
  */
 export const toggleThemeMode = (): E.Either<AppError, ThemeMode> => {
-	logger.start("[Action] 切换主题模式");
+	info("[Action] 切换主题模式", {}, "update-theme.flow");
 
 	const store = useThemeStore.getState();
 	const newMode = getNextMode(store.mode);
@@ -163,7 +163,7 @@ export const toggleThemeMode = (): E.Either<AppError, ThemeMode> => {
 		return result;
 	}
 
-	logger.success("[Action] 主题模式切换成功:", newMode);
+	success("[Action] 主题模式切换成功", { newMode }, "update-theme");
 	return E.right(newMode);
 };
 
@@ -178,9 +178,9 @@ export const toggleThemeMode = (): E.Either<AppError, ThemeMode> => {
 export const updateThemeTransition = (
 	params: UpdateTransitionParams,
 ): E.Either<AppError, void> => {
-	logger.start("[Action] 更新过渡动画设置:", params.enable);
+	info("[Action] 更新过渡动画设置", { enable: params.enable }, "update-theme.flow");
 
 	useThemeStore.getState().setEnableTransition(params.enable);
-	logger.success("[Action] 过渡动画设置更新成功:", params.enable);
+	success("[Action] 过渡动画设置更新成功", { enable: params.enable }, "update-theme");
 	return E.right(undefined);
 };

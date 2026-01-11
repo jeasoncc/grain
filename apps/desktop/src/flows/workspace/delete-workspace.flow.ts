@@ -13,7 +13,7 @@
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import * as workspaceRepo from "@/io/api/workspace.api";
-import logger from "@/io/log";
+import { info, success } from "@/io/log/logger.api";
 import type { AppError } from "@/utils/error.util";
 
 /**
@@ -33,12 +33,12 @@ import type { AppError } from "@/utils/error.util";
 export const deleteWorkspace = (
 	workspaceId: string,
 ): TE.TaskEither<AppError, void> => {
-	logger.start("[Action] 删除工作区:", workspaceId);
+	info("[Action] 删除工作区", { workspaceId }, "delete-workspace");
 
 	return pipe(
 		workspaceRepo.deleteWorkspace(workspaceId),
 		TE.tap(() => {
-			logger.success("[Action] 工作区删除成功:", workspaceId);
+			success("[Action] 工作区删除成功", { workspaceId }, "delete-workspace");
 			return TE.right(undefined);
 		}),
 	);

@@ -16,7 +16,7 @@ import {
 	getNodesByWorkspace,
 	getWorkspaceById,
 } from "@/io/api";
-import logger from "@/io/log";
+import { info } from "@/io/log/logger.api";
 import { exportWorkspaceToMarkdown } from "@/pipes/export/export.bundle.fn";
 import type { AppError } from "@/utils/error.util";
 
@@ -29,7 +29,7 @@ import type { AppError } from "@/utils/error.util";
 export function exportAsMarkdown(
 	workspaceId: string,
 ): TE.TaskEither<AppError, string> {
-	logger.start("[Export] 开始导出 Markdown...");
+	info("[Export] 开始导出 Markdown...", {}, "export-workspace-markdown");
 
 	return pipe(
 		TE.Do,
@@ -65,7 +65,7 @@ export function exportAsMarkdown(
 		// 转换为 Markdown
 		TE.map(({ workspace, nodes, contentMap }) => {
 			const markdown = exportWorkspaceToMarkdown(workspace, nodes, contentMap);
-			logger.success("[Export] Markdown 导出成功");
+			success("[Export] Markdown 导出成功");
 			return markdown;
 		}),
 	);

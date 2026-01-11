@@ -11,7 +11,7 @@ import * as E from "fp-ts/Either";
 import * as TE from "fp-ts/TaskEither";
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/io/api";
 import { legacyDatabase } from "@/io/db/legacy-database";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import { WikiFileEntryBuilder } from "@/pipes/wiki/wiki.builder";
 import { WIKI_TAG } from "@/pipes/wiki/wiki.resolve.fn";
 import type { WikiFileEntry } from "@/pipes/wiki/wiki.schema";
@@ -48,7 +48,7 @@ function buildNodePath(
 export const getWikiFilesAsync = (
 	workspaceId: string,
 ): TE.TaskEither<AppError, WikiFileEntry[]> => {
-	logger.info("[Wiki] 获取 Wiki 文件列表...");
+	info("[Wiki] 获取 Wiki 文件列表...");
 
 	return TE.tryCatch(
 		async () => {
@@ -59,7 +59,7 @@ export const getWikiFilesAsync = (
 				.and((node) => node.workspace === workspaceId)
 				.toArray();
 
-			logger.info("[Wiki] 找到 Wiki 文件:", { count: nodes.length });
+			info("[Wiki] 找到 Wiki 文件", { count: nodes.length }, "get-wiki-files.flow");
 
 			// Get content for all wiki files
 			const nodeIds = nodes.map((n) => n.id);
@@ -85,9 +85,9 @@ export const getWikiFilesAsync = (
 					.build();
 			});
 
-			logger.success("[Wiki] Wiki 文件列表获取成功:", {
+			success("[Wiki] Wiki 文件列表获取成功", {
 				count: entries.length,
-			});
+			}, "get-wiki-files");
 			return entries;
 		},
 		(error) => ({
@@ -109,7 +109,7 @@ export async function getWikiFiles(
 	const result = await getWikiFilesAsync(workspaceId)();
 
 	if (E.isLeft(result)) {
-		logger.error("[Wiki] 获取 Wiki 文件列表失败:", result.left);
+		error("[Wiki] 获取 Wiki 文件列表失败", { error: result.left }, "get-wiki-files.flow");
 		return [];
 	}
 

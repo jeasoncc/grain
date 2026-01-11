@@ -16,7 +16,7 @@
 import { debounce } from "es-toolkit";
 import * as E from "fp-ts/Either";
 import { updateContentByNodeId } from "@/io/api/content.api";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import type { ContentType } from "@/types/content/content.interface";
 
 // ============================================================================
@@ -118,18 +118,18 @@ export const createUnifiedSaveService = (
 	const saveContent = async (content: string): Promise<boolean> => {
 		// 如果内容没有变化，跳过保存
 		if (content === lastSavedContent) {
-			logger.debug("[UnifiedSave] 内容未变化，跳过保存");
+			debug("[UnifiedSave] 内容未变化，跳过保存");
 			return true;
 		}
 
 		// 防止重复保存
 		if (isSaving) {
-			logger.debug("[UnifiedSave] 正在保存中，跳过");
+			debug("[UnifiedSave] 正在保存中，跳过");
 			return false;
 		}
 
 		isSaving = true;
-		logger.info("[UnifiedSave] 开始保存:", { nodeId, contentType });
+		info("[UnifiedSave] 开始保存", { nodeId, contentType }, "unified-save.service");
 
 		// 1. 通知开始保存
 		onSaving?.();
@@ -155,18 +155,18 @@ export const createUnifiedSaveService = (
 				// 5. 通知保存成功
 				onSaved?.();
 
-				logger.success("[UnifiedSave] 保存成功:", nodeId);
+				success("[UnifiedSave] 保存成功", { nodeId }, "unified-save.service");
 				return true;
 			}
 			// 保存失败
 			const error = new Error(result.left.message || "保存失败");
 			onError?.(error);
-			logger.error("[UnifiedSave] 保存失败:", result.left);
+			error("[UnifiedSave] 保存失败", { error: result.left }, "unified-save.service");
 			return false;
 		} catch (err) {
 			const error = err instanceof Error ? err : new Error("未知错误");
 			onError?.(error);
-			logger.error("[UnifiedSave] 保存异常:", error);
+			error("[UnifiedSave] 保存异常", { error }, "unified-save.service");
 			return false;
 		} finally {
 			isSaving = false;
@@ -223,7 +223,7 @@ export const createUnifiedSaveService = (
 			}
 
 			// 没有待保存的内容
-			logger.debug("[UnifiedSave] 没有待保存的内容");
+			debug("[UnifiedSave] 没有待保存的内容");
 			return true;
 		},
 
@@ -245,7 +245,7 @@ export const createUnifiedSaveService = (
 		 */
 		dispose: (): void => {
 			debouncedSave?.cancel();
-			logger.debug("[UnifiedSave] 资源已清理:", nodeId);
+			debug("[UnifiedSave] 资源已清理", { nodeId }, "unified-save.service");
 		},
 
 		/**

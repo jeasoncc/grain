@@ -7,7 +7,7 @@
  */
 
 import * as TE from "fp-ts/TaskEither";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import type { AppError } from "@/utils/error.util";
 
 // ==============================
@@ -48,10 +48,10 @@ export const isTauriEnvironment = (): boolean => {
 export const checkForUpdates = (): TE.TaskEither<AppError, UpdateInfo> =>
 	TE.tryCatch(
 		async (): Promise<UpdateInfo> => {
-			logger.info("[Updater] 检查更新...");
+			info("[Updater] 检查更新...");
 
 			if (!isTauriEnvironment()) {
-				logger.info("[Updater] 非 Tauri 环境，跳过更新检查");
+				info("[Updater] 非 Tauri 环境，跳过更新检查");
 				return {
 					available: false,
 					currentVersion: "dev",
@@ -63,7 +63,7 @@ export const checkForUpdates = (): TE.TaskEither<AppError, UpdateInfo> =>
 				const update = await check();
 
 				if (update?.available) {
-					logger.success("[Updater] 发现新版本:", update.version);
+					success("[Updater] 发现新版本", { version: update.version }, "updater");
 					return {
 						available: true,
 						currentVersion: update.currentVersion,
@@ -72,13 +72,13 @@ export const checkForUpdates = (): TE.TaskEither<AppError, UpdateInfo> =>
 					};
 				}
 
-				logger.info("[Updater] 已是最新版本");
+				info("[Updater] 已是最新版本");
 				return {
 					available: false,
 					currentVersion: update?.currentVersion || "unknown",
 				};
 			} catch (error) {
-				logger.error("[Updater] 检查更新失败:", error);
+				error("[Updater] 检查更新失败", { error }, "updater.fn");
 
 				// 提供更有用的错误信息
 				const errorMessage =
@@ -112,7 +112,7 @@ export const downloadAndInstallUpdate = (
 ): TE.TaskEither<AppError, void> =>
 	TE.tryCatch(
 		async (): Promise<void> => {
-			logger.start("[Updater] 开始下载更新...");
+			info("[Updater] 开始下载更新...", {}, "updater.fn");
 
 			if (!isTauriEnvironment()) {
 				throw new Error("更新功能仅在桌面应用中可用");
@@ -135,7 +135,7 @@ export const downloadAndInstallUpdate = (
 				switch (event.event) {
 					case "Started":
 						contentLength = event.data.contentLength || 0;
-						logger.info(`[Updater] 开始下载 ${contentLength} 字节`);
+						info(`[Updater] 开始下载 ${contentLength} 字节`);
 						break;
 					case "Progress": {
 						downloaded += event.data.chunkLength;
@@ -149,17 +149,17 @@ export const downloadAndInstallUpdate = (
 						};
 
 						onProgress?.(progress);
-						logger.info(`[Updater] 下载进度: ${percentage.toFixed(1)}%`);
+						info(`[Updater] 下载进度: ${percentage.toFixed(1)}%`);
 						break;
 					}
 					case "Finished":
-						logger.success("[Updater] 下载完成");
+						success("[Updater] 下载完成");
 						break;
 				}
 			});
 
 			// 安装完成后重启应用
-			logger.info("[Updater] 重启应用以完成更新...");
+			info("[Updater] 重启应用以完成更新...");
 			await relaunch();
 		},
 		(error): AppError => ({

@@ -11,6 +11,7 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
+import { success } from "@/io/log/logger.api";
 import {
 	getAllNodes,
 	getAllWorkspaces,
@@ -20,7 +21,7 @@ import {
 	getNodesByWorkspace,
 	getWorkspaceById,
 } from "@/io/api";
-import logger from "@/io/log";
+import { info } from "@/io/log/logger.api";
 import {
 	createExportBundle,
 	serializeBundle,
@@ -53,7 +54,7 @@ function toAttachmentData(
 export function exportAll(
 	workspaceId?: string,
 ): TE.TaskEither<AppError, string> {
-	logger.start("[Export] 开始导出数据...");
+	info("[Export] 开始导出数据...", {}, "export-all");
 
 	return pipe(
 		TE.Do,
@@ -112,7 +113,7 @@ export function exportAll(
 				attachments,
 			});
 			const json = serializeBundle(bundle);
-			logger.success("[Export] 数据导出成功");
+			success("[Export] 数据导出成功");
 			return json;
 		}),
 	);

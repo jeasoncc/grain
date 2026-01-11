@@ -17,7 +17,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import * as TE from "fp-ts/TaskEither";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import type { AppError } from "@/types/error";
 import { dbError } from "@/types/error";
 import type {
@@ -72,13 +72,13 @@ const invokeTE = <T>(
 ): TE.TaskEither<AppError, T> =>
 	TE.tryCatch(
 		async () => {
-			logger.info(`[API:Tauri] ${cmd}`, args);
+			info(`[API:Tauri] ${cmd}`, args);
 			const result = await invoke<T>(cmd, args);
-			logger.info(`[API:Tauri] ${cmd} 成功`);
+			info(`[API:Tauri] ${cmd} 成功`);
 			return result;
 		},
 		(error) => {
-			logger.error(`[API:Tauri] ${cmd} 失败`, error);
+			error(`[API:Tauri] ${cmd} 失败`, error);
 			return dbError(`${cmd} 失败: ${error}`);
 		},
 	);
@@ -95,7 +95,7 @@ const fetchTE = <T>(
 			const url = `${getApiBaseUrl()}${endpoint}`;
 			const method = options.method || "GET";
 
-			logger.info(`[API:HTTP] ${method} ${endpoint}`);
+			info(`[API:HTTP] ${method} ${endpoint}`);
 
 			const response = await fetch(url, {
 				...options,
@@ -111,11 +111,11 @@ const fetchTE = <T>(
 			}
 
 			const result = await response.json();
-			logger.info(`[API:HTTP] ${method} ${endpoint} 成功`);
+			info(`[API:HTTP] ${method} ${endpoint} 成功`);
 			return result as T;
 		},
 		(error) => {
-			logger.error(`[API:HTTP] ${endpoint} 失败`, error);
+			error(`[API:HTTP] ${endpoint} 失败`, error);
 			return dbError(`${endpoint} 失败: ${error}`);
 		},
 	);
@@ -311,7 +311,7 @@ export interface ApiClient {
  * 调用方无需关心底层是 invoke 还是 fetch
  */
 export const createApiClient = (): ApiClient => {
-	logger.info(`[API] 初始化客户端，环境: ${isTauri ? "Tauri" : "Web"}`);
+	info(`[API] 初始化客户端，环境: ${isTauri ? "Tauri" : "Web"}`);
 
 	return {
 		// ============================================

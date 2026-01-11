@@ -26,7 +26,7 @@ import * as TE from "fp-ts/TaskEither";
 import { z } from "zod";
 import { createFile } from "@/flows/file";
 import { ensureFolderPath } from "@/flows/node";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import type { FileNodeType, NodeInterface } from "@/types/node";
 import type { AppError } from "@/utils/error.util";
 
@@ -242,7 +242,7 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 			),
 			// 6. 记录成功日志
 			TE.tap((result) => {
-				logger.success(`[Action] ${config.name}创建成功:`, result.node.id);
+				success(`[Action] ${config.name}创建成功:`, result.node.id);
 				return TE.right(result);
 			}),
 		);

@@ -16,7 +16,7 @@ import {
 	getNodesByWorkspace,
 	getWorkspaceById,
 } from "@/io/api";
-import logger from "@/io/log";
+import { info, debug, warn, error, success } from "@/io/log/logger.api";
 import {
 	calculateSimpleScore,
 	extractHighlights,
@@ -133,9 +133,9 @@ export class SearchEngine {
 				this.indexedData.set(node.id, node);
 			}
 
-			logger.success(`[Search] 索引构建完成: ${nodes.length} 个节点`);
+			success(`[Search] 索引构建完成: ${nodes.length} 个节点`);
 		} catch (error) {
-			logger.error("[Search] 索引构建失败:", error);
+			error("[Search] 索引构建失败", { error }, "search-engine.flow");
 		} finally {
 			this.isIndexing = false;
 		}
@@ -234,7 +234,7 @@ export class SearchEngine {
 			results.sort((a, b) => b.score - a.score);
 			return results.slice(0, limit);
 		} catch (error) {
-			logger.error("[Search] 搜索失败:", error);
+			error("[Search] 搜索失败", { error }, "search-engine.flow");
 			return [];
 		}
 	}
@@ -309,7 +309,7 @@ export class SearchEngine {
 			results.sort((a, b) => b.score - a.score);
 			return results.slice(0, limit);
 		} catch (error) {
-			logger.error("[Search] 简单搜索失败:", error);
+			error("[Search] 简单搜索失败", { error }, "search-engine.flow");
 			return [];
 		}
 	}

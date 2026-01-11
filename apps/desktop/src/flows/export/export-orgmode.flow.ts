@@ -14,7 +14,7 @@ import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { getContentByNodeIdOrFail, getNodeByIdOrFail } from "@/io/api";
-import logger from "@/io/log";
+import { info, success } from "@/io/log/logger.api";
 import { exportToOrgmode, type OrgmodeExportOptions } from "@/pipes/export";
 import { type AppError, exportError } from "@/utils/error.util";
 
@@ -51,7 +51,7 @@ export interface ExportResult {
 export const exportNodeToOrgmode = (
 	params: ExportOrgmodeParams,
 ): TE.TaskEither<AppError, ExportResult> => {
-	logger.start("[Action] 导出 Org-mode...");
+	info("[Action] 导出 Org-mode...", {}, "export-orgmode");
 
 	return pipe(
 		// 并行获取节点和内容
@@ -81,7 +81,7 @@ export const exportNodeToOrgmode = (
 			);
 		}),
 		TE.tap((result) => {
-			logger.success("[Action] Org-mode 导出成功:", result.filename);
+			success("[Action] Org-mode 导出成功", { filename: result.filename }, "export-orgmode");
 			return TE.right(result);
 		}),
 	);
@@ -100,7 +100,7 @@ export const exportContentToOrgmode = (
 	content: string,
 	options?: OrgmodeExportOptions,
 ): E.Either<AppError, string> => {
-	logger.info("[Action] 直接导出 Org-mode");
+	info("[Action] 直接导出 Org-mode");
 
 	return pipe(
 		exportToOrgmode(content, options),

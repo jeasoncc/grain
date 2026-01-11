@@ -14,7 +14,7 @@ import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { getContentByNodeIdOrFail, getNodeByIdOrFail } from "@/io/api";
-import logger from "@/io/log";
+import { info } from "@/io/log/logger.api";
 import { exportToMarkdown, type MarkdownExportOptions } from "@/pipes/export";
 import { type AppError, exportError } from "@/utils/error.util";
 
@@ -51,7 +51,7 @@ export interface ExportResult {
 export const exportNodeToMarkdown = (
 	params: ExportMarkdownParams,
 ): TE.TaskEither<AppError, ExportResult> => {
-	logger.start("[Action] 导出 Markdown...");
+	info("[Action] 导出 Markdown...", {}, "export-markdown");
 
 	return pipe(
 		// 并行获取节点和内容
@@ -81,7 +81,7 @@ export const exportNodeToMarkdown = (
 			);
 		}),
 		TE.tap((result) => {
-			logger.success("[Action] Markdown 导出成功:", result.filename);
+			success("[Action] Markdown 导出成功", { filename: result.filename }, "export-markdown");
 			return TE.right(result);
 		}),
 	);
@@ -100,7 +100,7 @@ export const exportContentToMarkdown = (
 	content: string,
 	options?: MarkdownExportOptions,
 ): E.Either<AppError, string> => {
-	logger.info("[Action] 直接导出 Markdown");
+	info("[Action] 直接导出 Markdown");
 
 	return pipe(
 		exportToMarkdown(content, options),

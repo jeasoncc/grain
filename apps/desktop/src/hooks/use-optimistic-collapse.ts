@@ -16,7 +16,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { queryKeys } from "@/hooks/queries/query-keys";
 import { setNodeCollapsed as setNodeCollapsedApi } from "@/io/api/node.api";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import type { NodeInterface } from "@/types/node";
 
 interface UseOptimisticCollapseOptions {
@@ -65,7 +65,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			const queryKey = queryKeys.nodes.byWorkspace(workspaceId);
 			const syncStartTime = performance.now();
 
-			logger.debug("[OptimisticCollapse] Syncing to backend (debounced)", {
+			debug("[OptimisticCollapse] Syncing to backend (debounced)", {
 				nodeId,
 				collapsed,
 				timestamp: new Date().toISOString(),
@@ -77,7 +77,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 				const syncDuration = syncEndTime - syncStartTime;
 
 				if (result._tag === "Left") {
-					logger.error(
+					error(
 						"[OptimisticCollapse] Backend sync failed, rolling back",
 						{
 							nodeId,
@@ -101,7 +101,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 					return;
 				}
 
-				logger.debug("[OptimisticCollapse] Backend sync completed", {
+				debug("[OptimisticCollapse] Backend sync completed", {
 					nodeId,
 					collapsed,
 					syncDuration: `${syncDuration.toFixed(2)}ms`,
@@ -135,7 +135,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 	// 组件卸载时立即执行所有待处理的更新 - Requirements: 6.5
 	useEffect(() => {
 		return () => {
-			logger.debug(
+			debug(
 				"[OptimisticCollapse] Component unmounting, flushing pending updates",
 			);
 
@@ -157,7 +157,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 	const toggleCollapsed = useCallback(
 		(nodeId: string, collapsed: boolean): void => {
 			if (!workspaceId) {
-				logger.error("[OptimisticCollapse] No workspace ID provided");
+				error("[OptimisticCollapse] No workspace ID provided");
 				return;
 			}
 
@@ -168,7 +168,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 
 			// Performance monitoring
 			const startTime = performance.now();
-			logger.debug("[OptimisticCollapse] Starting optimistic update", {
+			debug("[OptimisticCollapse] Starting optimistic update", {
 				nodeId,
 				collapsed,
 				timestamp: new Date().toISOString(),
@@ -184,7 +184,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			});
 
 			const uiUpdateTime = performance.now();
-			logger.debug("[OptimisticCollapse] UI updated optimistically", {
+			debug("[OptimisticCollapse] UI updated optimistically", {
 				nodeId,
 				collapsed,
 				uiUpdateDuration: `${(uiUpdateTime - startTime).toFixed(2)}ms`,

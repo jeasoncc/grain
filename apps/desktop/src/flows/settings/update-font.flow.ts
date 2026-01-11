@@ -12,7 +12,7 @@
  */
 
 import * as E from "fp-ts/Either";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import { useFontStore } from "@/state/font.state";
 import { FONT_CONSTRAINTS, type FontState } from "@/types/font";
 import { type AppError, validationError } from "@/utils/error.util";
@@ -111,7 +111,7 @@ const validateNonEmpty = (
 export const updateEditorFont = (
 	params: UpdateEditorFontParams,
 ): E.Either<AppError, void> => {
-	logger.start("[Action] 更新编辑器字体设置");
+	info("[Action] 更新编辑器字体设置", {}, "update-font.flow");
 
 	const store = useFontStore.getState();
 
@@ -158,7 +158,7 @@ export const updateEditorFont = (
 		store.setLetterSpacing(params.letterSpacing);
 	}
 
-	logger.success("[Action] 编辑器字体设置更新成功");
+	success("[Action] 编辑器字体设置更新成功");
 	return E.right(undefined);
 };
 
@@ -174,7 +174,7 @@ export const updateEditorFont = (
 export const updateUiFont = (
 	params: UpdateUiFontParams,
 ): E.Either<AppError, void> => {
-	logger.start("[Action] 更新 UI 字体设置");
+	info("[Action] 更新 UI 字体设置", {}, "update-font.flow");
 
 	const store = useFontStore.getState();
 
@@ -202,7 +202,7 @@ export const updateUiFont = (
 		store.setUiScale(params.uiScale);
 	}
 
-	logger.success("[Action] UI 字体设置更新成功");
+	success("[Action] UI 字体设置更新成功");
 	return E.right(undefined);
 };
 
@@ -218,7 +218,7 @@ export const updateUiFont = (
 export const updateTypography = (
 	params: UpdateTypographyParams,
 ): E.Either<AppError, void> => {
-	logger.start("[Action] 更新排版设置");
+	info("[Action] 更新排版设置", {}, "update-font.flow");
 
 	const store = useFontStore.getState();
 
@@ -263,7 +263,7 @@ export const updateTypography = (
 		store.setFirstLineIndent(params.firstLineIndent);
 	}
 
-	logger.success("[Action] 排版设置更新成功");
+	success("[Action] 排版设置更新成功");
 	return E.right(undefined);
 };
 
@@ -275,10 +275,10 @@ export const updateTypography = (
  * @returns Either<AppError, void>
  */
 export const resetFontSettings = (): E.Either<AppError, void> => {
-	logger.start("[Action] 重置字体设置");
+	info("[Action] 重置字体设置", {}, "update-font.flow");
 
 	useFontStore.getState().reset();
-	logger.success("[Action] 字体设置已重置为默认值");
+	success("[Action] 字体设置已重置为默认值");
 	return E.right(undefined);
 };
 

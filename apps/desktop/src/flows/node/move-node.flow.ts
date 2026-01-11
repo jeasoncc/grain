@@ -13,7 +13,7 @@
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import * as nodeRepo from "@/io/api/node.api";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 import { wouldCreateCycle } from "@/pipes/node/node.tree.fn";
 import { type AppError, cycleError, notFoundError } from "@/utils/error.util";
 
@@ -42,7 +42,7 @@ export interface MoveNodeParams {
 export const moveNode = (
 	params: MoveNodeParams,
 ): TE.TaskEither<AppError, void> => {
-	logger.start("[Action] 移动节点:", params.nodeId);
+	info("[Action] 移动节点", { nodeId: params.nodeId }, "move-node.flow");
 
 	return pipe(
 		// 1. 获取节点信息
@@ -62,7 +62,7 @@ export const moveNode = (
 		// 3. 检查是否会创建循环引用
 		TE.chain(({ node, nodes }) => {
 			if (wouldCreateCycle(nodes, params.nodeId, params.newParentId)) {
-				logger.error("[Action] 移动节点失败: 会创建循环引用");
+				error("[Action] 移动节点失败: 会创建循环引用");
 				return TE.left(cycleError("移动节点会创建循环引用"));
 			}
 			return TE.right(node);
@@ -83,7 +83,7 @@ export const moveNode = (
 		),
 		// 6. 记录成功日志
 		TE.tap(() => {
-			logger.success("[Action] 节点移动成功:", params.nodeId);
+			success("[Action] 节点移动成功", { nodeId: params.nodeId }, "move-node");
 			return TE.right(undefined);
 		}),
 		// 7. 返回 void

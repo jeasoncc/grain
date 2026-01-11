@@ -12,7 +12,7 @@
  */
 
 import type { z } from "zod";
-import logger from "@/io/log";
+import { info, debug, warn, error } from "@/io/log/logger.api";
 
 // ============================================================================
 // 存储键常量
@@ -49,7 +49,7 @@ export function getString(key: string): string | null {
 	try {
 		return localStorage.getItem(key);
 	} catch (error) {
-		logger.error(`[Storage] 读取失败 (${key}):`, error);
+		error(`[Storage] 读取失败 (${key}):`, error);
 		return null;
 	}
 }
@@ -66,7 +66,7 @@ export function setString(key: string, value: string): boolean {
 		localStorage.setItem(key, value);
 		return true;
 	} catch (error) {
-		logger.error(`[Storage] 写入失败 (${key}):`, error);
+		error(`[Storage] 写入失败 (${key}):`, error);
 		return false;
 	}
 }
@@ -82,7 +82,7 @@ export function remove(key: string): boolean {
 		localStorage.removeItem(key);
 		return true;
 	} catch (error) {
-		logger.error(`[Storage] 删除失败 (${key}):`, error);
+		error(`[Storage] 删除失败 (${key}):`, error);
 		return false;
 	}
 }
@@ -97,7 +97,7 @@ export function clearAll(): boolean {
 		localStorage.clear();
 		return true;
 	} catch (error) {
-		logger.error("[Storage] 清空失败:", error);
+		error("[Storage] 清空失败", { error }, "settings.storage");
 		return false;
 	}
 }
@@ -132,10 +132,10 @@ export function getJson<T>(
 			return result.data;
 		}
 
-		logger.warn(`[Storage] 数据格式无效 (${key})，使用默认值:`, result.error);
+		warn(`[Storage] 数据格式无效 (${key})，使用默认值:`, result.error);
 		return defaultValue;
 	} catch (error) {
-		logger.error(`[Storage] 读取 JSON 失败 (${key}):`, error);
+		error(`[Storage] 读取 JSON 失败 (${key}):`, error);
 		return defaultValue;
 	}
 }
@@ -152,7 +152,7 @@ export function setJson<T>(key: string, value: T): boolean {
 		localStorage.setItem(key, JSON.stringify(value));
 		return true;
 	} catch (error) {
-		logger.error(`[Storage] 写入 JSON 失败 (${key}):`, error);
+		error(`[Storage] 写入 JSON 失败 (${key}):`, error);
 		return false;
 	}
 }
@@ -172,7 +172,7 @@ export function getJsonUnsafe<T>(key: string, defaultValue: T): T {
 		}
 		return JSON.parse(stored) as T;
 	} catch (error) {
-		logger.error(`[Storage] 解析 JSON 失败 (${key}):`, error);
+		error(`[Storage] 解析 JSON 失败 (${key}):`, error);
 		return defaultValue;
 	}
 }
@@ -204,7 +204,7 @@ export function getStorageStats(): { size: number; keys: number } {
 			keys: keys.length,
 		};
 	} catch (error) {
-		logger.error("[Storage] 获取统计信息失败:", error);
+		error("[Storage] 获取统计信息失败", { error }, "settings.storage");
 		return { size: 0, keys: 0 };
 	}
 }
@@ -218,7 +218,7 @@ export function getAllKeys(): string[] {
 	try {
 		return Object.keys(localStorage);
 	} catch (error) {
-		logger.error("[Storage] 获取键列表失败:", error);
+		error("[Storage] 获取键列表失败", { error }, "settings.storage");
 		return [];
 	}
 }
@@ -233,7 +233,7 @@ export function has(key: string): boolean {
 	try {
 		return localStorage.getItem(key) !== null;
 	} catch (error) {
-		logger.error(`[Storage] 检查键失败 (${key}):`, error);
+		error(`[Storage] 检查键失败 (${key}):`, error);
 		return false;
 	}
 }
