@@ -41,7 +41,7 @@ async function main() {
 					{import.meta.env.DEV && (
 						<ReactQueryDevtools
 							initialIsOpen={false}
-							position="bottom-left"
+							buttonPosition="bottom-left"
 						/>
 					)}
 				</QueryClientProvider>
