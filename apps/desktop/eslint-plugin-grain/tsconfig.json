@@ -14,7 +14,9 @@
     "declarationMap": true,
     "sourceMap": true,
     "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "types": ["node"],
+    "moduleDetection": "force"
   },
   "include": [
     "src/**/*"
@@ -22,6 +24,7 @@
   "exclude": [
     "node_modules",
     "dist",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "../../../node_modules/react-native/**/*"
   ]
 }
