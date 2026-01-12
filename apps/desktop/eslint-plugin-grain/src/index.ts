@@ -36,6 +36,24 @@ import {
   noStoreInViews,
   fileLocation,
 } from './rules/architecture/index.js';
+
+// Import naming rules
+import {
+  fileNaming,
+  variableNaming,
+  functionNaming,
+  booleanNaming,
+  constantNaming,
+} from './rules/naming/index.js';
+
+// Import complexity rules
+import {
+  maxFunctionLines,
+  maxParams,
+  maxNesting,
+  cyclomaticComplexity,
+  maxFileLines,
+} from './rules/complexity/index.js';
 // import layerDependencies from './rules/layer-dependencies';
 // import noReactInPureLayers from './rules/no-react-in-pure-layers';
 // import noSideEffectsInPipes from './rules/no-side-effects-in-pipes';
@@ -90,6 +108,20 @@ const plugin = {
     'no-store-in-views': noStoreInViews,
     'file-location': fileLocation,
     
+    // Naming Rules
+    'file-naming': fileNaming,
+    'variable-naming': variableNaming,
+    'function-naming': functionNaming,
+    'boolean-naming': booleanNaming,
+    'constant-naming': constantNaming,
+    
+    // Complexity Rules
+    'max-function-lines': maxFunctionLines,
+    'max-params': maxParams,
+    'max-nesting': maxNesting,
+    'cyclomatic-complexity': cyclomaticComplexity,
+    'max-file-lines': maxFileLines,
+    
     // Architecture Layer Rules
     // 'layer-dependencies': layerDependencies,
     // 'no-react-in-pure-layers': noReactInPureLayers,
@@ -139,6 +171,18 @@ const plugin = {
         'grain/no-side-effects-in-pipes': 'error',
         'grain/no-store-in-views': 'error',
         'grain/file-location': 'warn',
+        // Naming Rules
+        'grain/file-naming': 'warn',
+        'grain/variable-naming': 'error',
+        'grain/function-naming': 'warn',
+        'grain/boolean-naming': 'error',
+        'grain/constant-naming': 'error',
+        // Complexity Rules
+        'grain/max-function-lines': 'error',
+        'grain/max-params': 'error',
+        'grain/max-nesting': 'error',
+        'grain/cyclomatic-complexity': 'error',
+        'grain/max-file-lines': 'error',
       },
     },
     
@@ -162,6 +206,18 @@ const plugin = {
         'grain/no-side-effects-in-pipes': 'error',
         'grain/no-store-in-views': 'error',
         'grain/file-location': 'error',
+        // Naming Rules - All error
+        'grain/file-naming': 'error',
+        'grain/variable-naming': 'error',
+        'grain/function-naming': 'error',
+        'grain/boolean-naming': 'error',
+        'grain/constant-naming': 'error',
+        // Complexity Rules - All error
+        'grain/max-function-lines': 'error',
+        'grain/max-params': 'error',
+        'grain/max-nesting': 'error',
+        'grain/cyclomatic-complexity': 'error',
+        'grain/max-file-lines': 'error',
       },
     },
     

@@ -92,47 +92,47 @@
   - 在实际项目文件上验证规则效果
   - 如有问题请询问用户
 
-- [ ] 6. 命名规范规则（naming/）
-  - [ ] 6.1 实现 file-naming 规则
+- [x] 6. 命名规范规则（naming/）
+  - [x] 6.1 实现 file-naming 规则
     - 检测各层级文件命名规范
     - _Requirements: 4.1-4.10_
-  - [ ] 6.2 实现 variable-naming 规则
+  - [x] 6.2 实现 variable-naming 规则
     - 检测变量名最小长度
     - 检测允许的短变量名
     - _Requirements: 16.1_
-  - [ ] 6.3 实现 function-naming 规则
+  - [x] 6.3 实现 function-naming 规则
     - 检测函数名是否以动词开头
     - 检测事件处理器命名
     - _Requirements: 16.2, 16.7_
-  - [ ] 6.4 实现 boolean-naming 规则
+  - [x] 6.4 实现 boolean-naming 规则
     - 检测布尔变量前缀
     - _Requirements: 16.3_
-  - [ ] 6.5 实现 constant-naming 规则
+  - [x] 6.5 实现 constant-naming 规则
     - 检测常量是否为 SCREAMING_SNAKE_CASE
     - _Requirements: 16.4_
-  - [ ] 6.6 编写命名规则属性测试
+  - [x] 6.6 编写命名规则属性测试
     - **Property 5: File Naming Convention Validation**
     - **Property 10: Naming Convention Enforcement**
     - **Validates: Requirements 4.1-4.10, 16.1-16.7**
 
-- [ ] 7. 复杂度规则（complexity/）
-  - [ ] 7.1 实现 max-function-lines 规则
+- [x] 7. 复杂度规则（complexity/）
+  - [x] 7.1 实现 max-function-lines 规则
     - 限制函数最大 20 行
     - _Requirements: 15.1_
-  - [ ] 7.2 实现 max-params 规则
+  - [x] 7.2 实现 max-params 规则
     - 限制参数最大 3 个
     - 提供对象参数建议
     - _Requirements: 15.2_
-  - [ ] 7.3 实现 max-nesting 规则
+  - [x] 7.3 实现 max-nesting 规则
     - 限制嵌套最大 2 层
     - _Requirements: 15.4_
-  - [ ] 7.4 实现 cyclomatic-complexity 规则
+  - [x] 7.4 实现 cyclomatic-complexity 规则
     - 限制圈复杂度最大 5
     - _Requirements: 15.3_
-  - [ ] 7.5 实现 max-file-lines 规则
+  - [x] 7.5 实现 max-file-lines 规则
     - 限制文件最大 200 行
     - _Requirements: 15.6_
-  - [ ] 7.6 编写复杂度规则属性测试
+  - [x] 7.6 编写复杂度规则属性测试
     - **Property 9: Code Complexity Metrics Enforcement**
     - **Validates: Requirements 15.1-15.6**
 
