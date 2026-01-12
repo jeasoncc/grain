@@ -227,48 +227,48 @@
     - 检测硬编码超时值
     - _Requirements: 23.2-23.5_
 
-- [-] 15. 条件语句规则
-  - [-] 15.1 实现 no-nested-ternary 规则
+- [x] 15. 条件语句规则
+  - [x] 15.1 实现 no-nested-ternary 规则
     - 检测嵌套三元表达式
     - _Requirements: 20.2_
-  - [ ] 15.2 实现 strict-equality 规则
+  - [x] 15.2 实现 strict-equality 规则
     - 强制使用 === 和 !==
     - _Requirements: 20.5_
-  - [ ] 15.3 实现 require-switch-default 规则
+  - [x] 15.3 实现 require-switch-default 规则
     - 检测 switch 缺少 default
     - _Requirements: 20.3_
 
-- [ ] 16. 类型安全规则
-  - [ ] 16.1 实现 no-any 规则
+- [x] 16. 类型安全规则
+  - [x] 16.1 实现 no-any 规则
     - 检测 any 类型使用
     - _Requirements: 12.1_
-  - [ ] 16.2 实现 no-non-null-assertion 规则
+  - [x] 16.2 实现 no-non-null-assertion 规则
     - 检测非空断言
     - 建议使用 Option
     - _Requirements: 12.4_
-  - [ ] 16.3 实现 require-return-type 规则
+  - [x] 16.3 实现 require-return-type 规则
     - 检测函数返回类型
     - _Requirements: 12.6_
 
-- [ ] 17. Zustand 规则
-  - [ ] 17.1 实现 zustand-patterns 规则
+- [x] 17. Zustand 规则
+  - [x] 17.1 实现 zustand-patterns 规则
     - 检测 store 位置
     - 检测 selector 使用
     - 检测 Immer 使用
     - _Requirements: 27.1-27.5_
 
-- [ ] 18. 配置和预设
-  - [ ] 18.1 创建 strict 配置
+- [x] 18. 配置和预设
+  - [x] 18.1 创建 strict 配置
     - 所有规则设为 error
     - _Requirements: 14.1-14.4_
-  - [ ] 18.2 创建 legacy 配置
+  - [x] 18.2 创建 legacy 配置
     - 用于迁移的宽松配置
     - _Requirements: 14.5_
-  - [ ] 18.3 更新插件入口
+  - [x] 18.3 更新插件入口
     - 导出所有新规则
     - 导出配置预设
 
-- [ ] 19. Final Checkpoint - 完整验证
+- [x] 19. Final Checkpoint - 完整验证
   - 运行所有测试确保通过
   - 在实际项目上运行完整检查
   - 验证错误消息的清晰度

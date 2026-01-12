@@ -43,15 +43,15 @@ export function getArchitectureLayer(filename: string): ArchitectureLayer | null
 /**
  * 判断是否为容器组件
  */
-export function isContainerComponent(filename: string): boolean {
-  return filename.includes('.container.fn.tsx');
+export function isContainerComponent(filename: string | undefined): boolean {
+  return filename?.includes('.container.fn.tsx') ?? false;
 }
 
 /**
  * 判断是否为视图组件
  */
-export function isViewComponent(filename: string): boolean {
-  return filename.includes('.view.fn.tsx');
+export function isViewComponent(filename: string | undefined): boolean {
+  return filename?.includes('.view.fn.tsx') ?? false;
 }
 
 /**

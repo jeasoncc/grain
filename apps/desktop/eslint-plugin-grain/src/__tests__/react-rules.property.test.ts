@@ -8,35 +8,7 @@
 
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { Linter } from 'eslint';
-import plugin from '../index.js';
-
-// Helper to run ESLint with our plugin
-function runLint(
-  code: string,
-  rules: Record<string, string | [string, unknown]>,
-  filename?: string
-): Linter.LintMessage[] {
-  const linter = new Linter({ configType: 'flat' });
-  
-  const config = {
-    plugins: {
-      grain: plugin,
-    },
-    rules,
-    languageOptions: {
-      ecmaVersion: 2022 as const,
-      sourceType: 'module' as const,
-      parserOptions: {
-        ecmaFeatures: {
-          jsx: true,
-        },
-      },
-    },
-  };
-
-  return linter.verify(code, config, { filename: filename || 'test.tsx' });
-}
+import { runLint, hasRuleError, countRuleErrors } from './test-utils.js';
 
 describe('Property 7: React Component Pattern Enforcement', () => {
 
@@ -59,7 +31,7 @@ describe('Property 7: React Component Pattern Enforcement', () => {
             );
 
             expect(errors.length).toBeGreaterThan(0);
-            expect(errors.some(e => e.ruleId === 'grain/require-memo')).toBe(true);
+            expect(hasRuleError(errors, 'grain/require-memo')).toBe(true);
           }
         ),
         { numRuns: 100 }
@@ -85,7 +57,7 @@ describe('Property 7: React Component Pattern Enforcement', () => {
             );
 
             // Should have no errors for memoized components
-            expect(errors.filter(e => e.ruleId === 'grain/require-memo').length).toBe(0);
+            expect(countRuleErrors(errors, 'grain/require-memo')).toBe(0);
           }
         ),
         { numRuns: 100 }

@@ -9,33 +9,8 @@
 
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { Linter } from 'eslint';
-import plugin from '../index.js';
+import { runLint, hasRuleError, countRuleErrors } from './test-utils.js';
 import { FILE_NAMING_PATTERNS, DEFAULT_NAMING_CONFIG } from '../types/config.types';
-
-// Helper to run ESLint with our plugin
-function runLint(code: string, rules: Record<string, string | [string, unknown]>, filename?: string): Linter.LintMessage[] {
-  const linter = new Linter({ configType: 'flat' });
-  
-  const config = {
-    plugins: {
-      grain: plugin,
-    },
-    languageOptions: {
-      ecmaVersion: 2020,
-      sourceType: 'module' as const,
-      parser: require('@typescript-eslint/parser'),
-      parserOptions: {
-        ecmaFeatures: {
-          jsx: true,
-        },
-      },
-    },
-    rules,
-  };
-
-  return linter.verify(code, config, { filename: filename || 'test.ts' });
-}
 
 describe('Property 5: File Naming Convention Validation', () => {
   /**

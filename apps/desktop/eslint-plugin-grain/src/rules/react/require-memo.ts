@@ -106,22 +106,45 @@ export const MyComponent = ({ title, onAction }: Props) => {
     }
 
     function isWrappedWithMemo(node: TSESTree.Node): boolean {
-      const parent = node.parent;
+      let current: TSESTree.Node | undefined = node.parent;
       
-      // 检查是否被 memo() 包裹
-      if (parent && parent.type === 'CallExpression') {
-        const callee = parent.callee;
-        if (callee.type === 'Identifier' && callee.name === 'memo') {
-          return true;
+      // 向上查找，检查是否在 memo() 调用中
+      while (current) {
+        if (current.type === 'CallExpression') {
+          const callee = current.callee;
+          if (callee.type === 'Identifier' && callee.name === 'memo') {
+            return true;
+          }
+          // 检查 React.memo
+          if (callee.type === 'MemberExpression' &&
+              callee.object.type === 'Identifier' &&
+              callee.object.name === 'React' &&
+              callee.property.type === 'Identifier' &&
+              callee.property.name === 'memo') {
+            return true;
+          }
         }
-        // 检查 React.memo
-        if (callee.type === 'MemberExpression' &&
-            callee.object.type === 'Identifier' &&
-            callee.object.name === 'React' &&
-            callee.property.type === 'Identifier' &&
-            callee.property.name === 'memo') {
-          return true;
+        
+        // 如果到达变量声明器，检查其初始化器
+        if (current.type === 'VariableDeclarator') {
+          const init = current.init;
+          if (init && init.type === 'CallExpression') {
+            const callee = init.callee;
+            if (callee.type === 'Identifier' && callee.name === 'memo') {
+              return true;
+            }
+            if (callee.type === 'MemberExpression' &&
+                callee.object.type === 'Identifier' &&
+                callee.object.name === 'React' &&
+                callee.property.type === 'Identifier' &&
+                callee.property.name === 'memo') {
+              return true;
+            }
+          }
+          break; // 到达变量声明器就停止
         }
+        
+        current = current.parent;
       }
       
       return false;
