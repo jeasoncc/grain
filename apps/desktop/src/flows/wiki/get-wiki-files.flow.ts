@@ -16,7 +16,7 @@ import { WikiFileEntryBuilder } from "@/pipes/wiki/wiki.builder";
 import { WIKI_TAG } from "@/pipes/wiki/wiki.resolve.fn";
 import type { WikiFileEntry } from "@/pipes/wiki/wiki.schema";
 import type { NodeInterface } from "@/types/node";
-import type { AppError } from "@/utils/error.util";
+import type { AppError } from "@/types/error";
 
 /**
  * Build the path string for a node

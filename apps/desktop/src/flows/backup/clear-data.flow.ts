@@ -15,7 +15,7 @@ import type {
 	StorageStats,
 	TableSizes,
 } from "@/types/storage";
-import { type AppError, dbError } from "@/utils/error.util";
+import { type AppError, dbError } from "@/types/error";
 
 // ============================================================================
 // SQLite 清理

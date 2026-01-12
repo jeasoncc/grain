@@ -15,7 +15,7 @@ import * as E from "fp-ts/Either";
 import { info, debug, warn, error } from "@/io/log/logger.api";
 import { useFontStore } from "@/state/font.state";
 import { FONT_CONSTRAINTS, type FontState } from "@/types/font";
-import { type AppError, validationError } from "@/utils/error.util";
+import { type AppError, validationError } from "@/types/error";
 
 // ============================================================================
 // Types

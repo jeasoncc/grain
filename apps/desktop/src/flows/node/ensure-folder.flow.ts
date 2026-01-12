@@ -15,7 +15,7 @@ import * as TE from "fp-ts/TaskEither";
 import * as nodeRepo from "@/io/api/node.api";
 import { info, debug, warn, error, success } from "@/io/log/logger.api";
 import type { NodeInterface } from "@/types/node";
-import type { AppError } from "@/utils/error.util";
+import type { AppError } from "@/types/error";
 
 /**
  * 确保根级文件夹存在

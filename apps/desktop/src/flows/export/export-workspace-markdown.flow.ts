@@ -18,7 +18,7 @@ import {
 } from "@/io/api";
 import { info } from "@/io/log/logger.api";
 import { exportWorkspaceToMarkdown } from "@/pipes/export/export.bundle.fn";
-import type { AppError } from "@/utils/error.util";
+import type { AppError } from "@/types/error";
 
 /**
  * 导出工作区为 Markdown 格式

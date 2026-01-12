@@ -16,7 +16,7 @@ import type {
 	DatabaseStats,
 	LocalBackupRecord,
 } from "@/types/backup";
-import { type AppError, dbError, importError } from "@/utils/error.util";
+import { type AppError, dbError, importError } from "@/types/error";
 
 // ============================================================================
 // 备份操作

@@ -22,7 +22,7 @@ import {
 	updateNode,
 } from "@/io/api";
 import { info, debug, warn, error } from "@/io/log/logger.api";
-import type { AppError } from "@/utils/error.util";
+import type { AppError } from "@/types/error";
 import { extractTagsFromContent } from "./save.debounce.fn";
 
 // ============================================================================

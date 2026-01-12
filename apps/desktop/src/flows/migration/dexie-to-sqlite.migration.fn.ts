@@ -34,7 +34,7 @@ import type { ContentInterface } from "@/types/content";
 import type { NodeInterface } from "@/types/node";
 import type { UserInterface } from "@/types/user";
 import type { WorkspaceInterface } from "@/types/workspace";
-import { type AppError, dbError } from "@/utils/error.util";
+import { type AppError, dbError } from "@/types/error";
 
 // ============================================================================
 // 类型定义

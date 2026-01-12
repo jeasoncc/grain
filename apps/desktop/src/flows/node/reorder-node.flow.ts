@@ -14,7 +14,7 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import * as nodeRepo from "@/io/api/node.api";
 import { info, debug, warn, error } from "@/io/log/logger.api";
-import { type AppError, validationError } from "@/utils/error.util";
+import { type AppError, validationError } from "@/types/error";
 
 /**
  * 重新排序节点参数

@@ -20,7 +20,7 @@ import {
 	type MarkdownImportOptions,
 } from "@/pipes/import/import.markdown.fn";
 import type { NodeInterface } from "@/types/node";
-import { type AppError, importError } from "@/utils/error.util";
+import { type AppError, importError } from "@/types/error";
 
 /**
  * 导入 Markdown 内容参数

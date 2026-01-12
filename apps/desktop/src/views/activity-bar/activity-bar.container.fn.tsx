@@ -37,7 +37,7 @@ import { useSelectionStore } from "@/state/selection.state";
 import { useSidebarStore } from "@/state/sidebar.state";
 import type { TabType } from "@/types/editor-tab";
 import type { WorkspaceInterface } from "@/types/workspace";
-import type { AppError } from "@/utils/error.util";
+import type { AppError } from "@/types/error";
 import { ExportDialog } from "@/views/export-dialog";
 import { useConfirm } from "@/views/ui/confirm";
 

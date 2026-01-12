@@ -15,7 +15,7 @@ import * as TE from "fp-ts/TaskEither";
 import * as nodeRepo from "@/io/api/node.api";
 import { info, debug, warn, error } from "@/io/log/logger.api";
 import { wouldCreateCycle } from "@/pipes/node/node.tree.fn";
-import { type AppError, cycleError, notFoundError } from "@/utils/error.util";
+import { type AppError, cycleError, notFoundError } from "@/types/error";
 
 /**
  * 移动节点参数

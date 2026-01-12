@@ -14,7 +14,7 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import * as workspaceRepo from "@/io/api/workspace.api";
 import { info, success } from "@/io/log/logger.api";
-import type { AppError } from "@/utils/error.util";
+import type { AppError } from "@/types/error";
 
 /**
  * 删除工作区及其所有关联数据

@@ -25,7 +25,7 @@ import * as contentRepo from "@/io/api/content.api";
 import { info, debug, warn, error } from "@/io/log/logger.api";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import type { TabType } from "@/types/editor-tab";
-import type { AppError } from "@/utils/error.util";
+import type { AppError } from "@/types/error";
 import { fileOperationQueue } from "@/utils/queue.util";
 
 /**

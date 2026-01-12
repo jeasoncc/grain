@@ -28,7 +28,7 @@ import { createFile } from "@/flows/file";
 import { ensureFolderPath } from "@/flows/node";
 import { info, debug, warn, error } from "@/io/log/logger.api";
 import type { FileNodeType, NodeInterface } from "@/types/node";
-import type { AppError } from "@/utils/error.util";
+import type { AppError } from "@/types/error";
 
 // ==============================
 // Types

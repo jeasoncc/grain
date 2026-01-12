@@ -8,7 +8,7 @@
 import * as E from "fp-ts/Either";
 import * as TE from "fp-ts/TaskEither";
 import { getContentByNodeId, getNodeById } from "@/io/api";
-import type { AppError } from "@/utils/error.util";
+import type { AppError } from "@/types/error";
 
 /**
  * Wiki 预览数据类型

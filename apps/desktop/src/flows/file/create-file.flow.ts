@@ -26,7 +26,7 @@ import { info, debug, success } from "@/io/log/logger.api";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import type { TabType } from "@/types/editor-tab";
 import type { NodeInterface, NodeType } from "@/types/node";
-import type { AppError } from "@/utils/error.util";
+import type { AppError } from "@/types/error";
 import { fileOperationQueue } from "@/utils/queue.util";
 
 /**

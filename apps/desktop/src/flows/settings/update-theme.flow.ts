@@ -23,7 +23,7 @@ import {
 } from "@/pipes/theme";
 import { useThemeStore } from "@/state/theme.state";
 import type { ThemeMode } from "@/types/theme";
-import { type AppError, validationError } from "@/utils/error.util";
+import { type AppError, validationError } from "@/types/error";
 import { getThemeByKey } from "@/utils/themes.util";
 
 // ============================================================================

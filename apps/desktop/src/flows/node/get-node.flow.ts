@@ -11,7 +11,7 @@ import {
 	setNodeCollapsed as setNodeCollapsedApi,
 } from "@/io/api";
 import type { NodeInterface } from "@/types/node";
-import type { AppError } from "@/utils/error.util";
+import type { AppError } from "@/types/error";
 
 /**
  * 获取节点详情

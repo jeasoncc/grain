@@ -31,7 +31,7 @@ import type {
 	ContentData,
 } from "@/pipes/import/import.json.fn";
 import type { AttachmentInterface } from "@/types/attachment";
-import type { AppError } from "@/utils/error.util";
+import type { AppError } from "@/types/error";
 
 /**
  * 将附件数据转换为导出格式

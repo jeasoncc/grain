@@ -20,7 +20,7 @@ import {
 } from "@/pipes/import/import.json.fn";
 import type { NodeInterface } from "@/types/node";
 import type { WorkspaceInterface } from "@/types/workspace";
-import type { AppError } from "@/utils/error.util";
+import type { AppError } from "@/types/error";
 
 /**
  * 从 JSON 导入数据

@@ -16,7 +16,7 @@ import * as TE from "fp-ts/TaskEither";
 import { getContentByNodeIdOrFail, getNodeByIdOrFail } from "@/io/api";
 import { info, success } from "@/io/log/logger.api";
 import { exportToOrgmode, type OrgmodeExportOptions } from "@/pipes/export";
-import { type AppError, exportError } from "@/utils/error.util";
+import { type AppError, exportError } from "@/types/error";
 
 /**
  * 导出节点内容为 Org-mode 格式参数
