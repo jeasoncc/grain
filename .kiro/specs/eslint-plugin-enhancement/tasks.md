@@ -17,43 +17,43 @@
     - 创建 `types/rule.types.ts` 规则相关类型
     - 创建 `types/config.types.ts` 配置相关类型
     - _Requirements: 13.1-13.5_
-  - [-] 1.3 编写基础设施单元测试
+  - [x] 1.3 编写基础设施单元测试
     - 测试 message-builder 函数
     - 测试 architecture 工具函数
     - _Requirements: 13.1-13.5_
 
-- [ ] 2. 函数式编程规则（functional/）
-  - [ ] 2.1 增强 no-try-catch 规则
+- [x] 2. 函数式编程规则（functional/）
+  - [x] 2.1 增强 no-try-catch 规则
     - 添加完整的错误消息模板
     - 添加 TaskEither 迁移指导
     - _Requirements: 1.1_
-  - [ ] 2.2 实现 no-throw 规则
+  - [x] 2.2 实现 no-throw 规则
     - 检测所有 throw 语句
     - 提供 Either.left/TaskEither.left 替代方案
     - _Requirements: 1.2_
-  - [ ] 2.3 实现 no-promise-methods 规则
+  - [x] 2.3 实现 no-promise-methods 规则
     - 检测 Promise.catch/then/all/race
     - 提供 TaskEither 替代方案
     - _Requirements: 1.3, 17.2-17.5_
-  - [ ] 2.4 实现 no-async-outside-io 规则
+  - [x] 2.4 实现 no-async-outside-io 规则
     - 检测 io/ 层外的 async/await
     - _Requirements: 17.1, 17.7_
-  - [ ] 2.5 增强 no-mutation 规则
+  - [x] 2.5 增强 no-mutation 规则
     - 添加所有数组变异方法检测
     - 添加 forEach 检测
     - 添加数组索引赋值检测
     - _Requirements: 1.5, 18.1-18.7_
-  - [ ] 2.6 实现 no-object-mutation 规则
+  - [x] 2.6 实现 no-object-mutation 规则
     - 检测 Object.assign 变异
     - 检测 delete 操作符
     - 检测 Object.defineProperty
     - _Requirements: 1.6-1.8, 19.1-19.7_
-  - [ ] 2.7 实现 fp-ts-patterns 规则
+  - [x] 2.7 实现 fp-ts-patterns 规则
     - 检测未 fold 的 Either/Option
     - 检测未执行的 TaskEither
     - 检测手动 null 检查
     - _Requirements: 26.1-26.7_
-  - [ ] 2.8 编写函数式规则属性测试
+  - [x] 2.8 编写函数式规则属性测试
     - **Property 1: Error Handling Pattern Detection**
     - **Property 2: Immutability Enforcement**
     - **Validates: Requirements 1.1-1.10, 17.1-17.7, 18.1-18.7, 19.1-19.7, 26.1-26.7**

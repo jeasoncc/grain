@@ -5,7 +5,8 @@
 
 import { ESLintUtils } from '@typescript-eslint/utils';
 import { TSESTree } from '@typescript-eslint/utils';
-import { getArchitectureLayer, SIDE_EFFECT_GLOBALS } from '../utils/index.js';
+import { getArchitectureLayer } from '../utils/index.js';
+import { SIDE_EFFECT_GLOBALS } from '../types/config.types.js';
 
 const createRule = ESLintUtils.RuleCreator(
   (name) => `https://github.com/grain-team/grain/blob/main/docs/eslint-rules/${name}.md`
@@ -78,7 +79,7 @@ export default createRule({
     return {
       // Check for global object access
       Identifier(node: TSESTree.Identifier) {
-        if (SIDE_EFFECT_GLOBALS.includes(node.name)) {
+        if ((SIDE_EFFECT_GLOBALS as readonly string[]).includes(node.name)) {
           // Skip if it's part of a type annotation
           if (
             node.parent?.type === 'TSTypeReference' ||

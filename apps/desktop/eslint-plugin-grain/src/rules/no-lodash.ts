@@ -9,7 +9,10 @@ const createRule = ESLintUtils.RuleCreator(
   (name) => `https://github.com/grain-team/grain/blob/main/docs/eslint-rules/${name}.md`
 );
 import { TSESTree } from '@typescript-eslint/utils';
-import { DEPRECATED_MODULES } from '../utils/index.js';
+import { BANNED_LIBRARIES } from '../types/config.types.js';
+
+// Alias for backward compatibility
+const DEPRECATED_MODULES = BANNED_LIBRARIES;
 
 export default createRule({
   name: 'no-lodash',
