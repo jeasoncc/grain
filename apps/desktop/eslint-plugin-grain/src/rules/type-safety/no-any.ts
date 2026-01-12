@@ -15,7 +15,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '禁止使用 any 类型，必须使用明确的类型定义',
-      recommended: 'error',
     },
     messages: {
       noAnyType: buildErrorMessage({

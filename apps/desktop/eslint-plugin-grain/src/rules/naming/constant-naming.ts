@@ -101,30 +101,10 @@ export default createRule({
         context.report({
           node,
           messageId: 'invalidConstantName',
-          message: buildErrorMessage({
-            title: `常量 "${name}" 命名不符合规范`,
-            reason: `模块级别的原始类型常量必须使用 SCREAMING_SNAKE_CASE 命名。
-当前常量名：${name}
-建议改为：${suggestion}`,
-            correctExample: `// ✅ 正确的常量命名
-const MAX_RETRY_COUNT = 3;
-const API_BASE_URL = 'https://api.example.com';
-const DEFAULT_TIMEOUT = 5000;
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
-const ERROR_MESSAGES = {
-  NOT_FOUND: '未找到',
-  UNAUTHORIZED: '未授权',
-};
-
-// 非常量（camelCase 正确）
-const getUserById = (id: string) => { /* ... */ };
-const defaultConfig = { timeout: 5000 };  // 对象不需要 SCREAMING_SNAKE_CASE`,
-            incorrectExample: `// ❌ 错误的常量命名
-const ${name} = ${declarator.init?.type === AST_NODE_TYPES.Literal ? JSON.stringify(declarator.init.value) : '...'};
-const maxRetryCount = 3;
-const apiBaseUrl = 'https://api.example.com';`,
-            docRef: '#code-standards - 常量命名',
-          }),
+          data: {
+            name,
+            suggestion,
+          },
         });
       }
     }

@@ -42,20 +42,12 @@ export default createRule({
           context.report({
             node,
             messageId: 'invalidFileName',
-            message: buildErrorMessage({
-              title: `文件命名不符合 ${layer}/ 层规范`,
-              reason: `${layer}/ 层的文件必须遵循特定的命名模式。
-当前文件名：${basename}
-不符合规范：${pattern.description}`,
-              correctExample: `// ${pattern.description}
-// 示例：${pattern.example}
-
-// 正确的文件名格式
-${pattern.example.split(', ').map(ex => `- ${ex}`).join('\n')}`,
-              incorrectExample: `// ❌ 错误的文件名
-${basename}`,
-              docRef: '#code-standards - 文件命名规范',
-            }),
+            data: {
+              layer,
+              basename,
+              description: pattern.description,
+              example: pattern.example,
+            },
           });
         }
       },

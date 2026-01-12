@@ -15,7 +15,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '禁止使用非空断言（!），建议使用 Option 类型进行安全的空值处理',
-      recommended: 'error',
     },
     messages: {
       noNonNullAssertion: buildErrorMessage({

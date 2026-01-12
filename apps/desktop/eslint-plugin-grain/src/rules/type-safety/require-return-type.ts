@@ -15,7 +15,6 @@ export default createRule({
     type: 'suggestion',
     docs: {
       description: '要求函数显式声明返回类型，提高代码可读性和类型安全性',
-      recommended: 'warn',
     },
     messages: {
       missingReturnType: buildWarningMessage({

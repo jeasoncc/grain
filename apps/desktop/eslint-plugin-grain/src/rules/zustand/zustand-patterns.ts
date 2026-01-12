@@ -20,7 +20,6 @@ export default createRule<[], MessageIds>({
     type: 'problem',
     docs: {
       description: '强制执行 Zustand 状态管理模式',
-      recommended: 'error',
     },
     messages: {
       storeInView: buildErrorMessage({

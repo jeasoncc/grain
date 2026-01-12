@@ -53,20 +53,10 @@ export default createRule({
           context.report({
             node,
             messageId: 'invalidEventHandler',
-            message: buildErrorMessage({
-              title: `事件处理器 "${name}" 命名不符合规范`,
-              reason: `事件处理器必须以 ${eventHandlerPrefixes.join(' 或 ')} 开头。
-当前函数名：${name}`,
-              correctExample: `// ✅ 正确的事件处理器命名
-const handleClick = () => { /* ... */ };
-const handleSubmit = () => { /* ... */ };
-const onMount = () => { /* ... */ };
-const onChange = (value: string) => { /* ... */ };`,
-              incorrectExample: `// ❌ 错误的事件处理器命名
-const ${name} = () => { /* ... */ };
-const clickHandler = () => { /* ... */ };  // 应该是 handleClick`,
-              docRef: '#code-standards - 事件处理器命名',
-            }),
+            data: {
+              name,
+              prefixes: eventHandlerPrefixes.join(' 或 '),
+            },
           });
           return;
         }

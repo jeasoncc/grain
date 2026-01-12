@@ -54,7 +54,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '❌ 禁止记录敏感数据和硬编码凭证',
-      recommended: 'error',
     },
     messages: {
       sensitiveLogging: buildComprehensiveErrorMessage({

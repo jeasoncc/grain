@@ -77,31 +77,10 @@ export default createRule({
         context.report({
           node,
           messageId: 'invalidBooleanName',
-          message: buildErrorMessage({
-            title: `布尔变量 "${name}" 命名不符合规范`,
-            reason: `布尔变量必须以 ${booleanPrefixes.join('/')} 等前缀开头，以提高代码可读性。
-当前变量名：${name}
-建议前缀：${booleanPrefixes.join(', ')}`,
-            correctExample: `// ✅ 正确的布尔变量命名
-const isActive = true;
-const hasPermission = false;
-const canEdit = user.role === 'admin';
-const shouldRender = count > 0;
-const willUpdate = !isStatic;
-const didMount = true;
-
-// 常见模式
-const isLoading = false;
-const hasError = false;
-const canSubmit = isValid && !isLoading;
-const shouldShowModal = isOpen && hasContent;`,
-            incorrectExample: `// ❌ 错误的布尔变量命名
-const ${name} = true;
-const active = false;
-const visible = true;
-const enabled = false;`,
-            docRef: '#code-standards - 布尔变量命名',
-          }),
+          data: {
+            name,
+            prefixes: booleanPrefixes.join(', '),
+          },
         });
       }
     }
@@ -122,16 +101,10 @@ const enabled = false;`,
                 context.report({
                   node: param,
                   messageId: 'invalidBooleanName',
-                  message: buildErrorMessage({
-                    title: `布尔参数 "${param.name}" 命名不符合规范`,
-                    reason: `布尔参数必须以 ${booleanPrefixes.join('/')} 等前缀开头。`,
-                    correctExample: `// ✅ 正确
-function updateUser(isActive: boolean) { /* ... */ }
-function render(shouldShow: boolean) { /* ... */ }`,
-                    incorrectExample: `// ❌ 错误
-function updateUser(${param.name}: boolean) { /* ... */ }`,
-                    docRef: '#code-standards - 布尔变量命名',
-                  }),
+                  data: {
+                    name: param.name,
+                    prefixes: booleanPrefixes.join(', '),
+                  },
                 });
               }
             }

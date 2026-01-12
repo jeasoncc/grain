@@ -11,7 +11,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '❌ 禁止使用 eval() 和 Function 构造函数',
-      recommended: 'error',
     },
     messages: {
       noEval: buildComprehensiveErrorMessage({

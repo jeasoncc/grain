@@ -11,7 +11,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '❌ 禁止使用 innerHTML/outerHTML 和 dangerouslySetInnerHTML',
-      recommended: 'error',
     },
     messages: {
       noInnerHTML: buildComprehensiveErrorMessage({
