@@ -126,6 +126,56 @@ countRef.current += 1; // 不会触发重新渲染`,
     let inConditional = false;
     let inLoop = false;
 
+    // Helper function to check useEffect patterns
+    const checkUseEffect = (node: TSESTree.CallExpression) => {
+      // 检查依赖数组
+      if (node.arguments.length < 2) return;
+
+      const depsArg = node.arguments[1];
+      
+      // 检查空依赖数组
+      if (
+        depsArg.type === 'ArrayExpression' &&
+        depsArg.elements.length === 0
+      ) {
+        // 检查是否有注释说明
+        const comments = context.sourceCode.getCommentsBefore(node);
+        const hasComment = comments.some(
+          (comment) =>
+            comment.value.includes('挂载') ||
+            comment.value.includes('mount') ||
+            comment.value.includes('一次') ||
+            comment.value.includes('once')
+        );
+
+        if (!hasComment) {
+          context.report({
+            node: depsArg,
+            messageId: 'emptyDepsWithoutComment',
+          });
+        }
+      }
+    };
+
+    // Helper function to check useRef patterns
+    const checkUseRef = (node: TSESTree.CallExpression) => {
+      // 检查 useRef 的初始值
+      if (node.arguments.length === 0) return;
+
+      const initArg = node.arguments[0];
+      
+      // 检查是否为对象字面量（可能是业务状态）
+      if (initArg.type === 'ObjectExpression') {
+        // 简单启发式：如果对象有多个属性，可能是业务状态
+        if (initArg.properties.length > 2) {
+          context.report({
+            node,
+            messageId: 'useRefForMutableState',
+          });
+        }
+      }
+    };
+
     return {
       // 检测条件语句
       IfStatement() {
@@ -170,60 +220,12 @@ countRef.current += 1; // 不会触发重新渲染`,
 
         // 检测 useEffect 模式
         if (hookName === 'useEffect') {
-          this.checkUseEffect(node);
+          checkUseEffect(node);
         }
 
         // 检测 useRef 模式
         if (hookName === 'useRef') {
-          this.checkUseRef(node);
-        }
-      },
-
-      checkUseEffect(node: TSESTree.CallExpression) {
-        // 检查依赖数组
-        if (node.arguments.length < 2) return;
-
-        const depsArg = node.arguments[1];
-        
-        // 检查空依赖数组
-        if (
-          depsArg.type === 'ArrayExpression' &&
-          depsArg.elements.length === 0
-        ) {
-          // 检查是否有注释说明
-          const comments = context.sourceCode.getCommentsBefore(node);
-          const hasComment = comments.some(
-            (comment) =>
-              comment.value.includes('挂载') ||
-              comment.value.includes('mount') ||
-              comment.value.includes('一次') ||
-              comment.value.includes('once')
-          );
-
-          if (!hasComment) {
-            context.report({
-              node: depsArg,
-              messageId: 'emptyDepsWithoutComment',
-            });
-          }
-        }
-      },
-
-      checkUseRef(node: TSESTree.CallExpression) {
-        // 检查 useRef 的初始值
-        if (node.arguments.length === 0) return;
-
-        const initArg = node.arguments[0];
-        
-        // 检查是否为对象字面量（可能是业务状态）
-        if (initArg.type === 'ObjectExpression') {
-          // 简单启发式：如果对象有多个属性，可能是业务状态
-          if (initArg.properties.length > 2) {
-            context.report({
-              node,
-              messageId: 'useRefForMutableState',
-            });
-          }
+          checkUseRef(node);
         }
       },
     };

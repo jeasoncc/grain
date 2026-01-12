@@ -67,21 +67,10 @@ export default createRule({
         context.report({
           node,
           messageId: 'noVerbPrefix',
-          message: buildWarningMessage({
-            title: `函数名 "${name}" 应以动词开头`,
-            suggestion: `函数名应该描述函数的动作，使用动词开头可以提高代码可读性。
-
-建议的动词前缀：
-${verbPrefixes.slice(0, 20).join(', ')}...
-
-当前函数名：${name}
-建议改为：${getSuggestion(name)}`,
-            example: `// ✅ 正确的函数命名
-const getUserById = (id: string) => { /* ... */ };
-const createWorkspace = (name: string) => { /* ... */ };
-const validateInput = (input: string) => { /* ... */ };
-const transformData = (data: Data) => { /* ... */ };`,
-          }),
+          data: {
+            name,
+            suggestion: getSuggestion(name),
+          },
         });
       }
     }

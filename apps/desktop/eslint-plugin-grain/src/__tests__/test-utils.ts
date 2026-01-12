@@ -36,7 +36,8 @@ export function runLint(
     rules,
   };
 
-  return linter.verify(code, config, { filename: filename || 'test.tsx' });
+  // Type assertion needed because our plugin's configs use legacy format
+  return linter.verify(code, config as any, { filename: filename || 'test.tsx' });
 }
 
 /**

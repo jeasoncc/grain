@@ -68,38 +68,30 @@ function handleClick() {
       
       // 收集所有变量声明中的函数
       VariableDeclarator(node) {
-        if (
-          node.id.type === 'Identifier' &&
-          (node.init?.type === 'ArrowFunctionExpression' ||
-            node.init?.type === 'FunctionExpression')
-        ) {
-          // 检查是否被 useCallback 包裹
-          const parent = node.parent;
-          if (
-            parent?.type === 'VariableDeclaration' &&
-            parent.parent?.type === 'Program'
-          ) {
-            // 检查初始化表达式是否为 useCallback 调用
-            if (
-              node.init.type === 'CallExpression' &&
-              node.init.callee.type === 'Identifier' &&
-              node.init.callee.name === 'useCallback'
-            ) {
-              callbackFunctions.add(node.id.name);
-            } else {
-              functionDeclarations.set(node.id.name, node);
-            }
-          }
-        }
+        if (node.id.type !== 'Identifier') return;
         
         // 检查 useCallback 调用
         if (
-          node.id.type === 'Identifier' &&
           node.init?.type === 'CallExpression' &&
           node.init.callee.type === 'Identifier' &&
           node.init.callee.name === 'useCallback'
         ) {
           callbackFunctions.add(node.id.name);
+          return;
+        }
+        
+        // 检查普通函数声明
+        if (
+          node.init?.type === 'ArrowFunctionExpression' ||
+          node.init?.type === 'FunctionExpression'
+        ) {
+          const parent = node.parent;
+          if (
+            parent?.type === 'VariableDeclaration' &&
+            parent.parent?.type === 'Program'
+          ) {
+            functionDeclarations.set(node.id.name, node);
+          }
         }
       },
 
