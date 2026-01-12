@@ -6,18 +6,18 @@
 
 ## Tasks
 
-- [ ] 1. 基础设施升级
-  - [ ] 1.1 升级工具函数库
+- [-] 1. 基础设施升级
+  - [x] 1.1 升级工具函数库
     - 更新 `utils/architecture.ts` 添加严格模式层级依赖
     - 添加 `utils/message-builder.ts` 统一错误消息构建
     - 添加 `utils/ast-helpers.ts` AST 辅助函数
     - 添加 `utils/naming-helpers.ts` 命名检查辅助
     - _Requirements: 13.1-13.5_
-  - [ ] 1.2 创建类型定义
+  - [x] 1.2 创建类型定义
     - 创建 `types/rule.types.ts` 规则相关类型
     - 创建 `types/config.types.ts` 配置相关类型
     - _Requirements: 13.1-13.5_
-  - [ ] 1.3 编写基础设施单元测试
+  - [-] 1.3 编写基础设施单元测试
     - 测试 message-builder 函数
     - 测试 architecture 工具函数
     - _Requirements: 13.1-13.5_

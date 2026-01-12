@@ -13,11 +13,11 @@ import {
   isInternalImport,
   getAllowedDependencies,
   getImportLayer,
-  DEPRECATED_MODULES,
+  BANNED_LIBRARIES,
   SIDE_EFFECT_GLOBALS,
   REACT_IMPORTS,
   FILE_NAMING_PATTERNS,
-} from '../utils';
+} from '../utils/index.js';
 
 describe('Architecture Layer Detection', () => {
   it('should detect views layer', () => {
@@ -106,9 +106,9 @@ describe('Import Layer Extraction', () => {
 });
 
 describe('Constants', () => {
-  it('should have deprecated modules mapping', () => {
-    expect(DEPRECATED_MODULES.lodash).toBe('es-toolkit');
-    expect(DEPRECATED_MODULES.moment).toBe('dayjs');
+  it('should have banned libraries mapping', () => {
+    expect(BANNED_LIBRARIES.lodash).toBe('es-toolkit');
+    expect(BANNED_LIBRARIES.moment).toBe('dayjs');
   });
 
   it('should have side effect globals list', () => {
@@ -123,8 +123,12 @@ describe('Constants', () => {
   });
 
   it('should have file naming patterns', () => {
-    expect(FILE_NAMING_PATTERNS.pipes.test('transform.pipe.ts')).toBe(true);
-    expect(FILE_NAMING_PATTERNS.flows.test('create-node.flow.ts')).toBe(true);
-    expect(FILE_NAMING_PATTERNS['views/view'].test('sidebar.view.fn.tsx')).toBe(true);
+    const pipesPattern = FILE_NAMING_PATTERNS.find(p => p.layer === 'pipes');
+    const flowsPattern = FILE_NAMING_PATTERNS.find(p => p.layer === 'flows');
+    const viewsPattern = FILE_NAMING_PATTERNS.find(p => p.layer === 'views');
+    
+    expect(pipesPattern?.pattern.test('transform.pipe.ts')).toBe(true);
+    expect(flowsPattern?.pattern.test('create-node.flow.ts')).toBe(true);
+    expect(viewsPattern?.pattern.test('sidebar.view.fn.tsx')).toBe(true);
   });
 });
