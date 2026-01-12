@@ -179,21 +179,21 @@ export const restoreBackup = (file: File): TE.TaskEither<AppError, void> =>
 				],
 				async () => {
 					if (backupData.users?.length)
-						await database.users.bulkPut(backupData.users as never[]);
+						await database.users.bulkPut(backupData.users as readonly never[]);
 					if (workspacesData.length)
-						await database.workspaces.bulkPut(workspacesData as never[]);
+						await database.workspaces.bulkPut(workspacesData as readonly never[]);
 					if (backupData.nodes?.length)
-						await database.nodes.bulkPut(backupData.nodes as never[]);
+						await database.nodes.bulkPut(backupData.nodes as readonly never[]);
 					if (backupData.contents?.length)
-						await database.contents.bulkPut(backupData.contents as never[]);
+						await database.contents.bulkPut(backupData.contents as readonly never[]);
 					if (backupData.attachments?.length)
 						await database.attachments.bulkPut(
-							backupData.attachments as never[],
+							backupData.attachments as readonly never[],
 						);
 					if (backupData.tags?.length)
-						await database.tags.bulkPut(backupData.tags as never[]);
+						await database.tags.bulkPut(backupData.tags as readonly never[]);
 					if (backupData.dbVersions?.length)
-						await database.dbVersions.bulkPut(backupData.dbVersions as never[]);
+						await database.dbVersions.bulkPut(backupData.dbVersions as readonly never[]);
 				},
 			);
 		},
@@ -226,19 +226,19 @@ export const restoreBackupData = (
 				],
 				async () => {
 					if (backupData.users?.length)
-						await database.users.bulkPut(backupData.users as never[]);
+						await database.users.bulkPut(backupData.users as readonly never[]);
 					if (workspacesData.length)
-						await database.workspaces.bulkPut(workspacesData as never[]);
+						await database.workspaces.bulkPut(workspacesData as readonly never[]);
 					if (backupData.nodes?.length)
-						await database.nodes.bulkPut(backupData.nodes as never[]);
+						await database.nodes.bulkPut(backupData.nodes as readonly never[]);
 					if (backupData.contents?.length)
-						await database.contents.bulkPut(backupData.contents as never[]);
+						await database.contents.bulkPut(backupData.contents as readonly never[]);
 					if (backupData.attachments?.length)
 						await database.attachments.bulkPut(
-							backupData.attachments as never[],
+							backupData.attachments as readonly never[],
 						);
 					if (backupData.tags?.length)
-						await database.tags.bulkPut(backupData.tags as never[]);
+						await database.tags.bulkPut(backupData.tags as readonly never[]);
 				},
 			);
 		},
@@ -299,7 +299,7 @@ const LAST_BACKUP_KEY = "last-auto-backup";
 /**
  * 获取本地存储的备份列表
  */
-export const getLocalBackups = (): LocalBackupRecord[] => {
+export const getLocalBackups = (): readonly LocalBackupRecord[] => {
 	try {
 		const stored = localStorage.getItem(LOCAL_BACKUPS_KEY);
 		return stored ? JSON.parse(stored) : [];
