@@ -63,26 +63,26 @@
   - 在示例代码上验证规则效果
   - 如有问题请询问用户
 
-- [-] 4. 架构层级规则（architecture/）
-  - [-] 4.1 增强 layer-dependencies 规则
+- [x] 4. 架构层级规则（architecture/）
+  - [x] 4.1 增强 layer-dependencies 规则
     - 移除所有例外情况（严格模式）
     - 添加完整的层级修复建议
     - _Requirements: 2.1-2.12_
-  - [ ] 4.2 增强 no-react-in-pure-layers 规则
+  - [x] 4.2 增强 no-react-in-pure-layers 规则
     - 扩展到检测所有 React 相关导入
     - _Requirements: 3.10_
-  - [ ] 4.3 增强 no-side-effects-in-pipes 规则
+  - [x] 4.3 增强 no-side-effects-in-pipes 规则
     - 添加更多副作用检测
     - 扩展到 utils/ 层
     - _Requirements: 3.1-3.9_
-  - [ ] 4.4 实现 no-store-in-views 规则
+  - [x] 4.4 实现 no-store-in-views 规则
     - 检测 view 组件中的 store 访问
     - _Requirements: 6.1, 27.1_
-  - [ ] 4.5 实现 file-location 规则
+  - [x] 4.5 实现 file-location 规则
     - 检测文件是否在正确的目录
     - 检测 index.ts 是否只包含重导出
     - _Requirements: 28.1-28.5_
-  - [ ] 4.6 编写架构规则属性测试
+  - [x] 4.6 编写架构规则属性测试
     - **Property 3: Architecture Layer Dependency Validation**
     - **Property 4: Side Effect Detection in Pure Layers**
     - **Validates: Requirements 2.1-2.12, 3.1-3.10**

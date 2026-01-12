@@ -29,7 +29,13 @@ import {
 } from './rules/functional/index.js';
 
 // Import new architecture rules
-import { layerDependencies } from './rules/architecture/index.js';
+import { 
+  layerDependencies,
+  noReactInPureLayers as noReactInPureLayersNew,
+  noSideEffectsInPipes as noSideEffectsInPipesNew,
+  noStoreInViews,
+  fileLocation,
+} from './rules/architecture/index.js';
 // import layerDependencies from './rules/layer-dependencies';
 // import noReactInPureLayers from './rules/no-react-in-pure-layers';
 // import noSideEffectsInPipes from './rules/no-side-effects-in-pipes';
@@ -79,8 +85,10 @@ const plugin = {
     
     // Architecture Layer Rules (Enhanced)
     'layer-dependencies': layerDependencies,
-    'no-react-in-pure-layers': noReactInPureLayers,
-    'no-side-effects-in-pipes': noSideEffectsInPipes,
+    'no-react-in-pure-layers': noReactInPureLayersNew,
+    'no-side-effects-in-pipes': noSideEffectsInPipesNew,
+    'no-store-in-views': noStoreInViews,
+    'file-location': fileLocation,
     
     // Architecture Layer Rules
     // 'layer-dependencies': layerDependencies,
@@ -129,6 +137,8 @@ const plugin = {
         'grain/layer-dependencies': 'error',
         'grain/no-react-in-pure-layers': 'error',
         'grain/no-side-effects-in-pipes': 'error',
+        'grain/no-store-in-views': 'error',
+        'grain/file-location': 'warn',
       },
     },
     
@@ -150,6 +160,8 @@ const plugin = {
         'grain/layer-dependencies': 'error',
         'grain/no-react-in-pure-layers': 'error',
         'grain/no-side-effects-in-pipes': 'error',
+        'grain/no-store-in-views': 'error',
+        'grain/file-location': 'error',
       },
     },
     
@@ -170,6 +182,8 @@ const plugin = {
         'grain/layer-dependencies': 'warn',
         'grain/no-react-in-pure-layers': 'warn',
         'grain/no-side-effects-in-pipes': 'warn',
+        'grain/no-store-in-views': 'warn',
+        'grain/file-location': 'off',
       },
     },
   },
