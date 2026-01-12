@@ -28,22 +28,24 @@ describe('Rules Integration Tests', () => {
 
   it('should have correct plugin structure', () => {
     expect(plugin.meta.name).toBe('eslint-plugin-grain');
-    expect(plugin.meta.version).toBe('1.0.0');
+    expect(plugin.meta.version).toBe('2.0.0');
     expect(plugin.configs.recommended).toBeDefined();
     expect(plugin.configs.strict).toBeDefined();
   });
 
   it('should have rules in configs', () => {
-    const recommendedRules = plugin.configs.recommended.rules;
     const strictRules = plugin.configs.strict.rules;
+    const legacyRules = plugin.configs.legacy.rules;
     
-    expect(recommendedRules['grain/no-try-catch']).toBe('error');
-    expect(recommendedRules['grain/no-console-log']).toBe('error');
-    expect(recommendedRules['grain/layer-dependencies']).toBe('error');
-    
+    // Strict config should have all rules as error
     expect(strictRules['grain/no-try-catch']).toBe('error');
-    expect(strictRules['grain/no-console-log']).toBe('error');
     expect(strictRules['grain/layer-dependencies']).toBe('error');
+    expect(strictRules['grain/no-mutation']).toBe('error');
+    
+    // Legacy config should have rules as warn or error
+    expect(legacyRules['grain/no-try-catch']).toBe('warn');
+    expect(legacyRules['grain/layer-dependencies']).toBe('warn');
+    expect(legacyRules['grain/no-eval']).toBe('error'); // Security rules stay error
   });
 
   it('should have correct rule metadata', () => {
@@ -76,6 +78,10 @@ describe('Rules Integration Tests', () => {
       // Test that create function returns an object (visitor pattern)
       const mockContext = {
         getFilename: () => '/test/src/pipes/test.pipe.ts',
+        sourceCode: {
+          getText: () => '',
+          getAncestors: () => [],
+        },
         report: () => {},
       };
       

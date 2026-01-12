@@ -56,7 +56,7 @@ if (status == 'active') { }`,
             fix(fixer) {
               // 自动修复：== → ===, != → !==
               const operator = node.operator === '==' ? '===' : '!==';
-              const sourceCode = context.getSourceCode();
+              const sourceCode = context.sourceCode;
               const operatorToken = sourceCode.getTokensBetween(node.left, node.right)
                 .find(token => token.value === node.operator);
               

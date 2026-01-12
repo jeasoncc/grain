@@ -10,7 +10,7 @@ describe('ESLint Plugin Grain', () => {
     expect(plugin).toBeDefined();
     expect(plugin.meta).toBeDefined();
     expect(plugin.meta.name).toBe('eslint-plugin-grain');
-    expect(plugin.meta.version).toBe('1.0.0');
+    expect(plugin.meta.version).toBe('2.0.0');
   });
 
   it('should have rules object', () => {

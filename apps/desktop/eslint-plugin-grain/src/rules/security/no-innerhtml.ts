@@ -153,7 +153,7 @@ const sanitizedHTML = DOMPurify.sanitize(richTextContent, {
           node.name.name === 'dangerouslySetInnerHTML'
         ) {
           // 检查是否有 DOMPurify.sanitize 调用
-          const sourceCode = context.getSourceCode();
+          const sourceCode = context.sourceCode;
           const text = sourceCode.getText(node.value || node);
           
           // 如果没有 sanitize 调用，报告错误

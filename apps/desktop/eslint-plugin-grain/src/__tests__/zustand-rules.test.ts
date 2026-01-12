@@ -1,33 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Linter } from 'eslint';
-import plugin from '../index.js';
-
-// Helper to run ESLint with our plugin
-function runLint(code: string, rules: Record<string, string | [string, unknown]>): Linter.LintMessage[] {
-  const linter = new Linter({ configType: 'flat' });
-  
-  const config = {
-    files: ['**/*.ts', '**/*.tsx'],
-    plugins: {
-      grain: plugin,
-    },
-    rules,
-    languageOptions: {
-      ecmaVersion: 2022 as const,
-      sourceType: 'module' as const,
-      parser: require('@typescript-eslint/parser'),
-      parserOptions: {
-        ecmaVersion: 2022,
-        sourceType: 'module',
-        ecmaFeatures: {
-          jsx: true,
-        },
-      },
-    },
-  };
-
-  return linter.verify(code, config);
-}
+import { runLint } from './test-utils.js';
 
 describe('zustand-patterns', () => {
   describe('selector usage', () => {

@@ -163,7 +163,7 @@ const apiKey = await getSecret('API_KEY');`,
   },
   defaultOptions: [],
   create(context) {
-    const sourceCode = context.getSourceCode();
+    const sourceCode = context.sourceCode;
 
     /**
      * 检查标识符或字符串是否包含敏感关键词

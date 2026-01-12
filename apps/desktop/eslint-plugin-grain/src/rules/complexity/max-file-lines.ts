@@ -79,7 +79,7 @@ export * from './node-validate.pipe';`,
 
     return {
       Program(node: TSESTree.Program) {
-        const sourceCode = context.getSourceCode();
+        const sourceCode = context.sourceCode;
         const lines = sourceCode.lines;
         let actualLines = lines.length;
 

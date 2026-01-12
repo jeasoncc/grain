@@ -300,8 +300,8 @@ export const useAppStore = create<AppState>((set) => ({
         // 遍历函数体
         if (node.body.type === 'BlockStatement') {
           node.body.body.forEach((statement) => {
-            context.getSourceCode().getTokens(statement).forEach((token) => {
-              const tokenNode = context.getSourceCode().getNodeByRangeIndex(token.range[0]);
+            context.sourceCode.getTokens(statement).forEach((token) => {
+              const tokenNode = context.sourceCode.getNodeByRangeIndex(token.range[0]);
               if (tokenNode) {
                 checkForMutation(tokenNode);
               }
@@ -314,7 +314,7 @@ export const useAppStore = create<AppState>((set) => ({
       'Program:exit'() {
         if (!isStateFile) return;
 
-        const sourceCode = context.getSourceCode();
+        const sourceCode = context.sourceCode;
         const ast = sourceCode.ast;
 
         // 查找 create 调用

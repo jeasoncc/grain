@@ -16,16 +16,13 @@ export function runLint(
 ): Linter.LintMessage[] {
   const linter = new Linter({ configType: 'flat' });
   
-  // Define the parser
-  linter.defineParser('@typescript-eslint/parser', parser as any);
-  
   const config = {
     files: ['**/*.ts', '**/*.tsx'],
     plugins: {
       grain: plugin,
     },
     languageOptions: {
-      parser: parser as any,
+      parser: parser,
       ecmaVersion: 2022 as const,
       sourceType: 'module' as const,
       parserOptions: {
@@ -34,7 +31,6 @@ export function runLint(
         ecmaFeatures: {
           jsx: true,
         },
-        project: null, // Don't require tsconfig for tests
       },
     },
     rules,
