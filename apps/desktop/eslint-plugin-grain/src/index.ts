@@ -13,7 +13,7 @@ import noConsoleLog from './rules/no-console-log.js';
 import noDateConstructor from './rules/no-date-constructor.js';
 import noLodash from './rules/no-lodash.js';
 import noMutationLegacy from './rules/no-mutation.js';
-import layerDependencies from './rules/layer-dependencies.js';
+import layerDependenciesLegacy from './rules/layer-dependencies.js';
 import noReactInPureLayers from './rules/no-react-in-pure-layers.js';
 import noSideEffectsInPipes from './rules/no-side-effects-in-pipes.js';
 
@@ -27,6 +27,9 @@ import {
   noObjectMutation,
   fpTsPatterns,
 } from './rules/functional/index.js';
+
+// Import new architecture rules
+import { layerDependencies } from './rules/architecture/index.js';
 // import layerDependencies from './rules/layer-dependencies';
 // import noReactInPureLayers from './rules/no-react-in-pure-layers';
 // import noSideEffectsInPipes from './rules/no-side-effects-in-pipes';
@@ -72,8 +75,9 @@ const plugin = {
     'no-console-log': noConsoleLog,
     'no-date-constructor': noDateConstructor,
     'no-lodash': noLodash,
+    'layer-dependencies-legacy': layerDependenciesLegacy,
     
-    // Architecture Layer Rules
+    // Architecture Layer Rules (Enhanced)
     'layer-dependencies': layerDependencies,
     'no-react-in-pure-layers': noReactInPureLayers,
     'no-side-effects-in-pipes': noSideEffectsInPipes,

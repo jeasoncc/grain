@@ -63,8 +63,8 @@
   - 在示例代码上验证规则效果
   - 如有问题请询问用户
 
-- [ ] 4. 架构层级规则（architecture/）
-  - [ ] 4.1 增强 layer-dependencies 规则
+- [-] 4. 架构层级规则（architecture/）
+  - [-] 4.1 增强 layer-dependencies 规则
     - 移除所有例外情况（严格模式）
     - 添加完整的层级修复建议
     - _Requirements: 2.1-2.12_

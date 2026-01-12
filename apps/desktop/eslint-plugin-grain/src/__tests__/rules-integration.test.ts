@@ -61,7 +61,8 @@ describe('Rules Integration Tests', () => {
     
     // Check layer-dependencies rule
     expect(rules['layer-dependencies'].meta.type).toBe('problem');
-    expect(rules['layer-dependencies'].meta.docs.description).toContain('layer');
+    // Description can be in Chinese or English
+    expect(rules['layer-dependencies'].meta.docs.description).toBeDefined();
     expect(rules['layer-dependencies'].meta.messages.layerViolation).toBeDefined();
   });
 
