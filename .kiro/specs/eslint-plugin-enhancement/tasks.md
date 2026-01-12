@@ -87,7 +87,7 @@
     - **Property 4: Side Effect Detection in Pure Layers**
     - **Validates: Requirements 2.1-2.12, 3.1-3.10**
 
-- [ ] 5. Checkpoint - 架构规则验证
+- [x] 5. Checkpoint - 架构规则验证
   - 运行所有测试确保通过
   - 在实际项目文件上验证规则效果
   - 如有问题请询问用户
