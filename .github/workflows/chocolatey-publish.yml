@@ -16,7 +16,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Extract version
         id: version
@@ -285,7 +285,7 @@ jobs:
           }
 
       - name: Upload Chocolatey package artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: chocolatey-package
           path: "chocolatey-package/*.nupkg"

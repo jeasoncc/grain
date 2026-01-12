@@ -16,7 +16,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Extract version
         id: version
@@ -224,7 +224,7 @@ jobs:
           echo "📄 Cask file ready in artifacts"
 
       - name: Upload Homebrew Cask artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: homebrew-cask
           path: "homebrew-cask/grain.rb"

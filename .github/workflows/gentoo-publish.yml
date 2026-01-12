@@ -16,7 +16,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Extract version
         id: version
@@ -296,7 +296,7 @@ jobs:
           echo "✅ Installation instructions created"
 
       - name: Upload Gentoo overlay artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: gentoo-overlay
           path: "gentoo-overlay/"
