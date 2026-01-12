@@ -16,7 +16,6 @@ export default createRule<Options, MessageIds>({
     type: 'problem',
     docs: {
       description: '限制文件最大行数',
-      recommended: 'error',
     },
     messages: {
       maxFileLines: buildErrorMessage({

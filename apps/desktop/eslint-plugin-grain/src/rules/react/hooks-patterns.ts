@@ -11,7 +11,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '检测 React Hooks 使用模式',
-      recommended: 'error',
     },
     messages: {
       missingDependency: buildErrorMessage({

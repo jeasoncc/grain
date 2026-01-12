@@ -13,7 +13,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '强制执行各层级的文件命名规范',
-      recommended: 'error',
     },
     messages: {
       invalidFileName: '文件命名不符合规范',

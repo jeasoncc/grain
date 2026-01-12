@@ -16,7 +16,6 @@ export default createRule<Options, MessageIds>({
     type: 'problem',
     docs: {
       description: '限制函数圈复杂度',
-      recommended: 'error',
     },
     messages: {
       cyclomaticComplexity: buildErrorMessage({

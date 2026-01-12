@@ -16,7 +16,6 @@ export default createRule<Options, MessageIds>({
     type: 'problem',
     docs: {
       description: '限制代码块嵌套最大层级',
-      recommended: 'error',
     },
     messages: {
       maxNesting: buildErrorMessage({

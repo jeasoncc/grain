@@ -16,7 +16,6 @@ export default createRule<Options, MessageIds>({
     type: 'problem',
     docs: {
       description: '限制函数参数最大数量',
-      recommended: 'error',
     },
     messages: {
       maxParams: buildErrorMessage({

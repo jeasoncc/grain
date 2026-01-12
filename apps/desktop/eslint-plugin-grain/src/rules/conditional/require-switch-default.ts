@@ -11,7 +11,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '要求 switch 语句包含 default 分支',
-      recommended: 'error',
     },
     messages: {
       missingDefault: buildErrorMessage({

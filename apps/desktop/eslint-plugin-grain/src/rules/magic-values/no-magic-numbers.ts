@@ -21,7 +21,6 @@ export default createRule<Options, MessageIds>({
     type: 'problem',
     docs: {
       description: '禁止使用魔法数字，必须使用命名常量',
-      recommended: 'error',
     },
     messages: {
       noMagicNumber: buildErrorMessage({

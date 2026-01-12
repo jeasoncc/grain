@@ -21,7 +21,6 @@ export default createRule<Options, MessageIds>({
     type: 'problem',
     docs: {
       description: '禁止硬编码 URL、路径、超时值等配置值',
-      recommended: 'error',
     },
     messages: {
       hardcodedUrl: buildErrorMessage({

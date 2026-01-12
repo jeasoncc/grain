@@ -11,7 +11,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '检测函数 props 是否使用 useCallback',
-      recommended: 'error',
     },
     messages: {
       requireCallback: buildErrorMessage({

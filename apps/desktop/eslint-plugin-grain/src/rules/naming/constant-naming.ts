@@ -14,7 +14,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '强制执行常量命名规范（SCREAMING_SNAKE_CASE）',
-      recommended: 'error',
     },
     messages: {
       invalidConstantName: '常量命名不符合规范',

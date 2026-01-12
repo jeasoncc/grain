@@ -11,7 +11,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '强制使用 === 和 !==',
-      recommended: 'error',
     },
     messages: {
       useStrictEquality: buildErrorMessage({

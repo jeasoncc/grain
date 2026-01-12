@@ -12,7 +12,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '检测 React 组件模式',
-      recommended: 'error',
     },
     messages: {
       businessStateInView: buildErrorMessage({

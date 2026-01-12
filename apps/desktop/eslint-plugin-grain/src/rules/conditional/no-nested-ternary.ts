@@ -11,7 +11,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '禁止嵌套三元表达式',
-      recommended: 'error',
     },
     messages: {
       noNestedTernary: buildErrorMessage({

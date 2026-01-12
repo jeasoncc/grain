@@ -13,7 +13,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '强制执行布尔变量命名规范（必须以 is/has/can/should 等开头）',
-      recommended: 'error',
     },
     messages: {
       invalidBooleanName: '布尔变量命名不符合规范',

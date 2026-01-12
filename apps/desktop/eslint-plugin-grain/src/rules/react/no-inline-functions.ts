@@ -11,7 +11,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '禁止在 JSX props 中使用内联函数',
-      recommended: 'error',
     },
     messages: {
       noInlineFunction: buildErrorMessage({

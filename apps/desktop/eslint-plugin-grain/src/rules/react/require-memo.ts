@@ -15,7 +15,6 @@ export default createRule<Options, MessageIds>({
     type: 'problem',
     docs: {
       description: '要求 React 组件使用 memo 包裹以优化性能',
-      recommended: 'error',
     },
     messages: {
       requireMemo: buildErrorMessage({

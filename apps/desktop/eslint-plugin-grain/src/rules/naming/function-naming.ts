@@ -13,7 +13,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '强制执行函数命名规范（动词开头、事件处理器命名）',
-      recommended: 'error',
     },
     messages: {
       noVerbPrefix: '函数名应以动词开头',

@@ -13,7 +13,6 @@ export default createRule({
     type: 'problem',
     docs: {
       description: '强制执行变量命名规范（最小长度和允许的短变量名）',
-      recommended: 'error',
     },
     messages: {
       variableTooShort: '变量名过短',
