@@ -54,22 +54,32 @@ import {
   cyclomaticComplexity,
   maxFileLines,
 } from './rules/complexity/index.js';
-// import layerDependencies from './rules/layer-dependencies';
-// import noReactInPureLayers from './rules/no-react-in-pure-layers';
-// import noSideEffectsInPipes from './rules/no-side-effects-in-pipes';
-// import preferPipe from './rules/prefer-pipe';
-// import noPromiseCatch from './rules/no-promise-catch';
-// import noThrow from './rules/no-throw';
-// import noAsyncTryCatch from './rules/no-async-try-catch';
-// import noStoreInViews from './rules/no-store-in-views';
-// import requireMemo from './rules/require-memo';
-// import requireFnTests from './rules/require-fn-tests';
-// import requireFlowTests from './rules/require-flow-tests';
-// import requirePipeTests from './rules/require-pipe-tests';
-// import suggestComponentTests from './rules/suggest-component-tests';
-// import importGrouping from './rules/import-grouping';
-// import internalImportAlias from './rules/internal-import-alias';
-// import noDeprecatedImports from './rules/no-deprecated-imports';
+
+// Import React rules
+import reactRules from './rules/react/index.js';
+
+// Import import rules
+import importRules from './rules/imports/index.js';
+
+// Import security rules
+import {
+  noEval,
+  noInnerhtml,
+  noSensitiveLogging,
+} from './rules/security/index.js';
+
+// Import documentation rules
+import {
+  requireJsdoc,
+  noCommentedCode,
+  chineseComments,
+} from './rules/documentation/index.js';
+
+// Import magic-values rules
+import {
+  noMagicNumbers,
+  noHardcodedValues,
+} from './rules/magic-values/index.js';
 
 const createRule = ESLintUtils.RuleCreator(
   (name) => `https://github.com/grain-team/grain/blob/main/docs/eslint-rules/${name}.md`
@@ -121,6 +131,34 @@ const plugin = {
     'max-nesting': maxNesting,
     'cyclomatic-complexity': cyclomaticComplexity,
     'max-file-lines': maxFileLines,
+    
+    // React Rules
+    'require-memo': reactRules['require-memo'],
+    'no-inline-functions': reactRules['no-inline-functions'],
+    'require-callback': reactRules['require-callback'],
+    'hooks-patterns': reactRules['hooks-patterns'],
+    'component-patterns': reactRules['component-patterns'],
+    
+    // Import Rules
+    'no-default-export': importRules['no-default-export'],
+    'no-banned-imports': importRules['no-banned-imports'],
+    'require-alias': importRules['require-alias'],
+    'import-grouping': importRules['import-grouping'],
+    'no-deprecated-imports': importRules['no-deprecated-imports'],
+    
+    // Security Rules
+    'no-eval': noEval,
+    'no-innerhtml': noInnerhtml,
+    'no-sensitive-logging': noSensitiveLogging,
+    
+    // Documentation Rules
+    'require-jsdoc': requireJsdoc,
+    'no-commented-code': noCommentedCode,
+    'chinese-comments': chineseComments,
+    
+    // Magic Values Rules
+    'no-magic-numbers': noMagicNumbers,
+    'no-hardcoded-values': noHardcodedValues,
     
     // Architecture Layer Rules
     // 'layer-dependencies': layerDependencies,
@@ -183,6 +221,29 @@ const plugin = {
         'grain/max-nesting': 'error',
         'grain/cyclomatic-complexity': 'error',
         'grain/max-file-lines': 'error',
+        // React Rules
+        'grain/require-memo': 'warn',
+        'grain/no-inline-functions': 'error',
+        'grain/require-callback': 'error',
+        'grain/hooks-patterns': 'error',
+        'grain/component-patterns': 'error',
+        // Import Rules
+        'grain/no-default-export': 'error',
+        'grain/no-banned-imports': 'error',
+        'grain/require-alias': 'error',
+        'grain/import-grouping': 'warn',
+        'grain/no-deprecated-imports': 'error',
+        // Security Rules
+        'grain/no-eval': 'error',
+        'grain/no-innerhtml': 'error',
+        'grain/no-sensitive-logging': 'error',
+        // Documentation Rules
+        'grain/require-jsdoc': 'error',
+        'grain/no-commented-code': 'error',
+        'grain/chinese-comments': 'warn',
+        // Magic Values Rules
+        'grain/no-magic-numbers': 'error',
+        'grain/no-hardcoded-values': 'error',
       },
     },
     
@@ -218,6 +279,29 @@ const plugin = {
         'grain/max-nesting': 'error',
         'grain/cyclomatic-complexity': 'error',
         'grain/max-file-lines': 'error',
+        // React Rules - All error
+        'grain/require-memo': 'error',
+        'grain/no-inline-functions': 'error',
+        'grain/require-callback': 'error',
+        'grain/hooks-patterns': 'error',
+        'grain/component-patterns': 'error',
+        // Import Rules - All error
+        'grain/no-default-export': 'error',
+        'grain/no-banned-imports': 'error',
+        'grain/require-alias': 'error',
+        'grain/import-grouping': 'error',
+        'grain/no-deprecated-imports': 'error',
+        // Security Rules - All error
+        'grain/no-eval': 'error',
+        'grain/no-innerhtml': 'error',
+        'grain/no-sensitive-logging': 'error',
+        // Documentation Rules - All error
+        'grain/require-jsdoc': 'error',
+        'grain/no-commented-code': 'error',
+        'grain/chinese-comments': 'error',
+        // Magic Values Rules - All error
+        'grain/no-magic-numbers': 'error',
+        'grain/no-hardcoded-values': 'error',
       },
     },
     
