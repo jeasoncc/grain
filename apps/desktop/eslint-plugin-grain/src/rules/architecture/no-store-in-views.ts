@@ -130,6 +130,11 @@ export default createRule<[], MessageIds>({
   create(context) {
     const filename = context.filename;
 
+    // 如果没有文件名，跳过检查
+    if (!filename) {
+      return {};
+    }
+
     // 跳过测试文件
     if (isTestFile(filename)) {
       return {};
