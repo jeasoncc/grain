@@ -12,7 +12,7 @@
  */
 
 import { getSystemTheme } from "@/io/dom/theme.dom";
-import { info, debug, warn, error } from "@/io/log/logger.api";
+import { info } from "@/io/log/logger.api";
 import { useThemeStore } from "@/state";
 import {
 	handleSystemThemeChangeFlow,

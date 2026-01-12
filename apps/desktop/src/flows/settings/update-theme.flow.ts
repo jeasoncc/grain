@@ -15,16 +15,16 @@
 
 import * as E from "fp-ts/Either";
 import { applyThemeWithTransition, getSystemTheme } from "@/io/dom/theme.dom";
-import { info, debug, warn, error } from "@/io/log/logger.api";
+import { info, success } from "@/io/log/logger.api";
 import {
 	getDefaultThemeKey,
 	getNextMode,
 	isThemeTypeMatch,
 } from "@/pipes/theme";
+import { getThemeByKey } from "@/pipes/theme/theme-lookup.pipe";
 import { useThemeStore } from "@/state/theme.state";
 import type { ThemeMode } from "@/types/theme";
 import { type AppError, validationError } from "@/types/error";
-import { getThemeByKey } from "@/utils/themes.util";
 
 // ============================================================================
 // Types

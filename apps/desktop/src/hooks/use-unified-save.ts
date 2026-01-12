@@ -18,7 +18,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { saveServiceManager } from "@/flows/save";
-import { info, debug, warn, error } from "@/io/log/logger.api";
+import { info, debug } from "@/io/log/logger.api";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import { useSaveStore } from "@/state/save.state";
 import type { ContentType } from "@/types/content/content.interface";

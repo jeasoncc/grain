@@ -11,7 +11,7 @@ import * as E from "fp-ts/Either";
 import * as TE from "fp-ts/TaskEither";
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/io/api";
 import { legacyDatabase } from "@/io/db/legacy-database";
-import { info, debug, warn, error } from "@/io/log/logger.api";
+import { info, error, success } from "@/io/log/logger.api";
 import { WikiFileEntryBuilder } from "@/pipes/wiki/wiki.builder";
 import { WIKI_TAG } from "@/pipes/wiki/wiki.resolve.fn";
 import type { WikiFileEntry } from "@/pipes/wiki/wiki.schema";

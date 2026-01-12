@@ -17,7 +17,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import * as TE from "fp-ts/TaskEither";
-import { info, debug, warn, error } from "@/io/log/logger.api";
+import { info } from "@/io/log/logger.api";
 import type { AppError } from "@/types/error";
 import { dbError } from "@/types/error";
 import type {

@@ -22,7 +22,7 @@ import {
 	useNode as useNodeQuery,
 	useNodesByType,
 } from "@/hooks/queries/node.queries";
-import { info, debug, warn, error } from "@/io/log/logger.api";
+import { info, warn } from "@/io/log/logger.api";
 import type { NodeInterface } from "@/types/node";
 
 // ============================================================================

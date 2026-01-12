@@ -29,7 +29,7 @@ import {
 	createUser,
 	createWorkspace,
 } from "@/io/api";
-import { info, debug, warn, error, success } from "@/io/log/logger.api";
+import { info, warn, success } from "@/io/log/logger.api";
 import type { ContentInterface } from "@/types/content";
 import type { NodeInterface } from "@/types/node";
 import type { UserInterface } from "@/types/user";

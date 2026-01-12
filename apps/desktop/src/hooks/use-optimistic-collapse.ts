@@ -16,7 +16,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { queryKeys } from "@/hooks/queries/query-keys";
 import { setNodeCollapsed as setNodeCollapsedApi } from "@/io/api/node.api";
-import { info, debug, warn, error } from "@/io/log/logger.api";
+import { debug, error } from "@/io/log/logger.api";
 import type { NodeInterface } from "@/types/node";
 
 interface UseOptimisticCollapseOptions {

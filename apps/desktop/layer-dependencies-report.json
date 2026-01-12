@@ -1,0 +1,3020 @@
+{
+  "summary": {
+    "total": 234,
+    "byFixType": [
+      {
+        "type": "refactor",
+        "count": 232
+      },
+      {
+        "type": "move",
+        "count": 2
+      }
+    ],
+    "byLayerCombo": [
+      {
+        "combo": "views → views",
+        "count": 68
+      },
+      {
+        "combo": "views → utils",
+        "count": 51
+      },
+      {
+        "combo": "container component → views",
+        "count": 18
+      },
+      {
+        "combo": "types → types",
+        "count": 15
+      },
+      {
+        "combo": "hooks → io",
+        "count": 14
+      },
+      {
+        "combo": "container component → io",
+        "count": 11
+      },
+      {
+        "combo": "hooks → hooks",
+        "count": 9
+      },
+      {
+        "combo": "io → io",
+        "count": 8
+      },
+      {
+        "combo": "flows → flows",
+        "count": 6
+      },
+      {
+        "combo": "routes → utils",
+        "count": 5
+      },
+      {
+        "combo": "container component → pipes",
+        "count": 4
+      },
+      {
+        "combo": "views → pipes",
+        "count": 4
+      },
+      {
+        "combo": "routes → io",
+        "count": 3
+      },
+      {
+        "combo": "views → io",
+        "count": 3
+      },
+      {
+        "combo": "container component → utils",
+        "count": 3
+      },
+      {
+        "combo": "views → flows",
+        "count": 3
+      },
+      {
+        "combo": "pipes → pipes",
+        "count": 2
+      },
+      {
+        "combo": "pipes → io",
+        "count": 2
+      },
+      {
+        "combo": "views → state",
+        "count": 2
+      },
+      {
+        "combo": "hooks → utils",
+        "count": 1
+      },
+      {
+        "combo": "routes → pipes",
+        "count": 1
+      },
+      {
+        "combo": "utils → io",
+        "count": 1
+      }
+    ]
+  },
+  "violations": [
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/flows/file/create-file.flow.ts",
+      "line": 23,
+      "currentLayer": "flows",
+      "importLayer": "flows",
+      "allowedLayers": [
+        "pipes",
+        "io",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: flows should not depend on flows"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/flows/file/open-file.flow.ts",
+      "line": 23,
+      "currentLayer": "flows",
+      "importLayer": "flows",
+      "allowedLayers": [
+        "pipes",
+        "io",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: flows should not depend on flows"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/flows/templated/create-templated-file.action.test.ts",
+      "line": 47,
+      "currentLayer": "flows",
+      "importLayer": "flows",
+      "allowedLayers": [
+        "pipes",
+        "io",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: flows should not depend on flows"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/flows/templated/create-templated-file.flow.ts",
+      "line": 27,
+      "currentLayer": "flows",
+      "importLayer": "flows",
+      "allowedLayers": [
+        "pipes",
+        "io",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: flows should not depend on flows"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/flows/templated/create-templated-file.flow.ts",
+      "line": 28,
+      "currentLayer": "flows",
+      "importLayer": "flows",
+      "allowedLayers": [
+        "pipes",
+        "io",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: flows should not depend on flows"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/flows/wiki/migrate-wiki.flow.ts",
+      "line": 17,
+      "currentLayer": "flows",
+      "importLayer": "flows",
+      "allowedLayers": [
+        "pipes",
+        "io",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: flows should not depend on flows"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/queries/attachment.queries.ts",
+      "line": 13,
+      "currentLayer": "hooks",
+      "importLayer": "io",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Create a flow that wraps the IO operation, then use it in the hook"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/queries/content.queries.ts",
+      "line": 13,
+      "currentLayer": "hooks",
+      "importLayer": "io",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Create a flow that wraps the IO operation, then use it in the hook"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/queries/node.queries.ts",
+      "line": 13,
+      "currentLayer": "hooks",
+      "importLayer": "io",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Create a flow that wraps the IO operation, then use it in the hook"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/queries/tag.queries.ts",
+      "line": 13,
+      "currentLayer": "hooks",
+      "importLayer": "io",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Create a flow that wraps the IO operation, then use it in the hook"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/queries/user.queries.ts",
+      "line": 15,
+      "currentLayer": "hooks",
+      "importLayer": "io",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Create a flow that wraps the IO operation, then use it in the hook"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/queries/workspace.queries.ts",
+      "line": 13,
+      "currentLayer": "hooks",
+      "importLayer": "io",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Create a flow that wraps the IO operation, then use it in the hook"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-attachment.ts",
+      "line": 11,
+      "currentLayer": "hooks",
+      "importLayer": "hooks",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: hooks should not depend on hooks"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-backup-manager.ts",
+      "line": 12,
+      "currentLayer": "hooks",
+      "importLayer": "io",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Create a flow that wraps the IO operation, then use it in the hook"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-backup-manager.ts",
+      "line": 24,
+      "currentLayer": "hooks",
+      "importLayer": "io",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Create a flow that wraps the IO operation, then use it in the hook"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-backup-manager.ts",
+      "line": 28,
+      "currentLayer": "hooks",
+      "importLayer": "io",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Create a flow that wraps the IO operation, then use it in the hook"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-content.ts",
+      "line": 15,
+      "currentLayer": "hooks",
+      "importLayer": "hooks",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: hooks should not depend on hooks"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-drawing.ts",
+      "line": 21,
+      "currentLayer": "hooks",
+      "importLayer": "hooks",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: hooks should not depend on hooks"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-drawing.ts",
+      "line": 25,
+      "currentLayer": "hooks",
+      "importLayer": "io",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Create a flow that wraps the IO operation, then use it in the hook"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-node.ts",
+      "line": 16,
+      "currentLayer": "hooks",
+      "importLayer": "hooks",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: hooks should not depend on hooks"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-optimistic-collapse.ts",
+      "line": 17,
+      "currentLayer": "hooks",
+      "importLayer": "hooks",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: hooks should not depend on hooks"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-optimistic-collapse.ts",
+      "line": 18,
+      "currentLayer": "hooks",
+      "importLayer": "io",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Create a flow that wraps the IO operation, then use it in the hook"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-optimistic-collapse.ts",
+      "line": 19,
+      "currentLayer": "hooks",
+      "importLayer": "io",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Create a flow that wraps the IO operation, then use it in the hook"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-tag.ts",
+      "line": 11,
+      "currentLayer": "hooks",
+      "importLayer": "hooks",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: hooks should not depend on hooks"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-unified-save.ts",
+      "line": 21,
+      "currentLayer": "hooks",
+      "importLayer": "io",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Create a flow that wraps the IO operation, then use it in the hook"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-unified-save.ts",
+      "line": 25,
+      "currentLayer": "hooks",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: hooks should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-update-checker.ts",
+      "line": 18,
+      "currentLayer": "hooks",
+      "importLayer": "io",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Create a flow that wraps the IO operation, then use it in the hook"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-user.ts",
+      "line": 11,
+      "currentLayer": "hooks",
+      "importLayer": "hooks",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: hooks should not depend on hooks"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-wiki.ts",
+      "line": 15,
+      "currentLayer": "hooks",
+      "importLayer": "hooks",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: hooks should not depend on hooks"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/hooks/use-workspace.ts",
+      "line": 16,
+      "currentLayer": "hooks",
+      "importLayer": "hooks",
+      "allowedLayers": [
+        "flows",
+        "state",
+        "queries",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: hooks should not depend on hooks"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/io/api/clear-data.api.ts",
+      "line": 15,
+      "currentLayer": "io",
+      "importLayer": "io",
+      "allowedLayers": [
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: io should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/io/api/client.api.ts",
+      "line": 20,
+      "currentLayer": "io",
+      "importLayer": "io",
+      "allowedLayers": [
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: io should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/io/api/content.api.ts",
+      "line": 11,
+      "currentLayer": "io",
+      "importLayer": "io",
+      "allowedLayers": [
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: io should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/io/api/node.api.ts",
+      "line": 24,
+      "currentLayer": "io",
+      "importLayer": "io",
+      "allowedLayers": [
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: io should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/io/db/legacy-database.ts",
+      "line": 27,
+      "currentLayer": "io",
+      "importLayer": "io",
+      "allowedLayers": [
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: io should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/io/file/dialog.file.ts",
+      "line": 13,
+      "currentLayer": "io",
+      "importLayer": "io",
+      "allowedLayers": [
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: io should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/io/storage/layout.storage.ts",
+      "line": 15,
+      "currentLayer": "io",
+      "importLayer": "io",
+      "allowedLayers": [
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: io should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/io/storage/settings.storage.ts",
+      "line": 15,
+      "currentLayer": "io",
+      "importLayer": "io",
+      "allowedLayers": [
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: io should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/pipes/export/export.bundle.fn.ts",
+      "line": 13,
+      "currentLayer": "pipes",
+      "importLayer": "pipes",
+      "allowedLayers": [
+        "utils",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: pipes should not depend on pipes"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/pipes/export/export.bundle.fn.ts",
+      "line": 14,
+      "currentLayer": "pipes",
+      "importLayer": "pipes",
+      "allowedLayers": [
+        "utils",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: pipes should not depend on pipes"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/pipes/search/search.engine.fn.test.ts",
+      "line": 42,
+      "currentLayer": "pipes",
+      "importLayer": "io",
+      "allowedLayers": [
+        "utils",
+        "types"
+      ],
+      "fixType": "move",
+      "suggestion": "Move this logic to flows/ layer (pipes should be pure)"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/pipes/wiki/wiki.resolve.fn.test.ts",
+      "line": 50,
+      "currentLayer": "pipes",
+      "importLayer": "io",
+      "allowedLayers": [
+        "utils",
+        "types"
+      ],
+      "fixType": "move",
+      "suggestion": "Move this logic to flows/ layer (pipes should be pure)"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/routes/settings.tsx",
+      "line": 10,
+      "currentLayer": "routes",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "views",
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: routes should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/routes/settings/design.tsx",
+      "line": 5,
+      "currentLayer": "routes",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "views",
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: routes should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/routes/settings/design.tsx",
+      "line": 6,
+      "currentLayer": "routes",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "views",
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: routes should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/routes/settings/diagrams.tsx",
+      "line": 10,
+      "currentLayer": "routes",
+      "importLayer": "io",
+      "allowedLayers": [
+        "views",
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: routes should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/routes/settings/export.tsx",
+      "line": 5,
+      "currentLayer": "routes",
+      "importLayer": "pipes",
+      "allowedLayers": [
+        "views",
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: routes should not depend on pipes"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/routes/settings/export.tsx",
+      "line": 16,
+      "currentLayer": "routes",
+      "importLayer": "io",
+      "allowedLayers": [
+        "views",
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: routes should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/routes/settings/icons.tsx",
+      "line": 8,
+      "currentLayer": "routes",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "views",
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: routes should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/routes/settings/logs.tsx",
+      "line": 15,
+      "currentLayer": "routes",
+      "importLayer": "io",
+      "allowedLayers": [
+        "views",
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: routes should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/routes/settings/logs.tsx",
+      "line": 16,
+      "currentLayer": "routes",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "views",
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: routes should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/types/codec/attachment.codec.ts",
+      "line": 18,
+      "currentLayer": "types",
+      "importLayer": "types",
+      "allowedLayers": [],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: types should not depend on types"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/types/codec/attachment.codec.ts",
+      "line": 24,
+      "currentLayer": "types",
+      "importLayer": "types",
+      "allowedLayers": [],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: types should not depend on types"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/types/codec/content.codec.ts",
+      "line": 8,
+      "currentLayer": "types",
+      "importLayer": "types",
+      "allowedLayers": [],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: types should not depend on types"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/types/codec/content.codec.ts",
+      "line": 13,
+      "currentLayer": "types",
+      "importLayer": "types",
+      "allowedLayers": [],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: types should not depend on types"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/types/codec/node.codec.ts",
+      "line": 8,
+      "currentLayer": "types",
+      "importLayer": "types",
+      "allowedLayers": [],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: types should not depend on types"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/types/codec/node.codec.ts",
+      "line": 13,
+      "currentLayer": "types",
+      "importLayer": "types",
+      "allowedLayers": [],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: types should not depend on types"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/types/codec/tag.codec.ts",
+      "line": 18,
+      "currentLayer": "types",
+      "importLayer": "types",
+      "allowedLayers": [],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: types should not depend on types"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/types/codec/tag.codec.ts",
+      "line": 24,
+      "currentLayer": "types",
+      "importLayer": "types",
+      "allowedLayers": [],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: types should not depend on types"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/types/codec/user.codec.ts",
+      "line": 18,
+      "currentLayer": "types",
+      "importLayer": "types",
+      "allowedLayers": [],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: types should not depend on types"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/types/codec/user.codec.ts",
+      "line": 26,
+      "currentLayer": "types",
+      "importLayer": "types",
+      "allowedLayers": [],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: types should not depend on types"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/types/codec/workspace.codec.ts",
+      "line": 10,
+      "currentLayer": "types",
+      "importLayer": "types",
+      "allowedLayers": [],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: types should not depend on types"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/types/codec/workspace.codec.ts",
+      "line": 15,
+      "currentLayer": "types",
+      "importLayer": "types",
+      "allowedLayers": [],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: types should not depend on types"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/types/editor-tab/editor-tab.interface.ts",
+      "line": 8,
+      "currentLayer": "types",
+      "importLayer": "types",
+      "allowedLayers": [],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: types should not depend on types"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/types/node/node.interface.ts",
+      "line": 11,
+      "currentLayer": "types",
+      "importLayer": "types",
+      "allowedLayers": [],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: types should not depend on types"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/types/node/node.schema.ts",
+      "line": 12,
+      "currentLayer": "types",
+      "importLayer": "types",
+      "allowedLayers": [],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: types should not depend on types"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/utils/file-tree-navigation.util.ts",
+      "line": 11,
+      "currentLayer": "utils",
+      "importLayer": "io",
+      "allowedLayers": [
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: utils should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/activity-bar/activity-bar.container.fn.tsx",
+      "line": 34,
+      "currentLayer": "container component",
+      "importLayer": "io",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/activity-bar/activity-bar.container.fn.tsx",
+      "line": 35,
+      "currentLayer": "container component",
+      "importLayer": "pipes",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on pipes"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/activity-bar/activity-bar.container.fn.tsx",
+      "line": 41,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/activity-bar/activity-bar.container.fn.tsx",
+      "line": 42,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/activity-bar/activity-bar.container.fn.tsx",
+      "line": 45,
+      "currentLayer": "container component",
+      "importLayer": "io",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/activity-bar/activity-bar.view.fn.tsx",
+      "line": 12,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/activity-bar/activity-bar.view.fn.tsx",
+      "line": 13,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/activity-bar/activity-bar.view.fn.tsx",
+      "line": 14,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/activity-bar/activity-bar.view.fn.tsx",
+      "line": 15,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/activity-bar/activity-bar.view.fn.tsx",
+      "line": 16,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/app-layout/app-layout.view.fn.tsx",
+      "line": 19,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/app-layout/app-layout.view.fn.tsx",
+      "line": 20,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/backup-manager/backup-manager.container.fn.tsx",
+      "line": 13,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/backup-manager/backup-manager.view.fn.tsx",
+      "line": 28,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/backup-manager/backup-manager.view.fn.tsx",
+      "line": 29,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/backup-manager/backup-manager.view.fn.tsx",
+      "line": 30,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/backup-manager/backup-manager.view.fn.tsx",
+      "line": 37,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/backup-manager/backup-manager.view.fn.tsx",
+      "line": 38,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/backup-manager/backup-manager.view.fn.tsx",
+      "line": 39,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/buffer-switcher/buffer-switcher.view.fn.tsx",
+      "line": 16,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/buffer-switcher/buffer-switcher.view.fn.tsx",
+      "line": 17,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/command-palette/command-palette.container.fn.tsx",
+      "line": 13,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/command-palette/command-palette.container.fn.tsx",
+      "line": 19,
+      "currentLayer": "container component",
+      "importLayer": "io",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/command-palette/command-palette.view.fn.tsx",
+      "line": 4,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/diagram/mermaid.render.fn.ts",
+      "line": 17,
+      "currentLayer": "views",
+      "importLayer": "io",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/diagram/plantuml.render.fn.ts",
+      "line": 17,
+      "currentLayer": "views",
+      "importLayer": "io",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/editor-tabs/editor-tabs.container.fn.test.tsx",
+      "line": 8,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/editor-tabs/editor-tabs.container.fn.test.tsx",
+      "line": 17,
+      "currentLayer": "views",
+      "importLayer": "state",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Convert to container component (.container.fn.tsx) or move logic to hooks"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/editor-tabs/editor-tabs.view.fn.test.tsx",
+      "line": 8,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/editor-tabs/editor-tabs.view.fn.tsx",
+      "line": 24,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/editor-tabs/editor-tabs.view.fn.tsx",
+      "line": 25,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/editor-tabs/editor-tabs.view.fn.tsx",
+      "line": 26,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/editor-tabs/editor-tabs.view.fn.tsx",
+      "line": 32,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/excalidraw-editor/excalidraw-editor.container.fn.tsx",
+      "line": 24,
+      "currentLayer": "container component",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/excalidraw-editor/excalidraw-editor.container.fn.tsx",
+      "line": 32,
+      "currentLayer": "container component",
+      "importLayer": "io",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/excalidraw-editor/excalidraw-editor.utils.ts",
+      "line": 12,
+      "currentLayer": "views",
+      "importLayer": "io",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/export-button/export-button.container.fn.tsx",
+      "line": 12,
+      "currentLayer": "container component",
+      "importLayer": "io",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/export-button/export-button.view.fn.tsx",
+      "line": 15,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/export-button/export-button.view.fn.tsx",
+      "line": 16,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/export-dialog-manager/export-dialog-manager.container.fn.tsx",
+      "line": 8,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/export-dialog/export-dialog.container.fn.tsx",
+      "line": 22,
+      "currentLayer": "container component",
+      "importLayer": "io",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/export-dialog/export-dialog.container.fn.tsx",
+      "line": 23,
+      "currentLayer": "container component",
+      "importLayer": "pipes",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on pipes"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/export-dialog/export-dialog.container.fn.tsx",
+      "line": 29,
+      "currentLayer": "container component",
+      "importLayer": "io",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/export-dialog/export-dialog.types.ts",
+      "line": 5,
+      "currentLayer": "views",
+      "importLayer": "pipes",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on pipes"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/export-dialog/export-dialog.view.fn.tsx",
+      "line": 7,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/export-dialog/export-dialog.view.fn.tsx",
+      "line": 8,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/export-dialog/export-dialog.view.fn.tsx",
+      "line": 16,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/export-dialog/export-dialog.view.fn.tsx",
+      "line": 17,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/export-dialog/export-dialog.view.fn.tsx",
+      "line": 18,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/file-tree/file-tree-item.view.fn.test.tsx",
+      "line": 8,
+      "currentLayer": "views",
+      "importLayer": "pipes",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on pipes"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/file-tree/file-tree-item.view.fn.tsx",
+      "line": 23,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/file-tree/file-tree-item.view.fn.tsx",
+      "line": 24,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/file-tree/file-tree-item.view.fn.tsx",
+      "line": 34,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/file-tree/file-tree.types.ts",
+      "line": 6,
+      "currentLayer": "views",
+      "importLayer": "pipes",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on pipes"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/file-tree/file-tree.view.fn.tsx",
+      "line": 24,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/file-tree/file-tree.view.fn.tsx",
+      "line": 25,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/file-tree/file-tree.view.fn.tsx",
+      "line": 26,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/file-tree/file-tree.view.fn.tsx",
+      "line": 36,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/global-search/global-search.container.fn.tsx",
+      "line": 15,
+      "currentLayer": "container component",
+      "importLayer": "io",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/global-search/global-search.view.fn.tsx",
+      "line": 9,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/global-search/global-search.view.fn.tsx",
+      "line": 10,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/global-search/global-search.view.fn.tsx",
+      "line": 11,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/global-search/global-search.view.fn.tsx",
+      "line": 12,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/global-search/global-search.view.fn.tsx",
+      "line": 18,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/global-search/global-search.view.fn.tsx",
+      "line": 19,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/global-search/global-search.view.fn.tsx",
+      "line": 20,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/keyboard-shortcuts-help/keyboard-shortcuts-help.view.fn.tsx",
+      "line": 7,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/keyboard-shortcuts-help/keyboard-shortcuts-help.view.fn.tsx",
+      "line": 8,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/drawings-panel.tsx",
+      "line": 11,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/drawings-panel.tsx",
+      "line": 12,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/drawings-panel.tsx",
+      "line": 13,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/drawings-panel.tsx",
+      "line": 14,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/drawings-panel.tsx",
+      "line": 15,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/file-tree-panel/file-tree-panel.container.fn.tsx",
+      "line": 26,
+      "currentLayer": "container component",
+      "importLayer": "pipes",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on pipes"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/file-tree-panel/file-tree-panel.container.fn.tsx",
+      "line": 34,
+      "currentLayer": "container component",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/file-tree-panel/file-tree-panel.container.fn.tsx",
+      "line": 35,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/file-tree-panel/file-tree-panel.container.fn.tsx",
+      "line": 36,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/file-tree-panel/file-tree-panel.container.fn.tsx",
+      "line": 38,
+      "currentLayer": "container component",
+      "importLayer": "io",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/search-panel/search-panel.container.fn.tsx",
+      "line": 13,
+      "currentLayer": "container component",
+      "importLayer": "io",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/search-panel/search-panel.types.ts",
+      "line": 5,
+      "currentLayer": "views",
+      "importLayer": "pipes",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on pipes"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/search-panel/search-panel.view.fn.test.tsx",
+      "line": 7,
+      "currentLayer": "views",
+      "importLayer": "flows",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Convert to container component (.container.fn.tsx) or move logic to hooks"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/search-panel/search-panel.view.fn.tsx",
+      "line": 17,
+      "currentLayer": "views",
+      "importLayer": "flows",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Convert to container component (.container.fn.tsx) or move logic to hooks"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/search-panel/search-panel.view.fn.tsx",
+      "line": 18,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/search-panel/search-panel.view.fn.tsx",
+      "line": 19,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/search-panel/search-panel.view.fn.tsx",
+      "line": 20,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/search-panel/search-panel.view.fn.tsx",
+      "line": 21,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/search-panel/search-panel.view.fn.tsx",
+      "line": 26,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/search-panel/search-panel.view.fn.tsx",
+      "line": 27,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/search-panel/search-panel.view.fn.tsx",
+      "line": 28,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/panels/tag-graph-panel/tag-graph-panel.view.fn.tsx",
+      "line": 14,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/save-status-indicator/save-status-indicator.view.fn.tsx",
+      "line": 9,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/story-right-sidebar/story-right-sidebar.view.fn.tsx",
+      "line": 21,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/story-right-sidebar/story-right-sidebar.view.fn.tsx",
+      "line": 22,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/story-workspace/story-workspace.container.fn.tsx",
+      "line": 22,
+      "currentLayer": "container component",
+      "importLayer": "pipes",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on pipes"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/story-workspace/story-workspace.container.fn.tsx",
+      "line": 31,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/story-workspace/story-workspace.container.fn.tsx",
+      "line": 32,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/story-workspace/story-workspace.container.fn.tsx",
+      "line": 33,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/story-workspace/story-workspace.container.fn.tsx",
+      "line": 34,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/story-workspace/story-workspace.container.fn.tsx",
+      "line": 35,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/story-workspace/story-workspace.container.fn.tsx",
+      "line": 36,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/story-workspace/story-workspace.container.fn.tsx",
+      "line": 37,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/story-workspace/story-workspace.container.fn.tsx",
+      "line": 38,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/story-workspace/story-workspace.container.fn.tsx",
+      "line": 39,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/story-workspace/story-workspace.container.fn.tsx",
+      "line": 40,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/story-workspace/story-workspace.container.fn.tsx",
+      "line": 46,
+      "currentLayer": "container component",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/story-workspace/story-workspace.container.fn.tsx",
+      "line": 48,
+      "currentLayer": "container component",
+      "importLayer": "io",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on io"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/theme-selector/theme-selector.container.fn.test.tsx",
+      "line": 3,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/theme-selector/theme-selector.container.fn.tsx",
+      "line": 8,
+      "currentLayer": "container component",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "flows",
+        "state",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: container component should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/theme-selector/theme-selector.types.ts",
+      "line": 2,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/theme-selector/theme-selector.view.fn.test.tsx",
+      "line": 3,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/theme-selector/theme-selector.view.fn.tsx",
+      "line": 13,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/theme-selector/theme-selector.view.fn.tsx",
+      "line": 14,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/theme-selector/theme-selector.view.fn.tsx",
+      "line": 15,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/theme-selector/theme-selector.view.fn.tsx",
+      "line": 16,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/theme-selector/theme-selector.view.fn.tsx",
+      "line": 17,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/theme/editor-theme.fn.ts",
+      "line": 8,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/theme/theme.fn.test.ts",
+      "line": 7,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/theme/theme.fn.ts",
+      "line": 14,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/alert.tsx",
+      "line": 4,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/avatar.tsx",
+      "line": 3,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/badge.tsx",
+      "line": 3,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/breadcrumb.tsx",
+      "line": 5,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/button-group.tsx",
+      "line": 4,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/button-group.tsx",
+      "line": 5,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/button.tsx",
+      "line": 5,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/card.tsx",
+      "line": 3,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/checkbox.tsx",
+      "line": 7,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/command.tsx",
+      "line": 5,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/command.tsx",
+      "line": 6,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/confirm.tsx",
+      "line": 9,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/confirm.tsx",
+      "line": 10,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/dialog.tsx",
+      "line": 5,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/dropdown-menu.tsx",
+      "line": 5,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/empty.tsx",
+      "line": 3,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/input.tsx",
+      "line": 3,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/label.tsx",
+      "line": 6,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/popover.tsx",
+      "line": 4,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/progress.tsx",
+      "line": 4,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/radio-group.tsx",
+      "line": 7,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/resize-handle.tsx",
+      "line": 2,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/scroll-area.tsx",
+      "line": 6,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/select.tsx",
+      "line": 5,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/separator.tsx",
+      "line": 4,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/sheet.tsx",
+      "line": 7,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/sidebar.tsx",
+      "line": 7,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/sidebar.tsx",
+      "line": 8,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/sidebar.tsx",
+      "line": 9,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/sidebar.tsx",
+      "line": 10,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/sidebar.tsx",
+      "line": 11,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/sidebar.tsx",
+      "line": 18,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/sidebar.tsx",
+      "line": 19,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/skeleton.tsx",
+      "line": 1,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/slider.tsx",
+      "line": 4,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/switch.tsx",
+      "line": 6,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/table.tsx",
+      "line": 3,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/tabs.tsx",
+      "line": 6,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/textarea.tsx",
+      "line": 3,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/toggle-group.tsx",
+      "line": 7,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/toggle-group.tsx",
+      "line": 8,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/toggle.tsx",
+      "line": 7,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/ui/tooltip.tsx",
+      "line": 4,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/update-checker/update-checker.types.ts",
+      "line": 6,
+      "currentLayer": "views",
+      "importLayer": "flows",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Convert to container component (.container.fn.tsx) or move logic to hooks"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/update-checker/update-checker.view.fn.tsx",
+      "line": 14,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/update-checker/update-checker.view.fn.tsx",
+      "line": 15,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/update-checker/update-checker.view.fn.tsx",
+      "line": 23,
+      "currentLayer": "views",
+      "importLayer": "views",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on views"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/utils/font-style-injector.tsx",
+      "line": 3,
+      "currentLayer": "views",
+      "importLayer": "state",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Convert to container component (.container.fn.tsx) or move logic to hooks"
+    },
+    {
+      "file": "/home/lotus/project/book2/novel-editor/apps/desktop/src/views/word-count-badge/word-count-badge.view.fn.tsx",
+      "line": 17,
+      "currentLayer": "views",
+      "importLayer": "utils",
+      "allowedLayers": [
+        "hooks",
+        "types"
+      ],
+      "fixType": "refactor",
+      "suggestion": "Refactor to follow architecture: views should not depend on utils"
+    }
+  ]
+}

@@ -6,7 +6,7 @@
  * 解决 Tab 切换时状态不更新的问题
  */
 
-import { memo, useSyncExternalStore } from "react";
+import { memo } from "react";
 import { saveServiceManager } from "@/flows/save";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import { useSaveStore } from "@/state/save.state";
@@ -33,7 +33,7 @@ export interface SaveStatusIndicatorContainerProps {
  * 由于 saveServiceManager 没有内置订阅机制，我们使用轮询方式
  * 实际上状态变化会通过 SaveStore 触发重渲染
  */
-const subscribe = (callback: () => void) => {
+const _subscribe = (_callback: () => void) => {
 	// SaveStore 的状态变化会触发重渲染
 	// 这里返回一个空的 unsubscribe 函数
 	return () => {};

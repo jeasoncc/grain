@@ -22,11 +22,11 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { openTabFlow, setActiveTabFlow } from "@/flows/editor-tabs";
 import * as contentRepo from "@/io/api/content.api";
-import { info, debug, warn, error } from "@/io/log/logger.api";
+import { info, debug, warn } from "@/io/log/logger.api";
+import { fileOperationQueue } from "@/pipes/queue/queue.pipe";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
 import type { TabType } from "@/types/editor-tab";
 import type { AppError } from "@/types/error";
-import { fileOperationQueue } from "@/utils/queue.util";
 
 /**
  * 打开文件参数

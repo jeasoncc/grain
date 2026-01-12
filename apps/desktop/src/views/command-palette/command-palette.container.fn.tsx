@@ -1,7 +1,6 @@
 // 命令面板 - 快速访问所有功能（容器组件）
 
 import { useNavigate } from "@tanstack/react-router";
-import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { Download, Moon, PenTool, Search, Settings, Sun } from "lucide-react";

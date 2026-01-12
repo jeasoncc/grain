@@ -8,7 +8,7 @@
 import * as A from "fp-ts/Array";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { info, debug, warn, error } from "@/io/log/logger.api";
+import { debug } from "@/io/log/logger.api";
 import {
 	decodeContent,
 	decodeContentOptional,

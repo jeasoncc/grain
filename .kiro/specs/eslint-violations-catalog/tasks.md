@@ -10,58 +10,58 @@ Systematic execution plan for fixing 5,466 ESLint violations across 512 files, o
 
 **Goal**: Fix 1,043 violations (19.1%)
 
-- [ ] 1. Fix Type Safety Violations (417 violations)
-  - [ ] 1.1 Create automated script for no-undef fixes
+- [-] 1. Fix Type Safety Violations (417 violations)
+  - [x] 1.1 Create automated script for no-undef fixes
     - Write `scripts/fix-no-undef.ts` to add missing imports
     - Use TypeScript compiler API to resolve undefined references
     - Add proper type imports from @/types/
     - _Requirements: 1.1_
   
-  - [ ] 1.2 Run no-undef fix script
+  - [x] 1.2 Run no-undef fix script
     - Execute script on all source files
     - Verify no compilation errors
     - Run tests to ensure functionality
     - _Requirements: 1.1_
   
-  - [ ] 1.3 Manually fix @typescript-eslint/no-explicit-any violations
+  - [x] 1.3 Manually fix @typescript-eslint/no-explicit-any violations
     - Review 9 files with `any` types
     - Replace with specific types
     - Update type definitions as needed
     - _Requirements: 1.2_
 
-- [ ] 2. Fix Architecture Layer Dependencies (225 violations)
-  - [ ] 2.1 Run architecture analysis script
+- [x] 2. Fix Architecture Layer Dependencies (225 violations)
+  - [x] 2.1 Run architecture analysis script
     - Execute `scripts/analyze-layer-dependencies.ts`
     - Generate report of all violations
     - Categorize by fix type (wrapper vs move)
     - _Requirements: 2.1, 2.2_
   
-  - [ ] 2.2 Create pipe wrappers for flows→utils violations
+  - [x] 2.2 Create pipe wrappers for flows→utils violations
     - For each flows/ file importing utils/
     - Create corresponding wrapper in pipes/
     - Update flows/ to import from pipes/
     - _Requirements: 2.2_
   
-  - [ ] 2.3 Move logic from pipes→io violations to flows
+  - [x] 2.3 Move logic from pipes→io violations to flows
     - Identify pipes/ files with IO operations
     - Move logic to appropriate flows/ file
     - Update imports and call sites
     - _Requirements: 2.3_
   
-  - [ ] 2.4 Verify architecture compliance
+  - [x] 2.4 Verify architecture compliance
     - Run ESLint to check grain/layer-dependencies
     - Ensure zero violations
     - Run tests
     - _Requirements: 2.4_
 
-- [ ] 3. Fix Unused Code (103 violations)
-  - [ ] 3.1 Create automated unused code removal script
+- [x] 3. Fix Unused Code (103 violations)
+  - [x] 3.1 Create automated unused code removal script
     - Write `scripts/fix-unused-vars.ts`
     - Use TypeScript compiler API to find unused exports
     - Safely remove unused variables, imports, parameters
     - _Requirements: 3.1_
   
-  - [ ] 3.2 Run unused code removal
+  - [x] 3.2 Run unused code removal
     - Execute script on all files
     - Review changes for safety
     - Run tests to verify no breakage

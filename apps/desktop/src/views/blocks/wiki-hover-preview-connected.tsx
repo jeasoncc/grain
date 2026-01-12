@@ -5,7 +5,7 @@
  */
 
 import { useWikiPreviewFetcher } from "@/hooks/use-wiki-preview";
-import { WikiHoverPreview, type WikiPreviewData } from "./wiki-hover-preview";
+import { WikiHoverPreview } from "./wiki-hover-preview";
 
 interface WikiHoverPreviewConnectedProps {
 	entryId: string;

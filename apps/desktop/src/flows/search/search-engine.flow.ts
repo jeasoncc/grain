@@ -16,7 +16,7 @@ import {
 	getNodesByWorkspace,
 	getWorkspaceById,
 } from "@/io/api";
-import { info, debug, warn, error, success } from "@/io/log/logger.api";
+import { success } from "@/io/log/logger.api";
 import {
 	calculateSimpleScore,
 	extractHighlights,

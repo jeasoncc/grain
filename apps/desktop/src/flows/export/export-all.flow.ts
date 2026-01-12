@@ -11,7 +11,7 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { success } from "@/io/log/logger.api";
+import { success, info } from "@/io/log/logger.api";
 import {
 	getAllNodes,
 	getAllWorkspaces,

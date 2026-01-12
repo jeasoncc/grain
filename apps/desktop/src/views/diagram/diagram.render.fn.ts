@@ -21,6 +21,8 @@ import {
 	renderMermaid as renderMermaidWithTheme,
 } from "./mermaid.render.fn";
 import {
+import { error } from "@/io/log/logger.api";
+
 	type PlantUMLRenderConfig,
 	renderPlantUML as renderPlantUMLWithRetry,
 } from "./plantuml.render.fn";

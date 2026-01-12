@@ -21,7 +21,7 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { error, debug, warn } from "@/io/log/logger.api";
+import { debug, warn } from "@/io/log/logger.api";
 import {
 	decodeNode,
 	decodeNodes,

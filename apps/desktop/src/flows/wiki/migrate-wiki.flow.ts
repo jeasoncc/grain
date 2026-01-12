@@ -17,7 +17,7 @@ import * as E from "fp-ts/Either";
 import { ensureRootFolderAsync } from "@/flows/node";
 import { addContent, addNode, getNextOrder, updateNode } from "@/io/api";
 import { legacyDatabase } from "@/io/db/legacy-database";
-import { info, debug, warn, error } from "@/io/log/logger.api";
+import { info, debug, success } from "@/io/log/logger.api";
 import { WIKI_ROOT_FOLDER, WIKI_TAG } from "@/pipes/wiki";
 
 /**

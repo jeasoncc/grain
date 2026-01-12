@@ -248,7 +248,7 @@ export const searchLogsFlow = (
  * @returns TaskEither<AppError, Record<LogLevel, number>>
  */
 export const getLogLevelStatsFlow = (
-  timeRange?: { startTime?: string; endTime?: string },
+  _timeRange?: { startTime?: string; endTime?: string },
 ): TE.TaskEither<AppError, Record<LogLevel, number>> => {
   return pipe(
     getLogStatsFromSQLite(),

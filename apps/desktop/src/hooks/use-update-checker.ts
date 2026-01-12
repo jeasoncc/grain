@@ -15,7 +15,6 @@ import {
 	downloadAndInstallUpdate,
 	type UpdateInfo,
 } from "@/flows/updater";
-import { info, debug, warn, error } from "@/io/log/logger.api";
 
 type CheckStatus =
 	| "idle"

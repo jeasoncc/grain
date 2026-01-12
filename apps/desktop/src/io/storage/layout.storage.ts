@@ -12,7 +12,7 @@
  */
 
 import { z } from "zod";
-import { info, debug, warn, error } from "@/io/log/logger.api";
+import { info, warn } from "@/io/log/logger.api";
 import type { LayoutState } from "@/types/layout";
 import { DEFAULT_LAYOUT_STATE } from "@/types/layout";
 import { SIDEBAR_PANELS } from "@/types/sidebar";

@@ -15,7 +15,7 @@ import dayjs from "dayjs";
 import { z } from "zod";
 import { generateExcalidrawContent } from "@/pipes/content";
 import { FILE_EXTENSIONS } from "@/pipes/editor";
-import { getDateFolderStructureWithFilename } from "@/utils/date.util";
+import { getDateFolderStructureWithFilename } from "@/pipes/date/date-folder.pipe";
 import type { TemplateConfig } from "../create-templated-file.flow";
 
 // ==============================

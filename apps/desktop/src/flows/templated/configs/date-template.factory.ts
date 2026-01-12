@@ -13,8 +13,8 @@
 import dayjs from "dayjs";
 import { z } from "zod";
 import { NODE_TYPE_TO_EXTENSION_MAP } from "@/pipes/editor";
+import { getDateFolderStructureWithFilename } from "@/pipes/date/date-folder.pipe";
 import type { FileNodeType } from "@/types/node";
-import { getDateFolderStructureWithFilename } from "@/utils/date.util";
 import type { TemplateConfig } from "../create-templated-file.flow";
 
 // ==============================

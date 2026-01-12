@@ -16,7 +16,7 @@ import {
 	getNodesByWorkspace,
 	getWorkspaceById,
 } from "@/io/api";
-import { info } from "@/io/log/logger.api";
+import { info, success } from "@/io/log/logger.api";
 import { exportWorkspaceToMarkdown } from "@/pipes/export/export.bundle.fn";
 import type { AppError } from "@/types/error";
 

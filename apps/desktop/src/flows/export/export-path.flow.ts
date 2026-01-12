@@ -11,7 +11,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { saveAs } from "file-saver";
 import { z } from "zod";
-import { info, debug, warn, error } from "@/io/log/logger.api";
+import { warn, success } from "@/io/log/logger.api";
 
 // ============================================================================
 // Zod Schema 定义

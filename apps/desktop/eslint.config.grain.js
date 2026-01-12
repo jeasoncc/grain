@@ -9,6 +9,7 @@ import tsparser from '@typescript-eslint/parser';
 import checkFile from 'eslint-plugin-check-file';
 import functional from 'eslint-plugin-functional';
 import grainPlugin from './eslint-plugin-grain/dist/index.js';
+import globals from 'globals';
 
 export default [
   js.configs.recommended,
@@ -16,6 +17,10 @@ export default [
     files: ['src/**/*.{ts,tsx}'],
     languageOptions: {
       parser: tsparser,
+      globals: {
+        ...globals.browser,
+        ...globals.es2021,
+      },
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',

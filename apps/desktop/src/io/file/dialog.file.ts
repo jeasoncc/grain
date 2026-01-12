@@ -10,7 +10,7 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
-import { info, debug, warn, error } from "@/io/log/logger.api";
+import { warn } from "@/io/log/logger.api";
 
 // ============================================================================
 // 类型定义

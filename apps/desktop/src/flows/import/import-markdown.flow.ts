@@ -14,7 +14,7 @@ import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { addContent, addNode, getNextOrder } from "@/io/api";
-import { info, debug, warn, error } from "@/io/log/logger.api";
+import { info, success } from "@/io/log/logger.api";
 import {
 	importFromMarkdown,
 	type MarkdownImportOptions,

@@ -58,7 +58,7 @@ export function WikiHoverPreview({
 					setTitle(data.title);
 					setContent(data.content);
 				}
-			} catch (_error) {
+			} catch {
 				if (mounted) {
 					setTitle("Unknown");
 					setContent("Failed to load content");

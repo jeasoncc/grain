@@ -13,7 +13,7 @@ import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { toast } from "sonner";
 import { legacyDatabase } from "@/io/db/legacy-database";
-import { info, debug, warn, error } from "@/io/log/logger.api";
+import { info, success } from "@/io/log/logger.api";
 import {
 	type JsonImportOptions,
 	parseImportData,

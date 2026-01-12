@@ -14,7 +14,7 @@ import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { getContentByNodeIdOrFail, getNodeByIdOrFail } from "@/io/api";
-import { info } from "@/io/log/logger.api";
+import { info, success } from "@/io/log/logger.api";
 import { exportToMarkdown, type MarkdownExportOptions } from "@/pipes/export";
 import { type AppError, exportError } from "@/types/error";
 

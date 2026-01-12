@@ -360,7 +360,7 @@ function FileItem({
 	icon: Icon,
 	label,
 	level = 0,
-	isOpen = false,
+	_isOpen = false,
 	isActive = false,
 }: {
 	icon: any;

@@ -21,6 +21,8 @@ import {
 
 // Storage API (同层依赖，允许)
 import {
+import { debug, info, success, warn, error, trace } from "@/io/log/logger.api";
+
   saveLogToSQLite,
   saveLogsBatchToSQLite,
 } from "./log.storage.api";

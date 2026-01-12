@@ -10,16 +10,7 @@ import { pipe } from "fp-ts/function";
 import type { AppError } from "@/types/error/error.types";
 
 // 新的日志 API
-import {
-  logDebug,
-  logInfo,
-  logSuccess,
-  logWarn,
-  logError,
-  logTrace,
-  queryLogs,
-  autoCleanupLogs,
-} from "@/io/log/logger.api";
+import { logDebug, logInfo, logSuccess, logWarn, logError, logTrace, queryLogs, autoCleanupLogs, , error } from "@/io/log/logger.api";
 
 // 初始化和迁移
 import { initLogDatabase } from "@/io/log/log.storage.api";

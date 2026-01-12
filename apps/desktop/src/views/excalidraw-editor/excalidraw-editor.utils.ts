@@ -9,6 +9,7 @@
 /**
  * 硬件加速检测结果
  */
+
 export interface HardwareAccelerationStatus {
 	/** 是否支持 WebGL */
 	readonly webglSupported: boolean;

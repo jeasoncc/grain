@@ -13,8 +13,8 @@ import {
 	getNextMode,
 	isThemeTypeMatch,
 } from "@/pipes/theme";
+import { getThemeByKey, themes } from "@/pipes/theme/theme-lookup.pipe";
 import type { ThemeMode } from "@/types/theme";
-import { getThemeByKey, themes } from "@/utils/themes.util";
 
 // ==============================
 // Theme Application Flow
