@@ -31,6 +31,8 @@ export const STORAGE_KEYS = {
 	AUTO_BACKUPS: "auto-backups",
 	/** 上次自动备份时间 */
 	LAST_AUTO_BACKUP: "last-auto-backup",
+	/** 自动备份启用状态 */
+	AUTO_BACKUP_ENABLED: "auto-backup-enabled",
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
@@ -234,6 +236,40 @@ export function has(key: string): boolean {
 		return localStorage.getItem(key) !== null;
 	} catch (error) {
 		error(`[Storage] 检查键失败 (${key}):`, error);
+		return false;
+	}
+}
+
+// ============================================================================
+// 自动备份设置
+// ============================================================================
+
+/**
+ * 获取自动备份启用状态
+ *
+ * @returns 是否启用自动备份
+ */
+export function getAutoBackupEnabled(): boolean {
+	try {
+		return localStorage.getItem(STORAGE_KEYS.AUTO_BACKUP_ENABLED) === "true";
+	} catch (error) {
+		error("[Storage] 获取自动备份状态失败", { error }, "settings.storage");
+		return false;
+	}
+}
+
+/**
+ * 设置自动备份启用状态
+ *
+ * @param enabled - 是否启用
+ * @returns 是否成功
+ */
+export function setAutoBackupEnabled(enabled: boolean): boolean {
+	try {
+		localStorage.setItem(STORAGE_KEYS.AUTO_BACKUP_ENABLED, enabled.toString());
+		return true;
+	} catch (error) {
+		error("[Storage] 设置自动备份状态失败", { error }, "settings.storage");
 		return false;
 	}
 }

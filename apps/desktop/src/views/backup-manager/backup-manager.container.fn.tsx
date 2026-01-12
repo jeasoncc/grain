@@ -1,113 +1,25 @@
 /**
- * Backup Manager Container Component
+ * @file backup-manager.container.fn.tsx
+ * @description 备份管理容器组件
  *
- * 容器组件，连接 hooks/stores 和数据逻辑
+ * 符合架构规范：
+ * - views/ 只能依赖 hooks/, types/
+ * - 通过 hook 封装所有业务逻辑
+ * - 容器组件负责确认对话框和事件编排
  */
 
-import { memo, useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
-import {
-	autoBackupManager,
-	clearAllData,
-	exportBackupJson,
-	exportBackupZip,
-	getDatabaseStats,
-	getLocalBackups,
-	getStorageStats,
-	restoreBackup,
-	restoreLocalBackup,
-} from "@/flows/backup";
-import type { DatabaseStats, LocalBackupRecord } from "@/types/backup";
-import type { ClearDataOptions, StorageStats } from "@/types/storage";
+import { memo, useCallback } from "react";
+import { useBackupManager } from "@/hooks/use-backup-manager";
 import { useConfirm } from "@/views/ui/confirm";
 import { BackupManagerView } from "./backup-manager.view.fn";
 
 export const BackupManagerContainer = memo(function BackupManagerContainer() {
-	// ============================================================================
-	// 状态
-	// ============================================================================
-
-	const [stats, setStats] = useState<DatabaseStats | null>(null);
-	const [storageStats, setStorageStats] = useState<StorageStats | null>(null);
-	const [loading, setLoading] = useState(false);
-	const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
-	const [localBackups, setLocalBackups] = useState<LocalBackupRecord[]>([]);
-
 	const confirm = useConfirm();
+	const backupManager = useBackupManager();
 
 	// ============================================================================
-	// 数据加载
+	// 事件处理（带确认对话框）
 	// ============================================================================
-
-	const loadStats = useCallback(async () => {
-		try {
-			const statsResult = await getDatabaseStats()();
-			if (statsResult._tag === "Right") {
-				setStats(statsResult.right);
-			}
-
-			const storageResult = await getStorageStats()();
-			if (storageResult._tag === "Right") {
-				setStorageStats(storageResult.right);
-			}
-		} catch (error) {
-			console.error("[BackupManager] 加载统计信息失败:", error);
-		}
-	}, []);
-
-	const loadLocalBackups = useCallback(() => {
-		const backups = getLocalBackups();
-		setLocalBackups(backups);
-	}, []);
-
-	useEffect(() => {
-		loadStats();
-		loadLocalBackups();
-
-		const enabled = localStorage.getItem("auto-backup-enabled") === "true";
-		setAutoBackupEnabled(enabled);
-		if (enabled) {
-			autoBackupManager.start();
-		}
-	}, [loadStats, loadLocalBackups]);
-
-	// ============================================================================
-	// 事件处理
-	// ============================================================================
-
-	const handleExportJson = useCallback(async () => {
-		setLoading(true);
-		try {
-			const result = await exportBackupJson()();
-			if (result._tag === "Right") {
-				toast.success("备份导出成功");
-			} else {
-				toast.error(result.left.message);
-			}
-		} catch (error) {
-			toast.error("导出失败");
-			console.error("[BackupManager] 导出 JSON 失败:", error);
-		} finally {
-			setLoading(false);
-		}
-	}, []);
-
-	const handleExportZip = useCallback(async () => {
-		setLoading(true);
-		try {
-			const result = await exportBackupZip()();
-			if (result._tag === "Right") {
-				toast.success("压缩备份导出成功");
-			} else {
-				toast.error(result.left.message);
-			}
-		} catch (error) {
-			toast.error("导出失败");
-			console.error("[BackupManager] 导出 ZIP 失败:", error);
-		} finally {
-			setLoading(false);
-		}
-	}, []);
 
 	const handleRestore = useCallback(async () => {
 		const confirmed = await confirm({
@@ -118,47 +30,10 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 			cancelText: "取消",
 		});
 
-		if (!confirmed) return;
-
-		const input = document.createElement("input");
-		input.type = "file";
-		input.accept = ".json,.zip";
-		input.onchange = async (e) => {
-			const file = (e.target as HTMLInputElement).files?.[0];
-			if (!file) return;
-
-			setLoading(true);
-			try {
-				const result = await restoreBackup(file)();
-				if (result._tag === "Right") {
-					toast.success("备份恢复成功");
-					await loadStats();
-					window.location.reload();
-				} else {
-					toast.error(result.left.message);
-				}
-			} catch (error) {
-				toast.error("恢复失败");
-				console.error("[BackupManager] 恢复备份失败:", error);
-			} finally {
-				setLoading(false);
-			}
-		};
-		input.click();
-	}, [confirm, loadStats]);
-
-	const handleToggleAutoBackup = useCallback((enabled: boolean) => {
-		setAutoBackupEnabled(enabled);
-		localStorage.setItem("auto-backup-enabled", enabled.toString());
-
-		if (enabled) {
-			autoBackupManager.start();
-			toast.success("自动备份已启用");
-		} else {
-			autoBackupManager.stop();
-			toast.info("自动备份已禁用");
+		if (confirmed) {
+			await backupManager.restore();
 		}
-	}, []);
+	}, [confirm, backupManager]);
 
 	const handleRestoreLocal = useCallback(
 		async (timestamp: string) => {
@@ -169,26 +44,11 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 				cancelText: "取消",
 			});
 
-			if (!confirmed) return;
-
-			setLoading(true);
-			try {
-				const result = await restoreLocalBackup(timestamp)();
-				if (result._tag === "Right") {
-					toast.success("备份恢复成功");
-					await loadStats();
-					window.location.reload();
-				} else {
-					toast.error(result.left.message);
-				}
-			} catch (error) {
-				toast.error("恢复失败");
-				console.error("[BackupManager] 恢复本地备份失败:", error);
-			} finally {
-				setLoading(false);
+			if (confirmed) {
+				await backupManager.restoreLocal(timestamp);
 			}
 		},
-		[confirm, loadStats],
+		[confirm, backupManager],
 	);
 
 	const handleClearAllData = useCallback(async () => {
@@ -200,29 +60,10 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 			cancelText: "取消",
 		});
 
-		if (!confirmed) return;
-
-		setLoading(true);
-		try {
-			const result = await clearAllData()();
-			if (result._tag === "Right") {
-				toast.success("所有数据已清除");
-				await loadStats();
-				setTimeout(() => {
-					window.location.reload();
-				}, 1500);
-			} else {
-				toast.error(result.left.message);
-			}
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : "清除数据失败";
-			toast.error(errorMessage);
-			console.error("[BackupManager] 清除所有数据失败:", error);
-		} finally {
-			setLoading(false);
+		if (confirmed) {
+			await backupManager.clearAll();
 		}
-	}, [confirm, loadStats]);
+	}, [confirm, backupManager]);
 
 	const handleClearDatabase = useCallback(async () => {
 		const confirmed = await confirm({
@@ -232,30 +73,10 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 			cancelText: "取消",
 		});
 
-		if (!confirmed) return;
-
-		setLoading(true);
-		try {
-			const options: ClearDataOptions = {
-				clearIndexedDB: true,
-				clearLocalStorage: false,
-				clearSessionStorage: false,
-				clearCookies: false,
-			};
-			const result = await clearAllData(options)();
-			if (result._tag === "Right") {
-				toast.success("数据库已清除");
-				await loadStats();
-			} else {
-				toast.error(result.left.message);
-			}
-		} catch (error) {
-			toast.error("清除失败");
-			console.error("[BackupManager] 清除数据库失败:", error);
-		} finally {
-			setLoading(false);
+		if (confirmed) {
+			await backupManager.clearDatabase();
 		}
-	}, [confirm, loadStats]);
+	}, [confirm, backupManager]);
 
 	const handleClearSettings = useCallback(async () => {
 		const confirmed = await confirm({
@@ -265,30 +86,10 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 			cancelText: "取消",
 		});
 
-		if (!confirmed) return;
-
-		setLoading(true);
-		try {
-			const options: ClearDataOptions = {
-				clearIndexedDB: false,
-				clearLocalStorage: true,
-				clearSessionStorage: true,
-				clearCookies: true,
-			};
-			const result = await clearAllData(options)();
-			if (result._tag === "Right") {
-				toast.success("设置已清除");
-				await loadStats();
-			} else {
-				toast.error(result.left.message);
-			}
-		} catch (error) {
-			toast.error("清除失败");
-			console.error("[BackupManager] 清除设置失败:", error);
-		} finally {
-			setLoading(false);
+		if (confirmed) {
+			await backupManager.clearSettings();
 		}
-	}, [confirm, loadStats]);
+	}, [confirm, backupManager]);
 
 	// ============================================================================
 	// 渲染
@@ -296,15 +97,15 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 
 	return (
 		<BackupManagerView
-			stats={stats}
-			storageStats={storageStats}
-			loading={loading}
-			autoBackupEnabled={autoBackupEnabled}
-			localBackups={localBackups}
-			onExportJson={handleExportJson}
-			onExportZip={handleExportZip}
+			stats={backupManager.stats}
+			storageStats={backupManager.storageStats}
+			loading={backupManager.loading}
+			autoBackupEnabled={backupManager.autoBackupEnabled}
+			localBackups={backupManager.localBackups}
+			onExportJson={backupManager.exportJson}
+			onExportZip={backupManager.exportZip}
 			onRestore={handleRestore}
-			onToggleAutoBackup={handleToggleAutoBackup}
+			onToggleAutoBackup={backupManager.toggleAutoBackup}
 			onRestoreLocal={handleRestoreLocal}
 			onClearAllData={handleClearAllData}
 			onClearDatabase={handleClearDatabase}

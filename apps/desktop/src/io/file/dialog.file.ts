@@ -188,3 +188,53 @@ export async function getHomeDirectory(): Promise<string> {
 		return "";
 	}
 }
+
+// ============================================================================
+// 文件选择对话框（浏览器环境）
+// ============================================================================
+
+/**
+ * 文件选择结果
+ */
+export interface FileSelectResult {
+	readonly file: File | null;
+	readonly cancelled: boolean;
+}
+
+/**
+ * 打开文件选择对话框（浏览器环境）
+ *
+ * @param options - 文件选择选项
+ * @returns Promise<FileSelectResult>
+ */
+export async function selectFile(
+	options?: FileSelectOptions,
+): Promise<FileSelectResult> {
+	return new Promise((resolve) => {
+		const input = document.createElement("input");
+		input.type = "file";
+		input.multiple = options?.multiple ?? false;
+
+		if (options?.filters && options.filters.length > 0) {
+			const extensions = options.filters.flatMap((f) => f.extensions);
+			input.accept = extensions.map((ext) => `.${ext}`).join(",");
+		}
+
+		input.onchange = (e) => {
+			const file = (e.target as HTMLInputElement).files?.[0];
+			resolve({
+				file: file ?? null,
+				cancelled: !file,
+			});
+		};
+
+		input.oncancel = () => {
+			resolve({
+				file: null,
+				cancelled: true,
+			});
+		};
+
+		input.click();
+	});
+}
