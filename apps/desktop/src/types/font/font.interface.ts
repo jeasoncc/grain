@@ -47,29 +47,29 @@ export interface FontState {
  */
 export interface FontActions {
 	/** Set editor font family */
-	setFontFamily: (family: string) => void;
+	readonly setFontFamily: (family: string) => void;
 	/** Set editor font size (clamped to 12-32) */
-	setFontSize: (size: number) => void;
+	readonly setFontSize: (size: number) => void;
 	/** Set editor line height (clamped to 1.2-2.5) */
-	setLineHeight: (height: number) => void;
+	readonly setLineHeight: (height: number) => void;
 	/** Set editor letter spacing (clamped to -0.05-0.2) */
-	setLetterSpacing: (spacing: number) => void;
+	readonly setLetterSpacing: (spacing: number) => void;
 	/** Set UI font family */
-	setUiFontFamily: (family: string) => void;
+	readonly setUiFontFamily: (family: string) => void;
 	/** Set UI font size (clamped to 12-18) */
-	setUiFontSize: (size: number) => void;
+	readonly setUiFontSize: (size: number) => void;
 	/** Set UI scale preset */
-	setUiScale: (scale: string) => void;
+	readonly setUiScale: (scale: string) => void;
 	/** Set card size preset */
-	setCardSize: (size: string) => void;
+	readonly setCardSize: (size: string) => void;
 	/** Set card border radius (clamped to 0-16) */
-	setCardBorderRadius: (radius: number) => void;
+	readonly setCardBorderRadius: (radius: number) => void;
 	/** Set paragraph spacing (clamped to 0-2.5) */
-	setParagraphSpacing: (spacing: number) => void;
+	readonly setParagraphSpacing: (spacing: number) => void;
 	/** Set first line indent (clamped to 0-4) */
-	setFirstLineIndent: (indent: number) => void;
+	readonly setFirstLineIndent: (indent: number) => void;
 	/** Reset all settings to defaults */
-	reset: () => void;
+	readonly reset: () => void;
 }
 
 // ==============================
