@@ -109,67 +109,67 @@ export interface SidebarActions {
 	 * Set the active panel.
 	 * Opens sidebar if panel is not null.
 	 */
-	setActivePanel: (panel: SidebarPanel) => void;
+	readonly setActivePanel: (panel: SidebarPanel) => void;
 
 	/**
 	 * Set sidebar open state.
 	 */
-	setIsOpen: (open: boolean) => void;
+	readonly setIsOpen: (open: boolean) => void;
 
 	/**
 	 * Toggle sidebar open/closed.
 	 */
-	toggleSidebar: () => void;
+	readonly toggleSidebar: () => void;
 
 	/**
 	 * Set sidebar width (constrained to min/max bounds).
 	 */
-	setWidth: (width: number) => void;
+	readonly setWidth: (width: number) => void;
 
 	/**
 	 * Resize sidebar with auto-collapse support.
 	 * Collapses if width drops below threshold.
 	 */
-	resizeSidebar: (newWidth: number) => void;
+	readonly resizeSidebar: (newWidth: number) => void;
 
 	/**
 	 * Restore sidebar from drag collapse.
 	 * Restores previous width.
 	 */
-	restoreFromCollapse: () => void;
+	readonly restoreFromCollapse: () => void;
 
 	// Search panel actions
 	/**
 	 * Set search query string.
 	 */
-	setSearchQuery: (query: string) => void;
+	readonly setSearchQuery: (query: string) => void;
 
 	/**
 	 * Set selected search types.
 	 */
-	setSearchSelectedTypes: (types: string[]) => void;
+	readonly setSearchSelectedTypes: (types: readonly string[]) => void;
 
 	/**
 	 * Set search filters visibility.
 	 */
-	setSearchShowFilters: (show: boolean) => void;
+	readonly setSearchShowFilters: (show: boolean) => void;
 
 	// Drawings panel actions
 	/**
 	 * Set selected drawing ID.
 	 */
-	setSelectedDrawingId: (id: string | null) => void;
+	readonly setSelectedDrawingId: (id: string | null) => void;
 
 	// File tree actions
 	/**
 	 * Set expanded folders map.
 	 */
-	setExpandedFolders: (folders: Record<string, boolean>) => void;
+	readonly setExpandedFolders: (folders: Readonly<Record<string, boolean>>) => void;
 
 	/**
 	 * Toggle a folder's expanded state.
 	 */
-	toggleFolderExpanded: (folderId: string) => void;
+	readonly toggleFolderExpanded: (folderId: string) => void;
 }
 
 // ==============================
