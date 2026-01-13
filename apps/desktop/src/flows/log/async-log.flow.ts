@@ -73,7 +73,7 @@ interface AsyncLogConfig extends LogConfig {
 /**
  * 日志队列
  */
-let logQueue: LogQueueItem[] = [];
+let logQueue: readonly LogQueueItem[] = [];
 
 /**
  * 队列处理器状态
