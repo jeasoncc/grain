@@ -45,7 +45,7 @@ export interface WorkspaceInterface {
 	readonly createDate: ISODateString;
 
 	/** 可选：团队成员（用户 ID 数组），用于协作工作区 */
-	readonly members?: string[];
+	readonly members?: readonly string[];
 
 	/** 可选：所有者用户 ID */
 	readonly owner?: UUID;
@@ -62,7 +62,7 @@ export interface WorkspaceCreateInput {
 	readonly description?: string;
 	readonly publisher?: string;
 	readonly language?: string;
-	readonly members?: string[];
+	readonly members?: readonly string[];
 	readonly owner?: UUID;
 }
 
@@ -78,6 +78,6 @@ export interface WorkspaceUpdateInput {
 	readonly publisher?: string;
 	readonly language?: string;
 	readonly lastOpen?: ISODateString;
-	readonly members?: string[];
+	readonly members?: readonly string[];
 	readonly owner?: UUID;
 }
