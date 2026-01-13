@@ -11,6 +11,6 @@ pub mod entity;
 pub mod request;
 pub mod response;
 
-pub use entity::*;
+pub use entity::{LogEntity, LogLevel, Model as LogModel};
 pub use request::*;
 pub use response::*;

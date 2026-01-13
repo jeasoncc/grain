@@ -3,7 +3,7 @@
 //! 定义日志相关的响应数据结构
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use super::entity::LogLevel;
 
@@ -55,7 +55,7 @@ pub struct LogStats {
     pub total_entries: i64,
     
     /// 按级别分组的统计
-    pub by_level: HashMap<LogLevel, i64>,
+    pub by_level: BTreeMap<LogLevel, i64>,
     
     /// 最早日志时间
     pub earliest_entry: Option<String>,
