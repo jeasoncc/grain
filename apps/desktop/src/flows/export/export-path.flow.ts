@@ -11,7 +11,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { saveAs } from "file-saver";
 import { z } from "zod";
-import { warn, success } from "@/io/log/logger.api";
+import { warn, success, error as logError } from "@/io/log/logger.api";
 
 // ============================================================================
 // Zod Schema 定义
@@ -106,9 +106,9 @@ export async function selectExportDirectory(
 			initialDirectory: initialDirectory || null,
 		});
 		return result;
-	} catch (error) {
-		error("[Export] 目录选择失败", { error }, "export-path.flow");
-		throw new Error(`目录选择失败: ${error}`);
+	} catch (err) {
+		logError("[Export] 目录选择失败", { error: err }, "export-path.flow");
+		throw new Error(`目录选择失败: ${err}`);
 	}
 }
 
@@ -159,9 +159,9 @@ export async function saveToPath(
 			content: contentArray,
 		});
 		success("[Export] 文件保存成功", { path: `${path}/${filename}` }, "export-path");
-	} catch (error) {
-		error("[Export] 文件保存失败", { error }, "export-path.flow");
-		throw new Error(`文件保存失败: ${error}`);
+	} catch (err) {
+		logError("[Export] 文件保存失败", { error: err }, "export-path.flow");
+		throw new Error(`文件保存失败: ${err}`);
 	}
 }
 
@@ -183,8 +183,8 @@ export async function getDownloadsDirectory(): Promise<string> {
 	try {
 		const result = await invoke<string>("get_downloads_dir");
 		return result;
-	} catch (error) {
-		error("[Export] 获取下载目录失败", { error }, "export-path.flow");
+	} catch (err) {
+		logError("[Export] 获取下载目录失败", { error: err }, "export-path.flow");
 		return "";
 	}
 }
@@ -222,8 +222,8 @@ export function getExportSettings(): ExportSettings {
 
 		warn("[Export] 设置数据格式无效，使用默认值", { error: result.error }, "export-path.flow");
 		return DEFAULT_EXPORT_SETTINGS;
-	} catch (error) {
-		error("[Export] 加载设置失败", { error }, "export-path.flow");
+	} catch (err) {
+		logError("[Export] 加载设置失败", { error: err }, "export-path.flow");
 		return DEFAULT_EXPORT_SETTINGS;
 	}
 }
@@ -234,8 +234,8 @@ export function getExportSettings(): ExportSettings {
 export function saveExportSettings(settings: ExportSettings): void {
 	try {
 		localStorage.setItem(EXPORT_SETTINGS_KEY, JSON.stringify(settings));
-	} catch (error) {
-		error("[Export] 保存设置失败", { error }, "export-path.flow");
+	} catch (err) {
+		logError("[Export] 保存设置失败", { error: err }, "export-path.flow");
 	}
 }
 
