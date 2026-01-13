@@ -37,8 +37,8 @@ import type { AppError } from "@/types/error";
  * 将附件数据转换为导出格式
  */
 function toAttachmentData(
-	attachments: AttachmentInterface[],
-): AttachmentData[] {
+	attachments: readonly AttachmentInterface[],
+): readonly AttachmentData[] {
 	return attachments.map((a) => ({
 		id: a.id,
 		project: a.project,
@@ -77,9 +77,9 @@ export function exportAll(
 		}),
 		// 获取内容
 		TE.bind("contents", ({ nodes }) => {
-			const nodeIds = nodes.map((n) => n.id);
+			const nodeIds: readonly string[] = nodes.map((n) => n.id);
 			if (nodeIds.length === 0) {
-				return TE.right([] as ContentData[]);
+				return TE.right([] as readonly ContentData[]);
 			}
 			return pipe(
 				getContentsByNodeIds(nodeIds),
