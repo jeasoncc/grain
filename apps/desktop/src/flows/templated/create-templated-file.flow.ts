@@ -27,7 +27,7 @@ import { z } from "zod";
 import dayjs from "dayjs";
 import type { SerializedEditorState } from "lexical";
 import * as nodeRepo from "@/io/api/node.api";
-import { success, start, debug, warn } from "@/io/log/logger.api";
+import { success, debug, warn } from "@/io/log/logger.api";
 import { fileOperationQueue } from "@/pipes/queue/queue.pipe";
 import { findTabByNodeId, evictLRUEditorStates } from "@/pipes/editor-tab";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
