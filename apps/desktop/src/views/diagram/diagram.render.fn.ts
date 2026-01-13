@@ -17,7 +17,6 @@
 
 import {
 	initMermaid,
-import {
 	type MermaidTheme,
 	renderMermaid as renderMermaidWithTheme,
 } from "./mermaid.render.fn";
