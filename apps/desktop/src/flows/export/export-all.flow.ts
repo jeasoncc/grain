@@ -21,7 +21,6 @@ import {
 	getNodesByWorkspace,
 	getWorkspaceById,
 } from "@/io/api";
-import { info } from "@/io/log/logger.api";
 import {
 	createExportBundle,
 	serializeBundle,
