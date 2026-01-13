@@ -160,7 +160,7 @@ export const shouldLog = (level: LogLevel, minLevel: LogLevel): boolean => {
  * @param minLevel - 最小日志级别
  * @returns 过滤后的日志条目数组
  */
-export const filterByLevel = (entries: LogEntry[], minLevel: LogLevel): LogEntry[] =>
+export const filterByLevel = (entries: readonly LogEntry[], minLevel: LogLevel): readonly LogEntry[] =>
   pipe(
     entries,
     A.filter((entry) => shouldLog(entry.level, minLevel)),
@@ -173,7 +173,7 @@ export const filterByLevel = (entries: LogEntry[], minLevel: LogLevel): LogEntry
  * @param levels - 允许的日志级别数组
  * @returns 过滤后的日志条目数组
  */
-export const filterByLevels = (entries: LogEntry[], levels: LogLevel[]): LogEntry[] =>
+export const filterByLevels = (entries: readonly LogEntry[], levels: readonly LogLevel[]): readonly LogEntry[] =>
   pipe(
     entries,
     A.filter((entry) => levels.includes(entry.level)),
