@@ -51,17 +51,17 @@ export interface SelectionActions {
 	 * Set the selected workspace ID.
 	 * Clears the selected node when workspace changes.
 	 */
-	setSelectedWorkspaceId: (id: string | null) => void;
+	readonly setSelectedWorkspaceId: (id: string | null) => void;
 
 	/**
 	 * Set the selected node ID in the file tree.
 	 */
-	setSelectedNodeId: (id: string | null) => void;
+	readonly setSelectedNodeId: (id: string | null) => void;
 
 	/**
 	 * Clear all selection state.
 	 */
-	clearSelection: () => void;
+	readonly clearSelection: () => void;
 }
 
 // ==============================
