@@ -27,7 +27,7 @@ import { z } from "zod";
 import dayjs from "dayjs";
 import type { SerializedEditorState } from "lexical";
 import * as nodeRepo from "@/io/api/node.api";
-import { success, debug, warn } from "@/io/log/logger.api";
+import { success, info, debug, warn } from "@/io/log/logger.api";
 import { fileOperationQueue } from "@/pipes/queue/queue.pipe";
 import { findTabByNodeId, evictLRUEditorStates } from "@/pipes/editor-tab";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
@@ -380,7 +380,7 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 	return (
 		params: TemplatedFileParams<T>,
 	): TE.TaskEither<AppError, TemplatedFileResult> => {
-		start(`[Action] 创建${config.name}...`);
+		info(`[Action] 创建${config.name}...`);
 
 		return pipe(
 			// 1. 校验基础参数（工作区 ID）
