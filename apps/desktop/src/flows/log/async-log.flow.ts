@@ -6,6 +6,8 @@
  * 确保日志操作不阻塞主线程，提供高性能的日志处理能力。
  */
 
+/// <reference types="node" />
+
 import * as TE from "fp-ts/TaskEither";
 import * as T from "fp-ts/Task";
 import * as E from "fp-ts/Either";
