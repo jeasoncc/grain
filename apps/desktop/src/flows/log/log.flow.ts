@@ -60,8 +60,6 @@ import {
 
 // Configuration
 import {
-import { warn } from "@/io/log/logger.api";
-
   getCurrentLogConfig as getCurrentExtendedLogConfig,
   updateLogConfig as updateExtendedLogConfig,
   validateLogConfigFlow as validateLogConfig,
