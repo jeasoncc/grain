@@ -15,7 +15,7 @@ import type { AppError } from "@/types/error";
  */
 export const getAttachments = (): TE.TaskEither<
 	AppError,
-	AttachmentInterface[]
+	readonly AttachmentInterface[]
 > => {
 	return attachmentRepo.getAttachments();
 };
@@ -34,7 +34,7 @@ export const getAttachment = (
  */
 export const getAttachmentsByProject = (
 	projectId: string,
-): TE.TaskEither<AppError, AttachmentInterface[]> => {
+): TE.TaskEither<AppError, readonly AttachmentInterface[]> => {
 	return attachmentRepo.getAttachmentsByProject(projectId);
 };
 
@@ -44,7 +44,7 @@ export const getAttachmentsByProject = (
 export const getAttachmentsByType = (
 	projectId: string,
 	attachmentType: AttachmentType,
-): TE.TaskEither<AppError, AttachmentInterface[]> => {
+): TE.TaskEither<AppError, readonly AttachmentInterface[]> => {
 	return attachmentRepo.getAttachmentsByType(projectId, attachmentType);
 };
 
@@ -53,7 +53,7 @@ export const getAttachmentsByType = (
  */
 export const getImagesByProject = (
 	projectId: string,
-): TE.TaskEither<AppError, AttachmentInterface[]> => {
+): TE.TaskEither<AppError, readonly AttachmentInterface[]> => {
 	return attachmentRepo.getImagesByProject(projectId);
 };
 
@@ -62,7 +62,7 @@ export const getImagesByProject = (
  */
 export const getAudioFilesByProject = (
 	projectId: string,
-): TE.TaskEither<AppError, AttachmentInterface[]> => {
+): TE.TaskEither<AppError, readonly AttachmentInterface[]> => {
 	return attachmentRepo.getAudioFilesByProject(projectId);
 };
 
