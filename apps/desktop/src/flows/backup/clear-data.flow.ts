@@ -152,8 +152,8 @@ export const clearAllData = (
 
 			const results = await Promise.all(tasks.map((task) => task()));
 			
-			const errors = results
-				.filter((result): result is { _tag: "Left"; left: AppError } => result._tag === "Left")
+			const errors: readonly string[] = results
+				.filter((result): result is { readonly _tag: "Left"; readonly left: AppError } => result._tag === "Left")
 				.map((result) => result.left.message);
 
 			if (shouldClearCaches) {
@@ -174,7 +174,7 @@ export const clearAllData = (
 // 统计信息
 // ============================================================================
 
-const calculateDataSize = (data: unknown[]): number => {
+const calculateDataSize = (data: readonly unknown[]): number => {
 	try {
 		return new Blob([JSON.stringify(data)]).size;
 	} catch {
@@ -207,7 +207,7 @@ export const getStorageStats = (): TE.TaskEither<AppError, StorageStats> =>
 				tags: calculateDataSize(tags),
 			};
 
-			const totalSize = (Object.values(tableSizes) as number[]).reduce(
+			const totalSize = (Object.values(tableSizes) as readonly number[]).reduce(
 				(a, b) => a + b,
 				0,
 			);
