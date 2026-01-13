@@ -492,10 +492,13 @@ export const getAsyncLogPerformanceStats = () => ({
  * 重置性能统计
  */
 export const resetAsyncLogPerformanceStats = (): void => {
-  processorState.processedCount = 0;
-  processorState.errorCount = 0;
-  processorState.averageProcessTime = 0;
-  processorState.lastProcessTime = Date.now();
+  processorState = {
+    ...processorState,
+    processedCount: 0,
+    errorCount: 0,
+    averageProcessTime: 0,
+    lastProcessTime: Date.now(),
+  };
 };
 
 // ============================================================================
