@@ -50,35 +50,35 @@ export interface ThemeActions {
 	 * Set the current theme by key.
 	 * Also updates mode to match the theme type.
 	 */
-	setTheme: (key: string) => void;
+	readonly setTheme: (key: string) => void;
 
 	/**
 	 * Set the theme mode.
 	 * May trigger theme change if current theme doesn't match mode.
 	 */
-	setMode: (mode: ThemeMode) => void;
+	readonly setMode: (mode: ThemeMode) => void;
 
 	/**
 	 * Set the system theme preference (detected from OS).
 	 * Updates effectiveTheme if mode is "system".
 	 */
-	setSystemTheme: (theme: "light" | "dark") => void;
+	readonly setSystemTheme: (theme: "light" | "dark") => void;
 
 	/**
 	 * Toggle between light, dark, and system modes.
 	 * Cycles: light → dark → system → light
 	 */
-	toggleMode: () => void;
+	readonly toggleMode: () => void;
 
 	/**
 	 * Enable or disable transition animations.
 	 */
-	setEnableTransition: (enable: boolean) => void;
+	readonly setEnableTransition: (enable: boolean) => void;
 
 	/**
 	 * Mark theme system as initialized.
 	 */
-	setInitialized: (initialized: boolean) => void;
+	readonly setInitialized: (initialized: boolean) => void;
 }
 
 // ==============================
