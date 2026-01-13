@@ -41,8 +41,9 @@ export const decodeNode = (response: NodeResponse): NodeInterface => ({
 /**
  * 批量解码节点：NodeResponse[] → NodeInterface[]
  */
-export const decodeNodes = (responses: NodeResponse[]): NodeInterface[] =>
-	responses.map(decodeNode);
+export const decodeNodes = (
+	responses: readonly NodeResponse[],
+): readonly NodeInterface[] => responses.map(decodeNode);
 
 // ============================================
 // 编码：前端类型 → Rust 请求类型
@@ -54,7 +55,7 @@ export const decodeNodes = (responses: NodeResponse[]): NodeInterface[] =>
 export const encodeCreateNode = (
 	input: NodeCreateInput,
 	initialContent?: string,
-	tags?: string[],
+	tags?: readonly string[],
 ): CreateNodeRequest => ({
 	workspaceId: input.workspace,
 	parentId: input.parent ?? null,
