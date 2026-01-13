@@ -142,42 +142,19 @@ export const clearAllData = (
 				clearCaches: shouldClearCaches = true,
 			} = options;
 
-			const errors: string[] = [];
+			const tasks = [
+				shouldClearSqlite ? clearSqliteData() : null,
+				shouldClearIndexedDB ? clearIndexedDB() : null,
+				shouldClearLocalStorage ? clearLocalStorage() : null,
+				shouldClearSessionStorage ? clearSessionStorage() : null,
+				shouldClearCookies ? clearCookies() : null,
+			].filter((task): task is TE.TaskEither<AppError, void> => task !== null);
 
-			if (shouldClearSqlite) {
-				const result = await clearSqliteData()();
-				if (result._tag === "Left") {
-					errors.push(result.left.message);
-				}
-			}
-
-			if (shouldClearIndexedDB) {
-				const result = await clearIndexedDB()();
-				if (result._tag === "Left") {
-					errors.push(result.left.message);
-				}
-			}
-
-			if (shouldClearLocalStorage) {
-				const result = await clearLocalStorage()();
-				if (result._tag === "Left") {
-					errors.push(result.left.message);
-				}
-			}
-
-			if (shouldClearSessionStorage) {
-				const result = await clearSessionStorage()();
-				if (result._tag === "Left") {
-					errors.push(result.left.message);
-				}
-			}
-
-			if (shouldClearCookies) {
-				const result = await clearCookies()();
-				if (result._tag === "Left") {
-					errors.push(result.left.message);
-				}
-			}
+			const results = await Promise.all(tasks.map((task) => task()));
+			
+			const errors = results
+				.filter((result): result is { _tag: "Left"; left: AppError } => result._tag === "Left")
+				.map((result) => result.left.message);
 
 			if (shouldClearCaches) {
 				await clearCaches()();
