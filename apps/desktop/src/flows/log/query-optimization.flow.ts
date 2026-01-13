@@ -294,8 +294,8 @@ export const getRecentErrorLogsFlow = (
 export const getLogsBySourceFlow = (
   source: string,
   limit: number = 100,
-  levelFilter?: LogLevel[],
-): TE.TaskEither<AppError, LogEntry[]> => {
+  levelFilter?: readonly LogLevel[],
+): TE.TaskEither<AppError, readonly LogEntry[]> => {
   const options: LogQueryOptions = {
     sourceFilter: source,
     levelFilter,
