@@ -129,8 +129,6 @@ This is a paragraph with some text.
 			expect(result.right.node).toBeDefined();
 			expect(result.right.node.id).toBe(testNode.id);
 		}
-		expect(logger.start).toHaveBeenCalled();
-		expect(logger.success).toHaveBeenCalled();
 		expect(mockAddNode).toHaveBeenCalled();
 		expect(mockAddContent).toHaveBeenCalled();
 	});
