@@ -58,8 +58,8 @@ export const decodeAttachment = (
  * 解码附件数组
  */
 export const decodeAttachments = (
-	responses: AttachmentResponse[],
-): AttachmentInterface[] => responses.map(decodeAttachment);
+	responses: readonly AttachmentResponse[],
+): readonly AttachmentInterface[] => responses.map(decodeAttachment);
 
 /**
  * 解码可选附件
