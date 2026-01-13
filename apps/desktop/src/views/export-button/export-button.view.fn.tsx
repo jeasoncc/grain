@@ -9,6 +9,7 @@ import {
 	Download,
 	FileText,
 	FileType,
+	type LucideIcon,
 } from "lucide-react";
 import { memo } from "react";
 import type { ExportFormat } from "@/types/export";
@@ -21,7 +22,7 @@ import {
 } from "@/views/ui/dropdown-menu";
 import type { ExportButtonViewProps } from "./export-button.types";
 
-const formatIcons: Record<ExportFormat, any> = {
+const formatIcons: Record<ExportFormat, LucideIcon> = {
 	txt: FileText,
 	docx: FileType,
 	pdf: FileText,
