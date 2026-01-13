@@ -33,8 +33,8 @@ export class WikiFileEntryBuilder {
 	/**
 	 * 设置别名
 	 */
-	alias(v: readonly string[]): this {
-		this.data.alias = [...v];
+	alias(v: string[]): this {
+		this.data.alias = v;
 		return this;
 	}
 
