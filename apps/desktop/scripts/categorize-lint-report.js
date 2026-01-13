@@ -82,10 +82,16 @@ function getRuleCategory(ruleId) {
  * 分类并保存报告
  */
 function categorizeAndSave(results) {
-  // 生成日期前缀的目录名 (YYYY-MM-DD-lint-reports)
+  // 生成日期时间子目录 (lint-reports/YYYY-MM-DD-HH-mm-ss/)
   const now = new Date();
-  const datePrefix = now.toISOString().split('T')[0]; // YYYY-MM-DD
-  const outputDir = join(process.cwd(), `${datePrefix}-lint-reports`);
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  const dateTimeFolder = `${year}-${month}-${day}-${hours}-${minutes}-${seconds}`;
+  const outputDir = join(process.cwd(), 'lint-reports', dateTimeFolder);
   
   // 创建输出目录
   try {
