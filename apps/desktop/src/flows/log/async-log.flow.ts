@@ -173,7 +173,7 @@ export const addLogToAsyncQueue = (
         // 移除最旧的低优先级条目
         const sortedQueue = [...logQueue].sort((a, b) => a.priority - b.priority || a.timestamp - b.timestamp);
         const toRemove = sortedQueue.slice(0, Math.floor(config.maxQueueSize * 0.1)); // 移除10%的最低优先级条目
-        logQueue = logQueue.filter(item => !toRemove.includes(item));
+        logQueue = logQueue.filter(item => !toRemove.some(r => r.id === item.id));
       }
       
       // 创建队列项
@@ -185,11 +185,8 @@ export const addLogToAsyncQueue = (
         retryCount: 0,
       };
       
-      // 添加到队列
-      logQueue.push(queueItem);
-      
-      // 按优先级排序队列
-      logQueue.sort((a, b) => b.priority - a.priority || a.timestamp - b.timestamp);
+      // 添加到队列并按优先级排序
+      logQueue = [...logQueue, queueItem].sort((a, b) => b.priority - a.priority || a.timestamp - b.timestamp);
       
       // 启动队列处理器（如果未运行）
       startQueueProcessor(config);
