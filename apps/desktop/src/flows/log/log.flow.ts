@@ -118,7 +118,7 @@ export const createLogFlow = (config: LogConfig = DEFAULT_LOG_CONFIG) => {
  * @returns TaskEither<AppError, void>
  */
 export const saveBatchLogFlow = (
-  entries: LogEntry[],
+  entries: readonly LogEntry[],
   config: LogConfig = DEFAULT_LOG_CONFIG,
 ): TE.TaskEither<AppError, void> => {
   if (!config.enableStorage || entries.length === 0) {
