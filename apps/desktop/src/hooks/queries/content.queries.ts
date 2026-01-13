@@ -10,7 +10,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import * as contentRepo from "@/io/api/content.api";
+import * as contentFlow from "@/flows/content";
 import type { ContentInterface } from "@/types/content";
 import { queryKeys } from "./query-keys";
 
@@ -41,7 +41,7 @@ export const useContent = (nodeId: string | null | undefined) => {
 		queryFn: async (): Promise<ContentInterface | null> => {
 			if (!nodeId) return null;
 
-			const result = await contentRepo.getContentByNodeId(nodeId)();
+			const result = await contentFlow.getContentByNodeId(nodeId)();
 
 			if (result._tag === "Left") throw result.left;
 			return result.right;
@@ -62,7 +62,7 @@ export const useContentVersion = (nodeId: string | null | undefined) => {
 		queryFn: async (): Promise<number | null> => {
 			if (!nodeId) return null;
 
-			const result = await contentRepo.getContentVersion(nodeId)();
+			const result = await contentFlow.getContentVersion(nodeId)();
 
 			if (result._tag === "Left") throw result.left;
 			return result.right;
