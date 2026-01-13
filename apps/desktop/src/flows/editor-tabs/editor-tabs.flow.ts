@@ -144,10 +144,17 @@ export const reorderTabsFlow = (
 	store: ReturnType<typeof useEditorTabsStore.getState>,
 ): void => {
 	const currentTabs = [...store.tabs] as readonly EditorTab[];
-	const mutableTabs = [...currentTabs];
-	const [removed] = mutableTabs.splice(fromIndex, 1);
-	mutableTabs.splice(toIndex, 0, removed);
-	store.setTabs(mutableTabs);
+	const removed = currentTabs[fromIndex];
+	const withoutRemoved = [
+		...currentTabs.slice(0, fromIndex),
+		...currentTabs.slice(fromIndex + 1),
+	];
+	const reordered = [
+		...withoutRemoved.slice(0, toIndex),
+		removed,
+		...withoutRemoved.slice(toIndex),
+	];
+	store.setTabs(reordered);
 };
 
 /**
@@ -195,10 +202,12 @@ export const closeTabsByWorkspaceFlow = (
 	);
 
 	// Remove editor states for closed tabs
-	const newEditorStates = { ...store.editorStates };
-	for (const tab of tabsToClose) {
-		delete newEditorStates[tab.id];
-	}
+	const tabIdsToRemove = new Set(tabsToClose.map((tab) => tab.id));
+	const newEditorStates = Object.fromEntries(
+		Object.entries(store.editorStates).filter(
+			([tabId]) => !tabIdsToRemove.has(tabId),
+		),
+	);
 
 	// Update active tab if needed
 	let newActiveTabId = store.activeTabId;
@@ -209,7 +218,7 @@ export const closeTabsByWorkspaceFlow = (
 		newActiveTabId = remainingTabs.length > 0 ? remainingTabs[0].id : null;
 	}
 
-	store.setTabs(remainingTabs as EditorTab[]);
+	store.setTabs(remainingTabs as readonly EditorTab[]);
 	store.setActiveTabId(newActiveTabId);
 	store.setEditorStates(newEditorStates);
 };
