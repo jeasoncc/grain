@@ -58,9 +58,9 @@ export interface ConfigValidationResult {
   /** 是否有效 */
   readonly isValid: boolean;
   /** 错误信息 */
-  readonly errors: string[];
+  readonly errors: readonly string[];
   /** 警告信息 */
-  readonly warnings: string[];
+  readonly warnings: readonly string[];
 }
 
 // ============================================================================
