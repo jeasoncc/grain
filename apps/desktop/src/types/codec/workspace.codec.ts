@@ -46,8 +46,8 @@ export const decodeWorkspace = (
  * 批量解码工作区：WorkspaceResponse[] → WorkspaceInterface[]
  */
 export const decodeWorkspaces = (
-	responses: WorkspaceResponse[],
-): WorkspaceInterface[] => responses.map(decodeWorkspace);
+	responses: readonly WorkspaceResponse[],
+): readonly WorkspaceInterface[] => responses.map(decodeWorkspace);
 
 // ============================================
 // 编码：前端类型 → Rust 请求类型
