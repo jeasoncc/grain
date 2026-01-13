@@ -230,42 +230,45 @@ export const validateLogConfigFlow = (
 ): TE.TaskEither<AppError, LogConfigValidationResult> => {
   return TE.tryCatch(
     async () => {
-      const errors: string[] = [];
-      const warnings: string[] = [];
+      let errors: readonly string[] = [];
+      let warnings: readonly string[] = [];
 
       // 使用 Zod 进行基础验证
       const mergedConfig = { ...DEFAULT_EXTENDED_LOG_CONFIG, ...config };
       const validation = ExtendedLogConfigSchema.safeParse(mergedConfig);
 
       if (!validation.success) {
-        errors.push(...validation.error.issues.map(err => 
-          `${err.path.join('.')}: ${err.message}`
-        ));
+        errors = [
+          ...errors,
+          ...validation.error.issues.map(err => 
+            `${err.path.join('.')}: ${err.message}`
+          ),
+        ];
       }
 
       // 自定义验证规则
       if (config.batchSize && config.batchDelay !== undefined) {
         if (config.batchSize > 1 && config.batchDelay === 0) {
-          warnings.push("批量大小 > 1 但延迟为 0，将使用异步队列模式");
+          warnings = [...warnings, "批量大小 > 1 但延迟为 0，将使用异步队列模式"];
         }
       }
 
       if (config.maxEntries && config.autoCleanup?.maxEntries) {
         if (config.autoCleanup.maxEntries > config.maxEntries) {
-          warnings.push("自动清理的最大条目数大于日志配置的最大条目数");
+          warnings = [...warnings, "自动清理的最大条目数大于日志配置的最大条目数"];
         }
       }
 
       if (config.minLevel) {
         const levelPriority = LOG_LEVEL_PRIORITY[config.minLevel];
         if (levelPriority >= LOG_LEVEL_PRIORITY.warn) {
-          warnings.push(`最小日志级别设置为 ${config.minLevel}，可能会丢失重要的调试信息`);
+          warnings = [...warnings, `最小日志级别设置为 ${config.minLevel}，可能会丢失重要的调试信息`];
         }
       }
 
       if (config.autoCleanup?.enabled === false && config.maxEntries) {
         if (config.maxEntries > 50000) {
-          warnings.push("禁用自动清理且最大条目数较大，可能导致存储空间不足");
+          warnings = [...warnings, "禁用自动清理且最大条目数较大，可能导致存储空间不足"];
         }
       }
 
