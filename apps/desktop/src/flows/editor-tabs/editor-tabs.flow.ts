@@ -44,7 +44,7 @@ export const openTabFlow = (
 	store: ReturnType<typeof useEditorTabsStore.getState>,
 ): void => {
 	const existingTab = findTabByNodeId(
-		store.tabs as EditorTab[],
+		store.tabs as readonly EditorTab[],
 		payload.nodeId,
 	);
 
@@ -88,7 +88,7 @@ export const closeTabFlow = (
 	store: ReturnType<typeof useEditorTabsStore.getState>,
 ): void => {
 	const newActiveTabId = calculateNextActiveTabId(
-		store.tabs as EditorTab[],
+		store.tabs as readonly EditorTab[],
 		tabId,
 		store.activeTabId,
 	);
@@ -142,10 +142,11 @@ export const reorderTabsFlow = (
 	toIndex: number,
 	store: ReturnType<typeof useEditorTabsStore.getState>,
 ): void => {
-	const currentTabs = [...store.tabs] as EditorTab[];
-	const [removed] = currentTabs.splice(fromIndex, 1);
-	currentTabs.splice(toIndex, 0, removed);
-	store.setTabs(currentTabs);
+	const currentTabs = [...store.tabs] as readonly EditorTab[];
+	const mutableTabs = [...currentTabs];
+	const [removed] = mutableTabs.splice(fromIndex, 1);
+	mutableTabs.splice(toIndex, 0, removed);
+	store.setTabs(mutableTabs);
 };
 
 /**
