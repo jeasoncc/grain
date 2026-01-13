@@ -3,9 +3,10 @@
 //! 提供前端调用的日志操作接口
 
 use tauri::State;
+use sea_orm::DatabaseConnection;
 
 use crate::{
-    db::{connection::DbConnection, log_db_fn},
+    db::log_db_fn,
     types::{
         error::AppResult,
         log::{
@@ -17,16 +18,16 @@ use crate::{
 
 /// 初始化日志数据库
 #[tauri::command]
-pub async fn init_log_database(db: State<'_, DbConnection>) -> Result<(), String> {
-    log_db_fn::init_log_database(&db.0)
+pub async fn init_log_database(db: State<'_, DatabaseConnection>) -> Result<(), String> {
+    log_db_fn::init_log_database(&db)
         .await
         .map_err(|e| e.to_string())
 }
 
 /// 检查日志数据库是否存在
 #[tauri::command]
-pub async fn check_log_database_exists(db: State<'_, DbConnection>) -> Result<bool, String> {
-    log_db_fn::check_log_database_exists(&db.0)
+pub async fn check_log_database_exists(db: State<'_, DatabaseConnection>) -> Result<bool, String> {
+    log_db_fn::check_log_database_exists(&db)
         .await
         .map_err(|e| e.to_string())
 }
@@ -35,9 +36,9 @@ pub async fn check_log_database_exists(db: State<'_, DbConnection>) -> Result<bo
 #[tauri::command]
 pub async fn save_log_entry(
     entry: CreateLogEntryRequest,
-    db: State<'_, DbConnection>,
+    db: State<'_, DatabaseConnection>,
 ) -> Result<LogEntryResponse, String> {
-    log_db_fn::save_log_entry(&db.0, entry)
+    log_db_fn::save_log_entry(&db, entry)
         .await
         .map_err(|e| e.to_string())
 }
@@ -46,9 +47,9 @@ pub async fn save_log_entry(
 #[tauri::command]
 pub async fn save_logs_batch(
     entries: Vec<CreateLogEntryRequest>,
-    db: State<'_, DbConnection>,
+    db: State<'_, DatabaseConnection>,
 ) -> Result<Vec<LogEntryResponse>, String> {
-    log_db_fn::save_logs_batch(&db.0, entries)
+    log_db_fn::save_logs_batch(&db, entries)
         .await
         .map_err(|e| e.to_string())
 }
@@ -57,17 +58,17 @@ pub async fn save_logs_batch(
 #[tauri::command]
 pub async fn query_logs(
     options: LogQueryOptions,
-    db: State<'_, DbConnection>,
+    db: State<'_, DatabaseConnection>,
 ) -> Result<LogQueryResult, String> {
-    log_db_fn::query_logs(&db.0, options)
+    log_db_fn::query_logs(&db, options)
         .await
         .map_err(|e| e.to_string())
 }
 
 /// 获取日志统计信息
 #[tauri::command]
-pub async fn get_log_stats(db: State<'_, DbConnection>) -> Result<LogStats, String> {
-    log_db_fn::get_log_stats(&db.0)
+pub async fn get_log_stats(db: State<'_, DatabaseConnection>) -> Result<LogStats, String> {
+    log_db_fn::get_log_stats(&db)
         .await
         .map_err(|e| e.to_string())
 }
@@ -76,17 +77,17 @@ pub async fn get_log_stats(db: State<'_, DbConnection>) -> Result<LogStats, Stri
 #[tauri::command]
 pub async fn clear_old_logs(
     before_date: String,
-    db: State<'_, DbConnection>,
+    db: State<'_, DatabaseConnection>,
 ) -> Result<i64, String> {
-    log_db_fn::clear_old_logs(&db.0, &before_date)
+    log_db_fn::clear_old_logs(&db, &before_date)
         .await
         .map_err(|e| e.to_string())
 }
 
 /// 清理所有日志条目
 #[tauri::command]
-pub async fn clear_all_logs(db: State<'_, DbConnection>) -> Result<i64, String> {
-    log_db_fn::clear_all_logs(&db.0)
+pub async fn clear_all_logs(db: State<'_, DatabaseConnection>) -> Result<i64, String> {
+    log_db_fn::clear_all_logs(&db)
         .await
         .map_err(|e| e.to_string())
 }
