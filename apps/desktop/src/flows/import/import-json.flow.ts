@@ -97,7 +97,7 @@ export function importFromJson(
  */
 export async function importFromJsonAsync(
 	jsonText: string,
-	options: { keepIds?: boolean } = {},
+	options: { readonly keepIds?: boolean } = {},
 ): Promise<void> {
 	const result = await importFromJson(jsonText, options)();
 	if (E.isLeft(result)) {
