@@ -164,7 +164,7 @@ pub async fn query_logs(
 
     // 获取总数
     let total = query.clone().count(db).await
-        .map_err(|e| AppError::DbError(format!("Failed to count logs: {}", e)))?;
+        .map_err(|e| AppError::DatabaseError(format!("Failed to count logs: {}", e)))?;
 
     // 应用排序（按时间戳降序）
     query = query.order_by_desc(crate::types::log::entity::Column::Timestamp);
@@ -179,7 +179,7 @@ pub async fn query_logs(
     query = query.limit(limit as u64);
 
     let entries = query.all(db).await
-        .map_err(|e| AppError::DbError(format!("Failed to query logs: {}", e)))?;
+        .map_err(|e| AppError::DatabaseError(format!("Failed to query logs: {}", e)))?;
 
     let has_more = (offset + limit) < total as i32;
     let response_entries = entries.into_iter().map(log_model_to_response).collect();
@@ -200,7 +200,7 @@ pub async fn clear_old_logs(
         .filter(crate::types::log::entity::Column::Timestamp.lt(before_date))
         .exec(db)
         .await
-        .map_err(|e| AppError::DbError(format!("Failed to clear old logs: {}", e)))?;
+        .map_err(|e| AppError::DatabaseError(format!("Failed to clear old logs: {}", e)))?;
 
     Ok(result.rows_affected as i64)
 }
@@ -210,7 +210,7 @@ pub async fn clear_all_logs(db: &DatabaseConnection) -> AppResult<i64> {
     let result = LogEntity::delete_many()
         .exec(db)
         .await
-        .map_err(|e| AppError::DbError(format!("Failed to clear all logs: {}", e)))?;
+        .map_err(|e| AppError::DatabaseError(format!("Failed to clear all logs: {}", e)))?;
 
     Ok(result.rows_affected as i64)
 }
@@ -219,7 +219,7 @@ pub async fn clear_all_logs(db: &DatabaseConnection) -> AppResult<i64> {
 pub async fn get_log_stats(db: &DatabaseConnection) -> AppResult<LogStats> {
     // 获取总条目数
     let total_entries = LogEntity::find().count(db).await
-        .map_err(|e| AppError::DbError(format!("Failed to count total logs: {}", e)))?;
+        .map_err(|e| AppError::DatabaseError(format!("Failed to count total logs: {}", e)))?;
 
     // 按级别统计
     let level_stats = LogEntity::find()
@@ -230,7 +230,7 @@ pub async fn get_log_stats(db: &DatabaseConnection) -> AppResult<LogStats> {
         .into_tuple::<(LogLevel, i64)>()
         .all(db)
         .await
-        .map_err(|e| AppError::DbError(format!("Failed to get level stats: {}", e)))?;
+        .map_err(|e| AppError::DatabaseError(format!("Failed to get level stats: {}", e)))?;
 
     let mut by_level = HashMap::new();
     for (level, count) in level_stats {
