@@ -237,58 +237,79 @@ const stopQueueProcessor = (): void => {
  * @returns Task<void>
  */
 const processLogQueue = (config: AsyncLogConfig): T.Task<void> =>
-  T.fromIO(async () => {
+  T.fromIO(() => {
     if (processorState.isProcessing || logQueue.length === 0) {
-      return;
+      return Promise.resolve();
     }
     
-    processorState.isProcessing = true;
+    // 更新状态：开始处理
+    processorState = {
+      ...processorState,
+      isProcessing: true,
+    };
     const startTime = Date.now();
     
-    try {
-      // 获取一批要处理的日志（最多批量大小）
-      const batchSize = Math.min(config.batchSize, logQueue.length);
-      const batch = logQueue.splice(0, batchSize);
-      
-      if (batch.length === 0) {
-        return;
-      }
-      
-      // 提取日志条目
-      const entries = batch.map(item => item.entry);
-      
-      // 批量保存到 SQLite
-      const saveResult = await saveLogsBatchToSQLite(entries)();
-      
-      if (E.isLeft(saveResult)) {
-        // 保存失败，重新加入队列（增加重试计数）
-        const retriedItems = batch
-          .filter(item => item.retryCount < config.maxRetries)
-          .map(item => ({
-            ...item,
-            retryCount: item.retryCount + 1,
-            priority: item.priority - 10, // 降低优先级
-          }));
+    return (async () => {
+      try {
+        // 获取一批要处理的日志（最多批量大小）
+        const batchSize = Math.min(config.batchSize, logQueue.length);
+        const batch = logQueue.slice(0, batchSize);
+        logQueue = logQueue.slice(batchSize);
         
-        logQueue.unshift(...retriedItems);
-        processorState.errorCount += batch.length - retriedItems.length;
-      } else {
-        // 保存成功
-        processorState.processedCount += batch.length;
+        if (batch.length === 0) {
+          return;
+        }
+        
+        // 提取日志条目
+        const entries = batch.map(item => item.entry);
+        
+        // 批量保存到 SQLite
+        const saveResult = await saveLogsBatchToSQLite(entries)();
+        
+        if (E.isLeft(saveResult)) {
+          // 保存失败，重新加入队列（增加重试计数）
+          const retriedItems = batch
+            .filter(item => item.retryCount < config.maxRetries)
+            .map(item => ({
+              ...item,
+              retryCount: item.retryCount + 1,
+              priority: item.priority - 10, // 降低优先级
+            }));
+          
+          logQueue = [...retriedItems, ...logQueue];
+          processorState = {
+            ...processorState,
+            errorCount: processorState.errorCount + (batch.length - retriedItems.length),
+          };
+        } else {
+          // 保存成功
+          processorState = {
+            ...processorState,
+            processedCount: processorState.processedCount + batch.length,
+          };
+        }
+        
+        // 更新处理时间统计
+        const processTime = Date.now() - startTime;
+        processorState = {
+          ...processorState,
+          averageProcessTime: (processorState.averageProcessTime * 0.9) + (processTime * 0.1),
+          lastProcessTime: Date.now(),
+        };
+        
+      } catch (error) {
+        console.warn('Queue processor error:', error);
+        processorState = {
+          ...processorState,
+          errorCount: processorState.errorCount + 1,
+        };
+      } finally {
+        processorState = {
+          ...processorState,
+          isProcessing: false,
+        };
       }
-      
-      // 更新处理时间统计
-      const processTime = Date.now() - startTime;
-      processorState.averageProcessTime = 
-        (processorState.averageProcessTime * 0.9) + (processTime * 0.1);
-      processorState.lastProcessTime = Date.now();
-      
-    } catch (error) {
-      console.warn('Queue processor error:', error);
-      processorState.errorCount++;
-    } finally {
-      processorState.isProcessing = false;
-    }
+    })();
   });
 
 // ============================================================================
