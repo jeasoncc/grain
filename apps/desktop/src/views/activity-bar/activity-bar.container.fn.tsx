@@ -31,7 +31,7 @@ import { touchWorkspace } from "@/flows/workspace/update-workspace.flow";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useNodesByWorkspace } from "@/hooks/use-node";
 import { useAllWorkspaces } from "@/hooks/use-workspace";
-import logger from "@/io/log";
+import { error } from "@/io/log/logger.api";
 import { calculateExpandedFoldersForNode } from "@/pipes/node";
 import { useSelectionStore } from "@/state/selection.state";
 import { useSidebarStore } from "@/state/sidebar.state";
@@ -153,8 +153,8 @@ export function ActivityBarContainer(): React.ReactElement {
 			} else {
 				try {
 					await touchWorkspace(selectedWorkspaceId)();
-				} catch (error) {
-					logger.error("[ActivityBar] 更新 lastOpen 失败:", error);
+				} catch (err) {
+					error("[ActivityBar] 更新 lastOpen 失败:", err);
 				}
 			}
 		};
@@ -176,8 +176,8 @@ export function ActivityBarContainer(): React.ReactElement {
 			setSelectedWorkspaceId(workspaceId);
 			try {
 				await touchWorkspace(workspaceId)();
-			} catch (error) {
-				logger.error("[ActivityBar] 更新 lastOpen 失败:", error);
+			} catch (err) {
+				error("[ActivityBar] 更新 lastOpen 失败:", err);
 			}
 			toast.success("Workspace selected");
 		},
