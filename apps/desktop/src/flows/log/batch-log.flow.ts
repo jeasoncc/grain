@@ -6,6 +6,8 @@
  * 使用 TaskEither 进行错误处理和函数组合。
  */
 
+/// <reference types="node" />
+
 import * as TE from "fp-ts/TaskEither";
 import { pipe } from "fp-ts/function";
 import type { LogEntry, LogLevel, LogConfig } from "@/types/log/log.interface";
