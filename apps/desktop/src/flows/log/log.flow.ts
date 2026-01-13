@@ -189,8 +189,8 @@ export const searchLogFlow = (
  */
 export const getRecentLogsFlow = (
   limit = 100,
-  levelFilter?: LogLevel[],
-): TE.TaskEither<AppError, LogEntry[]> =>
+  levelFilter?: readonly LogLevel[],
+): TE.TaskEither<AppError, readonly LogEntry[]> =>
   pipe(
     optimizedQueryLogsFlow({
       limit,
