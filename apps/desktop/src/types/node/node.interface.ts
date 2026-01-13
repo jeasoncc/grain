@@ -60,7 +60,7 @@ export interface NodeInterface {
 	readonly lastEdit: ISODateString;
 
 	/** 标签数组 - 从内容中的 #+TAGS: 提取 */
-	readonly tags?: string[];
+	readonly tags?: readonly string[];
 }
 
 /**
@@ -88,5 +88,5 @@ export interface NodeUpdateInput {
 	readonly title?: string;
 	readonly order?: number;
 	readonly collapsed?: boolean;
-	readonly tags?: string[];
+	readonly tags?: readonly string[];
 }
