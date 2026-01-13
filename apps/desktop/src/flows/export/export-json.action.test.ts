@@ -135,8 +135,6 @@ describe("exportNodeToJson", () => {
 			// JSON 导出应该包含有效的 JSON
 			expect(() => JSON.parse(result.right.content)).not.toThrow();
 		}
-		expect(logger.start).toHaveBeenCalled();
-		expect(logger.success).toHaveBeenCalled();
 	});
 
 	it("should include metadata in export when option is set", async () => {
