@@ -25,7 +25,7 @@ export interface EditorHistoryEntry {
 }
 
 /** History stack type - maps nodeId to array of entries */
-export type HistoryStack = Map<string, EditorHistoryEntry[]>;
+export type HistoryStack = ReadonlyMap<string, readonly EditorHistoryEntry[]>;
 
 // ============================================================================
 // State Interface
@@ -46,17 +46,17 @@ export interface EditorHistoryState {
 
 export interface EditorHistoryActions {
 	/** Push a new history entry for a node */
-	pushHistory: (nodeId: string, content: unknown, wordCount: number) => void;
+	readonly pushHistory: (nodeId: string, content: unknown, wordCount: number) => void;
 	/** Undo the last change for a node, returns the entry or null */
-	undo: (nodeId: string) => EditorHistoryEntry | null;
+	readonly undo: (nodeId: string) => EditorHistoryEntry | null;
 	/** Redo the last undone change for a node, returns the entry or null */
-	redo: (nodeId: string) => EditorHistoryEntry | null;
+	readonly redo: (nodeId: string) => EditorHistoryEntry | null;
 	/** Clear history for a specific node */
-	clearHistory: (nodeId: string) => void;
+	readonly clearHistory: (nodeId: string) => void;
 	/** Clear all history for all nodes */
-	clearAllHistory: () => void;
+	readonly clearAllHistory: () => void;
 	/** Set the current active node */
-	setCurrentNode: (nodeId: string | null) => void;
+	readonly setCurrentNode: (nodeId: string | null) => void;
 }
 
 // ============================================================================
@@ -65,11 +65,11 @@ export interface EditorHistoryActions {
 
 export interface EditorHistoryQueries {
 	/** Check if undo is available for a node */
-	canUndo: (nodeId: string) => boolean;
+	readonly canUndo: (nodeId: string) => boolean;
 	/** Check if redo is available for a node */
-	canRedo: (nodeId: string) => boolean;
+	readonly canRedo: (nodeId: string) => boolean;
 	/** Get the count of undo/redo entries for a node */
-	getHistoryCount: (nodeId: string) => { undo: number; redo: number };
+	readonly getHistoryCount: (nodeId: string) => { readonly undo: number; readonly redo: number };
 }
 
 // ============================================================================
