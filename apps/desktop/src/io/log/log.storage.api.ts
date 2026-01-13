@@ -40,7 +40,7 @@ export const saveLogToSQLite = (entry: LogEntry): TE.TaskEither<AppError, void> 
  * @param entries - 日志条目数组
  * @returns TaskEither<AppError, void>
  */
-export const saveLogsBatchToSQLite = (entries: LogEntry[]): TE.TaskEither<AppError, void> =>
+export const saveLogsBatchToSQLite = (entries: readonly LogEntry[]): TE.TaskEither<AppError, void> =>
   pipe(
     TE.tryCatch(
       () => invoke<void>("save_logs_batch", { entries }),
