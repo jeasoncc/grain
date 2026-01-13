@@ -55,7 +55,7 @@ pub async fn check_log_database_exists(db: &DatabaseConnection) -> AppResult<boo
             "SELECT name FROM sqlite_master WHERE type='table' AND name='logs'".to_string(),
         ))
         .await
-        .map_err(|e| AppError::DbError(format!("Failed to check log database: {}", e)))?;
+        .map_err(|e| AppError::DatabaseError(format!("Failed to check log database: {}", e)))?;
 
     Ok(result.is_some())
 }
