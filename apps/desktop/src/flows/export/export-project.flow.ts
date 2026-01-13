@@ -18,6 +18,7 @@ import {
 	Paragraph,
 	TextRun,
 } from "docx";
+import { orderBy } from "es-toolkit";
 import { saveAs } from "file-saver";
 import * as E from "fp-ts/Either";
 import JSZip from "jszip";
@@ -102,9 +103,12 @@ function getNodeContents(
 		  }]
 		: [];
 
-	const children = [...allNodes]
-		.filter((n) => n.parent === node.id)
-		.sort((a, b) => a.order - b.order);
+	// 使用 es-toolkit 的 orderBy 进行不可变排序
+	const children = orderBy(
+		allNodes.filter((n) => n.parent === node.id),
+		[(n) => n.order],
+		["asc"]
+	);
 
 	const childResults = children.flatMap((child) =>
 		getNodeContents(child, allNodes, contentMap, depth + 1)
@@ -212,7 +216,8 @@ async function getProjectContent(projectId: string) {
 		: [];
 	const contentMap = new Map(contents.map((c) => [c.nodeId, c.content]));
 
-	const sortedNodes = [...nodes].sort((a, b) => a.order - b.order);
+	// 使用 es-toolkit 的 orderBy 进行不可变排序
+	const sortedNodes = orderBy(nodes, [(n) => n.order], ["asc"]);
 
 	const rootNodes = sortedNodes.filter((n) => !n.parent);
 
@@ -413,6 +418,30 @@ export async function exportToWord(
 // PDF 导出（使用打印样式）
 // ============================================
 
+/**
+ * 在新窗口中打印 HTML 内容（副作用操作）
+ */
+function printHtmlInNewWindow(html: string): void {
+	const printWindow = window.open("", "_blank");
+	if (!printWindow) {
+		throw new Error(
+			"Unable to open print window, please check browser popup settings",
+		);
+	}
+
+	// 必要的 DOM 操作（打印功能的副作用）
+	// eslint-disable-next-line functional/immutable-data
+	printWindow.document.write(html);
+	printWindow.document.close();
+
+	// eslint-disable-next-line functional/immutable-data
+	printWindow.onload = () => {
+		setTimeout(() => {
+			printWindow.print();
+		}, 500);
+	};
+}
+
 export async function exportToPdf(
 	projectId: string,
 	options: ExportOptions = {},
@@ -421,23 +450,8 @@ export async function exportToPdf(
 	const { project, nodes, rootNodes, contentMap } =
 		await getProjectContent(projectId);
 
-	const printWindow = window.open("", "_blank");
-	if (!printWindow) {
-		throw new Error(
-			"Unable to open print window, please check browser popup settings",
-		);
-	}
-
 	const html = generatePrintHtml(project, nodes, rootNodes, contentMap, opts);
-
-	printWindow.document.write(html);
-	printWindow.document.close();
-
-	printWindow.onload = () => {
-		setTimeout(() => {
-			printWindow.print();
-		}, 500);
-	};
+	printHtmlInNewWindow(html);
 }
 
 // ============================================
