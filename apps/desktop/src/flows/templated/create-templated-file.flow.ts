@@ -24,9 +24,15 @@ import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
 import { z } from "zod";
-import { createFile } from "@/flows/file";
-import { ensureFolderPath } from "@/flows/node";
-import { success, start } from "@/io/log/logger.api";
+import dayjs from "dayjs";
+import type { SerializedEditorState } from "lexical";
+import * as nodeRepo from "@/io/api/node.api";
+import { success, start, debug, warn } from "@/io/log/logger.api";
+import { fileOperationQueue } from "@/pipes/queue/queue.pipe";
+import { findTabByNodeId, evictLRUEditorStates } from "@/pipes/editor-tab";
+import { useEditorTabsStore } from "@/state/editor-tabs.state";
+import { EditorTabBuilder, EditorStateBuilder } from "@/types/editor-tab";
+import type { TabType, EditorTab, EditorInstanceState } from "@/types/editor-tab";
 import type { FileNodeType, NodeInterface } from "@/types/node";
 import type { AppError } from "@/types/error";
 
@@ -96,6 +102,243 @@ export interface TemplatedFileResult {
 const baseParamsSchema = z.object({
 	workspaceId: z.string().uuid({ message: "工作区 ID 必须是有效的 UUID" }),
 });
+
+// ==============================
+// Internal Helper Functions (避免 flows/ 依赖 flows/)
+// ==============================
+
+/**
+ * 获取或创建文件夹（内联版本）
+ *
+ * @param workspaceId - 工作区 ID
+ * @param parentId - 父节点 ID
+ * @param title - 文件夹标题
+ * @param collapsed - 是否折叠
+ * @returns TaskEither<AppError, NodeInterface>
+ */
+const getOrCreateFolder = (
+	workspaceId: string,
+	parentId: string | null,
+	title: string,
+	collapsed: boolean = false,
+): TE.TaskEither<AppError, NodeInterface> => {
+	return pipe(
+		nodeRepo.getNodesByWorkspace(workspaceId),
+		TE.chain((nodes) => {
+			// 查找已存在的文件夹
+			const existing = nodes.find(
+				(n) =>
+					n.parent === parentId && n.title === title && n.type === "folder",
+			);
+
+			if (existing) {
+				return TE.right(existing);
+			}
+
+			// 创建新文件夹
+			return nodeRepo.createNode({
+				workspace: workspaceId,
+				parent: parentId,
+				type: "folder",
+				title,
+				collapsed,
+			});
+		}),
+	);
+};
+
+/**
+ * 确保文件夹路径存在（内联版本）
+ *
+ * 递归创建文件夹层级结构，如果文件夹已存在则复用。
+ *
+ * @param workspaceId - 工作区 ID
+ * @param folderPath - 文件夹路径数组
+ * @param collapsed - 新建文件夹是否折叠
+ * @returns TaskEither<AppError, NodeInterface> 最深层的文件夹节点
+ */
+const ensureFolderPath = (
+	workspaceId: string,
+	folderPath: string[],
+	collapsed: boolean = false,
+): TE.TaskEither<AppError, NodeInterface> => {
+	if (folderPath.length === 0) {
+		return TE.left({
+			type: "VALIDATION_ERROR",
+			message: "文件夹路径不能为空",
+		});
+	}
+
+	// 递归创建文件夹路径
+	const createPath = (
+		remainingPath: string[],
+		parentId: string | null,
+	): TE.TaskEither<AppError, NodeInterface> => {
+		if (remainingPath.length === 0) {
+			return TE.left({
+				type: "VALIDATION_ERROR",
+				message: "文件夹路径不能为空",
+			});
+		}
+
+		const [currentFolder, ...rest] = remainingPath;
+
+		return pipe(
+			getOrCreateFolder(workspaceId, parentId, currentFolder, collapsed),
+			TE.chain((folder) => {
+				if (rest.length === 0) {
+					return TE.right(folder);
+				}
+				return createPath(rest, folder.id);
+			}),
+		);
+	};
+
+	return createPath(folderPath, null);
+};
+
+/**
+ * 创建文件（内联版本，避免 flows/ 依赖 flows/）
+ *
+ * @param params - 创建文件参数
+ * @returns TaskEither<AppError, { node: NodeInterface; tabId: string | null }>
+ */
+const createFileInternal = (params: {
+	readonly workspaceId: string;
+	readonly parentId: string | null;
+	readonly title: string;
+	readonly type: FileNodeType;
+	readonly content?: string;
+	readonly tags?: string[];
+	readonly collapsed?: boolean;
+}): TE.TaskEither<AppError, { node: NodeInterface; tabId: string | null }> => {
+	return pipe(
+		TE.tryCatch(
+			() =>
+				fileOperationQueue.add(async () => {
+					const {
+						workspaceId,
+						parentId,
+						title,
+						type,
+						content = "",
+						tags,
+						collapsed = true,
+					} = params;
+
+					// 1. 获取排序号
+					const orderResult = await nodeRepo.getNextSortOrder(
+						workspaceId,
+						parentId,
+					)();
+					const order = E.isRight(orderResult) ? orderResult.right : 0;
+
+					// 2. 创建节点（带初始内容和标签）
+					const nodeResult = await nodeRepo.createNode(
+						{
+							workspace: workspaceId,
+							title,
+							parent: parentId,
+							type,
+							order,
+							collapsed,
+						},
+						type !== "folder" ? content : undefined,
+						tags,
+					)();
+
+					if (E.isLeft(nodeResult)) {
+						throw new Error(nodeResult.left.message);
+					}
+
+					const node = nodeResult.right;
+
+					// 3. 更新 Store（非文件夹）
+					let tabId: string | null = null;
+					if (type !== "folder") {
+						const store = useEditorTabsStore.getState();
+
+						// 解析内容（如果有）
+						let parsedContent: SerializedEditorState | undefined;
+						if (content) {
+							try {
+								parsedContent = JSON.parse(content) as SerializedEditorState;
+							} catch (error) {
+								warn("[CreateFile] 内容解析失败，使用空文档");
+								parsedContent = undefined;
+							}
+						}
+
+						// 打开 tab：直接操作 state
+						const existingTab = findTabByNodeId(
+							store.tabs as EditorTab[],
+							node.id,
+						);
+
+						if (existingTab) {
+							// Tab 已存在，激活它
+							store.setActiveTabId(existingTab.id);
+							if (store.editorStates[existingTab.id]) {
+								store.updateEditorState(existingTab.id, {
+									lastModified: dayjs().valueOf(),
+								});
+							}
+							tabId = existingTab.id;
+						} else {
+							// 创建新 tab
+							const newTab = EditorTabBuilder.create()
+								.workspaceId(workspaceId)
+								.nodeId(node.id)
+								.title(title)
+								.type(type as TabType)
+								.build();
+
+							// 如果有初始内容，使用它；否则创建空状态
+							const newEditorState = parsedContent
+								? EditorStateBuilder.fromDefault()
+										.serializedState(parsedContent)
+										.build()
+								: EditorStateBuilder.fromDefault().build();
+
+							// 使用原子操作同时添加 tab、设置 editorState 和激活 tab
+							store.addTabWithState(newTab as EditorTab, newEditorState);
+
+							// LRU eviction
+							const MAX_EDITOR_STATES = 10;
+							const openTabIds = new Set(store.tabs.map((t: EditorTab) => t.id));
+							const evictedStates = evictLRUEditorStates(
+								store.editorStates,
+								store.activeTabId,
+								openTabIds as ReadonlySet<string>,
+								MAX_EDITOR_STATES,
+							);
+							store.setEditorStates(evictedStates as Record<string, EditorInstanceState>);
+
+							tabId = newTab.id;
+						}
+					}
+
+					return {
+						node,
+						tabId,
+					};
+				}),
+			(error): AppError => ({
+				type: "DB_ERROR",
+				message: `创建文件失败: ${error instanceof Error ? error.message : String(error)}`,
+			}),
+		),
+		// 处理 p-queue 返回 undefined 的情况
+		TE.chain((result) =>
+			result
+				? TE.right(result)
+				: TE.left<AppError>({
+						type: "DB_ERROR",
+						message: "创建文件失败: 队列返回空结果",
+					}),
+		),
+	);
+};
 
 // ==============================
 // High-Order Function
@@ -209,7 +452,7 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 					})),
 				);
 			}),
-			// 5. 确保文件夹路径存在，然后通过 createFile action 创建文件（通过队列执行）
+			// 5. 确保文件夹路径存在，然后通过内联 createFile 创建文件（通过队列执行）
 			TE.chain(({ content, folderPath, title, parsedContent }) =>
 				pipe(
 					// 5.1 确保文件夹路径存在
@@ -218,10 +461,10 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 						[config.rootFolder, ...folderPath],
 						config.foldersCollapsed ?? true,
 					),
-					// 5.2 成功后，通过 createFile action 创建文件（通过队列串行执行）
+					// 5.2 成功后，通过内联 createFile 创建文件（通过队列串行执行）
 					TE.chain((parentFolder) =>
 						pipe(
-							createFile({
+							createFileInternal({
 								workspaceId: params.workspaceId,
 								parentId: parentFolder.id,
 								title,
