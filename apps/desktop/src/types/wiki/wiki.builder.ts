@@ -12,60 +12,54 @@ import { wikiFileEntrySchema } from "./wiki.schema";
  * 用于构建符合规范的 WikiFileEntry 对象
  */
 export class WikiFileEntryBuilder {
-	private readonly data: Partial<WikiFileEntry> = {};
+	private data: Partial<WikiFileEntry> = {};
 
 	/**
 	 * 设置 ID
 	 */
 	id(v: string): this {
-		return Object.assign(Object.create(Object.getPrototypeOf(this)), this, {
-			data: { ...this.data, id: v },
-		});
+		this.data.id = v;
+		return this;
 	}
 
 	/**
 	 * 设置名称
 	 */
 	name(v: string): this {
-		return Object.assign(Object.create(Object.getPrototypeOf(this)), this, {
-			data: { ...this.data, name: v },
-		});
+		this.data.name = v;
+		return this;
 	}
 
 	/**
 	 * 设置别名
 	 */
 	alias(v: readonly string[]): this {
-		return Object.assign(Object.create(Object.getPrototypeOf(this)), this, {
-			data: { ...this.data, alias: v as string[] },
-		});
+		this.data.alias = [...v];
+		return this;
 	}
 
 	/**
 	 * 设置内容
 	 */
 	content(v: string): this {
-		return Object.assign(Object.create(Object.getPrototypeOf(this)), this, {
-			data: { ...this.data, content: v },
-		});
+		this.data.content = v;
+		return this;
 	}
 
 	/**
 	 * 设置路径
 	 */
 	path(v: string): this {
-		return Object.assign(Object.create(Object.getPrototypeOf(this)), this, {
-			data: { ...this.data, path: v },
-		});
+		this.data.path = v;
+		return this;
 	}
 
 	/**
 	 * 从现有对象复制
 	 */
 	from(entry: WikiFileEntry): this {
-		return Object.assign(Object.create(Object.getPrototypeOf(this)), this, {
-			data: { ...entry },
-		});
+		this.data = { ...entry };
+		return this;
 	}
 
 	/**
