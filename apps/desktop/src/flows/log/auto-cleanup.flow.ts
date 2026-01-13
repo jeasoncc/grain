@@ -69,7 +69,7 @@ export interface CleanupHistory {
   /** 最后清理时间 */
   readonly lastCleanup?: string;
   /** 清理统计历史 */
-  readonly history: CleanupStats[];
+  readonly history: readonly CleanupStats[];
   /** 总清理次数 */
   readonly totalCleanups: number;
 }
