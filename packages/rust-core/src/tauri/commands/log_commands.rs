@@ -8,7 +8,6 @@ use sea_orm::DatabaseConnection;
 use crate::{
     db::log_db_fn,
     types::{
-        error::AppResult,
         log::{
             request::{CreateLogEntryRequest, LogQueryOptions},
             response::{LogEntryResponse, LogQueryResult, LogStats},
