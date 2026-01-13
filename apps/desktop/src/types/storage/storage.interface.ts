@@ -55,9 +55,9 @@ export interface IndexedDBStats {
  */
 export interface StorageStats {
 	readonly indexedDB: IndexedDBStats;
-	readonly localStorage: { size: number; keys: number };
-	readonly sessionStorage: { size: number; keys: number };
-	readonly cookies: { count: number };
+	readonly localStorage: { readonly size: number; readonly keys: number };
+	readonly sessionStorage: { readonly size: number; readonly keys: number };
+	readonly cookies: { readonly count: number };
 }
 
 // ============================================================================
