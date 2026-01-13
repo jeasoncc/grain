@@ -37,8 +37,8 @@ export interface EditorTab {
 // ==============================
 
 export interface EditorSelectionState {
-	readonly anchor: { key: string; offset: number };
-	readonly focus: { key: string; offset: number };
+	readonly anchor: { readonly key: string; readonly offset: number };
+	readonly focus: { readonly key: string; readonly offset: number };
 }
 
 export interface EditorInstanceState extends BaseEditorInstanceState {
