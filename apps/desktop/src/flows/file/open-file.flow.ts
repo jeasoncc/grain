@@ -20,12 +20,15 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { openTabFlow, setActiveTabFlow } from "@/flows/editor-tabs";
+import dayjs from "dayjs";
+import type { SerializedEditorState } from "lexical";
 import * as contentRepo from "@/io/api/content.api";
 import { info, debug, warn } from "@/io/log/logger.api";
 import { fileOperationQueue } from "@/pipes/queue/queue.pipe";
+import { findTabByNodeId, evictLRUEditorStates } from "@/pipes/editor-tab";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
-import type { TabType } from "@/types/editor-tab";
+import { EditorTabBuilder, EditorStateBuilder } from "@/types/editor-tab";
+import type { TabType, EditorTab, EditorInstanceState } from "@/types/editor-tab";
 import type { AppError } from "@/types/error";
 
 /**
@@ -74,10 +77,16 @@ export const openFile = (
 					const store = useEditorTabsStore.getState();
 
 					// 1. 检查是否已打开
-					const existingTab = store.tabs.find((t) => t.nodeId === nodeId);
+					const existingTab = findTabByNodeId(store.tabs as EditorTab[], nodeId);
 					if (existingTab) {
 						info("[OpenFile] 文件已打开，切换到标签", { tabId: existingTab.id }, "open-file.flow");
-						setActiveTabFlow(existingTab.id, store);
+						// 内联 setActiveTabFlow 逻辑，避免 flows/ 依赖 flows/
+						store.setActiveTabId(existingTab.id);
+						if (store.editorStates[existingTab.id]) {
+							store.updateEditorState(existingTab.id, {
+								lastModified: dayjs().valueOf(),
+							});
+						}
 						return {
 							tabId: existingTab.id,
 							isNewTab: false,
@@ -89,7 +98,7 @@ export const openFile = (
 					info("[OpenFile] 从 DB 加载内容...");
 					const contentResult = await contentRepo.getContentByNodeId(nodeId)();
 
-					let parsedContent: unknown;
+					let parsedContent: SerializedEditorState | undefined;
 					let hasContent = false;
 
 					if (E.isRight(contentResult) && contentResult.right) {
@@ -100,56 +109,49 @@ export const openFile = (
 
 						// 解析内容
 						try {
-							parsedContent = JSON.parse(contentResult.right.content);
+							parsedContent = JSON.parse(contentResult.right.content) as SerializedEditorState;
 							hasContent = true;
 							debug("[OpenFile] 内容解析成功");
 						} catch (error) {
 							warn("[OpenFile] 内容解析失败，使用空文档");
 							debug("[OpenFile] 解析错误", { error }, "open-file.flow");
-							// 创建一个最小的有效 Lexical 文档作为降级策略
-							parsedContent = {
-								root: {
-									children: [
-										{
-											children: [],
-											direction: "ltr" as const,
-											format: "" as const,
-											indent: 0,
-											type: "paragraph" as const,
-											version: 1,
-										},
-									],
-									direction: "ltr" as const,
-									format: "" as const,
-									indent: 0,
-									type: "root" as const,
-									version: 1,
-								},
-							};
+							parsedContent = undefined;
 						}
 					} else {
 						warn("[OpenFile] 内容加载失败或为空");
 					}
 
-					// 3. 创建 tab（带初始内容）
-					openTabFlow(
-						{
-							workspaceId,
-							nodeId,
-							title,
-							type,
-							initialContent: parsedContent,
-						},
-						useEditorTabsStore.getState(),
-					);
+					// 3. 创建 tab（内联 openTabFlow 逻辑，避免 flows/ 依赖 flows/）
+					const newTab = EditorTabBuilder.create()
+						.workspaceId(workspaceId)
+						.nodeId(nodeId)
+						.title(title)
+						.type(type)
+						.build();
 
-					// 获取新创建的 tab ID
-					const newTabs = useEditorTabsStore.getState().tabs;
-					const newTab = newTabs.find((t) => t.nodeId === nodeId);
-					const tabId = newTab?.id ?? nodeId;
+					// 如果有初始内容，使用它；否则创建空状态
+					const newEditorState = parsedContent
+						? EditorStateBuilder.fromDefault()
+								.serializedState(parsedContent)
+								.build()
+						: EditorStateBuilder.fromDefault().build();
+
+					// 使用原子操作同时添加 tab、设置 editorState 和激活 tab
+					store.addTabWithState(newTab as EditorTab, newEditorState);
+
+					// LRU eviction
+					const MAX_EDITOR_STATES = 10;
+					const openTabIds = new Set(store.tabs.map((t: EditorTab) => t.id));
+					const evictedStates = evictLRUEditorStates(
+						store.editorStates,
+						store.activeTabId,
+						openTabIds as ReadonlySet<string>,
+						MAX_EDITOR_STATES,
+					);
+					store.setEditorStates(evictedStates as Record<string, EditorInstanceState>);
 
 					return {
-						tabId,
+						tabId: newTab.id,
 						isNewTab: true,
 						hasContent,
 					};
