@@ -86,7 +86,7 @@ pub async fn save_log_entry(
     let result = LogEntity::insert(log_entry)
         .exec_with_returning(db)
         .await
-        .map_err(|e| AppError::DbError(format!("Failed to save log entry: {}", e)))?;
+        .map_err(|e| AppError::DatabaseError(format!("Failed to save log entry: {}", e)))?;
 
     Ok(log_model_to_response(result))
 }
