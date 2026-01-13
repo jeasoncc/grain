@@ -41,28 +41,28 @@ export interface LayoutActions {
 	 * Set the active sidebar panel.
 	 * Opens the sidebar if a panel is selected.
 	 */
-	setActivePanel: (panel: SidebarPanel) => void;
+	readonly setActivePanel: (panel: SidebarPanel) => void;
 
 	/**
 	 * Toggle the sidebar open/closed state.
 	 */
-	toggleSidebar: () => void;
+	readonly toggleSidebar: () => void;
 
 	/**
 	 * Set whether the sidebar was collapsed by drag.
 	 */
-	setSidebarCollapsedByDrag: (collapsed: boolean) => void;
+	readonly setSidebarCollapsedByDrag: (collapsed: boolean) => void;
 
 	/**
 	 * Restore the sidebar from drag collapse.
 	 * Reopens the sidebar to its previous state.
 	 */
-	restoreFromCollapse: () => void;
+	readonly restoreFromCollapse: () => void;
 
 	/**
 	 * Set the sidebar width percentage.
 	 */
-	setSidebarWidth: (width: number) => void;
+	readonly setSidebarWidth: (width: number) => void;
 }
 
 // ==============================
