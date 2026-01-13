@@ -108,7 +108,6 @@ export default [
         {
           ignoreImmediateMutation: false,
           ignoreAccessorPattern: ['^mutable'],
-          ignorePattern: ['.*\\.builder\\.ts$'],
         },
       ],
       'functional/prefer-readonly-type': [
@@ -119,7 +118,6 @@ export default [
           ignoreClass: false,
           ignoreInterface: false,
           ignoreCollections: false,
-          ignorePattern: ['.*\\.builder\\.ts$'],
         },
       ],
       'functional/prefer-property-signatures': 'error',
