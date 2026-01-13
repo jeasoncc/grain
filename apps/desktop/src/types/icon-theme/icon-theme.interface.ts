@@ -9,67 +9,67 @@ import type { LucideIcon } from "lucide-react";
 
 export interface IconThemeIcons {
 	// 文件类型图标
-	project: {
-		default: LucideIcon;
-		open?: LucideIcon;
+	readonly project: {
+		readonly default: LucideIcon;
+		readonly open?: LucideIcon;
 	};
-	folder: {
-		default: LucideIcon;
-		open?: LucideIcon;
+	readonly folder: {
+		readonly default: LucideIcon;
+		readonly open?: LucideIcon;
 	};
-	file: {
-		default: LucideIcon;
+	readonly file: {
+		readonly default: LucideIcon;
 	};
-	character: {
-		default: LucideIcon;
+	readonly character: {
+		readonly default: LucideIcon;
 	};
-	world: {
-		default: LucideIcon;
+	readonly world: {
+		readonly default: LucideIcon;
 	};
 	// ActivityBar 图标
-	activityBar: {
-		library: LucideIcon;
-		search: LucideIcon;
-		outline: LucideIcon;
-		canvas: LucideIcon;
-		chapters: LucideIcon;
-		files: LucideIcon;
-		diary: LucideIcon;
-		ledger: LucideIcon;
-		todo: LucideIcon;
-		note: LucideIcon;
-		mermaid: LucideIcon;
-		plantuml: LucideIcon;
-		code: LucideIcon;
-		tags: LucideIcon;
-		statistics: LucideIcon;
-		settings: LucideIcon;
-		create: LucideIcon;
-		import: LucideIcon;
-		export: LucideIcon;
-		more: LucideIcon;
+	readonly activityBar: {
+		readonly library: LucideIcon;
+		readonly search: LucideIcon;
+		readonly outline: LucideIcon;
+		readonly canvas: LucideIcon;
+		readonly chapters: LucideIcon;
+		readonly files: LucideIcon;
+		readonly diary: LucideIcon;
+		readonly ledger: LucideIcon;
+		readonly todo: LucideIcon;
+		readonly note: LucideIcon;
+		readonly mermaid: LucideIcon;
+		readonly plantuml: LucideIcon;
+		readonly code: LucideIcon;
+		readonly tags: LucideIcon;
+		readonly statistics: LucideIcon;
+		readonly settings: LucideIcon;
+		readonly create: LucideIcon;
+		readonly import: LucideIcon;
+		readonly export: LucideIcon;
+		readonly more: LucideIcon;
 	};
 	// 设置页面图标
-	settingsPage: {
-		appearance: LucideIcon;
-		icons: LucideIcon;
-		diagrams: LucideIcon;
-		general: LucideIcon;
-		editor: LucideIcon;
-		data: LucideIcon;
-		export: LucideIcon;
-		scroll: LucideIcon;
-		logs: LucideIcon;
-		about: LucideIcon;
+	readonly settingsPage: {
+		readonly appearance: LucideIcon;
+		readonly icons: LucideIcon;
+		readonly diagrams: LucideIcon;
+		readonly general: LucideIcon;
+		readonly editor: LucideIcon;
+		readonly data: LucideIcon;
+		readonly export: LucideIcon;
+		readonly scroll: LucideIcon;
+		readonly logs: LucideIcon;
+		readonly about: LucideIcon;
 	};
 }
 
 export interface IconTheme {
-	key: string;
-	name: string;
-	description: string;
-	author?: string;
-	icons: IconThemeIcons;
+	readonly key: string;
+	readonly name: string;
+	readonly description: string;
+	readonly author?: string;
+	readonly icons: IconThemeIcons;
 }
 
 export interface IconThemeState {
@@ -77,7 +77,7 @@ export interface IconThemeState {
 }
 
 export interface IconThemeActions {
-	setTheme: (key: string) => void;
+	readonly setTheme: (key: string) => void;
 }
 
 export type IconThemeStore = IconThemeState & IconThemeActions;
