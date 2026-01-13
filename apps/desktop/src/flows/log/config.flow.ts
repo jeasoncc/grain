@@ -347,7 +347,7 @@ export const resetLogConfig = (): TE.TaskEither<AppError, ExtendedLogConfig> =>
  * 
  * @returns 配置预设列表
  */
-export const getLogConfigPresets = (): LogConfigPreset[] => {
+export const getLogConfigPresets = (): readonly LogConfigPreset[] => {
   const customPresets = getJson(
     STORAGE_KEYS.LOG_CONFIG_PRESETS,
     z.array(z.object({
