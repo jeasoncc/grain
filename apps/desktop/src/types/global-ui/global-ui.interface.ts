@@ -53,65 +53,65 @@ export interface GlobalUIActions {
 	/**
 	 * Open the command palette.
 	 */
-	openCommandPalette: () => void;
+	readonly openCommandPalette: () => void;
 
 	/**
 	 * Close the command palette.
 	 */
-	closeCommandPalette: () => void;
+	readonly closeCommandPalette: () => void;
 
 	/**
 	 * Toggle the command palette open/closed.
 	 */
-	toggleCommandPalette: () => void;
+	readonly toggleCommandPalette: () => void;
 
 	// Global Search
 	/**
 	 * Open the global search panel.
 	 */
-	openGlobalSearch: () => void;
+	readonly openGlobalSearch: () => void;
 
 	/**
 	 * Close the global search panel.
 	 */
-	closeGlobalSearch: () => void;
+	readonly closeGlobalSearch: () => void;
 
 	/**
 	 * Toggle the global search panel open/closed.
 	 */
-	toggleGlobalSearch: () => void;
+	readonly toggleGlobalSearch: () => void;
 
 	// Buffer Switcher
 	/**
 	 * Open the buffer switcher with specified direction.
 	 */
-	openBufferSwitcher: (direction: BufferSwitcherDirection) => void;
+	readonly openBufferSwitcher: (direction: BufferSwitcherDirection) => void;
 
 	/**
 	 * Close the buffer switcher.
 	 */
-	closeBufferSwitcher: () => void;
+	readonly closeBufferSwitcher: () => void;
 
 	/**
 	 * Set the buffer switcher direction.
 	 */
-	setBufferSwitcherDirection: (direction: BufferSwitcherDirection) => void;
+	readonly setBufferSwitcherDirection: (direction: BufferSwitcherDirection) => void;
 
 	// Export Dialog
 	/**
 	 * Open the export dialog.
 	 */
-	openExportDialog: () => void;
+	readonly openExportDialog: () => void;
 
 	/**
 	 * Close the export dialog.
 	 */
-	closeExportDialog: () => void;
+	readonly closeExportDialog: () => void;
 
 	/**
 	 * Toggle the export dialog open/closed.
 	 */
-	toggleExportDialog: () => void;
+	readonly toggleExportDialog: () => void;
 }
 
 // ==============================
