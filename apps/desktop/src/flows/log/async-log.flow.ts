@@ -34,22 +34,22 @@ import { saveLogsBatchToSQLite } from "@/io/log/log.storage.api";
  * 日志队列项
  */
 interface LogQueueItem {
-  id: string;
-  entry: LogEntry;
-  priority: number;
-  timestamp: number;
-  retryCount: number;
+  readonly id: string;
+  readonly entry: LogEntry;
+  readonly priority: number;
+  readonly timestamp: number;
+  readonly retryCount: number;
 }
 
 /**
  * 队列处理状态
  */
 interface QueueProcessorState {
-  isProcessing: boolean;
-  processedCount: number;
-  errorCount: number;
-  lastProcessTime: number;
-  averageProcessTime: number;
+  readonly isProcessing: boolean;
+  readonly processedCount: number;
+  readonly errorCount: number;
+  readonly lastProcessTime: number;
+  readonly averageProcessTime: number;
 }
 
 /**
@@ -57,13 +57,13 @@ interface QueueProcessorState {
  */
 interface AsyncLogConfig extends LogConfig {
   /** 队列最大大小 */
-  maxQueueSize: number;
+  readonly maxQueueSize: number;
   /** 处理间隔（毫秒） */
-  processInterval: number;
+  readonly processInterval: number;
   /** 最大重试次数 */
-  maxRetries: number;
+  readonly maxRetries: number;
   /** 高优先级阈值 */
-  highPriorityLevels: LogLevel[];
+  readonly highPriorityLevels: readonly LogLevel[];
 }
 
 // ============================================================================
