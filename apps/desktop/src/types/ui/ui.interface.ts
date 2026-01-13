@@ -52,27 +52,27 @@ export interface UIActions {
 	/**
 	 * Set the current view in the right panel.
 	 */
-	setRightPanelView: (view: RightPanelView) => void;
+	readonly setRightPanelView: (view: RightPanelView) => void;
 
 	/**
 	 * Set whether the right sidebar is open.
 	 */
-	setRightSidebarOpen: (open: boolean) => void;
+	readonly setRightSidebarOpen: (open: boolean) => void;
 
 	/**
 	 * Toggle the right sidebar open/closed state.
 	 */
-	toggleRightSidebar: () => void;
+	readonly toggleRightSidebar: () => void;
 
 	/**
 	 * Set the tab position.
 	 */
-	setTabPosition: (position: TabPosition) => void;
+	readonly setTabPosition: (position: TabPosition) => void;
 
 	/**
 	 * Set the application locale.
 	 */
-	setLocale: (locale: string) => void;
+	readonly setLocale: (locale: string) => void;
 }
 
 // ==============================
