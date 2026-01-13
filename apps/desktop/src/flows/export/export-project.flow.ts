@@ -1,4 +1,4 @@
-/**
+	/**
  * Export Project Flow
  *
  * 支持 PDF、Word、TXT、EPUB 格式导出
@@ -93,8 +93,8 @@ function getNodeContents(
 	allNodes: readonly NodeInterface[],
 	contentMap: ReadonlyMap<string, string>,
 	depth: number = 0,
-): readonly Array<{ readonly node: NodeInterface; readonly depth: number; readonly text: string }> {
-	const currentResult = (node.type === "file" || node.type === "diary")
+): ReadonlyArray<{ readonly node: NodeInterface; readonly depth: number; readonly text: string }> {
+	const currentResult: ReadonlyArray<{ readonly node: NodeInterface; readonly depth: number; readonly text: string }> = (node.type === "file" || node.type === "diary")
 		? [{
 				node,
 				depth,
@@ -102,7 +102,7 @@ function getNodeContents(
 		  }]
 		: [];
 
-	const children = allNodes
+	const children = [...allNodes]
 		.filter((n) => n.parent === node.id)
 		.sort((a, b) => a.order - b.order);
 
@@ -205,18 +205,18 @@ async function getProjectContent(projectId: string) {
 		.equals(projectId)
 		.toArray();
 
-	const nodeIds = nodes.map((n) => n.id);
+	const nodeIds: readonly string[] = nodes.map((n) => n.id);
 	const contentsResult = await getContentsByNodeIds(nodeIds)();
-	const contents: ContentInterface[] = E.isRight(contentsResult)
+	const contents: readonly ContentInterface[] = E.isRight(contentsResult)
 		? contentsResult.right
 		: [];
 	const contentMap = new Map(contents.map((c) => [c.nodeId, c.content]));
 
-	nodes.sort((a, b) => a.order - b.order);
+	const sortedNodes = [...nodes].sort((a, b) => a.order - b.order);
 
-	const rootNodes = nodes.filter((n) => !n.parent);
+	const rootNodes = sortedNodes.filter((n) => !n.parent);
 
-	return { project, nodes, rootNodes, contentMap };
+	return { project, nodes: sortedNodes, rootNodes, contentMap };
 }
 
 // ============================================
@@ -281,80 +281,80 @@ export async function exportToWord(
 	const { project, nodes, rootNodes, contentMap } =
 		await getProjectContent(projectId);
 
-	const children: Paragraph[] = [];
+	const headerParagraphs: readonly Paragraph[] = [
+		...(opts.includeTitle
+			? [
+					new Paragraph({
+						text: project.title || "Untitled Work",
+						heading: HeadingLevel.TITLE,
+						alignment: AlignmentType.CENTER,
+						spacing: { after: 400 },
+					}),
+			  ]
+			: []),
+		...(opts.includeAuthor && project.author
+			? [
+					new Paragraph({
+						text: `作者：${project.author}`,
+						alignment: AlignmentType.CENTER,
+						spacing: { after: 800 },
+					}),
+			  ]
+			: []),
+	];
 
-	if (opts.includeTitle) {
-		children.push(
-			new Paragraph({
-				text: project.title || "Untitled Work",
-				heading: HeadingLevel.TITLE,
-				alignment: AlignmentType.CENTER,
-				spacing: { after: 400 },
-			}),
-		);
-	}
-
-	if (opts.includeAuthor && project.author) {
-		children.push(
-			new Paragraph({
-				text: `作者：${project.author}`,
-				alignment: AlignmentType.CENTER,
-				spacing: { after: 800 },
-			}),
-		);
-	}
-
-	let isFirst = true;
-	for (const rootNode of rootNodes) {
+	const contentParagraphs = rootNodes.flatMap((rootNode, rootIndex) => {
 		const contents = getNodeContents(rootNode, nodes, contentMap);
 
-		for (const { node, depth, text } of contents) {
-			if (opts.pageBreakBetweenChapters && depth === 0 && !isFirst) {
-				children.push(
-					new Paragraph({
-						children: [new PageBreak()],
-					}),
-				);
-			}
-			isFirst = false;
+		return contents.flatMap(({ node, depth, text }) => {
+			const pageBreak =
+				opts.pageBreakBetweenChapters && depth === 0 && rootIndex > 0
+					? [new Paragraph({ children: [new PageBreak()] })]
+					: [];
 
-			if (opts.includeChapterTitles && depth === 0) {
-				children.push(
-					new Paragraph({
-						text: node.title,
-						heading: HeadingLevel.HEADING_1,
-						spacing: { before: 400, after: 200 },
-					}),
-				);
-			} else if (opts.includeSceneTitles && depth > 0) {
-				children.push(
-					new Paragraph({
-						text: node.title,
-						heading: HeadingLevel.HEADING_2,
-						spacing: { before: 200, after: 100 },
-					}),
-				);
-			}
+			const title =
+				opts.includeChapterTitles && depth === 0
+					? [
+							new Paragraph({
+								text: node.title,
+								heading: HeadingLevel.HEADING_1,
+								spacing: { before: 400, after: 200 },
+							}),
+					  ]
+					: opts.includeSceneTitles && depth > 0
+					? [
+							new Paragraph({
+								text: node.title,
+								heading: HeadingLevel.HEADING_2,
+								spacing: { before: 200, after: 100 },
+							}),
+					  ]
+					: [];
 
-			if (text.trim()) {
-				const paragraphs = text.split("\n").filter((p) => p.trim());
-				for (const para of paragraphs) {
-					children.push(
-						new Paragraph({
-							children: [
-								new TextRun({
-									text: `　　${para.trim()}`,
-									font: "SimSun",
-									size: 24,
+			const paragraphs = text.trim()
+				? text
+						.split("\n")
+						.filter((p) => p.trim())
+						.map(
+							(para) =>
+								new Paragraph({
+									children: [
+										new TextRun({
+											text: `　　${para.trim()}`,
+											font: "SimSun",
+											size: 24,
+										}),
+									],
+									spacing: { line: 360, after: 120 },
 								}),
-							],
-							spacing: { line: 360, after: 120 },
-						}),
-					);
-				}
-			}
-		}
-	}
+						)
+				: [];
+
+			return [...pageBreak, ...title, ...paragraphs];
+		});
+	});
+
+	const children: readonly Paragraph[] = [...headerParagraphs, ...contentParagraphs];
 
 	const doc = new Document({
 		sections: [
@@ -469,45 +469,49 @@ export async function exportToEpub(
 </container>`,
 	);
 
-	const chapters: Array<{ id: string; title: string; filename: string }> = [];
-
-	if (opts.includeTitle) {
-		const titleHtml = generateEpubChapterHtml(
-			title,
-			`<div class="title-page"><h1>${escapeHtml(title)}</h1>${opts.includeAuthor ? `<p class="author">${escapeHtml(author)}</p>` : ""}</div>`,
-		);
-		zip.file("OEBPS/title.xhtml", titleHtml);
-		chapters.push({ id: "title", title: "Cover", filename: "title.xhtml" });
-	}
+	const titleChapter: ReadonlyArray<{ readonly id: string; readonly title: string; readonly filename: string }> = opts.includeTitle
+		? (() => {
+				const titleHtml = generateEpubChapterHtml(
+					title,
+					`<div class="title-page"><h1>${escapeHtml(title)}</h1>${opts.includeAuthor ? `<p class="author">${escapeHtml(author)}</p>` : ""}</div>`,
+				);
+				zip.file("OEBPS/title.xhtml", titleHtml);
+				return [{ id: "title", title: "Cover", filename: "title.xhtml" }];
+		  })()
+		: [];
 
 	let chapterIndex = 0;
-	for (const rootNode of rootNodes) {
+	const contentChapters = rootNodes.flatMap((rootNode) => {
 		const contents = getNodeContents(rootNode, nodes, contentMap);
 
-		for (const { node, depth, text } of contents) {
-			if (depth > 0 && !opts.includeSceneTitles) continue;
+		return contents.flatMap(({ node, depth, text }) => {
+			if (depth > 0 && !opts.includeSceneTitles) return [];
 
 			chapterIndex++;
 			const chapterId = `chapter-${chapterIndex}`;
 			const filename = `${chapterId}.xhtml`;
 
-			let htmlContent = "";
-			if (opts.includeChapterTitles) {
-				htmlContent += `<h2 class="chapter-title">${escapeHtml(node.title)}</h2>`;
-			}
+			const titleHtml = opts.includeChapterTitles
+				? `<h2 class="chapter-title">${escapeHtml(node.title)}</h2>`
+				: "";
 
-			if (text.trim()) {
-				const paragraphs = text.split("\n").filter((p) => p.trim());
-				for (const para of paragraphs) {
-					htmlContent += `<p>${escapeHtml(para.trim())}</p>`;
-				}
-			}
+			const paragraphsHtml = text.trim()
+				? text.split("\n")
+					.filter((p) => p.trim())
+					.map((para) => `<p>${escapeHtml(para.trim())}</p>`)
+					.join("")
+				: "";
+
+			const htmlContent = titleHtml + paragraphsHtml;
 
 			const chapterHtml = generateEpubChapterHtml(node.title, htmlContent);
 			zip.file(`OEBPS/${filename}`, chapterHtml);
-			chapters.push({ id: chapterId, title: node.title, filename });
-		}
-	}
+			
+			return [{ id: chapterId, title: node.title, filename }];
+		});
+	});
+
+	const chapters = [...titleChapter, ...contentChapters];
 
 	zip.file(
 		"OEBPS/styles.css",
