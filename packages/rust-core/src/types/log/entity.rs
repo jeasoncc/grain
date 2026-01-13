@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 /// 日志级别枚举
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, EnumIter, DeriveActiveEnum)]
-#[sea_orm(rs_type = "String", db_type = "String(Some(10))")]
+#[sea_orm(rs_type = "String", db_type = "String(StringLen::None)")]
 pub enum LogLevel {
     #[sea_orm(string_value = "trace")]
     Trace,
