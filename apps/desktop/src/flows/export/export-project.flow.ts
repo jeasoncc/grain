@@ -90,31 +90,27 @@ function escapeHtml(text: string): string {
  */
 function getNodeContents(
 	node: NodeInterface,
-	allNodes: NodeInterface[],
-	contentMap: Map<string, string>,
+	allNodes: readonly NodeInterface[],
+	contentMap: ReadonlyMap<string, string>,
 	depth: number = 0,
-): Array<{ node: NodeInterface; depth: number; text: string }> {
-	const results: Array<{ node: NodeInterface; depth: number; text: string }> =
-		[];
-
-	if (node.type === "file" || node.type === "diary") {
-		const content = contentMap.get(node.id) ?? null;
-		results.push({
-			node,
-			depth,
-			text: extractTextFromContent(content),
-		});
-	}
+): readonly Array<{ readonly node: NodeInterface; readonly depth: number; readonly text: string }> {
+	const currentResult = (node.type === "file" || node.type === "diary")
+		? [{
+				node,
+				depth,
+				text: extractTextFromContent(contentMap.get(node.id) ?? null),
+		  }]
+		: [];
 
 	const children = allNodes
 		.filter((n) => n.parent === node.id)
 		.sort((a, b) => a.order - b.order);
 
-	for (const child of children) {
-		results.push(...getNodeContents(child, allNodes, contentMap, depth + 1));
-	}
+	const childResults = children.flatMap((child) =>
+		getNodeContents(child, allNodes, contentMap, depth + 1)
+	);
 
-	return results;
+	return [...currentResult, ...childResults];
 }
 
 /**
@@ -122,46 +118,44 @@ function getNodeContents(
  */
 function generatePrintHtml(
 	project: WorkspaceInterface,
-	nodes: NodeInterface[],
-	rootNodes: NodeInterface[],
-	contentMap: Map<string, string>,
+	nodes: readonly NodeInterface[],
+	rootNodes: readonly NodeInterface[],
+	contentMap: ReadonlyMap<string, string>,
 	opts: ExportOptions,
 ): string {
-	let content = "";
-
-	if (opts.includeTitle) {
-		content += `<div class="title-page">
+	const titlePage = opts.includeTitle
+		? `<div class="title-page">
 			<h1 class="book-title">${escapeHtml(project.title || "Untitled Work")}</h1>
 			${opts.includeAuthor && project.author ? `<p class="author">Author: ${escapeHtml(project.author)}</p>` : ""}
-		</div>`;
-	}
+		</div>`
+		: "";
 
-	for (const rootNode of rootNodes) {
+	const chapters = rootNodes.flatMap((rootNode) => {
 		const contents = getNodeContents(rootNode, nodes, contentMap);
 
-		for (const { node, depth, text } of contents) {
-			if (opts.pageBreakBetweenChapters && depth === 0) {
-				content += '<div class="chapter" style="page-break-before: always;">';
-			} else {
-				content += '<div class="chapter">';
-			}
+		return contents.map(({ node, depth, text }) => {
+			const chapterClass = opts.pageBreakBetweenChapters && depth === 0
+				? '<div class="chapter" style="page-break-before: always;">'
+				: '<div class="chapter">';
 
-			if (opts.includeChapterTitles && depth === 0) {
-				content += `<h2 class="chapter-title">${escapeHtml(node.title)}</h2>`;
-			} else if (opts.includeSceneTitles && depth > 0) {
-				content += `<h3 class="scene-title">${escapeHtml(node.title)}</h3>`;
-			}
+			const title = opts.includeChapterTitles && depth === 0
+				? `<h2 class="chapter-title">${escapeHtml(node.title)}</h2>`
+				: opts.includeSceneTitles && depth > 0
+				? `<h3 class="scene-title">${escapeHtml(node.title)}</h3>`
+				: "";
 
-			if (text.trim()) {
-				const paragraphs = text.split("\n").filter((p) => p.trim());
-				for (const para of paragraphs) {
-					content += `<p class="paragraph">${escapeHtml(para.trim())}</p>`;
-				}
-			}
+			const paragraphs = text.trim()
+				? text.split("\n")
+					.filter((p) => p.trim())
+					.map((para) => `<p class="paragraph">${escapeHtml(para.trim())}</p>`)
+					.join("")
+				: "";
 
-			content += "</div>";
-		}
-	}
+			return `${chapterClass}${title}${paragraphs}</div>`;
+		});
+	}).join("");
+
+	const content = titlePage + chapters;
 
 	return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -237,51 +231,39 @@ export async function exportToTxt(
 	const { project, nodes, rootNodes, contentMap } =
 		await getProjectContent(projectId);
 
-	const lines: string[] = [];
+	const headerLines = [
+		...(opts.includeTitle ? [project.title || "Untitled Work", ""] : []),
+		...(opts.includeAuthor && project.author ? [`作者：${project.author}`, ""] : []),
+		...(opts.includeTitle || opts.includeAuthor ? ["═".repeat(40), ""] : []),
+	];
 
-	if (opts.includeTitle) {
-		lines.push(project.title || "Untitled Work");
-		lines.push("");
-	}
-
-	if (opts.includeAuthor && project.author) {
-		lines.push(`作者：${project.author}`);
-		lines.push("");
-	}
-
-	if (opts.includeTitle || opts.includeAuthor) {
-		lines.push("═".repeat(40));
-		lines.push("");
-	}
-
-	for (const rootNode of rootNodes) {
+	const contentLines = rootNodes.flatMap((rootNode) => {
 		const contents = getNodeContents(rootNode, nodes, contentMap);
 
-		for (const { node, depth, text } of contents) {
-			if (opts.includeChapterTitles && depth === 0) {
-				lines.push("");
-				lines.push(`【${node.title}】`);
-				lines.push("");
-			} else if (opts.includeSceneTitles && depth > 0) {
-				lines.push(`〔${node.title}〕`);
-				lines.push("");
-			}
+		const chapterLines = contents.flatMap(({ node, depth, text }) => {
+			const title = opts.includeChapterTitles && depth === 0
+				? ["", `【${node.title}】`, ""]
+				: opts.includeSceneTitles && depth > 0
+				? [`〔${node.title}〕`, ""]
+				: [];
 
-			if (text.trim()) {
-				const paragraphs = text.split("\n").filter((p) => p.trim());
-				for (const para of paragraphs) {
-					lines.push(`　　${para.trim()}`);
-				}
-				lines.push("");
-			}
-		}
+			const paragraphs = text.trim()
+				? [...text.split("\n")
+					.filter((p) => p.trim())
+					.map((para) => `　　${para.trim()}`), ""]
+				: [];
 
-		if (opts.pageBreakBetweenChapters) {
-			lines.push("");
-			lines.push("─".repeat(40));
-		}
-	}
+			return [...title, ...paragraphs];
+		});
 
+		const separator = opts.pageBreakBetweenChapters
+			? ["", "─".repeat(40)]
+			: [];
+
+		return [...chapterLines, ...separator];
+	});
+
+	const lines = [...headerLines, ...contentLines];
 	const content = lines.join("\n");
 	const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
 	saveAs(blob, `${project.title || "novel"}.txt`);
