@@ -12,6 +12,7 @@ import {
 	Loader2,
 	Search,
 	X,
+	type LucideIcon,
 } from "lucide-react";
 import { memo, useState } from "react";
 import type { SearchResult, SearchResultType } from "@/flows/search";
@@ -31,7 +32,7 @@ import type {
 	SearchPanelViewProps,
 } from "./search-panel.types";
 
-const typeIcons: Record<SearchResultType, any> = {
+const typeIcons: Record<SearchResultType, LucideIcon> = {
 	project: FileText,
 	node: FileText,
 };
