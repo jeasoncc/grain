@@ -246,7 +246,7 @@ pub async fn get_log_stats(db: &DatabaseConnection) -> AppResult<LogStats> {
         .into_tuple::<String>()
         .one(db)
         .await
-        .map_err(|e| AppError::DbError(format!("Failed to get earliest log: {}", e)))?;
+        .map_err(|e| AppError::DatabaseError(format!("Failed to get earliest log: {}", e)))?;
 
     let latest_entry = LogEntity::find()
         .select_only()
@@ -256,7 +256,7 @@ pub async fn get_log_stats(db: &DatabaseConnection) -> AppResult<LogStats> {
         .into_tuple::<String>()
         .one(db)
         .await
-        .map_err(|e| AppError::DbError(format!("Failed to get latest log: {}", e)))?;
+        .map_err(|e| AppError::DatabaseError(format!("Failed to get latest log: {}", e)))?;
 
     // 估算存储大小（简单估算：每条日志平均 200 字节）
     let storage_size = total_entries as i64 * 200;
