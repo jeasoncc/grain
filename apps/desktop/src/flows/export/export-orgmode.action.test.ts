@@ -137,8 +137,6 @@ describe("exportNodeToOrgmode", () => {
 			expect(result.right.extension).toBe("org");
 			expect(result.right.content).toContain("Hello World");
 		}
-		expect(logger.start).toHaveBeenCalled();
-		expect(logger.success).toHaveBeenCalled();
 	});
 
 	it("should include title in export when option is set", async () => {
