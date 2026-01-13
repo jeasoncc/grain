@@ -90,17 +90,26 @@ export const clearCookies = (): TE.TaskEither<AppError, void> =>
 		async () => {
 			const cookies = document.cookie.split(";");
 
-			for (const cookie of cookies) {
+			// 清理 cookies 是必须的副作用操作，无法避免
+			// 使用 forEach 而不是 for...of 来保持函数式风格
+			cookies.forEach((cookie) => {
 				const eqPos = cookie.indexOf("=");
 				const name =
 					eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
 
 				if (name) {
-					document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-					document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
-					document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.${window.location.hostname}`;
+					// 这些是必须的副作用操作（清理 cookies）
+					const expireDate = "Thu, 01 Jan 1970 00:00:00 GMT";
+					const cookieSettings = [
+						`${name}=;expires=${expireDate};path=/`,
+						`${name}=;expires=${expireDate};path=/;domain=${window.location.hostname}`,
+						`${name}=;expires=${expireDate};path=/;domain=.${window.location.hostname}`,
+					];
+					cookieSettings.forEach((setting) => {
+						document.cookie = setting;
+					});
 				}
-			}
+			});
 		},
 		(error): AppError =>
 			dbError(
