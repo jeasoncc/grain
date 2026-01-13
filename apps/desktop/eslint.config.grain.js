@@ -235,6 +235,18 @@ export default [
     },
   },
   
+  // types/ 目录中的 Builder 文件 - 允许可变性
+  {
+    files: ['src/types/**/*.builder.ts'],
+    rules: {
+      // Builder 模式需要内部可变性来构建对象
+      'functional/immutable-data': 'off',
+      'functional/prefer-readonly-type': 'off',
+      'grain/no-try-catch': 'off',
+      'grain/no-console-log': 'off',
+    },
+  },
+  
   // ============================================================================
   // 🧪 测试文件特殊规则
   // ============================================================================
