@@ -121,8 +121,9 @@ export const decodeUser = (response: UserResponse): UserInterface => ({
 /**
  * 解码用户数组
  */
-export const decodeUsers = (responses: UserResponse[]): UserInterface[] =>
-	responses.map(decodeUser);
+export const decodeUsers = (
+	responses: readonly UserResponse[],
+): readonly UserInterface[] => responses.map(decodeUser);
 
 /**
  * 解码可选用户
