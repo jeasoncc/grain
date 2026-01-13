@@ -9,6 +9,8 @@
  * @requirements 10.2, 10.3, 10.4, 10.5
  */
 
+/// <reference types="node" />
+
 import * as E from "fp-ts/Either";
 import type * as TE from "fp-ts/TaskEither";
 import { beforeEach, describe, expect, it, vi } from "vitest";
