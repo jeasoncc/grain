@@ -69,62 +69,62 @@ export interface WritingActions {
 	/**
 	 * Set focus mode enabled state.
 	 */
-	setFocusMode: (enabled: boolean) => void;
+	readonly setFocusMode: (enabled: boolean) => void;
 
 	/**
 	 * Toggle focus mode on/off.
 	 */
-	toggleFocusMode: () => void;
+	readonly toggleFocusMode: () => void;
 
 	/**
 	 * Set typewriter mode enabled state.
 	 */
-	setTypewriterMode: (enabled: boolean) => void;
+	readonly setTypewriterMode: (enabled: boolean) => void;
 
 	/**
 	 * Toggle typewriter mode on/off.
 	 */
-	toggleTypewriterMode: () => void;
+	readonly toggleTypewriterMode: () => void;
 
 	/**
 	 * Update writing goal configuration.
 	 * Accepts partial updates to merge with existing goal.
 	 */
-	setWritingGoal: (goal: Partial<WritingGoal>) => void;
+	readonly setWritingGoal: (goal: Partial<WritingGoal>) => void;
 
 	/**
 	 * Add words to today's word count.
 	 * Resets count if date has changed.
 	 */
-	addTodayWords: (count: number) => void;
+	readonly addTodayWords: (count: number) => void;
 
 	/**
 	 * Reset today's word count if the date has changed.
 	 */
-	resetTodayIfNeeded: () => void;
+	readonly resetTodayIfNeeded: () => void;
 
 	/**
 	 * Start a new writing session.
 	 * @param wordCount - Initial word count at session start
 	 */
-	startSession: (wordCount: number) => void;
+	readonly startSession: (wordCount: number) => void;
 
 	/**
 	 * Update the current session's word count.
 	 * Also updates today's word count if words increased.
 	 * @param wordCount - Current word count
 	 */
-	updateSessionWordCount: (wordCount: number) => void;
+	readonly updateSessionWordCount: (wordCount: number) => void;
 
 	/**
 	 * End the current writing session.
 	 */
-	endSession: () => void;
+	readonly endSession: () => void;
 
 	/**
 	 * Set minimal toolbar mode.
 	 */
-	setMinimalToolbar: (enabled: boolean) => void;
+	readonly setMinimalToolbar: (enabled: boolean) => void;
 }
 
 // ==============================
