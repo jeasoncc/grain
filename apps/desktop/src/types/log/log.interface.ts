@@ -98,7 +98,7 @@ export interface LogQueryOptions {
   /** 偏移量 */
   readonly offset?: number;
   /** 日志级别过滤 */
-  readonly levelFilter?: LogLevel[];
+  readonly levelFilter?: readonly LogLevel[];
   /** 开始时间 */
   readonly startTime?: string;
   /** 结束时间 */
@@ -131,7 +131,7 @@ export const LogQueryOptionsSchema = z.object({
  */
 export interface LogQueryResult {
   /** 日志条目列表 */
-  readonly entries: LogEntry[];
+  readonly entries: readonly LogEntry[];
   /** 总条目数 */
   readonly total: number;
   /** 是否有更多数据 */
@@ -191,8 +191,8 @@ export const LOG_LEVEL_ICONS: Record<LogLevel, string> = {
  */
 export interface LogConfigValidationResult {
   readonly isValid: boolean;
-  readonly errors: string[];
-  readonly warnings?: string[];
+  readonly errors: readonly string[];
+  readonly warnings?: readonly string[];
 }
 
 /**
