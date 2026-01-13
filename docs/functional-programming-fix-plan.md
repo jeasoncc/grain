@@ -240,7 +240,7 @@ Object.assign(obj, updates) → { ...obj, ...updates }
 
 | 阶段 | 文件数 | 已完成 | 进度 | 备注 |
 |------|--------|--------|------|------|
-| Types | 50 | 8 | 16% | rust-api.ts, node.interface.ts, workspace.interface.ts, attachment.interface.ts, backup.interface.ts, 4个codec文件 |
+| Types | 50 | 30 | 60% | 已完成30个interface/codec/config文件 |
 | Utils | 30 | 0 | 0% | |
 | Pipes | 40 | 0 | 0% | |
 | IO | 30 | 0 | 0% | |
@@ -248,7 +248,7 @@ Object.assign(obj, updates) → { ...obj, ...updates }
 | State | 20 | 0 | 0% | |
 | Hooks | 30 | 0 | 0% | |
 | Views | 100 | 0 | 0% | |
-| **总计** | **400** | **8** | **2%** | |
+| **总计** | **400** | **30** | **7.5%** | |
 
 ## 🚀 已完成的修复
 
@@ -265,6 +265,25 @@ Object.assign(obj, updates) → { ...obj, ...updates }
 9. ✅ `user.codec.ts` - decodeUsers 改为 readonly 数组
 10. ✅ `workspace.interface.ts` - members 字段改为 readonly 数组
 11. ✅ `workspace.codec.ts` - decodeWorkspaces 改为 readonly 数组
+12. ✅ `diagram.interface.ts` - 所有属性添加 readonly
+13. ✅ `editor-settings.interface.ts` - 所有属性添加 readonly
+14. ✅ `selection.interface.ts` - 所有属性添加 readonly
+15. ✅ `log.interface.ts` - 所有属性添加 readonly
+16. ✅ `editor-tab.interface.ts` - 所有属性添加 readonly
+17. ✅ `layout.interface.ts` - 所有属性添加 readonly
+18. ✅ `storage.interface.ts` - 所有属性添加 readonly
+19. ✅ `ui.interface.ts` - 所有属性添加 readonly
+20. ✅ `theme.interface.ts` - 所有属性添加 readonly
+21. ✅ `save.interface.ts` - 所有属性添加 readonly
+22. ✅ `sidebar.interface.ts` - Actions 接口添加 readonly
+23. ✅ `global-ui.interface.ts` - Actions 接口添加 readonly
+24. ✅ `font.interface.ts` - Actions 接口添加 readonly
+25. ✅ `editor-history.interface.ts` - HistoryStack 和 Actions 接口添加 readonly
+26. ✅ `writing.interface.ts` - Actions 接口添加 readonly
+27. ✅ `icon-theme.config.ts` - iconThemes 数组改为 readonly
+28. ✅ `icon-theme.interface.ts` - 所有属性添加 readonly (50个错误)
+29. ✅ `theme.types.ts` - ThemeColors 和 Theme 接口添加 readonly (47个错误)
+30. ✅ `error.types.ts` - AppError 联合类型和类型守卫添加 readonly (44个错误)
 
 ## 🔄 当前任务
 - [ ] 继续修复 Types 层的其他文件
