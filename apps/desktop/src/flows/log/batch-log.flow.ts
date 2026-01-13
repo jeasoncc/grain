@@ -274,9 +274,11 @@ export const getBufferStatus = () => ({
  * @returns void
  */
 export const clearLogBuffer = (): void => {
-  logBuffer.entries = [];
-  logBuffer.lastFlushTime = Date.now();
-  logBuffer.isFlushPending = false;
+  logBuffer = {
+    entries: [],
+    lastFlushTime: Date.now(),
+    isFlushPending: false,
+  };
   
   if (batchTimer) {
     clearTimeout(batchTimer);
