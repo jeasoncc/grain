@@ -77,7 +77,7 @@ export const openFile = (
 					const store = useEditorTabsStore.getState();
 
 					// 1. 检查是否已打开
-					const existingTab = findTabByNodeId(store.tabs as EditorTab[], nodeId);
+					const existingTab = findTabByNodeId(store.tabs as readonly EditorTab[], nodeId);
 					if (existingTab) {
 						info("[OpenFile] 文件已打开，切换到标签", { tabId: existingTab.id }, "open-file.flow");
 						// 内联 setActiveTabFlow 逻辑，避免 flows/ 依赖 flows/
