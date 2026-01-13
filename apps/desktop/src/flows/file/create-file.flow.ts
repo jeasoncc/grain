@@ -20,12 +20,15 @@
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { openTabFlow } from "@/flows/editor-tabs";
+import dayjs from "dayjs";
+import type { SerializedEditorState } from "lexical";
 import * as nodeRepo from "@/io/api/node.api";
 import { info, debug, success, warn, error } from "@/io/log/logger.api";
 import { fileOperationQueue } from "@/pipes/queue/queue.pipe";
+import { findTabByNodeId, evictLRUEditorStates } from "@/pipes/editor-tab";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
-import type { TabType } from "@/types/editor-tab";
+import { EditorTabBuilder, EditorStateBuilder } from "@/types/editor-tab";
+import type { TabType, EditorTab, EditorInstanceState } from "@/types/editor-tab";
 import type { NodeInterface, NodeType } from "@/types/node";
 import type { AppError } from "@/types/error";
 
@@ -142,55 +145,67 @@ export const createFile = (
 						const store = useEditorTabsStore.getState();
 
 						// 解析内容（如果有）
-						let parsedContent: unknown;
+						let parsedContent: SerializedEditorState | undefined;
 						if (content) {
 							try {
-								parsedContent = JSON.parse(content);
+								parsedContent = JSON.parse(content) as SerializedEditorState;
 								debug("[CreateFile] 内容解析成功");
 							} catch (error) {
 								warn("[CreateFile] 内容解析失败，使用空文档");
 								debug("[CreateFile] 解析错误", { error }, "create-file");
-								// 创建一个最小的有效 Lexical 文档作为降级策略
-								parsedContent = {
-									root: {
-										children: [
-											{
-												children: [],
-												direction: "ltr" as const,
-												format: "" as const,
-												indent: 0,
-												type: "paragraph" as const,
-												version: 1,
-											},
-										],
-										direction: "ltr" as const,
-										format: "" as const,
-										indent: 0,
-										type: "root" as const,
-										version: 1,
-									},
-								};
+								parsedContent = undefined;
 							}
 						}
 
-						// 打开 tab 时直接传入初始内容
-						openTabFlow(
-							{
-								workspaceId,
-								nodeId: node.id,
-								title,
-								type: type as TabType,
-								initialContent: parsedContent,
-							},
-							store,
+						// 打开 tab：直接操作 state，避免 flows/ 依赖 flows/
+						const existingTab = findTabByNodeId(
+						store.tabs as EditorTab[],
+						node.id,
 						);
-						debug("[CreateFile] Tab 已打开，内容已设置");
 
-						// 获取新创建的 tab ID
-						const newTabs = useEditorTabsStore.getState().tabs;
-						const newTab = newTabs.find((t) => t.nodeId === node.id);
-						tabId = newTab?.id ?? node.id;
-						debug("[CreateFile] Tab ID", { tabId }, "create-file");
+						if (existingTab) {
+						// Tab 已存在，激活它
+						store.setActiveTabId(existingTab.id);
+						if (store.editorStates[existingTab.id]) {
+						  store.updateEditorState(existingTab.id, {
+						   lastModified: dayjs().valueOf(),
+							});
+						 }
+						 tabId = existingTab.id;
+						} else {
+						 // 创建新 tab
+						 const newTab = EditorTabBuilder.create()
+							.workspaceId(workspaceId)
+							.nodeId(node.id)
+							.title(title)
+							.type(type as TabType)
+							.build();
+
+						// 如果有初始内容，使用它；否则创建空状态
+						const newEditorState = parsedContent
+							? EditorStateBuilder.fromDefault()
+									.serializedState(parsedContent)
+									.build()
+							: EditorStateBuilder.fromDefault().build();
+
+						// 使用原子操作同时添加 tab、设置 editorState 和激活 tab
+						store.addTabWithState(newTab as EditorTab, newEditorState);
+
+						// LRU eviction
+						const MAX_EDITOR_STATES = 10;
+						const openTabIds = new Set(store.tabs.map((t: EditorTab) => t.id));
+						const evictedStates = evictLRUEditorStates(
+							store.editorStates,
+							store.activeTabId,
+							openTabIds as ReadonlySet<string>,
+							MAX_EDITOR_STATES,
+						);
+						store.setEditorStates(evictedStates as Record<string, EditorInstanceState>);
+
+						tabId = newTab.id;
+					}
+					debug("[CreateFile] Tab 已打开，内容已设置");
+					debug("[CreateFile] Tab ID", { tabId }, "create-file");
 					}
 
 					success("[CreateFile] 文件创建完成", { nodeId: node.id }, "create-file");
