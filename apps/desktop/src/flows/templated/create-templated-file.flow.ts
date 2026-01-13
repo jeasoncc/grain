@@ -26,7 +26,7 @@ import * as TE from "fp-ts/TaskEither";
 import { z } from "zod";
 import { createFile } from "@/flows/file";
 import { ensureFolderPath } from "@/flows/node";
-import { success } from "@/io/log/logger.api";
+import { success, start } from "@/io/log/logger.api";
 import type { FileNodeType, NodeInterface } from "@/types/node";
 import type { AppError } from "@/types/error";
 
@@ -137,7 +137,7 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 	return (
 		params: TemplatedFileParams<T>,
 	): TE.TaskEither<AppError, TemplatedFileResult> => {
-		logger.start(`[Action] 创建${config.name}...`);
+		start(`[Action] 创建${config.name}...`);
 
 		return pipe(
 			// 1. 校验基础参数（工作区 ID）
