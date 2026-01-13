@@ -154,7 +154,7 @@ export const saveContent = (
  * @returns TaskEither<AppError, ContentInterface[]>
  */
 export const getContentsByNodeIds = (
-	nodeIds: string[],
+	nodeIds: readonly string[],
 ): TE.TaskEither<AppError, ContentInterface[]> => {
 	if (nodeIds.length === 0) {
 		return TE.right([]);
