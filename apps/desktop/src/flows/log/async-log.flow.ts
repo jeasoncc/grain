@@ -237,7 +237,7 @@ const stopQueueProcessor = (): void => {
  * @returns Task<void>
  */
 const processLogQueue = (config: AsyncLogConfig): T.Task<void> =>
-  T.fromIO(() => {
+  () => {
     if (processorState.isProcessing || logQueue.length === 0) {
       return Promise.resolve();
     }
@@ -310,7 +310,7 @@ const processLogQueue = (config: AsyncLogConfig): T.Task<void> =>
         };
       }
     })();
-  });
+  };
 
 // ============================================================================
 // 异步日志记录器
