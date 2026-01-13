@@ -10,7 +10,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import * as nodeRepo from "@/io/api/node.api";
+import * as nodeFlow from "@/flows/node";
 import type { NodeInterface } from "@/types/node";
 import { queryKeys } from "./query-keys";
 
@@ -41,7 +41,7 @@ export const useNodesByWorkspace = (workspaceId: string | null | undefined) => {
 		queryFn: async (): Promise<NodeInterface[]> => {
 			if (!workspaceId) return [];
 
-			const result = await nodeRepo.getNodesByWorkspace(workspaceId)();
+			const result = await nodeFlow.getNodesByWorkspace(workspaceId)();
 
 			if (result._tag === "Left") throw result.left;
 			return result.right;
