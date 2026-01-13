@@ -127,7 +127,7 @@ pub async fn save_logs_batch(
     let results = LogEntity::insert_many(active_models)
         .exec_with_returning(db)
         .await
-        .map_err(|e| AppError::DbError(format!("Failed to save log batch: {}", e)))?;
+        .map_err(|e| AppError::DatabaseError(format!("Failed to save log batch: {}", e)))?;
 
     Ok(results.into_iter().map(log_model_to_response).collect())
 }
