@@ -415,7 +415,7 @@ export const saveLogConfigPreset = (
           description: z.string(),
           config: z.record(z.string(), z.unknown()),
         })),
-        [] as readonly Array<{ readonly name: string; readonly description: string; readonly config: Record<string, unknown> }>,
+        [] as ReadonlyArray<{ name: string; description: string; config: Record<string, unknown> }>,
       );
 
       // 更新或添加预设（不可变方式）
