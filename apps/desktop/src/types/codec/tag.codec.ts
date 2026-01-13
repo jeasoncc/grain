@@ -43,8 +43,9 @@ export const decodeTag = (response: TagResponse): TagInterface => ({
 /**
  * 解码标签数组
  */
-export const decodeTags = (responses: TagResponse[]): TagInterface[] =>
-	responses.map(decodeTag);
+export const decodeTags = (
+	responses: readonly TagResponse[],
+): readonly TagInterface[] => responses.map(decodeTag);
 
 /**
  * 解码可选标签
