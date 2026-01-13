@@ -9,7 +9,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node scripts/fix-imports.js",
     "dev": "tsc --watch",
     "test": "vitest --run",
     "test:watch": "vitest"

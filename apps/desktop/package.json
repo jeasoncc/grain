@@ -1,7 +1,7 @@
 {
   "name": "desktop",
   "private": true,
-  "version": "0.1.341",
+  "version": "0.1.342",
   "type": "module",
   "scripts": {
     "dev": "concurrently -n vite,api -c blue,green \"vite\" \"cargo run --manifest-path src-tauri/../../../apps/api-rust/Cargo.toml\"",
@@ -16,6 +16,7 @@
     "lint": "biome lint",
     "lint:functional": "eslint --config eslint.config.functional.js 'src/**/*.{ts,tsx}'",
     "lint:grain": "eslint --config eslint.config.grain.js 'src/**/*.{ts,tsx}'",
+    "lint:grain:report": "eslint --config eslint.config.grain.js 'src/**/*.{ts,tsx}' --format json | node scripts/categorize-lint-report.js",
     "lint:all": "npm run lint && npm run lint:functional && npm run lint:grain",
     "check": "biome check --write",
     "check:functional": "npm run lint:functional",

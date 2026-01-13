@@ -29,3 +29,6 @@ diff.txt
 e2e/reports/screenshots/
 e2e/reports/test-report.json
 e2e/reports/test-report.md
+
+# Lint 报告
+lint-reports/
