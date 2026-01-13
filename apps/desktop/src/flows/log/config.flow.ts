@@ -525,7 +525,7 @@ export const importLogConfig = (
 // ============================================================================
 
 type ConfigChangeListener = (config: ExtendedLogConfig) => void;
-const configChangeListeners: ConfigChangeListener[] = [];
+let configChangeListeners: readonly ConfigChangeListener[] = [];
 
 /**
  * 添加配置变化监听器
@@ -536,12 +536,15 @@ const configChangeListeners: ConfigChangeListener[] = [];
 export const addConfigChangeListener = (
   listener: ConfigChangeListener,
 ): (() => void) => {
-  configChangeListeners.push(listener);
+  configChangeListeners = [...configChangeListeners, listener];
   
   return () => {
     const index = configChangeListeners.indexOf(listener);
     if (index >= 0) {
-      configChangeListeners.splice(index, 1);
+      configChangeListeners = [
+        ...configChangeListeners.slice(0, index),
+        ...configChangeListeners.slice(index + 1),
+      ];
     }
   };
 };
