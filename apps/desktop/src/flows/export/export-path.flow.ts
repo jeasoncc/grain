@@ -79,7 +79,7 @@ const EXPORT_SETTINGS_KEY = "grain-export-settings";
 export function isTauriEnvironment(): boolean {
 	return (
 		typeof window !== "undefined" &&
-		!!(window as unknown as { __TAURI__?: unknown }).__TAURI__
+		!!(window as unknown as { readonly __TAURI__?: unknown }).__TAURI__
 	);
 }
 
