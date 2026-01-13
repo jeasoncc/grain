@@ -14,9 +14,9 @@ export interface DiagramState {
 }
 
 export interface DiagramActions {
-	setKrokiServerUrl: (url: string) => void;
-	setEnableKroki: (enabled: boolean) => void;
-	testKrokiConnection: () => Promise<boolean>;
+	readonly setKrokiServerUrl: (url: string) => void;
+	readonly setEnableKroki: (enabled: boolean) => void;
+	readonly testKrokiConnection: () => Promise<boolean>;
 }
 
 export type DiagramStore = DiagramState & DiagramActions;
