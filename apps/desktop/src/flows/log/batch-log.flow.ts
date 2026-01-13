@@ -119,15 +119,21 @@ export const flushLogBuffer = (
     return TE.right(undefined);
   }
 
-  // 标记正在刷新
-  logBuffer.isFlushPending = true;
+  // 标记正在刷新（不可变方式）
+  logBuffer = {
+    ...logBuffer,
+    isFlushPending: true,
+  };
 
   // 获取当前缓冲区内容
   const entriesToFlush = [...logBuffer.entries];
   
-  // 清空缓冲区
-  logBuffer.entries = [];
-  logBuffer.lastFlushTime = Date.now();
+  // 清空缓冲区（不可变方式）
+  logBuffer = {
+    ...logBuffer,
+    entries: [],
+    lastFlushTime: Date.now(),
+  };
 
   // 清除定时器
   if (batchTimer) {
@@ -139,19 +145,28 @@ export const flushLogBuffer = (
   const filteredEntries = filterByLevel(entriesToFlush, config.minLevel);
 
   if (filteredEntries.length === 0) {
-    logBuffer.isFlushPending = false;
+    logBuffer = {
+      ...logBuffer,
+      isFlushPending: false,
+    };
     return TE.right(undefined);
   }
 
   return pipe(
     saveLogsBatchToSQLite(filteredEntries),
     TE.map(() => {
-      logBuffer.isFlushPending = false;
+      logBuffer = {
+        ...logBuffer,
+        isFlushPending: false,
+      };
     }),
     TE.mapLeft((error) => {
       // 刷新失败时，重新添加到缓冲区（避免丢失日志）
-      logBuffer.entries.unshift(...filteredEntries);
-      logBuffer.isFlushPending = false;
+      logBuffer = {
+        ...logBuffer,
+        entries: [...filteredEntries, ...logBuffer.entries],
+        isFlushPending: false,
+      };
       return error;
     }),
   );
