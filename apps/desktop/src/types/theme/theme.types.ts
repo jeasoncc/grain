@@ -8,77 +8,77 @@
  */
 export interface ThemeColors {
 	// 基础背景
-	background: string;
-	foreground: string;
-	card: string;
-	cardForeground: string;
-	popover: string;
-	popoverForeground: string;
+	readonly background: string;
+	readonly foreground: string;
+	readonly card: string;
+	readonly cardForeground: string;
+	readonly popover: string;
+	readonly popoverForeground: string;
 
 	// 主色调
-	primary: string;
-	primaryForeground: string;
+	readonly primary: string;
+	readonly primaryForeground: string;
 
 	// 次要色
-	secondary: string;
-	secondaryForeground: string;
+	readonly secondary: string;
+	readonly secondaryForeground: string;
 
 	// 柔和色
-	muted: string;
-	mutedForeground: string;
+	readonly muted: string;
+	readonly mutedForeground: string;
 
 	// 强调色
-	accent: string;
-	accentForeground: string;
+	readonly accent: string;
+	readonly accentForeground: string;
 
 	// 边框和输入
-	border: string;
-	input: string;
-	ring: string;
+	readonly border: string;
+	readonly input: string;
+	readonly ring: string;
 
 	// 侧边栏
-	sidebar: string;
-	sidebarForeground: string;
-	sidebarPrimary: string;
-	sidebarPrimaryForeground: string;
-	sidebarAccent: string;
-	sidebarAccentForeground: string;
-	sidebarBorder: string;
-	folderColor: string;
+	readonly sidebar: string;
+	readonly sidebarForeground: string;
+	readonly sidebarPrimary: string;
+	readonly sidebarPrimaryForeground: string;
+	readonly sidebarAccent: string;
+	readonly sidebarAccentForeground: string;
+	readonly sidebarBorder: string;
+	readonly folderColor: string;
 
 	// Toast 提示框（可选）
-	toastBackground?: string;
-	toastForeground?: string;
-	toastBorder?: string;
+	readonly toastBackground?: string;
+	readonly toastForeground?: string;
+	readonly toastBorder?: string;
 
 	// 编辑器扩展颜色
-	editorCursor?: string;
-	editorSelection: string; // Required - background color for selected text
-	editorLineHighlight?: string;
+	readonly editorCursor?: string;
+	readonly editorSelection: string; // Required - background color for selected text
+	readonly editorLineHighlight?: string;
 
 	// 状态颜色（可选）
-	success?: string;
-	warning?: string;
-	error?: string;
-	info?: string;
+	readonly success?: string;
+	readonly warning?: string;
+	readonly error?: string;
+	readonly info?: string;
 
 	// 编辑器语法高亮（可选）
-	syntaxHeading?: string;
-	syntaxBold?: string;
-	syntaxItalic?: string;
-	syntaxLink?: string;
-	syntaxCode?: string;
-	syntaxQuote?: string;
-	syntaxComment?: string;
+	readonly syntaxHeading?: string;
+	readonly syntaxBold?: string;
+	readonly syntaxItalic?: string;
+	readonly syntaxLink?: string;
+	readonly syntaxCode?: string;
+	readonly syntaxQuote?: string;
+	readonly syntaxComment?: string;
 }
 
 /**
  * 主题配置接口
  */
 export interface Theme {
-	key: string;
-	name: string;
-	description: string;
-	type: "light" | "dark";
-	colors: ThemeColors;
+	readonly key: string;
+	readonly name: string;
+	readonly description: string;
+	readonly type: "light" | "dark";
+	readonly colors: ThemeColors;
 }
