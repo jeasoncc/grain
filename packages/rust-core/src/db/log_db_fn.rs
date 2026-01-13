@@ -100,36 +100,14 @@ pub async fn save_logs_batch(
         return Ok(vec![]);
     }
 
-    let mut active_models = Vec::new();
+    let mut results = Vec::new();
     
     for request in entries {
-        let uuid = request.uuid.unwrap_or_else(|| Uuid::new_v4().to_string());
-        let context_json = request
-            .context
-            .map(|ctx| serde_json::to_string(&ctx))
-            .transpose()
-            .map_err(|e| AppError::ValidationError(format!("Invalid context JSON: {}", e)))?;
-
-        let log_entry = crate::types::log::entity::ActiveModel {
-            uuid: Set(uuid),
-            timestamp: Set(request.timestamp),
-            level: Set(request.level),
-            message: Set(request.message),
-            context: Set(context_json),
-            source: Set(request.source),
-            created_at: Set(chrono::Utc::now()),
-            ..Default::default()
-        };
-        
-        active_models.push(log_entry);
+        let result = save_log_entry(db, request).await?;
+        results.push(result);
     }
 
-    let results = LogEntity::insert_many(active_models)
-        .exec_with_returning(db)
-        .await
-        .map_err(|e| AppError::DatabaseError(format!("Failed to save log batch: {}", e)))?;
-
-    Ok(results.into_iter().map(log_model_to_response).collect())
+    Ok(results)
 }
 
 /// 查询日志条目
