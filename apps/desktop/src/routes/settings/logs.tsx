@@ -10,6 +10,7 @@ import {
 	Search,
 	Trash2,
 	XCircle,
+	type LucideIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { type LogEntry, logDB } from "@/io/db/log-db";
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/settings/logs")({
 });
 
 // Map log levels to Lucide icons for a cleaner look
-const LOG_ICONS: Record<string, any> = {
+const LOG_ICONS: Record<string, LucideIcon> = {
 	FATAL: XCircle,
 	ERROR: XCircle,
 	WARN: AlertTriangle,
