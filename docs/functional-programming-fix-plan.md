@@ -240,7 +240,7 @@ Object.assign(obj, updates) → { ...obj, ...updates }
 
 | 阶段 | 文件数 | 已完成 | 进度 | 备注 |
 |------|--------|--------|------|------|
-| Types | 50 | 3 | 6% | attachment.interface.ts, backup.interface.ts, Builder 规则例外 |
+| Types | 50 | 8 | 16% | rust-api.ts, node.interface.ts, workspace.interface.ts, attachment.interface.ts, backup.interface.ts, 4个codec文件 |
 | Utils | 30 | 0 | 0% | |
 | Pipes | 40 | 0 | 0% | |
 | IO | 30 | 0 | 0% | |
@@ -248,15 +248,23 @@ Object.assign(obj, updates) → { ...obj, ...updates }
 | State | 20 | 0 | 0% | |
 | Hooks | 30 | 0 | 0% | |
 | Views | 100 | 0 | 0% | |
-| **总计** | **400** | **3** | **0.75%** | |
+| **总计** | **400** | **8** | **2%** | |
 
 ## 🚀 已完成的修复
 
 ### 2026-01-13
 
 1. ✅ `attachment.interface.ts` - 添加 readonly 到 Input 接口
-2. ✅ `eslint.config.grain.js` - 为 Builder 文件添加例外规则
+2. ✅ `eslint.config.grain.js` - 为 Builder 文件添加规则例外
 3. ✅ `backup.interface.ts` - 数组类型改为 readonly
+4. ✅ `attachment.codec.ts` - decodeAttachments 参数和返回值改为 readonly 数组
+5. ✅ `rust-api.ts` - 所有接口属性添加 readonly，数组类型改为 readonly
+6. ✅ `node.interface.ts` - tags 字段改为 readonly 数组
+7. ✅ `node.codec.ts` - decodeNodes 和 encodeCreateNode 改为 readonly 数组
+8. ✅ `tag.codec.ts` - decodeTags 改为 readonly 数组
+9. ✅ `user.codec.ts` - decodeUsers 改为 readonly 数组
+10. ✅ `workspace.interface.ts` - members 字段改为 readonly 数组
+11. ✅ `workspace.codec.ts` - decodeWorkspaces 改为 readonly 数组
 
 ## 🔄 当前任务
 - [ ] 继续修复 Types 层的其他文件
