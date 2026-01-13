@@ -16,17 +16,17 @@
  * 都应该返回 Either<AppError, T> 类型
  */
 export type AppError =
-	| { type: "VALIDATION_ERROR"; message: string; field?: string }
-	| { type: "DB_ERROR"; message: string }
-	| { type: "NOT_FOUND"; message: string; id?: string }
-	| { type: "CYCLE_ERROR"; message: string }
-	| { type: "EXPORT_ERROR"; message: string }
-	| { type: "IMPORT_ERROR"; message: string }
-	| { type: "LOG_STORAGE_ERROR"; message: string; originalError?: unknown }
-	| { type: "LOG_FORMAT_ERROR"; message: string; originalError?: unknown }
-	| { type: "LOG_CONFIG_ERROR"; message: string; originalError?: unknown }
-	| { type: "LOG_QUEUE_ERROR"; message: string; originalError?: unknown }
-	| { type: "UNKNOWN_ERROR"; message: string };
+	| { readonly type: "VALIDATION_ERROR"; readonly message: string; readonly field?: string }
+	| { readonly type: "DB_ERROR"; readonly message: string }
+	| { readonly type: "NOT_FOUND"; readonly message: string; readonly id?: string }
+	| { readonly type: "CYCLE_ERROR"; readonly message: string }
+	| { readonly type: "EXPORT_ERROR"; readonly message: string }
+	| { readonly type: "IMPORT_ERROR"; readonly message: string }
+	| { readonly type: "LOG_STORAGE_ERROR"; readonly message: string; readonly originalError?: unknown }
+	| { readonly type: "LOG_FORMAT_ERROR"; readonly message: string; readonly originalError?: unknown }
+	| { readonly type: "LOG_CONFIG_ERROR"; readonly message: string; readonly originalError?: unknown }
+	| { readonly type: "LOG_QUEUE_ERROR"; readonly message: string; readonly originalError?: unknown }
+	| { readonly type: "UNKNOWN_ERROR"; readonly message: string };
 
 /**
  * 错误类型枚举，用于类型安全的错误创建
@@ -54,7 +54,7 @@ export const ErrorType = {
  */
 export const isValidationError = (
 	e: AppError,
-): e is { type: "VALIDATION_ERROR"; message: string; field?: string } =>
+): e is { readonly type: "VALIDATION_ERROR"; readonly message: string; readonly field?: string } =>
 	e.type === "VALIDATION_ERROR";
 
 /**
@@ -62,14 +62,14 @@ export const isValidationError = (
  */
 export const isDbError = (
 	e: AppError,
-): e is { type: "DB_ERROR"; message: string } => e.type === "DB_ERROR";
+): e is { readonly type: "DB_ERROR"; readonly message: string } => e.type === "DB_ERROR";
 
 /**
  * 判断是否为未找到错误
  */
 export const isNotFoundError = (
 	e: AppError,
-): e is { type: "NOT_FOUND"; message: string; id?: string } =>
+): e is { readonly type: "NOT_FOUND"; readonly message: string; readonly id?: string } =>
 	e.type === "NOT_FOUND";
 
 /**
@@ -77,28 +77,28 @@ export const isNotFoundError = (
  */
 export const isCycleError = (
 	e: AppError,
-): e is { type: "CYCLE_ERROR"; message: string } => e.type === "CYCLE_ERROR";
+): e is { readonly type: "CYCLE_ERROR"; readonly message: string } => e.type === "CYCLE_ERROR";
 
 /**
  * 判断是否为导出错误
  */
 export const isExportError = (
 	e: AppError,
-): e is { type: "EXPORT_ERROR"; message: string } => e.type === "EXPORT_ERROR";
+): e is { readonly type: "EXPORT_ERROR"; readonly message: string } => e.type === "EXPORT_ERROR";
 
 /**
  * 判断是否为导入错误
  */
 export const isImportError = (
 	e: AppError,
-): e is { type: "IMPORT_ERROR"; message: string } => e.type === "IMPORT_ERROR";
+): e is { readonly type: "IMPORT_ERROR"; readonly message: string } => e.type === "IMPORT_ERROR";
 
 /**
  * 判断是否为未知错误
  */
 export const isUnknownError = (
 	e: AppError,
-): e is { type: "UNKNOWN_ERROR"; message: string } =>
+): e is { readonly type: "UNKNOWN_ERROR"; readonly message: string } =>
 	e.type === "UNKNOWN_ERROR";
 
 // ============================================================================
