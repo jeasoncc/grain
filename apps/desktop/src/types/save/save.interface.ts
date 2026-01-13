@@ -37,15 +37,15 @@ export interface SaveState {
 // ============================================================================
 
 export interface SaveActions {
-	setStatus: (status: SaveStatus) => void;
-	setLastSaveTime: (time: Date) => void;
-	setErrorMessage: (message: string | null) => void;
-	setHasUnsavedChanges: (hasChanges: boolean) => void;
-	setIsManualSaving: (isSaving: boolean) => void;
-	markAsSaved: () => void;
-	markAsError: (message: string) => void;
-	markAsSaving: () => void;
-	markAsUnsaved: () => void;
+	readonly setStatus: (status: SaveStatus) => void;
+	readonly setLastSaveTime: (time: Date) => void;
+	readonly setErrorMessage: (message: string | null) => void;
+	readonly setHasUnsavedChanges: (hasChanges: boolean) => void;
+	readonly setIsManualSaving: (isSaving: boolean) => void;
+	readonly markAsSaved: () => void;
+	readonly markAsError: (message: string) => void;
+	readonly markAsSaving: () => void;
+	readonly markAsUnsaved: () => void;
 }
 
 // ============================================================================
