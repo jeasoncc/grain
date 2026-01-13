@@ -7,7 +7,7 @@
 //! - 统计日志信息
 
 use sea_orm::*;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use uuid::Uuid;
 
 use crate::types::{
@@ -232,7 +232,7 @@ pub async fn get_log_stats(db: &DatabaseConnection) -> AppResult<LogStats> {
         .await
         .map_err(|e| AppError::DatabaseError(format!("Failed to get level stats: {}", e)))?;
 
-    let mut by_level = HashMap::new();
+    let mut by_level = BTreeMap::new();
     for (level, count) in level_stats {
         by_level.insert(level, count);
     }
