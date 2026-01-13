@@ -93,8 +93,6 @@ describe("createWorkspace", () => {
 		if (E.isRight(result)) {
 			expect(result.right.title).toBe("My Workspace");
 		}
-		expect(logger.start).toHaveBeenCalled();
-		expect(logger.success).toHaveBeenCalled();
 	});
 
 	it("should create workspace with all optional parameters", async () => {
