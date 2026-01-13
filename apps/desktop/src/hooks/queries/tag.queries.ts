@@ -10,7 +10,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import * as E from "fp-ts/Either";
-import * as tagRepo from "@/io/api/tag.api";
+import * as tagFlow from "@/flows/tag";
 import type { TagGraphData } from "@/types/codec";
 import type { TagInterface } from "@/types/tag";
 import { queryKeys } from "./query-keys";
@@ -24,7 +24,7 @@ export const useTagsByWorkspace = (workspaceId: string | null | undefined) => {
 		queryKey: queryKeys.tags.byWorkspace(workspaceId ?? ""),
 		queryFn: async (): Promise<TagInterface[]> => {
 			if (!workspaceId) return [];
-			const result = await tagRepo.getTagsByWorkspace(workspaceId)();
+			const result = await tagFlow.getTagsByWorkspace(workspaceId)();
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message);
 			}
@@ -42,7 +42,7 @@ export const useTag = (tagId: string | null | undefined) => {
 		queryKey: queryKeys.tags.detail(tagId ?? ""),
 		queryFn: async (): Promise<TagInterface | null> => {
 			if (!tagId) return null;
-			const result = await tagRepo.getTag(tagId)();
+			const result = await tagFlow.getTag(tagId)();
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message);
 			}
@@ -63,7 +63,7 @@ export const useTagByName = (
 		queryKey: queryKeys.tags.byName(workspaceId ?? "", name ?? ""),
 		queryFn: async (): Promise<TagInterface | null> => {
 			if (!workspaceId || !name) return null;
-			const result = await tagRepo.getTagByName(workspaceId, name)();
+			const result = await tagFlow.getTagByName(workspaceId, name)();
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message);
 			}
@@ -84,7 +84,7 @@ export const useTopTags = (
 		queryKey: queryKeys.tags.top(workspaceId ?? "", limit),
 		queryFn: async (): Promise<TagInterface[]> => {
 			if (!workspaceId) return [];
-			const result = await tagRepo.getTopTags(workspaceId, limit)();
+			const result = await tagFlow.getTopTags(workspaceId, limit)();
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message);
 			}
@@ -105,7 +105,7 @@ export const useTagSearch = (
 		queryKey: queryKeys.tags.search(workspaceId ?? "", query ?? ""),
 		queryFn: async (): Promise<TagInterface[]> => {
 			if (!workspaceId || !query) return [];
-			const result = await tagRepo.searchTags(workspaceId, query)();
+			const result = await tagFlow.searchTags(workspaceId, query)();
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message);
 			}
@@ -126,7 +126,7 @@ export const useNodesByTag = (
 		queryKey: queryKeys.tags.nodesByTag(workspaceId ?? "", tagName ?? ""),
 		queryFn: async (): Promise<string[]> => {
 			if (!workspaceId || !tagName) return [];
-			const result = await tagRepo.getNodesByTag(workspaceId, tagName)();
+			const result = await tagFlow.getNodesByTag(workspaceId, tagName)();
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message);
 			}
@@ -144,7 +144,7 @@ export const useTagGraph = (workspaceId: string | null | undefined) => {
 		queryKey: queryKeys.tags.graph(workspaceId ?? ""),
 		queryFn: async (): Promise<TagGraphData> => {
 			if (!workspaceId) return { nodes: [], edges: [] };
-			const result = await tagRepo.getTagGraphData(workspaceId)();
+			const result = await tagFlow.getTagGraphData(workspaceId)();
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message);
 			}
