@@ -27,7 +27,6 @@ import {
   type SimpleLogger,
 } from "@/io/log/simple-logger.api";
 import {
-  saveLogToSQLite,
   saveLogsBatchToSQLite,
 } from "@/io/log/log.storage.api";
 
@@ -210,7 +209,7 @@ export const getRecentLogsFlow = (
 export const getRecentErrorsFlow = (
   limit: number = 20,
   hours: number = 24,
-): TE.TaskEither<AppError, LogEntry[]> =>
+): TE.TaskEither<AppError, readonly LogEntry[]> =>
   getRecentErrorLogsFlow(limit, hours);
 
 /**
@@ -224,8 +223,8 @@ export const getRecentErrorsFlow = (
 export const getLogsBySourceFlow = (
   source: string,
   limit: number = 100,
-  levelFilter?: LogLevel[],
-): TE.TaskEither<AppError, LogEntry[]> =>
+  levelFilter?: readonly LogLevel[],
+): TE.TaskEither<AppError, readonly LogEntry[]> =>
   getLogsBySourceOptimizedFlow(source, limit, levelFilter);
 
 // ============================================================================
