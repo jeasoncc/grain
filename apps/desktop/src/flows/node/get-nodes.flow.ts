@@ -27,3 +27,50 @@ export const getNode = (
 ): TE.TaskEither<AppError, NodeInterface | null> => {
 	return nodeRepo.getNode(nodeId);
 };
+
+/**
+ * 获取根节点
+ */
+export const getRootNodes = (
+	workspaceId: string,
+): TE.TaskEither<AppError, NodeInterface[]> => {
+	return nodeRepo.getRootNodes(workspaceId);
+};
+
+/**
+ * 获取子节点（通过父节点 ID）
+ */
+export const getChildNodes = (
+	parentId: string,
+): TE.TaskEither<AppError, NodeInterface[]> => {
+	return nodeRepo.getChildNodes(parentId);
+};
+
+/**
+ * 按父节点获取子节点（支持 null 表示根节点）
+ */
+export const getNodesByParent = (
+	workspaceId: string,
+	parentId: string | null,
+): TE.TaskEither<AppError, NodeInterface[]> => {
+	return nodeRepo.getNodesByParent(workspaceId, parentId);
+};
+
+/**
+ * 按类型获取节点
+ */
+export const getNodesByType = (
+	workspaceId: string,
+	nodeType: string,
+): TE.TaskEither<AppError, NodeInterface[]> => {
+	return nodeRepo.getNodesByType(workspaceId, nodeType);
+};
+
+/**
+ * 获取节点的所有后代
+ */
+export const getDescendants = (
+	nodeId: string,
+): TE.TaskEither<AppError, NodeInterface[]> => {
+	return nodeRepo.getDescendants(nodeId);
+};

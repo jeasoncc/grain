@@ -62,7 +62,7 @@ export const useRootNodes = (workspaceId: string | null | undefined) => {
 		queryFn: async (): Promise<NodeInterface[]> => {
 			if (!workspaceId) return [];
 
-			const result = await nodeRepo.getRootNodes(workspaceId)();
+			const result = await nodeFlow.getRootNodes(workspaceId)();
 
 			if (result._tag === "Left") throw result.left;
 			return result.right;
@@ -83,7 +83,7 @@ export const useChildNodes = (parentId: string | null | undefined) => {
 		queryFn: async (): Promise<NodeInterface[]> => {
 			if (!parentId) return [];
 
-			const result = await nodeRepo.getChildNodes(parentId)();
+			const result = await nodeFlow.getChildNodes(parentId)();
 
 			if (result._tag === "Left") throw result.left;
 			return result.right;
@@ -108,7 +108,7 @@ export const useNodesByParent = (
 		queryFn: async (): Promise<NodeInterface[]> => {
 			if (!workspaceId) return [];
 
-			const result = await nodeRepo.getNodesByParent(workspaceId, parentId)();
+			const result = await nodeFlow.getNodesByParent(workspaceId, parentId)();
 
 			if (result._tag === "Left") throw result.left;
 			return result.right;
@@ -129,7 +129,7 @@ export const useNode = (nodeId: string | null | undefined) => {
 		queryFn: async (): Promise<NodeInterface | null> => {
 			if (!nodeId) return null;
 
-			const result = await nodeRepo.getNode(nodeId)();
+			const result = await nodeFlow.getNode(nodeId)();
 
 			if (result._tag === "Left") throw result.left;
 			return result.right;
@@ -154,7 +154,7 @@ export const useNodesByType = (
 		queryFn: async (): Promise<NodeInterface[]> => {
 			if (!workspaceId) return [];
 
-			const result = await nodeRepo.getNodesByType(workspaceId, nodeType)();
+			const result = await nodeFlow.getNodesByType(workspaceId, nodeType)();
 
 			if (result._tag === "Left") throw result.left;
 			return result.right;
@@ -175,7 +175,7 @@ export const useDescendants = (nodeId: string | null | undefined) => {
 		queryFn: async (): Promise<NodeInterface[]> => {
 			if (!nodeId) return [];
 
-			const result = await nodeRepo.getDescendants(nodeId)();
+			const result = await nodeFlow.getDescendants(nodeId)();
 
 			if (result._tag === "Left") throw result.left;
 			return result.right;
