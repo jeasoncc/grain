@@ -33,9 +33,9 @@ import { saveLogsBatchToSQLite } from "@/io/log/log.storage.api";
  * 日志缓冲区状态
  */
 interface LogBuffer {
-  entries: LogEntry[];
-  lastFlushTime: number;
-  isFlushPending: boolean;
+  readonly entries: readonly LogEntry[];
+  readonly lastFlushTime: number;
+  readonly isFlushPending: boolean;
 }
 
 /**
