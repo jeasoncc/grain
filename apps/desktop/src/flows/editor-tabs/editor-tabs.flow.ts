@@ -8,6 +8,7 @@
  */
 
 import dayjs from "dayjs";
+import type { SerializedEditorState } from "lexical";
 import {
 	calculateNextActiveTabId,
 	evictLRUEditorStates,
@@ -68,7 +69,7 @@ export const openTabFlow = (
 	// 如果有初始内容，使用它；否则创建空状态
 	const newEditorState = payload.initialContent
 		? EditorStateBuilder.fromDefault()
-				.serializedState(payload.initialContent as unknown)
+				.serializedState(payload.initialContent as SerializedEditorState)
 				.build()
 		: EditorStateBuilder.fromDefault().build();
 
