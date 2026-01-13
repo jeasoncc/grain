@@ -344,10 +344,10 @@ export const queryLogsByTimeRangeFlow = (
  * @returns TaskEither<AppError, LogEntry[]>
  */
 export const queryLogsByLevelsFlow = (
-  levels: LogLevel[],
+  levels: readonly LogLevel[],
   limit: number = 100,
   timeRange?: { startTime?: string; endTime?: string },
-): TE.TaskEither<AppError, LogEntry[]> => {
+): TE.TaskEither<AppError, readonly LogEntry[]> => {
   const options: LogQueryOptions = {
     levelFilter: levels,
     limit,
