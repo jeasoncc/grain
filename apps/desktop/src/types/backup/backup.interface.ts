@@ -29,18 +29,18 @@ export interface BackupMetadata {
  */
 export interface BackupData {
 	readonly metadata: BackupMetadata;
-	readonly users: unknown[];
-	readonly workspaces: unknown[];
-	readonly nodes: unknown[];
-	readonly contents: unknown[];
-	readonly drawings: unknown[];
-	readonly attachments: unknown[];
-	readonly tags: unknown[];
-	readonly dbVersions: unknown[];
+	readonly users: readonly unknown[];
+	readonly workspaces: readonly unknown[];
+	readonly nodes: readonly unknown[];
+	readonly contents: readonly unknown[];
+	readonly drawings: readonly unknown[];
+	readonly attachments: readonly unknown[];
+	readonly tags: readonly unknown[];
+	readonly dbVersions: readonly unknown[];
 	/** @deprecated Use workspaces instead */
-	readonly projects?: unknown[];
+	readonly projects?: readonly unknown[];
 	/** @deprecated Wiki entries are now stored as file nodes with "wiki" tag */
-	readonly wikiEntries?: unknown[];
+	readonly wikiEntries?: readonly unknown[];
 }
 
 // ============================================================================
