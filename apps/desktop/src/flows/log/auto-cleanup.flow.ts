@@ -6,6 +6,8 @@
  * 根据配置的存储策略自动清理旧日志条目。
  */
 
+/// <reference types="node" />
+
 import * as TE from "fp-ts/TaskEither";
 import { pipe } from "fp-ts/function";
 import type { AppError } from "@/types/error/error.types";
