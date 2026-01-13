@@ -393,35 +393,38 @@ export const performAutoBackup = (
 // 自动备份管理器
 // ============================================================================
 
-export class AutoBackupManager {
-	private intervalId: number | null = null;
+export const createAutoBackupManager = () => {
+	let intervalId: number | null = null;
 
-	start(intervalHours = 24) {
-		if (this.intervalId) {
+	const start = (intervalHours = 24) => {
+		if (intervalId) {
 			return;
 		}
 
-		this.checkAndBackup();
-		this.intervalId = window.setInterval(
-			() => this.checkAndBackup(),
+		checkAndBackup();
+		intervalId = window.setInterval(
+			() => checkAndBackup(),
 			intervalHours * 60 * 60 * 1000,
 		);
-	}
+	};
 
-	stop() {
-		if (this.intervalId) {
-			clearInterval(this.intervalId);
-			this.intervalId = null;
+	const stop = () => {
+		if (intervalId) {
+			clearInterval(intervalId);
+			intervalId = null;
 		}
-	}
+	};
 
-	private async checkAndBackup() {
+	const checkAndBackup = async () => {
 		await performAutoBackup()();
-	}
+	};
 
-	getLocalBackups() {
-		return getLocalBackups();
-	}
+	return {
+		start,
+		stop,
+		getLocalBackups,
+	};
+};
 
 	async restoreLocalBackup(timestamp: string) {
 		const result = await restoreLocalBackup(timestamp)();
