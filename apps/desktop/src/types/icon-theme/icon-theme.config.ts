@@ -110,7 +110,7 @@ import {
 } from "lucide-react";
 import type { IconTheme } from "./icon-theme.interface";
 
-export const iconThemes: IconTheme[] = [
+export const iconThemes: readonly IconTheme[] = [
 	{
 		key: "default",
 		name: "Default",
