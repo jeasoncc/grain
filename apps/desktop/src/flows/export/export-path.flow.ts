@@ -145,7 +145,7 @@ export async function saveToPath(
 
 	try {
 		// 将 Blob 转换为 Uint8Array
-		let contentArray: number[];
+		let contentArray: readonly number[];
 		if (content instanceof Blob) {
 			const arrayBuffer = await content.arrayBuffer();
 			contentArray = Array.from(new Uint8Array(arrayBuffer));
