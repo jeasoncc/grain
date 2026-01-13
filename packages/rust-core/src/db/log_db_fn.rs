@@ -164,7 +164,7 @@ pub async fn query_logs(
 
     Ok(LogQueryResult {
         entries: response_entries,
-        total,
+        total: total as i64,
         has_more,
     })
 }
@@ -240,7 +240,7 @@ pub async fn get_log_stats(db: &DatabaseConnection) -> AppResult<LogStats> {
     let storage_size = total_entries as i64 * 200;
 
     Ok(LogStats {
-        total_entries,
+        total_entries: total_entries as i64,
         by_level,
         earliest_entry,
         latest_entry,
