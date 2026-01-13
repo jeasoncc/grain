@@ -42,7 +42,7 @@ pub async fn init_log_database(db: &DatabaseConnection) -> AppResult<()> {
 
     db.execute_unprepared(sql)
         .await
-        .map_err(|e| AppError::DbError(format!("Failed to initialize log database: {}", e)))?;
+        .map_err(|e| AppError::DatabaseError(format!("Failed to initialize log database: {}", e)))?;
 
     Ok(())
 }
