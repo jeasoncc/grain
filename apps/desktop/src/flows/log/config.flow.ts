@@ -408,22 +408,26 @@ export const saveLogConfigPreset = (
         ));
       }
 
-      const customPresets = getJson(
+      let customPresets = getJson(
         STORAGE_KEYS.LOG_CONFIG_PRESETS,
         z.array(z.object({
           name: z.string(),
           description: z.string(),
           config: z.record(z.string(), z.unknown()),
         })),
-        [] as Array<{ name: string; description: string; config: Record<string, unknown> }>,
+        [] as readonly Array<{ readonly name: string; readonly description: string; readonly config: Record<string, unknown> }>,
       );
 
-      // 更新或添加预设
+      // 更新或添加预设（不可变方式）
       const existingIndex = customPresets.findIndex(p => p.name === preset.name);
       if (existingIndex >= 0) {
-        customPresets[existingIndex] = preset;
+        customPresets = [
+          ...customPresets.slice(0, existingIndex),
+          preset,
+          ...customPresets.slice(existingIndex + 1),
+        ];
       } else {
-        customPresets.push(preset);
+        customPresets = [...customPresets, preset];
       }
 
       const success = setJson(STORAGE_KEYS.LOG_CONFIG_PRESETS, customPresets);
