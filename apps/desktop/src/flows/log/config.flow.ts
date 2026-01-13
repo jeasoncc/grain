@@ -93,7 +93,7 @@ export const DEFAULT_EXTENDED_LOG_CONFIG: ExtendedLogConfig = {
 /**
  * 内置配置预设
  */
-export const BUILTIN_CONFIG_PRESETS: LogConfigPreset[] = [
+export const BUILTIN_CONFIG_PRESETS: readonly LogConfigPreset[] = [
   {
     name: "development",
     description: "开发环境配置 - 详细日志，快速清理",
