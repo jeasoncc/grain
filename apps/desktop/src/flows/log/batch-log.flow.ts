@@ -83,8 +83,11 @@ export const addLogToBuffer = (
     return TE.right(undefined);
   }
 
-  // 添加到缓冲区
-  logBuffer.entries.push(entry);
+  // 添加到缓冲区（不可变方式）
+  logBuffer = {
+    ...logBuffer,
+    entries: [...logBuffer.entries, entry],
+  };
 
   // 检查是否需要立即刷新
   const shouldFlushImmediately = 
