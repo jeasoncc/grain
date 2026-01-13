@@ -3,7 +3,7 @@
 //! 定义日志相关的响应数据结构
 
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use super::entity::LogLevel;
 
