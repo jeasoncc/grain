@@ -54,12 +54,12 @@ export interface AttachmentInterface {
  * id 和 uploadedAt 自动生成
  */
 export interface AttachmentCreateInput {
-	project?: UUID;
-	type: AttachmentType;
-	fileName: string;
-	filePath: string;
-	size?: number;
-	mimeType?: string;
+	readonly project?: UUID;
+	readonly type: AttachmentType;
+	readonly fileName: string;
+	readonly filePath: string;
+	readonly size?: number;
+	readonly mimeType?: string;
 }
 
 /**
@@ -68,10 +68,10 @@ export interface AttachmentCreateInput {
  * 只有可变字段可以更新
  */
 export interface AttachmentUpdateInput {
-	project?: UUID;
-	type?: AttachmentType;
-	fileName?: string;
-	filePath?: string;
-	size?: number;
-	mimeType?: string;
+	readonly project?: UUID;
+	readonly type?: AttachmentType;
+	readonly fileName?: string;
+	readonly filePath?: string;
+	readonly size?: number;
+	readonly mimeType?: string;
 }
