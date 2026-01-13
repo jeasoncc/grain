@@ -106,6 +106,7 @@ export const clearCookies = (): TE.TaskEither<AppError, void> =>
 						`${name}=;expires=${expireDate};path=/;domain=.${window.location.hostname}`,
 					];
 					cookieSettings.forEach((setting) => {
+						// eslint-disable-next-line functional/immutable-data
 						document.cookie = setting;
 					});
 				}
