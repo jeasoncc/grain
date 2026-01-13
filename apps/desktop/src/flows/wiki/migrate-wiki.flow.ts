@@ -14,11 +14,15 @@
  */
 
 import * as E from "fp-ts/Either";
-import { ensureRootFolderAsync } from "@/flows/node";
+import { pipe } from "fp-ts/function";
+import * as TE from "fp-ts/TaskEither";
 import { addContent, addNode, getNextOrder, updateNode } from "@/io/api";
+import * as nodeRepo from "@/io/api/node.api";
 import { legacyDatabase } from "@/io/db/legacy-database";
-import { info, debug, success } from "@/io/log/logger.api";
+import { info, debug, success, error } from "@/io/log/logger.api";
 import { WIKI_ROOT_FOLDER, WIKI_TAG } from "@/pipes/wiki";
+import type { NodeInterface } from "@/types/node";
+import type { AppError } from "@/types/error";
 
 /**
  * 旧版 WikiInterface，用于迁移
@@ -47,6 +51,72 @@ export interface MigrationResult {
 	migrated: number;
 	/** 失败迁移的错误消息数组 */
 	errors: string[];
+}
+
+// ==============================
+// Internal Helper Functions (避免 flows/ 依赖 flows/)
+// ==============================
+
+/**
+ * 确保根级文件夹存在（内联版本）
+ *
+ * 如果文件夹已存在则返回现有文件夹，否则创建新文件夹。
+ *
+ * @param workspaceId - 工作区 ID
+ * @param folderName - 文件夹名称
+ * @param collapsed - 是否折叠（默认 false）
+ * @returns TaskEither<AppError, NodeInterface>
+ */
+const ensureRootFolder = (
+	workspaceId: string,
+	folderName: string,
+	collapsed: boolean = false,
+): TE.TaskEither<AppError, NodeInterface> => {
+	return pipe(
+		nodeRepo.getNodesByWorkspace(workspaceId),
+		TE.chain((nodes) => {
+			// 查找已存在的根级文件夹
+			const existing = nodes.find(
+				(n) =>
+					n.parent === null && n.title === folderName && n.type === "folder",
+			);
+
+			if (existing) {
+				return TE.right(existing);
+			}
+
+			// 创建新文件夹
+			return nodeRepo.createNode({
+				workspace: workspaceId,
+				parent: null,
+				type: "folder",
+				title: folderName,
+				collapsed,
+			});
+		}),
+	);
+};
+
+/**
+ * 确保根级文件夹存在（异步版本，内联）
+ *
+ * @param workspaceId - 工作区 ID
+ * @param folderName - 文件夹名称
+ * @param collapsed - 是否折叠（默认 false）
+ * @returns Promise<NodeInterface>
+ */
+async function ensureRootFolderAsync(
+	workspaceId: string,
+	folderName: string,
+	collapsed: boolean = false,
+): Promise<NodeInterface> {
+	const result = await ensureRootFolder(workspaceId, folderName, collapsed)();
+
+	if (result._tag === "Left") {
+		throw new Error(`确保文件夹失败: ${result.left.message}`);
+	}
+
+	return result.right;
 }
 
 // ==============================
