@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, type LucideIcon } from "lucide-react";
 import { useIconTheme } from "@/hooks/use-icon-theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useIconThemeStore } from "@/state/icon-theme.state";
@@ -363,7 +363,7 @@ function FileItem({
 	_isOpen = false,
 	isActive = false,
 }: {
-	icon: any;
+	icon: LucideIcon;
 	label: string;
 	level?: number;
 	isOpen?: boolean;
@@ -408,7 +408,7 @@ function ActivityBarIcon({
 	icon: Icon,
 	isActive = false,
 }: {
-	icon: any;
+	icon: LucideIcon;
 	isActive?: boolean;
 }) {
 	const { currentTheme } = useTheme();
@@ -442,7 +442,7 @@ function ActivityBarIconItem({
 	label,
 	color,
 }: {
-	icon: any;
+	icon: LucideIcon;
 	label: string;
 	color?: string;
 }) {
