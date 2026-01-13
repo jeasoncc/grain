@@ -10,7 +10,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import * as E from "fp-ts/Either";
-import * as attachmentFlow from "@/flows/attachment";
+import * as attachmentApi from "@/io/api/attachment.api";
 import type { AttachmentInterface, AttachmentType } from "@/types/attachment";
 import { queryKeys } from "./query-keys";
 
@@ -21,7 +21,7 @@ export const useAttachments = () => {
 	return useQuery({
 		queryKey: queryKeys.attachments.all,
 		queryFn: async (): Promise<AttachmentInterface[]> => {
-			const result = await attachmentFlow.getAttachments()();
+			const result = await attachmentApi.getAttachments()();
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message);
 			}
@@ -43,7 +43,7 @@ export const useAttachment = (attachmentId: string | null | undefined) => {
 		queryKey: queryKeys.attachments.detail(attachmentId ?? ""),
 		queryFn: async (): Promise<AttachmentInterface | null> => {
 			if (!attachmentId) return null;
-			const result = await attachmentFlow.getAttachment(attachmentId)();
+			const result = await attachmentApi.getAttachment(attachmentId)();
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message);
 			}
@@ -63,7 +63,7 @@ export const useAttachmentsByProject = (
 		queryKey: queryKeys.attachments.byProject(projectId ?? ""),
 		queryFn: async (): Promise<AttachmentInterface[]> => {
 			if (!projectId) return [];
-			const result = await attachmentFlow.getAttachmentsByProject(projectId)();
+			const result = await attachmentApi.getAttachmentsByProject(projectId)();
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message);
 			}
@@ -91,7 +91,7 @@ export const useAttachmentsByType = (
 		),
 		queryFn: async (): Promise<AttachmentInterface[]> => {
 			if (!projectId || !attachmentType) return [];
-			const result = await attachmentFlow.getAttachmentsByType(
+			const result = await attachmentApi.getAttachmentsByType(
 				projectId,
 				attachmentType,
 			)();
@@ -116,7 +116,7 @@ export const useImagesByProject = (projectId: string | null | undefined) => {
 		queryKey: queryKeys.attachments.imagesByProject(projectId ?? ""),
 		queryFn: async (): Promise<AttachmentInterface[]> => {
 			if (!projectId) return [];
-			const result = await attachmentFlow.getImagesByProject(projectId)();
+			const result = await attachmentApi.getImagesByProject(projectId)();
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message);
 			}
@@ -140,7 +140,7 @@ export const useAudioFilesByProject = (
 		queryKey: queryKeys.attachments.audioByProject(projectId ?? ""),
 		queryFn: async (): Promise<AttachmentInterface[]> => {
 			if (!projectId) return [];
-			const result = await attachmentFlow.getAudioFilesByProject(projectId)();
+			const result = await attachmentApi.getAudioFilesByProject(projectId)();
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message);
 			}
@@ -162,7 +162,7 @@ export const useAttachmentByPath = (filePath: string | null | undefined) => {
 		queryKey: queryKeys.attachments.byPath(filePath ?? ""),
 		queryFn: async (): Promise<AttachmentInterface | null> => {
 			if (!filePath) return null;
-			const result = await attachmentFlow.getAttachmentByPath(filePath)();
+			const result = await attachmentApi.getAttachmentByPath(filePath)();
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message);
 			}
