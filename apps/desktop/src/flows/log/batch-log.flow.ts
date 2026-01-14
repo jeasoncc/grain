@@ -43,7 +43,7 @@ interface LogBuffer {
  */
 let logBuffer: LogBuffer = {
   entries: [],
-  lastFlushTime: Date.now(),
+  lastFlushTime: dayjs().valueOf(),
   isFlushPending: false,
 };
 
@@ -132,7 +132,7 @@ export const flushLogBuffer = (
   logBuffer = {
     ...logBuffer,
     entries: [],
-    lastFlushTime: Date.now(),
+    lastFlushTime: dayjs().valueOf(),
   };
 
   // 清除定时器
@@ -265,7 +265,7 @@ export const getBufferStatus = () => ({
   entryCount: logBuffer.entries.length,
   lastFlushTime: logBuffer.lastFlushTime,
   isFlushPending: logBuffer.isFlushPending,
-  timeSinceLastFlush: Date.now() - logBuffer.lastFlushTime,
+  timeSinceLastFlush: dayjs().valueOf() - logBuffer.lastFlushTime,
 });
 
 /**
@@ -276,7 +276,7 @@ export const getBufferStatus = () => ({
 export const clearLogBuffer = (): void => {
   logBuffer = {
     entries: [],
-    lastFlushTime: Date.now(),
+    lastFlushTime: dayjs().valueOf(),
     isFlushPending: false,
   };
   
