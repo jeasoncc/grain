@@ -48,7 +48,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 	const queryClient = useQueryClient();
 
 	// 存储待处理的更新（用于回滚）
-	const pendingUpdatesRef = useRef<Map<string, PendingUpdate>>(new Map());
+	const pendingUpdatesRef = useRef<ReadonlyMap<string, PendingUpdate>>(new Map());
 
 	/**
 	 * 执行后端同步（防抖）
@@ -97,7 +97,9 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 					toast.error("Failed to update folder state");
 
 					// 清除待处理的更新
-					pendingUpdatesRef.current.delete(nodeId);
+					const newPendingUpdates = new Map(pendingUpdatesRef.current);
+					newPendingUpdates.delete(nodeId);
+					(pendingUpdatesRef.current as any) = newPendingUpdates;
 					return;
 				}
 
@@ -109,7 +111,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 				});
 
 				// 更新缓存为后端返回的最新数据
-				queryClient.setQueryData<NodeInterface[]>(queryKey, (oldData) => {
+				queryClient.setQueryData<ReadonlyArray<NodeInterface>>(queryKey, (oldData) => {
 					if (!oldData) return oldData;
 
 					return oldData.map((node) =>
@@ -118,7 +120,9 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 				});
 
 				// 清除待处理的更新
-				pendingUpdatesRef.current.delete(nodeId);
+				const newPendingUpdates = new Map(pendingUpdatesRef.current);
+				newPendingUpdates.delete(nodeId);
+				(pendingUpdatesRef.current as any) = newPendingUpdates;
 			});
 		},
 		[workspaceId, queryClient],
@@ -175,7 +179,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			});
 
 			// 2. 立即更新 UI（乐观更新）- Requirements: 1.1, 1.4
-			queryClient.setQueryData<NodeInterface[]>(queryKey, (oldData) => {
+			queryClient.setQueryData<ReadonlyArray<NodeInterface>>(queryKey, (oldData) => {
 				if (!oldData) return oldData;
 
 				return oldData.map((node) =>
@@ -191,11 +195,12 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			});
 
 			// 3. 存储待处理的更新
-			pendingUpdatesRef.current.set(nodeId, {
+			const newPendingUpdates = new Map([...pendingUpdatesRef.current, [nodeId, {
 				nodeId,
 				collapsed,
 				previousData,
-			});
+			}]]);
+			(pendingUpdatesRef.current as any) = newPendingUpdates;
 
 			// 4. 防抖调用后端 API - Requirements: 1.2, 6.1, 6.4
 			debouncedSyncRef.current(nodeId, collapsed, previousData);

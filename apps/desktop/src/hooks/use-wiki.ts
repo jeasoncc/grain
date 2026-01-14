@@ -24,17 +24,18 @@ const WIKI_TAG = "wiki";
  */
 function buildNodePath(
 	node: NodeInterface,
-	nodeMap: Map<string, NodeInterface>,
+	nodeMap: ReadonlyMap<string, NodeInterface>,
 ): string {
-	const parts: string[] = [node.title];
-	let current = node.parent ? nodeMap.get(node.parent) : undefined;
+	const buildPathRecursive = (currentNode: NodeInterface, acc: ReadonlyArray<string> = []): ReadonlyArray<string> => {
+		const newAcc = [currentNode.title, ...acc];
+		if (!currentNode.parent) {
+			return newAcc;
+		}
+		const parent = nodeMap.get(currentNode.parent);
+		return parent ? buildPathRecursive(parent, newAcc) : newAcc;
+	};
 
-	while (current) {
-		parts.unshift(current.title);
-		current = current.parent ? nodeMap.get(current.parent) : undefined;
-	}
-
-	return parts.join("/");
+	return buildPathRecursive(node).join("/");
 }
 
 /**
@@ -46,7 +47,7 @@ function buildNodePath(
  * @param workspaceId - The workspace ID (null returns empty array)
  * @returns Array of WikiFileEntry objects
  */
-export function useWikiFiles(workspaceId: string | null): WikiFileEntry[] {
+export function useWikiFiles(workspaceId: string | null): ReadonlyArray<WikiFileEntry> {
 	const { data: allNodes, isLoading } = useNodesByWorkspace(workspaceId);
 
 	return useMemo(() => {
@@ -60,7 +61,7 @@ export function useWikiFiles(workspaceId: string | null): WikiFileEntry[] {
 		if (wikiNodes.length === 0) return [];
 
 		// Build node map for path building
-		const nodeMap = new Map(allNodes.map((n) => [n.id, n]));
+		const nodeMap: ReadonlyMap<string, NodeInterface> = new Map(allNodes.map((n) => [n.id, n]));
 
 		// Build WikiFileEntry array
 		// 注意：内容需要单独查询，这里暂时使用空字符串

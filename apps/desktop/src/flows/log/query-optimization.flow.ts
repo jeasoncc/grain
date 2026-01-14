@@ -48,7 +48,7 @@ interface QueryCacheEntry {
 /**
  * 查询缓存
  */
-const queryCache = new Map<string, QueryCacheEntry>();
+let queryCache: ReadonlyMap<string, QueryCacheEntry> = new Map();
 
 /**
  * 缓存配置
@@ -69,7 +69,7 @@ const generateCacheKey = (options: LogQueryOptions): string => {
   const normalized = {
     limit: options.limit || 100,
     offset: options.offset || 0,
-    levelFilter: options.levelFilter ? Array.from(options.levelFilter).sort() : [],
+    levelFilter: options.levelFilter ? [...Array.from(options.levelFilter)].sort() : [],
     startTime: options.startTime || '',
     endTime: options.endTime || '',
     sourceFilter: options.sourceFilter || '',
@@ -94,7 +94,9 @@ const getFromCache = (key: string): O.Option<LogQueryResult> => {
   
   // 检查是否过期
   if (dayjs().valueOf() > entry.timestamp + entry.ttl) {
-    queryCache.delete(key);
+    // Create new map without the expired entry
+    const entries = Array.from(queryCache.entries()).filter(([k]) => k !== key);
+    queryCache = new Map(entries);
     return O.none;
   }
   
@@ -115,19 +117,22 @@ const setToCache = (
 ): void => {
   // If cache is full, remove oldest entry
   if (queryCache.size >= CACHE_CONFIG.maxSize) {
-    const oldestEntry = Array.from(queryCache.entries())
-      .sort(([, a], [, b]) => a.timestamp - b.timestamp)[0];
+    const entries = Array.from(queryCache.entries());
+    const sortedEntries = entries.sort(([, a], [, b]) => a.timestamp - b.timestamp);
+    const oldestEntry = sortedEntries[0];
     if (oldestEntry) {
-      queryCache.delete(oldestEntry[0]);
+      const filteredEntries = entries.filter(([k]) => k !== oldestEntry[0]);
+      queryCache = new Map(filteredEntries);
     }
   }
   
-  queryCache.set(key, {
+  // Add new entry
+  queryCache = new Map([...queryCache, [key, {
     key,
     result,
     timestamp: dayjs().valueOf(),
     ttl,
-  });
+  }]]);
 };
 
 /**
@@ -135,13 +140,9 @@ const setToCache = (
  */
 const cleanupCache = (): void => {
   const now = dayjs().valueOf();
-  const expiredKeys = Array.from(queryCache.entries())
-    .filter(([, entry]) => now > entry.timestamp + entry.ttl)
-    .map(([key]) => key);
-  
-  for (const key of expiredKeys) {
-    queryCache.delete(key);
-  }
+  const entries = Array.from(queryCache.entries());
+  const validEntries = entries.filter(([, entry]) => now <= entry.timestamp + entry.ttl);
+  queryCache = new Map(validEntries);
 };
 
 // 设置定期清理
@@ -253,7 +254,7 @@ export const searchLogsFlow = (
  * @returns TaskEither<AppError, Record<LogLevel, number>>
  */
 export const getLogLevelStatsFlow = (
-  _timeRange?: { startTime?: string; endTime?: string },
+  _timeRange?: { readonly startTime?: string; readonly endTime?: string },
 ): TE.TaskEither<AppError, Record<LogLevel, number>> => {
   return pipe(
     getLogStatsFromSQLite(),
@@ -373,7 +374,7 @@ export const queryLogsByLevelsFlow = (
  * 清空查询缓存
  */
 export const clearQueryCache = (): void => {
-  queryCache.clear();
+  queryCache = new Map();
 };
 
 /**

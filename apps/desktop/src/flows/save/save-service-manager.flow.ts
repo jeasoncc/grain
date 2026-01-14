@@ -119,7 +119,7 @@ const DEFAULT_AUTOSAVE_DELAY = 3000;
  * 创建保存服务管理器
  */
 export const createSaveServiceManager = (): SaveServiceManagerInterface => {
-	const models = new Map<string, SaveModel>();
+	let models: ReadonlyMap<string, SaveModel> = new Map();
 
 	const saveContent = async (nodeId: string): Promise<boolean> => {
 		const model = models.get(nodeId);
@@ -127,12 +127,12 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 
 		if (model.pendingContent === null) return true;
 		if (model.pendingContent === model.lastSavedContent) {
-			models.set(nodeId, { ...model, pendingContent: null });
+			models = new Map([...models, [nodeId, { ...model, pendingContent: null }]]);
 			return true;
 		}
 		if (model.isSaving) return false;
 
-		models.set(nodeId, { ...model, isSaving: true });
+		models = new Map([...models, [nodeId, { ...model, isSaving: true }]]);
 		const contentToSave = model.pendingContent;
 		model.onSaving?.();
 
@@ -150,7 +150,7 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 					pendingContent: null,
 					isSaving: false,
 				};
-				models.set(nodeId, updatedModel);
+				models = new Map([...models, [nodeId, updatedModel]]);
 				if (model.tabId && model.setTabDirty) {
 					model.setTabDirty(model.tabId, false);
 				}
@@ -158,12 +158,12 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 				return true;
 			}
 
-			models.set(nodeId, { ...model, isSaving: false });
+			models = new Map([...models, [nodeId, { ...model, isSaving: false }]]);
 			const error = new Error(result.left.message || "保存失败");
 			model.onError?.(error);
 			return false;
 		} catch (err) {
-			models.set(nodeId, { ...model, isSaving: false });
+			models = new Map([...models, [nodeId, { ...model, isSaving: false }]]);
 			const error = err instanceof Error ? err : new Error("未知错误");
 			model.onError?.(error);
 			return false;
@@ -206,13 +206,13 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 				if (existing.autoSaveDelay !== autoSaveDelay) {
 					existing.debouncedSave?.cancel();
 					const newDebouncedSave = createDebouncedSave(nodeId, autoSaveDelay);
-					models.set(nodeId, {
+					models = new Map([...models, [nodeId, {
 						...updatedModel,
 						debouncedSave: newDebouncedSave,
 						autoSaveDelay,
-					});
+					}]]);
 				} else {
-					models.set(nodeId, updatedModel);
+					models = new Map([...models, [nodeId, updatedModel]]);
 				}
 				return;
 			}
@@ -232,7 +232,7 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 				onError,
 			};
 
-			models.set(nodeId, model);
+			models = new Map([...models, [nodeId, model]]);
 		},
 
 		updateContent: (nodeId: string, content: string): void => {
@@ -240,7 +240,7 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 			if (!model) return;
 
 			const updatedModel = { ...model, pendingContent: content };
-			models.set(nodeId, updatedModel);
+			models = new Map([...models, [nodeId, updatedModel]]);
 
 			if (
 				model.tabId &&
@@ -268,7 +268,7 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 		setInitialContent: (nodeId: string, content: string): void => {
 			const model = models.get(nodeId);
 			if (!model) return;
-			models.set(nodeId, { ...model, lastSavedContent: content });
+			models = new Map([...models, [nodeId, { ...model, lastSavedContent: content }]]);
 		},
 
 		hasUnsavedChanges: (nodeId: string): boolean => {
@@ -291,7 +291,9 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 				if (model.debouncedSave) {
 					model.debouncedSave.cancel();
 				}
-				models.delete(nodeId);
+				// Create new map without the specified entry using functional approach
+				const entries = Array.from(models.entries()).filter(([id]) => id !== nodeId);
+				models = new Map(entries);
 			}
 		},
 
@@ -301,7 +303,7 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 					model.debouncedSave.cancel();
 				}
 			}
-			models.clear();
+			models = new Map();
 		},
 
 		getUnsavedNodeIds: (): ReadonlyArray<string> => {

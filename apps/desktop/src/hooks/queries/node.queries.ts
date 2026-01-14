@@ -38,7 +38,7 @@ const DEFAULT_STALE_TIME = 30 * 1000;
 export const useNodesByWorkspace = (workspaceId: string | null | undefined) => {
 	return useQuery({
 		queryKey: queryKeys.nodes.byWorkspace(workspaceId ?? ""),
-		queryFn: async (): Promise<NodeInterface[]> => {
+		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
 			if (!workspaceId) return [];
 
 			const result = await nodeFlow.getNodesByWorkspace(workspaceId)();
@@ -59,7 +59,7 @@ export const useNodesByWorkspace = (workspaceId: string | null | undefined) => {
 export const useRootNodes = (workspaceId: string | null | undefined) => {
 	return useQuery({
 		queryKey: queryKeys.nodes.rootNodes(workspaceId ?? ""),
-		queryFn: async (): Promise<NodeInterface[]> => {
+		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
 			if (!workspaceId) return [];
 
 			const result = await nodeFlow.getRootNodes(workspaceId)();
@@ -80,7 +80,7 @@ export const useRootNodes = (workspaceId: string | null | undefined) => {
 export const useChildNodes = (parentId: string | null | undefined) => {
 	return useQuery({
 		queryKey: queryKeys.nodes.children(parentId ?? ""),
-		queryFn: async (): Promise<NodeInterface[]> => {
+		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
 			if (!parentId) return [];
 
 			const result = await nodeFlow.getChildNodes(parentId)();
@@ -105,7 +105,7 @@ export const useNodesByParent = (
 ) => {
 	return useQuery({
 		queryKey: queryKeys.nodes.byParent(workspaceId ?? "", parentId),
-		queryFn: async (): Promise<NodeInterface[]> => {
+		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
 			if (!workspaceId) return [];
 
 			const result = await nodeFlow.getNodesByParent(workspaceId, parentId)();
@@ -151,7 +151,7 @@ export const useNodesByType = (
 ) => {
 	return useQuery({
 		queryKey: queryKeys.nodes.byType(workspaceId ?? "", nodeType),
-		queryFn: async (): Promise<NodeInterface[]> => {
+		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
 			if (!workspaceId) return [];
 
 			const result = await nodeFlow.getNodesByType(workspaceId, nodeType)();
@@ -172,7 +172,7 @@ export const useNodesByType = (
 export const useDescendants = (nodeId: string | null | undefined) => {
 	return useQuery({
 		queryKey: queryKeys.nodes.descendants(nodeId ?? ""),
-		queryFn: async (): Promise<NodeInterface[]> => {
+		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
 			if (!nodeId) return [];
 
 			const result = await nodeFlow.getDescendants(nodeId)();
