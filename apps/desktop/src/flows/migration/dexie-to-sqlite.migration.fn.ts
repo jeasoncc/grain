@@ -115,8 +115,8 @@ export const getMigrationStatus = (): MigrationStatus => {
 export const setMigrationStatus = (status: MigrationStatus): void => {
 	try {
 		localStorage.setItem(MIGRATION_STATUS_KEY, status);
-	} catch (error) {
-		error("[Migration] 设置迁移状态失败", { error }, "dexie-to-sqlite.migration.fn");
+	} catch (err) {
+		error("[Migration] 设置迁移状态失败", { error: err }, "dexie-to-sqlite.migration.fn");
 	}
 };
 
@@ -126,8 +126,8 @@ export const setMigrationStatus = (status: MigrationStatus): void => {
 export const clearMigrationStatus = (): void => {
 	try {
 		localStorage.removeItem(MIGRATION_STATUS_KEY);
-	} catch (error) {
-		error("[Migration] 清除迁移状态失败", { error }, "dexie-to-sqlite.migration.fn");
+	} catch (err) {
+		error("[Migration] 清除迁移状态失败", { error: err }, "dexie-to-sqlite.migration.fn");
 	}
 };
 
