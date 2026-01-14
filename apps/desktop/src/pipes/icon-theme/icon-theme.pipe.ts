@@ -40,7 +40,7 @@ export const getDefaultIconTheme = (): IconTheme => {
  *
  * @returns 所有图标主题数组
  */
-export const getAllIconThemes = (): IconTheme[] => {
+export const getAllIconThemes = (): readonly IconTheme[] => {
 	return iconThemes;
 };
 
