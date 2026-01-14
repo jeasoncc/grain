@@ -49,12 +49,10 @@ function createTestUser(overrides: Partial<UserInterface> = {}): UserInterface {
 		tokenStatus: "unchecked",
 		lastTokenCheck: dayjs().toISOString(),
 		features: {
-			maxWorkspaces: 3,
-			maxNodesPerWorkspace: 1000,
-			cloudSync: false,
-			aiAssistant: false,
-			advancedExport: false,
-			customThemes: false,
+			canUseAllScenes: true,
+			canExportPDF: false,
+			canUseCloudSync: false,
+			showAds: true,
 		},
 		settings: {
 			theme: "dark",
@@ -65,13 +63,18 @@ function createTestUser(overrides: Partial<UserInterface> = {}): UserInterface {
 			fontSize: "14px",
 		},
 		state: {
-			lastWorkspaceId: null,
-			lastNodeId: null,
-			sidebarWidth: 280,
-			sidebarCollapsed: false,
+			lastLocation: "/",
+			currentProject: "",
+			currentChapter: "",
+			currentScene: "",
+			currentTitle: "",
+			currentTyping: "",
+			lastCloudSave: "",
+			lastLocalSave: "",
+			isUserLoggedIn: false,
 		},
 		lastLogin: dayjs().toISOString(),
-		createdAt: dayjs().toISOString(),
+		createDate: dayjs().toISOString(),
 		...overrides,
 	};
 }
@@ -90,8 +93,8 @@ function createTestWorkspace(
 		author: "Test Author",
 		publisher: "",
 		language: "en",
-		createdAt: dayjs().toISOString(),
-		updatedAt: dayjs().toISOString(),
+		createDate: dayjs().toISOString(),
+		lastOpen: dayjs().toISOString(),
 		...overrides,
 	};
 }
@@ -109,8 +112,8 @@ function createTestNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
 		order: 0,
 		collapsed: false,
 		tags: [],
-		createdAt: dayjs().toISOString(),
-		updatedAt: dayjs().toISOString(),
+		createDate: dayjs().toISOString(),
+		lastEdit: dayjs().toISOString(),
 		...overrides,
 	};
 }
@@ -126,9 +129,7 @@ function createTestContent(
 		nodeId: "node-1",
 		content: '{"root":{"children":[]}}',
 		contentType: "lexical",
-		version: 1,
-		createdAt: dayjs().toISOString(),
-		updatedAt: dayjs().toISOString(),
+		lastEdit: dayjs().toISOString(),
 		...overrides,
 	};
 }
