@@ -236,7 +236,7 @@ export function createListItemNode(
 	value: number = 1,
 	checked?: boolean,
 ): LexicalListItemNode {
-	const node: LexicalListItemNode = {
+	const baseNode: LexicalListItemNode = {
 		children: text ? [createTextNode(text)] : [],
 		direction: "ltr",
 		format: "",
@@ -246,11 +246,9 @@ export function createListItemNode(
 		value,
 	};
 
-	if (checked !== undefined) {
-		node.checked = checked;
-	}
-
-	return node;
+	return checked !== undefined 
+		? { ...baseNode, checked }
+		: baseNode;
 }
 
 /**
@@ -290,7 +288,7 @@ export function createListNode(
  * @returns Lexical 段落节点
  */
 export function createTagsLine(tags: readonly string[]): LexicalParagraphNode {
-	const children = tags.flatMap((tag, index) =>
+	const children: readonly (LexicalTextNode | LexicalTagNode)[] = tags.flatMap((tag, index) =>
 		index < tags.length - 1
 			? [createTagNode(tag), createTextNode(" ")]
 			: [createTagNode(tag)],
@@ -382,25 +380,16 @@ export function generateDiaryContent(
 	} = options;
 
 	const fullDateTime = formatFullDateTime(date);
-	const children = [] as LexicalRootChild[];
-
-	// 添加标签行
-	if (tags.length > 0) {
-		children.push(createTagsLine(tags));
-	}
-
-	// 添加空行
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
-
-	// 添加日期时间标题
-	children.push(createHeadingNode(fullDateTime, headingLevel));
-
-	// 添加空行
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
+	const children: readonly LexicalRootChild[] = [
+		// Add tags line
+		...(tags.length > 0 ? [createTagsLine(tags)] : []),
+		// Add empty line
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+		// Add date time heading
+		createHeadingNode(fullDateTime, headingLevel),
+		// Add empty line
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+	];
 
 	return JSON.stringify(createDocument(children));
 }
@@ -424,28 +413,18 @@ export function generateTodoContent(
 	} = options;
 
 	const title = customTitle || `Tasks for ${formatShortDate(date)}`;
-	const children = [] as LexicalRootChild[];
-
-	// 添加标签行
-	if (tags.length > 0) {
-		children.push(createTagsLine(tags));
-	}
-
-	// 添加空行
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
-
-	// 添加标题
-	children.push(createHeadingNode(title, headingLevel));
-
-	// 添加空行
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
-
-	// 添加空的待办列表
-	children.push(createListNode([""], "check"));
+	const children: readonly LexicalRootChild[] = [
+		// Add tags line
+		...(tags.length > 0 ? [createTagsLine(tags)] : []),
+		// Add empty line
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+		// Add title
+		createHeadingNode(title, headingLevel),
+		// Add empty line
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+		// Add empty todo list
+		createListNode([""], "check"),
+	];
 
 	return JSON.stringify(createDocument(children));
 }
@@ -469,38 +448,24 @@ export function generateLedgerContent(
 	} = options;
 
 	const title = customTitle || `Expenses for ${formatShortDate(date)}`;
-	const children = [] as LexicalRootChild[];
-
-	// 添加标签行
-	if (tags.length > 0) {
-		children.push(createTagsLine(tags));
-	}
-
-	// 添加空行
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
-
-	// 添加标题
-	children.push(createHeadingNode(title, headingLevel));
-
-	// 添加空行
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
-
-	// 添加收入部分
-	children.push(createHeadingNode("Income", "h3"));
-	children.push(createListNode([""], "bullet"));
-
-	// 添加空行
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
-
-	// 添加支出部分
-	children.push(createHeadingNode("Expenses", "h3"));
-	children.push(createListNode([""], "bullet"));
+	const children: readonly LexicalRootChild[] = [
+		// Add tags line
+		...(tags.length > 0 ? [createTagsLine(tags)] : []),
+		// Add empty line
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+		// Add title
+		createHeadingNode(title, headingLevel),
+		// Add empty line
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+		// Add income section
+		createHeadingNode("Income", "h3"),
+		createListNode([""], "bullet"),
+		// Add empty line
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+		// Add expenses section
+		createHeadingNode("Expenses", "h3"),
+		createListNode([""], "bullet"),
+	];
 
 	return JSON.stringify(createDocument(children));
 }
@@ -524,28 +489,18 @@ export function generateNoteContent(
 	} = options;
 
 	const title = customTitle || `Note - ${formatShortDate(date)}`;
-	const children = [] as LexicalRootChild[];
-
-	// 添加标签行
-	if (tags.length > 0) {
-		children.push(createTagsLine(tags));
-	}
-
-	// 添加空行
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
-
-	// 添加标题
-	children.push(createHeadingNode(title, headingLevel));
-
-	// 添加空行
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
-
-	// 添加空段落供用户输入
-	children.push(createParagraphNode([createTextNode("")]));
+	const children: readonly LexicalRootChild[] = [
+		// Add tags line
+		...(tags.length > 0 ? [createTagsLine(tags)] : []),
+		// Add empty line
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+		// Add title
+		createHeadingNode(title, headingLevel),
+		// Add empty line
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+		// Add empty paragraph for user input
+		createParagraphNode([createTextNode("")]),
+	];
 
 	return JSON.stringify(createDocument(children));
 }
@@ -569,73 +524,37 @@ export function generateWikiContent(
 	} = options;
 
 	const title = customTitle || "New Article";
-	const children = [] as LexicalRootChild[];
-
-	// 添加标签行
-	if (tags.length > 0) {
-		children.push(createTagsLine(tags));
-	}
-
-	// 添加空行
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
-
-	// 添加标题
-	children.push(createHeadingNode(title, headingLevel));
-
-	// 添加空行
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
-
-	// 添加简介段落提示
-	children.push(
+	const children: readonly LexicalRootChild[] = [
+		// Add tags line
+		...(tags.length > 0 ? [createTagsLine(tags)] : []),
+		// Add empty line
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+		// Add title
+		createHeadingNode(title, headingLevel),
+		// Add empty line
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+		// Add introduction paragraph hint
 		createParagraphNode([createTextNode("Write a brief introduction here...")]),
-	);
-
-	// 添加空行
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
-
-	// 添加 Overview 小节
-	children.push(createHeadingNode("Overview", "h3"));
-
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
-
-	children.push(createParagraphNode([createTextNode("")]));
-
-	// 添加空行
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
-
-	// 添加 Details 小节
-	children.push(createHeadingNode("Details", "h3"));
-
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
-
-	children.push(createParagraphNode([createTextNode("")]));
-
-	// 添加空行
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
-
-	// 添加 References 小节
-	children.push(createHeadingNode("References", "h3"));
-
-	if (includeEmptyLines) {
-		children.push(createParagraphNode());
-	}
-
-	// 添加空的列表用于参考链接
-	children.push(createListNode([""], "bullet"));
+		// Add empty line
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+		// Add Overview section
+		createHeadingNode("Overview", "h3"),
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+		createParagraphNode([createTextNode("")]),
+		// Add empty line
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+		// Add Details section
+		createHeadingNode("Details", "h3"),
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+		createParagraphNode([createTextNode("")]),
+		// Add empty line
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+		// Add References section
+		createHeadingNode("References", "h3"),
+		...(includeEmptyLines ? [createParagraphNode()] : []),
+		// Add empty list for reference links
+		createListNode([""], "bullet"),
+	];
 
 	return JSON.stringify(createDocument(children));
 }
@@ -699,29 +618,24 @@ export function parseContent(content: string): E.Either<Error, LexicalDocument> 
  * @returns 标签名称数组
  */
 export function extractTagsFromDocument(document: LexicalDocument): readonly string[] {
-	const tags = [] as string[];
-
 	const extractFromChildren = (
 		children: readonly (LexicalTextNode | LexicalTagNode)[],
-	) => {
-		for (const child of children) {
-			if (child.type === "tag") {
-				tags.push(child.tagName);
-			}
-		}
+	): readonly string[] => {
+		return children
+			.filter((child): child is LexicalTagNode => child.type === "tag")
+			.map(child => child.tagName);
 	};
 
-	for (const child of document.root.children) {
+	const allTags = document.root.children.flatMap(child => {
 		if (child.type === "paragraph") {
-			extractFromChildren(child.children);
+			return extractFromChildren(child.children);
 		} else if (child.type === "list") {
-			for (const item of child.children) {
-				extractFromChildren(item.children);
-			}
+			return child.children.flatMap(item => extractFromChildren(item.children));
 		}
-	}
+		return [];
+	});
 
-	return tags;
+	return allTags;
 }
 
 /**
@@ -731,36 +645,31 @@ export function extractTagsFromDocument(document: LexicalDocument): readonly str
  * @returns 纯文本字符串
  */
 export function extractTextFromDocument(document: LexicalDocument): string {
-	const texts = [] as string[];
-
 	const extractFromChildren = (
 		children: readonly (LexicalTextNode | LexicalTagNode)[],
-	) => {
-		for (const child of children) {
+	): readonly string[] => {
+		return children.map(child => {
 			if (child.type === "text") {
-				texts.push(child.text);
+				return child.text;
 			} else if (child.type === "tag") {
-				texts.push(child.text);
+				return child.text;
 			}
-		}
+			return "";
+		});
 	};
 
-	for (const child of document.root.children) {
+	const allTexts = document.root.children.flatMap(child => {
 		if (child.type === "paragraph") {
-			extractFromChildren(child.children);
-			texts.push("\n");
+			return [...extractFromChildren(child.children), "\n"];
 		} else if (child.type === "heading") {
-			for (const textNode of child.children) {
-				texts.push(textNode.text);
-			}
-			texts.push("\n");
+			return [...child.children.map(textNode => textNode.text), "\n"];
 		} else if (child.type === "list") {
-			for (const item of child.children) {
-				extractFromChildren(item.children);
-				texts.push("\n");
-			}
+			return child.children.flatMap(item => 
+				[...extractFromChildren(item.children), "\n"]
+			);
 		}
-	}
+		return [];
+	});
 
-	return texts.join("").trim();
+	return allTexts.join("").trim();
 }

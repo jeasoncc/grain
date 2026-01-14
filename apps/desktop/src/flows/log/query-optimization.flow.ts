@@ -113,7 +113,7 @@ const setToCache = (
   result: LogQueryResult, 
   ttl: number = CACHE_CONFIG.defaultTTL
 ): void => {
-  // 如果缓存已满，删除最旧的条目
+  // If cache is full, remove oldest entry
   if (queryCache.size >= CACHE_CONFIG.maxSize) {
     const oldestKey = Array.from(queryCache.entries())
       .sort(([, a], [, b]) => a.timestamp - b.timestamp)[0][0];
@@ -133,11 +133,11 @@ const setToCache = (
  */
 const cleanupCache = (): void => {
   const now = dayjs().valueOf();
-  for (const [key, entry] of queryCache.entries()) {
-    if (now > entry.timestamp + entry.ttl) {
-      queryCache.delete(key);
-    }
-  }
+  const expiredKeys = Array.from(queryCache.entries())
+    .filter(([, entry]) => now > entry.timestamp + entry.ttl)
+    .map(([key]) => key);
+  
+  expiredKeys.forEach(key => queryCache.delete(key));
 };
 
 // 设置定期清理
@@ -160,7 +160,7 @@ export const optimizedQueryLogsFlow = (
 ): TE.TaskEither<AppError, LogQueryResult> => {
   const cacheKey = generateCacheKey(options);
   
-  // 尝试从缓存获取
+  // Try to get from cache
   if (useCache) {
     const cached = getFromCache(cacheKey);
     if (O.isSome(cached)) {
@@ -168,17 +168,17 @@ export const optimizedQueryLogsFlow = (
     }
   }
   
-  // 从数据库查询
+  // Query from database
   return pipe(
     queryLogsFromSQLite(options),
     TE.map((result) => {
-      // 应用前端过滤和排序优化
+      // Apply frontend filtering and sorting optimization
       const optimizedEntries = pipe(
-        [...result.entries], // Convert readonly array to mutable array
+        result.entries as readonly LogEntry[], // Ensure readonly
         (entries) => options.messageSearch 
           ? searchInMessage(entries, options.messageSearch)
           : entries,
-        (entries) => sortByTimestamp(entries, false), // 最新的在前
+        (entries) => sortByTimestamp(entries, false), // Latest first
       );
       
       const optimizedResult = {
@@ -186,7 +186,7 @@ export const optimizedQueryLogsFlow = (
         entries: optimizedEntries,
       };
       
-      // 存入缓存
+      // Store in cache
       if (useCache) {
         setToCache(cacheKey, optimizedResult);
       }
@@ -346,7 +346,7 @@ export const queryLogsByTimeRangeFlow = (
 export const queryLogsByLevelsFlow = (
   levels: readonly LogLevel[],
   limit: number = 100,
-  timeRange?: { startTime?: string; endTime?: string },
+  timeRange?: { readonly startTime?: string; readonly endTime?: string },
 ): TE.TaskEither<AppError, readonly LogEntry[]> => {
   const options: LogQueryOptions = {
     levelFilter: levels,
@@ -392,12 +392,12 @@ export const getCacheStats = () => ({
  * @returns TaskEither<AppError, void>
  */
 export const warmupQueryCache = (): TE.TaskEither<AppError, void> => {
-  const commonQueries: LogQueryOptions[] = [
-    // 最近的日志
+  const commonQueries: readonly LogQueryOptions[] = [
+    // Recent logs
     { limit: 50, offset: 0 },
-    // 最近的错误
+    // Recent errors
     { levelFilter: ['error'], limit: 20, offset: 0 },
-    // 最近的警告和错误
+    // Recent warnings and errors
     { levelFilter: ['warn', 'error'], limit: 30, offset: 0 },
   ];
   

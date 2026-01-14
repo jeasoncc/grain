@@ -205,9 +205,9 @@ export function parseInlineContent(
 	// 简化处理：先处理标签，再处理格式
 	let lastIndex = 0;
 	const segments: Array<{
-		start: number;
-		end: number;
-		node: LexicalTextNode | LexicalTagNode;
+		readonly start: number;
+		readonly end: number;
+		readonly node: LexicalTextNode | LexicalTagNode;
 	}> = [];
 
 	// 查找所有标签
@@ -238,8 +238,10 @@ export function parseInlineContent(
 					(matchEnd > s.start && matchEnd <= s.end),
 			);
 			if (!overlaps) {
-				const textNode = createTextNode(content);
-				textNode.format = format;
+				const textNode = {
+					...createTextNode(content),
+					format,
+				};
 				segments.push({
 					start: matchStart,
 					end: matchEnd,
@@ -370,25 +372,23 @@ export function parseMarkdownToDocument(
 ): LexicalDocument {
 	const opts = { ...defaultOptions, ...options };
 	const lines = content.split("\n");
-	const children: LexicalRootChild[] = [];
+	
+	const parseLines = (lineIndex: number, acc: readonly LexicalRootChild[]): readonly LexicalRootChild[] => {
+		if (lineIndex >= lines.length) {
+			return acc;
+		}
 
-	let i = 0;
-	while (i < lines.length) {
-		const line = lines[i].trimEnd();
+		const line = lines[lineIndex].trimEnd();
 
 		// 空行 -> 空段落
 		if (line.trim() === "") {
-			children.push(createParagraphNode([]));
-			i++;
-			continue;
+			return parseLines(lineIndex + 1, [...acc, createParagraphNode([])]);
 		}
 
 		// 标题
 		const heading = parseHeadingLine(line);
 		if (heading) {
-			children.push(heading);
-			i++;
-			continue;
+			return parseLines(lineIndex + 1, [...acc, heading]);
 		}
 
 		// 列表
@@ -396,15 +396,16 @@ export function parseMarkdownToDocument(
 		if (listItem) {
 			const [listType] = listItem;
 			const items: Array<{ text: string; checked?: boolean }> = [];
+			let currentIndex = lineIndex;
 
 			// 收集连续的列表项
-			while (i < lines.length) {
-				const currentLine = lines[i].trimEnd();
+			while (currentIndex < lines.length) {
+				const currentLine = lines[currentIndex].trimEnd();
 				const item = parseListItemLine(currentLine);
 				if (!item || item[0] !== listType) break;
 
 				items.push({ text: item[1], checked: item[2] });
-				i++;
+				currentIndex++;
 			}
 
 			// 创建列表节点
@@ -425,15 +426,16 @@ export function parseMarkdownToDocument(
 						}
 					: listNode;
 
-			children.push(updatedListNode);
-			continue;
+			return parseLines(currentIndex, [...acc, updatedListNode]);
 		}
 
 		// 普通段落
 		// 收集连续的非空行作为一个段落
 		const paragraphLines: string[] = [];
-		while (i < lines.length) {
-			const currentLine = lines[i].trimEnd();
+		let currentIndex = lineIndex;
+		
+		while (currentIndex < lines.length) {
+			const currentLine = lines[currentIndex].trimEnd();
 			if (
 				currentLine.trim() === "" ||
 				parseHeadingLine(currentLine) ||
@@ -442,15 +444,18 @@ export function parseMarkdownToDocument(
 				break;
 			}
 			paragraphLines.push(currentLine);
-			i++;
+			currentIndex++;
 		}
 
 		if (paragraphLines.length > 0) {
 			const paragraphText = paragraphLines.join(" ");
-			children.push(parseParagraph(paragraphText, opts));
+			return parseLines(currentIndex, [...acc, parseParagraph(paragraphText, opts)]);
 		}
-	}
 
+		return parseLines(currentIndex, acc);
+	};
+
+	const children = parseLines(0, []);
 	return createDocument(children);
 }
 

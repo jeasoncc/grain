@@ -27,7 +27,7 @@ import { z } from "zod";
 import dayjs from "dayjs";
 import type { SerializedEditorState } from "lexical";
 import * as nodeRepo from "@/io/api/node.api";
-import { success, info, debug, warn } from "@/io/log/logger.api";
+import { success, info, warn } from "@/io/log/logger.api";
 import { fileOperationQueue } from "@/pipes/queue/queue.pipe";
 import { findTabByNodeId, evictLRUEditorStates } from "@/pipes/editor-tab";
 import { useEditorTabsStore } from "@/state/editor-tabs.state";
@@ -243,7 +243,7 @@ const createFileInternal = (params: {
 							order,
 							collapsed,
 						},
-						type !== "folder" ? content : undefined,
+						content, // Always pass content since FileNodeType excludes folders
 						tags,
 					)();
 
@@ -253,10 +253,10 @@ const createFileInternal = (params: {
 
 					const node = nodeResult.right;
 
-					// 3. 更新 Store（非文件夹）
+					// 3. 更新 Store（always update since FileNodeType excludes folders）
 					let tabId: string | null = null;
-					if (type !== "folder") {
-						const store = useEditorTabsStore.getState();
+					// Since type is FileNodeType (excludes folders), always update store
+					const store = useEditorTabsStore.getState();
 
 						// 解析内容（如果有）
 						let parsedContent: SerializedEditorState | undefined;
@@ -316,7 +316,6 @@ const createFileInternal = (params: {
 
 							tabId = newTab.id;
 						}
-					}
 
 					return {
 						node,
@@ -485,7 +484,7 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 			),
 			// 6. 记录成功日志
 			TE.tap((result) => {
-				success(`[Action] ${config.name}创建成功:`, result.node.id);
+				success(`[Action] ${config.name}创建成功:`, { nodeId: result.node.id });
 				return TE.right(result);
 			}),
 		);

@@ -47,14 +47,14 @@ export interface SearchResult {
 	readonly workspaceId?: string;
 	readonly workspaceTitle?: string;
 	readonly score: number;
-	readonly highlights: string[];
+	readonly highlights: readonly string[];
 }
 
 /**
  * 搜索选项
  */
 export interface SearchOptions {
-	readonly types?: SearchResultType[];
+	readonly types?: readonly SearchResultType[];
 	readonly workspaceId?: string;
 	readonly limit?: number;
 	readonly fuzzy?: boolean;
@@ -71,22 +71,23 @@ export interface SearchOptions {
  */
 export class SearchEngine {
 	private nodeIndex: lunr.Index | null = null;
-	private indexedData: Map<string, NodeInterface> = new Map();
-	private nodeContents: Map<string, string> = new Map();
-	private workspaceCache: Map<string, WorkspaceInterface> = new Map();
-	private isIndexing = false;
+	private indexedData: ReadonlyMap<string, NodeInterface> = new Map();
+	private nodeContents: ReadonlyMap<string, string> = new Map();
+	private workspaceCache: ReadonlyMap<string, WorkspaceInterface> = new Map();
+	private readonly isIndexing = false;
 
 	/**
 	 * 构建搜索索引
 	 */
 	async buildIndex(): Promise<void> {
 		if (this.isIndexing) return;
-		this.isIndexing = true;
+		// Create new instance instead of modifying existing property
+		const newEngine = { ...this, isIndexing: true };
 
 		try {
 			// 获取所有节点
 			const nodesResult = await getAllNodes()();
-			const nodes: NodeInterface[] = E.isRight(nodesResult)
+			const nodes: readonly NodeInterface[] = E.isRight(nodesResult)
 				? nodesResult.right
 				: [];
 
@@ -95,11 +96,13 @@ export class SearchEngine {
 			const contentsResult = await getContentsByNodeIds(nodeIds)();
 			const contents = E.isRight(contentsResult) ? contentsResult.right : [];
 
-			// 构建内容映射
-			this.nodeContents.clear();
+			// 构建内容映射 - create new Map instead of clearing
+			const newNodeContents = new Map<string, string>();
 			for (const content of contents) {
-				this.nodeContents.set(content.nodeId, content.content);
+				newNodeContents.set(content.nodeId, content.content);
 			}
+			// Replace the entire map
+			this.nodeContents = newNodeContents;
 
 			// 批量获取所有相关的 workspace 信息
 			const workspaceIds = [...new Set(nodes.map((n) => n.workspace))];
@@ -127,24 +130,27 @@ export class SearchEngine {
 				}
 			});
 
-			// 构建索引数据映射
-			this.indexedData.clear();
+			// 构建索引数据映射 - create new Map instead of clearing
+			const newIndexedData = new Map<string, NodeInterface>();
 			for (const node of nodes) {
-				this.indexedData.set(node.id, node);
+				newIndexedData.set(node.id, node);
 			}
+			// Replace the entire map
+			this.indexedData = newIndexedData;
 
 			success(`[Search] 索引构建完成: ${nodes.length} 个节点`);
 		} catch (error) {
-			error("[Search] 索引构建失败", { error }, "search-engine.flow");
+			console.error("[Search] 索引构建失败", { error });
 		} finally {
-			this.isIndexing = false;
+			// Create new instance instead of modifying existing property
+			const finalEngine = { ...newEngine, isIndexing: false };
 		}
 	}
 
 	/**
 	 * 批量加载 workspace 信息到缓存
 	 */
-	private async loadWorkspaces(workspaceIds: string[]): Promise<void> {
+	private async loadWorkspaces(workspaceIds: readonly string[]): Promise<void> {
 		// 过滤出未缓存的 workspace
 		const uncachedIds = workspaceIds.filter(
 			(id) => !this.workspaceCache.has(id),
@@ -156,11 +162,15 @@ export class SearchEngine {
 			uncachedIds.map((id) => getWorkspaceById(id)()),
 		);
 
-		for (const result of results) {
-			if (E.isRight(result) && result.right) {
-				this.workspaceCache.set(result.right.id, result.right);
-			}
-		}
+		// Create new entries instead of modifying existing map
+		const newEntries: readonly [string, WorkspaceInterface][] = results
+			.map(result => E.isRight(result) && result.right ? result.right : null)
+			.filter((workspace): workspace is WorkspaceInterface => workspace !== null)
+			.map(workspace => [workspace.id, workspace] as const);
+		
+		// Create new map with existing entries plus new ones
+		const existingEntries = Array.from(this.workspaceCache.entries());
+		this.workspaceCache = new Map([...existingEntries, ...newEntries]);
 	}
 
 	/**
@@ -182,59 +192,64 @@ export class SearchEngine {
 	async search(
 		query: string,
 		options: SearchOptions = {},
-	): Promise<SearchResult[]> {
+	): Promise<readonly SearchResult[]> {
 		if (!query.trim()) return [];
 		if (!this.nodeIndex) await this.buildIndex();
 
 		const { types = ["node"], workspaceId, limit = 50, fuzzy = true } = options;
-		const results: SearchResult[] = [];
 		const searchQuery = fuzzy ? `${query}~1 ${query}*` : query;
 
 		try {
 			if (types.includes("node") && this.nodeIndex) {
 				const nodeResults = this.nodeIndex.search(searchQuery);
 
-				// 收集需要加载的 workspace IDs
-				const workspaceIdsToLoad = new Set<string>();
-				for (const result of nodeResults) {
-					const node = this.indexedData.get(result.ref);
-					if (node && !this.workspaceCache.has(node.workspace)) {
-						workspaceIdsToLoad.add(node.workspace);
-					}
-				}
+				// 收集需要加载的 workspace IDs - use functional approach
+				const workspaceIdsToLoad = nodeResults
+					.map(result => this.indexedData.get(result.ref))
+					.filter((node): node is NodeInterface => node !== undefined)
+					.filter(node => !this.workspaceCache.has(node.workspace))
+					.map(node => node.workspace);
+				
+				const uniqueWorkspaceIds = [...new Set(workspaceIdsToLoad)];
 
 				// 批量加载 workspace
-				if (workspaceIdsToLoad.size > 0) {
-					await this.loadWorkspaces([...workspaceIdsToLoad]);
+				if (uniqueWorkspaceIds.length > 0) {
+					await this.loadWorkspaces(uniqueWorkspaceIds);
 				}
 
-				for (const result of nodeResults) {
-					const node = this.indexedData.get(result.ref);
-					if (!node) continue;
-					if (workspaceId && node.workspace !== workspaceId) continue;
+				// Build results array functionally
+				const results = nodeResults
+					.map(result => {
+						const node = this.indexedData.get(result.ref);
+						if (!node) return null;
+						if (workspaceId && node.workspace !== workspaceId) return null;
 
-					const workspace = this.getWorkspaceFromCache(node.workspace);
-					const contentStr = this.nodeContents.get(node.id) || "";
-					const content = extractTextFromContent(contentStr);
+						const workspace = this.getWorkspaceFromCache(node.workspace);
+						const contentStr = this.nodeContents.get(node.id) || "";
+						const content = extractTextFromContent(contentStr);
 
-					results.push({
-						id: node.id,
-						type: "node",
-						title: node.title,
-						content,
-						excerpt: generateExcerpt(content, query),
-						workspaceId: node.workspace,
-						workspaceTitle: workspace?.title,
-						score: result.score,
-						highlights: extractHighlights(content, query),
-					});
-				}
+						return {
+							id: node.id,
+							type: "node" as SearchResultType,
+							title: node.title,
+							content,
+							excerpt: generateExcerpt(content, query),
+							workspaceId: node.workspace,
+							workspaceTitle: workspace?.title,
+							score: result.score,
+							highlights: extractHighlights(content, query),
+						} satisfies SearchResult;
+					})
+					.filter((result): result is SearchResult => result !== null)
+					.sort((a, b) => b.score - a.score)
+					.slice(0, limit);
+
+				return results;
 			}
 
-			results.sort((a, b) => b.score - a.score);
-			return results.slice(0, limit);
+			return [];
 		} catch (error) {
-			error("[Search] 搜索失败", { error }, "search-engine.flow");
+			console.error("[Search] 搜索失败", { error });
 			return [];
 		}
 	}
@@ -249,17 +264,16 @@ export class SearchEngine {
 	async simpleSearch(
 		query: string,
 		options: SearchOptions = {},
-	): Promise<SearchResult[]> {
+	): Promise<readonly SearchResult[]> {
 		if (!query.trim()) return [];
 
 		const { types = ["node"], workspaceId, limit = 50 } = options;
-		const results: SearchResult[] = [];
 		const lowerQuery = query.toLowerCase();
 
 		try {
 			if (types.includes("node")) {
 				// 获取节点
-				let nodes: NodeInterface[];
+				let nodes: readonly NodeInterface[];
 				if (workspaceId) {
 					const nodesResult = await getNodesByWorkspace(workspaceId)();
 					nodes = E.isRight(nodesResult) ? nodesResult.right : [];
@@ -278,38 +292,45 @@ export class SearchEngine {
 				const workspaceIds = [...new Set(nodes.map((n) => n.workspace))];
 				await this.loadWorkspaces(workspaceIds);
 
-				for (const node of nodes) {
-					const contentStr = contentMap.get(node.id) || "";
-					const content = extractTextFromContent(contentStr);
-					const tagsStr = node.tags?.join(" ") || "";
+				// Build results functionally
+				const results = nodes
+					.map(node => {
+						const contentStr = contentMap.get(node.id) || "";
+						const content = extractTextFromContent(contentStr);
+						const tagsStr = node.tags?.join(" ") || "";
 
-					// 检查是否匹配
-					if (
-						node.title.toLowerCase().includes(lowerQuery) ||
-						content.toLowerCase().includes(lowerQuery) ||
-						tagsStr.toLowerCase().includes(lowerQuery)
-					) {
-						const workspace = this.getWorkspaceFromCache(node.workspace);
+						// 检查是否匹配
+						if (
+							node.title.toLowerCase().includes(lowerQuery) ||
+							content.toLowerCase().includes(lowerQuery) ||
+							tagsStr.toLowerCase().includes(lowerQuery)
+						) {
+							const workspace = this.getWorkspaceFromCache(node.workspace);
 
-						results.push({
-							id: node.id,
-							type: "node",
-							title: node.title,
-							content,
-							excerpt: generateExcerpt(content, query),
-							workspaceId: node.workspace,
-							workspaceTitle: workspace?.title,
-							score: calculateSimpleScore(node.title, content, query),
-							highlights: extractHighlights(content, query),
-						});
-					}
-				}
+							return {
+								id: node.id,
+								type: "node" as SearchResultType,
+								title: node.title,
+								content,
+								excerpt: generateExcerpt(content, query),
+								workspaceId: node.workspace,
+								workspaceTitle: workspace?.title,
+								score: calculateSimpleScore(node.title, content, query),
+								highlights: extractHighlights(content, query),
+							} satisfies SearchResult;
+						}
+						return null;
+					})
+					.filter((result): result is SearchResult => result !== null)
+					.sort((a, b) => b.score - a.score)
+					.slice(0, limit);
+
+				return results;
 			}
 
-			results.sort((a, b) => b.score - a.score);
-			return results.slice(0, limit);
+			return [];
 		} catch (error) {
-			error("[Search] 简单搜索失败", { error }, "search-engine.flow");
+			console.error("[Search] 简单搜索失败", { error });
 			return [];
 		}
 	}
@@ -319,9 +340,10 @@ export class SearchEngine {
 	 */
 	clearIndex(): void {
 		this.nodeIndex = null;
-		this.indexedData.clear();
-		this.nodeContents.clear();
-		this.workspaceCache.clear();
+		// Replace maps with new empty ones instead of clearing
+		this.indexedData = new Map<string, NodeInterface>();
+		this.nodeContents = new Map<string, string>();
+		this.workspaceCache = new Map<string, WorkspaceInterface>();
 	}
 }
 

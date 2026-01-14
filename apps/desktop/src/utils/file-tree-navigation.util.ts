@@ -28,7 +28,7 @@ import type { NodeInterface } from "@/types/node";
  * // 返回: ['folder1-id', 'folder2-id']
  */
 export function calculateAncestorPath(
-	nodes: NodeInterface[],
+	nodes: readonly NodeInterface[],
 	targetNodeId: string,
 ): string[] {
 	// 边界情况：节点列表为空
@@ -201,7 +201,7 @@ export function scrollToNode(
  * );
  */
 export async function autoExpandAndScrollToNode(
-	nodes: NodeInterface[],
+	nodes: readonly NodeInterface[],
 	targetNodeId: string,
 	setCollapsed: (nodeId: string, collapsed: boolean) => Promise<boolean>,
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any

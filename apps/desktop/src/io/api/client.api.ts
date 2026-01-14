@@ -17,7 +17,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import * as TE from "fp-ts/TaskEither";
-import { info } from "@/io/log/logger.api";
+import { info, error as logError } from "@/io/log/logger.api";
 import type { AppError } from "@/types/error";
 import { dbError } from "@/types/error";
 import type {
@@ -78,7 +78,7 @@ const invokeTE = <T>(
 			return result;
 		},
 		(error) => {
-			error(`[API:Tauri] ${cmd} 失败`, error);
+			logError(`[API:Tauri] ${cmd} 失败`, { error });
 			return dbError(`${cmd} 失败: ${error}`);
 		},
 	);
@@ -115,7 +115,7 @@ const fetchTE = <T>(
 			return result as T;
 		},
 		(error) => {
-			error(`[API:HTTP] ${endpoint} 失败`, error);
+			logError(`[API:HTTP] ${endpoint} 失败`, { error });
 			return dbError(`${endpoint} 失败: ${error}`);
 		},
 	);
@@ -127,177 +127,177 @@ const fetchTE = <T>(
 /** 统一 API 客户端接口 */
 export interface ApiClient {
 	// Workspace API
-	getWorkspaces: () => TE.TaskEither<AppError, WorkspaceResponse[]>;
-	getWorkspace: (
+	readonly getWorkspaces: () => TE.TaskEither<AppError, readonly WorkspaceResponse[]>;
+	readonly getWorkspace: (
 		id: string,
 	) => TE.TaskEither<AppError, WorkspaceResponse | null>;
-	createWorkspace: (
+	readonly createWorkspace: (
 		request: CreateWorkspaceRequest,
 	) => TE.TaskEither<AppError, WorkspaceResponse>;
-	updateWorkspace: (
+	readonly updateWorkspace: (
 		id: string,
 		request: UpdateWorkspaceRequest,
 	) => TE.TaskEither<AppError, WorkspaceResponse>;
-	deleteWorkspace: (id: string) => TE.TaskEither<AppError, void>;
+	readonly deleteWorkspace: (id: string) => TE.TaskEither<AppError, void>;
 
 	// Node API
-	getNodesByWorkspace: (
+	readonly getNodesByWorkspace: (
 		workspaceId: string,
-	) => TE.TaskEither<AppError, NodeResponse[]>;
-	getNode: (id: string) => TE.TaskEither<AppError, NodeResponse | null>;
-	getChildNodes: (parentId: string) => TE.TaskEither<AppError, NodeResponse[]>;
-	getRootNodes: (
+	) => TE.TaskEither<AppError, readonly NodeResponse[]>;
+	readonly getNode: (id: string) => TE.TaskEither<AppError, NodeResponse | null>;
+	readonly getChildNodes: (parentId: string) => TE.TaskEither<AppError, readonly NodeResponse[]>;
+	readonly getRootNodes: (
 		workspaceId: string,
-	) => TE.TaskEither<AppError, NodeResponse[]>;
-	getNodesByParent: (
+	) => TE.TaskEither<AppError, readonly NodeResponse[]>;
+	readonly getNodesByParent: (
 		workspaceId: string,
 		parentId: string | null,
-	) => TE.TaskEither<AppError, NodeResponse[]>;
-	getNodesByType: (
+	) => TE.TaskEither<AppError, readonly NodeResponse[]>;
+	readonly getNodesByType: (
 		workspaceId: string,
 		nodeType: string,
-	) => TE.TaskEither<AppError, NodeResponse[]>;
-	getDescendants: (nodeId: string) => TE.TaskEither<AppError, NodeResponse[]>;
-	getNextSortOrder: (
+	) => TE.TaskEither<AppError, readonly NodeResponse[]>;
+	readonly getDescendants: (nodeId: string) => TE.TaskEither<AppError, readonly NodeResponse[]>;
+	readonly getNextSortOrder: (
 		workspaceId: string,
 		parentId: string | null,
 	) => TE.TaskEither<AppError, number>;
-	createNode: (
+	readonly createNode: (
 		request: CreateNodeRequest,
 	) => TE.TaskEither<AppError, NodeResponse>;
-	updateNode: (
+	readonly updateNode: (
 		id: string,
 		request: UpdateNodeRequest,
 	) => TE.TaskEither<AppError, NodeResponse>;
-	moveNode: (
+	readonly moveNode: (
 		id: string,
 		request: MoveNodeRequest,
 	) => TE.TaskEither<AppError, NodeResponse>;
-	deleteNode: (id: string) => TE.TaskEither<AppError, void>;
-	duplicateNode: (
+	readonly deleteNode: (id: string) => TE.TaskEither<AppError, void>;
+	readonly duplicateNode: (
 		id: string,
 		newTitle?: string,
 	) => TE.TaskEither<AppError, NodeResponse>;
-	reorderNodes: (nodeIds: readonly string[]) => TE.TaskEither<AppError, void>;
-	deleteNodesBatch: (nodeIds: readonly string[]) => TE.TaskEither<AppError, void>;
+	readonly reorderNodes: (nodeIds: readonly string[]) => TE.TaskEither<AppError, void>;
+	readonly deleteNodesBatch: (nodeIds: readonly string[]) => TE.TaskEither<AppError, void>;
 
 	// Content API
-	getContent: (
+	readonly getContent: (
 		nodeId: string,
 	) => TE.TaskEither<AppError, ContentResponse | null>;
-	saveContent: (
+	readonly saveContent: (
 		request: SaveContentRequest,
 	) => TE.TaskEither<AppError, ContentResponse>;
-	getContentVersion: (nodeId: string) => TE.TaskEither<AppError, number | null>;
+	readonly getContentVersion: (nodeId: string) => TE.TaskEither<AppError, number | null>;
 
 	// Backup API
-	createBackup: () => TE.TaskEither<AppError, BackupInfo>;
-	restoreBackup: (backupPath: string) => TE.TaskEither<AppError, void>;
-	listBackups: () => TE.TaskEither<AppError, BackupInfo[]>;
-	deleteBackup: (backupPath: string) => TE.TaskEither<AppError, void>;
-	cleanupOldBackups: (keepCount: number) => TE.TaskEither<AppError, number>;
+	readonly createBackup: () => TE.TaskEither<AppError, BackupInfo>;
+	readonly restoreBackup: (backupPath: string) => TE.TaskEither<AppError, void>;
+	readonly listBackups: () => TE.TaskEither<AppError, readonly BackupInfo[]>;
+	readonly deleteBackup: (backupPath: string) => TE.TaskEither<AppError, void>;
+	readonly cleanupOldBackups: (keepCount: number) => TE.TaskEither<AppError, number>;
 
 	// Clear Data API
-	clearSqliteData: () => TE.TaskEither<AppError, ClearDataResult>;
-	clearSqliteDataKeepUsers: () => TE.TaskEither<AppError, ClearDataResult>;
+	readonly clearSqliteData: () => TE.TaskEither<AppError, ClearDataResult>;
+	readonly clearSqliteDataKeepUsers: () => TE.TaskEither<AppError, ClearDataResult>;
 
 	// User API
-	getUsers: () => TE.TaskEither<AppError, UserResponse[]>;
-	getUser: (id: string) => TE.TaskEither<AppError, UserResponse | null>;
-	getUserByUsername: (
+	readonly getUsers: () => TE.TaskEither<AppError, readonly UserResponse[]>;
+	readonly getUser: (id: string) => TE.TaskEither<AppError, UserResponse | null>;
+	readonly getUserByUsername: (
 		username: string,
 	) => TE.TaskEither<AppError, UserResponse | null>;
-	getUserByEmail: (
+	readonly getUserByEmail: (
 		email: string,
 	) => TE.TaskEither<AppError, UserResponse | null>;
-	getCurrentUser: () => TE.TaskEither<AppError, UserResponse | null>;
-	createUser: (
+	readonly getCurrentUser: () => TE.TaskEither<AppError, UserResponse | null>;
+	readonly createUser: (
 		request: CreateUserRequest,
 	) => TE.TaskEither<AppError, UserResponse>;
-	updateUser: (
+	readonly updateUser: (
 		id: string,
 		request: UpdateUserRequest,
 	) => TE.TaskEither<AppError, UserResponse>;
-	updateUserLastLogin: (id: string) => TE.TaskEither<AppError, UserResponse>;
-	deleteUser: (id: string) => TE.TaskEither<AppError, void>;
+	readonly updateUserLastLogin: (id: string) => TE.TaskEither<AppError, UserResponse>;
+	readonly deleteUser: (id: string) => TE.TaskEither<AppError, void>;
 
 	// Attachment API
-	getAttachments: () => TE.TaskEither<AppError, AttachmentResponse[]>;
-	getAttachmentsByProject: (
+	readonly getAttachments: () => TE.TaskEither<AppError, readonly AttachmentResponse[]>;
+	readonly getAttachmentsByProject: (
 		projectId: string,
-	) => TE.TaskEither<AppError, AttachmentResponse[]>;
-	getAttachment: (
+	) => TE.TaskEither<AppError, readonly AttachmentResponse[]>;
+	readonly getAttachment: (
 		id: string,
 	) => TE.TaskEither<AppError, AttachmentResponse | null>;
-	getAttachmentsByType: (
+	readonly getAttachmentsByType: (
 		projectId: string,
 		attachmentType: AttachmentType,
-	) => TE.TaskEither<AppError, AttachmentResponse[]>;
-	getImagesByProject: (
+	) => TE.TaskEither<AppError, readonly AttachmentResponse[]>;
+	readonly getImagesByProject: (
 		projectId: string,
-	) => TE.TaskEither<AppError, AttachmentResponse[]>;
-	getAudioFilesByProject: (
+	) => TE.TaskEither<AppError, readonly AttachmentResponse[]>;
+	readonly getAudioFilesByProject: (
 		projectId: string,
-	) => TE.TaskEither<AppError, AttachmentResponse[]>;
-	getAttachmentByPath: (
+	) => TE.TaskEither<AppError, readonly AttachmentResponse[]>;
+	readonly getAttachmentByPath: (
 		filePath: string,
 	) => TE.TaskEither<AppError, AttachmentResponse | null>;
-	createAttachment: (
+	readonly createAttachment: (
 		request: CreateAttachmentRequest,
 	) => TE.TaskEither<AppError, AttachmentResponse>;
-	updateAttachment: (
+	readonly updateAttachment: (
 		id: string,
 		request: UpdateAttachmentRequest,
 	) => TE.TaskEither<AppError, AttachmentResponse>;
-	deleteAttachment: (id: string) => TE.TaskEither<AppError, void>;
-	deleteAttachmentsByProject: (
+	readonly deleteAttachment: (id: string) => TE.TaskEither<AppError, void>;
+	readonly deleteAttachmentsByProject: (
 		projectId: string,
 	) => TE.TaskEither<AppError, number>;
 
 	// Tag API
-	getTagsByWorkspace: (
+	readonly getTagsByWorkspace: (
 		workspaceId: string,
-	) => TE.TaskEither<AppError, TagResponse[]>;
-	getTag: (id: string) => TE.TaskEither<AppError, TagResponse | null>;
-	getTagByName: (
+	) => TE.TaskEither<AppError, readonly TagResponse[]>;
+	readonly getTag: (id: string) => TE.TaskEither<AppError, TagResponse | null>;
+	readonly getTagByName: (
 		workspaceId: string,
 		name: string,
 	) => TE.TaskEither<AppError, TagResponse | null>;
-	getTopTags: (
+	readonly getTopTags: (
 		workspaceId: string,
 		limit: number,
-	) => TE.TaskEither<AppError, TagResponse[]>;
-	searchTags: (
+	) => TE.TaskEither<AppError, readonly TagResponse[]>;
+	readonly searchTags: (
 		workspaceId: string,
 		query: string,
-	) => TE.TaskEither<AppError, TagResponse[]>;
-	getNodesByTag: (
+	) => TE.TaskEither<AppError, readonly TagResponse[]>;
+	readonly getNodesByTag: (
 		workspaceId: string,
 		tagName: string,
-	) => TE.TaskEither<AppError, string[]>;
-	getTagGraphData: (
+	) => TE.TaskEither<AppError, readonly string[]>;
+	readonly getTagGraphData: (
 		workspaceId: string,
 	) => TE.TaskEither<AppError, TagGraphData>;
-	createTag: (
+	readonly createTag: (
 		request: CreateTagRequest,
 	) => TE.TaskEither<AppError, TagResponse>;
-	updateTag: (
+	readonly updateTag: (
 		id: string,
 		request: UpdateTagRequest,
 	) => TE.TaskEither<AppError, TagResponse>;
-	getOrCreateTag: (
+	readonly getOrCreateTag: (
 		workspaceId: string,
 		name: string,
 	) => TE.TaskEither<AppError, TagResponse>;
-	incrementTagCount: (id: string) => TE.TaskEither<AppError, TagResponse>;
-	decrementTagCount: (id: string) => TE.TaskEither<AppError, TagResponse>;
-	deleteTag: (id: string) => TE.TaskEither<AppError, void>;
-	deleteTagsByWorkspace: (
+	readonly incrementTagCount: (id: string) => TE.TaskEither<AppError, TagResponse>;
+	readonly decrementTagCount: (id: string) => TE.TaskEither<AppError, TagResponse>;
+	readonly deleteTag: (id: string) => TE.TaskEither<AppError, void>;
+	readonly deleteTagsByWorkspace: (
 		workspaceId: string,
 	) => TE.TaskEither<AppError, number>;
-	syncTagCache: (workspaceId: string) => TE.TaskEither<AppError, void>;
-	rebuildTagCache: (workspaceId: string) => TE.TaskEither<AppError, void>;
-	recalculateTagCounts: (workspaceId: string) => TE.TaskEither<AppError, void>;
+	readonly syncTagCache: (workspaceId: string) => TE.TaskEither<AppError, void>;
+	readonly rebuildTagCache: (workspaceId: string) => TE.TaskEither<AppError, void>;
+	readonly recalculateTagCounts: (workspaceId: string) => TE.TaskEither<AppError, void>;
 }
 
 // ============================================
@@ -428,7 +428,7 @@ export const createApiClient = (): ApiClient => {
 						body: JSON.stringify({ newTitle }),
 					}),
 
-		reorderNodes: (nodeIds: string[]) =>
+		reorderNodes: (nodeIds: readonly string[]) =>
 			isTauri
 				? invokeTE("reorder_nodes", { nodeIds })
 				: fetchTE("/api/nodes/reorder", {
@@ -436,7 +436,7 @@ export const createApiClient = (): ApiClient => {
 						body: JSON.stringify({ nodeIds }),
 					}),
 
-		deleteNodesBatch: (nodeIds: string[]) =>
+		deleteNodesBatch: (nodeIds: readonly string[]) =>
 			isTauri
 				? invokeTE("delete_nodes_batch", { nodeIds })
 				: fetchTE("/api/nodes/batch", {
@@ -786,13 +786,13 @@ const toPromise = <T>(te: TE.TaskEither<AppError, T>): Promise<T> =>
 	);
 
 // Workspace API (Promise 版本)
-export const getWorkspacesAsync = (): Promise<WorkspaceResponse[]> =>
+export const getWorkspacesAsync = (): Promise<readonly WorkspaceResponse[]> =>
 	toPromise(api.getWorkspaces());
 
 // Node API (Promise 版本)
 export const getNodesByWorkspaceAsync = (
 	workspaceId: string,
-): Promise<NodeResponse[]> => toPromise(api.getNodesByWorkspace(workspaceId));
+): Promise<readonly NodeResponse[]> => toPromise(api.getNodesByWorkspace(workspaceId));
 
 export const createNodeAsync = (
 	request: CreateNodeRequest,
@@ -800,21 +800,21 @@ export const createNodeAsync = (
 
 export const getRootNodesAsync = (
 	workspaceId: string,
-): Promise<NodeResponse[]> => toPromise(api.getRootNodes(workspaceId));
+): Promise<readonly NodeResponse[]> => toPromise(api.getRootNodes(workspaceId));
 
 export const getNodesByParentAsync = (
 	workspaceId: string,
 	parentId: string | null,
-): Promise<NodeResponse[]> =>
+): Promise<readonly NodeResponse[]> =>
 	toPromise(api.getNodesByParent(workspaceId, parentId));
 
 export const getNodesByTypeAsync = (
 	workspaceId: string,
 	nodeType: string,
-): Promise<NodeResponse[]> =>
+): Promise<readonly NodeResponse[]> =>
 	toPromise(api.getNodesByType(workspaceId, nodeType));
 
-export const getDescendantsAsync = (nodeId: string): Promise<NodeResponse[]> =>
+export const getDescendantsAsync = (nodeId: string): Promise<readonly NodeResponse[]> =>
 	toPromise(api.getDescendants(nodeId));
 
 export const getNextSortOrderAsync = (
@@ -822,10 +822,10 @@ export const getNextSortOrderAsync = (
 	parentId: string | null,
 ): Promise<number> => toPromise(api.getNextSortOrder(workspaceId, parentId));
 
-export const reorderNodesAsync = (nodeIds: string[]): Promise<void> =>
+export const reorderNodesAsync = (nodeIds: readonly string[]): Promise<void> =>
 	toPromise(api.reorderNodes(nodeIds));
 
-export const deleteNodesBatchAsync = (nodeIds: string[]): Promise<void> =>
+export const deleteNodesBatchAsync = (nodeIds: readonly string[]): Promise<void> =>
 	toPromise(api.deleteNodesBatch(nodeIds));
 
 // Content API (Promise 版本)
