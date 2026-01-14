@@ -74,15 +74,14 @@ export class SearchEngine {
 	private indexedData: ReadonlyMap<string, NodeInterface> = new Map();
 	private nodeContents: ReadonlyMap<string, string> = new Map();
 	private workspaceCache: ReadonlyMap<string, WorkspaceInterface> = new Map();
-	private readonly isIndexing = false;
+	private isIndexing = false;
 
 	/**
 	 * 构建搜索索引
 	 */
 	async buildIndex(): Promise<void> {
 		if (this.isIndexing) return;
-		// Create new instance instead of modifying existing property
-		const newEngine = { ...this, isIndexing: true };
+		this.isIndexing = true;
 
 		try {
 			// 获取所有节点
@@ -142,8 +141,7 @@ export class SearchEngine {
 		} catch (error) {
 			console.error("[Search] 索引构建失败", { error });
 		} finally {
-			// Create new instance instead of modifying existing property
-			const finalEngine = { ...newEngine, isIndexing: false };
+			this.isIndexing = false;
 		}
 	}
 
@@ -228,7 +226,7 @@ export class SearchEngine {
 						const contentStr = this.nodeContents.get(node.id) || "";
 						const content = extractTextFromContent(contentStr);
 
-						return {
+						const searchResult: SearchResult = {
 							id: node.id,
 							type: "node" as SearchResultType,
 							title: node.title,
@@ -238,7 +236,8 @@ export class SearchEngine {
 							workspaceTitle: workspace?.title,
 							score: result.score,
 							highlights: extractHighlights(content, query),
-						} satisfies SearchResult;
+						};
+						return searchResult;
 					})
 					.filter((result): result is SearchResult => result !== null)
 					.sort((a, b) => b.score - a.score)
@@ -307,7 +306,7 @@ export class SearchEngine {
 						) {
 							const workspace = this.getWorkspaceFromCache(node.workspace);
 
-							return {
+							const searchResult: SearchResult = {
 								id: node.id,
 								type: "node" as SearchResultType,
 								title: node.title,
@@ -317,7 +316,8 @@ export class SearchEngine {
 								workspaceTitle: workspace?.title,
 								score: calculateSimpleScore(node.title, content, query),
 								highlights: extractHighlights(content, query),
-							} satisfies SearchResult;
+							};
+							return searchResult;
 						}
 						return null;
 					})

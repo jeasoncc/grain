@@ -49,31 +49,31 @@ export interface SaveModelConfig {
  */
 interface SaveModel {
 	/** 节点 ID */
-	nodeId: string;
+	readonly nodeId: string;
 	/** 内容类型 */
-	contentType: ContentType;
+	readonly contentType: ContentType;
 	/** Tab ID */
-	tabId?: string;
+	readonly tabId?: string;
 	/** 待保存的内容 */
-	pendingContent: string | null;
+	readonly pendingContent: string | null;
 	/** 上次保存的内容 */
-	lastSavedContent: string;
+	readonly lastSavedContent: string;
 	/** 是否正在保存 */
-	isSaving: boolean;
+	readonly isSaving: boolean;
 	/** 防抖保存函数 */
-	debouncedSave: DebouncedFunction<
+	readonly debouncedSave: DebouncedFunction<
 		(content: string) => Promise<boolean>
 	> | null;
 	/** 自动保存延迟 */
-	autoSaveDelay: number;
+	readonly autoSaveDelay: number;
 	/** 更新 Tab isDirty 状态的函数 */
-	setTabDirty?: (tabId: string, isDirty: boolean) => void;
+	readonly setTabDirty?: (tabId: string, isDirty: boolean) => void;
 	/** 保存开始回调 */
-	onSaving?: () => void;
+	readonly onSaving?: () => void;
 	/** 保存成功回调 */
-	onSaved?: () => void;
+	readonly onSaved?: () => void;
 	/** 保存失败回调 */
-	onError?: (error: Error) => void;
+	readonly onError?: (error: Error) => void;
 }
 
 /**
@@ -97,7 +97,7 @@ export interface SaveServiceManagerInterface {
 	/** 清理所有 model */
 	readonly disposeAll: () => void;
 	/** 获取所有有未保存更改的节点 ID */
-	readonly getUnsavedNodeIds: () => string[];
+	readonly getUnsavedNodeIds: () => readonly string[];
 	/** 保存所有未保存的内容 */
 	readonly saveAll: () => Promise<void>;
 	/** 检查 model 是否存在 */
@@ -127,12 +127,12 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 
 		if (model.pendingContent === null) return true;
 		if (model.pendingContent === model.lastSavedContent) {
-			model.pendingContent = null;
+			models.set(nodeId, { ...model, pendingContent: null });
 			return true;
 		}
 		if (model.isSaving) return false;
 
-		model.isSaving = true;
+		models.set(nodeId, { ...model, isSaving: true });
 		const contentToSave = model.pendingContent;
 		model.onSaving?.();
 
@@ -144,8 +144,13 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 			)();
 
 			if (E.isRight(result)) {
-				model.lastSavedContent = contentToSave;
-				model.pendingContent = null;
+				const updatedModel = {
+					...model,
+					lastSavedContent: contentToSave,
+					pendingContent: null,
+					isSaving: false,
+				};
+				models.set(nodeId, updatedModel);
 				if (model.tabId && model.setTabDirty) {
 					model.setTabDirty(model.tabId, false);
 				}
@@ -153,15 +158,15 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 				return true;
 			}
 
+			models.set(nodeId, { ...model, isSaving: false });
 			const error = new Error(result.left.message || "保存失败");
 			model.onError?.(error);
 			return false;
 		} catch (err) {
+			models.set(nodeId, { ...model, isSaving: false });
 			const error = err instanceof Error ? err : new Error("未知错误");
 			model.onError?.(error);
 			return false;
-		} finally {
-			model.isSaving = false;
 		}
 	};
 
@@ -189,16 +194,25 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 			const existing = models.get(nodeId);
 
 			if (existing) {
-				existing.tabId = tabId;
-				existing.setTabDirty = setTabDirty;
-				existing.onSaving = onSaving;
-				existing.onSaved = onSaved;
-				existing.onError = onError;
+				const updatedModel = {
+					...existing,
+					tabId,
+					setTabDirty,
+					onSaving,
+					onSaved,
+					onError,
+				};
 
 				if (existing.autoSaveDelay !== autoSaveDelay) {
 					existing.debouncedSave?.cancel();
-					existing.debouncedSave = createDebouncedSave(nodeId, autoSaveDelay);
-					existing.autoSaveDelay = autoSaveDelay;
+					const newDebouncedSave = createDebouncedSave(nodeId, autoSaveDelay);
+					models.set(nodeId, {
+						...updatedModel,
+						debouncedSave: newDebouncedSave,
+						autoSaveDelay,
+					});
+				} else {
+					models.set(nodeId, updatedModel);
 				}
 				return;
 			}
@@ -225,7 +239,8 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 			const model = models.get(nodeId);
 			if (!model) return;
 
-			model.pendingContent = content;
+			const updatedModel = { ...model, pendingContent: content };
+			models.set(nodeId, updatedModel);
 
 			if (
 				model.tabId &&
@@ -244,14 +259,16 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 			const model = models.get(nodeId);
 			if (!model) return false;
 
-			model.debouncedSave?.cancel();
+			if (model.debouncedSave) {
+				model.debouncedSave.cancel();
+			}
 			return await saveContent(nodeId);
 		},
 
 		setInitialContent: (nodeId: string, content: string): void => {
 			const model = models.get(nodeId);
 			if (!model) return;
-			model.lastSavedContent = content;
+			models.set(nodeId, { ...model, lastSavedContent: content });
 		},
 
 		hasUnsavedChanges: (nodeId: string): boolean => {
@@ -271,19 +288,23 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 		dispose: (nodeId: string): void => {
 			const model = models.get(nodeId);
 			if (model) {
-				model.debouncedSave?.cancel();
+				if (model.debouncedSave) {
+					model.debouncedSave.cancel();
+				}
 				models.delete(nodeId);
 			}
 		},
 
 		disposeAll: (): void => {
 			for (const model of models.values()) {
-				model.debouncedSave?.cancel();
+				if (model.debouncedSave) {
+					model.debouncedSave.cancel();
+				}
 			}
 			models.clear();
 		},
 
-		getUnsavedNodeIds: (): string[] => {
+		getUnsavedNodeIds: (): readonly string[] => {
 			const unsaved: string[] = [];
 			for (const [nodeId, model] of models) {
 				if (
@@ -297,7 +318,7 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 		},
 
 		saveAll: async (): Promise<void> => {
-			const unsavedIds = [];
+			const unsavedIds: string[] = [];
 			for (const [nodeId, model] of models) {
 				if (
 					model.pendingContent !== null &&

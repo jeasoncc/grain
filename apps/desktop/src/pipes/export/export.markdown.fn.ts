@@ -263,31 +263,31 @@ export function convertRootChild(
 	prevNodeType?: string,
 ): string {
 	const opts = { ...defaultOptions, ...options };
-	const lines: string[] = [];
+	let lines: readonly string[] = [];
 
 	switch (node.type) {
 		case "paragraph": {
 			const content = convertParagraphNode(node, opts);
-			lines.push(content);
+			lines = [...lines, content];
 			break;
 		}
 		case "heading": {
 			if (opts.blankLineBeforeHeading && prevNodeType) {
-				lines.push("");
+				lines = [...lines, ""];
 			}
-			lines.push(convertHeadingNode(node, opts));
+			lines = [...lines, convertHeadingNode(node, opts)];
 			if (opts.blankLineAfterHeading) {
-				lines.push("");
+				lines = [...lines, ""];
 			}
 			break;
 		}
 		case "list": {
 			if (opts.blankLineBeforeList && prevNodeType && prevNodeType !== "list") {
-				lines.push("");
+				lines = [...lines, ""];
 			}
-			lines.push(convertListNode(node, opts));
+			lines = [...lines, convertListNode(node, opts)];
 			if (opts.blankLineAfterList) {
-				lines.push("");
+				lines = [...lines, ""];
 			}
 			break;
 		}
@@ -314,30 +314,29 @@ export function generateFrontMatter(data: Record<string, unknown>): string {
 		return "";
 	}
 
-	const lines = ["---"];
+	let lines: readonly string[] = ["---"];
 
 	for (const [key, value] of Object.entries(data)) {
 		if (value === undefined || value === null) continue;
 
 		if (Array.isArray(value)) {
-			lines.push(`${key}:`);
+			lines = [...lines, `${key}:`];
 			for (const item of value) {
-				lines.push(`  - ${String(item)}`);
+				lines = [...lines, `  - ${String(item)}`];
 			}
 		} else if (typeof value === "object") {
-			lines.push(`${key}:`);
+			lines = [...lines, `${key}:`];
 			for (const [subKey, subValue] of Object.entries(
 				value as Record<string, unknown>,
 			)) {
-				lines.push(`  ${subKey}: ${String(subValue)}`);
+				lines = [...lines, `  ${subKey}: ${String(subValue)}`];
 			}
 		} else {
-			lines.push(`${key}: ${String(value)}`);
+			lines = [...lines, `${key}: ${String(value)}`];
 		}
 	}
 
-	lines.push("---");
-	lines.push("");
+	lines = [...lines, "---", ""];
 
 	return lines.join("\n");
 }
@@ -354,17 +353,16 @@ export function convertDocumentToMarkdown(
 	options: MarkdownExportOptions = {},
 ): string {
 	const opts = { ...defaultOptions, ...options };
-	const lines: string[] = [];
+	let lines: readonly string[] = [];
 
 	// 添加 front matter
 	if (opts.includeFrontMatter && Object.keys(opts.frontMatter).length > 0) {
-		lines.push(generateFrontMatter(opts.frontMatter));
+		lines = [...lines, generateFrontMatter(opts.frontMatter)];
 	}
 
 	// 添加标题
 	if (opts.includeTitle && opts.title) {
-		lines.push(`# ${opts.title}`);
-		lines.push("");
+		lines = [...lines, `# ${opts.title}`, ""];
 	}
 
 	// 转换内容
@@ -372,7 +370,7 @@ export function convertDocumentToMarkdown(
 	for (const child of document.root.children) {
 		const converted = convertRootChild(child, opts, prevNodeType);
 		if (converted) {
-			lines.push(converted);
+			lines = [...lines, converted];
 		}
 		prevNodeType = child.type;
 	}
@@ -418,7 +416,7 @@ export function exportMultipleToMarkdown(
 	options: MarkdownExportOptions = {},
 	separator: string = "\n\n---\n\n",
 ): E.Either<ExportError, string> {
-	const results: string[] = [];
+	let results: readonly string[] = [];
 
 	for (const item of contents) {
 		const itemOptions = {
@@ -431,7 +429,7 @@ export function exportMultipleToMarkdown(
 		if (E.isLeft(result)) {
 			return result;
 		}
-		results.push(result.right);
+		results = [...results, result.right];
 	}
 
 	return E.right(results.join(separator));

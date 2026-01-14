@@ -95,7 +95,7 @@ const defaultOptions: Required<MarkdownImportOptions> = {
  */
 export function parseFrontMatter(
 	content: string,
-): E.Either<Error, [Record<string, unknown> | undefined, string]> {
+): E.Either<Error, readonly [Record<string, unknown> | undefined, string]> {
 	const trimmed = content.trim();
 
 	if (!trimmed.startsWith("---")) {
@@ -115,14 +115,14 @@ export function parseFrontMatter(
 			const frontMatter: Record<string, unknown> = {};
 			const lines = frontMatterStr.split("\n");
 			let currentKey: string | null = null;
-			let currentArray: string[] | null = null;
+			let currentArray: ReadonlyArray<string> | null = null;
 
 			for (const line of lines) {
 				const trimmedLine = line.trim();
 
 				// 数组项
 				if (trimmedLine.startsWith("- ") && currentKey && currentArray) {
-					currentArray.push(trimmedLine.slice(2).trim());
+					currentArray = [...currentArray, trimmedLine.slice(2).trim()];
 					continue;
 				}
 
@@ -154,7 +154,7 @@ export function parseFrontMatter(
 				frontMatter[currentKey] = currentArray;
 			}
 
-			return [frontMatter, remainingContent] as [Record<string, unknown>, string];
+			return [frontMatter, remainingContent] as readonly [Record<string, unknown>, string];
 		},
 		() => new Error("Front matter 解析失败"),
 	);
@@ -174,13 +174,16 @@ export function parseFrontMatter(
 export function parseInlineContent(
 	text: string,
 	options: MarkdownImportOptions = {},
-): (LexicalTextNode | LexicalTagNode)[] {
-	const nodes: (LexicalTextNode | LexicalTagNode)[] = [];
+): readonly (LexicalTextNode | LexicalTagNode)[] {
+	let nodes: ReadonlyArray<LexicalTextNode | LexicalTagNode> = [];
 	const { tagFormat = "hash" } = options;
 
 	// 正则表达式匹配各种格式
 	// 匹配顺序：代码 > 粗斜体 > 粗体 > 斜体 > 删除线 > 标签
-	const patterns = [
+	const patterns: readonly {
+		readonly regex: RegExp;
+		readonly format: number;
+	}[] = [
 		// 行内代码
 		{ regex: /`([^`]+)`/g, format: TEXT_FORMAT.CODE },
 		// 粗斜体 (***text*** 或 ___text___)
@@ -204,7 +207,7 @@ export function parseInlineContent(
 
 	// 简化处理：先处理标签，再处理格式
 	let lastIndex = 0;
-	const segments: Array<{
+	let segments: ReadonlyArray<{
 		readonly start: number;
 		readonly end: number;
 		readonly node: LexicalTextNode | LexicalTagNode;
@@ -214,11 +217,11 @@ export function parseInlineContent(
 	const tagMatches = Array.from(text.matchAll(tagRegex));
 	for (const tagMatch of tagMatches) {
 		if (tagMatch.index !== undefined) {
-			segments.push({
+			segments = [...segments, {
 				start: tagMatch.index,
 				end: tagMatch.index + tagMatch[0].length,
 				node: createTagNode(tagMatch[1]),
-			});
+			}];
 		}
 	}
 
@@ -242,17 +245,17 @@ export function parseInlineContent(
 					...createTextNode(content),
 					format,
 				};
-				segments.push({
+				segments = [...segments, {
 					start: matchStart,
 					end: matchEnd,
 					node: textNode,
-				});
+				}];
 			}
 		}
 	}
 
 	// 按位置排序
-	segments.sort((a, b) => a.start - b.start);
+	segments = [...segments].sort((a, b) => a.start - b.start);
 
 	// 构建最终节点数组
 	lastIndex = 0;
@@ -261,10 +264,10 @@ export function parseInlineContent(
 		if (segment.start > lastIndex) {
 			const plainText = text.slice(lastIndex, segment.start);
 			if (plainText) {
-				nodes.push(createTextNode(plainText));
+				nodes = [...nodes, createTextNode(plainText)];
 			}
 		}
-		nodes.push(segment.node);
+		nodes = [...nodes, segment.node];
 		lastIndex = segment.end;
 	}
 
@@ -272,13 +275,13 @@ export function parseInlineContent(
 	if (lastIndex < text.length) {
 		const plainText = text.slice(lastIndex);
 		if (plainText) {
-			nodes.push(createTextNode(plainText));
+			nodes = [...nodes, createTextNode(plainText)];
 		}
 	}
 
 	// 如果没有任何特殊格式，返回纯文本
 	if (nodes.length === 0 && text) {
-		nodes.push(createTextNode(text));
+		nodes = [createTextNode(text)];
 	}
 
 	return nodes;
@@ -317,7 +320,7 @@ export function parseHeadingLine(line: string): LexicalHeadingNode | null {
  */
 export function parseListItemLine(
 	line: string,
-): ["bullet" | "number" | "check", string, boolean | undefined] | null {
+): readonly ["bullet" | "number" | "check", string, boolean | undefined] | null {
 	// 检查复选框列表
 	const checkMatch = line.match(/^[-*]\s+\[([ xX])\]\s*(.*)$/);
 	if (checkMatch) {
@@ -395,7 +398,7 @@ export function parseMarkdownToDocument(
 		const listItem = parseListItemLine(line);
 		if (listItem) {
 			const [listType] = listItem;
-			const items: Array<{ text: string; checked?: boolean }> = [];
+			let items: ReadonlyArray<{ readonly text: string; readonly checked?: boolean }> = [];
 			let currentIndex = lineIndex;
 
 			// 收集连续的列表项
@@ -404,7 +407,7 @@ export function parseMarkdownToDocument(
 				const item = parseListItemLine(currentLine);
 				if (!item || item[0] !== listType) break;
 
-				items.push({ text: item[1], checked: item[2] });
+				items = [...items, { text: item[1], checked: item[2] }];
 				currentIndex++;
 			}
 
@@ -431,7 +434,7 @@ export function parseMarkdownToDocument(
 
 		// 普通段落
 		// 收集连续的非空行作为一个段落
-		const paragraphLines: string[] = [];
+		let paragraphLines: ReadonlyArray<string> = [];
 		let currentIndex = lineIndex;
 		
 		while (currentIndex < lines.length) {
@@ -443,7 +446,7 @@ export function parseMarkdownToDocument(
 			) {
 				break;
 			}
-			paragraphLines.push(currentLine);
+			paragraphLines = [...paragraphLines, currentLine];
 			currentIndex++;
 		}
 
@@ -560,8 +563,8 @@ export function importMultipleFromMarkdown(
 		readonly content: string;
 	}>,
 	options: MarkdownImportOptions = {},
-): E.Either<ImportError, Array<{ id: string; result: ImportResult }>> {
-	const results: Array<{ id: string; result: ImportResult }> = [];
+): E.Either<ImportError, ReadonlyArray<{ readonly id: string; readonly result: ImportResult }>> {
+	let results: ReadonlyArray<{ readonly id: string; readonly result: ImportResult }> = [];
 
 	for (const item of contents) {
 		const result = importFromMarkdown(item.content, options);
@@ -571,7 +574,7 @@ export function importMultipleFromMarkdown(
 				message: `导入 ${item.id} 失败: ${result.left.message}`,
 			});
 		}
-		results.push({ id: item.id, result: result.right });
+		results = [...results, { id: item.id, result: result.right }];
 	}
 
 	return E.right(results);

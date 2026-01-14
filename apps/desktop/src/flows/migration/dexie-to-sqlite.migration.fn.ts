@@ -116,7 +116,7 @@ export const setMigrationStatus = (status: MigrationStatus): void => {
 	try {
 		localStorage.setItem(MIGRATION_STATUS_KEY, status);
 	} catch (err) {
-		error("[Migration] 设置迁移状态失败", { error: err }, "dexie-to-sqlite.migration.fn");
+		warn("[Migration] 设置迁移状态失败", { error: err }, "dexie-to-sqlite.migration.fn");
 	}
 };
 
@@ -127,7 +127,7 @@ export const clearMigrationStatus = (): void => {
 	try {
 		localStorage.removeItem(MIGRATION_STATUS_KEY);
 	} catch (err) {
-		error("[Migration] 清除迁移状态失败", { error: err }, "dexie-to-sqlite.migration.fn");
+		warn("[Migration] 清除迁移状态失败", { error: err }, "dexie-to-sqlite.migration.fn");
 	}
 };
 
@@ -160,9 +160,9 @@ export const hasDexieData = (): TE.TaskEither<AppError, boolean> =>
 
 			return hasData;
 		},
-		(error): AppError => {
-			error("[Migration] 检测 Dexie 数据失败", { error }, "dexie-to-sqlite.migration.fn");
-			return dbError(`检测 Dexie 数据失败: ${error}`);
+		(err): AppError => {
+			warn("[Migration] 检测 Dexie 数据失败", { error: err }, "dexie-to-sqlite.migration.fn");
+			return dbError(`检测 Dexie 数据失败: ${err instanceof Error ? err.message : String(err)}`);
 		},
 	);
 
@@ -217,9 +217,9 @@ export const readDexieData = (): TE.TaskEither<AppError, DexieDataSnapshot> =>
 				users,
 			};
 		},
-		(error): AppError => {
-			error("[Migration] 读取 Dexie 数据失败", { error }, "dexie-to-sqlite.migration.fn");
-			return dbError(`读取 Dexie 数据失败: ${error}`);
+		(err): AppError => {
+			warn("[Migration] 读取 Dexie 数据失败", { error: err }, "dexie-to-sqlite.migration.fn");
+			return dbError(`读取 Dexie 数据失败: ${err instanceof Error ? err.message : String(err)}`);
 		},
 	);
 
@@ -231,7 +231,7 @@ export const readDexieData = (): TE.TaskEither<AppError, DexieDataSnapshot> =>
  * 迁移用户数据
  */
 const migrateUsers = (
-	users: UserInterface[],
+	users: readonly UserInterface[],
 ): TE.TaskEither<AppError, { count: number; mapping: Map<string, string> }> =>
 	TE.tryCatch(
 		async () => {
@@ -264,7 +264,7 @@ const migrateUsers = (
  * 迁移工作区数据
  */
 const migrateWorkspaces = (
-	workspaces: WorkspaceInterface[],
+	workspaces: readonly WorkspaceInterface[],
 	userMapping: Map<string, string>,
 ): TE.TaskEither<AppError, { count: number; mapping: Map<string, string> }> =>
 	TE.tryCatch(
@@ -306,7 +306,7 @@ const migrateWorkspaces = (
  * 迁移节点数据
  */
 const migrateNodes = (
-	nodes: NodeInterface[],
+	nodes: readonly NodeInterface[],
 	workspaceMapping: Map<string, string>,
 ): TE.TaskEither<AppError, { count: number; mapping: Map<string, string> }> =>
 	TE.tryCatch(
@@ -351,7 +351,7 @@ const migrateNodes = (
 						collapsed: node.collapsed,
 					},
 					undefined,
-					node.tags,
+					[...node.tags],
 				)();
 
 				if (E.isRight(result)) {
@@ -370,7 +370,7 @@ const migrateNodes = (
  * 迁移内容数据
  */
 const migrateContents = (
-	contents: ContentInterface[],
+	contents: readonly ContentInterface[],
 	nodeMapping: Map<string, string>,
 ): TE.TaskEither<AppError, number> =>
 	TE.tryCatch(
@@ -478,13 +478,13 @@ export const migrateData = (): TE.TaskEither<AppError, MigrationResult> =>
 					},
 				),
 				// 6. 错误处理
-				TE.orElse((error) => {
+				TE.orElse((err) => {
 					setMigrationStatus("failed");
-					error("[Migration] 数据迁移失败", { error }, "dexie-to-sqlite.migration.fn");
+					warn("[Migration] 数据迁移失败", { error: err }, "dexie-to-sqlite.migration.fn");
 					return TE.right({
 						status: "failed",
 						migratedCounts: { workspaces: 0, nodes: 0, contents: 0, users: 0 },
-						errors: [error.message],
+						errors: [err.message],
 						startedAt: dayjs().toISOString(),
 					} as MigrationResult);
 				}),
@@ -509,9 +509,9 @@ export const rollbackMigration = (): TE.TaskEither<AppError, void> =>
 			setMigrationStatus("rolled_back");
 			info("[Migration] 迁移状态已回滚");
 		},
-		(error): AppError => {
-			error("[Migration] 回滚迁移失败", { error }, "dexie-to-sqlite.migration.fn");
-			return dbError(`回滚迁移失败: ${error}`);
+		(err): AppError => {
+			warn("[Migration] 回滚迁移失败", { error: err }, "dexie-to-sqlite.migration.fn");
+			return dbError(`回滚迁移失败: ${err instanceof Error ? err.message : String(err)}`);
 		},
 	);
 
@@ -525,9 +525,9 @@ export const resetMigrationStatus = (): TE.TaskEither<AppError, void> =>
 			clearMigrationStatus();
 			info("[Migration] 迁移状态已重置");
 		},
-		(error): AppError => {
-			error("[Migration] 重置迁移状态失败", { error }, "dexie-to-sqlite.migration.fn");
-			return dbError(`重置迁移状态失败: ${error}`);
+		(err): AppError => {
+			warn("[Migration] 重置迁移状态失败", { error: err }, "dexie-to-sqlite.migration.fn");
+			return dbError(`重置迁移状态失败: ${err instanceof Error ? err.message : String(err)}`);
 		},
 	);
 
@@ -563,9 +563,9 @@ export const clearDexieData = (): TE.TaskEither<AppError, void> =>
 
 			success("[Migration] Dexie 数据清理完成");
 		},
-		(error): AppError => {
-			error("[Migration] 清理 Dexie 数据失败", { error }, "dexie-to-sqlite.migration.fn");
-			return dbError(`清理 Dexie 数据失败: ${error}`);
+		(err): AppError => {
+			warn("[Migration] 清理 Dexie 数据失败", { error: err }, "dexie-to-sqlite.migration.fn");
+			return dbError(`清理 Dexie 数据失败: ${err instanceof Error ? err.message : String(err)}`);
 		},
 	);
 
