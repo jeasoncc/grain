@@ -7,10 +7,12 @@
 
 import * as TE from "fp-ts/TaskEither";
 import { pipe } from "fp-ts/function";
+import dayjs from "dayjs";
 import type { AppError } from "@/types/error/error.types";
 
 // 新的日志 API
 import { logDebug, logInfo, logSuccess, logWarn, logError, logTrace, queryLogs, autoCleanupLogs } from "@/io/log/logger.api";
+import { info, error } from "@/io/log/logger.api";
 
 // 初始化和迁移
 import { initLogDatabase } from "@/io/log/log.storage.api";
@@ -47,9 +49,9 @@ export const testLogQueryFlow = (): TE.TaskEither<AppError, number> =>
       sourceFilter: "test-logger",
     }),
     TE.map((result) => {
-      console.log(`查询到 ${result.entries.length} 条测试日志`);
+      info(`[TestLogger] 查询到 ${result.entries.length} 条测试日志`);
       for (const entry of result.entries) {
-        console.log(`- [${entry.level}] ${entry.message}`);
+        info(`[TestLogger] - [${entry.level}] ${entry.message}`);
       }
       return result.entries.length;
     }),
@@ -78,11 +80,11 @@ export const runCompleteLogSystemTestFlow = (): TE.TaskEither<AppError, TestResu
     // 1. 初始化数据库
     initLogDatabase(),
     TE.chain(() => {
-      console.log("✅ 日志数据库初始化成功");
+      info("[TestLogger] ✅ 日志数据库初始化成功");
       return TE.right({ initSuccess: true, migrationCount: 0 });
     }),
     TE.chain(({ initSuccess, migrationCount }) => {
-      console.log("ℹ️ 跳过迁移 - 系统尚未发布");
+      info("[TestLogger] ℹ️ 跳过迁移 - 系统尚未发布");
       return TE.right({ initSuccess, migrationCount });
     }),
     TE.chain(({ initSuccess, migrationCount }) =>
@@ -90,7 +92,7 @@ export const runCompleteLogSystemTestFlow = (): TE.TaskEither<AppError, TestResu
       pipe(
         testAllLogLevelsFlow(),
         TE.map(() => {
-          console.log("✅ 所有级别日志记录成功");
+          info("[TestLogger] ✅ 所有级别日志记录成功");
           return { initSuccess, migrationCount, loggingSuccess: true };
         }),
       )
@@ -100,7 +102,7 @@ export const runCompleteLogSystemTestFlow = (): TE.TaskEither<AppError, TestResu
       pipe(
         testLogQueryFlow(),
         TE.map((queryCount) => {
-          console.log(`✅ 日志查询成功，找到 ${queryCount} 条日志`);
+          info(`[TestLogger] ✅ 日志查询成功，找到 ${queryCount} 条日志`);
           
           const allTestsPassed = initSuccess && loggingSuccess && queryCount > 0;
           
@@ -124,25 +126,25 @@ export const runCompleteLogSystemTestFlow = (): TE.TaskEither<AppError, TestResu
  * 快速测试日志系统（异步执行，不等待结果）
  */
 export const quickTestLogSystem = (): void => {
-  console.log("🚀 开始测试函数式日志系统...");
+  info("[TestLogger] 🚀 开始测试函数式日志系统...");
   
   runCompleteLogSystemTestFlow()()
     .then((result) => {
       if (result._tag === 'Right') {
         const testResult = result.right;
-        console.log("📊 测试结果:", testResult);
+        info("[TestLogger] 📊 测试结果:", testResult);
         
         if (testResult.allTestsPassed) {
-          console.log("🎉 所有测试通过！函数式日志系统工作正常");
+          info("[TestLogger] 🎉 所有测试通过！函数式日志系统工作正常");
         } else {
-          console.log("⚠️ 部分测试失败，请检查日志系统配置");
+          info("[TestLogger] ⚠️ 部分测试失败，请检查日志系统配置");
         }
       } else {
-        console.error("❌ 测试失败:", result.left);
+        error("[TestLogger] ❌ 测试失败:", result.left);
       }
     })
-    .catch((error) => {
-      console.error("💥 测试过程中发生异常:", error);
+    .catch((err) => {
+      error("[TestLogger] 💥 测试过程中发生异常:", err);
     });
 };
 
@@ -153,20 +155,20 @@ export const quickTestLogSystem = (): void => {
  * @returns TaskEither<AppError, number> 返回写入耗时（毫秒）
  */
 export const testLogPerformanceFlow = (count = 100): TE.TaskEither<AppError, number> => {
-  const startTime = Date.now();
+  const startTime = dayjs().valueOf();
   
   // 创建测试日志数组
   const testLogs = Array.from({ length: count }, (_, i) =>
-    logInfo(`性能测试日志 ${i + 1}`, { index: i, timestamp: Date.now() }, "performance-test")
+    logInfo(`性能测试日志 ${i + 1}`, { index: i, timestamp: dayjs().valueOf() }, "performance-test")
   );
 
   return pipe(
     // 并发执行所有日志写入
     TE.sequenceArray(testLogs),
     TE.map(() => {
-      const endTime = Date.now();
+      const endTime = dayjs().valueOf();
       const duration = endTime - startTime;
-      console.log(`📈 性能测试完成：写入 ${count} 条日志耗时 ${duration}ms`);
+      info(`[TestLogger] 📈 性能测试完成：写入 ${count} 条日志耗时 ${duration}ms`);
       return duration;
     }),
   );
