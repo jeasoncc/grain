@@ -21,7 +21,7 @@
 
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
-import { debug, warn } from "@/io/log/logger.api";
+import { debug, error, warn } from "@/io/log/logger.api";
 import {
 	decodeNode,
 	decodeNodes,
@@ -46,7 +46,7 @@ import { api } from "./client.api";
  */
 export const getNodesByWorkspace = (
 	workspaceId: string,
-): TE.TaskEither<AppError, NodeInterface[]> =>
+): TE.TaskEither<AppError, readonly NodeInterface[]> =>
 	pipe(api.getNodesByWorkspace(workspaceId), TE.map(decodeNodes));
 
 /**
@@ -54,7 +54,7 @@ export const getNodesByWorkspace = (
  */
 export const getRootNodes = (
 	workspaceId: string,
-): TE.TaskEither<AppError, NodeInterface[]> =>
+): TE.TaskEither<AppError, readonly NodeInterface[]> =>
 	pipe(api.getRootNodes(workspaceId), TE.map(decodeNodes));
 
 /**
@@ -63,7 +63,7 @@ export const getRootNodes = (
 export const getNodesByParent = (
 	workspaceId: string,
 	parentId: string | null,
-): TE.TaskEither<AppError, NodeInterface[]> =>
+): TE.TaskEither<AppError, readonly NodeInterface[]> =>
 	pipe(api.getNodesByParent(workspaceId, parentId), TE.map(decodeNodes));
 
 /**
@@ -71,7 +71,7 @@ export const getNodesByParent = (
  */
 export const getChildNodes = (
 	parentId: string,
-): TE.TaskEither<AppError, NodeInterface[]> =>
+): TE.TaskEither<AppError, readonly NodeInterface[]> =>
 	pipe(api.getChildNodes(parentId), TE.map(decodeNodes));
 
 /**
@@ -119,7 +119,7 @@ export const getNodeByIdOrNull = getNode;
 export const getNodesByType = (
 	workspaceId: string,
 	nodeType: string,
-): TE.TaskEither<AppError, NodeInterface[]> =>
+): TE.TaskEither<AppError, readonly NodeInterface[]> =>
 	pipe(api.getNodesByType(workspaceId, nodeType), TE.map(decodeNodes));
 
 /**
@@ -127,7 +127,7 @@ export const getNodesByType = (
  */
 export const getDescendants = (
 	nodeId: string,
-): TE.TaskEither<AppError, NodeInterface[]> =>
+): TE.TaskEither<AppError, readonly NodeInterface[]> =>
 	pipe(api.getDescendants(nodeId), TE.map(decodeNodes));
 
 /**
@@ -160,7 +160,7 @@ export const getNextOrder = (
 export const createNode = (
 	input: NodeCreateInput,
 	initialContent?: string,
-	tags?: string[],
+	tags?: readonly string[],
 ): TE.TaskEither<AppError, NodeInterface> => {
 	debug("[NodeAPI] 创建节点", {
 		title: input.title,
@@ -204,11 +204,11 @@ export const addNode = (
 	workspace: string,
 	title: string,
 	options: {
-		parent?: string | null;
-		type?: NodeType;
-		order?: number;
-		collapsed?: boolean;
-		tags?: string[];
+		readonly parent?: string | null;
+		readonly type?: NodeType;
+		readonly order?: number;
+		readonly collapsed?: boolean;
+		readonly tags?: readonly string[];
 	} = {},
 ): TE.TaskEither<AppError, NodeInterface> =>
 	createNode(
@@ -273,7 +273,7 @@ export const duplicateNode = (
  * 批量重排序节点
  */
 export const reorderNodes = (
-	nodeIds: string[],
+	nodeIds: readonly string[],
 ): TE.TaskEither<AppError, void> => api.reorderNodes(nodeIds);
 
 /**
@@ -319,19 +319,19 @@ export const setNodeCollapsed = (
 
 			return result;
 		}),
-		TE.mapLeft((error) => {
+		TE.mapLeft((err) => {
 			const endTime = performance.now();
 			const duration = endTime - startTime;
 
 			error("[API Performance] setNodeCollapsed failed", {
 				nodeId,
 				collapsed,
-				error,
+				error: err,
 				duration: `${duration.toFixed(2)}ms`,
 				timestamp: new Date().toISOString(),
 			});
 
-			return error;
+			return err;
 		}),
 	);
 };
@@ -342,12 +342,12 @@ export const setNodeCollapsed = (
  * 注意：此函数需要先获取所有工作区，然后获取每个工作区的节点
  * 由于 Rust 后端没有直接的 getAllNodes API
  */
-export const getAllNodes = (): TE.TaskEither<AppError, NodeInterface[]> =>
+export const getAllNodes = (): TE.TaskEither<AppError, readonly NodeInterface[]> =>
 	pipe(
 		api.getWorkspaces(),
 		TE.chain((workspaces) => {
 			if (workspaces.length === 0) {
-				return TE.right<AppError, NodeInterface[]>([]);
+				return TE.right<AppError, readonly NodeInterface[]>([]);
 			}
 			// 串行获取每个工作区的节点，避免并发问题
 			return workspaces.reduce(
@@ -361,7 +361,7 @@ export const getAllNodes = (): TE.TaskEither<AppError, NodeInterface[]> =>
 							),
 						),
 					),
-				TE.right<AppError, NodeInterface[]>([]),
+				TE.right<AppError, readonly NodeInterface[]>([]),
 			);
 		}),
 	);
