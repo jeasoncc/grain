@@ -430,11 +430,9 @@ function printHtmlInNewWindow(html: string): void {
 	}
 
 	// 必要的 DOM 操作（打印功能的副作用）
-	// eslint-disable-next-line functional/immutable-data
 	printWindow.document.write(html);
 	printWindow.document.close();
 
-	// eslint-disable-next-line functional/immutable-data
 	printWindow.onload = () => {
 		setTimeout(() => {
 			printWindow.print();
