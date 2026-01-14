@@ -52,8 +52,8 @@ export function getString(key: string): E.Either<Error, string | null> {
 	return E.tryCatch(
 		() => localStorage.getItem(key),
 		(err) => {
-			const error = new Error(`[Storage] 读取失败 (${key}): ${err}`);
-			logError(`[Storage] 读取失败 (${key}):`, err);
+			const error = new Error(`[Storage] 读取失败 (${key}): ${String(err)}`);
+			logError(`[Storage] 读取失败 (${key}):`, { error: err });
 			return error;
 		},
 	);
@@ -70,8 +70,8 @@ export function setString(key: string, value: string): E.Either<Error, void> {
 	return E.tryCatch(
 		() => localStorage.setItem(key, value),
 		(err) => {
-			const error = new Error(`[Storage] 写入失败 (${key}): ${err}`);
-			logError(`[Storage] 写入失败 (${key}):`, err);
+			const error = new Error(`[Storage] 写入失败 (${key}): ${String(err)}`);
+			logError(`[Storage] 写入失败 (${key}):`, { error: err });
 			return error;
 		},
 	);
@@ -87,8 +87,8 @@ export function remove(key: string): E.Either<Error, void> {
 	return E.tryCatch(
 		() => localStorage.removeItem(key),
 		(err) => {
-			const error = new Error(`[Storage] 删除失败 (${key}): ${err}`);
-			logError(`[Storage] 删除失败 (${key}):`, err);
+			const error = new Error(`[Storage] 删除失败 (${key}): ${String(err)}`);
+			logError(`[Storage] 删除失败 (${key}):`, { error: err });
 			return error;
 		},
 	);
@@ -103,9 +103,8 @@ export function clearAll(): E.Either<Error, void> {
 	return E.tryCatch(
 		() => localStorage.clear(),
 		(err) => {
-			const error = new Error(`[Storage] 清空失败: ${err}`);
 			logError("[Storage] 清空失败", { error: err }, "settings.storage");
-			return error;
+			return new Error(`[Storage] 清空失败: ${String(err)}`);
 		},
 	);
 }
@@ -141,12 +140,12 @@ export function getJson<T>(
 				return validation.data;
 			}
 
-			warn(`[Storage] 数据格式无效 (${key})，使用默认值:`, validation.error);
+			warn(`[Storage] 数据格式无效 (${key})，使用默认值:`, { error: validation.error });
 			return defaultValue;
 		},
 		(err) => {
-			logError(`[Storage] 读取 JSON 失败 (${key}):`, err);
-			return new Error(`[Storage] 读取 JSON 失败 (${key}): ${err}`);
+			logError(`[Storage] 读取 JSON 失败 (${key}):`, { error: err });
+			return new Error(`[Storage] 读取 JSON 失败 (${key}): ${String(err)}`);
 		},
 	);
 
@@ -164,9 +163,8 @@ export function setJson<T>(key: string, value: T): E.Either<Error, void> {
 	return E.tryCatch(
 		() => localStorage.setItem(key, JSON.stringify(value)),
 		(err) => {
-			const error = new Error(`[Storage] 写入 JSON 失败 (${key}): ${err}`);
-			logError(`[Storage] 写入 JSON 失败 (${key}):`, err);
-			return error;
+			logError(`[Storage] 写入 JSON 失败 (${key}):`, { error: err });
+			return new Error(`[Storage] 写入 JSON 失败 (${key}): ${String(err)}`);
 		},
 	);
 }
@@ -188,8 +186,8 @@ export function getJsonUnsafe<T>(key: string, defaultValue: T): T {
 			return JSON.parse(stored) as T;
 		},
 		(err) => {
-			logError(`[Storage] 解析 JSON 失败 (${key}):`, err);
-			return new Error(`[Storage] 解析 JSON 失败 (${key}): ${err}`);
+			logError(`[Storage] 解析 JSON 失败 (${key}):`, { error: err });
+			return new Error(`[Storage] 解析 JSON 失败 (${key}): ${String(err)}`);
 		},
 	);
 
@@ -260,8 +258,8 @@ export function has(key: string): boolean {
 	const result = E.tryCatch(
 		() => localStorage.getItem(key) !== null,
 		(err) => {
-			logError(`[Storage] 检查键失败 (${key}):`, err);
-			return new Error(`[Storage] 检查键失败 (${key}): ${err}`);
+			logError(`[Storage] 检查键失败 (${key}):`, { error: err });
+			return new Error(`[Storage] 检查键失败 (${key}): ${String(err)}`);
 		},
 	);
 
@@ -299,9 +297,8 @@ export function setAutoBackupEnabled(enabled: boolean): E.Either<Error, void> {
 	return E.tryCatch(
 		() => localStorage.setItem(STORAGE_KEYS.AUTO_BACKUP_ENABLED, enabled.toString()),
 		(err) => {
-			const error = new Error(`[Storage] 设置自动备份状态失败: ${err}`);
 			logError("[Storage] 设置自动备份状态失败", { error: err }, "settings.storage");
-			return error;
+			return new Error(`[Storage] 设置自动备份状态失败: ${String(err)}`);
 		},
 	);
 }
