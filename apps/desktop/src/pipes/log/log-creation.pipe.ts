@@ -35,9 +35,9 @@ export const createLogEntry = (
   source?: string,
   config: LogConfig = DEFAULT_LOG_CONFIG,
 ): {
-  entry: LogEntry;
-  shouldLog: boolean;
-  consoleOutput?: string;
+  readonly entry: LogEntry;
+  readonly shouldLog: boolean;
+  readonly consoleOutput?: string;
 } => {
   // 检查是否应该记录此级别的日志
   const shouldLogEntry = shouldLog(level, config.minLevel);
@@ -72,17 +72,17 @@ export const createLogEntry = (
  * @returns 处理后的日志条目数组
  */
 export const createLogEntries = (
-  entries: Array<{
-    level: LogLevel;
-    message: string;
-    context?: Record<string, unknown>;
-    source?: string;
+  entries: ReadonlyArray<{
+    readonly level: LogLevel;
+    readonly message: string;
+    readonly context?: Record<string, unknown>;
+    readonly source?: string;
   }>,
   config: LogConfig = DEFAULT_LOG_CONFIG,
-): Array<{
-  entry: LogEntry;
-  shouldLog: boolean;
-  consoleOutput?: string;
+): ReadonlyArray<{
+  readonly entry: LogEntry;
+  readonly shouldLog: boolean;
+  readonly consoleOutput?: string;
 }> => {
   return entries.map(({ level, message, context, source }) =>
     createLogEntry(level, message, context, source, config)
@@ -96,9 +96,9 @@ export const createLogEntries = (
  * @returns 验证结果
  */
 export const validateLogConfig = (config: Partial<LogConfig>): {
-  isValid: boolean;
-  errors: string[];
-  mergedConfig: LogConfig;
+  readonly isValid: boolean;
+  readonly errors: ReadonlyArray<string>;
+  readonly mergedConfig: LogConfig;
 } => {
   const errors: string[] = [];
   const mergedConfig = { ...DEFAULT_LOG_CONFIG, ...config };
@@ -125,7 +125,7 @@ export const validateLogConfig = (config: Partial<LogConfig>): {
 
   return {
     isValid: errors.length === 0,
-    errors,
+    errors: errors as ReadonlyArray<string>,
     mergedConfig,
   };
 };

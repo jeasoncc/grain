@@ -29,14 +29,14 @@ import type { AppError } from "@/types/error";
  * 匹配旧的 wikiEntries 表结构
  */
 interface LegacyWikiEntry {
-	id: string;
-	project: string;
-	name: string;
-	alias: string[];
-	tags: string[];
-	content: string;
-	createDate: string;
-	updatedAt: string;
+	readonly id: string;
+	readonly project: string;
+	readonly name: string;
+	readonly alias: ReadonlyArray<string>;
+	readonly tags: ReadonlyArray<string>;
+	readonly content: string;
+	readonly createDate: string;
+	readonly updatedAt: string;
 }
 
 // ==============================
@@ -48,9 +48,9 @@ interface LegacyWikiEntry {
  */
 export interface MigrationResult {
 	/** 成功迁移的条目数 */
-	migrated: number;
+	readonly migrated: number;
 	/** 失败迁移的错误消息数组 */
-	errors: string[];
+	readonly errors: ReadonlyArray<string>;
 }
 
 // ==============================
@@ -142,11 +142,10 @@ export async function checkMigrationNeeded(
 		}
 		const count = await table.where("project").equals(workspaceId).count();
 		return count > 0;
-	} catch (error) {
+	} catch (err) {
 		// 迁移后表可能不存在
 		debug(
-			`Wiki entries table not found or empty for workspace ${workspaceId}:`,
-			error,
+			`Wiki entries table not found or empty for workspace ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`,
 		);
 		return false;
 	}
@@ -162,26 +161,21 @@ export async function checkMigrationNeeded(
 export async function migrateWikiEntriesToFiles(
 	workspaceId: string,
 ): Promise<MigrationResult> {
-	const result: MigrationResult = {
-		migrated: 0,
-		errors: [],
-	};
-
 	try {
 		// 从旧表获取此工作区的所有 wiki 条目
 		const table = legacyDatabase.table("wikiEntries");
 		if (!table) {
 			info(`Wiki entries table not found for workspace ${workspaceId}`);
-			return result;
+			return { migrated: 0, errors: [] };
 		}
 		const wikiEntries = (await table
 			.where("project")
 			.equals(workspaceId)
-			.toArray()) as LegacyWikiEntry[];
+			.toArray()) as ReadonlyArray<LegacyWikiEntry>;
 
 		if (wikiEntries.length === 0) {
 			info(`No wiki entries to migrate for workspace ${workspaceId}`);
-			return result;
+			return { migrated: 0, errors: [] };
 		}
 
 		info(
@@ -195,28 +189,31 @@ export async function migrateWikiEntriesToFiles(
 		);
 
 		// 迁移每个条目
-		for (const entry of wikiEntries) {
-			try {
-				await migrateWikiEntry(entry, wikiFolder.id, workspaceId);
-				result.migrated++;
-			} catch (error) {
-				const errorMessage = `Failed to migrate wiki entry "${entry.name}" (${entry.id}): ${error instanceof Error ? error.message : String(error)}`;
-				result.errors.push(errorMessage);
+		const migrationResults = await Promise.allSettled(
+			wikiEntries.map(entry => migrateWikiEntry(entry, wikiFolder.id, workspaceId))
+		);
+
+		const migrated = migrationResults.filter(result => result.status === 'fulfilled').length;
+		const errors = migrationResults
+			.filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+			.map((result, index) => {
+				const entry = wikiEntries[index];
+				const errorMessage = `Failed to migrate wiki entry "${entry.name}" (${entry.id}): ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`;
 				error(errorMessage);
-				// 继续处理剩余条目
-			}
-		}
+				return errorMessage;
+			});
+
+		const result: MigrationResult = { migrated, errors };
 
 		success(
 			`Migration complete for workspace ${workspaceId}: ${result.migrated} migrated, ${result.errors.length} errors`,
 		);
 
 		return result;
-	} catch (error) {
-		const errorMessage = `Migration failed for workspace ${workspaceId}: ${error instanceof Error ? error.message : String(error)}`;
-		result.errors.push(errorMessage);
+	} catch (err) {
+		const errorMessage = `Migration failed for workspace ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`;
 		error(errorMessage);
-		return result;
+		return { migrated: 0, errors: [errorMessage] };
 	}
 }
 
@@ -250,7 +247,7 @@ async function migrateWikiEntry(
 	const node = nodeResult.right;
 
 	// 应用 "wiki" 标签并保留原始标签
-	const tags =
+	const tags: readonly string[] =
 		entry.tags?.length > 0
 			? [...new Set([WIKI_TAG, ...entry.tags])]
 			: [WIKI_TAG];

@@ -8,9 +8,12 @@
  * @requirements 1.4, 5.1, 5.2
  */
 
-import * as A from "fp-ts/Array";
 import { pipe } from "fp-ts/function";
+import * as N from "fp-ts/number";
 import * as O from "fp-ts/Option";
+import * as Ord from "fp-ts/Ord";
+import * as RA from "fp-ts/ReadonlyArray";
+import * as S from "fp-ts/string";
 import type { TagInterface } from "@/types/tag";
 
 // ============================================================================
@@ -72,12 +75,12 @@ export const validateTagName = (name: string): string | null => {
  * @returns 匹配前缀的标签数组
  */
 export const filterTagsByPrefix = (
-	tags: TagInterface[],
+	tags: ReadonlyArray<TagInterface>,
 	prefix: string,
-): TagInterface[] =>
+): ReadonlyArray<TagInterface> =>
 	pipe(
 		tags,
-		A.filter((t) => t.name.toLowerCase().startsWith(prefix.toLowerCase())),
+		RA.filter((t) => t.name.toLowerCase().startsWith(prefix.toLowerCase())),
 	);
 
 /**
@@ -88,12 +91,12 @@ export const filterTagsByPrefix = (
  * @returns 使用次数达标的标签数组
  */
 export const filterTagsByMinCount = (
-	tags: TagInterface[],
+	tags: ReadonlyArray<TagInterface>,
 	minCount: number,
-): TagInterface[] =>
+): ReadonlyArray<TagInterface> =>
 	pipe(
 		tags,
-		A.filter((t) => t.count >= minCount),
+		RA.filter((t) => t.count >= minCount),
 	);
 
 // ============================================================================
@@ -106,8 +109,16 @@ export const filterTagsByMinCount = (
  * @param tags - 标签数组
  * @returns 排序后的标签数组（不修改原数组）
  */
-export const sortTagsByCount = (tags: TagInterface[]): TagInterface[] =>
-	pipe([...tags], (arr) => arr.sort((a, b) => b.count - a.count));
+export const sortTagsByCount = (tags: ReadonlyArray<TagInterface>): ReadonlyArray<TagInterface> =>
+	pipe(
+		tags,
+		RA.sortBy([
+			pipe(
+				N.Ord,
+				Ord.contramap((tag: TagInterface) => -tag.count)
+			)
+		])
+	);
 
 /**
  * 按名称字母顺序排序标签
@@ -115,8 +126,16 @@ export const sortTagsByCount = (tags: TagInterface[]): TagInterface[] =>
  * @param tags - 标签数组
  * @returns 排序后的标签数组（不修改原数组）
  */
-export const sortTagsAlphabetically = (tags: TagInterface[]): TagInterface[] =>
-	pipe([...tags], (arr) => arr.sort((a, b) => a.name.localeCompare(b.name)));
+export const sortTagsAlphabetically = (tags: ReadonlyArray<TagInterface>): ReadonlyArray<TagInterface> =>
+	pipe(
+		tags,
+		RA.sortBy([
+			pipe(
+				S.Ord,
+				Ord.contramap((tag: TagInterface) => tag.name)
+			)
+		])
+	);
 
 // ============================================================================
 // Extraction Functions
@@ -129,7 +148,7 @@ export const sortTagsAlphabetically = (tags: TagInterface[]): TagInterface[] =>
  * @param content - 内容字符串
  * @returns 提取的标签名称数组（已去重和规范化）
  */
-export const extractTagsFromContent = (content: string): string[] => {
+export const extractTagsFromContent = (content: string): ReadonlyArray<string> => {
 	const matches = content.matchAll(TAG_PATTERN);
 	const tags = new Set<string>();
 
@@ -140,7 +159,7 @@ export const extractTagsFromContent = (content: string): string[] => {
 		}
 	}
 
-	return Array.from(tags);
+	return Array.from(tags) as ReadonlyArray<string>;
 };
 
 /**
@@ -149,11 +168,11 @@ export const extractTagsFromContent = (content: string): string[] => {
  * @param tags - 标签数组
  * @returns 唯一的标签名称数组
  */
-export const getUniqueTagNames = (tags: TagInterface[]): string[] =>
+export const getUniqueTagNames = (tags: ReadonlyArray<TagInterface>): ReadonlyArray<string> =>
 	pipe(
 		tags,
-		A.map((t) => t.name),
-		(names) => [...new Set(names)],
+		RA.map((t) => t.name),
+		(names) => [...new Set(names)] as ReadonlyArray<string>,
 	);
 
 // ============================================================================
@@ -166,10 +185,10 @@ export const getUniqueTagNames = (tags: TagInterface[]): string[] =>
  * @param tags - 标签数组
  * @returns 总使用次数
  */
-export const getTotalTagUsage = (tags: TagInterface[]): number =>
+export const getTotalTagUsage = (tags: ReadonlyArray<TagInterface>): number =>
 	pipe(
 		tags,
-		A.reduce(0, (sum, t) => sum + t.count),
+		RA.reduce(0, (sum, t) => sum + t.count),
 	);
 
 /**
@@ -179,8 +198,8 @@ export const getTotalTagUsage = (tags: TagInterface[]): number =>
  * @param n - 要获取的数量
  * @returns 前 N 个标签
  */
-export const getTopTags = (tags: TagInterface[], n: number): TagInterface[] =>
-	pipe(tags, sortTagsByCount, A.takeLeft(n));
+export const getTopTags = (tags: ReadonlyArray<TagInterface>, n: number): ReadonlyArray<TagInterface> =>
+	pipe(tags, sortTagsByCount, RA.takeLeft(n));
 
 /**
  * 按工作区过滤标签
@@ -190,12 +209,12 @@ export const getTopTags = (tags: TagInterface[], n: number): TagInterface[] =>
  * @returns 属于指定工作区的标签数组
  */
 export const filterTagsByWorkspace = (
-	tags: TagInterface[],
+	tags: ReadonlyArray<TagInterface>,
 	workspaceId: string,
-): TagInterface[] =>
+): ReadonlyArray<TagInterface> =>
 	pipe(
 		tags,
-		A.filter((t) => t.workspace === workspaceId),
+		RA.filter((t) => t.workspace === workspaceId),
 	);
 
 /**
@@ -207,13 +226,13 @@ export const filterTagsByWorkspace = (
  * @returns 找到的标签或 undefined
  */
 export const findTag = (
-	tags: TagInterface[],
+	tags: ReadonlyArray<TagInterface>,
 	name: string,
 	workspaceId: string,
 ): TagInterface | undefined =>
 	pipe(
 		tags,
-		A.findFirst(
+		RA.findFirst(
 			(t) =>
 				t.name.toLowerCase() === name.toLowerCase() &&
 				t.workspace === workspaceId,

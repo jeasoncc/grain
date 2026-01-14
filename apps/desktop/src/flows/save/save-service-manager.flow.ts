@@ -97,7 +97,7 @@ export interface SaveServiceManagerInterface {
 	/** 清理所有 model */
 	readonly disposeAll: () => void;
 	/** 获取所有有未保存更改的节点 ID */
-	readonly getUnsavedNodeIds: () => readonly string[];
+	readonly getUnsavedNodeIds: () => ReadonlyArray<string>;
 	/** 保存所有未保存的内容 */
 	readonly saveAll: () => Promise<void>;
 	/** 检查 model 是否存在 */
@@ -304,29 +304,23 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 			models.clear();
 		},
 
-		getUnsavedNodeIds: (): readonly string[] => {
-			const unsaved: string[] = [];
-			for (const [nodeId, model] of models) {
-				if (
+		getUnsavedNodeIds: (): ReadonlyArray<string> => {
+			return Array.from(models.entries())
+				.filter(([, model]) => 
 					model.pendingContent !== null &&
 					model.pendingContent !== model.lastSavedContent
-				) {
-					unsaved.push(nodeId);
-				}
-			}
-			return unsaved;
+				)
+				.map(([nodeId]) => nodeId);
 		},
 
 		saveAll: async (): Promise<void> => {
-			const unsavedIds: string[] = [];
-			for (const [nodeId, model] of models) {
-				if (
+			const unsavedIds = Array.from(models.entries())
+				.filter(([, model]) => 
 					model.pendingContent !== null &&
 					model.pendingContent !== model.lastSavedContent
-				) {
-					unsavedIds.push(nodeId);
-				}
-			}
+				)
+				.map(([nodeId]) => nodeId);
+			
 			await Promise.all(unsavedIds.map((nodeId) => saveContent(nodeId)));
 		},
 

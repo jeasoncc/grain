@@ -72,7 +72,7 @@ export interface MigrationResult {
 		readonly contents: number;
 		readonly users: number;
 	};
-	readonly errors: readonly string[];
+	readonly errors: ReadonlyArray<string>;
 	readonly startedAt: string;
 	readonly completedAt?: string;
 	readonly idMapping?: IdMapping;
@@ -82,10 +82,10 @@ export interface MigrationResult {
  * Dexie 数据快照
  */
 export interface DexieDataSnapshot {
-	readonly workspaces: readonly WorkspaceInterface[];
-	readonly nodes: readonly NodeInterface[];
-	readonly contents: readonly ContentInterface[];
-	readonly users: readonly UserInterface[];
+	readonly workspaces: ReadonlyArray<WorkspaceInterface>;
+	readonly nodes: ReadonlyArray<NodeInterface>;
+	readonly contents: ReadonlyArray<ContentInterface>;
+	readonly users: ReadonlyArray<UserInterface>;
 }
 
 // ============================================================================
@@ -231,31 +231,42 @@ export const readDexieData = (): TE.TaskEither<AppError, DexieDataSnapshot> =>
  * 迁移用户数据
  */
 const migrateUsers = (
-	users: readonly UserInterface[],
-): TE.TaskEither<AppError, { count: number; mapping: Map<string, string> }> =>
+	users: ReadonlyArray<UserInterface>,
+): TE.TaskEither<AppError, { count: number; mapping: ReadonlyMap<string, string> }> =>
 	TE.tryCatch(
 		async () => {
-			let count = 0;
-			const mapping = new Map<string, string>();
+			const results = await Promise.allSettled(
+				users.map(async (user) => {
+					const result = await createUser({
+						username: user.username,
+						displayName: user.displayName,
+						email: user.email,
+						avatar: user.avatar,
+						plan: user.plan,
+						settings: user.settings,
+					})();
 
-			for (const user of users) {
-				const result = await createUser({
-					username: user.username,
-					displayName: user.displayName,
-					email: user.email,
-					avatar: user.avatar,
-					plan: user.plan,
-					settings: user.settings,
-				})();
+					if (E.isRight(result)) {
+						return { oldId: user.id, newId: result.right.id };
+					} else {
+						warn(`[Migration] 用户迁移失败: ${user.id}`, result.left);
+						throw new Error(`用户迁移失败: ${user.id}`);
+					}
+				})
+			);
 
-				if (E.isRight(result)) {
-					mapping.set(user.id, result.right.id);
-					count++;
-				} else {
-					warn(`[Migration] 用户迁移失败: ${user.id}`, result.left);
-				}
-			}
-			return { count, mapping };
+			const successful = results
+				.filter((result): result is PromiseFulfilledResult<{ oldId: string; newId: string }> => 
+					result.status === 'fulfilled'
+				)
+				.map(result => result.value);
+
+			const mapping = new Map(successful.map(({ oldId, newId }) => [oldId, newId]));
+			
+			return { 
+				count: successful.length, 
+				mapping: mapping as ReadonlyMap<string, string>
+			};
 		},
 		(error): AppError => dbError(`迁移用户失败: ${error}`),
 	);
@@ -264,40 +275,51 @@ const migrateUsers = (
  * 迁移工作区数据
  */
 const migrateWorkspaces = (
-	workspaces: readonly WorkspaceInterface[],
-	userMapping: Map<string, string>,
-): TE.TaskEither<AppError, { count: number; mapping: Map<string, string> }> =>
+	workspaces: ReadonlyArray<WorkspaceInterface>,
+	userMapping: ReadonlyMap<string, string>,
+): TE.TaskEither<AppError, { count: number; mapping: ReadonlyMap<string, string> }> =>
 	TE.tryCatch(
 		async () => {
-			let count = 0;
-			const mapping = new Map<string, string>();
+			const results = await Promise.allSettled(
+				workspaces.map(async (workspace) => {
+					// 映射 owner ID
+					const newOwnerId = workspace.owner
+						? userMapping.get(workspace.owner) || workspace.owner
+						: undefined;
 
-			for (const workspace of workspaces) {
-				// 映射 owner ID
-				const newOwnerId = workspace.owner
-					? userMapping.get(workspace.owner) || workspace.owner
-					: undefined;
+					const result = await createWorkspace({
+						title: workspace.title,
+						description: workspace.description,
+						owner: newOwnerId,
+						author: workspace.author,
+						publisher: workspace.publisher,
+						language: workspace.language,
+					})();
 
-				const result = await createWorkspace({
-					title: workspace.title,
-					description: workspace.description,
-					owner: newOwnerId,
-					author: workspace.author,
-					publisher: workspace.publisher,
-					language: workspace.language,
-				})();
+					if (E.isRight(result)) {
+						return { oldId: workspace.id, newId: result.right.id };
+					} else {
+						warn(
+							`[Migration] 工作区迁移失败: ${workspace.id}`,
+							result.left,
+						);
+						throw new Error(`工作区迁移失败: ${workspace.id}`);
+					}
+				})
+			);
 
-				if (E.isRight(result)) {
-					mapping.set(workspace.id, result.right.id);
-					count++;
-				} else {
-					warn(
-						`[Migration] 工作区迁移失败: ${workspace.id}`,
-						result.left,
-					);
-				}
-			}
-			return { count, mapping };
+			const successful = results
+				.filter((result): result is PromiseFulfilledResult<{ oldId: string; newId: string }> => 
+					result.status === 'fulfilled'
+				)
+				.map(result => result.value);
+
+			const mapping = new Map(successful.map(({ oldId, newId }) => [oldId, newId]));
+			
+			return { 
+				count: successful.length, 
+				mapping: mapping as ReadonlyMap<string, string>
+			};
 		},
 		(error): AppError => dbError(`迁移工作区失败: ${error}`),
 	);
@@ -306,14 +328,11 @@ const migrateWorkspaces = (
  * 迁移节点数据
  */
 const migrateNodes = (
-	nodes: readonly NodeInterface[],
-	workspaceMapping: Map<string, string>,
-): TE.TaskEither<AppError, { count: number; mapping: Map<string, string> }> =>
+	nodes: ReadonlyArray<NodeInterface>,
+	workspaceMapping: ReadonlyMap<string, string>,
+): TE.TaskEither<AppError, { count: number; mapping: ReadonlyMap<string, string> }> =>
 	TE.tryCatch(
 		async () => {
-			let count = 0;
-			const mapping = new Map<string, string>();
-
 			// 按层级排序：先迁移根节点，再迁移子节点
 			// 这样可以确保父节点的新 ID 已经存在于 mapping 中
 			const sortedNodes = [...nodes].sort((a, b) => {
@@ -325,6 +344,9 @@ const migrateNodes = (
 				};
 				return getDepth(a) - getDepth(b);
 			});
+
+			const mapping = new Map<string, string>();
+			let count = 0;
 
 			for (const node of sortedNodes) {
 				// 映射 workspace ID
@@ -351,7 +373,7 @@ const migrateNodes = (
 						collapsed: node.collapsed,
 					},
 					undefined,
-					[...node.tags],
+					Array.from(node.tags || []),
 				)();
 
 				if (E.isRight(result)) {
@@ -361,7 +383,11 @@ const migrateNodes = (
 					warn(`[Migration] 节点迁移失败: ${node.id}`, result.left);
 				}
 			}
-			return { count, mapping };
+			
+			return { 
+				count, 
+				mapping: mapping as ReadonlyMap<string, string>
+			};
 		},
 		(error): AppError => dbError(`迁移节点失败: ${error}`),
 	);
@@ -370,35 +396,39 @@ const migrateNodes = (
  * 迁移内容数据
  */
 const migrateContents = (
-	contents: readonly ContentInterface[],
-	nodeMapping: Map<string, string>,
+	contents: ReadonlyArray<ContentInterface>,
+	nodeMapping: ReadonlyMap<string, string>,
 ): TE.TaskEither<AppError, number> =>
 	TE.tryCatch(
 		async () => {
-			let count = 0;
-			for (const content of contents) {
-				// 映射 nodeId
-				const newNodeId = nodeMapping.get(content.nodeId);
-				if (!newNodeId) {
-					warn(
-						`[Migration] 内容 ${content.id} 的节点 ${content.nodeId} 未找到映射`,
-					);
-					continue;
-				}
+			const results = await Promise.allSettled(
+				contents.map(async (content) => {
+					// 映射 nodeId
+					const newNodeId = nodeMapping.get(content.nodeId);
+					if (!newNodeId) {
+						warn(
+							`[Migration] 内容 ${content.id} 的节点 ${content.nodeId} 未找到映射`,
+						);
+						throw new Error(`节点映射未找到: ${content.nodeId}`);
+					}
 
-				const result = await createContent({
-					nodeId: newNodeId,
-					content: content.content,
-					contentType: content.contentType,
-				})();
+					const result = await createContent({
+						nodeId: newNodeId,
+						content: content.content,
+						contentType: content.contentType,
+					})();
 
-				if (E.isRight(result)) {
-					count++;
-				} else {
-					warn(`[Migration] 内容迁移失败: ${content.id}`, result.left);
-				}
-			}
-			return count;
+					if (E.isRight(result)) {
+						return result.right;
+					} else {
+						warn(`[Migration] 内容迁移失败: ${content.id}`, result.left);
+						throw new Error(`内容迁移失败: ${content.id}`);
+					}
+				})
+			);
+
+			const successful = results.filter(result => result.status === 'fulfilled');
+			return successful.length;
 		},
 		(error): AppError => dbError(`迁移内容失败: ${error}`),
 	);

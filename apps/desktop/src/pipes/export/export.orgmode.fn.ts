@@ -273,40 +273,37 @@ export function convertRootChild(
 	prevNodeType?: string,
 ): string {
 	const opts = { ...defaultOptions, ...options };
-	const lines: string[] = [];
+	const lines: ReadonlyArray<string> = [];
 
 	switch (node.type) {
 		case "paragraph": {
 			const content = convertParagraphNode(node, opts);
-			lines.push(content);
-			break;
+			return [...lines, content].join("\n");
 		}
 		case "heading": {
-			if (opts.blankLineBeforeHeading && prevNodeType) {
-				lines.push("");
-			}
-			lines.push(convertHeadingNode(node, opts));
-			if (opts.blankLineAfterHeading) {
-				lines.push("");
-			}
-			break;
+			const linesWithBlankBefore = opts.blankLineBeforeHeading && prevNodeType
+				? [...lines, ""]
+				: lines;
+			const linesWithHeading = [...linesWithBlankBefore, convertHeadingNode(node, opts)];
+			const finalLines = opts.blankLineAfterHeading
+				? [...linesWithHeading, ""]
+				: linesWithHeading;
+			return finalLines.join("\n");
 		}
 		case "list": {
-			if (opts.blankLineBeforeList && prevNodeType && prevNodeType !== "list") {
-				lines.push("");
-			}
-			lines.push(convertListNode(node, opts));
-			if (opts.blankLineAfterList) {
-				lines.push("");
-			}
-			break;
+			const linesWithBlankBefore = opts.blankLineBeforeList && prevNodeType && prevNodeType !== "list"
+				? [...lines, ""]
+				: lines;
+			const linesWithList = [...linesWithBlankBefore, convertListNode(node, opts)];
+			const finalLines = opts.blankLineAfterList
+				? [...linesWithList, ""]
+				: linesWithList;
+			return finalLines.join("\n");
 		}
 		default:
 			// 处理未知节点类型
-			break;
+			return lines.join("\n");
 	}
-
-	return lines.join("\n");
 }
 
 // ==============================
@@ -320,32 +317,33 @@ export function convertRootChild(
  * @returns Org-mode 属性字符串
  */
 export function generateOrgProperties(options: OrgmodeExportOptions): string {
-	const lines: string[] = [];
+	const lines: ReadonlyArray<string> = [];
 
-	if (options.title) {
-		lines.push(`#+TITLE: ${options.title}`);
-	}
+	const linesWithTitle = options.title 
+		? [...lines, `#+TITLE: ${options.title}`]
+		: lines;
 
-	if (options.author) {
-		lines.push(`#+AUTHOR: ${options.author}`);
-	}
+	const linesWithAuthor = options.author
+		? [...linesWithTitle, `#+AUTHOR: ${options.author}`]
+		: linesWithTitle;
 
-	if (options.date) {
-		lines.push(`#+DATE: ${options.date}`);
-	}
+	const linesWithDate = options.date
+		? [...linesWithAuthor, `#+DATE: ${options.date}`]
+		: linesWithAuthor;
 
 	// 添加自定义属性
-	if (options.properties) {
-		for (const [key, value] of Object.entries(options.properties)) {
-			lines.push(`#+${key.toUpperCase()}: ${value}`);
-		}
-	}
+	const finalLines = options.properties
+		? Object.entries(options.properties).reduce(
+			(acc, [key, value]) => [...acc, `#+${key.toUpperCase()}: ${value}`],
+			linesWithDate
+		)
+		: linesWithDate;
 
-	if (lines.length > 0) {
-		lines.push("");
-	}
+	const result = finalLines.length > 0 
+		? [...finalLines, ""]
+		: finalLines;
 
-	return lines.join("\n");
+	return result.join("\n");
 }
 
 /**
@@ -360,27 +358,32 @@ export function convertDocumentToOrgmode(
 	options: OrgmodeExportOptions = {},
 ): string {
 	const opts = { ...defaultOptions, ...options };
-	const lines: string[] = [];
+	const lines: ReadonlyArray<string> = [];
 
 	// 添加文档属性
-	if (opts.includeProperties || opts.includeTitle) {
-		const properties = generateOrgProperties(opts);
-		if (properties) {
-			lines.push(properties);
-		}
-	}
+	const linesWithProperties = (opts.includeProperties || opts.includeTitle)
+		? (() => {
+			const properties = generateOrgProperties(opts);
+			return properties ? [...lines, properties] : lines;
+		})()
+		: lines;
 
 	// 转换内容
-	let prevNodeType: string | undefined;
-	for (const child of document.root.children) {
-		const converted = convertRootChild(child, opts, prevNodeType);
-		if (converted) {
-			lines.push(converted);
+	const { finalLines } = document.root.children.reduce(
+		(acc, child) => {
+			const converted = convertRootChild(child, opts, acc.prevNodeType);
+			return {
+				finalLines: converted ? [...acc.finalLines, converted] : acc.finalLines,
+				prevNodeType: child.type,
+			};
+		},
+		{
+			finalLines: linesWithProperties,
+			prevNodeType: undefined as string | undefined,
 		}
-		prevNodeType = child.type;
-	}
+	);
 
-	return lines.join("\n").trim();
+	return finalLines.join("\n").trim();
 }
 
 // ==============================
@@ -421,21 +424,28 @@ export function exportMultipleToOrgmode(
 	options: OrgmodeExportOptions = {},
 	separator: string = "\n\n",
 ): E.Either<ExportError, string> {
-	const results: string[] = [];
+	const results = contents.reduce<E.Either<ExportError, ReadonlyArray<string>>>(
+		(acc, item) => {
+			if (E.isLeft(acc)) return acc;
+			
+			const itemOptions = {
+				...options,
+				includeTitle: !!item.title,
+				title: item.title,
+			};
 
-	for (const item of contents) {
-		const itemOptions = {
-			...options,
-			includeTitle: !!item.title,
-			title: item.title,
-		};
+			const result = exportToOrgmode(item.content, itemOptions);
+			if (E.isLeft(result)) {
+				return result;
+			}
+			
+			return E.right([...acc.right, result.right]);
+		},
+		E.right([])
+	);
 
-		const result = exportToOrgmode(item.content, itemOptions);
-		if (E.isLeft(result)) {
-			return result;
-		}
-		results.push(result.right);
-	}
-
-	return E.right(results.join(separator));
+	return pipe(
+		results,
+		E.map(resultArray => resultArray.join(separator))
+	);
 }
