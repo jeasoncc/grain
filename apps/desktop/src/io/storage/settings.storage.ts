@@ -188,7 +188,7 @@ export function getJsonUnsafe<T>(key: string, defaultValue: T): T {
  *
  * @returns 存储统计信息
  */
-export function getStorageStats(): { size: number; keys: number } {
+export function getStorageStats(): { readonly size: number; readonly keys: number } {
 	try {
 		let totalSize = 0;
 		const keys = Object.keys(localStorage);
@@ -216,7 +216,7 @@ export function getStorageStats(): { size: number; keys: number } {
  *
  * @returns 键名数组
  */
-export function getAllKeys(): string[] {
+export function getAllKeys(): readonly string[] {
 	try {
 		return Object.keys(localStorage);
 	} catch (error) {
