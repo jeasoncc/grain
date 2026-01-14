@@ -6,15 +6,15 @@
  * Tag Graph 数据接口
  */
 export interface TagGraphData {
-	nodes: Array<{
-		id: string;
-		name: string;
-		count: number;
+	readonly nodes: ReadonlyArray<{
+		readonly id: string;
+		readonly name: string;
+		readonly count: number;
 	}>;
-	edges: Array<{
-		source: string;
-		target: string;
-		weight: number;
+	readonly edges: ReadonlyArray<{
+		readonly source: string;
+		readonly target: string;
+		readonly weight: number;
 	}>;
 }
 
