@@ -36,7 +36,7 @@ export interface SaveResult {
 	readonly success: boolean;
 	readonly error?: string;
 	readonly timestamp: Date;
-	readonly tags?: string[];
+	readonly tags?: readonly string[];
 	readonly documentId: string;
 }
 
@@ -72,7 +72,7 @@ export const hasContentChanged = (
  */
 export const createSuccessResult = (
 	documentId: string,
-	tags: string[],
+	tags: readonly string[],
 ): SaveResult => ({
 	success: true,
 	timestamp: dayjs().toDate(),
@@ -130,7 +130,7 @@ const saveContentToDb = (
  */
 const updateNodeTags = (
 	documentId: string,
-	tags: string[],
+	tags: readonly string[],
 ): TE.TaskEither<AppError, void> =>
 	pipe(
 		TE.tryCatch(
@@ -150,7 +150,7 @@ const updateNodeTags = (
  */
 const syncTagCacheForWorkspace = (
 	workspaceId: string,
-	_tags: string[],
+	_tags: readonly string[],
 ): TE.TaskEither<AppError, void> =>
 	pipe(
 		TE.tryCatch(
