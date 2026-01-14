@@ -20,15 +20,15 @@ import { debug, error } from "@/io/log/logger.api";
 import type { NodeInterface } from "@/types/node";
 
 interface UseOptimisticCollapseOptions {
-	workspaceId: string | null | undefined;
+	readonly workspaceId: string | null | undefined;
 	/** 防抖延迟（毫秒），默认 300ms - Requirements: 6.4 */
-	debounceMs?: number;
+	readonly debounceMs?: number;
 }
 
 interface PendingUpdate {
-	nodeId: string;
-	collapsed: boolean;
-	previousData: NodeInterface[] | undefined;
+	readonly nodeId: string;
+	readonly collapsed: boolean;
+	readonly previousData: readonly NodeInterface[] | undefined;
 }
 
 /**
@@ -58,7 +58,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 		(
 			nodeId: string,
 			collapsed: boolean,
-			previousData: NodeInterface[] | undefined,
+			previousData: readonly NodeInterface[] | undefined,
 		): void => {
 			if (!workspaceId) return;
 
@@ -164,7 +164,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			const queryKey = queryKeys.nodes.byWorkspace(workspaceId);
 
 			// 1. 获取当前缓存数据（用于回滚）
-			const previousData = queryClient.getQueryData<NodeInterface[]>(queryKey);
+			const previousData = queryClient.getQueryData<readonly NodeInterface[]>(queryKey);
 
 			// Performance monitoring
 			const startTime = performance.now();
