@@ -14,6 +14,7 @@ import "@grain/editor-lexical/styles";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { error, info } from "@/io/log/logger.api";
 
 // 类型定义
 interface AppConfig {
@@ -101,7 +102,7 @@ const main = (): TE.TaskEither<Error, void> =>
 pipe(
 	main(),
 	TE.fold(
-		(error) => async () => console.error("App initialization failed:", error),
-		() => async () => console.log("App initialized successfully"),
+		(appError) => async () => error("[Main] App initialization failed", { error: appError }),
+		() => async () => info("[Main] App initialized successfully"),
 	),
 )();
