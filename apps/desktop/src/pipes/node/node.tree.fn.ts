@@ -95,7 +95,7 @@ export const getNodePath = (
 
 	while (currentId) {
 		const node = pipe(
-			nodes,
+			nodes as NodeInterface[],
 			A.findFirst((n) => n.id === currentId),
 			O.toNullable,
 		);
