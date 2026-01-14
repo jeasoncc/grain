@@ -10,6 +10,7 @@
  * 目标覆盖率：> 90%
  */
 
+import dayjs from "dayjs";
 import { describe, expect, it } from "vitest";
 import {
 	type DiaryTemplateParams,
@@ -53,7 +54,7 @@ describe("diaryConfig", () => {
 		});
 
 		it("应该接受有效的日期", () => {
-			const validDate = new Date("2024-05-15T12:30:00.000Z");
+			const validDate = dayjs("2024-05-15T12:30:00.000Z").toDate();
 			const result = diaryParamsSchema.safeParse({ date: validDate });
 
 			expect(result.success).toBe(true);
@@ -77,9 +78,9 @@ describe("diaryConfig", () => {
 
 		it("应该处理边界日期值", () => {
 			const edgeDates = [
-				new Date(0), // Unix epoch
-				new Date("1900-01-01"), // 很早的日期
-				new Date("2100-12-31"), // 很晚的日期
+				dayjs(0).toDate(), // Unix epoch
+				dayjs("1900-01-01").toDate(), // 很早的日期
+				dayjs("2100-12-31").toDate(), // 很晚的日期
 			];
 
 			for (const date of edgeDates) {
@@ -90,7 +91,7 @@ describe("diaryConfig", () => {
 	});
 
 	describe("纯函数特性", () => {
-		const testDate = new Date("2024-01-15T10:30:00.000Z");
+		const testDate = dayjs("2024-01-15T10:30:00.000Z").toDate();
 
 		it("应该生成一致的结果（纯函数特性）", () => {
 			const params: DiaryTemplateParams = { date: testDate };
@@ -165,7 +166,7 @@ describe("diaryConfig", () => {
 
 		it("应该处理完整的创建流程", () => {
 			const params: DiaryTemplateParams = {
-				date: new Date("2024-01-15T10:30:00.000Z"),
+				date: dayjs("2024-01-15T10:30:00.000Z").toDate(),
 			};
 
 			// 1. 校验参数
