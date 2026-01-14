@@ -69,7 +69,7 @@ const generateCacheKey = (options: LogQueryOptions): string => {
   const normalized = {
     limit: options.limit || 100,
     offset: options.offset || 0,
-    levelFilter: options.levelFilter?.sort() || [],
+    levelFilter: options.levelFilter ? [...options.levelFilter].sort() : [],
     startTime: options.startTime || '',
     endTime: options.endTime || '',
     sourceFilter: options.sourceFilter || '',
