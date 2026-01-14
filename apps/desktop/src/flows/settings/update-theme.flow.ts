@@ -83,7 +83,7 @@ export const updateTheme = (
 	}
 
 	const store = useThemeStore.getState();
-	store.setThemeKey(params.themeKey);
+	store.setTheme(params.themeKey);
 	store.setMode(theme.type);
 	applyThemeWithTransition(theme, store.enableTransition);
 
@@ -121,7 +121,7 @@ export const updateThemeMode = (
 			const defaultThemeKey = getDefaultThemeKey(systemType);
 			const newTheme = getThemeByKey(defaultThemeKey);
 			if (newTheme) {
-				store.setThemeKey(defaultThemeKey);
+				store.setTheme(defaultThemeKey);
 				applyThemeWithTransition(newTheme, store.enableTransition);
 			}
 		} else if (currentTheme) {
@@ -132,7 +132,7 @@ export const updateThemeMode = (
 			const defaultThemeKey = getDefaultThemeKey(params.mode);
 			const newTheme = getThemeByKey(defaultThemeKey);
 			if (newTheme) {
-				store.setThemeKey(defaultThemeKey);
+				store.setTheme(defaultThemeKey);
 				applyThemeWithTransition(newTheme, store.enableTransition);
 			}
 		} else if (currentTheme) {
