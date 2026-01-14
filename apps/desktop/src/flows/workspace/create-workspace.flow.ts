@@ -32,7 +32,7 @@ export interface CreateWorkspaceParams {
 	/** 项目语言（可选） */
 	readonly language?: string;
 	/** 团队成员 ID 数组（可选） */
-	readonly members?: string[];
+	readonly members?: readonly string[];
 	/** 所有者用户 ID（可选） */
 	readonly owner?: string;
 }
