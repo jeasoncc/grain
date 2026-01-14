@@ -97,9 +97,9 @@ export function applyTheme(theme: Theme): void {
 	const fullColors = getExtendedColors(theme.colors, theme.type);
 
 	// 应用所有颜色变量（直接使用十六进制颜色）
-	Object.entries(fullColors).forEach(([key, value]) => {
+	for (const [key, value] of Object.entries(fullColors)) {
 		root.style.setProperty(`--${toKebabCase(key)}`, value);
-	});
+	}
 }
 
 /**
