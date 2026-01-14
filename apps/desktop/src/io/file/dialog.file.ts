@@ -10,7 +10,8 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
-import { warn } from "@/io/log/logger.api";
+import * as TE from "fp-ts/TaskEither";
+import { warn, error as logError } from "@/io/log/logger.api";
 
 // ============================================================================
 // 类型定义
@@ -72,41 +73,43 @@ export function isTauriEnvironment(): boolean {
  * 打开目录选择对话框
  *
  * @param options - 目录选择选项
- * @returns 选择的目录路径，如果用户取消则返回 null
+ * @returns TaskEither<Error, string | null>
  */
-export async function selectDirectory(
+export function selectDirectory(
 	options?: DirectorySelectOptions,
-): Promise<string | null> {
+): TE.TaskEither<Error, string | null> {
 	if (!isTauriEnvironment()) {
 		warn("[Dialog] selectDirectory: 非 Tauri 环境，返回 null");
-		return null;
+		return TE.right(null);
 	}
 
-	try {
-		const result = await invoke<string | null>("select_directory", {
-			initialDirectory: options?.defaultPath || null,
-		});
-		return result;
-	} catch (error) {
-		error("[Dialog] 目录选择失败", { error }, "dialog.file");
-		throw new Error(`目录选择失败: ${error}`);
-	}
+	return TE.tryCatch(
+		async () => {
+			const result = await invoke<string | null>("select_directory", {
+				initialDirectory: options?.defaultPath || null,
+			});
+			return result;
+		},
+		(err) => {
+			logError("[Dialog] 目录选择失败", { error: err }, "dialog.file");
+			return new Error(`目录选择失败: ${String(err)}`);
+		},
+	);
 }
 
 /**
  * 打开目录选择对话框（带详细结果）
  *
  * @param options - 目录选择选项
- * @returns 包含路径和取消状态的结果对象
+ * @returns TaskEither<Error, DirectorySelectResult>
  */
-export async function selectDirectoryWithResult(
+export function selectDirectoryWithResult(
 	options?: DirectorySelectOptions,
-): Promise<DirectorySelectResult> {
-	const path = await selectDirectory(options);
-	return {
+): TE.TaskEither<Error, DirectorySelectResult> {
+	return TE.map((path: string | null) => ({
 		path,
 		cancelled: path === null,
-	};
+	}))(selectDirectory(options));
 }
 
 // ============================================================================
@@ -116,77 +119,89 @@ export async function selectDirectoryWithResult(
 /**
  * 获取系统下载目录
  *
- * @returns 下载目录路径，非 Tauri 环境返回空字符串
+ * @returns TaskEither<Error, string>
  */
-export async function getDownloadsDirectory(): Promise<string> {
+export function getDownloadsDirectory(): TE.TaskEither<Error, string> {
 	if (!isTauriEnvironment()) {
-		return "";
+		return TE.right("");
 	}
 
-	try {
-		const result = await invoke<string>("get_downloads_dir");
-		return result;
-	} catch (error) {
-		error("[Dialog] 获取下载目录失败", { error }, "dialog.file");
-		return "";
-	}
+	return TE.tryCatch(
+		async () => {
+			const result = await invoke<string>("get_downloads_dir");
+			return result;
+		},
+		(err) => {
+			logError("[Dialog] 获取下载目录失败", { error: err }, "dialog.file");
+			return new Error(`获取下载目录失败: ${String(err)}`);
+		},
+	);
 }
 
 /**
  * 获取系统文档目录
  *
- * @returns 文档目录路径，非 Tauri 环境返回空字符串
+ * @returns TaskEither<Error, string>
  */
-export async function getDocumentsDirectory(): Promise<string> {
+export function getDocumentsDirectory(): TE.TaskEither<Error, string> {
 	if (!isTauriEnvironment()) {
-		return "";
+		return TE.right("");
 	}
 
-	try {
-		const result = await invoke<string>("get_documents_dir");
-		return result;
-	} catch (error) {
-		error("[Dialog] 获取文档目录失败", { error }, "dialog.file");
-		return "";
-	}
+	return TE.tryCatch(
+		async () => {
+			const result = await invoke<string>("get_documents_dir");
+			return result;
+		},
+		(err) => {
+			logError("[Dialog] 获取文档目录失败", { error: err }, "dialog.file");
+			return new Error(`获取文档目录失败: ${String(err)}`);
+		},
+	);
 }
 
 /**
  * 获取系统桌面目录
  *
- * @returns 桌面目录路径，非 Tauri 环境返回空字符串
+ * @returns TaskEither<Error, string>
  */
-export async function getDesktopDirectory(): Promise<string> {
+export function getDesktopDirectory(): TE.TaskEither<Error, string> {
 	if (!isTauriEnvironment()) {
-		return "";
+		return TE.right("");
 	}
 
-	try {
-		const result = await invoke<string>("get_desktop_dir");
-		return result;
-	} catch (error) {
-		error("[Dialog] 获取桌面目录失败", { error }, "dialog.file");
-		return "";
-	}
+	return TE.tryCatch(
+		async () => {
+			const result = await invoke<string>("get_desktop_dir");
+			return result;
+		},
+		(err) => {
+			logError("[Dialog] 获取桌面目录失败", { error: err }, "dialog.file");
+			return new Error(`获取桌面目录失败: ${String(err)}`);
+		},
+	);
 }
 
 /**
  * 获取用户主目录
  *
- * @returns 主目录路径，非 Tauri 环境返回空字符串
+ * @returns TaskEither<Error, string>
  */
-export async function getHomeDirectory(): Promise<string> {
+export function getHomeDirectory(): TE.TaskEither<Error, string> {
 	if (!isTauriEnvironment()) {
-		return "";
+		return TE.right("");
 	}
 
-	try {
-		const result = await invoke<string>("get_home_dir");
-		return result;
-	} catch (error) {
-		error("[Dialog] 获取主目录失败", { error }, "dialog.file");
-		return "";
-	}
+	return TE.tryCatch(
+		async () => {
+			const result = await invoke<string>("get_home_dir");
+			return result;
+		},
+		(err) => {
+			logError("[Dialog] 获取主目录失败", { error: err }, "dialog.file");
+			return new Error(`获取主目录失败: ${String(err)}`);
+		},
+	);
 }
 
 // ============================================================================
