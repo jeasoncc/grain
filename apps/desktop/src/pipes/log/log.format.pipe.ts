@@ -9,9 +9,11 @@
  */
 
 import * as A from "fp-ts/Array";
+import * as RA from "fp-ts/ReadonlyArray";
 import * as Ord from "fp-ts/Ord";
 import { pipe } from "fp-ts/function";
 import { v4 as uuidv4 } from "uuid";
+import dayjs from "dayjs";
 import type {
   LogEntry,
   LogLevel,
@@ -56,7 +58,7 @@ export const formatLogEntry = (
   source?: string,
 ): LogEntry => ({
   id: generateLogId(),
-  timestamp: new Date().toISOString(),
+  timestamp: dayjs().toISOString(),
   level,
   message,
   context,
@@ -75,7 +77,7 @@ export const addTimestamp = (
   timestamp?: string,
 ): LogEntry => ({
   ...entry,
-  timestamp: timestamp || new Date().toISOString(),
+  timestamp: timestamp || dayjs().toISOString(),
 });
 
 /**
@@ -110,7 +112,7 @@ export const addConsoleColors = (entry: LogEntry): string => {
   const icon = LOG_LEVEL_ICONS[entry.level];
   const reset = '\x1b[0m';
   
-  const timestamp = new Date(entry.timestamp).toLocaleTimeString();
+  const timestamp = dayjs(entry.timestamp).format('HH:mm:ss');
   const levelText = entry.level.toUpperCase().padEnd(7);
   const sourceText = entry.source ? ` [${entry.source}]` : '';
   
@@ -124,7 +126,7 @@ export const addConsoleColors = (entry: LogEntry): string => {
  * @returns 纯文本控制台输出字符串
  */
 export const formatConsoleOutput = (entry: LogEntry): string => {
-  const timestamp = new Date(entry.timestamp).toLocaleTimeString();
+  const timestamp = dayjs(entry.timestamp).format('HH:mm:ss');
   const icon = LOG_LEVEL_ICONS[entry.level];
   const levelText = entry.level.toUpperCase().padEnd(7);
   const sourceText = entry.source ? ` [${entry.source}]` : '';
@@ -163,7 +165,7 @@ export const shouldLog = (level: LogLevel, minLevel: LogLevel): boolean => {
 export const filterByLevel = (entries: readonly LogEntry[], minLevel: LogLevel): readonly LogEntry[] =>
   pipe(
     entries,
-    A.filter((entry) => shouldLog(entry.level, minLevel)),
+    RA.filter((entry) => shouldLog(entry.level, minLevel)),
   );
 
 /**
@@ -176,7 +178,7 @@ export const filterByLevel = (entries: readonly LogEntry[], minLevel: LogLevel):
 export const filterByLevels = (entries: readonly LogEntry[], levels: readonly LogLevel[]): readonly LogEntry[] =>
   pipe(
     entries,
-    A.filter((entry) => levels.includes(entry.level)),
+    RA.filter((entry) => levels.includes(entry.level)),
   );
 
 // ============================================================================
@@ -199,13 +201,13 @@ export const filterByTimeRange = (
   pipe(
     entries,
     A.filter((entry) => {
-      const entryTime = new Date(entry.timestamp).getTime();
+      const entryTime = dayjs(entry.timestamp).valueOf();
       
-      if (startTime && entryTime < new Date(startTime).getTime()) {
+      if (startTime && entryTime < dayjs(startTime).valueOf()) {
         return false;
       }
       
-      if (endTime && entryTime > new Date(endTime).getTime()) {
+      if (endTime && entryTime > dayjs(endTime).valueOf()) {
         return false;
       }
       
@@ -240,7 +242,7 @@ export const filterBySource = (entries: LogEntry[], source: string): LogEntry[] 
 export const searchByMessage = (entries: readonly LogEntry[], searchTerm: string): readonly LogEntry[] =>
   pipe(
     entries,
-    A.filter((entry) => 
+    RA.filter((entry) => 
       entry.message.toLowerCase().includes(searchTerm.toLowerCase())
     ),
   );
@@ -268,9 +270,9 @@ export const searchInMessage = searchByMessage;
 export const sortByTimestamp = (entries: readonly LogEntry[], ascending = false): readonly LogEntry[] =>
   pipe(
     entries,
-    A.sort(Ord.fromCompare((a: LogEntry, b: LogEntry) => {
-      const timeA = new Date(a.timestamp).getTime();
-      const timeB = new Date(b.timestamp).getTime();
+    RA.sort(Ord.fromCompare((a: LogEntry, b: LogEntry) => {
+      const timeA = dayjs(a.timestamp).valueOf();
+      const timeB = dayjs(b.timestamp).valueOf();
       const diff = timeA - timeB;
       if (ascending) {
         return diff < 0 ? -1 : diff > 0 ? 1 : 0;
