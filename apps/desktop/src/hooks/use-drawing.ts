@@ -37,7 +37,7 @@ import type { NodeInterface } from "@/types/node";
  */
 export function useDrawingNodes(
 	workspaceId: string | null | undefined,
-): NodeInterface[] | undefined {
+): readonly NodeInterface[] | undefined {
 	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing");
 
 	return useMemo(() => {
@@ -52,7 +52,7 @@ export function useDrawingNodes(
  */
 export function useDrawingsByWorkspace(
 	workspaceId: string | null | undefined,
-): NodeInterface[] | undefined {
+): readonly NodeInterface[] | undefined {
 	return useDrawingNodes(workspaceId);
 }
 
@@ -61,7 +61,7 @@ export function useDrawingsByWorkspace(
  */
 export function useDrawingsByProject(
 	projectId: string | null | undefined,
-): NodeInterface[] | undefined {
+): readonly NodeInterface[] | undefined {
 	return useDrawingNodes(projectId);
 }
 
@@ -99,7 +99,7 @@ export function useDrawing(
 export function useDrawingSearch(
 	workspaceId: string | null | undefined,
 	query: string | null | undefined,
-): NodeInterface[] | undefined {
+): readonly NodeInterface[] | undefined {
 	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing");
 
 	return useMemo(() => {
@@ -129,7 +129,7 @@ export function useDrawingSearch(
 export function useRecentDrawings(
 	workspaceId: string | null | undefined,
 	limit = 10,
-): NodeInterface[] | undefined {
+): readonly NodeInterface[] | undefined {
 	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing");
 
 	return useMemo(() => {
@@ -152,7 +152,7 @@ export function useRecentDrawings(
  *
  * @returns 所有绘图节点数组，加载中返回 undefined
  */
-export function useAllDrawings(): NodeInterface[] | undefined {
+export function useAllDrawings(): readonly NodeInterface[] | undefined {
 	// 注意：当前 API 不支持跨工作区查询
 	// 如果需要此功能，需要添加对应的 Rust API
 	return undefined;
