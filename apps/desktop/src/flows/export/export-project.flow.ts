@@ -465,7 +465,7 @@ export async function exportToEpub(
 		await getProjectContent(projectId);
 
 	const zip = new JSZip();
-	const bookId = `grain-${Date.now()}`;
+	const bookId = `grain-${dayjs().valueOf()}`;
 	const title = project.title || "Untitled Work";
 	const author = project.author || "Unknown Author";
 
