@@ -15,11 +15,11 @@ export interface KeyboardShortcutHandler {
 }
 
 export interface ShortcutConfig {
-	key: string;
-	ctrlKey?: boolean;
-	metaKey?: boolean;
-	shiftKey?: boolean;
-	altKey?: boolean;
+	readonly key: string;
+	readonly ctrlKey?: boolean;
+	readonly metaKey?: boolean;
+	readonly shiftKey?: boolean;
+	readonly altKey?: boolean;
 }
 
 // ============================================================================
