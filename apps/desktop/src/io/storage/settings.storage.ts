@@ -12,7 +12,8 @@
  */
 
 import type { z } from "zod";
-import { warn } from "@/io/log/logger.api";
+import * as E from "fp-ts/Either";
+import { warn, error as logError } from "@/io/log/logger.api";
 
 // ============================================================================
 // 存储键常量
@@ -45,15 +46,17 @@ export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
  * 从 localStorage 获取字符串值
  *
  * @param key - 存储键
- * @returns 存储的字符串值，如果不存在则返回 null
+ * @returns Either<Error, string | null>
  */
-export function getString(key: string): string | null {
-	try {
-		return localStorage.getItem(key);
-	} catch (error) {
-		error(`[Storage] 读取失败 (${key}):`, error);
-		return null;
-	}
+export function getString(key: string): E.Either<Error, string | null> {
+	return E.tryCatch(
+		() => localStorage.getItem(key),
+		(err) => {
+			const error = new Error(`[Storage] 读取失败 (${key}): ${err}`);
+			logError(`[Storage] 读取失败 (${key}):`, err);
+			return error;
+		},
+	);
 }
 
 /**
@@ -61,47 +64,50 @@ export function getString(key: string): string | null {
  *
  * @param key - 存储键
  * @param value - 要存储的字符串值
- * @returns 是否成功
+ * @returns Either<Error, void>
  */
-export function setString(key: string, value: string): boolean {
-	try {
-		localStorage.setItem(key, value);
-		return true;
-	} catch (error) {
-		error(`[Storage] 写入失败 (${key}):`, error);
-		return false;
-	}
+export function setString(key: string, value: string): E.Either<Error, void> {
+	return E.tryCatch(
+		() => localStorage.setItem(key, value),
+		(err) => {
+			const error = new Error(`[Storage] 写入失败 (${key}): ${err}`);
+			logError(`[Storage] 写入失败 (${key}):`, err);
+			return error;
+		},
+	);
 }
 
 /**
  * 从 localStorage 删除值
  *
  * @param key - 存储键
- * @returns 是否成功
+ * @returns Either<Error, void>
  */
-export function remove(key: string): boolean {
-	try {
-		localStorage.removeItem(key);
-		return true;
-	} catch (error) {
-		error(`[Storage] 删除失败 (${key}):`, error);
-		return false;
-	}
+export function remove(key: string): E.Either<Error, void> {
+	return E.tryCatch(
+		() => localStorage.removeItem(key),
+		(err) => {
+			const error = new Error(`[Storage] 删除失败 (${key}): ${err}`);
+			logError(`[Storage] 删除失败 (${key}):`, err);
+			return error;
+		},
+	);
 }
 
 /**
  * 清空所有 localStorage 数据
  *
- * @returns 是否成功
+ * @returns Either<Error, void>
  */
-export function clearAll(): boolean {
-	try {
-		localStorage.clear();
-		return true;
-	} catch (error) {
-		error("[Storage] 清空失败", { error }, "settings.storage");
-		return false;
-	}
+export function clearAll(): E.Either<Error, void> {
+	return E.tryCatch(
+		() => localStorage.clear(),
+		(err) => {
+			const error = new Error(`[Storage] 清空失败: ${err}`);
+			logError("[Storage] 清空失败", { error: err }, "settings.storage");
+			return error;
+		},
+	);
 }
 
 // ============================================================================
@@ -121,25 +127,30 @@ export function getJson<T>(
 	schema: z.ZodType<T>,
 	defaultValue: T,
 ): T {
-	try {
-		const stored = localStorage.getItem(key);
-		if (!stored) {
+	const result = E.tryCatch(
+		() => {
+			const stored = localStorage.getItem(key);
+			if (!stored) {
+				return defaultValue;
+			}
+
+			const parsed = JSON.parse(stored);
+			const validation = schema.safeParse(parsed);
+
+			if (validation.success) {
+				return validation.data;
+			}
+
+			warn(`[Storage] 数据格式无效 (${key})，使用默认值:`, validation.error);
 			return defaultValue;
-		}
+		},
+		(err) => {
+			logError(`[Storage] 读取 JSON 失败 (${key}):`, err);
+			return new Error(`[Storage] 读取 JSON 失败 (${key}): ${err}`);
+		},
+	);
 
-		const parsed = JSON.parse(stored);
-		const result = schema.safeParse(parsed);
-
-		if (result.success) {
-			return result.data;
-		}
-
-		warn(`[Storage] 数据格式无效 (${key})，使用默认值:`, result.error);
-		return defaultValue;
-	} catch (error) {
-		error(`[Storage] 读取 JSON 失败 (${key}):`, error);
-		return defaultValue;
-	}
+	return E.getOrElse(() => defaultValue)(result);
 }
 
 /**
@@ -147,16 +158,17 @@ export function getJson<T>(
  *
  * @param key - 存储键
  * @param value - 要存储的数据
- * @returns 是否成功
+ * @returns Either<Error, void>
  */
-export function setJson<T>(key: string, value: T): boolean {
-	try {
-		localStorage.setItem(key, JSON.stringify(value));
-		return true;
-	} catch (error) {
-		error(`[Storage] 写入 JSON 失败 (${key}):`, error);
-		return false;
-	}
+export function setJson<T>(key: string, value: T): E.Either<Error, void> {
+	return E.tryCatch(
+		() => localStorage.setItem(key, JSON.stringify(value)),
+		(err) => {
+			const error = new Error(`[Storage] 写入 JSON 失败 (${key}): ${err}`);
+			logError(`[Storage] 写入 JSON 失败 (${key}):`, err);
+			return error;
+		},
+	);
 }
 
 /**
@@ -167,16 +179,21 @@ export function setJson<T>(key: string, value: T): boolean {
  * @returns 解析后的数据或默认值
  */
 export function getJsonUnsafe<T>(key: string, defaultValue: T): T {
-	try {
-		const stored = localStorage.getItem(key);
-		if (!stored) {
-			return defaultValue;
-		}
-		return JSON.parse(stored) as T;
-	} catch (error) {
-		error(`[Storage] 解析 JSON 失败 (${key}):`, error);
-		return defaultValue;
-	}
+	const result = E.tryCatch(
+		() => {
+			const stored = localStorage.getItem(key);
+			if (!stored) {
+				return defaultValue;
+			}
+			return JSON.parse(stored) as T;
+		},
+		(err) => {
+			logError(`[Storage] 解析 JSON 失败 (${key}):`, err);
+			return new Error(`[Storage] 解析 JSON 失败 (${key}): ${err}`);
+		},
+	);
+
+	return E.getOrElse(() => defaultValue)(result);
 }
 
 // ============================================================================
@@ -189,26 +206,31 @@ export function getJsonUnsafe<T>(key: string, defaultValue: T): T {
  * @returns 存储统计信息
  */
 export function getStorageStats(): { readonly size: number; readonly keys: number } {
-	try {
-		let totalSize = 0;
-		const keys = Object.keys(localStorage);
+	const result = E.tryCatch(
+		() => {
+			let totalSize = 0;
+			const keys = Object.keys(localStorage);
 
-		for (const key of keys) {
-			const value = localStorage.getItem(key);
-			if (value) {
-				// 计算字符串的字节大小（UTF-16）
-				totalSize += (key.length + value.length) * 2;
+			for (const key of keys) {
+				const value = localStorage.getItem(key);
+				if (value) {
+					// 计算字符串的字节大小（UTF-16）
+					totalSize += (key.length + value.length) * 2;
+				}
 			}
-		}
 
-		return {
-			size: totalSize,
-			keys: keys.length,
-		};
-	} catch (error) {
-		error("[Storage] 获取统计信息失败", { error }, "settings.storage");
-		return { size: 0, keys: 0 };
-	}
+			return {
+				size: totalSize,
+				keys: keys.length,
+			};
+		},
+		(err) => {
+			logError("[Storage] 获取统计信息失败", { error: err }, "settings.storage");
+			return new Error(`[Storage] 获取统计信息失败: ${err}`);
+		},
+	);
+
+	return E.getOrElse(() => ({ size: 0, keys: 0 }))(result);
 }
 
 /**
@@ -217,12 +239,15 @@ export function getStorageStats(): { readonly size: number; readonly keys: numbe
  * @returns 键名数组
  */
 export function getAllKeys(): readonly string[] {
-	try {
-		return Object.keys(localStorage);
-	} catch (error) {
-		error("[Storage] 获取键列表失败", { error }, "settings.storage");
-		return [];
-	}
+	const result = E.tryCatch(
+		() => Object.keys(localStorage),
+		(err) => {
+			logError("[Storage] 获取键列表失败", { error: err }, "settings.storage");
+			return new Error(`[Storage] 获取键列表失败: ${err}`);
+		},
+	);
+
+	return E.getOrElse(() => [] as readonly string[])(result);
 }
 
 /**
@@ -232,12 +257,15 @@ export function getAllKeys(): readonly string[] {
  * @returns 是否存在
  */
 export function has(key: string): boolean {
-	try {
-		return localStorage.getItem(key) !== null;
-	} catch (error) {
-		error(`[Storage] 检查键失败 (${key}):`, error);
-		return false;
-	}
+	const result = E.tryCatch(
+		() => localStorage.getItem(key) !== null,
+		(err) => {
+			logError(`[Storage] 检查键失败 (${key}):`, err);
+			return new Error(`[Storage] 检查键失败 (${key}): ${err}`);
+		},
+	);
+
+	return E.getOrElse(() => false)(result);
 }
 
 // ============================================================================
@@ -250,26 +278,30 @@ export function has(key: string): boolean {
  * @returns 是否启用自动备份
  */
 export function getAutoBackupEnabled(): boolean {
-	try {
-		return localStorage.getItem(STORAGE_KEYS.AUTO_BACKUP_ENABLED) === "true";
-	} catch (error) {
-		error("[Storage] 获取自动备份状态失败", { error }, "settings.storage");
-		return false;
-	}
+	const result = E.tryCatch(
+		() => localStorage.getItem(STORAGE_KEYS.AUTO_BACKUP_ENABLED) === "true",
+		(err) => {
+			logError("[Storage] 获取自动备份状态失败", { error: err }, "settings.storage");
+			return new Error(`[Storage] 获取自动备份状态失败: ${err}`);
+		},
+	);
+
+	return E.getOrElse(() => false)(result);
 }
 
 /**
  * 设置自动备份启用状态
  *
  * @param enabled - 是否启用
- * @returns 是否成功
+ * @returns Either<Error, void>
  */
-export function setAutoBackupEnabled(enabled: boolean): boolean {
-	try {
-		localStorage.setItem(STORAGE_KEYS.AUTO_BACKUP_ENABLED, enabled.toString());
-		return true;
-	} catch (error) {
-		error("[Storage] 设置自动备份状态失败", { error }, "settings.storage");
-		return false;
-	}
+export function setAutoBackupEnabled(enabled: boolean): E.Either<Error, void> {
+	return E.tryCatch(
+		() => localStorage.setItem(STORAGE_KEYS.AUTO_BACKUP_ENABLED, enabled.toString()),
+		(err) => {
+			const error = new Error(`[Storage] 设置自动备份状态失败: ${err}`);
+			logError("[Storage] 设置自动备份状态失败", { error: err }, "settings.storage");
+			return error;
+		},
+	);
 }
