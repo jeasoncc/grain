@@ -55,13 +55,13 @@ export interface UseUnifiedSaveOptions {
  */
 export interface UseUnifiedSaveReturn {
 	/** 更新内容（触发防抖自动保存） */
-	updateContent: (content: string) => void;
+	readonly updateContent: (content: string) => void;
 	/** 立即保存当前内容（手动保存） */
-	saveNow: () => Promise<boolean>;
+	readonly saveNow: () => Promise<boolean>;
 	/** 是否有未保存的更改 */
-	hasUnsavedChanges: () => boolean;
+	readonly hasUnsavedChanges: () => boolean;
 	/** 设置初始内容（不触发保存） */
-	setInitialContent: (content: string) => void;
+	readonly setInitialContent: (content: string) => void;
 }
 
 // ============================================================================
