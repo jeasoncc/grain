@@ -10,6 +10,7 @@
 
 import * as TE from "fp-ts/TaskEither";
 import { pipe } from "fp-ts/function";
+import dayjs from "dayjs";
 import type { AppError } from "@/types/error/error.types";
 
 // IO
@@ -17,12 +18,14 @@ import {
   getLogStatsFromSQLite,
   clearOldLogsFromSQLite,
 } from "@/io/log/log.storage.api";
+import { info, warn, error } from "@/io/log/logger.api";
 
 // Storage
 import { getJson, setJson } from "@/io/storage/settings.storage";
 
 // Zod for validation
 import { z } from "zod";
+import dayjs from "dayjs";
 
 // ============================================================================
 // 类型定义
@@ -404,19 +407,19 @@ export const startAutoCleanupTimer = (
           executeAutoCleanup(config)()
             .then((cleanupResult) => {
               if (cleanupResult._tag === "Right") {
-                console.log(`[AutoCleanup] Cleaned up ${cleanupResult.right.entriesRemoved} log entries`);
+                info("[AutoCleanup] Cleanup completed", { entriesRemoved: cleanupResult.right.entriesRemoved });
               } else {
-                console.warn(`[AutoCleanup] Failed:`, cleanupResult.left);
+                warn("[AutoCleanup] Cleanup failed", { error: cleanupResult.left });
               }
             });
         }
       })
-      .catch((error) => {
-        console.error("[AutoCleanup] Timer error:", error);
+      .catch((err) => {
+        error("[AutoCleanup] Timer error", { error: err });
       });
   }, config.checkInterval);
 
-  console.log(`[AutoCleanup] Timer started with ${config.checkInterval}ms interval`);
+  info("[AutoCleanup] Timer started", { intervalMs: config.checkInterval });
 };
 
 /**
@@ -428,7 +431,7 @@ export const stopAutoCleanupTimer = (): void => {
   if (cleanupTimer) {
     clearInterval(cleanupTimer);
     cleanupTimer = null;
-    console.log("[AutoCleanup] Timer stopped");
+    info("[AutoCleanup] Timer stopped");
   }
 };
 
