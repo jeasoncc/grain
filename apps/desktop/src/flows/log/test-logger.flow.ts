@@ -132,7 +132,13 @@ export const quickTestLogSystem = (): void => {
     .then((result) => {
       if (result._tag === 'Right') {
         const testResult = result.right;
-        info("[TestLogger] 📊 测试结果:", testResult);
+        info("[TestLogger] 📊 测试结果:", { 
+          initSuccess: testResult.initSuccess,
+          migrationCount: testResult.migrationCount,
+          loggingSuccess: testResult.loggingSuccess,
+          queryCount: testResult.queryCount,
+          allTestsPassed: testResult.allTestsPassed
+        });
         
         if (testResult.allTestsPassed) {
           info("[TestLogger] 🎉 所有测试通过！函数式日志系统工作正常");
@@ -140,11 +146,11 @@ export const quickTestLogSystem = (): void => {
           info("[TestLogger] ⚠️ 部分测试失败，请检查日志系统配置");
         }
       } else {
-        error("[TestLogger] ❌ 测试失败:", result.left);
+        error("[TestLogger] ❌ 测试失败:", { error: result.left });
       }
     })
     .catch((err) => {
-      error("[TestLogger] 💥 测试过程中发生异常:", err);
+      error("[TestLogger] 💥 测试过程中发生异常:", { error: err });
     });
 };
 

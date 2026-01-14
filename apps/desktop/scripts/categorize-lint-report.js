@@ -9,6 +9,7 @@
 
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { spawn } from 'node:child_process';
 
 // 读取 stdin
 let inputData = '';
@@ -173,6 +174,9 @@ function categorizeAndSave(results) {
   const htmlContent = generateHtmlReport(summary, categorized);
   writeFileSync(htmlFilename, htmlContent, 'utf-8');
   console.log(`📈 可视化报告 → ${htmlFilename}`);
+
+  // 生成命令行图表
+  generateCommandLineCharts(summary, categorized);
 
   console.log(`\n✨ 报告生成完成！共 ${summary.totalFiles} 个文件，${summary.totalErrors} 个错误，${summary.totalWarnings} 个警告`);
 }
@@ -715,4 +719,118 @@ function generateHtmlReport(summary, categorized) {
   </script>
 </body>
 </html>`;
+}
+
+/**
+ * 生成命令行图表
+ */
+function generateCommandLineCharts(summary, categorized) {
+  console.log('\n🎨 生成命令行图表...\n');
+
+  const uplotPath = '/home/lotus/.local/share/gem/ruby/3.4.0/bin/uplot';
+
+  // 1. 按类别问题数柱状图
+  console.log('📊 问题分布（按类别）');
+  console.log('━'.repeat(50));
+  
+  const categoryData = Object.entries(summary.byCategory)
+    .sort(([, a], [, b]) => (b.errors + b.warnings) - (a.errors + a.warnings))
+    .slice(0, 10); // 只显示前10个
+
+  const categoryChartData = categoryData
+    .map(([category, stats]) => `${category}\t${stats.errors + stats.warnings}`)
+    .join('\n');
+
+  if (categoryChartData) {
+    const categoryProcess = spawn(uplotPath, ['barplot', '--title', '问题分布（按类别）'], {
+      stdio: ['pipe', 'inherit', 'inherit']
+    });
+    categoryProcess.stdin.write(categoryChartData);
+    categoryProcess.stdin.end();
+  }
+
+  // 2. 错误 vs 警告对比
+  setTimeout(() => {
+    console.log('\n🔴 错误 vs 警告');
+    console.log('━'.repeat(50));
+    
+    const severityData = `错误\t${summary.totalErrors}\n警告\t${summary.totalWarnings}`;
+    
+    const severityProcess = spawn(uplotPath, ['barplot', '--title', '错误 vs 警告'], {
+      stdio: ['pipe', 'inherit', 'inherit']
+    });
+    severityProcess.stdin.write(severityData);
+    severityProcess.stdin.end();
+  }, 1000);
+
+  // 3. 问题最多的文件 Top 10
+  setTimeout(() => {
+    console.log('\n📁 问题最多的文件 (Top 10)');
+    console.log('━'.repeat(50));
+    
+    const fileIssueCount = {};
+    for (const [, issues] of Object.entries(categorized)) {
+      for (const issue of issues) {
+        const shortPath = issue.file.replace(process.cwd(), '').replace(/^\//, '');
+        fileIssueCount[shortPath] = (fileIssueCount[shortPath] || 0) + 1;
+      }
+    }
+    
+    const topFiles = Object.entries(fileIssueCount)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10);
+
+    if (topFiles.length > 0) {
+      const fileChartData = topFiles
+        .map(([file, count]) => {
+          // 截断过长的文件名
+          const shortFile = file.length > 30 ? '...' + file.slice(-27) : file;
+          return `${shortFile}\t${count}`;
+        })
+        .join('\n');
+
+      const fileProcess = spawn(uplotPath, ['barplot', '--title', '问题最多的文件 (Top 10)'], {
+        stdio: ['pipe', 'inherit', 'inherit']
+      });
+      fileProcess.stdin.write(fileChartData);
+      fileProcess.stdin.end();
+    }
+  }, 2000);
+
+  // 4. 错误与警告对比（按类别）- 使用多列数据
+  setTimeout(() => {
+    console.log('\n📈 错误与警告对比（按类别 Top 8）');
+    console.log('━'.repeat(50));
+    
+    const stackedData = categoryData
+      .slice(0, 8) // 只显示前8个，避免图表过于拥挤
+      .map(([category, stats]) => `${category}\t${stats.errors}\t${stats.warnings}`)
+      .join('\n');
+
+    if (stackedData) {
+      const stackedProcess = spawn(uplotPath, ['lineplots', '--title', '错误与警告对比（红=错误，蓝=警告）'], {
+        stdio: ['pipe', 'inherit', 'inherit']
+      });
+      stackedProcess.stdin.write(stackedData);
+      stackedProcess.stdin.end();
+    }
+  }, 3000);
+
+  // 5. 总体统计摘要
+  setTimeout(() => {
+    console.log('\n📋 总体统计');
+    console.log('━'.repeat(50));
+    console.log(`📁 总文件数: ${summary.totalFiles}`);
+    console.log(`🔴 总错误数: ${summary.totalErrors}`);
+    console.log(`⚠️  总警告数: ${summary.totalWarnings}`);
+    console.log(`📊 总问题数: ${summary.totalErrors + summary.totalWarnings}`);
+    console.log(`📂 问题类别: ${Object.keys(summary.byCategory).length}`);
+    
+    if (summary.totalErrors + summary.totalWarnings > 0) {
+      const errorRate = ((summary.totalErrors / (summary.totalErrors + summary.totalWarnings)) * 100).toFixed(1);
+      console.log(`💥 错误率: ${errorRate}%`);
+    }
+    
+    console.log('━'.repeat(50));
+  }, 4000);
 }

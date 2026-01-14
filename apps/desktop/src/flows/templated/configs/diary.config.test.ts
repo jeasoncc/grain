@@ -91,7 +91,7 @@ describe("diaryConfig", () => {
 	});
 
 	describe("纯函数特性", () => {
-		const testDate = dayjs("2024-01-15T10:30:00.000Z").toDate();
+		const testDate = new Date("2024-01-15T10:30:00.000Z");
 
 		it("应该生成一致的结果（纯函数特性）", () => {
 			const params: DiaryTemplateParams = { date: testDate };
@@ -166,7 +166,7 @@ describe("diaryConfig", () => {
 
 		it("应该处理完整的创建流程", () => {
 			const params: DiaryTemplateParams = {
-				date: dayjs("2024-01-15T10:30:00.000Z").toDate(),
+				date: new Date("2024-01-15T10:30:00.000Z"),
 			};
 
 			// 1. 校验参数

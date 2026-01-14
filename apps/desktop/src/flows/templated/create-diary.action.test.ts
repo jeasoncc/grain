@@ -10,6 +10,7 @@
  * 目标覆盖率：> 95%
  */
 
+import dayjs from "dayjs";
 import { describe, expect, it } from "vitest";
 import { diaryConfig } from "./configs/diary.config";
 import type { CreateDateTemplateParams } from "./create-date-template.flow";
@@ -34,7 +35,7 @@ describe("create-diary.action (高阶函数版本)", () => {
 
 		it("generateTemplate 应该生成有效的 JSON", () => {
 			const content = diaryConfig.generateTemplate({
-				date: new Date("2024-12-25"),
+				date: dayjs("2024-12-25").toDate(),
 			});
 			expect(() => JSON.parse(content)).not.toThrow();
 		});
