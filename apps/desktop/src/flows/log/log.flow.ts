@@ -29,6 +29,7 @@ import {
 import {
   saveLogsBatchToSQLite,
 } from "@/io/log/log.storage.api";
+import { warn } from "@/io/log/logger.api";
 
 // Batch logging
 import {
@@ -86,7 +87,7 @@ export const createLogFlow = (config: LogConfig = DEFAULT_LOG_CONFIG) => {
   
   if (useAsyncLogging) {
     // 使用异步队列日志流程 - 需要实现
-    console.warn("Async logging not yet implemented, falling back to direct mode");
+    warn("[LogFlow] Async logging not yet implemented, falling back to direct mode");
   }
   
   if (useBatchLogging) {
@@ -306,7 +307,7 @@ export const warmupLogQueryCacheFlow = () => warmupQueryCache();
  * @returns TaskEither<AppError, void>
  */
 export const flushAsyncQueueFlow = () => {
-  console.warn("Async queue not implemented yet");
+  warn("[LogFlow] Async queue not implemented yet");
   return TE.right(undefined);
 };
 
@@ -327,7 +328,7 @@ export const getAsyncQueueStatusFlow = () => ({
  * @returns void
  */
 export const pauseAsyncQueueFlow = () => {
-  console.warn("Async queue not implemented yet");
+  warn("[LogFlow] Async queue not implemented yet");
 };
 
 /**
@@ -336,7 +337,7 @@ export const pauseAsyncQueueFlow = () => {
  * @returns void
  */
 export const resumeAsyncQueueFlow = () => {
-  console.warn("Async queue not implemented yet");
+  warn("[LogFlow] Async queue not implemented yet");
 };
 
 // ============================================================================
@@ -401,7 +402,7 @@ export const handleLogErrorFlow = (
   T.fromIO(() => {
     // 降级到控制台输出
     const message = fallbackMessage || `Log operation failed: ${error.message}`;
-    console.warn(`⚠️ [LOG_FALLBACK] ${message}`);
+    warn(`⚠️ [LOG_FALLBACK] ${message}`);
     
     // 可以在这里添加其他降级策略，如发送到远程日志服务
   });
