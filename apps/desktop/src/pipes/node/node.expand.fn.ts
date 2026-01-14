@@ -46,7 +46,7 @@ export type ExpandedFoldersMap = Record<string, boolean>;
  * ```
  */
 export const calculateExpandedFoldersForNode = (
-	nodes: NodeInterface[],
+	nodes: readonly NodeInterface[],
 	targetNodeId: string,
 ): ExpandedFoldersMap => {
 	// 获取从根到目标节点的路径
@@ -57,10 +57,10 @@ export const calculateExpandedFoldersForNode = (
 		path,
 		(pathNodes) => pathNodes.filter((node) => node.type === "folder"),
 		(folders) =>
-			folders.reduce<ExpandedFoldersMap>((acc, folder) => {
-				acc[folder.id] = true;
-				return acc;
-			}, {}),
+			folders.reduce<ExpandedFoldersMap>((acc, folder) => ({
+				...acc,
+				[folder.id]: true,
+			}), {}),
 	);
 };
 
@@ -74,7 +74,7 @@ export const calculateExpandedFoldersForNode = (
  */
 export const mergeExpandedFoldersForNode = (
 	currentExpanded: ExpandedFoldersMap,
-	nodes: NodeInterface[],
+	nodes: readonly NodeInterface[],
 	targetNodeId: string,
 ): ExpandedFoldersMap => {
 	const pathExpanded = calculateExpandedFoldersForNode(nodes, targetNodeId);
