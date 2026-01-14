@@ -11,6 +11,7 @@
 import * as E from "fp-ts/Either";
 import type * as TE from "fp-ts/TaskEither";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import dayjs from "dayjs";
 import type { ContentInterface } from "@/types/content/content.interface";
 import type { NodeInterface } from "@/types/node/node.interface";
 
@@ -30,8 +31,8 @@ function createTestNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
 		title: overrides.title ?? "Test Node",
 		order: overrides.order ?? 0,
 		collapsed: overrides.collapsed ?? false,
-		createDate: overrides.createDate ?? new Date().toISOString(),
-		lastEdit: overrides.lastEdit ?? new Date().toISOString(),
+		createDate: overrides.createDate ?? dayjs().toISOString(),
+		lastEdit: overrides.lastEdit ?? dayjs().toISOString(),
 		tags: overrides.tags ?? [],
 	};
 }
@@ -63,7 +64,7 @@ function createTestContent(
 				},
 			}),
 		contentType: overrides.contentType ?? "lexical",
-		lastEdit: overrides.lastEdit ?? new Date().toISOString(),
+		lastEdit: overrides.lastEdit ?? dayjs().toISOString(),
 	};
 }
 
