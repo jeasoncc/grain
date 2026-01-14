@@ -183,10 +183,10 @@ export const addLogToAsyncQueue = (
       
       // 创建队列项
       const queueItem: LogQueueItem = {
-        id: entry.id || `queue-${Date.now()}-${Math.random()}`,
+        id: entry.id || `queue-${dayjs().valueOf()}-${Math.random()}`,
         entry,
         priority: calculatePriority(entry, config),
-        timestamp: Date.now(),
+        timestamp: dayjs().valueOf(),
         retryCount: 0,
       };
       
