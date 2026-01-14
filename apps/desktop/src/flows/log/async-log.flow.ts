@@ -12,6 +12,7 @@ import * as TE from "fp-ts/TaskEither";
 import * as T from "fp-ts/Task";
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
+import { sortBy } from "es-toolkit";
 import type { LogEntry, LogLevel, LogConfig } from "@/types/log/log.interface";
 import type { AppError } from "@/types/error/error.types";
 import { DEFAULT_LOG_CONFIG } from "@/types/log/log.interface";
@@ -171,9 +172,13 @@ export const addLogToAsyncQueue = (
       // 检查队列大小限制
       if (logQueue.length >= config.maxQueueSize) {
         // 移除最旧的低优先级条目
-        const sortedQueue = [...logQueue].sort((a, b) => a.priority - b.priority || a.timestamp - b.timestamp);
+        const sortedQueue = sortBy([...logQueue], [
+          item => item.priority,  // 按优先级升序
+          item => item.timestamp  // 按时间戳升序
+        ]);
         const toRemove = sortedQueue.slice(0, Math.floor(config.maxQueueSize * 0.1)); // 移除10%的最低优先级条目
-        logQueue = logQueue.filter(item => !toRemove.some(r => r.id === item.id));
+        const toRemoveIds = new Set(toRemove.map(r => r.id));
+        logQueue = logQueue.filter(item => !toRemoveIds.has(item.id));
       }
       
       // 创建队列项
@@ -186,7 +191,11 @@ export const addLogToAsyncQueue = (
       };
       
       // 添加到队列并按优先级排序
-      logQueue = [...logQueue, queueItem].sort((a, b) => b.priority - a.priority || a.timestamp - b.timestamp);
+      const newQueue = [...logQueue, queueItem];
+      logQueue = sortBy(newQueue, [
+        item => -item.priority,  // 按优先级降序（负号）
+        item => item.timestamp   // 按时间戳升序
+      ]);
       
       // 启动队列处理器（如果未运行）
       startQueueProcessor(config);
@@ -254,7 +263,8 @@ const processLogQueue = (config: AsyncLogConfig): T.Task<void> =>
         // 获取一批要处理的日志（最多批量大小）
         const batchSize = Math.min(config.batchSize, logQueue.length);
         const batch = logQueue.slice(0, batchSize);
-        logQueue = logQueue.slice(batchSize);
+        const remainingQueue = logQueue.slice(batchSize);
+        logQueue = remainingQueue;
         
         if (batch.length === 0) {
           return;
