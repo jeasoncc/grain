@@ -5,31 +5,33 @@
  * 简单的测试脚本来验证批量日志、查询优化和异步处理功能
  */
 
+import { info } from "@/io/log/logger.api";
+
 // 模拟测试，实际使用时需要正确的导入路径
-console.log("Performance optimization features implemented:");
-console.log("✅ 1. Batch logging with buffer mechanism");
-console.log("✅ 2. Query optimization with caching and pagination");
-console.log("✅ 3. Async log processing with queue management");
+info("[PerformanceTest] Performance optimization features implemented:");
+info("[PerformanceTest] ✅ 1. Batch logging with buffer mechanism");
+info("[PerformanceTest] ✅ 2. Query optimization with caching and pagination");
+info("[PerformanceTest] ✅ 3. Async log processing with queue management");
 
 // 批量日志功能
-console.log("\n📦 Batch Logging Features:");
-console.log("- Log buffer with configurable batch size");
-console.log("- Automatic flush on batch size or delay");
-console.log("- Priority-based flushing for errors/warnings");
-console.log("- Buffer status monitoring");
+info("[PerformanceTest] \n📦 Batch Logging Features:");
+info("[PerformanceTest] - Log buffer with configurable batch size");
+info("[PerformanceTest] - Automatic flush on batch size or delay");
+info("[PerformanceTest] - Priority-based flushing for errors/warnings");
+info("[PerformanceTest] - Buffer status monitoring");
 
 // 查询优化功能
-console.log("\n🔍 Query Optimization Features:");
-console.log("- Query result caching with TTL");
-console.log("- Paginated query support");
-console.log("- Advanced search and filtering");
-console.log("- Performance statistics");
+info("[PerformanceTest] \n🔍 Query Optimization Features:");
+info("[PerformanceTest] - Query result caching with TTL");
+info("[PerformanceTest] - Paginated query support");
+info("[PerformanceTest] - Advanced search and filtering");
+info("[PerformanceTest] - Performance statistics");
 
 // 异步处理功能
-console.log("\n⚡ Async Processing Features:");
-console.log("- Non-blocking log queue");
-console.log("- Priority-based processing");
-console.log("- Automatic retry mechanism");
-console.log("- Queue status monitoring");
+info("[PerformanceTest] \n⚡ Async Processing Features:");
+info("[PerformanceTest] - Non-blocking log queue");
+info("[PerformanceTest] - Priority-based processing");
+info("[PerformanceTest] - Automatic retry mechanism");
+info("[PerformanceTest] - Queue status monitoring");
 
-console.log("\n🎯 All performance optimization tasks completed!");
+info("[PerformanceTest] \n🎯 All performance optimization tasks completed!");
