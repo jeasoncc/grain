@@ -22,7 +22,7 @@ import { queryKeys } from "./query-keys";
 export const useUsers = () => {
 	return useQuery({
 		queryKey: queryKeys.users.all,
-		queryFn: async (): Promise<UserInterface[]> => {
+		queryFn: async (): Promise<readonly UserInterface[]> => {
 			const result = await userRepo.getUsers()();
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message);
@@ -113,7 +113,7 @@ export const useUsersByPlan = (plan: UserPlan | null | undefined) => {
 	return useQuery({
 		enabled: !!plan,
 		queryKey: queryKeys.users.byPlan(plan ?? ""),
-		queryFn: async (): Promise<UserInterface[]> => {
+		queryFn: async (): Promise<readonly UserInterface[]> => {
 			if (!plan) return [];
 			const result = await userRepo.getUsers()();
 			if (E.isLeft(result)) {
