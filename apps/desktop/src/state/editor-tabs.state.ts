@@ -61,10 +61,10 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 		// ==============================
 
 		addTab: (tab) => {
-			set((state) => {
-				// Use immer-compatible push for readonly arrays
-				state.tabs = [...state.tabs, tab];
-			});
+			set((state) => ({
+				...state,
+				tabs: [...state.tabs, tab],
+			}));
 		},
 
 		/**
@@ -72,73 +72,78 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 		 * 避免多次渲染导致的时序问题
 		 */
 		addTabWithState: (tab, editorState) => {
-			set((state) => {
-				// Use immer-compatible operations
-				state.tabs = [...state.tabs, tab];
-				state.editorStates = { ...state.editorStates, [tab.id]: editorState };
-				state.activeTabId = tab.id;
-			});
+			set((state) => ({
+				...state,
+				tabs: [...state.tabs, tab],
+				editorStates: { ...state.editorStates, [tab.id]: editorState },
+				activeTabId: tab.id,
+			}));
 		},
 
 		removeTab: (tabId) => {
-			set((state) => {
-				// Use functional filter instead of splice
-				state.tabs = state.tabs.filter((t: EditorTab) => t.id !== tabId);
-			});
+			set((state) => ({
+				...state,
+				tabs: state.tabs.filter((t: EditorTab) => t.id !== tabId),
+			}));
 		},
 
 		setTabs: (tabs) => {
-			set((state) => {
-				state.tabs = tabs;
-			});
+			set((state) => ({
+				...state,
+				tabs: [...tabs],
+			}));
 		},
 
 		setActiveTabId: (tabId) => {
-			set((state) => {
-				state.activeTabId = tabId;
-			});
+			set((state) => ({
+				...state,
+				activeTabId: tabId,
+			}));
 		},
 
 		updateTab: (tabId, updates) => {
-			set((state) => {
-				// Use functional map instead of direct mutation
-				state.tabs = state.tabs.map((t: EditorTab) => 
+			set((state) => ({
+				...state,
+				tabs: state.tabs.map((t: EditorTab) => 
 					t.id === tabId ? { ...t, ...updates } : t
-				);
-			});
+				),
+			}));
 		},
 
 		setEditorState: (tabId, editorState) => {
-			set((state) => {
-				// Use spread operator instead of direct assignment
-				state.editorStates = { ...state.editorStates, [tabId]: editorState };
-			});
+			set((state) => ({
+				...state,
+				editorStates: { ...state.editorStates, [tabId]: editorState },
+			}));
 		},
 
 		updateEditorState: (tabId, updates) => {
-			set((state) => {
-				// Use functional update instead of Object.assign
-				if (state.editorStates[tabId]) {
-					state.editorStates = {
+			set((state) => ({
+				...state,
+				editorStates: state.editorStates[tabId] 
+					? {
 						...state.editorStates,
 						[tabId]: { ...state.editorStates[tabId], ...updates }
-					};
-				}
-			});
+					}
+					: state.editorStates,
+			}));
 		},
 
 		removeEditorState: (tabId) => {
 			set((state) => {
-				// Use functional approach instead of delete
 				const { [tabId]: removed, ...rest } = state.editorStates;
-				state.editorStates = rest;
+				return {
+					...state,
+					editorStates: rest,
+				};
 			});
 		},
 
 		setEditorStates: (states) => {
-			set((state) => {
-				state.editorStates = states;
-			});
+			set((state) => ({
+				...state,
+				editorStates: { ...states },
+			}));
 		},
 	})),
 );

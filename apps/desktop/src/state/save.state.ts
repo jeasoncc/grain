@@ -33,57 +33,66 @@ export const useSaveStore = create<SaveStore>()(
 
 		// Actions
 		setStatus: (status) =>
-			set((state) => {
-				state.status = status;
-			}),
+			set((state) => ({
+				...state,
+				status,
+			})),
 
 		setLastSaveTime: (time) =>
-			set((state) => {
-				state.lastSaveTime = time.getTime();
-			}),
+			set((state) => ({
+				...state,
+				lastSaveTime: time.getTime(),
+			})),
 
 		setErrorMessage: (message) =>
-			set((state) => {
-				state.errorMessage = message;
-			}),
+			set((state) => ({
+				...state,
+				errorMessage: message,
+			})),
 
 		setHasUnsavedChanges: (hasChanges) =>
-			set((state) => {
-				state.hasUnsavedChanges = hasChanges;
-			}),
+			set((state) => ({
+				...state,
+				hasUnsavedChanges: hasChanges,
+			})),
 
 		setIsManualSaving: (isSaving) =>
-			set((state) => {
-				state.isManualSaving = isSaving;
-			}),
+			set((state) => ({
+				...state,
+				isManualSaving: isSaving,
+			})),
 
 		markAsSaved: () =>
-			set((state) => {
-				state.status = "saved";
-				state.lastSaveTime = Date.now();
-				state.errorMessage = null;
-				state.hasUnsavedChanges = false;
-				state.isManualSaving = false;
-			}),
+			set((state) => ({
+				...state,
+				status: "saved" as SaveStatus,
+				lastSaveTime: Date.now(),
+				errorMessage: null,
+				hasUnsavedChanges: false,
+				isManualSaving: false,
+			})),
 
 		markAsError: (message) =>
-			set((state) => {
-				state.status = "error";
-				state.errorMessage = message;
-				state.isManualSaving = false;
-			}),
+			set((state) => ({
+				...state,
+				status: "error" as SaveStatus,
+				errorMessage: message,
+				isManualSaving: false,
+			})),
 
 		markAsSaving: () =>
-			set((state) => {
-				state.status = "saving";
-				state.errorMessage = null;
-			}),
+			set((state) => ({
+				...state,
+				status: "saving" as SaveStatus,
+				errorMessage: null,
+			})),
 
 		markAsUnsaved: () =>
-			set((state) => {
-				state.status = "unsaved";
-				state.hasUnsavedChanges = true;
-			}),
+			set((state) => ({
+				...state,
+				status: "unsaved" as SaveStatus,
+				hasUnsavedChanges: true,
+			})),
 	})),
 );
 

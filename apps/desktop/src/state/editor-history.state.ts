@@ -33,7 +33,7 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 					const undoStack = new Map(state.undoStack);
 					const redoStack = new Map(state.redoStack);
 
-					const nodeHistory = undoStack.get(nodeId) || [];
+					const nodeHistory = [...(undoStack.get(nodeId) || [])];
 					const entry: EditorHistoryEntry = {
 						nodeId,
 						content,
@@ -41,69 +41,68 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 						wordCount,
 					};
 
-					nodeHistory.push(entry);
+					const newNodeHistory = [...nodeHistory, entry];
 
 					// Limit history size
-					if (nodeHistory.length > MAX_HISTORY_SIZE) {
-						nodeHistory.shift();
-					}
+					const limitedHistory = newNodeHistory.length > MAX_HISTORY_SIZE 
+						? newNodeHistory.slice(1)
+						: newNodeHistory;
 
-					undoStack.set(nodeId, nodeHistory);
+					const newUndoStack = new Map([...undoStack, [nodeId, limitedHistory]]);
 					// Clear redo stack on new action
-					redoStack.delete(nodeId);
+					const newRedoStack = new Map([...redoStack]);
+					newRedoStack.delete(nodeId);
 
-					return { undoStack, redoStack };
+					return { undoStack: newUndoStack, redoStack: newRedoStack };
 				});
 			},
 
 			undo: (nodeId) => {
 				const state = get();
-				const undoStack = new Map(state.undoStack);
-				const redoStack = new Map(state.redoStack);
-
-				const nodeHistory = undoStack.get(nodeId) || [];
+				const nodeHistory = [...(state.undoStack.get(nodeId) || [])];
 				if (nodeHistory.length === 0) {
 					return null;
 				}
 
-				const entry = nodeHistory.pop();
+				const newNodeHistory = nodeHistory.slice(0, -1);
+				const entry = nodeHistory[nodeHistory.length - 1];
 				if (!entry) {
 					return null;
 				}
 
 				// Push to redo stack
-				const nodeRedoHistory = redoStack.get(nodeId) || [];
-				nodeRedoHistory.push(entry);
-				redoStack.set(nodeId, nodeRedoHistory);
-				undoStack.set(nodeId, nodeHistory);
+				const nodeRedoHistory = [...(state.redoStack.get(nodeId) || [])];
+				const newNodeRedoHistory = [...nodeRedoHistory, entry];
+				
+				const newUndoStack = new Map([...state.undoStack, [nodeId, newNodeHistory]]);
+				const newRedoStack = new Map([...state.redoStack, [nodeId, newNodeRedoHistory]]);
 
-				set({ undoStack, redoStack });
+				set({ undoStack: newUndoStack, redoStack: newRedoStack });
 
 				return entry;
 			},
 
 			redo: (nodeId) => {
 				const state = get();
-				const undoStack = new Map(state.undoStack);
-				const redoStack = new Map(state.redoStack);
-
-				const nodeRedoHistory = redoStack.get(nodeId) || [];
+				const nodeRedoHistory = [...(state.redoStack.get(nodeId) || [])];
 				if (nodeRedoHistory.length === 0) {
 					return null;
 				}
 
-				const entry = nodeRedoHistory.pop();
+				const newNodeRedoHistory = nodeRedoHistory.slice(0, -1);
+				const entry = nodeRedoHistory[nodeRedoHistory.length - 1];
 				if (!entry) {
 					return null;
 				}
 
 				// Push back to undo stack
-				const nodeHistory = undoStack.get(nodeId) || [];
-				nodeHistory.push(entry);
-				undoStack.set(nodeId, nodeHistory);
-				redoStack.set(nodeId, nodeRedoHistory);
+				const nodeHistory = [...(state.undoStack.get(nodeId) || [])];
+				const newNodeHistory = [...nodeHistory, entry];
+				
+				const newUndoStack = new Map([...state.undoStack, [nodeId, newNodeHistory]]);
+				const newRedoStack = new Map([...state.redoStack, [nodeId, newNodeRedoHistory]]);
 
-				set({ undoStack, redoStack });
+				set({ undoStack: newUndoStack, redoStack: newRedoStack });
 
 				return entry;
 			},

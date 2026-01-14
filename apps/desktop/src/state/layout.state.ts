@@ -40,45 +40,48 @@ export const useLayoutStore = create<LayoutStore>()(
 			// ==============================
 
 			setActivePanel: (panel: SidebarPanel) => {
-				set((draft) => {
-					draft.activePanel = panel;
+				set((state) => ({
+					...state,
+					activePanel: panel,
 					// Open sidebar when a panel is selected
-					draft.isSidebarOpen = true;
+					isSidebarOpen: true,
 					// Clear drag collapse flag when manually setting panel
-					draft.wasCollapsedByDrag = false;
-				});
+					wasCollapsedByDrag: false,
+				}));
 			},
 
 			toggleSidebar: () => {
-				set((draft) => {
-					draft.isSidebarOpen = !draft.isSidebarOpen;
+				set((state) => ({
+					...state,
+					isSidebarOpen: !state.isSidebarOpen,
 					// Clear drag collapse flag on manual toggle
-					draft.wasCollapsedByDrag = false;
-				});
+					wasCollapsedByDrag: false,
+				}));
 			},
 
 			setSidebarCollapsedByDrag: (collapsed: boolean) => {
-				set((draft) => {
-					draft.wasCollapsedByDrag = collapsed;
-					if (collapsed) {
-						draft.isSidebarOpen = false;
-					}
-				});
+				set((state) => ({
+					...state,
+					wasCollapsedByDrag: collapsed,
+					isSidebarOpen: collapsed ? false : state.isSidebarOpen,
+				}));
 			},
 
 			restoreFromCollapse: () => {
-				set((draft) => {
-					draft.isSidebarOpen = true;
-					draft.wasCollapsedByDrag = false;
+				set((state) => ({
+					...state,
+					isSidebarOpen: true,
+					wasCollapsedByDrag: false,
 					// Restore to default width (20%)
-					draft.sidebarWidth = DEFAULT_LAYOUT_STATE.sidebarWidth;
-				});
+					sidebarWidth: DEFAULT_LAYOUT_STATE.sidebarWidth,
+				}));
 			},
 
 			setSidebarWidth: (width: number) => {
-				set((draft) => {
-					draft.sidebarWidth = width;
-				});
+				set((state) => ({
+					...state,
+					sidebarWidth: width,
+				}));
 			},
 		})),
 		{

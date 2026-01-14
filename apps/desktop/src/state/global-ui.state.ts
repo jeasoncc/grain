@@ -37,21 +37,24 @@ export const useGlobalUIStore = create<GlobalUIStore>()(
 		// ==============================
 
 		openCommandPalette: () => {
-			set((draft) => {
-				draft.commandPaletteOpen = true;
-			});
+			set((state) => ({
+				...state,
+				commandPaletteOpen: true,
+			}));
 		},
 
 		closeCommandPalette: () => {
-			set((draft) => {
-				draft.commandPaletteOpen = false;
-			});
+			set((state) => ({
+				...state,
+				commandPaletteOpen: false,
+			}));
 		},
 
 		toggleCommandPalette: () => {
-			set((draft) => {
-				draft.commandPaletteOpen = !draft.commandPaletteOpen;
-			});
+			set((state) => ({
+				...state,
+				commandPaletteOpen: !state.commandPaletteOpen,
+			}));
 		},
 
 		// ==============================
@@ -59,21 +62,24 @@ export const useGlobalUIStore = create<GlobalUIStore>()(
 		// ==============================
 
 		openGlobalSearch: () => {
-			set((draft) => {
-				draft.globalSearchOpen = true;
-			});
+			set((state) => ({
+				...state,
+				globalSearchOpen: true,
+			}));
 		},
 
 		closeGlobalSearch: () => {
-			set((draft) => {
-				draft.globalSearchOpen = false;
-			});
+			set((state) => ({
+				...state,
+				globalSearchOpen: false,
+			}));
 		},
 
 		toggleGlobalSearch: () => {
-			set((draft) => {
-				draft.globalSearchOpen = !draft.globalSearchOpen;
-			});
+			set((state) => ({
+				...state,
+				globalSearchOpen: !state.globalSearchOpen,
+			}));
 		},
 
 		// ==============================
@@ -81,22 +87,25 @@ export const useGlobalUIStore = create<GlobalUIStore>()(
 		// ==============================
 
 		openBufferSwitcher: (direction: BufferSwitcherDirection) => {
-			set((draft) => {
-				draft.bufferSwitcherOpen = true;
-				draft.bufferSwitcherDirection = direction;
-			});
+			set((state) => ({
+				...state,
+				bufferSwitcherOpen: true,
+				bufferSwitcherDirection: direction,
+			}));
 		},
 
 		closeBufferSwitcher: () => {
-			set((draft) => {
-				draft.bufferSwitcherOpen = false;
-			});
+			set((state) => ({
+				...state,
+				bufferSwitcherOpen: false,
+			}));
 		},
 
 		setBufferSwitcherDirection: (direction: BufferSwitcherDirection) => {
-			set((draft) => {
-				draft.bufferSwitcherDirection = direction;
-			});
+			set((state) => ({
+				...state,
+				bufferSwitcherDirection: direction,
+			}));
 		},
 
 		// ==============================
@@ -104,21 +113,24 @@ export const useGlobalUIStore = create<GlobalUIStore>()(
 		// ==============================
 
 		openExportDialog: () => {
-			set((draft) => {
-				draft.exportDialogOpen = true;
-			});
+			set((state) => ({
+				...state,
+				exportDialogOpen: true,
+			}));
 		},
 
 		closeExportDialog: () => {
-			set((draft) => {
-				draft.exportDialogOpen = false;
-			});
+			set((state) => ({
+				...state,
+				exportDialogOpen: false,
+			}));
 		},
 
 		toggleExportDialog: () => {
-			set((draft) => {
-				draft.exportDialogOpen = !draft.exportDialogOpen;
-			});
+			set((state) => ({
+				...state,
+				exportDialogOpen: !state.exportDialogOpen,
+			}));
 		},
 	})),
 );
