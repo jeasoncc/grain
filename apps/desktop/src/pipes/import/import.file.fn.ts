@@ -10,6 +10,7 @@
  */
 
 import * as E from "fp-ts/Either";
+import * as TE from "fp-ts/TaskEither";
 
 // ==============================
 // Types
@@ -45,20 +46,21 @@ export function readFileAsText(file: File): Promise<string> {
  * 读取文件内容为文本（带错误处理）
  *
  * @param file - File 对象
- * @returns Either<FileReadError, string>
+ * @returns TaskEither<FileReadError, string>
  */
-export async function readFileAsTextSafe(
+export function readFileAsTextSafe(
 	file: File,
-): Promise<E.Either<FileReadError, string>> {
-	try {
-		const content = await readFileAsText(file);
-		return E.right(content);
-	} catch (error) {
-		return E.left({
-			type: "READ_ERROR",
+): TE.TaskEither<FileReadError, string> {
+	return TE.tryCatch(
+		async () => {
+			const content = await readFileAsText(file);
+			return content;
+		},
+		(error) => ({
+			type: "READ_ERROR" as const,
 			message: `文件读取失败: ${error instanceof Error ? error.message : String(error)}`,
-		});
-	}
+		}),
+	);
 }
 
 /**
