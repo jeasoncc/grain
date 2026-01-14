@@ -35,7 +35,7 @@ export interface CreateNodeParams {
 	/** 初始内容（可选） */
 	readonly content?: string;
 	/** 标签（可选） */
-	readonly tags?: string[];
+	readonly tags?: readonly string[];
 }
 
 /**
@@ -47,11 +47,11 @@ export interface CreateFileInTreeParams {
 	/** 文件标题 */
 	readonly title: string;
 	/** 文件夹路径（从根目录开始的文件夹名称数组） */
-	readonly folderPath: string[];
+	readonly folderPath: readonly string[];
 	/** 节点类型（默认 file） */
 	readonly type?: NodeType;
 	/** 标签 */
-	readonly tags?: string[];
+	readonly tags?: readonly string[];
 	/** 内容（Lexical JSON 字符串） */
 	readonly content?: string;
 	/** 文件夹是否折叠（默认 false） */
@@ -154,7 +154,7 @@ const getOrCreateFolder = (
  */
 export const ensureFolderPath = (
 	workspaceId: string,
-	folderPath: string[],
+	folderPath: readonly string[],
 	collapsed: boolean = false,
 ): TE.TaskEither<AppError, NodeInterface> => {
 	if (folderPath.length === 0) {
@@ -166,7 +166,7 @@ export const ensureFolderPath = (
 
 	// 递归创建文件夹路径
 	const createPath = (
-		remainingPath: string[],
+		remainingPath: readonly string[],
 		parentId: string | null,
 	): TE.TaskEither<AppError, NodeInterface> => {
 		if (remainingPath.length === 0) {
