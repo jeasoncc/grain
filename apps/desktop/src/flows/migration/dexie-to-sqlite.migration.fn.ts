@@ -20,6 +20,7 @@
  * @requirements 10.1, 10.2, 10.3, 10.4, 10.5, 10.6
  */
 
+import dayjs from "dayjs";
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import * as TE from "fp-ts/TaskEither";
@@ -421,7 +422,7 @@ export const migrateData = (): TE.TaskEither<AppError, MigrationResult> =>
 					status: status === "completed" ? "completed" : "not_started",
 					migratedCounts: { workspaces: 0, nodes: 0, contents: 0, users: 0 },
 					errors: [],
-					startedAt: new Date().toISOString(),
+					startedAt: dayjs().toISOString(),
 				} as MigrationResult);
 			}
 
@@ -464,8 +465,8 @@ export const migrateData = (): TE.TaskEither<AppError, MigrationResult> =>
 								users: userResult.count,
 							},
 							errors: [],
-							startedAt: new Date().toISOString(),
-							completedAt: new Date().toISOString(),
+							startedAt: dayjs().toISOString(),
+							completedAt: dayjs().toISOString(),
 							idMapping: {
 								workspaces: workspaceResult.mapping,
 								nodes: nodeResult.mapping,
@@ -484,7 +485,7 @@ export const migrateData = (): TE.TaskEither<AppError, MigrationResult> =>
 						status: "failed",
 						migratedCounts: { workspaces: 0, nodes: 0, contents: 0, users: 0 },
 						errors: [error.message],
-						startedAt: new Date().toISOString(),
+						startedAt: dayjs().toISOString(),
 					} as MigrationResult);
 				}),
 			);
