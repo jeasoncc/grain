@@ -10,6 +10,7 @@
  * 这些函数无副作用，可组合，可测试。
  */
 
+import * as E from "fp-ts/Either";
 import type { TemplateType } from "./content.template.fn";
 import { getTemplateConfig } from "./content.template.fn";
 
@@ -684,14 +685,14 @@ export function generateContentByType(
  * 解析 Lexical JSON 内容
  *
  * @param content - Lexical JSON 字符串
- * @returns 解析后的 Lexical 文档对象，解析失败返回 null
+ * @returns Either<Error, LexicalDocument>
  */
-export function parseContent(content: string): LexicalDocument | null {
-	try {
-		return JSON.parse(content) as LexicalDocument;
-	} catch {
-		return null;
-	}
+export function parseContent(content: string): E.Either<Error, LexicalDocument> {
+	return E.tryCatch(
+		() => JSON.parse(content) as LexicalDocument,
+		(err) => new Error(`JSON 解析失败: ${String(err)}`),
+	);
+}
 }
 
 /**
