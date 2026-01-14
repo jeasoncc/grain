@@ -43,7 +43,7 @@ import { api } from "./client.api";
 /**
  * 获取所有用户
  */
-export const getUsers = (): TE.TaskEither<AppError, UserInterface[]> =>
+export const getUsers = (): TE.TaskEither<AppError, readonly UserInterface[]> =>
 	pipe(api.getUsers(), TE.map(decodeUsers));
 
 /**

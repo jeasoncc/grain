@@ -30,7 +30,7 @@ import { api } from "./client.api";
  */
 export const getWorkspaces = (): TE.TaskEither<
 	AppError,
-	WorkspaceInterface[]
+	readonly WorkspaceInterface[]
 > => pipe(api.getWorkspaces(), TE.map(decodeWorkspaces));
 
 /**
