@@ -413,14 +413,19 @@ export function parseMarkdownToDocument(
 				listType,
 			);
 
-			// 设置 checked 状态
-			if (listType === "check") {
-				listNode.children.forEach((child, index) => {
-					child.checked = items[index].checked;
-				});
-			}
+			// 设置 checked 状态（使用 map 创建新的 children 数组）
+			const updatedListNode =
+				listType === "check"
+					? {
+							...listNode,
+							children: listNode.children.map((child, index) => ({
+								...child,
+								checked: items[index].checked,
+							})),
+						}
+					: listNode;
 
-			children.push(listNode);
+			children.push(updatedListNode);
 			continue;
 		}
 
