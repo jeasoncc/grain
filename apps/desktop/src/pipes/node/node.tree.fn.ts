@@ -94,11 +94,7 @@ export const getNodePath = (
 	let currentId: string | null = nodeId;
 
 	while (currentId) {
-		const node = pipe(
-			nodes as NodeInterface[],
-			A.findFirst((n) => n.id === currentId),
-			O.toNullable,
-		);
+		const node = nodes.find((n) => n.id === currentId);
 		if (!node) break;
 		path.unshift(node);
 		currentId = node.parent;
