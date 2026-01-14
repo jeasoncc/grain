@@ -15,7 +15,7 @@ import type { WorkspaceInterface } from "@/types/workspace";
  */
 export interface ActivityBarProps {
 	/** 所有工作区列表 */
-	readonly workspaces: WorkspaceInterface[];
+	readonly workspaces: readonly WorkspaceInterface[];
 	/** 当前选中的工作区 ID */
 	readonly selectedWorkspaceId: string | null;
 	/** 当前激活的侧边栏面板 */
@@ -76,7 +76,7 @@ export interface WorkspaceItemProps {
 	/** 是否选中 */
 	readonly isSelected: boolean;
 	/** 文件夹图标组件 */
-	readonly FolderIcon: React.ComponentType<{ className?: string }>;
+	readonly FolderIcon: React.ComponentType<{ readonly className?: string }>;
 	/** 点击回调 */
 	readonly onClick: () => void;
 }
