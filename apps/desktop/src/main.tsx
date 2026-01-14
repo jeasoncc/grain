@@ -30,7 +30,7 @@ interface RootElement {
 // 注册类型（类型提示）
 declare module "@tanstack/react-router" {
 	interface Register {
-		router: typeof Router;
+		readonly router: typeof Router;
 	}
 }
 
