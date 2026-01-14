@@ -289,14 +289,11 @@ export function createListNode(
  * @returns Lexical 段落节点
  */
 export function createTagsLine(tags: string[]): LexicalParagraphNode {
-	const children: (LexicalTextNode | LexicalTagNode)[] = [];
-
-	tags.forEach((tag, index) => {
-		children.push(createTagNode(tag));
-		if (index < tags.length - 1) {
-			children.push(createTextNode(" "));
-		}
-	});
+	const children = tags.flatMap((tag, index) =>
+		index < tags.length - 1
+			? [createTagNode(tag), createTextNode(" ")]
+			: [createTagNode(tag)],
+	);
 
 	return createParagraphNode(children);
 }
@@ -692,7 +689,6 @@ export function parseContent(content: string): E.Either<Error, LexicalDocument> 
 		() => JSON.parse(content) as LexicalDocument,
 		(err) => new Error(`JSON 解析失败: ${String(err)}`),
 	);
-}
 }
 
 /**
