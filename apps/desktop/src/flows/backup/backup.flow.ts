@@ -318,8 +318,8 @@ export const saveLocalBackup = (
 	TE.tryCatch(
 		async () => {
 			const backups = getLocalBackups();
-			backups.unshift({ timestamp: backup.metadata.timestamp, data: backup });
-			const recentBackups = backups.slice(0, maxBackups);
+			const newBackup = { timestamp: backup.metadata.timestamp, data: backup };
+			const recentBackups = [newBackup, ...backups].slice(0, maxBackups);
 			localStorage.setItem(LOCAL_BACKUPS_KEY, JSON.stringify(recentBackups));
 			localStorage.setItem(LAST_BACKUP_KEY, backup.metadata.timestamp);
 		},
@@ -426,12 +426,4 @@ export const createAutoBackupManager = () => {
 	};
 };
 
-	async restoreLocalBackup(timestamp: string) {
-		const result = await restoreLocalBackup(timestamp)();
-		if (result._tag === "Left") {
-			throw new Error(result.left.message);
-		}
-	}
-}
-
-export const autoBackupManager = new AutoBackupManager();
+export const autoBackupManager = createAutoBackupManager();
