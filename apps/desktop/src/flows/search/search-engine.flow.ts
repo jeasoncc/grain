@@ -47,14 +47,14 @@ export interface SearchResult {
 	readonly workspaceId?: string;
 	readonly workspaceTitle?: string;
 	readonly score: number;
-	readonly highlights: readonly string[];
+	readonly highlights: ReadonlyArray<string>;
 }
 
 /**
  * 搜索选项
  */
 export interface SearchOptions {
-	readonly types?: readonly SearchResultType[];
+	readonly types?: ReadonlyArray<SearchResultType>;
 	readonly workspaceId?: string;
 	readonly limit?: number;
 	readonly fuzzy?: boolean;
@@ -86,7 +86,7 @@ export class SearchEngine {
 		try {
 			// 获取所有节点
 			const nodesResult = await getAllNodes()();
-			const nodes: readonly NodeInterface[] = E.isRight(nodesResult)
+			const nodes: ReadonlyArray<NodeInterface> = E.isRight(nodesResult)
 				? nodesResult.right
 				: [];
 
@@ -148,7 +148,7 @@ export class SearchEngine {
 	/**
 	 * 批量加载 workspace 信息到缓存
 	 */
-	private async loadWorkspaces(workspaceIds: readonly string[]): Promise<void> {
+	private async loadWorkspaces(workspaceIds: ReadonlyArray<string>): Promise<void> {
 		// 过滤出未缓存的 workspace
 		const uncachedIds = workspaceIds.filter(
 			(id) => !this.workspaceCache.has(id),
@@ -161,7 +161,7 @@ export class SearchEngine {
 		);
 
 		// Create new entries instead of modifying existing map
-		const newEntries: readonly [string, WorkspaceInterface][] = results
+		const newEntries: ReadonlyArray<readonly [string, WorkspaceInterface]> = results
 			.map(result => E.isRight(result) && result.right ? result.right : null)
 			.filter((workspace): workspace is WorkspaceInterface => workspace !== null)
 			.map(workspace => [workspace.id, workspace] as const);
@@ -190,7 +190,7 @@ export class SearchEngine {
 	async search(
 		query: string,
 		options: SearchOptions = {},
-	): Promise<readonly SearchResult[]> {
+	): Promise<ReadonlyArray<SearchResult>> {
 		if (!query.trim()) return [];
 		if (!this.nodeIndex) await this.buildIndex();
 
@@ -263,7 +263,7 @@ export class SearchEngine {
 	async simpleSearch(
 		query: string,
 		options: SearchOptions = {},
-	): Promise<readonly SearchResult[]> {
+	): Promise<ReadonlyArray<SearchResult>> {
 		if (!query.trim()) return [];
 
 		const { types = ["node"], workspaceId, limit = 50 } = options;
@@ -272,7 +272,7 @@ export class SearchEngine {
 		try {
 			if (types.includes("node")) {
 				// 获取节点
-				let nodes: readonly NodeInterface[];
+				let nodes: ReadonlyArray<NodeInterface>;
 				if (workspaceId) {
 					const nodesResult = await getNodesByWorkspace(workspaceId)();
 					nodes = E.isRight(nodesResult) ? nodesResult.right : [];

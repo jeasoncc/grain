@@ -33,19 +33,19 @@ export type TemplateType = "diary" | "todo" | "ledger" | "wiki";
  */
 export interface TemplateConfig {
 	/** 模板类型 */
-	type: TemplateType;
+	readonly type: TemplateType;
 	/** 根文件夹名称 */
-	rootFolder: string;
+	readonly rootFolder: string;
 	/** 文件名前缀 */
-	filePrefix: string;
+	readonly filePrefix: string;
 	/** 默认标签 */
-	defaultTags: string[];
+	readonly defaultTags: ReadonlyArray<string>;
 	/** 标题级别 */
-	headingLevel: "h1" | "h2" | "h3";
+	readonly headingLevel: "h1" | "h2" | "h3";
 	/** 是否包含空行 */
-	includeEmptyLines: boolean;
+	readonly includeEmptyLines: boolean;
 	/** 节点类型 */
-	nodeType: "file" | "diary" | "canvas";
+	readonly nodeType: "file" | "diary" | "canvas";
 }
 
 /**
@@ -53,19 +53,19 @@ export interface TemplateConfig {
  */
 export interface FileStructure {
 	/** 根文件夹名称 */
-	rootFolder: string;
+	readonly rootFolder: string;
 	/** 年份文件夹名称 */
-	yearFolder: string;
+	readonly yearFolder: string;
 	/** 月份文件夹名称 */
-	monthFolder: string;
+	readonly monthFolder: string;
 	/** 日期文件夹名称 */
-	dayFolder: string;
+	readonly dayFolder: string;
 	/** 文件名 */
-	filename: string;
+	readonly filename: string;
 	/** 完整文件夹路径数组 */
-	folderPath: string[];
+	readonly folderPath: ReadonlyArray<string>;
 	/** 完整路径（含文件名） */
-	fullPath: string;
+	readonly fullPath: string;
 }
 
 /**
@@ -73,13 +73,13 @@ export interface FileStructure {
  */
 export interface FileCreationParams {
 	/** 工作区 ID */
-	workspaceId: string;
+	readonly workspaceId: string;
 	/** 文件结构 */
-	structure: FileStructure;
+	readonly structure: FileStructure;
 	/** 模板配置 */
-	config: TemplateConfig;
+	readonly config: TemplateConfig;
 	/** 内容（Lexical JSON 字符串） */
-	content: string;
+	readonly content: string;
 }
 
 // ==============================
@@ -257,7 +257,7 @@ export function isValidTemplateType(type: string): type is TemplateType {
  *
  * @returns 模板类型数组
  */
-export function getAvailableTemplateTypes(): TemplateType[] {
+export function getAvailableTemplateTypes(): ReadonlyArray<TemplateType> {
 	return Object.keys(TEMPLATE_CONFIGS) as TemplateType[];
 }
 

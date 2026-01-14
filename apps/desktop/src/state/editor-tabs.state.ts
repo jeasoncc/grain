@@ -22,21 +22,21 @@ import type {
 
 interface EditorTabsStoreActions {
 	// Tab Operations
-	addTab: (tab: EditorTab) => void;
-	addTabWithState: (tab: EditorTab, editorState: EditorInstanceState) => void;
-	removeTab: (tabId: string) => void;
-	setTabs: (tabs: EditorTab[]) => void;
-	setActiveTabId: (tabId: string | null) => void;
-	updateTab: (tabId: string, updates: Partial<EditorTab>) => void;
+	readonly addTab: (tab: EditorTab) => void;
+	readonly addTabWithState: (tab: EditorTab, editorState: EditorInstanceState) => void;
+	readonly removeTab: (tabId: string) => void;
+	readonly setTabs: (tabs: ReadonlyArray<EditorTab>) => void;
+	readonly setActiveTabId: (tabId: string | null) => void;
+	readonly updateTab: (tabId: string, updates: Partial<EditorTab>) => void;
 
 	// Editor State Operations
-	setEditorState: (tabId: string, state: EditorInstanceState) => void;
-	updateEditorState: (
+	readonly setEditorState: (tabId: string, state: EditorInstanceState) => void;
+	readonly updateEditorState: (
 		tabId: string,
 		updates: Partial<EditorInstanceState>,
 	) => void;
-	removeEditorState: (tabId: string) => void;
-	setEditorStates: (states: Record<string, EditorInstanceState>) => void;
+	readonly removeEditorState: (tabId: string) => void;
+	readonly setEditorStates: (states: Record<string, EditorInstanceState>) => void;
 }
 
 // ==============================
@@ -62,7 +62,8 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 
 		addTab: (tab) => {
 			set((state) => {
-				state.tabs.push(tab as EditorTab);
+				// Use immer-compatible push for readonly arrays
+				state.tabs = [...state.tabs, tab];
 			});
 		},
 
@@ -72,18 +73,17 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 		 */
 		addTabWithState: (tab, editorState) => {
 			set((state) => {
-				state.tabs.push(tab as EditorTab);
-				state.editorStates[tab.id] = editorState;
+				// Use immer-compatible operations
+				state.tabs = [...state.tabs, tab];
+				state.editorStates = { ...state.editorStates, [tab.id]: editorState };
 				state.activeTabId = tab.id;
 			});
 		},
 
 		removeTab: (tabId) => {
 			set((state) => {
-				const index = state.tabs.findIndex((t: EditorTab) => t.id === tabId);
-				if (index !== -1) {
-					state.tabs.splice(index, 1);
-				}
+				// Use functional filter instead of splice
+				state.tabs = state.tabs.filter((t: EditorTab) => t.id !== tabId);
 			});
 		},
 
@@ -101,30 +101,37 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 
 		updateTab: (tabId, updates) => {
 			set((state) => {
-				const tab = state.tabs.find((t: EditorTab) => t.id === tabId);
-				if (tab) {
-					Object.assign(tab, updates);
-				}
+				// Use functional map instead of direct mutation
+				state.tabs = state.tabs.map((t: EditorTab) => 
+					t.id === tabId ? { ...t, ...updates } : t
+				);
 			});
 		},
 
 		setEditorState: (tabId, editorState) => {
 			set((state) => {
-				state.editorStates[tabId] = editorState;
+				// Use spread operator instead of direct assignment
+				state.editorStates = { ...state.editorStates, [tabId]: editorState };
 			});
 		},
 
 		updateEditorState: (tabId, updates) => {
 			set((state) => {
+				// Use functional update instead of Object.assign
 				if (state.editorStates[tabId]) {
-					Object.assign(state.editorStates[tabId], updates);
+					state.editorStates = {
+						...state.editorStates,
+						[tabId]: { ...state.editorStates[tabId], ...updates }
+					};
 				}
 			});
 		},
 
 		removeEditorState: (tabId) => {
 			set((state) => {
-				delete state.editorStates[tabId];
+				// Use functional approach instead of delete
+				const { [tabId]: removed, ...rest } = state.editorStates;
+				state.editorStates = rest;
 			});
 		},
 
@@ -143,8 +150,8 @@ export const useEditorTabsStore = create<EditorTabsStore>()(
 /**
  * 获取所有标签
  */
-export const useTabs = (): readonly EditorTab[] => {
-	return useEditorTabsStore((s) => s.tabs) as readonly EditorTab[];
+export const useTabs = (): ReadonlyArray<EditorTab> => {
+	return useEditorTabsStore((s) => s.tabs) as ReadonlyArray<EditorTab>;
 };
 
 /**
