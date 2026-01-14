@@ -426,7 +426,7 @@ export const clearAsyncQueue = (): void => {
     isProcessing: false,
     processedCount: 0,
     errorCount: 0,
-    lastProcessTime: Date.now(),
+    lastProcessTime: dayjs().valueOf(),
     averageProcessTime: 0,
   };
 };
@@ -442,7 +442,7 @@ export const getAsyncQueueStatus = () => ({
     level: item.entry.level,
     priority: item.priority,
     retryCount: item.retryCount,
-    age: Date.now() - item.timestamp,
+    age: dayjs().valueOf() - item.timestamp,
   })),
 });
 
@@ -494,7 +494,7 @@ export const getAsyncLogPerformanceStats = () => ({
   averageProcessTime: processorState.averageProcessTime,
   isProcessing: processorState.isProcessing,
   lastProcessTime: processorState.lastProcessTime,
-  timeSinceLastProcess: Date.now() - processorState.lastProcessTime,
+  timeSinceLastProcess: dayjs().valueOf() - processorState.lastProcessTime,
   successRate: processorState.processedCount / (processorState.processedCount + processorState.errorCount) || 0,
 });
 
@@ -507,7 +507,7 @@ export const resetAsyncLogPerformanceStats = (): void => {
     processedCount: 0,
     errorCount: 0,
     averageProcessTime: 0,
-    lastProcessTime: Date.now(),
+    lastProcessTime: dayjs().valueOf(),
   };
 };
 
