@@ -9,6 +9,7 @@
 import * as TE from "fp-ts/TaskEither";
 import * as O from "fp-ts/Option";
 import { pipe } from "fp-ts/function";
+import { orderBy } from "es-toolkit";
 import dayjs from "dayjs";
 import type { 
   LogEntry, 
@@ -69,7 +70,7 @@ const generateCacheKey = (options: LogQueryOptions): string => {
   const normalized = {
     limit: options.limit || 100,
     offset: options.offset || 0,
-    levelFilter: options.levelFilter ? [...options.levelFilter].sort() : [],
+    levelFilter: options.levelFilter ? orderBy(options.levelFilter, [x => x], ['asc']) : [],
     startTime: options.startTime || '',
     endTime: options.endTime || '',
     sourceFilter: options.sourceFilter || '',
