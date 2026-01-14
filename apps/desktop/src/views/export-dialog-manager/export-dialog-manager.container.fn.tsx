@@ -36,12 +36,16 @@ export const exportDialogManager: ExportDialogManagerAPI = {
 			workspaceId: workspaceId || "",
 			workspaceTitle: workspaceTitle || "",
 		};
-		exportDialogListeners.forEach((listener) => listener());
+		for (const listener of exportDialogListeners) {
+			listener();
+		}
 	},
 
 	close: () => {
 		globalExportDialogState = { ...globalExportDialogState, isOpen: false };
-		exportDialogListeners.forEach((listener) => listener());
+		for (const listener of exportDialogListeners) {
+			listener();
+		}
 	},
 
 	subscribe: (listener: () => void) => {
