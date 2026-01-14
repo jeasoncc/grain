@@ -8,6 +8,7 @@
  * - 不修改输入参数
  */
 
+import dayjs from "dayjs";
 import type {
 	WritingGoal,
 	WritingSession,
@@ -25,7 +26,7 @@ import type {
  * @param date - 可选的日期（默认为当前日期）
  * @returns YYYY-MM-DD 格式的日期字符串
  */
-export const getTodayDate = (date: Date = new Date()): string => {
+export const getTodayDate = (date: Date = dayjs().toDate()): string => {
 	return date.toISOString().slice(0, 10);
 };
 
@@ -38,7 +39,7 @@ export const getTodayDate = (date: Date = new Date()): string => {
  */
 export const isToday = (
 	dateString: string,
-	today: Date = new Date(),
+	today: Date = dayjs().toDate(),
 ): boolean => {
 	return dateString === getTodayDate(today);
 };
@@ -135,7 +136,7 @@ export const getRemainingWords = (
  */
 export const createSession = (
 	wordCount: number,
-	startTime: number = Date.now(),
+	startTime: number = dayjs().valueOf(),
 ): WritingSession => {
 	return {
 		startTime,
@@ -166,12 +167,12 @@ export const updateSessionCount = (
  * 计算会话持续时间（分钟）
  *
  * @param session - 写作会话
- * @param currentTime - 可选的当前时间（默认为 Date.now()）
+ * @param currentTime - 可选的当前时间（默认为 dayjs().valueOf()）
  * @returns 持续时间（分钟）
  */
 export const getSessionDuration = (
 	session: WritingSession,
-	currentTime: number = Date.now(),
+	currentTime: number = dayjs().valueOf(),
 ): number => {
 	return Math.floor((currentTime - session.startTime) / 60000);
 };
@@ -180,12 +181,12 @@ export const getSessionDuration = (
  * 计算会话的每分钟字数
  *
  * @param session - 写作会话
- * @param currentTime - 可选的当前时间（默认为 Date.now()）
+ * @param currentTime - 可选的当前时间（默认为 dayjs().valueOf()）
  * @returns 每分钟字数（如果持续时间为 0 则返回 0）
  */
 export const getWordsPerMinute = (
 	session: WritingSession,
-	currentTime: number = Date.now(),
+	currentTime: number = dayjs().valueOf(),
 ): number => {
 	const duration = getSessionDuration(session, currentTime);
 	if (duration <= 0) {
