@@ -12,8 +12,8 @@ export interface ThemeSelectorViewProps {
 	readonly setMode: (mode: ThemeMode) => void;
 	readonly enableTransition: boolean;
 	readonly setEnableTransition: (enabled: boolean) => void;
-	readonly lightThemes: Theme[];
-	readonly darkThemes: Theme[];
+	readonly lightThemes: readonly Theme[];
+	readonly darkThemes: readonly Theme[];
 }
 
 /**
