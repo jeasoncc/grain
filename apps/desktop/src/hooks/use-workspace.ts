@@ -45,7 +45,7 @@ import type { WorkspaceInterface } from "@/types/workspace";
  * }
  * ```
  */
-export function useAllWorkspaces(): WorkspaceInterface[] | undefined {
+export function useAllWorkspaces(): readonly WorkspaceInterface[] | undefined {
 	const { data: workspaces, isLoading } = useWorkspacesQuery();
 
 	return useMemo(() => {
@@ -92,7 +92,7 @@ export function useWorkspace(
  */
 export function useWorkspacesByOwner(
 	ownerId: string | null | undefined,
-): WorkspaceInterface[] | undefined {
+): readonly WorkspaceInterface[] | undefined {
 	const { data: workspaces, isLoading } = useWorkspacesQuery();
 
 	return useMemo(() => {
@@ -110,7 +110,7 @@ export function useWorkspacesByOwner(
  */
 export function useRecentWorkspaces(
 	limit: number = 5,
-): WorkspaceInterface[] | undefined {
+): readonly WorkspaceInterface[] | undefined {
 	const { data: workspaces, isLoading } = useWorkspacesQuery();
 
 	return useMemo(() => {
@@ -162,7 +162,7 @@ export function useWorkspaceExists(
  */
 export function useWorkspaceSearch(
 	query: string | null | undefined,
-): WorkspaceInterface[] | undefined {
+): readonly WorkspaceInterface[] | undefined {
 	const { data: workspaces, isLoading } = useWorkspacesQuery();
 
 	return useMemo(() => {
