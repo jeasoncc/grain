@@ -14,6 +14,7 @@ import * as A from "fp-ts/Array";
 import { pipe } from "fp-ts/function";
 import * as N from "fp-ts/number";
 import * as O from "fp-ts/Option";
+import * as RA from "fp-ts/ReadonlyArray";
 import { contramap } from "fp-ts/Ord";
 import type { NodeInterface, NodeType } from "@/types/node";
 
@@ -94,7 +95,11 @@ export const getNodePath = (
 	let currentId: string | null = nodeId;
 
 	while (currentId) {
-		const node = nodes.find((n) => n.id === currentId);
+		const node = pipe(
+			nodes,
+			RA.findFirst((n) => n.id === currentId),
+			O.toNullable,
+		);
 		if (!node) break;
 		path.unshift(node);
 		currentId = node.parent;
@@ -113,7 +118,7 @@ export const getNodePath = (
  * @returns 如果移动会创建循环则返回 true
  */
 export const wouldCreateCycle = (
-	nodes: NodeInterface[],
+	nodes: readonly NodeInterface[],
 	nodeId: string,
 	newParentId: string | null,
 ): boolean => {
@@ -126,7 +131,7 @@ export const wouldCreateCycle = (
 		if (currentId === nodeId) return true;
 		const parent = pipe(
 			nodes,
-			A.findFirst((n) => n.id === currentId),
+			RA.findFirst((n) => n.id === currentId),
 			O.map((n) => n.parent),
 			O.toNullable,
 		);
