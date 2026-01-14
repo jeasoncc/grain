@@ -144,8 +144,8 @@ const calculatePriority = (entry: LogEntry, config: AsyncLogConfig): number => {
   }
   
   // 时间因子（越新的日志优先级越高）
-  const now = Date.now();
-  const entryTime = new Date(entry.timestamp).getTime();
+  const now = dayjs().valueOf();
+  const entryTime = dayjs(entry.timestamp).valueOf();
   const timeFactor = Math.max(0, 10 - (now - entryTime) / 1000); // 10秒内的日志有时间加成
   priority += timeFactor;
   
