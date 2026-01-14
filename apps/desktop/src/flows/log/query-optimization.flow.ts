@@ -38,10 +38,10 @@ import {
  * 查询缓存条目
  */
 interface QueryCacheEntry {
-  key: string;
-  result: LogQueryResult;
-  timestamp: number;
-  ttl: number;
+  readonly key: string;
+  readonly result: LogQueryResult;
+  readonly timestamp: number;
+  readonly ttl: number;
 }
 
 /**
