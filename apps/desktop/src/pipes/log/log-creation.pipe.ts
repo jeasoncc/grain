@@ -100,32 +100,34 @@ export const validateLogConfig = (config: Partial<LogConfig>): {
   readonly errors: ReadonlyArray<string>;
   readonly mergedConfig: LogConfig;
 } => {
-  const errors: string[] = [];
   const mergedConfig = { ...DEFAULT_LOG_CONFIG, ...config };
 
-  // 验证 minLevel
-  if (config.minLevel && !['trace', 'debug', 'info', 'success', 'warn', 'error'].includes(config.minLevel)) {
-    errors.push(`Invalid minLevel: ${config.minLevel}`);
-  }
-
-  // 验证 maxEntries
-  if (config.maxEntries !== undefined && (config.maxEntries <= 0 || config.maxEntries > 100000)) {
-    errors.push(`maxEntries must be between 1 and 100000, got: ${config.maxEntries}`);
-  }
-
-  // 验证 batchSize
-  if (config.batchSize !== undefined && (config.batchSize <= 0 || config.batchSize > 1000)) {
-    errors.push(`batchSize must be between 1 and 1000, got: ${config.batchSize}`);
-  }
-
-  // 验证 batchDelay
-  if (config.batchDelay !== undefined && (config.batchDelay < 0 || config.batchDelay > 60000)) {
-    errors.push(`batchDelay must be between 0 and 60000ms, got: ${config.batchDelay}`);
-  }
+  // Use functional approach to collect validation errors
+  const validationErrors = [
+    // 验证 minLevel
+    config.minLevel && !['trace', 'debug', 'info', 'success', 'warn', 'error'].includes(config.minLevel)
+      ? `Invalid minLevel: ${config.minLevel}`
+      : null,
+    
+    // 验证 maxEntries
+    config.maxEntries !== undefined && (config.maxEntries <= 0 || config.maxEntries > 100000)
+      ? `maxEntries must be between 1 and 100000, got: ${config.maxEntries}`
+      : null,
+    
+    // 验证 batchSize
+    config.batchSize !== undefined && (config.batchSize <= 0 || config.batchSize > 1000)
+      ? `batchSize must be between 1 and 1000, got: ${config.batchSize}`
+      : null,
+    
+    // 验证 batchDelay
+    config.batchDelay !== undefined && (config.batchDelay < 0 || config.batchDelay > 60000)
+      ? `batchDelay must be between 0 and 60000ms, got: ${config.batchDelay}`
+      : null,
+  ].filter((error): error is string => error !== null);
 
   return {
-    isValid: errors.length === 0,
-    errors: errors as ReadonlyArray<string>,
+    isValid: validationErrors.length === 0,
+    errors: validationErrors as ReadonlyArray<string>,
     mergedConfig,
   };
 };

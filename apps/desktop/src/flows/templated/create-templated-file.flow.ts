@@ -57,7 +57,7 @@ export interface TemplateConfig<T> {
 	/** 生成模板内容的函数 */
 	readonly generateTemplate: (params: T) => string;
 	/** 生成文件夹路径的函数 */
-	readonly generateFolderPath: (params: T) => string[];
+	readonly generateFolderPath: (params: T) => ReadonlyArray<string>;
 	/** 生成文件标题的函数 */
 	readonly generateTitle: (params: T) => string;
 	/** 参数校验 Schema */
@@ -159,7 +159,7 @@ const getOrCreateFolder = (
  */
 const ensureFolderPath = (
 	workspaceId: string,
-	folderPath: string[],
+	folderPath: ReadonlyArray<string>,
 	collapsed: boolean = false,
 ): TE.TaskEither<AppError, NodeInterface> => {
 	if (folderPath.length === 0) {
@@ -171,7 +171,7 @@ const ensureFolderPath = (
 
 	// 递归创建文件夹路径
 	const createPath = (
-		remainingPath: string[],
+		remainingPath: ReadonlyArray<string>,
 		parentId: string | null,
 	): TE.TaskEither<AppError, NodeInterface> => {
 		if (remainingPath.length === 0) {
@@ -209,9 +209,9 @@ const createFileInternal = (params: {
 	readonly title: string;
 	readonly type: FileNodeType;
 	readonly content?: string;
-	readonly tags?: string[];
+	readonly tags?: ReadonlyArray<string>;
 	readonly collapsed?: boolean;
-}): TE.TaskEither<AppError, { node: NodeInterface; tabId: string | null }> => {
+}): TE.TaskEither<AppError, { readonly node: NodeInterface; readonly tabId: string | null }> => {
 	return pipe(
 		TE.tryCatch(
 			() =>
@@ -271,7 +271,7 @@ const createFileInternal = (params: {
 
 						// 打开 tab：直接操作 state
 						const existingTab = findTabByNodeId(
-							store.tabs as EditorTab[],
+							store.tabs as ReadonlyArray<EditorTab>,
 							node.id,
 						);
 

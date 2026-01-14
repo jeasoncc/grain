@@ -8,7 +8,6 @@
  * 使用 fp-ts pipe 进行函数组合。
  */
 
-import * as A from "fp-ts/Array";
 import * as RA from "fp-ts/ReadonlyArray";
 import * as Ord from "fp-ts/Ord";
 import { pipe } from "fp-ts/function";
@@ -194,13 +193,13 @@ export const filterByLevels = (entries: readonly LogEntry[], levels: readonly Lo
  * @returns 过滤后的日志条目数组
  */
 export const filterByTimeRange = (
-  entries: LogEntry[],
+  entries: ReadonlyArray<LogEntry>,
   startTime?: string,
   endTime?: string,
-): LogEntry[] =>
+): ReadonlyArray<LogEntry> =>
   pipe(
     entries,
-    A.filter((entry) => {
+    RA.filter((entry) => {
       const entryTime = dayjs(entry.timestamp).valueOf();
       
       if (startTime && entryTime < dayjs(startTime).valueOf()) {
@@ -226,10 +225,10 @@ export const filterByTimeRange = (
  * @param source - 来源字符串
  * @returns 过滤后的日志条目数组
  */
-export const filterBySource = (entries: LogEntry[], source: string): LogEntry[] =>
+export const filterBySource = (entries: ReadonlyArray<LogEntry>, source: string): ReadonlyArray<LogEntry> =>
   pipe(
     entries,
-    A.filter((entry) => entry.source === source),
+    RA.filter((entry) => entry.source === source),
   );
 
 /**
@@ -291,10 +290,10 @@ export const sortByTimestamp = (entries: readonly LogEntry[], ascending = false)
  * @returns 分页后的日志条目数组
  */
 export const paginateEntries = (
-  entries: LogEntry[],
+  entries: ReadonlyArray<LogEntry>,
   offset = 0,
   limit = 100,
-): LogEntry[] => entries.slice(offset, offset + limit);
+): ReadonlyArray<LogEntry> => entries.slice(offset, offset + limit);
 
 // ============================================================================
 // 配置验证
@@ -331,13 +330,14 @@ export const isValidLogConfig = (config: LogConfig): boolean => {
  * @param entries - 日志条目数组
  * @returns 统计信息
  */
-export const calculateLogStats = (entries: LogEntry[]) => {
-  const byLevel = entries.reduce((acc, entry) => {
-    acc[entry.level] = (acc[entry.level] || 0) + 1;
-    return acc;
-  }, {} as Record<LogLevel, number>);
+export const calculateLogStats = (entries: ReadonlyArray<LogEntry>) => {
+  // Use functional approach instead of mutation
+  const byLevel = entries.reduce((acc, entry) => ({
+    ...acc,
+    [entry.level]: (acc[entry.level] || 0) + 1,
+  }), {} as Record<LogLevel, number>);
 
-  const timestamps = entries.map(e => e.timestamp).sort();
+  const timestamps = [...entries.map(e => e.timestamp)].sort();
   const earliestEntry = timestamps[0];
   const latestEntry = timestamps[timestamps.length - 1];
 

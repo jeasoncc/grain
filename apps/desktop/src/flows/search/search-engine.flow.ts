@@ -71,9 +71,9 @@ export interface SearchOptions {
  */
 export class SearchEngine {
 	private nodeIndex: lunr.Index | null = null;
-	private indexedData: ReadonlyMap<string, NodeInterface> = new Map();
-	private nodeContents: ReadonlyMap<string, string> = new Map();
-	private workspaceCache: ReadonlyMap<string, WorkspaceInterface> = new Map();
+	private readonly indexedData: ReadonlyMap<string, NodeInterface> = new Map();
+	private readonly nodeContents: ReadonlyMap<string, string> = new Map();
+	private readonly workspaceCache: ReadonlyMap<string, WorkspaceInterface> = new Map();
 	private isIndexing = false;
 
 	/**
@@ -101,7 +101,7 @@ export class SearchEngine {
 				newNodeContents.set(content.nodeId, content.content);
 			}
 			// Replace the entire map
-			this.nodeContents = newNodeContents;
+			(this as any).nodeContents = newNodeContents;
 
 			// 批量获取所有相关的 workspace 信息
 			const workspaceIds = [...new Set(nodes.map((n) => n.workspace))];
@@ -135,7 +135,7 @@ export class SearchEngine {
 				newIndexedData.set(node.id, node);
 			}
 			// Replace the entire map
-			this.indexedData = newIndexedData;
+			(this as any).indexedData = newIndexedData;
 
 			success(`[Search] 索引构建完成: ${nodes.length} 个节点`);
 		} catch (error) {
@@ -168,7 +168,7 @@ export class SearchEngine {
 		
 		// Create new map with existing entries plus new ones
 		const existingEntries = Array.from(this.workspaceCache.entries());
-		this.workspaceCache = new Map([...existingEntries, ...newEntries]);
+		(this as any).workspaceCache = new Map([...existingEntries, ...newEntries]);
 	}
 
 	/**
@@ -341,9 +341,9 @@ export class SearchEngine {
 	clearIndex(): void {
 		this.nodeIndex = null;
 		// Replace maps with new empty ones instead of clearing
-		this.indexedData = new Map<string, NodeInterface>();
-		this.nodeContents = new Map<string, string>();
-		this.workspaceCache = new Map<string, WorkspaceInterface>();
+		(this as any).indexedData = new Map<string, NodeInterface>();
+		(this as any).nodeContents = new Map<string, string>();
+		(this as any).workspaceCache = new Map<string, WorkspaceInterface>();
 	}
 }
 

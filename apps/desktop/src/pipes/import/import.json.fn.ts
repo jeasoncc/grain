@@ -72,10 +72,10 @@ export type JsonImportError =
  * 解析后的导入数据
  */
 export interface ParsedImportData {
-	readonly workspaces: readonly WorkspaceInterface[];
-	readonly nodes: readonly NodeInterface[];
-	readonly contents: readonly ContentData[];
-	readonly attachments: readonly AttachmentData[];
+	readonly workspaces: ReadonlyArray<WorkspaceInterface>;
+	readonly nodes: ReadonlyArray<NodeInterface>;
+	readonly contents: ReadonlyArray<ContentData>;
+	readonly attachments: ReadonlyArray<AttachmentData>;
 	readonly idMap: ReadonlyMap<string, string>;
 }
 
@@ -140,28 +140,18 @@ export function validateBundle(
 export function generateIdMap(
 	bundle: ExportBundle,
 	keepIds: boolean,
-): Map<string, string> {
-	const idMap = new Map<string, string>();
-
+): ReadonlyMap<string, string> {
 	if (keepIds) {
-		// 保留原始 ID
-		for (const w of bundle.projects) {
-			idMap.set(w.id, w.id);
-		}
-		for (const n of bundle.nodes) {
-			idMap.set(n.id, n.id);
-		}
+		// 保留原始 ID - use functional approach
+		const workspaceEntries = bundle.projects.map(w => [w.id, w.id] as const);
+		const nodeEntries = bundle.nodes.map(n => [n.id, n.id] as const);
+		return new Map([...workspaceEntries, ...nodeEntries]);
 	} else {
-		// 生成新 ID
-		for (const w of bundle.projects) {
-			idMap.set(w.id, uuidv4());
-		}
-		for (const n of bundle.nodes) {
-			idMap.set(n.id, uuidv4());
-		}
+		// 生成新 ID - use functional approach
+		const workspaceEntries = bundle.projects.map(w => [w.id, uuidv4()] as const);
+		const nodeEntries = bundle.nodes.map(n => [n.id, uuidv4()] as const);
+		return new Map([...workspaceEntries, ...nodeEntries]);
 	}
-
-	return idMap;
 }
 
 /**
@@ -172,9 +162,9 @@ export function generateIdMap(
  * @returns 转换后的工作区数组
  */
 export function transformWorkspaces(
-	workspaces: readonly WorkspaceInterface[],
+	workspaces: ReadonlyArray<WorkspaceInterface>,
 	idMap: ReadonlyMap<string, string>,
-): WorkspaceInterface[] {
+): ReadonlyArray<WorkspaceInterface> {
 	return workspaces.map((w) => ({
 		...w,
 		id: idMap.get(w.id) ?? w.id,
@@ -189,9 +179,9 @@ export function transformWorkspaces(
  * @returns 转换后的节点数组
  */
 export function transformNodes(
-	nodes: readonly NodeInterface[],
+	nodes: ReadonlyArray<NodeInterface>,
 	idMap: ReadonlyMap<string, string>,
-): NodeInterface[] {
+): ReadonlyArray<NodeInterface> {
 	return nodes.map((n) => ({
 		...n,
 		id: idMap.get(n.id) ?? n.id,
@@ -209,10 +199,10 @@ export function transformNodes(
  * @returns 转换后的内容数组
  */
 export function transformContents(
-	contents: readonly ContentData[],
+	contents: ReadonlyArray<ContentData>,
 	idMap: ReadonlyMap<string, string>,
 	keepIds: boolean,
-): ContentData[] {
+): ReadonlyArray<ContentData> {
 	return contents.map((c) => ({
 		...c,
 		id: keepIds ? c.id : uuidv4(),
@@ -228,9 +218,9 @@ export function transformContents(
  * @returns 转换后的附件数组
  */
 export function transformAttachments(
-	attachments: readonly AttachmentData[],
+	attachments: ReadonlyArray<AttachmentData>,
 	idMap: ReadonlyMap<string, string>,
-): AttachmentData[] {
+): ReadonlyArray<AttachmentData> {
 	return attachments.map((a) => ({
 		...a,
 		project:

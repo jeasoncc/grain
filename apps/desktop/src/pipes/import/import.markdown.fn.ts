@@ -112,7 +112,7 @@ export function parseFrontMatter(
 
 	return E.tryCatch(
 		() => {
-			const frontMatter: Record<string, unknown> = {};
+			let frontMatter: Record<string, unknown> = {};
 			const lines = frontMatterStr.split("\n");
 			let currentKey: string | null = null;
 			let currentArray: ReadonlyArray<string> | null = null;
@@ -128,7 +128,7 @@ export function parseFrontMatter(
 
 				// 保存之前的数组
 				if (currentKey && currentArray) {
-					frontMatter[currentKey] = currentArray;
+					frontMatter = { ...frontMatter, [currentKey]: currentArray };
 					currentKey = null;
 					currentArray = null;
 				}
@@ -144,14 +144,14 @@ export function parseFrontMatter(
 						currentKey = key;
 						currentArray = [];
 					} else {
-						frontMatter[key] = value;
+						frontMatter = { ...frontMatter, [key]: value };
 					}
 				}
 			}
 
 			// 保存最后的数组
 			if (currentKey && currentArray) {
-				frontMatter[currentKey] = currentArray;
+				frontMatter = { ...frontMatter, [currentKey]: currentArray };
 			}
 
 			return [frontMatter, remainingContent] as readonly [Record<string, unknown>, string];

@@ -26,7 +26,7 @@ function buildNodePath(
 	nodeMap: ReadonlyMap<string, NodeInterface>,
 ): string {
 	const buildPathRecursive = (currentNode: NodeInterface, acc: ReadonlyArray<string> = []): ReadonlyArray<string> => {
-		const newAcc = [currentNode.title, ...acc];
+		const newAcc: ReadonlyArray<string> = [currentNode.title, ...acc];
 		if (!currentNode.parent) {
 			return newAcc;
 		}
@@ -63,7 +63,7 @@ export const getWikiFilesAsync = (
 			info("[Wiki] 找到 Wiki 文件", { count: nodes.length }, "get-wiki-files.flow");
 
 			// Get content for all wiki files
-			const nodeIds = nodes.map((n) => n.id);
+			const nodeIds: ReadonlyArray<string> = nodes.map((n) => n.id);
 			const contentsResult = await getContentsByNodeIds(nodeIds)();
 			const contents = E.isRight(contentsResult) ? contentsResult.right : [];
 			const contentMap = new Map(contents.map((c) => [c.nodeId, c.content])) as ReadonlyMap<string, string>;
@@ -74,7 +74,7 @@ export const getWikiFilesAsync = (
 			const nodeMap = new Map(allNodes.map((n) => [n.id, n])) as ReadonlyMap<string, NodeInterface>;
 
 			// Build WikiFileEntry array
-			const entries = nodes.map((node) => {
+			const entries: ReadonlyArray<WikiFileEntry> = nodes.map((node) => {
 				const path = buildNodePath(node, nodeMap);
 				const content = contentMap.get(node.id) || "";
 				return new WikiFileEntryBuilder()
@@ -89,7 +89,7 @@ export const getWikiFilesAsync = (
 			success("[Wiki] Wiki 文件列表获取成功", {
 				count: entries.length,
 			}, "get-wiki-files");
-			return entries as ReadonlyArray<WikiFileEntry>;
+			return entries;
 		},
 		(error) => ({
 			type: "DB_ERROR" as const,

@@ -161,27 +161,29 @@ export const extractHighlights = (
 	content: string,
 	query: string,
 	options: HighlightOptions = {},
-): string[] => {
+): ReadonlyArray<string> => {
 	const { maxHighlights = 3, contextLength = 20 } = options;
 
 	if (!query || !content) return [];
 
-	const highlights: string[] = [];
 	const lowerContent = content.toLowerCase();
 	const lowerQuery = query.toLowerCase();
-	let index = 0;
-
-	while (highlights.length < maxHighlights) {
-		index = lowerContent.indexOf(lowerQuery, index);
-		if (index === -1) break;
+	
+	// Use functional approach to find all matches
+	const findMatches = (startIndex: number, accumulator: ReadonlyArray<string>): ReadonlyArray<string> => {
+		if (accumulator.length >= maxHighlights) return accumulator;
+		
+		const index = lowerContent.indexOf(lowerQuery, startIndex);
+		if (index === -1) return accumulator;
 
 		const start = Math.max(0, index - contextLength);
 		const end = Math.min(content.length, index + query.length + contextLength);
-		highlights.push(content.slice(start, end));
-		index += query.length;
-	}
+		const highlight = content.slice(start, end);
+		
+		return findMatches(index + query.length, [...accumulator, highlight]);
+	};
 
-	return highlights;
+	return findMatches(0, []);
 };
 
 // ============================================================================
