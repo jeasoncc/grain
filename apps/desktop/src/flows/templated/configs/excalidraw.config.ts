@@ -80,7 +80,7 @@ const generateExcalidrawTemplate = (
  */
 const generateExcalidrawFolderPath = (
 	params: ExcalidrawTemplateParams,
-): string[] => {
+): readonly string[] => {
 	const date = params.date || dayjs().toDate();
 	const structure = getDateFolderStructureWithFilename(date, "drawing");
 
