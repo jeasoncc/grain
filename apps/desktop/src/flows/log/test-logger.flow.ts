@@ -44,7 +44,7 @@ export const testLogQueryFlow = (): TE.TaskEither<AppError, number> =>
   pipe(
     queryLogs({
       limit: 10,
-      source_filter: "test-logger",
+      sourceFilter: "test-logger",
     }),
     TE.map((result) => {
       console.log(`查询到 ${result.entries.length} 条测试日志`);
@@ -62,35 +62,29 @@ export const testLogQueryFlow = (): TE.TaskEither<AppError, number> =>
  */
 export interface TestResult {
   /** 初始化是否成功 */
-  initSuccess: boolean;
+  readonly initSuccess: boolean;
   /** 迁移结果 */
-  migrationCount: number;
+  readonly migrationCount: number;
   /** 日志记录是否成功 */
-  loggingSuccess: boolean;
+  readonly loggingSuccess: boolean;
   /** 查询到的日志数量 */
-  queryCount: number;
+  readonly queryCount: number;
   /** 测试是否全部通过 */
-  allTestsPassed: boolean;
+  readonly allTestsPassed: boolean;
 }
 
 export const runCompleteLogSystemTestFlow = (): TE.TaskEither<AppError, TestResult> =>
   pipe(
     // 1. 初始化数据库
     initLogDatabase(),
-    TE.map(() => {
+    TE.chain(() => {
       console.log("✅ 日志数据库初始化成功");
-      return true;
+      return TE.right({ initSuccess: true, migrationCount: 0 });
     }),
-    TE.chain((initSuccess) =>
-      // 2. 迁移已移除 - 直接进行测试
-      pipe(
-        TE.right({ initSuccess, migrationCount: 0 }),
-        TE.map((result) => {
-          console.log("ℹ️ 跳过迁移 - 系统尚未发布");
-          return result;
-        }),
-      )
-    ),
+    TE.chain(({ initSuccess, migrationCount }) => {
+      console.log("ℹ️ 跳过迁移 - 系统尚未发布");
+      return TE.right({ initSuccess, migrationCount });
+    }),
     TE.chain(({ initSuccess, migrationCount }) =>
       // 3. 测试日志记录
       pipe(
