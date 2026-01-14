@@ -9,7 +9,6 @@
  */
 
 import { create } from "zustand";
-import { immer } from "zustand/middleware/immer";
 import {
 	type BufferSwitcherDirection,
 	DEFAULT_GLOBAL_UI_STATE,
@@ -27,113 +26,111 @@ type GlobalUIStore = GlobalUIState & GlobalUIActions;
 // Store Implementation
 // ==============================
 
-export const useGlobalUIStore = create<GlobalUIStore>()(
-	immer((set) => ({
-		// Initial state
-		...DEFAULT_GLOBAL_UI_STATE,
+export const useGlobalUIStore = create<GlobalUIStore>()((set) => ({
+	// Initial state
+	...DEFAULT_GLOBAL_UI_STATE,
 
-		// ==============================
-		// Command Palette Actions
-		// ==============================
+	// ==============================
+	// Command Palette Actions
+	// ==============================
 
-		openCommandPalette: () => {
-			set((state) => ({
-				...state,
-				commandPaletteOpen: true,
-			}));
-		},
+	openCommandPalette: () => {
+		set((state) => ({
+			...state,
+			commandPaletteOpen: true,
+		}));
+	},
 
-		closeCommandPalette: () => {
-			set((state) => ({
-				...state,
-				commandPaletteOpen: false,
-			}));
-		},
+	closeCommandPalette: () => {
+		set((state) => ({
+			...state,
+			commandPaletteOpen: false,
+		}));
+	},
 
-		toggleCommandPalette: () => {
-			set((state) => ({
-				...state,
-				commandPaletteOpen: !state.commandPaletteOpen,
-			}));
-		},
+	toggleCommandPalette: () => {
+		set((state) => ({
+			...state,
+			commandPaletteOpen: !state.commandPaletteOpen,
+		}));
+	},
 
-		// ==============================
-		// Global Search Actions
-		// ==============================
+	// ==============================
+	// Global Search Actions
+	// ==============================
 
-		openGlobalSearch: () => {
-			set((state) => ({
-				...state,
-				globalSearchOpen: true,
-			}));
-		},
+	openGlobalSearch: () => {
+		set((state) => ({
+			...state,
+			globalSearchOpen: true,
+		}));
+	},
 
-		closeGlobalSearch: () => {
-			set((state) => ({
-				...state,
-				globalSearchOpen: false,
-			}));
-		},
+	closeGlobalSearch: () => {
+		set((state) => ({
+			...state,
+			globalSearchOpen: false,
+		}));
+	},
 
-		toggleGlobalSearch: () => {
-			set((state) => ({
-				...state,
-				globalSearchOpen: !state.globalSearchOpen,
-			}));
-		},
+	toggleGlobalSearch: () => {
+		set((state) => ({
+			...state,
+			globalSearchOpen: !state.globalSearchOpen,
+		}));
+	},
 
-		// ==============================
-		// Buffer Switcher Actions
-		// ==============================
+	// ==============================
+	// Buffer Switcher Actions
+	// ==============================
 
-		openBufferSwitcher: (direction: BufferSwitcherDirection) => {
-			set((state) => ({
-				...state,
-				bufferSwitcherOpen: true,
-				bufferSwitcherDirection: direction,
-			}));
-		},
+	openBufferSwitcher: (direction: BufferSwitcherDirection) => {
+		set((state) => ({
+			...state,
+			bufferSwitcherOpen: true,
+			bufferSwitcherDirection: direction,
+		}));
+	},
 
-		closeBufferSwitcher: () => {
-			set((state) => ({
-				...state,
-				bufferSwitcherOpen: false,
-			}));
-		},
+	closeBufferSwitcher: () => {
+		set((state) => ({
+			...state,
+			bufferSwitcherOpen: false,
+		}));
+	},
 
-		setBufferSwitcherDirection: (direction: BufferSwitcherDirection) => {
-			set((state) => ({
-				...state,
-				bufferSwitcherDirection: direction,
-			}));
-		},
+	setBufferSwitcherDirection: (direction: BufferSwitcherDirection) => {
+		set((state) => ({
+			...state,
+			bufferSwitcherDirection: direction,
+		}));
+	},
 
-		// ==============================
-		// Export Dialog Actions
-		// ==============================
+	// ==============================
+	// Export Dialog Actions
+	// ==============================
 
-		openExportDialog: () => {
-			set((state) => ({
-				...state,
-				exportDialogOpen: true,
-			}));
-		},
+	openExportDialog: () => {
+		set((state) => ({
+			...state,
+			exportDialogOpen: true,
+		}));
+	},
 
-		closeExportDialog: () => {
-			set((state) => ({
-				...state,
-				exportDialogOpen: false,
-			}));
-		},
+	closeExportDialog: () => {
+		set((state) => ({
+			...state,
+			exportDialogOpen: false,
+		}));
+	},
 
-		toggleExportDialog: () => {
-			set((state) => ({
-				...state,
-				exportDialogOpen: !state.exportDialogOpen,
-			}));
-		},
-	})),
-);
+	toggleExportDialog: () => {
+		set((state) => ({
+			...state,
+			exportDialogOpen: !state.exportDialogOpen,
+		}));
+	},
+}));
 
 // ==============================
 // Selector Hooks

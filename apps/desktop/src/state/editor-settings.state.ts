@@ -11,7 +11,6 @@
 import type { FoldIconStyle } from "@grain/editor-lexical";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { immer } from "zustand/middleware/immer";
 
 // ==============================
 // State Interface
@@ -53,7 +52,7 @@ const DEFAULT_EDITOR_SETTINGS_STATE: EditorSettingsState = {
 
 export const useEditorSettingsStore = create<EditorSettingsStore>()(
 	persist(
-		immer((set) => ({
+		(set) => ({
 			// Initial State
 			...DEFAULT_EDITOR_SETTINGS_STATE,
 
@@ -62,17 +61,19 @@ export const useEditorSettingsStore = create<EditorSettingsStore>()(
 			// ==============================
 
 			setFoldIconStyle: (style: FoldIconStyle) => {
-				set((state) => {
-					state.foldIconStyle = style;
-				});
+				set((state) => ({
+					...state,
+					foldIconStyle: style,
+				}));
 			},
 
 			reset: () => {
-				set((state) => {
-					state.foldIconStyle = DEFAULT_EDITOR_SETTINGS_STATE.foldIconStyle;
-				});
+				set((state) => ({
+					...state,
+					foldIconStyle: DEFAULT_EDITOR_SETTINGS_STATE.foldIconStyle,
+				}));
 			},
-		})),
+		}),
 		{
 			name: "grain-editor-settings",
 		},

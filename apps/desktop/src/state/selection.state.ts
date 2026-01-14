@@ -8,7 +8,6 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { immer } from "zustand/middleware/immer";
 import type { SelectionActions, SelectionState } from "@/types/selection";
 import { DEFAULT_SELECTION_CONFIG } from "@/types/selection";
 
@@ -24,7 +23,7 @@ type SelectionStore = SelectionState & SelectionActions;
 
 export const useSelectionStore = create<SelectionStore>()(
 	persist(
-		immer((set) => ({
+		(set) => ({
 			// Initial State
 			selectedWorkspaceId: null,
 			selectedNodeId: null,
@@ -34,26 +33,29 @@ export const useSelectionStore = create<SelectionStore>()(
 			// ==============================
 
 			setSelectedWorkspaceId: (id) => {
-				set((state) => {
-					state.selectedWorkspaceId = id;
+				set((state) => ({
+					...state,
+					selectedWorkspaceId: id,
 					// 切换工作区时清除节点选择
-					state.selectedNodeId = null;
-				});
+					selectedNodeId: null,
+				}));
 			},
 
 			setSelectedNodeId: (id) => {
-				set((state) => {
-					state.selectedNodeId = id;
-				});
+				set((state) => ({
+					...state,
+					selectedNodeId: id,
+				}));
 			},
 
 			clearSelection: () => {
-				set((state) => {
-					state.selectedWorkspaceId = null;
-					state.selectedNodeId = null;
-				});
+				set((state) => ({
+					...state,
+					selectedWorkspaceId: null,
+					selectedNodeId: null,
+				}));
 			},
-		})),
+		}),
 		{
 			name: DEFAULT_SELECTION_CONFIG.storageKey,
 			partialize: (state) => ({

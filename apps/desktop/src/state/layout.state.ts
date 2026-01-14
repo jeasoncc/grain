@@ -10,7 +10,6 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { immer } from "zustand/middleware/immer";
 import {
 	DEFAULT_LAYOUT_CONFIG,
 	DEFAULT_LAYOUT_STATE,
@@ -31,7 +30,7 @@ type LayoutStore = LayoutState & LayoutActions;
 
 export const useLayoutStore = create<LayoutStore>()(
 	persist(
-		immer((set) => ({
+		(set) => ({
 			// Initial state
 			...DEFAULT_LAYOUT_STATE,
 
@@ -83,7 +82,7 @@ export const useLayoutStore = create<LayoutStore>()(
 					sidebarWidth: width,
 				}));
 			},
-		})),
+		}),
 		{
 			name: DEFAULT_LAYOUT_CONFIG.storageKey,
 			partialize: (state) => ({

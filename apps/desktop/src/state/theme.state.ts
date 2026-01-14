@@ -10,7 +10,6 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { immer } from "zustand/middleware/immer";
 import {
 	DEFAULT_THEME_CONFIG,
 	DEFAULT_THEME_STATE,
@@ -40,7 +39,7 @@ type ThemeStore = ThemeState & InternalThemeState & ThemeActions;
 
 export const useThemeStore = create<ThemeStore>()(
 	persist(
-		immer((set, get) => ({
+		(set, get) => ({
 			// Initial State
 			...DEFAULT_THEME_STATE,
 			_initialized: false,
@@ -111,7 +110,7 @@ export const useThemeStore = create<ThemeStore>()(
 					_initialized: initialized,
 				}));
 			},
-		})),
+		}),
 		{
 			name: DEFAULT_THEME_CONFIG.storageKey,
 			partialize: (state) => ({

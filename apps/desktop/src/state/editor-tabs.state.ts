@@ -9,7 +9,6 @@
  */
 
 import { create } from "zustand";
-import { immer } from "zustand/middleware/immer";
 import type {
 	EditorInstanceState,
 	EditorTab,
@@ -49,104 +48,102 @@ type EditorTabsStore = EditorTabsState & EditorTabsStoreActions;
 // Store Implementation
 // ==============================
 
-export const useEditorTabsStore = create<EditorTabsStore>()(
-	immer((set) => ({
-		// Initial State
-		tabs: [],
-		activeTabId: null,
-		editorStates: {},
+export const useEditorTabsStore = create<EditorTabsStore>()((set) => ({
+	// Initial State
+	tabs: [],
+	activeTabId: null,
+	editorStates: {},
 
-		// ==============================
-		// Pure State Setters (no business logic)
-		// ==============================
+	// ==============================
+	// Pure State Setters (no business logic)
+	// ==============================
 
-		addTab: (tab) => {
-			set((state) => ({
+	addTab: (tab) => {
+		set((state) => ({
+			...state,
+			tabs: [...state.tabs, tab],
+		}));
+	},
+
+	/**
+	 * 原子操作：同时添加 tab 和设置 editorState
+	 * 避免多次渲染导致的时序问题
+	 */
+	addTabWithState: (tab, editorState) => {
+		set((state) => ({
+			...state,
+			tabs: [...state.tabs, tab],
+			editorStates: { ...state.editorStates, [tab.id]: editorState },
+			activeTabId: tab.id,
+		}));
+	},
+
+	removeTab: (tabId) => {
+		set((state) => ({
+			...state,
+			tabs: state.tabs.filter((t: EditorTab) => t.id !== tabId),
+		}));
+	},
+
+	setTabs: (tabs) => {
+		set((state) => ({
+			...state,
+			tabs: [...tabs],
+		}));
+	},
+
+	setActiveTabId: (tabId) => {
+		set((state) => ({
+			...state,
+			activeTabId: tabId,
+		}));
+	},
+
+	updateTab: (tabId, updates) => {
+		set((state) => ({
+			...state,
+			tabs: state.tabs.map((t: EditorTab) => 
+				t.id === tabId ? { ...t, ...updates } : t
+			),
+		}));
+	},
+
+	setEditorState: (tabId, editorState) => {
+		set((state) => ({
+			...state,
+			editorStates: { ...state.editorStates, [tabId]: editorState },
+		}));
+	},
+
+	updateEditorState: (tabId, updates) => {
+		set((state) => ({
+			...state,
+			editorStates: state.editorStates[tabId] 
+				? {
+					...state.editorStates,
+					[tabId]: { ...state.editorStates[tabId], ...updates }
+				}
+				: state.editorStates,
+		}));
+	},
+
+	removeEditorState: (tabId) => {
+		set((state) => {
+			const { [tabId]: removed, ...rest } = state.editorStates;
+			return {
 				...state,
-				tabs: [...state.tabs, tab],
-			}));
-		},
+				editorStates: rest,
+			};
+		});
+	},
 
-		/**
-		 * 原子操作：同时添加 tab 和设置 editorState
-		 * 避免多次渲染导致的时序问题
-		 */
-		addTabWithState: (tab, editorState) => {
-			set((state) => ({
-				...state,
-				tabs: [...state.tabs, tab],
-				editorStates: { ...state.editorStates, [tab.id]: editorState },
-				activeTabId: tab.id,
-			}));
-		},
-
-		removeTab: (tabId) => {
-			set((state) => ({
-				...state,
-				tabs: state.tabs.filter((t: EditorTab) => t.id !== tabId),
-			}));
-		},
-
-		setTabs: (tabs) => {
-			set((state) => ({
-				...state,
-				tabs: [...tabs],
-			}));
-		},
-
-		setActiveTabId: (tabId) => {
-			set((state) => ({
-				...state,
-				activeTabId: tabId,
-			}));
-		},
-
-		updateTab: (tabId, updates) => {
-			set((state) => ({
-				...state,
-				tabs: state.tabs.map((t: EditorTab) => 
-					t.id === tabId ? { ...t, ...updates } : t
-				),
-			}));
-		},
-
-		setEditorState: (tabId, editorState) => {
-			set((state) => ({
-				...state,
-				editorStates: { ...state.editorStates, [tabId]: editorState },
-			}));
-		},
-
-		updateEditorState: (tabId, updates) => {
-			set((state) => ({
-				...state,
-				editorStates: state.editorStates[tabId] 
-					? {
-						...state.editorStates,
-						[tabId]: { ...state.editorStates[tabId], ...updates }
-					}
-					: state.editorStates,
-			}));
-		},
-
-		removeEditorState: (tabId) => {
-			set((state) => {
-				const { [tabId]: removed, ...rest } = state.editorStates;
-				return {
-					...state,
-					editorStates: rest,
-				};
-			});
-		},
-
-		setEditorStates: (states) => {
-			set((state) => ({
-				...state,
-				editorStates: { ...states },
-			}));
-		},
-	})),
-);
+	setEditorStates: (states) => {
+		set((state) => ({
+			...state,
+			editorStates: { ...states },
+		}));
+	},
+}));
 
 // ==============================
 // Selector Hooks
