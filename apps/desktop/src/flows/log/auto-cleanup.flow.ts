@@ -9,6 +9,7 @@
 /// <reference types="node" />
 
 import * as TE from "fp-ts/TaskEither";
+import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import dayjs from "dayjs";
 import type { AppError } from "@/types/error/error.types";
@@ -25,7 +26,6 @@ import { getJson, setJson } from "@/io/storage/settings.storage";
 
 // Zod for validation
 import { z } from "zod";
-import dayjs from "dayjs";
 
 // ============================================================================
 // 类型定义
@@ -198,7 +198,8 @@ const recordCleanupStats = (stats: CleanupStats): boolean => {
     totalCleanups: history.totalCleanups + 1,
   };
 
-  return setJson(STORAGE_KEYS.CLEANUP_HISTORY, newHistory);
+  const result = setJson(STORAGE_KEYS.CLEANUP_HISTORY, newHistory);
+  return E.isRight(result);
 };
 
 // ============================================================================
