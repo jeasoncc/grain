@@ -78,8 +78,8 @@ export function useContentById(
  * @returns 内容记录数组
  */
 export function useContentsByNodeIds(
-	nodeIds: string[],
-): ContentInterface[] | undefined {
+	nodeIds: readonly string[],
+): readonly ContentInterface[] | undefined {
 	// 注意：当前 API 不支持批量查询
 	// 如果需要此功能，需要添加对应的 Rust API
 	// 暂时返回空数组
