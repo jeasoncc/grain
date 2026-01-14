@@ -237,7 +237,7 @@ export const filterBySource = (entries: LogEntry[], source: string): LogEntry[] 
  * @param searchTerm - 搜索关键词
  * @returns 匹配的日志条目数组
  */
-export const searchByMessage = (entries: LogEntry[], searchTerm: string): LogEntry[] =>
+export const searchByMessage = (entries: readonly LogEntry[], searchTerm: string): readonly LogEntry[] =>
   pipe(
     entries,
     A.filter((entry) => 
@@ -265,7 +265,7 @@ export const searchInMessage = searchByMessage;
  * @param ascending - 是否升序排列（默认 false，即最新的在前）
  * @returns 排序后的日志条目数组
  */
-export const sortByTimestamp = (entries: LogEntry[], ascending = false): LogEntry[] =>
+export const sortByTimestamp = (entries: readonly LogEntry[], ascending = false): readonly LogEntry[] =>
   pipe(
     entries,
     A.sort(Ord.fromCompare((a: LogEntry, b: LogEntry) => {
