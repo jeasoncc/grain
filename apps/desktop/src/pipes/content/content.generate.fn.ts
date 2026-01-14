@@ -11,6 +11,7 @@
  */
 
 import * as E from "fp-ts/Either";
+import dayjs from "dayjs";
 import type { TemplateType } from "./content.template.fn";
 import { getTemplateConfig } from "./content.template.fn";
 
@@ -371,7 +372,7 @@ export function createDocument(children: LexicalRootChild[]): LexicalDocument {
  * @returns Lexical JSON 字符串
  */
 export function generateDiaryContent(
-	date: Date = new Date(),
+	date: Date = dayjs().toDate(),
 	options: ContentGenerationOptions = {},
 ): string {
 	const {
@@ -412,7 +413,7 @@ export function generateDiaryContent(
  * @returns Lexical JSON 字符串
  */
 export function generateTodoContent(
-	date: Date = new Date(),
+	date: Date = dayjs().toDate(),
 	options: ContentGenerationOptions = {},
 ): string {
 	const {
@@ -457,7 +458,7 @@ export function generateTodoContent(
  * @returns Lexical JSON 字符串
  */
 export function generateLedgerContent(
-	date: Date = new Date(),
+	date: Date = dayjs().toDate(),
 	options: ContentGenerationOptions = {},
 ): string {
 	const {
@@ -512,7 +513,7 @@ export function generateLedgerContent(
  * @returns Lexical JSON 字符串
  */
 export function generateNoteContent(
-	date: Date = new Date(),
+	date: Date = dayjs().toDate(),
 	options: ContentGenerationOptions = {},
 ): string {
 	const {
@@ -557,7 +558,7 @@ export function generateNoteContent(
  * @returns Lexical JSON 字符串
  */
 export function generateWikiContent(
-	_date: Date = new Date(),
+	_date: Date = dayjs().toDate(),
 	options: ContentGenerationOptions = {},
 ): string {
 	const {
@@ -649,7 +650,7 @@ export function generateWikiContent(
  */
 export function generateContentByType(
 	type: TemplateType,
-	date: Date = new Date(),
+	date: Date = dayjs().toDate(),
 	options: ContentGenerationOptions = {},
 ): string {
 	const config = getTemplateConfig(type);
