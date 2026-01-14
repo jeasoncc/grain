@@ -4,32 +4,32 @@ import type { CountMode } from "@/types/word-count";
 
 interface SettingsState {
 	// General
-	language: "zh" | "en";
-	autoSave: boolean;
-	autoSaveInterval: number; // in seconds
-	spellCheck: boolean;
+	readonly language: "zh" | "en";
+	readonly autoSave: boolean;
+	readonly autoSaveInterval: number; // in seconds
+	readonly spellCheck: boolean;
 
 	// Word Count
-	wordCountMode: CountMode;
-	showWordCountBadge: boolean;
+	readonly wordCountMode: CountMode;
+	readonly showWordCountBadge: boolean;
 
 	// Editor
-	fontFamily: string;
-	fontSize: number;
-	lineHeight: number;
-	paragraphSpacing: number;
+	readonly fontFamily: string;
+	readonly fontSize: number;
+	readonly lineHeight: number;
+	readonly paragraphSpacing: number;
 
 	// Actions
-	setLanguage: (lang: "zh" | "en") => void;
-	setAutoSave: (enable: boolean) => void;
-	setAutoSaveInterval: (interval: number) => void;
-	setSpellCheck: (enable: boolean) => void;
-	setWordCountMode: (mode: CountMode) => void;
-	setShowWordCountBadge: (show: boolean) => void;
-	setFontFamily: (font: string) => void;
-	setFontSize: (size: number) => void;
-	setLineHeight: (height: number) => void;
-	setParagraphSpacing: (spacing: number) => void;
+	readonly setLanguage: (lang: "zh" | "en") => void;
+	readonly setAutoSave: (enable: boolean) => void;
+	readonly setAutoSaveInterval: (interval: number) => void;
+	readonly setSpellCheck: (enable: boolean) => void;
+	readonly setWordCountMode: (mode: CountMode) => void;
+	readonly setShowWordCountBadge: (show: boolean) => void;
+	readonly setFontFamily: (font: string) => void;
+	readonly setFontSize: (size: number) => void;
+	readonly setLineHeight: (height: number) => void;
+	readonly setParagraphSpacing: (spacing: number) => void;
 }
 
 export const useSettings = create<SettingsState>()(
