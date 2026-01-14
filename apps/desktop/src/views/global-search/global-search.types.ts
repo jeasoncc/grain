@@ -19,7 +19,7 @@ export interface SearchResult {
 	readonly workspaceId?: string;
 	readonly workspaceTitle?: string;
 	readonly score: number;
-	readonly highlights: string[];
+	readonly highlights: readonly string[];
 }
 
 /**
@@ -38,7 +38,7 @@ export interface GlobalSearchViewProps {
 	/** 搜索关键词 */
 	readonly query: string;
 	/** 搜索结果 */
-	readonly results: SearchResult[];
+	readonly results: readonly SearchResult[];
 	/** 是否加载中 */
 	readonly loading: boolean;
 	/** 当前选中索引 */

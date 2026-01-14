@@ -87,9 +87,9 @@ export const buildTree = (
  * @returns 从根节点到目标节点的 NodeInterface 对象数组
  */
 export const getNodePath = (
-	nodes: NodeInterface[],
+	nodes: readonly NodeInterface[],
 	nodeId: string,
-): NodeInterface[] => {
+): readonly NodeInterface[] => {
 	const path: NodeInterface[] = [];
 	let currentId: string | null = nodeId;
 
