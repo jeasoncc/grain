@@ -95,23 +95,21 @@ export function parseLexicalContent(
 		});
 	}
 
-	try {
-		const parsed = JSON.parse(content) as LexicalDocument;
+	return E.tryCatch(
+		() => {
+			const parsed = JSON.parse(content) as LexicalDocument;
 
-		if (!parsed.root) {
-			return E.left({
-				type: "INVALID_CONTENT",
-				message: "无效的 Lexical 文档结构：缺少 root 节点",
-			});
-		}
+			if (!parsed.root) {
+				throw new Error("无效的 Lexical 文档结构：缺少 root 节点");
+			}
 
-		return E.right(parsed);
-	} catch (error) {
-		return E.left({
-			type: "PARSE_ERROR",
+			return parsed;
+		},
+		(error) => ({
+			type: "PARSE_ERROR" as const,
 			message: `JSON 解析失败: ${error instanceof Error ? error.message : String(error)}`,
-		});
-	}
+		}),
+	);
 }
 
 /**
