@@ -91,8 +91,8 @@ export const clearCookies = (): TE.TaskEither<AppError, void> =>
 			const cookies = document.cookie.split(";");
 
 			// 清理 cookies 是必须的副作用操作，无法避免
-			// 使用 forEach 而不是 for...of 来保持函数式风格
-			cookies.forEach((cookie) => {
+			// 使用 for...of 明确表示这是副作用操作
+			for (const cookie of cookies) {
 				const eqPos = cookie.indexOf("=");
 				const name =
 					eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
@@ -105,12 +105,12 @@ export const clearCookies = (): TE.TaskEither<AppError, void> =>
 						`${name}=;expires=${expireDate};path=/;domain=${window.location.hostname}`,
 						`${name}=;expires=${expireDate};path=/;domain=.${window.location.hostname}`,
 					];
-					cookieSettings.forEach((setting) => {
+					for (const setting of cookieSettings) {
 						// eslint-disable-next-line functional/immutable-data
 						document.cookie = setting;
-					});
+					}
 				}
-			});
+			}
 		},
 		(error): AppError =>
 			dbError(
