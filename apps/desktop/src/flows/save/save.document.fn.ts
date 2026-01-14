@@ -21,7 +21,7 @@ import {
 	updateContentByNodeId,
 	updateNode,
 } from "@/io/api";
-import { info, success } from "@/io/log/logger.api";
+import { error, info, success } from "@/io/log/logger.api";
 import type { AppError } from "@/types/error";
 import { extractTagsFromContent } from "./save.debounce.fn";
 
@@ -233,16 +233,16 @@ export const saveDocument = (
 		// 4. 返回成功结果
 		TE.map(() => {
 			success(
-				"[Save] 文档保存成功:",
-				documentId,
-				`(${tags.length} 个标签)`,
+				"[Save] 文档保存成功",
+				{ documentId, tagCount: tags.length },
+				"save.document.fn",
 			);
 			return createSuccessResult(documentId, tags);
 		}),
 		// 5. 错误处理
-		TE.mapLeft((error) => {
-			error("[Save] 文档保存失败", { documentId, error }, "save.document.fn");
-			return error;
+		TE.mapLeft((err) => {
+			error("[Save] 文档保存失败", { documentId, error: err }, "save.document.fn");
+			return err;
 		}),
 	);
 };
