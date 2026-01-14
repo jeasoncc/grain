@@ -256,7 +256,7 @@ const processLogQueue = (config: AsyncLogConfig): T.Task<void> =>
       ...processorState,
       isProcessing: true,
     };
-    const startTime = Date.now();
+    const startTime = dayjs().valueOf();
     
     return (async () => {
       try {
