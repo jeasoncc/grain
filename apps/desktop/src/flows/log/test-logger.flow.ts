@@ -48,9 +48,9 @@ export const testLogQueryFlow = (): TE.TaskEither<AppError, number> =>
     }),
     TE.map((result) => {
       console.log(`查询到 ${result.entries.length} 条测试日志`);
-      result.entries.forEach((entry) => {
+      for (const entry of result.entries) {
         console.log(`- [${entry.level}] ${entry.message}`);
-      });
+      }
       return result.entries.length;
     }),
   );
