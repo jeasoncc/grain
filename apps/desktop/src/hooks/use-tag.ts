@@ -28,7 +28,7 @@ import type { TagInterface } from "@/types/tag";
  */
 export function useTagsByWorkspace(
 	workspaceId: string | undefined,
-): TagInterface[] {
+): readonly TagInterface[] {
 	const { data } = useTagsByWorkspaceQuery(workspaceId);
 	return data ?? [];
 }
@@ -43,7 +43,7 @@ export function useTagsByWorkspace(
 export function useNodesByTag(
 	workspaceId: string | undefined,
 	tagName: string | undefined,
-): string[] {
+): readonly string[] {
 	const { data } = useNodesByTagQuery(workspaceId, tagName);
 	return data ?? [];
 }
@@ -69,7 +69,7 @@ export function useTagGraph(workspaceId: string | undefined): TagGraphData {
 export function useTagSearch(
 	workspaceId: string | undefined,
 	query: string,
-): TagInterface[] {
+): readonly TagInterface[] {
 	const { data } = useTagSearchQuery(workspaceId, query || undefined);
 	return data ?? [];
 }
@@ -121,7 +121,7 @@ export function useTagCount(workspaceId: string | undefined): number {
 export function usePopularTags(
 	workspaceId: string | undefined,
 	limit = 10,
-): TagInterface[] {
+): readonly TagInterface[] {
 	const { data } = useTopTagsQuery(workspaceId, limit);
 	return data ?? [];
 }
@@ -136,7 +136,7 @@ export function usePopularTags(
 export function useRecentTags(
 	workspaceId: string | undefined,
 	limit = 10,
-): TagInterface[] {
+): readonly TagInterface[] {
 	const { data } = useTagsByWorkspaceQuery(workspaceId);
 	if (!data) return [];
 	// Sort by lastUsed and take top N
