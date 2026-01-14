@@ -230,11 +230,10 @@ export const checkNeedsCleanup = (
 
       // 检查是否有超过最大天数的日志
       if (stats.earliestEntry) {
-        const earliestDate = new Date(stats.earliestEntry);
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - config.maxDays);
+        const earliestDate = dayjs(stats.earliestEntry);
+        const cutoffDate = dayjs().subtract(config.maxDays, 'day');
         
-        if (earliestDate < cutoffDate) {
+        if (earliestDate.isBefore(cutoffDate)) {
           return true;
         }
       }
@@ -307,11 +306,10 @@ export const executeAutoCleanup = (
     // 获取清理前的统计信息
     getLogStatsFromSQLite(),
     TE.chain((statsBefore) => {
-      const cleanupTime = new Date().toISOString();
+      const cleanupTime = dayjs().toISOString();
       
       // 计算清理截止日期
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - config.maxDays);
+      const cutoffDate = dayjs().subtract(config.maxDays, 'day');
       
       return pipe(
         // 执行清理
@@ -366,13 +364,12 @@ export const forceCleanupToTarget = (
       const entriesToRemove = stats.totalEntries - targetEntries;
       
       // 计算截止日期（保留最新的 targetEntries 条目）
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - Math.ceil(entriesToRemove / 1000)); // 粗略估算
+      const daysToSubtract = Math.ceil(entriesToRemove / 1000); // 粗略估算
 
       return executeAutoCleanup({
         ...getAutoCleanupConfig(),
         maxEntries: targetEntries,
-        maxDays: Math.ceil(entriesToRemove / 1000),
+        maxDays: daysToSubtract,
       });
     }),
   );
