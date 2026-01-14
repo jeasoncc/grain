@@ -117,7 +117,7 @@ export const createDateTemplateConfig = (
 	/**
 	 * 生成文件夹路径
 	 */
-	const generateFolderPath = (params: DateTemplateParams): string[] => {
+	const generateFolderPath = (params: DateTemplateParams): readonly string[] => {
 		const date = params.date || dayjs().toDate();
 		const structure = getDateFolderStructureWithFilename(date, prefix);
 
