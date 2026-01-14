@@ -55,36 +55,36 @@ export type MigrationStatus =
  * 用于跟踪旧 ID 到新 ID 的映射关系
  */
 export interface IdMapping {
-	workspaces: Map<string, string>;
-	nodes: Map<string, string>;
-	users: Map<string, string>;
+	readonly workspaces: ReadonlyMap<string, string>;
+	readonly nodes: ReadonlyMap<string, string>;
+	readonly users: ReadonlyMap<string, string>;
 }
 
 /**
  * 迁移结果
  */
 export interface MigrationResult {
-	status: MigrationStatus;
-	migratedCounts: {
-		workspaces: number;
-		nodes: number;
-		contents: number;
-		users: number;
+	readonly status: MigrationStatus;
+	readonly migratedCounts: {
+		readonly workspaces: number;
+		readonly nodes: number;
+		readonly contents: number;
+		readonly users: number;
 	};
-	errors: string[];
-	startedAt: string;
-	completedAt?: string;
-	idMapping?: IdMapping;
+	readonly errors: readonly string[];
+	readonly startedAt: string;
+	readonly completedAt?: string;
+	readonly idMapping?: IdMapping;
 }
 
 /**
  * Dexie 数据快照
  */
 export interface DexieDataSnapshot {
-	workspaces: WorkspaceInterface[];
-	nodes: NodeInterface[];
-	contents: ContentInterface[];
-	users: UserInterface[];
+	readonly workspaces: readonly WorkspaceInterface[];
+	readonly nodes: readonly NodeInterface[];
+	readonly contents: readonly ContentInterface[];
+	readonly users: readonly UserInterface[];
 }
 
 // ============================================================================
