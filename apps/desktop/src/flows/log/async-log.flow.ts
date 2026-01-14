@@ -300,11 +300,11 @@ const processLogQueue = (config: AsyncLogConfig): T.Task<void> =>
         }
         
         // 更新处理时间统计
-        const processTime = Date.now() - startTime;
+        const processTime = dayjs().valueOf() - startTime;
         processorState = {
           ...processorState,
           averageProcessTime: (processorState.averageProcessTime * 0.9) + (processTime * 0.1),
-          lastProcessTime: Date.now(),
+          lastProcessTime: dayjs().valueOf(),
         };
         
       } catch (error) {
