@@ -186,7 +186,7 @@ export function generateFilename(prefix: string, date: Date): string {
  */
 export function generateFileStructure(
 	config: TemplateConfig,
-	date: Date = new Date(),
+	date: Date = dayjs().toDate(),
 ): FileStructure {
 	const dateStructure: DateFolderStructure = getDateFolderStructure(date);
 	const filename = generateFilename(config.filePrefix, date);
@@ -218,7 +218,7 @@ export function generateFileStructure(
  */
 export function generateFileStructureByType(
 	type: TemplateType,
-	date: Date = new Date(),
+	date: Date = dayjs().toDate(),
 ): FileStructure {
 	const config = getTemplateConfig(type);
 	return generateFileStructure(config, date);
@@ -274,7 +274,7 @@ export function buildFileCreationParams(
 	workspaceId: string,
 	type: TemplateType,
 	content: string,
-	date: Date = new Date(),
+	date: Date = dayjs().toDate(),
 ): FileCreationParams {
 	const config = getTemplateConfig(type);
 	const structure = generateFileStructure(config, date);
