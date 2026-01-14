@@ -10,6 +10,7 @@
 
 import * as TE from "fp-ts/TaskEither";
 import { pipe } from "fp-ts/function";
+import dayjs from "dayjs";
 import type { LogEntry, LogLevel, LogConfig } from "@/types/log/log.interface";
 import type { AppError } from "@/types/error/error.types";
 import { DEFAULT_LOG_CONFIG } from "@/types/log/log.interface";
@@ -24,6 +25,7 @@ import {
 
 // IO
 import { saveLogsBatchToSQLite } from "@/io/log/log.storage.api";
+import { info } from "@/io/log/logger.api";
 
 // ============================================================================
 // 批量日志缓冲区
@@ -75,7 +77,7 @@ export const addLogToBuffer = (
   // 控制台输出（如果启用）
   if (config.enableConsole) {
     const consoleOutput = addConsoleColors(entry);
-    console.log(consoleOutput);
+    info("[BatchLog] Console output", { output: consoleOutput });
   }
 
   // 如果不启用存储，直接返回
