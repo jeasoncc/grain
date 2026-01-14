@@ -38,11 +38,11 @@ export type ExportSettings = z.infer<typeof exportSettingsSchema>;
  * Export 路径服务接口
  */
 export interface ExportPathService {
-	selectExportDirectory: () => Promise<string | null>;
-	saveToPath: (path: string, filename: string, content: Blob) => Promise<void>;
-	getDefaultExportPath: () => string | null;
-	setDefaultExportPath: (path: string | null) => void;
-	isTauriEnvironment: () => boolean;
+	readonly selectExportDirectory: () => Promise<string | null>;
+	readonly saveToPath: (path: string, filename: string, content: Blob) => Promise<void>;
+	readonly getDefaultExportPath: () => string | null;
+	readonly setDefaultExportPath: (path: string | null) => void;
+	readonly isTauriEnvironment: () => boolean;
 }
 
 /**

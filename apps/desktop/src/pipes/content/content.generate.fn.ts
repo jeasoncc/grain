@@ -23,81 +23,81 @@ import { getTemplateConfig } from "./content.template.fn";
  * Lexical 文本节点
  */
 export interface LexicalTextNode {
-	type: "text";
-	version: number;
-	text: string;
-	format: number;
-	style: string;
-	detail: number;
-	mode: string;
+	readonly type: "text";
+	readonly version: number;
+	readonly text: string;
+	readonly format: number;
+	readonly style: string;
+	readonly detail: number;
+	readonly mode: string;
 }
 
 /**
  * Lexical 标签节点
  */
 export interface LexicalTagNode {
-	type: "tag";
-	version: number;
-	tagName: string;
-	text: string;
-	format: number;
-	style: string;
-	detail: number;
-	mode: string;
+	readonly type: "tag";
+	readonly version: number;
+	readonly tagName: string;
+	readonly text: string;
+	readonly format: number;
+	readonly style: string;
+	readonly detail: number;
+	readonly mode: string;
 }
 
 /**
  * Lexical 段落节点
  */
 export interface LexicalParagraphNode {
-	children: (LexicalTextNode | LexicalTagNode)[];
-	direction: string;
-	format: string;
-	indent: number;
-	type: "paragraph";
-	version: number;
+	readonly children: readonly (LexicalTextNode | LexicalTagNode)[];
+	readonly direction: string;
+	readonly format: string;
+	readonly indent: number;
+	readonly type: "paragraph";
+	readonly version: number;
 }
 
 /**
  * Lexical 标题节点
  */
 export interface LexicalHeadingNode {
-	children: LexicalTextNode[];
-	direction: string;
-	format: string;
-	indent: number;
-	type: "heading";
-	version: number;
-	tag: string;
+	readonly children: readonly LexicalTextNode[];
+	readonly direction: string;
+	readonly format: string;
+	readonly indent: number;
+	readonly type: "heading";
+	readonly version: number;
+	readonly tag: string;
 }
 
 /**
  * Lexical 列表项节点
  */
 export interface LexicalListItemNode {
-	children: (LexicalTextNode | LexicalTagNode)[];
-	direction: string;
-	format: string;
-	indent: number;
-	type: "listitem";
-	version: number;
-	value: number;
-	checked?: boolean;
+	readonly children: readonly (LexicalTextNode | LexicalTagNode)[];
+	readonly direction: string;
+	readonly format: string;
+	readonly indent: number;
+	readonly type: "listitem";
+	readonly version: number;
+	readonly value: number;
+	readonly checked?: boolean;
 }
 
 /**
  * Lexical 列表节点
  */
 export interface LexicalListNode {
-	children: LexicalListItemNode[];
-	direction: string;
-	format: string;
-	indent: number;
-	type: "list";
-	version: number;
-	listType: "bullet" | "number" | "check";
-	start: number;
-	tag: string;
+	readonly children: readonly LexicalListItemNode[];
+	readonly direction: string;
+	readonly format: string;
+	readonly indent: number;
+	readonly type: "list";
+	readonly version: number;
+	readonly listType: "bullet" | "number" | "check";
+	readonly start: number;
+	readonly tag: string;
 }
 
 /**
@@ -112,19 +112,19 @@ export type LexicalRootChild =
  * Lexical 根节点
  */
 export interface LexicalRootNode {
-	children: LexicalRootChild[];
-	direction: string;
-	format: string;
-	indent: number;
-	type: "root";
-	version: number;
+	readonly children: readonly LexicalRootChild[];
+	readonly direction: string;
+	readonly format: string;
+	readonly indent: number;
+	readonly type: "root";
+	readonly version: number;
 }
 
 /**
  * Lexical 文档结构
  */
 export interface LexicalDocument {
-	root: LexicalRootNode;
+	readonly root: LexicalRootNode;
 }
 
 /**
@@ -132,13 +132,13 @@ export interface LexicalDocument {
  */
 export interface ContentGenerationOptions {
 	/** 标签列表 */
-	tags?: string[];
+	readonly tags?: readonly string[];
 	/** 标题级别 */
-	headingLevel?: "h1" | "h2" | "h3";
+	readonly headingLevel?: "h1" | "h2" | "h3";
 	/** 是否包含空行 */
-	includeEmptyLines?: boolean;
+	readonly includeEmptyLines?: boolean;
 	/** 自定义标题文本 */
-	customTitle?: string;
+	readonly customTitle?: string;
 }
 
 // ==============================
@@ -189,7 +189,7 @@ export function createTagNode(tagName: string): LexicalTagNode {
  * @returns Lexical 段落节点
  */
 export function createParagraphNode(
-	children: (LexicalTextNode | LexicalTagNode)[] = [],
+	children: readonly (LexicalTextNode | LexicalTagNode)[] = [],
 ): LexicalParagraphNode {
 	return {
 		children,
@@ -261,7 +261,7 @@ export function createListItemNode(
  * @returns Lexical 列表节点
  */
 export function createListNode(
-	items: string[],
+	items: readonly string[],
 	listType: "bullet" | "number" | "check" = "bullet",
 ): LexicalListNode {
 	return {
@@ -289,7 +289,7 @@ export function createListNode(
  * @param tags - 标签名称数组
  * @returns Lexical 段落节点
  */
-export function createTagsLine(tags: string[]): LexicalParagraphNode {
+export function createTagsLine(tags: readonly string[]): LexicalParagraphNode {
 	const children = tags.flatMap((tag, index) =>
 		index < tags.length - 1
 			? [createTagNode(tag), createTextNode(" ")]
@@ -351,7 +351,7 @@ export function formatShortDate(date: Date): string {
  * @param children - 根节点子元素
  * @returns Lexical 文档
  */
-export function createDocument(children: LexicalRootChild[]): LexicalDocument {
+export function createDocument(children: readonly LexicalRootChild[]): LexicalDocument {
 	return {
 		root: {
 			children,
@@ -382,7 +382,7 @@ export function generateDiaryContent(
 	} = options;
 
 	const fullDateTime = formatFullDateTime(date);
-	const children: LexicalRootChild[] = [];
+	const children = [] as LexicalRootChild[];
 
 	// 添加标签行
 	if (tags.length > 0) {
@@ -424,7 +424,7 @@ export function generateTodoContent(
 	} = options;
 
 	const title = customTitle || `Tasks for ${formatShortDate(date)}`;
-	const children: LexicalRootChild[] = [];
+	const children = [] as LexicalRootChild[];
 
 	// 添加标签行
 	if (tags.length > 0) {
@@ -469,7 +469,7 @@ export function generateLedgerContent(
 	} = options;
 
 	const title = customTitle || `Expenses for ${formatShortDate(date)}`;
-	const children: LexicalRootChild[] = [];
+	const children = [] as LexicalRootChild[];
 
 	// 添加标签行
 	if (tags.length > 0) {
@@ -524,7 +524,7 @@ export function generateNoteContent(
 	} = options;
 
 	const title = customTitle || `Note - ${formatShortDate(date)}`;
-	const children: LexicalRootChild[] = [];
+	const children = [] as LexicalRootChild[];
 
 	// 添加标签行
 	if (tags.length > 0) {
@@ -569,7 +569,7 @@ export function generateWikiContent(
 	} = options;
 
 	const title = customTitle || "New Article";
-	const children: LexicalRootChild[] = [];
+	const children = [] as LexicalRootChild[];
 
 	// 添加标签行
 	if (tags.length > 0) {
@@ -698,11 +698,11 @@ export function parseContent(content: string): E.Either<Error, LexicalDocument> 
  * @param document - Lexical 文档对象
  * @returns 标签名称数组
  */
-export function extractTagsFromDocument(document: LexicalDocument): string[] {
-	const tags: string[] = [];
+export function extractTagsFromDocument(document: LexicalDocument): readonly string[] {
+	const tags = [] as string[];
 
 	const extractFromChildren = (
-		children: (LexicalTextNode | LexicalTagNode)[],
+		children: readonly (LexicalTextNode | LexicalTagNode)[],
 	) => {
 		for (const child of children) {
 			if (child.type === "tag") {
@@ -731,10 +731,10 @@ export function extractTagsFromDocument(document: LexicalDocument): string[] {
  * @returns 纯文本字符串
  */
 export function extractTextFromDocument(document: LexicalDocument): string {
-	const texts: string[] = [];
+	const texts = [] as string[];
 
 	const extractFromChildren = (
-		children: (LexicalTextNode | LexicalTagNode)[],
+		children: readonly (LexicalTextNode | LexicalTagNode)[],
 	) => {
 		for (const child of children) {
 			if (child.type === "text") {
