@@ -102,11 +102,11 @@ export function useEditorTabs() {
 	);
 
 	// Get tabs by workspace
-	const getTabsByWorkspace = useCallback((workspaceId: string): EditorTab[] => {
+	const getTabsByWorkspace = useCallback((workspaceId: string): readonly EditorTab[] => {
 		return getTabsByWorkspaceFlow(
 			workspaceId,
-			useEditorTabsStore.getState().tabs as EditorTab[],
-		) as EditorTab[];
+			useEditorTabsStore.getState().tabs as readonly EditorTab[],
+		) as readonly EditorTab[];
 	}, []);
 
 	// Close tabs by workspace
