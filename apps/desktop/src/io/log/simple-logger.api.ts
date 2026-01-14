@@ -248,8 +248,8 @@ export const trace = (
  * @returns 验证结果
  */
 export const updateDefaultLoggerConfig = (config: Partial<LogConfig>): {
-  isValid: boolean;
-  errors: string[];
+  readonly isValid: boolean;
+  readonly errors: readonly string[];
 } => {
   const validation = validateLogConfig(config);
   
