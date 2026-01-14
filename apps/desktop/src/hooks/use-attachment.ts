@@ -44,7 +44,7 @@ import type { AttachmentInterface, AttachmentType } from "@/types/attachment";
  * }
  * ```
  */
-export function useAllAttachments(): AttachmentInterface[] | undefined {
+export function useAllAttachments(): readonly AttachmentInterface[] | undefined {
 	const { data } = useAttachmentsQuery();
 	return data;
 }
@@ -96,7 +96,7 @@ export function useAttachment(
  */
 export function useAttachmentsByProject(
 	projectId: string | null | undefined,
-): AttachmentInterface[] | undefined {
+): readonly AttachmentInterface[] | undefined {
 	const { data } = useAttachmentsByProjectQuery(projectId);
 	return data;
 }
@@ -109,7 +109,7 @@ export function useAttachmentsByProject(
  */
 export function useAttachmentsByType(
 	type: AttachmentType | null | undefined,
-): AttachmentInterface[] | undefined {
+): readonly AttachmentInterface[] | undefined {
 	// For global type filtering, we get all attachments and filter
 	const { data: allAttachments } = useAttachmentsQuery();
 	if (!type || !allAttachments) return allAttachments;
@@ -126,7 +126,7 @@ export function useAttachmentsByType(
 export function useAttachmentsByProjectAndType(
 	projectId: string | null | undefined,
 	type: AttachmentType | null | undefined,
-): AttachmentInterface[] | undefined {
+): readonly AttachmentInterface[] | undefined {
 	const { data } = useAttachmentsByTypeQuery(projectId, type);
 	return data;
 }
@@ -139,7 +139,7 @@ export function useAttachmentsByProjectAndType(
  */
 export function useProjectImages(
 	projectId: string | null | undefined,
-): AttachmentInterface[] | undefined {
+): readonly AttachmentInterface[] | undefined {
 	const { data } = useImagesByProjectQuery(projectId);
 	return data;
 }
@@ -152,7 +152,7 @@ export function useProjectImages(
  */
 export function useProjectAudioFiles(
 	projectId: string | null | undefined,
-): AttachmentInterface[] | undefined {
+): readonly AttachmentInterface[] | undefined {
 	const { data } = useAudioFilesByProjectQuery(projectId);
 	return data;
 }
@@ -162,7 +162,7 @@ export function useProjectAudioFiles(
  *
  * @returns Array of global attachments
  */
-export function useGlobalAttachments(): AttachmentInterface[] | undefined {
+export function useGlobalAttachments(): readonly AttachmentInterface[] | undefined {
 	const { data: allAttachments } = useAttachmentsQuery();
 	if (!allAttachments) return undefined;
 	return allAttachments.filter((a) => !a.project);
