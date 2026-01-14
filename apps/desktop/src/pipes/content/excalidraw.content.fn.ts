@@ -10,6 +10,8 @@
  * 这些函数无副作用，可组合，可测试。
  */
 
+import * as E from "fp-ts/Either";
+
 // ==============================
 // Types
 // ==============================
@@ -180,30 +182,31 @@ export function generateExcalidrawContent(
  * 解析 Excalidraw JSON 内容
  *
  * @param content - Excalidraw JSON 字符串
- * @returns 解析后的 Excalidraw 文档对象，解析失败返回 null
+ * @returns Either<Error, ExcalidrawDocument>
  */
 export function parseExcalidrawContent(
 	content: string,
-): ExcalidrawDocument | null {
-	try {
-		const parsed = JSON.parse(content);
+): E.Either<Error, ExcalidrawDocument> {
+	return E.tryCatch(
+		() => {
+			const parsed = JSON.parse(content);
 
-		// 验证基本结构
-		if (
-			parsed &&
-			typeof parsed === "object" &&
-			parsed.type === "excalidraw" &&
-			Array.isArray(parsed.elements) &&
-			typeof parsed.appState === "object" &&
-			typeof parsed.files === "object"
-		) {
-			return parsed as ExcalidrawDocument;
-		}
+			// 验证基本结构
+			if (
+				parsed &&
+				typeof parsed === "object" &&
+				parsed.type === "excalidraw" &&
+				Array.isArray(parsed.elements) &&
+				typeof parsed.appState === "object" &&
+				typeof parsed.files === "object"
+			) {
+				return parsed as ExcalidrawDocument;
+			}
 
-		return null;
-	} catch {
-		return null;
-	}
+			throw new Error("Invalid Excalidraw document structure");
+		},
+		(err) => new Error(`Excalidraw 解析失败: ${String(err)}`),
+	);
 }
 
 /**
