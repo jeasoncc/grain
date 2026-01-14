@@ -14,22 +14,22 @@ export const Route = createFileRoute("/settings")({
 });
 
 interface NavItem {
-	to: string;
-	label: string;
-	description?: string;
-	icon: React.ComponentType<{ className?: string }>;
+	readonly to: string;
+	readonly label: string;
+	readonly description?: string;
+	readonly icon: React.ComponentType<{ readonly className?: string }>;
 }
 
 interface NavGroup {
-	title: string;
-	items: NavItem[];
+	readonly title: string;
+	readonly items: ReadonlyArray<NavItem>;
 }
 
 function SettingsLayout() {
 	const location = useLocation();
 	const iconTheme = useIconTheme();
 
-	const navGroups = useMemo<NavGroup[]>(
+	const navGroups = useMemo<ReadonlyArray<NavGroup>>(
 		() => [
 			{
 				title: "Customization",

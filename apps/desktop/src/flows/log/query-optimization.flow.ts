@@ -69,7 +69,7 @@ const generateCacheKey = (options: LogQueryOptions): string => {
   const normalized = {
     limit: options.limit || 100,
     offset: options.offset || 0,
-    levelFilter: options.levelFilter ? [...Array.from(options.levelFilter)].sort() : [],
+    levelFilter: options.levelFilter ? [...Array.from(options.levelFilter)].toSorted() : [],
     startTime: options.startTime || '',
     endTime: options.endTime || '',
     sourceFilter: options.sourceFilter || '',
@@ -118,7 +118,7 @@ const setToCache = (
   // If cache is full, remove oldest entry
   if (queryCache.size >= CACHE_CONFIG.maxSize) {
     const entries = Array.from(queryCache.entries());
-    const sortedEntries = entries.sort(([, a], [, b]) => a.timestamp - b.timestamp);
+    const sortedEntries = entries.toSorted(([, a], [, b]) => a.timestamp - b.timestamp);
     const oldestEntry = sortedEntries[0];
     if (oldestEntry) {
       const filteredEntries = entries.filter(([k]) => k !== oldestEntry[0]);

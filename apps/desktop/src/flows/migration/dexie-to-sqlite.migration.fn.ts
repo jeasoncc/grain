@@ -256,7 +256,7 @@ const migrateUsers = (
 			);
 
 			const successful: ReadonlyArray<{ readonly oldId: string; readonly newId: string }> = results
-				.filter((result): result is PromiseFulfilledResult<{ oldId: string; newId: string }> => 
+				.filter((result): result is PromiseFulfilledResult<{ readonly oldId: string; readonly newId: string }> => 
 					result.status === 'fulfilled'
 				)
 				.map(result => result.value);
@@ -309,7 +309,7 @@ const migrateWorkspaces = (
 			);
 
 			const successful: ReadonlyArray<{ readonly oldId: string; readonly newId: string }> = results
-				.filter((result): result is PromiseFulfilledResult<{ oldId: string; newId: string }> => 
+				.filter((result): result is PromiseFulfilledResult<{ readonly oldId: string; readonly newId: string }> => 
 					result.status === 'fulfilled'
 				)
 				.map(result => result.value);
@@ -335,7 +335,7 @@ const migrateNodes = (
 		async () => {
 			// 按层级排序：先迁移根节点，再迁移子节点
 			// 这样可以确保父节点的新 ID 已经存在于 mapping 中
-			const sortedNodes: ReadonlyArray<NodeInterface> = [...nodes].sort((a, b) => {
+			const sortedNodes: ReadonlyArray<NodeInterface> = [...nodes].toSorted((a, b) => {
 				// 计算节点深度
 				const getDepth = (node: NodeInterface): number => {
 					if (!node.parent) return 0;

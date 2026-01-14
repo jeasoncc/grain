@@ -74,14 +74,15 @@ export class SearchEngine {
 	private readonly indexedData: ReadonlyMap<string, NodeInterface> = new Map();
 	private readonly nodeContents: ReadonlyMap<string, string> = new Map();
 	private readonly workspaceCache: ReadonlyMap<string, WorkspaceInterface> = new Map();
-	private isIndexing = false;
+	private readonly isIndexing = false;
 
 	/**
 	 * 构建搜索索引
 	 */
 	async buildIndex(): Promise<void> {
 		if (this.isIndexing) return;
-		this.isIndexing = true;
+		// Create new instance with isIndexing = true
+		(this as any).isIndexing = true;
 
 		try {
 			// 获取所有节点
@@ -141,7 +142,7 @@ export class SearchEngine {
 		} catch (error) {
 			console.error("[Search] 索引构建失败", { error });
 		} finally {
-			this.isIndexing = false;
+			(this as any).isIndexing = false;
 		}
 	}
 
@@ -240,7 +241,7 @@ export class SearchEngine {
 						return searchResult;
 					})
 					.filter((result): result is SearchResult => result !== null)
-					.sort((a, b) => b.score - a.score)
+					.toSorted((a, b) => b.score - a.score)
 					.slice(0, limit);
 
 				return results;
@@ -322,7 +323,7 @@ export class SearchEngine {
 						return null;
 					})
 					.filter((result): result is SearchResult => result !== null)
-					.sort((a, b) => b.score - a.score)
+					.toSorted((a, b) => b.score - a.score)
 					.slice(0, limit);
 
 				return results;

@@ -50,95 +50,131 @@ export const useSidebarStore = create<SidebarStore>()(
 			// Main sidebar actions
 			setActivePanel: (panel: SidebarPanel) => {
 				const newIsOpen = true; // 选择面板时总是打开侧边栏
-				set((draft) => {
-					draft.activePanel = panel;
-					draft.isOpen = newIsOpen;
-				});
+				set((state) => ({
+					...state,
+					activePanel: panel,
+					isOpen: newIsOpen,
+				}));
 			},
 
 			setIsOpen: (open: boolean) => {
-				set((draft) => {
-					draft.isOpen = open;
-				});
+				set((state) => ({
+					...state,
+					isOpen: open,
+				}));
 			},
 
 			toggleSidebar: () => {
-				set((draft) => {
-					draft.isOpen = !draft.isOpen;
-					draft.wasCollapsedByDrag = false;
-				});
+				set((state) => ({
+					...state,
+					isOpen: !state.isOpen,
+					wasCollapsedByDrag: false,
+				}));
 			},
 
 			setWidth: (width: number) => {
-				set((draft) => {
-					draft.width = constrainWidth(width);
-				});
+				set((state) => ({
+					...state,
+					width: constrainWidth(width),
+				}));
 			},
 
 			resizeSidebar: (newWidth: number) => {
 				const state = get();
 				// Auto-collapse when width drops below threshold
 				if (newWidth < SIDEBAR_AUTO_COLLAPSE_THRESHOLD) {
-					set((draft) => {
-						draft.isOpen = false;
-						draft.wasCollapsedByDrag = true;
-						draft.previousWidth = state.width;
-					});
+					set((currentState) => ({
+						...currentState,
+						isOpen: false,
+						wasCollapsedByDrag: true,
+						previousWidth: state.width,
+					}));
 					return;
 				}
 				// Constrain width within bounds
-				set((draft) => {
-					draft.width = constrainWidth(newWidth);
-					draft.wasCollapsedByDrag = false;
-				});
+				set((currentState) => ({
+					...currentState,
+					width: constrainWidth(newWidth),
+					wasCollapsedByDrag: false,
+				}));
 			},
 
 			restoreFromCollapse: () => {
 				const state = get();
-				set((draft) => {
-					draft.isOpen = true;
-					draft.wasCollapsedByDrag = false;
-					draft.width = state.previousWidth || SIDEBAR_DEFAULT_WIDTH;
-				});
+				set((currentState) => ({
+					...currentState,
+					isOpen: true,
+					wasCollapsedByDrag: false,
+					width: state.previousWidth || SIDEBAR_DEFAULT_WIDTH,
+				}));
 			},
 
 			// Search panel actions
 			setSearchQuery: (query: string) => {
-				set((draft) => {
-					draft.searchState.query = query;
-				});
+				set((state) => ({
+					...state,
+					searchState: {
+						...state.searchState,
+						query,
+					},
+				}));
 			},
 
-			setSearchSelectedTypes: (types: string[]) => {
-				set((draft) => {
-					draft.searchState.selectedTypes = types;
-				});
+			setSearchSelectedTypes: (types: ReadonlyArray<string>) => {
+				set((state) => ({
+					...state,
+					searchState: {
+						...state.searchState,
+						selectedTypes: [...types],
+					},
+				}));
 			},
 
 			setSearchShowFilters: (show: boolean) => {
-				set((draft) => {
-					draft.searchState.showFilters = show;
-				});
+				set((state) => ({
+					...state,
+					searchState: {
+						...state.searchState,
+						showFilters: show,
+					},
+				}));
 			},
 
 			// Drawings panel actions
 			setSelectedDrawingId: (id: string | null) => {
-				set((draft) => {
-					draft.drawingsState.selectedDrawingId = id;
-				});
+				set((state) => ({
+					...state,
+					drawingsState: {
+						...state.drawingsState,
+						selectedDrawingId: id,
+					},
+				}));
 			},
 
 			// File tree actions
 			setExpandedFolders: (folders: Record<string, boolean>) => {
-				set((draft) => {
-					draft.fileTreeState.expandedFolders = folders;
-				});
+				set((state) => ({
+					...state,
+					fileTreeState: {
+						...state.fileTreeState,
+						expandedFolders: folders,
+					},
+				}));
 			},
 
 			toggleFolderExpanded: (folderId: string) => {
-				set((draft) => {
-					const current = draft.fileTreeState.expandedFolders[folderId];
-					draft.fileTreeState.expandedFolders[folderId] = !current;
+				set((state) => {
+					const current = state.fileTreeState.expandedFolders[folderId];
+					return {
+						...state,
+						fileTreeState: {
+							...state.fileTreeState,
+							expandedFolders: {
+								...state.fileTreeState.expandedFolders,
+								[folderId]: !current,
+							},
+						},
+					};
 				});
 			},
 		})),

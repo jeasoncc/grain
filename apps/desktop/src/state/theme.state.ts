@@ -25,7 +25,7 @@ import {
 
 interface InternalThemeState {
 	/** Whether the theme has been initialized */
-	_initialized: boolean;
+	readonly _initialized: boolean;
 }
 
 // ==============================
@@ -50,39 +50,31 @@ export const useThemeStore = create<ThemeStore>()(
 			// ==============================
 
 			setTheme: (key: string) => {
-				set((state) => {
-					state.themeKey = key;
+				set((state) => ({
+					...state,
+					themeKey: key,
 					// Update mode based on theme key
-					if (key.includes("dark")) {
-						state.mode = "dark";
-						state.effectiveTheme = "dark";
-					} else if (key.includes("light")) {
-						state.mode = "light";
-						state.effectiveTheme = "light";
-					}
-				});
+					mode: key.includes("dark") ? "dark" : key.includes("light") ? "light" : state.mode,
+					effectiveTheme: key.includes("dark") ? "dark" : key.includes("light") ? "light" : state.effectiveTheme,
+				}));
 			},
 
 			setMode: (mode: ThemeMode) => {
-				set((state) => {
-					state.mode = mode;
+				set((state) => ({
+					...state,
+					mode,
 					// Update effective theme based on mode
-					if (mode === "system") {
-						state.effectiveTheme = state.systemTheme;
-					} else {
-						state.effectiveTheme = mode;
-					}
-				});
+					effectiveTheme: mode === "system" ? state.systemTheme : mode,
+				}));
 			},
 
 			setSystemTheme: (theme: "light" | "dark") => {
-				set((state) => {
-					state.systemTheme = theme;
+				set((state) => ({
+					...state,
+					systemTheme: theme,
 					// Update effective theme if in system mode
-					if (state.mode === "system") {
-						state.effectiveTheme = theme;
-					}
-				});
+					effectiveTheme: state.mode === "system" ? theme : state.effectiveTheme,
+				}));
 			},
 
 			toggleMode: () => {
@@ -98,27 +90,26 @@ export const useThemeStore = create<ThemeStore>()(
 					nextMode = "light";
 				}
 
-				set((state) => {
-					state.mode = nextMode;
+				set((state) => ({
+					...state,
+					mode: nextMode,
 					// Update effective theme
-					if (nextMode === "system") {
-						state.effectiveTheme = state.systemTheme;
-					} else {
-						state.effectiveTheme = nextMode;
-					}
-				});
+					effectiveTheme: nextMode === "system" ? state.systemTheme : nextMode,
+				}));
 			},
 
 			setEnableTransition: (enable: boolean) => {
-				set((draft) => {
-					draft.enableTransition = enable;
-				});
+				set((state) => ({
+					...state,
+					enableTransition: enable,
+				}));
 			},
 
 			setInitialized: (initialized: boolean) => {
-				set((draft) => {
-					draft._initialized = initialized;
-				});
+				set((state) => ({
+					...state,
+					_initialized: initialized,
+				}));
 			},
 		})),
 		{

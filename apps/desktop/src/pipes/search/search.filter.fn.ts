@@ -8,7 +8,7 @@
  * @requirements 1.2, 4.1, 6.2
  */
 
-import * as A from "fp-ts/Array";
+import * as RA from "fp-ts/ReadonlyArray";
 import { pipe } from "fp-ts/function";
 import * as N from "fp-ts/number";
 import * as O from "fp-ts/Option";
@@ -35,7 +35,7 @@ export interface SearchResult {
 	readonly workspaceId?: string;
 	readonly workspaceTitle?: string;
 	readonly score: number;
-	readonly highlights: string[];
+	readonly highlights: ReadonlyArray<string>;
 }
 
 /**
@@ -45,7 +45,7 @@ export interface SearchableItem {
 	readonly id: string;
 	readonly title: string;
 	readonly content: string;
-	readonly tags?: string[];
+	readonly tags?: ReadonlyArray<string>;
 	readonly workspaceId?: string;
 }
 
@@ -53,7 +53,7 @@ export interface SearchableItem {
  * 搜索过滤选项
  */
 export interface SearchFilterOptions {
-	readonly types?: SearchResultType[];
+	readonly types?: ReadonlyArray<SearchResultType>;
 	readonly workspaceId?: string;
 	readonly limit?: number;
 	readonly minScore?: number;
@@ -142,14 +142,14 @@ export const matchesRegex = (
  * @returns 过滤后的搜索结果
  */
 export const filterByWorkspace = (
-	results: SearchResult[],
+	results: ReadonlyArray<SearchResult>,
 	workspaceId: string | undefined,
-): SearchResult[] => {
+): ReadonlyArray<SearchResult> => {
 	if (!workspaceId) return results;
 
 	return pipe(
 		results,
-		A.filter((r) => r.workspaceId === workspaceId),
+		RA.filter((r) => r.workspaceId === workspaceId),
 	);
 };
 
@@ -161,14 +161,14 @@ export const filterByWorkspace = (
  * @returns 过滤后的搜索结果
  */
 export const filterByType = (
-	results: SearchResult[],
-	types: SearchResultType[] | undefined,
-): SearchResult[] => {
+	results: ReadonlyArray<SearchResult>,
+	types: ReadonlyArray<SearchResultType> | undefined,
+): ReadonlyArray<SearchResult> => {
 	if (!types || types.length === 0) return results;
 
 	return pipe(
 		results,
-		A.filter((r) => types.includes(r.type)),
+		RA.filter((r) => types.includes(r.type)),
 	);
 };
 
@@ -180,14 +180,14 @@ export const filterByType = (
  * @returns 过滤后的搜索结果
  */
 export const filterByMinScore = (
-	results: SearchResult[],
+	results: ReadonlyArray<SearchResult>,
 	minScore: number | undefined,
-): SearchResult[] => {
+): ReadonlyArray<SearchResult> => {
 	if (minScore === undefined || minScore <= 0) return results;
 
 	return pipe(
 		results,
-		A.filter((r) => r.score >= minScore),
+		RA.filter((r) => r.score >= minScore),
 	);
 };
 
@@ -201,8 +201,8 @@ export const filterByMinScore = (
  * @param results - 搜索结果数组
  * @returns 排序后的搜索结果
  */
-export const sortByScore = (results: SearchResult[]): SearchResult[] => {
-	return pipe(results, A.sort(byScoreDesc));
+export const sortByScore = (results: ReadonlyArray<SearchResult>): ReadonlyArray<SearchResult> => {
+	return pipe(results, RA.sort(byScoreDesc));
 };
 
 // ============================================================================
@@ -217,12 +217,12 @@ export const sortByScore = (results: SearchResult[]): SearchResult[] => {
  * @returns 限制后的搜索结果
  */
 export const limitResults = (
-	results: SearchResult[],
+	results: ReadonlyArray<SearchResult>,
 	limit: number | undefined,
-): SearchResult[] => {
+): ReadonlyArray<SearchResult> => {
 	if (!limit || limit <= 0) return results;
 
-	return pipe(results, A.takeLeft(limit));
+	return pipe(results, RA.takeLeft(limit));
 };
 
 // ============================================================================
@@ -237,9 +237,9 @@ export const limitResults = (
  * @returns 过滤、排序、限制后的搜索结果
  */
 export const applySearchFilters = (
-	results: SearchResult[],
+	results: ReadonlyArray<SearchResult>,
 	options: SearchFilterOptions = {},
-): SearchResult[] => {
+): ReadonlyArray<SearchResult> => {
 	const { types, workspaceId, limit, minScore } = options;
 
 	return pipe(
@@ -282,9 +282,9 @@ export const isEmptyQuery = (query: string): boolean => {
  * @param query - 查询字符串
  * @returns 搜索词数组
  */
-export const splitQueryTerms = (query: string): string[] => {
+export const splitQueryTerms = (query: string): ReadonlyArray<string> => {
 	return pipe(
 		query.trim().split(/\s+/),
-		A.filter((term) => term.length > 0),
+		RA.filter((term) => term.length > 0),
 	);
 };

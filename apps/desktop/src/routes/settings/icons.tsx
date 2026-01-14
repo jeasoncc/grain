@@ -284,9 +284,9 @@ function IconSettings() {
 
 // Icon Theme Card
 interface IconThemeCardProps {
-	theme: IconTheme;
-	isActive: boolean;
-	onSelect: () => void;
+	readonly theme: IconTheme;
+	readonly isActive: boolean;
+	readonly onSelect: () => void;
 }
 
 function IconThemeCard({ theme, isActive, onSelect }: IconThemeCardProps) {
@@ -360,14 +360,14 @@ function FileItem({
 	icon: Icon,
 	label,
 	level = 0,
-	_isOpen = false,
+	isOpen: _isOpen = false,
 	isActive = false,
 }: {
-	icon: LucideIcon;
-	label: string;
-	level?: number;
-	isOpen?: boolean;
-	isActive?: boolean;
+	readonly icon: LucideIcon;
+	readonly label: string;
+	readonly level?: number;
+	readonly isOpen?: boolean;
+	readonly isActive?: boolean;
 }) {
 	const { currentTheme } = useTheme();
 
@@ -408,8 +408,8 @@ function ActivityBarIcon({
 	icon: Icon,
 	isActive = false,
 }: {
-	icon: LucideIcon;
-	isActive?: boolean;
+	readonly icon: LucideIcon;
+	readonly isActive?: boolean;
 }) {
 	const { currentTheme } = useTheme();
 
@@ -442,9 +442,9 @@ function ActivityBarIconItem({
 	label,
 	color,
 }: {
-	icon: LucideIcon;
-	label: string;
-	color?: string;
+	readonly icon: LucideIcon;
+	readonly label: string;
+	readonly color?: string;
 }) {
 	const { currentTheme } = useTheme();
 
