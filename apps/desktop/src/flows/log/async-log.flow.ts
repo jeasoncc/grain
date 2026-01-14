@@ -83,7 +83,7 @@ let processorState: QueueProcessorState = {
   isProcessing: false,
   processedCount: 0,
   errorCount: 0,
-  lastProcessTime: Date.now(),
+  lastProcessTime: dayjs().valueOf(),
   averageProcessTime: 0,
 };
 
