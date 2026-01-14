@@ -92,15 +92,13 @@ export interface ParsedImportData {
 export function parseJsonBundle(
 	jsonText: string,
 ): E.Either<JsonImportError, Partial<ExportBundle>> {
-	try {
-		const data = JSON.parse(jsonText) as Partial<ExportBundle>;
-		return E.right(data);
-	} catch (error) {
-		return E.left({
-			type: "PARSE_ERROR",
+	return E.tryCatch(
+		() => JSON.parse(jsonText) as Partial<ExportBundle>,
+		(error) => ({
+			type: "PARSE_ERROR" as const,
 			message: `JSON 解析失败: ${error instanceof Error ? error.message : String(error)}`,
-		});
-	}
+		}),
+	);
 }
 
 /**
