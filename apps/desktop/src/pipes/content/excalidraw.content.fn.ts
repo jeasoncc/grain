@@ -73,7 +73,7 @@ export interface ExcalidrawDocument {
 	readonly type: "excalidraw";
 	readonly version: number;
 	readonly source: string;
-	readonly elements: ExcalidrawElement[];
+	readonly elements: readonly ExcalidrawElement[];
 	readonly appState: ExcalidrawAppState;
 	readonly files: ExcalidrawFiles;
 }
@@ -127,11 +127,11 @@ export function createDefaultAppState(): Partial<ExcalidrawAppState> {
  * @returns Excalidraw 文档对象
  */
 export function createExcalidrawDocument(
-	elements: ExcalidrawElement[] = [],
+	elements: readonly ExcalidrawElement[] = [],
 	appState: Partial<ExcalidrawAppState> = createDefaultAppState(),
 	files: ExcalidrawFiles = {},
 ): Omit<ExcalidrawDocument, "appState"> & {
-	appState: Partial<ExcalidrawAppState>;
+	readonly appState: Partial<ExcalidrawAppState>;
 } {
 	return {
 		type: "excalidraw",
