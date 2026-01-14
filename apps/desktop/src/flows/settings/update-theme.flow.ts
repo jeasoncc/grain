@@ -105,7 +105,7 @@ export const updateThemeMode = (
 ): E.Either<AppError, void> => {
 	info("[Action] 更新主题模式", { mode: params.mode }, "update-theme.flow");
 
-	const validModes: ThemeMode[] = ["light", "dark", "system"];
+	const validModes: readonly ThemeMode[] = ["light", "dark", "system"];
 	if (!validModes.includes(params.mode)) {
 		return E.left(validationError(`无效的主题模式: ${params.mode}`, "mode"));
 	}
