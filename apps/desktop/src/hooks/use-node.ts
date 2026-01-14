@@ -43,7 +43,7 @@ import type { NodeInterface, NodeType } from "@/types/node";
  */
 export function useNodesByWorkspace(
 	workspaceId: string | null | undefined,
-): NodeInterface[] | undefined {
+): readonly NodeInterface[] | undefined {
 	const { data: nodes, isLoading } = useNodesByWorkspaceQuery(workspaceId);
 
 	if (isLoading) return undefined;
@@ -77,7 +77,7 @@ export function useNode(
 export function useChildNodes(
 	parentId: string | null,
 	workspaceId: string | null | undefined,
-): NodeInterface[] | undefined {
+): readonly NodeInterface[] | undefined {
 	const { data: nodes, isLoading } = useNodesByParent(workspaceId, parentId);
 
 	return useMemo(() => {
@@ -97,7 +97,7 @@ export function useChildNodes(
  */
 export function useRootNodes(
 	workspaceId: string | null | undefined,
-): NodeInterface[] | undefined {
+): readonly NodeInterface[] | undefined {
 	const { data: nodes, isLoading } = useRootNodesQuery(workspaceId);
 
 	return useMemo(() => {
@@ -117,7 +117,7 @@ export function useRootNodes(
 export function useNodesByType(
 	workspaceId: string | null | undefined,
 	type: NodeType,
-): NodeInterface[] | undefined {
+): readonly NodeInterface[] | undefined {
 	const { data: nodes, isLoading } = useNodesByTypeQuery(workspaceId, type);
 
 	if (isLoading) return undefined;
@@ -161,7 +161,7 @@ export function useNodeExists(
  * @param nodeIds - 节点 ID 数组
  * @returns 节点数组
  */
-export function useNodesByIds(nodeIds: string[]): NodeInterface[] | undefined {
+export function useNodesByIds(nodeIds: readonly string[]): readonly NodeInterface[] | undefined {
 	// 注意：这里暂时使用工作区查询 + 过滤的方式
 	// 如果需要更高效的实现，可以添加专门的批量查询 API
 	const { data: nodes, isLoading } = useNodesByWorkspaceQuery(undefined);
