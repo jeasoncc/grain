@@ -15,7 +15,7 @@ import type { AppError } from "@/types/error";
  */
 export const getNodesByWorkspace = (
 	workspaceId: string,
-): TE.TaskEither<AppError, NodeInterface[]> => {
+): TE.TaskEither<AppError, readonly NodeInterface[]> => {
 	return nodeRepo.getNodesByWorkspace(workspaceId);
 };
 
@@ -33,7 +33,7 @@ export const getNode = (
  */
 export const getRootNodes = (
 	workspaceId: string,
-): TE.TaskEither<AppError, NodeInterface[]> => {
+): TE.TaskEither<AppError, readonly NodeInterface[]> => {
 	return nodeRepo.getRootNodes(workspaceId);
 };
 
@@ -42,7 +42,7 @@ export const getRootNodes = (
  */
 export const getChildNodes = (
 	parentId: string,
-): TE.TaskEither<AppError, NodeInterface[]> => {
+): TE.TaskEither<AppError, readonly NodeInterface[]> => {
 	return nodeRepo.getChildNodes(parentId);
 };
 
@@ -52,7 +52,7 @@ export const getChildNodes = (
 export const getNodesByParent = (
 	workspaceId: string,
 	parentId: string | null,
-): TE.TaskEither<AppError, NodeInterface[]> => {
+): TE.TaskEither<AppError, readonly NodeInterface[]> => {
 	return nodeRepo.getNodesByParent(workspaceId, parentId);
 };
 
@@ -62,7 +62,7 @@ export const getNodesByParent = (
 export const getNodesByType = (
 	workspaceId: string,
 	nodeType: string,
-): TE.TaskEither<AppError, NodeInterface[]> => {
+): TE.TaskEither<AppError, readonly NodeInterface[]> => {
 	return nodeRepo.getNodesByType(workspaceId, nodeType);
 };
 
@@ -71,6 +71,6 @@ export const getNodesByType = (
  */
 export const getDescendants = (
 	nodeId: string,
-): TE.TaskEither<AppError, NodeInterface[]> => {
+): TE.TaskEither<AppError, readonly NodeInterface[]> => {
 	return nodeRepo.getDescendants(nodeId);
 };
