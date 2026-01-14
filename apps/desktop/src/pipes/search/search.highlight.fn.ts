@@ -22,7 +22,7 @@ import * as O from "fp-ts/Option";
 interface LexicalNode {
 	readonly type?: string;
 	readonly text?: string;
-	readonly children?: LexicalNode[];
+	readonly children?: ReadonlyArray<LexicalNode>;
 }
 
 /**
@@ -135,11 +135,11 @@ export const generateExcerpt = (
 					index + query.length + halfContext,
 				);
 
-				let excerpt = content.slice(start, end);
-				if (start > 0) excerpt = `...${excerpt}`;
-				if (end < content.length) excerpt = `${excerpt}...`;
+				const baseExcerpt = content.slice(start, end);
+				const prefixed = start > 0 ? `...${baseExcerpt}` : baseExcerpt;
+				const suffixed = end < content.length ? `${prefixed}...` : prefixed;
 
-				return excerpt;
+				return suffixed;
 			},
 		),
 	);

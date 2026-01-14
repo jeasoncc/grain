@@ -206,28 +206,36 @@ export function exportMultipleToJson(
 	options: JsonExportOptions = {},
 ): E.Either<ExportError, string> {
 	const opts = { ...defaultOptions, ...options };
-	const results: Array<{
-		id: string;
-		document: LexicalDocument;
-	}> = [];
 
-	for (const item of contents) {
+	// Use functional approach instead of mutation
+	const parsedResults = contents.map(item => {
 		const parsed = parseLexicalContent(item.content);
 		if (E.isLeft(parsed)) {
-			return parsed;
+			return E.left(parsed.left);
 		}
-		results.push({ id: item.id, document: parsed.right });
+		return E.right({ id: item.id, document: parsed.right });
+	});
+
+	// Check for any parsing errors
+	const firstError = parsedResults.find(E.isLeft);
+	if (firstError && E.isLeft(firstError)) {
+		return firstError;
 	}
+
+	// Extract successful results
+	const successfulResults = parsedResults
+		.filter(E.isRight)
+		.map(result => result.right);
 
 	const exportData = {
 		metadata: opts.includeMetadata
 			? {
 					...opts.metadata,
 					exportedAt: dayjs().toISOString(),
-					count: results.length,
+					count: successfulResults.length,
 				}
 			: undefined,
-		documents: results,
+		documents: successfulResults,
 	};
 
 	return E.right(serializeToJson(exportData, opts));

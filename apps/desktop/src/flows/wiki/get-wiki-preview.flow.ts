@@ -14,8 +14,8 @@ import type { AppError } from "@/types/error";
  * Wiki 预览数据类型
  */
 export interface WikiPreviewData {
-	title: string;
-	content: string;
+	readonly title: string;
+	readonly content: string;
 }
 
 /**
@@ -24,7 +24,7 @@ export interface WikiPreviewData {
 function extractTextFromLexical(node: unknown): string {
 	if (!node) return "";
 	if (typeof node === "object" && node !== null) {
-		const nodeObj = node as { text?: string; children?: unknown[] };
+		const nodeObj = node as { readonly text?: string; readonly children?: ReadonlyArray<unknown> };
 		if (typeof nodeObj.text === "string") return nodeObj.text;
 		if (Array.isArray(nodeObj.children)) {
 			return nodeObj.children.map(extractTextFromLexical).join(" ");

@@ -100,9 +100,17 @@ export const reorderTabs = (
 	toIndex: number,
 ): readonly EditorTab[] => {
 	const result = [...tabs];
-	const [removed] = result.splice(fromIndex, 1);
-	result.splice(toIndex, 0, removed);
-	return result;
+	const itemToMove = result[fromIndex];
+	
+	// Create new array without the item at fromIndex
+	const withoutItem = result.filter((_, index) => index !== fromIndex);
+	
+	// Insert the item at the new position
+	return [
+		...withoutItem.slice(0, toIndex),
+		itemToMove,
+		...withoutItem.slice(toIndex),
+	];
 };
 
 // ==============================
@@ -129,23 +137,21 @@ export const evictLRUEditorStates = (
 	);
 
 	const toEvictCount = entries.length - maxStates;
-	const evictedIds = new Set<string>();
+	
+	// Use functional approach to collect IDs to evict
+	const evictedIds = sortedEntries
+		.filter(([id, state]) => {
+			return id !== activeTabId && !openTabIds.has(id) && !state.isDirty;
+		})
+		.slice(0, toEvictCount)
+		.map(([id]) => id);
 
-	for (const [id, state] of sortedEntries) {
-		if (evictedIds.size >= toEvictCount) break;
-
-		if (id === activeTabId || openTabIds.has(id) || state.isDirty) {
-			continue;
-		}
-
-		evictedIds.add(id);
-	}
-
-	if (evictedIds.size === 0) {
+	if (evictedIds.length === 0) {
 		return states;
 	}
 
-	return Object.fromEntries(entries.filter(([id]) => !evictedIds.has(id)));
+	const evictedSet = new Set(evictedIds);
+	return Object.fromEntries(entries.filter(([id]) => !evictedSet.has(id)));
 };
 
 // ==============================

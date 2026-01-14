@@ -29,10 +29,10 @@ import type { WorkspaceInterface } from "@/types/workspace";
  * Database version info interface
  */
 export interface DBVersionInterface {
-	id: string;
-	version: string;
-	updatedAt: string;
-	migrationNotes?: string;
+	readonly id: string;
+	readonly version: string;
+	readonly updatedAt: string;
+	readonly migrationNotes?: string;
 }
 
 /**
@@ -44,11 +44,11 @@ export type ContentType = "lexical" | "excalidraw" | "text";
  * Content interface for the contents table
  */
 export interface ContentInterface {
-	id: string;
-	nodeId: string;
-	content: string;
-	contentType: ContentType;
-	lastEdit: string;
+	readonly id: string;
+	readonly nodeId: string;
+	readonly content: string;
+	readonly contentType: ContentType;
+	readonly lastEdit: string;
 }
 
 /**

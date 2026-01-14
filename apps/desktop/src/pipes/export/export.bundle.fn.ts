@@ -101,22 +101,21 @@ export function exportWorkspaceToMarkdown(
 	contentMap: ReadonlyMap<string, string>,
 ): string {
 	const sortedNodes = [...nodes].sort((a, b) => a.order - b.order);
-	const lines: string[] = [];
+	const lines: ReadonlyArray<string> = [];
 
 	// 添加标题
-	lines.push(`# ${workspace.title || "Untitled"}`);
-	if (workspace.author) lines.push(`Author: ${workspace.author}`);
+	const titleLines = [`# ${workspace.title || "Untitled"}`];
+	if (workspace.author) titleLines.push(`Author: ${workspace.author}`);
 	if (workspace.description) {
-		lines.push("");
-		lines.push(workspace.description);
+		titleLines.push("");
+		titleLines.push(workspace.description);
 	}
-	lines.push("");
+	titleLines.push("");
 
 	// 递归输出节点
-	function outputNode(node: NodeInterface, depth: number) {
+	function outputNode(node: NodeInterface, depth: number): ReadonlyArray<string> {
 		const prefix = "#".repeat(Math.min(depth + 2, 6));
-		lines.push("");
-		lines.push(`${prefix} ${node.title || "Untitled"}`);
+		const nodeLines = ["", `${prefix} ${node.title || "Untitled"}`];
 
 		const content = contentMap.get(node.id);
 		if (content) {
@@ -130,22 +129,20 @@ export function exportWorkspaceToMarkdown(
 
 			const text = E.getOrElse(() => content)(parseResult);
 			if (text.trim()) {
-				lines.push("");
-				lines.push(text);
+				nodeLines.push("");
+				nodeLines.push(text);
 			}
 		}
 
 		const children = sortedNodes.filter((n) => n.parent === node.id);
-		for (const child of children) {
-			outputNode(child, depth + 1);
-		}
+		const childLines = children.flatMap(child => outputNode(child, depth + 1));
+		
+		return [...nodeLines, ...childLines];
 	}
 
 	// 输出根节点
 	const rootNodes = sortedNodes.filter((n) => !n.parent);
-	for (const node of rootNodes) {
-		outputNode(node, 0);
-	}
+	const contentLines = rootNodes.flatMap(node => outputNode(node, 0));
 
-	return lines.join("\n");
+	return [...titleLines, ...contentLines].join("\n");
 }

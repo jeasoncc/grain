@@ -16,7 +16,7 @@
 import { debounce } from "es-toolkit";
 import * as E from "fp-ts/Either";
 import { updateContentByNodeId } from "@/io/api/content.api";
-import { info, debug, success } from "@/io/log/logger.api";
+import { info, debug, success, error as logError } from "@/io/log/logger.api";
 import type { ContentType } from "@/types/content/content.interface";
 
 // ============================================================================
@@ -50,17 +50,17 @@ export interface UnifiedSaveConfig {
  */
 export interface UnifiedSaveServiceInterface {
 	/** 更新内容（触发防抖自动保存） */
-	updateContent: (content: string) => void;
+	readonly updateContent: (content: string) => void;
 	/** 立即保存当前内容（手动保存核心函数） */
-	saveNow: () => Promise<boolean>;
+	readonly saveNow: () => Promise<boolean>;
 	/** 设置初始内容（不触发保存） */
-	setInitialContent: (content: string) => void;
+	readonly setInitialContent: (content: string) => void;
 	/** 清理资源（取消防抖定时器） */
-	dispose: () => void;
+	readonly dispose: () => void;
 	/** 是否有未保存的更改 */
-	hasUnsavedChanges: () => boolean;
+	readonly hasUnsavedChanges: () => boolean;
 	/** 获取当前待保存的内容 */
-	getPendingContent: () => string | null;
+	readonly getPendingContent: () => string | null;
 }
 
 // ============================================================================
@@ -159,14 +159,14 @@ export const createUnifiedSaveService = (
 				return true;
 			}
 			// 保存失败
-			const error = new Error(result.left.message || "保存失败");
-			onError?.(error);
-			error("[UnifiedSave] 保存失败", { error: result.left }, "unified-save.service");
+			const saveError = new Error(result.left.message || "保存失败");
+			onError?.(saveError);
+			logError("[UnifiedSave] 保存失败", { error: result.left }, "unified-save.service");
 			return false;
 		} catch (err) {
-			const error = err instanceof Error ? err : new Error("未知错误");
-			onError?.(error);
-			error("[UnifiedSave] 保存异常", { error }, "unified-save.service");
+			const saveError = err instanceof Error ? err : new Error("未知错误");
+			onError?.(saveError);
+			logError("[UnifiedSave] 保存异常", { error: saveError }, "unified-save.service");
 			return false;
 		} finally {
 			isSaving = false;

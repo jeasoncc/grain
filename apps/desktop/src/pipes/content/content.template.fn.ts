@@ -258,7 +258,7 @@ export function isValidTemplateType(type: string): type is TemplateType {
  * @returns 模板类型数组
  */
 export function getAvailableTemplateTypes(): ReadonlyArray<TemplateType> {
-	return Object.keys(TEMPLATE_CONFIGS) as TemplateType[];
+	return Object.keys(TEMPLATE_CONFIGS) as ReadonlyArray<TemplateType>;
 }
 
 /**

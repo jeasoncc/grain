@@ -69,7 +69,7 @@ const generateCacheKey = (options: LogQueryOptions): string => {
   const normalized = {
     limit: options.limit || 100,
     offset: options.offset || 0,
-    levelFilter: options.levelFilter ? [...options.levelFilter].sort() : [],
+    levelFilter: options.levelFilter ? Array.from(options.levelFilter).sort() : [],
     startTime: options.startTime || '',
     endTime: options.endTime || '',
     sourceFilter: options.sourceFilter || '',
@@ -115,9 +115,11 @@ const setToCache = (
 ): void => {
   // If cache is full, remove oldest entry
   if (queryCache.size >= CACHE_CONFIG.maxSize) {
-    const oldestKey = Array.from(queryCache.entries())
-      .sort(([, a], [, b]) => a.timestamp - b.timestamp)[0][0];
-    queryCache.delete(oldestKey);
+    const oldestEntry = Array.from(queryCache.entries())
+      .sort(([, a], [, b]) => a.timestamp - b.timestamp)[0];
+    if (oldestEntry) {
+      queryCache.delete(oldestEntry[0]);
+    }
   }
   
   queryCache.set(key, {
@@ -137,7 +139,9 @@ const cleanupCache = (): void => {
     .filter(([, entry]) => now > entry.timestamp + entry.ttl)
     .map(([key]) => key);
   
-  expiredKeys.forEach(key => queryCache.delete(key));
+  for (const key of expiredKeys) {
+    queryCache.delete(key);
+  }
 };
 
 // 设置定期清理
@@ -267,7 +271,7 @@ export const getLogLevelStatsFlow = (
 export const getRecentErrorLogsFlow = (
   limit: number = 20,
   hours: number = 24,
-): TE.TaskEither<AppError, readonly LogEntry[]> => {
+): TE.TaskEither<AppError, ReadonlyArray<LogEntry>> => {
   const startTime = dayjs().subtract(hours, 'hour');
   
   const options: LogQueryOptions = {
@@ -294,8 +298,8 @@ export const getRecentErrorLogsFlow = (
 export const getLogsBySourceFlow = (
   source: string,
   limit: number = 100,
-  levelFilter?: readonly LogLevel[],
-): TE.TaskEither<AppError, readonly LogEntry[]> => {
+  levelFilter?: ReadonlyArray<LogLevel>,
+): TE.TaskEither<AppError, ReadonlyArray<LogEntry>> => {
   const options: LogQueryOptions = {
     sourceFilter: source,
     levelFilter,
@@ -344,10 +348,10 @@ export const queryLogsByTimeRangeFlow = (
  * @returns TaskEither<AppError, LogEntry[]>
  */
 export const queryLogsByLevelsFlow = (
-  levels: readonly LogLevel[],
+  levels: ReadonlyArray<LogLevel>,
   limit: number = 100,
   timeRange?: { readonly startTime?: string; readonly endTime?: string },
-): TE.TaskEither<AppError, readonly LogEntry[]> => {
+): TE.TaskEither<AppError, ReadonlyArray<LogEntry>> => {
   const options: LogQueryOptions = {
     levelFilter: levels,
     limit,
@@ -392,7 +396,7 @@ export const getCacheStats = () => ({
  * @returns TaskEither<AppError, void>
  */
 export const warmupQueryCache = (): TE.TaskEither<AppError, void> => {
-  const commonQueries: readonly LogQueryOptions[] = [
+  const commonQueries: ReadonlyArray<LogQueryOptions> = [
     // Recent logs
     { limit: 50, offset: 0 },
     // Recent errors

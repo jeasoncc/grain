@@ -36,8 +36,13 @@ export type FileReadError =
 export function readFileAsText(file: File): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
-		reader.onload = () => resolve(String(reader.result ?? ""));
-		reader.onerror = reject;
+		
+		// Apply event handlers functionally
+		Object.assign(reader, {
+			onload: () => resolve(String(reader.result ?? "")),
+			onerror: reject,
+		});
+		
 		reader.readAsText(file);
 	});
 }

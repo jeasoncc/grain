@@ -23,17 +23,18 @@ import type { AppError } from "@/types/error";
  */
 function buildNodePath(
 	node: NodeInterface,
-	nodeMap: Map<string, NodeInterface>,
+	nodeMap: ReadonlyMap<string, NodeInterface>,
 ): string {
-	const parts: string[] = [node.title];
-	let current = node.parent ? nodeMap.get(node.parent) : undefined;
+	const buildPathRecursive = (currentNode: NodeInterface, acc: ReadonlyArray<string> = []): ReadonlyArray<string> => {
+		const newAcc = [currentNode.title, ...acc];
+		if (!currentNode.parent) {
+			return newAcc;
+		}
+		const parent = nodeMap.get(currentNode.parent);
+		return parent ? buildPathRecursive(parent, newAcc) : newAcc;
+	};
 
-	while (current) {
-		parts.unshift(current.title);
-		current = current.parent ? nodeMap.get(current.parent) : undefined;
-	}
-
-	return parts.join("/");
+	return buildPathRecursive(node).join("/");
 }
 
 /**
@@ -47,7 +48,7 @@ function buildNodePath(
  */
 export const getWikiFilesAsync = (
 	workspaceId: string,
-): TE.TaskEither<AppError, WikiFileEntry[]> => {
+): TE.TaskEither<AppError, ReadonlyArray<WikiFileEntry>> => {
 	info("[Wiki] 获取 Wiki 文件列表...");
 
 	return TE.tryCatch(
@@ -65,12 +66,12 @@ export const getWikiFilesAsync = (
 			const nodeIds = nodes.map((n) => n.id);
 			const contentsResult = await getContentsByNodeIds(nodeIds)();
 			const contents = E.isRight(contentsResult) ? contentsResult.right : [];
-			const contentMap = new Map(contents.map((c) => [c.nodeId, c.content]));
+			const contentMap = new Map(contents.map((c) => [c.nodeId, c.content])) as ReadonlyMap<string, string>;
 
 			// Get all nodes for path building
 			const allNodesResult = await getNodesByWorkspace(workspaceId)();
 			const allNodes = E.isRight(allNodesResult) ? allNodesResult.right : [];
-			const nodeMap = new Map(allNodes.map((n) => [n.id, n]));
+			const nodeMap = new Map(allNodes.map((n) => [n.id, n])) as ReadonlyMap<string, NodeInterface>;
 
 			// Build WikiFileEntry array
 			const entries = nodes.map((node) => {
@@ -88,7 +89,7 @@ export const getWikiFilesAsync = (
 			success("[Wiki] Wiki 文件列表获取成功", {
 				count: entries.length,
 			}, "get-wiki-files");
-			return entries;
+			return entries as ReadonlyArray<WikiFileEntry>;
 		},
 		(error) => ({
 			type: "DB_ERROR" as const,
@@ -105,7 +106,7 @@ export const getWikiFilesAsync = (
  */
 export async function getWikiFiles(
 	workspaceId: string,
-): Promise<WikiFileEntry[]> {
+): Promise<ReadonlyArray<WikiFileEntry>> {
 	const result = await getWikiFilesAsync(workspaceId)();
 
 	if (E.isLeft(result)) {

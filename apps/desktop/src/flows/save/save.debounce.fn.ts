@@ -20,10 +20,10 @@ import type { SerializedEditorState } from "lexical";
  * Lexical 节点结构用于遍历
  */
 interface LexicalNode {
-	type?: string;
-	key?: string;
-	value?: string;
-	children?: LexicalNode[];
+	readonly type?: string;
+	readonly key?: string;
+	readonly value?: string;
+	readonly children?: ReadonlyArray<LexicalNode>;
 }
 
 // ============================================================================
@@ -37,7 +37,7 @@ interface LexicalNode {
  * @param value - 逗号分隔的标签字符串
  * @returns 标签数组
  */
-export const parseTagString = (value: string): string[] =>
+export const parseTagString = (value: string): ReadonlyArray<string> =>
 	value
 		.split(",")
 		.map((t) => t.trim())
@@ -58,7 +58,7 @@ const isTagsFrontMatter = (node: LexicalNode): boolean =>
  * @param node - Lexical 节点
  * @returns 标签数组
  */
-const extractNodeTags = (node: LexicalNode): string[] =>
+const extractNodeTags = (node: LexicalNode): ReadonlyArray<string> =>
 	isTagsFrontMatter(node) ? parseTagString(node.value || "") : [];
 
 /**
@@ -68,7 +68,7 @@ const extractNodeTags = (node: LexicalNode): string[] =>
  * @param node - Lexical 节点
  * @returns 标签数组
  */
-const collectTags = (node: LexicalNode): string[] => [
+const collectTags = (node: LexicalNode): ReadonlyArray<string> => [
 	...extractNodeTags(node),
 	...(node.children ?? []).flatMap(collectTags),
 ];
@@ -79,7 +79,7 @@ const collectTags = (node: LexicalNode): string[] => [
  * @param arr - 输入数组
  * @returns 去重后的数组
  */
-const deduplicate = <T>(arr: T[]): T[] => [...new Set(arr)];
+const deduplicate = <T>(arr: ReadonlyArray<T>): ReadonlyArray<T> => [...new Set(arr)];
 
 // ============================================================================
 // Main Export
@@ -96,7 +96,7 @@ const deduplicate = <T>(arr: T[]): T[] => [...new Set(arr)];
  */
 export const extractTagsFromContent = (
 	content: SerializedEditorState,
-): string[] =>
+): ReadonlyArray<string> =>
 	content.root
 		? deduplicate(collectTags(content.root as unknown as LexicalNode))
 		: [];

@@ -112,7 +112,7 @@ export const extractTextFromLexicalState = (editorState: unknown): string => {
 		return "";
 	}
 
-	const state = editorState as { root?: { children?: unknown[] } };
+	const state = editorState as { readonly root?: { readonly children?: ReadonlyArray<unknown> } };
 	if (!state.root?.children) {
 		return "";
 	}
@@ -126,26 +126,28 @@ export const extractTextFromLexicalState = (editorState: unknown): string => {
  * @param nodes - Lexical 节点数组
  * @returns 提取的文本
  */
-const extractTextFromNodes = (nodes: unknown[]): string => {
-	const texts: string[] = [];
+const extractTextFromNodes = (nodes: ReadonlyArray<unknown>): string => {
+	// Use functional approach instead of mutation
+	const extractedTexts = nodes
+		.filter((node): node is { readonly type?: string; readonly text?: string; readonly children?: ReadonlyArray<unknown> } => 
+			node !== null && typeof node === "object"
+		)
+		.flatMap((n) => {
+			// 文本节点
+			if (n.type === "text" && typeof n.text === "string") {
+				return [n.text];
+			}
 
-	for (const node of nodes) {
-		if (!node || typeof node !== "object") continue;
+			// 递归处理子节点
+			if (Array.isArray(n.children)) {
+				const childText = extractTextFromNodes(n.children);
+				return childText ? [childText] : [];
+			}
 
-		const n = node as { type?: string; text?: string; children?: unknown[] };
+			return [];
+		});
 
-		// 文本节点
-		if (n.type === "text" && typeof n.text === "string") {
-			texts.push(n.text);
-		}
-
-		// 递归处理子节点
-		if (Array.isArray(n.children)) {
-			texts.push(extractTextFromNodes(n.children));
-		}
-	}
-
-	return texts.join(" ");
+	return extractedTexts.join(" ");
 };
 
 /**

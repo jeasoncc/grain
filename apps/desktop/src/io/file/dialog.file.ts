@@ -30,7 +30,7 @@ export interface DirectorySelectResult {
  */
 export interface FileFilter {
 	readonly name: string;
-	readonly extensions: string[];
+	readonly extensions: ReadonlyArray<string>;
 }
 
 /**
@@ -39,7 +39,7 @@ export interface FileFilter {
 export interface FileSelectOptions {
 	readonly title?: string;
 	readonly defaultPath?: string | null;
-	readonly filters?: FileFilter[];
+	readonly filters?: ReadonlyArray<FileFilter>;
 	readonly multiple?: boolean;
 }
 
@@ -227,15 +227,21 @@ export async function selectFile(
 ): Promise<FileSelectResult> {
 	return new Promise((resolve) => {
 		const input = document.createElement("input");
-		input.type = "file";
-		input.multiple = options?.multiple ?? false;
+		const inputConfig = {
+			type: "file",
+			multiple: options?.multiple ?? false,
+		};
+		
+		// Apply configuration functionally
+		Object.assign(input, inputConfig);
 
 		if (options?.filters && options.filters.length > 0) {
 			const extensions = options.filters.flatMap((f) => f.extensions);
-			input.accept = extensions.map((ext) => `.${ext}`).join(",");
+			const acceptValue = extensions.map((ext) => `.${ext}`).join(",");
+			Object.assign(input, { accept: acceptValue });
 		}
 
-		input.onchange = (e) => {
+		const handleChange = (e: Event) => {
 			const file = (e.target as HTMLInputElement).files?.[0];
 			resolve({
 				file: file ?? null,
@@ -243,12 +249,18 @@ export async function selectFile(
 			});
 		};
 
-		input.oncancel = () => {
+		const handleCancel = () => {
 			resolve({
 				file: null,
 				cancelled: true,
 			});
 		};
+
+		// Assign event handlers functionally
+		Object.assign(input, {
+			onchange: handleChange,
+			oncancel: handleCancel,
+		});
 
 		input.click();
 	});

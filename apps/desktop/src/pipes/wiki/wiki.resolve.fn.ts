@@ -279,19 +279,24 @@ interface NodeLike {
  */
 export function buildNodePath<T extends NodeLike>(
 	node: T,
-	nodeMap: Map<string, T>,
+	nodeMap: ReadonlyMap<string, T>,
 ): string {
-	const parts: string[] = [node.title];
+	const parts: ReadonlyArray<string> = [node.title];
 	const parentId = node.parent ?? node.parentId;
 	let current = parentId ? nodeMap.get(parentId) : undefined;
 
-	while (current) {
-		parts.unshift(current.title);
-		const nextParentId = current.parent ?? current.parentId;
-		current = nextParentId ? nodeMap.get(nextParentId) : undefined;
-	}
+	// Use functional approach to build path parts
+	const buildParts = (currentNode: T | undefined, accumulator: ReadonlyArray<string>): ReadonlyArray<string> => {
+		if (!currentNode) return accumulator;
+		
+		const nextParentId = currentNode.parent ?? currentNode.parentId;
+		const nextNode = nextParentId ? nodeMap.get(nextParentId) : undefined;
+		
+		return buildParts(nextNode, [currentNode.title, ...accumulator]);
+	};
 
-	return parts.join("/");
+	const allParts = buildParts(current, parts);
+	return allParts.join("/");
 }
 
 /**

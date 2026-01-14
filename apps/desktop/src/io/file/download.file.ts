@@ -28,8 +28,13 @@ export function triggerDownload(
 	const blob = new Blob([text], { type: mimeType });
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement("a");
-	a.href = url;
-	a.download = filename;
+	
+	// Apply properties functionally
+	Object.assign(a, {
+		href: url,
+		download: filename,
+	});
+	
 	document.body.appendChild(a);
 	a.click();
 	a.remove();
@@ -45,8 +50,13 @@ export function triggerDownload(
 export function triggerBlobDownload(filename: string, blob: Blob): void {
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement("a");
-	a.href = url;
-	a.download = filename;
+	
+	// Apply properties functionally
+	Object.assign(a, {
+		href: url,
+		download: filename,
+	});
+	
 	document.body.appendChild(a);
 	a.click();
 	a.remove();
