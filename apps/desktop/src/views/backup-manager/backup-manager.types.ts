@@ -13,7 +13,7 @@ export interface BackupManagerViewProps {
 	readonly storageStats: StorageStats | null;
 	readonly loading: boolean;
 	readonly autoBackupEnabled: boolean;
-	readonly localBackups: LocalBackupRecord[];
+	readonly localBackups: readonly LocalBackupRecord[];
 	readonly onExportJson: () => void;
 	readonly onExportZip: () => void;
 	readonly onRestore: () => void;
