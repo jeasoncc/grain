@@ -40,9 +40,9 @@ export const restoreBackup = (
 /**
  * 列出所有备份
  *
- * @returns TaskEither<AppError, BackupInfo[]>
+ * @returns TaskEither<AppError, readonly BackupInfo[]>
  */
-export const listBackups = (): TE.TaskEither<AppError, BackupInfo[]> =>
+export const listBackups = (): TE.TaskEither<AppError, readonly BackupInfo[]> =>
 	api.listBackups();
 
 /**
