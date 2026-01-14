@@ -1,4 +1,4 @@
-	/**
+/**
  * Export Project Flow
  *
  * 支持 PDF、Word、TXT、EPUB 格式导出
@@ -255,7 +255,7 @@ export async function exportToTxt(
 			const paragraphs = text.trim()
 				? [...text.split("\n")
 					.filter((p) => p.trim())
-					.map((para) => `　　${para.trim()}`), ""]
+					.map((para) => `  ${para.trim()}`), ""]
 				: [];
 
 			return [...title, ...paragraphs];
@@ -345,7 +345,7 @@ export async function exportToWord(
 								new Paragraph({
 									children: [
 										new TextRun({
-											text: `　　${para.trim()}`,
+											text: `  ${para.trim()}`,
 											font: "SimSun",
 											size: 24,
 										}),
