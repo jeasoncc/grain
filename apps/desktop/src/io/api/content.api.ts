@@ -5,8 +5,8 @@
  * 通过 Codec 层进行类型转换，确保前后端类型解耦。
  */
 
-import * as A from "fp-ts/Array";
 import { pipe } from "fp-ts/function";
+import * as RA from "fp-ts/ReadonlyArray";
 import * as TE from "fp-ts/TaskEither";
 import { debug } from "@/io/log/logger.api";
 import {
@@ -151,24 +151,24 @@ export const saveContent = (
  * 由于 Rust 后端没有批量获取 API，这里通过并行调用单个 API 实现
  *
  * @param nodeIds - 节点 ID 数组
- * @returns TaskEither<AppError, ContentInterface[]>
+ * @returns TaskEither<AppError, readonly ContentInterface[]>
  */
 export const getContentsByNodeIds = (
 	nodeIds: readonly string[],
-): TE.TaskEither<AppError, ContentInterface[]> => {
+): TE.TaskEither<AppError, readonly ContentInterface[]> => {
 	if (nodeIds.length === 0) {
 		return TE.right([]);
 	}
 
 	return pipe(
 		nodeIds,
-		A.map((nodeId) =>
+		RA.map((nodeId) =>
 			pipe(
 				api.getContent(nodeId),
 				TE.map((response) => (response ? decodeContent(response) : null)),
 			),
 		),
-		A.sequence(TE.ApplicativePar),
+		RA.sequence(TE.ApplicativePar),
 		TE.map((results) =>
 			results.filter((c): c is ContentInterface => c !== null),
 		),
