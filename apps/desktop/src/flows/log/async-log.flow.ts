@@ -13,6 +13,7 @@ import * as T from "fp-ts/Task";
 import * as E from "fp-ts/Either";
 import { pipe } from "fp-ts/function";
 import { sortBy } from "es-toolkit";
+import dayjs from "dayjs";
 import type { LogEntry, LogLevel, LogConfig } from "@/types/log/log.interface";
 import type { AppError } from "@/types/error/error.types";
 import { DEFAULT_LOG_CONFIG } from "@/types/log/log.interface";
@@ -26,7 +27,7 @@ import {
 
 // IO
 import { saveLogsBatchToSQLite } from "@/io/log/log.storage.api";
-import logger from "@/io/log/logger.api";
+import { info, warn } from "@/io/log/logger.api";
 
 // ============================================================================
 // 日志队列类型定义
@@ -204,7 +205,7 @@ export const addLogToAsyncQueue = (
       // 立即控制台输出（如果启用）
       if (config.enableConsole) {
         const consoleOutput = addConsoleColors(entry);
-        logger.info("[AsyncLog] Console output", { output: consoleOutput });
+        info("[AsyncLog] Console output", { output: consoleOutput });
       }
     },
     (error): AppError => ({
@@ -309,7 +310,7 @@ const processLogQueue = (config: AsyncLogConfig): T.Task<void> =>
         };
         
       } catch (error) {
-        logger.warn("[AsyncLog] Queue processor error", { error });
+        warn("[AsyncLog] Queue processor error", { error });
         processorState = {
           ...processorState,
           errorCount: processorState.errorCount + 1,

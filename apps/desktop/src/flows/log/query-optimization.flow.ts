@@ -9,14 +9,13 @@
 import * as TE from "fp-ts/TaskEither";
 import * as O from "fp-ts/Option";
 import { pipe } from "fp-ts/function";
-import { orderBy } from "es-toolkit";
 import dayjs from "dayjs";
 import type { 
   LogEntry, 
   LogLevel, 
   LogQueryOptions, 
   LogQueryResult,
-  LogStats 
+  LogStatsFormatted 
 } from "@/types/log/log.interface";
 import type { AppError } from "@/types/error/error.types";
 
@@ -70,7 +69,7 @@ const generateCacheKey = (options: LogQueryOptions): string => {
   const normalized = {
     limit: options.limit || 100,
     offset: options.offset || 0,
-    levelFilter: options.levelFilter ? orderBy(options.levelFilter, [x => x], ['asc']) : [],
+    levelFilter: options.levelFilter ? [...options.levelFilter].sort() : [],
     startTime: options.startTime || '',
     endTime: options.endTime || '',
     sourceFilter: options.sourceFilter || '',
@@ -175,7 +174,7 @@ export const optimizedQueryLogsFlow = (
     TE.map((result) => {
       // 应用前端过滤和排序优化
       const optimizedEntries = pipe(
-        result.entries,
+        [...result.entries], // Convert readonly array to mutable array
         (entries) => options.messageSearch 
           ? searchInMessage(entries, options.messageSearch)
           : entries,
@@ -254,7 +253,7 @@ export const getLogLevelStatsFlow = (
 ): TE.TaskEither<AppError, Record<LogLevel, number>> => {
   return pipe(
     getLogStatsFromSQLite(),
-    TE.map((stats: LogStats) => stats.byLevel),
+    TE.map((stats: LogStatsFormatted) => stats.byLevel),
   );
 };
 
@@ -268,7 +267,7 @@ export const getLogLevelStatsFlow = (
 export const getRecentErrorLogsFlow = (
   limit: number = 20,
   hours: number = 24,
-): TE.TaskEither<AppError, LogEntry[]> => {
+): TE.TaskEither<AppError, readonly LogEntry[]> => {
   const startTime = dayjs().subtract(hours, 'hour');
   
   const options: LogQueryOptions = {
