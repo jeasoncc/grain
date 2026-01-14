@@ -10,6 +10,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import * as E from "fp-ts/Either";
+import { orderBy } from "es-toolkit";
 import * as attachmentApi from "@/io/api/attachment.api";
 import type { AttachmentInterface, AttachmentType } from "@/types/attachment";
 import { queryKeys } from "./query-keys";
@@ -26,10 +27,7 @@ export const useAttachments = () => {
 				throw new Error(result.left.message);
 			}
 			// 按上传时间排序（最新的在前）
-			return result.right.sort(
-				(a, b) =>
-					new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
-			);
+			return orderBy(result.right, [(item) => new Date(item.uploadedAt).getTime()], ['desc']);
 		},
 	});
 };
@@ -68,10 +66,7 @@ export const useAttachmentsByProject = (
 				throw new Error(result.left.message);
 			}
 			// 按上传时间排序（最新的在前）
-			return result.right.sort(
-				(a, b) =>
-					new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
-			);
+			return orderBy(result.right, [(item) => new Date(item.uploadedAt).getTime()], ['desc']);
 		},
 	});
 };
@@ -99,10 +94,7 @@ export const useAttachmentsByType = (
 				throw new Error(result.left.message);
 			}
 			// 按上传时间排序（最新的在前）
-			return result.right.sort(
-				(a, b) =>
-					new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
-			);
+			return orderBy(result.right, [(item) => new Date(item.uploadedAt).getTime()], ['desc']);
 		},
 	});
 };
@@ -121,10 +113,7 @@ export const useImagesByProject = (projectId: string | null | undefined) => {
 				throw new Error(result.left.message);
 			}
 			// 按上传时间排序（最新的在前）
-			return result.right.sort(
-				(a, b) =>
-					new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
-			);
+			return orderBy(result.right, [(item) => new Date(item.uploadedAt).getTime()], ['desc']);
 		},
 	});
 };
@@ -145,10 +134,7 @@ export const useAudioFilesByProject = (
 				throw new Error(result.left.message);
 			}
 			// 按上传时间排序（最新的在前）
-			return result.right.sort(
-				(a, b) =>
-					new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
-			);
+			return orderBy(result.right, [(item) => new Date(item.uploadedAt).getTime()], ['desc']);
 		},
 	});
 };
