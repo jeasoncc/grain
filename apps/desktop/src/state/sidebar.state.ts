@@ -8,7 +8,6 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { immer } from "zustand/middleware/immer";
 import {
 	DEFAULT_SIDEBAR_CONFIG,
 	DEFAULT_SIDEBAR_STATE,
@@ -43,7 +42,7 @@ const constrainWidth = (width: number): number =>
 
 export const useSidebarStore = create<SidebarStore>()(
 	persist(
-		immer((set, get) => ({
+		(set, get) => ({
 			// Initial state
 			...DEFAULT_SIDEBAR_STATE,
 
@@ -120,7 +119,7 @@ export const useSidebarStore = create<SidebarStore>()(
 				}));
 			},
 
-			setSearchSelectedTypes: (types: ReadonlyArray<string>) => {
+			setSearchSelectedTypes: (types: readonly string[]) => {
 				set((state) => ({
 					...state,
 					searchState: {
@@ -177,7 +176,7 @@ export const useSidebarStore = create<SidebarStore>()(
 					};
 				});
 			},
-		})),
+		}),
 		{
 			name: DEFAULT_SIDEBAR_CONFIG.storageKey,
 			partialize: (state) => ({

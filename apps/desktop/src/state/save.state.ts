@@ -7,7 +7,6 @@
  */
 
 import { create } from "zustand";
-import { immer } from "zustand/middleware/immer";
 import type { SaveStatus, SaveStore } from "@/types/save";
 
 // Re-export types for convenience
@@ -22,79 +21,77 @@ export type {
 // Store
 // ============================================================================
 
-export const useSaveStore = create<SaveStore>()(
-	immer((set) => ({
-		// State
-		status: "saved" as SaveStatus,
-		lastSaveTime: null as number | null,
-		errorMessage: null as string | null,
-		hasUnsavedChanges: false,
-		isManualSaving: false,
+export const useSaveStore = create<SaveStore>()((set) => ({
+	// State
+	status: "saved" as SaveStatus,
+	lastSaveTime: null as number | null,
+	errorMessage: null as string | null,
+	hasUnsavedChanges: false,
+	isManualSaving: false,
 
-		// Actions
-		setStatus: (status) =>
-			set((state) => ({
-				...state,
-				status,
-			})),
+	// Actions
+	setStatus: (status) =>
+		set((state) => ({
+			...state,
+			status,
+		})),
 
-		setLastSaveTime: (time) =>
-			set((state) => ({
-				...state,
-				lastSaveTime: time.getTime(),
-			})),
+	setLastSaveTime: (time) =>
+		set((state) => ({
+			...state,
+			lastSaveTime: time.getTime(),
+		})),
 
-		setErrorMessage: (message) =>
-			set((state) => ({
-				...state,
-				errorMessage: message,
-			})),
+	setErrorMessage: (message) =>
+		set((state) => ({
+			...state,
+			errorMessage: message,
+		})),
 
-		setHasUnsavedChanges: (hasChanges) =>
-			set((state) => ({
-				...state,
-				hasUnsavedChanges: hasChanges,
-			})),
+	setHasUnsavedChanges: (hasChanges) =>
+		set((state) => ({
+			...state,
+			hasUnsavedChanges: hasChanges,
+		})),
 
-		setIsManualSaving: (isSaving) =>
-			set((state) => ({
-				...state,
-				isManualSaving: isSaving,
-			})),
+	setIsManualSaving: (isSaving) =>
+		set((state) => ({
+			...state,
+			isManualSaving: isSaving,
+		})),
 
-		markAsSaved: () =>
-			set((state) => ({
-				...state,
-				status: "saved" as SaveStatus,
-				lastSaveTime: Date.now(),
-				errorMessage: null,
-				hasUnsavedChanges: false,
-				isManualSaving: false,
-			})),
+	markAsSaved: () =>
+		set((state) => ({
+			...state,
+			status: "saved" as SaveStatus,
+			lastSaveTime: Date.now(),
+			errorMessage: null,
+			hasUnsavedChanges: false,
+			isManualSaving: false,
+		})),
 
-		markAsError: (message) =>
-			set((state) => ({
-				...state,
-				status: "error" as SaveStatus,
-				errorMessage: message,
-				isManualSaving: false,
-			})),
+	markAsError: (message) =>
+		set((state) => ({
+			...state,
+			status: "error" as SaveStatus,
+			errorMessage: message,
+			isManualSaving: false,
+		})),
 
-		markAsSaving: () =>
-			set((state) => ({
-				...state,
-				status: "saving" as SaveStatus,
-				errorMessage: null,
-			})),
+	markAsSaving: () =>
+		set((state) => ({
+			...state,
+			status: "saving" as SaveStatus,
+			errorMessage: null,
+		})),
 
-		markAsUnsaved: () =>
-			set((state) => ({
-				...state,
-				status: "unsaved" as SaveStatus,
-				hasUnsavedChanges: true,
-			})),
-	})),
-);
+	markAsUnsaved: () =>
+		set((state) => ({
+			...state,
+			status: "unsaved" as SaveStatus,
+			hasUnsavedChanges: true,
+		})),
+}));
 
 // ============================================================================
 // Selector Hooks

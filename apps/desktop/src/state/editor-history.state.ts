@@ -50,8 +50,7 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 
 					const newUndoStack = new Map([...undoStack, [nodeId, limitedHistory]]);
 					// Clear redo stack on new action
-					const newRedoStack = new Map([...redoStack]);
-					newRedoStack.delete(nodeId);
+					const newRedoStack = new Map([...redoStack.entries()].filter(([key]) => key !== nodeId));
 
 					return { undoStack: newUndoStack, redoStack: newRedoStack };
 				});
@@ -109,13 +108,13 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 
 			clearHistory: (nodeId) => {
 				set((state) => {
-					const undoStack = new Map(state.undoStack);
-					const redoStack = new Map(state.redoStack);
+					const newUndoStack = new Map([...state.undoStack]);
+					const newRedoStack = new Map([...state.redoStack]);
 
-					undoStack.delete(nodeId);
-					redoStack.delete(nodeId);
+					newUndoStack.delete(nodeId);
+					newRedoStack.delete(nodeId);
 
-					return { undoStack, redoStack };
+					return { undoStack: newUndoStack, redoStack: newRedoStack };
 				});
 			},
 

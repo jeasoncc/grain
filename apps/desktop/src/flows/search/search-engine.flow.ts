@@ -71,18 +71,17 @@ export interface SearchOptions {
  */
 export class SearchEngine {
 	private nodeIndex: lunr.Index | null = null;
-	private readonly indexedData: ReadonlyMap<string, NodeInterface> = new Map();
-	private readonly nodeContents: ReadonlyMap<string, string> = new Map();
-	private readonly workspaceCache: ReadonlyMap<string, WorkspaceInterface> = new Map();
-	private readonly isIndexing = false;
+	private indexedData: Map<string, NodeInterface> = new Map();
+	private nodeContents: Map<string, string> = new Map();
+	private workspaceCache: Map<string, WorkspaceInterface> = new Map();
+	private isIndexing = false;
 
 	/**
 	 * 构建搜索索引
 	 */
 	async buildIndex(): Promise<void> {
 		if (this.isIndexing) return;
-		// Create new instance with isIndexing = true
-		(this as any).isIndexing = true;
+		this.isIndexing = true;
 
 		try {
 			// 获取所有节点
@@ -96,13 +95,11 @@ export class SearchEngine {
 			const contentsResult = await getContentsByNodeIds(nodeIds)();
 			const contents = E.isRight(contentsResult) ? contentsResult.right : [];
 
-			// 构建内容映射 - create new Map instead of clearing
-			const newNodeContents = new Map<string, string>();
+			// 构建内容映射
+			this.nodeContents.clear();
 			for (const content of contents) {
-				newNodeContents.set(content.nodeId, content.content);
+				this.nodeContents.set(content.nodeId, content.content);
 			}
-			// Replace the entire map
-			(this as any).nodeContents = newNodeContents;
 
 			// 批量获取所有相关的 workspace 信息
 			const workspaceIds = [...new Set(nodes.map((n) => n.workspace))];
@@ -130,19 +127,17 @@ export class SearchEngine {
 				}
 			});
 
-			// 构建索引数据映射 - create new Map instead of clearing
-			const newIndexedData = new Map<string, NodeInterface>();
+			// 构建索引数据映射
+			this.indexedData.clear();
 			for (const node of nodes) {
-				newIndexedData.set(node.id, node);
+				this.indexedData.set(node.id, node);
 			}
-			// Replace the entire map
-			(this as any).indexedData = newIndexedData;
 
 			success(`[Search] 索引构建完成: ${nodes.length} 个节点`);
 		} catch (error) {
 			console.error("[Search] 索引构建失败", { error });
 		} finally {
-			(this as any).isIndexing = false;
+			this.isIndexing = false;
 		}
 	}
 
@@ -161,15 +156,12 @@ export class SearchEngine {
 			uncachedIds.map((id) => getWorkspaceById(id)()),
 		);
 
-		// Create new entries instead of modifying existing map
-		const newEntries: ReadonlyArray<readonly [string, WorkspaceInterface]> = results
-			.map(result => E.isRight(result) && result.right ? result.right : null)
-			.filter((workspace): workspace is WorkspaceInterface => workspace !== null)
-			.map(workspace => [workspace.id, workspace] as const);
-		
-		// Create new map with existing entries plus new ones
-		const existingEntries = Array.from(this.workspaceCache.entries());
-		(this as any).workspaceCache = new Map([...existingEntries, ...newEntries]);
+		// 添加到缓存
+		for (const result of results) {
+			if (E.isRight(result) && result.right) {
+				this.workspaceCache.set(result.right.id, result.right);
+			}
+		}
 	}
 
 	/**
@@ -202,13 +194,14 @@ export class SearchEngine {
 			if (types.includes("node") && this.nodeIndex) {
 				const nodeResults = this.nodeIndex.search(searchQuery);
 
-				// 收集需要加载的 workspace IDs - use functional approach
-				const workspaceIdsToLoad = nodeResults
-					.map(result => this.indexedData.get(result.ref))
-					.filter((node): node is NodeInterface => node !== undefined)
-					.filter(node => !this.workspaceCache.has(node.workspace))
-					.map(node => node.workspace);
-				
+				// 收集需要加载的 workspace IDs
+				const workspaceIdsToLoad: string[] = [];
+				for (const result of nodeResults) {
+					const node = this.indexedData.get(result.ref);
+					if (node && !this.workspaceCache.has(node.workspace)) {
+						workspaceIdsToLoad.push(node.workspace);
+					}
+				}
 				const uniqueWorkspaceIds = [...new Set(workspaceIdsToLoad)];
 
 				// 批量加载 workspace
@@ -216,35 +209,32 @@ export class SearchEngine {
 					await this.loadWorkspaces(uniqueWorkspaceIds);
 				}
 
-				// Build results array functionally
-				const results = nodeResults
-					.map(result => {
-						const node = this.indexedData.get(result.ref);
-						if (!node) return null;
-						if (workspaceId && node.workspace !== workspaceId) return null;
+				// Build results array
+				const results: SearchResult[] = [];
+				for (const result of nodeResults) {
+					const node = this.indexedData.get(result.ref);
+					if (!node) continue;
+					if (workspaceId && node.workspace !== workspaceId) continue;
 
-						const workspace = this.getWorkspaceFromCache(node.workspace);
-						const contentStr = this.nodeContents.get(node.id) || "";
-						const content = extractTextFromContent(contentStr);
+					const workspace = this.getWorkspaceFromCache(node.workspace);
+					const contentStr = this.nodeContents.get(node.id) || "";
+					const content = extractTextFromContent(contentStr);
 
-						const searchResult: SearchResult = {
-							id: node.id,
-							type: "node" as SearchResultType,
-							title: node.title,
-							content,
-							excerpt: generateExcerpt(content, query),
-							workspaceId: node.workspace,
-							workspaceTitle: workspace?.title,
-							score: result.score,
-							highlights: extractHighlights(content, query),
-						};
-						return searchResult;
-					})
-					.filter((result): result is SearchResult => result !== null)
-					.toSorted((a, b) => b.score - a.score)
-					.slice(0, limit);
+					const searchResult: SearchResult = {
+						id: node.id,
+						type: "node" as SearchResultType,
+						title: node.title,
+						content,
+						excerpt: generateExcerpt(content, query),
+						workspaceId: node.workspace,
+						workspaceTitle: workspace?.title,
+						score: result.score,
+						highlights: extractHighlights(content, query),
+					};
+					results.push(searchResult);
+				}
 
-				return results;
+				return results.toSorted((a, b) => b.score - a.score).slice(0, limit);
 			}
 
 			return [];
@@ -292,41 +282,37 @@ export class SearchEngine {
 				const workspaceIds = [...new Set(nodes.map((n) => n.workspace))];
 				await this.loadWorkspaces(workspaceIds);
 
-				// Build results functionally
-				const results = nodes
-					.map(node => {
-						const contentStr = contentMap.get(node.id) || "";
-						const content = extractTextFromContent(contentStr);
-						const tagsStr = node.tags?.join(" ") || "";
+				// Build results
+				const results: SearchResult[] = [];
+				for (const node of nodes) {
+					const contentStr = contentMap.get(node.id) || "";
+					const content = extractTextFromContent(contentStr);
+					const tagsStr = node.tags?.join(" ") || "";
 
-						// 检查是否匹配
-						if (
-							node.title.toLowerCase().includes(lowerQuery) ||
-							content.toLowerCase().includes(lowerQuery) ||
-							tagsStr.toLowerCase().includes(lowerQuery)
-						) {
-							const workspace = this.getWorkspaceFromCache(node.workspace);
+					// 检查是否匹配
+					if (
+						node.title.toLowerCase().includes(lowerQuery) ||
+						content.toLowerCase().includes(lowerQuery) ||
+						tagsStr.toLowerCase().includes(lowerQuery)
+					) {
+						const workspace = this.getWorkspaceFromCache(node.workspace);
 
-							const searchResult: SearchResult = {
-								id: node.id,
-								type: "node" as SearchResultType,
-								title: node.title,
-								content,
-								excerpt: generateExcerpt(content, query),
-								workspaceId: node.workspace,
-								workspaceTitle: workspace?.title,
-								score: calculateSimpleScore(node.title, content, query),
-								highlights: extractHighlights(content, query),
-							};
-							return searchResult;
-						}
-						return null;
-					})
-					.filter((result): result is SearchResult => result !== null)
-					.toSorted((a, b) => b.score - a.score)
-					.slice(0, limit);
+						const searchResult: SearchResult = {
+							id: node.id,
+							type: "node" as SearchResultType,
+							title: node.title,
+							content,
+							excerpt: generateExcerpt(content, query),
+							workspaceId: node.workspace,
+							workspaceTitle: workspace?.title,
+							score: calculateSimpleScore(node.title, content, query),
+							highlights: extractHighlights(content, query),
+						};
+						results.push(searchResult);
+					}
+				}
 
-				return results;
+				return results.toSorted((a, b) => b.score - a.score).slice(0, limit);
 			}
 
 			return [];
@@ -341,10 +327,9 @@ export class SearchEngine {
 	 */
 	clearIndex(): void {
 		this.nodeIndex = null;
-		// Replace maps with new empty ones instead of clearing
-		(this as any).indexedData = new Map<string, NodeInterface>();
-		(this as any).nodeContents = new Map<string, string>();
-		(this as any).workspaceCache = new Map<string, WorkspaceInterface>();
+		this.indexedData.clear();
+		this.nodeContents.clear();
+		this.workspaceCache.clear();
 	}
 }
 
