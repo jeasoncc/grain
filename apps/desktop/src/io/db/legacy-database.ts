@@ -59,15 +59,15 @@ export interface ContentInterface {
  */
 export class LegacyDatabase extends Dexie {
 	// Core tables (for backward compatibility during migration)
-	nodes!: Table<NodeInterface, string>;
-	contents!: Table<ContentInterface, string>;
-	workspaces!: Table<WorkspaceInterface, string>;
-	users!: Table<UserInterface, string>;
-	attachments!: Table<AttachmentInterface, string>;
-	dbVersions!: Table<DBVersionInterface, string>;
+	readonly nodes!: Table<NodeInterface, string>;
+	readonly contents!: Table<ContentInterface, string>;
+	readonly workspaces!: Table<WorkspaceInterface, string>;
+	readonly users!: Table<UserInterface, string>;
+	readonly attachments!: Table<AttachmentInterface, string>;
+	readonly dbVersions!: Table<DBVersionInterface, string>;
 
 	// Tag aggregation cache (source of truth is nodes.tags)
-	tags!: Table<TagInterface, string>;
+	readonly tags!: Table<TagInterface, string>;
 
 	constructor() {
 		super("GrainDB");

@@ -115,7 +115,7 @@ export function parseFrontMatter(
 			let frontMatter: Record<string, unknown> = {};
 			const lines = frontMatterStr.split("\n");
 			let currentKey: string | null = null;
-			let currentArray: ReadonlyArray<string> | null = null;
+			let currentArray: readonly string[] | null = null;
 
 			for (const line of lines) {
 				const trimmedLine = line.trim();
@@ -175,7 +175,7 @@ export function parseInlineContent(
 	text: string,
 	options: MarkdownImportOptions = {},
 ): readonly (LexicalTextNode | LexicalTagNode)[] {
-	let nodes: ReadonlyArray<LexicalTextNode | LexicalTagNode> = [];
+	let nodes: readonly (LexicalTextNode | LexicalTagNode)[] = [];
 	const { tagFormat = "hash" } = options;
 
 	// 正则表达式匹配各种格式
@@ -207,11 +207,11 @@ export function parseInlineContent(
 
 	// 简化处理：先处理标签，再处理格式
 	let lastIndex = 0;
-	let segments: ReadonlyArray<{
+	let segments: readonly {
 		readonly start: number;
 		readonly end: number;
 		readonly node: LexicalTextNode | LexicalTagNode;
-	}> = [];
+	}[] = [];
 
 	// 查找所有标签
 	const tagMatches = Array.from(text.matchAll(tagRegex));

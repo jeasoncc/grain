@@ -232,10 +232,10 @@ export const readDexieData = (): TE.TaskEither<AppError, DexieDataSnapshot> =>
  */
 const migrateUsers = (
 	users: ReadonlyArray<UserInterface>,
-): TE.TaskEither<AppError, { count: number; mapping: ReadonlyMap<string, string> }> =>
+): TE.TaskEither<AppError, { readonly count: number; readonly mapping: ReadonlyMap<string, string> }> =>
 	TE.tryCatch(
 		async () => {
-			const results: ReadonlyArray<PromiseSettledResult<{ readonly oldId: string; readonly newId: string }>> = await Promise.allSettled(
+			const results: readonly PromiseSettledResult<{ readonly oldId: string; readonly newId: string }>[] = await Promise.allSettled(
 				users.map(async (user) => {
 					const result = await createUser({
 						username: user.username,
@@ -255,7 +255,7 @@ const migrateUsers = (
 				})
 			);
 
-			const successful: ReadonlyArray<{ readonly oldId: string; readonly newId: string }> = results
+			const successful: readonly { readonly oldId: string; readonly newId: string }[] = results
 				.filter((result): result is PromiseFulfilledResult<{ readonly oldId: string; readonly newId: string }> => 
 					result.status === 'fulfilled'
 				)
@@ -277,10 +277,10 @@ const migrateUsers = (
 const migrateWorkspaces = (
 	workspaces: ReadonlyArray<WorkspaceInterface>,
 	userMapping: ReadonlyMap<string, string>,
-): TE.TaskEither<AppError, { count: number; mapping: ReadonlyMap<string, string> }> =>
+): TE.TaskEither<AppError, { readonly count: number; readonly mapping: ReadonlyMap<string, string> }> =>
 	TE.tryCatch(
 		async () => {
-			const results: ReadonlyArray<PromiseSettledResult<{ readonly oldId: string; readonly newId: string }>> = await Promise.allSettled(
+			const results: readonly PromiseSettledResult<{ readonly oldId: string; readonly newId: string }>[] = await Promise.allSettled(
 				workspaces.map(async (workspace) => {
 					// 映射 owner ID
 					const newOwnerId = workspace.owner
@@ -308,7 +308,7 @@ const migrateWorkspaces = (
 				})
 			);
 
-			const successful: ReadonlyArray<{ readonly oldId: string; readonly newId: string }> = results
+			const successful: readonly { readonly oldId: string; readonly newId: string }[] = results
 				.filter((result): result is PromiseFulfilledResult<{ readonly oldId: string; readonly newId: string }> => 
 					result.status === 'fulfilled'
 				)
@@ -330,12 +330,12 @@ const migrateWorkspaces = (
 const migrateNodes = (
 	nodes: ReadonlyArray<NodeInterface>,
 	workspaceMapping: ReadonlyMap<string, string>,
-): TE.TaskEither<AppError, { count: number; mapping: ReadonlyMap<string, string> }> =>
+): TE.TaskEither<AppError, { readonly count: number; readonly mapping: ReadonlyMap<string, string> }> =>
 	TE.tryCatch(
 		async () => {
 			// 按层级排序：先迁移根节点，再迁移子节点
 			// 这样可以确保父节点的新 ID 已经存在于 mapping 中
-			const sortedNodes: ReadonlyArray<NodeInterface> = [...nodes].toSorted((a, b) => {
+			const sortedNodes: readonly NodeInterface[] = nodes.toSorted((a, b) => {
 				// 计算节点深度
 				const getDepth = (node: NodeInterface): number => {
 					if (!node.parent) return 0;
@@ -347,10 +347,10 @@ const migrateNodes = (
 
 			// 使用递归函数来处理节点迁移，避免直接修改 Map
 			const migrateNodesRecursively = async (
-				remainingNodes: ReadonlyArray<NodeInterface>,
+				remainingNodes: readonly NodeInterface[],
 				currentMapping: ReadonlyMap<string, string>,
 				currentCount: number,
-			): Promise<{ count: number; mapping: ReadonlyMap<string, string> }> => {
+			): Promise<{ readonly count: number; readonly mapping: ReadonlyMap<string, string> }> => {
 				if (remainingNodes.length === 0) {
 					return { count: currentCount, mapping: currentMapping };
 				}
@@ -413,7 +413,7 @@ const migrateContents = (
 ): TE.TaskEither<AppError, number> =>
 	TE.tryCatch(
 		async () => {
-			const results: ReadonlyArray<PromiseSettledResult<any>> = await Promise.allSettled(
+			const results: readonly PromiseSettledResult<any>[] = await Promise.allSettled(
 				contents.map(async (content) => {
 					// 映射 nodeId
 					const newNodeId = nodeMapping.get(content.nodeId);
@@ -439,7 +439,7 @@ const migrateContents = (
 				})
 			);
 
-			const successful: ReadonlyArray<PromiseFulfilledResult<any>> = results.filter(result => result.status === 'fulfilled');
+			const successful: readonly PromiseFulfilledResult<any>[] = results.filter(result => result.status === 'fulfilled');
 			return successful.length;
 		},
 		(error): AppError => dbError(`迁移内容失败: ${error}`),

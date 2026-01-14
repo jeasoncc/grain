@@ -99,11 +99,10 @@ export const reorderTabs = (
 	fromIndex: number,
 	toIndex: number,
 ): readonly EditorTab[] => {
-	const result = [...tabs];
-	const itemToMove = result[fromIndex];
+	const itemToMove = tabs[fromIndex];
 	
 	// Create new array without the item at fromIndex
-	const withoutItem = result.filter((_, index) => index !== fromIndex);
+	const withoutItem = tabs.filter((_, index) => index !== fromIndex);
 	
 	// Insert the item at the new position
 	return [

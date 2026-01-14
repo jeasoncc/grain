@@ -10,7 +10,6 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { immer } from "zustand/middleware/immer";
 import type {
 	WritingGoal,
 	WritingSession,
@@ -24,23 +23,23 @@ import { DEFAULT_WRITING_CONFIG, DEFAULT_WRITING_STATE } from "@/types/writing";
 
 interface WritingStoreActions {
 	// Focus Mode
-	setFocusMode: (enabled: boolean) => void;
+	readonly setFocusMode: (enabled: boolean) => void;
 
 	// Typewriter Mode
-	setTypewriterMode: (enabled: boolean) => void;
+	readonly setTypewriterMode: (enabled: boolean) => void;
 
 	// Writing Goal
-	setWritingGoal: (goal: WritingGoal) => void;
+	readonly setWritingGoal: (goal: WritingGoal) => void;
 
 	// Today Word Count
-	setTodayWordCount: (count: number) => void;
-	setTodayDate: (date: string) => void;
+	readonly setTodayWordCount: (count: number) => void;
+	readonly setTodayDate: (date: string) => void;
 
 	// Session
-	setSession: (session: WritingSession | null) => void;
+	readonly setSession: (session: WritingSession | null) => void;
 
 	// Toolbar
-	setMinimalToolbar: (enabled: boolean) => void;
+	readonly setMinimalToolbar: (enabled: boolean) => void;
 }
 
 // ==============================
@@ -55,7 +54,7 @@ type WritingStore = WritingState & WritingStoreActions;
 
 export const useWritingStore = create<WritingStore>()(
 	persist(
-		immer((set) => ({
+		(set) => ({
 			// Initial State
 			...DEFAULT_WRITING_STATE,
 			todayDate: "",
@@ -65,47 +64,54 @@ export const useWritingStore = create<WritingStore>()(
 			// ==============================
 
 			setFocusMode: (enabled) => {
-				set((state) => {
-					state.focusMode = enabled;
-				});
+				set((state) => ({
+					...state,
+					focusMode: enabled,
+				}));
 			},
 
 			setTypewriterMode: (enabled) => {
-				set((state) => {
-					state.typewriterMode = enabled;
-				});
+				set((state) => ({
+					...state,
+					typewriterMode: enabled,
+				}));
 			},
 
 			setWritingGoal: (goal) => {
-				set((state) => {
-					state.writingGoal = goal;
-				});
+				set((state) => ({
+					...state,
+					writingGoal: goal,
+				}));
 			},
 
 			setTodayWordCount: (count) => {
-				set((state) => {
-					state.todayWordCount = count;
-				});
+				set((state) => ({
+					...state,
+					todayWordCount: count,
+				}));
 			},
 
 			setTodayDate: (date) => {
-				set((state) => {
-					state.todayDate = date;
-				});
+				set((state) => ({
+					...state,
+					todayDate: date,
+				}));
 			},
 
 			setSession: (session) => {
-				set((state) => {
-					state.session = session;
-				});
+				set((state) => ({
+					...state,
+					session: session,
+				}));
 			},
 
 			setMinimalToolbar: (enabled) => {
-				set((state) => {
-					state.minimalToolbar = enabled;
-				});
+				set((state) => ({
+					...state,
+					minimalToolbar: enabled,
+				}));
 			},
-		})),
+		}),
 		{
 			name: DEFAULT_WRITING_CONFIG.storageKey,
 			partialize: (state) => ({

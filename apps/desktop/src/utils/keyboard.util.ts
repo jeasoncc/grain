@@ -31,14 +31,14 @@ export const isSaveShortcut = (event: KeyboardEvent): boolean => {
 };
 
 export const getShortcutKey = (event: KeyboardEvent): string => {
-	const parts: string[] = [];
+	let parts: readonly string[] = [];
 
-	if (event.ctrlKey) parts.push("ctrl");
-	if (event.metaKey) parts.push("meta");
-	if (event.shiftKey) parts.push("shift");
-	if (event.altKey) parts.push("alt");
+	if (event.ctrlKey) parts = [...parts, "ctrl"];
+	if (event.metaKey) parts = [...parts, "meta"];
+	if (event.shiftKey) parts = [...parts, "shift"];
+	if (event.altKey) parts = [...parts, "alt"];
 
-	parts.push(event.key.toLowerCase());
+	parts = [...parts, event.key.toLowerCase()];
 
 	return parts.join("+");
 };
@@ -55,29 +55,52 @@ export const isEditableElement = (target: HTMLElement): boolean => {
 // Keyboard Shortcut Manager
 // ============================================================================
 
+interface KeyboardShortcutState {
+	readonly shortcuts: ReadonlyMap<string, () => void>;
+	readonly isListening: boolean;
+}
+
 class KeyboardShortcutManager implements KeyboardShortcutHandler {
-	private shortcuts = new Map<string, () => void>();
-	private isListening = false;
+	private state: KeyboardShortcutState = {
+		shortcuts: new Map(),
+		isListening: false,
+	};
 
 	constructor() {
 		this.handleKeyDown = this.handleKeyDown.bind(this);
 	}
 
 	registerShortcut(key: string, handler: () => void): void {
-		this.shortcuts.set(key, handler);
-
-		if (!this.isListening) {
+		const newShortcuts = new Map([...this.state.shortcuts, [key, handler]]);
+		
+		if (!this.state.isListening) {
 			window.addEventListener("keydown", this.handleKeyDown);
-			this.isListening = true;
+			this.state = {
+				shortcuts: newShortcuts,
+				isListening: true,
+			};
+		} else {
+			this.state = {
+				...this.state,
+				shortcuts: newShortcuts,
+			};
 		}
 	}
 
 	unregisterShortcut(key: string): void {
-		this.shortcuts.delete(key);
+		const newShortcuts = new Map([...this.state.shortcuts].filter(([k]) => k !== key));
 
-		if (this.shortcuts.size === 0 && this.isListening) {
+		if (newShortcuts.size === 0 && this.state.isListening) {
 			window.removeEventListener("keydown", this.handleKeyDown);
-			this.isListening = false;
+			this.state = {
+				shortcuts: newShortcuts,
+				isListening: false,
+			};
+		} else {
+			this.state = {
+				...this.state,
+				shortcuts: newShortcuts,
+			};
 		}
 	}
 
@@ -91,7 +114,7 @@ class KeyboardShortcutManager implements KeyboardShortcutHandler {
 		}
 
 		const shortcutKey = getShortcutKey(event);
-		const handler = this.shortcuts.get(shortcutKey);
+		const handler = this.state.shortcuts.get(shortcutKey);
 
 		if (handler) {
 			event.preventDefault();
@@ -100,19 +123,21 @@ class KeyboardShortcutManager implements KeyboardShortcutHandler {
 	}
 
 	destroy(): void {
-		if (this.isListening) {
+		if (this.state.isListening) {
 			window.removeEventListener("keydown", this.handleKeyDown);
-			this.isListening = false;
 		}
-		this.shortcuts.clear();
+		this.state = {
+			shortcuts: new Map(),
+			isListening: false,
+		};
 	}
 
 	get shortcutCount(): number {
-		return this.shortcuts.size;
+		return this.state.shortcuts.size;
 	}
 
 	get listening(): boolean {
-		return this.isListening;
+		return this.state.isListening;
 	}
 }
 

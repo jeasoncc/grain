@@ -101,11 +101,12 @@ export function exportWorkspaceToMarkdown(
 	contentMap: ReadonlyMap<string, string>,
 ): string {
 	const sortedNodes = [...nodes].sort((a, b) => a.order - b.order);
-	const lines: ReadonlyArray<string> = [];
 
 	// 添加标题
 	const titleLines = [`# ${workspace.title || "Untitled"}`];
-	if (workspace.author) titleLines.push(`Author: ${workspace.author}`);
+	if (workspace.author) {
+		titleLines.push(`Author: ${workspace.author}`);
+	}
 	if (workspace.description) {
 		titleLines.push("");
 		titleLines.push(workspace.description);
@@ -113,9 +114,9 @@ export function exportWorkspaceToMarkdown(
 	titleLines.push("");
 
 	// 递归输出节点
-	function outputNode(node: NodeInterface, depth: number): ReadonlyArray<string> {
+	function outputNode(node: NodeInterface, depth: number): readonly string[] {
 		const prefix = "#".repeat(Math.min(depth + 2, 6));
-		const nodeLines = ["", `${prefix} ${node.title || "Untitled"}`];
+		let nodeLines = ["", `${prefix} ${node.title || "Untitled"}`];
 
 		const content = contentMap.get(node.id);
 		if (content) {
@@ -129,8 +130,7 @@ export function exportWorkspaceToMarkdown(
 
 			const text = E.getOrElse(() => content)(parseResult);
 			if (text.trim()) {
-				nodeLines.push("");
-				nodeLines.push(text);
+				nodeLines = [...nodeLines, "", text];
 			}
 		}
 

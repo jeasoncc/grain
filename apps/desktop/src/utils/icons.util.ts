@@ -48,11 +48,11 @@ import {
 } from "lucide-react";
 
 export interface IconOption {
-	key: string;
-	name: string;
-	icon: LucideIcon;
-	category: IconCategory;
-	description?: string;
+	readonly key: string;
+	readonly name: string;
+	readonly icon: LucideIcon;
+	readonly category: IconCategory;
+	readonly description?: string;
 }
 
 export type IconCategory =
@@ -66,7 +66,7 @@ export type IconCategory =
 
 export const iconCategories: Record<
 	IconCategory,
-	{ name: string; description: string }
+	{ readonly name: string; readonly description: string }
 > = {
 	book: {
 		name: "Book",

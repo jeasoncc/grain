@@ -337,7 +337,7 @@ export const calculateLogStats = (entries: ReadonlyArray<LogEntry>) => {
     [entry.level]: (acc[entry.level] || 0) + 1,
   }), {} as Record<LogLevel, number>);
 
-  const timestamps = [...entries.map(e => e.timestamp)].sort();
+  const timestamps = entries.map(e => e.timestamp).toSorted();
   const earliestEntry = timestamps[0];
   const latestEntry = timestamps[timestamps.length - 1];
 

@@ -37,11 +37,9 @@ export function readFileAsText(file: File): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
 		
-		// Apply event handlers functionally
-		Object.assign(reader, {
-			onload: () => resolve(String(reader.result ?? "")),
-			onerror: reject,
-		});
+		// Set event handlers functionally
+		reader.onload = () => resolve(String(reader.result ?? ""));
+		reader.onerror = reject;
 		
 		reader.readAsText(file);
 	});

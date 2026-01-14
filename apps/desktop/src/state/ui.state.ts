@@ -13,7 +13,6 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { immer } from "zustand/middleware/immer";
 import type {
 	RightPanelView,
 	TabPosition,
@@ -34,7 +33,7 @@ type UIStore = UIState & UIActions;
 
 export const useUIStore = create<UIStore>()(
 	persist(
-		immer((set) => ({
+		(set) => ({
 			// Initial State
 			...DEFAULT_UI_STATE,
 
@@ -43,35 +42,40 @@ export const useUIStore = create<UIStore>()(
 			// ==============================
 
 			setRightPanelView: (view: RightPanelView) => {
-				set((state) => {
-					state.rightPanelView = view;
-				});
+				set((state) => ({
+					...state,
+					rightPanelView: view,
+				}));
 			},
 
 			setRightSidebarOpen: (open: boolean) => {
-				set((state) => {
-					state.rightSidebarOpen = open;
-				});
+				set((state) => ({
+					...state,
+					rightSidebarOpen: open,
+				}));
 			},
 
 			toggleRightSidebar: () => {
-				set((state) => {
-					state.rightSidebarOpen = !state.rightSidebarOpen;
-				});
+				set((state) => ({
+					...state,
+					rightSidebarOpen: !state.rightSidebarOpen,
+				}));
 			},
 
 			setTabPosition: (position: TabPosition) => {
-				set((state) => {
-					state.tabPosition = position;
-				});
+				set((state) => ({
+					...state,
+					tabPosition: position,
+				}));
 			},
 
 			setLocale: (locale: string) => {
-				set((state) => {
-					state.locale = locale;
-				});
+				set((state) => ({
+					...state,
+					locale: locale,
+				}));
 			},
-		})),
+		}),
 		{
 			name: DEFAULT_UI_CONFIG.storageKey,
 			partialize: (state) => ({

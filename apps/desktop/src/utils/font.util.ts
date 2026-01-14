@@ -2,17 +2,17 @@
 import { CARD_SIZE_OPTIONS, UI_SCALE_OPTIONS } from "@/types/font";
 
 export interface FontConfig {
-	fontFamily: string;
-	fontSize: number;
-	lineHeight: number;
-	letterSpacing: number;
-	uiFontFamily: string;
-	uiFontSize: number;
-	uiScale: string;
-	cardSize: string;
-	cardBorderRadius: number;
-	paragraphSpacing: number;
-	firstLineIndent: number;
+	readonly fontFamily: string;
+	readonly fontSize: number;
+	readonly lineHeight: number;
+	readonly letterSpacing: number;
+	readonly uiFontFamily: string;
+	readonly uiFontSize: number;
+	readonly uiScale: string;
+	readonly cardSize: string;
+	readonly cardBorderRadius: number;
+	readonly paragraphSpacing: number;
+	readonly firstLineIndent: number;
 }
 
 export const FONT_PRESETS: Record<string, FontConfig> = {

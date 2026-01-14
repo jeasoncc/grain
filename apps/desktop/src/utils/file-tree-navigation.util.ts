@@ -30,7 +30,7 @@ import type { NodeInterface } from "@/types/node";
 export function calculateAncestorPath(
 	nodes: readonly NodeInterface[],
 	targetNodeId: string,
-): string[] {
+): readonly string[] {
 	// 边界情况：节点列表为空
 	if (nodes.length === 0) {
 		return [];
@@ -55,7 +55,7 @@ export function calculateAncestorPath(
 	}
 
 	// 从目标节点向上遍历，构建路径
-	const path: string[] = [];
+	let path: readonly string[] = [];
 	let currentNode = targetNode;
 	const maxDepth = 100; // 防止无限循环
 	let depth = 0;
@@ -71,7 +71,7 @@ export function calculateAncestorPath(
 			break;
 		}
 		// 将父节点添加到路径开头（因为我们是从下往上遍历）
-		path.unshift(parentNode.id);
+		path = [parentNode.id, ...path];
 		currentNode = parentNode;
 		depth++;
 	}
@@ -102,7 +102,7 @@ export function calculateAncestorPath(
  * await expandAncestors(ancestorIds, setCollapsed);
  */
 export async function expandAncestors(
-	ancestorIds: string[],
+	ancestorIds: readonly string[],
 	setCollapsed: (nodeId: string, collapsed: boolean) => Promise<boolean>,
 ): Promise<void> {
 	// 边界情况：空数组

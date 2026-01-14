@@ -148,18 +148,19 @@ export const sortTagsAlphabetically = (tags: ReadonlyArray<TagInterface>): Reado
  * @param content - 内容字符串
  * @returns 提取的标签名称数组（已去重和规范化）
  */
-export const extractTagsFromContent = (content: string): ReadonlyArray<string> => {
+export const extractTagsFromContent = (content: string): readonly string[] => {
 	const matches = content.matchAll(TAG_PATTERN);
-	const tags = new Set<string>();
+	const tagNames: string[] = [];
 
 	for (const match of matches) {
 		const normalized = normalizeTagName(match[1]);
 		if (normalized) {
-			tags.add(normalized);
+			tagNames.push(normalized);
 		}
 	}
 
-	return Array.from(tags) as ReadonlyArray<string>;
+	// Remove duplicates using functional approach
+	return [...new Set(tagNames)];
 };
 
 /**
