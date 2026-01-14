@@ -116,18 +116,18 @@ const WEEKDAY_NAMES = [
 // ==============================
 
 export interface ZodiacAnimal {
-	cn: string;
-	en: string;
+	readonly cn: string;
+	readonly en: string;
 }
 
 export interface DateFolderStructure {
-	yearFolder: string;
-	monthFolder: string;
-	dayFolder: string;
+	readonly yearFolder: string;
+	readonly monthFolder: string;
+	readonly dayFolder: string;
 }
 
 export interface DateFolderStructureWithFilename extends DateFolderStructure {
-	filename: string;
+	readonly filename: string;
 }
 
 // ==============================
