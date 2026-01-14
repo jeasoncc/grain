@@ -14,6 +14,7 @@
 import * as E from "fp-ts/Either";
 import type * as TE from "fp-ts/TaskEither";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import dayjs from "dayjs";
 import type { ContentInterface } from "@/types/content";
 import type { NodeInterface } from "@/types/node";
 import type { UserInterface } from "@/types/user";
@@ -43,10 +44,10 @@ function createTestUser(overrides: Partial<UserInterface> = {}): UserInterface {
 		email: "test@example.com",
 		avatar: "",
 		plan: "free",
-		planStartDate: new Date().toISOString(),
+		planStartDate: dayjs().toISOString(),
 		token: "",
 		tokenStatus: "unchecked",
-		lastTokenCheck: new Date().toISOString(),
+		lastTokenCheck: dayjs().toISOString(),
 		features: {
 			maxWorkspaces: 3,
 			maxNodesPerWorkspace: 1000,
@@ -69,8 +70,8 @@ function createTestUser(overrides: Partial<UserInterface> = {}): UserInterface {
 			sidebarWidth: 280,
 			sidebarCollapsed: false,
 		},
-		lastLogin: new Date().toISOString(),
-		createdAt: new Date().toISOString(),
+		lastLogin: dayjs().toISOString(),
+		createdAt: dayjs().toISOString(),
 		...overrides,
 	};
 }
@@ -89,8 +90,8 @@ function createTestWorkspace(
 		author: "Test Author",
 		publisher: "",
 		language: "en",
-		createdAt: new Date().toISOString(),
-		updatedAt: new Date().toISOString(),
+		createdAt: dayjs().toISOString(),
+		updatedAt: dayjs().toISOString(),
 		...overrides,
 	};
 }
@@ -108,8 +109,8 @@ function createTestNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
 		order: 0,
 		collapsed: false,
 		tags: [],
-		createdAt: new Date().toISOString(),
-		updatedAt: new Date().toISOString(),
+		createdAt: dayjs().toISOString(),
+		updatedAt: dayjs().toISOString(),
 		...overrides,
 	};
 }
@@ -126,8 +127,8 @@ function createTestContent(
 		content: '{"root":{"children":[]}}',
 		contentType: "lexical",
 		version: 1,
-		createdAt: new Date().toISOString(),
-		updatedAt: new Date().toISOString(),
+		createdAt: dayjs().toISOString(),
+		updatedAt: dayjs().toISOString(),
 		...overrides,
 	};
 }
