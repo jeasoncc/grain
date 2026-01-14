@@ -230,7 +230,7 @@ export const calculateTodayWordCountUpdate = (
 	state: Pick<WritingState, "todayWordCount" | "todayDate" | "session">,
 	newWordCount: number,
 	today: string,
-): { todayWordCount: number; todayDate: string } => {
+): { readonly todayWordCount: number; readonly todayDate: string } => {
 	if (!state.session) {
 		return { todayWordCount: state.todayWordCount, todayDate: state.todayDate };
 	}
