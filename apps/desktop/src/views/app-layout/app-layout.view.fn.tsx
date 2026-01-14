@@ -56,7 +56,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 	 * Handle panel resize
 	 * Updates sidebar width in state
 	 */
-	const handleResize = (sizes: number[]) => {
+	const handleResize = (sizes: readonly number[]) => {
 		// sizes[0] is sidebar percentage
 		const newWidth = sizes[0];
 		if (newWidth !== undefined) {
