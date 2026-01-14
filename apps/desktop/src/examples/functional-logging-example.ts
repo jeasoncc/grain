@@ -82,9 +82,9 @@ export const logQueryExample = async () => {
   if (result._tag === 'Right') {
     const logs = result.right;
     info(`找到 ${logs.entries.length} 条日志`);
-    logs.entries.forEach(log => {
+    for (const log of logs.entries) {
       info(`  [${log.level}] ${log.message} (${log.source})`);
-    });
+    }
   } else {
     error("查询失败", { error: result.left });
   }
