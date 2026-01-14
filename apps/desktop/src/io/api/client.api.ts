@@ -178,8 +178,8 @@ export interface ApiClient {
 		id: string,
 		newTitle?: string,
 	) => TE.TaskEither<AppError, NodeResponse>;
-	reorderNodes: (nodeIds: string[]) => TE.TaskEither<AppError, void>;
-	deleteNodesBatch: (nodeIds: string[]) => TE.TaskEither<AppError, void>;
+	reorderNodes: (nodeIds: readonly string[]) => TE.TaskEither<AppError, void>;
+	deleteNodesBatch: (nodeIds: readonly string[]) => TE.TaskEither<AppError, void>;
 
 	// Content API
 	getContent: (
