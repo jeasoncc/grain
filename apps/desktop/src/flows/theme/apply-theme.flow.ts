@@ -80,7 +80,7 @@ export const setModeFlow = (
 export const initializeThemeFlow = (
 	themeKey: string,
 	mode: ThemeMode,
-): { cleanup: (() => void) | undefined; newThemeKey: string } => {
+): { readonly cleanup: (() => void) | undefined; readonly newThemeKey: string } => {
 	let effectiveThemeKey = themeKey;
 
 	if (mode === "system") {
