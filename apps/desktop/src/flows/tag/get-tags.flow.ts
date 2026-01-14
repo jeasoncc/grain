@@ -16,7 +16,7 @@ import type { AppError } from "@/types/error";
  */
 export const getTagsByWorkspace = (
 	workspaceId: string,
-): TE.TaskEither<AppError, TagInterface[]> => {
+): TE.TaskEither<AppError, readonly TagInterface[]> => {
 	return tagRepo.getTagsByWorkspace(workspaceId);
 };
 
@@ -45,7 +45,7 @@ export const getTagByName = (
 export const getTopTags = (
 	workspaceId: string,
 	limit: number,
-): TE.TaskEither<AppError, TagInterface[]> => {
+): TE.TaskEither<AppError, readonly TagInterface[]> => {
 	return tagRepo.getTopTags(workspaceId, limit);
 };
 
@@ -55,7 +55,7 @@ export const getTopTags = (
 export const searchTags = (
 	workspaceId: string,
 	query: string,
-): TE.TaskEither<AppError, TagInterface[]> => {
+): TE.TaskEither<AppError, readonly TagInterface[]> => {
 	return tagRepo.searchTags(workspaceId, query);
 };
 
@@ -65,7 +65,7 @@ export const searchTags = (
 export const getNodesByTag = (
 	workspaceId: string,
 	tagName: string,
-): TE.TaskEither<AppError, string[]> => {
+): TE.TaskEither<AppError, readonly string[]> => {
 	return tagRepo.getNodesByTag(workspaceId, tagName);
 };
 
