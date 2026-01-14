@@ -46,7 +46,7 @@ import { api } from "./client.api";
  */
 export const getAttachments = (): TE.TaskEither<
 	AppError,
-	AttachmentInterface[]
+	readonly AttachmentInterface[]
 > => pipe(api.getAttachments(), TE.map(decodeAttachments));
 
 /**
@@ -54,7 +54,7 @@ export const getAttachments = (): TE.TaskEither<
  */
 export const getAttachmentsByProject = (
 	projectId: string,
-): TE.TaskEither<AppError, AttachmentInterface[]> =>
+): TE.TaskEither<AppError, readonly AttachmentInterface[]> =>
 	pipe(api.getAttachmentsByProject(projectId), TE.map(decodeAttachments));
 
 /**
@@ -89,7 +89,7 @@ export const getAttachmentOrFail = (
 export const getAttachmentsByType = (
 	projectId: string,
 	attachmentType: AttachmentType,
-): TE.TaskEither<AppError, AttachmentInterface[]> =>
+): TE.TaskEither<AppError, readonly AttachmentInterface[]> =>
 	pipe(
 		api.getAttachmentsByType(projectId, attachmentType),
 		TE.map(decodeAttachments),
@@ -100,7 +100,7 @@ export const getAttachmentsByType = (
  */
 export const getImagesByProject = (
 	projectId: string,
-): TE.TaskEither<AppError, AttachmentInterface[]> =>
+): TE.TaskEither<AppError, readonly AttachmentInterface[]> =>
 	pipe(api.getImagesByProject(projectId), TE.map(decodeAttachments));
 
 /**
@@ -108,7 +108,7 @@ export const getImagesByProject = (
  */
 export const getAudioFilesByProject = (
 	projectId: string,
-): TE.TaskEither<AppError, AttachmentInterface[]> =>
+): TE.TaskEither<AppError, readonly AttachmentInterface[]> =>
 	pipe(api.getAudioFilesByProject(projectId), TE.map(decodeAttachments));
 
 /**
