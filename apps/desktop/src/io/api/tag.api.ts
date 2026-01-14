@@ -43,7 +43,7 @@ import { api } from "./client.api";
  */
 export const getTagsByWorkspace = (
 	workspaceId: string,
-): TE.TaskEither<AppError, TagInterface[]> =>
+): TE.TaskEither<AppError, readonly TagInterface[]> =>
 	pipe(api.getTagsByWorkspace(workspaceId), TE.map(decodeTags));
 
 /**
@@ -87,7 +87,7 @@ export const getTagByName = (
 export const getTopTags = (
 	workspaceId: string,
 	limit: number,
-): TE.TaskEither<AppError, TagInterface[]> =>
+): TE.TaskEither<AppError, readonly TagInterface[]> =>
 	pipe(api.getTopTags(workspaceId, limit), TE.map(decodeTags));
 
 /**
@@ -96,7 +96,7 @@ export const getTopTags = (
 export const searchTags = (
 	workspaceId: string,
 	query: string,
-): TE.TaskEither<AppError, TagInterface[]> =>
+): TE.TaskEither<AppError, readonly TagInterface[]> =>
 	pipe(api.searchTags(workspaceId, query), TE.map(decodeTags));
 
 /**
@@ -105,7 +105,7 @@ export const searchTags = (
 export const getNodesByTag = (
 	workspaceId: string,
 	tagName: string,
-): TE.TaskEither<AppError, string[]> => api.getNodesByTag(workspaceId, tagName);
+): TE.TaskEither<AppError, readonly string[]> => api.getNodesByTag(workspaceId, tagName);
 
 /**
  * 获取标签图形数据
