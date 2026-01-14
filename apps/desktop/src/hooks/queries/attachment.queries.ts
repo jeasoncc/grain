@@ -20,7 +20,7 @@ import { queryKeys } from "./query-keys";
 export const useAttachments = () => {
 	return useQuery({
 		queryKey: queryKeys.attachments.all,
-		queryFn: async (): Promise<AttachmentInterface[]> => {
+		queryFn: async (): Promise<readonly AttachmentInterface[]> => {
 			const result = await attachmentApi.getAttachments()();
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message);
@@ -61,7 +61,7 @@ export const useAttachmentsByProject = (
 	return useQuery({
 		enabled: !!projectId,
 		queryKey: queryKeys.attachments.byProject(projectId ?? ""),
-		queryFn: async (): Promise<AttachmentInterface[]> => {
+		queryFn: async (): Promise<readonly AttachmentInterface[]> => {
 			if (!projectId) return [];
 			const result = await attachmentApi.getAttachmentsByProject(projectId)();
 			if (E.isLeft(result)) {
@@ -89,7 +89,7 @@ export const useAttachmentsByType = (
 			projectId ?? "",
 			attachmentType ?? "",
 		),
-		queryFn: async (): Promise<AttachmentInterface[]> => {
+		queryFn: async (): Promise<readonly AttachmentInterface[]> => {
 			if (!projectId || !attachmentType) return [];
 			const result = await attachmentApi.getAttachmentsByType(
 				projectId,
@@ -114,7 +114,7 @@ export const useImagesByProject = (projectId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!projectId,
 		queryKey: queryKeys.attachments.imagesByProject(projectId ?? ""),
-		queryFn: async (): Promise<AttachmentInterface[]> => {
+		queryFn: async (): Promise<readonly AttachmentInterface[]> => {
 			if (!projectId) return [];
 			const result = await attachmentApi.getImagesByProject(projectId)();
 			if (E.isLeft(result)) {
@@ -138,7 +138,7 @@ export const useAudioFilesByProject = (
 	return useQuery({
 		enabled: !!projectId,
 		queryKey: queryKeys.attachments.audioByProject(projectId ?? ""),
-		queryFn: async (): Promise<AttachmentInterface[]> => {
+		queryFn: async (): Promise<readonly AttachmentInterface[]> => {
 			if (!projectId) return [];
 			const result = await attachmentApi.getAudioFilesByProject(projectId)();
 			if (E.isLeft(result)) {
