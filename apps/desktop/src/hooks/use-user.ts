@@ -172,10 +172,10 @@ export function useUsernameExists(
  */
 export function useUserSubscription(userId: string | null | undefined):
 	| {
-			plan: UserPlan;
-			isPremium: boolean;
-			isExpired: boolean;
-			expiresAt?: string;
+			readonly plan: UserPlan;
+			readonly isPremium: boolean;
+			readonly isExpired: boolean;
+			readonly expiresAt?: string;
 	  }
 	| undefined {
 	const { data: user } = useUserQuery(userId);
