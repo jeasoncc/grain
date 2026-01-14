@@ -10,6 +10,7 @@
  * 这些函数处理数据转换，不直接访问数据库。
  */
 
+import * as E from "fp-ts/Either";
 import { extractText } from "@/pipes/content/content.extract.fn";
 import type {
 	AttachmentData,
@@ -119,16 +120,18 @@ export function exportWorkspaceToMarkdown(
 
 		const content = contentMap.get(node.id);
 		if (content) {
-			try {
-				const parsed = JSON.parse(content);
-				const text = extractText(parsed.root);
-				if (text.trim()) {
-					lines.push("");
-					lines.push(text);
-				}
-			} catch {
+			const parseResult = E.tryCatch(
+				() => {
+					const parsed = JSON.parse(content);
+					return extractText(parsed.root);
+				},
+				() => content,
+			);
+
+			const text = E.getOrElse(() => content)(parseResult);
+			if (text.trim()) {
 				lines.push("");
-				lines.push(content);
+				lines.push(text);
 			}
 		}
 
