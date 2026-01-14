@@ -9,6 +9,7 @@
 import * as TE from "fp-ts/TaskEither";
 import * as O from "fp-ts/Option";
 import { pipe } from "fp-ts/function";
+import dayjs from "dayjs";
 import type { 
   LogEntry, 
   LogLevel, 
@@ -92,7 +93,7 @@ const getFromCache = (key: string): O.Option<LogQueryResult> => {
   }
   
   // 检查是否过期
-  if (Date.now() > entry.timestamp + entry.ttl) {
+  if (dayjs().valueOf() > entry.timestamp + entry.ttl) {
     queryCache.delete(key);
     return O.none;
   }
@@ -122,7 +123,7 @@ const setToCache = (
   queryCache.set(key, {
     key,
     result,
-    timestamp: Date.now(),
+    timestamp: dayjs().valueOf(),
     ttl,
   });
 };
@@ -131,7 +132,7 @@ const setToCache = (
  * 清理过期缓存
  */
 const cleanupCache = (): void => {
-  const now = Date.now();
+  const now = dayjs().valueOf();
   for (const [key, entry] of queryCache.entries()) {
     if (now > entry.timestamp + entry.ttl) {
       queryCache.delete(key);
@@ -267,8 +268,7 @@ export const getRecentErrorLogsFlow = (
   limit: number = 20,
   hours: number = 24,
 ): TE.TaskEither<AppError, LogEntry[]> => {
-  const startTime = new Date();
-  startTime.setHours(startTime.getHours() - hours);
+  const startTime = dayjs().subtract(hours, 'hour');
   
   const options: LogQueryOptions = {
     levelFilter: ['error'],
@@ -382,7 +382,7 @@ export const getCacheStats = () => ({
     key: entry.key,
     timestamp: entry.timestamp,
     ttl: entry.ttl,
-    age: Date.now() - entry.timestamp,
+    age: dayjs().valueOf() - entry.timestamp,
   })),
 });
 
