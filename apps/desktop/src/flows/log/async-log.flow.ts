@@ -26,6 +26,7 @@ import {
 
 // IO
 import { saveLogsBatchToSQLite } from "@/io/log/log.storage.api";
+import logger from "@/io/log/logger.api";
 
 // ============================================================================
 // 日志队列类型定义
@@ -203,7 +204,7 @@ export const addLogToAsyncQueue = (
       // 立即控制台输出（如果启用）
       if (config.enableConsole) {
         const consoleOutput = addConsoleColors(entry);
-        console.log(consoleOutput);
+        logger.info("[AsyncLog] Console output", { output: consoleOutput });
       }
     },
     (error): AppError => ({
@@ -308,7 +309,7 @@ const processLogQueue = (config: AsyncLogConfig): T.Task<void> =>
         };
         
       } catch (error) {
-        console.warn('Queue processor error:', error);
+        logger.warn("[AsyncLog] Queue processor error", { error });
         processorState = {
           ...processorState,
           errorCount: processorState.errorCount + 1,
