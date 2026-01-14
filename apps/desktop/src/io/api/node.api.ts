@@ -257,7 +257,7 @@ export const deleteNode = (nodeId: string): TE.TaskEither<AppError, void> =>
  * 批量删除节点
  */
 export const deleteNodesBatch = (
-	nodeIds: string[],
+	nodeIds: readonly string[],
 ): TE.TaskEither<AppError, void> => api.deleteNodesBatch(nodeIds);
 
 /**

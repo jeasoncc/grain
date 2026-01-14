@@ -44,7 +44,7 @@ export const deleteNode = (nodeId: string): TE.TaskEither<AppError, void> => {
  * @returns TaskEither<AppError, void>
  */
 export const deleteNodesBatch = (
-	nodeIds: string[],
+	nodeIds: readonly string[],
 ): TE.TaskEither<AppError, void> => {
 	info("[Action] 批量删除节点", { count: nodeIds.length }, "delete-node.flow");
 
