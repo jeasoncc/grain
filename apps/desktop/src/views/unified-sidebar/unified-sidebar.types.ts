@@ -22,7 +22,7 @@ export interface UnifiedSidebarViewProps {
 	/** 当前工作区 ID */
 	readonly workspaceId: string | null;
 	/** 工作区的所有绘图节点 */
-	readonly drawings: NodeInterface[];
+	readonly drawings: readonly NodeInterface[];
 	/** 选中的绘图 ID */
 	readonly selectedDrawingId: string | null;
 	/** 恢复折叠回调 */
