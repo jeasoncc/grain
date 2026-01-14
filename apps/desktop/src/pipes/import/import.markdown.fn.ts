@@ -91,72 +91,73 @@ const defaultOptions: Required<MarkdownImportOptions> = {
  * 解析 YAML front matter
  *
  * @param content - Markdown 内容
- * @returns [front matter 对象, 剩余内容]
+ * @returns Either<Error, [front matter 对象 | undefined, 剩余内容]>
  */
 export function parseFrontMatter(
 	content: string,
-): [Record<string, unknown> | undefined, string] {
+): E.Either<Error, [Record<string, unknown> | undefined, string]> {
 	const trimmed = content.trim();
 
 	if (!trimmed.startsWith("---")) {
-		return [undefined, content];
+		return E.right([undefined, content]);
 	}
 
 	const endIndex = trimmed.indexOf("---", 3);
 	if (endIndex === -1) {
-		return [undefined, content];
+		return E.right([undefined, content]);
 	}
 
 	const frontMatterStr = trimmed.slice(3, endIndex).trim();
 	const remainingContent = trimmed.slice(endIndex + 3).trim();
 
-	try {
-		const frontMatter: Record<string, unknown> = {};
-		const lines = frontMatterStr.split("\n");
-		let currentKey: string | null = null;
-		let currentArray: string[] | null = null;
+	return E.tryCatch(
+		() => {
+			const frontMatter: Record<string, unknown> = {};
+			const lines = frontMatterStr.split("\n");
+			let currentKey: string | null = null;
+			let currentArray: string[] | null = null;
 
-		for (const line of lines) {
-			const trimmedLine = line.trim();
+			for (const line of lines) {
+				const trimmedLine = line.trim();
 
-			// 数组项
-			if (trimmedLine.startsWith("- ") && currentKey && currentArray) {
-				currentArray.push(trimmedLine.slice(2).trim());
-				continue;
-			}
+				// 数组项
+				if (trimmedLine.startsWith("- ") && currentKey && currentArray) {
+					currentArray.push(trimmedLine.slice(2).trim());
+					continue;
+				}
 
-			// 保存之前的数组
-			if (currentKey && currentArray) {
-				frontMatter[currentKey] = currentArray;
-				currentKey = null;
-				currentArray = null;
-			}
+				// 保存之前的数组
+				if (currentKey && currentArray) {
+					frontMatter[currentKey] = currentArray;
+					currentKey = null;
+					currentArray = null;
+				}
 
-			// 键值对
-			const colonIndex = trimmedLine.indexOf(":");
-			if (colonIndex > 0) {
-				const key = trimmedLine.slice(0, colonIndex).trim();
-				const value = trimmedLine.slice(colonIndex + 1).trim();
+				// 键值对
+				const colonIndex = trimmedLine.indexOf(":");
+				if (colonIndex > 0) {
+					const key = trimmedLine.slice(0, colonIndex).trim();
+					const value = trimmedLine.slice(colonIndex + 1).trim();
 
-				if (value === "") {
-					// 可能是数组的开始
-					currentKey = key;
-					currentArray = [];
-				} else {
-					frontMatter[key] = value;
+					if (value === "") {
+						// 可能是数组的开始
+						currentKey = key;
+						currentArray = [];
+					} else {
+						frontMatter[key] = value;
+					}
 				}
 			}
-		}
 
-		// 保存最后的数组
-		if (currentKey && currentArray) {
-			frontMatter[currentKey] = currentArray;
-		}
+			// 保存最后的数组
+			if (currentKey && currentArray) {
+				frontMatter[currentKey] = currentArray;
+			}
 
-		return [frontMatter, remainingContent];
-	} catch {
-		return [undefined, content];
-	}
+			return [frontMatter, remainingContent] as [Record<string, unknown>, string];
+		},
+		() => new Error("Front matter 解析失败"),
+	);
 }
 
 // ==============================
@@ -470,49 +471,53 @@ export function importFromMarkdown(
 		});
 	}
 
-	try {
-		const opts = { ...defaultOptions, ...options };
-		let markdownContent = content;
-		let frontMatter: Record<string, unknown> | undefined;
-		let title: string | undefined;
+	return E.tryCatch(
+		() => {
+			const opts = { ...defaultOptions, ...options };
+			let markdownContent = content;
+			let frontMatter: Record<string, unknown> | undefined;
+			let title: string | undefined;
 
-		// 解析 front matter
-		if (opts.parseFrontMatter) {
-			const [fm, remaining] = parseFrontMatter(content);
-			frontMatter = fm;
-			markdownContent = remaining;
+			// 解析 front matter
+			if (opts.parseFrontMatter) {
+				const fmResult = parseFrontMatter(content);
+				if (E.isRight(fmResult)) {
+					const [fm, remaining] = fmResult.right;
+					frontMatter = fm;
+					markdownContent = remaining;
 
-			// 从 front matter 提取标题
-			if (frontMatter?.title && typeof frontMatter.title === "string") {
-				title = frontMatter.title;
+					// 从 front matter 提取标题
+					if (frontMatter?.title && typeof frontMatter.title === "string") {
+						title = frontMatter.title;
+					}
+				}
 			}
-		}
 
-		// 解析 Markdown 内容
-		const document = parseMarkdownToDocument(markdownContent, opts);
+			// 解析 Markdown 内容
+			const document = parseMarkdownToDocument(markdownContent, opts);
 
-		// 从第一个 h1 提取标题
-		if (opts.extractTitle && !title) {
-			const firstHeading = document.root.children.find(
-				(child): child is LexicalHeadingNode =>
-					child.type === "heading" && child.tag === "h1",
-			);
-			if (firstHeading && firstHeading.children.length > 0) {
-				title = firstHeading.children.map((c) => c.text).join("");
+			// 从第一个 h1 提取标题
+			if (opts.extractTitle && !title) {
+				const firstHeading = document.root.children.find(
+					(child): child is LexicalHeadingNode =>
+						child.type === "heading" && child.tag === "h1",
+				);
+				if (firstHeading && firstHeading.children.length > 0) {
+					title = firstHeading.children.map((c) => c.text).join("");
+				}
 			}
-		}
 
-		return E.right({
-			document,
-			frontMatter,
-			title,
-		});
-	} catch (error) {
-		return E.left({
-			type: "PARSE_ERROR",
+			return {
+				document,
+				frontMatter,
+				title,
+			};
+		},
+		(error) => ({
+			type: "PARSE_ERROR" as const,
 			message: `Markdown 解析失败: ${error instanceof Error ? error.message : String(error)}`,
-		});
-	}
+		}),
+	);
 }
 
 /**
