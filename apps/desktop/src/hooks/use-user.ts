@@ -44,7 +44,7 @@ import type { UserInterface, UserPlan } from "@/types/user";
  * }
  * ```
  */
-export function useAllUsers(): UserInterface[] | undefined {
+export function useAllUsers(): readonly UserInterface[] | undefined {
 	const { data } = useUsersQuery();
 	return data;
 }
@@ -121,7 +121,7 @@ export function useCurrentUser(): UserInterface | undefined {
  */
 export function useUsersByPlan(
 	plan: UserPlan | null | undefined,
-): UserInterface[] | undefined {
+): readonly UserInterface[] | undefined {
 	const { data } = useUsersByPlanQuery(plan);
 	return data;
 }
