@@ -38,7 +38,7 @@ export interface UseBackupManagerReturn {
 	readonly storageStats: StorageStats | null;
 	readonly loading: boolean;
 	readonly autoBackupEnabled: boolean;
-	readonly localBackups: LocalBackupRecord[];
+	readonly localBackups: readonly LocalBackupRecord[];
 
 	// 操作
 	readonly loadStats: () => Promise<void>;
@@ -67,7 +67,7 @@ export function useBackupManager(): UseBackupManagerReturn {
 	const [storageStats, setStorageStats] = useState<StorageStats | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [autoBackupEnabled, setAutoBackupEnabledState] = useState(false);
-	const [localBackups, setLocalBackups] = useState<LocalBackupRecord[]>([]);
+	const [localBackups, setLocalBackups] = useState<readonly LocalBackupRecord[]>([]);
 
 	// ============================================================================
 	// 数据加载
