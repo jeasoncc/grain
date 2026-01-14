@@ -9,6 +9,8 @@
  * 这些函数无副作用，可组合，可测试。
  */
 
+import * as E from "fp-ts/Either";
+
 // ==============================
 // Types
 // ==============================
@@ -72,13 +74,16 @@ export function extractTextWithNewlines(node: unknown): string {
  * 从 Lexical JSON 字符串中提取纯文本
  *
  * @param content - Lexical JSON 字符串
- * @returns 提取的纯文本
+ * @returns 提取的纯文本，失败返回空字符串
  */
 export function extractTextFromJson(content: string): string {
-	try {
-		const parsed = JSON.parse(content);
-		return extractText(parsed.root);
-	} catch {
-		return "";
-	}
+	const result = E.tryCatch(
+		() => {
+			const parsed = JSON.parse(content);
+			return extractText(parsed.root);
+		},
+		() => "",
+	);
+
+	return E.getOrElse(() => "")(result);
 }
