@@ -15,7 +15,7 @@ export interface FileTreeProps {
 	/** 工作区 ID（用于显示空状态） */
 	readonly workspaceId: string | null;
 	/** 节点数据数组 */
-	readonly nodes: NodeInterface[];
+	readonly nodes: readonly NodeInterface[];
 	/** 当前选中的节点 ID */
 	readonly selectedNodeId: string | null;
 	/** 节点选择回调 */
@@ -52,7 +52,7 @@ export interface TreeData {
 	readonly name: string;
 	readonly type: NodeType;
 	readonly collapsed: boolean;
-	readonly children?: TreeData[];
+	readonly children?: readonly TreeData[];
 }
 
 /**
