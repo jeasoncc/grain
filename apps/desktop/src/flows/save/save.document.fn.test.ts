@@ -5,6 +5,7 @@
  * 只测试纯函数，不测试涉及 DB 的函数
  */
 
+import dayjs from "dayjs";
 import type { SerializedEditorState } from "lexical";
 import { describe, expect, it } from "vitest";
 import {
@@ -127,9 +128,9 @@ describe("createSuccessResult", () => {
 	});
 
 	it("should create timestamp close to current time", () => {
-		const before = new Date();
+		const before = dayjs().toDate();
 		const result = createSuccessResult("doc-123", []);
-		const after = new Date();
+		const after = dayjs().toDate();
 
 		expect(result.timestamp.getTime()).toBeGreaterThanOrEqual(before.getTime());
 		expect(result.timestamp.getTime()).toBeLessThanOrEqual(after.getTime());
