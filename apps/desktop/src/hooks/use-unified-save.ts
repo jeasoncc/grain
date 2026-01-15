@@ -126,13 +126,6 @@ export function useUnifiedSave(options: UseUnifiedSaveOptions): UseUnifiedSaveRe
 		onSaveSuccess,
 	})
 
-	useEffect(() => {
-		callbacksRef.current = {
-			onSaveError,
-			onSaveSuccess,
-		}
-	}, [onSaveSuccess, onSaveError])
-
 	// ==============================
 	// 注册/更新 model（组件挂载时）
 	// ==============================
@@ -146,11 +139,11 @@ export function useUnifiedSave(options: UseUnifiedSaveOptions): UseUnifiedSaveRe
 			nodeId,
 			onError: (error) => {
 				markAsError(error.message)
-				callbacksRef.current.onSaveError?.(error)
+				onSaveError?.(error)
 			},
 			onSaved: () => {
 				markAsSaved()
-				callbacksRef.current.onSaveSuccess?.()
+				onSaveSuccess?.()
 			},
 			onSaving: () => {
 				markAsSaving()
@@ -169,6 +162,8 @@ export function useUnifiedSave(options: UseUnifiedSaveOptions): UseUnifiedSaveRe
 		markAsSaving,
 		markAsSaved,
 		markAsError,
+		onSaveError,
+		onSaveSuccess,
 	])
 
 	// ==============================

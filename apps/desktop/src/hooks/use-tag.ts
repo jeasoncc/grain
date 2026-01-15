@@ -8,6 +8,7 @@
  * @requirements 8.2
  */
 
+import { orderBy } from "es-toolkit"
 import {
 	useNodesByTag as useNodesByTagQuery,
 	useTagByName as useTagByNameQuery,
@@ -138,7 +139,9 @@ export function useRecentTags(
 	const { data } = useTagsByWorkspaceQuery(workspaceId)
 	if (!data) return []
 	// Sort by lastUsed and take top N
-	return [...data]
-		.sort((a, b) => new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime())
-		.slice(0, limit)
+	return orderBy(
+		data,
+		[(tag) => new Date(tag.lastUsed).getTime()],
+		["desc"]
+	).slice(0, limit)
 }

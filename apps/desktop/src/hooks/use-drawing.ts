@@ -18,6 +18,7 @@
  */
 
 import { useCallback, useMemo, useState } from "react"
+import { orderBy } from "es-toolkit"
 import { useNode as useNodeQuery, useNodesByType } from "@/hooks/queries/node.queries"
 import { info, warn } from "@/io/log/logger.api"
 import type { NodeInterface } from "@/types/node"
@@ -40,7 +41,7 @@ export function useDrawingNodes(
 	return useMemo(() => {
 		if (isLoading) return undefined
 		if (!nodes) return []
-		return [...nodes].sort((a, b) => a.title.localeCompare(b.title))
+		return orderBy(nodes, [(node) => node.title], ['asc'])
 	}, [nodes, isLoading])
 }
 
@@ -101,7 +102,7 @@ export function useDrawingSearch(
 		if (isLoading) return undefined
 		if (!nodes) return []
 
-		const sorted = [...nodes].sort((a, b) => a.title.localeCompare(b.title))
+		const sorted = orderBy(nodes, [(node) => node.title], ['asc'])
 
 		if (!query || query.trim() === "") {
 			return sorted
@@ -129,8 +130,7 @@ export function useRecentDrawings(
 		if (isLoading) return undefined
 		if (!nodes) return []
 
-		return [...nodes]
-			.sort((a, b) => new Date(b.lastEdit).getTime() - new Date(a.lastEdit).getTime())
+		return orderBy(nodes, [(node) => new Date(node.lastEdit).getTime()], ['desc'])
 			.slice(0, limit)
 	}, [nodes, limit, isLoading])
 }

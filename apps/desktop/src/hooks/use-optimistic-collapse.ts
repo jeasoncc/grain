@@ -12,7 +12,7 @@
 
 import { useQueryClient } from "@tanstack/react-query"
 import { debounce } from "es-toolkit"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { queryKeys } from "@/hooks/queries/query-keys"
 import { setNodeCollapsed as setNodeCollapsedApi } from "@/io/api/node.api"
@@ -122,12 +122,10 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 	)
 
 	// 创建防抖的同步函数 - Requirements: 6.1, 6.4
-	const debouncedSyncRef = useRef(debounce(syncToBackend, debounceMs))
-
-	// 更新防抖函数的引用
-	useEffect(() => {
-		debouncedSyncRef.current = debounce(syncToBackend, debounceMs)
-	}, [syncToBackend, debounceMs])
+	const debouncedSync = useMemo(
+		() => debounce(syncToBackend, debounceMs),
+		[syncToBackend, debounceMs]
+	)
 
 	// 组件卸载时立即执行所有待处理的更新 - Requirements: 6.5
 	useEffect(() => {
@@ -135,7 +133,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			debug("[OptimisticCollapse] Component unmounting, flushing pending updates")
 
 			// 取消防抖并立即执行所有待处理的更新
-			debouncedSyncRef.current.cancel()
+			debouncedSync.cancel()
 
 			// 立即同步所有待处理的更新
 			for (const [nodeId, update] of pendingUpdates.entries()) {
@@ -200,7 +198,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			)
 
 			// 4. 防抖调用后端 API - Requirements: 1.2, 6.1, 6.4
-			debouncedSyncRef.current(nodeId, collapsed, previousData)
+			debouncedSync(nodeId, collapsed, previousData)
 		},
 		[workspaceId, queryClient],
 	)

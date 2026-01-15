@@ -13,6 +13,7 @@
  */
 
 import { useMemo } from "react"
+import { orderBy } from "es-toolkit"
 import {
 	useWorkspace as useWorkspaceQuery,
 	useWorkspaces as useWorkspacesQuery,
@@ -50,8 +51,10 @@ export function useAllWorkspaces(): readonly WorkspaceInterface[] | undefined {
 
 	return useMemo(() => {
 		if (isLoading || !workspaces) return undefined
-		return [...workspaces].sort(
-			(a, b) => new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime(),
+		return orderBy(
+			workspaces,
+			[(workspace) => new Date(workspace.lastOpen).getTime()],
+			["desc"]
 		)
 	}, [workspaces, isLoading])
 }
@@ -113,9 +116,11 @@ export function useRecentWorkspaces(limit: number = 5): readonly WorkspaceInterf
 
 	return useMemo(() => {
 		if (isLoading || !workspaces) return undefined
-		return [...workspaces]
-			.sort((a, b) => new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime())
-			.slice(0, limit)
+		return orderBy(
+			workspaces,
+			[(workspace) => new Date(workspace.lastOpen).getTime()],
+			["desc"]
+		).slice(0, limit)
 	}, [workspaces, limit, isLoading])
 }
 
@@ -161,8 +166,10 @@ export function useWorkspaceSearch(
 	return useMemo(() => {
 		if (isLoading || !workspaces) return undefined
 
-		const sorted = [...workspaces].sort(
-			(a, b) => new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime(),
+		const sorted = orderBy(
+			workspaces,
+			[(workspace) => new Date(workspace.lastOpen).getTime()],
+			["desc"]
 		)
 
 		if (!query || query.trim() === "") {

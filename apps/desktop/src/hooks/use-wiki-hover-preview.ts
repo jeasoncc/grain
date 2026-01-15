@@ -1,5 +1,5 @@
 import type { WikiHoverPreviewHook, WikiPreviewState } from "@grain/editor-lexical"
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 export function useWikiHoverPreview(): WikiHoverPreviewHook {
 	const [previewState, setPreviewState] = useState<WikiPreviewState>({
@@ -8,46 +8,60 @@ export function useWikiHoverPreview(): WikiHoverPreviewHook {
 		isVisible: false,
 	})
 
-	const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
+	const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | undefined>(undefined)
+
+	// Clear timeout when component unmounts or timeout changes
+	useEffect(() => {
+		return () => {
+			if (timeoutId) {
+				clearTimeout(timeoutId)
+			}
+		}
+	}, [timeoutId])
 
 	const showPreview = useCallback((entryId: string, anchorElement: HTMLElement) => {
-		if (timeoutRef.current) {
-			clearTimeout(timeoutRef.current)
+		if (timeoutId) {
+			clearTimeout(timeoutId)
 		}
 
 		// Slight delay to avoid flickering when moving fast
-		timeoutRef.current = setTimeout(() => {
+		const newTimeoutId = setTimeout(() => {
 			setPreviewState({
 				anchorElement,
 				entryId,
 				isVisible: true,
 			})
+			setTimeoutId(undefined)
 		}, 300)
-	}, [])
+		setTimeoutId(newTimeoutId)
+	}, [timeoutId])
 
 	const hidePreview = useCallback(() => {
-		if (timeoutRef.current) {
-			clearTimeout(timeoutRef.current)
+		if (timeoutId) {
+			clearTimeout(timeoutId)
 		}
 
 		// Delay hiding to allow moving mouse to the tooltip
-		timeoutRef.current = setTimeout(() => {
+		const newTimeoutId = setTimeout(() => {
 			setPreviewState((prev) => ({
 				...prev,
 				isVisible: false,
 			}))
+			setTimeoutId(undefined)
 		}, 300)
-	}, [])
+		setTimeoutId(newTimeoutId)
+	}, [timeoutId])
 
 	const hidePreviewImmediately = useCallback(() => {
-		if (timeoutRef.current) {
-			clearTimeout(timeoutRef.current)
+		if (timeoutId) {
+			clearTimeout(timeoutId)
+			setTimeoutId(undefined)
 		}
 		setPreviewState((prev) => ({
 			...prev,
 			isVisible: false,
 		}))
-	}, [])
+	}, [timeoutId])
 
 	return {
 		hidePreview,

@@ -7,7 +7,7 @@
  * 依赖规则：hooks/ 只能依赖 flows/, state/, types/
  */
 
-import { useCallback, useEffect, useRef } from "react"
+import { useCallback, useEffect } from "react"
 import { applyThemeFlow, getThemeByKey, getThemes, setModeFlow } from "@/flows/theme"
 import { initThemeFlow } from "@/flows/theme/init-theme.flow"
 import {
@@ -111,23 +111,14 @@ export function useTheme() {
 export function useThemeInitialization(): void {
 	const isInitialized = useIsThemeInitialized()
 
-	// Use ref to track cleanup function
-	const cleanupRef = useRef<(() => void) | null>(null)
-
 	// Initialize theme
 	useEffect(() => {
 		if (isInitialized) return
 
 		// Initialize theme system (sets up listeners and applies theme)
 		const cleanup = initThemeFlow()
-		cleanupRef.current = cleanup
 
-		return () => {
-			if (cleanupRef.current) {
-				cleanupRef.current()
-				cleanupRef.current = null
-			}
-		}
+		return cleanup
 	}, [isInitialized])
 }
 
