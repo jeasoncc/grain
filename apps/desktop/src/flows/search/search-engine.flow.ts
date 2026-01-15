@@ -72,181 +72,273 @@ export interface SearchEngineState {
 }
 
 // ============================================================================
-// Search Engine Class
+// Search Engine State Management
 // ============================================================================
 
 /**
- * 搜索引擎类
- * 提供全文搜索功能，支持 Lunr.js 索引和简单搜索。
+ * 初始搜索引擎状态
  */
-export class SearchEngine {
-	private state: SearchEngineState = {
-		nodeIndex: null,
-		indexedData: new Map(),
-		nodeContents: new Map(),
-		workspaceCache: new Map(),
-		isIndexing: false,
-	};
+const createInitialState = (): SearchEngineState => ({
+	nodeIndex: null,
+	indexedData: new Map(),
+	nodeContents: new Map(),
+	workspaceCache: new Map(),
+	isIndexing: false,
+});
 
-	/**
-	 * 构建搜索索引
-	 */
-	async buildIndex(): Promise<void> {
-		if (this.state.isIndexing) return;
-		this.state = { ...this.state, isIndexing: true };
+/**
+ * 全局搜索引擎状态
+ */
+let searchEngineState: SearchEngineState = createInitialState();
 
-		try {
-			// 获取所有节点
-			const nodesResult = await getAllNodes()();
-			const nodes: readonly NodeInterface[] = E.isRight(nodesResult)
-				? nodesResult.right
-				: [];
+// ============================================================================
+// Helper Functions
+// ============================================================================
 
-			// 加载节点内容
+/**
+ * 批量加载 workspace 信息到缓存
+ */
+const loadWorkspaces = async (
+	workspaceIds: readonly string[],
+	currentCache: ReadonlyMap<string, WorkspaceInterface>
+): Promise<ReadonlyMap<string, WorkspaceInterface>> => {
+	// 过滤出未缓存的 workspace
+	const uncachedIds = workspaceIds.filter(
+		(id) => !currentCache.has(id),
+	);
+	
+	if (uncachedIds.length === 0) {
+		return currentCache;
+	}
+
+	// 并行获取所有未缓存的 workspace
+	const results = await Promise.all(
+		uncachedIds.map((id) => getWorkspaceById(id)()),
+	);
+
+	// 创建新的缓存映射
+	const newEntries: readonly (readonly [string, WorkspaceInterface])[] = results
+		.filter((result): result is E.Right<WorkspaceInterface> => E.isRight(result) && !!result.right)
+		.map((result) => [result.right.id, result.right] as const);
+
+	return new Map([...currentCache, ...newEntries]);
+};
+
+/**
+ * 从缓存获取 workspace
+ */
+const getWorkspaceFromCache = (
+	workspaceId: string,
+	cache: ReadonlyMap<string, WorkspaceInterface>
+): WorkspaceInterface | null => {
+	return cache.get(workspaceId) ?? null;
+};
+
+// ============================================================================
+// Search Engine Functions
+// ============================================================================
+
+/**
+ * 构建搜索索引
+ */
+export const buildSearchIndex = async (): Promise<void> => {
+	if (searchEngineState.isIndexing) return;
+	searchEngineState = { ...searchEngineState, isIndexing: true };
+
+	try {
+		// 获取所有节点
+		const nodesResult = await getAllNodes()();
+		const nodes: readonly NodeInterface[] = E.isRight(nodesResult)
+			? nodesResult.right
+			: [];
+
+		// 加载节点内容
+		const nodeIds = nodes.map((n: NodeInterface) => n.id);
+		const contentsResult = await getContentsByNodeIds(nodeIds)();
+		const contents = E.isRight(contentsResult) ? contentsResult.right : [];
+
+		// 构建内容映射
+		const nodeContents = new Map<string, string>(
+			contents.map((content) => [content.nodeId, content.content])
+		);
+
+		// 批量获取所有相关的 workspace 信息
+		const workspaceIds = [...new Set(nodes.map((n) => n.workspace))];
+		const workspaceCache = await loadWorkspaces(workspaceIds, searchEngineState.workspaceCache);
+
+		// 构建 Lunr 索引
+		const nodeIndex = lunr(function (this: lunr.Builder) {
+			this.ref("id");
+			this.field("title", { boost: 10 });
+			this.field("tags", { boost: 5 });
+			this.field("content");
+			this.pipeline.remove(lunr.stemmer);
+			this.searchPipeline.remove(lunr.stemmer);
+
+			for (const node of nodes) {
+				const contentStr =
+					contents.find((c) => c.nodeId === node.id)?.content || "";
+				const textContent = extractTextFromContent(contentStr);
+				this.add({
+					id: node.id,
+					title: node.title,
+					tags: node.tags?.join(" ") || "",
+					content: textContent,
+				});
+			}
+		});
+
+		// 构建索引数据映射
+		const indexedData = new Map<string, NodeInterface>(
+			nodes.map((node) => [node.id, node])
+		);
+
+		// 更新状态
+		searchEngineState = {
+			nodeIndex,
+			indexedData,
+			nodeContents,
+			workspaceCache,
+			isIndexing: false,
+		};
+
+		success(`[Search] 索引构建完成: ${nodes.length} 个节点`);
+	} catch (error) {
+		console.error("[Search] 索引构建失败", { error });
+		searchEngineState = { ...searchEngineState, isIndexing: false };
+	}
+};
+
+/**
+ * 执行搜索
+ *
+ * @param query - 搜索查询
+ * @param options - 搜索选项
+ * @returns 搜索结果数组
+ */
+export const search = async (
+	query: string,
+	options: SearchOptions = {},
+): Promise<readonly SearchResult[]> => {
+	if (!query.trim()) return [];
+	if (!searchEngineState.nodeIndex) await buildSearchIndex();
+
+	const { types = ["node"], workspaceId, limit = 50, fuzzy = true } = options;
+	const searchQuery = fuzzy ? `${query}~1 ${query}*` : query;
+
+	try {
+		if (types.includes("node") && searchEngineState.nodeIndex) {
+			const nodeResults = searchEngineState.nodeIndex.search(searchQuery);
+
+			// 收集需要加载的 workspace IDs
+			const workspaceIdsToLoad: readonly string[] = nodeResults
+				.map((result) => {
+					const node = searchEngineState.indexedData.get(result.ref);
+					return node && !searchEngineState.workspaceCache.has(node.workspace) 
+						? node.workspace 
+						: null;
+				})
+				.filter((id): id is string => id !== null);
+			
+			const uniqueWorkspaceIds = [...new Set(workspaceIdsToLoad)];
+
+			// 批量加载 workspace
+			if (uniqueWorkspaceIds.length > 0) {
+				searchEngineState = {
+					...searchEngineState,
+					workspaceCache: await loadWorkspaces(uniqueWorkspaceIds, searchEngineState.workspaceCache),
+				};
+			}
+
+			// Build results array
+			const results: readonly SearchResult[] = nodeResults
+				.flatMap((result) => {
+					const node = searchEngineState.indexedData.get(result.ref);
+					if (!node) return [];
+					if (workspaceId && node.workspace !== workspaceId) return [];
+
+					const workspace = getWorkspaceFromCache(node.workspace, searchEngineState.workspaceCache);
+					const contentStr = searchEngineState.nodeContents.get(node.id) || "";
+					const content = extractTextFromContent(contentStr);
+
+					return [{
+						id: node.id,
+						type: "node" as SearchResultType,
+						title: node.title,
+						content,
+						excerpt: generateExcerpt(content, query),
+						workspaceId: node.workspace,
+						workspaceTitle: workspace?.title,
+						score: result.score,
+						highlights: extractHighlights(content, query),
+					} satisfies SearchResult];
+				});
+
+			return [...results].sort((a, b) => b.score - a.score).slice(0, limit);
+		}
+
+		return [];
+	} catch (error) {
+		console.error("[Search] 搜索失败", { error });
+		return [];
+	}
+};
+
+/**
+ * 执行简单搜索（不使用 Lunr 索引）
+ *
+ * @param query - 搜索查询
+ * @param options - 搜索选项
+ * @returns 搜索结果数组
+ */
+export const simpleSearch = async (
+	query: string,
+	options: SearchOptions = {},
+): Promise<readonly SearchResult[]> => {
+	if (!query.trim()) return [];
+
+	const { types = ["node"], workspaceId, limit = 50 } = options;
+	const lowerQuery = query.toLowerCase();
+
+	try {
+		if (types.includes("node")) {
+			// 获取节点
+			let nodes: readonly NodeInterface[];
+			if (workspaceId) {
+				const nodesResult = await getNodesByWorkspace(workspaceId)();
+				nodes = E.isRight(nodesResult) ? nodesResult.right : [];
+			} else {
+				const nodesResult = await getAllNodes()();
+				nodes = E.isRight(nodesResult) ? nodesResult.right : [];
+			}
+
+			// 获取所有节点的内容
 			const nodeIds = nodes.map((n: NodeInterface) => n.id);
 			const contentsResult = await getContentsByNodeIds(nodeIds)();
 			const contents = E.isRight(contentsResult) ? contentsResult.right : [];
+			const contentMap = new Map(contents.map((c) => [c.nodeId, c.content]));
 
-			// 构建内容映射
-			const nodeContents = new Map<string, string>();
-			for (const content of contents) {
-				nodeContents.set(content.nodeId, content.content);
-			}
-
-			// 批量获取所有相关的 workspace 信息
+			// 批量加载所有相关的 workspace
 			const workspaceIds = [...new Set(nodes.map((n) => n.workspace))];
-			const workspaceCache = await this.loadWorkspaces(workspaceIds);
-
-			// 构建 Lunr 索引
-			const nodeIndex = lunr(function (this: lunr.Builder) {
-				this.ref("id");
-				this.field("title", { boost: 10 });
-				this.field("tags", { boost: 5 });
-				this.field("content");
-				this.pipeline.remove(lunr.stemmer);
-				this.searchPipeline.remove(lunr.stemmer);
-
-				for (const node of nodes) {
-					const contentStr =
-						contents.find((c) => c.nodeId === node.id)?.content || "";
-					const textContent = extractTextFromContent(contentStr);
-					this.add({
-						id: node.id,
-						title: node.title,
-						tags: node.tags?.join(" ") || "",
-						content: textContent,
-					});
-				}
-			});
-
-			// 构建索引数据映射
-			const indexedData = new Map<string, NodeInterface>();
-			for (const node of nodes) {
-				indexedData.set(node.id, node);
-			}
-
-			// 更新状态
-			this.state = {
-				nodeIndex,
-				indexedData,
-				nodeContents,
-				workspaceCache,
-				isIndexing: false,
+			searchEngineState = {
+				...searchEngineState,
+				workspaceCache: await loadWorkspaces(workspaceIds, searchEngineState.workspaceCache),
 			};
 
-			success(`[Search] 索引构建完成: ${nodes.length} 个节点`);
-		} catch (error) {
-			console.error("[Search] 索引构建失败", { error });
-			this.state = { ...this.state, isIndexing: false };
-		}
-	}
+			// Build results
+			const results: readonly SearchResult[] = nodes
+				.flatMap((node) => {
+					const contentStr = contentMap.get(node.id) || "";
+					const content = extractTextFromContent(contentStr);
+					const tagsStr = node.tags?.join(" ") || "";
 
-	/**
-	 * 批量加载 workspace 信息到缓存
-	 */
-	private async loadWorkspaces(workspaceIds: readonly string[]): Promise<ReadonlyMap<string, WorkspaceInterface>> {
-		// 过滤出未缓存的 workspace
-		const uncachedIds = workspaceIds.filter(
-			(id) => !this.state.workspaceCache.has(id),
-		);
-		
-		if (uncachedIds.length === 0) {
-			return this.state.workspaceCache;
-		}
-
-		// 并行获取所有未缓存的 workspace
-		const results = await Promise.all(
-			uncachedIds.map((id) => getWorkspaceById(id)()),
-		);
-
-		// 创建新的缓存映射
-		const newEntries: readonly [string, WorkspaceInterface][] = results
-			.filter((result): result is E.Right<WorkspaceInterface> => E.isRight(result) && !!result.right)
-			.map((result) => [result.right.id, result.right] as const);
-
-		return new Map([...this.state.workspaceCache, ...newEntries]);
-	}
-
-	/**
-	 * 从缓存获取 workspace
-	 */
-	private getWorkspaceFromCache(
-		workspaceId: string,
-	): WorkspaceInterface | null {
-		return this.state.workspaceCache.get(workspaceId) ?? null;
-	}
-
-	/**
-	 * 执行搜索
-	 *
-	 * @param query - 搜索查询
-	 * @param options - 搜索选项
-	 * @returns 搜索结果数组
-	 */
-	async search(
-		query: string,
-		options: SearchOptions = {},
-	): Promise<readonly SearchResult[]> {
-		if (!query.trim()) return [];
-		if (!this.state.nodeIndex) await this.buildIndex();
-
-		const { types = ["node"], workspaceId, limit = 50, fuzzy = true } = options;
-		const searchQuery = fuzzy ? `${query}~1 ${query}*` : query;
-
-		try {
-			if (types.includes("node") && this.state.nodeIndex) {
-				const nodeResults = this.state.nodeIndex.search(searchQuery);
-
-				// 收集需要加载的 workspace IDs
-				const workspaceIdsToLoad: readonly string[] = nodeResults
-					.map((result) => {
-						const node = this.state.indexedData.get(result.ref);
-						return node && !this.state.workspaceCache.has(node.workspace) 
-							? node.workspace 
-							: null;
-					})
-					.filter((id): id is string => id !== null);
-				
-				const uniqueWorkspaceIds = [...new Set(workspaceIdsToLoad)];
-
-				// 批量加载 workspace
-				if (uniqueWorkspaceIds.length > 0) {
-					this.state = {
-						...this.state,
-						workspaceCache: await this.loadWorkspaces(uniqueWorkspaceIds),
-					};
-				}
-
-				// Build results array
-				const results: readonly SearchResult[] = nodeResults
-					.flatMap((result) => {
-						const node = this.state.indexedData.get(result.ref);
-						if (!node) return [];
-						if (workspaceId && node.workspace !== workspaceId) return [];
-
-						const workspace = this.getWorkspaceFromCache(node.workspace);
-						const contentStr = this.state.nodeContents.get(node.id) || "";
-						const content = extractTextFromContent(contentStr);
+					// 检查是否匹配
+					if (
+						node.title.toLowerCase().includes(lowerQuery) ||
+						content.toLowerCase().includes(lowerQuery) ||
+						tagsStr.toLowerCase().includes(lowerQuery)
+					) {
+						const workspace = getWorkspaceFromCache(node.workspace, searchEngineState.workspaceCache);
 
 						return [{
 							id: node.id,
@@ -256,123 +348,41 @@ export class SearchEngine {
 							excerpt: generateExcerpt(content, query),
 							workspaceId: node.workspace,
 							workspaceTitle: workspace?.title,
-							score: result.score,
+							score: calculateSimpleScore(node.title, content, query),
 							highlights: extractHighlights(content, query),
 						} satisfies SearchResult];
-					});
+					}
+					return [];
+				});
 
-				const searchResults: readonly SearchResult[] = results;
-
-				return [...searchResults].sort((a, b) => b.score - a.score).slice(0, limit);
-			}
-
-			return [];
-		} catch (error) {
-			console.error("[Search] 搜索失败", { error });
-			return [];
+			return [...results].sort((a, b) => b.score - a.score).slice(0, limit);
 		}
+
+		return [];
+	} catch (error) {
+		console.error("[Search] 简单搜索失败", { error });
+		return [];
 	}
+};
 
-	/**
-	 * 执行简单搜索（不使用 Lunr 索引）
-	 *
-	 * @param query - 搜索查询
-	 * @param options - 搜索选项
-	 * @returns 搜索结果数组
-	 */
-	async simpleSearch(
-		query: string,
-		options: SearchOptions = {},
-	): Promise<readonly SearchResult[]> {
-		if (!query.trim()) return [];
-
-		const { types = ["node"], workspaceId, limit = 50 } = options;
-		const lowerQuery = query.toLowerCase();
-
-		try {
-			if (types.includes("node")) {
-				// 获取节点
-				let nodes: readonly NodeInterface[];
-				if (workspaceId) {
-					const nodesResult = await getNodesByWorkspace(workspaceId)();
-					nodes = E.isRight(nodesResult) ? nodesResult.right : [];
-				} else {
-					const nodesResult = await getAllNodes()();
-					nodes = E.isRight(nodesResult) ? nodesResult.right : [];
-				}
-
-				// 获取所有节点的内容
-				const nodeIds = nodes.map((n: NodeInterface) => n.id);
-				const contentsResult = await getContentsByNodeIds(nodeIds)();
-				const contents = E.isRight(contentsResult) ? contentsResult.right : [];
-				const contentMap = new Map(contents.map((c) => [c.nodeId, c.content]));
-
-				// 批量加载所有相关的 workspace
-				const workspaceIds = [...new Set(nodes.map((n) => n.workspace))];
-				this.state = {
-					...this.state,
-					workspaceCache: await this.loadWorkspaces(workspaceIds),
-				};
-
-				// Build results
-				const results: readonly SearchResult[] = nodes
-					.flatMap((node) => {
-						const contentStr = contentMap.get(node.id) || "";
-						const content = extractTextFromContent(contentStr);
-						const tagsStr = node.tags?.join(" ") || "";
-
-						// 检查是否匹配
-						if (
-							node.title.toLowerCase().includes(lowerQuery) ||
-							content.toLowerCase().includes(lowerQuery) ||
-							tagsStr.toLowerCase().includes(lowerQuery)
-						) {
-							const workspace = this.getWorkspaceFromCache(node.workspace);
-
-							return [{
-								id: node.id,
-								type: "node" as SearchResultType,
-								title: node.title,
-								content,
-								excerpt: generateExcerpt(content, query),
-								workspaceId: node.workspace,
-								workspaceTitle: workspace?.title,
-								score: calculateSimpleScore(node.title, content, query),
-								highlights: extractHighlights(content, query),
-							} satisfies SearchResult];
-						}
-						return [];
-					});
-
-				return [...results].sort((a, b) => b.score - a.score).slice(0, limit);
-			}
-
-			return [];
-		} catch (error) {
-			console.error("[Search] 简单搜索失败", { error });
-			return [];
-		}
-	}
-
-	/**
-	 * 清除索引
-	 */
-	clearIndex(): void {
-		this.state = {
-			nodeIndex: null,
-			indexedData: new Map(),
-			nodeContents: new Map(),
-			workspaceCache: new Map(),
-			isIndexing: false,
-		};
-	}
-}
+/**
+ * 清除索引
+ */
+export const clearSearchIndex = (): void => {
+	searchEngineState = createInitialState();
+};
 
 // ============================================================================
-// Singleton Instance
+// Legacy Compatibility
 // ============================================================================
 
 /**
- * 搜索引擎单例实例
+ * 搜索引擎兼容性对象
+ * 保持与原有 API 的兼容性
  */
-export const searchEngine = new SearchEngine();
+export const searchEngine = {
+	buildIndex: buildSearchIndex,
+	search,
+	simpleSearch,
+	clearIndex: clearSearchIndex,
+};

@@ -52,12 +52,19 @@ export function calculateAncestorPath(
 	}
 
 	// 从目标节点向上遍历，构建路径
-	let path: readonly string[] = [];
-	let currentNode = targetNode;
-	const maxDepth = 100; // 防止无限循环
-	let depth = 0;
+	const buildPath = (currentNode: NodeInterface, depth: number): readonly string[] => {
+		// 防止无限循环
+		if (depth >= 100) {
+			console.error(
+				"[FileTreeNavigation] Max depth exceeded, possible circular reference",
+			);
+			return [];
+		}
 
-	while (currentNode.parent !== null && depth < maxDepth) {
+		if (currentNode.parent === null) {
+			return [];
+		}
+
 		const parentNode = nodeMap.get(currentNode.parent);
 		// 边界情况：孤立节点（parent 指向不存在的节点）
 		if (!parentNode) {
@@ -65,22 +72,15 @@ export function calculateAncestorPath(
 				"[FileTreeNavigation] Parent node not found:",
 				currentNode.parent,
 			);
-			break;
+			return [];
 		}
-		// 将父节点添加到路径开头（因为我们是从下往上遍历）
-		path = [parentNode.id, ...path];
-		currentNode = parentNode;
-		depth++;
-	}
 
-	// 边界情况：深度超过限制（可能存在循环引用）
-	if (depth >= maxDepth) {
-		console.error(
-			"[FileTreeNavigation] Max depth exceeded, possible circular reference",
-		);
-	}
+		// 递归构建路径
+		const parentPath = buildPath(parentNode, depth + 1);
+		return [...parentPath, parentNode.id];
+	};
 
-	return path;
+	return buildPath(targetNode, 0);
 }
 
 /**

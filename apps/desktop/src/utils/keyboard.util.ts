@@ -10,8 +10,8 @@
 // ============================================================================
 
 export interface KeyboardShortcutHandler {
-	registerShortcut(key: string, handler: () => void): void;
-	unregisterShortcut(key: string): void;
+	readonly registerShortcut: (key: string, handler: () => void) => void;
+	readonly unregisterShortcut: (key: string) => void;
 }
 
 export interface ShortcutConfig {
@@ -69,7 +69,7 @@ class KeyboardShortcutManager implements KeyboardShortcutHandler {
 		this.handleKeyDown = this.handleKeyDown.bind(this);
 	}
 
-	registerShortcut(key: string, handler: () => void): void {
+	readonly registerShortcut = (key: string, handler: () => void): void => {
 		const newShortcuts = new Map([...this.state.shortcuts, [key, handler]]);
 		
 		if (!this.state.isListening) {
@@ -84,9 +84,9 @@ class KeyboardShortcutManager implements KeyboardShortcutHandler {
 				shortcuts: newShortcuts,
 			};
 		}
-	}
+	};
 
-	unregisterShortcut(key: string): void {
+	readonly unregisterShortcut = (key: string): void => {
 		const newShortcuts = new Map([...this.state.shortcuts].filter(([k]) => k !== key));
 
 		if (newShortcuts.size === 0 && this.state.isListening) {
@@ -101,9 +101,9 @@ class KeyboardShortcutManager implements KeyboardShortcutHandler {
 				shortcuts: newShortcuts,
 			};
 		}
-	}
+	};
 
-	private handleKeyDown(event: KeyboardEvent): void {
+	private readonly handleKeyDown = (event: KeyboardEvent): void => {
 		const target = event.target as HTMLElement;
 
 		if (isEditableElement(target)) {
@@ -119,9 +119,9 @@ class KeyboardShortcutManager implements KeyboardShortcutHandler {
 			event.preventDefault();
 			handler();
 		}
-	}
+	};
 
-	destroy(): void {
+	readonly destroy = (): void => {
 		if (this.state.isListening) {
 			window.removeEventListener("keydown", this.handleKeyDown);
 		}
@@ -129,7 +129,7 @@ class KeyboardShortcutManager implements KeyboardShortcutHandler {
 			shortcuts: new Map(),
 			isListening: false,
 		};
-	}
+	};
 
 	get shortcutCount(): number {
 		return this.state.shortcuts.size;

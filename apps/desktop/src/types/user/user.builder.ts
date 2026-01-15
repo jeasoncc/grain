@@ -2,7 +2,7 @@
  * @file types/user/user.builder.ts
  * @description 用户 Builder
  *
- * 实现用于创建 User 对象的 Builder 模式。
+ * 实现用于创建 User 对象的函数式 Builder 模式。
  * 提供带有链式方法的流畅 API 来设置属性。
  *
  * @requirements 3.1, 3.2
@@ -22,282 +22,105 @@ import type {
 import { UserSchema } from "./user.schema";
 
 /**
- * Builder 内部使用的可变类型
- * 用于在构建过程中修改数据
+ * 函数式 UserBuilder 类型
+ * 提供用于构建 User 对象的流畅 API
  */
-type MutableUser = {
-	-readonly [K in keyof UserInterface]: UserInterface[K];
+export interface UserBuilder {
+	readonly id: (id: string) => UserBuilder;
+	readonly username: (username: string) => UserBuilder;
+	readonly displayName: (displayName: string) => UserBuilder;
+	readonly avatar: (avatar: string) => UserBuilder;
+	readonly email: (email: string) => UserBuilder;
+	readonly lastLogin: (timestamp: string) => UserBuilder;
+	readonly createDate: (timestamp: string) => UserBuilder;
+	readonly plan: (plan: UserPlan) => UserBuilder;
+	readonly planStartDate: (timestamp: string) => UserBuilder;
+	readonly planExpiresAt: (timestamp: string) => UserBuilder;
+	readonly trialExpiresAt: (timestamp: string) => UserBuilder;
+	readonly token: (token: string) => UserBuilder;
+	readonly tokenStatus: (status: TokenStatus) => UserBuilder;
+	readonly lastTokenCheck: (timestamp: string) => UserBuilder;
+	readonly serverMessage: (message: string) => UserBuilder;
+	readonly features: (features: UserFeatures) => UserBuilder;
+	readonly state: (state: UserState) => UserBuilder;
+	readonly settings: (settings: UserSettings) => UserBuilder;
+	readonly dbVersion: (dbVersion: UserDBVersion) => UserBuilder;
+	readonly from: (user: UserInterface) => UserBuilder;
+	readonly build: () => UserInterface;
+	readonly buildPartial: () => Partial<UserInterface>;
+}
+
+/**
+ * 创建函数式 UserBuilder 实例
+ * @param initialData - 初始数据（可选）
+ * @returns UserBuilder 实例
+ */
+const createUserBuilder = (initialData?: Partial<UserInterface>): UserBuilder => {
+	const now = dayjs().toISOString();
+	const defaultData: Partial<UserInterface> = {
+		id: uuidv4(),
+		username: "user",
+		plan: "free",
+		lastLogin: now,
+		createDate: now,
+		...initialData,
+	};
+
+	const createBuilder = (data: Partial<UserInterface>): UserBuilder => ({
+		id: (id: string) => createBuilder({ ...data, id }),
+		username: (username: string) => createBuilder({ ...data, username }),
+		displayName: (displayName: string) => createBuilder({ ...data, displayName }),
+		avatar: (avatar: string) => createBuilder({ ...data, avatar }),
+		email: (email: string) => createBuilder({ ...data, email }),
+		lastLogin: (timestamp: string) => createBuilder({ ...data, lastLogin: timestamp }),
+		createDate: (timestamp: string) => createBuilder({ ...data, createDate: timestamp }),
+		plan: (plan: UserPlan) => createBuilder({ ...data, plan }),
+		planStartDate: (timestamp: string) => createBuilder({ ...data, planStartDate: timestamp }),
+		planExpiresAt: (timestamp: string) => createBuilder({ ...data, planExpiresAt: timestamp }),
+		trialExpiresAt: (timestamp: string) => createBuilder({ ...data, trialExpiresAt: timestamp }),
+		token: (token: string) => createBuilder({ ...data, token }),
+		tokenStatus: (status: TokenStatus) => createBuilder({ ...data, tokenStatus: status }),
+		lastTokenCheck: (timestamp: string) => createBuilder({ ...data, lastTokenCheck: timestamp }),
+		serverMessage: (message: string) => createBuilder({ ...data, serverMessage: message }),
+		features: (features: UserFeatures) => createBuilder({ ...data, features }),
+		state: (state: UserState) => createBuilder({ ...data, state }),
+		settings: (settings: UserSettings) => createBuilder({ ...data, settings }),
+		dbVersion: (dbVersion: UserDBVersion) => createBuilder({ ...data, dbVersion }),
+		from: (user: UserInterface) => createBuilder({ ...data, ...user }),
+
+		build: (): UserInterface => {
+			const now = dayjs().toISOString();
+			const finalData = {
+				...data,
+				lastLogin: data.lastLogin || now,
+				createDate: data.createDate || now,
+			};
+
+			const result = UserSchema.parse(finalData);
+			return Object.freeze(result) as UserInterface;
+		},
+
+		buildPartial: (): Partial<UserInterface> => {
+			const finalData = {
+				...data,
+				lastLogin: dayjs().toISOString(),
+			};
+			return Object.freeze(finalData) as Partial<UserInterface>;
+		},
+	});
+
+	return createBuilder(defaultData);
 };
 
 /**
- * UserBuilder 类
- *
- * 提供用于构建 User 对象的流畅 API：
- * - 可选属性的合理默认值
- * - 方法链式调用，代码清晰易读
- * - build() 时进行 Zod 校验
- * - 使用 Object.freeze() 返回不可变对象
+ * 创建新的 UserBuilder 实例
+ * @returns UserBuilder 实例
  */
-export class UserBuilder {
-	private data: Partial<MutableUser> = {};
+export const UserBuilder = (): UserBuilder => createUserBuilder();
 
-	constructor() {
-		// 设置合理的默认值
-		const now = dayjs().toISOString();
-		this.data = {
-			id: uuidv4(),
-			username: "user",
-			plan: "free",
-			lastLogin: now,
-			createDate: now,
-		};
-	}
-
-	/**
-	 * 设置用户 ID（可选，默认自动生成）
-	 * @param id - 用户的 UUID
-	 * @returns this builder 用于链式调用
-	 */
-	id(id: string): this {
-		this.data.id = id;
-		return this;
-	}
-
-	/**
-	 * 设置用户名
-	 * @param username - 登录用户名
-	 * @returns this builder 用于链式调用
-	 */
-	username(username: string): this {
-		this.data.username = username;
-		return this;
-	}
-
-	/**
-	 * 设置显示名称
-	 * @param displayName - 显示名称
-	 * @returns this builder 用于链式调用
-	 */
-	displayName(displayName: string): this {
-		this.data.displayName = displayName;
-		return this;
-	}
-
-	/**
-	 * 设置头像 URL
-	 * @param avatar - 头像 URL
-	 * @returns this builder 用于链式调用
-	 */
-	avatar(avatar: string): this {
-		this.data.avatar = avatar;
-		return this;
-	}
-
-	/**
-	 * 设置邮箱
-	 * @param email - 用户邮箱
-	 * @returns this builder 用于链式调用
-	 */
-	email(email: string): this {
-		this.data.email = email;
-		return this;
-	}
-
-	/**
-	 * 设置最后登录时间戳
-	 * @param timestamp - ISO 8601 日期时间字符串
-	 * @returns this builder 用于链式调用
-	 */
-	lastLogin(timestamp: string): this {
-		this.data.lastLogin = timestamp;
-		return this;
-	}
-
-	/**
-	 * 设置创建日期时间戳（可选，默认自动生成）
-	 * @param timestamp - ISO 8601 日期时间字符串
-	 * @returns this builder 用于链式调用
-	 */
-	createDate(timestamp: string): this {
-		this.data.createDate = timestamp;
-		return this;
-	}
-
-	/**
-	 * 设置订阅计划
-	 * @param plan - 用户计划（free/premium）
-	 * @returns this builder 用于链式调用
-	 */
-	plan(plan: UserPlan): this {
-		this.data.plan = plan;
-		return this;
-	}
-
-	/**
-	 * 设置计划开始日期
-	 * @param timestamp - ISO 8601 日期时间字符串
-	 * @returns this builder 用于链式调用
-	 */
-	planStartDate(timestamp: string): this {
-		this.data.planStartDate = timestamp;
-		return this;
-	}
-
-	/**
-	 * 设置计划到期日期
-	 * @param timestamp - ISO 8601 日期时间字符串
-	 * @returns this builder 用于链式调用
-	 */
-	planExpiresAt(timestamp: string): this {
-		this.data.planExpiresAt = timestamp;
-		return this;
-	}
-
-	/**
-	 * 设置试用到期日期
-	 * @param timestamp - ISO 8601 日期时间字符串
-	 * @returns this builder 用于链式调用
-	 */
-	trialExpiresAt(timestamp: string): this {
-		this.data.trialExpiresAt = timestamp;
-		return this;
-	}
-
-	/**
-	 * 设置认证 Token
-	 * @param token - 认证 Token 字符串
-	 * @returns this builder 用于链式调用
-	 */
-	token(token: string): this {
-		this.data.token = token;
-		return this;
-	}
-
-	/**
-	 * 设置 Token 状态
-	 * @param status - Token 验证状态
-	 * @returns this builder 用于链式调用
-	 */
-	tokenStatus(status: TokenStatus): this {
-		this.data.tokenStatus = status;
-		return this;
-	}
-
-	/**
-	 * 设置最后 Token 检查时间戳
-	 * @param timestamp - ISO 8601 日期时间字符串
-	 * @returns this builder 用于链式调用
-	 */
-	lastTokenCheck(timestamp: string): this {
-		this.data.lastTokenCheck = timestamp;
-		return this;
-	}
-
-	/**
-	 * 设置服务器消息
-	 * @param message - 服务器消息字符串
-	 * @returns this builder 用于链式调用
-	 */
-	serverMessage(message: string): this {
-		this.data.serverMessage = message;
-		return this;
-	}
-
-	/**
-	 * 设置用户功能
-	 * @param features - 用户功能权限
-	 * @returns this builder 用于链式调用
-	 */
-	features(features: UserFeatures): this {
-		this.data.features = features;
-		return this;
-	}
-
-	/**
-	 * 设置用户状态
-	 * @param state - 用户应用状态
-	 * @returns this builder 用于链式调用
-	 */
-	state(state: UserState): this {
-		this.data.state = state;
-		return this;
-	}
-
-	/**
-	 * 设置用户设置
-	 * @param settings - 用户设置/偏好
-	 * @returns this builder 用于链式调用
-	 */
-	settings(settings: UserSettings): this {
-		this.data.settings = settings;
-		return this;
-	}
-
-	/**
-	 * 设置数据库版本信息
-	 * @param dbVersion - 数据库版本信息
-	 * @returns this builder 用于链式调用
-	 */
-	dbVersion(dbVersion: UserDBVersion): this {
-		this.data.dbVersion = dbVersion;
-		return this;
-	}
-
-	/**
-	 * 从现有用户对象初始化 Builder
-	 * @param user - 现有的用户对象
-	 * @returns this builder 用于链式调用
-	 */
-	from(user: UserInterface): this {
-		this.data = { ...user };
-		return this;
-	}
-
-	/**
-	 * 构建并校验 User 对象
-	 * @returns 经过校验的不可变 UserInterface 对象
-	 * @throws ZodError 如果校验失败
-	 */
-	build(): UserInterface {
-		// 如果构造后未显式设置，则更新 lastLogin 为当前时间
-		const now = dayjs().toISOString();
-		if (!this.data.lastLogin) {
-			this.data.lastLogin = now;
-		}
-		if (!this.data.createDate) {
-			this.data.createDate = now;
-		}
-
-		// 校验并返回不可变对象
-		const result = UserSchema.parse(this.data);
-		return Object.freeze(result) as UserInterface;
-	}
-
-	/**
-	 * 构建用于更新操作的部分 User 对象
-	 * 不需要所有字段，只校验提供的字段
-	 * @returns 带有更新的 lastLogin 的部分 UserInterface 对象
-	 */
-	buildPartial(): Partial<UserInterface> {
-		// 部分构建时始终更新 lastLogin
-		this.data.lastLogin = dayjs().toISOString();
-		return Object.freeze({ ...this.data }) as Partial<UserInterface>;
-	}
-
-	/**
-	 * 重置 Builder 到初始状态
-	 * 用于重用同一个 Builder 实例
-	 * @returns this builder 用于链式调用
-	 */
-	reset(): this {
-		const now = dayjs().toISOString();
-		this.data = {
-			id: uuidv4(),
-			username: "user",
-			plan: "free",
-			lastLogin: now,
-			createDate: now,
-		};
-		return this;
-	}
-}
+/**
+ * 从现有用户对象创建 UserBuilder 实例
+ * @param user - 现有的用户对象
+ * @returns UserBuilder 实例
+ */
+export const UserBuilderFrom = (user: UserInterface): UserBuilder => createUserBuilder(user);

@@ -43,7 +43,7 @@ export function useDrawingNodes(
 	return useMemo(() => {
 		if (isLoading) return undefined;
 		if (!nodes) return [];
-		return [...nodes].sort((a, b) => a.title.localeCompare(b.title));
+		return nodes.slice().sort((a, b) => a.title.localeCompare(b.title));
 	}, [nodes, isLoading]);
 }
 
@@ -106,7 +106,7 @@ export function useDrawingSearch(
 		if (isLoading) return undefined;
 		if (!nodes) return [];
 
-		const sorted = [...nodes].sort((a, b) => a.title.localeCompare(b.title));
+		const sorted = nodes.slice().sort((a, b) => a.title.localeCompare(b.title));
 
 		if (!query || query.trim() === "") {
 			return sorted;
@@ -136,7 +136,8 @@ export function useRecentDrawings(
 		if (isLoading) return undefined;
 		if (!nodes) return [];
 
-		return [...nodes]
+		return nodes
+			.slice()
 			.sort(
 				(a, b) =>
 					new Date(b.lastEdit).getTime() - new Date(a.lastEdit).getTime(),

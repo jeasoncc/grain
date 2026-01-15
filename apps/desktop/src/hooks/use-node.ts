@@ -83,7 +83,7 @@ export function useChildNodes(
 	return useMemo(() => {
 		if (isLoading) return undefined;
 		if (!nodes) return [];
-		return [...nodes].sort((a, b) => a.order - b.order);
+		return nodes.slice().sort((a, b) => a.order - b.order);
 	}, [nodes, isLoading]);
 }
 
@@ -103,7 +103,7 @@ export function useRootNodes(
 	return useMemo(() => {
 		if (isLoading) return undefined;
 		if (!nodes) return [];
-		return [...nodes].sort((a, b) => a.order - b.order);
+		return nodes.slice().sort((a, b) => a.order - b.order);
 	}, [nodes, isLoading]);
 }
 
