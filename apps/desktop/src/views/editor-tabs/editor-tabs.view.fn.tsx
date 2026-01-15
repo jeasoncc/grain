@@ -263,5 +263,3 @@ export const EditorTabsView = memo(
 		)
 	},
 )
-
-EditorTabsView.displayName = "EditorTabsView"

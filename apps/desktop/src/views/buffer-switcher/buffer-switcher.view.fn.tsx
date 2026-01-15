@@ -75,5 +75,3 @@ export const BufferSwitcherView = memo(
 		)
 	},
 )
-
-BufferSwitcherView.displayName = "BufferSwitcherView"

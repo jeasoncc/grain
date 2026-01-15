@@ -35,7 +35,7 @@ export interface TagBuilder {
  * @param initialData - 初始数据（可选）
  * @returns TagBuilder 实例
  */
-const createTagBuilder = (initialData?: Partial<TagInterface>): TagBuilder => {
+const createTagBuilderInternal = (initialData?: Partial<TagInterface>): TagBuilder => {
 	const now = dayjs().toISOString()
 	const defaultData: Partial<TagInterface> = {
 		count: 1,
@@ -104,11 +104,11 @@ const createTagBuilder = (initialData?: Partial<TagInterface>): TagBuilder => {
  * 创建新的 TagBuilder 实例
  * @returns TagBuilder 实例
  */
-export const TagBuilder = (): TagBuilder => createTagBuilder()
+export const TagBuilder = (): TagBuilder => createTagBuilderInternal()
 
 /**
  * 从现有标签对象创建 TagBuilder 实例
  * @param tag - 现有的标签对象
  * @returns TagBuilder 实例
  */
-export const TagBuilderFrom = (tag: TagInterface): TagBuilder => createTagBuilder(tag)
+export const TagBuilderFrom = (tag: TagInterface): TagBuilder => createTagBuilderInternal(tag)

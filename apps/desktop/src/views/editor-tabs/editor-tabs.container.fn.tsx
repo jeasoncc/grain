@@ -44,5 +44,3 @@ export const EditorTabsContainer = memo(({ className, workspaceId }: EditorTabsC
 		/>
 	)
 })
-
-EditorTabsContainer.displayName = "EditorTabsContainer"

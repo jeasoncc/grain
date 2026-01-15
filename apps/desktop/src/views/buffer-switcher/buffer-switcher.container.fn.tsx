@@ -97,5 +97,3 @@ export const BufferSwitcherContainer = memo(
 		)
 	},
 )
-
-BufferSwitcherContainer.displayName = "BufferSwitcherContainer"

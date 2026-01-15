@@ -129,5 +129,3 @@ export const CommandPaletteContainer = memo(
 		return <CommandPaletteView open={open} onOpenChange={onOpenChange} commands={commands} />
 	},
 )
-
-CommandPaletteContainer.displayName = "CommandPaletteContainer"

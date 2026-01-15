@@ -38,7 +38,7 @@ export interface NodeBuilder {
  * @param initialData - 初始数据（可选）
  * @returns NodeBuilder 实例
  */
-const createNodeBuilder = (initialData?: Partial<NodeInterface>): NodeBuilder => {
+const createNodeBuilderInternal = (initialData?: Partial<NodeInterface>): NodeBuilder => {
 	const now = dayjs().toISOString()
 	const defaultData: Partial<NodeInterface> = {
 		collapsed: true,
@@ -92,11 +92,11 @@ const createNodeBuilder = (initialData?: Partial<NodeInterface>): NodeBuilder =>
  * 创建新的 NodeBuilder 实例
  * @returns NodeBuilder 实例
  */
-export const NodeBuilder = (): NodeBuilder => createNodeBuilder()
+export const NodeBuilder = (): NodeBuilder => createNodeBuilderInternal()
 
 /**
  * 从现有节点对象创建 NodeBuilder 实例
  * @param node - 现有的节点对象
  * @returns NodeBuilder 实例
  */
-export const NodeBuilderFrom = (node: NodeInterface): NodeBuilder => createNodeBuilder(node)
+export const NodeBuilderFrom = (node: NodeInterface): NodeBuilder => createNodeBuilderInternal(node)

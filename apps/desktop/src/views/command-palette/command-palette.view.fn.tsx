@@ -64,5 +64,3 @@ export const CommandPaletteView = memo(
 		)
 	},
 )
-
-CommandPaletteView.displayName = "CommandPaletteView"

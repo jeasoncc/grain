@@ -7,6 +7,7 @@
  */
 
 import { useLocation, useNavigate } from "@tanstack/react-router"
+import dayjs from "dayjs"
 import { orderBy } from "es-toolkit"
 import * as E from "fp-ts/Either"
 import { pipe } from "fp-ts/function"
@@ -16,6 +17,7 @@ import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { clearAllData, openFile } from "@/flows"
 import { createCode } from "@/flows/templated/create-code.flow"
+import { error as logError } from "@/io/log/logger.api"
 import {
 	createDiary,
 	createLedger,
@@ -131,7 +133,7 @@ export function ActivityBarContainer(): React.ReactElement {
 						setActivePanel("files")
 					}
 				} catch (error) {
-					console.error("[ActivityBar] 创建默认工作区失败:", error)
+					logError("[ActivityBar] 创建默认工作区失败", { error })
 				}
 				return
 			}
@@ -143,7 +145,7 @@ export function ActivityBarContainer(): React.ReactElement {
 			if (!isSelectedValid) {
 				const sortedByLastOpen = orderBy(
 					workspaces,
-					[(w) => new Date(w.lastOpen || w.createDate).getTime()],
+					[(w) => dayjs(w.lastOpen || w.createDate).valueOf()],
 					["desc"]
 				)
 				setSelectedWorkspaceId(sortedByLastOpen[0].id)
@@ -151,7 +153,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				try {
 					await touchWorkspace(selectedWorkspaceId)()
 				} catch (err) {
-					error("[ActivityBar] 更新 lastOpen 失败:", { error: err })
+					logError("[ActivityBar] 更新 lastOpen 失败", { error: err })
 				}
 			}
 		}
@@ -174,7 +176,7 @@ export function ActivityBarContainer(): React.ReactElement {
 			try {
 				await touchWorkspace(workspaceId)()
 			} catch (err) {
-				error("[ActivityBar] 更新 lastOpen 失败:", { error: err })
+				logError("[ActivityBar] 更新 lastOpen 失败", { error: err })
 			}
 			toast.success("Workspace selected")
 		},
@@ -230,7 +232,7 @@ export function ActivityBarContainer(): React.ReactElement {
 			const task = pipe(
 				// 1. 创建模板文件
 				creator({
-					templateParams: { date: new Date() },
+					templateParams: { date: dayjs().toDate() },
 					workspaceId: selectedWorkspaceId,
 				}),
 				// 2. 成功后，打开文件（通过队列执行）
@@ -268,7 +270,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				TE.fold(
 					// 失败分支
 					(error) => {
-						console.error("[ActivityBar] 创建模板失败:", error)
+						logError("[ActivityBar] 创建模板失败", { error })
 						toast.error(errorMessage)
 						return TE.of(undefined as void)
 					},

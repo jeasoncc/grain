@@ -38,7 +38,7 @@ export interface WorkspaceBuilder {
  * @param initialData - 初始数据（可选）
  * @returns WorkspaceBuilder 实例
  */
-const createWorkspaceBuilder = (initialData?: Partial<WorkspaceInterface>): WorkspaceBuilder => {
+const createWorkspaceBuilderInternal = (initialData?: Partial<WorkspaceInterface>): WorkspaceBuilder => {
 	const now = dayjs().toISOString()
 	const defaultData: Partial<WorkspaceInterface> = {
 		author: "",
@@ -93,7 +93,7 @@ const createWorkspaceBuilder = (initialData?: Partial<WorkspaceInterface>): Work
  * 创建新的 WorkspaceBuilder 实例
  * @returns WorkspaceBuilder 实例
  */
-export const WorkspaceBuilder = (): WorkspaceBuilder => createWorkspaceBuilder()
+export const WorkspaceBuilder = (): WorkspaceBuilder => createWorkspaceBuilderInternal()
 
 /**
  * 从现有工作区对象创建 WorkspaceBuilder 实例
@@ -101,4 +101,4 @@ export const WorkspaceBuilder = (): WorkspaceBuilder => createWorkspaceBuilder()
  * @returns WorkspaceBuilder 实例
  */
 export const WorkspaceBuilderFrom = (workspace: WorkspaceInterface): WorkspaceBuilder =>
-	createWorkspaceBuilder(workspace)
+	createWorkspaceBuilderInternal(workspace)

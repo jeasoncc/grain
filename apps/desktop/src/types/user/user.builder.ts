@@ -55,7 +55,7 @@ export interface UserBuilder {
  * @param initialData - 初始数据（可选）
  * @returns UserBuilder 实例
  */
-const createUserBuilder = (initialData?: Partial<UserInterface>): UserBuilder => {
+const createUserBuilderInternal = (initialData?: Partial<UserInterface>): UserBuilder => {
 	const now = dayjs().toISOString()
 	const defaultData: Partial<UserInterface> = {
 		createDate: now,
@@ -116,11 +116,11 @@ const createUserBuilder = (initialData?: Partial<UserInterface>): UserBuilder =>
  * 创建新的 UserBuilder 实例
  * @returns UserBuilder 实例
  */
-export const UserBuilder = (): UserBuilder => createUserBuilder()
+export const UserBuilder = (): UserBuilder => createUserBuilderInternal()
 
 /**
  * 从现有用户对象创建 UserBuilder 实例
  * @param user - 现有的用户对象
  * @returns UserBuilder 实例
  */
-export const UserBuilderFrom = (user: UserInterface): UserBuilder => createUserBuilder(user)
+export const UserBuilderFrom = (user: UserInterface): UserBuilder => createUserBuilderInternal(user)
