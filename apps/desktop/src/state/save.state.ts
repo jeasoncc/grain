@@ -7,6 +7,7 @@
  */
 
 import { create } from "zustand"
+import dayjs from "dayjs"
 import type { SaveStatus, SaveStore } from "@/types/save"
 
 // Re-export types for convenience
@@ -41,7 +42,7 @@ export const useSaveStore = create<SaveStore>()((set) => ({
 			errorMessage: null,
 			hasUnsavedChanges: false,
 			isManualSaving: false,
-			lastSaveTime: Date.now(),
+			lastSaveTime: dayjs().valueOf(),
 			status: "saved" as SaveStatus,
 		})),
 

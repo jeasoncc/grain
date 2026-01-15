@@ -27,7 +27,9 @@ function getOrgmodeSettings(): OrgmodeSettings {
 	try {
 		const stored = localStorage.getItem(ORGMODE_SETTINGS_KEY)
 		if (stored) return JSON.parse(stored)
-	} catch {}
+	} catch {
+		// Ignore parsing errors and return default settings
+	}
 	return { diarySubdir: "diary", enabled: false, orgRoamPath: null }
 }
 

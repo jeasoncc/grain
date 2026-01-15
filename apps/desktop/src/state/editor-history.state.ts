@@ -8,6 +8,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import dayjs from "dayjs"
 import {
 	EDITOR_HISTORY_STORAGE_KEY,
 	type EditorHistoryEntry,
@@ -73,7 +74,7 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 					const entry: EditorHistoryEntry = {
 						content,
 						nodeId,
-						timestamp: new Date().toISOString(),
+						timestamp: dayjs().toISOString(),
 						wordCount,
 					}
 

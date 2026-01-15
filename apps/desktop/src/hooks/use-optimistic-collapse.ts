@@ -14,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { debounce } from "es-toolkit"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
+import dayjs from "dayjs"
 import { queryKeys } from "@/hooks/queries/query-keys"
 import { setNodeCollapsed as setNodeCollapsedApi } from "@/io/api/node.api"
 import { debug, error } from "@/io/log/logger.api"
@@ -70,7 +71,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			debug("[OptimisticCollapse] Syncing to backend (debounced)", {
 				collapsed,
 				nodeId,
-				timestamp: new Date().toISOString(),
+				timestamp: dayjs().toISOString(),
 			})
 
 			// 使用 TaskEither 的函数式风格执行
@@ -84,7 +85,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 						error: result.left,
 						nodeId,
 						syncDuration: `${syncDuration.toFixed(2)}ms`,
-						timestamp: new Date().toISOString(),
+						timestamp: dayjs().toISOString(),
 					})
 
 					// 回滚到之前的数据 - Requirements: 1.3
@@ -104,7 +105,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 					collapsed,
 					nodeId,
 					syncDuration: `${syncDuration.toFixed(2)}ms`,
-					timestamp: new Date().toISOString(),
+					timestamp: dayjs().toISOString(),
 				})
 
 				// 更新缓存为后端返回的最新数据
@@ -164,7 +165,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			debug("[OptimisticCollapse] Starting optimistic update", {
 				collapsed,
 				nodeId,
-				timestamp: new Date().toISOString(),
+				timestamp: dayjs().toISOString(),
 			})
 
 			// 2. 立即更新 UI（乐观更新）- Requirements: 1.1, 1.4

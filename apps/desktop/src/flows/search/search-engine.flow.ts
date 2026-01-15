@@ -12,7 +12,7 @@ import * as E from "fp-ts/Either"
 import { orderBy } from "es-toolkit"
 import lunr from "lunr"
 import { getAllNodes, getContentsByNodeIds, getNodesByWorkspace, getWorkspaceById } from "@/io/api"
-import { success } from "@/io/log/logger.api"
+import { success, error } from "@/io/log/logger.api"
 import {
 	calculateSimpleScore,
 	extractHighlights,
@@ -190,8 +190,8 @@ export const buildSearchIndex = async (): Promise<void> => {
 		}
 
 		success(`[Search] 索引构建完成: ${nodes.length} 个节点`)
-	} catch (error) {
-		console.error("[Search] 索引构建失败", { error })
+	} catch (err) {
+		error("[Search] 索引构建失败", { error: err })
 		searchEngineState = { ...searchEngineState, isIndexing: false }
 	}
 }
@@ -270,8 +270,8 @@ export const search = async (
 		}
 
 		return []
-	} catch (error) {
-		console.error("[Search] 搜索失败", { error })
+	} catch (err) {
+		error("[Search] 搜索失败", { error: err })
 		return []
 	}
 }
@@ -353,8 +353,8 @@ export const simpleSearch = async (
 		}
 
 		return []
-	} catch (error) {
-		console.error("[Search] 简单搜索失败", { error })
+	} catch (err) {
+		error("[Search] 简单搜索失败", { error: err })
 		return []
 	}
 }

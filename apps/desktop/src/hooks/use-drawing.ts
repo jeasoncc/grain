@@ -18,6 +18,7 @@
  */
 
 import { useCallback, useMemo, useState } from "react"
+import dayjs from "dayjs"
 import { orderBy } from "es-toolkit"
 import { useNode as useNodeQuery, useNodesByType } from "@/hooks/queries/node.queries"
 import { info, warn } from "@/io/log/logger.api"
@@ -130,7 +131,7 @@ export function useRecentDrawings(
 		if (isLoading) return undefined
 		if (!nodes) return []
 
-		return orderBy(nodes, [(node) => new Date(node.lastEdit).getTime()], ['desc'])
+		return orderBy(nodes, [(node) => dayjs(node.lastEdit).valueOf()], ['desc'])
 			.slice(0, limit)
 	}, [nodes, limit, isLoading])
 }

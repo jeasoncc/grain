@@ -8,6 +8,7 @@
  * - 不修改输入参数
  */
 
+import dayjs from "dayjs"
 import type { EditorInstanceState, EditorTab } from "@/types/editor-tab"
 
 // ==============================
@@ -21,7 +22,7 @@ import type { EditorInstanceState, EditorTab } from "@/types/editor-tab"
  */
 export const createDefaultEditorState = (): EditorInstanceState => ({
 	isDirty: false,
-	lastModified: Date.now(),
+	lastModified: dayjs().valueOf(),
 	scrollLeft: 0,
 	scrollTop: 0,
 	selectionState: undefined,
@@ -180,7 +181,7 @@ export const updateEditorState = (
 		[tabId]: {
 			...existingState,
 			...updates,
-			lastModified: Date.now(),
+			lastModified: dayjs().valueOf(),
 		},
 	}
 }

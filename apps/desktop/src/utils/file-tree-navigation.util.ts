@@ -8,6 +8,7 @@
  */
 
 import type { NodeInterface } from "@/types/node"
+import { error, warn } from "@/io/log/logger.api"
 
 /**
  * 计算从根节点到目标节点的祖先路径
@@ -55,7 +56,7 @@ export function calculateAncestorPath(
 	const buildPath = (currentNode: NodeInterface, depth: number): readonly string[] => {
 		// 防止无限循环
 		if (depth >= 100) {
-			console.error("[FileTreeNavigation] Max depth exceeded, possible circular reference")
+			error("[FileTreeNavigation] Max depth exceeded, possible circular reference")
 			return []
 		}
 
@@ -66,7 +67,7 @@ export function calculateAncestorPath(
 		const parentNode = nodeMap.get(currentNode.parent)
 		// 边界情况：孤立节点（parent 指向不存在的节点）
 		if (!parentNode) {
-			console.warn("[FileTreeNavigation] Parent node not found:", currentNode.parent)
+			warn("[FileTreeNavigation] Parent node not found:", currentNode.parent)
 			return []
 		}
 
@@ -107,11 +108,11 @@ export async function expandAncestors(
 		try {
 			const success = await setCollapsed(ancestorId, false)
 			if (!success) {
-				console.warn("[FileTreeNavigation] Failed to expand ancestor:", ancestorId)
+				warn("[FileTreeNavigation] Failed to expand ancestor:", ancestorId)
 				// 继续展开其他节点，不中断流程
 			}
-		} catch (error) {
-			console.error("[FileTreeNavigation] Error expanding ancestor:", ancestorId, error)
+		} catch (err) {
+			error("[FileTreeNavigation] Error expanding ancestor:", ancestorId, err)
 			// 继续展开其他节点，不中断流程
 		}
 	}
@@ -140,7 +141,7 @@ export function scrollToNode(
 ): void {
 	// 边界情况：treeRef 为 null
 	if (!treeRef.current) {
-		console.warn("[FileTreeNavigation] Tree ref is null, cannot scroll")
+		warn("[FileTreeNavigation] Tree ref is null, cannot scroll")
 		return
 	}
 
@@ -150,10 +151,10 @@ export function scrollToNode(
 		if (typeof treeRef.current.scrollTo === "function") {
 			treeRef.current.scrollTo(nodeId)
 		} else {
-			console.warn("[FileTreeNavigation] scrollTo method not available on tree ref")
+			warn("[FileTreeNavigation] scrollTo method not available on tree ref")
 		}
-	} catch (error) {
-		console.warn("[FileTreeNavigation] Failed to scroll to node:", error)
+	} catch (err) {
+		warn("[FileTreeNavigation] Failed to scroll to node:", err)
 	}
 }
 
@@ -193,14 +194,14 @@ export async function autoExpandAndScrollToNode(
 	try {
 		// 边界情况：节点列表为空
 		if (nodes.length === 0) {
-			console.warn("[FileTreeNavigation] No nodes available")
+			warn("[FileTreeNavigation] No nodes available")
 			return
 		}
 
 		// 边界情况：目标节点不存在
 		const targetNode = nodes.find((n) => n.id === targetNodeId)
 		if (!targetNode) {
-			console.warn("[FileTreeNavigation] Target node not found:", targetNodeId)
+			warn("[FileTreeNavigation] Target node not found:", targetNodeId)
 			return
 		}
 
@@ -220,8 +221,8 @@ export async function autoExpandAndScrollToNode(
 		// 4. 滚动到目标节点
 		// 边界情况：节点不在可见区域（react-arborist 自动处理）
 		scrollToNode(treeRef, targetNodeId)
-	} catch (error) {
-		console.error("[FileTreeNavigation] Failed to auto-expand and scroll:", error)
+	} catch (err) {
+		error("[FileTreeNavigation] Failed to auto-expand and scroll:", err)
 		// 不抛出错误，避免影响文件创建流程
 	}
 }
