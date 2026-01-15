@@ -59,7 +59,7 @@ export interface DirectorySelectOptions {
  * 检查是否在 Tauri 环境中运行
  */
 export function isTauriEnvironment(): boolean {
-	return typeof window !== "undefined" && !!(window as unknown as { __TAURI__?: unknown }).__TAURI__
+	return typeof window !== "undefined" && !!(window as unknown as { readonly __TAURI__?: unknown }).__TAURI__
 }
 
 // ============================================================================
@@ -214,6 +214,46 @@ export interface FileSelectResult {
 }
 
 /**
+ * 创建并配置文件输入元素
+ * 
+ * @param config - 输入元素配置
+ * @returns 配置好的输入元素
+ */
+function createFileInput(config: {
+	readonly multiple: boolean
+	readonly type: "file"
+	readonly accept?: string
+}): HTMLInputElement {
+	const input = document.createElement("input")
+	return Object.assign(input, config)
+}
+
+/**
+ * 构建文件输入配置
+ * 
+ * @param options - 文件选择选项
+ * @returns 输入元素配置对象
+ */
+function buildFileInputConfig(options?: FileSelectOptions): {
+	readonly multiple: boolean
+	readonly type: "file"
+	readonly accept?: string
+} {
+	const baseConfig = {
+		multiple: options?.multiple ?? false,
+		type: "file" as const,
+	}
+
+	if (options?.filters && options.filters.length > 0) {
+		const extensions = options.filters.flatMap((f) => f.extensions)
+		const acceptValue = extensions.map((ext) => `.${ext}`).join(",")
+		return { ...baseConfig, accept: acceptValue }
+	}
+
+	return baseConfig
+}
+
+/**
  * 打开文件选择对话框（浏览器环境）
  *
  * @param options - 文件选择选项
@@ -221,21 +261,9 @@ export interface FileSelectResult {
  */
 export async function selectFile(options?: FileSelectOptions): Promise<FileSelectResult> {
 	return new Promise((resolve) => {
-		const input = document.createElement("input")
-
-		// Apply configuration functionally using object spread
-		const inputConfig = {
-			multiple: options?.multiple ?? false,
-			type: "file" as const,
-		}
-		Object.assign(input, inputConfig)
-
-		if (options?.filters && options.filters.length > 0) {
-			const extensions = options.filters.flatMap((f) => f.extensions)
-			const acceptValue = extensions.map((ext) => `.${ext}`).join(",")
-			const acceptConfig = { accept: acceptValue }
-			Object.assign(input, acceptConfig)
-		}
+		// 函数式组合：构建配置 -> 创建元素
+		const inputConfig = buildFileInputConfig(options)
+		const input = createFileInput(inputConfig)
 
 		const handleChange = (e: Event) => {
 			const file = (e.target as HTMLInputElement).files?.[0]
