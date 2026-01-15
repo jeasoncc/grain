@@ -198,8 +198,8 @@ function LogsSettingsPage() {
 }
 
 interface LogRowProps {
-	log: LogEntry
-	formatTimestamp: (timestamp: string) => string
+	readonly log: LogEntry
+	readonly formatTimestamp: (timestamp: string) => string
 }
 
 function LogRow({ log, formatTimestamp }: LogRowProps) {

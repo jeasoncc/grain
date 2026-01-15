@@ -42,11 +42,13 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 
 			clearHistory: (nodeId) => {
 				set((state) => {
-					const newUndoStack = new Map([...state.undoStack])
-					const newRedoStack = new Map([...state.redoStack])
-
-					newUndoStack.delete(nodeId)
-					newRedoStack.delete(nodeId)
+					// Create new maps without the specified nodeId (functional approach)
+					const newUndoStack = new Map(
+						[...state.undoStack.entries()].filter(([key]) => key !== nodeId)
+					)
+					const newRedoStack = new Map(
+						[...state.redoStack.entries()].filter(([key]) => key !== nodeId)
+					)
 
 					return { redoStack: newRedoStack, undoStack: newUndoStack }
 				})

@@ -130,7 +130,7 @@ function TypographySettings() {
 							</div>
 							<DebouncedSlider
 								value={[uiFontSize]}
-								onValueChange={([v]: number[]) => setUiFontSize(v)}
+								onValueChange={([v]: readonly number[]) => setUiFontSize(v)}
 								min={12}
 								max={18}
 								step={1}
@@ -224,7 +224,7 @@ function TypographySettings() {
 							</div>
 							<DebouncedSlider
 								value={[cardBorderRadius]}
-								onValueChange={([v]: number[]) => setCardBorderRadius(v)}
+								onValueChange={([v]: readonly number[]) => setCardBorderRadius(v)}
 								min={0}
 								max={16}
 								step={1}

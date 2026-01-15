@@ -53,8 +53,8 @@ import { ActivityBarView } from "./activity-bar.view.fn"
  * 接收工作区 ID 和日期，返回 TaskEither
  */
 type TemplateCreator = (params: {
-	workspaceId: string
-	templateParams: { date: Date }
+	readonly workspaceId: string
+	readonly templateParams: { readonly date: Date }
 }) => TE.TaskEither<AppError, TemplatedFileResult>
 
 /**

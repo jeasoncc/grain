@@ -6,7 +6,7 @@ import type { Theme, ThemeColors } from "@/types/theme/theme.types"
 
 export type { Theme, ThemeColors }
 
-export const themes: Theme[] = [
+export const themes: readonly Theme[] = [
 	// ============ 浅色主题 ============
 	{
 		colors: {
@@ -2208,7 +2208,7 @@ export function getThemeByKey(key: string): Theme | undefined {
  *
  * @returns 浅色主题数组
  */
-export function getLightThemes(): Theme[] {
+export function getLightThemes(): readonly Theme[] {
 	return themes.filter((t) => t.type === "light")
 }
 
@@ -2217,6 +2217,6 @@ export function getLightThemes(): Theme[] {
  *
  * @returns 深色主题数组
  */
-export function getDarkThemes(): Theme[] {
+export function getDarkThemes(): readonly Theme[] {
 	return themes.filter((t) => t.type === "dark")
 }

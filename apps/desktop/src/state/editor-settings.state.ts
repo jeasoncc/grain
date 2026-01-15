@@ -27,9 +27,9 @@ interface EditorSettingsState {
 
 interface EditorSettingsActions {
 	/** 设置折叠图标风格 */
-	setFoldIconStyle: (style: FoldIconStyle) => void
+	readonly setFoldIconStyle: (style: FoldIconStyle) => void
 	/** 重置所有设置 */
-	reset: () => void
+	readonly reset: () => void
 }
 
 // ==============================
