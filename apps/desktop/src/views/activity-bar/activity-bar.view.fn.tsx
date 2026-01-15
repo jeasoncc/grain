@@ -78,7 +78,7 @@ const ActionButton = memo(function ActionButton({
 	onClick,
 	active = false,
 	testId,
-}: ActionButtonProps & { testId?: string }) {
+}: ActionButtonProps & { readonly testId?: string }) {
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
@@ -215,7 +215,9 @@ export const ActivityBarView = memo(function ActivityBarView({
 			try {
 				await onImportFile(file)
 			} finally {
-				if (fileInputRef.current) fileInputRef.current.value = ""
+				if (fileInputRef.current) {
+					fileInputRef.current.setAttribute('value', '')
+				}
 			}
 		},
 		[onImportFile],

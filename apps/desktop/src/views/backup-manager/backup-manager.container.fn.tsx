@@ -112,5 +112,3 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 		/>
 	)
 })
-
-BackupManagerContainer.displayName = "BackupManagerContainer"

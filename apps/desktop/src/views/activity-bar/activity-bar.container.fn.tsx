@@ -7,11 +7,12 @@
  */
 
 import { useLocation, useNavigate } from "@tanstack/react-router"
+import { orderBy } from "es-toolkit"
 import * as E from "fp-ts/Either"
 import { pipe } from "fp-ts/function"
 import * as TE from "fp-ts/TaskEither"
 import type * as React from "react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { clearAllData, openFile } from "@/flows"
 import { createCode } from "@/flows/templated/create-code.flow"
@@ -105,14 +106,14 @@ export function ActivityBarContainer(): React.ReactElement {
 	// 初始化逻辑
 	// ==============================
 
-	const hasInitializedRef = useRef(false)
+	const [hasInitialized, setHasInitialized] = useState(false)
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: 初始化逻辑只在 workspacesRaw 变化时运行一次
 	useEffect(() => {
 		const initializeWorkspace = async () => {
 			if (workspacesRaw === undefined) return
-			if (hasInitializedRef.current) return
-			hasInitializedRef.current = true
+			if (hasInitialized) return
+			setHasInitialized(true)
 
 			if (workspaces.length === 0) {
 				if (selectedWorkspaceId) {
@@ -140,17 +141,17 @@ export function ActivityBarContainer(): React.ReactElement {
 				workspaces.some((w: WorkspaceInterface) => w.id === selectedWorkspaceId)
 
 			if (!isSelectedValid) {
-				const sortedByLastOpen = [...workspaces].sort((a, b) => {
-					const dateA = new Date(a.lastOpen || a.createDate).getTime()
-					const dateB = new Date(b.lastOpen || b.createDate).getTime()
-					return dateB - dateA
-				})
+				const sortedByLastOpen = orderBy(
+					workspaces,
+					[(w) => new Date(w.lastOpen || w.createDate).getTime()],
+					["desc"]
+				)
 				setSelectedWorkspaceId(sortedByLastOpen[0].id)
 			} else {
 				try {
 					await touchWorkspace(selectedWorkspaceId)()
 				} catch (err) {
-					error("[ActivityBar] 更新 lastOpen 失败:", err)
+					error("[ActivityBar] 更新 lastOpen 失败:", { error: err })
 				}
 			}
 		}
@@ -173,7 +174,7 @@ export function ActivityBarContainer(): React.ReactElement {
 			try {
 				await touchWorkspace(workspaceId)()
 			} catch (err) {
-				error("[ActivityBar] 更新 lastOpen 失败:", err)
+				error("[ActivityBar] 更新 lastOpen 失败:", { error: err })
 			}
 			toast.success("Workspace selected")
 		},
@@ -258,7 +259,7 @@ export function ActivityBarContainer(): React.ReactElement {
 
 					// 导航到主页面（如果当前不在主页面）
 					if (location.pathname !== "/") {
-						navigate({ to: "/" })
+						window.location.assign("/")
 					}
 
 					return TE.right(result)
@@ -406,19 +407,19 @@ export function ActivityBarContainer(): React.ReactElement {
 			await clearAllData()()
 			setSelectedWorkspaceId(null)
 			setSelectedNodeId(null)
-			hasInitializedRef.current = false
+			setHasInitialized(false)
 			toast.success("All data deleted")
 			setTimeout(() => window.location.reload(), 1000)
 		} catch {
 			toast.error("Delete failed")
 		}
-	}, [confirm, setSelectedWorkspaceId, setSelectedNodeId])
+	}, [confirm, setSelectedWorkspaceId, setSelectedNodeId, setHasInitialized])
 
 	const handleNavigate = useCallback(
 		(path: string) => {
-			navigate({ to: path })
+			window.location.assign(path)
 		},
-		[navigate],
+		[],
 	)
 
 	// ==============================

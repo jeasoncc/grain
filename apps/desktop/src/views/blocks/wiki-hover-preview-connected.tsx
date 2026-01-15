@@ -8,9 +8,9 @@ import { useWikiPreviewFetcher } from "@/hooks/use-wiki-preview"
 import { WikiHoverPreview } from "./wiki-hover-preview"
 
 interface WikiHoverPreviewConnectedProps {
-	entryId: string
-	anchorElement: HTMLElement
-	onClose: () => void
+	readonly entryId: string
+	readonly anchorElement: HTMLElement
+	readonly onClose: () => void
 }
 
 /**

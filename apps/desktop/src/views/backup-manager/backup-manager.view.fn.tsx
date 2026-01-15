@@ -6,6 +6,7 @@
 
 import dayjs from "dayjs"
 import relativeTime from "dayjs/plugin/relativeTime"
+import { orderBy } from "es-toolkit"
 import {
 	Archive,
 	BookOpen,
@@ -171,7 +172,7 @@ export const BackupManagerView = memo(function BackupManagerView({
 													{formatBytes(storageStats.indexedDB.size)}
 												</p>
 												<p className="text-[10px] text-muted-foreground">
-													{(Object.values(storageStats.indexedDB.tables) as number[]).reduce(
+													{(Object.values(storageStats.indexedDB.tables) as readonly number[]).reduce(
 														(a, b) => a + b,
 														0,
 													)}{" "}
@@ -242,8 +243,11 @@ export const BackupManagerView = memo(function BackupManagerView({
 									<div>
 										<h4 className="text-sm font-medium mb-4">IndexedDB Table Breakdown</h4>
 										<div className="space-y-3">
-											{Object.entries(storageStats.indexedDB.tableSizes)
-												.sort(([, a], [, b]) => b - a)
+											{orderBy(
+												Object.entries(storageStats.indexedDB.tableSizes),
+												[([, size]) => size],
+												['desc']
+											)
 												.map(([table, size]) => {
 													const percentage =
 														storageStats.indexedDB.size > 0
@@ -486,5 +490,3 @@ export const BackupManagerView = memo(function BackupManagerView({
 		</div>
 	)
 })
-
-BackupManagerView.displayName = "BackupManagerView"

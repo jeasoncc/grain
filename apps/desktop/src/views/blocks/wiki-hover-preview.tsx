@@ -6,8 +6,8 @@ import { createPortal } from "react-dom"
  * Wiki 悬浮预览数据
  */
 export interface WikiPreviewData {
-	title: string
-	content: string
+	readonly title: string
+	readonly content: string
 }
 
 /**
@@ -17,13 +17,13 @@ export interface WikiPreviewData {
  */
 interface WikiHoverPreviewProps {
 	/** 条目 ID */
-	entryId: string
+	readonly entryId: string
 	/** 锚点元素 */
-	anchorElement: HTMLElement
+	readonly anchorElement: HTMLElement
 	/** 关闭回调 */
-	onClose: () => void
+	readonly onClose: () => void
 	/** 数据获取函数 */
-	onFetchData: (entryId: string) => Promise<WikiPreviewData>
+	readonly onFetchData: (entryId: string) => Promise<WikiPreviewData>
 }
 
 /**
@@ -40,7 +40,7 @@ export function WikiHoverPreview({
 	const [content, setContent] = useState<string | null>(null)
 	const [title, setTitle] = useState<string>("")
 	const [loading, setLoading] = useState(true)
-	const [position, setPosition] = useState<{ top: number; left: number }>({
+	const [position, setPosition] = useState<{ readonly top: number; readonly left: number }>({
 		left: 0,
 		top: 0,
 	})
