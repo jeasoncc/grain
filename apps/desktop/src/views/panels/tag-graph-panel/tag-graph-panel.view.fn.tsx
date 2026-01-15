@@ -15,20 +15,20 @@ import { Button } from "@/views/ui/button";
 import type { TagGraphPanelViewProps } from "./tag-graph-panel.types";
 
 interface GraphNode {
-	id: string;
-	label: string;
-	color: string;
-	x: number;
-	y: number;
-	vx: number;
-	vy: number;
-	radius: number;
+	readonly id: string;
+	readonly label: string;
+	readonly color: string;
+	readonly x: number;
+	readonly y: number;
+	readonly vx: number;
+	readonly vy: number;
+	readonly radius: number;
 }
 
 interface GraphEdge {
-	source: string;
-	target: string;
-	weight: number;
+	readonly source: string;
+	readonly target: string;
+	readonly weight: number;
 }
 
 // 力导向图参数
@@ -48,8 +48,8 @@ export const TagGraphPanelView = memo(
 		const containerRef = useRef<HTMLDivElement>(null);
 		const animationRef = useRef<number>(0);
 
-		const [nodes, setNodes] = useState<GraphNode[]>([]);
-		const [edges, setEdges] = useState<GraphEdge[]>([]);
+		const [nodes, setNodes] = useState<readonly GraphNode[]>([]);
+		const [edges, setEdges] = useState<readonly GraphEdge[]>([]);
 		const [scale, setScale] = useState(1);
 		const [offset, setOffset] = useState({ x: 0, y: 0 });
 		const [dragging, setDragging] = useState<string | null>(null);
@@ -117,18 +117,23 @@ export const TagGraphPanelView = memo(
 						const fx = (dx / dist) * force;
 						const fy = (dy / dist) * force;
 
-						newNodes[i].vx -= fx;
-						newNodes[i].vy -= fy;
-						newNodes[j].vx += fx;
-						newNodes[j].vy += fy;
+						const updatedI = { ...newNodes[i], vx: newNodes[i].vx - fx, vy: newNodes[i].vy - fy };
+						const updatedJ = { ...newNodes[j], vx: newNodes[j].vx + fx, vy: newNodes[j].vy + fy };
+						
+						newNodes[i] = updatedI;
+						newNodes[j] = updatedJ;
 					}
 				}
 
 				// 计算引力（边）
+				const nodesWithAttraction = [...newNodes];
 				for (const edge of edges) {
-					const source = newNodes.find((n) => n.id === edge.source);
-					const target = newNodes.find((n) => n.id === edge.target);
-					if (!source || !target) continue;
+					const sourceIndex = nodesWithAttraction.findIndex((n) => n.id === edge.source);
+					const targetIndex = nodesWithAttraction.findIndex((n) => n.id === edge.target);
+					if (sourceIndex === -1 || targetIndex === -1) continue;
+
+					const source = nodesWithAttraction[sourceIndex];
+					const target = nodesWithAttraction[targetIndex];
 
 					const dx = target.x - source.x;
 					const dy = target.y - source.y;
@@ -138,23 +143,24 @@ export const TagGraphPanelView = memo(
 					const fx = (dx / dist) * force;
 					const fy = (dy / dist) * force;
 
-					source.vx += fx;
-					source.vy += fy;
-					target.vx -= fx;
-					target.vy -= fy;
+					nodesWithAttraction[sourceIndex] = { ...source, vx: source.vx + fx, vy: source.vy + fy };
+					nodesWithAttraction[targetIndex] = { ...target, vx: target.vx - fx, vy: target.vy - fy };
 				}
 
 				// 应用速度和阻尼
-				for (const node of newNodes) {
-					if (node.id === dragging) continue;
+				return nodesWithAttraction.map((node) => {
+					if (node.id === dragging) return node;
 
-					node.vx *= DAMPING;
-					node.vy *= DAMPING;
-					node.x += node.vx;
-					node.y += node.vy;
-				}
-
-				return newNodes;
+					const dampedVx = node.vx * DAMPING;
+					const dampedVy = node.vy * DAMPING;
+					return {
+						...node,
+						vx: dampedVx,
+						vy: dampedVy,
+						x: node.x + dampedVx,
+						y: node.y + dampedVy,
+					};
+				});
 			});
 		}, [nodes.length, edges, dragging]);
 
@@ -283,7 +289,7 @@ export const TagGraphPanelView = memo(
 			} else if (panning) {
 				const dx = e.clientX - lastMouse.x;
 				const dy = e.clientY - lastMouse.y;
-				setOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+				setOffset((prev) => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
 				setLastMouse({ x: e.clientX, y: e.clientY });
 			}
 		};

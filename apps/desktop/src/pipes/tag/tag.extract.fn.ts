@@ -150,14 +150,9 @@ export const sortTagsAlphabetically = (tags: ReadonlyArray<TagInterface>): Reado
  */
 export const extractTagsFromContent = (content: string): readonly string[] => {
 	const matches = content.matchAll(TAG_PATTERN);
-	const tagNames: string[] = [];
-
-	for (const match of matches) {
-		const normalized = normalizeTagName(match[1]);
-		if (normalized) {
-			tagNames.push(normalized);
-		}
-	}
+	const tagNames: readonly string[] = Array.from(matches)
+		.map((match) => normalizeTagName(match[1]))
+		.filter((normalized) => normalized !== "");
 
 	// Remove duplicates using functional approach
 	return [...new Set(tagNames)];

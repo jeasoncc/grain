@@ -80,7 +80,7 @@ export const extractTextFromContent = (content: string): string => {
 	if (!content) return "";
 
 	return pipe(
-		O.tryCatch(() => JSON.parse(content) as { root?: unknown }),
+		O.tryCatch(() => JSON.parse(content) as { readonly root?: unknown }),
 		O.chain((parsed) => O.fromNullable(parsed?.root)),
 		O.map(extractTextFromLexical),
 		O.getOrElse(() => content),

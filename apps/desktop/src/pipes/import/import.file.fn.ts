@@ -38,8 +38,8 @@ export function readFileAsText(file: File): Promise<string> {
 		const reader = new FileReader();
 		
 		// Set event handlers functionally
-		reader.onload = () => resolve(String(reader.result ?? ""));
-		reader.onerror = reject;
+		reader.addEventListener("load", () => resolve(String(reader.result ?? "")));
+		reader.addEventListener("error", reject);
 		
 		reader.readAsText(file);
 	});
@@ -106,7 +106,8 @@ export function validateFileExtension(
 		return E.right(file);
 	}
 
-	const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+	const nameParts = file.name.split(".") as readonly string[];
+	const extension = nameParts[nameParts.length - 1]?.toLowerCase() ?? "";
 
 	if (!allowedExtensions.includes(extension)) {
 		return E.left({

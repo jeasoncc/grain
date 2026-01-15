@@ -31,14 +31,13 @@ export const isSaveShortcut = (event: KeyboardEvent): boolean => {
 };
 
 export const getShortcutKey = (event: KeyboardEvent): string => {
-	let parts: readonly string[] = [];
-
-	if (event.ctrlKey) parts = [...parts, "ctrl"];
-	if (event.metaKey) parts = [...parts, "meta"];
-	if (event.shiftKey) parts = [...parts, "shift"];
-	if (event.altKey) parts = [...parts, "alt"];
-
-	parts = [...parts, event.key.toLowerCase()];
+	const parts: readonly string[] = [
+		...(event.ctrlKey ? ["ctrl"] : []),
+		...(event.metaKey ? ["meta"] : []),
+		...(event.shiftKey ? ["shift"] : []),
+		...(event.altKey ? ["alt"] : []),
+		event.key.toLowerCase(),
+	];
 
 	return parts.join("+");
 };

@@ -37,10 +37,7 @@ export function calculateAncestorPath(
 	}
 
 	// 创建节点映射以便快速查找
-	const nodeMap = new Map<string, NodeInterface>();
-	for (const node of nodes) {
-		nodeMap.set(node.id, node);
-	}
+	const nodeMap = new Map(nodes.map((node) => [node.id, node]));
 
 	// 查找目标节点
 	const targetNode = nodeMap.get(targetNodeId);

@@ -30,7 +30,7 @@ export interface DirectorySelectResult {
  */
 export interface FileFilter {
 	readonly name: string;
-	readonly extensions: ReadonlyArray<string>;
+	readonly extensions: readonly string[];
 }
 
 /**
@@ -227,18 +227,15 @@ export async function selectFile(
 ): Promise<FileSelectResult> {
 	return new Promise((resolve) => {
 		const input = document.createElement("input");
-		const inputConfig = {
-			type: "file",
-			multiple: options?.multiple ?? false,
-		};
 		
 		// Apply configuration functionally
-		Object.assign(input, inputConfig);
+		input.type = "file";
+		input.multiple = options?.multiple ?? false;
 
 		if (options?.filters && options.filters.length > 0) {
 			const extensions = options.filters.flatMap((f) => f.extensions);
 			const acceptValue = extensions.map((ext) => `.${ext}`).join(",");
-			Object.assign(input, { accept: acceptValue });
+			input.accept = acceptValue;
 		}
 
 		const handleChange = (e: Event) => {
@@ -257,10 +254,8 @@ export async function selectFile(
 		};
 
 		// Assign event handlers functionally
-		Object.assign(input, {
-			onchange: handleChange,
-			oncancel: handleCancel,
-		});
+		input.onchange = handleChange;
+		input.oncancel = handleCancel;
 
 		input.click();
 	});

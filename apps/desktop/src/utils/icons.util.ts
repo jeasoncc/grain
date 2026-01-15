@@ -98,7 +98,7 @@ export const iconCategories: Record<
 	},
 };
 
-export const icons: IconOption[] = [
+export const icons: readonly IconOption[] = [
 	// Book类图标
 	{
 		key: "book",
@@ -395,13 +395,13 @@ export const icons: IconOption[] = [
 ];
 
 // 按类别分组图标
-export function getIconsByCategory(category: IconCategory): IconOption[] {
+export function getIconsByCategory(category: IconCategory): readonly IconOption[] {
 	return icons.filter((icon) => icon.category === category);
 }
 
 // 获取所有类别
-export function getAllCategories(): IconCategory[] {
-	return Object.keys(iconCategories) as IconCategory[];
+export function getAllCategories(): readonly IconCategory[] {
+	return Object.keys(iconCategories) as readonly IconCategory[];
 }
 
 // 根据 key 获取图标
@@ -426,7 +426,7 @@ export function getDefaultIcon(
 }
 
 // 搜索图标
-export function searchIcons(query: string): IconOption[] {
+export function searchIcons(query: string): readonly IconOption[] {
 	const lowerQuery = query.toLowerCase();
 	return icons.filter(
 		(icon) =>

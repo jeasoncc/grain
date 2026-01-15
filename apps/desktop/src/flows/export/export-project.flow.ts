@@ -434,11 +434,12 @@ function printHtmlInNewWindow(html: string): void {
 	printWindow.document.write(html);
 	printWindow.document.close();
 
-	printWindow.onload = () => {
+	// 使用 addEventListener 而不是直接赋值属性
+	printWindow.addEventListener("load", () => {
 		setTimeout(() => {
 			printWindow.print();
 		}, 500);
-	};
+	});
 }
 
 export async function exportToPdf(

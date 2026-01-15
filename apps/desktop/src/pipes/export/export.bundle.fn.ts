@@ -103,23 +103,20 @@ export function exportWorkspaceToMarkdown(
 	const sortedNodes = [...nodes].sort((a, b) => a.order - b.order);
 
 	// 添加标题
-	const titleLines = [`# ${workspace.title || "Untitled"}`];
-	if (workspace.author) {
-		titleLines.push(`Author: ${workspace.author}`);
-	}
-	if (workspace.description) {
-		titleLines.push("");
-		titleLines.push(workspace.description);
-	}
-	titleLines.push("");
+	const titleLines = [
+		`# ${workspace.title || "Untitled"}`,
+		...(workspace.author ? [`Author: ${workspace.author}`] : []),
+		...(workspace.description ? ["", workspace.description] : []),
+		"",
+	];
 
 	// 递归输出节点
 	function outputNode(node: NodeInterface, depth: number): readonly string[] {
 		const prefix = "#".repeat(Math.min(depth + 2, 6));
-		let nodeLines = ["", `${prefix} ${node.title || "Untitled"}`];
+		const headerLines = ["", `${prefix} ${node.title || "Untitled"}`];
 
 		const content = contentMap.get(node.id);
-		if (content) {
+		const contentLines = content ? (() => {
 			const parseResult = E.tryCatch(
 				() => {
 					const parsed = JSON.parse(content);
@@ -129,15 +126,13 @@ export function exportWorkspaceToMarkdown(
 			);
 
 			const text = E.getOrElse(() => content)(parseResult);
-			if (text.trim()) {
-				nodeLines = [...nodeLines, "", text];
-			}
-		}
+			return text.trim() ? ["", text] : [];
+		})() : [];
 
 		const children = sortedNodes.filter((n) => n.parent === node.id);
 		const childLines = children.flatMap(child => outputNode(child, depth + 1));
 		
-		return [...nodeLines, ...childLines];
+		return [...headerLines, ...contentLines, ...childLines];
 	}
 
 	// 输出根节点

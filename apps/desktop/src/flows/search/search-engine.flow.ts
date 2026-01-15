@@ -182,7 +182,7 @@ export class SearchEngine {
 		// 创建新的缓存映射
 		const newEntries: readonly [string, WorkspaceInterface][] = results
 			.filter((result): result is E.Right<WorkspaceInterface> => E.isRight(result) && !!result.right)
-			.map((result) => [result.right.id, result.right]);
+			.map((result) => [result.right.id, result.right] as const);
 
 		return new Map([...this.state.workspaceCache, ...newEntries]);
 	}
@@ -218,13 +218,15 @@ export class SearchEngine {
 				const nodeResults = this.state.nodeIndex.search(searchQuery);
 
 				// 收集需要加载的 workspace IDs
-				const workspaceIdsToLoad: string[] = [];
-				for (const result of nodeResults) {
-					const node = this.state.indexedData.get(result.ref);
-					if (node && !this.state.workspaceCache.has(node.workspace)) {
-						workspaceIdsToLoad.push(node.workspace);
-					}
-				}
+				const workspaceIdsToLoad: readonly string[] = nodeResults
+					.map((result) => {
+						const node = this.state.indexedData.get(result.ref);
+						return node && !this.state.workspaceCache.has(node.workspace) 
+							? node.workspace 
+							: null;
+					})
+					.filter((id): id is string => id !== null);
+				
 				const uniqueWorkspaceIds = [...new Set(workspaceIdsToLoad)];
 
 				// 批量加载 workspace
@@ -236,31 +238,32 @@ export class SearchEngine {
 				}
 
 				// Build results array
-				const results: SearchResult[] = [];
-				for (const result of nodeResults) {
-					const node = this.state.indexedData.get(result.ref);
-					if (!node) continue;
-					if (workspaceId && node.workspace !== workspaceId) continue;
+				const results: readonly SearchResult[] = nodeResults
+					.flatMap((result) => {
+						const node = this.state.indexedData.get(result.ref);
+						if (!node) return [];
+						if (workspaceId && node.workspace !== workspaceId) return [];
 
-					const workspace = this.getWorkspaceFromCache(node.workspace);
-					const contentStr = this.state.nodeContents.get(node.id) || "";
-					const content = extractTextFromContent(contentStr);
+						const workspace = this.getWorkspaceFromCache(node.workspace);
+						const contentStr = this.state.nodeContents.get(node.id) || "";
+						const content = extractTextFromContent(contentStr);
 
-					const searchResult: SearchResult = {
-						id: node.id,
-						type: "node" as SearchResultType,
-						title: node.title,
-						content,
-						excerpt: generateExcerpt(content, query),
-						workspaceId: node.workspace,
-						workspaceTitle: workspace?.title,
-						score: result.score,
-						highlights: extractHighlights(content, query),
-					};
-					results.push(searchResult);
-				}
+						return [{
+							id: node.id,
+							type: "node" as SearchResultType,
+							title: node.title,
+							content,
+							excerpt: generateExcerpt(content, query),
+							workspaceId: node.workspace,
+							workspaceTitle: workspace?.title,
+							score: result.score,
+							highlights: extractHighlights(content, query),
+						} satisfies SearchResult];
+					});
 
-				return [...results].sort((a, b) => b.score - a.score).slice(0, limit);
+				const searchResults: readonly SearchResult[] = results;
+
+				return [...searchResults].sort((a, b) => b.score - a.score).slice(0, limit);
 			}
 
 			return [];
@@ -312,34 +315,34 @@ export class SearchEngine {
 				};
 
 				// Build results
-				const results: SearchResult[] = [];
-				for (const node of nodes) {
-					const contentStr = contentMap.get(node.id) || "";
-					const content = extractTextFromContent(contentStr);
-					const tagsStr = node.tags?.join(" ") || "";
+				const results: readonly SearchResult[] = nodes
+					.flatMap((node) => {
+						const contentStr = contentMap.get(node.id) || "";
+						const content = extractTextFromContent(contentStr);
+						const tagsStr = node.tags?.join(" ") || "";
 
-					// 检查是否匹配
-					if (
-						node.title.toLowerCase().includes(lowerQuery) ||
-						content.toLowerCase().includes(lowerQuery) ||
-						tagsStr.toLowerCase().includes(lowerQuery)
-					) {
-						const workspace = this.getWorkspaceFromCache(node.workspace);
+						// 检查是否匹配
+						if (
+							node.title.toLowerCase().includes(lowerQuery) ||
+							content.toLowerCase().includes(lowerQuery) ||
+							tagsStr.toLowerCase().includes(lowerQuery)
+						) {
+							const workspace = this.getWorkspaceFromCache(node.workspace);
 
-						const searchResult: SearchResult = {
-							id: node.id,
-							type: "node" as SearchResultType,
-							title: node.title,
-							content,
-							excerpt: generateExcerpt(content, query),
-							workspaceId: node.workspace,
-							workspaceTitle: workspace?.title,
-							score: calculateSimpleScore(node.title, content, query),
-							highlights: extractHighlights(content, query),
-						};
-						results.push(searchResult);
-					}
-				}
+							return [{
+								id: node.id,
+								type: "node" as SearchResultType,
+								title: node.title,
+								content,
+								excerpt: generateExcerpt(content, query),
+								workspaceId: node.workspace,
+								workspaceTitle: workspace?.title,
+								score: calculateSimpleScore(node.title, content, query),
+								highlights: extractHighlights(content, query),
+							} satisfies SearchResult];
+						}
+						return [];
+					});
 
 				return [...results].sort((a, b) => b.score - a.score).slice(0, limit);
 			}

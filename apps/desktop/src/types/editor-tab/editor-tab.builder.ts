@@ -1,9 +1,10 @@
 /**
  * Editor Tabs - Builder Pattern Implementation
  *
- * 使用 Builder 模式构建复杂对象，支持链式调用
+ * 使用函数式 Builder 模式构建复杂对象，支持链式调用
  */
 
+import dayjs from "dayjs";
 import type { SerializedEditorState } from "lexical";
 import type {
 	EditorInstanceState,
@@ -25,170 +26,160 @@ export const createDefaultEditorState = (): EditorInstanceState => ({
 	scrollTop: 0,
 	scrollLeft: 0,
 	isDirty: false,
-	lastModified: Date.now(),
+	lastModified: dayjs().valueOf(),
 });
 
 // ==============================
-// EditorTab Builder
+// EditorTab Builder State
 // ==============================
 
-export class EditorTabBuilder {
-	private _workspaceId: string = "";
-	private _nodeId: string = "";
-	private _title: string = "";
-	private _type: TabType = "file";
-	private _isDirty: boolean = false;
+interface EditorTabBuilderState {
+	readonly workspaceId: string;
+	readonly nodeId: string;
+	readonly title: string;
+	readonly type: TabType;
+	readonly isDirty: boolean;
+}
 
-	private constructor() {}
+const createInitialTabBuilderState = (): EditorTabBuilderState => ({
+	workspaceId: "",
+	nodeId: "",
+	title: "",
+	type: "file",
+	isDirty: false,
+});
 
-	static create(): EditorTabBuilder {
-		return new EditorTabBuilder();
-	}
+// ==============================
+// EditorTab Builder Functions
+// ==============================
 
-	workspaceId(id: string): this {
-		this._workspaceId = id;
-		return this;
-	}
+export interface EditorTabBuilder {
+	readonly workspaceId: (id: string) => EditorTabBuilder;
+	readonly nodeId: (id: string) => EditorTabBuilder;
+	readonly title: (title: string) => EditorTabBuilder;
+	readonly type: (type: TabType) => EditorTabBuilder;
+	readonly dirty: (isDirty?: boolean) => EditorTabBuilder;
+	readonly from: (tab: Partial<EditorTab>) => EditorTabBuilder;
+	readonly build: () => EditorTab;
+}
 
-	nodeId(id: string): this {
-		this._nodeId = id;
-		return this;
-	}
-
-	title(title: string): this {
-		this._title = title;
-		return this;
-	}
-
-	type(type: TabType): this {
-		this._type = type;
-		return this;
-	}
-
-	dirty(isDirty: boolean = true): this {
-		this._isDirty = isDirty;
-		return this;
-	}
-
-	/**
-	 * 从现有标签复制
-	 */
-	from(tab: Partial<EditorTab>): this {
-		if (tab.workspaceId) this._workspaceId = tab.workspaceId;
-		if (tab.nodeId) this._nodeId = tab.nodeId;
-		if (tab.title) this._title = tab.title;
-		if (tab.type) this._type = tab.type;
-		if (tab.isDirty !== undefined) this._isDirty = tab.isDirty;
-		return this;
-	}
-
-	build(): EditorTab {
-		if (!this._workspaceId) {
+const createEditorTabBuilder = (state: EditorTabBuilderState = createInitialTabBuilderState()): EditorTabBuilder => ({
+	workspaceId: (id: string) => createEditorTabBuilder({ ...state, workspaceId: id }),
+	nodeId: (id: string) => createEditorTabBuilder({ ...state, nodeId: id }),
+	title: (title: string) => createEditorTabBuilder({ ...state, title }),
+	type: (type: TabType) => createEditorTabBuilder({ ...state, type }),
+	dirty: (isDirty: boolean = true) => createEditorTabBuilder({ ...state, isDirty }),
+	from: (tab: Partial<EditorTab>) => createEditorTabBuilder({
+		...state,
+		...(tab.workspaceId && { workspaceId: tab.workspaceId }),
+		...(tab.nodeId && { nodeId: tab.nodeId }),
+		...(tab.title && { title: tab.title }),
+		...(tab.type && { type: tab.type }),
+		...(tab.isDirty !== undefined && { isDirty: tab.isDirty }),
+	}),
+	build: (): EditorTab => {
+		if (!state.workspaceId) {
 			throw new Error("EditorTab requires workspaceId");
 		}
-		if (!this._nodeId) {
+		if (!state.nodeId) {
 			throw new Error("EditorTab requires nodeId");
 		}
-		if (!this._title) {
+		if (!state.title) {
 			throw new Error("EditorTab requires title");
 		}
 
 		return Object.freeze({
-			id: this._nodeId, // 使用 nodeId 作为 id
-			workspaceId: this._workspaceId,
-			nodeId: this._nodeId,
-			title: this._title,
-			type: this._type,
-			isDirty: this._isDirty,
+			id: state.nodeId, // 使用 nodeId 作为 id
+			workspaceId: state.workspaceId,
+			nodeId: state.nodeId,
+			title: state.title,
+			type: state.type,
+			isDirty: state.isDirty,
 		});
-	}
+	},
+});
+
+export const EditorTabBuilderFactory = {
+	create: () => createEditorTabBuilder(),
+};
+
+// ==============================
+// EditorInstanceState Builder State
+// ==============================
+
+interface EditorStateBuilderState {
+	readonly serializedState: SerializedEditorState | undefined;
+	readonly selectionState: EditorSelectionState | undefined;
+	readonly scrollTop: number;
+	readonly scrollLeft: number;
+	readonly isDirty: boolean;
+	readonly lastModified: number;
 }
 
+const createInitialEditorStateBuilderState = (): EditorStateBuilderState => ({
+	serializedState: undefined,
+	selectionState: undefined,
+	scrollTop: 0,
+	scrollLeft: 0,
+	isDirty: false,
+	lastModified: dayjs().valueOf(),
+});
+
 // ==============================
-// EditorInstanceState Builder
+// EditorInstanceState Builder Functions
 // ==============================
 
-export class EditorStateBuilder {
-	private _serializedState: SerializedEditorState | undefined = undefined;
-	private _selectionState: EditorSelectionState | undefined = undefined;
-	private _scrollTop: number = 0;
-	private _scrollLeft: number = 0;
-	private _isDirty: boolean = false;
-	private _lastModified: number = Date.now();
+export interface EditorStateBuilder {
+	readonly serializedState: (state: SerializedEditorState | undefined) => EditorStateBuilder;
+	readonly selection: (
+		anchor: { readonly key: string; readonly offset: number },
+		focus: { readonly key: string; readonly offset: number },
+	) => EditorStateBuilder;
+	readonly scrollPosition: (top: number, left?: number) => EditorStateBuilder;
+	readonly dirty: (isDirty?: boolean) => EditorStateBuilder;
+	readonly from: (state: Partial<EditorInstanceState>) => EditorStateBuilder;
+	readonly touch: () => EditorStateBuilder;
+	readonly build: () => EditorInstanceState;
+}
 
-	private constructor() {}
+const createEditorStateBuilder = (state: EditorStateBuilderState = createInitialEditorStateBuilderState()): EditorStateBuilder => ({
+	serializedState: (serializedState: SerializedEditorState | undefined) => 
+		createEditorStateBuilder({ ...state, serializedState }),
+	selection: (
+		anchor: { readonly key: string; readonly offset: number },
+		focus: { readonly key: string; readonly offset: number },
+	) => createEditorStateBuilder({ ...state, selectionState: { anchor, focus } }),
+	scrollPosition: (top: number, left: number = 0) => 
+		createEditorStateBuilder({ ...state, scrollTop: top, scrollLeft: left }),
+	dirty: (isDirty: boolean = true) => 
+		createEditorStateBuilder({ ...state, isDirty }),
+	from: (partialState: Partial<EditorInstanceState>) => createEditorStateBuilder({
+		...state,
+		...(partialState.serializedState !== undefined && { serializedState: partialState.serializedState }),
+		...(partialState.selectionState && { selectionState: partialState.selectionState }),
+		...(partialState.scrollTop !== undefined && { scrollTop: partialState.scrollTop }),
+		...(partialState.scrollLeft !== undefined && { scrollLeft: partialState.scrollLeft }),
+		...(partialState.isDirty !== undefined && { isDirty: partialState.isDirty }),
+		...(partialState.lastModified !== undefined && { lastModified: partialState.lastModified }),
+	}),
+	touch: () => createEditorStateBuilder({ ...state, lastModified: dayjs().valueOf() }),
+	build: (): EditorInstanceState => Object.freeze({
+		serializedState: state.serializedState,
+		selectionState: state.selectionState,
+		scrollTop: state.scrollTop,
+		scrollLeft: state.scrollLeft,
+		isDirty: state.isDirty,
+		lastModified: state.lastModified,
+	}),
+});
 
-	static create(): EditorStateBuilder {
-		return new EditorStateBuilder();
-	}
-
-	/**
-	 * 从默认状态开始
-	 */
-	static fromDefault(): EditorStateBuilder {
-		const builder = new EditorStateBuilder();
+export const EditorStateBuilderFactory = {
+	create: () => createEditorStateBuilder(),
+	fromDefault: () => {
 		const defaultState = createDefaultEditorState();
-		return builder.from(defaultState);
-	}
-
-	serializedState(state: SerializedEditorState | undefined): this {
-		this._serializedState = state;
-		return this;
-	}
-
-	selection(
-		anchor: { key: string; offset: number },
-		focus: { key: string; offset: number },
-	): this {
-		this._selectionState = { anchor, focus };
-		return this;
-	}
-
-	scrollPosition(top: number, left: number = 0): this {
-		this._scrollTop = top;
-		this._scrollLeft = left;
-		return this;
-	}
-
-	dirty(isDirty: boolean = true): this {
-		this._isDirty = isDirty;
-		return this;
-	}
-
-	/**
-	 * 从现有状态复制
-	 */
-	from(state: Partial<EditorInstanceState>): this {
-		if (state.serializedState !== undefined)
-			this._serializedState = state.serializedState;
-		if (state.selectionState) this._selectionState = state.selectionState;
-		if (state.scrollTop !== undefined) this._scrollTop = state.scrollTop;
-		if (state.scrollLeft !== undefined) this._scrollLeft = state.scrollLeft;
-		if (state.isDirty !== undefined) this._isDirty = state.isDirty;
-		if (state.lastModified !== undefined)
-			this._lastModified = state.lastModified;
-		return this;
-	}
-
-	/**
-	 * 更新 lastModified 为当前时间
-	 */
-	touch(): this {
-		this._lastModified = Date.now();
-		return this;
-	}
-
-	build(): EditorInstanceState {
-		return Object.freeze({
-			serializedState: this._serializedState,
-			selectionState: this._selectionState,
-			scrollTop: this._scrollTop,
-			scrollLeft: this._scrollLeft,
-			isDirty: this._isDirty,
-			lastModified: this._lastModified,
-		});
-	}
-}
+		return createEditorStateBuilder().from(defaultState);
+	},
+};
 
 // ==============================
 // Convenience Functions
@@ -202,7 +193,7 @@ export const createFileTab = (
 	nodeId: string,
 	title: string,
 ): EditorTab =>
-	EditorTabBuilder.create()
+	EditorTabBuilderFactory.create()
 		.workspaceId(workspaceId)
 		.nodeId(nodeId)
 		.title(title)
@@ -217,7 +208,7 @@ export const createDiaryTab = (
 	nodeId: string,
 	title: string,
 ): EditorTab =>
-	EditorTabBuilder.create()
+	EditorTabBuilderFactory.create()
 		.workspaceId(workspaceId)
 		.nodeId(nodeId)
 		.title(title)
@@ -232,7 +223,7 @@ export const createCanvasTab = (
 	nodeId: string,
 	title: string,
 ): EditorTab =>
-	EditorTabBuilder.create()
+	EditorTabBuilderFactory.create()
 		.workspaceId(workspaceId)
 		.nodeId(nodeId)
 		.title(title)

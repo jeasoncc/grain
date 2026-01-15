@@ -154,7 +154,7 @@ export function parseFrontMatter(
 				frontMatter = { ...frontMatter, [currentKey]: currentArray };
 			}
 
-			return [frontMatter, remainingContent] as readonly [Record<string, unknown>, string];
+			return [frontMatter, remainingContent] as const;
 		},
 		() => new Error("Front matter 解析失败"),
 	);
