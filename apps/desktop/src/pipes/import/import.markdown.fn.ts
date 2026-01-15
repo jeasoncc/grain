@@ -227,8 +227,9 @@ export function parseInlineContent(
 
 	// 查找所有格式化文本
 	for (const { regex, format } of patterns) {
-		regex.lastIndex = 0
-		const matches = Array.from(text.matchAll(regex))
+		// 创建新的正则表达式实例以避免修改原对象
+		const regexCopy = new RegExp(regex.source, regex.flags)
+		const matches = Array.from(text.matchAll(regexCopy))
 		for (const match of matches) {
 			if (match.index === undefined) continue
 			const content = match[1] || match[2]

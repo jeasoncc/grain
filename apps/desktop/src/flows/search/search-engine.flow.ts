@@ -9,6 +9,7 @@
  */
 
 import * as E from "fp-ts/Either"
+import { orderBy } from "es-toolkit"
 import lunr from "lunr"
 import { getAllNodes, getContentsByNodeIds, getNodesByWorkspace, getWorkspaceById } from "@/io/api"
 import { success } from "@/io/log/logger.api"
@@ -264,9 +265,7 @@ export const search = async (
 				]
 			})
 
-			return results
-				.slice()
-				.sort((a, b) => b.score - a.score)
+			return orderBy(results, [(item) => item.score], ['desc'])
 				.slice(0, limit)
 		}
 
@@ -349,9 +348,7 @@ export const simpleSearch = async (
 				return []
 			})
 
-			return results
-				.slice()
-				.sort((a, b) => b.score - a.score)
+			return orderBy(results, [(item) => item.score], ['desc'])
 				.slice(0, limit)
 		}
 

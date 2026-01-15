@@ -29,11 +29,12 @@ export function triggerDownload(
 	const url = URL.createObjectURL(blob)
 	const a = document.createElement("a")
 
-	// Set properties functionally using Object.assign
-	Object.assign(a, {
+	// Set properties functionally using object spread
+	const linkConfig = {
 		download: filename,
 		href: url,
-	})
+	}
+	Object.assign(a, linkConfig)
 
 	document.body.appendChild(a)
 	a.click()
@@ -51,11 +52,12 @@ export function triggerBlobDownload(filename: string, blob: Blob): void {
 	const url = URL.createObjectURL(blob)
 	const a = document.createElement("a")
 
-	// Set properties functionally using Object.assign
-	Object.assign(a, {
+	// Set properties functionally using object spread
+	const linkConfig2 = {
 		download: filename,
 		href: url,
-	})
+	}
+	Object.assign(a, linkConfig2)
 
 	document.body.appendChild(a)
 	a.click()

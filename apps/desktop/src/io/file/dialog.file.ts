@@ -223,16 +223,18 @@ export async function selectFile(options?: FileSelectOptions): Promise<FileSelec
 	return new Promise((resolve) => {
 		const input = document.createElement("input")
 
-		// Apply configuration functionally using Object.assign
-		Object.assign(input, {
+		// Apply configuration functionally using object spread
+		const inputConfig = {
 			multiple: options?.multiple ?? false,
-			type: "file",
-		})
+			type: "file" as const,
+		}
+		Object.assign(input, inputConfig)
 
 		if (options?.filters && options.filters.length > 0) {
 			const extensions = options.filters.flatMap((f) => f.extensions)
 			const acceptValue = extensions.map((ext) => `.${ext}`).join(",")
-			Object.assign(input, { accept: acceptValue })
+			const acceptConfig = { accept: acceptValue }
+			Object.assign(input, acceptConfig)
 		}
 
 		const handleChange = (e: Event) => {
