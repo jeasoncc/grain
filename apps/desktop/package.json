@@ -128,6 +128,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.2",
+    "@grain/eslint-plugin": "workspace:*",
     "@tanstack/react-query-devtools": "^5.91.2",
     "@tauri-apps/cli": "^2",
     "@testing-library/dom": "^10.4.1",

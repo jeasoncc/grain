@@ -1,5 +1,5 @@
 {
-  "name": "eslint-plugin-grain",
+  "name": "@grain/eslint-plugin",
   "version": "2.0.0",
   "description": "ESLint plugin for Grain functional programming architecture enforcement",
   "main": "dist/index.js",

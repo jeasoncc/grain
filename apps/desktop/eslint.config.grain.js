@@ -8,7 +8,7 @@ import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
 import checkFile from 'eslint-plugin-check-file';
 import functional from 'eslint-plugin-functional';
-import grainPlugin from './eslint-plugin-grain/dist/index.js';
+import grainPlugin from '@grain/eslint-plugin';
 import globals from 'globals';
 
 export default [
