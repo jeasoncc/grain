@@ -228,14 +228,16 @@ export async function selectFile(
 	return new Promise((resolve) => {
 		const input = document.createElement("input");
 		
-		// Apply configuration functionally
-		input.type = "file";
-		input.multiple = options?.multiple ?? false;
+		// Apply configuration functionally using Object.assign
+		Object.assign(input, {
+			type: "file",
+			multiple: options?.multiple ?? false,
+		});
 
 		if (options?.filters && options.filters.length > 0) {
 			const extensions = options.filters.flatMap((f) => f.extensions);
 			const acceptValue = extensions.map((ext) => `.${ext}`).join(",");
-			input.accept = acceptValue;
+			Object.assign(input, { accept: acceptValue });
 		}
 
 		const handleChange = (e: Event) => {
@@ -253,9 +255,9 @@ export async function selectFile(
 			});
 		};
 
-		// Assign event handlers functionally
-		input.onchange = handleChange;
-		input.oncancel = handleCancel;
+		// Assign event handlers using addEventListener instead of direct assignment
+		input.addEventListener("change", handleChange);
+		input.addEventListener("cancel", handleCancel);
 
 		input.click();
 	});

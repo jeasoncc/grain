@@ -22,6 +22,11 @@ export interface ShortcutConfig {
 	readonly altKey?: boolean;
 }
 
+interface KeyboardShortcutState {
+	readonly shortcuts: ReadonlyMap<string, () => void>;
+	readonly isListening: boolean;
+}
+
 // ============================================================================
 // Pure Functions
 // ============================================================================
@@ -51,59 +56,47 @@ export const isEditableElement = (target: HTMLElement): boolean => {
 };
 
 // ============================================================================
-// Keyboard Shortcut Manager
+// State Management Functions
 // ============================================================================
 
-interface KeyboardShortcutState {
-	readonly shortcuts: ReadonlyMap<string, () => void>;
-	readonly isListening: boolean;
-}
+const createInitialState = (): KeyboardShortcutState => ({
+	shortcuts: new Map(),
+	isListening: false,
+});
 
-class KeyboardShortcutManager implements KeyboardShortcutHandler {
-	private state: KeyboardShortcutState = {
-		shortcuts: new Map(),
-		isListening: false,
-	};
+const addShortcut = (
+	state: KeyboardShortcutState,
+	key: string,
+	handler: () => void,
+): KeyboardShortcutState => ({
+	...state,
+	shortcuts: new Map([...state.shortcuts, [key, handler]]),
+});
 
-	constructor() {
-		this.handleKeyDown = this.handleKeyDown.bind(this);
-	}
+const removeShortcut = (
+	state: KeyboardShortcutState,
+	key: string,
+): KeyboardShortcutState => ({
+	...state,
+	shortcuts: new Map([...state.shortcuts].filter(([k]) => k !== key)),
+});
 
-	readonly registerShortcut = (key: string, handler: () => void): void => {
-		const newShortcuts = new Map([...this.state.shortcuts, [key, handler]]);
-		
-		if (!this.state.isListening) {
-			window.addEventListener("keydown", this.handleKeyDown);
-			this.state = {
-				shortcuts: newShortcuts,
-				isListening: true,
-			};
-		} else {
-			this.state = {
-				...this.state,
-				shortcuts: newShortcuts,
-			};
-		}
-	};
+const setListening = (
+	state: KeyboardShortcutState,
+	isListening: boolean,
+): KeyboardShortcutState => ({
+	...state,
+	isListening,
+});
 
-	readonly unregisterShortcut = (key: string): void => {
-		const newShortcuts = new Map([...this.state.shortcuts].filter(([k]) => k !== key));
+// ============================================================================
+// Keyboard Shortcut Manager (Functional)
+// ============================================================================
 
-		if (newShortcuts.size === 0 && this.state.isListening) {
-			window.removeEventListener("keydown", this.handleKeyDown);
-			this.state = {
-				shortcuts: newShortcuts,
-				isListening: false,
-			};
-		} else {
-			this.state = {
-				...this.state,
-				shortcuts: newShortcuts,
-			};
-		}
-	};
+const createKeyboardShortcutManager = (): KeyboardShortcutHandler => {
+	let state = createInitialState();
 
-	private readonly handleKeyDown = (event: KeyboardEvent): void => {
+	const handleKeyDown = (event: KeyboardEvent): void => {
 		const target = event.target as HTMLElement;
 
 		if (isEditableElement(target)) {
@@ -113,7 +106,7 @@ class KeyboardShortcutManager implements KeyboardShortcutHandler {
 		}
 
 		const shortcutKey = getShortcutKey(event);
-		const handler = this.state.shortcuts.get(shortcutKey);
+		const handler = state.shortcuts.get(shortcutKey);
 
 		if (handler) {
 			event.preventDefault();
@@ -121,23 +114,28 @@ class KeyboardShortcutManager implements KeyboardShortcutHandler {
 		}
 	};
 
-	readonly destroy = (): void => {
-		if (this.state.isListening) {
-			window.removeEventListener("keydown", this.handleKeyDown);
+	const registerShortcut = (key: string, handler: () => void): void => {
+		state = addShortcut(state, key, handler);
+		
+		if (!state.isListening) {
+			window.addEventListener("keydown", handleKeyDown);
+			state = setListening(state, true);
 		}
-		this.state = {
-			shortcuts: new Map(),
-			isListening: false,
-		};
 	};
 
-	get shortcutCount(): number {
-		return this.state.shortcuts.size;
-	}
+	const unregisterShortcut = (key: string): void => {
+		state = removeShortcut(state, key);
 
-	get listening(): boolean {
-		return this.state.isListening;
-	}
-}
+		if (state.shortcuts.size === 0 && state.isListening) {
+			window.removeEventListener("keydown", handleKeyDown);
+			state = setListening(state, false);
+		}
+	};
 
-export const keyboardShortcutManager = new KeyboardShortcutManager();
+	return {
+		registerShortcut,
+		unregisterShortcut,
+	};
+};
+
+export const keyboardShortcutManager = createKeyboardShortcutManager();

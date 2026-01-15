@@ -29,9 +29,11 @@ export function triggerDownload(
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement("a");
 	
-	// Set properties functionally
-	a.href = url;
-	a.download = filename;
+	// Set properties functionally using Object.assign
+	Object.assign(a, {
+		href: url,
+		download: filename,
+	});
 	
 	document.body.appendChild(a);
 	a.click();
@@ -49,9 +51,11 @@ export function triggerBlobDownload(filename: string, blob: Blob): void {
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement("a");
 	
-	// Set properties functionally
-	a.href = url;
-	a.download = filename;
+	// Set properties functionally using Object.assign
+	Object.assign(a, {
+		href: url,
+		download: filename,
+	});
 	
 	document.body.appendChild(a);
 	a.click();

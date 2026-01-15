@@ -150,9 +150,19 @@ export const reorderTabs = (
 	fromIndex: number,
 	toIndex: number,
 ): readonly EditorTab[] => {
-	const result = [...tabs];
-	const [removed] = result.splice(fromIndex, 1);
-	result.splice(toIndex, 0, removed);
+	if (fromIndex === toIndex) return tabs;
+	
+	const tabsArray = [...tabs];
+	const movedTab = tabsArray[fromIndex];
+	
+	// 创建新数组，不使用 splice 变异操作
+	const withoutMoved = tabsArray.filter((_, index) => index !== fromIndex);
+	const result = [
+		...withoutMoved.slice(0, toIndex),
+		movedTab,
+		...withoutMoved.slice(toIndex),
+	];
+	
 	return result;
 };
 
@@ -232,26 +242,24 @@ export const evictLRUEditorStates = (
 
 	// 计算需要清理的数量
 	const toEvictCount = entries.length - maxStates;
-	const evictedIds = new Set<string>();
-
-	for (const [id, state] of sortedEntries) {
-		if (evictedIds.size >= toEvictCount) break;
-
-		// 不清理：活动标签、打开的标签、有未保存更改的状态
-		if (id === activeTabId || openTabIds.has(id) || state.isDirty) {
-			continue;
-		}
-
-		evictedIds.add(id);
-	}
+	
+	// 使用函数式方法收集要清理的 ID
+	const evictedIds = sortedEntries
+		.slice(0, toEvictCount)
+		.filter(([id, state]) => {
+			// 不清理：活动标签、打开的标签、有未保存更改的状态
+			return !(id === activeTabId || openTabIds.has(id) || state.isDirty);
+		})
+		.map(([id]) => id);
 
 	// 如果无法清理任何状态，返回原状态
-	if (evictedIds.size === 0) {
+	if (evictedIds.length === 0) {
 		return states;
 	}
 
 	// 创建新对象，排除被清理的条目
-	return Object.fromEntries(entries.filter(([id]) => !evictedIds.has(id)));
+	const evictedSet = new Set(evictedIds);
+	return Object.fromEntries(entries.filter(([id]) => !evictedSet.has(id)));
 };
 
 // ==============================

@@ -12,7 +12,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { debounce } from "es-toolkit";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { queryKeys } from "@/hooks/queries/query-keys";
 import { setNodeCollapsed as setNodeCollapsedApi } from "@/io/api/node.api";
@@ -47,8 +47,8 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 	const { workspaceId, debounceMs = 300 } = options;
 	const queryClient = useQueryClient();
 
-	// 存储待处理的更新（用于回滚）
-	const pendingUpdatesRef = useRef<ReadonlyMap<string, PendingUpdate>>(new Map());
+	// 使用 useState 而不是 useRef 来避免直接变异
+	const [pendingUpdates, setPendingUpdates] = useState<ReadonlyMap<string, PendingUpdate>>(new Map());
 
 	/**
 	 * 执行后端同步（防抖）
@@ -97,9 +97,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 					toast.error("Failed to update folder state");
 
 					// 清除待处理的更新
-					const newPendingUpdates = new Map(pendingUpdatesRef.current);
-					newPendingUpdates.delete(nodeId);
-					(pendingUpdatesRef.current as any) = newPendingUpdates;
+					setPendingUpdates(prev => new Map([...prev].filter(([id]) => id !== nodeId)));
 					return;
 				}
 
@@ -120,9 +118,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 				});
 
 				// 清除待处理的更新
-				const newPendingUpdates = new Map(pendingUpdatesRef.current);
-				newPendingUpdates.delete(nodeId);
-				(pendingUpdatesRef.current as any) = newPendingUpdates;
+				setPendingUpdates(prev => new Map([...prev].filter(([id]) => id !== nodeId)));
 			});
 		},
 		[workspaceId, queryClient],
@@ -147,11 +143,11 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			debouncedSyncRef.current.cancel();
 
 			// 立即同步所有待处理的更新
-			for (const [nodeId, update] of pendingUpdatesRef.current.entries()) {
+			for (const [nodeId, update] of pendingUpdates.entries()) {
 				syncToBackend(nodeId, update.collapsed, update.previousData);
 			}
 		};
-	}, [syncToBackend]);
+	}, [syncToBackend, pendingUpdates]);
 
 	/**
 	 * 乐观更新节点折叠状态
@@ -195,12 +191,11 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			});
 
 			// 3. 存储待处理的更新
-			const newPendingUpdates = new Map([...pendingUpdatesRef.current, [nodeId, {
+			setPendingUpdates(prev => new Map([...prev, [nodeId, {
 				nodeId,
 				collapsed,
 				previousData,
-			}]]);
-			(pendingUpdatesRef.current as any) = newPendingUpdates;
+			}]]));
 
 			// 4. 防抖调用后端 API - Requirements: 1.2, 6.1, 6.4
 			debouncedSyncRef.current(nodeId, collapsed, previousData);

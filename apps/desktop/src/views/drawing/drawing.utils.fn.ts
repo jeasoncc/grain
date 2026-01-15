@@ -42,7 +42,7 @@ export function getSafeDrawingDimensions(
 	width: number | undefined,
 	height: number | undefined,
 	dpr: number = 1,
-): { width: number; height: number } {
+): { readonly width: number; readonly height: number } {
 	const maxSafeSize = Math.floor(4096 / dpr);
 
 	const safeWidth = Math.min(
@@ -54,7 +54,7 @@ export function getSafeDrawingDimensions(
 		maxSafeSize,
 	);
 
-	return { width: safeWidth, height: safeHeight };
+	return { width: safeWidth, height: safeHeight } as const;
 }
 
 /**
@@ -107,53 +107,45 @@ export function sanitizeDrawingContent(content: string): string {
 	try {
 		const data = JSON.parse(content);
 
-		// 清理 elements 中的异常坐标
-		if (data.elements && Array.isArray(data.elements)) {
-			for (const element of data.elements) {
-				if (
-					typeof element.x === "number" &&
-					Math.abs(element.x) > MAX_SAFE_COORD
-				) {
-					element.x = 0;
-				}
-				if (
-					typeof element.y === "number" &&
-					Math.abs(element.y) > MAX_SAFE_COORD
-				) {
-					element.y = 0;
-				}
-				if (
-					typeof element.width === "number" &&
-					Math.abs(element.width) > MAX_SAFE_COORD
-				) {
-					element.width = 100;
-				}
-				if (
-					typeof element.height === "number" &&
-					Math.abs(element.height) > MAX_SAFE_COORD
-				) {
-					element.height = 100;
-				}
-			}
-		}
+		// 清理 elements 中的异常坐标 - 使用不可变方式
+		const cleanedElements = data.elements && Array.isArray(data.elements)
+			? data.elements.map((element: any) => ({
+				...element,
+				...(typeof element.x === "number" && Math.abs(element.x) > MAX_SAFE_COORD
+					? { x: 0 }
+					: {}),
+				...(typeof element.y === "number" && Math.abs(element.y) > MAX_SAFE_COORD
+					? { y: 0 }
+					: {}),
+				...(typeof element.width === "number" && Math.abs(element.width) > MAX_SAFE_COORD
+					? { width: 100 }
+					: {}),
+				...(typeof element.height === "number" && Math.abs(element.height) > MAX_SAFE_COORD
+					? { height: 100 }
+					: {}),
+			}))
+			: data.elements;
 
-		// 清理 appState 中的异常值
-		if (data.appState) {
-			if (
-				typeof data.appState.scrollX === "number" &&
-				Math.abs(data.appState.scrollX) > MAX_SAFE_COORD
-			) {
-				data.appState.scrollX = 0;
+		// 清理 appState 中的异常值 - 使用不可变方式
+		const cleanedAppState = data.appState
+			? {
+				...data.appState,
+				...(typeof data.appState.scrollX === "number" && Math.abs(data.appState.scrollX) > MAX_SAFE_COORD
+					? { scrollX: 0 }
+					: {}),
+				...(typeof data.appState.scrollY === "number" && Math.abs(data.appState.scrollY) > MAX_SAFE_COORD
+					? { scrollY: 0 }
+					: {}),
 			}
-			if (
-				typeof data.appState.scrollY === "number" &&
-				Math.abs(data.appState.scrollY) > MAX_SAFE_COORD
-			) {
-				data.appState.scrollY = 0;
-			}
-		}
+			: data.appState;
 
-		return JSON.stringify(data);
+		const cleanedData = {
+			...data,
+			elements: cleanedElements,
+			appState: cleanedAppState,
+		};
+
+		return JSON.stringify(cleanedData);
 	} catch {
 		return EMPTY_DRAWING_CONTENT;
 	}

@@ -274,7 +274,7 @@ export const search = async (
 					} satisfies SearchResult];
 				});
 
-			return [...results].sort((a, b) => b.score - a.score).slice(0, limit);
+			return results.slice().sort((a, b) => b.score - a.score).slice(0, limit);
 		}
 
 		return [];
@@ -355,7 +355,7 @@ export const simpleSearch = async (
 					return [];
 				});
 
-			return [...results].sort((a, b) => b.score - a.score).slice(0, limit);
+			return results.slice().sort((a, b) => b.score - a.score).slice(0, limit);
 		}
 
 		return [];

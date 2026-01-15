@@ -53,16 +53,15 @@ export const pushToStack = (
 	nodeId: string,
 	entry: EditorHistoryEntry,
 ): HistoryStack => {
-	const newStack = new Map(stack);
-	const nodeHistory = [...(stack.get(nodeId) || []), entry];
+	const currentHistory = stack.get(nodeId) || [];
+	const nodeHistory = [...currentHistory, entry];
 
-	// 强制执行最大历史大小
-	if (nodeHistory.length > MAX_HISTORY_SIZE) {
-		nodeHistory.shift();
-	}
+	// 强制执行最大历史大小 - 使用 slice 而不是 shift
+	const finalHistory = nodeHistory.length > MAX_HISTORY_SIZE 
+		? nodeHistory.slice(-MAX_HISTORY_SIZE)
+		: nodeHistory;
 
-	newStack.set(nodeId, nodeHistory);
-	return newStack;
+	return new Map([...stack, [nodeId, finalHistory]]);
 };
 
 /**
@@ -76,19 +75,17 @@ export const pushToStack = (
 export const popFromStack = (
 	stack: HistoryStack,
 	nodeId: string,
-): [HistoryStack, EditorHistoryEntry | null] => {
+): readonly [HistoryStack, EditorHistoryEntry | null] => {
 	const nodeHistory = stack.get(nodeId);
 
 	if (!nodeHistory || nodeHistory.length === 0) {
-		return [stack, null];
+		return [stack, null] as const;
 	}
 
-	const newStack = new Map(stack);
-	const newHistory = [...nodeHistory];
-	const entry = newHistory.pop()!;
+	const newHistory = nodeHistory.slice(0, -1);
+	const entry = nodeHistory[nodeHistory.length - 1];
 
-	newStack.set(nodeId, newHistory);
-	return [newStack, entry];
+	return [new Map([...stack, [nodeId, newHistory]]), entry] as const;
 };
 
 /**
@@ -103,9 +100,7 @@ export const clearNodeFromStack = (
 	stack: HistoryStack,
 	nodeId: string,
 ): HistoryStack => {
-	const newStack = new Map(stack);
-	newStack.delete(nodeId);
-	return newStack;
+	return new Map([...stack].filter(([key]) => key !== nodeId));
 };
 
 /**
@@ -156,8 +151,8 @@ export const hasHistory = (stack: HistoryStack, nodeId: string): boolean => {
  */
 export const serializeStack = (
 	stack: HistoryStack,
-): Array<[string, EditorHistoryEntry[]]> => {
-	return Array.from(stack.entries());
+): readonly (readonly [string, readonly EditorHistoryEntry[]])[] => {
+	return Array.from(stack.entries()) as readonly (readonly [string, readonly EditorHistoryEntry[]])[];
 };
 
 /**
@@ -167,7 +162,7 @@ export const serializeStack = (
  * @returns 历史栈
  */
 export const deserializeStack = (
-	data: Array<[string, EditorHistoryEntry[]]> | undefined,
+	data: readonly (readonly [string, readonly EditorHistoryEntry[]])[] | undefined,
 ): HistoryStack => {
 	if (!data) return new Map();
 	return new Map(data);
