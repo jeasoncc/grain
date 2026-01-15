@@ -18,124 +18,104 @@ import {
 	Palette,
 	StickyNote,
 	X,
-} from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { EditorTab } from "@/types/editor-tab";
-import { cn } from "@/utils/cn.util";
-import { Button } from "@/views/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-} from "@/views/ui/dialog";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/views/ui/tooltip";
-import type { EditorTabsViewProps } from "./editor-tabs.types";
+} from "lucide-react"
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import type { EditorTab } from "@/types/editor-tab"
+import { cn } from "@/utils/cn.util"
+import { Button } from "@/views/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/views/ui/dialog"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/views/ui/tooltip"
+import type { EditorTabsViewProps } from "./editor-tabs.types"
 
 // 根据标签数量计算最大宽度
 function getTabMaxWidth(tabCount: number): number {
-	if (tabCount <= 3) return 200;
-	if (tabCount <= 5) return 160;
-	if (tabCount <= 8) return 120;
-	return 100;
+	if (tabCount <= 3) return 200
+	if (tabCount <= 5) return 160
+	if (tabCount <= 8) return 120
+	return 100
 }
 
 export const EditorTabsView = memo(
-	({
-		className,
-		tabs,
-		activeTabId,
-		onSetActiveTab,
-		onCloseTab,
-	}: EditorTabsViewProps) => {
-		const [cardViewOpen, setCardViewOpen] = useState(false);
-		const [showScrollButtons, setShowScrollButtons] = useState(false);
-		const [canScrollLeft, setCanScrollLeft] = useState(false);
-		const [canScrollRight, setCanScrollRight] = useState(false);
-		const scrollContainerRef = useRef<HTMLDivElement>(null);
+	({ className, tabs, activeTabId, onSetActiveTab, onCloseTab }: EditorTabsViewProps) => {
+		const [cardViewOpen, setCardViewOpen] = useState(false)
+		const [showScrollButtons, setShowScrollButtons] = useState(false)
+		const [canScrollLeft, setCanScrollLeft] = useState(false)
+		const [canScrollRight, setCanScrollRight] = useState(false)
+		const scrollContainerRef = useRef<HTMLDivElement>(null)
 
 		// 计算标签最大宽度
-		const tabMaxWidth = useMemo(
-			() => getTabMaxWidth(tabs.length),
-			[tabs.length],
-		);
+		const tabMaxWidth = useMemo(() => getTabMaxWidth(tabs.length), [tabs.length])
 
 		// 检查是否需要显示滚动按钮
 		const checkScrollState = useCallback(() => {
-			const container = scrollContainerRef.current;
-			if (!container) return;
+			const container = scrollContainerRef.current
+			if (!container) return
 
-			const hasOverflow = container.scrollWidth > container.clientWidth;
-			setShowScrollButtons(hasOverflow);
-			setCanScrollLeft(container.scrollLeft > 0);
-			setCanScrollRight(
-				container.scrollLeft <
-					container.scrollWidth - container.clientWidth - 1,
-			);
-		}, []); // Add tabs.length as dependency so it re-creates when tabs change
+			const hasOverflow = container.scrollWidth > container.clientWidth
+			setShowScrollButtons(hasOverflow)
+			setCanScrollLeft(container.scrollLeft > 0)
+			setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth - 1)
+		}, []) // Add tabs.length as dependency so it re-creates when tabs change
 
 		useEffect(() => {
-			checkScrollState();
-			window.addEventListener("resize", checkScrollState);
-			return () => window.removeEventListener("resize", checkScrollState);
-		}, [checkScrollState]);
+			checkScrollState()
+			window.addEventListener("resize", checkScrollState)
+			return () => window.removeEventListener("resize", checkScrollState)
+		}, [checkScrollState])
 
 		// 滚动到活动标签
 		useEffect(() => {
-			if (!activeTabId || !scrollContainerRef.current) return;
+			if (!activeTabId || !scrollContainerRef.current) return
 			const activeElement = scrollContainerRef.current.querySelector(
 				`[data-tab-id="${activeTabId}"]`,
-			);
+			)
 			activeElement?.scrollIntoView({
 				behavior: "smooth",
 				block: "nearest",
 				inline: "nearest",
-			});
-		}, [activeTabId]);
+			})
+		}, [activeTabId])
 
 		const handleScroll = () => {
-			checkScrollState();
-		};
+			checkScrollState()
+		}
 
 		const scrollLeft = () => {
-			scrollContainerRef.current?.scrollBy({ left: -150, behavior: "smooth" });
-		};
+			scrollContainerRef.current?.scrollBy({ left: -150, behavior: "smooth" })
+		}
 
 		const scrollRight = () => {
-			scrollContainerRef.current?.scrollBy({ left: 150, behavior: "smooth" });
-		};
+			scrollContainerRef.current?.scrollBy({ left: 150, behavior: "smooth" })
+		}
 
 		if (tabs.length === 0) {
-			return null;
+			return null
 		}
 
 		const getTabIcon = (type: EditorTab["type"]) => {
 			switch (type) {
 				case "diary":
-					return <Calendar className="size-3.5 shrink-0" />;
+					return <Calendar className="size-3.5 shrink-0" />
 				case "wiki":
-					return <BookOpen className="size-3.5 shrink-0" />;
+					return <BookOpen className="size-3.5 shrink-0" />
 				case "todo":
-					return <CheckSquare className="size-3.5 shrink-0" />;
+					return <CheckSquare className="size-3.5 shrink-0" />
 				case "note":
-					return <StickyNote className="size-3.5 shrink-0" />;
+					return <StickyNote className="size-3.5 shrink-0" />
 				case "ledger":
-					return <DollarSign className="size-3.5 shrink-0" />;
+					return <DollarSign className="size-3.5 shrink-0" />
 				case "drawing":
-					return <Palette className="size-3.5 shrink-0" />;
+					return <Palette className="size-3.5 shrink-0" />
 				default:
-					return <FileText className="size-3.5 shrink-0" />;
+					return <FileText className="size-3.5 shrink-0" />
 			}
-		};
+		}
 
 		return (
 			<>
 				<div
 					data-testid="editor-tabs"
-					className={cn(
-						"bg-muted/20 flex items-center min-w-0 overflow-hidden",
-						className,
-					)}
+					className={cn("bg-muted/20 flex items-center min-w-0 overflow-hidden", className)}
 				>
 					{/* 左滚动按钮 */}
 					{showScrollButtons && (
@@ -175,19 +155,13 @@ export const EditorTabsView = memo(
 											className={cn(
 												"group flex items-center gap-1.5 px-3 py-1.5 text-sm shrink-0",
 												"hover:bg-accent/50 transition-colors h-8 rounded-t-md mx-0.5",
-												activeTabId === tab.id
-													? "bg-background shadow-sm"
-													: "bg-transparent",
+												activeTabId === tab.id ? "bg-background shadow-sm" : "bg-transparent",
 											)}
 											style={{ maxWidth: `${tabMaxWidth}px`, minWidth: "70px" }}
 										>
 											{getTabIcon(tab.type)}
 											<span className="truncate flex-1 text-left text-xs">
-												{tab.isDirty && (
-													<span className="text-primary mr-0.5 text-[8px]">
-														●
-													</span>
-												)}
+												{tab.isDirty && <span className="text-primary mr-0.5 text-[8px]">●</span>}
 												{tab.title}
 											</span>
 											<Button
@@ -195,8 +169,8 @@ export const EditorTabsView = memo(
 												size="icon"
 												className="size-4 opacity-0 group-hover:opacity-100 hover:bg-destructive/20 transition-opacity shrink-0"
 												onClick={(e) => {
-													e.stopPropagation();
-													onCloseTab(tab.id);
+													e.stopPropagation()
+													onCloseTab(tab.id)
 												}}
 											>
 												<X className="size-3" />
@@ -257,8 +231,8 @@ export const EditorTabsView = memo(
 									type="button"
 									key={tab.id}
 									onClick={() => {
-										onSetActiveTab(tab.id);
-										setCardViewOpen(false);
+										onSetActiveTab(tab.id)
+										setCardViewOpen(false)
 									}}
 									className={cn(
 										"flex items-center gap-2 p-3 rounded-lg border text-left",
@@ -274,8 +248,8 @@ export const EditorTabsView = memo(
 										size="icon"
 										className="size-5 opacity-50 hover:opacity-100"
 										onClick={(e) => {
-											e.stopPropagation();
-											onCloseTab(tab.id);
+											e.stopPropagation()
+											onCloseTab(tab.id)
 										}}
 									>
 										<X className="size-3" />
@@ -286,8 +260,8 @@ export const EditorTabsView = memo(
 					</DialogContent>
 				</Dialog>
 			</>
-		);
+		)
 	},
-);
+)
 
-EditorTabsView.displayName = "EditorTabsView";
+EditorTabsView.displayName = "EditorTabsView"

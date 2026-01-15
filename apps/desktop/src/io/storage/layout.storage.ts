@@ -11,18 +11,18 @@
  * - 纯函数风格：无副作用的数据转换
  */
 
-import { z } from "zod";
-import * as E from "fp-ts/Either";
-import { info, warn, error as logError } from "@/io/log/logger.api";
-import type { LayoutState } from "@/types/layout";
-import { DEFAULT_LAYOUT_STATE } from "@/types/layout";
-import { SIDEBAR_PANELS } from "@/types/sidebar";
+import * as E from "fp-ts/Either"
+import { z } from "zod"
+import { info, error as logError, warn } from "@/io/log/logger.api"
+import type { LayoutState } from "@/types/layout"
+import { DEFAULT_LAYOUT_STATE } from "@/types/layout"
+import { SIDEBAR_PANELS } from "@/types/sidebar"
 
 // ============================================================================
 // 存储键
 // ============================================================================
 
-export const LAYOUT_STORAGE_KEY = "grain-layout-state";
+export const LAYOUT_STORAGE_KEY = "grain-layout-state"
 
 // ============================================================================
 // Zod Schema
@@ -37,7 +37,7 @@ const LayoutStateSchema = z.object({
 	activePanel: z.enum(SIDEBAR_PANELS),
 	wasCollapsedByDrag: z.boolean(),
 	sidebarWidth: z.number().min(15).max(40),
-});
+})
 
 // ============================================================================
 // Storage Operations
@@ -52,14 +52,14 @@ const LayoutStateSchema = z.object({
 export function saveLayoutState(state: LayoutState): E.Either<Error, void> {
 	return E.tryCatch(
 		() => {
-			localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(state));
-			info("[Layout Storage] State saved", { state }, "layout.storage");
+			localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(state))
+			info("[Layout Storage] State saved", { state }, "layout.storage")
 		},
 		(err) => {
-			logError("[Layout Storage] Failed to save state", { error: err }, "layout.storage");
-			return new Error(`[Layout Storage] Failed to save state: ${String(err)}`);
+			logError("[Layout Storage] Failed to save state", { error: err }, "layout.storage")
+			return new Error(`[Layout Storage] Failed to save state: ${String(err)}`)
 		},
-	);
+	)
 }
 
 /**
@@ -70,34 +70,31 @@ export function saveLayoutState(state: LayoutState): E.Either<Error, void> {
 export function loadLayoutState(): LayoutState {
 	const result = E.tryCatch(
 		() => {
-			const stored = localStorage.getItem(LAYOUT_STORAGE_KEY);
+			const stored = localStorage.getItem(LAYOUT_STORAGE_KEY)
 
 			if (!stored) {
-				info("[Layout Storage] No saved state found, using default");
-				return DEFAULT_LAYOUT_STATE;
+				info("[Layout Storage] No saved state found, using default")
+				return DEFAULT_LAYOUT_STATE
 			}
 
-			const parsed: unknown = JSON.parse(stored);
-			const validation = LayoutStateSchema.safeParse(parsed);
+			const parsed: unknown = JSON.parse(stored)
+			const validation = LayoutStateSchema.safeParse(parsed)
 
 			if (validation.success) {
-				info("[Layout Storage] State loaded", { data: validation.data }, "layout.storage");
-				return validation.data;
+				info("[Layout Storage] State loaded", { data: validation.data }, "layout.storage")
+				return validation.data
 			}
 
-			warn(
-				"[Layout Storage] Invalid state format, using default:",
-				{ error: validation.error },
-			);
-			return DEFAULT_LAYOUT_STATE;
+			warn("[Layout Storage] Invalid state format, using default:", { error: validation.error })
+			return DEFAULT_LAYOUT_STATE
 		},
 		(err) => {
-			logError("[Layout Storage] Failed to load state", { error: err }, "layout.storage");
-			return new Error(`[Layout Storage] Failed to load state: ${String(err)}`);
+			logError("[Layout Storage] Failed to load state", { error: err }, "layout.storage")
+			return new Error(`[Layout Storage] Failed to load state: ${String(err)}`)
 		},
-	);
+	)
 
-	return E.getOrElse(() => DEFAULT_LAYOUT_STATE)(result);
+	return E.getOrElse(() => DEFAULT_LAYOUT_STATE)(result)
 }
 
 /**
@@ -108,14 +105,14 @@ export function loadLayoutState(): LayoutState {
 export function clearLayoutState(): E.Either<Error, void> {
 	return E.tryCatch(
 		() => {
-			localStorage.removeItem(LAYOUT_STORAGE_KEY);
-			info("[Layout Storage] State cleared");
+			localStorage.removeItem(LAYOUT_STORAGE_KEY)
+			info("[Layout Storage] State cleared")
 		},
 		(err) => {
-			logError("[Layout Storage] Failed to clear state", { error: err }, "layout.storage");
-			return new Error(`[Layout Storage] Failed to clear state: ${String(err)}`);
+			logError("[Layout Storage] Failed to clear state", { error: err }, "layout.storage")
+			return new Error(`[Layout Storage] Failed to clear state: ${String(err)}`)
 		},
-	);
+	)
 }
 
 /**
@@ -127,10 +124,10 @@ export function hasLayoutState(): boolean {
 	const result = E.tryCatch(
 		() => localStorage.getItem(LAYOUT_STORAGE_KEY) !== null,
 		(err) => {
-			logError("[Layout Storage] Failed to check state", { error: err }, "layout.storage");
-			return new Error(`[Layout Storage] Failed to check state: ${String(err)}`);
+			logError("[Layout Storage] Failed to check state", { error: err }, "layout.storage")
+			return new Error(`[Layout Storage] Failed to check state: ${String(err)}`)
 		},
-	);
+	)
 
-	return E.getOrElse(() => false)(result);
+	return E.getOrElse(() => false)(result)
 }

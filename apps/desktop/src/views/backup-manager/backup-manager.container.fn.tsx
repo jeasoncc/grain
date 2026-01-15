@@ -8,14 +8,14 @@
  * - 容器组件负责确认对话框和事件编排
  */
 
-import { memo, useCallback } from "react";
-import { useBackupManager } from "@/hooks/use-backup-manager";
-import { useConfirm } from "@/views/ui/confirm";
-import { BackupManagerView } from "./backup-manager.view.fn";
+import { memo, useCallback } from "react"
+import { useBackupManager } from "@/hooks/use-backup-manager"
+import { useConfirm } from "@/views/ui/confirm"
+import { BackupManagerView } from "./backup-manager.view.fn"
 
 export const BackupManagerContainer = memo(function BackupManagerContainer() {
-	const confirm = useConfirm();
-	const backupManager = useBackupManager();
+	const confirm = useConfirm()
+	const backupManager = useBackupManager()
 
 	// ============================================================================
 	// 事件处理（带确认对话框）
@@ -24,16 +24,15 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 	const handleRestore = useCallback(async () => {
 		const confirmed = await confirm({
 			title: "恢复备份",
-			description:
-				"恢复备份将覆盖当前数据。此操作无法撤销。我们建议先导出当前数据。",
+			description: "恢复备份将覆盖当前数据。此操作无法撤销。我们建议先导出当前数据。",
 			confirmText: "确认恢复",
 			cancelText: "取消",
-		});
+		})
 
 		if (confirmed) {
-			await backupManager.restore();
+			await backupManager.restore()
 		}
-	}, [confirm, backupManager]);
+	}, [confirm, backupManager])
 
 	const handleRestoreLocal = useCallback(
 		async (timestamp: string) => {
@@ -42,14 +41,14 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 				description: `确定要恢复 ${new Date(timestamp).toLocaleString()} 的备份吗？`,
 				confirmText: "确认恢复",
 				cancelText: "取消",
-			});
+			})
 
 			if (confirmed) {
-				await backupManager.restoreLocal(timestamp);
+				await backupManager.restoreLocal(timestamp)
 			}
 		},
 		[confirm, backupManager],
-	);
+	)
 
 	const handleClearAllData = useCallback(async () => {
 		const confirmed = await confirm({
@@ -58,12 +57,12 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 				"这将永久删除所有数据，包括：\n• 所有项目、章节和场景（IndexedDB）\n• 应用设置和偏好（localStorage）\n• 会话数据（sessionStorage）\n• 浏览器 cookies\n• 应用缓存\n\n此操作无法撤销！我们建议先导出备份。",
 			confirmText: "确认清除",
 			cancelText: "取消",
-		});
+		})
 
 		if (confirmed) {
-			await backupManager.clearAll();
+			await backupManager.clearAll()
 		}
-	}, [confirm, backupManager]);
+	}, [confirm, backupManager])
 
 	const handleClearDatabase = useCallback(async () => {
 		const confirmed = await confirm({
@@ -71,12 +70,12 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 			description: "这将清除所有项目、章节和场景，但保留应用设置。",
 			confirmText: "确认清除",
 			cancelText: "取消",
-		});
+		})
 
 		if (confirmed) {
-			await backupManager.clearDatabase();
+			await backupManager.clearDatabase()
 		}
-	}, [confirm, backupManager]);
+	}, [confirm, backupManager])
 
 	const handleClearSettings = useCallback(async () => {
 		const confirmed = await confirm({
@@ -84,12 +83,12 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 			description: "这将清除应用设置和偏好，但保留项目数据。",
 			confirmText: "确认清除",
 			cancelText: "取消",
-		});
+		})
 
 		if (confirmed) {
-			await backupManager.clearSettings();
+			await backupManager.clearSettings()
 		}
-	}, [confirm, backupManager]);
+	}, [confirm, backupManager])
 
 	// ============================================================================
 	// 渲染
@@ -111,7 +110,7 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 			onClearDatabase={handleClearDatabase}
 			onClearSettings={handleClearSettings}
 		/>
-	);
-});
+	)
+})
 
-BackupManagerContainer.displayName = "BackupManagerContainer";
+BackupManagerContainer.displayName = "BackupManagerContainer"

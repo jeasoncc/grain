@@ -10,32 +10,29 @@
  * TODO: importDirectory（批量导入，暂不实现）
  */
 
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import { addContent, addNode, getNextOrder } from "@/io/api";
-import { info, success } from "@/io/log/logger.api";
-import {
-	importFromMarkdown,
-	type MarkdownImportOptions,
-} from "@/pipes/import/import.markdown.fn";
-import type { NodeInterface } from "@/types/node";
-import { type AppError, importError } from "@/types/error";
+import * as E from "fp-ts/Either"
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import { addContent, addNode, getNextOrder } from "@/io/api"
+import { info, success } from "@/io/log/logger.api"
+import { importFromMarkdown, type MarkdownImportOptions } from "@/pipes/import/import.markdown.fn"
+import { type AppError, importError } from "@/types/error"
+import type { NodeInterface } from "@/types/node"
 
 /**
  * 导入 Markdown 内容参数
  */
 export interface ImportMarkdownParams {
 	/** 工作区 ID */
-	readonly workspaceId: string;
+	readonly workspaceId: string
 	/** 父节点 ID（null 表示根级） */
-	readonly parentId: string | null;
+	readonly parentId: string | null
 	/** Markdown 内容 */
-	readonly content: string;
+	readonly content: string
 	/** 节点标题（可选，如果不提供则从内容提取） */
-	readonly title?: string;
+	readonly title?: string
 	/** 导入选项 */
-	readonly options?: MarkdownImportOptions;
+	readonly options?: MarkdownImportOptions
 }
 
 /**
@@ -43,9 +40,9 @@ export interface ImportMarkdownParams {
  */
 export interface ImportResult {
 	/** 创建的节点 */
-	readonly node: NodeInterface;
+	readonly node: NodeInterface
 	/** 解析的 front matter（如果有） */
-	readonly frontMatter?: Record<string, unknown>;
+	readonly frontMatter?: Record<string, unknown>
 }
 
 /**
@@ -59,7 +56,7 @@ export interface ImportResult {
 export const importMarkdown = (
 	params: ImportMarkdownParams,
 ): TE.TaskEither<AppError, ImportResult> => {
-	info("[Action] 导入 Markdown...", {}, "import-markdown.flow");
+	info("[Action] 导入 Markdown...", {}, "import-markdown.flow")
 
 	return pipe(
 		// 1. 解析 Markdown 内容
@@ -78,7 +75,7 @@ export const importMarkdown = (
 				params.title ||
 				importResult.title ||
 				(importResult.frontMatter?.title as string | undefined) ||
-				"导入的文档";
+				"导入的文档"
 
 			// 3. 获取下一个排序号并创建节点
 			return pipe(
@@ -93,23 +90,23 @@ export const importMarkdown = (
 				),
 				// 4. 创建内容记录
 				TE.chainFirst((node) => {
-					const lexicalJson = JSON.stringify(importResult.document);
-					return addContent(node.id, lexicalJson);
+					const lexicalJson = JSON.stringify(importResult.document)
+					return addContent(node.id, lexicalJson)
 				}),
 				// 5. 返回结果
 				TE.map((node) => ({
 					node,
 					frontMatter: importResult.frontMatter,
 				})),
-			);
+			)
 		}),
 		// 6. 记录成功日志
 		TE.tap((result) => {
-			success("[Action] Markdown 导入成功", { nodeId: result.node.id }, "import-markdown");
-			return TE.right(result);
+			success("[Action] Markdown 导入成功", { nodeId: result.node.id }, "import-markdown")
+			return TE.right(result)
 		}),
-	);
-};
+	)
+}
 
 /**
  * 直接导入 Markdown 内容为 Lexical JSON（不创建节点）
@@ -124,11 +121,11 @@ export const importMarkdownToJson = (
 	content: string,
 	options?: MarkdownImportOptions,
 ): E.Either<AppError, string> => {
-	info("[Action] 直接导入 Markdown 为 JSON");
+	info("[Action] 直接导入 Markdown 为 JSON")
 
 	return pipe(
 		importFromMarkdown(content, options),
 		E.mapLeft((err) => importError(`Markdown 解析失败: ${err.message}`)),
 		E.map((result) => JSON.stringify(result.document)),
-	);
-};
+	)
+}

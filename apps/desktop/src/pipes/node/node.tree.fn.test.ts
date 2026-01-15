@@ -8,9 +8,9 @@
  * @requirements 2.1, 1.4
  */
 
-import * as fc from "fast-check";
-import { describe, expect, it } from "vitest";
-import type { NodeInterface, NodeType } from "@/types/node";
+import * as fc from "fast-check"
+import { describe, expect, it } from "vitest"
+import type { NodeInterface, NodeType } from "@/types/node"
 import {
 	buildTree,
 	calculateReorderAfterInsert,
@@ -23,7 +23,7 @@ import {
 	getRootNodes,
 	type TreeNode,
 	wouldCreateCycle,
-} from "./node.tree.fn";
+} from "./node.tree.fn"
 
 // ============================================================================
 // Test Helpers - Node Generators
@@ -35,14 +35,12 @@ import {
 const isoDateArbitrary = (): fc.Arbitrary<string> =>
 	fc
 		.integer({ min: 946684800000, max: 4102444800000 }) // 2000-01-01 to 2100-01-01
-		.map((timestamp) => new Date(timestamp).toISOString());
+		.map((timestamp) => new Date(timestamp).toISOString())
 
 /**
  * 生成有效的 NodeInterface 对象
  */
-const nodeArbitrary = (
-	overrides?: Partial<NodeInterface>,
-): fc.Arbitrary<NodeInterface> =>
+const nodeArbitrary = (overrides?: Partial<NodeInterface>): fc.Arbitrary<NodeInterface> =>
 	fc
 		.record({
 			id: fc.uuid(),
@@ -54,12 +52,11 @@ const nodeArbitrary = (
 			collapsed: fc.boolean(),
 			createDate: isoDateArbitrary(),
 			lastEdit: isoDateArbitrary(),
-			tags: fc.option(
-				fc.array(fc.string({ minLength: 1, maxLength: 50 }), { maxLength: 10 }),
-				{ nil: undefined },
-			),
+			tags: fc.option(fc.array(fc.string({ minLength: 1, maxLength: 50 }), { maxLength: 10 }), {
+				nil: undefined,
+			}),
 		})
-		.map((node) => ({ ...node, ...overrides })) as fc.Arbitrary<NodeInterface>;
+		.map((node) => ({ ...node, ...overrides })) as fc.Arbitrary<NodeInterface>
 
 // ============================================================================
 // Unit Tests
@@ -82,11 +79,11 @@ describe("buildTree", () => {
 				title: "Child",
 				type: "file",
 			}),
-		];
-		const tree = buildTree(nodes);
-		expect(tree).toHaveLength(1);
-		expect(tree[0].children).toHaveLength(1);
-	});
+		]
+		const tree = buildTree(nodes)
+		expect(tree).toHaveLength(1)
+		expect(tree[0].children).toHaveLength(1)
+	})
 
 	it("should sort by order", () => {
 		const nodes: NodeInterface[] = [
@@ -104,16 +101,16 @@ describe("buildTree", () => {
 				title: "First",
 				type: "file",
 			}),
-		];
-		const tree = buildTree(nodes);
-		expect(tree[0].title).toBe("First");
-		expect(tree[1].title).toBe("Second");
-	});
+		]
+		const tree = buildTree(nodes)
+		expect(tree[0].title).toBe("First")
+		expect(tree[1].title).toBe("Second")
+	})
 
 	it("should handle empty nodes array", () => {
-		const tree = buildTree([]);
-		expect(tree).toHaveLength(0);
-	});
+		const tree = buildTree([])
+		expect(tree).toHaveLength(0)
+	})
 
 	it("should set correct depth", () => {
 		const nodes: NodeInterface[] = [
@@ -138,13 +135,13 @@ describe("buildTree", () => {
 				title: "Level 2",
 				type: "file",
 			}),
-		];
-		const tree = buildTree(nodes);
-		expect(tree[0].depth).toBe(0);
-		expect(tree[0].children[0].depth).toBe(1);
-		expect(tree[0].children[0].children[0].depth).toBe(2);
-	});
-});
+		]
+		const tree = buildTree(nodes)
+		expect(tree[0].depth).toBe(0)
+		expect(tree[0].children[0].depth).toBe(1)
+		expect(tree[0].children[0].children[0].depth).toBe(2)
+	})
+})
 
 describe("getNodePath", () => {
 	it("should return path from root to node", () => {
@@ -152,61 +149,57 @@ describe("getNodePath", () => {
 			createNode({ id: "1", parent: null, title: "Root" }),
 			createNode({ id: "2", parent: "1", title: "Child" }),
 			createNode({ id: "3", parent: "2", title: "Grandchild" }),
-		];
-		const path = getNodePath(nodes, "3");
-		expect(path).toHaveLength(3);
-		expect(path[0].id).toBe("1");
-		expect(path[1].id).toBe("2");
-		expect(path[2].id).toBe("3");
-	});
+		]
+		const path = getNodePath(nodes, "3")
+		expect(path).toHaveLength(3)
+		expect(path[0].id).toBe("1")
+		expect(path[1].id).toBe("2")
+		expect(path[2].id).toBe("3")
+	})
 
 	it("should return single node for root", () => {
-		const nodes: NodeInterface[] = [
-			createNode({ id: "1", parent: null, title: "Root" }),
-		];
-		const path = getNodePath(nodes, "1");
-		expect(path).toHaveLength(1);
-		expect(path[0].id).toBe("1");
-	});
+		const nodes: NodeInterface[] = [createNode({ id: "1", parent: null, title: "Root" })]
+		const path = getNodePath(nodes, "1")
+		expect(path).toHaveLength(1)
+		expect(path[0].id).toBe("1")
+	})
 
 	it("should return empty array for non-existent node", () => {
-		const nodes: NodeInterface[] = [
-			createNode({ id: "1", parent: null, title: "Root" }),
-		];
-		const path = getNodePath(nodes, "non-existent");
-		expect(path).toHaveLength(0);
-	});
-});
+		const nodes: NodeInterface[] = [createNode({ id: "1", parent: null, title: "Root" })]
+		const path = getNodePath(nodes, "non-existent")
+		expect(path).toHaveLength(0)
+	})
+})
 
 describe("wouldCreateCycle", () => {
 	it("should return false for null parent", () => {
-		const nodes: NodeInterface[] = [createNode({ id: "1", parent: null })];
-		expect(wouldCreateCycle(nodes, "1", null)).toBe(false);
-	});
+		const nodes: NodeInterface[] = [createNode({ id: "1", parent: null })]
+		expect(wouldCreateCycle(nodes, "1", null)).toBe(false)
+	})
 
 	it("should return true when node is its own parent", () => {
-		const nodes: NodeInterface[] = [createNode({ id: "1", parent: null })];
-		expect(wouldCreateCycle(nodes, "1", "1")).toBe(true);
-	});
+		const nodes: NodeInterface[] = [createNode({ id: "1", parent: null })]
+		expect(wouldCreateCycle(nodes, "1", "1")).toBe(true)
+	})
 
 	it("should return true when moving to descendant", () => {
 		const nodes: NodeInterface[] = [
 			createNode({ id: "1", parent: null }),
 			createNode({ id: "2", parent: "1" }),
 			createNode({ id: "3", parent: "2" }),
-		];
-		expect(wouldCreateCycle(nodes, "1", "3")).toBe(true);
-	});
+		]
+		expect(wouldCreateCycle(nodes, "1", "3")).toBe(true)
+	})
 
 	it("should return false for valid move", () => {
 		const nodes: NodeInterface[] = [
 			createNode({ id: "1", parent: null }),
 			createNode({ id: "2", parent: null }),
 			createNode({ id: "3", parent: "1" }),
-		];
-		expect(wouldCreateCycle(nodes, "3", "2")).toBe(false);
-	});
-});
+		]
+		expect(wouldCreateCycle(nodes, "3", "2")).toBe(false)
+	})
+})
 
 describe("getRootNodes", () => {
 	it("should return only root nodes", () => {
@@ -214,24 +207,24 @@ describe("getRootNodes", () => {
 			createNode({ id: "1", parent: null, order: 0 }),
 			createNode({ id: "2", parent: "1", order: 0 }),
 			createNode({ id: "3", parent: null, order: 1 }),
-		];
-		const roots = getRootNodes(nodes);
-		expect(roots).toHaveLength(2);
-		expect(roots.every((n) => n.parent === null)).toBe(true);
-	});
+		]
+		const roots = getRootNodes(nodes)
+		expect(roots).toHaveLength(2)
+		expect(roots.every((n) => n.parent === null)).toBe(true)
+	})
 
 	it("should sort by order", () => {
 		const nodes: NodeInterface[] = [
 			createNode({ id: "1", parent: null, order: 2 }),
 			createNode({ id: "2", parent: null, order: 0 }),
 			createNode({ id: "3", parent: null, order: 1 }),
-		];
-		const roots = getRootNodes(nodes);
-		expect(roots[0].id).toBe("2");
-		expect(roots[1].id).toBe("3");
-		expect(roots[2].id).toBe("1");
-	});
-});
+		]
+		const roots = getRootNodes(nodes)
+		expect(roots[0].id).toBe("2")
+		expect(roots[1].id).toBe("3")
+		expect(roots[2].id).toBe("1")
+	})
+})
 
 describe("getChildNodes", () => {
 	it("should return children of parent", () => {
@@ -240,12 +233,12 @@ describe("getChildNodes", () => {
 			createNode({ id: "2", parent: "1", order: 0 }),
 			createNode({ id: "3", parent: "1", order: 1 }),
 			createNode({ id: "4", parent: "2" }),
-		];
-		const children = getChildNodes(nodes, "1");
-		expect(children).toHaveLength(2);
-		expect(children.every((n) => n.parent === "1")).toBe(true);
-	});
-});
+		]
+		const children = getChildNodes(nodes, "1")
+		expect(children).toHaveLength(2)
+		expect(children.every((n) => n.parent === "1")).toBe(true)
+	})
+})
 
 describe("getDescendants", () => {
 	it("should return all descendants", () => {
@@ -254,20 +247,20 @@ describe("getDescendants", () => {
 			createNode({ id: "2", parent: "1" }),
 			createNode({ id: "3", parent: "1" }),
 			createNode({ id: "4", parent: "2" }),
-		];
-		const descendants = getDescendants(nodes, "1");
-		expect(descendants).toHaveLength(3);
-	});
+		]
+		const descendants = getDescendants(nodes, "1")
+		expect(descendants).toHaveLength(3)
+	})
 
 	it("should return empty array for leaf node", () => {
 		const nodes: NodeInterface[] = [
 			createNode({ id: "1", parent: null }),
 			createNode({ id: "2", parent: "1" }),
-		];
-		const descendants = getDescendants(nodes, "2");
-		expect(descendants).toHaveLength(0);
-	});
-});
+		]
+		const descendants = getDescendants(nodes, "2")
+		expect(descendants).toHaveLength(0)
+	})
+})
 
 describe("filterByType", () => {
 	it("should filter nodes by type", () => {
@@ -275,12 +268,12 @@ describe("filterByType", () => {
 			createNode({ id: "1", type: "folder" }),
 			createNode({ id: "2", type: "file" }),
 			createNode({ id: "3", type: "folder" }),
-		];
-		const folders = filterByType(nodes, "folder");
-		expect(folders).toHaveLength(2);
-		expect(folders.every((n) => n.type === "folder")).toBe(true);
-	});
-});
+		]
+		const folders = filterByType(nodes, "folder")
+		expect(folders).toHaveLength(2)
+		expect(folders.every((n) => n.type === "folder")).toBe(true)
+	})
+})
 
 describe("filterByTag", () => {
 	it("should filter nodes by tag", () => {
@@ -288,35 +281,35 @@ describe("filterByTag", () => {
 			createNode({ id: "1", tags: ["important", "work"] }),
 			createNode({ id: "2", tags: ["personal"] }),
 			createNode({ id: "3", tags: ["important"] }),
-		];
-		const important = filterByTag(nodes, "important");
-		expect(important).toHaveLength(2);
-	});
+		]
+		const important = filterByTag(nodes, "important")
+		expect(important).toHaveLength(2)
+	})
 
 	it("should handle nodes without tags", () => {
 		const nodes: NodeInterface[] = [
 			createNode({ id: "1", tags: ["test"] }),
 			createNode({ id: "2" }), // no tags
-		];
-		const filtered = filterByTag(nodes, "test");
-		expect(filtered).toHaveLength(1);
-	});
-});
+		]
+		const filtered = filterByTag(nodes, "test")
+		expect(filtered).toHaveLength(1)
+	})
+})
 
 describe("getNextOrder", () => {
 	it("should return 0 for empty siblings", () => {
-		expect(getNextOrder([])).toBe(0);
-	});
+		expect(getNextOrder([])).toBe(0)
+	})
 
 	it("should return max order + 1", () => {
 		const siblings: NodeInterface[] = [
 			createNode({ id: "1", order: 0 }),
 			createNode({ id: "2", order: 2 }),
 			createNode({ id: "3", order: 1 }),
-		];
-		expect(getNextOrder(siblings)).toBe(3);
-	});
-});
+		]
+		expect(getNextOrder(siblings)).toBe(3)
+	})
+})
 
 describe("calculateReorderAfterInsert", () => {
 	it("should calculate new orders after insert", () => {
@@ -324,14 +317,14 @@ describe("calculateReorderAfterInsert", () => {
 			createNode({ id: "1", order: 0 }),
 			createNode({ id: "2", order: 1 }),
 			createNode({ id: "3", order: 2 }),
-		];
-		const reorder = calculateReorderAfterInsert(siblings, 1);
+		]
+		const reorder = calculateReorderAfterInsert(siblings, 1)
 		// 插入位置 1，所以 order >= 1 的节点需要 +1
-		expect(reorder.get("2")).toBe(2);
-		expect(reorder.get("3")).toBe(3);
-		expect(reorder.has("1")).toBe(false); // order 0 不变
-	});
-});
+		expect(reorder.get("2")).toBe(2)
+		expect(reorder.get("3")).toBe(3)
+		expect(reorder.has("1")).toBe(false) // order 0 不变
+	})
+})
 
 // ============================================================================
 // Property-Based Tests
@@ -346,27 +339,23 @@ describe("Property-Based Tests", () => {
 		it("should never allow node to be its own parent", () => {
 			fc.assert(
 				fc.property(fc.uuid(), (nodeId) => {
-					const nodes: NodeInterface[] = [
-						createNode({ id: nodeId, parent: null }),
-					];
-					return wouldCreateCycle(nodes, nodeId, nodeId) === true;
+					const nodes: NodeInterface[] = [createNode({ id: nodeId, parent: null })]
+					return wouldCreateCycle(nodes, nodeId, nodeId) === true
 				}),
 				{ numRuns: 100 },
-			);
-		});
+			)
+		})
 
 		it("should always allow moving to null parent", () => {
 			fc.assert(
 				fc.property(fc.uuid(), (nodeId) => {
-					const nodes: NodeInterface[] = [
-						createNode({ id: nodeId, parent: "other" }),
-					];
-					return wouldCreateCycle(nodes, nodeId, null) === false;
+					const nodes: NodeInterface[] = [createNode({ id: nodeId, parent: "other" })]
+					return wouldCreateCycle(nodes, nodeId, null) === false
 				}),
 				{ numRuns: 100 },
-			);
-		});
-	});
+			)
+		})
+	})
 
 	/**
 	 * **Feature: fp-architecture-refactor, Property 2: buildTree 保持节点数量不变**
@@ -381,20 +370,17 @@ describe("Property-Based Tests", () => {
 						maxLength: 10,
 					}),
 					(nodes) => {
-						const tree = buildTree(nodes);
+						const tree = buildTree(nodes)
 						const countTreeNodes = (treeNodes: TreeNode[]): number =>
-							treeNodes.reduce(
-								(sum, n) => sum + 1 + countTreeNodes(n.children),
-								0,
-							);
+							treeNodes.reduce((sum, n) => sum + 1 + countTreeNodes(n.children), 0)
 						// 所有根节点（parent === null）应该在树中
-						const rootCount = nodes.filter((n) => n.parent === null).length;
-						return countTreeNodes(tree) === rootCount;
+						const rootCount = nodes.filter((n) => n.parent === null).length
+						return countTreeNodes(tree) === rootCount
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
+			)
+		})
 
 		it("should sort children by order", () => {
 			fc.assert(
@@ -404,26 +390,24 @@ describe("Property-Based Tests", () => {
 						maxLength: 10,
 					}),
 					(nodes) => {
-						const tree = buildTree(nodes);
+						const tree = buildTree(nodes)
 						const isSorted = (treeNodes: TreeNode[]): boolean => {
 							for (let i = 1; i < treeNodes.length; i++) {
-								const prevNode = nodes.find(
-									(n) => n.id === treeNodes[i - 1].id,
-								);
-								const currNode = nodes.find((n) => n.id === treeNodes[i].id);
+								const prevNode = nodes.find((n) => n.id === treeNodes[i - 1].id)
+								const currNode = nodes.find((n) => n.id === treeNodes[i].id)
 								if (prevNode && currNode && prevNode.order > currNode.order) {
-									return false;
+									return false
 								}
 							}
-							return treeNodes.every((n) => isSorted(n.children));
-						};
-						return isSorted(tree);
+							return treeNodes.every((n) => isSorted(n.children))
+						}
+						return isSorted(tree)
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
-	});
+			)
+		})
+	})
 
 	/**
 	 * **Feature: fp-architecture-refactor, Property 3: getNodePath 返回有效路径**
@@ -438,16 +422,14 @@ describe("Property-Based Tests", () => {
 						maxLength: 10,
 					}),
 					(nodes) => {
-						const targetNode = nodes[0];
-						const path = getNodePath(nodes, targetNode.id);
-						return (
-							path.length === 0 || path[path.length - 1].id === targetNode.id
-						);
+						const targetNode = nodes[0]
+						const path = getNodePath(nodes, targetNode.id)
+						return path.length === 0 || path[path.length - 1].id === targetNode.id
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
+			)
+		})
 
 		it("should return empty array for non-existent node", () => {
 			fc.assert(
@@ -459,15 +441,15 @@ describe("Property-Based Tests", () => {
 					fc.uuid(),
 					(nodes, randomId) => {
 						// 确保 randomId 不在 nodes 中
-						if (nodes.some((n) => n.id === randomId)) return true;
-						const path = getNodePath(nodes, randomId);
-						return path.length === 0;
+						if (nodes.some((n) => n.id === randomId)) return true
+						const path = getNodePath(nodes, randomId)
+						return path.length === 0
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
-	});
+			)
+		})
+	})
 
 	/**
 	 * **Feature: fp-architecture-refactor, Property 4: getNextOrder 总是返回大于现有最大值的数**
@@ -476,21 +458,18 @@ describe("Property-Based Tests", () => {
 	describe("getNextOrder - property based", () => {
 		it("should return value greater than all existing orders", () => {
 			fc.assert(
-				fc.property(
-					fc.array(nodeArbitrary(), { minLength: 1, maxLength: 20 }),
-					(nodes) => {
-						const nextOrder = getNextOrder(nodes);
-						return nodes.every((n) => nextOrder > n.order);
-					},
-				),
+				fc.property(fc.array(nodeArbitrary(), { minLength: 1, maxLength: 20 }), (nodes) => {
+					const nextOrder = getNextOrder(nodes)
+					return nodes.every((n) => nextOrder > n.order)
+				}),
 				{ numRuns: 100 },
-			);
-		});
+			)
+		})
 
 		it("should return 0 for empty array", () => {
-			expect(getNextOrder([])).toBe(0);
-		});
-	});
+			expect(getNextOrder([])).toBe(0)
+		})
+	})
 
 	/**
 	 * **Feature: fp-architecture-refactor, Property 5: filterByType 只返回指定类型的节点**
@@ -503,13 +482,13 @@ describe("Property-Based Tests", () => {
 					fc.array(nodeArbitrary(), { minLength: 0, maxLength: 20 }),
 					fc.constantFrom<NodeType>("folder", "file", "drawing", "diary"),
 					(nodes, type) => {
-						const filtered = filterByType(nodes, type);
-						return filtered.every((n) => n.type === type);
+						const filtered = filterByType(nodes, type)
+						return filtered.every((n) => n.type === type)
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
+			)
+		})
 
 		it("should not lose any nodes of specified type", () => {
 			fc.assert(
@@ -517,16 +496,16 @@ describe("Property-Based Tests", () => {
 					fc.array(nodeArbitrary(), { minLength: 0, maxLength: 20 }),
 					fc.constantFrom<NodeType>("folder", "file", "drawing", "diary"),
 					(nodes, type) => {
-						const filtered = filterByType(nodes, type);
-						const expected = nodes.filter((n) => n.type === type);
-						return filtered.length === expected.length;
+						const filtered = filterByType(nodes, type)
+						const expected = nodes.filter((n) => n.type === type)
+						return filtered.length === expected.length
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
-	});
-});
+			)
+		})
+	})
+})
 
 // ============================================================================
 // Helper Functions
@@ -547,5 +526,5 @@ function createNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
 		createDate: overrides.createDate ?? new Date().toISOString(),
 		lastEdit: overrides.lastEdit ?? new Date().toISOString(),
 		tags: overrides.tags,
-	};
+	}
 }

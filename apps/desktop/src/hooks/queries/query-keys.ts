@@ -28,8 +28,7 @@ export const queryKeys = {
 		/** 所有节点（全局） */
 		all: ["nodes"] as const,
 		/** 工作区下的所有节点 */
-		byWorkspace: (workspaceId: string) =>
-			["nodes", "workspace", workspaceId] as const,
+		byWorkspace: (workspaceId: string) => ["nodes", "workspace", workspaceId] as const,
 		/** 根节点 */
 		rootNodes: (workspaceId: string) => ["nodes", "root", workspaceId] as const,
 		/** 单个节点 */
@@ -42,8 +41,7 @@ export const queryKeys = {
 		/** 后代节点 */
 		descendants: (nodeId: string) => ["nodes", "descendants", nodeId] as const,
 		/** 按类型 */
-		byType: (workspaceId: string, type: string) =>
-			["nodes", "type", workspaceId, type] as const,
+		byType: (workspaceId: string, type: string) => ["nodes", "type", workspaceId, type] as const,
 	},
 
 	// ============================================
@@ -65,17 +63,13 @@ export const queryKeys = {
 		/** 单个附件 */
 		detail: (id: string) => ["attachments", id] as const,
 		/** 项目下的附件 */
-		byProject: (projectId: string) =>
-			["attachments", "project", projectId] as const,
+		byProject: (projectId: string) => ["attachments", "project", projectId] as const,
 		/** 按类型 */
-		byType: (projectId: string, type: string) =>
-			["attachments", "type", projectId, type] as const,
+		byType: (projectId: string, type: string) => ["attachments", "type", projectId, type] as const,
 		/** 项目下的图片 */
-		imagesByProject: (projectId: string) =>
-			["attachments", "images", projectId] as const,
+		imagesByProject: (projectId: string) => ["attachments", "images", projectId] as const,
 		/** 项目下的音频 */
-		audioByProject: (projectId: string) =>
-			["attachments", "audio", projectId] as const,
+		audioByProject: (projectId: string) => ["attachments", "audio", projectId] as const,
 		/** 按路径 */
 		byPath: (filePath: string) => ["attachments", "path", filePath] as const,
 	},
@@ -85,19 +79,15 @@ export const queryKeys = {
 	// ============================================
 	tags: {
 		/** 工作区下的所有标签 */
-		byWorkspace: (workspaceId: string) =>
-			["tags", "workspace", workspaceId] as const,
+		byWorkspace: (workspaceId: string) => ["tags", "workspace", workspaceId] as const,
 		/** 单个标签 */
 		detail: (id: string) => ["tags", id] as const,
 		/** 按名称 */
-		byName: (workspaceId: string, name: string) =>
-			["tags", "name", workspaceId, name] as const,
+		byName: (workspaceId: string, name: string) => ["tags", "name", workspaceId, name] as const,
 		/** 热门标签 */
-		top: (workspaceId: string, limit: number) =>
-			["tags", "top", workspaceId, limit] as const,
+		top: (workspaceId: string, limit: number) => ["tags", "top", workspaceId, limit] as const,
 		/** 搜索标签 */
-		search: (workspaceId: string, query: string) =>
-			["tags", "search", workspaceId, query] as const,
+		search: (workspaceId: string, query: string) => ["tags", "search", workspaceId, query] as const,
 		/** 包含指定标签的节点 */
 		nodesByTag: (workspaceId: string, tagName: string) =>
 			["tags", "nodes", workspaceId, tagName] as const,
@@ -122,7 +112,7 @@ export const queryKeys = {
 		/** 按计划类型 */
 		byPlan: (plan: string) => ["users", "plan", plan] as const,
 	},
-} as const;
+} as const
 
 // ============================================
 // 类型导出
@@ -131,7 +121,7 @@ export const queryKeys = {
 /** Workspace query key 类型 */
 export type WorkspaceQueryKey =
 	| typeof queryKeys.workspaces.all
-	| ReturnType<typeof queryKeys.workspaces.detail>;
+	| ReturnType<typeof queryKeys.workspaces.detail>
 
 /** Node query key 类型 */
 export type NodeQueryKey =
@@ -142,12 +132,12 @@ export type NodeQueryKey =
 	| ReturnType<typeof queryKeys.nodes.children>
 	| ReturnType<typeof queryKeys.nodes.byParent>
 	| ReturnType<typeof queryKeys.nodes.descendants>
-	| ReturnType<typeof queryKeys.nodes.byType>;
+	| ReturnType<typeof queryKeys.nodes.byType>
 
 /** Content query key 类型 */
 export type ContentQueryKey =
 	| ReturnType<typeof queryKeys.contents.byNode>
-	| ReturnType<typeof queryKeys.contents.version>;
+	| ReturnType<typeof queryKeys.contents.version>
 
 /** Attachment query key 类型 */
 export type AttachmentQueryKey =
@@ -157,7 +147,7 @@ export type AttachmentQueryKey =
 	| ReturnType<typeof queryKeys.attachments.byType>
 	| ReturnType<typeof queryKeys.attachments.imagesByProject>
 	| ReturnType<typeof queryKeys.attachments.audioByProject>
-	| ReturnType<typeof queryKeys.attachments.byPath>;
+	| ReturnType<typeof queryKeys.attachments.byPath>
 
 /** Tag query key 类型 */
 export type TagQueryKey =
@@ -167,7 +157,7 @@ export type TagQueryKey =
 	| ReturnType<typeof queryKeys.tags.top>
 	| ReturnType<typeof queryKeys.tags.search>
 	| ReturnType<typeof queryKeys.tags.nodesByTag>
-	| ReturnType<typeof queryKeys.tags.graph>;
+	| ReturnType<typeof queryKeys.tags.graph>
 
 /** User query key 类型 */
 export type UserQueryKey =
@@ -176,4 +166,4 @@ export type UserQueryKey =
 	| ReturnType<typeof queryKeys.users.byUsername>
 	| ReturnType<typeof queryKeys.users.byEmail>
 	| typeof queryKeys.users.current
-	| ReturnType<typeof queryKeys.users.byPlan>;
+	| ReturnType<typeof queryKeys.users.byPlan>

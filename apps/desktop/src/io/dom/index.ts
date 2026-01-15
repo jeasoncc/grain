@@ -5,4 +5,4 @@
  * 包含所有与 DOM 交互的 IO 函数
  */
 
-export * from "./theme.dom";
+export * from "./theme.dom"

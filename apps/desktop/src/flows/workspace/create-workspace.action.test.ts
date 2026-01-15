@@ -10,10 +10,10 @@
  * @requirements 7.1, 7.4
  */
 
-import * as E from "fp-ts/Either";
-import type * as TE from "fp-ts/TaskEither";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { WorkspaceInterface } from "@/types/workspace/workspace.interface";
+import * as E from "fp-ts/Either"
+import type * as TE from "fp-ts/TaskEither"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import type { WorkspaceInterface } from "@/types/workspace/workspace.interface"
 
 // ============================================================================
 // Test Helpers
@@ -22,9 +22,7 @@ import type { WorkspaceInterface } from "@/types/workspace/workspace.interface";
 /**
  * 创建测试用的 WorkspaceInterface 对象
  */
-function createTestWorkspace(
-	overrides: Partial<WorkspaceInterface> = {},
-): WorkspaceInterface {
+function createTestWorkspace(overrides: Partial<WorkspaceInterface> = {}): WorkspaceInterface {
 	return {
 		id: overrides.id ?? "550e8400-e29b-41d4-a716-446655440000",
 		title: overrides.title ?? "Test Workspace",
@@ -36,27 +34,25 @@ function createTestWorkspace(
 		lastOpen: overrides.lastOpen ?? new Date().toISOString(),
 		members: overrides.members ?? [],
 		owner: overrides.owner ?? undefined,
-	};
+	}
 }
 
 /**
  * 运行 TaskEither 并返回 Either 结果
  */
-async function runTE<Err, A>(
-	te: TE.TaskEither<Err, A>,
-): Promise<E.Either<Err, A>> {
-	return te();
+async function runTE<Err, A>(te: TE.TaskEither<Err, A>): Promise<E.Either<Err, A>> {
+	return te()
 }
 
 // ============================================================================
 // Mock Setup
 // ============================================================================
 
-const mockAddWorkspace = vi.fn();
+const mockAddWorkspace = vi.fn()
 
 vi.mock("@/db/workspace.db.fn", () => ({
 	addWorkspace: (...args: unknown[]) => mockAddWorkspace(...args),
-}));
+}))
 
 vi.mock("@/log", () => ({
 	default: {
@@ -67,10 +63,10 @@ vi.mock("@/log", () => ({
 		warn: vi.fn(),
 		debug: vi.fn(),
 	},
-}));
+}))
 
 // Logger removed - not needed in tests
-import { createWorkspace } from "./create-workspace.flow";
+import { createWorkspace } from "./create-workspace.flow"
 
 // ============================================================================
 // Unit Tests
@@ -78,22 +74,20 @@ import { createWorkspace } from "./create-workspace.flow";
 
 describe("createWorkspace", () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
-	});
+		vi.clearAllMocks()
+	})
 
 	it("should create workspace with only title", async () => {
-		const testWorkspace = createTestWorkspace({ title: "My Workspace" });
-		mockAddWorkspace.mockReturnValue(() =>
-			Promise.resolve(E.right(testWorkspace)),
-		);
+		const testWorkspace = createTestWorkspace({ title: "My Workspace" })
+		mockAddWorkspace.mockReturnValue(() => Promise.resolve(E.right(testWorkspace)))
 
-		const result = await runTE(createWorkspace({ title: "My Workspace" }));
+		const result = await runTE(createWorkspace({ title: "My Workspace" }))
 
-		expect(E.isRight(result)).toBe(true);
+		expect(E.isRight(result)).toBe(true)
 		if (E.isRight(result)) {
-			expect(result.right.title).toBe("My Workspace");
+			expect(result.right.title).toBe("My Workspace")
 		}
-	});
+	})
 
 	it("should create workspace with all optional parameters", async () => {
 		const testWorkspace = createTestWorkspace({
@@ -104,10 +98,8 @@ describe("createWorkspace", () => {
 			language: "en",
 			members: ["user-1", "user-2"],
 			owner: "owner-1",
-		});
-		mockAddWorkspace.mockReturnValue(() =>
-			Promise.resolve(E.right(testWorkspace)),
-		);
+		})
+		mockAddWorkspace.mockReturnValue(() => Promise.resolve(E.right(testWorkspace)))
 
 		const result = await runTE(
 			createWorkspace({
@@ -119,17 +111,17 @@ describe("createWorkspace", () => {
 				members: ["user-1", "user-2"],
 				owner: "owner-1",
 			}),
-		);
+		)
 
-		expect(E.isRight(result)).toBe(true);
+		expect(E.isRight(result)).toBe(true)
 		if (E.isRight(result)) {
-			expect(result.right.title).toBe("My Workspace");
-			expect(result.right.author).toBe("Test Author");
-			expect(result.right.description).toBe("Test Description");
-			expect(result.right.publisher).toBe("Test Publisher");
-			expect(result.right.language).toBe("en");
-			expect(result.right.members).toEqual(["user-1", "user-2"]);
-			expect(result.right.owner).toBe("owner-1");
+			expect(result.right.title).toBe("My Workspace")
+			expect(result.right.author).toBe("Test Author")
+			expect(result.right.description).toBe("Test Description")
+			expect(result.right.publisher).toBe("Test Publisher")
+			expect(result.right.language).toBe("en")
+			expect(result.right.members).toEqual(["user-1", "user-2"])
+			expect(result.right.owner).toBe("owner-1")
 		}
 		expect(mockAddWorkspace).toHaveBeenCalledWith("My Workspace", {
 			author: "Test Author",
@@ -138,18 +130,18 @@ describe("createWorkspace", () => {
 			language: "en",
 			members: ["user-1", "user-2"],
 			owner: "owner-1",
-		});
-	});
+		})
+	})
 
 	it("should return Left with error on failure", async () => {
-		const error = { type: "DB_ERROR" as const, message: "Database error" };
-		mockAddWorkspace.mockReturnValue(() => Promise.resolve(E.left(error)));
+		const error = { type: "DB_ERROR" as const, message: "Database error" }
+		mockAddWorkspace.mockReturnValue(() => Promise.resolve(E.left(error)))
 
-		const result = await runTE(createWorkspace({ title: "My Workspace" }));
+		const result = await runTE(createWorkspace({ title: "My Workspace" }))
 
-		expect(E.isLeft(result)).toBe(true);
+		expect(E.isLeft(result)).toBe(true)
 		if (E.isLeft(result)) {
-			expect(result.left.type).toBe("DB_ERROR");
+			expect(result.left.type).toBe("DB_ERROR")
 		}
-	});
-});
+	})
+})

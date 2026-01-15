@@ -13,18 +13,14 @@
  * @requirements 4.1, 4.2, 4.3, 4.4
  */
 
-import * as E from "fp-ts/Either";
-import { applyThemeWithTransition, getSystemTheme } from "@/io/dom/theme.dom";
-import { info, success } from "@/io/log/logger.api";
-import {
-	getDefaultThemeKey,
-	getNextMode,
-	isThemeTypeMatch,
-} from "@/pipes/theme";
-import { getThemeByKey } from "@/pipes/theme/theme-lookup.pipe";
-import { useThemeStore } from "@/state/theme.state";
-import type { ThemeMode } from "@/types/theme";
-import { type AppError, validationError } from "@/types/error";
+import * as E from "fp-ts/Either"
+import { applyThemeWithTransition, getSystemTheme } from "@/io/dom/theme.dom"
+import { info, success } from "@/io/log/logger.api"
+import { getDefaultThemeKey, getNextMode, isThemeTypeMatch } from "@/pipes/theme"
+import { getThemeByKey } from "@/pipes/theme/theme-lookup.pipe"
+import { useThemeStore } from "@/state/theme.state"
+import { type AppError, validationError } from "@/types/error"
+import type { ThemeMode } from "@/types/theme"
 
 // ============================================================================
 // Types
@@ -35,7 +31,7 @@ import { type AppError, validationError } from "@/types/error";
  */
 export interface UpdateThemeParams {
 	/** 主题 key */
-	readonly themeKey: string;
+	readonly themeKey: string
 }
 
 /**
@@ -43,7 +39,7 @@ export interface UpdateThemeParams {
  */
 export interface UpdateThemeModeParams {
 	/** 主题模式 */
-	readonly mode: ThemeMode;
+	readonly mode: ThemeMode
 }
 
 /**
@@ -51,7 +47,7 @@ export interface UpdateThemeModeParams {
  */
 export interface UpdateTransitionParams {
 	/** 是否启用过渡动画 */
-	readonly enable: boolean;
+	readonly enable: boolean
 }
 
 // ============================================================================
@@ -66,30 +62,26 @@ export interface UpdateTransitionParams {
  * @param params - 更新主题参数
  * @returns Either<AppError, void>
  */
-export const updateTheme = (
-	params: UpdateThemeParams,
-): E.Either<AppError, void> => {
-	info("[Action] 更新主题", { themeKey: params.themeKey }, "update-theme.flow");
+export const updateTheme = (params: UpdateThemeParams): E.Either<AppError, void> => {
+	info("[Action] 更新主题", { themeKey: params.themeKey }, "update-theme.flow")
 
 	if (!params.themeKey || params.themeKey.trim() === "") {
-		return E.left(validationError("主题 key 不能为空", "themeKey"));
+		return E.left(validationError("主题 key 不能为空", "themeKey"))
 	}
 
-	const theme = getThemeByKey(params.themeKey);
+	const theme = getThemeByKey(params.themeKey)
 	if (!theme) {
-		return E.left(
-			validationError(`主题不存在: ${params.themeKey}`, "themeKey"),
-		);
+		return E.left(validationError(`主题不存在: ${params.themeKey}`, "themeKey"))
 	}
 
-	const store = useThemeStore.getState();
-	store.setTheme(params.themeKey);
-	store.setMode(theme.type);
-	applyThemeWithTransition(theme, store.enableTransition);
+	const store = useThemeStore.getState()
+	store.setTheme(params.themeKey)
+	store.setMode(theme.type)
+	applyThemeWithTransition(theme, store.enableTransition)
 
-	success("[Action] 主题更新成功", { themeKey: params.themeKey }, "update-theme");
-	return E.right(undefined);
-};
+	success("[Action] 主题更新成功", { themeKey: params.themeKey }, "update-theme")
+	return E.right(undefined)
+}
 
 /**
  * 更新主题模式
@@ -100,49 +92,47 @@ export const updateTheme = (
  * @param params - 更新主题模式参数
  * @returns Either<AppError, void>
  */
-export const updateThemeMode = (
-	params: UpdateThemeModeParams,
-): E.Either<AppError, void> => {
-	info("[Action] 更新主题模式", { mode: params.mode }, "update-theme.flow");
+export const updateThemeMode = (params: UpdateThemeModeParams): E.Either<AppError, void> => {
+	info("[Action] 更新主题模式", { mode: params.mode }, "update-theme.flow")
 
-	const validModes: readonly ThemeMode[] = ["light", "dark", "system"];
+	const validModes: readonly ThemeMode[] = ["light", "dark", "system"]
 	if (!validModes.includes(params.mode)) {
-		return E.left(validationError(`无效的主题模式: ${params.mode}`, "mode"));
+		return E.left(validationError(`无效的主题模式: ${params.mode}`, "mode"))
 	}
 
-	const store = useThemeStore.getState();
-	const currentTheme = getThemeByKey(store.themeKey);
+	const store = useThemeStore.getState()
+	const currentTheme = getThemeByKey(store.themeKey)
 
-	store.setMode(params.mode);
+	store.setMode(params.mode)
 
 	if (params.mode === "system") {
-		const systemType = getSystemTheme();
+		const systemType = getSystemTheme()
 		if (currentTheme && !isThemeTypeMatch(currentTheme, systemType)) {
-			const defaultThemeKey = getDefaultThemeKey(systemType);
-			const newTheme = getThemeByKey(defaultThemeKey);
+			const defaultThemeKey = getDefaultThemeKey(systemType)
+			const newTheme = getThemeByKey(defaultThemeKey)
 			if (newTheme) {
-				store.setTheme(defaultThemeKey);
-				applyThemeWithTransition(newTheme, store.enableTransition);
+				store.setTheme(defaultThemeKey)
+				applyThemeWithTransition(newTheme, store.enableTransition)
 			}
 		} else if (currentTheme) {
-			applyThemeWithTransition(currentTheme, store.enableTransition);
+			applyThemeWithTransition(currentTheme, store.enableTransition)
 		}
 	} else {
 		if (currentTheme && !isThemeTypeMatch(currentTheme, params.mode)) {
-			const defaultThemeKey = getDefaultThemeKey(params.mode);
-			const newTheme = getThemeByKey(defaultThemeKey);
+			const defaultThemeKey = getDefaultThemeKey(params.mode)
+			const newTheme = getThemeByKey(defaultThemeKey)
 			if (newTheme) {
-				store.setTheme(defaultThemeKey);
-				applyThemeWithTransition(newTheme, store.enableTransition);
+				store.setTheme(defaultThemeKey)
+				applyThemeWithTransition(newTheme, store.enableTransition)
 			}
 		} else if (currentTheme) {
-			applyThemeWithTransition(currentTheme, store.enableTransition);
+			applyThemeWithTransition(currentTheme, store.enableTransition)
 		}
 	}
 
-	success("[Action] 主题模式更新成功", { mode: params.mode }, "update-theme");
-	return E.right(undefined);
-};
+	success("[Action] 主题模式更新成功", { mode: params.mode }, "update-theme")
+	return E.right(undefined)
+}
 
 /**
  * 切换主题模式
@@ -152,20 +142,20 @@ export const updateThemeMode = (
  * @returns Either<AppError, ThemeMode> - 返回新的主题模式
  */
 export const toggleThemeMode = (): E.Either<AppError, ThemeMode> => {
-	info("[Action] 切换主题模式", {}, "update-theme.flow");
+	info("[Action] 切换主题模式", {}, "update-theme.flow")
 
-	const store = useThemeStore.getState();
-	const newMode = getNextMode(store.mode);
+	const store = useThemeStore.getState()
+	const newMode = getNextMode(store.mode)
 
 	// Use updateThemeMode to handle the mode change with theme switching
-	const result = updateThemeMode({ mode: newMode });
+	const result = updateThemeMode({ mode: newMode })
 	if (E.isLeft(result)) {
-		return result;
+		return result
 	}
 
-	success("[Action] 主题模式切换成功", { newMode }, "update-theme");
-	return E.right(newMode);
-};
+	success("[Action] 主题模式切换成功", { newMode }, "update-theme")
+	return E.right(newMode)
+}
 
 /**
  * 更新过渡动画设置
@@ -175,12 +165,10 @@ export const toggleThemeMode = (): E.Either<AppError, ThemeMode> => {
  * @param params - 更新过渡动画参数
  * @returns Either<AppError, void>
  */
-export const updateThemeTransition = (
-	params: UpdateTransitionParams,
-): E.Either<AppError, void> => {
-	info("[Action] 更新过渡动画设置", { enable: params.enable }, "update-theme.flow");
+export const updateThemeTransition = (params: UpdateTransitionParams): E.Either<AppError, void> => {
+	info("[Action] 更新过渡动画设置", { enable: params.enable }, "update-theme.flow")
 
-	useThemeStore.getState().setEnableTransition(params.enable);
-	success("[Action] 过渡动画设置更新成功", { enable: params.enable }, "update-theme");
-	return E.right(undefined);
-};
+	useThemeStore.getState().setEnableTransition(params.enable)
+	success("[Action] 过渡动画设置更新成功", { enable: params.enable }, "update-theme")
+	return E.right(undefined)
+}

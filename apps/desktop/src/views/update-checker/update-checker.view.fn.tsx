@@ -3,15 +3,9 @@
  * @description 更新检查纯展示组件
  */
 
-import {
-	AlertCircle,
-	CheckCircle,
-	Download,
-	Info,
-	RefreshCw,
-} from "lucide-react";
-import { memo } from "react";
-import { Button } from "@/views/ui/button";
+import { AlertCircle, CheckCircle, Download, Info, RefreshCw } from "lucide-react"
+import { memo } from "react"
+import { Button } from "@/views/ui/button"
 import {
 	Dialog,
 	DialogContent,
@@ -19,9 +13,9 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@/views/ui/dialog";
-import { Progress } from "@/views/ui/progress";
-import type { UpdateCheckerViewProps } from "./update-checker.types";
+} from "@/views/ui/dialog"
+import { Progress } from "@/views/ui/progress"
+import type { UpdateCheckerViewProps } from "./update-checker.types"
 
 export const UpdateCheckerView = memo(
 	({
@@ -44,25 +38,25 @@ export const UpdateCheckerView = memo(
 							<CheckCircle className="size-4" />
 							<span>You're up to date! (v{updateInfo?.currentVersion})</span>
 						</div>
-					);
+					)
 				case "dev-mode":
 					return (
 						<div className="flex items-center gap-2 text-sm text-muted-foreground">
 							<Info className="size-4" />
 							<span>Update check unavailable in browser mode</span>
 						</div>
-					);
+					)
 				case "error":
 					return (
 						<div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
 							<AlertCircle className="size-4" />
 							<span>Check failed: {errorMessage || "Unknown error"}</span>
 						</div>
-					);
+					)
 				default:
-					return null;
+					return null
 			}
-		};
+		}
 
 		return (
 			<>
@@ -74,9 +68,7 @@ export const UpdateCheckerView = memo(
 						disabled={isChecking}
 						className="w-fit"
 					>
-						<RefreshCw
-							className={`size-4 mr-2 ${isChecking ? "animate-spin" : ""}`}
-						/>
+						<RefreshCw className={`size-4 mr-2 ${isChecking ? "animate-spin" : ""}`} />
 						{isChecking ? "Checking..." : "Check for Updates"}
 					</Button>
 					{renderStatusMessage()}
@@ -86,26 +78,18 @@ export const UpdateCheckerView = memo(
 					<DialogContent>
 						<DialogHeader>
 							<DialogTitle>Update Available</DialogTitle>
-							<DialogDescription>
-								A new version of Grain is available.
-							</DialogDescription>
+							<DialogDescription>A new version of Grain is available.</DialogDescription>
 						</DialogHeader>
 
 						{updateInfo && (
 							<div className="space-y-4">
 								<div className="space-y-2">
 									<div className="flex justify-between text-sm">
-										<span className="text-muted-foreground">
-											Current Version:
-										</span>
-										<span className="font-mono">
-											{updateInfo.currentVersion}
-										</span>
+										<span className="text-muted-foreground">Current Version:</span>
+										<span className="font-mono">{updateInfo.currentVersion}</span>
 									</div>
 									<div className="flex justify-between text-sm">
-										<span className="text-muted-foreground">
-											Latest Version:
-										</span>
+										<span className="text-muted-foreground">Latest Version:</span>
 										<span className="font-mono font-semibold text-primary">
 											{updateInfo.latestVersion}
 										</span>
@@ -116,9 +100,7 @@ export const UpdateCheckerView = memo(
 									<div className="space-y-2">
 										<h4 className="text-sm font-medium">Release Notes:</h4>
 										<div className="text-sm text-muted-foreground max-h-48 overflow-y-auto p-3 bg-muted rounded-md">
-											<pre className="whitespace-pre-wrap font-sans">
-												{updateInfo.body}
-											</pre>
+											<pre className="whitespace-pre-wrap font-sans">{updateInfo.body}</pre>
 										</div>
 									</div>
 								)}
@@ -151,8 +133,8 @@ export const UpdateCheckerView = memo(
 					</DialogContent>
 				</Dialog>
 			</>
-		);
+		)
 	},
-);
+)
 
-UpdateCheckerView.displayName = "UpdateCheckerView";
+UpdateCheckerView.displayName = "UpdateCheckerView"

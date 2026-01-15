@@ -2,19 +2,19 @@
  * StoryRightSidebarContainer 组件测试
  */
 
-import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { StoryRightSidebarContainer } from "./story-right-sidebar.container.fn";
+import { render, screen } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import { StoryRightSidebarContainer } from "./story-right-sidebar.container.fn"
 
 // Mock stores
 vi.mock("@/state/ui.state", () => ({
 	useUIStore: vi.fn((selector) => {
 		const state = {
 			tabPosition: "right-sidebar" as const,
-		};
-		return selector(state);
+		}
+		return selector(state)
 	}),
-}));
+}))
 
 vi.mock("@/state/editor-tabs.state", () => ({
 	useEditorTabsStore: vi.fn((selector) => {
@@ -40,67 +40,67 @@ vi.mock("@/state/editor-tabs.state", () => ({
 			activeTabId: "tab-1",
 			setActiveTab: vi.fn(),
 			closeTab: vi.fn(),
-		};
-		return selector(state);
+		}
+		return selector(state)
 	}),
-}));
+}))
 
 describe("StoryRightSidebarContainer", () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
-	});
+		vi.clearAllMocks()
+	})
 
 	it("should render with workspace tabs", () => {
-		render(<StoryRightSidebarContainer workspaceId="workspace-1" />);
-		expect(screen.getByText("Open Tabs")).toBeInTheDocument();
-		expect(screen.getByText("Test File 1")).toBeInTheDocument();
-	});
+		render(<StoryRightSidebarContainer workspaceId="workspace-1" />)
+		expect(screen.getByText("Open Tabs")).toBeInTheDocument()
+		expect(screen.getByText("Test File 1")).toBeInTheDocument()
+	})
 
 	it("should filter tabs by workspaceId", () => {
-		render(<StoryRightSidebarContainer workspaceId="workspace-1" />);
-		expect(screen.getByText("Test File 1")).toBeInTheDocument();
-		expect(screen.queryByText("Test File 2")).not.toBeInTheDocument();
-	});
+		render(<StoryRightSidebarContainer workspaceId="workspace-1" />)
+		expect(screen.getByText("Test File 1")).toBeInTheDocument()
+		expect(screen.queryByText("Test File 2")).not.toBeInTheDocument()
+	})
 
 	it("should display correct tab count for workspace", () => {
-		render(<StoryRightSidebarContainer workspaceId="workspace-1" />);
-		expect(screen.getByText("1")).toBeInTheDocument();
-	});
+		render(<StoryRightSidebarContainer workspaceId="workspace-1" />)
+		expect(screen.getByText("1")).toBeInTheDocument()
+	})
 
 	it("should not render when tabPosition is top", async () => {
-		const { useUIStore } = await import("@/state/ui.state");
-		const _originalMock = vi.mocked(useUIStore);
+		const { useUIStore } = await import("@/state/ui.state")
+		const _originalMock = vi.mocked(useUIStore)
 
 		vi.mocked(useUIStore).mockImplementation((selector: any) => {
 			const state = {
 				tabPosition: "top" as const,
-			};
-			return selector(state);
-		});
+			}
+			return selector(state)
+		})
 
-		render(<StoryRightSidebarContainer workspaceId="workspace-1" />);
-		expect(screen.queryByText("Open Tabs")).not.toBeInTheDocument();
+		render(<StoryRightSidebarContainer workspaceId="workspace-1" />)
+		expect(screen.queryByText("Open Tabs")).not.toBeInTheDocument()
 
 		// Restore original mock
 		vi.mocked(useUIStore).mockImplementation((selector: any) => {
 			const state = {
 				tabPosition: "right-sidebar" as const,
-			};
-			return selector(state);
-		});
-	});
+			}
+			return selector(state)
+		})
+	})
 
 	it("should not render when workspace has no tabs", () => {
-		render(<StoryRightSidebarContainer workspaceId="workspace-3" />);
-		expect(screen.queryByText("Open Tabs")).not.toBeInTheDocument();
-	});
+		render(<StoryRightSidebarContainer workspaceId="workspace-3" />)
+		expect(screen.queryByText("Open Tabs")).not.toBeInTheDocument()
+	})
 
 	it("should pass correct props to view component", () => {
-		render(<StoryRightSidebarContainer workspaceId="workspace-1" />);
+		render(<StoryRightSidebarContainer workspaceId="workspace-1" />)
 		// The component should render with the filtered tabs
-		expect(screen.getByText("Open Tabs")).toBeInTheDocument();
-		expect(screen.getByText("Test File 1")).toBeInTheDocument();
-		const tab = screen.getByText("Test File 1").closest("button");
-		expect(tab).toHaveClass("bg-primary/10"); // Active tab styling
-	});
-});
+		expect(screen.getByText("Open Tabs")).toBeInTheDocument()
+		expect(screen.getByText("Test File 1")).toBeInTheDocument()
+		const tab = screen.getByText("Test File 1").closest("button")
+		expect(tab).toHaveClass("bg-primary/10") // Active tab styling
+	})
+})

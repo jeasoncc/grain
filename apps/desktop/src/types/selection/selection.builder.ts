@@ -5,8 +5,8 @@
  * 用于构建不可变的 Selection 状态对象
  */
 
-import type { SelectionConfig, SelectionState } from "./selection.interface";
-import { DEFAULT_SELECTION_CONFIG } from "./selection.interface";
+import type { SelectionConfig, SelectionState } from "./selection.interface"
+import { DEFAULT_SELECTION_CONFIG } from "./selection.interface"
 
 // ==============================
 // Internal Mutable Types
@@ -14,15 +14,15 @@ import { DEFAULT_SELECTION_CONFIG } from "./selection.interface";
 
 /** 内部可写的 SelectionState 类型 */
 type MutableSelectionState = {
-	selectedWorkspaceId: string | null;
-	selectedNodeId: string | null;
-};
+	selectedWorkspaceId: string | null
+	selectedNodeId: string | null
+}
 
 /** 内部可写的 SelectionConfig 类型 */
 type MutableSelectionConfig = {
-	storageKey: string;
-	persistWorkspace: boolean;
-};
+	storageKey: string
+	persistWorkspace: boolean
+}
 
 // ==============================
 // Selection State Builder
@@ -42,30 +42,30 @@ type MutableSelectionConfig = {
  * ```
  */
 export class SelectionStateBuilder {
-	private data: Partial<MutableSelectionState> = {};
+	private data: Partial<MutableSelectionState> = {}
 
 	/**
 	 * 设置选中的工作区 ID
 	 */
 	selectedWorkspaceId(id: string | null): this {
-		this.data.selectedWorkspaceId = id;
-		return this;
+		this.data.selectedWorkspaceId = id
+		return this
 	}
 
 	/**
 	 * 设置选中的节点 ID
 	 */
 	selectedNodeId(id: string | null): this {
-		this.data.selectedNodeId = id;
-		return this;
+		this.data.selectedNodeId = id
+		return this
 	}
 
 	/**
 	 * 从现有状态复制
 	 */
 	from(state: SelectionState): this {
-		this.data = { ...state };
-		return this;
+		this.data = { ...state }
+		return this
 	}
 
 	/**
@@ -73,16 +73,16 @@ export class SelectionStateBuilder {
 	 */
 	build(): SelectionState {
 		return Object.freeze({
-			selectedWorkspaceId: this.data.selectedWorkspaceId ?? null,
 			selectedNodeId: this.data.selectedNodeId ?? null,
-		}) as SelectionState;
+			selectedWorkspaceId: this.data.selectedWorkspaceId ?? null,
+		}) as SelectionState
 	}
 
 	/**
 	 * 构建初始状态
 	 */
 	static initial(): SelectionState {
-		return new SelectionStateBuilder().build();
+		return new SelectionStateBuilder().build()
 	}
 }
 
@@ -96,30 +96,30 @@ export class SelectionStateBuilder {
  * 用于构建选择配置对象
  */
 export class SelectionConfigBuilder {
-	private data: Partial<MutableSelectionConfig> = {};
+	private data: Partial<MutableSelectionConfig> = {}
 
 	/**
 	 * 设置存储键名
 	 */
 	storageKey(key: string): this {
-		this.data.storageKey = key;
-		return this;
+		this.data.storageKey = key
+		return this
 	}
 
 	/**
 	 * 设置是否持久化工作区选择
 	 */
 	persistWorkspace(persist: boolean): this {
-		this.data.persistWorkspace = persist;
-		return this;
+		this.data.persistWorkspace = persist
+		return this
 	}
 
 	/**
 	 * 从现有配置复制
 	 */
 	from(config: SelectionConfig): this {
-		this.data = { ...config };
-		return this;
+		this.data = { ...config }
+		return this
 	}
 
 	/**
@@ -127,16 +127,15 @@ export class SelectionConfigBuilder {
 	 */
 	build(): SelectionConfig {
 		return Object.freeze({
+			persistWorkspace: this.data.persistWorkspace ?? DEFAULT_SELECTION_CONFIG.persistWorkspace,
 			storageKey: this.data.storageKey ?? DEFAULT_SELECTION_CONFIG.storageKey,
-			persistWorkspace:
-				this.data.persistWorkspace ?? DEFAULT_SELECTION_CONFIG.persistWorkspace,
-		}) as SelectionConfig;
+		}) as SelectionConfig
 	}
 
 	/**
 	 * 构建默认配置
 	 */
 	static default(): SelectionConfig {
-		return new SelectionConfigBuilder().build();
+		return new SelectionConfigBuilder().build()
 	}
 }

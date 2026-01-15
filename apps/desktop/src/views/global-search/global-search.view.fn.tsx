@@ -4,42 +4,31 @@
  * 纯展示组件，只负责 UI 渲染和用户交互
  */
 
-import { FileText, Loader2, Search, X } from "lucide-react";
-import { memo } from "react";
-import { cn } from "@/utils/cn.util";
-import { Badge } from "@/views/ui/badge";
-import { Button } from "@/views/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-} from "@/views/ui/dialog";
-import { Input } from "@/views/ui/input";
-import { ScrollArea } from "@/views/ui/scroll-area";
-import { Separator } from "@/views/ui/separator";
-import type {
-	GlobalSearchViewProps,
-	SearchResultType,
-} from "./global-search.types";
+import { FileText, Loader2, Search, X } from "lucide-react"
+import { memo } from "react"
+import { cn } from "@/utils/cn.util"
+import { Badge } from "@/views/ui/badge"
+import { Button } from "@/views/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/views/ui/dialog"
+import { Input } from "@/views/ui/input"
+import { ScrollArea } from "@/views/ui/scroll-area"
+import { Separator } from "@/views/ui/separator"
+import type { GlobalSearchViewProps, SearchResultType } from "./global-search.types"
 
-const typeIcons: Record<
-	SearchResultType,
-	React.ComponentType<{ className?: string }>
-> = {
+const typeIcons: Record<SearchResultType, React.ComponentType<{ className?: string }>> = {
 	project: FileText,
 	node: FileText,
-};
+}
 
 const typeLabels: Record<SearchResultType, string> = {
 	project: "项目",
 	node: "文件",
-};
+}
 
 const typeColors: Record<SearchResultType, string> = {
 	project: "bg-purple-500/10 text-purple-500",
 	node: "bg-blue-500/10 text-blue-500",
-};
+}
 
 export const GlobalSearchView = memo(
 	({
@@ -55,9 +44,9 @@ export const GlobalSearchView = memo(
 	}: GlobalSearchViewProps) => {
 		// 高亮匹配文本
 		const highlightText = (text: string, searchQuery: string) => {
-			if (!searchQuery.trim()) return text;
+			if (!searchQuery.trim()) return text
 
-			const parts = text.split(new RegExp(`(${searchQuery})`, "gi"));
+			const parts = text.split(new RegExp(`(${searchQuery})`, "gi"))
 			return parts.map((part: string, index: number) =>
 				part.toLowerCase() === searchQuery.toLowerCase() ? (
 					<mark
@@ -70,8 +59,8 @@ export const GlobalSearchView = memo(
 				) : (
 					part
 				),
-			);
-		};
+			)
+		}
 
 		return (
 			<Dialog open={open} onOpenChange={onOpenChange}>
@@ -113,7 +102,7 @@ export const GlobalSearchView = memo(
 						) : results.length > 0 ? (
 							<div className="p-2">
 								{results.map((result, index) => {
-									const Icon = typeIcons[result.type];
+									const Icon = typeIcons[result.type]
 									return (
 										<button
 											type="button"
@@ -126,12 +115,7 @@ export const GlobalSearchView = memo(
 											)}
 										>
 											<div className="flex items-start gap-3">
-												<div
-													className={cn(
-														"p-2 rounded-md",
-														typeColors[result.type],
-													)}
-												>
+												<div className={cn("p-2 rounded-md", typeColors[result.type])}>
 													<Icon className="size-4" />
 												</div>
 												<div className="flex-1 min-w-0">
@@ -154,7 +138,7 @@ export const GlobalSearchView = memo(
 												</div>
 											</div>
 										</button>
-									);
+									)
 								})}
 							</div>
 						) : query.trim() ? (
@@ -194,8 +178,8 @@ export const GlobalSearchView = memo(
 					)}
 				</DialogContent>
 			</Dialog>
-		);
+		)
 	},
-);
+)
 
-GlobalSearchView.displayName = "GlobalSearchView";
+GlobalSearchView.displayName = "GlobalSearchView"

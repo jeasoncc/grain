@@ -6,8 +6,8 @@
  * 依赖：state/, flows/, types/
  */
 
-import { useCallback, useEffect } from "react";
-import { initLayoutFlow } from "@/flows/layout";
+import { useCallback, useEffect } from "react"
+import { initLayoutFlow } from "@/flows/layout"
 import {
 	useActivePanel,
 	useIsSidebarOpen,
@@ -15,8 +15,8 @@ import {
 	useLayoutStore,
 	useSidebarWidth,
 	useWasCollapsedByDrag,
-} from "@/state";
-import type { SidebarPanel } from "@/types/sidebar";
+} from "@/state"
+import type { SidebarPanel } from "@/types/sidebar"
 
 // ============================================================================
 // Layout Hook
@@ -29,43 +29,43 @@ import type { SidebarPanel } from "@/types/sidebar";
  */
 export function useLayout() {
 	// Selectors
-	const isSidebarOpen = useIsSidebarOpen();
-	const activePanel = useActivePanel();
-	const wasCollapsedByDrag = useWasCollapsedByDrag();
-	const sidebarWidth = useSidebarWidth();
+	const isSidebarOpen = useIsSidebarOpen()
+	const activePanel = useActivePanel()
+	const wasCollapsedByDrag = useWasCollapsedByDrag()
+	const sidebarWidth = useSidebarWidth()
 
 	// Actions
-	const actions = useLayoutActions();
+	const actions = useLayoutActions()
 
 	// Wrapped actions with useCallback for stability
 	const setActivePanel = useCallback(
 		(panel: SidebarPanel) => {
-			actions.setActivePanel(panel);
+			actions.setActivePanel(panel)
 		},
 		[actions],
-	);
+	)
 
 	const toggleSidebar = useCallback(() => {
-		actions.toggleSidebar();
-	}, [actions]);
+		actions.toggleSidebar()
+	}, [actions])
 
 	const setSidebarCollapsedByDrag = useCallback(
 		(collapsed: boolean) => {
-			actions.setSidebarCollapsedByDrag(collapsed);
+			actions.setSidebarCollapsedByDrag(collapsed)
 		},
 		[actions],
-	);
+	)
 
 	const restoreFromCollapse = useCallback(() => {
-		actions.restoreFromCollapse();
-	}, [actions]);
+		actions.restoreFromCollapse()
+	}, [actions])
 
 	const setSidebarWidth = useCallback(
 		(width: number) => {
-			actions.setSidebarWidth(width);
+			actions.setSidebarWidth(width)
 		},
 		[actions],
-	);
+	)
 
 	return {
 		// State
@@ -80,7 +80,7 @@ export function useLayout() {
 		setSidebarCollapsedByDrag,
 		restoreFromCollapse,
 		setSidebarWidth,
-	};
+	}
 }
 
 /**
@@ -91,10 +91,10 @@ export function useLayout() {
 export function useLayoutInit() {
 	useEffect(() => {
 		// Initialize layout from localStorage
-		initLayoutFlow();
-	}, []);
+		initLayoutFlow()
+	}, [])
 
-	return useLayout();
+	return useLayout()
 }
 
 /**
@@ -104,5 +104,5 @@ export function useLayoutInit() {
  * @returns Layout store
  */
 export function useLayoutStore_Direct() {
-	return useLayoutStore();
+	return useLayoutStore()
 }

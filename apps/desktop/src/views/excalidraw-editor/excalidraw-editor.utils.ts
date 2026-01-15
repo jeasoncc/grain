@@ -12,17 +12,17 @@
 
 export interface HardwareAccelerationStatus {
 	/** 是否支持 WebGL */
-	readonly webglSupported: boolean;
+	readonly webglSupported: boolean
 	/** WebGL 版本（1 或 2，0 表示不支持） */
-	readonly webglVersion: 0 | 1 | 2;
+	readonly webglVersion: 0 | 1 | 2
 	/** 是否启用硬件加速 */
-	readonly hardwareAccelerated: boolean;
+	readonly hardwareAccelerated: boolean
 	/** GPU 渲染器信息 */
-	readonly renderer: string | null;
+	readonly renderer: string | null
 	/** GPU 厂商信息 */
-	readonly vendor: string | null;
+	readonly vendor: string | null
 	/** 检测时间戳 */
-	readonly timestamp: number;
+	readonly timestamp: number
 }
 
 /**
@@ -43,44 +43,41 @@ export function detectHardwareAcceleration(): HardwareAccelerationStatus {
 		renderer: null,
 		vendor: null,
 		timestamp: Date.now(),
-	};
+	}
 
 	try {
 		// 创建临时 Canvas 用于检测
-		const canvas = document.createElement("canvas");
+		const canvas = document.createElement("canvas")
 
 		// 尝试获取 WebGL2 上下文
-		let gl: WebGLRenderingContext | WebGL2RenderingContext | null =
-			canvas.getContext("webgl2");
-		let webglVersion: 0 | 1 | 2 = gl ? 2 : 0;
+		let gl: WebGLRenderingContext | WebGL2RenderingContext | null = canvas.getContext("webgl2")
+		let webglVersion: 0 | 1 | 2 = gl ? 2 : 0
 
 		// 如果 WebGL2 不可用，尝试 WebGL1
 		if (!gl) {
 			gl =
 				canvas.getContext("webgl") ||
-				(canvas.getContext(
-					"experimental-webgl",
-				) as WebGLRenderingContext | null);
-			webglVersion = gl ? 1 : 0;
+				(canvas.getContext("experimental-webgl") as WebGLRenderingContext | null)
+			webglVersion = gl ? 1 : 0
 		}
 
 		if (!gl) {
-			return result;
+			return result
 		}
 
 		// 获取调试信息扩展
-		const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+		const debugInfo = gl.getExtension("WEBGL_debug_renderer_info")
 
-		let renderer: string | null = null;
-		let vendor: string | null = null;
+		let renderer: string | null = null
+		let vendor: string | null = null
 
 		if (debugInfo) {
-			renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) as string;
-			vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) as string;
+			renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) as string
+			vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) as string
 		} else {
 			// 回退到基本信息
-			renderer = gl.getParameter(gl.RENDERER) as string;
-			vendor = gl.getParameter(gl.VENDOR) as string;
+			renderer = gl.getParameter(gl.RENDERER) as string
+			vendor = gl.getParameter(gl.VENDOR) as string
 		}
 
 		// 检测是否为软件渲染
@@ -92,12 +89,10 @@ export function detectHardwareAcceleration(): HardwareAccelerationStatus {
 			"mesa",
 			"microsoft basic render",
 			"google swiftshader",
-		];
+		]
 
-		const rendererLower = (renderer || "").toLowerCase();
-		const isSoftwareRenderer = softwareRenderers.some((sw) =>
-			rendererLower.includes(sw),
-		);
+		const rendererLower = (renderer || "").toLowerCase()
+		const isSoftwareRenderer = softwareRenderers.some((sw) => rendererLower.includes(sw))
 
 		return {
 			webglSupported: true,
@@ -106,10 +101,10 @@ export function detectHardwareAcceleration(): HardwareAccelerationStatus {
 			renderer,
 			vendor,
 			timestamp: Date.now(),
-		};
+		}
 	} catch (error) {
-		console.error("[ExcalidrawEditor] 硬件加速检测失败:", error);
-		return result;
+		console.error("[ExcalidrawEditor] 硬件加速检测失败:", error)
+		return result
 	}
 }
 
@@ -121,34 +116,26 @@ export function detectHardwareAcceleration(): HardwareAccelerationStatus {
  * @param status 硬件加速状态
  * @requirements 6.3
  */
-export function logHardwareAccelerationStatus(
-	status: HardwareAccelerationStatus,
-): void {
+export function logHardwareAccelerationStatus(status: HardwareAccelerationStatus): void {
 	if (!status.webglSupported) {
-		console.warn("[ExcalidrawEditor] WebGL 不可用，Excalidraw 性能可能受影响");
-		console.warn(
-			"[ExcalidrawEditor] 建议：检查浏览器/WebView 设置，确保 WebGL 已启用",
-		);
-		return;
+		console.warn("[ExcalidrawEditor] WebGL 不可用，Excalidraw 性能可能受影响")
+		console.warn("[ExcalidrawEditor] 建议：检查浏览器/WebView 设置，确保 WebGL 已启用")
+		return
 	}
 
 	if (!status.hardwareAccelerated) {
-		console.warn("[ExcalidrawEditor] 硬件加速未启用，使用软件渲染");
-		console.warn(`[ExcalidrawEditor] 当前渲染器: ${status.renderer || "未知"}`);
-		console.warn("[ExcalidrawEditor] 建议解决方案：");
-		console.warn("  1. 检查系统 GPU 驱动是否正常安装");
-		console.warn("  2. 在 Tauri 配置中启用硬件加速");
-		console.warn("  3. 检查系统是否禁用了 GPU 加速");
-		return;
+		console.warn("[ExcalidrawEditor] 硬件加速未启用，使用软件渲染")
+		console.warn(`[ExcalidrawEditor] 当前渲染器: ${status.renderer || "未知"}`)
+		console.warn("[ExcalidrawEditor] 建议解决方案：")
+		console.warn("  1. 检查系统 GPU 驱动是否正常安装")
+		console.warn("  2. 在 Tauri 配置中启用硬件加速")
+		console.warn("  3. 检查系统是否禁用了 GPU 加速")
+		return
 	}
 
 	// 硬件加速正常
-	console.log(
-		`[ExcalidrawEditor] 硬件加速已启用 (WebGL${status.webglVersion})`,
-	);
-	console.log(
-		`[ExcalidrawEditor] GPU: ${status.vendor || "未知"} - ${status.renderer || "未知"}`,
-	);
+	console.log(`[ExcalidrawEditor] 硬件加速已启用 (WebGL${status.webglVersion})`)
+	console.log(`[ExcalidrawEditor] GPU: ${status.vendor || "未知"} - ${status.renderer || "未知"}`)
 }
 
 /**
@@ -161,16 +148,16 @@ export function logHardwareAccelerationStatus(
  * @requirements 6.1, 6.3
  */
 export function checkAndLogHardwareAcceleration(): HardwareAccelerationStatus {
-	const status = detectHardwareAcceleration();
-	logHardwareAccelerationStatus(status);
-	return status;
+	const status = detectHardwareAcceleration()
+	logHardwareAccelerationStatus(status)
+	return status
 }
 
 /**
  * 硬件加速检测缓存
  * 避免重复检测，因为硬件状态在应用运行期间不会改变
  */
-let cachedStatus: HardwareAccelerationStatus | null = null;
+let cachedStatus: HardwareAccelerationStatus | null = null
 
 /**
  * 获取硬件加速状态（带缓存）
@@ -181,9 +168,9 @@ let cachedStatus: HardwareAccelerationStatus | null = null;
  */
 export function getHardwareAccelerationStatus(): HardwareAccelerationStatus {
 	if (!cachedStatus) {
-		cachedStatus = checkAndLogHardwareAcceleration();
+		cachedStatus = checkAndLogHardwareAcceleration()
 	}
-	return cachedStatus;
+	return cachedStatus
 }
 
 /**
@@ -191,5 +178,5 @@ export function getHardwareAccelerationStatus(): HardwareAccelerationStatus {
  * 主要用于测试
  */
 export function clearHardwareAccelerationCache(): void {
-	cachedStatus = null;
+	cachedStatus = null
 }

@@ -1,13 +1,13 @@
-import { Loader2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { Loader2 } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 
 /**
  * Wiki 悬浮预览数据
  */
 export interface WikiPreviewData {
-	title: string;
-	content: string;
+	title: string
+	content: string
 }
 
 /**
@@ -17,13 +17,13 @@ export interface WikiPreviewData {
  */
 interface WikiHoverPreviewProps {
 	/** 条目 ID */
-	entryId: string;
+	entryId: string
 	/** 锚点元素 */
-	anchorElement: HTMLElement;
+	anchorElement: HTMLElement
 	/** 关闭回调 */
-	onClose: () => void;
+	onClose: () => void
 	/** 数据获取函数 */
-	onFetchData: (entryId: string) => Promise<WikiPreviewData>;
+	onFetchData: (entryId: string) => Promise<WikiPreviewData>
 }
 
 /**
@@ -37,56 +37,56 @@ export function WikiHoverPreview({
 	onClose,
 	onFetchData,
 }: WikiHoverPreviewProps) {
-	const [content, setContent] = useState<string | null>(null);
-	const [title, setTitle] = useState<string>("");
-	const [loading, setLoading] = useState(true);
+	const [content, setContent] = useState<string | null>(null)
+	const [title, setTitle] = useState<string>("")
+	const [loading, setLoading] = useState(true)
 	const [position, setPosition] = useState<{ top: number; left: number }>({
 		top: 0,
 		left: 0,
-	});
-	const tooltipRef = useRef<HTMLDivElement>(null);
+	})
+	const tooltipRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
-		let mounted = true;
+		let mounted = true
 
 		async function fetchData() {
-			setLoading(true);
+			setLoading(true)
 			try {
-				const data = await onFetchData(entryId);
+				const data = await onFetchData(entryId)
 
 				if (mounted) {
-					setTitle(data.title);
-					setContent(data.content);
+					setTitle(data.title)
+					setContent(data.content)
 				}
 			} catch {
 				if (mounted) {
-					setTitle("Unknown");
-					setContent("Failed to load content");
+					setTitle("Unknown")
+					setContent("Failed to load content")
 				}
 			} finally {
-				if (mounted) setLoading(false);
+				if (mounted) setLoading(false)
 			}
 		}
 
-		fetchData();
+		fetchData()
 
 		return () => {
-			mounted = false;
-		};
-	}, [entryId, onFetchData]);
+			mounted = false
+		}
+	}, [entryId, onFetchData])
 
 	// Calculate position
 	useEffect(() => {
-		if (!anchorElement) return;
+		if (!anchorElement) return
 
-		const rect = anchorElement.getBoundingClientRect();
-		const top = rect.bottom + window.scrollY + 5;
-		const left = rect.left + window.scrollX;
+		const rect = anchorElement.getBoundingClientRect()
+		const top = rect.bottom + window.scrollY + 5
+		const left = rect.left + window.scrollX
 
-		setPosition({ top, left });
-	}, [anchorElement]);
+		setPosition({ top, left })
+	}, [anchorElement])
 
-	if (!anchorElement) return null;
+	if (!anchorElement) return null
 
 	return createPortal(
 		<div
@@ -103,15 +103,11 @@ export function WikiHoverPreview({
 				</div>
 			) : (
 				<div className="space-y-2">
-					<h4 className="font-medium text-sm border-b border-border/40 pb-1.5 mb-1.5">
-						{title}
-					</h4>
-					<p className="text-xs text-muted-foreground leading-relaxed line-clamp-4">
-						{content}
-					</p>
+					<h4 className="font-medium text-sm border-b border-border/40 pb-1.5 mb-1.5">{title}</h4>
+					<p className="text-xs text-muted-foreground leading-relaxed line-clamp-4">{content}</p>
 				</div>
 			)}
 		</div>,
 		document.body,
-	);
+	)
 }

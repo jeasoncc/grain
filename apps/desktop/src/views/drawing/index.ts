@@ -15,4 +15,4 @@ export {
 	getSafeDrawingDimensions,
 	hasInvalidAppState,
 	sanitizeDrawingContent,
-} from "./drawing.utils.fn";
+} from "./drawing.utils.fn"

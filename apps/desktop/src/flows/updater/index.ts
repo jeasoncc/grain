@@ -14,4 +14,4 @@ export {
 	isTauriEnvironment,
 	type UpdateInfo,
 	type UpdateProgress,
-} from "./updater.fn";
+} from "./updater.fn"

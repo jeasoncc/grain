@@ -8,18 +8,18 @@
  * @requirements 3.1, 3.2, 3.4, 3.5
  */
 
-import dayjs from "dayjs";
-import { v4 as uuidv4 } from "uuid";
-import type { ContentInterface, ContentType } from "./content.interface";
-import { ContentSchema } from "./content.schema";
+import dayjs from "dayjs"
+import { v4 as uuidv4 } from "uuid"
+import type { ContentInterface, ContentType } from "./content.interface"
+import { ContentSchema } from "./content.schema"
 
 /**
  * Builder 内部使用的可变类型
  * 用于在构建过程中修改数据
  */
 type MutableContent = {
-	-readonly [K in keyof ContentInterface]: ContentInterface[K];
-};
+	-readonly [K in keyof ContentInterface]: ContentInterface[K]
+}
 
 /**
  * ContentBuilder 类
@@ -31,16 +31,16 @@ type MutableContent = {
  * - 使用 Object.freeze() 确保不可变性
  */
 export class ContentBuilder {
-	private data: Partial<MutableContent> = {};
+	private data: Partial<MutableContent> = {}
 
 	constructor() {
 		// 设置合理的默认值
 		this.data = {
-			id: uuidv4(),
 			content: "",
 			contentType: "lexical",
+			id: uuidv4(),
 			lastEdit: dayjs().toISOString(),
-		};
+		}
 	}
 
 	/**
@@ -49,8 +49,8 @@ export class ContentBuilder {
 	 * @returns this builder 用于链式调用
 	 */
 	nodeId(id: string): this {
-		this.data.nodeId = id;
-		return this;
+		this.data.nodeId = id
+		return this
 	}
 
 	/**
@@ -59,8 +59,8 @@ export class ContentBuilder {
 	 * @returns this builder 用于链式调用
 	 */
 	content(content: string): this {
-		this.data.content = content;
-		return this;
+		this.data.content = content
+		return this
 	}
 
 	/**
@@ -69,8 +69,8 @@ export class ContentBuilder {
 	 * @returns this builder 用于链式调用
 	 */
 	contentType(type: ContentType): this {
-		this.data.contentType = type;
-		return this;
+		this.data.contentType = type
+		return this
 	}
 
 	/**
@@ -79,8 +79,8 @@ export class ContentBuilder {
 	 * @returns this builder 用于链式调用
 	 */
 	id(id: string): this {
-		this.data.id = id;
-		return this;
+		this.data.id = id
+		return this
 	}
 
 	/**
@@ -89,8 +89,8 @@ export class ContentBuilder {
 	 * @returns this builder 用于链式调用
 	 */
 	lastEdit(timestamp: string): this {
-		this.data.lastEdit = timestamp;
-		return this;
+		this.data.lastEdit = timestamp
+		return this
 	}
 
 	/**
@@ -99,8 +99,8 @@ export class ContentBuilder {
 	 * @returns this builder 用于链式调用
 	 */
 	from(content: ContentInterface): this {
-		this.data = { ...content };
-		return this;
+		this.data = { ...content }
+		return this
 	}
 
 	/**
@@ -111,12 +111,12 @@ export class ContentBuilder {
 	build(): ContentInterface {
 		// 如果未显式设置，更新 lastEdit 为当前时间
 		if (!this.data.lastEdit) {
-			this.data.lastEdit = dayjs().toISOString();
+			this.data.lastEdit = dayjs().toISOString()
 		}
 
 		// 校验并返回不可变对象
-		const result = ContentSchema.parse(this.data);
-		return Object.freeze(result) as ContentInterface;
+		const result = ContentSchema.parse(this.data)
+		return Object.freeze(result) as ContentInterface
 	}
 
 	/**
@@ -126,8 +126,8 @@ export class ContentBuilder {
 	 */
 	buildPartial(): Partial<ContentInterface> {
 		// 部分构建时始终更新 lastEdit
-		this.data.lastEdit = dayjs().toISOString();
-		return Object.freeze({ ...this.data }) as Partial<ContentInterface>;
+		this.data.lastEdit = dayjs().toISOString()
+		return Object.freeze({ ...this.data }) as Partial<ContentInterface>
 	}
 
 	/**
@@ -137,11 +137,11 @@ export class ContentBuilder {
 	 */
 	reset(): this {
 		this.data = {
-			id: uuidv4(),
 			content: "",
 			contentType: "lexical",
+			id: uuidv4(),
 			lastEdit: dayjs().toISOString(),
-		};
-		return this;
+		}
+		return this
 	}
 }

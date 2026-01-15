@@ -15,9 +15,9 @@
  */
 export interface WritingGoal {
 	/** Daily target word count */
-	readonly dailyTarget: number;
+	readonly dailyTarget: number
 	/** Whether the goal tracking is enabled */
-	readonly enabled: boolean;
+	readonly enabled: boolean
 }
 
 /**
@@ -26,11 +26,11 @@ export interface WritingGoal {
  */
 export interface WritingSession {
 	/** Session start timestamp (milliseconds since epoch) */
-	readonly startTime: number;
+	readonly startTime: number
 	/** Word count at session start */
-	readonly startWordCount: number;
+	readonly startWordCount: number
 	/** Current word count in session */
-	readonly currentWordCount: number;
+	readonly currentWordCount: number
 }
 
 // ==============================
@@ -43,19 +43,19 @@ export interface WritingSession {
  */
 export interface WritingState {
 	/** Whether focus mode is enabled (hides distractions) */
-	readonly focusMode: boolean;
+	readonly focusMode: boolean
 	/** Whether typewriter mode is enabled (keeps cursor centered) */
-	readonly typewriterMode: boolean;
+	readonly typewriterMode: boolean
 	/** Writing goal configuration */
-	readonly writingGoal: WritingGoal;
+	readonly writingGoal: WritingGoal
 	/** Total words written today */
-	readonly todayWordCount: number;
+	readonly todayWordCount: number
 	/** Current date in YYYY-MM-DD format */
-	readonly todayDate: string;
+	readonly todayDate: string
 	/** Current active writing session, null if no session */
-	readonly session: WritingSession | null;
+	readonly session: WritingSession | null
 	/** Whether minimal toolbar mode is enabled */
-	readonly minimalToolbar: boolean;
+	readonly minimalToolbar: boolean
 }
 
 // ==============================
@@ -69,62 +69,62 @@ export interface WritingActions {
 	/**
 	 * Set focus mode enabled state.
 	 */
-	readonly setFocusMode: (enabled: boolean) => void;
+	readonly setFocusMode: (enabled: boolean) => void
 
 	/**
 	 * Toggle focus mode on/off.
 	 */
-	readonly toggleFocusMode: () => void;
+	readonly toggleFocusMode: () => void
 
 	/**
 	 * Set typewriter mode enabled state.
 	 */
-	readonly setTypewriterMode: (enabled: boolean) => void;
+	readonly setTypewriterMode: (enabled: boolean) => void
 
 	/**
 	 * Toggle typewriter mode on/off.
 	 */
-	readonly toggleTypewriterMode: () => void;
+	readonly toggleTypewriterMode: () => void
 
 	/**
 	 * Update writing goal configuration.
 	 * Accepts partial updates to merge with existing goal.
 	 */
-	readonly setWritingGoal: (goal: Partial<WritingGoal>) => void;
+	readonly setWritingGoal: (goal: Partial<WritingGoal>) => void
 
 	/**
 	 * Add words to today's word count.
 	 * Resets count if date has changed.
 	 */
-	readonly addTodayWords: (count: number) => void;
+	readonly addTodayWords: (count: number) => void
 
 	/**
 	 * Reset today's word count if the date has changed.
 	 */
-	readonly resetTodayIfNeeded: () => void;
+	readonly resetTodayIfNeeded: () => void
 
 	/**
 	 * Start a new writing session.
 	 * @param wordCount - Initial word count at session start
 	 */
-	readonly startSession: (wordCount: number) => void;
+	readonly startSession: (wordCount: number) => void
 
 	/**
 	 * Update the current session's word count.
 	 * Also updates today's word count if words increased.
 	 * @param wordCount - Current word count
 	 */
-	readonly updateSessionWordCount: (wordCount: number) => void;
+	readonly updateSessionWordCount: (wordCount: number) => void
 
 	/**
 	 * End the current writing session.
 	 */
-	readonly endSession: () => void;
+	readonly endSession: () => void
 
 	/**
 	 * Set minimal toolbar mode.
 	 */
-	readonly setMinimalToolbar: (enabled: boolean) => void;
+	readonly setMinimalToolbar: (enabled: boolean) => void
 }
 
 // ==============================
@@ -136,12 +136,12 @@ export interface WritingActions {
  */
 export interface WritingConfig {
 	/** Storage key for persistence */
-	readonly storageKey: string;
+	readonly storageKey: string
 }
 
 export const DEFAULT_WRITING_CONFIG: WritingConfig = {
 	storageKey: "grain-writing",
-} as const;
+} as const
 
 // ==============================
 // Default Values
@@ -150,14 +150,14 @@ export const DEFAULT_WRITING_CONFIG: WritingConfig = {
 export const DEFAULT_WRITING_GOAL: WritingGoal = {
 	dailyTarget: 1000,
 	enabled: true,
-} as const;
+} as const
 
 export const DEFAULT_WRITING_STATE: WritingState = {
 	focusMode: false,
+	minimalToolbar: true,
+	session: null,
+	todayDate: "",
+	todayWordCount: 0,
 	typewriterMode: false,
 	writingGoal: DEFAULT_WRITING_GOAL,
-	todayWordCount: 0,
-	todayDate: "",
-	session: null,
-	minimalToolbar: true,
-} as const;
+} as const

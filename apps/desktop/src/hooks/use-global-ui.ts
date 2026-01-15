@@ -6,7 +6,7 @@
  * 依赖：state/, types/
  */
 
-import { useCallback } from "react";
+import { useCallback } from "react"
 import {
 	useBufferSwitcherActions,
 	useBufferSwitcherDirection,
@@ -18,8 +18,8 @@ import {
 	useGlobalSearchActions,
 	useGlobalSearchOpen,
 	useGlobalUIStore,
-} from "@/state";
-import type { BufferSwitcherDirection } from "@/types/global-ui";
+} from "@/state"
+import type { BufferSwitcherDirection } from "@/types/global-ui"
 
 // ============================================================================
 // Global UI Hook
@@ -32,17 +32,17 @@ import type { BufferSwitcherDirection } from "@/types/global-ui";
  */
 export function useGlobalUI() {
 	// Selectors
-	const commandPaletteOpen = useCommandPaletteOpen();
-	const globalSearchOpen = useGlobalSearchOpen();
-	const bufferSwitcherOpen = useBufferSwitcherOpen();
-	const bufferSwitcherDirection = useBufferSwitcherDirection();
-	const exportDialogOpen = useExportDialogOpen();
+	const commandPaletteOpen = useCommandPaletteOpen()
+	const globalSearchOpen = useGlobalSearchOpen()
+	const bufferSwitcherOpen = useBufferSwitcherOpen()
+	const bufferSwitcherDirection = useBufferSwitcherDirection()
+	const exportDialogOpen = useExportDialogOpen()
 
 	// Actions
-	const commandPaletteActions = useCommandPaletteActions();
-	const globalSearchActions = useGlobalSearchActions();
-	const bufferSwitcherActions = useBufferSwitcherActions();
-	const exportDialogActions = useExportDialogActions();
+	const commandPaletteActions = useCommandPaletteActions()
+	const globalSearchActions = useGlobalSearchActions()
+	const bufferSwitcherActions = useBufferSwitcherActions()
+	const exportDialogActions = useExportDialogActions()
 
 	return {
 		// Command Palette
@@ -77,88 +77,88 @@ export function useGlobalUI() {
 			close: exportDialogActions.close,
 			toggle: exportDialogActions.toggle,
 		},
-	};
+	}
 }
 
 /**
  * Hook for command palette
  */
 export function useCommandPalette() {
-	const open = useCommandPaletteOpen();
-	const actions = useCommandPaletteActions();
+	const open = useCommandPaletteOpen()
+	const actions = useCommandPaletteActions()
 
 	const openPalette = useCallback(() => {
-		actions.open();
-	}, [actions]);
+		actions.open()
+	}, [actions])
 
 	const closePalette = useCallback(() => {
-		actions.close();
-	}, [actions]);
+		actions.close()
+	}, [actions])
 
 	const togglePalette = useCallback(() => {
-		actions.toggle();
-	}, [actions]);
+		actions.toggle()
+	}, [actions])
 
 	return {
 		open,
 		openPalette,
 		closePalette,
 		togglePalette,
-	};
+	}
 }
 
 /**
  * Hook for global search
  */
 export function useGlobalSearch() {
-	const open = useGlobalSearchOpen();
-	const actions = useGlobalSearchActions();
+	const open = useGlobalSearchOpen()
+	const actions = useGlobalSearchActions()
 
 	const openSearch = useCallback(() => {
-		actions.open();
-	}, [actions]);
+		actions.open()
+	}, [actions])
 
 	const closeSearch = useCallback(() => {
-		actions.close();
-	}, [actions]);
+		actions.close()
+	}, [actions])
 
 	const toggleSearch = useCallback(() => {
-		actions.toggle();
-	}, [actions]);
+		actions.toggle()
+	}, [actions])
 
 	return {
 		open,
 		openSearch,
 		closeSearch,
 		toggleSearch,
-	};
+	}
 }
 
 /**
  * Hook for buffer switcher
  */
 export function useBufferSwitcher() {
-	const open = useBufferSwitcherOpen();
-	const direction = useBufferSwitcherDirection();
-	const actions = useBufferSwitcherActions();
+	const open = useBufferSwitcherOpen()
+	const direction = useBufferSwitcherDirection()
+	const actions = useBufferSwitcherActions()
 
 	const openSwitcher = useCallback(
 		(dir: BufferSwitcherDirection) => {
-			actions.open(dir);
+			actions.open(dir)
 		},
 		[actions],
-	);
+	)
 
 	const closeSwitcher = useCallback(() => {
-		actions.close();
-	}, [actions]);
+		actions.close()
+	}, [actions])
 
 	const setDirection = useCallback(
 		(dir: BufferSwitcherDirection) => {
-			actions.setDirection(dir);
+			actions.setDirection(dir)
 		},
 		[actions],
-	);
+	)
 
 	return {
 		open,
@@ -166,34 +166,34 @@ export function useBufferSwitcher() {
 		openSwitcher,
 		closeSwitcher,
 		setDirection,
-	};
+	}
 }
 
 /**
  * Hook for export dialog
  */
 export function useExportDialog() {
-	const open = useExportDialogOpen();
-	const actions = useExportDialogActions();
+	const open = useExportDialogOpen()
+	const actions = useExportDialogActions()
 
 	const openDialog = useCallback(() => {
-		actions.open();
-	}, [actions]);
+		actions.open()
+	}, [actions])
 
 	const closeDialog = useCallback(() => {
-		actions.close();
-	}, [actions]);
+		actions.close()
+	}, [actions])
 
 	const toggleDialog = useCallback(() => {
-		actions.toggle();
-	}, [actions]);
+		actions.toggle()
+	}, [actions])
 
 	return {
 		open,
 		openDialog,
 		closeDialog,
 		toggleDialog,
-	};
+	}
 }
 
 /**
@@ -203,5 +203,5 @@ export function useExportDialog() {
  * @returns Global UI store
  */
 export function useGlobalUIStore_Direct() {
-	return useGlobalUIStore();
+	return useGlobalUIStore()
 }

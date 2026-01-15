@@ -6,31 +6,31 @@
  */
 
 // Diagram
-export * from "./diagram.state";
+export * from "./diagram.state"
 // Editor History
-export * from "./editor-history.state";
+export * from "./editor-history.state"
 
 // Editor Settings
-export * from "./editor-settings.state";
+export * from "./editor-settings.state"
 // Editor Tabs
-export * from "./editor-tabs.state";
+export * from "./editor-tabs.state"
 // Font
-export * from "./font.state";
+export * from "./font.state"
 // Global UI
-export * from "./global-ui.state";
+export * from "./global-ui.state"
 // Icon Theme
-export * from "./icon-theme.state";
+export * from "./icon-theme.state"
 // Layout
-export * from "./layout.state";
+export * from "./layout.state"
 // Save
-export * from "./save.state";
+export * from "./save.state"
 // Selection
-export * from "./selection.state";
+export * from "./selection.state"
 // Sidebar
-export * from "./sidebar.state";
+export * from "./sidebar.state"
 // Theme
-export * from "./theme.state";
+export * from "./theme.state"
 // UI
-export * from "./ui.state";
+export * from "./ui.state"
 // Writing
-export * from "./writing.state";
+export * from "./writing.state"

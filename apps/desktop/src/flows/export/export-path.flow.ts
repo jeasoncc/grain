@@ -8,10 +8,10 @@
  * Requirements: 4.1, 4.2, 4.3
  */
 
-import { invoke } from "@tauri-apps/api/core";
-import { saveAs } from "file-saver";
-import { z } from "zod";
-import { warn, success, error as logError } from "@/io/log/logger.api";
+import { invoke } from "@tauri-apps/api/core"
+import { saveAs } from "file-saver"
+import { z } from "zod"
+import { error as logError, success, warn } from "@/io/log/logger.api"
 
 // ============================================================================
 // Zod Schema 定义
@@ -23,7 +23,7 @@ import { warn, success, error as logError } from "@/io/log/logger.api";
 export const exportSettingsSchema = z.object({
 	defaultExportPath: z.string().nullable(),
 	lastUsedPath: z.string().nullable(),
-});
+})
 
 // ============================================================================
 // 类型定义
@@ -32,42 +32,42 @@ export const exportSettingsSchema = z.object({
 /**
  * Export 设置接口（从 Zod Schema 推断）
  */
-export type ExportSettings = z.infer<typeof exportSettingsSchema>;
+export type ExportSettings = z.infer<typeof exportSettingsSchema>
 
 /**
  * Export 路径服务接口
  */
 export interface ExportPathService {
-	readonly selectExportDirectory: () => Promise<string | null>;
-	readonly saveToPath: (path: string, filename: string, content: Blob) => Promise<void>;
-	readonly getDefaultExportPath: () => string | null;
-	readonly setDefaultExportPath: (path: string | null) => void;
-	readonly isTauriEnvironment: () => boolean;
+	readonly selectExportDirectory: () => Promise<string | null>
+	readonly saveToPath: (path: string, filename: string, content: Blob) => Promise<void>
+	readonly getDefaultExportPath: () => string | null
+	readonly setDefaultExportPath: (path: string | null) => void
+	readonly isTauriEnvironment: () => boolean
 }
 
 /**
  * Export 结果接口
  */
 export interface ExportResult {
-	readonly success: boolean;
-	readonly path?: string;
-	readonly cancelled?: boolean;
-	readonly error?: string;
+	readonly success: boolean
+	readonly path?: string
+	readonly cancelled?: boolean
+	readonly error?: string
 }
 
 /**
  * Export 选项接口
  */
 export interface ExportWithPathOptions {
-	readonly useDefaultPath?: boolean;
-	readonly showSuccessMessage?: boolean;
+	readonly useDefaultPath?: boolean
+	readonly showSuccessMessage?: boolean
 }
 
 // ============================================================================
 // 常量
 // ============================================================================
 
-const EXPORT_SETTINGS_KEY = "grain-export-settings";
+const EXPORT_SETTINGS_KEY = "grain-export-settings"
 
 // ============================================================================
 // 环境检测
@@ -80,7 +80,7 @@ export function isTauriEnvironment(): boolean {
 	return (
 		typeof window !== "undefined" &&
 		!!(window as unknown as { readonly __TAURI__?: unknown }).__TAURI__
-	);
+	)
 }
 
 // ============================================================================
@@ -97,18 +97,18 @@ export async function selectExportDirectory(
 	initialDirectory?: string | null,
 ): Promise<string | null> {
 	if (!isTauriEnvironment()) {
-		warn("[Export] selectExportDirectory: 非 Tauri 环境，返回 null");
-		return null;
+		warn("[Export] selectExportDirectory: 非 Tauri 环境，返回 null")
+		return null
 	}
 
 	try {
 		const result = await invoke<string | null>("select_directory", {
 			initialDirectory: initialDirectory || null,
-		});
-		return result;
+		})
+		return result
 	} catch (err) {
-		logError("[Export] 目录选择失败", { error: err }, "export-path.flow");
-		throw new Error(`目录选择失败: ${err}`);
+		logError("[Export] 目录选择失败", { error: err }, "export-path.flow")
+		throw new Error(`目录选择失败: ${err}`)
 	}
 }
 
@@ -130,38 +130,38 @@ export async function saveToPath(
 ): Promise<void> {
 	if (!isTauriEnvironment()) {
 		// 浏览器环境降级处理：使用 file-saver 下载
-		warn("[Export] saveToPath: 非 Tauri 环境，降级为浏览器下载");
+		warn("[Export] saveToPath: 非 Tauri 环境，降级为浏览器下载")
 		if (content instanceof Uint8Array) {
 			// 创建新的 ArrayBuffer 避免 SharedArrayBuffer 类型问题
-			const buffer = new ArrayBuffer(content.length);
-			new Uint8Array(buffer).set(content);
-			const blob = new Blob([buffer]);
-			saveAs(blob, filename);
+			const buffer = new ArrayBuffer(content.length)
+			new Uint8Array(buffer).set(content)
+			const blob = new Blob([buffer])
+			saveAs(blob, filename)
 		} else {
-			saveAs(content, filename);
+			saveAs(content, filename)
 		}
-		return;
+		return
 	}
 
 	try {
 		// 将 Blob 转换为 Uint8Array
-		let contentArray: readonly number[];
+		let contentArray: readonly number[]
 		if (content instanceof Blob) {
-			const arrayBuffer = await content.arrayBuffer();
-			contentArray = Array.from(new Uint8Array(arrayBuffer));
+			const arrayBuffer = await content.arrayBuffer()
+			contentArray = Array.from(new Uint8Array(arrayBuffer))
 		} else {
-			contentArray = Array.from(content);
+			contentArray = Array.from(content)
 		}
 
 		await invoke("save_file", {
 			path,
 			filename,
 			content: contentArray,
-		});
-		success("[Export] 文件保存成功", { path: `${path}/${filename}` }, "export-path");
+		})
+		success("[Export] 文件保存成功", { path: `${path}/${filename}` }, "export-path")
 	} catch (err) {
-		logError("[Export] 文件保存失败", { error: err }, "export-path.flow");
-		throw new Error(`文件保存失败: ${err}`);
+		logError("[Export] 文件保存失败", { error: err }, "export-path.flow")
+		throw new Error(`文件保存失败: ${err}`)
 	}
 }
 
@@ -177,15 +177,15 @@ export async function saveToPath(
 export async function getDownloadsDirectory(): Promise<string> {
 	if (!isTauriEnvironment()) {
 		// 浏览器环境返回空字符串
-		return "";
+		return ""
 	}
 
 	try {
-		const result = await invoke<string>("get_downloads_dir");
-		return result;
+		const result = await invoke<string>("get_downloads_dir")
+		return result
 	} catch (err) {
-		logError("[Export] 获取下载目录失败", { error: err }, "export-path.flow");
-		return "";
+		logError("[Export] 获取下载目录失败", { error: err }, "export-path.flow")
+		return ""
 	}
 }
 
@@ -199,7 +199,7 @@ export async function getDownloadsDirectory(): Promise<string> {
 const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
 	defaultExportPath: null,
 	lastUsedPath: null,
-};
+}
 
 /**
  * 获取 Export 设置
@@ -208,23 +208,23 @@ const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
  */
 export function getExportSettings(): ExportSettings {
 	try {
-		const stored = localStorage.getItem(EXPORT_SETTINGS_KEY);
+		const stored = localStorage.getItem(EXPORT_SETTINGS_KEY)
 		if (!stored) {
-			return DEFAULT_EXPORT_SETTINGS;
+			return DEFAULT_EXPORT_SETTINGS
 		}
 
-		const parsed = JSON.parse(stored);
-		const result = exportSettingsSchema.safeParse(parsed);
+		const parsed = JSON.parse(stored)
+		const result = exportSettingsSchema.safeParse(parsed)
 
 		if (result.success) {
-			return result.data;
+			return result.data
 		}
 
-		warn("[Export] 设置数据格式无效，使用默认值", { error: result.error }, "export-path.flow");
-		return DEFAULT_EXPORT_SETTINGS;
+		warn("[Export] 设置数据格式无效，使用默认值", { error: result.error }, "export-path.flow")
+		return DEFAULT_EXPORT_SETTINGS
 	} catch (err) {
-		logError("[Export] 加载设置失败", { error: err }, "export-path.flow");
-		return DEFAULT_EXPORT_SETTINGS;
+		logError("[Export] 加载设置失败", { error: err }, "export-path.flow")
+		return DEFAULT_EXPORT_SETTINGS
 	}
 }
 
@@ -233,9 +233,9 @@ export function getExportSettings(): ExportSettings {
  */
 export function saveExportSettings(settings: ExportSettings): void {
 	try {
-		localStorage.setItem(EXPORT_SETTINGS_KEY, JSON.stringify(settings));
+		localStorage.setItem(EXPORT_SETTINGS_KEY, JSON.stringify(settings))
 	} catch (err) {
-		logError("[Export] 保存设置失败", { error: err }, "export-path.flow");
+		logError("[Export] 保存设置失败", { error: err }, "export-path.flow")
 	}
 }
 
@@ -243,43 +243,43 @@ export function saveExportSettings(settings: ExportSettings): void {
  * 获取默认 Export 路径
  */
 export function getDefaultExportPath(): string | null {
-	return getExportSettings().defaultExportPath;
+	return getExportSettings().defaultExportPath
 }
 
 /**
  * 设置默认 Export 路径
  */
 export function setDefaultExportPath(path: string | null): void {
-	const settings = getExportSettings();
+	const settings = getExportSettings()
 	saveExportSettings({
 		...settings,
 		defaultExportPath: path,
-	});
+	})
 }
 
 /**
  * 获取最后使用的路径
  */
 export function getLastUsedPath(): string | null {
-	return getExportSettings().lastUsedPath;
+	return getExportSettings().lastUsedPath
 }
 
 /**
  * 设置最后使用的路径
  */
 export function setLastUsedPath(path: string | null): void {
-	const settings = getExportSettings();
+	const settings = getExportSettings()
 	saveExportSettings({
 		...settings,
 		lastUsedPath: path,
-	});
+	})
 }
 
 /**
  * 清除默认 Export 路径
  */
 export function clearDefaultExportPath(): void {
-	setDefaultExportPath(null);
+	setDefaultExportPath(null)
 }
 
 // ============================================================================
@@ -295,7 +295,7 @@ export const exportPathService: ExportPathService = {
 	getDefaultExportPath,
 	setDefaultExportPath,
 	isTauriEnvironment,
-};
+}
 
 // ============================================================================
 // 带路径选择的导出
@@ -314,62 +314,62 @@ export async function exportWithPathSelection(
 	content: Blob | Uint8Array,
 	options?: ExportWithPathOptions,
 ): Promise<ExportResult> {
-	const { useDefaultPath = true } = options || {};
+	const { useDefaultPath = true } = options || {}
 
 	// 非 Tauri 环境直接使用浏览器下载
 	if (!isTauriEnvironment()) {
 		try {
 			if (content instanceof Uint8Array) {
 				// 创建新的 ArrayBuffer 避免 SharedArrayBuffer 类型问题
-				const buffer = new ArrayBuffer(content.length);
-				new Uint8Array(buffer).set(content);
-				const blob = new Blob([buffer]);
-				saveAs(blob, filename);
+				const buffer = new ArrayBuffer(content.length)
+				new Uint8Array(buffer).set(content)
+				const blob = new Blob([buffer])
+				saveAs(blob, filename)
 			} else {
-				saveAs(content, filename);
+				saveAs(content, filename)
 			}
-			return { success: true };
+			return { success: true }
 		} catch (error) {
-			return { success: false, error: String(error) };
+			return { success: false, error: String(error) }
 		}
 	}
 
 	try {
 		// 获取初始目录 (Requirements 5.4: 使用默认路径作为初始目录)
-		let initialPath: string | null = null;
+		let initialPath: string | null = null
 
 		if (useDefaultPath) {
 			// 优先使用默认 Export 路径，其次使用最后使用的路径
-			initialPath = getDefaultExportPath() || getLastUsedPath();
+			initialPath = getDefaultExportPath() || getLastUsedPath()
 		}
 
 		// 如果没有默认路径，尝试获取下载目录
 		if (!initialPath) {
-			initialPath = await getDownloadsDirectory();
+			initialPath = await getDownloadsDirectory()
 		}
 
 		// 显示目录选择对话框，使用初始路径作为起始目录
-		const selectedPath = await selectExportDirectory(initialPath);
+		const selectedPath = await selectExportDirectory(initialPath)
 
 		// 用户取消选择
 		if (!selectedPath) {
-			return { success: false, cancelled: true };
+			return { success: false, cancelled: true }
 		}
 
 		// 保存文件
-		await saveToPath(selectedPath, filename, content);
+		await saveToPath(selectedPath, filename, content)
 
 		// 更新最后使用的路径
-		setLastUsedPath(selectedPath);
+		setLastUsedPath(selectedPath)
 
 		return {
 			success: true,
 			path: `${selectedPath}/${filename}`,
-		};
+		}
 	} catch (error) {
 		return {
 			success: false,
 			error: String(error),
-		};
+		}
 	}
 }

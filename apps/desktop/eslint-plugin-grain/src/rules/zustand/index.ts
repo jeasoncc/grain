@@ -1,5 +1,5 @@
-import zustandPatterns from './zustand-patterns';
+import zustandPatterns from "./zustand-patterns"
 
 export default {
-  'zustand-patterns': zustandPatterns,
-};
+	"zustand-patterns": zustandPatterns,
+}

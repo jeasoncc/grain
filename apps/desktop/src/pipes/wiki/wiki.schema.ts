@@ -12,4 +12,4 @@ export {
 	wikiCreationParamsSchema,
 	wikiCreationResultSchema,
 	wikiFileEntrySchema,
-} from "@/types/wiki";
+} from "@/types/wiki"

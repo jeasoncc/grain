@@ -6,4 +6,4 @@
  * 保持 apps/desktop 中的导入路径不变。
  */
 
-export { ExcalidrawEditorView } from "@grain/excalidraw-editor";
+export { ExcalidrawEditorView } from "@grain/excalidraw-editor"

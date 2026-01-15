@@ -1,139 +1,139 @@
 /**
  * Legacy Configuration Preset
- * 
+ *
  * 用于迁移的宽松配置，仅在从旧代码库迁移到新架构时使用
- * 
+ *
  * ⚠️ 警告：此配置仅用于迁移目的
  * - 不应在新项目中使用
  * - 应尽快迁移到 strict 配置
  * - 此配置将在未来版本中被移除
- * 
+ *
  * 迁移策略：
  * 1. 使用 legacy 配置启动项目
  * 2. 逐步修复 warn 级别的问题
  * 3. 将规则逐个升级为 error
  * 4. 最终切换到 strict 配置
- * 
+ *
  * Requirements: 14.5
  */
 
 export const legacyConfig = {
-  plugins: ['grain'],
-  rules: {
-    // ============================================
-    // Functional Programming Rules - Relaxed
-    // ============================================
-    // 核心函数式规则降级为 warn，允许渐进式迁移
-    'grain/no-try-catch': 'warn',
-    'grain/no-throw': 'warn',
-    'grain/no-promise-methods': 'warn',
-    'grain/no-async-outside-io': 'off', // 完全关闭，迁移难度大
-    'grain/no-mutation': 'warn',
-    'grain/no-object-mutation': 'warn',
-    'grain/fp-ts-patterns': 'warn',
-    
-    // ============================================
-    // Architecture Layer Rules - Relaxed
-    // ============================================
-    // 架构规则降级为 warn，允许现有代码继续运行
-    'grain/layer-dependencies': 'warn',
-    'grain/no-react-in-pure-layers': 'warn',
-    'grain/no-side-effects-in-pipes': 'warn',
-    'grain/no-store-in-views': 'warn',
-    'grain/file-location': 'off', // 文件位置检查关闭，迁移成本高
-    
-    // ============================================
-    // Naming Convention Rules - Relaxed
-    // ============================================
-    // 命名规则降级为 warn，不阻塞构建
-    'grain/file-naming': 'warn',
-    'grain/variable-naming': 'warn',
-    'grain/function-naming': 'warn',
-    'grain/boolean-naming': 'warn',
-    'grain/constant-naming': 'warn',
-    
-    // ============================================
-    // Complexity Rules - Relaxed
-    // ============================================
-    // 复杂度规则降级为 warn，允许现有复杂代码
-    'grain/max-function-lines': 'warn',
-    'grain/max-params': 'warn',
-    'grain/max-nesting': 'warn',
-    'grain/cyclomatic-complexity': 'warn',
-    'grain/max-file-lines': 'warn',
-    
-    // ============================================
-    // React Component Rules - Relaxed
-    // ============================================
-    // React 规则降级为 warn，性能优化可以渐进
-    'grain/require-memo': 'warn',
-    'grain/no-inline-functions': 'warn',
-    'grain/require-callback': 'warn',
-    'grain/hooks-patterns': 'warn',
-    'grain/component-patterns': 'warn',
-    
-    // ============================================
-    // Import Organization Rules - Partial
-    // ============================================
-    // 禁止的库保持 error（安全和性能关键）
-    'grain/no-banned-imports': 'error',
-    'grain/no-deprecated-imports': 'error',
-    // 其他导入规则降级为 warn
-    'grain/no-default-export': 'warn',
-    'grain/require-alias': 'warn',
-    'grain/import-grouping': 'off', // 纯格式化，关闭
-    
-    // ============================================
-    // Security Rules - Keep error
-    // ============================================
-    // 安全规则保持 error，不能妥协
-    'grain/no-eval': 'error',
-    'grain/no-innerhtml': 'error',
-    'grain/no-sensitive-logging': 'error',
-    
-    // ============================================
-    // Documentation Rules - Relaxed
-    // ============================================
-    // 文档规则降级为 warn 或关闭
-    'grain/require-jsdoc': 'warn',
-    'grain/no-commented-code': 'warn',
-    'grain/chinese-comments': 'off', // 语言偏好，关闭
-    
-    // ============================================
-    // Magic Values Rules - Relaxed
-    // ============================================
-    // 魔法值规则降级为 warn
-    'grain/no-magic-numbers': 'warn',
-    'grain/no-hardcoded-values': 'warn',
-    
-    // ============================================
-    // Conditional Statement Rules - Relaxed
-    // ============================================
-    // 条件语句规则降级为 warn
-    'grain/no-nested-ternary': 'warn',
-    'grain/strict-equality': 'error', // 保持 error，容易修复
-    'grain/require-switch-default': 'warn',
-    
-    // ============================================
-    // Type Safety Rules - Relaxed
-    // ============================================
-    // 类型安全规则降级为 warn
-    'grain/no-any': 'warn',
-    'grain/no-non-null-assertion': 'warn',
-    'grain/require-return-type': 'off', // 类型推断足够，关闭
-    
-    // ============================================
-    // Zustand State Management Rules - Relaxed
-    // ============================================
-    'grain/zustand-patterns': 'warn',
-  },
-} as const;
+	plugins: ["grain"],
+	rules: {
+		// ============================================
+		// Functional Programming Rules - Relaxed
+		// ============================================
+		// 核心函数式规则降级为 warn，允许渐进式迁移
+		"grain/no-try-catch": "warn",
+		"grain/no-throw": "warn",
+		"grain/no-promise-methods": "warn",
+		"grain/no-async-outside-io": "off", // 完全关闭，迁移难度大
+		"grain/no-mutation": "warn",
+		"grain/no-object-mutation": "warn",
+		"grain/fp-ts-patterns": "warn",
+
+		// ============================================
+		// Architecture Layer Rules - Relaxed
+		// ============================================
+		// 架构规则降级为 warn，允许现有代码继续运行
+		"grain/layer-dependencies": "warn",
+		"grain/no-react-in-pure-layers": "warn",
+		"grain/no-side-effects-in-pipes": "warn",
+		"grain/no-store-in-views": "warn",
+		"grain/file-location": "off", // 文件位置检查关闭，迁移成本高
+
+		// ============================================
+		// Naming Convention Rules - Relaxed
+		// ============================================
+		// 命名规则降级为 warn，不阻塞构建
+		"grain/file-naming": "warn",
+		"grain/variable-naming": "warn",
+		"grain/function-naming": "warn",
+		"grain/boolean-naming": "warn",
+		"grain/constant-naming": "warn",
+
+		// ============================================
+		// Complexity Rules - Relaxed
+		// ============================================
+		// 复杂度规则降级为 warn，允许现有复杂代码
+		"grain/max-function-lines": "warn",
+		"grain/max-params": "warn",
+		"grain/max-nesting": "warn",
+		"grain/cyclomatic-complexity": "warn",
+		"grain/max-file-lines": "warn",
+
+		// ============================================
+		// React Component Rules - Relaxed
+		// ============================================
+		// React 规则降级为 warn，性能优化可以渐进
+		"grain/require-memo": "warn",
+		"grain/no-inline-functions": "warn",
+		"grain/require-callback": "warn",
+		"grain/hooks-patterns": "warn",
+		"grain/component-patterns": "warn",
+
+		// ============================================
+		// Import Organization Rules - Partial
+		// ============================================
+		// 禁止的库保持 error（安全和性能关键）
+		"grain/no-banned-imports": "error",
+		"grain/no-deprecated-imports": "error",
+		// 其他导入规则降级为 warn
+		"grain/no-default-export": "warn",
+		"grain/require-alias": "warn",
+		"grain/import-grouping": "off", // 纯格式化，关闭
+
+		// ============================================
+		// Security Rules - Keep error
+		// ============================================
+		// 安全规则保持 error，不能妥协
+		"grain/no-eval": "error",
+		"grain/no-innerhtml": "error",
+		"grain/no-sensitive-logging": "error",
+
+		// ============================================
+		// Documentation Rules - Relaxed
+		// ============================================
+		// 文档规则降级为 warn 或关闭
+		"grain/require-jsdoc": "warn",
+		"grain/no-commented-code": "warn",
+		"grain/chinese-comments": "off", // 语言偏好，关闭
+
+		// ============================================
+		// Magic Values Rules - Relaxed
+		// ============================================
+		// 魔法值规则降级为 warn
+		"grain/no-magic-numbers": "warn",
+		"grain/no-hardcoded-values": "warn",
+
+		// ============================================
+		// Conditional Statement Rules - Relaxed
+		// ============================================
+		// 条件语句规则降级为 warn
+		"grain/no-nested-ternary": "warn",
+		"grain/strict-equality": "error", // 保持 error，容易修复
+		"grain/require-switch-default": "warn",
+
+		// ============================================
+		// Type Safety Rules - Relaxed
+		// ============================================
+		// 类型安全规则降级为 warn
+		"grain/no-any": "warn",
+		"grain/no-non-null-assertion": "warn",
+		"grain/require-return-type": "off", // 类型推断足够，关闭
+
+		// ============================================
+		// Zustand State Management Rules - Relaxed
+		// ============================================
+		"grain/zustand-patterns": "warn",
+	},
+} as const
 
 /**
  * 迁移检查清单
- * 
+ *
  * 使用此配置时，请定期检查以下项目：
- * 
+ *
  * 1. [ ] 所有 try-catch 已迁移到 TaskEither
  * 2. [ ] 所有 throw 已替换为 Either.left
  * 3. [ ] 所有 Promise 方法已替换为 TaskEither
@@ -149,6 +149,6 @@ export const legacyConfig = {
  * 13. [ ] 文档完整（JSDoc）
  * 14. [ ] 无魔法值
  * 15. [ ] 类型安全（无 any, 无非空断言）
- * 
+ *
  * 当所有项目完成后，切换到 strict 配置
  */

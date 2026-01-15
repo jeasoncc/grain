@@ -8,7 +8,7 @@
  */
 
 // 容器组件（默认导出）
-export { ActivityBarContainer as ActivityBar } from "./activity-bar.container.fn";
+export { ActivityBarContainer as ActivityBar } from "./activity-bar.container.fn"
 // 类型定义
 export type {
 	ActionButtonProps,
@@ -16,6 +16,6 @@ export type {
 	NavItemProps,
 	ToggleNavItemProps,
 	WorkspaceItemProps,
-} from "./activity-bar.types";
+} from "./activity-bar.types"
 // 纯展示组件
-export { ActivityBarView } from "./activity-bar.view.fn";
+export { ActivityBarView } from "./activity-bar.view.fn"

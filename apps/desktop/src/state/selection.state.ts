@@ -6,16 +6,16 @@
  * 使用 Zustand + Immer 实现不可变状态管理。
  */
 
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { SelectionActions, SelectionState } from "@/types/selection";
-import { DEFAULT_SELECTION_CONFIG } from "@/types/selection";
+import { create } from "zustand"
+import { persist } from "zustand/middleware"
+import type { SelectionActions, SelectionState } from "@/types/selection"
+import { DEFAULT_SELECTION_CONFIG } from "@/types/selection"
 
 // ==============================
 // Store Type
 // ==============================
 
-type SelectionStore = SelectionState & SelectionActions;
+type SelectionStore = SelectionState & SelectionActions
 
 // ==============================
 // Store Implementation
@@ -38,14 +38,14 @@ export const useSelectionStore = create<SelectionStore>()(
 					selectedWorkspaceId: id,
 					// 切换工作区时清除节点选择
 					selectedNodeId: null,
-				}));
+				}))
 			},
 
 			setSelectedNodeId: (id) => {
 				set((state) => ({
 					...state,
 					selectedNodeId: id,
-				}));
+				}))
 			},
 
 			clearSelection: () => {
@@ -53,7 +53,7 @@ export const useSelectionStore = create<SelectionStore>()(
 					...state,
 					selectedWorkspaceId: null,
 					selectedNodeId: null,
-				}));
+				}))
 			},
 		}),
 		{
@@ -64,7 +64,7 @@ export const useSelectionStore = create<SelectionStore>()(
 			}),
 		},
 	),
-);
+)
 
 // ==============================
 // Selector Hooks
@@ -75,39 +75,36 @@ export const useSelectionStore = create<SelectionStore>()(
  * 优化：仅在工作区变化时重新渲染
  */
 export const useSelectedWorkspaceId = (): string | null => {
-	return useSelectionStore((state) => state.selectedWorkspaceId);
-};
+	return useSelectionStore((state) => state.selectedWorkspaceId)
+}
 
 /**
  * 获取当前选中的节点 ID
  * 优化：仅在节点选择变化时重新渲染
  */
 export const useSelectedNodeId = (): string | null => {
-	return useSelectionStore((state) => state.selectedNodeId);
-};
+	return useSelectionStore((state) => state.selectedNodeId)
+}
 
 /**
  * 检查指定工作区是否被选中
  */
 export const useIsWorkspaceSelected = (workspaceId: string): boolean => {
-	return useSelectionStore(
-		(state) => state.selectedWorkspaceId === workspaceId,
-	);
-};
+	return useSelectionStore((state) => state.selectedWorkspaceId === workspaceId)
+}
 
 /**
  * 检查指定节点是否被选中
  */
 export const useIsNodeSelected = (nodeId: string): boolean => {
-	return useSelectionStore((state) => state.selectedNodeId === nodeId);
-};
+	return useSelectionStore((state) => state.selectedNodeId === nodeId)
+}
 
 /**
  * 检查是否存在任何选择
  */
 export const useHasSelection = (): boolean => {
 	return useSelectionStore(
-		(state) =>
-			state.selectedWorkspaceId !== null || state.selectedNodeId !== null,
-	);
-};
+		(state) => state.selectedWorkspaceId !== null || state.selectedNodeId !== null,
+	)
+}

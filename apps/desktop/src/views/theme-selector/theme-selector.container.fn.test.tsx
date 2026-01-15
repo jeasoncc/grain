@@ -1,7 +1,7 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import type { Theme } from "@/utils/themes.util";
-import { ThemeSelectorContainer } from "./theme-selector.container.fn";
+import { render, screen } from "@testing-library/react"
+import { describe, expect, it, vi } from "vitest"
+import type { Theme } from "@/utils/themes.util"
+import { ThemeSelectorContainer } from "./theme-selector.container.fn"
 
 // Mock hooks and libs
 vi.mock("@/hooks/use-theme", () => ({
@@ -47,7 +47,7 @@ vi.mock("@/hooks/use-theme", () => ({
 		enableTransition: true,
 		setEnableTransition: vi.fn(),
 	})),
-}));
+}))
 
 vi.mock("@/lib/themes", () => ({
 	getLightThemes: vi.fn(() => [
@@ -122,25 +122,25 @@ vi.mock("@/lib/themes", () => ({
 			},
 		},
 	]),
-}));
+}))
 
 describe("ThemeSelectorContainer", () => {
 	it("should render theme selector", () => {
-		render(<ThemeSelectorContainer />);
-		const button = screen.getByRole("button");
-		expect(button).toBeInTheDocument();
-	});
+		render(<ThemeSelectorContainer />)
+		const button = screen.getByRole("button")
+		expect(button).toBeInTheDocument()
+	})
 
 	it("should connect to useTheme hook", async () => {
-		const { useTheme } = await import("@/hooks/use-theme");
-		render(<ThemeSelectorContainer />);
-		expect(useTheme).toHaveBeenCalled();
-	});
+		const { useTheme } = await import("@/hooks/use-theme")
+		render(<ThemeSelectorContainer />)
+		expect(useTheme).toHaveBeenCalled()
+	})
 
 	it("should connect to theme data functions", async () => {
-		const { getLightThemes, getDarkThemes } = await import("@/lib/themes");
-		render(<ThemeSelectorContainer />);
-		expect(getLightThemes).toHaveBeenCalled();
-		expect(getDarkThemes).toHaveBeenCalled();
-	});
-});
+		const { getLightThemes, getDarkThemes } = await import("@/lib/themes")
+		render(<ThemeSelectorContainer />)
+		expect(getLightThemes).toHaveBeenCalled()
+		expect(getDarkThemes).toHaveBeenCalled()
+	})
+})

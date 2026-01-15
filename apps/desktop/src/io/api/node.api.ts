@@ -19,23 +19,13 @@
  * ```
  */
 
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import { debug, error, warn } from "@/io/log/logger.api";
-import {
-	decodeNode,
-	decodeNodes,
-	encodeCreateNode,
-	encodeUpdateNode,
-} from "@/types/codec";
-import type { AppError } from "@/types/error";
-import type {
-	NodeCreateInput,
-	NodeInterface,
-	NodeType,
-	NodeUpdateInput,
-} from "@/types/node";
-import { api } from "./client.api";
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import { debug, error, warn } from "@/io/log/logger.api"
+import { decodeNode, decodeNodes, encodeCreateNode, encodeUpdateNode } from "@/types/codec"
+import type { AppError } from "@/types/error"
+import type { NodeCreateInput, NodeInterface, NodeType, NodeUpdateInput } from "@/types/node"
+import { api } from "./client.api"
 
 // ============================================
 // 查询操作
@@ -47,7 +37,7 @@ import { api } from "./client.api";
 export const getNodesByWorkspace = (
 	workspaceId: string,
 ): TE.TaskEither<AppError, readonly NodeInterface[]> =>
-	pipe(api.getNodesByWorkspace(workspaceId), TE.map(decodeNodes));
+	pipe(api.getNodesByWorkspace(workspaceId), TE.map(decodeNodes))
 
 /**
  * 获取根节点（parent_id 为 null）
@@ -55,7 +45,7 @@ export const getNodesByWorkspace = (
 export const getRootNodes = (
 	workspaceId: string,
 ): TE.TaskEither<AppError, readonly NodeInterface[]> =>
-	pipe(api.getRootNodes(workspaceId), TE.map(decodeNodes));
+	pipe(api.getRootNodes(workspaceId), TE.map(decodeNodes))
 
 /**
  * 按父节点获取子节点
@@ -64,7 +54,7 @@ export const getNodesByParent = (
 	workspaceId: string,
 	parentId: string | null,
 ): TE.TaskEither<AppError, readonly NodeInterface[]> =>
-	pipe(api.getNodesByParent(workspaceId, parentId), TE.map(decodeNodes));
+	pipe(api.getNodesByParent(workspaceId, parentId), TE.map(decodeNodes))
 
 /**
  * 获取子节点（通过父节点 ID）
@@ -72,25 +62,21 @@ export const getNodesByParent = (
 export const getChildNodes = (
 	parentId: string,
 ): TE.TaskEither<AppError, readonly NodeInterface[]> =>
-	pipe(api.getChildNodes(parentId), TE.map(decodeNodes));
+	pipe(api.getChildNodes(parentId), TE.map(decodeNodes))
 
 /**
  * 获取单个节点
  */
-export const getNode = (
-	nodeId: string,
-): TE.TaskEither<AppError, NodeInterface | null> =>
+export const getNode = (nodeId: string): TE.TaskEither<AppError, NodeInterface | null> =>
 	pipe(
 		api.getNode(nodeId),
 		TE.map((response) => (response ? decodeNode(response) : null)),
-	);
+	)
 
 /**
  * 获取单个节点（不存在时抛出错误）
  */
-export const getNodeByIdOrFail = (
-	nodeId: string,
-): TE.TaskEither<AppError, NodeInterface> =>
+export const getNodeByIdOrFail = (nodeId: string): TE.TaskEither<AppError, NodeInterface> =>
 	pipe(
 		getNode(nodeId),
 		TE.chain((node) =>
@@ -101,17 +87,17 @@ export const getNodeByIdOrFail = (
 						message: `节点不存在: ${nodeId}`,
 					} as AppError),
 		),
-	);
+	)
 
 /**
  * 获取单个节点（别名，兼容旧 API）
  */
-export const getNodeById = getNode;
+export const getNodeById = getNode
 
 /**
  * 获取单个节点（别名，兼容旧 API）
  */
-export const getNodeByIdOrNull = getNode;
+export const getNodeByIdOrNull = getNode
 
 /**
  * 按类型获取节点
@@ -120,15 +106,13 @@ export const getNodesByType = (
 	workspaceId: string,
 	nodeType: string,
 ): TE.TaskEither<AppError, readonly NodeInterface[]> =>
-	pipe(api.getNodesByType(workspaceId, nodeType), TE.map(decodeNodes));
+	pipe(api.getNodesByType(workspaceId, nodeType), TE.map(decodeNodes))
 
 /**
  * 获取节点的所有后代
  */
-export const getDescendants = (
-	nodeId: string,
-): TE.TaskEither<AppError, readonly NodeInterface[]> =>
-	pipe(api.getDescendants(nodeId), TE.map(decodeNodes));
+export const getDescendants = (nodeId: string): TE.TaskEither<AppError, readonly NodeInterface[]> =>
+	pipe(api.getDescendants(nodeId), TE.map(decodeNodes))
 
 /**
  * 获取下一个排序号
@@ -136,8 +120,7 @@ export const getDescendants = (
 export const getNextSortOrder = (
 	workspaceId: string,
 	parentId: string | null,
-): TE.TaskEither<AppError, number> =>
-	api.getNextSortOrder(workspaceId, parentId);
+): TE.TaskEither<AppError, number> => api.getNextSortOrder(workspaceId, parentId)
 
 /**
  * 获取下一个排序号（别名，兼容旧 API）
@@ -148,7 +131,7 @@ export const getNextSortOrder = (
 export const getNextOrder = (
 	parentId: string | null,
 	workspaceId: string,
-): TE.TaskEither<AppError, number> => getNextSortOrder(workspaceId, parentId);
+): TE.TaskEither<AppError, number> => getNextSortOrder(workspaceId, parentId)
 
 // ============================================
 // 写入操作
@@ -170,7 +153,7 @@ export const createNode = (
 		hasInitialContent: !!initialContent,
 		contentLength: initialContent?.length ?? 0,
 		tags,
-	});
+	})
 
 	return pipe(
 		TE.of(encodeCreateNode(input, initialContent, tags)),
@@ -178,20 +161,20 @@ export const createNode = (
 			debug("[NodeAPI] 编码后的请求", {
 				title: encoded.title,
 				hasContent: !!initialContent,
-			});
-			return api.createNode(encoded);
+			})
+			return api.createNode(encoded)
 		}),
 		TE.map((response) => {
-			const node = decodeNode(response);
+			const node = decodeNode(response)
 			debug("[NodeAPI] 节点创建成功", {
 				id: node.id,
 				title: node.title,
 				type: node.type,
-			});
-			return node;
+			})
+			return node
 		}),
-	);
-};
+	)
+}
 
 /**
  * 添加节点（别名，兼容旧 API）
@@ -204,11 +187,11 @@ export const addNode = (
 	workspace: string,
 	title: string,
 	options: {
-		readonly parent?: string | null;
-		readonly type?: NodeType;
-		readonly order?: number;
-		readonly collapsed?: boolean;
-		readonly tags?: readonly string[];
+		readonly parent?: string | null
+		readonly type?: NodeType
+		readonly order?: number
+		readonly collapsed?: boolean
+		readonly tags?: readonly string[]
 	} = {},
 ): TE.TaskEither<AppError, NodeInterface> =>
 	createNode(
@@ -222,7 +205,7 @@ export const addNode = (
 		},
 		undefined,
 		options.tags,
-	);
+	)
 
 /**
  * 更新节点
@@ -235,7 +218,7 @@ export const updateNode = (
 		TE.of(encodeUpdateNode(input)),
 		TE.chain((request) => api.updateNode(nodeId, request)),
 		TE.map(decodeNode),
-	);
+	)
 
 /**
  * 移动节点
@@ -245,20 +228,18 @@ export const moveNode = (
 	newParentId: string | null,
 	newSortOrder: number,
 ): TE.TaskEither<AppError, NodeInterface> =>
-	pipe(api.moveNode(nodeId, { newParentId, newSortOrder }), TE.map(decodeNode));
+	pipe(api.moveNode(nodeId, { newParentId, newSortOrder }), TE.map(decodeNode))
 
 /**
  * 删除节点（递归删除子节点）
  */
-export const deleteNode = (nodeId: string): TE.TaskEither<AppError, void> =>
-	api.deleteNode(nodeId);
+export const deleteNode = (nodeId: string): TE.TaskEither<AppError, void> => api.deleteNode(nodeId)
 
 /**
  * 批量删除节点
  */
-export const deleteNodesBatch = (
-	nodeIds: readonly string[],
-): TE.TaskEither<AppError, void> => api.deleteNodesBatch(nodeIds);
+export const deleteNodesBatch = (nodeIds: readonly string[]): TE.TaskEither<AppError, void> =>
+	api.deleteNodesBatch(nodeIds)
 
 /**
  * 复制节点
@@ -267,14 +248,13 @@ export const duplicateNode = (
 	nodeId: string,
 	newTitle?: string,
 ): TE.TaskEither<AppError, NodeInterface> =>
-	pipe(api.duplicateNode(nodeId, newTitle), TE.map(decodeNode));
+	pipe(api.duplicateNode(nodeId, newTitle), TE.map(decodeNode))
 
 /**
  * 批量重排序节点
  */
-export const reorderNodes = (
-	nodeIds: readonly string[],
-): TE.TaskEither<AppError, void> => api.reorderNodes(nodeIds);
+export const reorderNodes = (nodeIds: readonly string[]): TE.TaskEither<AppError, void> =>
+	api.reorderNodes(nodeIds)
 
 /**
  * 设置节点折叠状态
@@ -287,25 +267,25 @@ export const setNodeCollapsed = (
 	collapsed: boolean,
 ): TE.TaskEither<AppError, NodeInterface> => {
 	// Performance monitoring - Requirements: 10.1, 10.2, 10.3
-	const startTime = performance.now();
+	const startTime = performance.now()
 	debug("[API Performance] setNodeCollapsed started", {
 		nodeId,
 		collapsed,
 		timestamp: new Date().toISOString(),
-	});
+	})
 
 	return pipe(
 		updateNode(nodeId, { collapsed }),
 		TE.map((result) => {
-			const endTime = performance.now();
-			const duration = endTime - startTime;
+			const endTime = performance.now()
+			const duration = endTime - startTime
 
 			debug("[API Performance] setNodeCollapsed completed", {
 				nodeId,
 				collapsed,
 				duration: `${duration.toFixed(2)}ms`,
 				timestamp: new Date().toISOString(),
-			});
+			})
 
 			// Warning for slow API calls (> 50ms threshold)
 			if (duration > 50) {
@@ -314,14 +294,14 @@ export const setNodeCollapsed = (
 					nodeId,
 					duration: `${duration.toFixed(2)}ms`,
 					threshold: "50ms",
-				});
+				})
 			}
 
-			return result;
+			return result
 		}),
 		TE.mapLeft((err) => {
-			const endTime = performance.now();
-			const duration = endTime - startTime;
+			const endTime = performance.now()
+			const duration = endTime - startTime
 
 			error("[API Performance] setNodeCollapsed failed", {
 				nodeId,
@@ -329,12 +309,12 @@ export const setNodeCollapsed = (
 				error: err,
 				duration: `${duration.toFixed(2)}ms`,
 				timestamp: new Date().toISOString(),
-			});
+			})
 
-			return err;
+			return err
 		}),
-	);
-};
+	)
+}
 
 /**
  * 获取所有节点（跨工作区）
@@ -347,7 +327,7 @@ export const getAllNodes = (): TE.TaskEither<AppError, readonly NodeInterface[]>
 		api.getWorkspaces(),
 		TE.chain((workspaces) => {
 			if (workspaces.length === 0) {
-				return TE.right<AppError, readonly NodeInterface[]>([]);
+				return TE.right<AppError, readonly NodeInterface[]>([])
 			}
 			// 串行获取每个工作区的节点，避免并发问题
 			return workspaces.reduce(
@@ -362,6 +342,6 @@ export const getAllNodes = (): TE.TaskEither<AppError, readonly NodeInterface[]>
 						),
 					),
 				TE.right<AppError, readonly NodeInterface[]>([]),
-			);
+			)
 		}),
-	);
+	)

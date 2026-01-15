@@ -7,7 +7,7 @@
 // This file exists as a placeholder for any custom global declarations
 
 declare global {
-  // Add custom global declarations here if needed
+	// Add custom global declarations here if needed
 }
 
-export {};
+export {}

@@ -1,7 +1,7 @@
 // Font Style Injector - Apply font settings globally
-import { useEffect, useRef } from "react";
-import { useFontSettings } from "@/state/font.state";
-import { CARD_SIZE_OPTIONS, UI_SCALE_OPTIONS } from "@/types/font";
+import { useEffect, useRef } from "react"
+import { useFontSettings } from "@/state/font.state"
+import { CARD_SIZE_OPTIONS, UI_SCALE_OPTIONS } from "@/types/font"
 
 export function FontStyleInjector() {
 	const {
@@ -16,37 +16,33 @@ export function FontStyleInjector() {
 		letterSpacing,
 		paragraphSpacing,
 		firstLineIndent,
-	} = useFontSettings();
+	} = useFontSettings()
 
-	const rafRef = useRef<number | null>(null);
-	const styleElRef = useRef<HTMLStyleElement | null>(null);
+	const rafRef = useRef<number | null>(null)
+	const styleElRef = useRef<HTMLStyleElement | null>(null)
 
 	useEffect(() => {
 		// Cancel any pending update
 		if (rafRef.current) {
-			cancelAnimationFrame(rafRef.current);
+			cancelAnimationFrame(rafRef.current)
 		}
 
 		// Use requestAnimationFrame to batch DOM updates
 		rafRef.current = requestAnimationFrame(() => {
-			const scaleOption = UI_SCALE_OPTIONS.find((s) => s.value === uiScale);
-			const cardSizeOption = CARD_SIZE_OPTIONS.find(
-				(c) => c.value === cardSize,
-			);
-			const scale = scaleOption?.scale || 1;
-			const cardPadding = cardSizeOption?.padding || "1rem";
+			const scaleOption = UI_SCALE_OPTIONS.find((s) => s.value === uiScale)
+			const cardSizeOption = CARD_SIZE_OPTIONS.find((c) => c.value === cardSize)
+			const scale = scaleOption?.scale || 1
+			const cardPadding = cardSizeOption?.padding || "1rem"
 
 			// Create style element only once
 			if (!styleElRef.current) {
-				const existing = document.getElementById(
-					"font-settings-style",
-				) as HTMLStyleElement;
+				const existing = document.getElementById("font-settings-style") as HTMLStyleElement
 				if (existing) {
-					styleElRef.current = existing;
+					styleElRef.current = existing
 				} else {
-					styleElRef.current = document.createElement("style");
-					styleElRef.current.id = "font-settings-style";
-					document.head.appendChild(styleElRef.current);
+					styleElRef.current = document.createElement("style")
+					styleElRef.current.id = "font-settings-style"
+					document.head.appendChild(styleElRef.current)
 				}
 			}
 
@@ -147,14 +143,14 @@ export function FontStyleInjector() {
       .lexical-editor ::selection {
         background-color: var(--editor-selection);
       }
-    `;
-		});
+    `
+		})
 
 		return () => {
 			if (rafRef.current) {
-				cancelAnimationFrame(rafRef.current);
+				cancelAnimationFrame(rafRef.current)
 			}
-		};
+		}
 	}, [
 		fontFamily,
 		uiFontFamily,
@@ -167,16 +163,16 @@ export function FontStyleInjector() {
 		letterSpacing,
 		paragraphSpacing,
 		firstLineIndent,
-	]);
+	])
 
 	// Cleanup on unmount
 	useEffect(() => {
 		return () => {
 			if (styleElRef.current?.parentNode) {
-				styleElRef.current.parentNode.removeChild(styleElRef.current);
+				styleElRef.current.parentNode.removeChild(styleElRef.current)
 			}
-		};
-	}, []);
+		}
+	}, [])
 
-	return null;
+	return null
 }

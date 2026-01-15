@@ -1,20 +1,17 @@
 // 命令面板 - 快速访问所有功能（容器组件）
 
-import { useNavigate } from "@tanstack/react-router";
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import { Download, Moon, PenTool, Search, Settings, Sun } from "lucide-react";
-import { memo, useMemo } from "react";
-import { openFile } from "@/flows";
-import { createExcalidraw } from "@/flows/templated";
-import { useTheme } from "@/hooks/use-theme";
-import type { TabType } from "@/types/editor-tab";
-import { exportDialogManager } from "@/views/export-dialog-manager";
-import type {
-	CommandGroup,
-	CommandPaletteContainerProps,
-} from "./command-palette.types";
-import { CommandPaletteView } from "./command-palette.view.fn";
+import { useNavigate } from "@tanstack/react-router"
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import { Download, Moon, PenTool, Search, Settings, Sun } from "lucide-react"
+import { memo, useMemo } from "react"
+import { openFile } from "@/flows"
+import { createExcalidraw } from "@/flows/templated"
+import { useTheme } from "@/hooks/use-theme"
+import type { TabType } from "@/types/editor-tab"
+import { exportDialogManager } from "@/views/export-dialog-manager"
+import type { CommandGroup, CommandPaletteContainerProps } from "./command-palette.types"
+import { CommandPaletteView } from "./command-palette.view.fn"
 
 /**
  * CommandPaletteContainer - 容器组件
@@ -26,18 +23,11 @@ import { CommandPaletteView } from "./command-palette.view.fn";
  * - 传递数据给 View 组件
  */
 export const CommandPaletteContainer = memo(
-	({
-		open,
-		onOpenChange,
-		workspaces,
-		selectedWorkspaceId,
-	}: CommandPaletteContainerProps) => {
-		const navigate = useNavigate();
-		const { theme, setTheme } = useTheme();
+	({ open, onOpenChange, workspaces, selectedWorkspaceId }: CommandPaletteContainerProps) => {
+		const navigate = useNavigate()
+		const { theme, setTheme } = useTheme()
 
-		const currentWorkspace = workspaces.find(
-			(w) => w.id === selectedWorkspaceId,
-		);
+		const currentWorkspace = workspaces.find((w) => w.id === selectedWorkspaceId)
 
 		// 构建命令列表
 		const commands = useMemo<readonly CommandGroup[]>(
@@ -50,8 +40,8 @@ export const CommandPaletteContainer = memo(
 							icon: <Search className="size-4" />,
 							shortcut: "Ctrl+Shift+F",
 							onSelect: () => {
-								onOpenChange(false);
-								window.dispatchEvent(new CustomEvent("open-global-search"));
+								onOpenChange(false)
+								window.dispatchEvent(new CustomEvent("open-global-search"))
 							},
 						},
 						{
@@ -59,9 +49,9 @@ export const CommandPaletteContainer = memo(
 							icon: <PenTool className="size-4" />,
 							onSelect: () => {
 								if (!selectedWorkspaceId) {
-									return;
+									return
 								}
-								onOpenChange(false);
+								onOpenChange(false)
 
 								// 使用 TaskEither + chain 确保时序正确性
 								const task = pipe(
@@ -84,35 +74,29 @@ export const CommandPaletteContainer = memo(
 									),
 									// 3. 成功后，导航到主工作区
 									TE.tap(() => {
-										navigate({ to: "/" });
-										return TE.right(undefined);
+										navigate({ to: "/" })
+										return TE.right(undefined)
 									}),
 									// 4. 错误处理
 									TE.fold(
 										(error) => {
-											console.error(
-												"Failed to create Excalidraw drawing:",
-												error,
-											);
-											return TE.of(undefined as void);
+											console.error("Failed to create Excalidraw drawing:", error)
+											return TE.of(undefined as void)
 										},
 										() => TE.of(undefined as void),
 									),
-								);
+								)
 
 								// 执行 TaskEither
-								task();
+								task()
 							},
 						},
 						{
 							label: "Export Workspace",
 							icon: <Download className="size-4" />,
 							onSelect: () => {
-								onOpenChange(false);
-								exportDialogManager.open(
-									selectedWorkspaceId || undefined,
-									currentWorkspace?.title,
-								);
+								onOpenChange(false)
+								exportDialogManager.open(selectedWorkspaceId || undefined, currentWorkspace?.title)
 							},
 						},
 					],
@@ -121,50 +105,29 @@ export const CommandPaletteContainer = memo(
 					group: "Settings",
 					items: [
 						{
-							label:
-								theme === "dark"
-									? "Switch to Light Theme"
-									: "Switch to Dark Theme",
-							icon:
-								theme === "dark" ? (
-									<Sun className="size-4" />
-								) : (
-									<Moon className="size-4" />
-								),
+							label: theme === "dark" ? "Switch to Light Theme" : "Switch to Dark Theme",
+							icon: theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />,
 							onSelect: () => {
-								setTheme(theme === "dark" ? "light" : "dark");
-								onOpenChange(false);
+								setTheme(theme === "dark" ? "light" : "dark")
+								onOpenChange(false)
 							},
 						},
 						{
 							label: "Open Settings",
 							icon: <Settings className="size-4" />,
 							onSelect: () => {
-								navigate({ to: "/settings/design" });
-								onOpenChange(false);
+								navigate({ to: "/settings/design" })
+								onOpenChange(false)
 							},
 						},
 					],
 				},
 			],
-			[
-				theme,
-				setTheme,
-				navigate,
-				onOpenChange,
-				selectedWorkspaceId,
-				currentWorkspace?.title,
-			],
-		);
+			[theme, setTheme, navigate, onOpenChange, selectedWorkspaceId, currentWorkspace?.title],
+		)
 
-		return (
-			<CommandPaletteView
-				open={open}
-				onOpenChange={onOpenChange}
-				commands={commands}
-			/>
-		);
+		return <CommandPaletteView open={open} onOpenChange={onOpenChange} commands={commands} />
 	},
-);
+)
 
-CommandPaletteContainer.displayName = "CommandPaletteContainer";
+CommandPaletteContainer.displayName = "CommandPaletteContainer"

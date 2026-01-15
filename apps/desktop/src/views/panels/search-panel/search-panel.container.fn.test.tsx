@@ -2,20 +2,20 @@
  * SearchPanelContainer 组件测试
  */
 
-import { render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { SearchPanelContainer } from "./search-panel.container.fn";
+import { render, screen, waitFor } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import { SearchPanelContainer } from "./search-panel.container.fn"
 
 // Mock dependencies
 vi.mock("@tanstack/react-router", () => ({
 	useNavigate: vi.fn(() => vi.fn()),
-}));
+}))
 
 vi.mock("@/fn/search", () => ({
 	searchEngine: {
 		simpleSearch: vi.fn(() => Promise.resolve([])),
 	},
-}));
+}))
 
 vi.mock("@/state/sidebar.state", () => ({
 	useSidebarStore: vi.fn((selector) => {
@@ -28,18 +28,18 @@ vi.mock("@/state/sidebar.state", () => ({
 			setSearchQuery: vi.fn(),
 			setSearchSelectedTypes: vi.fn(),
 			setSearchShowFilters: vi.fn(),
-		};
-		return selector(state);
+		}
+		return selector(state)
 	}),
-}));
+}))
 
 describe("SearchPanelContainer", () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
-	});
+		vi.clearAllMocks()
+	})
 
 	it("should render SearchPanelView", async () => {
-		const { useSidebarStore } = await import("@/state/sidebar.state");
+		const { useSidebarStore } = await import("@/state/sidebar.state")
 		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
 			const state = {
 				searchState: {
@@ -50,16 +50,16 @@ describe("SearchPanelContainer", () => {
 				setSearchQuery: vi.fn(),
 				setSearchSelectedTypes: vi.fn(),
 				setSearchShowFilters: vi.fn(),
-			};
-			return selector(state);
-		});
+			}
+			return selector(state)
+		})
 
-		render(<SearchPanelContainer />);
-		expect(screen.getByPlaceholderText("Search...")).toBeInTheDocument();
-	});
+		render(<SearchPanelContainer />)
+		expect(screen.getByPlaceholderText("Search...")).toBeInTheDocument()
+	})
 
 	it("should pass search state to view", async () => {
-		const { useSidebarStore } = await import("@/state/sidebar.state");
+		const { useSidebarStore } = await import("@/state/sidebar.state")
 		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
 			const state = {
 				searchState: {
@@ -70,16 +70,16 @@ describe("SearchPanelContainer", () => {
 				setSearchQuery: vi.fn(),
 				setSearchSelectedTypes: vi.fn(),
 				setSearchShowFilters: vi.fn(),
-			};
-			return selector(state);
-		});
+			}
+			return selector(state)
+		})
 
-		render(<SearchPanelContainer />);
-		expect(screen.getByDisplayValue("test query")).toBeInTheDocument();
-	});
+		render(<SearchPanelContainer />)
+		expect(screen.getByDisplayValue("test query")).toBeInTheDocument()
+	})
 
 	it("should perform search when query changes", async () => {
-		const { searchEngine } = await import("@/fn/search");
+		const { searchEngine } = await import("@/fn/search")
 		const mockSearch = vi.fn(() =>
 			Promise.resolve([
 				{
@@ -93,10 +93,10 @@ describe("SearchPanelContainer", () => {
 					highlights: ["Test"],
 				},
 			]),
-		);
-		vi.mocked(searchEngine.simpleSearch).mockImplementation(mockSearch);
+		)
+		vi.mocked(searchEngine.simpleSearch).mockImplementation(mockSearch)
 
-		const { useSidebarStore } = await import("@/state/sidebar.state");
+		const { useSidebarStore } = await import("@/state/sidebar.state")
 		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
 			const state = {
 				searchState: {
@@ -107,29 +107,29 @@ describe("SearchPanelContainer", () => {
 				setSearchQuery: vi.fn(),
 				setSearchSelectedTypes: vi.fn(),
 				setSearchShowFilters: vi.fn(),
-			};
-			return selector(state);
-		});
+			}
+			return selector(state)
+		})
 
-		render(<SearchPanelContainer />);
+		render(<SearchPanelContainer />)
 
 		await waitFor(
 			() => {
 				expect(mockSearch).toHaveBeenCalledWith("test", {
 					types: ["node"],
 					limit: 100,
-				});
+				})
 			},
 			{ timeout: 500 },
-		);
-	});
+		)
+	})
 
 	it("should not search when query is empty", async () => {
-		const { searchEngine } = await import("@/fn/search");
-		const mockSearch = vi.fn(() => Promise.resolve([]));
-		vi.mocked(searchEngine.simpleSearch).mockImplementation(mockSearch);
+		const { searchEngine } = await import("@/fn/search")
+		const mockSearch = vi.fn(() => Promise.resolve([]))
+		vi.mocked(searchEngine.simpleSearch).mockImplementation(mockSearch)
 
-		const { useSidebarStore } = await import("@/state/sidebar.state");
+		const { useSidebarStore } = await import("@/state/sidebar.state")
 		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
 			const state = {
 				searchState: {
@@ -140,30 +140,28 @@ describe("SearchPanelContainer", () => {
 				setSearchQuery: vi.fn(),
 				setSearchSelectedTypes: vi.fn(),
 				setSearchShowFilters: vi.fn(),
-			};
-			return selector(state);
-		});
+			}
+			return selector(state)
+		})
 
-		render(<SearchPanelContainer />);
+		render(<SearchPanelContainer />)
 
 		await waitFor(
 			() => {
-				expect(mockSearch).not.toHaveBeenCalled();
+				expect(mockSearch).not.toHaveBeenCalled()
 			},
 			{ timeout: 500 },
-		);
-	});
+		)
+	})
 
 	it("should handle search errors gracefully", async () => {
-		const { searchEngine } = await import("@/fn/search");
-		const mockSearch = vi.fn(() => Promise.reject(new Error("Search failed")));
-		vi.mocked(searchEngine.simpleSearch).mockImplementation(mockSearch);
+		const { searchEngine } = await import("@/fn/search")
+		const mockSearch = vi.fn(() => Promise.reject(new Error("Search failed")))
+		vi.mocked(searchEngine.simpleSearch).mockImplementation(mockSearch)
 
-		const consoleErrorSpy = vi
-			.spyOn(console, "error")
-			.mockImplementation(() => {});
+		const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
 
-		const { useSidebarStore } = await import("@/state/sidebar.state");
+		const { useSidebarStore } = await import("@/state/sidebar.state")
 		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
 			const state = {
 				searchState: {
@@ -174,27 +172,24 @@ describe("SearchPanelContainer", () => {
 				setSearchQuery: vi.fn(),
 				setSearchSelectedTypes: vi.fn(),
 				setSearchShowFilters: vi.fn(),
-			};
-			return selector(state);
-		});
+			}
+			return selector(state)
+		})
 
-		render(<SearchPanelContainer />);
+		render(<SearchPanelContainer />)
 
 		await waitFor(
 			() => {
-				expect(consoleErrorSpy).toHaveBeenCalledWith(
-					"Search failed:",
-					expect.any(Error),
-				);
+				expect(consoleErrorSpy).toHaveBeenCalledWith("Search failed:", expect.any(Error))
 			},
 			{ timeout: 500 },
-		);
+		)
 
-		consoleErrorSpy.mockRestore();
-	});
+		consoleErrorSpy.mockRestore()
+	})
 
 	it("should connect to sidebar store actions", async () => {
-		const { useSidebarStore } = await import("@/state/sidebar.state");
+		const { useSidebarStore } = await import("@/state/sidebar.state")
 		vi.mocked(useSidebarStore).mockImplementation((selector: any) => {
 			const state = {
 				searchState: {
@@ -205,13 +200,13 @@ describe("SearchPanelContainer", () => {
 				setSearchQuery: vi.fn(),
 				setSearchSelectedTypes: vi.fn(),
 				setSearchShowFilters: vi.fn(),
-			};
-			return selector(state);
-		});
+			}
+			return selector(state)
+		})
 
-		render(<SearchPanelContainer />);
+		render(<SearchPanelContainer />)
 
 		// Verify store is accessed
-		expect(useSidebarStore).toHaveBeenCalled();
-	});
-});
+		expect(useSidebarStore).toHaveBeenCalled()
+	})
+})

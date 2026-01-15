@@ -8,7 +8,7 @@
  * @requirements 2.1
  */
 
-import type { ISODateString, UUID } from "../shared";
+import type { ISODateString, UUID } from "../shared"
 
 /**
  * Workspace 接口 - 项目元数据
@@ -21,34 +21,34 @@ import type { ISODateString, UUID } from "../shared";
  */
 export interface WorkspaceInterface {
 	/** 工作区唯一标识符 */
-	readonly id: UUID;
+	readonly id: UUID
 
 	/** 工作区显示标题 */
-	readonly title: string;
+	readonly title: string
 
 	/** 作者名称 */
-	readonly author: string;
+	readonly author: string
 
 	/** 项目描述 */
-	readonly description: string;
+	readonly description: string
 
 	/** 出版商信息 */
-	readonly publisher: string;
+	readonly publisher: string
 
 	/** 项目语言（如 "zh", "en"） */
-	readonly language: string;
+	readonly language: string
 
 	/** 最后打开时间 */
-	readonly lastOpen: ISODateString;
+	readonly lastOpen: ISODateString
 
 	/** 创建时间（ISO 8601 格式） */
-	readonly createDate: ISODateString;
+	readonly createDate: ISODateString
 
 	/** 可选：团队成员（用户 ID 数组），用于协作工作区 */
-	readonly members?: readonly string[];
+	readonly members?: readonly string[]
 
 	/** 可选：所有者用户 ID */
-	readonly owner?: UUID;
+	readonly owner?: UUID
 }
 
 /**
@@ -57,13 +57,13 @@ export interface WorkspaceInterface {
  * id、createDate 和 lastOpen 会自动生成
  */
 export interface WorkspaceCreateInput {
-	readonly title: string;
-	readonly author?: string;
-	readonly description?: string;
-	readonly publisher?: string;
-	readonly language?: string;
-	readonly members?: readonly string[];
-	readonly owner?: UUID;
+	readonly title: string
+	readonly author?: string
+	readonly description?: string
+	readonly publisher?: string
+	readonly language?: string
+	readonly members?: readonly string[]
+	readonly owner?: UUID
 }
 
 /**
@@ -72,12 +72,12 @@ export interface WorkspaceCreateInput {
  * 只有可变字段可以更新
  */
 export interface WorkspaceUpdateInput {
-	readonly title?: string;
-	readonly author?: string;
-	readonly description?: string;
-	readonly publisher?: string;
-	readonly language?: string;
-	readonly lastOpen?: ISODateString;
-	readonly members?: readonly string[];
-	readonly owner?: UUID;
+	readonly title?: string
+	readonly author?: string
+	readonly description?: string
+	readonly publisher?: string
+	readonly language?: string
+	readonly lastOpen?: ISODateString
+	readonly members?: readonly string[]
+	readonly owner?: UUID
 }

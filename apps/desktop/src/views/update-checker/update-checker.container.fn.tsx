@@ -3,9 +3,9 @@
  * @description 更新检查容器组件
  */
 
-import { memo } from "react";
-import { useUpdateChecker } from "@/hooks/use-update-checker";
-import { UpdateCheckerView } from "./update-checker.view.fn";
+import { memo } from "react"
+import { useUpdateChecker } from "@/hooks/use-update-checker"
+import { UpdateCheckerView } from "./update-checker.view.fn"
 
 export const UpdateCheckerContainer = memo(() => {
 	const {
@@ -19,7 +19,7 @@ export const UpdateCheckerContainer = memo(() => {
 		handleCheckForUpdates,
 		handleDownloadAndInstall,
 		setShowDialog,
-	} = useUpdateChecker();
+	} = useUpdateChecker()
 
 	return (
 		<UpdateCheckerView
@@ -34,7 +34,7 @@ export const UpdateCheckerContainer = memo(() => {
 			onDownloadAndInstall={handleDownloadAndInstall}
 			onSetShowDialog={setShowDialog}
 		/>
-	);
-});
+	)
+})
 
-UpdateCheckerContainer.displayName = "UpdateCheckerContainer";
+UpdateCheckerContainer.displayName = "UpdateCheckerContainer"

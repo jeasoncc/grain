@@ -13,7 +13,7 @@ export {
 	LAYOUT_STORAGE_KEY,
 	loadLayoutState,
 	saveLayoutState,
-} from "./layout.storage";
+} from "./layout.storage"
 // Settings storage - localStorage 操作
 export {
 	clearAll,
@@ -32,4 +32,4 @@ export {
 	type StorageKey,
 	setJson,
 	setString,
-} from "./settings.storage";
+} from "./settings.storage"

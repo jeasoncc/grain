@@ -18,37 +18,37 @@
  * @module io/db/legacy-database
  */
 
-import Dexie, { type Table } from "dexie";
-import type { AttachmentInterface } from "@/types/attachment";
-import type { NodeInterface } from "@/types/node";
-import type { TagInterface } from "@/types/tag";
-import type { UserInterface } from "@/types/user";
-import type { WorkspaceInterface } from "@/types/workspace";
+import Dexie, { type Table } from "dexie"
+import type { AttachmentInterface } from "@/types/attachment"
+import type { NodeInterface } from "@/types/node"
+import type { TagInterface } from "@/types/tag"
+import type { UserInterface } from "@/types/user"
+import type { WorkspaceInterface } from "@/types/workspace"
 
 /**
  * Database version info interface
  */
 export interface DBVersionInterface {
-	readonly id: string;
-	readonly version: string;
-	readonly updatedAt: string;
-	readonly migrationNotes?: string;
+	readonly id: string
+	readonly version: string
+	readonly updatedAt: string
+	readonly migrationNotes?: string
 }
 
 /**
  * Content type for the contents table
  */
-export type ContentType = "lexical" | "excalidraw" | "text";
+export type ContentType = "lexical" | "excalidraw" | "text"
 
 /**
  * Content interface for the contents table
  */
 export interface ContentInterface {
-	readonly id: string;
-	readonly nodeId: string;
-	readonly content: string;
-	readonly contentType: ContentType;
-	readonly lastEdit: string;
+	readonly id: string
+	readonly nodeId: string
+	readonly content: string
+	readonly contentType: ContentType
+	readonly lastEdit: string
 }
 
 /**
@@ -59,18 +59,18 @@ export interface ContentInterface {
  */
 export class LegacyDatabase extends Dexie {
 	// Core tables (for backward compatibility during migration)
-	readonly nodes!: Table<NodeInterface, string>;
-	readonly contents!: Table<ContentInterface, string>;
-	readonly workspaces!: Table<WorkspaceInterface, string>;
-	readonly users!: Table<UserInterface, string>;
-	readonly attachments!: Table<AttachmentInterface, string>;
-	readonly dbVersions!: Table<DBVersionInterface, string>;
+	readonly nodes!: Table<NodeInterface, string>
+	readonly contents!: Table<ContentInterface, string>
+	readonly workspaces!: Table<WorkspaceInterface, string>
+	readonly users!: Table<UserInterface, string>
+	readonly attachments!: Table<AttachmentInterface, string>
+	readonly dbVersions!: Table<DBVersionInterface, string>
 
 	// Tag aggregation cache (source of truth is nodes.tags)
-	readonly tags!: Table<TagInterface, string>;
+	readonly tags!: Table<TagInterface, string>
 
 	constructor() {
-		super("GrainDB");
+		super("GrainDB")
 
 		// Version 12: Current schema (same as before migration)
 		this.version(12).stores({
@@ -81,13 +81,13 @@ export class LegacyDatabase extends Dexie {
 			attachments: "id, project",
 			dbVersions: "id, version",
 			tags: "id, workspace, name",
-		});
+		})
 
 		// Open database silently (logger would cause circular dependency)
 		this.open().catch((err) =>
 			// eslint-disable-next-line no-console -- Logger would cause circular dependency
 			console.error("Legacy database open error:", err),
-		);
+		)
 	}
 }
 
@@ -96,4 +96,4 @@ export class LegacyDatabase extends Dexie {
  *
  * @deprecated Use @/io/api for data access
  */
-export const legacyDatabase = new LegacyDatabase();
+export const legacyDatabase = new LegacyDatabase()

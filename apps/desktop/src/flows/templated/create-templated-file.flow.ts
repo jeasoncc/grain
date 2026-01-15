@@ -20,21 +20,21 @@
  * @see .kiro/specs/editor-tabs-dataflow-refactor/design.md Property 8
  */
 
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import { z } from "zod";
-import dayjs from "dayjs";
-import type { SerializedEditorState } from "lexical";
-import * as nodeRepo from "@/io/api/node.api";
-import { success, info, warn } from "@/io/log/logger.api";
-import { fileOperationQueue } from "@/pipes/queue/queue.pipe";
-import { findTabByNodeId, evictLRUEditorStates } from "@/pipes/editor-tab";
-import { useEditorTabsStore } from "@/state/editor-tabs.state";
-import { EditorTabBuilder, EditorStateBuilder } from "@/types/editor-tab";
-import type { TabType, EditorTab, EditorInstanceState } from "@/types/editor-tab";
-import type { FileNodeType, NodeInterface } from "@/types/node";
-import type { AppError } from "@/types/error";
+import dayjs from "dayjs"
+import * as E from "fp-ts/Either"
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import type { SerializedEditorState } from "lexical"
+import { z } from "zod"
+import * as nodeRepo from "@/io/api/node.api"
+import { info, success, warn } from "@/io/log/logger.api"
+import { evictLRUEditorStates, findTabByNodeId } from "@/pipes/editor-tab"
+import { fileOperationQueue } from "@/pipes/queue/queue.pipe"
+import { useEditorTabsStore } from "@/state/editor-tabs.state"
+import type { EditorInstanceState, EditorTab, TabType } from "@/types/editor-tab"
+import { EditorStateBuilder, EditorTabBuilder } from "@/types/editor-tab"
+import type { AppError } from "@/types/error"
+import type { FileNodeType, NodeInterface } from "@/types/node"
 
 // ==============================
 // Types
@@ -47,25 +47,25 @@ import type { AppError } from "@/types/error";
  */
 export interface TemplateConfig<T> {
 	/** 模块名称（用于日志） */
-	readonly name: string;
+	readonly name: string
 	/** 根文件夹名称 */
-	readonly rootFolder: string;
+	readonly rootFolder: string
 	/** 文件类型（使用 FileNodeType，排除 folder） */
-	readonly fileType: FileNodeType;
+	readonly fileType: FileNodeType
 	/** 默认标签 */
-	readonly tag: string;
+	readonly tag: string
 	/** 生成模板内容的函数 */
-	readonly generateTemplate: (params: T) => string;
+	readonly generateTemplate: (params: T) => string
 	/** 生成文件夹路径的函数 */
-	readonly generateFolderPath: (params: T) => ReadonlyArray<string>;
+	readonly generateFolderPath: (params: T) => ReadonlyArray<string>
 	/** 生成文件标题的函数 */
-	readonly generateTitle: (params: T) => string;
+	readonly generateTitle: (params: T) => string
 	/** 参数校验 Schema */
-	readonly paramsSchema: z.ZodSchema<T>;
+	readonly paramsSchema: z.ZodSchema<T>
 	/** 文件夹是否折叠（可选，默认 true） */
-	readonly foldersCollapsed?: boolean;
+	readonly foldersCollapsed?: boolean
 	/** 是否跳过 JSON 解析（用于纯文本内容如 Mermaid/PlantUML，可选，默认 false） */
-	readonly skipJsonParse?: boolean;
+	readonly skipJsonParse?: boolean
 }
 
 /**
@@ -75,9 +75,9 @@ export interface TemplateConfig<T> {
  */
 export interface TemplatedFileParams<T> {
 	/** 工作区 ID */
-	readonly workspaceId: string;
+	readonly workspaceId: string
 	/** 模板特定参数 */
-	readonly templateParams: T;
+	readonly templateParams: T
 }
 
 /**
@@ -85,11 +85,11 @@ export interface TemplatedFileParams<T> {
  */
 export interface TemplatedFileResult {
 	/** 创建的文件节点 */
-	readonly node: NodeInterface;
+	readonly node: NodeInterface
 	/** 生成的内容（Lexical JSON 字符串） */
-	readonly content: string;
+	readonly content: string
 	/** 解析后的内容（Lexical JSON 对象） */
-	readonly parsedContent: unknown;
+	readonly parsedContent: unknown
 }
 
 // ==============================
@@ -101,7 +101,7 @@ export interface TemplatedFileResult {
  */
 const baseParamsSchema = z.object({
 	workspaceId: z.string().uuid({ message: "工作区 ID 必须是有效的 UUID" }),
-});
+})
 
 // ==============================
 // Internal Helper Functions (避免 flows/ 依赖 flows/)
@@ -127,12 +127,11 @@ const getOrCreateFolder = (
 		TE.chain((nodes) => {
 			// 查找已存在的文件夹
 			const existing = nodes.find(
-				(n) =>
-					n.parent === parentId && n.title === title && n.type === "folder",
-			);
+				(n) => n.parent === parentId && n.title === title && n.type === "folder",
+			)
 
 			if (existing) {
-				return TE.right(existing);
+				return TE.right(existing)
 			}
 
 			// 创建新文件夹
@@ -142,10 +141,10 @@ const getOrCreateFolder = (
 				type: "folder",
 				title,
 				collapsed,
-			});
+			})
 		}),
-	);
-};
+	)
+}
 
 /**
  * 确保文件夹路径存在（内联版本）
@@ -166,7 +165,7 @@ const ensureFolderPath = (
 		return TE.left({
 			type: "VALIDATION_ERROR",
 			message: "文件夹路径不能为空",
-		});
+		})
 	}
 
 	// 递归创建文件夹路径
@@ -178,24 +177,24 @@ const ensureFolderPath = (
 			return TE.left({
 				type: "VALIDATION_ERROR",
 				message: "文件夹路径不能为空",
-			});
+			})
 		}
 
-		const [currentFolder, ...rest] = remainingPath;
+		const [currentFolder, ...rest] = remainingPath
 
 		return pipe(
 			getOrCreateFolder(workspaceId, parentId, currentFolder, collapsed),
 			TE.chain((folder) => {
 				if (rest.length === 0) {
-					return TE.right(folder);
+					return TE.right(folder)
 				}
-				return createPath(rest, folder.id);
+				return createPath(rest, folder.id)
 			}),
-		);
-	};
+		)
+	}
 
-	return createPath(folderPath, null);
-};
+	return createPath(folderPath, null)
+}
 
 /**
  * 创建文件（内联版本，避免 flows/ 依赖 flows/）
@@ -204,13 +203,13 @@ const ensureFolderPath = (
  * @returns TaskEither<AppError, { node: NodeInterface; tabId: string | null }>
  */
 const createFileInternal = (params: {
-	readonly workspaceId: string;
-	readonly parentId: string | null;
-	readonly title: string;
-	readonly type: FileNodeType;
-	readonly content?: string;
-	readonly tags?: ReadonlyArray<string>;
-	readonly collapsed?: boolean;
+	readonly workspaceId: string
+	readonly parentId: string | null
+	readonly title: string
+	readonly type: FileNodeType
+	readonly content?: string
+	readonly tags?: ReadonlyArray<string>
+	readonly collapsed?: boolean
 }): TE.TaskEither<AppError, { readonly node: NodeInterface; readonly tabId: string | null }> => {
 	return pipe(
 		TE.tryCatch(
@@ -224,14 +223,11 @@ const createFileInternal = (params: {
 						content = "",
 						tags,
 						collapsed = true,
-					} = params;
+					} = params
 
 					// 1. 获取排序号
-					const orderResult = await nodeRepo.getNextSortOrder(
-						workspaceId,
-						parentId,
-					)();
-					const order = E.isRight(orderResult) ? orderResult.right : 0;
+					const orderResult = await nodeRepo.getNextSortOrder(workspaceId, parentId)()
+					const order = E.isRight(orderResult) ? orderResult.right : 0
 
 					// 2. 创建节点（带初始内容和标签）
 					const nodeResult = await nodeRepo.createNode(
@@ -245,82 +241,77 @@ const createFileInternal = (params: {
 						},
 						content, // Always pass content since FileNodeType excludes folders
 						tags,
-					)();
+					)()
 
 					if (E.isLeft(nodeResult)) {
-						throw new Error(nodeResult.left.message);
+						throw new Error(nodeResult.left.message)
 					}
 
-					const node = nodeResult.right;
+					const node = nodeResult.right
 
 					// 3. 更新 Store（always update since FileNodeType excludes folders）
-					let tabId: string | null = null;
+					let tabId: string | null = null
 					// Since type is FileNodeType (excludes folders), always update store
-					const store = useEditorTabsStore.getState();
+					const store = useEditorTabsStore.getState()
 
-						// 解析内容（如果有）
-						let parsedContent: SerializedEditorState | undefined;
-						if (content) {
-							try {
-								parsedContent = JSON.parse(content) as SerializedEditorState;
-							} catch (error) {
-								warn("[CreateFile] 内容解析失败，使用空文档");
-								parsedContent = undefined;
-							}
+					// 解析内容（如果有）
+					let parsedContent: SerializedEditorState | undefined
+					if (content) {
+						try {
+							parsedContent = JSON.parse(content) as SerializedEditorState
+						} catch (error) {
+							warn("[CreateFile] 内容解析失败，使用空文档")
+							parsedContent = undefined
 						}
+					}
 
-						// 打开 tab：直接操作 state
-						const existingTab = findTabByNodeId(
-							store.tabs as ReadonlyArray<EditorTab>,
-							node.id,
-						);
+					// 打开 tab：直接操作 state
+					const existingTab = findTabByNodeId(store.tabs as ReadonlyArray<EditorTab>, node.id)
 
-						if (existingTab) {
-							// Tab 已存在，激活它
-							store.setActiveTabId(existingTab.id);
-							if (store.editorStates[existingTab.id]) {
-								store.updateEditorState(existingTab.id, {
-									lastModified: dayjs().valueOf(),
-								});
-							}
-							tabId = existingTab.id;
-						} else {
-							// 创建新 tab
-							const newTab = EditorTabBuilder.create()
-								.workspaceId(workspaceId)
-								.nodeId(node.id)
-								.title(title)
-								.type(type as TabType)
-								.build();
-
-							// 如果有初始内容，使用它；否则创建空状态
-							const newEditorState = parsedContent
-								? EditorStateBuilder.fromDefault()
-										.serializedState(parsedContent)
-										.build()
-								: EditorStateBuilder.fromDefault().build();
-
-							// 使用原子操作同时添加 tab、设置 editorState 和激活 tab
-							store.addTabWithState(newTab as EditorTab, newEditorState);
-
-							// LRU eviction
-							const MAX_EDITOR_STATES = 10;
-							const openTabIds = new Set(store.tabs.map((t: EditorTab) => t.id));
-							const evictedStates = evictLRUEditorStates(
-								store.editorStates,
-								store.activeTabId,
-								openTabIds as ReadonlySet<string>,
-								MAX_EDITOR_STATES,
-							);
-							store.setEditorStates(evictedStates as Record<string, EditorInstanceState>);
-
-							tabId = newTab.id;
+					if (existingTab) {
+						// Tab 已存在，激活它
+						store.setActiveTabId(existingTab.id)
+						if (store.editorStates[existingTab.id]) {
+							store.updateEditorState(existingTab.id, {
+								lastModified: dayjs().valueOf(),
+							})
 						}
+						tabId = existingTab.id
+					} else {
+						// 创建新 tab
+						const newTab = EditorTabBuilder.create()
+							.workspaceId(workspaceId)
+							.nodeId(node.id)
+							.title(title)
+							.type(type as TabType)
+							.build()
+
+						// 如果有初始内容，使用它；否则创建空状态
+						const newEditorState = parsedContent
+							? EditorStateBuilder.fromDefault().serializedState(parsedContent).build()
+							: EditorStateBuilder.fromDefault().build()
+
+						// 使用原子操作同时添加 tab、设置 editorState 和激活 tab
+						store.addTabWithState(newTab as EditorTab, newEditorState)
+
+						// LRU eviction
+						const MAX_EDITOR_STATES = 10
+						const openTabIds = new Set(store.tabs.map((t: EditorTab) => t.id))
+						const evictedStates = evictLRUEditorStates(
+							store.editorStates,
+							store.activeTabId,
+							openTabIds as ReadonlySet<string>,
+							MAX_EDITOR_STATES,
+						)
+						store.setEditorStates(evictedStates as Record<string, EditorInstanceState>)
+
+						tabId = newTab.id
+					}
 
 					return {
 						node,
 						tabId,
-					};
+					}
 				}),
 			(error): AppError => ({
 				type: "DB_ERROR",
@@ -336,8 +327,8 @@ const createFileInternal = (params: {
 						message: "创建文件失败: 队列返回空结果",
 					}),
 		),
-	);
-};
+	)
+}
 
 // ==============================
 // High-Order Function
@@ -376,10 +367,8 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 	 * @param params - 包含工作区 ID 和模板参数的对象
 	 * @returns TaskEither<AppError, TemplatedFileResult>
 	 */
-	return (
-		params: TemplatedFileParams<T>,
-	): TE.TaskEither<AppError, TemplatedFileResult> => {
-		info(`[Action] 创建${config.name}...`);
+	return (params: TemplatedFileParams<T>): TE.TaskEither<AppError, TemplatedFileResult> => {
+		info(`[Action] 创建${config.name}...`)
 
 		return pipe(
 			// 1. 校验基础参数（工作区 ID）
@@ -408,16 +397,16 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 			),
 			// 3. 生成模板数据
 			TE.map((validTemplateParams) => {
-				const content = config.generateTemplate(validTemplateParams);
-				const folderPath = config.generateFolderPath(validTemplateParams);
-				const title = config.generateTitle(validTemplateParams);
+				const content = config.generateTemplate(validTemplateParams)
+				const folderPath = config.generateFolderPath(validTemplateParams)
+				const title = config.generateTitle(validTemplateParams)
 
 				return {
 					validTemplateParams,
 					content,
 					folderPath,
 					title,
-				};
+				}
 			}),
 			// 4. 解析内容（验证 JSON 格式，或跳过解析）
 			TE.chain(({ validTemplateParams, content, folderPath, title }) => {
@@ -429,7 +418,7 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 						folderPath,
 						title,
 						parsedContent: content, // 纯文本内容直接使用原始字符串
-					});
+					})
 				}
 
 				// 默认：解析 JSON 内容
@@ -449,7 +438,7 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 						title,
 						parsedContent,
 					})),
-				);
+				)
 			}),
 			// 5. 确保文件夹路径存在，然后通过内联 createFile 创建文件（通过队列执行）
 			TE.chain(({ content, folderPath, title, parsedContent }) =>
@@ -484,12 +473,12 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 			),
 			// 6. 记录成功日志
 			TE.tap((result) => {
-				success(`[Action] ${config.name}创建成功:`, { nodeId: result.node.id });
-				return TE.right(result);
+				success(`[Action] ${config.name}创建成功:`, { nodeId: result.node.id })
+				return TE.right(result)
 			}),
-		);
-	};
-};
+		)
+	}
+}
 
 /**
  * 创建模板化文件的异步版本
@@ -500,7 +489,7 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
  * @returns 异步文件创建函数
  */
 export const createTemplatedFileAsync = <T>(config: TemplateConfig<T>) => {
-	const createFn = createTemplatedFile(config);
+	const createFn = createTemplatedFile(config)
 
 	/**
 	 * 异步文件创建函数
@@ -509,15 +498,13 @@ export const createTemplatedFileAsync = <T>(config: TemplateConfig<T>) => {
 	 * @returns Promise<TemplatedFileResult>
 	 * @throws Error 如果创建失败
 	 */
-	return async (
-		params: TemplatedFileParams<T>,
-	): Promise<TemplatedFileResult> => {
-		const result = await createFn(params)();
+	return async (params: TemplatedFileParams<T>): Promise<TemplatedFileResult> => {
+		const result = await createFn(params)()
 
 		if (E.isLeft(result)) {
-			throw new Error(result.left.message);
+			throw new Error(result.left.message)
 		}
 
-		return result.right;
-	};
-};
+		return result.right
+	}
+}

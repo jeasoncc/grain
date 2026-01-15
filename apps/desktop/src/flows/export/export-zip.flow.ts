@@ -8,13 +8,13 @@
  * - 使用 JSZip 创建压缩包
  */
 
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import { info, success } from "@/io/log/logger.api";
-import { createZipBundle } from "@/pipes/export/export.bundle.fn";
-import type { AppError } from "@/types/error";
-import { exportAll } from "./export-all.flow";
+import * as E from "fp-ts/Either"
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import { info, success } from "@/io/log/logger.api"
+import { createZipBundle } from "@/pipes/export/export.bundle.fn"
+import type { AppError } from "@/types/error"
+import { exportAll } from "./export-all.flow"
 
 /**
  * 导出数据为 ZIP 压缩包
@@ -22,19 +22,17 @@ import { exportAll } from "./export-all.flow";
  * @param workspaceId - 可选的工作区 ID
  * @returns TaskEither<AppError, Blob>
  */
-export function exportAllAsZip(
-	workspaceId?: string,
-): TE.TaskEither<AppError, Blob> {
-	info("[Export] 开始导出 ZIP 压缩包...", {}, "export-zip");
+export function exportAllAsZip(workspaceId?: string): TE.TaskEither<AppError, Blob> {
+	info("[Export] 开始导出 ZIP 压缩包...", {}, "export-zip")
 
 	return pipe(
 		exportAll(workspaceId),
 		TE.chain((jsonData) =>
 			TE.tryCatch(
 				async () => {
-					const blob = await createZipBundle(jsonData);
-					success("[Export] ZIP 压缩包导出成功");
-					return blob;
+					const blob = await createZipBundle(jsonData)
+					success("[Export] ZIP 压缩包导出成功")
+					return blob
 				},
 				(error): AppError => ({
 					type: "EXPORT_ERROR",
@@ -42,7 +40,7 @@ export function exportAllAsZip(
 				}),
 			),
 		),
-	);
+	)
 }
 
 /**
@@ -52,9 +50,9 @@ export function exportAllAsZip(
  * @returns Promise<Blob>
  */
 export async function exportAllAsZipAsync(workspaceId?: string): Promise<Blob> {
-	const result = await exportAllAsZip(workspaceId)();
+	const result = await exportAllAsZip(workspaceId)()
 	if (E.isLeft(result)) {
-		throw new Error(result.left.message);
+		throw new Error(result.left.message)
 	}
-	return result.right;
+	return result.right
 }

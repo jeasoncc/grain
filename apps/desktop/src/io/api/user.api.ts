@@ -19,22 +19,18 @@
  * ```
  */
 
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
 import {
 	decodeUser,
 	decodeUserOptional,
 	decodeUsers,
 	encodeCreateUser,
 	encodeUpdateUser,
-} from "@/types/codec";
-import type { AppError } from "@/types/error";
-import type {
-	UserCreateInput,
-	UserInterface,
-	UserUpdateInput,
-} from "@/types/user";
-import { api } from "./client.api";
+} from "@/types/codec"
+import type { AppError } from "@/types/error"
+import type { UserCreateInput, UserInterface, UserUpdateInput } from "@/types/user"
+import { api } from "./client.api"
 
 // ============================================
 // 查询操作
@@ -44,22 +40,18 @@ import { api } from "./client.api";
  * 获取所有用户
  */
 export const getUsers = (): TE.TaskEither<AppError, readonly UserInterface[]> =>
-	pipe(api.getUsers(), TE.map(decodeUsers));
+	pipe(api.getUsers(), TE.map(decodeUsers))
 
 /**
  * 获取单个用户
  */
-export const getUser = (
-	id: string,
-): TE.TaskEither<AppError, UserInterface | null> =>
-	pipe(api.getUser(id), TE.map(decodeUserOptional));
+export const getUser = (id: string): TE.TaskEither<AppError, UserInterface | null> =>
+	pipe(api.getUser(id), TE.map(decodeUserOptional))
 
 /**
  * 获取单个用户（不存在时抛出错误）
  */
-export const getUserOrFail = (
-	id: string,
-): TE.TaskEither<AppError, UserInterface> =>
+export const getUserOrFail = (id: string): TE.TaskEither<AppError, UserInterface> =>
 	pipe(
 		getUser(id),
 		TE.chain((user) =>
@@ -70,7 +62,7 @@ export const getUserOrFail = (
 						message: `用户不存在: ${id}`,
 					} as AppError),
 		),
-	);
+	)
 
 /**
  * 按用户名获取用户
@@ -78,31 +70,24 @@ export const getUserOrFail = (
 export const getUserByUsername = (
 	username: string,
 ): TE.TaskEither<AppError, UserInterface | null> =>
-	pipe(api.getUserByUsername(username), TE.map(decodeUserOptional));
+	pipe(api.getUserByUsername(username), TE.map(decodeUserOptional))
 
 /**
  * 按邮箱获取用户
  */
-export const getUserByEmail = (
-	email: string,
-): TE.TaskEither<AppError, UserInterface | null> =>
-	pipe(api.getUserByEmail(email), TE.map(decodeUserOptional));
+export const getUserByEmail = (email: string): TE.TaskEither<AppError, UserInterface | null> =>
+	pipe(api.getUserByEmail(email), TE.map(decodeUserOptional))
 
 /**
  * 获取当前用户（最后登录的用户）
  */
-export const getCurrentUser = (): TE.TaskEither<
-	AppError,
-	UserInterface | null
-> => pipe(api.getCurrentUser(), TE.map(decodeUserOptional));
+export const getCurrentUser = (): TE.TaskEither<AppError, UserInterface | null> =>
+	pipe(api.getCurrentUser(), TE.map(decodeUserOptional))
 
 /**
  * 获取当前用户（不存在时抛出错误）
  */
-export const getCurrentUserOrFail = (): TE.TaskEither<
-	AppError,
-	UserInterface
-> =>
+export const getCurrentUserOrFail = (): TE.TaskEither<AppError, UserInterface> =>
 	pipe(
 		getCurrentUser(),
 		TE.chain((user) =>
@@ -113,7 +98,7 @@ export const getCurrentUserOrFail = (): TE.TaskEither<
 						message: "当前用户不存在",
 					} as AppError),
 		),
-	);
+	)
 
 // ============================================
 // 写入操作
@@ -122,14 +107,8 @@ export const getCurrentUserOrFail = (): TE.TaskEither<
 /**
  * 创建用户
  */
-export const createUser = (
-	input: UserCreateInput,
-): TE.TaskEither<AppError, UserInterface> =>
-	pipe(
-		TE.of(encodeCreateUser(input)),
-		TE.chain(api.createUser),
-		TE.map(decodeUser),
-	);
+export const createUser = (input: UserCreateInput): TE.TaskEither<AppError, UserInterface> =>
+	pipe(TE.of(encodeCreateUser(input)), TE.chain(api.createUser), TE.map(decodeUser))
 
 /**
  * 更新用户
@@ -142,21 +121,18 @@ export const updateUser = (
 		TE.of(encodeUpdateUser(input)),
 		TE.chain((request) => api.updateUser(id, request)),
 		TE.map(decodeUser),
-	);
+	)
 
 /**
  * 更新用户最后登录时间
  */
-export const updateUserLastLogin = (
-	id: string,
-): TE.TaskEither<AppError, UserInterface> =>
-	pipe(api.updateUserLastLogin(id), TE.map(decodeUser));
+export const updateUserLastLogin = (id: string): TE.TaskEither<AppError, UserInterface> =>
+	pipe(api.updateUserLastLogin(id), TE.map(decodeUser))
 
 /**
  * 删除用户
  */
-export const deleteUser = (id: string): TE.TaskEither<AppError, void> =>
-	api.deleteUser(id);
+export const deleteUser = (id: string): TE.TaskEither<AppError, void> => api.deleteUser(id)
 
 // ============================================
 // 兼容性别名
@@ -165,14 +141,14 @@ export const deleteUser = (id: string): TE.TaskEither<AppError, void> =>
 /**
  * 获取用户（别名，兼容旧 API）
  */
-export const getUserById = getUser;
+export const getUserById = getUser
 
 /**
  * 获取用户（别名，兼容旧 API）
  */
-export const getUserByIdOrNull = getUser;
+export const getUserByIdOrNull = getUser
 
 /**
  * 添加用户（别名，兼容旧 API）
  */
-export const addUser = createUser;
+export const addUser = createUser

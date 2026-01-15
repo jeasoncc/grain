@@ -10,22 +10,22 @@
  * TODO: exportWorkspace（全局导出，暂不实现）
  */
 
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import { getContentByNodeIdOrFail, getNodeByIdOrFail } from "@/io/api";
-import { info, success } from "@/io/log/logger.api";
-import { exportToMarkdown, type MarkdownExportOptions } from "@/pipes/export";
-import { type AppError, exportError } from "@/types/error";
+import * as E from "fp-ts/Either"
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import { getContentByNodeIdOrFail, getNodeByIdOrFail } from "@/io/api"
+import { info, success } from "@/io/log/logger.api"
+import { exportToMarkdown, type MarkdownExportOptions } from "@/pipes/export"
+import { type AppError, exportError } from "@/types/error"
 
 /**
  * 导出节点内容为 Markdown 格式参数
  */
 export interface ExportMarkdownParams {
 	/** 节点 ID */
-	readonly nodeId: string;
+	readonly nodeId: string
 	/** 导出选项 */
-	readonly options?: MarkdownExportOptions;
+	readonly options?: MarkdownExportOptions
 }
 
 /**
@@ -33,11 +33,11 @@ export interface ExportMarkdownParams {
  */
 export interface ExportResult {
 	/** 导出的内容 */
-	readonly content: string;
+	readonly content: string
 	/** 文件名（不含扩展名） */
-	readonly filename: string;
+	readonly filename: string
 	/** 文件扩展名 */
-	readonly extension: string;
+	readonly extension: string
 }
 
 /**
@@ -51,7 +51,7 @@ export interface ExportResult {
 export const exportNodeToMarkdown = (
 	params: ExportMarkdownParams,
 ): TE.TaskEither<AppError, ExportResult> => {
-	info("[Action] 导出 Markdown...", {}, "export-markdown");
+	info("[Action] 导出 Markdown...", {}, "export-markdown")
 
 	return pipe(
 		// 并行获取节点和内容
@@ -64,10 +64,10 @@ export const exportNodeToMarkdown = (
 				...params.options,
 				includeTitle: params.options?.includeTitle ?? true,
 				title: params.options?.title ?? node.title,
-			};
+			}
 
 			// 转换为 Markdown
-			const result = exportToMarkdown(contentRecord.content, exportOptions);
+			const result = exportToMarkdown(contentRecord.content, exportOptions)
 
 			return pipe(
 				result,
@@ -78,14 +78,14 @@ export const exportNodeToMarkdown = (
 					filename: node.title,
 					extension: "md",
 				})),
-			);
+			)
 		}),
 		TE.tap((result) => {
-			success("[Action] Markdown 导出成功", { filename: result.filename }, "export-markdown");
-			return TE.right(result);
+			success("[Action] Markdown 导出成功", { filename: result.filename }, "export-markdown")
+			return TE.right(result)
 		}),
-	);
-};
+	)
+}
 
 /**
  * 直接导出内容为 Markdown 格式（不从数据库获取）
@@ -100,10 +100,10 @@ export const exportContentToMarkdown = (
 	content: string,
 	options?: MarkdownExportOptions,
 ): E.Either<AppError, string> => {
-	info("[Action] 直接导出 Markdown");
+	info("[Action] 直接导出 Markdown")
 
 	return pipe(
 		exportToMarkdown(content, options),
 		E.mapLeft((err) => exportError(`Markdown 导出失败: ${err.message}`)),
-	);
-};
+	)
+}

@@ -8,9 +8,9 @@
  * 注意：编辑器类型选择已移除，统一使用 Lexical 编辑器
  */
 
-import type { FoldIconStyle } from "@grain/editor-lexical";
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import type { FoldIconStyle } from "@grain/editor-lexical"
+import { create } from "zustand"
+import { persist } from "zustand/middleware"
 
 // ==============================
 // State Interface
@@ -18,7 +18,7 @@ import { persist } from "zustand/middleware";
 
 interface EditorSettingsState {
 	/** 标题折叠图标风格 */
-	readonly foldIconStyle: FoldIconStyle;
+	readonly foldIconStyle: FoldIconStyle
 }
 
 // ==============================
@@ -27,16 +27,16 @@ interface EditorSettingsState {
 
 interface EditorSettingsActions {
 	/** 设置折叠图标风格 */
-	setFoldIconStyle: (style: FoldIconStyle) => void;
+	setFoldIconStyle: (style: FoldIconStyle) => void
 	/** 重置所有设置 */
-	reset: () => void;
+	reset: () => void
 }
 
 // ==============================
 // Store Type
 // ==============================
 
-type EditorSettingsStore = EditorSettingsState & EditorSettingsActions;
+type EditorSettingsStore = EditorSettingsState & EditorSettingsActions
 
 // ==============================
 // Default Values
@@ -44,7 +44,7 @@ type EditorSettingsStore = EditorSettingsState & EditorSettingsActions;
 
 const DEFAULT_EDITOR_SETTINGS_STATE: EditorSettingsState = {
 	foldIconStyle: "bagua",
-} as const;
+} as const
 
 // ==============================
 // Store Implementation
@@ -64,21 +64,21 @@ export const useEditorSettingsStore = create<EditorSettingsStore>()(
 				set((state) => ({
 					...state,
 					foldIconStyle: style,
-				}));
+				}))
 			},
 
 			reset: () => {
 				set((state) => ({
 					...state,
 					foldIconStyle: DEFAULT_EDITOR_SETTINGS_STATE.foldIconStyle,
-				}));
+				}))
 			},
 		}),
 		{
 			name: "grain-editor-settings",
 		},
 	),
-);
+)
 
 // ==============================
 // Selector Hooks
@@ -88,8 +88,8 @@ export const useEditorSettingsStore = create<EditorSettingsStore>()(
  * 获取当前折叠图标风格
  */
 export const useFoldIconStyle = (): FoldIconStyle => {
-	return useEditorSettingsStore((state) => state.foldIconStyle);
-};
+	return useEditorSettingsStore((state) => state.foldIconStyle)
+}
 
 // ==============================
 // Convenience Hook
@@ -99,5 +99,5 @@ export const useFoldIconStyle = (): FoldIconStyle => {
  * 便捷 hook，提供所有编辑器设置状态和 actions
  */
 export function useEditorSettings() {
-	return useEditorSettingsStore();
+	return useEditorSettingsStore()
 }

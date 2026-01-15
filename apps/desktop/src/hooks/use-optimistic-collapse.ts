@@ -10,25 +10,25 @@
  * Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 6.1, 6.4, 6.5
  */
 
-import { useQueryClient } from "@tanstack/react-query";
-import { debounce } from "es-toolkit";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import { queryKeys } from "@/hooks/queries/query-keys";
-import { setNodeCollapsed as setNodeCollapsedApi } from "@/io/api/node.api";
-import { debug, error } from "@/io/log/logger.api";
-import type { NodeInterface } from "@/types/node";
+import { useQueryClient } from "@tanstack/react-query"
+import { debounce } from "es-toolkit"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
+import { queryKeys } from "@/hooks/queries/query-keys"
+import { setNodeCollapsed as setNodeCollapsedApi } from "@/io/api/node.api"
+import { debug, error } from "@/io/log/logger.api"
+import type { NodeInterface } from "@/types/node"
 
 interface UseOptimisticCollapseOptions {
-	readonly workspaceId: string | null | undefined;
+	readonly workspaceId: string | null | undefined
 	/** 防抖延迟（毫秒），默认 300ms - Requirements: 6.4 */
-	readonly debounceMs?: number;
+	readonly debounceMs?: number
 }
 
 interface PendingUpdate {
-	readonly nodeId: string;
-	readonly collapsed: boolean;
-	readonly previousData: readonly NodeInterface[] | undefined;
+	readonly nodeId: string
+	readonly collapsed: boolean
+	readonly previousData: readonly NodeInterface[] | undefined
 }
 
 /**
@@ -44,11 +44,13 @@ interface PendingUpdate {
  * ```
  */
 export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
-	const { workspaceId, debounceMs = 300 } = options;
-	const queryClient = useQueryClient();
+	const { workspaceId, debounceMs = 300 } = options
+	const queryClient = useQueryClient()
 
 	// 使用 useState 而不是 useRef 来避免直接变异
-	const [pendingUpdates, setPendingUpdates] = useState<ReadonlyMap<string, PendingUpdate>>(new Map());
+	const [pendingUpdates, setPendingUpdates] = useState<ReadonlyMap<string, PendingUpdate>>(
+		new Map(),
+	)
 
 	/**
 	 * 执行后端同步（防抖）
@@ -60,45 +62,42 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			collapsed: boolean,
 			previousData: readonly NodeInterface[] | undefined,
 		): void => {
-			if (!workspaceId) return;
+			if (!workspaceId) return
 
-			const queryKey = queryKeys.nodes.byWorkspace(workspaceId);
-			const syncStartTime = performance.now();
+			const queryKey = queryKeys.nodes.byWorkspace(workspaceId)
+			const syncStartTime = performance.now()
 
 			debug("[OptimisticCollapse] Syncing to backend (debounced)", {
 				nodeId,
 				collapsed,
 				timestamp: new Date().toISOString(),
-			});
+			})
 
 			// 使用 TaskEither 的函数式风格执行
 			setNodeCollapsedApi(nodeId, collapsed)().then((result) => {
-				const syncEndTime = performance.now();
-				const syncDuration = syncEndTime - syncStartTime;
+				const syncEndTime = performance.now()
+				const syncDuration = syncEndTime - syncStartTime
 
 				if (result._tag === "Left") {
-					error(
-						"[OptimisticCollapse] Backend sync failed, rolling back",
-						{
-							nodeId,
-							collapsed,
-							error: result.left,
-							syncDuration: `${syncDuration.toFixed(2)}ms`,
-							timestamp: new Date().toISOString(),
-						},
-					);
+					error("[OptimisticCollapse] Backend sync failed, rolling back", {
+						nodeId,
+						collapsed,
+						error: result.left,
+						syncDuration: `${syncDuration.toFixed(2)}ms`,
+						timestamp: new Date().toISOString(),
+					})
 
 					// 回滚到之前的数据 - Requirements: 1.3
 					if (previousData) {
-						queryClient.setQueryData(queryKey, previousData);
+						queryClient.setQueryData(queryKey, previousData)
 					}
 
 					// 显示错误提示
-					toast.error("Failed to update folder state");
+					toast.error("Failed to update folder state")
 
 					// 清除待处理的更新
-					setPendingUpdates(prev => new Map([...prev].filter(([id]) => id !== nodeId)));
-					return;
+					setPendingUpdates((prev) => new Map([...prev].filter(([id]) => id !== nodeId)))
+					return
 				}
 
 				debug("[OptimisticCollapse] Backend sync completed", {
@@ -106,48 +105,44 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 					collapsed,
 					syncDuration: `${syncDuration.toFixed(2)}ms`,
 					timestamp: new Date().toISOString(),
-				});
+				})
 
 				// 更新缓存为后端返回的最新数据
 				queryClient.setQueryData<ReadonlyArray<NodeInterface>>(queryKey, (oldData) => {
-					if (!oldData) return oldData;
+					if (!oldData) return oldData
 
-					return oldData.map((node) =>
-						node.id === nodeId ? result.right : node,
-					);
-				});
+					return oldData.map((node) => (node.id === nodeId ? result.right : node))
+				})
 
 				// 清除待处理的更新
-				setPendingUpdates(prev => new Map([...prev].filter(([id]) => id !== nodeId)));
-			});
+				setPendingUpdates((prev) => new Map([...prev].filter(([id]) => id !== nodeId)))
+			})
 		},
 		[workspaceId, queryClient],
-	);
+	)
 
 	// 创建防抖的同步函数 - Requirements: 6.1, 6.4
-	const debouncedSyncRef = useRef(debounce(syncToBackend, debounceMs));
+	const debouncedSyncRef = useRef(debounce(syncToBackend, debounceMs))
 
 	// 更新防抖函数的引用
 	useEffect(() => {
-		debouncedSyncRef.current = debounce(syncToBackend, debounceMs);
-	}, [syncToBackend, debounceMs]);
+		debouncedSyncRef.current = debounce(syncToBackend, debounceMs)
+	}, [syncToBackend, debounceMs])
 
 	// 组件卸载时立即执行所有待处理的更新 - Requirements: 6.5
 	useEffect(() => {
 		return () => {
-			debug(
-				"[OptimisticCollapse] Component unmounting, flushing pending updates",
-			);
+			debug("[OptimisticCollapse] Component unmounting, flushing pending updates")
 
 			// 取消防抖并立即执行所有待处理的更新
-			debouncedSyncRef.current.cancel();
+			debouncedSyncRef.current.cancel()
 
 			// 立即同步所有待处理的更新
 			for (const [nodeId, update] of pendingUpdates.entries()) {
-				syncToBackend(nodeId, update.collapsed, update.previousData);
+				syncToBackend(nodeId, update.collapsed, update.previousData)
 			}
-		};
-	}, [syncToBackend, pendingUpdates]);
+		}
+	}, [syncToBackend, pendingUpdates])
 
 	/**
 	 * 乐观更新节点折叠状态
@@ -157,51 +152,58 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 	const toggleCollapsed = useCallback(
 		(nodeId: string, collapsed: boolean): void => {
 			if (!workspaceId) {
-				error("[OptimisticCollapse] No workspace ID provided");
-				return;
+				error("[OptimisticCollapse] No workspace ID provided")
+				return
 			}
 
-			const queryKey = queryKeys.nodes.byWorkspace(workspaceId);
+			const queryKey = queryKeys.nodes.byWorkspace(workspaceId)
 
 			// 1. 获取当前缓存数据（用于回滚）
-			const previousData = queryClient.getQueryData<readonly NodeInterface[]>(queryKey);
+			const previousData = queryClient.getQueryData<readonly NodeInterface[]>(queryKey)
 
 			// Performance monitoring
-			const startTime = performance.now();
+			const startTime = performance.now()
 			debug("[OptimisticCollapse] Starting optimistic update", {
 				nodeId,
 				collapsed,
 				timestamp: new Date().toISOString(),
-			});
+			})
 
 			// 2. 立即更新 UI（乐观更新）- Requirements: 1.1, 1.4
 			queryClient.setQueryData<ReadonlyArray<NodeInterface>>(queryKey, (oldData) => {
-				if (!oldData) return oldData;
+				if (!oldData) return oldData
 
-				return oldData.map((node) =>
-					node.id === nodeId ? { ...node, collapsed } : node,
-				);
-			});
+				return oldData.map((node) => (node.id === nodeId ? { ...node, collapsed } : node))
+			})
 
-			const uiUpdateTime = performance.now();
+			const uiUpdateTime = performance.now()
 			debug("[OptimisticCollapse] UI updated optimistically", {
 				nodeId,
 				collapsed,
 				uiUpdateDuration: `${(uiUpdateTime - startTime).toFixed(2)}ms`,
-			});
+			})
 
 			// 3. 存储待处理的更新
-			setPendingUpdates(prev => new Map([...prev, [nodeId, {
-				nodeId,
-				collapsed,
-				previousData,
-			}]]));
+			setPendingUpdates(
+				(prev) =>
+					new Map([
+						...prev,
+						[
+							nodeId,
+							{
+								nodeId,
+								collapsed,
+								previousData,
+							},
+						],
+					]),
+			)
 
 			// 4. 防抖调用后端 API - Requirements: 1.2, 6.1, 6.4
-			debouncedSyncRef.current(nodeId, collapsed, previousData);
+			debouncedSyncRef.current(nodeId, collapsed, previousData)
 		},
 		[workspaceId, queryClient],
-	);
+	)
 
-	return { toggleCollapsed };
+	return { toggleCollapsed }
 }

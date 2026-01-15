@@ -8,19 +8,19 @@
  * @requirements 119
  */
 
-import { generateLedgerContent } from "@/pipes/ledger";
+import { generateLedgerContent } from "@/pipes/ledger"
 import {
 	createDateTemplateConfig,
 	type DateTemplateParams,
 	dateParamsSchema,
-} from "./date-template.factory";
+} from "./date-template.factory"
 
 // ==============================
 // Types (Re-export)
 // ==============================
 
-export type LedgerTemplateParams = DateTemplateParams;
-export const ledgerParamsSchema = dateParamsSchema;
+export type LedgerTemplateParams = DateTemplateParams
+export const ledgerParamsSchema = dateParamsSchema
 
 // ==============================
 // Configuration
@@ -40,4 +40,4 @@ export const ledgerConfig = createDateTemplateConfig({
 	prefix: "ledger",
 	generateContent: generateLedgerContent,
 	includeDayFolder: false, // 记账不需要日期文件夹
-});
+})

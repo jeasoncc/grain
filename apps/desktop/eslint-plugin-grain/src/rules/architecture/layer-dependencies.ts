@@ -8,57 +8,52 @@
  * @property Property 3: Architecture Layer Dependency Validation
  */
 
-import { ESLintUtils } from '@typescript-eslint/utils';
-import type { TSESTree } from '@typescript-eslint/utils';
+import type { TSESTree } from "@typescript-eslint/utils"
+import { ESLintUtils } from "@typescript-eslint/utils"
+import { CONTAINER_EXTRA_DEPENDENCIES } from "../../types/config.types.js"
+import type { ArchitectureLayer } from "../../types/rule.types.js"
 import {
-  getArchitectureLayer,
-  getImportLayer,
-  isContainerComponent,
-  isViewComponent,
-  isTestFile,
-  isLayerViolation,
-  getLayerViolationDetails,
-  isDeprecatedDirectoryImport,
-  getDeprecatedDirectoryMigration,
-  getLayerChineseName,
-  getLayerDescription,
-  getAllowedDependencies,
-} from '../../utils/architecture.js';
-import {
-  buildErrorMessage,
-  getLayerViolationSuggestion,
-} from '../../utils/message-builder.js';
-import type { ArchitectureLayer } from '../../types/rule.types.js';
-import { CONTAINER_EXTRA_DEPENDENCIES } from '../../types/config.types.js';
+	getAllowedDependencies,
+	getArchitectureLayer,
+	getDeprecatedDirectoryMigration,
+	getImportLayer,
+	getLayerChineseName,
+	getLayerDescription,
+	getLayerViolationDetails,
+	isContainerComponent,
+	isDeprecatedDirectoryImport,
+	isLayerViolation,
+	isTestFile,
+	isViewComponent,
+} from "../../utils/architecture.js"
+import { buildErrorMessage, getLayerViolationSuggestion } from "../../utils/message-builder.js"
 
-const createRule = ESLintUtils.RuleCreator(
-  (name) => `https://grain.dev/eslint-rules/${name}`
-);
+const createRule = ESLintUtils.RuleCreator((name) => `https://grain.dev/eslint-rules/${name}`)
 
 type MessageIds =
-  | 'layerViolation'
-  | 'containerException'
-  | 'viewStateViolation'
-  | 'deprecatedImport'
-  | 'pipesPurityViolation'
-  | 'utilsPurityViolation'
-  | 'hooksIoViolation';
+	| "layerViolation"
+	| "containerException"
+	| "viewStateViolation"
+	| "deprecatedImport"
+	| "pipesPurityViolation"
+	| "utilsPurityViolation"
+	| "hooksIoViolation"
 
 type Options = [
-  {
-    strict?: boolean;
-  }
-];
+	{
+		strict?: boolean
+	},
+]
 
 export default createRule<Options, MessageIds>({
-  name: 'layer-dependencies',
-  meta: {
-    type: 'problem',
-    docs: {
-      description: '强制执行架构层级依赖规则',
-    },
-    messages: {
-      layerViolation: `❌ 架构层级违规：{{ currentLayer }}/ 层不能依赖 {{ importLayer }}/ 层
+	name: "layer-dependencies",
+	meta: {
+		type: "problem",
+		docs: {
+			description: "强制执行架构层级依赖规则",
+		},
+		messages: {
+			layerViolation: `❌ 架构层级违规：{{ currentLayer }}/ 层不能依赖 {{ importLayer }}/ 层
 
 🔍 原因：
   当前文件位于 {{ currentLayerChinese }}，但导入了 {{ importLayerChinese }} 的模块。
@@ -73,7 +68,7 @@ export default createRule<Options, MessageIds>({
 📚 参考文档：#architecture - 依赖规则
 📋 Steering 文件：#structure - 目录结构`,
 
-      containerException: `⚠️ views/ 层不能直接导入 {{ importLayer }}/
+			containerException: `⚠️ views/ 层不能直接导入 {{ importLayer }}/
 
 💡 建议：
   - 如果这是容器组件 (.container.fn.tsx)，可以导入 flows/ 和 state/
@@ -85,7 +80,7 @@ export default createRule<Options, MessageIds>({
 
 📚 参考文档：#architecture - 容器/视图分离`,
 
-      viewStateViolation: `❌ 视图组件不能直接访问 state/
+			viewStateViolation: `❌ 视图组件不能直接访问 state/
 
 🔍 原因：
   视图组件 (.view.fn.tsx) 应该是纯展示组件，只接收 props。
@@ -100,7 +95,7 @@ export default createRule<Options, MessageIds>({
 
 📚 参考文档：#code-standards - 组件规范`,
 
-      deprecatedImport: `❌ 禁止从废弃目录导入：{{ directory }}/
+			deprecatedImport: `❌ 禁止从废弃目录导入：{{ directory }}/
 
 🔍 原因：
   {{ directory }}/ 是废弃的目录结构，新代码不应依赖。
@@ -110,7 +105,7 @@ export default createRule<Options, MessageIds>({
 
 📚 参考文档：#structure - 目录结构`,
 
-      pipesPurityViolation: `❌ pipes/ 层必须是纯函数，不能依赖 {{ importLayer }}/
+			pipesPurityViolation: `❌ pipes/ 层必须是纯函数，不能依赖 {{ importLayer }}/
 
 🔍 原因：
   pipes/ 层只能包含纯数据转换函数，不能有任何副作用。
@@ -125,7 +120,7 @@ export default createRule<Options, MessageIds>({
 
 📚 参考文档：#architecture - 纯函数层`,
 
-      utilsPurityViolation: `❌ utils/ 层必须是纯函数，不能依赖 {{ importLayer }}/
+			utilsPurityViolation: `❌ utils/ 层必须是纯函数，不能依赖 {{ importLayer }}/
 
 🔍 原因：
   utils/ 层只能包含通用工具函数，只能依赖 types/。
@@ -136,7 +131,7 @@ export default createRule<Options, MessageIds>({
 
 📚 参考文档：#architecture - 工具层`,
 
-      hooksIoViolation: `❌ hooks/ 层不能直接依赖 io/
+			hooksIoViolation: `❌ hooks/ 层不能直接依赖 io/
 
 🔍 原因：
   hooks/ 应该通过 flows/ 间接访问 IO 操作。
@@ -151,142 +146,143 @@ export default createRule<Options, MessageIds>({
   hooks/ → queries/ → io/
 
 📚 参考文档：#architecture - 绑定层`,
-    },
-    schema: [
-      {
-        type: 'object',
-        properties: {
-          strict: {
-            type: 'boolean',
-            default: true,
-          },
-        },
-        additionalProperties: false,
-      },
-    ],
-  },
-  defaultOptions: [{ strict: true }],
-  create(context, [options]) {
-    const filename = context.filename || context.getFilename();
-    const strict = options.strict ?? true;
+		},
+		schema: [
+			{
+				type: "object",
+				properties: {
+					strict: {
+						type: "boolean",
+						default: true,
+					},
+				},
+				additionalProperties: false,
+			},
+		],
+	},
+	defaultOptions: [{ strict: true }],
+	create(context, [options]) {
+		const filename = context.filename || context.getFilename()
+		const strict = options.strict ?? true
 
-    // 跳过测试文件
-    if (isTestFile(filename)) {
-      return {};
-    }
+		// 跳过测试文件
+		if (isTestFile(filename)) {
+			return {}
+		}
 
-    // 获取当前文件的架构层级
-    const currentLayer = getArchitectureLayer(filename);
-    if (!currentLayer) {
-      return {};
-    }
+		// 获取当前文件的架构层级
+		const currentLayer = getArchitectureLayer(filename)
+		if (!currentLayer) {
+			return {}
+		}
 
-    const isContainer = isContainerComponent(filename);
-    const isView = isViewComponent(filename);
+		const isContainer = isContainerComponent(filename)
+		const isView = isViewComponent(filename)
 
-    return {
-      ImportDeclaration(node: TSESTree.ImportDeclaration) {
-        const importPath = node.source.value;
+		return {
+			ImportDeclaration(node: TSESTree.ImportDeclaration) {
+				const importPath = node.source.value
 
-        // 检查废弃目录导入
-        if (isDeprecatedDirectoryImport(importPath)) {
-          const match = importPath.match(/@\/([^/]+)/);
-          const directory = match ? match[1] : '';
-          const migration = getDeprecatedDirectoryMigration(directory);
+				// 检查废弃目录导入
+				if (isDeprecatedDirectoryImport(importPath)) {
+					const match = importPath.match(/@\/([^/]+)/)
+					const directory = match ? match[1] : ""
+					const migration = getDeprecatedDirectoryMigration(directory)
 
-          context.report({
-            node,
-            messageId: 'deprecatedImport',
-            data: {
-              directory,
-              migration,
-            },
-          });
-          return;
-        }
+					context.report({
+						node,
+						messageId: "deprecatedImport",
+						data: {
+							directory,
+							migration,
+						},
+					})
+					return
+				}
 
-        // 获取导入的层级
-        const importLayer = getImportLayer(importPath);
-        if (!importLayer) {
-          return;
-        }
+				// 获取导入的层级
+				const importLayer = getImportLayer(importPath)
+				if (!importLayer) {
+					return
+				}
 
-        // 检查层级违规
-        if (isLayerViolation(currentLayer, importLayer, isContainer, strict)) {
-          const details = getLayerViolationDetails(currentLayer, importLayer, strict);
-          const suggestion = getLayerViolationSuggestion(currentLayer, importLayer);
+				// 检查层级违规
+				if (isLayerViolation(currentLayer, importLayer, isContainer, strict)) {
+					const details = getLayerViolationDetails(currentLayer, importLayer, strict)
+					const suggestion = getLayerViolationSuggestion(currentLayer, importLayer)
 
-          // 特殊情况：views 层的容器/视图区分
-          if (currentLayer === 'views') {
-            if (isView && importLayer === 'state') {
-              context.report({
-                node,
-                messageId: 'viewStateViolation',
-              });
-              return;
-            }
+					// 特殊情况：views 层的容器/视图区分
+					if (currentLayer === "views") {
+						if (isView && importLayer === "state") {
+							context.report({
+								node,
+								messageId: "viewStateViolation",
+							})
+							return
+						}
 
-            if (!isContainer && (importLayer === 'flows' || importLayer === 'state')) {
-              context.report({
-                node,
-                messageId: 'containerException',
-                data: {
-                  importLayer,
-                },
-              });
-              return;
-            }
-          }
+						if (!isContainer && (importLayer === "flows" || importLayer === "state")) {
+							context.report({
+								node,
+								messageId: "containerException",
+								data: {
+									importLayer,
+								},
+							})
+							return
+						}
+					}
 
-          // 特殊情况：pipes 层的纯函数要求
-          if (currentLayer === 'pipes' && ['io', 'state', 'flows'].includes(importLayer)) {
-            context.report({
-              node,
-              messageId: 'pipesPurityViolation',
-              data: {
-                importLayer,
-              },
-            });
-            return;
-          }
+					// 特殊情况：pipes 层的纯函数要求
+					if (currentLayer === "pipes" && ["io", "state", "flows"].includes(importLayer)) {
+						context.report({
+							node,
+							messageId: "pipesPurityViolation",
+							data: {
+								importLayer,
+							},
+						})
+						return
+					}
 
-          // 特殊情况：utils 层的纯函数要求
-          if (currentLayer === 'utils' && importLayer !== 'types') {
-            context.report({
-              node,
-              messageId: 'utilsPurityViolation',
-              data: {
-                importLayer,
-              },
-            });
-            return;
-          }
+					// 特殊情况：utils 层的纯函数要求
+					if (currentLayer === "utils" && importLayer !== "types") {
+						context.report({
+							node,
+							messageId: "utilsPurityViolation",
+							data: {
+								importLayer,
+							},
+						})
+						return
+					}
 
-          // 特殊情况：hooks 层不能直接访问 io
-          if (currentLayer === 'hooks' && importLayer === 'io') {
-            context.report({
-              node,
-              messageId: 'hooksIoViolation',
-            });
-            return;
-          }
+					// 特殊情况：hooks 层不能直接访问 io
+					if (currentLayer === "hooks" && importLayer === "io") {
+						context.report({
+							node,
+							messageId: "hooksIoViolation",
+						})
+						return
+					}
 
-          // 通用层级违规
-          const allowedDeps = getAllowedDependencies(currentLayer, strict);
-          context.report({
-            node,
-            messageId: 'layerViolation',
-            data: {
-              currentLayer,
-              importLayer,
-              currentLayerChinese: getLayerChineseName(currentLayer),
-              importLayerChinese: getLayerChineseName(importLayer),
-              allowedLayers: allowedDeps.length > 0 ? allowedDeps.join(', ') : '无（只能依赖 types/）',
-              suggestion,
-            },
-          });
-        }
-      },
-    };
-  },
-});
+					// 通用层级违规
+					const allowedDeps = getAllowedDependencies(currentLayer, strict)
+					context.report({
+						node,
+						messageId: "layerViolation",
+						data: {
+							currentLayer,
+							importLayer,
+							currentLayerChinese: getLayerChineseName(currentLayer),
+							importLayerChinese: getLayerChineseName(importLayer),
+							allowedLayers:
+								allowedDeps.length > 0 ? allowedDeps.join(", ") : "无（只能依赖 types/）",
+							suggestion,
+						},
+					})
+				}
+			},
+		}
+	},
+})

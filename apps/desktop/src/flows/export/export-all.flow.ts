@@ -8,10 +8,9 @@
  * - 使用纯函数创建导出包
  */
 
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import { success, info } from "@/io/log/logger.api";
+import * as E from "fp-ts/Either"
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
 import {
 	getAllNodes,
 	getAllWorkspaces,
@@ -20,28 +19,21 @@ import {
 	getContentsByNodeIds,
 	getNodesByWorkspace,
 	getWorkspaceById,
-} from "@/io/api";
-import {
-	createExportBundle,
-	serializeBundle,
-} from "@/pipes/export/export.bundle.fn";
-import type {
-	AttachmentData,
-	ContentData,
-} from "@/pipes/import/import.json.fn";
-import type { AttachmentInterface } from "@/types/attachment";
-import type { AppError } from "@/types/error";
+} from "@/io/api"
+import { info, success } from "@/io/log/logger.api"
+import { createExportBundle, serializeBundle } from "@/pipes/export/export.bundle.fn"
+import type { AttachmentData, ContentData } from "@/pipes/import/import.json.fn"
+import type { AttachmentInterface } from "@/types/attachment"
+import type { AppError } from "@/types/error"
 
 /**
  * 将附件数据转换为导出格式
  */
-function toAttachmentData(
-	attachments: readonly AttachmentInterface[],
-): readonly AttachmentData[] {
+function toAttachmentData(attachments: readonly AttachmentInterface[]): readonly AttachmentData[] {
 	return attachments.map((a) => ({
 		id: a.id,
 		project: a.project,
-	}));
+	}))
 }
 
 /**
@@ -50,10 +42,8 @@ function toAttachmentData(
  * @param workspaceId - 可选的工作区 ID，不传则导出全部
  * @returns TaskEither<AppError, string>
  */
-export function exportAll(
-	workspaceId?: string,
-): TE.TaskEither<AppError, string> {
-	info("[Export] 开始导出数据...", {}, "export-all");
+export function exportAll(workspaceId?: string): TE.TaskEither<AppError, string> {
+	info("[Export] 开始导出数据...", {}, "export-all")
 
 	return pipe(
 		TE.Do,
@@ -63,22 +53,22 @@ export function exportAll(
 				return pipe(
 					getWorkspaceById(workspaceId),
 					TE.map((ws) => (ws ? [ws] : [])),
-				);
+				)
 			}
-			return getAllWorkspaces();
+			return getAllWorkspaces()
 		}),
 		// 获取节点
 		TE.bind("nodes", () => {
 			if (workspaceId) {
-				return getNodesByWorkspace(workspaceId);
+				return getNodesByWorkspace(workspaceId)
 			}
-			return getAllNodes();
+			return getAllNodes()
 		}),
 		// 获取内容
 		TE.bind("contents", ({ nodes }) => {
-			const nodeIds: readonly string[] = nodes.map((n) => n.id);
+			const nodeIds: readonly string[] = nodes.map((n) => n.id)
 			if (nodeIds.length === 0) {
-				return TE.right([] as readonly ContentData[]);
+				return TE.right([] as readonly ContentData[])
 			}
 			return pipe(
 				getContentsByNodeIds(nodeIds),
@@ -91,17 +81,14 @@ export function exportAll(
 						lastEdit: c.lastEdit,
 					})),
 				),
-			);
+			)
 		}),
 		// 获取附件
 		TE.bind("attachments", ({ workspaces: _workspaces }) => {
 			if (workspaceId) {
-				return pipe(
-					getAttachmentsByProject(workspaceId),
-					TE.map(toAttachmentData),
-				);
+				return pipe(getAttachmentsByProject(workspaceId), TE.map(toAttachmentData))
 			}
-			return pipe(getAttachments(), TE.map(toAttachmentData));
+			return pipe(getAttachments(), TE.map(toAttachmentData))
 		}),
 		// 创建导出包
 		TE.map(({ workspaces, nodes, contents, attachments }) => {
@@ -110,12 +97,12 @@ export function exportAll(
 				nodes,
 				contents,
 				attachments,
-			});
-			const json = serializeBundle(bundle);
-			success("[Export] 数据导出成功");
-			return json;
+			})
+			const json = serializeBundle(bundle)
+			success("[Export] 数据导出成功")
+			return json
 		}),
-	);
+	)
 }
 
 /**
@@ -125,9 +112,9 @@ export function exportAll(
  * @returns Promise<string>
  */
 export async function exportAllAsync(workspaceId?: string): Promise<string> {
-	const result = await exportAll(workspaceId)();
+	const result = await exportAll(workspaceId)()
 	if (E.isLeft(result)) {
-		throw new Error(result.left.message);
+		throw new Error(result.left.message)
 	}
-	return result.right;
+	return result.right
 }

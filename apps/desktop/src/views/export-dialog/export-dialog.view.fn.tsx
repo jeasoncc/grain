@@ -2,9 +2,9 @@
  * Export Dialog 纯展示组件
  */
 
-import { Loader2 } from "lucide-react";
-import { memo } from "react";
-import { Button } from "@/views/ui/button";
+import { Loader2 } from "lucide-react"
+import { memo } from "react"
+import { Button } from "@/views/ui/button"
 import {
 	Dialog,
 	DialogContent,
@@ -12,14 +12,11 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@/views/ui/dialog";
-import { Label } from "@/views/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/views/ui/radio-group";
-import { Switch } from "@/views/ui/switch";
-import type {
-	ExportDialogViewProps,
-	ExtendedExportFormat,
-} from "./export-dialog.types";
+} from "@/views/ui/dialog"
+import { Label } from "@/views/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/views/ui/radio-group"
+import { Switch } from "@/views/ui/switch"
+import type { ExportDialogViewProps, ExtendedExportFormat } from "./export-dialog.types"
 
 export const ExportDialogView = memo(
 	({
@@ -210,11 +207,7 @@ export const ExportDialogView = memo(
 					</div>
 
 					<DialogFooter>
-						<Button
-							variant="outline"
-							onClick={() => onOpenChange(false)}
-							disabled={isExporting}
-						>
+						<Button variant="outline" onClick={() => onOpenChange(false)} disabled={isExporting}>
 							Cancel
 						</Button>
 						<Button onClick={onExport} disabled={isExporting}>
@@ -230,8 +223,8 @@ export const ExportDialogView = memo(
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
-		);
+		)
 	},
-);
+)
 
-ExportDialogView.displayName = "ExportDialogView";
+ExportDialogView.displayName = "ExportDialogView"

@@ -6,16 +6,16 @@
  * Uses Zustand with persistence for settings.
  */
 
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { IconThemeStore } from "@/types/icon-theme";
+import { create } from "zustand"
+import { persist } from "zustand/middleware"
+import type { IconThemeStore } from "@/types/icon-theme"
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const STORAGE_KEY = "icon-theme";
-const DEFAULT_THEME_KEY = "default";
+const STORAGE_KEY = "icon-theme"
+const DEFAULT_THEME_KEY = "default"
 
 // ============================================================================
 // Store
@@ -29,18 +29,17 @@ export const useIconThemeStore = create<IconThemeStore>()(
 
 			// Actions
 			setTheme: (key: string) => {
-				set({ currentThemeKey: key });
+				set({ currentThemeKey: key })
 			},
 		}),
 		{
 			name: STORAGE_KEY,
 		},
 	),
-);
+)
 
 // ============================================================================
 // Selector Hooks
 // ============================================================================
 
-export const useCurrentIconThemeKey = () =>
-	useIconThemeStore((s) => s.currentThemeKey);
+export const useCurrentIconThemeKey = () => useIconThemeStore((s) => s.currentThemeKey)

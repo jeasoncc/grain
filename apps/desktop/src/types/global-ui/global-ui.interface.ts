@@ -14,7 +14,7 @@
  * - "forward": Move to next tab (Ctrl+Tab)
  * - "backward": Move to previous tab (Ctrl+Shift+Tab)
  */
-export type BufferSwitcherDirection = "forward" | "backward";
+export type BufferSwitcherDirection = "forward" | "backward"
 
 // ==============================
 // State Interface
@@ -26,19 +26,19 @@ export type BufferSwitcherDirection = "forward" | "backward";
  */
 export interface GlobalUIState {
 	/** Whether the command palette is open */
-	readonly commandPaletteOpen: boolean;
+	readonly commandPaletteOpen: boolean
 
 	/** Whether the global search panel is open */
-	readonly globalSearchOpen: boolean;
+	readonly globalSearchOpen: boolean
 
 	/** Whether the buffer switcher is open */
-	readonly bufferSwitcherOpen: boolean;
+	readonly bufferSwitcherOpen: boolean
 
 	/** Direction for buffer switcher navigation */
-	readonly bufferSwitcherDirection: BufferSwitcherDirection;
+	readonly bufferSwitcherDirection: BufferSwitcherDirection
 
 	/** Whether the export dialog is open */
-	readonly exportDialogOpen: boolean;
+	readonly exportDialogOpen: boolean
 }
 
 // ==============================
@@ -53,65 +53,65 @@ export interface GlobalUIActions {
 	/**
 	 * Open the command palette.
 	 */
-	readonly openCommandPalette: () => void;
+	readonly openCommandPalette: () => void
 
 	/**
 	 * Close the command palette.
 	 */
-	readonly closeCommandPalette: () => void;
+	readonly closeCommandPalette: () => void
 
 	/**
 	 * Toggle the command palette open/closed.
 	 */
-	readonly toggleCommandPalette: () => void;
+	readonly toggleCommandPalette: () => void
 
 	// Global Search
 	/**
 	 * Open the global search panel.
 	 */
-	readonly openGlobalSearch: () => void;
+	readonly openGlobalSearch: () => void
 
 	/**
 	 * Close the global search panel.
 	 */
-	readonly closeGlobalSearch: () => void;
+	readonly closeGlobalSearch: () => void
 
 	/**
 	 * Toggle the global search panel open/closed.
 	 */
-	readonly toggleGlobalSearch: () => void;
+	readonly toggleGlobalSearch: () => void
 
 	// Buffer Switcher
 	/**
 	 * Open the buffer switcher with specified direction.
 	 */
-	readonly openBufferSwitcher: (direction: BufferSwitcherDirection) => void;
+	readonly openBufferSwitcher: (direction: BufferSwitcherDirection) => void
 
 	/**
 	 * Close the buffer switcher.
 	 */
-	readonly closeBufferSwitcher: () => void;
+	readonly closeBufferSwitcher: () => void
 
 	/**
 	 * Set the buffer switcher direction.
 	 */
-	readonly setBufferSwitcherDirection: (direction: BufferSwitcherDirection) => void;
+	readonly setBufferSwitcherDirection: (direction: BufferSwitcherDirection) => void
 
 	// Export Dialog
 	/**
 	 * Open the export dialog.
 	 */
-	readonly openExportDialog: () => void;
+	readonly openExportDialog: () => void
 
 	/**
 	 * Close the export dialog.
 	 */
-	readonly closeExportDialog: () => void;
+	readonly closeExportDialog: () => void
 
 	/**
 	 * Toggle the export dialog open/closed.
 	 */
-	readonly toggleExportDialog: () => void;
+	readonly toggleExportDialog: () => void
 }
 
 // ==============================
@@ -124,21 +124,21 @@ export interface GlobalUIActions {
  */
 export interface GlobalUIConfig {
 	/** Whether to persist state (typically false for global UI) */
-	readonly persistState: boolean;
+	readonly persistState: boolean
 }
 
 export const DEFAULT_GLOBAL_UI_CONFIG: GlobalUIConfig = {
 	persistState: false,
-} as const;
+} as const
 
 // ==============================
 // Default Values
 // ==============================
 
 export const DEFAULT_GLOBAL_UI_STATE: GlobalUIState = {
-	commandPaletteOpen: false,
-	globalSearchOpen: false,
-	bufferSwitcherOpen: false,
 	bufferSwitcherDirection: "forward",
+	bufferSwitcherOpen: false,
+	commandPaletteOpen: false,
 	exportDialogOpen: false,
-} as const;
+	globalSearchOpen: false,
+} as const

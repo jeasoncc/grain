@@ -8,9 +8,9 @@
  * - 不修改输入参数
  */
 
-import type { LucideIcon } from "lucide-react";
-import type { IconTheme } from "@/types/icon-theme";
-import { iconThemes } from "@/types/icon-theme/icon-theme.config";
+import type { LucideIcon } from "lucide-react"
+import type { IconTheme } from "@/types/icon-theme"
+import { iconThemes } from "@/types/icon-theme/icon-theme.config"
 
 // ============================================================================
 // 主题查询函数（纯函数）
@@ -23,8 +23,8 @@ import { iconThemes } from "@/types/icon-theme/icon-theme.config";
  * @returns 匹配的图标主题，未找到返回 undefined
  */
 export const getIconThemeByKey = (key: string): IconTheme | undefined => {
-	return iconThemes.find((theme) => theme.key === key);
-};
+	return iconThemes.find((theme) => theme.key === key)
+}
 
 /**
  * 获取默认图标主题
@@ -32,8 +32,8 @@ export const getIconThemeByKey = (key: string): IconTheme | undefined => {
  * @returns 默认图标主题（第一个主题）
  */
 export const getDefaultIconTheme = (): IconTheme => {
-	return iconThemes[0];
-};
+	return iconThemes[0]
+}
 
 /**
  * 获取所有可用的图标主题
@@ -41,8 +41,8 @@ export const getDefaultIconTheme = (): IconTheme => {
  * @returns 所有图标主题数组
  */
 export const getAllIconThemes = (): IconTheme[] => {
-	return iconThemes;
-};
+	return iconThemes
+}
 
 /**
  * 获取图标主题数量
@@ -50,8 +50,8 @@ export const getAllIconThemes = (): IconTheme[] => {
  * @returns 主题数量
  */
 export const getIconThemeCount = (): number => {
-	return iconThemes.length;
-};
+	return iconThemes.length
+}
 
 // ============================================================================
 // 图标获取函数（纯函数）
@@ -70,14 +70,14 @@ export const getIconForTypeFromTheme = (
 	type: "project" | "character" | "world" | "folder" | "file",
 	state: "default" | "open" = "default",
 ): LucideIcon => {
-	const iconConfig = theme.icons[type];
+	const iconConfig = theme.icons[type]
 
 	if (state === "open" && "open" in iconConfig && iconConfig.open) {
-		return iconConfig.open;
+		return iconConfig.open
 	}
 
-	return iconConfig.default;
-};
+	return iconConfig.default
+}
 
 /**
  * 从指定主题获取 ActivityBar 图标
@@ -90,8 +90,8 @@ export const getActivityBarIconFromTheme = (
 	theme: IconTheme,
 	type: keyof IconTheme["icons"]["activityBar"],
 ): LucideIcon => {
-	return theme.icons.activityBar[type];
-};
+	return theme.icons.activityBar[type]
+}
 
 /**
  * 从指定主题获取 SettingsPage 图标
@@ -104,8 +104,8 @@ export const getSettingsPageIconFromTheme = (
 	theme: IconTheme,
 	type: keyof IconTheme["icons"]["settingsPage"],
 ): LucideIcon => {
-	return theme.icons.settingsPage[type];
-};
+	return theme.icons.settingsPage[type]
+}
 
 // ============================================================================
 // 主题验证函数（纯函数）
@@ -118,8 +118,8 @@ export const getSettingsPageIconFromTheme = (
  * @returns 主题键是否有效
  */
 export const isValidIconThemeKey = (key: string): boolean => {
-	return iconThemes.some((theme) => theme.key === key);
-};
+	return iconThemes.some((theme) => theme.key === key)
+}
 
 /**
  * 获取主题键，如果无效则返回默认主题键
@@ -128,8 +128,8 @@ export const isValidIconThemeKey = (key: string): boolean => {
  * @returns 有效的主题键
  */
 export const getValidIconThemeKey = (key: string): string => {
-	return isValidIconThemeKey(key) ? key : getDefaultIconTheme().key;
-};
+	return isValidIconThemeKey(key) ? key : getDefaultIconTheme().key
+}
 
 /**
  * 根据主题键获取图标主题，如果无效则返回默认主题
@@ -139,5 +139,5 @@ export const getValidIconThemeKey = (key: string): string => {
  * @returns 图标主题
  */
 export const getIconThemeOrDefault = (themeKey: string): IconTheme => {
-	return getIconThemeByKey(themeKey) ?? getDefaultIconTheme();
-};
+	return getIconThemeByKey(themeKey) ?? getDefaultIconTheme()
+}

@@ -10,22 +10,22 @@
  * TODO: exportWorkspace（全局导出，暂不实现）
  */
 
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import { getContentByNodeIdOrFail, getNodeByIdOrFail } from "@/io/api";
-import { info, success } from "@/io/log/logger.api";
-import { exportToJson, type JsonExportOptions } from "@/pipes/export";
-import { type AppError, exportError } from "@/types/error";
+import * as E from "fp-ts/Either"
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import { getContentByNodeIdOrFail, getNodeByIdOrFail } from "@/io/api"
+import { info, success } from "@/io/log/logger.api"
+import { exportToJson, type JsonExportOptions } from "@/pipes/export"
+import { type AppError, exportError } from "@/types/error"
 
 /**
  * 导出节点内容为 JSON 格式参数
  */
 export interface ExportJsonParams {
 	/** 节点 ID */
-	readonly nodeId: string;
+	readonly nodeId: string
 	/** 导出选项 */
-	readonly options?: JsonExportOptions;
+	readonly options?: JsonExportOptions
 }
 
 /**
@@ -33,11 +33,11 @@ export interface ExportJsonParams {
  */
 export interface ExportResult {
 	/** 导出的内容 */
-	readonly content: string;
+	readonly content: string
 	/** 文件名（不含扩展名） */
-	readonly filename: string;
+	readonly filename: string
 	/** 文件扩展名 */
-	readonly extension: string;
+	readonly extension: string
 }
 
 /**
@@ -51,7 +51,7 @@ export interface ExportResult {
 export const exportNodeToJson = (
 	params: ExportJsonParams,
 ): TE.TaskEither<AppError, ExportResult> => {
-	info("[Action] 导出 JSON...", {}, "export-json");
+	info("[Action] 导出 JSON...", {}, "export-json")
 
 	return pipe(
 		// 并行获取节点和内容
@@ -67,10 +67,10 @@ export const exportNodeToJson = (
 					...params.options?.metadata,
 					title: params.options?.metadata?.title ?? node.title,
 				},
-			};
+			}
 
 			// 转换为 JSON
-			const result = exportToJson(contentRecord.content, exportOptions);
+			const result = exportToJson(contentRecord.content, exportOptions)
 
 			return pipe(
 				result,
@@ -81,14 +81,14 @@ export const exportNodeToJson = (
 					filename: node.title,
 					extension: "json",
 				})),
-			);
+			)
 		}),
 		TE.tap((result) => {
-			success("[Action] JSON 导出成功", { filename: result.filename }, "export-json");
-			return TE.right(result);
+			success("[Action] JSON 导出成功", { filename: result.filename }, "export-json")
+			return TE.right(result)
 		}),
-	);
-};
+	)
+}
 
 /**
  * 直接导出内容为 JSON 格式（不从数据库获取）
@@ -103,10 +103,10 @@ export const exportContentToJson = (
 	content: string,
 	options?: JsonExportOptions,
 ): E.Either<AppError, string> => {
-	info("[Action] 直接导出 JSON");
+	info("[Action] 直接导出 JSON")
 
 	return pipe(
 		exportToJson(content, options),
 		E.mapLeft((err) => exportError(`JSON 导出失败: ${err.message}`)),
-	);
-};
+	)
+}

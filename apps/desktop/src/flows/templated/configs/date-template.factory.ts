@@ -10,12 +10,12 @@
  * @requirements 代码复用，函数式编程规范
  */
 
-import dayjs from "dayjs";
-import { z } from "zod";
-import { NODE_TYPE_TO_EXTENSION_MAP } from "@/pipes/editor";
-import { getDateFolderStructureWithFilename } from "@/pipes/date/date-folder.pipe";
-import type { FileNodeType } from "@/types/node";
-import type { TemplateConfig } from "../create-templated-file.flow";
+import dayjs from "dayjs"
+import { z } from "zod"
+import { getDateFolderStructureWithFilename } from "@/pipes/date/date-folder.pipe"
+import { NODE_TYPE_TO_EXTENSION_MAP } from "@/pipes/editor"
+import type { FileNodeType } from "@/types/node"
+import type { TemplateConfig } from "../create-templated-file.flow"
 
 // ==============================
 // Types
@@ -26,7 +26,7 @@ import type { TemplateConfig } from "../create-templated-file.flow";
  */
 export interface DateTemplateParams {
 	/** 日期（可选，默认为当前时间） */
-	readonly date?: Date;
+	readonly date?: Date
 }
 
 /**
@@ -34,23 +34,23 @@ export interface DateTemplateParams {
  */
 export interface DateTemplateOptions {
 	/** 模块名称（用于日志） */
-	readonly name: string;
+	readonly name: string
 	/** 根文件夹名称 */
-	readonly rootFolder: string;
+	readonly rootFolder: string
 	/** 文件类型（日期模板只支持文本类文件，排除 folder 和 drawing） */
-	readonly fileType: Exclude<FileNodeType, "drawing">;
+	readonly fileType: Exclude<FileNodeType, "drawing">
 	/** 默认标签 */
-	readonly tag: string;
+	readonly tag: string
 	/** 文件名前缀 */
-	readonly prefix: string;
+	readonly prefix: string
 	/** 内容生成函数 */
-	readonly generateContent: (date: Date) => string;
+	readonly generateContent: (date: Date) => string
 	/** 是否包含日期文件夹（年/月/日 vs 年/月） */
-	readonly includeDayFolder?: boolean;
+	readonly includeDayFolder?: boolean
 	/** 文件夹是否折叠 */
-	readonly foldersCollapsed?: boolean;
+	readonly foldersCollapsed?: boolean
 	/** 是否跳过 JSON 解析（用于纯文本内容如 Mermaid/PlantUML） */
-	readonly skipJsonParse?: boolean;
+	readonly skipJsonParse?: boolean
 }
 
 // ==============================
@@ -62,7 +62,7 @@ export interface DateTemplateOptions {
  */
 export const dateParamsSchema = z.object({
 	date: z.date().optional(),
-});
+})
 
 // ==============================
 // Factory Function
@@ -104,38 +104,38 @@ export const createDateTemplateConfig = (
 		includeDayFolder = true,
 		foldersCollapsed = true,
 		skipJsonParse = false,
-	} = options;
+	} = options
 
 	/**
 	 * 生成模板内容
 	 */
 	const generateTemplate = (params: DateTemplateParams): string => {
-		const date = params.date || dayjs().toDate();
-		return generateContent(date);
-	};
+		const date = params.date || dayjs().toDate()
+		return generateContent(date)
+	}
 
 	/**
 	 * 生成文件夹路径
 	 */
 	const generateFolderPath = (params: DateTemplateParams): readonly string[] => {
-		const date = params.date || dayjs().toDate();
-		const structure = getDateFolderStructureWithFilename(date, prefix);
+		const date = params.date || dayjs().toDate()
+		const structure = getDateFolderStructureWithFilename(date, prefix)
 
 		return includeDayFolder
 			? [structure.yearFolder, structure.monthFolder, structure.dayFolder]
-			: [structure.yearFolder, structure.monthFolder];
-	};
+			: [structure.yearFolder, structure.monthFolder]
+	}
 
 	/**
 	 * 生成文件标题（包含扩展名）
 	 */
 	const generateTitle = (params: DateTemplateParams): string => {
-		const date = params.date || dayjs().toDate();
-		const structure = getDateFolderStructureWithFilename(date, prefix);
+		const date = params.date || dayjs().toDate()
+		const structure = getDateFolderStructureWithFilename(date, prefix)
 		// 添加扩展名
-		const extension = NODE_TYPE_TO_EXTENSION_MAP[fileType] ?? ".grain";
-		return `${structure.filename}${extension}`;
-	};
+		const extension = NODE_TYPE_TO_EXTENSION_MAP[fileType] ?? ".grain"
+		return `${structure.filename}${extension}`
+	}
 
 	return {
 		name,
@@ -148,5 +148,5 @@ export const createDateTemplateConfig = (
 		paramsSchema: dateParamsSchema,
 		foldersCollapsed,
 		skipJsonParse,
-	};
-};
+	}
+}

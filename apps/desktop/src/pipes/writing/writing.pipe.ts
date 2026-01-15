@@ -8,12 +8,8 @@
  * - 不修改输入参数
  */
 
-import dayjs from "dayjs";
-import type {
-	WritingGoal,
-	WritingSession,
-	WritingState,
-} from "@/types/writing";
+import dayjs from "dayjs"
+import type { WritingGoal, WritingSession, WritingState } from "@/types/writing"
 
 // ==============================
 // Date Utilities
@@ -27,8 +23,8 @@ import type {
  * @returns YYYY-MM-DD 格式的日期字符串
  */
 export const getTodayDate = (date: Date = dayjs().toDate()): string => {
-	return date.toISOString().slice(0, 10);
-};
+	return date.toISOString().slice(0, 10)
+}
 
 /**
  * 检查日期字符串是否匹配今天的日期
@@ -37,12 +33,9 @@ export const getTodayDate = (date: Date = dayjs().toDate()): string => {
  * @param today - 可选的当前日期用于比较
  * @returns 日期字符串是否匹配今天
  */
-export const isToday = (
-	dateString: string,
-	today: Date = dayjs().toDate(),
-): boolean => {
-	return dateString === getTodayDate(today);
-};
+export const isToday = (dateString: string, today: Date = dayjs().toDate()): boolean => {
+	return dateString === getTodayDate(today)
+}
 
 // ==============================
 // Word Count Utilities
@@ -55,8 +48,8 @@ export const isToday = (
  * @returns 写入的字数（始终 >= 0）
  */
 export const getSessionWordsWritten = (session: WritingSession): number => {
-	return Math.max(0, session.currentWordCount - session.startWordCount);
-};
+	return Math.max(0, session.currentWordCount - session.startWordCount)
+}
 
 /**
  * 计算两个字数之间的差值
@@ -65,12 +58,9 @@ export const getSessionWordsWritten = (session: WritingSession): number => {
  * @param previousCount - 之前的字数
  * @returns 差值（如果删除了字则可能为负数）
  */
-export const calculateWordDifference = (
-	currentCount: number,
-	previousCount: number,
-): number => {
-	return currentCount - previousCount;
-};
+export const calculateWordDifference = (currentCount: number, previousCount: number): number => {
+	return currentCount - previousCount
+}
 
 /**
  * 计算每日目标的完成进度百分比
@@ -79,15 +69,12 @@ export const calculateWordDifference = (
  * @param goal - 写作目标配置
  * @returns 进度百分比（0-100，上限为 100）
  */
-export const calculateGoalProgress = (
-	todayWordCount: number,
-	goal: WritingGoal,
-): number => {
+export const calculateGoalProgress = (todayWordCount: number, goal: WritingGoal): number => {
 	if (!goal.enabled || goal.dailyTarget <= 0) {
-		return 0;
+		return 0
 	}
-	return Math.min(100, (todayWordCount / goal.dailyTarget) * 100);
-};
+	return Math.min(100, (todayWordCount / goal.dailyTarget) * 100)
+}
 
 /**
  * 检查每日目标是否已达成
@@ -96,15 +83,12 @@ export const calculateGoalProgress = (
  * @param goal - 写作目标配置
  * @returns 目标是否已达成
  */
-export const isGoalReached = (
-	todayWordCount: number,
-	goal: WritingGoal,
-): boolean => {
+export const isGoalReached = (todayWordCount: number, goal: WritingGoal): boolean => {
 	if (!goal.enabled) {
-		return false;
+		return false
 	}
-	return todayWordCount >= goal.dailyTarget;
-};
+	return todayWordCount >= goal.dailyTarget
+}
 
 /**
  * 计算达成每日目标还需要的字数
@@ -113,15 +97,12 @@ export const isGoalReached = (
  * @param goal - 写作目标配置
  * @returns 剩余字数（如果目标已达成或禁用则为 0）
  */
-export const getRemainingWords = (
-	todayWordCount: number,
-	goal: WritingGoal,
-): number => {
+export const getRemainingWords = (todayWordCount: number, goal: WritingGoal): number => {
 	if (!goal.enabled) {
-		return 0;
+		return 0
 	}
-	return Math.max(0, goal.dailyTarget - todayWordCount);
-};
+	return Math.max(0, goal.dailyTarget - todayWordCount)
+}
 
 // ==============================
 // Session Utilities
@@ -142,8 +123,8 @@ export const createSession = (
 		startTime,
 		startWordCount: wordCount,
 		currentWordCount: wordCount,
-	};
-};
+	}
+}
 
 /**
  * 更新会话的当前字数
@@ -153,15 +134,12 @@ export const createSession = (
  * @param wordCount - 新的字数
  * @returns 更新后的新会话对象
  */
-export const updateSessionCount = (
-	session: WritingSession,
-	wordCount: number,
-): WritingSession => {
+export const updateSessionCount = (session: WritingSession, wordCount: number): WritingSession => {
 	return {
 		...session,
 		currentWordCount: wordCount,
-	};
-};
+	}
+}
 
 /**
  * 计算会话持续时间（分钟）
@@ -174,8 +152,8 @@ export const getSessionDuration = (
 	session: WritingSession,
 	currentTime: number = dayjs().valueOf(),
 ): number => {
-	return Math.floor((currentTime - session.startTime) / 60000);
-};
+	return Math.floor((currentTime - session.startTime) / 60000)
+}
 
 /**
  * 计算会话的每分钟字数
@@ -188,13 +166,13 @@ export const getWordsPerMinute = (
 	session: WritingSession,
 	currentTime: number = dayjs().valueOf(),
 ): number => {
-	const duration = getSessionDuration(session, currentTime);
+	const duration = getSessionDuration(session, currentTime)
 	if (duration <= 0) {
-		return 0;
+		return 0
 	}
-	const wordsWritten = getSessionWordsWritten(session);
-	return Math.round(wordsWritten / duration);
-};
+	const wordsWritten = getSessionWordsWritten(session)
+	return Math.round(wordsWritten / duration)
+}
 
 // ==============================
 // State Update Utilities
@@ -215,8 +193,8 @@ export const mergeWritingGoal = (
 	return {
 		...currentGoal,
 		...updates,
-	};
-};
+	}
+}
 
 /**
  * 计算会话更新后的今日字数
@@ -233,24 +211,24 @@ export const calculateTodayWordCountUpdate = (
 	today: string,
 ): { readonly todayWordCount: number; readonly todayDate: string } => {
 	if (!state.session) {
-		return { todayWordCount: state.todayWordCount, todayDate: state.todayDate };
+		return { todayWordCount: state.todayWordCount, todayDate: state.todayDate }
 	}
 
-	const wordsWritten = newWordCount - state.session.currentWordCount;
+	const wordsWritten = newWordCount - state.session.currentWordCount
 
 	// 只计算正向字数差异
 	if (wordsWritten <= 0) {
-		return { todayWordCount: state.todayWordCount, todayDate: state.todayDate };
+		return { todayWordCount: state.todayWordCount, todayDate: state.todayDate }
 	}
 
 	// 如果日期变更，从新字数开始计算
 	if (state.todayDate !== today) {
-		return { todayWordCount: wordsWritten, todayDate: today };
+		return { todayWordCount: wordsWritten, todayDate: today }
 	}
 
 	// 同一天，累加到现有计数
 	return {
 		todayWordCount: state.todayWordCount + wordsWritten,
 		todayDate: today,
-	};
-};
+	}
+}

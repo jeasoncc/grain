@@ -8,19 +8,19 @@
  * @requirements Todo 创建功能
  */
 
-import { generateTodoContent } from "@/pipes/content";
+import { generateTodoContent } from "@/pipes/content"
 import {
 	createDateTemplateConfig,
 	type DateTemplateParams,
 	dateParamsSchema,
-} from "./date-template.factory";
+} from "./date-template.factory"
 
 // ==============================
 // Types (Re-export)
 // ==============================
 
-export type TodoTemplateParams = DateTemplateParams;
-export const todoParamsSchema = dateParamsSchema;
+export type TodoTemplateParams = DateTemplateParams
+export const todoParamsSchema = dateParamsSchema
 
 // ==============================
 // Configuration
@@ -40,4 +40,4 @@ export const todoConfig = createDateTemplateConfig({
 	prefix: "todo",
 	generateContent: generateTodoContent,
 	includeDayFolder: true,
-});
+})

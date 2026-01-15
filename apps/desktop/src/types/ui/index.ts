@@ -3,4 +3,4 @@
  * @description UI 类型模块导出
  */
 
-export * from "./ui.interface";
+export * from "./ui.interface"

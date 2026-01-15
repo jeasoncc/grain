@@ -15,8 +15,8 @@ import {
 	useUserQuery,
 	useUsersByPlanQuery,
 	useUsersQuery,
-} from "@/hooks/queries";
-import type { UserInterface, UserPlan } from "@/types/user";
+} from "@/hooks/queries"
+import type { UserInterface, UserPlan } from "@/types/user"
 
 /**
  * Hook to get all users with live updates
@@ -45,8 +45,8 @@ import type { UserInterface, UserPlan } from "@/types/user";
  * ```
  */
 export function useAllUsers(): readonly UserInterface[] | undefined {
-	const { data } = useUsersQuery();
-	return data;
+	const { data } = useUsersQuery()
+	return data
 }
 
 /**
@@ -68,11 +68,9 @@ export function useAllUsers(): readonly UserInterface[] | undefined {
  * }
  * ```
  */
-export function useUser(
-	userId: string | null | undefined,
-): UserInterface | undefined {
-	const { data } = useUserQuery(userId);
-	return data ?? undefined;
+export function useUser(userId: string | null | undefined): UserInterface | undefined {
+	const { data } = useUserQuery(userId)
+	return data ?? undefined
 }
 
 /**
@@ -81,11 +79,9 @@ export function useUser(
  * @param username - The username (can be null/undefined)
  * @returns The user or undefined
  */
-export function useUserByUsername(
-	username: string | null | undefined,
-): UserInterface | undefined {
-	const { data } = useUserByUsernameQuery(username);
-	return data ?? undefined;
+export function useUserByUsername(username: string | null | undefined): UserInterface | undefined {
+	const { data } = useUserByUsernameQuery(username)
+	return data ?? undefined
 }
 
 /**
@@ -94,11 +90,9 @@ export function useUserByUsername(
  * @param email - The email (can be null/undefined)
  * @returns The user or undefined
  */
-export function useUserByEmail(
-	email: string | null | undefined,
-): UserInterface | undefined {
-	const { data } = useUserByEmailQuery(email);
-	return data ?? undefined;
+export function useUserByEmail(email: string | null | undefined): UserInterface | undefined {
+	const { data } = useUserByEmailQuery(email)
+	return data ?? undefined
 }
 
 /**
@@ -109,8 +103,8 @@ export function useUserByEmail(
  * @returns The current user or undefined
  */
 export function useCurrentUser(): UserInterface | undefined {
-	const { data } = useCurrentUserQuery();
-	return data ?? undefined;
+	const { data } = useCurrentUserQuery()
+	return data ?? undefined
 }
 
 /**
@@ -122,8 +116,8 @@ export function useCurrentUser(): UserInterface | undefined {
 export function useUsersByPlan(
 	plan: UserPlan | null | undefined,
 ): readonly UserInterface[] | undefined {
-	const { data } = useUsersByPlanQuery(plan);
-	return data;
+	const { data } = useUsersByPlanQuery(plan)
+	return data
 }
 
 /**
@@ -132,8 +126,8 @@ export function useUsersByPlan(
  * @returns The count of users or undefined while loading
  */
 export function useUserCount(): number | undefined {
-	const { data } = useUsersQuery();
-	return data?.length;
+	const { data } = useUsersQuery()
+	return data?.length
 }
 
 /**
@@ -142,12 +136,10 @@ export function useUserCount(): number | undefined {
  * @param userId - The user ID
  * @returns True if exists, false otherwise, undefined while loading
  */
-export function useUserExists(
-	userId: string | null | undefined,
-): boolean | undefined {
-	const { data, isLoading } = useUserQuery(userId);
-	if (isLoading) return undefined;
-	return data !== null && data !== undefined;
+export function useUserExists(userId: string | null | undefined): boolean | undefined {
+	const { data, isLoading } = useUserQuery(userId)
+	if (isLoading) return undefined
+	return data !== null && data !== undefined
 }
 
 /**
@@ -156,12 +148,10 @@ export function useUserExists(
  * @param username - The username to check
  * @returns True if taken, false otherwise, undefined while loading
  */
-export function useUsernameExists(
-	username: string | null | undefined,
-): boolean | undefined {
-	const { data, isLoading } = useUserByUsernameQuery(username);
-	if (isLoading) return undefined;
-	return data !== null && data !== undefined;
+export function useUsernameExists(username: string | null | undefined): boolean | undefined {
+	const { data, isLoading } = useUserByUsernameQuery(username)
+	if (isLoading) return undefined
+	return data !== null && data !== undefined
 }
 
 /**
@@ -172,26 +162,24 @@ export function useUsernameExists(
  */
 export function useUserSubscription(userId: string | null | undefined):
 	| {
-			readonly plan: UserPlan;
-			readonly isPremium: boolean;
-			readonly isExpired: boolean;
-			readonly expiresAt?: string;
+			readonly plan: UserPlan
+			readonly isPremium: boolean
+			readonly isExpired: boolean
+			readonly expiresAt?: string
 	  }
 	| undefined {
-	const { data: user } = useUserQuery(userId);
-	if (!user) return undefined;
+	const { data: user } = useUserQuery(userId)
+	if (!user) return undefined
 
-	const isPremium = user.plan === "premium";
-	const isExpired = user.planExpiresAt
-		? new Date(user.planExpiresAt) < new Date()
-		: false;
+	const isPremium = user.plan === "premium"
+	const isExpired = user.planExpiresAt ? new Date(user.planExpiresAt) < new Date() : false
 
 	return {
 		plan: user.plan,
 		isPremium,
 		isExpired,
 		expiresAt: user.planExpiresAt,
-	};
+	}
 }
 
 /**
@@ -203,8 +191,8 @@ export function useUserSubscription(userId: string | null | undefined):
 export function useUserFeatures(
 	userId: string | null | undefined,
 ): UserInterface["features"] | undefined {
-	const { data: user } = useUserQuery(userId);
-	return user?.features;
+	const { data: user } = useUserQuery(userId)
+	return user?.features
 }
 
 /**
@@ -216,6 +204,6 @@ export function useUserFeatures(
 export function useUserSettings(
 	userId: string | null | undefined,
 ): UserInterface["settings"] | undefined {
-	const { data: user } = useUserQuery(userId);
-	return user?.settings;
+	const { data: user } = useUserQuery(userId)
+	return user?.settings
 }

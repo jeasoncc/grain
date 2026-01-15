@@ -8,7 +8,7 @@
  */
 
 // Builder 导出
-export { UserBuilder } from "./user.builder";
+export { UserBuilder } from "./user.builder"
 
 // Interface 导出
 export type {
@@ -21,7 +21,7 @@ export type {
 	UserSettings,
 	UserState,
 	UserUpdateInput,
-} from "./user.interface";
+} from "./user.interface"
 
 // Schema 类型推断导出
 export type {
@@ -31,7 +31,7 @@ export type {
 	UserSettingsSchemaType,
 	UserStateSchemaType,
 	UserUpdateSchemaType,
-} from "./user.schema";
+} from "./user.schema"
 
 // Schema 导出
 export {
@@ -44,4 +44,4 @@ export {
 	UserSettingsSchema,
 	UserStateSchema,
 	UserUpdateSchema,
-} from "./user.schema";
+} from "./user.schema"

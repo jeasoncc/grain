@@ -24,4 +24,4 @@ export {
 	isGrainFile,
 	isLexicalFile,
 	NODE_TYPE_TO_EXTENSION_MAP,
-} from "@/pipes/editor";
+} from "@/pipes/editor"

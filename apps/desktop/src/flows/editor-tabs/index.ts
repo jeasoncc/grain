@@ -3,4 +3,4 @@
  * @description Editor Tabs flows 模块导出
  */
 
-export * from "./editor-tabs.flow";
+export * from "./editor-tabs.flow"

@@ -11,10 +11,10 @@
  * - 错误处理：记录错误但不阻塞应用启动
  */
 
-import { info } from "@/io/log/logger.api";
-import { loadLayoutState } from "@/io/storage";
-import { useLayoutStore } from "@/state";
-import { DEFAULT_LAYOUT_STATE, type LayoutState } from "@/types/layout";
+import { info } from "@/io/log/logger.api"
+import { loadLayoutState } from "@/io/storage"
+import { useLayoutStore } from "@/state"
+import { DEFAULT_LAYOUT_STATE, type LayoutState } from "@/types/layout"
 
 // ============================================================================
 // Layout Initialization Flow
@@ -37,10 +37,10 @@ import { DEFAULT_LAYOUT_STATE, type LayoutState } from "@/types/layout";
  */
 export function initLayoutFlow(): LayoutState {
 	try {
-		info("[Layout Flow] Initializing layout...");
+		info("[Layout Flow] Initializing layout...")
 
 		// Load state from localStorage (with validation)
-		const loadedState = loadLayoutState();
+		const loadedState = loadLayoutState()
 
 		// Apply to store using batch update (避免多次触发状态更新)
 		useLayoutStore.setState({
@@ -48,16 +48,16 @@ export function initLayoutFlow(): LayoutState {
 			activePanel: loadedState.activePanel,
 			wasCollapsedByDrag: loadedState.wasCollapsedByDrag,
 			sidebarWidth: loadedState.sidebarWidth,
-		});
+		})
 
-		info("[Layout Flow] Layout initialized successfully", { loadedState }, "init-layout");
+		info("[Layout Flow] Layout initialized successfully", { loadedState }, "init-layout")
 
-		return loadedState;
+		return loadedState
 	} catch (error) {
-		error("[Layout Flow] Failed to initialize layout", { error }, "init-layout.flow");
+		error("[Layout Flow] Failed to initialize layout", { error }, "init-layout.flow")
 
 		// Return current store state as fallback
-		return useLayoutStore.getState();
+		return useLayoutStore.getState()
 	}
 }
 
@@ -68,19 +68,19 @@ export function initLayoutFlow(): LayoutState {
  */
 export function resetLayoutFlow(): LayoutState {
 	try {
-		info("[Layout Flow] Resetting layout to default...");
+		info("[Layout Flow] Resetting layout to default...")
 
 		// Reset to default values using batch update
 		useLayoutStore.setState({
 			...DEFAULT_LAYOUT_STATE,
-		});
+		})
 
-		const currentState = useLayoutStore.getState();
-		info("[Layout Flow] Layout reset successfully", { currentState }, "init-layout");
+		const currentState = useLayoutStore.getState()
+		info("[Layout Flow] Layout reset successfully", { currentState }, "init-layout")
 
-		return currentState;
+		return currentState
 	} catch (error) {
-		error("[Layout Flow] Failed to reset layout", { error }, "init-layout.flow");
-		return useLayoutStore.getState();
+		error("[Layout Flow] Failed to reset layout", { error }, "init-layout.flow")
+		return useLayoutStore.getState()
 	}
 }

@@ -26,7 +26,7 @@ export {
 	// 目录选择
 	selectDirectory,
 	selectDirectoryWithResult,
-} from "./dialog.file";
+} from "./dialog.file"
 
 // Download 相关导出
-export { triggerBlobDownload, triggerDownload } from "./download.file";
+export { triggerBlobDownload, triggerDownload } from "./download.file"

@@ -15,11 +15,11 @@
  * ```
  */
 
-import { invoke } from "@tauri-apps/api/core";
-import * as TE from "fp-ts/TaskEither";
-import { info, error as logError } from "@/io/log/logger.api";
-import type { AppError } from "@/types/error";
-import { dbError } from "@/types/error";
+import { invoke } from "@tauri-apps/api/core"
+import * as TE from "fp-ts/TaskEither"
+import { info, error as logError } from "@/io/log/logger.api"
+import type { AppError } from "@/types/error"
+import { dbError } from "@/types/error"
 import type {
 	AttachmentResponse,
 	AttachmentType,
@@ -43,7 +43,7 @@ import type {
 	UpdateWorkspaceRequest,
 	UserResponse,
 	WorkspaceResponse,
-} from "@/types/rust-api";
+} from "@/types/rust-api"
 
 // ============================================
 // 环境检测（只执行一次）
@@ -51,13 +51,10 @@ import type {
 
 /** 检测是否在 Tauri 环境中运行 */
 const isTauri =
-	typeof window !== "undefined" &&
-	"__TAURI__" in window &&
-	window.__TAURI__ !== undefined;
+	typeof window !== "undefined" && "__TAURI__" in window && window.__TAURI__ !== undefined
 
 /** API 基础 URL（Web 环境使用） */
-const getApiBaseUrl = (): string =>
-	import.meta.env.VITE_API_URL || "http://localhost:3030";
+const getApiBaseUrl = (): string => import.meta.env.VITE_API_URL || "http://localhost:3030"
 
 // ============================================
 // 底层调用函数
@@ -66,36 +63,30 @@ const getApiBaseUrl = (): string =>
 /**
  * Tauri invoke 封装为 TaskEither
  */
-const invokeTE = <T>(
-	cmd: string,
-	args?: Record<string, unknown>,
-): TE.TaskEither<AppError, T> =>
+const invokeTE = <T>(cmd: string, args?: Record<string, unknown>): TE.TaskEither<AppError, T> =>
 	TE.tryCatch(
 		async () => {
-			info(`[API:Tauri] ${cmd}`, args);
-			const result = await invoke<T>(cmd, args);
-			info(`[API:Tauri] ${cmd} 成功`);
-			return result;
+			info(`[API:Tauri] ${cmd}`, args)
+			const result = await invoke<T>(cmd, args)
+			info(`[API:Tauri] ${cmd} 成功`)
+			return result
 		},
 		(error) => {
-			logError(`[API:Tauri] ${cmd} 失败`, { error });
-			return dbError(`${cmd} 失败: ${error}`);
+			logError(`[API:Tauri] ${cmd} 失败`, { error })
+			return dbError(`${cmd} 失败: ${error}`)
 		},
-	);
+	)
 
 /**
  * HTTP fetch 封装为 TaskEither
  */
-const fetchTE = <T>(
-	endpoint: string,
-	options: RequestInit = {},
-): TE.TaskEither<AppError, T> =>
+const fetchTE = <T>(endpoint: string, options: RequestInit = {}): TE.TaskEither<AppError, T> =>
 	TE.tryCatch(
 		async () => {
-			const url = `${getApiBaseUrl()}${endpoint}`;
-			const method = options.method || "GET";
+			const url = `${getApiBaseUrl()}${endpoint}`
+			const method = options.method || "GET"
 
-			info(`[API:HTTP] ${method} ${endpoint}`);
+			info(`[API:HTTP] ${method} ${endpoint}`)
 
 			const response = await fetch(url, {
 				...options,
@@ -103,22 +94,22 @@ const fetchTE = <T>(
 					"Content-Type": "application/json",
 					...options.headers,
 				},
-			});
+			})
 
 			if (!response.ok) {
-				const errorBody = await response.text();
-				throw new Error(`HTTP ${response.status}: ${errorBody}`);
+				const errorBody = await response.text()
+				throw new Error(`HTTP ${response.status}: ${errorBody}`)
 			}
 
-			const result = await response.json();
-			info(`[API:HTTP] ${method} ${endpoint} 成功`);
-			return result as T;
+			const result = await response.json()
+			info(`[API:HTTP] ${method} ${endpoint} 成功`)
+			return result as T
 		},
 		(error) => {
-			logError(`[API:HTTP] ${endpoint} 失败`, { error });
-			return dbError(`${endpoint} 失败: ${error}`);
+			logError(`[API:HTTP] ${endpoint} 失败`, { error })
+			return dbError(`${endpoint} 失败: ${error}`)
 		},
-	);
+	)
 
 // ============================================
 // API 接口定义
@@ -127,177 +118,145 @@ const fetchTE = <T>(
 /** 统一 API 客户端接口 */
 export interface ApiClient {
 	// Workspace API
-	readonly getWorkspaces: () => TE.TaskEither<AppError, readonly WorkspaceResponse[]>;
-	readonly getWorkspace: (
-		id: string,
-	) => TE.TaskEither<AppError, WorkspaceResponse | null>;
+	readonly getWorkspaces: () => TE.TaskEither<AppError, readonly WorkspaceResponse[]>
+	readonly getWorkspace: (id: string) => TE.TaskEither<AppError, WorkspaceResponse | null>
 	readonly createWorkspace: (
 		request: CreateWorkspaceRequest,
-	) => TE.TaskEither<AppError, WorkspaceResponse>;
+	) => TE.TaskEither<AppError, WorkspaceResponse>
 	readonly updateWorkspace: (
 		id: string,
 		request: UpdateWorkspaceRequest,
-	) => TE.TaskEither<AppError, WorkspaceResponse>;
-	readonly deleteWorkspace: (id: string) => TE.TaskEither<AppError, void>;
+	) => TE.TaskEither<AppError, WorkspaceResponse>
+	readonly deleteWorkspace: (id: string) => TE.TaskEither<AppError, void>
 
 	// Node API
 	readonly getNodesByWorkspace: (
 		workspaceId: string,
-	) => TE.TaskEither<AppError, readonly NodeResponse[]>;
-	readonly getNode: (id: string) => TE.TaskEither<AppError, NodeResponse | null>;
-	readonly getChildNodes: (parentId: string) => TE.TaskEither<AppError, readonly NodeResponse[]>;
-	readonly getRootNodes: (
-		workspaceId: string,
-	) => TE.TaskEither<AppError, readonly NodeResponse[]>;
+	) => TE.TaskEither<AppError, readonly NodeResponse[]>
+	readonly getNode: (id: string) => TE.TaskEither<AppError, NodeResponse | null>
+	readonly getChildNodes: (parentId: string) => TE.TaskEither<AppError, readonly NodeResponse[]>
+	readonly getRootNodes: (workspaceId: string) => TE.TaskEither<AppError, readonly NodeResponse[]>
 	readonly getNodesByParent: (
 		workspaceId: string,
 		parentId: string | null,
-	) => TE.TaskEither<AppError, readonly NodeResponse[]>;
+	) => TE.TaskEither<AppError, readonly NodeResponse[]>
 	readonly getNodesByType: (
 		workspaceId: string,
 		nodeType: string,
-	) => TE.TaskEither<AppError, readonly NodeResponse[]>;
-	readonly getDescendants: (nodeId: string) => TE.TaskEither<AppError, readonly NodeResponse[]>;
+	) => TE.TaskEither<AppError, readonly NodeResponse[]>
+	readonly getDescendants: (nodeId: string) => TE.TaskEither<AppError, readonly NodeResponse[]>
 	readonly getNextSortOrder: (
 		workspaceId: string,
 		parentId: string | null,
-	) => TE.TaskEither<AppError, number>;
-	readonly createNode: (
-		request: CreateNodeRequest,
-	) => TE.TaskEither<AppError, NodeResponse>;
+	) => TE.TaskEither<AppError, number>
+	readonly createNode: (request: CreateNodeRequest) => TE.TaskEither<AppError, NodeResponse>
 	readonly updateNode: (
 		id: string,
 		request: UpdateNodeRequest,
-	) => TE.TaskEither<AppError, NodeResponse>;
-	readonly moveNode: (
-		id: string,
-		request: MoveNodeRequest,
-	) => TE.TaskEither<AppError, NodeResponse>;
-	readonly deleteNode: (id: string) => TE.TaskEither<AppError, void>;
-	readonly duplicateNode: (
-		id: string,
-		newTitle?: string,
-	) => TE.TaskEither<AppError, NodeResponse>;
-	readonly reorderNodes: (nodeIds: readonly string[]) => TE.TaskEither<AppError, void>;
-	readonly deleteNodesBatch: (nodeIds: readonly string[]) => TE.TaskEither<AppError, void>;
+	) => TE.TaskEither<AppError, NodeResponse>
+	readonly moveNode: (id: string, request: MoveNodeRequest) => TE.TaskEither<AppError, NodeResponse>
+	readonly deleteNode: (id: string) => TE.TaskEither<AppError, void>
+	readonly duplicateNode: (id: string, newTitle?: string) => TE.TaskEither<AppError, NodeResponse>
+	readonly reorderNodes: (nodeIds: readonly string[]) => TE.TaskEither<AppError, void>
+	readonly deleteNodesBatch: (nodeIds: readonly string[]) => TE.TaskEither<AppError, void>
 
 	// Content API
-	readonly getContent: (
-		nodeId: string,
-	) => TE.TaskEither<AppError, ContentResponse | null>;
-	readonly saveContent: (
-		request: SaveContentRequest,
-	) => TE.TaskEither<AppError, ContentResponse>;
-	readonly getContentVersion: (nodeId: string) => TE.TaskEither<AppError, number | null>;
+	readonly getContent: (nodeId: string) => TE.TaskEither<AppError, ContentResponse | null>
+	readonly saveContent: (request: SaveContentRequest) => TE.TaskEither<AppError, ContentResponse>
+	readonly getContentVersion: (nodeId: string) => TE.TaskEither<AppError, number | null>
 
 	// Backup API
-	readonly createBackup: () => TE.TaskEither<AppError, BackupInfo>;
-	readonly restoreBackup: (backupPath: string) => TE.TaskEither<AppError, void>;
-	readonly listBackups: () => TE.TaskEither<AppError, readonly BackupInfo[]>;
-	readonly deleteBackup: (backupPath: string) => TE.TaskEither<AppError, void>;
-	readonly cleanupOldBackups: (keepCount: number) => TE.TaskEither<AppError, number>;
+	readonly createBackup: () => TE.TaskEither<AppError, BackupInfo>
+	readonly restoreBackup: (backupPath: string) => TE.TaskEither<AppError, void>
+	readonly listBackups: () => TE.TaskEither<AppError, readonly BackupInfo[]>
+	readonly deleteBackup: (backupPath: string) => TE.TaskEither<AppError, void>
+	readonly cleanupOldBackups: (keepCount: number) => TE.TaskEither<AppError, number>
 
 	// Clear Data API
-	readonly clearSqliteData: () => TE.TaskEither<AppError, ClearDataResult>;
-	readonly clearSqliteDataKeepUsers: () => TE.TaskEither<AppError, ClearDataResult>;
+	readonly clearSqliteData: () => TE.TaskEither<AppError, ClearDataResult>
+	readonly clearSqliteDataKeepUsers: () => TE.TaskEither<AppError, ClearDataResult>
 
 	// User API
-	readonly getUsers: () => TE.TaskEither<AppError, readonly UserResponse[]>;
-	readonly getUser: (id: string) => TE.TaskEither<AppError, UserResponse | null>;
-	readonly getUserByUsername: (
-		username: string,
-	) => TE.TaskEither<AppError, UserResponse | null>;
-	readonly getUserByEmail: (
-		email: string,
-	) => TE.TaskEither<AppError, UserResponse | null>;
-	readonly getCurrentUser: () => TE.TaskEither<AppError, UserResponse | null>;
-	readonly createUser: (
-		request: CreateUserRequest,
-	) => TE.TaskEither<AppError, UserResponse>;
+	readonly getUsers: () => TE.TaskEither<AppError, readonly UserResponse[]>
+	readonly getUser: (id: string) => TE.TaskEither<AppError, UserResponse | null>
+	readonly getUserByUsername: (username: string) => TE.TaskEither<AppError, UserResponse | null>
+	readonly getUserByEmail: (email: string) => TE.TaskEither<AppError, UserResponse | null>
+	readonly getCurrentUser: () => TE.TaskEither<AppError, UserResponse | null>
+	readonly createUser: (request: CreateUserRequest) => TE.TaskEither<AppError, UserResponse>
 	readonly updateUser: (
 		id: string,
 		request: UpdateUserRequest,
-	) => TE.TaskEither<AppError, UserResponse>;
-	readonly updateUserLastLogin: (id: string) => TE.TaskEither<AppError, UserResponse>;
-	readonly deleteUser: (id: string) => TE.TaskEither<AppError, void>;
+	) => TE.TaskEither<AppError, UserResponse>
+	readonly updateUserLastLogin: (id: string) => TE.TaskEither<AppError, UserResponse>
+	readonly deleteUser: (id: string) => TE.TaskEither<AppError, void>
 
 	// Attachment API
-	readonly getAttachments: () => TE.TaskEither<AppError, readonly AttachmentResponse[]>;
+	readonly getAttachments: () => TE.TaskEither<AppError, readonly AttachmentResponse[]>
 	readonly getAttachmentsByProject: (
 		projectId: string,
-	) => TE.TaskEither<AppError, readonly AttachmentResponse[]>;
-	readonly getAttachment: (
-		id: string,
-	) => TE.TaskEither<AppError, AttachmentResponse | null>;
+	) => TE.TaskEither<AppError, readonly AttachmentResponse[]>
+	readonly getAttachment: (id: string) => TE.TaskEither<AppError, AttachmentResponse | null>
 	readonly getAttachmentsByType: (
 		projectId: string,
 		attachmentType: AttachmentType,
-	) => TE.TaskEither<AppError, readonly AttachmentResponse[]>;
+	) => TE.TaskEither<AppError, readonly AttachmentResponse[]>
 	readonly getImagesByProject: (
 		projectId: string,
-	) => TE.TaskEither<AppError, readonly AttachmentResponse[]>;
+	) => TE.TaskEither<AppError, readonly AttachmentResponse[]>
 	readonly getAudioFilesByProject: (
 		projectId: string,
-	) => TE.TaskEither<AppError, readonly AttachmentResponse[]>;
+	) => TE.TaskEither<AppError, readonly AttachmentResponse[]>
 	readonly getAttachmentByPath: (
 		filePath: string,
-	) => TE.TaskEither<AppError, AttachmentResponse | null>;
+	) => TE.TaskEither<AppError, AttachmentResponse | null>
 	readonly createAttachment: (
 		request: CreateAttachmentRequest,
-	) => TE.TaskEither<AppError, AttachmentResponse>;
+	) => TE.TaskEither<AppError, AttachmentResponse>
 	readonly updateAttachment: (
 		id: string,
 		request: UpdateAttachmentRequest,
-	) => TE.TaskEither<AppError, AttachmentResponse>;
-	readonly deleteAttachment: (id: string) => TE.TaskEither<AppError, void>;
-	readonly deleteAttachmentsByProject: (
-		projectId: string,
-	) => TE.TaskEither<AppError, number>;
+	) => TE.TaskEither<AppError, AttachmentResponse>
+	readonly deleteAttachment: (id: string) => TE.TaskEither<AppError, void>
+	readonly deleteAttachmentsByProject: (projectId: string) => TE.TaskEither<AppError, number>
 
 	// Tag API
 	readonly getTagsByWorkspace: (
 		workspaceId: string,
-	) => TE.TaskEither<AppError, readonly TagResponse[]>;
-	readonly getTag: (id: string) => TE.TaskEither<AppError, TagResponse | null>;
+	) => TE.TaskEither<AppError, readonly TagResponse[]>
+	readonly getTag: (id: string) => TE.TaskEither<AppError, TagResponse | null>
 	readonly getTagByName: (
 		workspaceId: string,
 		name: string,
-	) => TE.TaskEither<AppError, TagResponse | null>;
+	) => TE.TaskEither<AppError, TagResponse | null>
 	readonly getTopTags: (
 		workspaceId: string,
 		limit: number,
-	) => TE.TaskEither<AppError, readonly TagResponse[]>;
+	) => TE.TaskEither<AppError, readonly TagResponse[]>
 	readonly searchTags: (
 		workspaceId: string,
 		query: string,
-	) => TE.TaskEither<AppError, readonly TagResponse[]>;
+	) => TE.TaskEither<AppError, readonly TagResponse[]>
 	readonly getNodesByTag: (
 		workspaceId: string,
 		tagName: string,
-	) => TE.TaskEither<AppError, readonly string[]>;
-	readonly getTagGraphData: (
-		workspaceId: string,
-	) => TE.TaskEither<AppError, TagGraphData>;
-	readonly createTag: (
-		request: CreateTagRequest,
-	) => TE.TaskEither<AppError, TagResponse>;
+	) => TE.TaskEither<AppError, readonly string[]>
+	readonly getTagGraphData: (workspaceId: string) => TE.TaskEither<AppError, TagGraphData>
+	readonly createTag: (request: CreateTagRequest) => TE.TaskEither<AppError, TagResponse>
 	readonly updateTag: (
 		id: string,
 		request: UpdateTagRequest,
-	) => TE.TaskEither<AppError, TagResponse>;
+	) => TE.TaskEither<AppError, TagResponse>
 	readonly getOrCreateTag: (
 		workspaceId: string,
 		name: string,
-	) => TE.TaskEither<AppError, TagResponse>;
-	readonly incrementTagCount: (id: string) => TE.TaskEither<AppError, TagResponse>;
-	readonly decrementTagCount: (id: string) => TE.TaskEither<AppError, TagResponse>;
-	readonly deleteTag: (id: string) => TE.TaskEither<AppError, void>;
-	readonly deleteTagsByWorkspace: (
-		workspaceId: string,
-	) => TE.TaskEither<AppError, number>;
-	readonly syncTagCache: (workspaceId: string) => TE.TaskEither<AppError, void>;
-	readonly rebuildTagCache: (workspaceId: string) => TE.TaskEither<AppError, void>;
-	readonly recalculateTagCounts: (workspaceId: string) => TE.TaskEither<AppError, void>;
+	) => TE.TaskEither<AppError, TagResponse>
+	readonly incrementTagCount: (id: string) => TE.TaskEither<AppError, TagResponse>
+	readonly decrementTagCount: (id: string) => TE.TaskEither<AppError, TagResponse>
+	readonly deleteTag: (id: string) => TE.TaskEither<AppError, void>
+	readonly deleteTagsByWorkspace: (workspaceId: string) => TE.TaskEither<AppError, number>
+	readonly syncTagCache: (workspaceId: string) => TE.TaskEither<AppError, void>
+	readonly rebuildTagCache: (workspaceId: string) => TE.TaskEither<AppError, void>
+	readonly recalculateTagCounts: (workspaceId: string) => TE.TaskEither<AppError, void>
 }
 
 // ============================================
@@ -311,19 +270,16 @@ export interface ApiClient {
  * 调用方无需关心底层是 invoke 还是 fetch
  */
 export const createApiClient = (): ApiClient => {
-	info(`[API] 初始化客户端，环境: ${isTauri ? "Tauri" : "Web"}`);
+	info(`[API] 初始化客户端，环境: ${isTauri ? "Tauri" : "Web"}`)
 
 	return {
 		// ============================================
 		// Workspace API
 		// ============================================
-		getWorkspaces: () =>
-			isTauri ? invokeTE("get_workspaces") : fetchTE("/api/workspaces"),
+		getWorkspaces: () => (isTauri ? invokeTE("get_workspaces") : fetchTE("/api/workspaces")),
 
 		getWorkspace: (id: string) =>
-			isTauri
-				? invokeTE("get_workspace", { id })
-				: fetchTE(`/api/workspaces/${id}`),
+			isTauri ? invokeTE("get_workspace", { id }) : fetchTE(`/api/workspaces/${id}`),
 
 		createWorkspace: (request: CreateWorkspaceRequest) =>
 			isTauri
@@ -354,8 +310,7 @@ export const createApiClient = (): ApiClient => {
 				? invokeTE("get_nodes_by_workspace", { workspaceId })
 				: fetchTE(`/api/workspaces/${workspaceId}/nodes`),
 
-		getNode: (id: string) =>
-			isTauri ? invokeTE("get_node", { id }) : fetchTE(`/api/nodes/${id}`),
+		getNode: (id: string) => (isTauri ? invokeTE("get_node", { id }) : fetchTE(`/api/nodes/${id}`)),
 
 		getChildNodes: (parentId: string) =>
 			isTauri
@@ -370,9 +325,7 @@ export const createApiClient = (): ApiClient => {
 		getNodesByParent: (workspaceId: string, parentId: string | null) =>
 			isTauri
 				? invokeTE("get_nodes_by_parent", { workspaceId, parentId })
-				: fetchTE(
-						`/api/workspaces/${workspaceId}/nodes?parentId=${parentId ?? "null"}`,
-					),
+				: fetchTE(`/api/workspaces/${workspaceId}/nodes?parentId=${parentId ?? "null"}`),
 
 		getNodesByType: (workspaceId: string, nodeType: string) =>
 			isTauri
@@ -416,9 +369,7 @@ export const createApiClient = (): ApiClient => {
 					}),
 
 		deleteNode: (id: string) =>
-			isTauri
-				? invokeTE("delete_node", { id })
-				: fetchTE(`/api/nodes/${id}`, { method: "DELETE" }),
+			isTauri ? invokeTE("delete_node", { id }) : fetchTE(`/api/nodes/${id}`, { method: "DELETE" }),
 
 		duplicateNode: (id: string, newTitle?: string) =>
 			isTauri
@@ -448,9 +399,7 @@ export const createApiClient = (): ApiClient => {
 		// Content API
 		// ============================================
 		getContent: (nodeId: string) =>
-			isTauri
-				? invokeTE("get_content", { nodeId })
-				: fetchTE(`/api/nodes/${nodeId}/content`),
+			isTauri ? invokeTE("get_content", { nodeId }) : fetchTE(`/api/nodes/${nodeId}/content`),
 
 		saveContent: (request: SaveContentRequest) =>
 			isTauri
@@ -469,9 +418,7 @@ export const createApiClient = (): ApiClient => {
 		// Backup API
 		// ============================================
 		createBackup: () =>
-			isTauri
-				? invokeTE("create_backup")
-				: fetchTE("/api/backups", { method: "POST" }),
+			isTauri ? invokeTE("create_backup") : fetchTE("/api/backups", { method: "POST" }),
 
 		restoreBackup: (backupPath: string) =>
 			isTauri
@@ -481,8 +428,7 @@ export const createApiClient = (): ApiClient => {
 						body: JSON.stringify({ backupPath }),
 					}),
 
-		listBackups: () =>
-			isTauri ? invokeTE("list_backups") : fetchTE("/api/backups"),
+		listBackups: () => (isTauri ? invokeTE("list_backups") : fetchTE("/api/backups")),
 
 		deleteBackup: (backupPath: string) =>
 			isTauri
@@ -503,9 +449,7 @@ export const createApiClient = (): ApiClient => {
 		// Clear Data API
 		// ============================================
 		clearSqliteData: () =>
-			isTauri
-				? invokeTE("clear_sqlite_data")
-				: fetchTE("/api/data/clear", { method: "DELETE" }),
+			isTauri ? invokeTE("clear_sqlite_data") : fetchTE("/api/data/clear", { method: "DELETE" }),
 
 		clearSqliteDataKeepUsers: () =>
 			isTauri
@@ -517,8 +461,7 @@ export const createApiClient = (): ApiClient => {
 		// ============================================
 		getUsers: () => (isTauri ? invokeTE("get_users") : fetchTE("/api/users")),
 
-		getUser: (id: string) =>
-			isTauri ? invokeTE("get_user", { id }) : fetchTE(`/api/users/${id}`),
+		getUser: (id: string) => (isTauri ? invokeTE("get_user", { id }) : fetchTE(`/api/users/${id}`)),
 
 		getUserByUsername: (username: string) =>
 			isTauri
@@ -530,8 +473,7 @@ export const createApiClient = (): ApiClient => {
 				? invokeTE("get_user_by_email", { email })
 				: fetchTE(`/api/users/by-email/${encodeURIComponent(email)}`),
 
-		getCurrentUser: () =>
-			isTauri ? invokeTE("get_current_user") : fetchTE("/api/users/current"),
+		getCurrentUser: () => (isTauri ? invokeTE("get_current_user") : fetchTE("/api/users/current")),
 
 		createUser: (request: CreateUserRequest) =>
 			isTauri
@@ -555,15 +497,12 @@ export const createApiClient = (): ApiClient => {
 				: fetchTE(`/api/users/${id}/last-login`, { method: "PUT" }),
 
 		deleteUser: (id: string) =>
-			isTauri
-				? invokeTE("delete_user", { id })
-				: fetchTE(`/api/users/${id}`, { method: "DELETE" }),
+			isTauri ? invokeTE("delete_user", { id }) : fetchTE(`/api/users/${id}`, { method: "DELETE" }),
 
 		// ============================================
 		// Attachment API
 		// ============================================
-		getAttachments: () =>
-			isTauri ? invokeTE("get_attachments") : fetchTE("/api/attachments"),
+		getAttachments: () => (isTauri ? invokeTE("get_attachments") : fetchTE("/api/attachments")),
 
 		getAttachmentsByProject: (projectId: string) =>
 			isTauri
@@ -571,19 +510,12 @@ export const createApiClient = (): ApiClient => {
 				: fetchTE(`/api/projects/${projectId}/attachments`),
 
 		getAttachment: (id: string) =>
-			isTauri
-				? invokeTE("get_attachment", { id })
-				: fetchTE(`/api/attachments/${id}`),
+			isTauri ? invokeTE("get_attachment", { id }) : fetchTE(`/api/attachments/${id}`),
 
-		getAttachmentsByType: (
-			projectId: string,
-			attachmentType: AttachmentType,
-		) =>
+		getAttachmentsByType: (projectId: string, attachmentType: AttachmentType) =>
 			isTauri
 				? invokeTE("get_attachments_by_type", { projectId, attachmentType })
-				: fetchTE(
-						`/api/projects/${projectId}/attachments?type=${attachmentType}`,
-					),
+				: fetchTE(`/api/projects/${projectId}/attachments?type=${attachmentType}`),
 
 		getImagesByProject: (projectId: string) =>
 			isTauri
@@ -637,16 +569,12 @@ export const createApiClient = (): ApiClient => {
 				: fetchTE(`/api/workspaces/${workspaceId}/tags`),
 
 		getTag: (id: string) =>
-			isTauri
-				? invokeTE("get_tag", { id })
-				: fetchTE(`/api/tags/${encodeURIComponent(id)}`),
+			isTauri ? invokeTE("get_tag", { id }) : fetchTE(`/api/tags/${encodeURIComponent(id)}`),
 
 		getTagByName: (workspaceId: string, name: string) =>
 			isTauri
 				? invokeTE("get_tag_by_name", { workspaceId, name })
-				: fetchTE(
-						`/api/workspaces/${workspaceId}/tags/by-name/${encodeURIComponent(name)}`,
-					),
+				: fetchTE(`/api/workspaces/${workspaceId}/tags/by-name/${encodeURIComponent(name)}`),
 
 		getTopTags: (workspaceId: string, limit: number) =>
 			isTauri
@@ -656,16 +584,12 @@ export const createApiClient = (): ApiClient => {
 		searchTags: (workspaceId: string, query: string) =>
 			isTauri
 				? invokeTE("search_tags", { workspaceId, query })
-				: fetchTE(
-						`/api/workspaces/${workspaceId}/tags/search?q=${encodeURIComponent(query)}`,
-					),
+				: fetchTE(`/api/workspaces/${workspaceId}/tags/search?q=${encodeURIComponent(query)}`),
 
 		getNodesByTag: (workspaceId: string, tagName: string) =>
 			isTauri
 				? invokeTE("get_nodes_by_tag", { workspaceId, tagName })
-				: fetchTE(
-						`/api/workspaces/${workspaceId}/tags/${encodeURIComponent(tagName)}/nodes`,
-					),
+				: fetchTE(`/api/workspaces/${workspaceId}/tags/${encodeURIComponent(tagName)}/nodes`),
 
 		getTagGraphData: (workspaceId: string) =>
 			isTauri
@@ -740,15 +664,15 @@ export const createApiClient = (): ApiClient => {
 				: fetchTE(`/api/workspaces/${workspaceId}/tags/recalculate`, {
 						method: "POST",
 					}),
-	};
-};
+	}
+}
 
 // ============================================
 // 导出单例客户端
 // ============================================
 
 /** 全局 API 客户端实例 */
-export const api = createApiClient();
+export const api = createApiClient()
 
 // ============================================
 // 兼容性导出（与 rust-api.fn.ts 保持一致）
@@ -770,8 +694,8 @@ export const api = createApiClient();
 // Promise 版本（兼容性）
 // ============================================
 
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
+import * as E from "fp-ts/Either"
+import { pipe } from "fp-ts/function"
 
 /** 将 TaskEither 转换为 Promise */
 const toPromise = <T>(te: TE.TaskEither<AppError, T>): Promise<T> =>
@@ -783,56 +707,49 @@ const toPromise = <T>(te: TE.TaskEither<AppError, T>): Promise<T> =>
 				(value) => Promise.resolve(value),
 			),
 		),
-	);
+	)
 
 // Workspace API (Promise 版本)
 export const getWorkspacesAsync = (): Promise<readonly WorkspaceResponse[]> =>
-	toPromise(api.getWorkspaces());
+	toPromise(api.getWorkspaces())
 
 // Node API (Promise 版本)
-export const getNodesByWorkspaceAsync = (
-	workspaceId: string,
-): Promise<readonly NodeResponse[]> => toPromise(api.getNodesByWorkspace(workspaceId));
+export const getNodesByWorkspaceAsync = (workspaceId: string): Promise<readonly NodeResponse[]> =>
+	toPromise(api.getNodesByWorkspace(workspaceId))
 
-export const createNodeAsync = (
-	request: CreateNodeRequest,
-): Promise<NodeResponse> => toPromise(api.createNode(request));
+export const createNodeAsync = (request: CreateNodeRequest): Promise<NodeResponse> =>
+	toPromise(api.createNode(request))
 
-export const getRootNodesAsync = (
-	workspaceId: string,
-): Promise<readonly NodeResponse[]> => toPromise(api.getRootNodes(workspaceId));
+export const getRootNodesAsync = (workspaceId: string): Promise<readonly NodeResponse[]> =>
+	toPromise(api.getRootNodes(workspaceId))
 
 export const getNodesByParentAsync = (
 	workspaceId: string,
 	parentId: string | null,
-): Promise<readonly NodeResponse[]> =>
-	toPromise(api.getNodesByParent(workspaceId, parentId));
+): Promise<readonly NodeResponse[]> => toPromise(api.getNodesByParent(workspaceId, parentId))
 
 export const getNodesByTypeAsync = (
 	workspaceId: string,
 	nodeType: string,
-): Promise<readonly NodeResponse[]> =>
-	toPromise(api.getNodesByType(workspaceId, nodeType));
+): Promise<readonly NodeResponse[]> => toPromise(api.getNodesByType(workspaceId, nodeType))
 
 export const getDescendantsAsync = (nodeId: string): Promise<readonly NodeResponse[]> =>
-	toPromise(api.getDescendants(nodeId));
+	toPromise(api.getDescendants(nodeId))
 
 export const getNextSortOrderAsync = (
 	workspaceId: string,
 	parentId: string | null,
-): Promise<number> => toPromise(api.getNextSortOrder(workspaceId, parentId));
+): Promise<number> => toPromise(api.getNextSortOrder(workspaceId, parentId))
 
 export const reorderNodesAsync = (nodeIds: readonly string[]): Promise<void> =>
-	toPromise(api.reorderNodes(nodeIds));
+	toPromise(api.reorderNodes(nodeIds))
 
 export const deleteNodesBatchAsync = (nodeIds: readonly string[]): Promise<void> =>
-	toPromise(api.deleteNodesBatch(nodeIds));
+	toPromise(api.deleteNodesBatch(nodeIds))
 
 // Content API (Promise 版本)
-export const saveContentAsync = (
-	request: SaveContentRequest,
-): Promise<ContentResponse> => toPromise(api.saveContent(request));
+export const saveContentAsync = (request: SaveContentRequest): Promise<ContentResponse> =>
+	toPromise(api.saveContent(request))
 
-export const getContentAsync = (
-	nodeId: string,
-): Promise<ContentResponse | null> => toPromise(api.getContent(nodeId));
+export const getContentAsync = (nodeId: string): Promise<ContentResponse | null> =>
+	toPromise(api.getContent(nodeId))

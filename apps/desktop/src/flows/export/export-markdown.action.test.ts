@@ -8,12 +8,12 @@
  * - 错误处理
  */
 
-import * as E from "fp-ts/Either";
-import type * as TE from "fp-ts/TaskEither";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import dayjs from "dayjs";
-import type { ContentInterface } from "@/types/content/content.interface";
-import type { NodeInterface } from "@/types/node/node.interface";
+import dayjs from "dayjs"
+import * as E from "fp-ts/Either"
+import type * as TE from "fp-ts/TaskEither"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import type { ContentInterface } from "@/types/content/content.interface"
+import type { NodeInterface } from "@/types/node/node.interface"
 
 // ============================================================================
 // Test Helpers
@@ -34,15 +34,13 @@ function createTestNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
 		createDate: overrides.createDate ?? dayjs().toISOString(),
 		lastEdit: overrides.lastEdit ?? dayjs().toISOString(),
 		tags: overrides.tags ?? [],
-	};
+	}
 }
 
 /**
  * 创建测试用的 ContentInterface 对象
  */
-function createTestContent(
-	overrides: Partial<ContentInterface> = {},
-): ContentInterface {
+function createTestContent(overrides: Partial<ContentInterface> = {}): ContentInterface {
 	return {
 		id: overrides.id ?? "content-1",
 		nodeId: overrides.nodeId ?? "node-1",
@@ -65,33 +63,30 @@ function createTestContent(
 			}),
 		contentType: overrides.contentType ?? "lexical",
 		lastEdit: overrides.lastEdit ?? dayjs().toISOString(),
-	};
+	}
 }
 
 /**
  * 运行 TaskEither 并返回 Either 结果
  */
-async function runTE<Err, A>(
-	te: TE.TaskEither<Err, A>,
-): Promise<E.Either<Err, A>> {
-	return te();
+async function runTE<Err, A>(te: TE.TaskEither<Err, A>): Promise<E.Either<Err, A>> {
+	return te()
 }
 
 // ============================================================================
 // Mock Setup
 // ============================================================================
 
-const mockGetNodeByIdOrFail = vi.fn();
-const mockGetContentByNodeIdOrFail = vi.fn();
+const mockGetNodeByIdOrFail = vi.fn()
+const mockGetContentByNodeIdOrFail = vi.fn()
 
 vi.mock("@/db/node.db.fn", () => ({
 	getNodeByIdOrFail: (...args: unknown[]) => mockGetNodeByIdOrFail(...args),
-}));
+}))
 
 vi.mock("@/db/content.db.fn", () => ({
-	getContentByNodeIdOrFail: (...args: unknown[]) =>
-		mockGetContentByNodeIdOrFail(...args),
-}));
+	getContentByNodeIdOrFail: (...args: unknown[]) => mockGetContentByNodeIdOrFail(...args),
+}))
 
 vi.mock("@/log", () => ({
 	default: {
@@ -102,13 +97,10 @@ vi.mock("@/log", () => ({
 		warn: vi.fn(),
 		debug: vi.fn(),
 	},
-}));
+}))
 
 // Logger removed - not needed in tests
-import {
-	exportContentToMarkdown,
-	exportNodeToMarkdown,
-} from "./export-markdown.flow";
+import { exportContentToMarkdown, exportNodeToMarkdown } from "./export-markdown.flow"
 
 // ============================================================================
 // Unit Tests
@@ -116,87 +108,73 @@ import {
 
 describe("exportNodeToMarkdown", () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
-	});
+		vi.clearAllMocks()
+	})
 
 	it("should export node content to Markdown format", async () => {
-		const testNode = createTestNode({ title: "My Document" });
-		const testContent = createTestContent({ nodeId: testNode.id });
+		const testNode = createTestNode({ title: "My Document" })
+		const testContent = createTestContent({ nodeId: testNode.id })
 
-		mockGetNodeByIdOrFail.mockReturnValue(() =>
-			Promise.resolve(E.right(testNode)),
-		);
-		mockGetContentByNodeIdOrFail.mockReturnValue(() =>
-			Promise.resolve(E.right(testContent)),
-		);
+		mockGetNodeByIdOrFail.mockReturnValue(() => Promise.resolve(E.right(testNode)))
+		mockGetContentByNodeIdOrFail.mockReturnValue(() => Promise.resolve(E.right(testContent)))
 
-		const result = await runTE(exportNodeToMarkdown({ nodeId: testNode.id }));
+		const result = await runTE(exportNodeToMarkdown({ nodeId: testNode.id }))
 
-		expect(E.isRight(result)).toBe(true);
+		expect(E.isRight(result)).toBe(true)
 		if (E.isRight(result)) {
-			expect(result.right.filename).toBe("My Document");
-			expect(result.right.extension).toBe("md");
-			expect(result.right.content).toContain("Hello World");
+			expect(result.right.filename).toBe("My Document")
+			expect(result.right.extension).toBe("md")
+			expect(result.right.content).toContain("Hello World")
 		}
-	});
+	})
 
 	it("should include title in export when option is set", async () => {
-		const testNode = createTestNode({ title: "My Document" });
-		const testContent = createTestContent({ nodeId: testNode.id });
+		const testNode = createTestNode({ title: "My Document" })
+		const testContent = createTestContent({ nodeId: testNode.id })
 
-		mockGetNodeByIdOrFail.mockReturnValue(() =>
-			Promise.resolve(E.right(testNode)),
-		);
-		mockGetContentByNodeIdOrFail.mockReturnValue(() =>
-			Promise.resolve(E.right(testContent)),
-		);
+		mockGetNodeByIdOrFail.mockReturnValue(() => Promise.resolve(E.right(testNode)))
+		mockGetContentByNodeIdOrFail.mockReturnValue(() => Promise.resolve(E.right(testContent)))
 
 		const result = await runTE(
 			exportNodeToMarkdown({
 				nodeId: testNode.id,
 				options: { includeTitle: true },
 			}),
-		);
+		)
 
-		expect(E.isRight(result)).toBe(true);
+		expect(E.isRight(result)).toBe(true)
 		if (E.isRight(result)) {
-			expect(result.right.content).toContain("# My Document");
+			expect(result.right.content).toContain("# My Document")
 		}
-	});
+	})
 
 	it("should return Left when node not found", async () => {
-		const error = { type: "NOT_FOUND" as const, message: "Node not found" };
-		mockGetNodeByIdOrFail.mockReturnValue(() => Promise.resolve(E.left(error)));
+		const error = { type: "NOT_FOUND" as const, message: "Node not found" }
+		mockGetNodeByIdOrFail.mockReturnValue(() => Promise.resolve(E.left(error)))
 
-		const result = await runTE(
-			exportNodeToMarkdown({ nodeId: "non-existent" }),
-		);
+		const result = await runTE(exportNodeToMarkdown({ nodeId: "non-existent" }))
 
-		expect(E.isLeft(result)).toBe(true);
+		expect(E.isLeft(result)).toBe(true)
 		if (E.isLeft(result)) {
-			expect(result.left.type).toBe("NOT_FOUND");
+			expect(result.left.type).toBe("NOT_FOUND")
 		}
-	});
+	})
 
 	it("should return Left when content not found", async () => {
-		const testNode = createTestNode();
-		const error = { type: "NOT_FOUND" as const, message: "Content not found" };
+		const testNode = createTestNode()
+		const error = { type: "NOT_FOUND" as const, message: "Content not found" }
 
-		mockGetNodeByIdOrFail.mockReturnValue(() =>
-			Promise.resolve(E.right(testNode)),
-		);
-		mockGetContentByNodeIdOrFail.mockReturnValue(() =>
-			Promise.resolve(E.left(error)),
-		);
+		mockGetNodeByIdOrFail.mockReturnValue(() => Promise.resolve(E.right(testNode)))
+		mockGetContentByNodeIdOrFail.mockReturnValue(() => Promise.resolve(E.left(error)))
 
-		const result = await runTE(exportNodeToMarkdown({ nodeId: testNode.id }));
+		const result = await runTE(exportNodeToMarkdown({ nodeId: testNode.id }))
 
-		expect(E.isLeft(result)).toBe(true);
+		expect(E.isLeft(result)).toBe(true)
 		if (E.isLeft(result)) {
-			expect(result.left.type).toBe("NOT_FOUND");
+			expect(result.left.type).toBe("NOT_FOUND")
 		}
-	});
-});
+	})
+})
 
 describe("exportContentToMarkdown", () => {
 	it("should export content directly to Markdown format", () => {
@@ -214,31 +192,31 @@ describe("exportContentToMarkdown", () => {
 				type: "root",
 				version: 1,
 			},
-		});
+		})
 
-		const result = exportContentToMarkdown(content);
+		const result = exportContentToMarkdown(content)
 
-		expect(E.isRight(result)).toBe(true);
+		expect(E.isRight(result)).toBe(true)
 		if (E.isRight(result)) {
-			expect(result.right).toContain("Direct export");
+			expect(result.right).toContain("Direct export")
 		}
-	});
+	})
 
 	it("should return Left for invalid content", () => {
-		const result = exportContentToMarkdown("invalid json");
+		const result = exportContentToMarkdown("invalid json")
 
-		expect(E.isLeft(result)).toBe(true);
+		expect(E.isLeft(result)).toBe(true)
 		if (E.isLeft(result)) {
-			expect(result.left.type).toBe("EXPORT_ERROR");
+			expect(result.left.type).toBe("EXPORT_ERROR")
 		}
-	});
+	})
 
 	it("should return Left for empty content", () => {
-		const result = exportContentToMarkdown("");
+		const result = exportContentToMarkdown("")
 
-		expect(E.isLeft(result)).toBe(true);
+		expect(E.isLeft(result)).toBe(true)
 		if (E.isLeft(result)) {
-			expect(result.left.type).toBe("EXPORT_ERROR");
+			expect(result.left.type).toBe("EXPORT_ERROR")
 		}
-	});
-});
+	})
+})

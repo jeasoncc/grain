@@ -8,19 +8,19 @@
  * @requirements 2.1, 2.2, 2.3, 2.4, 2.5
  */
 
-import { generatePlantUMLContent } from "@/pipes/content";
+import { generatePlantUMLContent } from "@/pipes/content"
 import {
 	createDateTemplateConfig,
 	type DateTemplateParams,
 	dateParamsSchema,
-} from "./date-template.factory";
+} from "./date-template.factory"
 
 // ==============================
 // Types (Re-export)
 // ==============================
 
-export type PlantUMLTemplateParams = DateTemplateParams;
-export const plantumlParamsSchema = dateParamsSchema;
+export type PlantUMLTemplateParams = DateTemplateParams
+export const plantumlParamsSchema = dateParamsSchema
 
 // ==============================
 // Configuration
@@ -41,4 +41,4 @@ export const plantumlConfig = createDateTemplateConfig({
 	generateContent: generatePlantUMLContent,
 	includeDayFolder: false,
 	skipJsonParse: true,
-});
+})

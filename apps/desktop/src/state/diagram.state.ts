@@ -6,9 +6,9 @@
  * Uses Zustand with persistence for settings.
  */
 
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { DiagramStore } from "@/types/diagram";
+import { create } from "zustand"
+import { persist } from "zustand/middleware"
+import type { DiagramStore } from "@/types/diagram"
 
 // ============================================================================
 // Store
@@ -23,20 +23,20 @@ export const useDiagramStore = create<DiagramStore>()(
 
 			// Actions
 			setKrokiServerUrl: (url: string) => {
-				set({ krokiServerUrl: url.trim() });
+				set({ krokiServerUrl: url.trim() })
 			},
 
 			setEnableKroki: (enabled: boolean) => {
-				set({ enableKroki: enabled });
+				set({ enableKroki: enabled })
 			},
 
 			testKrokiConnection: async () => {
-				const { krokiServerUrl } = get();
-				if (!krokiServerUrl) return false;
+				const { krokiServerUrl } = get()
+				if (!krokiServerUrl) return false
 
 				try {
-					const testDiagram = "@startuml\nBob -> Alice : hello\n@enduml";
-					const url = `${krokiServerUrl}/plantuml/svg`;
+					const testDiagram = "@startuml\nBob -> Alice : hello\n@enduml"
+					const url = `${krokiServerUrl}/plantuml/svg`
 
 					const response = await fetch(url, {
 						method: "POST",
@@ -44,11 +44,11 @@ export const useDiagramStore = create<DiagramStore>()(
 							"Content-Type": "text/plain",
 						},
 						body: testDiagram,
-					});
+					})
 
-					return response.ok;
+					return response.ok
 				} catch {
-					return false;
+					return false
 				}
 			},
 		}),
@@ -56,18 +56,18 @@ export const useDiagramStore = create<DiagramStore>()(
 			name: "diagram-settings",
 		},
 	),
-);
+)
 
 // ============================================================================
 // Selector Hooks
 // ============================================================================
 
-export const useKrokiServerUrl = () => useDiagramStore((s) => s.krokiServerUrl);
-export const useEnableKroki = () => useDiagramStore((s) => s.enableKroki);
+export const useKrokiServerUrl = () => useDiagramStore((s) => s.krokiServerUrl)
+export const useEnableKroki = () => useDiagramStore((s) => s.enableKroki)
 
 // ============================================================================
 // Legacy Alias (向后兼容)
 // ============================================================================
 
 /** @deprecated 使用 useDiagramStore 代替 */
-export const useDiagramSettings = useDiagramStore;
+export const useDiagramSettings = useDiagramStore

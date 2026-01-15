@@ -3,4 +3,4 @@
  * @description Writing 纯函数模块导出
  */
 
-export * from "./writing.pipe";
+export * from "./writing.pipe"

@@ -6,4 +6,4 @@
  * 此文件保留为兼容层，重导出 io/dom/theme.dom
  */
 
-export { applyThemeWithTransition, getSystemTheme } from "@/io/dom/theme.dom";
+export { applyThemeWithTransition, getSystemTheme } from "@/io/dom/theme.dom"

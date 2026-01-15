@@ -15,49 +15,43 @@ import {
 	Palette,
 	StickyNote,
 	X,
-} from "lucide-react";
-import { memo } from "react";
-import type { EditorTab } from "@/types/editor-tab";
-import { cn } from "@/utils/cn.util";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/views/ui/tooltip";
-import type { StoryRightSidebarViewProps } from "./story-right-sidebar.types";
+} from "lucide-react"
+import { memo } from "react"
+import type { EditorTab } from "@/types/editor-tab"
+import { cn } from "@/utils/cn.util"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/views/ui/tooltip"
+import type { StoryRightSidebarViewProps } from "./story-right-sidebar.types"
 
 export const StoryRightSidebarView = memo(
-	({
-		tabPosition,
-		tabs,
-		activeTabId,
-		onSetActiveTab,
-		onCloseTab,
-	}: StoryRightSidebarViewProps) => {
+	({ tabPosition, tabs, activeTabId, onSetActiveTab, onCloseTab }: StoryRightSidebarViewProps) => {
 		// 只有当 tabPosition 为 "right-sidebar" 时才显示
 		if (tabPosition !== "right-sidebar") {
-			return null;
+			return null
 		}
 
 		// 如果没有打开的标签页，不显示
 		if (tabs.length === 0) {
-			return null;
+			return null
 		}
 
 		const getTabIcon = (type: EditorTab["type"]) => {
 			switch (type) {
 				case "diary":
-					return <Calendar className="size-4 shrink-0" />;
+					return <Calendar className="size-4 shrink-0" />
 				case "wiki":
-					return <BookOpen className="size-4 shrink-0" />;
+					return <BookOpen className="size-4 shrink-0" />
 				case "todo":
-					return <CheckSquare className="size-4 shrink-0" />;
+					return <CheckSquare className="size-4 shrink-0" />
 				case "note":
-					return <StickyNote className="size-4 shrink-0" />;
+					return <StickyNote className="size-4 shrink-0" />
 				case "ledger":
-					return <DollarSign className="size-4 shrink-0" />;
+					return <DollarSign className="size-4 shrink-0" />
 				case "drawing":
-					return <Palette className="size-4 shrink-0" />;
+					return <Palette className="size-4 shrink-0" />
 				default:
-					return <FileText className="size-4 shrink-0" />;
+					return <FileText className="size-4 shrink-0" />
 			}
-		};
+		}
 
 		return (
 			<aside className="w-56 shrink-0 border-l border-border/30 bg-sidebar/50 flex flex-col h-full backdrop-blur-sm group/panel hover:animate-[breathe-shadow_3s_ease-in-out_infinite]">
@@ -74,7 +68,7 @@ export const StoryRightSidebarView = memo(
 				{/* Tabs List */}
 				<div className="flex-1 overflow-y-auto p-2 pb-2 space-y-0.5 custom-scrollbar">
 					{tabs.map((tab) => {
-						const isActive = activeTabId === tab.id;
+						const isActive = activeTabId === tab.id
 						return (
 							<Tooltip key={tab.id}>
 								<TooltipTrigger asChild>
@@ -84,8 +78,8 @@ export const StoryRightSidebarView = memo(
 										onClick={() => onSetActiveTab(tab.id)}
 										onKeyDown={(e) => {
 											if (e.key === "Enter" || e.key === " ") {
-												e.preventDefault();
-												onSetActiveTab(tab.id);
+												e.preventDefault()
+												onSetActiveTab(tab.id)
 											}
 										}}
 										className={cn(
@@ -105,10 +99,7 @@ export const StoryRightSidebarView = memo(
 												<div className="absolute inset-0 bg-primary/20 blur-[2px] rounded-full" />
 											)}
 											<div
-												className={cn(
-													isActive &&
-														"animate-[icon-glow_3s_ease-in-out_infinite]",
-												)}
+												className={cn(isActive && "animate-[icon-glow_3s_ease-in-out_infinite]")}
 											>
 												{getTabIcon(tab.type)}
 											</div>
@@ -119,9 +110,7 @@ export const StoryRightSidebarView = memo(
 												!isActive && "opacity-40",
 											)}
 										>
-											{tab.isDirty && (
-												<span className="text-primary mr-1">●</span>
-											)}
+											{tab.isDirty && <span className="text-primary mr-1">●</span>}
 											{tab.title}
 										</span>
 										<button
@@ -129,17 +118,16 @@ export const StoryRightSidebarView = memo(
 											className={cn(
 												"flex items-center justify-center size-5 rounded-full transition-all",
 												"opacity-0 group-hover:opacity-100 hover:bg-muted-foreground/20 text-muted-foreground hover:text-foreground",
-												isActive &&
-													"text-primary/60 hover:text-primary hover:bg-primary/10",
+												isActive && "text-primary/60 hover:text-primary hover:bg-primary/10",
 											)}
 											onClick={(e) => {
-												e.stopPropagation();
-												onCloseTab(tab.id);
+												e.stopPropagation()
+												onCloseTab(tab.id)
 											}}
 											onKeyDown={(e) => {
 												if (e.key === "Enter" || e.key === " ") {
-													e.stopPropagation();
-													onCloseTab(tab.id);
+													e.stopPropagation()
+													onCloseTab(tab.id)
 												}
 											}}
 										>
@@ -151,12 +139,12 @@ export const StoryRightSidebarView = memo(
 									{tab.title}
 								</TooltipContent>
 							</Tooltip>
-						);
+						)
 					})}
 				</div>
 			</aside>
-		);
+		)
 	},
-);
+)
 
-StoryRightSidebarView.displayName = "StoryRightSidebarView";
+StoryRightSidebarView.displayName = "StoryRightSidebarView"

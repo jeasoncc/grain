@@ -20,22 +20,17 @@
  * @requirements 10.1, 10.2, 10.3, 10.4, 10.5, 10.6
  */
 
-import dayjs from "dayjs";
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import {
-	createContent,
-	createNode,
-	createUser,
-	createWorkspace,
-} from "@/io/api";
-import { info, warn, success } from "@/io/log/logger.api";
-import type { ContentInterface } from "@/types/content";
-import type { NodeInterface } from "@/types/node";
-import type { UserInterface } from "@/types/user";
-import type { WorkspaceInterface } from "@/types/workspace";
-import { type AppError, dbError } from "@/types/error";
+import dayjs from "dayjs"
+import * as E from "fp-ts/Either"
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import { createContent, createNode, createUser, createWorkspace } from "@/io/api"
+import { info, success, warn } from "@/io/log/logger.api"
+import type { ContentInterface } from "@/types/content"
+import { type AppError, dbError } from "@/types/error"
+import type { NodeInterface } from "@/types/node"
+import type { UserInterface } from "@/types/user"
+import type { WorkspaceInterface } from "@/types/workspace"
 
 // ============================================================================
 // 类型定义
@@ -44,92 +39,87 @@ import { type AppError, dbError } from "@/types/error";
 /**
  * 迁移状态
  */
-export type MigrationStatus =
-	| "not_started"
-	| "in_progress"
-	| "completed"
-	| "failed"
-	| "rolled_back";
+export type MigrationStatus = "not_started" | "in_progress" | "completed" | "failed" | "rolled_back"
 
 /**
  * ID 映射表
  * 用于跟踪旧 ID 到新 ID 的映射关系
  */
 export interface IdMapping {
-	readonly workspaces: ReadonlyMap<string, string>;
-	readonly nodes: ReadonlyMap<string, string>;
-	readonly users: ReadonlyMap<string, string>;
+	readonly workspaces: ReadonlyMap<string, string>
+	readonly nodes: ReadonlyMap<string, string>
+	readonly users: ReadonlyMap<string, string>
 }
 
 /**
  * 迁移结果
  */
 export interface MigrationResult {
-	readonly status: MigrationStatus;
+	readonly status: MigrationStatus
 	readonly migratedCounts: {
-		readonly workspaces: number;
-		readonly nodes: number;
-		readonly contents: number;
-		readonly users: number;
-	};
-	readonly errors: ReadonlyArray<string>;
-	readonly startedAt: string;
-	readonly completedAt?: string;
-	readonly idMapping?: IdMapping;
+		readonly workspaces: number
+		readonly nodes: number
+		readonly contents: number
+		readonly users: number
+	}
+	readonly errors: ReadonlyArray<string>
+	readonly startedAt: string
+	readonly completedAt?: string
+	readonly idMapping?: IdMapping
 }
 
 /**
  * Dexie 数据快照
  */
 export interface DexieDataSnapshot {
-	readonly workspaces: ReadonlyArray<WorkspaceInterface>;
-	readonly nodes: ReadonlyArray<NodeInterface>;
-	readonly contents: ReadonlyArray<ContentInterface>;
-	readonly users: ReadonlyArray<UserInterface>;
+	readonly workspaces: ReadonlyArray<WorkspaceInterface>
+	readonly nodes: ReadonlyArray<NodeInterface>
+	readonly contents: ReadonlyArray<ContentInterface>
+	readonly users: ReadonlyArray<UserInterface>
 }
 
 // ============================================================================
 // 迁移状态管理
 // ============================================================================
 
-const MIGRATION_STATUS_KEY = "grain_dexie_to_sqlite_migration_status";
+const MIGRATION_STATUS_KEY = "grain_dexie_to_sqlite_migration_status"
 
 /**
  * 获取迁移状态
  */
 export const getMigrationStatus = (): MigrationStatus => {
 	try {
-		const status = localStorage.getItem(MIGRATION_STATUS_KEY);
+		const status = localStorage.getItem(MIGRATION_STATUS_KEY)
 		if (status) {
-			return status as MigrationStatus;
+			return status as MigrationStatus
 		}
-		return "not_started";
+		return "not_started"
 	} catch {
-		return "not_started";
+		return "not_started"
 	}
-};
+}
 
 /**
  * 设置迁移状态
  */
 export const setMigrationStatus = (status: MigrationStatus): void => {
 	try {
-		localStorage.setItem(MIGRATION_STATUS_KEY, status);
+		localStorage.setItem(MIGRATION_STATUS_KEY, status)
 	} catch (err) {
-		warn("[Migration] 设置迁移状态失败", { error: err }, "dexie-to-sqlite.migration.fn");
+		warn("[Migration] 设置迁移状态失败", { error: err }, "dexie-to-sqlite.migration.fn")
 	}
-};
+}
 
 /**
  * 清除迁移状态
  */
 export const clearMigrationStatus = (): void => {
 	try {
-		localStorage.removeItem(MIGRATION_STATUS_KEY);
+		localStorage.removeItem(MIGRATION_STATUS_KEY)
 	} catch (err) {
-		warn("[Migration] 清除迁移状态失败", { error: err }, "dexie-to-sqlite.migration.fn");
+		warn("[Migration] 清除迁移状态失败", { error: err }, "dexie-to-sqlite.migration.fn")
 	}
-};
+}
 
 // ============================================================================
 // Dexie 数据检测
@@ -142,29 +132,33 @@ export const hasDexieData = (): TE.TaskEither<AppError, boolean> =>
 	TE.tryCatch(
 		async () => {
 			// 动态导入 legacy database
-			const { legacyDatabase } = await import("@/io/db/legacy-database");
+			const { legacyDatabase } = await import("@/io/db/legacy-database")
 
 			const [workspaceCount, nodeCount, userCount] = await Promise.all([
 				legacyDatabase.workspaces.count(),
 				legacyDatabase.nodes.count(),
 				legacyDatabase.users.count(),
-			]);
+			])
 
-			const hasData = workspaceCount > 0 || nodeCount > 0 || userCount > 0;
-			info("[Migration] Dexie 数据检测", {
-				workspaces: workspaceCount,
-				nodes: nodeCount,
-				users: userCount,
-				hasData,
-			}, "dexie-to-sqlite.migration.fn");
+			const hasData = workspaceCount > 0 || nodeCount > 0 || userCount > 0
+			info(
+				"[Migration] Dexie 数据检测",
+				{
+					workspaces: workspaceCount,
+					nodes: nodeCount,
+					users: userCount,
+					hasData,
+				},
+				"dexie-to-sqlite.migration.fn",
+			)
 
-			return hasData;
+			return hasData
 		},
 		(err): AppError => {
-			warn("[Migration] 检测 Dexie 数据失败", { error: err }, "dexie-to-sqlite.migration.fn");
-			return dbError(`检测 Dexie 数据失败: ${err instanceof Error ? err.message : String(err)}`);
+			warn("[Migration] 检测 Dexie 数据失败", { error: err }, "dexie-to-sqlite.migration.fn")
+			return dbError(`检测 Dexie 数据失败: ${err instanceof Error ? err.message : String(err)}`)
 		},
-	);
+	)
 
 /**
  * 检查是否需要迁移
@@ -176,11 +170,11 @@ export const needsMigration = (): TE.TaskEither<AppError, boolean> =>
 		TE.bind("hasData", () => hasDexieData()),
 		TE.map(({ status, hasData }) => {
 			// 只有在未开始且有数据时才需要迁移
-			const needs = status === "not_started" && hasData;
-			info("[Migration] 是否需要迁移", { status, hasData, needs }, "dexie-to-sqlite.migration.fn");
-			return needs;
+			const needs = status === "not_started" && hasData
+			info("[Migration] 是否需要迁移", { status, hasData, needs }, "dexie-to-sqlite.migration.fn")
+			return needs
 		}),
-	);
+	)
 
 // ============================================================================
 // 数据读取
@@ -192,36 +186,40 @@ export const needsMigration = (): TE.TaskEither<AppError, boolean> =>
 export const readDexieData = (): TE.TaskEither<AppError, DexieDataSnapshot> =>
 	TE.tryCatch(
 		async () => {
-			info("[Migration] 读取 Dexie 数据...");
+			info("[Migration] 读取 Dexie 数据...")
 
-			const { legacyDatabase } = await import("@/io/db/legacy-database");
+			const { legacyDatabase } = await import("@/io/db/legacy-database")
 
 			const [workspaces, nodes, contents, users] = await Promise.all([
 				legacyDatabase.workspaces.toArray(),
 				legacyDatabase.nodes.toArray(),
 				legacyDatabase.contents.toArray(),
 				legacyDatabase.users.toArray(),
-			]);
+			])
 
-			info("[Migration] Dexie 数据读取完成", {
-				workspaces: workspaces.length,
-				nodes: nodes.length,
-				contents: contents.length,
-				users: users.length,
-			}, "dexie-to-sqlite.migration.fn");
+			info(
+				"[Migration] Dexie 数据读取完成",
+				{
+					workspaces: workspaces.length,
+					nodes: nodes.length,
+					contents: contents.length,
+					users: users.length,
+				},
+				"dexie-to-sqlite.migration.fn",
+			)
 
 			return {
 				workspaces,
 				nodes,
 				contents,
 				users,
-			};
+			}
 		},
 		(err): AppError => {
-			warn("[Migration] 读取 Dexie 数据失败", { error: err }, "dexie-to-sqlite.migration.fn");
-			return dbError(`读取 Dexie 数据失败: ${err instanceof Error ? err.message : String(err)}`);
+			warn("[Migration] 读取 Dexie 数据失败", { error: err }, "dexie-to-sqlite.migration.fn")
+			return dbError(`读取 Dexie 数据失败: ${err instanceof Error ? err.message : String(err)}`)
 		},
-	);
+	)
 
 // ============================================================================
 // 数据写入
@@ -232,10 +230,16 @@ export const readDexieData = (): TE.TaskEither<AppError, DexieDataSnapshot> =>
  */
 const migrateUsers = (
 	users: ReadonlyArray<UserInterface>,
-): TE.TaskEither<AppError, { readonly count: number; readonly mapping: ReadonlyMap<string, string> }> =>
+): TE.TaskEither<
+	AppError,
+	{ readonly count: number; readonly mapping: ReadonlyMap<string, string> }
+> =>
 	TE.tryCatch(
 		async () => {
-			const results: readonly PromiseSettledResult<{ readonly oldId: string; readonly newId: string }>[] = await Promise.allSettled(
+			const results: readonly PromiseSettledResult<{
+				readonly oldId: string
+				readonly newId: string
+			}>[] = await Promise.allSettled(
 				users.map(async (user) => {
 					const result = await createUser({
 						username: user.username,
@@ -244,32 +248,35 @@ const migrateUsers = (
 						avatar: user.avatar,
 						plan: user.plan,
 						settings: user.settings,
-					})();
+					})()
 
 					if (E.isRight(result)) {
-						return { oldId: user.id, newId: result.right.id };
+						return { oldId: user.id, newId: result.right.id }
 					} else {
-						warn(`[Migration] 用户迁移失败: ${user.id}`, result.left);
-						throw new Error(`用户迁移失败: ${user.id}`);
+						warn(`[Migration] 用户迁移失败: ${user.id}`, result.left)
+						throw new Error(`用户迁移失败: ${user.id}`)
 					}
-				})
-			);
+				}),
+			)
 
 			const successful: readonly { readonly oldId: string; readonly newId: string }[] = results
-				.filter((result): result is PromiseFulfilledResult<{ readonly oldId: string; readonly newId: string }> => 
-					result.status === 'fulfilled'
+				.filter(
+					(
+						result,
+					): result is PromiseFulfilledResult<{ readonly oldId: string; readonly newId: string }> =>
+						result.status === "fulfilled",
 				)
-				.map(result => result.value);
+				.map((result) => result.value)
 
-			const mapping = new Map(successful.map(({ oldId, newId }) => [oldId, newId]));
-			
-			return { 
-				count: successful.length, 
-				mapping: mapping as ReadonlyMap<string, string>
-			};
+			const mapping = new Map(successful.map(({ oldId, newId }) => [oldId, newId]))
+
+			return {
+				count: successful.length,
+				mapping: mapping as ReadonlyMap<string, string>,
+			}
 		},
 		(error): AppError => dbError(`迁移用户失败: ${error}`),
-	);
+	)
 
 /**
  * 迁移工作区数据
@@ -277,15 +284,21 @@ const migrateUsers = (
 const migrateWorkspaces = (
 	workspaces: ReadonlyArray<WorkspaceInterface>,
 	userMapping: ReadonlyMap<string, string>,
-): TE.TaskEither<AppError, { readonly count: number; readonly mapping: ReadonlyMap<string, string> }> =>
+): TE.TaskEither<
+	AppError,
+	{ readonly count: number; readonly mapping: ReadonlyMap<string, string> }
+> =>
 	TE.tryCatch(
 		async () => {
-			const results: readonly PromiseSettledResult<{ readonly oldId: string; readonly newId: string }>[] = await Promise.allSettled(
+			const results: readonly PromiseSettledResult<{
+				readonly oldId: string
+				readonly newId: string
+			}>[] = await Promise.allSettled(
 				workspaces.map(async (workspace) => {
 					// 映射 owner ID
 					const newOwnerId = workspace.owner
 						? userMapping.get(workspace.owner) || workspace.owner
-						: undefined;
+						: undefined
 
 					const result = await createWorkspace({
 						title: workspace.title,
@@ -294,35 +307,35 @@ const migrateWorkspaces = (
 						author: workspace.author,
 						publisher: workspace.publisher,
 						language: workspace.language,
-					})();
+					})()
 
 					if (E.isRight(result)) {
-						return { oldId: workspace.id, newId: result.right.id };
+						return { oldId: workspace.id, newId: result.right.id }
 					} else {
-						warn(
-							`[Migration] 工作区迁移失败: ${workspace.id}`,
-							result.left,
-						);
-						throw new Error(`工作区迁移失败: ${workspace.id}`);
+						warn(`[Migration] 工作区迁移失败: ${workspace.id}`, result.left)
+						throw new Error(`工作区迁移失败: ${workspace.id}`)
 					}
-				})
-			);
+				}),
+			)
 
 			const successful: readonly { readonly oldId: string; readonly newId: string }[] = results
-				.filter((result): result is PromiseFulfilledResult<{ readonly oldId: string; readonly newId: string }> => 
-					result.status === 'fulfilled'
+				.filter(
+					(
+						result,
+					): result is PromiseFulfilledResult<{ readonly oldId: string; readonly newId: string }> =>
+						result.status === "fulfilled",
 				)
-				.map(result => result.value);
+				.map((result) => result.value)
 
-			const mapping = new Map(successful.map(({ oldId, newId }) => [oldId, newId]));
-			
-			return { 
-				count: successful.length, 
-				mapping: mapping as ReadonlyMap<string, string>
-			};
+			const mapping = new Map(successful.map(({ oldId, newId }) => [oldId, newId]))
+
+			return {
+				count: successful.length,
+				mapping: mapping as ReadonlyMap<string, string>,
+			}
 		},
 		(error): AppError => dbError(`迁移工作区失败: ${error}`),
-	);
+	)
 
 /**
  * 迁移节点数据
@@ -330,7 +343,10 @@ const migrateWorkspaces = (
 const migrateNodes = (
 	nodes: ReadonlyArray<NodeInterface>,
 	workspaceMapping: ReadonlyMap<string, string>,
-): TE.TaskEither<AppError, { readonly count: number; readonly mapping: ReadonlyMap<string, string> }> =>
+): TE.TaskEither<
+	AppError,
+	{ readonly count: number; readonly mapping: ReadonlyMap<string, string> }
+> =>
 	TE.tryCatch(
 		async () => {
 			// 按层级排序：先迁移根节点，再迁移子节点
@@ -338,12 +354,12 @@ const migrateNodes = (
 			const sortedNodes: readonly NodeInterface[] = nodes.toSorted((a, b) => {
 				// 计算节点深度
 				const getDepth = (node: NodeInterface): number => {
-					if (!node.parent) return 0;
-					const parent = nodes.find((n) => n.id === node.parent);
-					return parent ? getDepth(parent) + 1 : 0;
-				};
-				return getDepth(a) - getDepth(b);
-			});
+					if (!node.parent) return 0
+					const parent = nodes.find((n) => n.id === node.parent)
+					return parent ? getDepth(parent) + 1 : 0
+				}
+				return getDepth(a) - getDepth(b)
+			})
 
 			// 使用递归函数来处理节点迁移，避免直接修改 Map
 			const migrateNodesRecursively = async (
@@ -352,24 +368,20 @@ const migrateNodes = (
 				currentCount: number,
 			): Promise<{ readonly count: number; readonly mapping: ReadonlyMap<string, string> }> => {
 				if (remainingNodes.length === 0) {
-					return { count: currentCount, mapping: currentMapping };
+					return { count: currentCount, mapping: currentMapping }
 				}
 
-				const [node, ...restNodes] = remainingNodes;
+				const [node, ...restNodes] = remainingNodes
 
 				// 映射 workspace ID
-				const newWorkspaceId = workspaceMapping.get(node.workspace);
+				const newWorkspaceId = workspaceMapping.get(node.workspace)
 				if (!newWorkspaceId) {
-					warn(
-						`[Migration] 节点 ${node.id} 的工作区 ${node.workspace} 未找到映射`,
-					);
-					return migrateNodesRecursively(restNodes, currentMapping, currentCount);
+					warn(`[Migration] 节点 ${node.id} 的工作区 ${node.workspace} 未找到映射`)
+					return migrateNodesRecursively(restNodes, currentMapping, currentCount)
 				}
 
 				// 映射 parent ID
-				const newParentId = node.parent
-					? currentMapping.get(node.parent) || null
-					: null;
+				const newParentId = node.parent ? currentMapping.get(node.parent) || null : null
 
 				const result = await createNode(
 					{
@@ -382,27 +394,27 @@ const migrateNodes = (
 					},
 					undefined,
 					Array.from(node.tags || []),
-				)();
+				)()
 
 				if (E.isRight(result)) {
 					// Create new map with the additional entry
-					const newMapping = new Map([...currentMapping, [node.id, result.right.id]]);
-					return migrateNodesRecursively(restNodes, newMapping, currentCount + 1);
+					const newMapping = new Map([...currentMapping, [node.id, result.right.id]])
+					return migrateNodesRecursively(restNodes, newMapping, currentCount + 1)
 				} else {
-					warn(`[Migration] 节点迁移失败: ${node.id}`, result.left);
-					return migrateNodesRecursively(restNodes, currentMapping, currentCount);
+					warn(`[Migration] 节点迁移失败: ${node.id}`, result.left)
+					return migrateNodesRecursively(restNodes, currentMapping, currentCount)
 				}
-			};
+			}
 
-			const result = await migrateNodesRecursively(sortedNodes, new Map(), 0);
-			
-			return { 
-				count: result.count, 
-				mapping: result.mapping
-			};
+			const result = await migrateNodesRecursively(sortedNodes, new Map(), 0)
+
+			return {
+				count: result.count,
+				mapping: result.mapping,
+			}
 		},
 		(error): AppError => dbError(`迁移节点失败: ${error}`),
-	);
+	)
 
 /**
  * 迁移内容数据
@@ -416,34 +428,34 @@ const migrateContents = (
 			const results: readonly PromiseSettledResult<any>[] = await Promise.allSettled(
 				contents.map(async (content) => {
 					// 映射 nodeId
-					const newNodeId = nodeMapping.get(content.nodeId);
+					const newNodeId = nodeMapping.get(content.nodeId)
 					if (!newNodeId) {
-						warn(
-							`[Migration] 内容 ${content.id} 的节点 ${content.nodeId} 未找到映射`,
-						);
-						throw new Error(`节点映射未找到: ${content.nodeId}`);
+						warn(`[Migration] 内容 ${content.id} 的节点 ${content.nodeId} 未找到映射`)
+						throw new Error(`节点映射未找到: ${content.nodeId}`)
 					}
 
 					const result = await createContent({
 						nodeId: newNodeId,
 						content: content.content,
 						contentType: content.contentType,
-					})();
+					})()
 
 					if (E.isRight(result)) {
-						return result.right;
+						return result.right
 					} else {
-						warn(`[Migration] 内容迁移失败: ${content.id}`, result.left);
-						throw new Error(`内容迁移失败: ${content.id}`);
+						warn(`[Migration] 内容迁移失败: ${content.id}`, result.left)
+						throw new Error(`内容迁移失败: ${content.id}`)
 					}
-				})
-			);
+				}),
+			)
 
-			const successful: readonly PromiseFulfilledResult<any>[] = results.filter(result => result.status === 'fulfilled');
-			return successful.length;
+			const successful: readonly PromiseFulfilledResult<any>[] = results.filter(
+				(result) => result.status === "fulfilled",
+			)
+			return successful.length
 		},
 		(error): AppError => dbError(`迁移内容失败: ${error}`),
-	);
+	)
 
 // ============================================================================
 // 主迁移函数
@@ -459,22 +471,22 @@ export const migrateData = (): TE.TaskEither<AppError, MigrationResult> =>
 		TE.bind("needsMigrate", () => needsMigration()),
 		TE.chain(({ needsMigrate }) => {
 			if (!needsMigrate) {
-				const status = getMigrationStatus();
+				const status = getMigrationStatus()
 				return TE.right({
 					status: status === "completed" ? "completed" : "not_started",
 					migratedCounts: { workspaces: 0, nodes: 0, contents: 0, users: 0 },
 					errors: [],
 					startedAt: dayjs().toISOString(),
-				} as MigrationResult);
+				} as MigrationResult)
 			}
 
 			// 2. 开始迁移
 			return pipe(
 				TE.Do,
 				TE.tap(() => {
-					setMigrationStatus("in_progress");
-					info("[Migration] 开始数据迁移...");
-					return TE.right(undefined);
+					setMigrationStatus("in_progress")
+					info("[Migration] 开始数据迁移...")
+					return TE.right(undefined)
 				}),
 				// 3. 读取 Dexie 数据
 				TE.bind("data", () => readDexieData()),
@@ -490,49 +502,46 @@ export const migrateData = (): TE.TaskEither<AppError, MigrationResult> =>
 					migrateContents(data.contents, nodeResult.mapping),
 				),
 				// 5. 完成迁移
-				TE.map(
-					({
-						userResult,
-						workspaceResult,
-						nodeResult,
-						contentCount,
-					}): MigrationResult => {
-						setMigrationStatus("completed");
-						const result: MigrationResult = {
-							status: "completed",
-							migratedCounts: {
-								workspaces: workspaceResult.count,
-								nodes: nodeResult.count,
-								contents: contentCount,
-								users: userResult.count,
-							},
-							errors: [],
-							startedAt: dayjs().toISOString(),
-							completedAt: dayjs().toISOString(),
-							idMapping: {
-								workspaces: workspaceResult.mapping,
-								nodes: nodeResult.mapping,
-								users: userResult.mapping,
-							},
-						};
-						success("[Migration] 数据迁移完成", { migratedCounts: result.migratedCounts }, "dexie-to-sqlite.migration");
-						return result;
-					},
-				),
+				TE.map(({ userResult, workspaceResult, nodeResult, contentCount }): MigrationResult => {
+					setMigrationStatus("completed")
+					const result: MigrationResult = {
+						status: "completed",
+						migratedCounts: {
+							workspaces: workspaceResult.count,
+							nodes: nodeResult.count,
+							contents: contentCount,
+							users: userResult.count,
+						},
+						errors: [],
+						startedAt: dayjs().toISOString(),
+						completedAt: dayjs().toISOString(),
+						idMapping: {
+							workspaces: workspaceResult.mapping,
+							nodes: nodeResult.mapping,
+							users: userResult.mapping,
+						},
+					}
+					success(
+						"[Migration] 数据迁移完成",
+						{ migratedCounts: result.migratedCounts },
+						"dexie-to-sqlite.migration",
+					)
+					return result
+				}),
 				// 6. 错误处理
 				TE.orElse((err) => {
-					setMigrationStatus("failed");
-					warn("[Migration] 数据迁移失败", { error: err }, "dexie-to-sqlite.migration.fn");
+					setMigrationStatus("failed")
+					warn("[Migration] 数据迁移失败", { error: err }, "dexie-to-sqlite.migration.fn")
 					return TE.right({
 						status: "failed",
 						migratedCounts: { workspaces: 0, nodes: 0, contents: 0, users: 0 },
 						errors: [err.message],
 						startedAt: dayjs().toISOString(),
-					} as MigrationResult);
+					} as MigrationResult)
 				}),
-			);
+			)
 		}),
-	);
+	)
 
 // ============================================================================
 // 回滚函数
@@ -547,15 +556,15 @@ export const migrateData = (): TE.TaskEither<AppError, MigrationResult> =>
 export const rollbackMigration = (): TE.TaskEither<AppError, void> =>
 	TE.tryCatch(
 		async () => {
-			warn("[Migration] 回滚迁移状态...");
-			setMigrationStatus("rolled_back");
-			info("[Migration] 迁移状态已回滚");
+			warn("[Migration] 回滚迁移状态...")
+			setMigrationStatus("rolled_back")
+			info("[Migration] 迁移状态已回滚")
 		},
 		(err): AppError => {
-			warn("[Migration] 回滚迁移失败", { error: err }, "dexie-to-sqlite.migration.fn");
-			return dbError(`回滚迁移失败: ${err instanceof Error ? err.message : String(err)}`);
+			warn("[Migration] 回滚迁移失败", { error: err }, "dexie-to-sqlite.migration.fn")
+			return dbError(`回滚迁移失败: ${err instanceof Error ? err.message : String(err)}`)
 		},
-	);
+	)
 
 /**
  * 重置迁移状态（允许重新迁移）
@@ -563,15 +572,15 @@ export const rollbackMigration = (): TE.TaskEither<AppError, void> =>
 export const resetMigrationStatus = (): TE.TaskEither<AppError, void> =>
 	TE.tryCatch(
 		async () => {
-			info("[Migration] 重置迁移状态...");
-			clearMigrationStatus();
-			info("[Migration] 迁移状态已重置");
+			info("[Migration] 重置迁移状态...")
+			clearMigrationStatus()
+			info("[Migration] 迁移状态已重置")
 		},
 		(err): AppError => {
-			warn("[Migration] 重置迁移状态失败", { error: err }, "dexie-to-sqlite.migration.fn");
-			return dbError(`重置迁移状态失败: ${err instanceof Error ? err.message : String(err)}`);
+			warn("[Migration] 重置迁移状态失败", { error: err }, "dexie-to-sqlite.migration.fn")
+			return dbError(`重置迁移状态失败: ${err instanceof Error ? err.message : String(err)}`)
 		},
-	);
+	)
 
 // ============================================================================
 // 清理函数
@@ -583,9 +592,9 @@ export const resetMigrationStatus = (): TE.TaskEither<AppError, void> =>
 export const clearDexieData = (): TE.TaskEither<AppError, void> =>
 	TE.tryCatch(
 		async () => {
-			info("[Migration] 清理 Dexie 数据...");
+			info("[Migration] 清理 Dexie 数据...")
 
-			const { legacyDatabase } = await import("@/io/db/legacy-database");
+			const { legacyDatabase } = await import("@/io/db/legacy-database")
 
 			await legacyDatabase.transaction(
 				"rw",
@@ -596,20 +605,20 @@ export const clearDexieData = (): TE.TaskEither<AppError, void> =>
 					legacyDatabase.users,
 				],
 				async () => {
-					await legacyDatabase.workspaces.clear();
-					await legacyDatabase.nodes.clear();
-					await legacyDatabase.contents.clear();
-					await legacyDatabase.users.clear();
+					await legacyDatabase.workspaces.clear()
+					await legacyDatabase.nodes.clear()
+					await legacyDatabase.contents.clear()
+					await legacyDatabase.users.clear()
 				},
-			);
+			)
 
-			success("[Migration] Dexie 数据清理完成");
+			success("[Migration] Dexie 数据清理完成")
 		},
 		(err): AppError => {
-			warn("[Migration] 清理 Dexie 数据失败", { error: err }, "dexie-to-sqlite.migration.fn");
-			return dbError(`清理 Dexie 数据失败: ${err instanceof Error ? err.message : String(err)}`);
+			warn("[Migration] 清理 Dexie 数据失败", { error: err }, "dexie-to-sqlite.migration.fn")
+			return dbError(`清理 Dexie 数据失败: ${err instanceof Error ? err.message : String(err)}`)
 		},
-	);
+	)
 
 /**
  * 完整迁移流程（迁移 + 清理）
@@ -622,8 +631,8 @@ export const migrateAndCleanup = (): TE.TaskEither<AppError, MigrationResult> =>
 				return pipe(
 					clearDexieData(),
 					TE.map(() => result),
-				);
+				)
 			}
-			return TE.right(result);
+			return TE.right(result)
 		}),
-	);
+	)

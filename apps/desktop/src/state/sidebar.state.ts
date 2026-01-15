@@ -6,8 +6,8 @@
  * Manages unified sidebar state including panels and panel-specific states.
  */
 
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { create } from "zustand"
+import { persist } from "zustand/middleware"
 import {
 	DEFAULT_SIDEBAR_CONFIG,
 	DEFAULT_SIDEBAR_STATE,
@@ -18,13 +18,13 @@ import {
 	type SidebarActions,
 	type SidebarPanel,
 	type SidebarState,
-} from "@/types/sidebar";
+} from "@/types/sidebar"
 
 // ==============================
 // Store Type
 // ==============================
 
-type SidebarStore = SidebarState & SidebarActions;
+type SidebarStore = SidebarState & SidebarActions
 
 // ==============================
 // Utility Functions
@@ -34,7 +34,7 @@ type SidebarStore = SidebarState & SidebarActions;
  * Constrain width to valid bounds.
  */
 const constrainWidth = (width: number): number =>
-	Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, width));
+	Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, width))
 
 // ==============================
 // Store Implementation
@@ -48,19 +48,19 @@ export const useSidebarStore = create<SidebarStore>()(
 
 			// Main sidebar actions
 			setActivePanel: (panel: SidebarPanel) => {
-				const newIsOpen = true; // 选择面板时总是打开侧边栏
+				const newIsOpen = true // 选择面板时总是打开侧边栏
 				set((state) => ({
 					...state,
 					activePanel: panel,
 					isOpen: newIsOpen,
-				}));
+				}))
 			},
 
 			setIsOpen: (open: boolean) => {
 				set((state) => ({
 					...state,
 					isOpen: open,
-				}));
+				}))
 			},
 
 			toggleSidebar: () => {
@@ -68,18 +68,18 @@ export const useSidebarStore = create<SidebarStore>()(
 					...state,
 					isOpen: !state.isOpen,
 					wasCollapsedByDrag: false,
-				}));
+				}))
 			},
 
 			setWidth: (width: number) => {
 				set((state) => ({
 					...state,
 					width: constrainWidth(width),
-				}));
+				}))
 			},
 
 			resizeSidebar: (newWidth: number) => {
-				const state = get();
+				const state = get()
 				// Auto-collapse when width drops below threshold
 				if (newWidth < SIDEBAR_AUTO_COLLAPSE_THRESHOLD) {
 					set((currentState) => ({
@@ -87,25 +87,25 @@ export const useSidebarStore = create<SidebarStore>()(
 						isOpen: false,
 						wasCollapsedByDrag: true,
 						previousWidth: state.width,
-					}));
-					return;
+					}))
+					return
 				}
 				// Constrain width within bounds
 				set((currentState) => ({
 					...currentState,
 					width: constrainWidth(newWidth),
 					wasCollapsedByDrag: false,
-				}));
+				}))
 			},
 
 			restoreFromCollapse: () => {
-				const state = get();
+				const state = get()
 				set((currentState) => ({
 					...currentState,
 					isOpen: true,
 					wasCollapsedByDrag: false,
 					width: state.previousWidth || SIDEBAR_DEFAULT_WIDTH,
-				}));
+				}))
 			},
 
 			// Search panel actions
@@ -116,7 +116,7 @@ export const useSidebarStore = create<SidebarStore>()(
 						...state.searchState,
 						query,
 					},
-				}));
+				}))
 			},
 
 			setSearchSelectedTypes: (types: readonly string[]) => {
@@ -126,7 +126,7 @@ export const useSidebarStore = create<SidebarStore>()(
 						...state.searchState,
 						selectedTypes: [...types],
 					},
-				}));
+				}))
 			},
 
 			setSearchShowFilters: (show: boolean) => {
@@ -136,7 +136,7 @@ export const useSidebarStore = create<SidebarStore>()(
 						...state.searchState,
 						showFilters: show,
 					},
-				}));
+				}))
 			},
 
 			// Drawings panel actions
@@ -147,7 +147,7 @@ export const useSidebarStore = create<SidebarStore>()(
 						...state.drawingsState,
 						selectedDrawingId: id,
 					},
-				}));
+				}))
 			},
 
 			// File tree actions
@@ -158,12 +158,12 @@ export const useSidebarStore = create<SidebarStore>()(
 						...state.fileTreeState,
 						expandedFolders: folders,
 					},
-				}));
+				}))
 			},
 
 			toggleFolderExpanded: (folderId: string) => {
 				set((state) => {
-					const current = state.fileTreeState.expandedFolders[folderId];
+					const current = state.fileTreeState.expandedFolders[folderId]
 					return {
 						...state,
 						fileTreeState: {
@@ -173,8 +173,8 @@ export const useSidebarStore = create<SidebarStore>()(
 								[folderId]: !current,
 							},
 						},
-					};
-				});
+					}
+				})
 			},
 		}),
 		{
@@ -191,39 +191,35 @@ export const useSidebarStore = create<SidebarStore>()(
 			}),
 		},
 	),
-);
+)
 
 // ==============================
 // Selector Hooks
 // ==============================
 
 /** Select active panel (legacy - use useActivePanel from layout.state.ts for new code) */
-export const useSidebarActivePanel = () =>
-	useSidebarStore((s) => s.activePanel);
+export const useSidebarActivePanel = () => useSidebarStore((s) => s.activePanel)
 
 /** Select sidebar open state */
-export const useSidebarIsOpen = () => useSidebarStore((s) => s.isOpen);
+export const useSidebarIsOpen = () => useSidebarStore((s) => s.isOpen)
 
 /** Select sidebar width (legacy - use useSidebarWidth from layout.state.ts for new code) */
-export const useLegacySidebarWidth = () => useSidebarStore((s) => s.width);
+export const useLegacySidebarWidth = () => useSidebarStore((s) => s.width)
 
 /** Select whether collapsed by drag (legacy - use useWasCollapsedByDrag from layout.state.ts for new code) */
-export const useLegacyWasCollapsedByDrag = () =>
-	useSidebarStore((s) => s.wasCollapsedByDrag);
+export const useLegacyWasCollapsedByDrag = () => useSidebarStore((s) => s.wasCollapsedByDrag)
 
 /** Select search panel state */
-export const useSearchPanelState = () => useSidebarStore((s) => s.searchState);
+export const useSearchPanelState = () => useSidebarStore((s) => s.searchState)
 
 /** Select drawings panel state */
-export const useDrawingsPanelState = () =>
-	useSidebarStore((s) => s.drawingsState);
+export const useDrawingsPanelState = () => useSidebarStore((s) => s.drawingsState)
 
 /** Select file tree state */
-export const useFileTreeState = () => useSidebarStore((s) => s.fileTreeState);
+export const useFileTreeState = () => useSidebarStore((s) => s.fileTreeState)
 
 /** Select expanded folders */
-export const useExpandedFolders = () =>
-	useSidebarStore((s) => s.fileTreeState.expandedFolders);
+export const useExpandedFolders = () => useSidebarStore((s) => s.fileTreeState.expandedFolders)
 
 // ==============================
 // Action Hooks
@@ -243,7 +239,7 @@ export const useSidebarActions = () => ({
 	setSelectedDrawingId: useSidebarStore((s) => s.setSelectedDrawingId),
 	setExpandedFolders: useSidebarStore((s) => s.setExpandedFolders),
 	toggleFolderExpanded: useSidebarStore((s) => s.toggleFolderExpanded),
-});
+})
 
 // ==============================
 // Legacy Compatibility Export
@@ -252,4 +248,4 @@ export const useSidebarActions = () => ({
 /**
  * @deprecated Use useSidebarStore instead
  */
-export const useUnifiedSidebarStore = useSidebarStore;
+export const useUnifiedSidebarStore = useSidebarStore

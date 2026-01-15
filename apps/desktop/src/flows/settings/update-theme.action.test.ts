@@ -12,24 +12,24 @@
  * @requirements 4.1, 4.2, 4.3, 4.4
  */
 
-import * as E from "fp-ts/Either";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as E from "fp-ts/Either"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 // ============================================================================
 // Mock Setup
 // ============================================================================
 
-const mockSetTheme = vi.fn();
-const mockSetMode = vi.fn();
-const mockToggleMode = vi.fn();
-const mockSetEnableTransition = vi.fn();
-const mockGetState = vi.fn();
+const mockSetTheme = vi.fn()
+const mockSetMode = vi.fn()
+const mockToggleMode = vi.fn()
+const mockSetEnableTransition = vi.fn()
+const mockGetState = vi.fn()
 
 vi.mock("@/state/theme.state", () => ({
 	useThemeStore: {
 		getState: () => mockGetState(),
 	},
-}));
+}))
 
 vi.mock("@/log", () => ({
 	default: {
@@ -40,7 +40,7 @@ vi.mock("@/log", () => ({
 		warn: vi.fn(),
 		debug: vi.fn(),
 	},
-}));
+}))
 
 // Import after mocking
 import {
@@ -48,7 +48,7 @@ import {
 	updateTheme,
 	updateThemeMode,
 	updateThemeTransition,
-} from "./update-theme.flow";
+} from "./update-theme.flow"
 
 // ============================================================================
 // Unit Tests
@@ -56,15 +56,15 @@ import {
 
 describe("update-theme.flow", () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
+		vi.clearAllMocks()
 		mockGetState.mockReturnValue({
 			setTheme: mockSetTheme,
 			setMode: mockSetMode,
 			toggleMode: mockToggleMode,
 			setEnableTransition: mockSetEnableTransition,
 			mode: "dark",
-		});
-	});
+		})
+	})
 
 	// ==========================================================================
 	// updateTheme
@@ -72,45 +72,45 @@ describe("update-theme.flow", () => {
 
 	describe("updateTheme", () => {
 		it("should return Right and update theme on valid key", () => {
-			const result = updateTheme({ themeKey: "github-dark" });
+			const result = updateTheme({ themeKey: "github-dark" })
 
-			expect(E.isRight(result)).toBe(true);
-			expect(mockSetTheme).toHaveBeenCalledWith("github-dark");
-		});
+			expect(E.isRight(result)).toBe(true)
+			expect(mockSetTheme).toHaveBeenCalledWith("github-dark")
+		})
 
 		it("should return Left with validation error on empty key", () => {
-			const result = updateTheme({ themeKey: "" });
+			const result = updateTheme({ themeKey: "" })
 
-			expect(E.isLeft(result)).toBe(true);
+			expect(E.isLeft(result)).toBe(true)
 			if (E.isLeft(result)) {
-				expect(result.left.type).toBe("VALIDATION_ERROR");
-				expect(result.left.message).toContain("主题 key 不能为空");
+				expect(result.left.type).toBe("VALIDATION_ERROR")
+				expect(result.left.message).toContain("主题 key 不能为空")
 			}
-			expect(mockSetTheme).not.toHaveBeenCalled();
-		});
+			expect(mockSetTheme).not.toHaveBeenCalled()
+		})
 
 		it("should return Left with validation error on whitespace-only key", () => {
-			const result = updateTheme({ themeKey: "   " });
+			const result = updateTheme({ themeKey: "   " })
 
-			expect(E.isLeft(result)).toBe(true);
+			expect(E.isLeft(result)).toBe(true)
 			if (E.isLeft(result)) {
-				expect(result.left.type).toBe("VALIDATION_ERROR");
+				expect(result.left.type).toBe("VALIDATION_ERROR")
 			}
-			expect(mockSetTheme).not.toHaveBeenCalled();
-		});
+			expect(mockSetTheme).not.toHaveBeenCalled()
+		})
 
 		it("should handle various valid theme keys", () => {
-			const validKeys = ["light", "dark", "github-dark", "monokai", "nord"];
+			const validKeys = ["light", "dark", "github-dark", "monokai", "nord"]
 
 			for (const key of validKeys) {
-				vi.clearAllMocks();
-				const result = updateTheme({ themeKey: key });
+				vi.clearAllMocks()
+				const result = updateTheme({ themeKey: key })
 
-				expect(E.isRight(result)).toBe(true);
-				expect(mockSetTheme).toHaveBeenCalledWith(key);
+				expect(E.isRight(result)).toBe(true)
+				expect(mockSetTheme).toHaveBeenCalledWith(key)
 			}
-		});
-	});
+		})
+	})
 
 	// ==========================================================================
 	// updateThemeMode
@@ -118,37 +118,37 @@ describe("update-theme.flow", () => {
 
 	describe("updateThemeMode", () => {
 		it("should return Right and update mode to light", () => {
-			const result = updateThemeMode({ mode: "light" });
+			const result = updateThemeMode({ mode: "light" })
 
-			expect(E.isRight(result)).toBe(true);
-			expect(mockSetMode).toHaveBeenCalledWith("light");
-		});
+			expect(E.isRight(result)).toBe(true)
+			expect(mockSetMode).toHaveBeenCalledWith("light")
+		})
 
 		it("should return Right and update mode to dark", () => {
-			const result = updateThemeMode({ mode: "dark" });
+			const result = updateThemeMode({ mode: "dark" })
 
-			expect(E.isRight(result)).toBe(true);
-			expect(mockSetMode).toHaveBeenCalledWith("dark");
-		});
+			expect(E.isRight(result)).toBe(true)
+			expect(mockSetMode).toHaveBeenCalledWith("dark")
+		})
 
 		it("should return Right and update mode to system", () => {
-			const result = updateThemeMode({ mode: "system" });
+			const result = updateThemeMode({ mode: "system" })
 
-			expect(E.isRight(result)).toBe(true);
-			expect(mockSetMode).toHaveBeenCalledWith("system");
-		});
+			expect(E.isRight(result)).toBe(true)
+			expect(mockSetMode).toHaveBeenCalledWith("system")
+		})
 
 		it("should return Left with validation error on invalid mode", () => {
-			const result = updateThemeMode({ mode: "invalid" as never });
+			const result = updateThemeMode({ mode: "invalid" as never })
 
-			expect(E.isLeft(result)).toBe(true);
+			expect(E.isLeft(result)).toBe(true)
 			if (E.isLeft(result)) {
-				expect(result.left.type).toBe("VALIDATION_ERROR");
-				expect(result.left.message).toContain("无效的主题模式");
+				expect(result.left.type).toBe("VALIDATION_ERROR")
+				expect(result.left.message).toContain("无效的主题模式")
 			}
-			expect(mockSetMode).not.toHaveBeenCalled();
-		});
-	});
+			expect(mockSetMode).not.toHaveBeenCalled()
+		})
+	})
 
 	// ==========================================================================
 	// toggleThemeMode
@@ -162,22 +162,22 @@ describe("update-theme.flow", () => {
 				toggleMode: mockToggleMode,
 				setEnableTransition: mockSetEnableTransition,
 				mode: "light",
-			});
+			})
 
-			const result = toggleThemeMode();
+			const result = toggleThemeMode()
 
-			expect(E.isRight(result)).toBe(true);
+			expect(E.isRight(result)).toBe(true)
 			if (E.isRight(result)) {
-				expect(result.right).toBe("light");
+				expect(result.right).toBe("light")
 			}
-			expect(mockToggleMode).toHaveBeenCalled();
-		});
+			expect(mockToggleMode).toHaveBeenCalled()
+		})
 
 		it("should call toggleMode on store", () => {
-			toggleThemeMode();
+			toggleThemeMode()
 
-			expect(mockToggleMode).toHaveBeenCalledTimes(1);
-		});
+			expect(mockToggleMode).toHaveBeenCalledTimes(1)
+		})
 
 		it("should return current mode from store after toggle", () => {
 			// 模拟 toggle 后模式变为 system
@@ -195,16 +195,16 @@ describe("update-theme.flow", () => {
 					toggleMode: mockToggleMode,
 					setEnableTransition: mockSetEnableTransition,
 					mode: "system",
-				});
+				})
 
-			const result = toggleThemeMode();
+			const result = toggleThemeMode()
 
-			expect(E.isRight(result)).toBe(true);
+			expect(E.isRight(result)).toBe(true)
 			if (E.isRight(result)) {
-				expect(result.right).toBe("system");
+				expect(result.right).toBe("system")
 			}
-		});
-	});
+		})
+	})
 
 	// ==========================================================================
 	// updateThemeTransition
@@ -212,17 +212,17 @@ describe("update-theme.flow", () => {
 
 	describe("updateThemeTransition", () => {
 		it("should return Right and enable transition", () => {
-			const result = updateThemeTransition({ enable: true });
+			const result = updateThemeTransition({ enable: true })
 
-			expect(E.isRight(result)).toBe(true);
-			expect(mockSetEnableTransition).toHaveBeenCalledWith(true);
-		});
+			expect(E.isRight(result)).toBe(true)
+			expect(mockSetEnableTransition).toHaveBeenCalledWith(true)
+		})
 
 		it("should return Right and disable transition", () => {
-			const result = updateThemeTransition({ enable: false });
+			const result = updateThemeTransition({ enable: false })
 
-			expect(E.isRight(result)).toBe(true);
-			expect(mockSetEnableTransition).toHaveBeenCalledWith(false);
-		});
-	});
-});
+			expect(E.isRight(result)).toBe(true)
+			expect(mockSetEnableTransition).toHaveBeenCalledWith(false)
+		})
+	})
+})

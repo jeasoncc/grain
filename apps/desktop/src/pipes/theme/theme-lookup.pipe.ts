@@ -9,11 +9,11 @@
  */
 
 import {
-	getThemeByKey as utilGetThemeByKey,
-	themes as utilThemes,
 	type Theme,
 	type ThemeColors,
-} from "@/utils/themes.util";
+	getThemeByKey as utilGetThemeByKey,
+	themes as utilThemes,
+} from "@/utils/themes.util"
 
 /**
  * Get theme by key
@@ -23,15 +23,14 @@ import {
  * @param key - Theme key (e.g., "default-light", "github-dark")
  * @returns Theme configuration or undefined if not found
  */
-export const getThemeByKey = (key: string): Theme | undefined =>
-	utilGetThemeByKey(key);
+export const getThemeByKey = (key: string): Theme | undefined => utilGetThemeByKey(key)
 
 /**
  * All available themes
  *
  * Complete list of theme configurations including both light and dark themes.
  */
-export const themes: readonly Theme[] = utilThemes;
+export const themes: readonly Theme[] = utilThemes
 
 // Re-export types
-export type { Theme, ThemeColors };
+export type { Theme, ThemeColors }

@@ -9,7 +9,7 @@
  * 依赖规则：views/ 只能依赖 hooks/, types/
  */
 
-import { lazy, Suspense } from "react";
+import { lazy, Suspense } from "react"
 
 // Lazy load TanStack Router Devtools
 const TanStackRouterDevtools =
@@ -19,7 +19,7 @@ const TanStackRouterDevtools =
 				import("@tanstack/react-router-devtools").then((res) => ({
 					default: res.TanStackRouterDevtools,
 				})),
-			);
+			)
 
 /**
  * Devtools Wrapper Component
@@ -33,12 +33,12 @@ const TanStackRouterDevtools =
 export function DevtoolsWrapper() {
 	// Don't render anything in production
 	if (import.meta.env.MODE === "production") {
-		return null;
+		return null
 	}
 
 	return (
 		<Suspense fallback={null}>
 			<TanStackRouterDevtools position="bottom-right" />
 		</Suspense>
-	);
+	)
 }

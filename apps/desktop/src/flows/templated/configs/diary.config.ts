@@ -8,19 +8,19 @@
  * @requirements 1.1, 1.5, 3.1
  */
 
-import { generateDiaryContent } from "@/pipes/content";
+import { generateDiaryContent } from "@/pipes/content"
 import {
 	createDateTemplateConfig,
 	type DateTemplateParams,
 	dateParamsSchema,
-} from "./date-template.factory";
+} from "./date-template.factory"
 
 // ==============================
 // Types (Re-export)
 // ==============================
 
-export type DiaryTemplateParams = DateTemplateParams;
-export const diaryParamsSchema = dateParamsSchema;
+export type DiaryTemplateParams = DateTemplateParams
+export const diaryParamsSchema = dateParamsSchema
 
 // ==============================
 // Configuration
@@ -40,4 +40,4 @@ export const diaryConfig = createDateTemplateConfig({
 	prefix: "diary",
 	generateContent: generateDiaryContent,
 	includeDayFolder: true,
-});
+})

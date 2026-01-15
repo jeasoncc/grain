@@ -4,13 +4,13 @@
  * 连接层：提供数据获取逻辑，将纯展示组件连接到数据源
  */
 
-import { useWikiPreviewFetcher } from "@/hooks/use-wiki-preview";
-import { WikiHoverPreview } from "./wiki-hover-preview";
+import { useWikiPreviewFetcher } from "@/hooks/use-wiki-preview"
+import { WikiHoverPreview } from "./wiki-hover-preview"
 
 interface WikiHoverPreviewConnectedProps {
-	entryId: string;
-	anchorElement: HTMLElement;
-	onClose: () => void;
+	entryId: string
+	anchorElement: HTMLElement
+	onClose: () => void
 }
 
 /**
@@ -23,7 +23,7 @@ export function WikiHoverPreviewConnected({
 	anchorElement,
 	onClose,
 }: WikiHoverPreviewConnectedProps) {
-	const { fetchWikiPreview } = useWikiPreviewFetcher();
+	const { fetchWikiPreview } = useWikiPreviewFetcher()
 
 	return (
 		<WikiHoverPreview
@@ -32,5 +32,5 @@ export function WikiHoverPreviewConnected({
 			onClose={onClose}
 			onFetchData={fetchWikiPreview}
 		/>
-	);
+	)
 }

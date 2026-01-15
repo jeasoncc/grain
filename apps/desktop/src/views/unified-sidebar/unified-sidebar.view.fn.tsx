@@ -4,14 +4,14 @@
  * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  */
 
-import { PanelLeftOpen } from "lucide-react";
-import { memo } from "react";
-import { DrawingsPanel } from "../panels/drawings-panel";
-import { FileTreePanel } from "../panels/file-tree-panel/";
-import { SearchPanel } from "../panels/search-panel/";
-import { TagGraphPanel } from "../panels/tag-graph-panel/";
-import { Button } from "../ui/button";
-import type { UnifiedSidebarViewProps } from "./unified-sidebar.types";
+import { PanelLeftOpen } from "lucide-react"
+import { memo } from "react"
+import { DrawingsPanel } from "../panels/drawings-panel"
+import { FileTreePanel } from "../panels/file-tree-panel/"
+import { SearchPanel } from "../panels/search-panel/"
+import { TagGraphPanel } from "../panels/tag-graph-panel/"
+import { Button } from "../ui/button"
+import type { UnifiedSidebarViewProps } from "./unified-sidebar.types"
 
 /**
  * UnifiedSidebarView - 统一侧边栏纯展示组件
@@ -49,11 +49,11 @@ export const UnifiedSidebarView = memo(
 						<PanelLeftOpen className="h-4 w-4" />
 					</Button>
 				</div>
-			);
+			)
 		}
 
 		if (!isOpen || !activePanel) {
-			return null;
+			return null
 		}
 
 		return (
@@ -72,8 +72,8 @@ export const UnifiedSidebarView = memo(
 				{activePanel === "files" && <FileTreePanel />}
 				{activePanel === "tags" && <TagGraphPanel />}
 			</div>
-		);
+		)
 	},
-);
+)
 
-UnifiedSidebarView.displayName = "UnifiedSidebarView";
+UnifiedSidebarView.displayName = "UnifiedSidebarView"

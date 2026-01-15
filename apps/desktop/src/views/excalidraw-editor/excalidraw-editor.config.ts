@@ -14,4 +14,4 @@ export {
 	type ExcalidrawPerformanceConfigKey,
 	type ExcalidrawRenderConfig,
 	type ExcalidrawUIOptions,
-} from "@grain/excalidraw-editor";
+} from "@grain/excalidraw-editor"

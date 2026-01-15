@@ -14,4 +14,4 @@ export {
 	formatWordCount,
 	formatWordCountDetail,
 	type WordCountResult,
-} from "./word-count.fn";
+} from "./word-count.fn"

@@ -9,9 +9,9 @@
  * @requirements 文件树展开状态管理
  */
 
-import { pipe } from "fp-ts/function";
-import type { NodeInterface } from "@/types/node";
-import { getNodePath } from "./node.tree.fn";
+import { pipe } from "fp-ts/function"
+import type { NodeInterface } from "@/types/node"
+import { getNodePath } from "./node.tree.fn"
 
 // ==============================
 // Types
@@ -22,7 +22,7 @@ import { getNodePath } from "./node.tree.fn";
  * key: 文件夹节点 ID
  * value: 是否展开
  */
-export type ExpandedFoldersMap = Record<string, boolean>;
+export type ExpandedFoldersMap = Record<string, boolean>
 
 // ==============================
 // Pure Functions
@@ -50,19 +50,22 @@ export const calculateExpandedFoldersForNode = (
 	targetNodeId: string,
 ): ExpandedFoldersMap => {
 	// 获取从根到目标节点的路径
-	const path = getNodePath(nodes, targetNodeId);
+	const path = getNodePath(nodes, targetNodeId)
 
 	// 只展开路径上的文件夹（排除目标节点本身，因为它可能不是文件夹）
 	return pipe(
 		path,
 		(pathNodes) => pathNodes.filter((node) => node.type === "folder"),
 		(folders) =>
-			folders.reduce<ExpandedFoldersMap>((acc, folder) => ({
-				...acc,
-				[folder.id]: true,
-			}), {}),
-	);
-};
+			folders.reduce<ExpandedFoldersMap>(
+				(acc, folder) => ({
+					...acc,
+					[folder.id]: true,
+				}),
+				{},
+			),
+	)
+}
 
 /**
  * 合并展开状态，保留现有展开的文件夹，同时展开新路径
@@ -77,10 +80,10 @@ export const mergeExpandedFoldersForNode = (
 	nodes: readonly NodeInterface[],
 	targetNodeId: string,
 ): ExpandedFoldersMap => {
-	const pathExpanded = calculateExpandedFoldersForNode(nodes, targetNodeId);
+	const pathExpanded = calculateExpandedFoldersForNode(nodes, targetNodeId)
 
 	return {
 		...currentExpanded,
 		...pathExpanded,
-	};
-};
+	}
+}

@@ -5,23 +5,19 @@
  * 通过 Codec 层进行类型转换，确保前后端类型解耦。
  */
 
-import { pipe } from "fp-ts/function";
-import * as RA from "fp-ts/ReadonlyArray";
-import * as TE from "fp-ts/TaskEither";
-import { debug } from "@/io/log/logger.api";
+import { pipe } from "fp-ts/function"
+import * as RA from "fp-ts/ReadonlyArray"
+import * as TE from "fp-ts/TaskEither"
+import { debug } from "@/io/log/logger.api"
 import {
 	decodeContent,
 	decodeContentOptional,
 	encodeCreateContent,
 	encodeUpdateContent,
-} from "@/types/codec";
-import type {
-	ContentCreateInput,
-	ContentInterface,
-	ContentType,
-} from "@/types/content";
-import type { AppError } from "@/types/error";
-import { api } from "./client.api";
+} from "@/types/codec"
+import type { ContentCreateInput, ContentInterface, ContentType } from "@/types/content"
+import type { AppError } from "@/types/error"
+import { api } from "./client.api"
 
 // ============================================
 // 查询操作
@@ -33,25 +29,29 @@ import { api } from "./client.api";
 export const getContentByNodeId = (
 	nodeId: string,
 ): TE.TaskEither<AppError, ContentInterface | null> => {
-	debug("[ContentAPI] 获取内容", { nodeId }, "content.api");
+	debug("[ContentAPI] 获取内容", { nodeId }, "content.api")
 
 	return pipe(
 		api.getContent(nodeId),
 		TE.map((response) => {
-			const content = decodeContentOptional(response);
+			const content = decodeContentOptional(response)
 			if (content) {
-				debug("[ContentAPI] 内容获取成功", {
-					nodeId: content.nodeId,
-					contentLength: content.content.length,
-					contentType: content.contentType,
-				}, "content.api");
+				debug(
+					"[ContentAPI] 内容获取成功",
+					{
+						nodeId: content.nodeId,
+						contentLength: content.content.length,
+						contentType: content.contentType,
+					},
+					"content.api",
+				)
 			} else {
-				debug("[ContentAPI] 内容不存在");
+				debug("[ContentAPI] 内容不存在")
 			}
-			return content;
+			return content
 		}),
-	);
-};
+	)
+}
 
 /**
  * 获取节点内容（不存在时抛出错误）
@@ -69,14 +69,13 @@ export const getContentByNodeIdOrFail = (
 						message: `内容不存在: ${nodeId}`,
 					} as AppError),
 		),
-	);
+	)
 
 /**
  * 获取内容版本号
  */
-export const getContentVersion = (
-	nodeId: string,
-): TE.TaskEither<AppError, number | null> => api.getContentVersion(nodeId);
+export const getContentVersion = (nodeId: string): TE.TaskEither<AppError, number | null> =>
+	api.getContentVersion(nodeId)
 
 // ============================================
 // 写入操作
@@ -88,11 +87,7 @@ export const getContentVersion = (
 export const createContent = (
 	input: ContentCreateInput,
 ): TE.TaskEither<AppError, ContentInterface> =>
-	pipe(
-		TE.of(encodeCreateContent(input)),
-		TE.chain(api.saveContent),
-		TE.map(decodeContent),
-	);
+	pipe(TE.of(encodeCreateContent(input)), TE.chain(api.saveContent), TE.map(decodeContent))
 
 /**
  * 添加内容（别名，兼容旧 API）
@@ -110,7 +105,7 @@ export const addContent = (
 		nodeId,
 		content,
 		contentType,
-	});
+	})
 
 /**
  * 更新节点内容
@@ -128,7 +123,7 @@ export const updateContentByNodeId = (
 		TE.of(encodeUpdateContent(nodeId, content)),
 		TE.chain(api.saveContent),
 		TE.map(decodeContent),
-	);
+	)
 
 /**
  * 保存内容（创建或更新）
@@ -143,7 +138,7 @@ export const saveContent = (
 		TE.of(encodeUpdateContent(nodeId, content, expectedVersion)),
 		TE.chain(api.saveContent),
 		TE.map(decodeContent),
-	);
+	)
 
 /**
  * 批量获取多个节点的内容
@@ -157,7 +152,7 @@ export const getContentsByNodeIds = (
 	nodeIds: readonly string[],
 ): TE.TaskEither<AppError, readonly ContentInterface[]> => {
 	if (nodeIds.length === 0) {
-		return TE.right([]);
+		return TE.right([])
 	}
 
 	return pipe(
@@ -169,8 +164,6 @@ export const getContentsByNodeIds = (
 			),
 		),
 		RA.sequence(TE.ApplicativePar),
-		TE.map((results) =>
-			results.filter((c): c is ContentInterface => c !== null),
-		),
-	);
-};
+		TE.map((results) => results.filter((c): c is ContentInterface => c !== null)),
+	)
+}

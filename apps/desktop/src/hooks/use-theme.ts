@@ -7,14 +7,9 @@
  * 依赖规则：hooks/ 只能依赖 flows/, state/, types/
  */
 
-import { useCallback, useEffect, useRef } from "react";
-import {
-	applyThemeFlow,
-	getThemeByKey,
-	getThemes,
-	setModeFlow,
-} from "@/flows/theme";
-import { initThemeFlow } from "@/flows/theme/init-theme.flow";
+import { useCallback, useEffect, useRef } from "react"
+import { applyThemeFlow, getThemeByKey, getThemes, setModeFlow } from "@/flows/theme"
+import { initThemeFlow } from "@/flows/theme/init-theme.flow"
 import {
 	useEffectiveTheme,
 	useEnableTransition,
@@ -24,8 +19,8 @@ import {
 	useThemeKey,
 	useThemeMode,
 	useThemeStore,
-} from "@/state/theme.state";
-import type { ThemeMode } from "@/types/theme";
+} from "@/state/theme.state"
+import type { ThemeMode } from "@/types/theme"
 
 // ==============================
 // Theme Hook
@@ -35,57 +30,57 @@ import type { ThemeMode } from "@/types/theme";
  * Main theme hook providing all theme-related state and actions.
  */
 export function useTheme() {
-	const themeKey = useThemeKey();
-	const mode = useThemeMode();
-	const systemTheme = useSystemTheme();
-	const effectiveTheme = useEffectiveTheme();
-	const enableTransition = useEnableTransition();
-	const isInitialized = useIsThemeInitialized();
+	const themeKey = useThemeKey()
+	const mode = useThemeMode()
+	const systemTheme = useSystemTheme()
+	const effectiveTheme = useEffectiveTheme()
+	const enableTransition = useEnableTransition()
+	const isInitialized = useIsThemeInitialized()
 
-	const actions = useThemeActions();
-	const currentTheme = getThemeByKey(themeKey);
+	const actions = useThemeActions()
+	const currentTheme = getThemeByKey(themeKey)
 
 	// Set theme
 	const setTheme = useCallback(
 		(key: string) => {
-			const theme = getThemeByKey(key);
-			if (!theme) return;
+			const theme = getThemeByKey(key)
+			if (!theme) return
 
-			actions.setTheme(key);
-			applyThemeFlow(key, enableTransition);
+			actions.setTheme(key)
+			applyThemeFlow(key, enableTransition)
 		},
 		[actions, enableTransition],
-	);
+	)
 
 	// Set mode
 	const setMode = useCallback(
 		(newMode: ThemeMode) => {
-			actions.setMode(newMode);
-			const newThemeKey = setModeFlow(newMode, themeKey, enableTransition);
+			actions.setMode(newMode)
+			const newThemeKey = setModeFlow(newMode, themeKey, enableTransition)
 			if (newThemeKey !== themeKey) {
-				actions.setTheme(newThemeKey);
+				actions.setTheme(newThemeKey)
 			}
 		},
 		[actions, themeKey, enableTransition],
-	);
+	)
 
 	// Toggle mode
 	const toggleMode = useCallback(() => {
-		actions.toggleMode();
-		const newMode = useThemeStore.getState().mode;
-		const newThemeKey = setModeFlow(newMode, themeKey, enableTransition);
+		actions.toggleMode()
+		const newMode = useThemeStore.getState().mode
+		const newThemeKey = setModeFlow(newMode, themeKey, enableTransition)
 		if (newThemeKey !== themeKey) {
-			actions.setTheme(newThemeKey);
+			actions.setTheme(newThemeKey)
 		}
-	}, [actions, themeKey, enableTransition]);
+	}, [actions, themeKey, enableTransition])
 
 	// Set enable transition
 	const setEnableTransition = useCallback(
 		(enable: boolean) => {
-			actions.setEnableTransition(enable);
+			actions.setEnableTransition(enable)
 		},
 		[actions],
-	);
+	)
 
 	return {
 		theme: themeKey,
@@ -102,7 +97,7 @@ export function useTheme() {
 		setMode,
 		toggleMode,
 		setEnableTransition,
-	};
+	}
 }
 
 // ==============================
@@ -114,26 +109,26 @@ export function useTheme() {
  * Should be called once at the root component.
  */
 export function useThemeInitialization(): void {
-	const isInitialized = useIsThemeInitialized();
+	const isInitialized = useIsThemeInitialized()
 
 	// Use ref to track cleanup function
-	const cleanupRef = useRef<(() => void) | null>(null);
+	const cleanupRef = useRef<(() => void) | null>(null)
 
 	// Initialize theme
 	useEffect(() => {
-		if (isInitialized) return;
+		if (isInitialized) return
 
 		// Initialize theme system (sets up listeners and applies theme)
-		const cleanup = initThemeFlow();
-		cleanupRef.current = cleanup;
+		const cleanup = initThemeFlow()
+		cleanupRef.current = cleanup
 
 		return () => {
 			if (cleanupRef.current) {
-				cleanupRef.current();
-				cleanupRef.current = null;
+				cleanupRef.current()
+				cleanupRef.current = null
 			}
-		};
-	}, [isInitialized]);
+		}
+	}, [isInitialized])
 }
 
 // ==============================
@@ -144,17 +139,17 @@ export function useThemeInitialization(): void {
  * Check if the current theme is dark.
  */
 export const useIsDarkTheme = (): boolean => {
-	const effectiveTheme = useEffectiveTheme();
-	return effectiveTheme === "dark";
-};
+	const effectiveTheme = useEffectiveTheme()
+	return effectiveTheme === "dark"
+}
 
 /**
  * Check if system mode is active.
  */
 export const useIsSystemMode = (): boolean => {
-	const mode = useThemeMode();
-	return mode === "system";
-};
+	const mode = useThemeMode()
+	return mode === "system"
+}
 
 // Re-export state selectors for convenience
 export {
@@ -163,7 +158,7 @@ export {
 	useSystemTheme,
 	useThemeKey,
 	useThemeMode,
-} from "@/state/theme.state";
+} from "@/state/theme.state"
 
 // Re-export types for convenience
-export type { ThemeMode } from "@/types/theme";
+export type { ThemeMode } from "@/types/theme"

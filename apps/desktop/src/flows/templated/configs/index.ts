@@ -19,7 +19,7 @@ export {
 	type DateTemplateOptions,
 	type DateTemplateParams,
 	dateParamsSchema,
-} from "./date-template.factory";
+} from "./date-template.factory"
 
 // ==============================
 // Diary Configuration
@@ -29,7 +29,7 @@ export {
 	type DiaryTemplateParams,
 	diaryConfig,
 	diaryParamsSchema,
-} from "./diary.config";
+} from "./diary.config"
 
 // ==============================
 // Wiki Configuration
@@ -39,7 +39,7 @@ export {
 	type WikiTemplateParams,
 	wikiConfig,
 	wikiParamsSchema,
-} from "./wiki.config";
+} from "./wiki.config"
 
 // ==============================
 // Ledger Configuration
@@ -49,7 +49,7 @@ export {
 	type LedgerTemplateParams,
 	ledgerConfig,
 	ledgerParamsSchema,
-} from "./ledger.config";
+} from "./ledger.config"
 
 // ==============================
 // Todo Configuration
@@ -59,7 +59,7 @@ export {
 	type TodoTemplateParams,
 	todoConfig,
 	todoParamsSchema,
-} from "./todo.config";
+} from "./todo.config"
 
 // ==============================
 // Note Configuration
@@ -69,7 +69,7 @@ export {
 	type NoteTemplateParams,
 	noteConfig,
 	noteParamsSchema,
-} from "./note.config";
+} from "./note.config"
 
 // ==============================
 // Excalidraw Configuration
@@ -79,7 +79,7 @@ export {
 	type ExcalidrawTemplateParams,
 	excalidrawConfig,
 	excalidrawParamsSchema,
-} from "./excalidraw.config";
+} from "./excalidraw.config"
 
 // ==============================
 // Mermaid Configuration
@@ -89,7 +89,7 @@ export {
 	type MermaidTemplateParams,
 	mermaidConfig,
 	mermaidParamsSchema,
-} from "./mermaid.config";
+} from "./mermaid.config"
 
 // ==============================
 // PlantUML Configuration
@@ -99,7 +99,7 @@ export {
 	type PlantUMLTemplateParams,
 	plantumlConfig,
 	plantumlParamsSchema,
-} from "./plantuml.config";
+} from "./plantuml.config"
 
 // ==============================
 // Code Configuration
@@ -109,7 +109,7 @@ export {
 	type CodeTemplateParams,
 	codeConfig,
 	codeParamsSchema,
-} from "./code.config";
+} from "./code.config"
 
 // ==============================
 // Configuration Registry
@@ -124,17 +124,16 @@ export const templateConfigs = {
 	ledger: () => import("./ledger.config").then((m) => m.ledgerConfig),
 	todo: () => import("./todo.config").then((m) => m.todoConfig),
 	note: () => import("./note.config").then((m) => m.noteConfig),
-	excalidraw: () =>
-		import("./excalidraw.config").then((m) => m.excalidrawConfig),
+	excalidraw: () => import("./excalidraw.config").then((m) => m.excalidrawConfig),
 	mermaid: () => import("./mermaid.config").then((m) => m.mermaidConfig),
 	plantuml: () => import("./plantuml.config").then((m) => m.plantumlConfig),
 	code: () => import("./code.config").then((m) => m.codeConfig),
-} as const;
+} as const
 
 /**
  * 模板类型
  */
-export type TemplateType = keyof typeof templateConfigs;
+export type TemplateType = keyof typeof templateConfigs
 
 /**
  * 获取模板配置
@@ -143,8 +142,8 @@ export type TemplateType = keyof typeof templateConfigs;
  * @returns 模板配置
  */
 export async function getTemplateConfig(type: TemplateType) {
-	const configLoader = templateConfigs[type];
-	return await configLoader();
+	const configLoader = templateConfigs[type]
+	return await configLoader()
 }
 
 /**
@@ -154,5 +153,5 @@ export async function getTemplateConfig(type: TemplateType) {
  * @returns 是否为有效的模板类型
  */
 export function isValidTemplateType(type: string): type is TemplateType {
-	return type in templateConfigs;
+	return type in templateConfigs
 }

@@ -19,64 +19,59 @@ import {
 	initMermaid,
 	type MermaidTheme,
 	renderMermaid as renderMermaidWithTheme,
-} from "./mermaid.render.fn";
+} from "./mermaid.render.fn"
 import {
 	type PlantUMLRenderConfig,
 	renderPlantUML as renderPlantUMLWithRetry,
-} from "./plantuml.render.fn";
+} from "./plantuml.render.fn"
 
 // ============================================================================
 // Types
 // ============================================================================
 
 /** 图表类型 */
-export type DiagramType = "mermaid" | "plantuml";
+export type DiagramType = "mermaid" | "plantuml"
 
 /** 错误类型 */
-export type DiagramErrorType =
-	| "syntax"
-	| "network"
-	| "server"
-	| "config"
-	| "unknown";
+export type DiagramErrorType = "syntax" | "network" | "server" | "config" | "unknown"
 
 /** 图表渲染错误 */
 export interface DiagramError {
-	readonly type: DiagramErrorType;
-	readonly message: string;
-	readonly retryable: boolean;
-	readonly retryCount: number;
+	readonly type: DiagramErrorType
+	readonly message: string
+	readonly retryable: boolean
+	readonly retryCount: number
 }
 
 /** 渲染成功结果 */
 export interface RenderSuccess {
-	readonly success: true;
-	readonly svg: string;
+	readonly success: true
+	readonly svg: string
 }
 
 /** 渲染失败结果 */
 export interface RenderFailure {
-	readonly success: false;
-	readonly error: DiagramError;
+	readonly success: false
+	readonly error: DiagramError
 }
 
 /** 渲染结果 */
-export type RenderResult = RenderSuccess | RenderFailure;
+export type RenderResult = RenderSuccess | RenderFailure
 
 /** 统一渲染配置 */
 export interface RenderDiagramConfig {
 	/** 图表代码 */
-	readonly code: string;
+	readonly code: string
 	/** 图表类型 */
-	readonly diagramType: DiagramType;
+	readonly diagramType: DiagramType
 	/** 主题（Mermaid 使用） */
-	readonly theme?: MermaidTheme;
+	readonly theme?: MermaidTheme
 	/** Kroki 服务器 URL（PlantUML 使用） */
-	readonly krokiServerUrl?: string;
+	readonly krokiServerUrl?: string
 	/** 容器 ID（Mermaid 使用，用于生成唯一 SVG ID） */
-	readonly containerId?: string;
+	readonly containerId?: string
 	/** 重试回调（PlantUML 使用） */
-	readonly onRetryAttempt?: (attempt: number, maxRetries: number) => void;
+	readonly onRetryAttempt?: (attempt: number, maxRetries: number) => void
 }
 
 // ============================================================================
@@ -105,17 +100,17 @@ export const renderMermaid = async (
 				retryable: false,
 				retryCount: 0,
 			},
-		};
+		}
 	}
 
 	// 初始化 Mermaid（如果主题变化会重新初始化）
-	initMermaid(theme);
+	initMermaid(theme)
 
 	// 调用 mermaid.render.fn.ts 中的渲染函数
-	const result = await renderMermaidWithTheme(code, containerId);
+	const result = await renderMermaidWithTheme(code, containerId)
 
 	if ("svg" in result) {
-		return { success: true, svg: result.svg };
+		return { success: true, svg: result.svg }
 	}
 
 	return {
@@ -126,8 +121,8 @@ export const renderMermaid = async (
 			retryable: false,
 			retryCount: 0,
 		},
-	};
-};
+	}
+}
 
 // ============================================================================
 // PlantUML 渲染
@@ -155,7 +150,7 @@ export const renderPlantUML = async (
 				retryable: false,
 				retryCount: 0,
 			},
-		};
+		}
 	}
 
 	if (!krokiServerUrl) {
@@ -167,19 +162,19 @@ export const renderPlantUML = async (
 				retryable: false,
 				retryCount: 0,
 			},
-		};
+		}
 	}
 
 	// 调用 plantuml.render.fn.ts 中的渲染函数
 	const config: PlantUMLRenderConfig = {
 		krokiServerUrl,
 		onRetryAttempt,
-	};
+	}
 
-	const result = await renderPlantUMLWithRetry(code, config);
+	const result = await renderPlantUMLWithRetry(code, config)
 
 	if ("svg" in result) {
-		return { success: true, svg: result.svg };
+		return { success: true, svg: result.svg }
 	}
 
 	return {
@@ -190,8 +185,8 @@ export const renderPlantUML = async (
 			retryable: result.retryable,
 			retryCount: 0, // 重试已在 plantuml.render.fn.ts 内部处理
 		},
-	};
-};
+	}
+}
 
 // ============================================================================
 // 统一渲染接口
@@ -230,28 +225,19 @@ export const renderPlantUML = async (
  * }
  * ```
  */
-export const renderDiagram = async (
-	config: RenderDiagramConfig,
-): Promise<RenderResult> => {
-	const {
-		code,
-		diagramType,
-		theme = "light",
-		krokiServerUrl,
-		containerId,
-		onRetryAttempt,
-	} = config;
+export const renderDiagram = async (config: RenderDiagramConfig): Promise<RenderResult> => {
+	const { code, diagramType, theme = "light", krokiServerUrl, containerId, onRetryAttempt } = config
 
 	switch (diagramType) {
 		case "mermaid":
-			return renderMermaid(code, theme, containerId);
+			return renderMermaid(code, theme, containerId)
 
 		case "plantuml":
-			return renderPlantUML(code, krokiServerUrl ?? "", onRetryAttempt);
+			return renderPlantUML(code, krokiServerUrl ?? "", onRetryAttempt)
 
 		default: {
 			// TypeScript exhaustive check
-			const _exhaustive: never = diagramType;
+			const _exhaustive: never = diagramType
 			return {
 				success: false,
 				error: {
@@ -260,10 +246,10 @@ export const renderDiagram = async (
 					retryable: false,
 					retryCount: 0,
 				},
-			};
+			}
 		}
 	}
-};
+}
 
 // ============================================================================
 // 便捷函数（向后兼容）
@@ -284,8 +270,6 @@ export const renderDiagramSimple = async (
 		code,
 		diagramType,
 		krokiServerUrl,
-		onRetryAttempt: onRetryAttempt
-			? (attempt, _max) => onRetryAttempt(attempt)
-			: undefined,
-	});
-};
+		onRetryAttempt: onRetryAttempt ? (attempt, _max) => onRetryAttempt(attempt) : undefined,
+	})
+}

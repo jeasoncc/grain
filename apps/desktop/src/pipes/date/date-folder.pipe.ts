@@ -9,19 +9,19 @@
  */
 
 import {
-	getDateFolderStructure as utilGetDateFolderStructure,
-	getDateFolderStructureWithFilename as utilGetDateFolderStructureWithFilename,
-	buildFolderPath as utilBuildFolderPath,
-	buildFilePath as utilBuildFilePath,
-	getZodiacAnimal as utilGetZodiacAnimal,
-	getChineseEra as utilGetChineseEra,
-	getChineseHour as utilGetChineseHour,
-	getMonthName as utilGetMonthName,
-	getWeekdayName as utilGetWeekdayName,
 	type DateFolderStructure,
 	type DateFolderStructureWithFilename,
+	buildFilePath as utilBuildFilePath,
+	buildFolderPath as utilBuildFolderPath,
+	getChineseEra as utilGetChineseEra,
+	getChineseHour as utilGetChineseHour,
+	getDateFolderStructure as utilGetDateFolderStructure,
+	getDateFolderStructureWithFilename as utilGetDateFolderStructureWithFilename,
+	getMonthName as utilGetMonthName,
+	getWeekdayName as utilGetWeekdayName,
+	getZodiacAnimal as utilGetZodiacAnimal,
 	type ZodiacAnimal,
-} from "@/utils/date.util";
+} from "@/utils/date.util"
 
 /**
  * Get date folder structure
@@ -34,9 +34,8 @@ import {
  * @param date - Date to generate structure for (defaults to current date)
  * @returns Folder structure object
  */
-export const getDateFolderStructure = (
-	date?: Date,
-): DateFolderStructure => utilGetDateFolderStructure(date);
+export const getDateFolderStructure = (date?: Date): DateFolderStructure =>
+	utilGetDateFolderStructure(date)
 
 /**
  * Get date folder structure with filename
@@ -51,8 +50,7 @@ export const getDateFolderStructure = (
 export const getDateFolderStructureWithFilename = (
 	date?: Date,
 	prefix?: string,
-): DateFolderStructureWithFilename =>
-	utilGetDateFolderStructureWithFilename(date, prefix);
+): DateFolderStructureWithFilename => utilGetDateFolderStructureWithFilename(date, prefix)
 
 /**
  * Build folder path from structure
@@ -63,7 +61,7 @@ export const getDateFolderStructureWithFilename = (
  * @returns Path string (e.g., "year-2024-Dragon/month-01-January/day-15-Monday")
  */
 export const buildFolderPath = (structure: DateFolderStructure): string =>
-	utilBuildFolderPath(structure);
+	utilBuildFolderPath(structure)
 
 /**
  * Build file path from structure with filename
@@ -73,9 +71,8 @@ export const buildFolderPath = (structure: DateFolderStructure): string =>
  * @param structure - Folder structure with filename
  * @returns Full file path string
  */
-export const buildFilePath = (
-	structure: DateFolderStructureWithFilename,
-): string => utilBuildFilePath(structure);
+export const buildFilePath = (structure: DateFolderStructureWithFilename): string =>
+	utilBuildFilePath(structure)
 
 /**
  * Get zodiac animal for a year
@@ -85,8 +82,7 @@ export const buildFilePath = (
  * @param year - Year to get zodiac for
  * @returns Zodiac animal object with cn and en properties
  */
-export const getZodiacAnimal = (year: number): ZodiacAnimal =>
-	utilGetZodiacAnimal(year);
+export const getZodiacAnimal = (year: number): ZodiacAnimal => utilGetZodiacAnimal(year)
 
 /**
  * Get Chinese era (天干地支) for a year
@@ -97,7 +93,7 @@ export const getZodiacAnimal = (year: number): ZodiacAnimal =>
  * @param year - Year to get era for
  * @returns Chinese era string (e.g., "甲子")
  */
-export const getChineseEra = (year: number): string => utilGetChineseEra(year);
+export const getChineseEra = (year: number): string => utilGetChineseEra(year)
 
 /**
  * Get Chinese hour (时辰) for an hour
@@ -107,7 +103,7 @@ export const getChineseEra = (year: number): string => utilGetChineseEra(year);
  * @param hour - Hour in 24-hour format (0-23)
  * @returns Chinese hour string (e.g., "子时")
  */
-export const getChineseHour = (hour: number): string => utilGetChineseHour(hour);
+export const getChineseHour = (hour: number): string => utilGetChineseHour(hour)
 
 /**
  * Get month name
@@ -117,7 +113,7 @@ export const getChineseHour = (hour: number): string => utilGetChineseHour(hour)
  * @param month - Month number (0-11)
  * @returns Month name (e.g., "January")
  */
-export const getMonthName = (month: number): string => utilGetMonthName(month);
+export const getMonthName = (month: number): string => utilGetMonthName(month)
 
 /**
  * Get weekday name
@@ -127,8 +123,7 @@ export const getMonthName = (month: number): string => utilGetMonthName(month);
  * @param weekday - Weekday number (0-6, where 0 is Sunday)
  * @returns Weekday name (e.g., "Monday")
  */
-export const getWeekdayName = (weekday: number): string =>
-	utilGetWeekdayName(weekday);
+export const getWeekdayName = (weekday: number): string => utilGetWeekdayName(weekday)
 
 // Re-export types
-export type { DateFolderStructure, DateFolderStructureWithFilename, ZodiacAnimal };
+export type { DateFolderStructure, DateFolderStructureWithFilename, ZodiacAnimal }

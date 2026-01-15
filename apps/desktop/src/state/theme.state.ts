@@ -8,15 +8,15 @@
  * 依赖规则：state/ 只能依赖 types/
  */
 
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { create } from "zustand"
+import { persist } from "zustand/middleware"
 import {
 	DEFAULT_THEME_CONFIG,
 	DEFAULT_THEME_STATE,
 	type ThemeActions,
 	type ThemeMode,
 	type ThemeState,
-} from "@/types/theme";
+} from "@/types/theme"
 
 // ==============================
 // Internal State
@@ -24,14 +24,14 @@ import {
 
 interface InternalThemeState {
 	/** Whether the theme has been initialized */
-	readonly _initialized: boolean;
+	readonly _initialized: boolean
 }
 
 // ==============================
 // Store Type
 // ==============================
 
-type ThemeStore = ThemeState & InternalThemeState & ThemeActions;
+type ThemeStore = ThemeState & InternalThemeState & ThemeActions
 
 // ==============================
 // Store Implementation
@@ -54,8 +54,12 @@ export const useThemeStore = create<ThemeStore>()(
 					themeKey: key,
 					// Update mode based on theme key
 					mode: key.includes("dark") ? "dark" : key.includes("light") ? "light" : state.mode,
-					effectiveTheme: key.includes("dark") ? "dark" : key.includes("light") ? "light" : state.effectiveTheme,
-				}));
+					effectiveTheme: key.includes("dark")
+						? "dark"
+						: key.includes("light")
+							? "light"
+							: state.effectiveTheme,
+				}))
 			},
 
 			setMode: (mode: ThemeMode) => {
@@ -64,7 +68,7 @@ export const useThemeStore = create<ThemeStore>()(
 					mode,
 					// Update effective theme based on mode
 					effectiveTheme: mode === "system" ? state.systemTheme : mode,
-				}));
+				}))
 			},
 
 			setSystemTheme: (theme: "light" | "dark") => {
@@ -73,20 +77,20 @@ export const useThemeStore = create<ThemeStore>()(
 					systemTheme: theme,
 					// Update effective theme if in system mode
 					effectiveTheme: state.mode === "system" ? theme : state.effectiveTheme,
-				}));
+				}))
 			},
 
 			toggleMode: () => {
-				const currentMode = get().mode;
-				let nextMode: ThemeMode;
+				const currentMode = get().mode
+				let nextMode: ThemeMode
 
 				// Cycle: light → dark → system → light
 				if (currentMode === "light") {
-					nextMode = "dark";
+					nextMode = "dark"
 				} else if (currentMode === "dark") {
-					nextMode = "system";
+					nextMode = "system"
 				} else {
-					nextMode = "light";
+					nextMode = "light"
 				}
 
 				set((state) => ({
@@ -94,21 +98,21 @@ export const useThemeStore = create<ThemeStore>()(
 					mode: nextMode,
 					// Update effective theme
 					effectiveTheme: nextMode === "system" ? state.systemTheme : nextMode,
-				}));
+				}))
 			},
 
 			setEnableTransition: (enable: boolean) => {
 				set((state) => ({
 					...state,
 					enableTransition: enable,
-				}));
+				}))
 			},
 
 			setInitialized: (initialized: boolean) => {
 				set((state) => ({
 					...state,
 					_initialized: initialized,
-				}));
+				}))
 			},
 		}),
 		{
@@ -122,7 +126,7 @@ export const useThemeStore = create<ThemeStore>()(
 			}),
 		},
 	),
-);
+)
 
 // ==============================
 // Selector Hooks
@@ -132,43 +136,43 @@ export const useThemeStore = create<ThemeStore>()(
  * Get the current theme key.
  */
 export const useThemeKey = (): string => {
-	return useThemeStore((state) => state.themeKey);
-};
+	return useThemeStore((state) => state.themeKey)
+}
 
 /**
  * Get the current theme mode.
  */
 export const useThemeMode = (): ThemeMode => {
-	return useThemeStore((state) => state.mode);
-};
+	return useThemeStore((state) => state.mode)
+}
 
 /**
  * Get the system theme preference.
  */
 export const useSystemTheme = (): "light" | "dark" => {
-	return useThemeStore((state) => state.systemTheme);
-};
+	return useThemeStore((state) => state.systemTheme)
+}
 
 /**
  * Get the effective theme being applied.
  */
 export const useEffectiveTheme = (): "light" | "dark" => {
-	return useThemeStore((state) => state.effectiveTheme);
-};
+	return useThemeStore((state) => state.effectiveTheme)
+}
 
 /**
  * Get whether transitions are enabled.
  */
 export const useEnableTransition = (): boolean => {
-	return useThemeStore((state) => state.enableTransition);
-};
+	return useThemeStore((state) => state.enableTransition)
+}
 
 /**
  * Check if theme is initialized.
  */
 export const useIsThemeInitialized = (): boolean => {
-	return useThemeStore((state) => state._initialized);
-};
+	return useThemeStore((state) => state._initialized)
+}
 
 // ==============================
 // Action Hooks
@@ -184,4 +188,4 @@ export const useThemeActions = () => ({
 	toggleMode: useThemeStore((s) => s.toggleMode),
 	setEnableTransition: useThemeStore((s) => s.setEnableTransition),
 	setInitialized: useThemeStore((s) => s.setInitialized),
-});
+})

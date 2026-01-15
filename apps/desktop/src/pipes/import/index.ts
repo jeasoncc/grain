@@ -19,7 +19,7 @@ export {
 	readFileAsTextSafe,
 	validateFileExtension,
 	validateFileType,
-} from "./import.file.fn";
+} from "./import.file.fn"
 
 // JSON 导入
 export {
@@ -37,7 +37,7 @@ export {
 	transformNodes,
 	transformWorkspaces,
 	validateBundle,
-} from "./import.json.fn";
+} from "./import.json.fn"
 // Markdown 导入
 export {
 	type ImportError,
@@ -52,7 +52,7 @@ export {
 	parseListItemLine,
 	parseMarkdownToDocument,
 	parseParagraph,
-} from "./import.markdown.fn";
+} from "./import.markdown.fn"
 
 // ==============================
 // TODO: 批量导入接口（暂不实现）
@@ -63,13 +63,13 @@ export {
  */
 export interface DirectoryImportOptions {
 	/** 导入格式 */
-	readonly format: "markdown" | "json";
+	readonly format: "markdown" | "json"
 	/** 是否递归导入子目录 */
-	readonly recursive?: boolean;
+	readonly recursive?: boolean
 	/** 文件过滤模式 */
-	readonly filePattern?: string;
+	readonly filePattern?: string
 	/** 是否保留目录结构 */
-	readonly preserveStructure?: boolean;
+	readonly preserveStructure?: boolean
 }
 
 /**
@@ -83,5 +83,5 @@ export async function importDirectory(
 	_directoryPath: string,
 	_options: DirectoryImportOptions,
 ): Promise<never> {
-	throw new Error("importDirectory 功能暂未实现");
+	throw new Error("importDirectory 功能暂未实现")
 }

@@ -18,7 +18,7 @@ export {
 	EXTENSION_TO_EDITOR_MAP,
 	FILE_EXTENSIONS,
 	NODE_TYPE_TO_EXTENSION_MAP,
-} from "./editor-extension.const";
+} from "./editor-extension.const"
 
 // 编辑器类型判断函数
 export {
@@ -29,4 +29,4 @@ export {
 	isExcalidrawFile,
 	isGrainFile,
 	isLexicalFile,
-} from "./get-editor-type.pipe";
+} from "./get-editor-type.pipe"

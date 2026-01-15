@@ -15,27 +15,27 @@
  */
 export interface FontState {
 	/** Editor font family (VSCode style - comma separated font list) */
-	readonly fontFamily: string;
+	readonly fontFamily: string
 	/** Editor font size in pixels */
-	readonly fontSize: number;
+	readonly fontSize: number
 	/** Editor line height multiplier */
-	readonly lineHeight: number;
+	readonly lineHeight: number
 	/** Editor letter spacing in em units */
-	readonly letterSpacing: number;
+	readonly letterSpacing: number
 	/** UI font family */
-	readonly uiFontFamily: string;
+	readonly uiFontFamily: string
 	/** UI font size in pixels */
-	readonly uiFontSize: number;
+	readonly uiFontSize: number
 	/** UI scale preset key */
-	readonly uiScale: string;
+	readonly uiScale: string
 	/** Card size preset key */
-	readonly cardSize: string;
+	readonly cardSize: string
 	/** Card border radius in pixels */
-	readonly cardBorderRadius: number;
+	readonly cardBorderRadius: number
 	/** Paragraph spacing multiplier */
-	readonly paragraphSpacing: number;
+	readonly paragraphSpacing: number
 	/** First line indent in em units */
-	readonly firstLineIndent: number;
+	readonly firstLineIndent: number
 }
 
 // ==============================
@@ -47,29 +47,29 @@ export interface FontState {
  */
 export interface FontActions {
 	/** Set editor font family */
-	readonly setFontFamily: (family: string) => void;
+	readonly setFontFamily: (family: string) => void
 	/** Set editor font size (clamped to 12-32) */
-	readonly setFontSize: (size: number) => void;
+	readonly setFontSize: (size: number) => void
 	/** Set editor line height (clamped to 1.2-2.5) */
-	readonly setLineHeight: (height: number) => void;
+	readonly setLineHeight: (height: number) => void
 	/** Set editor letter spacing (clamped to -0.05-0.2) */
-	readonly setLetterSpacing: (spacing: number) => void;
+	readonly setLetterSpacing: (spacing: number) => void
 	/** Set UI font family */
-	readonly setUiFontFamily: (family: string) => void;
+	readonly setUiFontFamily: (family: string) => void
 	/** Set UI font size (clamped to 12-18) */
-	readonly setUiFontSize: (size: number) => void;
+	readonly setUiFontSize: (size: number) => void
 	/** Set UI scale preset */
-	readonly setUiScale: (scale: string) => void;
+	readonly setUiScale: (scale: string) => void
 	/** Set card size preset */
-	readonly setCardSize: (size: string) => void;
+	readonly setCardSize: (size: string) => void
 	/** Set card border radius (clamped to 0-16) */
-	readonly setCardBorderRadius: (radius: number) => void;
+	readonly setCardBorderRadius: (radius: number) => void
 	/** Set paragraph spacing (clamped to 0-2.5) */
-	readonly setParagraphSpacing: (spacing: number) => void;
+	readonly setParagraphSpacing: (spacing: number) => void
 	/** Set first line indent (clamped to 0-4) */
-	readonly setFirstLineIndent: (indent: number) => void;
+	readonly setFirstLineIndent: (indent: number) => void
 	/** Reset all settings to defaults */
-	readonly reset: () => void;
+	readonly reset: () => void
 }
 
 // ==============================
@@ -78,11 +78,10 @@ export interface FontActions {
 
 /** Default editor font (VSCode style, comma separated, by priority) */
 export const DEFAULT_EDITOR_FONT =
-	"'FiraCode Nerd Font', 'Hack Nerd Font', 'JetBrainsMono Nerd Font', 'Noto Sans Mono CJK SC', monospace";
+	"'FiraCode Nerd Font', 'Hack Nerd Font', 'JetBrainsMono Nerd Font', 'Noto Sans Mono CJK SC', monospace"
 
 /** Default UI font */
-export const DEFAULT_UI_FONT =
-	"'Noto Sans CJK SC', 'Noto Sans', system-ui, sans-serif";
+export const DEFAULT_UI_FONT = "'Noto Sans CJK SC', 'Noto Sans', system-ui, sans-serif"
 
 /** Popular Nerd Font list for quick selection */
 export const POPULAR_FONTS = [
@@ -94,78 +93,78 @@ export const POPULAR_FONTS = [
 	"Noto Sans CJK SC",
 	"Noto Serif CJK SC",
 	"Noto Sans Mono CJK SC",
-] as const;
+] as const
 
 // ==============================
 // UI Scale Options
 // ==============================
 
 export interface UIScaleOption {
-	readonly value: string;
-	readonly label: string;
-	readonly scale: number;
-	readonly description: string;
+	readonly value: string
+	readonly label: string
+	readonly scale: number
+	readonly description: string
 }
 
 export const UI_SCALE_OPTIONS: readonly UIScaleOption[] = [
 	{
-		value: "compact",
+		description: "Dense layout",
 		label: "Compact",
 		scale: 0.875,
-		description: "Dense layout",
+		value: "compact",
 	},
 	{
-		value: "default",
+		description: "Standard size",
 		label: "Default",
 		scale: 1,
-		description: "Standard size",
+		value: "default",
 	},
 	{
-		value: "comfortable",
+		description: "Spacious layout",
 		label: "Comfortable",
 		scale: 1.125,
-		description: "Spacious layout",
+		value: "comfortable",
 	},
-	{ value: "large", label: "Large", scale: 1.25, description: "Extra large" },
-] as const;
+	{ description: "Extra large", label: "Large", scale: 1.25, value: "large" },
+] as const
 
 // ==============================
 // Card Size Options
 // ==============================
 
 export interface CardSizeOption {
-	readonly value: string;
-	readonly label: string;
-	readonly padding: string;
-	readonly description: string;
+	readonly value: string
+	readonly label: string
+	readonly padding: string
+	readonly description: string
 }
 
 export const CARD_SIZE_OPTIONS: readonly CardSizeOption[] = [
 	{
-		value: "compact",
+		description: "Minimal padding",
 		label: "Compact",
 		padding: "0.75rem",
-		description: "Minimal padding",
+		value: "compact",
 	},
 	{
-		value: "default",
+		description: "Standard padding",
 		label: "Default",
 		padding: "1rem",
-		description: "Standard padding",
+		value: "default",
 	},
 	{
-		value: "comfortable",
+		description: "Generous padding",
 		label: "Comfortable",
 		padding: "1.5rem",
-		description: "Generous padding",
+		value: "comfortable",
 	},
 	{
-		value: "spacious",
+		description: "Maximum padding",
 		label: "Spacious",
 		padding: "2rem",
-		description: "Maximum padding",
+		value: "spacious",
 	},
-] as const;
+] as const
 
 // ==============================
 // Value Constraints
@@ -176,14 +175,14 @@ export const CARD_SIZE_OPTIONS: readonly CardSizeOption[] = [
  * Used for clamping values in setters.
  */
 export const FONT_CONSTRAINTS = {
-	fontSize: { min: 12, max: 32 },
-	lineHeight: { min: 1.2, max: 2.5 },
-	letterSpacing: { min: -0.05, max: 0.2 },
-	uiFontSize: { min: 12, max: 18 },
-	cardBorderRadius: { min: 0, max: 16 },
-	paragraphSpacing: { min: 0, max: 2.5 },
-	firstLineIndent: { min: 0, max: 4 },
-} as const;
+	cardBorderRadius: { max: 16, min: 0 },
+	firstLineIndent: { max: 4, min: 0 },
+	fontSize: { max: 32, min: 12 },
+	letterSpacing: { max: 0.2, min: -0.05 },
+	lineHeight: { max: 2.5, min: 1.2 },
+	paragraphSpacing: { max: 2.5, min: 0 },
+	uiFontSize: { max: 18, min: 12 },
+} as const
 
 // ==============================
 // Configuration
@@ -194,27 +193,27 @@ export const FONT_CONSTRAINTS = {
  */
 export interface FontConfig {
 	/** Storage key for persistence */
-	readonly storageKey: string;
+	readonly storageKey: string
 }
 
 export const DEFAULT_FONT_CONFIG: FontConfig = {
 	storageKey: "grain-font-settings",
-} as const;
+} as const
 
 // ==============================
 // Default Values
 // ==============================
 
 export const DEFAULT_FONT_STATE: FontState = {
+	cardBorderRadius: 8,
+	cardSize: "default",
+	firstLineIndent: 0,
 	fontFamily: DEFAULT_EDITOR_FONT,
 	fontSize: 16,
-	lineHeight: 1.6,
 	letterSpacing: 0,
+	lineHeight: 1.6,
+	paragraphSpacing: 0.5,
 	uiFontFamily: DEFAULT_UI_FONT,
 	uiFontSize: 14,
 	uiScale: "default",
-	cardSize: "default",
-	cardBorderRadius: 8,
-	paragraphSpacing: 0.5,
-	firstLineIndent: 0,
-} as const;
+} as const

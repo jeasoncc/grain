@@ -13,11 +13,8 @@
  * 这些函数无副作用，可组合，可测试。
  */
 
-import dayjs from "dayjs";
-import {
-	type DateFolderStructure,
-	getDateFolderStructure,
-} from "@/utils/date.util";
+import dayjs from "dayjs"
+import { type DateFolderStructure, getDateFolderStructure } from "@/utils/date.util"
 
 // ==============================
 // Types
@@ -26,26 +23,26 @@ import {
 /**
  * 模板类型
  */
-export type TemplateType = "diary" | "todo" | "ledger" | "wiki";
+export type TemplateType = "diary" | "todo" | "ledger" | "wiki"
 
 /**
  * 模板配置
  */
 export interface TemplateConfig {
 	/** 模板类型 */
-	readonly type: TemplateType;
+	readonly type: TemplateType
 	/** 根文件夹名称 */
-	readonly rootFolder: string;
+	readonly rootFolder: string
 	/** 文件名前缀 */
-	readonly filePrefix: string;
+	readonly filePrefix: string
 	/** 默认标签 */
-	readonly defaultTags: ReadonlyArray<string>;
+	readonly defaultTags: ReadonlyArray<string>
 	/** 标题级别 */
-	readonly headingLevel: "h1" | "h2" | "h3";
+	readonly headingLevel: "h1" | "h2" | "h3"
 	/** 是否包含空行 */
-	readonly includeEmptyLines: boolean;
+	readonly includeEmptyLines: boolean
 	/** 节点类型 */
-	readonly nodeType: "file" | "diary" | "canvas";
+	readonly nodeType: "file" | "diary" | "canvas"
 }
 
 /**
@@ -53,19 +50,19 @@ export interface TemplateConfig {
  */
 export interface FileStructure {
 	/** 根文件夹名称 */
-	readonly rootFolder: string;
+	readonly rootFolder: string
 	/** 年份文件夹名称 */
-	readonly yearFolder: string;
+	readonly yearFolder: string
 	/** 月份文件夹名称 */
-	readonly monthFolder: string;
+	readonly monthFolder: string
 	/** 日期文件夹名称 */
-	readonly dayFolder: string;
+	readonly dayFolder: string
 	/** 文件名 */
-	readonly filename: string;
+	readonly filename: string
 	/** 完整文件夹路径数组 */
-	readonly folderPath: ReadonlyArray<string>;
+	readonly folderPath: ReadonlyArray<string>
 	/** 完整路径（含文件名） */
-	readonly fullPath: string;
+	readonly fullPath: string
 }
 
 /**
@@ -73,13 +70,13 @@ export interface FileStructure {
  */
 export interface FileCreationParams {
 	/** 工作区 ID */
-	readonly workspaceId: string;
+	readonly workspaceId: string
 	/** 文件结构 */
-	readonly structure: FileStructure;
+	readonly structure: FileStructure
 	/** 模板配置 */
-	readonly config: TemplateConfig;
+	readonly config: TemplateConfig
 	/** 内容（Lexical JSON 字符串） */
-	readonly content: string;
+	readonly content: string
 }
 
 // ==============================
@@ -97,7 +94,7 @@ export const DIARY_TEMPLATE: TemplateConfig = {
 	headingLevel: "h2",
 	includeEmptyLines: true,
 	nodeType: "diary",
-};
+}
 
 /**
  * 待办模板配置
@@ -110,7 +107,7 @@ export const TODO_TEMPLATE: TemplateConfig = {
 	headingLevel: "h2",
 	includeEmptyLines: true,
 	nodeType: "file",
-};
+}
 
 /**
  * 账本模板配置
@@ -123,7 +120,7 @@ export const LEDGER_TEMPLATE: TemplateConfig = {
 	headingLevel: "h2",
 	includeEmptyLines: true,
 	nodeType: "file",
-};
+}
 
 /**
  * Wiki 模板配置
@@ -136,7 +133,7 @@ export const WIKI_TEMPLATE: TemplateConfig = {
 	headingLevel: "h2",
 	includeEmptyLines: true,
 	nodeType: "file",
-};
+}
 
 /**
  * 所有模板配置映射
@@ -146,7 +143,7 @@ export const TEMPLATE_CONFIGS: Record<TemplateType, TemplateConfig> = {
 	todo: TODO_TEMPLATE,
 	ledger: LEDGER_TEMPLATE,
 	wiki: WIKI_TEMPLATE,
-};
+}
 
 // ==============================
 // Pure Functions
@@ -159,7 +156,7 @@ export const TEMPLATE_CONFIGS: Record<TemplateType, TemplateConfig> = {
  * @returns 模板配置
  */
 export function getTemplateConfig(type: TemplateType): TemplateConfig {
-	return TEMPLATE_CONFIGS[type];
+	return TEMPLATE_CONFIGS[type]
 }
 
 /**
@@ -171,9 +168,9 @@ export function getTemplateConfig(type: TemplateType): TemplateConfig {
  * @returns 文件名
  */
 export function generateFilename(prefix: string, date: Date): string {
-	const timestamp = Math.floor(date.getTime() / 1000);
-	const formattedTime = dayjs(date).format("HH-mm-ss");
-	return `${prefix}-${timestamp}-${formattedTime}`;
+	const timestamp = Math.floor(date.getTime() / 1000)
+	const formattedTime = dayjs(date).format("HH-mm-ss")
+	return `${prefix}-${timestamp}-${formattedTime}`
 }
 
 /**
@@ -188,15 +185,15 @@ export function generateFileStructure(
 	config: TemplateConfig,
 	date: Date = dayjs().toDate(),
 ): FileStructure {
-	const dateStructure: DateFolderStructure = getDateFolderStructure(date);
-	const filename = generateFilename(config.filePrefix, date);
+	const dateStructure: DateFolderStructure = getDateFolderStructure(date)
+	const filename = generateFilename(config.filePrefix, date)
 
 	const folderPath = [
 		config.rootFolder,
 		dateStructure.yearFolder,
 		dateStructure.monthFolder,
 		dateStructure.dayFolder,
-	];
+	]
 
 	return {
 		rootFolder: config.rootFolder,
@@ -206,7 +203,7 @@ export function generateFileStructure(
 		filename,
 		folderPath,
 		fullPath: `${folderPath.join("/")}/${filename}`,
-	};
+	}
 }
 
 /**
@@ -220,8 +217,8 @@ export function generateFileStructureByType(
 	type: TemplateType,
 	date: Date = dayjs().toDate(),
 ): FileStructure {
-	const config = getTemplateConfig(type);
-	return generateFileStructure(config, date);
+	const config = getTemplateConfig(type)
+	return generateFileStructure(config, date)
 }
 
 /**
@@ -235,11 +232,11 @@ export function createCustomTemplate(
 	base: TemplateType,
 	overrides: Partial<TemplateConfig>,
 ): TemplateConfig {
-	const baseConfig = getTemplateConfig(base);
+	const baseConfig = getTemplateConfig(base)
 	return {
 		...baseConfig,
 		...overrides,
-	};
+	}
 }
 
 /**
@@ -249,7 +246,7 @@ export function createCustomTemplate(
  * @returns 是否为有效的模板类型
  */
 export function isValidTemplateType(type: string): type is TemplateType {
-	return type in TEMPLATE_CONFIGS;
+	return type in TEMPLATE_CONFIGS
 }
 
 /**
@@ -258,7 +255,7 @@ export function isValidTemplateType(type: string): type is TemplateType {
  * @returns 模板类型数组
  */
 export function getAvailableTemplateTypes(): ReadonlyArray<TemplateType> {
-	return Object.keys(TEMPLATE_CONFIGS) as ReadonlyArray<TemplateType>;
+	return Object.keys(TEMPLATE_CONFIGS) as ReadonlyArray<TemplateType>
 }
 
 /**
@@ -276,13 +273,13 @@ export function buildFileCreationParams(
 	content: string,
 	date: Date = dayjs().toDate(),
 ): FileCreationParams {
-	const config = getTemplateConfig(type);
-	const structure = generateFileStructure(config, date);
+	const config = getTemplateConfig(type)
+	const structure = generateFileStructure(config, date)
 
 	return {
 		workspaceId,
 		structure,
 		config,
 		content,
-	};
+	}
 }

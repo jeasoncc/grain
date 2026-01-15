@@ -13,32 +13,32 @@ import {
 	useIsManualSaving,
 	useSaveStatus,
 	useSaveStore,
-} from "@/state/save.state";
+} from "@/state/save.state"
 
 /**
  * Hook to get save status
  *
  * @returns Current save status
  */
-export { useSaveStatus };
+export { useSaveStatus }
 
 /**
  * Hook to check if there are unsaved changes
  *
  * @returns True if there are unsaved changes
  */
-export { useHasUnsavedChanges };
+export { useHasUnsavedChanges }
 
 /**
  * Hook to check if manual save is in progress
  *
  * @returns True if manual save is in progress
  */
-export { useIsManualSaving };
+export { useIsManualSaving }
 
 /**
  * Hook to access the full save store
  *
  * @returns Save store with all state and actions
  */
-export { useSaveStore };
+export { useSaveStore }

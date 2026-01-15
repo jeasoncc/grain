@@ -30,5 +30,5 @@ function main() {
 }
 
 main();
-`;
-};
+`
+}

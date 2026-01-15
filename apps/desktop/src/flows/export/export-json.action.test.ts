@@ -8,12 +8,12 @@
  * - 错误处理
  */
 
-import * as E from "fp-ts/Either";
-import type * as TE from "fp-ts/TaskEither";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import dayjs from "dayjs";
-import type { ContentInterface } from "@/types/content/content.interface";
-import type { NodeInterface } from "@/types/node/node.interface";
+import dayjs from "dayjs"
+import * as E from "fp-ts/Either"
+import type * as TE from "fp-ts/TaskEither"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import type { ContentInterface } from "@/types/content/content.interface"
+import type { NodeInterface } from "@/types/node/node.interface"
 
 // ============================================================================
 // Test Helpers
@@ -34,15 +34,13 @@ function createTestNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
 		createDate: overrides.createDate ?? dayjs().toISOString(),
 		lastEdit: overrides.lastEdit ?? dayjs().toISOString(),
 		tags: overrides.tags ?? [],
-	};
+	}
 }
 
 /**
  * 创建测试用的 ContentInterface 对象
  */
-function createTestContent(
-	overrides: Partial<ContentInterface> = {},
-): ContentInterface {
+function createTestContent(overrides: Partial<ContentInterface> = {}): ContentInterface {
 	return {
 		id: overrides.id ?? "content-1",
 		nodeId: overrides.nodeId ?? "node-1",
@@ -65,33 +63,30 @@ function createTestContent(
 			}),
 		contentType: overrides.contentType ?? "lexical",
 		lastEdit: overrides.lastEdit ?? dayjs().toISOString(),
-	};
+	}
 }
 
 /**
  * 运行 TaskEither 并返回 Either 结果
  */
-async function runTE<Err, A>(
-	te: TE.TaskEither<Err, A>,
-): Promise<E.Either<Err, A>> {
-	return te();
+async function runTE<Err, A>(te: TE.TaskEither<Err, A>): Promise<E.Either<Err, A>> {
+	return te()
 }
 
 // ============================================================================
 // Mock Setup
 // ============================================================================
 
-const mockGetNodeByIdOrFail = vi.fn();
-const mockGetContentByNodeIdOrFail = vi.fn();
+const mockGetNodeByIdOrFail = vi.fn()
+const mockGetContentByNodeIdOrFail = vi.fn()
 
 vi.mock("@/db/node.db.fn", () => ({
 	getNodeByIdOrFail: (...args: unknown[]) => mockGetNodeByIdOrFail(...args),
-}));
+}))
 
 vi.mock("@/db/content.db.fn", () => ({
-	getContentByNodeIdOrFail: (...args: unknown[]) =>
-		mockGetContentByNodeIdOrFail(...args),
-}));
+	getContentByNodeIdOrFail: (...args: unknown[]) => mockGetContentByNodeIdOrFail(...args),
+}))
 
 vi.mock("@/log", () => ({
 	default: {
@@ -102,10 +97,10 @@ vi.mock("@/log", () => ({
 		warn: vi.fn(),
 		debug: vi.fn(),
 	},
-}));
+}))
 
 // Logger removed - not needed in tests
-import { exportContentToJson, exportNodeToJson } from "./export-json.flow";
+import { exportContentToJson, exportNodeToJson } from "./export-json.flow"
 
 // ============================================================================
 // Unit Tests
@@ -113,88 +108,76 @@ import { exportContentToJson, exportNodeToJson } from "./export-json.flow";
 
 describe("exportNodeToJson", () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
-	});
+		vi.clearAllMocks()
+	})
 
 	it("should export node content to JSON format", async () => {
-		const testNode = createTestNode({ title: "My Document" });
-		const testContent = createTestContent({ nodeId: testNode.id });
+		const testNode = createTestNode({ title: "My Document" })
+		const testContent = createTestContent({ nodeId: testNode.id })
 
-		mockGetNodeByIdOrFail.mockReturnValue(() =>
-			Promise.resolve(E.right(testNode)),
-		);
-		mockGetContentByNodeIdOrFail.mockReturnValue(() =>
-			Promise.resolve(E.right(testContent)),
-		);
+		mockGetNodeByIdOrFail.mockReturnValue(() => Promise.resolve(E.right(testNode)))
+		mockGetContentByNodeIdOrFail.mockReturnValue(() => Promise.resolve(E.right(testContent)))
 
-		const result = await runTE(exportNodeToJson({ nodeId: testNode.id }));
+		const result = await runTE(exportNodeToJson({ nodeId: testNode.id }))
 
-		expect(E.isRight(result)).toBe(true);
+		expect(E.isRight(result)).toBe(true)
 		if (E.isRight(result)) {
-			expect(result.right.filename).toBe("My Document");
-			expect(result.right.extension).toBe("json");
+			expect(result.right.filename).toBe("My Document")
+			expect(result.right.extension).toBe("json")
 			// JSON 导出应该包含有效的 JSON
-			expect(() => JSON.parse(result.right.content)).not.toThrow();
+			expect(() => JSON.parse(result.right.content)).not.toThrow()
 		}
-	});
+	})
 
 	it("should include metadata in export when option is set", async () => {
-		const testNode = createTestNode({ title: "My Document" });
-		const testContent = createTestContent({ nodeId: testNode.id });
+		const testNode = createTestNode({ title: "My Document" })
+		const testContent = createTestContent({ nodeId: testNode.id })
 
-		mockGetNodeByIdOrFail.mockReturnValue(() =>
-			Promise.resolve(E.right(testNode)),
-		);
-		mockGetContentByNodeIdOrFail.mockReturnValue(() =>
-			Promise.resolve(E.right(testContent)),
-		);
+		mockGetNodeByIdOrFail.mockReturnValue(() => Promise.resolve(E.right(testNode)))
+		mockGetContentByNodeIdOrFail.mockReturnValue(() => Promise.resolve(E.right(testContent)))
 
 		const result = await runTE(
 			exportNodeToJson({
 				nodeId: testNode.id,
 				options: { includeMetadata: true },
 			}),
-		);
+		)
 
-		expect(E.isRight(result)).toBe(true);
+		expect(E.isRight(result)).toBe(true)
 		if (E.isRight(result)) {
-			const parsed = JSON.parse(result.right.content);
-			expect(parsed.metadata).toBeDefined();
-			expect(parsed.metadata.title).toBe("My Document");
+			const parsed = JSON.parse(result.right.content)
+			expect(parsed.metadata).toBeDefined()
+			expect(parsed.metadata.title).toBe("My Document")
 		}
-	});
+	})
 
 	it("should return Left when node not found", async () => {
-		const error = { type: "NOT_FOUND" as const, message: "Node not found" };
-		mockGetNodeByIdOrFail.mockReturnValue(() => Promise.resolve(E.left(error)));
+		const error = { type: "NOT_FOUND" as const, message: "Node not found" }
+		mockGetNodeByIdOrFail.mockReturnValue(() => Promise.resolve(E.left(error)))
 
-		const result = await runTE(exportNodeToJson({ nodeId: "non-existent" }));
+		const result = await runTE(exportNodeToJson({ nodeId: "non-existent" }))
 
-		expect(E.isLeft(result)).toBe(true);
+		expect(E.isLeft(result)).toBe(true)
 		if (E.isLeft(result)) {
-			expect(result.left.type).toBe("NOT_FOUND");
+			expect(result.left.type).toBe("NOT_FOUND")
 		}
-	});
+	})
 
 	it("should return Left when content not found", async () => {
-		const testNode = createTestNode();
-		const error = { type: "NOT_FOUND" as const, message: "Content not found" };
+		const testNode = createTestNode()
+		const error = { type: "NOT_FOUND" as const, message: "Content not found" }
 
-		mockGetNodeByIdOrFail.mockReturnValue(() =>
-			Promise.resolve(E.right(testNode)),
-		);
-		mockGetContentByNodeIdOrFail.mockReturnValue(() =>
-			Promise.resolve(E.left(error)),
-		);
+		mockGetNodeByIdOrFail.mockReturnValue(() => Promise.resolve(E.right(testNode)))
+		mockGetContentByNodeIdOrFail.mockReturnValue(() => Promise.resolve(E.left(error)))
 
-		const result = await runTE(exportNodeToJson({ nodeId: testNode.id }));
+		const result = await runTE(exportNodeToJson({ nodeId: testNode.id }))
 
-		expect(E.isLeft(result)).toBe(true);
+		expect(E.isLeft(result)).toBe(true)
 		if (E.isLeft(result)) {
-			expect(result.left.type).toBe("NOT_FOUND");
+			expect(result.left.type).toBe("NOT_FOUND")
 		}
-	});
-});
+	})
+})
 
 describe("exportContentToJson", () => {
 	it("should export content directly to JSON format", () => {
@@ -212,34 +195,34 @@ describe("exportContentToJson", () => {
 				type: "root",
 				version: 1,
 			},
-		});
+		})
 
-		const result = exportContentToJson(content);
+		const result = exportContentToJson(content)
 
-		expect(E.isRight(result)).toBe(true);
+		expect(E.isRight(result)).toBe(true)
 		if (E.isRight(result)) {
 			// 应该是有效的 JSON
-			expect(() => JSON.parse(result.right)).not.toThrow();
+			expect(() => JSON.parse(result.right)).not.toThrow()
 		}
-	});
+	})
 
 	it("should return Left for invalid content", () => {
-		const result = exportContentToJson("invalid json");
+		const result = exportContentToJson("invalid json")
 
-		expect(E.isLeft(result)).toBe(true);
+		expect(E.isLeft(result)).toBe(true)
 		if (E.isLeft(result)) {
-			expect(result.left.type).toBe("EXPORT_ERROR");
+			expect(result.left.type).toBe("EXPORT_ERROR")
 		}
-	});
+	})
 
 	it("should return Left for empty content", () => {
-		const result = exportContentToJson("");
+		const result = exportContentToJson("")
 
-		expect(E.isLeft(result)).toBe(true);
+		expect(E.isLeft(result)).toBe(true)
 		if (E.isLeft(result)) {
-			expect(result.left.type).toBe("EXPORT_ERROR");
+			expect(result.left.type).toBe("EXPORT_ERROR")
 		}
-	});
+	})
 
 	it("should format JSON with pretty option", () => {
 		const content = JSON.stringify({
@@ -256,14 +239,14 @@ describe("exportContentToJson", () => {
 				type: "root",
 				version: 1,
 			},
-		});
+		})
 
-		const result = exportContentToJson(content, { pretty: true, indent: 2 });
+		const result = exportContentToJson(content, { pretty: true, indent: 2 })
 
-		expect(E.isRight(result)).toBe(true);
+		expect(E.isRight(result)).toBe(true)
 		if (E.isRight(result)) {
 			// Pretty JSON 应该包含换行符
-			expect(result.right).toContain("\n");
+			expect(result.right).toContain("\n")
 		}
-	});
-});
+	})
+})

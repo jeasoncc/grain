@@ -13,7 +13,7 @@ export type {
 	ExcalidrawEditorViewProps,
 	PerformanceConfig,
 	PerformanceMetrics,
-} from "@grain/excalidraw-editor";
+} from "@grain/excalidraw-editor"
 
 /**
  * ExcalidrawEditorContainer Props 接口
@@ -22,7 +22,7 @@ export type {
  */
 export interface ExcalidrawEditorContainerProps {
 	/** 节点 ID */
-	readonly nodeId: string;
+	readonly nodeId: string
 	/** 样式类名 */
-	readonly className?: string;
+	readonly className?: string
 }

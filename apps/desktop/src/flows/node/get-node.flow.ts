@@ -5,13 +5,10 @@
  * 封装节点获取操作
  */
 
-import type * as TE from "fp-ts/TaskEither";
-import {
-	getNodeById as getNodeByIdApi,
-	setNodeCollapsed as setNodeCollapsedApi,
-} from "@/io/api";
-import type { NodeInterface } from "@/types/node";
-import type { AppError } from "@/types/error";
+import type * as TE from "fp-ts/TaskEither"
+import { getNodeById as getNodeByIdApi, setNodeCollapsed as setNodeCollapsedApi } from "@/io/api"
+import type { AppError } from "@/types/error"
+import type { NodeInterface } from "@/types/node"
 
 /**
  * 获取节点详情
@@ -19,9 +16,8 @@ import type { AppError } from "@/types/error";
  * @param nodeId - 节点 ID
  * @returns TaskEither<AppError, NodeInterface | null>
  */
-export const getNodeById = (
-	nodeId: string,
-): TE.TaskEither<AppError, NodeInterface | null> => getNodeByIdApi(nodeId);
+export const getNodeById = (nodeId: string): TE.TaskEither<AppError, NodeInterface | null> =>
+	getNodeByIdApi(nodeId)
 
 /**
  * 设置节点折叠状态
@@ -33,5 +29,4 @@ export const getNodeById = (
 export const setNodeCollapsed = (
 	nodeId: string,
 	collapsed: boolean,
-): TE.TaskEither<AppError, NodeInterface> =>
-	setNodeCollapsedApi(nodeId, collapsed);
+): TE.TaskEither<AppError, NodeInterface> => setNodeCollapsedApi(nodeId, collapsed)

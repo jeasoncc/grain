@@ -3,4 +3,4 @@
  * @description Editor History 类型模块导出
  */
 
-export * from "./editor-history.interface";
+export * from "./editor-history.interface"

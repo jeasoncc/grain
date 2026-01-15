@@ -6,4 +6,4 @@
  * 此文件保留作为兼容层
  */
 
-export * from "@/pipes/icon-theme";
+export * from "@/pipes/icon-theme"

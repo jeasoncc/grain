@@ -5,14 +5,14 @@
  * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  */
 
-import { PenTool, Plus, Search, Trash2 } from "lucide-react";
-import { useCallback, useState } from "react";
-import type { NodeInterface } from "@/types/node";
-import { cn } from "@/utils/cn.util";
-import { Button } from "@/views/ui/button";
-import { Input } from "@/views/ui/input";
-import { ScrollArea } from "@/views/ui/scroll-area";
-import { Separator } from "@/views/ui/separator";
+import { PenTool, Plus, Search, Trash2 } from "lucide-react"
+import { useCallback, useState } from "react"
+import type { NodeInterface } from "@/types/node"
+import { cn } from "@/utils/cn.util"
+import { Button } from "@/views/ui/button"
+import { Input } from "@/views/ui/input"
+import { ScrollArea } from "@/views/ui/scroll-area"
+import { Separator } from "@/views/ui/separator"
 
 /**
  * DrawingsPanel Props 接口
@@ -21,17 +21,17 @@ import { Separator } from "@/views/ui/separator";
  */
 export interface DrawingsPanelProps {
 	/** 当前工作区 ID */
-	readonly workspaceId: string | null;
+	readonly workspaceId: string | null
 	/** 工作区的所有绘图节点 */
-	readonly drawings: NodeInterface[];
+	readonly drawings: NodeInterface[]
 	/** 选中的绘图 ID */
-	readonly selectedDrawingId: string | null;
+	readonly selectedDrawingId: string | null
 	/** 选择绘图回调 */
-	readonly onSelectDrawing: (drawing: NodeInterface) => void;
+	readonly onSelectDrawing: (drawing: NodeInterface) => void
 	/** 创建绘图回调 */
-	readonly onCreateDrawing: () => void;
+	readonly onCreateDrawing: () => void
 	/** 删除绘图回调 */
-	readonly onDeleteDrawing: (drawingId: string, drawingName: string) => void;
+	readonly onDeleteDrawing: (drawingId: string, drawingName: string) => void
 }
 
 /**
@@ -47,23 +47,23 @@ export function DrawingsPanel({
 	onCreateDrawing,
 	onDeleteDrawing,
 }: DrawingsPanelProps) {
-	const [searchQuery, setSearchQuery] = useState("");
+	const [searchQuery, setSearchQuery] = useState("")
 
 	// Filter drawings based on search
 	const filteredDrawings = drawings.filter((drawing) =>
 		drawing.title.toLowerCase().includes(searchQuery.toLowerCase()),
-	);
+	)
 
 	// Delete drawing handler
 	const handleDeleteDrawing = useCallback(
 		(drawingId: string, drawingName: string) => {
 			if (!window.confirm(`Delete "${drawingName}"?`)) {
-				return;
+				return
 			}
-			onDeleteDrawing(drawingId, drawingName);
+			onDeleteDrawing(drawingId, drawingName)
 		},
 		[onDeleteDrawing],
-	);
+	)
 
 	return (
 		<div className="flex h-full flex-col">
@@ -108,26 +108,17 @@ export function DrawingsPanel({
 						// 未选择工作空间
 						<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
 							<PenTool className="size-12 mb-3 opacity-20" />
-							<p className="text-sm text-center">
-								Select a workspace to view drawings
-							</p>
+							<p className="text-sm text-center">Select a workspace to view drawings</p>
 						</div>
 					) : filteredDrawings.length === 0 ? (
 						// 无绘图
 						<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
 							<PenTool className="size-12 mb-3 opacity-20" />
 							<p className="text-sm text-center">
-								{searchQuery
-									? "No drawings match your search"
-									: "No drawings yet"}
+								{searchQuery ? "No drawings match your search" : "No drawings yet"}
 							</p>
 							{!searchQuery && (
-								<Button
-									variant="outline"
-									size="sm"
-									className="mt-3"
-									onClick={onCreateDrawing}
-								>
+								<Button variant="outline" size="sm" className="mt-3" onClick={onCreateDrawing}>
 									<Plus className="size-4 mr-1" />
 									Create Drawing
 								</Button>
@@ -147,9 +138,7 @@ export function DrawingsPanel({
 									drawing={drawing}
 									isSelected={selectedDrawingId === drawing.id}
 									onSelect={() => onSelectDrawing(drawing)}
-									onDelete={() =>
-										handleDeleteDrawing(drawing.id, drawing.title)
-									}
+									onDelete={() => handleDeleteDrawing(drawing.id, drawing.title)}
 								/>
 							))}
 
@@ -167,29 +156,24 @@ export function DrawingsPanel({
 				</div>
 			</ScrollArea>
 		</div>
-	);
+	)
 }
 
 interface DrawingListItemProps {
-	drawing: NodeInterface;
-	isSelected: boolean;
-	onSelect: () => void;
-	onDelete: () => void;
+	drawing: NodeInterface
+	isSelected: boolean
+	onSelect: () => void
+	onDelete: () => void
 }
 
-function DrawingListItem({
-	drawing,
-	isSelected,
-	onSelect,
-	onDelete,
-}: DrawingListItemProps) {
+function DrawingListItem({ drawing, isSelected, onSelect, onDelete }: DrawingListItemProps) {
 	const handleDelete = useCallback(
 		(e: React.MouseEvent) => {
-			e.stopPropagation();
-			onDelete();
+			e.stopPropagation()
+			onDelete()
 		},
 		[onDelete],
-	);
+	)
 
 	return (
 		<div
@@ -204,8 +188,8 @@ function DrawingListItem({
 			onClick={onSelect}
 			onKeyDown={(e) => {
 				if (e.key === "Enter" || e.key === " ") {
-					e.preventDefault();
-					onSelect();
+					e.preventDefault()
+					onSelect()
 				}
 			}}
 		>
@@ -213,9 +197,7 @@ function DrawingListItem({
 				<PenTool className="size-4" />
 			</div>
 			<div className="flex flex-col items-start gap-0.5 overflow-hidden flex-1">
-				<span className="text-sm font-medium leading-tight truncate w-full">
-					{drawing.title}
-				</span>
+				<span className="text-sm font-medium leading-tight truncate w-full">{drawing.title}</span>
 				<span className="text-xs text-muted-foreground/70 truncate w-full font-light">
 					{new Date(drawing.lastEdit).toLocaleDateString()}
 				</span>
@@ -230,5 +212,5 @@ function DrawingListItem({
 				<Trash2 className="size-3" />
 			</Button>
 		</div>
-	);
+	)
 }

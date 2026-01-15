@@ -12,12 +12,12 @@
  * @requirements 3.3
  */
 
-import { useMemo } from "react";
+import { useMemo } from "react"
 import {
 	useWorkspace as useWorkspaceQuery,
 	useWorkspaces as useWorkspacesQuery,
-} from "@/hooks/queries/workspace.queries";
-import type { WorkspaceInterface } from "@/types/workspace";
+} from "@/hooks/queries/workspace.queries"
+import type { WorkspaceInterface } from "@/types/workspace"
 
 /**
  * 获取所有工作区（实时更新）
@@ -46,14 +46,14 @@ import type { WorkspaceInterface } from "@/types/workspace";
  * ```
  */
 export function useAllWorkspaces(): readonly WorkspaceInterface[] | undefined {
-	const { data: workspaces, isLoading } = useWorkspacesQuery();
+	const { data: workspaces, isLoading } = useWorkspacesQuery()
 
 	return useMemo(() => {
-		if (isLoading || !workspaces) return undefined;
+		if (isLoading || !workspaces) return undefined
 		return [...workspaces].sort(
 			(a, b) => new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime(),
-		);
-	}, [workspaces, isLoading]);
+		)
+	}, [workspaces, isLoading])
 }
 
 /**
@@ -78,10 +78,10 @@ export function useAllWorkspaces(): readonly WorkspaceInterface[] | undefined {
 export function useWorkspace(
 	workspaceId: string | null | undefined,
 ): WorkspaceInterface | undefined {
-	const { data: workspace, isLoading } = useWorkspaceQuery(workspaceId);
+	const { data: workspace, isLoading } = useWorkspaceQuery(workspaceId)
 
-	if (isLoading) return undefined;
-	return workspace ?? undefined;
+	if (isLoading) return undefined
+	return workspace ?? undefined
 }
 
 /**
@@ -93,13 +93,13 @@ export function useWorkspace(
 export function useWorkspacesByOwner(
 	ownerId: string | null | undefined,
 ): readonly WorkspaceInterface[] | undefined {
-	const { data: workspaces, isLoading } = useWorkspacesQuery();
+	const { data: workspaces, isLoading } = useWorkspacesQuery()
 
 	return useMemo(() => {
-		if (isLoading || !workspaces) return undefined;
-		if (!ownerId) return [];
-		return workspaces.filter((w) => w.owner === ownerId);
-	}, [workspaces, ownerId, isLoading]);
+		if (isLoading || !workspaces) return undefined
+		if (!ownerId) return []
+		return workspaces.filter((w) => w.owner === ownerId)
+	}, [workspaces, ownerId, isLoading])
 }
 
 /**
@@ -108,20 +108,15 @@ export function useWorkspacesByOwner(
  * @param limit - 返回的最大工作区数量（默认：5）
  * @returns 最近打开的工作区数组
  */
-export function useRecentWorkspaces(
-	limit: number = 5,
-): readonly WorkspaceInterface[] | undefined {
-	const { data: workspaces, isLoading } = useWorkspacesQuery();
+export function useRecentWorkspaces(limit: number = 5): readonly WorkspaceInterface[] | undefined {
+	const { data: workspaces, isLoading } = useWorkspacesQuery()
 
 	return useMemo(() => {
-		if (isLoading || !workspaces) return undefined;
+		if (isLoading || !workspaces) return undefined
 		return [...workspaces]
-			.sort(
-				(a, b) =>
-					new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime(),
-			)
-			.slice(0, limit);
-	}, [workspaces, limit, isLoading]);
+			.sort((a, b) => new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime())
+			.slice(0, limit)
+	}, [workspaces, limit, isLoading])
 }
 
 /**
@@ -130,10 +125,10 @@ export function useRecentWorkspaces(
  * @returns 工作区数量，加载中返回 undefined
  */
 export function useWorkspaceCount(): number | undefined {
-	const { data: workspaces, isLoading } = useWorkspacesQuery();
+	const { data: workspaces, isLoading } = useWorkspacesQuery()
 
-	if (isLoading || !workspaces) return undefined;
-	return workspaces.length;
+	if (isLoading || !workspaces) return undefined
+	return workspaces.length
 }
 
 /**
@@ -142,14 +137,12 @@ export function useWorkspaceCount(): number | undefined {
  * @param workspaceId - 工作区 ID
  * @returns 存在返回 true，不存在返回 false，加载中返回 undefined
  */
-export function useWorkspaceExists(
-	workspaceId: string | null | undefined,
-): boolean | undefined {
-	const { data: workspace, isLoading } = useWorkspaceQuery(workspaceId);
+export function useWorkspaceExists(workspaceId: string | null | undefined): boolean | undefined {
+	const { data: workspace, isLoading } = useWorkspaceQuery(workspaceId)
 
-	if (isLoading) return undefined;
-	if (!workspaceId) return false;
-	return workspace !== null && workspace !== undefined;
+	if (isLoading) return undefined
+	if (!workspaceId) return false
+	return workspace !== null && workspace !== undefined
 }
 
 /**
@@ -163,20 +156,20 @@ export function useWorkspaceExists(
 export function useWorkspaceSearch(
 	query: string | null | undefined,
 ): readonly WorkspaceInterface[] | undefined {
-	const { data: workspaces, isLoading } = useWorkspacesQuery();
+	const { data: workspaces, isLoading } = useWorkspacesQuery()
 
 	return useMemo(() => {
-		if (isLoading || !workspaces) return undefined;
+		if (isLoading || !workspaces) return undefined
 
 		const sorted = [...workspaces].sort(
 			(a, b) => new Date(b.lastOpen).getTime() - new Date(a.lastOpen).getTime(),
-		);
+		)
 
 		if (!query || query.trim() === "") {
-			return sorted;
+			return sorted
 		}
 
-		const lowerQuery = query.toLowerCase();
-		return sorted.filter((w) => w.title.toLowerCase().includes(lowerQuery));
-	}, [workspaces, query, isLoading]);
+		const lowerQuery = query.toLowerCase()
+		return sorted.filter((w) => w.title.toLowerCase().includes(lowerQuery))
+	}, [workspaces, query, isLoading])
 }

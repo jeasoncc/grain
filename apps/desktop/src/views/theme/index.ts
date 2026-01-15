@@ -10,5 +10,5 @@ export {
 	getEffectiveThemeType,
 	getNextMode,
 	isThemeTypeMatch,
-} from "@/pipes/theme";
-export { getEditorThemeColors } from "./editor-theme.fn";
+} from "@/pipes/theme"
+export { getEditorThemeColors } from "./editor-theme.fn"

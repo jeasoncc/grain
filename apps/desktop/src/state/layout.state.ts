@@ -8,21 +8,21 @@
  * 依赖规则：state/ 只能依赖 types/
  */
 
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { create } from "zustand"
+import { persist } from "zustand/middleware"
 import {
 	DEFAULT_LAYOUT_CONFIG,
 	DEFAULT_LAYOUT_STATE,
 	type LayoutActions,
 	type LayoutState,
 	type SidebarPanel,
-} from "@/types/layout";
+} from "@/types/layout"
 
 // ==============================
 // Store Type
 // ==============================
 
-type LayoutStore = LayoutState & LayoutActions;
+type LayoutStore = LayoutState & LayoutActions
 
 // ==============================
 // Store Implementation
@@ -46,7 +46,7 @@ export const useLayoutStore = create<LayoutStore>()(
 					isSidebarOpen: true,
 					// Clear drag collapse flag when manually setting panel
 					wasCollapsedByDrag: false,
-				}));
+				}))
 			},
 
 			toggleSidebar: () => {
@@ -55,7 +55,7 @@ export const useLayoutStore = create<LayoutStore>()(
 					isSidebarOpen: !state.isSidebarOpen,
 					// Clear drag collapse flag on manual toggle
 					wasCollapsedByDrag: false,
-				}));
+				}))
 			},
 
 			setSidebarCollapsedByDrag: (collapsed: boolean) => {
@@ -63,7 +63,7 @@ export const useLayoutStore = create<LayoutStore>()(
 					...state,
 					wasCollapsedByDrag: collapsed,
 					isSidebarOpen: collapsed ? false : state.isSidebarOpen,
-				}));
+				}))
 			},
 
 			restoreFromCollapse: () => {
@@ -73,14 +73,14 @@ export const useLayoutStore = create<LayoutStore>()(
 					wasCollapsedByDrag: false,
 					// Restore to default width (20%)
 					sidebarWidth: DEFAULT_LAYOUT_STATE.sidebarWidth,
-				}));
+				}))
 			},
 
 			setSidebarWidth: (width: number) => {
 				set((state) => ({
 					...state,
 					sidebarWidth: width,
-				}));
+				}))
 			},
 		}),
 		{
@@ -93,24 +93,23 @@ export const useLayoutStore = create<LayoutStore>()(
 			}),
 		},
 	),
-);
+)
 
 // ==============================
 // Selector Hooks
 // ==============================
 
 /** Select whether sidebar is open */
-export const useIsSidebarOpen = () => useLayoutStore((s) => s.isSidebarOpen);
+export const useIsSidebarOpen = () => useLayoutStore((s) => s.isSidebarOpen)
 
 /** Select active panel */
-export const useActivePanel = () => useLayoutStore((s) => s.activePanel);
+export const useActivePanel = () => useLayoutStore((s) => s.activePanel)
 
 /** Select whether collapsed by drag */
-export const useWasCollapsedByDrag = () =>
-	useLayoutStore((s) => s.wasCollapsedByDrag);
+export const useWasCollapsedByDrag = () => useLayoutStore((s) => s.wasCollapsedByDrag)
 
 /** Select sidebar width */
-export const useSidebarWidth = () => useLayoutStore((s) => s.sidebarWidth);
+export const useSidebarWidth = () => useLayoutStore((s) => s.sidebarWidth)
 
 // ==============================
 // Action Hooks
@@ -123,4 +122,4 @@ export const useLayoutActions = () => ({
 	setSidebarCollapsedByDrag: useLayoutStore((s) => s.setSidebarCollapsedByDrag),
 	restoreFromCollapse: useLayoutStore((s) => s.restoreFromCollapse),
 	setSidebarWidth: useLayoutStore((s) => s.setSidebarWidth),
-});
+})

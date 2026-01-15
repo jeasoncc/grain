@@ -10,21 +10,21 @@
 // ============================================================================
 
 export interface KeyboardShortcutHandler {
-	readonly registerShortcut: (key: string, handler: () => void) => void;
-	readonly unregisterShortcut: (key: string) => void;
+	readonly registerShortcut: (key: string, handler: () => void) => void
+	readonly unregisterShortcut: (key: string) => void
 }
 
 export interface ShortcutConfig {
-	readonly key: string;
-	readonly ctrlKey?: boolean;
-	readonly metaKey?: boolean;
-	readonly shiftKey?: boolean;
-	readonly altKey?: boolean;
+	readonly key: string
+	readonly ctrlKey?: boolean
+	readonly metaKey?: boolean
+	readonly shiftKey?: boolean
+	readonly altKey?: boolean
 }
 
 interface KeyboardShortcutState {
-	readonly shortcuts: ReadonlyMap<string, () => void>;
-	readonly isListening: boolean;
+	readonly shortcuts: ReadonlyMap<string, () => void>
+	readonly isListening: boolean
 }
 
 // ============================================================================
@@ -32,8 +32,8 @@ interface KeyboardShortcutState {
 // ============================================================================
 
 export const isSaveShortcut = (event: KeyboardEvent): boolean => {
-	return (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s";
-};
+	return (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s"
+}
 
 export const getShortcutKey = (event: KeyboardEvent): string => {
 	const parts: readonly string[] = [
@@ -42,18 +42,14 @@ export const getShortcutKey = (event: KeyboardEvent): string => {
 		...(event.shiftKey ? ["shift"] : []),
 		...(event.altKey ? ["alt"] : []),
 		event.key.toLowerCase(),
-	];
+	]
 
-	return parts.join("+");
-};
+	return parts.join("+")
+}
 
 export const isEditableElement = (target: HTMLElement): boolean => {
-	return (
-		target.isContentEditable ||
-		target.tagName === "INPUT" ||
-		target.tagName === "TEXTAREA"
-	);
-};
+	return target.isContentEditable || target.tagName === "INPUT" || target.tagName === "TEXTAREA"
+}
 
 // ============================================================================
 // State Management Functions
@@ -62,7 +58,7 @@ export const isEditableElement = (target: HTMLElement): boolean => {
 const createInitialState = (): KeyboardShortcutState => ({
 	shortcuts: new Map(),
 	isListening: false,
-});
+})
 
 const addShortcut = (
 	state: KeyboardShortcutState,
@@ -71,15 +67,12 @@ const addShortcut = (
 ): KeyboardShortcutState => ({
 	...state,
 	shortcuts: new Map([...state.shortcuts, [key, handler]]),
-});
+})
 
-const removeShortcut = (
-	state: KeyboardShortcutState,
-	key: string,
-): KeyboardShortcutState => ({
+const removeShortcut = (state: KeyboardShortcutState, key: string): KeyboardShortcutState => ({
 	...state,
 	shortcuts: new Map([...state.shortcuts].filter(([k]) => k !== key)),
-});
+})
 
 const setListening = (
 	state: KeyboardShortcutState,
@@ -87,55 +80,55 @@ const setListening = (
 ): KeyboardShortcutState => ({
 	...state,
 	isListening,
-});
+})
 
 // ============================================================================
 // Keyboard Shortcut Manager (Functional)
 // ============================================================================
 
 const createKeyboardShortcutManager = (): KeyboardShortcutHandler => {
-	let state = createInitialState();
+	let state = createInitialState()
 
 	const handleKeyDown = (event: KeyboardEvent): void => {
-		const target = event.target as HTMLElement;
+		const target = event.target as HTMLElement
 
 		if (isEditableElement(target)) {
 			if (!isSaveShortcut(event)) {
-				return;
+				return
 			}
 		}
 
-		const shortcutKey = getShortcutKey(event);
-		const handler = state.shortcuts.get(shortcutKey);
+		const shortcutKey = getShortcutKey(event)
+		const handler = state.shortcuts.get(shortcutKey)
 
 		if (handler) {
-			event.preventDefault();
-			handler();
+			event.preventDefault()
+			handler()
 		}
-	};
+	}
 
 	const registerShortcut = (key: string, handler: () => void): void => {
-		state = addShortcut(state, key, handler);
-		
+		state = addShortcut(state, key, handler)
+
 		if (!state.isListening) {
-			window.addEventListener("keydown", handleKeyDown);
-			state = setListening(state, true);
+			window.addEventListener("keydown", handleKeyDown)
+			state = setListening(state, true)
 		}
-	};
+	}
 
 	const unregisterShortcut = (key: string): void => {
-		state = removeShortcut(state, key);
+		state = removeShortcut(state, key)
 
 		if (state.shortcuts.size === 0 && state.isListening) {
-			window.removeEventListener("keydown", handleKeyDown);
-			state = setListening(state, false);
+			window.removeEventListener("keydown", handleKeyDown)
+			state = setListening(state, false)
 		}
-	};
+	}
 
 	return {
 		registerShortcut,
 		unregisterShortcut,
-	};
-};
+	}
+}
 
-export const keyboardShortcutManager = createKeyboardShortcutManager();
+export const keyboardShortcutManager = createKeyboardShortcutManager()

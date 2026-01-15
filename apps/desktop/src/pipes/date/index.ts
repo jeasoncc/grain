@@ -3,4 +3,4 @@
  * @description Date pipes barrel export
  */
 
-export * from "./date-folder.pipe";
+export * from "./date-folder.pipe"

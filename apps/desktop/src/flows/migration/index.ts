@@ -25,4 +25,4 @@ export {
 	// Rollback
 	rollbackMigration,
 	setMigrationStatus,
-} from "./dexie-to-sqlite.migration.fn";
+} from "./dexie-to-sqlite.migration.fn"

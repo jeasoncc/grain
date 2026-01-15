@@ -10,9 +10,9 @@
  * @requirements 7.1, 7.4
  */
 
-import * as E from "fp-ts/Either";
-import type * as TE from "fp-ts/TaskEither";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as E from "fp-ts/Either"
+import type * as TE from "fp-ts/TaskEither"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 // ============================================================================
 // Test Helpers
@@ -21,22 +21,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 /**
  * 运行 TaskEither 并返回 Either 结果
  */
-async function runTE<Err, A>(
-	te: TE.TaskEither<Err, A>,
-): Promise<E.Either<Err, A>> {
-	return te();
+async function runTE<Err, A>(te: TE.TaskEither<Err, A>): Promise<E.Either<Err, A>> {
+	return te()
 }
 
 // ============================================================================
 // Mock Setup
 // ============================================================================
 
-const mockDeleteWorkspaceWithContents = vi.fn();
+const mockDeleteWorkspaceWithContents = vi.fn()
 
 vi.mock("@/db/workspace.db.fn", () => ({
-	deleteWorkspaceWithContents: (...args: unknown[]) =>
-		mockDeleteWorkspaceWithContents(...args),
-}));
+	deleteWorkspaceWithContents: (...args: unknown[]) => mockDeleteWorkspaceWithContents(...args),
+}))
 
 vi.mock("@/log", () => ({
 	default: {
@@ -47,10 +44,10 @@ vi.mock("@/log", () => ({
 		warn: vi.fn(),
 		debug: vi.fn(),
 	},
-}));
+}))
 
 // Logger removed - not needed in tests
-import { deleteWorkspace } from "./delete-workspace.flow";
+import { deleteWorkspace } from "./delete-workspace.flow"
 
 // ============================================================================
 // Unit Tests
@@ -58,41 +55,35 @@ import { deleteWorkspace } from "./delete-workspace.flow";
 
 describe("deleteWorkspace", () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
-	});
+		vi.clearAllMocks()
+	})
 
 	it("should delete workspace and all associated data", async () => {
-		mockDeleteWorkspaceWithContents.mockReturnValue(() =>
-			Promise.resolve(E.right(undefined)),
-		);
+		mockDeleteWorkspaceWithContents.mockReturnValue(() => Promise.resolve(E.right(undefined)))
 
-		const result = await runTE(deleteWorkspace("ws-1"));
+		const result = await runTE(deleteWorkspace("ws-1"))
 
-		expect(E.isRight(result)).toBe(true);
-		expect(mockDeleteWorkspaceWithContents).toHaveBeenCalledWith("ws-1");
-	});
+		expect(E.isRight(result)).toBe(true)
+		expect(mockDeleteWorkspaceWithContents).toHaveBeenCalledWith("ws-1")
+	})
 
 	it("should return Left with error on failure", async () => {
-		const error = { type: "DB_ERROR" as const, message: "Database error" };
-		mockDeleteWorkspaceWithContents.mockReturnValue(() =>
-			Promise.resolve(E.left(error)),
-		);
+		const error = { type: "DB_ERROR" as const, message: "Database error" }
+		mockDeleteWorkspaceWithContents.mockReturnValue(() => Promise.resolve(E.left(error)))
 
-		const result = await runTE(deleteWorkspace("ws-1"));
+		const result = await runTE(deleteWorkspace("ws-1"))
 
-		expect(E.isLeft(result)).toBe(true);
+		expect(E.isLeft(result)).toBe(true)
 		if (E.isLeft(result)) {
-			expect(result.left.type).toBe("DB_ERROR");
+			expect(result.left.type).toBe("DB_ERROR")
 		}
-	});
+	})
 
 	it("should log start and success messages", async () => {
-		mockDeleteWorkspaceWithContents.mockReturnValue(() =>
-			Promise.resolve(E.right(undefined)),
-		);
+		mockDeleteWorkspaceWithContents.mockReturnValue(() => Promise.resolve(E.right(undefined)))
 
-		await runTE(deleteWorkspace("ws-123"));
+		await runTE(deleteWorkspace("ws-123"))
 
 		// Logger calls are mocked, no need to verify
-	});
-});
+	})
+})

@@ -7,14 +7,10 @@
  * 依赖规则：flows/ 只能依赖 pipes/, io/, state/, types/
  */
 
-import { applyThemeWithTransition, getSystemTheme } from "@/io/dom/theme.dom";
-import {
-	getDefaultThemeKey,
-	getNextMode,
-	isThemeTypeMatch,
-} from "@/pipes/theme";
-import { getThemeByKey, themes } from "@/pipes/theme/theme-lookup.pipe";
-import type { ThemeMode } from "@/types/theme";
+import { applyThemeWithTransition, getSystemTheme } from "@/io/dom/theme.dom"
+import { getDefaultThemeKey, getNextMode, isThemeTypeMatch } from "@/pipes/theme"
+import { getThemeByKey, themes } from "@/pipes/theme/theme-lookup.pipe"
+import type { ThemeMode } from "@/types/theme"
 
 // ==============================
 // Theme Application Flow
@@ -24,15 +20,12 @@ import type { ThemeMode } from "@/types/theme";
  * 应用主题
  * @returns 新的 themeKey（如果需要更新）
  */
-export const applyThemeFlow = (
-	themeKey: string,
-	enableTransition: boolean,
-): void => {
-	const theme = getThemeByKey(themeKey);
+export const applyThemeFlow = (themeKey: string, enableTransition: boolean): void => {
+	const theme = getThemeByKey(themeKey)
 	if (theme) {
-		applyThemeWithTransition(theme, enableTransition);
+		applyThemeWithTransition(theme, enableTransition)
 	}
-};
+}
 
 /**
  * 设置主题模式并应用
@@ -43,35 +36,35 @@ export const setModeFlow = (
 	currentThemeKey: string,
 	enableTransition: boolean,
 ): string => {
-	const currentTheme = getThemeByKey(currentThemeKey);
+	const currentTheme = getThemeByKey(currentThemeKey)
 
 	if (mode === "system") {
-		const systemType = getSystemTheme();
+		const systemType = getSystemTheme()
 		if (currentTheme && !isThemeTypeMatch(currentTheme, systemType)) {
-			const defaultThemeKey = getDefaultThemeKey(systemType);
-			const newTheme = getThemeByKey(defaultThemeKey);
+			const defaultThemeKey = getDefaultThemeKey(systemType)
+			const newTheme = getThemeByKey(defaultThemeKey)
 			if (newTheme) {
-				applyThemeWithTransition(newTheme, enableTransition);
-				return defaultThemeKey;
+				applyThemeWithTransition(newTheme, enableTransition)
+				return defaultThemeKey
 			}
 		} else if (currentTheme) {
-			applyThemeWithTransition(currentTheme, enableTransition);
+			applyThemeWithTransition(currentTheme, enableTransition)
 		}
 	} else {
 		if (currentTheme && !isThemeTypeMatch(currentTheme, mode)) {
-			const defaultThemeKey = getDefaultThemeKey(mode);
-			const newTheme = getThemeByKey(defaultThemeKey);
+			const defaultThemeKey = getDefaultThemeKey(mode)
+			const newTheme = getThemeByKey(defaultThemeKey)
 			if (newTheme) {
-				applyThemeWithTransition(newTheme, enableTransition);
-				return defaultThemeKey;
+				applyThemeWithTransition(newTheme, enableTransition)
+				return defaultThemeKey
 			}
 		} else if (currentTheme) {
-			applyThemeWithTransition(currentTheme, enableTransition);
+			applyThemeWithTransition(currentTheme, enableTransition)
 		}
 	}
 
-	return currentThemeKey;
-};
+	return currentThemeKey
+}
 
 /**
  * 初始化主题
@@ -81,38 +74,38 @@ export const initializeThemeFlow = (
 	themeKey: string,
 	mode: ThemeMode,
 ): { readonly cleanup: (() => void) | undefined; readonly newThemeKey: string } => {
-	let effectiveThemeKey = themeKey;
+	let effectiveThemeKey = themeKey
 
 	if (mode === "system") {
-		const systemType = getSystemTheme();
-		const currentTheme = getThemeByKey(themeKey);
+		const systemType = getSystemTheme()
+		const currentTheme = getThemeByKey(themeKey)
 
 		if (currentTheme && !isThemeTypeMatch(currentTheme, systemType)) {
-			effectiveThemeKey = getDefaultThemeKey(systemType);
+			effectiveThemeKey = getDefaultThemeKey(systemType)
 		}
 	}
 
-	const theme = getThemeByKey(effectiveThemeKey);
+	const theme = getThemeByKey(effectiveThemeKey)
 	if (theme) {
-		applyThemeWithTransition(theme, false);
+		applyThemeWithTransition(theme, false)
 	}
 
 	// Set up system theme change listener
-	let cleanup: (() => void) | undefined;
+	let cleanup: (() => void) | undefined
 
 	if (typeof window !== "undefined") {
-		const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+		const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
 
 		const handleChange = (_e: MediaQueryListEvent) => {
 			// This will be called by the hook with current state
-		};
+		}
 
-		mediaQuery.addEventListener("change", handleChange);
-		cleanup = () => mediaQuery.removeEventListener("change", handleChange);
+		mediaQuery.addEventListener("change", handleChange)
+		cleanup = () => mediaQuery.removeEventListener("change", handleChange)
 	}
 
-	return { cleanup, newThemeKey: effectiveThemeKey };
-};
+	return { cleanup, newThemeKey: effectiveThemeKey }
+}
 
 /**
  * 处理系统主题变化
@@ -122,33 +115,33 @@ export const handleSystemThemeChangeFlow = (
 	enableTransition: boolean,
 	isDark: boolean,
 ): string | null => {
-	if (mode !== "system") return null;
+	if (mode !== "system") return null
 
-	const newType = isDark ? "dark" : "light";
-	const defaultThemeKey = getDefaultThemeKey(newType);
-	const theme = getThemeByKey(defaultThemeKey);
+	const newType = isDark ? "dark" : "light"
+	const defaultThemeKey = getDefaultThemeKey(newType)
+	const theme = getThemeByKey(defaultThemeKey)
 
 	if (theme) {
-		applyThemeWithTransition(theme, enableTransition);
-		return defaultThemeKey;
+		applyThemeWithTransition(theme, enableTransition)
+		return defaultThemeKey
 	}
 
-	return null;
-};
+	return null
+}
 
 /**
  * 获取所有主题
  */
-export const getThemes = () => themes;
+export const getThemes = () => themes
 
 /**
  * 获取下一个模式
  */
 export const getNextModeFlow = (currentMode: ThemeMode): ThemeMode => {
-	return getNextMode(currentMode);
-};
+	return getNextMode(currentMode)
+}
 
 /**
  * 获取主题
  */
-export { getThemeByKey };
+export { getThemeByKey }

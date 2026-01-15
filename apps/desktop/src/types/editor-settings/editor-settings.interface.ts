@@ -7,7 +7,7 @@
  * 注意：编辑器类型选择已移除，统一使用 Lexical 编辑器
  */
 
-import type { FoldIconStyle } from "@grain/editor-lexical";
+import type { FoldIconStyle } from "@grain/editor-lexical"
 
 // ==============================
 // State Interface
@@ -19,7 +19,7 @@ import type { FoldIconStyle } from "@grain/editor-lexical";
  */
 export interface EditorSettingsState {
 	/** 标题折叠图标风格 */
-	readonly foldIconStyle: FoldIconStyle;
+	readonly foldIconStyle: FoldIconStyle
 }
 
 // ==============================
@@ -31,9 +31,9 @@ export interface EditorSettingsState {
  */
 export interface EditorSettingsActions {
 	/** 设置折叠图标风格 */
-	readonly setFoldIconStyle: (style: FoldIconStyle) => void;
+	readonly setFoldIconStyle: (style: FoldIconStyle) => void
 	/** 重置所有设置 */
-	readonly reset: () => void;
+	readonly reset: () => void
 }
 
 // ==============================
@@ -42,12 +42,12 @@ export interface EditorSettingsActions {
 
 export interface EditorSettingsConfig {
 	/** 持久化存储 key */
-	readonly storageKey: string;
+	readonly storageKey: string
 }
 
 export const DEFAULT_EDITOR_SETTINGS_CONFIG: EditorSettingsConfig = {
 	storageKey: "grain-editor-settings",
-} as const;
+} as const
 
 // ==============================
 // Default Values
@@ -55,4 +55,4 @@ export const DEFAULT_EDITOR_SETTINGS_CONFIG: EditorSettingsConfig = {
 
 export const DEFAULT_EDITOR_SETTINGS_STATE: EditorSettingsState = {
 	foldIconStyle: "bagua",
-} as const;
+} as const

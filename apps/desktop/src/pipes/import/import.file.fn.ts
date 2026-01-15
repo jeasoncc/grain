@@ -9,8 +9,8 @@
  * 这些函数封装了文件读取操作。
  */
 
-import * as E from "fp-ts/Either";
-import * as TE from "fp-ts/TaskEither";
+import * as E from "fp-ts/Either"
+import * as TE from "fp-ts/TaskEither"
 
 // ==============================
 // Types
@@ -21,7 +21,7 @@ import * as TE from "fp-ts/TaskEither";
  */
 export type FileReadError =
 	| { readonly type: "READ_ERROR"; readonly message: string }
-	| { readonly type: "INVALID_FILE"; readonly message: string };
+	| { readonly type: "INVALID_FILE"; readonly message: string }
 
 // ==============================
 // Pure Functions
@@ -35,14 +35,14 @@ export type FileReadError =
  */
 export function readFileAsText(file: File): Promise<string> {
 	return new Promise((resolve, reject) => {
-		const reader = new FileReader();
-		
+		const reader = new FileReader()
+
 		// Set event handlers functionally
-		reader.addEventListener("load", () => resolve(String(reader.result ?? "")));
-		reader.addEventListener("error", reject);
-		
-		reader.readAsText(file);
-	});
+		reader.addEventListener("load", () => resolve(String(reader.result ?? "")))
+		reader.addEventListener("error", reject)
+
+		reader.readAsText(file)
+	})
 }
 
 /**
@@ -51,19 +51,17 @@ export function readFileAsText(file: File): Promise<string> {
  * @param file - File 对象
  * @returns TaskEither<FileReadError, string>
  */
-export function readFileAsTextSafe(
-	file: File,
-): TE.TaskEither<FileReadError, string> {
+export function readFileAsTextSafe(file: File): TE.TaskEither<FileReadError, string> {
 	return TE.tryCatch(
 		async () => {
-			const content = await readFileAsText(file);
-			return content;
+			const content = await readFileAsText(file)
+			return content
 		},
 		(error) => ({
 			type: "READ_ERROR" as const,
 			message: `文件读取失败: ${error instanceof Error ? error.message : String(error)}`,
 		}),
-	);
+	)
 }
 
 /**
@@ -78,17 +76,17 @@ export function validateFileType(
 	allowedTypes: readonly string[],
 ): E.Either<FileReadError, File> {
 	if (allowedTypes.length === 0) {
-		return E.right(file);
+		return E.right(file)
 	}
 
 	if (!allowedTypes.includes(file.type)) {
 		return E.left({
 			type: "INVALID_FILE",
 			message: `不支持的文件类型: ${file.type}。允许的类型: ${allowedTypes.join(", ")}`,
-		});
+		})
 	}
 
-	return E.right(file);
+	return E.right(file)
 }
 
 /**
@@ -103,18 +101,18 @@ export function validateFileExtension(
 	allowedExtensions: readonly string[],
 ): E.Either<FileReadError, File> {
 	if (allowedExtensions.length === 0) {
-		return E.right(file);
+		return E.right(file)
 	}
 
-	const nameParts = file.name.split(".") as readonly string[];
-	const extension = nameParts[nameParts.length - 1]?.toLowerCase() ?? "";
+	const nameParts = file.name.split(".") as readonly string[]
+	const extension = nameParts[nameParts.length - 1]?.toLowerCase() ?? ""
 
 	if (!allowedExtensions.includes(extension)) {
 		return E.left({
 			type: "INVALID_FILE",
 			message: `不支持的文件扩展名: .${extension}。允许的扩展名: ${allowedExtensions.map((e) => `.${e}`).join(", ")}`,
-		});
+		})
 	}
 
-	return E.right(file);
+	return E.right(file)
 }

@@ -10,8 +10,8 @@
  * 注意：有副作用的函数（DOM 操作、系统检测）在 hooks/use-theme-dom.ts
  */
 
-import type { ThemeMode } from "@/types/theme";
-import type { Theme } from "@/utils/themes.util";
+import type { ThemeMode } from "@/types/theme"
+import type { Theme } from "@/utils/themes.util"
 
 // ==============================
 // Mode Calculations
@@ -27,15 +27,15 @@ import type { Theme } from "@/utils/themes.util";
 export const getNextMode = (currentMode: ThemeMode): ThemeMode => {
 	switch (currentMode) {
 		case "light":
-			return "dark";
+			return "dark"
 		case "dark":
-			return "system";
+			return "system"
 		case "system":
-			return "light";
+			return "light"
 		default:
-			return "light";
+			return "light"
 	}
-};
+}
 
 /**
  * 根据模式获取有效的主题类型
@@ -50,10 +50,10 @@ export const getEffectiveThemeType = (
 	systemPreference: "light" | "dark" = "light",
 ): "light" | "dark" => {
 	if (mode === "system") {
-		return systemPreference;
+		return systemPreference
 	}
-	return mode;
-};
+	return mode
+}
 
 /**
  * 获取给定主题类型的默认主题键
@@ -62,8 +62,8 @@ export const getEffectiveThemeType = (
  * @returns 该类型的默认主题键
  */
 export const getDefaultThemeKey = (type: "light" | "dark"): string => {
-	return type === "dark" ? "default-dark" : "default-light";
-};
+	return type === "dark" ? "default-dark" : "default-light"
+}
 
 /**
  * 检查主题是否匹配预期类型
@@ -72,9 +72,6 @@ export const getDefaultThemeKey = (type: "light" | "dark"): string => {
  * @param expectedType - 预期的主题类型
  * @returns 主题是否匹配预期类型
  */
-export const isThemeTypeMatch = (
-	theme: Theme,
-	expectedType: "light" | "dark",
-): boolean => {
-	return theme.type === expectedType;
-};
+export const isThemeTypeMatch = (theme: Theme, expectedType: "light" | "dark"): boolean => {
+	return theme.type === expectedType
+}

@@ -28,8 +28,8 @@ export const generateMermaidContent = (_date: Date): string => {
     B -->|是| C[执行操作 1]
     B -->|否| D[执行操作 2]
     C --> E[结束]
-    D --> E`;
-};
+    D --> E`
+}
 
 // ==============================
 // PlantUML Content Generation
@@ -49,5 +49,5 @@ Alice -> Bob: 你好
 Bob --> Alice: 你好！
 Alice -> Bob: 今天怎么样？
 Bob --> Alice: 很好，谢谢！
-@enduml`;
-};
+@enduml`
+}

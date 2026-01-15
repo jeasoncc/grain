@@ -10,18 +10,18 @@
  * @requirements 7.1, 7.4
  */
 
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import * as nodeRepo from "@/io/api/node.api";
-import { info, warn, error, success } from "@/io/log/logger.api";
-import { type AppError, validationError } from "@/types/error";
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import * as nodeRepo from "@/io/api/node.api"
+import { error, info, success, warn } from "@/io/log/logger.api"
+import { type AppError, validationError } from "@/types/error"
 
 /**
  * 重新排序节点参数
  */
 export interface ReorderNodesParams {
 	/** 按新顺序排列的节点 ID 数组 */
-	readonly nodeIds: readonly string[];
+	readonly nodeIds: readonly string[]
 }
 
 /**
@@ -34,31 +34,33 @@ export interface ReorderNodesParams {
  * @param params - 重新排序参数
  * @returns TaskEither<AppError, void>
  */
-export const reorderNodes = (
-	params: ReorderNodesParams,
-): TE.TaskEither<AppError, void> => {
-	info("[Action] 重新排序节点", { count: params.nodeIds.length }, "reorder-node.flow");
+export const reorderNodes = (params: ReorderNodesParams): TE.TaskEither<AppError, void> => {
+	info("[Action] 重新排序节点", { count: params.nodeIds.length }, "reorder-node.flow")
 
 	// 验证参数
 	if (params.nodeIds.length === 0) {
-		warn("[Action] 重新排序节点: 节点列表为空");
-		return TE.right(undefined);
+		warn("[Action] 重新排序节点: 节点列表为空")
+		return TE.right(undefined)
 	}
 
 	// 检查是否有重复的节点 ID
-	const uniqueIds = new Set(params.nodeIds);
+	const uniqueIds = new Set(params.nodeIds)
 	if (uniqueIds.size !== params.nodeIds.length) {
-		error("[Action] 重新排序节点失败: 存在重复的节点 ID");
-		return TE.left(validationError("节点 ID 列表中存在重复项", "nodeIds"));
+		error("[Action] 重新排序节点失败: 存在重复的节点 ID")
+		return TE.left(validationError("节点 ID 列表中存在重复项", "nodeIds"))
 	}
 
 	return pipe(
 		nodeRepo.reorderNodes([...params.nodeIds]),
 		TE.tap(() => {
-			success("[Action] 节点重新排序成功", {
-				count: params.nodeIds.length,
-			}, "reorder-node");
-			return TE.right(undefined);
+			success(
+				"[Action] 节点重新排序成功",
+				{
+					count: params.nodeIds.length,
+				},
+				"reorder-node",
+			)
+			return TE.right(undefined)
 		}),
-	);
-};
+	)
+}

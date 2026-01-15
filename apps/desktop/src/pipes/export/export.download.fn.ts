@@ -6,4 +6,4 @@
  * 此文件保留为兼容层，重导出 io/file/download.file
  */
 
-export { triggerBlobDownload, triggerDownload } from "@/io/file/download.file";
+export { triggerBlobDownload, triggerDownload } from "@/io/file/download.file"

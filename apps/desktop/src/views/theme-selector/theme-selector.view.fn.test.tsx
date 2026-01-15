@@ -1,8 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import type { Theme } from "@/utils/themes.util";
-import type { ThemeSelectorViewProps } from "./theme-selector.types";
-import { ThemeSelectorView } from "./theme-selector.view.fn";
+import { fireEvent, render, screen } from "@testing-library/react"
+import { describe, expect, it, vi } from "vitest"
+import type { Theme } from "@/utils/themes.util"
+import type { ThemeSelectorViewProps } from "./theme-selector.types"
+import { ThemeSelectorView } from "./theme-selector.view.fn"
 
 describe("ThemeSelectorView", () => {
 	const mockLightTheme: Theme = {
@@ -38,7 +38,7 @@ describe("ThemeSelectorView", () => {
 			folderColor: "#0066cc",
 			editorSelection: "#0066cc33",
 		},
-	};
+	}
 
 	const mockDarkTheme: Theme = {
 		key: "dark-default",
@@ -73,7 +73,7 @@ describe("ThemeSelectorView", () => {
 			folderColor: "#0066cc",
 			editorSelection: "#0066cc33",
 		},
-	};
+	}
 
 	const defaultProps: ThemeSelectorViewProps = {
 		theme: "light-default",
@@ -85,94 +85,89 @@ describe("ThemeSelectorView", () => {
 		setEnableTransition: vi.fn(),
 		lightThemes: [mockLightTheme],
 		darkThemes: [mockDarkTheme],
-	};
+	}
 
 	it("should render theme selector button", () => {
-		render(<ThemeSelectorView {...defaultProps} />);
-		const button = screen.getByRole("button");
-		expect(button).toBeInTheDocument();
-	});
+		render(<ThemeSelectorView {...defaultProps} />)
+		const button = screen.getByRole("button")
+		expect(button).toBeInTheDocument()
+	})
 
 	it("should display current theme name when popover is open", () => {
-		render(<ThemeSelectorView {...defaultProps} />);
-		const button = screen.getByRole("button");
-		fireEvent.click(button);
-		const themeName = screen.getAllByText("Light Default");
-		expect(themeName.length).toBeGreaterThan(0);
-	});
+		render(<ThemeSelectorView {...defaultProps} />)
+		const button = screen.getByRole("button")
+		fireEvent.click(button)
+		const themeName = screen.getAllByText("Light Default")
+		expect(themeName.length).toBeGreaterThan(0)
+	})
 
 	it("should call setMode when mode button is clicked", () => {
-		const setMode = vi.fn();
-		render(<ThemeSelectorView {...defaultProps} setMode={setMode} />);
-		const button = screen.getByRole("button");
-		fireEvent.click(button);
-		const darkButton = screen.getByText("Dark");
-		fireEvent.click(darkButton);
-		expect(setMode).toHaveBeenCalledWith("dark");
-	});
+		const setMode = vi.fn()
+		render(<ThemeSelectorView {...defaultProps} setMode={setMode} />)
+		const button = screen.getByRole("button")
+		fireEvent.click(button)
+		const darkButton = screen.getByText("Dark")
+		fireEvent.click(darkButton)
+		expect(setMode).toHaveBeenCalledWith("dark")
+	})
 
 	it("should call setTheme when theme card is clicked", () => {
-		const setTheme = vi.fn();
-		render(<ThemeSelectorView {...defaultProps} setTheme={setTheme} />);
-		const button = screen.getByRole("button");
-		fireEvent.click(button);
-		const themeCard = screen.getByTitle("Default light theme");
-		fireEvent.click(themeCard);
-		expect(setTheme).toHaveBeenCalledWith("light-default");
-	});
+		const setTheme = vi.fn()
+		render(<ThemeSelectorView {...defaultProps} setTheme={setTheme} />)
+		const button = screen.getByRole("button")
+		fireEvent.click(button)
+		const themeCard = screen.getByTitle("Default light theme")
+		fireEvent.click(themeCard)
+		expect(setTheme).toHaveBeenCalledWith("light-default")
+	})
 
 	it("should call setEnableTransition when switch is toggled", () => {
-		const setEnableTransition = vi.fn();
-		render(
-			<ThemeSelectorView
-				{...defaultProps}
-				setEnableTransition={setEnableTransition}
-			/>,
-		);
-		const button = screen.getByRole("button");
-		fireEvent.click(button);
-		const switchElement = screen.getByRole("switch");
-		fireEvent.click(switchElement);
-		expect(setEnableTransition).toHaveBeenCalled();
-	});
+		const setEnableTransition = vi.fn()
+		render(<ThemeSelectorView {...defaultProps} setEnableTransition={setEnableTransition} />)
+		const button = screen.getByRole("button")
+		fireEvent.click(button)
+		const switchElement = screen.getByRole("switch")
+		fireEvent.click(switchElement)
+		expect(setEnableTransition).toHaveBeenCalled()
+	})
 
 	it("should show light themes when mode is light", () => {
-		render(<ThemeSelectorView {...defaultProps} mode="light" />);
-		const button = screen.getByRole("button");
-		fireEvent.click(button);
-		expect(screen.getByText("Light Themes")).toBeInTheDocument();
-		expect(screen.queryByText("Dark Themes")).not.toBeInTheDocument();
-	});
+		render(<ThemeSelectorView {...defaultProps} mode="light" />)
+		const button = screen.getByRole("button")
+		fireEvent.click(button)
+		expect(screen.getByText("Light Themes")).toBeInTheDocument()
+		expect(screen.queryByText("Dark Themes")).not.toBeInTheDocument()
+	})
 
 	it("should show dark themes when mode is dark", () => {
-		render(<ThemeSelectorView {...defaultProps} mode="dark" />);
-		const button = screen.getByRole("button");
-		fireEvent.click(button);
-		expect(screen.getByText("Dark Themes")).toBeInTheDocument();
-		expect(screen.queryByText("Light Themes")).not.toBeInTheDocument();
-	});
+		render(<ThemeSelectorView {...defaultProps} mode="dark" />)
+		const button = screen.getByRole("button")
+		fireEvent.click(button)
+		expect(screen.getByText("Dark Themes")).toBeInTheDocument()
+		expect(screen.queryByText("Light Themes")).not.toBeInTheDocument()
+	})
 
 	it("should show both theme types when mode is system", () => {
-		render(<ThemeSelectorView {...defaultProps} mode="system" />);
-		const button = screen.getByRole("button");
-		fireEvent.click(button);
-		expect(screen.getByText("Light Themes")).toBeInTheDocument();
-		expect(screen.getByText("Dark Themes")).toBeInTheDocument();
-	});
+		render(<ThemeSelectorView {...defaultProps} mode="system" />)
+		const button = screen.getByRole("button")
+		fireEvent.click(button)
+		expect(screen.getByText("Light Themes")).toBeInTheDocument()
+		expect(screen.getByText("Dark Themes")).toBeInTheDocument()
+	})
 
 	it("should highlight selected theme", () => {
-		render(<ThemeSelectorView {...defaultProps} theme="light-default" />);
-		const button = screen.getByRole("button");
-		fireEvent.click(button);
-		const themeCard = screen.getByTitle("Default light theme");
-		expect(themeCard).toHaveClass("border-primary/50");
-	});
+		render(<ThemeSelectorView {...defaultProps} theme="light-default" />)
+		const button = screen.getByRole("button")
+		fireEvent.click(button)
+		const themeCard = screen.getByTitle("Default light theme")
+		expect(themeCard).toHaveClass("border-primary/50")
+	})
 
 	it("should display transition switch in correct state", () => {
-		render(<ThemeSelectorView {...defaultProps} enableTransition={true} />);
-		const button = screen.getByRole("button");
-		fireEvent.click(button);
-		const switchElement = screen.getByRole("switch");
-		expect(switchElement).toHaveAttribute("data-state", "checked");
-	});
-});
+		render(<ThemeSelectorView {...defaultProps} enableTransition={true} />)
+		const button = screen.getByRole("button")
+		fireEvent.click(button)
+		const switchElement = screen.getByRole("switch")
+		expect(switchElement).toHaveAttribute("data-state", "checked")
+	})
+})

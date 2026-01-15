@@ -1,26 +1,26 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Check, Sparkles, type LucideIcon } from "lucide-react";
-import { useIconTheme } from "@/hooks/use-icon-theme";
-import { useTheme } from "@/hooks/use-theme";
-import { useIconThemeStore } from "@/state/icon-theme.state";
-import type { IconTheme } from "@/types/icon-theme";
-import { iconThemes } from "@/types/icon-theme";
-import { cn } from "@/utils/cn.util";
+import { createFileRoute } from "@tanstack/react-router"
+import { Check, type LucideIcon, Sparkles } from "lucide-react"
+import { useIconTheme } from "@/hooks/use-icon-theme"
+import { useTheme } from "@/hooks/use-theme"
+import { useIconThemeStore } from "@/state/icon-theme.state"
+import type { IconTheme } from "@/types/icon-theme"
+import { iconThemes } from "@/types/icon-theme"
+import { cn } from "@/utils/cn.util"
 
 export const Route = createFileRoute("/settings/icons")({
 	component: IconSettings,
-});
+})
 
 function IconSettings() {
-	const currentIconTheme = useIconTheme();
-	const { currentTheme } = useTheme();
+	const currentIconTheme = useIconTheme()
+	const { currentTheme } = useTheme()
 
 	// Apply icon theme
 	const handleIconThemeChange = (themeKey: string) => {
-		useIconThemeStore.getState().setTheme(themeKey);
+		useIconThemeStore.getState().setTheme(themeKey)
 		// Trigger re-render
-		window.dispatchEvent(new Event("icon-theme-changed"));
-	};
+		window.dispatchEvent(new Event("icon-theme-changed"))
+	}
 
 	return (
 		<div className="space-y-10 max-w-5xl">
@@ -37,9 +37,7 @@ function IconSettings() {
 					<div className="space-y-4">
 						<div className="flex items-center gap-2 text-muted-foreground">
 							<Sparkles className="size-4" />
-							<h4 className="text-sm font-medium uppercase tracking-wider">
-								Icon Themes
-							</h4>
+							<h4 className="text-sm font-medium uppercase tracking-wider">Icon Themes</h4>
 						</div>
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 							{iconThemes.map((theme) => (
@@ -91,23 +89,13 @@ function IconSettings() {
 											icon={currentIconTheme.icons.activityBar.library}
 											isActive={true}
 										/>
-										<ActivityBarIcon
-											icon={currentIconTheme.icons.activityBar.search}
-										/>
-										<ActivityBarIcon
-											icon={currentIconTheme.icons.activityBar.outline}
-										/>
+										<ActivityBarIcon icon={currentIconTheme.icons.activityBar.search} />
+										<ActivityBarIcon icon={currentIconTheme.icons.activityBar.outline} />
 										<div className="h-px w-6 bg-border/20 my-1" />
-										<ActivityBarIcon
-											icon={currentIconTheme.icons.activityBar.create}
-										/>
-										<ActivityBarIcon
-											icon={currentIconTheme.icons.activityBar.import}
-										/>
+										<ActivityBarIcon icon={currentIconTheme.icons.activityBar.create} />
+										<ActivityBarIcon icon={currentIconTheme.icons.activityBar.import} />
 										<div className="flex-1" />
-										<ActivityBarIcon
-											icon={currentIconTheme.icons.activityBar.settings}
-										/>
+										<ActivityBarIcon icon={currentIconTheme.icons.activityBar.settings} />
 									</div>
 
 									{/* Sidebar Mock - File Icons */}
@@ -279,20 +267,20 @@ function IconSettings() {
 				</div>
 			</div>
 		</div>
-	);
+	)
 }
 
 // Icon Theme Card
 interface IconThemeCardProps {
-	readonly theme: IconTheme;
-	readonly isActive: boolean;
-	readonly onSelect: () => void;
+	readonly theme: IconTheme
+	readonly isActive: boolean
+	readonly onSelect: () => void
 }
 
 function IconThemeCard({ theme, isActive, onSelect }: IconThemeCardProps) {
-	const ProjectIcon = theme.icons.project.default;
-	const FolderIcon = theme.icons.folder.default;
-	const FileIcon = theme.icons.file.default;
+	const ProjectIcon = theme.icons.project.default
+	const FolderIcon = theme.icons.folder.default
+	const FileIcon = theme.icons.file.default
 
 	return (
 		<button
@@ -352,7 +340,7 @@ function IconThemeCard({ theme, isActive, onSelect }: IconThemeCardProps) {
 				</div>
 			)}
 		</button>
-	);
+	)
 }
 
 // File Item Component
@@ -363,25 +351,21 @@ function FileItem({
 	isOpen: _isOpen = false,
 	isActive = false,
 }: {
-	readonly icon: LucideIcon;
-	readonly label: string;
-	readonly level?: number;
-	readonly isOpen?: boolean;
-	readonly isActive?: boolean;
+	readonly icon: LucideIcon
+	readonly label: string
+	readonly level?: number
+	readonly isOpen?: boolean
+	readonly isActive?: boolean
 }) {
-	const { currentTheme } = useTheme();
+	const { currentTheme } = useTheme()
 
 	return (
 		<div
 			className="flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors"
 			style={{
 				paddingLeft: `${level * 12 + 8}px`,
-				background: isActive
-					? currentTheme?.colors.sidebarAccent
-					: "transparent",
-				color: isActive
-					? currentTheme?.colors.primary
-					: currentTheme?.colors.sidebarForeground,
+				background: isActive ? currentTheme?.colors.sidebarAccent : "transparent",
+				color: isActive ? currentTheme?.colors.primary : currentTheme?.colors.sidebarForeground,
 			}}
 		>
 			<Icon
@@ -400,7 +384,7 @@ function FileItem({
 			/>
 			<span className="truncate">{label}</span>
 		</div>
-	);
+	)
 }
 
 // ActivityBar Icon Component (Left vertical bar)
@@ -408,10 +392,10 @@ function ActivityBarIcon({
 	icon: Icon,
 	isActive = false,
 }: {
-	readonly icon: LucideIcon;
-	readonly isActive?: boolean;
+	readonly icon: LucideIcon
+	readonly isActive?: boolean
 }) {
-	const { currentTheme } = useTheme();
+	const { currentTheme } = useTheme()
 
 	return (
 		<div
@@ -420,9 +404,7 @@ function ActivityBarIcon({
 				isActive ? "bg-sidebar-accent" : "hover:bg-sidebar-accent/50",
 			)}
 			style={{
-				color: isActive
-					? currentTheme?.colors.primary
-					: currentTheme?.colors.sidebarForeground,
+				color: isActive ? currentTheme?.colors.primary : currentTheme?.colors.sidebarForeground,
 			}}
 		>
 			{isActive && (
@@ -433,7 +415,7 @@ function ActivityBarIcon({
 			)}
 			<Icon className="size-5" />
 		</div>
-	);
+	)
 }
 
 // ActivityBar Icon Item Component (Right preview grid)
@@ -442,11 +424,11 @@ function ActivityBarIconItem({
 	label,
 	color,
 }: {
-	readonly icon: LucideIcon;
-	readonly label: string;
-	readonly color?: string;
+	readonly icon: LucideIcon
+	readonly label: string
+	readonly color?: string
 }) {
-	const { currentTheme } = useTheme();
+	const { currentTheme } = useTheme()
 
 	return (
 		<div className="group flex flex-col items-center justify-center gap-2 p-2 rounded-xl transition-all duration-200 hover:bg-muted/20 hover:scale-105 cursor-default">
@@ -466,5 +448,5 @@ function ActivityBarIconItem({
 				{label}
 			</span>
 		</div>
-	);
+	)
 }

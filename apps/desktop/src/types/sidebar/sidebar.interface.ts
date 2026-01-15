@@ -13,13 +13,13 @@
  * Available sidebar panel types as const array.
  * Used for Zod schema validation and type derivation.
  */
-export const SIDEBAR_PANELS = ["search", "drawings", "files", "tags"] as const;
+export const SIDEBAR_PANELS = ["search", "drawings", "files", "tags"] as const
 
 /**
  * Available sidebar panel types.
  * Derived from SIDEBAR_PANELS constant for type safety.
  */
-export type SidebarPanel = (typeof SIDEBAR_PANELS)[number];
+export type SidebarPanel = (typeof SIDEBAR_PANELS)[number]
 
 /**
  * Search panel state.
@@ -27,11 +27,11 @@ export type SidebarPanel = (typeof SIDEBAR_PANELS)[number];
  */
 export interface SearchPanelState {
 	/** Current search query string */
-	readonly query: string;
+	readonly query: string
 	/** Selected content types to search */
-	readonly selectedTypes: readonly string[];
+	readonly selectedTypes: readonly string[]
 	/** Whether filter panel is visible */
-	readonly showFilters: boolean;
+	readonly showFilters: boolean
 }
 
 /**
@@ -40,7 +40,7 @@ export interface SearchPanelState {
  */
 export interface DrawingsPanelState {
 	/** Currently selected drawing ID, null if none */
-	readonly selectedDrawingId: string | null;
+	readonly selectedDrawingId: string | null
 }
 
 /**
@@ -49,7 +49,7 @@ export interface DrawingsPanelState {
  */
 export interface FileTreeState {
 	/** Map of folder IDs to their expanded state */
-	readonly expandedFolders: Readonly<Record<string, boolean>>;
+	readonly expandedFolders: Readonly<Record<string, boolean>>
 }
 
 // ==============================
@@ -57,16 +57,16 @@ export interface FileTreeState {
 // ==============================
 
 /** Minimum sidebar width in pixels */
-export const SIDEBAR_MIN_WIDTH = 200;
+export const SIDEBAR_MIN_WIDTH = 200
 
 /** Maximum sidebar width in pixels */
-export const SIDEBAR_MAX_WIDTH = 600;
+export const SIDEBAR_MAX_WIDTH = 600
 
 /** Width threshold below which sidebar auto-collapses */
-export const SIDEBAR_AUTO_COLLAPSE_THRESHOLD = 150;
+export const SIDEBAR_AUTO_COLLAPSE_THRESHOLD = 150
 
 /** Default sidebar width in pixels */
-export const SIDEBAR_DEFAULT_WIDTH = 320;
+export const SIDEBAR_DEFAULT_WIDTH = 320
 
 // ==============================
 // State Interface
@@ -78,22 +78,22 @@ export const SIDEBAR_DEFAULT_WIDTH = 320;
  */
 export interface SidebarState {
 	/** Currently active panel */
-	readonly activePanel: SidebarPanel;
+	readonly activePanel: SidebarPanel
 	/** Whether sidebar is open/visible */
-	readonly isOpen: boolean;
+	readonly isOpen: boolean
 	/** Current sidebar width in pixels */
-	readonly width: number;
+	readonly width: number
 	/** Whether sidebar was collapsed by drag (vs manual toggle) */
-	readonly wasCollapsedByDrag: boolean;
+	readonly wasCollapsedByDrag: boolean
 	/** Previous width before drag collapse (for restore) */
-	readonly previousWidth: number;
+	readonly previousWidth: number
 
 	/** Search panel state */
-	readonly searchState: SearchPanelState;
+	readonly searchState: SearchPanelState
 	/** Drawings panel state */
-	readonly drawingsState: DrawingsPanelState;
+	readonly drawingsState: DrawingsPanelState
 	/** File tree panel state */
-	readonly fileTreeState: FileTreeState;
+	readonly fileTreeState: FileTreeState
 }
 
 // ==============================
@@ -109,67 +109,67 @@ export interface SidebarActions {
 	 * Set the active panel.
 	 * Opens sidebar if panel is not null.
 	 */
-	readonly setActivePanel: (panel: SidebarPanel) => void;
+	readonly setActivePanel: (panel: SidebarPanel) => void
 
 	/**
 	 * Set sidebar open state.
 	 */
-	readonly setIsOpen: (open: boolean) => void;
+	readonly setIsOpen: (open: boolean) => void
 
 	/**
 	 * Toggle sidebar open/closed.
 	 */
-	readonly toggleSidebar: () => void;
+	readonly toggleSidebar: () => void
 
 	/**
 	 * Set sidebar width (constrained to min/max bounds).
 	 */
-	readonly setWidth: (width: number) => void;
+	readonly setWidth: (width: number) => void
 
 	/**
 	 * Resize sidebar with auto-collapse support.
 	 * Collapses if width drops below threshold.
 	 */
-	readonly resizeSidebar: (newWidth: number) => void;
+	readonly resizeSidebar: (newWidth: number) => void
 
 	/**
 	 * Restore sidebar from drag collapse.
 	 * Restores previous width.
 	 */
-	readonly restoreFromCollapse: () => void;
+	readonly restoreFromCollapse: () => void
 
 	// Search panel actions
 	/**
 	 * Set search query string.
 	 */
-	readonly setSearchQuery: (query: string) => void;
+	readonly setSearchQuery: (query: string) => void
 
 	/**
 	 * Set selected search types.
 	 */
-	readonly setSearchSelectedTypes: (types: readonly string[]) => void;
+	readonly setSearchSelectedTypes: (types: readonly string[]) => void
 
 	/**
 	 * Set search filters visibility.
 	 */
-	readonly setSearchShowFilters: (show: boolean) => void;
+	readonly setSearchShowFilters: (show: boolean) => void
 
 	// Drawings panel actions
 	/**
 	 * Set selected drawing ID.
 	 */
-	readonly setSelectedDrawingId: (id: string | null) => void;
+	readonly setSelectedDrawingId: (id: string | null) => void
 
 	// File tree actions
 	/**
 	 * Set expanded folders map.
 	 */
-	readonly setExpandedFolders: (folders: Readonly<Record<string, boolean>>) => void;
+	readonly setExpandedFolders: (folders: Readonly<Record<string, boolean>>) => void
 
 	/**
 	 * Toggle a folder's expanded state.
 	 */
-	readonly toggleFolderExpanded: (folderId: string) => void;
+	readonly toggleFolderExpanded: (folderId: string) => void
 }
 
 // ==============================
@@ -181,12 +181,12 @@ export interface SidebarActions {
  */
 export interface SidebarConfig {
 	/** Storage key for persistence */
-	readonly storageKey: string;
+	readonly storageKey: string
 }
 
 export const DEFAULT_SIDEBAR_CONFIG: SidebarConfig = {
 	storageKey: "grain-unified-sidebar",
-} as const;
+} as const
 
 // ==============================
 // Default Values
@@ -196,23 +196,23 @@ export const DEFAULT_SEARCH_STATE: SearchPanelState = {
 	query: "",
 	selectedTypes: ["node"],
 	showFilters: false,
-} as const;
+} as const
 
 export const DEFAULT_DRAWINGS_STATE: DrawingsPanelState = {
 	selectedDrawingId: null,
-} as const;
+} as const
 
 export const DEFAULT_FILE_TREE_STATE: FileTreeState = {
 	expandedFolders: {},
-} as const;
+} as const
 
 export const DEFAULT_SIDEBAR_STATE: SidebarState = {
 	activePanel: "files",
-	isOpen: true,
-	width: SIDEBAR_DEFAULT_WIDTH,
-	wasCollapsedByDrag: false,
-	previousWidth: SIDEBAR_DEFAULT_WIDTH,
-	searchState: DEFAULT_SEARCH_STATE,
 	drawingsState: DEFAULT_DRAWINGS_STATE,
 	fileTreeState: DEFAULT_FILE_TREE_STATE,
-} as const;
+	isOpen: true,
+	previousWidth: SIDEBAR_DEFAULT_WIDTH,
+	searchState: DEFAULT_SEARCH_STATE,
+	wasCollapsedByDrag: false,
+	width: SIDEBAR_DEFAULT_WIDTH,
+} as const

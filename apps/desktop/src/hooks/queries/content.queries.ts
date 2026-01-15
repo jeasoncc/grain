@@ -9,17 +9,17 @@
  * - 写入操作使用纯 TaskEither 管道（在 actions 中）
  */
 
-import { useQuery } from "@tanstack/react-query";
-import * as contentApi from "@/io/api/content.api";
-import type { ContentInterface } from "@/types/content";
-import { queryKeys } from "./query-keys";
+import { useQuery } from "@tanstack/react-query"
+import * as contentApi from "@/io/api/content.api"
+import type { ContentInterface } from "@/types/content"
+import { queryKeys } from "./query-keys"
 
 // ============================================
 // 默认配置
 // ============================================
 
 /** 默认 staleTime：1 分钟（内容变化较少） */
-const DEFAULT_STALE_TIME = 60 * 1000;
+const DEFAULT_STALE_TIME = 60 * 1000
 
 // ============================================
 // Query Hooks
@@ -39,17 +39,17 @@ export const useContent = (nodeId: string | null | undefined) => {
 	return useQuery({
 		queryKey: queryKeys.contents.byNode(nodeId ?? ""),
 		queryFn: async (): Promise<ContentInterface | null> => {
-			if (!nodeId) return null;
+			if (!nodeId) return null
 
-			const result = await contentApi.getContentByNodeId(nodeId)();
+			const result = await contentApi.getContentByNodeId(nodeId)()
 
-			if (result._tag === "Left") throw result.left;
-			return result.right;
+			if (result._tag === "Left") throw result.left
+			return result.right
 		},
 		enabled: !!nodeId,
 		staleTime: DEFAULT_STALE_TIME,
-	});
-};
+	})
+}
 
 /**
  * 获取内容版本号
@@ -60,14 +60,14 @@ export const useContentVersion = (nodeId: string | null | undefined) => {
 	return useQuery({
 		queryKey: queryKeys.contents.version(nodeId ?? ""),
 		queryFn: async (): Promise<number | null> => {
-			if (!nodeId) return null;
+			if (!nodeId) return null
 
-			const result = await contentApi.getContentVersion(nodeId)();
+			const result = await contentApi.getContentVersion(nodeId)()
 
-			if (result._tag === "Left") throw result.left;
-			return result.right;
+			if (result._tag === "Left") throw result.left
+			return result.right
 		},
 		enabled: !!nodeId,
 		staleTime: DEFAULT_STALE_TIME,
-	});
-};
+	})
+}

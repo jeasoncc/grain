@@ -5,4 +5,4 @@
  * @deprecated 请直接从 @/utils/format.util 导入
  */
 
-export { formatBytes } from "@/utils/format.util";
+export { formatBytes } from "@/utils/format.util"

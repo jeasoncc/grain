@@ -10,10 +10,10 @@
  * 这些函数无副作用，可组合，可测试。
  */
 
-import dayjs from "dayjs";
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
-import type { LexicalDocument } from "../content/content.generate.fn";
+import dayjs from "dayjs"
+import * as E from "fp-ts/Either"
+import { pipe } from "fp-ts/function"
+import type { LexicalDocument } from "../content/content.generate.fn"
 
 // ==============================
 // Types
@@ -24,13 +24,13 @@ import type { LexicalDocument } from "../content/content.generate.fn";
  */
 export interface JsonExportOptions {
 	/** 是否格式化输出（美化 JSON） */
-	readonly pretty?: boolean;
+	readonly pretty?: boolean
 	/** 缩进空格数（仅在 pretty 为 true 时有效） */
-	readonly indent?: number;
+	readonly indent?: number
 	/** 是否包含元数据 */
-	readonly includeMetadata?: boolean;
+	readonly includeMetadata?: boolean
 	/** 元数据信息 */
-	readonly metadata?: JsonExportMetadata;
+	readonly metadata?: JsonExportMetadata
 }
 
 /**
@@ -38,13 +38,13 @@ export interface JsonExportOptions {
  */
 export interface JsonExportMetadata {
 	/** 文档标题 */
-	readonly title?: string;
+	readonly title?: string
 	/** 作者 */
-	readonly author?: string;
+	readonly author?: string
 	/** 导出时间 */
-	readonly exportedAt?: string;
+	readonly exportedAt?: string
 	/** 应用版本 */
-	readonly version?: string;
+	readonly version?: string
 }
 
 /**
@@ -52,9 +52,9 @@ export interface JsonExportMetadata {
  */
 export interface JsonExportDocument {
 	/** 元数据 */
-	readonly metadata: JsonExportMetadata;
+	readonly metadata: JsonExportMetadata
 	/** Lexical 文档内容 */
-	readonly content: LexicalDocument;
+	readonly content: LexicalDocument
 }
 
 /**
@@ -62,7 +62,7 @@ export interface JsonExportDocument {
  */
 export type ExportError =
 	| { readonly type: "PARSE_ERROR"; readonly message: string }
-	| { readonly type: "INVALID_CONTENT"; readonly message: string };
+	| { readonly type: "INVALID_CONTENT"; readonly message: string }
 
 // ==============================
 // Default Options
@@ -73,7 +73,7 @@ const defaultOptions: Required<JsonExportOptions> = {
 	indent: 2,
 	includeMetadata: false,
 	metadata: {},
-};
+}
 
 // ==============================
 // Pure Functions
@@ -85,31 +85,29 @@ const defaultOptions: Required<JsonExportOptions> = {
  * @param content - Lexical JSON 字符串
  * @returns Either<ExportError, LexicalDocument>
  */
-export function parseLexicalContent(
-	content: string,
-): E.Either<ExportError, LexicalDocument> {
+export function parseLexicalContent(content: string): E.Either<ExportError, LexicalDocument> {
 	if (!content || content.trim() === "") {
 		return E.left({
 			type: "INVALID_CONTENT",
 			message: "内容为空",
-		});
+		})
 	}
 
 	return E.tryCatch(
 		() => {
-			const parsed = JSON.parse(content) as LexicalDocument;
+			const parsed = JSON.parse(content) as LexicalDocument
 
 			if (!parsed.root) {
-				throw new Error("无效的 Lexical 文档结构：缺少 root 节点");
+				throw new Error("无效的 Lexical 文档结构：缺少 root 节点")
 			}
 
-			return parsed;
+			return parsed
 		},
 		(error) => ({
 			type: "PARSE_ERROR" as const,
 			message: `JSON 解析失败: ${error instanceof Error ? error.message : String(error)}`,
 		}),
-	);
+	)
 }
 
 /**
@@ -129,7 +127,7 @@ export function createExportDocument(
 			exportedAt: metadata.exportedAt || dayjs().toISOString(),
 		},
 		content: document,
-	};
+	}
 }
 
 /**
@@ -143,13 +141,13 @@ export function serializeToJson<T>(
 	document: T,
 	options: Pick<JsonExportOptions, "pretty" | "indent"> = {},
 ): string {
-	const { pretty = true, indent = 2 } = options;
+	const { pretty = true, indent = 2 } = options
 
 	if (pretty) {
-		return JSON.stringify(document, null, indent);
+		return JSON.stringify(document, null, indent)
 	}
 
-	return JSON.stringify(document);
+	return JSON.stringify(document)
 }
 
 /**
@@ -163,18 +161,18 @@ export function exportToJson(
 	content: string,
 	options: JsonExportOptions = {},
 ): E.Either<ExportError, string> {
-	const opts = { ...defaultOptions, ...options };
+	const opts = { ...defaultOptions, ...options }
 
 	return pipe(
 		parseLexicalContent(content),
 		E.map((document) => {
 			if (opts.includeMetadata) {
-				const exportDoc = createExportDocument(document, opts.metadata);
-				return serializeToJson(exportDoc, opts);
+				const exportDoc = createExportDocument(document, opts.metadata)
+				return serializeToJson(exportDoc, opts)
 			}
-			return serializeToJson(document, opts);
+			return serializeToJson(document, opts)
 		}),
-	);
+	)
 }
 
 /**
@@ -191,7 +189,7 @@ export function exportRawJson(
 	return pipe(
 		parseLexicalContent(content),
 		E.map((document) => serializeToJson(document, options)),
-	);
+	)
 }
 
 /**
@@ -205,27 +203,25 @@ export function exportMultipleToJson(
 	contents: ReadonlyArray<{ readonly id: string; readonly content: string }>,
 	options: JsonExportOptions = {},
 ): E.Either<ExportError, string> {
-	const opts = { ...defaultOptions, ...options };
+	const opts = { ...defaultOptions, ...options }
 
 	// Use functional approach instead of mutation
-	const parsedResults = contents.map(item => {
-		const parsed = parseLexicalContent(item.content);
+	const parsedResults = contents.map((item) => {
+		const parsed = parseLexicalContent(item.content)
 		if (E.isLeft(parsed)) {
-			return E.left(parsed.left);
+			return E.left(parsed.left)
 		}
-		return E.right({ id: item.id, document: parsed.right });
-	});
+		return E.right({ id: item.id, document: parsed.right })
+	})
 
 	// Check for any parsing errors
-	const firstError = parsedResults.find(E.isLeft);
+	const firstError = parsedResults.find(E.isLeft)
 	if (firstError && E.isLeft(firstError)) {
-		return firstError;
+		return firstError
 	}
 
 	// Extract successful results
-	const successfulResults = parsedResults
-		.filter(E.isRight)
-		.map(result => result.right);
+	const successfulResults = parsedResults.filter(E.isRight).map((result) => result.right)
 
 	const exportData = {
 		metadata: opts.includeMetadata
@@ -236,7 +232,7 @@ export function exportMultipleToJson(
 				}
 			: undefined,
 		documents: successfulResults,
-	};
+	}
 
-	return E.right(serializeToJson(exportData, opts));
+	return E.right(serializeToJson(exportData, opts))
 }

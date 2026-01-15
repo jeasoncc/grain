@@ -17,15 +17,9 @@
  * @requirements 3.1, 3.2, 3.3, 3.4, 3.5, 3.6
  */
 
-import {
-	type ExcalidrawTemplateParams,
-	excalidrawConfig,
-} from "./configs/excalidraw.config";
-import type { TemplatedFileParams } from "./create-templated-file.flow";
-import {
-	createTemplatedFile,
-	createTemplatedFileAsync,
-} from "./create-templated-file.flow";
+import { type ExcalidrawTemplateParams, excalidrawConfig } from "./configs/excalidraw.config"
+import type { TemplatedFileParams } from "./create-templated-file.flow"
+import { createTemplatedFile, createTemplatedFileAsync } from "./create-templated-file.flow"
 
 // ==============================
 // Types
@@ -36,15 +30,15 @@ import {
  */
 export interface CreateExcalidrawParams {
 	/** 工作区 ID */
-	readonly workspaceId: string;
+	readonly workspaceId: string
 	/** 自定义标题（可选） */
-	readonly title?: string;
+	readonly title?: string
 	/** 日期（可选，默认为当前时间） */
-	readonly date?: Date;
+	readonly date?: Date
 	/** 画布宽度（可选，默认 1920） */
-	readonly width?: number;
+	readonly width?: number
 	/** 画布高度（可选，默认 1080） */
-	readonly height?: number;
+	readonly height?: number
 }
 
 /**
@@ -52,11 +46,11 @@ export interface CreateExcalidrawParams {
  */
 export interface ExcalidrawCreationResult {
 	/** 创建的 Excalidraw 节点 */
-	readonly node: import("@/types/node").NodeInterface;
+	readonly node: import("@/types/node").NodeInterface
 	/** 生成的内容（Excalidraw JSON 字符串） */
-	readonly content: string;
+	readonly content: string
 	/** 解析后的内容（Excalidraw JSON 对象） */
-	readonly parsedContent: unknown;
+	readonly parsedContent: unknown
 }
 
 // ==============================
@@ -73,7 +67,7 @@ export interface ExcalidrawCreationResult {
  * @param params - 创建 Excalidraw 参数
  * @returns TaskEither<AppError, ExcalidrawCreationResult>
  */
-export const createExcalidraw = createTemplatedFile(excalidrawConfig);
+export const createExcalidraw = createTemplatedFile(excalidrawConfig)
 
 /**
  * 创建 Excalidraw 文件（异步版本）
@@ -84,7 +78,7 @@ export const createExcalidraw = createTemplatedFile(excalidrawConfig);
  * @returns Promise<ExcalidrawCreationResult>
  * @throws Error 如果创建失败
  */
-export const createExcalidrawAsync = createTemplatedFileAsync(excalidrawConfig);
+export const createExcalidrawAsync = createTemplatedFileAsync(excalidrawConfig)
 
 // ==============================
 // Helper Functions
@@ -108,7 +102,7 @@ export const adaptExcalidrawParams = (
 		width: params.width,
 		height: params.height,
 	},
-});
+})
 
 /**
  * 创建 Excalidraw 文件（兼容旧 API）
@@ -122,9 +116,9 @@ export const adaptExcalidrawParams = (
 export const createExcalidrawCompat = (
 	params: CreateExcalidrawParams,
 ): ReturnType<typeof createExcalidraw> => {
-	const adaptedParams = adaptExcalidrawParams(params);
-	return createExcalidraw(adaptedParams);
-};
+	const adaptedParams = adaptExcalidrawParams(params)
+	return createExcalidraw(adaptedParams)
+}
 
 /**
  * 创建 Excalidraw 文件（兼容旧 API，异步版本）
@@ -136,6 +130,6 @@ export const createExcalidrawCompat = (
 export async function createExcalidrawCompatAsync(
 	params: CreateExcalidrawParams,
 ): Promise<ExcalidrawCreationResult> {
-	const adaptedParams = adaptExcalidrawParams(params);
-	return createExcalidrawAsync(adaptedParams);
+	const adaptedParams = adaptExcalidrawParams(params)
+	return createExcalidrawAsync(adaptedParams)
 }

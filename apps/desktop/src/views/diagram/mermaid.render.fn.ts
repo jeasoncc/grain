@@ -13,32 +13,32 @@
  * - 安全性：配置适当的 securityLevel
  */
 
-import mermaid from "mermaid";
+import mermaid from "mermaid"
 
 // ============================================================================
 // Types
 // ============================================================================
 
 /** Mermaid 主题类型 */
-export type MermaidTheme = "light" | "dark";
+export type MermaidTheme = "light" | "dark"
 
 /** Mermaid 渲染成功结果 */
 export interface MermaidRenderSuccess {
-	readonly svg: string;
+	readonly svg: string
 }
 
 /** Mermaid 渲染错误结果 */
 export interface MermaidRenderError {
-	readonly error: string;
+	readonly error: string
 }
 
 /** Mermaid 渲染结果 */
-export type MermaidRenderResult = MermaidRenderSuccess | MermaidRenderError;
+export type MermaidRenderResult = MermaidRenderSuccess | MermaidRenderError
 
 /** Mermaid 初始化配置 */
 export interface MermaidInitConfig {
-	readonly theme: MermaidTheme;
-	readonly fontFamily?: string;
+	readonly theme: MermaidTheme
+	readonly fontFamily?: string
 	/**
 	 * Mermaid 安全级别：
 	 *
@@ -54,7 +54,7 @@ export interface MermaidInitConfig {
 	 * - "sandbox": 在 iframe sandbox 中渲染
 	 *   适用于：需要完全隔离的场景
 	 */
-	readonly securityLevel?: "strict" | "loose" | "antiscript" | "sandbox";
+	readonly securityLevel?: "strict" | "loose" | "antiscript" | "sandbox"
 }
 
 // ============================================================================
@@ -62,7 +62,7 @@ export interface MermaidInitConfig {
 // ============================================================================
 
 /** 当前初始化的主题 */
-let currentTheme: MermaidTheme | null = null;
+let currentTheme: MermaidTheme | null = null
 
 // ============================================================================
 // Helper Functions
@@ -74,18 +74,15 @@ let currentTheme: MermaidTheme | null = null;
 const toMermaidTheme = (
 	theme: MermaidTheme,
 ): "default" | "dark" | "forest" | "neutral" | "base" => {
-	return theme === "dark" ? "dark" : "default";
-};
+	return theme === "dark" ? "dark" : "default"
+}
 
 /**
  * Mermaid 错误模式及其友好提示
  */
 interface MermaidErrorPattern {
-	readonly pattern: RegExp | string;
-	readonly getMessage: (
-		match: RegExpMatchArray | null,
-		original: string,
-	) => string;
+	readonly pattern: RegExp | string
+	readonly getMessage: (match: RegExpMatchArray | null, original: string) => string
 }
 
 /**
@@ -109,58 +106,58 @@ const MERMAID_ERROR_PATTERNS: readonly MermaidErrorPattern[] = [
 	{
 		pattern: /Syntax error.*?line\s*(\d+)/i,
 		getMessage: (match, original) => {
-			const lineNum = match?.[1] || "未知";
-			const cleanMsg = original.replace(/Syntax error.*?:\s*/i, "").trim();
-			return `语法错误（第 ${lineNum} 行）：${cleanMsg || "请检查该行的语法"}`;
+			const lineNum = match?.[1] || "未知"
+			const cleanMsg = original.replace(/Syntax error.*?:\s*/i, "").trim()
+			return `语法错误（第 ${lineNum} 行）：${cleanMsg || "请检查该行的语法"}`
 		},
 	},
 	// 解析错误（带行号）
 	{
 		pattern: /Parse error.*?line\s*(\d+)/i,
 		getMessage: (match, original) => {
-			const lineNum = match?.[1] || "未知";
-			const cleanMsg = original.replace(/Parse error.*?:\s*/i, "").trim();
-			return `解析错误（第 ${lineNum} 行）：${cleanMsg || "请检查该行的语法结构"}`;
+			const lineNum = match?.[1] || "未知"
+			const cleanMsg = original.replace(/Parse error.*?:\s*/i, "").trim()
+			return `解析错误（第 ${lineNum} 行）：${cleanMsg || "请检查该行的语法结构"}`
 		},
 	},
 	// 词法错误
 	{
 		pattern: /Lexical error/i,
 		getMessage: (_, original) => {
-			const cleanMsg = original.replace(/Lexical error.*?:\s*/i, "").trim();
-			return `词法错误：${cleanMsg || "代码中包含无法识别的字符或关键字"}`;
+			const cleanMsg = original.replace(/Lexical error.*?:\s*/i, "").trim()
+			return `词法错误：${cleanMsg || "代码中包含无法识别的字符或关键字"}`
 		},
 	},
 	// 一般语法错误
 	{
 		pattern: /Syntax error/i,
 		getMessage: (_, original) => {
-			const cleanMsg = original.replace(/Syntax error.*?:\s*/i, "").trim();
-			return `语法错误：${cleanMsg || "请检查代码语法"}`;
+			const cleanMsg = original.replace(/Syntax error.*?:\s*/i, "").trim()
+			return `语法错误：${cleanMsg || "请检查代码语法"}`
 		},
 	},
 	// 一般解析错误
 	{
 		pattern: /Parse error/i,
 		getMessage: (_, original) => {
-			const cleanMsg = original.replace(/Parse error.*?:\s*/i, "").trim();
-			return `解析错误：${cleanMsg || "请检查代码结构"}`;
+			const cleanMsg = original.replace(/Parse error.*?:\s*/i, "").trim()
+			return `解析错误：${cleanMsg || "请检查代码结构"}`
 		},
 	},
 	// 意外的 token
 	{
 		pattern: /Unexpected token/i,
 		getMessage: (_, original) => {
-			return `意外的符号：${original.replace(/Unexpected token/i, "").trim() || "代码中存在意外的字符或符号"}`;
+			return `意外的符号：${original.replace(/Unexpected token/i, "").trim() || "代码中存在意外的字符或符号"}`
 		},
 	},
 	// 期望某个 token
 	{
 		pattern: /Expected\s+(.+?)\s+but\s+got\s+(.+)/i,
 		getMessage: (match) => {
-			const expected = match?.[1] || "某个符号";
-			const got = match?.[2] || "其他内容";
-			return `语法错误：期望 ${expected}，但得到了 ${got}`;
+			const expected = match?.[1] || "某个符号"
+			const got = match?.[2] || "其他内容"
+			return `语法错误：期望 ${expected}，但得到了 ${got}`
 		},
 	},
 	// 未闭合的引号
@@ -182,8 +179,7 @@ const MERMAID_ERROR_PATTERNS: readonly MermaidErrorPattern[] = [
 	// 无效的节点 ID
 	{
 		pattern: /invalid node id|invalid identifier/i,
-		getMessage: () =>
-			"无效的节点 ID：节点 ID 不能以数字开头，不能包含特殊字符（除了下划线）",
+		getMessage: () => "无效的节点 ID：节点 ID 不能以数字开头，不能包含特殊字符（除了下划线）",
 	},
 	// 重复定义
 	{
@@ -195,12 +191,12 @@ const MERMAID_ERROR_PATTERNS: readonly MermaidErrorPattern[] = [
 		pattern: /subgraph/i,
 		getMessage: (_, original) => {
 			if (original.toLowerCase().includes("end")) {
-				return "子图未正确闭合：请确保每个 subgraph 都有对应的 end";
+				return "子图未正确闭合：请确保每个 subgraph 都有对应的 end"
 			}
-			return `子图错误：${original}`;
+			return `子图错误：${original}`
 		},
 	},
-];
+]
 
 /**
  * 解析 Mermaid 错误信息，返回友好的错误描述
@@ -211,26 +207,26 @@ const MERMAID_ERROR_PATTERNS: readonly MermaidErrorPattern[] = [
 const parseMermaidError = (error: unknown): string => {
 	// 非 Error 对象的情况
 	if (!(error instanceof Error)) {
-		return "Mermaid 渲染失败：未知错误";
+		return "Mermaid 渲染失败：未知错误"
 	}
 
-	const message = error.message;
+	const message = error.message
 
 	// 空消息
 	if (!message || message.trim() === "") {
-		return "Mermaid 渲染失败：未知错误";
+		return "Mermaid 渲染失败：未知错误"
 	}
 
 	// 遍历错误模式，找到匹配的模式
 	for (const { pattern, getMessage } of MERMAID_ERROR_PATTERNS) {
 		if (typeof pattern === "string") {
 			if (message.includes(pattern)) {
-				return getMessage(null, message);
+				return getMessage(null, message)
 			}
 		} else {
-			const match = message.match(pattern);
+			const match = message.match(pattern)
 			if (match) {
-				return getMessage(match, message);
+				return getMessage(match, message)
 			}
 		}
 	}
@@ -240,10 +236,10 @@ const parseMermaidError = (error: unknown): string => {
 	const cleanedMessage = message
 		.replace(/^Error:\s*/i, "")
 		.replace(/^Mermaid:\s*/i, "")
-		.trim();
+		.trim()
 
-	return cleanedMessage || "Mermaid 渲染失败：未知错误";
-};
+	return cleanedMessage || "Mermaid 渲染失败：未知错误"
+}
 
 // ============================================================================
 // Public Functions
@@ -270,7 +266,7 @@ export const initMermaid = (
 ): void => {
 	// 如果主题没有变化，跳过重新初始化
 	if (currentTheme === theme) {
-		return;
+		return
 	}
 
 	mermaid.initialize({
@@ -282,10 +278,10 @@ export const initMermaid = (
 		fontFamily: config?.fontFamily ?? "inherit",
 		// 禁用日志以避免控制台噪音
 		logLevel: "error",
-	});
+	})
 
-	currentTheme = theme;
-};
+	currentTheme = theme
+}
 
 /**
  * 渲染 Mermaid 图表
@@ -312,28 +308,28 @@ export const renderMermaid = async (
 	if (!code.trim()) {
 		return {
 			error: "图表代码为空",
-		};
+		}
 	}
 
 	try {
 		// 确保 Mermaid 已初始化（默认使用 light 主题）
 		if (currentTheme === null) {
-			initMermaid("light");
+			initMermaid("light")
 		}
 
 		// 生成唯一 ID
-		const id = containerId ?? `mermaid-${crypto.randomUUID()}`;
+		const id = containerId ?? `mermaid-${crypto.randomUUID()}`
 
 		// 渲染图表
-		const { svg } = await mermaid.render(id, code);
+		const { svg } = await mermaid.render(id, code)
 
-		return { svg };
+		return { svg }
 	} catch (error) {
 		return {
 			error: parseMermaidError(error),
-		};
+		}
 	}
-};
+}
 
 /**
  * 检查 Mermaid 代码是否有效（不实际渲染）
@@ -343,22 +339,22 @@ export const renderMermaid = async (
  */
 export const validateMermaidCode = async (code: string): Promise<boolean> => {
 	if (!code.trim()) {
-		return false;
+		return false
 	}
 
 	try {
 		// 确保 Mermaid 已初始化
 		if (currentTheme === null) {
-			initMermaid("light");
+			initMermaid("light")
 		}
 
 		// 使用 parse 方法验证语法（不生成 SVG）
-		await mermaid.parse(code);
-		return true;
+		await mermaid.parse(code)
+		return true
 	} catch {
-		return false;
+		return false
 	}
-};
+}
 
 /**
  * 获取当前 Mermaid 主题
@@ -366,12 +362,12 @@ export const validateMermaidCode = async (code: string): Promise<boolean> => {
  * @returns 当前主题，如果未初始化则返回 null
  */
 export const getCurrentMermaidTheme = (): MermaidTheme | null => {
-	return currentTheme;
-};
+	return currentTheme
+}
 
 /**
  * 重置 Mermaid 状态（主要用于测试）
  */
 export const resetMermaidState = (): void => {
-	currentTheme = null;
-};
+	currentTheme = null
+}

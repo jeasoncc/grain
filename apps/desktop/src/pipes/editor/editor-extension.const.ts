@@ -18,12 +18,12 @@
  * - lexical: Lexical 富文本编辑器（所有文本文件）
  * - excalidraw: Excalidraw 绘图编辑器（.excalidraw 文件）
  */
-export type EditorType = "lexical" | "excalidraw";
+export type EditorType = "lexical" | "excalidraw"
 
 /**
  * 图表类型（用于内容识别，不影响编辑器选择）
  */
-export type DiagramType = "mermaid" | "plantuml";
+export type DiagramType = "mermaid" | "plantuml"
 
 // ==============================
 // Constants
@@ -70,7 +70,7 @@ export const FILE_EXTENSIONS = {
 	H: ".h",
 	HPP: ".hpp",
 	TXT: ".txt",
-} as const;
+} as const
 
 /**
  * 扩展名到编辑器类型的映射
@@ -112,7 +112,7 @@ export const EXTENSION_TO_EDITOR_MAP: Record<string, EditorType> = {
 	[FILE_EXTENSIONS.H]: "lexical",
 	[FILE_EXTENSIONS.HPP]: "lexical",
 	[FILE_EXTENSIONS.TXT]: "lexical",
-};
+}
 
 /**
  * 扩展名到图表类型的映射
@@ -120,7 +120,7 @@ export const EXTENSION_TO_EDITOR_MAP: Record<string, EditorType> = {
 export const EXTENSION_TO_DIAGRAM_TYPE_MAP: Record<string, DiagramType> = {
 	[FILE_EXTENSIONS.MERMAID]: "mermaid",
 	[FILE_EXTENSIONS.PLANTUML]: "plantuml",
-};
+}
 
 /**
  * NodeType 到默认扩展名的映射
@@ -145,4 +145,4 @@ export const NODE_TYPE_TO_EXTENSION_MAP: Record<string, string> = {
 
 	// 代码类型（使用 Lexical 编辑器）
 	code: FILE_EXTENSIONS.JS,
-};
+}

@@ -10,10 +10,10 @@
  * 这些函数无副作用，可组合，可测试。
  */
 
-import * as E from "fp-ts/Either";
-import dayjs from "dayjs";
-import type { TemplateType } from "./content.template.fn";
-import { getTemplateConfig } from "./content.template.fn";
+import dayjs from "dayjs"
+import * as E from "fp-ts/Either"
+import type { TemplateType } from "./content.template.fn"
+import { getTemplateConfig } from "./content.template.fn"
 
 // ==============================
 // Types - Lexical Nodes
@@ -23,108 +23,105 @@ import { getTemplateConfig } from "./content.template.fn";
  * Lexical 文本节点
  */
 export interface LexicalTextNode {
-	readonly type: "text";
-	readonly version: number;
-	readonly text: string;
-	readonly format: number;
-	readonly style: string;
-	readonly detail: number;
-	readonly mode: string;
+	readonly type: "text"
+	readonly version: number
+	readonly text: string
+	readonly format: number
+	readonly style: string
+	readonly detail: number
+	readonly mode: string
 }
 
 /**
  * Lexical 标签节点
  */
 export interface LexicalTagNode {
-	readonly type: "tag";
-	readonly version: number;
-	readonly tagName: string;
-	readonly text: string;
-	readonly format: number;
-	readonly style: string;
-	readonly detail: number;
-	readonly mode: string;
+	readonly type: "tag"
+	readonly version: number
+	readonly tagName: string
+	readonly text: string
+	readonly format: number
+	readonly style: string
+	readonly detail: number
+	readonly mode: string
 }
 
 /**
  * Lexical 段落节点
  */
 export interface LexicalParagraphNode {
-	readonly children: readonly (LexicalTextNode | LexicalTagNode)[];
-	readonly direction: string;
-	readonly format: string;
-	readonly indent: number;
-	readonly type: "paragraph";
-	readonly version: number;
+	readonly children: readonly (LexicalTextNode | LexicalTagNode)[]
+	readonly direction: string
+	readonly format: string
+	readonly indent: number
+	readonly type: "paragraph"
+	readonly version: number
 }
 
 /**
  * Lexical 标题节点
  */
 export interface LexicalHeadingNode {
-	readonly children: readonly LexicalTextNode[];
-	readonly direction: string;
-	readonly format: string;
-	readonly indent: number;
-	readonly type: "heading";
-	readonly version: number;
-	readonly tag: string;
+	readonly children: readonly LexicalTextNode[]
+	readonly direction: string
+	readonly format: string
+	readonly indent: number
+	readonly type: "heading"
+	readonly version: number
+	readonly tag: string
 }
 
 /**
  * Lexical 列表项节点
  */
 export interface LexicalListItemNode {
-	readonly children: readonly (LexicalTextNode | LexicalTagNode)[];
-	readonly direction: string;
-	readonly format: string;
-	readonly indent: number;
-	readonly type: "listitem";
-	readonly version: number;
-	readonly value: number;
-	readonly checked?: boolean;
+	readonly children: readonly (LexicalTextNode | LexicalTagNode)[]
+	readonly direction: string
+	readonly format: string
+	readonly indent: number
+	readonly type: "listitem"
+	readonly version: number
+	readonly value: number
+	readonly checked?: boolean
 }
 
 /**
  * Lexical 列表节点
  */
 export interface LexicalListNode {
-	readonly children: readonly LexicalListItemNode[];
-	readonly direction: string;
-	readonly format: string;
-	readonly indent: number;
-	readonly type: "list";
-	readonly version: number;
-	readonly listType: "bullet" | "number" | "check";
-	readonly start: number;
-	readonly tag: string;
+	readonly children: readonly LexicalListItemNode[]
+	readonly direction: string
+	readonly format: string
+	readonly indent: number
+	readonly type: "list"
+	readonly version: number
+	readonly listType: "bullet" | "number" | "check"
+	readonly start: number
+	readonly tag: string
 }
 
 /**
  * Lexical 根节点子元素类型
  */
-export type LexicalRootChild =
-	| LexicalParagraphNode
-	| LexicalHeadingNode
-	| LexicalListNode;
+export type LexicalRootChild = LexicalParagraphNode | LexicalHeadingNode | LexicalListNode
 
 /**
  * Lexical 根节点
  */
 export interface LexicalRootNode {
-	readonly children: readonly LexicalRootChild[];
-	readonly direction: string;
-	readonly format: string;
-	readonly indent: number;
-	readonly type: "root";
-	readonly version: number;
+	readonly children: readonly LexicalRootChild[]
+	readonly direction: string
+	readonly format: string
+	readonly indent: number
+	readonly type: "root"
+	readonly version: number
 }
 
 /**
  * Lexical 文档结构
  */
 export interface LexicalDocument {
-	readonly root: LexicalRootNode;
+	readonly root: LexicalRootNode
 }
 
 /**
@@ -132,13 +129,13 @@ export interface LexicalDocument {
  */
 export interface ContentGenerationOptions {
 	/** 标签列表 */
-	readonly tags?: readonly string[];
+	readonly tags?: readonly string[]
 	/** 标题级别 */
-	readonly headingLevel?: "h1" | "h2" | "h3";
+	readonly headingLevel?: "h1" | "h2" | "h3"
 	/** 是否包含空行 */
-	readonly includeEmptyLines?: boolean;
+	readonly includeEmptyLines?: boolean
 	/** 自定义标题文本 */
-	readonly customTitle?: string;
+	readonly customTitle?: string
 }
 
 // ==============================
@@ -160,7 +157,7 @@ export function createTextNode(text: string): LexicalTextNode {
 		style: "",
 		detail: 0,
 		mode: "normal",
-	};
+	}
 }
 
 /**
@@ -179,7 +176,7 @@ export function createTagNode(tagName: string): LexicalTagNode {
 		style: "",
 		detail: 2,
 		mode: "segmented",
-	};
+	}
 }
 
 /**
@@ -198,7 +195,7 @@ export function createParagraphNode(
 		indent: 0,
 		type: "paragraph",
 		version: 1,
-	};
+	}
 }
 
 /**
@@ -220,7 +217,7 @@ export function createHeadingNode(
 		type: "heading",
 		version: 1,
 		tag,
-	};
+	}
 }
 
 /**
@@ -244,11 +241,9 @@ export function createListItemNode(
 		type: "listitem",
 		version: 1,
 		value,
-	};
+	}
 
-	return checked !== undefined 
-		? { ...baseNode, checked }
-		: baseNode;
+	return checked !== undefined ? { ...baseNode, checked } : baseNode
 }
 
 /**
@@ -264,11 +259,7 @@ export function createListNode(
 ): LexicalListNode {
 	return {
 		children: items.map((text, index) =>
-			createListItemNode(
-				text,
-				index + 1,
-				listType === "check" ? false : undefined,
-			),
+			createListItemNode(text, index + 1, listType === "check" ? false : undefined),
 		),
 		direction: "ltr",
 		format: "",
@@ -278,7 +269,7 @@ export function createListNode(
 		listType,
 		start: 1,
 		tag: listType === "number" ? "ol" : "ul",
-	};
+	}
 }
 
 /**
@@ -289,12 +280,10 @@ export function createListNode(
  */
 export function createTagsLine(tags: readonly string[]): LexicalParagraphNode {
 	const children: readonly (LexicalTextNode | LexicalTagNode)[] = tags.flatMap((tag, index) =>
-		index < tags.length - 1
-			? [createTagNode(tag), createTextNode(" ")]
-			: [createTagNode(tag)],
-	);
+		index < tags.length - 1 ? [createTagNode(tag), createTextNode(" ")] : [createTagNode(tag)],
+	)
 
-	return createParagraphNode(children);
+	return createParagraphNode(children)
 }
 
 // ==============================
@@ -313,16 +302,16 @@ export function formatFullDateTime(date: Date): string {
 		year: "numeric",
 		month: "long",
 		day: "numeric",
-	});
+	})
 
 	const timeStr = date.toLocaleTimeString("en-US", {
 		hour: "numeric",
 		minute: "2-digit",
 		second: "2-digit",
 		hour12: true,
-	});
+	})
 
-	return `${dateStr} at ${timeStr}`;
+	return `${dateStr} at ${timeStr}`
 }
 
 /**
@@ -336,7 +325,7 @@ export function formatShortDate(date: Date): string {
 		year: "numeric",
 		month: "short",
 		day: "numeric",
-	});
+	})
 }
 
 // ==============================
@@ -359,7 +348,7 @@ export function createDocument(children: readonly LexicalRootChild[]): LexicalDo
 			type: "root",
 			version: 1,
 		},
-	};
+	}
 }
 
 /**
@@ -373,13 +362,9 @@ export function generateDiaryContent(
 	date: Date = dayjs().toDate(),
 	options: ContentGenerationOptions = {},
 ): string {
-	const {
-		tags = ["diary", "notes"],
-		headingLevel = "h2",
-		includeEmptyLines = true,
-	} = options;
+	const { tags = ["diary", "notes"], headingLevel = "h2", includeEmptyLines = true } = options
 
-	const fullDateTime = formatFullDateTime(date);
+	const fullDateTime = formatFullDateTime(date)
 	const children: readonly LexicalRootChild[] = [
 		// Add tags line
 		...(tags.length > 0 ? [createTagsLine(tags)] : []),
@@ -389,9 +374,9 @@ export function generateDiaryContent(
 		createHeadingNode(fullDateTime, headingLevel),
 		// Add empty line
 		...(includeEmptyLines ? [createParagraphNode()] : []),
-	];
+	]
 
-	return JSON.stringify(createDocument(children));
+	return JSON.stringify(createDocument(children))
 }
 
 /**
@@ -410,9 +395,9 @@ export function generateTodoContent(
 		headingLevel = "h2",
 		includeEmptyLines = true,
 		customTitle,
-	} = options;
+	} = options
 
-	const title = customTitle || `Tasks for ${formatShortDate(date)}`;
+	const title = customTitle || `Tasks for ${formatShortDate(date)}`
 	const children: readonly LexicalRootChild[] = [
 		// Add tags line
 		...(tags.length > 0 ? [createTagsLine(tags)] : []),
@@ -424,9 +409,9 @@ export function generateTodoContent(
 		...(includeEmptyLines ? [createParagraphNode()] : []),
 		// Add empty todo list
 		createListNode([""], "check"),
-	];
+	]
 
-	return JSON.stringify(createDocument(children));
+	return JSON.stringify(createDocument(children))
 }
 
 /**
@@ -445,9 +430,9 @@ export function generateLedgerContent(
 		headingLevel = "h2",
 		includeEmptyLines = true,
 		customTitle,
-	} = options;
+	} = options
 
-	const title = customTitle || `Expenses for ${formatShortDate(date)}`;
+	const title = customTitle || `Expenses for ${formatShortDate(date)}`
 	const children: readonly LexicalRootChild[] = [
 		// Add tags line
 		...(tags.length > 0 ? [createTagsLine(tags)] : []),
@@ -465,9 +450,9 @@ export function generateLedgerContent(
 		// Add expenses section
 		createHeadingNode("Expenses", "h3"),
 		createListNode([""], "bullet"),
-	];
+	]
 
-	return JSON.stringify(createDocument(children));
+	return JSON.stringify(createDocument(children))
 }
 
 /**
@@ -481,14 +466,9 @@ export function generateNoteContent(
 	date: Date = dayjs().toDate(),
 	options: ContentGenerationOptions = {},
 ): string {
-	const {
-		tags = ["note"],
-		headingLevel = "h2",
-		includeEmptyLines = true,
-		customTitle,
-	} = options;
+	const { tags = ["note"], headingLevel = "h2", includeEmptyLines = true, customTitle } = options
 
-	const title = customTitle || `Note - ${formatShortDate(date)}`;
+	const title = customTitle || `Note - ${formatShortDate(date)}`
 	const children: readonly LexicalRootChild[] = [
 		// Add tags line
 		...(tags.length > 0 ? [createTagsLine(tags)] : []),
@@ -500,9 +480,9 @@ export function generateNoteContent(
 		...(includeEmptyLines ? [createParagraphNode()] : []),
 		// Add empty paragraph for user input
 		createParagraphNode([createTextNode("")]),
-	];
+	]
 
-	return JSON.stringify(createDocument(children));
+	return JSON.stringify(createDocument(children))
 }
 
 /**
@@ -521,9 +501,9 @@ export function generateWikiContent(
 		headingLevel = "h2",
 		includeEmptyLines = true,
 		customTitle,
-	} = options;
+	} = options
 
-	const title = customTitle || "New Article";
+	const title = customTitle || "New Article"
 	const children: readonly LexicalRootChild[] = [
 		// Add tags line
 		...(tags.length > 0 ? [createTagsLine(tags)] : []),
@@ -554,9 +534,9 @@ export function generateWikiContent(
 		...(includeEmptyLines ? [createParagraphNode()] : []),
 		// Add empty list for reference links
 		createListNode([""], "bullet"),
-	];
+	]
 
-	return JSON.stringify(createDocument(children));
+	return JSON.stringify(createDocument(children))
 }
 
 /**
@@ -572,25 +552,25 @@ export function generateContentByType(
 	date: Date = dayjs().toDate(),
 	options: ContentGenerationOptions = {},
 ): string {
-	const config = getTemplateConfig(type);
+	const config = getTemplateConfig(type)
 	const mergedOptions: ContentGenerationOptions = {
 		tags: options.tags ?? config.defaultTags,
 		headingLevel: options.headingLevel ?? config.headingLevel,
 		includeEmptyLines: options.includeEmptyLines ?? config.includeEmptyLines,
 		customTitle: options.customTitle,
-	};
+	}
 
 	switch (type) {
 		case "diary":
-			return generateDiaryContent(date, mergedOptions);
+			return generateDiaryContent(date, mergedOptions)
 		case "todo":
-			return generateTodoContent(date, mergedOptions);
+			return generateTodoContent(date, mergedOptions)
 		case "ledger":
-			return generateLedgerContent(date, mergedOptions);
+			return generateLedgerContent(date, mergedOptions)
 		case "wiki":
-			return generateWikiContent(date, mergedOptions);
+			return generateWikiContent(date, mergedOptions)
 		default:
-			return generateDiaryContent(date, mergedOptions);
+			return generateDiaryContent(date, mergedOptions)
 	}
 }
 
@@ -608,7 +588,7 @@ export function parseContent(content: string): E.Either<Error, LexicalDocument> 
 	return E.tryCatch(
 		() => JSON.parse(content) as LexicalDocument,
 		(err) => new Error(`JSON 解析失败: ${String(err)}`),
-	);
+	)
 }
 
 /**
@@ -623,19 +603,19 @@ export function extractTagsFromDocument(document: LexicalDocument): readonly str
 	): readonly string[] => {
 		return children
 			.filter((child): child is LexicalTagNode => child.type === "tag")
-			.map(child => child.tagName);
-	};
+			.map((child) => child.tagName)
+	}
 
-	const allTags = document.root.children.flatMap(child => {
+	const allTags = document.root.children.flatMap((child) => {
 		if (child.type === "paragraph") {
-			return extractFromChildren(child.children);
+			return extractFromChildren(child.children)
 		} else if (child.type === "list") {
-			return child.children.flatMap(item => extractFromChildren(item.children));
+			return child.children.flatMap((item) => extractFromChildren(item.children))
 		}
-		return [];
-	});
+		return []
+	})
 
-	return allTags;
+	return allTags
 }
 
 /**
@@ -648,28 +628,26 @@ export function extractTextFromDocument(document: LexicalDocument): string {
 	const extractFromChildren = (
 		children: readonly (LexicalTextNode | LexicalTagNode)[],
 	): readonly string[] => {
-		return children.map(child => {
+		return children.map((child) => {
 			if (child.type === "text") {
-				return child.text;
+				return child.text
 			} else if (child.type === "tag") {
-				return child.text;
+				return child.text
 			}
-			return "";
-		});
-	};
+			return ""
+		})
+	}
 
-	const allTexts = document.root.children.flatMap(child => {
+	const allTexts = document.root.children.flatMap((child) => {
 		if (child.type === "paragraph") {
-			return [...extractFromChildren(child.children), "\n"];
+			return [...extractFromChildren(child.children), "\n"]
 		} else if (child.type === "heading") {
-			return [...child.children.map(textNode => textNode.text), "\n"];
+			return [...child.children.map((textNode) => textNode.text), "\n"]
 		} else if (child.type === "list") {
-			return child.children.flatMap(item => 
-				[...extractFromChildren(item.children), "\n"]
-			);
+			return child.children.flatMap((item) => [...extractFromChildren(item.children), "\n"])
 		}
-		return [];
-	});
+		return []
+	})
 
-	return allTexts.join("").trim();
+	return allTexts.join("").trim()
 }

@@ -8,13 +8,13 @@
  * @requirements 2.1, 5.1
  */
 
-import type { ISODateString, UUID } from "../shared";
+import type { ISODateString, UUID } from "../shared"
 
 /**
  * 内容类型枚举
  * 定义可存储的不同内容类型
  */
-export type ContentType = "lexical" | "excalidraw" | "text";
+export type ContentType = "lexical" | "excalidraw" | "text"
 
 /**
  * 内容接口 - 独立内容表
@@ -27,19 +27,19 @@ export type ContentType = "lexical" | "excalidraw" | "text";
  */
 export interface ContentInterface {
 	/** 内容记录的唯一标识符 */
-	readonly id: UUID;
+	readonly id: UUID
 
 	/** 父节点的引用 */
-	readonly nodeId: UUID;
+	readonly nodeId: UUID
 
 	/** 实际内容（Lexical JSON、Excalidraw JSON 或纯文本） */
-	readonly content: string;
+	readonly content: string
 
 	/** 存储的内容类型 */
-	readonly contentType: ContentType;
+	readonly contentType: ContentType
 
 	/** ISO 8601 格式的最后修改时间戳 */
-	readonly lastEdit: ISODateString;
+	readonly lastEdit: ISODateString
 }
 
 /**
@@ -48,9 +48,9 @@ export interface ContentInterface {
  * id 和 lastEdit 自动生成
  */
 export interface ContentCreateInput {
-	readonly nodeId: UUID;
-	readonly content?: string;
-	readonly contentType?: ContentType;
+	readonly nodeId: UUID
+	readonly content?: string
+	readonly contentType?: ContentType
 }
 
 /**
@@ -59,6 +59,6 @@ export interface ContentCreateInput {
  * 只有 content 和 contentType 可以更新
  */
 export interface ContentUpdateInput {
-	readonly content?: string;
-	readonly contentType?: ContentType;
+	readonly content?: string
+	readonly contentType?: ContentType
 }

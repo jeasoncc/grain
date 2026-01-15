@@ -8,19 +8,19 @@
  * @requirements 4.1, 4.2, 4.3, 4.4, 4.5
  */
 
-import { generateCodeContent } from "@/pipes/content";
+import { generateCodeContent } from "@/pipes/content"
 import {
 	createDateTemplateConfig,
 	type DateTemplateParams,
 	dateParamsSchema,
-} from "./date-template.factory";
+} from "./date-template.factory"
 
 // ==============================
 // Types (Re-export)
 // ==============================
 
-export type CodeTemplateParams = DateTemplateParams;
-export const codeParamsSchema = dateParamsSchema;
+export type CodeTemplateParams = DateTemplateParams
+export const codeParamsSchema = dateParamsSchema
 
 // ==============================
 // Configuration
@@ -41,4 +41,4 @@ export const codeConfig = createDateTemplateConfig({
 	generateContent: generateCodeContent,
 	includeDayFolder: false,
 	skipJsonParse: true,
-});
+})

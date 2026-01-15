@@ -1,18 +1,18 @@
 // Font Configuration Utilities
-import { CARD_SIZE_OPTIONS, UI_SCALE_OPTIONS } from "@/types/font";
+import { CARD_SIZE_OPTIONS, UI_SCALE_OPTIONS } from "@/types/font"
 
 export interface FontConfig {
-	readonly fontFamily: string;
-	readonly fontSize: number;
-	readonly lineHeight: number;
-	readonly letterSpacing: number;
-	readonly uiFontFamily: string;
-	readonly uiFontSize: number;
-	readonly uiScale: string;
-	readonly cardSize: string;
-	readonly cardBorderRadius: number;
-	readonly paragraphSpacing: number;
-	readonly firstLineIndent: number;
+	readonly fontFamily: string
+	readonly fontSize: number
+	readonly lineHeight: number
+	readonly letterSpacing: number
+	readonly uiFontFamily: string
+	readonly uiFontSize: number
+	readonly uiScale: string
+	readonly cardSize: string
+	readonly cardBorderRadius: number
+	readonly paragraphSpacing: number
+	readonly firstLineIndent: number
 }
 
 export const FONT_PRESETS: Record<string, FontConfig> = {
@@ -68,22 +68,22 @@ export const FONT_PRESETS: Record<string, FontConfig> = {
 		paragraphSpacing: 1,
 		firstLineIndent: 2,
 	},
-};
+}
 
 export class FontConfigManager {
 	/**
 	 * Get UI scale value
 	 */
 	static getUIScale(scaleValue: string): number {
-		const option = UI_SCALE_OPTIONS.find((s) => s.value === scaleValue);
-		return option?.scale || 1;
+		const option = UI_SCALE_OPTIONS.find((s) => s.value === scaleValue)
+		return option?.scale || 1
 	}
 
 	/**
 	 * Get card padding value
 	 */
 	static getCardPadding(cardSizeValue: string): string {
-		const option = CARD_SIZE_OPTIONS.find((c) => c.value === cardSizeValue);
-		return option?.padding || "1rem";
+		const option = CARD_SIZE_OPTIONS.find((c) => c.value === cardSizeValue)
+		return option?.padding || "1rem"
 	}
 }

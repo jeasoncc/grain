@@ -12,8 +12,8 @@
  * @requirements 3.3, 5.2
  */
 
-import { useContent as useContentQuery } from "@/hooks/queries/content.queries";
-import type { ContentInterface } from "@/types/content";
+import { useContent as useContentQuery } from "@/hooks/queries/content.queries"
+import type { ContentInterface } from "@/types/content"
 
 /**
  * 根据节点 ID 获取内容（实时更新）
@@ -40,10 +40,10 @@ import type { ContentInterface } from "@/types/content";
 export function useContentByNodeId(
 	nodeId: string | null | undefined,
 ): ContentInterface | undefined {
-	const { data: content, isLoading } = useContentQuery(nodeId);
+	const { data: content, isLoading } = useContentQuery(nodeId)
 
-	if (isLoading) return undefined;
-	return content ?? undefined;
+	if (isLoading) return undefined
+	return content ?? undefined
 }
 
 /**
@@ -55,15 +55,13 @@ export function useContentByNodeId(
  * @param id - 内容记录 ID（可为 null/undefined）
  * @returns 内容记录，不存在或加载中返回 undefined
  */
-export function useContentById(
-	id: string | null | undefined,
-): ContentInterface | undefined {
+export function useContentById(id: string | null | undefined): ContentInterface | undefined {
 	// 注意：当前 API 不支持通过 content ID 查询
 	// 如果需要此功能，需要添加对应的 Rust API
-	const { data: content, isLoading } = useContentQuery(id);
+	const { data: content, isLoading } = useContentQuery(id)
 
-	if (isLoading) return undefined;
-	return content ?? undefined;
+	if (isLoading) return undefined
+	return content ?? undefined
 }
 
 /**
@@ -83,8 +81,8 @@ export function useContentsByNodeIds(
 	// 注意：当前 API 不支持批量查询
 	// 如果需要此功能，需要添加对应的 Rust API
 	// 暂时返回空数组
-	if (!nodeIds || nodeIds.length === 0) return [];
-	return undefined;
+	if (!nodeIds || nodeIds.length === 0) return []
+	return undefined
 }
 
 /**
@@ -95,12 +93,10 @@ export function useContentsByNodeIds(
  * @param nodeId - 父节点 ID
  * @returns 存在返回 true，不存在返回 false，加载中返回 undefined
  */
-export function useContentExists(
-	nodeId: string | null | undefined,
-): boolean | undefined {
-	const { data: content, isLoading } = useContentQuery(nodeId);
+export function useContentExists(nodeId: string | null | undefined): boolean | undefined {
+	const { data: content, isLoading } = useContentQuery(nodeId)
 
-	if (isLoading) return undefined;
-	if (!nodeId) return false;
-	return content !== null && content !== undefined;
+	if (isLoading) return undefined
+	if (!nodeId) return false
+	return content !== null && content !== undefined
 }

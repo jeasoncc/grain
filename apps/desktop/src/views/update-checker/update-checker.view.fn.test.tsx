@@ -3,10 +3,10 @@
  * @description 更新检查 View 组件测试
  */
 
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import type { UpdateCheckerViewProps } from "./update-checker.types";
-import { UpdateCheckerView } from "./update-checker.view.fn";
+import { fireEvent, render, screen } from "@testing-library/react"
+import { describe, expect, it, vi } from "vitest"
+import type { UpdateCheckerViewProps } from "./update-checker.types"
+import { UpdateCheckerView } from "./update-checker.view.fn"
 
 describe("UpdateCheckerView", () => {
 	const defaultProps: UpdateCheckerViewProps = {
@@ -20,34 +20,25 @@ describe("UpdateCheckerView", () => {
 		onCheckForUpdates: vi.fn(),
 		onDownloadAndInstall: vi.fn(),
 		onSetShowDialog: vi.fn(),
-	};
+	}
 
 	it("should render check for updates button", () => {
-		render(<UpdateCheckerView {...defaultProps} />);
-		expect(
-			screen.getByRole("button", { name: /check for updates/i }),
-		).toBeInTheDocument();
-	});
+		render(<UpdateCheckerView {...defaultProps} />)
+		expect(screen.getByRole("button", { name: /check for updates/i })).toBeInTheDocument()
+	})
 
 	it("should show checking state when isChecking is true", () => {
-		render(<UpdateCheckerView {...defaultProps} isChecking={true} />);
-		expect(
-			screen.getByRole("button", { name: /checking/i }),
-		).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: /checking/i })).toBeDisabled();
-	});
+		render(<UpdateCheckerView {...defaultProps} isChecking={true} />)
+		expect(screen.getByRole("button", { name: /checking/i })).toBeInTheDocument()
+		expect(screen.getByRole("button", { name: /checking/i })).toBeDisabled()
+	})
 
 	it("should call onCheckForUpdates when button clicked", () => {
-		const onCheckForUpdates = vi.fn();
-		render(
-			<UpdateCheckerView
-				{...defaultProps}
-				onCheckForUpdates={onCheckForUpdates}
-			/>,
-		);
-		fireEvent.click(screen.getByRole("button", { name: /check for updates/i }));
-		expect(onCheckForUpdates).toHaveBeenCalled();
-	});
+		const onCheckForUpdates = vi.fn()
+		render(<UpdateCheckerView {...defaultProps} onCheckForUpdates={onCheckForUpdates} />)
+		fireEvent.click(screen.getByRole("button", { name: /check for updates/i }))
+		expect(onCheckForUpdates).toHaveBeenCalled()
+	})
 
 	it("should show up-to-date message when checkStatus is up-to-date", () => {
 		render(
@@ -61,29 +52,21 @@ describe("UpdateCheckerView", () => {
 					body: "",
 				}}
 			/>,
-		);
-		expect(screen.getByText(/you're up to date/i)).toBeInTheDocument();
-		expect(screen.getByText(/v1.0.0/i)).toBeInTheDocument();
-	});
+		)
+		expect(screen.getByText(/you're up to date/i)).toBeInTheDocument()
+		expect(screen.getByText(/v1.0.0/i)).toBeInTheDocument()
+	})
 
 	it("should show dev-mode message when checkStatus is dev-mode", () => {
-		render(<UpdateCheckerView {...defaultProps} checkStatus="dev-mode" />);
-		expect(
-			screen.getByText(/update check unavailable in browser mode/i),
-		).toBeInTheDocument();
-	});
+		render(<UpdateCheckerView {...defaultProps} checkStatus="dev-mode" />)
+		expect(screen.getByText(/update check unavailable in browser mode/i)).toBeInTheDocument()
+	})
 
 	it("should show error message when checkStatus is error", () => {
-		render(
-			<UpdateCheckerView
-				{...defaultProps}
-				checkStatus="error"
-				errorMessage="Network error"
-			/>,
-		);
-		expect(screen.getByText(/check failed/i)).toBeInTheDocument();
-		expect(screen.getByText(/network error/i)).toBeInTheDocument();
-	});
+		render(<UpdateCheckerView {...defaultProps} checkStatus="error" errorMessage="Network error" />)
+		expect(screen.getByText(/check failed/i)).toBeInTheDocument()
+		expect(screen.getByText(/network error/i)).toBeInTheDocument()
+	})
 
 	it("should show update dialog when showDialog is true", () => {
 		render(
@@ -97,13 +80,13 @@ describe("UpdateCheckerView", () => {
 					body: "New features",
 				}}
 			/>,
-		);
-		expect(screen.getByText(/update available/i)).toBeInTheDocument();
-		expect(screen.getByText(/current version/i)).toBeInTheDocument();
-		expect(screen.getByText(/1.0.0/)).toBeInTheDocument();
-		expect(screen.getByText(/latest version/i)).toBeInTheDocument();
-		expect(screen.getByText(/1.1.0/)).toBeInTheDocument();
-	});
+		)
+		expect(screen.getByText(/update available/i)).toBeInTheDocument()
+		expect(screen.getByText(/current version/i)).toBeInTheDocument()
+		expect(screen.getByText(/1.0.0/)).toBeInTheDocument()
+		expect(screen.getByText(/latest version/i)).toBeInTheDocument()
+		expect(screen.getByText(/1.1.0/)).toBeInTheDocument()
+	})
 
 	it("should show release notes in dialog", () => {
 		render(
@@ -117,10 +100,10 @@ describe("UpdateCheckerView", () => {
 					body: "New features and bug fixes",
 				}}
 			/>,
-		);
-		expect(screen.getByText(/release notes/i)).toBeInTheDocument();
-		expect(screen.getByText(/new features and bug fixes/i)).toBeInTheDocument();
-	});
+		)
+		expect(screen.getByText(/release notes/i)).toBeInTheDocument()
+		expect(screen.getByText(/new features and bug fixes/i)).toBeInTheDocument()
+	})
 
 	it("should show download progress when isDownloading is true", () => {
 		render(
@@ -136,14 +119,14 @@ describe("UpdateCheckerView", () => {
 					body: "",
 				}}
 			/>,
-		);
+		)
 		// Check for the progress percentage instead of "Downloading..." which appears twice
-		expect(screen.getByText(/50%/)).toBeInTheDocument();
-		expect(screen.getByRole("progressbar")).toBeInTheDocument();
-	});
+		expect(screen.getByText(/50%/)).toBeInTheDocument()
+		expect(screen.getByRole("progressbar")).toBeInTheDocument()
+	})
 
 	it("should call onDownloadAndInstall when update button clicked", () => {
-		const onDownloadAndInstall = vi.fn();
+		const onDownloadAndInstall = vi.fn()
 		render(
 			<UpdateCheckerView
 				{...defaultProps}
@@ -156,13 +139,13 @@ describe("UpdateCheckerView", () => {
 					body: "",
 				}}
 			/>,
-		);
-		fireEvent.click(screen.getByRole("button", { name: /update now/i }));
-		expect(onDownloadAndInstall).toHaveBeenCalled();
-	});
+		)
+		fireEvent.click(screen.getByRole("button", { name: /update now/i }))
+		expect(onDownloadAndInstall).toHaveBeenCalled()
+	})
 
 	it("should call onSetShowDialog when later button clicked", () => {
-		const onSetShowDialog = vi.fn();
+		const onSetShowDialog = vi.fn()
 		render(
 			<UpdateCheckerView
 				{...defaultProps}
@@ -175,10 +158,10 @@ describe("UpdateCheckerView", () => {
 					body: "",
 				}}
 			/>,
-		);
-		fireEvent.click(screen.getByRole("button", { name: /later/i }));
-		expect(onSetShowDialog).toHaveBeenCalledWith(false);
-	});
+		)
+		fireEvent.click(screen.getByRole("button", { name: /later/i }))
+		expect(onSetShowDialog).toHaveBeenCalledWith(false)
+	})
 
 	it("should disable buttons when isDownloading is true", () => {
 		render(
@@ -193,8 +176,8 @@ describe("UpdateCheckerView", () => {
 					body: "",
 				}}
 			/>,
-		);
-		expect(screen.getByRole("button", { name: /downloading/i })).toBeDisabled();
-		expect(screen.getByRole("button", { name: /later/i })).toBeDisabled();
-	});
-});
+		)
+		expect(screen.getByRole("button", { name: /downloading/i })).toBeDisabled()
+		expect(screen.getByRole("button", { name: /later/i })).toBeDisabled()
+	})
+})

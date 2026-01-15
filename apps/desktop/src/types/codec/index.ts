@@ -23,7 +23,7 @@ export {
 	decodeAttachments,
 	encodeCreateAttachment,
 	encodeUpdateAttachment,
-} from "./attachment.codec";
+} from "./attachment.codec"
 // Content Codec
 export {
 	decodeContent,
@@ -31,7 +31,7 @@ export {
 	encodeContentToSaveRequest,
 	encodeCreateContent,
 	encodeUpdateContent,
-} from "./content.codec";
+} from "./content.codec"
 // Node Codec
 export {
 	decodeNode,
@@ -40,7 +40,7 @@ export {
 	encodeNodeToCreateRequest,
 	encodeNodeToUpdateRequest,
 	encodeUpdateNode,
-} from "./node.codec";
+} from "./node.codec"
 // Tag Codec
 export {
 	decodeTag,
@@ -50,7 +50,7 @@ export {
 	encodeCreateTag,
 	encodeUpdateTag,
 	type TagGraphData,
-} from "./tag.codec";
+} from "./tag.codec"
 // User Codec
 export {
 	decodeUser,
@@ -58,7 +58,7 @@ export {
 	decodeUsers,
 	encodeCreateUser,
 	encodeUpdateUser,
-} from "./user.codec";
+} from "./user.codec"
 // Workspace Codec
 export {
 	decodeWorkspace,
@@ -67,4 +67,4 @@ export {
 	encodeUpdateWorkspace,
 	encodeWorkspaceToCreateRequest,
 	encodeWorkspaceToUpdateRequest,
-} from "./workspace.codec";
+} from "./workspace.codec"

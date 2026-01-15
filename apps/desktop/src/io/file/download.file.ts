@@ -25,20 +25,20 @@ export function triggerDownload(
 	text: string,
 	mimeType = "application/json;charset=utf-8",
 ): void {
-	const blob = new Blob([text], { type: mimeType });
-	const url = URL.createObjectURL(blob);
-	const a = document.createElement("a");
-	
+	const blob = new Blob([text], { type: mimeType })
+	const url = URL.createObjectURL(blob)
+	const a = document.createElement("a")
+
 	// Set properties functionally using Object.assign
 	Object.assign(a, {
 		href: url,
 		download: filename,
-	});
-	
-	document.body.appendChild(a);
-	a.click();
-	a.remove();
-	URL.revokeObjectURL(url);
+	})
+
+	document.body.appendChild(a)
+	a.click()
+	a.remove()
+	URL.revokeObjectURL(url)
 }
 
 /**
@@ -48,17 +48,17 @@ export function triggerDownload(
  * @param blob - Blob 对象
  */
 export function triggerBlobDownload(filename: string, blob: Blob): void {
-	const url = URL.createObjectURL(blob);
-	const a = document.createElement("a");
-	
+	const url = URL.createObjectURL(blob)
+	const a = document.createElement("a")
+
 	// Set properties functionally using Object.assign
 	Object.assign(a, {
 		href: url,
 		download: filename,
-	});
-	
-	document.body.appendChild(a);
-	a.click();
-	a.remove();
-	URL.revokeObjectURL(url);
+	})
+
+	document.body.appendChild(a)
+	a.click()
+	a.remove()
+	URL.revokeObjectURL(url)
 }

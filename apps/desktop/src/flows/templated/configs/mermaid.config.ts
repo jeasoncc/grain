@@ -8,19 +8,19 @@
  * @requirements 1.1, 1.2, 1.3, 1.4, 1.5
  */
 
-import { generateMermaidContent } from "@/pipes/content";
+import { generateMermaidContent } from "@/pipes/content"
 import {
 	createDateTemplateConfig,
 	type DateTemplateParams,
 	dateParamsSchema,
-} from "./date-template.factory";
+} from "./date-template.factory"
 
 // ==============================
 // Types (Re-export)
 // ==============================
 
-export type MermaidTemplateParams = DateTemplateParams;
-export const mermaidParamsSchema = dateParamsSchema;
+export type MermaidTemplateParams = DateTemplateParams
+export const mermaidParamsSchema = dateParamsSchema
 
 // ==============================
 // Configuration
@@ -41,4 +41,4 @@ export const mermaidConfig = createDateTemplateConfig({
 	generateContent: generateMermaidContent,
 	includeDayFolder: false,
 	skipJsonParse: true,
-});
+})

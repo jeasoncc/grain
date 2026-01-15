@@ -8,7 +8,7 @@
  * - 不修改输入参数
  */
 
-import type { DiagramState } from "@/types/diagram";
+import type { DiagramState } from "@/types/diagram"
 
 // ============================================================================
 // URL Generation (Pure Functions)
@@ -27,11 +27,11 @@ export const getKrokiPlantUMLUrl = (
 	format: "svg" | "png" = "svg",
 ): string => {
 	if (!krokiServerUrl) {
-		throw new Error("Kroki server URL not configured");
+		throw new Error("Kroki server URL not configured")
 	}
 
-	return `${krokiServerUrl}/plantuml/${format}`;
-};
+	return `${krokiServerUrl}/plantuml/${format}`
+}
 
 /**
  * 生成 Mermaid 图表的 Kroki URL
@@ -46,11 +46,11 @@ export const getKrokiMermaidUrl = (
 	format: "svg" | "png" = "svg",
 ): string => {
 	if (!krokiServerUrl) {
-		throw new Error("Kroki server URL not configured");
+		throw new Error("Kroki server URL not configured")
 	}
 
-	return `${krokiServerUrl}/mermaid/${format}`;
-};
+	return `${krokiServerUrl}/mermaid/${format}`
+}
 
 // ============================================================================
 // State Validation (Pure Functions)
@@ -63,8 +63,8 @@ export const getKrokiMermaidUrl = (
  * @returns Kroki 是否已启用
  */
 export const isKrokiEnabled = (state: DiagramState): boolean => {
-	return state.enableKroki && !!state.krokiServerUrl;
-};
+	return state.enableKroki && !!state.krokiServerUrl
+}
 
 /**
  * 验证 Kroki 服务器 URL 格式
@@ -73,14 +73,14 @@ export const isKrokiEnabled = (state: DiagramState): boolean => {
  * @returns URL 是否有效
  */
 export const isValidKrokiUrl = (url: string): boolean => {
-	if (!url) return false;
+	if (!url) return false
 	try {
-		const parsed = new URL(url);
-		return parsed.protocol === "http:" || parsed.protocol === "https:";
+		const parsed = new URL(url)
+		return parsed.protocol === "http:" || parsed.protocol === "https:"
 	} catch {
-		return false;
+		return false
 	}
-};
+}
 
 /**
  * 规范化 Kroki 服务器 URL（移除尾部斜杠）
@@ -89,8 +89,8 @@ export const isValidKrokiUrl = (url: string): boolean => {
  * @returns 规范化后的 URL
  */
 export const normalizeKrokiUrl = (url: string): string => {
-	return url.replace(/\/+$/, "");
-};
+	return url.replace(/\/+$/, "")
+}
 
 // ============================================================================
 // Default Values
@@ -99,7 +99,7 @@ export const normalizeKrokiUrl = (url: string): string => {
 /**
  * 默认的 Kroki 服务器 URL
  */
-export const DEFAULT_KROKI_URL = "https://kroki.io";
+export const DEFAULT_KROKI_URL = "https://kroki.io"
 
 /**
  * 创建默认的图表状态
@@ -109,4 +109,4 @@ export const DEFAULT_KROKI_URL = "https://kroki.io";
 export const createDefaultDiagramState = (): DiagramState => ({
 	krokiServerUrl: DEFAULT_KROKI_URL,
 	enableKroki: true,
-});
+})

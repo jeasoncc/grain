@@ -1,4 +1,4 @@
-		/**
+/**
  * @file io/file/dialog.file.ts
  * @description 文件对话框 IO 操作
  *
@@ -9,9 +9,9 @@
  * 依赖：types/
  */
 
-import { invoke } from "@tauri-apps/api/core";
-import * as TE from "fp-ts/TaskEither";
-import { warn, error as logError } from "@/io/log/logger.api";
+import { invoke } from "@tauri-apps/api/core"
+import * as TE from "fp-ts/TaskEither"
+import { error as logError, warn } from "@/io/log/logger.api"
 
 // ============================================================================
 // 类型定义
@@ -21,34 +21,34 @@ import { warn, error as logError } from "@/io/log/logger.api";
  * 目录选择结果
  */
 export interface DirectorySelectResult {
-	readonly path: string | null;
-	readonly cancelled: boolean;
+	readonly path: string | null
+	readonly cancelled: boolean
 }
 
 /**
  * 文件选择过滤器
  */
 export interface FileFilter {
-	readonly name: string;
-	readonly extensions: readonly string[];
+	readonly name: string
+	readonly extensions: readonly string[]
 }
 
 /**
  * 文件选择选项
  */
 export interface FileSelectOptions {
-	readonly title?: string;
-	readonly defaultPath?: string | null;
-	readonly filters?: ReadonlyArray<FileFilter>;
-	readonly multiple?: boolean;
+	readonly title?: string
+	readonly defaultPath?: string | null
+	readonly filters?: ReadonlyArray<FileFilter>
+	readonly multiple?: boolean
 }
 
 /**
  * 目录选择选项
  */
 export interface DirectorySelectOptions {
-	readonly title?: string;
-	readonly defaultPath?: string | null;
+	readonly title?: string
+	readonly defaultPath?: string | null
 }
 
 // ============================================================================
@@ -59,10 +59,7 @@ export interface DirectorySelectOptions {
  * 检查是否在 Tauri 环境中运行
  */
 export function isTauriEnvironment(): boolean {
-	return (
-		typeof window !== "undefined" &&
-		!!(window as unknown as { __TAURI__?: unknown }).__TAURI__
-	);
+	return typeof window !== "undefined" && !!(window as unknown as { __TAURI__?: unknown }).__TAURI__
 }
 
 // ============================================================================
@@ -79,22 +76,22 @@ export function selectDirectory(
 	options?: DirectorySelectOptions,
 ): TE.TaskEither<Error, string | null> {
 	if (!isTauriEnvironment()) {
-		warn("[Dialog] selectDirectory: 非 Tauri 环境，返回 null");
-		return TE.right(null);
+		warn("[Dialog] selectDirectory: 非 Tauri 环境，返回 null")
+		return TE.right(null)
 	}
 
 	return TE.tryCatch(
 		async () => {
 			const result = await invoke<string | null>("select_directory", {
 				initialDirectory: options?.defaultPath || null,
-			});
-			return result;
+			})
+			return result
 		},
 		(err) => {
-			logError("[Dialog] 目录选择失败", { error: err }, "dialog.file");
-			return new Error(`目录选择失败: ${String(err)}`);
+			logError("[Dialog] 目录选择失败", { error: err }, "dialog.file")
+			return new Error(`目录选择失败: ${String(err)}`)
 		},
-	);
+	)
 }
 
 /**
@@ -109,7 +106,7 @@ export function selectDirectoryWithResult(
 	return TE.map((path: string | null) => ({
 		path,
 		cancelled: path === null,
-	}))(selectDirectory(options));
+	}))(selectDirectory(options))
 }
 
 // ============================================================================
@@ -123,19 +120,19 @@ export function selectDirectoryWithResult(
  */
 export function getDownloadsDirectory(): TE.TaskEither<Error, string> {
 	if (!isTauriEnvironment()) {
-		return TE.right("");
+		return TE.right("")
 	}
 
 	return TE.tryCatch(
 		async () => {
-			const result = await invoke<string>("get_downloads_dir");
-			return result;
+			const result = await invoke<string>("get_downloads_dir")
+			return result
 		},
 		(err) => {
-			logError("[Dialog] 获取下载目录失败", { error: err }, "dialog.file");
-			return new Error(`获取下载目录失败: ${String(err)}`);
+			logError("[Dialog] 获取下载目录失败", { error: err }, "dialog.file")
+			return new Error(`获取下载目录失败: ${String(err)}`)
 		},
-	);
+	)
 }
 
 /**
@@ -145,19 +142,19 @@ export function getDownloadsDirectory(): TE.TaskEither<Error, string> {
  */
 export function getDocumentsDirectory(): TE.TaskEither<Error, string> {
 	if (!isTauriEnvironment()) {
-		return TE.right("");
+		return TE.right("")
 	}
 
 	return TE.tryCatch(
 		async () => {
-			const result = await invoke<string>("get_documents_dir");
-			return result;
+			const result = await invoke<string>("get_documents_dir")
+			return result
 		},
 		(err) => {
-			logError("[Dialog] 获取文档目录失败", { error: err }, "dialog.file");
-			return new Error(`获取文档目录失败: ${String(err)}`);
+			logError("[Dialog] 获取文档目录失败", { error: err }, "dialog.file")
+			return new Error(`获取文档目录失败: ${String(err)}`)
 		},
-	);
+	)
 }
 
 /**
@@ -167,19 +164,19 @@ export function getDocumentsDirectory(): TE.TaskEither<Error, string> {
  */
 export function getDesktopDirectory(): TE.TaskEither<Error, string> {
 	if (!isTauriEnvironment()) {
-		return TE.right("");
+		return TE.right("")
 	}
 
 	return TE.tryCatch(
 		async () => {
-			const result = await invoke<string>("get_desktop_dir");
-			return result;
+			const result = await invoke<string>("get_desktop_dir")
+			return result
 		},
 		(err) => {
-			logError("[Dialog] 获取桌面目录失败", { error: err }, "dialog.file");
-			return new Error(`获取桌面目录失败: ${String(err)}`);
+			logError("[Dialog] 获取桌面目录失败", { error: err }, "dialog.file")
+			return new Error(`获取桌面目录失败: ${String(err)}`)
 		},
-	);
+	)
 }
 
 /**
@@ -189,19 +186,19 @@ export function getDesktopDirectory(): TE.TaskEither<Error, string> {
  */
 export function getHomeDirectory(): TE.TaskEither<Error, string> {
 	if (!isTauriEnvironment()) {
-		return TE.right("");
+		return TE.right("")
 	}
 
 	return TE.tryCatch(
 		async () => {
-			const result = await invoke<string>("get_home_dir");
-			return result;
+			const result = await invoke<string>("get_home_dir")
+			return result
 		},
 		(err) => {
-			logError("[Dialog] 获取主目录失败", { error: err }, "dialog.file");
-			return new Error(`获取主目录失败: ${String(err)}`);
+			logError("[Dialog] 获取主目录失败", { error: err }, "dialog.file")
+			return new Error(`获取主目录失败: ${String(err)}`)
 		},
-	);
+	)
 }
 
 // ============================================================================
@@ -212,8 +209,8 @@ export function getHomeDirectory(): TE.TaskEither<Error, string> {
  * 文件选择结果
  */
 export interface FileSelectResult {
-	readonly file: File | null;
-	readonly cancelled: boolean;
+	readonly file: File | null
+	readonly cancelled: boolean
 }
 
 /**
@@ -222,43 +219,41 @@ export interface FileSelectResult {
  * @param options - 文件选择选项
  * @returns Promise<FileSelectResult>
  */
-export async function selectFile(
-	options?: FileSelectOptions,
-): Promise<FileSelectResult> {
+export async function selectFile(options?: FileSelectOptions): Promise<FileSelectResult> {
 	return new Promise((resolve) => {
-		const input = document.createElement("input");
-		
+		const input = document.createElement("input")
+
 		// Apply configuration functionally using Object.assign
 		Object.assign(input, {
 			type: "file",
 			multiple: options?.multiple ?? false,
-		});
+		})
 
 		if (options?.filters && options.filters.length > 0) {
-			const extensions = options.filters.flatMap((f) => f.extensions);
-			const acceptValue = extensions.map((ext) => `.${ext}`).join(",");
-			Object.assign(input, { accept: acceptValue });
+			const extensions = options.filters.flatMap((f) => f.extensions)
+			const acceptValue = extensions.map((ext) => `.${ext}`).join(",")
+			Object.assign(input, { accept: acceptValue })
 		}
 
 		const handleChange = (e: Event) => {
-			const file = (e.target as HTMLInputElement).files?.[0];
+			const file = (e.target as HTMLInputElement).files?.[0]
 			resolve({
 				file: file ?? null,
 				cancelled: !file,
-			});
-		};
+			})
+		}
 
 		const handleCancel = () => {
 			resolve({
 				file: null,
 				cancelled: true,
-			});
-		};
+			})
+		}
 
 		// Assign event handlers using addEventListener instead of direct assignment
-		input.addEventListener("change", handleChange);
-		input.addEventListener("cancel", handleCancel);
+		input.addEventListener("change", handleChange)
+		input.addEventListener("cancel", handleCancel)
 
-		input.click();
-	});
+		input.click()
+	})
 }

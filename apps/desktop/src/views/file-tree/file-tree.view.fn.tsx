@@ -15,14 +15,14 @@ import {
 	Pencil,
 	Plus,
 	Trash2,
-} from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type NodeApi, type NodeRendererProps, Tree } from "react-arborist";
-import { useIconTheme } from "@/hooks/use-icon-theme";
-import { useTheme } from "@/hooks/use-theme";
-import type { NodeInterface, NodeType } from "@/types/node";
-import { cn } from "@/utils/cn.util";
-import { Button } from "@/views/ui/button";
+} from "lucide-react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { type NodeApi, type NodeRendererProps, Tree } from "react-arborist"
+import { useIconTheme } from "@/hooks/use-icon-theme"
+import { useTheme } from "@/hooks/use-theme"
+import type { NodeInterface, NodeType } from "@/types/node"
+import { cn } from "@/utils/cn.util"
+import { Button } from "@/views/ui/button"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -32,21 +32,18 @@ import {
 	DropdownMenuSubContent,
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
-} from "@/views/ui/dropdown-menu";
-import { Input } from "@/views/ui/input";
-import type { FileTreeProps, TreeData } from "./file-tree.types";
+} from "@/views/ui/dropdown-menu"
+import { Input } from "@/views/ui/input"
+import type { FileTreeProps, TreeData } from "./file-tree.types"
 
 /**
  * FileTree Props 接口
  *
  * 纯展示组件：所有数据和回调通过 props 传入
  */
-export type { FileTreeProps, TreeData } from "./file-tree.types";
+export type { FileTreeProps, TreeData } from "./file-tree.types"
 
-function buildTreeData(
-	nodes: NodeInterface[],
-	parentId: string | null = null,
-): TreeData[] {
+function buildTreeData(nodes: NodeInterface[], parentId: string | null = null): TreeData[] {
 	return nodes
 		.filter((n) => n.parent === parentId)
 		.sort((a, b) => a.order - b.order)
@@ -55,9 +52,8 @@ function buildTreeData(
 			name: node.title,
 			type: node.type,
 			collapsed: node.collapsed ?? true,
-			children:
-				node.type === "folder" ? buildTreeData(nodes, node.id) : undefined,
-		}));
+			children: node.type === "folder" ? buildTreeData(nodes, node.id) : undefined,
+		}))
 }
 
 function TreeNode({
@@ -70,21 +66,21 @@ function TreeNode({
 	folderColor,
 	hasSelection,
 }: NodeRendererProps<TreeData> & {
-	onDelete: (nodeId: string) => void;
-	onCreateFolder: (parentId: string | null) => void;
-	onCreateFile: (parentId: string | null, type: NodeType) => void;
-	folderColor?: string;
-	hasSelection: boolean;
+	onDelete: (nodeId: string) => void
+	onCreateFolder: (parentId: string | null) => void
+	onCreateFile: (parentId: string | null, type: NodeType) => void
+	folderColor?: string
+	hasSelection: boolean
 }) {
-	const data = node.data;
-	const isFolder = data.type === "folder";
-	const iconTheme = useIconTheme();
+	const data = node.data
+	const isFolder = data.type === "folder"
+	const iconTheme = useIconTheme()
 
 	const renderIcon = () => {
 		if (data.type === "folder") {
 			const FolderIcon = node.isOpen
 				? iconTheme.icons.folder.open || iconTheme.icons.folder.default
-				: iconTheme.icons.folder.default;
+				: iconTheme.icons.folder.default
 			return (
 				<FolderIcon
 					className={cn(
@@ -97,10 +93,10 @@ function TreeNode({
 						fill: folderColor ? `${folderColor}1A` : "#3b82f61A",
 					}}
 				/>
-			);
+			)
 		}
 		if (data.type === "drawing") {
-			const CanvasIcon = iconTheme.icons.activityBar.canvas;
+			const CanvasIcon = iconTheme.icons.activityBar.canvas
 			return (
 				<CanvasIcon
 					className={cn(
@@ -109,9 +105,9 @@ function TreeNode({
 						node.isSelected && "animate-[icon-glow_3s_ease-in-out_infinite]",
 					)}
 				/>
-			);
+			)
 		}
-		const FileIcon = iconTheme.icons.file.default;
+		const FileIcon = iconTheme.icons.file.default
 		return (
 			<FileIcon
 				className={cn(
@@ -120,8 +116,8 @@ function TreeNode({
 					node.isSelected && "animate-[icon-glow_3s_ease-in-out_infinite]",
 				)}
 			/>
-		);
-	};
+		)
+	}
 
 	return (
 		<div
@@ -143,38 +139,38 @@ function TreeNode({
 				node.willReceiveDrop && "bg-sidebar-accent ring-1 ring-primary/20",
 			)}
 			onClick={(e) => {
-				e.stopPropagation();
+				e.stopPropagation()
 				if (isFolder) {
-					node.toggle();
+					node.toggle()
 				} else {
-					node.select();
+					node.select()
 				}
 			}}
 			onKeyDown={(e) => {
 				if (e.key === "Enter" || e.key === " ") {
-					e.preventDefault();
-					e.stopPropagation();
+					e.preventDefault()
+					e.stopPropagation()
 					if (isFolder) {
-						node.toggle();
+						node.toggle()
 					} else {
-						node.select();
+						node.select()
 					}
 				} else if (e.key === "F2") {
-					e.preventDefault();
-					node.edit();
+					e.preventDefault()
+					node.edit()
 				}
 			}}
 			onDoubleClick={(e) => {
-				e.stopPropagation();
-				node.edit();
+				e.stopPropagation()
+				node.edit()
 			}}
 		>
 			{isFolder ? (
 				<button
 					type="button"
 					onClick={(e) => {
-						e.stopPropagation();
-						node.toggle();
+						e.stopPropagation()
+						node.toggle()
 					}}
 					className="p-0.5 hover:bg-foreground/10 rounded-sm shrink-0 -ml-1"
 				>
@@ -198,9 +194,9 @@ function TreeNode({
 					onBlur={() => node.reset()}
 					onKeyDown={(e) => {
 						if (e.key === "Enter") {
-							node.submit(e.currentTarget.value);
+							node.submit(e.currentTarget.value)
 						} else if (e.key === "Escape") {
-							node.reset();
+							node.reset()
 						}
 					}}
 					onClick={(e) => e.stopPropagation()}
@@ -209,9 +205,7 @@ function TreeNode({
 				<span
 					className={cn(
 						"flex-1 text-sm truncate min-w-0 transition-opacity duration-200 group-hover/panel:opacity-100",
-						node.isSelected
-							? "text-foreground font-medium opacity-100"
-							: "text-muted-foreground",
+						node.isSelected ? "text-foreground font-medium opacity-100" : "text-muted-foreground",
 						hasSelection && !node.isSelected && "opacity-40",
 					)}
 					title={data.name}
@@ -220,14 +214,11 @@ function TreeNode({
 				</span>
 			)}
 
-			{isFolder &&
-				node.children &&
-				node.children.length > 0 &&
-				!node.isEditing && (
-					<span className="text-xs opacity-50 group-hover:opacity-100 mr-1">
-						{node.children.length}
-					</span>
-				)}
+			{isFolder && node.children && node.children.length > 0 && !node.isEditing && (
+				<span className="text-xs opacity-50 group-hover:opacity-100 mr-1">
+					{node.children.length}
+				</span>
+			)}
 
 			{!node.isEditing && (
 				<DropdownMenu>
@@ -253,15 +244,11 @@ function TreeNode({
 										New File
 									</DropdownMenuSubTrigger>
 									<DropdownMenuSubContent>
-										<DropdownMenuItem
-											onClick={() => onCreateFile(node.id, "file")}
-										>
+										<DropdownMenuItem onClick={() => onCreateFile(node.id, "file")}>
 											<FileText className="size-4 mr-2" />
 											Text File
 										</DropdownMenuItem>
-										<DropdownMenuItem
-											onClick={() => onCreateFile(node.id, "drawing")}
-										>
+										<DropdownMenuItem onClick={() => onCreateFile(node.id, "drawing")}>
 											<FileText className="size-4 mr-2" />
 											Canvas
 										</DropdownMenuItem>
@@ -286,7 +273,7 @@ function TreeNode({
 				</DropdownMenu>
 			)}
 		</div>
-	);
+	)
 }
 
 export function FileTree({
@@ -302,62 +289,62 @@ export function FileTree({
 	onToggleCollapsed,
 	treeRef: externalTreeRef,
 }: FileTreeProps) {
-	const treeData = useMemo(() => buildTreeData(nodes), [nodes]);
+	const treeData = useMemo(() => buildTreeData(nodes), [nodes])
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const internalTreeRef = useRef<any>(null);
+	const internalTreeRef = useRef<any>(null)
 	// Use external ref if provided, otherwise use internal ref
-	const treeRef = externalTreeRef || internalTreeRef;
-	const containerRef = useRef<HTMLDivElement>(null);
-	const iconTheme = useIconTheme();
-	const { currentTheme } = useTheme();
+	const treeRef = externalTreeRef || internalTreeRef
+	const containerRef = useRef<HTMLDivElement>(null)
+	const iconTheme = useIconTheme()
+	const { currentTheme } = useTheme()
 
 	// Use window height as fallback to ensure tree renders immediately
 	const [dimensions, setDimensions] = useState<{
-		width: number | string;
-		height: number;
+		width: number | string
+		height: number
 	}>({
 		width: "100%",
 		height: typeof window !== "undefined" ? window.innerHeight - 100 : 600,
-	});
+	})
 
 	useEffect(() => {
-		const container = containerRef.current;
-		if (!container) return;
+		const container = containerRef.current
+		if (!container) return
 
 		const updateDimensions = () => {
-			const rect = container.getBoundingClientRect();
+			const rect = container.getBoundingClientRect()
 			if (rect.width > 0 && rect.height > 0) {
-				setDimensions({ width: rect.width, height: rect.height });
+				setDimensions({ width: rect.width, height: rect.height })
 			}
-		};
+		}
 
 		// Initial measurement
-		updateDimensions();
+		updateDimensions()
 
 		// Use ResizeObserver for updates
-		const observer = new ResizeObserver(updateDimensions);
-		observer.observe(container);
+		const observer = new ResizeObserver(updateDimensions)
+		observer.observe(container)
 
-		return () => observer.disconnect();
-	}, []);
+		return () => observer.disconnect()
+	}, [])
 
 	const handleSelect = useCallback(
 		(selectedNodes: NodeApi<TreeData>[]) => {
 			if (selectedNodes.length > 0 && selectedNodes[0].data.type !== "folder") {
-				onSelectNode(selectedNodes[0].id);
+				onSelectNode(selectedNodes[0].id)
 			}
 		},
 		[onSelectNode],
-	);
+	)
 
 	const handleRename = useCallback(
 		({ id, name }: { id: string; name: string }) => {
 			if (name.trim()) {
-				onRenameNode(id, name.trim());
+				onRenameNode(id, name.trim())
 			}
 		},
 		[onRenameNode],
-	);
+	)
 
 	const handleMove = useCallback(
 		({
@@ -365,26 +352,26 @@ export function FileTree({
 			parentId,
 			index,
 		}: {
-			dragIds: string[];
-			parentId: string | null;
-			index: number;
+			dragIds: string[]
+			parentId: string | null
+			index: number
 		}) => {
 			if (dragIds.length > 0) {
-				onMoveNode(dragIds[0], parentId, index);
+				onMoveNode(dragIds[0], parentId, index)
 			}
 		},
 		[onMoveNode],
-	);
+	)
 
 	const handleToggle = useCallback(
 		async (id: string) => {
-			const node = nodes.find((n) => n.id === id);
+			const node = nodes.find((n) => n.id === id)
 			if (node) {
-				onToggleCollapsed(id, !node.collapsed);
+				onToggleCollapsed(id, !node.collapsed)
 			}
 		},
 		[nodes, onToggleCollapsed],
-	);
+	)
 
 	const renderNode = useCallback(
 		(props: NodeRendererProps<TreeData>) => (
@@ -397,18 +384,12 @@ export function FileTree({
 				hasSelection={!!selectedNodeId}
 			/>
 		),
-		[
-			onDeleteNode,
-			onCreateFolder,
-			onCreateFile,
-			currentTheme?.colors.folderColor,
-			selectedNodeId,
-		],
-	);
+		[onDeleteNode, onCreateFolder, onCreateFile, currentTheme?.colors.folderColor, selectedNodeId],
+	)
 
 	// No workspace selected
 	if (!workspaceId) {
-		const FolderIcon = iconTheme.icons.folder.default;
+		const FolderIcon = iconTheme.icons.folder.default
 		return (
 			<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
 				<FolderIcon
@@ -417,18 +398,13 @@ export function FileTree({
 						color: currentTheme?.colors.folderColor || "#3b82f6",
 					}}
 				/>
-				<p className="text-sm text-center px-4">
-					Please select a workspace first
-				</p>
+				<p className="text-sm text-center px-4">Please select a workspace first</p>
 			</div>
-		);
+		)
 	}
 
 	return (
-		<div
-			className="group/panel flex h-full w-full flex-col"
-			data-testid="file-tree"
-		>
+		<div className="group/panel flex h-full w-full flex-col" data-testid="file-tree">
 			{/* Header */}
 			<div className="h-11 flex items-center justify-between px-4 shrink-0 group/header">
 				<span className="text-sm font-semibold text-foreground/80 tracking-wide pl-1">
@@ -461,8 +437,8 @@ export function FileTree({
 				{treeData.length === 0 ? (
 					<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
 						{(() => {
-							const FileIcon = iconTheme.icons.file.default;
-							return <FileIcon className="size-12 mb-3 opacity-20" />;
+							const FileIcon = iconTheme.icons.file.default
+							return <FileIcon className="size-12 mb-3 opacity-20" />
 						})()}
 						<p className="text-sm text-center px-4">No files yet</p>
 						<Button
@@ -500,5 +476,5 @@ export function FileTree({
 				)}
 			</div>
 		</div>
-	);
+	)
 }

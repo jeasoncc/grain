@@ -6,9 +6,9 @@
 export {
 	UpdateCheckerContainer,
 	UpdateCheckerContainer as UpdateChecker,
-} from "./update-checker.container.fn";
+} from "./update-checker.container.fn"
 export type {
 	CheckStatus,
 	UpdateCheckerViewProps,
-} from "./update-checker.types";
-export { UpdateCheckerView } from "./update-checker.view.fn";
+} from "./update-checker.types"
+export { UpdateCheckerView } from "./update-checker.view.fn"

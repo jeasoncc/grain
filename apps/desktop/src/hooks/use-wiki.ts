@@ -11,31 +11,31 @@
  * Requirements: 2.1
  */
 
-import { useMemo } from "react";
-import { useNodesByWorkspace } from "@/hooks/queries/node.queries";
-import type { NodeInterface } from "@/types/node";
-import { type WikiFileEntry, WikiFileEntryBuilder } from "@/types/wiki";
+import { useMemo } from "react"
+import { useNodesByWorkspace } from "@/hooks/queries/node.queries"
+import type { NodeInterface } from "@/types/node"
+import { type WikiFileEntry, WikiFileEntryBuilder } from "@/types/wiki"
 
 /** Wiki tag name */
-const WIKI_TAG = "wiki";
+const WIKI_TAG = "wiki"
 
 /**
  * Build the path string for a node
  */
-function buildNodePath(
-	node: NodeInterface,
-	nodeMap: ReadonlyMap<string, NodeInterface>,
-): string {
-	const buildPathRecursive = (currentNode: NodeInterface, acc: ReadonlyArray<string> = []): ReadonlyArray<string> => {
-		const newAcc = [currentNode.title, ...acc];
+function buildNodePath(node: NodeInterface, nodeMap: ReadonlyMap<string, NodeInterface>): string {
+	const buildPathRecursive = (
+		currentNode: NodeInterface,
+		acc: ReadonlyArray<string> = [],
+	): ReadonlyArray<string> => {
+		const newAcc = [currentNode.title, ...acc]
 		if (!currentNode.parent) {
-			return newAcc;
+			return newAcc
 		}
-		const parent = nodeMap.get(currentNode.parent);
-		return parent ? buildPathRecursive(parent, newAcc) : newAcc;
-	};
+		const parent = nodeMap.get(currentNode.parent)
+		return parent ? buildPathRecursive(parent, newAcc) : newAcc
+	}
 
-	return buildPathRecursive(node).join("/");
+	return buildPathRecursive(node).join("/")
 }
 
 /**
@@ -48,20 +48,20 @@ function buildNodePath(
  * @returns Array of WikiFileEntry objects
  */
 export function useWikiFiles(workspaceId: string | null): ReadonlyArray<WikiFileEntry> {
-	const { data: allNodes, isLoading } = useNodesByWorkspace(workspaceId);
+	const { data: allNodes, isLoading } = useNodesByWorkspace(workspaceId)
 
 	return useMemo(() => {
-		if (isLoading || !allNodes || !workspaceId) return [];
+		if (isLoading || !allNodes || !workspaceId) return []
 
 		// Filter wiki nodes (nodes with "wiki" tag)
 		const wikiNodes = allNodes.filter(
 			(node) => node.tags?.includes(WIKI_TAG) && node.workspace === workspaceId,
-		);
+		)
 
-		if (wikiNodes.length === 0) return [];
+		if (wikiNodes.length === 0) return []
 
 		// Build node map for path building
-		const nodeMap: ReadonlyMap<string, NodeInterface> = new Map(allNodes.map((n) => [n.id, n]));
+		const nodeMap: ReadonlyMap<string, NodeInterface> = new Map(allNodes.map((n) => [n.id, n]))
 
 		// Build WikiFileEntry array
 		// 注意：内容需要单独查询，这里暂时使用空字符串
@@ -74,6 +74,6 @@ export function useWikiFiles(workspaceId: string | null): ReadonlyArray<WikiFile
 				.content("") // 内容需要单独查询
 				.path(buildNodePath(node, nodeMap))
 				.build(),
-		);
-	}, [allNodes, workspaceId, isLoading]);
+		)
+	}, [allNodes, workspaceId, isLoading])
 }

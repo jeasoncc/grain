@@ -8,21 +8,21 @@
  */
 
 // Builder 导出
-export { TagBuilder } from "./tag.builder";
+export { TagBuilder } from "./tag.builder"
 
 // Interface 导出
 export type {
 	TagCreateInput,
 	TagInterface,
 	TagUpdateInput,
-} from "./tag.interface";
+} from "./tag.interface"
 
 // Schema 类型推断导出
 export type {
 	TagCreateSchemaType,
 	TagSchemaType,
 	TagUpdateSchemaType,
-} from "./tag.schema";
+} from "./tag.schema"
 
 // Schema 导出
-export { TagCreateSchema, TagSchema, TagUpdateSchema } from "./tag.schema";
+export { TagCreateSchema, TagSchema, TagUpdateSchema } from "./tag.schema"

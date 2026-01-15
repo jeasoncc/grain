@@ -5,9 +5,9 @@
  * 封装图标主题的获取逻辑，供 hooks 层使用
  */
 
-import { getIconThemeOrDefault } from "@/pipes/icon-theme";
-import { useIconThemeStore } from "@/state/icon-theme.state";
-import type { IconTheme } from "@/types/icon-theme";
+import { getIconThemeOrDefault } from "@/pipes/icon-theme"
+import { useIconThemeStore } from "@/state/icon-theme.state"
+import type { IconTheme } from "@/types/icon-theme"
 
 /**
  * 获取当前选中的图标主题
@@ -16,9 +16,9 @@ import type { IconTheme } from "@/types/icon-theme";
  * @returns 当前图标主题
  */
 export const getCurrentIconTheme = (): IconTheme => {
-	const currentKey = useIconThemeStore.getState().currentThemeKey;
-	return getIconThemeOrDefault(currentKey);
-};
+	const currentKey = useIconThemeStore.getState().currentThemeKey
+	return getIconThemeOrDefault(currentKey)
+}
 
 /**
  * 根据主题键获取图标主题
@@ -27,5 +27,5 @@ export const getCurrentIconTheme = (): IconTheme => {
  * @returns 图标主题
  */
 export const getIconThemeByKey = (themeKey: string): IconTheme => {
-	return getIconThemeOrDefault(themeKey);
-};
+	return getIconThemeOrDefault(themeKey)
+}

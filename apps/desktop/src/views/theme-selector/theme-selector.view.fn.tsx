@@ -7,25 +7,22 @@
  * - 过渡动画开关
  */
 
-import { Check, Monitor, Moon, Palette, Sun } from "lucide-react";
-import { memo } from "react";
-import type { ThemeMode } from "@/hooks/use-theme";
-import { cn } from "@/utils/cn.util";
-import { Button } from "@/views/ui/button";
-import { Label } from "@/views/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/views/ui/popover";
-import { Switch } from "@/views/ui/switch";
-import type {
-	ThemeCardProps,
-	ThemeSelectorViewProps,
-} from "./theme-selector.types";
+import { Check, Monitor, Moon, Palette, Sun } from "lucide-react"
+import { memo } from "react"
+import type { ThemeMode } from "@/hooks/use-theme"
+import { cn } from "@/utils/cn.util"
+import { Button } from "@/views/ui/button"
+import { Label } from "@/views/ui/label"
+import { Popover, PopoverContent, PopoverTrigger } from "@/views/ui/popover"
+import { Switch } from "@/views/ui/switch"
+import type { ThemeCardProps, ThemeSelectorViewProps } from "./theme-selector.types"
 
 // Mode configuration
 const modeConfig: { mode: ThemeMode; icon: typeof Sun; label: string }[] = [
 	{ mode: "light", icon: Sun, label: "Light" },
 	{ mode: "dark", icon: Moon, label: "Dark" },
 	{ mode: "system", icon: Monitor, label: "System" },
-];
+]
 
 export const ThemeSelectorView = memo(
 	({
@@ -147,14 +144,14 @@ export const ThemeSelectorView = memo(
 					</div>
 				</PopoverContent>
 			</Popover>
-		);
+		)
 	},
-);
+)
 
-ThemeSelectorView.displayName = "ThemeSelectorView";
+ThemeSelectorView.displayName = "ThemeSelectorView"
 
 const ThemeCard = memo(({ theme, isSelected, onSelect }: ThemeCardProps) => {
-	const { colors } = theme;
+	const { colors } = theme
 
 	return (
 		<button
@@ -170,10 +167,7 @@ const ThemeCard = memo(({ theme, isSelected, onSelect }: ThemeCardProps) => {
 			)}
 		>
 			{/* 主题预览 */}
-			<div
-				className="h-14 w-full flex"
-				style={{ background: colors.background }}
-			>
+			<div className="h-14 w-full flex" style={{ background: colors.background }}>
 				{/* 模拟侧边栏 */}
 				<div
 					className="w-1/4 h-full border-r border-black/5 dark:border-white/5"
@@ -214,7 +208,7 @@ const ThemeCard = memo(({ theme, isSelected, onSelect }: ThemeCardProps) => {
 				</div>
 			)}
 		</button>
-	);
-});
+	)
+})
 
-ThemeCard.displayName = "ThemeCard";
+ThemeCard.displayName = "ThemeCard"

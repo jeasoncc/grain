@@ -10,21 +10,21 @@
  * @requirements 7.1, 7.4
  */
 
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import * as workspaceRepo from "@/io/api/workspace.api";
-import { info, success } from "@/io/log/logger.api";
-import type { WorkspaceUpdateInput } from "@/types/workspace";
-import type { AppError } from "@/types/error";
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import * as workspaceRepo from "@/io/api/workspace.api"
+import { info, success } from "@/io/log/logger.api"
+import type { AppError } from "@/types/error"
+import type { WorkspaceUpdateInput } from "@/types/workspace"
 
 /**
  * 更新工作区参数
  */
 export interface UpdateWorkspaceParams {
 	/** 工作区 ID */
-	readonly workspaceId: string;
+	readonly workspaceId: string
 	/** 更新的字段 */
-	readonly updates: WorkspaceUpdateInput;
+	readonly updates: WorkspaceUpdateInput
 }
 
 /**
@@ -37,20 +37,18 @@ export interface UpdateWorkspaceParams {
  * @param params - 更新工作区参数
  * @returns TaskEither<AppError, void>
  */
-export const updateWorkspace = (
-	params: UpdateWorkspaceParams,
-): TE.TaskEither<AppError, void> => {
-	info("[Action] 更新工作区", { workspaceId: params.workspaceId }, "update-workspace");
+export const updateWorkspace = (params: UpdateWorkspaceParams): TE.TaskEither<AppError, void> => {
+	info("[Action] 更新工作区", { workspaceId: params.workspaceId }, "update-workspace")
 
 	return pipe(
 		workspaceRepo.updateWorkspace(params.workspaceId, params.updates),
 		TE.tap(() => {
-			success("[Action] 工作区更新成功", { workspaceId: params.workspaceId }, "update-workspace");
-			return TE.right(undefined);
+			success("[Action] 工作区更新成功", { workspaceId: params.workspaceId }, "update-workspace")
+			return TE.right(undefined)
 		}),
 		TE.map(() => undefined),
-	);
-};
+	)
+}
 
 /**
  * 更新工作区的最后打开时间
@@ -61,15 +59,13 @@ export const updateWorkspace = (
  * @param workspaceId - 工作区 ID
  * @returns TaskEither<AppError, void>
  */
-export const touchWorkspace = (
-	workspaceId: string,
-): TE.TaskEither<AppError, void> => {
-	info("[Action] 更新工作区最后打开时间", { workspaceId }, "update-workspace");
+export const touchWorkspace = (workspaceId: string): TE.TaskEither<AppError, void> => {
+	info("[Action] 更新工作区最后打开时间", { workspaceId }, "update-workspace")
 
 	return pipe(
 		workspaceRepo.updateWorkspace(workspaceId, {
 			lastOpen: new Date().toISOString(),
 		}),
 		TE.map(() => undefined),
-	);
-};
+	)
+}

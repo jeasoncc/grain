@@ -1,19 +1,19 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Check, Moon, Sun } from "lucide-react";
-import { useIconTheme } from "@/hooks/use-icon-theme";
-import { useTheme } from "@/hooks/use-theme";
-import { cn } from "@/utils/cn.util";
-import { getDarkThemes, getLightThemes, type Theme } from "@/utils/themes.util";
+import { createFileRoute } from "@tanstack/react-router"
+import { Check, Moon, Sun } from "lucide-react"
+import { useIconTheme } from "@/hooks/use-icon-theme"
+import { useTheme } from "@/hooks/use-theme"
+import { cn } from "@/utils/cn.util"
+import { getDarkThemes, getLightThemes, type Theme } from "@/utils/themes.util"
 
 export const Route = createFileRoute("/settings/design")({
 	component: DesignSettings,
-});
+})
 
 function DesignSettings() {
-	const { theme: activeTheme, setTheme, currentTheme } = useTheme();
-	const iconTheme = useIconTheme();
-	const lightThemes = getLightThemes();
-	const darkThemes = getDarkThemes();
+	const { theme: activeTheme, setTheme, currentTheme } = useTheme()
+	const iconTheme = useIconTheme()
+	const lightThemes = getLightThemes()
+	const darkThemes = getDarkThemes()
 
 	return (
 		<div className="space-y-10 max-w-5xl">
@@ -31,9 +31,7 @@ function DesignSettings() {
 					<div className="space-y-4">
 						<div className="flex items-center gap-2 text-muted-foreground">
 							<Sun className="size-4" />
-							<h4 className="text-sm font-medium uppercase tracking-wider">
-								Light Themes
-							</h4>
+							<h4 className="text-sm font-medium uppercase tracking-wider">Light Themes</h4>
 						</div>
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 							{lightThemes.map((t) => (
@@ -51,9 +49,7 @@ function DesignSettings() {
 					<div className="space-y-4">
 						<div className="flex items-center gap-2 text-muted-foreground">
 							<Moon className="size-4" />
-							<h4 className="text-sm font-medium uppercase tracking-wider">
-								Dark Themes
-							</h4>
+							<h4 className="text-sm font-medium uppercase tracking-wider">Dark Themes</h4>
 						</div>
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 							{darkThemes.map((t) => (
@@ -116,13 +112,13 @@ function DesignSettings() {
 											}}
 										>
 											{(() => {
-												const Icon = iconTheme.icons.folder.default;
+												const Icon = iconTheme.icons.folder.default
 												return (
 													<Icon
 														className="size-3.5 shrink-0"
 														style={{ color: currentTheme?.colors.folderColor }}
 													/>
-												);
+												)
 											})()}
 											<span className="truncate opacity-90">My Novel</span>
 										</div>
@@ -136,8 +132,8 @@ function DesignSettings() {
 											}}
 										>
 											{(() => {
-												const Icon = iconTheme.icons.file.default;
-												return <Icon className="size-3.5 shrink-0" />;
+												const Icon = iconTheme.icons.file.default
+												return <Icon className="size-3.5 shrink-0" />
 											})()}
 											<span className="truncate font-medium">Chapter 1</span>
 										</div>
@@ -148,10 +144,8 @@ function DesignSettings() {
 											style={{ color: currentTheme?.colors.sidebarForeground }}
 										>
 											{(() => {
-												const Icon = iconTheme.icons.file.default;
-												return (
-													<Icon className="size-3.5 shrink-0 opacity-70" />
-												);
+												const Icon = iconTheme.icons.file.default
+												return <Icon className="size-3.5 shrink-0 opacity-70" />
 											})()}
 											<span className="truncate opacity-70">Chapter 2</span>
 										</div>
@@ -172,16 +166,15 @@ function DesignSettings() {
 											className="text-sm leading-relaxed mb-4"
 											style={{ color: currentTheme?.colors.foreground }}
 										>
-											In a land far away, where the ancient ruins whisper
-											secrets of the past, a lone traveler stood atop the
-											hill...
+											In a land far away, where the ancient ruins whisper secrets of the past, a
+											lone traveler stood atop the hill...
 										</p>
 										<p
 											className="text-sm leading-relaxed"
 											style={{ color: currentTheme?.colors.mutedForeground }}
 										>
-											The wind howled through the broken pillars, carrying with
-											it the scent of rain and forgotten memories.
+											The wind howled through the broken pillars, carrying with it the scent of rain
+											and forgotten memories.
 										</p>
 										<button
 											type="button"
@@ -201,18 +194,18 @@ function DesignSettings() {
 				</div>
 			</div>
 		</div>
-	);
+	)
 }
 
 interface ThemeCardProps {
-	theme: Theme;
-	isActive: boolean;
-	onSelect: () => void;
+	theme: Theme
+	isActive: boolean
+	onSelect: () => void
 }
 
 // Theme Card Component
 function ThemeCard({ theme, isActive, onSelect }: ThemeCardProps) {
-	const { colors } = theme;
+	const { colors } = theme
 
 	return (
 		<button
@@ -227,10 +220,7 @@ function ThemeCard({ theme, isActive, onSelect }: ThemeCardProps) {
 			)}
 		>
 			{/* Minimalist Abstract Preview */}
-			<div
-				className="w-full aspect-[2.4/1] flex"
-				style={{ background: colors.background }}
-			>
+			<div className="w-full aspect-[2.4/1] flex" style={{ background: colors.background }}>
 				{/* Abstract Sidebar */}
 				<div
 					className="w-[25%] h-full border-r opacity-90"
@@ -249,14 +239,8 @@ function ThemeCard({ theme, isActive, onSelect }: ThemeCardProps) {
 					/>
 					{/* Subtle Content Hints */}
 					<div className="mt-2 space-y-1.5 opacity-30">
-						<div
-							className="h-1 w-2/3 rounded-full"
-							style={{ background: colors.foreground }}
-						/>
-						<div
-							className="h-1 w-1/2 rounded-full"
-							style={{ background: colors.foreground }}
-						/>
+						<div className="h-1 w-2/3 rounded-full" style={{ background: colors.foreground }} />
+						<div className="h-1 w-1/2 rounded-full" style={{ background: colors.foreground }} />
 					</div>
 				</div>
 			</div>
@@ -269,9 +253,7 @@ function ThemeCard({ theme, isActive, onSelect }: ThemeCardProps) {
 				)}
 			>
 				<div className="flex items-center justify-between gap-2">
-					<div className="font-medium text-[10px] text-card-foreground truncate">
-						{theme.name}
-					</div>
+					<div className="font-medium text-[10px] text-card-foreground truncate">{theme.name}</div>
 					{/* Minimal Color Dots */}
 					<div className="flex -space-x-1 shrink-0">
 						<div
@@ -296,12 +278,9 @@ function ThemeCard({ theme, isActive, onSelect }: ThemeCardProps) {
 					className="absolute top-1.5 right-1.5 size-3 rounded-full flex items-center justify-center shadow-sm animate-in fade-in zoom-in duration-200 z-40"
 					style={{ background: colors.primary }}
 				>
-					<Check
-						className="size-1.5"
-						style={{ color: colors.primaryForeground }}
-					/>
+					<Check className="size-1.5" style={{ color: colors.primaryForeground }} />
 				</div>
 			)}
 		</button>
-	);
+	)
 }

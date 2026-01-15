@@ -15,9 +15,9 @@
  */
 export interface SelectionState {
 	/** Currently selected workspace ID, null if none selected */
-	readonly selectedWorkspaceId: string | null;
+	readonly selectedWorkspaceId: string | null
 	/** Currently selected node ID in file tree, null if none selected */
-	readonly selectedNodeId: string | null;
+	readonly selectedNodeId: string | null
 }
 
 // ==============================
@@ -29,14 +29,14 @@ export interface SelectionState {
  * When workspace changes, node selection is automatically cleared.
  */
 export interface SetWorkspacePayload {
-	readonly workspaceId: string | null;
+	readonly workspaceId: string | null
 }
 
 /**
  * Payload for setting the selected node.
  */
 export interface SetNodePayload {
-	readonly nodeId: string | null;
+	readonly nodeId: string | null
 }
 
 // ==============================
@@ -51,17 +51,17 @@ export interface SelectionActions {
 	 * Set the selected workspace ID.
 	 * Clears the selected node when workspace changes.
 	 */
-	readonly setSelectedWorkspaceId: (id: string | null) => void;
+	readonly setSelectedWorkspaceId: (id: string | null) => void
 
 	/**
 	 * Set the selected node ID in the file tree.
 	 */
-	readonly setSelectedNodeId: (id: string | null) => void;
+	readonly setSelectedNodeId: (id: string | null) => void
 
 	/**
 	 * Clear all selection state.
 	 */
-	readonly clearSelection: () => void;
+	readonly clearSelection: () => void
 }
 
 // ==============================
@@ -73,12 +73,12 @@ export interface SelectionActions {
  */
 export interface SelectionConfig {
 	/** Storage key for persistence */
-	readonly storageKey: string;
+	readonly storageKey: string
 	/** Whether to persist workspace selection */
-	readonly persistWorkspace: boolean;
+	readonly persistWorkspace: boolean
 }
 
 export const DEFAULT_SELECTION_CONFIG: SelectionConfig = {
-	storageKey: "grain-selection",
 	persistWorkspace: true,
-} as const;
+	storageKey: "grain-selection",
+} as const

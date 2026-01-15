@@ -3,5 +3,5 @@
  * Type definitions exports
  */
 
-export * from './rule.types.js';
-export * from './config.types.js';
+export * from "./config.types.js"
+export * from "./rule.types.js"

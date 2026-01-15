@@ -10,20 +10,15 @@
  * Requirements: 1.2, 5.3, 6.2
  */
 
-import dayjs from "dayjs";
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import type { SerializedEditorState } from "lexical";
-import {
-	getNode,
-	syncTagCache,
-	updateContentByNodeId,
-	updateNode,
-} from "@/io/api";
-import { error, info, success } from "@/io/log/logger.api";
-import type { AppError } from "@/types/error";
-import { extractTagsFromContent } from "./save.debounce.fn";
+import dayjs from "dayjs"
+import * as E from "fp-ts/Either"
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import type { SerializedEditorState } from "lexical"
+import { getNode, syncTagCache, updateContentByNodeId, updateNode } from "@/io/api"
+import { error, info, success } from "@/io/log/logger.api"
+import type { AppError } from "@/types/error"
+import { extractTagsFromContent } from "./save.debounce.fn"
 
 // ============================================================================
 // Types
@@ -33,20 +28,20 @@ import { extractTagsFromContent } from "./save.debounce.fn";
  * 保存结果
  */
 export interface SaveResult {
-	readonly success: boolean;
-	readonly error?: string;
-	readonly timestamp: Date;
-	readonly tags?: readonly string[];
-	readonly documentId: string;
+	readonly success: boolean
+	readonly error?: string
+	readonly timestamp: Date
+	readonly tags?: readonly string[]
+	readonly documentId: string
 }
 
 /**
  * 保存参数
  */
 export interface SaveDocumentParams {
-	readonly documentId: string;
-	readonly content: SerializedEditorState;
-	readonly previousContent?: string;
+	readonly documentId: string
+	readonly content: SerializedEditorState
+	readonly previousContent?: string
 }
 
 // ============================================================================
@@ -56,8 +51,7 @@ export interface SaveDocumentParams {
 /**
  * 序列化编辑器内容为字符串
  */
-export const serializeContent = (content: SerializedEditorState): string =>
-	JSON.stringify(content);
+export const serializeContent = (content: SerializedEditorState): string => JSON.stringify(content)
 
 /**
  * 检查内容是否有变化
@@ -65,33 +59,27 @@ export const serializeContent = (content: SerializedEditorState): string =>
 export const hasContentChanged = (
 	newContent: string,
 	previousContent: string | undefined,
-): boolean => previousContent !== newContent;
+): boolean => previousContent !== newContent
 
 /**
  * 创建成功的保存结果
  */
-export const createSuccessResult = (
-	documentId: string,
-	tags: readonly string[],
-): SaveResult => ({
+export const createSuccessResult = (documentId: string, tags: readonly string[]): SaveResult => ({
 	success: true,
 	timestamp: dayjs().toDate(),
 	tags,
 	documentId,
-});
+})
 
 /**
  * 创建失败的保存结果
  */
-export const createErrorResult = (
-	documentId: string,
-	error: string,
-): SaveResult => ({
+export const createErrorResult = (documentId: string, error: string): SaveResult => ({
 	success: false,
 	error,
 	timestamp: dayjs().toDate(),
 	documentId,
-});
+})
 
 /**
  * 创建无变化的保存结果
@@ -100,7 +88,7 @@ export const createNoChangeResult = (documentId: string): SaveResult => ({
 	success: true,
 	timestamp: dayjs().toDate(),
 	documentId,
-});
+})
 
 // ============================================================================
 // Database Operations (TaskEither)
@@ -116,14 +104,14 @@ const saveContentToDb = (
 	pipe(
 		TE.tryCatch(
 			async () => {
-				await updateContentByNodeId(documentId, contentString, "lexical")();
+				await updateContentByNodeId(documentId, contentString, "lexical")()
 			},
 			(error): AppError => ({
 				type: "DB_ERROR",
 				message: `保存内容失败: ${error}`,
 			}),
 		),
-	);
+	)
 
 /**
  * 更新节点标签
@@ -135,14 +123,14 @@ const updateNodeTags = (
 	pipe(
 		TE.tryCatch(
 			async () => {
-				await updateNode(documentId, { tags })();
+				await updateNode(documentId, { tags })()
 			},
 			(error): AppError => ({
 				type: "DB_ERROR",
 				message: `更新节点标签失败: ${error}`,
 			}),
 		),
-	);
+	)
 
 /**
  * 同步标签缓存
@@ -155,25 +143,23 @@ const syncTagCacheForWorkspace = (
 	pipe(
 		TE.tryCatch(
 			async () => {
-				await syncTagCache(workspaceId)();
+				await syncTagCache(workspaceId)()
 			},
 			(error): AppError => ({
 				type: "DB_ERROR",
 				message: `同步标签缓存失败: ${error}`,
 			}),
 		),
-	);
+	)
 
 /**
  * 获取节点的工作区 ID
  */
-const getWorkspaceId = (
-	documentId: string,
-): TE.TaskEither<AppError, string | null> =>
+const getWorkspaceId = (documentId: string): TE.TaskEither<AppError, string | null> =>
 	pipe(
 		getNode(documentId),
 		TE.map((node) => node?.workspace ?? null),
-	);
+	)
 
 // ============================================================================
 // Main Export Functions
@@ -193,68 +179,56 @@ const getWorkspaceId = (
  * @param params - 保存参数
  * @returns TaskEither 包含保存结果或错误
  */
-export const saveDocument = (
-	params: SaveDocumentParams,
-): TE.TaskEither<AppError, SaveResult> => {
-	const { documentId, content, previousContent } = params;
-	const contentString = serializeContent(content);
+export const saveDocument = (params: SaveDocumentParams): TE.TaskEither<AppError, SaveResult> => {
+	const { documentId, content, previousContent } = params
+	const contentString = serializeContent(content)
 
 	// 如果内容没有变化，直接返回成功
 	if (!hasContentChanged(contentString, previousContent)) {
-		info("[Save] 内容无变化，跳过保存", { documentId }, "save.document.fn");
-		return TE.right(createNoChangeResult(documentId));
+		info("[Save] 内容无变化，跳过保存", { documentId }, "save.document.fn")
+		return TE.right(createNoChangeResult(documentId))
 	}
 
 	// 提取标签
-	const tags = extractTagsFromContent(content);
+	const tags = extractTagsFromContent(content)
 
-	info("[Save] 开始保存文档", { documentId }, "save.document.fn");
+	info("[Save] 开始保存文档", { documentId }, "save.document.fn")
 
 	return pipe(
 		// 1. 保存内容
 		saveContentToDb(documentId, contentString),
 		// 2. 更新节点标签（如果有标签）
-		TE.chain(() =>
-			tags.length > 0 ? updateNodeTags(documentId, tags) : TE.right(undefined),
-		),
+		TE.chain(() => (tags.length > 0 ? updateNodeTags(documentId, tags) : TE.right(undefined))),
 		// 3. 获取工作区 ID 并同步标签缓存
 		TE.chain(() =>
 			tags.length > 0
 				? pipe(
 						getWorkspaceId(documentId),
 						TE.chain((workspaceId) =>
-							workspaceId
-								? syncTagCacheForWorkspace(workspaceId, tags)
-								: TE.right(undefined),
+							workspaceId ? syncTagCacheForWorkspace(workspaceId, tags) : TE.right(undefined),
 						),
 					)
 				: TE.right(undefined),
 		),
 		// 4. 返回成功结果
 		TE.map(() => {
-			success(
-				"[Save] 文档保存成功",
-				{ documentId, tagCount: tags.length },
-				"save.document.fn",
-			);
-			return createSuccessResult(documentId, tags);
+			success("[Save] 文档保存成功", { documentId, tagCount: tags.length }, "save.document.fn")
+			return createSuccessResult(documentId, tags)
 		}),
 		// 5. 错误处理
 		TE.mapLeft((err) => {
-			error("[Save] 文档保存失败", { documentId, error: err }, "save.document.fn");
-			return err;
+			error("[Save] 文档保存失败", { documentId, error: err }, "save.document.fn")
+			return err
 		}),
-	);
-};
+	)
+}
 
 /**
  * 执行保存并返回 Promise（便于在非 fp-ts 环境中使用）
  */
-export const saveDocumentAsync = async (
-	params: SaveDocumentParams,
-): Promise<SaveResult> => {
-	const result = await saveDocument(params)();
+export const saveDocumentAsync = async (params: SaveDocumentParams): Promise<SaveResult> => {
+	const result = await saveDocument(params)()
 	return E.isRight(result)
 		? result.right
-		: createErrorResult(params.documentId, result.left.message);
-};
+		: createErrorResult(params.documentId, result.left.message)
+}

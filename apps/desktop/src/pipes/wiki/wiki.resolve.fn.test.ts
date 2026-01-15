@@ -3,9 +3,9 @@
  * @description Wiki 解析函数测试
  */
 
-import * as E from "fp-ts/Either";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { generateWikiTemplate, getWikiFilesAsync } from "./wiki.resolve.fn";
+import * as E from "fp-ts/Either"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { generateWikiTemplate, getWikiFilesAsync } from "./wiki.resolve.fn"
 
 // ============================================================================
 // Mocks
@@ -14,7 +14,7 @@ import { generateWikiTemplate, getWikiFilesAsync } from "./wiki.resolve.fn";
 vi.mock("@/io/api", () => ({
 	getContentsByNodeIds: vi.fn(),
 	getNodesByWorkspace: vi.fn(),
-}));
+}))
 
 // 使用 vi.hoisted 来创建可以在 vi.mock 中使用的变量
 const { nodesMock } = vi.hoisted(() => {
@@ -23,18 +23,18 @@ const { nodesMock } = vi.hoisted(() => {
 		equals: vi.fn(),
 		and: vi.fn(),
 		toArray: vi.fn(),
-	};
-	mock.where.mockReturnValue(mock);
-	mock.equals.mockReturnValue(mock);
-	mock.and.mockReturnValue(mock);
-	return { nodesMock: mock };
-});
+	}
+	mock.where.mockReturnValue(mock)
+	mock.equals.mockReturnValue(mock)
+	mock.and.mockReturnValue(mock)
+	return { nodesMock: mock }
+})
 
 vi.mock("@/db/database", () => ({
 	database: {
 		nodes: nodesMock,
 	},
-}));
+}))
 
 vi.mock("@/log/index", () => ({
 	default: {
@@ -45,18 +45,18 @@ vi.mock("@/log/index", () => ({
 		debug: vi.fn(),
 		start: vi.fn(),
 	},
-}));
+}))
 
-import { getContentsByNodeIds, getNodesByWorkspace } from "@/io/api";
+import { getContentsByNodeIds, getNodesByWorkspace } from "@/io/api"
 
 // ============================================================================
 // Test Data
 // ============================================================================
 
 // 使用有效的 UUID v4 格式
-const MOCK_NODE_ID = "a1111111-1111-4111-8111-111111111111";
-const MOCK_PARENT_ID = "b2222222-2222-4222-8222-222222222222";
-const MOCK_WORKSPACE_ID = "c3333333-3333-4333-8333-333333333333";
+const MOCK_NODE_ID = "a1111111-1111-4111-8111-111111111111"
+const MOCK_PARENT_ID = "b2222222-2222-4222-8222-222222222222"
+const MOCK_WORKSPACE_ID = "c3333333-3333-4333-8333-333333333333"
 
 const mockNode = {
 	id: MOCK_NODE_ID,
@@ -69,7 +69,7 @@ const mockNode = {
 	tags: ["wiki"],
 	createDate: "2024-01-01T00:00:00.000Z",
 	lastEdit: "2024-01-01T00:00:00.000Z",
-};
+}
 
 const mockContent = {
 	id: "d4444444-4444-4444-8444-444444444444",
@@ -86,7 +86,7 @@ const mockContent = {
 	}),
 	contentType: "lexical" as const,
 	lastEdit: "2024-01-01T00:00:00.000Z",
-};
+}
 
 // ============================================================================
 // Tests
@@ -94,12 +94,12 @@ const mockContent = {
 
 describe("Wiki Resolution Functions", () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
-	});
+		vi.clearAllMocks()
+	})
 
 	afterEach(() => {
-		vi.clearAllMocks();
-	});
+		vi.clearAllMocks()
+	})
 
 	// ==========================================================================
 	// generateWikiTemplate Tests
@@ -107,52 +107,48 @@ describe("Wiki Resolution Functions", () => {
 
 	describe("generateWikiTemplate", () => {
 		it("应该生成有效的 Lexical JSON 模板", () => {
-			const template = generateWikiTemplate("测试标题");
-			const parsed = JSON.parse(template);
+			const template = generateWikiTemplate("测试标题")
+			const parsed = JSON.parse(template)
 
-			expect(parsed.root).toBeDefined();
-			expect(parsed.root.type).toBe("root");
-			expect(parsed.root.children).toBeInstanceOf(Array);
-			expect(parsed.root.children.length).toBeGreaterThan(0);
-		});
+			expect(parsed.root).toBeDefined()
+			expect(parsed.root.type).toBe("root")
+			expect(parsed.root.children).toBeInstanceOf(Array)
+			expect(parsed.root.children.length).toBeGreaterThan(0)
+		})
 
 		it("应该在模板中包含标题", () => {
-			const title = "我的 Wiki 条目";
-			const template = generateWikiTemplate(title);
-			const parsed = JSON.parse(template);
+			const title = "我的 Wiki 条目"
+			const template = generateWikiTemplate(title)
+			const parsed = JSON.parse(template)
 
 			const titleNode = parsed.root.children.find(
 				(child: { type: string }) => child.type === "heading",
-			);
-			expect(titleNode).toBeDefined();
-			expect(titleNode.children[0].text).toBe(title);
-		});
+			)
+			expect(titleNode).toBeDefined()
+			expect(titleNode.children[0].text).toBe(title)
+		})
 
 		it("应该在模板中包含 wiki 标签", () => {
-			const template = generateWikiTemplate("测试");
-			const parsed = JSON.parse(template);
+			const template = generateWikiTemplate("测试")
+			const parsed = JSON.parse(template)
 
-			const tagNode = parsed.root.children[0];
-			expect(tagNode.children).toBeInstanceOf(Array);
-			expect(
-				tagNode.children.some(
-					(child: { type: string }) => child.type === "tag",
-				),
-			).toBe(true);
-		});
+			const tagNode = parsed.root.children[0]
+			expect(tagNode.children).toBeInstanceOf(Array)
+			expect(tagNode.children.some((child: { type: string }) => child.type === "tag")).toBe(true)
+		})
 
 		it("应该在模板中包含日期标签", () => {
-			const template = generateWikiTemplate("测试");
-			const parsed = JSON.parse(template);
+			const template = generateWikiTemplate("测试")
+			const parsed = JSON.parse(template)
 
-			const tagNode = parsed.root.children[0];
+			const tagNode = parsed.root.children[0]
 			const dateTag = tagNode.children.find(
 				(child: { type: string; tagName?: string }) =>
 					child.type === "tag" && child.tagName?.includes("-"),
-			);
-			expect(dateTag).toBeDefined();
-		});
-	});
+			)
+			expect(dateTag).toBeDefined()
+		})
+	})
 
 	// NOTE: createWikiFileAsync tests have been moved to actions/templated/create-wiki.action.test.ts
 
@@ -162,57 +158,49 @@ describe("Wiki Resolution Functions", () => {
 
 	describe("getWikiFilesAsync", () => {
 		it("应该成功获取 Wiki 文件列表", async () => {
-			nodesMock.toArray.mockResolvedValue([mockNode]);
-			vi.mocked(getContentsByNodeIds).mockReturnValue(() =>
-				Promise.resolve(E.right([mockContent])),
-			);
-			vi.mocked(getNodesByWorkspace).mockReturnValue(() =>
-				Promise.resolve(E.right([mockNode])),
-			);
+			nodesMock.toArray.mockResolvedValue([mockNode])
+			vi.mocked(getContentsByNodeIds).mockReturnValue(() => Promise.resolve(E.right([mockContent])))
+			vi.mocked(getNodesByWorkspace).mockReturnValue(() => Promise.resolve(E.right([mockNode])))
 
-			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)();
+			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)()
 
 			// Debug: 打印结果
 			if (E.isLeft(result)) {
-				console.log("Error:", result.left);
+				console.log("Error:", result.left)
 			}
 
-			expect(E.isRight(result)).toBe(true);
+			expect(E.isRight(result)).toBe(true)
 			if (E.isRight(result)) {
-				expect(result.right).toBeInstanceOf(Array);
-				expect(result.right.length).toBe(1);
-				expect(result.right[0].id).toBe(MOCK_NODE_ID);
-				expect(result.right[0].name).toBe("测试 Wiki");
+				expect(result.right).toBeInstanceOf(Array)
+				expect(result.right.length).toBe(1)
+				expect(result.right[0].id).toBe(MOCK_NODE_ID)
+				expect(result.right[0].name).toBe("测试 Wiki")
 			}
-		});
+		})
 
 		it("应该处理空的 Wiki 文件列表", async () => {
-			nodesMock.toArray.mockResolvedValue([]);
-			vi.mocked(getContentsByNodeIds).mockReturnValue(() =>
-				Promise.resolve(E.right([])),
-			);
-			vi.mocked(getNodesByWorkspace).mockReturnValue(() =>
-				Promise.resolve(E.right([])),
-			);
+			nodesMock.toArray.mockResolvedValue([])
+			vi.mocked(getContentsByNodeIds).mockReturnValue(() => Promise.resolve(E.right([])))
+			vi.mocked(getNodesByWorkspace).mockReturnValue(() => Promise.resolve(E.right([])))
 
-			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)();
+			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)()
 
-			expect(E.isRight(result)).toBe(true);
+			expect(E.isRight(result)).toBe(true)
 			if (E.isRight(result)) {
-				expect(result.right).toEqual([]);
+				expect(result.right).toEqual([])
 			}
-		});
+		})
 
 		it("应该处理数据库查询失败", async () => {
-			nodesMock.toArray.mockRejectedValue(new Error("查询失败"));
+			nodesMock.toArray.mockRejectedValue(new Error("查询失败"))
 
-			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)();
+			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)()
 
-			expect(E.isLeft(result)).toBe(true);
+			expect(E.isLeft(result)).toBe(true)
 			if (E.isLeft(result)) {
-				expect(result.left.type).toBe("DB_ERROR");
+				expect(result.left.type).toBe("DB_ERROR")
 			}
-		});
+		})
 
 		it("应该构建正确的文件路径", async () => {
 			const parentNode = {
@@ -220,44 +208,38 @@ describe("Wiki Resolution Functions", () => {
 				id: MOCK_PARENT_ID,
 				title: "Wiki",
 				type: "folder" as const,
-			};
+			}
 
 			const childNode = {
 				...mockNode,
 				parent: MOCK_PARENT_ID,
-			};
+			}
 
-			nodesMock.toArray.mockResolvedValue([childNode]);
-			vi.mocked(getContentsByNodeIds).mockReturnValue(() =>
-				Promise.resolve(E.right([mockContent])),
-			);
+			nodesMock.toArray.mockResolvedValue([childNode])
+			vi.mocked(getContentsByNodeIds).mockReturnValue(() => Promise.resolve(E.right([mockContent])))
 			vi.mocked(getNodesByWorkspace).mockReturnValue(() =>
 				Promise.resolve(E.right([parentNode, childNode])),
-			);
+			)
 
-			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)();
+			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)()
 
-			expect(E.isRight(result)).toBe(true);
+			expect(E.isRight(result)).toBe(true)
 			if (E.isRight(result)) {
-				expect(result.right[0].path).toBe("Wiki/测试 Wiki");
+				expect(result.right[0].path).toBe("Wiki/测试 Wiki")
 			}
-		});
+		})
 
 		it("应该处理缺失的内容", async () => {
-			nodesMock.toArray.mockResolvedValue([mockNode]);
-			vi.mocked(getContentsByNodeIds).mockReturnValue(() =>
-				Promise.resolve(E.right([])),
-			);
-			vi.mocked(getNodesByWorkspace).mockReturnValue(() =>
-				Promise.resolve(E.right([mockNode])),
-			);
+			nodesMock.toArray.mockResolvedValue([mockNode])
+			vi.mocked(getContentsByNodeIds).mockReturnValue(() => Promise.resolve(E.right([])))
+			vi.mocked(getNodesByWorkspace).mockReturnValue(() => Promise.resolve(E.right([mockNode])))
 
-			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)();
+			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)()
 
-			expect(E.isRight(result)).toBe(true);
+			expect(E.isRight(result)).toBe(true)
 			if (E.isRight(result)) {
-				expect(result.right[0].content).toBe("");
+				expect(result.right[0].content).toBe("")
 			}
-		});
-	});
-});
+		})
+	})
+})

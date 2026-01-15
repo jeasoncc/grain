@@ -13,7 +13,7 @@ export {
 	calculateExpandedFoldersForNode,
 	type ExpandedFoldersMap,
 	mergeExpandedFoldersForNode,
-} from "./node.expand.fn";
+} from "./node.expand.fn"
 // Tree 操作函数
 export {
 	buildTree,
@@ -27,4 +27,4 @@ export {
 	getRootNodes,
 	type TreeNode,
 	wouldCreateCycle,
-} from "./node.tree.fn";
+} from "./node.tree.fn"

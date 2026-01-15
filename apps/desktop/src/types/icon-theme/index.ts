@@ -3,5 +3,5 @@
  * @description Icon Theme 类型模块导出
  */
 
-export * from "./icon-theme.config";
-export * from "./icon-theme.interface";
+export * from "./icon-theme.config"
+export * from "./icon-theme.interface"

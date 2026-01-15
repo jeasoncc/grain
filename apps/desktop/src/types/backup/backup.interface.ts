@@ -11,13 +11,13 @@
  * 备份元数据
  */
 export interface BackupMetadata {
-	readonly version: string;
-	readonly timestamp: string;
-	readonly projectCount: number;
-	readonly nodeCount: number;
-	readonly contentCount: number;
-	readonly tagCount: number;
-	readonly appVersion: string;
+	readonly version: string
+	readonly timestamp: string
+	readonly projectCount: number
+	readonly nodeCount: number
+	readonly contentCount: number
+	readonly tagCount: number
+	readonly appVersion: string
 }
 
 // ============================================================================
@@ -28,19 +28,19 @@ export interface BackupMetadata {
  * 备份数据结构
  */
 export interface BackupData {
-	readonly metadata: BackupMetadata;
-	readonly users: readonly unknown[];
-	readonly workspaces: readonly unknown[];
-	readonly nodes: readonly unknown[];
-	readonly contents: readonly unknown[];
-	readonly drawings: readonly unknown[];
-	readonly attachments: readonly unknown[];
-	readonly tags: readonly unknown[];
-	readonly dbVersions: readonly unknown[];
+	readonly metadata: BackupMetadata
+	readonly users: readonly unknown[]
+	readonly workspaces: readonly unknown[]
+	readonly nodes: readonly unknown[]
+	readonly contents: readonly unknown[]
+	readonly drawings: readonly unknown[]
+	readonly attachments: readonly unknown[]
+	readonly tags: readonly unknown[]
+	readonly dbVersions: readonly unknown[]
 	/** @deprecated Use workspaces instead */
-	readonly projects?: readonly unknown[];
+	readonly projects?: readonly unknown[]
 	/** @deprecated Wiki entries are now stored as file nodes with "wiki" tag */
-	readonly wikiEntries?: readonly unknown[];
+	readonly wikiEntries?: readonly unknown[]
 }
 
 // ============================================================================
@@ -51,13 +51,13 @@ export interface BackupData {
  * 数据库统计信息
  */
 export interface DatabaseStats {
-	readonly userCount: number;
-	readonly projectCount: number;
-	readonly nodeCount: number;
-	readonly contentCount: number;
-	readonly drawingCount: number;
-	readonly attachmentCount: number;
-	readonly tagCount: number;
+	readonly userCount: number
+	readonly projectCount: number
+	readonly nodeCount: number
+	readonly contentCount: number
+	readonly drawingCount: number
+	readonly attachmentCount: number
+	readonly tagCount: number
 }
 
 // ============================================================================
@@ -68,6 +68,6 @@ export interface DatabaseStats {
  * 本地备份记录
  */
 export interface LocalBackupRecord {
-	readonly timestamp: string;
-	readonly data: BackupData;
+	readonly timestamp: string
+	readonly data: BackupData
 }

@@ -8,8 +8,8 @@
  * - 不修改输入参数
  */
 
-import type { EditorHistoryEntry, HistoryStack } from "@/types/editor-history";
-import { MAX_HISTORY_SIZE } from "@/types/editor-history";
+import type { EditorHistoryEntry, HistoryStack } from "@/types/editor-history"
+import { MAX_HISTORY_SIZE } from "@/types/editor-history"
 
 // ============================================================================
 // Entry Creation
@@ -33,7 +33,7 @@ export const createHistoryEntry = (
 	content,
 	timestamp: new Date().toISOString(),
 	wordCount,
-});
+})
 
 // ============================================================================
 // Stack Operations (Pure Functions)
@@ -53,16 +53,15 @@ export const pushToStack = (
 	nodeId: string,
 	entry: EditorHistoryEntry,
 ): HistoryStack => {
-	const currentHistory = stack.get(nodeId) || [];
-	const nodeHistory = [...currentHistory, entry];
+	const currentHistory = stack.get(nodeId) || []
+	const nodeHistory = [...currentHistory, entry]
 
 	// 强制执行最大历史大小 - 使用 slice 而不是 shift
-	const finalHistory = nodeHistory.length > MAX_HISTORY_SIZE 
-		? nodeHistory.slice(-MAX_HISTORY_SIZE)
-		: nodeHistory;
+	const finalHistory =
+		nodeHistory.length > MAX_HISTORY_SIZE ? nodeHistory.slice(-MAX_HISTORY_SIZE) : nodeHistory
 
-	return new Map([...stack, [nodeId, finalHistory]]);
-};
+	return new Map([...stack, [nodeId, finalHistory]])
+}
 
 /**
  * 从节点的历史栈中弹出最后一个条目
@@ -76,17 +75,17 @@ export const popFromStack = (
 	stack: HistoryStack,
 	nodeId: string,
 ): readonly [HistoryStack, EditorHistoryEntry | null] => {
-	const nodeHistory = stack.get(nodeId);
+	const nodeHistory = stack.get(nodeId)
 
 	if (!nodeHistory || nodeHistory.length === 0) {
-		return [stack, null] as const;
+		return [stack, null] as const
 	}
 
-	const newHistory = nodeHistory.slice(0, -1);
-	const entry = nodeHistory[nodeHistory.length - 1];
+	const newHistory = nodeHistory.slice(0, -1)
+	const entry = nodeHistory[nodeHistory.length - 1]
 
-	return [new Map([...stack, [nodeId, newHistory]]), entry] as const;
-};
+	return [new Map([...stack, [nodeId, newHistory]]), entry] as const
+}
 
 /**
  * 清除特定节点的历史记录
@@ -96,19 +95,16 @@ export const popFromStack = (
  * @param nodeId - 节点 ID
  * @returns 新的历史栈
  */
-export const clearNodeFromStack = (
-	stack: HistoryStack,
-	nodeId: string,
-): HistoryStack => {
-	return new Map([...stack].filter(([key]) => key !== nodeId));
-};
+export const clearNodeFromStack = (stack: HistoryStack, nodeId: string): HistoryStack => {
+	return new Map([...stack].filter(([key]) => key !== nodeId))
+}
 
 /**
  * 创建空的历史栈
  *
  * @returns 空的历史栈
  */
-export const createEmptyStack = (): HistoryStack => new Map();
+export const createEmptyStack = (): HistoryStack => new Map()
 
 // ============================================================================
 // Query Functions (Pure)
@@ -121,12 +117,9 @@ export const createEmptyStack = (): HistoryStack => new Map();
  * @param nodeId - 节点 ID
  * @returns 历史记录数量
  */
-export const getNodeHistoryCount = (
-	stack: HistoryStack,
-	nodeId: string,
-): number => {
-	return stack.get(nodeId)?.length ?? 0;
-};
+export const getNodeHistoryCount = (stack: HistoryStack, nodeId: string): number => {
+	return stack.get(nodeId)?.length ?? 0
+}
 
 /**
  * 检查节点是否有历史记录
@@ -136,8 +129,8 @@ export const getNodeHistoryCount = (
  * @returns 是否有历史记录
  */
 export const hasHistory = (stack: HistoryStack, nodeId: string): boolean => {
-	return getNodeHistoryCount(stack, nodeId) > 0;
-};
+	return getNodeHistoryCount(stack, nodeId) > 0
+}
 
 // ============================================================================
 // Serialization (for persistence)
@@ -152,8 +145,11 @@ export const hasHistory = (stack: HistoryStack, nodeId: string): boolean => {
 export const serializeStack = (
 	stack: HistoryStack,
 ): readonly (readonly [string, readonly EditorHistoryEntry[]])[] => {
-	return Array.from(stack.entries()) as readonly (readonly [string, readonly EditorHistoryEntry[]])[];
-};
+	return Array.from(stack.entries()) as readonly (readonly [
+		string,
+		readonly EditorHistoryEntry[],
+	])[]
+}
 
 /**
  * 将数组格式反序列化为 HistoryStack
@@ -164,6 +160,6 @@ export const serializeStack = (
 export const deserializeStack = (
 	data: readonly (readonly [string, readonly EditorHistoryEntry[]])[] | undefined,
 ): HistoryStack => {
-	if (!data) return new Map();
-	return new Map(data);
-};
+	if (!data) return new Map()
+	return new Map(data)
+}

@@ -10,10 +10,10 @@
  * 这些函数无副作用，可组合，可测试。
  */
 
-import * as E from "fp-ts/Either";
-import { v4 as uuidv4 } from "uuid";
-import type { NodeInterface } from "@/types/node";
-import type { WorkspaceInterface } from "@/types/workspace";
+import * as E from "fp-ts/Either"
+import { v4 as uuidv4 } from "uuid"
+import type { NodeInterface } from "@/types/node"
+import type { WorkspaceInterface } from "@/types/workspace"
 
 // ==============================
 // Types
@@ -23,33 +23,33 @@ import type { WorkspaceInterface } from "@/types/workspace";
  * 导出数据包结构
  */
 export interface ExportBundle {
-	readonly version: number;
-	readonly projects: readonly WorkspaceInterface[];
-	readonly nodes: readonly NodeInterface[];
-	readonly contents: readonly ContentData[];
+	readonly version: number
+	readonly projects: readonly WorkspaceInterface[]
+	readonly nodes: readonly NodeInterface[]
+	readonly contents: readonly ContentData[]
 	/** @deprecated Wiki entries are now stored as file nodes with "wiki" tag */
-	readonly wikiEntries?: readonly unknown[];
-	readonly attachments: readonly AttachmentData[];
+	readonly wikiEntries?: readonly unknown[]
+	readonly attachments: readonly AttachmentData[]
 }
 
 /**
  * 内容数据结构
  */
 export interface ContentData {
-	readonly id: string;
-	readonly nodeId: string;
-	readonly content: string;
-	readonly contentType: string;
-	readonly lastEdit: string;
+	readonly id: string
+	readonly nodeId: string
+	readonly content: string
+	readonly contentType: string
+	readonly lastEdit: string
 }
 
 /**
  * 附件数据结构
  */
 export interface AttachmentData {
-	readonly id: string;
-	readonly project?: string;
-	readonly [key: string]: unknown;
+	readonly id: string
+	readonly project?: string
+	readonly [key: string]: unknown
 }
 
 /**
@@ -57,7 +57,7 @@ export interface AttachmentData {
  */
 export interface JsonImportOptions {
 	/** 是否保留原始 ID */
-	readonly keepIds?: boolean;
+	readonly keepIds?: boolean
 }
 
 /**
@@ -66,17 +66,17 @@ export interface JsonImportOptions {
 export type JsonImportError =
 	| { readonly type: "PARSE_ERROR"; readonly message: string }
 	| { readonly type: "INVALID_FORMAT"; readonly message: string }
-	| { readonly type: "VERSION_ERROR"; readonly message: string };
+	| { readonly type: "VERSION_ERROR"; readonly message: string }
 
 /**
  * 解析后的导入数据
  */
 export interface ParsedImportData {
-	readonly workspaces: ReadonlyArray<WorkspaceInterface>;
-	readonly nodes: ReadonlyArray<NodeInterface>;
-	readonly contents: ReadonlyArray<ContentData>;
-	readonly attachments: ReadonlyArray<AttachmentData>;
-	readonly idMap: ReadonlyMap<string, string>;
+	readonly workspaces: ReadonlyArray<WorkspaceInterface>
+	readonly nodes: ReadonlyArray<NodeInterface>
+	readonly contents: ReadonlyArray<ContentData>
+	readonly attachments: ReadonlyArray<AttachmentData>
+	readonly idMap: ReadonlyMap<string, string>
 }
 
 // ==============================
@@ -98,7 +98,7 @@ export function parseJsonBundle(
 			type: "PARSE_ERROR" as const,
 			message: `JSON 解析失败: ${error instanceof Error ? error.message : String(error)}`,
 		}),
-	);
+	)
 }
 
 /**
@@ -115,7 +115,7 @@ export function validateBundle(
 		return E.left({
 			type: "INVALID_FORMAT",
 			message: "无效的备份格式：缺少 projects 或 nodes 字段",
-		});
+		})
 	}
 
 	// 构建完整的数据包
@@ -125,9 +125,9 @@ export function validateBundle(
 		nodes: data.nodes ?? [],
 		contents: (data.contents ?? []) as ContentData[],
 		attachments: (data.attachments ?? []) as AttachmentData[],
-	};
+	}
 
-	return E.right(bundle);
+	return E.right(bundle)
 }
 
 /**
@@ -137,20 +137,17 @@ export function validateBundle(
  * @param keepIds - 是否保留原始 ID
  * @returns ID 映射表
  */
-export function generateIdMap(
-	bundle: ExportBundle,
-	keepIds: boolean,
-): ReadonlyMap<string, string> {
+export function generateIdMap(bundle: ExportBundle, keepIds: boolean): ReadonlyMap<string, string> {
 	if (keepIds) {
 		// 保留原始 ID - use functional approach
-		const workspaceEntries = bundle.projects.map(w => [w.id, w.id] as const);
-		const nodeEntries = bundle.nodes.map(n => [n.id, n.id] as const);
-		return new Map([...workspaceEntries, ...nodeEntries]);
+		const workspaceEntries = bundle.projects.map((w) => [w.id, w.id] as const)
+		const nodeEntries = bundle.nodes.map((n) => [n.id, n.id] as const)
+		return new Map([...workspaceEntries, ...nodeEntries])
 	} else {
 		// 生成新 ID - use functional approach
-		const workspaceEntries = bundle.projects.map(w => [w.id, uuidv4()] as const);
-		const nodeEntries = bundle.nodes.map(n => [n.id, uuidv4()] as const);
-		return new Map([...workspaceEntries, ...nodeEntries]);
+		const workspaceEntries = bundle.projects.map((w) => [w.id, uuidv4()] as const)
+		const nodeEntries = bundle.nodes.map((n) => [n.id, uuidv4()] as const)
+		return new Map([...workspaceEntries, ...nodeEntries])
 	}
 }
 
@@ -168,7 +165,7 @@ export function transformWorkspaces(
 	return workspaces.map((w) => ({
 		...w,
 		id: idMap.get(w.id) ?? w.id,
-	}));
+	}))
 }
 
 /**
@@ -187,7 +184,7 @@ export function transformNodes(
 		id: idMap.get(n.id) ?? n.id,
 		workspace: idMap.get(n.workspace) ?? n.workspace,
 		parent: n.parent ? (idMap.get(n.parent) ?? n.parent) : null,
-	}));
+	}))
 }
 
 /**
@@ -207,7 +204,7 @@ export function transformContents(
 		...c,
 		id: keepIds ? c.id : uuidv4(),
 		nodeId: idMap.get(c.nodeId) ?? c.nodeId,
-	}));
+	}))
 }
 
 /**
@@ -223,9 +220,8 @@ export function transformAttachments(
 ): ReadonlyArray<AttachmentData> {
 	return attachments.map((a) => ({
 		...a,
-		project:
-			a.project && idMap.has(a.project) ? idMap.get(a.project) : a.project,
-	}));
+		project: a.project && idMap.has(a.project) ? idMap.get(a.project) : a.project,
+	}))
 }
 
 /**
@@ -239,30 +235,30 @@ export function parseImportData(
 	jsonText: string,
 	options: JsonImportOptions = {},
 ): E.Either<JsonImportError, ParsedImportData> {
-	const { keepIds = false } = options;
+	const { keepIds = false } = options
 
 	// 解析 JSON
-	const parseResult = parseJsonBundle(jsonText);
+	const parseResult = parseJsonBundle(jsonText)
 	if (E.isLeft(parseResult)) {
-		return parseResult;
+		return parseResult
 	}
 
 	// 验证数据结构
-	const validateResult = validateBundle(parseResult.right);
+	const validateResult = validateBundle(parseResult.right)
 	if (E.isLeft(validateResult)) {
-		return validateResult;
+		return validateResult
 	}
 
-	const bundle = validateResult.right;
+	const bundle = validateResult.right
 
 	// 生成 ID 映射
-	const idMap = generateIdMap(bundle, keepIds);
+	const idMap = generateIdMap(bundle, keepIds)
 
 	// 转换数据
-	const workspaces = transformWorkspaces(bundle.projects, idMap);
-	const nodes = transformNodes(bundle.nodes, idMap);
-	const contents = transformContents(bundle.contents, idMap, keepIds);
-	const attachments = transformAttachments(bundle.attachments, idMap);
+	const workspaces = transformWorkspaces(bundle.projects, idMap)
+	const nodes = transformNodes(bundle.nodes, idMap)
+	const contents = transformContents(bundle.contents, idMap, keepIds)
+	const attachments = transformAttachments(bundle.attachments, idMap)
 
 	return E.right({
 		workspaces,
@@ -270,5 +266,5 @@ export function parseImportData(
 		contents,
 		attachments,
 		idMap,
-	});
+	})
 }

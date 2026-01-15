@@ -10,20 +10,20 @@
  * @requirements 7.1, 7.4
  */
 
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import * as nodeRepo from "@/io/api/node.api";
-import { info, error, success } from "@/io/log/logger.api";
-import { type AppError, validationError } from "@/types/error";
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import * as nodeRepo from "@/io/api/node.api"
+import { error, info, success } from "@/io/log/logger.api"
+import { type AppError, validationError } from "@/types/error"
 
 /**
  * 重命名节点参数
  */
 export interface RenameNodeParams {
 	/** 节点 ID */
-	readonly nodeId: string;
+	readonly nodeId: string
 	/** 新标题 */
-	readonly title: string;
+	readonly title: string
 }
 
 /**
@@ -35,27 +35,29 @@ export interface RenameNodeParams {
  * @param params - 重命名节点参数
  * @returns TaskEither<AppError, void>
  */
-export const renameNode = (
-	params: RenameNodeParams,
-): TE.TaskEither<AppError, void> => {
-	info("[Action] 重命名节点", { nodeId: params.nodeId }, "rename-node.flow");
+export const renameNode = (params: RenameNodeParams): TE.TaskEither<AppError, void> => {
+	info("[Action] 重命名节点", { nodeId: params.nodeId }, "rename-node.flow")
 
 	// 验证标题
-	const trimmedTitle = params.title.trim();
+	const trimmedTitle = params.title.trim()
 	if (!trimmedTitle) {
-		error("[Action] 重命名节点失败: 标题不能为空");
-		return TE.left(validationError("标题不能为空", "title"));
+		error("[Action] 重命名节点失败: 标题不能为空")
+		return TE.left(validationError("标题不能为空", "title"))
 	}
 
 	return pipe(
 		nodeRepo.updateNode(params.nodeId, { title: trimmedTitle }),
 		TE.tap(() => {
-			success("[Action] 节点重命名成功", {
-				nodeId: params.nodeId,
-				title: trimmedTitle,
-			}, "rename-node");
-			return TE.right(undefined);
+			success(
+				"[Action] 节点重命名成功",
+				{
+					nodeId: params.nodeId,
+					title: trimmedTitle,
+				},
+				"rename-node",
+			)
+			return TE.right(undefined)
 		}),
 		TE.map(() => undefined),
-	);
-};
+	)
+}

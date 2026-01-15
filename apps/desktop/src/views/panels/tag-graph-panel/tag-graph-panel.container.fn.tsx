@@ -4,10 +4,10 @@
  * 连接数据层和展示层
  */
 
-import { memo } from "react";
-import { useTagGraph } from "@/hooks";
-import { useSelectionStore } from "@/state/selection.state";
-import { TagGraphPanelView } from "./tag-graph-panel.view.fn";
+import { memo } from "react"
+import { useTagGraph } from "@/hooks"
+import { useSelectionStore } from "@/state/selection.state"
+import { TagGraphPanelView } from "./tag-graph-panel.view.fn"
 
 /**
  * TagGraphPanelContainer - 标签图谱面板容器组件
@@ -19,15 +19,15 @@ import { TagGraphPanelView } from "./tag-graph-panel.view.fn";
  */
 export const TagGraphPanelContainer = memo(() => {
 	// 获取当前工作区 ID
-	const workspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
+	const workspaceId = useSelectionStore((s) => s.selectedWorkspaceId)
 
 	// 获取标签图谱数据
 	const graphData = useTagGraph(workspaceId ?? undefined) ?? {
 		nodes: [],
 		edges: [],
-	};
+	}
 
-	return <TagGraphPanelView workspaceId={workspaceId} graphData={graphData} />;
-});
+	return <TagGraphPanelView workspaceId={workspaceId} graphData={graphData} />
+})
 
-TagGraphPanelContainer.displayName = "TagGraphPanelContainer";
+TagGraphPanelContainer.displayName = "TagGraphPanelContainer"

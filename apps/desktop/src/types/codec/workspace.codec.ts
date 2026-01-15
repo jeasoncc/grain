@@ -11,12 +11,12 @@ import type {
 	CreateWorkspaceRequest,
 	UpdateWorkspaceRequest,
 	WorkspaceResponse,
-} from "@/types/rust-api";
+} from "@/types/rust-api"
 import type {
 	WorkspaceCreateInput,
 	WorkspaceInterface,
 	WorkspaceUpdateInput,
-} from "@/types/workspace";
+} from "@/types/workspace"
 
 // ============================================
 // 解码：Rust 类型 → 前端类型
@@ -27,27 +27,25 @@ import type {
  *
  * 将 Rust 后端返回的工作区数据转换为前端使用的接口类型
  */
-export const decodeWorkspace = (
-	response: WorkspaceResponse,
-): WorkspaceInterface => ({
-	id: response.id,
-	title: response.title,
+export const decodeWorkspace = (response: WorkspaceResponse): WorkspaceInterface => ({
 	author: response.author,
+	createDate: new Date(response.createdAt).toISOString(),
 	description: response.description,
-	publisher: response.publisher,
+	id: response.id,
 	language: response.language,
 	lastOpen: new Date(response.lastOpen).toISOString(),
-	createDate: new Date(response.createdAt).toISOString(),
 	members: response.members,
 	owner: response.owner,
-});
+	publisher: response.publisher,
+	title: response.title,
+})
 
 /**
  * 批量解码工作区：WorkspaceResponse[] → WorkspaceInterface[]
  */
 export const decodeWorkspaces = (
 	responses: readonly WorkspaceResponse[],
-): readonly WorkspaceInterface[] => responses.map(decodeWorkspace);
+): readonly WorkspaceInterface[] => responses.map(decodeWorkspace)
 
 // ============================================
 // 编码：前端类型 → Rust 请求类型
@@ -58,33 +56,29 @@ export const decodeWorkspaces = (
  *
  * 前端和后端使用相同的字段名，直接传递
  */
-export const encodeCreateWorkspace = (
-	input: WorkspaceCreateInput,
-): CreateWorkspaceRequest => ({
-	title: input.title,
+export const encodeCreateWorkspace = (input: WorkspaceCreateInput): CreateWorkspaceRequest => ({
 	author: input.author,
 	description: input.description,
-	publisher: input.publisher,
 	language: input.language,
 	members: input.members,
 	owner: input.owner,
-});
+	publisher: input.publisher,
+	title: input.title,
+})
 
 /**
  * 编码更新工作区请求：WorkspaceUpdateInput → UpdateWorkspaceRequest
  */
-export const encodeUpdateWorkspace = (
-	input: WorkspaceUpdateInput,
-): UpdateWorkspaceRequest => ({
-	title: input.title,
+export const encodeUpdateWorkspace = (input: WorkspaceUpdateInput): UpdateWorkspaceRequest => ({
 	author: input.author,
 	description: input.description,
-	publisher: input.publisher,
 	language: input.language,
 	lastOpen: input.lastOpen ? new Date(input.lastOpen).getTime() : undefined,
 	members: input.members,
 	owner: input.owner,
-});
+	publisher: input.publisher,
+	title: input.title,
+})
 
 /**
  * 从 WorkspaceInterface 编码创建请求
@@ -92,14 +86,14 @@ export const encodeUpdateWorkspace = (
 export const encodeWorkspaceToCreateRequest = (
 	workspace: Partial<WorkspaceInterface>,
 ): CreateWorkspaceRequest => ({
-	title: workspace.title!,
 	author: workspace.author,
 	description: workspace.description,
-	publisher: workspace.publisher,
 	language: workspace.language,
 	members: workspace.members,
 	owner: workspace.owner,
-});
+	publisher: workspace.publisher,
+	title: workspace.title!,
+})
 
 /**
  * 从 WorkspaceInterface 编码更新请求
@@ -107,14 +101,12 @@ export const encodeWorkspaceToCreateRequest = (
 export const encodeWorkspaceToUpdateRequest = (
 	workspace: Partial<WorkspaceInterface>,
 ): UpdateWorkspaceRequest => ({
-	title: workspace.title,
 	author: workspace.author,
 	description: workspace.description,
-	publisher: workspace.publisher,
 	language: workspace.language,
-	lastOpen: workspace.lastOpen
-		? new Date(workspace.lastOpen).getTime()
-		: undefined,
+	lastOpen: workspace.lastOpen ? new Date(workspace.lastOpen).getTime() : undefined,
 	members: workspace.members,
 	owner: workspace.owner,
-});
+	publisher: workspace.publisher,
+	title: workspace.title,
+})

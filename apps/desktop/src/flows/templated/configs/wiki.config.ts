@@ -8,19 +8,19 @@
  * @requirements Wiki 条目创建功能
  */
 
-import { generateWikiContent } from "@/pipes/content";
+import { generateWikiContent } from "@/pipes/content"
 import {
 	createDateTemplateConfig,
 	type DateTemplateParams,
 	dateParamsSchema,
-} from "./date-template.factory";
+} from "./date-template.factory"
 
 // ==============================
 // Types (Re-export)
 // ==============================
 
-export type WikiTemplateParams = DateTemplateParams;
-export const wikiParamsSchema = dateParamsSchema;
+export type WikiTemplateParams = DateTemplateParams
+export const wikiParamsSchema = dateParamsSchema
 
 // ==============================
 // Configuration
@@ -40,4 +40,4 @@ export const wikiConfig = createDateTemplateConfig({
 	prefix: "wiki",
 	generateContent: generateWikiContent,
 	includeDayFolder: true,
-});
+})

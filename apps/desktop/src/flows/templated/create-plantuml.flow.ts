@@ -10,8 +10,8 @@
  * @requirements 2.1
  */
 
-import { plantumlConfig } from "./configs/plantuml.config";
-import { createDateTemplateActions } from "./create-date-template.flow";
+import { plantumlConfig } from "./configs/plantuml.config"
+import { createDateTemplateActions } from "./create-date-template.flow"
 
 // ==============================
 // Types
@@ -22,9 +22,9 @@ import { createDateTemplateActions } from "./create-date-template.flow";
  */
 export interface CreatePlantUMLParams {
 	/** 工作区 ID */
-	readonly workspaceId: string;
+	readonly workspaceId: string
 	/** 日期（可选，默认为当前时间） */
-	readonly date?: Date;
+	readonly date?: Date
 }
 
 /**
@@ -32,11 +32,11 @@ export interface CreatePlantUMLParams {
  */
 export interface PlantUMLCreationResult {
 	/** 创建的节点 */
-	readonly node: import("@/types/node").NodeInterface;
+	readonly node: import("@/types/node").NodeInterface
 	/** 生成的内容（PlantUML 代码） */
-	readonly content: string;
+	readonly content: string
 	/** 解析后的内容 */
-	readonly parsedContent: unknown;
+	readonly parsedContent: unknown
 }
 
 // ==============================
@@ -44,16 +44,16 @@ export interface PlantUMLCreationResult {
 // ==============================
 
 /** PlantUML actions 对象 */
-export const plantumlActions = createDateTemplateActions(plantumlConfig);
+export const plantumlActions = createDateTemplateActions(plantumlConfig)
 
 /** TaskEither 版本 */
-export const createPlantUML = plantumlActions.create;
+export const createPlantUML = plantumlActions.create
 
 /** Promise 版本 */
-export const createPlantUMLAsync = plantumlActions.createAsync;
+export const createPlantUMLAsync = plantumlActions.createAsync
 
 /** 兼容旧 API 的 TaskEither 版本 */
-export const createPlantUMLCompat = plantumlActions.createCompat;
+export const createPlantUMLCompat = plantumlActions.createCompat
 
 /** 兼容旧 API 的 Promise 版本 */
-export const createPlantUMLCompatAsync = plantumlActions.createCompatAsync;
+export const createPlantUMLCompatAsync = plantumlActions.createCompatAsync

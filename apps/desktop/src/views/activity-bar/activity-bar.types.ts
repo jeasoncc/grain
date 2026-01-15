@@ -6,65 +6,65 @@
  * 遵循函数式架构：组件只接收 props，不直接访问 Store/DB。
  */
 
-import type { IconTheme } from "@/types/icon-theme";
-import type { SidebarPanel } from "@/types/sidebar";
-import type { WorkspaceInterface } from "@/types/workspace";
+import type { IconTheme } from "@/types/icon-theme"
+import type { SidebarPanel } from "@/types/sidebar"
+import type { WorkspaceInterface } from "@/types/workspace"
 
 /**
  * ActivityBar 主组件 Props
  */
 export interface ActivityBarProps {
 	/** 所有工作区列表 */
-	readonly workspaces: readonly WorkspaceInterface[];
+	readonly workspaces: readonly WorkspaceInterface[]
 	/** 当前选中的工作区 ID */
-	readonly selectedWorkspaceId: string | null;
+	readonly selectedWorkspaceId: string | null
 	/** 当前激活的侧边栏面板 */
-	readonly activePanel: SidebarPanel;
+	readonly activePanel: SidebarPanel
 	/** 侧边栏是否打开 */
-	readonly isSidebarOpen: boolean;
+	readonly isSidebarOpen: boolean
 	/** 当前图标主题 */
-	readonly iconTheme: IconTheme;
+	readonly iconTheme: IconTheme
 	/** 当前路由路径 */
-	readonly currentPath: string;
+	readonly currentPath: string
 
 	// ==============================
 	// 回调函数
 	// ==============================
 
 	/** 选择工作区 */
-	readonly onSelectWorkspace: (workspaceId: string) => void;
+	readonly onSelectWorkspace: (workspaceId: string) => void
 	/** 创建新工作区 */
-	readonly onCreateWorkspace: (name: string) => Promise<void>;
+	readonly onCreateWorkspace: (name: string) => Promise<void>
 	/** 设置激活面板 */
-	readonly onSetActivePanel: (panel: SidebarPanel) => void;
+	readonly onSetActivePanel: (panel: SidebarPanel) => void
 	/** 切换侧边栏 */
-	readonly onToggleSidebar: () => void;
+	readonly onToggleSidebar: () => void
 	/** 创建日记 */
-	readonly onCreateDiary: () => void;
+	readonly onCreateDiary: () => void
 	/** 创建 Wiki */
-	readonly onCreateWiki: () => void;
+	readonly onCreateWiki: () => void
 	/** 创建记账 */
-	readonly onCreateLedger: () => void;
+	readonly onCreateLedger: () => void
 	/** 创建待办 */
-	readonly onCreateTodo: () => void;
+	readonly onCreateTodo: () => void
 	/** 创建笔记 */
-	readonly onCreateNote: () => void;
+	readonly onCreateNote: () => void
 	/** 创建 Excalidraw */
-	readonly onCreateExcalidraw: () => void;
+	readonly onCreateExcalidraw: () => void
 	/** 创建 Mermaid 图表 */
-	readonly onCreateMermaid: () => void;
+	readonly onCreateMermaid: () => void
 	/** 创建 PlantUML 图表 */
-	readonly onCreatePlantUML: () => void;
+	readonly onCreatePlantUML: () => void
 	/** 创建代码文件 */
-	readonly onCreateCode: () => void;
+	readonly onCreateCode: () => void
 	/** 导入文件 */
-	readonly onImportFile: (file: File) => Promise<void>;
+	readonly onImportFile: (file: File) => Promise<void>
 	/** 打开导出对话框 */
-	readonly onOpenExportDialog: () => void;
+	readonly onOpenExportDialog: () => void
 	/** 删除所有数据 */
-	readonly onDeleteAllData: () => Promise<void>;
+	readonly onDeleteAllData: () => Promise<void>
 	/** 导航到路径 */
-	readonly onNavigate: (path: string) => void;
+	readonly onNavigate: (path: string) => void
 }
 
 /**
@@ -72,13 +72,13 @@ export interface ActivityBarProps {
  */
 export interface WorkspaceItemProps {
 	/** 工作区数据 */
-	readonly workspace: WorkspaceInterface;
+	readonly workspace: WorkspaceInterface
 	/** 是否选中 */
-	readonly isSelected: boolean;
+	readonly isSelected: boolean
 	/** 文件夹图标组件 */
-	readonly FolderIcon: React.ComponentType<{ readonly className?: string }>;
+	readonly FolderIcon: React.ComponentType<{ readonly className?: string }>
 	/** 点击回调 */
-	readonly onClick: () => void;
+	readonly onClick: () => void
 }
 
 /**
@@ -86,13 +86,13 @@ export interface WorkspaceItemProps {
  */
 export interface ActionButtonProps {
 	/** 图标 */
-	readonly icon: React.ReactNode;
+	readonly icon: React.ReactNode
 	/** 标签文本 */
-	readonly label: string;
+	readonly label: string
 	/** 点击回调 */
-	readonly onClick: () => void;
+	readonly onClick: () => void
 	/** 是否激活 */
-	readonly active?: boolean;
+	readonly active?: boolean
 }
 
 /**
@@ -100,13 +100,13 @@ export interface ActionButtonProps {
  */
 export interface NavItemProps {
 	/** 目标路径 */
-	readonly to: string;
+	readonly to: string
 	/** 图标 */
-	readonly icon: React.ReactNode;
+	readonly icon: React.ReactNode
 	/** 标签文本 */
-	readonly label: string;
+	readonly label: string
 	/** 是否激活 */
-	readonly active: boolean;
+	readonly active: boolean
 }
 
 /**
@@ -114,13 +114,13 @@ export interface NavItemProps {
  */
 export interface ToggleNavItemProps {
 	/** 目标路径 */
-	readonly to: string;
+	readonly to: string
 	/** 图标 */
-	readonly icon: React.ReactNode;
+	readonly icon: React.ReactNode
 	/** 标签文本 */
-	readonly label: string;
+	readonly label: string
 	/** 是否激活 */
-	readonly active: boolean;
+	readonly active: boolean
 	/** 导航回调 */
-	readonly onNavigate: (path: string) => void;
+	readonly onNavigate: (path: string) => void
 }

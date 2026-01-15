@@ -8,7 +8,7 @@
  * @requirements 2.1
  */
 
-import type { ISODateString, UUID } from "../shared";
+import type { ISODateString, UUID } from "../shared"
 
 /**
  * 标签接口 - 聚合缓存
@@ -21,22 +21,22 @@ import type { ISODateString, UUID } from "../shared";
  */
 export interface TagInterface {
 	/** 标签名称作为 ID（每个工作区唯一） */
-	readonly id: string;
+	readonly id: string
 
 	/** 标签显示名称 */
-	readonly name: string;
+	readonly name: string
 
 	/** 标签所属的工作区 */
-	readonly workspace: UUID;
+	readonly workspace: UUID
 
 	/** 使用此标签的文档数量 */
-	readonly count: number;
+	readonly count: number
 
 	/** 最后使用此标签的时间 */
-	readonly lastUsed: ISODateString;
+	readonly lastUsed: ISODateString
 
 	/** 首次创建此标签的时间 */
-	readonly createDate: ISODateString;
+	readonly createDate: ISODateString
 }
 
 /**
@@ -44,8 +44,8 @@ export interface TagInterface {
  * 创建新标签时使用
  */
 export interface TagCreateInput {
-	readonly name: string;
-	readonly workspace: UUID;
+	readonly name: string
+	readonly workspace: UUID
 }
 
 /**
@@ -53,7 +53,7 @@ export interface TagCreateInput {
  * 更新现有标签时使用
  */
 export interface TagUpdateInput {
-	readonly name?: string;
-	readonly count?: number;
-	readonly lastUsed?: ISODateString;
+	readonly name?: string
+	readonly count?: number
+	readonly lastUsed?: ISODateString
 }

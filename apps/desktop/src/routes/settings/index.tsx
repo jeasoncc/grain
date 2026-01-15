@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Settings } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router"
+import { Settings } from "lucide-react"
 
 export const Route = createFileRoute("/settings/")({
 	component: SettingsIndex,
-});
+})
 
 function SettingsIndex() {
 	return (
@@ -30,24 +30,18 @@ function SettingsIndex() {
 					</div>
 					<div className="p-4 border rounded-lg">
 						<h3 className="font-semibold mb-2">Editor</h3>
-						<p className="text-sm text-muted-foreground">
-							Configure editor behavior and shortcuts
-						</p>
+						<p className="text-sm text-muted-foreground">Configure editor behavior and shortcuts</p>
 					</div>
 					<div className="p-4 border rounded-lg">
 						<h3 className="font-semibold mb-2">Data Management</h3>
-						<p className="text-sm text-muted-foreground">
-							Backup, restore, and clear data
-						</p>
+						<p className="text-sm text-muted-foreground">Backup, restore, and clear data</p>
 					</div>
 					<div className="p-4 border rounded-lg">
 						<h3 className="font-semibold mb-2">General</h3>
-						<p className="text-sm text-muted-foreground">
-							Language, auto-save, and basic settings
-						</p>
+						<p className="text-sm text-muted-foreground">Language, auto-save, and basic settings</p>
 					</div>
 				</div>
 			</div>
 		</div>
-	);
+	)
 }

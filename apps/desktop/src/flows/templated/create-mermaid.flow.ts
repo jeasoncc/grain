@@ -10,8 +10,8 @@
  * @requirements 1.1
  */
 
-import { mermaidConfig } from "./configs/mermaid.config";
-import { createDateTemplateActions } from "./create-date-template.flow";
+import { mermaidConfig } from "./configs/mermaid.config"
+import { createDateTemplateActions } from "./create-date-template.flow"
 
 // ==============================
 // Types
@@ -22,9 +22,9 @@ import { createDateTemplateActions } from "./create-date-template.flow";
  */
 export interface CreateMermaidParams {
 	/** 工作区 ID */
-	readonly workspaceId: string;
+	readonly workspaceId: string
 	/** 日期（可选，默认为当前时间） */
-	readonly date?: Date;
+	readonly date?: Date
 }
 
 /**
@@ -32,11 +32,11 @@ export interface CreateMermaidParams {
  */
 export interface MermaidCreationResult {
 	/** 创建的节点 */
-	readonly node: import("@/types/node").NodeInterface;
+	readonly node: import("@/types/node").NodeInterface
 	/** 生成的内容（Mermaid 代码） */
-	readonly content: string;
+	readonly content: string
 	/** 解析后的内容 */
-	readonly parsedContent: unknown;
+	readonly parsedContent: unknown
 }
 
 // ==============================
@@ -44,16 +44,16 @@ export interface MermaidCreationResult {
 // ==============================
 
 /** Mermaid actions 对象 */
-export const mermaidActions = createDateTemplateActions(mermaidConfig);
+export const mermaidActions = createDateTemplateActions(mermaidConfig)
 
 /** TaskEither 版本 */
-export const createMermaid = mermaidActions.create;
+export const createMermaid = mermaidActions.create
 
 /** Promise 版本 */
-export const createMermaidAsync = mermaidActions.createAsync;
+export const createMermaidAsync = mermaidActions.createAsync
 
 /** 兼容旧 API 的 TaskEither 版本 */
-export const createMermaidCompat = mermaidActions.createCompat;
+export const createMermaidCompat = mermaidActions.createCompat
 
 /** 兼容旧 API 的 Promise 版本 */
-export const createMermaidCompatAsync = mermaidActions.createCompatAsync;
+export const createMermaidCompatAsync = mermaidActions.createCompatAsync

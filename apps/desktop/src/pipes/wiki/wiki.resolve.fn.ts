@@ -7,18 +7,18 @@
  * Requirements: 1.1, 1.2, 2.1
  */
 
-import { WikiFileEntryBuilder } from "./wiki.builder";
-import type { WikiFileEntry } from "./wiki.schema";
+import { WikiFileEntryBuilder } from "./wiki.builder"
+import type { WikiFileEntry } from "./wiki.schema"
 
 // ==============================
 // Constants
 // ==============================
 
 /** Wiki root folder name */
-export const WIKI_ROOT_FOLDER = "Wiki";
+export const WIKI_ROOT_FOLDER = "Wiki"
 
 /** Wiki tag name */
-export const WIKI_TAG = "wiki";
+export const WIKI_TAG = "wiki"
 
 // ==============================
 // Wiki File Operations
@@ -32,8 +32,8 @@ export const WIKI_TAG = "wiki";
  */
 export function generateWikiTemplate(title: string): string {
 	// Get current date for the date tag
-	const now = new Date();
-	const dateTag = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+	const now = new Date()
+	const dateTag = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
 
 	const template = {
 		root: {
@@ -249,8 +249,8 @@ export function generateWikiTemplate(title: string): string {
 			type: "root",
 			version: 1,
 		},
-	};
-	return JSON.stringify(template);
+	}
+	return JSON.stringify(template)
 }
 
 // NOTE: Wiki file creation has been moved to actions/templated/create-wiki.action.ts
@@ -264,10 +264,10 @@ export function generateWikiTemplate(title: string): string {
  * Node-like type for path building (accepts both NodeInterface and NodeResponse)
  */
 interface NodeLike {
-	readonly id: string;
-	readonly title: string;
-	readonly parent?: string | null;
-	readonly parentId?: string | null;
+	readonly id: string
+	readonly title: string
+	readonly parent?: string | null
+	readonly parentId?: string | null
 }
 
 /**
@@ -281,22 +281,25 @@ export function buildNodePath<T extends NodeLike>(
 	node: T,
 	nodeMap: ReadonlyMap<string, T>,
 ): string {
-	const parts: ReadonlyArray<string> = [node.title];
-	const parentId = node.parent ?? node.parentId;
-	let current = parentId ? nodeMap.get(parentId) : undefined;
+	const parts: ReadonlyArray<string> = [node.title]
+	const parentId = node.parent ?? node.parentId
+	const current = parentId ? nodeMap.get(parentId) : undefined
 
 	// Use functional approach to build path parts
-	const buildParts = (currentNode: T | undefined, accumulator: ReadonlyArray<string>): ReadonlyArray<string> => {
-		if (!currentNode) return accumulator;
-		
-		const nextParentId = currentNode.parent ?? currentNode.parentId;
-		const nextNode = nextParentId ? nodeMap.get(nextParentId) : undefined;
-		
-		return buildParts(nextNode, [currentNode.title, ...accumulator]);
-	};
+	const buildParts = (
+		currentNode: T | undefined,
+		accumulator: ReadonlyArray<string>,
+	): ReadonlyArray<string> => {
+		if (!currentNode) return accumulator
 
-	const allParts = buildParts(current, parts);
-	return allParts.join("/");
+		const nextParentId = currentNode.parent ?? currentNode.parentId
+		const nextNode = nextParentId ? nodeMap.get(nextParentId) : undefined
+
+		return buildParts(nextNode, [currentNode.title, ...accumulator])
+	}
+
+	const allParts = buildParts(current, parts)
+	return allParts.join("/")
 }
 
 /**
@@ -318,11 +321,11 @@ export function buildWikiFileEntry(
 		.alias([])
 		.content(content)
 		.path(path)
-		.build();
+		.build()
 }
 
 // ==============================
 // Exports
 // ==============================
 
-export type { WikiFileEntry };
+export type { WikiFileEntry }

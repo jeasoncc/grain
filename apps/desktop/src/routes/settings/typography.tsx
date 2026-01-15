@@ -1,28 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Check, Monitor, RotateCcw } from "lucide-react";
-import { useFontSettings } from "@/state/font.state";
-import {
-	CARD_SIZE_OPTIONS,
-	DEFAULT_UI_FONT,
-	POPULAR_FONTS,
-	UI_SCALE_OPTIONS,
-} from "@/types/font";
-import { Button } from "@/views/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/views/ui/card";
-import { DebouncedSlider } from "@/views/ui/debounced-slider";
-import { Input } from "@/views/ui/input";
-import { Label } from "@/views/ui/label";
-import { Separator } from "@/views/ui/separator";
+import { createFileRoute } from "@tanstack/react-router"
+import { Check, Monitor, RotateCcw } from "lucide-react"
+import { useFontSettings } from "@/state/font.state"
+import { CARD_SIZE_OPTIONS, DEFAULT_UI_FONT, POPULAR_FONTS, UI_SCALE_OPTIONS } from "@/types/font"
+import { Button } from "@/views/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/views/ui/card"
+import { DebouncedSlider } from "@/views/ui/debounced-slider"
+import { Input } from "@/views/ui/input"
+import { Label } from "@/views/ui/label"
+import { Separator } from "@/views/ui/separator"
 
 export const Route = createFileRoute("/settings/typography")({
 	component: TypographySettings,
-});
+})
 
 function TypographySettings() {
 	const {
@@ -36,23 +25,23 @@ function TypographySettings() {
 		setUiScale,
 		setCardSize,
 		setCardBorderRadius,
-	} = useFontSettings();
+	} = useFontSettings()
 
 	const resetUiSettings = () => {
-		setUiFontFamily(DEFAULT_UI_FONT);
-		setUiFontSize(14);
-		setUiScale("default");
-		setCardSize("default");
-		setCardBorderRadius(8);
-	};
+		setUiFontFamily(DEFAULT_UI_FONT)
+		setUiFontSize(14)
+		setUiScale("default")
+		setCardSize("default")
+		setCardBorderRadius(8)
+	}
 
 	// 添加字体到列表
 	const addFont = (font: string) => {
-		const fonts = uiFontFamily.split(",").map((f) => f.trim());
+		const fonts = uiFontFamily.split(",").map((f) => f.trim())
 		if (!fonts.some((f) => f.replace(/['"]/g, "") === font)) {
-			setUiFontFamily(`'${font}', ${uiFontFamily}`);
+			setUiFontFamily(`'${font}', ${uiFontFamily}`)
 		}
-	};
+	}
 
 	return (
 		<div className="space-y-6 max-w-4xl">
@@ -77,9 +66,7 @@ function TypographySettings() {
 							<Monitor className="size-4" />
 							Interface Typography
 						</CardTitle>
-						<CardDescription>
-							Font settings for sidebar, menus, and UI elements
-						</CardDescription>
+						<CardDescription>Font settings for sidebar, menus, and UI elements</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
 						{/* UI Font Family - VSCode style input */}
@@ -105,7 +92,7 @@ function TypographySettings() {
 							/>
 							<div className="flex flex-wrap gap-1">
 								{POPULAR_FONTS.map((font) => {
-									const isIncluded = uiFontFamily.includes(font);
+									const isIncluded = uiFontFamily.includes(font)
 									return (
 										<button
 											type="button"
@@ -121,12 +108,10 @@ function TypographySettings() {
 												}
 											`}
 										>
-											{isIncluded && (
-												<Check className="size-2.5 inline mr-0.5" />
-											)}
+											{isIncluded && <Check className="size-2.5 inline mr-0.5" />}
 											{font}
 										</button>
-									);
+									)
 								})}
 							</div>
 						</div>
@@ -180,9 +165,7 @@ function TypographySettings() {
 										`}
 									>
 										<div className="text-sm font-medium">{option.label}</div>
-										<div className="text-xs text-muted-foreground">
-											{option.description}
-										</div>
+										<div className="text-xs text-muted-foreground">{option.description}</div>
 									</button>
 								))}
 							</div>
@@ -221,9 +204,7 @@ function TypographySettings() {
 										`}
 									>
 										<div className="text-sm font-medium">{option.label}</div>
-										<div className="text-xs text-muted-foreground">
-											{option.description}
-										</div>
+										<div className="text-xs text-muted-foreground">{option.description}</div>
 									</button>
 								))}
 							</div>
@@ -264,9 +245,7 @@ function TypographySettings() {
 								className="p-4 border bg-card text-card-foreground transition-all"
 								style={{
 									borderRadius: `${cardBorderRadius}px`,
-									padding:
-										CARD_SIZE_OPTIONS.find((c) => c.value === cardSize)
-											?.padding || "1rem",
+									padding: CARD_SIZE_OPTIONS.find((c) => c.value === cardSize)?.padding || "1rem",
 									fontFamily: uiFontFamily,
 								}}
 							>
@@ -280,5 +259,5 @@ function TypographySettings() {
 				</Card>
 			</div>
 		</div>
-	);
+	)
 }

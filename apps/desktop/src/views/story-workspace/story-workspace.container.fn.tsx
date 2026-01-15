@@ -11,61 +11,54 @@
  * @see Requirements 1.4, 3.1, 4.1, 6.4
  */
 
-import { type MentionEntry, MultiEditorContainer } from "@grain/editor-lexical";
-import type { SerializedEditorState } from "lexical";
-import { PanelRightClose, PanelRightOpen } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo } from "react";
-import { useSettings } from "@/hooks/use-settings";
-import { useUnifiedSave } from "@/hooks/use-unified-save";
-import { useWikiFiles } from "@/hooks/use-wiki";
-import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview";
+import { type MentionEntry, MultiEditorContainer } from "@grain/editor-lexical"
+import type { SerializedEditorState } from "lexical"
+import { PanelRightClose, PanelRightOpen } from "lucide-react"
+import { memo, useCallback, useEffect, useMemo } from "react"
+import { useSettings } from "@/hooks/use-settings"
+import { useUnifiedSave } from "@/hooks/use-unified-save"
+import { useWikiFiles } from "@/hooks/use-wiki"
+import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview"
 import {
 	countWordsFromLexicalState,
 	formatWordCount,
 	formatWordCountDetail,
-} from "@/pipes/word-count";
-import { useFoldIconStyle } from "@/state/editor-settings.state";
-import { useEditorTabsStore } from "@/state/editor-tabs.state";
-import { useSelectionStore } from "@/state/selection.state";
-import { useUIStore } from "@/state/ui.state";
-import { WikiHoverPreviewConnected } from "@/views/blocks/wiki-hover-preview-connected";
-import { type EditorType, getEditorTypeByFilename } from "@/views/editor";
-import { EditorTabs } from "@/views/editor-tabs";
-import { ExcalidrawEditorContainer } from "@/views/excalidraw-editor";
-import { KeyboardShortcutsHelp } from "@/views/keyboard-shortcuts-help";
-import { SaveStatusIndicator } from "@/views/save-status-indicator";
-import { StoryRightSidebar } from "@/views/story-right-sidebar";
-import { ThemeSelector } from "@/views/theme-selector";
-import { Button } from "@/views/ui/button";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/views/ui/tooltip";
-import { WordCountBadge } from "@/views/word-count-badge";
-import type { StoryWorkspaceContainerProps } from "./story-workspace.types";
+} from "@/pipes/word-count"
+import { useFoldIconStyle } from "@/state/editor-settings.state"
+import { useEditorTabsStore } from "@/state/editor-tabs.state"
+import { useSelectionStore } from "@/state/selection.state"
+import { useUIStore } from "@/state/ui.state"
+import { WikiHoverPreviewConnected } from "@/views/blocks/wiki-hover-preview-connected"
+import { type EditorType, getEditorTypeByFilename } from "@/views/editor"
+import { EditorTabs } from "@/views/editor-tabs"
+import { ExcalidrawEditorContainer } from "@/views/excalidraw-editor"
+import { KeyboardShortcutsHelp } from "@/views/keyboard-shortcuts-help"
+import { SaveStatusIndicator } from "@/views/save-status-indicator"
+import { StoryRightSidebar } from "@/views/story-right-sidebar"
+import { ThemeSelector } from "@/views/theme-selector"
+import { Button } from "@/views/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/views/ui/tooltip"
+import { WordCountBadge } from "@/views/word-count-badge"
+import type { StoryWorkspaceContainerProps } from "./story-workspace.types"
 
 export const StoryWorkspaceContainer = memo(
 	({ workspaces, activeWorkspaceId }: StoryWorkspaceContainerProps) => {
-		const initialWorkspaceId = activeWorkspaceId ?? workspaces[0]?.id ?? null;
-		const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
-		const setSelectedWorkspaceId = useSelectionStore(
-			(s) => s.setSelectedWorkspaceId,
-		);
+		const initialWorkspaceId = activeWorkspaceId ?? workspaces[0]?.id ?? null
+		const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId)
+		const setSelectedWorkspaceId = useSelectionStore((s) => s.setSelectedWorkspaceId)
 
-		const { wordCountMode, showWordCountBadge } = useSettings();
+		const { wordCountMode, showWordCountBadge } = useSettings()
 
 		// 编辑器设置 - 只保留折叠图标风格
-		const foldIconStyle = useFoldIconStyle();
+		const foldIconStyle = useFoldIconStyle()
 
 		// UI 状态
-		const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen);
-		const toggleRightSidebar = useUIStore((s) => s.toggleRightSidebar);
-		const tabPosition = useUIStore((s) => s.tabPosition);
+		const rightSidebarOpen = useUIStore((s) => s.rightSidebarOpen)
+		const toggleRightSidebar = useUIStore((s) => s.toggleRightSidebar)
+		const tabPosition = useUIStore((s) => s.tabPosition)
 
 		// Wiki 数据 (用于编辑器插件)
-		const wikiFiles = useWikiFiles(selectedWorkspaceId);
+		const wikiFiles = useWikiFiles(selectedWorkspaceId)
 
 		// Map WikiFileEntry to MentionEntry format for the editor
 		const mentionEntries: MentionEntry[] = useMemo(
@@ -76,20 +69,20 @@ export const StoryWorkspaceContainer = memo(
 					alias: file.alias,
 				})),
 			[wikiFiles],
-		);
+		)
 
 		// 标签页状态 - 只获取当前 workspace 的标签
-		const allTabs = useEditorTabsStore((s) => s.tabs);
+		const allTabs = useEditorTabsStore((s) => s.tabs)
 		const tabs = useMemo(
 			() => allTabs.filter((t) => t.workspaceId === selectedWorkspaceId),
 			[allTabs, selectedWorkspaceId],
-		);
-		const activeTabId = useEditorTabsStore((s) => s.activeTabId);
-		const editorStates = useEditorTabsStore((s) => s.editorStates);
-		const updateEditorState = useEditorTabsStore((s) => s.updateEditorState);
+		)
+		const activeTabId = useEditorTabsStore((s) => s.activeTabId)
+		const editorStates = useEditorTabsStore((s) => s.editorStates)
+		const updateEditorState = useEditorTabsStore((s) => s.updateEditorState)
 
 		// 获取当前活动标签（提前定义，供 useUnifiedSave 使用）
-		const activeTab = tabs.find((t) => t.id === activeTabId);
+		const activeTab = tabs.find((t) => t.id === activeTabId)
 
 		// ==============================
 		// 统一保存逻辑（使用 useUnifiedSave hook）
@@ -101,19 +94,19 @@ export const StoryWorkspaceContainer = memo(
 			contentType: "lexical",
 			tabId: activeTabId ?? undefined,
 			onSaveSuccess: () => {
-				console.log("[StoryWorkspace] 内容保存成功");
+				console.log("[StoryWorkspace] 内容保存成功")
 			},
 			onSaveError: (error) => {
-				console.error("[StoryWorkspace] 保存失败:", error);
+				console.error("[StoryWorkspace] 保存失败:", error)
 			},
-		});
+		})
 
 		// 初始化工作空间选择
 		useEffect(() => {
 			if (!selectedWorkspaceId && initialWorkspaceId) {
-				setSelectedWorkspaceId(initialWorkspaceId);
+				setSelectedWorkspaceId(initialWorkspaceId)
 			}
-		}, [selectedWorkspaceId, initialWorkspaceId, setSelectedWorkspaceId]);
+		}, [selectedWorkspaceId, initialWorkspaceId, setSelectedWorkspaceId])
 
 		// 注意：内容加载已在 openFile action 中处理
 		// 当用户点击文件时，openFile 会：
@@ -125,67 +118,65 @@ export const StoryWorkspaceContainer = memo(
 		// 根据文件名扩展名确定编辑器类型
 		// 只有两种类型：lexical 和 excalidraw
 		const editorType: EditorType = useMemo(() => {
-			if (!activeTab?.title) return "lexical";
-			return getEditorTypeByFilename(activeTab.title);
-		}, [activeTab?.title]);
+			if (!activeTab?.title) return "lexical"
+			return getEditorTypeByFilename(activeTab.title)
+		}, [activeTab?.title])
 
 		// 编辑器类型判断 - 只区分 Excalidraw
-		const isExcalidrawTab = editorType === "excalidraw";
+		const isExcalidrawTab = editorType === "excalidraw"
 
 		const handleScrollChange = useCallback(
 			(tabId: string, scrollTop: number) => {
-				updateEditorState(tabId, { scrollTop });
+				updateEditorState(tabId, { scrollTop })
 			},
 			[updateEditorState],
-		);
+		)
 
 		const handleMultiEditorContentChange = useCallback(
 			(tabId: string, state: SerializedEditorState) => {
 				// 更新编辑器状态
-				updateEditorState(tabId, { serializedState: state });
+				updateEditorState(tabId, { serializedState: state })
 
 				// 只有当前活动标签页才触发保存
 				if (tabId === activeTabId) {
 					// 序列化并通过 hook 更新内容（触发防抖保存）
-					const serialized = JSON.stringify(state);
-					updateContent(serialized);
+					const serialized = JSON.stringify(state)
+					updateContent(serialized)
 				}
 			},
 			[activeTabId, updateEditorState, updateContent],
-		);
+		)
 
 		// 所有非 Excalidraw 标签都使用 Lexical 编辑器
 		const lexicalTabs = useMemo(() => {
 			return tabs.filter((tab) => {
-				const tabEditorType = getEditorTypeByFilename(tab.title);
-				return tabEditorType === "lexical";
-			});
-		}, [tabs]);
+				const tabEditorType = getEditorTypeByFilename(tab.title)
+				return tabEditorType === "lexical"
+			})
+		}, [tabs])
 
 		// 计算当前编辑器的字数（仅对 Lexical 编辑器有效）
 		const wordCountResult = useMemo(() => {
 			if (!activeTabId || isExcalidrawTab) {
-				return { chineseChars: 0, englishWords: 0, total: 0, characters: 0 };
+				return { chineseChars: 0, englishWords: 0, total: 0, characters: 0 }
 			}
-			const state = editorStates[activeTabId];
+			const state = editorStates[activeTabId]
 			if (!state?.serializedState) {
-				return { chineseChars: 0, englishWords: 0, total: 0, characters: 0 };
+				return { chineseChars: 0, englishWords: 0, total: 0, characters: 0 }
 			}
-			return countWordsFromLexicalState(state.serializedState, wordCountMode);
-		}, [activeTabId, editorStates, isExcalidrawTab, wordCountMode]);
+			return countWordsFromLexicalState(state.serializedState, wordCountMode)
+		}, [activeTabId, editorStates, isExcalidrawTab, wordCountMode])
 
 		const renderEditorContent = () => {
 			if (!activeTab) {
 				// Check if there are any files in the workspace
-				const hasFiles = wikiFiles.length > 0;
+				const hasFiles = wikiFiles.length > 0
 
 				return (
 					<div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-4">
 						{hasFiles ? (
 							<>
-								<p className="text-lg">
-									Select a file from the file tree to start editing
-								</p>
+								<p className="text-lg">Select a file from the file tree to start editing</p>
 								<p className="text-sm opacity-70">
 									Choose a file from the left sidebar or create a new one
 								</p>
@@ -193,16 +184,14 @@ export const StoryWorkspaceContainer = memo(
 						) : (
 							<>
 								<p className="text-lg">Welcome to your workspace!</p>
-								<p className="text-sm opacity-70">
-									Create your first file to get started
-								</p>
+								<p className="text-sm opacity-70">Create your first file to get started</p>
 								<p className="text-xs opacity-50 mt-2">
 									Click the "Create File" button in the file tree on the left
 								</p>
 							</>
 						)}
 					</div>
-				);
+				)
 			}
 
 			// 处理 Excalidraw 类型节点（drawing）
@@ -213,7 +202,7 @@ export const StoryWorkspaceContainer = memo(
 						nodeId={activeTab.nodeId || ""}
 						className="flex-1 min-h-0"
 					/>
-				);
+				)
 			}
 
 			// 所有其他文件类型都使用 Lexical 编辑器
@@ -233,8 +222,8 @@ export const StoryWorkspaceContainer = memo(
 						foldIconStyle={foldIconStyle}
 					/>
 				</div>
-			);
-		};
+			)
+		}
 
 		return (
 			<TooltipProvider>
@@ -251,11 +240,7 @@ export const StoryWorkspaceContainer = memo(
 
 								<Tooltip>
 									<TooltipTrigger asChild>
-										<Button
-											variant="ghost"
-											size="icon"
-											onClick={toggleRightSidebar}
-										>
+										<Button variant="ghost" size="icon" onClick={toggleRightSidebar}>
 											{rightSidebarOpen ? (
 												<PanelRightClose className="size-4" />
 											) : (
@@ -281,9 +266,7 @@ export const StoryWorkspaceContainer = memo(
 						</div>
 					</div>
 
-					{rightSidebarOpen && (
-						<StoryRightSidebar workspaceId={selectedWorkspaceId} />
-					)}
+					{rightSidebarOpen && <StoryRightSidebar workspaceId={selectedWorkspaceId} />}
 
 					{/* 字数统计徽章（仅对 Lexical 编辑器显示） */}
 					<WordCountBadge
@@ -299,8 +282,8 @@ export const StoryWorkspaceContainer = memo(
 					/>
 				</div>
 			</TooltipProvider>
-		);
+		)
 	},
-);
+)
 
-StoryWorkspaceContainer.displayName = "StoryWorkspaceContainer";
+StoryWorkspaceContainer.displayName = "StoryWorkspaceContainer"

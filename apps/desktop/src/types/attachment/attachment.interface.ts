@@ -1,4 +1,4 @@
-	/**
+/**
  * @file attachment.interface.ts
  * @description Attachment 接口定义
  *
@@ -8,13 +8,13 @@
  * @requirements 2.1
  */
 
-import type { ISODateString, UUID } from "../shared";
+import type { ISODateString, UUID } from "../shared"
 
 /**
  * 附件类型枚举
  * 定义支持的附件文件类型
  */
-export type AttachmentType = "image" | "audio" | "file";
+export type AttachmentType = "image" | "audio" | "file"
 
 /**
  * Attachment 接口 - 文件附件
@@ -24,28 +24,28 @@ export type AttachmentType = "image" | "audio" | "file";
  */
 export interface AttachmentInterface {
 	/** 附件的唯一标识符（UUID） */
-	readonly id: UUID;
+	readonly id: UUID
 
 	/** 关联的项目 ID（可选 - 可以是全局附件） */
-	readonly project?: UUID;
+	readonly project?: UUID
 
 	/** 附件类型（image/audio/file） */
-	readonly type: AttachmentType;
+	readonly type: AttachmentType
 
 	/** 原始文件名 */
-	readonly fileName: string;
+	readonly fileName: string
 
 	/** 文件存储路径 */
-	readonly filePath: string;
+	readonly filePath: string
 
 	/** 上传时间戳 */
-	readonly uploadedAt: ISODateString;
+	readonly uploadedAt: ISODateString
 
 	/** 文件大小（字节，可选） */
-	readonly size?: number;
+	readonly size?: number
 
 	/** MIME 类型（可选） */
-	readonly mimeType?: string;
+	readonly mimeType?: string
 }
 
 /**
@@ -54,12 +54,12 @@ export interface AttachmentInterface {
  * id 和 uploadedAt 自动生成
  */
 export interface AttachmentCreateInput {
-	readonly project?: UUID;
-	readonly type: AttachmentType;
-	readonly fileName: string;
-	readonly filePath: string;
-	readonly size?: number;
-	readonly mimeType?: string;
+	readonly project?: UUID
+	readonly type: AttachmentType
+	readonly fileName: string
+	readonly filePath: string
+	readonly size?: number
+	readonly mimeType?: string
 }
 
 /**
@@ -68,10 +68,10 @@ export interface AttachmentCreateInput {
  * 只有可变字段可以更新
  */
 export interface AttachmentUpdateInput {
-	readonly project?: UUID;
-	readonly type?: AttachmentType;
-	readonly fileName?: string;
-	readonly filePath?: string;
-	readonly size?: number;
-	readonly mimeType?: string;
+	readonly project?: UUID
+	readonly type?: AttachmentType
+	readonly fileName?: string
+	readonly filePath?: string
+	readonly size?: number
+	readonly mimeType?: string
 }

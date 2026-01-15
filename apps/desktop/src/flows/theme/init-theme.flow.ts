@@ -11,13 +11,10 @@
  * - 应用主题到 DOM
  */
 
-import { getSystemTheme } from "@/io/dom/theme.dom";
-import { info } from "@/io/log/logger.api";
-import { useThemeStore } from "@/state";
-import {
-	handleSystemThemeChangeFlow,
-	initializeThemeFlow,
-} from "./apply-theme.flow";
+import { getSystemTheme } from "@/io/dom/theme.dom"
+import { info } from "@/io/log/logger.api"
+import { useThemeStore } from "@/state"
+import { handleSystemThemeChangeFlow, initializeThemeFlow } from "./apply-theme.flow"
 
 // ============================================================================
 // Theme Initialization Flow
@@ -37,71 +34,70 @@ import {
  */
 export function initThemeFlow(): () => void {
 	try {
-		info("[Theme Flow] Initializing theme system...");
+		info("[Theme Flow] Initializing theme system...")
 
-		const store = useThemeStore.getState();
-		const { themeKey, mode } = store;
+		const store = useThemeStore.getState()
+		const { themeKey, mode } = store
 
 		// Detect system theme
-		const systemTheme = getSystemTheme();
-		store.setSystemTheme(systemTheme);
+		const systemTheme = getSystemTheme()
+		store.setSystemTheme(systemTheme)
 
 		// Initialize theme (applies to DOM and sets up listener)
-		const { cleanup, newThemeKey } = initializeThemeFlow(themeKey, mode);
+		const { cleanup, newThemeKey } = initializeThemeFlow(themeKey, mode)
 
 		// Update theme key if it changed
 		if (newThemeKey !== themeKey) {
-			store.setTheme(newThemeKey);
+			store.setTheme(newThemeKey)
 		}
 
 		// Set up system theme change listener
-		let systemThemeCleanup: (() => void) | undefined;
+		let systemThemeCleanup: (() => void) | undefined
 
 		if (typeof window !== "undefined") {
-			const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+			const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
 
 			const handleChange = (e: MediaQueryListEvent) => {
-				const isDark = e.matches;
-				const newSystemTheme = isDark ? "dark" : "light";
+				const isDark = e.matches
+				const newSystemTheme = isDark ? "dark" : "light"
 
-				info("[Theme Flow] System theme changed", { newSystemTheme }, "init-theme.flow");
+				info("[Theme Flow] System theme changed", { newSystemTheme }, "init-theme.flow")
 
 				// Update system theme in store
-				store.setSystemTheme(newSystemTheme);
+				store.setSystemTheme(newSystemTheme)
 
 				// Apply theme if in system mode
-				const currentStore = useThemeStore.getState();
+				const currentStore = useThemeStore.getState()
 				const updatedThemeKey = handleSystemThemeChangeFlow(
 					currentStore.mode,
 					currentStore.enableTransition,
 					isDark,
-				);
+				)
 
 				if (updatedThemeKey) {
-					store.setTheme(updatedThemeKey);
+					store.setTheme(updatedThemeKey)
 				}
-			};
+			}
 
-			mediaQuery.addEventListener("change", handleChange);
-			systemThemeCleanup = () =>
-				mediaQuery.removeEventListener("change", handleChange);
+			mediaQuery.addEventListener("change", handleChange)
+			systemThemeCleanup = () => mediaQuery.removeEventListener("change", handleChange)
 		}
 
 		// Mark as initialized
-		store.setInitialized(true);
+		store.setInitialized(true)
 
-		info("[Theme Flow] Theme system initialized successfully");
+		info("[Theme Flow] Theme system initialized successfully")
 
 		// Return combined cleanup function
 		return () => {
-			cleanup?.();
-			systemThemeCleanup?.();
-		};
+			cleanup?.()
+			systemThemeCleanup?.()
+		}
 	} catch (error) {
-		error("[Theme Flow] Failed to initialize theme system", { error }, "init-theme.flow");
+		error("[Theme Flow] Failed to initialize theme system", { error }, "init-theme.flow")
 
 		// Return no-op cleanup
-		return () => {};
+		return () => {}
 	}
 }
 
@@ -110,21 +106,21 @@ export function initThemeFlow(): () => void {
  */
 export function resetThemeFlow(): void {
 	try {
-		info("[Theme Flow] Resetting theme to default...");
+		info("[Theme Flow] Resetting theme to default...")
 
-		const store = useThemeStore.getState();
+		const store = useThemeStore.getState()
 
 		// Reset to default values
-		store.setTheme("default-dark");
-		store.setMode("dark");
-		store.setEnableTransition(true);
+		store.setTheme("default-dark")
+		store.setMode("dark")
+		store.setEnableTransition(true)
 
 		// Detect and set system theme
-		const systemTheme = getSystemTheme();
-		store.setSystemTheme(systemTheme);
+		const systemTheme = getSystemTheme()
+		store.setSystemTheme(systemTheme)
 
-		info("[Theme Flow] Theme reset successfully");
+		info("[Theme Flow] Theme reset successfully")
 	} catch (error) {
-		error("[Theme Flow] Failed to reset theme", { error }, "init-theme.flow");
+		error("[Theme Flow] Failed to reset theme", { error }, "init-theme.flow")
 	}
 }

@@ -15,14 +15,14 @@ export type {
 	BaseEntityUpdate,
 	ISODateString,
 	UUID,
-} from "./base.interface";
+} from "./base.interface"
 
 // Zod Schema 类型推断
 export type {
 	BaseEntityCreateSchemaType,
 	BaseEntitySchemaType,
 	BaseEntityUpdateSchemaType,
-} from "./base.schema";
+} from "./base.schema"
 
 // Zod Schema 用于校验
 export {
@@ -31,4 +31,4 @@ export {
 	BaseEntityUpdateSchema,
 	ISODateTimeSchema,
 	UUIDSchema,
-} from "./base.schema";
+} from "./base.schema"

@@ -6,26 +6,21 @@
  * 不直接访问 Store 或 DB，遵循函数式架构原则。
  */
 
-import { Check, Plus, Trash2 } from "lucide-react";
-import type * as React from "react";
-import { memo, useCallback, useRef, useState } from "react";
-import { cn } from "@/utils/cn.util";
-import { Button } from "@/views/ui/button";
-import { Input } from "@/views/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/views/ui/popover";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/views/ui/tooltip";
+import { Check, Plus, Trash2 } from "lucide-react"
+import type * as React from "react"
+import { memo, useCallback, useRef, useState } from "react"
+import { cn } from "@/utils/cn.util"
+import { Button } from "@/views/ui/button"
+import { Input } from "@/views/ui/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@/views/ui/popover"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/views/ui/tooltip"
 
 import type {
 	ActionButtonProps,
 	ActivityBarProps,
 	ToggleNavItemProps,
 	WorkspaceItemProps,
-} from "./activity-bar.types";
+} from "./activity-bar.types"
 
 // ==============================
 // 子组件
@@ -62,9 +57,7 @@ const WorkspaceItem = memo(function WorkspaceItem({
 				<FolderIcon className="size-3" />
 			</div>
 
-			<span className="flex-1 truncate text-left text-xs">
-				{workspace.title}
-			</span>
+			<span className="flex-1 truncate text-left text-xs">{workspace.title}</span>
 
 			{isSelected && (
 				<div className="relative flex items-center justify-center size-3 shrink-0 animate-in zoom-in duration-300">
@@ -73,8 +66,8 @@ const WorkspaceItem = memo(function WorkspaceItem({
 				</div>
 			)}
 		</button>
-	);
-});
+	)
+})
 
 /**
  * 操作按钮
@@ -95,9 +88,7 @@ const ActionButton = memo(function ActionButton({
 					data-testid={testId}
 					className={cn(
 						"relative flex w-full aspect-square items-center justify-center transition-all",
-						active
-							? "text-foreground"
-							: "text-muted-foreground hover:text-foreground",
+						active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
 					)}
 				>
 					{active && (
@@ -108,8 +99,8 @@ const ActionButton = memo(function ActionButton({
 			</TooltipTrigger>
 			<TooltipContent side="right">{label}</TooltipContent>
 		</Tooltip>
-	);
-});
+	)
+})
 
 /**
  * Toggle 导航项
@@ -123,15 +114,15 @@ const ToggleNavItem = memo(function ToggleNavItem({
 }: ToggleNavItemProps) {
 	const handleClick = useCallback(
 		(e: React.MouseEvent) => {
-			e.preventDefault();
+			e.preventDefault()
 			if (active) {
-				onNavigate("/");
+				onNavigate("/")
 			} else {
-				onNavigate(to);
+				onNavigate(to)
 			}
 		},
 		[active, to, onNavigate],
-	);
+	)
 
 	return (
 		<Tooltip>
@@ -141,9 +132,7 @@ const ToggleNavItem = memo(function ToggleNavItem({
 					onClick={handleClick}
 					className={cn(
 						"relative flex w-full aspect-square items-center justify-center transition-all",
-						active
-							? "text-foreground"
-							: "text-muted-foreground hover:text-foreground",
+						active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
 					)}
 				>
 					{active && (
@@ -154,8 +143,8 @@ const ToggleNavItem = memo(function ToggleNavItem({
 			</TooltipTrigger>
 			<TooltipContent side="right">{label}</TooltipContent>
 		</Tooltip>
-	);
-});
+	)
+})
 
 // ==============================
 // 主组件
@@ -191,78 +180,77 @@ export const ActivityBarView = memo(function ActivityBarView({
 	onDeleteAllData,
 	onNavigate,
 }: ActivityBarProps): React.ReactElement {
-	const fileInputRef = useRef<HTMLInputElement | null>(null);
-	const [showNewWorkspace, setShowNewWorkspace] = useState(false);
-	const [newWorkspaceName, setNewWorkspaceName] = useState("");
+	const fileInputRef = useRef<HTMLInputElement | null>(null)
+	const [showNewWorkspace, setShowNewWorkspace] = useState(false)
+	const [newWorkspaceName, setNewWorkspaceName] = useState("")
 
 	// 获取图标
-	const FilesIcon = iconTheme.icons.activityBar.files;
-	const SearchIcon = iconTheme.icons.activityBar.search;
-	const DiaryIcon = iconTheme.icons.activityBar.diary;
-	const WikiIcon = iconTheme.icons.activityBar.library;
-	const LedgerIcon = iconTheme.icons.activityBar.ledger;
-	const TodoIcon = iconTheme.icons.activityBar.todo;
-	const NoteIcon = iconTheme.icons.activityBar.note;
-	const ExcalidrawIcon = iconTheme.icons.activityBar.canvas;
-	const MermaidIcon = iconTheme.icons.activityBar.mermaid;
-	const PlantUMLIcon = iconTheme.icons.activityBar.plantuml;
-	const CodeIcon = iconTheme.icons.activityBar.code;
-	const SettingsIcon = iconTheme.icons.activityBar.settings;
-	const ImportIcon = iconTheme.icons.activityBar.import;
-	const ExportIcon = iconTheme.icons.activityBar.export;
-	const MoreIcon = iconTheme.icons.activityBar.more;
-	const FolderIcon = iconTheme.icons.activityBar.library;
+	const FilesIcon = iconTheme.icons.activityBar.files
+	const SearchIcon = iconTheme.icons.activityBar.search
+	const DiaryIcon = iconTheme.icons.activityBar.diary
+	const WikiIcon = iconTheme.icons.activityBar.library
+	const LedgerIcon = iconTheme.icons.activityBar.ledger
+	const TodoIcon = iconTheme.icons.activityBar.todo
+	const NoteIcon = iconTheme.icons.activityBar.note
+	const ExcalidrawIcon = iconTheme.icons.activityBar.canvas
+	const MermaidIcon = iconTheme.icons.activityBar.mermaid
+	const PlantUMLIcon = iconTheme.icons.activityBar.plantuml
+	const CodeIcon = iconTheme.icons.activityBar.code
+	const SettingsIcon = iconTheme.icons.activityBar.settings
+	const ImportIcon = iconTheme.icons.activityBar.import
+	const ExportIcon = iconTheme.icons.activityBar.export
+	const MoreIcon = iconTheme.icons.activityBar.more
+	const FolderIcon = iconTheme.icons.activityBar.library
 
 	// 处理导入点击
 	const handleImportClick = useCallback(() => {
-		fileInputRef.current?.click();
-	}, []);
+		fileInputRef.current?.click()
+	}, [])
 
 	// 处理文件导入
 	const handleImportFile = useCallback(
 		async (e: React.ChangeEvent<HTMLInputElement>) => {
-			const file = e.target.files?.[0];
-			if (!file) return;
+			const file = e.target.files?.[0]
+			if (!file) return
 			try {
-				await onImportFile(file);
+				await onImportFile(file)
 			} finally {
-				if (fileInputRef.current) fileInputRef.current.value = "";
+				if (fileInputRef.current) fileInputRef.current.value = ""
 			}
 		},
 		[onImportFile],
-	);
+	)
 
 	// 处理创建工作区
 	const handleCreateWorkspace = useCallback(async () => {
-		if (!newWorkspaceName.trim()) return;
-		await onCreateWorkspace(newWorkspaceName.trim());
-		setNewWorkspaceName("");
-		setShowNewWorkspace(false);
-	}, [newWorkspaceName, onCreateWorkspace]);
+		if (!newWorkspaceName.trim()) return
+		await onCreateWorkspace(newWorkspaceName.trim())
+		setNewWorkspaceName("")
+		setShowNewWorkspace(false)
+	}, [newWorkspaceName, onCreateWorkspace])
 
 	// 检查路由是否激活
 	const isActive = useCallback(
-		(path: string) =>
-			currentPath === path || currentPath.startsWith(`${path}/`),
+		(path: string) => currentPath === path || currentPath.startsWith(`${path}/`),
 		[currentPath],
-	);
+	)
 
 	// 处理面板切换
 	const handleFilesClick = useCallback(() => {
 		if (activePanel === "files" && isSidebarOpen) {
-			onToggleSidebar();
+			onToggleSidebar()
 		} else {
-			onSetActivePanel("files");
+			onSetActivePanel("files")
 		}
-	}, [activePanel, isSidebarOpen, onToggleSidebar, onSetActivePanel]);
+	}, [activePanel, isSidebarOpen, onToggleSidebar, onSetActivePanel])
 
 	const handleSearchClick = useCallback(() => {
 		if (activePanel === "search" && isSidebarOpen) {
-			onToggleSidebar();
+			onToggleSidebar()
 		} else {
-			onSetActivePanel("search");
+			onSetActivePanel("search")
 		}
-	}, [activePanel, isSidebarOpen, onToggleSidebar, onSetActivePanel]);
+	}, [activePanel, isSidebarOpen, onToggleSidebar, onSetActivePanel])
 
 	return (
 		<aside
@@ -404,9 +392,7 @@ export const ActivityBarView = memo(function ActivityBarView({
 											<div className="size-6 mx-auto mb-1.5 rounded-full bg-muted/30 flex items-center justify-center">
 												<FolderIcon className="size-3 text-muted-foreground/40" />
 											</div>
-											<p className="text-[10px] text-muted-foreground/60 italic">
-												No workspaces
-											</p>
+											<p className="text-[10px] text-muted-foreground/60 italic">No workspaces</p>
 										</div>
 									)}
 								</div>
@@ -425,10 +411,10 @@ export const ActivityBarView = memo(function ActivityBarView({
 												className="h-6 text-xs border-none bg-transparent shadow-none focus-visible:ring-0 px-1.5"
 												autoFocus
 												onKeyDown={(e) => {
-													if (e.key === "Enter") handleCreateWorkspace();
+													if (e.key === "Enter") handleCreateWorkspace()
 													if (e.key === "Escape") {
-														setShowNewWorkspace(false);
-														setNewWorkspaceName("");
+														setShowNewWorkspace(false)
+														setNewWorkspaceName("")
 													}
 												}}
 											/>
@@ -511,5 +497,5 @@ export const ActivityBarView = memo(function ActivityBarView({
 				/>
 			</TooltipProvider>
 		</aside>
-	);
-});
+	)
+})

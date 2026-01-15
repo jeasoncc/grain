@@ -8,4 +8,4 @@ export type {
 	BackupMetadata,
 	DatabaseStats,
 	LocalBackupRecord,
-} from "./backup.interface";
+} from "./backup.interface"

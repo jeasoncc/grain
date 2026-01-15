@@ -10,7 +10,7 @@
  * @requirements 118
  */
 
-import dayjs from "dayjs";
+import dayjs from "dayjs"
 
 // ==============================
 // Pure Functions
@@ -32,14 +32,14 @@ import dayjs from "dayjs";
  */
 export function generateLedgerContent(date: Date = dayjs().toDate()): string {
 	// 格式化日期标签：2024-12-25
-	const dateTag = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+	const dateTag = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 
 	// 格式化标题日期：December 25, 2024
 	const titleDate = date.toLocaleDateString("en-US", {
 		year: "numeric",
 		month: "long",
 		day: "numeric",
-	});
+	})
 
 	const content = {
 		root: {
@@ -344,7 +344,7 @@ export function generateLedgerContent(date: Date = dayjs().toDate()): string {
 			type: "root",
 			version: 1,
 		},
-	};
+	}
 
-	return JSON.stringify(content);
+	return JSON.stringify(content)
 }

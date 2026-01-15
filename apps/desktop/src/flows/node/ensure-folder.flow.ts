@@ -10,12 +10,12 @@
  * @requirements 7.1
  */
 
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import * as nodeRepo from "@/io/api/node.api";
-import { info, success } from "@/io/log/logger.api";
-import type { NodeInterface } from "@/types/node";
-import type { AppError } from "@/types/error";
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import * as nodeRepo from "@/io/api/node.api"
+import { info, success } from "@/io/log/logger.api"
+import type { AppError } from "@/types/error"
+import type { NodeInterface } from "@/types/node"
 
 /**
  * 确保根级文件夹存在
@@ -33,24 +33,23 @@ export const ensureRootFolder = (
 	folderName: string,
 	collapsed: boolean = false,
 ): TE.TaskEither<AppError, NodeInterface> => {
-	info("[Action] 确保根级文件夹存在", { folderName }, "ensure-folder.flow");
+	info("[Action] 确保根级文件夹存在", { folderName }, "ensure-folder.flow")
 
 	return pipe(
 		nodeRepo.getNodesByWorkspace(workspaceId),
 		TE.chain((nodes) => {
 			// 查找已存在的根级文件夹
 			const existing = nodes.find(
-				(n) =>
-					n.parent === null && n.title === folderName && n.type === "folder",
-			);
+				(n) => n.parent === null && n.title === folderName && n.type === "folder",
+			)
 
 			if (existing) {
-				info("[Action] 文件夹已存在", { folderId: existing.id }, "ensure-folder.flow");
-				return TE.right(existing);
+				info("[Action] 文件夹已存在", { folderId: existing.id }, "ensure-folder.flow")
+				return TE.right(existing)
 			}
 
 			// 创建新文件夹
-			info("[Action] 创建新文件夹", { folderName }, "ensure-folder.flow");
+			info("[Action] 创建新文件夹", { folderName }, "ensure-folder.flow")
 			return pipe(
 				nodeRepo.createNode({
 					workspace: workspaceId,
@@ -60,13 +59,13 @@ export const ensureRootFolder = (
 					collapsed,
 				}),
 				TE.tap((folder) => {
-					success("[Action] 文件夹创建成功", { folderId: folder.id }, "ensure-folder");
-					return TE.right(folder);
+					success("[Action] 文件夹创建成功", { folderId: folder.id }, "ensure-folder")
+					return TE.right(folder)
 				}),
-			);
+			)
 		}),
-	);
-};
+	)
+}
 
 /**
  * 确保根级文件夹存在（异步版本）
@@ -83,11 +82,11 @@ export async function ensureRootFolderAsync(
 	folderName: string,
 	collapsed: boolean = false,
 ): Promise<NodeInterface> {
-	const result = await ensureRootFolder(workspaceId, folderName, collapsed)();
+	const result = await ensureRootFolder(workspaceId, folderName, collapsed)()
 
 	if (result._tag === "Left") {
-		throw new Error(`确保文件夹失败: ${result.left.message}`);
+		throw new Error(`确保文件夹失败: ${result.left.message}`)
 	}
 
-	return result.right;
+	return result.right
 }

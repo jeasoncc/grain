@@ -12,11 +12,11 @@ export {
 	type ExcalidrawPerformanceConfigKey,
 	type ExcalidrawRenderConfig,
 	type ExcalidrawUIOptions,
-} from "./excalidraw-editor.config";
+} from "./excalidraw-editor.config"
 export {
 	ExcalidrawEditorContainer,
 	ExcalidrawEditorContainer as ExcalidrawEditor,
-} from "./excalidraw-editor.container.fn";
+} from "./excalidraw-editor.container.fn"
 export type {
 	ContainerSize,
 	ExcalidrawData,
@@ -24,7 +24,7 @@ export type {
 	ExcalidrawEditorViewProps,
 	PerformanceConfig,
 	PerformanceMetrics,
-} from "./excalidraw-editor.types";
+} from "./excalidraw-editor.types"
 export {
 	checkAndLogHardwareAcceleration,
 	clearHardwareAccelerationCache,
@@ -32,5 +32,5 @@ export {
 	getHardwareAccelerationStatus,
 	type HardwareAccelerationStatus,
 	logHardwareAccelerationStatus,
-} from "./excalidraw-editor.utils";
-export { ExcalidrawEditorView } from "./excalidraw-editor.view.fn";
+} from "./excalidraw-editor.utils"
+export { ExcalidrawEditorView } from "./excalidraw-editor.view.fn"

@@ -10,42 +10,35 @@ import {
 	FileText,
 	Filter,
 	Loader2,
+	type LucideIcon,
 	Search,
 	X,
-	type LucideIcon,
-} from "lucide-react";
-import { memo, useState } from "react";
-import type { SearchResult, SearchResultType } from "@/flows/search";
-import { cn } from "@/utils/cn.util";
-import { Button } from "@/views/ui/button";
-import { Checkbox } from "@/views/ui/checkbox";
-import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "@/views/ui/collapsible";
-import { Input } from "@/views/ui/input";
-import { Label } from "@/views/ui/label";
-import { ScrollArea } from "@/views/ui/scroll-area";
-import type {
-	ResultGroupProps,
-	SearchPanelViewProps,
-} from "./search-panel.types";
+} from "lucide-react"
+import { memo, useState } from "react"
+import type { SearchResult, SearchResultType } from "@/flows/search"
+import { cn } from "@/utils/cn.util"
+import { Button } from "@/views/ui/button"
+import { Checkbox } from "@/views/ui/checkbox"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/views/ui/collapsible"
+import { Input } from "@/views/ui/input"
+import { Label } from "@/views/ui/label"
+import { ScrollArea } from "@/views/ui/scroll-area"
+import type { ResultGroupProps, SearchPanelViewProps } from "./search-panel.types"
 
 const typeIcons: Record<SearchResultType, LucideIcon> = {
 	project: FileText,
 	node: FileText,
-};
+}
 
 const typeLabels: Record<SearchResultType, string> = {
 	project: "项目",
 	node: "文件",
-};
+}
 
 const typeColors: Record<SearchResultType, string> = {
 	project: "text-purple-500",
 	node: "text-blue-500",
-};
+}
 
 export const SearchPanelView = memo(
 	({
@@ -61,19 +54,19 @@ export const SearchPanelView = memo(
 		const groupedResults = results.reduce(
 			(acc, result) => {
 				if (!acc[result.type]) {
-					acc[result.type] = [];
+					acc[result.type] = []
 				}
-				acc[result.type].push(result);
-				return acc;
+				acc[result.type].push(result)
+				return acc
 			},
 			{} as Record<SearchResultType, SearchResult[]>,
-		);
+		)
 
 		// 高亮匹配文本
 		const highlightText = (text: string, query: string) => {
-			if (!query.trim()) return text;
+			if (!query.trim()) return text
 
-			const parts = text.split(new RegExp(`(${query})`, "gi"));
+			const parts = text.split(new RegExp(`(${query})`, "gi"))
 			return parts.map((part, index) =>
 				part.toLowerCase() === query.toLowerCase() ? (
 					<mark
@@ -85,17 +78,15 @@ export const SearchPanelView = memo(
 				) : (
 					<span key={`text-${index}-${part.slice(0, 10)}`}>{part}</span>
 				),
-			);
-		};
+			)
+		}
 
 		return (
 			<div className="flex h-full flex-col">
 				{/* 头部 */}
 				<div className="p-4 space-y-3 border-b border-sidebar-border/10">
 					<div className="flex items-center justify-between">
-						<h2 className="text-sm font-semibold text-foreground/80 tracking-wide pl-1">
-							Search
-						</h2>
+						<h2 className="text-sm font-semibold text-foreground/80 tracking-wide pl-1">Search</h2>
 						<Button
 							variant="ghost"
 							size="icon"
@@ -141,10 +132,7 @@ export const SearchPanelView = memo(
 											onCheckedChange={() => onToggleType(type)}
 											className="size-4"
 										/>
-										<Label
-											htmlFor={`type-${type}`}
-											className="text-sm cursor-pointer font-normal"
-										>
+										<Label htmlFor={`type-${type}`} className="text-sm cursor-pointer font-normal">
 											{typeLabels[type]}
 										</Label>
 									</div>
@@ -200,63 +188,56 @@ export const SearchPanelView = memo(
 					)}
 				</ScrollArea>
 			</div>
-		);
+		)
 	},
-);
+)
 
-SearchPanelView.displayName = "SearchPanelView";
+SearchPanelView.displayName = "SearchPanelView"
 
 // 结果分组组件
-const ResultGroup = memo(
-	({ type, results, query, onSelect, highlightText }: ResultGroupProps) => {
-		const [isOpen, setIsOpen] = useState(true);
-		const Icon = typeIcons[type];
+const ResultGroup = memo(({ type, results, query, onSelect, highlightText }: ResultGroupProps) => {
+	const [isOpen, setIsOpen] = useState(true)
+	const Icon = typeIcons[type]
 
-		return (
-			<Collapsible open={isOpen} onOpenChange={setIsOpen}>
-				<CollapsibleTrigger className="flex w-full items-center gap-2 p-2 px-3 hover:bg-sidebar-accent/50 rounded-sm text-sm font-semibold text-muted-foreground group">
-					{isOpen ? (
-						<ChevronDown className="size-3.5 text-muted-foreground/70 group-hover:text-foreground" />
-					) : (
-						<ChevronRight className="size-3.5 text-muted-foreground/70 group-hover:text-foreground" />
-					)}
-					<Icon className={cn("size-4", typeColors[type])} />
-					<span className="group-hover:text-foreground transition-colors">
-						{typeLabels[type]}{" "}
-						<span className="opacity-50 ml-1 font-normal">
-							({results.length})
-						</span>
-					</span>
-				</CollapsibleTrigger>
-				<CollapsibleContent className="space-y-0.5 mt-0.5">
-					{results.map((result) => (
-						<button
-							type="button"
-							key={result.id}
-							onClick={() => onSelect(result)}
-							className="w-full text-left py-2 pl-9 pr-2 rounded-sm hover:bg-sidebar-accent transition-colors group/item"
-						>
-							<div className="space-y-0.5">
-								<p className="text-sm font-medium truncate text-foreground/80 group-hover/item:text-foreground">
-									{highlightText(result.title, query)}
+	return (
+		<Collapsible open={isOpen} onOpenChange={setIsOpen}>
+			<CollapsibleTrigger className="flex w-full items-center gap-2 p-2 px-3 hover:bg-sidebar-accent/50 rounded-sm text-sm font-semibold text-muted-foreground group">
+				{isOpen ? (
+					<ChevronDown className="size-3.5 text-muted-foreground/70 group-hover:text-foreground" />
+				) : (
+					<ChevronRight className="size-3.5 text-muted-foreground/70 group-hover:text-foreground" />
+				)}
+				<Icon className={cn("size-4", typeColors[type])} />
+				<span className="group-hover:text-foreground transition-colors">
+					{typeLabels[type]} <span className="opacity-50 ml-1 font-normal">({results.length})</span>
+				</span>
+			</CollapsibleTrigger>
+			<CollapsibleContent className="space-y-0.5 mt-0.5">
+				{results.map((result) => (
+					<button
+						type="button"
+						key={result.id}
+						onClick={() => onSelect(result)}
+						className="w-full text-left py-2 pl-9 pr-2 rounded-sm hover:bg-sidebar-accent transition-colors group/item"
+					>
+						<div className="space-y-0.5">
+							<p className="text-sm font-medium truncate text-foreground/80 group-hover/item:text-foreground">
+								{highlightText(result.title, query)}
+							</p>
+							{result.workspaceTitle && (
+								<p className="text-xs text-muted-foreground/60 truncate">{result.workspaceTitle}</p>
+							)}
+							{result.excerpt && (
+								<p className="text-xs text-muted-foreground/70 line-clamp-2 leading-relaxed">
+									{highlightText(result.excerpt, query)}
 								</p>
-								{result.workspaceTitle && (
-									<p className="text-xs text-muted-foreground/60 truncate">
-										{result.workspaceTitle}
-									</p>
-								)}
-								{result.excerpt && (
-									<p className="text-xs text-muted-foreground/70 line-clamp-2 leading-relaxed">
-										{highlightText(result.excerpt, query)}
-									</p>
-								)}
-							</div>
-						</button>
-					))}
-				</CollapsibleContent>
-			</Collapsible>
-		);
-	},
-);
+							)}
+						</div>
+					</button>
+				))}
+			</CollapsibleContent>
+		</Collapsible>
+	)
+})
 
-ResultGroup.displayName = "ResultGroup";
+ResultGroup.displayName = "ResultGroup"

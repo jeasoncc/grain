@@ -9,4 +9,4 @@ export type {
 	StorageStats,
 	TableSizes,
 	TableStats,
-} from "./storage.interface";
+} from "./storage.interface"

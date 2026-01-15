@@ -7,9 +7,8 @@
  * - 提供给 views/ 使用
  */
 
-import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
-import { error as logError } from "@/io/log/logger.api";
+import { useCallback, useEffect, useState } from "react"
+import { toast } from "sonner"
 import {
 	autoBackupManager,
 	clearAllData,
@@ -20,37 +19,35 @@ import {
 	getStorageStats,
 	restoreBackup,
 	restoreLocalBackup,
-} from "@/flows/backup";
-import {
-	getAutoBackupEnabled,
-	setAutoBackupEnabled,
-} from "@/io/storage/settings.storage";
-import { selectFile } from "@/io/file/dialog.file";
-import type { DatabaseStats, LocalBackupRecord } from "@/types/backup";
-import type { ClearDataOptions, StorageStats } from "@/types/storage";
+} from "@/flows/backup"
+import { selectFile } from "@/io/file/dialog.file"
+import { error as logError } from "@/io/log/logger.api"
+import { getAutoBackupEnabled, setAutoBackupEnabled } from "@/io/storage/settings.storage"
+import type { DatabaseStats, LocalBackupRecord } from "@/types/backup"
+import type { ClearDataOptions, StorageStats } from "@/types/storage"
 
 /**
  * 备份管理 Hook 返回值
  */
 export interface UseBackupManagerReturn {
 	// 状态
-	readonly stats: DatabaseStats | null;
-	readonly storageStats: StorageStats | null;
-	readonly loading: boolean;
-	readonly autoBackupEnabled: boolean;
-	readonly localBackups: readonly LocalBackupRecord[];
+	readonly stats: DatabaseStats | null
+	readonly storageStats: StorageStats | null
+	readonly loading: boolean
+	readonly autoBackupEnabled: boolean
+	readonly localBackups: readonly LocalBackupRecord[]
 
 	// 操作
-	readonly loadStats: () => Promise<void>;
-	readonly loadLocalBackups: () => void;
-	readonly exportJson: () => Promise<void>;
-	readonly exportZip: () => Promise<void>;
-	readonly restore: () => Promise<void>;
-	readonly toggleAutoBackup: (enabled: boolean) => void;
-	readonly restoreLocal: (timestamp: string) => Promise<void>;
-	readonly clearAll: () => Promise<void>;
-	readonly clearDatabase: () => Promise<void>;
-	readonly clearSettings: () => Promise<void>;
+	readonly loadStats: () => Promise<void>
+	readonly loadLocalBackups: () => void
+	readonly exportJson: () => Promise<void>
+	readonly exportZip: () => Promise<void>
+	readonly restore: () => Promise<void>
+	readonly toggleAutoBackup: (enabled: boolean) => void
+	readonly restoreLocal: (timestamp: string) => Promise<void>
+	readonly clearAll: () => Promise<void>
+	readonly clearDatabase: () => Promise<void>
+	readonly clearSettings: () => Promise<void>
 }
 
 /**
@@ -63,11 +60,11 @@ export function useBackupManager(): UseBackupManagerReturn {
 	// 状态
 	// ============================================================================
 
-	const [stats, setStats] = useState<DatabaseStats | null>(null);
-	const [storageStats, setStorageStats] = useState<StorageStats | null>(null);
-	const [loading, setLoading] = useState(false);
-	const [autoBackupEnabled, setAutoBackupEnabledState] = useState(false);
-	const [localBackups, setLocalBackups] = useState<readonly LocalBackupRecord[]>([]);
+	const [stats, setStats] = useState<DatabaseStats | null>(null)
+	const [storageStats, setStorageStats] = useState<StorageStats | null>(null)
+	const [loading, setLoading] = useState(false)
+	const [autoBackupEnabled, setAutoBackupEnabledState] = useState(false)
+	const [localBackups, setLocalBackups] = useState<readonly LocalBackupRecord[]>([])
 
 	// ============================================================================
 	// 数据加载
@@ -75,75 +72,75 @@ export function useBackupManager(): UseBackupManagerReturn {
 
 	const loadStats = useCallback(async () => {
 		try {
-			const statsResult = await getDatabaseStats()();
+			const statsResult = await getDatabaseStats()()
 			if (statsResult._tag === "Right") {
-				setStats(statsResult.right);
+				setStats(statsResult.right)
 			}
 
-			const storageResult = await getStorageStats()();
+			const storageResult = await getStorageStats()()
 			if (storageResult._tag === "Right") {
-				setStorageStats(storageResult.right);
+				setStorageStats(storageResult.right)
 			}
 		} catch (err) {
-			logError("[BackupManager] 加载统计信息失败", { error: err }, "use-backup-manager");
+			logError("[BackupManager] 加载统计信息失败", { error: err }, "use-backup-manager")
 		}
-	}, []);
+	}, [])
 
 	const loadLocalBackups = useCallback(() => {
-		const backups = getLocalBackups();
-		setLocalBackups(backups);
-	}, []);
+		const backups = getLocalBackups()
+		setLocalBackups(backups)
+	}, [])
 
 	useEffect(() => {
-		loadStats();
-		loadLocalBackups();
+		loadStats()
+		loadLocalBackups()
 
-		const enabled = getAutoBackupEnabled();
-		setAutoBackupEnabledState(enabled);
+		const enabled = getAutoBackupEnabled()
+		setAutoBackupEnabledState(enabled)
 		if (enabled) {
-			autoBackupManager.start();
+			autoBackupManager.start()
 		}
-	}, [loadStats, loadLocalBackups]);
+	}, [loadStats, loadLocalBackups])
 
 	// ============================================================================
 	// 导出操作
 	// ============================================================================
 
 	const exportJson = useCallback(async () => {
-		setLoading(true);
+		setLoading(true)
 		try {
-			const result = await exportBackupJson()();
+			const result = await exportBackupJson()()
 			if (result._tag === "Right") {
-				toast.success("备份导出成功");
+				toast.success("备份导出成功")
 			} else {
-				toast.error(result.left.message);
-				logError("[BackupManager] 导出 JSON 失败", { error: result.left }, "use-backup-manager");
+				toast.error(result.left.message)
+				logError("[BackupManager] 导出 JSON 失败", { error: result.left }, "use-backup-manager")
 			}
 		} catch (err) {
-			toast.error("导出失败");
-			logError("[BackupManager] 导出 JSON 异常", { error: err }, "use-backup-manager");
+			toast.error("导出失败")
+			logError("[BackupManager] 导出 JSON 异常", { error: err }, "use-backup-manager")
 		} finally {
-			setLoading(false);
+			setLoading(false)
 		}
-	}, []);
+	}, [])
 
 	const exportZip = useCallback(async () => {
-		setLoading(true);
+		setLoading(true)
 		try {
-			const result = await exportBackupZip()();
+			const result = await exportBackupZip()()
 			if (result._tag === "Right") {
-				toast.success("压缩备份导出成功");
+				toast.success("压缩备份导出成功")
 			} else {
-				toast.error(result.left.message);
-				logError("[BackupManager] 导出 ZIP 失败", { error: result.left }, "use-backup-manager");
+				toast.error(result.left.message)
+				logError("[BackupManager] 导出 ZIP 失败", { error: result.left }, "use-backup-manager")
 			}
 		} catch (err) {
-			toast.error("导出失败");
-			logError("[BackupManager] 导出 ZIP 异常", { error: err }, "use-backup-manager");
+			toast.error("导出失败")
+			logError("[BackupManager] 导出 ZIP 异常", { error: err }, "use-backup-manager")
 		} finally {
-			setLoading(false);
+			setLoading(false)
 		}
-	}, []);
+	}, [])
 
 	// ============================================================================
 	// 恢复操作
@@ -151,150 +148,152 @@ export function useBackupManager(): UseBackupManagerReturn {
 
 	const restore = useCallback(async () => {
 		const result = await selectFile({
-			filters: [
-				{ name: "备份文件", extensions: ["json", "zip"] },
-			],
-		});
+			filters: [{ name: "备份文件", extensions: ["json", "zip"] }],
+		})
 
 		if (result.cancelled || !result.file) {
-			return;
+			return
 		}
 
-		setLoading(true);
+		setLoading(true)
 		try {
-			const restoreResult = await restoreBackup(result.file)();
+			const restoreResult = await restoreBackup(result.file)()
 			if (restoreResult._tag === "Right") {
-				toast.success("备份恢复成功");
-				await loadStats();
-				window.location.reload();
+				toast.success("备份恢复成功")
+				await loadStats()
+				window.location.reload()
 			} else {
-				toast.error(restoreResult.left.message);
-				logError("[BackupManager] 恢复备份失败", { error: restoreResult.left }, "use-backup-manager");
+				toast.error(restoreResult.left.message)
+				logError(
+					"[BackupManager] 恢复备份失败",
+					{ error: restoreResult.left },
+					"use-backup-manager",
+				)
 			}
 		} catch (err) {
-			toast.error("恢复失败");
-			logError("[BackupManager] 恢复备份异常", { error: err }, "use-backup-manager");
+			toast.error("恢复失败")
+			logError("[BackupManager] 恢复备份异常", { error: err }, "use-backup-manager")
 		} finally {
-			setLoading(false);
+			setLoading(false)
 		}
-	}, [loadStats]);
+	}, [loadStats])
 
 	const restoreLocal = useCallback(
 		async (timestamp: string) => {
-			setLoading(true);
+			setLoading(true)
 			try {
-				const result = await restoreLocalBackup(timestamp)();
+				const result = await restoreLocalBackup(timestamp)()
 				if (result._tag === "Right") {
-					toast.success("备份恢复成功");
-					await loadStats();
-					window.location.reload();
+					toast.success("备份恢复成功")
+					await loadStats()
+					window.location.reload()
 				} else {
-					toast.error(result.left.message);
-					logError("[BackupManager] 恢复本地备份失败", { error: result.left }, "use-backup-manager");
+					toast.error(result.left.message)
+					logError("[BackupManager] 恢复本地备份失败", { error: result.left }, "use-backup-manager")
 				}
 			} catch (err) {
-				toast.error("恢复失败");
-				logError("[BackupManager] 恢复本地备份异常", { error: err }, "use-backup-manager");
+				toast.error("恢复失败")
+				logError("[BackupManager] 恢复本地备份异常", { error: err }, "use-backup-manager")
 			} finally {
-				setLoading(false);
+				setLoading(false)
 			}
 		},
 		[loadStats],
-	);
+	)
 
 	// ============================================================================
 	// 自动备份
 	// ============================================================================
 
 	const toggleAutoBackup = useCallback((enabled: boolean) => {
-		setAutoBackupEnabledState(enabled);
-		setAutoBackupEnabled(enabled);
+		setAutoBackupEnabledState(enabled)
+		setAutoBackupEnabled(enabled)
 
 		if (enabled) {
-			autoBackupManager.start();
-			toast.success("自动备份已启用");
+			autoBackupManager.start()
+			toast.success("自动备份已启用")
 		} else {
-			autoBackupManager.stop();
-			toast.info("自动备份已禁用");
+			autoBackupManager.stop()
+			toast.info("自动备份已禁用")
 		}
-	}, []);
+	}, [])
 
 	// ============================================================================
 	// 清除数据
 	// ============================================================================
 
 	const clearAll = useCallback(async () => {
-		setLoading(true);
+		setLoading(true)
 		try {
-			const result = await clearAllData()();
+			const result = await clearAllData()()
 			if (result._tag === "Right") {
-				toast.success("所有数据已清除");
-				await loadStats();
+				toast.success("所有数据已清除")
+				await loadStats()
 				setTimeout(() => {
-					window.location.reload();
-				}, 1500);
+					window.location.reload()
+				}, 1500)
 			} else {
-				toast.error(result.left.message);
-				logError("[BackupManager] 清除所有数据失败", { error: result.left }, "use-backup-manager");
+				toast.error(result.left.message)
+				logError("[BackupManager] 清除所有数据失败", { error: result.left }, "use-backup-manager")
 			}
 		} catch (err) {
-			const errorMessage = err instanceof Error ? err.message : "清除数据失败";
-			toast.error(errorMessage);
-			logError("[BackupManager] 清除所有数据异常", { error: err }, "use-backup-manager");
+			const errorMessage = err instanceof Error ? err.message : "清除数据失败"
+			toast.error(errorMessage)
+			logError("[BackupManager] 清除所有数据异常", { error: err }, "use-backup-manager")
 		} finally {
-			setLoading(false);
+			setLoading(false)
 		}
-	}, [loadStats]);
+	}, [loadStats])
 
 	const clearDatabase = useCallback(async () => {
-		setLoading(true);
+		setLoading(true)
 		try {
 			const options: ClearDataOptions = {
 				clearIndexedDB: true,
 				clearLocalStorage: false,
 				clearSessionStorage: false,
 				clearCookies: false,
-			};
-			const result = await clearAllData(options)();
+			}
+			const result = await clearAllData(options)()
 			if (result._tag === "Right") {
-				toast.success("数据库已清除");
-				await loadStats();
+				toast.success("数据库已清除")
+				await loadStats()
 			} else {
-				toast.error(result.left.message);
-				logError("[BackupManager] 清除数据库失败", { error: result.left }, "use-backup-manager");
+				toast.error(result.left.message)
+				logError("[BackupManager] 清除数据库失败", { error: result.left }, "use-backup-manager")
 			}
 		} catch (err) {
-			toast.error("清除失败");
-			logError("[BackupManager] 清除数据库异常", { error: err }, "use-backup-manager");
+			toast.error("清除失败")
+			logError("[BackupManager] 清除数据库异常", { error: err }, "use-backup-manager")
 		} finally {
-			setLoading(false);
+			setLoading(false)
 		}
-	}, [loadStats]);
+	}, [loadStats])
 
 	const clearSettings = useCallback(async () => {
-		setLoading(true);
+		setLoading(true)
 		try {
 			const options: ClearDataOptions = {
 				clearIndexedDB: false,
 				clearLocalStorage: true,
 				clearSessionStorage: true,
 				clearCookies: true,
-			};
-			const result = await clearAllData(options)();
+			}
+			const result = await clearAllData(options)()
 			if (result._tag === "Right") {
-				toast.success("设置已清除");
-				await loadStats();
+				toast.success("设置已清除")
+				await loadStats()
 			} else {
-				toast.error(result.left.message);
-				logError("[BackupManager] 清除设置失败", { error: result.left }, "use-backup-manager");
+				toast.error(result.left.message)
+				logError("[BackupManager] 清除设置失败", { error: result.left }, "use-backup-manager")
 			}
 		} catch (err) {
-			toast.error("清除失败");
-			logError("[BackupManager] 清除设置异常", { error: err }, "use-backup-manager");
+			toast.error("清除失败")
+			logError("[BackupManager] 清除设置异常", { error: err }, "use-backup-manager")
 		} finally {
-			setLoading(false);
+			setLoading(false)
 		}
-	}, [loadStats]);
+	}, [loadStats])
 
 	// ============================================================================
 	// 返回
@@ -316,5 +315,5 @@ export function useBackupManager(): UseBackupManagerReturn {
 		clearAll,
 		clearDatabase,
 		clearSettings,
-	};
+	}
 }

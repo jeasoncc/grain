@@ -11,12 +11,12 @@
  * @requirements 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8
  */
 
-import dayjs from "dayjs";
-import { z } from "zod";
-import { generateExcalidrawContent } from "@/pipes/content";
-import { FILE_EXTENSIONS } from "@/pipes/editor";
-import { getDateFolderStructureWithFilename } from "@/pipes/date/date-folder.pipe";
-import type { TemplateConfig } from "../create-templated-file.flow";
+import dayjs from "dayjs"
+import { z } from "zod"
+import { generateExcalidrawContent } from "@/pipes/content"
+import { getDateFolderStructureWithFilename } from "@/pipes/date/date-folder.pipe"
+import { FILE_EXTENSIONS } from "@/pipes/editor"
+import type { TemplateConfig } from "../create-templated-file.flow"
 
 // ==============================
 // Types
@@ -27,13 +27,13 @@ import type { TemplateConfig } from "../create-templated-file.flow";
  */
 export interface ExcalidrawTemplateParams {
 	/** 自定义标题（可选） */
-	readonly title?: string;
+	readonly title?: string
 	/** 日期（可选，默认为当前时间） */
-	readonly date?: Date;
+	readonly date?: Date
 	/** 画布宽度（可选，默认 1920） */
-	readonly width?: number;
+	readonly width?: number
 	/** 画布高度（可选，默认 1080） */
-	readonly height?: number;
+	readonly height?: number
 }
 
 // ==============================
@@ -48,7 +48,7 @@ export const excalidrawParamsSchema = z.object({
 	date: z.date().optional(),
 	width: z.number().positive().optional(),
 	height: z.number().positive().optional(),
-});
+})
 
 // ==============================
 // Template Functions
@@ -60,14 +60,12 @@ export const excalidrawParamsSchema = z.object({
  * @param params - 模板参数
  * @returns Excalidraw JSON 字符串
  */
-const generateExcalidrawTemplate = (
-	params: ExcalidrawTemplateParams,
-): string => {
+const generateExcalidrawTemplate = (params: ExcalidrawTemplateParams): string => {
 	return generateExcalidrawContent({
 		width: params.width,
 		height: params.height,
-	});
-};
+	})
+}
 
 /**
  * 生成 Excalidraw 文件夹路径（年/月/日结构）
@@ -78,14 +76,12 @@ const generateExcalidrawTemplate = (
  * @param params - 模板参数
  * @returns 文件夹路径数组
  */
-const generateExcalidrawFolderPath = (
-	params: ExcalidrawTemplateParams,
-): readonly string[] => {
-	const date = params.date || dayjs().toDate();
-	const structure = getDateFolderStructureWithFilename(date, "drawing");
+const generateExcalidrawFolderPath = (params: ExcalidrawTemplateParams): readonly string[] => {
+	const date = params.date || dayjs().toDate()
+	const structure = getDateFolderStructureWithFilename(date, "drawing")
 
-	return [structure.yearFolder, structure.monthFolder, structure.dayFolder];
-};
+	return [structure.yearFolder, structure.monthFolder, structure.dayFolder]
+}
 
 /**
  * 生成 Excalidraw 文件标题（包含扩展名）
@@ -100,14 +96,14 @@ const generateExcalidrawTitle = (params: ExcalidrawTemplateParams): string => {
 	if (params.title) {
 		// 如果自定义标题没有扩展名，添加扩展名
 		if (!params.title.endsWith(FILE_EXTENSIONS.EXCALIDRAW)) {
-			return `${params.title}${FILE_EXTENSIONS.EXCALIDRAW}`;
+			return `${params.title}${FILE_EXTENSIONS.EXCALIDRAW}`
 		}
-		return params.title;
+		return params.title
 	}
-	const date = params.date || dayjs().toDate();
-	const structure = getDateFolderStructureWithFilename(date, "drawing");
-	return `${structure.filename}${FILE_EXTENSIONS.EXCALIDRAW}`;
-};
+	const date = params.date || dayjs().toDate()
+	const structure = getDateFolderStructureWithFilename(date, "drawing")
+	return `${structure.filename}${FILE_EXTENSIONS.EXCALIDRAW}`
+}
 
 // ==============================
 // Configuration
@@ -126,4 +122,4 @@ export const excalidrawConfig: TemplateConfig<ExcalidrawTemplateParams> = {
 	generateTitle: generateExcalidrawTitle,
 	paramsSchema: excalidrawParamsSchema,
 	foldersCollapsed: true,
-};
+}

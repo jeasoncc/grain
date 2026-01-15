@@ -17,28 +17,28 @@
  * @see .kiro/specs/editor-tabs-dataflow-refactor/design.md
  */
 
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import dayjs from "dayjs";
-import type { SerializedEditorState } from "lexical";
-import * as contentRepo from "@/io/api/content.api";
-import { info, debug, warn } from "@/io/log/logger.api";
-import { fileOperationQueue } from "@/pipes/queue/queue.pipe";
-import { findTabByNodeId, evictLRUEditorStates } from "@/pipes/editor-tab";
-import { useEditorTabsStore } from "@/state/editor-tabs.state";
-import { EditorTabBuilder, EditorStateBuilder } from "@/types/editor-tab";
-import type { TabType, EditorTab, EditorInstanceState } from "@/types/editor-tab";
-import type { AppError } from "@/types/error";
+import dayjs from "dayjs"
+import * as E from "fp-ts/Either"
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import type { SerializedEditorState } from "lexical"
+import * as contentRepo from "@/io/api/content.api"
+import { debug, info, warn } from "@/io/log/logger.api"
+import { evictLRUEditorStates, findTabByNodeId } from "@/pipes/editor-tab"
+import { fileOperationQueue } from "@/pipes/queue/queue.pipe"
+import { useEditorTabsStore } from "@/state/editor-tabs.state"
+import type { EditorInstanceState, EditorTab, TabType } from "@/types/editor-tab"
+import { EditorStateBuilder, EditorTabBuilder } from "@/types/editor-tab"
+import type { AppError } from "@/types/error"
 
 /**
  * 打开文件参数
  */
 export interface OpenFileParams {
-	readonly workspaceId: string;
-	readonly nodeId: string;
-	readonly title: string;
-	readonly type: TabType;
+	readonly workspaceId: string
+	readonly nodeId: string
+	readonly title: string
+	readonly type: TabType
 }
 
 /**
@@ -46,11 +46,11 @@ export interface OpenFileParams {
  */
 export interface OpenFileResult {
 	/** 标签页 ID */
-	readonly tabId: string;
+	readonly tabId: string
 	/** 是否是新创建的标签页 */
-	readonly isNewTab: boolean;
+	readonly isNewTab: boolean
 	/** 是否成功加载了内容 */
-	readonly hasContent: boolean;
+	readonly hasContent: boolean
 }
 
 /**
@@ -64,61 +64,63 @@ export interface OpenFileResult {
  * @param params - 打开文件参数
  * @returns TaskEither<AppError, OpenFileResult>
  */
-export const openFile = (
-	params: OpenFileParams,
-): TE.TaskEither<AppError, OpenFileResult> => {
+export const openFile = (params: OpenFileParams): TE.TaskEither<AppError, OpenFileResult> => {
 	return pipe(
 		TE.tryCatch(
 			() =>
 				fileOperationQueue.add(async () => {
-					const { workspaceId, nodeId, title, type } = params;
-					info("[OpenFile] 打开文件", { title }, "open-file.flow");
+					const { workspaceId, nodeId, title, type } = params
+					info("[OpenFile] 打开文件", { title }, "open-file.flow")
 
-					const store = useEditorTabsStore.getState();
+					const store = useEditorTabsStore.getState()
 
 					// 1. 检查是否已打开
-					const existingTab = findTabByNodeId(store.tabs as readonly EditorTab[], nodeId);
+					const existingTab = findTabByNodeId(store.tabs as readonly EditorTab[], nodeId)
 					if (existingTab) {
-						info("[OpenFile] 文件已打开，切换到标签", { tabId: existingTab.id }, "open-file.flow");
+						info("[OpenFile] 文件已打开，切换到标签", { tabId: existingTab.id }, "open-file.flow")
 						// 内联 setActiveTabFlow 逻辑，避免 flows/ 依赖 flows/
-						store.setActiveTabId(existingTab.id);
+						store.setActiveTabId(existingTab.id)
 						if (store.editorStates[existingTab.id]) {
 							store.updateEditorState(existingTab.id, {
 								lastModified: dayjs().valueOf(),
-							});
+							})
 						}
 						return {
 							tabId: existingTab.id,
 							isNewTab: false,
 							hasContent: true,
-						};
+						}
 					}
 
 					// 2. 从 DB 加载内容
-					info("[OpenFile] 从 DB 加载内容...");
-					const contentResult = await contentRepo.getContentByNodeId(nodeId)();
+					info("[OpenFile] 从 DB 加载内容...")
+					const contentResult = await contentRepo.getContentByNodeId(nodeId)()
 
-					let parsedContent: SerializedEditorState | undefined;
-					let hasContent = false;
+					let parsedContent: SerializedEditorState | undefined
+					let hasContent = false
 
 					if (E.isRight(contentResult) && contentResult.right) {
-						debug("[OpenFile] 内容加载成功", {
-							contentLength: contentResult.right.content.length,
-							contentPreview: contentResult.right.content.substring(0, 100)
-						}, "open-file.flow");
+						debug(
+							"[OpenFile] 内容加载成功",
+							{
+								contentLength: contentResult.right.content.length,
+								contentPreview: contentResult.right.content.substring(0, 100),
+							},
+							"open-file.flow",
+						)
 
 						// 解析内容
 						try {
-							parsedContent = JSON.parse(contentResult.right.content) as SerializedEditorState;
-							hasContent = true;
-							debug("[OpenFile] 内容解析成功");
+							parsedContent = JSON.parse(contentResult.right.content) as SerializedEditorState
+							hasContent = true
+							debug("[OpenFile] 内容解析成功")
 						} catch (error) {
-							warn("[OpenFile] 内容解析失败，使用空文档");
-							debug("[OpenFile] 解析错误", { error }, "open-file.flow");
-							parsedContent = undefined;
+							warn("[OpenFile] 内容解析失败，使用空文档")
+							debug("[OpenFile] 解析错误", { error }, "open-file.flow")
+							parsedContent = undefined
 						}
 					} else {
-						warn("[OpenFile] 内容加载失败或为空");
+						warn("[OpenFile] 内容加载失败或为空")
 					}
 
 					// 3. 创建 tab（内联 openTabFlow 逻辑，避免 flows/ 依赖 flows/）
@@ -127,34 +129,32 @@ export const openFile = (
 						.nodeId(nodeId)
 						.title(title)
 						.type(type)
-						.build();
+						.build()
 
 					// 如果有初始内容，使用它；否则创建空状态
 					const newEditorState = parsedContent
-						? EditorStateBuilder.fromDefault()
-								.serializedState(parsedContent)
-								.build()
-						: EditorStateBuilder.fromDefault().build();
+						? EditorStateBuilder.fromDefault().serializedState(parsedContent).build()
+						: EditorStateBuilder.fromDefault().build()
 
 					// 使用原子操作同时添加 tab、设置 editorState 和激活 tab
-					store.addTabWithState(newTab as EditorTab, newEditorState);
+					store.addTabWithState(newTab as EditorTab, newEditorState)
 
 					// LRU eviction
-					const MAX_EDITOR_STATES = 10;
-					const openTabIds = new Set(store.tabs.map((t: EditorTab) => t.id));
+					const MAX_EDITOR_STATES = 10
+					const openTabIds = new Set(store.tabs.map((t: EditorTab) => t.id))
 					const evictedStates = evictLRUEditorStates(
 						store.editorStates,
 						store.activeTabId,
 						openTabIds as ReadonlySet<string>,
 						MAX_EDITOR_STATES,
-					);
-					store.setEditorStates(evictedStates as Record<string, EditorInstanceState>);
+					)
+					store.setEditorStates(evictedStates as Record<string, EditorInstanceState>)
 
 					return {
 						tabId: newTab.id,
 						isNewTab: true,
 						hasContent,
-					};
+					}
 				}),
 			(error): AppError => ({
 				type: "UNKNOWN_ERROR",
@@ -170,8 +170,8 @@ export const openFile = (
 						message: "打开文件失败: 队列返回空结果",
 					}),
 		),
-	);
-};
+	)
+}
 
 /**
  * 打开文件 Action（Promise 版本，兼容旧代码）
@@ -180,12 +180,10 @@ export const openFile = (
  * @returns Promise<OpenFileResult>
  * @throws Error 如果打开失败
  */
-export const openFileAsync = async (
-	params: OpenFileParams,
-): Promise<OpenFileResult> => {
-	const result = await openFile(params)();
+export const openFileAsync = async (params: OpenFileParams): Promise<OpenFileResult> => {
+	const result = await openFile(params)()
 	if (E.isLeft(result)) {
-		throw new Error(result.left.message);
+		throw new Error(result.left.message)
 	}
-	return result.right;
-};
+	return result.right
+}

@@ -12,15 +12,15 @@
  * @requirements 3.3
  */
 
-import { useMemo } from "react";
+import { useMemo } from "react"
 import {
 	useNode as useNodeQuery,
 	useNodesByParent,
 	useNodesByType as useNodesByTypeQuery,
 	useNodesByWorkspace as useNodesByWorkspaceQuery,
 	useRootNodes as useRootNodesQuery,
-} from "@/hooks/queries/node.queries";
-import type { NodeInterface, NodeType } from "@/types/node";
+} from "@/hooks/queries/node.queries"
+import type { NodeInterface, NodeType } from "@/types/node"
 
 /**
  * 获取工作区所有节点（实时更新）
@@ -44,10 +44,10 @@ import type { NodeInterface, NodeType } from "@/types/node";
 export function useNodesByWorkspace(
 	workspaceId: string | null | undefined,
 ): readonly NodeInterface[] | undefined {
-	const { data: nodes, isLoading } = useNodesByWorkspaceQuery(workspaceId);
+	const { data: nodes, isLoading } = useNodesByWorkspaceQuery(workspaceId)
 
-	if (isLoading) return undefined;
-	return nodes ?? [];
+	if (isLoading) return undefined
+	return nodes ?? []
 }
 
 /**
@@ -56,13 +56,11 @@ export function useNodesByWorkspace(
  * @param nodeId - 节点 ID（可为 null/undefined）
  * @returns 节点对象，不存在或加载中返回 undefined
  */
-export function useNode(
-	nodeId: string | null | undefined,
-): NodeInterface | undefined {
-	const { data: node, isLoading } = useNodeQuery(nodeId);
+export function useNode(nodeId: string | null | undefined): NodeInterface | undefined {
+	const { data: node, isLoading } = useNodeQuery(nodeId)
 
-	if (isLoading) return undefined;
-	return node ?? undefined;
+	if (isLoading) return undefined
+	return node ?? undefined
 }
 
 /**
@@ -78,13 +76,13 @@ export function useChildNodes(
 	parentId: string | null,
 	workspaceId: string | null | undefined,
 ): readonly NodeInterface[] | undefined {
-	const { data: nodes, isLoading } = useNodesByParent(workspaceId, parentId);
+	const { data: nodes, isLoading } = useNodesByParent(workspaceId, parentId)
 
 	return useMemo(() => {
-		if (isLoading) return undefined;
-		if (!nodes) return [];
-		return [...nodes].sort((a, b) => a.order - b.order);
-	}, [nodes, isLoading]);
+		if (isLoading) return undefined
+		if (!nodes) return []
+		return [...nodes].sort((a, b) => a.order - b.order)
+	}, [nodes, isLoading])
 }
 
 /**
@@ -98,13 +96,13 @@ export function useChildNodes(
 export function useRootNodes(
 	workspaceId: string | null | undefined,
 ): readonly NodeInterface[] | undefined {
-	const { data: nodes, isLoading } = useRootNodesQuery(workspaceId);
+	const { data: nodes, isLoading } = useRootNodesQuery(workspaceId)
 
 	return useMemo(() => {
-		if (isLoading) return undefined;
-		if (!nodes) return [];
-		return [...nodes].sort((a, b) => a.order - b.order);
-	}, [nodes, isLoading]);
+		if (isLoading) return undefined
+		if (!nodes) return []
+		return [...nodes].sort((a, b) => a.order - b.order)
+	}, [nodes, isLoading])
 }
 
 /**
@@ -118,10 +116,10 @@ export function useNodesByType(
 	workspaceId: string | null | undefined,
 	type: NodeType,
 ): readonly NodeInterface[] | undefined {
-	const { data: nodes, isLoading } = useNodesByTypeQuery(workspaceId, type);
+	const { data: nodes, isLoading } = useNodesByTypeQuery(workspaceId, type)
 
-	if (isLoading) return undefined;
-	return nodes ?? [];
+	if (isLoading) return undefined
+	return nodes ?? []
 }
 
 /**
@@ -130,13 +128,11 @@ export function useNodesByType(
  * @param workspaceId - 工作区 ID
  * @returns 节点数量，加载中返回 undefined
  */
-export function useNodeCount(
-	workspaceId: string | null | undefined,
-): number | undefined {
-	const { data: nodes, isLoading } = useNodesByWorkspaceQuery(workspaceId);
+export function useNodeCount(workspaceId: string | null | undefined): number | undefined {
+	const { data: nodes, isLoading } = useNodesByWorkspaceQuery(workspaceId)
 
-	if (isLoading) return undefined;
-	return nodes?.length ?? 0;
+	if (isLoading) return undefined
+	return nodes?.length ?? 0
 }
 
 /**
@@ -145,14 +141,12 @@ export function useNodeCount(
  * @param nodeId - 节点 ID
  * @returns 存在返回 true，不存在返回 false，加载中返回 undefined
  */
-export function useNodeExists(
-	nodeId: string | null | undefined,
-): boolean | undefined {
-	const { data: node, isLoading } = useNodeQuery(nodeId);
+export function useNodeExists(nodeId: string | null | undefined): boolean | undefined {
+	const { data: node, isLoading } = useNodeQuery(nodeId)
 
-	if (isLoading) return undefined;
-	if (!nodeId) return false;
-	return node !== null && node !== undefined;
+	if (isLoading) return undefined
+	if (!nodeId) return false
+	return node !== null && node !== undefined
 }
 
 /**
@@ -164,12 +158,12 @@ export function useNodeExists(
 export function useNodesByIds(nodeIds: readonly string[]): readonly NodeInterface[] | undefined {
 	// 注意：这里暂时使用工作区查询 + 过滤的方式
 	// 如果需要更高效的实现，可以添加专门的批量查询 API
-	const { data: nodes, isLoading } = useNodesByWorkspaceQuery(undefined);
+	const { data: nodes, isLoading } = useNodesByWorkspaceQuery(undefined)
 
 	return useMemo(() => {
-		if (isLoading) return undefined;
-		if (!nodes || !nodeIds || nodeIds.length === 0) return [];
-		const idSet = new Set(nodeIds);
-		return nodes.filter((n) => idSet.has(n.id));
-	}, [nodes, nodeIds, isLoading]);
+		if (isLoading) return undefined
+		if (!nodes || !nodeIds || nodeIds.length === 0) return []
+		const idSet = new Set(nodeIds)
+		return nodes.filter((n) => idSet.has(n.id))
+	}, [nodes, nodeIds, isLoading])
 }

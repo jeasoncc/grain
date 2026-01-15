@@ -11,12 +11,9 @@
  * @requirements 2.2, 2.3, 2.4, 2.5, 2.6
  */
 
-import * as fc from "fast-check";
-import { describe, expect, it } from "vitest";
-import {
-	EXTENSION_TO_EDITOR_MAP,
-	FILE_EXTENSIONS,
-} from "./editor-extension.const";
+import * as fc from "fast-check"
+import { describe, expect, it } from "vitest"
+import { EXTENSION_TO_EDITOR_MAP, FILE_EXTENSIONS } from "./editor-extension.const"
 import {
 	getEditorTypeByFilename,
 	getFileExtension,
@@ -24,7 +21,7 @@ import {
 	isExcalidrawFile,
 	isGrainFile,
 	isLexicalFile,
-} from "./get-editor-type.fn";
+} from "./get-editor-type.fn"
 
 // ============================================================================
 // Unit Tests - getFileExtension
@@ -32,32 +29,32 @@ import {
 
 describe("getFileExtension", () => {
 	it("should extract extension from filename", () => {
-		expect(getFileExtension("test.js")).toBe(".js");
-		expect(getFileExtension("test.ts")).toBe(".ts");
-		expect(getFileExtension("test.grain")).toBe(".grain");
-	});
+		expect(getFileExtension("test.js")).toBe(".js")
+		expect(getFileExtension("test.ts")).toBe(".ts")
+		expect(getFileExtension("test.grain")).toBe(".grain")
+	})
 
 	it("should handle multiple dots in filename", () => {
-		expect(getFileExtension("test.spec.ts")).toBe(".ts");
-		expect(getFileExtension("my.file.name.json")).toBe(".json");
-	});
+		expect(getFileExtension("test.spec.ts")).toBe(".ts")
+		expect(getFileExtension("my.file.name.json")).toBe(".json")
+	})
 
 	it("should return empty string for files without extension", () => {
-		expect(getFileExtension("README")).toBe("");
-		expect(getFileExtension("Makefile")).toBe("");
-	});
+		expect(getFileExtension("README")).toBe("")
+		expect(getFileExtension("Makefile")).toBe("")
+	})
 
 	it("should return empty string for dotfiles", () => {
-		expect(getFileExtension(".gitignore")).toBe("");
-		expect(getFileExtension(".env")).toBe("");
-	});
+		expect(getFileExtension(".gitignore")).toBe("")
+		expect(getFileExtension(".env")).toBe("")
+	})
 
 	it("should convert extension to lowercase", () => {
-		expect(getFileExtension("test.JS")).toBe(".js");
-		expect(getFileExtension("test.GRAIN")).toBe(".grain");
-		expect(getFileExtension("test.Ts")).toBe(".ts");
-	});
-});
+		expect(getFileExtension("test.JS")).toBe(".js")
+		expect(getFileExtension("test.GRAIN")).toBe(".grain")
+		expect(getFileExtension("test.Ts")).toBe(".ts")
+	})
+})
 
 // ============================================================================
 // Unit Tests - getEditorTypeByFilename
@@ -66,84 +63,82 @@ describe("getFileExtension", () => {
 describe("getEditorTypeByFilename", () => {
 	describe("lexical editor (all text files)", () => {
 		it("should return lexical for .grain files", () => {
-			expect(getEditorTypeByFilename("diary-123.grain")).toBe("lexical");
-			expect(getEditorTypeByFilename("wiki-456.grain")).toBe("lexical");
-			expect(getEditorTypeByFilename("note.grain")).toBe("lexical");
-		});
+			expect(getEditorTypeByFilename("diary-123.grain")).toBe("lexical")
+			expect(getEditorTypeByFilename("wiki-456.grain")).toBe("lexical")
+			expect(getEditorTypeByFilename("note.grain")).toBe("lexical")
+		})
 
 		it("should return lexical for .mermaid files", () => {
-			expect(getEditorTypeByFilename("flowchart.mermaid")).toBe("lexical");
-			expect(getEditorTypeByFilename("sequence.mermaid")).toBe("lexical");
-		});
+			expect(getEditorTypeByFilename("flowchart.mermaid")).toBe("lexical")
+			expect(getEditorTypeByFilename("sequence.mermaid")).toBe("lexical")
+		})
 
 		it("should return lexical for .plantuml files", () => {
-			expect(getEditorTypeByFilename("class.plantuml")).toBe("lexical");
-			expect(getEditorTypeByFilename("activity.plantuml")).toBe("lexical");
-		});
+			expect(getEditorTypeByFilename("class.plantuml")).toBe("lexical")
+			expect(getEditorTypeByFilename("activity.plantuml")).toBe("lexical")
+		})
 
 		it("should return lexical for JavaScript files", () => {
-			expect(getEditorTypeByFilename("script.js")).toBe("lexical");
-			expect(getEditorTypeByFilename("app.jsx")).toBe("lexical");
-		});
+			expect(getEditorTypeByFilename("script.js")).toBe("lexical")
+			expect(getEditorTypeByFilename("app.jsx")).toBe("lexical")
+		})
 
 		it("should return lexical for TypeScript files", () => {
-			expect(getEditorTypeByFilename("main.ts")).toBe("lexical");
-			expect(getEditorTypeByFilename("component.tsx")).toBe("lexical");
-		});
+			expect(getEditorTypeByFilename("main.ts")).toBe("lexical")
+			expect(getEditorTypeByFilename("component.tsx")).toBe("lexical")
+		})
 
 		it("should return lexical for other text files", () => {
-			expect(getEditorTypeByFilename("data.json")).toBe("lexical");
-			expect(getEditorTypeByFilename("readme.md")).toBe("lexical");
-			expect(getEditorTypeByFilename("index.html")).toBe("lexical");
-			expect(getEditorTypeByFilename("styles.css")).toBe("lexical");
-			expect(getEditorTypeByFilename("query.sql")).toBe("lexical");
-			expect(getEditorTypeByFilename("script.sh")).toBe("lexical");
-			expect(getEditorTypeByFilename("config.yaml")).toBe("lexical");
-			expect(getEditorTypeByFilename("config.yml")).toBe("lexical");
-			expect(getEditorTypeByFilename("main.py")).toBe("lexical");
-		});
-	});
+			expect(getEditorTypeByFilename("data.json")).toBe("lexical")
+			expect(getEditorTypeByFilename("readme.md")).toBe("lexical")
+			expect(getEditorTypeByFilename("index.html")).toBe("lexical")
+			expect(getEditorTypeByFilename("styles.css")).toBe("lexical")
+			expect(getEditorTypeByFilename("query.sql")).toBe("lexical")
+			expect(getEditorTypeByFilename("script.sh")).toBe("lexical")
+			expect(getEditorTypeByFilename("config.yaml")).toBe("lexical")
+			expect(getEditorTypeByFilename("config.yml")).toBe("lexical")
+			expect(getEditorTypeByFilename("main.py")).toBe("lexical")
+		})
+	})
 
 	describe("excalidraw editor (.excalidraw)", () => {
 		it("should return excalidraw for .excalidraw files", () => {
-			expect(getEditorTypeByFilename("drawing.excalidraw")).toBe("excalidraw");
-			expect(getEditorTypeByFilename("sketch-123.excalidraw")).toBe(
-				"excalidraw",
-			);
-		});
-	});
+			expect(getEditorTypeByFilename("drawing.excalidraw")).toBe("excalidraw")
+			expect(getEditorTypeByFilename("sketch-123.excalidraw")).toBe("excalidraw")
+		})
+	})
 
 	describe("fallback to lexical editor", () => {
 		it("should return lexical for unknown extensions", () => {
-			expect(getEditorTypeByFilename("file.xyz")).toBe("lexical");
-			expect(getEditorTypeByFilename("file.unknown")).toBe("lexical");
-		});
+			expect(getEditorTypeByFilename("file.xyz")).toBe("lexical")
+			expect(getEditorTypeByFilename("file.unknown")).toBe("lexical")
+		})
 
 		it("should return lexical for files without extension", () => {
-			expect(getEditorTypeByFilename("README")).toBe("lexical");
-			expect(getEditorTypeByFilename("Makefile")).toBe("lexical");
-		});
+			expect(getEditorTypeByFilename("README")).toBe("lexical")
+			expect(getEditorTypeByFilename("Makefile")).toBe("lexical")
+		})
 
 		it("should return lexical for dotfiles", () => {
-			expect(getEditorTypeByFilename(".gitignore")).toBe("lexical");
-			expect(getEditorTypeByFilename(".env")).toBe("lexical");
-		});
-	});
+			expect(getEditorTypeByFilename(".gitignore")).toBe("lexical")
+			expect(getEditorTypeByFilename(".env")).toBe("lexical")
+		})
+	})
 
 	describe("case insensitivity", () => {
 		it("should handle uppercase extensions", () => {
-			expect(getEditorTypeByFilename("file.GRAIN")).toBe("lexical");
-			expect(getEditorTypeByFilename("file.EXCALIDRAW")).toBe("excalidraw");
-			expect(getEditorTypeByFilename("file.MERMAID")).toBe("lexical");
-			expect(getEditorTypeByFilename("file.JS")).toBe("lexical");
-		});
+			expect(getEditorTypeByFilename("file.GRAIN")).toBe("lexical")
+			expect(getEditorTypeByFilename("file.EXCALIDRAW")).toBe("excalidraw")
+			expect(getEditorTypeByFilename("file.MERMAID")).toBe("lexical")
+			expect(getEditorTypeByFilename("file.JS")).toBe("lexical")
+		})
 
 		it("should handle mixed case extensions", () => {
-			expect(getEditorTypeByFilename("file.Grain")).toBe("lexical");
-			expect(getEditorTypeByFilename("file.ExcaliDraw")).toBe("excalidraw");
-		});
-	});
-});
+			expect(getEditorTypeByFilename("file.Grain")).toBe("lexical")
+			expect(getEditorTypeByFilename("file.ExcaliDraw")).toBe("excalidraw")
+		})
+	})
+})
 
 // ============================================================================
 // Unit Tests - Helper Functions
@@ -151,55 +146,55 @@ describe("getEditorTypeByFilename", () => {
 
 describe("isGrainFile", () => {
 	it("should return true for .grain files", () => {
-		expect(isGrainFile("diary.grain")).toBe(true);
-		expect(isGrainFile("wiki.grain")).toBe(true);
-	});
+		expect(isGrainFile("diary.grain")).toBe(true)
+		expect(isGrainFile("wiki.grain")).toBe(true)
+	})
 
 	it("should return false for non-.grain files", () => {
-		expect(isGrainFile("script.js")).toBe(false);
-		expect(isGrainFile("drawing.excalidraw")).toBe(false);
-	});
-});
+		expect(isGrainFile("script.js")).toBe(false)
+		expect(isGrainFile("drawing.excalidraw")).toBe(false)
+	})
+})
 
 describe("isExcalidrawFile", () => {
 	it("should return true for .excalidraw files", () => {
-		expect(isExcalidrawFile("drawing.excalidraw")).toBe(true);
-	});
+		expect(isExcalidrawFile("drawing.excalidraw")).toBe(true)
+	})
 
 	it("should return false for non-.excalidraw files", () => {
-		expect(isExcalidrawFile("script.js")).toBe(false);
-		expect(isExcalidrawFile("diary.grain")).toBe(false);
-	});
-});
+		expect(isExcalidrawFile("script.js")).toBe(false)
+		expect(isExcalidrawFile("diary.grain")).toBe(false)
+	})
+})
 
 describe("isDiagramFile", () => {
 	it("should return true for .mermaid files", () => {
-		expect(isDiagramFile("flowchart.mermaid")).toBe(true);
-	});
+		expect(isDiagramFile("flowchart.mermaid")).toBe(true)
+	})
 
 	it("should return true for .plantuml files", () => {
-		expect(isDiagramFile("class.plantuml")).toBe(true);
-	});
+		expect(isDiagramFile("class.plantuml")).toBe(true)
+	})
 
 	it("should return false for non-diagram files", () => {
-		expect(isDiagramFile("script.js")).toBe(false);
-		expect(isDiagramFile("diary.grain")).toBe(false);
-	});
-});
+		expect(isDiagramFile("script.js")).toBe(false)
+		expect(isDiagramFile("diary.grain")).toBe(false)
+	})
+})
 
 describe("isLexicalFile", () => {
 	it("should return true for all text files", () => {
-		expect(isLexicalFile("diary.grain")).toBe(true);
-		expect(isLexicalFile("script.js")).toBe(true);
-		expect(isLexicalFile("main.ts")).toBe(true);
-		expect(isLexicalFile("data.json")).toBe(true);
-		expect(isLexicalFile("flowchart.mermaid")).toBe(true);
-	});
+		expect(isLexicalFile("diary.grain")).toBe(true)
+		expect(isLexicalFile("script.js")).toBe(true)
+		expect(isLexicalFile("main.ts")).toBe(true)
+		expect(isLexicalFile("data.json")).toBe(true)
+		expect(isLexicalFile("flowchart.mermaid")).toBe(true)
+	})
 
 	it("should return false for excalidraw files", () => {
-		expect(isLexicalFile("drawing.excalidraw")).toBe(false);
-	});
-});
+		expect(isLexicalFile("drawing.excalidraw")).toBe(false)
+	})
+})
 
 // ============================================================================
 // Property-Based Tests - Lexical Unified Editor
@@ -239,66 +234,61 @@ describe("Property-Based Tests - Lexical Unified Editor", () => {
 							.map((s) => `.${s}`),
 					),
 					(prefix, extension) => {
-						const filename = `${prefix}${extension}`;
-						const result = getEditorTypeByFilename(filename);
+						const filename = `${prefix}${extension}`
+						const result = getEditorTypeByFilename(filename)
 
 						// 核心属性：excalidraw 当且仅当扩展名是 .excalidraw
-						const isExcalidrawExtension =
-							extension.toLowerCase() === ".excalidraw";
-						const isExcalidrawResult = result === "excalidraw";
+						const isExcalidrawExtension = extension.toLowerCase() === ".excalidraw"
+						const isExcalidrawResult = result === "excalidraw"
 
 						// 双向蕴含：isExcalidrawExtension ⟺ isExcalidrawResult
-						return isExcalidrawExtension === isExcalidrawResult;
+						return isExcalidrawExtension === isExcalidrawResult
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
+			)
+		})
 
 		it("should return lexical for all non-excalidraw files", () => {
 			// 所有已知的非 excalidraw 扩展名
 			const nonExcalidrawExtensions = Object.entries(EXTENSION_TO_EDITOR_MAP)
 				.filter(([_, type]) => type === "lexical")
-				.map(([ext]) => ext);
+				.map(([ext]) => ext)
 
 			fc.assert(
 				fc.property(
-					fc
-						.string({ minLength: 1, maxLength: 50 })
-						.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+					fc.string({ minLength: 1, maxLength: 50 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 					fc.constantFrom(...nonExcalidrawExtensions),
 					(prefix, extension) => {
-						const filename = `${prefix}${extension}`;
-						return getEditorTypeByFilename(filename) === "lexical";
+						const filename = `${prefix}${extension}`
+						return getEditorTypeByFilename(filename) === "lexical"
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
+			)
+		})
 
 		it("should return excalidraw only for .excalidraw files regardless of prefix", () => {
 			fc.assert(
 				fc.property(
 					// 生成各种可能的文件名前缀
 					fc.oneof(
-						fc
-							.string({ minLength: 1, maxLength: 50 })
-							.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+						fc.string({ minLength: 1, maxLength: 50 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 						fc.constant("drawing"),
 						fc.constant("sketch"),
 						fc.constant("diagram"),
 						fc.constant("whiteboard"),
 					),
 					(prefix) => {
-						const filename = `${prefix}.excalidraw`;
-						return getEditorTypeByFilename(filename) === "excalidraw";
+						const filename = `${prefix}.excalidraw`
+						return getEditorTypeByFilename(filename) === "excalidraw"
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
-	});
-});
+			)
+		})
+	})
+})
 
 // ============================================================================
 // Property-Based Tests - File Extension System
@@ -314,7 +304,7 @@ describe("Property-Based Tests - File Extension System", () => {
 	 */
 	describe("Property 1: Extension to Editor Type Mapping", () => {
 		// 定义已知扩展名及其预期编辑器类型
-		const knownExtensions = Object.entries(EXTENSION_TO_EDITOR_MAP);
+		const knownExtensions = Object.entries(EXTENSION_TO_EDITOR_MAP)
 
 		it("should map all known extensions to correct editor types", () => {
 			fc.assert(
@@ -326,60 +316,54 @@ describe("Property-Based Tests - File Extension System", () => {
 					// 从已知扩展名中随机选择
 					fc.constantFrom(...knownExtensions),
 					(prefix, [extension, expectedEditorType]) => {
-						const filename = `${prefix}${extension}`;
-						const result = getEditorTypeByFilename(filename);
-						return result === expectedEditorType;
+						const filename = `${prefix}${extension}`
+						const result = getEditorTypeByFilename(filename)
+						return result === expectedEditorType
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
+			)
+		})
 
 		it("should return lexical for any .grain filename", () => {
 			fc.assert(
 				fc.property(
-					fc
-						.string({ minLength: 1, maxLength: 50 })
-						.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+					fc.string({ minLength: 1, maxLength: 50 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 					(prefix) => {
-						const filename = `${prefix}.grain`;
-						return getEditorTypeByFilename(filename) === "lexical";
+						const filename = `${prefix}.grain`
+						return getEditorTypeByFilename(filename) === "lexical"
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
+			)
+		})
 
 		it("should return excalidraw for any .excalidraw filename", () => {
 			fc.assert(
 				fc.property(
-					fc
-						.string({ minLength: 1, maxLength: 50 })
-						.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+					fc.string({ minLength: 1, maxLength: 50 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 					(prefix) => {
-						const filename = `${prefix}.excalidraw`;
-						return getEditorTypeByFilename(filename) === "excalidraw";
+						const filename = `${prefix}.excalidraw`
+						return getEditorTypeByFilename(filename) === "excalidraw"
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
+			)
+		})
 
 		it("should return lexical for any .mermaid or .plantuml filename", () => {
 			fc.assert(
 				fc.property(
-					fc
-						.string({ minLength: 1, maxLength: 50 })
-						.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+					fc.string({ minLength: 1, maxLength: 50 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 					fc.constantFrom(".mermaid", ".plantuml"),
 					(prefix, extension) => {
-						const filename = `${prefix}${extension}`;
-						return getEditorTypeByFilename(filename) === "lexical";
+						const filename = `${prefix}${extension}`
+						return getEditorTypeByFilename(filename) === "lexical"
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
+			)
+		})
 
 		it("should return lexical for any known code extension filename", () => {
 			const codeExtensions = [
@@ -396,23 +380,21 @@ describe("Property-Based Tests - File Extension System", () => {
 				FILE_EXTENSIONS.YAML,
 				FILE_EXTENSIONS.YML,
 				FILE_EXTENSIONS.PY,
-			];
+			]
 
 			fc.assert(
 				fc.property(
-					fc
-						.string({ minLength: 1, maxLength: 50 })
-						.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+					fc.string({ minLength: 1, maxLength: 50 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 					fc.constantFrom(...codeExtensions),
 					(prefix, extension) => {
-						const filename = `${prefix}${extension}`;
-						return getEditorTypeByFilename(filename) === "lexical";
+						const filename = `${prefix}${extension}`
+						return getEditorTypeByFilename(filename) === "lexical"
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
-	});
+			)
+		})
+	})
 
 	/**
 	 * **Feature: file-extension-system, Property 2: Unknown Extension Fallback**
@@ -423,30 +405,24 @@ describe("Property-Based Tests - File Extension System", () => {
 	 */
 	describe("Property 2: Unknown Extension Fallback", () => {
 		// 定义已知扩展名集合
-		const knownExtensions = new Set(Object.keys(EXTENSION_TO_EDITOR_MAP));
+		const knownExtensions = new Set(Object.keys(EXTENSION_TO_EDITOR_MAP))
 
 		it("should return lexical for any unknown extension", () => {
 			fc.assert(
 				fc.property(
-					fc
-						.string({ minLength: 1, maxLength: 50 })
-						.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+					fc.string({ minLength: 1, maxLength: 50 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 					// 生成不在已知扩展名列表中的扩展名
 					fc
 						.string({ minLength: 2, maxLength: 10 })
-						.filter(
-							(s) =>
-								/^[a-z]+$/.test(s) &&
-								!knownExtensions.has(`.${s.toLowerCase()}`),
-						),
+						.filter((s) => /^[a-z]+$/.test(s) && !knownExtensions.has(`.${s.toLowerCase()}`)),
 					(prefix, unknownExt) => {
-						const filename = `${prefix}.${unknownExt}`;
-						return getEditorTypeByFilename(filename) === "lexical";
+						const filename = `${prefix}.${unknownExt}`
+						return getEditorTypeByFilename(filename) === "lexical"
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
+			)
+		})
 
 		it("should return lexical for files without extension", () => {
 			fc.assert(
@@ -456,12 +432,12 @@ describe("Property-Based Tests - File Extension System", () => {
 						.string({ minLength: 1, maxLength: 50 })
 						.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s) && !s.includes(".")),
 					(filename) => {
-						return getEditorTypeByFilename(filename) === "lexical";
+						return getEditorTypeByFilename(filename) === "lexical"
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
+			)
+		})
 
 		it("should return lexical for dotfiles (files starting with dot)", () => {
 			fc.assert(
@@ -471,14 +447,14 @@ describe("Property-Based Tests - File Extension System", () => {
 						.string({ minLength: 1, maxLength: 20 })
 						.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s) && !s.includes(".")),
 					(name) => {
-						const filename = `.${name}`;
-						return getEditorTypeByFilename(filename) === "lexical";
+						const filename = `.${name}`
+						return getEditorTypeByFilename(filename) === "lexical"
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
-	});
+			)
+		})
+	})
 
 	/**
 	 * **Feature: file-extension-system, Property: Case Insensitivity**
@@ -489,32 +465,30 @@ describe("Property-Based Tests - File Extension System", () => {
 	 */
 	describe("Property: Case Insensitivity", () => {
 		it("should return same editor type regardless of extension case", () => {
-			const knownExtensions = Object.keys(EXTENSION_TO_EDITOR_MAP);
+			const knownExtensions = Object.keys(EXTENSION_TO_EDITOR_MAP)
 
 			fc.assert(
 				fc.property(
-					fc
-						.string({ minLength: 1, maxLength: 20 })
-						.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+					fc.string({ minLength: 1, maxLength: 20 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 					fc.constantFrom(...knownExtensions),
 					(prefix, extension) => {
 						// 移除开头的点号
-						const extWithoutDot = extension.slice(1);
+						const extWithoutDot = extension.slice(1)
 
 						// 生成不同大小写的扩展名
-						const lowerFilename = `${prefix}.${extWithoutDot.toLowerCase()}`;
-						const upperFilename = `${prefix}.${extWithoutDot.toUpperCase()}`;
+						const lowerFilename = `${prefix}.${extWithoutDot.toLowerCase()}`
+						const upperFilename = `${prefix}.${extWithoutDot.toUpperCase()}`
 
-						const lowerResult = getEditorTypeByFilename(lowerFilename);
-						const upperResult = getEditorTypeByFilename(upperFilename);
+						const lowerResult = getEditorTypeByFilename(lowerFilename)
+						const upperResult = getEditorTypeByFilename(upperFilename)
 
-						return lowerResult === upperResult;
+						return lowerResult === upperResult
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
-	});
+			)
+		})
+	})
 
 	/**
 	 * **Feature: file-extension-system, Property: Editor Type Validity**
@@ -524,7 +498,7 @@ describe("Property-Based Tests - File Extension System", () => {
 	 * a valid EditorType value ("lexical" or "excalidraw").
 	 */
 	describe("Property: Editor Type Validity", () => {
-		const validEditorTypes = ["lexical", "excalidraw"];
+		const validEditorTypes = ["lexical", "excalidraw"]
 
 		it("should always return a valid editor type", () => {
 			fc.assert(
@@ -532,12 +506,12 @@ describe("Property-Based Tests - File Extension System", () => {
 					// 生成任意文件名
 					fc.string({ minLength: 0, maxLength: 100 }),
 					(filename) => {
-						const result = getEditorTypeByFilename(filename);
-						return validEditorTypes.includes(result);
+						const result = getEditorTypeByFilename(filename)
+						return validEditorTypes.includes(result)
 					},
 				),
 				{ numRuns: 100 },
-			);
-		});
-	});
-});
+			)
+		})
+	})
+})

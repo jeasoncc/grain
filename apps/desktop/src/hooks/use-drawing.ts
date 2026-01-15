@@ -17,13 +17,10 @@
  * @requirements 3.3
  */
 
-import { useCallback, useMemo, useState } from "react";
-import {
-	useNode as useNodeQuery,
-	useNodesByType,
-} from "@/hooks/queries/node.queries";
-import { info, warn } from "@/io/log/logger.api";
-import type { NodeInterface } from "@/types/node";
+import { useCallback, useMemo, useState } from "react"
+import { useNode as useNodeQuery, useNodesByType } from "@/hooks/queries/node.queries"
+import { info, warn } from "@/io/log/logger.api"
+import type { NodeInterface } from "@/types/node"
 
 // ============================================================================
 // 新架构：基于文件树的绘图查询
@@ -38,13 +35,13 @@ import type { NodeInterface } from "@/types/node";
 export function useDrawingNodes(
 	workspaceId: string | null | undefined,
 ): readonly NodeInterface[] | undefined {
-	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing");
+	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing")
 
 	return useMemo(() => {
-		if (isLoading) return undefined;
-		if (!nodes) return [];
-		return [...nodes].sort((a, b) => a.title.localeCompare(b.title));
-	}, [nodes, isLoading]);
+		if (isLoading) return undefined
+		if (!nodes) return []
+		return [...nodes].sort((a, b) => a.title.localeCompare(b.title))
+	}, [nodes, isLoading])
 }
 
 /**
@@ -53,7 +50,7 @@ export function useDrawingNodes(
 export function useDrawingsByWorkspace(
 	workspaceId: string | null | undefined,
 ): readonly NodeInterface[] | undefined {
-	return useDrawingNodes(workspaceId);
+	return useDrawingNodes(workspaceId)
 }
 
 /**
@@ -62,7 +59,7 @@ export function useDrawingsByWorkspace(
 export function useDrawingsByProject(
 	projectId: string | null | undefined,
 ): readonly NodeInterface[] | undefined {
-	return useDrawingNodes(projectId);
+	return useDrawingNodes(projectId)
 }
 
 /**
@@ -71,18 +68,16 @@ export function useDrawingsByProject(
  * @param drawingId - 绘图节点 ID（可为 null/undefined）
  * @returns 绘图节点对象，不存在或加载中返回 undefined
  */
-export function useDrawing(
-	drawingId: string | null | undefined,
-): NodeInterface | undefined {
-	const { data: node, isLoading } = useNodeQuery(drawingId);
+export function useDrawing(drawingId: string | null | undefined): NodeInterface | undefined {
+	const { data: node, isLoading } = useNodeQuery(drawingId)
 
 	return useMemo(() => {
-		if (isLoading) return undefined;
+		if (isLoading) return undefined
 		if (node?.type === "drawing") {
-			return node;
+			return node
 		}
-		return undefined;
-	}, [node, isLoading]);
+		return undefined
+	}, [node, isLoading])
 }
 
 // ============================================================================
@@ -100,23 +95,21 @@ export function useDrawingSearch(
 	workspaceId: string | null | undefined,
 	query: string | null | undefined,
 ): readonly NodeInterface[] | undefined {
-	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing");
+	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing")
 
 	return useMemo(() => {
-		if (isLoading) return undefined;
-		if (!nodes) return [];
+		if (isLoading) return undefined
+		if (!nodes) return []
 
-		const sorted = [...nodes].sort((a, b) => a.title.localeCompare(b.title));
+		const sorted = [...nodes].sort((a, b) => a.title.localeCompare(b.title))
 
 		if (!query || query.trim() === "") {
-			return sorted;
+			return sorted
 		}
 
-		const lowerQuery = query.toLowerCase();
-		return sorted.filter((node) =>
-			node.title.toLowerCase().includes(lowerQuery),
-		);
-	}, [nodes, query, isLoading]);
+		const lowerQuery = query.toLowerCase()
+		return sorted.filter((node) => node.title.toLowerCase().includes(lowerQuery))
+	}, [nodes, query, isLoading])
 }
 
 /**
@@ -130,19 +123,16 @@ export function useRecentDrawings(
 	workspaceId: string | null | undefined,
 	limit = 10,
 ): readonly NodeInterface[] | undefined {
-	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing");
+	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing")
 
 	return useMemo(() => {
-		if (isLoading) return undefined;
-		if (!nodes) return [];
+		if (isLoading) return undefined
+		if (!nodes) return []
 
 		return [...nodes]
-			.sort(
-				(a, b) =>
-					new Date(b.lastEdit).getTime() - new Date(a.lastEdit).getTime(),
-			)
-			.slice(0, limit);
-	}, [nodes, limit, isLoading]);
+			.sort((a, b) => new Date(b.lastEdit).getTime() - new Date(a.lastEdit).getTime())
+			.slice(0, limit)
+	}, [nodes, limit, isLoading])
 }
 
 /**
@@ -155,7 +145,7 @@ export function useRecentDrawings(
 export function useAllDrawings(): readonly NodeInterface[] | undefined {
 	// 注意：当前 API 不支持跨工作区查询
 	// 如果需要此功能，需要添加对应的 Rust API
-	return undefined;
+	return undefined
 }
 
 // ============================================================================
@@ -168,13 +158,11 @@ export function useAllDrawings(): readonly NodeInterface[] | undefined {
  * @param workspaceId - 工作区 ID
  * @returns 绘图数量，加载中返回 undefined
  */
-export function useDrawingCount(
-	workspaceId: string | null | undefined,
-): number | undefined {
-	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing");
+export function useDrawingCount(workspaceId: string | null | undefined): number | undefined {
+	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing")
 
-	if (isLoading) return undefined;
-	return nodes?.length ?? 0;
+	if (isLoading) return undefined
+	return nodes?.length ?? 0
 }
 
 /**
@@ -183,14 +171,12 @@ export function useDrawingCount(
  * @param drawingId - 绘图节点 ID
  * @returns 存在返回 true，不存在返回 false，加载中返回 undefined
  */
-export function useDrawingExists(
-	drawingId: string | null | undefined,
-): boolean | undefined {
-	const { data: node, isLoading } = useNodeQuery(drawingId);
+export function useDrawingExists(drawingId: string | null | undefined): boolean | undefined {
+	const { data: node, isLoading } = useNodeQuery(drawingId)
 
-	if (isLoading) return undefined;
-	if (!drawingId) return false;
-	return node?.type === "drawing";
+	if (isLoading) return undefined
+	if (!drawingId) return false
+	return node?.type === "drawing"
 }
 
 // ============================================================================
@@ -207,22 +193,20 @@ export function useDrawingExists(
  * @returns 绘图列表、选中绘图、操作函数
  */
 export function useDrawingWorkspace(workspaceId: string | null) {
-	const [selectedDrawing, setSelectedDrawing] = useState<NodeInterface | null>(
-		null,
-	);
-	const drawings = useDrawingNodes(workspaceId);
+	const [selectedDrawing, setSelectedDrawing] = useState<NodeInterface | null>(null)
+	const drawings = useDrawingNodes(workspaceId)
 
 	// 选择绘图
 	const selectDrawing = useCallback((drawing: NodeInterface) => {
-		setSelectedDrawing(drawing);
-		info("[Drawing] 选择绘图", { drawingId: drawing.id }, "use-drawing");
-	}, []);
+		setSelectedDrawing(drawing)
+		info("[Drawing] 选择绘图", { drawingId: drawing.id }, "use-drawing")
+	}, [])
 
 	// 清除选择
 	const clearSelection = useCallback(() => {
-		setSelectedDrawing(null);
-		info("[Drawing] 清除绘图选择");
-	}, []);
+		setSelectedDrawing(null)
+		info("[Drawing] 清除绘图选择")
+	}, [])
 
 	return {
 		drawings: drawings ?? [],
@@ -231,10 +215,8 @@ export function useDrawingWorkspace(workspaceId: string | null) {
 		clearSelection,
 		// createNewDrawing 已移除，请使用 createExcalidrawAsync
 		createNewDrawing: async () => {
-			warn(
-				"[Drawing] createNewDrawing 已弃用，请使用 createExcalidrawAsync",
-			);
-			return null;
+			warn("[Drawing] createNewDrawing 已弃用，请使用 createExcalidrawAsync")
+			return null
 		},
-	};
+	}
 }

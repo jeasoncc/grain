@@ -3,14 +3,14 @@
  * @description Theme 纯函数的单元测试
  */
 
-import { describe, expect, it } from "vitest";
-import type { Theme } from "@/utils/themes.util";
+import { describe, expect, it } from "vitest"
+import type { Theme } from "@/utils/themes.util"
 import {
 	getDefaultThemeKey,
 	getEffectiveThemeType,
 	getNextMode,
 	isThemeTypeMatch,
-} from "./theme.fn";
+} from "./theme.fn"
 
 // ============================================================================
 // Test Data
@@ -49,7 +49,7 @@ const createMockTheme = (type: "light" | "dark"): Theme => ({
 		folderColor: "#007acc",
 		editorSelection: type === "dark" ? "#264f78" : "#add6ff",
 	},
-});
+})
 
 // ============================================================================
 // getNextMode Tests
@@ -57,32 +57,32 @@ const createMockTheme = (type: "light" | "dark"): Theme => ({
 
 describe("getNextMode", () => {
 	it("should return dark when current mode is light", () => {
-		expect(getNextMode("light")).toBe("dark");
-	});
+		expect(getNextMode("light")).toBe("dark")
+	})
 
 	it("should return system when current mode is dark", () => {
-		expect(getNextMode("dark")).toBe("system");
-	});
+		expect(getNextMode("dark")).toBe("system")
+	})
 
 	it("should return light when current mode is system", () => {
-		expect(getNextMode("system")).toBe("light");
-	});
+		expect(getNextMode("system")).toBe("light")
+	})
 
 	it("should return light for unknown mode", () => {
 		// 测试未知模式时的默认行为
-		expect(getNextMode("unknown" as "light" | "dark" | "system")).toBe("light");
-	});
+		expect(getNextMode("unknown" as "light" | "dark" | "system")).toBe("light")
+	})
 
 	it("should cycle through all modes correctly", () => {
-		let mode: "light" | "dark" | "system" = "light";
-		mode = getNextMode(mode); // dark
-		expect(mode).toBe("dark");
-		mode = getNextMode(mode); // system
-		expect(mode).toBe("system");
-		mode = getNextMode(mode); // light
-		expect(mode).toBe("light");
-	});
-});
+		let mode: "light" | "dark" | "system" = "light"
+		mode = getNextMode(mode) // dark
+		expect(mode).toBe("dark")
+		mode = getNextMode(mode) // system
+		expect(mode).toBe("system")
+		mode = getNextMode(mode) // light
+		expect(mode).toBe("light")
+	})
+})
 
 // ============================================================================
 // getEffectiveThemeType Tests
@@ -90,24 +90,24 @@ describe("getNextMode", () => {
 
 describe("getEffectiveThemeType", () => {
 	it("should return light when mode is light", () => {
-		expect(getEffectiveThemeType("light")).toBe("light");
-		expect(getEffectiveThemeType("light", "dark")).toBe("light");
-	});
+		expect(getEffectiveThemeType("light")).toBe("light")
+		expect(getEffectiveThemeType("light", "dark")).toBe("light")
+	})
 
 	it("should return dark when mode is dark", () => {
-		expect(getEffectiveThemeType("dark")).toBe("dark");
-		expect(getEffectiveThemeType("dark", "light")).toBe("dark");
-	});
+		expect(getEffectiveThemeType("dark")).toBe("dark")
+		expect(getEffectiveThemeType("dark", "light")).toBe("dark")
+	})
 
 	it("should return system preference when mode is system", () => {
-		expect(getEffectiveThemeType("system", "light")).toBe("light");
-		expect(getEffectiveThemeType("system", "dark")).toBe("dark");
-	});
+		expect(getEffectiveThemeType("system", "light")).toBe("light")
+		expect(getEffectiveThemeType("system", "dark")).toBe("dark")
+	})
 
 	it("should default to light when system preference not provided", () => {
-		expect(getEffectiveThemeType("system")).toBe("light");
-	});
-});
+		expect(getEffectiveThemeType("system")).toBe("light")
+	})
+})
 
 // ============================================================================
 // getDefaultThemeKey Tests
@@ -115,13 +115,13 @@ describe("getEffectiveThemeType", () => {
 
 describe("getDefaultThemeKey", () => {
 	it("should return default-dark for dark type", () => {
-		expect(getDefaultThemeKey("dark")).toBe("default-dark");
-	});
+		expect(getDefaultThemeKey("dark")).toBe("default-dark")
+	})
 
 	it("should return default-light for light type", () => {
-		expect(getDefaultThemeKey("light")).toBe("default-light");
-	});
-});
+		expect(getDefaultThemeKey("light")).toBe("default-light")
+	})
+})
 
 // ============================================================================
 // isThemeTypeMatch Tests
@@ -129,18 +129,18 @@ describe("getDefaultThemeKey", () => {
 
 describe("isThemeTypeMatch", () => {
 	it("should return true when theme type matches expected type", () => {
-		const lightTheme = createMockTheme("light");
-		const darkTheme = createMockTheme("dark");
+		const lightTheme = createMockTheme("light")
+		const darkTheme = createMockTheme("dark")
 
-		expect(isThemeTypeMatch(lightTheme, "light")).toBe(true);
-		expect(isThemeTypeMatch(darkTheme, "dark")).toBe(true);
-	});
+		expect(isThemeTypeMatch(lightTheme, "light")).toBe(true)
+		expect(isThemeTypeMatch(darkTheme, "dark")).toBe(true)
+	})
 
 	it("should return false when theme type does not match expected type", () => {
-		const lightTheme = createMockTheme("light");
-		const darkTheme = createMockTheme("dark");
+		const lightTheme = createMockTheme("light")
+		const darkTheme = createMockTheme("dark")
 
-		expect(isThemeTypeMatch(lightTheme, "dark")).toBe(false);
-		expect(isThemeTypeMatch(darkTheme, "light")).toBe(false);
-	});
-});
+		expect(isThemeTypeMatch(lightTheme, "dark")).toBe(false)
+		expect(isThemeTypeMatch(darkTheme, "light")).toBe(false)
+	})
+})

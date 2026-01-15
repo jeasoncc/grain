@@ -8,13 +8,13 @@
  * @requirements Architecture compliance (flows → pipes → utils)
  */
 
-import PQueue from "p-queue";
+import type PQueue from "p-queue"
 import {
+	type QueueStatus,
 	fileOperationQueue as utilFileOperationQueue,
 	getQueueStatus as utilGetQueueStatus,
 	waitForQueueIdle as utilWaitForQueueIdle,
-	type QueueStatus,
-} from "@/utils/queue.util";
+} from "@/utils/queue.util"
 
 /**
  * File operation queue - re-exported from utils
@@ -22,7 +22,7 @@ import {
  * This is a module-level singleton queue that ensures all file operations
  * execute serially to avoid race conditions.
  */
-export const fileOperationQueue: PQueue = utilFileOperationQueue;
+export const fileOperationQueue: PQueue = utilFileOperationQueue
 
 /**
  * Get queue status
@@ -34,7 +34,7 @@ export const fileOperationQueue: PQueue = utilFileOperationQueue;
  *
  * @returns Queue status object
  */
-export const getQueueStatus = (): QueueStatus => utilGetQueueStatus();
+export const getQueueStatus = (): QueueStatus => utilGetQueueStatus()
 
 /**
  * Wait for queue to become idle
@@ -44,7 +44,7 @@ export const getQueueStatus = (): QueueStatus => utilGetQueueStatus();
  *
  * @returns Promise that resolves when queue is idle
  */
-export const waitForQueueIdle = (): Promise<void> => utilWaitForQueueIdle();
+export const waitForQueueIdle = (): Promise<void> => utilWaitForQueueIdle()
 
 // Re-export types
-export type { QueueStatus };
+export type { QueueStatus }

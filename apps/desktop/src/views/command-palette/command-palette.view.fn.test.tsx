@@ -1,8 +1,8 @@
-import { render } from "@testing-library/react";
-import { Search } from "lucide-react";
-import { describe, expect, it, vi } from "vitest";
-import type { CommandPaletteViewProps } from "./command-palette.types";
-import { CommandPaletteView } from "./command-palette.view.fn";
+import { render } from "@testing-library/react"
+import { Search } from "lucide-react"
+import { describe, expect, it, vi } from "vitest"
+import type { CommandPaletteViewProps } from "./command-palette.types"
+import { CommandPaletteView } from "./command-palette.view.fn"
 
 describe("CommandPaletteView", () => {
 	const defaultProps: CommandPaletteViewProps = {
@@ -21,12 +21,12 @@ describe("CommandPaletteView", () => {
 				],
 			},
 		],
-	};
+	}
 
 	it("should render without crashing", () => {
-		const { container } = render(<CommandPaletteView {...defaultProps} />);
-		expect(container).toBeTruthy();
-	});
+		const { container } = render(<CommandPaletteView {...defaultProps} />)
+		expect(container).toBeTruthy()
+	})
 
 	it("should accept commands prop", () => {
 		const props: CommandPaletteViewProps = {
@@ -53,26 +53,20 @@ describe("CommandPaletteView", () => {
 					],
 				},
 			],
-		};
+		}
 
-		const { container } = render(<CommandPaletteView {...props} />);
-		expect(container).toBeTruthy();
-	});
+		const { container } = render(<CommandPaletteView {...props} />)
+		expect(container).toBeTruthy()
+	})
 
 	it("should handle open state changes", () => {
-		const onOpenChange = vi.fn();
+		const onOpenChange = vi.fn()
 		const { rerender } = render(
 			<CommandPaletteView {...defaultProps} onOpenChange={onOpenChange} />,
-		);
+		)
 
-		rerender(
-			<CommandPaletteView
-				{...defaultProps}
-				open={false}
-				onOpenChange={onOpenChange}
-			/>,
-		);
+		rerender(<CommandPaletteView {...defaultProps} open={false} onOpenChange={onOpenChange} />)
 
-		expect(onOpenChange).not.toHaveBeenCalled();
-	});
-});
+		expect(onOpenChange).not.toHaveBeenCalled()
+	})
+})

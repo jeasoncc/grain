@@ -1,33 +1,28 @@
-import {
-	createFileRoute,
-	Link,
-	Outlet,
-	useLocation,
-} from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
-import { useMemo } from "react";
-import { useIconTheme } from "@/hooks/use-icon-theme";
-import { cn } from "@/utils/cn.util";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router"
+import { ArrowLeft } from "lucide-react"
+import { useMemo } from "react"
+import { useIconTheme } from "@/hooks/use-icon-theme"
+import { cn } from "@/utils/cn.util"
 
 export const Route = createFileRoute("/settings")({
 	component: SettingsLayout,
-});
+})
 
 interface NavItem {
-	readonly to: string;
-	readonly label: string;
-	readonly description?: string;
-	readonly icon: React.ComponentType<{ readonly className?: string }>;
+	readonly to: string
+	readonly label: string
+	readonly description?: string
+	readonly icon: React.ComponentType<{ readonly className?: string }>
 }
 
 interface NavGroup {
-	readonly title: string;
-	readonly items: ReadonlyArray<NavItem>;
+	readonly title: string
+	readonly items: ReadonlyArray<NavItem>
 }
 
 function SettingsLayout() {
-	const location = useLocation();
-	const iconTheme = useIconTheme();
+	const location = useLocation()
+	const iconTheme = useIconTheme()
 
 	const navGroups = useMemo<ReadonlyArray<NavGroup>>(
 		() => [
@@ -108,7 +103,7 @@ function SettingsLayout() {
 			},
 		],
 		[iconTheme],
-	);
+	)
 
 	return (
 		<div className="h-screen bg-background flex flex-col overflow-hidden">
@@ -143,7 +138,7 @@ function SettingsLayout() {
 								</h3>
 								<div className="space-y-0.5">
 									{group.items.map((item) => {
-										const isActive = location.pathname === item.to;
+										const isActive = location.pathname === item.to
 										return (
 											<Link
 												key={item.to}
@@ -176,7 +171,7 @@ function SettingsLayout() {
 													</span>
 												</div>
 											</Link>
-										);
+										)
 									})}
 								</div>
 							</div>
@@ -192,5 +187,5 @@ function SettingsLayout() {
 				</main>
 			</div>
 		</div>
-	);
+	)
 }

@@ -7,10 +7,10 @@
  * Requirements: 2.1, 2.3, 3.3, 1.1, 1.5, 3.1
  */
 
-import { useNavigate } from "@tanstack/react-router";
-import * as E from "fp-ts/Either";
-import { memo, useCallback, useEffect, useRef } from "react";
-import { toast } from "sonner";
+import { useNavigate } from "@tanstack/react-router"
+import * as E from "fp-ts/Either"
+import { memo, useCallback, useEffect, useRef } from "react"
+import { toast } from "sonner"
 import {
 	createDiaryCompatAsync,
 	createFileAsync,
@@ -18,64 +18,61 @@ import {
 	moveNode,
 	openFileAsync,
 	renameNode,
-} from "@/flows";
-import { useEditorTabs } from "@/hooks/use-editor-tabs";
-import { useNodesByWorkspace } from "@/hooks/use-node";
-import { useGetNodeById } from "@/hooks/use-node-operations";
-import { useOptimisticCollapse } from "@/hooks/use-optimistic-collapse";
+} from "@/flows"
+import { useEditorTabs } from "@/hooks/use-editor-tabs"
+import { useNodesByWorkspace } from "@/hooks/use-node"
+import { useGetNodeById } from "@/hooks/use-node-operations"
+import { useOptimisticCollapse } from "@/hooks/use-optimistic-collapse"
 import {
 	createDocument,
 	createHeadingNode,
 	createParagraphNode,
 	createTextNode,
-} from "@/pipes/content";
-import { useSelectionStore } from "@/state/selection.state";
-import type { NodeType } from "@/types/node";
-import { autoExpandAndScrollToNode } from "@/utils/file-tree-navigation.util";
-import { FileTree } from "@/views/file-tree";
-import { useConfirm } from "@/views/ui/confirm";
-import type { FileTreePanelContainerProps } from "./file-tree-panel.types";
+} from "@/pipes/content"
+import { useSelectionStore } from "@/state/selection.state"
+import type { NodeType } from "@/types/node"
+import { autoExpandAndScrollToNode } from "@/utils/file-tree-navigation.util"
+import { FileTree } from "@/views/file-tree"
+import { useConfirm } from "@/views/ui/confirm"
+import type { FileTreePanelContainerProps } from "./file-tree-panel.types"
 
 export const FileTreePanelContainer = memo(
 	({ workspaceId: propWorkspaceId }: FileTreePanelContainerProps) => {
-		const navigate = useNavigate();
-		const confirm = useConfirm();
+		const navigate = useNavigate()
+		const confirm = useConfirm()
 
 		// Global selection state
-		const globalSelectedWorkspaceId = useSelectionStore(
-			(s) => s.selectedWorkspaceId,
-		);
-		const workspaceId = propWorkspaceId ?? globalSelectedWorkspaceId;
+		const globalSelectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId)
+		const workspaceId = propWorkspaceId ?? globalSelectedWorkspaceId
 
 		// Node operations hooks
-		const { getNode } = useGetNodeById();
+		const { getNode } = useGetNodeById()
 
 		// Optimistic collapse hook - Requirements: 1.1, 1.2, 1.3, 1.4, 1.5
-		const { toggleCollapsed: optimisticToggleCollapsed } =
-			useOptimisticCollapse({
-				workspaceId,
-			});
+		const { toggleCollapsed: optimisticToggleCollapsed } = useOptimisticCollapse({
+			workspaceId,
+		})
 
 		// Wrapper for autoExpandAndScrollToNode compatibility
 		const setCollapsed = useCallback(
 			async (nodeId: string, collapsed: boolean): Promise<boolean> => {
 				try {
-					await optimisticToggleCollapsed(nodeId, collapsed);
-					return true;
+					await optimisticToggleCollapsed(nodeId, collapsed)
+					return true
 				} catch {
-					return false;
+					return false
 				}
 			},
 			[optimisticToggleCollapsed],
-		);
+		)
 
 		// Selected node state - use global store for cross-component communication
-		const selectedNodeId = useSelectionStore((s) => s.selectedNodeId);
-		const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId);
+		const selectedNodeId = useSelectionStore((s) => s.selectedNodeId)
+		const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId)
 
 		// Tree ref for scrolling to nodes
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const treeRef = useRef<any>(null);
+		const treeRef = useRef<any>(null)
 
 		/**
 		 * Generate default content for new files
@@ -85,35 +82,35 @@ export const FileTreePanelContainer = memo(
 			const doc = createDocument([
 				createHeadingNode(title, "h2"),
 				createParagraphNode([createTextNode("")]),
-			]);
-			return JSON.stringify(doc);
-		}, []);
+			])
+			return JSON.stringify(doc)
+		}, [])
 
 		// Clear selection when workspace changes
 		// Requirements: 3.3
-		const prevWorkspaceIdRef = useRef(workspaceId);
+		const prevWorkspaceIdRef = useRef(workspaceId)
 		useEffect(() => {
 			if (prevWorkspaceIdRef.current !== workspaceId) {
-				setSelectedNodeId(null);
-				prevWorkspaceIdRef.current = workspaceId;
+				setSelectedNodeId(null)
+				prevWorkspaceIdRef.current = workspaceId
 			}
-		}, [workspaceId, setSelectedNodeId]);
+		}, [workspaceId, setSelectedNodeId])
 
 		// 获取工作区节点数据
-		const nodes = useNodesByWorkspace(workspaceId) ?? [];
+		const nodes = useNodesByWorkspace(workspaceId) ?? []
 
 		// Handle node selection - open file in editor
 		// 使用 openFile action 通过队列执行，确保数据先于渲染
 		const handleSelectNode = useCallback(
 			async (nodeId: string) => {
-				setSelectedNodeId(nodeId);
+				setSelectedNodeId(nodeId)
 
 				// Get node details to open in editor
-				const node = await getNode(nodeId);
-				if (!node) return;
+				const node = await getNode(nodeId)
+				if (!node) return
 
 				// Only open files (not folders) in editor
-				if (node.type === "folder") return;
+				if (node.type === "folder") return
 
 				if (workspaceId) {
 					// 使用 openFileAsync，内部处理：
@@ -125,22 +122,22 @@ export const FileTreePanelContainer = memo(
 						nodeId,
 						title: node.title,
 						type: node.type,
-					});
+					})
 				}
 
 				// Navigate to main workspace - all file types are handled there
-				navigate({ to: "/" });
+				navigate({ to: "/" })
 			},
 			[workspaceId, navigate, setSelectedNodeId, getNode],
-		);
+		)
 
 		// Handle folder creation
 		// 使用 createFileAsync 通过队列执行
 		const handleCreateFolder = useCallback(
 			async (parentId: string | null) => {
 				if (!workspaceId) {
-					toast.error("Please select a workspace first");
-					return;
+					toast.error("Please select a workspace first")
+					return
 				}
 
 				try {
@@ -149,56 +146,51 @@ export const FileTreePanelContainer = memo(
 						parentId,
 						type: "folder",
 						title: "New Folder",
-					});
+					})
 
-					toast.success("Folder created");
+					toast.success("Folder created")
 
 					// Auto-expand and scroll to new folder
 					// Requirements: 2.1, 2.2, 2.3, 2.4
 					if (result && result.node) {
 						// Select the new folder
-						setSelectedNodeId(result.node.id);
+						setSelectedNodeId(result.node.id)
 
 						// Auto-expand ancestors and scroll to the new folder
-						await autoExpandAndScrollToNode(
-							nodes,
-							result.node.id,
-							setCollapsed,
-							treeRef,
-						);
+						await autoExpandAndScrollToNode(nodes, result.node.id, setCollapsed, treeRef)
 					}
 				} catch (error) {
-					console.error("Failed to create folder:", error);
-					toast.error("Failed to create folder");
+					console.error("Failed to create folder:", error)
+					toast.error("Failed to create folder")
 				}
 			},
 			[workspaceId, nodes, setCollapsed, setSelectedNodeId],
-		);
+		)
 
 		// Handle file creation
 		// 使用 createFileAsync 通过队列执行
 		const handleCreateFile = useCallback(
 			async (parentId: string | null, type: NodeType) => {
 				if (!workspaceId) {
-					toast.error("Please select a workspace first");
-					return;
+					toast.error("Please select a workspace first")
+					return
 				}
 
 				try {
-					const title = type === "drawing" ? "New Canvas" : "New File";
+					const title = type === "drawing" ? "New Canvas" : "New File"
 
 					// Generate appropriate content based on type
-					let content: string;
+					let content: string
 					if (type === "drawing") {
 						// Excalidraw canvas content
 						content = JSON.stringify({
 							elements: [],
 							appState: {},
 							files: {},
-						});
+						})
 					} else {
 						// Regular file - generate Lexical template content
-						content = generateDefaultFileContent(title);
+						content = generateDefaultFileContent(title)
 					}
 
 					console.log("[FileTreePanel] 创建文件:", {
@@ -208,7 +200,7 @@ export const FileTreePanelContainer = memo(
 						title,
 						contentLength: content.length,
 						hasContent: !!content,
-					});
+					})
 
 					const result = await createFileAsync({
 						workspaceId,
@@ -216,55 +208,43 @@ export const FileTreePanelContainer = memo(
 						type,
 						title,
 						content,
-					});
+					})
 
 					console.log("[FileTreePanel] 文件创建成功:", {
 						nodeId: result.node.id,
 						tabId: result.tabId,
-					});
+					})
 
-					toast.success(`${type === "drawing" ? "Canvas" : "File"} created`);
+					toast.success(`${type === "drawing" ? "Canvas" : "File"} created`)
 
 					// Auto-select the new file (createFileAsync 已经打开了 tab)
 					// Requirements: 2.1, 2.2, 2.3, 2.4, 2.5
 					if (result && type !== "folder") {
-						setSelectedNodeId(result.node.id);
+						setSelectedNodeId(result.node.id)
 
 						// Auto-expand ancestors and scroll to the new file
-						await autoExpandAndScrollToNode(
-							nodes,
-							result.node.id,
-							setCollapsed,
-							treeRef,
-						);
+						await autoExpandAndScrollToNode(nodes, result.node.id, setCollapsed, treeRef)
 
-						navigate({ to: "/" });
+						navigate({ to: "/" })
 					}
 				} catch (error) {
-					console.error("Failed to create file:", error);
-					toast.error("Failed to create file");
+					console.error("Failed to create file:", error)
+					toast.error("Failed to create file")
 				}
 			},
-			[
-				workspaceId,
-				setSelectedNodeId,
-				navigate,
-				generateDefaultFileContent,
-				nodes,
-				setCollapsed,
-			],
-		);
+			[workspaceId, setSelectedNodeId, navigate, generateDefaultFileContent, nodes, setCollapsed],
+		)
 
 		// Editor tabs for closing deleted files
-		const { closeTab } = useEditorTabs();
+		const { closeTab } = useEditorTabs()
 
 		// Handle node deletion
 		const handleDeleteNode = useCallback(
 			async (nodeId: string) => {
-				const node = await getNode(nodeId);
-				if (!node) return;
+				const node = await getNode(nodeId)
+				if (!node) return
 
-				const isFolder = node.type === "folder";
+				const isFolder = node.type === "folder"
 				const ok = await confirm({
 					title: `Delete ${isFolder ? "folder" : "file"}?`,
 					description: isFolder
@@ -272,55 +252,52 @@ export const FileTreePanelContainer = memo(
 						: `Are you sure you want to delete "${node.title}"? This cannot be undone.`,
 					confirmText: "Delete",
 					cancelText: "Cancel",
-				});
+				})
 
-				if (!ok) return;
+				if (!ok) return
 
 				try {
-					const result = await deleteNode(nodeId)();
+					const result = await deleteNode(nodeId)()
 
 					if (E.isLeft(result)) {
-						throw new Error(result.left.message);
+						throw new Error(result.left.message)
 					}
 
 					// Close the tab if the deleted node was open in editor
-					closeTab(nodeId);
+					closeTab(nodeId)
 
 					// Clear selection if deleted node was selected
 					if (selectedNodeId === nodeId) {
-						setSelectedNodeId(null);
+						setSelectedNodeId(null)
 					}
 
-					toast.success(`${isFolder ? "Folder" : "File"} deleted`);
+					toast.success(`${isFolder ? "Folder" : "File"} deleted`)
 				} catch (error) {
-					console.error("Failed to delete node:", error);
-					toast.error("Failed to delete");
+					console.error("Failed to delete node:", error)
+					toast.error("Failed to delete")
 				}
 			},
 			[confirm, selectedNodeId, closeTab, setSelectedNodeId, getNode],
-		);
+		)
 
 		// Handle node rename
-		const handleRenameNode = useCallback(
-			async (nodeId: string, newTitle: string) => {
-				if (!newTitle.trim()) return;
+		const handleRenameNode = useCallback(async (nodeId: string, newTitle: string) => {
+			if (!newTitle.trim()) return
 
-				try {
-					const result = await renameNode({
-						nodeId,
-						title: newTitle.trim(),
-					})();
+			try {
+				const result = await renameNode({
+					nodeId,
+					title: newTitle.trim(),
+				})()
 
-					if (E.isLeft(result)) {
-						throw new Error(result.left.message);
-					}
-				} catch (error) {
-					console.error("Failed to rename node:", error);
-					toast.error("Failed to rename");
+				if (E.isLeft(result)) {
+					throw new Error(result.left.message)
 				}
-			},
-			[],
-		);
+			} catch (error) {
+				console.error("Failed to rename node:", error)
+				toast.error("Failed to rename")
+			}
+		}, [])
 
 		// Handle node move (drag and drop)
 		const handleMoveNode = useCallback(
@@ -330,53 +307,53 @@ export const FileTreePanelContainer = memo(
 						nodeId,
 						newParentId,
 						newOrder: newIndex,
-					})();
+					})()
 
 					if (E.isLeft(result)) {
-						throw new Error(result.left.message);
+						throw new Error(result.left.message)
 					}
 				} catch (error) {
-					console.error("Failed to move node:", error);
+					console.error("Failed to move node:", error)
 					if (error instanceof Error && error.message.includes("descendants")) {
-						toast.error("Cannot move a folder into itself");
+						toast.error("Cannot move a folder into itself")
 					} else {
-						toast.error("Failed to move");
+						toast.error("Failed to move")
 					}
 				}
 			},
 			[],
-		);
+		)
 
 		// Handle diary creation
 		// Requirements: 1.1, 1.5, 3.1
 		// 使用 createDiaryCompatAsync，内部已通过队列处理
 		const handleCreateDiary = useCallback(async () => {
 			if (!workspaceId) {
-				toast.error("Please select a workspace first");
-				return;
+				toast.error("Please select a workspace first")
+				return
 			}
 
 			try {
 				// Create diary and get content in one call
 				const { node } = await createDiaryCompatAsync({
 					workspaceId,
-				});
+				})
 
-				toast.success("Diary created");
+				toast.success("Diary created")
 
 				// Auto-select the new diary file
 				// Requirements: 2.1, 2.2, 2.3, 2.4
-				setSelectedNodeId(node.id);
+				setSelectedNodeId(node.id)
 
 				// Auto-expand ancestors and scroll to the new diary
-				await autoExpandAndScrollToNode(nodes, node.id, setCollapsed, treeRef);
+				await autoExpandAndScrollToNode(nodes, node.id, setCollapsed, treeRef)
 
-				navigate({ to: "/" });
+				navigate({ to: "/" })
 			} catch (error) {
-				console.error("Failed to create diary:", error);
-				toast.error("Failed to create diary");
+				console.error("Failed to create diary:", error)
+				toast.error("Failed to create diary")
 			}
-		}, [workspaceId, setSelectedNodeId, navigate, nodes, setCollapsed]);
+		}, [workspaceId, setSelectedNodeId, navigate, nodes, setCollapsed])
 
 		// Handle toggle collapsed state
 		// Handle toggle collapsed state
@@ -384,19 +361,19 @@ export const FileTreePanelContainer = memo(
 		const handleToggleCollapsed = useCallback(
 			async (nodeId: string, collapsed: boolean) => {
 				// Performance monitoring - Requirements: 1.5, 10.1, 10.2, 10.3
-				const startTime = performance.now();
+				const startTime = performance.now()
 				console.log("[FileTree Performance] Toggle collapsed started", {
 					nodeId,
 					collapsed,
 					timestamp: new Date().toISOString(),
-				});
+				})
 
 				try {
 					// Use optimistic update - Requirements: 1.1, 1.2, 1.3, 1.4
-					await optimisticToggleCollapsed(nodeId, collapsed);
+					await optimisticToggleCollapsed(nodeId, collapsed)
 
-					const endTime = performance.now();
-					const totalDuration = endTime - startTime;
+					const endTime = performance.now()
+					const totalDuration = endTime - startTime
 
 					// Log performance metrics
 					console.log("[FileTree Performance] Toggle collapsed completed", {
@@ -404,24 +381,21 @@ export const FileTreePanelContainer = memo(
 						collapsed,
 						totalDuration: `${totalDuration.toFixed(2)}ms`,
 						timestamp: new Date().toISOString(),
-					});
+					})
 
 					// Warning for slow operations (> 100ms threshold)
 					// Note: With optimistic updates, this should rarely trigger
 					if (totalDuration > 100) {
-						console.warn(
-							"[FileTree Performance] Slow toggle operation detected",
-							{
-								nodeId,
-								totalDuration: `${totalDuration.toFixed(2)}ms`,
-								threshold: "100ms",
-								note: "This is unexpected with optimistic updates",
-							},
-						);
+						console.warn("[FileTree Performance] Slow toggle operation detected", {
+							nodeId,
+							totalDuration: `${totalDuration.toFixed(2)}ms`,
+							threshold: "100ms",
+							note: "This is unexpected with optimistic updates",
+						})
 					}
 				} catch (error) {
-					const errorTime = performance.now();
-					const totalDuration = errorTime - startTime;
+					const errorTime = performance.now()
+					const totalDuration = errorTime - startTime
 
 					console.error("[FileTree Performance] Toggle collapsed failed", {
 						nodeId,
@@ -429,11 +403,11 @@ export const FileTreePanelContainer = memo(
 						error,
 						totalDuration: `${totalDuration.toFixed(2)}ms`,
 						timestamp: new Date().toISOString(),
-					});
+					})
 				}
 			},
 			[optimisticToggleCollapsed],
-		);
+		)
 
 		return (
 			<FileTree
@@ -450,8 +424,8 @@ export const FileTreePanelContainer = memo(
 				onCreateDiary={handleCreateDiary}
 				treeRef={treeRef}
 			/>
-		);
+		)
 	},
-);
+)
 
-FileTreePanelContainer.displayName = "FileTreePanelContainer";
+FileTreePanelContainer.displayName = "FileTreePanelContainer"

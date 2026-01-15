@@ -11,9 +11,9 @@
  * - 纯函数风格：无副作用的数据转换
  */
 
-import type { z } from "zod";
-import * as E from "fp-ts/Either";
-import { warn, error as logError } from "@/io/log/logger.api";
+import * as E from "fp-ts/Either"
+import type { z } from "zod"
+import { error as logError, warn } from "@/io/log/logger.api"
 
 // ============================================================================
 // 存储键常量
@@ -34,9 +34,9 @@ export const STORAGE_KEYS = {
 	LAST_AUTO_BACKUP: "last-auto-backup",
 	/** 自动备份启用状态 */
 	AUTO_BACKUP_ENABLED: "auto-backup-enabled",
-} as const;
+} as const
 
-export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
+export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS]
 
 // ============================================================================
 // 通用存储操作
@@ -52,11 +52,11 @@ export function getString(key: string): E.Either<Error, string | null> {
 	return E.tryCatch(
 		() => localStorage.getItem(key),
 		(err) => {
-			const error = new Error(`[Storage] 读取失败 (${key}): ${String(err)}`);
-			logError(`[Storage] 读取失败 (${key}):`, { error: err });
-			return error;
+			const error = new Error(`[Storage] 读取失败 (${key}): ${String(err)}`)
+			logError(`[Storage] 读取失败 (${key}):`, { error: err })
+			return error
 		},
-	);
+	)
 }
 
 /**
@@ -70,11 +70,11 @@ export function setString(key: string, value: string): E.Either<Error, void> {
 	return E.tryCatch(
 		() => localStorage.setItem(key, value),
 		(err) => {
-			const error = new Error(`[Storage] 写入失败 (${key}): ${String(err)}`);
-			logError(`[Storage] 写入失败 (${key}):`, { error: err });
-			return error;
+			const error = new Error(`[Storage] 写入失败 (${key}): ${String(err)}`)
+			logError(`[Storage] 写入失败 (${key}):`, { error: err })
+			return error
 		},
-	);
+	)
 }
 
 /**
@@ -87,11 +87,11 @@ export function remove(key: string): E.Either<Error, void> {
 	return E.tryCatch(
 		() => localStorage.removeItem(key),
 		(err) => {
-			const error = new Error(`[Storage] 删除失败 (${key}): ${String(err)}`);
-			logError(`[Storage] 删除失败 (${key}):`, { error: err });
-			return error;
+			const error = new Error(`[Storage] 删除失败 (${key}): ${String(err)}`)
+			logError(`[Storage] 删除失败 (${key}):`, { error: err })
+			return error
 		},
-	);
+	)
 }
 
 /**
@@ -103,10 +103,10 @@ export function clearAll(): E.Either<Error, void> {
 	return E.tryCatch(
 		() => localStorage.clear(),
 		(err) => {
-			logError("[Storage] 清空失败", { error: err }, "settings.storage");
-			return new Error(`[Storage] 清空失败: ${String(err)}`);
+			logError("[Storage] 清空失败", { error: err }, "settings.storage")
+			return new Error(`[Storage] 清空失败: ${String(err)}`)
 		},
-	);
+	)
 }
 
 // ============================================================================
@@ -121,35 +121,31 @@ export function clearAll(): E.Either<Error, void> {
  * @param defaultValue - 默认值（校验失败或数据不存在时返回）
  * @returns 校验后的数据或默认值
  */
-export function getJson<T>(
-	key: string,
-	schema: z.ZodType<T>,
-	defaultValue: T,
-): T {
+export function getJson<T>(key: string, schema: z.ZodType<T>, defaultValue: T): T {
 	const result = E.tryCatch(
 		() => {
-			const stored = localStorage.getItem(key);
+			const stored = localStorage.getItem(key)
 			if (!stored) {
-				return defaultValue;
+				return defaultValue
 			}
 
-			const parsed = JSON.parse(stored);
-			const validation = schema.safeParse(parsed);
+			const parsed = JSON.parse(stored)
+			const validation = schema.safeParse(parsed)
 
 			if (validation.success) {
-				return validation.data;
+				return validation.data
 			}
 
-			warn(`[Storage] 数据格式无效 (${key})，使用默认值:`, { error: validation.error });
-			return defaultValue;
+			warn(`[Storage] 数据格式无效 (${key})，使用默认值:`, { error: validation.error })
+			return defaultValue
 		},
 		(err) => {
-			logError(`[Storage] 读取 JSON 失败 (${key}):`, { error: err });
-			return new Error(`[Storage] 读取 JSON 失败 (${key}): ${String(err)}`);
+			logError(`[Storage] 读取 JSON 失败 (${key}):`, { error: err })
+			return new Error(`[Storage] 读取 JSON 失败 (${key}): ${String(err)}`)
 		},
-	);
+	)
 
-	return E.getOrElse(() => defaultValue)(result);
+	return E.getOrElse(() => defaultValue)(result)
 }
 
 /**
@@ -163,10 +159,10 @@ export function setJson<T>(key: string, value: T): E.Either<Error, void> {
 	return E.tryCatch(
 		() => localStorage.setItem(key, JSON.stringify(value)),
 		(err) => {
-			logError(`[Storage] 写入 JSON 失败 (${key}):`, { error: err });
-			return new Error(`[Storage] 写入 JSON 失败 (${key}): ${String(err)}`);
+			logError(`[Storage] 写入 JSON 失败 (${key}):`, { error: err })
+			return new Error(`[Storage] 写入 JSON 失败 (${key}): ${String(err)}`)
 		},
-	);
+	)
 }
 
 /**
@@ -179,19 +175,19 @@ export function setJson<T>(key: string, value: T): E.Either<Error, void> {
 export function getJsonUnsafe<T>(key: string, defaultValue: T): T {
 	const result = E.tryCatch(
 		() => {
-			const stored = localStorage.getItem(key);
+			const stored = localStorage.getItem(key)
 			if (!stored) {
-				return defaultValue;
+				return defaultValue
 			}
-			return JSON.parse(stored) as T;
+			return JSON.parse(stored) as T
 		},
 		(err) => {
-			logError(`[Storage] 解析 JSON 失败 (${key}):`, { error: err });
-			return new Error(`[Storage] 解析 JSON 失败 (${key}): ${String(err)}`);
+			logError(`[Storage] 解析 JSON 失败 (${key}):`, { error: err })
+			return new Error(`[Storage] 解析 JSON 失败 (${key}): ${String(err)}`)
 		},
-	);
+	)
 
-	return E.getOrElse(() => defaultValue)(result);
+	return E.getOrElse(() => defaultValue)(result)
 }
 
 // ============================================================================
@@ -206,29 +202,29 @@ export function getJsonUnsafe<T>(key: string, defaultValue: T): T {
 export function getStorageStats(): { readonly size: number; readonly keys: number } {
 	const result = E.tryCatch(
 		() => {
-			let totalSize = 0;
-			const keys = Object.keys(localStorage);
+			let totalSize = 0
+			const keys = Object.keys(localStorage)
 
 			for (const key of keys) {
-				const value = localStorage.getItem(key);
+				const value = localStorage.getItem(key)
 				if (value) {
 					// 计算字符串的字节大小（UTF-16）
-					totalSize += (key.length + value.length) * 2;
+					totalSize += (key.length + value.length) * 2
 				}
 			}
 
 			return {
 				size: totalSize,
 				keys: keys.length,
-			};
+			}
 		},
 		(err) => {
-			logError("[Storage] 获取统计信息失败", { error: err }, "settings.storage");
-			return new Error(`[Storage] 获取统计信息失败: ${err}`);
+			logError("[Storage] 获取统计信息失败", { error: err }, "settings.storage")
+			return new Error(`[Storage] 获取统计信息失败: ${err}`)
 		},
-	);
+	)
 
-	return E.getOrElse(() => ({ size: 0, keys: 0 }))(result);
+	return E.getOrElse(() => ({ size: 0, keys: 0 }))(result)
 }
 
 /**
@@ -240,12 +236,12 @@ export function getAllKeys(): readonly string[] {
 	const result = E.tryCatch(
 		() => Object.keys(localStorage),
 		(err) => {
-			logError("[Storage] 获取键列表失败", { error: err }, "settings.storage");
-			return new Error(`[Storage] 获取键列表失败: ${err}`);
+			logError("[Storage] 获取键列表失败", { error: err }, "settings.storage")
+			return new Error(`[Storage] 获取键列表失败: ${err}`)
 		},
-	);
+	)
 
-	return E.getOrElse(() => [] as readonly string[])(result);
+	return E.getOrElse(() => [] as readonly string[])(result)
 }
 
 /**
@@ -258,12 +254,12 @@ export function has(key: string): boolean {
 	const result = E.tryCatch(
 		() => localStorage.getItem(key) !== null,
 		(err) => {
-			logError(`[Storage] 检查键失败 (${key}):`, { error: err });
-			return new Error(`[Storage] 检查键失败 (${key}): ${String(err)}`);
+			logError(`[Storage] 检查键失败 (${key}):`, { error: err })
+			return new Error(`[Storage] 检查键失败 (${key}): ${String(err)}`)
 		},
-	);
+	)
 
-	return E.getOrElse(() => false)(result);
+	return E.getOrElse(() => false)(result)
 }
 
 // ============================================================================
@@ -279,12 +275,12 @@ export function getAutoBackupEnabled(): boolean {
 	const result = E.tryCatch(
 		() => localStorage.getItem(STORAGE_KEYS.AUTO_BACKUP_ENABLED) === "true",
 		(err) => {
-			logError("[Storage] 获取自动备份状态失败", { error: err }, "settings.storage");
-			return new Error(`[Storage] 获取自动备份状态失败: ${err}`);
+			logError("[Storage] 获取自动备份状态失败", { error: err }, "settings.storage")
+			return new Error(`[Storage] 获取自动备份状态失败: ${err}`)
 		},
-	);
+	)
 
-	return E.getOrElse(() => false)(result);
+	return E.getOrElse(() => false)(result)
 }
 
 /**
@@ -297,8 +293,8 @@ export function setAutoBackupEnabled(enabled: boolean): E.Either<Error, void> {
 	return E.tryCatch(
 		() => localStorage.setItem(STORAGE_KEYS.AUTO_BACKUP_ENABLED, enabled.toString()),
 		(err) => {
-			logError("[Storage] 设置自动备份状态失败", { error: err }, "settings.storage");
-			return new Error(`[Storage] 设置自动备份状态失败: ${String(err)}`);
+			logError("[Storage] 设置自动备份状态失败", { error: err }, "settings.storage")
+			return new Error(`[Storage] 设置自动备份状态失败: ${String(err)}`)
 		},
-	);
+	)
 }

@@ -10,8 +10,8 @@
  * 这些函数无副作用，可组合，可测试。
  */
 
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
+import * as E from "fp-ts/Either"
+import { pipe } from "fp-ts/function"
 import type {
 	LexicalDocument,
 	LexicalHeadingNode,
@@ -21,8 +21,8 @@ import type {
 	LexicalRootChild,
 	LexicalTagNode,
 	LexicalTextNode,
-} from "../content/content.generate.fn";
-import { type ExportError, parseLexicalContent } from "./export.json.fn";
+} from "../content/content.generate.fn"
+import { type ExportError, parseLexicalContent } from "./export.json.fn"
 
 // ==============================
 // Types
@@ -33,23 +33,23 @@ import { type ExportError, parseLexicalContent } from "./export.json.fn";
  */
 export interface MarkdownExportOptions {
 	/** 是否在标题前添加空行 */
-	readonly blankLineBeforeHeading?: boolean;
+	readonly blankLineBeforeHeading?: boolean
 	/** 是否在标题后添加空行 */
-	readonly blankLineAfterHeading?: boolean;
+	readonly blankLineAfterHeading?: boolean
 	/** 是否在列表前添加空行 */
-	readonly blankLineBeforeList?: boolean;
+	readonly blankLineBeforeList?: boolean
 	/** 是否在列表后添加空行 */
-	readonly blankLineAfterList?: boolean;
+	readonly blankLineAfterList?: boolean
 	/** 标签格式：'hash' (#tag) 或 'bracket' (#[tag]) */
-	readonly tagFormat?: "hash" | "bracket";
+	readonly tagFormat?: "hash" | "bracket"
 	/** 是否包含文档标题 */
-	readonly includeTitle?: boolean;
+	readonly includeTitle?: boolean
 	/** 文档标题 */
-	readonly title?: string;
+	readonly title?: string
 	/** 是否包含 YAML front matter */
-	readonly includeFrontMatter?: boolean;
+	readonly includeFrontMatter?: boolean
 	/** Front matter 数据 */
-	readonly frontMatter?: Record<string, unknown>;
+	readonly frontMatter?: Record<string, unknown>
 }
 
 /**
@@ -63,7 +63,7 @@ const TEXT_FORMAT = {
 	CODE: 16,
 	SUBSCRIPT: 32,
 	SUPERSCRIPT: 64,
-} as const;
+} as const
 
 // ==============================
 // Default Options
@@ -79,7 +79,7 @@ const defaultOptions: Required<MarkdownExportOptions> = {
 	title: "",
 	includeFrontMatter: false,
 	frontMatter: {},
-};
+}
 
 // ==============================
 // Text Formatting Functions
@@ -93,25 +93,25 @@ const defaultOptions: Required<MarkdownExportOptions> = {
  * @returns 格式化后的文本
  */
 export function applyTextFormat(text: string, format: number): string {
-	if (!text) return text;
+	if (!text) return text
 
-	let result = text;
+	let result = text
 
 	// 按优先级应用格式（内层到外层）
 	if (format & TEXT_FORMAT.CODE) {
-		result = `\`${result}\``;
+		result = `\`${result}\``
 	}
 	if (format & TEXT_FORMAT.STRIKETHROUGH) {
-		result = `~~${result}~~`;
+		result = `~~${result}~~`
 	}
 	if (format & TEXT_FORMAT.ITALIC) {
-		result = `*${result}*`;
+		result = `*${result}*`
 	}
 	if (format & TEXT_FORMAT.BOLD) {
-		result = `**${result}**`;
+		result = `**${result}**`
 	}
 
-	return result;
+	return result
 }
 
 /**
@@ -121,17 +121,14 @@ export function applyTextFormat(text: string, format: number): string {
  * @param options - 导出选项
  * @returns Markdown 字符串
  */
-export function convertTagNode(
-	node: LexicalTagNode,
-	options: MarkdownExportOptions = {},
-): string {
-	const { tagFormat = "hash" } = options;
+export function convertTagNode(node: LexicalTagNode, options: MarkdownExportOptions = {}): string {
+	const { tagFormat = "hash" } = options
 
 	if (tagFormat === "bracket") {
-		return `#[${node.tagName}]`;
+		return `#[${node.tagName}]`
 	}
 
-	return `#${node.tagName}`;
+	return `#${node.tagName}`
 }
 
 /**
@@ -141,7 +138,7 @@ export function convertTagNode(
  * @returns Markdown 字符串
  */
 export function convertTextNode(node: LexicalTextNode): string {
-	return applyTextFormat(node.text, node.format);
+	return applyTextFormat(node.text, node.format)
 }
 
 /**
@@ -158,11 +155,11 @@ export function convertInlineNodes(
 	return children
 		.map((child) => {
 			if (child.type === "tag") {
-				return convertTagNode(child, options);
+				return convertTagNode(child, options)
 			}
-			return convertTextNode(child);
+			return convertTextNode(child)
 		})
-		.join("");
+		.join("")
 }
 
 // ==============================
@@ -180,8 +177,8 @@ export function convertParagraphNode(
 	node: LexicalParagraphNode,
 	options: MarkdownExportOptions = {},
 ): string {
-	const content = convertInlineNodes(node.children, options);
-	return content;
+	const content = convertInlineNodes(node.children, options)
+	return content
 }
 
 /**
@@ -195,11 +192,11 @@ export function convertHeadingNode(
 	node: LexicalHeadingNode,
 	_options: MarkdownExportOptions = {},
 ): string {
-	const level = parseInt(node.tag.replace("h", ""), 10);
-	const prefix = "#".repeat(level);
-	const content = node.children.map((child) => convertTextNode(child)).join("");
+	const level = parseInt(node.tag.replace("h", ""), 10)
+	const prefix = "#".repeat(level)
+	const content = node.children.map((child) => convertTextNode(child)).join("")
 
-	return `${prefix} ${content}`;
+	return `${prefix} ${content}`
 }
 
 /**
@@ -217,17 +214,17 @@ export function convertListItemNode(
 	index: number,
 	options: MarkdownExportOptions = {},
 ): string {
-	const content = convertInlineNodes(node.children, options);
+	const content = convertInlineNodes(node.children, options)
 
 	switch (listType) {
 		case "number":
-			return `${index + 1}. ${content}`;
+			return `${index + 1}. ${content}`
 		case "check": {
-			const checkbox = node.checked ? "[x]" : "[ ]";
-			return `- ${checkbox} ${content}`;
+			const checkbox = node.checked ? "[x]" : "[ ]"
+			return `- ${checkbox} ${content}`
 		}
 		default:
-			return `- ${content}`;
+			return `- ${content}`
 	}
 }
 
@@ -243,10 +240,8 @@ export function convertListNode(
 	options: MarkdownExportOptions = {},
 ): string {
 	return node.children
-		.map((item, index) =>
-			convertListItemNode(item, node.listType, index, options),
-		)
-		.join("\n");
+		.map((item, index) => convertListItemNode(item, node.listType, index, options))
+		.join("\n")
 }
 
 /**
@@ -262,41 +257,41 @@ export function convertRootChild(
 	options: MarkdownExportOptions = {},
 	prevNodeType?: string,
 ): string {
-	const opts = { ...defaultOptions, ...options };
-	let lines: readonly string[] = [];
+	const opts = { ...defaultOptions, ...options }
+	let lines: readonly string[] = []
 
 	switch (node.type) {
 		case "paragraph": {
-			const content = convertParagraphNode(node, opts);
-			lines = [...lines, content];
-			break;
+			const content = convertParagraphNode(node, opts)
+			lines = [...lines, content]
+			break
 		}
 		case "heading": {
 			if (opts.blankLineBeforeHeading && prevNodeType) {
-				lines = [...lines, ""];
+				lines = [...lines, ""]
 			}
-			lines = [...lines, convertHeadingNode(node, opts)];
+			lines = [...lines, convertHeadingNode(node, opts)]
 			if (opts.blankLineAfterHeading) {
-				lines = [...lines, ""];
+				lines = [...lines, ""]
 			}
-			break;
+			break
 		}
 		case "list": {
 			if (opts.blankLineBeforeList && prevNodeType && prevNodeType !== "list") {
-				lines = [...lines, ""];
+				lines = [...lines, ""]
 			}
-			lines = [...lines, convertListNode(node, opts)];
+			lines = [...lines, convertListNode(node, opts)]
 			if (opts.blankLineAfterList) {
-				lines = [...lines, ""];
+				lines = [...lines, ""]
 			}
-			break;
+			break
 		}
 		default:
 			// 处理未知节点类型
-			break;
+			break
 	}
 
-	return lines.join("\n");
+	return lines.join("\n")
 }
 
 // ==============================
@@ -311,34 +306,32 @@ export function convertRootChild(
  */
 export function generateFrontMatter(data: Record<string, unknown>): string {
 	if (Object.keys(data).length === 0) {
-		return "";
+		return ""
 	}
 
-	let lines: readonly string[] = ["---"];
+	let lines: readonly string[] = ["---"]
 
 	for (const [key, value] of Object.entries(data)) {
-		if (value === undefined || value === null) continue;
+		if (value === undefined || value === null) continue
 
 		if (Array.isArray(value)) {
-			lines = [...lines, `${key}:`];
+			lines = [...lines, `${key}:`]
 			for (const item of value) {
-				lines = [...lines, `  - ${String(item)}`];
+				lines = [...lines, `  - ${String(item)}`]
 			}
 		} else if (typeof value === "object") {
-			lines = [...lines, `${key}:`];
-			for (const [subKey, subValue] of Object.entries(
-				value as Record<string, unknown>,
-			)) {
-				lines = [...lines, `  ${subKey}: ${String(subValue)}`];
+			lines = [...lines, `${key}:`]
+			for (const [subKey, subValue] of Object.entries(value as Record<string, unknown>)) {
+				lines = [...lines, `  ${subKey}: ${String(subValue)}`]
 			}
 		} else {
-			lines = [...lines, `${key}: ${String(value)}`];
+			lines = [...lines, `${key}: ${String(value)}`]
 		}
 	}
 
-	lines = [...lines, "---", ""];
+	lines = [...lines, "---", ""]
 
-	return lines.join("\n");
+	return lines.join("\n")
 }
 
 /**
@@ -352,30 +345,30 @@ export function convertDocumentToMarkdown(
 	document: LexicalDocument,
 	options: MarkdownExportOptions = {},
 ): string {
-	const opts = { ...defaultOptions, ...options };
-	let lines: readonly string[] = [];
+	const opts = { ...defaultOptions, ...options }
+	let lines: readonly string[] = []
 
 	// 添加 front matter
 	if (opts.includeFrontMatter && Object.keys(opts.frontMatter).length > 0) {
-		lines = [...lines, generateFrontMatter(opts.frontMatter)];
+		lines = [...lines, generateFrontMatter(opts.frontMatter)]
 	}
 
 	// 添加标题
 	if (opts.includeTitle && opts.title) {
-		lines = [...lines, `# ${opts.title}`, ""];
+		lines = [...lines, `# ${opts.title}`, ""]
 	}
 
 	// 转换内容
-	let prevNodeType: string | undefined;
+	let prevNodeType: string | undefined
 	for (const child of document.root.children) {
-		const converted = convertRootChild(child, opts, prevNodeType);
+		const converted = convertRootChild(child, opts, prevNodeType)
 		if (converted) {
-			lines = [...lines, converted];
+			lines = [...lines, converted]
 		}
-		prevNodeType = child.type;
+		prevNodeType = child.type
 	}
 
-	return lines.join("\n").trim();
+	return lines.join("\n").trim()
 }
 
 // ==============================
@@ -396,7 +389,7 @@ export function exportToMarkdown(
 	return pipe(
 		parseLexicalContent(content),
 		E.map((document) => convertDocumentToMarkdown(document, options)),
-	);
+	)
 }
 
 /**
@@ -409,28 +402,28 @@ export function exportToMarkdown(
  */
 export function exportMultipleToMarkdown(
 	contents: ReadonlyArray<{
-		readonly id: string;
-		readonly content: string;
-		readonly title?: string;
+		readonly id: string
+		readonly content: string
+		readonly title?: string
 	}>,
 	options: MarkdownExportOptions = {},
 	separator: string = "\n\n---\n\n",
 ): E.Either<ExportError, string> {
-	let results: readonly string[] = [];
+	let results: readonly string[] = []
 
 	for (const item of contents) {
 		const itemOptions = {
 			...options,
 			includeTitle: !!item.title,
 			title: item.title,
-		};
-
-		const result = exportToMarkdown(item.content, itemOptions);
-		if (E.isLeft(result)) {
-			return result;
 		}
-		results = [...results, result.right];
+
+		const result = exportToMarkdown(item.content, itemOptions)
+		if (E.isLeft(result)) {
+			return result
+		}
+		results = [...results, result.right]
 	}
 
-	return E.right(results.join(separator));
+	return E.right(results.join(separator))
 }

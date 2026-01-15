@@ -1,10 +1,10 @@
-import * as React from "react";
+import * as React from "react"
 
-import { cn } from "@/utils/cn.util";
+import { cn } from "@/utils/cn.util"
 
 interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
-	initials?: string;
-	variant?: "default" | "emerald" | "sky" | "violet" | "amber";
+	initials?: string
+	variant?: "default" | "emerald" | "sky" | "violet" | "amber"
 }
 
 const avatarVariants: Record<NonNullable<AvatarProps["variant"]>, string> = {
@@ -13,7 +13,7 @@ const avatarVariants: Record<NonNullable<AvatarProps["variant"]>, string> = {
 	sky: "bg-sky-500/15 text-sky-400 ring-1 ring-sky-500/30",
 	violet: "bg-violet-500/15 text-violet-400 ring-1 ring-violet-500/30",
 	amber: "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30",
-};
+}
 
 const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
 	({ className, initials, variant = "default", children, ...props }, ref) => (
@@ -29,7 +29,7 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
 			{initials ? initials : children}
 		</div>
 	),
-);
-Avatar.displayName = "Avatar";
+)
+Avatar.displayName = "Avatar"
 
-export { Avatar };
+export { Avatar }

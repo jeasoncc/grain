@@ -10,11 +10,11 @@
  * @requirements 7.1, 7.4
  */
 
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import * as nodeRepo from "@/io/api/node.api";
-import { info, success } from "@/io/log/logger.api";
-import type { AppError } from "@/types/error";
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import * as nodeRepo from "@/io/api/node.api"
+import { info, success } from "@/io/log/logger.api"
+import type { AppError } from "@/types/error"
 
 /**
  * 删除节点及其子节点
@@ -26,16 +26,16 @@ import type { AppError } from "@/types/error";
  * @returns TaskEither<AppError, void>
  */
 export const deleteNode = (nodeId: string): TE.TaskEither<AppError, void> => {
-	info("[Action] 删除节点", { nodeId }, "delete-node.flow");
+	info("[Action] 删除节点", { nodeId }, "delete-node.flow")
 
 	return pipe(
 		nodeRepo.deleteNode(nodeId),
 		TE.tap(() => {
-			success("[Action] 节点删除成功", { nodeId }, "delete-node");
-			return TE.right(undefined);
+			success("[Action] 节点删除成功", { nodeId }, "delete-node")
+			return TE.right(undefined)
 		}),
-	);
-};
+	)
+}
 
 /**
  * 批量删除节点
@@ -43,16 +43,14 @@ export const deleteNode = (nodeId: string): TE.TaskEither<AppError, void> => {
  * @param nodeIds - 要删除的节点 ID 数组
  * @returns TaskEither<AppError, void>
  */
-export const deleteNodesBatch = (
-	nodeIds: readonly string[],
-): TE.TaskEither<AppError, void> => {
-	info("[Action] 批量删除节点", { count: nodeIds.length }, "delete-node.flow");
+export const deleteNodesBatch = (nodeIds: readonly string[]): TE.TaskEither<AppError, void> => {
+	info("[Action] 批量删除节点", { count: nodeIds.length }, "delete-node.flow")
 
 	return pipe(
 		nodeRepo.deleteNodesBatch(nodeIds),
 		TE.tap(() => {
-			success("[Action] 批量删除成功", { count: nodeIds.length }, "delete-node");
-			return TE.right(undefined);
+			success("[Action] 批量删除成功", { count: nodeIds.length }, "delete-node")
+			return TE.right(undefined)
 		}),
-	);
-};
+	)
+}

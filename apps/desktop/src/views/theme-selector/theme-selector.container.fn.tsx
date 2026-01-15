@@ -3,24 +3,17 @@
  *
  * 连接 useTheme hook 和主题数据
  */
-import { memo } from "react";
-import { useTheme } from "@/hooks/use-theme";
-import { getDarkThemes, getLightThemes } from "@/utils/themes.util";
-import { ThemeSelectorView } from "./theme-selector.view.fn";
+import { memo } from "react"
+import { useTheme } from "@/hooks/use-theme"
+import { getDarkThemes, getLightThemes } from "@/utils/themes.util"
+import { ThemeSelectorView } from "./theme-selector.view.fn"
 
 export const ThemeSelectorContainer = memo(() => {
-	const {
-		theme,
-		setTheme,
-		currentTheme,
-		mode,
-		setMode,
-		enableTransition,
-		setEnableTransition,
-	} = useTheme();
+	const { theme, setTheme, currentTheme, mode, setMode, enableTransition, setEnableTransition } =
+		useTheme()
 
-	const lightThemes = getLightThemes();
-	const darkThemes = getDarkThemes();
+	const lightThemes = getLightThemes()
+	const darkThemes = getDarkThemes()
 
 	return (
 		<ThemeSelectorView
@@ -34,7 +27,7 @@ export const ThemeSelectorContainer = memo(() => {
 			lightThemes={lightThemes}
 			darkThemes={darkThemes}
 		/>
-	);
-});
+	)
+})
 
-ThemeSelectorContainer.displayName = "ThemeSelectorContainer";
+ThemeSelectorContainer.displayName = "ThemeSelectorContainer"

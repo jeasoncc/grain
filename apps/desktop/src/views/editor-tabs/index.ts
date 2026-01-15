@@ -7,8 +7,8 @@
  */
 
 // Re-export from pipes for backward compatibility
-export * from "@/pipes/editor-tab";
+export * from "@/pipes/editor-tab"
 
 // Export components
-export { EditorTabsContainer as EditorTabs } from "./editor-tabs.container.fn";
-export { EditorTabsView } from "./editor-tabs.view.fn";
+export { EditorTabsContainer as EditorTabs } from "./editor-tabs.container.fn"
+export { EditorTabsView } from "./editor-tabs.view.fn"

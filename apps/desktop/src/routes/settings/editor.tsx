@@ -1,18 +1,18 @@
-import { FOLD_ICON_OPTIONS, getFoldIconLetters } from "@grain/editor-lexical";
-import { createFileRoute } from "@tanstack/react-router";
-import { Check, Minus, Plus, RotateCcw, Sparkles, Type } from "lucide-react";
-import { useEditorSettings } from "@/state/editor-settings.state";
-import { useFontSettings } from "@/state/font.state";
-import { DEFAULT_EDITOR_FONT, POPULAR_FONTS } from "@/types/font";
-import { Button } from "@/views/ui/button";
-import { DebouncedSlider } from "@/views/ui/debounced-slider";
-import { Input } from "@/views/ui/input";
-import { Label } from "@/views/ui/label";
-import { Switch } from "@/views/ui/switch";
+import { FOLD_ICON_OPTIONS, getFoldIconLetters } from "@grain/editor-lexical"
+import { createFileRoute } from "@tanstack/react-router"
+import { Check, Minus, Plus, RotateCcw, Sparkles, Type } from "lucide-react"
+import { useEditorSettings } from "@/state/editor-settings.state"
+import { useFontSettings } from "@/state/font.state"
+import { DEFAULT_EDITOR_FONT, POPULAR_FONTS } from "@/types/font"
+import { Button } from "@/views/ui/button"
+import { DebouncedSlider } from "@/views/ui/debounced-slider"
+import { Input } from "@/views/ui/input"
+import { Label } from "@/views/ui/label"
+import { Switch } from "@/views/ui/switch"
 
 export const Route = createFileRoute("/settings/editor")({
 	component: EditorSettings,
-});
+})
 
 function EditorSettings() {
 	const {
@@ -28,20 +28,20 @@ function EditorSettings() {
 		setLetterSpacing,
 		setParagraphSpacing,
 		setFirstLineIndent,
-	} = useFontSettings();
+	} = useFontSettings()
 
-	const { foldIconStyle, setFoldIconStyle } = useEditorSettings();
+	const { foldIconStyle, setFoldIconStyle } = useEditorSettings()
 
 	// 获取当前选中风格的字母列表
-	const currentLetters = getFoldIconLetters(foldIconStyle);
+	const currentLetters = getFoldIconLetters(foldIconStyle)
 
 	// 添加字体到列表
 	const addFont = (font: string) => {
-		const fonts = fontFamily.split(",").map((f) => f.trim());
+		const fonts = fontFamily.split(",").map((f) => f.trim())
 		if (!fonts.some((f) => f.replace(/['"]/g, "") === font)) {
-			setFontFamily(`'${font}', ${fontFamily}`);
+			setFontFamily(`'${font}', ${fontFamily}`)
 		}
-	};
+	}
 
 	return (
 		<div className="space-y-8 max-w-2xl">
@@ -56,9 +56,7 @@ function EditorSettings() {
 			<div className="space-y-6">
 				<div className="flex items-center gap-2 text-muted-foreground">
 					<Type className="size-4" />
-					<h4 className="text-sm font-medium uppercase tracking-wider">
-						Typography
-					</h4>
+					<h4 className="text-sm font-medium uppercase tracking-wider">Typography</h4>
 				</div>
 
 				{/* Font Family - VSCode style input */}
@@ -90,7 +88,7 @@ function EditorSettings() {
 					{/* Quick add popular fonts */}
 					<div className="flex flex-wrap gap-1.5">
 						{POPULAR_FONTS.map((font) => {
-							const isIncluded = fontFamily.includes(font);
+							const isIncluded = fontFamily.includes(font)
 							return (
 								<button
 									type="button"
@@ -109,7 +107,7 @@ function EditorSettings() {
 									{isIncluded && <Check className="size-3 inline mr-1" />}
 									{font}
 								</button>
-							);
+							)
 						})}
 					</div>
 				</div>
@@ -129,9 +127,7 @@ function EditorSettings() {
 						>
 							<Minus className="size-4" />
 						</Button>
-						<span className="w-12 text-center font-mono text-sm">
-							{fontSize}px
-						</span>
+						<span className="w-12 text-center font-mono text-sm">{fontSize}px</span>
 						<Button
 							variant="outline"
 							size="icon"
@@ -148,13 +144,9 @@ function EditorSettings() {
 					<div className="flex items-center justify-between">
 						<div>
 							<Label className="text-sm">Line Height</Label>
-							<p className="text-xs text-muted-foreground">
-								Space between lines
-							</p>
+							<p className="text-xs text-muted-foreground">Space between lines</p>
 						</div>
-						<span className="font-mono text-sm text-muted-foreground">
-							{lineHeight.toFixed(1)}
-						</span>
+						<span className="font-mono text-sm text-muted-foreground">{lineHeight.toFixed(1)}</span>
 					</div>
 					<DebouncedSlider
 						value={[lineHeight]}
@@ -170,9 +162,7 @@ function EditorSettings() {
 					<div className="flex items-center justify-between">
 						<div>
 							<Label className="text-sm">Letter Spacing</Label>
-							<p className="text-xs text-muted-foreground">
-								Space between characters
-							</p>
+							<p className="text-xs text-muted-foreground">Space between characters</p>
 						</div>
 						<span className="font-mono text-sm text-muted-foreground">
 							{letterSpacing.toFixed(2)}em
@@ -192,9 +182,7 @@ function EditorSettings() {
 					<div className="flex items-center justify-between">
 						<div>
 							<Label className="text-sm">Paragraph Spacing</Label>
-							<p className="text-xs text-muted-foreground">
-								Space between paragraphs
-							</p>
+							<p className="text-xs text-muted-foreground">Space between paragraphs</p>
 						</div>
 						<span className="font-mono text-sm text-muted-foreground">
 							{paragraphSpacing.toFixed(1)}em
@@ -213,15 +201,11 @@ function EditorSettings() {
 				<div className="flex items-center justify-between">
 					<div>
 						<Label className="text-sm">First Line Indent</Label>
-						<p className="text-xs text-muted-foreground">
-							Indent first line of paragraphs
-						</p>
+						<p className="text-xs text-muted-foreground">Indent first line of paragraphs</p>
 					</div>
 					<div className="flex items-center gap-3">
 						{firstLineIndent > 0 && (
-							<span className="text-sm text-muted-foreground">
-								{firstLineIndent} chars
-							</span>
+							<span className="text-sm text-muted-foreground">{firstLineIndent} chars</span>
 						)}
 						<Switch
 							checked={firstLineIndent > 0}
@@ -235,9 +219,7 @@ function EditorSettings() {
 			<div className="space-y-6">
 				<div className="flex items-center gap-2 text-muted-foreground">
 					<Sparkles className="size-4" />
-					<h4 className="text-sm font-medium uppercase tracking-wider">
-						Behavior
-					</h4>
+					<h4 className="text-sm font-medium uppercase tracking-wider">Behavior</h4>
 				</div>
 
 				{/* Fold Icon Style */}
@@ -250,7 +232,7 @@ function EditorSettings() {
 					</div>
 					<div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
 						{FOLD_ICON_OPTIONS.map((option) => {
-							const isSelected = foldIconStyle === option.id;
+							const isSelected = foldIconStyle === option.id
 							return (
 								<button
 									type="button"
@@ -269,20 +251,14 @@ function EditorSettings() {
 										{option.preview}
 									</span>
 									<div className="flex-1 min-w-0">
-										<div className="text-xs font-medium truncate">
-											{option.name}
-										</div>
+										<div className="text-xs font-medium truncate">{option.name}</div>
 										{option.era && (
-											<div className="text-[10px] text-muted-foreground truncate">
-												{option.era}
-											</div>
+											<div className="text-[10px] text-muted-foreground truncate">{option.era}</div>
 										)}
 									</div>
-									{isSelected && (
-										<Check className="size-4 text-primary shrink-0" />
-									)}
+									{isSelected && <Check className="size-4 text-primary shrink-0" />}
 								</button>
-							);
+							)
 						})}
 					</div>
 				</div>
@@ -303,21 +279,15 @@ function EditorSettings() {
 					{/* Heading Preview with Fold Icons */}
 					<div className="space-y-2 mb-4 pb-4 border-b border-border/50">
 						<div className="flex items-center gap-2">
-							<span className="text-sm font-serif opacity-60 w-4">
-								{currentLetters[0]}
-							</span>
+							<span className="text-sm font-serif opacity-60 w-4">{currentLetters[0]}</span>
 							<h1 className="text-xl font-bold">Heading 1</h1>
 						</div>
 						<div className="flex items-center gap-2">
-							<span className="text-sm font-serif opacity-60 w-4">
-								{currentLetters[1]}
-							</span>
+							<span className="text-sm font-serif opacity-60 w-4">{currentLetters[1]}</span>
 							<h2 className="text-lg font-semibold">Heading 2</h2>
 						</div>
 						<div className="flex items-center gap-2">
-							<span className="text-sm font-serif opacity-60 w-4">
-								{currentLetters[2]}
-							</span>
+							<span className="text-sm font-serif opacity-60 w-4">{currentLetters[2]}</span>
 							<h3 className="text-base font-medium">Heading 3</h3>
 						</div>
 					</div>
@@ -327,8 +297,8 @@ function EditorSettings() {
 							marginBottom: `${paragraphSpacing}em`,
 						}}
 					>
-						The old lighthouse stood defiant against the crashing waves, its
-						beacon cutting through the thick fog.
+						The old lighthouse stood defiant against the crashing waves, its beacon cutting through
+						the thick fog.
 					</p>
 					<p
 						style={{
@@ -338,11 +308,9 @@ function EditorSettings() {
 					>
 						古老的灯塔傲然矗立，抵御着汹涌的海浪，它的光芒穿透浓雾。
 					</p>
-					<p style={{ textIndent: `${firstLineIndent}em` }}>
-						0123456789 ABCDEFG abcdefg 中文测试
-					</p>
+					<p style={{ textIndent: `${firstLineIndent}em` }}>0123456789 ABCDEFG abcdefg 中文测试</p>
 				</div>
 			</div>
 		</div>
-	);
+	)
 }

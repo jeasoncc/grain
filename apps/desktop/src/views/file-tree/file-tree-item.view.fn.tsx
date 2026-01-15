@@ -18,9 +18,9 @@ import {
 	PenTool,
 	Plus,
 	Trash2,
-} from "lucide-react";
-import { useCallback } from "react";
-import { cn } from "@/utils/cn.util";
+} from "lucide-react"
+import { useCallback } from "react"
+import { cn } from "@/utils/cn.util"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -30,9 +30,9 @@ import {
 	DropdownMenuSubContent,
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
-} from "@/views/ui/dropdown-menu";
-import { Input } from "@/views/ui/input";
-import type { FileTreeItemProps } from "./file-tree.types";
+} from "@/views/ui/dropdown-menu"
+import { Input } from "@/views/ui/input"
+import type { FileTreeItemProps } from "./file-tree.types"
 
 export function FileTreeItem({
 	node,
@@ -52,13 +52,13 @@ export function FileTreeItem({
 	onDragEnd,
 	onDrop,
 }: FileTreeItemProps) {
-	const isSelected = node.id === selectedId;
-	const isRenaming = node.id === renamingId;
-	const isDragging = dragState.draggedId === node.id;
-	const isDropTarget = dragState.targetId === node.id;
-	const dropPosition = isDropTarget ? dragState.position : null;
-	const isFolder = node.type === "folder";
-	const hasChildren = node.children.length > 0;
+	const isSelected = node.id === selectedId
+	const isRenaming = node.id === renamingId
+	const isDragging = dragState.draggedId === node.id
+	const isDropTarget = dragState.targetId === node.id
+	const dropPosition = isDropTarget ? dragState.position : null
+	const isFolder = node.type === "folder"
+	const hasChildren = node.children.length > 0
 
 	// Get appropriate icon based on node type and state
 	const getIcon = () => {
@@ -68,64 +68,62 @@ export function FileTreeItem({
 					<Folder className="size-4 shrink-0 text-blue-500/70" />
 				) : (
 					<FolderOpen className="size-4 shrink-0 text-blue-500" />
-				);
+				)
 			case "drawing":
-				return <PenTool className="size-4 shrink-0 text-purple-500/70" />;
+				return <PenTool className="size-4 shrink-0 text-purple-500/70" />
 			default:
-				return <FileText className="size-4 shrink-0 text-muted-foreground" />;
+				return <FileText className="size-4 shrink-0 text-muted-foreground" />
 		}
-	};
+	}
 
 	// Handle click on the item
 	const handleClick = useCallback(() => {
 		if (isFolder) {
-			onToggle(node.id, node.collapsed);
+			onToggle(node.id, node.collapsed)
 		} else {
-			onSelect(node.id);
+			onSelect(node.id)
 		}
-	}, [isFolder, node.id, node.collapsed, onToggle, onSelect]);
+	}, [isFolder, node.id, node.collapsed, onToggle, onSelect])
 
 	// Handle chevron click (for folders)
 	const handleChevronClick = useCallback(
 		(e: React.MouseEvent) => {
-			e.stopPropagation();
-			onToggle(node.id, node.collapsed);
+			e.stopPropagation()
+			onToggle(node.id, node.collapsed)
 		},
 		[node.id, node.collapsed, onToggle],
-	);
+	)
 
 	// Handle rename input
 	const handleKeyDown = useCallback(
 		(e: React.KeyboardEvent<HTMLInputElement>) => {
 			if (e.key === "Enter") {
-				onRename(node.id, e.currentTarget.value);
+				onRename(node.id, e.currentTarget.value)
 			} else if (e.key === "Escape") {
-				onCancelRename();
+				onCancelRename()
 			}
 		},
 		[node.id, onRename, onCancelRename],
-	);
+	)
 
 	const handleBlur = useCallback(
 		(e: React.FocusEvent<HTMLInputElement>) => {
-			onRename(node.id, e.target.value);
+			onRename(node.id, e.target.value)
 		},
 		[node.id, onRename],
-	);
+	)
 
 	// Handle double click to start rename
 	const handleDoubleClick = useCallback(
 		(e: React.MouseEvent) => {
-			e.stopPropagation();
-			onStartRename(node.id);
+			e.stopPropagation()
+			onStartRename(node.id)
 		},
 		[node.id, onStartRename],
-	);
+	)
 
 	return (
-		<div
-			className={cn("transition-all duration-200", isDragging && "opacity-30")}
-		>
+		<div className={cn("transition-all duration-200", isDragging && "opacity-30")}>
 			{/* Drop indicator before */}
 			{isDropTarget && dropPosition === "before" && (
 				<div className="h-0.5 bg-primary my-0.5 rounded-full" />
@@ -141,16 +139,14 @@ export function FileTreeItem({
 					isSelected
 						? "bg-primary/10 text-primary"
 						: "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-					isDropTarget &&
-						dropPosition === "inside" &&
-						"bg-sidebar-accent ring-1 ring-primary/20",
+					isDropTarget && dropPosition === "inside" && "bg-sidebar-accent ring-1 ring-primary/20",
 				)}
 				style={{ paddingLeft: `${node.depth * 8 + 8}px` }}
 				onClick={handleClick}
 				onKeyDown={(e) => {
 					if (e.key === "Enter" || e.key === " ") {
-						e.preventDefault();
-						handleClick();
+						e.preventDefault()
+						handleClick()
 					}
 				}}
 				draggable={!isRenaming}
@@ -197,8 +193,8 @@ export function FileTreeItem({
 						onDoubleClick={handleDoubleClick}
 						onKeyDown={(e) => {
 							if (e.key === "F2") {
-								e.preventDefault();
-								onStartRename(node.id);
+								e.preventDefault()
+								onStartRename(node.id)
 							}
 						}}
 					>
@@ -240,15 +236,11 @@ export function FileTreeItem({
 											新建文件
 										</DropdownMenuSubTrigger>
 										<DropdownMenuSubContent>
-											<DropdownMenuItem
-												onClick={() => onCreateFile(node.id, "file")}
-											>
+											<DropdownMenuItem onClick={() => onCreateFile(node.id, "file")}>
 												<FileText className="size-4 mr-2" />
 												文本文件
 											</DropdownMenuItem>
-											<DropdownMenuItem
-												onClick={() => onCreateFile(node.id, "drawing")}
-											>
+											<DropdownMenuItem onClick={() => onCreateFile(node.id, "drawing")}>
 												<PenTool className="size-4 mr-2" />
 												画布
 											</DropdownMenuItem>
@@ -311,5 +303,5 @@ export function FileTreeItem({
 				</div>
 			)}
 		</div>
-	);
+	)
 }

@@ -5,4 +5,4 @@
  * @deprecated 请直接从 @/types/wiki 导入
  */
 
-export { WikiFileEntryBuilder } from "@/types/wiki";
+export { WikiFileEntryBuilder } from "@/types/wiki"

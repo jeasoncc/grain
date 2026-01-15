@@ -45,24 +45,17 @@ import {
 	Triangle,
 	Trophy,
 	Zap,
-} from "lucide-react";
+} from "lucide-react"
 
 export interface IconOption {
-	readonly key: string;
-	readonly name: string;
-	readonly icon: LucideIcon;
-	readonly category: IconCategory;
-	readonly description?: string;
+	readonly key: string
+	readonly name: string
+	readonly icon: LucideIcon
+	readonly category: IconCategory
+	readonly description?: string
 }
 
-export type IconCategory =
-	| "book"
-	| "writing"
-	| "file"
-	| "folder"
-	| "special"
-	| "shape"
-	| "symbol";
+export type IconCategory = "book" | "writing" | "file" | "folder" | "special" | "shape" | "symbol"
 
 export const iconCategories: Record<
 	IconCategory,
@@ -96,7 +89,7 @@ export const iconCategories: Record<
 		name: "符号",
 		description: "符号图标",
 	},
-};
+}
 
 export const icons: readonly IconOption[] = [
 	// Book类图标
@@ -392,46 +385,44 @@ export const icons: readonly IconOption[] = [
 		category: "symbol",
 		description: "@符号",
 	},
-];
+]
 
 // 按类别分组图标
 export function getIconsByCategory(category: IconCategory): readonly IconOption[] {
-	return icons.filter((icon) => icon.category === category);
+	return icons.filter((icon) => icon.category === category)
 }
 
 // 获取所有类别
 export function getAllCategories(): readonly IconCategory[] {
-	return Object.keys(iconCategories) as readonly IconCategory[];
+	return Object.keys(iconCategories) as readonly IconCategory[]
 }
 
 // 根据 key 获取图标
 export function getIconByKey(key: string): IconOption | undefined {
-	return icons.find((icon) => icon.key === key);
+	return icons.find((icon) => icon.key === key)
 }
 
 // 获取默认图标
-export function getDefaultIcon(
-	type: "project" | "folder" | "file",
-): IconOption {
+export function getDefaultIcon(type: "project" | "folder" | "file"): IconOption {
 	switch (type) {
 		case "project":
-			return icons.find((i) => i.key === "book") || icons[0];
+			return icons.find((i) => i.key === "book") || icons[0]
 		case "folder":
-			return icons.find((i) => i.key === "folder") || icons[0];
+			return icons.find((i) => i.key === "folder") || icons[0]
 		case "file":
-			return icons.find((i) => i.key === "file-text") || icons[0];
+			return icons.find((i) => i.key === "file-text") || icons[0]
 		default:
-			return icons[0];
+			return icons[0]
 	}
 }
 
 // 搜索图标
 export function searchIcons(query: string): readonly IconOption[] {
-	const lowerQuery = query.toLowerCase();
+	const lowerQuery = query.toLowerCase()
 	return icons.filter(
 		(icon) =>
 			icon.name.toLowerCase().includes(lowerQuery) ||
 			icon.key.toLowerCase().includes(lowerQuery) ||
 			icon.description?.toLowerCase().includes(lowerQuery),
-	);
+	)
 }

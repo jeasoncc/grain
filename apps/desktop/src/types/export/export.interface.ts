@@ -9,14 +9,14 @@
  * 导出选项
  */
 export interface ExportOptions {
-	readonly includeTitle?: boolean;
-	readonly includeAuthor?: boolean;
-	readonly includeChapterTitles?: boolean;
-	readonly includeSceneTitles?: boolean;
-	readonly pageBreakBetweenChapters?: boolean;
+	readonly includeTitle?: boolean
+	readonly includeAuthor?: boolean
+	readonly includeChapterTitles?: boolean
+	readonly includeSceneTitles?: boolean
+	readonly pageBreakBetweenChapters?: boolean
 }
 
 /**
  * 支持的导出格式
  */
-export type ExportFormat = "pdf" | "docx" | "txt" | "epub";
+export type ExportFormat = "pdf" | "docx" | "txt" | "epub"

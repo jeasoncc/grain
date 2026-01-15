@@ -9,17 +9,17 @@
  */
 export interface SaveStatusIndicatorViewProps {
 	/** 样式类名 */
-	readonly className?: string;
+	readonly className?: string
 	/** 是否显示最后保存时间 */
-	readonly showLastSaveTime?: boolean;
+	readonly showLastSaveTime?: boolean
 	/** 保存状态 */
-	readonly status: "saved" | "saving" | "error" | "unsaved";
+	readonly status: "saved" | "saving" | "error" | "unsaved"
 	/** 最后保存时间戳 */
-	readonly lastSaveTime: number | null;
+	readonly lastSaveTime: number | null
 	/** 错误信息 */
-	readonly errorMessage: string | null;
+	readonly errorMessage: string | null
 	/** 是否有未保存的更改 */
-	readonly hasUnsavedChanges: boolean;
+	readonly hasUnsavedChanges: boolean
 	/** 是否正在手动保存 */
-	readonly isManualSaving: boolean;
+	readonly isManualSaving: boolean
 }

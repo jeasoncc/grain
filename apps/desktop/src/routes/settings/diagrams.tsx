@@ -1,73 +1,66 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, ExternalLink, Loader2, XCircle } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-import { useDiagramSettings } from "@/state/diagram.state";
-import { Button } from "@/views/ui/button";
-import { Input } from "@/views/ui/input";
-import { Label } from "@/views/ui/label";
-import { Switch } from "@/views/ui/switch";
+import { createFileRoute } from "@tanstack/react-router"
+import { CheckCircle2, ExternalLink, Loader2, XCircle } from "lucide-react"
+import { useState } from "react"
+import { toast } from "sonner"
+import { useDiagramSettings } from "@/state/diagram.state"
+import { Button } from "@/views/ui/button"
+import { Input } from "@/views/ui/input"
+import { Label } from "@/views/ui/label"
+import { Switch } from "@/views/ui/switch"
 
 export const Route = createFileRoute("/settings/diagrams")({
 	component: DiagramSettings,
-});
+})
 
 function DiagramSettings() {
-	const {
-		krokiServerUrl,
-		enableKroki,
-		setKrokiServerUrl,
-		setEnableKroki,
-		testKrokiConnection,
-	} = useDiagramSettings();
+	const { krokiServerUrl, enableKroki, setKrokiServerUrl, setEnableKroki, testKrokiConnection } =
+		useDiagramSettings()
 
-	const [testUrl, setTestUrl] = useState(krokiServerUrl);
-	const [testing, setTesting] = useState(false);
-	const [testResult, setTestResult] = useState<boolean | null>(null);
+	const [testUrl, setTestUrl] = useState(krokiServerUrl)
+	const [testing, setTesting] = useState(false)
+	const [testResult, setTestResult] = useState<boolean | null>(null)
 
 	const handleTest = async () => {
 		if (!testUrl.trim()) {
-			toast.error("Please enter a Kroki server URL");
-			return;
+			toast.error("Please enter a Kroki server URL")
+			return
 		}
 
-		setTesting(true);
-		setTestResult(null);
+		setTesting(true)
+		setTestResult(null)
 
 		// Temporary URL for testing
-		const originalUrl = krokiServerUrl;
-		setKrokiServerUrl(testUrl);
+		const originalUrl = krokiServerUrl
+		setKrokiServerUrl(testUrl)
 
-		const success = await testKrokiConnection();
-		setTestResult(success);
+		const success = await testKrokiConnection()
+		setTestResult(success)
 
 		if (success) {
-			toast.success("Connection successful!");
+			toast.success("Connection successful!")
 		} else {
-			toast.error("Connection failed. Please check the URL.");
+			toast.error("Connection failed. Please check the URL.")
 			// Revert URL
-			setKrokiServerUrl(originalUrl);
-			setTestUrl(originalUrl);
+			setKrokiServerUrl(originalUrl)
+			setTestUrl(originalUrl)
 		}
 
-		setTesting(false);
-	};
+		setTesting(false)
+	}
 
 	const handleSave = () => {
-		setKrokiServerUrl(testUrl);
-		toast.success("Settings saved");
-	};
+		setKrokiServerUrl(testUrl)
+		toast.success("Settings saved")
+	}
 
 	const handleEnableToggle = (checked: boolean) => {
-		setEnableKroki(checked);
+		setEnableKroki(checked)
 		if (checked && !krokiServerUrl) {
 			// If enabling and no URL set, suggest the official one
-			setTestUrl("https://kroki.io");
+			setTestUrl("https://kroki.io")
 		}
-		toast.success(
-			checked ? "PlantUML support enabled" : "PlantUML support disabled",
-		);
-	};
+		toast.success(checked ? "PlantUML support enabled" : "PlantUML support disabled")
+	}
 
 	return (
 		<div className="space-y-10 max-w-3xl">
@@ -101,10 +94,7 @@ function DiagramSettings() {
 								Render PlantUML diagrams via a Kroki server.
 							</p>
 						</div>
-						<Switch
-							checked={enableKroki}
-							onCheckedChange={handleEnableToggle}
-						/>
+						<Switch checked={enableKroki} onCheckedChange={handleEnableToggle} />
 					</div>
 
 					{enableKroki && (
@@ -119,8 +109,8 @@ function DiagramSettings() {
 											placeholder="https://kroki.io"
 											value={testUrl}
 											onChange={(e) => {
-												setTestUrl(e.target.value);
-												setTestResult(null);
+												setTestUrl(e.target.value)
+												setTestResult(null)
 											}}
 										/>
 										<Button
@@ -145,33 +135,24 @@ function DiagramSettings() {
 											{testResult ? (
 												<>
 													<CheckCircle2 className="h-4 w-4 text-green-500" />
-													<span className="text-green-600">
-														Connected successfully
-													</span>
+													<span className="text-green-600">Connected successfully</span>
 												</>
 											) : (
 												<>
 													<XCircle className="h-4 w-4 text-red-500" />
-													<span className="text-red-600">
-														Connection failed
-													</span>
+													<span className="text-red-600">Connection failed</span>
 												</>
 											)}
 										</div>
 									)}
 
 									<p className="text-xs text-muted-foreground">
-										Recommended: Official service (https://kroki.io) or
-										self-hosted instance.
+										Recommended: Official service (https://kroki.io) or self-hosted instance.
 									</p>
 								</div>
 
 								<div className="flex gap-2">
-									<Button
-										onClick={handleSave}
-										disabled={testUrl === krokiServerUrl}
-										size="sm"
-									>
+									<Button onClick={handleSave} disabled={testUrl === krokiServerUrl} size="sm">
 										Save Changes
 									</Button>
 									<Button
@@ -187,8 +168,8 @@ function DiagramSettings() {
 
 							<div className="space-y-2 text-sm text-muted-foreground pt-2">
 								<p>
-									Kroki is an open-source diagram rendering service supporting
-									PlantUML, Mermaid, and more.
+									Kroki is an open-source diagram rendering service supporting PlantUML, Mermaid,
+									and more.
 								</p>
 								<div className="flex gap-4 text-xs">
 									<a
@@ -216,5 +197,5 @@ function DiagramSettings() {
 				</div>
 			</div>
 		</div>
-	);
+	)
 }

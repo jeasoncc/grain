@@ -6,7 +6,7 @@
 export {
 	importFromJson,
 	importFromJsonAsync,
-} from "./import-json.flow";
+} from "./import-json.flow"
 
 // Markdown 导入
 export {
@@ -14,4 +14,4 @@ export {
 	type ImportResult,
 	importMarkdown,
 	importMarkdownToJson,
-} from "./import-markdown.flow";
+} from "./import-markdown.flow"

@@ -22,7 +22,7 @@ import type {
 	UserState as RustUserState,
 	UpdateUserRequest,
 	UserResponse,
-} from "@/types/rust-api";
+} from "@/types/rust-api"
 import type {
 	UserCreateInput,
 	UserFeatures,
@@ -30,7 +30,7 @@ import type {
 	UserSettings,
 	UserState,
 	UserUpdateInput,
-} from "@/types/user";
+} from "@/types/user"
 
 // ============================================
 // 解码函数 (Rust → 前端)
@@ -39,98 +39,90 @@ import type {
 /**
  * 解码用户功能权限
  */
-const decodeUserFeatures = (
-	features: RustUserFeatures | null,
-): UserFeatures | undefined => {
-	if (!features) return undefined;
+const decodeUserFeatures = (features: RustUserFeatures | null): UserFeatures | undefined => {
+	if (!features) return undefined
 	return {
-		canUseAllScenes: features.canUseAllScenes,
 		canExportPDF: features.canExportPdf,
+		canUseAllScenes: features.canUseAllScenes,
 		canUseCloudSync: features.canUseCloudSync,
-		showAds: features.showAds,
 		reminderInterval: features.reminderInterval,
-	};
-};
+		showAds: features.showAds,
+	}
+}
 
 /**
  * 解码用户应用状态
  */
-const decodeUserState = (
-	state: RustUserState | null,
-): UserState | undefined => {
-	if (!state) return undefined;
+const decodeUserState = (state: RustUserState | null): UserState | undefined => {
+	if (!state) return undefined
 	return {
-		lastLocation: state.lastLocation ?? "",
-		currentProject: state.currentProject ?? "",
 		currentChapter: state.currentChapter ?? "",
+		currentProject: state.currentProject ?? "",
 		currentScene: state.currentScene ?? "",
 		currentTitle: state.currentTitle ?? "",
 		currentTyping: state.currentTyping ?? "",
+		isUserLoggedIn: state.isUserLoggedIn ?? false,
 		lastCloudSave: state.lastCloudSave ?? "",
 		lastLocalSave: state.lastLocalSave ?? "",
-		isUserLoggedIn: state.isUserLoggedIn ?? false,
-	};
-};
+		lastLocation: state.lastLocation ?? "",
+	}
+}
 
 /**
  * 解码用户设置
  */
-const decodeUserSettings = (
-	settings: RustUserSettings | null,
-): UserSettings | undefined => {
-	if (!settings) return undefined;
+const decodeUserSettings = (settings: RustUserSettings | null): UserSettings | undefined => {
+	if (!settings) return undefined
 	return {
-		theme: settings.theme ?? "light",
-		language: settings.language ?? "zh",
 		autosave: settings.autosave,
-		spellCheck: settings.spellCheck,
-		lastLocation: settings.lastLocation,
 		fontSize: settings.fontSize ?? "16px",
-	};
-};
+		language: settings.language ?? "zh",
+		lastLocation: settings.lastLocation,
+		spellCheck: settings.spellCheck,
+		theme: settings.theme ?? "light",
+	}
+}
 
 /**
  * 解码单个用户
  * Rust UserResponse → 前端 UserInterface
  */
 export const decodeUser = (response: UserResponse): UserInterface => ({
-	id: response.id,
-	username: response.username,
-	displayName: response.displayName ?? undefined,
 	avatar: response.avatar ?? undefined,
-	email: response.email ?? undefined,
-	lastLogin: new Date(response.lastLogin).toISOString(),
 	createDate: new Date(response.createdAt).toISOString(),
+	displayName: response.displayName ?? undefined,
+	email: response.email ?? undefined,
+	features: decodeUserFeatures(response.features),
+	id: response.id,
+	lastLogin: new Date(response.lastLogin).toISOString(),
 	plan: response.plan,
-	planStartDate: response.planStartDate
-		? new Date(response.planStartDate).toISOString()
-		: undefined,
 	planExpiresAt: response.planExpiresAt
 		? new Date(response.planExpiresAt).toISOString()
 		: undefined,
+	planStartDate: response.planStartDate
+		? new Date(response.planStartDate).toISOString()
+		: undefined,
+	serverMessage: response.serverMessage ?? undefined,
+	settings: decodeUserSettings(response.settings),
+	state: decodeUserState(response.state),
+	token: response.token ?? undefined,
 	trialExpiresAt: response.trialExpiresAt
 		? new Date(response.trialExpiresAt).toISOString()
 		: undefined,
-	token: response.token ?? undefined,
-	serverMessage: response.serverMessage ?? undefined,
-	features: decodeUserFeatures(response.features),
-	state: decodeUserState(response.state),
-	settings: decodeUserSettings(response.settings),
-});
+	username: response.username,
+})
 
 /**
  * 解码用户数组
  */
-export const decodeUsers = (
-	responses: readonly UserResponse[],
-): readonly UserInterface[] => responses.map(decodeUser);
+export const decodeUsers = (responses: readonly UserResponse[]): readonly UserInterface[] =>
+	responses.map(decodeUser)
 
 /**
  * 解码可选用户
  */
-export const decodeUserOptional = (
-	response: UserResponse | null,
-): UserInterface | null => (response ? decodeUser(response) : null);
+export const decodeUserOptional = (response: UserResponse | null): UserInterface | null =>
+	response ? decodeUser(response) : null
 
 // ============================================
 // 编码函数 (前端 → Rust)
@@ -139,102 +131,81 @@ export const decodeUserOptional = (
 /**
  * 编码用户功能权限
  */
-const encodeUserFeatures = (
-	features?: UserFeatures,
-): RustUserFeatures | undefined => {
-	if (!features) return undefined;
+const encodeUserFeatures = (features?: UserFeatures): RustUserFeatures | undefined => {
+	if (!features) return undefined
 	return {
-		canUseAllScenes: features.canUseAllScenes,
 		canExportPdf: features.canExportPDF,
+		canUseAllScenes: features.canUseAllScenes,
 		canUseCloudSync: features.canUseCloudSync,
-		showAds: features.showAds,
 		reminderInterval: features.reminderInterval,
-	};
-};
+		showAds: features.showAds,
+	}
+}
 
 /**
  * 编码用户应用状态
  */
 const encodeUserState = (state?: UserState): RustUserState | undefined => {
-	if (!state) return undefined;
+	if (!state) return undefined
 	return {
-		lastLocation: state.lastLocation || undefined,
-		currentProject: state.currentProject || undefined,
 		currentChapter: state.currentChapter || undefined,
+		currentProject: state.currentProject || undefined,
 		currentScene: state.currentScene || undefined,
 		currentTitle: state.currentTitle || undefined,
 		currentTyping: state.currentTyping || undefined,
+		isUserLoggedIn: state.isUserLoggedIn,
 		lastCloudSave: state.lastCloudSave || undefined,
 		lastLocalSave: state.lastLocalSave || undefined,
-		isUserLoggedIn: state.isUserLoggedIn,
-	};
-};
+		lastLocation: state.lastLocation || undefined,
+	}
+}
 
 /**
  * 编码用户设置
  */
-const encodeUserSettings = (
-	settings?: UserSettings,
-): RustUserSettings | undefined => {
-	if (!settings) return undefined;
+const encodeUserSettings = (settings?: UserSettings): RustUserSettings | undefined => {
+	if (!settings) return undefined
 	return {
-		theme: settings.theme || undefined,
-		language: settings.language || undefined,
 		autosave: settings.autosave,
-		spellCheck: settings.spellCheck,
-		lastLocation: settings.lastLocation,
 		fontSize: settings.fontSize || undefined,
-	};
-};
+		language: settings.language || undefined,
+		lastLocation: settings.lastLocation,
+		spellCheck: settings.spellCheck,
+		theme: settings.theme || undefined,
+	}
+}
 
 /**
  * 编码创建用户请求
  * 前端 UserCreateInput → Rust CreateUserRequest
  */
-export const encodeCreateUser = (
-	input: UserCreateInput,
-): CreateUserRequest => ({
-	username: input.username,
-	displayName: input.displayName,
+export const encodeCreateUser = (input: UserCreateInput): CreateUserRequest => ({
 	avatar: input.avatar,
+	displayName: input.displayName,
 	email: input.email,
-	plan: input.plan,
 	features: encodeUserFeatures(input.features),
+	plan: input.plan,
 	settings: encodeUserSettings(input.settings),
-});
+	username: input.username,
+})
 
 /**
  * 编码更新用户请求
  * 前端 UserUpdateInput → Rust UpdateUserRequest
  */
-export const encodeUpdateUser = (
-	input: UserUpdateInput,
-): UpdateUserRequest => ({
-	username: input.username,
-	displayName: input.displayName !== undefined ? input.displayName : undefined,
+export const encodeUpdateUser = (input: UserUpdateInput): UpdateUserRequest => ({
 	avatar: input.avatar !== undefined ? input.avatar : undefined,
+	displayName: input.displayName !== undefined ? input.displayName : undefined,
 	email: input.email !== undefined ? input.email : undefined,
+	features: input.features !== undefined ? encodeUserFeatures(input.features) : undefined,
 	lastLogin: input.lastLogin ? new Date(input.lastLogin).getTime() : undefined,
 	plan: input.plan,
-	planStartDate: input.planStartDate
-		? new Date(input.planStartDate).getTime()
-		: undefined,
-	planExpiresAt: input.planExpiresAt
-		? new Date(input.planExpiresAt).getTime()
-		: undefined,
-	trialExpiresAt: input.trialExpiresAt
-		? new Date(input.trialExpiresAt).getTime()
-		: undefined,
-	token: input.token !== undefined ? input.token : undefined,
-	serverMessage:
-		input.serverMessage !== undefined ? input.serverMessage : undefined,
-	features:
-		input.features !== undefined
-			? encodeUserFeatures(input.features)
-			: undefined,
+	planExpiresAt: input.planExpiresAt ? new Date(input.planExpiresAt).getTime() : undefined,
+	planStartDate: input.planStartDate ? new Date(input.planStartDate).getTime() : undefined,
+	serverMessage: input.serverMessage !== undefined ? input.serverMessage : undefined,
+	settings: input.settings !== undefined ? encodeUserSettings(input.settings) : undefined,
 	state: input.state !== undefined ? encodeUserState(input.state) : undefined,
-	settings:
-		input.settings !== undefined
-			? encodeUserSettings(input.settings)
-			: undefined,
-});
+	token: input.token !== undefined ? input.token : undefined,
+	trialExpiresAt: input.trialExpiresAt ? new Date(input.trialExpiresAt).getTime() : undefined,
+	username: input.username,
+})

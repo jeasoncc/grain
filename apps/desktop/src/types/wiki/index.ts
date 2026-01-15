@@ -3,7 +3,7 @@
  * @description Wiki 类型定义导出
  */
 
-export { WikiFileEntryBuilder } from "./wiki.builder";
+export { WikiFileEntryBuilder } from "./wiki.builder"
 export {
 	type WikiCreationParams,
 	type WikiCreationResult,
@@ -11,4 +11,4 @@ export {
 	wikiCreationParamsSchema,
 	wikiCreationResultSchema,
 	wikiFileEntrySchema,
-} from "./wiki.schema";
+} from "./wiki.schema"

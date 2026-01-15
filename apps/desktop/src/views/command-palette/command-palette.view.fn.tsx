@@ -1,6 +1,6 @@
 // 命令面板 - 快速访问所有功能（展示组件）
 
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react"
 import {
 	CommandDialog,
 	CommandEmpty,
@@ -8,8 +8,8 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
-} from "@/views/ui/command";
-import type { CommandPaletteViewProps } from "./command-palette.types";
+} from "@/views/ui/command"
+import type { CommandPaletteViewProps } from "./command-palette.types"
 
 /**
  * CommandPaletteView - 纯展示组件
@@ -27,22 +27,18 @@ import type { CommandPaletteViewProps } from "./command-palette.types";
 export const CommandPaletteView = memo(
 	({ open, onOpenChange, commands }: CommandPaletteViewProps) => {
 		// UI 状态：搜索输入
-		const [search, setSearch] = useState("");
+		const [search, setSearch] = useState("")
 
 		// 重置搜索
 		useEffect(() => {
 			if (!open) {
-				setSearch("");
+				setSearch("")
 			}
-		}, [open]);
+		}, [open])
 
 		return (
 			<CommandDialog open={open} onOpenChange={onOpenChange}>
-				<CommandInput
-					placeholder="Search commands..."
-					value={search}
-					onValueChange={setSearch}
-				/>
+				<CommandInput placeholder="Search commands..." value={search} onValueChange={setSearch} />
 				<CommandList>
 					<CommandEmpty>No results found</CommandEmpty>
 
@@ -57,9 +53,7 @@ export const CommandPaletteView = memo(
 									{item.icon}
 									<span className="flex-1">{item.label}</span>
 									{item.shortcut && (
-										<kbd className="text-xs text-muted-foreground">
-											{item.shortcut}
-										</kbd>
+										<kbd className="text-xs text-muted-foreground">{item.shortcut}</kbd>
 									)}
 								</CommandItem>
 							))}
@@ -67,8 +61,8 @@ export const CommandPaletteView = memo(
 					))}
 				</CommandList>
 			</CommandDialog>
-		);
+		)
 	},
-);
+)
 
-CommandPaletteView.displayName = "CommandPaletteView";
+CommandPaletteView.displayName = "CommandPaletteView"

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router"
 import {
 	AppWindow,
 	Clock,
@@ -7,31 +7,19 @@ import {
 	Monitor,
 	Save,
 	SpellCheck,
-} from "lucide-react";
-import { useSettings } from "@/hooks/use-settings";
-import { useUIStore } from "@/state/ui.state";
-import type { TabPosition } from "@/types/ui";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/views/ui/card";
-import { Input } from "@/views/ui/input";
-import { Label } from "@/views/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/views/ui/select";
-import { Switch } from "@/views/ui/switch";
+} from "lucide-react"
+import { useSettings } from "@/hooks/use-settings"
+import { useUIStore } from "@/state/ui.state"
+import type { TabPosition } from "@/types/ui"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/views/ui/card"
+import { Input } from "@/views/ui/input"
+import { Label } from "@/views/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/views/ui/select"
+import { Switch } from "@/views/ui/switch"
 
 export const Route = createFileRoute("/settings/general")({
 	component: GeneralSettings,
-});
+})
 
 function GeneralSettings() {
 	const {
@@ -43,9 +31,9 @@ function GeneralSettings() {
 		setAutoSave,
 		setAutoSaveInterval,
 		setSpellCheck,
-	} = useSettings();
+	} = useSettings()
 
-	const { tabPosition, setTabPosition } = useUIStore();
+	const { tabPosition, setTabPosition } = useUIStore()
 
 	return (
 		<div className="space-y-6 max-w-3xl">
@@ -64,9 +52,7 @@ function GeneralSettings() {
 							<Monitor className="size-5" />
 							Application
 						</CardTitle>
-						<CardDescription>
-							Customize how the application looks and behaves.
-						</CardDescription>
+						<CardDescription>Customize how the application looks and behaves.</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
 						{/* Language */}
@@ -77,16 +63,11 @@ function GeneralSettings() {
 								</div>
 								<div className="space-y-0.5">
 									<Label className="text-base font-normal">Language</Label>
-									<p className="text-sm text-muted-foreground">
-										Select the display language.
-									</p>
+									<p className="text-sm text-muted-foreground">Select the display language.</p>
 								</div>
 							</div>
 							<div className="w-[200px]">
-								<Select
-									value={language}
-									onValueChange={(v: "zh" | "en") => setLanguage(v)}
-								>
+								<Select value={language} onValueChange={(v: "zh" | "en") => setLanguage(v)}>
 									<SelectTrigger>
 										<SelectValue placeholder="Select language" />
 									</SelectTrigger>
@@ -112,10 +93,7 @@ function GeneralSettings() {
 								</div>
 							</div>
 							<div className="w-[200px]">
-								<Select
-									value={tabPosition}
-									onValueChange={(v: TabPosition) => setTabPosition(v)}
-								>
+								<Select value={tabPosition} onValueChange={(v: TabPosition) => setTabPosition(v)}>
 									<SelectTrigger>
 										<SelectValue placeholder="Select position" />
 									</SelectTrigger>
@@ -136,9 +114,7 @@ function GeneralSettings() {
 							<AppWindow className="size-5" />
 							Editor & Saving
 						</CardTitle>
-						<CardDescription>
-							Manage how your content is saved and checked.
-						</CardDescription>
+						<CardDescription>Manage how your content is saved and checked.</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
 						{/* Auto Save */}
@@ -155,10 +131,7 @@ function GeneralSettings() {
 										</p>
 									</div>
 								</div>
-								<Switch
-									checked={autoSave}
-									onCheckedChange={(c) => setAutoSave(!!c)}
-								/>
+								<Switch checked={autoSave} onCheckedChange={(c) => setAutoSave(!!c)} />
 							</div>
 
 							{autoSave && (
@@ -166,9 +139,7 @@ function GeneralSettings() {
 									<div className="flex items-center gap-3">
 										<Clock className="size-4 text-muted-foreground" />
 										<div className="space-y-0.5">
-											<Label className="text-sm font-normal">
-												Save Interval
-											</Label>
+											<Label className="text-sm font-normal">Save Interval</Label>
 											<p className="text-xs text-muted-foreground">
 												How often to save (in seconds).
 											</p>
@@ -178,9 +149,7 @@ function GeneralSettings() {
 										<Input
 											type="number"
 											value={autoSaveInterval}
-											onChange={(e) =>
-												setAutoSaveInterval(Number(e.target.value))
-											}
+											onChange={(e) => setAutoSaveInterval(Number(e.target.value))}
 											min={1}
 											max={60}
 											className="h-8 w-20 text-center"
@@ -204,14 +173,11 @@ function GeneralSettings() {
 									</p>
 								</div>
 							</div>
-							<Switch
-								checked={spellCheck}
-								onCheckedChange={(c) => setSpellCheck(!!c)}
-							/>
+							<Switch checked={spellCheck} onCheckedChange={(c) => setSpellCheck(!!c)} />
 						</div>
 					</CardContent>
 				</Card>
 			</div>
 		</div>
-	);
+	)
 }

@@ -8,7 +8,7 @@
  */
 
 // Builder 导出
-export { AttachmentBuilder } from "./attachment.builder";
+export { AttachmentBuilder } from "./attachment.builder"
 
 // Interface 导出
 export type {
@@ -16,14 +16,14 @@ export type {
 	AttachmentInterface,
 	AttachmentType,
 	AttachmentUpdateInput,
-} from "./attachment.interface";
+} from "./attachment.interface"
 
 // Schema 类型推断导出
 export type {
 	AttachmentCreateSchemaType,
 	AttachmentSchemaType,
 	AttachmentUpdateSchemaType,
-} from "./attachment.schema";
+} from "./attachment.schema"
 
 // Schema 导出
 export {
@@ -31,4 +31,4 @@ export {
 	AttachmentSchema,
 	AttachmentTypeSchema,
 	AttachmentUpdateSchema,
-} from "./attachment.schema";
+} from "./attachment.schema"

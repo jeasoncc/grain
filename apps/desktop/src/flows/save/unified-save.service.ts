@@ -13,11 +13,11 @@
  * @requirements 3.1, 3.2, 3.3, 3.4, 3.5
  */
 
-import { debounce } from "es-toolkit";
-import * as E from "fp-ts/Either";
-import { updateContentByNodeId } from "@/io/api/content.api";
-import { info, debug, success, error as logError } from "@/io/log/logger.api";
-import type { ContentType } from "@/types/content/content.interface";
+import { debounce } from "es-toolkit"
+import * as E from "fp-ts/Either"
+import { updateContentByNodeId } from "@/io/api/content.api"
+import { debug, info, error as logError, success } from "@/io/log/logger.api"
+import type { ContentType } from "@/types/content/content.interface"
 
 // ============================================================================
 // Types
@@ -28,21 +28,21 @@ import type { ContentType } from "@/types/content/content.interface";
  */
 export interface UnifiedSaveConfig {
 	/** 节点 ID */
-	readonly nodeId: string;
+	readonly nodeId: string
 	/** 内容类型 */
-	readonly contentType: ContentType;
+	readonly contentType: ContentType
 	/** 自动保存防抖延迟（毫秒），0 表示禁用自动保存 */
-	readonly autoSaveDelay?: number;
+	readonly autoSaveDelay?: number
 	/** 标签页 ID，用于更新 isDirty 状态 */
-	readonly tabId?: string;
+	readonly tabId?: string
 	/** 保存开始回调 */
-	readonly onSaving?: () => void;
+	readonly onSaving?: () => void
 	/** 保存成功回调 */
-	readonly onSaved?: () => void;
+	readonly onSaved?: () => void
 	/** 保存失败回调 */
-	readonly onError?: (error: Error) => void;
+	readonly onError?: (error: Error) => void
 	/** 更新 Tab isDirty 状态的函数 */
-	readonly setTabDirty?: (tabId: string, isDirty: boolean) => void;
+	readonly setTabDirty?: (tabId: string, isDirty: boolean) => void
 }
 
 /**
@@ -50,17 +50,17 @@ export interface UnifiedSaveConfig {
  */
 export interface UnifiedSaveServiceInterface {
 	/** 更新内容（触发防抖自动保存） */
-	readonly updateContent: (content: string) => void;
+	readonly updateContent: (content: string) => void
 	/** 立即保存当前内容（手动保存核心函数） */
-	readonly saveNow: () => Promise<boolean>;
+	readonly saveNow: () => Promise<boolean>
 	/** 设置初始内容（不触发保存） */
-	readonly setInitialContent: (content: string) => void;
+	readonly setInitialContent: (content: string) => void
 	/** 清理资源（取消防抖定时器） */
-	readonly dispose: () => void;
+	readonly dispose: () => void
 	/** 是否有未保存的更改 */
-	readonly hasUnsavedChanges: () => boolean;
+	readonly hasUnsavedChanges: () => boolean
 	/** 获取当前待保存的内容 */
-	readonly getPendingContent: () => string | null;
+	readonly getPendingContent: () => string | null
 }
 
 // ============================================================================
@@ -68,7 +68,7 @@ export interface UnifiedSaveServiceInterface {
 // ============================================================================
 
 /** 默认自动保存防抖延迟（毫秒） */
-const DEFAULT_AUTOSAVE_DELAY = 3000;
+const DEFAULT_AUTOSAVE_DELAY = 3000
 
 // ============================================================================
 // Factory Function
@@ -98,15 +98,15 @@ export const createUnifiedSaveService = (
 		onSaved,
 		onError,
 		setTabDirty,
-	} = config;
+	} = config
 
 	// 内部状态
-	let lastSavedContent = "";
-	let pendingContent: string | null = null;
-	let isSaving = false;
+	let lastSavedContent = ""
+	let pendingContent: string | null = null
+	let isSaving = false
 
 	// 是否启用自动保存（autoSaveDelay > 0 时启用）
-	const isAutoSaveEnabled = autoSaveDelay > 0;
+	const isAutoSaveEnabled = autoSaveDelay > 0
 
 	/**
 	 * 核心保存函数
@@ -118,68 +118,62 @@ export const createUnifiedSaveService = (
 	const saveContent = async (content: string): Promise<boolean> => {
 		// 如果内容没有变化，跳过保存
 		if (content === lastSavedContent) {
-			debug("[UnifiedSave] 内容未变化，跳过保存");
-			return true;
+			debug("[UnifiedSave] 内容未变化，跳过保存")
+			return true
 		}
 
 		// 防止重复保存
 		if (isSaving) {
-			debug("[UnifiedSave] 正在保存中，跳过");
-			return false;
+			debug("[UnifiedSave] 正在保存中，跳过")
+			return false
 		}
 
-		isSaving = true;
-		info("[UnifiedSave] 开始保存", { nodeId, contentType }, "unified-save.service");
+		isSaving = true
+		info("[UnifiedSave] 开始保存", { nodeId, contentType }, "unified-save.service")
 
 		// 1. 通知开始保存
-		onSaving?.();
+		onSaving?.()
 
 		try {
 			// 2. 执行数据库保存
-			const result = await updateContentByNodeId(
-				nodeId,
-				content,
-				contentType,
-			)();
+			const result = await updateContentByNodeId(nodeId, content, contentType)()
 
 			if (E.isRight(result)) {
 				// 3. 保存成功：更新内部状态
-				lastSavedContent = content;
-				pendingContent = null;
+				lastSavedContent = content
+				pendingContent = null
 
 				// 4. 更新 Tab isDirty 状态
 				if (tabId && setTabDirty) {
-					setTabDirty(tabId, false);
+					setTabDirty(tabId, false)
 				}
 
 				// 5. 通知保存成功
-				onSaved?.();
+				onSaved?.()
 
-				success("[UnifiedSave] 保存成功", { nodeId }, "unified-save.service");
-				return true;
+				success("[UnifiedSave] 保存成功", { nodeId }, "unified-save.service")
+				return true
 			}
 			// 保存失败
-			const saveError = new Error(result.left.message || "保存失败");
-			onError?.(saveError);
-			logError("[UnifiedSave] 保存失败", { error: result.left }, "unified-save.service");
-			return false;
+			const saveError = new Error(result.left.message || "保存失败")
+			onError?.(saveError)
+			logError("[UnifiedSave] 保存失败", { error: result.left }, "unified-save.service")
+			return false
 		} catch (err) {
-			const saveError = err instanceof Error ? err : new Error("未知错误");
-			onError?.(saveError);
-			logError("[UnifiedSave] 保存异常", { error: saveError }, "unified-save.service");
-			return false;
+			const saveError = err instanceof Error ? err : new Error("未知错误")
+			onError?.(saveError)
+			logError("[UnifiedSave] 保存异常", { error: saveError }, "unified-save.service")
+			return false
 		} finally {
-			isSaving = false;
+			isSaving = false
 		}
-	};
+	}
 
 	/**
 	 * 防抖保存函数（用于自动保存）
 	 * 当 autoSaveDelay = 0 时禁用自动保存
 	 */
-	const debouncedSave = isAutoSaveEnabled
-		? debounce(saveContent, autoSaveDelay)
-		: null;
+	const debouncedSave = isAutoSaveEnabled ? debounce(saveContent, autoSaveDelay) : null
 
 	return {
 		/**
@@ -190,16 +184,16 @@ export const createUnifiedSaveService = (
 		 * 2. 如果启用自动保存，重置防抖定时器
 		 */
 		updateContent: (content: string): void => {
-			pendingContent = content;
+			pendingContent = content
 
 			// 标记为有未保存更改（用于 UI 显示）
 			if (tabId && setTabDirty && content !== lastSavedContent) {
-				setTabDirty(tabId, true);
+				setTabDirty(tabId, true)
 			}
 
 			// 触发防抖自动保存
 			if (debouncedSave) {
-				debouncedSave(content);
+				debouncedSave(content)
 			}
 		},
 
@@ -215,16 +209,16 @@ export const createUnifiedSaveService = (
 		 */
 		saveNow: async (): Promise<boolean> => {
 			// 取消防抖定时器（避免重复保存）
-			debouncedSave?.cancel();
+			debouncedSave?.cancel()
 
 			// 如果有待保存的内容，立即保存
 			if (pendingContent !== null) {
-				return await saveContent(pendingContent);
+				return await saveContent(pendingContent)
 			}
 
 			// 没有待保存的内容
-			debug("[UnifiedSave] 没有待保存的内容");
-			return true;
+			debug("[UnifiedSave] 没有待保存的内容")
+			return true
 		},
 
 		/**
@@ -233,7 +227,7 @@ export const createUnifiedSaveService = (
 		 * 用于组件初始化时设置已保存的内容基准
 		 */
 		setInitialContent: (content: string): void => {
-			lastSavedContent = content;
+			lastSavedContent = content
 			// 不设置 pendingContent，因为这是已保存的内容
 		},
 
@@ -244,22 +238,22 @@ export const createUnifiedSaveService = (
 		 * 注意：不会自动保存未保存的内容，调用者需要先调用 saveNow()
 		 */
 		dispose: (): void => {
-			debouncedSave?.cancel();
-			debug("[UnifiedSave] 资源已清理", { nodeId }, "unified-save.service");
+			debouncedSave?.cancel()
+			debug("[UnifiedSave] 资源已清理", { nodeId }, "unified-save.service")
 		},
 
 		/**
 		 * 是否有未保存的更改
 		 */
 		hasUnsavedChanges: (): boolean => {
-			return pendingContent !== null && pendingContent !== lastSavedContent;
+			return pendingContent !== null && pendingContent !== lastSavedContent
 		},
 
 		/**
 		 * 获取当前待保存的内容
 		 */
 		getPendingContent: (): string | null => {
-			return pendingContent;
+			return pendingContent
 		},
-	};
-};
+	}
+}

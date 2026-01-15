@@ -1,12 +1,12 @@
-import { useCallback, useState } from "react";
-import { cn } from "@/utils/cn.util";
+import { useCallback, useState } from "react"
+import { cn } from "@/utils/cn.util"
 
 interface ResizeHandleProps {
-	onResize: (deltaX: number) => void;
-	onResizeStart?: () => void;
-	onResizeEnd?: () => void;
-	position?: "left" | "right";
-	className?: string;
+	onResize: (deltaX: number) => void
+	onResizeStart?: () => void
+	onResizeEnd?: () => void
+	position?: "left" | "right"
+	className?: string
 }
 
 export function ResizeHandle({
@@ -16,38 +16,38 @@ export function ResizeHandle({
 	position = "right",
 	className,
 }: ResizeHandleProps) {
-	const [isDragging, setIsDragging] = useState(false);
+	const [isDragging, setIsDragging] = useState(false)
 
 	const handleMouseDown = useCallback(
 		(e: React.MouseEvent) => {
-			e.preventDefault();
-			e.stopPropagation();
-			setIsDragging(true);
-			onResizeStart?.();
+			e.preventDefault()
+			e.stopPropagation()
+			setIsDragging(true)
+			onResizeStart?.()
 
-			const startX = e.clientX;
+			const startX = e.clientX
 
 			const handleMouseMove = (moveEvent: MouseEvent) => {
-				const deltaX = moveEvent.clientX - startX;
-				onResize(position === "right" ? deltaX : -deltaX);
-			};
+				const deltaX = moveEvent.clientX - startX
+				onResize(position === "right" ? deltaX : -deltaX)
+			}
 
 			const handleMouseUp = () => {
-				setIsDragging(false);
-				onResizeEnd?.();
-				document.removeEventListener("mousemove", handleMouseMove);
-				document.removeEventListener("mouseup", handleMouseUp);
-				document.body.style.cursor = "";
-				document.body.style.userSelect = "";
-			};
+				setIsDragging(false)
+				onResizeEnd?.()
+				document.removeEventListener("mousemove", handleMouseMove)
+				document.removeEventListener("mouseup", handleMouseUp)
+				document.body.style.cursor = ""
+				document.body.style.userSelect = ""
+			}
 
-			document.addEventListener("mousemove", handleMouseMove);
-			document.addEventListener("mouseup", handleMouseUp);
-			document.body.style.cursor = "col-resize";
-			document.body.style.userSelect = "none";
+			document.addEventListener("mousemove", handleMouseMove)
+			document.addEventListener("mouseup", handleMouseUp)
+			document.body.style.cursor = "col-resize"
+			document.body.style.userSelect = "none"
 		},
 		[onResize, onResizeStart, onResizeEnd, position],
-	);
+	)
 
 	return (
 		<div
@@ -71,5 +71,5 @@ export function ResizeHandle({
 				)}
 			/>
 		</div>
-	);
+	)
 }

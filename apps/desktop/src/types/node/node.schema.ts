@@ -8,8 +8,8 @@
  * @requirements 2.2
  */
 
-import { z } from "zod";
-import { ISODateTimeSchema, UUIDSchema } from "@/types/shared";
+import { z } from "zod"
+import { ISODateTimeSchema, UUIDSchema } from "@/types/shared"
 
 /**
  * 节点类型 Zod Schema（单一来源）
@@ -41,43 +41,42 @@ export const NodeTypeSchema = z.enum([
 	"plantuml",
 	"mermaid",
 	"code",
-]);
+])
 
 /**
  * 完整的 Node schema
  * 验证来自数据库的完整节点记录
  */
 export const NodeSchema = z.object({
-	/** 节点的唯一标识符 */
-	id: UUIDSchema,
-
-	/** 父工作区/项目的引用 */
-	workspace: UUIDSchema,
-
-	/** 父节点 ID，根级节点为 null */
-	parent: UUIDSchema.nullable(),
-
-	/** 节点类型（folder, file, canvas, diary） */
-	type: NodeTypeSchema,
-
-	/** 节点的显示标题 */
-	title: z.string().min(1).max(500),
-
-	/** 兄弟节点间的排序顺序（从 0 开始） */
-	order: z.number().int().min(0),
-
 	/** 文件夹在树视图中是否折叠 */
 	collapsed: z.boolean().optional(),
 
 	/** ISO 8601 格式的创建时间戳 */
 	createDate: ISODateTimeSchema,
+	/** 节点的唯一标识符 */
+	id: UUIDSchema,
 
 	/** ISO 8601 格式的最后修改时间戳 */
 	lastEdit: ISODateTimeSchema,
 
+	/** 兄弟节点间的排序顺序（从 0 开始） */
+	order: z.number().int().min(0),
+
+	/** 父节点 ID，根级节点为 null */
+	parent: UUIDSchema.nullable(),
+
 	/** 用于分类的标签数组 */
 	tags: z.array(z.string()).optional(),
-});
+
+	/** 节点的显示标题 */
+	title: z.string().min(1).max(500),
+
+	/** 节点类型（folder, file, canvas, diary） */
+	type: NodeTypeSchema,
+
+	/** 父工作区/项目的引用 */
+	workspace: UUIDSchema,
+})
 
 /**
  * 节点创建 schema
@@ -85,33 +84,32 @@ export const NodeSchema = z.object({
  * id、createDate 和 lastEdit 自动生成
  */
 export const NodeCreateSchema = z.object({
-	/** 可选 id - 如果未提供将自动生成 */
-	id: UUIDSchema.optional(),
-
-	/** 必需的父工作区引用 */
-	workspace: UUIDSchema,
-
-	/** 可选的父节点 ID - 根级节点为 null */
-	parent: UUIDSchema.nullable().optional().default(null),
-
-	/** 可选类型 - 默认为 "file" */
-	type: NodeTypeSchema.optional().default("file"),
-
-	/** 必需的显示标题 */
-	title: z.string().min(1).max(500),
-
-	/** 可选顺序 - 默认为 0 */
-	order: z.number().int().min(0).optional().default(0),
-
 	/** 可选折叠状态 - 文件夹默认为 true */
 	collapsed: z.boolean().optional(),
 
 	/** 可选 createDate - 如果未提供将自动生成 */
 	createDate: ISODateTimeSchema.optional(),
+	/** 可选 id - 如果未提供将自动生成 */
+	id: UUIDSchema.optional(),
 
 	/** 可选 lastEdit - 如果未提供将自动生成 */
 	lastEdit: ISODateTimeSchema.optional(),
-});
+
+	/** 可选顺序 - 默认为 0 */
+	order: z.number().int().min(0).optional().default(0),
+
+	/** 可选的父节点 ID - 根级节点为 null */
+	parent: UUIDSchema.nullable().optional().default(null),
+
+	/** 必需的显示标题 */
+	title: z.string().min(1).max(500),
+
+	/** 可选类型 - 默认为 "file" */
+	type: NodeTypeSchema.optional().default("file"),
+
+	/** 必需的父工作区引用 */
+	workspace: UUIDSchema,
+})
 
 /**
  * 节点更新 schema
@@ -119,34 +117,33 @@ export const NodeCreateSchema = z.object({
  * 除了用于查找的隐式 id 外，所有字段都是可选的
  */
 export const NodeUpdateSchema = z.object({
-	/** 更新的父节点 ID */
-	parent: UUIDSchema.nullable().optional(),
-
-	/** 更新的类型 */
-	type: NodeTypeSchema.optional(),
-
-	/** 更新的标题 */
-	title: z.string().min(1).max(500).optional(),
-
-	/** 更新的顺序 */
-	order: z.number().int().min(0).optional(),
-
 	/** 更新的折叠状态 */
 	collapsed: z.boolean().optional(),
 
 	/** 更新的 lastEdit - 通常自动生成 */
 	lastEdit: ISODateTimeSchema.optional(),
-});
+
+	/** 更新的顺序 */
+	order: z.number().int().min(0).optional(),
+	/** 更新的父节点 ID */
+	parent: UUIDSchema.nullable().optional(),
+
+	/** 更新的标题 */
+	title: z.string().min(1).max(500).optional(),
+
+	/** 更新的类型 */
+	type: NodeTypeSchema.optional(),
+})
 
 /**
  * 类型推断辅助
  * 使用这些从 Zod schemas 派生 TypeScript 类型
  */
-export type NodeSchemaType = z.infer<typeof NodeSchema>;
-export type NodeCreateSchemaType = z.infer<typeof NodeCreateSchema>;
-export type NodeUpdateSchemaType = z.infer<typeof NodeUpdateSchema>;
+export type NodeSchemaType = z.infer<typeof NodeSchema>
+export type NodeCreateSchemaType = z.infer<typeof NodeCreateSchema>
+export type NodeUpdateSchemaType = z.infer<typeof NodeUpdateSchema>
 
 /**
  * 从 Schema 推断的 NodeType 类型（单一来源）
  */
-export type NodeType = z.infer<typeof NodeTypeSchema>;
+export type NodeType = z.infer<typeof NodeTypeSchema>

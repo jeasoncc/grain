@@ -10,12 +10,12 @@
  * @requirements 2.1, 1.4
  */
 
-import { pipe } from "fp-ts/function";
-import * as N from "fp-ts/number";
-import * as O from "fp-ts/Option";
-import * as RA from "fp-ts/ReadonlyArray";
-import { contramap } from "fp-ts/Ord";
-import type { NodeInterface, NodeType } from "@/types/node";
+import { pipe } from "fp-ts/function"
+import * as N from "fp-ts/number"
+import * as O from "fp-ts/Option"
+import { contramap } from "fp-ts/Ord"
+import * as RA from "fp-ts/ReadonlyArray"
+import type { NodeInterface, NodeType } from "@/types/node"
 
 // ============================================================================
 // Ord Instances for Sorting
@@ -27,7 +27,7 @@ import type { NodeInterface, NodeType } from "@/types/node";
 const byOrder = pipe(
 	N.Ord,
 	contramap((n: NodeInterface) => n.order),
-);
+)
 
 // ============================================================================
 // Types for UI Consumption
@@ -38,12 +38,12 @@ const byOrder = pipe(
  * 表示层级树结构中的节点
  */
 export interface TreeNode {
-	readonly id: string;
-	readonly title: string;
-	readonly type: NodeType;
-	readonly collapsed: boolean;
-	readonly children: ReadonlyArray<TreeNode>;
-	readonly depth: number;
+	readonly id: string
+	readonly title: string
+	readonly type: NodeType
+	readonly collapsed: boolean
+	readonly children: ReadonlyArray<TreeNode>
+	readonly depth: number
 }
 
 // ============================================================================
@@ -74,10 +74,9 @@ export const buildTree = (
 			type: node.type,
 			collapsed: node.collapsed ?? true,
 			depth,
-			children:
-				node.type === "folder" ? buildTree(nodes, node.id, depth + 1) : [],
+			children: node.type === "folder" ? buildTree(nodes, node.id, depth + 1) : [],
 		})),
-	);
+	)
 
 /**
  * 获取从根节点到指定节点的路径（用于面包屑导航）
@@ -91,22 +90,25 @@ export const getNodePath = (
 	nodeId: string,
 ): ReadonlyArray<NodeInterface> => {
 	// Use functional approach to build path
-	const buildPath = (currentId: string | null, acc: ReadonlyArray<NodeInterface>): ReadonlyArray<NodeInterface> => {
-		if (!currentId) return acc;
-		
+	const buildPath = (
+		currentId: string | null,
+		acc: ReadonlyArray<NodeInterface>,
+	): ReadonlyArray<NodeInterface> => {
+		if (!currentId) return acc
+
 		const node = pipe(
 			nodes,
 			RA.findFirst((n) => n.id === currentId),
 			O.toNullable,
-		);
-		
-		if (!node) return acc;
-		
-		return buildPath(node.parent, [node, ...acc]);
-	};
+		)
 
-	return buildPath(nodeId, []);
-};
+		if (!node) return acc
+
+		return buildPath(node.parent, [node, ...acc])
+	}
+
+	return buildPath(nodeId, [])
+}
 
 /**
  * 检查移动节点是否会创建循环引用
@@ -122,26 +124,26 @@ export const wouldCreateCycle = (
 	nodeId: string,
 	newParentId: string | null,
 ): boolean => {
-	if (newParentId === null) return false;
-	if (nodeId === newParentId) return true;
+	if (newParentId === null) return false
+	if (nodeId === newParentId) return true
 
 	// Use functional approach to check cycle
 	const checkCycle = (currentId: string | null): boolean => {
-		if (!currentId) return false;
-		if (currentId === nodeId) return true;
-		
+		if (!currentId) return false
+		if (currentId === nodeId) return true
+
 		const parent = pipe(
 			nodes,
 			RA.findFirst((n) => n.id === currentId),
 			O.map((n) => n.parent),
 			O.toNullable,
-		);
-		
-		return checkCycle(parent);
-	};
+		)
 
-	return checkCycle(newParentId);
-};
+		return checkCycle(parent)
+	}
+
+	return checkCycle(newParentId)
+}
 
 // ============================================================================
 // Node Filtering and Sorting
@@ -158,7 +160,7 @@ export const getRootNodes = (nodes: ReadonlyArray<NodeInterface>): ReadonlyArray
 		nodes,
 		RA.filter((n) => n.parent === null),
 		RA.sort(byOrder),
-	);
+	)
 
 /**
  * 获取父节点的子节点
@@ -175,7 +177,7 @@ export const getChildNodes = (
 		nodes,
 		RA.filter((n) => n.parent === parentId),
 		RA.sort(byOrder),
-	);
+	)
 
 /**
  * 获取节点的所有后代（递归）
@@ -193,16 +195,16 @@ export const getDescendants = (
 		const children = pipe(
 			nodes,
 			RA.filter((n) => n.parent === currentId),
-		);
+		)
 
 		return pipe(
 			children,
 			RA.chain((child: NodeInterface) => [child, ...collectDescendants(child.id)]),
-		);
-	};
+		)
+	}
 
-	return collectDescendants(nodeId);
-};
+	return collectDescendants(nodeId)
+}
 
 /**
  * 按类型过滤节点
@@ -218,7 +220,7 @@ export const filterByType = (
 	pipe(
 		nodes,
 		RA.filter((n) => n.type === type),
-	);
+	)
 
 /**
  * 按标签过滤节点
@@ -234,7 +236,7 @@ export const filterByTag = (
 	pipe(
 		nodes,
 		RA.filter((n) => n.tags?.includes(tag) ?? false),
-	);
+	)
 
 // ============================================================================
 // Order Calculation
@@ -247,13 +249,13 @@ export const filterByTag = (
  * @returns 下一个 order 值
  */
 export const getNextOrder = (siblings: ReadonlyArray<NodeInterface>): number => {
-	if (siblings.length === 0) return 0;
+	if (siblings.length === 0) return 0
 	return pipe(
 		siblings,
 		RA.map((n) => n.order),
 		(orders) => Math.max(...orders) + 1,
-	);
-};
+	)
+}
 
 /**
  * 计算在指定索引插入节点后的新 order 值
@@ -266,15 +268,15 @@ export const calculateReorderAfterInsert = (
 	siblings: ReadonlyArray<NodeInterface>,
 	insertIndex: number,
 ): ReadonlyMap<string, number> => {
-	const sorted = pipe(siblings, RA.sort(byOrder));
+	const sorted = pipe(siblings, RA.sort(byOrder))
 
 	// Use functional approach to build the map
 	const entries = sorted
 		.map((node: NodeInterface, i: number) => {
-			const newOrder = i >= insertIndex ? i + 1 : i;
-			return node.order !== newOrder ? [node.id, newOrder] as const : null;
+			const newOrder = i >= insertIndex ? i + 1 : i
+			return node.order !== newOrder ? ([node.id, newOrder] as const) : null
 		})
-		.filter((entry): entry is readonly [string, number] => entry !== null);
+		.filter((entry): entry is readonly [string, number] => entry !== null)
 
-	return new Map(entries);
-};
+	return new Map(entries)
+}

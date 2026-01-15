@@ -10,7 +10,7 @@
  * Requirements: 1.1, 3.1, 3.2, 3.3
  */
 
-import type { SerializedEditorState } from "lexical";
+import type { SerializedEditorState } from "lexical"
 
 // ============================================================================
 // Types
@@ -20,10 +20,10 @@ import type { SerializedEditorState } from "lexical";
  * Lexical 节点结构用于遍历
  */
 interface LexicalNode {
-	readonly type?: string;
-	readonly key?: string;
-	readonly value?: string;
-	readonly children?: ReadonlyArray<LexicalNode>;
+	readonly type?: string
+	readonly key?: string
+	readonly value?: string
+	readonly children?: ReadonlyArray<LexicalNode>
 }
 
 // ============================================================================
@@ -41,7 +41,7 @@ export const parseTagString = (value: string): ReadonlyArray<string> =>
 	value
 		.split(",")
 		.map((t) => t.trim())
-		.filter(Boolean);
+		.filter(Boolean)
 
 /**
  * 检查节点是否为 TAGS front-matter 节点
@@ -50,7 +50,7 @@ export const parseTagString = (value: string): ReadonlyArray<string> =>
  * @returns 是否为 TAGS front-matter 节点
  */
 const isTagsFrontMatter = (node: LexicalNode): boolean =>
-	node.type === "front-matter" && node.key?.toUpperCase() === "TAGS";
+	node.type === "front-matter" && node.key?.toUpperCase() === "TAGS"
 
 /**
  * 从单个节点提取标签（非递归）
@@ -59,7 +59,7 @@ const isTagsFrontMatter = (node: LexicalNode): boolean =>
  * @returns 标签数组
  */
 const extractNodeTags = (node: LexicalNode): ReadonlyArray<string> =>
-	isTagsFrontMatter(node) ? parseTagString(node.value || "") : [];
+	isTagsFrontMatter(node) ? parseTagString(node.value || "") : []
 
 /**
  * 递归收集节点树中的标签
@@ -71,7 +71,7 @@ const extractNodeTags = (node: LexicalNode): ReadonlyArray<string> =>
 const collectTags = (node: LexicalNode): ReadonlyArray<string> => [
 	...extractNodeTags(node),
 	...(node.children ?? []).flatMap(collectTags),
-];
+]
 
 /**
  * 使用 Set 去重数组
@@ -79,7 +79,7 @@ const collectTags = (node: LexicalNode): ReadonlyArray<string> => [
  * @param arr - 输入数组
  * @returns 去重后的数组
  */
-const deduplicate = <T>(arr: ReadonlyArray<T>): ReadonlyArray<T> => [...new Set(arr)];
+const deduplicate = <T>(arr: ReadonlyArray<T>): ReadonlyArray<T> => [...new Set(arr)]
 
 // ============================================================================
 // Main Export
@@ -94,9 +94,5 @@ const deduplicate = <T>(arr: ReadonlyArray<T>): ReadonlyArray<T> => [...new Set(
  * @param content - 序列化的 Lexical 编辑器状态
  * @returns 唯一标签字符串数组
  */
-export const extractTagsFromContent = (
-	content: SerializedEditorState,
-): ReadonlyArray<string> =>
-	content.root
-		? deduplicate(collectTags(content.root as unknown as LexicalNode))
-		: [];
+export const extractTagsFromContent = (content: SerializedEditorState): ReadonlyArray<string> =>
+	content.root ? deduplicate(collectTags(content.root as unknown as LexicalNode)) : []

@@ -8,21 +8,18 @@
  * @requirements 3.1, 3.2
  */
 
-import dayjs from "dayjs";
-import { v4 as uuidv4 } from "uuid";
-import type {
-	AttachmentInterface,
-	AttachmentType,
-} from "./attachment.interface";
-import { AttachmentSchema } from "./attachment.schema";
+import dayjs from "dayjs"
+import { v4 as uuidv4 } from "uuid"
+import type { AttachmentInterface, AttachmentType } from "./attachment.interface"
+import { AttachmentSchema } from "./attachment.schema"
 
 /**
  * Builder 内部使用的可变类型
  * 用于在构建过程中修改数据
  */
 type MutableAttachment = {
-	-readonly [K in keyof AttachmentInterface]: AttachmentInterface[K];
-};
+	-readonly [K in keyof AttachmentInterface]: AttachmentInterface[K]
+}
 
 /**
  * AttachmentBuilder 类
@@ -34,18 +31,18 @@ type MutableAttachment = {
  * - 返回不可变对象（Object.freeze）
  */
 export class AttachmentBuilder {
-	private data: Partial<MutableAttachment> = {};
+	private data: Partial<MutableAttachment> = {}
 
 	constructor() {
 		// 设置合理的默认值
-		const now = dayjs().toISOString();
+		const now = dayjs().toISOString()
 		this.data = {
-			id: uuidv4(),
-			type: "file",
 			fileName: "",
 			filePath: "",
+			id: uuidv4(),
+			type: "file",
 			uploadedAt: now,
-		};
+		}
 	}
 
 	/**
@@ -54,8 +51,8 @@ export class AttachmentBuilder {
 	 * @returns 返回 this 以支持链式调用
 	 */
 	id(id: string): this {
-		this.data.id = id;
-		return this;
+		this.data.id = id
+		return this
 	}
 
 	/**
@@ -64,8 +61,8 @@ export class AttachmentBuilder {
 	 * @returns 返回 this 以支持链式调用
 	 */
 	project(projectId: string): this {
-		this.data.project = projectId;
-		return this;
+		this.data.project = projectId
+		return this
 	}
 
 	/**
@@ -74,8 +71,8 @@ export class AttachmentBuilder {
 	 * @returns 返回 this 以支持链式调用
 	 */
 	type(type: AttachmentType): this {
-		this.data.type = type;
-		return this;
+		this.data.type = type
+		return this
 	}
 
 	/**
@@ -84,8 +81,8 @@ export class AttachmentBuilder {
 	 * @returns 返回 this 以支持链式调用
 	 */
 	fileName(fileName: string): this {
-		this.data.fileName = fileName;
-		return this;
+		this.data.fileName = fileName
+		return this
 	}
 
 	/**
@@ -94,8 +91,8 @@ export class AttachmentBuilder {
 	 * @returns 返回 this 以支持链式调用
 	 */
 	filePath(filePath: string): this {
-		this.data.filePath = filePath;
-		return this;
+		this.data.filePath = filePath
+		return this
 	}
 
 	/**
@@ -104,8 +101,8 @@ export class AttachmentBuilder {
 	 * @returns 返回 this 以支持链式调用
 	 */
 	uploadedAt(timestamp: string): this {
-		this.data.uploadedAt = timestamp;
-		return this;
+		this.data.uploadedAt = timestamp
+		return this
 	}
 
 	/**
@@ -114,8 +111,8 @@ export class AttachmentBuilder {
 	 * @returns 返回 this 以支持链式调用
 	 */
 	size(size: number): this {
-		this.data.size = size;
-		return this;
+		this.data.size = size
+		return this
 	}
 
 	/**
@@ -124,8 +121,8 @@ export class AttachmentBuilder {
 	 * @returns 返回 this 以支持链式调用
 	 */
 	mimeType(mimeType: string): this {
-		this.data.mimeType = mimeType;
-		return this;
+		this.data.mimeType = mimeType
+		return this
 	}
 
 	/**
@@ -134,8 +131,8 @@ export class AttachmentBuilder {
 	 * @returns 返回 this 以支持链式调用
 	 */
 	from(attachment: AttachmentInterface): this {
-		this.data = { ...attachment };
-		return this;
+		this.data = { ...attachment }
+		return this
 	}
 
 	/**
@@ -146,12 +143,12 @@ export class AttachmentBuilder {
 	build(): AttachmentInterface {
 		// 确保 uploadedAt 已设置
 		if (!this.data.uploadedAt) {
-			this.data.uploadedAt = dayjs().toISOString();
+			this.data.uploadedAt = dayjs().toISOString()
 		}
 
 		// 校验并返回不可变对象
-		const result = AttachmentSchema.parse(this.data);
-		return Object.freeze(result) as AttachmentInterface;
+		const result = AttachmentSchema.parse(this.data)
+		return Object.freeze(result) as AttachmentInterface
 	}
 
 	/**
@@ -160,7 +157,7 @@ export class AttachmentBuilder {
 	 * @returns 部分 AttachmentInterface 对象
 	 */
 	buildPartial(): Partial<AttachmentInterface> {
-		return Object.freeze({ ...this.data }) as Partial<AttachmentInterface>;
+		return Object.freeze({ ...this.data }) as Partial<AttachmentInterface>
 	}
 
 	/**
@@ -169,14 +166,14 @@ export class AttachmentBuilder {
 	 * @returns 返回 this 以支持链式调用
 	 */
 	reset(): this {
-		const now = dayjs().toISOString();
+		const now = dayjs().toISOString()
 		this.data = {
-			id: uuidv4(),
-			type: "file",
 			fileName: "",
 			filePath: "",
+			id: uuidv4(),
+			type: "file",
 			uploadedAt: now,
-		};
-		return this;
+		}
+		return this
 	}
 }

@@ -7,4 +7,4 @@
  *
  * 这是一个纯展示组件，不需要任何 props
  */
-export type KeyboardShortcutsHelpViewProps = {};
+export type KeyboardShortcutsHelpViewProps = {}

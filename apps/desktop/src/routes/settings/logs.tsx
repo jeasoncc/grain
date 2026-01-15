@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useLiveQuery } from "dexie-react-hooks";
+import { createFileRoute } from "@tanstack/react-router"
+import { useLiveQuery } from "dexie-react-hooks"
 import {
 	AlertTriangle,
 	Box,
@@ -7,27 +7,21 @@ import {
 	CheckCircle2,
 	Filter,
 	Info,
+	type LucideIcon,
 	Search,
 	Trash2,
 	XCircle,
-	type LucideIcon,
-} from "lucide-react";
-import { useMemo, useState } from "react";
-import { type LogEntry, logDB } from "@/io/db/log-db";
-import { cn } from "@/utils/cn.util";
-import { Button } from "@/views/ui/button";
-import { Input } from "@/views/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/views/ui/select";
+} from "lucide-react"
+import { useMemo, useState } from "react"
+import { type LogEntry, logDB } from "@/io/db/log-db"
+import { cn } from "@/utils/cn.util"
+import { Button } from "@/views/ui/button"
+import { Input } from "@/views/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/views/ui/select"
 
 export const Route = createFileRoute("/settings/logs")({
 	component: LogsSettingsPage,
-});
+})
 
 // Map log levels to Lucide icons for a cleaner look
 const LOG_ICONS: Record<string, LucideIcon> = {
@@ -38,7 +32,7 @@ const LOG_ICONS: Record<string, LucideIcon> = {
 	SUCCESS: CheckCircle2,
 	DEBUG: Bug,
 	TRACE: Box,
-};
+}
 
 const LOG_LEVEL_COLORS: Record<string, string> = {
 	FATAL: "text-red-600 bg-red-50 dark:bg-red-950/20",
@@ -49,7 +43,7 @@ const LOG_LEVEL_COLORS: Record<string, string> = {
 	SUCCESS: "text-green-500 bg-green-50/50 dark:bg-green-950/10",
 	DEBUG: "text-violet-500 bg-violet-50/50 dark:bg-violet-950/10",
 	TRACE: "text-muted-foreground bg-muted/10",
-};
+}
 
 const LOG_LEVELS = [
 	"all",
@@ -61,42 +55,36 @@ const LOG_LEVELS = [
 	"SUCCESS",
 	"DEBUG",
 	"TRACE",
-] as const;
+] as const
 
-type LogLevelFilter = (typeof LOG_LEVELS)[number];
+type LogLevelFilter = (typeof LOG_LEVELS)[number]
 
 function LogsSettingsPage() {
-	const [levelFilter, setLevelFilter] = useState<LogLevelFilter>("all");
-	const [searchQuery, setSearchQuery] = useState("");
+	const [levelFilter, setLevelFilter] = useState<LogLevelFilter>("all")
+	const [searchQuery, setSearchQuery] = useState("")
 
-	const logs = useLiveQuery(
-		() => logDB.logs.orderBy("id").reverse().toArray(),
-		[],
-	);
+	const logs = useLiveQuery(() => logDB.logs.orderBy("id").reverse().toArray(), [])
 
 	const filteredLogs = useMemo(() => {
-		if (!logs) return [];
+		if (!logs) return []
 
 		return logs.filter((log) => {
 			if (levelFilter !== "all" && log.level !== levelFilter) {
-				return false;
+				return false
 			}
-			if (
-				searchQuery &&
-				!log.message.toLowerCase().includes(searchQuery.toLowerCase())
-			) {
-				return false;
+			if (searchQuery && !log.message.toLowerCase().includes(searchQuery.toLowerCase())) {
+				return false
 			}
-			return true;
-		});
-	}, [logs, levelFilter, searchQuery]);
+			return true
+		})
+	}, [logs, levelFilter, searchQuery])
 
 	const handleClearLogs = async () => {
 		if (!window.confirm("Are you sure you want to clear all logs?")) {
-			return;
+			return
 		}
-		await logDB.logs.clear();
-	};
+		await logDB.logs.clear()
+	}
 
 	const formatTimestamp = (timestamp: string) => {
 		try {
@@ -108,11 +96,11 @@ function LogsSettingsPage() {
 				hour: "2-digit",
 				minute: "2-digit",
 				second: "2-digit",
-			});
+			})
 		} catch {
-			return timestamp;
+			return timestamp
 		}
-	};
+	}
 
 	return (
 		<div className="space-y-10 max-w-6xl">
@@ -170,14 +158,10 @@ function LogsSettingsPage() {
 				{/* Log List */}
 				<div className="rounded-md border bg-background/50">
 					{!logs ? (
-						<div className="p-12 text-center text-muted-foreground text-sm">
-							Loading logs...
-						</div>
+						<div className="p-12 text-center text-muted-foreground text-sm">Loading logs...</div>
 					) : filteredLogs.length === 0 ? (
 						<div className="p-12 text-center text-muted-foreground text-sm">
-							{logs.length === 0
-								? "No logs available"
-								: "No logs match your filter"}
+							{logs.length === 0 ? "No logs available" : "No logs match your filter"}
 						</div>
 					) : (
 						<div className="max-h-[600px] overflow-y-auto custom-scrollbar">
@@ -197,11 +181,7 @@ function LogsSettingsPage() {
 								</thead>
 								<tbody className="divide-y divide-border/50">
 									{filteredLogs.map((log) => (
-										<LogRow
-											key={log.id}
-											log={log}
-											formatTimestamp={formatTimestamp}
-										/>
+										<LogRow key={log.id} log={log} formatTimestamp={formatTimestamp} />
 									))}
 								</tbody>
 							</table>
@@ -214,17 +194,17 @@ function LogsSettingsPage() {
 				</div>
 			</div>
 		</div>
-	);
+	)
 }
 
 interface LogRowProps {
-	log: LogEntry;
-	formatTimestamp: (timestamp: string) => string;
+	log: LogEntry
+	formatTimestamp: (timestamp: string) => string
 }
 
 function LogRow({ log, formatTimestamp }: LogRowProps) {
-	const levelColor = LOG_LEVEL_COLORS[log.level] || "text-foreground";
-	const Icon = LOG_ICONS[log.level] || Info;
+	const levelColor = LOG_LEVEL_COLORS[log.level] || "text-foreground"
+	const Icon = LOG_ICONS[log.level] || Info
 
 	return (
 		<tr className="hover:bg-muted/30 transition-colors group">
@@ -242,9 +222,7 @@ function LogRow({ log, formatTimestamp }: LogRowProps) {
 					{log.level}
 				</span>
 			</td>
-			<td className="px-4 py-2.5 break-all leading-relaxed text-foreground/90">
-				{log.message}
-			</td>
+			<td className="px-4 py-2.5 break-all leading-relaxed text-foreground/90">{log.message}</td>
 		</tr>
-	);
+	)
 }

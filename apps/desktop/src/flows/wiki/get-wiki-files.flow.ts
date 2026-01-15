@@ -7,34 +7,34 @@
  * Requirements: 2.1
  */
 
-import * as E from "fp-ts/Either";
-import * as TE from "fp-ts/TaskEither";
-import { getContentsByNodeIds, getNodesByWorkspace } from "@/io/api";
-import { legacyDatabase } from "@/io/db/legacy-database";
-import { info, error, success } from "@/io/log/logger.api";
-import { WikiFileEntryBuilder } from "@/pipes/wiki/wiki.builder";
-import { WIKI_TAG } from "@/pipes/wiki/wiki.resolve.fn";
-import type { WikiFileEntry } from "@/pipes/wiki/wiki.schema";
-import type { NodeInterface } from "@/types/node";
-import type { AppError } from "@/types/error";
+import * as E from "fp-ts/Either"
+import * as TE from "fp-ts/TaskEither"
+import { getContentsByNodeIds, getNodesByWorkspace } from "@/io/api"
+import { legacyDatabase } from "@/io/db/legacy-database"
+import { error, info, success } from "@/io/log/logger.api"
+import { WikiFileEntryBuilder } from "@/pipes/wiki/wiki.builder"
+import { WIKI_TAG } from "@/pipes/wiki/wiki.resolve.fn"
+import type { WikiFileEntry } from "@/pipes/wiki/wiki.schema"
+import type { AppError } from "@/types/error"
+import type { NodeInterface } from "@/types/node"
 
 /**
  * Build the path string for a node
  */
-function buildNodePath(
-	node: NodeInterface,
-	nodeMap: ReadonlyMap<string, NodeInterface>,
-): string {
-	const buildPathRecursive = (currentNode: NodeInterface, acc: ReadonlyArray<string> = []): ReadonlyArray<string> => {
-		const newAcc: ReadonlyArray<string> = [currentNode.title, ...acc];
+function buildNodePath(node: NodeInterface, nodeMap: ReadonlyMap<string, NodeInterface>): string {
+	const buildPathRecursive = (
+		currentNode: NodeInterface,
+		acc: ReadonlyArray<string> = [],
+	): ReadonlyArray<string> => {
+		const newAcc: ReadonlyArray<string> = [currentNode.title, ...acc]
 		if (!currentNode.parent) {
-			return newAcc;
+			return newAcc
 		}
-		const parent = nodeMap.get(currentNode.parent);
-		return parent ? buildPathRecursive(parent, newAcc) : newAcc;
-	};
+		const parent = nodeMap.get(currentNode.parent)
+		return parent ? buildPathRecursive(parent, newAcc) : newAcc
+	}
 
-	return buildPathRecursive(node).join("/");
+	return buildPathRecursive(node).join("/")
 }
 
 /**
@@ -49,7 +49,7 @@ function buildNodePath(
 export const getWikiFilesAsync = (
 	workspaceId: string,
 ): TE.TaskEither<AppError, ReadonlyArray<WikiFileEntry>> => {
-	info("[Wiki] 获取 Wiki 文件列表...");
+	info("[Wiki] 获取 Wiki 文件列表...")
 
 	return TE.tryCatch(
 		async () => {
@@ -58,45 +58,52 @@ export const getWikiFilesAsync = (
 				.where("tags")
 				.equals(WIKI_TAG)
 				.and((node) => node.workspace === workspaceId)
-				.toArray();
+				.toArray()
 
-			info("[Wiki] 找到 Wiki 文件", { count: nodes.length }, "get-wiki-files.flow");
+			info("[Wiki] 找到 Wiki 文件", { count: nodes.length }, "get-wiki-files.flow")
 
 			// Get content for all wiki files
-			const nodeIds: ReadonlyArray<string> = nodes.map((n) => n.id);
-			const contentsResult = await getContentsByNodeIds(nodeIds)();
-			const contents = E.isRight(contentsResult) ? contentsResult.right : [];
-			const contentMap = new Map(contents.map((c) => [c.nodeId, c.content])) as ReadonlyMap<string, string>;
+			const nodeIds: ReadonlyArray<string> = nodes.map((n) => n.id)
+			const contentsResult = await getContentsByNodeIds(nodeIds)()
+			const contents = E.isRight(contentsResult) ? contentsResult.right : []
+			const contentMap = new Map(contents.map((c) => [c.nodeId, c.content])) as ReadonlyMap<
+				string,
+				string
+			>
 
 			// Get all nodes for path building
-			const allNodesResult = await getNodesByWorkspace(workspaceId)();
-			const allNodes = E.isRight(allNodesResult) ? allNodesResult.right : [];
-			const nodeMap = new Map(allNodes.map((n) => [n.id, n])) as ReadonlyMap<string, NodeInterface>;
+			const allNodesResult = await getNodesByWorkspace(workspaceId)()
+			const allNodes = E.isRight(allNodesResult) ? allNodesResult.right : []
+			const nodeMap = new Map(allNodes.map((n) => [n.id, n])) as ReadonlyMap<string, NodeInterface>
 
 			// Build WikiFileEntry array
 			const entries: ReadonlyArray<WikiFileEntry> = nodes.map((node) => {
-				const path = buildNodePath(node, nodeMap);
-				const content = contentMap.get(node.id) || "";
+				const path = buildNodePath(node, nodeMap)
+				const content = contentMap.get(node.id) || ""
 				return new WikiFileEntryBuilder()
 					.id(node.id)
 					.name(node.title)
 					.alias([])
 					.content(content)
 					.path(path)
-					.build();
-			});
+					.build()
+			})
 
-			success("[Wiki] Wiki 文件列表获取成功", {
-				count: entries.length,
-			}, "get-wiki-files");
-			return entries;
+			success(
+				"[Wiki] Wiki 文件列表获取成功",
+				{
+					count: entries.length,
+				},
+				"get-wiki-files",
+			)
+			return entries
 		},
 		(error) => ({
 			type: "DB_ERROR" as const,
 			message: `获取 Wiki 文件列表失败: ${error instanceof Error ? error.message : "未知错误"}`,
 		}),
-	);
-};
+	)
+}
 
 /**
  * Get all files with "wiki" tag for a workspace (async wrapper)
@@ -104,15 +111,13 @@ export const getWikiFilesAsync = (
  * @param workspaceId - The workspace ID
  * @returns Promise<WikiFileEntry[]>
  */
-export async function getWikiFiles(
-	workspaceId: string,
-): Promise<ReadonlyArray<WikiFileEntry>> {
-	const result = await getWikiFilesAsync(workspaceId)();
+export async function getWikiFiles(workspaceId: string): Promise<ReadonlyArray<WikiFileEntry>> {
+	const result = await getWikiFilesAsync(workspaceId)()
 
 	if (E.isLeft(result)) {
-		error("[Wiki] 获取 Wiki 文件列表失败", { error: result.left }, "get-wiki-files.flow");
-		return [];
+		error("[Wiki] 获取 Wiki 文件列表失败", { error: result.left }, "get-wiki-files.flow")
+		return []
 	}
 
-	return result.right;
+	return result.right
 }

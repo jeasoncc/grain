@@ -3,9 +3,9 @@
  * @description 备份管理 Hook 测试
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
-import { useBackupManager } from "./use-backup-manager";
+import { renderHook, waitFor } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import { useBackupManager } from "./use-backup-manager"
 
 // Mock dependencies
 vi.mock("sonner", () => ({
@@ -14,45 +14,33 @@ vi.mock("sonner", () => ({
 		error: vi.fn(),
 		info: vi.fn(),
 	},
-}));
+}))
 
 vi.mock("@/io/log/logger.api", () => ({
 	error: vi.fn(),
-}));
+}))
 
 vi.mock("@/flows/backup", () => ({
 	autoBackupManager: {
 		start: vi.fn(),
 		stop: vi.fn(),
 	},
-	getDatabaseStats: vi.fn(() => () =>
-		Promise.resolve({ _tag: "Right", right: { totalNodes: 10 } }),
+	getDatabaseStats: vi.fn(
+		() => () => Promise.resolve({ _tag: "Right", right: { totalNodes: 10 } }),
 	),
-	getStorageStats: vi.fn(() => () =>
-		Promise.resolve({ _tag: "Right", right: { size: 1024 } }),
-	),
+	getStorageStats: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: { size: 1024 } })),
 	getLocalBackups: vi.fn(() => []),
-	exportBackupJson: vi.fn(() => () =>
-		Promise.resolve({ _tag: "Right", right: undefined }),
-	),
-	exportBackupZip: vi.fn(() => () =>
-		Promise.resolve({ _tag: "Right", right: undefined }),
-	),
-	restoreBackup: vi.fn(() => () =>
-		Promise.resolve({ _tag: "Right", right: undefined }),
-	),
-	restoreLocalBackup: vi.fn(() => () =>
-		Promise.resolve({ _tag: "Right", right: undefined }),
-	),
-	clearAllData: vi.fn(() => () =>
-		Promise.resolve({ _tag: "Right", right: undefined }),
-	),
-}));
+	exportBackupJson: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: undefined })),
+	exportBackupZip: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: undefined })),
+	restoreBackup: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: undefined })),
+	restoreLocalBackup: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: undefined })),
+	clearAllData: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: undefined })),
+}))
 
 vi.mock("@/io/storage/settings.storage", () => ({
 	getAutoBackupEnabled: vi.fn(() => false),
 	setAutoBackupEnabled: vi.fn(() => true),
-}));
+}))
 
 vi.mock("@/io/file/dialog.file", () => ({
 	selectFile: vi.fn(() =>
@@ -61,45 +49,45 @@ vi.mock("@/io/file/dialog.file", () => ({
 			cancelled: false,
 		}),
 	),
-}));
+}))
 
 describe("useBackupManager", () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
-	});
+		vi.clearAllMocks()
+	})
 
 	it("should initialize with default state", () => {
-		const { result } = renderHook(() => useBackupManager());
+		const { result } = renderHook(() => useBackupManager())
 
-		expect(result.current.stats).toBeNull();
-		expect(result.current.storageStats).toBeNull();
-		expect(result.current.loading).toBe(false);
-		expect(result.current.autoBackupEnabled).toBe(false);
-		expect(result.current.localBackups).toEqual([]);
-	});
+		expect(result.current.stats).toBeNull()
+		expect(result.current.storageStats).toBeNull()
+		expect(result.current.loading).toBe(false)
+		expect(result.current.autoBackupEnabled).toBe(false)
+		expect(result.current.localBackups).toEqual([])
+	})
 
 	it("should load stats on mount", async () => {
-		const { result } = renderHook(() => useBackupManager());
+		const { result } = renderHook(() => useBackupManager())
 
 		await waitFor(() => {
-			expect(result.current.stats).not.toBeNull();
-			expect(result.current.storageStats).not.toBeNull();
-		});
-	});
+			expect(result.current.stats).not.toBeNull()
+			expect(result.current.storageStats).not.toBeNull()
+		})
+	})
 
 	it("should export JSON successfully", async () => {
-		const { result } = renderHook(() => useBackupManager());
+		const { result } = renderHook(() => useBackupManager())
 
-		await result.current.exportJson();
+		await result.current.exportJson()
 
-		expect(result.current.loading).toBe(false);
-	});
+		expect(result.current.loading).toBe(false)
+	})
 
 	it("should toggle auto backup", () => {
-		const { result } = renderHook(() => useBackupManager());
+		const { result } = renderHook(() => useBackupManager())
 
-		result.current.toggleAutoBackup(true);
+		result.current.toggleAutoBackup(true)
 
-		expect(result.current.autoBackupEnabled).toBe(true);
-	});
-});
+		expect(result.current.autoBackupEnabled).toBe(true)
+	})
+})

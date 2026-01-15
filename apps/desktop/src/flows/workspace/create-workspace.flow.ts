@@ -10,31 +10,31 @@
  * @requirements 7.1, 7.4
  */
 
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import * as workspaceRepo from "@/io/api/workspace.api";
-import { info, success } from "@/io/log/logger.api";
-import type { WorkspaceInterface } from "@/types/workspace";
-import type { AppError } from "@/types/error";
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import * as workspaceRepo from "@/io/api/workspace.api"
+import { info, success } from "@/io/log/logger.api"
+import type { AppError } from "@/types/error"
+import type { WorkspaceInterface } from "@/types/workspace"
 
 /**
  * 创建工作区参数
  */
 export interface CreateWorkspaceParams {
 	/** 工作区标题 */
-	readonly title: string;
+	readonly title: string
 	/** 作者名称（可选） */
-	readonly author?: string;
+	readonly author?: string
 	/** 项目描述（可选） */
-	readonly description?: string;
+	readonly description?: string
 	/** 出版商信息（可选） */
-	readonly publisher?: string;
+	readonly publisher?: string
 	/** 项目语言（可选） */
-	readonly language?: string;
+	readonly language?: string
 	/** 团队成员 ID 数组（可选） */
-	readonly members?: readonly string[];
+	readonly members?: readonly string[]
 	/** 所有者用户 ID（可选） */
-	readonly owner?: string;
+	readonly owner?: string
 }
 
 /**
@@ -49,7 +49,7 @@ export interface CreateWorkspaceParams {
 export const createWorkspace = (
 	params: CreateWorkspaceParams,
 ): TE.TaskEither<AppError, WorkspaceInterface> => {
-	info("[Action] 创建工作区...", {}, "create-workspace");
+	info("[Action] 创建工作区...", {}, "create-workspace")
 
 	return pipe(
 		workspaceRepo.createWorkspace({
@@ -62,8 +62,8 @@ export const createWorkspace = (
 			owner: params.owner,
 		}),
 		TE.tap((workspace) => {
-			success("[Action] 工作区创建成功", { workspaceId: workspace.id }, "create-workspace");
-			return TE.right(workspace);
+			success("[Action] 工作区创建成功", { workspaceId: workspace.id }, "create-workspace")
+			return TE.right(workspace)
 		}),
-	);
-};
+	)
+}

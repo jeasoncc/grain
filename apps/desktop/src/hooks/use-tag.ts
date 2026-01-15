@@ -16,9 +16,9 @@ import {
 	useTagSearch as useTagSearchQuery,
 	useTagsByWorkspace as useTagsByWorkspaceQuery,
 	useTopTags as useTopTagsQuery,
-} from "@/hooks/queries";
-import type { TagGraphData } from "@/types/codec";
-import type { TagInterface } from "@/types/tag";
+} from "@/hooks/queries"
+import type { TagGraphData } from "@/types/codec"
+import type { TagInterface } from "@/types/tag"
 
 /**
  * Hook to get all tags for a workspace
@@ -26,11 +26,9 @@ import type { TagInterface } from "@/types/tag";
  * @param workspaceId - The workspace ID
  * @returns Array of tags for the workspace
  */
-export function useTagsByWorkspace(
-	workspaceId: string | undefined,
-): readonly TagInterface[] {
-	const { data } = useTagsByWorkspaceQuery(workspaceId);
-	return data ?? [];
+export function useTagsByWorkspace(workspaceId: string | undefined): readonly TagInterface[] {
+	const { data } = useTagsByWorkspaceQuery(workspaceId)
+	return data ?? []
 }
 
 /**
@@ -44,8 +42,8 @@ export function useNodesByTag(
 	workspaceId: string | undefined,
 	tagName: string | undefined,
 ): readonly string[] {
-	const { data } = useNodesByTagQuery(workspaceId, tagName);
-	return data ?? [];
+	const { data } = useNodesByTagQuery(workspaceId, tagName)
+	return data ?? []
 }
 
 /**
@@ -55,8 +53,8 @@ export function useNodesByTag(
  * @returns Graph data with nodes and edges
  */
 export function useTagGraph(workspaceId: string | undefined): TagGraphData {
-	const { data } = useTagGraphQuery(workspaceId);
-	return data ?? { nodes: [], edges: [] };
+	const { data } = useTagGraphQuery(workspaceId)
+	return data ?? { nodes: [], edges: [] }
 }
 
 /**
@@ -70,8 +68,8 @@ export function useTagSearch(
 	workspaceId: string | undefined,
 	query: string,
 ): readonly TagInterface[] {
-	const { data } = useTagSearchQuery(workspaceId, query || undefined);
-	return data ?? [];
+	const { data } = useTagSearchQuery(workspaceId, query || undefined)
+	return data ?? []
 }
 
 /**
@@ -81,8 +79,8 @@ export function useTagSearch(
  * @returns The tag or undefined
  */
 export function useTag(tagId: string | undefined): TagInterface | undefined {
-	const { data } = useTagQuery(tagId);
-	return data ?? undefined;
+	const { data } = useTagQuery(tagId)
+	return data ?? undefined
 }
 
 /**
@@ -96,8 +94,8 @@ export function useTagByName(
 	workspaceId: string | undefined,
 	name: string | undefined,
 ): TagInterface | undefined {
-	const { data } = useTagByNameQuery(workspaceId, name);
-	return data ?? undefined;
+	const { data } = useTagByNameQuery(workspaceId, name)
+	return data ?? undefined
 }
 
 /**
@@ -107,8 +105,8 @@ export function useTagByName(
  * @returns The count of tags
  */
 export function useTagCount(workspaceId: string | undefined): number {
-	const { data } = useTagsByWorkspaceQuery(workspaceId);
-	return data?.length ?? 0;
+	const { data } = useTagsByWorkspaceQuery(workspaceId)
+	return data?.length ?? 0
 }
 
 /**
@@ -122,8 +120,8 @@ export function usePopularTags(
 	workspaceId: string | undefined,
 	limit = 10,
 ): readonly TagInterface[] {
-	const { data } = useTopTagsQuery(workspaceId, limit);
-	return data ?? [];
+	const { data } = useTopTagsQuery(workspaceId, limit)
+	return data ?? []
 }
 
 /**
@@ -137,12 +135,10 @@ export function useRecentTags(
 	workspaceId: string | undefined,
 	limit = 10,
 ): readonly TagInterface[] {
-	const { data } = useTagsByWorkspaceQuery(workspaceId);
-	if (!data) return [];
+	const { data } = useTagsByWorkspaceQuery(workspaceId)
+	if (!data) return []
 	// Sort by lastUsed and take top N
 	return [...data]
-		.sort(
-			(a, b) => new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime(),
-		)
-		.slice(0, limit);
+		.sort((a, b) => new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime())
+		.slice(0, limit)
 }

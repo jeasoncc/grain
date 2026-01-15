@@ -13,7 +13,7 @@
  * - 可靠性：网络错误自动重试
  */
 
-import { getKrokiPlantUMLUrl } from "./diagram.fn";
+import { getKrokiPlantUMLUrl } from "./diagram.fn"
 
 // ============================================================================
 // Types
@@ -21,18 +21,18 @@ import { getKrokiPlantUMLUrl } from "./diagram.fn";
 
 /** PlantUML 渲染成功结果 */
 export interface PlantUMLRenderSuccess {
-	readonly svg: string;
+	readonly svg: string
 }
 
 /** PlantUML 渲染错误结果 */
 export interface PlantUMLRenderError {
-	readonly error: string;
-	readonly errorType: PlantUMLErrorType;
-	readonly retryable: boolean;
+	readonly error: string
+	readonly errorType: PlantUMLErrorType
+	readonly retryable: boolean
 }
 
 /** PlantUML 渲染结果 */
-export type PlantUMLRenderResult = PlantUMLRenderSuccess | PlantUMLRenderError;
+export type PlantUMLRenderResult = PlantUMLRenderSuccess | PlantUMLRenderError
 
 /** PlantUML 错误类型 */
 export type PlantUMLErrorType =
@@ -40,18 +40,18 @@ export type PlantUMLErrorType =
 	| "network" // 网络错误（无法连接到 Kroki 服务器）
 	| "server" // 服务器错误（Kroki 服务器返回 5xx）
 	| "config" // 配置错误（Kroki URL 未配置）
-	| "unknown"; // 未知错误
+	| "unknown" // 未知错误
 
 /** PlantUML 渲染配置 */
 export interface PlantUMLRenderConfig {
 	/** Kroki 服务器 URL */
-	readonly krokiServerUrl: string;
+	readonly krokiServerUrl: string
 	/** 最大重试次数（默认 3） */
-	readonly maxRetries?: number;
+	readonly maxRetries?: number
 	/** 重试基础延迟（毫秒，默认 1000） */
-	readonly retryBaseDelay?: number;
+	readonly retryBaseDelay?: number
 	/** 重试回调 */
-	readonly onRetryAttempt?: (attempt: number, maxRetries: number) => void;
+	readonly onRetryAttempt?: (attempt: number, maxRetries: number) => void
 }
 
 // ============================================================================
@@ -59,10 +59,10 @@ export interface PlantUMLRenderConfig {
 // ============================================================================
 
 /** 默认最大重试次数 */
-const DEFAULT_MAX_RETRIES = 3;
+const DEFAULT_MAX_RETRIES = 3
 
 /** 默认重试基础延迟（毫秒） */
-const DEFAULT_RETRY_BASE_DELAY_MS = 1000;
+const DEFAULT_RETRY_BASE_DELAY_MS = 1000
 
 // ============================================================================
 // Helper Functions
@@ -71,8 +71,7 @@ const DEFAULT_RETRY_BASE_DELAY_MS = 1000;
 /**
  * 延迟函数
  */
-const delay = (ms: number): Promise<void> =>
-	new Promise((resolve) => setTimeout(resolve, ms));
+const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
  * 计算重试延迟（指数退避）
@@ -82,8 +81,8 @@ const delay = (ms: number): Promise<void> =>
  * @returns 延迟时间（毫秒）
  */
 const getRetryDelay = (attempt: number, baseDelay: number): number => {
-	return baseDelay * 2 ** attempt;
-};
+	return baseDelay * 2 ** attempt
+}
 
 /**
  * 根据 HTTP 状态码判断错误类型
@@ -93,13 +92,13 @@ const getRetryDelay = (attempt: number, baseDelay: number): number => {
  */
 const getErrorTypeFromStatus = (statusCode: number): PlantUMLErrorType => {
 	if (statusCode >= 400 && statusCode < 500) {
-		return "syntax"; // 4xx 通常是客户端错误（语法问题）
+		return "syntax" // 4xx 通常是客户端错误（语法问题）
 	}
 	if (statusCode >= 500) {
-		return "server"; // 5xx 是服务器错误
+		return "server" // 5xx 是服务器错误
 	}
-	return "unknown";
-};
+	return "unknown"
+}
 
 /**
  * 根据错误对象判断错误类型
@@ -109,10 +108,10 @@ const getErrorTypeFromStatus = (statusCode: number): PlantUMLErrorType => {
  */
 const getErrorTypeFromError = (error: unknown): PlantUMLErrorType => {
 	if (!(error instanceof Error)) {
-		return "unknown";
+		return "unknown"
 	}
 
-	const message = error.message.toLowerCase();
+	const message = error.message.toLowerCase()
 
 	// 网络相关错误
 	if (
@@ -124,11 +123,11 @@ const getErrorTypeFromError = (error: unknown): PlantUMLErrorType => {
 		message.includes("dns") ||
 		message.includes("socket")
 	) {
-		return "network";
+		return "network"
 	}
 
-	return "unknown";
-};
+	return "unknown"
+}
 
 /**
  * 判断错误是否可重试
@@ -139,8 +138,8 @@ const getErrorTypeFromError = (error: unknown): PlantUMLErrorType => {
 const isRetryableError = (errorType: PlantUMLErrorType): boolean => {
 	// 语法错误和配置错误不可重试
 	// 网络错误和服务器错误可以重试
-	return errorType === "network" || errorType === "server";
-};
+	return errorType === "network" || errorType === "server"
+}
 
 /**
  * 解析 Kroki 服务器返回的错误信息
@@ -152,35 +151,35 @@ const isRetryableError = (errorType: PlantUMLErrorType): boolean => {
 const parseKrokiError = (errorText: string, statusCode: number): string => {
 	// 空错误文本
 	if (!errorText.trim()) {
-		return `Kroki 服务器错误 (HTTP ${statusCode})`;
+		return `Kroki 服务器错误 (HTTP ${statusCode})`
 	}
 
 	// 尝试解析常见的 PlantUML 错误
-	const lowerText = errorText.toLowerCase();
+	const lowerText = errorText.toLowerCase()
 
 	// 语法错误
 	if (lowerText.includes("syntax error")) {
-		return `PlantUML 语法错误：${errorText}`;
+		return `PlantUML 语法错误：${errorText}`
 	}
 
 	// 未知图表类型
 	if (lowerText.includes("unknown diagram")) {
-		return "未知的图表类型。请确保代码以 @startuml 开头，以 @enduml 结尾";
+		return "未知的图表类型。请确保代码以 @startuml 开头，以 @enduml 结尾"
 	}
 
 	// 超时
 	if (lowerText.includes("timeout")) {
-		return "渲染超时：图表可能过于复杂，请尝试简化";
+		return "渲染超时：图表可能过于复杂，请尝试简化"
 	}
 
 	// 返回原始错误（截断过长的错误信息）
-	const maxLength = 200;
+	const maxLength = 200
 	if (errorText.length > maxLength) {
-		return `${errorText.substring(0, maxLength)}...`;
+		return `${errorText.substring(0, maxLength)}...`
 	}
 
-	return errorText;
-};
+	return errorText
+}
 
 // ============================================================================
 // Public Functions
@@ -219,7 +218,7 @@ export const renderPlantUML = async (
 		maxRetries = DEFAULT_MAX_RETRIES,
 		retryBaseDelay = DEFAULT_RETRY_BASE_DELAY_MS,
 		onRetryAttempt,
-	} = config;
+	} = config
 
 	// 空代码检查
 	if (!code.trim()) {
@@ -227,7 +226,7 @@ export const renderPlantUML = async (
 			error: "图表代码为空",
 			errorType: "syntax",
 			retryable: false,
-		};
+		}
 	}
 
 	// Kroki URL 配置检查
@@ -236,15 +235,13 @@ export const renderPlantUML = async (
 			error: "Kroki 服务器 URL 未配置",
 			errorType: "config",
 			retryable: false,
-		};
+		}
 	}
 
 	// 内部重试函数
-	const attemptRender = async (
-		attempt: number,
-	): Promise<PlantUMLRenderResult> => {
+	const attemptRender = async (attempt: number): Promise<PlantUMLRenderResult> => {
 		try {
-			const url = getKrokiPlantUMLUrl(krokiServerUrl);
+			const url = getKrokiPlantUMLUrl(krokiServerUrl)
 
 			const response = await fetch(url, {
 				method: "POST",
@@ -252,54 +249,54 @@ export const renderPlantUML = async (
 					"Content-Type": "text/plain",
 				},
 				body: code,
-			});
+			})
 
 			if (!response.ok) {
-				const errorText = await response.text();
-				const errorType = getErrorTypeFromStatus(response.status);
-				const retryable = isRetryableError(errorType) && attempt < maxRetries;
+				const errorText = await response.text()
+				const errorType = getErrorTypeFromStatus(response.status)
+				const retryable = isRetryableError(errorType) && attempt < maxRetries
 
 				// 如果可重试，执行重试
 				if (retryable) {
-					const delayMs = getRetryDelay(attempt, retryBaseDelay);
-					onRetryAttempt?.(attempt + 1, maxRetries);
-					await delay(delayMs);
-					return attemptRender(attempt + 1);
+					const delayMs = getRetryDelay(attempt, retryBaseDelay)
+					onRetryAttempt?.(attempt + 1, maxRetries)
+					await delay(delayMs)
+					return attemptRender(attempt + 1)
 				}
 
 				return {
 					error: parseKrokiError(errorText, response.status),
 					errorType,
 					retryable: false,
-				};
+				}
 			}
 
-			const svg = await response.text();
-			return { svg };
+			const svg = await response.text()
+			return { svg }
 		} catch (error) {
-			const errorType = getErrorTypeFromError(error);
-			const retryable = isRetryableError(errorType) && attempt < maxRetries;
+			const errorType = getErrorTypeFromError(error)
+			const retryable = isRetryableError(errorType) && attempt < maxRetries
 
 			// 如果可重试，执行重试
 			if (retryable) {
-				const delayMs = getRetryDelay(attempt, retryBaseDelay);
-				onRetryAttempt?.(attempt + 1, maxRetries);
-				await delay(delayMs);
-				return attemptRender(attempt + 1);
+				const delayMs = getRetryDelay(attempt, retryBaseDelay)
+				onRetryAttempt?.(attempt + 1, maxRetries)
+				await delay(delayMs)
+				return attemptRender(attempt + 1)
 			}
 
-			const message = error instanceof Error ? error.message : "未知错误";
+			const message = error instanceof Error ? error.message : "未知错误"
 
 			return {
 				error: `网络错误：${message}`,
 				errorType,
 				retryable: false,
-			};
+			}
 		}
-	};
+	}
 
-	return attemptRender(0);
-};
+	return attemptRender(0)
+}
 
 /**
  * 渲染 PlantUML 图表（简化版，不带重试）
@@ -325,14 +322,14 @@ export const renderPlantUMLSimple = async (
 	const result = await renderPlantUML(code, {
 		krokiServerUrl,
 		maxRetries: 0,
-	});
+	})
 
 	if ("svg" in result) {
-		return { svg: result.svg };
+		return { svg: result.svg }
 	}
 
-	return { error: result.error };
-};
+	return { error: result.error }
+}
 
 /**
  * 检查 Kroki 服务器是否可用
@@ -354,16 +351,16 @@ export const checkKrokiServerHealth = async (
 	timeoutMs = 5000,
 ): Promise<boolean> => {
 	if (!krokiServerUrl) {
-		return false;
+		return false
 	}
 
 	try {
-		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+		const controller = new AbortController()
+		const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
 		// 使用简单的 PlantUML 代码测试服务器
-		const testCode = "@startuml\nA -> B\n@enduml";
-		const url = getKrokiPlantUMLUrl(krokiServerUrl);
+		const testCode = "@startuml\nA -> B\n@enduml"
+		const url = getKrokiPlantUMLUrl(krokiServerUrl)
 
 		const response = await fetch(url, {
 			method: "POST",
@@ -372,11 +369,11 @@ export const checkKrokiServerHealth = async (
 			},
 			body: testCode,
 			signal: controller.signal,
-		});
+		})
 
-		clearTimeout(timeoutId);
-		return response.ok;
+		clearTimeout(timeoutId)
+		return response.ok
 	} catch {
-		return false;
+		return false
 	}
-};
+}

@@ -8,19 +8,19 @@
  * @requirements Note 创建功能
  */
 
-import { generateNoteContent } from "@/pipes/content";
+import { generateNoteContent } from "@/pipes/content"
 import {
 	createDateTemplateConfig,
 	type DateTemplateParams,
 	dateParamsSchema,
-} from "./date-template.factory";
+} from "./date-template.factory"
 
 // ==============================
 // Types (Re-export)
 // ==============================
 
-export type NoteTemplateParams = DateTemplateParams;
-export const noteParamsSchema = dateParamsSchema;
+export type NoteTemplateParams = DateTemplateParams
+export const noteParamsSchema = dateParamsSchema
 
 // ==============================
 // Configuration
@@ -40,4 +40,4 @@ export const noteConfig = createDateTemplateConfig({
 	prefix: "note",
 	generateContent: generateNoteContent,
 	includeDayFolder: true,
-});
+})

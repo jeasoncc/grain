@@ -32,4 +32,4 @@ export {
 	sortTagsByCount,
 	TAG_PATTERN,
 	validateTagName,
-} from "./tag.extract.fn";
+} from "./tag.extract.fn"

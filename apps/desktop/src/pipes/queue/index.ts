@@ -3,4 +3,4 @@
  * @description Queue pipes barrel export
  */
 
-export * from "./queue.pipe";
+export * from "./queue.pipe"

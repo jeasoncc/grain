@@ -13,30 +13,30 @@
  * @requirements 4.1, 4.2, 4.3, 4.5
  */
 
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import { addContent, addNode, getNextOrder, updateNode } from "@/io/api";
-import * as nodeRepo from "@/io/api/node.api";
-import { legacyDatabase } from "@/io/db/legacy-database";
-import { info, debug, success, error } from "@/io/log/logger.api";
-import { WIKI_ROOT_FOLDER, WIKI_TAG } from "@/pipes/wiki";
-import type { NodeInterface } from "@/types/node";
-import type { AppError } from "@/types/error";
+import * as E from "fp-ts/Either"
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import { addContent, addNode, getNextOrder, updateNode } from "@/io/api"
+import * as nodeRepo from "@/io/api/node.api"
+import { legacyDatabase } from "@/io/db/legacy-database"
+import { debug, error, info, success } from "@/io/log/logger.api"
+import { WIKI_ROOT_FOLDER, WIKI_TAG } from "@/pipes/wiki"
+import type { AppError } from "@/types/error"
+import type { NodeInterface } from "@/types/node"
 
 /**
  * 旧版 WikiInterface，用于迁移
  * 匹配旧的 wikiEntries 表结构
  */
 interface LegacyWikiEntry {
-	readonly id: string;
-	readonly project: string;
-	readonly name: string;
-	readonly alias: ReadonlyArray<string>;
-	readonly tags: ReadonlyArray<string>;
-	readonly content: string;
-	readonly createDate: string;
-	readonly updatedAt: string;
+	readonly id: string
+	readonly project: string
+	readonly name: string
+	readonly alias: ReadonlyArray<string>
+	readonly tags: ReadonlyArray<string>
+	readonly content: string
+	readonly createDate: string
+	readonly updatedAt: string
 }
 
 // ==============================
@@ -48,9 +48,9 @@ interface LegacyWikiEntry {
  */
 export interface MigrationResult {
 	/** 成功迁移的条目数 */
-	readonly migrated: number;
+	readonly migrated: number
 	/** 失败迁移的错误消息数组 */
-	readonly errors: ReadonlyArray<string>;
+	readonly errors: ReadonlyArray<string>
 }
 
 // ==============================
@@ -77,12 +77,11 @@ const ensureRootFolder = (
 		TE.chain((nodes) => {
 			// 查找已存在的根级文件夹
 			const existing = nodes.find(
-				(n) =>
-					n.parent === null && n.title === folderName && n.type === "folder",
-			);
+				(n) => n.parent === null && n.title === folderName && n.type === "folder",
+			)
 
 			if (existing) {
-				return TE.right(existing);
+				return TE.right(existing)
 			}
 
 			// 创建新文件夹
@@ -92,10 +91,10 @@ const ensureRootFolder = (
 				type: "folder",
 				title: folderName,
 				collapsed,
-			});
+			})
 		}),
-	);
-};
+	)
+}
 
 /**
  * 确保根级文件夹存在（异步版本，内联）
@@ -110,13 +109,13 @@ async function ensureRootFolderAsync(
 	folderName: string,
 	collapsed: boolean = false,
 ): Promise<NodeInterface> {
-	const result = await ensureRootFolder(workspaceId, folderName, collapsed)();
+	const result = await ensureRootFolder(workspaceId, folderName, collapsed)()
 
 	if (result._tag === "Left") {
-		throw new Error(`确保文件夹失败: ${result.left.message}`);
+		throw new Error(`确保文件夹失败: ${result.left.message}`)
 	}
 
-	return result.right;
+	return result.right
 }
 
 // ==============================
@@ -130,24 +129,22 @@ async function ensureRootFolderAsync(
  * @param workspaceId - 要检查的工作区 ID
  * @returns 是否需要迁移
  */
-export async function checkMigrationNeeded(
-	workspaceId: string,
-): Promise<boolean> {
+export async function checkMigrationNeeded(workspaceId: string): Promise<boolean> {
 	try {
 		// 直接访问旧的 wikiEntries 表
 		// 如果已迁移到 v11，该表可能不存在
-		const table = legacyDatabase.table("wikiEntries");
+		const table = legacyDatabase.table("wikiEntries")
 		if (!table) {
-			return false;
+			return false
 		}
-		const count = await table.where("project").equals(workspaceId).count();
-		return count > 0;
+		const count = await table.where("project").equals(workspaceId).count()
+		return count > 0
 	} catch (err) {
 		// 迁移后表可能不存在
 		debug(
 			`Wiki entries table not found or empty for workspace ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`,
-		);
-		return false;
+		)
+		return false
 	}
 }
 
@@ -158,62 +155,55 @@ export async function checkMigrationNeeded(
  * @param workspaceId - 要迁移的工作区 ID
  * @returns 迁移结果，包含计数和错误
  */
-export async function migrateWikiEntriesToFiles(
-	workspaceId: string,
-): Promise<MigrationResult> {
+export async function migrateWikiEntriesToFiles(workspaceId: string): Promise<MigrationResult> {
 	try {
 		// 从旧表获取此工作区的所有 wiki 条目
-		const table = legacyDatabase.table("wikiEntries");
+		const table = legacyDatabase.table("wikiEntries")
 		if (!table) {
-			info(`Wiki entries table not found for workspace ${workspaceId}`);
-			return { migrated: 0, errors: [] };
+			info(`Wiki entries table not found for workspace ${workspaceId}`)
+			return { migrated: 0, errors: [] }
 		}
 		const wikiEntries = (await table
 			.where("project")
 			.equals(workspaceId)
-			.toArray()) as ReadonlyArray<LegacyWikiEntry>;
+			.toArray()) as ReadonlyArray<LegacyWikiEntry>
 
 		if (wikiEntries.length === 0) {
-			info(`No wiki entries to migrate for workspace ${workspaceId}`);
-			return { migrated: 0, errors: [] };
+			info(`No wiki entries to migrate for workspace ${workspaceId}`)
+			return { migrated: 0, errors: [] }
 		}
 
-		info(
-			`Starting migration of ${wikiEntries.length} wiki entries for workspace ${workspaceId}`,
-		);
+		info(`Starting migration of ${wikiEntries.length} wiki entries for workspace ${workspaceId}`)
 
 		// 确保 wiki 文件夹存在
-		const wikiFolder = await ensureRootFolderAsync(
-			workspaceId,
-			WIKI_ROOT_FOLDER,
-		);
+		const wikiFolder = await ensureRootFolderAsync(workspaceId, WIKI_ROOT_FOLDER)
 
 		// 迁移每个条目
 		const migrationResults = await Promise.allSettled(
-			wikiEntries.map(entry => migrateWikiEntry(entry, wikiFolder.id, workspaceId))
-		);
+			wikiEntries.map((entry) => migrateWikiEntry(entry, wikiFolder.id, workspaceId)),
+		)
 
-		const migrated = migrationResults.filter(result => result.status === 'fulfilled').length;
+		const migrated = migrationResults.filter((result) => result.status === "fulfilled").length
 		const errors = migrationResults
-			.filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+			.filter((result): result is PromiseRejectedResult => result.status === "rejected")
 			.map((result, index) => {
-				const entry = wikiEntries[index];
-				const errorMessage = `Failed to migrate wiki entry "${entry.name}" (${entry.id}): ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`;
-				error(errorMessage);
-				return errorMessage;
-			});
+				const entry = wikiEntries[index]
+				const errorMessage = `Failed to migrate wiki entry "${entry.name}" (${entry.id}): ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`
+				error(errorMessage)
+				return errorMessage
+			})
 
-		const result: MigrationResult = { migrated, errors };
+		const result: MigrationResult = { migrated, errors }
 
 		success(
 			`Migration complete for workspace ${workspaceId}: ${result.migrated} migrated, ${result.errors.length} errors`,
-		);
+		)
 
-		return result;
+		return result
 	} catch (err) {
-		const errorMessage = `Migration failed for workspace ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`;
-		error(errorMessage);
-		return { migrated: 0, errors: [errorMessage] };
+		const errorMessage = `Migration failed for workspace ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`
+		error(errorMessage)
+		return { migrated: 0, errors: [errorMessage] }
 	}
 }
 
@@ -230,40 +220,38 @@ async function migrateWikiEntry(
 	workspaceId: string,
 ): Promise<void> {
 	// 获取新文件的下一个顺序
-	const nextOrderResult = await getNextOrder(wikiFolderId, workspaceId)();
-	const nextOrder = E.isRight(nextOrderResult) ? nextOrderResult.right : 0;
+	const nextOrderResult = await getNextOrder(wikiFolderId, workspaceId)()
+	const nextOrder = E.isRight(nextOrderResult) ? nextOrderResult.right : 0
 
 	// 创建文件节点
 	const nodeResult = await addNode(workspaceId, entry.name, {
 		parent: wikiFolderId,
 		type: "file",
 		order: nextOrder,
-	})();
+	})()
 
 	if (E.isLeft(nodeResult)) {
-		throw new Error(`Failed to create node: ${nodeResult.left.message}`);
+		throw new Error(`Failed to create node: ${nodeResult.left.message}`)
 	}
 
-	const node = nodeResult.right;
+	const node = nodeResult.right
 
 	// 应用 "wiki" 标签并保留原始标签
 	const tags: readonly string[] =
-		entry.tags?.length > 0
-			? [...new Set([WIKI_TAG, ...entry.tags])]
-			: [WIKI_TAG];
+		entry.tags?.length > 0 ? [...new Set([WIKI_TAG, ...entry.tags])] : [WIKI_TAG]
 
-	await updateNode(node.id, { tags })();
+	await updateNode(node.id, { tags })()
 
 	// 创建内容记录
-	await addContent(node.id, entry.content || "", "lexical")();
+	await addContent(node.id, entry.content || "", "lexical")()
 
 	// 成功迁移后删除原始 wiki 条目
-	const table = legacyDatabase.table("wikiEntries");
+	const table = legacyDatabase.table("wikiEntries")
 	if (table) {
-		await table.delete(entry.id);
+		await table.delete(entry.id)
 	}
 
-	debug(`Migrated wiki entry "${entry.name}" to node ${node.id}`);
+	debug(`Migrated wiki entry "${entry.name}" to node ${node.id}`)
 }
 
 /**
@@ -273,15 +261,13 @@ async function migrateWikiEntry(
  * @param workspaceId - 工作区 ID
  * @returns 迁移结果，如果不需要迁移则返回 null
  */
-export async function runMigrationIfNeeded(
-	workspaceId: string,
-): Promise<MigrationResult | null> {
-	const needsMigration = await checkMigrationNeeded(workspaceId);
+export async function runMigrationIfNeeded(workspaceId: string): Promise<MigrationResult | null> {
+	const needsMigration = await checkMigrationNeeded(workspaceId)
 
 	if (!needsMigration) {
-		return null;
+		return null
 	}
 
-	info(`Wiki migration needed for workspace ${workspaceId}`);
-	return migrateWikiEntriesToFiles(workspaceId);
+	info(`Wiki migration needed for workspace ${workspaceId}`)
+	return migrateWikiEntriesToFiles(workspaceId)
 }

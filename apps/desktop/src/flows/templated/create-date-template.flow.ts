@@ -15,12 +15,9 @@
  * @requirements 代码复用，函数式编程规范
  */
 
-import type { DateTemplateParams } from "./configs/date-template.factory";
-import type { TemplateConfig } from "./create-templated-file.flow";
-import {
-	createTemplatedFile,
-	createTemplatedFileAsync,
-} from "./create-templated-file.flow";
+import type { DateTemplateParams } from "./configs/date-template.factory"
+import type { TemplateConfig } from "./create-templated-file.flow"
+import { createTemplatedFile, createTemplatedFileAsync } from "./create-templated-file.flow"
 
 // ==============================
 // Types
@@ -31,9 +28,9 @@ import {
  */
 export interface CreateDateTemplateParams {
 	/** 工作区 ID */
-	readonly workspaceId: string;
+	readonly workspaceId: string
 	/** 日期（可选，默认为当前时间） */
-	readonly date?: Date;
+	readonly date?: Date
 }
 
 /**
@@ -41,11 +38,11 @@ export interface CreateDateTemplateParams {
  */
 export interface DateTemplateCreationResult {
 	/** 创建的节点 */
-	readonly node: import("@/types/node").NodeInterface;
+	readonly node: import("@/types/node").NodeInterface
 	/** 生成的内容（Lexical JSON 字符串） */
-	readonly content: string;
+	readonly content: string
 	/** 解析后的内容（Lexical JSON 对象） */
-	readonly parsedContent: unknown;
+	readonly parsedContent: unknown
 }
 
 // ==============================
@@ -60,7 +57,7 @@ const adaptParams = (params: CreateDateTemplateParams) => ({
 	templateParams: {
 		date: params.date,
 	},
-});
+})
 
 /**
  * 创建日期模板 Flow 的工厂函数
@@ -81,11 +78,9 @@ const adaptParams = (params: CreateDateTemplateParams) => ({
  * export const createDiaryCompatAsync = diaryActions.createCompatAsync;
  * ```
  */
-export const createDateTemplateActions = (
-	config: TemplateConfig<DateTemplateParams>,
-) => {
-	const create = createTemplatedFile(config);
-	const createAsync = createTemplatedFileAsync(config);
+export const createDateTemplateActions = (config: TemplateConfig<DateTemplateParams>) => {
+	const create = createTemplatedFile(config)
+	const createAsync = createTemplatedFileAsync(config)
 
 	return {
 		/** TaskEither 版本 */
@@ -93,71 +88,70 @@ export const createDateTemplateActions = (
 		/** Promise 版本 */
 		createAsync,
 		/** 兼容旧 API 的 TaskEither 版本 */
-		createCompat: (params: CreateDateTemplateParams) =>
-			create(adaptParams(params)),
+		createCompat: (params: CreateDateTemplateParams) => create(adaptParams(params)),
 		/** 兼容旧 API 的 Promise 版本 */
 		createCompatAsync: async (
 			params: CreateDateTemplateParams,
 		): Promise<DateTemplateCreationResult> => createAsync(adaptParams(params)),
-	};
-};
+	}
+}
 
 // ==============================
 // Pre-built Actions
 // ==============================
 
 // 导入所有配置
-import { diaryConfig } from "./configs/diary.config";
-import { ledgerConfig } from "./configs/ledger.config";
-import { noteConfig } from "./configs/note.config";
-import { todoConfig } from "./configs/todo.config";
-import { wikiConfig } from "./configs/wiki.config";
+import { diaryConfig } from "./configs/diary.config"
+import { ledgerConfig } from "./configs/ledger.config"
+import { noteConfig } from "./configs/note.config"
+import { todoConfig } from "./configs/todo.config"
+import { wikiConfig } from "./configs/wiki.config"
 
 /** Diary actions */
-export const diaryActions = createDateTemplateActions(diaryConfig);
+export const diaryActions = createDateTemplateActions(diaryConfig)
 
 /** Wiki actions */
-export const wikiActions = createDateTemplateActions(wikiConfig);
+export const wikiActions = createDateTemplateActions(wikiConfig)
 
 /** Todo actions */
-export const todoActions = createDateTemplateActions(todoConfig);
+export const todoActions = createDateTemplateActions(todoConfig)
 
 /** Note actions */
-export const noteActions = createDateTemplateActions(noteConfig);
+export const noteActions = createDateTemplateActions(noteConfig)
 
 /** Ledger actions */
-export const ledgerActions = createDateTemplateActions(ledgerConfig);
+export const ledgerActions = createDateTemplateActions(ledgerConfig)
 
 // ==============================
 // Convenience Exports
 // ==============================
 
 // Diary
-export const createDiary = diaryActions.create;
-export const createDiaryAsync = diaryActions.createAsync;
-export const createDiaryCompat = diaryActions.createCompat;
-export const createDiaryCompatAsync = diaryActions.createCompatAsync;
+export const createDiary = diaryActions.create
+export const createDiaryAsync = diaryActions.createAsync
+export const createDiaryCompat = diaryActions.createCompat
+export const createDiaryCompatAsync = diaryActions.createCompatAsync
 
 // Wiki
-export const createWiki = wikiActions.create;
-export const createWikiAsync = wikiActions.createAsync;
-export const createWikiCompat = wikiActions.createCompat;
-export const createWikiCompatAsync = wikiActions.createCompatAsync;
+export const createWiki = wikiActions.create
+export const createWikiAsync = wikiActions.createAsync
+export const createWikiCompat = wikiActions.createCompat
+export const createWikiCompatAsync = wikiActions.createCompatAsync
 
 // Todo
-export const createTodo = todoActions.create;
-export const createTodoAsync = todoActions.createAsync;
-export const createTodoCompat = todoActions.createCompat;
-export const createTodoCompatAsync = todoActions.createCompatAsync;
+export const createTodo = todoActions.create
+export const createTodoAsync = todoActions.createAsync
+export const createTodoCompat = todoActions.createCompat
+export const createTodoCompatAsync = todoActions.createCompatAsync
 
 // Note
-export const createNote = noteActions.create;
-export const createNoteAsync = noteActions.createAsync;
-export const createNoteCompat = noteActions.createCompat;
-export const createNoteCompatAsync = noteActions.createCompatAsync;
+export const createNote = noteActions.create
+export const createNoteAsync = noteActions.createAsync
+export const createNoteCompat = noteActions.createCompat
+export const createNoteCompatAsync = noteActions.createCompatAsync
 
 // Ledger
-export const createLedger = ledgerActions.create;
-export const createLedgerAsync = ledgerActions.createAsync;
-export const createLedgerCompat = ledgerActions.createCompat;
-export const createLedgerCompatAsync = ledgerActions.createCompatAsync;
+export const createLedger = ledgerActions.create
+export const createLedgerAsync = ledgerActions.createAsync
+export const createLedgerCompat = ledgerActions.createCompat
+export const createLedgerCompatAsync = ledgerActions.createCompatAsync

@@ -6,42 +6,42 @@
  * 将数据通过 props 传递给纯展示组件 ActivityBarView。
  */
 
-import { useLocation, useNavigate } from "@tanstack/react-router";
-import * as E from "fp-ts/Either";
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import type * as React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import { clearAllData, openFile } from "@/flows";
-import { createCode } from "@/flows/templated/create-code.flow";
+import { useLocation, useNavigate } from "@tanstack/react-router"
+import * as E from "fp-ts/Either"
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import type * as React from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
+import { clearAllData, openFile } from "@/flows"
+import { createCode } from "@/flows/templated/create-code.flow"
 import {
 	createDiary,
 	createLedger,
 	createNote,
 	createTodo,
 	createWiki,
-} from "@/flows/templated/create-date-template.flow";
-import { createExcalidraw } from "@/flows/templated/create-excalidraw.flow";
-import { createMermaid } from "@/flows/templated/create-mermaid.flow";
-import { createPlantUML } from "@/flows/templated/create-plantuml.flow";
-import type { TemplatedFileResult } from "@/flows/templated/create-templated-file.flow";
-import { createWorkspace } from "@/flows/workspace/create-workspace.flow";
-import { touchWorkspace } from "@/flows/workspace/update-workspace.flow";
-import { useIconTheme } from "@/hooks/use-icon-theme";
-import { useNodesByWorkspace } from "@/hooks/use-node";
-import { useAllWorkspaces } from "@/hooks/use-workspace";
-import { error } from "@/io/log/logger.api";
-import { calculateExpandedFoldersForNode } from "@/pipes/node";
-import { useSelectionStore } from "@/state/selection.state";
-import { useSidebarStore } from "@/state/sidebar.state";
-import type { TabType } from "@/types/editor-tab";
-import type { WorkspaceInterface } from "@/types/workspace";
-import type { AppError } from "@/types/error";
-import { ExportDialog } from "@/views/export-dialog";
-import { useConfirm } from "@/views/ui/confirm";
+} from "@/flows/templated/create-date-template.flow"
+import { createExcalidraw } from "@/flows/templated/create-excalidraw.flow"
+import { createMermaid } from "@/flows/templated/create-mermaid.flow"
+import { createPlantUML } from "@/flows/templated/create-plantuml.flow"
+import type { TemplatedFileResult } from "@/flows/templated/create-templated-file.flow"
+import { createWorkspace } from "@/flows/workspace/create-workspace.flow"
+import { touchWorkspace } from "@/flows/workspace/update-workspace.flow"
+import { useIconTheme } from "@/hooks/use-icon-theme"
+import { useNodesByWorkspace } from "@/hooks/use-node"
+import { useAllWorkspaces } from "@/hooks/use-workspace"
+import { error } from "@/io/log/logger.api"
+import { calculateExpandedFoldersForNode } from "@/pipes/node"
+import { useSelectionStore } from "@/state/selection.state"
+import { useSidebarStore } from "@/state/sidebar.state"
+import type { TabType } from "@/types/editor-tab"
+import type { AppError } from "@/types/error"
+import type { WorkspaceInterface } from "@/types/workspace"
+import { ExportDialog } from "@/views/export-dialog"
+import { useConfirm } from "@/views/ui/confirm"
 
-import { ActivityBarView } from "./activity-bar.view.fn";
+import { ActivityBarView } from "./activity-bar.view.fn"
 
 // ==============================
 // Types
@@ -53,45 +53,43 @@ import { ActivityBarView } from "./activity-bar.view.fn";
  * 接收工作区 ID 和日期，返回 TaskEither
  */
 type TemplateCreator = (params: {
-	workspaceId: string;
-	templateParams: { date: Date };
-}) => TE.TaskEither<AppError, TemplatedFileResult>;
+	workspaceId: string
+	templateParams: { date: Date }
+}) => TE.TaskEither<AppError, TemplatedFileResult>
 
 /**
  * 创建模板文件的选项
  */
 interface CreateTemplateOptions {
 	/** 模板创建函数（TaskEither 版本） */
-	readonly creator: TemplateCreator;
+	readonly creator: TemplateCreator
 	/** 成功消息 */
-	readonly successMessage: string;
+	readonly successMessage: string
 	/** 错误消息 */
-	readonly errorMessage: string;
+	readonly errorMessage: string
 }
 
 /**
  * ActivityBar 容器组件
  */
 export function ActivityBarContainer(): React.ReactElement {
-	const location = useLocation();
-	const navigate = useNavigate();
-	const confirm = useConfirm();
+	const location = useLocation()
+	const navigate = useNavigate()
+	const confirm = useConfirm()
 
 	// ==============================
 	// 数据获取
 	// ==============================
 
-	const workspacesRaw = useAllWorkspaces();
-	const workspaces = workspacesRaw ?? [];
+	const workspacesRaw = useAllWorkspaces()
+	const workspaces = workspacesRaw ?? []
 
-	const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId);
-	const setSelectedWorkspaceId = useSelectionStore(
-		(s) => s.setSelectedWorkspaceId,
-	);
-	const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId);
+	const selectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId)
+	const setSelectedWorkspaceId = useSelectionStore((s) => s.setSelectedWorkspaceId)
+	const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId)
 
 	// 获取当前工作区的所有节点（用于计算展开路径）
-	const nodes = useNodesByWorkspace(selectedWorkspaceId);
+	const nodes = useNodesByWorkspace(selectedWorkspaceId)
 
 	const {
 		activePanel,
@@ -99,26 +97,26 @@ export function ActivityBarContainer(): React.ReactElement {
 		setActivePanel,
 		toggleSidebar,
 		setExpandedFolders,
-	} = useSidebarStore();
+	} = useSidebarStore()
 
-	const iconTheme = useIconTheme();
+	const iconTheme = useIconTheme()
 
 	// ==============================
 	// 初始化逻辑
 	// ==============================
 
-	const hasInitializedRef = useRef(false);
+	const hasInitializedRef = useRef(false)
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: 初始化逻辑只在 workspacesRaw 变化时运行一次
 	useEffect(() => {
 		const initializeWorkspace = async () => {
-			if (workspacesRaw === undefined) return;
-			if (hasInitializedRef.current) return;
-			hasInitializedRef.current = true;
+			if (workspacesRaw === undefined) return
+			if (hasInitializedRef.current) return
+			hasInitializedRef.current = true
 
 			if (workspaces.length === 0) {
 				if (selectedWorkspaceId) {
-					setSelectedWorkspaceId(null);
+					setSelectedWorkspaceId(null)
 				}
 				try {
 					const result = await createWorkspace({
@@ -126,46 +124,44 @@ export function ActivityBarContainer(): React.ReactElement {
 						author: "",
 						description: "",
 						language: "en",
-					})();
+					})()
 					if (E.isRight(result)) {
-						setSelectedWorkspaceId(result.right.id);
-						setActivePanel("files");
+						setSelectedWorkspaceId(result.right.id)
+						setActivePanel("files")
 					}
 				} catch (error) {
-					console.error("[ActivityBar] 创建默认工作区失败:", error);
+					console.error("[ActivityBar] 创建默认工作区失败:", error)
 				}
-				return;
+				return
 			}
 
 			const isSelectedValid =
 				selectedWorkspaceId &&
-				workspaces.some(
-					(w: WorkspaceInterface) => w.id === selectedWorkspaceId,
-				);
+				workspaces.some((w: WorkspaceInterface) => w.id === selectedWorkspaceId)
 
 			if (!isSelectedValid) {
 				const sortedByLastOpen = [...workspaces].sort((a, b) => {
-					const dateA = new Date(a.lastOpen || a.createDate).getTime();
-					const dateB = new Date(b.lastOpen || b.createDate).getTime();
-					return dateB - dateA;
-				});
-				setSelectedWorkspaceId(sortedByLastOpen[0].id);
+					const dateA = new Date(a.lastOpen || a.createDate).getTime()
+					const dateB = new Date(b.lastOpen || b.createDate).getTime()
+					return dateB - dateA
+				})
+				setSelectedWorkspaceId(sortedByLastOpen[0].id)
 			} else {
 				try {
-					await touchWorkspace(selectedWorkspaceId)();
+					await touchWorkspace(selectedWorkspaceId)()
 				} catch (err) {
-					error("[ActivityBar] 更新 lastOpen 失败:", err);
+					error("[ActivityBar] 更新 lastOpen 失败:", err)
 				}
 			}
-		};
-		initializeWorkspace();
-	}, [workspacesRaw]);
+		}
+		initializeWorkspace()
+	}, [workspacesRaw])
 
 	// ==============================
 	// 导出对话框状态
 	// ==============================
 
-	const [exportDialogOpen, setExportDialogOpen] = useState(false);
+	const [exportDialogOpen, setExportDialogOpen] = useState(false)
 
 	// ==============================
 	// 回调函数
@@ -173,22 +169,22 @@ export function ActivityBarContainer(): React.ReactElement {
 
 	const handleSelectWorkspace = useCallback(
 		async (workspaceId: string) => {
-			setSelectedWorkspaceId(workspaceId);
+			setSelectedWorkspaceId(workspaceId)
 			try {
-				await touchWorkspace(workspaceId)();
+				await touchWorkspace(workspaceId)()
 			} catch (err) {
-				error("[ActivityBar] 更新 lastOpen 失败:", err);
+				error("[ActivityBar] 更新 lastOpen 失败:", err)
 			}
-			toast.success("Workspace selected");
+			toast.success("Workspace selected")
 		},
 		[setSelectedWorkspaceId],
-	);
+	)
 
 	const handleCreateWorkspace = useCallback(
 		async (name: string) => {
 			if (!name.trim()) {
-				toast.error("Please enter a workspace name");
-				return;
+				toast.error("Please enter a workspace name")
+				return
 			}
 			try {
 				const result = await createWorkspace({
@@ -196,19 +192,19 @@ export function ActivityBarContainer(): React.ReactElement {
 					author: "",
 					description: "",
 					language: "en",
-				})();
+				})()
 				if (E.isRight(result)) {
-					setSelectedWorkspaceId(result.right.id);
-					toast.success("Workspace created");
+					setSelectedWorkspaceId(result.right.id)
+					toast.success("Workspace created")
 				} else {
-					toast.error("Failed to create workspace");
+					toast.error("Failed to create workspace")
 				}
 			} catch {
-				toast.error("Failed to create workspace");
+				toast.error("Failed to create workspace")
 			}
 		},
 		[setSelectedWorkspaceId],
-	);
+	)
 
 	/**
 	 * 通用的模板文件创建处理函数（高阶函数）
@@ -223,11 +219,11 @@ export function ActivityBarContainer(): React.ReactElement {
 	const handleCreateTemplate = useCallback(
 		(options: CreateTemplateOptions) => {
 			if (!selectedWorkspaceId) {
-				toast.error("Please select a workspace first");
-				return;
+				toast.error("Please select a workspace first")
+				return
 			}
 
-			const { creator, successMessage, errorMessage } = options;
+			const { creator, successMessage, errorMessage } = options
 
 			// 构建 TaskEither 管道
 			const task = pipe(
@@ -252,42 +248,39 @@ export function ActivityBarContainer(): React.ReactElement {
 				// 3. 成功后，更新 UI 状态（副作用，不改变值）
 				TE.tap((result) => {
 					// 在文件树中选中新创建的文件
-					setSelectedNodeId(result.node.id);
+					setSelectedNodeId(result.node.id)
 
 					// 展开文件路径，关闭其他文件夹
 					if (nodes) {
-						const expandedFolders = calculateExpandedFoldersForNode(
-							nodes,
-							result.node.id,
-						);
-						setExpandedFolders(expandedFolders);
+						const expandedFolders = calculateExpandedFoldersForNode(nodes, result.node.id)
+						setExpandedFolders(expandedFolders)
 					}
 
 					// 导航到主页面（如果当前不在主页面）
 					if (location.pathname !== "/") {
-						navigate({ to: "/" });
+						navigate({ to: "/" })
 					}
 
-					return TE.right(result);
+					return TE.right(result)
 				}),
 				// 4. 最终处理：成功或失败
 				TE.fold(
 					// 失败分支
 					(error) => {
-						console.error("[ActivityBar] 创建模板失败:", error);
-						toast.error(errorMessage);
-						return TE.of(undefined as void);
+						console.error("[ActivityBar] 创建模板失败:", error)
+						toast.error(errorMessage)
+						return TE.of(undefined as void)
 					},
 					// 成功分支
 					() => {
-						toast.success(successMessage);
-						return TE.of(undefined as void);
+						toast.success(successMessage)
+						return TE.of(undefined as void)
 					},
 				),
-			);
+			)
 
 			// 执行 TaskEither
-			task();
+			task()
 		},
 		[
 			selectedWorkspaceId,
@@ -297,7 +290,7 @@ export function ActivityBarContainer(): React.ReactElement {
 			navigate,
 			location.pathname,
 		],
-	);
+	)
 
 	const handleCreateDiary = useCallback(
 		() =>
@@ -307,7 +300,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				errorMessage: "Failed to create diary",
 			}),
 		[handleCreateTemplate],
-	);
+	)
 
 	const handleCreateWiki = useCallback(
 		() =>
@@ -317,7 +310,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				errorMessage: "Failed to create wiki",
 			}),
 		[handleCreateTemplate],
-	);
+	)
 
 	const handleCreateLedger = useCallback(
 		() =>
@@ -327,7 +320,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				errorMessage: "Failed to create ledger",
 			}),
 		[handleCreateTemplate],
-	);
+	)
 
 	const handleCreateTodo = useCallback(
 		() =>
@@ -337,7 +330,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				errorMessage: "Failed to create todo",
 			}),
 		[handleCreateTemplate],
-	);
+	)
 
 	const handleCreateNote = useCallback(
 		() =>
@@ -347,7 +340,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				errorMessage: "Failed to create note",
 			}),
 		[handleCreateTemplate],
-	);
+	)
 
 	const handleCreateExcalidraw = useCallback(
 		() =>
@@ -357,7 +350,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				errorMessage: "Failed to create excalidraw",
 			}),
 		[handleCreateTemplate],
-	);
+	)
 
 	const handleCreateMermaid = useCallback(
 		() =>
@@ -367,7 +360,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				errorMessage: "Failed to create mermaid",
 			}),
 		[handleCreateTemplate],
-	);
+	)
 
 	const handleCreatePlantUML = useCallback(
 		() =>
@@ -377,7 +370,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				errorMessage: "Failed to create plantuml",
 			}),
 		[handleCreateTemplate],
-	);
+	)
 
 	const handleCreateCode = useCallback(
 		() =>
@@ -387,47 +380,46 @@ export function ActivityBarContainer(): React.ReactElement {
 				errorMessage: "Failed to create code file",
 			}),
 		[handleCreateTemplate],
-	);
+	)
 
 	const handleImportFile = useCallback(async (_file: File) => {
 		try {
-			toast.info("Import functionality is being reimplemented");
+			toast.info("Import functionality is being reimplemented")
 		} catch {
-			toast.error("Import failed");
+			toast.error("Import failed")
 		}
-	}, []);
+	}, [])
 
 	const handleOpenExportDialog = useCallback(() => {
-		setExportDialogOpen(true);
-	}, []);
+		setExportDialogOpen(true)
+	}, [])
 
 	const handleDeleteAllData = useCallback(async () => {
 		const ok = await confirm({
 			title: "Delete all data?",
-			description:
-				"This action cannot be undone. All workspaces, files, and data will be deleted.",
+			description: "This action cannot be undone. All workspaces, files, and data will be deleted.",
 			confirmText: "Delete",
 			cancelText: "Cancel",
-		});
-		if (!ok) return;
+		})
+		if (!ok) return
 		try {
-			await clearAllData()();
-			setSelectedWorkspaceId(null);
-			setSelectedNodeId(null);
-			hasInitializedRef.current = false;
-			toast.success("All data deleted");
-			setTimeout(() => window.location.reload(), 1000);
+			await clearAllData()()
+			setSelectedWorkspaceId(null)
+			setSelectedNodeId(null)
+			hasInitializedRef.current = false
+			toast.success("All data deleted")
+			setTimeout(() => window.location.reload(), 1000)
 		} catch {
-			toast.error("Delete failed");
+			toast.error("Delete failed")
 		}
-	}, [confirm, setSelectedWorkspaceId, setSelectedNodeId]);
+	}, [confirm, setSelectedWorkspaceId, setSelectedNodeId])
 
 	const handleNavigate = useCallback(
 		(path: string) => {
-			navigate({ to: path });
+			navigate({ to: path })
 		},
 		[navigate],
-	);
+	)
 
 	// ==============================
 	// 渲染
@@ -467,11 +459,10 @@ export function ActivityBarContainer(): React.ReactElement {
 				workspaceId={selectedWorkspaceId || workspaces[0]?.id || ""}
 				workspaceTitle={
 					workspaces.find(
-						(w: WorkspaceInterface) =>
-							w.id === (selectedWorkspaceId || workspaces[0]?.id),
+						(w: WorkspaceInterface) => w.id === (selectedWorkspaceId || workspaces[0]?.id),
 					)?.title
 				}
 			/>
 		</>
-	);
+	)
 }

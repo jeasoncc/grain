@@ -5,15 +5,14 @@
  * 封装数据清理操作，供 views 层使用
  */
 
-import type * as TE from "fp-ts/TaskEither";
-import { clearAllData as clearAllDataApi } from "@/io/api";
-import type { ClearDataResult } from "@/types/rust-api";
-import type { AppError } from "@/types/error";
+import type * as TE from "fp-ts/TaskEither"
+import { clearAllData as clearAllDataApi } from "@/io/api"
+import type { AppError } from "@/types/error"
+import type { ClearDataResult } from "@/types/rust-api"
 
 /**
  * 清除所有数据
  *
  * @returns TaskEither<AppError, ClearDataResult>
  */
-export const clearAllData = (): TE.TaskEither<AppError, ClearDataResult> =>
-	clearAllDataApi();
+export const clearAllData = (): TE.TaskEither<AppError, ClearDataResult> => clearAllDataApi()

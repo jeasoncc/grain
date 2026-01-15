@@ -9,7 +9,7 @@
  * 这些函数无副作用，可组合，可测试。
  */
 
-import * as E from "fp-ts/Either";
+import * as E from "fp-ts/Either"
 
 // ==============================
 // Types
@@ -19,9 +19,9 @@ import * as E from "fp-ts/Either";
  * Lexical 节点类型
  */
 export interface LexicalNode {
-	readonly type?: string;
-	readonly text?: string;
-	readonly children?: readonly LexicalNode[];
+	readonly type?: string
+	readonly text?: string
+	readonly children?: readonly LexicalNode[]
 }
 
 // ==============================
@@ -36,11 +36,11 @@ export interface LexicalNode {
  * @returns 提取的纯文本
  */
 export function extractText(node: unknown): string {
-	if (!node || typeof node !== "object") return "";
-	const n = node as Record<string, unknown>;
-	if (n.type === "text") return (n.text as string) || "";
-	if (Array.isArray(n.children)) return n.children.map(extractText).join("");
-	return "";
+	if (!node || typeof node !== "object") return ""
+	const n = node as Record<string, unknown>
+	if (n.type === "text") return (n.text as string) || ""
+	if (Array.isArray(n.children)) return n.children.map(extractText).join("")
+	return ""
 }
 
 /**
@@ -51,23 +51,21 @@ export function extractText(node: unknown): string {
  * @returns 提取的纯文本（带换行）
  */
 export function extractTextWithNewlines(node: unknown): string {
-	if (!node || typeof node !== "object") return "";
-	const n = node as Record<string, unknown>;
+	if (!node || typeof node !== "object") return ""
+	const n = node as Record<string, unknown>
 
-	if (n.type === "text") return (n.text as string) || "";
+	if (n.type === "text") return (n.text as string) || ""
 
 	if (n.type === "paragraph" || n.type === "heading") {
-		const text = Array.isArray(n.children)
-			? n.children.map(extractText).join("")
-			: "";
-		return `${text}\n`;
+		const text = Array.isArray(n.children) ? n.children.map(extractText).join("") : ""
+		return `${text}\n`
 	}
 
 	if (Array.isArray(n.children)) {
-		return n.children.map(extractTextWithNewlines).join("");
+		return n.children.map(extractTextWithNewlines).join("")
 	}
 
-	return "";
+	return ""
 }
 
 /**
@@ -79,11 +77,11 @@ export function extractTextWithNewlines(node: unknown): string {
 export function extractTextFromJson(content: string): string {
 	const result = E.tryCatch(
 		() => {
-			const parsed = JSON.parse(content);
-			return extractText(parsed.root);
+			const parsed = JSON.parse(content)
+			return extractText(parsed.root)
 		},
 		() => "",
-	);
+	)
 
-	return E.getOrElse(() => "")(result);
+	return E.getOrElse(() => "")(result)
 }

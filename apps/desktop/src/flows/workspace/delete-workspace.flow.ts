@@ -10,11 +10,11 @@
  * @requirements 7.1, 7.4
  */
 
-import { pipe } from "fp-ts/function";
-import * as TE from "fp-ts/TaskEither";
-import * as workspaceRepo from "@/io/api/workspace.api";
-import { info, success } from "@/io/log/logger.api";
-import type { AppError } from "@/types/error";
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import * as workspaceRepo from "@/io/api/workspace.api"
+import { info, success } from "@/io/log/logger.api"
+import type { AppError } from "@/types/error"
 
 /**
  * 删除工作区及其所有关联数据
@@ -30,16 +30,14 @@ import type { AppError } from "@/types/error";
  * @param workspaceId - 要删除的工作区 ID
  * @returns TaskEither<AppError, void>
  */
-export const deleteWorkspace = (
-	workspaceId: string,
-): TE.TaskEither<AppError, void> => {
-	info("[Action] 删除工作区", { workspaceId }, "delete-workspace");
+export const deleteWorkspace = (workspaceId: string): TE.TaskEither<AppError, void> => {
+	info("[Action] 删除工作区", { workspaceId }, "delete-workspace")
 
 	return pipe(
 		workspaceRepo.deleteWorkspace(workspaceId),
 		TE.tap(() => {
-			success("[Action] 工作区删除成功", { workspaceId }, "delete-workspace");
-			return TE.right(undefined);
+			success("[Action] 工作区删除成功", { workspaceId }, "delete-workspace")
+			return TE.right(undefined)
 		}),
-	);
-};
+	)
+}

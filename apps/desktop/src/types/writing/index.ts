@@ -3,4 +3,4 @@
  * @description Writing 类型模块导出
  */
 
-export * from "./writing.interface";
+export * from "./writing.interface"

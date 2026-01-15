@@ -7,15 +7,15 @@
  */
 export interface TagGraphData {
 	readonly nodes: ReadonlyArray<{
-		readonly id: string;
-		readonly name: string;
-		readonly count: number;
-	}>;
+		readonly id: string
+		readonly name: string
+		readonly count: number
+	}>
 	readonly edges: ReadonlyArray<{
-		readonly source: string;
-		readonly target: string;
-		readonly weight: number;
-	}>;
+		readonly source: string
+		readonly target: string
+		readonly weight: number
+	}>
 }
 
 /**
@@ -25,7 +25,7 @@ export interface TagGraphData {
  */
 export interface TagGraphPanelViewProps {
 	/** 当前工作区 ID */
-	readonly workspaceId: string | null;
+	readonly workspaceId: string | null
 	/** 标签图谱数据 */
-	readonly graphData: TagGraphData | null;
+	readonly graphData: TagGraphData | null
 }

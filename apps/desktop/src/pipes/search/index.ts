@@ -28,7 +28,7 @@ export {
 	type SearchResultType,
 	sortByScore,
 	splitQueryTerms,
-} from "./search.filter.fn";
+} from "./search.filter.fn"
 // 高亮相关函数
 export {
 	calculateSimpleScore,
@@ -38,4 +38,4 @@ export {
 	extractTextFromLexical,
 	generateExcerpt,
 	type HighlightOptions,
-} from "./search.highlight.fn";
+} from "./search.highlight.fn"

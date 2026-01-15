@@ -1,10 +1,10 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import type { WorkspaceInterface } from "@/types/workspace";
+import { render, screen } from "@testing-library/react"
+import { describe, expect, it, vi } from "vitest"
+import type { WorkspaceInterface } from "@/types/workspace"
 import {
 	ExportDialogManagerContainer,
 	exportDialogManager,
-} from "./export-dialog-manager.container.fn";
+} from "./export-dialog-manager.container.fn"
 
 // Mock ExportDialog component
 vi.mock("@/components/export-dialog", () => ({
@@ -18,7 +18,7 @@ vi.mock("@/components/export-dialog", () => ({
 			)}
 		</div>
 	)),
-}));
+}))
 
 describe("ExportDialogManagerContainer", () => {
 	const mockWorkspaces: WorkspaceInterface[] = [
@@ -42,102 +42,67 @@ describe("ExportDialogManagerContainer", () => {
 			lastOpen: new Date().toISOString(),
 			createDate: new Date().toISOString(),
 		},
-	];
+	]
 
 	it("should not render dialog when no workspace is selected", () => {
 		const { container } = render(
-			<ExportDialogManagerContainer
-				selectedWorkspaceId={null}
-				workspaces={mockWorkspaces}
-			/>,
-		);
-		expect(container.querySelector('[data-testid="export-dialog"]')).toBeNull();
-	});
+			<ExportDialogManagerContainer selectedWorkspaceId={null} workspaces={mockWorkspaces} />,
+		)
+		expect(container.querySelector('[data-testid="export-dialog"]')).toBeNull()
+	})
 
 	it("should render dialog with selected workspace", () => {
-		render(
-			<ExportDialogManagerContainer
-				selectedWorkspaceId="ws1"
-				workspaces={mockWorkspaces}
-			/>,
-		);
-		expect(screen.getByTestId("export-dialog")).toBeInTheDocument();
-	});
+		render(<ExportDialogManagerContainer selectedWorkspaceId="ws1" workspaces={mockWorkspaces} />)
+		expect(screen.getByTestId("export-dialog")).toBeInTheDocument()
+	})
 
 	it("should use selected workspace title", () => {
-		exportDialogManager.open("ws1");
-		render(
-			<ExportDialogManagerContainer
-				selectedWorkspaceId="ws1"
-				workspaces={mockWorkspaces}
-			/>,
-		);
-		expect(screen.getByTestId("workspace-title")).toHaveTextContent(
-			"Workspace 1",
-		);
-	});
+		exportDialogManager.open("ws1")
+		render(<ExportDialogManagerContainer selectedWorkspaceId="ws1" workspaces={mockWorkspaces} />)
+		expect(screen.getByTestId("workspace-title")).toHaveTextContent("Workspace 1")
+	})
 
 	it("should handle workspace not found", () => {
-		exportDialogManager.open("ws-nonexistent");
+		exportDialogManager.open("ws-nonexistent")
 		render(
 			<ExportDialogManagerContainer
 				selectedWorkspaceId="ws-nonexistent"
 				workspaces={mockWorkspaces}
 			/>,
-		);
-		expect(screen.getByTestId("workspace-title")).toHaveTextContent(
-			"Untitled Workspace",
-		);
-	});
+		)
+		expect(screen.getByTestId("workspace-title")).toHaveTextContent("Untitled Workspace")
+	})
 
 	it("should respond to exportDialogManager.open", () => {
 		// Start with closed dialog
-		exportDialogManager.close();
+		exportDialogManager.close()
 
 		const { rerender } = render(
-			<ExportDialogManagerContainer
-				selectedWorkspaceId="ws1"
-				workspaces={mockWorkspaces}
-			/>,
-		);
+			<ExportDialogManagerContainer selectedWorkspaceId="ws1" workspaces={mockWorkspaces} />,
+		)
 
 		// Initially closed
-		expect(screen.queryByTestId("workspace-id")).not.toBeInTheDocument();
+		expect(screen.queryByTestId("workspace-id")).not.toBeInTheDocument()
 
 		// Open dialog
-		exportDialogManager.open("ws2", "Custom Title");
-		rerender(
-			<ExportDialogManagerContainer
-				selectedWorkspaceId="ws1"
-				workspaces={mockWorkspaces}
-			/>,
-		);
+		exportDialogManager.open("ws2", "Custom Title")
+		rerender(<ExportDialogManagerContainer selectedWorkspaceId="ws1" workspaces={mockWorkspaces} />)
 
-		expect(screen.getByTestId("workspace-id")).toHaveTextContent("ws2");
-		expect(screen.getByTestId("workspace-title")).toHaveTextContent(
-			"Custom Title",
-		);
-	});
+		expect(screen.getByTestId("workspace-id")).toHaveTextContent("ws2")
+		expect(screen.getByTestId("workspace-title")).toHaveTextContent("Custom Title")
+	})
 
 	it("should respond to exportDialogManager.close", () => {
-		exportDialogManager.open("ws1");
+		exportDialogManager.open("ws1")
 		const { rerender } = render(
-			<ExportDialogManagerContainer
-				selectedWorkspaceId="ws1"
-				workspaces={mockWorkspaces}
-			/>,
-		);
+			<ExportDialogManagerContainer selectedWorkspaceId="ws1" workspaces={mockWorkspaces} />,
+		)
 
-		expect(screen.getByTestId("workspace-id")).toBeInTheDocument();
+		expect(screen.getByTestId("workspace-id")).toBeInTheDocument()
 
-		exportDialogManager.close();
-		rerender(
-			<ExportDialogManagerContainer
-				selectedWorkspaceId="ws1"
-				workspaces={mockWorkspaces}
-			/>,
-		);
+		exportDialogManager.close()
+		rerender(<ExportDialogManagerContainer selectedWorkspaceId="ws1" workspaces={mockWorkspaces} />)
 
-		expect(screen.queryByTestId("workspace-id")).not.toBeInTheDocument();
-	});
-});
+		expect(screen.queryByTestId("workspace-id")).not.toBeInTheDocument()
+	})
+})

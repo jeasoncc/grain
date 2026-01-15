@@ -3,4 +3,4 @@
  * @description Diagram 类型模块导出
  */
 
-export * from "./diagram.interface";
+export * from "./diagram.interface"

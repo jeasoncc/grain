@@ -3,4 +3,4 @@
  * @description Editor Settings 类型模块导出
  */
 
-export * from "./editor-settings.interface";
+export * from "./editor-settings.interface"

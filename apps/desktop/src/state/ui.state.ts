@@ -11,21 +11,16 @@
  * 使用 Zustand + Immer 实现不可变状态管理。
  */
 
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type {
-	RightPanelView,
-	TabPosition,
-	UIActions,
-	UIState,
-} from "@/types/ui";
-import { DEFAULT_UI_CONFIG, DEFAULT_UI_STATE } from "@/types/ui";
+import { create } from "zustand"
+import { persist } from "zustand/middleware"
+import type { RightPanelView, TabPosition, UIActions, UIState } from "@/types/ui"
+import { DEFAULT_UI_CONFIG, DEFAULT_UI_STATE } from "@/types/ui"
 
 // ==============================
 // Store Type
 // ==============================
 
-type UIStore = UIState & UIActions;
+type UIStore = UIState & UIActions
 
 // ==============================
 // Store Implementation
@@ -45,35 +40,35 @@ export const useUIStore = create<UIStore>()(
 				set((state) => ({
 					...state,
 					rightPanelView: view,
-				}));
+				}))
 			},
 
 			setRightSidebarOpen: (open: boolean) => {
 				set((state) => ({
 					...state,
 					rightSidebarOpen: open,
-				}));
+				}))
 			},
 
 			toggleRightSidebar: () => {
 				set((state) => ({
 					...state,
 					rightSidebarOpen: !state.rightSidebarOpen,
-				}));
+				}))
 			},
 
 			setTabPosition: (position: TabPosition) => {
 				set((state) => ({
 					...state,
 					tabPosition: position,
-				}));
+				}))
 			},
 
 			setLocale: (locale: string) => {
 				set((state) => ({
 					...state,
 					locale: locale,
-				}));
+				}))
 			},
 		}),
 		{
@@ -86,7 +81,7 @@ export const useUIStore = create<UIStore>()(
 			}),
 		},
 	),
-);
+)
 
 // ==============================
 // Selector Hooks
@@ -97,49 +92,49 @@ export const useUIStore = create<UIStore>()(
  * 优化：仅在面板视图变化时重新渲染
  */
 export const useRightPanelView = (): RightPanelView => {
-	return useUIStore((state) => state.rightPanelView);
-};
+	return useUIStore((state) => state.rightPanelView)
+}
 
 /**
  * 获取右侧边栏是否打开
  * 优化：仅在边栏状态变化时重新渲染
  */
 export const useRightSidebarOpen = (): boolean => {
-	return useUIStore((state) => state.rightSidebarOpen);
-};
+	return useUIStore((state) => state.rightSidebarOpen)
+}
 
 /**
  * 获取当前标签页位置
  * 优化：仅在标签页位置变化时重新渲染
  */
 export const useTabPosition = (): TabPosition => {
-	return useUIStore((state) => state.tabPosition);
-};
+	return useUIStore((state) => state.tabPosition)
+}
 
 /**
  * 获取当前应用语言
  * 优化：仅在语言变化时重新渲染
  */
 export const useLocale = (): string => {
-	return useUIStore((state) => state.locale);
-};
+	return useUIStore((state) => state.locale)
+}
 
 /**
  * 检查指定面板视图是否激活
  */
 export const useIsPanelViewActive = (view: RightPanelView): boolean => {
-	return useUIStore((state) => state.rightPanelView === view);
-};
+	return useUIStore((state) => state.rightPanelView === view)
+}
 
 /**
  * 检查标签页是否在顶部
  */
 export const useIsTabsAtTop = (): boolean => {
-	return useUIStore((state) => state.tabPosition === "top");
-};
+	return useUIStore((state) => state.tabPosition === "top")
+}
 
 /**
  * @deprecated 使用 useUIStore 代替。此别名仅为向后兼容提供。
  * 将在未来版本中移除。
  */
-export const useUISettingsStore = useUIStore;
+export const useUISettingsStore = useUIStore

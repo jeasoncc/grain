@@ -15,8 +15,8 @@ import {
 	useAttachments as useAttachmentsQuery,
 	useAudioFilesByProject as useAudioFilesByProjectQuery,
 	useImagesByProject as useImagesByProjectQuery,
-} from "@/hooks/queries";
-import type { AttachmentInterface, AttachmentType } from "@/types/attachment";
+} from "@/hooks/queries"
+import type { AttachmentInterface, AttachmentType } from "@/types/attachment"
 
 /**
  * Hook to get all attachments
@@ -45,8 +45,8 @@ import type { AttachmentInterface, AttachmentType } from "@/types/attachment";
  * ```
  */
 export function useAllAttachments(): readonly AttachmentInterface[] | undefined {
-	const { data } = useAttachmentsQuery();
-	return data;
+	const { data } = useAttachmentsQuery()
+	return data
 }
 
 /**
@@ -71,8 +71,8 @@ export function useAllAttachments(): readonly AttachmentInterface[] | undefined 
 export function useAttachment(
 	attachmentId: string | null | undefined,
 ): AttachmentInterface | undefined {
-	const { data } = useAttachmentQuery(attachmentId);
-	return data ?? undefined;
+	const { data } = useAttachmentQuery(attachmentId)
+	return data ?? undefined
 }
 
 /**
@@ -97,8 +97,8 @@ export function useAttachment(
 export function useAttachmentsByProject(
 	projectId: string | null | undefined,
 ): readonly AttachmentInterface[] | undefined {
-	const { data } = useAttachmentsByProjectQuery(projectId);
-	return data;
+	const { data } = useAttachmentsByProjectQuery(projectId)
+	return data
 }
 
 /**
@@ -111,9 +111,9 @@ export function useAttachmentsByType(
 	type: AttachmentType | null | undefined,
 ): readonly AttachmentInterface[] | undefined {
 	// For global type filtering, we get all attachments and filter
-	const { data: allAttachments } = useAttachmentsQuery();
-	if (!type || !allAttachments) return allAttachments;
-	return allAttachments.filter((a) => a.type === type);
+	const { data: allAttachments } = useAttachmentsQuery()
+	if (!type || !allAttachments) return allAttachments
+	return allAttachments.filter((a) => a.type === type)
 }
 
 /**
@@ -127,8 +127,8 @@ export function useAttachmentsByProjectAndType(
 	projectId: string | null | undefined,
 	type: AttachmentType | null | undefined,
 ): readonly AttachmentInterface[] | undefined {
-	const { data } = useAttachmentsByTypeQuery(projectId, type);
-	return data;
+	const { data } = useAttachmentsByTypeQuery(projectId, type)
+	return data
 }
 
 /**
@@ -140,8 +140,8 @@ export function useAttachmentsByProjectAndType(
 export function useProjectImages(
 	projectId: string | null | undefined,
 ): readonly AttachmentInterface[] | undefined {
-	const { data } = useImagesByProjectQuery(projectId);
-	return data;
+	const { data } = useImagesByProjectQuery(projectId)
+	return data
 }
 
 /**
@@ -153,8 +153,8 @@ export function useProjectImages(
 export function useProjectAudioFiles(
 	projectId: string | null | undefined,
 ): readonly AttachmentInterface[] | undefined {
-	const { data } = useAudioFilesByProjectQuery(projectId);
-	return data;
+	const { data } = useAudioFilesByProjectQuery(projectId)
+	return data
 }
 
 /**
@@ -163,9 +163,9 @@ export function useProjectAudioFiles(
  * @returns Array of global attachments
  */
 export function useGlobalAttachments(): readonly AttachmentInterface[] | undefined {
-	const { data: allAttachments } = useAttachmentsQuery();
-	if (!allAttachments) return undefined;
-	return allAttachments.filter((a) => !a.project);
+	const { data: allAttachments } = useAttachmentsQuery()
+	if (!allAttachments) return undefined
+	return allAttachments.filter((a) => !a.project)
 }
 
 /**
@@ -174,8 +174,8 @@ export function useGlobalAttachments(): readonly AttachmentInterface[] | undefin
  * @returns The count of attachments or undefined while loading
  */
 export function useAttachmentCount(): number | undefined {
-	const { data: allAttachments } = useAttachmentsQuery();
-	return allAttachments?.length;
+	const { data: allAttachments } = useAttachmentsQuery()
+	return allAttachments?.length
 }
 
 /**
@@ -187,8 +187,8 @@ export function useAttachmentCount(): number | undefined {
 export function useAttachmentCountByProject(
 	projectId: string | null | undefined,
 ): number | undefined {
-	const { data: attachments } = useAttachmentsByProjectQuery(projectId);
-	return attachments?.length;
+	const { data: attachments } = useAttachmentsByProjectQuery(projectId)
+	return attachments?.length
 }
 
 /**
@@ -197,12 +197,10 @@ export function useAttachmentCountByProject(
  * @param attachmentId - The attachment ID
  * @returns True if exists, false otherwise, undefined while loading
  */
-export function useAttachmentExists(
-	attachmentId: string | null | undefined,
-): boolean | undefined {
-	const { data, isLoading } = useAttachmentQuery(attachmentId);
-	if (isLoading) return undefined;
-	return data !== null && data !== undefined;
+export function useAttachmentExists(attachmentId: string | null | undefined): boolean | undefined {
+	const { data, isLoading } = useAttachmentQuery(attachmentId)
+	if (isLoading) return undefined
+	return data !== null && data !== undefined
 }
 
 /**
@@ -211,10 +209,8 @@ export function useAttachmentExists(
  * @param projectId - The project ID
  * @returns Total size in bytes or undefined while loading
  */
-export function useProjectAttachmentSize(
-	projectId: string | null | undefined,
-): number | undefined {
-	const { data: attachments } = useAttachmentsByProjectQuery(projectId);
-	if (!attachments) return undefined;
-	return attachments.reduce((total, a) => total + (a.size || 0), 0);
+export function useProjectAttachmentSize(projectId: string | null | undefined): number | undefined {
+	const { data: attachments } = useAttachmentsByProjectQuery(projectId)
+	if (!attachments) return undefined
+	return attachments.reduce((total, a) => total + (a.size || 0), 0)
 }

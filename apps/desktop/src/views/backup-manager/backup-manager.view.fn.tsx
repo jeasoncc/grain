@@ -4,8 +4,8 @@
  * 纯展示组件，所有数据和回调通过 props 传入
  */
 
-import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
+import dayjs from "dayjs"
+import relativeTime from "dayjs/plugin/relativeTime"
 import {
 	Archive,
 	BookOpen,
@@ -23,23 +23,17 @@ import {
 	Tag,
 	Trash2,
 	Upload,
-} from "lucide-react";
-import { memo } from "react";
-import { formatBytes } from "@/utils/format.util";
-import { Button } from "@/views/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/views/ui/card";
-import { Progress } from "@/views/ui/progress";
-import { Separator } from "@/views/ui/separator";
-import { Switch } from "@/views/ui/switch";
-import type { BackupManagerViewProps } from "./backup-manager.types";
+} from "lucide-react"
+import { memo } from "react"
+import { formatBytes } from "@/utils/format.util"
+import { Button } from "@/views/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/views/ui/card"
+import { Progress } from "@/views/ui/progress"
+import { Separator } from "@/views/ui/separator"
+import { Switch } from "@/views/ui/switch"
+import type { BackupManagerViewProps } from "./backup-manager.types"
 
-dayjs.extend(relativeTime);
+dayjs.extend(relativeTime)
 
 export const BackupManagerView = memo(function BackupManagerView({
 	stats,
@@ -84,9 +78,7 @@ export const BackupManagerView = memo(function BackupManagerView({
 											Projects
 										</p>
 										<div className="flex items-baseline gap-1 relative z-10">
-											<p className="text-xl font-bold text-foreground">
-												{stats.projectCount}
-											</p>
+											<p className="text-xl font-bold text-foreground">{stats.projectCount}</p>
 											<BookOpen className="size-3 text-muted-foreground opacity-50" />
 										</div>
 									</div>
@@ -98,9 +90,7 @@ export const BackupManagerView = memo(function BackupManagerView({
 											File Nodes
 										</p>
 										<div className="flex items-baseline gap-1 relative z-10">
-											<p className="text-xl font-bold text-foreground">
-												{stats.nodeCount}
-											</p>
+											<p className="text-xl font-bold text-foreground">{stats.nodeCount}</p>
 											<FileText className="size-3 text-muted-foreground opacity-50" />
 										</div>
 									</div>
@@ -112,9 +102,7 @@ export const BackupManagerView = memo(function BackupManagerView({
 											Records
 										</p>
 										<div className="flex items-baseline gap-1 relative z-10">
-											<p className="text-xl font-bold text-foreground">
-												{stats.contentCount}
-											</p>
+											<p className="text-xl font-bold text-foreground">{stats.contentCount}</p>
 											<Database className="size-3 text-muted-foreground opacity-50" />
 										</div>
 									</div>
@@ -126,9 +114,7 @@ export const BackupManagerView = memo(function BackupManagerView({
 											Drawings
 										</p>
 										<div className="flex items-baseline gap-1 relative z-10">
-											<p className="text-xl font-bold text-foreground">
-												{stats.drawingCount}
-											</p>
+											<p className="text-xl font-bold text-foreground">{stats.drawingCount}</p>
 											<Image className="size-3 text-muted-foreground opacity-50" />
 										</div>
 									</div>
@@ -140,9 +126,7 @@ export const BackupManagerView = memo(function BackupManagerView({
 											Attachments
 										</p>
 										<div className="flex items-baseline gap-1 relative z-10">
-											<p className="text-xl font-bold text-foreground">
-												{stats.attachmentCount}
-											</p>
+											<p className="text-xl font-bold text-foreground">{stats.attachmentCount}</p>
 											<Paperclip className="size-3 text-muted-foreground opacity-50" />
 										</div>
 									</div>
@@ -154,9 +138,7 @@ export const BackupManagerView = memo(function BackupManagerView({
 											Tags
 										</p>
 										<div className="flex items-baseline gap-1 relative z-10">
-											<p className="text-xl font-bold text-foreground">
-												{stats.tagCount}
-											</p>
+											<p className="text-xl font-bold text-foreground">{stats.tagCount}</p>
 											<Tag className="size-3 text-muted-foreground opacity-50" />
 										</div>
 									</div>
@@ -189,11 +171,10 @@ export const BackupManagerView = memo(function BackupManagerView({
 													{formatBytes(storageStats.indexedDB.size)}
 												</p>
 												<p className="text-[10px] text-muted-foreground">
-													{(
-														Object.values(
-															storageStats.indexedDB.tables,
-														) as number[]
-													).reduce((a, b) => a + b, 0)}{" "}
+													{(Object.values(storageStats.indexedDB.tables) as number[]).reduce(
+														(a, b) => a + b,
+														0,
+													)}{" "}
 													total records
 												</p>
 											</div>
@@ -226,9 +207,7 @@ export const BackupManagerView = memo(function BackupManagerView({
 														<FolderOpen className="size-4 text-purple-600" />
 													</div>
 													<div>
-														<p className="text-sm font-medium">
-															sessionStorage
-														</p>
+														<p className="text-sm font-medium">sessionStorage</p>
 														<p className="text-[10px] text-muted-foreground">
 															Temporary session data
 														</p>
@@ -250,26 +229,18 @@ export const BackupManagerView = memo(function BackupManagerView({
 													</div>
 													<div>
 														<p className="text-sm font-medium">Cookies</p>
-														<p className="text-[10px] text-muted-foreground">
-															Browser cookies
-														</p>
+														<p className="text-[10px] text-muted-foreground">Browser cookies</p>
 													</div>
 												</div>
-												<p className="text-xl font-bold mb-1">
-													{storageStats.cookies.count}
-												</p>
-												<p className="text-[10px] text-muted-foreground">
-													cookies stored
-												</p>
+												<p className="text-xl font-bold mb-1">{storageStats.cookies.count}</p>
+												<p className="text-[10px] text-muted-foreground">cookies stored</p>
 											</div>
 										</div>
 									</div>
 
 									<Separator />
 									<div>
-										<h4 className="text-sm font-medium mb-4">
-											IndexedDB Table Breakdown
-										</h4>
+										<h4 className="text-sm font-medium mb-4">IndexedDB Table Breakdown</h4>
 										<div className="space-y-3">
 											{Object.entries(storageStats.indexedDB.tableSizes)
 												.sort(([, a], [, b]) => b - a)
@@ -277,28 +248,26 @@ export const BackupManagerView = memo(function BackupManagerView({
 													const percentage =
 														storageStats.indexedDB.size > 0
 															? (size / storageStats.indexedDB.size) * 100
-															: 0;
-													const tables = storageStats.indexedDB
-														.tables as unknown as Record<string, number>;
-													const recordCount = tables[table] || 0;
+															: 0
+													const tables = storageStats.indexedDB.tables as unknown as Record<
+														string,
+														number
+													>
+													const recordCount = tables[table] || 0
 													return (
 														<div key={table} className="space-y-1.5">
 															<div className="flex justify-between items-center">
 																<div className="flex items-center gap-2">
-																	<span className="text-sm font-medium capitalize">
-																		{table}
-																	</span>
+																	<span className="text-sm font-medium capitalize">{table}</span>
 																	<span className="text-xs text-muted-foreground">
 																		({recordCount} records)
 																	</span>
 																</div>
-																<span className="text-sm font-semibold">
-																	{formatBytes(size)}
-																</span>
+																<span className="text-sm font-semibold">{formatBytes(size)}</span>
 															</div>
 															<Progress value={percentage} className="h-1.5" />
 														</div>
-													);
+													)
 												})}
 										</div>
 									</div>
@@ -320,9 +289,7 @@ export const BackupManagerView = memo(function BackupManagerView({
 						<Archive className="size-4 text-primary" />
 						Manual Backup
 					</CardTitle>
-					<CardDescription>
-						Export your data to safeguard against loss.
-					</CardDescription>
+					<CardDescription>Export your data to safeguard against loss.</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
 					<div className="flex flex-wrap gap-3">
@@ -359,8 +326,7 @@ export const BackupManagerView = memo(function BackupManagerView({
 					</div>
 					<div className="flex items-center gap-2 p-2 rounded bg-background/50 text-[10px] text-muted-foreground border border-border/50">
 						<Settings className="size-3" />
-						ZIP format includes all project metadata and is recommended for full
-						backups.
+						ZIP format includes all project metadata and is recommended for full backups.
 					</div>
 				</CardContent>
 			</Card>
@@ -374,9 +340,7 @@ export const BackupManagerView = memo(function BackupManagerView({
 								<Clock className="size-4" />
 								Auto Backup
 							</CardTitle>
-							<CardDescription>
-								Automatically creates local backups every 24 hours
-							</CardDescription>
+							<CardDescription>Automatically creates local backups every 24 hours</CardDescription>
 						</div>
 						<Switch
 							id="auto-backup"
@@ -404,13 +368,11 @@ export const BackupManagerView = memo(function BackupManagerView({
 											</div>
 											<div>
 												<p className="font-medium text-xs">
-													{dayjs(backup.timestamp).format(
-														"MMM D, YYYY · HH:mm:ss",
-													)}
+													{dayjs(backup.timestamp).format("MMM D, YYYY · HH:mm:ss")}
 												</p>
 												<p className="text-[10px] text-muted-foreground">
-													{dayjs(backup.timestamp).fromNow()} ·{" "}
-													{backup.data.metadata.projectCount} projects
+													{dayjs(backup.timestamp).fromNow()} · {backup.data.metadata.projectCount}{" "}
+													projects
 												</p>
 											</div>
 										</div>
@@ -457,9 +419,7 @@ export const BackupManagerView = memo(function BackupManagerView({
 								<Trash2 className="size-3.5" />
 							</div>
 							<div>
-								<div className="font-medium text-sm text-foreground">
-									Clear All Data
-								</div>
+								<div className="font-medium text-sm text-foreground">Clear All Data</div>
 								<div className="text-[10px] text-muted-foreground">
 									Delete content, settings, and cache
 								</div>
@@ -482,9 +442,7 @@ export const BackupManagerView = memo(function BackupManagerView({
 								<Database className="size-3.5" />
 							</div>
 							<div>
-								<div className="font-medium text-sm text-foreground">
-									Clear Database
-								</div>
+								<div className="font-medium text-sm text-foreground">Clear Database</div>
 								<div className="text-[10px] text-muted-foreground">
 									Delete projects only. Keep settings
 								</div>
@@ -507,9 +465,7 @@ export const BackupManagerView = memo(function BackupManagerView({
 								<Settings className="size-3.5" />
 							</div>
 							<div>
-								<div className="font-medium text-sm text-foreground">
-									Clear Settings
-								</div>
+								<div className="font-medium text-sm text-foreground">Clear Settings</div>
 								<div className="text-[10px] text-muted-foreground">
 									Reset preferences. Keep projects
 								</div>
@@ -528,7 +484,7 @@ export const BackupManagerView = memo(function BackupManagerView({
 				</CardContent>
 			</Card>
 		</div>
-	);
-});
+	)
+})
 
-BackupManagerView.displayName = "BackupManagerView";
+BackupManagerView.displayName = "BackupManagerView"

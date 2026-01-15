@@ -5,14 +5,14 @@
  * IO operations are in @/flows/wiki.
  */
 
-export { WikiFileEntryBuilder } from "./wiki.builder";
+export { WikiFileEntryBuilder } from "./wiki.builder"
 export {
 	buildNodePath,
 	buildWikiFileEntry,
 	generateWikiTemplate,
 	WIKI_ROOT_FOLDER,
 	WIKI_TAG,
-} from "./wiki.resolve.fn";
+} from "./wiki.resolve.fn"
 export {
 	type WikiCreationParams as WikiCreationParamsType,
 	type WikiCreationResult as WikiCreationResultType,
@@ -21,7 +21,7 @@ export {
 	wikiCreationParamsSchema,
 	wikiCreationResultSchema,
 	wikiFileEntrySchema,
-} from "./wiki.schema";
+} from "./wiki.schema"
 
 // NOTE: IO functions (getWikiFiles, getWikiFilesAsync) are in @/flows/wiki
 // Import them from there directly to avoid circular dependencies.

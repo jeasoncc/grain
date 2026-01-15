@@ -10,7 +10,7 @@
  * 这些函数无副作用，可组合，可测试。
  */
 
-import * as E from "fp-ts/Either";
+import * as E from "fp-ts/Either"
 
 // ==============================
 // Types
@@ -21,63 +21,63 @@ import * as E from "fp-ts/Either";
  */
 export interface ExcalidrawContentParams {
 	/** 画布宽度，默认 1920 */
-	readonly width?: number;
+	readonly width?: number
 	/** 画布高度，默认 1080 */
-	readonly height?: number;
+	readonly height?: number
 }
 
 /**
  * Excalidraw 缩放配置
  */
 export interface ExcalidrawZoom {
-	readonly value: number;
+	readonly value: number
 }
 
 /**
  * Excalidraw 应用状态
  */
 export interface ExcalidrawAppState {
-	readonly viewBackgroundColor: string;
-	readonly currentItemStrokeColor: string;
-	readonly currentItemBackgroundColor: string;
-	readonly currentItemFillStyle: string;
-	readonly currentItemStrokeWidth: number;
-	readonly currentItemStrokeStyle: string;
-	readonly currentItemRoughness: number;
-	readonly currentItemOpacity: number;
-	readonly currentItemFontFamily: number;
-	readonly currentItemFontSize: number;
-	readonly currentItemTextAlign: string;
-	readonly currentItemStartArrowhead: string | null;
-	readonly currentItemEndArrowhead: string;
-	readonly scrollX: number;
-	readonly scrollY: number;
-	readonly zoom: ExcalidrawZoom;
-	readonly currentItemRoundness: string;
-	readonly gridSize: number | null;
-	readonly colorPalette: Record<string, unknown>;
+	readonly viewBackgroundColor: string
+	readonly currentItemStrokeColor: string
+	readonly currentItemBackgroundColor: string
+	readonly currentItemFillStyle: string
+	readonly currentItemStrokeWidth: number
+	readonly currentItemStrokeStyle: string
+	readonly currentItemRoughness: number
+	readonly currentItemOpacity: number
+	readonly currentItemFontFamily: number
+	readonly currentItemFontSize: number
+	readonly currentItemTextAlign: string
+	readonly currentItemStartArrowhead: string | null
+	readonly currentItemEndArrowhead: string
+	readonly scrollX: number
+	readonly scrollY: number
+	readonly zoom: ExcalidrawZoom
+	readonly currentItemRoundness: string
+	readonly gridSize: number | null
+	readonly colorPalette: Record<string, unknown>
 }
 
 /**
  * Excalidraw 元素（绘图元素）
  */
-export type ExcalidrawElement = Record<string, unknown>;
+export type ExcalidrawElement = Record<string, unknown>
 
 /**
  * Excalidraw 文件（嵌入的图片等）
  */
-export type ExcalidrawFiles = Record<string, unknown>;
+export type ExcalidrawFiles = Record<string, unknown>
 
 /**
  * Excalidraw 文档结构
  */
 export interface ExcalidrawDocument {
-	readonly type: "excalidraw";
-	readonly version: number;
-	readonly source: string;
-	readonly elements: readonly ExcalidrawElement[];
-	readonly appState: ExcalidrawAppState;
-	readonly files: ExcalidrawFiles;
+	readonly type: "excalidraw"
+	readonly version: number
+	readonly source: string
+	readonly elements: readonly ExcalidrawElement[]
+	readonly appState: ExcalidrawAppState
+	readonly files: ExcalidrawFiles
 }
 
 // ==============================
@@ -85,16 +85,16 @@ export interface ExcalidrawDocument {
 // ==============================
 
 /** 默认画布宽度 */
-export const DEFAULT_WIDTH = 1920;
+export const DEFAULT_WIDTH = 1920
 
 /** 默认画布高度 */
-export const DEFAULT_HEIGHT = 1080;
+export const DEFAULT_HEIGHT = 1080
 
 /** Excalidraw 版本 */
-export const EXCALIDRAW_VERSION = 2;
+export const EXCALIDRAW_VERSION = 2
 
 /** 来源标识 */
-export const EXCALIDRAW_SOURCE = "grain-editor";
+export const EXCALIDRAW_SOURCE = "grain-editor"
 
 // ==============================
 // Pure Functions
@@ -117,7 +117,7 @@ export function createDefaultAppState(): Partial<ExcalidrawAppState> {
 		scrollX: 0,
 		scrollY: 0,
 		zoom: { value: 1 },
-	};
+	}
 }
 
 /**
@@ -133,7 +133,7 @@ export function createExcalidrawDocument(
 	appState: Partial<ExcalidrawAppState> = createDefaultAppState(),
 	files: ExcalidrawFiles = {},
 ): Omit<ExcalidrawDocument, "appState"> & {
-	readonly appState: Partial<ExcalidrawAppState>;
+	readonly appState: Partial<ExcalidrawAppState>
 } {
 	return {
 		type: "excalidraw",
@@ -142,7 +142,7 @@ export function createExcalidrawDocument(
 		elements,
 		appState,
 		files,
-	};
+	}
 }
 
 /**
@@ -162,20 +162,18 @@ export function createExcalidrawDocument(
  * // 使用自定义尺寸
  * const content = generateExcalidrawContent({ width: 2560, height: 1440 });
  */
-export function generateExcalidrawContent(
-	params: ExcalidrawContentParams = {},
-): string {
+export function generateExcalidrawContent(params: ExcalidrawContentParams = {}): string {
 	// 解构参数，使用默认值
 	// Note: width and height are currently not used in document creation
 	// but are kept for future extensibility
-	params.width ?? DEFAULT_WIDTH;
-	params.height ?? DEFAULT_HEIGHT;
+	params.width ?? DEFAULT_WIDTH
+	params.height ?? DEFAULT_HEIGHT
 
 	// 创建文档对象
-	const document = createExcalidrawDocument();
+	const document = createExcalidrawDocument()
 
 	// 返回格式化的 JSON 字符串
-	return JSON.stringify(document, null, 2);
+	return JSON.stringify(document, null, 2)
 }
 
 /**
@@ -184,12 +182,10 @@ export function generateExcalidrawContent(
  * @param content - Excalidraw JSON 字符串
  * @returns Either<Error, ExcalidrawDocument>
  */
-export function parseExcalidrawContent(
-	content: string,
-): E.Either<Error, ExcalidrawDocument> {
+export function parseExcalidrawContent(content: string): E.Either<Error, ExcalidrawDocument> {
 	return E.tryCatch(
 		() => {
-			const parsed = JSON.parse(content);
+			const parsed = JSON.parse(content)
 
 			// 验证基本结构
 			if (
@@ -200,13 +196,13 @@ export function parseExcalidrawContent(
 				typeof parsed.appState === "object" &&
 				typeof parsed.files === "object"
 			) {
-				return parsed as ExcalidrawDocument;
+				return parsed as ExcalidrawDocument
 			}
 
-			throw new Error("Invalid Excalidraw document structure");
+			throw new Error("Invalid Excalidraw document structure")
 		},
 		(err) => new Error(`Excalidraw 解析失败: ${String(err)}`),
-	);
+	)
 }
 
 /**
@@ -216,5 +212,5 @@ export function parseExcalidrawContent(
  * @returns 是否为有效的 Excalidraw 内容
  */
 export function isValidExcalidrawContent(content: string): boolean {
-	return parseExcalidrawContent(content) !== null;
+	return parseExcalidrawContent(content) !== null
 }

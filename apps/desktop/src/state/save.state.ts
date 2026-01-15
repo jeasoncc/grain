@@ -6,8 +6,8 @@
  * Uses Zustand + Immer for immutable state management.
  */
 
-import { create } from "zustand";
-import type { SaveStatus, SaveStore } from "@/types/save";
+import { create } from "zustand"
+import type { SaveStatus, SaveStore } from "@/types/save"
 
 // Re-export types for convenience
 export type {
@@ -15,7 +15,7 @@ export type {
 	SaveState,
 	SaveStatus,
 	SaveStore,
-} from "@/types/save";
+} from "@/types/save"
 
 // ============================================================================
 // Store
@@ -91,13 +91,12 @@ export const useSaveStore = create<SaveStore>()((set) => ({
 			status: "unsaved" as SaveStatus,
 			hasUnsavedChanges: true,
 		})),
-}));
+}))
 
 // ============================================================================
 // Selector Hooks
 // ============================================================================
 
-export const useSaveStatus = () => useSaveStore((s) => s.status);
-export const useHasUnsavedChanges = () =>
-	useSaveStore((s) => s.hasUnsavedChanges);
-export const useIsManualSaving = () => useSaveStore((s) => s.isManualSaving);
+export const useSaveStatus = () => useSaveStore((s) => s.status)
+export const useHasUnsavedChanges = () => useSaveStore((s) => s.hasUnsavedChanges)
+export const useIsManualSaving = () => useSaveStore((s) => s.isManualSaving)

@@ -4,5 +4,5 @@
 
 export interface FileTreePanelContainerProps {
 	/** Optional workspace ID override. If not provided, uses global selection */
-	readonly workspaceId?: string | null;
+	readonly workspaceId?: string | null
 }

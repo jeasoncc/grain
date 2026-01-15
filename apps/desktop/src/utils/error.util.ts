@@ -5,4 +5,4 @@
  * 此文件保留用于向后兼容，所有新代码应直接从 @/types/error 导入
  */
 
-export * from "@/types/error";
+export * from "@/types/error"

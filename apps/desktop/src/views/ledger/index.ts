@@ -8,4 +8,4 @@
  * @deprecated 请直接从 @/pipes/ledger 导入
  */
 
-export { generateLedgerContent } from "@/pipes/ledger";
+export { generateLedgerContent } from "@/pipes/ledger"

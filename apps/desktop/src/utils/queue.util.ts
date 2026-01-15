@@ -8,18 +8,18 @@
  * @see .kiro/steering/design-patterns.md
  */
 
-import PQueue from "p-queue";
+import PQueue from "p-queue"
 
 /**
  * 队列状态类型
  */
 export interface QueueStatus {
 	/** 等待中的任务数 */
-	readonly size: number;
+	readonly size: number
 	/** 正在执行的任务数 */
-	readonly pending: number;
+	readonly pending: number
 	/** 是否暂停 */
-	readonly isPaused: boolean;
+	readonly isPaused: boolean
 }
 
 /**
@@ -33,7 +33,7 @@ export interface QueueStatus {
 export const fileOperationQueue = new PQueue({
 	concurrency: 1,
 	autoStart: true,
-});
+})
 
 /**
  * 获取队列状态
@@ -44,7 +44,7 @@ export const getQueueStatus = (): QueueStatus => ({
 	size: fileOperationQueue.size,
 	pending: fileOperationQueue.pending,
 	isPaused: fileOperationQueue.isPaused,
-});
+})
 
 /**
  * 等待队列空闲
@@ -52,5 +52,5 @@ export const getQueueStatus = (): QueueStatus => ({
  * 用于测试或需要确保所有操作完成的场景。
  */
 export const waitForQueueIdle = (): Promise<void> => {
-	return fileOperationQueue.onIdle();
-};
+	return fileOperationQueue.onIdle()
+}

@@ -6,15 +6,11 @@
  * Uses Zustand + Immer for immutable state management.
  */
 
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { immer } from "zustand/middleware/immer";
-import type { FontActions, FontState } from "@/types/font";
-import {
-	DEFAULT_FONT_CONFIG,
-	DEFAULT_FONT_STATE,
-	FONT_CONSTRAINTS,
-} from "@/types/font";
+import { create } from "zustand"
+import { persist } from "zustand/middleware"
+import { immer } from "zustand/middleware/immer"
+import type { FontActions, FontState } from "@/types/font"
+import { DEFAULT_FONT_CONFIG, DEFAULT_FONT_STATE, FONT_CONSTRAINTS } from "@/types/font"
 
 // ==============================
 // Utility Functions
@@ -24,14 +20,14 @@ import {
  * Clamp a value between min and max bounds.
  */
 function clamp(value: number, min: number, max: number): number {
-	return Math.max(min, Math.min(max, value));
+	return Math.max(min, Math.min(max, value))
 }
 
 // ==============================
 // Store Type
 // ==============================
 
-type FontStore = FontState & FontActions;
+type FontStore = FontState & FontActions
 
 // ==============================
 // Store Implementation
@@ -49,8 +45,8 @@ export const useFontStore = create<FontStore>()(
 
 			setFontFamily: (fontFamily: string) => {
 				set((state) => {
-					return { ...state, fontFamily };
-				});
+					return { ...state, fontFamily }
+				})
 			},
 
 			setFontSize: (fontSize: number) => {
@@ -59,9 +55,9 @@ export const useFontStore = create<FontStore>()(
 						fontSize,
 						FONT_CONSTRAINTS.fontSize.min,
 						FONT_CONSTRAINTS.fontSize.max,
-					);
-					return { ...state, fontSize: clampedSize };
-				});
+					)
+					return { ...state, fontSize: clampedSize }
+				})
 			},
 
 			setLineHeight: (lineHeight: number) => {
@@ -70,9 +66,9 @@ export const useFontStore = create<FontStore>()(
 						lineHeight,
 						FONT_CONSTRAINTS.lineHeight.min,
 						FONT_CONSTRAINTS.lineHeight.max,
-					);
-					return { ...state, lineHeight: clampedHeight };
-				});
+					)
+					return { ...state, lineHeight: clampedHeight }
+				})
 			},
 
 			setLetterSpacing: (letterSpacing: number) => {
@@ -81,15 +77,15 @@ export const useFontStore = create<FontStore>()(
 						letterSpacing,
 						FONT_CONSTRAINTS.letterSpacing.min,
 						FONT_CONSTRAINTS.letterSpacing.max,
-					);
-					return { ...state, letterSpacing: clampedSpacing };
-				});
+					)
+					return { ...state, letterSpacing: clampedSpacing }
+				})
 			},
 
 			setUiFontFamily: (uiFontFamily: string) => {
 				set((state) => {
-					return { ...state, uiFontFamily };
-				});
+					return { ...state, uiFontFamily }
+				})
 			},
 
 			setUiFontSize: (uiFontSize: number) => {
@@ -98,21 +94,21 @@ export const useFontStore = create<FontStore>()(
 						uiFontSize,
 						FONT_CONSTRAINTS.uiFontSize.min,
 						FONT_CONSTRAINTS.uiFontSize.max,
-					);
-					return { ...state, uiFontSize: clampedSize };
-				});
+					)
+					return { ...state, uiFontSize: clampedSize }
+				})
 			},
 
 			setUiScale: (uiScale: string) => {
 				set((state) => {
-					return { ...state, uiScale };
-				});
+					return { ...state, uiScale }
+				})
 			},
 
 			setCardSize: (cardSize: string) => {
 				set((state) => {
-					return { ...state, cardSize };
-				});
+					return { ...state, cardSize }
+				})
 			},
 
 			setCardBorderRadius: (cardBorderRadius: number) => {
@@ -121,9 +117,9 @@ export const useFontStore = create<FontStore>()(
 						cardBorderRadius,
 						FONT_CONSTRAINTS.cardBorderRadius.min,
 						FONT_CONSTRAINTS.cardBorderRadius.max,
-					);
-					return { ...state, cardBorderRadius: clampedRadius };
-				});
+					)
+					return { ...state, cardBorderRadius: clampedRadius }
+				})
 			},
 
 			setParagraphSpacing: (paragraphSpacing: number) => {
@@ -132,9 +128,9 @@ export const useFontStore = create<FontStore>()(
 						paragraphSpacing,
 						FONT_CONSTRAINTS.paragraphSpacing.min,
 						FONT_CONSTRAINTS.paragraphSpacing.max,
-					);
-					return { ...state, paragraphSpacing: clampedSpacing };
-				});
+					)
+					return { ...state, paragraphSpacing: clampedSpacing }
+				})
 			},
 
 			setFirstLineIndent: (firstLineIndent: number) => {
@@ -143,9 +139,9 @@ export const useFontStore = create<FontStore>()(
 						firstLineIndent,
 						FONT_CONSTRAINTS.firstLineIndent.min,
 						FONT_CONSTRAINTS.firstLineIndent.max,
-					);
-					return { ...state, firstLineIndent: clampedIndent };
-				});
+					)
+					return { ...state, firstLineIndent: clampedIndent }
+				})
 			},
 
 			reset: () => {
@@ -163,15 +159,15 @@ export const useFontStore = create<FontStore>()(
 						cardBorderRadius: DEFAULT_FONT_STATE.cardBorderRadius,
 						paragraphSpacing: DEFAULT_FONT_STATE.paragraphSpacing,
 						firstLineIndent: DEFAULT_FONT_STATE.firstLineIndent,
-					};
-				});
+					}
+				})
 			},
 		})),
 		{
 			name: DEFAULT_FONT_CONFIG.storageKey,
 		},
 	),
-);
+)
 
 // ==============================
 // Selector Hooks
@@ -181,78 +177,78 @@ export const useFontStore = create<FontStore>()(
  * Get the current editor font family.
  */
 export const useFontFamily = (): string => {
-	return useFontStore((state) => state.fontFamily);
-};
+	return useFontStore((state) => state.fontFamily)
+}
 
 /**
  * Get the current editor font size.
  */
 export const useFontSize = (): number => {
-	return useFontStore((state) => state.fontSize);
-};
+	return useFontStore((state) => state.fontSize)
+}
 
 /**
  * Get the current editor line height.
  */
 export const useLineHeight = (): number => {
-	return useFontStore((state) => state.lineHeight);
-};
+	return useFontStore((state) => state.lineHeight)
+}
 
 /**
  * Get the current editor letter spacing.
  */
 export const useLetterSpacing = (): number => {
-	return useFontStore((state) => state.letterSpacing);
-};
+	return useFontStore((state) => state.letterSpacing)
+}
 
 /**
  * Get the current UI font family.
  */
 export const useUiFontFamily = (): string => {
-	return useFontStore((state) => state.uiFontFamily);
-};
+	return useFontStore((state) => state.uiFontFamily)
+}
 
 /**
  * Get the current UI font size.
  */
 export const useUiFontSize = (): number => {
-	return useFontStore((state) => state.uiFontSize);
-};
+	return useFontStore((state) => state.uiFontSize)
+}
 
 /**
  * Get the current UI scale preset.
  */
 export const useUiScale = (): string => {
-	return useFontStore((state) => state.uiScale);
-};
+	return useFontStore((state) => state.uiScale)
+}
 
 /**
  * Get the current card size preset.
  */
 export const useCardSize = (): string => {
-	return useFontStore((state) => state.cardSize);
-};
+	return useFontStore((state) => state.cardSize)
+}
 
 /**
  * Get the current card border radius.
  */
 export const useCardBorderRadius = (): number => {
-	return useFontStore((state) => state.cardBorderRadius);
-};
+	return useFontStore((state) => state.cardBorderRadius)
+}
 
 /**
  * Get the current paragraph spacing.
  */
 export const useParagraphSpacing = (): number => {
-	return useFontStore((state) => state.paragraphSpacing);
-};
+	return useFontStore((state) => state.paragraphSpacing)
+}
 
 /**
  * Get the current first line indent.
  */
 export const useFirstLineIndent = (): number => {
-	return useFontStore((state) => state.firstLineIndent);
-};
+	return useFontStore((state) => state.firstLineIndent)
+}
 
 // ==============================
 // Convenience Hook
@@ -263,5 +259,5 @@ export const useFirstLineIndent = (): number => {
  * Maintains backward compatibility with useFontSettings.
  */
 export function useFontSettings() {
-	return useFontStore();
+	return useFontStore()
 }

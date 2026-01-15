@@ -2,11 +2,11 @@
  * SearchPanelView 组件测试
  */
 
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import type { SearchResult } from "@/flows/search";
-import type { SearchPanelViewProps } from "./search-panel.types";
-import { SearchPanelView } from "./search-panel.view.fn";
+import { fireEvent, render, screen } from "@testing-library/react"
+import { describe, expect, it, vi } from "vitest"
+import type { SearchResult } from "@/flows/search"
+import type { SearchPanelViewProps } from "./search-panel.types"
+import { SearchPanelView } from "./search-panel.view.fn"
 
 describe("SearchPanelView", () => {
 	const defaultProps: SearchPanelViewProps = {
@@ -21,12 +21,12 @@ describe("SearchPanelView", () => {
 		onToggleType: vi.fn(),
 		onSetSearchShowFilters: vi.fn(),
 		onSelectResult: vi.fn(),
-	};
+	}
 
 	it("should render search input", () => {
-		render(<SearchPanelView {...defaultProps} />);
-		expect(screen.getByPlaceholderText("Search...")).toBeInTheDocument();
-	});
+		render(<SearchPanelView {...defaultProps} />)
+		expect(screen.getByPlaceholderText("Search...")).toBeInTheDocument()
+	})
 
 	it("should display search query in input", () => {
 		const props = {
@@ -35,22 +35,20 @@ describe("SearchPanelView", () => {
 				...defaultProps.searchState,
 				query: "test query",
 			},
-		};
-		render(<SearchPanelView {...props} />);
-		expect(screen.getByDisplayValue("test query")).toBeInTheDocument();
-	});
+		}
+		render(<SearchPanelView {...props} />)
+		expect(screen.getByDisplayValue("test query")).toBeInTheDocument()
+	})
 
 	it("should call onSetSearchQuery when input changes", () => {
-		const onSetSearchQuery = vi.fn();
-		render(
-			<SearchPanelView {...defaultProps} onSetSearchQuery={onSetSearchQuery} />,
-		);
+		const onSetSearchQuery = vi.fn()
+		render(<SearchPanelView {...defaultProps} onSetSearchQuery={onSetSearchQuery} />)
 
-		const input = screen.getByPlaceholderText("Search...");
-		fireEvent.change(input, { target: { value: "new query" } });
+		const input = screen.getByPlaceholderText("Search...")
+		fireEvent.change(input, { target: { value: "new query" } })
 
-		expect(onSetSearchQuery).toHaveBeenCalledWith("new query");
-	});
+		expect(onSetSearchQuery).toHaveBeenCalledWith("new query")
+	})
 
 	it("should show clear button when query is not empty", () => {
 		const props = {
@@ -59,16 +57,16 @@ describe("SearchPanelView", () => {
 				...defaultProps.searchState,
 				query: "test",
 			},
-		};
-		render(<SearchPanelView {...props} />);
+		}
+		render(<SearchPanelView {...props} />)
 
-		const clearButtons = screen.getAllByRole("button");
-		const clearButton = clearButtons.find((btn) => btn.querySelector("svg"));
-		expect(clearButton).toBeInTheDocument();
-	});
+		const clearButtons = screen.getAllByRole("button")
+		const clearButton = clearButtons.find((btn) => btn.querySelector("svg"))
+		expect(clearButton).toBeInTheDocument()
+	})
 
 	it("should call onSetSearchQuery with empty string when clear button clicked", () => {
-		const onSetSearchQuery = vi.fn();
+		const onSetSearchQuery = vi.fn()
 		const props = {
 			...defaultProps,
 			searchState: {
@@ -76,35 +74,29 @@ describe("SearchPanelView", () => {
 				query: "test",
 			},
 			onSetSearchQuery,
-		};
-		render(<SearchPanelView {...props} />);
+		}
+		render(<SearchPanelView {...props} />)
 
-		const clearButtons = screen.getAllByRole("button");
+		const clearButtons = screen.getAllByRole("button")
 		const clearButton = clearButtons.find(
-			(btn) =>
-				btn.className.includes("absolute") && btn.className.includes("right-1"),
-		);
+			(btn) => btn.className.includes("absolute") && btn.className.includes("right-1"),
+		)
 
 		if (clearButton) {
-			fireEvent.click(clearButton);
-			expect(onSetSearchQuery).toHaveBeenCalledWith("");
+			fireEvent.click(clearButton)
+			expect(onSetSearchQuery).toHaveBeenCalledWith("")
 		}
-	});
+	})
 
 	it("should toggle filters when filter button clicked", () => {
-		const onSetSearchShowFilters = vi.fn();
-		render(
-			<SearchPanelView
-				{...defaultProps}
-				onSetSearchShowFilters={onSetSearchShowFilters}
-			/>,
-		);
+		const onSetSearchShowFilters = vi.fn()
+		render(<SearchPanelView {...defaultProps} onSetSearchShowFilters={onSetSearchShowFilters} />)
 
-		const filterButton = screen.getByTitle("Toggle filters");
-		fireEvent.click(filterButton);
+		const filterButton = screen.getByTitle("Toggle filters")
+		fireEvent.click(filterButton)
 
-		expect(onSetSearchShowFilters).toHaveBeenCalledWith(true);
-	});
+		expect(onSetSearchShowFilters).toHaveBeenCalledWith(true)
+	})
 
 	it("should show filters when showFilters is true", () => {
 		const props = {
@@ -113,11 +105,11 @@ describe("SearchPanelView", () => {
 				...defaultProps.searchState,
 				showFilters: true,
 			},
-		};
-		render(<SearchPanelView {...props} />);
+		}
+		render(<SearchPanelView {...props} />)
 
-		expect(screen.getByText("Scope")).toBeInTheDocument();
-	});
+		expect(screen.getByText("Scope")).toBeInTheDocument()
+	})
 
 	it("should display loading state", () => {
 		const props = {
@@ -127,11 +119,11 @@ describe("SearchPanelView", () => {
 				query: "test",
 			},
 			loading: true,
-		};
-		render(<SearchPanelView {...props} />);
+		}
+		render(<SearchPanelView {...props} />)
 
-		expect(screen.getByText("Searching...")).toBeInTheDocument();
-	});
+		expect(screen.getByText("Searching...")).toBeInTheDocument()
+	})
 
 	it("should display results count", () => {
 		const results: SearchResult[] = [
@@ -155,7 +147,7 @@ describe("SearchPanelView", () => {
 				score: 1.0,
 				highlights: [],
 			},
-		];
+		]
 		const props = {
 			...defaultProps,
 			searchState: {
@@ -163,11 +155,11 @@ describe("SearchPanelView", () => {
 				query: "test",
 			},
 			results,
-		};
-		render(<SearchPanelView {...props} />);
+		}
+		render(<SearchPanelView {...props} />)
 
-		expect(screen.getByText("Found 2 results")).toBeInTheDocument();
-	});
+		expect(screen.getByText("Found 2 results")).toBeInTheDocument()
+	})
 
 	it("should display no results message when query exists but no results", () => {
 		const props = {
@@ -177,20 +169,20 @@ describe("SearchPanelView", () => {
 				query: "nonexistent",
 			},
 			results: [],
-		};
-		render(<SearchPanelView {...props} />);
+		}
+		render(<SearchPanelView {...props} />)
 
-		expect(screen.getByText("No results found")).toBeInTheDocument();
-	});
+		expect(screen.getByText("No results found")).toBeInTheDocument()
+	})
 
 	it("should display type to search message when no query", () => {
-		render(<SearchPanelView {...defaultProps} />);
+		render(<SearchPanelView {...defaultProps} />)
 
-		expect(screen.getByText("Type to search")).toBeInTheDocument();
-	});
+		expect(screen.getByText("Type to search")).toBeInTheDocument()
+	})
 
 	it("should call onToggleType when type checkbox is clicked", () => {
-		const onToggleType = vi.fn();
+		const onToggleType = vi.fn()
 		const props = {
 			...defaultProps,
 			searchState: {
@@ -198,14 +190,14 @@ describe("SearchPanelView", () => {
 				showFilters: true,
 			},
 			onToggleType,
-		};
-		render(<SearchPanelView {...props} />);
+		}
+		render(<SearchPanelView {...props} />)
 
-		const nodeCheckbox = screen.getByLabelText("文件");
-		fireEvent.click(nodeCheckbox);
+		const nodeCheckbox = screen.getByLabelText("文件")
+		fireEvent.click(nodeCheckbox)
 
-		expect(onToggleType).toHaveBeenCalledWith("node");
-	});
+		expect(onToggleType).toHaveBeenCalledWith("node")
+	})
 
 	it("should display search results grouped by type", () => {
 		const results: SearchResult[] = [
@@ -219,7 +211,7 @@ describe("SearchPanelView", () => {
 				score: 1.0,
 				highlights: [],
 			},
-		];
+		]
 		const props = {
 			...defaultProps,
 			searchState: {
@@ -227,20 +219,20 @@ describe("SearchPanelView", () => {
 				query: "test",
 			},
 			results,
-		};
-		render(<SearchPanelView {...props} />);
+		}
+		render(<SearchPanelView {...props} />)
 
 		// 文本可能被高亮标记分割，使用函数匹配器
 		expect(
 			screen.getByText((_content, element) => {
-				return element?.textContent === "Test Node";
+				return element?.textContent === "Test Node"
 			}),
-		).toBeInTheDocument();
-		expect(screen.getByText("Workspace")).toBeInTheDocument();
-	});
+		).toBeInTheDocument()
+		expect(screen.getByText("Workspace")).toBeInTheDocument()
+	})
 
 	it("should call onSelectResult when result is clicked", () => {
-		const onSelectResult = vi.fn();
+		const onSelectResult = vi.fn()
 		const results: SearchResult[] = [
 			{
 				id: "1",
@@ -252,7 +244,7 @@ describe("SearchPanelView", () => {
 				score: 1.0,
 				highlights: [],
 			},
-		];
+		]
 		const props = {
 			...defaultProps,
 			searchState: {
@@ -261,17 +253,17 @@ describe("SearchPanelView", () => {
 			},
 			results,
 			onSelectResult,
-		};
-		render(<SearchPanelView {...props} />);
+		}
+		render(<SearchPanelView {...props} />)
 
 		// 文本可能被高亮标记分割，使用函数匹配器找到元素
 		const titleElement = screen.getByText((_content, element) => {
-			return element?.textContent === "Test Node";
-		});
-		const resultButton = titleElement.closest("button");
+			return element?.textContent === "Test Node"
+		})
+		const resultButton = titleElement.closest("button")
 		if (resultButton) {
-			fireEvent.click(resultButton);
-			expect(onSelectResult).toHaveBeenCalledWith(results[0]);
+			fireEvent.click(resultButton)
+			expect(onSelectResult).toHaveBeenCalledWith(results[0])
 		}
-	});
-});
+	})
+})

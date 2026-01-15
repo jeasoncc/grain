@@ -6,5 +6,5 @@
 export type {
 	WordCountBadgeProps,
 	WordCountDisplayProps,
-} from "./word-count-badge.types";
-export { WordCountBadge, WordCountDisplay } from "./word-count-badge.view.fn";
+} from "./word-count-badge.types"
+export { WordCountBadge, WordCountDisplay } from "./word-count-badge.view.fn"

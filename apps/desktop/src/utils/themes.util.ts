@@ -2,9 +2,9 @@
  * 完整主题配置系统 - VS Code 风格
  */
 
-import type { Theme, ThemeColors } from "@/types/theme/theme.types";
+import type { Theme, ThemeColors } from "@/types/theme/theme.types"
 
-export type { Theme, ThemeColors };
+export type { Theme, ThemeColors }
 
 export const themes: Theme[] = [
 	// ============ 浅色主题 ============
@@ -2187,7 +2187,7 @@ export const themes: Theme[] = [
 			toastBorder: "#2a2139",
 		},
 	},
-];
+]
 
 // ============================================================================
 // 纯函数：主题查询和过滤
@@ -2200,7 +2200,7 @@ export const themes: Theme[] = [
  * @returns 主题对象，如果未找到则返回 undefined
  */
 export function getThemeByKey(key: string): Theme | undefined {
-	return themes.find((t) => t.key === key);
+	return themes.find((t) => t.key === key)
 }
 
 /**
@@ -2209,7 +2209,7 @@ export function getThemeByKey(key: string): Theme | undefined {
  * @returns 浅色主题数组
  */
 export function getLightThemes(): Theme[] {
-	return themes.filter((t) => t.type === "light");
+	return themes.filter((t) => t.type === "light")
 }
 
 /**
@@ -2218,5 +2218,5 @@ export function getLightThemes(): Theme[] {
  * @returns 深色主题数组
  */
 export function getDarkThemes(): Theme[] {
-	return themes.filter((t) => t.type === "dark");
+	return themes.filter((t) => t.type === "dark")
 }

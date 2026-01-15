@@ -10,12 +10,12 @@ import {
 	FileText,
 	Palette,
 	StickyNote,
-} from "lucide-react";
-import { memo } from "react";
-import type { EditorTab } from "@/types/editor-tab";
-import { cn } from "@/utils/cn.util";
-import { Dialog, DialogContent } from "@/views/ui/dialog";
-import type { BufferSwitcherViewProps } from "./buffer-switcher.types";
+} from "lucide-react"
+import { memo } from "react"
+import type { EditorTab } from "@/types/editor-tab"
+import { cn } from "@/utils/cn.util"
+import { Dialog, DialogContent } from "@/views/ui/dialog"
+import type { BufferSwitcherViewProps } from "./buffer-switcher.types"
 
 /**
  * 获取标签页图标
@@ -23,41 +23,32 @@ import type { BufferSwitcherViewProps } from "./buffer-switcher.types";
 const getTabIcon = (type: EditorTab["type"]) => {
 	switch (type) {
 		case "diary":
-			return <Calendar className="size-4" />;
+			return <Calendar className="size-4" />
 		case "wiki":
-			return <BookOpen className="size-4" />;
+			return <BookOpen className="size-4" />
 		case "todo":
-			return <CheckSquare className="size-4" />;
+			return <CheckSquare className="size-4" />
 		case "note":
-			return <StickyNote className="size-4" />;
+			return <StickyNote className="size-4" />
 		case "ledger":
-			return <DollarSign className="size-4" />;
+			return <DollarSign className="size-4" />
 		case "drawing":
-			return <Palette className="size-4" />;
+			return <Palette className="size-4" />
 		default:
-			return <FileText className="size-4" />;
+			return <FileText className="size-4" />
 	}
-};
+}
 
 /**
  * Buffer Switcher 纯展示组件
  */
 export const BufferSwitcherView = memo(
-	({
-		open,
-		onOpenChange,
-		tabs,
-		selectedIndex,
-		onTabClick,
-	}: BufferSwitcherViewProps) => {
-		if (tabs.length === 0) return null;
+	({ open, onOpenChange, tabs, selectedIndex, onTabClick }: BufferSwitcherViewProps) => {
+		if (tabs.length === 0) return null
 
 		return (
 			<Dialog open={open} onOpenChange={onOpenChange}>
-				<DialogContent
-					className="max-w-md p-2"
-					onPointerDownOutside={(e) => e.preventDefault()}
-				>
+				<DialogContent className="max-w-md p-2" onPointerDownOutside={(e) => e.preventDefault()}>
 					<div className="space-y-1">
 						{tabs.map((tab, index) => (
 							<button
@@ -81,8 +72,8 @@ export const BufferSwitcherView = memo(
 					</p>
 				</DialogContent>
 			</Dialog>
-		);
+		)
 	},
-);
+)
 
-BufferSwitcherView.displayName = "BufferSwitcherView";
+BufferSwitcherView.displayName = "BufferSwitcherView"

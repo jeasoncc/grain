@@ -13,7 +13,7 @@ import {
 	type EditorType,
 	EXTENSION_TO_DIAGRAM_TYPE_MAP,
 	EXTENSION_TO_EDITOR_MAP,
-} from "./editor-extension.const";
+} from "./editor-extension.const"
 
 // ==============================
 // Helper Functions
@@ -32,13 +32,13 @@ import {
  * getFileExtension(".gitignore") // ""
  */
 export const getFileExtension = (filename: string): string => {
-	const lastDotIndex = filename.lastIndexOf(".");
+	const lastDotIndex = filename.lastIndexOf(".")
 	// 如果没有点号，或者点号在开头（如 .gitignore），则没有扩展名
 	if (lastDotIndex <= 0) {
-		return "";
+		return ""
 	}
-	return filename.slice(lastDotIndex).toLowerCase();
-};
+	return filename.slice(lastDotIndex).toLowerCase()
+}
 
 // ==============================
 // Main Functions
@@ -62,16 +62,16 @@ export const getFileExtension = (filename: string): string => {
  * getEditorTypeByFilename("unknown") // "lexical"
  */
 export const getEditorTypeByFilename = (filename: string): EditorType => {
-	const extension = getFileExtension(filename);
+	const extension = getFileExtension(filename)
 
 	// 如果没有扩展名，默认使用 Lexical 编辑器
 	if (!extension) {
-		return "lexical";
+		return "lexical"
 	}
 
 	// 查找映射，未知扩展名默认使用 Lexical 编辑器
-	return EXTENSION_TO_EDITOR_MAP[extension] ?? "lexical";
-};
+	return EXTENSION_TO_EDITOR_MAP[extension] ?? "lexical"
+}
 
 /**
  * 根据文件名获取图表类型
@@ -87,17 +87,15 @@ export const getEditorTypeByFilename = (filename: string): EditorType => {
  * getDiagramTypeByFilename("sequence.plantuml") // "plantuml"
  * getDiagramTypeByFilename("script.js") // null
  */
-export const getDiagramTypeByFilename = (
-	filename: string,
-): DiagramType | null => {
-	const extension = getFileExtension(filename);
+export const getDiagramTypeByFilename = (filename: string): DiagramType | null => {
+	const extension = getFileExtension(filename)
 
 	if (!extension) {
-		return null;
+		return null
 	}
 
-	return EXTENSION_TO_DIAGRAM_TYPE_MAP[extension] ?? null;
-};
+	return EXTENSION_TO_DIAGRAM_TYPE_MAP[extension] ?? null
+}
 
 /**
  * 检查文件是否为 Grain 富文本文件
@@ -106,8 +104,8 @@ export const getDiagramTypeByFilename = (
  * @returns 是否为 .grain 文件
  */
 export const isGrainFile = (filename: string): boolean => {
-	return getFileExtension(filename) === ".grain";
-};
+	return getFileExtension(filename) === ".grain"
+}
 
 /**
  * 检查文件是否为 Excalidraw 绘图文件
@@ -116,8 +114,8 @@ export const isGrainFile = (filename: string): boolean => {
  * @returns 是否为 .excalidraw 文件
  */
 export const isExcalidrawFile = (filename: string): boolean => {
-	return getFileExtension(filename) === ".excalidraw";
-};
+	return getFileExtension(filename) === ".excalidraw"
+}
 
 /**
  * 检查文件是否为图表文件（Mermaid/PlantUML）
@@ -128,8 +126,8 @@ export const isExcalidrawFile = (filename: string): boolean => {
  * @returns 是否为 .mermaid 或 .plantuml 文件
  */
 export const isDiagramFile = (filename: string): boolean => {
-	return getDiagramTypeByFilename(filename) !== null;
-};
+	return getDiagramTypeByFilename(filename) !== null
+}
 
 /**
  * 检查文件是否使用 Lexical 编辑器
@@ -138,5 +136,5 @@ export const isDiagramFile = (filename: string): boolean => {
  * @returns 是否使用 Lexical 编辑器（除 Excalidraw 外的所有文件）
  */
 export const isLexicalFile = (filename: string): boolean => {
-	return getEditorTypeByFilename(filename) === "lexical";
-};
+	return getEditorTypeByFilename(filename) === "lexical"
+}

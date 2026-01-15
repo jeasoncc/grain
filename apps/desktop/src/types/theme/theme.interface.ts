@@ -15,7 +15,7 @@
  * - "dark": Force dark theme
  * - "system": Follow system preference
  */
-export type ThemeMode = "light" | "dark" | "system";
+export type ThemeMode = "light" | "dark" | "system"
 
 // ==============================
 // State Interface
@@ -27,15 +27,15 @@ export type ThemeMode = "light" | "dark" | "system";
  */
 export interface ThemeState {
 	/** Current theme key (e.g., "default-dark", "default-light") */
-	readonly themeKey: string;
+	readonly themeKey: string
 	/** Theme mode: light, dark, or system */
-	readonly mode: ThemeMode;
+	readonly mode: ThemeMode
 	/** Current system theme preference (detected from OS) */
-	readonly systemTheme: "light" | "dark";
+	readonly systemTheme: "light" | "dark"
 	/** Effective theme being applied (resolved from mode and systemTheme) */
-	readonly effectiveTheme: "light" | "dark";
+	readonly effectiveTheme: "light" | "dark"
 	/** Whether to enable transition animations when switching themes */
-	readonly enableTransition: boolean;
+	readonly enableTransition: boolean
 }
 
 // ==============================
@@ -50,35 +50,35 @@ export interface ThemeActions {
 	 * Set the current theme by key.
 	 * Also updates mode to match the theme type.
 	 */
-	readonly setTheme: (key: string) => void;
+	readonly setTheme: (key: string) => void
 
 	/**
 	 * Set the theme mode.
 	 * May trigger theme change if current theme doesn't match mode.
 	 */
-	readonly setMode: (mode: ThemeMode) => void;
+	readonly setMode: (mode: ThemeMode) => void
 
 	/**
 	 * Set the system theme preference (detected from OS).
 	 * Updates effectiveTheme if mode is "system".
 	 */
-	readonly setSystemTheme: (theme: "light" | "dark") => void;
+	readonly setSystemTheme: (theme: "light" | "dark") => void
 
 	/**
 	 * Toggle between light, dark, and system modes.
 	 * Cycles: light → dark → system → light
 	 */
-	readonly toggleMode: () => void;
+	readonly toggleMode: () => void
 
 	/**
 	 * Enable or disable transition animations.
 	 */
-	readonly setEnableTransition: (enable: boolean) => void;
+	readonly setEnableTransition: (enable: boolean) => void
 
 	/**
 	 * Mark theme system as initialized.
 	 */
-	readonly setInitialized: (initialized: boolean) => void;
+	readonly setInitialized: (initialized: boolean) => void
 }
 
 // ==============================
@@ -90,24 +90,24 @@ export interface ThemeActions {
  */
 export interface ThemeConfig {
 	/** Storage key for persistence */
-	readonly storageKey: string;
+	readonly storageKey: string
 	/** Transition duration in milliseconds */
-	readonly transitionDuration: number;
+	readonly transitionDuration: number
 }
 
 export const DEFAULT_THEME_CONFIG: ThemeConfig = {
 	storageKey: "grain-theme",
 	transitionDuration: 300,
-} as const;
+} as const
 
 // ==============================
 // Default Values
 // ==============================
 
 export const DEFAULT_THEME_STATE: ThemeState = {
-	themeKey: "default-dark",
-	mode: "dark",
-	systemTheme: "dark",
 	effectiveTheme: "dark",
 	enableTransition: true,
-} as const;
+	mode: "dark",
+	systemTheme: "dark",
+	themeKey: "default-dark",
+} as const

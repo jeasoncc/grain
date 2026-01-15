@@ -16,4 +16,4 @@ export {
 	type DBVersionInterface,
 	LegacyDatabase,
 	legacyDatabase,
-} from "./legacy-database";
+} from "./legacy-database"

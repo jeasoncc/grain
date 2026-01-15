@@ -12,9 +12,9 @@ import {
 	createSession,
 	getTodayDate,
 	mergeWritingGoal,
-} from "@/pipes/writing";
-import type { useWritingStore } from "@/state/writing.state";
-import type { WritingGoal, WritingSession } from "@/types/writing";
+} from "@/pipes/writing"
+import type { useWritingStore } from "@/state/writing.state"
+import type { WritingGoal, WritingSession } from "@/types/writing"
 
 // ==============================
 // Writing Goal Flow
@@ -28,9 +28,9 @@ export const setWritingGoalFlow = (
 	updates: Partial<WritingGoal>,
 	store: ReturnType<typeof useWritingStore.getState>,
 ): void => {
-	const newGoal = mergeWritingGoal(currentGoal, updates);
-	store.setWritingGoal(newGoal);
-};
+	const newGoal = mergeWritingGoal(currentGoal, updates)
+	store.setWritingGoal(newGoal)
+}
 
 // ==============================
 // Today Word Count Flow
@@ -45,14 +45,14 @@ export const addTodayWordsFlow = (
 	todayWordCount: number,
 	store: ReturnType<typeof useWritingStore.getState>,
 ): void => {
-	const today = getTodayDate();
+	const today = getTodayDate()
 	if (todayDate !== today) {
-		store.setTodayWordCount(count);
-		store.setTodayDate(today);
+		store.setTodayWordCount(count)
+		store.setTodayDate(today)
 	} else {
-		store.setTodayWordCount(todayWordCount + count);
+		store.setTodayWordCount(todayWordCount + count)
 	}
-};
+}
 
 /**
  * Reset today if needed flow
@@ -61,12 +61,12 @@ export const resetTodayIfNeededFlow = (
 	todayDate: string,
 	store: ReturnType<typeof useWritingStore.getState>,
 ): void => {
-	const today = getTodayDate();
+	const today = getTodayDate()
 	if (todayDate !== today) {
-		store.setTodayWordCount(0);
-		store.setTodayDate(today);
+		store.setTodayWordCount(0)
+		store.setTodayDate(today)
 	}
-};
+}
 
 // ==============================
 // Session Flow
@@ -79,9 +79,9 @@ export const startSessionFlow = (
 	wordCount: number,
 	store: ReturnType<typeof useWritingStore.getState>,
 ): void => {
-	const newSession = createSession(wordCount);
-	store.setSession(newSession);
-};
+	const newSession = createSession(wordCount)
+	store.setSession(newSession)
+}
 
 /**
  * Update session word count flow
@@ -93,27 +93,23 @@ export const updateSessionWordCountFlow = (
 	todayDate: string,
 	store: ReturnType<typeof useWritingStore.getState>,
 ): void => {
-	if (!session) return;
-	if (session.currentWordCount === wordCount) return;
+	if (!session) return
+	if (session.currentWordCount === wordCount) return
 
-	const today = getTodayDate();
+	const today = getTodayDate()
 	const { todayWordCount: newTodayWordCount, todayDate: newTodayDate } =
-		calculateTodayWordCountUpdate(
-			{ todayWordCount, todayDate, session },
-			wordCount,
-			today,
-		);
+		calculateTodayWordCountUpdate({ todayWordCount, todayDate, session }, wordCount, today)
 
 	store.setSession({
 		...session,
 		currentWordCount: wordCount,
-	});
-	store.setTodayWordCount(newTodayWordCount);
-	store.setTodayDate(newTodayDate);
-};
+	})
+	store.setTodayWordCount(newTodayWordCount)
+	store.setTodayDate(newTodayDate)
+}
 
 // ==============================
 // Re-export pure functions for convenience
 // ==============================
 
-export { getTodayDate } from "@/pipes/writing";
+export { getTodayDate } from "@/pipes/writing"

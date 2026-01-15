@@ -1,15 +1,12 @@
-"use client";
+"use client"
 
-import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
-import { CheckIcon } from "lucide-react";
-import type * as React from "react";
+import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
+import { CheckIcon } from "lucide-react"
+import type * as React from "react"
 
-import { cn } from "@/utils/cn.util";
+import { cn } from "@/utils/cn.util"
 
-function Checkbox({
-	className,
-	...props
-}: React.ComponentProps<typeof CheckboxPrimitive.Root>) {
+function Checkbox({ className, ...props }: React.ComponentProps<typeof CheckboxPrimitive.Root>) {
 	return (
 		<CheckboxPrimitive.Root
 			data-slot="checkbox"
@@ -26,7 +23,7 @@ function Checkbox({
 				<CheckIcon className="size-3.5" />
 			</CheckboxPrimitive.Indicator>
 		</CheckboxPrimitive.Root>
-	);
+	)
 }
 
-export { Checkbox };
+export { Checkbox }

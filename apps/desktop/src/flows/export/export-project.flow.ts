@@ -6,6 +6,8 @@
  *
  * Requirements: 1.1, 1.2, 4.1
  */
+
+import dayjs from "dayjs"
 import {
 	AlignmentType,
 	Document,
@@ -17,19 +19,18 @@ import {
 	PageNumber,
 	Paragraph,
 	TextRun,
-} from "docx";
-import { orderBy } from "es-toolkit";
-import { saveAs } from "file-saver";
-import * as E from "fp-ts/Either";
-import JSZip from "jszip";
-import dayjs from "dayjs";
-import { getContentsByNodeIds } from "@/io/api";
-import { legacyDatabase } from "@/io/db/legacy-database";
-import type { NodeInterface, WorkspaceInterface } from "@/types";
-import type { ContentInterface } from "@/types/content";
-import type { ExportFormat, ExportOptions } from "@/types/export";
+} from "docx"
+import { orderBy } from "es-toolkit"
+import { saveAs } from "file-saver"
+import * as E from "fp-ts/Either"
+import JSZip from "jszip"
+import { getContentsByNodeIds } from "@/io/api"
+import { legacyDatabase } from "@/io/db/legacy-database"
+import type { NodeInterface, WorkspaceInterface } from "@/types"
+import type { ContentInterface } from "@/types/content"
+import type { ExportFormat, ExportOptions } from "@/types/export"
 
-export type { ExportOptions, ExportFormat };
+export type { ExportOptions, ExportFormat }
 
 const defaultOptions: ExportOptions = {
 	includeTitle: true,
@@ -37,7 +38,7 @@ const defaultOptions: ExportOptions = {
 	includeChapterTitles: true,
 	includeSceneTitles: false,
 	pageBreakBetweenChapters: true,
-};
+}
 
 // ============================================
 // 工具函数
@@ -47,12 +48,12 @@ const defaultOptions: ExportOptions = {
  * 从 Lexical 编辑器 JSON 内容中提取纯文本
  */
 function extractTextFromContent(content: string | null): string {
-	if (!content) return "";
+	if (!content) return ""
 	try {
-		const parsed = JSON.parse(content);
-		return extractTextFromNode(parsed.root);
+		const parsed = JSON.parse(content)
+		return extractTextFromNode(parsed.root)
 	} catch {
-		return content;
+		return content
 	}
 }
 
@@ -60,19 +61,19 @@ function extractTextFromContent(content: string | null): string {
  * 递归从 Lexical 节点树中提取文本
  */
 function extractTextFromNode(node: unknown): string {
-	if (!node) return "";
+	if (!node) return ""
 
-	const n = node as Record<string, unknown>;
+	const n = node as Record<string, unknown>
 
 	if (n.type === "text") {
-		return (n.text as string) || "";
+		return (n.text as string) || ""
 	}
 
 	if (n.children && Array.isArray(n.children)) {
-		return n.children.map(extractTextFromNode).join("");
+		return n.children.map(extractTextFromNode).join("")
 	}
 
-	return "";
+	return ""
 }
 
 /**
@@ -84,7 +85,7 @@ function escapeHtml(text: string): string {
 		.replace(/</g, "&lt;")
 		.replace(/>/g, "&gt;")
 		.replace(/"/g, "&quot;")
-		.replace(/'/g, "&#039;");
+		.replace(/'/g, "&#039;")
 }
 
 /**
@@ -96,26 +97,33 @@ function getNodeContents(
 	contentMap: ReadonlyMap<string, string>,
 	depth: number = 0,
 ): ReadonlyArray<{ readonly node: NodeInterface; readonly depth: number; readonly text: string }> {
-	const currentResult: ReadonlyArray<{ readonly node: NodeInterface; readonly depth: number; readonly text: string }> = (node.type === "file" || node.type === "diary")
-		? [{
-				node,
-				depth,
-				text: extractTextFromContent(contentMap.get(node.id) ?? null),
-		  }]
-		: [];
+	const currentResult: ReadonlyArray<{
+		readonly node: NodeInterface
+		readonly depth: number
+		readonly text: string
+	}> =
+		node.type === "file" || node.type === "diary"
+			? [
+					{
+						node,
+						depth,
+						text: extractTextFromContent(contentMap.get(node.id) ?? null),
+					},
+				]
+			: []
 
 	// 使用 es-toolkit 的 orderBy 进行不可变排序
 	const children = orderBy(
 		allNodes.filter((n) => n.parent === node.id),
 		[(n) => n.order],
-		["asc"]
-	);
+		["asc"],
+	)
 
 	const childResults = children.flatMap((child) =>
-		getNodeContents(child, allNodes, contentMap, depth + 1)
-	);
+		getNodeContents(child, allNodes, contentMap, depth + 1),
+	)
 
-	return [...currentResult, ...childResults];
+	return [...currentResult, ...childResults]
 }
 
 /**
@@ -133,34 +141,39 @@ function generatePrintHtml(
 			<h1 class="book-title">${escapeHtml(project.title || "Untitled Work")}</h1>
 			${opts.includeAuthor && project.author ? `<p class="author">Author: ${escapeHtml(project.author)}</p>` : ""}
 		</div>`
-		: "";
+		: ""
 
-	const chapters = rootNodes.flatMap((rootNode) => {
-		const contents = getNodeContents(rootNode, nodes, contentMap);
+	const chapters = rootNodes
+		.flatMap((rootNode) => {
+			const contents = getNodeContents(rootNode, nodes, contentMap)
 
-		return contents.map(({ node, depth, text }) => {
-			const chapterClass = opts.pageBreakBetweenChapters && depth === 0
-				? '<div class="chapter" style="page-break-before: always;">'
-				: '<div class="chapter">';
+			return contents.map(({ node, depth, text }) => {
+				const chapterClass =
+					opts.pageBreakBetweenChapters && depth === 0
+						? '<div class="chapter" style="page-break-before: always;">'
+						: '<div class="chapter">'
 
-			const title = opts.includeChapterTitles && depth === 0
-				? `<h2 class="chapter-title">${escapeHtml(node.title)}</h2>`
-				: opts.includeSceneTitles && depth > 0
-				? `<h3 class="scene-title">${escapeHtml(node.title)}</h3>`
-				: "";
+				const title =
+					opts.includeChapterTitles && depth === 0
+						? `<h2 class="chapter-title">${escapeHtml(node.title)}</h2>`
+						: opts.includeSceneTitles && depth > 0
+							? `<h3 class="scene-title">${escapeHtml(node.title)}</h3>`
+							: ""
 
-			const paragraphs = text.trim()
-				? text.split("\n")
-					.filter((p) => p.trim())
-					.map((para) => `<p class="paragraph">${escapeHtml(para.trim())}</p>`)
-					.join("")
-				: "";
+				const paragraphs = text.trim()
+					? text
+							.split("\n")
+							.filter((p) => p.trim())
+							.map((para) => `<p class="paragraph">${escapeHtml(para.trim())}</p>`)
+							.join("")
+					: ""
 
-			return `${chapterClass}${title}${paragraphs}</div>`;
-		});
-	}).join("");
+				return `${chapterClass}${title}${paragraphs}</div>`
+			})
+		})
+		.join("")
 
-	const content = titlePage + chapters;
+	const content = titlePage + chapters
 
 	return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -179,7 +192,7 @@ function generatePrintHtml(
 	</style>
 </head>
 <body>${content}</body>
-</html>`;
+</html>`
 }
 
 /**
@@ -191,7 +204,7 @@ function generateEpubChapterHtml(title: string, content: string): string {
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head><meta charset="UTF-8"/><title>${escapeHtml(title)}</title><link rel="stylesheet" href="styles.css"/></head>
 <body>${content}</body>
-</html>`;
+</html>`
 }
 
 // ============================================
@@ -202,90 +215,82 @@ function generateEpubChapterHtml(title: string, content: string): string {
  * 获取项目的完整内容数据（基于 Node 结构）
  */
 async function getProjectContent(projectId: string) {
-	const project = await legacyDatabase.workspaces.get(projectId);
-	if (!project) throw new Error("Project not found");
+	const project = await legacyDatabase.workspaces.get(projectId)
+	if (!project) throw new Error("Project not found")
 
-	const nodes = await legacyDatabase.nodes
-		.where("workspace")
-		.equals(projectId)
-		.toArray();
+	const nodes = await legacyDatabase.nodes.where("workspace").equals(projectId).toArray()
 
-	const nodeIds: readonly string[] = nodes.map((n) => n.id);
-	const contentsResult = await getContentsByNodeIds(nodeIds)();
+	const nodeIds: readonly string[] = nodes.map((n) => n.id)
+	const contentsResult = await getContentsByNodeIds(nodeIds)()
 	const contents: readonly ContentInterface[] = E.isRight(contentsResult)
 		? contentsResult.right
-		: [];
-	const contentMap = new Map(contents.map((c) => [c.nodeId, c.content]));
+		: []
+	const contentMap = new Map(contents.map((c) => [c.nodeId, c.content]))
 
 	// 使用 es-toolkit 的 orderBy 进行不可变排序
-	const sortedNodes = orderBy(nodes, [(n) => n.order], ["asc"]);
+	const sortedNodes = orderBy(nodes, [(n) => n.order], ["asc"])
 
-	const rootNodes = sortedNodes.filter((n) => !n.parent);
+	const rootNodes = sortedNodes.filter((n) => !n.parent)
 
-	return { project, nodes: sortedNodes, rootNodes, contentMap };
+	return { project, nodes: sortedNodes, rootNodes, contentMap }
 }
 
 // ============================================
 // TXT 导出
 // ============================================
 
-export async function exportToTxt(
-	projectId: string,
-	options: ExportOptions = {},
-): Promise<void> {
-	const opts = { ...defaultOptions, ...options };
-	const { project, nodes, rootNodes, contentMap } =
-		await getProjectContent(projectId);
+export async function exportToTxt(projectId: string, options: ExportOptions = {}): Promise<void> {
+	const opts = { ...defaultOptions, ...options }
+	const { project, nodes, rootNodes, contentMap } = await getProjectContent(projectId)
 
 	const headerLines = [
 		...(opts.includeTitle ? [project.title || "Untitled Work", ""] : []),
 		...(opts.includeAuthor && project.author ? [`作者：${project.author}`, ""] : []),
 		...(opts.includeTitle || opts.includeAuthor ? ["═".repeat(40), ""] : []),
-	];
+	]
 
 	const contentLines = rootNodes.flatMap((rootNode) => {
-		const contents = getNodeContents(rootNode, nodes, contentMap);
+		const contents = getNodeContents(rootNode, nodes, contentMap)
 
 		const chapterLines = contents.flatMap(({ node, depth, text }) => {
-			const title = opts.includeChapterTitles && depth === 0
-				? ["", `【${node.title}】`, ""]
-				: opts.includeSceneTitles && depth > 0
-				? [`〔${node.title}〕`, ""]
-				: [];
+			const title =
+				opts.includeChapterTitles && depth === 0
+					? ["", `【${node.title}】`, ""]
+					: opts.includeSceneTitles && depth > 0
+						? [`〔${node.title}〕`, ""]
+						: []
 
 			const paragraphs = text.trim()
-				? [...text.split("\n")
-					.filter((p) => p.trim())
-					.map((para) => `  ${para.trim()}`), ""]
-				: [];
+				? [
+						...text
+							.split("\n")
+							.filter((p) => p.trim())
+							.map((para) => `  ${para.trim()}`),
+						"",
+					]
+				: []
 
-			return [...title, ...paragraphs];
-		});
+			return [...title, ...paragraphs]
+		})
 
-		const separator = opts.pageBreakBetweenChapters
-			? ["", "─".repeat(40)]
-			: [];
+		const separator = opts.pageBreakBetweenChapters ? ["", "─".repeat(40)] : []
 
-		return [...chapterLines, ...separator];
-	});
+		return [...chapterLines, ...separator]
+	})
 
-	const lines = [...headerLines, ...contentLines];
-	const content = lines.join("\n");
-	const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-	saveAs(blob, `${project.title || "novel"}.txt`);
+	const lines = [...headerLines, ...contentLines]
+	const content = lines.join("\n")
+	const blob = new Blob([content], { type: "text/plain;charset=utf-8" })
+	saveAs(blob, `${project.title || "novel"}.txt`)
 }
 
 // ============================================
 // Word (DOCX) 导出
 // ============================================
 
-export async function exportToWord(
-	projectId: string,
-	options: ExportOptions = {},
-): Promise<void> {
-	const opts = { ...defaultOptions, ...options };
-	const { project, nodes, rootNodes, contentMap } =
-		await getProjectContent(projectId);
+export async function exportToWord(projectId: string, options: ExportOptions = {}): Promise<void> {
+	const opts = { ...defaultOptions, ...options }
+	const { project, nodes, rootNodes, contentMap } = await getProjectContent(projectId)
 
 	const headerParagraphs: readonly Paragraph[] = [
 		...(opts.includeTitle
@@ -296,7 +301,7 @@ export async function exportToWord(
 						alignment: AlignmentType.CENTER,
 						spacing: { after: 400 },
 					}),
-			  ]
+				]
 			: []),
 		...(opts.includeAuthor && project.author
 			? [
@@ -305,18 +310,18 @@ export async function exportToWord(
 						alignment: AlignmentType.CENTER,
 						spacing: { after: 800 },
 					}),
-			  ]
+				]
 			: []),
-	];
+	]
 
 	const contentParagraphs = rootNodes.flatMap((rootNode, rootIndex) => {
-		const contents = getNodeContents(rootNode, nodes, contentMap);
+		const contents = getNodeContents(rootNode, nodes, contentMap)
 
 		return contents.flatMap(({ node, depth, text }) => {
 			const pageBreak =
 				opts.pageBreakBetweenChapters && depth === 0 && rootIndex > 0
 					? [new Paragraph({ children: [new PageBreak()] })]
-					: [];
+					: []
 
 			const title =
 				opts.includeChapterTitles && depth === 0
@@ -326,16 +331,16 @@ export async function exportToWord(
 								heading: HeadingLevel.HEADING_1,
 								spacing: { before: 400, after: 200 },
 							}),
-					  ]
+						]
 					: opts.includeSceneTitles && depth > 0
-					? [
-							new Paragraph({
-								text: node.title,
-								heading: HeadingLevel.HEADING_2,
-								spacing: { before: 200, after: 100 },
-							}),
-					  ]
-					: [];
+						? [
+								new Paragraph({
+									text: node.title,
+									heading: HeadingLevel.HEADING_2,
+									spacing: { before: 200, after: 100 },
+								}),
+							]
+						: []
 
 			const paragraphs = text.trim()
 				? text
@@ -354,13 +359,13 @@ export async function exportToWord(
 									spacing: { line: 360, after: 120 },
 								}),
 						)
-				: [];
+				: []
 
-			return [...pageBreak, ...title, ...paragraphs];
-		});
-	});
+			return [...pageBreak, ...title, ...paragraphs]
+		})
+	})
 
-	const children: readonly Paragraph[] = [...headerParagraphs, ...contentParagraphs];
+	const children: readonly Paragraph[] = [...headerParagraphs, ...contentParagraphs]
 
 	const doc = new Document({
 		sections: [
@@ -409,10 +414,10 @@ export async function exportToWord(
 				children,
 			},
 		],
-	});
+	})
 
-	const blob = await Packer.toBlob(doc);
-	saveAs(blob, `${project.title || "novel"}.docx`);
+	const blob = await Packer.toBlob(doc)
+	saveAs(blob, `${project.title || "novel"}.docx`)
 }
 
 // ============================================
@@ -423,55 +428,45 @@ export async function exportToWord(
  * 在新窗口中打印 HTML 内容（副作用操作）
  */
 function printHtmlInNewWindow(html: string): void {
-	const printWindow = window.open("", "_blank");
+	const printWindow = window.open("", "_blank")
 	if (!printWindow) {
-		throw new Error(
-			"Unable to open print window, please check browser popup settings",
-		);
+		throw new Error("Unable to open print window, please check browser popup settings")
 	}
 
 	// 必要的 DOM 操作（打印功能的副作用）
-	printWindow.document.write(html);
-	printWindow.document.close();
+	printWindow.document.write(html)
+	printWindow.document.close()
 
 	// 使用 addEventListener 而不是直接赋值属性
 	printWindow.addEventListener("load", () => {
 		setTimeout(() => {
-			printWindow.print();
-		}, 500);
-	});
+			printWindow.print()
+		}, 500)
+	})
 }
 
-export async function exportToPdf(
-	projectId: string,
-	options: ExportOptions = {},
-): Promise<void> {
-	const opts = { ...defaultOptions, ...options };
-	const { project, nodes, rootNodes, contentMap } =
-		await getProjectContent(projectId);
+export async function exportToPdf(projectId: string, options: ExportOptions = {}): Promise<void> {
+	const opts = { ...defaultOptions, ...options }
+	const { project, nodes, rootNodes, contentMap } = await getProjectContent(projectId)
 
-	const html = generatePrintHtml(project, nodes, rootNodes, contentMap, opts);
-	printHtmlInNewWindow(html);
+	const html = generatePrintHtml(project, nodes, rootNodes, contentMap, opts)
+	printHtmlInNewWindow(html)
 }
 
 // ============================================
 // EPUB 导出
 // ============================================
 
-export async function exportToEpub(
-	projectId: string,
-	options: ExportOptions = {},
-): Promise<void> {
-	const opts = { ...defaultOptions, ...options };
-	const { project, nodes, rootNodes, contentMap } =
-		await getProjectContent(projectId);
+export async function exportToEpub(projectId: string, options: ExportOptions = {}): Promise<void> {
+	const opts = { ...defaultOptions, ...options }
+	const { project, nodes, rootNodes, contentMap } = await getProjectContent(projectId)
 
-	const zip = new JSZip();
-	const bookId = `grain-${dayjs().valueOf()}`;
-	const title = project.title || "Untitled Work";
-	const author = project.author || "Unknown Author";
+	const zip = new JSZip()
+	const bookId = `grain-${dayjs().valueOf()}`
+	const title = project.title || "Untitled Work"
+	const author = project.author || "Unknown Author"
 
-	zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
+	zip.file("mimetype", "application/epub+zip", { compression: "STORE" })
 
 	zip.file(
 		"META-INF/container.xml",
@@ -481,66 +476,66 @@ export async function exportToEpub(
     <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
   </rootfiles>
 </container>`,
-	);
+	)
 
-	const titleChapter: ReadonlyArray<{ readonly id: string; readonly title: string; readonly filename: string }> = opts.includeTitle
+	const titleChapter: ReadonlyArray<{
+		readonly id: string
+		readonly title: string
+		readonly filename: string
+	}> = opts.includeTitle
 		? (() => {
 				const titleHtml = generateEpubChapterHtml(
 					title,
 					`<div class="title-page"><h1>${escapeHtml(title)}</h1>${opts.includeAuthor ? `<p class="author">${escapeHtml(author)}</p>` : ""}</div>`,
-				);
-				zip.file("OEBPS/title.xhtml", titleHtml);
-				return [{ id: "title", title: "Cover", filename: "title.xhtml" }];
-		  })()
-		: [];
+				)
+				zip.file("OEBPS/title.xhtml", titleHtml)
+				return [{ id: "title", title: "Cover", filename: "title.xhtml" }]
+			})()
+		: []
 
-	let chapterIndex = 0;
+	let chapterIndex = 0
 	const contentChapters = rootNodes.flatMap((rootNode) => {
-		const contents = getNodeContents(rootNode, nodes, contentMap);
+		const contents = getNodeContents(rootNode, nodes, contentMap)
 
 		return contents.flatMap(({ node, depth, text }) => {
-			if (depth > 0 && !opts.includeSceneTitles) return [];
+			if (depth > 0 && !opts.includeSceneTitles) return []
 
-			chapterIndex++;
-			const chapterId = `chapter-${chapterIndex}`;
-			const filename = `${chapterId}.xhtml`;
+			chapterIndex++
+			const chapterId = `chapter-${chapterIndex}`
+			const filename = `${chapterId}.xhtml`
 
 			const titleHtml = opts.includeChapterTitles
 				? `<h2 class="chapter-title">${escapeHtml(node.title)}</h2>`
-				: "";
+				: ""
 
 			const paragraphsHtml = text.trim()
-				? text.split("\n")
-					.filter((p) => p.trim())
-					.map((para) => `<p>${escapeHtml(para.trim())}</p>`)
-					.join("")
-				: "";
+				? text
+						.split("\n")
+						.filter((p) => p.trim())
+						.map((para) => `<p>${escapeHtml(para.trim())}</p>`)
+						.join("")
+				: ""
 
-			const htmlContent = titleHtml + paragraphsHtml;
+			const htmlContent = titleHtml + paragraphsHtml
 
-			const chapterHtml = generateEpubChapterHtml(node.title, htmlContent);
-			zip.file(`OEBPS/${filename}`, chapterHtml);
-			
-			return [{ id: chapterId, title: node.title, filename }];
-		});
-	});
+			const chapterHtml = generateEpubChapterHtml(node.title, htmlContent)
+			zip.file(`OEBPS/${filename}`, chapterHtml)
 
-	const chapters = [...titleChapter, ...contentChapters];
+			return [{ id: chapterId, title: node.title, filename }]
+		})
+	})
+
+	const chapters = [...titleChapter, ...contentChapters]
 
 	zip.file(
 		"OEBPS/styles.css",
 		`body { font-family: serif; line-height: 1.8; } .title-page { text-align: center; padding-top: 30%; } .chapter-title { text-align: center; margin: 2em 0; } p { text-indent: 2em; }`,
-	);
+	)
 
 	const manifestItems = chapters
-		.map(
-			(ch) =>
-				`<item id="${ch.id}" href="${ch.filename}" media-type="application/xhtml+xml"/>`,
-		)
-		.join("\n");
-	const spineItems = chapters
-		.map((ch) => `<itemref idref="${ch.id}"/>`)
-		.join("\n");
+		.map((ch) => `<item id="${ch.id}" href="${ch.filename}" media-type="application/xhtml+xml"/>`)
+		.join("\n")
+	const spineItems = chapters.map((ch) => `<itemref idref="${ch.id}"/>`).join("\n")
 
 	zip.file(
 		"OEBPS/content.opf",
@@ -558,13 +553,13 @@ export async function exportToEpub(
   </manifest>
   <spine>${spineItems}</spine>
 </package>`,
-	);
+	)
 
 	const blob = await zip.generateAsync({
 		type: "blob",
 		mimeType: "application/epub+zip",
-	});
-	saveAs(blob, `${title}.epub`);
+	})
+	saveAs(blob, `${title}.epub`)
 }
 
 // ============================================
@@ -585,14 +580,14 @@ export async function exportProject(
 ): Promise<void> {
 	switch (format) {
 		case "pdf":
-			return exportToPdf(projectId, options);
+			return exportToPdf(projectId, options)
 		case "docx":
-			return exportToWord(projectId, options);
+			return exportToWord(projectId, options)
 		case "txt":
-			return exportToTxt(projectId, options);
+			return exportToTxt(projectId, options)
 		case "epub":
-			return exportToEpub(projectId, options);
+			return exportToEpub(projectId, options)
 		default:
-			throw new Error(`不支持的导出格式: ${format}`);
+			throw new Error(`不支持的导出格式: ${format}`)
 	}
 }
