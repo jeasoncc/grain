@@ -28,7 +28,12 @@
  */
 function createDownloadLink(config: { readonly download: string; readonly href: string }): HTMLAnchorElement {
 	const linkElement = document.createElement("a")
-	return Object.assign(linkElement, config)
+	
+	// 使用 setAttribute 来设置属性，避免直接属性赋值
+	linkElement.setAttribute("download", config.download)
+	linkElement.setAttribute("href", config.href)
+	
+	return linkElement
 }
 
 /**

@@ -16,9 +16,9 @@ import { Switch } from "@/views/ui/switch"
 
 // Org-mode settings (simplified)
 interface OrgmodeSettings {
-	orgRoamPath: string | null
-	diarySubdir: string
-	enabled: boolean
+	readonly orgRoamPath: string | null
+	readonly diarySubdir: string
+	readonly enabled: boolean
 }
 
 const ORGMODE_SETTINGS_KEY = "orgmode-settings"

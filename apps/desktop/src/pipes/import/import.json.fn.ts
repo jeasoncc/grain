@@ -120,8 +120,8 @@ export function validateBundle(
 
 	// 构建完整的数据包
 	const bundle: ExportBundle = {
-		attachments: (data.attachments ?? []) as AttachmentData[],
-		contents: (data.contents ?? []) as ContentData[],
+		attachments: (data.attachments ?? []) as readonly AttachmentData[],
+		contents: (data.contents ?? []) as readonly ContentData[],
 		nodes: data.nodes ?? [],
 		projects: data.projects ?? [],
 		version: data.version ?? 1,

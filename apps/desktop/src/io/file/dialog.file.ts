@@ -225,7 +225,16 @@ function createFileInput(config: {
 	readonly accept?: string
 }): HTMLInputElement {
 	const input = document.createElement("input")
-	return Object.assign(input, config)
+	
+	// 使用 setAttribute 来设置属性，避免直接属性赋值
+	input.setAttribute("type", config.type)
+	input.setAttribute("multiple", config.multiple.toString())
+	
+	if (config.accept) {
+		input.setAttribute("accept", config.accept)
+	}
+	
+	return input
 }
 
 /**

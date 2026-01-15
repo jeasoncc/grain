@@ -10,6 +10,7 @@
  * 这些函数处理数据转换，不直接访问数据库。
  */
 
+import { orderBy } from "es-toolkit"
 import * as E from "fp-ts/Either"
 import { extractText } from "@/pipes/content/content.extract.fn"
 import type { AttachmentData, ContentData } from "@/pipes/import/import.json.fn"
@@ -97,7 +98,7 @@ export function exportWorkspaceToMarkdown(
 	nodes: readonly NodeInterface[],
 	contentMap: ReadonlyMap<string, string>,
 ): string {
-	const sortedNodes = [...nodes].sort((a, b) => a.order - b.order)
+	const sortedNodes = orderBy(nodes, [(node) => node.order], ["asc"])
 
 	// 添加标题
 	const titleLines = [

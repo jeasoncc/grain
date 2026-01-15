@@ -198,9 +198,9 @@ function DesignSettings() {
 }
 
 interface ThemeCardProps {
-	theme: Theme
-	isActive: boolean
-	onSelect: () => void
+	readonly theme: Theme
+	readonly isActive: boolean
+	readonly onSelect: () => void
 }
 
 // Theme Card Component

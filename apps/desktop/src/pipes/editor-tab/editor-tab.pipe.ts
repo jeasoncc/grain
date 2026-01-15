@@ -8,6 +8,7 @@
  * - 不修改输入参数
  */
 
+import { orderBy } from "es-toolkit"
 import type { EditorInstanceState, EditorTab } from "@/types/editor-tab"
 
 // ==============================
@@ -122,8 +123,10 @@ export const evictLRUEditorStates = (
 		return states
 	}
 
-	const sortedEntries = [...entries].sort(
-		([, a], [, b]) => (a.lastModified ?? 0) - (b.lastModified ?? 0),
+	const sortedEntries = orderBy(
+		entries,
+		[([, state]) => state.lastModified ?? 0],
+		["asc"]
 	)
 
 	const toEvictCount = entries.length - maxStates

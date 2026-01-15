@@ -10,6 +10,7 @@
  * 这些函数无副作用，可组合，可测试。
  */
 
+import { orderBy } from "es-toolkit"
 import * as E from "fp-ts/Either"
 import { pipe } from "fp-ts/function"
 import {
@@ -259,7 +260,7 @@ export function parseInlineContent(
 	}
 
 	// 按位置排序
-	segments = [...segments].sort((a, b) => a.start - b.start)
+	segments = orderBy(segments, [(segment) => segment.start], ["asc"])
 
 	// 构建最终节点数组
 	lastIndex = 0
