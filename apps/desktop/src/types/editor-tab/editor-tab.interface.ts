@@ -4,6 +4,7 @@
  * 所有接口和类型定义放在这个文件中
  */
 
+import type { SerializedEditorState } from "lexical"
 import type { EditorInstanceState as BaseEditorInstanceState } from "@grain/editor-lexical"
 import type { NodeType } from "@/types/node"
 
@@ -94,3 +95,38 @@ export const DEFAULT_CONFIG: EditorTabsConfig = {
 	maxEditorStates: 10,
 	persistTabs: false,
 } as const
+
+// ==============================
+// Builder Interfaces
+// ==============================
+
+/**
+ * EditorTab Builder 接口
+ * 用于构建 EditorTab 对象的链式调用接口
+ */
+export interface EditorTabBuilderInterface {
+	readonly workspaceId: (id: string) => EditorTabBuilderInterface
+	readonly nodeId: (id: string) => EditorTabBuilderInterface
+	readonly title: (title: string) => EditorTabBuilderInterface
+	readonly type: (type: TabType) => EditorTabBuilderInterface
+	readonly dirty: (isDirty?: boolean) => EditorTabBuilderInterface
+	readonly from: (tab: Partial<EditorTab>) => EditorTabBuilderInterface
+	readonly build: () => EditorTab
+}
+
+/**
+ * EditorInstanceState Builder 接口
+ * 用于构建 EditorInstanceState 对象的链式调用接口
+ */
+export interface EditorStateBuilderInterface {
+	readonly serializedState: (state: SerializedEditorState | undefined) => EditorStateBuilderInterface
+	readonly selection: (
+		anchor: { readonly key: string; readonly offset: number },
+		focus: { readonly key: string; readonly offset: number },
+	) => EditorStateBuilderInterface
+	readonly scrollPosition: (top: number, left?: number) => EditorStateBuilderInterface
+	readonly dirty: (isDirty?: boolean) => EditorStateBuilderInterface
+	readonly from: (state: Partial<EditorInstanceState>) => EditorStateBuilderInterface
+	readonly touch: () => EditorStateBuilderInterface
+	readonly build: () => EditorInstanceState
+}

@@ -10,6 +10,8 @@ import type {
 	EditorInstanceState,
 	EditorSelectionState,
 	EditorTab,
+	EditorTabBuilderInterface,
+	EditorStateBuilderInterface,
 	TabType,
 } from "./editor-tab.interface"
 
@@ -53,19 +55,9 @@ const createInitialTabBuilderState = (): EditorTabBuilderState => ({
 // EditorTab Builder Functions
 // ==============================
 
-export interface EditorTabBuilder {
-	readonly workspaceId: (id: string) => EditorTabBuilder
-	readonly nodeId: (id: string) => EditorTabBuilder
-	readonly title: (title: string) => EditorTabBuilder
-	readonly type: (type: TabType) => EditorTabBuilder
-	readonly dirty: (isDirty?: boolean) => EditorTabBuilder
-	readonly from: (tab: Partial<EditorTab>) => EditorTabBuilder
-	readonly build: () => EditorTab
-}
-
-const createEditorTabBuilder = (
+const createTabBuilder = (
 	state: EditorTabBuilderState = createInitialTabBuilderState(),
-): EditorTabBuilder => ({
+): EditorTabBuilderInterface => ({
 	build: (): EditorTab => {
 		if (!state.workspaceId) {
 			throw new Error("EditorTab requires workspaceId")
@@ -86,9 +78,9 @@ const createEditorTabBuilder = (
 			workspaceId: state.workspaceId,
 		})
 	},
-	dirty: (isDirty: boolean = true) => createEditorTabBuilder({ ...state, isDirty }),
+	dirty: (isDirty: boolean = true) => createTabBuilder({ ...state, isDirty }),
 	from: (tab: Partial<EditorTab>) =>
-		createEditorTabBuilder({
+		createTabBuilder({
 			...state,
 			...(tab.workspaceId && { workspaceId: tab.workspaceId }),
 			...(tab.nodeId && { nodeId: tab.nodeId }),
@@ -96,14 +88,14 @@ const createEditorTabBuilder = (
 			...(tab.type && { type: tab.type }),
 			...(tab.isDirty !== undefined && { isDirty: tab.isDirty }),
 		}),
-	nodeId: (id: string) => createEditorTabBuilder({ ...state, nodeId: id }),
-	title: (title: string) => createEditorTabBuilder({ ...state, title }),
-	type: (type: TabType) => createEditorTabBuilder({ ...state, type }),
-	workspaceId: (id: string) => createEditorTabBuilder({ ...state, workspaceId: id }),
+	nodeId: (id: string) => createTabBuilder({ ...state, nodeId: id }),
+	title: (title: string) => createTabBuilder({ ...state, title }),
+	type: (type: TabType) => createTabBuilder({ ...state, type }),
+	workspaceId: (id: string) => createTabBuilder({ ...state, workspaceId: id }),
 })
 
-export const EditorTabBuilderFactory = {
-	create: () => createEditorTabBuilder(),
+export const EditorTabBuilder = {
+	create: () => createTabBuilder(),
 }
 
 // ==============================
@@ -132,22 +124,9 @@ const createInitialEditorStateBuilderState = (): EditorStateBuilderState => ({
 // EditorInstanceState Builder Functions
 // ==============================
 
-export interface EditorStateBuilder {
-	readonly serializedState: (state: SerializedEditorState | undefined) => EditorStateBuilder
-	readonly selection: (
-		anchor: { readonly key: string; readonly offset: number },
-		focus: { readonly key: string; readonly offset: number },
-	) => EditorStateBuilder
-	readonly scrollPosition: (top: number, left?: number) => EditorStateBuilder
-	readonly dirty: (isDirty?: boolean) => EditorStateBuilder
-	readonly from: (state: Partial<EditorInstanceState>) => EditorStateBuilder
-	readonly touch: () => EditorStateBuilder
-	readonly build: () => EditorInstanceState
-}
-
-const createEditorStateBuilder = (
+const createEditorState = (
 	state: EditorStateBuilderState = createInitialEditorStateBuilderState(),
-): EditorStateBuilder => ({
+): EditorStateBuilderInterface => ({
 	build: (): EditorInstanceState =>
 		Object.freeze({
 			isDirty: state.isDirty,
@@ -157,9 +136,9 @@ const createEditorStateBuilder = (
 			selectionState: state.selectionState,
 			serializedState: state.serializedState,
 		}),
-	dirty: (isDirty: boolean = true) => createEditorStateBuilder({ ...state, isDirty }),
+	dirty: (isDirty: boolean = true) => createEditorState({ ...state, isDirty }),
 	from: (partialState: Partial<EditorInstanceState>) =>
-		createEditorStateBuilder({
+		createEditorState({
 			...state,
 			...(partialState.serializedState !== undefined && {
 				serializedState: partialState.serializedState,
@@ -171,21 +150,21 @@ const createEditorStateBuilder = (
 			...(partialState.lastModified !== undefined && { lastModified: partialState.lastModified }),
 		}),
 	scrollPosition: (top: number, left: number = 0) =>
-		createEditorStateBuilder({ ...state, scrollLeft: left, scrollTop: top }),
+		createEditorState({ ...state, scrollLeft: left, scrollTop: top }),
 	selection: (
 		anchor: { readonly key: string; readonly offset: number },
 		focus: { readonly key: string; readonly offset: number },
-	) => createEditorStateBuilder({ ...state, selectionState: { anchor, focus } }),
+	) => createEditorState({ ...state, selectionState: { anchor, focus } }),
 	serializedState: (serializedState: SerializedEditorState | undefined) =>
-		createEditorStateBuilder({ ...state, serializedState }),
-	touch: () => createEditorStateBuilder({ ...state, lastModified: dayjs().valueOf() }),
+		createEditorState({ ...state, serializedState }),
+	touch: () => createEditorState({ ...state, lastModified: dayjs().valueOf() }),
 })
 
-export const EditorStateBuilderFactory = {
-	create: () => createEditorStateBuilder(),
+export const EditorStateBuilder = {
+	create: () => createEditorState(),
 	fromDefault: () => {
 		const defaultState = createDefaultEditorState()
-		return createEditorStateBuilder().from(defaultState)
+		return createEditorState().from(defaultState)
 	},
 }
 
@@ -197,7 +176,7 @@ export const EditorStateBuilderFactory = {
  * 快速创建文件标签
  */
 export const createFileTab = (workspaceId: string, nodeId: string, title: string): EditorTab =>
-	EditorTabBuilderFactory.create()
+	EditorTabBuilder.create()
 		.workspaceId(workspaceId)
 		.nodeId(nodeId)
 		.title(title)
@@ -208,7 +187,7 @@ export const createFileTab = (workspaceId: string, nodeId: string, title: string
  * 快速创建日记标签
  */
 export const createDiaryTab = (workspaceId: string, nodeId: string, title: string): EditorTab =>
-	EditorTabBuilderFactory.create()
+	EditorTabBuilder.create()
 		.workspaceId(workspaceId)
 		.nodeId(nodeId)
 		.title(title)
@@ -219,7 +198,7 @@ export const createDiaryTab = (workspaceId: string, nodeId: string, title: strin
  * 快速创建画布标签
  */
 export const createCanvasTab = (workspaceId: string, nodeId: string, title: string): EditorTab =>
-	EditorTabBuilderFactory.create()
+	EditorTabBuilder.create()
 		.workspaceId(workspaceId)
 		.nodeId(nodeId)
 		.title(title)

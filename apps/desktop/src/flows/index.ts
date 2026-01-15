@@ -205,11 +205,15 @@ export * as migrationFlow from "./migration"
 // ==============================
 
 export {
-	SearchEngine,
+	buildSearchIndex,
+	search,
+	simpleSearch,
+	clearSearchIndex,
+	searchEngine,
+	type SearchEngineState,
 	type SearchOptions,
 	type SearchResult,
 	type SearchResultType,
-	searchEngine,
 } from "./search"
 
 // ==============================

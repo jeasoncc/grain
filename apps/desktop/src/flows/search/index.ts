@@ -9,9 +9,13 @@
 
 // 搜索引擎 Flow
 export {
-	SearchEngine,
+	buildSearchIndex,
+	search,
+	simpleSearch,
+	clearSearchIndex,
+	searchEngine,
+	type SearchEngineState,
 	type SearchOptions,
 	type SearchResult,
 	type SearchResultType,
-	searchEngine,
 } from "./search-engine.flow"
