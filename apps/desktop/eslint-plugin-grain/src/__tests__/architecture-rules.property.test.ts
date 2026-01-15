@@ -35,14 +35,14 @@ function runLintWithFilename(
 	linter.defineRules(ruleDefinitions)
 
 	const config = {
-		rules,
 		parserOptions: {
-			ecmaVersion: 2022,
-			sourceType: "module" as const,
 			ecmaFeatures: {
 				jsx: true,
 			},
+			ecmaVersion: 2022,
+			sourceType: "module" as const,
 		},
+		rules,
 	}
 
 	return linter.verify(code, config, { filename })
@@ -75,31 +75,31 @@ describe("Property 3: Architecture Layer Dependency Validation", () => {
 
 	// Allowed dependencies for each layer (strict mode)
 	const allowedDependencies: Record<Layer, Layer[]> = {
-		views: ["hooks", "types"],
-		hooks: ["flows", "state", "queries", "types"],
 		flows: ["pipes", "io", "state", "types"],
-		pipes: ["utils", "types"],
+		hooks: ["flows", "state", "queries", "types"],
 		io: ["types"],
-		state: ["types"],
-		utils: ["types"],
-		types: [],
+		pipes: ["utils", "types"],
 		queries: ["io", "types"],
 		routes: ["views", "hooks", "types"],
+		state: ["types"],
+		types: [],
+		utils: ["types"],
+		views: ["hooks", "types"],
 	}
 
 	// Generate a filename for a given layer
 	const generateFilename = (layer: Layer): string => {
 		const filenames: Record<Layer, string> = {
-			views: "/project/src/views/sidebar/sidebar.view.fn.tsx",
-			hooks: "/project/src/hooks/use-workspace.ts",
 			flows: "/project/src/flows/node/create-node.flow.ts",
-			pipes: "/project/src/pipes/node/transform.pipe.ts",
+			hooks: "/project/src/hooks/use-workspace.ts",
 			io: "/project/src/io/api/node.api.ts",
-			state: "/project/src/state/selection.state.ts",
-			utils: "/project/src/utils/date.util.ts",
-			types: "/project/src/types/node.interface.ts",
+			pipes: "/project/src/pipes/node/transform.pipe.ts",
 			queries: "/project/src/queries/node.queries.ts",
 			routes: "/project/src/routes/index.tsx",
+			state: "/project/src/state/selection.state.ts",
+			types: "/project/src/types/node.interface.ts",
+			utils: "/project/src/utils/date.util.ts",
+			views: "/project/src/views/sidebar/sidebar.view.fn.tsx",
 		}
 		return filenames[layer]
 	}

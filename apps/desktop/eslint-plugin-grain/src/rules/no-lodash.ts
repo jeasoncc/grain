@@ -16,41 +16,50 @@ import { BANNED_LIBRARIES } from "../types/config.types.js"
 const DEPRECATED_MODULES = BANNED_LIBRARIES
 
 export default createRule({
-	name: "no-lodash",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "Prohibit lodash imports and suggest es-toolkit alternatives",
-		},
-		fixable: undefined,
-		schema: [],
-		messages: {
-			noLodash: [
-				"❌ 禁止使用 lodash！请使用 es-toolkit 替代。",
-				"",
-				"✅ 正确做法：",
-				'  import { {{functionName}} } from "es-toolkit";',
-				"",
-				"🔄 常用函数对照：",
-				"  lodash.debounce → es-toolkit/debounce",
-				"  lodash.throttle → es-toolkit/throttle",
-				"  lodash.cloneDeep → es-toolkit/cloneDeep",
-				"  lodash.merge → es-toolkit/merge",
-				"  lodash.pick → es-toolkit/pick",
-				"  lodash.omit → es-toolkit/omit",
-				"",
-				"📚 es-toolkit 文档: https://es-toolkit.slash.page/",
-			].join("\n"),
-			noDeprecatedModule: [
-				'❌ 禁止使用已废弃的模块 "{{moduleName}}"！请使用 {{alternative}} 替代。',
-				"",
-				"✅ 推荐替代方案：{{alternative}}",
-			].join("\n"),
-		},
-	},
-	defaultOptions: [],
 	create(context) {
 		return {
+			// Also check for require() calls
+			CallExpression(node: TSESTree.CallExpression) {
+				if (
+					node.callee.type === "Identifier" &&
+					node.callee.name === "require" &&
+					node.arguments.length > 0 &&
+					node.arguments[0].type === "Literal" &&
+					typeof node.arguments[0].value === "string"
+				) {
+					const source = node.arguments[0].value
+
+					// Check for lodash requires
+					if (source === "lodash" || source.startsWith("lodash/")) {
+						let functionName = "function"
+
+						if (source.startsWith("lodash/")) {
+							functionName = source.replace("lodash/", "")
+						}
+
+						context.report({
+							data: {
+								functionName,
+							},
+							messageId: "noLodash",
+							node,
+						})
+						return
+					}
+
+					// Check for other deprecated modules
+					if (source in DEPRECATED_MODULES) {
+						context.report({
+							data: {
+								alternative: DEPRECATED_MODULES[source],
+								moduleName: source,
+							},
+							messageId: "noDeprecatedModule",
+							node,
+						})
+					}
+				}
+			},
 			ImportDeclaration(node: TSESTree.ImportDeclaration) {
 				const source = node.source.value
 
@@ -79,11 +88,11 @@ export default createRule({
 					}
 
 					context.report({
-						node,
-						messageId: "noLodash",
 						data: {
 							functionName,
 						},
+						messageId: "noLodash",
+						node,
 					})
 					return
 				}
@@ -91,58 +100,48 @@ export default createRule({
 				// Check for other deprecated modules
 				if (source in DEPRECATED_MODULES) {
 					context.report({
-						node,
-						messageId: "noDeprecatedModule",
 						data: {
-							moduleName: source,
 							alternative: DEPRECATED_MODULES[source],
+							moduleName: source,
 						},
+						messageId: "noDeprecatedModule",
+						node,
 					})
-				}
-			},
-
-			// Also check for require() calls
-			CallExpression(node: TSESTree.CallExpression) {
-				if (
-					node.callee.type === "Identifier" &&
-					node.callee.name === "require" &&
-					node.arguments.length > 0 &&
-					node.arguments[0].type === "Literal" &&
-					typeof node.arguments[0].value === "string"
-				) {
-					const source = node.arguments[0].value
-
-					// Check for lodash requires
-					if (source === "lodash" || source.startsWith("lodash/")) {
-						let functionName = "function"
-
-						if (source.startsWith("lodash/")) {
-							functionName = source.replace("lodash/", "")
-						}
-
-						context.report({
-							node,
-							messageId: "noLodash",
-							data: {
-								functionName,
-							},
-						})
-						return
-					}
-
-					// Check for other deprecated modules
-					if (source in DEPRECATED_MODULES) {
-						context.report({
-							node,
-							messageId: "noDeprecatedModule",
-							data: {
-								moduleName: source,
-								alternative: DEPRECATED_MODULES[source],
-							},
-						})
-					}
 				}
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "Prohibit lodash imports and suggest es-toolkit alternatives",
+		},
+		fixable: undefined,
+		messages: {
+			noDeprecatedModule: [
+				'❌ 禁止使用已废弃的模块 "{{moduleName}}"！请使用 {{alternative}} 替代。',
+				"",
+				"✅ 推荐替代方案：{{alternative}}",
+			].join("\n"),
+			noLodash: [
+				"❌ 禁止使用 lodash！请使用 es-toolkit 替代。",
+				"",
+				"✅ 正确做法：",
+				'  import { {{functionName}} } from "es-toolkit";',
+				"",
+				"🔄 常用函数对照：",
+				"  lodash.debounce → es-toolkit/debounce",
+				"  lodash.throttle → es-toolkit/throttle",
+				"  lodash.cloneDeep → es-toolkit/cloneDeep",
+				"  lodash.merge → es-toolkit/merge",
+				"  lodash.pick → es-toolkit/pick",
+				"  lodash.omit → es-toolkit/omit",
+				"",
+				"📚 es-toolkit 文档: https://es-toolkit.slash.page/",
+			].join("\n"),
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "no-lodash",
 })

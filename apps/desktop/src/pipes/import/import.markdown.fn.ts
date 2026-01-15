@@ -67,10 +67,10 @@ export interface ImportResult {
  */
 const TEXT_FORMAT = {
 	BOLD: 1,
+	CODE: 16,
 	ITALIC: 2,
 	STRIKETHROUGH: 4,
 	UNDERLINE: 8,
-	CODE: 16,
 } as const
 
 // ==============================
@@ -78,9 +78,9 @@ const TEXT_FORMAT = {
 // ==============================
 
 const defaultOptions: Required<MarkdownImportOptions> = {
+	extractTitle: false,
 	parseFrontMatter: true,
 	tagFormat: "hash",
-	extractTitle: false,
 }
 
 // ==============================
@@ -185,18 +185,18 @@ export function parseInlineContent(
 		readonly format: number
 	}[] = [
 		// 行内代码
-		{ regex: /`([^`]+)`/g, format: TEXT_FORMAT.CODE },
+		{ format: TEXT_FORMAT.CODE, regex: /`([^`]+)`/g },
 		// 粗斜体 (***text*** 或 ___text___)
 		{
-			regex: /\*\*\*([^*]+)\*\*\*|___([^_]+)___/g,
 			format: TEXT_FORMAT.BOLD | TEXT_FORMAT.ITALIC,
+			regex: /\*\*\*([^*]+)\*\*\*|___([^_]+)___/g,
 		},
 		// 粗体 (**text** 或 __text__)
-		{ regex: /\*\*([^*]+)\*\*|__([^_]+)__/g, format: TEXT_FORMAT.BOLD },
+		{ format: TEXT_FORMAT.BOLD, regex: /\*\*([^*]+)\*\*|__([^_]+)__/g },
 		// 斜体 (*text* 或 _text_)
-		{ regex: /\*([^*]+)\*|_([^_]+)_/g, format: TEXT_FORMAT.ITALIC },
+		{ format: TEXT_FORMAT.ITALIC, regex: /\*([^*]+)\*|_([^_]+)_/g },
 		// 删除线
-		{ regex: /~~([^~]+)~~/g, format: TEXT_FORMAT.STRIKETHROUGH },
+		{ format: TEXT_FORMAT.STRIKETHROUGH, regex: /~~([^~]+)~~/g },
 	]
 
 	// 标签正则
@@ -217,9 +217,9 @@ export function parseInlineContent(
 			segments = [
 				...segments,
 				{
-					start: tagMatch.index,
 					end: tagMatch.index + tagMatch[0].length,
 					node: createTagNode(tagMatch[1]),
+					start: tagMatch.index,
 				},
 			]
 		}
@@ -248,9 +248,9 @@ export function parseInlineContent(
 				segments = [
 					...segments,
 					{
-						start: matchStart,
 						end: matchEnd,
 						node: textNode,
+						start: matchStart,
 					},
 				]
 			}
@@ -413,7 +413,7 @@ export function parseMarkdownToDocument(
 				const item = parseListItemLine(currentLine)
 				if (!item || item[0] !== listType) break
 
-				items = [...items, { text: item[1], checked: item[2] }]
+				items = [...items, { checked: item[2], text: item[1] }]
 				currentIndex++
 			}
 
@@ -485,8 +485,8 @@ export function importFromMarkdown(
 ): E.Either<ImportError, ImportResult> {
 	if (!content || content.trim() === "") {
 		return E.left({
-			type: "INVALID_CONTENT",
 			message: "内容为空",
+			type: "INVALID_CONTENT",
 		})
 	}
 
@@ -532,8 +532,8 @@ export function importFromMarkdown(
 			}
 		},
 		(error) => ({
-			type: "PARSE_ERROR" as const,
 			message: `Markdown 解析失败: ${error instanceof Error ? error.message : String(error)}`,
+			type: "PARSE_ERROR" as const,
 		}),
 	)
 }
@@ -575,8 +575,8 @@ export function importMultipleFromMarkdown(
 		const result = importFromMarkdown(item.content, options)
 		if (E.isLeft(result)) {
 			return E.left({
-				type: "PARSE_ERROR",
 				message: `导入 ${item.id} 失败: ${result.left.message}`,
+				type: "PARSE_ERROR",
 			})
 		}
 		results = [...results, { id: item.id, result: result.right }]

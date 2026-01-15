@@ -10,21 +10,23 @@ const createRule = ESLintUtils.RuleCreator(
  * 要求：Requirements 12.4
  */
 export default createRule({
-	name: "no-non-null-assertion",
+	create(context) {
+		return {
+			TSNonNullExpression(node) {
+				context.report({
+					messageId: "noNonNullAssertion",
+					node,
+				})
+			},
+		}
+	},
+	defaultOptions: [],
 	meta: {
-		type: "problem",
 		docs: {
 			description: "禁止使用非空断言（!），建议使用 Option 类型进行安全的空值处理",
 		},
 		messages: {
 			noNonNullAssertion: buildErrorMessage({
-				title: "禁止使用非空断言（!）",
-				reason: `
-  非空断言（!）绕过了 TypeScript 的空值检查：
-  - 运行时可能抛出 null/undefined 错误
-  - 隐藏了潜在的空值问题
-  - 破坏了类型系统的安全性
-  - 使代码难以维护和重构`,
 				correctExample: `// ✅ 使用 Option 类型
 import * as O from 'fp-ts/Option';
 import { pipe } from 'fp-ts/function';
@@ -53,6 +55,7 @@ function processUser(user: User | null) {
   // 此处 user 类型已收窄为 User
   console.log(user.name);
 }`,
+				docRef: "#fp-patterns - Option 类型",
 				incorrectExample: `// ❌ 使用非空断言
 const name = user!.name;
 
@@ -61,20 +64,17 @@ const value = obj!.prop!.value;
 
 // ❌ 数组非空断言
 const first = array![0];`,
-				docRef: "#fp-patterns - Option 类型",
+				reason: `
+  非空断言（!）绕过了 TypeScript 的空值检查：
+  - 运行时可能抛出 null/undefined 错误
+  - 隐藏了潜在的空值问题
+  - 破坏了类型系统的安全性
+  - 使代码难以维护和重构`,
+				title: "禁止使用非空断言（!）",
 			}),
 		},
 		schema: [],
+		type: "problem",
 	},
-	defaultOptions: [],
-	create(context) {
-		return {
-			TSNonNullExpression(node) {
-				context.report({
-					node,
-					messageId: "noNonNullAssertion",
-				})
-			},
-		}
-	},
+	name: "no-non-null-assertion",
 })

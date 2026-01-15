@@ -26,8 +26,8 @@ import {
 vi.mock("mermaid", () => ({
 	default: {
 		initialize: vi.fn(),
-		render: vi.fn(),
 		parse: vi.fn(),
+		render: vi.fn(),
 	},
 }))
 
@@ -36,8 +36,8 @@ const getMermaidMock = async () => {
 	const mermaid = await import("mermaid")
 	return {
 		initialize: mermaid.default.initialize as ReturnType<typeof vi.fn>,
-		render: mermaid.default.render as ReturnType<typeof vi.fn>,
 		parse: mermaid.default.parse as ReturnType<typeof vi.fn>,
+		render: mermaid.default.render as ReturnType<typeof vi.fn>,
 	}
 }
 
@@ -67,11 +67,11 @@ describe("mermaid.render.fn", () => {
 
 			expect(mermaid.initialize).toHaveBeenCalledWith(
 				expect.objectContaining({
-					startOnLoad: false,
-					theme: "default",
-					securityLevel: "loose",
 					fontFamily: "inherit",
 					logLevel: "error",
+					securityLevel: "loose",
+					startOnLoad: false,
+					theme: "default",
 				}),
 			)
 			expect(getCurrentMermaidTheme()).toBe("light")

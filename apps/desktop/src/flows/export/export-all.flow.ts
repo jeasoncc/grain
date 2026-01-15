@@ -74,11 +74,11 @@ export function exportAll(workspaceId?: string): TE.TaskEither<AppError, string>
 				getContentsByNodeIds(nodeIds),
 				TE.map((contents) =>
 					contents.map((c) => ({
-						id: c.id,
-						nodeId: c.nodeId,
 						content: c.content,
 						contentType: c.contentType,
+						id: c.id,
 						lastEdit: c.lastEdit,
+						nodeId: c.nodeId,
 					})),
 				),
 			)
@@ -93,10 +93,10 @@ export function exportAll(workspaceId?: string): TE.TaskEither<AppError, string>
 		// 创建导出包
 		TE.map(({ workspaces, nodes, contents, attachments }) => {
 			const bundle = createExportBundle({
-				workspaces,
-				nodes,
-				contents,
 				attachments,
+				contents,
+				nodes,
+				workspaces,
 			})
 			const json = serializeBundle(bundle)
 			success("[Export] 数据导出成功")

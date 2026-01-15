@@ -136,11 +136,11 @@ const getOrCreateFolder = (
 
 			// 创建新文件夹
 			return nodeRepo.createNode({
-				workspace: workspaceId,
-				parent: parentId,
-				type: "folder",
-				title,
 				collapsed,
+				parent: parentId,
+				title,
+				type: "folder",
+				workspace: workspaceId,
 			})
 		}),
 	)
@@ -163,8 +163,8 @@ const ensureFolderPath = (
 ): TE.TaskEither<AppError, NodeInterface> => {
 	if (folderPath.length === 0) {
 		return TE.left({
-			type: "VALIDATION_ERROR",
 			message: "文件夹路径不能为空",
+			type: "VALIDATION_ERROR",
 		})
 	}
 
@@ -175,8 +175,8 @@ const ensureFolderPath = (
 	): TE.TaskEither<AppError, NodeInterface> => {
 		if (remainingPath.length === 0) {
 			return TE.left({
-				type: "VALIDATION_ERROR",
 				message: "文件夹路径不能为空",
+				type: "VALIDATION_ERROR",
 			})
 		}
 
@@ -232,12 +232,12 @@ const createFileInternal = (params: {
 					// 2. 创建节点（带初始内容和标签）
 					const nodeResult = await nodeRepo.createNode(
 						{
-							workspace: workspaceId,
-							title,
-							parent: parentId,
-							type,
-							order,
 							collapsed,
+							order,
+							parent: parentId,
+							title,
+							type,
+							workspace: workspaceId,
 						},
 						content, // Always pass content since FileNodeType excludes folders
 						tags,
@@ -314,8 +314,8 @@ const createFileInternal = (params: {
 					}
 				}),
 			(error): AppError => ({
-				type: "DB_ERROR",
 				message: `创建文件失败: ${error instanceof Error ? error.message : String(error)}`,
+				type: "DB_ERROR",
 			}),
 		),
 		// 处理 p-queue 返回 undefined 的情况
@@ -323,8 +323,8 @@ const createFileInternal = (params: {
 			result
 				? TE.right(result)
 				: TE.left<AppError>({
-						type: "DB_ERROR",
 						message: "创建文件失败: 队列返回空结果",
+						type: "DB_ERROR",
 					}),
 		),
 	)
@@ -377,8 +377,8 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 				result.success
 					? E.right(result.data)
 					: E.left({
-							type: "VALIDATION_ERROR" as const,
 							message: `基础参数校验失败: ${result.error.issues[0]?.message || "未知错误"}`,
+							type: "VALIDATION_ERROR" as const,
 						}),
 			TE.fromEither,
 			// 2. 校验模板特定参数
@@ -389,8 +389,8 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 						result.success
 							? E.right(result.data)
 							: E.left({
-									type: "VALIDATION_ERROR" as const,
 									message: `模板参数校验失败: ${result.error.issues[0]?.message || "未知错误"}`,
+									type: "VALIDATION_ERROR" as const,
 								}),
 					TE.fromEither,
 				),
@@ -402,10 +402,10 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 				const title = config.generateTitle(validTemplateParams)
 
 				return {
-					validTemplateParams,
 					content,
 					folderPath,
 					title,
+					validTemplateParams,
 				}
 			}),
 			// 4. 解析内容（验证 JSON 格式，或跳过解析）
@@ -413,11 +413,11 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 				// 如果配置了跳过 JSON 解析（如 Mermaid/PlantUML 纯文本内容）
 				if (config.skipJsonParse) {
 					return TE.right({
-						validTemplateParams,
 						content,
 						folderPath,
-						title,
 						parsedContent: content, // 纯文本内容直接使用原始字符串
+						title,
+						validTemplateParams,
 					})
 				}
 
@@ -426,17 +426,17 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 					E.tryCatch(
 						() => JSON.parse(content),
 						(error) => ({
-							type: "VALIDATION_ERROR" as const,
 							message: `内容解析失败: ${error instanceof Error ? error.message : String(error)}`,
+							type: "VALIDATION_ERROR" as const,
 						}),
 					),
 					TE.fromEither,
 					TE.map((parsedContent) => ({
-						validTemplateParams,
 						content,
 						folderPath,
-						title,
 						parsedContent,
+						title,
+						validTemplateParams,
 					})),
 				)
 			}),
@@ -453,18 +453,18 @@ export const createTemplatedFile = <T>(config: TemplateConfig<T>) => {
 					TE.chain((parentFolder) =>
 						pipe(
 							createFileInternal({
-								workspaceId: params.workspaceId,
+								collapsed: true,
+								content,
 								parentId: parentFolder.id,
+								tags: [config.tag],
 								title,
 								type: config.fileType,
-								content,
-								tags: [config.tag],
-								collapsed: true,
+								workspaceId: params.workspaceId,
 							}),
 							// 5.3 成功后，组装返回结果
 							TE.map((result) => ({
-								node: result.node,
 								content,
+								node: result.node,
 								parsedContent,
 							})),
 						),

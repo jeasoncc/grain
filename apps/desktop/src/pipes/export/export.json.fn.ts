@@ -69,10 +69,10 @@ export type ExportError =
 // ==============================
 
 const defaultOptions: Required<JsonExportOptions> = {
-	pretty: true,
-	indent: 2,
 	includeMetadata: false,
+	indent: 2,
 	metadata: {},
+	pretty: true,
 }
 
 // ==============================
@@ -88,8 +88,8 @@ const defaultOptions: Required<JsonExportOptions> = {
 export function parseLexicalContent(content: string): E.Either<ExportError, LexicalDocument> {
 	if (!content || content.trim() === "") {
 		return E.left({
-			type: "INVALID_CONTENT",
 			message: "内容为空",
+			type: "INVALID_CONTENT",
 		})
 	}
 
@@ -104,8 +104,8 @@ export function parseLexicalContent(content: string): E.Either<ExportError, Lexi
 			return parsed
 		},
 		(error) => ({
-			type: "PARSE_ERROR" as const,
 			message: `JSON 解析失败: ${error instanceof Error ? error.message : String(error)}`,
+			type: "PARSE_ERROR" as const,
 		}),
 	)
 }
@@ -122,11 +122,11 @@ export function createExportDocument(
 	metadata: JsonExportMetadata = {},
 ): JsonExportDocument {
 	return {
+		content: document,
 		metadata: {
 			...metadata,
 			exportedAt: metadata.exportedAt || dayjs().toISOString(),
 		},
-		content: document,
 	}
 }
 
@@ -211,7 +211,7 @@ export function exportMultipleToJson(
 		if (E.isLeft(parsed)) {
 			return E.left(parsed.left)
 		}
-		return E.right({ id: item.id, document: parsed.right })
+		return E.right({ document: parsed.right, id: item.id })
 	})
 
 	// Check for any parsing errors
@@ -224,14 +224,14 @@ export function exportMultipleToJson(
 	const successfulResults = parsedResults.filter(E.isRight).map((result) => result.right)
 
 	const exportData = {
+		documents: successfulResults,
 		metadata: opts.includeMetadata
 			? {
 					...opts.metadata,
-					exportedAt: dayjs().toISOString(),
 					count: successfulResults.length,
+					exportedAt: dayjs().toISOString(),
 				}
 			: undefined,
-		documents: successfulResults,
 	}
 
 	return E.right(serializeToJson(exportData, opts))

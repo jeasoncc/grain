@@ -58,8 +58,8 @@ export const getUserOrFail = (id: string): TE.TaskEither<AppError, UserInterface
 			user
 				? TE.right(user)
 				: TE.left({
-						type: "NOT_FOUND",
 						message: `用户不存在: ${id}`,
+						type: "NOT_FOUND",
 					} as AppError),
 		),
 	)
@@ -94,8 +94,8 @@ export const getCurrentUserOrFail = (): TE.TaskEither<AppError, UserInterface> =
 			user
 				? TE.right(user)
 				: TE.left({
-						type: "NOT_FOUND",
 						message: "当前用户不存在",
+						type: "NOT_FOUND",
 					} as AppError),
 		),
 	)

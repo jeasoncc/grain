@@ -99,8 +99,8 @@ export const getWikiFilesAsync = (
 			return entries
 		},
 		(error) => ({
-			type: "DB_ERROR" as const,
 			message: `获取 Wiki 文件列表失败: ${error instanceof Error ? error.message : "未知错误"}`,
+			type: "DB_ERROR" as const,
 		}),
 	)
 }

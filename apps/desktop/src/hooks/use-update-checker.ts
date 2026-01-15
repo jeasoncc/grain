@@ -109,15 +109,15 @@ export function useUpdateChecker(): UseUpdateCheckerReturn {
 	}, [checkStatus])
 
 	return {
-		updateInfo,
-		isChecking,
-		isDownloading,
-		downloadProgress,
-		showDialog,
 		checkStatus,
+		downloadProgress,
 		errorMessage,
 		handleCheckForUpdates,
 		handleDownloadAndInstall,
+		isChecking,
+		isDownloading,
 		setShowDialog,
+		showDialog,
+		updateInfo,
 	}
 }

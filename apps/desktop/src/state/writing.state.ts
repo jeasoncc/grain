@@ -53,7 +53,6 @@ export const useWritingStore = create<WritingStore>()(
 		(set) => ({
 			// Initial State
 			...DEFAULT_WRITING_STATE,
-			todayDate: "",
 
 			// ==============================
 			// Pure State Setters (no business logic)
@@ -63,6 +62,34 @@ export const useWritingStore = create<WritingStore>()(
 				set((state) => ({
 					...state,
 					focusMode: enabled,
+				}))
+			},
+
+			setMinimalToolbar: (enabled) => {
+				set((state) => ({
+					...state,
+					minimalToolbar: enabled,
+				}))
+			},
+
+			setSession: (session) => {
+				set((state) => ({
+					...state,
+					session: session,
+				}))
+			},
+
+			setTodayDate: (date) => {
+				set((state) => ({
+					...state,
+					todayDate: date,
+				}))
+			},
+
+			setTodayWordCount: (count) => {
+				set((state) => ({
+					...state,
+					todayWordCount: count,
 				}))
 			},
 
@@ -79,43 +106,16 @@ export const useWritingStore = create<WritingStore>()(
 					writingGoal: goal,
 				}))
 			},
-
-			setTodayWordCount: (count) => {
-				set((state) => ({
-					...state,
-					todayWordCount: count,
-				}))
-			},
-
-			setTodayDate: (date) => {
-				set((state) => ({
-					...state,
-					todayDate: date,
-				}))
-			},
-
-			setSession: (session) => {
-				set((state) => ({
-					...state,
-					session: session,
-				}))
-			},
-
-			setMinimalToolbar: (enabled) => {
-				set((state) => ({
-					...state,
-					minimalToolbar: enabled,
-				}))
-			},
+			todayDate: "",
 		}),
 		{
 			name: DEFAULT_WRITING_CONFIG.storageKey,
 			partialize: (state) => ({
+				minimalToolbar: state.minimalToolbar,
+				todayDate: state.todayDate,
+				todayWordCount: state.todayWordCount,
 				typewriterMode: state.typewriterMode,
 				writingGoal: state.writingGoal,
-				todayWordCount: state.todayWordCount,
-				todayDate: state.todayDate,
-				minimalToolbar: state.minimalToolbar,
 			}),
 		},
 	),

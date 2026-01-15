@@ -13,15 +13,15 @@ import { FileTree } from "./file-tree.view.fn"
 vi.mock("@/hooks/use-icon-theme", () => ({
 	useIconTheme: () => ({
 		icons: {
-			folder: {
-				default: () => <div data-testid="folder-icon">Folder</div>,
-				open: () => <div data-testid="folder-open-icon">FolderOpen</div>,
+			activityBar: {
+				canvas: () => <div data-testid="canvas-icon">Canvas</div>,
 			},
 			file: {
 				default: () => <div data-testid="file-icon">File</div>,
 			},
-			activityBar: {
-				canvas: () => <div data-testid="canvas-icon">Canvas</div>,
+			folder: {
+				default: () => <div data-testid="folder-icon">Folder</div>,
+				open: () => <div data-testid="folder-open-icon">FolderOpen</div>,
 			},
 		},
 	}),
@@ -40,40 +40,40 @@ vi.mock("@/hooks/use-theme", () => ({
 describe("FileTree", () => {
 	const mockNodes: NodeInterface[] = [
 		{
+			collapsed: false,
+			createDate: new Date().toISOString(),
 			id: "1",
+			lastEdit: new Date().toISOString(),
+			order: 0,
+			parent: null,
 			title: "Test Folder",
 			type: "folder",
-			parent: null,
-			order: 0,
-			collapsed: false,
 			workspace: "workspace-1",
-			createDate: new Date().toISOString(),
-			lastEdit: new Date().toISOString(),
 		},
 		{
+			collapsed: false,
+			createDate: new Date().toISOString(),
 			id: "2",
+			lastEdit: new Date().toISOString(),
+			order: 0,
+			parent: "1",
 			title: "Test File",
 			type: "file",
-			parent: "1",
-			order: 0,
-			collapsed: false,
 			workspace: "workspace-1",
-			createDate: new Date().toISOString(),
-			lastEdit: new Date().toISOString(),
 		},
 	]
 
 	const defaultProps: FileTreeProps = {
-		workspaceId: "workspace-1",
 		nodes: mockNodes,
-		selectedNodeId: null,
-		onSelectNode: vi.fn(),
-		onCreateFolder: vi.fn(),
 		onCreateFile: vi.fn(),
+		onCreateFolder: vi.fn(),
 		onDeleteNode: vi.fn(),
-		onRenameNode: vi.fn(),
 		onMoveNode: vi.fn(),
+		onRenameNode: vi.fn(),
+		onSelectNode: vi.fn(),
 		onToggleCollapsed: vi.fn(),
+		selectedNodeId: null,
+		workspaceId: "workspace-1",
 	}
 
 	it("should render with workspace selected", () => {

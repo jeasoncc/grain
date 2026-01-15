@@ -93,13 +93,13 @@ export const renderMermaid = async (
 ): Promise<RenderResult> => {
 	if (!code.trim()) {
 		return {
-			success: false,
 			error: {
-				type: "syntax",
 				message: "图表代码为空",
 				retryable: false,
 				retryCount: 0,
+				type: "syntax",
 			},
+			success: false,
 		}
 	}
 
@@ -114,13 +114,13 @@ export const renderMermaid = async (
 	}
 
 	return {
-		success: false,
 		error: {
-			type: "syntax",
 			message: result.error,
 			retryable: false,
 			retryCount: 0,
+			type: "syntax",
 		},
+		success: false,
 	}
 }
 
@@ -143,25 +143,25 @@ export const renderPlantUML = async (
 ): Promise<RenderResult> => {
 	if (!code.trim()) {
 		return {
-			success: false,
 			error: {
-				type: "syntax",
 				message: "图表代码为空",
 				retryable: false,
 				retryCount: 0,
+				type: "syntax",
 			},
+			success: false,
 		}
 	}
 
 	if (!krokiServerUrl) {
 		return {
-			success: false,
 			error: {
-				type: "config",
 				message: "Kroki 服务器 URL 未配置",
 				retryable: false,
 				retryCount: 0,
+				type: "config",
 			},
+			success: false,
 		}
 	}
 
@@ -178,13 +178,13 @@ export const renderPlantUML = async (
 	}
 
 	return {
-		success: false,
 		error: {
-			type: result.errorType,
 			message: result.error,
 			retryable: result.retryable,
 			retryCount: 0, // 重试已在 plantuml.render.fn.ts 内部处理
+			type: result.errorType,
 		},
+		success: false,
 	}
 }
 
@@ -239,13 +239,13 @@ export const renderDiagram = async (config: RenderDiagramConfig): Promise<Render
 			// TypeScript exhaustive check
 			const _exhaustive: never = diagramType
 			return {
-				success: false,
 				error: {
-					type: "unknown",
 					message: `不支持的图表类型: ${_exhaustive}`,
 					retryable: false,
 					retryCount: 0,
+					type: "unknown",
 				},
+				success: false,
 			}
 		}
 	}

@@ -98,135 +98,8 @@ const createRule = ESLintUtils.RuleCreator(
 
 // Plugin configuration
 const plugin = {
-	meta: {
-		name: "eslint-plugin-grain",
-		version: "2.0.0",
-		description: "最严格的代码审查系统 - Grain 函数式编程架构",
-	},
-
-	// All implemented rules
-	rules: {
-		// ============================================
-		// Functional Programming Rules (Enhanced)
-		// ============================================
-		"no-try-catch": noTryCatch,
-		"no-throw": noThrow,
-		"no-promise-methods": noPromiseMethods,
-		"no-async-outside-io": noAsyncOutsideIo,
-		"no-mutation": noMutation,
-		"no-object-mutation": noObjectMutation,
-		"fp-ts-patterns": fpTsPatterns,
-
-		// ============================================
-		// Architecture Layer Rules (Enhanced)
-		// ============================================
-		"layer-dependencies": layerDependencies,
-		"no-react-in-pure-layers": noReactInPureLayersNew,
-		"no-side-effects-in-pipes": noSideEffectsInPipesNew,
-		"no-store-in-views": noStoreInViews,
-		"file-location": fileLocation,
-
-		// ============================================
-		// Naming Convention Rules
-		// ============================================
-		"file-naming": fileNaming,
-		"variable-naming": variableNaming,
-		"function-naming": functionNaming,
-		"boolean-naming": booleanNaming,
-		"constant-naming": constantNaming,
-
-		// ============================================
-		// Complexity Rules
-		// ============================================
-		"max-function-lines": maxFunctionLines,
-		"max-params": maxParams,
-		"max-nesting": maxNesting,
-		"cyclomatic-complexity": cyclomaticComplexity,
-		"max-file-lines": maxFileLines,
-
-		// ============================================
-		// React Component Rules
-		// ============================================
-		"require-memo": reactRules["require-memo"],
-		"no-inline-functions": reactRules["no-inline-functions"],
-		"require-callback": reactRules["require-callback"],
-		"hooks-patterns": reactRules["hooks-patterns"],
-		"component-patterns": reactRules["component-patterns"],
-
-		// ============================================
-		// Import Organization Rules
-		// ============================================
-		"no-default-export": importRules["no-default-export"],
-		"no-banned-imports": importRules["no-banned-imports"],
-		"require-alias": importRules["require-alias"],
-		"import-grouping": importRules["import-grouping"],
-		"no-deprecated-imports": importRules["no-deprecated-imports"],
-
-		// ============================================
-		// Security Rules
-		// ============================================
-		"no-eval": noEval,
-		"no-innerhtml": noInnerhtml,
-		"no-sensitive-logging": noSensitiveLogging,
-
-		// ============================================
-		// Documentation Rules
-		// ============================================
-		"require-jsdoc": requireJsdoc,
-		"no-commented-code": noCommentedCode,
-		"chinese-comments": chineseComments,
-
-		// ============================================
-		// Magic Values Rules
-		// ============================================
-		"no-magic-numbers": noMagicNumbers,
-		"no-hardcoded-values": noHardcodedValues,
-
-		// ============================================
-		// Conditional Statement Rules
-		// ============================================
-		"no-nested-ternary": noNestedTernary,
-		"strict-equality": strictEquality,
-		"require-switch-default": requireSwitchDefault,
-
-		// ============================================
-		// Type Safety Rules
-		// ============================================
-		"no-any": noAny,
-		"no-non-null-assertion": noNonNullAssertion,
-		"require-return-type": requireReturnType,
-
-		// ============================================
-		// Zustand State Management Rules
-		// ============================================
-		"zustand-patterns": zustandRules["zustand-patterns"],
-
-		// ============================================
-		// Legacy Rules (Deprecated - for backward compatibility)
-		// ============================================
-		"no-try-catch-legacy": noTryCatchLegacy,
-		"no-mutation-legacy": noMutationLegacy,
-		"no-console-log": noConsoleLog,
-		"no-date-constructor": noDateConstructor,
-		"no-lodash": noLodash,
-		"layer-dependencies-legacy": layerDependenciesLegacy,
-	},
-
 	// Predefined configurations
 	configs: {
-		/**
-		 * Strict Configuration (推荐)
-		 *
-		 * 最严格的代码审查配置，所有规则设为 error 级别
-		 * 这是 Grain 项目的默认和唯一推荐配置
-		 *
-		 * 适用场景：
-		 * - 新项目
-		 * - 已完成迁移的项目
-		 * - 追求最高代码质量的项目
-		 */
-		strict: strictConfig,
-
 		/**
 		 * Legacy Configuration (仅用于迁移)
 		 *
@@ -256,67 +129,192 @@ const plugin = {
 		recommended: {
 			plugins: ["grain"],
 			rules: {
-				// Functional Programming Rules
-				"grain/no-try-catch": "error",
-				"grain/no-throw": "error",
-				"grain/no-promise-methods": "error",
-				"grain/no-async-outside-io": "error",
-				"grain/no-mutation": "error",
-				"grain/no-object-mutation": "error",
-				"grain/fp-ts-patterns": "error",
-				// Architecture Rules
-				"grain/layer-dependencies": "error",
-				"grain/no-react-in-pure-layers": "error",
-				"grain/no-side-effects-in-pipes": "error",
-				"grain/no-store-in-views": "error",
+				"grain/boolean-naming": "error",
+				"grain/chinese-comments": "warn",
+				"grain/component-patterns": "error",
+				"grain/constant-naming": "error",
+				"grain/cyclomatic-complexity": "error",
 				"grain/file-location": "warn",
 				// Naming Rules
 				"grain/file-naming": "warn",
-				"grain/variable-naming": "error",
+				"grain/fp-ts-patterns": "error",
 				"grain/function-naming": "warn",
-				"grain/boolean-naming": "error",
-				"grain/constant-naming": "error",
+				"grain/hooks-patterns": "error",
+				"grain/import-grouping": "warn",
+				// Architecture Rules
+				"grain/layer-dependencies": "error",
+				"grain/max-file-lines": "error",
 				// Complexity Rules
 				"grain/max-function-lines": "error",
-				"grain/max-params": "error",
 				"grain/max-nesting": "error",
-				"grain/cyclomatic-complexity": "error",
-				"grain/max-file-lines": "error",
-				// React Rules
-				"grain/require-memo": "warn",
-				"grain/no-inline-functions": "error",
-				"grain/require-callback": "error",
-				"grain/hooks-patterns": "error",
-				"grain/component-patterns": "error",
+				"grain/max-params": "error",
+				// Type Safety Rules
+				"grain/no-any": "error",
+				"grain/no-async-outside-io": "error",
+				"grain/no-banned-imports": "error",
+				"grain/no-commented-code": "error",
 				// Import Rules
 				"grain/no-default-export": "error",
-				"grain/no-banned-imports": "error",
-				"grain/require-alias": "error",
-				"grain/import-grouping": "warn",
 				"grain/no-deprecated-imports": "error",
 				// Security Rules
 				"grain/no-eval": "error",
+				"grain/no-hardcoded-values": "error",
+				"grain/no-inline-functions": "error",
 				"grain/no-innerhtml": "error",
-				"grain/no-sensitive-logging": "error",
-				// Documentation Rules
-				"grain/require-jsdoc": "error",
-				"grain/no-commented-code": "error",
-				"grain/chinese-comments": "warn",
 				// Magic Values Rules
 				"grain/no-magic-numbers": "error",
-				"grain/no-hardcoded-values": "error",
+				"grain/no-mutation": "error",
 				// Conditional Rules
 				"grain/no-nested-ternary": "error",
-				"grain/strict-equality": "error",
-				"grain/require-switch-default": "error",
-				// Type Safety Rules
-				"grain/no-any": "error",
 				"grain/no-non-null-assertion": "error",
+				"grain/no-object-mutation": "error",
+				"grain/no-promise-methods": "error",
+				"grain/no-react-in-pure-layers": "error",
+				"grain/no-sensitive-logging": "error",
+				"grain/no-side-effects-in-pipes": "error",
+				"grain/no-store-in-views": "error",
+				"grain/no-throw": "error",
+				// Functional Programming Rules
+				"grain/no-try-catch": "error",
+				"grain/require-alias": "error",
+				"grain/require-callback": "error",
+				// Documentation Rules
+				"grain/require-jsdoc": "error",
+				// React Rules
+				"grain/require-memo": "warn",
 				"grain/require-return-type": "warn",
+				"grain/require-switch-default": "error",
+				"grain/strict-equality": "error",
+				"grain/variable-naming": "error",
 				// Zustand Rules
 				"grain/zustand-patterns": "error",
 			},
 		},
+		/**
+		 * Strict Configuration (推荐)
+		 *
+		 * 最严格的代码审查配置，所有规则设为 error 级别
+		 * 这是 Grain 项目的默认和唯一推荐配置
+		 *
+		 * 适用场景：
+		 * - 新项目
+		 * - 已完成迁移的项目
+		 * - 追求最高代码质量的项目
+		 */
+		strict: strictConfig,
+	},
+	meta: {
+		description: "最严格的代码审查系统 - Grain 函数式编程架构",
+		name: "eslint-plugin-grain",
+		version: "2.0.0",
+	},
+
+	// All implemented rules
+	rules: {
+		"boolean-naming": booleanNaming,
+		"chinese-comments": chineseComments,
+		"component-patterns": reactRules["component-patterns"],
+		"constant-naming": constantNaming,
+		"cyclomatic-complexity": cyclomaticComplexity,
+		"file-location": fileLocation,
+
+		// ============================================
+		// Naming Convention Rules
+		// ============================================
+		"file-naming": fileNaming,
+		"fp-ts-patterns": fpTsPatterns,
+		"function-naming": functionNaming,
+		"hooks-patterns": reactRules["hooks-patterns"],
+		"import-grouping": importRules["import-grouping"],
+
+		// ============================================
+		// Architecture Layer Rules (Enhanced)
+		// ============================================
+		"layer-dependencies": layerDependencies,
+		"layer-dependencies-legacy": layerDependenciesLegacy,
+		"max-file-lines": maxFileLines,
+
+		// ============================================
+		// Complexity Rules
+		// ============================================
+		"max-function-lines": maxFunctionLines,
+		"max-nesting": maxNesting,
+		"max-params": maxParams,
+
+		// ============================================
+		// Type Safety Rules
+		// ============================================
+		"no-any": noAny,
+		"no-async-outside-io": noAsyncOutsideIo,
+		"no-banned-imports": importRules["no-banned-imports"],
+		"no-commented-code": noCommentedCode,
+		"no-console-log": noConsoleLog,
+		"no-date-constructor": noDateConstructor,
+
+		// ============================================
+		// Import Organization Rules
+		// ============================================
+		"no-default-export": importRules["no-default-export"],
+		"no-deprecated-imports": importRules["no-deprecated-imports"],
+
+		// ============================================
+		// Security Rules
+		// ============================================
+		"no-eval": noEval,
+		"no-hardcoded-values": noHardcodedValues,
+		"no-inline-functions": reactRules["no-inline-functions"],
+		"no-innerhtml": noInnerhtml,
+		"no-lodash": noLodash,
+
+		// ============================================
+		// Magic Values Rules
+		// ============================================
+		"no-magic-numbers": noMagicNumbers,
+		"no-mutation": noMutation,
+		"no-mutation-legacy": noMutationLegacy,
+
+		// ============================================
+		// Conditional Statement Rules
+		// ============================================
+		"no-nested-ternary": noNestedTernary,
+		"no-non-null-assertion": noNonNullAssertion,
+		"no-object-mutation": noObjectMutation,
+		"no-promise-methods": noPromiseMethods,
+		"no-react-in-pure-layers": noReactInPureLayersNew,
+		"no-sensitive-logging": noSensitiveLogging,
+		"no-side-effects-in-pipes": noSideEffectsInPipesNew,
+		"no-store-in-views": noStoreInViews,
+		"no-throw": noThrow,
+		// ============================================
+		// Functional Programming Rules (Enhanced)
+		// ============================================
+		"no-try-catch": noTryCatch,
+
+		// ============================================
+		// Legacy Rules (Deprecated - for backward compatibility)
+		// ============================================
+		"no-try-catch-legacy": noTryCatchLegacy,
+		"require-alias": importRules["require-alias"],
+		"require-callback": reactRules["require-callback"],
+
+		// ============================================
+		// Documentation Rules
+		// ============================================
+		"require-jsdoc": requireJsdoc,
+
+		// ============================================
+		// React Component Rules
+		// ============================================
+		"require-memo": reactRules["require-memo"],
+		"require-return-type": requireReturnType,
+		"require-switch-default": requireSwitchDefault,
+		"strict-equality": strictEquality,
+		"variable-naming": variableNaming,
+
+		// ============================================
+		// Zustand State Management Rules
+		// ============================================
+		"zustand-patterns": zustandRules["zustand-patterns"],
 	},
 }
 

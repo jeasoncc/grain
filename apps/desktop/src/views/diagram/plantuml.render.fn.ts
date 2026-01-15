@@ -244,11 +244,11 @@ export const renderPlantUML = async (
 			const url = getKrokiPlantUMLUrl(krokiServerUrl)
 
 			const response = await fetch(url, {
-				method: "POST",
+				body: code,
 				headers: {
 					"Content-Type": "text/plain",
 				},
-				body: code,
+				method: "POST",
 			})
 
 			if (!response.ok) {
@@ -363,11 +363,11 @@ export const checkKrokiServerHealth = async (
 		const url = getKrokiPlantUMLUrl(krokiServerUrl)
 
 		const response = await fetch(url, {
-			method: "POST",
+			body: testCode,
 			headers: {
 				"Content-Type": "text/plain",
 			},
-			body: testCode,
+			method: "POST",
 			signal: controller.signal,
 		})
 

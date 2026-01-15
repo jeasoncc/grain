@@ -25,18 +25,18 @@ vi.mock("@excalidraw/excalidraw", () => ({
 // 测试辅助函数：创建测试数据
 function createTestData() {
 	return {
-		elements: [],
 		appState: { viewBackgroundColor: "#ffffff" },
+		elements: [],
 		files: {},
 	}
 }
 
 describe("ExcalidrawEditorView", () => {
 	const defaultProps: ExcalidrawEditorViewProps = {
+		containerSize: { height: 600, width: 800 },
 		initialData: createTestData(),
-		theme: "light",
 		onChange: vi.fn(),
-		containerSize: { width: 800, height: 600 },
+		theme: "light",
 	}
 
 	it("should render loading state when initialData is null", () => {

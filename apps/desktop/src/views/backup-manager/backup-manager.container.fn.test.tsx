@@ -10,9 +10,9 @@ import { BackupManagerContainer } from "./backup-manager.container.fn"
 // Mock dependencies
 vi.mock("sonner", () => ({
 	toast: {
-		success: vi.fn(),
 		error: vi.fn(),
 		info: vi.fn(),
+		success: vi.fn(),
 	},
 }))
 
@@ -21,74 +21,74 @@ vi.mock("@/components/ui/confirm", () => ({
 }))
 
 vi.mock("@/db/backup.db.fn", () => ({
+	autoBackupManager: {
+		start: vi.fn(),
+		stop: vi.fn(),
+	},
+	exportBackupJson: vi.fn(() => vi.fn(() => Promise.resolve(TE.right({})))),
+	exportBackupZip: vi.fn(() => vi.fn(() => Promise.resolve(TE.right({})))),
 	getDatabaseStats: vi.fn(() =>
 		vi.fn(() =>
 			Promise.resolve(
 				TE.right({
-					userCount: 2,
-					projectCount: 5,
-					nodeCount: 20,
+					attachmentCount: 8,
 					contentCount: 15,
 					drawingCount: 3,
-					attachmentCount: 8,
+					nodeCount: 20,
+					projectCount: 5,
 					tagCount: 12,
+					userCount: 2,
 				}),
 			),
 		),
 	),
 	getLocalBackups: vi.fn(() => []),
-	exportBackupJson: vi.fn(() => vi.fn(() => Promise.resolve(TE.right({})))),
-	exportBackupZip: vi.fn(() => vi.fn(() => Promise.resolve(TE.right({})))),
 	restoreBackup: vi.fn(() => vi.fn(() => Promise.resolve(TE.right({})))),
 	restoreLocalBackup: vi.fn(() => vi.fn(() => Promise.resolve(TE.right({})))),
-	autoBackupManager: {
-		start: vi.fn(),
-		stop: vi.fn(),
-	},
 }))
 
 vi.mock("@/db/clear-data.db.fn", () => ({
+	clearAllData: vi.fn(() => vi.fn(() => Promise.resolve(TE.right({})))),
 	getStorageStats: vi.fn(() =>
 		vi.fn(() =>
 			Promise.resolve(
 				TE.right({
+					cookies: {
+						count: 3,
+					},
 					indexedDB: {
 						size: 1024000,
-						tables: {
-							users: 2,
-							workspaces: 5,
-							nodes: 20,
-							contents: 15,
-							drawings: 3,
-							attachments: 8,
-							tags: 12,
-						},
 						tableSizes: {
-							users: 10240,
-							workspaces: 512000,
-							nodes: 256000,
+							attachments: 40960,
 							contents: 128000,
 							drawings: 51200,
-							attachments: 40960,
+							nodes: 256000,
 							tags: 25600,
+							users: 10240,
+							workspaces: 512000,
+						},
+						tables: {
+							attachments: 8,
+							contents: 15,
+							drawings: 3,
+							nodes: 20,
+							tags: 12,
+							users: 2,
+							workspaces: 5,
 						},
 					},
 					localStorage: {
-						size: 2048,
 						keys: 10,
+						size: 2048,
 					},
 					sessionStorage: {
-						size: 1024,
 						keys: 5,
-					},
-					cookies: {
-						count: 3,
+						size: 1024,
 					},
 				}),
 			),
 		),
 	),
-	clearAllData: vi.fn(() => vi.fn(() => Promise.resolve(TE.right({})))),
 }))
 
 vi.mock("@/log", () => ({

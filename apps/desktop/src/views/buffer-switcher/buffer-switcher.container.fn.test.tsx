@@ -7,37 +7,37 @@ describe("BufferSwitcherContainer", () => {
 	const mockTabs: EditorTab[] = [
 		{
 			id: "tab-1",
+			isDirty: false,
+			nodeId: "node-1",
 			title: "Document 1",
 			type: "file",
 			workspaceId: "workspace-1",
-			nodeId: "node-1",
-			isDirty: false,
 		},
 		{
 			id: "tab-2",
+			isDirty: false,
+			nodeId: "node-2",
 			title: "Document 2",
 			type: "file",
 			workspaceId: "workspace-1",
-			nodeId: "node-2",
-			isDirty: false,
 		},
 		{
 			id: "tab-3",
+			isDirty: false,
+			nodeId: "node-3",
 			title: "Document 3",
 			type: "file",
 			workspaceId: "workspace-1",
-			nodeId: "node-3",
-			isDirty: false,
 		},
 	]
 
 	const defaultProps = {
-		open: true,
-		onOpenChange: vi.fn(),
-		tabs: mockTabs,
 		activeTabId: "tab-1",
-		onSelectTab: vi.fn(),
 		initialDirection: "forward" as const,
+		onOpenChange: vi.fn(),
+		onSelectTab: vi.fn(),
+		open: true,
+		tabs: mockTabs,
 	}
 
 	beforeEach(() => {
@@ -86,7 +86,7 @@ describe("BufferSwitcherContainer", () => {
 		})
 
 		// Simulate Ctrl+Tab
-		fireEvent.keyDown(window, { key: "Tab", ctrlKey: true })
+		fireEvent.keyDown(window, { ctrlKey: true, key: "Tab" })
 
 		await waitFor(() => {
 			const buttons = screen.getAllByRole("button")
@@ -105,7 +105,7 @@ describe("BufferSwitcherContainer", () => {
 		})
 
 		// Simulate Ctrl+Shift+Tab
-		fireEvent.keyDown(window, { key: "Tab", ctrlKey: true, shiftKey: true })
+		fireEvent.keyDown(window, { ctrlKey: true, key: "Tab", shiftKey: true })
 
 		await waitFor(() => {
 			const buttons = screen.getAllByRole("button")
@@ -188,7 +188,7 @@ describe("BufferSwitcherContainer", () => {
 		render(<BufferSwitcherContainer {...defaultProps} open={false} onSelectTab={onSelectTab} />)
 
 		// Simulate Ctrl+Tab
-		fireEvent.keyDown(window, { key: "Tab", ctrlKey: true })
+		fireEvent.keyDown(window, { ctrlKey: true, key: "Tab" })
 
 		// Simulate Control key release
 		fireEvent.keyUp(window, { key: "Control" })

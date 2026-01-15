@@ -34,6 +34,16 @@ export const useLayoutStore = create<LayoutStore>()(
 			// Initial state
 			...DEFAULT_LAYOUT_STATE,
 
+			restoreFromCollapse: () => {
+				set((state) => ({
+					...state,
+					isSidebarOpen: true,
+					// Restore to default width (20%)
+					sidebarWidth: DEFAULT_LAYOUT_STATE.sidebarWidth,
+					wasCollapsedByDrag: false,
+				}))
+			},
+
 			// ==============================
 			// Actions
 			// ==============================
@@ -49,30 +59,11 @@ export const useLayoutStore = create<LayoutStore>()(
 				}))
 			},
 
-			toggleSidebar: () => {
-				set((state) => ({
-					...state,
-					isSidebarOpen: !state.isSidebarOpen,
-					// Clear drag collapse flag on manual toggle
-					wasCollapsedByDrag: false,
-				}))
-			},
-
 			setSidebarCollapsedByDrag: (collapsed: boolean) => {
 				set((state) => ({
 					...state,
-					wasCollapsedByDrag: collapsed,
 					isSidebarOpen: collapsed ? false : state.isSidebarOpen,
-				}))
-			},
-
-			restoreFromCollapse: () => {
-				set((state) => ({
-					...state,
-					isSidebarOpen: true,
-					wasCollapsedByDrag: false,
-					// Restore to default width (20%)
-					sidebarWidth: DEFAULT_LAYOUT_STATE.sidebarWidth,
+					wasCollapsedByDrag: collapsed,
 				}))
 			},
 
@@ -82,14 +73,23 @@ export const useLayoutStore = create<LayoutStore>()(
 					sidebarWidth: width,
 				}))
 			},
+
+			toggleSidebar: () => {
+				set((state) => ({
+					...state,
+					isSidebarOpen: !state.isSidebarOpen,
+					// Clear drag collapse flag on manual toggle
+					wasCollapsedByDrag: false,
+				}))
+			},
 		}),
 		{
 			name: DEFAULT_LAYOUT_CONFIG.storageKey,
 			partialize: (state) => ({
-				isSidebarOpen: state.isSidebarOpen,
 				activePanel: state.activePanel,
-				wasCollapsedByDrag: state.wasCollapsedByDrag,
+				isSidebarOpen: state.isSidebarOpen,
 				sidebarWidth: state.sidebarWidth,
+				wasCollapsedByDrag: state.wasCollapsedByDrag,
 			}),
 		},
 	),
@@ -117,9 +117,9 @@ export const useSidebarWidth = () => useLayoutStore((s) => s.sidebarWidth)
 
 /** Get layout actions */
 export const useLayoutActions = () => ({
-	setActivePanel: useLayoutStore((s) => s.setActivePanel),
-	toggleSidebar: useLayoutStore((s) => s.toggleSidebar),
-	setSidebarCollapsedByDrag: useLayoutStore((s) => s.setSidebarCollapsedByDrag),
 	restoreFromCollapse: useLayoutStore((s) => s.restoreFromCollapse),
+	setActivePanel: useLayoutStore((s) => s.setActivePanel),
+	setSidebarCollapsedByDrag: useLayoutStore((s) => s.setSidebarCollapsedByDrag),
 	setSidebarWidth: useLayoutStore((s) => s.setSidebarWidth),
+	toggleSidebar: useLayoutStore((s) => s.toggleSidebar),
 })

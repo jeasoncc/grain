@@ -9,25 +9,25 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/views/ui/popover"
 import type { KeyboardShortcutsHelpViewProps } from "./keyboard-shortcuts-help.types"
 
 const shortcuts = [
-	{ keys: ["Ctrl", "K"], description: "Command Palette", category: "Global" },
+	{ category: "Global", description: "Command Palette", keys: ["Ctrl", "K"] },
 	{
-		keys: ["Ctrl", "Shift", "F"],
-		description: "Search Panel",
 		category: "Global",
+		description: "Search Panel",
+		keys: ["Ctrl", "Shift", "F"],
 	},
-	{ keys: ["Ctrl", "B"], description: "File Panel", category: "Global" },
-	{ keys: ["Ctrl", "Tab"], description: "Next Tab", category: "Navigation" },
+	{ category: "Global", description: "File Panel", keys: ["Ctrl", "B"] },
+	{ category: "Navigation", description: "Next Tab", keys: ["Ctrl", "Tab"] },
 	{
-		keys: ["Ctrl", "Shift", "Tab"],
-		description: "Previous Tab",
 		category: "Navigation",
+		description: "Previous Tab",
+		keys: ["Ctrl", "Shift", "Tab"],
 	},
-	{ keys: ["Ctrl", "S"], description: "Save", category: "Edit" },
-	{ keys: ["Ctrl", "B"], description: "Bold", category: "Format" },
-	{ keys: ["Ctrl", "I"], description: "Italic", category: "Format" },
-	{ keys: ["Ctrl", "U"], description: "Underline", category: "Format" },
-	{ keys: ["Ctrl", "Z"], description: "Undo", category: "Edit" },
-	{ keys: ["Ctrl", "Shift", "Z"], description: "Redo", category: "Edit" },
+	{ category: "Edit", description: "Save", keys: ["Ctrl", "S"] },
+	{ category: "Format", description: "Bold", keys: ["Ctrl", "B"] },
+	{ category: "Format", description: "Italic", keys: ["Ctrl", "I"] },
+	{ category: "Format", description: "Underline", keys: ["Ctrl", "U"] },
+	{ category: "Edit", description: "Undo", keys: ["Ctrl", "Z"] },
+	{ category: "Edit", description: "Redo", keys: ["Ctrl", "Shift", "Z"] },
 ]
 
 export const KeyboardShortcutsHelpView = memo(({}: KeyboardShortcutsHelpViewProps) => {

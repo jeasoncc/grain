@@ -20,12 +20,12 @@ import type { EditorInstanceState, EditorTab } from "@/types/editor-tab"
  * @returns 默认的编辑器实例状态
  */
 export const createDefaultEditorState = (): EditorInstanceState => ({
-	serializedState: undefined,
-	selectionState: undefined,
-	scrollTop: 0,
-	scrollLeft: 0,
 	isDirty: false,
 	lastModified: Date.now(),
+	scrollLeft: 0,
+	scrollTop: 0,
+	selectionState: undefined,
+	serializedState: undefined,
 })
 
 /**

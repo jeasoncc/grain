@@ -76,11 +76,11 @@ let logQueue: readonly LogQueueItem[] = []
  * 队列处理器状态
  */
 let processorState: QueueProcessorState = {
-	isProcessing: false,
-	processedCount: 0,
-	errorCount: 0,
-	lastProcessTime: dayjs().valueOf(),
 	averageProcessTime: 0,
+	errorCount: 0,
+	isProcessing: false,
+	lastProcessTime: dayjs().valueOf(),
+	processedCount: 0,
 }
 
 /**
@@ -93,10 +93,10 @@ let queueProcessor: NodeJS.Timeout | null = null
  */
 const DEFAULT_ASYNC_CONFIG: AsyncLogConfig = {
 	...DEFAULT_LOG_CONFIG,
-	maxQueueSize: 1000,
-	processInterval: 100, // 100ms
-	maxRetries: 3,
 	highPriorityLevels: ["error", "warn"],
+	maxQueueSize: 1000,
+	maxRetries: 3,
+	processInterval: 100, // 100ms
 }
 
 // ============================================================================
@@ -182,11 +182,11 @@ export const addLogToAsyncQueue = (
 
 			// 创建队列项
 			const queueItem: LogQueueItem = {
-				id: entry.id || `queue-${dayjs().valueOf()}-${Math.random()}`,
 				entry,
+				id: entry.id || `queue-${dayjs().valueOf()}-${Math.random()}`,
 				priority: calculatePriority(entry, config),
-				timestamp: dayjs().valueOf(),
 				retryCount: 0,
+				timestamp: dayjs().valueOf(),
 			}
 
 			// 添加到队列并按优先级排序
@@ -206,9 +206,9 @@ export const addLogToAsyncQueue = (
 			}
 		},
 		(error): AppError => ({
-			type: "LOG_QUEUE_ERROR",
 			message: `Failed to add log to async queue: ${String(error)}`,
 			originalError: error,
+			type: "LOG_QUEUE_ERROR",
 		}),
 	)
 }
@@ -282,8 +282,8 @@ const processLogQueue =
 						.filter((item) => item.retryCount < config.maxRetries)
 						.map((item) => ({
 							...item,
-							retryCount: item.retryCount + 1,
 							priority: item.priority - 10, // 降低优先级
+							retryCount: item.retryCount + 1,
 						}))
 
 					logQueue = [...retriedItems, ...logQueue]
@@ -360,25 +360,25 @@ export const createAsyncLogFlow = (config: AsyncLogConfig = DEFAULT_ASYNC_CONFIG
 	}
 
 	return {
-		logEntry,
+		clearQueue: () => clearAsyncQueue(),
 		debug: (message: string, context?: Record<string, unknown>, source?: string) =>
 			logEntry("debug", message, context, source),
-		info: (message: string, context?: Record<string, unknown>, source?: string) =>
-			logEntry("info", message, context, source),
-		success: (message: string, context?: Record<string, unknown>, source?: string) =>
-			logEntry("success", message, context, source),
-		warn: (message: string, context?: Record<string, unknown>, source?: string) =>
-			logEntry("warn", message, context, source),
 		error: (message: string, context?: Record<string, unknown>, source?: string) =>
 			logEntry("error", message, context, source),
-		trace: (message: string, context?: Record<string, unknown>, source?: string) =>
-			logEntry("trace", message, context, source),
+		flushQueue: () => forceFlushAsyncQueue(config),
+		getProcessorState: () => ({ ...processorState }),
 
 		// 队列管理
 		getQueueSize: () => logQueue.length,
-		getProcessorState: () => ({ ...processorState }),
-		flushQueue: () => forceFlushAsyncQueue(config),
-		clearQueue: () => clearAsyncQueue(),
+		info: (message: string, context?: Record<string, unknown>, source?: string) =>
+			logEntry("info", message, context, source),
+		logEntry,
+		success: (message: string, context?: Record<string, unknown>, source?: string) =>
+			logEntry("success", message, context, source),
+		trace: (message: string, context?: Record<string, unknown>, source?: string) =>
+			logEntry("trace", message, context, source),
+		warn: (message: string, context?: Record<string, unknown>, source?: string) =>
+			logEntry("warn", message, context, source),
 	}
 }
 
@@ -409,9 +409,9 @@ export const forceFlushAsyncQueue = (
 			startQueueProcessor(config)
 		},
 		(error): AppError => ({
-			type: "LOG_QUEUE_ERROR",
 			message: `Failed to flush async queue: ${String(error)}`,
 			originalError: error,
+			type: "LOG_QUEUE_ERROR",
 		}),
 	)
 }
@@ -422,11 +422,11 @@ export const forceFlushAsyncQueue = (
 export const clearAsyncQueue = (): void => {
 	logQueue = []
 	processorState = {
-		isProcessing: false,
-		processedCount: 0,
-		errorCount: 0,
-		lastProcessTime: dayjs().valueOf(),
 		averageProcessTime: 0,
+		errorCount: 0,
+		isProcessing: false,
+		lastProcessTime: dayjs().valueOf(),
+		processedCount: 0,
 	}
 }
 
@@ -434,15 +434,15 @@ export const clearAsyncQueue = (): void => {
  * 获取队列状态
  */
 export const getAsyncQueueStatus = () => ({
-	queueSize: logQueue.length,
 	processorState: { ...processorState },
 	queueItems: logQueue.map((item) => ({
+		age: dayjs().valueOf() - item.timestamp,
 		id: item.id,
 		level: item.entry.level,
 		priority: item.priority,
 		retryCount: item.retryCount,
-		age: dayjs().valueOf() - item.timestamp,
 	})),
+	queueSize: logQueue.length,
 })
 
 /**
@@ -489,16 +489,16 @@ export const shutdownAsyncLogger = (
  * 获取性能统计信息
  */
 export const getAsyncLogPerformanceStats = () => ({
-	queueSize: logQueue.length,
-	processedCount: processorState.processedCount,
-	errorCount: processorState.errorCount,
 	averageProcessTime: processorState.averageProcessTime,
+	errorCount: processorState.errorCount,
 	isProcessing: processorState.isProcessing,
 	lastProcessTime: processorState.lastProcessTime,
-	timeSinceLastProcess: dayjs().valueOf() - processorState.lastProcessTime,
+	processedCount: processorState.processedCount,
+	queueSize: logQueue.length,
 	successRate:
 		processorState.processedCount / (processorState.processedCount + processorState.errorCount) ||
 		0,
+	timeSinceLastProcess: dayjs().valueOf() - processorState.lastProcessTime,
 })
 
 /**
@@ -507,10 +507,10 @@ export const getAsyncLogPerformanceStats = () => ({
 export const resetAsyncLogPerformanceStats = (): void => {
 	processorState = {
 		...processorState,
-		processedCount: 0,
-		errorCount: 0,
 		averageProcessTime: 0,
+		errorCount: 0,
 		lastProcessTime: dayjs().valueOf(),
+		processedCount: 0,
 	}
 }
 

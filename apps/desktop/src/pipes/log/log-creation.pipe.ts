@@ -52,9 +52,9 @@ export const createLogEntry = (
 	const consoleOutput = config.enableConsole ? addConsoleColors(entry) : undefined
 
 	return {
+		consoleOutput,
 		entry,
 		shouldLog: true,
-		consoleOutput,
 	}
 }
 
@@ -123,8 +123,8 @@ export const validateLogConfig = (
 	].filter((error): error is string => error !== null)
 
 	return {
-		isValid: validationErrors.length === 0,
 		errors: validationErrors as ReadonlyArray<string>,
+		isValid: validationErrors.length === 0,
 		mergedConfig,
 	}
 }
@@ -155,12 +155,12 @@ export const createLoggerConfig = (config: Partial<LogConfig> = {}): LogConfig =
  */
 export const compareLogLevels = (level1: LogLevel, level2: LogLevel): number => {
 	const priorities = {
-		trace: 0,
 		debug: 1,
+		error: 4,
 		info: 2,
 		success: 2,
+		trace: 0,
 		warn: 3,
-		error: 4,
 	}
 
 	const priority1 = priorities[level1]

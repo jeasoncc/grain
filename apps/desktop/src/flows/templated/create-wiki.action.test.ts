@@ -13,25 +13,25 @@ import type { TemplatedFileParams } from "./create-templated-file.flow"
 vi.mock("@/flows/node", () => ({
 	createFileInTree: vi.fn().mockResolvedValue({
 		node: {
-			id: "test-wiki-id",
-			title: "wiki-1234567890-test-title",
-			workspace: "test-workspace",
-			parent: "wiki-folder-id",
-			type: "file",
-			order: 0,
 			createDate: "2024-12-25T00:00:00.000Z",
+			id: "test-wiki-id",
 			lastEdit: "2024-12-25T00:00:00.000Z",
+			order: 0,
+			parent: "wiki-folder-id",
 			tags: ["wiki"],
+			title: "wiki-1234567890-test-title",
+			type: "file",
+			workspace: "test-workspace",
 		},
 	}),
 }))
 
 vi.mock("@/log", () => ({
 	default: {
+		error: vi.fn(),
+		info: vi.fn(),
 		start: vi.fn(),
 		success: vi.fn(),
-		info: vi.fn(),
-		error: vi.fn(),
 	},
 }))
 
@@ -77,10 +77,10 @@ describe("createWiki", () => {
 	describe("TaskEither 版本", () => {
 		it("应该在工作区 ID 无效时返回错误", async () => {
 			const params: TemplatedFileParams<WikiTemplateParams> = {
-				workspaceId: "invalid-uuid",
 				templateParams: {
 					date: new Date("2024-12-25T00:00:00.000Z"),
 				},
+				workspaceId: "invalid-uuid",
 			}
 
 			const result = await createWiki(params)()
@@ -96,10 +96,10 @@ describe("createWiki", () => {
 	describe("Promise 版本", () => {
 		it("应该在参数无效时抛出错误", async () => {
 			const params: TemplatedFileParams<WikiTemplateParams> = {
-				workspaceId: "invalid-uuid",
 				templateParams: {
 					date: new Date("2024-12-25T00:00:00.000Z"),
 				},
+				workspaceId: "invalid-uuid",
 			}
 
 			await expect(createWikiAsync(params)).rejects.toThrow("基础参数校验失败")

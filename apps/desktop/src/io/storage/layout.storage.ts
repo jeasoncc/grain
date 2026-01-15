@@ -33,10 +33,10 @@ export const LAYOUT_STORAGE_KEY = "grain-layout-state"
  * 使用 SIDEBAR_PANELS 常量确保与类型定义同步
  */
 const LayoutStateSchema = z.object({
-	isSidebarOpen: z.boolean(),
 	activePanel: z.enum(SIDEBAR_PANELS),
-	wasCollapsedByDrag: z.boolean(),
+	isSidebarOpen: z.boolean(),
 	sidebarWidth: z.number().min(15).max(40),
+	wasCollapsedByDrag: z.boolean(),
 })
 
 // ============================================================================

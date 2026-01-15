@@ -22,10 +22,10 @@ vi.mock("@/hooks/use-node", () => ({
 vi.mock("@/state/editor-tabs.state", () => ({
 	useEditorTabsStore: vi.fn((selector) => {
 		const store = {
+			closeTab: vi.fn(),
+			editorStates: {},
 			openTab: vi.fn(),
 			updateEditorState: vi.fn(),
-			editorStates: {},
-			closeTab: vi.fn(),
 		}
 		return selector ? selector(store) : store
 	}),
@@ -34,8 +34,8 @@ vi.mock("@/state/editor-tabs.state", () => ({
 vi.mock("@/state/selection.state", () => ({
 	useSelectionStore: vi.fn((selector) => {
 		const store = {
-			selectedWorkspaceId: "workspace-1",
 			selectedNodeId: null,
+			selectedWorkspaceId: "workspace-1",
 			setSelectedNodeId: vi.fn(),
 		}
 		return selector ? selector(store) : store

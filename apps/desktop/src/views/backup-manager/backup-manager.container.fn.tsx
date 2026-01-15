@@ -23,10 +23,10 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 
 	const handleRestore = useCallback(async () => {
 		const confirmed = await confirm({
-			title: "恢复备份",
-			description: "恢复备份将覆盖当前数据。此操作无法撤销。我们建议先导出当前数据。",
-			confirmText: "确认恢复",
 			cancelText: "取消",
+			confirmText: "确认恢复",
+			description: "恢复备份将覆盖当前数据。此操作无法撤销。我们建议先导出当前数据。",
+			title: "恢复备份",
 		})
 
 		if (confirmed) {
@@ -37,10 +37,10 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 	const handleRestoreLocal = useCallback(
 		async (timestamp: string) => {
 			const confirmed = await confirm({
-				title: "恢复本地备份",
-				description: `确定要恢复 ${new Date(timestamp).toLocaleString()} 的备份吗？`,
-				confirmText: "确认恢复",
 				cancelText: "取消",
+				confirmText: "确认恢复",
+				description: `确定要恢复 ${new Date(timestamp).toLocaleString()} 的备份吗？`,
+				title: "恢复本地备份",
 			})
 
 			if (confirmed) {
@@ -52,11 +52,11 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 
 	const handleClearAllData = useCallback(async () => {
 		const confirmed = await confirm({
-			title: "清除所有数据",
+			cancelText: "取消",
+			confirmText: "确认清除",
 			description:
 				"这将永久删除所有数据，包括：\n• 所有项目、章节和场景（IndexedDB）\n• 应用设置和偏好（localStorage）\n• 会话数据（sessionStorage）\n• 浏览器 cookies\n• 应用缓存\n\n此操作无法撤销！我们建议先导出备份。",
-			confirmText: "确认清除",
-			cancelText: "取消",
+			title: "清除所有数据",
 		})
 
 		if (confirmed) {
@@ -66,10 +66,10 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 
 	const handleClearDatabase = useCallback(async () => {
 		const confirmed = await confirm({
-			title: "仅清除数据库",
-			description: "这将清除所有项目、章节和场景，但保留应用设置。",
-			confirmText: "确认清除",
 			cancelText: "取消",
+			confirmText: "确认清除",
+			description: "这将清除所有项目、章节和场景，但保留应用设置。",
+			title: "仅清除数据库",
 		})
 
 		if (confirmed) {
@@ -79,10 +79,10 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 
 	const handleClearSettings = useCallback(async () => {
 		const confirmed = await confirm({
-			title: "仅清除设置",
-			description: "这将清除应用设置和偏好，但保留项目数据。",
-			confirmText: "确认清除",
 			cancelText: "取消",
+			confirmText: "确认清除",
+			description: "这将清除应用设置和偏好，但保留项目数据。",
+			title: "仅清除设置",
 		})
 
 		if (confirmed) {

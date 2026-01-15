@@ -22,10 +22,44 @@ import {
 export const useEditorHistoryStore = create<EditorHistoryStore>()(
 	persist(
 		(set, get) => ({
-			// State
-			undoStack: new Map(),
-			redoStack: new Map(),
+			canRedo: (nodeId) => {
+				const nodeRedoHistory = get().redoStack.get(nodeId)
+				return (nodeRedoHistory?.length ?? 0) > 0
+			},
+
+			// Queries
+			canUndo: (nodeId) => {
+				const nodeHistory = get().undoStack.get(nodeId)
+				return (nodeHistory?.length ?? 0) > 0
+			},
+
+			clearAllHistory: () => {
+				set({
+					redoStack: new Map(),
+					undoStack: new Map(),
+				})
+			},
+
+			clearHistory: (nodeId) => {
+				set((state) => {
+					const newUndoStack = new Map([...state.undoStack])
+					const newRedoStack = new Map([...state.redoStack])
+
+					newUndoStack.delete(nodeId)
+					newRedoStack.delete(nodeId)
+
+					return { redoStack: newRedoStack, undoStack: newUndoStack }
+				})
+			},
 			currentNodeId: null,
+
+			getHistoryCount: (nodeId) => {
+				const state = get()
+				return {
+					redo: state.redoStack.get(nodeId)?.length ?? 0,
+					undo: state.undoStack.get(nodeId)?.length ?? 0,
+				}
+			},
 
 			// Actions
 			pushHistory: (nodeId, content, wordCount) => {
@@ -35,8 +69,8 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 
 					const nodeHistory = [...(undoStack.get(nodeId) || [])]
 					const entry: EditorHistoryEntry = {
-						nodeId,
 						content,
+						nodeId,
 						timestamp: new Date().toISOString(),
 						wordCount,
 					}
@@ -51,33 +85,8 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 					// Clear redo stack on new action
 					const newRedoStack = new Map([...redoStack.entries()].filter(([key]) => key !== nodeId))
 
-					return { undoStack: newUndoStack, redoStack: newRedoStack }
+					return { redoStack: newRedoStack, undoStack: newUndoStack }
 				})
-			},
-
-			undo: (nodeId) => {
-				const state = get()
-				const nodeHistory = [...(state.undoStack.get(nodeId) || [])]
-				if (nodeHistory.length === 0) {
-					return null
-				}
-
-				const newNodeHistory = nodeHistory.slice(0, -1)
-				const entry = nodeHistory[nodeHistory.length - 1]
-				if (!entry) {
-					return null
-				}
-
-				// Push to redo stack
-				const nodeRedoHistory = [...(state.redoStack.get(nodeId) || [])]
-				const newNodeRedoHistory = [...nodeRedoHistory, entry]
-
-				const newUndoStack = new Map([...state.undoStack, [nodeId, newNodeHistory]])
-				const newRedoStack = new Map([...state.redoStack, [nodeId, newNodeRedoHistory]])
-
-				set({ undoStack: newUndoStack, redoStack: newRedoStack })
-
-				return entry
 			},
 
 			redo: (nodeId) => {
@@ -100,58 +109,48 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 				const newUndoStack = new Map([...state.undoStack, [nodeId, newNodeHistory]])
 				const newRedoStack = new Map([...state.redoStack, [nodeId, newNodeRedoHistory]])
 
-				set({ undoStack: newUndoStack, redoStack: newRedoStack })
+				set({ redoStack: newRedoStack, undoStack: newUndoStack })
 
 				return entry
 			},
-
-			clearHistory: (nodeId) => {
-				set((state) => {
-					const newUndoStack = new Map([...state.undoStack])
-					const newRedoStack = new Map([...state.redoStack])
-
-					newUndoStack.delete(nodeId)
-					newRedoStack.delete(nodeId)
-
-					return { undoStack: newUndoStack, redoStack: newRedoStack }
-				})
-			},
-
-			clearAllHistory: () => {
-				set({
-					undoStack: new Map(),
-					redoStack: new Map(),
-				})
-			},
+			redoStack: new Map(),
 
 			setCurrentNode: (nodeId) => {
 				set({ currentNodeId: nodeId })
 			},
 
-			// Queries
-			canUndo: (nodeId) => {
-				const nodeHistory = get().undoStack.get(nodeId)
-				return (nodeHistory?.length ?? 0) > 0
-			},
-
-			canRedo: (nodeId) => {
-				const nodeRedoHistory = get().redoStack.get(nodeId)
-				return (nodeRedoHistory?.length ?? 0) > 0
-			},
-
-			getHistoryCount: (nodeId) => {
+			undo: (nodeId) => {
 				const state = get()
-				return {
-					undo: state.undoStack.get(nodeId)?.length ?? 0,
-					redo: state.redoStack.get(nodeId)?.length ?? 0,
+				const nodeHistory = [...(state.undoStack.get(nodeId) || [])]
+				if (nodeHistory.length === 0) {
+					return null
 				}
+
+				const newNodeHistory = nodeHistory.slice(0, -1)
+				const entry = nodeHistory[nodeHistory.length - 1]
+				if (!entry) {
+					return null
+				}
+
+				// Push to redo stack
+				const nodeRedoHistory = [...(state.redoStack.get(nodeId) || [])]
+				const newNodeRedoHistory = [...nodeRedoHistory, entry]
+
+				const newUndoStack = new Map([...state.undoStack, [nodeId, newNodeHistory]])
+				const newRedoStack = new Map([...state.redoStack, [nodeId, newNodeRedoHistory]])
+
+				set({ redoStack: newRedoStack, undoStack: newUndoStack })
+
+				return entry
 			},
+			// State
+			undoStack: new Map(),
 		}),
 		{
 			name: EDITOR_HISTORY_STORAGE_KEY,
 			partialize: (state) => ({
-				undoStack: Array.from(state.undoStack.entries()),
 				redoStack: Array.from(state.redoStack.entries()),
+				undoStack: Array.from(state.undoStack.entries()),
 			}),
 			storage: {
 				getItem: (name) => {
@@ -161,21 +160,21 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 					return {
 						state: {
 							...parsed.state,
-							undoStack: new Map(parsed.state.undoStack),
 							redoStack: new Map(parsed.state.redoStack),
+							undoStack: new Map(parsed.state.undoStack),
 						},
 					}
 				},
+				removeItem: (name) => localStorage.removeItem(name),
 				setItem: (name, value) => {
 					const serialized = {
 						state: {
-							undoStack: Array.from((value.state as EditorHistoryStore).undoStack.entries()),
 							redoStack: Array.from((value.state as EditorHistoryStore).redoStack.entries()),
+							undoStack: Array.from((value.state as EditorHistoryStore).undoStack.entries()),
 						},
 					}
 					localStorage.setItem(name, JSON.stringify(serialized))
 				},
-				removeItem: (name) => localStorage.removeItem(name),
 			},
 		},
 	),

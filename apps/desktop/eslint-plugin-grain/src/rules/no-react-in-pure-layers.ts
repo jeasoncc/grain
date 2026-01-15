@@ -11,45 +11,6 @@ const createRule = ESLintUtils.RuleCreator(
 )
 
 export default createRule({
-	name: "no-react-in-pure-layers",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "Prohibit React imports in pure layers (pipes, utils, io, state)",
-		},
-		fixable: undefined,
-		schema: [],
-		messages: {
-			noReactInPureLayer: [
-				"❌ 禁止在 {{layer}} 层中导入 React！此层应该保持纯净，无副作用。",
-				"",
-				"🏗️ 架构原则：",
-				"  - pipes/: 纯函数，无副作用",
-				"  - utils/: 通用工具函数，无副作用",
-				"  - io/: IO 操作，无 UI 依赖",
-				"  - state/: 状态管理，无 UI 依赖",
-				"",
-				"✅ 建议：",
-				"  - 将 React 相关逻辑移动到 views/ 或 hooks/ 层",
-				"  - 保持当前层的纯净性",
-				"  - 通过参数传递所需的数据",
-				"",
-				"📚 更多信息: 查看项目架构文档了解层级职责",
-			].join("\n"),
-			noReactTypesInPureLayer: [
-				"❌ 禁止在 {{layer}} 层中导入 React 类型！",
-				"",
-				"💡 例外情况：",
-				"  - 如果确实需要 React 类型定义，请将其移动到 types/ 层",
-				"  - 或者重新考虑架构设计",
-				"",
-				"✅ 建议：",
-				"  - 使用通用的 TypeScript 类型",
-				"  - 将 React 特定的类型定义移动到 types/ 层",
-			].join("\n"),
-		},
-	},
-	defaultOptions: [],
 	create(context) {
 		const filename = context.getFilename()
 		const currentLayer = getArchitectureLayer(filename)
@@ -83,33 +44,6 @@ export default createRule({
 		}
 
 		return {
-			ImportDeclaration(node: TSESTree.ImportDeclaration) {
-				const source = node.source.value
-
-				if (typeof source !== "string") return
-
-				if (isReactImport(source)) {
-					// Special handling for type-only imports
-					if (isReactTypeImport(node)) {
-						context.report({
-							node,
-							messageId: "noReactTypesInPureLayer",
-							data: {
-								layer: currentLayer,
-							},
-						})
-					} else {
-						context.report({
-							node,
-							messageId: "noReactInPureLayer",
-							data: {
-								layer: currentLayer,
-							},
-						})
-					}
-				}
-			},
-
 			// Also check require() calls
 			CallExpression(node: TSESTree.CallExpression) {
 				if (
@@ -123,15 +57,80 @@ export default createRule({
 
 					if (isReactImport(source)) {
 						context.report({
-							node,
-							messageId: "noReactInPureLayer",
 							data: {
 								layer: currentLayer,
 							},
+							messageId: "noReactInPureLayer",
+							node,
+						})
+					}
+				}
+			},
+			ImportDeclaration(node: TSESTree.ImportDeclaration) {
+				const source = node.source.value
+
+				if (typeof source !== "string") return
+
+				if (isReactImport(source)) {
+					// Special handling for type-only imports
+					if (isReactTypeImport(node)) {
+						context.report({
+							data: {
+								layer: currentLayer,
+							},
+							messageId: "noReactTypesInPureLayer",
+							node,
+						})
+					} else {
+						context.report({
+							data: {
+								layer: currentLayer,
+							},
+							messageId: "noReactInPureLayer",
+							node,
 						})
 					}
 				}
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "Prohibit React imports in pure layers (pipes, utils, io, state)",
+		},
+		fixable: undefined,
+		messages: {
+			noReactInPureLayer: [
+				"❌ 禁止在 {{layer}} 层中导入 React！此层应该保持纯净，无副作用。",
+				"",
+				"🏗️ 架构原则：",
+				"  - pipes/: 纯函数，无副作用",
+				"  - utils/: 通用工具函数，无副作用",
+				"  - io/: IO 操作，无 UI 依赖",
+				"  - state/: 状态管理，无 UI 依赖",
+				"",
+				"✅ 建议：",
+				"  - 将 React 相关逻辑移动到 views/ 或 hooks/ 层",
+				"  - 保持当前层的纯净性",
+				"  - 通过参数传递所需的数据",
+				"",
+				"📚 更多信息: 查看项目架构文档了解层级职责",
+			].join("\n"),
+			noReactTypesInPureLayer: [
+				"❌ 禁止在 {{layer}} 层中导入 React 类型！",
+				"",
+				"💡 例外情况：",
+				"  - 如果确实需要 React 类型定义，请将其移动到 types/ 层",
+				"  - 或者重新考虑架构设计",
+				"",
+				"✅ 建议：",
+				"  - 使用通用的 TypeScript 类型",
+				"  - 将 React 特定的类型定义移动到 types/ 层",
+			].join("\n"),
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "no-react-in-pure-layers",
 })

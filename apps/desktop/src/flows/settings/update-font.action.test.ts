@@ -31,29 +31,29 @@ import {
 // ============================================================================
 
 const mockFontStore = {
+	cardBorderRadius: 8,
+	cardSize: "medium",
+	firstLineIndent: 0,
+	fontFamily: "Inter",
+	fontSize: 14,
+	letterSpacing: 0,
+	lineHeight: 1.6,
+	paragraphSpacing: 16,
+	reset: vi.fn(),
+	setCardBorderRadius: vi.fn(),
+	setCardSize: vi.fn(),
+	setFirstLineIndent: vi.fn(),
 	setFontFamily: vi.fn(),
 	setFontSize: vi.fn(),
-	setLineHeight: vi.fn(),
 	setLetterSpacing: vi.fn(),
+	setLineHeight: vi.fn(),
+	setParagraphSpacing: vi.fn(),
 	setUiFontFamily: vi.fn(),
 	setUiFontSize: vi.fn(),
 	setUiScale: vi.fn(),
-	setCardSize: vi.fn(),
-	setCardBorderRadius: vi.fn(),
-	setParagraphSpacing: vi.fn(),
-	setFirstLineIndent: vi.fn(),
-	reset: vi.fn(),
-	fontFamily: "Inter",
-	fontSize: 14,
-	lineHeight: 1.6,
-	letterSpacing: 0,
 	uiFontFamily: "Inter",
 	uiFontSize: 13,
 	uiScale: "100%",
-	cardSize: "medium",
-	cardBorderRadius: 8,
-	paragraphSpacing: 16,
-	firstLineIndent: 0,
 }
 
 vi.mock("@/state/font.state", () => ({
@@ -64,12 +64,12 @@ vi.mock("@/state/font.state", () => ({
 
 vi.mock("@/log/index", () => ({
 	default: {
+		debug: vi.fn(),
+		error: vi.fn(),
 		info: vi.fn(),
+		start: vi.fn(),
 		success: vi.fn(),
 		warn: vi.fn(),
-		error: vi.fn(),
-		debug: vi.fn(),
-		start: vi.fn(),
 	},
 }))
 
@@ -80,8 +80,8 @@ vi.mock("@/log/index", () => ({
 const validEditorFontParams: UpdateEditorFontParams = {
 	fontFamily: "JetBrains Mono",
 	fontSize: 16,
-	lineHeight: 1.8,
 	letterSpacing: 0.5,
+	lineHeight: 1.8,
 }
 
 const validUiFontParams: UpdateUiFontParams = {
@@ -91,10 +91,10 @@ const validUiFontParams: UpdateUiFontParams = {
 }
 
 const validTypographyParams: UpdateTypographyParams = {
-	cardSize: "large",
 	cardBorderRadius: 12,
-	paragraphSpacing: 20,
+	cardSize: "large",
 	firstLineIndent: 2,
+	paragraphSpacing: 20,
 }
 
 // ============================================================================
@@ -459,17 +459,17 @@ describe("getFontSettings", () => {
 		const settings = getFontSettings()
 
 		expect(settings).toEqual({
+			cardBorderRadius: 8,
+			cardSize: "medium",
+			firstLineIndent: 0,
 			fontFamily: "Inter",
 			fontSize: 14,
-			lineHeight: 1.6,
 			letterSpacing: 0,
+			lineHeight: 1.6,
+			paragraphSpacing: 16,
 			uiFontFamily: "Inter",
 			uiFontSize: 13,
 			uiScale: "100%",
-			cardSize: "medium",
-			cardBorderRadius: 8,
-			paragraphSpacing: 16,
-			firstLineIndent: 0,
 		})
 	})
 })
@@ -504,8 +504,8 @@ describe("边界情况", () => {
 			uiFontSize: undefined,
 		})
 		const result3 = updateTypography({
-			cardSize: undefined,
 			cardBorderRadius: undefined,
+			cardSize: undefined,
 		})
 
 		expect(E.isRight(result1)).toBe(true)

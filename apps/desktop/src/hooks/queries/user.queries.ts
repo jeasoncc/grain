@@ -21,7 +21,6 @@ import { queryKeys } from "./query-keys"
  */
 export const useUsers = () => {
 	return useQuery({
-		queryKey: queryKeys.users.all,
 		queryFn: async (): Promise<readonly UserInterface[]> => {
 			const result = await userRepo.getUsers()()
 			if (E.isLeft(result)) {
@@ -32,6 +31,7 @@ export const useUsers = () => {
 				(a, b) => new Date(b.lastLogin).getTime() - new Date(a.lastLogin).getTime(),
 			)
 		},
+		queryKey: queryKeys.users.all,
 	})
 }
 
@@ -41,7 +41,6 @@ export const useUsers = () => {
 export const useUser = (userId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!userId,
-		queryKey: queryKeys.users.detail(userId ?? ""),
 		queryFn: async (): Promise<UserInterface | null> => {
 			if (!userId) return null
 			const result = await userRepo.getUser(userId)()
@@ -50,6 +49,7 @@ export const useUser = (userId: string | null | undefined) => {
 			}
 			return result.right
 		},
+		queryKey: queryKeys.users.detail(userId ?? ""),
 	})
 }
 
@@ -59,7 +59,6 @@ export const useUser = (userId: string | null | undefined) => {
 export const useUserByUsername = (username: string | null | undefined) => {
 	return useQuery({
 		enabled: !!username,
-		queryKey: queryKeys.users.byUsername(username ?? ""),
 		queryFn: async (): Promise<UserInterface | null> => {
 			if (!username) return null
 			const result = await userRepo.getUserByUsername(username)()
@@ -68,6 +67,7 @@ export const useUserByUsername = (username: string | null | undefined) => {
 			}
 			return result.right
 		},
+		queryKey: queryKeys.users.byUsername(username ?? ""),
 	})
 }
 
@@ -77,7 +77,6 @@ export const useUserByUsername = (username: string | null | undefined) => {
 export const useUserByEmail = (email: string | null | undefined) => {
 	return useQuery({
 		enabled: !!email,
-		queryKey: queryKeys.users.byEmail(email ?? ""),
 		queryFn: async (): Promise<UserInterface | null> => {
 			if (!email) return null
 			const result = await userRepo.getUserByEmail(email)()
@@ -86,6 +85,7 @@ export const useUserByEmail = (email: string | null | undefined) => {
 			}
 			return result.right
 		},
+		queryKey: queryKeys.users.byEmail(email ?? ""),
 	})
 }
 
@@ -94,7 +94,6 @@ export const useUserByEmail = (email: string | null | undefined) => {
  */
 export const useCurrentUser = () => {
 	return useQuery({
-		queryKey: queryKeys.users.current,
 		queryFn: async (): Promise<UserInterface | null> => {
 			const result = await userRepo.getCurrentUser()()
 			if (E.isLeft(result)) {
@@ -102,6 +101,7 @@ export const useCurrentUser = () => {
 			}
 			return result.right
 		},
+		queryKey: queryKeys.users.current,
 	})
 }
 
@@ -111,7 +111,6 @@ export const useCurrentUser = () => {
 export const useUsersByPlan = (plan: UserPlan | null | undefined) => {
 	return useQuery({
 		enabled: !!plan,
-		queryKey: queryKeys.users.byPlan(plan ?? ""),
 		queryFn: async (): Promise<readonly UserInterface[]> => {
 			if (!plan) return []
 			const result = await userRepo.getUsers()()
@@ -120,5 +119,6 @@ export const useUsersByPlan = (plan: UserPlan | null | undefined) => {
 			}
 			return result.right.filter((u) => u.plan === plan)
 		},
+		queryKey: queryKeys.users.byPlan(plan ?? ""),
 	})
 }

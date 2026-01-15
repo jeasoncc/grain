@@ -71,8 +71,8 @@ export const getAttachmentOrFail = (id: string): TE.TaskEither<AppError, Attachm
 			attachment
 				? TE.right(attachment)
 				: TE.left({
-						type: "NOT_FOUND",
 						message: `附件不存在: ${id}`,
+						type: "NOT_FOUND",
 					} as AppError),
 		),
 	)

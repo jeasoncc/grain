@@ -8,18 +8,6 @@ const createRule = ESLintUtils.RuleCreator(
 )
 
 export default createRule({
-	name: "file-naming",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "强制执行各层级的文件命名规范",
-		},
-		messages: {
-			invalidFileName: "文件命名不符合规范",
-		},
-		schema: [],
-	},
-	defaultOptions: [],
 	create(context) {
 		const filename = context.getFilename()
 
@@ -40,17 +28,29 @@ export default createRule({
 
 				if (!pattern.pattern.test(basename)) {
 					context.report({
-						node,
-						messageId: "invalidFileName",
 						data: {
-							layer,
 							basename,
 							description: pattern.description,
 							example: pattern.example,
+							layer,
 						},
+						messageId: "invalidFileName",
+						node,
 					})
 				}
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "强制执行各层级的文件命名规范",
+		},
+		messages: {
+			invalidFileName: "文件命名不符合规范",
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "file-naming",
 })

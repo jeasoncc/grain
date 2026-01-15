@@ -37,12 +37,12 @@ export interface HardwareAccelerationStatus {
  */
 export function detectHardwareAcceleration(): HardwareAccelerationStatus {
 	const result: HardwareAccelerationStatus = {
-		webglSupported: false,
-		webglVersion: 0,
 		hardwareAccelerated: false,
 		renderer: null,
-		vendor: null,
 		timestamp: Date.now(),
+		vendor: null,
+		webglSupported: false,
+		webglVersion: 0,
 	}
 
 	try {
@@ -95,12 +95,12 @@ export function detectHardwareAcceleration(): HardwareAccelerationStatus {
 		const isSoftwareRenderer = softwareRenderers.some((sw) => rendererLower.includes(sw))
 
 		return {
-			webglSupported: true,
-			webglVersion,
 			hardwareAccelerated: !isSoftwareRenderer,
 			renderer,
-			vendor,
 			timestamp: Date.now(),
+			vendor,
+			webglSupported: true,
+			webglVersion,
 		}
 	} catch (error) {
 		console.error("[ExcalidrawEditor] 硬件加速检测失败:", error)

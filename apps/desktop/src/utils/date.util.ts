@@ -132,9 +132,9 @@ export function getDateFolderStructure(date: Date = new Date()): DateFolderStruc
 	const zodiac = getZodiacAnimal(year)
 
 	return {
-		yearFolder: `year-${year}-${zodiac.en}`,
-		monthFolder: `month-${String(month + 1).padStart(2, "0")}-${MONTH_NAMES[month]}`,
 		dayFolder: `day-${String(day).padStart(2, "0")}-${WEEKDAY_NAMES[weekday]}`,
+		monthFolder: `month-${String(month + 1).padStart(2, "0")}-${MONTH_NAMES[month]}`,
+		yearFolder: `year-${year}-${zodiac.en}`,
 	}
 }
 

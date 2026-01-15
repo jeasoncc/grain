@@ -6,20 +6,29 @@ const createRule = ESLintUtils.RuleCreator(
 )
 
 export default createRule({
-	name: "no-nested-ternary",
+	create(context) {
+		return {
+			ConditionalExpression(node) {
+				// 检查 consequent 或 alternate 是否包含嵌套的三元表达式
+				const hasNestedInConsequent = node.consequent.type === "ConditionalExpression"
+				const hasNestedInAlternate = node.alternate.type === "ConditionalExpression"
+
+				if (hasNestedInConsequent || hasNestedInAlternate) {
+					context.report({
+						messageId: "noNestedTernary",
+						node,
+					})
+				}
+			},
+		}
+	},
+	defaultOptions: [],
 	meta: {
-		type: "problem",
 		docs: {
 			description: "禁止嵌套三元表达式",
 		},
 		messages: {
 			noNestedTernary: buildErrorMessage({
-				title: "禁止嵌套三元表达式",
-				reason: `
-  嵌套三元表达式会严重降低代码可读性：
-  - 难以理解条件逻辑的执行路径
-  - 容易出错且难以调试
-  - 违反"代码应该易于阅读"的原则`,
 				correctExample: `// ✅ 使用 if-else 或提取函数
 const getStatus = (score: number): string => {
   if (score >= 90) return 'excellent';
@@ -44,32 +53,23 @@ pipe(
     () => 'excellent'
   )
 );`,
+				docRef: "#code-standards - 条件语句规范",
 				incorrectExample: `// ❌ 嵌套三元表达式
 const status = score >= 90 
   ? 'excellent' 
   : score >= 60 
     ? 'pass' 
     : 'fail';`,
-				docRef: "#code-standards - 条件语句规范",
+				reason: `
+  嵌套三元表达式会严重降低代码可读性：
+  - 难以理解条件逻辑的执行路径
+  - 容易出错且难以调试
+  - 违反"代码应该易于阅读"的原则`,
+				title: "禁止嵌套三元表达式",
 			}),
 		},
 		schema: [],
+		type: "problem",
 	},
-	defaultOptions: [],
-	create(context) {
-		return {
-			ConditionalExpression(node) {
-				// 检查 consequent 或 alternate 是否包含嵌套的三元表达式
-				const hasNestedInConsequent = node.consequent.type === "ConditionalExpression"
-				const hasNestedInAlternate = node.alternate.type === "ConditionalExpression"
-
-				if (hasNestedInConsequent || hasNestedInAlternate) {
-					context.report({
-						node,
-						messageId: "noNestedTernary",
-					})
-				}
-			},
-		}
-	},
+	name: "no-nested-ternary",
 })

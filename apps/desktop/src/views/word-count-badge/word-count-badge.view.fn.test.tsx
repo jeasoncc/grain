@@ -10,14 +10,14 @@ import { WordCountBadge, WordCountDisplay } from "./word-count-badge.view.fn"
 
 describe("WordCountBadge", () => {
 	const defaultProps: WordCountBadgeProps = {
-		wordCountResult: {
-			total: 100,
-			chineseChars: 50,
-			englishWords: 50,
-			characters: 100,
-		},
 		countMode: "chinese",
 		show: true,
+		wordCountResult: {
+			characters: 100,
+			chineseChars: 50,
+			englishWords: 50,
+			total: 100,
+		},
 	}
 
 	it("should render with word count", () => {
@@ -45,10 +45,10 @@ describe("WordCountBadge", () => {
 			<WordCountBadge
 				{...defaultProps}
 				wordCountResult={{
-					total: 150,
+					characters: 150,
 					chineseChars: 75,
 					englishWords: 75,
-					characters: 150,
+					total: 150,
 				}}
 			/>,
 		)
@@ -67,13 +67,13 @@ describe("WordCountBadge", () => {
 
 describe("WordCountDisplay", () => {
 	const defaultProps: WordCountDisplayProps = {
+		countMode: "chinese",
 		wordCountResult: {
-			total: 100,
+			characters: 100,
 			chineseChars: 50,
 			englishWords: 50,
-			characters: 100,
+			total: 100,
 		},
-		countMode: "chinese",
 	}
 
 	it("should render with word count", () => {

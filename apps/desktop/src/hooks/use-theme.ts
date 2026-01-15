@@ -83,20 +83,20 @@ export function useTheme() {
 	)
 
 	return {
-		theme: themeKey,
-		mode,
-		systemTheme,
-		effectiveTheme,
 		currentTheme,
-		themes: getThemes(),
-		isDark: effectiveTheme === "dark",
-		isSystem: mode === "system",
+		effectiveTheme,
 		enableTransition,
+		isDark: effectiveTheme === "dark",
 		isInitialized,
-		setTheme,
-		setMode,
-		toggleMode,
+		isSystem: mode === "system",
+		mode,
 		setEnableTransition,
+		setMode,
+		setTheme,
+		systemTheme,
+		theme: themeKey,
+		themes: getThemes(),
+		toggleMode,
 	}
 }
 

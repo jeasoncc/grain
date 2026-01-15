@@ -36,9 +36,9 @@ export function generateLedgerContent(date: Date = dayjs().toDate()): string {
 
 	// 格式化标题日期：December 25, 2024
 	const titleDate = date.toLocaleDateString("en-US", {
-		year: "numeric",
-		month: "long",
 		day: "numeric",
+		month: "long",
+		year: "numeric",
 	})
 
 	const content = {
@@ -48,33 +48,33 @@ export function generateLedgerContent(date: Date = dayjs().toDate()): string {
 				{
 					children: [
 						{
-							type: "tag",
-							version: 1,
+							detail: 2,
+							format: 0,
+							mode: "segmented",
+							style: "",
 							tagName: "ledger",
 							text: "#[ledger]",
-							format: 0,
-							style: "",
-							detail: 2,
-							mode: "segmented",
-						},
-						{
-							type: "text",
-							version: 1,
-							text: " ",
-							format: 0,
-							style: "",
-							detail: 0,
-							mode: "normal",
-						},
-						{
 							type: "tag",
 							version: 1,
+						},
+						{
+							detail: 0,
+							format: 0,
+							mode: "normal",
+							style: "",
+							text: " ",
+							type: "text",
+							version: 1,
+						},
+						{
+							detail: 2,
+							format: 0,
+							mode: "segmented",
+							style: "",
 							tagName: dateTag,
 							text: `#[${dateTag}]`,
-							format: 0,
-							style: "",
-							detail: 2,
-							mode: "segmented",
+							type: "tag",
+							version: 1,
 						},
 					],
 					direction: "ltr",
@@ -96,21 +96,21 @@ export function generateLedgerContent(date: Date = dayjs().toDate()): string {
 				{
 					children: [
 						{
+							detail: 0,
+							format: 0,
+							mode: "normal",
+							style: "",
+							text: `${titleDate} - Ledger`,
 							type: "text",
 							version: 1,
-							text: `${titleDate} - Ledger`,
-							format: 0,
-							style: "",
-							detail: 0,
-							mode: "normal",
 						},
 					],
 					direction: "ltr",
 					format: "",
 					indent: 0,
+					tag: "h2",
 					type: "heading",
 					version: 1,
-					tag: "h2",
 				},
 				// 空行
 				{
@@ -125,41 +125,41 @@ export function generateLedgerContent(date: Date = dayjs().toDate()): string {
 				{
 					children: [
 						{
+							detail: 0,
+							format: 1, // bold
+							mode: "normal",
+							style: "",
+							text: "Income",
 							type: "text",
 							version: 1,
-							text: "Income",
-							format: 1, // bold
-							style: "",
-							detail: 0,
-							mode: "normal",
 						},
 					],
 					direction: "ltr",
 					format: "",
 					indent: 0,
+					tag: "h2",
 					type: "heading",
 					version: 1,
-					tag: "h2",
 				},
 				// 收入列表项
 				{
 					children: [
 						{
+							detail: 0,
+							format: 0,
+							mode: "normal",
+							style: "",
+							text: "[Source]: ¥0.00",
 							type: "text",
 							version: 1,
-							text: "[Source]: ¥0.00",
-							format: 0,
-							style: "",
-							detail: 0,
-							mode: "normal",
 						},
 					],
 					direction: "ltr",
 					format: "",
 					indent: 0,
 					type: "listitem",
-					version: 1,
 					value: 1,
+					version: 1,
 				},
 				// 空行
 				{
@@ -174,41 +174,41 @@ export function generateLedgerContent(date: Date = dayjs().toDate()): string {
 				{
 					children: [
 						{
+							detail: 0,
+							format: 1, // bold
+							mode: "normal",
+							style: "",
+							text: "Expenses",
 							type: "text",
 							version: 1,
-							text: "Expenses",
-							format: 1, // bold
-							style: "",
-							detail: 0,
-							mode: "normal",
 						},
 					],
 					direction: "ltr",
 					format: "",
 					indent: 0,
+					tag: "h2",
 					type: "heading",
 					version: 1,
-					tag: "h2",
 				},
 				// 支出列表项
 				{
 					children: [
 						{
+							detail: 0,
+							format: 0,
+							mode: "normal",
+							style: "",
+							text: "[Category] [Item]: ¥0.00",
 							type: "text",
 							version: 1,
-							text: "[Category] [Item]: ¥0.00",
-							format: 0,
-							style: "",
-							detail: 0,
-							mode: "normal",
 						},
 					],
 					direction: "ltr",
 					format: "",
 					indent: 0,
 					type: "listitem",
-					version: 1,
 					value: 1,
+					version: 1,
 				},
 				// 空行
 				{
@@ -223,81 +223,81 @@ export function generateLedgerContent(date: Date = dayjs().toDate()): string {
 				{
 					children: [
 						{
+							detail: 0,
+							format: 1, // bold
+							mode: "normal",
+							style: "",
+							text: "Summary",
 							type: "text",
 							version: 1,
-							text: "Summary",
-							format: 1, // bold
-							style: "",
-							detail: 0,
-							mode: "normal",
 						},
 					],
 					direction: "ltr",
 					format: "",
 					indent: 0,
+					tag: "h2",
 					type: "heading",
 					version: 1,
-					tag: "h2",
 				},
 				// 汇总列表项 - Total Income
 				{
 					children: [
 						{
+							detail: 0,
+							format: 0,
+							mode: "normal",
+							style: "",
+							text: "Total Income: ¥0.00",
 							type: "text",
 							version: 1,
-							text: "Total Income: ¥0.00",
-							format: 0,
-							style: "",
-							detail: 0,
-							mode: "normal",
 						},
 					],
 					direction: "ltr",
 					format: "",
 					indent: 0,
 					type: "listitem",
-					version: 1,
 					value: 1,
+					version: 1,
 				},
 				// 汇总列表项 - Total Expenses
 				{
 					children: [
 						{
+							detail: 0,
+							format: 0,
+							mode: "normal",
+							style: "",
+							text: "Total Expenses: ¥0.00",
 							type: "text",
 							version: 1,
-							text: "Total Expenses: ¥0.00",
-							format: 0,
-							style: "",
-							detail: 0,
-							mode: "normal",
 						},
 					],
 					direction: "ltr",
 					format: "",
 					indent: 0,
 					type: "listitem",
-					version: 1,
 					value: 2,
+					version: 1,
 				},
 				// 汇总列表项 - Balance
 				{
 					children: [
 						{
+							detail: 0,
+							format: 0,
+							mode: "normal",
+							style: "",
+							text: "Balance: ¥0.00",
 							type: "text",
 							version: 1,
-							text: "Balance: ¥0.00",
-							format: 0,
-							style: "",
-							detail: 0,
-							mode: "normal",
 						},
 					],
 					direction: "ltr",
 					format: "",
 					indent: 0,
 					type: "listitem",
-					version: 1,
 					value: 3,
+					version: 1,
 				},
 				// 空行
 				{
@@ -312,21 +312,21 @@ export function generateLedgerContent(date: Date = dayjs().toDate()): string {
 				{
 					children: [
 						{
+							detail: 0,
+							format: 1, // bold
+							mode: "normal",
+							style: "",
+							text: "Notes",
 							type: "text",
 							version: 1,
-							text: "Notes",
-							format: 1, // bold
-							style: "",
-							detail: 0,
-							mode: "normal",
 						},
 					],
 					direction: "ltr",
 					format: "",
 					indent: 0,
+					tag: "h2",
 					type: "heading",
 					version: 1,
-					tag: "h2",
 				},
 				// 空行（准备开始写备注）
 				{

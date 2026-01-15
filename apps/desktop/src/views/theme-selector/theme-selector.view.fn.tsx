@@ -19,9 +19,9 @@ import type { ThemeCardProps, ThemeSelectorViewProps } from "./theme-selector.ty
 
 // Mode configuration
 const modeConfig: { mode: ThemeMode; icon: typeof Sun; label: string }[] = [
-	{ mode: "light", icon: Sun, label: "Light" },
-	{ mode: "dark", icon: Moon, label: "Dark" },
-	{ mode: "system", icon: Monitor, label: "System" },
+	{ icon: Sun, label: "Light", mode: "light" },
+	{ icon: Moon, label: "Dark", mode: "dark" },
+	{ icon: Monitor, label: "System", mode: "system" },
 ]
 
 export const ThemeSelectorView = memo(

@@ -23,11 +23,11 @@ import { SaveStatusIndicatorView } from "./save-status-indicator.view.fn"
 
 describe("SaveStatusIndicatorView", () => {
 	const defaultProps: SaveStatusIndicatorViewProps = {
-		status: "saved",
-		lastSaveTime: null,
 		errorMessage: null,
 		hasUnsavedChanges: false,
 		isManualSaving: false,
+		lastSaveTime: null,
+		status: "saved",
 	}
 
 	describe("基本渲染", () => {

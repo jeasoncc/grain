@@ -77,14 +77,14 @@ export const TagGraphPanelView = memo(({ workspaceId, graphData }: TagGraphPanel
 			const angle = (2 * Math.PI * i) / graphData.nodes.length
 			const radius = Math.min(width, height) * 0.3
 			return {
+				color: getColor(node.name),
 				id: node.id,
 				label: node.name,
-				color: getColor(node.name),
-				x: centerX + radius * Math.cos(angle),
-				y: centerY + radius * Math.sin(angle),
+				radius: 20 + Math.min(node.count * 2, 20),
 				vx: 0,
 				vy: 0,
-				radius: 20 + Math.min(node.count * 2, 20),
+				x: centerX + radius * Math.cos(angle),
+				y: centerY + radius * Math.sin(angle),
 			}
 		})
 
@@ -281,7 +281,7 @@ export const TagGraphPanelView = memo(({ workspaceId, graphData }: TagGraphPanel
 			const y = (e.clientY - rect.top - offset.y) / scale
 
 			setNodes((prev) =>
-				prev.map((node) => (node.id === dragging ? { ...node, x, y, vx: 0, vy: 0 } : node)),
+				prev.map((node) => (node.id === dragging ? { ...node, vx: 0, vy: 0, x, y } : node)),
 			)
 		} else if (panning) {
 			const dx = e.clientX - lastMouse.x

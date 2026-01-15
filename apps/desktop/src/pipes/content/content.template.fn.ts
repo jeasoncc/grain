@@ -87,52 +87,52 @@ export interface FileCreationParams {
  * 日记模板配置
  */
 export const DIARY_TEMPLATE: TemplateConfig = {
-	type: "diary",
-	rootFolder: "Diary",
-	filePrefix: "diary",
 	defaultTags: ["diary", "notes"],
+	filePrefix: "diary",
 	headingLevel: "h2",
 	includeEmptyLines: true,
 	nodeType: "diary",
+	rootFolder: "Diary",
+	type: "diary",
 }
 
 /**
  * 待办模板配置
  */
 export const TODO_TEMPLATE: TemplateConfig = {
-	type: "todo",
-	rootFolder: "Todo",
-	filePrefix: "todo",
 	defaultTags: ["todo", "tasks"],
+	filePrefix: "todo",
 	headingLevel: "h2",
 	includeEmptyLines: true,
 	nodeType: "file",
+	rootFolder: "Todo",
+	type: "todo",
 }
 
 /**
  * 账本模板配置
  */
 export const LEDGER_TEMPLATE: TemplateConfig = {
-	type: "ledger",
-	rootFolder: "Ledger",
-	filePrefix: "ledger",
 	defaultTags: ["ledger", "finance"],
+	filePrefix: "ledger",
 	headingLevel: "h2",
 	includeEmptyLines: true,
 	nodeType: "file",
+	rootFolder: "Ledger",
+	type: "ledger",
 }
 
 /**
  * Wiki 模板配置
  */
 export const WIKI_TEMPLATE: TemplateConfig = {
-	type: "wiki",
-	rootFolder: "Wiki",
-	filePrefix: "wiki",
 	defaultTags: ["wiki", "knowledge"],
+	filePrefix: "wiki",
 	headingLevel: "h2",
 	includeEmptyLines: true,
 	nodeType: "file",
+	rootFolder: "Wiki",
+	type: "wiki",
 }
 
 /**
@@ -140,8 +140,8 @@ export const WIKI_TEMPLATE: TemplateConfig = {
  */
 export const TEMPLATE_CONFIGS: Record<TemplateType, TemplateConfig> = {
 	diary: DIARY_TEMPLATE,
-	todo: TODO_TEMPLATE,
 	ledger: LEDGER_TEMPLATE,
+	todo: TODO_TEMPLATE,
 	wiki: WIKI_TEMPLATE,
 }
 
@@ -196,13 +196,13 @@ export function generateFileStructure(
 	]
 
 	return {
-		rootFolder: config.rootFolder,
-		yearFolder: dateStructure.yearFolder,
-		monthFolder: dateStructure.monthFolder,
 		dayFolder: dateStructure.dayFolder,
 		filename,
 		folderPath,
 		fullPath: `${folderPath.join("/")}/${filename}`,
+		monthFolder: dateStructure.monthFolder,
+		rootFolder: config.rootFolder,
+		yearFolder: dateStructure.yearFolder,
 	}
 }
 
@@ -277,9 +277,9 @@ export function buildFileCreationParams(
 	const structure = generateFileStructure(config, date)
 
 	return {
-		workspaceId,
-		structure,
 		config,
 		content,
+		structure,
+		workspaceId,
 	}
 }

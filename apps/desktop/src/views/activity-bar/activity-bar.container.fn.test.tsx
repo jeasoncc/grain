@@ -53,22 +53,22 @@ const {
 	mockOpenTab,
 	mockUpdateEditorState,
 } = vi.hoisted(() => ({
-	mockNavigate: vi.fn(),
-	mockConfirm: vi.fn(),
 	mockAddWorkspace: vi.fn(),
 	mockClearAllData: vi.fn(),
+	mockConfirm: vi.fn(),
+	mockCreateDiaryCompatAsync: vi.fn(),
+	mockCreateLedgerCompatAsync: vi.fn(),
+	mockCreateWikiCompatAsync: vi.fn(),
+	mockNavigate: vi.fn(),
+	mockOpenTab: vi.fn(),
+	mockSetActivePanel: vi.fn(),
+	mockSetSelectedNodeId: vi.fn(),
+	mockSetSelectedWorkspaceId: vi.fn(),
+	mockToggleSidebar: vi.fn(),
 	mockTouchWorkspace: vi.fn(),
+	mockUpdateEditorState: vi.fn(),
 	mockUseAllWorkspaces: vi.fn(),
 	mockUseIconTheme: vi.fn(),
-	mockCreateLedgerCompatAsync: vi.fn(),
-	mockCreateDiaryCompatAsync: vi.fn(),
-	mockCreateWikiCompatAsync: vi.fn(),
-	mockSetSelectedWorkspaceId: vi.fn(),
-	mockSetSelectedNodeId: vi.fn(),
-	mockSetActivePanel: vi.fn(),
-	mockToggleSidebar: vi.fn(),
-	mockOpenTab: vi.fn(),
-	mockUpdateEditorState: vi.fn(),
 }))
 
 const mockLocation = { pathname: "/" }
@@ -86,9 +86,9 @@ vi.mock("@tanstack/react-router", () => ({
 // Mock sonner toast
 vi.mock("sonner", () => ({
 	toast: {
-		success: vi.fn(),
 		error: vi.fn(),
 		info: vi.fn(),
+		success: vi.fn(),
 	},
 }))
 
@@ -138,8 +138,8 @@ vi.mock("@/state/selection.state", () => ({
 	useSelectionStore: (selector: (state: any) => any) => {
 		const state = {
 			selectedWorkspaceId: mockSelectedWorkspaceId,
-			setSelectedWorkspaceId: mockSetSelectedWorkspaceId,
 			setSelectedNodeId: mockSetSelectedNodeId,
+			setSelectedWorkspaceId: mockSetSelectedWorkspaceId,
 		}
 		return selector ? selector(state) : state
 	},
@@ -189,65 +189,65 @@ vi.mock("./activity-bar.view.fn", () => ({
 
 function createTestWorkspace(overrides: Partial<WorkspaceInterface> = {}): WorkspaceInterface {
 	return {
-		id: overrides.id ?? "workspace-1",
-		title: overrides.title ?? "Test Workspace",
 		author: overrides.author ?? "",
-		description: overrides.description ?? "",
-		publisher: overrides.publisher ?? "",
-		language: overrides.language ?? "zh-CN",
 		createDate: overrides.createDate ?? new Date().toISOString(),
+		description: overrides.description ?? "",
+		id: overrides.id ?? "workspace-1",
+		language: overrides.language ?? "zh-CN",
 		lastOpen: overrides.lastOpen ?? new Date().toISOString(),
 		members: overrides.members ?? [],
 		owner: overrides.owner ?? undefined,
+		publisher: overrides.publisher ?? "",
+		title: overrides.title ?? "Test Workspace",
 	}
 }
 
 function createTestIconTheme(): IconTheme {
 	return {
-		key: "test-theme",
-		name: "Test Theme",
 		description: "Test theme for testing",
 		icons: {
-			project: { default: {} as any },
-			folder: { default: {} as any },
-			file: { default: {} as any },
-			character: { default: {} as any },
-			world: { default: {} as any },
 			activityBar: {
-				library: {} as any,
-				search: {} as any,
-				outline: {} as any,
 				canvas: {} as any,
 				chapters: {} as any,
-				files: {} as any,
-				diary: {} as any,
-				ledger: {} as any,
-				todo: {} as any,
-				note: {} as any,
-				tags: {} as any,
-				statistics: {} as any,
-				settings: {} as any,
-				create: {} as any,
-				import: {} as any,
-				export: {} as any,
-				more: {} as any,
-				mermaid: {} as any,
-				plantuml: {} as any,
 				code: {} as any,
-			},
-			settingsPage: {
-				appearance: {} as any,
-				icons: {} as any,
-				diagrams: {} as any,
-				general: {} as any,
-				editor: {} as any,
-				data: {} as any,
+				create: {} as any,
+				diary: {} as any,
 				export: {} as any,
-				scroll: {} as any,
-				logs: {} as any,
-				about: {} as any,
+				files: {} as any,
+				import: {} as any,
+				ledger: {} as any,
+				library: {} as any,
+				mermaid: {} as any,
+				more: {} as any,
+				note: {} as any,
+				outline: {} as any,
+				plantuml: {} as any,
+				search: {} as any,
+				settings: {} as any,
+				statistics: {} as any,
+				tags: {} as any,
+				todo: {} as any,
 			},
+			character: { default: {} as any },
+			file: { default: {} as any },
+			folder: { default: {} as any },
+			project: { default: {} as any },
+			settingsPage: {
+				about: {} as any,
+				appearance: {} as any,
+				data: {} as any,
+				diagrams: {} as any,
+				editor: {} as any,
+				export: {} as any,
+				general: {} as any,
+				icons: {} as any,
+				logs: {} as any,
+				scroll: {} as any,
+			},
+			world: { default: {} as any },
 		},
+		key: "test-theme",
+		name: "Test Theme",
 	}
 }
 
@@ -412,7 +412,7 @@ describe("ActivityBarContainer", () => {
 		it("should handle workspace creation failure", async () => {
 			mockUseAllWorkspaces.mockReturnValue([])
 			mockAddWorkspace.mockReturnValue(() =>
-				Promise.resolve(E.left({ type: "DB_ERROR" as const, message: "Failed" })),
+				Promise.resolve(E.left({ message: "Failed", type: "DB_ERROR" as const })),
 			)
 
 			const { toast } = await import("sonner")
@@ -439,8 +439,8 @@ describe("ActivityBarContainer", () => {
 			renderWithSelectedWorkspace("ws-1")
 
 			mockCreateDiaryCompatAsync.mockResolvedValue({
-				node: { id: "diary-1", title: "Diary", type: "diary" },
 				content: "{}",
+				node: { id: "diary-1", title: "Diary", type: "diary" },
 				parsedContent: {},
 			})
 
@@ -449,8 +449,8 @@ describe("ActivityBarContainer", () => {
 
 			await waitFor(() => {
 				expect(mockCreateDiaryCompatAsync).toHaveBeenCalledWith({
-					workspaceId: "ws-1",
 					date: expect.any(Date),
+					workspaceId: "ws-1",
 				})
 			})
 		})
@@ -465,8 +465,8 @@ describe("ActivityBarContainer", () => {
 			renderWithSelectedWorkspace("ws-1")
 
 			mockCreateDiaryCompatAsync.mockResolvedValue({
-				node: { id: "diary-1", title: "Diary 2024-12-27", type: "diary" },
 				content: "{}",
+				node: { id: "diary-1", title: "Diary 2024-12-27", type: "diary" },
 				parsedContent: { root: { children: [] } },
 			})
 
@@ -477,10 +477,10 @@ describe("ActivityBarContainer", () => {
 
 			await waitFor(() => {
 				expect(mockOpenTab).toHaveBeenCalledWith({
-					workspaceId: "ws-1",
 					nodeId: "diary-1",
 					title: "Diary 2024-12-27",
 					type: "diary",
+					workspaceId: "ws-1",
 				})
 			})
 
@@ -498,8 +498,8 @@ describe("ActivityBarContainer", () => {
 
 			const parsedContent = { root: { children: [] } }
 			mockCreateDiaryCompatAsync.mockResolvedValue({
-				node: { id: "diary-1", title: "Diary 2024-12-27", type: "diary" },
 				content: "{}",
+				node: { id: "diary-1", title: "Diary 2024-12-27", type: "diary" },
 				parsedContent,
 			})
 
@@ -521,8 +521,8 @@ describe("ActivityBarContainer", () => {
 			renderWithSelectedWorkspace("ws-1")
 
 			mockCreateDiaryCompatAsync.mockResolvedValue({
-				node: { id: "diary-1", title: "Diary 2024-12-27", type: "diary" },
 				content: "{}",
+				node: { id: "diary-1", title: "Diary 2024-12-27", type: "diary" },
 				parsedContent: {},
 			})
 
@@ -557,8 +557,8 @@ describe("ActivityBarContainer", () => {
 			renderWithSelectedWorkspace("ws-1")
 
 			mockCreateWikiCompatAsync.mockResolvedValue({
-				node: { id: "wiki-1", title: "Wiki", type: "file" },
 				content: "{}",
+				node: { id: "wiki-1", title: "Wiki", type: "file" },
 				parsedContent: {},
 			})
 
@@ -569,17 +569,17 @@ describe("ActivityBarContainer", () => {
 
 			await waitFor(() => {
 				expect(mockCreateWikiCompatAsync).toHaveBeenCalledWith({
-					workspaceId: "ws-1",
 					date: expect.any(Date),
+					workspaceId: "ws-1",
 				})
 			})
 
 			await waitFor(() => {
 				expect(mockOpenTab).toHaveBeenCalledWith({
-					workspaceId: "ws-1",
 					nodeId: "wiki-1",
 					title: "Wiki",
 					type: "file",
+					workspaceId: "ws-1",
 				})
 			})
 
@@ -607,8 +607,8 @@ describe("ActivityBarContainer", () => {
 			renderWithSelectedWorkspace("ws-1")
 
 			mockCreateLedgerCompatAsync.mockResolvedValue({
-				node: { id: "ledger-1", title: "Ledger", type: "ledger" },
 				content: "{}",
+				node: { id: "ledger-1", title: "Ledger", type: "ledger" },
 				parsedContent: {},
 			})
 
@@ -619,17 +619,17 @@ describe("ActivityBarContainer", () => {
 
 			await waitFor(() => {
 				expect(mockCreateLedgerCompatAsync).toHaveBeenCalledWith({
-					workspaceId: "ws-1",
 					date: expect.any(Date),
+					workspaceId: "ws-1",
 				})
 			})
 
 			await waitFor(() => {
 				expect(mockOpenTab).toHaveBeenCalledWith({
-					workspaceId: "ws-1",
 					nodeId: "ledger-1",
 					title: "Ledger",
 					type: "ledger",
+					workspaceId: "ws-1",
 				})
 			})
 
@@ -731,9 +731,9 @@ describe("ActivityBarContainer", () => {
 
 			// Mock window.location.reload
 			Object.defineProperty(window, "location", {
+				configurable: true,
 				value: { reload: reloadMock },
 				writable: true,
-				configurable: true,
 			})
 
 			render(<ActivityBarContainer />)
@@ -743,10 +743,10 @@ describe("ActivityBarContainer", () => {
 
 			await waitFor(() => {
 				expect(mockConfirm).toHaveBeenCalledWith({
-					title: "Delete all data?",
-					description: expect.any(String),
-					confirmText: "Delete",
 					cancelText: "Cancel",
+					confirmText: "Delete",
+					description: expect.any(String),
+					title: "Delete all data?",
 				})
 			})
 
@@ -768,9 +768,9 @@ describe("ActivityBarContainer", () => {
 
 			// 恢复原始值
 			Object.defineProperty(window, "location", {
+				configurable: true,
 				value: originalLocation,
 				writable: true,
-				configurable: true,
 			})
 		})
 
@@ -778,7 +778,7 @@ describe("ActivityBarContainer", () => {
 			mockUseAllWorkspaces.mockReturnValue([createTestWorkspace()])
 			mockConfirm.mockResolvedValue(true)
 			mockClearAllData.mockReturnValue(() =>
-				Promise.resolve(E.left({ type: "DB_ERROR" as const, message: "Failed" })),
+				Promise.resolve(E.left({ message: "Failed", type: "DB_ERROR" as const })),
 			)
 
 			const { toast } = await import("sonner")

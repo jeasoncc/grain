@@ -36,17 +36,17 @@ export const CommandPaletteContainer = memo(
 					group: "Actions",
 					items: [
 						{
-							label: "Global Search",
 							icon: <Search className="size-4" />,
-							shortcut: "Ctrl+Shift+F",
+							label: "Global Search",
 							onSelect: () => {
 								onOpenChange(false)
 								window.dispatchEvent(new CustomEvent("open-global-search"))
 							},
+							shortcut: "Ctrl+Shift+F",
 						},
 						{
-							label: "Create Excalidraw Drawing",
 							icon: <PenTool className="size-4" />,
+							label: "Create Excalidraw Drawing",
 							onSelect: () => {
 								if (!selectedWorkspaceId) {
 									return
@@ -57,17 +57,17 @@ export const CommandPaletteContainer = memo(
 								const task = pipe(
 									// 1. 创建 Excalidraw 文件
 									createExcalidraw({
-										workspaceId: selectedWorkspaceId,
 										templateParams: { date: new Date() },
+										workspaceId: selectedWorkspaceId,
 									}),
 									// 2. 成功后，打开文件
 									TE.chain((result) =>
 										pipe(
 											openFile({
-												workspaceId: selectedWorkspaceId,
 												nodeId: result.node.id,
 												title: result.node.title,
 												type: result.node.type as TabType,
+												workspaceId: selectedWorkspaceId,
 											}),
 											TE.map(() => result),
 										),
@@ -92,8 +92,8 @@ export const CommandPaletteContainer = memo(
 							},
 						},
 						{
-							label: "Export Workspace",
 							icon: <Download className="size-4" />,
+							label: "Export Workspace",
 							onSelect: () => {
 								onOpenChange(false)
 								exportDialogManager.open(selectedWorkspaceId || undefined, currentWorkspace?.title)
@@ -105,16 +105,16 @@ export const CommandPaletteContainer = memo(
 					group: "Settings",
 					items: [
 						{
-							label: theme === "dark" ? "Switch to Light Theme" : "Switch to Dark Theme",
 							icon: theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />,
+							label: theme === "dark" ? "Switch to Light Theme" : "Switch to Dark Theme",
 							onSelect: () => {
 								setTheme(theme === "dark" ? "light" : "dark")
 								onOpenChange(false)
 							},
 						},
 						{
-							label: "Open Settings",
 							icon: <Settings className="size-4" />,
+							label: "Open Settings",
 							onSelect: () => {
 								navigate({ to: "/settings/design" })
 								onOpenChange(false)

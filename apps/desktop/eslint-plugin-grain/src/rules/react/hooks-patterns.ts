@@ -6,120 +6,6 @@ const createRule = ESLintUtils.RuleCreator(
 )
 
 export default createRule({
-	name: "hooks-patterns",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "检测 React Hooks 使用模式",
-		},
-		messages: {
-			missingDependency: buildErrorMessage({
-				title: "useEffect 缺少依赖项",
-				reason: `
-  useEffect 的依赖数组必须包含所有在 effect 中使用的外部变量。
-  缺少依赖会导致：
-  - 使用过期的闭包值
-  - 难以追踪的 bug
-  - 违反 React Hooks 规则`,
-				correctExample: `// ✅ 包含所有依赖
-useEffect(() => {
-  fetchData(userId);
-}, [userId]);
-
-// ✅ 空依赖数组需要注释说明
-useEffect(() => {
-  // 仅在组件挂载时执行一次
-  initializeApp();
-}, []);`,
-				incorrectExample: `// ❌ 缺少依赖
-useEffect(() => {
-  fetchData(userId);
-}, []);
-
-// ❌ 依赖不完整
-useEffect(() => {
-  doSomething(a, b);
-}, [a]);`,
-				docRef: "#fp-patterns - React Hooks 最佳实践",
-			}),
-			emptyDepsWithoutComment: buildErrorMessage({
-				title: "useEffect 空依赖数组需要注释说明",
-				reason: `
-  空依赖数组意味着 effect 只在挂载时执行一次。
-  这是一个重要的设计决策，需要明确注释说明原因。`,
-				correctExample: `// ✅ 有注释说明
-useEffect(() => {
-  // 仅在组件挂载时初始化一次
-  initializeApp();
-}, []);`,
-				incorrectExample: `// ❌ 缺少注释
-useEffect(() => {
-  initializeApp();
-}, []);`,
-				docRef: "#code-standards - 注释规范",
-			}),
-			conditionalHook: buildErrorMessage({
-				title: "禁止条件调用 Hooks",
-				reason: `
-  Hooks 必须在组件顶层调用，不能在条件语句、循环或嵌套函数中调用。
-  这是 React Hooks 的基本规则，违反会导致：
-  - Hook 调用顺序不一致
-  - 状态混乱
-  - 运行时错误`,
-				correctExample: `// ✅ 在顶层调用
-const [value, setValue] = useState('');
-
-if (condition) {
-  // 使用状态
-  doSomething(value);
-}
-
-// ✅ 使用条件渲染
-const data = useData();
-if (!data) return null;`,
-				incorrectExample: `// ❌ 条件调用
-if (condition) {
-  const [value, setValue] = useState('');
-}
-
-// ❌ 循环中调用
-for (let i = 0; i < 10; i++) {
-  useEffect(() => {}, []);
-}
-
-// ❌ 嵌套函数中调用
-function helper() {
-  const value = useState('');
-}`,
-				docRef: "https://react.dev/reference/rules/rules-of-hooks",
-			}),
-			useRefForMutableState: buildErrorMessage({
-				title: "useRef 不应用于存储可变业务状态",
-				reason: `
-  useRef 应该用于：
-  - 存储 DOM 引用
-  - 存储不触发重新渲染的值（如定时器 ID）
-  
-  不应该用于：
-  - 存储业务状态（应使用 useState）
-  - 绕过 React 的状态管理`,
-				correctExample: `// ✅ 存储 DOM 引用
-const inputRef = useRef<HTMLInputElement>(null);
-
-// ✅ 存储定时器 ID
-const timerRef = useRef<number>();
-
-// ✅ 业务状态使用 useState
-const [count, setCount] = useState(0);`,
-				incorrectExample: `// ❌ 用 useRef 存储业务状态
-const countRef = useRef(0);
-countRef.current += 1; // 不会触发重新渲染`,
-				docRef: "#fp-patterns - React Hooks 最佳实践",
-			}),
-		},
-		schema: [],
-	},
-	defaultOptions: [],
 	create(context) {
 		// 跟踪当前作用域深度（用于检测条件调用）
 		let scopeDepth = 0
@@ -147,8 +33,8 @@ countRef.current += 1; // 不会触发重新渲染`,
 
 				if (!hasComment) {
 					context.report({
-						node: depsArg,
 						messageId: "emptyDepsWithoutComment",
+						node: depsArg,
 					})
 				}
 			}
@@ -166,20 +52,40 @@ countRef.current += 1; // 不会触发重新渲染`,
 				// 简单启发式：如果对象有多个属性，可能是业务状态
 				if (initArg.properties.length > 2) {
 					context.report({
-						node,
 						messageId: "useRefForMutableState",
+						node,
 					})
 				}
 			}
 		}
 
 		return {
-			// 检测条件语句
-			IfStatement() {
-				inConditional = true
-			},
-			"IfStatement:exit"() {
-				inConditional = false
+			// 检测 Hook 调用
+			CallExpression(node) {
+				if (node.callee.type !== "Identifier") return
+
+				const hookName = node.callee.name
+
+				// 检查是否为 Hook 调用（以 use 开头）
+				if (!hookName.startsWith("use")) return
+
+				// 检测条件调用
+				if ((inConditional || inLoop) && scopeDepth > 0) {
+					context.report({
+						messageId: "conditionalHook",
+						node,
+					})
+				}
+
+				// 检测 useEffect 模式
+				if (hookName === "useEffect") {
+					checkUseEffect(node)
+				}
+
+				// 检测 useRef 模式
+				if (hookName === "useRef") {
+					checkUseRef(node)
+				}
 			},
 
 			// 检测循环
@@ -197,34 +103,127 @@ countRef.current += 1; // 不会触发重新渲染`,
 			"FunctionDeclaration:exit, FunctionExpression:exit, ArrowFunctionExpression:exit"() {
 				scopeDepth--
 			},
-
-			// 检测 Hook 调用
-			CallExpression(node) {
-				if (node.callee.type !== "Identifier") return
-
-				const hookName = node.callee.name
-
-				// 检查是否为 Hook 调用（以 use 开头）
-				if (!hookName.startsWith("use")) return
-
-				// 检测条件调用
-				if ((inConditional || inLoop) && scopeDepth > 0) {
-					context.report({
-						node,
-						messageId: "conditionalHook",
-					})
-				}
-
-				// 检测 useEffect 模式
-				if (hookName === "useEffect") {
-					checkUseEffect(node)
-				}
-
-				// 检测 useRef 模式
-				if (hookName === "useRef") {
-					checkUseRef(node)
-				}
+			// 检测条件语句
+			IfStatement() {
+				inConditional = true
+			},
+			"IfStatement:exit"() {
+				inConditional = false
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "检测 React Hooks 使用模式",
+		},
+		messages: {
+			conditionalHook: buildErrorMessage({
+				correctExample: `// ✅ 在顶层调用
+const [value, setValue] = useState('');
+
+if (condition) {
+  // 使用状态
+  doSomething(value);
+}
+
+// ✅ 使用条件渲染
+const data = useData();
+if (!data) return null;`,
+				docRef: "https://react.dev/reference/rules/rules-of-hooks",
+				incorrectExample: `// ❌ 条件调用
+if (condition) {
+  const [value, setValue] = useState('');
+}
+
+// ❌ 循环中调用
+for (let i = 0; i < 10; i++) {
+  useEffect(() => {}, []);
+}
+
+// ❌ 嵌套函数中调用
+function helper() {
+  const value = useState('');
+}`,
+				reason: `
+  Hooks 必须在组件顶层调用，不能在条件语句、循环或嵌套函数中调用。
+  这是 React Hooks 的基本规则，违反会导致：
+  - Hook 调用顺序不一致
+  - 状态混乱
+  - 运行时错误`,
+				title: "禁止条件调用 Hooks",
+			}),
+			emptyDepsWithoutComment: buildErrorMessage({
+				correctExample: `// ✅ 有注释说明
+useEffect(() => {
+  // 仅在组件挂载时初始化一次
+  initializeApp();
+}, []);`,
+				docRef: "#code-standards - 注释规范",
+				incorrectExample: `// ❌ 缺少注释
+useEffect(() => {
+  initializeApp();
+}, []);`,
+				reason: `
+  空依赖数组意味着 effect 只在挂载时执行一次。
+  这是一个重要的设计决策，需要明确注释说明原因。`,
+				title: "useEffect 空依赖数组需要注释说明",
+			}),
+			missingDependency: buildErrorMessage({
+				correctExample: `// ✅ 包含所有依赖
+useEffect(() => {
+  fetchData(userId);
+}, [userId]);
+
+// ✅ 空依赖数组需要注释说明
+useEffect(() => {
+  // 仅在组件挂载时执行一次
+  initializeApp();
+}, []);`,
+				docRef: "#fp-patterns - React Hooks 最佳实践",
+				incorrectExample: `// ❌ 缺少依赖
+useEffect(() => {
+  fetchData(userId);
+}, []);
+
+// ❌ 依赖不完整
+useEffect(() => {
+  doSomething(a, b);
+}, [a]);`,
+				reason: `
+  useEffect 的依赖数组必须包含所有在 effect 中使用的外部变量。
+  缺少依赖会导致：
+  - 使用过期的闭包值
+  - 难以追踪的 bug
+  - 违反 React Hooks 规则`,
+				title: "useEffect 缺少依赖项",
+			}),
+			useRefForMutableState: buildErrorMessage({
+				correctExample: `// ✅ 存储 DOM 引用
+const inputRef = useRef<HTMLInputElement>(null);
+
+// ✅ 存储定时器 ID
+const timerRef = useRef<number>();
+
+// ✅ 业务状态使用 useState
+const [count, setCount] = useState(0);`,
+				docRef: "#fp-patterns - React Hooks 最佳实践",
+				incorrectExample: `// ❌ 用 useRef 存储业务状态
+const countRef = useRef(0);
+countRef.current += 1; // 不会触发重新渲染`,
+				reason: `
+  useRef 应该用于：
+  - 存储 DOM 引用
+  - 存储不触发重新渲染的值（如定时器 ID）
+  
+  不应该用于：
+  - 存储业务状态（应使用 useState）
+  - 绕过 React 的状态管理`,
+				title: "useRef 不应用于存储可变业务状态",
+			}),
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "hooks-patterns",
 })

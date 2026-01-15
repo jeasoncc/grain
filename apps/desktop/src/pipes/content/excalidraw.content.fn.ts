@@ -111,11 +111,11 @@ export const EXCALIDRAW_SOURCE = "grain-editor"
  */
 export function createDefaultAppState(): Partial<ExcalidrawAppState> {
 	return {
-		viewBackgroundColor: "#ffffff",
 		gridSize: null,
 		// 必须设置这些值为安全的初始值
 		scrollX: 0,
 		scrollY: 0,
+		viewBackgroundColor: "#ffffff",
 		zoom: { value: 1 },
 	}
 }
@@ -136,12 +136,12 @@ export function createExcalidrawDocument(
 	readonly appState: Partial<ExcalidrawAppState>
 } {
 	return {
+		appState,
+		elements,
+		files,
+		source: EXCALIDRAW_SOURCE,
 		type: "excalidraw",
 		version: EXCALIDRAW_VERSION,
-		source: EXCALIDRAW_SOURCE,
-		elements,
-		appState,
-		files,
 	}
 }
 

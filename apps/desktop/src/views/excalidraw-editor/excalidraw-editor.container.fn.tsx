@@ -36,13 +36,13 @@ interface ExcalidrawInitialData {
 
 /** 默认空 Excalidraw 数据 */
 const EMPTY_EXCALIDRAW_DATA: ExcalidrawInitialData = {
-	elements: [],
 	appState: {
-		viewBackgroundColor: "#ffffff",
 		scrollX: 0,
 		scrollY: 0,
+		viewBackgroundColor: "#ffffff",
 		zoom: { value: 1 },
 	},
+	elements: [],
 	files: {},
 }
 
@@ -57,13 +57,13 @@ function parseExcalidrawContent(content: string | undefined): ExcalidrawInitialD
 	try {
 		const parsed = JSON.parse(content)
 		return {
-			elements: Array.isArray(parsed.elements) ? parsed.elements : [],
 			appState: {
-				viewBackgroundColor: parsed.appState?.viewBackgroundColor || "#ffffff",
 				scrollX: 0,
 				scrollY: 0,
+				viewBackgroundColor: parsed.appState?.viewBackgroundColor || "#ffffff",
 				zoom: { value: 1 },
 			},
+			elements: Array.isArray(parsed.elements) ? parsed.elements : [],
 			files: parsed.files || {},
 		}
 	} catch (error) {
@@ -81,14 +81,14 @@ function serializeExcalidrawData(
 	files: Record<string, unknown>,
 ): string {
 	const dataToSave = {
-		type: "excalidraw",
-		version: 2,
-		source: "grain-editor",
-		elements,
 		appState: {
 			viewBackgroundColor: appState.viewBackgroundColor || "#ffffff",
 		},
+		elements,
 		files,
+		source: "grain-editor",
+		type: "excalidraw",
+		version: 2,
 	}
 	return JSON.stringify(dataToSave)
 }
@@ -126,16 +126,16 @@ export const ExcalidrawEditorContainer = memo(
 		// ==============================
 
 		const { updateContent, saveNow, setInitialContent } = useUnifiedSave({
-			nodeId,
 			contentType: "excalidraw",
-			tabId: activeTabId ?? undefined,
-			registerShortcut: false, // Excalidraw 有自己的快捷键处理
-			onSaveSuccess: () => {
-				console.log("[ExcalidrawEditor] 内容保存成功")
-			},
+			nodeId,
 			onSaveError: (error) => {
 				console.error("[ExcalidrawEditor] 保存失败:", error)
 			},
+			onSaveSuccess: () => {
+				console.log("[ExcalidrawEditor] 内容保存成功")
+			},
+			registerShortcut: false, // Excalidraw 有自己的快捷键处理
+			tabId: activeTabId ?? undefined,
 		})
 
 		/**
@@ -222,9 +222,9 @@ export const ExcalidrawEditorContainer = memo(
 						}
 
 						resizeTimeout = setTimeout(() => {
-							setContainerSize({ width, height })
+							setContainerSize({ height, width })
 							sizeStableRef.current = true
-							console.log("[ExcalidrawEditor] 容器尺寸:", { width, height })
+							console.log("[ExcalidrawEditor] 容器尺寸:", { height, width })
 						}, RESIZE_DEBOUNCE_DELAY)
 					}
 				}
@@ -259,7 +259,7 @@ export const ExcalidrawEditorContainer = memo(
 				files: Record<string, unknown>,
 			) => {
 				// 保存当前数据引用（用于手动保存）
-				currentDataRef.current = { elements, appState, files }
+				currentDataRef.current = { appState, elements, files }
 
 				// 序列化并通过 hook 更新内容
 				const serialized = serializeExcalidrawData(elements, appState, files)

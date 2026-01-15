@@ -39,8 +39,8 @@ export function importFromJson(
 				parseImportData(jsonText, options),
 				E.mapLeft(
 					(error): AppError => ({
-						type: "IMPORT_ERROR",
 						message: error.message,
+						type: "IMPORT_ERROR",
 					}),
 				),
 			),
@@ -77,8 +77,8 @@ export function importFromJson(
 					toast.success("Import completed")
 				},
 				(error): AppError => ({
-					type: "DB_ERROR",
 					message: `数据库写入失败: ${error instanceof Error ? error.message : String(error)}`,
+					type: "DB_ERROR",
 				}),
 			),
 		),

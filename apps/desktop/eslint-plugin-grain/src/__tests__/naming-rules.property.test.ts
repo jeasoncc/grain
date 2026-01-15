@@ -25,7 +25,7 @@ describe("Property 5: File Naming Convention Validation", () => {
 
 		// Generate invalid filenames (not ending with .pipe.ts or .fn.ts)
 		const invalidFilenameArb = fc
-			.string({ minLength: 1, maxLength: 20 })
+			.string({ maxLength: 20, minLength: 1 })
 			.filter((s) => /^[a-z][a-z0-9-]*$/.test(s))
 			.map((s) => `${s}.ts`) // Missing .pipe or .fn
 
@@ -52,7 +52,7 @@ describe("Property 5: File Naming Convention Validation", () => {
 
 		const validFilenameArb = fc
 			.tuple(
-				fc.string({ minLength: 1, maxLength: 20 }).filter((s) => /^[a-z][a-z0-9-]*$/.test(s)),
+				fc.string({ maxLength: 20, minLength: 1 }).filter((s) => /^[a-z][a-z0-9-]*$/.test(s)),
 				fc.constantFrom(...validSuffixes),
 			)
 			.map(([name, suffix]) => `${name}${suffix}`)
@@ -74,7 +74,7 @@ describe("Property 5: File Naming Convention Validation", () => {
 		if (!flowsPattern) throw new Error("flows pattern not found")
 
 		const invalidFilenameArb = fc
-			.string({ minLength: 1, maxLength: 20 })
+			.string({ maxLength: 20, minLength: 1 })
 			.filter((s) => /^[a-z][a-z0-9-]*$/.test(s))
 			.map((s) => `${s}.ts`) // Missing .flow or .action
 
@@ -109,7 +109,7 @@ describe("Property 10: Naming Convention Enforcement", () => {
 
 			// Generate short variable names (1-2 chars) that are not in allowed list
 			const shortNameArb = fc
-				.string({ minLength: 1, maxLength: minVariableLength - 1 })
+				.string({ maxLength: minVariableLength - 1, minLength: 1 })
 				.filter((s) => /^[a-z][a-z0-9]*$/i.test(s))
 				.filter((s) => !allowedShortNames.includes(s))
 				.filter((s) => !s.startsWith("_")) // Skip private variables
@@ -146,7 +146,7 @@ describe("Property 10: Naming Convention Enforcement", () => {
 
 			// Generate function names that don't start with verbs
 			const nonVerbNameArb = fc
-				.string({ minLength: 3, maxLength: 15 })
+				.string({ maxLength: 15, minLength: 3 })
 				.filter((s) => /^[a-z][a-z0-9]*$/i.test(s))
 				.filter((s) => !verbPrefixes.some((v) => s.toLowerCase().startsWith(v.toLowerCase())))
 				.filter((s) => !/^[A-Z]/.test(s)) // Skip React components
@@ -170,7 +170,7 @@ describe("Property 10: Naming Convention Enforcement", () => {
 			const verbFunctionArb = fc
 				.tuple(
 					fc.constantFrom(...verbPrefixes.slice(0, 10)),
-					fc.string({ minLength: 1, maxLength: 10 }).filter((s) => /^[A-Z][a-z0-9]*$/.test(s)),
+					fc.string({ maxLength: 10, minLength: 1 }).filter((s) => /^[A-Z][a-z0-9]*$/.test(s)),
 				)
 				.map(([verb, suffix]) => `${verb}${suffix}`)
 
@@ -192,7 +192,7 @@ describe("Property 10: Naming Convention Enforcement", () => {
 
 			// Generate boolean variable names without proper prefix
 			const invalidBooleanArb = fc
-				.string({ minLength: 3, maxLength: 15 })
+				.string({ maxLength: 15, minLength: 3 })
 				.filter((s) => /^[a-z][a-z0-9]*$/i.test(s))
 				.filter((s) => !booleanPrefixes.some((p) => s.toLowerCase().startsWith(p.toLowerCase())))
 				.filter((s) => !s.startsWith("_"))
@@ -214,7 +214,7 @@ describe("Property 10: Naming Convention Enforcement", () => {
 			const validBooleanArb = fc
 				.tuple(
 					fc.constantFrom(...booleanPrefixes),
-					fc.string({ minLength: 1, maxLength: 10 }).filter((s) => /^[A-Z][a-z0-9]*$/.test(s)),
+					fc.string({ maxLength: 10, minLength: 1 }).filter((s) => /^[A-Z][a-z0-9]*$/.test(s)),
 				)
 				.map(([prefix, suffix]) => `${prefix}${suffix}`)
 
@@ -234,7 +234,7 @@ describe("Property 10: Naming Convention Enforcement", () => {
 		it("should detect constants not in SCREAMING_SNAKE_CASE", () => {
 			// Generate camelCase constant names
 			const camelCaseArb = fc
-				.string({ minLength: 3, maxLength: 15 })
+				.string({ maxLength: 15, minLength: 3 })
 				.filter((s) => /^[a-z][a-zA-Z0-9]*$/.test(s))
 				.filter((s) => !/^[A-Z][A-Z0-9_]*$/.test(s)) // Not SCREAMING_SNAKE_CASE
 
@@ -253,8 +253,8 @@ describe("Property 10: Naming Convention Enforcement", () => {
 			// Generate SCREAMING_SNAKE_CASE names
 			const screamingSnakeArb = fc
 				.array(
-					fc.string({ minLength: 1, maxLength: 8 }).filter((s) => /^[A-Z][A-Z0-9]*$/.test(s)),
-					{ minLength: 1, maxLength: 3 },
+					fc.string({ maxLength: 8, minLength: 1 }).filter((s) => /^[A-Z][A-Z0-9]*$/.test(s)),
+					{ maxLength: 3, minLength: 1 },
 				)
 				.map((parts) => parts.join("_"))
 

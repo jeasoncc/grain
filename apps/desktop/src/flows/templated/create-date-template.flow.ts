@@ -53,10 +53,10 @@ export interface DateTemplateCreationResult {
  * 将通用参数转换为模板化文件参数
  */
 const adaptParams = (params: CreateDateTemplateParams) => ({
-	workspaceId: params.workspaceId,
 	templateParams: {
 		date: params.date,
 	},
+	workspaceId: params.workspaceId,
 })
 
 /**

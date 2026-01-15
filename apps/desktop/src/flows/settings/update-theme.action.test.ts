@@ -33,12 +33,12 @@ vi.mock("@/state/theme.state", () => ({
 
 vi.mock("@/log", () => ({
 	default: {
-		start: vi.fn(),
-		info: vi.fn(),
-		success: vi.fn(),
-		error: vi.fn(),
-		warn: vi.fn(),
 		debug: vi.fn(),
+		error: vi.fn(),
+		info: vi.fn(),
+		start: vi.fn(),
+		success: vi.fn(),
+		warn: vi.fn(),
 	},
 }))
 
@@ -58,11 +58,11 @@ describe("update-theme.flow", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mockGetState.mockReturnValue({
-			setTheme: mockSetTheme,
-			setMode: mockSetMode,
-			toggleMode: mockToggleMode,
-			setEnableTransition: mockSetEnableTransition,
 			mode: "dark",
+			setEnableTransition: mockSetEnableTransition,
+			setMode: mockSetMode,
+			setTheme: mockSetTheme,
+			toggleMode: mockToggleMode,
 		})
 	})
 
@@ -157,11 +157,11 @@ describe("update-theme.flow", () => {
 	describe("toggleThemeMode", () => {
 		it("should return Right with new mode after toggle", () => {
 			mockGetState.mockReturnValue({
-				setTheme: mockSetTheme,
-				setMode: mockSetMode,
-				toggleMode: mockToggleMode,
-				setEnableTransition: mockSetEnableTransition,
 				mode: "light",
+				setEnableTransition: mockSetEnableTransition,
+				setMode: mockSetMode,
+				setTheme: mockSetTheme,
+				toggleMode: mockToggleMode,
 			})
 
 			const result = toggleThemeMode()
@@ -183,18 +183,18 @@ describe("update-theme.flow", () => {
 			// 模拟 toggle 后模式变为 system
 			mockGetState
 				.mockReturnValueOnce({
-					setTheme: mockSetTheme,
-					setMode: mockSetMode,
-					toggleMode: mockToggleMode,
-					setEnableTransition: mockSetEnableTransition,
 					mode: "dark",
+					setEnableTransition: mockSetEnableTransition,
+					setMode: mockSetMode,
+					setTheme: mockSetTheme,
+					toggleMode: mockToggleMode,
 				})
 				.mockReturnValueOnce({
-					setTheme: mockSetTheme,
-					setMode: mockSetMode,
-					toggleMode: mockToggleMode,
-					setEnableTransition: mockSetEnableTransition,
 					mode: "system",
+					setEnableTransition: mockSetEnableTransition,
+					setMode: mockSetMode,
+					setTheme: mockSetTheme,
+					toggleMode: mockToggleMode,
 				})
 
 			const result = toggleThemeMode()

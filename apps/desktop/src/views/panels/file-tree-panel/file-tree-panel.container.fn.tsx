@@ -118,10 +118,10 @@ export const FileTreePanelContainer = memo(
 					// 2. 创建 tab
 					// 3. 设置 editorState
 					await openFileAsync({
-						workspaceId,
 						nodeId,
 						title: node.title,
 						type: node.type,
+						workspaceId,
 					})
 				}
 
@@ -142,10 +142,10 @@ export const FileTreePanelContainer = memo(
 
 				try {
 					const result = await createFileAsync({
-						workspaceId,
 						parentId,
-						type: "folder",
 						title: "New Folder",
+						type: "folder",
+						workspaceId,
 					})
 
 					toast.success("Folder created")
@@ -184,8 +184,8 @@ export const FileTreePanelContainer = memo(
 					if (type === "drawing") {
 						// Excalidraw canvas content
 						content = JSON.stringify({
-							elements: [],
 							appState: {},
+							elements: [],
 							files: {},
 						})
 					} else {
@@ -194,20 +194,20 @@ export const FileTreePanelContainer = memo(
 					}
 
 					console.log("[FileTreePanel] 创建文件:", {
-						workspaceId,
-						parentId,
-						type,
-						title,
 						contentLength: content.length,
 						hasContent: !!content,
+						parentId,
+						title,
+						type,
+						workspaceId,
 					})
 
 					const result = await createFileAsync({
-						workspaceId,
-						parentId,
-						type,
-						title,
 						content,
+						parentId,
+						title,
+						type,
+						workspaceId,
 					})
 
 					console.log("[FileTreePanel] 文件创建成功:", {
@@ -246,12 +246,12 @@ export const FileTreePanelContainer = memo(
 
 				const isFolder = node.type === "folder"
 				const ok = await confirm({
-					title: `Delete ${isFolder ? "folder" : "file"}?`,
+					cancelText: "Cancel",
+					confirmText: "Delete",
 					description: isFolder
 						? `Are you sure you want to delete "${node.title}"? This will also delete all contents inside. This cannot be undone.`
 						: `Are you sure you want to delete "${node.title}"? This cannot be undone.`,
-					confirmText: "Delete",
-					cancelText: "Cancel",
+					title: `Delete ${isFolder ? "folder" : "file"}?`,
 				})
 
 				if (!ok) return
@@ -304,9 +304,9 @@ export const FileTreePanelContainer = memo(
 			async (nodeId: string, newParentId: string | null, newIndex: number) => {
 				try {
 					const result = await moveNode({
-						nodeId,
-						newParentId,
 						newOrder: newIndex,
+						newParentId,
+						nodeId,
 					})()
 
 					if (E.isLeft(result)) {
@@ -363,8 +363,8 @@ export const FileTreePanelContainer = memo(
 				// Performance monitoring - Requirements: 1.5, 10.1, 10.2, 10.3
 				const startTime = performance.now()
 				console.log("[FileTree Performance] Toggle collapsed started", {
-					nodeId,
 					collapsed,
+					nodeId,
 					timestamp: new Date().toISOString(),
 				})
 
@@ -377,10 +377,10 @@ export const FileTreePanelContainer = memo(
 
 					// Log performance metrics
 					console.log("[FileTree Performance] Toggle collapsed completed", {
-						nodeId,
 						collapsed,
-						totalDuration: `${totalDuration.toFixed(2)}ms`,
+						nodeId,
 						timestamp: new Date().toISOString(),
+						totalDuration: `${totalDuration.toFixed(2)}ms`,
 					})
 
 					// Warning for slow operations (> 100ms threshold)
@@ -388,9 +388,9 @@ export const FileTreePanelContainer = memo(
 					if (totalDuration > 100) {
 						console.warn("[FileTree Performance] Slow toggle operation detected", {
 							nodeId,
-							totalDuration: `${totalDuration.toFixed(2)}ms`,
-							threshold: "100ms",
 							note: "This is unexpected with optimistic updates",
+							threshold: "100ms",
+							totalDuration: `${totalDuration.toFixed(2)}ms`,
 						})
 					}
 				} catch (error) {
@@ -398,11 +398,11 @@ export const FileTreePanelContainer = memo(
 					const totalDuration = errorTime - startTime
 
 					console.error("[FileTree Performance] Toggle collapsed failed", {
-						nodeId,
 						collapsed,
 						error,
-						totalDuration: `${totalDuration.toFixed(2)}ms`,
+						nodeId,
 						timestamp: new Date().toISOString(),
+						totalDuration: `${totalDuration.toFixed(2)}ms`,
 					})
 				}
 			},

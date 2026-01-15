@@ -25,10 +25,10 @@ import {
 // 测试数据
 const createTestTab = (overrides: Partial<EditorTab> = {}): EditorTab => ({
 	id: "tab-1",
-	workspaceId: "ws-1",
 	nodeId: "node-1",
 	title: "Test Tab",
 	type: "file",
+	workspaceId: "ws-1",
 	...overrides,
 })
 
@@ -249,8 +249,8 @@ describe("evictLRUEditorStates", () => {
 		const states: Record<string, EditorInstanceState> = {
 			"tab-1": {
 				...createDefaultEditorState(),
-				lastModified: 1000,
 				isDirty: true,
+				lastModified: 1000,
 			},
 			"tab-2": { ...createDefaultEditorState(), lastModified: 2000 },
 			"tab-3": { ...createDefaultEditorState(), lastModified: 3000 },

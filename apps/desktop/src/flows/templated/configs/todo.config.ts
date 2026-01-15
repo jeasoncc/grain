@@ -33,11 +33,11 @@ export const todoParamsSchema = dateParamsSchema
  * Todo > year-YYYY-{Zodiac} > month-MM-{MonthName} > day-DD-{Weekday}
  */
 export const todoConfig = createDateTemplateConfig({
-	name: "Todo",
-	rootFolder: "Todo",
 	fileType: "todo",
-	tag: "todo",
-	prefix: "todo",
 	generateContent: generateTodoContent,
 	includeDayFolder: true,
+	name: "Todo",
+	prefix: "todo",
+	rootFolder: "Todo",
+	tag: "todo",
 })

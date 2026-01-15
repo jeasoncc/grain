@@ -10,17 +10,17 @@ import { SearchPanelView } from "./search-panel.view.fn"
 
 describe("SearchPanelView", () => {
 	const defaultProps: SearchPanelViewProps = {
+		loading: false,
+		onSelectResult: vi.fn(),
+		onSetSearchQuery: vi.fn(),
+		onSetSearchShowFilters: vi.fn(),
+		onToggleType: vi.fn(),
+		results: [],
 		searchState: {
 			query: "",
 			selectedTypes: ["node"],
 			showFilters: false,
 		},
-		results: [],
-		loading: false,
-		onSetSearchQuery: vi.fn(),
-		onToggleType: vi.fn(),
-		onSetSearchShowFilters: vi.fn(),
-		onSelectResult: vi.fn(),
 	}
 
 	it("should render search input", () => {
@@ -69,11 +69,11 @@ describe("SearchPanelView", () => {
 		const onSetSearchQuery = vi.fn()
 		const props = {
 			...defaultProps,
+			onSetSearchQuery,
 			searchState: {
 				...defaultProps.searchState,
 				query: "test",
 			},
-			onSetSearchQuery,
 		}
 		render(<SearchPanelView {...props} />)
 
@@ -114,11 +114,11 @@ describe("SearchPanelView", () => {
 	it("should display loading state", () => {
 		const props = {
 			...defaultProps,
+			loading: true,
 			searchState: {
 				...defaultProps.searchState,
 				query: "test",
 			},
-			loading: true,
 		}
 		render(<SearchPanelView {...props} />)
 
@@ -128,33 +128,33 @@ describe("SearchPanelView", () => {
 	it("should display results count", () => {
 		const results: SearchResult[] = [
 			{
-				id: "1",
-				type: "node",
-				title: "Test Node 1",
 				content: "Test content",
-				workspaceTitle: "Workspace",
 				excerpt: "Test excerpt",
-				score: 1.0,
 				highlights: [],
+				id: "1",
+				score: 1.0,
+				title: "Test Node 1",
+				type: "node",
+				workspaceTitle: "Workspace",
 			},
 			{
-				id: "2",
-				type: "node",
-				title: "Test Node 2",
 				content: "Test content",
-				workspaceTitle: "Workspace",
 				excerpt: "Test excerpt",
-				score: 1.0,
 				highlights: [],
+				id: "2",
+				score: 1.0,
+				title: "Test Node 2",
+				type: "node",
+				workspaceTitle: "Workspace",
 			},
 		]
 		const props = {
 			...defaultProps,
+			results,
 			searchState: {
 				...defaultProps.searchState,
 				query: "test",
 			},
-			results,
 		}
 		render(<SearchPanelView {...props} />)
 
@@ -164,11 +164,11 @@ describe("SearchPanelView", () => {
 	it("should display no results message when query exists but no results", () => {
 		const props = {
 			...defaultProps,
+			results: [],
 			searchState: {
 				...defaultProps.searchState,
 				query: "nonexistent",
 			},
-			results: [],
 		}
 		render(<SearchPanelView {...props} />)
 
@@ -185,11 +185,11 @@ describe("SearchPanelView", () => {
 		const onToggleType = vi.fn()
 		const props = {
 			...defaultProps,
+			onToggleType,
 			searchState: {
 				...defaultProps.searchState,
 				showFilters: true,
 			},
-			onToggleType,
 		}
 		render(<SearchPanelView {...props} />)
 
@@ -202,23 +202,23 @@ describe("SearchPanelView", () => {
 	it("should display search results grouped by type", () => {
 		const results: SearchResult[] = [
 			{
-				id: "1",
-				type: "node",
-				title: "Test Node",
 				content: "Test content",
-				workspaceTitle: "Workspace",
 				excerpt: "Test excerpt",
-				score: 1.0,
 				highlights: [],
+				id: "1",
+				score: 1.0,
+				title: "Test Node",
+				type: "node",
+				workspaceTitle: "Workspace",
 			},
 		]
 		const props = {
 			...defaultProps,
+			results,
 			searchState: {
 				...defaultProps.searchState,
 				query: "test",
 			},
-			results,
 		}
 		render(<SearchPanelView {...props} />)
 
@@ -235,24 +235,24 @@ describe("SearchPanelView", () => {
 		const onSelectResult = vi.fn()
 		const results: SearchResult[] = [
 			{
-				id: "1",
-				type: "node",
-				title: "Test Node",
 				content: "Test content",
-				workspaceTitle: "Workspace",
 				excerpt: "Test excerpt",
-				score: 1.0,
 				highlights: [],
+				id: "1",
+				score: 1.0,
+				title: "Test Node",
+				type: "node",
+				workspaceTitle: "Workspace",
 			},
 		]
 		const props = {
 			...defaultProps,
+			onSelectResult,
+			results,
 			searchState: {
 				...defaultProps.searchState,
 				query: "test",
 			},
-			results,
-			onSelectResult,
 		}
 		render(<SearchPanelView {...props} />)
 

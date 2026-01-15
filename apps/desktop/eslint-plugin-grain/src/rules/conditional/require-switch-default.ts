@@ -6,25 +6,28 @@ const createRule = ESLintUtils.RuleCreator(
 )
 
 export default createRule({
-	name: "require-switch-default",
+	create(context) {
+		return {
+			SwitchStatement(node) {
+				// 检查是否有 default case
+				const hasDefault = node.cases.some((caseNode) => caseNode.test === null)
+
+				if (!hasDefault) {
+					context.report({
+						messageId: "missingDefault",
+						node,
+					})
+				}
+			},
+		}
+	},
+	defaultOptions: [],
 	meta: {
-		type: "problem",
 		docs: {
 			description: "要求 switch 语句包含 default 分支",
 		},
 		messages: {
 			missingDefault: buildErrorMessage({
-				title: "switch 语句必须包含 default 分支",
-				reason: `
-  缺少 default 分支会导致：
-  - 未处理的情况被静默忽略
-  - 难以发现逻辑错误
-  - 违反"显式优于隐式"原则
-  
-  即使你认为已经覆盖了所有情况，也应该添加 default 分支：
-  - 防止未来添加新的枚举值时遗漏处理
-  - 提供明确的错误处理
-  - 使代码意图更清晰`,
 				correctExample: `// ✅ 包含 default 分支
 switch (status) {
   case 'active':
@@ -60,6 +63,7 @@ if (!handler) {
   return handleUnknown();
 }
 return handler();`,
+				docRef: "#code-standards - 条件语句规范",
 				incorrectExample: `// ❌ 缺少 default 分支
 switch (status) {
   case 'active':
@@ -68,25 +72,21 @@ switch (status) {
     return handleInactive();
   // 如果 status 是其他值，会静默失败
 }`,
-				docRef: "#code-standards - 条件语句规范",
+				reason: `
+  缺少 default 分支会导致：
+  - 未处理的情况被静默忽略
+  - 难以发现逻辑错误
+  - 违反"显式优于隐式"原则
+  
+  即使你认为已经覆盖了所有情况，也应该添加 default 分支：
+  - 防止未来添加新的枚举值时遗漏处理
+  - 提供明确的错误处理
+  - 使代码意图更清晰`,
+				title: "switch 语句必须包含 default 分支",
 			}),
 		},
 		schema: [],
+		type: "problem",
 	},
-	defaultOptions: [],
-	create(context) {
-		return {
-			SwitchStatement(node) {
-				// 检查是否有 default case
-				const hasDefault = node.cases.some((caseNode) => caseNode.test === null)
-
-				if (!hasDefault) {
-					context.report({
-						node,
-						messageId: "missingDefault",
-					})
-				}
-			},
-		}
-	},
+	name: "require-switch-default",
 })

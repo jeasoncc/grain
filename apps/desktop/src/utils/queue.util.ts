@@ -31,8 +31,8 @@ export interface QueueStatus {
  * 2. 多个异步操作交错执行导致的数据不一致
  */
 export const fileOperationQueue = new PQueue({
-	concurrency: 1,
 	autoStart: true,
+	concurrency: 1,
 })
 
 /**
@@ -41,9 +41,9 @@ export const fileOperationQueue = new PQueue({
  * 用于调试和监控队列运行情况。
  */
 export const getQueueStatus = (): QueueStatus => ({
-	size: fileOperationQueue.size,
-	pending: fileOperationQueue.pending,
 	isPaused: fileOperationQueue.isPaused,
+	pending: fileOperationQueue.pending,
+	size: fileOperationQueue.size,
 })
 
 /**

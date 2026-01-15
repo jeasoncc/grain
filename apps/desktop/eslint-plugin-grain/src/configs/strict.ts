@@ -16,95 +16,95 @@
 export const strictConfig = {
 	plugins: ["grain"],
 	rules: {
-		// ============================================
-		// Functional Programming Rules - All error
-		// ============================================
-		"grain/no-try-catch": "error",
-		"grain/no-throw": "error",
-		"grain/no-promise-methods": "error",
-		"grain/no-async-outside-io": "error",
-		"grain/no-mutation": "error",
-		"grain/no-object-mutation": "error",
-		"grain/fp-ts-patterns": "error",
-
-		// ============================================
-		// Architecture Layer Rules - All error
-		// ============================================
-		"grain/layer-dependencies": "error",
-		"grain/no-react-in-pure-layers": "error",
-		"grain/no-side-effects-in-pipes": "error",
-		"grain/no-store-in-views": "error",
+		"grain/boolean-naming": "error",
+		"grain/chinese-comments": "error",
+		"grain/component-patterns": "error",
+		"grain/constant-naming": "error",
+		"grain/cyclomatic-complexity": "error",
 		"grain/file-location": "error",
 
 		// ============================================
 		// Naming Convention Rules - All error
 		// ============================================
 		"grain/file-naming": "error",
-		"grain/variable-naming": "error",
+		"grain/fp-ts-patterns": "error",
 		"grain/function-naming": "error",
-		"grain/boolean-naming": "error",
-		"grain/constant-naming": "error",
+		"grain/hooks-patterns": "error",
+		"grain/import-grouping": "error",
+
+		// ============================================
+		// Architecture Layer Rules - All error
+		// ============================================
+		"grain/layer-dependencies": "error",
+		"grain/max-file-lines": "error",
 
 		// ============================================
 		// Complexity Rules - All error
 		// ============================================
 		"grain/max-function-lines": "error",
-		"grain/max-params": "error",
 		"grain/max-nesting": "error",
-		"grain/cyclomatic-complexity": "error",
-		"grain/max-file-lines": "error",
+		"grain/max-params": "error",
 
 		// ============================================
-		// React Component Rules - All error
+		// Type Safety Rules - All error
 		// ============================================
-		"grain/require-memo": "error",
-		"grain/no-inline-functions": "error",
-		"grain/require-callback": "error",
-		"grain/hooks-patterns": "error",
-		"grain/component-patterns": "error",
+		"grain/no-any": "error",
+		"grain/no-async-outside-io": "error",
+		"grain/no-banned-imports": "error",
+		"grain/no-commented-code": "error",
 
 		// ============================================
 		// Import Organization Rules - All error
 		// ============================================
 		"grain/no-default-export": "error",
-		"grain/no-banned-imports": "error",
-		"grain/require-alias": "error",
-		"grain/import-grouping": "error",
 		"grain/no-deprecated-imports": "error",
 
 		// ============================================
 		// Security Rules - All error
 		// ============================================
 		"grain/no-eval": "error",
+		"grain/no-hardcoded-values": "error",
+		"grain/no-inline-functions": "error",
 		"grain/no-innerhtml": "error",
-		"grain/no-sensitive-logging": "error",
-
-		// ============================================
-		// Documentation Rules - All error
-		// ============================================
-		"grain/require-jsdoc": "error",
-		"grain/no-commented-code": "error",
-		"grain/chinese-comments": "error",
 
 		// ============================================
 		// Magic Values Rules - All error
 		// ============================================
 		"grain/no-magic-numbers": "error",
-		"grain/no-hardcoded-values": "error",
+		"grain/no-mutation": "error",
 
 		// ============================================
 		// Conditional Statement Rules - All error
 		// ============================================
 		"grain/no-nested-ternary": "error",
-		"grain/strict-equality": "error",
-		"grain/require-switch-default": "error",
+		"grain/no-non-null-assertion": "error",
+		"grain/no-object-mutation": "error",
+		"grain/no-promise-methods": "error",
+		"grain/no-react-in-pure-layers": "error",
+		"grain/no-sensitive-logging": "error",
+		"grain/no-side-effects-in-pipes": "error",
+		"grain/no-store-in-views": "error",
+		"grain/no-throw": "error",
+		// ============================================
+		// Functional Programming Rules - All error
+		// ============================================
+		"grain/no-try-catch": "error",
+		"grain/require-alias": "error",
+		"grain/require-callback": "error",
 
 		// ============================================
-		// Type Safety Rules - All error
+		// Documentation Rules - All error
 		// ============================================
-		"grain/no-any": "error",
-		"grain/no-non-null-assertion": "error",
+		"grain/require-jsdoc": "error",
+
+		// ============================================
+		// React Component Rules - All error
+		// ============================================
+		"grain/require-memo": "error",
 		"grain/require-return-type": "error",
+		"grain/require-switch-default": "error",
+		"grain/strict-equality": "error",
+		"grain/variable-naming": "error",
 
 		// ============================================
 		// Zustand State Management Rules - All error

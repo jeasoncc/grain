@@ -69,12 +69,12 @@ export const buildTree = (
 		RA.filter((n) => n.parent === parentId),
 		RA.sort(byOrder),
 		RA.map((node) => ({
+			children: node.type === "folder" ? buildTree(nodes, node.id, depth + 1) : [],
+			collapsed: node.collapsed ?? true,
+			depth,
 			id: node.id,
 			title: node.title,
 			type: node.type,
-			collapsed: node.collapsed ?? true,
-			depth,
-			children: node.type === "folder" ? buildTree(nodes, node.id, depth + 1) : [],
 		})),
 	)
 

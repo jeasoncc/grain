@@ -10,52 +10,6 @@ type MessageIds = "requireMemo"
 type Options = []
 
 export default createRule<Options, MessageIds>({
-	name: "require-memo",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "要求 React 组件使用 memo 包裹以优化性能",
-		},
-		messages: {
-			requireMemo: buildErrorMessage({
-				title: "组件 {{componentName}} 未使用 memo 包裹",
-				reason: `未使用 memo 的组件会在父组件重新渲染时无条件重新渲染：
-  - 造成不必要的性能开销
-  - 违反 Grain 项目的性能优化原则
-  - 可能导致子组件的无效渲染`,
-				correctExample: `// ✅ 使用 memo 包裹组件
-import { memo } from 'react';
-
-interface Props {
-  title: string;
-  onAction: () => void;
-}
-
-export const MyComponent = memo<Props>(({ title, onAction }) => {
-  return (
-    <div>
-      <h1>{title}</h1>
-      <button onClick={onAction}>Action</button>
-    </div>
-  );
-});
-
-MyComponent.displayName = 'MyComponent';`,
-				incorrectExample: `// ❌ 未使用 memo
-export const MyComponent = ({ title, onAction }: Props) => {
-  return (
-    <div>
-      <h1>{title}</h1>
-      <button onClick={onAction}>Action</button>
-    </div>
-  );
-};`,
-				docRef: "#code-standards - React 组件规范",
-			}),
-		},
-		schema: [],
-	},
-	defaultOptions: [],
 	create(context) {
 		const filename = context.getFilename()
 
@@ -184,27 +138,11 @@ export const MyComponent = ({ title, onAction }: Props) => {
 							node.parent.type === "ExportDefaultDeclaration")
 					) {
 						context.report({
-							node,
-							messageId: "requireMemo",
 							data: {
 								componentName,
 							},
-						})
-					}
-				}
-			},
-
-			// 检查函数表达式组件
-			FunctionExpression(node) {
-				if (isReactComponent(node) && !isWrappedWithMemo(node)) {
-					const componentName = getComponentName(node)
-					if (node.parent && node.parent.type === "VariableDeclarator") {
-						context.report({
-							node,
 							messageId: "requireMemo",
-							data: {
-								componentName,
-							},
+							node,
 						})
 					}
 				}
@@ -223,15 +161,77 @@ export const MyComponent = ({ title, onAction }: Props) => {
 							parent.type === "Program")
 					) {
 						context.report({
-							node,
-							messageId: "requireMemo",
 							data: {
 								componentName,
 							},
+							messageId: "requireMemo",
+							node,
+						})
+					}
+				}
+			},
+
+			// 检查函数表达式组件
+			FunctionExpression(node) {
+				if (isReactComponent(node) && !isWrappedWithMemo(node)) {
+					const componentName = getComponentName(node)
+					if (node.parent && node.parent.type === "VariableDeclarator") {
+						context.report({
+							data: {
+								componentName,
+							},
+							messageId: "requireMemo",
+							node,
 						})
 					}
 				}
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "要求 React 组件使用 memo 包裹以优化性能",
+		},
+		messages: {
+			requireMemo: buildErrorMessage({
+				correctExample: `// ✅ 使用 memo 包裹组件
+import { memo } from 'react';
+
+interface Props {
+  title: string;
+  onAction: () => void;
+}
+
+export const MyComponent = memo<Props>(({ title, onAction }) => {
+  return (
+    <div>
+      <h1>{title}</h1>
+      <button onClick={onAction}>Action</button>
+    </div>
+  );
+});
+
+MyComponent.displayName = 'MyComponent';`,
+				docRef: "#code-standards - React 组件规范",
+				incorrectExample: `// ❌ 未使用 memo
+export const MyComponent = ({ title, onAction }: Props) => {
+  return (
+    <div>
+      <h1>{title}</h1>
+      <button onClick={onAction}>Action</button>
+    </div>
+  );
+};`,
+				reason: `未使用 memo 的组件会在父组件重新渲染时无条件重新渲染：
+  - 造成不必要的性能开销
+  - 违反 Grain 项目的性能优化原则
+  - 可能导致子组件的无效渲染`,
+				title: "组件 {{componentName}} 未使用 memo 包裹",
+			}),
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "require-memo",
 })

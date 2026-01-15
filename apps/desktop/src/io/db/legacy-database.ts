@@ -74,13 +74,13 @@ export class LegacyDatabase extends Dexie {
 
 		// Version 12: Current schema (same as before migration)
 		this.version(12).stores({
-			nodes: "id, workspace, parent, type, order, *tags",
-			contents: "id, nodeId, contentType",
-			workspaces: "id, title, owner",
-			users: "id, username, email",
 			attachments: "id, project",
+			contents: "id, nodeId, contentType",
 			dbVersions: "id, version",
+			nodes: "id, workspace, parent, type, order, *tags",
 			tags: "id, workspace, name",
+			users: "id, username, email",
+			workspaces: "id, title, owner",
 		})
 
 		// Open database silently (logger would cause circular dependency)

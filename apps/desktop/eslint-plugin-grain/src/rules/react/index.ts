@@ -5,9 +5,9 @@ import requireCallback from "./require-callback"
 import requireMemo from "./require-memo"
 
 export default {
-	"require-memo": requireMemo,
+	"component-patterns": componentPatterns,
+	"hooks-patterns": hooksPatterns,
 	"no-inline-functions": noInlineFunctions,
 	"require-callback": requireCallback,
-	"hooks-patterns": hooksPatterns,
-	"component-patterns": componentPatterns,
+	"require-memo": requireMemo,
 }

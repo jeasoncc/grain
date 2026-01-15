@@ -40,8 +40,8 @@ describe("extractTagsFromContent", () => {
 			root: {
 				children: [
 					{
-						type: "front-matter",
 						key: "TAGS",
+						type: "front-matter",
 						value: "tag1, tag2",
 					},
 				],
@@ -57,8 +57,8 @@ describe("extractTagsFromContent", () => {
 			root: {
 				children: [
 					{
-						type: "front-matter",
 						key: "tags",
+						type: "front-matter",
 						value: "tag1, tag2",
 					},
 				],
@@ -74,14 +74,14 @@ describe("extractTagsFromContent", () => {
 			root: {
 				children: [
 					{
-						type: "paragraph",
 						children: [
 							{
-								type: "front-matter",
 								key: "TAGS",
+								type: "front-matter",
 								value: "nested-tag",
 							},
 						],
+						type: "paragraph",
 					},
 				],
 			},
@@ -96,13 +96,13 @@ describe("extractTagsFromContent", () => {
 			root: {
 				children: [
 					{
-						type: "front-matter",
 						key: "TAGS",
+						type: "front-matter",
 						value: "tag1, tag2",
 					},
 					{
-						type: "front-matter",
 						key: "TAGS",
+						type: "front-matter",
 						value: "tag2, tag3",
 					},
 				],
@@ -118,8 +118,8 @@ describe("extractTagsFromContent", () => {
 			root: {
 				children: [
 					{
-						type: "paragraph",
 						children: [],
+						type: "paragraph",
 					},
 				],
 			},
@@ -140,13 +140,13 @@ describe("extractTagsFromContent", () => {
 			root: {
 				children: [
 					{
-						type: "front-matter",
 						key: "TITLE",
+						type: "front-matter",
 						value: "My Title",
 					},
 					{
-						type: "front-matter",
 						key: "TAGS",
+						type: "front-matter",
 						value: "actual-tag",
 					},
 				],

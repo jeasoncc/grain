@@ -46,38 +46,6 @@ export const useSidebarStore = create<SidebarStore>()(
 			// Initial state
 			...DEFAULT_SIDEBAR_STATE,
 
-			// Main sidebar actions
-			setActivePanel: (panel: SidebarPanel) => {
-				const newIsOpen = true // 选择面板时总是打开侧边栏
-				set((state) => ({
-					...state,
-					activePanel: panel,
-					isOpen: newIsOpen,
-				}))
-			},
-
-			setIsOpen: (open: boolean) => {
-				set((state) => ({
-					...state,
-					isOpen: open,
-				}))
-			},
-
-			toggleSidebar: () => {
-				set((state) => ({
-					...state,
-					isOpen: !state.isOpen,
-					wasCollapsedByDrag: false,
-				}))
-			},
-
-			setWidth: (width: number) => {
-				set((state) => ({
-					...state,
-					width: constrainWidth(width),
-				}))
-			},
-
 			resizeSidebar: (newWidth: number) => {
 				const state = get()
 				// Auto-collapse when width drops below threshold
@@ -85,16 +53,16 @@ export const useSidebarStore = create<SidebarStore>()(
 					set((currentState) => ({
 						...currentState,
 						isOpen: false,
-						wasCollapsedByDrag: true,
 						previousWidth: state.width,
+						wasCollapsedByDrag: true,
 					}))
 					return
 				}
 				// Constrain width within bounds
 				set((currentState) => ({
 					...currentState,
-					width: constrainWidth(newWidth),
 					wasCollapsedByDrag: false,
+					width: constrainWidth(newWidth),
 				}))
 			},
 
@@ -105,6 +73,34 @@ export const useSidebarStore = create<SidebarStore>()(
 					isOpen: true,
 					wasCollapsedByDrag: false,
 					width: state.previousWidth || SIDEBAR_DEFAULT_WIDTH,
+				}))
+			},
+
+			// Main sidebar actions
+			setActivePanel: (panel: SidebarPanel) => {
+				const newIsOpen = true // 选择面板时总是打开侧边栏
+				set((state) => ({
+					...state,
+					activePanel: panel,
+					isOpen: newIsOpen,
+				}))
+			},
+
+			// File tree actions
+			setExpandedFolders: (folders: Record<string, boolean>) => {
+				set((state) => ({
+					...state,
+					fileTreeState: {
+						...state.fileTreeState,
+						expandedFolders: folders,
+					},
+				}))
+			},
+
+			setIsOpen: (open: boolean) => {
+				set((state) => ({
+					...state,
+					isOpen: open,
 				}))
 			},
 
@@ -150,14 +146,10 @@ export const useSidebarStore = create<SidebarStore>()(
 				}))
 			},
 
-			// File tree actions
-			setExpandedFolders: (folders: Record<string, boolean>) => {
+			setWidth: (width: number) => {
 				set((state) => ({
 					...state,
-					fileTreeState: {
-						...state.fileTreeState,
-						expandedFolders: folders,
-					},
+					width: constrainWidth(width),
 				}))
 			},
 
@@ -176,18 +168,26 @@ export const useSidebarStore = create<SidebarStore>()(
 					}
 				})
 			},
+
+			toggleSidebar: () => {
+				set((state) => ({
+					...state,
+					isOpen: !state.isOpen,
+					wasCollapsedByDrag: false,
+				}))
+			},
 		}),
 		{
 			name: DEFAULT_SIDEBAR_CONFIG.storageKey,
 			partialize: (state) => ({
 				activePanel: state.activePanel,
-				isOpen: state.isOpen,
-				width: state.width,
-				wasCollapsedByDrag: state.wasCollapsedByDrag,
-				previousWidth: state.previousWidth,
-				searchState: state.searchState,
 				drawingsState: state.drawingsState,
 				fileTreeState: state.fileTreeState,
+				isOpen: state.isOpen,
+				previousWidth: state.previousWidth,
+				searchState: state.searchState,
+				wasCollapsedByDrag: state.wasCollapsedByDrag,
+				width: state.width,
 			}),
 		},
 	),
@@ -227,18 +227,18 @@ export const useExpandedFolders = () => useSidebarStore((s) => s.fileTreeState.e
 
 /** Get sidebar actions */
 export const useSidebarActions = () => ({
-	setActivePanel: useSidebarStore((s) => s.setActivePanel),
-	setIsOpen: useSidebarStore((s) => s.setIsOpen),
-	toggleSidebar: useSidebarStore((s) => s.toggleSidebar),
-	setWidth: useSidebarStore((s) => s.setWidth),
 	resizeSidebar: useSidebarStore((s) => s.resizeSidebar),
 	restoreFromCollapse: useSidebarStore((s) => s.restoreFromCollapse),
+	setActivePanel: useSidebarStore((s) => s.setActivePanel),
+	setExpandedFolders: useSidebarStore((s) => s.setExpandedFolders),
+	setIsOpen: useSidebarStore((s) => s.setIsOpen),
 	setSearchQuery: useSidebarStore((s) => s.setSearchQuery),
 	setSearchSelectedTypes: useSidebarStore((s) => s.setSearchSelectedTypes),
 	setSearchShowFilters: useSidebarStore((s) => s.setSearchShowFilters),
 	setSelectedDrawingId: useSidebarStore((s) => s.setSelectedDrawingId),
-	setExpandedFolders: useSidebarStore((s) => s.setExpandedFolders),
+	setWidth: useSidebarStore((s) => s.setWidth),
 	toggleFolderExpanded: useSidebarStore((s) => s.toggleFolderExpanded),
+	toggleSidebar: useSidebarStore((s) => s.toggleSidebar),
 })
 
 // ==============================

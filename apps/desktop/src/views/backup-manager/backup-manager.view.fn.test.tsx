@@ -9,64 +9,64 @@ import { BackupManagerView } from "./backup-manager.view.fn"
 
 describe("BackupManagerView", () => {
 	const mockStats = {
-		userCount: 2,
-		projectCount: 5,
-		nodeCount: 20,
+		attachmentCount: 8,
 		contentCount: 15,
 		drawingCount: 3,
-		attachmentCount: 8,
+		nodeCount: 20,
+		projectCount: 5,
 		tagCount: 12,
+		userCount: 2,
 	}
 
 	const mockStorageStats = {
+		cookies: {
+			count: 3,
+		},
 		indexedDB: {
 			size: 1024000,
-			tables: {
-				users: 2,
-				workspaces: 5,
-				nodes: 20,
-				contents: 15,
-				drawings: 3,
-				attachments: 8,
-				tags: 12,
-			},
 			tableSizes: {
-				users: 10240,
-				workspaces: 512000,
-				nodes: 256000,
+				attachments: 40960,
 				contents: 128000,
 				drawings: 51200,
-				attachments: 40960,
+				nodes: 256000,
 				tags: 25600,
+				users: 10240,
+				workspaces: 512000,
+			},
+			tables: {
+				attachments: 8,
+				contents: 15,
+				drawings: 3,
+				nodes: 20,
+				tags: 12,
+				users: 2,
+				workspaces: 5,
 			},
 		},
 		localStorage: {
-			size: 2048,
 			keys: 10,
+			size: 2048,
 		},
 		sessionStorage: {
-			size: 1024,
 			keys: 5,
-		},
-		cookies: {
-			count: 3,
+			size: 1024,
 		},
 	}
 
 	const defaultProps: BackupManagerViewProps = {
-		stats: mockStats,
-		storageStats: mockStorageStats,
-		loading: false,
 		autoBackupEnabled: false,
+		loading: false,
 		localBackups: [],
-		onExportJson: vi.fn(),
-		onExportZip: vi.fn(),
-		onRestore: vi.fn(),
-		onToggleAutoBackup: vi.fn(),
-		onRestoreLocal: vi.fn(),
 		onClearAllData: vi.fn(),
 		onClearDatabase: vi.fn(),
 		onClearSettings: vi.fn(),
+		onExportJson: vi.fn(),
+		onExportZip: vi.fn(),
+		onRestore: vi.fn(),
+		onRestoreLocal: vi.fn(),
+		onToggleAutoBackup: vi.fn(),
+		stats: mockStats,
+		storageStats: mockStorageStats,
 	}
 
 	it("should render with stats", () => {
@@ -122,26 +122,26 @@ describe("BackupManagerView", () => {
 	it("should show local backups when available", () => {
 		const localBackups = [
 			{
-				timestamp: "2024-01-01T00:00:00.000Z",
 				data: {
+					attachments: [],
+					contents: [],
+					dbVersions: [],
+					drawings: [],
 					metadata: {
-						version: "1.0.0",
-						timestamp: "2024-01-01T00:00:00.000Z",
-						projectCount: 5,
-						nodeCount: 20,
-						contentCount: 15,
-						tagCount: 12,
 						appVersion: "1.0.0",
+						contentCount: 15,
+						nodeCount: 20,
+						projectCount: 5,
+						tagCount: 12,
+						timestamp: "2024-01-01T00:00:00.000Z",
+						version: "1.0.0",
 					},
+					nodes: [],
+					tags: [],
 					users: [],
 					workspaces: [],
-					nodes: [],
-					contents: [],
-					drawings: [],
-					attachments: [],
-					tags: [],
-					dbVersions: [],
 				},
+				timestamp: "2024-01-01T00:00:00.000Z",
 			},
 		]
 		render(<BackupManagerView {...defaultProps} localBackups={localBackups} />)
@@ -158,26 +158,26 @@ describe("BackupManagerView", () => {
 		const onRestoreLocal = vi.fn()
 		const localBackups = [
 			{
-				timestamp: "2024-01-01T00:00:00.000Z",
 				data: {
+					attachments: [],
+					contents: [],
+					dbVersions: [],
+					drawings: [],
 					metadata: {
-						version: "1.0.0",
-						timestamp: "2024-01-01T00:00:00.000Z",
-						projectCount: 5,
-						nodeCount: 20,
-						contentCount: 15,
-						tagCount: 12,
 						appVersion: "1.0.0",
+						contentCount: 15,
+						nodeCount: 20,
+						projectCount: 5,
+						tagCount: 12,
+						timestamp: "2024-01-01T00:00:00.000Z",
+						version: "1.0.0",
 					},
+					nodes: [],
+					tags: [],
 					users: [],
 					workspaces: [],
-					nodes: [],
-					contents: [],
-					drawings: [],
-					attachments: [],
-					tags: [],
-					dbVersions: [],
 				},
+				timestamp: "2024-01-01T00:00:00.000Z",
 			},
 		]
 		render(

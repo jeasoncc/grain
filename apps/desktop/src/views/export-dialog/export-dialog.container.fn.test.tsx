@@ -16,22 +16,22 @@ vi.mock("@/actions", () => ({
 
 // Mock export functions
 vi.mock("@/fn/export", () => ({
-	triggerDownload: vi.fn(),
 	triggerBlobDownload: vi.fn(),
+	triggerDownload: vi.fn(),
 }))
 
 // Mock toast
 vi.mock("sonner", () => ({
 	toast: {
-		success: vi.fn(),
 		error: vi.fn(),
+		success: vi.fn(),
 	},
 }))
 
 describe("ExportDialogContainer", () => {
 	const defaultProps = {
-		open: true,
 		onOpenChange: vi.fn(),
+		open: true,
 		workspaceId: "workspace-1",
 		workspaceTitle: "Test Workspace",
 	}
@@ -155,10 +155,10 @@ describe("ExportDialogContainer", () => {
 				"workspace-1",
 				"pdf",
 				expect.objectContaining({
-					includeTitle: true,
 					includeAuthor: true,
 					includeChapterTitles: true,
 					includeSceneTitles: false,
+					includeTitle: true,
 					pageBreakBetweenChapters: true,
 				}),
 			)

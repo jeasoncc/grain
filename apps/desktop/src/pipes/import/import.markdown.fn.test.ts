@@ -38,8 +38,8 @@ Content here`
 			const [fm, remaining] = parseFrontMatter(content)
 
 			expect(fm).toEqual({
-				title: "Test Document",
 				author: "John Doe",
+				title: "Test Document",
 			})
 			expect(remaining).toBe("Content here")
 		})
@@ -423,8 +423,8 @@ title: Front Matter Title
 Content`
 
 			const result = importFromMarkdown(markdown, {
-				parseFrontMatter: true,
 				extractTitle: true,
+				parseFrontMatter: true,
 			})
 
 			expect(E.isRight(result)).toBe(true)
@@ -479,8 +479,8 @@ Content`
 	describe("importMultipleFromMarkdown", () => {
 		it("should import multiple documents", () => {
 			const contents = [
-				{ id: "1", content: "# Doc 1\n\nContent 1" },
-				{ id: "2", content: "# Doc 2\n\nContent 2" },
+				{ content: "# Doc 1\n\nContent 1", id: "1" },
+				{ content: "# Doc 2\n\nContent 2", id: "2" },
 			]
 
 			const result = importMultipleFromMarkdown(contents)
@@ -495,8 +495,8 @@ Content`
 
 		it("should return error if any document fails", () => {
 			const contents = [
-				{ id: "1", content: "# Valid" },
-				{ id: "2", content: "" },
+				{ content: "# Valid", id: "1" },
+				{ content: "", id: "2" },
 			]
 
 			const result = importMultipleFromMarkdown(contents)

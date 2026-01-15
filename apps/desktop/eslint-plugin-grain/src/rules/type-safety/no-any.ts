@@ -10,21 +10,23 @@ const createRule = ESLintUtils.RuleCreator(
  * 要求：Requirements 12.1
  */
 export default createRule({
-	name: "no-any",
+	create(context) {
+		return {
+			TSAnyKeyword(node) {
+				context.report({
+					messageId: "noAnyType",
+					node,
+				})
+			},
+		}
+	},
+	defaultOptions: [],
 	meta: {
-		type: "problem",
 		docs: {
 			description: "禁止使用 any 类型，必须使用明确的类型定义",
 		},
 		messages: {
 			noAnyType: buildErrorMessage({
-				title: "禁止使用 any 类型",
-				reason: `
-  any 类型完全放弃了 TypeScript 的类型检查：
-  - 失去编译时类型安全保障
-  - 无法获得 IDE 智能提示
-  - 容易引入运行时错误
-  - 破坏类型系统的完整性`,
 				correctExample: `// ✅ 使用明确的类型
 function processData(data: UserData): Result {
   return transform(data);
@@ -49,6 +51,7 @@ function processUnknown(data: unknown): string {
   }
   return String(data);
 }`,
+				docRef: "#code-standards - 类型安全",
 				incorrectExample: `// ❌ 使用 any
 function processData(data: any): any {
   return data.something;
@@ -61,20 +64,17 @@ const items: any[] = [];
 function handle(event: any) {
   console.log(event);
 }`,
-				docRef: "#code-standards - 类型安全",
+				reason: `
+  any 类型完全放弃了 TypeScript 的类型检查：
+  - 失去编译时类型安全保障
+  - 无法获得 IDE 智能提示
+  - 容易引入运行时错误
+  - 破坏类型系统的完整性`,
+				title: "禁止使用 any 类型",
 			}),
 		},
 		schema: [],
+		type: "problem",
 	},
-	defaultOptions: [],
-	create(context) {
-		return {
-			TSAnyKeyword(node) {
-				context.report({
-					node,
-					messageId: "noAnyType",
-				})
-			},
-		}
-	},
+	name: "no-any",
 })

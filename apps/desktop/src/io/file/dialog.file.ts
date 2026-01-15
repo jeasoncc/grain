@@ -104,8 +104,8 @@ export function selectDirectoryWithResult(
 	options?: DirectorySelectOptions,
 ): TE.TaskEither<Error, DirectorySelectResult> {
 	return TE.map((path: string | null) => ({
-		path,
 		cancelled: path === null,
+		path,
 	}))(selectDirectory(options))
 }
 
@@ -225,8 +225,8 @@ export async function selectFile(options?: FileSelectOptions): Promise<FileSelec
 
 		// Apply configuration functionally using Object.assign
 		Object.assign(input, {
-			type: "file",
 			multiple: options?.multiple ?? false,
+			type: "file",
 		})
 
 		if (options?.filters && options.filters.length > 0) {
@@ -238,15 +238,15 @@ export async function selectFile(options?: FileSelectOptions): Promise<FileSelec
 		const handleChange = (e: Event) => {
 			const file = (e.target as HTMLInputElement).files?.[0]
 			resolve({
-				file: file ?? null,
 				cancelled: !file,
+				file: file ?? null,
 			})
 		}
 
 		const handleCancel = () => {
 			resolve({
-				file: null,
 				cancelled: true,
+				file: null,
 			})
 		}
 

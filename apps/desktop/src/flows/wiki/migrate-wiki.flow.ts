@@ -86,11 +86,11 @@ const ensureRootFolder = (
 
 			// 创建新文件夹
 			return nodeRepo.createNode({
-				workspace: workspaceId,
-				parent: null,
-				type: "folder",
-				title: folderName,
 				collapsed,
+				parent: null,
+				title: folderName,
+				type: "folder",
+				workspace: workspaceId,
 			})
 		}),
 	)
@@ -161,7 +161,7 @@ export async function migrateWikiEntriesToFiles(workspaceId: string): Promise<Mi
 		const table = legacyDatabase.table("wikiEntries")
 		if (!table) {
 			info(`Wiki entries table not found for workspace ${workspaceId}`)
-			return { migrated: 0, errors: [] }
+			return { errors: [], migrated: 0 }
 		}
 		const wikiEntries = (await table
 			.where("project")
@@ -170,7 +170,7 @@ export async function migrateWikiEntriesToFiles(workspaceId: string): Promise<Mi
 
 		if (wikiEntries.length === 0) {
 			info(`No wiki entries to migrate for workspace ${workspaceId}`)
-			return { migrated: 0, errors: [] }
+			return { errors: [], migrated: 0 }
 		}
 
 		info(`Starting migration of ${wikiEntries.length} wiki entries for workspace ${workspaceId}`)
@@ -193,7 +193,7 @@ export async function migrateWikiEntriesToFiles(workspaceId: string): Promise<Mi
 				return errorMessage
 			})
 
-		const result: MigrationResult = { migrated, errors }
+		const result: MigrationResult = { errors, migrated }
 
 		success(
 			`Migration complete for workspace ${workspaceId}: ${result.migrated} migrated, ${result.errors.length} errors`,
@@ -203,7 +203,7 @@ export async function migrateWikiEntriesToFiles(workspaceId: string): Promise<Mi
 	} catch (err) {
 		const errorMessage = `Migration failed for workspace ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`
 		error(errorMessage)
-		return { migrated: 0, errors: [errorMessage] }
+		return { errors: [errorMessage], migrated: 0 }
 	}
 }
 
@@ -225,9 +225,9 @@ async function migrateWikiEntry(
 
 	// 创建文件节点
 	const nodeResult = await addNode(workspaceId, entry.name, {
+		order: nextOrder,
 		parent: wikiFolderId,
 		type: "file",
-		order: nextOrder,
 	})()
 
 	if (E.isLeft(nodeResult)) {

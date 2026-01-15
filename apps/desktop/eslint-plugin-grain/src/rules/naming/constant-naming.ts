@@ -8,18 +8,6 @@ const createRule = ESLintUtils.RuleCreator(
 const SCREAMING_SNAKE_CASE = /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$/
 
 export default createRule({
-	name: "constant-naming",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "强制执行常量命名规范（SCREAMING_SNAKE_CASE）",
-		},
-		messages: {
-			invalidConstantName: "常量命名不符合规范",
-		},
-		schema: [],
-	},
-	defaultOptions: [],
 	create(context) {
 		function isScreamingSnakeCase(name: string): boolean {
 			return SCREAMING_SNAKE_CASE.test(name)
@@ -102,12 +90,12 @@ export default createRule({
 					.toUpperCase()
 
 				context.report({
-					node,
-					messageId: "invalidConstantName",
 					data: {
 						name,
 						suggestion,
 					},
+					messageId: "invalidConstantName",
+					node,
 				})
 			}
 		}
@@ -120,4 +108,16 @@ export default createRule({
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "强制执行常量命名规范（SCREAMING_SNAKE_CASE）",
+		},
+		messages: {
+			invalidConstantName: "常量命名不符合规范",
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "constant-naming",
 })

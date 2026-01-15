@@ -24,9 +24,9 @@ vi.mock("@/pipes/node/node.tree.fn", () => ({
 
 vi.mock("@/log/index", () => ({
 	default: {
+		error: vi.fn(),
 		start: vi.fn(),
 		success: vi.fn(),
-		error: vi.fn(),
 	},
 }))
 
@@ -43,16 +43,16 @@ import { wouldCreateCycle } from "@/pipes/node/node.tree.fn"
 // ============================================================================
 
 const mockNode = {
+	collapsed: false,
+	createDate: "2024-01-01T00:00:00.000Z",
 	id: "node-1",
+	lastEdit: "2024-01-01T00:00:00.000Z",
+	order: 0,
+	parent: null,
+	tags: [],
 	title: "测试节点",
 	type: "file" as const,
 	workspace: "ws-1",
-	parent: null,
-	order: 0,
-	collapsed: false,
-	tags: [],
-	createDate: "2024-01-01T00:00:00.000Z",
-	lastEdit: "2024-01-01T00:00:00.000Z",
 }
 
 const mockNodes = [
@@ -87,9 +87,9 @@ describe("moveNode", () => {
 
 	it("应该成功移动节点", async () => {
 		const params = {
-			nodeId: "node-1",
-			newParentId: "node-2",
 			newOrder: 0,
+			newParentId: "node-2",
+			nodeId: "node-1",
 		}
 
 		const result = await moveNode(params)()
@@ -103,8 +103,8 @@ describe("moveNode", () => {
 
 	it("应该在未指定排序时自动计算", async () => {
 		const params = {
-			nodeId: "node-1",
 			newParentId: "node-2",
+			nodeId: "node-1",
 		}
 
 		const result = await moveNode(params)()
@@ -118,8 +118,8 @@ describe("moveNode", () => {
 		vi.mocked(wouldCreateCycle).mockReturnValue(true)
 
 		const params = {
-			nodeId: "node-1",
 			newParentId: "node-2",
+			nodeId: "node-1",
 		}
 
 		const result = await moveNode(params)()
@@ -138,8 +138,8 @@ describe("moveNode", () => {
 		vi.mocked(getNode).mockReturnValue(() => Promise.resolve(E.right(null)))
 
 		const params = {
-			nodeId: "nonexistent",
 			newParentId: "node-2",
+			nodeId: "nonexistent",
 		}
 
 		const result = await moveNode(params)()
@@ -152,12 +152,12 @@ describe("moveNode", () => {
 
 	it("应该处理获取工作区节点失败", async () => {
 		vi.mocked(getNodesByWorkspace).mockReturnValue(() =>
-			Promise.resolve(E.left({ type: "DB_ERROR", message: "获取节点失败" })),
+			Promise.resolve(E.left({ message: "获取节点失败", type: "DB_ERROR" })),
 		)
 
 		const params = {
-			nodeId: "node-1",
 			newParentId: "node-2",
+			nodeId: "node-1",
 		}
 
 		const result = await moveNode(params)()
@@ -170,9 +170,9 @@ describe("moveNode", () => {
 
 	it("应该处理移动到根级", async () => {
 		const params = {
-			nodeId: "node-1",
-			newParentId: null,
 			newOrder: 0,
+			newParentId: null,
+			nodeId: "node-1",
 		}
 
 		const result = await moveNode(params)()

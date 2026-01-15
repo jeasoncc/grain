@@ -10,56 +10,6 @@ const createRule = ESLintUtils.RuleCreator(
  * 要求：Requirements 12.6
  */
 export default createRule({
-	name: "require-return-type",
-	meta: {
-		type: "suggestion",
-		docs: {
-			description: "要求函数显式声明返回类型，提高代码可读性和类型安全性",
-		},
-		messages: {
-			missingReturnType: buildWarningMessage({
-				title: "函数缺少返回类型声明",
-				suggestion: `
-  显式声明返回类型可以：
-  - 提高代码可读性，一眼看出函数的输出
-  - 防止意外的类型推断错误
-  - 使重构更安全
-  - 提供更好的 IDE 智能提示`,
-				example: `// ✅ 显式返回类型
-function getUserName(user: User): string {
-  return user.name;
-}
-
-// ✅ 箭头函数
-const transform = (data: Data): Result => {
-  return process(data);
-};
-
-// ✅ 异步函数
-async function fetchData(): Promise<Data> {
-  return await api.getData();
-}
-
-// ✅ TaskEither 返回类型
-const saveNode = (node: Node): TE.TaskEither<AppError, void> => {
-  return pipe(
-    validateNode(node),
-    TE.fromEither,
-    TE.chain(nodeApi.save)
-  );
-};
-
-// ✅ 高阶函数
-function createHandler(config: Config): (event: Event) => void {
-  return (event) => {
-    handle(event, config);
-  };
-}`,
-			}),
-		},
-		schema: [],
-	},
-	defaultOptions: [],
 	create(context) {
 		/**
 		 * 检查函数是否有返回类型注解
@@ -107,8 +57,8 @@ function createHandler(config: Config): (event: Event) => void {
 				// 只对命名函数和导出的函数报告
 				if (node.type === "FunctionDeclaration" && node.id) {
 					context.report({
-						node,
 						messageId: "missingReturnType",
+						node,
 					})
 				} else if (node.type === "ArrowFunctionExpression" || node.type === "FunctionExpression") {
 					// 检查是否是导出的变量声明
@@ -119,15 +69,15 @@ function createHandler(config: Config): (event: Event) => void {
 						parent.parent.parent?.type === "ExportNamedDeclaration"
 					) {
 						context.report({
-							node,
 							messageId: "missingReturnType",
+							node,
 						})
 					}
 					// 检查是否是直接导出的箭头函数
 					else if (parent?.type === "ExportDefaultDeclaration") {
 						context.report({
-							node,
 							messageId: "missingReturnType",
+							node,
 						})
 					}
 					// 检查是否是对象方法
@@ -140,8 +90,8 @@ function createHandler(config: Config): (event: Event) => void {
 							objectParent.parent.parent?.type === "ExportNamedDeclaration"
 						) {
 							context.report({
-								node,
 								messageId: "missingReturnType",
+								node,
 							})
 						}
 					}
@@ -150,9 +100,59 @@ function createHandler(config: Config): (event: Event) => void {
 		}
 
 		return {
+			ArrowFunctionExpression: checkFunction,
 			FunctionDeclaration: checkFunction,
 			FunctionExpression: checkFunction,
-			ArrowFunctionExpression: checkFunction,
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "要求函数显式声明返回类型，提高代码可读性和类型安全性",
+		},
+		messages: {
+			missingReturnType: buildWarningMessage({
+				example: `// ✅ 显式返回类型
+function getUserName(user: User): string {
+  return user.name;
+}
+
+// ✅ 箭头函数
+const transform = (data: Data): Result => {
+  return process(data);
+};
+
+// ✅ 异步函数
+async function fetchData(): Promise<Data> {
+  return await api.getData();
+}
+
+// ✅ TaskEither 返回类型
+const saveNode = (node: Node): TE.TaskEither<AppError, void> => {
+  return pipe(
+    validateNode(node),
+    TE.fromEither,
+    TE.chain(nodeApi.save)
+  );
+};
+
+// ✅ 高阶函数
+function createHandler(config: Config): (event: Event) => void {
+  return (event) => {
+    handle(event, config);
+  };
+}`,
+				suggestion: `
+  显式声明返回类型可以：
+  - 提高代码可读性，一眼看出函数的输出
+  - 防止意外的类型推断错误
+  - 使重构更安全
+  - 提供更好的 IDE 智能提示`,
+				title: "函数缺少返回类型声明",
+			}),
+		},
+		schema: [],
+		type: "suggestion",
+	},
+	name: "require-return-type",
 })

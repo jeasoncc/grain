@@ -87,8 +87,8 @@ describe("excalidrawConfig", () => {
 
 		it("应该接受有效的宽度和高度", () => {
 			const result = excalidrawParamsSchema.safeParse({
-				width: 2560,
 				height: 1440,
+				width: 2560,
 			})
 
 			expect(result.success).toBe(true)
@@ -139,8 +139,8 @@ describe("excalidrawConfig", () => {
 
 		it("应该使用自定义标题（如果提供）", () => {
 			const params: ExcalidrawTemplateParams = {
-				title: "My Custom Drawing",
 				date: testDate,
+				title: "My Custom Drawing",
 			}
 
 			const result = excalidrawConfig.generateTitle(params)
@@ -277,9 +277,9 @@ describe("excalidrawConfig", () => {
 		it("应该处理完整的创建流程", () => {
 			const params: ExcalidrawTemplateParams = {
 				date: dayjs("2024-01-15T10:30:00.000Z").toDate(),
+				height: 1080,
 				title: "Test Drawing",
 				width: 1920,
-				height: 1080,
 			}
 
 			// 1. 校验参数

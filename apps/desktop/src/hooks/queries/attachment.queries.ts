@@ -20,7 +20,6 @@ import { queryKeys } from "./query-keys"
  */
 export const useAttachments = () => {
 	return useQuery({
-		queryKey: queryKeys.attachments.all,
 		queryFn: async (): Promise<readonly AttachmentInterface[]> => {
 			const result = await attachmentApi.getAttachments()()
 			if (E.isLeft(result)) {
@@ -29,6 +28,7 @@ export const useAttachments = () => {
 			// 按上传时间排序（最新的在前）
 			return orderBy(result.right, [(item) => new Date(item.uploadedAt).getTime()], ["desc"])
 		},
+		queryKey: queryKeys.attachments.all,
 	})
 }
 
@@ -38,7 +38,6 @@ export const useAttachments = () => {
 export const useAttachment = (attachmentId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!attachmentId,
-		queryKey: queryKeys.attachments.detail(attachmentId ?? ""),
 		queryFn: async (): Promise<AttachmentInterface | null> => {
 			if (!attachmentId) return null
 			const result = await attachmentApi.getAttachment(attachmentId)()
@@ -47,6 +46,7 @@ export const useAttachment = (attachmentId: string | null | undefined) => {
 			}
 			return result.right
 		},
+		queryKey: queryKeys.attachments.detail(attachmentId ?? ""),
 	})
 }
 
@@ -56,7 +56,6 @@ export const useAttachment = (attachmentId: string | null | undefined) => {
 export const useAttachmentsByProject = (projectId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!projectId,
-		queryKey: queryKeys.attachments.byProject(projectId ?? ""),
 		queryFn: async (): Promise<readonly AttachmentInterface[]> => {
 			if (!projectId) return []
 			const result = await attachmentApi.getAttachmentsByProject(projectId)()
@@ -66,6 +65,7 @@ export const useAttachmentsByProject = (projectId: string | null | undefined) =>
 			// 按上传时间排序（最新的在前）
 			return orderBy(result.right, [(item) => new Date(item.uploadedAt).getTime()], ["desc"])
 		},
+		queryKey: queryKeys.attachments.byProject(projectId ?? ""),
 	})
 }
 
@@ -78,7 +78,6 @@ export const useAttachmentsByType = (
 ) => {
 	return useQuery({
 		enabled: !!projectId && !!attachmentType,
-		queryKey: queryKeys.attachments.byType(projectId ?? "", attachmentType ?? ""),
 		queryFn: async (): Promise<readonly AttachmentInterface[]> => {
 			if (!projectId || !attachmentType) return []
 			const result = await attachmentApi.getAttachmentsByType(projectId, attachmentType)()
@@ -88,6 +87,7 @@ export const useAttachmentsByType = (
 			// 按上传时间排序（最新的在前）
 			return orderBy(result.right, [(item) => new Date(item.uploadedAt).getTime()], ["desc"])
 		},
+		queryKey: queryKeys.attachments.byType(projectId ?? "", attachmentType ?? ""),
 	})
 }
 
@@ -97,7 +97,6 @@ export const useAttachmentsByType = (
 export const useImagesByProject = (projectId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!projectId,
-		queryKey: queryKeys.attachments.imagesByProject(projectId ?? ""),
 		queryFn: async (): Promise<readonly AttachmentInterface[]> => {
 			if (!projectId) return []
 			const result = await attachmentApi.getImagesByProject(projectId)()
@@ -107,6 +106,7 @@ export const useImagesByProject = (projectId: string | null | undefined) => {
 			// 按上传时间排序（最新的在前）
 			return orderBy(result.right, [(item) => new Date(item.uploadedAt).getTime()], ["desc"])
 		},
+		queryKey: queryKeys.attachments.imagesByProject(projectId ?? ""),
 	})
 }
 
@@ -116,7 +116,6 @@ export const useImagesByProject = (projectId: string | null | undefined) => {
 export const useAudioFilesByProject = (projectId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!projectId,
-		queryKey: queryKeys.attachments.audioByProject(projectId ?? ""),
 		queryFn: async (): Promise<readonly AttachmentInterface[]> => {
 			if (!projectId) return []
 			const result = await attachmentApi.getAudioFilesByProject(projectId)()
@@ -126,6 +125,7 @@ export const useAudioFilesByProject = (projectId: string | null | undefined) => 
 			// 按上传时间排序（最新的在前）
 			return orderBy(result.right, [(item) => new Date(item.uploadedAt).getTime()], ["desc"])
 		},
+		queryKey: queryKeys.attachments.audioByProject(projectId ?? ""),
 	})
 }
 
@@ -135,7 +135,6 @@ export const useAudioFilesByProject = (projectId: string | null | undefined) => 
 export const useAttachmentByPath = (filePath: string | null | undefined) => {
 	return useQuery({
 		enabled: !!filePath,
-		queryKey: queryKeys.attachments.byPath(filePath ?? ""),
 		queryFn: async (): Promise<AttachmentInterface | null> => {
 			if (!filePath) return null
 			const result = await attachmentApi.getAttachmentByPath(filePath)()
@@ -144,5 +143,6 @@ export const useAttachmentByPath = (filePath: string | null | undefined) => {
 			}
 			return result.right
 		},
+		queryKey: queryKeys.attachments.byPath(filePath ?? ""),
 	})
 }

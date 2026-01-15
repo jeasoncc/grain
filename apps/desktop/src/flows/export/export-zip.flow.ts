@@ -35,8 +35,8 @@ export function exportAllAsZip(workspaceId?: string): TE.TaskEither<AppError, Bl
 					return blob
 				},
 				(error): AppError => ({
-					type: "EXPORT_ERROR",
 					message: `创建 ZIP 压缩包失败: ${error instanceof Error ? error.message : String(error)}`,
+					type: "EXPORT_ERROR",
 				}),
 			),
 		),

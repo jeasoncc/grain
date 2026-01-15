@@ -92,109 +92,109 @@ interface MermaidErrorPattern {
 const MERMAID_ERROR_PATTERNS: readonly MermaidErrorPattern[] = [
 	// 未知图表类型
 	{
-		pattern: /Unknown diagram type/i,
 		getMessage: () =>
 			"未知的图表类型。请在代码开头使用有效的图表声明，如：flowchart、sequenceDiagram、classDiagram、stateDiagram、erDiagram、gantt、pie、mindmap 等",
+		pattern: /Unknown diagram type/i,
 	},
 	// 未检测到图表类型
 	{
-		pattern: /No diagram type detected/i,
 		getMessage: () =>
 			"未检测到图表类型。请在代码第一行添加图表类型声明，例如：\n• flowchart TD\n• sequenceDiagram\n• classDiagram",
+		pattern: /No diagram type detected/i,
 	},
 	// 语法错误（带行号）
 	{
-		pattern: /Syntax error.*?line\s*(\d+)/i,
 		getMessage: (match, original) => {
 			const lineNum = match?.[1] || "未知"
 			const cleanMsg = original.replace(/Syntax error.*?:\s*/i, "").trim()
 			return `语法错误（第 ${lineNum} 行）：${cleanMsg || "请检查该行的语法"}`
 		},
+		pattern: /Syntax error.*?line\s*(\d+)/i,
 	},
 	// 解析错误（带行号）
 	{
-		pattern: /Parse error.*?line\s*(\d+)/i,
 		getMessage: (match, original) => {
 			const lineNum = match?.[1] || "未知"
 			const cleanMsg = original.replace(/Parse error.*?:\s*/i, "").trim()
 			return `解析错误（第 ${lineNum} 行）：${cleanMsg || "请检查该行的语法结构"}`
 		},
+		pattern: /Parse error.*?line\s*(\d+)/i,
 	},
 	// 词法错误
 	{
-		pattern: /Lexical error/i,
 		getMessage: (_, original) => {
 			const cleanMsg = original.replace(/Lexical error.*?:\s*/i, "").trim()
 			return `词法错误：${cleanMsg || "代码中包含无法识别的字符或关键字"}`
 		},
+		pattern: /Lexical error/i,
 	},
 	// 一般语法错误
 	{
-		pattern: /Syntax error/i,
 		getMessage: (_, original) => {
 			const cleanMsg = original.replace(/Syntax error.*?:\s*/i, "").trim()
 			return `语法错误：${cleanMsg || "请检查代码语法"}`
 		},
+		pattern: /Syntax error/i,
 	},
 	// 一般解析错误
 	{
-		pattern: /Parse error/i,
 		getMessage: (_, original) => {
 			const cleanMsg = original.replace(/Parse error.*?:\s*/i, "").trim()
 			return `解析错误：${cleanMsg || "请检查代码结构"}`
 		},
+		pattern: /Parse error/i,
 	},
 	// 意外的 token
 	{
-		pattern: /Unexpected token/i,
 		getMessage: (_, original) => {
 			return `意外的符号：${original.replace(/Unexpected token/i, "").trim() || "代码中存在意外的字符或符号"}`
 		},
+		pattern: /Unexpected token/i,
 	},
 	// 期望某个 token
 	{
-		pattern: /Expected\s+(.+?)\s+but\s+got\s+(.+)/i,
 		getMessage: (match) => {
 			const expected = match?.[1] || "某个符号"
 			const got = match?.[2] || "其他内容"
 			return `语法错误：期望 ${expected}，但得到了 ${got}`
 		},
+		pattern: /Expected\s+(.+?)\s+but\s+got\s+(.+)/i,
 	},
 	// 未闭合的引号
 	{
-		pattern: /unterminated string|unclosed quote/i,
 		getMessage: () => "字符串未闭合：请检查引号是否成对出现",
+		pattern: /unterminated string|unclosed quote/i,
 	},
 	// 未闭合的括号
 	{
-		pattern: /unclosed bracket|unmatched bracket/i,
 		getMessage: () => "括号未闭合：请检查括号是否成对出现",
+		pattern: /unclosed bracket|unmatched bracket/i,
 	},
 	// 无效的箭头
 	{
-		pattern: /invalid arrow|unknown arrow/i,
 		getMessage: () =>
 			"无效的箭头符号。常用箭头：\n• --> 实线箭头\n• ---> 长实线箭头\n• -.-> 虚线箭头\n• ==> 粗箭头",
+		pattern: /invalid arrow|unknown arrow/i,
 	},
 	// 无效的节点 ID
 	{
-		pattern: /invalid node id|invalid identifier/i,
 		getMessage: () => "无效的节点 ID：节点 ID 不能以数字开头，不能包含特殊字符（除了下划线）",
+		pattern: /invalid node id|invalid identifier/i,
 	},
 	// 重复定义
 	{
-		pattern: /duplicate|already defined/i,
 		getMessage: (_, original) => `重复定义：${original}`,
+		pattern: /duplicate|already defined/i,
 	},
 	// 子图错误
 	{
-		pattern: /subgraph/i,
 		getMessage: (_, original) => {
 			if (original.toLowerCase().includes("end")) {
 				return "子图未正确闭合：请确保每个 subgraph 都有对应的 end"
 			}
 			return `子图错误：${original}`
 		},
+		pattern: /subgraph/i,
 	},
 ]
 
@@ -270,14 +270,14 @@ export const initMermaid = (
 	}
 
 	mermaid.initialize({
-		startOnLoad: false,
-		theme: toMermaidTheme(theme),
-		// 使用 loose 允许点击事件等交互功能
-		// 在桌面应用中这是安全的
-		securityLevel: config?.securityLevel ?? "loose",
 		fontFamily: config?.fontFamily ?? "inherit",
 		// 禁用日志以避免控制台噪音
 		logLevel: "error",
+		// 使用 loose 允许点击事件等交互功能
+		// 在桌面应用中这是安全的
+		securityLevel: config?.securityLevel ?? "loose",
+		startOnLoad: false,
+		theme: toMermaidTheme(theme),
 	})
 
 	currentTheme = theme

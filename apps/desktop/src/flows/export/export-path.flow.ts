@@ -154,9 +154,9 @@ export async function saveToPath(
 		}
 
 		await invoke("save_file", {
-			path,
-			filename,
 			content: contentArray,
+			filename,
+			path,
 		})
 		success("[Export] 文件保存成功", { path: `${path}/${filename}` }, "export-path")
 	} catch (err) {
@@ -290,11 +290,11 @@ export function clearDefaultExportPath(): void {
  * Export 路径服务实例
  */
 export const exportPathService: ExportPathService = {
-	selectExportDirectory,
-	saveToPath,
 	getDefaultExportPath,
-	setDefaultExportPath,
 	isTauriEnvironment,
+	saveToPath,
+	selectExportDirectory,
+	setDefaultExportPath,
 }
 
 // ============================================================================
@@ -330,7 +330,7 @@ export async function exportWithPathSelection(
 			}
 			return { success: true }
 		} catch (error) {
-			return { success: false, error: String(error) }
+			return { error: String(error), success: false }
 		}
 	}
 
@@ -353,7 +353,7 @@ export async function exportWithPathSelection(
 
 		// 用户取消选择
 		if (!selectedPath) {
-			return { success: false, cancelled: true }
+			return { cancelled: true, success: false }
 		}
 
 		// 保存文件
@@ -363,13 +363,13 @@ export async function exportWithPathSelection(
 		setLastUsedPath(selectedPath)
 
 		return {
-			success: true,
 			path: `${selectedPath}/${filename}`,
+			success: true,
 		}
 	} catch (error) {
 		return {
-			success: false,
 			error: String(error),
+			success: false,
 		}
 	}
 }

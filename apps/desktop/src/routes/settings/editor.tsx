@@ -272,8 +272,8 @@ function EditorSettings() {
 					style={{
 						fontFamily: fontFamily,
 						fontSize: `${fontSize}px`,
-						lineHeight: lineHeight,
 						letterSpacing: `${letterSpacing}em`,
+						lineHeight: lineHeight,
 					}}
 				>
 					{/* Heading Preview with Fold Icons */}
@@ -293,8 +293,8 @@ function EditorSettings() {
 					</div>
 					<p
 						style={{
-							textIndent: `${firstLineIndent}em`,
 							marginBottom: `${paragraphSpacing}em`,
+							textIndent: `${firstLineIndent}em`,
 						}}
 					>
 						The old lighthouse stood defiant against the crashing waves, its beacon cutting through
@@ -302,8 +302,8 @@ function EditorSettings() {
 					</p>
 					<p
 						style={{
-							textIndent: `${firstLineIndent}em`,
 							marginBottom: `${paragraphSpacing}em`,
+							textIndent: `${firstLineIndent}em`,
 						}}
 					>
 						古老的灯塔傲然矗立，抵御着汹涌的海浪，它的光芒穿透浓雾。

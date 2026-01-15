@@ -65,29 +65,29 @@ export const hasContentChanged = (
  * 创建成功的保存结果
  */
 export const createSuccessResult = (documentId: string, tags: readonly string[]): SaveResult => ({
-	success: true,
-	timestamp: dayjs().toDate(),
-	tags,
 	documentId,
+	success: true,
+	tags,
+	timestamp: dayjs().toDate(),
 })
 
 /**
  * 创建失败的保存结果
  */
 export const createErrorResult = (documentId: string, error: string): SaveResult => ({
-	success: false,
-	error,
-	timestamp: dayjs().toDate(),
 	documentId,
+	error,
+	success: false,
+	timestamp: dayjs().toDate(),
 })
 
 /**
  * 创建无变化的保存结果
  */
 export const createNoChangeResult = (documentId: string): SaveResult => ({
+	documentId,
 	success: true,
 	timestamp: dayjs().toDate(),
-	documentId,
 })
 
 // ============================================================================
@@ -107,8 +107,8 @@ const saveContentToDb = (
 				await updateContentByNodeId(documentId, contentString, "lexical")()
 			},
 			(error): AppError => ({
-				type: "DB_ERROR",
 				message: `保存内容失败: ${error}`,
+				type: "DB_ERROR",
 			}),
 		),
 	)
@@ -126,8 +126,8 @@ const updateNodeTags = (
 				await updateNode(documentId, { tags })()
 			},
 			(error): AppError => ({
-				type: "DB_ERROR",
 				message: `更新节点标签失败: ${error}`,
+				type: "DB_ERROR",
 			}),
 		),
 	)
@@ -146,8 +146,8 @@ const syncTagCacheForWorkspace = (
 				await syncTagCache(workspaceId)()
 			},
 			(error): AppError => ({
-				type: "DB_ERROR",
 				message: `同步标签缓存失败: ${error}`,
+				type: "DB_ERROR",
 			}),
 		),
 	)

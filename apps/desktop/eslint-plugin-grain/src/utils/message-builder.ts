@@ -142,20 +142,29 @@ export function buildSuggestionMessage(title: string, suggestion: string): strin
  */
 export function getImmutableArrayAlternative(method: string, arrayName: string): string {
 	const alternatives: Record<string, string> = {
-		push: `// 添加元素到末尾
-const newArray = [...${arrayName}, newItem];
-// 添加多个元素
-const newArray = [...${arrayName}, item1, item2];`,
+		copyWithin: `// 使用 slice 和 spread 创建新数组
+const newArray = [...${arrayName}];`,
+		fill: `// 填充（创建新数组）
+const filled = ${arrayName}.map(() => fillValue);`,
 		pop: `// 移除最后一个元素
 const newArray = ${arrayName}.slice(0, -1);
 // 获取最后一个元素
 const lastItem = ${arrayName}[${arrayName}.length - 1];`,
+		push: `// 添加元素到末尾
+const newArray = [...${arrayName}, newItem];
+// 添加多个元素
+const newArray = [...${arrayName}, item1, item2];`,
+		reverse: `// 反转（不修改原数组）
+const reversed = [...${arrayName}].reverse();`,
 		shift: `// 移除第一个元素
 const newArray = ${arrayName}.slice(1);
 // 获取第一个元素
 const firstItem = ${arrayName}[0];`,
-		unshift: `// 添加元素到开头
-const newArray = [newItem, ...${arrayName}];`,
+		sort: `// 排序（不修改原数组）
+const sorted = [...${arrayName}].sort((a, b) => a.name.localeCompare(b.name));
+// 使用 fp-ts
+import * as A from 'fp-ts/Array';
+const sorted = pipe(${arrayName}, A.sort(Ord));`,
 		splice: `// 删除元素
 const newArray = ${arrayName}.filter((_, index) => index !== targetIndex);
 // 插入元素
@@ -164,17 +173,8 @@ const newArray = [
   newItem,
   ...${arrayName}.slice(insertIndex)
 ];`,
-		sort: `// 排序（不修改原数组）
-const sorted = [...${arrayName}].sort((a, b) => a.name.localeCompare(b.name));
-// 使用 fp-ts
-import * as A from 'fp-ts/Array';
-const sorted = pipe(${arrayName}, A.sort(Ord));`,
-		reverse: `// 反转（不修改原数组）
-const reversed = [...${arrayName}].reverse();`,
-		fill: `// 填充（创建新数组）
-const filled = ${arrayName}.map(() => fillValue);`,
-		copyWithin: `// 使用 slice 和 spread 创建新数组
-const newArray = [...${arrayName}];`,
+		unshift: `// 添加元素到开头
+const newArray = [newItem, ...${arrayName}];`,
 	}
 	return alternatives[method] || `const newArray = [...${arrayName}];`
 }
@@ -184,6 +184,23 @@ const newArray = [...${arrayName}];`,
  */
 export function getLayerViolationSuggestion(currentLayer: string, importLayer: string): string {
 	const suggestions: Record<string, Record<string, string>> = {
+		hooks: {
+			io: `// hooks/ 不能直接导入 io/
+// 方案: 通过 flows/ 间接访问
+// 或使用 queries/ (TanStack Query)`,
+		},
+		pipes: {
+			flows: `// pipes/ 不能导入 flows/
+// 方案: pipes 只能依赖 utils/ 和 types/`,
+			io: `// pipes/ 不能导入 io/（pipes 必须是纯函数）
+// 方案: 将 IO 操作移动到 flows/ 层
+// flows/ 负责组合 pipes/ 和 io/`,
+			state: `// pipes/ 不能导入 state/（pipes 必须是纯函数）
+// 方案: 将状态作为参数传入
+const transform = (node: Node, settings: Settings) => {
+  return { ...node, ...settings };
+};`,
+		},
 		views: {
 			flows: `// views/ 不能直接导入 flows/
 // 方案: 使用 hooks 封装
@@ -199,23 +216,6 @@ const { mutate } = useCreateNode();`,
 			state: `// views/ 不能直接导入 state/
 // 方案: 通过 hooks/ 访问状态
 import { useSelectionState } from '@/hooks/use-selection';`,
-		},
-		pipes: {
-			io: `// pipes/ 不能导入 io/（pipes 必须是纯函数）
-// 方案: 将 IO 操作移动到 flows/ 层
-// flows/ 负责组合 pipes/ 和 io/`,
-			state: `// pipes/ 不能导入 state/（pipes 必须是纯函数）
-// 方案: 将状态作为参数传入
-const transform = (node: Node, settings: Settings) => {
-  return { ...node, ...settings };
-};`,
-			flows: `// pipes/ 不能导入 flows/
-// 方案: pipes 只能依赖 utils/ 和 types/`,
-		},
-		hooks: {
-			io: `// hooks/ 不能直接导入 io/
-// 方案: 通过 flows/ 间接访问
-// 或使用 queries/ (TanStack Query)`,
 		},
 	}
 

@@ -281,16 +281,16 @@ export const resetFontSettings = (): E.Either<AppError, void> => {
 export const getFontSettings = (): FontState => {
 	const state = useFontStore.getState()
 	return {
+		cardBorderRadius: state.cardBorderRadius,
+		cardSize: state.cardSize,
+		firstLineIndent: state.firstLineIndent,
 		fontFamily: state.fontFamily,
 		fontSize: state.fontSize,
-		lineHeight: state.lineHeight,
 		letterSpacing: state.letterSpacing,
+		lineHeight: state.lineHeight,
+		paragraphSpacing: state.paragraphSpacing,
 		uiFontFamily: state.uiFontFamily,
 		uiFontSize: state.uiFontSize,
 		uiScale: state.uiScale,
-		cardSize: state.cardSize,
-		cardBorderRadius: state.cardBorderRadius,
-		paragraphSpacing: state.paragraphSpacing,
-		firstLineIndent: state.firstLineIndent,
 	}
 }

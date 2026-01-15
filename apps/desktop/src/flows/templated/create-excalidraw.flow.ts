@@ -95,13 +95,13 @@ export const createExcalidrawAsync = createTemplatedFileAsync(excalidrawConfig)
 export const adaptExcalidrawParams = (
 	params: CreateExcalidrawParams,
 ): TemplatedFileParams<ExcalidrawTemplateParams> => ({
-	workspaceId: params.workspaceId,
 	templateParams: {
-		title: params.title,
 		date: params.date,
-		width: params.width,
 		height: params.height,
+		title: params.title,
+		width: params.width,
 	},
+	workspaceId: params.workspaceId,
 })
 
 /**

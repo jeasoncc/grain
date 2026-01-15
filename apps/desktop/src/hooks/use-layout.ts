@@ -68,18 +68,18 @@ export function useLayout() {
 	)
 
 	return {
+		activePanel,
 		// State
 		isSidebarOpen,
-		activePanel,
-		wasCollapsedByDrag,
-		sidebarWidth,
+		restoreFromCollapse,
 
 		// Actions
 		setActivePanel,
-		toggleSidebar,
 		setSidebarCollapsedByDrag,
-		restoreFromCollapse,
 		setSidebarWidth,
+		sidebarWidth,
+		toggleSidebar,
+		wasCollapsedByDrag,
 	}
 }
 

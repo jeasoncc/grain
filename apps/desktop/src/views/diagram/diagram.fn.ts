@@ -107,6 +107,6 @@ export const DEFAULT_KROKI_URL = "https://kroki.io"
  * @returns 默认的图表状态
  */
 export const createDefaultDiagramState = (): DiagramState => ({
-	krokiServerUrl: DEFAULT_KROKI_URL,
 	enableKroki: true,
+	krokiServerUrl: DEFAULT_KROKI_URL,
 })

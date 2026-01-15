@@ -35,37 +35,37 @@ interface SettingsState {
 export const useSettings = create<SettingsState>()(
 	persist(
 		(set) => ({
-			// Defaults
-			language: "en",
 			autoSave: false,
 			autoSaveInterval: 3, // 3秒更合理（之前是60秒太长）
-			spellCheck: false,
-
-			// Word Count
-			wordCountMode: "chinese" as CountMode,
-			showWordCountBadge: true,
 
 			fontFamily: "Merriweather",
 			fontSize: 16,
+			// Defaults
+			language: "en",
 			lineHeight: 1.6,
 			paragraphSpacing: 1.2,
-
-			// Setters
-			setLanguage: (language) => set({ language }),
 			setAutoSave: (autoSave) => set({ autoSave }),
 			setAutoSaveInterval: (interval) => {
 				// 范围限制：1-60 秒
 				const validated = Math.max(1, Math.min(60, interval))
 				set({ autoSaveInterval: validated })
 			},
-			setSpellCheck: (spellCheck) => set({ spellCheck }),
-			setWordCountMode: (wordCountMode) => set({ wordCountMode }),
-			setShowWordCountBadge: (showWordCountBadge) => set({ showWordCountBadge }),
 
 			setFontFamily: (fontFamily) => set({ fontFamily }),
 			setFontSize: (fontSize) => set({ fontSize }),
+
+			// Setters
+			setLanguage: (language) => set({ language }),
 			setLineHeight: (lineHeight) => set({ lineHeight }),
 			setParagraphSpacing: (paragraphSpacing) => set({ paragraphSpacing }),
+			setShowWordCountBadge: (showWordCountBadge) => set({ showWordCountBadge }),
+			setSpellCheck: (spellCheck) => set({ spellCheck }),
+			setWordCountMode: (wordCountMode) => set({ wordCountMode }),
+			showWordCountBadge: true,
+			spellCheck: false,
+
+			// Word Count
+			wordCountMode: "chinese" as CountMode,
 		}),
 		{
 			name: "grain-settings",

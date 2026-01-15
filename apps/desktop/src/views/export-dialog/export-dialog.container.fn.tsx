@@ -21,21 +21,21 @@ export const ExportDialogContainer = memo(
 		const [format, setFormat] = useState<ExtendedExportFormat>("pdf")
 		const [isExporting, setIsExporting] = useState(false)
 		const [options, setOptions] = useState<ExportOptions>({
-			includeTitle: true,
 			includeAuthor: true,
 			includeChapterTitles: true,
 			includeSceneTitles: false,
+			includeTitle: true,
 			pageBreakBetweenChapters: true,
 		})
 
 		const formatLabels: Record<ExtendedExportFormat, string> = useMemo(
 			() => ({
-				pdf: "PDF",
 				docx: "Word",
-				txt: "Text",
 				epub: "EPUB",
-				markdown: "Markdown",
 				json: "JSON Backup",
+				markdown: "Markdown",
+				pdf: "PDF",
+				txt: "Text",
 				zip: "ZIP Archive",
 			}),
 			[],
@@ -43,12 +43,12 @@ export const ExportDialogContainer = memo(
 
 		const formatIcons: Record<ExtendedExportFormat, React.ReactNode> = useMemo(
 			() => ({
-				pdf: <FileText className="size-5 text-red-500" />,
 				docx: <FileType className="size-5 text-blue-500" />,
-				txt: <File className="size-5 text-gray-500" />,
 				epub: <BookOpen className="size-5 text-green-500" />,
-				markdown: <FileCode className="size-5 text-purple-500" />,
 				json: <FileJson className="size-5 text-orange-500" />,
+				markdown: <FileCode className="size-5 text-purple-500" />,
+				pdf: <FileText className="size-5 text-red-500" />,
+				txt: <File className="size-5 text-gray-500" />,
 				zip: <FileArchive className="size-5 text-cyan-500" />,
 			}),
 			[],

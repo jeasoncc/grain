@@ -156,29 +156,142 @@ function hasTypeDefinitions(body: TSESTree.Statement[]): boolean {
  */
 function getFileTypeDescription(layer: ArchitectureLayer): string {
 	const descriptions: Record<ArchitectureLayer, string> = {
-		pipes: "管道文件应以 .pipe.ts 或 .fn.ts 结尾",
 		flows: "流程文件应以 .flow.ts 或 .action.ts 结尾",
-		io: "IO 文件应以 .api.ts, .storage.ts 或 .file.ts 结尾",
-		state: "状态文件应以 .state.ts 结尾",
 		hooks: "Hook 文件应以 use- 开头",
-		utils: "工具文件应以 .util.ts 结尾",
-		views: "视图文件应以 .view.fn.tsx 或 .container.fn.tsx 结尾",
-		types: "类型文件应以 .interface.ts, .schema.ts 或 .types.ts 结尾",
+		io: "IO 文件应以 .api.ts, .storage.ts 或 .file.ts 结尾",
+		pipes: "管道文件应以 .pipe.ts 或 .fn.ts 结尾",
 		queries: "查询文件应以 .queries.ts 结尾",
 		routes: "路由文件",
+		state: "状态文件应以 .state.ts 结尾",
+		types: "类型文件应以 .interface.ts, .schema.ts 或 .types.ts 结尾",
+		utils: "工具文件应以 .util.ts 结尾",
+		views: "视图文件应以 .view.fn.tsx 或 .container.fn.tsx 结尾",
 	}
 
 	return descriptions[layer] || ""
 }
 
 export default createRule<[], MessageIds>({
-	name: "file-location",
+	create(context) {
+		const filename = context.filename
+
+		// 如果没有文件名，跳过检查
+		if (!filename) {
+			return {}
+		}
+
+		// 跳过测试文件
+		if (isTestFile(filename)) {
+			return {}
+		}
+
+		// 获取当前文件的架构层级
+		const currentLayer = getArchitectureLayer(filename)
+
+		// 跳过非架构层级的文件
+		if (!currentLayer) {
+			return {}
+		}
+
+		const basename = path.basename(filename)
+		const isIndexFile = isIndexFilePattern(filename)
+
+		return {
+			// 检查深层相对导入
+			ImportDeclaration(node: TSESTree.ImportDeclaration) {
+				const importPath = node.source.value
+
+				if (typeof importPath === "string" && importPath.startsWith(".")) {
+					const depth = getRelativeImportDepth(importPath)
+
+					if (depth > 2) {
+						context.report({
+							data: { depth: String(depth) },
+							messageId: "deepRelativeImport",
+							node,
+						})
+					}
+				}
+			},
+			Program(node: TSESTree.Program) {
+				// 检查 index.ts 是否只包含重导出
+				if (isIndexFile) {
+					if (!hasOnlyReExports(node.body)) {
+						context.report({
+							messageId: "indexFileLogic",
+							node,
+						})
+					}
+					return // index.ts 不需要检查其他规则
+				}
+
+				// 检查文件是否导出了多个组件
+				const exportCount = countExportedComponents(node.body)
+				if (exportCount > 1) {
+					context.report({
+						data: { count: String(exportCount) },
+						messageId: "multipleExports",
+						node,
+					})
+				}
+
+				// 检查非 types/ 文件中的类型定义
+				if (currentLayer !== "types" && hasTypeDefinitions(node.body)) {
+					// 只对导出的类型报告警告
+					// 内部类型定义是允许的
+					for (const statement of node.body) {
+						if (
+							statement.type === "ExportNamedDeclaration" &&
+							(statement.declaration?.type === "TSTypeAliasDeclaration" ||
+								statement.declaration?.type === "TSInterfaceDeclaration" ||
+								statement.declaration?.type === "TSEnumDeclaration")
+						) {
+							context.report({
+								messageId: "typesInWrongFile",
+								node: statement,
+							})
+						}
+					}
+				}
+
+				// 检查文件命名是否符合层级规范
+				const pattern = FILE_NAMING_PATTERNS.find((p) => p.layer === currentLayer)
+				if (pattern && !pattern.pattern.test(basename)) {
+					context.report({
+						data: {
+							description: getFileTypeDescription(currentLayer),
+							example: pattern.example,
+							layer: currentLayer,
+						},
+						messageId: "wrongFileLocation",
+						node,
+					})
+				}
+			},
+		}
+	},
+	defaultOptions: [],
 	meta: {
-		type: "suggestion",
 		docs: {
 			description: "检测文件是否在正确的目录，以及 index.ts 是否只包含重导出",
 		},
 		messages: {
+			deepRelativeImport: `❌ 相对导入层级过深 ({{ depth }} 层)
+
+🔍 原因：
+  相对导入超过 2 层会导致：
+  - 代码难以阅读
+  - 重构时容易出错
+  - 路径难以维护
+
+✅ 修复方案：
+  使用 @/ 别名替代深层相对导入
+
+📋 示例：
+  ❌ import { something } from '../../../utils/helper';
+  ✅ import { something } from '@/utils/helper';
+
+📚 参考文档：#code-standards - 导入规范`,
 			indexFileLogic: `❌ index.ts 文件应该只包含重导出，不应包含业务逻辑
 
 🔍 原因：
@@ -229,23 +342,6 @@ export default createRule<[], MessageIds>({
 
 📚 参考文档：#structure - 类型层`,
 
-			deepRelativeImport: `❌ 相对导入层级过深 ({{ depth }} 层)
-
-🔍 原因：
-  相对导入超过 2 层会导致：
-  - 代码难以阅读
-  - 重构时容易出错
-  - 路径难以维护
-
-✅ 修复方案：
-  使用 @/ 别名替代深层相对导入
-
-📋 示例：
-  ❌ import { something } from '../../../utils/helper';
-  ✅ import { something } from '@/utils/helper';
-
-📚 参考文档：#code-standards - 导入规范`,
-
 			wrongFileLocation: `⚠️ 文件命名不符合 {{ layer }}/ 层的规范
 
 🔍 原因：
@@ -259,105 +355,7 @@ export default createRule<[], MessageIds>({
 📚 参考文档：#structure - 文件命名规范`,
 		},
 		schema: [],
+		type: "suggestion",
 	},
-	defaultOptions: [],
-	create(context) {
-		const filename = context.filename
-
-		// 如果没有文件名，跳过检查
-		if (!filename) {
-			return {}
-		}
-
-		// 跳过测试文件
-		if (isTestFile(filename)) {
-			return {}
-		}
-
-		// 获取当前文件的架构层级
-		const currentLayer = getArchitectureLayer(filename)
-
-		// 跳过非架构层级的文件
-		if (!currentLayer) {
-			return {}
-		}
-
-		const basename = path.basename(filename)
-		const isIndexFile = isIndexFilePattern(filename)
-
-		return {
-			Program(node: TSESTree.Program) {
-				// 检查 index.ts 是否只包含重导出
-				if (isIndexFile) {
-					if (!hasOnlyReExports(node.body)) {
-						context.report({
-							node,
-							messageId: "indexFileLogic",
-						})
-					}
-					return // index.ts 不需要检查其他规则
-				}
-
-				// 检查文件是否导出了多个组件
-				const exportCount = countExportedComponents(node.body)
-				if (exportCount > 1) {
-					context.report({
-						node,
-						messageId: "multipleExports",
-						data: { count: String(exportCount) },
-					})
-				}
-
-				// 检查非 types/ 文件中的类型定义
-				if (currentLayer !== "types" && hasTypeDefinitions(node.body)) {
-					// 只对导出的类型报告警告
-					// 内部类型定义是允许的
-					for (const statement of node.body) {
-						if (
-							statement.type === "ExportNamedDeclaration" &&
-							(statement.declaration?.type === "TSTypeAliasDeclaration" ||
-								statement.declaration?.type === "TSInterfaceDeclaration" ||
-								statement.declaration?.type === "TSEnumDeclaration")
-						) {
-							context.report({
-								node: statement,
-								messageId: "typesInWrongFile",
-							})
-						}
-					}
-				}
-
-				// 检查文件命名是否符合层级规范
-				const pattern = FILE_NAMING_PATTERNS.find((p) => p.layer === currentLayer)
-				if (pattern && !pattern.pattern.test(basename)) {
-					context.report({
-						node,
-						messageId: "wrongFileLocation",
-						data: {
-							layer: currentLayer,
-							description: getFileTypeDescription(currentLayer),
-							example: pattern.example,
-						},
-					})
-				}
-			},
-
-			// 检查深层相对导入
-			ImportDeclaration(node: TSESTree.ImportDeclaration) {
-				const importPath = node.source.value
-
-				if (typeof importPath === "string" && importPath.startsWith(".")) {
-					const depth = getRelativeImportDepth(importPath)
-
-					if (depth > 2) {
-						context.report({
-							node,
-							messageId: "deepRelativeImport",
-							data: { depth: String(depth) },
-						})
-					}
-				}
-			},
-		}
-	},
+	name: "file-location",
 })

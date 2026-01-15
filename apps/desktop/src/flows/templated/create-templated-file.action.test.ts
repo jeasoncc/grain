@@ -35,12 +35,12 @@ vi.mock("@/flows/node", () => ({
 
 vi.mock("@/log/index", () => ({
 	default: {
+		debug: vi.fn(),
+		error: vi.fn(),
 		info: vi.fn(),
+		start: vi.fn(),
 		success: vi.fn(),
 		warn: vi.fn(),
-		error: vi.fn(),
-		debug: vi.fn(),
-		start: vi.fn(),
 	},
 }))
 
@@ -55,16 +55,16 @@ import { createFileInTree } from "@/flows/node"
  */
 function createMockNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
 	return {
-		id: overrides.id ?? "550e8400-e29b-41d4-a716-446655440001",
-		workspace: overrides.workspace ?? "550e8400-e29b-41d4-a716-446655440000",
-		parent: overrides.parent ?? null,
-		type: overrides.type ?? "file",
-		title: overrides.title ?? "Test Node",
-		order: overrides.order ?? 0,
 		collapsed: overrides.collapsed ?? false,
 		createDate: overrides.createDate ?? new Date().toISOString(),
+		id: overrides.id ?? "550e8400-e29b-41d4-a716-446655440001",
 		lastEdit: overrides.lastEdit ?? new Date().toISOString(),
+		order: overrides.order ?? 0,
+		parent: overrides.parent ?? null,
 		tags: overrides.tags ?? [],
+		title: overrides.title ?? "Test Node",
+		type: overrides.type ?? "file",
+		workspace: overrides.workspace ?? "550e8400-e29b-41d4-a716-446655440000",
 	}
 }
 
@@ -77,8 +77,8 @@ const createMockFileResult = (
 ) => ({
 	node: createMockNode(nodeOverrides),
 	parentFolder: createMockNode({
-		type: "folder",
 		title: "Parent Folder",
+		type: "folder",
 		...parentOverrides,
 	}),
 })
@@ -96,8 +96,8 @@ interface TestTemplateParams {
  * 测试用的模板参数 Schema
  */
 const testTemplateParamsSchema = z.object({
-	name: z.string().min(1, "名称不能为空").max(100, "名称过长"),
 	category: z.string().min(1, "分类不能为空"),
+	name: z.string().min(1, "名称不能为空").max(100, "名称过长"),
 	priority: z.number().min(1).max(10).optional(),
 })
 
@@ -107,23 +107,22 @@ const testTemplateParamsSchema = z.object({
 const createTestTemplateConfig = (
 	overrides: Partial<TemplateConfig<TestTemplateParams>> = {},
 ): TemplateConfig<TestTemplateParams> => ({
-	name: "测试模板",
-	rootFolder: "TestFolder",
 	fileType: "file",
-	tag: "test",
+	foldersCollapsed: true,
+	generateFolderPath: (params) => [params.category],
 	generateTemplate: (params) =>
 		JSON.stringify({
 			root: {
 				children: [
 					{
-						type: "paragraph",
 						children: [
 							{
-								type: "text",
-								text: `Test: ${params.name} - ${params.category}`,
 								format: 0,
+								text: `Test: ${params.name} - ${params.category}`,
+								type: "text",
 							},
 						],
+						type: "paragraph",
 					},
 				],
 				direction: "ltr",
@@ -133,10 +132,11 @@ const createTestTemplateConfig = (
 				version: 1,
 			},
 		}),
-	generateFolderPath: (params) => [params.category],
 	generateTitle: (params) => `${params.name} (${params.category})`,
+	name: "测试模板",
 	paramsSchema: testTemplateParamsSchema,
-	foldersCollapsed: true,
+	rootFolder: "TestFolder",
+	tag: "test",
 	...overrides,
 })
 
@@ -154,14 +154,14 @@ const createTemplatedFileWithInvalidParams = <T>(config: TemplateConfig<T>, para
 
 const validWorkspaceId = "550e8400-e29b-41d4-a716-446655440000"
 const validTemplateParams: TestTemplateParams = {
-	name: "测试文件",
 	category: "工作",
+	name: "测试文件",
 	priority: 5,
 }
 
 const validParams: TemplatedFileParams<TestTemplateParams> = {
-	workspaceId: validWorkspaceId,
 	templateParams: validTemplateParams,
+	workspaceId: validWorkspaceId,
 }
 
 // ============================================================================
@@ -253,8 +253,8 @@ describe("createTemplatedFile", () => {
 		it("应该拒绝无效的工作区 ID", async () => {
 			const _createFn = createTemplatedFile(testConfig)
 			const result = await createTemplatedFileWithInvalidParams(testConfig, {
-				workspaceId: "invalid-id",
 				templateParams: validTemplateParams,
+				workspaceId: "invalid-id",
 			})()
 
 			expect(E.isLeft(result)).toBe(true)
@@ -267,8 +267,8 @@ describe("createTemplatedFile", () => {
 		it("应该拒绝空的工作区 ID", async () => {
 			const _createFn = createTemplatedFile(testConfig)
 			const result = await createTemplatedFileWithInvalidParams(testConfig, {
-				workspaceId: "",
 				templateParams: validTemplateParams,
+				workspaceId: "",
 			})()
 
 			expect(E.isLeft(result)).toBe(true)
@@ -280,11 +280,11 @@ describe("createTemplatedFile", () => {
 		it("应该拒绝无效的模板参数", async () => {
 			const _createFn = createTemplatedFile(testConfig)
 			const result = await createTemplatedFileWithInvalidParams(testConfig, {
-				workspaceId: validWorkspaceId,
 				templateParams: {
-					name: "", // 空名称
 					category: "工作",
+					name: "", // 空名称
 				},
+				workspaceId: validWorkspaceId,
 			})()
 
 			expect(E.isLeft(result)).toBe(true)
@@ -297,12 +297,12 @@ describe("createTemplatedFile", () => {
 		it("应该接受可选的优先级参数", async () => {
 			const createFn = createTemplatedFile(testConfig)
 			const result = await createFn({
-				workspaceId: validWorkspaceId,
 				templateParams: {
-					name: "测试",
 					category: "工作",
+					name: "测试",
 					// 不提供 priority
 				},
+				workspaceId: validWorkspaceId,
 			})()
 
 			expect(E.isRight(result)).toBe(true)
@@ -383,13 +383,13 @@ describe("createTemplatedFile", () => {
 			await createFn(validParams)()
 
 			expect(vi.mocked(createFileInTree)).toHaveBeenCalledWith({
-				workspaceId: validWorkspaceId,
-				title: "测试文件 (工作)",
-				folderPath: ["TestFolder", "工作"],
-				type: "file",
-				tags: ["test"],
 				content: expect.any(String),
+				folderPath: ["TestFolder", "工作"],
 				foldersCollapsed: true,
+				tags: ["test"],
+				title: "测试文件 (工作)",
+				type: "file",
+				workspaceId: validWorkspaceId,
 			})
 		})
 
@@ -440,11 +440,11 @@ describe("createTemplatedFile", () => {
 		it("应该处理最小有效参数", async () => {
 			const createFn = createTemplatedFile(testConfig)
 			const result = await createFn({
-				workspaceId: validWorkspaceId,
 				templateParams: {
-					name: "a",
 					category: "b",
+					name: "a",
 				},
+				workspaceId: validWorkspaceId,
 			})()
 
 			expect(E.isRight(result)).toBe(true)
@@ -453,11 +453,11 @@ describe("createTemplatedFile", () => {
 		it("应该处理特殊字符", async () => {
 			const createFn = createTemplatedFile(testConfig)
 			const result = await createFn({
-				workspaceId: validWorkspaceId,
 				templateParams: {
-					name: "测试 @#$%^&*() 文件",
 					category: "工作 & 学习",
+					name: "测试 @#$%^&*() 文件",
 				},
+				workspaceId: validWorkspaceId,
 			})()
 
 			expect(E.isRight(result)).toBe(true)
@@ -506,8 +506,8 @@ describe("createTemplatedFileAsync", () => {
 
 		await expect(
 			createFnAsync({
-				workspaceId: "invalid-id",
 				templateParams: validTemplateParams,
+				workspaceId: "invalid-id",
 			} as TemplatedFileParams<TestTemplateParams>),
 		).rejects.toThrow()
 	})

@@ -25,11 +25,11 @@ export interface ComplexityConfig {
  * 默认复杂度配置（严格模式）
  */
 export const DEFAULT_COMPLEXITY_CONFIG: ComplexityConfig = {
-	maxFunctionLines: 20,
-	maxParams: 3,
-	maxNesting: 2,
 	maxCyclomaticComplexity: 5,
 	maxFileLines: 200,
+	maxFunctionLines: 20,
+	maxNesting: 2,
+	maxParams: 3,
 }
 
 /**
@@ -52,10 +52,10 @@ export interface NamingConfig {
  * 默认命名配置
  */
 export const DEFAULT_NAMING_CONFIG: NamingConfig = {
-	minVariableLength: 3,
 	allowedShortNames: ["i", "j", "k", "x", "y", "id"],
 	booleanPrefixes: ["is", "has", "can", "should", "will", "did"],
 	eventHandlerPrefixes: ["handle", "on"],
+	minVariableLength: 3,
 	verbPrefixes: [
 		"get",
 		"set",
@@ -113,58 +113,58 @@ export const DEFAULT_NAMING_CONFIG: NamingConfig = {
  */
 export const FILE_NAMING_PATTERNS: FileNamingPattern[] = [
 	{
-		layer: "pipes",
-		pattern: /\.(pipe|fn)\.ts$/,
 		description: "管道文件必须以 .pipe.ts 或 .fn.ts 结尾",
 		example: "transform.pipe.ts, validate.fn.ts",
+		layer: "pipes",
+		pattern: /\.(pipe|fn)\.ts$/,
 	},
 	{
-		layer: "flows",
-		pattern: /\.(flow|action)\.ts$/,
 		description: "流程文件必须以 .flow.ts 或 .action.ts 结尾",
 		example: "create-node.flow.ts, save.action.ts",
+		layer: "flows",
+		pattern: /\.(flow|action)\.ts$/,
 	},
 	{
-		layer: "io",
-		pattern: /\.(api|storage|file)\.ts$/,
 		description: "IO 文件必须以 .api.ts, .storage.ts 或 .file.ts 结尾",
 		example: "node.api.ts, settings.storage.ts",
+		layer: "io",
+		pattern: /\.(api|storage|file)\.ts$/,
 	},
 	{
-		layer: "state",
-		pattern: /\.state\.ts$/,
 		description: "状态文件必须以 .state.ts 结尾",
 		example: "selection.state.ts",
+		layer: "state",
+		pattern: /\.state\.ts$/,
 	},
 	{
-		layer: "hooks",
-		pattern: /^use-.+\.ts$/,
 		description: "Hook 文件必须以 use- 开头",
 		example: "use-workspace.ts",
+		layer: "hooks",
+		pattern: /^use-.+\.ts$/,
 	},
 	{
-		layer: "utils",
-		pattern: /\.util\.ts$/,
 		description: "工具文件必须以 .util.ts 结尾",
 		example: "date.util.ts",
+		layer: "utils",
+		pattern: /\.util\.ts$/,
 	},
 	{
-		layer: "views",
-		pattern: /\.(view|container)\.fn\.tsx$/,
 		description: "视图文件必须以 .view.fn.tsx 或 .container.fn.tsx 结尾",
 		example: "file-tree.view.fn.tsx",
+		layer: "views",
+		pattern: /\.(view|container)\.fn\.tsx$/,
 	},
 	{
-		layer: "types",
-		pattern: /\.(interface|schema|types)\.ts$/,
 		description: "类型文件必须以 .interface.ts, .schema.ts 或 .types.ts 结尾",
 		example: "node.interface.ts, user.schema.ts",
+		layer: "types",
+		pattern: /\.(interface|schema|types)\.ts$/,
 	},
 	{
-		layer: "queries",
-		pattern: /\.queries\.ts$/,
 		description: "查询文件必须以 .queries.ts 结尾",
 		example: "node.queries.ts",
+		layer: "queries",
+		pattern: /\.queries\.ts$/,
 	},
 ]
 
@@ -172,17 +172,17 @@ export const FILE_NAMING_PATTERNS: FileNamingPattern[] = [
  * 禁止的库列表
  */
 export const BANNED_LIBRARIES: Record<string, string> = {
+	axios: "fetch API with TaskEither",
+	jquery: "原生 DOM API 或 React",
 	lodash: "es-toolkit",
 	"lodash-es": "es-toolkit",
 	"lodash/": "es-toolkit",
-	underscore: "es-toolkit",
+	mkdirp: "fs.mkdir with recursive option",
 	moment: "dayjs",
 	"moment-timezone": "dayjs + dayjs/plugin/timezone",
 	request: "fetch API",
-	axios: "fetch API with TaskEither",
-	jquery: "原生 DOM API 或 React",
-	mkdirp: "fs.mkdir with recursive option",
 	rimraf: "fs.rm with recursive option",
+	underscore: "es-toolkit",
 }
 
 /**
@@ -250,32 +250,32 @@ export const REACT_IMPORTS = [
  * value: 允许依赖的层级列表
  */
 export const STRICT_LAYER_DEPENDENCIES: Record<ArchitectureLayer, ArchitectureLayer[]> = {
-	views: ["hooks", "types"],
-	hooks: ["flows", "state", "queries", "types"],
 	flows: ["pipes", "io", "state", "types"],
-	pipes: ["utils", "types"],
+	hooks: ["flows", "state", "queries", "types"],
 	io: ["types"],
-	state: ["types"], // 严格模式：移除 pipes 例外
-	utils: ["types"],
-	types: [],
+	pipes: ["utils", "types"],
 	queries: ["io", "types"],
 	routes: ["views", "hooks", "types"],
+	state: ["types"], // 严格模式：移除 pipes 例外
+	types: [],
+	utils: ["types"],
+	views: ["hooks", "types"],
 }
 
 /**
  * 层级依赖矩阵 - 宽松模式（用于迁移）
  */
 export const LEGACY_LAYER_DEPENDENCIES: Record<ArchitectureLayer, ArchitectureLayer[]> = {
-	views: ["hooks", "flows", "state", "types"],
-	hooks: ["flows", "state", "queries", "types", "io"],
 	flows: ["pipes", "io", "state", "types"],
-	pipes: ["utils", "types"],
+	hooks: ["flows", "state", "queries", "types", "io"],
 	io: ["types"],
-	state: ["types", "pipes"],
-	utils: ["types"],
-	types: [],
+	pipes: ["utils", "types"],
 	queries: ["io", "types"],
 	routes: ["views", "hooks", "flows", "state", "types"],
+	state: ["types", "pipes"],
+	types: [],
+	utils: ["types"],
+	views: ["hooks", "flows", "state", "types"],
 }
 
 /**

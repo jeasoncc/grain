@@ -19,15 +19,15 @@ function runLint(
 	const linter = new Linter({ configType: "flat" })
 
 	const config = {
+		languageOptions: {
+			ecmaVersion: 2022 as const,
+			parser: require("@typescript-eslint/parser"),
+			sourceType: "module" as const,
+		},
 		plugins: {
 			grain: plugin,
 		},
 		rules,
-		languageOptions: {
-			ecmaVersion: 2022 as const,
-			sourceType: "module" as const,
-			parser: require("@typescript-eslint/parser"),
-		},
 	}
 
 	return linter.verify(code, config)
@@ -50,7 +50,7 @@ describe("Property 9: Code Complexity Metrics Enforcement", () => {
 		it("should detect functions exceeding max lines", () => {
 			fc.assert(
 				fc.property(
-					fc.integer({ min: 21, max: 50 }), // Lines exceeding limit
+					fc.integer({ max: 50, min: 21 }), // Lines exceeding limit
 					identifierArb,
 					(lines, funcName) => {
 						// Generate a function with specified number of lines
@@ -73,7 +73,7 @@ describe("Property 9: Code Complexity Metrics Enforcement", () => {
 		it("should not report functions within limit", () => {
 			fc.assert(
 				fc.property(
-					fc.integer({ min: 1, max: 20 }), // Lines within limit
+					fc.integer({ max: 20, min: 1 }), // Lines within limit
 					identifierArb,
 					(lines, funcName) => {
 						const bodyLines = Array(Math.max(1, lines - 2))
@@ -96,7 +96,7 @@ describe("Property 9: Code Complexity Metrics Enforcement", () => {
 		it("should detect functions with too many parameters", () => {
 			fc.assert(
 				fc.property(
-					fc.integer({ min: 4, max: 10 }), // Params exceeding limit
+					fc.integer({ max: 10, min: 4 }), // Params exceeding limit
 					identifierArb,
 					(paramCount, funcName) => {
 						const params = Array(paramCount)
@@ -119,7 +119,7 @@ describe("Property 9: Code Complexity Metrics Enforcement", () => {
 		it("should not report functions with acceptable parameters", () => {
 			fc.assert(
 				fc.property(
-					fc.integer({ min: 0, max: 3 }), // Params within limit
+					fc.integer({ max: 3, min: 0 }), // Params within limit
 					identifierArb,
 					(paramCount, funcName) => {
 						const params = Array(paramCount)
@@ -143,7 +143,7 @@ describe("Property 9: Code Complexity Metrics Enforcement", () => {
 		it("should detect excessive nesting", () => {
 			fc.assert(
 				fc.property(
-					fc.integer({ min: 3, max: 5 }), // Nesting exceeding limit
+					fc.integer({ max: 5, min: 3 }), // Nesting exceeding limit
 					(nestingLevel) => {
 						// Generate nested if statements
 						let code = "function test() {\n"
@@ -170,7 +170,7 @@ describe("Property 9: Code Complexity Metrics Enforcement", () => {
 		it("should not report acceptable nesting", () => {
 			fc.assert(
 				fc.property(
-					fc.integer({ min: 0, max: 2 }), // Nesting within limit
+					fc.integer({ max: 2, min: 0 }), // Nesting within limit
 					(nestingLevel) => {
 						let code = "function test() {\n"
 						for (let i = 0; i < nestingLevel; i++) {
@@ -197,7 +197,7 @@ describe("Property 9: Code Complexity Metrics Enforcement", () => {
 		it("should detect high cyclomatic complexity", () => {
 			fc.assert(
 				fc.property(
-					fc.integer({ min: 6, max: 10 }), // Complexity exceeding limit
+					fc.integer({ max: 10, min: 6 }), // Complexity exceeding limit
 					(branchCount) => {
 						// Generate function with multiple if statements
 						let code = "function test(x: number) {\n"
@@ -220,7 +220,7 @@ describe("Property 9: Code Complexity Metrics Enforcement", () => {
 		it("should not report acceptable complexity", () => {
 			fc.assert(
 				fc.property(
-					fc.integer({ min: 0, max: 4 }), // Complexity within limit (base 1 + branches)
+					fc.integer({ max: 4, min: 0 }), // Complexity within limit (base 1 + branches)
 					(branchCount) => {
 						let code = "function test(x: number) {\n"
 						for (let i = 0; i < branchCount; i++) {
@@ -243,7 +243,7 @@ describe("Property 9: Code Complexity Metrics Enforcement", () => {
 		it("should detect files exceeding max lines", () => {
 			fc.assert(
 				fc.property(
-					fc.integer({ min: 201, max: 300 }), // Lines exceeding limit
+					fc.integer({ max: 300, min: 201 }), // Lines exceeding limit
 					(lines) => {
 						// Generate file with specified number of lines
 						const code = Array(lines).fill('console.log("line");').join("\n")
@@ -262,7 +262,7 @@ describe("Property 9: Code Complexity Metrics Enforcement", () => {
 		it("should not report files within limit", () => {
 			fc.assert(
 				fc.property(
-					fc.integer({ min: 1, max: 200 }), // Lines within limit
+					fc.integer({ max: 200, min: 1 }), // Lines within limit
 					(lines) => {
 						const code = Array(lines).fill('console.log("line");').join("\n")
 

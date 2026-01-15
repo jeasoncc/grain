@@ -31,11 +31,11 @@ vi.mock("@/state/selection.state", () => ({
 
 const mockSidebarStore = {
 	activePanel: "files" as const,
-	isOpen: true,
-	wasCollapsedByDrag: false,
 	drawingsState: { selectedDrawingId: null },
+	isOpen: true,
 	restoreFromCollapse: vi.fn(),
 	setSelectedDrawingId: vi.fn(),
+	wasCollapsedByDrag: false,
 }
 vi.mock("@/state/sidebar.state", () => ({
 	useSidebarStore: vi.fn((selector: any) => {

@@ -66,9 +66,9 @@ export const checkForUpdates = (): TE.TaskEither<AppError, UpdateInfo> =>
 					success("[Updater] 发现新版本", { version: update.version }, "updater")
 					return {
 						available: true,
+						body: update.body,
 						currentVersion: update.currentVersion,
 						latestVersion: update.version,
-						body: update.body,
 					}
 				}
 
@@ -92,8 +92,8 @@ export const checkForUpdates = (): TE.TaskEither<AppError, UpdateInfo> =>
 			}
 		},
 		(error): AppError => ({
-			type: "EXPORT_ERROR", // 使用现有的错误类型，或者可以扩展为 UPDATE_ERROR
 			message: `检查更新失败: ${error instanceof Error ? error.message : String(error)}`,
+			type: "EXPORT_ERROR", // 使用现有的错误类型，或者可以扩展为 UPDATE_ERROR
 		}),
 	)
 
@@ -136,8 +136,8 @@ export const downloadAndInstallUpdate = (
 
 						const progress: UpdateProgress = {
 							downloaded,
-							total: contentLength,
 							percentage,
+							total: contentLength,
 						}
 
 						onProgress?.(progress)
@@ -155,8 +155,8 @@ export const downloadAndInstallUpdate = (
 			await relaunch()
 		},
 		(error): AppError => ({
-			type: "EXPORT_ERROR", // 使用现有的错误类型
 			message: `下载安装更新失败: ${error instanceof Error ? error.message : String(error)}`,
+			type: "EXPORT_ERROR", // 使用现有的错误类型
 		}),
 	)
 

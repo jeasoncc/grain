@@ -11,36 +11,36 @@ describe("StoryRightSidebarView", () => {
 	const mockTabs = [
 		{
 			id: "tab-1",
+			isDirty: false,
+			nodeId: "node-1",
 			title: "Test File 1",
 			type: "file" as const,
-			nodeId: "node-1",
 			workspaceId: "workspace-1",
-			isDirty: false,
 		},
 		{
 			id: "tab-2",
+			isDirty: true,
+			nodeId: "node-2",
 			title: "Test Diary",
 			type: "diary" as const,
-			nodeId: "node-2",
 			workspaceId: "workspace-1",
-			isDirty: true,
 		},
 		{
 			id: "tab-3",
+			isDirty: false,
+			nodeId: "node-3",
 			title: "Test Drawing",
 			type: "drawing" as const,
-			nodeId: "node-3",
 			workspaceId: "workspace-1",
-			isDirty: false,
 		},
 	]
 
 	const defaultProps: StoryRightSidebarViewProps = {
+		activeTabId: "tab-1",
+		onCloseTab: vi.fn(),
+		onSetActiveTab: vi.fn(),
 		tabPosition: "right-sidebar",
 		tabs: mockTabs,
-		activeTabId: "tab-1",
-		onSetActiveTab: vi.fn(),
-		onCloseTab: vi.fn(),
 	}
 
 	it("should render when tabPosition is right-sidebar", () => {

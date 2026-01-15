@@ -122,14 +122,14 @@ export function useUnifiedSave(options: UseUnifiedSaveOptions): UseUnifiedSaveRe
 	// ==============================
 
 	const callbacksRef = useRef({
-		onSaveSuccess,
 		onSaveError,
+		onSaveSuccess,
 	})
 
 	useEffect(() => {
 		callbacksRef.current = {
-			onSaveSuccess,
 			onSaveError,
+			onSaveSuccess,
 		}
 	}, [onSaveSuccess, onSaveError])
 
@@ -141,22 +141,22 @@ export function useUnifiedSave(options: UseUnifiedSaveOptions): UseUnifiedSaveRe
 		debug(`[useUnifiedSave] 注册 model: ${nodeId}`)
 
 		saveServiceManager.getOrCreate({
-			nodeId,
-			contentType,
 			autoSaveDelay: effectiveDelay,
-			tabId,
-			setTabDirty,
-			onSaving: () => {
-				markAsSaving()
+			contentType,
+			nodeId,
+			onError: (error) => {
+				markAsError(error.message)
+				callbacksRef.current.onSaveError?.(error)
 			},
 			onSaved: () => {
 				markAsSaved()
 				callbacksRef.current.onSaveSuccess?.()
 			},
-			onError: (error) => {
-				markAsError(error.message)
-				callbacksRef.current.onSaveError?.(error)
+			onSaving: () => {
+				markAsSaving()
 			},
+			setTabDirty,
+			tabId,
 		})
 
 		// 注意：组件卸载时不清理 model！
@@ -257,9 +257,9 @@ export function useUnifiedSave(options: UseUnifiedSaveOptions): UseUnifiedSaveRe
 	)
 
 	return {
-		updateContent,
-		saveNow,
 		hasUnsavedChanges,
+		saveNow,
 		setInitialContent,
+		updateContent,
 	}
 }

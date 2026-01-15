@@ -248,30 +248,39 @@ function isEnglishComment(text: string): boolean {
 }
 
 export default createRule({
-	name: "chinese-comments",
+	create(context) {
+		const sourceCode = context.sourceCode
+
+		return {
+			Program() {
+				// 获取所有注释
+				const comments = sourceCode.getAllComments()
+
+				for (const comment of comments) {
+					const commentText = comment.value
+
+					if (isEnglishComment(commentText)) {
+						context.report({
+							loc: comment.loc,
+							messageId: "useChineseComments",
+						})
+					}
+				}
+			},
+		}
+	},
+	defaultOptions: [],
 	meta: {
-		type: "suggestion",
 		docs: {
 			description: "⚠️ 建议使用中文编写注释",
 		},
 		messages: {
 			useChineseComments: buildComprehensiveErrorMessage({
-				title: "建议使用中文编写注释",
-				problemCode: `// This function creates a new node
-function createNode(name: string): Node {
-  return { name };
-}`,
-				reason: `Grain 项目使用中文作为主要注释语言：
-  - 团队成员主要使用中文
-  - 中文注释更容易理解和维护
-  - 技术术语可以保留英文
-  - 提高代码可读性`,
 				architecturePrinciple: `Grain 项目的注释原则：
   - 使用中文编写注释和文档
   - 技术术语保留英文（如 API、React、TaskEither）
   - 代码标识符使用英文（变量名、函数名）
   - JSDoc 使用中文描述`,
-				steps: ["将英文注释翻译成中文", "保留技术术语的英文形式", "确保注释清晰易懂"],
 				correctExample: `// ✅ 正确：使用中文注释
 // 创建新节点
 function createNode(name: string): Node {
@@ -301,39 +310,30 @@ const fetchData = (): TE.TaskEither<AppError, Data> => {
 function createNode(name: string): Node {
   return { name };
 }`,
+				docRef: "#code-standards - 注释规范",
+				problemCode: `// This function creates a new node
+function createNode(name: string): Node {
+  return { name };
+}`,
+				reason: `Grain 项目使用中文作为主要注释语言：
+  - 团队成员主要使用中文
+  - 中文注释更容易理解和维护
+  - 技术术语可以保留英文
+  - 提高代码可读性`,
+				relatedRules: ["require-jsdoc"],
+				steeringFile: "#code-standards - 文档规范",
+				steps: ["将英文注释翻译成中文", "保留技术术语的英文形式", "确保注释清晰易懂"],
+				title: "建议使用中文编写注释",
 				warnings: [
 					"技术术语（API、React、TaskEither 等）可以保留英文",
 					"TODO/FIXME 等标记可以用英文",
 					"代码标识符（变量名、函数名）应该用英文",
 					"注释的主要内容应该用中文",
 				],
-				docRef: "#code-standards - 注释规范",
-				steeringFile: "#code-standards - 文档规范",
-				relatedRules: ["require-jsdoc"],
 			}),
 		},
 		schema: [],
+		type: "suggestion",
 	},
-	defaultOptions: [],
-	create(context) {
-		const sourceCode = context.sourceCode
-
-		return {
-			Program() {
-				// 获取所有注释
-				const comments = sourceCode.getAllComments()
-
-				for (const comment of comments) {
-					const commentText = comment.value
-
-					if (isEnglishComment(commentText)) {
-						context.report({
-							loc: comment.loc,
-							messageId: "useChineseComments",
-						})
-					}
-				}
-			},
-		}
-	},
+	name: "chinese-comments",
 })

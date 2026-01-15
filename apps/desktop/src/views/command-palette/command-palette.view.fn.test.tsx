@@ -6,21 +6,21 @@ import { CommandPaletteView } from "./command-palette.view.fn"
 
 describe("CommandPaletteView", () => {
 	const defaultProps: CommandPaletteViewProps = {
-		open: true,
-		onOpenChange: vi.fn(),
 		commands: [
 			{
 				group: "Actions",
 				items: [
 					{
-						label: "Test Command",
 						icon: <Search className="size-4" />,
-						shortcut: "Ctrl+T",
+						label: "Test Command",
 						onSelect: vi.fn(),
+						shortcut: "Ctrl+T",
 					},
 				],
 			},
 		],
+		onOpenChange: vi.fn(),
+		open: true,
 	}
 
 	it("should render without crashing", () => {
@@ -36,8 +36,8 @@ describe("CommandPaletteView", () => {
 					group: "Actions",
 					items: [
 						{
-							label: "Action 1",
 							icon: <Search className="size-4" />,
+							label: "Action 1",
 							onSelect: vi.fn(),
 						},
 					],
@@ -46,8 +46,8 @@ describe("CommandPaletteView", () => {
 					group: "Settings",
 					items: [
 						{
-							label: "Setting 1",
 							icon: <Search className="size-4" />,
+							label: "Setting 1",
 							onSelect: vi.fn(),
 						},
 					],

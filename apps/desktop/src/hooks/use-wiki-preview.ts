@@ -24,8 +24,8 @@ export function useWikiPreviewFetcher() {
 			return result.right
 		}
 		return {
-			title: "Unknown",
 			content: "Failed to load content",
+			title: "Unknown",
 		}
 	}, [])
 

@@ -59,9 +59,9 @@ vi.mock("@/db/content.db.fn", () => ({
 // Mock logger
 vi.mock("@/log", () => ({
 	default: {
-		info: vi.fn(),
 		debug: vi.fn(),
 		error: vi.fn(),
+		info: vi.fn(),
 		warn: vi.fn(),
 	},
 }))
@@ -96,16 +96,16 @@ describe("ExcalidrawEditorContainer", () => {
 		// 但由于 initialData 状态需要 useEffect 更新，第一次渲染时仍然是 null
 		// 这个测试验证组件不会在 content 存在时显示 "Loading..."（容器级别）
 		const mockContent = {
-			id: "content-1",
-			nodeId: "test-node-id",
 			content: JSON.stringify({
-				elements: [],
 				appState: { viewBackgroundColor: "#ffffff" },
+				elements: [],
 				files: {},
 			}),
 			contentType: "excalidraw" as const,
 			createDate: new Date().toISOString(),
+			id: "content-1",
 			lastEdit: new Date().toISOString(),
+			nodeId: "test-node-id",
 		}
 
 		mockUseContentByNodeId.mockReturnValue(mockContent)
@@ -162,16 +162,16 @@ describe("ExcalidrawEditorContainer Property Tests", () => {
 
 		// 设置 mock 返回有效内容
 		const mockContent = {
-			id: "content-1",
-			nodeId: "test-node-id",
 			content: JSON.stringify({
-				elements: [],
 				appState: { viewBackgroundColor: "#ffffff" },
+				elements: [],
 				files: {},
 			}),
 			contentType: "excalidraw" as const,
 			createDate: new Date().toISOString(),
+			id: "content-1",
 			lastEdit: new Date().toISOString(),
+			nodeId: "test-node-id",
 		}
 		mockUseContentByNodeId.mockReturnValue(mockContent)
 
@@ -191,17 +191,19 @@ describe("ExcalidrawEditorContainer Property Tests", () => {
 				// 生成 1-20 个随机的 Excalidraw 元素
 				fc.array(
 					fc.record({
+						height: fc.integer({ max: 500, min: 10 }),
 						id: fc.uuid(),
 						type: fc.constantFrom("rectangle", "ellipse", "line", "text"),
-						x: fc.integer({ min: 0, max: 1000 }),
-						y: fc.integer({ min: 0, max: 1000 }),
-						width: fc.integer({ min: 10, max: 500 }),
-						height: fc.integer({ min: 10, max: 500 }),
+						width: fc.integer({ max: 500, min: 10 }),
+						x: fc.integer({ max: 1000, min: 0 }),
+						y: fc.integer({ max: 1000, min: 0 }),
 					}),
-					{ minLength: 1, maxLength: 20 },
+					{ maxLength: 20, minLength: 1 },
 				),
 				// 生成随机的 appState
 				fc.record({
+					scrollX: fc.integer({ max: 1000, min: -1000 }),
+					scrollY: fc.integer({ max: 1000, min: -1000 }),
 					viewBackgroundColor: fc.constantFrom(
 						"#ffffff",
 						"#000000",
@@ -210,11 +212,9 @@ describe("ExcalidrawEditorContainer Property Tests", () => {
 						"#0000ff",
 						"#1e1e1e",
 					),
-					scrollX: fc.integer({ min: -1000, max: 1000 }),
-					scrollY: fc.integer({ min: -1000, max: 1000 }),
 				}),
 				// 生成调用次数
-				fc.integer({ min: 1, max: 10 }),
+				fc.integer({ max: 10, min: 1 }),
 				(elements, appState, callCount) => {
 					// 重置渲染计数
 					const beforeCallRenderCount = renderCount
@@ -289,16 +289,16 @@ describe("ExcalidrawEditorContainer Resize Debounce Property Tests", () => {
 
 		// 设置 mock 返回有效内容
 		const mockContent = {
-			id: "content-1",
-			nodeId: "test-node-id",
 			content: JSON.stringify({
-				elements: [],
 				appState: { viewBackgroundColor: "#ffffff" },
+				elements: [],
 				files: {},
 			}),
 			contentType: "excalidraw" as const,
 			createDate: new Date().toISOString(),
+			id: "content-1",
 			lastEdit: new Date().toISOString(),
+			nodeId: "test-node-id",
 		}
 		mockUseContentByNodeId.mockReturnValue(mockContent)
 
@@ -306,16 +306,16 @@ describe("ExcalidrawEditorContainer Resize Debounce Property Tests", () => {
 			fc.property(
 				// 生成 2-10 个 resize 事件的时间间隔（毫秒）
 				fc.array(
-					fc.integer({ min: 10, max: 150 }), // 间隔小于 RESIZE_DEBOUNCE_DELAY
-					{ minLength: 2, maxLength: 10 },
+					fc.integer({ max: 150, min: 10 }), // 间隔小于 RESIZE_DEBOUNCE_DELAY
+					{ maxLength: 10, minLength: 2 },
 				),
 				// 生成有效的尺寸变化
 				fc.array(
 					fc.record({
-						width: fc.integer({ min: 300, max: 1200 }),
-						height: fc.integer({ min: 300, max: 800 }),
+						height: fc.integer({ max: 800, min: 300 }),
+						width: fc.integer({ max: 1200, min: 300 }),
 					}),
-					{ minLength: 2, maxLength: 10 },
+					{ maxLength: 10, minLength: 2 },
 				),
 				(delays, sizes) => {
 					// 确保 sizes 数组长度与 delays 匹配
@@ -341,21 +341,21 @@ describe("ExcalidrawEditorContainer Resize Debounce Property Tests", () => {
 
 						// 创建 mock ResizeObserverEntry
 						const mockEntry = {
-							contentRect: {
-								width: size.width,
-								height: size.height,
-								x: 0,
-								y: 0,
-								top: 0,
-								right: size.width,
-								bottom: size.height,
-								left: 0,
-								toJSON: () => ({}),
-							},
-							target: document.createElement("div"),
 							borderBoxSize: [],
 							contentBoxSize: [],
+							contentRect: {
+								bottom: size.height,
+								height: size.height,
+								left: 0,
+								right: size.width,
+								toJSON: () => ({}),
+								top: 0,
+								width: size.width,
+								x: 0,
+								y: 0,
+							},
 							devicePixelContentBoxSize: [],
+							target: document.createElement("div"),
 						} as ResizeObserverEntry
 
 						// 触发 resize 回调
@@ -448,16 +448,16 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 
 		// 设置 mock 返回有效内容
 		const mockContent = {
-			id: "content-1",
-			nodeId: "test-node-id",
 			content: JSON.stringify({
-				elements: [],
 				appState: { viewBackgroundColor: "#ffffff" },
+				elements: [],
 				files: {},
 			}),
 			contentType: "excalidraw" as const,
 			createDate: new Date().toISOString(),
+			id: "content-1",
 			lastEdit: new Date().toISOString(),
+			nodeId: "test-node-id",
 		}
 		mockUseContentByNodeId.mockReturnValue(mockContent)
 
@@ -465,22 +465,22 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 			fc.property(
 				// 生成初始尺寸（有效尺寸，大于 MIN_VALID_SIZE）
 				fc.record({
-					width: fc.integer({ min: 500, max: 1000 }),
-					height: fc.integer({ min: 400, max: 800 }),
+					height: fc.integer({ max: 800, min: 400 }),
+					width: fc.integer({ max: 1000, min: 500 }),
 				}),
 				// 生成小于阈值的尺寸变化（-9 到 9 像素）
 				fc.array(
 					fc.record({
-						deltaWidth: fc.integer({
-							min: -SIZE_CHANGE_THRESHOLD + 1,
-							max: SIZE_CHANGE_THRESHOLD - 1,
-						}),
 						deltaHeight: fc.integer({
-							min: -SIZE_CHANGE_THRESHOLD + 1,
 							max: SIZE_CHANGE_THRESHOLD - 1,
+							min: -SIZE_CHANGE_THRESHOLD + 1,
+						}),
+						deltaWidth: fc.integer({
+							max: SIZE_CHANGE_THRESHOLD - 1,
+							min: -SIZE_CHANGE_THRESHOLD + 1,
 						}),
 					}),
-					{ minLength: 1, maxLength: 5 },
+					{ maxLength: 5, minLength: 1 },
 				),
 				(initialSize, smallChanges) => {
 					// 渲染组件
@@ -495,24 +495,24 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 					if (resizeCallback && containerElement) {
 						// Mock getBoundingClientRect for initial size
 						const mockRect = {
-							width: initialSize.width,
+							bottom: initialSize.height,
 							height: initialSize.height,
+							left: 0,
+							right: initialSize.width,
+							toJSON: () => ({}),
+							top: 0,
+							width: initialSize.width,
 							x: 0,
 							y: 0,
-							top: 0,
-							right: initialSize.width,
-							bottom: initialSize.height,
-							left: 0,
-							toJSON: () => ({}),
 						}
 
 						// 触发初始 resize
 						const mockEntry = {
-							contentRect: mockRect,
-							target: containerElement,
 							borderBoxSize: [],
 							contentBoxSize: [],
+							contentRect: mockRect,
 							devicePixelContentBoxSize: [],
+							target: containerElement,
 						} as ResizeObserverEntry
 
 						act(() => {
@@ -538,23 +538,23 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 						if (newWidth > 200 && newHeight > 200) {
 							if (resizeCallback && containerElement) {
 								const mockRect = {
-									width: newWidth,
+									bottom: newHeight,
 									height: newHeight,
+									left: 0,
+									right: newWidth,
+									toJSON: () => ({}),
+									top: 0,
+									width: newWidth,
 									x: 0,
 									y: 0,
-									top: 0,
-									right: newWidth,
-									bottom: newHeight,
-									left: 0,
-									toJSON: () => ({}),
 								}
 
 								const mockEntry = {
-									contentRect: mockRect,
-									target: containerElement,
 									borderBoxSize: [],
 									contentBoxSize: [],
+									contentRect: mockRect,
 									devicePixelContentBoxSize: [],
+									target: containerElement,
 								} as ResizeObserverEntry
 
 								act(() => {
@@ -624,16 +624,16 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 
 		// 设置 mock 返回有效内容
 		const mockContent = {
-			id: "content-1",
-			nodeId: "test-node-id",
 			content: JSON.stringify({
-				elements: [],
 				appState: { viewBackgroundColor: "#ffffff" },
+				elements: [],
 				files: {},
 			}),
 			contentType: "excalidraw" as const,
 			createDate: new Date().toISOString(),
+			id: "content-1",
 			lastEdit: new Date().toISOString(),
+			nodeId: "test-node-id",
 		}
 		mockUseContentByNodeId.mockReturnValue(mockContent)
 
@@ -641,22 +641,22 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 			fc.property(
 				// 生成初始尺寸
 				fc.record({
-					width: fc.integer({ min: 500, max: 800 }),
-					height: fc.integer({ min: 400, max: 600 }),
+					height: fc.integer({ max: 600, min: 400 }),
+					width: fc.integer({ max: 800, min: 500 }),
 				}),
 				// 生成超过阈值的尺寸变化（至少 11 像素）
 				fc.array(
 					fc.record({
-						deltaWidth: fc.oneof(
-							fc.integer({ min: SIZE_CHANGE_THRESHOLD + 1, max: 100 }),
-							fc.integer({ min: -100, max: -(SIZE_CHANGE_THRESHOLD + 1) }),
-						),
 						deltaHeight: fc.oneof(
-							fc.integer({ min: SIZE_CHANGE_THRESHOLD + 1, max: 100 }),
-							fc.integer({ min: -100, max: -(SIZE_CHANGE_THRESHOLD + 1) }),
+							fc.integer({ max: 100, min: SIZE_CHANGE_THRESHOLD + 1 }),
+							fc.integer({ max: -(SIZE_CHANGE_THRESHOLD + 1), min: -100 }),
+						),
+						deltaWidth: fc.oneof(
+							fc.integer({ max: 100, min: SIZE_CHANGE_THRESHOLD + 1 }),
+							fc.integer({ max: -(SIZE_CHANGE_THRESHOLD + 1), min: -100 }),
 						),
 					}),
-					{ minLength: 1, maxLength: 3 },
+					{ maxLength: 3, minLength: 1 },
 				),
 				(initialSize, largeChanges) => {
 					// 渲染组件
@@ -670,23 +670,23 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 					// 模拟初始尺寸设置
 					if (resizeCallback && containerElement) {
 						const mockRect = {
-							width: initialSize.width,
+							bottom: initialSize.height,
 							height: initialSize.height,
+							left: 0,
+							right: initialSize.width,
+							toJSON: () => ({}),
+							top: 0,
+							width: initialSize.width,
 							x: 0,
 							y: 0,
-							top: 0,
-							right: initialSize.width,
-							bottom: initialSize.height,
-							left: 0,
-							toJSON: () => ({}),
 						}
 
 						const mockEntry = {
-							contentRect: mockRect,
-							target: containerElement,
 							borderBoxSize: [],
 							contentBoxSize: [],
+							contentRect: mockRect,
 							devicePixelContentBoxSize: [],
+							target: containerElement,
 						} as ResizeObserverEntry
 
 						act(() => {
@@ -710,23 +710,23 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 
 						if (resizeCallback && containerElement) {
 							const mockRect = {
-								width: newWidth,
+								bottom: newHeight,
 								height: newHeight,
+								left: 0,
+								right: newWidth,
+								toJSON: () => ({}),
+								top: 0,
+								width: newWidth,
 								x: 0,
 								y: 0,
-								top: 0,
-								right: newWidth,
-								bottom: newHeight,
-								left: 0,
-								toJSON: () => ({}),
 							}
 
 							const mockEntry = {
-								contentRect: mockRect,
-								target: containerElement,
 								borderBoxSize: [],
 								contentBoxSize: [],
+								contentRect: mockRect,
 								devicePixelContentBoxSize: [],
+								target: containerElement,
 							} as ResizeObserverEntry
 
 							act(() => {
@@ -801,9 +801,9 @@ describe("Status Update Throttle Property Tests", () => {
 			fc.property(
 				// 生成 2-20 个事件的时间间隔（毫秒）
 				// 间隔小于 STATUS_UPDATE_THROTTLE，确保在节流窗口内
-				fc.array(fc.integer({ min: 10, max: STATUS_UPDATE_THROTTLE - 50 }), {
-					minLength: 2,
+				fc.array(fc.integer({ max: STATUS_UPDATE_THROTTLE - 50, min: 10 }), {
 					maxLength: 20,
+					minLength: 2,
 				}),
 				(delays) => {
 					// 追踪调用次数
@@ -878,10 +878,10 @@ describe("Status Update Throttle Property Tests", () => {
 				// 生成 2-5 个事件，间隔超过节流时间
 				fc.array(
 					fc.integer({
-						min: STATUS_UPDATE_THROTTLE + 50,
 						max: STATUS_UPDATE_THROTTLE + 200,
+						min: STATUS_UPDATE_THROTTLE + 50,
 					}),
-					{ minLength: 2, maxLength: 5 },
+					{ maxLength: 5, minLength: 2 },
 				),
 				(delays) => {
 					// 追踪调用次数
@@ -928,7 +928,7 @@ describe("Status Update Throttle Property Tests", () => {
 		fc.assert(
 			fc.property(
 				// 生成随机的节流间隔（使用配置值附近的值）
-				fc.integer({ min: 100, max: 1000 }),
+				fc.integer({ max: 1000, min: 100 }),
 				(throttleInterval) => {
 					// 追踪调用次数
 					const mockFn = vi.fn()
@@ -979,31 +979,31 @@ describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () =>
 			fc.property(
 				// 生成随机的 Excalidraw 内容
 				fc.record({
+					appState: fc.record({
+						viewBackgroundColor: fc.constantFrom("#ffffff", "#000000", "#1e1e1e"),
+					}),
 					elements: fc.array(
 						fc.record({
 							id: fc.uuid(),
 							type: fc.constantFrom("rectangle", "ellipse", "line", "text"),
-							x: fc.integer({ min: 0, max: 1000 }),
-							y: fc.integer({ min: 0, max: 1000 }),
+							x: fc.integer({ max: 1000, min: 0 }),
+							y: fc.integer({ max: 1000, min: 0 }),
 						}),
-						{ minLength: 0, maxLength: 10 },
+						{ maxLength: 10, minLength: 0 },
 					),
-					appState: fc.record({
-						viewBackgroundColor: fc.constantFrom("#ffffff", "#000000", "#1e1e1e"),
-					}),
 					files: fc.constant({}),
 				}),
 				// 生成重渲染次数
-				fc.integer({ min: 2, max: 10 }),
+				fc.integer({ max: 10, min: 2 }),
 				(excalidrawData, rerenderCount) => {
 					// 创建 mock 内容
 					const mockContent = {
-						id: "content-1",
-						nodeId: "test-node-id",
 						content: JSON.stringify(excalidrawData),
 						contentType: "excalidraw" as const,
 						createDate: new Date().toISOString(),
+						id: "content-1",
 						lastEdit: new Date().toISOString(),
+						nodeId: "test-node-id",
 					}
 
 					// 追踪 useEffect 执行次数
@@ -1052,23 +1052,23 @@ describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () =>
 		fc.assert(
 			fc.property(
 				// 生成多个不同的 nodeId
-				fc.array(fc.uuid(), { minLength: 2, maxLength: 5 }),
+				fc.array(fc.uuid(), { maxLength: 5, minLength: 2 }),
 				// 生成对应的内容
 				fc.array(
 					fc.record({
+						appState: fc.record({
+							viewBackgroundColor: fc.constantFrom("#ffffff", "#000000"),
+						}),
 						elements: fc.array(
 							fc.record({
 								id: fc.uuid(),
 								type: fc.constantFrom("rectangle", "ellipse"),
 							}),
-							{ minLength: 0, maxLength: 5 },
+							{ maxLength: 5, minLength: 0 },
 						),
-						appState: fc.record({
-							viewBackgroundColor: fc.constantFrom("#ffffff", "#000000"),
-						}),
 						files: fc.constant({}),
 					}),
-					{ minLength: 2, maxLength: 5 },
+					{ maxLength: 5, minLength: 2 },
 				),
 				(nodeIds, contents) => {
 					// 确保 nodeIds 和 contents 长度匹配
@@ -1088,12 +1088,12 @@ describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () =>
 						const content = contentMap.get(currentNodeId)
 						if (!content) return undefined
 						return {
-							id: `content-${currentNodeId}`,
-							nodeId: currentNodeId,
 							content: JSON.stringify(content),
 							contentType: "excalidraw" as const,
 							createDate: new Date().toISOString(),
+							id: `content-${currentNodeId}`,
 							lastEdit: new Date().toISOString(),
+							nodeId: currentNodeId,
 						}
 					})
 
@@ -1107,12 +1107,12 @@ describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () =>
 
 						// 更新 mock 返回值
 						mockUseContentByNodeId.mockReturnValue({
-							id: `content-${newNodeId}`,
-							nodeId: newNodeId,
 							content: JSON.stringify(newContent),
 							contentType: "excalidraw" as const,
 							createDate: new Date().toISOString(),
+							id: `content-${newNodeId}`,
 							lastEdit: new Date().toISOString(),
+							nodeId: newNodeId,
 						})
 
 						// 重渲染组件
@@ -1148,29 +1148,29 @@ describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () =>
 				fc.uuid(),
 				// 生成内容
 				fc.record({
+					appState: fc.record({
+						viewBackgroundColor: fc.constantFrom("#ffffff", "#000000", "#1e1e1e"),
+					}),
 					elements: fc.array(
 						fc.record({
 							id: fc.uuid(),
 							type: fc.constantFrom("rectangle", "ellipse", "line"),
 						}),
-						{ minLength: 0, maxLength: 10 },
+						{ maxLength: 10, minLength: 0 },
 					),
-					appState: fc.record({
-						viewBackgroundColor: fc.constantFrom("#ffffff", "#000000", "#1e1e1e"),
-					}),
 					files: fc.constant({}),
 				}),
 				// 生成重渲染次数
-				fc.integer({ min: 5, max: 20 }),
+				fc.integer({ max: 20, min: 5 }),
 				(nodeId, excalidrawData, rerenderCount) => {
 					// 创建 mock 内容
 					const mockContent = {
-						id: "content-1",
-						nodeId: nodeId,
 						content: JSON.stringify(excalidrawData),
 						contentType: "excalidraw" as const,
 						createDate: new Date().toISOString(),
+						id: "content-1",
 						lastEdit: new Date().toISOString(),
+						nodeId: nodeId,
 					}
 
 					// 设置 mock
@@ -1258,30 +1258,30 @@ describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 				fc.uuid(),
 				// 生成初始尺寸
 				fc.record({
-					width: fc.integer({ min: 500, max: 800 }),
-					height: fc.integer({ min: 400, max: 600 }),
+					height: fc.integer({ max: 600, min: 400 }),
+					width: fc.integer({ max: 800, min: 500 }),
 				}),
 				// 生成多个 resize 事件的尺寸变化
 				fc.array(
 					fc.record({
-						width: fc.integer({ min: 300, max: 1200 }),
-						height: fc.integer({ min: 300, max: 900 }),
+						height: fc.integer({ max: 900, min: 300 }),
+						width: fc.integer({ max: 1200, min: 300 }),
 					}),
-					{ minLength: 2, maxLength: 10 },
+					{ maxLength: 10, minLength: 2 },
 				),
 				(nodeId, initialSize, resizeSizes) => {
 					// 创建 mock 内容
 					const mockContent = {
-						id: "content-1",
-						nodeId: nodeId,
 						content: JSON.stringify({
-							elements: [],
 							appState: { viewBackgroundColor: "#ffffff" },
+							elements: [],
 							files: {},
 						}),
 						contentType: "excalidraw" as const,
 						createDate: new Date().toISOString(),
+						id: "content-1",
 						lastEdit: new Date().toISOString(),
+						nodeId: nodeId,
 					}
 
 					// 设置 mock
@@ -1298,23 +1298,23 @@ describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 					// 模拟初始尺寸设置
 					if (resizeCallback && containerElement) {
 						const mockRect = {
-							width: initialSize.width,
+							bottom: initialSize.height,
 							height: initialSize.height,
+							left: 0,
+							right: initialSize.width,
+							toJSON: () => ({}),
+							top: 0,
+							width: initialSize.width,
 							x: 0,
 							y: 0,
-							top: 0,
-							right: initialSize.width,
-							bottom: initialSize.height,
-							left: 0,
-							toJSON: () => ({}),
 						}
 
 						const mockEntry = {
-							contentRect: mockRect,
-							target: containerElement,
 							borderBoxSize: [],
 							contentBoxSize: [],
+							contentRect: mockRect,
 							devicePixelContentBoxSize: [],
+							target: containerElement,
 						} as ResizeObserverEntry
 
 						act(() => {
@@ -1331,23 +1331,23 @@ describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 					for (const size of resizeSizes) {
 						if (resizeCallback && containerElement) {
 							const mockRect = {
-								width: size.width,
+								bottom: size.height,
 								height: size.height,
+								left: 0,
+								right: size.width,
+								toJSON: () => ({}),
+								top: 0,
+								width: size.width,
 								x: 0,
 								y: 0,
-								top: 0,
-								right: size.width,
-								bottom: size.height,
-								left: 0,
-								toJSON: () => ({}),
 							}
 
 							const mockEntry = {
-								contentRect: mockRect,
-								target: containerElement,
 								borderBoxSize: [],
 								contentBoxSize: [],
+								contentRect: mockRect,
 								devicePixelContentBoxSize: [],
+								target: containerElement,
 							} as ResizeObserverEntry
 
 							act(() => {
@@ -1409,11 +1409,11 @@ describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 		fc.assert(
 			fc.property(
 				// 生成多个不同的 nodeId
-				fc.array(fc.uuid(), { minLength: 2, maxLength: 5 }),
+				fc.array(fc.uuid(), { maxLength: 5, minLength: 2 }),
 				// 生成固定尺寸
 				fc.record({
-					width: fc.integer({ min: 500, max: 800 }),
-					height: fc.integer({ min: 400, max: 600 }),
+					height: fc.integer({ max: 600, min: 400 }),
+					width: fc.integer({ max: 800, min: 500 }),
 				}),
 				(nodeIds, size) => {
 					// 确保 nodeIds 都是唯一的
@@ -1422,16 +1422,16 @@ describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 
 					// 创建 mock 内容映射
 					const createMockContent = (nodeId: string) => ({
-						id: `content-${nodeId}`,
-						nodeId: nodeId,
 						content: JSON.stringify({
-							elements: [],
 							appState: { viewBackgroundColor: "#ffffff" },
+							elements: [],
 							files: {},
 						}),
 						contentType: "excalidraw" as const,
 						createDate: new Date().toISOString(),
+						id: `content-${nodeId}`,
 						lastEdit: new Date().toISOString(),
+						nodeId: nodeId,
 					})
 
 					// 设置初始 mock
@@ -1450,23 +1450,23 @@ describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 					// 模拟初始尺寸设置
 					if (resizeCallback && containerElement) {
 						const mockRect = {
-							width: size.width,
+							bottom: size.height,
 							height: size.height,
+							left: 0,
+							right: size.width,
+							toJSON: () => ({}),
+							top: 0,
+							width: size.width,
 							x: 0,
 							y: 0,
-							top: 0,
-							right: size.width,
-							bottom: size.height,
-							left: 0,
-							toJSON: () => ({}),
 						}
 
 						const mockEntry = {
-							contentRect: mockRect,
-							target: containerElement,
 							borderBoxSize: [],
 							contentBoxSize: [],
+							contentRect: mockRect,
 							devicePixelContentBoxSize: [],
+							target: containerElement,
 						} as ResizeObserverEntry
 
 						act(() => {
@@ -1526,10 +1526,10 @@ describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 				// 生成多个不同的尺寸
 				fc.array(
 					fc.record({
-						width: fc.integer({ min: 300, max: 1200 }),
-						height: fc.integer({ min: 300, max: 900 }),
+						height: fc.integer({ max: 900, min: 300 }),
+						width: fc.integer({ max: 1200, min: 300 }),
 					}),
-					{ minLength: 3, maxLength: 10 },
+					{ maxLength: 10, minLength: 3 },
 				),
 				(nodeId, sizes) => {
 					// 验证：对于相同的 nodeId，无论 containerSize 如何变化，
@@ -1596,19 +1596,19 @@ describe("ExcalidrawEditorContainer Save Coalescing Property Tests", () => {
 			fc.property(
 				// 生成 2-20 个快速变更事件的时间间隔（毫秒）
 				// 间隔小于 AUTO_SAVE_DELAY，确保在防抖窗口内
-				fc.array(fc.integer({ min: 50, max: AUTO_SAVE_DELAY - 100 }), {
-					minLength: 2,
+				fc.array(fc.integer({ max: AUTO_SAVE_DELAY - 100, min: 50 }), {
 					maxLength: 20,
+					minLength: 2,
 				}),
 				// 生成随机的 Excalidraw 元素变更
 				fc.array(
 					fc.record({
 						id: fc.uuid(),
 						type: fc.constantFrom("rectangle", "ellipse", "line", "text"),
-						x: fc.integer({ min: 0, max: 1000 }),
-						y: fc.integer({ min: 0, max: 1000 }),
+						x: fc.integer({ max: 1000, min: 0 }),
+						y: fc.integer({ max: 1000, min: 0 }),
 					}),
-					{ minLength: 1, maxLength: 10 },
+					{ maxLength: 10, minLength: 1 },
 				),
 				(delays, elements) => {
 					// 追踪保存调用次数
@@ -1675,10 +1675,10 @@ describe("ExcalidrawEditorContainer Save Coalescing Property Tests", () => {
 				// 生成 2-5 个变更事件，间隔超过防抖时间
 				fc.array(
 					fc.integer({
-						min: AUTO_SAVE_DELAY + 100,
 						max: AUTO_SAVE_DELAY + 500,
+						min: AUTO_SAVE_DELAY + 100,
 					}),
-					{ minLength: 2, maxLength: 5 },
+					{ maxLength: 5, minLength: 2 },
 				),
 				// 生成随机的 Excalidraw 元素
 				fc.array(
@@ -1686,7 +1686,7 @@ describe("ExcalidrawEditorContainer Save Coalescing Property Tests", () => {
 						id: fc.uuid(),
 						type: fc.constantFrom("rectangle", "ellipse"),
 					}),
-					{ minLength: 1, maxLength: 5 },
+					{ maxLength: 5, minLength: 1 },
 				),
 				(delays, elements) => {
 					// 追踪保存调用次数
@@ -1734,9 +1734,9 @@ describe("ExcalidrawEditorContainer Save Coalescing Property Tests", () => {
 		fc.assert(
 			fc.property(
 				// 生成 2-10 个快速变更事件
-				fc.integer({ min: 2, max: 10 }),
+				fc.integer({ max: 10, min: 2 }),
 				// 生成手动保存触发的时间点（在防抖窗口内）
-				fc.integer({ min: 100, max: AUTO_SAVE_DELAY - 100 }),
+				fc.integer({ max: AUTO_SAVE_DELAY - 100, min: 100 }),
 				(changeCount, manualSaveTime) => {
 					// 追踪保存调用次数
 					let autoSaveCount = 0
@@ -1798,9 +1798,9 @@ describe("ExcalidrawEditorContainer Save Coalescing Property Tests", () => {
 		fc.assert(
 			fc.property(
 				// 生成 2-10 个快速变更事件
-				fc.integer({ min: 2, max: 10 }),
+				fc.integer({ max: 10, min: 2 }),
 				// 生成卸载时间点（在防抖窗口内）
-				fc.integer({ min: 100, max: AUTO_SAVE_DELAY - 100 }),
+				fc.integer({ max: AUTO_SAVE_DELAY - 100, min: 100 }),
 				(changeCount, unmountTime) => {
 					// 追踪保存调用次数
 					let saveCount = 0
@@ -1895,36 +1895,36 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 				fc.uuid(),
 				// 生成随机的 Excalidraw 内容
 				fc.record({
+					appState: fc.record({
+						viewBackgroundColor: fc.constantFrom("#ffffff", "#000000", "#1e1e1e"),
+					}),
 					elements: fc.array(
 						fc.record({
 							id: fc.uuid(),
 							type: fc.constantFrom("rectangle", "ellipse", "line", "text"),
-							x: fc.integer({ min: 0, max: 1000 }),
-							y: fc.integer({ min: 0, max: 1000 }),
+							x: fc.integer({ max: 1000, min: 0 }),
+							y: fc.integer({ max: 1000, min: 0 }),
 						}),
-						{ minLength: 0, maxLength: 10 },
+						{ maxLength: 10, minLength: 0 },
 					),
-					appState: fc.record({
-						viewBackgroundColor: fc.constantFrom("#ffffff", "#000000", "#1e1e1e"),
-					}),
 					files: fc.constant({}),
 				}),
 				// 生成 onChange 调用次数（在卸载前）
-				fc.integer({ min: 1, max: 10 }),
+				fc.integer({ max: 10, min: 1 }),
 				// 生成卸载前的等待时间（小于 AUTO_SAVE_DELAY，确保有 pending 操作）
-				fc.integer({ min: 100, max: AUTO_SAVE_DELAY - 100 }),
+				fc.integer({ max: AUTO_SAVE_DELAY - 100, min: 100 }),
 				(nodeId, excalidrawData, changeCount, waitBeforeUnmount) => {
 					// 重置追踪状态
 					disconnectCalled = false
 
 					// 创建 mock 内容
 					const mockContent = {
-						id: "content-1",
-						nodeId: nodeId,
 						content: JSON.stringify(excalidrawData),
 						contentType: "excalidraw" as const,
 						createDate: new Date().toISOString(),
+						id: "content-1",
 						lastEdit: new Date().toISOString(),
+						nodeId: nodeId,
 					}
 
 					// 设置 mock
@@ -1941,23 +1941,23 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 					// 模拟初始尺寸设置
 					if (resizeCallback && containerElement) {
 						const mockRect = {
-							width: 800,
+							bottom: 600,
 							height: 600,
+							left: 0,
+							right: 800,
+							toJSON: () => ({}),
+							top: 0,
+							width: 800,
 							x: 0,
 							y: 0,
-							top: 0,
-							right: 800,
-							bottom: 600,
-							left: 0,
-							toJSON: () => ({}),
 						}
 
 						const mockEntry = {
-							contentRect: mockRect,
-							target: containerElement,
 							borderBoxSize: [],
 							contentBoxSize: [],
+							contentRect: mockRect,
 							devicePixelContentBoxSize: [],
+							target: containerElement,
 						} as ResizeObserverEntry
 
 						act(() => {
@@ -2038,9 +2038,9 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 		fc.assert(
 			fc.property(
 				// 生成 2-10 个快速变更事件
-				fc.integer({ min: 2, max: 10 }),
+				fc.integer({ max: 10, min: 2 }),
 				// 生成卸载时间点（在防抖窗口内）
-				fc.integer({ min: 100, max: AUTO_SAVE_DELAY - 100 }),
+				fc.integer({ max: AUTO_SAVE_DELAY - 100, min: 100 }),
 				(changeCount, unmountTime) => {
 					// 追踪保存调用次数
 					let saveCallCount = 0
@@ -2093,9 +2093,9 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 		fc.assert(
 			fc.property(
 				// 生成 2-10 个快速状态更新事件
-				fc.integer({ min: 2, max: 10 }),
+				fc.integer({ max: 10, min: 2 }),
 				// 生成卸载时间点（在节流窗口内）
-				fc.integer({ min: 50, max: STATUS_UPDATE_THROTTLE - 50 }),
+				fc.integer({ max: STATUS_UPDATE_THROTTLE - 50, min: 50 }),
 				(updateCount, unmountTime) => {
 					// 追踪状态更新调用次数
 					let updateCallCount = 0
@@ -2164,11 +2164,11 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 				fc.uuid(),
 				// 生成随机的内容
 				fc.record({
-					elements: fc.array(fc.record({ id: fc.uuid() }), {
-						minLength: 0,
-						maxLength: 5,
-					}),
 					appState: fc.record({ viewBackgroundColor: fc.constant("#ffffff") }),
+					elements: fc.array(fc.record({ id: fc.uuid() }), {
+						maxLength: 5,
+						minLength: 0,
+					}),
 					files: fc.constant({}),
 				}),
 				(nodeId, excalidrawData) => {
@@ -2177,12 +2177,12 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 
 					// 创建 mock 内容
 					const mockContent = {
-						id: "content-1",
-						nodeId: nodeId,
 						content: JSON.stringify(excalidrawData),
 						contentType: "excalidraw" as const,
 						createDate: new Date().toISOString(),
+						id: "content-1",
 						lastEdit: new Date().toISOString(),
+						nodeId: nodeId,
 					}
 
 					// 设置 mock
@@ -2238,33 +2238,33 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 				fc.uuid(),
 				// 生成随机的 Excalidraw 内容
 				fc.record({
+					appState: fc.record({
+						viewBackgroundColor: fc.constantFrom("#ffffff", "#000000"),
+					}),
 					elements: fc.array(
 						fc.record({
 							id: fc.uuid(),
 							type: fc.constantFrom("rectangle", "ellipse"),
-							x: fc.integer({ min: 0, max: 1000 }),
-							y: fc.integer({ min: 0, max: 1000 }),
+							x: fc.integer({ max: 1000, min: 0 }),
+							y: fc.integer({ max: 1000, min: 0 }),
 						}),
-						{ minLength: 1, maxLength: 5 },
+						{ maxLength: 5, minLength: 1 },
 					),
-					appState: fc.record({
-						viewBackgroundColor: fc.constantFrom("#ffffff", "#000000"),
-					}),
 					files: fc.constant({}),
 				}),
 				(nodeId, excalidrawData) => {
 					// 创建 mock 内容
 					const mockContent = {
-						id: "content-1",
-						nodeId: nodeId,
 						content: JSON.stringify({
-							elements: [],
 							appState: { viewBackgroundColor: "#ffffff" },
+							elements: [],
 							files: {},
 						}),
 						contentType: "excalidraw" as const,
 						createDate: new Date().toISOString(),
+						id: "content-1",
 						lastEdit: new Date().toISOString(),
+						nodeId: nodeId,
 					}
 
 					// 设置 mock
@@ -2281,23 +2281,23 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 					// 模拟初始尺寸设置
 					if (resizeCallback && containerElement) {
 						const mockRect = {
-							width: 800,
+							bottom: 600,
 							height: 600,
+							left: 0,
+							right: 800,
+							toJSON: () => ({}),
+							top: 0,
+							width: 800,
 							x: 0,
 							y: 0,
-							top: 0,
-							right: 800,
-							bottom: 600,
-							left: 0,
-							toJSON: () => ({}),
 						}
 
 						const mockEntry = {
-							contentRect: mockRect,
-							target: containerElement,
 							borderBoxSize: [],
 							contentBoxSize: [],
+							contentRect: mockRect,
 							devicePixelContentBoxSize: [],
+							target: containerElement,
 						} as ResizeObserverEntry
 
 						act(() => {

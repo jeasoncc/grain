@@ -56,6 +56,13 @@ export const useEditorSettingsStore = create<EditorSettingsStore>()(
 			// Initial State
 			...DEFAULT_EDITOR_SETTINGS_STATE,
 
+			reset: () => {
+				set((state) => ({
+					...state,
+					foldIconStyle: DEFAULT_EDITOR_SETTINGS_STATE.foldIconStyle,
+				}))
+			},
+
 			// ==============================
 			// Actions
 			// ==============================
@@ -64,13 +71,6 @@ export const useEditorSettingsStore = create<EditorSettingsStore>()(
 				set((state) => ({
 					...state,
 					foldIconStyle: style,
-				}))
-			},
-
-			reset: () => {
-				set((state) => ({
-					...state,
-					foldIconStyle: DEFAULT_EDITOR_SETTINGS_STATE.foldIconStyle,
 				}))
 			},
 		}),

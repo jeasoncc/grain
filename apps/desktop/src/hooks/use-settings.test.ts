@@ -105,7 +105,7 @@ describe("useSettings", () => {
 		 */
 		it("Property 2: autoSaveInterval 应该始终在 [1, 60] 范围内", () => {
 			fc.assert(
-				fc.property(fc.integer({ min: -1000, max: 10000 }), (input) => {
+				fc.property(fc.integer({ max: 10000, min: -1000 }), (input) => {
 					const { setAutoSaveInterval } = useSettings.getState()
 					setAutoSaveInterval(input)
 					const result = useSettings.getState().autoSaveInterval
@@ -124,7 +124,7 @@ describe("useSettings", () => {
 		 */
 		it("Property 2 补充: 范围内的值应该保持不变", () => {
 			fc.assert(
-				fc.property(fc.integer({ min: 1, max: 60 }), (input) => {
+				fc.property(fc.integer({ max: 60, min: 1 }), (input) => {
 					const { setAutoSaveInterval } = useSettings.getState()
 					setAutoSaveInterval(input)
 					const result = useSettings.getState().autoSaveInterval
@@ -141,7 +141,7 @@ describe("useSettings", () => {
 		 */
 		it("Property 2 补充: 小于 1 的值应该变为 1", () => {
 			fc.assert(
-				fc.property(fc.integer({ min: -1000, max: 0 }), (input) => {
+				fc.property(fc.integer({ max: 0, min: -1000 }), (input) => {
 					const { setAutoSaveInterval } = useSettings.getState()
 					setAutoSaveInterval(input)
 					const result = useSettings.getState().autoSaveInterval
@@ -157,7 +157,7 @@ describe("useSettings", () => {
 		 */
 		it("Property 2 补充: 大于 60 的值应该变为 60", () => {
 			fc.assert(
-				fc.property(fc.integer({ min: 61, max: 10000 }), (input) => {
+				fc.property(fc.integer({ max: 10000, min: 61 }), (input) => {
 					const { setAutoSaveInterval } = useSettings.getState()
 					setAutoSaveInterval(input)
 					const result = useSettings.getState().autoSaveInterval

@@ -145,8 +145,8 @@ describe("export.orgmode.fn", () => {
 				format: "",
 				indent: 0,
 				type: "listitem" as const,
-				version: 1,
 				value: 1,
+				version: 1,
 			}
 			expect(convertListItemNode(node, "bullet", 0)).toBe("- Item")
 		})
@@ -158,8 +158,8 @@ describe("export.orgmode.fn", () => {
 				format: "",
 				indent: 0,
 				type: "listitem" as const,
-				version: 1,
 				value: 1,
+				version: 1,
 			}
 			expect(convertListItemNode(node, "number", 0)).toBe("1. Item")
 			expect(convertListItemNode(node, "number", 2)).toBe("3. Item")
@@ -167,28 +167,28 @@ describe("export.orgmode.fn", () => {
 
 		it("should convert unchecked checkbox item with Org syntax", () => {
 			const node = {
+				checked: false,
 				children: [createTextNode("Task")],
 				direction: "ltr",
 				format: "",
 				indent: 0,
 				type: "listitem" as const,
-				version: 1,
 				value: 1,
-				checked: false,
+				version: 1,
 			}
 			expect(convertListItemNode(node, "check", 0)).toBe("- [ ] Task")
 		})
 
 		it("should convert checked checkbox item with Org syntax", () => {
 			const node = {
+				checked: true,
 				children: [createTextNode("Task")],
 				direction: "ltr",
 				format: "",
 				indent: 0,
 				type: "listitem" as const,
-				version: 1,
 				value: 1,
-				checked: true,
+				version: 1,
 			}
 			expect(convertListItemNode(node, "check", 0)).toBe("- [X] Task")
 		})
@@ -240,7 +240,7 @@ describe("export.orgmode.fn", () => {
 
 		it("should generate custom properties", () => {
 			const result = generateOrgProperties({
-				properties: { language: "en", category: "notes" },
+				properties: { category: "notes", language: "en" },
 			})
 			expect(result).toContain("#+LANGUAGE: en")
 			expect(result).toContain("#+CATEGORY: notes")
@@ -248,9 +248,9 @@ describe("export.orgmode.fn", () => {
 
 		it("should generate multiple properties", () => {
 			const result = generateOrgProperties({
-				title: "Test",
 				author: "John",
 				date: "2024-12-20",
+				title: "Test",
 			})
 			expect(result).toContain("#+TITLE: Test")
 			expect(result).toContain("#+AUTHOR: John")
@@ -291,9 +291,9 @@ describe("export.orgmode.fn", () => {
 		it("should include properties when option is set", () => {
 			const doc = createDocument([createParagraphNode([createTextNode("Content")])])
 			const result = convertDocumentToOrgmode(doc, {
+				author: "John",
 				includeProperties: true,
 				title: "Test",
-				author: "John",
 			})
 			expect(result).toContain("#+TITLE: Test")
 			expect(result).toContain("#+AUTHOR: John")
@@ -343,13 +343,13 @@ describe("export.orgmode.fn", () => {
 		it("should export multiple documents", () => {
 			const contents = [
 				{
-					id: "1",
 					content: JSON.stringify(createDocument([createParagraphNode([createTextNode("Doc 1")])])),
+					id: "1",
 					title: "First",
 				},
 				{
-					id: "2",
 					content: JSON.stringify(createDocument([createParagraphNode([createTextNode("Doc 2")])])),
+					id: "2",
 					title: "Second",
 				},
 			]
@@ -367,12 +367,12 @@ describe("export.orgmode.fn", () => {
 		it("should use custom separator", () => {
 			const contents = [
 				{
-					id: "1",
 					content: JSON.stringify(createDocument([createParagraphNode([createTextNode("Doc 1")])])),
+					id: "1",
 				},
 				{
-					id: "2",
 					content: JSON.stringify(createDocument([createParagraphNode([createTextNode("Doc 2")])])),
+					id: "2",
 				},
 			]
 			const result = exportMultipleToOrgmode(contents, {}, "\n\n* * *\n\n")
@@ -386,10 +386,10 @@ describe("export.orgmode.fn", () => {
 		it("should return error if any content is invalid", () => {
 			const contents = [
 				{
-					id: "1",
 					content: JSON.stringify(createDocument([createParagraphNode([createTextNode("Doc 1")])])),
+					id: "1",
 				},
-				{ id: "2", content: "invalid" },
+				{ content: "invalid", id: "2" },
 			]
 			const result = exportMultipleToOrgmode(contents)
 

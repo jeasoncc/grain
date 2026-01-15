@@ -32,6 +32,13 @@ export const useUIStore = create<UIStore>()(
 			// Initial State
 			...DEFAULT_UI_STATE,
 
+			setLocale: (locale: string) => {
+				set((state) => ({
+					...state,
+					locale: locale,
+				}))
+			},
+
 			// ==============================
 			// Actions
 			// ==============================
@@ -50,13 +57,6 @@ export const useUIStore = create<UIStore>()(
 				}))
 			},
 
-			toggleRightSidebar: () => {
-				set((state) => ({
-					...state,
-					rightSidebarOpen: !state.rightSidebarOpen,
-				}))
-			},
-
 			setTabPosition: (position: TabPosition) => {
 				set((state) => ({
 					...state,
@@ -64,20 +64,20 @@ export const useUIStore = create<UIStore>()(
 				}))
 			},
 
-			setLocale: (locale: string) => {
+			toggleRightSidebar: () => {
 				set((state) => ({
 					...state,
-					locale: locale,
+					rightSidebarOpen: !state.rightSidebarOpen,
 				}))
 			},
 		}),
 		{
 			name: DEFAULT_UI_CONFIG.storageKey,
 			partialize: (state) => ({
+				locale: state.locale,
 				// 只持久化这些字段
 				rightSidebarOpen: state.rightSidebarOpen,
 				tabPosition: state.tabPosition,
-				locale: state.locale,
 			}),
 		},
 	),

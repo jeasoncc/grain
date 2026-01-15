@@ -200,7 +200,7 @@ describe("excalidraw.content.fn", () => {
 		})
 
 		it("should accept both width and height parameters", () => {
-			const content = generateExcalidrawContent({ width: 2560, height: 1440 })
+			const content = generateExcalidrawContent({ height: 1440, width: 2560 })
 
 			// 内容应该仍然有效
 			expect(() => JSON.parse(content)).not.toThrow()
@@ -241,7 +241,7 @@ describe("excalidraw.content.fn", () => {
 
 		it("should return null for JSON without type field", () => {
 			const parsed = parseExcalidrawContent(
-				JSON.stringify({ elements: [], appState: {}, files: {} }),
+				JSON.stringify({ appState: {}, elements: [], files: {} }),
 			)
 
 			expect(parsed).toBeNull()
@@ -250,10 +250,10 @@ describe("excalidraw.content.fn", () => {
 		it("should return null for JSON with wrong type", () => {
 			const parsed = parseExcalidrawContent(
 				JSON.stringify({
-					type: "not-excalidraw",
-					elements: [],
 					appState: {},
+					elements: [],
 					files: {},
+					type: "not-excalidraw",
 				}),
 			)
 
@@ -262,7 +262,7 @@ describe("excalidraw.content.fn", () => {
 
 		it("should return null for JSON without elements array", () => {
 			const parsed = parseExcalidrawContent(
-				JSON.stringify({ type: "excalidraw", appState: {}, files: {} }),
+				JSON.stringify({ appState: {}, files: {}, type: "excalidraw" }),
 			)
 
 			expect(parsed).toBeNull()
@@ -270,7 +270,7 @@ describe("excalidraw.content.fn", () => {
 
 		it("should return null for JSON without appState object", () => {
 			const parsed = parseExcalidrawContent(
-				JSON.stringify({ type: "excalidraw", elements: [], files: {} }),
+				JSON.stringify({ elements: [], files: {}, type: "excalidraw" }),
 			)
 
 			expect(parsed).toBeNull()
@@ -278,7 +278,7 @@ describe("excalidraw.content.fn", () => {
 
 		it("should return null for JSON without files object", () => {
 			const parsed = parseExcalidrawContent(
-				JSON.stringify({ type: "excalidraw", elements: [], appState: {} }),
+				JSON.stringify({ appState: {}, elements: [], type: "excalidraw" }),
 			)
 
 			expect(parsed).toBeNull()
@@ -318,12 +318,12 @@ describe("excalidraw.content.fn", () => {
 
 		it("should return true for manually constructed valid content", () => {
 			const validContent = JSON.stringify({
+				appState: { viewBackgroundColor: "#fff" },
+				elements: [],
+				files: {},
+				source: "test",
 				type: "excalidraw",
 				version: 2,
-				source: "test",
-				elements: [],
-				appState: { viewBackgroundColor: "#fff" },
-				files: {},
 			})
 
 			expect(isValidExcalidrawContent(validContent)).toBe(true)

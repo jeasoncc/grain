@@ -81,11 +81,11 @@ export const EditorTabsView = memo(
 		}
 
 		const scrollLeft = () => {
-			scrollContainerRef.current?.scrollBy({ left: -150, behavior: "smooth" })
+			scrollContainerRef.current?.scrollBy({ behavior: "smooth", left: -150 })
 		}
 
 		const scrollRight = () => {
-			scrollContainerRef.current?.scrollBy({ left: 150, behavior: "smooth" })
+			scrollContainerRef.current?.scrollBy({ behavior: "smooth", left: 150 })
 		}
 
 		if (tabs.length === 0) {
@@ -138,7 +138,7 @@ export const EditorTabsView = memo(
 						ref={scrollContainerRef}
 						className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden"
 						onScroll={handleScroll}
-						style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+						style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
 					>
 						<div className="flex items-center w-max">
 							{tabs.map((tab) => (

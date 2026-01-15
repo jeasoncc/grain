@@ -18,9 +18,9 @@ import { renderDiagram, renderMermaid, renderPlantUML } from "./diagram.render.f
 
 // Mock mermaid.render.fn.ts
 vi.mock("./mermaid.render.fn", () => ({
+	getCurrentMermaidTheme: vi.fn().mockReturnValue("light"),
 	initMermaid: vi.fn(),
 	renderMermaid: vi.fn().mockResolvedValue({ svg: "<svg></svg>" }),
-	getCurrentMermaidTheme: vi.fn().mockReturnValue("light"),
 }))
 
 // Mock plantuml.render.fn.ts
@@ -267,8 +267,8 @@ describe("renderDiagram", () => {
 
 		await renderDiagram({
 			code: "flowchart TD\n  A --> B",
-			diagramType: "mermaid",
 			containerId: "preview-123",
+			diagramType: "mermaid",
 		})
 
 		expect(mermaid.renderMermaid).toHaveBeenCalledWith("flowchart TD\n  A --> B", "preview-123")

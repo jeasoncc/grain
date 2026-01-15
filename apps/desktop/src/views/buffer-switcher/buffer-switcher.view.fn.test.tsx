@@ -8,37 +8,37 @@ describe("BufferSwitcherView", () => {
 	const mockTabs: EditorTab[] = [
 		{
 			id: "tab-1",
+			isDirty: false,
+			nodeId: "node-1",
 			title: "Document 1",
 			type: "file",
 			workspaceId: "workspace-1",
-			nodeId: "node-1",
-			isDirty: false,
 		},
 		{
 			id: "tab-2",
+			isDirty: true,
+			nodeId: "node-2",
 			title: "Diary Entry",
 			type: "diary",
 			workspaceId: "workspace-1",
-			nodeId: "node-2",
-			isDirty: true,
 		},
 		{
 			id: "tab-3",
+			isDirty: false,
+			nodeId: "node-3",
 			title: "Canvas Drawing",
 			type: "drawing",
 			workspaceId: "workspace-1",
-			nodeId: "node-3",
-			isDirty: false,
 		},
 	]
 
 	const defaultProps: BufferSwitcherViewProps = {
-		open: true,
 		onOpenChange: vi.fn(),
-		tabs: mockTabs,
-		selectedIndex: 0,
 		onSelectTab: vi.fn(),
 		onTabClick: vi.fn(),
+		open: true,
+		selectedIndex: 0,
+		tabs: mockTabs,
 	}
 
 	it("should render all tabs", () => {
@@ -112,11 +112,11 @@ describe("BufferSwitcherView", () => {
 	it("should truncate long tab titles", () => {
 		const longTitleTab: EditorTab = {
 			id: "tab-long",
+			isDirty: false,
+			nodeId: "node-long",
 			title: "This is a very long title that should be truncated",
 			type: "file",
 			workspaceId: "workspace-1",
-			nodeId: "node-long",
-			isDirty: false,
 		}
 
 		render(<BufferSwitcherView {...defaultProps} tabs={[longTitleTab]} />)

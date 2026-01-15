@@ -30,19 +30,18 @@ const exportDialogListeners: Array<() => void> = []
  * 提供全局的对话框控制接口
  */
 export const exportDialogManager: ExportDialogManagerAPI = {
+	close: () => {
+		globalExportDialogState = { ...globalExportDialogState, isOpen: false }
+		for (const listener of exportDialogListeners) {
+			listener()
+		}
+	},
 	open: (workspaceId?: string, workspaceTitle?: string) => {
 		globalExportDialogState = {
 			isOpen: true,
 			workspaceId: workspaceId || "",
 			workspaceTitle: workspaceTitle || "",
 		}
-		for (const listener of exportDialogListeners) {
-			listener()
-		}
-	},
-
-	close: () => {
-		globalExportDialogState = { ...globalExportDialogState, isOpen: false }
 		for (const listener of exportDialogListeners) {
 			listener()
 		}

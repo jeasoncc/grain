@@ -101,7 +101,7 @@ export const runCompleteLogSystemTestFlow = (): TE.TaskEither<AppError, TestResu
 				testAllLogLevelsFlow(),
 				TE.map(() => {
 					info("[TestLogger] ✅ 所有级别日志记录成功")
-					return { initSuccess, migrationCount, loggingSuccess: true }
+					return { initSuccess, loggingSuccess: true, migrationCount }
 				}),
 			),
 		),
@@ -115,11 +115,11 @@ export const runCompleteLogSystemTestFlow = (): TE.TaskEither<AppError, TestResu
 					const allTestsPassed = initSuccess && loggingSuccess && queryCount > 0
 
 					return {
-						initSuccess,
-						migrationCount,
-						loggingSuccess,
-						queryCount,
 						allTestsPassed,
+						initSuccess,
+						loggingSuccess,
+						migrationCount,
+						queryCount,
 					}
 				}),
 			),
@@ -141,11 +141,11 @@ export const quickTestLogSystem = (): void => {
 			if (result._tag === "Right") {
 				const testResult = result.right
 				info("[TestLogger] 📊 测试结果:", {
-					initSuccess: testResult.initSuccess,
-					migrationCount: testResult.migrationCount,
-					loggingSuccess: testResult.loggingSuccess,
-					queryCount: testResult.queryCount,
 					allTestsPassed: testResult.allTestsPassed,
+					initSuccess: testResult.initSuccess,
+					loggingSuccess: testResult.loggingSuccess,
+					migrationCount: testResult.migrationCount,
+					queryCount: testResult.queryCount,
 				})
 
 				if (testResult.allTestsPassed) {

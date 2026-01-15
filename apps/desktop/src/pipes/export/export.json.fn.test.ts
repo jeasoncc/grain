@@ -100,7 +100,7 @@ describe("export.json.fn", () => {
 
 		it("should use custom indent", () => {
 			const doc = createTestDocument()
-			const result = serializeToJson(doc, { pretty: true, indent: 4 })
+			const result = serializeToJson(doc, { indent: 4, pretty: true })
 
 			expect(result).toContain("    ")
 		})
@@ -114,8 +114,8 @@ describe("export.json.fn", () => {
 		it("should create export document with metadata", () => {
 			const doc = createTestDocument()
 			const result = createExportDocument(doc, {
-				title: "Test Document",
 				author: "Test Author",
+				title: "Test Document",
 			})
 
 			expect(result.metadata.title).toBe("Test Document")
@@ -227,8 +227,8 @@ describe("export.json.fn", () => {
 	describe("exportMultipleToJson", () => {
 		it("should export multiple documents", () => {
 			const contents = [
-				{ id: "1", content: createTestContent() },
-				{ id: "2", content: createTestContent() },
+				{ content: createTestContent(), id: "1" },
+				{ content: createTestContent(), id: "2" },
 			]
 			const result = exportMultipleToJson(contents)
 
@@ -242,7 +242,7 @@ describe("export.json.fn", () => {
 		})
 
 		it("should include metadata when option is set", () => {
-			const contents = [{ id: "1", content: createTestContent() }]
+			const contents = [{ content: createTestContent(), id: "1" }]
 			const result = exportMultipleToJson(contents, {
 				includeMetadata: true,
 				metadata: { title: "Collection" },
@@ -259,8 +259,8 @@ describe("export.json.fn", () => {
 
 		it("should return error if any content is invalid", () => {
 			const contents = [
-				{ id: "1", content: createTestContent() },
-				{ id: "2", content: "invalid" },
+				{ content: createTestContent(), id: "1" },
+				{ content: "invalid", id: "2" },
 			]
 			const result = exportMultipleToJson(contents)
 

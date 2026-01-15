@@ -79,12 +79,12 @@ const STORAGE_KEYS = {
 export const DEFAULT_EXTENDED_LOG_CONFIG: ExtendedLogConfig = {
 	...DEFAULT_LOG_CONFIG,
 	autoCleanup: {
-		enabled: true,
-		maxEntries: 10000,
-		maxDays: 30,
-		maxStorageSize: 50 * 1024 * 1024, // 50MB
 		checkInterval: 60 * 60 * 1000, // 1小时
 		cleanupBatchSize: 1000,
+		enabled: true,
+		maxDays: 30,
+		maxEntries: 10000,
+		maxStorageSize: 50 * 1024 * 1024, // 50MB
 	},
 } as const
 
@@ -93,84 +93,84 @@ export const DEFAULT_EXTENDED_LOG_CONFIG: ExtendedLogConfig = {
  */
 export const BUILTIN_CONFIG_PRESETS: readonly LogConfigPreset[] = [
 	{
-		name: "development",
-		description: "开发环境配置 - 详细日志，快速清理",
 		config: {
-			enableConsole: true,
-			enableStorage: true,
-			minLevel: "debug",
-			maxEntries: 5000,
-			batchSize: 10,
-			batchDelay: 500,
 			autoCleanup: {
-				enabled: true,
-				maxEntries: 5000,
-				maxDays: 7,
-				maxStorageSize: 10 * 1024 * 1024, // 10MB
 				checkInterval: 30 * 60 * 1000, // 30分钟
 				cleanupBatchSize: 500,
+				enabled: true,
+				maxDays: 7,
+				maxEntries: 5000,
+				maxStorageSize: 10 * 1024 * 1024, // 10MB
 			},
+			batchDelay: 500,
+			batchSize: 10,
+			enableConsole: true,
+			enableStorage: true,
+			maxEntries: 5000,
+			minLevel: "debug",
 		},
+		description: "开发环境配置 - 详细日志，快速清理",
+		name: "development",
 	},
 	{
-		name: "production",
-		description: "生产环境配置 - 关键日志，长期保存",
 		config: {
-			enableConsole: false,
-			enableStorage: true,
-			minLevel: "warn",
-			maxEntries: 50000,
-			batchSize: 100,
-			batchDelay: 2000,
 			autoCleanup: {
-				enabled: true,
-				maxEntries: 50000,
-				maxDays: 90,
-				maxStorageSize: 200 * 1024 * 1024, // 200MB
 				checkInterval: 4 * 60 * 60 * 1000, // 4小时
 				cleanupBatchSize: 2000,
+				enabled: true,
+				maxDays: 90,
+				maxEntries: 50000,
+				maxStorageSize: 200 * 1024 * 1024, // 200MB
 			},
+			batchDelay: 2000,
+			batchSize: 100,
+			enableConsole: false,
+			enableStorage: true,
+			maxEntries: 50000,
+			minLevel: "warn",
 		},
+		description: "生产环境配置 - 关键日志，长期保存",
+		name: "production",
 	},
 	{
-		name: "minimal",
-		description: "最小配置 - 仅错误日志，快速清理",
 		config: {
-			enableConsole: true,
-			enableStorage: true,
-			minLevel: "error",
-			maxEntries: 1000,
-			batchSize: 5,
-			batchDelay: 100,
 			autoCleanup: {
-				enabled: true,
-				maxEntries: 1000,
-				maxDays: 3,
-				maxStorageSize: 1 * 1024 * 1024, // 1MB
 				checkInterval: 15 * 60 * 1000, // 15分钟
 				cleanupBatchSize: 100,
+				enabled: true,
+				maxDays: 3,
+				maxEntries: 1000,
+				maxStorageSize: 1 * 1024 * 1024, // 1MB
 			},
-		},
-	},
-	{
-		name: "debug",
-		description: "调试配置 - 所有日志，不自动清理",
-		config: {
+			batchDelay: 100,
+			batchSize: 5,
 			enableConsole: true,
 			enableStorage: true,
-			minLevel: "trace",
-			maxEntries: 100000,
-			batchSize: 1,
-			batchDelay: 0,
+			maxEntries: 1000,
+			minLevel: "error",
+		},
+		description: "最小配置 - 仅错误日志，快速清理",
+		name: "minimal",
+	},
+	{
+		config: {
 			autoCleanup: {
-				enabled: false,
-				maxEntries: 100000,
-				maxDays: 365,
-				maxStorageSize: 1024 * 1024 * 1024, // 1GB
 				checkInterval: 24 * 60 * 60 * 1000, // 24小时
 				cleanupBatchSize: 5000,
+				enabled: false,
+				maxDays: 365,
+				maxEntries: 100000,
+				maxStorageSize: 1024 * 1024 * 1024, // 1GB
 			},
+			batchDelay: 0,
+			batchSize: 1,
+			enableConsole: true,
+			enableStorage: true,
+			maxEntries: 100000,
+			minLevel: "trace",
 		},
+		description: "调试配置 - 所有日志，不自动清理",
+		name: "debug",
 	},
 ] as const
 
@@ -180,27 +180,27 @@ export const BUILTIN_CONFIG_PRESETS: readonly LogConfigPreset[] = [
 const LogLevelSchema = z.enum(["trace", "debug", "info", "success", "warn", "error"])
 
 const LogConfigSchema = z.object({
+	batchDelay: z.number().min(0).max(10000),
+	batchSize: z.number().min(1).max(1000),
 	enableConsole: z.boolean(),
 	enableStorage: z.boolean(),
-	minLevel: LogLevelSchema,
 	maxEntries: z.number().min(100).max(1000000),
-	batchSize: z.number().min(1).max(1000),
-	batchDelay: z.number().min(0).max(10000),
+	minLevel: LogLevelSchema,
 })
 
 const AutoCleanupConfigSchema = z.object({
-	enabled: z.boolean(),
-	maxEntries: z.number().min(100).max(1000000),
-	maxDays: z.number().min(1).max(365),
-	maxStorageSize: z
-		.number()
-		.min(1024 * 1024)
-		.max(10 * 1024 * 1024 * 1024), // 1MB - 10GB
 	checkInterval: z
 		.number()
 		.min(60 * 1000)
 		.max(24 * 60 * 60 * 1000), // 1分钟 - 24小时
 	cleanupBatchSize: z.number().min(10).max(10000),
+	enabled: z.boolean(),
+	maxDays: z.number().min(1).max(365),
+	maxEntries: z.number().min(100).max(1000000),
+	maxStorageSize: z
+		.number()
+		.min(1024 * 1024)
+		.max(10 * 1024 * 1024 * 1024), // 1MB - 10GB
 })
 
 const ExtendedLogConfigSchema = LogConfigSchema.extend({
@@ -274,8 +274,8 @@ export const validateLogConfigFlow = (
 			}
 
 			return {
-				isValid: errors.length === 0,
 				errors,
+				isValid: errors.length === 0,
 				warnings,
 			}
 		},
@@ -349,9 +349,9 @@ export const getLogConfigPresets = (): readonly LogConfigPreset[] => {
 		STORAGE_KEYS.LOG_CONFIG_PRESETS,
 		z.array(
 			z.object({
-				name: z.string(),
-				description: z.string(),
 				config: z.record(z.string(), z.unknown()),
+				description: z.string(),
+				name: z.string(),
 			}),
 		),
 		[],
@@ -405,9 +405,9 @@ export const saveLogConfigPreset = (preset: LogConfigPreset): TE.TaskEither<AppE
 				STORAGE_KEYS.LOG_CONFIG_PRESETS,
 				z.array(
 					z.object({
-						name: z.string(),
-						description: z.string(),
 						config: z.record(z.string(), z.unknown()),
+						description: z.string(),
+						name: z.string(),
 					}),
 				),
 				[] as ReadonlyArray<{
@@ -456,9 +456,9 @@ export const deleteLogConfigPreset = (presetName: string): TE.TaskEither<AppErro
 		STORAGE_KEYS.LOG_CONFIG_PRESETS,
 		z.array(
 			z.object({
-				name: z.string(),
-				description: z.string(),
 				config: z.record(z.string(), z.unknown()),
+				description: z.string(),
+				name: z.string(),
 			}),
 		),
 		[],
@@ -579,7 +579,7 @@ export const toggleStorage = (enabled: boolean): TE.TaskEither<AppError, Extende
 export const setBatchConfig = (
 	batchSize: number,
 	batchDelay: number,
-): TE.TaskEither<AppError, ExtendedLogConfig> => updateLogConfig({ batchSize, batchDelay })
+): TE.TaskEither<AppError, ExtendedLogConfig> => updateLogConfig({ batchDelay, batchSize })
 
 /**
  * 切换自动清理

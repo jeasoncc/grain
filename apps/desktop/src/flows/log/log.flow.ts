@@ -88,13 +88,13 @@ export const createLogFlow = (config: LogConfig = DEFAULT_LOG_CONFIG) => {
 	}
 
 	return {
-		logEntry: simpleLogger.log,
 		debug: simpleLogger.debug,
-		info: simpleLogger.info,
-		success: simpleLogger.success,
-		warn: simpleLogger.warn,
 		error: simpleLogger.error,
+		info: simpleLogger.info,
+		logEntry: simpleLogger.log,
+		success: simpleLogger.success,
 		trace: simpleLogger.trace,
+		warn: simpleLogger.warn,
 	}
 }
 
@@ -182,8 +182,8 @@ export const getRecentLogsFlow = (
 ): TE.TaskEither<AppError, readonly LogEntry[]> =>
 	pipe(
 		optimizedQueryLogsFlow({
-			limit,
 			levelFilter,
+			limit,
 			offset: 0,
 		}),
 		TE.map((result) => result.entries),
@@ -303,8 +303,8 @@ export const flushAsyncQueueFlow = () => {
  * @returns 队列状态信息
  */
 export const getAsyncQueueStatusFlow = () => ({
-	queueSize: 0,
 	isProcessing: false,
+	queueSize: 0,
 	totalProcessed: 0,
 })
 

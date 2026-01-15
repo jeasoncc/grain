@@ -120,9 +120,9 @@ export const createSession = (
 	startTime: number = dayjs().valueOf(),
 ): WritingSession => {
 	return {
+		currentWordCount: wordCount,
 		startTime,
 		startWordCount: wordCount,
-		currentWordCount: wordCount,
 	}
 }
 
@@ -211,24 +211,24 @@ export const calculateTodayWordCountUpdate = (
 	today: string,
 ): { readonly todayWordCount: number; readonly todayDate: string } => {
 	if (!state.session) {
-		return { todayWordCount: state.todayWordCount, todayDate: state.todayDate }
+		return { todayDate: state.todayDate, todayWordCount: state.todayWordCount }
 	}
 
 	const wordsWritten = newWordCount - state.session.currentWordCount
 
 	// 只计算正向字数差异
 	if (wordsWritten <= 0) {
-		return { todayWordCount: state.todayWordCount, todayDate: state.todayDate }
+		return { todayDate: state.todayDate, todayWordCount: state.todayWordCount }
 	}
 
 	// 如果日期变更，从新字数开始计算
 	if (state.todayDate !== today) {
-		return { todayWordCount: wordsWritten, todayDate: today }
+		return { todayDate: today, todayWordCount: wordsWritten }
 	}
 
 	// 同一天，累加到现有计数
 	return {
-		todayWordCount: state.todayWordCount + wordsWritten,
 		todayDate: today,
+		todayWordCount: state.todayWordCount + wordsWritten,
 	}
 }

@@ -54,7 +54,7 @@ export function useNodesByTag(
  */
 export function useTagGraph(workspaceId: string | undefined): TagGraphData {
 	const { data } = useTagGraphQuery(workspaceId)
-	return data ?? { nodes: [], edges: [] }
+	return data ?? { edges: [], nodes: [] }
 }
 
 /**

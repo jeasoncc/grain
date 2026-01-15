@@ -1,76 +1,83 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.3.2/schema.json",
-	"files": {
-		"ignoreUnknown": false,
-		"includes": [
-			"**/src/**/*",
-			"**/index.html",
-			"**/vite.config.js",
-			"!**/.vscode/**/*",
-			"!**/src/lib/utils.ts",
-			"!**/src/routeTree.gen.ts",
-			"!**/src/components/ui/**/*",
-			"!**/src/styles.css"
-		]
-	},
-	"formatter": {
-		"enabled": true,
-		"indentStyle": "tab",
-		"lineWidth": 100,
-		"indentWidth": 2,
-		"lineEnding": "lf"
-	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": true,
-			"style": {
-				"noNonNullAssertion": "off",
-				"useConst": "error",
-				"useTemplate": "error",
-				"useExponentiationOperator": "error",
-				"useOptionalChain": "error",
-				"useShorthandFunctionType": "error",
-				"useBlockStatements": "error"
-			},
-			"complexity": {
-				"noExcessiveCognitiveComplexity": "warn",
-				"noExtraBooleanCast": "error",
-				"noUselessTernary": "error"
-			},
-			"correctness": {
-				"noUnusedVariables": "error",
-				"useExhaustiveDependencies": "warn",
-				"noUnusedImports": "error"
-			},
-			"suspicious": {
-				"noExplicitAny": "warn",
-				"noArrayIndexKey": "warn",
-				"noAssignInExpressions": "error"
-			},
-			"performance": {
-				"noAccumulatingSpread": "warn"
-			}
-		}
-	},
-	"javascript": {
-		"formatter": {
-			"quoteStyle": "double",
-			"trailingCommas": "all",
-			"semicolons": "asNeeded",
-			"arrowParentheses": "always",
-			"bracketSpacing": true,
-			"bracketSameLine": false,
-			"quoteProperties": "asNeeded",
-			"attributePosition": "auto"
-		}
-	},
-	"assist": {
-		"actions": {
-			"source": {
-				"useSortedKeys": "on",
-				"organizeImports": "on"
-			}
-		}
-	}
+  "$schema": "https://biomejs.dev/schemas/2.3.2/schema.json",
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on",
+        "useSortedKeys": "on"
+      }
+    }
+  },
+  "files": {
+    "ignoreUnknown": false,
+    "includes": [
+      "**/src/**/*",
+      "**/index.html",
+      "**/vite.config.js",
+      "!**/.vscode/**/*",
+      "!**/src/lib/utils.ts",
+      "!**/src/routeTree.gen.ts",
+      "!**/src/components/ui/**/*",
+      "!**/src/styles.css",
+      "!**/package.json"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "tab",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "arrowParentheses": "always",
+      "attributePosition": "auto",
+      "bracketSameLine": false,
+      "bracketSpacing": true,
+      "quoteProperties": "asNeeded",
+      "quoteStyle": "double",
+      "semicolons": "asNeeded",
+      "trailingCommas": "all"
+    }
+  },
+  "json": {
+    "formatter": {
+      "enabled": true,
+      "indentStyle": "space",
+      "indentWidth": 2,
+      "lineWidth": 100
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "complexity": {
+        "noExcessiveCognitiveComplexity": "warn",
+        "noExtraBooleanCast": "error",
+        "noUselessTernary": "error"
+      },
+      "correctness": {
+        "noUnusedVariables": "error",
+        "useExhaustiveDependencies": "warn"
+      },
+      "performance": {
+        "noAccumulatingSpread": "warn"
+      },
+      "recommended": true,
+      "style": {
+        "noNonNullAssertion": "off",
+        "useBlockStatements": "error",
+        "useConst": "error",
+        "useExponentiationOperator": "error",
+        "useShorthandFunctionType": "error",
+        "useTemplate": "error"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "warn",
+        "noAssignInExpressions": "error",
+        "noExplicitAny": "warn"
+      }
+    }
+  }
 }

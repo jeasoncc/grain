@@ -7,8 +7,8 @@ import type { ExportButtonContainerProps } from "./export-button.types"
 // Mock dependencies
 vi.mock("sonner", () => ({
 	toast: {
-		success: vi.fn(),
 		error: vi.fn(),
+		success: vi.fn(),
 	},
 }))
 

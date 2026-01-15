@@ -110,13 +110,13 @@ export const createSimpleLogger = (config: Partial<LogConfig> = {}): SimpleLogge
 
 	return {
 		config: loggerConfig,
-		log,
 		debug: (message, context, source) => log("debug", message, context, source),
-		info: (message, context, source) => log("info", message, context, source),
-		success: (message, context, source) => log("success", message, context, source),
-		warn: (message, context, source) => log("warn", message, context, source),
 		error: (message, context, source) => log("error", message, context, source),
+		info: (message, context, source) => log("info", message, context, source),
+		log,
+		success: (message, context, source) => log("success", message, context, source),
 		trace: (message, context, source) => log("trace", message, context, source),
+		warn: (message, context, source) => log("warn", message, context, source),
 	}
 }
 
@@ -274,8 +274,8 @@ export const updateDefaultLoggerConfig = (
 	}
 
 	return {
-		isValid: validation.isValid,
 		errors: validation.errors,
+		isValid: validation.isValid,
 	}
 }
 

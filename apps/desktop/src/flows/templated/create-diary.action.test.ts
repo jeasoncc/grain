@@ -65,8 +65,8 @@ describe("create-diary.action (高阶函数版本)", () => {
 	describe("类型安全", () => {
 		it("应该接受有效的 CreateDateTemplateParams", () => {
 			const params: CreateDateTemplateParams = {
-				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 				date: new Date(),
+				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			}
 
 			// 这个测试主要是编译时检查，如果类型不匹配会编译失败
@@ -91,8 +91,8 @@ describe("create-diary.action (高阶函数版本)", () => {
 		it("应该处理极端日期", () => {
 			const extremeDate = new Date("1970-01-01T00:00:00.000Z")
 			const params: CreateDateTemplateParams = {
-				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 				date: extremeDate,
+				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			}
 
 			expect(params.date).toBe(extremeDate)
@@ -101,8 +101,8 @@ describe("create-diary.action (高阶函数版本)", () => {
 		it("应该处理未来日期", () => {
 			const futureDate = new Date("2030-12-31T23:59:59.999Z")
 			const params: CreateDateTemplateParams = {
-				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 				date: futureDate,
+				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			}
 
 			expect(params.date).toBe(futureDate)

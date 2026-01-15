@@ -120,10 +120,10 @@ export function ActivityBarContainer(): React.ReactElement {
 				}
 				try {
 					const result = await createWorkspace({
-						title: "My Workspace",
 						author: "",
 						description: "",
 						language: "en",
+						title: "My Workspace",
 					})()
 					if (E.isRight(result)) {
 						setSelectedWorkspaceId(result.right.id)
@@ -188,10 +188,10 @@ export function ActivityBarContainer(): React.ReactElement {
 			}
 			try {
 				const result = await createWorkspace({
-					title: name.trim(),
 					author: "",
 					description: "",
 					language: "en",
+					title: name.trim(),
 				})()
 				if (E.isRight(result)) {
 					setSelectedWorkspaceId(result.right.id)
@@ -229,17 +229,17 @@ export function ActivityBarContainer(): React.ReactElement {
 			const task = pipe(
 				// 1. 创建模板文件
 				creator({
-					workspaceId: selectedWorkspaceId,
 					templateParams: { date: new Date() },
+					workspaceId: selectedWorkspaceId,
 				}),
 				// 2. 成功后，打开文件（通过队列执行）
 				TE.chain((result) =>
 					pipe(
 						openFile({
-							workspaceId: selectedWorkspaceId,
 							nodeId: result.node.id,
 							title: result.node.title,
 							type: result.node.type as TabType,
+							workspaceId: selectedWorkspaceId,
 						}),
 						// 保留 result 用于后续处理
 						TE.map(() => result),
@@ -296,8 +296,8 @@ export function ActivityBarContainer(): React.ReactElement {
 		() =>
 			handleCreateTemplate({
 				creator: createDiary,
-				successMessage: "Diary created",
 				errorMessage: "Failed to create diary",
+				successMessage: "Diary created",
 			}),
 		[handleCreateTemplate],
 	)
@@ -306,8 +306,8 @@ export function ActivityBarContainer(): React.ReactElement {
 		() =>
 			handleCreateTemplate({
 				creator: createWiki,
-				successMessage: "Wiki created",
 				errorMessage: "Failed to create wiki",
+				successMessage: "Wiki created",
 			}),
 		[handleCreateTemplate],
 	)
@@ -316,8 +316,8 @@ export function ActivityBarContainer(): React.ReactElement {
 		() =>
 			handleCreateTemplate({
 				creator: createLedger,
-				successMessage: "Ledger created",
 				errorMessage: "Failed to create ledger",
+				successMessage: "Ledger created",
 			}),
 		[handleCreateTemplate],
 	)
@@ -326,8 +326,8 @@ export function ActivityBarContainer(): React.ReactElement {
 		() =>
 			handleCreateTemplate({
 				creator: createTodo,
-				successMessage: "Todo created",
 				errorMessage: "Failed to create todo",
+				successMessage: "Todo created",
 			}),
 		[handleCreateTemplate],
 	)
@@ -336,8 +336,8 @@ export function ActivityBarContainer(): React.ReactElement {
 		() =>
 			handleCreateTemplate({
 				creator: createNote,
-				successMessage: "Note created",
 				errorMessage: "Failed to create note",
+				successMessage: "Note created",
 			}),
 		[handleCreateTemplate],
 	)
@@ -346,8 +346,8 @@ export function ActivityBarContainer(): React.ReactElement {
 		() =>
 			handleCreateTemplate({
 				creator: createExcalidraw,
-				successMessage: "Excalidraw created",
 				errorMessage: "Failed to create excalidraw",
+				successMessage: "Excalidraw created",
 			}),
 		[handleCreateTemplate],
 	)
@@ -356,8 +356,8 @@ export function ActivityBarContainer(): React.ReactElement {
 		() =>
 			handleCreateTemplate({
 				creator: createMermaid,
-				successMessage: "Mermaid created",
 				errorMessage: "Failed to create mermaid",
+				successMessage: "Mermaid created",
 			}),
 		[handleCreateTemplate],
 	)
@@ -366,8 +366,8 @@ export function ActivityBarContainer(): React.ReactElement {
 		() =>
 			handleCreateTemplate({
 				creator: createPlantUML,
-				successMessage: "PlantUML created",
 				errorMessage: "Failed to create plantuml",
+				successMessage: "PlantUML created",
 			}),
 		[handleCreateTemplate],
 	)
@@ -376,8 +376,8 @@ export function ActivityBarContainer(): React.ReactElement {
 		() =>
 			handleCreateTemplate({
 				creator: createCode,
-				successMessage: "Code file created",
 				errorMessage: "Failed to create code file",
+				successMessage: "Code file created",
 			}),
 		[handleCreateTemplate],
 	)
@@ -396,10 +396,10 @@ export function ActivityBarContainer(): React.ReactElement {
 
 	const handleDeleteAllData = useCallback(async () => {
 		const ok = await confirm({
-			title: "Delete all data?",
-			description: "This action cannot be undone. All workspaces, files, and data will be deleted.",
-			confirmText: "Delete",
 			cancelText: "Cancel",
+			confirmText: "Delete",
+			description: "This action cannot be undone. All workspaces, files, and data will be deleted.",
+			title: "Delete all data?",
 		})
 		if (!ok) return
 		try {

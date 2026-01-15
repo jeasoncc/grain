@@ -19,10 +19,10 @@ vi.mock("@/io/api", () => ({
 // 使用 vi.hoisted 来创建可以在 vi.mock 中使用的变量
 const { nodesMock } = vi.hoisted(() => {
 	const mock = {
-		where: vi.fn(),
-		equals: vi.fn(),
 		and: vi.fn(),
+		equals: vi.fn(),
 		toArray: vi.fn(),
+		where: vi.fn(),
 	}
 	mock.where.mockReturnValue(mock)
 	mock.equals.mockReturnValue(mock)
@@ -38,12 +38,12 @@ vi.mock("@/db/database", () => ({
 
 vi.mock("@/log/index", () => ({
 	default: {
+		debug: vi.fn(),
+		error: vi.fn(),
 		info: vi.fn(),
+		start: vi.fn(),
 		success: vi.fn(),
 		warn: vi.fn(),
-		error: vi.fn(),
-		debug: vi.fn(),
-		start: vi.fn(),
 	},
 }))
 
@@ -59,33 +59,33 @@ const MOCK_PARENT_ID = "b2222222-2222-4222-8222-222222222222"
 const MOCK_WORKSPACE_ID = "c3333333-3333-4333-8333-333333333333"
 
 const mockNode = {
+	collapsed: false,
+	createDate: "2024-01-01T00:00:00.000Z",
 	id: MOCK_NODE_ID,
+	lastEdit: "2024-01-01T00:00:00.000Z",
+	order: 0,
+	parent: null,
+	tags: ["wiki"],
 	title: "测试 Wiki",
 	type: "file" as const,
 	workspace: MOCK_WORKSPACE_ID,
-	parent: null,
-	order: 0,
-	collapsed: false,
-	tags: ["wiki"],
-	createDate: "2024-01-01T00:00:00.000Z",
-	lastEdit: "2024-01-01T00:00:00.000Z",
 }
 
 const mockContent = {
-	id: "d4444444-4444-4444-8444-444444444444",
-	nodeId: MOCK_NODE_ID,
 	content: JSON.stringify({
 		root: {
 			children: [
 				{
+					children: [{ text: "测试内容", type: "text" }],
 					type: "paragraph",
-					children: [{ type: "text", text: "测试内容" }],
 				},
 			],
 		},
 	}),
 	contentType: "lexical" as const,
+	id: "d4444444-4444-4444-8444-444444444444",
 	lastEdit: "2024-01-01T00:00:00.000Z",
+	nodeId: MOCK_NODE_ID,
 }
 
 // ============================================================================

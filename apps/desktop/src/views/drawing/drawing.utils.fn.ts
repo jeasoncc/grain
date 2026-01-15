@@ -14,8 +14,8 @@
  * 空绘图内容的默认值
  */
 export const EMPTY_DRAWING_CONTENT = JSON.stringify({
-	elements: [],
 	appState: {},
+	elements: [],
 	files: {},
 })
 
@@ -48,7 +48,7 @@ export function getSafeDrawingDimensions(
 	const safeWidth = Math.min(Math.max(width || DEFAULT_DRAWING_WIDTH, 100), maxSafeSize)
 	const safeHeight = Math.min(Math.max(height || DEFAULT_DRAWING_HEIGHT, 100), maxSafeSize)
 
-	return { width: safeWidth, height: safeHeight } as const
+	return { height: safeHeight, width: safeWidth } as const
 }
 
 /**
@@ -132,8 +132,8 @@ export function sanitizeDrawingContent(content: string): string {
 
 		const cleanedData = {
 			...data,
-			elements: cleanedElements,
 			appState: cleanedAppState,
+			elements: cleanedElements,
 		}
 
 		return JSON.stringify(cleanedData)

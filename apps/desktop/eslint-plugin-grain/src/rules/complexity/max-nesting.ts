@@ -11,20 +11,58 @@ type MessageIds = "maxNesting"
 type Options = [{ max?: number }]
 
 export default createRule<Options, MessageIds>({
-	name: "max-nesting",
+	create(context, [options]) {
+		const maxNesting = options.max ?? DEFAULT_COMPLEXITY_CONFIG.maxNesting
+		let currentNesting = 0
+
+		function increaseNesting(node: TSESTree.Node) {
+			currentNesting++
+			if (currentNesting > maxNesting) {
+				context.report({
+					data: {
+						actual: String(currentNesting),
+						max: String(maxNesting),
+					},
+					messageId: "maxNesting",
+					node,
+				})
+			}
+		}
+
+		function decreaseNesting() {
+			currentNesting--
+		}
+
+		const nestingNodes = {
+			DoWhileStatement: increaseNesting,
+			"DoWhileStatement:exit": decreaseNesting,
+			ForInStatement: increaseNesting,
+			"ForInStatement:exit": decreaseNesting,
+			ForOfStatement: increaseNesting,
+			"ForOfStatement:exit": decreaseNesting,
+			ForStatement: increaseNesting,
+			"ForStatement:exit": decreaseNesting,
+			IfStatement: increaseNesting,
+			"IfStatement:exit": decreaseNesting,
+			SwitchStatement: increaseNesting,
+			"SwitchStatement:exit": decreaseNesting,
+			TryStatement: increaseNesting,
+			"TryStatement:exit": decreaseNesting,
+			WhileStatement: increaseNesting,
+			"WhileStatement:exit": decreaseNesting,
+			WithStatement: increaseNesting,
+			"WithStatement:exit": decreaseNesting,
+		}
+
+		return nestingNodes
+	},
+	defaultOptions: [{ max: DEFAULT_COMPLEXITY_CONFIG.maxNesting }],
 	meta: {
-		type: "problem",
 		docs: {
 			description: "限制代码块嵌套最大层级",
 		},
 		messages: {
 			maxNesting: buildErrorMessage({
-				title: "代码块嵌套超过 {{max}} 层（当前 {{actual}} 层）",
-				reason: `深层嵌套降低代码可读性：
-  - 增加认知负担
-  - 难以理解控制流
-  - 容易出现逻辑错误
-  - 违反扁平化原则`,
 				correctExample: `// ✅ 使用早返回和 pipe
 function process(data: Data | null) {
   if (!data?.items) return;
@@ -49,6 +87,7 @@ function process(data: Data) {
     .map(processValidItem)
     .filter(Boolean);
 }`,
+				docRef: "#code-standards - 复杂度限制",
 				incorrectExample: `// ❌ 嵌套过深
 function process(data) {
   if (data) {
@@ -63,66 +102,27 @@ function process(data) {
     }
   }
 }`,
-				docRef: "#code-standards - 复杂度限制",
+				reason: `深层嵌套降低代码可读性：
+  - 增加认知负担
+  - 难以理解控制流
+  - 容易出现逻辑错误
+  - 违反扁平化原则`,
+				title: "代码块嵌套超过 {{max}} 层（当前 {{actual}} 层）",
 			}),
 		},
 		schema: [
 			{
-				type: "object",
+				additionalProperties: false,
 				properties: {
 					max: {
-						type: "number",
 						minimum: 0,
+						type: "number",
 					},
 				},
-				additionalProperties: false,
+				type: "object",
 			},
 		],
+		type: "problem",
 	},
-	defaultOptions: [{ max: DEFAULT_COMPLEXITY_CONFIG.maxNesting }],
-	create(context, [options]) {
-		const maxNesting = options.max ?? DEFAULT_COMPLEXITY_CONFIG.maxNesting
-		let currentNesting = 0
-
-		function increaseNesting(node: TSESTree.Node) {
-			currentNesting++
-			if (currentNesting > maxNesting) {
-				context.report({
-					node,
-					messageId: "maxNesting",
-					data: {
-						max: String(maxNesting),
-						actual: String(currentNesting),
-					},
-				})
-			}
-		}
-
-		function decreaseNesting() {
-			currentNesting--
-		}
-
-		const nestingNodes = {
-			IfStatement: increaseNesting,
-			"IfStatement:exit": decreaseNesting,
-			ForStatement: increaseNesting,
-			"ForStatement:exit": decreaseNesting,
-			ForInStatement: increaseNesting,
-			"ForInStatement:exit": decreaseNesting,
-			ForOfStatement: increaseNesting,
-			"ForOfStatement:exit": decreaseNesting,
-			WhileStatement: increaseNesting,
-			"WhileStatement:exit": decreaseNesting,
-			DoWhileStatement: increaseNesting,
-			"DoWhileStatement:exit": decreaseNesting,
-			SwitchStatement: increaseNesting,
-			"SwitchStatement:exit": decreaseNesting,
-			TryStatement: increaseNesting,
-			"TryStatement:exit": decreaseNesting,
-			WithStatement: increaseNesting,
-			"WithStatement:exit": decreaseNesting,
-		}
-
-		return nestingNodes
-	},
+	name: "max-nesting",
 })

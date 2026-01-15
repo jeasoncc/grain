@@ -99,27 +99,27 @@ export function useWriting() {
 	}, [])
 
 	return {
+		addTodayWords,
+		endSession,
 		// State
 		focusMode,
-		typewriterMode,
-		writingGoal,
-		todayWordCount,
-		todayDate,
-		session,
 		minimalToolbar,
+		resetTodayIfNeeded,
+		session,
 
 		// Actions
 		setFocusMode: useWritingStore.getState().setFocusMode,
-		toggleFocusMode,
-		setTypewriterMode: useWritingStore.getState().setTypewriterMode,
-		toggleTypewriterMode,
-		setWritingGoal,
-		addTodayWords,
-		resetTodayIfNeeded,
-		startSession,
-		updateSessionWordCount,
-		endSession,
 		setMinimalToolbar: useWritingStore.getState().setMinimalToolbar,
+		setTypewriterMode: useWritingStore.getState().setTypewriterMode,
+		setWritingGoal,
+		startSession,
+		todayDate,
+		todayWordCount,
+		toggleFocusMode,
+		toggleTypewriterMode,
+		typewriterMode,
+		updateSessionWordCount,
+		writingGoal,
 	}
 }
 

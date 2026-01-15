@@ -23,24 +23,24 @@ vi.mock("@/components/export-dialog", () => ({
 describe("ExportDialogManagerContainer", () => {
 	const mockWorkspaces: WorkspaceInterface[] = [
 		{
-			id: "ws1",
-			title: "Workspace 1",
 			author: "Test Author",
+			createDate: new Date().toISOString(),
 			description: "Test Description",
-			publisher: "Test Publisher",
+			id: "ws1",
 			language: "en",
 			lastOpen: new Date().toISOString(),
-			createDate: new Date().toISOString(),
+			publisher: "Test Publisher",
+			title: "Workspace 1",
 		},
 		{
-			id: "ws2",
-			title: "Workspace 2",
 			author: "Test Author",
+			createDate: new Date().toISOString(),
 			description: "Test Description",
-			publisher: "Test Publisher",
+			id: "ws2",
 			language: "en",
 			lastOpen: new Date().toISOString(),
-			createDate: new Date().toISOString(),
+			publisher: "Test Publisher",
+			title: "Workspace 2",
 		},
 	]
 

@@ -24,16 +24,16 @@ import type { NodeInterface } from "@/types/node/node.interface"
  */
 function createTestNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
 	return {
-		id: overrides.id ?? "node-1",
-		workspace: overrides.workspace ?? "workspace-1",
-		parent: overrides.parent ?? null,
-		type: overrides.type ?? "file",
-		title: overrides.title ?? "Test Node",
-		order: overrides.order ?? 0,
 		collapsed: overrides.collapsed ?? false,
 		createDate: overrides.createDate ?? dayjs().toISOString(),
+		id: overrides.id ?? "node-1",
 		lastEdit: overrides.lastEdit ?? dayjs().toISOString(),
+		order: overrides.order ?? 0,
+		parent: overrides.parent ?? null,
 		tags: overrides.tags ?? [],
+		title: overrides.title ?? "Test Node",
+		type: overrides.type ?? "file",
+		workspace: overrides.workspace ?? "workspace-1",
 	}
 }
 
@@ -42,16 +42,14 @@ function createTestNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
  */
 function createTestContent(overrides: Partial<ContentInterface> = {}): ContentInterface {
 	return {
-		id: overrides.id ?? "content-1",
-		nodeId: overrides.nodeId ?? "node-1",
 		content:
 			overrides.content ??
 			JSON.stringify({
 				root: {
 					children: [
 						{
+							children: [{ format: 0, text: "Hello World", type: "text" }],
 							type: "paragraph",
-							children: [{ type: "text", text: "Hello World", format: 0 }],
 						},
 					],
 					direction: "ltr",
@@ -62,7 +60,9 @@ function createTestContent(overrides: Partial<ContentInterface> = {}): ContentIn
 				},
 			}),
 		contentType: overrides.contentType ?? "lexical",
+		id: overrides.id ?? "content-1",
 		lastEdit: overrides.lastEdit ?? dayjs().toISOString(),
+		nodeId: overrides.nodeId ?? "node-1",
 	}
 }
 
@@ -90,12 +90,12 @@ vi.mock("@/db/content.db.fn", () => ({
 
 vi.mock("@/log", () => ({
 	default: {
-		start: vi.fn(),
-		info: vi.fn(),
-		success: vi.fn(),
-		error: vi.fn(),
-		warn: vi.fn(),
 		debug: vi.fn(),
+		error: vi.fn(),
+		info: vi.fn(),
+		start: vi.fn(),
+		success: vi.fn(),
+		warn: vi.fn(),
 	},
 }))
 
@@ -149,7 +149,7 @@ describe("exportNodeToOrgmode", () => {
 	})
 
 	it("should return Left when node not found", async () => {
-		const error = { type: "NOT_FOUND" as const, message: "Node not found" }
+		const error = { message: "Node not found", type: "NOT_FOUND" as const }
 		mockGetNodeByIdOrFail.mockReturnValue(() => Promise.resolve(E.left(error)))
 
 		const result = await runTE(exportNodeToOrgmode({ nodeId: "non-existent" }))
@@ -162,7 +162,7 @@ describe("exportNodeToOrgmode", () => {
 
 	it("should return Left when content not found", async () => {
 		const testNode = createTestNode()
-		const error = { type: "NOT_FOUND" as const, message: "Content not found" }
+		const error = { message: "Content not found", type: "NOT_FOUND" as const }
 
 		mockGetNodeByIdOrFail.mockReturnValue(() => Promise.resolve(E.right(testNode)))
 		mockGetContentByNodeIdOrFail.mockReturnValue(() => Promise.resolve(E.left(error)))
@@ -182,8 +182,8 @@ describe("exportContentToOrgmode", () => {
 			root: {
 				children: [
 					{
+						children: [{ format: 0, text: "Direct export", type: "text" }],
 						type: "paragraph",
-						children: [{ type: "text", text: "Direct export", format: 0 }],
 					},
 				],
 				direction: "ltr",

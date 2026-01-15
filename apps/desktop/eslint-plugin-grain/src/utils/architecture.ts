@@ -145,11 +145,11 @@ export function isDeprecatedDirectoryImport(importPath: string): boolean {
  */
 export function getDeprecatedDirectoryMigration(directory: string): string {
 	const migrations: Record<string, string> = {
-		fn: "pipes/, utils/, flows/, views/",
-		components: "views/",
 		actions: "flows/",
-		stores: "state/",
+		components: "views/",
+		fn: "pipes/, utils/, flows/, views/",
 		lib: "utils/",
+		stores: "state/",
 	}
 
 	return migrations[directory] || "请参考架构文档"
@@ -226,13 +226,13 @@ export function getSuggestedDirectory(
 	fileType: "pipe" | "flow" | "api" | "state" | "hook" | "view" | "util",
 ): string {
 	const typeToLayer: Record<string, string> = {
-		pipe: "pipes",
-		flow: "flows",
 		api: "io/api",
-		state: "state",
+		flow: "flows",
 		hook: "hooks",
-		view: "views",
+		pipe: "pipes",
+		state: "state",
 		util: "utils",
+		view: "views",
 	}
 
 	return `src/${typeToLayer[fileType]}/`
@@ -250,16 +250,16 @@ export function isIndexFilePattern(filename: string): boolean {
  */
 export function getLayerChineseName(layer: ArchitectureLayer): string {
 	const names: Record<ArchitectureLayer, string> = {
-		views: "视图层",
-		hooks: "绑定层",
 		flows: "流程层",
-		pipes: "管道层",
+		hooks: "绑定层",
 		io: "IO 层",
-		state: "状态层",
-		utils: "工具层",
-		types: "类型层",
+		pipes: "管道层",
 		queries: "查询层",
 		routes: "路由层",
+		state: "状态层",
+		types: "类型层",
+		utils: "工具层",
+		views: "视图层",
 	}
 
 	return names[layer] || layer
@@ -270,16 +270,16 @@ export function getLayerChineseName(layer: ArchitectureLayer): string {
  */
 export function getLayerDescription(layer: ArchitectureLayer): string {
 	const descriptions: Record<ArchitectureLayer, string> = {
-		views: "UI 渲染组件，只能依赖 hooks 和 types",
-		hooks: "React 生命周期绑定，连接 flows 和 state",
 		flows: "业务流程，组合 pipes 和 io",
-		pipes: "纯数据转换函数，无副作用",
+		hooks: "React 生命周期绑定，连接 flows 和 state",
 		io: "外部交互（API、存储、文件）",
-		state: "应用状态管理（Zustand）",
-		utils: "通用工具函数",
-		types: "类型定义",
+		pipes: "纯数据转换函数，无副作用",
 		queries: "TanStack Query hooks",
 		routes: "路由定义",
+		state: "应用状态管理（Zustand）",
+		types: "类型定义",
+		utils: "通用工具函数",
+		views: "UI 渲染组件，只能依赖 hooks 和 types",
 	}
 
 	return descriptions[layer] || ""

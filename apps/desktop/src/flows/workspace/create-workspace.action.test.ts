@@ -24,16 +24,16 @@ import type { WorkspaceInterface } from "@/types/workspace/workspace.interface"
  */
 function createTestWorkspace(overrides: Partial<WorkspaceInterface> = {}): WorkspaceInterface {
 	return {
-		id: overrides.id ?? "550e8400-e29b-41d4-a716-446655440000",
-		title: overrides.title ?? "Test Workspace",
 		author: overrides.author ?? "",
-		description: overrides.description ?? "",
-		publisher: overrides.publisher ?? "",
-		language: overrides.language ?? "zh-CN",
 		createDate: overrides.createDate ?? new Date().toISOString(),
+		description: overrides.description ?? "",
+		id: overrides.id ?? "550e8400-e29b-41d4-a716-446655440000",
+		language: overrides.language ?? "zh-CN",
 		lastOpen: overrides.lastOpen ?? new Date().toISOString(),
 		members: overrides.members ?? [],
 		owner: overrides.owner ?? undefined,
+		publisher: overrides.publisher ?? "",
+		title: overrides.title ?? "Test Workspace",
 	}
 }
 
@@ -56,12 +56,12 @@ vi.mock("@/db/workspace.db.fn", () => ({
 
 vi.mock("@/log", () => ({
 	default: {
-		start: vi.fn(),
-		info: vi.fn(),
-		success: vi.fn(),
-		error: vi.fn(),
-		warn: vi.fn(),
 		debug: vi.fn(),
+		error: vi.fn(),
+		info: vi.fn(),
+		start: vi.fn(),
+		success: vi.fn(),
+		warn: vi.fn(),
 	},
 }))
 
@@ -91,25 +91,25 @@ describe("createWorkspace", () => {
 
 	it("should create workspace with all optional parameters", async () => {
 		const testWorkspace = createTestWorkspace({
-			title: "My Workspace",
 			author: "Test Author",
 			description: "Test Description",
-			publisher: "Test Publisher",
 			language: "en",
 			members: ["user-1", "user-2"],
 			owner: "owner-1",
+			publisher: "Test Publisher",
+			title: "My Workspace",
 		})
 		mockAddWorkspace.mockReturnValue(() => Promise.resolve(E.right(testWorkspace)))
 
 		const result = await runTE(
 			createWorkspace({
-				title: "My Workspace",
 				author: "Test Author",
 				description: "Test Description",
-				publisher: "Test Publisher",
 				language: "en",
 				members: ["user-1", "user-2"],
 				owner: "owner-1",
+				publisher: "Test Publisher",
+				title: "My Workspace",
 			}),
 		)
 
@@ -126,15 +126,15 @@ describe("createWorkspace", () => {
 		expect(mockAddWorkspace).toHaveBeenCalledWith("My Workspace", {
 			author: "Test Author",
 			description: "Test Description",
-			publisher: "Test Publisher",
 			language: "en",
 			members: ["user-1", "user-2"],
 			owner: "owner-1",
+			publisher: "Test Publisher",
 		})
 	})
 
 	it("should return Left with error on failure", async () => {
-		const error = { type: "DB_ERROR" as const, message: "Database error" }
+		const error = { message: "Database error", type: "DB_ERROR" as const }
 		mockAddWorkspace.mockReturnValue(() => Promise.resolve(E.left(error)))
 
 		const result = await runTE(createWorkspace({ title: "My Workspace" }))

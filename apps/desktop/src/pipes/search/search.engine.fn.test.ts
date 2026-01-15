@@ -21,20 +21,20 @@ import { SearchEngine } from "./search.engine.fn"
 // Mock @/io/api 模块
 vi.mock("@/io/api", () => ({
 	getAllNodes: vi.fn(),
-	getNodesByWorkspace: vi.fn(),
 	getContentsByNodeIds: vi.fn(),
+	getNodesByWorkspace: vi.fn(),
 	getWorkspaceById: vi.fn(),
 }))
 
 // Mock @/log/index 模块
 vi.mock("@/log/index", () => ({
 	default: {
+		debug: vi.fn(),
+		error: vi.fn(),
 		info: vi.fn(),
+		start: vi.fn(),
 		success: vi.fn(),
 		warn: vi.fn(),
-		error: vi.fn(),
-		debug: vi.fn(),
-		start: vi.fn(),
 	},
 }))
 
@@ -47,118 +47,118 @@ import { getAllNodes, getContentsByNodeIds, getNodesByWorkspace, getWorkspaceByI
 
 const mockNodes = [
 	{
+		collapsed: false,
+		createDate: "2024-01-01T00:00:00.000Z",
 		id: "node-1",
+		lastEdit: "2024-01-01T00:00:00.000Z",
+		order: 0,
+		parent: null,
+		tags: ["测试", "文档"],
 		title: "测试文档",
 		type: "file" as const,
 		workspace: "ws-1",
-		parent: null,
-		order: 0,
-		collapsed: false,
-		tags: ["测试", "文档"],
-		createDate: "2024-01-01T00:00:00.000Z",
-		lastEdit: "2024-01-01T00:00:00.000Z",
 	},
 	{
+		collapsed: false,
+		createDate: "2024-01-02T00:00:00.000Z",
 		id: "node-2",
+		lastEdit: "2024-01-02T00:00:00.000Z",
+		order: 1,
+		parent: null,
+		tags: ["示例"],
 		title: "另一个文件",
 		type: "file" as const,
 		workspace: "ws-1",
-		parent: null,
-		order: 1,
-		collapsed: false,
-		tags: ["示例"],
-		createDate: "2024-01-02T00:00:00.000Z",
-		lastEdit: "2024-01-02T00:00:00.000Z",
 	},
 	{
+		collapsed: false,
+		createDate: "2024-01-03T00:00:00.000Z",
 		id: "node-3",
+		lastEdit: "2024-01-03T00:00:00.000Z",
+		order: 0,
+		parent: null,
+		tags: [],
 		title: "工作区2的文件",
 		type: "file" as const,
 		workspace: "ws-2",
-		parent: null,
-		order: 0,
-		collapsed: false,
-		tags: [],
-		createDate: "2024-01-03T00:00:00.000Z",
-		lastEdit: "2024-01-03T00:00:00.000Z",
 	},
 ]
 
 const mockContents = [
 	{
+		content: JSON.stringify({
+			root: {
+				children: [
+					{
+						children: [{ text: "这是测试内容，包含关键词搜索", type: "text" }],
+						type: "paragraph",
+					},
+				],
+			},
+		}),
+		contentType: "lexical" as const,
 		id: "content-1",
-		nodeId: "node-1",
-		content: JSON.stringify({
-			root: {
-				children: [
-					{
-						type: "paragraph",
-						children: [{ type: "text", text: "这是测试内容，包含关键词搜索" }],
-					},
-				],
-			},
-		}),
-		contentType: "lexical" as const,
 		lastEdit: "2024-01-01T00:00:00.000Z",
+		nodeId: "node-1",
 	},
 	{
+		content: JSON.stringify({
+			root: {
+				children: [
+					{
+						children: [{ text: "另一个文件的内容", type: "text" }],
+						type: "paragraph",
+					},
+				],
+			},
+		}),
+		contentType: "lexical" as const,
 		id: "content-2",
-		nodeId: "node-2",
-		content: JSON.stringify({
-			root: {
-				children: [
-					{
-						type: "paragraph",
-						children: [{ type: "text", text: "另一个文件的内容" }],
-					},
-				],
-			},
-		}),
-		contentType: "lexical" as const,
 		lastEdit: "2024-01-02T00:00:00.000Z",
+		nodeId: "node-2",
 	},
 	{
-		id: "content-3",
-		nodeId: "node-3",
 		content: JSON.stringify({
 			root: {
 				children: [
 					{
+						children: [{ text: "工作区2的内容", type: "text" }],
 						type: "paragraph",
-						children: [{ type: "text", text: "工作区2的内容" }],
 					},
 				],
 			},
 		}),
 		contentType: "lexical" as const,
+		id: "content-3",
 		lastEdit: "2024-01-03T00:00:00.000Z",
+		nodeId: "node-3",
 	},
 ]
 
 const mockWorkspaces = {
 	"ws-1": {
-		id: "ws-1",
-		title: "工作区1",
-		description: "",
 		author: "",
-		publisher: "",
+		createDate: "2024-01-01T00:00:00.000Z",
+		description: "",
+		id: "ws-1",
 		language: "zh-CN",
+		lastOpen: "2024-01-01T00:00:00.000Z",
 		members: [],
 		owner: "user-1",
-		createDate: "2024-01-01T00:00:00.000Z",
-		lastOpen: "2024-01-01T00:00:00.000Z",
+		publisher: "",
+		title: "工作区1",
 	},
 	"ws-2": {
-		id: "ws-2",
-		title: "工作区2",
-		description: "",
 		author: "",
-		publisher: "",
+		createDate: "2024-01-02T00:00:00.000Z",
+		description: "",
+		id: "ws-2",
 		language: "zh-CN",
+		lastOpen: "2024-01-02T00:00:00.000Z",
 		members: [],
 		owner: "user-1",
-		createDate: "2024-01-02T00:00:00.000Z",
-		lastOpen: "2024-01-02T00:00:00.000Z",
+		publisher: "",
+		title: "工作区2",
 	},
 }
 
@@ -226,7 +226,7 @@ describe("SearchEngine", () => {
 
 		it("应该处理数据库错误", async () => {
 			vi.mocked(getAllNodes).mockReturnValue(() =>
-				Promise.resolve(E.left({ type: "DB_ERROR", message: "数据库错误" })),
+				Promise.resolve(E.left({ message: "数据库错误", type: "DB_ERROR" })),
 			)
 
 			// 不应该抛出错误
@@ -326,16 +326,16 @@ describe("SearchEngine", () => {
 			const nodesWithEnglish = [
 				...mockNodes,
 				{
+					collapsed: false,
+					createDate: "2024-01-04T00:00:00.000Z",
 					id: "node-4",
+					lastEdit: "2024-01-04T00:00:00.000Z",
+					order: 3,
+					parent: null,
+					tags: [],
 					title: "Hello World",
 					type: "file" as const,
 					workspace: "ws-1",
-					parent: null,
-					order: 3,
-					collapsed: false,
-					tags: [],
-					createDate: "2024-01-04T00:00:00.000Z",
-					lastEdit: "2024-01-04T00:00:00.000Z",
 				},
 			]
 
@@ -344,20 +344,20 @@ describe("SearchEngine", () => {
 			const contentsWithEnglish = [
 				...mockContents,
 				{
-					id: "content-4",
-					nodeId: "node-4",
 					content: JSON.stringify({
 						root: {
 							children: [
 								{
+									children: [{ text: "Hello World content", type: "text" }],
 									type: "paragraph",
-									children: [{ type: "text", text: "Hello World content" }],
 								},
 							],
 						},
 					}),
 					contentType: "lexical" as const,
+					id: "content-4",
 					lastEdit: "2024-01-04T00:00:00.000Z",
+					nodeId: "node-4",
 				},
 			]
 
@@ -420,11 +420,11 @@ describe("SearchEngine", () => {
 		it("应该处理无效的 JSON 内容", async () => {
 			const invalidContents = [
 				{
-					id: "content-1",
-					nodeId: "node-1",
 					content: "invalid json",
 					contentType: "lexical" as const,
+					id: "content-1",
 					lastEdit: "2024-01-01T00:00:00.000Z",
+					nodeId: "node-1",
 				},
 			]
 
@@ -438,7 +438,7 @@ describe("SearchEngine", () => {
 
 		it("应该处理 workspace 获取失败", async () => {
 			vi.mocked(getWorkspaceById).mockReturnValue(() =>
-				Promise.resolve(E.left({ type: "DB_ERROR", message: "获取失败" })),
+				Promise.resolve(E.left({ message: "获取失败", type: "DB_ERROR" })),
 			)
 
 			const results = await searchEngine.simpleSearch("测试")

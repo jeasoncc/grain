@@ -49,118 +49,6 @@ const CREDENTIAL_PATTERNS = [
 ]
 
 export default createRule({
-	name: "no-sensitive-logging",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "❌ 禁止记录敏感数据和硬编码凭证",
-		},
-		messages: {
-			sensitiveLogging: buildComprehensiveErrorMessage({
-				title: "禁止记录敏感数据",
-				problemCode: `logger.info('User login', { username, password });
-console.log('API token:', apiToken);
-logger.debug('Auth header:', { authorization: bearerToken });`,
-				reason: `记录敏感数据会导致安全风险：
-  - 密码、令牌等可能被泄露到日志文件
-  - 日志可能被未授权人员访问
-  - 违反数据保护法规（GDPR、CCPA）
-  - 增加数据泄露的攻击面`,
-				architecturePrinciple: `Grain 项目的安全原则：
-  - 永远不要记录敏感数据
-  - 记录前过滤或脱敏敏感字段
-  - 使用结构化日志，便于过滤
-  - 定期审计日志内容`,
-				steps: [
-					"识别日志中的敏感数据",
-					"移除或脱敏敏感字段",
-					"使用日志过滤器自动脱敏",
-					"记录操作而非数据内容",
-				],
-				correctExample: `// ✅ 正确：不记录敏感数据
-logger.info('User login', { username });
-logger.info('API request authenticated');
-logger.debug('Auth header present:', { hasAuth: !!bearerToken });
-
-// ✅ 正确：脱敏后记录
-logger.info('User login', {
-  username,
-  passwordHash: password ? '***' : undefined,
-});
-
-// ✅ 正确：使用日志过滤器
-const sanitizeForLog = (obj: any) => {
-  const sanitized = { ...obj };
-  const sensitiveKeys = ['password', 'token', 'secret', 'apiKey'];
-  
-  for (const key of sensitiveKeys) {
-    if (key in sanitized) {
-      sanitized[key] = '***';
-    }
-  }
-  
-  return sanitized;
-};
-
-logger.info('User data', sanitizeForLog(userData));`,
-				warnings: [
-					"永远不要记录密码、令牌、密钥等敏感数据",
-					"记录前检查对象是否包含敏感字段",
-					"使用脱敏函数处理日志数据",
-					"定期审计日志内容",
-				],
-				docRef: "#security - 敏感数据保护",
-				steeringFile: "#code-standards - 安全规范",
-				relatedRules: ["no-hardcoded-credentials"],
-			}),
-			hardcodedCredentials: buildComprehensiveErrorMessage({
-				title: "禁止硬编码凭证",
-				problemCode: `const apiKey = 'sk-1234567890abcdef';
-const password = 'mySecretPassword123';
-const token = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';`,
-				reason: `硬编码凭证会导致严重安全风险：
-  - 凭证会被提交到版本控制系统
-  - 任何能访问代码的人都能看到凭证
-  - 难以轮换和撤销凭证
-  - 违反安全最佳实践`,
-				architecturePrinciple: `Grain 项目的安全原则：
-  - 所有凭证必须从环境变量或配置文件读取
-  - 配置文件必须在 .gitignore 中
-  - 使用密钥管理服务（如 AWS Secrets Manager）
-  - 定期轮换凭证`,
-				steps: [
-					"移除硬编码的凭证",
-					"将凭证移到环境变量",
-					"使用 .env 文件（不提交到 git）",
-					"使用密钥管理服务",
-				],
-				correctExample: `// ✅ 正确：从环境变量读取
-const apiKey = process.env.API_KEY;
-const password = process.env.DB_PASSWORD;
-const token = process.env.AUTH_TOKEN;
-
-// ✅ 正确：使用配置文件（不提交到 git）
-import { config } from './config';  // config.ts 在 .gitignore 中
-const apiKey = config.apiKey;
-
-// ✅ 正确：使用密钥管理服务
-import { getSecret } from '@/io/secrets';
-const apiKey = await getSecret('API_KEY');`,
-				warnings: [
-					"永远不要在代码中硬编码凭证",
-					"使用环境变量或密钥管理服务",
-					"确保 .env 文件在 .gitignore 中",
-					"定期轮换凭证",
-					"使用不同的凭证用于开发、测试、生产环境",
-				],
-				docRef: "#security - 凭证管理",
-				steeringFile: "#code-standards - 安全规范",
-				relatedRules: ["no-sensitive-logging"],
-			}),
-		},
-		schema: [],
-	},
-	defaultOptions: [],
 	create(context) {
 		const sourceCode = context.sourceCode
 
@@ -218,8 +106,8 @@ const apiKey = await getSecret('API_KEY');`,
 					// 检查标识符名称
 					if (arg.type === "Identifier" && containsSensitiveKeyword(arg.name)) {
 						context.report({
-							node: arg,
 							messageId: "sensitiveLogging",
+							node: arg,
 						})
 					}
 
@@ -232,8 +120,8 @@ const apiKey = await getSecret('API_KEY');`,
 								containsSensitiveKeyword(prop.key.name)
 							) {
 								context.report({
-									node: prop,
 									messageId: "sensitiveLogging",
+									node: prop,
 								})
 							}
 						}
@@ -244,8 +132,8 @@ const apiKey = await getSecret('API_KEY');`,
 						for (const expr of arg.expressions) {
 							if (expr.type === "Identifier" && containsSensitiveKeyword(expr.name)) {
 								context.report({
-									node: expr,
 									messageId: "sensitiveLogging",
+									node: expr,
 								})
 							}
 						}
@@ -263,9 +151,30 @@ const apiKey = await getSecret('API_KEY');`,
 				// 检查字符串内容
 				if (containsHardcodedCredential(text) || containsHardcodedCredential(rawText)) {
 					context.report({
-						node,
 						messageId: "hardcodedCredentials",
+						node,
 					})
+				}
+			},
+
+			// 检测对象属性中的硬编码凭证
+			Property(node) {
+				if (node.key.type === "Identifier" && containsSensitiveKeyword(node.key.name)) {
+					if (node.value.type === "Literal" && typeof node.value.value === "string") {
+						const value = node.value.value
+						if (
+							value &&
+							value !== "" &&
+							!value.includes("YOUR_") &&
+							!value.includes("REPLACE_") &&
+							!value.includes("TODO")
+						) {
+							context.report({
+								messageId: "hardcodedCredentials",
+								node: node.value,
+							})
+						}
+					}
 				}
 			},
 
@@ -287,29 +196,8 @@ const apiKey = await getSecret('API_KEY');`,
 							!value.includes("TODO")
 						) {
 							context.report({
+								messageId: "hardcodedCredentials",
 								node: node.init,
-								messageId: "hardcodedCredentials",
-							})
-						}
-					}
-				}
-			},
-
-			// 检测对象属性中的硬编码凭证
-			Property(node) {
-				if (node.key.type === "Identifier" && containsSensitiveKeyword(node.key.name)) {
-					if (node.value.type === "Literal" && typeof node.value.value === "string") {
-						const value = node.value.value
-						if (
-							value &&
-							value !== "" &&
-							!value.includes("YOUR_") &&
-							!value.includes("REPLACE_") &&
-							!value.includes("TODO")
-						) {
-							context.report({
-								node: node.value,
-								messageId: "hardcodedCredentials",
 							})
 						}
 					}
@@ -317,4 +205,116 @@ const apiKey = await getSecret('API_KEY');`,
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "❌ 禁止记录敏感数据和硬编码凭证",
+		},
+		messages: {
+			hardcodedCredentials: buildComprehensiveErrorMessage({
+				architecturePrinciple: `Grain 项目的安全原则：
+  - 所有凭证必须从环境变量或配置文件读取
+  - 配置文件必须在 .gitignore 中
+  - 使用密钥管理服务（如 AWS Secrets Manager）
+  - 定期轮换凭证`,
+				correctExample: `// ✅ 正确：从环境变量读取
+const apiKey = process.env.API_KEY;
+const password = process.env.DB_PASSWORD;
+const token = process.env.AUTH_TOKEN;
+
+// ✅ 正确：使用配置文件（不提交到 git）
+import { config } from './config';  // config.ts 在 .gitignore 中
+const apiKey = config.apiKey;
+
+// ✅ 正确：使用密钥管理服务
+import { getSecret } from '@/io/secrets';
+const apiKey = await getSecret('API_KEY');`,
+				docRef: "#security - 凭证管理",
+				problemCode: `const apiKey = 'sk-1234567890abcdef';
+const password = 'mySecretPassword123';
+const token = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';`,
+				reason: `硬编码凭证会导致严重安全风险：
+  - 凭证会被提交到版本控制系统
+  - 任何能访问代码的人都能看到凭证
+  - 难以轮换和撤销凭证
+  - 违反安全最佳实践`,
+				relatedRules: ["no-sensitive-logging"],
+				steeringFile: "#code-standards - 安全规范",
+				steps: [
+					"移除硬编码的凭证",
+					"将凭证移到环境变量",
+					"使用 .env 文件（不提交到 git）",
+					"使用密钥管理服务",
+				],
+				title: "禁止硬编码凭证",
+				warnings: [
+					"永远不要在代码中硬编码凭证",
+					"使用环境变量或密钥管理服务",
+					"确保 .env 文件在 .gitignore 中",
+					"定期轮换凭证",
+					"使用不同的凭证用于开发、测试、生产环境",
+				],
+			}),
+			sensitiveLogging: buildComprehensiveErrorMessage({
+				architecturePrinciple: `Grain 项目的安全原则：
+  - 永远不要记录敏感数据
+  - 记录前过滤或脱敏敏感字段
+  - 使用结构化日志，便于过滤
+  - 定期审计日志内容`,
+				correctExample: `// ✅ 正确：不记录敏感数据
+logger.info('User login', { username });
+logger.info('API request authenticated');
+logger.debug('Auth header present:', { hasAuth: !!bearerToken });
+
+// ✅ 正确：脱敏后记录
+logger.info('User login', {
+  username,
+  passwordHash: password ? '***' : undefined,
+});
+
+// ✅ 正确：使用日志过滤器
+const sanitizeForLog = (obj: any) => {
+  const sanitized = { ...obj };
+  const sensitiveKeys = ['password', 'token', 'secret', 'apiKey'];
+  
+  for (const key of sensitiveKeys) {
+    if (key in sanitized) {
+      sanitized[key] = '***';
+    }
+  }
+  
+  return sanitized;
+};
+
+logger.info('User data', sanitizeForLog(userData));`,
+				docRef: "#security - 敏感数据保护",
+				problemCode: `logger.info('User login', { username, password });
+console.log('API token:', apiToken);
+logger.debug('Auth header:', { authorization: bearerToken });`,
+				reason: `记录敏感数据会导致安全风险：
+  - 密码、令牌等可能被泄露到日志文件
+  - 日志可能被未授权人员访问
+  - 违反数据保护法规（GDPR、CCPA）
+  - 增加数据泄露的攻击面`,
+				relatedRules: ["no-hardcoded-credentials"],
+				steeringFile: "#code-standards - 安全规范",
+				steps: [
+					"识别日志中的敏感数据",
+					"移除或脱敏敏感字段",
+					"使用日志过滤器自动脱敏",
+					"记录操作而非数据内容",
+				],
+				title: "禁止记录敏感数据",
+				warnings: [
+					"永远不要记录密码、令牌、密钥等敏感数据",
+					"记录前检查对象是否包含敏感字段",
+					"使用脱敏函数处理日志数据",
+					"定期审计日志内容",
+				],
+			}),
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "no-sensitive-logging",
 })

@@ -273,176 +273,12 @@ export const createApiClient = (): ApiClient => {
 	info(`[API] 初始化客户端，环境: ${isTauri ? "Tauri" : "Web"}`)
 
 	return {
-		// ============================================
-		// Workspace API
-		// ============================================
-		getWorkspaces: () => (isTauri ? invokeTE("get_workspaces") : fetchTE("/api/workspaces")),
-
-		getWorkspace: (id: string) =>
-			isTauri ? invokeTE("get_workspace", { id }) : fetchTE(`/api/workspaces/${id}`),
-
-		createWorkspace: (request: CreateWorkspaceRequest) =>
-			isTauri
-				? invokeTE("create_workspace", { request })
-				: fetchTE("/api/workspaces", {
-						method: "POST",
-						body: JSON.stringify(request),
-					}),
-
-		updateWorkspace: (id: string, request: UpdateWorkspaceRequest) =>
-			isTauri
-				? invokeTE("update_workspace", { id, request })
-				: fetchTE(`/api/workspaces/${id}`, {
-						method: "PUT",
-						body: JSON.stringify(request),
-					}),
-
-		deleteWorkspace: (id: string) =>
-			isTauri
-				? invokeTE("delete_workspace", { id })
-				: fetchTE(`/api/workspaces/${id}`, { method: "DELETE" }),
-
-		// ============================================
-		// Node API
-		// ============================================
-		getNodesByWorkspace: (workspaceId: string) =>
-			isTauri
-				? invokeTE("get_nodes_by_workspace", { workspaceId })
-				: fetchTE(`/api/workspaces/${workspaceId}/nodes`),
-
-		getNode: (id: string) => (isTauri ? invokeTE("get_node", { id }) : fetchTE(`/api/nodes/${id}`)),
-
-		getChildNodes: (parentId: string) =>
-			isTauri
-				? invokeTE("get_child_nodes", { parentId })
-				: fetchTE(`/api/nodes/${parentId}/children`),
-
-		getRootNodes: (workspaceId: string) =>
-			isTauri
-				? invokeTE("get_root_nodes", { workspaceId })
-				: fetchTE(`/api/workspaces/${workspaceId}/nodes/root`),
-
-		getNodesByParent: (workspaceId: string, parentId: string | null) =>
-			isTauri
-				? invokeTE("get_nodes_by_parent", { workspaceId, parentId })
-				: fetchTE(`/api/workspaces/${workspaceId}/nodes?parentId=${parentId ?? "null"}`),
-
-		getNodesByType: (workspaceId: string, nodeType: string) =>
-			isTauri
-				? invokeTE("get_nodes_by_type", { workspaceId, nodeType })
-				: fetchTE(`/api/workspaces/${workspaceId}/nodes?type=${nodeType}`),
-
-		getDescendants: (nodeId: string) =>
-			isTauri
-				? invokeTE("get_descendants", { nodeId })
-				: fetchTE(`/api/nodes/${nodeId}/descendants`),
-
-		getNextSortOrder: (workspaceId: string, parentId: string | null) =>
-			isTauri
-				? invokeTE("get_next_sort_order", { workspaceId, parentId })
-				: fetchTE(
-						`/api/workspaces/${workspaceId}/nodes/next-sort-order?parentId=${parentId ?? "null"}`,
-					),
-
-		createNode: (request: CreateNodeRequest) =>
-			isTauri
-				? invokeTE("create_node", { request })
-				: fetchTE("/api/nodes", {
-						method: "POST",
-						body: JSON.stringify(request),
-					}),
-
-		updateNode: (id: string, request: UpdateNodeRequest) =>
-			isTauri
-				? invokeTE("update_node", { id, request })
-				: fetchTE(`/api/nodes/${id}`, {
-						method: "PUT",
-						body: JSON.stringify(request),
-					}),
-
-		moveNode: (id: string, request: MoveNodeRequest) =>
-			isTauri
-				? invokeTE("move_node", { id, request })
-				: fetchTE(`/api/nodes/${id}/move`, {
-						method: "PUT",
-						body: JSON.stringify(request),
-					}),
-
-		deleteNode: (id: string) =>
-			isTauri ? invokeTE("delete_node", { id }) : fetchTE(`/api/nodes/${id}`, { method: "DELETE" }),
-
-		duplicateNode: (id: string, newTitle?: string) =>
-			isTauri
-				? invokeTE("duplicate_node", { id, newTitle })
-				: fetchTE(`/api/nodes/${id}/duplicate`, {
-						method: "POST",
-						body: JSON.stringify({ newTitle }),
-					}),
-
-		reorderNodes: (nodeIds: readonly string[]) =>
-			isTauri
-				? invokeTE("reorder_nodes", { nodeIds })
-				: fetchTE("/api/nodes/reorder", {
-						method: "PUT",
-						body: JSON.stringify({ nodeIds }),
-					}),
-
-		deleteNodesBatch: (nodeIds: readonly string[]) =>
-			isTauri
-				? invokeTE("delete_nodes_batch", { nodeIds })
-				: fetchTE("/api/nodes/batch", {
-						method: "DELETE",
-						body: JSON.stringify({ nodeIds }),
-					}),
-
-		// ============================================
-		// Content API
-		// ============================================
-		getContent: (nodeId: string) =>
-			isTauri ? invokeTE("get_content", { nodeId }) : fetchTE(`/api/nodes/${nodeId}/content`),
-
-		saveContent: (request: SaveContentRequest) =>
-			isTauri
-				? invokeTE("save_content", { request })
-				: fetchTE("/api/contents", {
-						method: "POST",
-						body: JSON.stringify(request),
-					}),
-
-		getContentVersion: (nodeId: string) =>
-			isTauri
-				? invokeTE("get_content_version", { nodeId })
-				: fetchTE(`/api/nodes/${nodeId}/content/version`),
-
-		// ============================================
-		// Backup API
-		// ============================================
-		createBackup: () =>
-			isTauri ? invokeTE("create_backup") : fetchTE("/api/backups", { method: "POST" }),
-
-		restoreBackup: (backupPath: string) =>
-			isTauri
-				? invokeTE("restore_backup", { backupPath })
-				: fetchTE("/api/backups/restore", {
-						method: "POST",
-						body: JSON.stringify({ backupPath }),
-					}),
-
-		listBackups: () => (isTauri ? invokeTE("list_backups") : fetchTE("/api/backups")),
-
-		deleteBackup: (backupPath: string) =>
-			isTauri
-				? invokeTE("delete_backup", { backupPath })
-				: fetchTE(`/api/backups/${encodeURIComponent(backupPath)}`, {
-						method: "DELETE",
-					}),
-
 		cleanupOldBackups: (keepCount: number) =>
 			isTauri
 				? invokeTE("cleanup_old_backups", { keepCount })
 				: fetchTE("/api/backups/cleanup", {
-						method: "POST",
 						body: JSON.stringify({ keepCount }),
+						method: "POST",
 					}),
 
 		// ============================================
@@ -456,96 +292,57 @@ export const createApiClient = (): ApiClient => {
 				? invokeTE("clear_sqlite_data_keep_users")
 				: fetchTE("/api/data/clear?keepUsers=true", { method: "DELETE" }),
 
-		// ============================================
-		// User API
-		// ============================================
-		getUsers: () => (isTauri ? invokeTE("get_users") : fetchTE("/api/users")),
-
-		getUser: (id: string) => (isTauri ? invokeTE("get_user", { id }) : fetchTE(`/api/users/${id}`)),
-
-		getUserByUsername: (username: string) =>
+		createAttachment: (request: CreateAttachmentRequest) =>
 			isTauri
-				? invokeTE("get_user_by_username", { username })
-				: fetchTE(`/api/users/by-username/${encodeURIComponent(username)}`),
+				? invokeTE("create_attachment", { request })
+				: fetchTE("/api/attachments", {
+						body: JSON.stringify(request),
+						method: "POST",
+					}),
 
-		getUserByEmail: (email: string) =>
+		// ============================================
+		// Backup API
+		// ============================================
+		createBackup: () =>
+			isTauri ? invokeTE("create_backup") : fetchTE("/api/backups", { method: "POST" }),
+
+		createNode: (request: CreateNodeRequest) =>
 			isTauri
-				? invokeTE("get_user_by_email", { email })
-				: fetchTE(`/api/users/by-email/${encodeURIComponent(email)}`),
+				? invokeTE("create_node", { request })
+				: fetchTE("/api/nodes", {
+						body: JSON.stringify(request),
+						method: "POST",
+					}),
 
-		getCurrentUser: () => (isTauri ? invokeTE("get_current_user") : fetchTE("/api/users/current")),
+		createTag: (request: CreateTagRequest) =>
+			isTauri
+				? invokeTE("create_tag", { request })
+				: fetchTE("/api/tags", {
+						body: JSON.stringify(request),
+						method: "POST",
+					}),
 
 		createUser: (request: CreateUserRequest) =>
 			isTauri
 				? invokeTE("create_user", { request })
 				: fetchTE("/api/users", {
+						body: JSON.stringify(request),
 						method: "POST",
-						body: JSON.stringify(request),
 					}),
 
-		updateUser: (id: string, request: UpdateUserRequest) =>
+		createWorkspace: (request: CreateWorkspaceRequest) =>
 			isTauri
-				? invokeTE("update_user", { id, request })
-				: fetchTE(`/api/users/${id}`, {
-						method: "PUT",
+				? invokeTE("create_workspace", { request })
+				: fetchTE("/api/workspaces", {
 						body: JSON.stringify(request),
-					}),
-
-		updateUserLastLogin: (id: string) =>
-			isTauri
-				? invokeTE("update_user_last_login", { id })
-				: fetchTE(`/api/users/${id}/last-login`, { method: "PUT" }),
-
-		deleteUser: (id: string) =>
-			isTauri ? invokeTE("delete_user", { id }) : fetchTE(`/api/users/${id}`, { method: "DELETE" }),
-
-		// ============================================
-		// Attachment API
-		// ============================================
-		getAttachments: () => (isTauri ? invokeTE("get_attachments") : fetchTE("/api/attachments")),
-
-		getAttachmentsByProject: (projectId: string) =>
-			isTauri
-				? invokeTE("get_attachments_by_project", { projectId })
-				: fetchTE(`/api/projects/${projectId}/attachments`),
-
-		getAttachment: (id: string) =>
-			isTauri ? invokeTE("get_attachment", { id }) : fetchTE(`/api/attachments/${id}`),
-
-		getAttachmentsByType: (projectId: string, attachmentType: AttachmentType) =>
-			isTauri
-				? invokeTE("get_attachments_by_type", { projectId, attachmentType })
-				: fetchTE(`/api/projects/${projectId}/attachments?type=${attachmentType}`),
-
-		getImagesByProject: (projectId: string) =>
-			isTauri
-				? invokeTE("get_images_by_project", { projectId })
-				: fetchTE(`/api/projects/${projectId}/attachments?type=image`),
-
-		getAudioFilesByProject: (projectId: string) =>
-			isTauri
-				? invokeTE("get_audio_files_by_project", { projectId })
-				: fetchTE(`/api/projects/${projectId}/attachments?type=audio`),
-
-		getAttachmentByPath: (filePath: string) =>
-			isTauri
-				? invokeTE("get_attachment_by_path", { filePath })
-				: fetchTE(`/api/attachments/by-path/${encodeURIComponent(filePath)}`),
-
-		createAttachment: (request: CreateAttachmentRequest) =>
-			isTauri
-				? invokeTE("create_attachment", { request })
-				: fetchTE("/api/attachments", {
 						method: "POST",
-						body: JSON.stringify(request),
 					}),
 
-		updateAttachment: (id: string, request: UpdateAttachmentRequest) =>
+		decrementTagCount: (id: string) =>
 			isTauri
-				? invokeTE("update_attachment", { id, request })
-				: fetchTE(`/api/attachments/${id}`, {
-						method: "PUT",
-						body: JSON.stringify(request),
+				? invokeTE("decrement_tag_count", { id })
+				: fetchTE(`/api/tags/${encodeURIComponent(id)}/decrement`, {
+						method: "POST",
 					}),
 
 		deleteAttachment: (id: string) =>
@@ -560,78 +357,22 @@ export const createApiClient = (): ApiClient => {
 						method: "DELETE",
 					}),
 
-		// ============================================
-		// Tag API
-		// ============================================
-		getTagsByWorkspace: (workspaceId: string) =>
+		deleteBackup: (backupPath: string) =>
 			isTauri
-				? invokeTE("get_tags_by_workspace", { workspaceId })
-				: fetchTE(`/api/workspaces/${workspaceId}/tags`),
-
-		getTag: (id: string) =>
-			isTauri ? invokeTE("get_tag", { id }) : fetchTE(`/api/tags/${encodeURIComponent(id)}`),
-
-		getTagByName: (workspaceId: string, name: string) =>
-			isTauri
-				? invokeTE("get_tag_by_name", { workspaceId, name })
-				: fetchTE(`/api/workspaces/${workspaceId}/tags/by-name/${encodeURIComponent(name)}`),
-
-		getTopTags: (workspaceId: string, limit: number) =>
-			isTauri
-				? invokeTE("get_top_tags", { workspaceId, limit })
-				: fetchTE(`/api/workspaces/${workspaceId}/tags/top?limit=${limit}`),
-
-		searchTags: (workspaceId: string, query: string) =>
-			isTauri
-				? invokeTE("search_tags", { workspaceId, query })
-				: fetchTE(`/api/workspaces/${workspaceId}/tags/search?q=${encodeURIComponent(query)}`),
-
-		getNodesByTag: (workspaceId: string, tagName: string) =>
-			isTauri
-				? invokeTE("get_nodes_by_tag", { workspaceId, tagName })
-				: fetchTE(`/api/workspaces/${workspaceId}/tags/${encodeURIComponent(tagName)}/nodes`),
-
-		getTagGraphData: (workspaceId: string) =>
-			isTauri
-				? invokeTE("get_tag_graph_data", { workspaceId })
-				: fetchTE(`/api/workspaces/${workspaceId}/tags/graph`),
-
-		createTag: (request: CreateTagRequest) =>
-			isTauri
-				? invokeTE("create_tag", { request })
-				: fetchTE("/api/tags", {
-						method: "POST",
-						body: JSON.stringify(request),
+				? invokeTE("delete_backup", { backupPath })
+				: fetchTE(`/api/backups/${encodeURIComponent(backupPath)}`, {
+						method: "DELETE",
 					}),
 
-		updateTag: (id: string, request: UpdateTagRequest) =>
-			isTauri
-				? invokeTE("update_tag", { id, request })
-				: fetchTE(`/api/tags/${encodeURIComponent(id)}`, {
-						method: "PUT",
-						body: JSON.stringify(request),
-					}),
+		deleteNode: (id: string) =>
+			isTauri ? invokeTE("delete_node", { id }) : fetchTE(`/api/nodes/${id}`, { method: "DELETE" }),
 
-		getOrCreateTag: (workspaceId: string, name: string) =>
+		deleteNodesBatch: (nodeIds: readonly string[]) =>
 			isTauri
-				? invokeTE("get_or_create_tag", { workspaceId, name })
-				: fetchTE(`/api/workspaces/${workspaceId}/tags/get-or-create`, {
-						method: "POST",
-						body: JSON.stringify({ name }),
-					}),
-
-		incrementTagCount: (id: string) =>
-			isTauri
-				? invokeTE("increment_tag_count", { id })
-				: fetchTE(`/api/tags/${encodeURIComponent(id)}/increment`, {
-						method: "POST",
-					}),
-
-		decrementTagCount: (id: string) =>
-			isTauri
-				? invokeTE("decrement_tag_count", { id })
-				: fetchTE(`/api/tags/${encodeURIComponent(id)}/decrement`, {
-						method: "POST",
+				? invokeTE("delete_nodes_batch", { nodeIds })
+				: fetchTE("/api/nodes/batch", {
+						body: JSON.stringify({ nodeIds }),
+						method: "DELETE",
 					}),
 
 		deleteTag: (id: string) =>
@@ -644,11 +385,188 @@ export const createApiClient = (): ApiClient => {
 				? invokeTE("delete_tags_by_workspace", { workspaceId })
 				: fetchTE(`/api/workspaces/${workspaceId}/tags`, { method: "DELETE" }),
 
-		syncTagCache: (workspaceId: string) =>
+		deleteUser: (id: string) =>
+			isTauri ? invokeTE("delete_user", { id }) : fetchTE(`/api/users/${id}`, { method: "DELETE" }),
+
+		deleteWorkspace: (id: string) =>
 			isTauri
-				? invokeTE("sync_tag_cache", { workspaceId })
-				: fetchTE(`/api/workspaces/${workspaceId}/tags/sync`, {
+				? invokeTE("delete_workspace", { id })
+				: fetchTE(`/api/workspaces/${id}`, { method: "DELETE" }),
+
+		duplicateNode: (id: string, newTitle?: string) =>
+			isTauri
+				? invokeTE("duplicate_node", { id, newTitle })
+				: fetchTE(`/api/nodes/${id}/duplicate`, {
+						body: JSON.stringify({ newTitle }),
 						method: "POST",
+					}),
+
+		getAttachment: (id: string) =>
+			isTauri ? invokeTE("get_attachment", { id }) : fetchTE(`/api/attachments/${id}`),
+
+		getAttachmentByPath: (filePath: string) =>
+			isTauri
+				? invokeTE("get_attachment_by_path", { filePath })
+				: fetchTE(`/api/attachments/by-path/${encodeURIComponent(filePath)}`),
+
+		// ============================================
+		// Attachment API
+		// ============================================
+		getAttachments: () => (isTauri ? invokeTE("get_attachments") : fetchTE("/api/attachments")),
+
+		getAttachmentsByProject: (projectId: string) =>
+			isTauri
+				? invokeTE("get_attachments_by_project", { projectId })
+				: fetchTE(`/api/projects/${projectId}/attachments`),
+
+		getAttachmentsByType: (projectId: string, attachmentType: AttachmentType) =>
+			isTauri
+				? invokeTE("get_attachments_by_type", { attachmentType, projectId })
+				: fetchTE(`/api/projects/${projectId}/attachments?type=${attachmentType}`),
+
+		getAudioFilesByProject: (projectId: string) =>
+			isTauri
+				? invokeTE("get_audio_files_by_project", { projectId })
+				: fetchTE(`/api/projects/${projectId}/attachments?type=audio`),
+
+		getChildNodes: (parentId: string) =>
+			isTauri
+				? invokeTE("get_child_nodes", { parentId })
+				: fetchTE(`/api/nodes/${parentId}/children`),
+
+		// ============================================
+		// Content API
+		// ============================================
+		getContent: (nodeId: string) =>
+			isTauri ? invokeTE("get_content", { nodeId }) : fetchTE(`/api/nodes/${nodeId}/content`),
+
+		getContentVersion: (nodeId: string) =>
+			isTauri
+				? invokeTE("get_content_version", { nodeId })
+				: fetchTE(`/api/nodes/${nodeId}/content/version`),
+
+		getCurrentUser: () => (isTauri ? invokeTE("get_current_user") : fetchTE("/api/users/current")),
+
+		getDescendants: (nodeId: string) =>
+			isTauri
+				? invokeTE("get_descendants", { nodeId })
+				: fetchTE(`/api/nodes/${nodeId}/descendants`),
+
+		getImagesByProject: (projectId: string) =>
+			isTauri
+				? invokeTE("get_images_by_project", { projectId })
+				: fetchTE(`/api/projects/${projectId}/attachments?type=image`),
+
+		getNextSortOrder: (workspaceId: string, parentId: string | null) =>
+			isTauri
+				? invokeTE("get_next_sort_order", { parentId, workspaceId })
+				: fetchTE(
+						`/api/workspaces/${workspaceId}/nodes/next-sort-order?parentId=${parentId ?? "null"}`,
+					),
+
+		getNode: (id: string) => (isTauri ? invokeTE("get_node", { id }) : fetchTE(`/api/nodes/${id}`)),
+
+		getNodesByParent: (workspaceId: string, parentId: string | null) =>
+			isTauri
+				? invokeTE("get_nodes_by_parent", { parentId, workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/nodes?parentId=${parentId ?? "null"}`),
+
+		getNodesByTag: (workspaceId: string, tagName: string) =>
+			isTauri
+				? invokeTE("get_nodes_by_tag", { tagName, workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/tags/${encodeURIComponent(tagName)}/nodes`),
+
+		getNodesByType: (workspaceId: string, nodeType: string) =>
+			isTauri
+				? invokeTE("get_nodes_by_type", { nodeType, workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/nodes?type=${nodeType}`),
+
+		// ============================================
+		// Node API
+		// ============================================
+		getNodesByWorkspace: (workspaceId: string) =>
+			isTauri
+				? invokeTE("get_nodes_by_workspace", { workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/nodes`),
+
+		getOrCreateTag: (workspaceId: string, name: string) =>
+			isTauri
+				? invokeTE("get_or_create_tag", { name, workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/tags/get-or-create`, {
+						body: JSON.stringify({ name }),
+						method: "POST",
+					}),
+
+		getRootNodes: (workspaceId: string) =>
+			isTauri
+				? invokeTE("get_root_nodes", { workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/nodes/root`),
+
+		getTag: (id: string) =>
+			isTauri ? invokeTE("get_tag", { id }) : fetchTE(`/api/tags/${encodeURIComponent(id)}`),
+
+		getTagByName: (workspaceId: string, name: string) =>
+			isTauri
+				? invokeTE("get_tag_by_name", { name, workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/tags/by-name/${encodeURIComponent(name)}`),
+
+		getTagGraphData: (workspaceId: string) =>
+			isTauri
+				? invokeTE("get_tag_graph_data", { workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/tags/graph`),
+
+		// ============================================
+		// Tag API
+		// ============================================
+		getTagsByWorkspace: (workspaceId: string) =>
+			isTauri
+				? invokeTE("get_tags_by_workspace", { workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/tags`),
+
+		getTopTags: (workspaceId: string, limit: number) =>
+			isTauri
+				? invokeTE("get_top_tags", { limit, workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/tags/top?limit=${limit}`),
+
+		getUser: (id: string) => (isTauri ? invokeTE("get_user", { id }) : fetchTE(`/api/users/${id}`)),
+
+		getUserByEmail: (email: string) =>
+			isTauri
+				? invokeTE("get_user_by_email", { email })
+				: fetchTE(`/api/users/by-email/${encodeURIComponent(email)}`),
+
+		getUserByUsername: (username: string) =>
+			isTauri
+				? invokeTE("get_user_by_username", { username })
+				: fetchTE(`/api/users/by-username/${encodeURIComponent(username)}`),
+
+		// ============================================
+		// User API
+		// ============================================
+		getUsers: () => (isTauri ? invokeTE("get_users") : fetchTE("/api/users")),
+
+		getWorkspace: (id: string) =>
+			isTauri ? invokeTE("get_workspace", { id }) : fetchTE(`/api/workspaces/${id}`),
+		// ============================================
+		// Workspace API
+		// ============================================
+		getWorkspaces: () => (isTauri ? invokeTE("get_workspaces") : fetchTE("/api/workspaces")),
+
+		incrementTagCount: (id: string) =>
+			isTauri
+				? invokeTE("increment_tag_count", { id })
+				: fetchTE(`/api/tags/${encodeURIComponent(id)}/increment`, {
+						method: "POST",
+					}),
+
+		listBackups: () => (isTauri ? invokeTE("list_backups") : fetchTE("/api/backups")),
+
+		moveNode: (id: string, request: MoveNodeRequest) =>
+			isTauri
+				? invokeTE("move_node", { id, request })
+				: fetchTE(`/api/nodes/${id}/move`, {
+						body: JSON.stringify(request),
+						method: "PUT",
 					}),
 
 		rebuildTagCache: (workspaceId: string) =>
@@ -663,6 +581,87 @@ export const createApiClient = (): ApiClient => {
 				? invokeTE("recalculate_tag_counts", { workspaceId })
 				: fetchTE(`/api/workspaces/${workspaceId}/tags/recalculate`, {
 						method: "POST",
+					}),
+
+		reorderNodes: (nodeIds: readonly string[]) =>
+			isTauri
+				? invokeTE("reorder_nodes", { nodeIds })
+				: fetchTE("/api/nodes/reorder", {
+						body: JSON.stringify({ nodeIds }),
+						method: "PUT",
+					}),
+
+		restoreBackup: (backupPath: string) =>
+			isTauri
+				? invokeTE("restore_backup", { backupPath })
+				: fetchTE("/api/backups/restore", {
+						body: JSON.stringify({ backupPath }),
+						method: "POST",
+					}),
+
+		saveContent: (request: SaveContentRequest) =>
+			isTauri
+				? invokeTE("save_content", { request })
+				: fetchTE("/api/contents", {
+						body: JSON.stringify(request),
+						method: "POST",
+					}),
+
+		searchTags: (workspaceId: string, query: string) =>
+			isTauri
+				? invokeTE("search_tags", { query, workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/tags/search?q=${encodeURIComponent(query)}`),
+
+		syncTagCache: (workspaceId: string) =>
+			isTauri
+				? invokeTE("sync_tag_cache", { workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/tags/sync`, {
+						method: "POST",
+					}),
+
+		updateAttachment: (id: string, request: UpdateAttachmentRequest) =>
+			isTauri
+				? invokeTE("update_attachment", { id, request })
+				: fetchTE(`/api/attachments/${id}`, {
+						body: JSON.stringify(request),
+						method: "PUT",
+					}),
+
+		updateNode: (id: string, request: UpdateNodeRequest) =>
+			isTauri
+				? invokeTE("update_node", { id, request })
+				: fetchTE(`/api/nodes/${id}`, {
+						body: JSON.stringify(request),
+						method: "PUT",
+					}),
+
+		updateTag: (id: string, request: UpdateTagRequest) =>
+			isTauri
+				? invokeTE("update_tag", { id, request })
+				: fetchTE(`/api/tags/${encodeURIComponent(id)}`, {
+						body: JSON.stringify(request),
+						method: "PUT",
+					}),
+
+		updateUser: (id: string, request: UpdateUserRequest) =>
+			isTauri
+				? invokeTE("update_user", { id, request })
+				: fetchTE(`/api/users/${id}`, {
+						body: JSON.stringify(request),
+						method: "PUT",
+					}),
+
+		updateUserLastLogin: (id: string) =>
+			isTauri
+				? invokeTE("update_user_last_login", { id })
+				: fetchTE(`/api/users/${id}/last-login`, { method: "PUT" }),
+
+		updateWorkspace: (id: string, request: UpdateWorkspaceRequest) =>
+			isTauri
+				? invokeTE("update_workspace", { id, request })
+				: fetchTE(`/api/workspaces/${id}`, {
+						body: JSON.stringify(request),
+						method: "PUT",
 					}),
 	}
 }

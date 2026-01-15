@@ -26,53 +26,38 @@ const createRule = ESLintUtils.RuleCreator(
  */
 const getArrayMutationMessage = (method: string) =>
 	buildComprehensiveErrorMessage({
-		title: `禁止使用 array.${method}()`,
+		architecturePrinciple: `Grain 项目遵循不可变数据原则：
+  - 数据一旦创建就不可修改
+  - 更新操作返回新数组
+  - 使用展开运算符或 fp-ts/Array 的函数式方法`,
+		correctExample: getImmutableArrayAlternative(method, "array"),
+		docRef: "#code-standards - 不可变性",
 		problemCode: `const items = [1, 2, 3];
 items.${method}(${method === "push" || method === "unshift" ? "4" : ""});`,
 		reason: `array.${method}() 会直接修改原数组，违反不可变性原则：
   - 导致难以追踪的状态变化
   - 破坏 React 的变化检测机制
   - 使得函数不再是纯函数`,
-		architecturePrinciple: `Grain 项目遵循不可变数据原则：
-  - 数据一旦创建就不可修改
-  - 更新操作返回新数组
-  - 使用展开运算符或 fp-ts/Array 的函数式方法`,
+		relatedRules: ["no-object-mutation", "prefer-spread"],
+		steeringFile: "#fp-patterns - 不可变数据",
 		steps: [
 			`将 ${method}() 替换为不可变操作`,
 			"使用展开运算符创建新数组",
 			"或使用 fp-ts/Array 的函数式方法",
 		],
-		correctExample: getImmutableArrayAlternative(method, "array"),
+		title: `禁止使用 array.${method}()`,
 		warnings: ["确保不要在原数组上调用任何变异方法", "如果需要排序，先复制数组：[...array].sort()"],
-		docRef: "#code-standards - 不可变性",
-		steeringFile: "#fp-patterns - 不可变数据",
-		relatedRules: ["no-object-mutation", "prefer-spread"],
 	})
 
 /**
  * forEach 的错误消息
  */
 const NO_FOREACH_MESSAGE = buildComprehensiveErrorMessage({
-	title: "禁止使用 array.forEach()",
-	problemCode: `const results: string[] = [];
-items.forEach(item => {
-  results.push(item.name);  // 副作用！
-});`,
-	reason: `forEach 鼓励副作用编程：
-  - 通常用于修改外部状态
-  - 没有返回值，难以组合
-  - 不如 map/filter/reduce 表达意图`,
 	architecturePrinciple: `使用声明式数组方法：
   - map: 转换每个元素
   - filter: 筛选元素
   - reduce: 聚合为单个值
   - flatMap: 转换并展平`,
-	steps: [
-		"分析 forEach 的实际用途",
-		"如果是转换，使用 map",
-		"如果是筛选，使用 filter",
-		"如果是聚合，使用 reduce",
-	],
 	correctExample: `// ❌ 错误做法
 const results: string[] = [];
 items.forEach(item => {
@@ -99,26 +84,33 @@ const results = pipe(
   A.map(item => item.name)
 );`,
 	docRef: "#fp-patterns - 数组操作",
-	steeringFile: "#code-standards - 声明式编程",
+	problemCode: `const results: string[] = [];
+items.forEach(item => {
+  results.push(item.name);  // 副作用！
+});`,
+	reason: `forEach 鼓励副作用编程：
+  - 通常用于修改外部状态
+  - 没有返回值，难以组合
+  - 不如 map/filter/reduce 表达意图`,
 	relatedRules: ["no-mutation", "prefer-map"],
+	steeringFile: "#code-standards - 声明式编程",
+	steps: [
+		"分析 forEach 的实际用途",
+		"如果是转换，使用 map",
+		"如果是筛选，使用 filter",
+		"如果是聚合，使用 reduce",
+	],
+	title: "禁止使用 array.forEach()",
 })
 
 /**
  * 数组索引赋值的错误消息
  */
 const NO_ARRAY_INDEX_ASSIGNMENT_MESSAGE = buildComprehensiveErrorMessage({
-	title: "禁止使用数组索引赋值",
-	problemCode: `const items = [1, 2, 3];
-items[1] = 10;  // 直接修改数组`,
-	reason: `数组索引赋值直接修改原数组：
-  - 破坏不可变性
-  - 难以追踪变化
-  - 可能导致 React 不重新渲染`,
 	architecturePrinciple: `使用不可变更新模式：
   - 使用 map 更新特定索引
   - 使用展开运算符创建新数组
   - 使用 Immer 进行复杂更新`,
-	steps: ["确定要更新的索引", "使用 map 或展开运算符创建新数组", "复杂更新考虑使用 Immer"],
 	correctExample: `// ❌ 错误做法
 items[1] = 10;
 
@@ -148,25 +140,25 @@ const updated = pipe(
   O.getOrElse(() => items)
 );`,
 	docRef: "#fp-patterns - 不可变更新",
-	steeringFile: "#code-standards - 数组操作",
+	problemCode: `const items = [1, 2, 3];
+items[1] = 10;  // 直接修改数组`,
+	reason: `数组索引赋值直接修改原数组：
+  - 破坏不可变性
+  - 难以追踪变化
+  - 可能导致 React 不重新渲染`,
 	relatedRules: ["no-mutation", "no-object-mutation"],
+	steeringFile: "#code-standards - 数组操作",
+	steps: ["确定要更新的索引", "使用 map 或展开运算符创建新数组", "复杂更新考虑使用 Immer"],
+	title: "禁止使用数组索引赋值",
 })
 
 /**
  * sort 不带复制的错误消息
  */
 const NO_SORT_IN_PLACE_MESSAGE = buildComprehensiveErrorMessage({
-	title: "禁止使用 array.sort() 原地排序",
-	problemCode: `const items = [3, 1, 2];
-items.sort();  // 修改原数组`,
-	reason: `array.sort() 会修改原数组：
-  - 违反不可变性原则
-  - 可能导致意外的副作用
-  - 难以追踪数据变化`,
 	architecturePrinciple: `排序时先复制数组：
   - 使用 [...array].sort()
   - 或使用 fp-ts/Array 的 sort 函数`,
-	steps: ["在调用 sort 前复制数组", "或使用 fp-ts 的排序函数"],
 	correctExample: `// ❌ 错误做法
 items.sort();
 
@@ -183,36 +175,41 @@ import * as N from 'fp-ts/number';
 
 const sorted = pipe(items, A.sort(N.Ord));`,
 	docRef: "#fp-patterns - 排序",
-	steeringFile: "#code-standards - 不可变操作",
+	problemCode: `const items = [3, 1, 2];
+items.sort();  // 修改原数组`,
+	reason: `array.sort() 会修改原数组：
+  - 违反不可变性原则
+  - 可能导致意外的副作用
+  - 难以追踪数据变化`,
 	relatedRules: ["no-mutation"],
+	steeringFile: "#code-standards - 不可变操作",
+	steps: ["在调用 sort 前复制数组", "或使用 fp-ts 的排序函数"],
+	title: "禁止使用 array.sort() 原地排序",
 })
 
 export default createRule({
-	name: "no-mutation",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "Prohibit array mutations and suggest immutable operations",
-		},
-		fixable: undefined,
-		schema: [],
-		messages: {
-			noArrayPush: getArrayMutationMessage("push"),
-			noArrayPop: getArrayMutationMessage("pop"),
-			noArrayShift: getArrayMutationMessage("shift"),
-			noArrayUnshift: getArrayMutationMessage("unshift"),
-			noArraySplice: getArrayMutationMessage("splice"),
-			noArrayReverse: getArrayMutationMessage("reverse"),
-			noArrayFill: getArrayMutationMessage("fill"),
-			noArrayCopyWithin: getArrayMutationMessage("copyWithin"),
-			noArraySort: NO_SORT_IN_PLACE_MESSAGE,
-			noForEach: NO_FOREACH_MESSAGE,
-			noArrayIndexAssignment: NO_ARRAY_INDEX_ASSIGNMENT_MESSAGE,
-		},
-	},
-	defaultOptions: [],
 	create(context) {
 		return {
+			AssignmentExpression(node: TSESTree.AssignmentExpression) {
+				// Check for array index assignment: arr[i] = value
+				if (
+					node.operator === "=" &&
+					node.left.type === "MemberExpression" &&
+					node.left.computed === true // arr[i] syntax
+				) {
+					// Check if it looks like array index access (numeric or variable index)
+					const property = node.left.property
+					const isNumericIndex = property.type === "Literal" && typeof property.value === "number"
+					const isVariableIndex = property.type === "Identifier"
+
+					if (isNumericIndex || isVariableIndex) {
+						context.report({
+							messageId: "noArrayIndexAssignment",
+							node,
+						})
+					}
+				}
+			},
 			CallExpression(node: TSESTree.CallExpression) {
 				if (node.callee.type === "MemberExpression" && node.callee.property.type === "Identifier") {
 					const methodName = node.callee.property.name
@@ -233,50 +230,52 @@ export default createRule({
 							| "noArrayCopyWithin"
 							| "noArraySort"
 						> = {
-							push: "noArrayPush",
-							pop: "noArrayPop",
-							shift: "noArrayShift",
-							unshift: "noArrayUnshift",
-							splice: "noArraySplice",
-							reverse: "noArrayReverse",
-							fill: "noArrayFill",
 							copyWithin: "noArrayCopyWithin",
+							fill: "noArrayFill",
+							pop: "noArrayPop",
+							push: "noArrayPush",
+							reverse: "noArrayReverse",
+							shift: "noArrayShift",
 							sort: "noArraySort",
+							splice: "noArraySplice",
+							unshift: "noArrayUnshift",
 						}
 
 						const messageId = messageIdMap[methodName]
 						if (messageId) {
-							context.report({ node, messageId })
+							context.report({ messageId, node })
 						}
 					}
 
 					// Check for forEach
 					if (methodName === "forEach") {
-						context.report({ node, messageId: "noForEach" })
-					}
-				}
-			},
-
-			AssignmentExpression(node: TSESTree.AssignmentExpression) {
-				// Check for array index assignment: arr[i] = value
-				if (
-					node.operator === "=" &&
-					node.left.type === "MemberExpression" &&
-					node.left.computed === true // arr[i] syntax
-				) {
-					// Check if it looks like array index access (numeric or variable index)
-					const property = node.left.property
-					const isNumericIndex = property.type === "Literal" && typeof property.value === "number"
-					const isVariableIndex = property.type === "Identifier"
-
-					if (isNumericIndex || isVariableIndex) {
-						context.report({
-							node,
-							messageId: "noArrayIndexAssignment",
-						})
+						context.report({ messageId: "noForEach", node })
 					}
 				}
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "Prohibit array mutations and suggest immutable operations",
+		},
+		fixable: undefined,
+		messages: {
+			noArrayCopyWithin: getArrayMutationMessage("copyWithin"),
+			noArrayFill: getArrayMutationMessage("fill"),
+			noArrayIndexAssignment: NO_ARRAY_INDEX_ASSIGNMENT_MESSAGE,
+			noArrayPop: getArrayMutationMessage("pop"),
+			noArrayPush: getArrayMutationMessage("push"),
+			noArrayReverse: getArrayMutationMessage("reverse"),
+			noArrayShift: getArrayMutationMessage("shift"),
+			noArraySort: NO_SORT_IN_PLACE_MESSAGE,
+			noArraySplice: getArrayMutationMessage("splice"),
+			noArrayUnshift: getArrayMutationMessage("unshift"),
+			noForEach: NO_FOREACH_MESSAGE,
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "no-mutation",
 })

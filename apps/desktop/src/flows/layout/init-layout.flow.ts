@@ -44,10 +44,10 @@ export function initLayoutFlow(): LayoutState {
 
 		// Apply to store using batch update (避免多次触发状态更新)
 		useLayoutStore.setState({
-			isSidebarOpen: loadedState.isSidebarOpen,
 			activePanel: loadedState.activePanel,
-			wasCollapsedByDrag: loadedState.wasCollapsedByDrag,
+			isSidebarOpen: loadedState.isSidebarOpen,
 			sidebarWidth: loadedState.sidebarWidth,
+			wasCollapsedByDrag: loadedState.wasCollapsedByDrag,
 		})
 
 		info("[Layout Flow] Layout initialized successfully", { loadedState }, "init-layout")

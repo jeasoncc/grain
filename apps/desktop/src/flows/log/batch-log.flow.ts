@@ -43,8 +43,8 @@ interface LogBuffer {
  */
 let logBuffer: LogBuffer = {
 	entries: [],
-	lastFlushTime: dayjs().valueOf(),
 	isFlushPending: false,
+	lastFlushTime: dayjs().valueOf(),
 }
 
 /**
@@ -223,24 +223,24 @@ export const createBatchLogFlow = (config: LogConfig = DEFAULT_LOG_CONFIG) => {
 	}
 
 	return {
-		logEntry,
 		debug: (message: string, context?: Record<string, unknown>, source?: string) =>
 			logEntry("debug", message, context, source),
-		info: (message: string, context?: Record<string, unknown>, source?: string) =>
-			logEntry("info", message, context, source),
-		success: (message: string, context?: Record<string, unknown>, source?: string) =>
-			logEntry("success", message, context, source),
-		warn: (message: string, context?: Record<string, unknown>, source?: string) =>
-			logEntry("warn", message, context, source),
 		error: (message: string, context?: Record<string, unknown>, source?: string) =>
 			logEntry("error", message, context, source),
-		trace: (message: string, context?: Record<string, unknown>, source?: string) =>
-			logEntry("trace", message, context, source),
 
 		// 批量操作
 		flush: () => flushLogBuffer(config),
 		getBufferSize: () => logBuffer.entries.length,
+		info: (message: string, context?: Record<string, unknown>, source?: string) =>
+			logEntry("info", message, context, source),
 		isFlushPending: () => logBuffer.isFlushPending,
+		logEntry,
+		success: (message: string, context?: Record<string, unknown>, source?: string) =>
+			logEntry("success", message, context, source),
+		trace: (message: string, context?: Record<string, unknown>, source?: string) =>
+			logEntry("trace", message, context, source),
+		warn: (message: string, context?: Record<string, unknown>, source?: string) =>
+			logEntry("warn", message, context, source),
 	}
 }
 
@@ -263,8 +263,8 @@ export const forceFlushAllLogs = (): TE.TaskEither<AppError, void> =>
  */
 export const getBufferStatus = () => ({
 	entryCount: logBuffer.entries.length,
-	lastFlushTime: logBuffer.lastFlushTime,
 	isFlushPending: logBuffer.isFlushPending,
+	lastFlushTime: logBuffer.lastFlushTime,
 	timeSinceLastFlush: dayjs().valueOf() - logBuffer.lastFlushTime,
 })
 
@@ -276,8 +276,8 @@ export const getBufferStatus = () => ({
 export const clearLogBuffer = (): void => {
 	logBuffer = {
 		entries: [],
-		lastFlushTime: dayjs().valueOf(),
 		isFlushPending: false,
+		lastFlushTime: dayjs().valueOf(),
 	}
 
 	if (batchTimer) {

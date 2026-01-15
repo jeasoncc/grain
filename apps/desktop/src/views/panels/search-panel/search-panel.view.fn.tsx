@@ -26,18 +26,18 @@ import { ScrollArea } from "@/views/ui/scroll-area"
 import type { ResultGroupProps, SearchPanelViewProps } from "./search-panel.types"
 
 const typeIcons: Record<SearchResultType, LucideIcon> = {
-	project: FileText,
 	node: FileText,
+	project: FileText,
 }
 
 const typeLabels: Record<SearchResultType, string> = {
-	project: "项目",
 	node: "文件",
+	project: "项目",
 }
 
 const typeColors: Record<SearchResultType, string> = {
-	project: "text-purple-500",
 	node: "text-blue-500",
+	project: "text-purple-500",
 }
 
 export const SearchPanelView = memo(

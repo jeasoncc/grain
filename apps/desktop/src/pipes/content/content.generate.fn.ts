@@ -150,13 +150,13 @@ export interface ContentGenerationOptions {
  */
 export function createTextNode(text: string): LexicalTextNode {
 	return {
+		detail: 0,
+		format: 0,
+		mode: "normal",
+		style: "",
+		text,
 		type: "text",
 		version: 1,
-		text,
-		format: 0,
-		style: "",
-		detail: 0,
-		mode: "normal",
 	}
 }
 
@@ -168,14 +168,14 @@ export function createTextNode(text: string): LexicalTextNode {
  */
 export function createTagNode(tagName: string): LexicalTagNode {
 	return {
-		type: "tag",
-		version: 1,
+		detail: 2,
+		format: 0,
+		mode: "segmented",
+		style: "",
 		tagName,
 		text: `#[${tagName}]`,
-		format: 0,
-		style: "",
-		detail: 2,
-		mode: "segmented",
+		type: "tag",
+		version: 1,
 	}
 }
 
@@ -214,9 +214,9 @@ export function createHeadingNode(
 		direction: "ltr",
 		format: "",
 		indent: 0,
+		tag,
 		type: "heading",
 		version: 1,
-		tag,
 	}
 }
 
@@ -239,8 +239,8 @@ export function createListItemNode(
 		format: "",
 		indent: 0,
 		type: "listitem",
-		version: 1,
 		value,
+		version: 1,
 	}
 
 	return checked !== undefined ? { ...baseNode, checked } : baseNode
@@ -264,11 +264,11 @@ export function createListNode(
 		direction: "ltr",
 		format: "",
 		indent: 0,
-		type: "list",
-		version: 1,
 		listType,
 		start: 1,
 		tag: listType === "number" ? "ol" : "ul",
+		type: "list",
+		version: 1,
 	}
 }
 
@@ -298,17 +298,17 @@ export function createTagsLine(tags: readonly string[]): LexicalParagraphNode {
  */
 export function formatFullDateTime(date: Date): string {
 	const dateStr = date.toLocaleDateString("en-US", {
+		day: "numeric",
+		month: "long",
 		weekday: "long",
 		year: "numeric",
-		month: "long",
-		day: "numeric",
 	})
 
 	const timeStr = date.toLocaleTimeString("en-US", {
 		hour: "numeric",
+		hour12: true,
 		minute: "2-digit",
 		second: "2-digit",
-		hour12: true,
 	})
 
 	return `${dateStr} at ${timeStr}`
@@ -322,9 +322,9 @@ export function formatFullDateTime(date: Date): string {
  */
 export function formatShortDate(date: Date): string {
 	return date.toLocaleDateString("en-US", {
-		year: "numeric",
-		month: "short",
 		day: "numeric",
+		month: "short",
+		year: "numeric",
 	})
 }
 
@@ -554,10 +554,10 @@ export function generateContentByType(
 ): string {
 	const config = getTemplateConfig(type)
 	const mergedOptions: ContentGenerationOptions = {
-		tags: options.tags ?? config.defaultTags,
+		customTitle: options.customTitle,
 		headingLevel: options.headingLevel ?? config.headingLevel,
 		includeEmptyLines: options.includeEmptyLines ?? config.includeEmptyLines,
-		customTitle: options.customTitle,
+		tags: options.tags ?? config.defaultTags,
 	}
 
 	switch (type) {

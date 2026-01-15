@@ -148,7 +148,7 @@ export function useBackupManager(): UseBackupManagerReturn {
 
 	const restore = useCallback(async () => {
 		const result = await selectFile({
-			filters: [{ name: "备份文件", extensions: ["json", "zip"] }],
+			filters: [{ extensions: ["json", "zip"], name: "备份文件" }],
 		})
 
 		if (result.cancelled || !result.file) {
@@ -249,10 +249,10 @@ export function useBackupManager(): UseBackupManagerReturn {
 		setLoading(true)
 		try {
 			const options: ClearDataOptions = {
+				clearCookies: false,
 				clearIndexedDB: true,
 				clearLocalStorage: false,
 				clearSessionStorage: false,
-				clearCookies: false,
 			}
 			const result = await clearAllData(options)()
 			if (result._tag === "Right") {
@@ -274,10 +274,10 @@ export function useBackupManager(): UseBackupManagerReturn {
 		setLoading(true)
 		try {
 			const options: ClearDataOptions = {
+				clearCookies: true,
 				clearIndexedDB: false,
 				clearLocalStorage: true,
 				clearSessionStorage: true,
-				clearCookies: true,
 			}
 			const result = await clearAllData(options)()
 			if (result._tag === "Right") {
@@ -300,20 +300,20 @@ export function useBackupManager(): UseBackupManagerReturn {
 	// ============================================================================
 
 	return {
-		stats,
-		storageStats,
-		loading,
 		autoBackupEnabled,
-		localBackups,
-		loadStats,
-		loadLocalBackups,
-		exportJson,
-		exportZip,
-		restore,
-		toggleAutoBackup,
-		restoreLocal,
 		clearAll,
 		clearDatabase,
 		clearSettings,
+		exportJson,
+		exportZip,
+		loading,
+		loadLocalBackups,
+		loadStats,
+		localBackups,
+		restore,
+		restoreLocal,
+		stats,
+		storageStats,
+		toggleAutoBackup,
 	}
 }

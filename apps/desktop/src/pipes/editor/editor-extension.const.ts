@@ -33,43 +33,43 @@ export type DiagramType = "mermaid" | "plantuml"
  * 文件扩展名常量
  */
 export const FILE_EXTENSIONS = {
-	// Grain 富文本
-	GRAIN: ".grain",
+	BASH: ".bash",
+	C: ".c",
+	CPP: ".cpp",
+	CSS: ".css",
 
 	// 绘图
 	EXCALIDRAW: ".excalidraw",
+	GO: ".go",
+	// Grain 富文本
+	GRAIN: ".grain",
+	H: ".h",
+	HPP: ".hpp",
+	HTML: ".html",
+	JAVA: ".java",
+
+	// 代码文件
+	JS: ".js",
+	JSON: ".json",
+	JSX: ".jsx",
+	LESS: ".less",
+	MD: ".md",
 
 	// 图表
 	MERMAID: ".mermaid",
 	PLANTUML: ".plantuml",
-
-	// 代码文件
-	JS: ".js",
-	TS: ".ts",
-	JSX: ".jsx",
-	TSX: ".tsx",
-	JSON: ".json",
-	MD: ".md",
-	HTML: ".html",
-	CSS: ".css",
-	SCSS: ".scss",
-	LESS: ".less",
-	YAML: ".yaml",
-	YML: ".yml",
-	TOML: ".toml",
-	XML: ".xml",
-	SQL: ".sql",
-	SH: ".sh",
-	BASH: ".bash",
 	PY: ".py",
 	RS: ".rs",
-	GO: ".go",
-	JAVA: ".java",
-	C: ".c",
-	CPP: ".cpp",
-	H: ".h",
-	HPP: ".hpp",
+	SCSS: ".scss",
+	SH: ".sh",
+	SQL: ".sql",
+	TOML: ".toml",
+	TS: ".ts",
+	TSX: ".tsx",
 	TXT: ".txt",
+	XML: ".xml",
+	YAML: ".yaml",
+	YML: ".yml",
 } as const
 
 /**
@@ -128,21 +128,20 @@ export const EXTENSION_TO_DIAGRAM_TYPE_MAP: Record<string, DiagramType> = {
  * 用于创建新文件时自动添加扩展名
  */
 export const NODE_TYPE_TO_EXTENSION_MAP: Record<string, string> = {
-	// 富文本类型使用 .grain
-	file: FILE_EXTENSIONS.GRAIN,
+	// 代码类型（使用 Lexical 编辑器）
+	code: FILE_EXTENSIONS.JS,
 	diary: FILE_EXTENSIONS.GRAIN,
-	wiki: FILE_EXTENSIONS.GRAIN,
-	todo: FILE_EXTENSIONS.GRAIN,
-	note: FILE_EXTENSIONS.GRAIN,
-	ledger: FILE_EXTENSIONS.GRAIN,
 
 	// 绘图类型
 	drawing: FILE_EXTENSIONS.EXCALIDRAW,
+	// 富文本类型使用 .grain
+	file: FILE_EXTENSIONS.GRAIN,
+	ledger: FILE_EXTENSIONS.GRAIN,
 
 	// 图表类型（使用 Lexical 编辑器）
 	mermaid: FILE_EXTENSIONS.MERMAID,
+	note: FILE_EXTENSIONS.GRAIN,
 	plantuml: FILE_EXTENSIONS.PLANTUML,
-
-	// 代码类型（使用 Lexical 编辑器）
-	code: FILE_EXTENSIONS.JS,
+	todo: FILE_EXTENSIONS.GRAIN,
+	wiki: FILE_EXTENSIONS.GRAIN,
 }

@@ -38,10 +38,10 @@ vi.mock("@tanstack/react-router", () => ({
 // Mock logger
 vi.mock("@/log", () => ({
 	default: {
-		start: vi.fn(),
-		success: vi.fn(),
 		error: vi.fn(),
 		info: vi.fn(),
+		start: vi.fn(),
+		success: vi.fn(),
 	},
 }))
 
@@ -104,13 +104,13 @@ describe("GlobalSearchContainer", () => {
 		it("should perform search when query changes", async () => {
 			const mockResults = [
 				{
-					id: "1",
-					type: "node" as const,
-					title: "Test",
 					content: "",
 					excerpt: "",
-					score: 1,
 					highlights: [],
+					id: "1",
+					score: 1,
+					title: "Test",
+					type: "node" as const,
 				},
 			]
 			mockSimpleSearch.mockResolvedValue(mockResults)
@@ -207,13 +207,13 @@ describe("GlobalSearchContainer", () => {
 			const onOpenChange = vi.fn()
 			const mockResults = [
 				{
-					id: "1",
-					type: "node" as const,
-					title: "Test",
 					content: "",
 					excerpt: "",
-					score: 1,
 					highlights: [],
+					id: "1",
+					score: 1,
+					title: "Test",
+					type: "node" as const,
 				},
 			]
 			mockSimpleSearch.mockResolvedValue(mockResults)
@@ -247,22 +247,22 @@ describe("GlobalSearchContainer", () => {
 		it("should handle arrow down key", async () => {
 			const mockResults = [
 				{
-					id: "1",
-					type: "node" as const,
-					title: "Test 1",
 					content: "",
 					excerpt: "",
-					score: 1,
 					highlights: [],
+					id: "1",
+					score: 1,
+					title: "Test 1",
+					type: "node" as const,
 				},
 				{
-					id: "2",
-					type: "node" as const,
-					title: "Test 2",
 					content: "",
 					excerpt: "",
-					score: 1,
 					highlights: [],
+					id: "2",
+					score: 1,
+					title: "Test 2",
+					type: "node" as const,
 				},
 			]
 			mockSimpleSearch.mockResolvedValue(mockResults)
@@ -294,13 +294,13 @@ describe("GlobalSearchContainer", () => {
 		it("should reset state when dialog closes", async () => {
 			const mockResults = [
 				{
-					id: "1",
-					type: "node" as const,
-					title: "Test",
 					content: "",
 					excerpt: "",
-					score: 1,
 					highlights: [],
+					id: "1",
+					score: 1,
+					title: "Test",
+					type: "node" as const,
 				},
 			]
 			mockSimpleSearch.mockResolvedValue(mockResults)

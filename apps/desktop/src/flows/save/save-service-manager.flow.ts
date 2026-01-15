@@ -140,9 +140,9 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 			if (E.isRight(result)) {
 				const updatedModel = {
 					...model,
+					isSaving: false,
 					lastSavedContent: contentToSave,
 					pendingContent: null,
-					isSaving: false,
 				}
 				models = new Map([...models, [nodeId, updatedModel]])
 				if (model.tabId && model.setTabDirty) {
@@ -173,111 +173,6 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 	}
 
 	return {
-		getOrCreate: (config: SaveModelConfig): void => {
-			const {
-				nodeId,
-				contentType,
-				autoSaveDelay = DEFAULT_AUTOSAVE_DELAY,
-				tabId,
-				setTabDirty,
-				onSaving,
-				onSaved,
-				onError,
-			} = config
-
-			const existing = models.get(nodeId)
-
-			if (existing) {
-				const updatedModel = {
-					...existing,
-					tabId,
-					setTabDirty,
-					onSaving,
-					onSaved,
-					onError,
-				}
-
-				if (existing.autoSaveDelay !== autoSaveDelay) {
-					existing.debouncedSave?.cancel()
-					const newDebouncedSave = createDebouncedSave(nodeId, autoSaveDelay)
-					models = new Map([
-						...models,
-						[
-							nodeId,
-							{
-								...updatedModel,
-								debouncedSave: newDebouncedSave,
-								autoSaveDelay,
-							},
-						],
-					])
-				} else {
-					models = new Map([...models, [nodeId, updatedModel]])
-				}
-				return
-			}
-
-			const model: SaveModel = {
-				nodeId,
-				contentType,
-				tabId,
-				pendingContent: null,
-				lastSavedContent: "",
-				isSaving: false,
-				debouncedSave: createDebouncedSave(nodeId, autoSaveDelay),
-				autoSaveDelay,
-				setTabDirty,
-				onSaving,
-				onSaved,
-				onError,
-			}
-
-			models = new Map([...models, [nodeId, model]])
-		},
-
-		updateContent: (nodeId: string, content: string): void => {
-			const model = models.get(nodeId)
-			if (!model) return
-
-			const updatedModel = { ...model, pendingContent: content }
-			models = new Map([...models, [nodeId, updatedModel]])
-
-			if (model.tabId && model.setTabDirty && content !== model.lastSavedContent) {
-				model.setTabDirty(model.tabId, true)
-			}
-
-			if (model.debouncedSave) {
-				model.debouncedSave(content)
-			}
-		},
-
-		saveNow: async (nodeId: string): Promise<boolean> => {
-			const model = models.get(nodeId)
-			if (!model) return false
-
-			if (model.debouncedSave) {
-				model.debouncedSave.cancel()
-			}
-			return await saveContent(nodeId)
-		},
-
-		setInitialContent: (nodeId: string, content: string): void => {
-			const model = models.get(nodeId)
-			if (!model) return
-			models = new Map([...models, [nodeId, { ...model, lastSavedContent: content }]])
-		},
-
-		hasUnsavedChanges: (nodeId: string): boolean => {
-			const model = models.get(nodeId)
-			if (!model) return false
-			return model.pendingContent !== null && model.pendingContent !== model.lastSavedContent
-		},
-
-		getPendingContent: (nodeId: string): string | null => {
-			const model = models.get(nodeId)
-			return model?.pendingContent ?? null
-		},
-
 		dispose: (nodeId: string): void => {
 			const model = models.get(nodeId)
 			if (model) {
@@ -298,6 +193,72 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 			}
 			models = new Map()
 		},
+		getOrCreate: (config: SaveModelConfig): void => {
+			const {
+				nodeId,
+				contentType,
+				autoSaveDelay = DEFAULT_AUTOSAVE_DELAY,
+				tabId,
+				setTabDirty,
+				onSaving,
+				onSaved,
+				onError,
+			} = config
+
+			const existing = models.get(nodeId)
+
+			if (existing) {
+				const updatedModel = {
+					...existing,
+					onError,
+					onSaved,
+					onSaving,
+					setTabDirty,
+					tabId,
+				}
+
+				if (existing.autoSaveDelay !== autoSaveDelay) {
+					existing.debouncedSave?.cancel()
+					const newDebouncedSave = createDebouncedSave(nodeId, autoSaveDelay)
+					models = new Map([
+						...models,
+						[
+							nodeId,
+							{
+								...updatedModel,
+								autoSaveDelay,
+								debouncedSave: newDebouncedSave,
+							},
+						],
+					])
+				} else {
+					models = new Map([...models, [nodeId, updatedModel]])
+				}
+				return
+			}
+
+			const model: SaveModel = {
+				autoSaveDelay,
+				contentType,
+				debouncedSave: createDebouncedSave(nodeId, autoSaveDelay),
+				isSaving: false,
+				lastSavedContent: "",
+				nodeId,
+				onError,
+				onSaved,
+				onSaving,
+				pendingContent: null,
+				setTabDirty,
+				tabId,
+			}
+
+			models = new Map([...models, [nodeId, model]])
+		},
+
+		getPendingContent: (nodeId: string): string | null => {
+			const model = models.get(nodeId)
+			return model?.pendingContent ?? null
+		},
 
 		getUnsavedNodeIds: (): ReadonlyArray<string> => {
 			return Array.from(models.entries())
@@ -306,6 +267,16 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 						model.pendingContent !== null && model.pendingContent !== model.lastSavedContent,
 				)
 				.map(([nodeId]) => nodeId)
+		},
+
+		has: (nodeId: string): boolean => {
+			return models.has(nodeId)
+		},
+
+		hasUnsavedChanges: (nodeId: string): boolean => {
+			const model = models.get(nodeId)
+			if (!model) return false
+			return model.pendingContent !== null && model.pendingContent !== model.lastSavedContent
 		},
 
 		saveAll: async (): Promise<void> => {
@@ -319,8 +290,36 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 			await Promise.all(unsavedIds.map((nodeId) => saveContent(nodeId)))
 		},
 
-		has: (nodeId: string): boolean => {
-			return models.has(nodeId)
+		saveNow: async (nodeId: string): Promise<boolean> => {
+			const model = models.get(nodeId)
+			if (!model) return false
+
+			if (model.debouncedSave) {
+				model.debouncedSave.cancel()
+			}
+			return await saveContent(nodeId)
+		},
+
+		setInitialContent: (nodeId: string, content: string): void => {
+			const model = models.get(nodeId)
+			if (!model) return
+			models = new Map([...models, [nodeId, { ...model, lastSavedContent: content }]])
+		},
+
+		updateContent: (nodeId: string, content: string): void => {
+			const model = models.get(nodeId)
+			if (!model) return
+
+			const updatedModel = { ...model, pendingContent: content }
+			models = new Map([...models, [nodeId, updatedModel]])
+
+			if (model.tabId && model.setTabDirty && content !== model.lastSavedContent) {
+				model.setTabDirty(model.tabId, true)
+			}
+
+			if (model.debouncedSave) {
+				model.debouncedSave(content)
+			}
 		},
 	}
 }

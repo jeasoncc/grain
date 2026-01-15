@@ -41,8 +41,8 @@ export function WikiHoverPreview({
 	const [title, setTitle] = useState<string>("")
 	const [loading, setLoading] = useState(true)
 	const [position, setPosition] = useState<{ top: number; left: number }>({
-		top: 0,
 		left: 0,
+		top: 0,
 	})
 	const tooltipRef = useRef<HTMLDivElement>(null)
 
@@ -83,7 +83,7 @@ export function WikiHoverPreview({
 		const top = rect.bottom + window.scrollY + 5
 		const left = rect.left + window.scrollX
 
-		setPosition({ top, left })
+		setPosition({ left, top })
 	}, [anchorElement])
 
 	if (!anchorElement) return null
@@ -92,7 +92,7 @@ export function WikiHoverPreview({
 		<div
 			ref={tooltipRef}
 			className="fixed z-[9999] w-64 p-3 bg-popover/95 backdrop-blur-xl border border-border/40 rounded-xl shadow-xl animate-in fade-in zoom-in-95 duration-200"
-			style={{ top: position.top, left: position.left }}
+			style={{ left: position.left, top: position.top }}
 			onMouseLeave={onClose}
 			data-wiki-preview="true"
 			role="tooltip"

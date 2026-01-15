@@ -33,12 +33,12 @@ export const mermaidParamsSchema = dateParamsSchema
  * Mermaid > year-YYYY-{Zodiac} > month-MM-{MonthName}
  */
 export const mermaidConfig = createDateTemplateConfig({
-	name: "Mermaid",
-	rootFolder: "Mermaid",
 	fileType: "mermaid",
-	tag: "mermaid",
-	prefix: "mermaid",
 	generateContent: generateMermaidContent,
 	includeDayFolder: false,
+	name: "Mermaid",
+	prefix: "mermaid",
+	rootFolder: "Mermaid",
 	skipJsonParse: true,
+	tag: "mermaid",
 })

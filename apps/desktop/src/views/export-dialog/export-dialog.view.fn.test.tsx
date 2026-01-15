@@ -10,42 +10,42 @@ import { ExportDialogView } from "./export-dialog.view.fn"
 
 describe("ExportDialogView", () => {
 	const formatLabels: Record<ExtendedExportFormat, string> = {
-		pdf: "PDF",
 		docx: "Word",
-		txt: "Text",
 		epub: "EPUB",
-		markdown: "Markdown",
 		json: "JSON Backup",
+		markdown: "Markdown",
+		pdf: "PDF",
+		txt: "Text",
 		zip: "ZIP Archive",
 	}
 
 	const formatIcons: Record<ExtendedExportFormat, React.ReactNode> = {
-		pdf: <FileText className="size-5 text-red-500" />,
 		docx: <FileType className="size-5 text-blue-500" />,
-		txt: <File className="size-5 text-gray-500" />,
 		epub: <BookOpen className="size-5 text-green-500" />,
-		markdown: <FileCode className="size-5 text-purple-500" />,
 		json: <FileJson className="size-5 text-orange-500" />,
+		markdown: <FileCode className="size-5 text-purple-500" />,
+		pdf: <FileText className="size-5 text-red-500" />,
+		txt: <File className="size-5 text-gray-500" />,
 		zip: <FileArchive className="size-5 text-cyan-500" />,
 	}
 
 	const defaultProps: ExportDialogViewProps = {
-		open: true,
-		onOpenChange: vi.fn(),
 		format: "pdf",
+		formatIcons,
+		formatLabels,
+		isExporting: false,
+		onExport: vi.fn(),
 		onFormatChange: vi.fn(),
+		onOpenChange: vi.fn(),
+		onOptionsChange: vi.fn(),
+		open: true,
 		options: {
-			includeTitle: true,
 			includeAuthor: true,
 			includeChapterTitles: true,
 			includeSceneTitles: false,
+			includeTitle: true,
 			pageBreakBetweenChapters: true,
 		},
-		onOptionsChange: vi.fn(),
-		isExporting: false,
-		onExport: vi.fn(),
-		formatLabels,
-		formatIcons,
 	}
 
 	it("should render dialog when open", () => {

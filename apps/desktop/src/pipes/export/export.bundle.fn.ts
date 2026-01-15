@@ -53,11 +53,11 @@ export interface ExportDataInput {
  */
 export function createExportBundle(data: ExportDataInput): ExportBundle {
 	return {
-		version: 4, // 当前版本
-		projects: data.workspaces,
-		nodes: data.nodes,
-		contents: data.contents,
 		attachments: data.attachments,
+		contents: data.contents,
+		nodes: data.nodes,
+		projects: data.workspaces,
+		version: 4, // 当前版本
 	}
 }
 

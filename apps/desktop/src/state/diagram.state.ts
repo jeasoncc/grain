@@ -17,17 +17,17 @@ import type { DiagramStore } from "@/types/diagram"
 export const useDiagramStore = create<DiagramStore>()(
 	persist(
 		(set, get) => ({
+			enableKroki: false,
 			// State
 			krokiServerUrl: "",
-			enableKroki: false,
+
+			setEnableKroki: (enabled: boolean) => {
+				set({ enableKroki: enabled })
+			},
 
 			// Actions
 			setKrokiServerUrl: (url: string) => {
 				set({ krokiServerUrl: url.trim() })
-			},
-
-			setEnableKroki: (enabled: boolean) => {
-				set({ enableKroki: enabled })
 			},
 
 			testKrokiConnection: async () => {
@@ -39,11 +39,11 @@ export const useDiagramStore = create<DiagramStore>()(
 					const url = `${krokiServerUrl}/plantuml/svg`
 
 					const response = await fetch(url, {
-						method: "POST",
+						body: testDiagram,
 						headers: {
 							"Content-Type": "text/plain",
 						},
-						body: testDiagram,
+						method: "POST",
 					})
 
 					return response.ok

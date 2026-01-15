@@ -35,7 +35,6 @@ const DEFAULT_STALE_TIME = 30 * 1000
  */
 export const useWorkspaces = () => {
 	return useQuery({
-		queryKey: queryKeys.workspaces.all,
 		queryFn: async (): Promise<readonly WorkspaceInterface[]> => {
 			// 执行 TaskEither，解包结果
 			const result = await workspaceRepo.getWorkspaces()()
@@ -44,6 +43,7 @@ export const useWorkspaces = () => {
 			if (result._tag === "Left") throw result.left
 			return result.right
 		},
+		queryKey: queryKeys.workspaces.all,
 		staleTime: DEFAULT_STALE_TIME,
 	})
 }
@@ -60,7 +60,7 @@ export const useWorkspaces = () => {
  */
 export const useWorkspace = (workspaceId: string | null | undefined) => {
 	return useQuery({
-		queryKey: queryKeys.workspaces.detail(workspaceId ?? ""),
+		enabled: !!workspaceId,
 		queryFn: async (): Promise<WorkspaceInterface | null> => {
 			if (!workspaceId) return null
 
@@ -69,7 +69,7 @@ export const useWorkspace = (workspaceId: string | null | undefined) => {
 			if (result._tag === "Left") throw result.left
 			return result.right
 		},
-		enabled: !!workspaceId,
+		queryKey: queryKeys.workspaces.detail(workspaceId ?? ""),
 		staleTime: DEFAULT_STALE_TIME,
 	})
 }

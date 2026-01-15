@@ -62,8 +62,8 @@ export const getTagOrFail = (id: string): TE.TaskEither<AppError, TagInterface> 
 			tag
 				? TE.right(tag)
 				: TE.left({
-						type: "NOT_FOUND",
 						message: `标签不存在: ${id}`,
+						type: "NOT_FOUND",
 					} as AppError),
 		),
 	)

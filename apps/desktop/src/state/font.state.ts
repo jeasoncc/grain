@@ -39,6 +39,53 @@ export const useFontStore = create<FontStore>()(
 			// Initial State
 			...DEFAULT_FONT_STATE,
 
+			reset: () => {
+				set((state) => {
+					return {
+						...state,
+						cardBorderRadius: DEFAULT_FONT_STATE.cardBorderRadius,
+						cardSize: DEFAULT_FONT_STATE.cardSize,
+						firstLineIndent: DEFAULT_FONT_STATE.firstLineIndent,
+						fontFamily: DEFAULT_FONT_STATE.fontFamily,
+						fontSize: DEFAULT_FONT_STATE.fontSize,
+						letterSpacing: DEFAULT_FONT_STATE.letterSpacing,
+						lineHeight: DEFAULT_FONT_STATE.lineHeight,
+						paragraphSpacing: DEFAULT_FONT_STATE.paragraphSpacing,
+						uiFontFamily: DEFAULT_FONT_STATE.uiFontFamily,
+						uiFontSize: DEFAULT_FONT_STATE.uiFontSize,
+						uiScale: DEFAULT_FONT_STATE.uiScale,
+					}
+				})
+			},
+
+			setCardBorderRadius: (cardBorderRadius: number) => {
+				set((state) => {
+					const clampedRadius = clamp(
+						cardBorderRadius,
+						FONT_CONSTRAINTS.cardBorderRadius.min,
+						FONT_CONSTRAINTS.cardBorderRadius.max,
+					)
+					return { ...state, cardBorderRadius: clampedRadius }
+				})
+			},
+
+			setCardSize: (cardSize: string) => {
+				set((state) => {
+					return { ...state, cardSize }
+				})
+			},
+
+			setFirstLineIndent: (firstLineIndent: number) => {
+				set((state) => {
+					const clampedIndent = clamp(
+						firstLineIndent,
+						FONT_CONSTRAINTS.firstLineIndent.min,
+						FONT_CONSTRAINTS.firstLineIndent.max,
+					)
+					return { ...state, firstLineIndent: clampedIndent }
+				})
+			},
+
 			// ==============================
 			// Actions
 			// ==============================
@@ -60,6 +107,17 @@ export const useFontStore = create<FontStore>()(
 				})
 			},
 
+			setLetterSpacing: (letterSpacing: number) => {
+				set((state) => {
+					const clampedSpacing = clamp(
+						letterSpacing,
+						FONT_CONSTRAINTS.letterSpacing.min,
+						FONT_CONSTRAINTS.letterSpacing.max,
+					)
+					return { ...state, letterSpacing: clampedSpacing }
+				})
+			},
+
 			setLineHeight: (lineHeight: number) => {
 				set((state) => {
 					const clampedHeight = clamp(
@@ -71,14 +129,14 @@ export const useFontStore = create<FontStore>()(
 				})
 			},
 
-			setLetterSpacing: (letterSpacing: number) => {
+			setParagraphSpacing: (paragraphSpacing: number) => {
 				set((state) => {
 					const clampedSpacing = clamp(
-						letterSpacing,
-						FONT_CONSTRAINTS.letterSpacing.min,
-						FONT_CONSTRAINTS.letterSpacing.max,
+						paragraphSpacing,
+						FONT_CONSTRAINTS.paragraphSpacing.min,
+						FONT_CONSTRAINTS.paragraphSpacing.max,
 					)
-					return { ...state, letterSpacing: clampedSpacing }
+					return { ...state, paragraphSpacing: clampedSpacing }
 				})
 			},
 
@@ -102,64 +160,6 @@ export const useFontStore = create<FontStore>()(
 			setUiScale: (uiScale: string) => {
 				set((state) => {
 					return { ...state, uiScale }
-				})
-			},
-
-			setCardSize: (cardSize: string) => {
-				set((state) => {
-					return { ...state, cardSize }
-				})
-			},
-
-			setCardBorderRadius: (cardBorderRadius: number) => {
-				set((state) => {
-					const clampedRadius = clamp(
-						cardBorderRadius,
-						FONT_CONSTRAINTS.cardBorderRadius.min,
-						FONT_CONSTRAINTS.cardBorderRadius.max,
-					)
-					return { ...state, cardBorderRadius: clampedRadius }
-				})
-			},
-
-			setParagraphSpacing: (paragraphSpacing: number) => {
-				set((state) => {
-					const clampedSpacing = clamp(
-						paragraphSpacing,
-						FONT_CONSTRAINTS.paragraphSpacing.min,
-						FONT_CONSTRAINTS.paragraphSpacing.max,
-					)
-					return { ...state, paragraphSpacing: clampedSpacing }
-				})
-			},
-
-			setFirstLineIndent: (firstLineIndent: number) => {
-				set((state) => {
-					const clampedIndent = clamp(
-						firstLineIndent,
-						FONT_CONSTRAINTS.firstLineIndent.min,
-						FONT_CONSTRAINTS.firstLineIndent.max,
-					)
-					return { ...state, firstLineIndent: clampedIndent }
-				})
-			},
-
-			reset: () => {
-				set((state) => {
-					return {
-						...state,
-						fontFamily: DEFAULT_FONT_STATE.fontFamily,
-						fontSize: DEFAULT_FONT_STATE.fontSize,
-						lineHeight: DEFAULT_FONT_STATE.lineHeight,
-						letterSpacing: DEFAULT_FONT_STATE.letterSpacing,
-						uiFontFamily: DEFAULT_FONT_STATE.uiFontFamily,
-						uiFontSize: DEFAULT_FONT_STATE.uiFontSize,
-						uiScale: DEFAULT_FONT_STATE.uiScale,
-						cardSize: DEFAULT_FONT_STATE.cardSize,
-						cardBorderRadius: DEFAULT_FONT_STATE.cardBorderRadius,
-						paragraphSpacing: DEFAULT_FONT_STATE.paragraphSpacing,
-						firstLineIndent: DEFAULT_FONT_STATE.firstLineIndent,
-					}
 				})
 			},
 		})),

@@ -84,11 +84,11 @@ export const createNode = (params: CreateNodeParams): TE.TaskEither<AppError, No
 		// 1. 创建节点（Rust 后端会自动处理排序号和内容创建）
 		nodeRepo.createNode(
 			{
-				workspace: params.workspaceId,
-				parent: params.parentId,
-				type: params.type,
-				title: params.title,
 				collapsed: true,
+				parent: params.parentId,
+				title: params.title,
+				type: params.type,
+				workspace: params.workspaceId,
 			},
 			params.content,
 		),
@@ -129,11 +129,11 @@ const getOrCreateFolder = (
 
 			// 创建新文件夹
 			return nodeRepo.createNode({
-				workspace: workspaceId,
-				parent: parentId,
-				type: "folder",
-				title,
 				collapsed,
+				parent: parentId,
+				title,
+				type: "folder",
+				workspace: workspaceId,
 			})
 		}),
 	)
@@ -156,8 +156,8 @@ export const ensureFolderPath = (
 ): TE.TaskEither<AppError, NodeInterface> => {
 	if (folderPath.length === 0) {
 		return TE.left({
-			type: "VALIDATION_ERROR",
 			message: "文件夹路径不能为空",
+			type: "VALIDATION_ERROR",
 		})
 	}
 
@@ -168,8 +168,8 @@ export const ensureFolderPath = (
 	): TE.TaskEither<AppError, NodeInterface> => {
 		if (remainingPath.length === 0) {
 			return TE.left({
-				type: "VALIDATION_ERROR",
 				message: "文件夹路径不能为空",
+				type: "VALIDATION_ERROR",
 			})
 		}
 
@@ -223,10 +223,10 @@ export async function createFileInTree(
 	// 创建文件节点（Rust 后端会自动处理排序号）
 	const nodeResult = await nodeRepo.createNode(
 		{
-			workspace: workspaceId,
 			parent: parentFolder.id,
-			type,
 			title,
+			type,
+			workspace: workspaceId,
 		},
 		content,
 	)()

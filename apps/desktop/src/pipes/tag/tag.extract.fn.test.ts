@@ -26,12 +26,12 @@ import {
 // ============================================================================
 
 const createTag = (name: string, count: number, workspace = "ws-1"): TagInterface => ({
-	id: `tag-${name}`,
-	name,
 	count,
-	workspace,
 	createDate: new Date().toISOString(),
+	id: `tag-${name}`,
 	lastUsed: new Date().toISOString(),
+	name,
+	workspace,
 })
 
 const sampleTags: TagInterface[] = [

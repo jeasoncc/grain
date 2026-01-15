@@ -38,10 +38,10 @@ import {
 // Helper to create mock nodes
 function createMockIdentifier(name: string): TSESTree.Identifier {
 	return {
-		type: AST_NODE_TYPES.Identifier,
+		loc: { end: { column: name.length, line: 1 }, start: { column: 0, line: 1 } },
 		name,
 		range: [0, name.length],
-		loc: { start: { line: 1, column: 0 }, end: { line: 1, column: name.length } },
+		type: AST_NODE_TYPES.Identifier,
 	} as TSESTree.Identifier
 }
 
@@ -50,24 +50,24 @@ function createMockMemberExpression(
 	propertyName: string,
 ): TSESTree.MemberExpression {
 	return {
-		type: AST_NODE_TYPES.MemberExpression,
-		object: createMockIdentifier(objectName),
-		property: createMockIdentifier(propertyName),
 		computed: false,
+		loc: { end: { column: 10, line: 1 }, start: { column: 0, line: 1 } },
+		object: createMockIdentifier(objectName),
 		optional: false,
+		property: createMockIdentifier(propertyName),
 		range: [0, 10],
-		loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
+		type: AST_NODE_TYPES.MemberExpression,
 	} as TSESTree.MemberExpression
 }
 
 function createMockCallExpression(callee: TSESTree.Expression): TSESTree.CallExpression {
 	return {
-		type: AST_NODE_TYPES.CallExpression,
-		callee,
 		arguments: [],
+		callee,
+		loc: { end: { column: 10, line: 1 }, start: { column: 0, line: 1 } },
 		optional: false,
 		range: [0, 10],
-		loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
+		type: AST_NODE_TYPES.CallExpression,
 	} as TSESTree.CallExpression
 }
 
@@ -147,12 +147,12 @@ describe("getMemberObjectName", () => {
 describe("isAsyncFunction", () => {
 	it("should detect async function declarations", () => {
 		const asyncFn: Partial<TSESTree.FunctionDeclaration> = {
-			type: AST_NODE_TYPES.FunctionDeclaration,
 			async: true,
+			type: AST_NODE_TYPES.FunctionDeclaration,
 		}
 		const syncFn: Partial<TSESTree.FunctionDeclaration> = {
-			type: AST_NODE_TYPES.FunctionDeclaration,
 			async: false,
+			type: AST_NODE_TYPES.FunctionDeclaration,
 		}
 
 		expect(isAsyncFunction(asyncFn as TSESTree.FunctionDeclaration)).toBe(true)
@@ -161,8 +161,8 @@ describe("isAsyncFunction", () => {
 
 	it("should detect async arrow functions", () => {
 		const asyncArrow: Partial<TSESTree.ArrowFunctionExpression> = {
-			type: AST_NODE_TYPES.ArrowFunctionExpression,
 			async: true,
+			type: AST_NODE_TYPES.ArrowFunctionExpression,
 		}
 
 		expect(isAsyncFunction(asyncArrow as TSESTree.ArrowFunctionExpression)).toBe(true)
@@ -219,19 +219,19 @@ describe("isAwaitExpression", () => {
 describe("isNewPromise", () => {
 	it("should detect new Promise() calls", () => {
 		const promiseNew: TSESTree.NewExpression = {
-			type: AST_NODE_TYPES.NewExpression,
-			callee: createMockIdentifier("Promise"),
 			arguments: [],
+			callee: createMockIdentifier("Promise"),
+			loc: { end: { column: 10, line: 1 }, start: { column: 0, line: 1 } },
 			range: [0, 10],
-			loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
+			type: AST_NODE_TYPES.NewExpression,
 		} as TSESTree.NewExpression
 
 		const otherNew: TSESTree.NewExpression = {
-			type: AST_NODE_TYPES.NewExpression,
-			callee: createMockIdentifier("Date"),
 			arguments: [],
+			callee: createMockIdentifier("Date"),
+			loc: { end: { column: 10, line: 1 }, start: { column: 0, line: 1 } },
 			range: [0, 10],
-			loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
+			type: AST_NODE_TYPES.NewExpression,
 		} as TSESTree.NewExpression
 
 		expect(isNewPromise(promiseNew)).toBe(true)
@@ -257,12 +257,12 @@ describe("isObjectPropertyAssignment", () => {
 	it("should detect object property assignments", () => {
 		const memberExpr = createMockMemberExpression("obj", "prop")
 		const assignExpr: TSESTree.AssignmentExpression = {
-			type: AST_NODE_TYPES.AssignmentExpression,
-			operator: "=",
 			left: memberExpr,
-			right: createMockIdentifier("value"),
+			loc: { end: { column: 10, line: 1 }, start: { column: 0, line: 1 } },
+			operator: "=",
 			range: [0, 10],
-			loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
+			right: createMockIdentifier("value"),
+			type: AST_NODE_TYPES.AssignmentExpression,
 		} as TSESTree.AssignmentExpression
 
 		expect(isObjectPropertyAssignment(assignExpr)).toBe(true)
@@ -270,12 +270,12 @@ describe("isObjectPropertyAssignment", () => {
 
 	it("should return false for simple variable assignments", () => {
 		const assignExpr: TSESTree.AssignmentExpression = {
-			type: AST_NODE_TYPES.AssignmentExpression,
-			operator: "=",
 			left: createMockIdentifier("x"),
-			right: createMockIdentifier("value"),
+			loc: { end: { column: 10, line: 1 }, start: { column: 0, line: 1 } },
+			operator: "=",
 			range: [0, 10],
-			loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
+			right: createMockIdentifier("value"),
+			type: AST_NODE_TYPES.AssignmentExpression,
 		} as TSESTree.AssignmentExpression
 
 		expect(isObjectPropertyAssignment(assignExpr)).toBe(false)
@@ -285,22 +285,22 @@ describe("isObjectPropertyAssignment", () => {
 describe("isArrayIndexAssignment", () => {
 	it("should detect array index assignments", () => {
 		const computedMember: TSESTree.MemberExpression = {
-			type: AST_NODE_TYPES.MemberExpression,
-			object: createMockIdentifier("arr"),
-			property: createMockIdentifier("i"),
 			computed: true,
+			loc: { end: { column: 10, line: 1 }, start: { column: 0, line: 1 } },
+			object: createMockIdentifier("arr"),
 			optional: false,
+			property: createMockIdentifier("i"),
 			range: [0, 10],
-			loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
+			type: AST_NODE_TYPES.MemberExpression,
 		} as TSESTree.MemberExpression
 
 		const assignExpr: TSESTree.AssignmentExpression = {
-			type: AST_NODE_TYPES.AssignmentExpression,
-			operator: "=",
 			left: computedMember,
-			right: createMockIdentifier("value"),
+			loc: { end: { column: 10, line: 1 }, start: { column: 0, line: 1 } },
+			operator: "=",
 			range: [0, 10],
-			loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
+			right: createMockIdentifier("value"),
+			type: AST_NODE_TYPES.AssignmentExpression,
 		} as TSESTree.AssignmentExpression
 
 		expect(isArrayIndexAssignment(assignExpr)).toBe(true)
@@ -310,8 +310,8 @@ describe("isArrayIndexAssignment", () => {
 describe("getFunctionParamCount", () => {
 	it("should count function parameters", () => {
 		const fn: Partial<TSESTree.FunctionDeclaration> = {
-			type: AST_NODE_TYPES.FunctionDeclaration,
 			params: [createMockIdentifier("a"), createMockIdentifier("b"), createMockIdentifier("c")],
+			type: AST_NODE_TYPES.FunctionDeclaration,
 		}
 
 		expect(getFunctionParamCount(fn as TSESTree.FunctionDeclaration)).toBe(3)
@@ -319,8 +319,8 @@ describe("getFunctionParamCount", () => {
 
 	it("should return 0 for functions with no parameters", () => {
 		const fn: Partial<TSESTree.FunctionDeclaration> = {
-			type: AST_NODE_TYPES.FunctionDeclaration,
 			params: [],
+			type: AST_NODE_TYPES.FunctionDeclaration,
 		}
 
 		expect(getFunctionParamCount(fn as TSESTree.FunctionDeclaration)).toBe(0)
@@ -330,11 +330,11 @@ describe("getFunctionParamCount", () => {
 describe("getFunctionLineCount", () => {
 	it("should calculate function line count", () => {
 		const fn: Partial<TSESTree.FunctionDeclaration> = {
-			type: AST_NODE_TYPES.FunctionDeclaration,
 			loc: {
-				start: { line: 1, column: 0 },
-				end: { line: 10, column: 0 },
+				end: { column: 0, line: 10 },
+				start: { column: 0, line: 1 },
 			},
+			type: AST_NODE_TYPES.FunctionDeclaration,
 		}
 
 		expect(getFunctionLineCount(fn as TSESTree.FunctionDeclaration)).toBe(10)
@@ -371,18 +371,18 @@ describe("Import helpers", () => {
 		specifiers: TSESTree.ImportClause[],
 	): TSESTree.ImportDeclaration =>
 		({
-			type: AST_NODE_TYPES.ImportDeclaration,
+			importKind: "value",
+			loc: { end: { column: 20, line: 1 }, start: { column: 0, line: 1 } },
+			range: [0, 20],
 			source: {
+				loc: { end: { column: source.length + 2, line: 1 }, start: { column: 0, line: 1 } },
+				range: [0, source.length + 2],
+				raw: `'${source}'`,
 				type: AST_NODE_TYPES.Literal,
 				value: source,
-				raw: `'${source}'`,
-				range: [0, source.length + 2],
-				loc: { start: { line: 1, column: 0 }, end: { line: 1, column: source.length + 2 } },
 			} as TSESTree.StringLiteral,
 			specifiers,
-			importKind: "value",
-			range: [0, 20],
-			loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 20 } },
+			type: AST_NODE_TYPES.ImportDeclaration,
 		}) as TSESTree.ImportDeclaration
 
 	describe("getImportSource", () => {
@@ -395,10 +395,10 @@ describe("Import helpers", () => {
 	describe("hasDefaultImport", () => {
 		it("should detect default imports", () => {
 			const defaultSpec: TSESTree.ImportDefaultSpecifier = {
-				type: AST_NODE_TYPES.ImportDefaultSpecifier,
+				loc: { end: { column: 5, line: 1 }, start: { column: 0, line: 1 } },
 				local: createMockIdentifier("React"),
 				range: [0, 5],
-				loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 5 } },
+				type: AST_NODE_TYPES.ImportDefaultSpecifier,
 			} as TSESTree.ImportDefaultSpecifier
 
 			const importDecl = createMockImportDeclaration("react", [defaultSpec])
@@ -407,12 +407,12 @@ describe("Import helpers", () => {
 
 		it("should return false for named imports only", () => {
 			const namedSpec: TSESTree.ImportSpecifier = {
-				type: AST_NODE_TYPES.ImportSpecifier,
-				local: createMockIdentifier("useState"),
 				imported: createMockIdentifier("useState"),
 				importKind: "value",
+				loc: { end: { column: 8, line: 1 }, start: { column: 0, line: 1 } },
+				local: createMockIdentifier("useState"),
 				range: [0, 8],
-				loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 8 } },
+				type: AST_NODE_TYPES.ImportSpecifier,
 			} as TSESTree.ImportSpecifier
 
 			const importDecl = createMockImportDeclaration("react", [namedSpec])
@@ -423,12 +423,12 @@ describe("Import helpers", () => {
 	describe("hasNamedImports", () => {
 		it("should detect named imports", () => {
 			const namedSpec: TSESTree.ImportSpecifier = {
-				type: AST_NODE_TYPES.ImportSpecifier,
-				local: createMockIdentifier("useState"),
 				imported: createMockIdentifier("useState"),
 				importKind: "value",
+				loc: { end: { column: 8, line: 1 }, start: { column: 0, line: 1 } },
+				local: createMockIdentifier("useState"),
 				range: [0, 8],
-				loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 8 } },
+				type: AST_NODE_TYPES.ImportSpecifier,
 			} as TSESTree.ImportSpecifier
 
 			const importDecl = createMockImportDeclaration("react", [namedSpec])
@@ -439,21 +439,21 @@ describe("Import helpers", () => {
 	describe("getNamedImports", () => {
 		it("should get named import names", () => {
 			const spec1: TSESTree.ImportSpecifier = {
-				type: AST_NODE_TYPES.ImportSpecifier,
-				local: createMockIdentifier("useState"),
 				imported: createMockIdentifier("useState"),
 				importKind: "value",
+				loc: { end: { column: 8, line: 1 }, start: { column: 0, line: 1 } },
+				local: createMockIdentifier("useState"),
 				range: [0, 8],
-				loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 8 } },
+				type: AST_NODE_TYPES.ImportSpecifier,
 			} as TSESTree.ImportSpecifier
 
 			const spec2: TSESTree.ImportSpecifier = {
-				type: AST_NODE_TYPES.ImportSpecifier,
-				local: createMockIdentifier("useEffect"),
 				imported: createMockIdentifier("useEffect"),
 				importKind: "value",
+				loc: { end: { column: 9, line: 1 }, start: { column: 0, line: 1 } },
+				local: createMockIdentifier("useEffect"),
 				range: [0, 9],
-				loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 9 } },
+				type: AST_NODE_TYPES.ImportSpecifier,
 			} as TSESTree.ImportSpecifier
 
 			const importDecl = createMockImportDeclaration("react", [spec1, spec2])
@@ -516,11 +516,11 @@ describe("Security helpers", () => {
 	describe("isFunctionConstructor", () => {
 		it("should detect Function constructor calls", () => {
 			const funcNew: TSESTree.NewExpression = {
-				type: AST_NODE_TYPES.NewExpression,
-				callee: createMockIdentifier("Function"),
 				arguments: [],
+				callee: createMockIdentifier("Function"),
+				loc: { end: { column: 10, line: 1 }, start: { column: 0, line: 1 } },
 				range: [0, 10],
-				loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
+				type: AST_NODE_TYPES.NewExpression,
 			} as TSESTree.NewExpression
 
 			expect(isFunctionConstructor(funcNew)).toBe(true)
@@ -528,11 +528,11 @@ describe("Security helpers", () => {
 
 		it("should return false for other constructors", () => {
 			const otherNew: TSESTree.NewExpression = {
-				type: AST_NODE_TYPES.NewExpression,
-				callee: createMockIdentifier("Date"),
 				arguments: [],
+				callee: createMockIdentifier("Date"),
+				loc: { end: { column: 10, line: 1 }, start: { column: 0, line: 1 } },
 				range: [0, 10],
-				loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
+				type: AST_NODE_TYPES.NewExpression,
 			} as TSESTree.NewExpression
 
 			expect(isFunctionConstructor(otherNew)).toBe(false)
@@ -542,22 +542,22 @@ describe("Security helpers", () => {
 	describe("isInnerHTMLAssignment", () => {
 		it("should detect innerHTML assignments", () => {
 			const memberExpr: TSESTree.MemberExpression = {
-				type: AST_NODE_TYPES.MemberExpression,
-				object: createMockIdentifier("element"),
-				property: createMockIdentifier("innerHTML"),
 				computed: false,
+				loc: { end: { column: 10, line: 1 }, start: { column: 0, line: 1 } },
+				object: createMockIdentifier("element"),
 				optional: false,
+				property: createMockIdentifier("innerHTML"),
 				range: [0, 10],
-				loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
+				type: AST_NODE_TYPES.MemberExpression,
 			} as TSESTree.MemberExpression
 
 			const assignExpr: TSESTree.AssignmentExpression = {
-				type: AST_NODE_TYPES.AssignmentExpression,
-				operator: "=",
 				left: memberExpr,
-				right: createMockIdentifier("html"),
+				loc: { end: { column: 20, line: 1 }, start: { column: 0, line: 1 } },
+				operator: "=",
 				range: [0, 20],
-				loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 20 } },
+				right: createMockIdentifier("html"),
+				type: AST_NODE_TYPES.AssignmentExpression,
 			} as TSESTree.AssignmentExpression
 
 			expect(isInnerHTMLAssignment(assignExpr)).toBe(true)
@@ -565,22 +565,22 @@ describe("Security helpers", () => {
 
 		it("should detect outerHTML assignments", () => {
 			const memberExpr: TSESTree.MemberExpression = {
-				type: AST_NODE_TYPES.MemberExpression,
-				object: createMockIdentifier("element"),
-				property: createMockIdentifier("outerHTML"),
 				computed: false,
+				loc: { end: { column: 10, line: 1 }, start: { column: 0, line: 1 } },
+				object: createMockIdentifier("element"),
 				optional: false,
+				property: createMockIdentifier("outerHTML"),
 				range: [0, 10],
-				loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
+				type: AST_NODE_TYPES.MemberExpression,
 			} as TSESTree.MemberExpression
 
 			const assignExpr: TSESTree.AssignmentExpression = {
-				type: AST_NODE_TYPES.AssignmentExpression,
-				operator: "=",
 				left: memberExpr,
-				right: createMockIdentifier("html"),
+				loc: { end: { column: 20, line: 1 }, start: { column: 0, line: 1 } },
+				operator: "=",
 				range: [0, 20],
-				loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 20 } },
+				right: createMockIdentifier("html"),
+				type: AST_NODE_TYPES.AssignmentExpression,
 			} as TSESTree.AssignmentExpression
 
 			expect(isInnerHTMLAssignment(assignExpr)).toBe(true)

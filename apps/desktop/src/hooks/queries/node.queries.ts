@@ -37,7 +37,7 @@ const DEFAULT_STALE_TIME = 30 * 1000
  */
 export const useNodesByWorkspace = (workspaceId: string | null | undefined) => {
 	return useQuery({
-		queryKey: queryKeys.nodes.byWorkspace(workspaceId ?? ""),
+		enabled: !!workspaceId,
 		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
 			if (!workspaceId) return []
 
@@ -46,7 +46,7 @@ export const useNodesByWorkspace = (workspaceId: string | null | undefined) => {
 			if (result._tag === "Left") throw result.left
 			return result.right
 		},
-		enabled: !!workspaceId,
+		queryKey: queryKeys.nodes.byWorkspace(workspaceId ?? ""),
 		staleTime: DEFAULT_STALE_TIME,
 	})
 }
@@ -58,7 +58,7 @@ export const useNodesByWorkspace = (workspaceId: string | null | undefined) => {
  */
 export const useRootNodes = (workspaceId: string | null | undefined) => {
 	return useQuery({
-		queryKey: queryKeys.nodes.rootNodes(workspaceId ?? ""),
+		enabled: !!workspaceId,
 		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
 			if (!workspaceId) return []
 
@@ -67,7 +67,7 @@ export const useRootNodes = (workspaceId: string | null | undefined) => {
 			if (result._tag === "Left") throw result.left
 			return result.right
 		},
-		enabled: !!workspaceId,
+		queryKey: queryKeys.nodes.rootNodes(workspaceId ?? ""),
 		staleTime: DEFAULT_STALE_TIME,
 	})
 }
@@ -79,7 +79,7 @@ export const useRootNodes = (workspaceId: string | null | undefined) => {
  */
 export const useChildNodes = (parentId: string | null | undefined) => {
 	return useQuery({
-		queryKey: queryKeys.nodes.children(parentId ?? ""),
+		enabled: !!parentId,
 		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
 			if (!parentId) return []
 
@@ -88,7 +88,7 @@ export const useChildNodes = (parentId: string | null | undefined) => {
 			if (result._tag === "Left") throw result.left
 			return result.right
 		},
-		enabled: !!parentId,
+		queryKey: queryKeys.nodes.children(parentId ?? ""),
 		staleTime: DEFAULT_STALE_TIME,
 	})
 }
@@ -104,7 +104,7 @@ export const useNodesByParent = (
 	parentId: string | null,
 ) => {
 	return useQuery({
-		queryKey: queryKeys.nodes.byParent(workspaceId ?? "", parentId),
+		enabled: !!workspaceId,
 		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
 			if (!workspaceId) return []
 
@@ -113,7 +113,7 @@ export const useNodesByParent = (
 			if (result._tag === "Left") throw result.left
 			return result.right
 		},
-		enabled: !!workspaceId,
+		queryKey: queryKeys.nodes.byParent(workspaceId ?? "", parentId),
 		staleTime: DEFAULT_STALE_TIME,
 	})
 }
@@ -125,7 +125,7 @@ export const useNodesByParent = (
  */
 export const useNode = (nodeId: string | null | undefined) => {
 	return useQuery({
-		queryKey: queryKeys.nodes.detail(nodeId ?? ""),
+		enabled: !!nodeId,
 		queryFn: async (): Promise<NodeInterface | null> => {
 			if (!nodeId) return null
 
@@ -134,7 +134,7 @@ export const useNode = (nodeId: string | null | undefined) => {
 			if (result._tag === "Left") throw result.left
 			return result.right
 		},
-		enabled: !!nodeId,
+		queryKey: queryKeys.nodes.detail(nodeId ?? ""),
 		staleTime: DEFAULT_STALE_TIME,
 	})
 }
@@ -147,7 +147,7 @@ export const useNode = (nodeId: string | null | undefined) => {
  */
 export const useNodesByType = (workspaceId: string | null | undefined, nodeType: string) => {
 	return useQuery({
-		queryKey: queryKeys.nodes.byType(workspaceId ?? "", nodeType),
+		enabled: !!workspaceId,
 		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
 			if (!workspaceId) return []
 
@@ -156,7 +156,7 @@ export const useNodesByType = (workspaceId: string | null | undefined, nodeType:
 			if (result._tag === "Left") throw result.left
 			return result.right
 		},
-		enabled: !!workspaceId,
+		queryKey: queryKeys.nodes.byType(workspaceId ?? "", nodeType),
 		staleTime: DEFAULT_STALE_TIME,
 	})
 }
@@ -168,7 +168,7 @@ export const useNodesByType = (workspaceId: string | null | undefined, nodeType:
  */
 export const useDescendants = (nodeId: string | null | undefined) => {
 	return useQuery({
-		queryKey: queryKeys.nodes.descendants(nodeId ?? ""),
+		enabled: !!nodeId,
 		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
 			if (!nodeId) return []
 
@@ -177,7 +177,7 @@ export const useDescendants = (nodeId: string | null | undefined) => {
 			if (result._tag === "Left") throw result.left
 			return result.right
 		},
-		enabled: !!nodeId,
+		queryKey: queryKeys.nodes.descendants(nodeId ?? ""),
 		staleTime: DEFAULT_STALE_TIME,
 	})
 }

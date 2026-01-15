@@ -39,23 +39,23 @@ describe("create-excalidraw.action (高阶函数版本)", () => {
 	describe("adaptExcalidrawParams", () => {
 		it("应该正确转换完整参数格式", () => {
 			const params: CreateExcalidrawParams = {
-				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 				date: new Date("2024-01-15T12:00:00.000Z"),
+				height: 1080,
 				title: "测试绘图",
 				width: 1920,
-				height: 1080,
+				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			}
 
 			const result = adaptExcalidrawParams(params)
 
 			expect(result).toEqual({
-				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 				templateParams: {
 					date: new Date("2024-01-15T12:00:00.000Z"),
+					height: 1080,
 					title: "测试绘图",
 					width: 1920,
-					height: 1080,
 				},
+				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			})
 		})
 
@@ -67,20 +67,20 @@ describe("create-excalidraw.action (高阶函数版本)", () => {
 			const result = adaptExcalidrawParams(params)
 
 			expect(result).toEqual({
-				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 				templateParams: {
-					title: undefined,
 					date: undefined,
-					width: undefined,
 					height: undefined,
+					title: undefined,
+					width: undefined,
 				},
+				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			})
 		})
 
 		it("应该处理只有日期的参数", () => {
 			const params: CreateExcalidrawParams = {
-				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 				date: new Date("2024-01-15T12:00:00.000Z"),
+				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			}
 
 			const result = adaptExcalidrawParams(params)
@@ -93,8 +93,8 @@ describe("create-excalidraw.action (高阶函数版本)", () => {
 
 		it("应该处理只有标题的参数", () => {
 			const params: CreateExcalidrawParams = {
-				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 				title: "自定义标题",
+				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			}
 
 			const result = adaptExcalidrawParams(params)
@@ -105,9 +105,9 @@ describe("create-excalidraw.action (高阶函数版本)", () => {
 
 		it("应该处理自定义尺寸参数", () => {
 			const params: CreateExcalidrawParams = {
-				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
-				width: 2560,
 				height: 1440,
+				width: 2560,
+				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			}
 
 			const result = adaptExcalidrawParams(params)
@@ -124,11 +124,11 @@ describe("create-excalidraw.action (高阶函数版本)", () => {
 	describe("类型安全", () => {
 		it("应该接受有效的 CreateExcalidrawParams", () => {
 			const params: CreateExcalidrawParams = {
-				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 				date: new Date(),
+				height: 1080,
 				title: "测试",
 				width: 1920,
-				height: 1080,
+				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			}
 
 			// 这个测试主要是编译时检查，如果类型不匹配会编译失败
@@ -158,8 +158,8 @@ describe("create-excalidraw.action (高阶函数版本)", () => {
 		it("应该处理极端日期", () => {
 			const extremeDate = new Date("1970-01-01T00:00:00.000Z")
 			const params: CreateExcalidrawParams = {
-				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 				date: extremeDate,
+				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			}
 
 			const result = adaptExcalidrawParams(params)
@@ -170,8 +170,8 @@ describe("create-excalidraw.action (高阶函数版本)", () => {
 		it("应该处理未来日期", () => {
 			const futureDate = new Date("2030-12-31T23:59:59.999Z")
 			const params: CreateExcalidrawParams = {
-				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 				date: futureDate,
+				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			}
 
 			const result = adaptExcalidrawParams(params)
@@ -181,8 +181,8 @@ describe("create-excalidraw.action (高阶函数版本)", () => {
 
 		it("应该处理空字符串标题", () => {
 			const params: CreateExcalidrawParams = {
-				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 				title: "",
+				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			}
 
 			const result = adaptExcalidrawParams(params)
@@ -192,9 +192,9 @@ describe("create-excalidraw.action (高阶函数版本)", () => {
 
 		it("应该处理极小尺寸", () => {
 			const params: CreateExcalidrawParams = {
-				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
-				width: 1,
 				height: 1,
+				width: 1,
+				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			}
 
 			const result = adaptExcalidrawParams(params)
@@ -205,9 +205,9 @@ describe("create-excalidraw.action (高阶函数版本)", () => {
 
 		it("应该处理极大尺寸", () => {
 			const params: CreateExcalidrawParams = {
-				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
-				width: 10000,
 				height: 10000,
+				width: 10000,
+				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			}
 
 			const result = adaptExcalidrawParams(params)

@@ -53,8 +53,8 @@ vi.mock("@/hooks/use-settings", () => ({
 	useSettings: vi.fn(() => ({
 		autoSave: false,
 		autoSaveInterval: 1,
-		wordCountMode: "mixed",
 		showWordCountBadge: false,
+		wordCountMode: "mixed",
 	})),
 }))
 
@@ -68,10 +68,10 @@ vi.mock("@/hooks/use-wiki-hover-preview", () => ({
 
 vi.mock("@/hooks/use-unified-save", () => ({
 	useUnifiedSave: vi.fn(() => ({
-		updateContent: vi.fn(),
-		saveNow: vi.fn(),
 		hasUnsavedChanges: vi.fn(() => false),
+		saveNow: vi.fn(),
 		setInitialContent: vi.fn(),
+		updateContent: vi.fn(),
 	})),
 }))
 
@@ -90,8 +90,8 @@ vi.mock("@/state/ui.state", () => ({
 	useUIStore: vi.fn((selector) => {
 		const state = {
 			rightSidebarOpen: false,
-			toggleRightSidebar: vi.fn(),
 			tabPosition: "top",
+			toggleRightSidebar: vi.fn(),
 		}
 		return selector ? selector(state) : state
 	}),
@@ -100,12 +100,12 @@ vi.mock("@/state/ui.state", () => ({
 vi.mock("@/state/editor-tabs.state", () => ({
 	useEditorTabsStore: vi.fn((selector) => {
 		const state = {
-			tabs: [],
 			activeTabId: null,
-			editorStates: {},
-			updateEditorState: vi.fn(),
-			setActiveTab: vi.fn(),
 			closeTab: vi.fn(),
+			editorStates: {},
+			setActiveTab: vi.fn(),
+			tabs: [],
+			updateEditorState: vi.fn(),
 		}
 		return selector ? selector(state) : state
 	}),
@@ -113,14 +113,14 @@ vi.mock("@/state/editor-tabs.state", () => ({
 
 vi.mock("@/state/save.state", () => ({
 	useSaveStore: vi.fn(() => ({
-		status: "saved",
-		lastSaveTime: null,
 		errorMessage: null,
 		hasUnsavedChanges: false,
 		isManualSaving: false,
-		markAsUnsaved: vi.fn(),
+		lastSaveTime: null,
 		markAsSaved: vi.fn(),
 		markAsSaving: vi.fn(),
+		markAsUnsaved: vi.fn(),
+		status: "saved",
 	})),
 }))
 
@@ -131,24 +131,24 @@ vi.mock("@/db", () => ({
 
 vi.mock("@/fn/word-count", () => ({
 	countWordsFromLexicalState: vi.fn(() => ({
+		characters: 0,
 		chineseChars: 0,
 		englishWords: 0,
 		total: 0,
-		characters: 0,
 	})),
 }))
 
 describe("StoryWorkspaceContainer", () => {
 	const mockWorkspaces: WorkspaceInterface[] = [
 		{
-			id: "ws1",
-			title: "Workspace 1",
 			author: "Test Author",
+			createDate: new Date().toISOString(),
 			description: "Test Description",
-			publisher: "Test Publisher",
+			id: "ws1",
 			language: "en",
 			lastOpen: new Date().toISOString(),
-			createDate: new Date().toISOString(),
+			publisher: "Test Publisher",
+			title: "Workspace 1",
 		},
 	]
 

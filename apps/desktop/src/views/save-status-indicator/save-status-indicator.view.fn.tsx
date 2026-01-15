@@ -22,42 +22,42 @@ export const SaveStatusIndicatorView = memo(
 		const getStatusDisplay = () => {
 			if (isManualSaving) {
 				return {
+					className: "text-primary",
 					icon: <Loader2 className="size-3.5 animate-spin" />,
 					text: "Saving manually...",
-					className: "text-primary",
 				}
 			}
 
 			switch (status) {
 				case "saved":
 					return {
+						className: hasUnsavedChanges ? "text-orange-500" : "text-muted-foreground",
 						icon: <Check className="size-3.5" />,
 						text: hasUnsavedChanges ? "Unsaved changes" : "Saved",
-						className: hasUnsavedChanges ? "text-orange-500" : "text-muted-foreground",
 					}
 				case "saving":
 					return {
+						className: "text-primary",
 						icon: <Loader2 className="size-3.5 animate-spin" />,
 						text: "Auto-saving...",
-						className: "text-primary",
 					}
 				case "error":
 					return {
+						className: "text-destructive",
 						icon: <AlertCircle className="size-3.5" />,
 						text: "Save failed",
-						className: "text-destructive",
 					}
 				case "unsaved":
 					return {
+						className: "text-orange-500",
 						icon: <Save className="size-3.5" />,
 						text: "Unsaved changes",
-						className: "text-orange-500",
 					}
 				default:
 					return {
+						className: "text-muted-foreground",
 						icon: <Check className="size-3.5" />,
 						text: "Saved",
-						className: "text-muted-foreground",
 					}
 			}
 		}

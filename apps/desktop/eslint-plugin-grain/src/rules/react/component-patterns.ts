@@ -7,99 +7,6 @@ const createRule = ESLintUtils.RuleCreator(
 )
 
 export default createRule({
-	name: "component-patterns",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "检测 React 组件模式",
-		},
-		messages: {
-			businessStateInView: buildErrorMessage({
-				title: "view 组件不应包含业务状态",
-				reason: `
-  view 组件应该是纯展示组件，只接收 props。
-  业务状态应该在 container 组件或 hooks 中管理。
-  
-  这样做的好处：
-  - 组件职责清晰
-  - 易于测试
-  - 易于复用`,
-				correctExample: `// ✅ view 组件只接收 props
-export const UserView = memo(({ user, onEdit }: UserViewProps) => {
-  return (
-    <div>
-      <h1>{user.name}</h1>
-      <button onClick={onEdit}>编辑</button>
-    </div>
-  );
-});
-
-// ✅ container 组件管理状态
-export const UserContainer = () => {
-  const { user } = useUser();
-  const handleEdit = useCallback(() => {
-    // 业务逻辑
-  }, []);
-  
-  return <UserView user={user} onEdit={handleEdit} />;
-};`,
-				incorrectExample: `// ❌ view 组件包含业务状态
-export const UserView = memo(() => {
-  const { user } = useUser(); // 不应该在 view 中
-  const [editing, setEditing] = useState(false); // UI 状态可以
-  
-  return <div>{user.name}</div>;
-});`,
-				docRef: "#architecture - 组件分层",
-			}),
-			keyWithIndex: buildErrorMessage({
-				title: "禁止使用 key={index}",
-				reason: `
-  使用数组索引作为 key 会导致：
-  - 列表重新排序时出现错误
-  - 组件状态混乱
-  - 性能问题
-  
-  应该使用稳定的唯一标识符作为 key。`,
-				correctExample: `// ✅ 使用唯一 ID
-{items.map((item) => (
-  <Item key={item.id} data={item} />
-))}
-
-// ✅ 使用组合键
-{items.map((item) => (
-  <Item key={\`\${item.type}-\${item.id}\`} data={item} />
-))}`,
-				incorrectExample: `// ❌ 使用索引
-{items.map((item, index) => (
-  <Item key={index} data={item} />
-))}`,
-				docRef: "https://react.dev/learn/rendering-lists#keeping-list-items-in-order-with-key",
-			}),
-			conditionalRenderingWithAnd: buildErrorMessage({
-				title: "条件渲染使用 && 可能导致渲染 0",
-				reason: `
-  使用 && 进行条件渲染时，如果左侧为 0，会渲染 "0" 而不是什么都不渲染。
-  这是一个常见的陷阱。`,
-				correctExample: `// ✅ 使用三元表达式
-{count > 0 ? <div>{count} items</div> : null}
-
-// ✅ 使用布尔转换
-{!!count && <div>{count} items</div>}
-
-// ✅ 显式比较
-{count > 0 && <div>{count} items</div>}`,
-				incorrectExample: `// ❌ 可能渲染 0
-{count && <div>{count} items</div>}
-
-// ❌ 可能渲染 0
-{items.length && <List items={items} />}`,
-				docRef: "#code-standards - React 条件渲染",
-			}),
-		},
-		schema: [],
-	},
-	defaultOptions: [],
 	create(context) {
 		const filename = context.filename
 		const isView = isViewComponent(filename)
@@ -126,8 +33,8 @@ export const UserView = memo(() => {
 
 				if (businessHooks.some((hook) => hookName.includes(hook))) {
 					context.report({
-						node,
 						messageId: "businessStateInView",
+						node,
 					})
 				}
 			},
@@ -149,8 +56,8 @@ export const UserView = memo(() => {
 					(expression.name === "index" || expression.name === "i" || expression.name === "idx")
 				) {
 					context.report({
-						node,
 						messageId: "keyWithIndex",
+						node,
 					})
 				}
 			},
@@ -190,11 +97,104 @@ export const UserView = memo(() => {
 
 				if (isPotentiallyNumeric(left)) {
 					context.report({
-						node,
 						messageId: "conditionalRenderingWithAnd",
+						node,
 					})
 				}
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "检测 React 组件模式",
+		},
+		messages: {
+			businessStateInView: buildErrorMessage({
+				correctExample: `// ✅ view 组件只接收 props
+export const UserView = memo(({ user, onEdit }: UserViewProps) => {
+  return (
+    <div>
+      <h1>{user.name}</h1>
+      <button onClick={onEdit}>编辑</button>
+    </div>
+  );
+});
+
+// ✅ container 组件管理状态
+export const UserContainer = () => {
+  const { user } = useUser();
+  const handleEdit = useCallback(() => {
+    // 业务逻辑
+  }, []);
+  
+  return <UserView user={user} onEdit={handleEdit} />;
+};`,
+				docRef: "#architecture - 组件分层",
+				incorrectExample: `// ❌ view 组件包含业务状态
+export const UserView = memo(() => {
+  const { user } = useUser(); // 不应该在 view 中
+  const [editing, setEditing] = useState(false); // UI 状态可以
+  
+  return <div>{user.name}</div>;
+});`,
+				reason: `
+  view 组件应该是纯展示组件，只接收 props。
+  业务状态应该在 container 组件或 hooks 中管理。
+  
+  这样做的好处：
+  - 组件职责清晰
+  - 易于测试
+  - 易于复用`,
+				title: "view 组件不应包含业务状态",
+			}),
+			conditionalRenderingWithAnd: buildErrorMessage({
+				correctExample: `// ✅ 使用三元表达式
+{count > 0 ? <div>{count} items</div> : null}
+
+// ✅ 使用布尔转换
+{!!count && <div>{count} items</div>}
+
+// ✅ 显式比较
+{count > 0 && <div>{count} items</div>}`,
+				docRef: "#code-standards - React 条件渲染",
+				incorrectExample: `// ❌ 可能渲染 0
+{count && <div>{count} items</div>}
+
+// ❌ 可能渲染 0
+{items.length && <List items={items} />}`,
+				reason: `
+  使用 && 进行条件渲染时，如果左侧为 0，会渲染 "0" 而不是什么都不渲染。
+  这是一个常见的陷阱。`,
+				title: "条件渲染使用 && 可能导致渲染 0",
+			}),
+			keyWithIndex: buildErrorMessage({
+				correctExample: `// ✅ 使用唯一 ID
+{items.map((item) => (
+  <Item key={item.id} data={item} />
+))}
+
+// ✅ 使用组合键
+{items.map((item) => (
+  <Item key={\`\${item.type}-\${item.id}\`} data={item} />
+))}`,
+				docRef: "https://react.dev/learn/rendering-lists#keeping-list-items-in-order-with-key",
+				incorrectExample: `// ❌ 使用索引
+{items.map((item, index) => (
+  <Item key={index} data={item} />
+))}`,
+				reason: `
+  使用数组索引作为 key 会导致：
+  - 列表重新排序时出现错误
+  - 组件状态混乱
+  - 性能问题
+  
+  应该使用稳定的唯一标识符作为 key。`,
+				title: "禁止使用 key={index}",
+			}),
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "component-patterns",
 })

@@ -90,14 +90,14 @@ export const createFile = (params: CreateFileParams): TE.TaskEither<AppError, Cr
 
 					info("[CreateFile] 创建文件", { title, type }, "create-file")
 					debug("[CreateFile] 参数详情", {
-						workspaceId,
-						parentId,
-						title,
-						type,
+						collapsed,
 						contentLength: content.length,
 						contentPreview: content.substring(0, 100),
+						parentId,
 						tags,
-						collapsed,
+						title,
+						type,
+						workspaceId,
 					})
 
 					// 1. 获取排序号
@@ -107,12 +107,12 @@ export const createFile = (params: CreateFileParams): TE.TaskEither<AppError, Cr
 					// 2. 创建节点（带初始内容和标签）
 					const nodeResult = await nodeRepo.createNode(
 						{
-							workspace: workspaceId,
-							title,
-							parent: parentId,
-							type,
-							order,
 							collapsed,
+							order,
+							parent: parentId,
+							title,
+							type,
+							workspace: workspaceId,
 						},
 						type !== "folder" ? content : undefined,
 						tags ? [...tags] : undefined,
@@ -129,10 +129,10 @@ export const createFile = (params: CreateFileParams): TE.TaskEither<AppError, Cr
 						"[CreateFile] 节点详情",
 						{
 							id: node.id,
+							parent: node.parent,
 							title: node.title,
 							type: node.type,
 							workspace: node.workspace,
-							parent: node.parent,
 						},
 						"create-file",
 					)
@@ -210,8 +210,8 @@ export const createFile = (params: CreateFileParams): TE.TaskEither<AppError, Cr
 					}
 				}),
 			(error): AppError => ({
-				type: "DB_ERROR",
 				message: `创建文件失败: ${error instanceof Error ? error.message : String(error)}`,
+				type: "DB_ERROR",
 			}),
 		),
 		// 处理 p-queue 返回 undefined 的情况
@@ -219,8 +219,8 @@ export const createFile = (params: CreateFileParams): TE.TaskEither<AppError, Cr
 			result
 				? TE.right(result)
 				: TE.left<AppError>({
-						type: "DB_ERROR",
 						message: "创建文件失败: 队列返回空结果",
+						type: "DB_ERROR",
 					}),
 		),
 	)

@@ -363,9 +363,9 @@ function FileItem({
 		<div
 			className="flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors"
 			style={{
-				paddingLeft: `${level * 12 + 8}px`,
 				background: isActive ? currentTheme?.colors.sidebarAccent : "transparent",
 				color: isActive ? currentTheme?.colors.primary : currentTheme?.colors.sidebarForeground,
+				paddingLeft: `${level * 12 + 8}px`,
 			}}
 		>
 			<Icon

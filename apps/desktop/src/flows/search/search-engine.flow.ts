@@ -74,11 +74,11 @@ export interface SearchEngineState {
  * 初始搜索引擎状态
  */
 const createInitialState = (): SearchEngineState => ({
-	nodeIndex: null,
 	indexedData: new Map(),
-	nodeContents: new Map(),
-	workspaceCache: new Map(),
 	isIndexing: false,
+	nodeContents: new Map(),
+	nodeIndex: null,
+	workspaceCache: new Map(),
 })
 
 /**
@@ -168,10 +168,10 @@ export const buildSearchIndex = async (): Promise<void> => {
 				const contentStr = contents.find((c) => c.nodeId === node.id)?.content || ""
 				const textContent = extractTextFromContent(contentStr)
 				this.add({
-					id: node.id,
-					title: node.title,
-					tags: node.tags?.join(" ") || "",
 					content: textContent,
+					id: node.id,
+					tags: node.tags?.join(" ") || "",
+					title: node.title,
 				})
 			}
 		})
@@ -181,11 +181,11 @@ export const buildSearchIndex = async (): Promise<void> => {
 
 		// 更新状态
 		searchEngineState = {
-			nodeIndex,
 			indexedData,
-			nodeContents,
-			workspaceCache,
 			isIndexing: false,
+			nodeContents,
+			nodeIndex,
+			workspaceCache,
 		}
 
 		success(`[Search] 索引构建完成: ${nodes.length} 个节点`)
@@ -251,15 +251,15 @@ export const search = async (
 
 				return [
 					{
-						id: node.id,
-						type: "node" as SearchResultType,
-						title: node.title,
 						content,
 						excerpt: generateExcerpt(content, query),
+						highlights: extractHighlights(content, query),
+						id: node.id,
+						score: result.score,
+						title: node.title,
+						type: "node" as SearchResultType,
 						workspaceId: node.workspace,
 						workspaceTitle: workspace?.title,
-						score: result.score,
-						highlights: extractHighlights(content, query),
 					} satisfies SearchResult,
 				]
 			})
@@ -334,15 +334,15 @@ export const simpleSearch = async (
 
 					return [
 						{
-							id: node.id,
-							type: "node" as SearchResultType,
-							title: node.title,
 							content,
 							excerpt: generateExcerpt(content, query),
+							highlights: extractHighlights(content, query),
+							id: node.id,
+							score: calculateSimpleScore(node.title, content, query),
+							title: node.title,
+							type: "node" as SearchResultType,
 							workspaceId: node.workspace,
 							workspaceTitle: workspace?.title,
-							score: calculateSimpleScore(node.title, content, query),
-							highlights: extractHighlights(content, query),
 						} satisfies SearchResult,
 					]
 				}
@@ -379,7 +379,7 @@ export const clearSearchIndex = (): void => {
  */
 export const searchEngine = {
 	buildIndex: buildSearchIndex,
+	clearIndex: clearSearchIndex,
 	search,
 	simpleSearch,
-	clearIndex: clearSearchIndex,
 }

@@ -25,24 +25,24 @@ export const Route = createFileRoute("/settings/logs")({
 
 // Map log levels to Lucide icons for a cleaner look
 const LOG_ICONS: Record<string, LucideIcon> = {
-	FATAL: XCircle,
+	DEBUG: Bug,
 	ERROR: XCircle,
-	WARN: AlertTriangle,
+	FATAL: XCircle,
 	INFO: Info,
 	SUCCESS: CheckCircle2,
-	DEBUG: Bug,
 	TRACE: Box,
+	WARN: AlertTriangle,
 }
 
 const LOG_LEVEL_COLORS: Record<string, string> = {
-	FATAL: "text-red-600 bg-red-50 dark:bg-red-950/20",
-	ERROR: "text-red-500 bg-red-50/50 dark:bg-red-950/10",
-	WARN: "text-orange-500 bg-orange-50/50 dark:bg-orange-950/10",
-	LOG: "text-foreground bg-muted/20",
-	INFO: "text-blue-500 bg-blue-50/50 dark:bg-blue-950/10",
-	SUCCESS: "text-green-500 bg-green-50/50 dark:bg-green-950/10",
 	DEBUG: "text-violet-500 bg-violet-50/50 dark:bg-violet-950/10",
+	ERROR: "text-red-500 bg-red-50/50 dark:bg-red-950/10",
+	FATAL: "text-red-600 bg-red-50 dark:bg-red-950/20",
+	INFO: "text-blue-500 bg-blue-50/50 dark:bg-blue-950/10",
+	LOG: "text-foreground bg-muted/20",
+	SUCCESS: "text-green-500 bg-green-50/50 dark:bg-green-950/10",
 	TRACE: "text-muted-foreground bg-muted/10",
+	WARN: "text-orange-500 bg-orange-50/50 dark:bg-orange-950/10",
 }
 
 const LOG_LEVELS = [
@@ -89,13 +89,13 @@ function LogsSettingsPage() {
 	const formatTimestamp = (timestamp: string) => {
 		try {
 			return new Date(timestamp).toLocaleString(undefined, {
-				hour12: false,
-				year: "numeric",
-				month: "2-digit",
 				day: "2-digit",
 				hour: "2-digit",
+				hour12: false,
 				minute: "2-digit",
+				month: "2-digit",
 				second: "2-digit",
+				year: "numeric",
 			})
 		} catch {
 			return timestamp

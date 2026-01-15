@@ -23,8 +23,8 @@ export const TagGraphPanelContainer = memo(() => {
 
 	// 获取标签图谱数据
 	const graphData = useTagGraph(workspaceId ?? undefined) ?? {
-		nodes: [],
 		edges: [],
+		nodes: [],
 	}
 
 	return <TagGraphPanelView workspaceId={workspaceId} graphData={graphData} />

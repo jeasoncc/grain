@@ -61,12 +61,12 @@ export interface OrgmodeExportOptions {
  */
 const TEXT_FORMAT = {
 	BOLD: 1,
+	CODE: 16,
 	ITALIC: 2,
 	STRIKETHROUGH: 4,
-	UNDERLINE: 8,
-	CODE: 16,
 	SUBSCRIPT: 32,
 	SUPERSCRIPT: 64,
+	UNDERLINE: 8,
 } as const
 
 // ==============================
@@ -74,17 +74,17 @@ const TEXT_FORMAT = {
 // ==============================
 
 const defaultOptions: Required<OrgmodeExportOptions> = {
-	blankLineBeforeHeading: true,
-	blankLineAfterHeading: false,
-	blankLineBeforeList: true,
-	blankLineAfterList: true,
-	tagFormat: "org",
-	includeTitle: false,
-	title: "",
-	includeProperties: false,
-	properties: {},
 	author: "",
+	blankLineAfterHeading: false,
+	blankLineAfterList: true,
+	blankLineBeforeHeading: true,
+	blankLineBeforeList: true,
 	date: "",
+	includeProperties: false,
+	includeTitle: false,
+	properties: {},
+	tagFormat: "org",
+	title: "",
 }
 
 // ==============================

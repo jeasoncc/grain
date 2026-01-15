@@ -11,20 +11,44 @@ type MessageIds = "maxParams"
 type Options = [{ max?: number }]
 
 export default createRule<Options, MessageIds>({
-	name: "max-params",
+	create(context, [options]) {
+		const maxParams = options.max ?? DEFAULT_COMPLEXITY_CONFIG.maxParams
+
+		function checkParams(
+			node:
+				| TSESTree.FunctionDeclaration
+				| TSESTree.FunctionExpression
+				| TSESTree.ArrowFunctionExpression,
+		) {
+			const actualParams = node.params.length
+
+			if (actualParams > maxParams) {
+				const functionName = getFunctionName(node)
+				context.report({
+					data: {
+						actual: String(actualParams),
+						functionName,
+						max: String(maxParams),
+					},
+					messageId: "maxParams",
+					node,
+				})
+			}
+		}
+
+		return {
+			ArrowFunctionExpression: checkParams,
+			FunctionDeclaration: checkParams,
+			FunctionExpression: checkParams,
+		}
+	},
+	defaultOptions: [{ max: DEFAULT_COMPLEXITY_CONFIG.maxParams }],
 	meta: {
-		type: "problem",
 		docs: {
 			description: "限制函数参数最大数量",
 		},
 		messages: {
 			maxParams: buildErrorMessage({
-				title: "函数 {{functionName}} 参数超过 {{max}} 个（当前 {{actual}} 个）",
-				reason: `过多的参数表明函数职责不清晰：
-  - 函数做了太多事情
-  - 参数顺序难以记忆
-  - 调用时容易出错
-  - 难以扩展和维护`,
 				correctExample: `// ✅ 使用对象参数
 interface CreateUserParams {
   name: string;
@@ -47,6 +71,7 @@ createUser({
   role: 'developer',
   department: 'engineering',
 });`,
+				docRef: "#code-standards - 复杂度限制",
 				incorrectExample: `// ❌ 参数过多
 function createUser(
   name: string,
@@ -60,54 +85,29 @@ function createUser(
 
 // 调用时容易出错
 createUser('Alice', 'alice@example.com', 30, 'developer', 'engineering');`,
-				docRef: "#code-standards - 复杂度限制",
+				reason: `过多的参数表明函数职责不清晰：
+  - 函数做了太多事情
+  - 参数顺序难以记忆
+  - 调用时容易出错
+  - 难以扩展和维护`,
+				title: "函数 {{functionName}} 参数超过 {{max}} 个（当前 {{actual}} 个）",
 			}),
 		},
 		schema: [
 			{
-				type: "object",
+				additionalProperties: false,
 				properties: {
 					max: {
-						type: "number",
 						minimum: 0,
+						type: "number",
 					},
 				},
-				additionalProperties: false,
+				type: "object",
 			},
 		],
+		type: "problem",
 	},
-	defaultOptions: [{ max: DEFAULT_COMPLEXITY_CONFIG.maxParams }],
-	create(context, [options]) {
-		const maxParams = options.max ?? DEFAULT_COMPLEXITY_CONFIG.maxParams
-
-		function checkParams(
-			node:
-				| TSESTree.FunctionDeclaration
-				| TSESTree.FunctionExpression
-				| TSESTree.ArrowFunctionExpression,
-		) {
-			const actualParams = node.params.length
-
-			if (actualParams > maxParams) {
-				const functionName = getFunctionName(node)
-				context.report({
-					node,
-					messageId: "maxParams",
-					data: {
-						functionName,
-						max: String(maxParams),
-						actual: String(actualParams),
-					},
-				})
-			}
-		}
-
-		return {
-			FunctionDeclaration: checkParams,
-			FunctionExpression: checkParams,
-			ArrowFunctionExpression: checkParams,
-		}
-	},
+	name: "max-params",
 })
 
 function getFunctionName(

@@ -12,36 +12,23 @@
 
 export const queryKeys = {
 	// ============================================
-	// Workspace Keys
+	// Attachment Keys
 	// ============================================
-	workspaces: {
-		/** 所有工作区 */
-		all: ["workspaces"] as const,
-		/** 单个工作区 */
-		detail: (id: string) => ["workspaces", id] as const,
-	},
-
-	// ============================================
-	// Node Keys
-	// ============================================
-	nodes: {
-		/** 所有节点（全局） */
-		all: ["nodes"] as const,
-		/** 工作区下的所有节点 */
-		byWorkspace: (workspaceId: string) => ["nodes", "workspace", workspaceId] as const,
-		/** 根节点 */
-		rootNodes: (workspaceId: string) => ["nodes", "root", workspaceId] as const,
-		/** 单个节点 */
-		detail: (id: string) => ["nodes", id] as const,
-		/** 子节点 */
-		children: (parentId: string) => ["nodes", "children", parentId] as const,
-		/** 按父节点（支持 null 表示根） */
-		byParent: (workspaceId: string, parentId: string | null) =>
-			["nodes", "parent", workspaceId, parentId ?? "root"] as const,
-		/** 后代节点 */
-		descendants: (nodeId: string) => ["nodes", "descendants", nodeId] as const,
+	attachments: {
+		/** 所有附件 */
+		all: ["attachments"] as const,
+		/** 项目下的音频 */
+		audioByProject: (projectId: string) => ["attachments", "audio", projectId] as const,
+		/** 按路径 */
+		byPath: (filePath: string) => ["attachments", "path", filePath] as const,
+		/** 项目下的附件 */
+		byProject: (projectId: string) => ["attachments", "project", projectId] as const,
 		/** 按类型 */
-		byType: (workspaceId: string, type: string) => ["nodes", "type", workspaceId, type] as const,
+		byType: (projectId: string, type: string) => ["attachments", "type", projectId, type] as const,
+		/** 单个附件 */
+		detail: (id: string) => ["attachments", id] as const,
+		/** 项目下的图片 */
+		imagesByProject: (projectId: string) => ["attachments", "images", projectId] as const,
 	},
 
 	// ============================================
@@ -55,44 +42,47 @@ export const queryKeys = {
 	},
 
 	// ============================================
-	// Attachment Keys
+	// Node Keys
 	// ============================================
-	attachments: {
-		/** 所有附件 */
-		all: ["attachments"] as const,
-		/** 单个附件 */
-		detail: (id: string) => ["attachments", id] as const,
-		/** 项目下的附件 */
-		byProject: (projectId: string) => ["attachments", "project", projectId] as const,
+	nodes: {
+		/** 所有节点（全局） */
+		all: ["nodes"] as const,
+		/** 按父节点（支持 null 表示根） */
+		byParent: (workspaceId: string, parentId: string | null) =>
+			["nodes", "parent", workspaceId, parentId ?? "root"] as const,
 		/** 按类型 */
-		byType: (projectId: string, type: string) => ["attachments", "type", projectId, type] as const,
-		/** 项目下的图片 */
-		imagesByProject: (projectId: string) => ["attachments", "images", projectId] as const,
-		/** 项目下的音频 */
-		audioByProject: (projectId: string) => ["attachments", "audio", projectId] as const,
-		/** 按路径 */
-		byPath: (filePath: string) => ["attachments", "path", filePath] as const,
+		byType: (workspaceId: string, type: string) => ["nodes", "type", workspaceId, type] as const,
+		/** 工作区下的所有节点 */
+		byWorkspace: (workspaceId: string) => ["nodes", "workspace", workspaceId] as const,
+		/** 子节点 */
+		children: (parentId: string) => ["nodes", "children", parentId] as const,
+		/** 后代节点 */
+		descendants: (nodeId: string) => ["nodes", "descendants", nodeId] as const,
+		/** 单个节点 */
+		detail: (id: string) => ["nodes", id] as const,
+		/** 根节点 */
+		rootNodes: (workspaceId: string) => ["nodes", "root", workspaceId] as const,
 	},
 
 	// ============================================
 	// Tag Keys
 	// ============================================
 	tags: {
+		/** 按名称 */
+		byName: (workspaceId: string, name: string) => ["tags", "name", workspaceId, name] as const,
 		/** 工作区下的所有标签 */
 		byWorkspace: (workspaceId: string) => ["tags", "workspace", workspaceId] as const,
 		/** 单个标签 */
 		detail: (id: string) => ["tags", id] as const,
-		/** 按名称 */
-		byName: (workspaceId: string, name: string) => ["tags", "name", workspaceId, name] as const,
-		/** 热门标签 */
-		top: (workspaceId: string, limit: number) => ["tags", "top", workspaceId, limit] as const,
-		/** 搜索标签 */
-		search: (workspaceId: string, query: string) => ["tags", "search", workspaceId, query] as const,
+		/** 标签图形数据 */
+		graph: (workspaceId: string) => ["tags", "graph", workspaceId] as const,
 		/** 包含指定标签的节点 */
 		nodesByTag: (workspaceId: string, tagName: string) =>
 			["tags", "nodes", workspaceId, tagName] as const,
-		/** 标签图形数据 */
-		graph: (workspaceId: string) => ["tags", "graph", workspaceId] as const,
+		/** 搜索标签 */
+		search: (workspaceId: string, query: string) => ["tags", "search", workspaceId, query] as const,
+		/** 热门标签 */
+		top: (workspaceId: string, limit: number) => ["tags", "top", workspaceId, limit] as const,
 	},
 
 	// ============================================
@@ -101,16 +91,25 @@ export const queryKeys = {
 	users: {
 		/** 所有用户 */
 		all: ["users"] as const,
-		/** 单个用户 */
-		detail: (id: string) => ["users", id] as const,
-		/** 按用户名 */
-		byUsername: (username: string) => ["users", "username", username] as const,
 		/** 按邮箱 */
 		byEmail: (email: string) => ["users", "email", email] as const,
-		/** 当前用户 */
-		current: ["users", "current"] as const,
 		/** 按计划类型 */
 		byPlan: (plan: string) => ["users", "plan", plan] as const,
+		/** 按用户名 */
+		byUsername: (username: string) => ["users", "username", username] as const,
+		/** 当前用户 */
+		current: ["users", "current"] as const,
+		/** 单个用户 */
+		detail: (id: string) => ["users", id] as const,
+	},
+	// ============================================
+	// Workspace Keys
+	// ============================================
+	workspaces: {
+		/** 所有工作区 */
+		all: ["workspaces"] as const,
+		/** 单个工作区 */
+		detail: (id: string) => ["workspaces", id] as const,
 	},
 } as const
 

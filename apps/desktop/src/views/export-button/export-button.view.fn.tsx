@@ -16,17 +16,17 @@ import {
 import type { ExportButtonViewProps } from "./export-button.types"
 
 const formatIcons: Record<ExportFormat, LucideIcon> = {
-	txt: FileText,
 	docx: FileType,
-	pdf: FileText,
 	epub: BookOpen,
+	pdf: FileText,
+	txt: FileText,
 }
 
 const formatLabels: Record<ExportFormat, string> = {
-	txt: "Plain Text (.txt)",
 	docx: "Word Document (.docx)",
-	pdf: "PDF Document",
 	epub: "E-Book (.epub)",
+	pdf: "PDF Document",
+	txt: "Plain Text (.txt)",
 }
 
 export const ExportButtonView = memo(

@@ -37,7 +37,7 @@ describe("extractTextFromLexical", () => {
 	})
 
 	it("should extract text from text node", () => {
-		const node = { type: "text", text: "Hello World" }
+		const node = { text: "Hello World", type: "text" }
 		expect(extractTextFromLexical(node)).toBe("Hello World")
 	})
 
@@ -48,24 +48,24 @@ describe("extractTextFromLexical", () => {
 
 	it("should recursively extract text from children", () => {
 		const node = {
-			type: "paragraph",
 			children: [
-				{ type: "text", text: "Hello" },
-				{ type: "text", text: "World" },
+				{ text: "Hello", type: "text" },
+				{ text: "World", type: "text" },
 			],
+			type: "paragraph",
 		}
 		expect(extractTextFromLexical(node)).toBe("Hello World")
 	})
 
 	it("should handle nested children", () => {
 		const node = {
-			type: "root",
 			children: [
 				{
+					children: [{ text: "Nested", type: "text" }],
 					type: "paragraph",
-					children: [{ type: "text", text: "Nested" }],
 				},
 			],
+			type: "root",
 		}
 		expect(extractTextFromLexical(node)).toBe("Nested")
 	})
@@ -92,13 +92,13 @@ describe("extractTextFromContent", () => {
 	it("should extract text from valid Lexical JSON", () => {
 		const content = JSON.stringify({
 			root: {
-				type: "root",
 				children: [
 					{
+						children: [{ text: "Hello World", type: "text" }],
 						type: "paragraph",
-						children: [{ type: "text", text: "Hello World" }],
 					},
 				],
+				type: "root",
 			},
 		})
 		expect(extractTextFromContent(content)).toBe("Hello World")
@@ -252,9 +252,9 @@ describe("Property-Based Tests", () => {
 		it("should always return a string", () => {
 			fc.assert(
 				fc.property(
-					fc.string({ minLength: 0, maxLength: 1000 }),
-					fc.string({ minLength: 1, maxLength: 50 }),
-					fc.integer({ min: 10, max: 200 }),
+					fc.string({ maxLength: 1000, minLength: 0 }),
+					fc.string({ maxLength: 50, minLength: 1 }),
+					fc.integer({ max: 200, min: 10 }),
 					(content, query, contextLength) => {
 						const result = generateExcerpt(content, query, { contextLength })
 						return typeof result === "string"
@@ -267,8 +267,8 @@ describe("Property-Based Tests", () => {
 		it("should never exceed content length plus ellipsis", () => {
 			fc.assert(
 				fc.property(
-					fc.string({ minLength: 1, maxLength: 500 }),
-					fc.string({ minLength: 1, maxLength: 20 }),
+					fc.string({ maxLength: 500, minLength: 1 }),
+					fc.string({ maxLength: 20, minLength: 1 }),
 					(content, query) => {
 						const result = generateExcerpt(content, query, {
 							contextLength: 100,
@@ -290,9 +290,9 @@ describe("Property-Based Tests", () => {
 		it("should never return more than maxHighlights", () => {
 			fc.assert(
 				fc.property(
-					fc.string({ minLength: 0, maxLength: 500 }),
-					fc.string({ minLength: 1, maxLength: 20 }),
-					fc.integer({ min: 1, max: 10 }),
+					fc.string({ maxLength: 500, minLength: 0 }),
+					fc.string({ maxLength: 20, minLength: 1 }),
+					fc.integer({ max: 10, min: 1 }),
 					(content, query, maxHighlights) => {
 						const result = extractHighlights(content, query, { maxHighlights })
 						return result.length <= maxHighlights
@@ -304,7 +304,7 @@ describe("Property-Based Tests", () => {
 
 		it("should return empty array for empty query", () => {
 			fc.assert(
-				fc.property(fc.string({ minLength: 0, maxLength: 500 }), (content) => {
+				fc.property(fc.string({ maxLength: 500, minLength: 0 }), (content) => {
 					const result = extractHighlights(content, "")
 					return result.length === 0
 				}),
@@ -321,9 +321,9 @@ describe("Property-Based Tests", () => {
 		it("should always return non-negative score", () => {
 			fc.assert(
 				fc.property(
-					fc.string({ minLength: 0, maxLength: 200 }),
-					fc.string({ minLength: 0, maxLength: 500 }),
-					fc.string({ minLength: 1, maxLength: 50 }),
+					fc.string({ maxLength: 200, minLength: 0 }),
+					fc.string({ maxLength: 500, minLength: 0 }),
+					fc.string({ maxLength: 50, minLength: 1 }),
 					(title, content, query) => {
 						const score = calculateSimpleScore(title, content, query)
 						return score >= 0
@@ -336,8 +336,8 @@ describe("Property-Based Tests", () => {
 		it("should give exact title match the highest base score", () => {
 			fc.assert(
 				fc.property(
-					fc.string({ minLength: 1, maxLength: 50 }),
-					fc.string({ minLength: 0, maxLength: 200 }),
+					fc.string({ maxLength: 50, minLength: 1 }),
+					fc.string({ maxLength: 200, minLength: 0 }),
 					(query, content) => {
 						const exactScore = calculateSimpleScore(query, content, query)
 						// 精确匹配应该至少得到 100 分

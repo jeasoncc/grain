@@ -58,8 +58,8 @@ export function readFileAsTextSafe(file: File): TE.TaskEither<FileReadError, str
 			return content
 		},
 		(error) => ({
-			type: "READ_ERROR" as const,
 			message: `文件读取失败: ${error instanceof Error ? error.message : String(error)}`,
+			type: "READ_ERROR" as const,
 		}),
 	)
 }
@@ -81,8 +81,8 @@ export function validateFileType(
 
 	if (!allowedTypes.includes(file.type)) {
 		return E.left({
-			type: "INVALID_FILE",
 			message: `不支持的文件类型: ${file.type}。允许的类型: ${allowedTypes.join(", ")}`,
+			type: "INVALID_FILE",
 		})
 	}
 
@@ -109,8 +109,8 @@ export function validateFileExtension(
 
 	if (!allowedExtensions.includes(extension)) {
 		return E.left({
-			type: "INVALID_FILE",
 			message: `不支持的文件扩展名: .${extension}。允许的扩展名: ${allowedExtensions.map((e) => `.${e}`).join(", ")}`,
+			type: "INVALID_FILE",
 		})
 	}
 

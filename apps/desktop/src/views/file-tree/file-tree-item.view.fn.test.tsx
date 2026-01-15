@@ -11,46 +11,46 @@ import { FileTreeItem } from "./file-tree-item.view.fn"
 
 describe("FileTreeItem", () => {
 	const mockFolderNode: TreeNode = {
+		children: [],
+		collapsed: false,
+		depth: 0,
 		id: "folder-1",
 		title: "Test Folder",
 		type: "folder",
-		collapsed: false,
-		depth: 0,
-		children: [],
 	}
 
 	const mockFileNode: TreeNode = {
+		children: [],
+		collapsed: false,
+		depth: 1,
 		id: "file-1",
 		title: "Test File",
 		type: "file",
-		collapsed: false,
-		depth: 1,
-		children: [],
 	}
 
 	const mockDragState: DragState = {
 		draggedId: "",
-		targetId: null,
 		position: null,
+		targetId: null,
 	}
 
 	const defaultProps: FileTreeItemProps = {
-		node: mockFileNode,
-		selectedId: null,
-		renamingId: null,
 		dragState: mockDragState,
-		onSelect: vi.fn(),
-		onToggle: vi.fn(),
-		onStartRename: vi.fn(),
-		onRename: vi.fn(),
+		node: mockFileNode,
 		onCancelRename: vi.fn(),
-		onDelete: vi.fn(),
-		onCreateFolder: vi.fn(),
 		onCreateFile: vi.fn(),
-		onDragStart: vi.fn(),
-		onDragOver: vi.fn(),
+		onCreateFolder: vi.fn(),
+		onDelete: vi.fn(),
 		onDragEnd: vi.fn(),
+		onDragOver: vi.fn(),
+		onDragStart: vi.fn(),
 		onDrop: vi.fn(),
+		onRename: vi.fn(),
+		onSelect: vi.fn(),
+		onStartRename: vi.fn(),
+		onToggle: vi.fn(),
+		renamingId: null,
+		selectedId: null,
 	}
 
 	it("should render file node", () => {
@@ -147,8 +147,8 @@ describe("FileTreeItem", () => {
 	it("should render children for expanded folders", () => {
 		const folderWithChildren: TreeNode = {
 			...mockFolderNode,
-			collapsed: false,
 			children: [mockFileNode],
+			collapsed: false,
 		}
 
 		render(<FileTreeItem {...defaultProps} node={folderWithChildren} />)
@@ -160,8 +160,8 @@ describe("FileTreeItem", () => {
 	it("should not render children for collapsed folders", () => {
 		const folderWithChildren: TreeNode = {
 			...mockFolderNode,
-			collapsed: true,
 			children: [mockFileNode],
+			collapsed: true,
 		}
 
 		render(<FileTreeItem {...defaultProps} node={folderWithChildren} />)

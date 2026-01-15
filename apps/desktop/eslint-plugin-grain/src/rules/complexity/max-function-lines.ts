@@ -11,20 +11,48 @@ type MessageIds = "maxFunctionLines"
 type Options = [{ max?: number }]
 
 export default createRule<Options, MessageIds>({
-	name: "max-function-lines",
+	create(context, [options]) {
+		const maxLines = options.max ?? DEFAULT_COMPLEXITY_CONFIG.maxFunctionLines
+
+		function checkFunctionLines(
+			node:
+				| TSESTree.FunctionDeclaration
+				| TSESTree.FunctionExpression
+				| TSESTree.ArrowFunctionExpression,
+		) {
+			if (!node.body) return
+
+			const startLine = node.loc.start.line
+			const endLine = node.loc.end.line
+			const actualLines = endLine - startLine + 1
+
+			if (actualLines > maxLines) {
+				const functionName = getFunctionName(node)
+				context.report({
+					data: {
+						actual: String(actualLines),
+						functionName,
+						max: String(maxLines),
+					},
+					messageId: "maxFunctionLines",
+					node,
+				})
+			}
+		}
+
+		return {
+			ArrowFunctionExpression: checkFunctionLines,
+			FunctionDeclaration: checkFunctionLines,
+			FunctionExpression: checkFunctionLines,
+		}
+	},
+	defaultOptions: [{ max: DEFAULT_COMPLEXITY_CONFIG.maxFunctionLines }],
 	meta: {
-		type: "problem",
 		docs: {
 			description: "限制函数最大行数",
 		},
 		messages: {
 			maxFunctionLines: buildErrorMessage({
-				title: "函数 {{functionName}} 超过 {{max}} 行（当前 {{actual}} 行）",
-				reason: `过长的函数难以理解、测试和维护。
-  - 函数职责不清晰
-  - 难以进行单元测试
-  - 增加认知负担
-  - 违反单一职责原则`,
 				correctExample: `// ✅ 拆分为多个小函数
 const validateInput = (input: Input): E.Either<Error, ValidInput> => {
   // 验证逻辑（5-10 行）
@@ -46,64 +74,36 @@ const processInput = (input: Input) =>
     TE.fromEither,
     TE.chain(saveToDatabase)
   );`,
+				docRef: "#code-standards - 复杂度限制",
 				incorrectExample: `// ❌ 函数过长
 function processInput(input: Input) {
   // 30+ 行的逻辑
   // 包含验证、转换、保存等多个职责
   // ...
 }`,
-				docRef: "#code-standards - 复杂度限制",
+				reason: `过长的函数难以理解、测试和维护。
+  - 函数职责不清晰
+  - 难以进行单元测试
+  - 增加认知负担
+  - 违反单一职责原则`,
+				title: "函数 {{functionName}} 超过 {{max}} 行（当前 {{actual}} 行）",
 			}),
 		},
 		schema: [
 			{
-				type: "object",
+				additionalProperties: false,
 				properties: {
 					max: {
-						type: "number",
 						minimum: 1,
+						type: "number",
 					},
 				},
-				additionalProperties: false,
+				type: "object",
 			},
 		],
+		type: "problem",
 	},
-	defaultOptions: [{ max: DEFAULT_COMPLEXITY_CONFIG.maxFunctionLines }],
-	create(context, [options]) {
-		const maxLines = options.max ?? DEFAULT_COMPLEXITY_CONFIG.maxFunctionLines
-
-		function checkFunctionLines(
-			node:
-				| TSESTree.FunctionDeclaration
-				| TSESTree.FunctionExpression
-				| TSESTree.ArrowFunctionExpression,
-		) {
-			if (!node.body) return
-
-			const startLine = node.loc.start.line
-			const endLine = node.loc.end.line
-			const actualLines = endLine - startLine + 1
-
-			if (actualLines > maxLines) {
-				const functionName = getFunctionName(node)
-				context.report({
-					node,
-					messageId: "maxFunctionLines",
-					data: {
-						functionName,
-						max: String(maxLines),
-						actual: String(actualLines),
-					},
-				})
-			}
-		}
-
-		return {
-			FunctionDeclaration: checkFunctionLines,
-			FunctionExpression: checkFunctionLines,
-			ArrowFunctionExpression: checkFunctionLines,
-		}
-	},
+	name: "max-function-lines",
 })
 
 function getFunctionName(

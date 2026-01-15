@@ -42,33 +42,33 @@ export function generateWikiTemplate(title: string): string {
 				{
 					children: [
 						{
-							type: "tag",
-							version: 1,
+							detail: 2,
+							format: 0,
+							mode: "segmented",
+							style: "",
 							tagName: "wiki",
 							text: "#[wiki]",
-							format: 0,
-							style: "",
-							detail: 2,
-							mode: "segmented",
-						},
-						{
-							type: "text",
-							version: 1,
-							text: " ",
-							format: 0,
-							style: "",
-							detail: 0,
-							mode: "normal",
-						},
-						{
 							type: "tag",
 							version: 1,
+						},
+						{
+							detail: 0,
+							format: 0,
+							mode: "normal",
+							style: "",
+							text: " ",
+							type: "text",
+							version: 1,
+						},
+						{
+							detail: 2,
+							format: 0,
+							mode: "segmented",
+							style: "",
 							tagName: dateTag,
 							text: `#[${dateTag}]`,
-							format: 0,
-							style: "",
-							detail: 2,
-							mode: "segmented",
+							type: "tag",
+							version: 1,
 						},
 					],
 					direction: "ltr",
@@ -102,9 +102,9 @@ export function generateWikiTemplate(title: string): string {
 					direction: "ltr",
 					format: "",
 					indent: 0,
+					tag: "h1",
 					type: "heading",
 					version: 1,
-					tag: "h1",
 				},
 				// Empty line after title
 				{
@@ -130,9 +130,9 @@ export function generateWikiTemplate(title: string): string {
 					direction: "ltr",
 					format: "",
 					indent: 0,
+					tag: "h2",
 					type: "heading",
 					version: 1,
-					tag: "h2",
 				},
 				{
 					children: [
@@ -175,9 +175,9 @@ export function generateWikiTemplate(title: string): string {
 					direction: "ltr",
 					format: "",
 					indent: 0,
+					tag: "h2",
 					type: "heading",
 					version: 1,
-					tag: "h2",
 				},
 				{
 					children: [
@@ -220,9 +220,9 @@ export function generateWikiTemplate(title: string): string {
 					direction: "ltr",
 					format: "",
 					indent: 0,
+					tag: "h2",
 					type: "heading",
 					version: 1,
-					tag: "h2",
 				},
 				{
 					children: [

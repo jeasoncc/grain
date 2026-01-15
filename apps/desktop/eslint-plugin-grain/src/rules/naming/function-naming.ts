@@ -7,19 +7,6 @@ const createRule = ESLintUtils.RuleCreator(
 )
 
 export default createRule({
-	name: "function-naming",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "强制执行函数命名规范（动词开头、事件处理器命名）",
-		},
-		messages: {
-			noVerbPrefix: "函数名应以动词开头",
-			invalidEventHandler: "事件处理器命名不符合规范",
-		},
-		schema: [],
-	},
-	defaultOptions: [],
 	create(context) {
 		const { verbPrefixes, eventHandlerPrefixes } = DEFAULT_NAMING_CONFIG
 
@@ -48,12 +35,12 @@ export default createRule({
 			if (name.includes("handler") || name.includes("Handler")) {
 				if (!isEventHandler(name)) {
 					context.report({
-						node,
-						messageId: "invalidEventHandler",
 						data: {
 							name,
 							prefixes: eventHandlerPrefixes.join(" 或 "),
 						},
+						messageId: "invalidEventHandler",
+						node,
 					})
 					return
 				}
@@ -62,12 +49,12 @@ export default createRule({
 			// 检查是否以动词开头
 			if (!startsWithVerb(name) && !isEventHandler(name)) {
 				context.report({
-					node,
-					messageId: "noVerbPrefix",
 					data: {
 						name,
 						suggestion: getSuggestion(name),
 					},
+					messageId: "noVerbPrefix",
+					node,
 				})
 			}
 		}
@@ -102,4 +89,17 @@ export default createRule({
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "强制执行函数命名规范（动词开头、事件处理器命名）",
+		},
+		messages: {
+			invalidEventHandler: "事件处理器命名不符合规范",
+			noVerbPrefix: "函数名应以动词开头",
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "function-naming",
 })

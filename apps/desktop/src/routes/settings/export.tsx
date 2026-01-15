@@ -28,7 +28,7 @@ function getOrgmodeSettings(): OrgmodeSettings {
 		const stored = localStorage.getItem(ORGMODE_SETTINGS_KEY)
 		if (stored) return JSON.parse(stored)
 	} catch {}
-	return { orgRoamPath: null, diarySubdir: "diary", enabled: false }
+	return { diarySubdir: "diary", enabled: false, orgRoamPath: null }
 }
 
 function saveOrgmodeSettings(settings: OrgmodeSettings): void {
@@ -47,9 +47,9 @@ function ExportSettingsPage() {
 
 	// Org-mode Settings
 	const [orgSettings, setOrgSettings] = useState<OrgmodeSettings>({
-		orgRoamPath: null,
 		diarySubdir: "diary",
 		enabled: false,
+		orgRoamPath: null,
 	})
 
 	useEffect(() => {

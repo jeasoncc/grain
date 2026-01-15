@@ -22,24 +22,41 @@ export type {
 // ============================================================================
 
 export const useSaveStore = create<SaveStore>()((set) => ({
-	// State
-	status: "saved" as SaveStatus,
-	lastSaveTime: null as number | null,
 	errorMessage: null as string | null,
 	hasUnsavedChanges: false,
 	isManualSaving: false,
+	lastSaveTime: null as number | null,
 
-	// Actions
-	setStatus: (status) =>
+	markAsError: (message) =>
 		set((state) => ({
 			...state,
-			status,
+			errorMessage: message,
+			isManualSaving: false,
+			status: "error" as SaveStatus,
 		})),
 
-	setLastSaveTime: (time) =>
+	markAsSaved: () =>
 		set((state) => ({
 			...state,
-			lastSaveTime: time.getTime(),
+			errorMessage: null,
+			hasUnsavedChanges: false,
+			isManualSaving: false,
+			lastSaveTime: Date.now(),
+			status: "saved" as SaveStatus,
+		})),
+
+	markAsSaving: () =>
+		set((state) => ({
+			...state,
+			errorMessage: null,
+			status: "saving" as SaveStatus,
+		})),
+
+	markAsUnsaved: () =>
+		set((state) => ({
+			...state,
+			hasUnsavedChanges: true,
+			status: "unsaved" as SaveStatus,
 		})),
 
 	setErrorMessage: (message) =>
@@ -60,37 +77,20 @@ export const useSaveStore = create<SaveStore>()((set) => ({
 			isManualSaving: isSaving,
 		})),
 
-	markAsSaved: () =>
+	setLastSaveTime: (time) =>
 		set((state) => ({
 			...state,
-			status: "saved" as SaveStatus,
-			lastSaveTime: Date.now(),
-			errorMessage: null,
-			hasUnsavedChanges: false,
-			isManualSaving: false,
+			lastSaveTime: time.getTime(),
 		})),
 
-	markAsError: (message) =>
+	// Actions
+	setStatus: (status) =>
 		set((state) => ({
 			...state,
-			status: "error" as SaveStatus,
-			errorMessage: message,
-			isManualSaving: false,
+			status,
 		})),
-
-	markAsSaving: () =>
-		set((state) => ({
-			...state,
-			status: "saving" as SaveStatus,
-			errorMessage: null,
-		})),
-
-	markAsUnsaved: () =>
-		set((state) => ({
-			...state,
-			status: "unsaved" as SaveStatus,
-			hasUnsavedChanges: true,
-		})),
+	// State
+	status: "saved" as SaveStatus,
 }))
 
 // ============================================================================

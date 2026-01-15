@@ -105,24 +105,24 @@ export function useEditorTabs() {
 	}, [])
 
 	return {
-		// State
-		tabs,
-		activeTabId,
 		activeTab,
+		activeTabId,
+		closeAllTabs,
+		closeOtherTabs,
+		closeTab,
+		closeTabsByWorkspace,
+		getEditorState,
+		getTabsByWorkspace,
 
 		// Actions
 		openTab,
-		closeTab,
-		closeOtherTabs,
-		closeAllTabs,
-		setActiveTab,
-		updateTabTitle,
-		setTabDirty,
 		reorderTabs,
+		setActiveTab,
+		setTabDirty,
+		// State
+		tabs,
 		updateEditorState,
-		getEditorState,
-		getTabsByWorkspace,
-		closeTabsByWorkspace,
+		updateTabTitle,
 	}
 }
 

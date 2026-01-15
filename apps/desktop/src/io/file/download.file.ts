@@ -31,8 +31,8 @@ export function triggerDownload(
 
 	// Set properties functionally using Object.assign
 	Object.assign(a, {
-		href: url,
 		download: filename,
+		href: url,
 	})
 
 	document.body.appendChild(a)
@@ -53,8 +53,8 @@ export function triggerBlobDownload(filename: string, blob: Blob): void {
 
 	// Set properties functionally using Object.assign
 	Object.assign(a, {
-		href: url,
 		download: filename,
+		href: url,
 	})
 
 	document.body.appendChild(a)

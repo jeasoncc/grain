@@ -10,16 +10,16 @@ import { UpdateCheckerView } from "./update-checker.view.fn"
 
 describe("UpdateCheckerView", () => {
 	const defaultProps: UpdateCheckerViewProps = {
-		updateInfo: null,
+		checkStatus: "idle",
+		downloadProgress: 0,
+		errorMessage: "",
 		isChecking: false,
 		isDownloading: false,
-		downloadProgress: 0,
-		showDialog: false,
-		checkStatus: "idle",
-		errorMessage: "",
 		onCheckForUpdates: vi.fn(),
 		onDownloadAndInstall: vi.fn(),
 		onSetShowDialog: vi.fn(),
+		showDialog: false,
+		updateInfo: null,
 	}
 
 	it("should render check for updates button", () => {
@@ -47,9 +47,9 @@ describe("UpdateCheckerView", () => {
 				checkStatus="up-to-date"
 				updateInfo={{
 					available: false,
+					body: "",
 					currentVersion: "1.0.0",
 					latestVersion: "1.0.0",
-					body: "",
 				}}
 			/>,
 		)
@@ -75,9 +75,9 @@ describe("UpdateCheckerView", () => {
 				showDialog={true}
 				updateInfo={{
 					available: true,
+					body: "New features",
 					currentVersion: "1.0.0",
 					latestVersion: "1.1.0",
-					body: "New features",
 				}}
 			/>,
 		)
@@ -95,9 +95,9 @@ describe("UpdateCheckerView", () => {
 				showDialog={true}
 				updateInfo={{
 					available: true,
+					body: "New features and bug fixes",
 					currentVersion: "1.0.0",
 					latestVersion: "1.1.0",
-					body: "New features and bug fixes",
 				}}
 			/>,
 		)
@@ -114,9 +114,9 @@ describe("UpdateCheckerView", () => {
 				downloadProgress={50}
 				updateInfo={{
 					available: true,
+					body: "",
 					currentVersion: "1.0.0",
 					latestVersion: "1.1.0",
-					body: "",
 				}}
 			/>,
 		)
@@ -134,9 +134,9 @@ describe("UpdateCheckerView", () => {
 				onDownloadAndInstall={onDownloadAndInstall}
 				updateInfo={{
 					available: true,
+					body: "",
 					currentVersion: "1.0.0",
 					latestVersion: "1.1.0",
-					body: "",
 				}}
 			/>,
 		)
@@ -153,9 +153,9 @@ describe("UpdateCheckerView", () => {
 				onSetShowDialog={onSetShowDialog}
 				updateInfo={{
 					available: true,
+					body: "",
 					currentVersion: "1.0.0",
 					latestVersion: "1.1.0",
-					body: "",
 				}}
 			/>,
 		)
@@ -171,9 +171,9 @@ describe("UpdateCheckerView", () => {
 				isDownloading={true}
 				updateInfo={{
 					available: true,
+					body: "",
 					currentVersion: "1.0.0",
 					latestVersion: "1.1.0",
-					body: "",
 				}}
 			/>,
 		)

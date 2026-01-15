@@ -13,11 +13,11 @@ import { EditorTabsView } from "./editor-tabs.view.fn"
 function createTestTab(overrides?: Partial<EditorTab>): EditorTab {
 	return {
 		id: "tab-1",
-		workspaceId: "workspace-1",
+		isDirty: false,
 		nodeId: "node-1",
 		title: "Test Document",
 		type: "file",
-		isDirty: false,
+		workspaceId: "workspace-1",
 		...overrides,
 	}
 }
@@ -29,10 +29,10 @@ function renderWithTooltip(ui: React.ReactElement) {
 
 describe("EditorTabsView", () => {
 	const defaultProps: EditorTabsViewProps = {
-		tabs: [createTestTab()],
 		activeTabId: "tab-1",
-		onSetActiveTab: vi.fn(),
 		onCloseTab: vi.fn(),
+		onSetActiveTab: vi.fn(),
+		tabs: [createTestTab()],
 	}
 
 	it("should render tabs", () => {

@@ -19,27 +19,27 @@ vi.mock("@/state/ui.state", () => ({
 vi.mock("@/state/editor-tabs.state", () => ({
 	useEditorTabsStore: vi.fn((selector) => {
 		const state = {
+			activeTabId: "tab-1",
+			closeTab: vi.fn(),
+			setActiveTab: vi.fn(),
 			tabs: [
 				{
 					id: "tab-1",
+					isDirty: false,
+					nodeId: "node-1",
 					title: "Test File 1",
 					type: "file" as const,
-					nodeId: "node-1",
 					workspaceId: "workspace-1",
-					isDirty: false,
 				},
 				{
 					id: "tab-2",
+					isDirty: false,
+					nodeId: "node-2",
 					title: "Test File 2",
 					type: "file" as const,
-					nodeId: "node-2",
 					workspaceId: "workspace-2",
-					isDirty: false,
 				},
 			],
-			activeTabId: "tab-1",
-			setActiveTab: vi.fn(),
-			closeTab: vi.fn(),
 		}
 		return selector(state)
 	}),

@@ -138,15 +138,15 @@ export const createDateTemplateConfig = (
 	}
 
 	return {
-		name,
-		rootFolder,
 		fileType,
-		tag,
-		generateTemplate,
-		generateFolderPath,
-		generateTitle,
-		paramsSchema: dateParamsSchema,
 		foldersCollapsed,
+		generateFolderPath,
+		generateTemplate,
+		generateTitle,
+		name,
+		paramsSchema: dateParamsSchema,
+		rootFolder,
 		skipJsonParse,
+		tag,
 	}
 }

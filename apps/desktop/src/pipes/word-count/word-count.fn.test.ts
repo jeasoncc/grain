@@ -192,8 +192,8 @@ describe("extractTextFromLexicalState", () => {
 			root: {
 				children: [
 					{
+						children: [{ text: "Hello World", type: "text" }],
 						type: "paragraph",
-						children: [{ type: "text", text: "Hello World" }],
 					},
 				],
 			},
@@ -207,11 +207,11 @@ describe("extractTextFromLexicalState", () => {
 			root: {
 				children: [
 					{
-						type: "paragraph",
 						children: [
-							{ type: "text", text: "Hello" },
-							{ type: "text", text: "World" },
+							{ text: "Hello", type: "text" },
+							{ text: "World", type: "text" },
 						],
+						type: "paragraph",
 					},
 				],
 			},
@@ -247,12 +247,12 @@ describe("extractTextFromLexicalState", () => {
 			root: {
 				children: [
 					{
+						children: [{ text: "First", type: "text" }],
 						type: "paragraph",
-						children: [{ type: "text", text: "First" }],
 					},
 					{
+						children: [{ text: "Second", type: "text" }],
 						type: "paragraph",
-						children: [{ type: "text", text: "Second" }],
 					},
 				],
 			},
@@ -274,8 +274,8 @@ describe("countWordsFromLexicalState", () => {
 			root: {
 				children: [
 					{
+						children: [{ text: "你好 Hello World", type: "text" }],
 						type: "paragraph",
-						children: [{ type: "text", text: "你好 Hello World" }],
 					},
 				],
 			},
@@ -299,8 +299,8 @@ describe("countWordsFromLexicalState", () => {
 			root: {
 				children: [
 					{
+						children: [{ text: "测试", type: "text" }],
 						type: "paragraph",
-						children: [{ type: "text", text: "测试" }],
 					},
 				],
 			},
@@ -345,10 +345,10 @@ describe("formatWordCount", () => {
 
 describe("formatWordCountDetail", () => {
 	const createResult = (chineseChars: number, englishWords: number): WordCountResult => ({
+		characters: chineseChars + englishWords * 5,
 		chineseChars,
 		englishWords,
 		total: chineseChars + englishWords,
-		characters: chineseChars + englishWords * 5,
 	})
 
 	describe("chinese mode", () => {

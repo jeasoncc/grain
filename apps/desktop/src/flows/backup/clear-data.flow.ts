@@ -187,39 +187,39 @@ export const getStorageStats = (): TE.TaskEither<AppError, StorageStats> =>
 			const drawingNodes = nodes.filter((n) => n.type === "drawing")
 
 			const tableSizes: TableSizes = {
-				users: calculateDataSize(users),
-				workspaces: calculateDataSize(workspaces),
-				nodes: calculateDataSize(nodes),
+				attachments: calculateDataSize(attachments),
 				contents: calculateDataSize(contents),
 				drawings: calculateDataSize(drawingNodes),
-				attachments: calculateDataSize(attachments),
+				nodes: calculateDataSize(nodes),
 				tags: calculateDataSize(tags),
+				users: calculateDataSize(users),
+				workspaces: calculateDataSize(workspaces),
 			}
 
 			const totalSize = (Object.values(tableSizes) as readonly number[]).reduce((a, b) => a + b, 0)
 
 			const indexedDBStats: IndexedDBStats = {
 				size: totalSize,
+				tableSizes,
 				tables: {
-					users: users.length,
-					workspaces: workspaces.length,
-					nodes: nodes.length,
+					attachments: attachments.length,
 					contents: contents.length,
 					drawings: drawingNodes.length,
-					attachments: attachments.length,
+					nodes: nodes.length,
 					tags: tags.length,
+					users: users.length,
+					workspaces: workspaces.length,
 				},
-				tableSizes,
 			}
 
 			const localStorageStats = {
-				size: new Blob([JSON.stringify(localStorage)]).size,
 				keys: Object.keys(localStorage).length,
+				size: new Blob([JSON.stringify(localStorage)]).size,
 			}
 
 			const sessionStorageStats = {
-				size: new Blob([JSON.stringify(sessionStorage)]).size,
 				keys: Object.keys(sessionStorage).length,
+				size: new Blob([JSON.stringify(sessionStorage)]).size,
 			}
 
 			const cookiesStats = {
@@ -227,10 +227,10 @@ export const getStorageStats = (): TE.TaskEither<AppError, StorageStats> =>
 			}
 
 			return {
+				cookies: cookiesStats,
 				indexedDB: indexedDBStats,
 				localStorage: localStorageStats,
 				sessionStorage: sessionStorageStats,
-				cookies: cookiesStats,
 			}
 		},
 		(error): AppError => dbError(`获取存储统计信息失败: ${error}`),

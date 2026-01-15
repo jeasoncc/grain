@@ -33,11 +33,11 @@ export const ledgerParamsSchema = dateParamsSchema
  * Ledger > year-YYYY-{Zodiac} > month-MM-{MonthName}
  */
 export const ledgerConfig = createDateTemplateConfig({
-	name: "记账",
-	rootFolder: "Ledger",
 	fileType: "ledger",
-	tag: "ledger",
-	prefix: "ledger",
 	generateContent: generateLedgerContent,
 	includeDayFolder: false, // 记账不需要日期文件夹
+	name: "记账",
+	prefix: "ledger",
+	rootFolder: "Ledger",
+	tag: "ledger",
 })

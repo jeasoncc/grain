@@ -229,9 +229,9 @@ describe("content.generate.fn", () => {
 
 		it("should respect custom options", () => {
 			const content = generateDiaryContent(new Date(), {
-				tags: ["custom"],
 				headingLevel: "h1",
 				includeEmptyLines: false,
+				tags: ["custom"],
 			})
 			const parsed = JSON.parse(content) as LexicalDocument
 			const tags = extractTagsFromDocument(parsed)

@@ -91,10 +91,10 @@ export const countWords = (text: string, mode: CountMode = "chinese"): WordCount
 	}
 
 	return {
+		characters,
 		chineseChars,
 		englishWords,
 		total,
-		characters,
 	}
 }
 

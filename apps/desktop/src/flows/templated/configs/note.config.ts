@@ -33,11 +33,11 @@ export const noteParamsSchema = dateParamsSchema
  * Note > year-YYYY-{Zodiac} > month-MM-{MonthName} > day-DD-{Weekday}
  */
 export const noteConfig = createDateTemplateConfig({
-	name: "Note",
-	rootFolder: "Note",
 	fileType: "note",
-	tag: "note",
-	prefix: "note",
 	generateContent: generateNoteContent,
 	includeDayFolder: true,
+	name: "Note",
+	prefix: "note",
+	rootFolder: "Note",
+	tag: "note",
 })

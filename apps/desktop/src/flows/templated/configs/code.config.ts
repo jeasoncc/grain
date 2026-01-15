@@ -33,12 +33,12 @@ export const codeParamsSchema = dateParamsSchema
  * Code > year-YYYY-{Zodiac} > month-MM-{MonthName}
  */
 export const codeConfig = createDateTemplateConfig({
-	name: "Code",
-	rootFolder: "Code",
 	fileType: "code",
-	tag: "code",
-	prefix: "code",
 	generateContent: generateCodeContent,
 	includeDayFolder: false,
+	name: "Code",
+	prefix: "code",
+	rootFolder: "Code",
 	skipJsonParse: true,
+	tag: "code",
 })

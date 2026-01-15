@@ -24,16 +24,16 @@ import { error as logError, warn } from "@/io/log/logger.api"
  * 便于管理和避免键名冲突
  */
 export const STORAGE_KEYS = {
-	/** 导出设置 */
-	EXPORT_SETTINGS: "grain-export-settings",
-	/** 迁移状态 */
-	MIGRATION_STATUS: "grain_dexie_to_sqlite_migration_status",
-	/** 自动备份列表 */
-	AUTO_BACKUPS: "auto-backups",
-	/** 上次自动备份时间 */
-	LAST_AUTO_BACKUP: "last-auto-backup",
 	/** 自动备份启用状态 */
 	AUTO_BACKUP_ENABLED: "auto-backup-enabled",
+	/** 自动备份列表 */
+	AUTO_BACKUPS: "auto-backups",
+	/** 导出设置 */
+	EXPORT_SETTINGS: "grain-export-settings",
+	/** 上次自动备份时间 */
+	LAST_AUTO_BACKUP: "last-auto-backup",
+	/** 迁移状态 */
+	MIGRATION_STATUS: "grain_dexie_to_sqlite_migration_status",
 } as const
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS]
@@ -214,8 +214,8 @@ export function getStorageStats(): { readonly size: number; readonly keys: numbe
 			}
 
 			return {
-				size: totalSize,
 				keys: keys.length,
+				size: totalSize,
 			}
 		},
 		(err) => {
@@ -224,7 +224,7 @@ export function getStorageStats(): { readonly size: number; readonly keys: numbe
 		},
 	)
 
-	return E.getOrElse(() => ({ size: 0, keys: 0 }))(result)
+	return E.getOrElse(() => ({ keys: 0, size: 0 }))(result)
 }
 
 /**

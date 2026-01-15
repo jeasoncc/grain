@@ -33,9 +33,9 @@ export const saveLogToSQLite = (entry: LogEntry): TE.TaskEither<AppError, void> 
 		TE.tryCatch(
 			() => invoke<void>("save_log_entry", { entry }),
 			(error): AppError => ({
-				type: "LOG_STORAGE_ERROR",
 				message: `Failed to save log entry: ${String(error)}`,
 				originalError: error,
+				type: "LOG_STORAGE_ERROR",
 			}),
 		),
 	)
@@ -53,9 +53,9 @@ export const saveLogsBatchToSQLite = (
 		TE.tryCatch(
 			() => invoke<void>("save_logs_batch", { entries }),
 			(error): AppError => ({
-				type: "LOG_STORAGE_ERROR",
 				message: `Failed to save log batch: ${String(error)}`,
 				originalError: error,
+				type: "LOG_STORAGE_ERROR",
 			}),
 		),
 	)
@@ -77,9 +77,9 @@ export const queryLogsFromSQLite = (
 		TE.tryCatch(
 			() => invoke<LogQueryResult>("query_logs", { options }),
 			(error): AppError => ({
-				type: "LOG_STORAGE_ERROR",
 				message: `Failed to query logs: ${String(error)}`,
 				originalError: error,
+				type: "LOG_STORAGE_ERROR",
 			}),
 		),
 	)
@@ -94,18 +94,18 @@ export const getLogStatsFromSQLite = (): TE.TaskEither<AppError, LogStatsFormatt
 		TE.tryCatch(
 			() => invoke<LogStats>("get_log_stats"),
 			(error): AppError => ({
-				type: "LOG_STORAGE_ERROR",
 				message: `Failed to get log stats: ${String(error)}`,
 				originalError: error,
+				type: "LOG_STORAGE_ERROR",
 			}),
 		),
 		TE.map(
 			(stats): LogStatsFormatted => ({
-				totalEntries: stats.total_entries,
 				byLevel: stats.by_level,
 				earliestEntry: stats.earliest_entry,
 				latestEntry: stats.latest_entry,
 				storageSize: stats.storage_size,
+				totalEntries: stats.total_entries,
 			}),
 		),
 	)
@@ -125,9 +125,9 @@ export const clearOldLogsFromSQLite = (beforeDate: string): TE.TaskEither<AppErr
 		TE.tryCatch(
 			() => invoke<number>("clear_old_logs", { beforeDate }),
 			(error): AppError => ({
-				type: "LOG_STORAGE_ERROR",
 				message: `Failed to clear old logs: ${String(error)}`,
 				originalError: error,
+				type: "LOG_STORAGE_ERROR",
 			}),
 		),
 	)
@@ -142,9 +142,9 @@ export const clearAllLogsFromSQLite = (): TE.TaskEither<AppError, void> =>
 		TE.tryCatch(
 			() => invoke<void>("clear_all_logs"),
 			(error): AppError => ({
-				type: "LOG_STORAGE_ERROR",
 				message: `Failed to clear all logs: ${String(error)}`,
 				originalError: error,
+				type: "LOG_STORAGE_ERROR",
 			}),
 		),
 	)
@@ -163,9 +163,9 @@ export const initLogDatabase = (): TE.TaskEither<AppError, void> =>
 		TE.tryCatch(
 			() => invoke<void>("init_log_database"),
 			(error): AppError => ({
-				type: "LOG_STORAGE_ERROR",
 				message: `Failed to initialize log database: ${String(error)}`,
 				originalError: error,
+				type: "LOG_STORAGE_ERROR",
 			}),
 		),
 	)
@@ -180,9 +180,9 @@ export const checkLogDatabaseExists = (): TE.TaskEither<AppError, boolean> =>
 		TE.tryCatch(
 			() => invoke<boolean>("check_log_database_exists"),
 			(error): AppError => ({
-				type: "LOG_STORAGE_ERROR",
 				message: `Failed to check log database: ${String(error)}`,
 				originalError: error,
+				type: "LOG_STORAGE_ERROR",
 			}),
 		),
 	)
@@ -201,9 +201,9 @@ export const checkNeedsMigration = (): TE.TaskEither<AppError, boolean> =>
 		TE.tryCatch(
 			() => invoke<boolean>("check_needs_migration"),
 			(error): AppError => ({
-				type: "LOG_STORAGE_ERROR",
 				message: `Failed to check migration status: ${String(error)}`,
 				originalError: error,
+				type: "LOG_STORAGE_ERROR",
 			}),
 		),
 	)
@@ -218,9 +218,9 @@ export const markMigrationComplete = (): TE.TaskEither<AppError, void> =>
 		TE.tryCatch(
 			() => invoke<void>("mark_migration_complete"),
 			(error): AppError => ({
-				type: "LOG_STORAGE_ERROR",
 				message: `Failed to mark migration complete: ${String(error)}`,
 				originalError: error,
+				type: "LOG_STORAGE_ERROR",
 			}),
 		),
 	)

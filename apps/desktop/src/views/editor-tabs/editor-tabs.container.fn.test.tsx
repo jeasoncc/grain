@@ -20,11 +20,11 @@ import { useEditorTabsStore } from "@/state/editor-tabs.state"
 function createTestTab(overrides?: Partial<EditorTab>): EditorTab {
 	return {
 		id: "tab-1",
-		workspaceId: "workspace-1",
+		isDirty: false,
 		nodeId: "node-1",
 		title: "Test Document",
 		type: "file",
-		isDirty: false,
+		workspaceId: "workspace-1",
 		...overrides,
 	}
 }
@@ -44,14 +44,14 @@ describe("EditorTabsContainer", () => {
 		// 默认 mock 实现
 		vi.mocked(useEditorTabsStore).mockImplementation((selector: any) => {
 			const state = {
+				activeTabId: "tab-1",
+				closeTab: mockCloseTab,
+				setActiveTab: mockSetActiveTab,
 				tabs: [
 					createTestTab({ id: "tab-1", workspaceId: "workspace-1" }),
 					createTestTab({ id: "tab-2", workspaceId: "workspace-1" }),
 					createTestTab({ id: "tab-3", workspaceId: "workspace-2" }),
 				],
-				activeTabId: "tab-1",
-				setActiveTab: mockSetActiveTab,
-				closeTab: mockCloseTab,
 			}
 			return selector(state)
 		})

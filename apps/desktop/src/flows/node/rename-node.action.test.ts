@@ -17,9 +17,9 @@ vi.mock("@/io/api/node.api", () => ({
 
 vi.mock("@/log/index", () => ({
 	default: {
+		error: vi.fn(),
 		start: vi.fn(),
 		success: vi.fn(),
-		error: vi.fn(),
 	},
 }))
 
@@ -30,16 +30,16 @@ import { updateNode } from "@/io/api/node.api"
 // ============================================================================
 
 const mockNode = {
+	collapsed: false,
+	createDate: "2024-01-01T00:00:00.000Z",
 	id: "node-1",
+	lastEdit: "2024-01-01T00:00:00.000Z",
+	order: 0,
+	parent: null,
+	tags: [],
 	title: "新标题",
 	type: "file" as const,
 	workspace: "ws-1",
-	parent: null,
-	order: 0,
-	collapsed: false,
-	tags: [],
-	createDate: "2024-01-01T00:00:00.000Z",
-	lastEdit: "2024-01-01T00:00:00.000Z",
 }
 
 // ============================================================================
@@ -116,7 +116,7 @@ describe("renameNode", () => {
 
 	it("应该处理数据库更新失败", async () => {
 		vi.mocked(updateNode).mockReturnValue(() =>
-			Promise.resolve(E.left({ type: "DB_ERROR", message: "更新失败" })),
+			Promise.resolve(E.left({ message: "更新失败", type: "DB_ERROR" })),
 		)
 
 		const params = {

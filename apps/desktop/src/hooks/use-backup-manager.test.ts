@@ -10,9 +10,9 @@ import { useBackupManager } from "./use-backup-manager"
 // Mock dependencies
 vi.mock("sonner", () => ({
 	toast: {
-		success: vi.fn(),
 		error: vi.fn(),
 		info: vi.fn(),
+		success: vi.fn(),
 	},
 }))
 
@@ -25,16 +25,16 @@ vi.mock("@/flows/backup", () => ({
 		start: vi.fn(),
 		stop: vi.fn(),
 	},
+	clearAllData: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: undefined })),
+	exportBackupJson: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: undefined })),
+	exportBackupZip: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: undefined })),
 	getDatabaseStats: vi.fn(
 		() => () => Promise.resolve({ _tag: "Right", right: { totalNodes: 10 } }),
 	),
-	getStorageStats: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: { size: 1024 } })),
 	getLocalBackups: vi.fn(() => []),
-	exportBackupJson: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: undefined })),
-	exportBackupZip: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: undefined })),
+	getStorageStats: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: { size: 1024 } })),
 	restoreBackup: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: undefined })),
 	restoreLocalBackup: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: undefined })),
-	clearAllData: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: undefined })),
 }))
 
 vi.mock("@/io/storage/settings.storage", () => ({
@@ -45,8 +45,8 @@ vi.mock("@/io/storage/settings.storage", () => ({
 vi.mock("@/io/file/dialog.file", () => ({
 	selectFile: vi.fn(() =>
 		Promise.resolve({
-			file: new File(["test"], "test.json"),
 			cancelled: false,
+			file: new File(["test"], "test.json"),
 		}),
 	),
 }))

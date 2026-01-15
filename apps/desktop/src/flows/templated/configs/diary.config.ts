@@ -33,11 +33,11 @@ export const diaryParamsSchema = dateParamsSchema
  * Diary > year-YYYY-{Zodiac} > month-MM-{MonthName} > day-DD-{Weekday}
  */
 export const diaryConfig = createDateTemplateConfig({
-	name: "日记",
-	rootFolder: "Diary",
 	fileType: "diary",
-	tag: "diary",
-	prefix: "diary",
 	generateContent: generateDiaryContent,
 	includeDayFolder: true,
+	name: "日记",
+	prefix: "diary",
+	rootFolder: "Diary",
+	tag: "diary",
 })

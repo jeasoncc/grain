@@ -68,8 +68,8 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			const syncStartTime = performance.now()
 
 			debug("[OptimisticCollapse] Syncing to backend (debounced)", {
-				nodeId,
 				collapsed,
+				nodeId,
 				timestamp: new Date().toISOString(),
 			})
 
@@ -80,9 +80,9 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 
 				if (result._tag === "Left") {
 					error("[OptimisticCollapse] Backend sync failed, rolling back", {
-						nodeId,
 						collapsed,
 						error: result.left,
+						nodeId,
 						syncDuration: `${syncDuration.toFixed(2)}ms`,
 						timestamp: new Date().toISOString(),
 					})
@@ -101,8 +101,8 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 				}
 
 				debug("[OptimisticCollapse] Backend sync completed", {
-					nodeId,
 					collapsed,
+					nodeId,
 					syncDuration: `${syncDuration.toFixed(2)}ms`,
 					timestamp: new Date().toISOString(),
 				})
@@ -164,8 +164,8 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			// Performance monitoring
 			const startTime = performance.now()
 			debug("[OptimisticCollapse] Starting optimistic update", {
-				nodeId,
 				collapsed,
+				nodeId,
 				timestamp: new Date().toISOString(),
 			})
 
@@ -178,8 +178,8 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 
 			const uiUpdateTime = performance.now()
 			debug("[OptimisticCollapse] UI updated optimistically", {
-				nodeId,
 				collapsed,
+				nodeId,
 				uiUpdateDuration: `${(uiUpdateTime - startTime).toFixed(2)}ms`,
 			})
 
@@ -191,8 +191,8 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 						[
 							nodeId,
 							{
-								nodeId,
 								collapsed,
+								nodeId,
 								previousData,
 							},
 						],

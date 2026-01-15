@@ -20,16 +20,16 @@ describe("UpdateCheckerContainer", () => {
 	it("should fetch data from hook and pass to view", async () => {
 		const { useUpdateChecker } = await import("@/hooks/use-update-checker")
 		vi.mocked(useUpdateChecker).mockReturnValue({
-			updateInfo: null,
-			isChecking: false,
-			isDownloading: false,
-			downloadProgress: 0,
-			showDialog: false,
 			checkStatus: "idle",
+			downloadProgress: 0,
 			errorMessage: "",
 			handleCheckForUpdates: vi.fn(),
 			handleDownloadAndInstall: vi.fn(),
+			isChecking: false,
+			isDownloading: false,
 			setShowDialog: vi.fn(),
+			showDialog: false,
+			updateInfo: null,
 		})
 
 		render(<UpdateCheckerContainer />)
@@ -39,16 +39,16 @@ describe("UpdateCheckerContainer", () => {
 	it("should pass checking state to view", async () => {
 		const { useUpdateChecker } = await import("@/hooks/use-update-checker")
 		vi.mocked(useUpdateChecker).mockReturnValue({
-			updateInfo: null,
-			isChecking: true,
-			isDownloading: false,
-			downloadProgress: 0,
-			showDialog: false,
 			checkStatus: "checking",
+			downloadProgress: 0,
 			errorMessage: "",
 			handleCheckForUpdates: vi.fn(),
 			handleDownloadAndInstall: vi.fn(),
+			isChecking: true,
+			isDownloading: false,
 			setShowDialog: vi.fn(),
+			showDialog: false,
+			updateInfo: null,
 		})
 
 		render(<UpdateCheckerContainer />)
@@ -58,21 +58,21 @@ describe("UpdateCheckerContainer", () => {
 	it("should pass up-to-date status to view", async () => {
 		const { useUpdateChecker } = await import("@/hooks/use-update-checker")
 		vi.mocked(useUpdateChecker).mockReturnValue({
-			updateInfo: {
-				available: false,
-				currentVersion: "1.0.0",
-				latestVersion: "1.0.0",
-				body: "",
-			},
-			isChecking: false,
-			isDownloading: false,
-			downloadProgress: 0,
-			showDialog: false,
 			checkStatus: "up-to-date",
+			downloadProgress: 0,
 			errorMessage: "",
 			handleCheckForUpdates: vi.fn(),
 			handleDownloadAndInstall: vi.fn(),
+			isChecking: false,
+			isDownloading: false,
 			setShowDialog: vi.fn(),
+			showDialog: false,
+			updateInfo: {
+				available: false,
+				body: "",
+				currentVersion: "1.0.0",
+				latestVersion: "1.0.0",
+			},
 		})
 
 		render(<UpdateCheckerContainer />)
@@ -82,16 +82,16 @@ describe("UpdateCheckerContainer", () => {
 	it("should pass error state to view", async () => {
 		const { useUpdateChecker } = await import("@/hooks/use-update-checker")
 		vi.mocked(useUpdateChecker).mockReturnValue({
-			updateInfo: null,
-			isChecking: false,
-			isDownloading: false,
-			downloadProgress: 0,
-			showDialog: false,
 			checkStatus: "error",
+			downloadProgress: 0,
 			errorMessage: "Network error",
 			handleCheckForUpdates: vi.fn(),
 			handleDownloadAndInstall: vi.fn(),
+			isChecking: false,
+			isDownloading: false,
 			setShowDialog: vi.fn(),
+			showDialog: false,
+			updateInfo: null,
 		})
 
 		render(<UpdateCheckerContainer />)
@@ -102,21 +102,21 @@ describe("UpdateCheckerContainer", () => {
 	it("should pass update available state to view", async () => {
 		const { useUpdateChecker } = await import("@/hooks/use-update-checker")
 		vi.mocked(useUpdateChecker).mockReturnValue({
-			updateInfo: {
-				available: true,
-				currentVersion: "1.0.0",
-				latestVersion: "1.1.0",
-				body: "New features",
-			},
-			isChecking: false,
-			isDownloading: false,
-			downloadProgress: 0,
-			showDialog: true,
 			checkStatus: "update-available",
+			downloadProgress: 0,
 			errorMessage: "",
 			handleCheckForUpdates: vi.fn(),
 			handleDownloadAndInstall: vi.fn(),
+			isChecking: false,
+			isDownloading: false,
 			setShowDialog: vi.fn(),
+			showDialog: true,
+			updateInfo: {
+				available: true,
+				body: "New features",
+				currentVersion: "1.0.0",
+				latestVersion: "1.1.0",
+			},
 		})
 
 		render(<UpdateCheckerContainer />)
@@ -128,21 +128,21 @@ describe("UpdateCheckerContainer", () => {
 	it("should pass download progress to view", async () => {
 		const { useUpdateChecker } = await import("@/hooks/use-update-checker")
 		vi.mocked(useUpdateChecker).mockReturnValue({
-			updateInfo: {
-				available: true,
-				currentVersion: "1.0.0",
-				latestVersion: "1.1.0",
-				body: "",
-			},
-			isChecking: false,
-			isDownloading: true,
-			downloadProgress: 75,
-			showDialog: true,
 			checkStatus: "update-available",
+			downloadProgress: 75,
 			errorMessage: "",
 			handleCheckForUpdates: vi.fn(),
 			handleDownloadAndInstall: vi.fn(),
+			isChecking: false,
+			isDownloading: true,
 			setShowDialog: vi.fn(),
+			showDialog: true,
+			updateInfo: {
+				available: true,
+				body: "",
+				currentVersion: "1.0.0",
+				latestVersion: "1.1.0",
+			},
 		})
 
 		render(<UpdateCheckerContainer />)

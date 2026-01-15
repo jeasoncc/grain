@@ -64,9 +64,9 @@ export const StoryWorkspaceContainer = memo(
 		const mentionEntries: MentionEntry[] = useMemo(
 			() =>
 				wikiFiles.map((file) => ({
+					alias: file.alias,
 					id: file.id,
 					name: file.name,
-					alias: file.alias,
 				})),
 			[wikiFiles],
 		)
@@ -90,15 +90,15 @@ export const StoryWorkspaceContainer = memo(
 		// ==============================
 
 		const { updateContent } = useUnifiedSave({
-			nodeId: activeTab?.nodeId ?? "",
 			contentType: "lexical",
-			tabId: activeTabId ?? undefined,
-			onSaveSuccess: () => {
-				console.log("[StoryWorkspace] 内容保存成功")
-			},
+			nodeId: activeTab?.nodeId ?? "",
 			onSaveError: (error) => {
 				console.error("[StoryWorkspace] 保存失败:", error)
 			},
+			onSaveSuccess: () => {
+				console.log("[StoryWorkspace] 内容保存成功")
+			},
+			tabId: activeTabId ?? undefined,
 		})
 
 		// 初始化工作空间选择
@@ -158,11 +158,11 @@ export const StoryWorkspaceContainer = memo(
 		// 计算当前编辑器的字数（仅对 Lexical 编辑器有效）
 		const wordCountResult = useMemo(() => {
 			if (!activeTabId || isExcalidrawTab) {
-				return { chineseChars: 0, englishWords: 0, total: 0, characters: 0 }
+				return { characters: 0, chineseChars: 0, englishWords: 0, total: 0 }
 			}
 			const state = editorStates[activeTabId]
 			if (!state?.serializedState) {
-				return { chineseChars: 0, englishWords: 0, total: 0, characters: 0 }
+				return { characters: 0, chineseChars: 0, englishWords: 0, total: 0 }
 			}
 			return countWordsFromLexicalState(state.serializedState, wordCountMode)
 		}, [activeTabId, editorStates, isExcalidrawTab, wordCountMode])

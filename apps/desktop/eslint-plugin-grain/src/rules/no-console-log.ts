@@ -13,33 +13,6 @@ import type { TSESTree } from "@typescript-eslint/utils"
 import { isMethodCall } from "../utils/index.js"
 
 export default createRule({
-	name: "no-console-log",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "Prohibit console usage and suggest logger usage with proper format",
-		},
-		fixable: undefined,
-		schema: [],
-		messages: {
-			noConsole: [
-				"❌ 禁止使用 console.{{method}}！请使用 logger 进行日志记录。",
-				"",
-				"✅ 正确做法：",
-				'  import logger from "@/io/log/logger";',
-				'  logger.{{logLevel}}("[ModuleName] 操作描述", data);',
-				"",
-				"📋 日志格式规范：",
-				"  - info: 一般信息记录",
-				"  - warn: 警告信息",
-				"  - error: 错误信息",
-				"  - debug: 调试信息",
-				"",
-				"🔗 更多信息: 查看项目中的日志规范文档",
-			].join("\n"),
-		},
-	},
-	defaultOptions: [],
 	create(context) {
 		return {
 			CallExpression(node: TSESTree.CallExpression) {
@@ -54,32 +27,32 @@ export default createRule({
 
 					// Map console methods to logger levels
 					const logLevelMap: Record<string, string> = {
-						log: "info",
-						info: "info",
-						warn: "warn",
-						error: "error",
+						assert: "error",
+						count: "debug",
 						debug: "debug",
-						trace: "debug",
 						dir: "debug",
-						table: "debug",
+						error: "error",
 						group: "debug",
 						groupCollapsed: "debug",
 						groupEnd: "debug",
+						info: "info",
+						log: "info",
+						table: "debug",
 						time: "debug",
 						timeEnd: "debug",
-						count: "debug",
-						assert: "error",
+						trace: "debug",
+						warn: "warn",
 					}
 
 					const logLevel = logLevelMap[method] || "info"
 
 					context.report({
-						node,
-						messageId: "noConsole",
 						data: {
-							method,
 							logLevel,
+							method,
 						},
+						messageId: "noConsole",
+						node,
 					})
 				}
 			},
@@ -98,15 +71,42 @@ export default createRule({
 				// Catch standalone console references
 				if (node.name === "console" && node.parent?.type !== "MemberExpression") {
 					context.report({
-						node,
-						messageId: "noConsole",
 						data: {
-							method: "object",
 							logLevel: "info",
+							method: "object",
 						},
+						messageId: "noConsole",
+						node,
 					})
 				}
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "Prohibit console usage and suggest logger usage with proper format",
+		},
+		fixable: undefined,
+		messages: {
+			noConsole: [
+				"❌ 禁止使用 console.{{method}}！请使用 logger 进行日志记录。",
+				"",
+				"✅ 正确做法：",
+				'  import logger from "@/io/log/logger";',
+				'  logger.{{logLevel}}("[ModuleName] 操作描述", data);',
+				"",
+				"📋 日志格式规范：",
+				"  - info: 一般信息记录",
+				"  - warn: 警告信息",
+				"  - error: 错误信息",
+				"  - debug: 调试信息",
+				"",
+				"🔗 更多信息: 查看项目中的日志规范文档",
+			].join("\n"),
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "no-console-log",
 })

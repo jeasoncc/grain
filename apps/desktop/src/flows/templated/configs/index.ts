@@ -119,15 +119,15 @@ export {
  * 所有可用的模板配置
  */
 export const templateConfigs = {
-	diary: () => import("./diary.config").then((m) => m.diaryConfig),
-	wiki: () => import("./wiki.config").then((m) => m.wikiConfig),
-	ledger: () => import("./ledger.config").then((m) => m.ledgerConfig),
-	todo: () => import("./todo.config").then((m) => m.todoConfig),
-	note: () => import("./note.config").then((m) => m.noteConfig),
-	excalidraw: () => import("./excalidraw.config").then((m) => m.excalidrawConfig),
-	mermaid: () => import("./mermaid.config").then((m) => m.mermaidConfig),
-	plantuml: () => import("./plantuml.config").then((m) => m.plantumlConfig),
 	code: () => import("./code.config").then((m) => m.codeConfig),
+	diary: () => import("./diary.config").then((m) => m.diaryConfig),
+	excalidraw: () => import("./excalidraw.config").then((m) => m.excalidrawConfig),
+	ledger: () => import("./ledger.config").then((m) => m.ledgerConfig),
+	mermaid: () => import("./mermaid.config").then((m) => m.mermaidConfig),
+	note: () => import("./note.config").then((m) => m.noteConfig),
+	plantuml: () => import("./plantuml.config").then((m) => m.plantumlConfig),
+	todo: () => import("./todo.config").then((m) => m.todoConfig),
+	wiki: () => import("./wiki.config").then((m) => m.wikiConfig),
 } as const
 
 /**

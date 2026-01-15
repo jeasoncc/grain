@@ -20,9 +20,9 @@ import {
 describe("buildErrorMessage", () => {
 	it("should build basic error message with title and reason", () => {
 		const message = buildErrorMessage({
-			title: "禁止使用 try-catch",
-			reason: "try-catch 隐藏了错误类型信息",
 			correctExample: "const result = TE.tryCatch(() => fetchData(), toAppError);",
+			reason: "try-catch 隐藏了错误类型信息",
+			title: "禁止使用 try-catch",
 		})
 
 		expect(message).toContain("❌ 禁止使用 try-catch")
@@ -34,10 +34,10 @@ describe("buildErrorMessage", () => {
 
 	it("should include incorrect example when provided", () => {
 		const message = buildErrorMessage({
-			title: "禁止数组变异",
-			reason: "数组变异破坏不可变性",
 			correctExample: "const newArr = [...arr, item];",
 			incorrectExample: "arr.push(item);",
+			reason: "数组变异破坏不可变性",
+			title: "禁止数组变异",
 		})
 
 		expect(message).toContain("❌ 错误做法：")
@@ -46,10 +46,10 @@ describe("buildErrorMessage", () => {
 
 	it("should include doc reference when provided", () => {
 		const message = buildErrorMessage({
-			title: "测试错误",
-			reason: "测试原因",
 			correctExample: "正确代码",
 			docRef: "https://example.com/docs",
+			reason: "测试原因",
+			title: "测试错误",
 		})
 
 		expect(message).toContain("📚 参考文档：https://example.com/docs")
@@ -57,10 +57,10 @@ describe("buildErrorMessage", () => {
 
 	it("should include steering file reference when provided", () => {
 		const message = buildErrorMessage({
-			title: "测试错误",
-			reason: "测试原因",
 			correctExample: "正确代码",
+			reason: "测试原因",
 			steeringFile: "#fp-patterns",
+			title: "测试错误",
 		})
 
 		expect(message).toContain("📋 Steering 文件：#fp-patterns")
@@ -68,10 +68,10 @@ describe("buildErrorMessage", () => {
 
 	it("should include related rules when provided", () => {
 		const message = buildErrorMessage({
-			title: "测试错误",
-			reason: "测试原因",
 			correctExample: "正确代码",
+			reason: "测试原因",
 			relatedRules: ["no-throw", "no-promise-catch"],
+			title: "测试错误",
 		})
 
 		expect(message).toContain("🔗 相关规则：no-throw, no-promise-catch")
@@ -81,8 +81,8 @@ describe("buildErrorMessage", () => {
 describe("buildWarningMessage", () => {
 	it("should build warning message with title and suggestion", () => {
 		const message = buildWarningMessage({
-			title: "建议使用 memo",
 			suggestion: "使用 React.memo 包裹组件以优化性能",
+			title: "建议使用 memo",
 		})
 
 		expect(message).toContain("⚠️ 建议使用 memo")
@@ -92,9 +92,9 @@ describe("buildWarningMessage", () => {
 
 	it("should include example when provided", () => {
 		const message = buildWarningMessage({
-			title: "建议使用 memo",
-			suggestion: "使用 React.memo 包裹组件",
 			example: "export const MyComponent = memo(({ props }) => <div />);",
+			suggestion: "使用 React.memo 包裹组件",
+			title: "建议使用 memo",
 		})
 
 		expect(message).toContain("示例：")
@@ -105,16 +105,16 @@ describe("buildWarningMessage", () => {
 describe("buildComprehensiveErrorMessage", () => {
 	it("should build comprehensive error message with all sections", () => {
 		const message = buildComprehensiveErrorMessage({
-			title: "架构层级违规",
+			architecturePrinciple: "views/ → hooks/ → flows/ → io/",
+			correctExample: "import { useData } from '@/hooks/use-data';",
+			docRef: "#architecture",
 			problemCode: "import { api } from '@/io/api';",
 			reason: "views 层不能直接导入 io 层",
-			architecturePrinciple: "views/ → hooks/ → flows/ → io/",
-			steps: ["创建 hook 封装", "在 hook 中调用 flow", "在 view 中使用 hook"],
-			correctExample: "import { useData } from '@/hooks/use-data';",
-			warnings: ["不要绕过架构规则"],
-			docRef: "#architecture",
-			steeringFile: "#structure",
 			relatedRules: ["layer-dependencies"],
+			steeringFile: "#structure",
+			steps: ["创建 hook 封装", "在 hook 中调用 flow", "在 view 中使用 hook"],
+			title: "架构层级违规",
+			warnings: ["不要绕过架构规则"],
 		})
 
 		expect(message).toContain("❌ 【错误】架构层级违规")

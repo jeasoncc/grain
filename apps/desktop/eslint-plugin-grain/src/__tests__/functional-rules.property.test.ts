@@ -20,14 +20,14 @@ function runLint(
 	const linter = new Linter({ configType: "flat" })
 
 	const config = {
-		plugins: {
-			grain: plugin,
-		},
-		rules,
 		languageOptions: {
 			ecmaVersion: 2022 as const,
 			sourceType: "module" as const,
 		},
+		plugins: {
+			grain: plugin,
+		},
+		rules,
 	}
 
 	return linter.verify(code, config)
@@ -182,7 +182,7 @@ describe("Property 1: Error Handling Pattern Detection", () => {
 
 		it("should detect Promise.all() calls", () => {
 			fc.assert(
-				fc.property(fc.array(identifierArb, { minLength: 1, maxLength: 5 }), (promises) => {
+				fc.property(fc.array(identifierArb, { maxLength: 5, minLength: 1 }), (promises) => {
 					const promiseList = promises.map((p) => `${p}()`).join(", ")
 					const code = `
               Promise.all([${promiseList}]);
@@ -199,7 +199,7 @@ describe("Property 1: Error Handling Pattern Detection", () => {
 
 		it("should detect Promise.race() calls", () => {
 			fc.assert(
-				fc.property(fc.array(identifierArb, { minLength: 1, maxLength: 3 }), (promises) => {
+				fc.property(fc.array(identifierArb, { maxLength: 3, minLength: 1 }), (promises) => {
 					const promiseList = promises.map((p) => `${p}()`).join(", ")
 					const code = `
               Promise.race([${promiseList}]);
@@ -330,8 +330,8 @@ describe("Property 2: Immutability Enforcement", () => {
 			fc.assert(
 				fc.property(
 					identifierArb,
-					fc.integer({ min: 0, max: 100 }),
-					fc.integer({ min: 0, max: 1000 }),
+					fc.integer({ max: 100, min: 0 }),
+					fc.integer({ max: 1000, min: 0 }),
 					(arrayName, index, value) => {
 						const code = `
               const ${arrayName} = [1, 2, 3];

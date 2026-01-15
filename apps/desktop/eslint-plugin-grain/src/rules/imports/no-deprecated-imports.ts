@@ -12,11 +12,11 @@ const createRule = ESLintUtils.RuleCreator(
 
 // Deprecated directories and their replacements
 const DEPRECATED_PATHS: Record<string, string> = {
-	"@/fn/": "@/pipes/, @/utils/, @/flows/",
-	"@/components/": "@/views/",
 	"@/actions/": "@/flows/",
-	"@/stores/": "@/state/",
+	"@/components/": "@/views/",
+	"@/fn/": "@/pipes/, @/utils/, @/flows/",
 	"@/lib/": "@/utils/",
+	"@/stores/": "@/state/",
 }
 
 function getDeprecatedPath(source: string): string | null {
@@ -29,14 +29,58 @@ function getDeprecatedPath(source: string): string | null {
 }
 
 export default createRule({
-	name: "no-deprecated-imports",
+	create(context) {
+		return {
+			// Also check for require() calls
+			CallExpression(node: TSESTree.CallExpression) {
+				if (
+					node.callee.type === "Identifier" &&
+					node.callee.name === "require" &&
+					node.arguments.length > 0 &&
+					node.arguments[0].type === "Literal" &&
+					typeof node.arguments[0].value === "string"
+				) {
+					const source = node.arguments[0].value
+					const deprecatedPath = getDeprecatedPath(source)
+
+					if (deprecatedPath) {
+						context.report({
+							data: {
+								deprecatedPath,
+								replacement: DEPRECATED_PATHS[deprecatedPath],
+							},
+							messageId: "deprecatedImport",
+							node: node.arguments[0],
+						})
+					}
+				}
+			},
+			ImportDeclaration(node: TSESTree.ImportDeclaration) {
+				const source = node.source.value
+
+				if (typeof source !== "string") return
+
+				const deprecatedPath = getDeprecatedPath(source)
+
+				if (deprecatedPath) {
+					context.report({
+						data: {
+							deprecatedPath,
+							replacement: DEPRECATED_PATHS[deprecatedPath],
+						},
+						messageId: "deprecatedImport",
+						node: node.source,
+					})
+				}
+			},
+		}
+	},
+	defaultOptions: [],
 	meta: {
-		type: "problem",
 		docs: {
 			description: "检测废弃目录导入，强制使用新的架构层级",
 		},
 		fixable: undefined,
-		schema: [],
 		messages: {
 			deprecatedImport: `❌ 禁止从废弃目录 "{{deprecatedPath}}" 导入
 
@@ -63,53 +107,8 @@ export default createRule({
 
 📚 参考文档：#structure - 目录结构`,
 		},
+		schema: [],
+		type: "problem",
 	},
-	defaultOptions: [],
-	create(context) {
-		return {
-			ImportDeclaration(node: TSESTree.ImportDeclaration) {
-				const source = node.source.value
-
-				if (typeof source !== "string") return
-
-				const deprecatedPath = getDeprecatedPath(source)
-
-				if (deprecatedPath) {
-					context.report({
-						node: node.source,
-						messageId: "deprecatedImport",
-						data: {
-							deprecatedPath,
-							replacement: DEPRECATED_PATHS[deprecatedPath],
-						},
-					})
-				}
-			},
-
-			// Also check for require() calls
-			CallExpression(node: TSESTree.CallExpression) {
-				if (
-					node.callee.type === "Identifier" &&
-					node.callee.name === "require" &&
-					node.arguments.length > 0 &&
-					node.arguments[0].type === "Literal" &&
-					typeof node.arguments[0].value === "string"
-				) {
-					const source = node.arguments[0].value
-					const deprecatedPath = getDeprecatedPath(source)
-
-					if (deprecatedPath) {
-						context.report({
-							node: node.arguments[0],
-							messageId: "deprecatedImport",
-							data: {
-								deprecatedPath,
-								replacement: DEPRECATED_PATHS[deprecatedPath],
-							},
-						})
-					}
-				}
-			},
-		}
-	},
+	name: "no-deprecated-imports",
 })

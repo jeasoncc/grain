@@ -141,8 +141,8 @@ describe("export.markdown.fn", () => {
 				format: "",
 				indent: 0,
 				type: "listitem" as const,
-				version: 1,
 				value: 1,
+				version: 1,
 			}
 			expect(convertListItemNode(node, "bullet", 0)).toBe("- Item")
 		})
@@ -154,8 +154,8 @@ describe("export.markdown.fn", () => {
 				format: "",
 				indent: 0,
 				type: "listitem" as const,
-				version: 1,
 				value: 1,
+				version: 1,
 			}
 			expect(convertListItemNode(node, "number", 0)).toBe("1. Item")
 			expect(convertListItemNode(node, "number", 2)).toBe("3. Item")
@@ -163,28 +163,28 @@ describe("export.markdown.fn", () => {
 
 		it("should convert unchecked checkbox item", () => {
 			const node = {
+				checked: false,
 				children: [createTextNode("Task")],
 				direction: "ltr",
 				format: "",
 				indent: 0,
 				type: "listitem" as const,
-				version: 1,
 				value: 1,
-				checked: false,
+				version: 1,
 			}
 			expect(convertListItemNode(node, "check", 0)).toBe("- [ ] Task")
 		})
 
 		it("should convert checked checkbox item", () => {
 			const node = {
+				checked: true,
 				children: [createTextNode("Task")],
 				direction: "ltr",
 				format: "",
 				indent: 0,
 				type: "listitem" as const,
-				version: 1,
 				value: 1,
-				checked: true,
+				version: 1,
 			}
 			expect(convertListItemNode(node, "check", 0)).toBe("- [x] Task")
 		})
@@ -221,8 +221,8 @@ describe("export.markdown.fn", () => {
 
 		it("should generate simple key-value pairs", () => {
 			const result = generateFrontMatter({
-				title: "Test",
 				author: "John",
+				title: "Test",
 			})
 			expect(result).toContain("---")
 			expect(result).toContain("title: Test")
@@ -240,9 +240,9 @@ describe("export.markdown.fn", () => {
 
 		it("should skip null and undefined values", () => {
 			const result = generateFrontMatter({
-				title: "Test",
 				author: undefined,
 				date: null,
+				title: "Test",
 			})
 			expect(result).toContain("title: Test")
 			expect(result).not.toContain("author")
@@ -283,8 +283,8 @@ describe("export.markdown.fn", () => {
 		it("should include front matter when option is set", () => {
 			const doc = createDocument([createParagraphNode([createTextNode("Content")])])
 			const result = convertDocumentToMarkdown(doc, {
+				frontMatter: { tags: ["a", "b"], title: "Test" },
 				includeFrontMatter: true,
-				frontMatter: { title: "Test", tags: ["a", "b"] },
 			})
 			expect(result).toContain("---")
 			expect(result).toContain("title: Test")
@@ -334,13 +334,13 @@ describe("export.markdown.fn", () => {
 		it("should export multiple documents", () => {
 			const contents = [
 				{
-					id: "1",
 					content: JSON.stringify(createDocument([createParagraphNode([createTextNode("Doc 1")])])),
+					id: "1",
 					title: "First",
 				},
 				{
-					id: "2",
 					content: JSON.stringify(createDocument([createParagraphNode([createTextNode("Doc 2")])])),
+					id: "2",
 					title: "Second",
 				},
 			]
@@ -359,12 +359,12 @@ describe("export.markdown.fn", () => {
 		it("should use custom separator", () => {
 			const contents = [
 				{
-					id: "1",
 					content: JSON.stringify(createDocument([createParagraphNode([createTextNode("Doc 1")])])),
+					id: "1",
 				},
 				{
-					id: "2",
 					content: JSON.stringify(createDocument([createParagraphNode([createTextNode("Doc 2")])])),
+					id: "2",
 				},
 			]
 			const result = exportMultipleToMarkdown(contents, {}, "\n\n===\n\n")
@@ -378,10 +378,10 @@ describe("export.markdown.fn", () => {
 		it("should return error if any content is invalid", () => {
 			const contents = [
 				{
-					id: "1",
 					content: JSON.stringify(createDocument([createParagraphNode([createTextNode("Doc 1")])])),
+					id: "1",
 				},
-				{ id: "2", content: "invalid" },
+				{ content: "invalid", id: "2" },
 			]
 			const result = exportMultipleToMarkdown(contents)
 

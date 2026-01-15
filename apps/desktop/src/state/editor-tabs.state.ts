@@ -42,10 +42,7 @@ type EditorTabsStore = EditorTabsState & EditorTabsStoreActions
 // ==============================
 
 export const useEditorTabsStore = create<EditorTabsStore>()((set) => ({
-	// Initial State
-	tabs: [],
 	activeTabId: null,
-	editorStates: {},
 
 	// ==============================
 	// Pure State Setters (no business logic)
@@ -65,23 +62,27 @@ export const useEditorTabsStore = create<EditorTabsStore>()((set) => ({
 	addTabWithState: (tab, editorState) => {
 		set((state) => ({
 			...state,
-			tabs: [...state.tabs, tab],
-			editorStates: { ...state.editorStates, [tab.id]: editorState },
 			activeTabId: tab.id,
+			editorStates: { ...state.editorStates, [tab.id]: editorState },
+			tabs: [...state.tabs, tab],
 		}))
+	},
+	editorStates: {},
+
+	removeEditorState: (tabId) => {
+		set((state) => {
+			const { [tabId]: removed, ...rest } = state.editorStates
+			return {
+				...state,
+				editorStates: rest,
+			}
+		})
 	},
 
 	removeTab: (tabId) => {
 		set((state) => ({
 			...state,
 			tabs: state.tabs.filter((t: EditorTab) => t.id !== tabId),
-		}))
-	},
-
-	setTabs: (tabs) => {
-		set((state) => ({
-			...state,
-			tabs: [...tabs],
 		}))
 	},
 
@@ -92,19 +93,28 @@ export const useEditorTabsStore = create<EditorTabsStore>()((set) => ({
 		}))
 	},
 
-	updateTab: (tabId, updates) => {
-		set((state) => ({
-			...state,
-			tabs: state.tabs.map((t: EditorTab) => (t.id === tabId ? { ...t, ...updates } : t)),
-		}))
-	},
-
 	setEditorState: (tabId, editorState) => {
 		set((state) => ({
 			...state,
 			editorStates: { ...state.editorStates, [tabId]: editorState },
 		}))
 	},
+
+	setEditorStates: (states) => {
+		set((state) => ({
+			...state,
+			editorStates: { ...states },
+		}))
+	},
+
+	setTabs: (tabs) => {
+		set((state) => ({
+			...state,
+			tabs: [...tabs],
+		}))
+	},
+	// Initial State
+	tabs: [],
 
 	updateEditorState: (tabId, updates) => {
 		set((state) => ({
@@ -118,20 +128,10 @@ export const useEditorTabsStore = create<EditorTabsStore>()((set) => ({
 		}))
 	},
 
-	removeEditorState: (tabId) => {
-		set((state) => {
-			const { [tabId]: removed, ...rest } = state.editorStates
-			return {
-				...state,
-				editorStates: rest,
-			}
-		})
-	},
-
-	setEditorStates: (states) => {
+	updateTab: (tabId, updates) => {
 		set((state) => ({
 			...state,
-			editorStates: { ...states },
+			tabs: state.tabs.map((t: EditorTab) => (t.id === tabId ? { ...t, ...updates } : t)),
 		}))
 	},
 }))

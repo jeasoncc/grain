@@ -29,8 +29,8 @@ export const createHistoryEntry = (
 	content: unknown,
 	wordCount: number,
 ): EditorHistoryEntry => ({
-	nodeId,
 	content,
+	nodeId,
 	timestamp: new Date().toISOString(),
 	wordCount,
 })

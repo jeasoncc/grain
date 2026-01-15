@@ -52,11 +52,11 @@ export const ensureRootFolder = (
 			info("[Action] 创建新文件夹", { folderName }, "ensure-folder.flow")
 			return pipe(
 				nodeRepo.createNode({
-					workspace: workspaceId,
-					parent: null,
-					type: "folder",
-					title: folderName,
 					collapsed,
+					parent: null,
+					title: folderName,
+					type: "folder",
+					workspace: workspaceId,
 				}),
 				TE.tap((folder) => {
 					success("[Action] 文件夹创建成功", { folderId: folder.id }, "ensure-folder")

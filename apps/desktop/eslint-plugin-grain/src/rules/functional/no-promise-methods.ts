@@ -21,23 +21,10 @@ const createRule = ESLintUtils.RuleCreator(
  * Promise.catch 的错误消息
  */
 const NO_PROMISE_CATCH_MESSAGE = buildComprehensiveErrorMessage({
-	title: "禁止使用 Promise.catch()",
-	problemCode: `fetchData()
-  .then(data => processData(data))
-  .catch(error => handleError(error));`,
-	reason: `Promise.catch() 隐藏了错误类型，使得：
-  - 无法在类型系统中追踪错误
-  - 错误处理逻辑与业务逻辑混杂
-  - 难以进行函数组合`,
 	architecturePrinciple: `Grain 项目使用 TaskEither 处理异步错误：
   - TE.orElse: 错误恢复，返回新的 TaskEither
   - TE.mapLeft: 转换错误类型
   - TE.fold: 最终处理成功和失败`,
-	steps: [
-		"将 Promise 转换为 TaskEither",
-		"使用 TE.orElse 替代 .catch()",
-		"使用 TE.map 替代 .then()",
-	],
 	correctExample: `import { pipe } from 'fp-ts/function';
 import * as TE from 'fp-ts/TaskEither';
 
@@ -58,25 +45,31 @@ pipe(
   )
 )();`,
 	docRef: "https://gcanti.github.io/fp-ts/modules/TaskEither.ts.html#orelse",
-	steeringFile: "#fp-patterns - TaskEither 错误处理",
+	problemCode: `fetchData()
+  .then(data => processData(data))
+  .catch(error => handleError(error));`,
+	reason: `Promise.catch() 隐藏了错误类型，使得：
+  - 无法在类型系统中追踪错误
+  - 错误处理逻辑与业务逻辑混杂
+  - 难以进行函数组合`,
 	relatedRules: ["no-try-catch", "no-throw", "fp-ts-patterns"],
+	steeringFile: "#fp-patterns - TaskEither 错误处理",
+	steps: [
+		"将 Promise 转换为 TaskEither",
+		"使用 TE.orElse 替代 .catch()",
+		"使用 TE.map 替代 .then()",
+	],
+	title: "禁止使用 Promise.catch()",
 })
 
 /**
  * Promise.then 的错误消息
  */
 const NO_PROMISE_THEN_MESSAGE = buildComprehensiveErrorMessage({
-	title: "禁止使用 Promise.then()",
-	problemCode: `fetchData().then(data => processData(data));`,
-	reason: `Promise.then() 链式调用难以组合和测试：
-  - 错误处理不显式
-  - 难以中断链式调用
-  - 类型推断不如 pipe 精确`,
 	architecturePrinciple: `使用 TaskEither 和 pipe 进行异步操作组合：
   - TE.map: 转换成功值（替代 .then）
   - TE.chain: 链接多个 TaskEither（替代 .then 返回 Promise）
   - pipe: 函数组合，类型安全`,
-	steps: ["将 Promise 包装为 TaskEither", "使用 TE.map 替代 .then()", "使用 pipe 组合操作"],
 	correctExample: `import { pipe } from 'fp-ts/function';
 import * as TE from 'fp-ts/TaskEither';
 
@@ -89,33 +82,25 @@ pipe(
   TE.map(processData)
 );`,
 	docRef: "https://gcanti.github.io/fp-ts/modules/TaskEither.ts.html#map",
-	steeringFile: "#fp-patterns - TaskEither 数据转换",
+	problemCode: `fetchData().then(data => processData(data));`,
+	reason: `Promise.then() 链式调用难以组合和测试：
+  - 错误处理不显式
+  - 难以中断链式调用
+  - 类型推断不如 pipe 精确`,
 	relatedRules: ["no-promise-methods", "fp-ts-patterns"],
+	steeringFile: "#fp-patterns - TaskEither 数据转换",
+	steps: ["将 Promise 包装为 TaskEither", "使用 TE.map 替代 .then()", "使用 pipe 组合操作"],
+	title: "禁止使用 Promise.then()",
 })
 
 /**
  * Promise.all 的错误消息
  */
 const NO_PROMISE_ALL_MESSAGE = buildComprehensiveErrorMessage({
-	title: "禁止使用 Promise.all()",
-	problemCode: `const results = await Promise.all([
-  fetchUser(id),
-  fetchPosts(id),
-  fetchComments(id),
-]);`,
-	reason: `Promise.all() 的错误处理不够精细：
-  - 任一 Promise 失败则全部失败
-  - 无法获取部分成功的结果
-  - 错误类型不明确`,
 	architecturePrinciple: `使用 fp-ts 的并行组合子：
   - TE.sequenceArray: 并行执行，全部成功或返回第一个错误
   - TE.sequenceSeqArray: 顺序执行
   - A.sequence(TE.ApplicativePar): 并行执行数组中的 TaskEither`,
-	steps: [
-		"将每个 Promise 转换为 TaskEither",
-		"使用 TE.sequenceArray 或 A.sequence 组合",
-		"处理组合后的结果",
-	],
 	correctExample: `import { pipe } from 'fp-ts/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as A from 'fp-ts/Array';
@@ -141,31 +126,32 @@ const fetchAllData3 = pipe(
   TE.apS('comments', fetchCommentsTE(id))
 );`,
 	docRef: "https://gcanti.github.io/fp-ts/modules/TaskEither.ts.html#sequencearray",
-	steeringFile: "#fp-patterns - 并行操作",
+	problemCode: `const results = await Promise.all([
+  fetchUser(id),
+  fetchPosts(id),
+  fetchComments(id),
+]);`,
+	reason: `Promise.all() 的错误处理不够精细：
+  - 任一 Promise 失败则全部失败
+  - 无法获取部分成功的结果
+  - 错误类型不明确`,
 	relatedRules: ["no-promise-methods", "fp-ts-patterns"],
+	steeringFile: "#fp-patterns - 并行操作",
+	steps: [
+		"将每个 Promise 转换为 TaskEither",
+		"使用 TE.sequenceArray 或 A.sequence 组合",
+		"处理组合后的结果",
+	],
+	title: "禁止使用 Promise.all()",
 })
 
 /**
  * Promise.race 的错误消息
  */
 const NO_PROMISE_RACE_MESSAGE = buildComprehensiveErrorMessage({
-	title: "禁止使用 Promise.race()",
-	problemCode: `const result = await Promise.race([
-  fetchWithTimeout(url, 5000),
-  timeout(5000),
-]);`,
-	reason: `Promise.race() 语义不明确：
-  - 难以区分成功和超时
-  - 其他 Promise 的结果被丢弃
-  - 错误处理复杂`,
 	architecturePrinciple: `使用更明确的超时和竞争模式：
   - TE.timeout: 为 TaskEither 添加超时
   - 自定义竞争逻辑，明确处理各种情况`,
-	steps: [
-		"分析 race 的实际用途（通常是超时）",
-		"使用 TE.timeout 或自定义超时逻辑",
-		"明确处理超时和成功情况",
-	],
 	correctExample: `import { pipe } from 'fp-ts/function';
 import * as TE from 'fp-ts/TaskEither';
 
@@ -188,26 +174,36 @@ pipe(
   fetchDataTE,
   (te) => withTimeout(te, 5000, { type: 'TIMEOUT', message: '请求超时' })
 );`,
+	docRef: "https://gcanti.github.io/fp-ts/modules/TaskEither.ts.html",
+	problemCode: `const result = await Promise.race([
+  fetchWithTimeout(url, 5000),
+  timeout(5000),
+]);`,
+	reason: `Promise.race() 语义不明确：
+  - 难以区分成功和超时
+  - 其他 Promise 的结果被丢弃
+  - 错误处理复杂`,
+	relatedRules: ["no-promise-methods"],
+	steeringFile: "#fp-patterns - 超时处理",
+	steps: [
+		"分析 race 的实际用途（通常是超时）",
+		"使用 TE.timeout 或自定义超时逻辑",
+		"明确处理超时和成功情况",
+	],
+	title: "禁止使用 Promise.race()",
 	warnings: [
 		"Promise.race 通常用于超时，考虑使用更明确的超时模式",
 		"如果确实需要竞争语义，请添加注释说明原因",
 	],
-	docRef: "https://gcanti.github.io/fp-ts/modules/TaskEither.ts.html",
-	steeringFile: "#fp-patterns - 超时处理",
-	relatedRules: ["no-promise-methods"],
 })
 
 /**
  * new Promise 的错误消息
  */
 const NO_NEW_PROMISE_MESSAGE = buildComprehensiveErrorMessage({
-	title: "禁止使用 new Promise()",
-	problemCode: `const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));`,
-	reason: `new Promise() 创建的 Promise 缺乏类型安全的错误处理`,
 	architecturePrinciple: `使用 TaskEither 或 Task 替代 Promise：
   - T.delay: 延迟执行
   - TE.tryCatch: 包装可能失败的异步操作`,
-	steps: ["确定操作是否可能失败", "可能失败使用 TE.tryCatch", "不会失败使用 T.of 或 T.delay"],
 	correctExample: `import * as T from 'fp-ts/Task';
 import * as TE from 'fp-ts/TaskEither';
 
@@ -224,28 +220,15 @@ const fetchWithRetry = TE.tryCatch(
   toAppError
 );`,
 	docRef: "https://gcanti.github.io/fp-ts/modules/Task.ts.html",
-	steeringFile: "#fp-patterns - Task 和 TaskEither",
+	problemCode: `const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));`,
+	reason: `new Promise() 创建的 Promise 缺乏类型安全的错误处理`,
 	relatedRules: ["no-promise-methods", "fp-ts-patterns"],
+	steeringFile: "#fp-patterns - Task 和 TaskEither",
+	steps: ["确定操作是否可能失败", "可能失败使用 TE.tryCatch", "不会失败使用 T.of 或 T.delay"],
+	title: "禁止使用 new Promise()",
 })
 
 export default createRule({
-	name: "no-promise-methods",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "Prohibit Promise methods and suggest TaskEither alternatives",
-		},
-		fixable: undefined,
-		schema: [],
-		messages: {
-			noPromiseCatch: NO_PROMISE_CATCH_MESSAGE,
-			noPromiseThen: NO_PROMISE_THEN_MESSAGE,
-			noPromiseAll: NO_PROMISE_ALL_MESSAGE,
-			noPromiseRace: NO_PROMISE_RACE_MESSAGE,
-			noNewPromise: NO_NEW_PROMISE_MESSAGE,
-		},
-	},
-	defaultOptions: [],
 	create(context) {
 		return {
 			// Detect Promise.catch(), Promise.then(), etc.
@@ -259,10 +242,10 @@ export default createRule({
 					if (objectName === "Promise") {
 						switch (methodName) {
 							case "all":
-								context.report({ node, messageId: "noPromiseAll" })
+								context.report({ messageId: "noPromiseAll", node })
 								break
 							case "race":
-								context.report({ node, messageId: "noPromiseRace" })
+								context.report({ messageId: "noPromiseRace", node })
 								break
 						}
 					}
@@ -270,10 +253,10 @@ export default createRule({
 					// Check for .then() and .catch() on any expression (Promise chain)
 					switch (methodName) {
 						case "catch":
-							context.report({ node, messageId: "noPromiseCatch" })
+							context.report({ messageId: "noPromiseCatch", node })
 							break
 						case "then":
-							context.report({ node, messageId: "noPromiseThen" })
+							context.report({ messageId: "noPromiseThen", node })
 							break
 					}
 				}
@@ -282,9 +265,26 @@ export default createRule({
 			// Detect new Promise()
 			NewExpression(node: TSESTree.NewExpression) {
 				if (node.callee.type === "Identifier" && node.callee.name === "Promise") {
-					context.report({ node, messageId: "noNewPromise" })
+					context.report({ messageId: "noNewPromise", node })
 				}
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "Prohibit Promise methods and suggest TaskEither alternatives",
+		},
+		fixable: undefined,
+		messages: {
+			noNewPromise: NO_NEW_PROMISE_MESSAGE,
+			noPromiseAll: NO_PROMISE_ALL_MESSAGE,
+			noPromiseCatch: NO_PROMISE_CATCH_MESSAGE,
+			noPromiseRace: NO_PROMISE_RACE_MESSAGE,
+			noPromiseThen: NO_PROMISE_THEN_MESSAGE,
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "no-promise-methods",
 })

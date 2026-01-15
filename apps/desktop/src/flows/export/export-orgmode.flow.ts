@@ -75,8 +75,8 @@ export const exportNodeToOrgmode = (
 				TE.fromEither,
 				TE.map((content) => ({
 					content,
-					filename: node.title,
 					extension: "org",
+					filename: node.title,
 				})),
 			)
 		}),

@@ -10,9 +10,9 @@ import noDeprecatedImports from "./no-deprecated-imports.js"
 import requireAlias from "./require-alias.js"
 
 export default {
-	"no-default-export": noDefaultExport,
-	"no-banned-imports": noBannedImports,
-	"require-alias": requireAlias,
 	"import-grouping": importGrouping,
+	"no-banned-imports": noBannedImports,
+	"no-default-export": noDefaultExport,
 	"no-deprecated-imports": noDeprecatedImports,
+	"require-alias": requireAlias,
 }

@@ -179,8 +179,8 @@ describe("content.template.fn", () => {
 	describe("createCustomTemplate", () => {
 		it("should create custom template with overrides", () => {
 			const custom = createCustomTemplate("diary", {
-				rootFolder: "MyDiary",
 				defaultTags: ["personal", "journal"],
+				rootFolder: "MyDiary",
 			})
 
 			expect(custom.rootFolder).toBe("MyDiary")

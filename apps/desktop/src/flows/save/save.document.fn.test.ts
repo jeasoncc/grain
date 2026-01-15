@@ -229,9 +229,9 @@ describe("Property-based tests", () => {
 
 	it("createErrorResult should always have success=false", () => {
 		const testCases = [
-			{ id: "1", error: "error" },
-			{ id: "abc", error: "" },
-			{ id: "xyz", error: "Long error message with details" },
+			{ error: "error", id: "1" },
+			{ error: "", id: "abc" },
+			{ error: "Long error message with details", id: "xyz" },
 		]
 
 		for (const { id, error } of testCases) {

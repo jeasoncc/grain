@@ -45,37 +45,36 @@ export function useGlobalUI() {
 	const exportDialogActions = useExportDialogActions()
 
 	return {
-		// Command Palette
-		commandPalette: {
-			isOpen: commandPaletteOpen,
-			open: commandPaletteActions.open,
-			close: commandPaletteActions.close,
-			toggle: commandPaletteActions.toggle,
-		},
-
-		// Global Search
-		globalSearch: {
-			isOpen: globalSearchOpen,
-			open: globalSearchActions.open,
-			close: globalSearchActions.close,
-			toggle: globalSearchActions.toggle,
-		},
-
 		// Buffer Switcher
 		bufferSwitcher: {
-			isOpen: bufferSwitcherOpen,
-			direction: bufferSwitcherDirection,
-			open: bufferSwitcherActions.open,
 			close: bufferSwitcherActions.close,
+			direction: bufferSwitcherDirection,
+			isOpen: bufferSwitcherOpen,
+			open: bufferSwitcherActions.open,
 			setDirection: bufferSwitcherActions.setDirection,
+		},
+		// Command Palette
+		commandPalette: {
+			close: commandPaletteActions.close,
+			isOpen: commandPaletteOpen,
+			open: commandPaletteActions.open,
+			toggle: commandPaletteActions.toggle,
 		},
 
 		// Export Dialog
 		exportDialog: {
+			close: exportDialogActions.close,
 			isOpen: exportDialogOpen,
 			open: exportDialogActions.open,
-			close: exportDialogActions.close,
 			toggle: exportDialogActions.toggle,
+		},
+
+		// Global Search
+		globalSearch: {
+			close: globalSearchActions.close,
+			isOpen: globalSearchOpen,
+			open: globalSearchActions.open,
+			toggle: globalSearchActions.toggle,
 		},
 	}
 }
@@ -100,9 +99,9 @@ export function useCommandPalette() {
 	}, [actions])
 
 	return {
+		closePalette,
 		open,
 		openPalette,
-		closePalette,
 		togglePalette,
 	}
 }
@@ -127,9 +126,9 @@ export function useGlobalSearch() {
 	}, [actions])
 
 	return {
+		closeSearch,
 		open,
 		openSearch,
-		closeSearch,
 		toggleSearch,
 	}
 }
@@ -161,10 +160,10 @@ export function useBufferSwitcher() {
 	)
 
 	return {
-		open,
-		direction,
-		openSwitcher,
 		closeSwitcher,
+		direction,
+		open,
+		openSwitcher,
 		setDirection,
 	}
 }
@@ -189,9 +188,9 @@ export function useExportDialog() {
 	}, [actions])
 
 	return {
+		closeDialog,
 		open,
 		openDialog,
-		closeDialog,
 		toggleDialog,
 	}
 }

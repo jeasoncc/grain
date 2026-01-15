@@ -36,15 +36,15 @@ import {
  */
 function createSearchResult(overrides: Partial<SearchResult> = {}): SearchResult {
 	return {
-		id: overrides.id ?? "test-id",
-		type: overrides.type ?? "node",
-		title: overrides.title ?? "Test Title",
 		content: overrides.content ?? "Test Content",
 		excerpt: overrides.excerpt ?? "Test Excerpt",
+		highlights: overrides.highlights ?? [],
+		id: overrides.id ?? "test-id",
+		score: overrides.score ?? 50,
+		title: overrides.title ?? "Test Title",
+		type: overrides.type ?? "node",
 		workspaceId: overrides.workspaceId,
 		workspaceTitle: overrides.workspaceTitle,
-		score: overrides.score ?? 50,
-		highlights: overrides.highlights ?? [],
 	}
 }
 
@@ -53,10 +53,10 @@ function createSearchResult(overrides: Partial<SearchResult> = {}): SearchResult
  */
 function createSearchableItem(overrides: Partial<SearchableItem> = {}): SearchableItem {
 	return {
-		id: overrides.id ?? "test-id",
-		title: overrides.title ?? "Test Title",
 		content: overrides.content ?? "Test Content",
+		id: overrides.id ?? "test-id",
 		tags: overrides.tags,
+		title: overrides.title ?? "Test Title",
 		workspaceId: overrides.workspaceId,
 	}
 }
@@ -88,9 +88,9 @@ describe("matchesQuery", () => {
 
 	it("should return false for no match", () => {
 		const item = createSearchableItem({
-			title: "Title",
 			content: "Content",
 			tags: ["tag"],
+			title: "Title",
 		})
 		expect(matchesQuery(item, "notfound")).toBe(false)
 	})
@@ -267,34 +267,34 @@ describe("applySearchFilters", () => {
 		const results = [
 			createSearchResult({
 				id: "1",
+				score: 100,
 				type: "node",
 				workspaceId: "ws1",
-				score: 100,
 			}),
 			createSearchResult({
 				id: "2",
+				score: 50,
 				type: "project",
 				workspaceId: "ws1",
-				score: 50,
 			}),
 			createSearchResult({
 				id: "3",
+				score: 80,
 				type: "node",
 				workspaceId: "ws2",
-				score: 80,
 			}),
 			createSearchResult({
 				id: "4",
+				score: 20,
 				type: "node",
 				workspaceId: "ws1",
-				score: 20,
 			}),
 		]
 		const filtered = applySearchFilters(results, {
+			limit: 1,
+			minScore: 30,
 			types: ["node"],
 			workspaceId: "ws1",
-			minScore: 30,
-			limit: 1,
 		})
 		expect(filtered).toHaveLength(1)
 		expect(filtered[0].id).toBe("1")
@@ -363,18 +363,18 @@ describe("splitQueryTerms", () => {
  */
 const searchResultArbitrary = (): fc.Arbitrary<SearchResult> =>
 	fc.record({
-		id: fc.uuid(),
-		type: fc.constantFrom<SearchResultType>("node", "project"),
-		title: fc.string({ minLength: 1, maxLength: 200 }),
-		content: fc.string({ minLength: 0, maxLength: 500 }),
-		excerpt: fc.string({ minLength: 0, maxLength: 200 }),
-		workspaceId: fc.option(fc.uuid(), { nil: undefined }),
-		workspaceTitle: fc.option(fc.string({ minLength: 1, maxLength: 100 }), {
-			nil: undefined,
-		}),
-		score: fc.integer({ min: 0, max: 1000 }),
-		highlights: fc.array(fc.string({ minLength: 1, maxLength: 100 }), {
+		content: fc.string({ maxLength: 500, minLength: 0 }),
+		excerpt: fc.string({ maxLength: 200, minLength: 0 }),
+		highlights: fc.array(fc.string({ maxLength: 100, minLength: 1 }), {
 			maxLength: 5,
+		}),
+		id: fc.uuid(),
+		score: fc.integer({ max: 1000, min: 0 }),
+		title: fc.string({ maxLength: 200, minLength: 1 }),
+		type: fc.constantFrom<SearchResultType>("node", "project"),
+		workspaceId: fc.option(fc.uuid(), { nil: undefined }),
+		workspaceTitle: fc.option(fc.string({ maxLength: 100, minLength: 1 }), {
+			nil: undefined,
 		}),
 	})
 
@@ -387,7 +387,7 @@ describe("Property-Based Tests", () => {
 		it("should sort results in descending order by score", () => {
 			fc.assert(
 				fc.property(
-					fc.array(searchResultArbitrary(), { minLength: 0, maxLength: 20 }),
+					fc.array(searchResultArbitrary(), { maxLength: 20, minLength: 0 }),
 					(results) => {
 						const sorted = sortByScore(results)
 						for (let i = 1; i < sorted.length; i++) {
@@ -405,7 +405,7 @@ describe("Property-Based Tests", () => {
 		it("should preserve all results", () => {
 			fc.assert(
 				fc.property(
-					fc.array(searchResultArbitrary(), { minLength: 0, maxLength: 20 }),
+					fc.array(searchResultArbitrary(), { maxLength: 20, minLength: 0 }),
 					(results) => {
 						const sorted = sortByScore(results)
 						return sorted.length === results.length
@@ -424,8 +424,8 @@ describe("Property-Based Tests", () => {
 		it("should never return more than limit", () => {
 			fc.assert(
 				fc.property(
-					fc.array(searchResultArbitrary(), { minLength: 0, maxLength: 50 }),
-					fc.integer({ min: 1, max: 100 }),
+					fc.array(searchResultArbitrary(), { maxLength: 50, minLength: 0 }),
+					fc.integer({ max: 100, min: 1 }),
 					(results, limit) => {
 						const limited = limitResults(results, limit)
 						return limited.length <= limit
@@ -438,7 +438,7 @@ describe("Property-Based Tests", () => {
 		it("should return all results when limit exceeds array length", () => {
 			fc.assert(
 				fc.property(
-					fc.array(searchResultArbitrary(), { minLength: 0, maxLength: 20 }),
+					fc.array(searchResultArbitrary(), { maxLength: 20, minLength: 0 }),
 					(results) => {
 						const limited = limitResults(results, results.length + 10)
 						return limited.length === results.length
@@ -457,7 +457,7 @@ describe("Property-Based Tests", () => {
 		it("should only return results of specified types", () => {
 			fc.assert(
 				fc.property(
-					fc.array(searchResultArbitrary(), { minLength: 0, maxLength: 20 }),
+					fc.array(searchResultArbitrary(), { maxLength: 20, minLength: 0 }),
 					fc.subarray(["node", "project"] as SearchResultType[], {
 						minLength: 1,
 					}),
@@ -479,8 +479,8 @@ describe("Property-Based Tests", () => {
 		it("should only return results with score >= minScore", () => {
 			fc.assert(
 				fc.property(
-					fc.array(searchResultArbitrary(), { minLength: 0, maxLength: 20 }),
-					fc.integer({ min: 1, max: 500 }),
+					fc.array(searchResultArbitrary(), { maxLength: 20, minLength: 0 }),
+					fc.integer({ max: 500, min: 1 }),
 					(results, minScore) => {
 						const filtered = filterByMinScore(results, minScore)
 						return filtered.every((r) => r.score >= minScore)
@@ -498,7 +498,7 @@ describe("Property-Based Tests", () => {
 	describe("normalizeQuery - property based", () => {
 		it("should always return lowercase string", () => {
 			fc.assert(
-				fc.property(fc.string({ minLength: 0, maxLength: 100 }), (query) => {
+				fc.property(fc.string({ maxLength: 100, minLength: 0 }), (query) => {
 					const normalized = normalizeQuery(query)
 					return normalized === normalized.toLowerCase()
 				}),
@@ -508,7 +508,7 @@ describe("Property-Based Tests", () => {
 
 		it("should always return trimmed string", () => {
 			fc.assert(
-				fc.property(fc.string({ minLength: 0, maxLength: 100 }), (query) => {
+				fc.property(fc.string({ maxLength: 100, minLength: 0 }), (query) => {
 					const normalized = normalizeQuery(query)
 					return normalized === normalized.trim()
 				}),
@@ -524,7 +524,7 @@ describe("Property-Based Tests", () => {
 	describe("splitQueryTerms - property based", () => {
 		it("should never return empty strings", () => {
 			fc.assert(
-				fc.property(fc.string({ minLength: 0, maxLength: 200 }), (query) => {
+				fc.property(fc.string({ maxLength: 200, minLength: 0 }), (query) => {
 					const terms = splitQueryTerms(query)
 					return terms.every((term) => term.length > 0)
 				}),

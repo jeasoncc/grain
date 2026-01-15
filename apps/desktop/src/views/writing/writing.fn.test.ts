@@ -50,27 +50,27 @@ describe("isToday", () => {
 describe("getSessionWordsWritten", () => {
 	it("should calculate words written correctly", () => {
 		const session: WritingSession = {
+			currentWordCount: 150,
 			startTime: Date.now(),
 			startWordCount: 100,
-			currentWordCount: 150,
 		}
 		expect(getSessionWordsWritten(session)).toBe(50)
 	})
 
 	it("should return 0 when words deleted", () => {
 		const session: WritingSession = {
+			currentWordCount: 80,
 			startTime: Date.now(),
 			startWordCount: 100,
-			currentWordCount: 80,
 		}
 		expect(getSessionWordsWritten(session)).toBe(0)
 	})
 
 	it("should return 0 when no change", () => {
 		const session: WritingSession = {
+			currentWordCount: 100,
 			startTime: Date.now(),
 			startWordCount: 100,
-			currentWordCount: 100,
 		}
 		expect(getSessionWordsWritten(session)).toBe(0)
 	})
@@ -176,9 +176,9 @@ describe("createSession", () => {
 describe("updateSessionCount", () => {
 	it("should update word count immutably", () => {
 		const session: WritingSession = {
+			currentWordCount: 100,
 			startTime: 1000,
 			startWordCount: 100,
-			currentWordCount: 100,
 		}
 		const updated = updateSessionCount(session, 150)
 		expect(updated.currentWordCount).toBe(150)
@@ -192,9 +192,9 @@ describe("updateSessionCount", () => {
 describe("getSessionDuration", () => {
 	it("should calculate duration in minutes", () => {
 		const session: WritingSession = {
+			currentWordCount: 150,
 			startTime: 0,
 			startWordCount: 100,
-			currentWordCount: 150,
 		}
 		// 10 分钟 = 600000 毫秒
 		expect(getSessionDuration(session, 600000)).toBe(10)
@@ -202,9 +202,9 @@ describe("getSessionDuration", () => {
 
 	it("should return 0 for very short sessions", () => {
 		const session: WritingSession = {
+			currentWordCount: 150,
 			startTime: 0,
 			startWordCount: 100,
-			currentWordCount: 150,
 		}
 		expect(getSessionDuration(session, 30000)).toBe(0)
 	})
@@ -213,9 +213,9 @@ describe("getSessionDuration", () => {
 describe("getWordsPerMinute", () => {
 	it("should calculate WPM correctly", () => {
 		const session: WritingSession = {
+			currentWordCount: 100,
 			startTime: 0,
 			startWordCount: 0,
-			currentWordCount: 100,
 		}
 		// 10 分钟写了 100 字 = 10 WPM
 		expect(getWordsPerMinute(session, 600000)).toBe(10)
@@ -223,9 +223,9 @@ describe("getWordsPerMinute", () => {
 
 	it("should return 0 for zero duration", () => {
 		const session: WritingSession = {
+			currentWordCount: 100,
 			startTime: 0,
 			startWordCount: 0,
-			currentWordCount: 100,
 		}
 		expect(getWordsPerMinute(session, 0)).toBe(0)
 	})
@@ -249,13 +249,13 @@ describe("mergeWritingGoal", () => {
 describe("calculateTodayWordCountUpdate", () => {
 	it("should add words to today count", () => {
 		const state = {
-			todayWordCount: 100,
-			todayDate: "2024-03-15",
 			session: {
+				currentWordCount: 50,
 				startTime: 0,
 				startWordCount: 0,
-				currentWordCount: 50,
 			},
+			todayDate: "2024-03-15",
+			todayWordCount: 100,
 		}
 		const result = calculateTodayWordCountUpdate(state, 100, "2024-03-15")
 		expect(result.todayWordCount).toBe(150)
@@ -264,13 +264,13 @@ describe("calculateTodayWordCountUpdate", () => {
 
 	it("should reset on date change", () => {
 		const state = {
-			todayWordCount: 100,
-			todayDate: "2024-03-14",
 			session: {
+				currentWordCount: 50,
 				startTime: 0,
 				startWordCount: 0,
-				currentWordCount: 50,
 			},
+			todayDate: "2024-03-14",
+			todayWordCount: 100,
 		}
 		const result = calculateTodayWordCountUpdate(state, 100, "2024-03-15")
 		expect(result.todayWordCount).toBe(50)
@@ -279,13 +279,13 @@ describe("calculateTodayWordCountUpdate", () => {
 
 	it("should not count negative differences", () => {
 		const state = {
-			todayWordCount: 100,
-			todayDate: "2024-03-15",
 			session: {
+				currentWordCount: 100,
 				startTime: 0,
 				startWordCount: 0,
-				currentWordCount: 100,
 			},
+			todayDate: "2024-03-15",
+			todayWordCount: 100,
 		}
 		const result = calculateTodayWordCountUpdate(state, 50, "2024-03-15")
 		expect(result.todayWordCount).toBe(100)
@@ -293,9 +293,9 @@ describe("calculateTodayWordCountUpdate", () => {
 
 	it("should return unchanged when no session", () => {
 		const state = {
-			todayWordCount: 100,
-			todayDate: "2024-03-15",
 			session: null,
+			todayDate: "2024-03-15",
+			todayWordCount: 100,
 		}
 		const result = calculateTodayWordCountUpdate(state, 150, "2024-03-15")
 		expect(result.todayWordCount).toBe(100)

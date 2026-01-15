@@ -9,16 +9,16 @@ import { TagGraphPanelView } from "./tag-graph-panel.view.fn"
 
 describe("TagGraphPanelView", () => {
 	const mockGraphData = {
-		nodes: [
-			{ id: "1", name: "Tag1", count: 5 },
-			{ id: "2", name: "Tag2", count: 3 },
-		],
 		edges: [{ source: "1", target: "2", weight: 2 }],
+		nodes: [
+			{ count: 5, id: "1", name: "Tag1" },
+			{ count: 3, id: "2", name: "Tag2" },
+		],
 	}
 
 	const defaultProps: TagGraphPanelViewProps = {
-		workspaceId: "workspace-1",
 		graphData: mockGraphData,
+		workspaceId: "workspace-1",
 	}
 
 	it("should render canvas when workspace and data are provided", () => {
@@ -38,7 +38,7 @@ describe("TagGraphPanelView", () => {
 	})
 
 	it("should show message when graph data has no nodes", () => {
-		render(<TagGraphPanelView workspaceId="workspace-1" graphData={{ nodes: [], edges: [] }} />)
+		render(<TagGraphPanelView workspaceId="workspace-1" graphData={{ edges: [], nodes: [] }} />)
 		expect(screen.getByText("No tag data available")).toBeInTheDocument()
 	})
 

@@ -33,12 +33,12 @@ export const plantumlParamsSchema = dateParamsSchema
  * PlantUML > year-YYYY-{Zodiac} > month-MM-{MonthName}
  */
 export const plantumlConfig = createDateTemplateConfig({
-	name: "PlantUML",
-	rootFolder: "PlantUML",
 	fileType: "plantuml",
-	tag: "plantuml",
-	prefix: "plantuml",
 	generateContent: generatePlantUMLContent,
 	includeDayFolder: false,
+	name: "PlantUML",
+	prefix: "plantuml",
+	rootFolder: "PlantUML",
 	skipJsonParse: true,
+	tag: "plantuml",
 })

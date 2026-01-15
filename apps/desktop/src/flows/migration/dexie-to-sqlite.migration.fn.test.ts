@@ -36,43 +36,43 @@ async function runTE<Err, A>(te: TE.TaskEither<Err, A>): Promise<E.Either<Err, A
  */
 function createTestUser(overrides: Partial<UserInterface> = {}): UserInterface {
 	return {
-		id: "user-1",
-		username: "testuser",
+		avatar: "",
+		createDate: dayjs().toISOString(),
 		displayName: "Test User",
 		email: "test@example.com",
-		avatar: "",
-		plan: "free",
-		planStartDate: dayjs().toISOString(),
-		token: "",
-		tokenStatus: "unchecked",
-		lastTokenCheck: dayjs().toISOString(),
 		features: {
-			canUseAllScenes: true,
 			canExportPDF: false,
+			canUseAllScenes: true,
 			canUseCloudSync: false,
 			showAds: true,
 		},
+		id: "user-1",
+		lastLogin: dayjs().toISOString(),
+		lastTokenCheck: dayjs().toISOString(),
+		plan: "free",
+		planStartDate: dayjs().toISOString(),
 		settings: {
-			theme: "dark",
-			language: "en",
 			autosave: true,
-			spellCheck: true,
-			lastLocation: true,
 			fontSize: "14px",
+			language: "en",
+			lastLocation: true,
+			spellCheck: true,
+			theme: "dark",
 		},
 		state: {
-			lastLocation: "/",
-			currentProject: "",
 			currentChapter: "",
+			currentProject: "",
 			currentScene: "",
 			currentTitle: "",
 			currentTyping: "",
+			isUserLoggedIn: false,
 			lastCloudSave: "",
 			lastLocalSave: "",
-			isUserLoggedIn: false,
+			lastLocation: "/",
 		},
-		lastLogin: dayjs().toISOString(),
-		createDate: dayjs().toISOString(),
+		token: "",
+		tokenStatus: "unchecked",
+		username: "testuser",
 		...overrides,
 	}
 }
@@ -82,15 +82,15 @@ function createTestUser(overrides: Partial<UserInterface> = {}): UserInterface {
  */
 function createTestWorkspace(overrides: Partial<WorkspaceInterface> = {}): WorkspaceInterface {
 	return {
-		id: "workspace-1",
-		title: "Test Workspace",
-		description: "A test workspace",
-		owner: "user-1",
 		author: "Test Author",
-		publisher: "",
-		language: "en",
 		createDate: dayjs().toISOString(),
+		description: "A test workspace",
+		id: "workspace-1",
+		language: "en",
 		lastOpen: dayjs().toISOString(),
+		owner: "user-1",
+		publisher: "",
+		title: "Test Workspace",
 		...overrides,
 	}
 }
@@ -100,16 +100,16 @@ function createTestWorkspace(overrides: Partial<WorkspaceInterface> = {}): Works
  */
 function createTestNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
 	return {
+		collapsed: false,
+		createDate: dayjs().toISOString(),
 		id: "node-1",
-		workspace: "workspace-1",
+		lastEdit: dayjs().toISOString(),
+		order: 0,
+		parent: null,
+		tags: [],
 		title: "Test Node",
 		type: "file",
-		parent: null,
-		order: 0,
-		collapsed: false,
-		tags: [],
-		createDate: dayjs().toISOString(),
-		lastEdit: dayjs().toISOString(),
+		workspace: "workspace-1",
 		...overrides,
 	}
 }
@@ -119,11 +119,11 @@ function createTestNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
  */
 function createTestContent(overrides: Partial<ContentInterface> = {}): ContentInterface {
 	return {
-		id: "content-1",
-		nodeId: "node-1",
 		content: '{"root":{"children":[]}}',
 		contentType: "lexical",
+		id: "content-1",
 		lastEdit: dayjs().toISOString(),
+		nodeId: "node-1",
 		...overrides,
 	}
 }
@@ -134,51 +134,51 @@ function createTestContent(overrides: Partial<ContentInterface> = {}): ContentIn
 
 const { mockRepo, mockLogger, mockLegacyDatabase } = vi.hoisted(() => {
 	return {
-		mockRepo: {
-			createUser: vi.fn(),
-			createWorkspace: vi.fn(),
-			createNode: vi.fn(),
-			createContent: vi.fn(),
-		},
-		mockLogger: {
-			info: vi.fn(),
-			success: vi.fn(),
-			error: vi.fn(),
-			warn: vi.fn(),
-			debug: vi.fn(),
-		},
 		mockLegacyDatabase: {
-			workspaces: {
+			contents: {
+				clear: vi.fn(),
 				count: vi.fn(),
 				toArray: vi.fn(),
-				clear: vi.fn(),
 			},
 			nodes: {
+				clear: vi.fn(),
 				count: vi.fn(),
 				toArray: vi.fn(),
-				clear: vi.fn(),
-			},
-			contents: {
-				count: vi.fn(),
-				toArray: vi.fn(),
-				clear: vi.fn(),
-			},
-			users: {
-				count: vi.fn(),
-				toArray: vi.fn(),
-				clear: vi.fn(),
 			},
 			transaction: vi.fn(),
+			users: {
+				clear: vi.fn(),
+				count: vi.fn(),
+				toArray: vi.fn(),
+			},
+			workspaces: {
+				clear: vi.fn(),
+				count: vi.fn(),
+				toArray: vi.fn(),
+			},
+		},
+		mockLogger: {
+			debug: vi.fn(),
+			error: vi.fn(),
+			info: vi.fn(),
+			success: vi.fn(),
+			warn: vi.fn(),
+		},
+		mockRepo: {
+			createContent: vi.fn(),
+			createNode: vi.fn(),
+			createUser: vi.fn(),
+			createWorkspace: vi.fn(),
 		},
 	}
 })
 
 // Mock repo
 vi.mock("@/io/api", () => ({
+	createContent: mockRepo.createContent,
+	createNode: mockRepo.createNode,
 	createUser: mockRepo.createUser,
 	createWorkspace: mockRepo.createWorkspace,
-	createNode: mockRepo.createNode,
-	createContent: mockRepo.createContent,
 }))
 
 // Mock logger
@@ -193,17 +193,17 @@ vi.mock("@/db/legacy-database", () => ({
 
 // Mock localStorage
 const mockLocalStorage = {
-	store: {} as Record<string, string>,
-	getItem: vi.fn((key: string) => mockLocalStorage.store[key] || null),
-	setItem: vi.fn((key: string, value: string) => {
-		mockLocalStorage.store[key] = value
-	}),
-	removeItem: vi.fn((key: string) => {
-		delete mockLocalStorage.store[key]
-	}),
 	clear: vi.fn(() => {
 		mockLocalStorage.store = {}
 	}),
+	getItem: vi.fn((key: string) => mockLocalStorage.store[key] || null),
+	removeItem: vi.fn((key: string) => {
+		delete mockLocalStorage.store[key]
+	}),
+	setItem: vi.fn((key: string, value: string) => {
+		mockLocalStorage.store[key] = value
+	}),
+	store: {} as Record<string, string>,
 }
 
 Object.defineProperty(global, "localStorage", {
@@ -427,9 +427,9 @@ describe("dexie-to-sqlite.migration.fn", () => {
 				expect(result.right.migratedCounts.users).toBe(1)
 				expect(mockRepo.createUser).toHaveBeenCalledWith(
 					expect.objectContaining({
-						username: testUser.username,
 						displayName: testUser.displayName,
 						email: testUser.email,
+						username: testUser.username,
 					}),
 				)
 			}
@@ -464,8 +464,8 @@ describe("dexie-to-sqlite.migration.fn", () => {
 				// Verify owner ID was mapped
 				expect(mockRepo.createWorkspace).toHaveBeenCalledWith(
 					expect.objectContaining({
-						title: testWorkspace.title,
 						owner: "new-user-1", // Mapped from old-user-1
+						title: testWorkspace.title,
 					}),
 				)
 			}
@@ -503,8 +503,8 @@ describe("dexie-to-sqlite.migration.fn", () => {
 				// Verify workspace ID was mapped
 				expect(mockRepo.createNode).toHaveBeenCalledWith(
 					expect.objectContaining({
-						workspace: "new-workspace-1", // Mapped from old-workspace-1
 						title: testNode.title,
+						workspace: "new-workspace-1", // Mapped from old-workspace-1
 					}),
 					undefined,
 					testNode.tags,
@@ -550,8 +550,8 @@ describe("dexie-to-sqlite.migration.fn", () => {
 				// Verify node ID was mapped
 				expect(mockRepo.createContent).toHaveBeenCalledWith(
 					expect.objectContaining({
-						nodeId: "new-node-1", // Mapped from old-node-1
 						content: testContent.content,
+						nodeId: "new-node-1", // Mapped from old-node-1
 					}),
 				)
 			}

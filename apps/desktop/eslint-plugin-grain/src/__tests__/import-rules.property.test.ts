@@ -20,14 +20,14 @@ function runLint(
 	const linter = new Linter({ configType: "flat" })
 
 	const config = {
-		plugins: {
-			grain: plugin,
-		},
-		rules,
 		languageOptions: {
 			ecmaVersion: 2022 as const,
 			sourceType: "module" as const,
 		},
+		plugins: {
+			grain: plugin,
+		},
+		rules,
 	}
 
 	return linter.verify(code, config)

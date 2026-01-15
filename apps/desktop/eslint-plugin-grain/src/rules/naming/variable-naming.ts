@@ -7,18 +7,6 @@ const createRule = ESLintUtils.RuleCreator(
 )
 
 export default createRule({
-	name: "variable-naming",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "强制执行变量命名规范（最小长度和允许的短变量名）",
-		},
-		messages: {
-			variableTooShort: "变量名过短",
-		},
-		schema: [],
-	},
-	defaultOptions: [],
 	create(context) {
 		const { minVariableLength, allowedShortNames } = DEFAULT_NAMING_CONFIG
 
@@ -36,22 +24,25 @@ export default createRule({
 			// 检查最小长度
 			if (name.length < minVariableLength) {
 				context.report({
-					node,
-					messageId: "variableTooShort",
 					data: {
-						name,
 						length: name.length.toString(),
 						minLength: minVariableLength.toString(),
+						name,
 					},
+					messageId: "variableTooShort",
+					node,
 				})
 			}
 		}
 
 		return {
-			VariableDeclarator(node) {
-				if (node.id.type === AST_NODE_TYPES.Identifier) {
-					checkVariableName(node.id.name, node.id)
-				}
+			ArrowFunctionExpression(node) {
+				// 检查箭头函数参数
+				node.params.forEach((param) => {
+					if (param.type === AST_NODE_TYPES.Identifier) {
+						checkVariableName(param.name, param)
+					}
+				})
 			},
 			FunctionDeclaration(node) {
 				// 检查函数参数
@@ -61,14 +52,23 @@ export default createRule({
 					}
 				})
 			},
-			ArrowFunctionExpression(node) {
-				// 检查箭头函数参数
-				node.params.forEach((param) => {
-					if (param.type === AST_NODE_TYPES.Identifier) {
-						checkVariableName(param.name, param)
-					}
-				})
+			VariableDeclarator(node) {
+				if (node.id.type === AST_NODE_TYPES.Identifier) {
+					checkVariableName(node.id.name, node.id)
+				}
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "强制执行变量命名规范（最小长度和允许的短变量名）",
+		},
+		messages: {
+			variableTooShort: "变量名过短",
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "variable-naming",
 })

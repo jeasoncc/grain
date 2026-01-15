@@ -83,8 +83,8 @@ export const getNodeByIdOrFail = (nodeId: string): TE.TaskEither<AppError, NodeI
 			node
 				? TE.right(node)
 				: TE.left({
-						type: "NOT_FOUND",
 						message: `节点不存在: ${nodeId}`,
+						type: "NOT_FOUND",
 					} as AppError),
 		),
 	)
@@ -146,21 +146,21 @@ export const createNode = (
 	tags?: readonly string[],
 ): TE.TaskEither<AppError, NodeInterface> => {
 	debug("[NodeAPI] 创建节点", {
+		contentLength: initialContent?.length ?? 0,
+		hasInitialContent: !!initialContent,
+		parent: input.parent,
+		tags,
 		title: input.title,
 		type: input.type,
 		workspace: input.workspace,
-		parent: input.parent,
-		hasInitialContent: !!initialContent,
-		contentLength: initialContent?.length ?? 0,
-		tags,
 	})
 
 	return pipe(
 		TE.of(encodeCreateNode(input, initialContent, tags)),
 		TE.chain((encoded) => {
 			debug("[NodeAPI] 编码后的请求", {
-				title: encoded.title,
 				hasContent: !!initialContent,
+				title: encoded.title,
 			})
 			return api.createNode(encoded)
 		}),
@@ -196,12 +196,12 @@ export const addNode = (
 ): TE.TaskEither<AppError, NodeInterface> =>
 	createNode(
 		{
-			workspace,
-			title,
-			parent: options.parent ?? null,
-			type: options.type ?? "file",
-			order: options.order ?? 0,
 			collapsed: options.collapsed ?? true,
+			order: options.order ?? 0,
+			parent: options.parent ?? null,
+			title,
+			type: options.type ?? "file",
+			workspace,
 		},
 		undefined,
 		options.tags,
@@ -269,8 +269,8 @@ export const setNodeCollapsed = (
 	// Performance monitoring - Requirements: 10.1, 10.2, 10.3
 	const startTime = performance.now()
 	debug("[API Performance] setNodeCollapsed started", {
-		nodeId,
 		collapsed,
+		nodeId,
 		timestamp: new Date().toISOString(),
 	})
 
@@ -281,18 +281,18 @@ export const setNodeCollapsed = (
 			const duration = endTime - startTime
 
 			debug("[API Performance] setNodeCollapsed completed", {
-				nodeId,
 				collapsed,
 				duration: `${duration.toFixed(2)}ms`,
+				nodeId,
 				timestamp: new Date().toISOString(),
 			})
 
 			// Warning for slow API calls (> 50ms threshold)
 			if (duration > 50) {
 				warn("[API Performance] Slow API call detected", {
-					operation: "setNodeCollapsed",
-					nodeId,
 					duration: `${duration.toFixed(2)}ms`,
+					nodeId,
+					operation: "setNodeCollapsed",
 					threshold: "50ms",
 				})
 			}
@@ -304,10 +304,10 @@ export const setNodeCollapsed = (
 			const duration = endTime - startTime
 
 			error("[API Performance] setNodeCollapsed failed", {
-				nodeId,
 				collapsed,
-				error: err,
 				duration: `${duration.toFixed(2)}ms`,
+				error: err,
+				nodeId,
 				timestamp: new Date().toISOString(),
 			})
 

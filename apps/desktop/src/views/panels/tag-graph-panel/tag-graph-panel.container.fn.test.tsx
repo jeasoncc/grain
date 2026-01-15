@@ -9,11 +9,11 @@ import { TagGraphPanelContainer } from "./tag-graph-panel.container.fn"
 // Mock hooks
 vi.mock("@/hooks", () => ({
 	useTagGraph: vi.fn(() => ({
-		nodes: [
-			{ id: "1", name: "Tag1", count: 5 },
-			{ id: "2", name: "Tag2", count: 3 },
-		],
 		edges: [{ source: "1", target: "2", weight: 2 }],
+		nodes: [
+			{ count: 5, id: "1", name: "Tag1" },
+			{ count: 3, id: "2", name: "Tag2" },
+		],
 	})),
 }))
 
@@ -47,7 +47,7 @@ describe("TagGraphPanelContainer", () => {
 		vi.mocked(useSelectionStore).mockImplementation((selector: any) =>
 			selector({ selectedWorkspaceId: "workspace-1" }),
 		)
-		vi.mocked(useTagGraph).mockReturnValue({ nodes: [], edges: [] })
+		vi.mocked(useTagGraph).mockReturnValue({ edges: [], nodes: [] })
 
 		render(<TagGraphPanelContainer />)
 		expect(screen.getByText("No tag data available")).toBeInTheDocument()

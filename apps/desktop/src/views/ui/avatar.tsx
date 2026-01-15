@@ -8,11 +8,11 @@ interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const avatarVariants: Record<NonNullable<AvatarProps["variant"]>, string> = {
+	amber: "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30",
 	default: "bg-primary/15 text-primary ring-1 ring-primary/30",
 	emerald: "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30",
 	sky: "bg-sky-500/15 text-sky-400 ring-1 ring-sky-500/30",
 	violet: "bg-violet-500/15 text-violet-400 ring-1 ring-violet-500/30",
-	amber: "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30",
 }
 
 const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(

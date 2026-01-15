@@ -33,10 +33,10 @@ import type { ExportFormat, ExportOptions } from "@/types/export"
 export type { ExportOptions, ExportFormat }
 
 const defaultOptions: ExportOptions = {
-	includeTitle: true,
 	includeAuthor: true,
 	includeChapterTitles: true,
 	includeSceneTitles: false,
+	includeTitle: true,
 	pageBreakBetweenChapters: true,
 }
 
@@ -105,8 +105,8 @@ function getNodeContents(
 		node.type === "file" || node.type === "diary"
 			? [
 					{
-						node,
 						depth,
+						node,
 						text: extractTextFromContent(contentMap.get(node.id) ?? null),
 					},
 				]
@@ -232,7 +232,7 @@ async function getProjectContent(projectId: string) {
 
 	const rootNodes = sortedNodes.filter((n) => !n.parent)
 
-	return { project, nodes: sortedNodes, rootNodes, contentMap }
+	return { contentMap, nodes: sortedNodes, project, rootNodes }
 }
 
 // ============================================
@@ -296,19 +296,19 @@ export async function exportToWord(projectId: string, options: ExportOptions = {
 		...(opts.includeTitle
 			? [
 					new Paragraph({
-						text: project.title || "Untitled Work",
-						heading: HeadingLevel.TITLE,
 						alignment: AlignmentType.CENTER,
+						heading: HeadingLevel.TITLE,
 						spacing: { after: 400 },
+						text: project.title || "Untitled Work",
 					}),
 				]
 			: []),
 		...(opts.includeAuthor && project.author
 			? [
 					new Paragraph({
-						text: `作者：${project.author}`,
 						alignment: AlignmentType.CENTER,
 						spacing: { after: 800 },
+						text: `作者：${project.author}`,
 					}),
 				]
 			: []),
@@ -327,17 +327,17 @@ export async function exportToWord(projectId: string, options: ExportOptions = {
 				opts.includeChapterTitles && depth === 0
 					? [
 							new Paragraph({
-								text: node.title,
 								heading: HeadingLevel.HEADING_1,
-								spacing: { before: 400, after: 200 },
+								spacing: { after: 200, before: 400 },
+								text: node.title,
 							}),
 						]
 					: opts.includeSceneTitles && depth > 0
 						? [
 								new Paragraph({
-									text: node.title,
 									heading: HeadingLevel.HEADING_2,
-									spacing: { before: 200, after: 100 },
+									spacing: { after: 100, before: 200 },
+									text: node.title,
 								}),
 							]
 						: []
@@ -351,12 +351,12 @@ export async function exportToWord(projectId: string, options: ExportOptions = {
 								new Paragraph({
 									children: [
 										new TextRun({
-											text: `  ${para.trim()}`,
 											font: "SimSun",
 											size: 24,
+											text: `  ${para.trim()}`,
 										}),
 									],
-									spacing: { line: 360, after: 120 },
+									spacing: { after: 120, line: 360 },
 								}),
 						)
 				: []
@@ -370,48 +370,48 @@ export async function exportToWord(projectId: string, options: ExportOptions = {
 	const doc = new Document({
 		sections: [
 			{
-				properties: {
-					page: {
-						margin: {
-							top: 1440,
-							right: 1440,
-							bottom: 1440,
-							left: 1440,
-						},
-					},
-				},
-				headers: {
-					default: new Header({
-						children: [
-							new Paragraph({
-								children: [
-									new TextRun({
-										text: project.title || "",
-										size: 18,
-										color: "888888",
-									}),
-								],
-								alignment: AlignmentType.CENTER,
-							}),
-						],
-					}),
-				},
+				children,
 				footers: {
 					default: new Footer({
 						children: [
 							new Paragraph({
+								alignment: AlignmentType.CENTER,
 								children: [
 									new TextRun({
 										children: [PageNumber.CURRENT],
 										size: 18,
 									}),
 								],
-								alignment: AlignmentType.CENTER,
 							}),
 						],
 					}),
 				},
-				children,
+				headers: {
+					default: new Header({
+						children: [
+							new Paragraph({
+								alignment: AlignmentType.CENTER,
+								children: [
+									new TextRun({
+										color: "888888",
+										size: 18,
+										text: project.title || "",
+									}),
+								],
+							}),
+						],
+					}),
+				},
+				properties: {
+					page: {
+						margin: {
+							bottom: 1440,
+							left: 1440,
+							right: 1440,
+							top: 1440,
+						},
+					},
+				},
 			},
 		],
 	})
@@ -489,7 +489,7 @@ export async function exportToEpub(projectId: string, options: ExportOptions = {
 					`<div class="title-page"><h1>${escapeHtml(title)}</h1>${opts.includeAuthor ? `<p class="author">${escapeHtml(author)}</p>` : ""}</div>`,
 				)
 				zip.file("OEBPS/title.xhtml", titleHtml)
-				return [{ id: "title", title: "Cover", filename: "title.xhtml" }]
+				return [{ filename: "title.xhtml", id: "title", title: "Cover" }]
 			})()
 		: []
 
@@ -521,7 +521,7 @@ export async function exportToEpub(projectId: string, options: ExportOptions = {
 			const chapterHtml = generateEpubChapterHtml(node.title, htmlContent)
 			zip.file(`OEBPS/${filename}`, chapterHtml)
 
-			return [{ id: chapterId, title: node.title, filename }]
+			return [{ filename, id: chapterId, title: node.title }]
 		})
 	})
 
@@ -556,8 +556,8 @@ export async function exportToEpub(projectId: string, options: ExportOptions = {
 	)
 
 	const blob = await zip.generateAsync({
-		type: "blob",
 		mimeType: "application/epub+zip",
+		type: "blob",
 	})
 	saveAs(blob, `${title}.epub`)
 }

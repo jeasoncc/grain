@@ -175,10 +175,10 @@ export function useUserSubscription(userId: string | null | undefined):
 	const isExpired = user.planExpiresAt ? new Date(user.planExpiresAt) < new Date() : false
 
 	return {
-		plan: user.plan,
-		isPremium,
-		isExpired,
 		expiresAt: user.planExpiresAt,
+		isExpired,
+		isPremium,
+		plan: user.plan,
 	}
 }
 

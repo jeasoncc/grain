@@ -33,14 +33,14 @@ declare module "@tanstack/react-router" {
 
 // 纯函数：创建应用配置
 const createAppConfig = (): AppConfig => ({
+	isDev: import.meta.env.DEV,
+	queryClient: new QueryClient(),
 	router: createRouter({
-		routeTree,
 		context: {},
 		defaultPreload: "intent",
+		routeTree,
 		scrollRestoration: true,
 	}),
-	queryClient: new QueryClient(),
-	isDev: import.meta.env.DEV,
 })
 
 // 纯函数：获取根元素

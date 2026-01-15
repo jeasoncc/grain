@@ -37,23 +37,23 @@ export const createBackup = (): TE.TaskEither<AppError, BackupData> =>
 			)
 
 			const backup: BackupData = {
+				attachments,
+				contents,
+				dbVersions,
+				drawings: [],
 				metadata: {
-					version: "5.0.0",
-					timestamp: dayjs().toISOString(),
-					projectCount: workspaces.length,
-					nodeCount: nodes.length,
-					contentCount: contents.length,
-					tagCount: tags.length,
 					appVersion: "0.1.89",
+					contentCount: contents.length,
+					nodeCount: nodes.length,
+					projectCount: workspaces.length,
+					tagCount: tags.length,
+					timestamp: dayjs().toISOString(),
+					version: "5.0.0",
 				},
+				nodes,
+				tags,
 				users,
 				workspaces,
-				nodes,
-				contents,
-				drawings: [],
-				attachments,
-				tags,
-				dbVersions,
 			}
 
 			return backup
@@ -111,9 +111,9 @@ How to restore:
 					)
 
 					const blob = await zip.generateAsync({
-						type: "blob",
 						compression: "DEFLATE",
 						compressionOptions: { level: 9 },
+						type: "blob",
 					})
 
 					const filename = `grain-backup-${dayjs().format("YYYY-MM-DD-HHmmss")}.zip`
@@ -252,13 +252,13 @@ export const getDatabaseStats = (): TE.TaskEither<AppError, DatabaseStats> =>
 			const drawingCount = await database.nodes.where("type").equals("drawing").count()
 
 			return {
-				userCount,
-				projectCount,
-				nodeCount,
+				attachmentCount,
 				contentCount,
 				drawingCount,
-				attachmentCount,
+				nodeCount,
+				projectCount,
 				tagCount,
+				userCount,
 			}
 		},
 		(error): AppError => dbError(`获取数据库统计信息失败: ${error}`),
@@ -293,7 +293,7 @@ export const saveLocalBackup = (
 	TE.tryCatch(
 		async () => {
 			const backups = getLocalBackups()
-			const newBackup = { timestamp: backup.metadata.timestamp, data: backup }
+			const newBackup = { data: backup, timestamp: backup.metadata.timestamp }
 			const recentBackups = [newBackup, ...backups].slice(0, maxBackups)
 			localStorage.setItem(LOCAL_BACKUPS_KEY, JSON.stringify(recentBackups))
 			localStorage.setItem(LAST_BACKUP_KEY, backup.metadata.timestamp)
@@ -388,9 +388,9 @@ export const createAutoBackupManager = () => {
 	}
 
 	return {
+		getLocalBackups,
 		start,
 		stop,
-		getLocalBackups,
 	}
 }
 

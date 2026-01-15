@@ -16,47 +16,6 @@ type Options = []
  * Validates: Requirements 23.1
  */
 export default createRule<Options, MessageIds>({
-	name: "no-magic-numbers",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "禁止使用魔法数字，必须使用命名常量",
-		},
-		messages: {
-			noMagicNumber: buildErrorMessage({
-				title: "禁止使用魔法数字 {{value}}",
-				reason: `
-  魔法数字降低代码可读性和可维护性：
-  - 数字的含义不明确
-  - 修改时需要查找所有出现的地方
-  - 容易出现拼写错误
-  - 难以理解业务逻辑`,
-				correctExample: `// ✅ 使用命名常量
-const MAX_RETRY_COUNT = 3;
-const DEFAULT_TIMEOUT_MS = 5000;
-const ITEMS_PER_PAGE = 20;
-
-function retry(fn: () => void) {
-  for (let i = 0; i < MAX_RETRY_COUNT; i++) {
-    fn();
-  }
-}
-
-setTimeout(callback, DEFAULT_TIMEOUT_MS);`,
-				incorrectExample: `// ❌ 使用魔法数字
-function retry(fn: () => void) {
-  for (let i = 0; i < 3; i++) {  // 3 是什么意思？
-    fn();
-  }
-}
-
-setTimeout(callback, 5000);  // 5000 是什么意思？`,
-				docRef: "#code-standards - 魔法值",
-			}),
-		},
-		schema: [],
-	},
-	defaultOptions: [],
 	create(context) {
 		/**
 		 * 检查数字是否为允许的值
@@ -134,13 +93,54 @@ setTimeout(callback, 5000);  // 5000 是什么意思？`,
 
 				// 报告错误
 				context.report({
-					node,
-					messageId: "noMagicNumber",
 					data: {
 						value: String(value),
 					},
+					messageId: "noMagicNumber",
+					node,
 				})
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "禁止使用魔法数字，必须使用命名常量",
+		},
+		messages: {
+			noMagicNumber: buildErrorMessage({
+				correctExample: `// ✅ 使用命名常量
+const MAX_RETRY_COUNT = 3;
+const DEFAULT_TIMEOUT_MS = 5000;
+const ITEMS_PER_PAGE = 20;
+
+function retry(fn: () => void) {
+  for (let i = 0; i < MAX_RETRY_COUNT; i++) {
+    fn();
+  }
+}
+
+setTimeout(callback, DEFAULT_TIMEOUT_MS);`,
+				docRef: "#code-standards - 魔法值",
+				incorrectExample: `// ❌ 使用魔法数字
+function retry(fn: () => void) {
+  for (let i = 0; i < 3; i++) {  // 3 是什么意思？
+    fn();
+  }
+}
+
+setTimeout(callback, 5000);  // 5000 是什么意思？`,
+				reason: `
+  魔法数字降低代码可读性和可维护性：
+  - 数字的含义不明确
+  - 修改时需要查找所有出现的地方
+  - 容易出现拼写错误
+  - 难以理解业务逻辑`,
+				title: "禁止使用魔法数字 {{value}}",
+			}),
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "no-magic-numbers",
 })

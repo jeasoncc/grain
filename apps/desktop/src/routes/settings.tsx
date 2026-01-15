@@ -27,79 +27,79 @@ function SettingsLayout() {
 	const navGroups = useMemo<ReadonlyArray<NavGroup>>(
 		() => [
 			{
-				title: "Customization",
 				items: [
 					{
-						to: "/settings/design",
-						label: "Appearance",
 						icon: iconTheme.icons.settingsPage.appearance,
+						label: "Appearance",
+						to: "/settings/design",
 					},
 					{
-						to: "/settings/typography",
+						icon: iconTheme.icons.settingsPage.editor,
 						label: "Typography",
-						icon: iconTheme.icons.settingsPage.editor,
+						to: "/settings/typography",
 					},
 					{
-						to: "/settings/icons",
-						label: "Icons",
 						icon: iconTheme.icons.settingsPage.icons,
+						label: "Icons",
+						to: "/settings/icons",
 					},
 					{
-						to: "/settings/diagrams",
-						label: "Diagrams",
 						icon: iconTheme.icons.settingsPage.diagrams,
+						label: "Diagrams",
+						to: "/settings/diagrams",
 					},
 				],
+				title: "Customization",
 			},
 			{
-				title: "Application",
 				items: [
 					{
-						to: "/settings/general",
-						label: "General",
 						icon: iconTheme.icons.settingsPage.general,
+						label: "General",
+						to: "/settings/general",
 					},
 					{
-						to: "/settings/editor",
-						label: "Editor",
 						icon: iconTheme.icons.settingsPage.editor,
+						label: "Editor",
+						to: "/settings/editor",
 					},
 				],
+				title: "Application",
 			},
 			{
-				title: "Data & Storage",
 				items: [
 					{
-						to: "/settings/data",
-						label: "Data",
 						icon: iconTheme.icons.settingsPage.data,
+						label: "Data",
+						to: "/settings/data",
 					},
 					{
-						to: "/settings/export",
-						label: "Export",
 						icon: iconTheme.icons.settingsPage.export,
+						label: "Export",
+						to: "/settings/export",
 					},
 				],
+				title: "Data & Storage",
 			},
 			{
-				title: "Advanced",
 				items: [
 					{
-						to: "/settings/logs",
-						label: "Logs",
 						icon: iconTheme.icons.settingsPage.logs,
+						label: "Logs",
+						to: "/settings/logs",
 					},
 				],
+				title: "Advanced",
 			},
 			{
-				title: "Info",
 				items: [
 					{
-						to: "/settings/about",
-						label: "About",
 						icon: iconTheme.icons.settingsPage.about,
+						label: "About",
+						to: "/settings/about",
 					},
 				],
+				title: "Info",
 			},
 		],
 		[iconTheme],

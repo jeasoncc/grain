@@ -144,10 +144,10 @@ export const hasDexieData = (): TE.TaskEither<AppError, boolean> =>
 			info(
 				"[Migration] Dexie 数据检测",
 				{
-					workspaces: workspaceCount,
+					hasData,
 					nodes: nodeCount,
 					users: userCount,
-					hasData,
+					workspaces: workspaceCount,
 				},
 				"dexie-to-sqlite.migration.fn",
 			)
@@ -171,7 +171,7 @@ export const needsMigration = (): TE.TaskEither<AppError, boolean> =>
 		TE.map(({ status, hasData }) => {
 			// 只有在未开始且有数据时才需要迁移
 			const needs = status === "not_started" && hasData
-			info("[Migration] 是否需要迁移", { status, hasData, needs }, "dexie-to-sqlite.migration.fn")
+			info("[Migration] 是否需要迁移", { hasData, needs, status }, "dexie-to-sqlite.migration.fn")
 			return needs
 		}),
 	)
@@ -200,19 +200,19 @@ export const readDexieData = (): TE.TaskEither<AppError, DexieDataSnapshot> =>
 			info(
 				"[Migration] Dexie 数据读取完成",
 				{
-					workspaces: workspaces.length,
-					nodes: nodes.length,
 					contents: contents.length,
+					nodes: nodes.length,
 					users: users.length,
+					workspaces: workspaces.length,
 				},
 				"dexie-to-sqlite.migration.fn",
 			)
 
 			return {
-				workspaces,
-				nodes,
 				contents,
+				nodes,
 				users,
+				workspaces,
 			}
 		},
 		(err): AppError => {
@@ -242,16 +242,16 @@ const migrateUsers = (
 			}>[] = await Promise.allSettled(
 				users.map(async (user) => {
 					const result = await createUser({
-						username: user.username,
+						avatar: user.avatar,
 						displayName: user.displayName,
 						email: user.email,
-						avatar: user.avatar,
 						plan: user.plan,
 						settings: user.settings,
+						username: user.username,
 					})()
 
 					if (E.isRight(result)) {
-						return { oldId: user.id, newId: result.right.id }
+						return { newId: result.right.id, oldId: user.id }
 					} else {
 						warn(`[Migration] 用户迁移失败: ${user.id}`, result.left)
 						throw new Error(`用户迁移失败: ${user.id}`)
@@ -301,16 +301,16 @@ const migrateWorkspaces = (
 						: undefined
 
 					const result = await createWorkspace({
-						title: workspace.title,
-						description: workspace.description,
-						owner: newOwnerId,
 						author: workspace.author,
-						publisher: workspace.publisher,
+						description: workspace.description,
 						language: workspace.language,
+						owner: newOwnerId,
+						publisher: workspace.publisher,
+						title: workspace.title,
 					})()
 
 					if (E.isRight(result)) {
-						return { oldId: workspace.id, newId: result.right.id }
+						return { newId: result.right.id, oldId: workspace.id }
 					} else {
 						warn(`[Migration] 工作区迁移失败: ${workspace.id}`, result.left)
 						throw new Error(`工作区迁移失败: ${workspace.id}`)
@@ -385,12 +385,12 @@ const migrateNodes = (
 
 				const result = await createNode(
 					{
-						workspace: newWorkspaceId,
+						collapsed: node.collapsed,
+						order: node.order,
+						parent: newParentId,
 						title: node.title,
 						type: node.type,
-						parent: newParentId,
-						order: node.order,
-						collapsed: node.collapsed,
+						workspace: newWorkspaceId,
 					},
 					undefined,
 					Array.from(node.tags || []),
@@ -435,9 +435,9 @@ const migrateContents = (
 					}
 
 					const result = await createContent({
-						nodeId: newNodeId,
 						content: content.content,
 						contentType: content.contentType,
+						nodeId: newNodeId,
 					})()
 
 					if (E.isRight(result)) {
@@ -473,10 +473,10 @@ export const migrateData = (): TE.TaskEither<AppError, MigrationResult> =>
 			if (!needsMigrate) {
 				const status = getMigrationStatus()
 				return TE.right({
-					status: status === "completed" ? "completed" : "not_started",
-					migratedCounts: { workspaces: 0, nodes: 0, contents: 0, users: 0 },
 					errors: [],
+					migratedCounts: { contents: 0, nodes: 0, users: 0, workspaces: 0 },
 					startedAt: dayjs().toISOString(),
+					status: status === "completed" ? "completed" : "not_started",
 				} as MigrationResult)
 			}
 
@@ -505,21 +505,21 @@ export const migrateData = (): TE.TaskEither<AppError, MigrationResult> =>
 				TE.map(({ userResult, workspaceResult, nodeResult, contentCount }): MigrationResult => {
 					setMigrationStatus("completed")
 					const result: MigrationResult = {
-						status: "completed",
-						migratedCounts: {
-							workspaces: workspaceResult.count,
-							nodes: nodeResult.count,
-							contents: contentCount,
-							users: userResult.count,
-						},
-						errors: [],
-						startedAt: dayjs().toISOString(),
 						completedAt: dayjs().toISOString(),
+						errors: [],
 						idMapping: {
-							workspaces: workspaceResult.mapping,
 							nodes: nodeResult.mapping,
 							users: userResult.mapping,
+							workspaces: workspaceResult.mapping,
 						},
+						migratedCounts: {
+							contents: contentCount,
+							nodes: nodeResult.count,
+							users: userResult.count,
+							workspaces: workspaceResult.count,
+						},
+						startedAt: dayjs().toISOString(),
+						status: "completed",
 					}
 					success(
 						"[Migration] 数据迁移完成",
@@ -533,10 +533,10 @@ export const migrateData = (): TE.TaskEither<AppError, MigrationResult> =>
 					setMigrationStatus("failed")
 					warn("[Migration] 数据迁移失败", { error: err }, "dexie-to-sqlite.migration.fn")
 					return TE.right({
-						status: "failed",
-						migratedCounts: { workspaces: 0, nodes: 0, contents: 0, users: 0 },
 						errors: [err.message],
+						migratedCounts: { contents: 0, nodes: 0, users: 0, workspaces: 0 },
 						startedAt: dayjs().toISOString(),
+						status: "failed",
 					} as MigrationResult)
 				}),
 			)

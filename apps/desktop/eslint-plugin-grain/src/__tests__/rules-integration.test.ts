@@ -78,11 +78,11 @@ describe("Rules Integration Tests", () => {
 			// Test that create function returns an object (visitor pattern)
 			const mockContext = {
 				getFilename: () => "/test/src/pipes/test.pipe.ts",
-				sourceCode: {
-					getText: () => "",
-					getAncestors: () => [],
-				},
 				report: () => {},
+				sourceCode: {
+					getAncestors: () => [],
+					getText: () => "",
+				},
 			}
 
 			const visitor = rule.create(mockContext as any)

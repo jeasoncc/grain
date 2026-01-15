@@ -75,8 +75,8 @@ export const exportNodeToMarkdown = (
 				TE.fromEither,
 				TE.map((content) => ({
 					content,
-					filename: node.title,
 					extension: "md",
+					filename: node.title,
 				})),
 			)
 		}),

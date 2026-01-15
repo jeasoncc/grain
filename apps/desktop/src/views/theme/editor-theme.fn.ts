@@ -40,11 +40,11 @@ export const getEditorThemeColors = (theme: Theme | undefined): EditorThemeColor
 
 	return {
 		background: colors.background,
-		foreground: colors.foreground,
-		selection: colors.editorSelection,
-		lineHighlight: colors.editorLineHighlight,
 		cursor: colors.editorCursor,
+		foreground: colors.foreground,
+		lineHighlight: colors.editorLineHighlight,
 		lineNumber: colors.mutedForeground,
 		lineNumberActive: colors.foreground,
+		selection: colors.editorSelection,
 	}
 }

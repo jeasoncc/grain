@@ -209,14 +209,14 @@ export function useDrawingWorkspace(workspaceId: string | null) {
 	}, [])
 
 	return {
-		drawings: drawings ?? [],
-		selectedDrawing,
-		selectDrawing,
 		clearSelection,
 		// createNewDrawing 已移除，请使用 createExcalidrawAsync
 		createNewDrawing: async () => {
 			warn("[Drawing] createNewDrawing 已弃用，请使用 createExcalidrawAsync")
 			return null
 		},
+		drawings: drawings ?? [],
+		selectDrawing,
+		selectedDrawing,
 	}
 }

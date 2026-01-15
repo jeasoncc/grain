@@ -48,28 +48,28 @@ function getExtendedColors(colors: ThemeColors, type: "light" | "dark"): Require
 		...colors,
 		// 编辑器颜色
 		editorCursor: colors.editorCursor || colors.primary,
-		editorSelection: colors.editorSelection || colors.accent,
 		editorLineHighlight: colors.editorLineHighlight || (type === "light" ? "#f5f5f5" : "#2a2a2a"),
-
-		// Toast 颜色
-		toastBackground: colors.toastBackground || colors.popover,
-		toastForeground: colors.toastForeground || colors.popoverForeground,
-		toastBorder: colors.toastBorder || colors.border,
-
-		// 状态颜色
-		success: colors.success || (type === "light" ? "#22c55e" : "#4ade80"),
-		warning: colors.warning || (type === "light" ? "#f59e0b" : "#fbbf24"),
+		editorSelection: colors.editorSelection || colors.accent,
 		error: colors.error || (type === "light" ? "#ef4444" : "#f87171"),
 		info: colors.info || colors.primary,
 
+		// 状态颜色
+		success: colors.success || (type === "light" ? "#22c55e" : "#4ade80"),
+		syntaxBold: colors.syntaxBold || (type === "light" ? "#1f2937" : "#f1f5f9"),
+		syntaxCode: colors.syntaxCode || (type === "light" ? "#dc2626" : "#f87171"),
+		syntaxComment: colors.syntaxComment || colors.mutedForeground,
+
 		// 语法高亮
 		syntaxHeading: colors.syntaxHeading || colors.primary,
-		syntaxBold: colors.syntaxBold || (type === "light" ? "#1f2937" : "#f1f5f9"),
 		syntaxItalic: colors.syntaxItalic || colors.mutedForeground,
 		syntaxLink: colors.syntaxLink || colors.primary,
-		syntaxCode: colors.syntaxCode || (type === "light" ? "#dc2626" : "#f87171"),
 		syntaxQuote: colors.syntaxQuote || colors.mutedForeground,
-		syntaxComment: colors.syntaxComment || colors.mutedForeground,
+
+		// Toast 颜色
+		toastBackground: colors.toastBackground || colors.popover,
+		toastBorder: colors.toastBorder || colors.border,
+		toastForeground: colors.toastForeground || colors.popoverForeground,
+		warning: colors.warning || (type === "light" ? "#f59e0b" : "#fbbf24"),
 	}
 }
 

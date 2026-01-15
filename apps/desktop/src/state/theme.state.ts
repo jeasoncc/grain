@@ -44,6 +44,38 @@ export const useThemeStore = create<ThemeStore>()(
 			...DEFAULT_THEME_STATE,
 			_initialized: false,
 
+			setEnableTransition: (enable: boolean) => {
+				set((state) => ({
+					...state,
+					enableTransition: enable,
+				}))
+			},
+
+			setInitialized: (initialized: boolean) => {
+				set((state) => ({
+					...state,
+					_initialized: initialized,
+				}))
+			},
+
+			setMode: (mode: ThemeMode) => {
+				set((state) => ({
+					...state,
+					// Update effective theme based on mode
+					effectiveTheme: mode === "system" ? state.systemTheme : mode,
+					mode,
+				}))
+			},
+
+			setSystemTheme: (theme: "light" | "dark") => {
+				set((state) => ({
+					...state,
+					// Update effective theme if in system mode
+					effectiveTheme: state.mode === "system" ? theme : state.effectiveTheme,
+					systemTheme: theme,
+				}))
+			},
+
 			// ==============================
 			// Pure State Setters (no business logic)
 			// ==============================
@@ -51,32 +83,14 @@ export const useThemeStore = create<ThemeStore>()(
 			setTheme: (key: string) => {
 				set((state) => ({
 					...state,
-					themeKey: key,
-					// Update mode based on theme key
-					mode: key.includes("dark") ? "dark" : key.includes("light") ? "light" : state.mode,
 					effectiveTheme: key.includes("dark")
 						? "dark"
 						: key.includes("light")
 							? "light"
 							: state.effectiveTheme,
-				}))
-			},
-
-			setMode: (mode: ThemeMode) => {
-				set((state) => ({
-					...state,
-					mode,
-					// Update effective theme based on mode
-					effectiveTheme: mode === "system" ? state.systemTheme : mode,
-				}))
-			},
-
-			setSystemTheme: (theme: "light" | "dark") => {
-				set((state) => ({
-					...state,
-					systemTheme: theme,
-					// Update effective theme if in system mode
-					effectiveTheme: state.mode === "system" ? theme : state.effectiveTheme,
+					// Update mode based on theme key
+					mode: key.includes("dark") ? "dark" : key.includes("light") ? "light" : state.mode,
+					themeKey: key,
 				}))
 			},
 
@@ -95,34 +109,20 @@ export const useThemeStore = create<ThemeStore>()(
 
 				set((state) => ({
 					...state,
-					mode: nextMode,
 					// Update effective theme
 					effectiveTheme: nextMode === "system" ? state.systemTheme : nextMode,
-				}))
-			},
-
-			setEnableTransition: (enable: boolean) => {
-				set((state) => ({
-					...state,
-					enableTransition: enable,
-				}))
-			},
-
-			setInitialized: (initialized: boolean) => {
-				set((state) => ({
-					...state,
-					_initialized: initialized,
+					mode: nextMode,
 				}))
 			},
 		}),
 		{
 			name: DEFAULT_THEME_CONFIG.storageKey,
 			partialize: (state) => ({
-				themeKey: state.themeKey,
-				mode: state.mode,
-				systemTheme: state.systemTheme,
 				effectiveTheme: state.effectiveTheme,
 				enableTransition: state.enableTransition,
+				mode: state.mode,
+				systemTheme: state.systemTheme,
+				themeKey: state.themeKey,
 			}),
 		},
 	),
@@ -182,10 +182,10 @@ export const useIsThemeInitialized = (): boolean => {
  * Get theme actions.
  */
 export const useThemeActions = () => ({
-	setTheme: useThemeStore((s) => s.setTheme),
-	setMode: useThemeStore((s) => s.setMode),
-	setSystemTheme: useThemeStore((s) => s.setSystemTheme),
-	toggleMode: useThemeStore((s) => s.toggleMode),
 	setEnableTransition: useThemeStore((s) => s.setEnableTransition),
 	setInitialized: useThemeStore((s) => s.setInitialized),
+	setMode: useThemeStore((s) => s.setMode),
+	setSystemTheme: useThemeStore((s) => s.setSystemTheme),
+	setTheme: useThemeStore((s) => s.setTheme),
+	toggleMode: useThemeStore((s) => s.toggleMode),
 })

@@ -21,7 +21,6 @@ import { queryKeys } from "./query-keys"
 export const useTagsByWorkspace = (workspaceId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!workspaceId,
-		queryKey: queryKeys.tags.byWorkspace(workspaceId ?? ""),
 		queryFn: async (): Promise<readonly TagInterface[]> => {
 			if (!workspaceId) return []
 			const result = await tagFlow.getTagsByWorkspace(workspaceId)()
@@ -30,6 +29,7 @@ export const useTagsByWorkspace = (workspaceId: string | null | undefined) => {
 			}
 			return result.right
 		},
+		queryKey: queryKeys.tags.byWorkspace(workspaceId ?? ""),
 	})
 }
 
@@ -39,7 +39,6 @@ export const useTagsByWorkspace = (workspaceId: string | null | undefined) => {
 export const useTag = (tagId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!tagId,
-		queryKey: queryKeys.tags.detail(tagId ?? ""),
 		queryFn: async (): Promise<TagInterface | null> => {
 			if (!tagId) return null
 			const result = await tagFlow.getTag(tagId)()
@@ -48,6 +47,7 @@ export const useTag = (tagId: string | null | undefined) => {
 			}
 			return result.right
 		},
+		queryKey: queryKeys.tags.detail(tagId ?? ""),
 	})
 }
 
@@ -60,7 +60,6 @@ export const useTagByName = (
 ) => {
 	return useQuery({
 		enabled: !!workspaceId && !!name,
-		queryKey: queryKeys.tags.byName(workspaceId ?? "", name ?? ""),
 		queryFn: async (): Promise<TagInterface | null> => {
 			if (!workspaceId || !name) return null
 			const result = await tagFlow.getTagByName(workspaceId, name)()
@@ -69,6 +68,7 @@ export const useTagByName = (
 			}
 			return result.right
 		},
+		queryKey: queryKeys.tags.byName(workspaceId ?? "", name ?? ""),
 	})
 }
 
@@ -78,7 +78,6 @@ export const useTagByName = (
 export const useTopTags = (workspaceId: string | null | undefined, limit = 10) => {
 	return useQuery({
 		enabled: !!workspaceId,
-		queryKey: queryKeys.tags.top(workspaceId ?? "", limit),
 		queryFn: async (): Promise<readonly TagInterface[]> => {
 			if (!workspaceId) return []
 			const result = await tagFlow.getTopTags(workspaceId, limit)()
@@ -87,6 +86,7 @@ export const useTopTags = (workspaceId: string | null | undefined, limit = 10) =
 			}
 			return result.right
 		},
+		queryKey: queryKeys.tags.top(workspaceId ?? "", limit),
 	})
 }
 
@@ -99,7 +99,6 @@ export const useTagSearch = (
 ) => {
 	return useQuery({
 		enabled: !!workspaceId && !!query,
-		queryKey: queryKeys.tags.search(workspaceId ?? "", query ?? ""),
 		queryFn: async (): Promise<readonly TagInterface[]> => {
 			if (!workspaceId || !query) return []
 			const result = await tagFlow.searchTags(workspaceId, query)()
@@ -108,6 +107,7 @@ export const useTagSearch = (
 			}
 			return result.right
 		},
+		queryKey: queryKeys.tags.search(workspaceId ?? "", query ?? ""),
 	})
 }
 
@@ -120,7 +120,6 @@ export const useNodesByTag = (
 ) => {
 	return useQuery({
 		enabled: !!workspaceId && !!tagName,
-		queryKey: queryKeys.tags.nodesByTag(workspaceId ?? "", tagName ?? ""),
 		queryFn: async (): Promise<readonly string[]> => {
 			if (!workspaceId || !tagName) return []
 			const result = await tagFlow.getNodesByTag(workspaceId, tagName)()
@@ -129,6 +128,7 @@ export const useNodesByTag = (
 			}
 			return result.right
 		},
+		queryKey: queryKeys.tags.nodesByTag(workspaceId ?? "", tagName ?? ""),
 	})
 }
 
@@ -138,14 +138,14 @@ export const useNodesByTag = (
 export const useTagGraph = (workspaceId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!workspaceId,
-		queryKey: queryKeys.tags.graph(workspaceId ?? ""),
 		queryFn: async (): Promise<TagGraphData> => {
-			if (!workspaceId) return { nodes: [], edges: [] }
+			if (!workspaceId) return { edges: [], nodes: [] }
 			const result = await tagFlow.getTagGraphData(workspaceId)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)
 			}
 			return result.right
 		},
+		queryKey: queryKeys.tags.graph(workspaceId ?? ""),
 	})
 }

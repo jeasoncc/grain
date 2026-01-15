@@ -72,8 +72,8 @@ export const logQueryExample = async () => {
 	info("=== 日志查询示例 ===")
 
 	const result = await queryLogs({
-		limit: 5,
 		levelFilter: ["error", "warn"],
+		limit: 5,
 		sourceFilter: "api",
 	})()
 
@@ -106,7 +106,7 @@ export const businessFlowWithLoggingExample = async () => {
 				// 模拟验证邮箱
 				if (!userData.email.includes("@")) {
 					error("邮箱格式无效", { email: userData.email }, "validation")
-					return TE.left({ type: "VALIDATION_ERROR" as const, message: "Invalid email" })
+					return TE.left({ message: "Invalid email", type: "VALIDATION_ERROR" as const })
 				}
 				return logInfo("邮箱验证通过", { email: userData.email }, "validation")
 			}),
@@ -147,7 +147,7 @@ export const errorHandlingExample = async () => {
 			TE.chain(() => {
 				// 模拟随机失败
 				if (Math.random() > 0.5) {
-					return TE.left({ type: "UNKNOWN_ERROR" as const, message: "Random failure" })
+					return TE.left({ message: "Random failure", type: "UNKNOWN_ERROR" as const })
 				}
 				return TE.right("success")
 			}),
@@ -229,7 +229,7 @@ export const runAllExamples = (): Promise<void> => {
 
 			info("🎉 所有示例运行完成！")
 		},
-		(error) => ({ type: "EXAMPLE_ERROR" as const, message: String(error) }),
+		(error) => ({ message: String(error), type: "EXAMPLE_ERROR" as const }),
 	)().then((result) => {
 		if (result._tag === "Left") {
 			error("💥 示例运行过程中发生错误", { error: result.left })

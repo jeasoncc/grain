@@ -86,9 +86,9 @@ export const openFile = (params: OpenFileParams): TE.TaskEither<AppError, OpenFi
 							})
 						}
 						return {
-							tabId: existingTab.id,
-							isNewTab: false,
 							hasContent: true,
+							isNewTab: false,
+							tabId: existingTab.id,
 						}
 					}
 
@@ -151,14 +151,14 @@ export const openFile = (params: OpenFileParams): TE.TaskEither<AppError, OpenFi
 					store.setEditorStates(evictedStates as Record<string, EditorInstanceState>)
 
 					return {
-						tabId: newTab.id,
-						isNewTab: true,
 						hasContent,
+						isNewTab: true,
+						tabId: newTab.id,
 					}
 				}),
 			(error): AppError => ({
-				type: "UNKNOWN_ERROR",
 				message: `打开文件失败: ${error instanceof Error ? error.message : String(error)}`,
+				type: "UNKNOWN_ERROR",
 			}),
 		),
 		// 处理 p-queue 返回 undefined 的情况
@@ -166,8 +166,8 @@ export const openFile = (params: OpenFileParams): TE.TaskEither<AppError, OpenFi
 			result
 				? TE.right(result)
 				: TE.left<AppError>({
-						type: "UNKNOWN_ERROR",
 						message: "打开文件失败: 队列返回空结果",
+						type: "UNKNOWN_ERROR",
 					}),
 		),
 	)

@@ -9,8 +9,8 @@ vi.mock("@tanstack/react-router", () => ({
 
 vi.mock("@/hooks/use-theme", () => ({
 	useTheme: vi.fn(() => ({
-		theme: "dark",
 		setTheme: vi.fn(),
+		theme: "dark",
 	})),
 }))
 
@@ -32,8 +32,8 @@ vi.mock("@/state/editor-tabs.state", () => ({
 vi.mock("@/flows/templated", () => ({
 	createExcalidrawCompatAsync: vi.fn(() =>
 		Promise.resolve({
-			node: { id: "node-1", title: "drawing-2024-01-15" },
 			content: "{}",
+			node: { id: "node-1", title: "drawing-2024-01-15" },
 			parsedContent: {},
 		}),
 	),
@@ -41,13 +41,13 @@ vi.mock("@/flows/templated", () => ({
 
 describe("CommandPaletteContainer", () => {
 	const defaultProps = {
-		open: true,
 		onOpenChange: vi.fn(),
+		open: true,
+		selectedWorkspaceId: "ws1",
 		workspaces: [
 			{ id: "ws1", title: "Workspace 1" },
 			{ id: "ws2", title: "Workspace 2" },
 		],
-		selectedWorkspaceId: "ws1",
 	}
 
 	it("should render without crashing", () => {

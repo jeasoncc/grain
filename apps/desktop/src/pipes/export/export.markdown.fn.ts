@@ -57,12 +57,12 @@ export interface MarkdownExportOptions {
  */
 const TEXT_FORMAT = {
 	BOLD: 1,
+	CODE: 16,
 	ITALIC: 2,
 	STRIKETHROUGH: 4,
-	UNDERLINE: 8,
-	CODE: 16,
 	SUBSCRIPT: 32,
 	SUPERSCRIPT: 64,
+	UNDERLINE: 8,
 } as const
 
 // ==============================
@@ -70,15 +70,15 @@ const TEXT_FORMAT = {
 // ==============================
 
 const defaultOptions: Required<MarkdownExportOptions> = {
-	blankLineBeforeHeading: true,
 	blankLineAfterHeading: false,
-	blankLineBeforeList: true,
 	blankLineAfterList: true,
-	tagFormat: "hash",
-	includeTitle: false,
-	title: "",
-	includeFrontMatter: false,
+	blankLineBeforeHeading: true,
+	blankLineBeforeList: true,
 	frontMatter: {},
+	includeFrontMatter: false,
+	includeTitle: false,
+	tagFormat: "hash",
+	title: "",
 }
 
 // ==============================

@@ -129,7 +129,7 @@ export const createUnifiedSaveService = (
 		}
 
 		isSaving = true
-		info("[UnifiedSave] 开始保存", { nodeId, contentType }, "unified-save.service")
+		info("[UnifiedSave] 开始保存", { contentType, nodeId }, "unified-save.service")
 
 		// 1. 通知开始保存
 		onSaving?.()
@@ -177,24 +177,28 @@ export const createUnifiedSaveService = (
 
 	return {
 		/**
-		 * 更新内容（触发防抖自动保存）
+		 * 清理资源
 		 *
-		 * 每次调用都会：
-		 * 1. 更新 pendingContent
-		 * 2. 如果启用自动保存，重置防抖定时器
+		 * 取消防抖定时器，释放资源
+		 * 注意：不会自动保存未保存的内容，调用者需要先调用 saveNow()
 		 */
-		updateContent: (content: string): void => {
-			pendingContent = content
+		dispose: (): void => {
+			debouncedSave?.cancel()
+			debug("[UnifiedSave] 资源已清理", { nodeId }, "unified-save.service")
+		},
 
-			// 标记为有未保存更改（用于 UI 显示）
-			if (tabId && setTabDirty && content !== lastSavedContent) {
-				setTabDirty(tabId, true)
-			}
+		/**
+		 * 获取当前待保存的内容
+		 */
+		getPendingContent: (): string | null => {
+			return pendingContent
+		},
 
-			// 触发防抖自动保存
-			if (debouncedSave) {
-				debouncedSave(content)
-			}
+		/**
+		 * 是否有未保存的更改
+		 */
+		hasUnsavedChanges: (): boolean => {
+			return pendingContent !== null && pendingContent !== lastSavedContent
 		},
 
 		/**
@@ -230,30 +234,25 @@ export const createUnifiedSaveService = (
 			lastSavedContent = content
 			// 不设置 pendingContent，因为这是已保存的内容
 		},
-
 		/**
-		 * 清理资源
+		 * 更新内容（触发防抖自动保存）
 		 *
-		 * 取消防抖定时器，释放资源
-		 * 注意：不会自动保存未保存的内容，调用者需要先调用 saveNow()
+		 * 每次调用都会：
+		 * 1. 更新 pendingContent
+		 * 2. 如果启用自动保存，重置防抖定时器
 		 */
-		dispose: (): void => {
-			debouncedSave?.cancel()
-			debug("[UnifiedSave] 资源已清理", { nodeId }, "unified-save.service")
-		},
+		updateContent: (content: string): void => {
+			pendingContent = content
 
-		/**
-		 * 是否有未保存的更改
-		 */
-		hasUnsavedChanges: (): boolean => {
-			return pendingContent !== null && pendingContent !== lastSavedContent
-		},
+			// 标记为有未保存更改（用于 UI 显示）
+			if (tabId && setTabDirty && content !== lastSavedContent) {
+				setTabDirty(tabId, true)
+			}
 
-		/**
-		 * 获取当前待保存的内容
-		 */
-		getPendingContent: (): string | null => {
-			return pendingContent
+			// 触发防抖自动保存
+			if (debouncedSave) {
+				debouncedSave(content)
+			}
 		},
 	}
 }

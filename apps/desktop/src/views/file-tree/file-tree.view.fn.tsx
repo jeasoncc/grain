@@ -48,11 +48,11 @@ function buildTreeData(nodes: NodeInterface[], parentId: string | null = null): 
 		.filter((n) => n.parent === parentId)
 		.sort((a, b) => a.order - b.order)
 		.map((node) => ({
+			children: node.type === "folder" ? buildTreeData(nodes, node.id) : undefined,
+			collapsed: node.collapsed ?? true,
 			id: node.id,
 			name: node.title,
 			type: node.type,
-			collapsed: node.collapsed ?? true,
-			children: node.type === "folder" ? buildTreeData(nodes, node.id) : undefined,
 		}))
 }
 
@@ -303,8 +303,8 @@ export function FileTree({
 		width: number | string
 		height: number
 	}>({
-		width: "100%",
 		height: typeof window !== "undefined" ? window.innerHeight - 100 : 600,
+		width: "100%",
 	})
 
 	useEffect(() => {
@@ -314,7 +314,7 @@ export function FileTree({
 		const updateDimensions = () => {
 			const rect = container.getBoundingClientRect()
 			if (rect.width > 0 && rect.height > 0) {
-				setDimensions({ width: rect.width, height: rect.height })
+				setDimensions({ height: rect.height, width: rect.width })
 			}
 		}
 

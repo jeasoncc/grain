@@ -35,8 +35,8 @@ export const SearchPanelContainer = memo(() => {
 			setLoading(true)
 			try {
 				const searchResults = await searchEngine.simpleSearch(searchQuery, {
-					types: searchState.selectedTypes as SearchResultType[],
 					limit: 100,
+					types: searchState.selectedTypes as SearchResultType[],
 				})
 				setResults(searchResults)
 			} catch (error) {

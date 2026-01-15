@@ -81,12 +81,12 @@ export interface CleanupHistory {
  * 默认自动清理配置
  */
 export const DEFAULT_AUTO_CLEANUP_CONFIG: AutoCleanupConfig = {
-	enabled: true,
-	maxEntries: 10000,
-	maxDays: 30,
-	maxStorageSize: 50 * 1024 * 1024, // 50MB
 	checkInterval: 60 * 60 * 1000, // 1小时
 	cleanupBatchSize: 1000,
+	enabled: true,
+	maxDays: 30,
+	maxEntries: 10000,
+	maxStorageSize: 50 * 1024 * 1024, // 50MB
 } as const
 
 /**
@@ -101,31 +101,31 @@ const STORAGE_KEYS = {
  * Zod Schema 用于配置验证
  */
 const AutoCleanupConfigSchema = z.object({
-	enabled: z.boolean(),
-	maxEntries: z.number().min(100).max(100000),
-	maxDays: z.number().min(1).max(365),
-	maxStorageSize: z
-		.number()
-		.min(1024 * 1024)
-		.max(1024 * 1024 * 1024), // 1MB - 1GB
 	checkInterval: z
 		.number()
 		.min(60 * 1000)
 		.max(24 * 60 * 60 * 1000), // 1分钟 - 24小时
 	cleanupBatchSize: z.number().min(100).max(10000),
+	enabled: z.boolean(),
+	maxDays: z.number().min(1).max(365),
+	maxEntries: z.number().min(100).max(100000),
+	maxStorageSize: z
+		.number()
+		.min(1024 * 1024)
+		.max(1024 * 1024 * 1024), // 1MB - 1GB
 })
 
 const CleanupHistorySchema = z.object({
-	lastCleanup: z.string().optional(),
 	history: z.array(
 		z.object({
+			cleanupTime: z.string(),
 			entriesRemoved: z.number(),
 			spaceFreed: z.number(),
-			totalEntriesBefore: z.number(),
 			totalEntriesAfter: z.number(),
-			cleanupTime: z.string(),
+			totalEntriesBefore: z.number(),
 		}),
 	),
+	lastCleanup: z.string().optional(),
 	totalCleanups: z.number(),
 })
 
@@ -156,16 +156,16 @@ export const updateAutoCleanupConfig = (
 	const validation = AutoCleanupConfigSchema.safeParse(newConfig)
 	if (!validation.success) {
 		return TE.left({
-			type: "LOG_CONFIG_ERROR",
 			message: `Invalid auto-cleanup configuration: ${validation.error.message}`,
+			type: "LOG_CONFIG_ERROR",
 		})
 	}
 
 	const success = setJson(STORAGE_KEYS.AUTO_CLEANUP_CONFIG, newConfig)
 	if (!success) {
 		return TE.left({
-			type: "LOG_CONFIG_ERROR",
 			message: "Failed to save auto-cleanup configuration",
+			type: "LOG_CONFIG_ERROR",
 		})
 	}
 
@@ -189,8 +189,8 @@ export const getCleanupHistory = (): CleanupHistory =>
 const recordCleanupStats = (stats: CleanupStats): boolean => {
 	const history = getCleanupHistory()
 	const newHistory: CleanupHistory = {
-		lastCleanup: stats.cleanupTime,
 		history: [...history.history.slice(-9), stats], // 保留最近10次记录
+		lastCleanup: stats.cleanupTime,
 		totalCleanups: history.totalCleanups + 1,
 	}
 
@@ -270,12 +270,12 @@ export const getStorageMonitorInfo = (
 				checkNeedsCleanup(config),
 				TE.map((needsCleanup) => ({
 					currentEntries: stats.totalEntries,
-					maxEntries: config.maxEntries,
 					currentSize: stats.storageSize,
-					maxSize: config.maxStorageSize,
-					oldestEntry: stats.earliestEntry,
 					maxDays: config.maxDays,
+					maxEntries: config.maxEntries,
+					maxSize: config.maxStorageSize,
 					needsCleanup,
+					oldestEntry: stats.earliestEntry,
 					utilizationPercent: Math.round((stats.totalEntries / config.maxEntries) * 100),
 				})),
 			),
@@ -297,8 +297,8 @@ export const executeAutoCleanup = (
 ): TE.TaskEither<AppError, CleanupStats> => {
 	if (!config.enabled) {
 		return TE.left({
-			type: "LOG_CONFIG_ERROR",
 			message: "Auto-cleanup is disabled",
+			type: "LOG_CONFIG_ERROR",
 		})
 	}
 
@@ -322,11 +322,11 @@ export const executeAutoCleanup = (
 							const spaceFreed = statsBefore.storageSize - statsAfter.storageSize
 
 							const cleanupStats: CleanupStats = {
+								cleanupTime,
 								entriesRemoved,
 								spaceFreed,
-								totalEntriesBefore: statsBefore.totalEntries,
 								totalEntriesAfter: statsAfter.totalEntries,
-								cleanupTime,
+								totalEntriesBefore: statsBefore.totalEntries,
 							}
 
 							// 记录清理统计
@@ -355,8 +355,8 @@ export const forceCleanupToTarget = (
 		TE.chain((stats) => {
 			if (stats.totalEntries <= targetEntries) {
 				return TE.left({
-					type: "LOG_CONFIG_ERROR",
 					message: `Current entries (${stats.totalEntries}) already below target (${targetEntries})`,
+					type: "LOG_CONFIG_ERROR",
 				})
 			}
 
@@ -368,8 +368,8 @@ export const forceCleanupToTarget = (
 
 			return executeAutoCleanup({
 				...getAutoCleanupConfig(),
-				maxEntries: targetEntries,
 				maxDays: daysToSubtract,
+				maxEntries: targetEntries,
 			})
 		}),
 	)

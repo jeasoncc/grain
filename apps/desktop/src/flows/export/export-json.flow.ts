@@ -78,8 +78,8 @@ export const exportNodeToJson = (
 				TE.fromEither,
 				TE.map((content) => ({
 					content,
-					filename: node.title,
 					extension: "json",
+					filename: node.title,
 				})),
 			)
 		}),

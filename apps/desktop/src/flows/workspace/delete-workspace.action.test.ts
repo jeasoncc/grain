@@ -37,12 +37,12 @@ vi.mock("@/db/workspace.db.fn", () => ({
 
 vi.mock("@/log", () => ({
 	default: {
-		start: vi.fn(),
-		info: vi.fn(),
-		success: vi.fn(),
-		error: vi.fn(),
-		warn: vi.fn(),
 		debug: vi.fn(),
+		error: vi.fn(),
+		info: vi.fn(),
+		start: vi.fn(),
+		success: vi.fn(),
+		warn: vi.fn(),
 	},
 }))
 
@@ -68,7 +68,7 @@ describe("deleteWorkspace", () => {
 	})
 
 	it("should return Left with error on failure", async () => {
-		const error = { type: "DB_ERROR" as const, message: "Database error" }
+		const error = { message: "Database error", type: "DB_ERROR" as const }
 		mockDeleteWorkspaceWithContents.mockReturnValue(() => Promise.resolve(E.left(error)))
 
 		const result = await runTE(deleteWorkspace("ws-1"))

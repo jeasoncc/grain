@@ -83,14 +83,14 @@ describe("SearchPanelContainer", () => {
 		const mockSearch = vi.fn(() =>
 			Promise.resolve([
 				{
-					id: "1",
-					type: "node" as const,
-					title: "Test Result",
 					content: "Test content",
-					workspaceTitle: "Workspace",
 					excerpt: "Test excerpt",
-					score: 1.0,
 					highlights: ["Test"],
+					id: "1",
+					score: 1.0,
+					title: "Test Result",
+					type: "node" as const,
+					workspaceTitle: "Workspace",
 				},
 			]),
 		)
@@ -116,8 +116,8 @@ describe("SearchPanelContainer", () => {
 		await waitFor(
 			() => {
 				expect(mockSearch).toHaveBeenCalledWith("test", {
-					types: ["node"],
 					limit: 100,
+					types: ["node"],
 				})
 			},
 			{ timeout: 500 },

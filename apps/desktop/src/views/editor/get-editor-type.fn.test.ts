@@ -221,7 +221,7 @@ describe("Property-Based Tests - Lexical Unified Editor", () => {
 				fc.property(
 					// 生成随机文件名前缀（非空，只包含有效字符）
 					fc
-						.string({ minLength: 1, maxLength: 50 })
+						.string({ maxLength: 50, minLength: 1 })
 						.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 					// 生成随机扩展名（包括 .excalidraw 和其他扩展名）
 					fc.oneof(
@@ -229,7 +229,7 @@ describe("Property-Based Tests - Lexical Unified Editor", () => {
 						fc.constant(".excalidraw"),
 						// 50% 概率生成其他扩展名
 						fc
-							.string({ minLength: 1, maxLength: 15 })
+							.string({ maxLength: 15, minLength: 1 })
 							.filter((s) => /^[a-z]+$/.test(s) && s !== "excalidraw")
 							.map((s) => `.${s}`),
 					),
@@ -257,7 +257,7 @@ describe("Property-Based Tests - Lexical Unified Editor", () => {
 
 			fc.assert(
 				fc.property(
-					fc.string({ minLength: 1, maxLength: 50 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+					fc.string({ maxLength: 50, minLength: 1 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 					fc.constantFrom(...nonExcalidrawExtensions),
 					(prefix, extension) => {
 						const filename = `${prefix}${extension}`
@@ -273,7 +273,7 @@ describe("Property-Based Tests - Lexical Unified Editor", () => {
 				fc.property(
 					// 生成各种可能的文件名前缀
 					fc.oneof(
-						fc.string({ minLength: 1, maxLength: 50 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+						fc.string({ maxLength: 50, minLength: 1 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 						fc.constant("drawing"),
 						fc.constant("sketch"),
 						fc.constant("diagram"),
@@ -311,7 +311,7 @@ describe("Property-Based Tests - File Extension System", () => {
 				fc.property(
 					// 生成随机文件名前缀
 					fc
-						.string({ minLength: 1, maxLength: 20 })
+						.string({ maxLength: 20, minLength: 1 })
 						.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s) && !s.includes(".")),
 					// 从已知扩展名中随机选择
 					fc.constantFrom(...knownExtensions),
@@ -328,7 +328,7 @@ describe("Property-Based Tests - File Extension System", () => {
 		it("should return lexical for any .grain filename", () => {
 			fc.assert(
 				fc.property(
-					fc.string({ minLength: 1, maxLength: 50 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+					fc.string({ maxLength: 50, minLength: 1 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 					(prefix) => {
 						const filename = `${prefix}.grain`
 						return getEditorTypeByFilename(filename) === "lexical"
@@ -341,7 +341,7 @@ describe("Property-Based Tests - File Extension System", () => {
 		it("should return excalidraw for any .excalidraw filename", () => {
 			fc.assert(
 				fc.property(
-					fc.string({ minLength: 1, maxLength: 50 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+					fc.string({ maxLength: 50, minLength: 1 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 					(prefix) => {
 						const filename = `${prefix}.excalidraw`
 						return getEditorTypeByFilename(filename) === "excalidraw"
@@ -354,7 +354,7 @@ describe("Property-Based Tests - File Extension System", () => {
 		it("should return lexical for any .mermaid or .plantuml filename", () => {
 			fc.assert(
 				fc.property(
-					fc.string({ minLength: 1, maxLength: 50 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+					fc.string({ maxLength: 50, minLength: 1 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 					fc.constantFrom(".mermaid", ".plantuml"),
 					(prefix, extension) => {
 						const filename = `${prefix}${extension}`
@@ -384,7 +384,7 @@ describe("Property-Based Tests - File Extension System", () => {
 
 			fc.assert(
 				fc.property(
-					fc.string({ minLength: 1, maxLength: 50 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+					fc.string({ maxLength: 50, minLength: 1 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 					fc.constantFrom(...codeExtensions),
 					(prefix, extension) => {
 						const filename = `${prefix}${extension}`
@@ -410,10 +410,10 @@ describe("Property-Based Tests - File Extension System", () => {
 		it("should return lexical for any unknown extension", () => {
 			fc.assert(
 				fc.property(
-					fc.string({ minLength: 1, maxLength: 50 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+					fc.string({ maxLength: 50, minLength: 1 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 					// 生成不在已知扩展名列表中的扩展名
 					fc
-						.string({ minLength: 2, maxLength: 10 })
+						.string({ maxLength: 10, minLength: 2 })
 						.filter((s) => /^[a-z]+$/.test(s) && !knownExtensions.has(`.${s.toLowerCase()}`)),
 					(prefix, unknownExt) => {
 						const filename = `${prefix}.${unknownExt}`
@@ -429,7 +429,7 @@ describe("Property-Based Tests - File Extension System", () => {
 				fc.property(
 					// 生成不包含点号的文件名
 					fc
-						.string({ minLength: 1, maxLength: 50 })
+						.string({ maxLength: 50, minLength: 1 })
 						.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s) && !s.includes(".")),
 					(filename) => {
 						return getEditorTypeByFilename(filename) === "lexical"
@@ -444,7 +444,7 @@ describe("Property-Based Tests - File Extension System", () => {
 				fc.property(
 					// 生成 dotfile 名称（以点开头，后面没有其他点）
 					fc
-						.string({ minLength: 1, maxLength: 20 })
+						.string({ maxLength: 20, minLength: 1 })
 						.filter((s) => /^[a-zA-Z0-9_-]+$/.test(s) && !s.includes(".")),
 					(name) => {
 						const filename = `.${name}`
@@ -469,7 +469,7 @@ describe("Property-Based Tests - File Extension System", () => {
 
 			fc.assert(
 				fc.property(
-					fc.string({ minLength: 1, maxLength: 20 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
+					fc.string({ maxLength: 20, minLength: 1 }).filter((s) => /^[a-zA-Z0-9_-]+$/.test(s)),
 					fc.constantFrom(...knownExtensions),
 					(prefix, extension) => {
 						// 移除开头的点号
@@ -504,7 +504,7 @@ describe("Property-Based Tests - File Extension System", () => {
 			fc.assert(
 				fc.property(
 					// 生成任意文件名
-					fc.string({ minLength: 0, maxLength: 100 }),
+					fc.string({ maxLength: 100, minLength: 0 }),
 					(filename) => {
 						const result = getEditorTypeByFilename(filename)
 						return validEditorTypes.includes(result)

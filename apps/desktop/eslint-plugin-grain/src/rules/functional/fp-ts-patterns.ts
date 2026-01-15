@@ -20,25 +20,10 @@ const createRule = ESLintUtils.RuleCreator(
  * 未 fold 的 Either/Option 错误消息
  */
 const UNFOLDED_EITHER_OPTION_MESSAGE = buildComprehensiveErrorMessage({
-	title: "检测到未处理的 Either/Option",
-	problemCode: `const result = pipe(
-  fetchData(),
-  E.map(transform)
-);
-// result 是 Either，但没有被 fold 处理`,
-	reason: `Either/Option 必须被显式处理：
-  - 未处理的 Either 可能包含错误
-  - 未处理的 Option 可能是 None
-  - 类型系统无法强制运行时处理`,
 	architecturePrinciple: `fp-ts 的容器类型必须被"打开"：
   - Either: 使用 E.fold, E.match, E.getOrElse
   - Option: 使用 O.fold, O.match, O.getOrElse
   - TaskEither: 使用 TE.fold, TE.match 后执行`,
-	steps: [
-		"确定 Either/Option 的最终用途",
-		"使用 fold/match 处理两种情况",
-		"或使用 getOrElse 提供默认值",
-	],
 	correctExample: `import { pipe } from 'fp-ts/function';
 import * as E from 'fp-ts/Either';
 import * as O from 'fp-ts/Option';
@@ -69,34 +54,33 @@ const message = pipe(
   )
 );`,
 	docRef: "https://gcanti.github.io/fp-ts/modules/Either.ts.html#fold",
-	steeringFile: "#fp-patterns - Either/Option 处理",
+	problemCode: `const result = pipe(
+  fetchData(),
+  E.map(transform)
+);
+// result 是 Either，但没有被 fold 处理`,
+	reason: `Either/Option 必须被显式处理：
+  - 未处理的 Either 可能包含错误
+  - 未处理的 Option 可能是 None
+  - 类型系统无法强制运行时处理`,
 	relatedRules: ["no-try-catch", "no-throw"],
+	steeringFile: "#fp-patterns - Either/Option 处理",
+	steps: [
+		"确定 Either/Option 的最终用途",
+		"使用 fold/match 处理两种情况",
+		"或使用 getOrElse 提供默认值",
+	],
+	title: "检测到未处理的 Either/Option",
 })
 
 /**
  * 未执行的 TaskEither 错误消息
  */
 const UNEXECUTED_TASKEITHER_MESSAGE = buildComprehensiveErrorMessage({
-	title: "TaskEither 未被执行",
-	problemCode: `const task = pipe(
-  fetchData(),
-  TE.map(transform),
-  TE.fold(handleError, handleSuccess)
-);
-// task 是 Task，但没有被执行 ()`,
-	reason: `TaskEither/Task 是惰性的，必须显式执行：
-  - TaskEither 是一个返回 Promise 的函数
-  - 不调用 () 则不会执行任何操作
-  - 这是常见的 fp-ts 错误`,
 	architecturePrinciple: `TaskEither 的执行模式：
   - 构建管道时不执行任何操作
   - 调用 () 时才开始执行
   - 通常在 hooks 或入口点执行`,
-	steps: [
-		"确认 TaskEither 管道已完成（通常以 fold 结尾）",
-		"在管道末尾调用 () 执行",
-		"或将 Task 传递给执行器",
-	],
 	correctExample: `import { pipe } from 'fp-ts/function';
 import * as TE from 'fp-ts/TaskEither';
 import * as T from 'fp-ts/Task';
@@ -130,35 +114,36 @@ const { data } = useQuery({
     TE.getOrElse(() => T.of(null))
   )(),
 });`,
-	warnings: ["确保 fold 返回的是 Task<void> 或 Task<A>", "不要忘记最后的 () 调用"],
 	docRef: "https://gcanti.github.io/fp-ts/modules/TaskEither.ts.html",
-	steeringFile: "#fp-patterns - TaskEither 执行",
+	problemCode: `const task = pipe(
+  fetchData(),
+  TE.map(transform),
+  TE.fold(handleError, handleSuccess)
+);
+// task 是 Task，但没有被执行 ()`,
+	reason: `TaskEither/Task 是惰性的，必须显式执行：
+  - TaskEither 是一个返回 Promise 的函数
+  - 不调用 () 则不会执行任何操作
+  - 这是常见的 fp-ts 错误`,
 	relatedRules: ["no-promise-methods", "fp-ts-patterns"],
+	steeringFile: "#fp-patterns - TaskEither 执行",
+	steps: [
+		"确认 TaskEither 管道已完成（通常以 fold 结尾）",
+		"在管道末尾调用 () 执行",
+		"或将 Task 传递给执行器",
+	],
+	title: "TaskEither 未被执行",
+	warnings: ["确保 fold 返回的是 Task<void> 或 Task<A>", "不要忘记最后的 () 调用"],
 })
 
 /**
  * 手动 null 检查的错误消息
  */
 const MANUAL_NULL_CHECK_MESSAGE = buildComprehensiveErrorMessage({
-	title: "使用 Option 替代手动 null/undefined 检查",
-	problemCode: `if (value !== null && value !== undefined) {
-  return transform(value);
-} else {
-  return defaultValue;
-}`,
-	reason: `手动 null 检查容易出错：
-  - 可能遗漏 undefined 或 null
-  - 嵌套检查难以阅读
-  - 不如 Option 类型安全`,
 	architecturePrinciple: `使用 Option 处理可空值：
   - O.fromNullable: 将可空值转为 Option
   - O.map: 安全地转换值
   - O.getOrElse: 提供默认值`,
-	steps: [
-		"使用 O.fromNullable 包装可空值",
-		"使用 O.map/O.chain 进行转换",
-		"使用 O.getOrElse 或 O.fold 提取值",
-	],
 	correctExample: `import { pipe } from 'fp-ts/function';
 import * as O from 'fp-ts/Option';
 
@@ -190,19 +175,29 @@ const city = pipe(
   O.getOrElse(() => 'Unknown')
 );`,
 	docRef: "https://gcanti.github.io/fp-ts/modules/Option.ts.html",
-	steeringFile: "#fp-patterns - Option 处理",
+	problemCode: `if (value !== null && value !== undefined) {
+  return transform(value);
+} else {
+  return defaultValue;
+}`,
+	reason: `手动 null 检查容易出错：
+  - 可能遗漏 undefined 或 null
+  - 嵌套检查难以阅读
+  - 不如 Option 类型安全`,
 	relatedRules: ["fp-ts-patterns"],
+	steeringFile: "#fp-patterns - Option 处理",
+	steps: [
+		"使用 O.fromNullable 包装可空值",
+		"使用 O.map/O.chain 进行转换",
+		"使用 O.getOrElse 或 O.fold 提取值",
+	],
+	title: "使用 Option 替代手动 null/undefined 检查",
 })
 
 /**
  * pipe 函数过长的警告消息
  */
 const PIPE_TOO_LONG_MESSAGE = buildWarningMessage({
-	title: "pipe() 包含过多函数",
-	suggestion: `pipe 超过 10 个函数时应该提取为独立函数：
-  - 提高可读性
-  - 便于测试
-  - 便于复用`,
 	example: `// ❌ 过长的 pipe
 const result = pipe(
   data,
@@ -230,26 +225,20 @@ const result = pipe(
   transformData,
   finalizeData
 );`,
+	suggestion: `pipe 超过 10 个函数时应该提取为独立函数：
+  - 提高可读性
+  - 便于测试
+  - 便于复用`,
+	title: "pipe() 包含过多函数",
 })
 
 /**
  * if-else 替代 Either.match 的警告消息
  */
 const USE_EITHER_MATCH_MESSAGE = buildComprehensiveErrorMessage({
-	title: "使用 Either.match 替代 if-else",
-	problemCode: `if (E.isRight(result)) {
-  return handleSuccess(result.right);
-} else {
-  return handleError(result.left);
-}`,
-	reason: `手动检查 Either 不如 match/fold 安全：
-  - 可能遗漏某个分支
-  - 类型推断不如 match 精确
-  - 代码更冗长`,
 	architecturePrinciple: `使用 Either 的模式匹配：
   - E.match/E.fold: 处理两种情况
   - 类型安全，编译器强制处理两种情况`,
-	steps: ["将 if-else 替换为 E.match 或 E.fold", "确保两个分支返回相同类型"],
 	correctExample: `import { pipe } from 'fp-ts/function';
 import * as E from 'fp-ts/Either';
 
@@ -272,28 +261,22 @@ const output = pipe(
   E.fold(handleError, handleSuccess)
 );`,
 	docRef: "https://gcanti.github.io/fp-ts/modules/Either.ts.html#match",
-	steeringFile: "#fp-patterns - Either 模式匹配",
+	problemCode: `if (E.isRight(result)) {
+  return handleSuccess(result.right);
+} else {
+  return handleError(result.left);
+}`,
+	reason: `手动检查 Either 不如 match/fold 安全：
+  - 可能遗漏某个分支
+  - 类型推断不如 match 精确
+  - 代码更冗长`,
 	relatedRules: ["fp-ts-patterns"],
+	steeringFile: "#fp-patterns - Either 模式匹配",
+	steps: ["将 if-else 替换为 E.match 或 E.fold", "确保两个分支返回相同类型"],
+	title: "使用 Either.match 替代 if-else",
 })
 
 export default createRule({
-	name: "fp-ts-patterns",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "Enforce correct fp-ts patterns",
-		},
-		fixable: undefined,
-		schema: [],
-		messages: {
-			unfoldedEitherOption: UNFOLDED_EITHER_OPTION_MESSAGE,
-			unexecutedTaskEither: UNEXECUTED_TASKEITHER_MESSAGE,
-			manualNullCheck: MANUAL_NULL_CHECK_MESSAGE,
-			pipeTooLong: PIPE_TOO_LONG_MESSAGE,
-			useEitherMatch: USE_EITHER_MATCH_MESSAGE,
-		},
-	},
-	defaultOptions: [],
 	create(context) {
 		const MAX_PIPE_LENGTH = 10
 
@@ -306,8 +289,8 @@ export default createRule({
 					const functionCount = node.arguments.length - 1
 					if (functionCount > MAX_PIPE_LENGTH) {
 						context.report({
-							node,
 							messageId: "pipeTooLong",
+							node,
 						})
 					}
 				}
@@ -325,8 +308,8 @@ export default createRule({
 					while (parent) {
 						if (parent.type === "IfStatement" && parent.test === node) {
 							context.report({
-								node: parent,
 								messageId: "useEitherMatch",
+								node: parent,
 							})
 							break
 						}
@@ -336,8 +319,8 @@ export default createRule({
 							parent.test === node
 						) {
 							context.report({
-								node: parent,
 								messageId: "useEitherMatch",
+								node: parent,
 							})
 							break
 						}
@@ -359,8 +342,8 @@ export default createRule({
 
 					if (isNullCheck) {
 						context.report({
-							node,
 							messageId: "manualNullCheck",
+							node,
 						})
 					}
 				}
@@ -386,8 +369,8 @@ export default createRule({
 
 						if (leftIsNullCheck && rightIsNullCheck) {
 							context.report({
-								node,
 								messageId: "manualNullCheck",
+								node,
 							})
 						}
 					}
@@ -395,4 +378,21 @@ export default createRule({
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "Enforce correct fp-ts patterns",
+		},
+		fixable: undefined,
+		messages: {
+			manualNullCheck: MANUAL_NULL_CHECK_MESSAGE,
+			pipeTooLong: PIPE_TOO_LONG_MESSAGE,
+			unexecutedTaskEither: UNEXECUTED_TASKEITHER_MESSAGE,
+			unfoldedEitherOption: UNFOLDED_EITHER_OPTION_MESSAGE,
+			useEitherMatch: USE_EITHER_MATCH_MESSAGE,
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "fp-ts-patterns",
 })

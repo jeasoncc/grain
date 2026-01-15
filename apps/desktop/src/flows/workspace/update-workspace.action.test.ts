@@ -38,12 +38,12 @@ vi.mock("@/db/workspace.db.fn", () => ({
 
 vi.mock("@/log", () => ({
 	default: {
-		start: vi.fn(),
-		info: vi.fn(),
-		success: vi.fn(),
-		error: vi.fn(),
-		warn: vi.fn(),
 		debug: vi.fn(),
+		error: vi.fn(),
+		info: vi.fn(),
+		start: vi.fn(),
+		success: vi.fn(),
+		warn: vi.fn(),
 	},
 }))
 
@@ -64,8 +64,8 @@ describe("updateWorkspace", () => {
 
 		const result = await runTE(
 			updateWorkspace({
-				workspaceId: "ws-1",
 				updates: { title: "New Title" },
+				workspaceId: "ws-1",
 			}),
 		)
 
@@ -80,20 +80,20 @@ describe("updateWorkspace", () => {
 
 		const result = await runTE(
 			updateWorkspace({
-				workspaceId: "ws-1",
 				updates: {
-					title: "New Title",
-					description: "New Description",
 					author: "New Author",
+					description: "New Description",
+					title: "New Title",
 				},
+				workspaceId: "ws-1",
 			}),
 		)
 
 		expect(E.isRight(result)).toBe(true)
 		expect(mockUpdateWorkspace).toHaveBeenCalledWith("ws-1", {
-			title: "New Title",
-			description: "New Description",
 			author: "New Author",
+			description: "New Description",
+			title: "New Title",
 		})
 	})
 
@@ -102,8 +102,8 @@ describe("updateWorkspace", () => {
 
 		const result = await runTE(
 			updateWorkspace({
-				workspaceId: "non-existent",
 				updates: { title: "New Title" },
+				workspaceId: "non-existent",
 			}),
 		)
 
@@ -114,13 +114,13 @@ describe("updateWorkspace", () => {
 	})
 
 	it("should return Left with error on database failure", async () => {
-		const error = { type: "DB_ERROR" as const, message: "Database error" }
+		const error = { message: "Database error", type: "DB_ERROR" as const }
 		mockUpdateWorkspace.mockReturnValue(() => Promise.resolve(E.left(error)))
 
 		const result = await runTE(
 			updateWorkspace({
-				workspaceId: "ws-1",
 				updates: { title: "New Title" },
+				workspaceId: "ws-1",
 			}),
 		)
 
@@ -135,8 +135,8 @@ describe("updateWorkspace", () => {
 
 		await runTE(
 			updateWorkspace({
-				workspaceId: "ws-123",
 				updates: { title: "New Title" },
+				workspaceId: "ws-123",
 			}),
 		)
 

@@ -98,7 +98,7 @@ export const updateSessionWordCountFlow = (
 
 	const today = getTodayDate()
 	const { todayWordCount: newTodayWordCount, todayDate: newTodayDate } =
-		calculateTodayWordCountUpdate({ todayWordCount, todayDate, session }, wordCount, today)
+		calculateTodayWordCountUpdate({ session, todayDate, todayWordCount }, wordCount, today)
 
 	store.setSession({
 		...session,

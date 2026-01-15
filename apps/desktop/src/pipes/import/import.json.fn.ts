@@ -95,8 +95,8 @@ export function parseJsonBundle(
 	return E.tryCatch(
 		() => JSON.parse(jsonText) as Partial<ExportBundle>,
 		(error) => ({
-			type: "PARSE_ERROR" as const,
 			message: `JSON 解析失败: ${error instanceof Error ? error.message : String(error)}`,
+			type: "PARSE_ERROR" as const,
 		}),
 	)
 }
@@ -113,18 +113,18 @@ export function validateBundle(
 	// 检查必要字段
 	if (!data.projects && !data.nodes) {
 		return E.left({
-			type: "INVALID_FORMAT",
 			message: "无效的备份格式：缺少 projects 或 nodes 字段",
+			type: "INVALID_FORMAT",
 		})
 	}
 
 	// 构建完整的数据包
 	const bundle: ExportBundle = {
-		version: data.version ?? 1,
-		projects: data.projects ?? [],
-		nodes: data.nodes ?? [],
-		contents: (data.contents ?? []) as ContentData[],
 		attachments: (data.attachments ?? []) as AttachmentData[],
+		contents: (data.contents ?? []) as ContentData[],
+		nodes: data.nodes ?? [],
+		projects: data.projects ?? [],
+		version: data.version ?? 1,
 	}
 
 	return E.right(bundle)
@@ -182,8 +182,8 @@ export function transformNodes(
 	return nodes.map((n) => ({
 		...n,
 		id: idMap.get(n.id) ?? n.id,
-		workspace: idMap.get(n.workspace) ?? n.workspace,
 		parent: n.parent ? (idMap.get(n.parent) ?? n.parent) : null,
+		workspace: idMap.get(n.workspace) ?? n.workspace,
 	}))
 }
 
@@ -261,10 +261,10 @@ export function parseImportData(
 	const attachments = transformAttachments(bundle.attachments, idMap)
 
 	return E.right({
-		workspaces,
-		nodes,
-		contents,
 		attachments,
+		contents,
 		idMap,
+		nodes,
+		workspaces,
 	})
 }

@@ -16,100 +16,6 @@ type Options = []
  * Validates: Requirements 23.2-23.5
  */
 export default createRule<Options, MessageIds>({
-	name: "no-hardcoded-values",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "禁止硬编码 URL、路径、超时值等配置值",
-		},
-		messages: {
-			hardcodedUrl: buildErrorMessage({
-				title: "禁止硬编码 URL",
-				reason: `
-  硬编码的 URL 导致：
-  - 环境切换困难（开发/测试/生产）
-  - 无法集中管理 API 端点
-  - 修改时需要查找所有出现的地方
-  - 容易出现拼写错误`,
-				correctExample: `// ✅ 使用配置文件
-// config/api.config.ts
-export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_BASE_URL,
-  ENDPOINTS: {
-    USERS: '/api/users',
-    POSTS: '/api/posts',
-  },
-} as const;
-
-// 使用
-fetch(\`\${API_CONFIG.BASE_URL}\${API_CONFIG.ENDPOINTS.USERS}\`);`,
-				incorrectExample: `// ❌ 硬编码 URL
-fetch('https://api.example.com/users');
-fetch('http://localhost:3000/api/posts');`,
-				docRef: "#code-standards - 配置管理",
-			}),
-			hardcodedPath: buildErrorMessage({
-				title: "禁止硬编码文件路径",
-				reason: `
-  硬编码的路径导致：
-  - 跨平台兼容性问题
-  - 部署环境差异
-  - 难以维护和修改`,
-				correctExample: `// ✅ 使用配置或环境变量
-import { join } from 'path';
-
-const DATA_DIR = process.env.DATA_DIR || './data';
-const configPath = join(DATA_DIR, 'config.json');`,
-				incorrectExample: `// ❌ 硬编码路径
-const configPath = '/home/user/app/config.json';
-const dataPath = 'C:\\\\Users\\\\user\\\\data';`,
-				docRef: "#code-standards - 路径管理",
-			}),
-			hardcodedTimeout: buildErrorMessage({
-				title: "禁止硬编码超时值",
-				reason: `
-  硬编码的超时值导致：
-  - 无法根据环境调整
-  - 难以统一管理
-  - 不同场景需要不同的超时时间`,
-				correctExample: `// ✅ 使用命名常量
-const NETWORK_TIMEOUT_MS = 30000;
-const DEBOUNCE_DELAY_MS = 300;
-const ANIMATION_DURATION_MS = 200;
-
-setTimeout(callback, NETWORK_TIMEOUT_MS);
-debounce(handler, DEBOUNCE_DELAY_MS);`,
-				incorrectExample: `// ❌ 硬编码超时值
-setTimeout(callback, 30000);
-debounce(handler, 300);`,
-				docRef: "#code-standards - 时间常量",
-			}),
-			hardcodedColor: buildErrorMessage({
-				title: "禁止在非 CSS 文件中硬编码颜色值",
-				reason: `
-  硬编码的颜色值导致：
-  - 主题切换困难
-  - 设计系统不一致
-  - 无法集中管理颜色`,
-				correctExample: `// ✅ 使用 Tailwind 类名或 CSS 变量
-<div className="bg-primary text-white" />
-
-// 或使用主题配置
-const theme = {
-  colors: {
-    primary: '#3b82f6',
-    secondary: '#8b5cf6',
-  },
-};`,
-				incorrectExample: `// ❌ 硬编码颜色
-<div style={{ backgroundColor: '#3b82f6' }} />
-ctx.fillStyle = '#ff0000';`,
-				docRef: "#code-standards - 主题管理",
-			}),
-		},
-		schema: [],
-	},
-	defaultOptions: [],
 	create(context) {
 		/**
 		 * 检查字符串是否为 URL
@@ -250,8 +156,8 @@ ctx.fillStyle = '#ff0000';`,
 					// 检查 URL
 					if (isUrl(value)) {
 						context.report({
-							node,
 							messageId: "hardcodedUrl",
+							node,
 						})
 						return
 					}
@@ -259,8 +165,8 @@ ctx.fillStyle = '#ff0000';`,
 					// 检查绝对路径
 					if (isAbsolutePath(value)) {
 						context.report({
-							node,
 							messageId: "hardcodedPath",
+							node,
 						})
 						return
 					}
@@ -268,8 +174,8 @@ ctx.fillStyle = '#ff0000';`,
 					// 检查颜色值（非样式上下文）
 					if (isColorValue(value) && !isInStyleContext(node)) {
 						context.report({
-							node,
 							messageId: "hardcodedColor",
+							node,
 						})
 						return
 					}
@@ -280,8 +186,8 @@ ctx.fillStyle = '#ff0000';`,
 					// 检查是否为超时值
 					if (isTimeoutValue(node, node.parent)) {
 						context.report({
-							node,
 							messageId: "hardcodedTimeout",
+							node,
 						})
 					}
 				}
@@ -306,11 +212,105 @@ ctx.fillStyle = '#ff0000';`,
 
 				if (hasUrlPattern) {
 					context.report({
-						node,
 						messageId: "hardcodedUrl",
+						node,
 					})
 				}
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "禁止硬编码 URL、路径、超时值等配置值",
+		},
+		messages: {
+			hardcodedColor: buildErrorMessage({
+				correctExample: `// ✅ 使用 Tailwind 类名或 CSS 变量
+<div className="bg-primary text-white" />
+
+// 或使用主题配置
+const theme = {
+  colors: {
+    primary: '#3b82f6',
+    secondary: '#8b5cf6',
+  },
+};`,
+				docRef: "#code-standards - 主题管理",
+				incorrectExample: `// ❌ 硬编码颜色
+<div style={{ backgroundColor: '#3b82f6' }} />
+ctx.fillStyle = '#ff0000';`,
+				reason: `
+  硬编码的颜色值导致：
+  - 主题切换困难
+  - 设计系统不一致
+  - 无法集中管理颜色`,
+				title: "禁止在非 CSS 文件中硬编码颜色值",
+			}),
+			hardcodedPath: buildErrorMessage({
+				correctExample: `// ✅ 使用配置或环境变量
+import { join } from 'path';
+
+const DATA_DIR = process.env.DATA_DIR || './data';
+const configPath = join(DATA_DIR, 'config.json');`,
+				docRef: "#code-standards - 路径管理",
+				incorrectExample: `// ❌ 硬编码路径
+const configPath = '/home/user/app/config.json';
+const dataPath = 'C:\\\\Users\\\\user\\\\data';`,
+				reason: `
+  硬编码的路径导致：
+  - 跨平台兼容性问题
+  - 部署环境差异
+  - 难以维护和修改`,
+				title: "禁止硬编码文件路径",
+			}),
+			hardcodedTimeout: buildErrorMessage({
+				correctExample: `// ✅ 使用命名常量
+const NETWORK_TIMEOUT_MS = 30000;
+const DEBOUNCE_DELAY_MS = 300;
+const ANIMATION_DURATION_MS = 200;
+
+setTimeout(callback, NETWORK_TIMEOUT_MS);
+debounce(handler, DEBOUNCE_DELAY_MS);`,
+				docRef: "#code-standards - 时间常量",
+				incorrectExample: `// ❌ 硬编码超时值
+setTimeout(callback, 30000);
+debounce(handler, 300);`,
+				reason: `
+  硬编码的超时值导致：
+  - 无法根据环境调整
+  - 难以统一管理
+  - 不同场景需要不同的超时时间`,
+				title: "禁止硬编码超时值",
+			}),
+			hardcodedUrl: buildErrorMessage({
+				correctExample: `// ✅ 使用配置文件
+// config/api.config.ts
+export const API_CONFIG = {
+  BASE_URL: import.meta.env.VITE_API_BASE_URL,
+  ENDPOINTS: {
+    USERS: '/api/users',
+    POSTS: '/api/posts',
+  },
+} as const;
+
+// 使用
+fetch(\`\${API_CONFIG.BASE_URL}\${API_CONFIG.ENDPOINTS.USERS}\`);`,
+				docRef: "#code-standards - 配置管理",
+				incorrectExample: `// ❌ 硬编码 URL
+fetch('https://api.example.com/users');
+fetch('http://localhost:3000/api/posts');`,
+				reason: `
+  硬编码的 URL 导致：
+  - 环境切换困难（开发/测试/生产）
+  - 无法集中管理 API 端点
+  - 修改时需要查找所有出现的地方
+  - 容易出现拼写错误`,
+				title: "禁止硬编码 URL",
+			}),
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "no-hardcoded-values",
 })

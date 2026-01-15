@@ -245,8 +245,8 @@ function TypographySettings() {
 								className="p-4 border bg-card text-card-foreground transition-all"
 								style={{
 									borderRadius: `${cardBorderRadius}px`,
-									padding: CARD_SIZE_OPTIONS.find((c) => c.value === cardSize)?.padding || "1rem",
 									fontFamily: uiFontFamily,
+									padding: CARD_SIZE_OPTIONS.find((c) => c.value === cardSize)?.padding || "1rem",
 								}}
 							>
 								<div className="font-medium text-sm mb-2">Sample Card</div>

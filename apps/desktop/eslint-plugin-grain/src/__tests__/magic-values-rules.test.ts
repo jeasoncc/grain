@@ -11,17 +11,17 @@ function runLint(
 	const linter = new Linter({ configType: "flat" })
 
 	const config = {
-		plugins: {
-			grain: plugin,
-		},
 		languageOptions: {
 			ecmaVersion: 2020,
-			sourceType: "module" as const,
 			parserOptions: {
 				ecmaFeatures: {
 					jsx: true,
 				},
 			},
+			sourceType: "module" as const,
+		},
+		plugins: {
+			grain: plugin,
 		},
 		rules,
 	}
@@ -96,7 +96,7 @@ describe("Magic Values Rules", () => {
 			if (errors.length > 0) {
 				console.log(
 					"Unexpected errors:",
-					errors.map((e) => ({ message: e.message, line: e.line, column: e.column })),
+					errors.map((e) => ({ column: e.column, line: e.line, message: e.message })),
 				)
 			}
 			// Relative paths should not be flagged

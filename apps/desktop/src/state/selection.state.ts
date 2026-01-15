@@ -24,22 +24,16 @@ type SelectionStore = SelectionState & SelectionActions
 export const useSelectionStore = create<SelectionStore>()(
 	persist(
 		(set) => ({
-			// Initial State
-			selectedWorkspaceId: null,
-			selectedNodeId: null,
-
-			// ==============================
-			// Actions
-			// ==============================
-
-			setSelectedWorkspaceId: (id) => {
+			clearSelection: () => {
 				set((state) => ({
 					...state,
-					selectedWorkspaceId: id,
-					// 切换工作区时清除节点选择
 					selectedNodeId: null,
+					selectedWorkspaceId: null,
 				}))
 			},
+			selectedNodeId: null,
+			// Initial State
+			selectedWorkspaceId: null,
 
 			setSelectedNodeId: (id) => {
 				set((state) => ({
@@ -48,11 +42,16 @@ export const useSelectionStore = create<SelectionStore>()(
 				}))
 			},
 
-			clearSelection: () => {
+			// ==============================
+			// Actions
+			// ==============================
+
+			setSelectedWorkspaceId: (id) => {
 				set((state) => ({
 					...state,
-					selectedWorkspaceId: null,
+					// 切换工作区时清除节点选择
 					selectedNodeId: null,
+					selectedWorkspaceId: id,
 				}))
 			},
 		}),

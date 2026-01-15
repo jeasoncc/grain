@@ -12,55 +12,8 @@ const createRule = ESLintUtils.RuleCreator(
 import type { TSESTree } from "@typescript-eslint/utils"
 
 export default createRule({
-	name: "no-date-constructor",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "Prohibit Date constructor and Date.now() usage, suggest dayjs alternatives",
-		},
-		fixable: undefined,
-		schema: [],
-		messages: {
-			noDateConstructor: [
-				"❌ 禁止使用 new Date()！请使用 dayjs 进行时间处理。",
-				"",
-				"✅ 正确做法：",
-				'  import dayjs from "dayjs";',
-				"  const now = dayjs();",
-				'  const specificDate = dayjs("2023-01-01");',
-				"  const timestamp = dayjs().valueOf();",
-				"",
-				"📚 dayjs 文档: https://day.js.org/docs/en/installation/installation",
-			].join("\n"),
-			noDateNow: [
-				"❌ 禁止使用 Date.now()！请使用 dayjs 获取时间戳。",
-				"",
-				"✅ 正确做法：",
-				'  import dayjs from "dayjs";',
-				"  const timestamp = dayjs().valueOf();",
-				"  const unixTimestamp = dayjs().unix();",
-			].join("\n"),
-			noDateMethods: [
-				"❌ 禁止使用 Date.{{method}}()！请使用 dayjs 的对应方法。",
-				"",
-				"✅ 正确做法：",
-				'  import dayjs from "dayjs";',
-				"  // 根据具体需求使用 dayjs 的相应方法",
-			].join("\n"),
-		},
-	},
-	defaultOptions: [],
 	create(context) {
 		return {
-			NewExpression(node: TSESTree.NewExpression) {
-				if (node.callee.type === "Identifier" && node.callee.name === "Date") {
-					context.report({
-						node,
-						messageId: "noDateConstructor",
-					})
-				}
-			},
-
 			CallExpression(node: TSESTree.CallExpression) {
 				// Check for Date.now()
 				if (
@@ -71,8 +24,8 @@ export default createRule({
 					node.callee.property.name === "now"
 				) {
 					context.report({
-						node,
 						messageId: "noDateNow",
+						node,
 					})
 				}
 
@@ -88,11 +41,11 @@ export default createRule({
 
 					if (staticMethods.includes(method)) {
 						context.report({
-							node,
-							messageId: "noDateMethods",
 							data: {
 								method,
 							},
+							messageId: "noDateMethods",
+							node,
 						})
 					}
 				}
@@ -100,11 +53,57 @@ export default createRule({
 				// Check for Date() function call (without new)
 				if (node.callee.type === "Identifier" && node.callee.name === "Date") {
 					context.report({
-						node,
 						messageId: "noDateConstructor",
+						node,
+					})
+				}
+			},
+			NewExpression(node: TSESTree.NewExpression) {
+				if (node.callee.type === "Identifier" && node.callee.name === "Date") {
+					context.report({
+						messageId: "noDateConstructor",
+						node,
 					})
 				}
 			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "Prohibit Date constructor and Date.now() usage, suggest dayjs alternatives",
+		},
+		fixable: undefined,
+		messages: {
+			noDateConstructor: [
+				"❌ 禁止使用 new Date()！请使用 dayjs 进行时间处理。",
+				"",
+				"✅ 正确做法：",
+				'  import dayjs from "dayjs";',
+				"  const now = dayjs();",
+				'  const specificDate = dayjs("2023-01-01");',
+				"  const timestamp = dayjs().valueOf();",
+				"",
+				"📚 dayjs 文档: https://day.js.org/docs/en/installation/installation",
+			].join("\n"),
+			noDateMethods: [
+				"❌ 禁止使用 Date.{{method}}()！请使用 dayjs 的对应方法。",
+				"",
+				"✅ 正确做法：",
+				'  import dayjs from "dayjs";',
+				"  // 根据具体需求使用 dayjs 的相应方法",
+			].join("\n"),
+			noDateNow: [
+				"❌ 禁止使用 Date.now()！请使用 dayjs 获取时间戳。",
+				"",
+				"✅ 正确做法：",
+				'  import dayjs from "dayjs";',
+				"  const timestamp = dayjs().valueOf();",
+				"  const unixTimestamp = dayjs().unix();",
+			].join("\n"),
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "no-date-constructor",
 })

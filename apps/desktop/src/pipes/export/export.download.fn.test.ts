@@ -9,9 +9,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 // Mock DOM APIs before importing the module
 const mockAnchor = {
-	href: "",
-	download: "",
 	click: vi.fn(),
+	download: "",
+	href: "",
 	remove: vi.fn(),
 }
 
@@ -22,10 +22,10 @@ const mockRevokeObjectURL = vi.fn()
 
 // Setup global mocks
 vi.stubGlobal("document", {
-	createElement: mockCreateElement,
 	body: {
 		appendChild: mockAppendChild,
 	},
+	createElement: mockCreateElement,
 })
 
 vi.stubGlobal("URL", {

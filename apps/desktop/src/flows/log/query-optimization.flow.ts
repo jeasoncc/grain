@@ -46,9 +46,9 @@ let queryCache: ReadonlyMap<string, QueryCacheEntry> = new Map()
  * 缓存配置
  */
 const CACHE_CONFIG = {
-	maxSize: 50, // 最大缓存条目数
-	defaultTTL: 30000, // 默认缓存时间（30秒）
 	cleanupInterval: 60000, // 清理间隔（1分钟）
+	defaultTTL: 30000, // 默认缓存时间（30秒）
+	maxSize: 50, // 最大缓存条目数
 } as const
 
 /**
@@ -59,13 +59,13 @@ const CACHE_CONFIG = {
  */
 const generateCacheKey = (options: LogQueryOptions): string => {
 	const normalized = {
-		limit: options.limit || 100,
-		offset: options.offset || 0,
-		levelFilter: options.levelFilter ? [...Array.from(options.levelFilter)].toSorted() : [],
-		startTime: options.startTime || "",
 		endTime: options.endTime || "",
-		sourceFilter: options.sourceFilter || "",
+		levelFilter: options.levelFilter ? [...Array.from(options.levelFilter)].toSorted() : [],
+		limit: options.limit || 100,
 		messageSearch: options.messageSearch || "",
+		offset: options.offset || 0,
+		sourceFilter: options.sourceFilter || "",
+		startTime: options.startTime || "",
 	}
 
 	return JSON.stringify(normalized)
@@ -237,8 +237,8 @@ export const searchLogsFlow = (
 ): TE.TaskEither<AppError, LogQueryResult> => {
 	const options: LogQueryOptions = {
 		...filters,
-		messageSearch: searchTerm,
 		limit,
+		messageSearch: searchTerm,
 	}
 
 	return optimizedQueryLogsFlow(options, false) // 搜索结果不缓存
@@ -275,9 +275,9 @@ export const getRecentErrorLogsFlow = (
 
 	const options: LogQueryOptions = {
 		levelFilter: ["error"],
-		startTime: startTime.toISOString(),
 		limit,
 		offset: 0,
+		startTime: startTime.toISOString(),
 	}
 
 	return pipe(
@@ -300,10 +300,10 @@ export const getLogsBySourceFlow = (
 	levelFilter?: ReadonlyArray<LogLevel>,
 ): TE.TaskEither<AppError, ReadonlyArray<LogEntry>> => {
 	const options: LogQueryOptions = {
-		sourceFilter: source,
 		levelFilter,
 		limit,
 		offset: 0,
+		sourceFilter: source,
 	}
 
 	return pipe(
@@ -331,8 +331,8 @@ export const queryLogsByTimeRangeFlow = (
 ): TE.TaskEither<AppError, LogQueryResult> => {
 	const options: LogQueryOptions = {
 		...filters,
-		startTime,
 		endTime,
+		startTime,
 	}
 
 	return optimizedQueryLogsFlow(options)
@@ -379,14 +379,14 @@ export const clearQueryCache = (): void => {
  * 获取缓存统计信息
  */
 export const getCacheStats = () => ({
-	size: queryCache.size,
-	maxSize: CACHE_CONFIG.maxSize,
 	entries: Array.from(queryCache.values()).map((entry) => ({
+		age: dayjs().valueOf() - entry.timestamp,
 		key: entry.key,
 		timestamp: entry.timestamp,
 		ttl: entry.ttl,
-		age: dayjs().valueOf() - entry.timestamp,
 	})),
+	maxSize: CACHE_CONFIG.maxSize,
+	size: queryCache.size,
 })
 
 /**

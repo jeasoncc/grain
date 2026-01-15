@@ -26,15 +26,15 @@ import { GlobalSearchView } from "./global-search.view.fn"
  */
 function createTestSearchResult(overrides: Partial<SearchResult> = {}): SearchResult {
 	return {
-		id: overrides.id ?? "result-1",
-		type: overrides.type ?? "node",
-		title: overrides.title ?? "Test Result",
 		content: overrides.content ?? "Test content",
 		excerpt: overrides.excerpt ?? "Test excerpt",
+		highlights: overrides.highlights ?? [],
+		id: overrides.id ?? "result-1",
+		score: overrides.score ?? 1.0,
+		title: overrides.title ?? "Test Result",
+		type: overrides.type ?? "node",
 		workspaceId: overrides.workspaceId ?? "workspace-1",
 		workspaceTitle: overrides.workspaceTitle ?? "Test Workspace",
-		score: overrides.score ?? 1.0,
-		highlights: overrides.highlights ?? [],
 	}
 }
 
@@ -43,15 +43,15 @@ function createTestSearchResult(overrides: Partial<SearchResult> = {}): SearchRe
  */
 function createDefaultProps(overrides: Partial<GlobalSearchViewProps> = {}): GlobalSearchViewProps {
 	return {
-		open: overrides.open ?? false,
-		query: overrides.query ?? "",
-		results: overrides.results ?? [],
 		loading: overrides.loading ?? false,
-		selectedIndex: overrides.selectedIndex ?? 0,
+		onKeyDown: overrides.onKeyDown ?? vi.fn(),
 		onOpenChange: overrides.onOpenChange ?? vi.fn(),
 		onQueryChange: overrides.onQueryChange ?? vi.fn(),
 		onSelectResult: overrides.onSelectResult ?? vi.fn(),
-		onKeyDown: overrides.onKeyDown ?? vi.fn(),
+		open: overrides.open ?? false,
+		query: overrides.query ?? "",
+		results: overrides.results ?? [],
+		selectedIndex: overrides.selectedIndex ?? 0,
 	}
 }
 
@@ -93,7 +93,7 @@ describe("GlobalSearchView", () => {
 	describe("用户交互", () => {
 		it("should call onQueryChange when typing", () => {
 			const onQueryChange = vi.fn()
-			const props = createDefaultProps({ open: true, onQueryChange })
+			const props = createDefaultProps({ onQueryChange, open: true })
 			render(<GlobalSearchView {...props} />)
 
 			const input = screen.getByPlaceholderText("搜索文件...")
@@ -105,9 +105,9 @@ describe("GlobalSearchView", () => {
 		it("should call onQueryChange with empty string when clear button clicked", () => {
 			const onQueryChange = vi.fn()
 			const props = createDefaultProps({
+				onQueryChange,
 				open: true,
 				query: "test",
-				onQueryChange,
 			})
 			render(<GlobalSearchView {...props} />)
 
@@ -122,9 +122,9 @@ describe("GlobalSearchView", () => {
 			const onSelectResult = vi.fn()
 			const result = createTestSearchResult({ title: "Test Result" })
 			const props = createDefaultProps({
+				onSelectResult,
 				open: true,
 				results: [result],
-				onSelectResult,
 			})
 			render(<GlobalSearchView {...props} />)
 
@@ -136,7 +136,7 @@ describe("GlobalSearchView", () => {
 
 		it("should call onKeyDown when key pressed", () => {
 			const onKeyDown = vi.fn()
-			const props = createDefaultProps({ open: true, onKeyDown })
+			const props = createDefaultProps({ onKeyDown, open: true })
 			render(<GlobalSearchView {...props} />)
 
 			const dialog = screen.getByRole("dialog")
@@ -148,7 +148,7 @@ describe("GlobalSearchView", () => {
 
 	describe("条件渲染", () => {
 		it("should show loading state", () => {
-			const props = createDefaultProps({ open: true, loading: true })
+			const props = createDefaultProps({ loading: true, open: true })
 			render(<GlobalSearchView {...props} />)
 
 			// 应该显示加载图标

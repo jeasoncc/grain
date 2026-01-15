@@ -82,10 +82,10 @@ export const importMarkdown = (
 				getNextOrder(params.parentId, params.workspaceId),
 				TE.chain((order) =>
 					addNode(params.workspaceId, title, {
+						collapsed: true,
+						order,
 						parent: params.parentId,
 						type: "file",
-						order,
-						collapsed: true,
 					}),
 				),
 				// 4. 创建内容记录
@@ -95,8 +95,8 @@ export const importMarkdown = (
 				}),
 				// 5. 返回结果
 				TE.map((node) => ({
-					node,
 					frontMatter: importResult.frontMatter,
+					node,
 				})),
 			)
 		}),

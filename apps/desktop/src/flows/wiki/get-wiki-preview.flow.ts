@@ -65,10 +65,10 @@ export const getWikiPreviewData = (id: string): TE.TaskEither<AppError, WikiPrev
 				}
 			}
 
-			return { title, content }
+			return { content, title }
 		},
 		(): AppError => ({
-			type: "UNKNOWN_ERROR",
 			message: "Failed to load wiki preview",
+			type: "UNKNOWN_ERROR",
 		}),
 	)

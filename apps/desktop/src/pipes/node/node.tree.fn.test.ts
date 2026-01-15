@@ -34,7 +34,7 @@ import {
  */
 const isoDateArbitrary = (): fc.Arbitrary<string> =>
 	fc
-		.integer({ min: 946684800000, max: 4102444800000 }) // 2000-01-01 to 2100-01-01
+		.integer({ max: 4102444800000, min: 946684800000 }) // 2000-01-01 to 2100-01-01
 		.map((timestamp) => new Date(timestamp).toISOString())
 
 /**
@@ -43,18 +43,18 @@ const isoDateArbitrary = (): fc.Arbitrary<string> =>
 const nodeArbitrary = (overrides?: Partial<NodeInterface>): fc.Arbitrary<NodeInterface> =>
 	fc
 		.record({
-			id: fc.uuid(),
-			workspace: fc.uuid(),
-			parent: fc.option(fc.uuid(), { nil: null }),
-			type: fc.constantFrom<NodeType>("folder", "file", "drawing", "diary"),
-			title: fc.string({ minLength: 1, maxLength: 200 }),
-			order: fc.nat({ max: 1000 }),
 			collapsed: fc.boolean(),
 			createDate: isoDateArbitrary(),
+			id: fc.uuid(),
 			lastEdit: isoDateArbitrary(),
-			tags: fc.option(fc.array(fc.string({ minLength: 1, maxLength: 50 }), { maxLength: 10 }), {
+			order: fc.nat({ max: 1000 }),
+			parent: fc.option(fc.uuid(), { nil: null }),
+			tags: fc.option(fc.array(fc.string({ maxLength: 50, minLength: 1 }), { maxLength: 10 }), {
 				nil: undefined,
 			}),
+			title: fc.string({ maxLength: 200, minLength: 1 }),
+			type: fc.constantFrom<NodeType>("folder", "file", "drawing", "diary"),
+			workspace: fc.uuid(),
 		})
 		.map((node) => ({ ...node, ...overrides })) as fc.Arbitrary<NodeInterface>
 
@@ -67,15 +67,15 @@ describe("buildTree", () => {
 		const nodes: NodeInterface[] = [
 			createNode({
 				id: "1",
-				parent: null,
 				order: 0,
+				parent: null,
 				title: "Root",
 				type: "folder",
 			}),
 			createNode({
 				id: "2",
-				parent: "1",
 				order: 0,
+				parent: "1",
 				title: "Child",
 				type: "file",
 			}),
@@ -89,15 +89,15 @@ describe("buildTree", () => {
 		const nodes: NodeInterface[] = [
 			createNode({
 				id: "1",
-				parent: null,
 				order: 1,
+				parent: null,
 				title: "Second",
 				type: "file",
 			}),
 			createNode({
 				id: "2",
-				parent: null,
 				order: 0,
+				parent: null,
 				title: "First",
 				type: "file",
 			}),
@@ -116,22 +116,22 @@ describe("buildTree", () => {
 		const nodes: NodeInterface[] = [
 			createNode({
 				id: "1",
-				parent: null,
 				order: 0,
+				parent: null,
 				title: "Root",
 				type: "folder",
 			}),
 			createNode({
 				id: "2",
-				parent: "1",
 				order: 0,
+				parent: "1",
 				title: "Level 1",
 				type: "folder",
 			}),
 			createNode({
 				id: "3",
-				parent: "2",
 				order: 0,
+				parent: "2",
 				title: "Level 2",
 				type: "file",
 			}),
@@ -204,9 +204,9 @@ describe("wouldCreateCycle", () => {
 describe("getRootNodes", () => {
 	it("should return only root nodes", () => {
 		const nodes: NodeInterface[] = [
-			createNode({ id: "1", parent: null, order: 0 }),
-			createNode({ id: "2", parent: "1", order: 0 }),
-			createNode({ id: "3", parent: null, order: 1 }),
+			createNode({ id: "1", order: 0, parent: null }),
+			createNode({ id: "2", order: 0, parent: "1" }),
+			createNode({ id: "3", order: 1, parent: null }),
 		]
 		const roots = getRootNodes(nodes)
 		expect(roots).toHaveLength(2)
@@ -215,9 +215,9 @@ describe("getRootNodes", () => {
 
 	it("should sort by order", () => {
 		const nodes: NodeInterface[] = [
-			createNode({ id: "1", parent: null, order: 2 }),
-			createNode({ id: "2", parent: null, order: 0 }),
-			createNode({ id: "3", parent: null, order: 1 }),
+			createNode({ id: "1", order: 2, parent: null }),
+			createNode({ id: "2", order: 0, parent: null }),
+			createNode({ id: "3", order: 1, parent: null }),
 		]
 		const roots = getRootNodes(nodes)
 		expect(roots[0].id).toBe("2")
@@ -230,8 +230,8 @@ describe("getChildNodes", () => {
 	it("should return children of parent", () => {
 		const nodes: NodeInterface[] = [
 			createNode({ id: "1", parent: null }),
-			createNode({ id: "2", parent: "1", order: 0 }),
-			createNode({ id: "3", parent: "1", order: 1 }),
+			createNode({ id: "2", order: 0, parent: "1" }),
+			createNode({ id: "3", order: 1, parent: "1" }),
 			createNode({ id: "4", parent: "2" }),
 		]
 		const children = getChildNodes(nodes, "1")
@@ -366,8 +366,8 @@ describe("Property-Based Tests", () => {
 			fc.assert(
 				fc.property(
 					fc.array(nodeArbitrary({ parent: null }), {
-						minLength: 0,
 						maxLength: 10,
+						minLength: 0,
 					}),
 					(nodes) => {
 						const tree = buildTree(nodes)
@@ -386,8 +386,8 @@ describe("Property-Based Tests", () => {
 			fc.assert(
 				fc.property(
 					fc.array(nodeArbitrary({ parent: null }), {
-						minLength: 2,
 						maxLength: 10,
+						minLength: 2,
 					}),
 					(nodes) => {
 						const tree = buildTree(nodes)
@@ -418,8 +418,8 @@ describe("Property-Based Tests", () => {
 			fc.assert(
 				fc.property(
 					fc.array(nodeArbitrary({ parent: null }), {
-						minLength: 1,
 						maxLength: 10,
+						minLength: 1,
 					}),
 					(nodes) => {
 						const targetNode = nodes[0]
@@ -435,8 +435,8 @@ describe("Property-Based Tests", () => {
 			fc.assert(
 				fc.property(
 					fc.array(nodeArbitrary({ parent: null }), {
-						minLength: 0,
 						maxLength: 10,
+						minLength: 0,
 					}),
 					fc.uuid(),
 					(nodes, randomId) => {
@@ -458,7 +458,7 @@ describe("Property-Based Tests", () => {
 	describe("getNextOrder - property based", () => {
 		it("should return value greater than all existing orders", () => {
 			fc.assert(
-				fc.property(fc.array(nodeArbitrary(), { minLength: 1, maxLength: 20 }), (nodes) => {
+				fc.property(fc.array(nodeArbitrary(), { maxLength: 20, minLength: 1 }), (nodes) => {
 					const nextOrder = getNextOrder(nodes)
 					return nodes.every((n) => nextOrder > n.order)
 				}),
@@ -479,7 +479,7 @@ describe("Property-Based Tests", () => {
 		it("should only return nodes of specified type", () => {
 			fc.assert(
 				fc.property(
-					fc.array(nodeArbitrary(), { minLength: 0, maxLength: 20 }),
+					fc.array(nodeArbitrary(), { maxLength: 20, minLength: 0 }),
 					fc.constantFrom<NodeType>("folder", "file", "drawing", "diary"),
 					(nodes, type) => {
 						const filtered = filterByType(nodes, type)
@@ -493,7 +493,7 @@ describe("Property-Based Tests", () => {
 		it("should not lose any nodes of specified type", () => {
 			fc.assert(
 				fc.property(
-					fc.array(nodeArbitrary(), { minLength: 0, maxLength: 20 }),
+					fc.array(nodeArbitrary(), { maxLength: 20, minLength: 0 }),
 					fc.constantFrom<NodeType>("folder", "file", "drawing", "diary"),
 					(nodes, type) => {
 						const filtered = filterByType(nodes, type)
@@ -516,15 +516,15 @@ describe("Property-Based Tests", () => {
  */
 function createNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
 	return {
-		id: overrides.id ?? "test-id",
-		workspace: overrides.workspace ?? "test-workspace",
-		parent: overrides.parent ?? null,
-		type: overrides.type ?? "file",
-		title: overrides.title ?? "Test Node",
-		order: overrides.order ?? 0,
 		collapsed: overrides.collapsed ?? true,
 		createDate: overrides.createDate ?? new Date().toISOString(),
+		id: overrides.id ?? "test-id",
 		lastEdit: overrides.lastEdit ?? new Date().toISOString(),
+		order: overrides.order ?? 0,
+		parent: overrides.parent ?? null,
 		tags: overrides.tags,
+		title: overrides.title ?? "Test Node",
+		type: overrides.type ?? "file",
+		workspace: overrides.workspace ?? "test-workspace",
 	}
 }

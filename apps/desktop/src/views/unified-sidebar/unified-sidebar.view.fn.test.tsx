@@ -27,15 +27,15 @@ vi.mock("../panels/tag-graph-panel/", () => ({
 describe("UnifiedSidebarView", () => {
 	const defaultProps: UnifiedSidebarViewProps = {
 		activePanel: "files",
-		isOpen: true,
-		wasCollapsedByDrag: false,
-		workspaceId: "workspace-1",
 		drawings: [],
-		selectedDrawingId: null,
-		onRestoreFromCollapse: vi.fn(),
-		onSelectDrawing: vi.fn(),
+		isOpen: true,
 		onCreateDrawing: vi.fn(),
 		onDeleteDrawing: vi.fn(),
+		onRestoreFromCollapse: vi.fn(),
+		onSelectDrawing: vi.fn(),
+		selectedDrawingId: null,
+		wasCollapsedByDrag: false,
+		workspaceId: "workspace-1",
 	}
 
 	it("should render nothing when sidebar is closed", () => {

@@ -38,16 +38,16 @@ import { ActivityBarView } from "./activity-bar.view.fn"
  */
 function createTestWorkspace(overrides: Partial<WorkspaceInterface> = {}): WorkspaceInterface {
 	return {
-		id: overrides.id ?? "workspace-1",
-		title: overrides.title ?? "Test Workspace",
 		author: overrides.author ?? "",
-		description: overrides.description ?? "",
-		publisher: overrides.publisher ?? "",
-		language: overrides.language ?? "zh-CN",
 		createDate: overrides.createDate ?? new Date().toISOString(),
+		description: overrides.description ?? "",
+		id: overrides.id ?? "workspace-1",
+		language: overrides.language ?? "zh-CN",
 		lastOpen: overrides.lastOpen ?? new Date().toISOString(),
 		members: overrides.members ?? [],
 		owner: overrides.owner ?? undefined,
+		publisher: overrides.publisher ?? "",
+		title: overrides.title ?? "Test Workspace",
 	}
 }
 
@@ -56,50 +56,50 @@ function createTestWorkspace(overrides: Partial<WorkspaceInterface> = {}): Works
  */
 function createTestIconTheme(): IconTheme {
 	return {
-		key: "test-theme",
-		name: "Test Theme",
 		description: "Test theme for testing",
 		icons: {
-			project: { default: Folder },
-			folder: { default: Folder },
-			file: { default: FileText },
-			character: { default: FileText },
-			world: { default: FileText },
 			activityBar: {
-				library: BookOpen,
-				search: Search,
-				outline: FileText,
 				canvas: FileText,
 				chapters: FileText,
-				files: Folder,
-				diary: FileText,
-				ledger: DollarSign,
-				todo: FileText,
-				note: FileText,
-				tags: FileText,
-				statistics: FileText,
-				settings: Settings,
-				create: FileText,
-				import: Upload,
-				export: Download,
-				more: MoreHorizontal,
-				mermaid: FileText,
-				plantuml: FileText,
 				code: FileText,
-			},
-			settingsPage: {
-				appearance: Settings,
-				icons: FileText,
-				diagrams: FileText,
-				general: Settings,
-				editor: FileText,
-				data: FileText,
+				create: FileText,
+				diary: FileText,
 				export: Download,
-				scroll: FileText,
-				logs: FileText,
-				about: FileText,
+				files: Folder,
+				import: Upload,
+				ledger: DollarSign,
+				library: BookOpen,
+				mermaid: FileText,
+				more: MoreHorizontal,
+				note: FileText,
+				outline: FileText,
+				plantuml: FileText,
+				search: Search,
+				settings: Settings,
+				statistics: FileText,
+				tags: FileText,
+				todo: FileText,
 			},
+			character: { default: FileText },
+			file: { default: FileText },
+			folder: { default: Folder },
+			project: { default: Folder },
+			settingsPage: {
+				about: FileText,
+				appearance: Settings,
+				data: FileText,
+				diagrams: FileText,
+				editor: FileText,
+				export: Download,
+				general: Settings,
+				icons: FileText,
+				logs: FileText,
+				scroll: FileText,
+			},
+			world: { default: FileText },
 		},
+		key: "test-theme",
+		name: "Test Theme",
 	}
 }
 
@@ -108,29 +108,29 @@ function createTestIconTheme(): IconTheme {
  */
 function createDefaultProps(overrides: Partial<ActivityBarProps> = {}): ActivityBarProps {
 	return {
-		workspaces: overrides.workspaces ?? [],
-		selectedWorkspaceId: overrides.selectedWorkspaceId ?? null,
 		activePanel: overrides.activePanel ?? "files",
-		isSidebarOpen: overrides.isSidebarOpen ?? true,
-		iconTheme: overrides.iconTheme ?? createTestIconTheme(),
 		currentPath: overrides.currentPath ?? "/",
-		onSelectWorkspace: overrides.onSelectWorkspace ?? vi.fn(),
+		iconTheme: overrides.iconTheme ?? createTestIconTheme(),
+		isSidebarOpen: overrides.isSidebarOpen ?? true,
+		onCreateCode: overrides.onCreateCode ?? vi.fn(),
+		onCreateDiary: overrides.onCreateDiary ?? vi.fn(),
+		onCreateExcalidraw: overrides.onCreateExcalidraw ?? vi.fn(),
+		onCreateLedger: overrides.onCreateLedger ?? vi.fn(),
+		onCreateMermaid: overrides.onCreateMermaid ?? vi.fn(),
+		onCreateNote: overrides.onCreateNote ?? vi.fn(),
+		onCreatePlantUML: overrides.onCreatePlantUML ?? vi.fn(),
+		onCreateTodo: overrides.onCreateTodo ?? vi.fn(),
+		onCreateWiki: overrides.onCreateWiki ?? vi.fn(),
 		onCreateWorkspace: overrides.onCreateWorkspace ?? vi.fn(),
+		onDeleteAllData: overrides.onDeleteAllData ?? vi.fn(),
+		onImportFile: overrides.onImportFile ?? vi.fn(),
+		onNavigate: overrides.onNavigate ?? vi.fn(),
+		onOpenExportDialog: overrides.onOpenExportDialog ?? vi.fn(),
+		onSelectWorkspace: overrides.onSelectWorkspace ?? vi.fn(),
 		onSetActivePanel: overrides.onSetActivePanel ?? vi.fn(),
 		onToggleSidebar: overrides.onToggleSidebar ?? vi.fn(),
-		onCreateDiary: overrides.onCreateDiary ?? vi.fn(),
-		onCreateWiki: overrides.onCreateWiki ?? vi.fn(),
-		onCreateLedger: overrides.onCreateLedger ?? vi.fn(),
-		onCreateTodo: overrides.onCreateTodo ?? vi.fn(),
-		onCreateNote: overrides.onCreateNote ?? vi.fn(),
-		onCreateExcalidraw: overrides.onCreateExcalidraw ?? vi.fn(),
-		onCreateMermaid: overrides.onCreateMermaid ?? vi.fn(),
-		onCreatePlantUML: overrides.onCreatePlantUML ?? vi.fn(),
-		onImportFile: overrides.onImportFile ?? vi.fn(),
-		onOpenExportDialog: overrides.onOpenExportDialog ?? vi.fn(),
-		onDeleteAllData: overrides.onDeleteAllData ?? vi.fn(),
-		onNavigate: overrides.onNavigate ?? vi.fn(),
-		onCreateCode: overrides.onCreateCode ?? vi.fn(),
+		selectedWorkspaceId: overrides.selectedWorkspaceId ?? null,
+		workspaces: overrides.workspaces ?? [],
 	}
 }
 
@@ -225,8 +225,8 @@ describe("ActivityBarView", () => {
 		it("should call onSetActivePanel when files button clicked", () => {
 			const onSetActivePanel = vi.fn()
 			const props = createDefaultProps({
-				onSetActivePanel,
 				activePanel: "search",
+				onSetActivePanel,
 			})
 			const { container } = render(<ActivityBarView {...props} />)
 
@@ -239,9 +239,9 @@ describe("ActivityBarView", () => {
 		it("should call onToggleSidebar when files button clicked and already active", () => {
 			const onToggleSidebar = vi.fn()
 			const props = createDefaultProps({
-				onToggleSidebar,
 				activePanel: "files",
 				isSidebarOpen: true,
+				onToggleSidebar,
 			})
 			const { container } = render(<ActivityBarView {...props} />)
 
@@ -254,8 +254,8 @@ describe("ActivityBarView", () => {
 		it("should call onSetActivePanel when search button clicked", () => {
 			const onSetActivePanel = vi.fn()
 			const props = createDefaultProps({
-				onSetActivePanel,
 				activePanel: "files",
+				onSetActivePanel,
 			})
 			const { container } = render(<ActivityBarView {...props} />)
 
@@ -268,7 +268,7 @@ describe("ActivityBarView", () => {
 		it("should call onSelectWorkspace when workspace clicked", () => {
 			const onSelectWorkspace = vi.fn()
 			const workspaces = [createTestWorkspace({ id: "ws-1", title: "Workspace 1" })]
-			const props = createDefaultProps({ workspaces, onSelectWorkspace })
+			const props = createDefaultProps({ onSelectWorkspace, workspaces })
 			const { container } = render(<ActivityBarView {...props} />)
 
 			// 打开 popover
@@ -284,7 +284,7 @@ describe("ActivityBarView", () => {
 
 		it("should call onNavigate when settings button clicked", () => {
 			const onNavigate = vi.fn()
-			const props = createDefaultProps({ onNavigate, currentPath: "/" })
+			const props = createDefaultProps({ currentPath: "/", onNavigate })
 			const { container } = render(<ActivityBarView {...props} />)
 
 			// Settings 按钮是底部的第二个按钮
@@ -298,8 +298,8 @@ describe("ActivityBarView", () => {
 		it("should call onNavigate with / when settings button clicked and already on settings", () => {
 			const onNavigate = vi.fn()
 			const props = createDefaultProps({
-				onNavigate,
 				currentPath: "/settings/design",
+				onNavigate,
 			})
 			const { container } = render(<ActivityBarView {...props} />)
 
@@ -493,8 +493,8 @@ describe("ActivityBarView", () => {
 				createTestWorkspace({ id: "ws-2", title: "Workspace 2" }),
 			]
 			const props = createDefaultProps({
-				workspaces,
 				selectedWorkspaceId: "ws-1",
+				workspaces,
 			})
 			const { container } = render(<ActivityBarView {...props} />)
 

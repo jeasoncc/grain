@@ -33,11 +33,11 @@ export const wikiParamsSchema = dateParamsSchema
  * Wiki > year-YYYY-{Zodiac} > month-MM-{MonthName} > day-DD-{Weekday}
  */
 export const wikiConfig = createDateTemplateConfig({
-	name: "Wiki",
-	rootFolder: "Wiki",
 	fileType: "wiki",
-	tag: "wiki",
-	prefix: "wiki",
 	generateContent: generateWikiContent,
 	includeDayFolder: true,
+	name: "Wiki",
+	prefix: "wiki",
+	rootFolder: "Wiki",
+	tag: "wiki",
 })

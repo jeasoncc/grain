@@ -11,17 +11,17 @@ function runLint(
 	const linter = new Linter({ configType: "flat" })
 
 	const config = {
-		plugins: {
-			grain: plugin,
-		},
 		languageOptions: {
 			ecmaVersion: 2020,
-			sourceType: "module",
 			parserOptions: {
 				ecmaFeatures: {
 					jsx: true,
 				},
 			},
+			sourceType: "module",
+		},
+		plugins: {
+			grain: plugin,
 		},
 		rules,
 	}

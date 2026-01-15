@@ -7,18 +7,6 @@ const createRule = ESLintUtils.RuleCreator(
 )
 
 export default createRule({
-	name: "boolean-naming",
-	meta: {
-		type: "problem",
-		docs: {
-			description: "强制执行布尔变量命名规范（必须以 is/has/can/should 等开头）",
-		},
-		messages: {
-			invalidBooleanName: "布尔变量命名不符合规范",
-		},
-		schema: [],
-	},
-	defaultOptions: [],
 	create(context) {
 		const { booleanPrefixes } = DEFAULT_NAMING_CONFIG
 
@@ -74,22 +62,17 @@ export default createRule({
 
 			if (isBooleanType(declarator) && !hasBooleanPrefix(name)) {
 				context.report({
-					node,
-					messageId: "invalidBooleanName",
 					data: {
 						name,
 						prefixes: booleanPrefixes.join(", "),
 					},
+					messageId: "invalidBooleanName",
+					node,
 				})
 			}
 		}
 
 		return {
-			VariableDeclarator(node) {
-				if (node.id.type === AST_NODE_TYPES.Identifier) {
-					checkBooleanName(node.id.name, node.id, node)
-				}
-			},
 			FunctionDeclaration(node) {
 				// 检查函数参数
 				node.params.forEach((param) => {
@@ -98,18 +81,35 @@ export default createRule({
 						if (param.typeAnnotation?.typeAnnotation?.type === AST_NODE_TYPES.TSBooleanKeyword) {
 							if (!hasBooleanPrefix(param.name) && !param.name.startsWith("_")) {
 								context.report({
-									node: param,
-									messageId: "invalidBooleanName",
 									data: {
 										name: param.name,
 										prefixes: booleanPrefixes.join(", "),
 									},
+									messageId: "invalidBooleanName",
+									node: param,
 								})
 							}
 						}
 					}
 				})
 			},
+			VariableDeclarator(node) {
+				if (node.id.type === AST_NODE_TYPES.Identifier) {
+					checkBooleanName(node.id.name, node.id, node)
+				}
+			},
 		}
 	},
+	defaultOptions: [],
+	meta: {
+		docs: {
+			description: "强制执行布尔变量命名规范（必须以 is/has/can/should 等开头）",
+		},
+		messages: {
+			invalidBooleanName: "布尔变量命名不符合规范",
+		},
+		schema: [],
+		type: "problem",
+	},
+	name: "boolean-naming",
 })

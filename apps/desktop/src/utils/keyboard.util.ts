@@ -56,8 +56,8 @@ export const isEditableElement = (target: HTMLElement): boolean => {
 // ============================================================================
 
 const createInitialState = (): KeyboardShortcutState => ({
-	shortcuts: new Map(),
 	isListening: false,
+	shortcuts: new Map(),
 })
 
 const addShortcut = (

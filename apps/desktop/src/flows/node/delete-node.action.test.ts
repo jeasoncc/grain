@@ -17,9 +17,9 @@ vi.mock("@/io/api/node.api", () => ({
 
 vi.mock("@/log/index", () => ({
 	default: {
+		error: vi.fn(),
 		start: vi.fn(),
 		success: vi.fn(),
-		error: vi.fn(),
 	},
 }))
 
@@ -52,7 +52,7 @@ describe("deleteNode", () => {
 
 	it("应该处理删除失败", async () => {
 		vi.mocked(deleteNodeRepo).mockReturnValue(() =>
-			Promise.resolve(E.left({ type: "DB_ERROR", message: "删除失败" })),
+			Promise.resolve(E.left({ message: "删除失败", type: "DB_ERROR" })),
 		)
 
 		const nodeId = "node-1"

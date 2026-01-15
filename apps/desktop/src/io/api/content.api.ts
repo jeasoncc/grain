@@ -39,9 +39,9 @@ export const getContentByNodeId = (
 				debug(
 					"[ContentAPI] 内容获取成功",
 					{
-						nodeId: content.nodeId,
 						contentLength: content.content.length,
 						contentType: content.contentType,
+						nodeId: content.nodeId,
 					},
 					"content.api",
 				)
@@ -65,8 +65,8 @@ export const getContentByNodeIdOrFail = (
 			content
 				? TE.right(content)
 				: TE.left({
-						type: "NOT_FOUND",
 						message: `内容不存在: ${nodeId}`,
+						type: "NOT_FOUND",
 					} as AppError),
 		),
 	)
@@ -102,9 +102,9 @@ export const addContent = (
 	contentType: ContentType = "lexical",
 ): TE.TaskEither<AppError, ContentInterface> =>
 	createContent({
-		nodeId,
 		content,
 		contentType,
+		nodeId,
 	})
 
 /**

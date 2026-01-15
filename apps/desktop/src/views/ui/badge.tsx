@@ -8,9 +8,9 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const badgeVariants: Record<NonNullable<BadgeProps["variant"]>, string> = {
 	default: "bg-primary text-primary-foreground",
-	secondary: "bg-secondary text-secondary-foreground",
-	outline: "border border-border text-foreground",
 	muted: "bg-muted text-muted-foreground",
+	outline: "border border-border text-foreground",
+	secondary: "bg-secondary text-secondary-foreground",
 	success: "bg-emerald-500/15 text-emerald-400 ring-1 ring-inset ring-emerald-400/40",
 	warning: "bg-amber-500/15 text-amber-400 ring-1 ring-inset ring-amber-400/40",
 }

@@ -24,16 +24,16 @@ import type { NodeInterface } from "@/types/node/node.interface"
  */
 function createTestNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
 	return {
-		id: overrides.id ?? "node-1",
-		workspace: overrides.workspace ?? "workspace-1",
-		parent: overrides.parent ?? null,
-		type: overrides.type ?? "file",
-		title: overrides.title ?? "Test Node",
-		order: overrides.order ?? 0,
 		collapsed: overrides.collapsed ?? false,
 		createDate: overrides.createDate ?? dayjs().toISOString(),
+		id: overrides.id ?? "node-1",
 		lastEdit: overrides.lastEdit ?? dayjs().toISOString(),
+		order: overrides.order ?? 0,
+		parent: overrides.parent ?? null,
 		tags: overrides.tags ?? [],
+		title: overrides.title ?? "Test Node",
+		type: overrides.type ?? "file",
+		workspace: overrides.workspace ?? "workspace-1",
 	}
 }
 
@@ -42,11 +42,11 @@ function createTestNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
  */
 function createTestContent(overrides: Partial<ContentInterface> = {}): ContentInterface {
 	return {
-		id: overrides.id ?? "content-1",
-		nodeId: overrides.nodeId ?? "node-1",
 		content: overrides.content ?? "",
 		contentType: overrides.contentType ?? "lexical",
+		id: overrides.id ?? "content-1",
 		lastEdit: overrides.lastEdit ?? dayjs().toISOString(),
+		nodeId: overrides.nodeId ?? "node-1",
 	}
 }
 
@@ -76,12 +76,12 @@ vi.mock("@/db/content.db.fn", () => ({
 
 vi.mock("@/log", () => ({
 	default: {
-		start: vi.fn(),
-		info: vi.fn(),
-		success: vi.fn(),
-		error: vi.fn(),
-		warn: vi.fn(),
 		debug: vi.fn(),
+		error: vi.fn(),
+		info: vi.fn(),
+		start: vi.fn(),
+		success: vi.fn(),
+		warn: vi.fn(),
 	},
 }))
 
@@ -115,9 +115,9 @@ This is a paragraph with some text.
 
 		const result = await runTE(
 			importMarkdown({
-				workspaceId: "workspace-1",
-				parentId: null,
 				content: markdownContent,
+				parentId: null,
+				workspaceId: "workspace-1",
 			}),
 		)
 
@@ -145,10 +145,10 @@ Some content here.
 
 		const result = await runTE(
 			importMarkdown({
-				workspaceId: "workspace-1",
-				parentId: null,
 				content: markdownContent,
+				parentId: null,
 				title: "Custom Title",
+				workspaceId: "workspace-1",
 			}),
 		)
 
@@ -177,9 +177,9 @@ Some content here.
 
 		const result = await runTE(
 			importMarkdown({
-				workspaceId: "workspace-1",
-				parentId: null,
 				content: markdownContent,
+				parentId: null,
+				workspaceId: "workspace-1",
 			}),
 		)
 
@@ -202,9 +202,9 @@ Some content here.
 
 		const result = await runTE(
 			importMarkdown({
-				workspaceId: "workspace-1",
-				parentId: null,
 				content: markdownContent,
+				parentId: null,
+				workspaceId: "workspace-1",
 			}),
 		)
 
@@ -216,9 +216,9 @@ Some content here.
 	it("should return Left for empty content", async () => {
 		const result = await runTE(
 			importMarkdown({
-				workspaceId: "workspace-1",
-				parentId: null,
 				content: "",
+				parentId: null,
+				workspaceId: "workspace-1",
 			}),
 		)
 
@@ -229,7 +229,7 @@ Some content here.
 	})
 
 	it("should return Left when node creation fails", async () => {
-		const error = { type: "DB_ERROR" as const, message: "Database error" }
+		const error = { message: "Database error", type: "DB_ERROR" as const }
 
 		mockGetNextOrder.mockReturnValue(() => Promise.resolve(E.right(0)))
 		mockAddNode.mockReturnValue(() => Promise.resolve(E.left(error)))
@@ -241,9 +241,9 @@ Some content.
 
 		const result = await runTE(
 			importMarkdown({
-				workspaceId: "workspace-1",
-				parentId: null,
 				content: markdownContent,
+				parentId: null,
+				workspaceId: "workspace-1",
 			}),
 		)
 
@@ -255,8 +255,8 @@ Some content.
 
 	it("should create node under specified parent", async () => {
 		const testNode = createTestNode({
-			title: "Child Document",
 			parent: "parent-node-id",
+			title: "Child Document",
 		})
 		const testContent = createTestContent({ nodeId: testNode.id })
 
@@ -271,9 +271,9 @@ Content under parent.
 
 		const result = await runTE(
 			importMarkdown({
-				workspaceId: "workspace-1",
-				parentId: "parent-node-id",
 				content: markdownContent,
+				parentId: "parent-node-id",
+				workspaceId: "workspace-1",
 			}),
 		)
 
@@ -283,8 +283,8 @@ Content under parent.
 			"workspace-1",
 			expect.any(String),
 			expect.objectContaining({
-				parent: "parent-node-id",
 				order: 2,
+				parent: "parent-node-id",
 			}),
 		)
 	})

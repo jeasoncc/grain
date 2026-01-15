@@ -37,7 +37,7 @@ const DEFAULT_STALE_TIME = 60 * 1000
  */
 export const useContent = (nodeId: string | null | undefined) => {
 	return useQuery({
-		queryKey: queryKeys.contents.byNode(nodeId ?? ""),
+		enabled: !!nodeId,
 		queryFn: async (): Promise<ContentInterface | null> => {
 			if (!nodeId) return null
 
@@ -46,7 +46,7 @@ export const useContent = (nodeId: string | null | undefined) => {
 			if (result._tag === "Left") throw result.left
 			return result.right
 		},
-		enabled: !!nodeId,
+		queryKey: queryKeys.contents.byNode(nodeId ?? ""),
 		staleTime: DEFAULT_STALE_TIME,
 	})
 }
@@ -58,7 +58,7 @@ export const useContent = (nodeId: string | null | undefined) => {
  */
 export const useContentVersion = (nodeId: string | null | undefined) => {
 	return useQuery({
-		queryKey: queryKeys.contents.version(nodeId ?? ""),
+		enabled: !!nodeId,
 		queryFn: async (): Promise<number | null> => {
 			if (!nodeId) return null
 
@@ -67,7 +67,7 @@ export const useContentVersion = (nodeId: string | null | undefined) => {
 			if (result._tag === "Left") throw result.left
 			return result.right
 		},
-		enabled: !!nodeId,
+		queryKey: queryKeys.contents.version(nodeId ?? ""),
 		staleTime: DEFAULT_STALE_TIME,
 	})
 }

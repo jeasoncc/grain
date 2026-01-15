@@ -16,18 +16,18 @@ import { Separator } from "@/views/ui/separator"
 import type { GlobalSearchViewProps, SearchResultType } from "./global-search.types"
 
 const typeIcons: Record<SearchResultType, React.ComponentType<{ className?: string }>> = {
-	project: FileText,
 	node: FileText,
+	project: FileText,
 }
 
 const typeLabels: Record<SearchResultType, string> = {
-	project: "项目",
 	node: "文件",
+	project: "项目",
 }
 
 const typeColors: Record<SearchResultType, string> = {
-	project: "bg-purple-500/10 text-purple-500",
 	node: "bg-blue-500/10 text-blue-500",
+	project: "bg-purple-500/10 text-purple-500",
 }
 
 export const GlobalSearchView = memo(

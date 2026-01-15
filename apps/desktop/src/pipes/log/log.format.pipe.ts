@@ -48,12 +48,12 @@ export const formatLogEntry = (
 	context?: Record<string, unknown>,
 	source?: string,
 ): LogEntry => ({
+	context,
 	id: generateLogId(),
-	timestamp: dayjs().toISOString(),
 	level,
 	message,
-	context,
 	source,
+	timestamp: dayjs().toISOString(),
 })
 
 /**
@@ -349,10 +349,10 @@ export const calculateLogStats = (entries: ReadonlyArray<LogEntry>) => {
 	const storageSize = new Blob([JSON.stringify(entries)]).size
 
 	return {
-		totalEntries: entries.length,
 		byLevel,
 		earliestEntry,
 		latestEntry,
 		storageSize,
+		totalEntries: entries.length,
 	}
 }

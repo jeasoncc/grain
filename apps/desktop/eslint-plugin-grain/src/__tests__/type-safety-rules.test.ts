@@ -10,19 +10,19 @@ function runLint(
 	const linter = new Linter({ configType: "flat" })
 
 	const config = {
-		plugins: {
-			grain: plugin,
-		},
-		rules,
 		languageOptions: {
 			ecmaVersion: 2022 as const,
-			sourceType: "module" as const,
 			parser: require("@typescript-eslint/parser"),
 			parserOptions: {
 				ecmaVersion: 2022,
 				sourceType: "module",
 			},
+			sourceType: "module" as const,
 		},
+		plugins: {
+			grain: plugin,
+		},
+		rules,
 	}
 
 	return linter.verify(code, config)

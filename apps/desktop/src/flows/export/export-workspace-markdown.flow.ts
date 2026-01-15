@@ -35,8 +35,8 @@ export function exportAsMarkdown(workspaceId: string): TE.TaskEither<AppError, s
 					ws
 						? TE.right(ws)
 						: TE.left<AppError>({
-								type: "NOT_FOUND",
 								message: "工作区不存在",
+								type: "NOT_FOUND",
 							}),
 				),
 			),

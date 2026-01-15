@@ -53,13 +53,13 @@ export const createWorkspace = (
 
 	return pipe(
 		workspaceRepo.createWorkspace({
-			title: params.title,
 			author: params.author,
 			description: params.description,
-			publisher: params.publisher,
 			language: params.language,
 			members: params.members,
 			owner: params.owner,
+			publisher: params.publisher,
+			title: params.title,
 		}),
 		TE.tap((workspace) => {
 			success("[Action] 工作区创建成功", { workspaceId: workspace.id }, "create-workspace")

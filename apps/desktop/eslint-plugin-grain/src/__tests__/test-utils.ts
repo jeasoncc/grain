@@ -18,20 +18,20 @@ export function runLint(
 
 	const config = {
 		files: ["**/*.ts", "**/*.tsx"],
-		plugins: {
-			grain: plugin,
-		},
 		languageOptions: {
-			parser: parser,
 			ecmaVersion: 2022 as const,
-			sourceType: "module" as const,
+			parser: parser,
 			parserOptions: {
-				ecmaVersion: 2022,
-				sourceType: "module",
 				ecmaFeatures: {
 					jsx: true,
 				},
+				ecmaVersion: 2022,
+				sourceType: "module",
 			},
+			sourceType: "module" as const,
+		},
+		plugins: {
+			grain: plugin,
 		},
 		rules,
 	}

@@ -44,10 +44,10 @@ export interface ExcalidrawTemplateParams {
  * Excalidraw 模板参数校验 Schema
  */
 export const excalidrawParamsSchema = z.object({
-	title: z.string().optional(),
 	date: z.date().optional(),
-	width: z.number().positive().optional(),
 	height: z.number().positive().optional(),
+	title: z.string().optional(),
+	width: z.number().positive().optional(),
 })
 
 // ==============================
@@ -62,8 +62,8 @@ export const excalidrawParamsSchema = z.object({
  */
 const generateExcalidrawTemplate = (params: ExcalidrawTemplateParams): string => {
 	return generateExcalidrawContent({
-		width: params.width,
 		height: params.height,
+		width: params.width,
 	})
 }
 
@@ -113,13 +113,13 @@ const generateExcalidrawTitle = (params: ExcalidrawTemplateParams): string => {
  * Excalidraw 模板配置
  */
 export const excalidrawConfig: TemplateConfig<ExcalidrawTemplateParams> = {
-	name: "Excalidraw 绘图",
-	rootFolder: "excalidraw",
 	fileType: "drawing",
-	tag: "excalidraw",
-	generateTemplate: generateExcalidrawTemplate,
-	generateFolderPath: generateExcalidrawFolderPath,
-	generateTitle: generateExcalidrawTitle,
-	paramsSchema: excalidrawParamsSchema,
 	foldersCollapsed: true,
+	generateFolderPath: generateExcalidrawFolderPath,
+	generateTemplate: generateExcalidrawTemplate,
+	generateTitle: generateExcalidrawTitle,
+	name: "Excalidraw 绘图",
+	paramsSchema: excalidrawParamsSchema,
+	rootFolder: "excalidraw",
+	tag: "excalidraw",
 }
