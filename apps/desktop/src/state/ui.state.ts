@@ -132,9 +132,3 @@ export const useIsPanelViewActive = (view: RightPanelView): boolean => {
 export const useIsTabsAtTop = (): boolean => {
 	return useUIStore((state) => state.tabPosition === "top")
 }
-
-/**
- * @deprecated 使用 useUIStore 代替。此别名仅为向后兼容提供。
- * 将在未来版本中移除。
- */
-export const useUISettingsStore = useUIStore

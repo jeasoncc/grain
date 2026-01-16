@@ -64,10 +64,3 @@ export const useDiagramStore = create<DiagramStore>()(
 
 export const useKrokiServerUrl = () => useDiagramStore((s) => s.krokiServerUrl)
 export const useEnableKroki = () => useDiagramStore((s) => s.enableKroki)
-
-// ============================================================================
-// Legacy Alias (向后兼容)
-// ============================================================================
-
-/** @deprecated 使用 useDiagramStore 代替 */
-export const useDiagramSettings = useDiagramStore

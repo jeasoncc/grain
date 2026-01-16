@@ -188,6 +188,3 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 // ============================================================================
 
 export const useCurrentNodeId = () => useEditorHistoryStore((state) => state.currentNodeId)
-
-/** @deprecated Use useEditorHistoryStore instead - kept for backward compatibility */
-export const useEditorHistory = useEditorHistoryStore

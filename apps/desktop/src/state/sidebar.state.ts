@@ -240,12 +240,3 @@ export const useSidebarActions = () => ({
 	toggleFolderExpanded: useSidebarStore((s) => s.toggleFolderExpanded),
 	toggleSidebar: useSidebarStore((s) => s.toggleSidebar),
 })
-
-// ==============================
-// Legacy Compatibility Export
-// ==============================
-
-/**
- * @deprecated Use useSidebarStore instead
- */
-export const useUnifiedSidebarStore = useSidebarStore

@@ -9,8 +9,8 @@
 
 import dayjs from "dayjs"
 
-import { WikiFileEntryBuilder } from "./wiki.builder"
-import type { WikiFileEntry } from "./wiki.schema"
+import { WikiFileEntryBuilder } from "@/types/wiki"
+import type { WikiFileEntry } from "@/types/wiki"
 
 // ==============================
 // Constants

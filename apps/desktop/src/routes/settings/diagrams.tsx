@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { CheckCircle2, ExternalLink, Loader2, XCircle } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
-import { useDiagramSettings } from "@/state/diagram.state"
+import { useDiagramStore } from "@/state/diagram.state"
 import { Button } from "@/views/ui/button"
 import { Input } from "@/views/ui/input"
 import { Label } from "@/views/ui/label"
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/settings/diagrams")({
 
 function DiagramSettings() {
 	const { krokiServerUrl, enableKroki, setKrokiServerUrl, setEnableKroki, testKrokiConnection } =
-		useDiagramSettings()
+		useDiagramStore()
 
 	const [testUrl, setTestUrl] = useState(krokiServerUrl)
 	const [testing, setTesting] = useState(false)

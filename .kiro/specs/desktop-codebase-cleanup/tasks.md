@@ -121,28 +121,28 @@
   - 运行 `bun run test` 确保测试通过
   - 提交: `git commit -m "refactor: remove duplicate functionality"`
 
-- [ ] 9. 更新导入和移除 deprecated 别名
-  - [ ] 9.1 更新 `flows/wiki/get-wiki-files.flow.ts` 的导入
+- [x] 9. 更新导入和移除 deprecated 别名
+  - [x] 9.1 更新 `flows/wiki/get-wiki-files.flow.ts` 的导入
     - 将 `from "@/pipes/wiki/wiki.builder"` 改为 `from "@/types/wiki"`
     - _Requirements: 4.3_
-  - [ ] 9.2 删除 `pipes/wiki/wiki.builder.ts`
+  - [x] 9.2 删除 `pipes/wiki/wiki.builder.ts`
     - 更新导入后可安全删除
     - _Requirements: 4.2_
-  - [ ] 9.3 删除 `pipes/wiki/wiki.schema.ts`
+  - [x] 9.3 删除 `pipes/wiki/wiki.schema.ts`
     - 仅重导出 `@/types/wiki`
     - _Requirements: 4.2_
-  - [ ] 9.4 更新 `pipes/wiki/index.ts` 移除已删除模块的导出
+  - [x] 9.4 更新 `pipes/wiki/index.ts` 移除已删除模块的导出
     - _Requirements: 7.1, 7.2_
-  - [ ] 9.5 移除 `state/ui.state.ts` 中的 deprecated 别名
+  - [x] 9.5 移除 `state/ui.state.ts` 中的 deprecated 别名
     - 移除 `useUIState` 别名
     - _Requirements: 4.1_
-  - [ ] 9.6 移除 `state/editor-history.state.ts` 中的 deprecated 别名
+  - [x] 9.6 移除 `state/editor-history.state.ts` 中的 deprecated 别名
     - 移除 `useEditorHistory` 别名
     - _Requirements: 4.1_
-  - [ ] 9.7 移除 `state/diagram.state.ts` 中的 deprecated 别名
+  - [x] 9.7 移除 `state/diagram.state.ts` 中的 deprecated 别名
     - 移除 `useDiagramSettings` 别名
     - _Requirements: 4.1_
-  - [ ] 9.8 移除 `state/sidebar.state.ts` 中的 deprecated 别名
+  - [x] 9.8 移除 `state/sidebar.state.ts` 中的 deprecated 别名
     - 移除 `useUnifiedSidebarStore` 别名
     - _Requirements: 4.1_
 
