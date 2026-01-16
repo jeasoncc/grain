@@ -127,7 +127,8 @@ export const FileTreePanelContainer = memo(
 				}
 
 				// Navigate to main workspace - all file types are handled there
-				navigate({ to: "/" })
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				void navigate({ to: "/" } as any)
 			},
 			[workspaceId, navigate, setSelectedNodeId, getNode],
 		)
@@ -226,7 +227,8 @@ export const FileTreePanelContainer = memo(
 						// Auto-expand ancestors and scroll to the new file
 						await autoExpandAndScrollToNode(nodes, result.node.id, setCollapsed, treeRef)
 
-						navigate({ to: "/" })
+						// eslint-disable-next-line @typescript-eslint/no-explicit-any
+						void navigate({ to: "/" } as any)
 					}
 				} catch (error) {
 					console.error("Failed to create file:", error)
@@ -349,7 +351,8 @@ export const FileTreePanelContainer = memo(
 				// Auto-expand ancestors and scroll to the new diary
 				await autoExpandAndScrollToNode(nodes, node.id, setCollapsed, treeRef)
 
-				navigate({ to: "/" })
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				void navigate({ to: "/" } as any)
 			} catch (error) {
 				console.error("Failed to create diary:", error)
 				toast.error("Failed to create diary")
