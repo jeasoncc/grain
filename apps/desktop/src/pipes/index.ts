@@ -19,8 +19,6 @@ export * as editorPipe from "./editor"
 export * as editorTabPipe from "./editor-tab"
 // Export 管道（JSON、Markdown、Org-mode 导出）
 export * as exportPipe from "./export"
-// Format 管道（格式化工具）
-export * as formatPipe from "./format"
 // Import 管道（Markdown 导入）
 export * as importPipe from "./import"
 // Ledger 管道（记账模板）

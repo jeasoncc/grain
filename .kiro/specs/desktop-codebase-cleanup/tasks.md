@@ -101,18 +101,18 @@
   - 运行 `bun run test` 确保测试通过
   - 提交: `git commit -m "refactor: remove example and test files"`
 
-- [ ] 7. 删除重复功能
-  - [ ] 7.1 删除 `flows/data/` 整个目录
+- [x] 7. 删除重复功能
+  - [x] 7.1 删除 `flows/data/` 整个目录
     - 包含 `clear-data.flow.ts` 和 `index.ts`
     - 功能与 `flows/backup/clear-data.flow.ts` 重复
     - _Requirements: 5.1, 5.2, 5.3_
-  - [ ] 7.2 删除 `pipes/format/` 整个目录
+  - [x] 7.2 删除 `pipes/format/` 整个目录
     - 包含 `format.bytes.fn.ts`, `format.bytes.fn.test.ts`, `index.ts`
     - 只有重导出，无实际使用
     - _Requirements: 5.1, 5.2, 5.3_
-  - [ ] 7.3 更新 `flows/index.ts` 移除 data 导出
+  - [x] 7.3 更新 `flows/index.ts` 移除 data 导出
     - _Requirements: 7.1, 7.2_
-  - [ ] 7.4 更新 `pipes/index.ts` 移除 format 导出
+  - [x] 7.4 更新 `pipes/index.ts` 移除 format 导出
     - _Requirements: 7.1, 7.2_
 
 - [ ] 8. Checkpoint - 验证阶段 7
