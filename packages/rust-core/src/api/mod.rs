@@ -24,6 +24,7 @@
 //! ```
 
 pub mod content;
+pub mod clear_data;
 pub mod inputs;
 pub mod node;
 pub mod transaction;
@@ -132,6 +133,7 @@ pub type NoOutput = ();
 // ============================================================================
 
 pub use content::*;
+pub use clear_data::*;
 pub use inputs::*;
 pub use node::*;
 pub use transaction::*;

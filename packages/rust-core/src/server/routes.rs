@@ -7,6 +7,7 @@ use std::sync::Arc;
 use warp::Filter;
 
 use crate::api::{
+    clear_data::{ClearAllData, ClearDataKeepUsers},
     content::{GetContent, SaveContent},
     node::{
         CreateNode, DeleteNode, GetChildNodes, GetNextSortOrder, GetNode, GetNodesByWorkspace, GetRootNodes,
@@ -54,6 +55,7 @@ pub fn build_routes(
         .or(node_routes(db.clone()))
         .or(content_routes(db.clone()))
         .or(transaction_routes(db.clone()))
+        .or(clear_data_routes(db.clone()))
         .or(backup_routes(config.clone()));
 
     // 健康检查
@@ -88,6 +90,7 @@ pub fn build_routes(
                 "GET /api/backups",
                 "POST /api/backups",
                 "DELETE /api/backups/:filename",
+                "DELETE /api/data/clear",
                 "GET /health"
             ]
         }))
@@ -500,6 +503,61 @@ fn delete_backup(
             let backup_path = config.backup_dir().join(&filename);
             crate::delete_backup(&backup_path)
                 .map(|_| warp::reply::json(&serde_json::json!({"success": true})))
+                .map_err(|e| warp::reject::custom(AppRejection::from(e)))
+        })
+}
+
+// ============================================================================
+// Clear Data 路由
+// ============================================================================
+
+fn clear_data_routes(
+    db: Arc<DatabaseConnection>,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    clear_all_data(db.clone()).or(clear_data_keep_users(db))
+}
+
+fn clear_all_data(
+    db: Arc<DatabaseConnection>,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    warp::path!("api" / "data" / "clear")
+        .and(warp::delete())
+        .and(warp::query::<std::collections::HashMap<String, String>>())
+        .and(with_db(db))
+        .and_then(
+            |query: std::collections::HashMap<String, String>, db: Arc<DatabaseConnection>| async move {
+                // 检查是否有 keepUsers 参数
+                let keep_users = query.get("keepUsers")
+                    .map(|v| v == "true")
+                    .unwrap_or(false);
+
+                if keep_users {
+                    ClearDataKeepUsers::execute(&db, ())
+                        .await
+                        .map(|r| warp::reply::json(&r))
+                        .map_err(|e| warp::reject::custom(AppRejection::from(e)))
+                } else {
+                    ClearAllData::execute(&db, ())
+                        .await
+                        .map(|r| warp::reply::json(&r))
+                        .map_err(|e| warp::reject::custom(AppRejection::from(e)))
+                }
+            },
+        )
+}
+
+fn clear_data_keep_users(
+    db: Arc<DatabaseConnection>,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    // 这个路由实际上由上面的 clear_all_data 处理，通过查询参数区分
+    // 这里保留作为备用，但不会被匹配到
+    warp::path!("api" / "data" / "clear" / "keep-users")
+        .and(warp::delete())
+        .and(with_db(db))
+        .and_then(|db: Arc<DatabaseConnection>| async move {
+            ClearDataKeepUsers::execute(&db, ())
+                .await
+                .map(|r| warp::reply::json(&r))
                 .map_err(|e| warp::reject::custom(AppRejection::from(e)))
         })
 }
