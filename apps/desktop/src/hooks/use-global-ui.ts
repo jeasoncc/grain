@@ -52,12 +52,15 @@ export function useGlobalUI() {
 			isOpen: bufferSwitcherOpen,
 			open: bufferSwitcherActions.open,
 			setDirection: bufferSwitcherActions.setDirection,
+			setOpen: (isOpen: boolean) => (isOpen ? undefined : bufferSwitcherActions.close()),
 		},
 		// Command Palette
 		commandPalette: {
 			close: commandPaletteActions.close,
 			isOpen: commandPaletteOpen,
 			open: commandPaletteActions.open,
+			setOpen: (isOpen: boolean) =>
+				isOpen ? commandPaletteActions.open() : commandPaletteActions.close(),
 			toggle: commandPaletteActions.toggle,
 		},
 
@@ -66,6 +69,8 @@ export function useGlobalUI() {
 			close: exportDialogActions.close,
 			isOpen: exportDialogOpen,
 			open: exportDialogActions.open,
+			setOpen: (isOpen: boolean) =>
+				isOpen ? exportDialogActions.open() : exportDialogActions.close(),
 			toggle: exportDialogActions.toggle,
 		},
 
@@ -74,6 +79,8 @@ export function useGlobalUI() {
 			close: globalSearchActions.close,
 			isOpen: globalSearchOpen,
 			open: globalSearchActions.open,
+			setOpen: (isOpen: boolean) =>
+				isOpen ? globalSearchActions.open() : globalSearchActions.close(),
 			toggle: globalSearchActions.toggle,
 		},
 	}

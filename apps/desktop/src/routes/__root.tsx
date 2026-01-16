@@ -85,45 +85,26 @@ function RootComponent() {
 
 	return (
 		<ConfirmProvider>
-			{/* Font Style Injector - Applies custom font settings */}
 			<FontStyleInjector />
 
-			{/* Main Layout */}
 			<AppLayout>
 				<Outlet />
 			</AppLayout>
 
-			{/* Global Components */}
 			<Toaster />
 			<CommandPaletteContainer
 				open={commandPalette.isOpen}
-				onOpenChange={(isOpen) => {
-					if (isOpen) {
-						commandPalette.open()
-					} else {
-						commandPalette.close()
-					}
-				}}
+				onOpenChange={commandPalette.setOpen}
 				workspaces={workspaces}
 				selectedWorkspaceId={selectedWorkspaceId}
 			/>
 			<GlobalSearchContainer
 				open={globalSearch.isOpen}
-				onOpenChange={(isOpen) => {
-					if (isOpen) {
-						globalSearch.open()
-					} else {
-						globalSearch.close()
-					}
-				}}
+				onOpenChange={globalSearch.setOpen}
 			/>
 			<BufferSwitcherContainer
 				open={bufferSwitcher.isOpen}
-				onOpenChange={(isOpen) => {
-					if (!isOpen) {
-						bufferSwitcher.close()
-					}
-				}}
+				onOpenChange={bufferSwitcher.setOpen}
 				tabs={tabs}
 				activeTabId={activeTabId}
 				onSelectTab={setActiveTab}
@@ -134,7 +115,6 @@ function RootComponent() {
 				workspaces={workspaces}
 			/>
 
-			{/* Devtools - Only in development */}
 			<DevtoolsWrapper />
 		</ConfirmProvider>
 	)
