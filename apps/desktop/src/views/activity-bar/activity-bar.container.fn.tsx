@@ -5,6 +5,7 @@
  * 职责：连接 hooks 和 views，不包含业务逻辑
  */
 
+import { useQueryClient } from "@tanstack/react-query"
 import { useLocation, useRouter } from "@tanstack/react-router"
 import dayjs from "dayjs"
 import { orderBy } from "es-toolkit"
@@ -29,6 +30,7 @@ import { touchWorkspace } from "@/flows/workspace/update-workspace.flow"
 import { useCreateTemplate } from "@/hooks/use-create-template"
 import { useIconTheme } from "@/hooks/use-icon-theme"
 import { useAllWorkspaces } from "@/hooks/use-workspace"
+import { queryKeys } from "@/hooks/queries/query-keys"
 import { error as logError } from "@/io/log/logger.api"
 import type { FileRouteTypes } from "@/routeTree.gen"
 import { useSelectionStore } from "@/state/selection.state"
@@ -69,6 +71,7 @@ export function ActivityBarContainer(): React.ReactElement {
 	const router = useRouter()
 	const location = useLocation()
 	const confirm = useConfirm()
+	const queryClient = useQueryClient()
 
 	// Data
 	const workspacesRaw = useAllWorkspaces()
@@ -113,6 +116,8 @@ export function ActivityBarContainer(): React.ReactElement {
 					if (E.isRight(result)) {
 						setSelectedWorkspaceId(result.right.id)
 						setActivePanel("files")
+						// Invalidate workspaces cache to trigger refetch
+						await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces.all })
 					}
 				} catch (error) {
 					logError("[ActivityBar] 创建默认工作区失败", { error })
@@ -140,6 +145,7 @@ export function ActivityBarContainer(): React.ReactElement {
 		selectedWorkspaceId,
 		setSelectedWorkspaceId,
 		setActivePanel,
+		queryClient,
 	])
 
 	// ==============================
@@ -229,12 +235,14 @@ export function ActivityBarContainer(): React.ReactElement {
 			})()
 			if (E.isRight(result)) {
 				setSelectedWorkspaceId(result.right.id)
+				// Invalidate workspaces cache to trigger refetch
+				await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces.all })
 				toast.success("Workspace created")
 			} else {
 				toast.error("Failed to create workspace")
 			}
 		},
-		[setSelectedWorkspaceId],
+		[setSelectedWorkspaceId, queryClient],
 	)
 
 	const handleDeleteAllData = useCallback(async () => {
