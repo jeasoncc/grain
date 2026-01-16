@@ -23,6 +23,25 @@ export interface UseActivityBarViewParams {
 	readonly onSetActivePanel: (panel: SidebarPanel) => void
 	readonly onCreateWorkspace: (name: string) => Promise<void>
 	readonly onImportFile: (file: File) => Promise<void>
+	// Template creators
+	readonly onCreateDiary: () => void
+	readonly onCreateWiki: () => void
+	readonly onCreateLedger: () => void
+	readonly onCreateTodo: () => void
+	readonly onCreateNote: () => void
+	readonly onCreateExcalidraw: () => void
+	readonly onCreateMermaid: () => void
+	readonly onCreatePlantUML: () => void
+	readonly onCreateCode: () => void
+}
+
+export interface NavItem {
+	readonly key: string
+	readonly Icon: React.ComponentType<{ className?: string }>
+	readonly label: string
+	readonly onClick: () => void
+	readonly active?: boolean
+	readonly testId?: string
 }
 
 // ==============================
@@ -38,6 +57,15 @@ export function useActivityBarView({
 	onSetActivePanel,
 	onCreateWorkspace,
 	onImportFile,
+	onCreateDiary,
+	onCreateWiki,
+	onCreateLedger,
+	onCreateTodo,
+	onCreateNote,
+	onCreateExcalidraw,
+	onCreateMermaid,
+	onCreatePlantUML,
+	onCreateCode,
 }: UseActivityBarViewParams) {
 	const fileInputRef = useRef<HTMLInputElement | null>(null)
 	const [showNewWorkspace, setShowNewWorkspace] = useState(false)
@@ -138,6 +166,90 @@ export function useActivityBarView({
 	}, [])
 
 	// ==============================
+	// Nav Items Configuration
+	// ==============================
+
+	const navItems: readonly NavItem[] = [
+		{
+			key: "files",
+			Icon: icons.FilesIcon,
+			label: "Files",
+			onClick: handleFilesClick,
+			active: activePanel === "files" && isSidebarOpen,
+		},
+		{
+			key: "diary",
+			Icon: icons.DiaryIcon,
+			label: "New Diary",
+			onClick: onCreateDiary,
+			testId: "btn-new-diary",
+		},
+		{
+			key: "wiki",
+			Icon: icons.WikiIcon,
+			label: "New Wiki",
+			onClick: onCreateWiki,
+			testId: "btn-new-wiki",
+		},
+		{
+			key: "ledger",
+			Icon: icons.LedgerIcon,
+			label: "New Ledger",
+			onClick: onCreateLedger,
+			testId: "btn-new-ledger",
+		},
+		{
+			key: "todo",
+			Icon: icons.TodoIcon,
+			label: "New Todo",
+			onClick: onCreateTodo,
+			testId: "btn-new-todo",
+		},
+		{
+			key: "note",
+			Icon: icons.NoteIcon,
+			label: "New Note",
+			onClick: onCreateNote,
+			testId: "btn-new-note",
+		},
+		{
+			key: "excalidraw",
+			Icon: icons.ExcalidrawIcon,
+			label: "New Excalidraw",
+			onClick: onCreateExcalidraw,
+			testId: "btn-new-excalidraw",
+		},
+		{
+			key: "mermaid",
+			Icon: icons.MermaidIcon,
+			label: "New Mermaid",
+			onClick: onCreateMermaid,
+			testId: "btn-new-mermaid",
+		},
+		{
+			key: "plantuml",
+			Icon: icons.PlantUMLIcon,
+			label: "New PlantUML",
+			onClick: onCreatePlantUML,
+			testId: "btn-new-plantuml",
+		},
+		{
+			key: "code",
+			Icon: icons.CodeIcon,
+			label: "New Code File",
+			onClick: onCreateCode,
+			testId: "btn-new-code",
+		},
+		{
+			key: "search",
+			Icon: icons.SearchIcon,
+			label: "Search (Ctrl+Shift+F)",
+			onClick: handleSearchClick,
+			active: activePanel === "search" && isSidebarOpen,
+		},
+	]
+
+	// ==============================
 	// Return
 	// ==============================
 
@@ -153,14 +265,15 @@ export function useActivityBarView({
 		// Icons
 		icons,
 
+		// Nav Items
+		navItems,
+
 		// Handlers
 		handleImportClick,
 		handleFileInputChange,
 		handleCreateWorkspace,
 		handleNewWorkspaceKeyDown,
 		isActive,
-		handleFilesClick,
-		handleSearchClick,
 		openNewWorkspaceInput,
 		closeNewWorkspaceInput,
 	}

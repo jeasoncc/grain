@@ -159,13 +159,12 @@ export const ActivityBarView = memo(function ActivityBarView({
 		newWorkspaceName,
 		setNewWorkspaceName,
 		icons,
+		navItems,
 		handleImportClick,
 		handleFileInputChange,
 		handleCreateWorkspace,
 		handleNewWorkspaceKeyDown,
 		isActive,
-		handleFilesClick,
-		handleSearchClick,
 		openNewWorkspaceInput,
 	} = useActivityBarView({
 		activePanel,
@@ -176,6 +175,15 @@ export const ActivityBarView = memo(function ActivityBarView({
 		onSetActivePanel,
 		onCreateWorkspace,
 		onImportFile,
+		onCreateDiary,
+		onCreateWiki,
+		onCreateLedger,
+		onCreateTodo,
+		onCreateNote,
+		onCreateExcalidraw,
+		onCreateMermaid,
+		onCreatePlantUML,
+		onCreateCode,
 	})
 
 	return (
@@ -185,72 +193,16 @@ export const ActivityBarView = memo(function ActivityBarView({
 		>
 			<TooltipProvider>
 				<nav className="flex flex-col items-center w-full">
-					<ActionButton
-						icon={<icons.FilesIcon className="size-5" />}
-						label="Files"
-						active={activePanel === "files" && isSidebarOpen}
-						onClick={handleFilesClick}
-					/>
-					<ActionButton
-						icon={<icons.DiaryIcon className="size-5" />}
-						label="New Diary"
-						onClick={onCreateDiary}
-						testId="btn-new-diary"
-					/>
-					<ActionButton
-						icon={<icons.WikiIcon className="size-5" />}
-						label="New Wiki"
-						onClick={onCreateWiki}
-						testId="btn-new-wiki"
-					/>
-					<ActionButton
-						icon={<icons.LedgerIcon className="size-5" />}
-						label="New Ledger"
-						onClick={onCreateLedger}
-						testId="btn-new-ledger"
-					/>
-					<ActionButton
-						icon={<icons.TodoIcon className="size-5" />}
-						label="New Todo"
-						onClick={onCreateTodo}
-						testId="btn-new-todo"
-					/>
-					<ActionButton
-						icon={<icons.NoteIcon className="size-5" />}
-						label="New Note"
-						onClick={onCreateNote}
-						testId="btn-new-note"
-					/>
-					<ActionButton
-						icon={<icons.ExcalidrawIcon className="size-5" />}
-						label="New Excalidraw"
-						onClick={onCreateExcalidraw}
-						testId="btn-new-excalidraw"
-					/>
-					<ActionButton
-						icon={<icons.MermaidIcon className="size-5" />}
-						label="New Mermaid"
-						onClick={onCreateMermaid}
-						testId="btn-new-mermaid"
-					/>
-					<ActionButton
-						icon={<icons.PlantUMLIcon className="size-5" />}
-						label="New PlantUML"
-						onClick={onCreatePlantUML}
-						testId="btn-new-plantuml"
-					/>
-					<ActionButton
-						icon={<icons.CodeIcon className="size-5" />}
-						label="New Code File"
-						onClick={onCreateCode}
-						testId="btn-new-code"
-					/>
-					<ActionButton
-						icon={<icons.SearchIcon className="size-5" />}
-						label="Search (Ctrl+Shift+F)"
-						active={activePanel === "search" && isSidebarOpen}
-						onClick={handleSearchClick}
-					/>
+					{navItems.map(({ key, Icon, label, onClick, active, testId }) => (
+						<ActionButton
+							key={key}
+							icon={<Icon className="size-5" />}
+							label={label}
+							onClick={onClick}
+							active={active}
+							testId={testId}
+						/>
+					))}
 				</nav>
 
 				<div className="flex-1" />
