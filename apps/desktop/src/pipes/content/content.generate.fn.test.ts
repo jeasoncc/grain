@@ -4,6 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest"
+import dayjs from "dayjs"
 import {
 	createDocument,
 	createHeadingNode,
@@ -175,7 +176,7 @@ describe("content.generate.fn", () => {
 
 	describe("formatFullDateTime", () => {
 		it("should format date with full weekday and time", () => {
-			const date = new Date("2024-12-20T14:30:45.000Z")
+			const date = dayjs("2024-12-20T14:30:45.000Z").toDate()
 			const formatted = formatFullDateTime(date)
 
 			expect(formatted).toContain("2024")
@@ -186,7 +187,7 @@ describe("content.generate.fn", () => {
 
 	describe("formatShortDate", () => {
 		it("should format date in short format", () => {
-			const date = new Date("2024-12-20T14:30:00.000Z")
+			const date = dayjs("2024-12-20T14:30:00.000Z").toDate()
 			const formatted = formatShortDate(date)
 
 			expect(formatted).toContain("2024")

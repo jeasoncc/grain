@@ -85,7 +85,7 @@ export class LegacyDatabase extends Dexie {
 
 		// Open database silently (logger would cause circular dependency)
 		this.open().catch((err) =>
-			// eslint-disable-next-line no-console, grain/no-console-log -- Logger would cause circular dependency
+			// eslint-disable-next-line grain/no-console-log -- Logger would cause circular dependency
 			console.error("Legacy database open error:", err),
 		)
 	}

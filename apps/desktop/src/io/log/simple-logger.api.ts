@@ -96,7 +96,7 @@ export const createSimpleLogger = (config: Partial<LogConfig> = {}): SimpleLogge
 
 		// 控制台输出（如果启用）
 		if (logResult.consoleOutput) {
-			// eslint-disable-next-line no-console, grain/no-console-log -- This is the core logger implementation that needs console output
+			// eslint-disable-next-line grain/no-console-log -- This is the core logger implementation that needs console output
 			console.log(logResult.consoleOutput)
 		}
 
@@ -269,7 +269,7 @@ export const updateDefaultLoggerConfig = (
 
 	if (validation.isValid) {
 		// 重新创建默认记录器（这里需要重构为可变的配置管理）
-		// eslint-disable-next-line no-console, grain/no-console-log -- This is the core logger implementation
+		// eslint-disable-next-line grain/no-console-log -- This is the core logger implementation
 		console.info("Log config updated successfully")
 	}
 
