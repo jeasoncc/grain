@@ -6,16 +6,13 @@
 
 import dayjs from "dayjs"
 import relativeTime from "dayjs/plugin/relativeTime"
-import { orderBy } from "es-toolkit"
 import {
 	Archive,
 	BookOpen,
 	Clock,
-	Cookie,
 	Database,
 	Download,
 	FileText,
-	FolderOpen,
 	HardDrive,
 	Image,
 	Loader2,
@@ -29,7 +26,6 @@ import { memo } from "react"
 import { formatBytes } from "@/utils/format.util"
 import { Button } from "@/views/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/views/ui/card"
-import { Progress } from "@/views/ui/progress"
 import { Separator } from "@/views/ui/separator"
 import { Switch } from "@/views/ui/switch"
 import type { BackupManagerViewProps } from "./backup-manager.types"
@@ -155,30 +151,6 @@ export const BackupManagerView = memo(function BackupManagerView({
 											Storage Usage
 										</h4>
 										<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-											{/* IndexedDB Card */}
-											<div className="p-3 rounded-xl border bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent hover:shadow-sm transition-all">
-												<div className="flex items-center gap-3 mb-2">
-													<div className="p-1.5 rounded-lg bg-blue-500/20">
-														<HardDrive className="size-4 text-blue-600" />
-													</div>
-													<div>
-														<p className="text-sm font-medium">IndexedDB</p>
-														<p className="text-[10px] text-muted-foreground">
-															Main database storage
-														</p>
-													</div>
-												</div>
-												<p className="text-xl font-bold mb-1">
-													{formatBytes(storageStats.indexedDB.size)}
-												</p>
-												<p className="text-[10px] text-muted-foreground">
-													{(
-														Object.values(storageStats.indexedDB.tables) as readonly number[]
-													).reduce((a, b) => a + b, 0)}{" "}
-													total records
-												</p>
-											</div>
-
 											{/* localStorage Card */}
 											<div className="p-3 rounded-xl border bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent hover:shadow-sm transition-all">
 												<div className="flex items-center gap-3 mb-2">
@@ -193,84 +165,12 @@ export const BackupManagerView = memo(function BackupManagerView({
 													</div>
 												</div>
 												<p className="text-xl font-bold mb-1">
-													{formatBytes(storageStats.localStorage.size)}
+													{formatBytes(storageStats.size)}
 												</p>
 												<p className="text-[10px] text-muted-foreground">
-													{storageStats.localStorage.keys} keys stored
+													{storageStats.keys} keys stored
 												</p>
 											</div>
-
-											{/* sessionStorage Card */}
-											<div className="p-3 rounded-xl border bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent hover:shadow-sm transition-all">
-												<div className="flex items-center gap-3 mb-2">
-													<div className="p-1.5 rounded-lg bg-purple-500/20">
-														<FolderOpen className="size-4 text-purple-600" />
-													</div>
-													<div>
-														<p className="text-sm font-medium">sessionStorage</p>
-														<p className="text-[10px] text-muted-foreground">
-															Temporary session data
-														</p>
-													</div>
-												</div>
-												<p className="text-xl font-bold mb-1">
-													{formatBytes(storageStats.sessionStorage.size)}
-												</p>
-												<p className="text-[10px] text-muted-foreground">
-													{storageStats.sessionStorage.keys} keys stored
-												</p>
-											</div>
-
-											{/* Cookies Card */}
-											<div className="p-3 rounded-xl border bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent hover:shadow-sm transition-all">
-												<div className="flex items-center gap-3 mb-2">
-													<div className="p-1.5 rounded-lg bg-orange-500/20">
-														<Cookie className="size-4 text-orange-600" />
-													</div>
-													<div>
-														<p className="text-sm font-medium">Cookies</p>
-														<p className="text-[10px] text-muted-foreground">Browser cookies</p>
-													</div>
-												</div>
-												<p className="text-xl font-bold mb-1">{storageStats.cookies.count}</p>
-												<p className="text-[10px] text-muted-foreground">cookies stored</p>
-											</div>
-										</div>
-									</div>
-
-									<Separator />
-									<div>
-										<h4 className="text-sm font-medium mb-4">IndexedDB Table Breakdown</h4>
-										<div className="space-y-3">
-											{orderBy(
-												Object.entries(storageStats.indexedDB.tableSizes),
-												[([, size]) => size],
-												["desc"],
-											).map(([table, size]) => {
-												const percentage =
-													storageStats.indexedDB.size > 0
-														? (size / storageStats.indexedDB.size) * 100
-														: 0
-												const tables = storageStats.indexedDB.tables as unknown as Record<
-													string,
-													number
-												>
-												const recordCount = tables[table] || 0
-												return (
-													<div key={table} className="space-y-1.5">
-														<div className="flex justify-between items-center">
-															<div className="flex items-center gap-2">
-																<span className="text-sm font-medium capitalize">{table}</span>
-																<span className="text-xs text-muted-foreground">
-																	({recordCount} records)
-																</span>
-															</div>
-															<span className="text-sm font-semibold">{formatBytes(size)}</span>
-														</div>
-														<Progress value={percentage} className="h-1.5" />
-													</div>
-												)
-											})}
 										</div>
 									</div>
 								</>
