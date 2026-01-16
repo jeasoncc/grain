@@ -105,17 +105,21 @@ export const addConsoleColors = (entry: LogEntry): string => {
 	const icon = LOG_LEVEL_ICONS[entry.level]
 	const levelText = entry.level.toUpperCase().padEnd(7)
 	const sourceText = entry.source ? ` [${entry.source}]` : ""
+	const contextText =
+		entry.context && Object.keys(entry.context).length > 0
+			? ` ${JSON.stringify(entry.context)}`
+			: ""
 
 	// 在浏览器环境中不使用 ANSI 颜色代码
 	if (isBrowser()) {
-		return `${timestamp} ${icon} ${levelText}${sourceText} ${entry.message}`
+		return `${timestamp} ${icon} ${levelText}${sourceText} ${entry.message}${contextText}`
 	}
 
 	// 在 Node.js 环境中使用颜色代码
 	const color = LOG_LEVEL_COLORS[entry.level]
 	const reset = "\x1b[0m"
 
-	return `${color}${timestamp} ${icon} ${levelText}${reset}${sourceText} ${entry.message}`
+	return `${color}${timestamp} ${icon} ${levelText}${reset}${sourceText} ${entry.message}${contextText}`
 }
 
 /**

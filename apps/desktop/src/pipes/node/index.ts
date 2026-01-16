@@ -28,3 +28,10 @@ export {
 	type TreeNode,
 	wouldCreateCycle,
 } from "./node.tree.fn"
+// 文件夹路径函数
+export {
+	findFolderByParentAndTitle,
+	resolveFolderPath,
+	type FolderLookupResult,
+	type FolderPathSegment,
+} from "./folder-path.pipe"

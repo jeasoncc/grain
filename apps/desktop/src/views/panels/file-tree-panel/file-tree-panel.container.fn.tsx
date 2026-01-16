@@ -1,23 +1,26 @@
 /**
- * FileTreePanel - 文件树面板
- * 使用新的 Node 结构管理工作空间内容
+ * FileTreePanel - 文件树面板容器组件
  *
  * 路由编排层：连接数据和展示组件
+ * 职责：协调 hooks、flows、state，传递给 FileTree 视图组件
  *
- * Requirements: 2.1, 2.3, 3.3, 1.1, 1.5, 3.1
+ * 使用 fp-ts 的 pipe + fold 模式处理 TaskEither 结果
+ *
+ * @see .kiro/steering/architecture.md - views/ 层职责
  */
 
 import { useNavigate } from "@tanstack/react-router"
-import dayjs from "dayjs"
-import * as E from "fp-ts/Either"
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
 import { memo, useCallback, useEffect, useRef } from "react"
 import { toast } from "sonner"
+
 import {
 	createDiaryCompatAsync,
-	createFileAsync,
+	createFile,
 	deleteNode,
 	moveNode,
-	openFileAsync,
+	openFile,
 	renameNode,
 } from "@/flows"
 import { useEditorTabs } from "@/hooks/use-editor-tabs"
@@ -35,30 +38,87 @@ import type { NodeType } from "@/types/node"
 import { autoExpandAndScrollToNode } from "@/utils/file-tree-navigation.util"
 import { FileTree } from "@/views/file-tree"
 import { useConfirm } from "@/views/ui/confirm"
+
 import type { FileTreePanelContainerProps } from "./file-tree-panel.types"
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const EXCALIDRAW_EMPTY_CONTENT = JSON.stringify({
+	appState: {},
+	elements: [],
+	files: {},
+})
+
+// ============================================================================
+// Helper Functions (Pure)
+// ============================================================================
+
+/**
+ * 生成新文件的默认 Lexical 内容
+ */
+const generateLexicalContent = (title: string): string => {
+	const doc = createDocument([
+		createHeadingNode(title, "h2"),
+		createParagraphNode([createTextNode("")]),
+	])
+	console.log("coming" + doc)
+	return JSON.stringify(doc)
+}
+
+/**
+ * 根据文件类型生成初始内容
+ */
+const generateContentByType = (type: NodeType, title: string): string =>
+	type === "drawing" ? EXCALIDRAW_EMPTY_CONTENT : generateLexicalContent(title)
+
+/**
+ * 根据文件类型获取标题
+ */
+const getTitleByType = (type: NodeType): string =>
+	type === "drawing" ? "New Canvas" : "New File"
+
+/**
+ * 根据文件类型获取成功消息
+ */
+const getSuccessMessage = (type: NodeType): string =>
+	type === "drawing" ? "Canvas created" : "File created"
+
+// ============================================================================
+// Component
+// ============================================================================
 
 export const FileTreePanelContainer = memo(
 	({ workspaceId: propWorkspaceId }: FileTreePanelContainerProps) => {
+		// ========================================
+		// Hooks - Navigation & UI
+		// ========================================
 		const navigate = useNavigate()
 		const confirm = useConfirm()
 
-		// Global selection state
+		// ========================================
+		// Hooks - State
+		// ========================================
 		const globalSelectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId)
+		const selectedNodeId = useSelectionStore((s) => s.selectedNodeId)
+		const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId)
+
 		const workspaceId = propWorkspaceId ?? globalSelectedWorkspaceId
 
-		// Node operations hooks
+		// ========================================
+		// Hooks - Data
+		// ========================================
+		const nodes = useNodesByWorkspace(workspaceId) ?? []
 		const { getNode } = useGetNodeById()
+		const { closeTab } = useEditorTabs()
+		const { toggleCollapsed: optimisticToggleCollapsed } = useOptimisticCollapse({ workspaceId })
 
-		// Optimistic collapse hook - Requirements: 1.1, 1.2, 1.3, 1.4, 1.5
-		const { toggleCollapsed: optimisticToggleCollapsed } = useOptimisticCollapse({
-			workspaceId,
-		})
-
-		// Wrapper for autoExpandAndScrollToNode compatibility
-		const setCollapsed = useCallback(
+		// 包装 toggleCollapsed 以兼容 autoExpandAndScrollToNode 的类型要求
+		const setCollapsedAsync = useCallback(
 			async (nodeId: string, collapsed: boolean): Promise<boolean> => {
 				try {
-					await optimisticToggleCollapsed(nodeId, collapsed)
+					optimisticToggleCollapsed(nodeId, collapsed)
 					return true
 				} catch {
 					return false
@@ -67,29 +127,18 @@ export const FileTreePanelContainer = memo(
 			[optimisticToggleCollapsed],
 		)
 
-		// Selected node state - use global store for cross-component communication
-		const selectedNodeId = useSelectionStore((s) => s.selectedNodeId)
-		const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId)
-
-		// Tree ref for scrolling to nodes
+		// ========================================
+		// Refs
+		// ========================================
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const treeRef = useRef<any>(null)
-
-		/**
-		 * Generate default content for new files
-		 * Creates a simple Lexical document with a title and empty paragraph
-		 */
-		const generateDefaultFileContent = useCallback((title: string): string => {
-			const doc = createDocument([
-				createHeadingNode(title, "h2"),
-				createParagraphNode([createTextNode("")]),
-			])
-			return JSON.stringify(doc)
-		}, [])
-
-		// Clear selection when workspace changes
-		// Requirements: 3.3
 		const prevWorkspaceIdRef = useRef(workspaceId)
+
+		// ========================================
+		// Effects
+		// ========================================
+
+		// 工作区切换时清除选中状态
 		useEffect(() => {
 			if (prevWorkspaceIdRef.current !== workspaceId) {
 				setSelectedNodeId(null)
@@ -97,44 +146,46 @@ export const FileTreePanelContainer = memo(
 			}
 		}, [workspaceId, setSelectedNodeId])
 
-		// 获取工作区节点数据
-		const nodes = useNodesByWorkspace(workspaceId) ?? []
+		// ========================================
+		// Callbacks - Node Operations
+		// ========================================
 
-		// Handle node selection - open file in editor
-		// 使用 openFile action 通过队列执行，确保数据先于渲染
+		/**
+		 * 选中节点 - 打开文件到编辑器
+		 */
 		const handleSelectNode = useCallback(
 			async (nodeId: string) => {
 				setSelectedNodeId(nodeId)
 
-				// Get node details to open in editor
 				const node = await getNode(nodeId)
-				if (!node) return
-
-				// Only open files (not folders) in editor
-				if (node.type === "folder") return
+				if (!node || node.type === "folder") return
 
 				if (workspaceId) {
-					// 使用 openFileAsync，内部处理：
-					// 1. 从 DB 加载内容
-					// 2. 创建 tab
-					// 3. 设置 editorState
-					await openFileAsync({
-						nodeId,
-						title: node.title,
-						type: node.type,
-						workspaceId,
-					})
+					await pipe(
+						openFile({
+							nodeId,
+							title: node.title,
+							type: node.type,
+							workspaceId,
+						}),
+						TE.fold(
+							(error) => async () => {
+								console.error("[FileTreePanel] Failed to open file:", error.message)
+							},
+							() => async () => {
+								// eslint-disable-next-line @typescript-eslint/no-explicit-any
+								void navigate({ to: "/" } as any)
+							},
+						),
+					)()
 				}
-
-				// Navigate to main workspace - all file types are handled there
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				void navigate({ to: "/" } as any)
 			},
 			[workspaceId, navigate, setSelectedNodeId, getNode],
 		)
 
-		// Handle folder creation
-		// 使用 createFileAsync 通过队列执行
+		/**
+		 * 创建文件夹
+		 */
 		const handleCreateFolder = useCallback(
 			async (parentId: string | null) => {
 				if (!workspaceId) {
@@ -142,35 +193,34 @@ export const FileTreePanelContainer = memo(
 					return
 				}
 
-				try {
-					const result = await createFileAsync({
+				await pipe(
+					createFile({
 						parentId,
 						title: "New Folder",
 						type: "folder",
 						workspaceId,
-					})
-
-					toast.success("Folder created")
-
-					// Auto-expand and scroll to new folder
-					// Requirements: 2.1, 2.2, 2.3, 2.4
-					if (result && result.node) {
-						// Select the new folder
-						setSelectedNodeId(result.node.id)
-
-						// Auto-expand ancestors and scroll to the new folder
-						await autoExpandAndScrollToNode(nodes, result.node.id, setCollapsed, treeRef)
-					}
-				} catch (error) {
-					console.error("Failed to create folder:", error)
-					toast.error("Failed to create folder")
-				}
+					}),
+					TE.fold(
+						(error) => async () => {
+							console.error("[FileTreePanel] Failed to create folder:", error.message)
+							toast.error("Failed to create folder")
+						},
+						(result) => async () => {
+							if (result?.node) {
+								setSelectedNodeId(result.node.id)
+								await autoExpandAndScrollToNode(nodes, result.node.id, setCollapsedAsync, treeRef)
+							}
+							toast.success("Folder created")
+						},
+					),
+				)()
 			},
-			[workspaceId, nodes, setCollapsed, setSelectedNodeId],
+			[workspaceId, nodes, setCollapsedAsync, setSelectedNodeId],
 		)
 
-		// Handle file creation
-		// 使用 createFileAsync 通过队列执行
+		/**
+		 * 创建文件
+		 */
 		const handleCreateFile = useCallback(
 			async (parentId: string | null, type: NodeType) => {
 				if (!workspaceId) {
@@ -178,77 +228,71 @@ export const FileTreePanelContainer = memo(
 					return
 				}
 
-				try {
-					const title = type === "drawing" ? "New Canvas" : "New File"
+				const title = getTitleByType(type)
+				const content = generateContentByType(type, title)
 
-					// Generate appropriate content based on type
-					let content: string
-					if (type === "drawing") {
-						// Excalidraw canvas content
-						content = JSON.stringify({
-							appState: {},
-							elements: [],
-							files: {},
-						})
-					} else {
-						// Regular file - generate Lexical template content
-						content = generateDefaultFileContent(title)
-					}
-
-					console.log("[FileTreePanel] 创建文件:", {
-						contentLength: content.length,
-						hasContent: !!content,
-						parentId,
-						title,
-						type,
-						workspaceId,
-					})
-
-					const result = await createFileAsync({
+				await pipe(
+					createFile({
 						content,
 						parentId,
 						title,
 						type,
 						workspaceId,
-					})
-
-					console.log("[FileTreePanel] 文件创建成功:", {
-						nodeId: result.node.id,
-						tabId: result.tabId,
-					})
-
-					toast.success(`${type === "drawing" ? "Canvas" : "File"} created`)
-
-					// Auto-select the new file (createFileAsync 已经打开了 tab)
-					// Requirements: 2.1, 2.2, 2.3, 2.4, 2.5
-					if (result && type !== "folder") {
-						setSelectedNodeId(result.node.id)
-
-						// Auto-expand ancestors and scroll to the new file
-						await autoExpandAndScrollToNode(nodes, result.node.id, setCollapsed, treeRef)
-
-						// eslint-disable-next-line @typescript-eslint/no-explicit-any
-						void navigate({ to: "/" } as any)
-					}
-				} catch (error) {
-					console.error("Failed to create file:", error)
-					toast.error("Failed to create file")
-				}
+					}),
+					TE.fold(
+						(error) => async () => {
+							console.error("[FileTreePanel] Failed to create file:", error.message)
+							toast.error("Failed to create file")
+						},
+						(result) => async () => {
+							if (result && type !== "folder") {
+								setSelectedNodeId(result.node.id)
+								await autoExpandAndScrollToNode(nodes, result.node.id, setCollapsedAsync, treeRef)
+								// eslint-disable-next-line @typescript-eslint/no-explicit-any
+								void navigate({ to: "/" } as any)
+							}
+							toast.success(getSuccessMessage(type))
+						},
+					),
+				)()
 			},
-			[workspaceId, setSelectedNodeId, navigate, generateDefaultFileContent, nodes, setCollapsed],
+			[workspaceId, setSelectedNodeId, navigate, nodes, setCollapsedAsync],
 		)
 
-		// Editor tabs for closing deleted files
-		const { closeTab } = useEditorTabs()
+		/**
+		 * 创建日记
+		 */
+		const handleCreateDiary = useCallback(async () => {
+			if (!workspaceId) {
+				toast.error("Please select a workspace first")
+				return
+			}
 
-		// Handle node deletion
+			try {
+				const { node } = await createDiaryCompatAsync({ workspaceId })
+
+				setSelectedNodeId(node.id)
+				await autoExpandAndScrollToNode(nodes, node.id, setCollapsedAsync, treeRef)
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				void navigate({ to: "/" } as any)
+
+				toast.success("Diary created")
+			} catch (error) {
+				console.error("[FileTreePanel] Failed to create diary:", error)
+				toast.error("Failed to create diary")
+			}
+		}, [workspaceId, setSelectedNodeId, navigate, nodes, setCollapsedAsync])
+
+		/**
+		 * 删除节点
+		 */
 		const handleDeleteNode = useCallback(
 			async (nodeId: string) => {
 				const node = await getNode(nodeId)
 				if (!node) return
 
 				const isFolder = node.type === "folder"
-				const ok = await confirm({
+				const confirmed = await confirm({
 					cancelText: "Cancel",
 					confirmText: "Delete",
 					description: isFolder
@@ -257,161 +301,91 @@ export const FileTreePanelContainer = memo(
 					title: `Delete ${isFolder ? "folder" : "file"}?`,
 				})
 
-				if (!ok) return
+				if (!confirmed) return
 
-				try {
-					const result = await deleteNode(nodeId)()
-
-					if (E.isLeft(result)) {
-						throw new Error(result.left.message)
-					}
-
-					// Close the tab if the deleted node was open in editor
-					closeTab(nodeId)
-
-					// Clear selection if deleted node was selected
-					if (selectedNodeId === nodeId) {
-						setSelectedNodeId(null)
-					}
-
-					toast.success(`${isFolder ? "Folder" : "File"} deleted`)
-				} catch (error) {
-					console.error("Failed to delete node:", error)
-					toast.error("Failed to delete")
-				}
+				await pipe(
+					deleteNode(nodeId),
+					TE.fold(
+						(error) => async () => {
+							console.error("[FileTreePanel] Failed to delete node:", error.message)
+							toast.error("Failed to delete")
+						},
+						() => async () => {
+							closeTab(nodeId)
+							if (selectedNodeId === nodeId) {
+								setSelectedNodeId(null)
+							}
+							toast.success(`${isFolder ? "Folder" : "File"} deleted`)
+						},
+					),
+				)()
 			},
 			[confirm, selectedNodeId, closeTab, setSelectedNodeId, getNode],
 		)
 
-		// Handle node rename
+		/**
+		 * 重命名节点
+		 */
 		const handleRenameNode = useCallback(async (nodeId: string, newTitle: string) => {
-			if (!newTitle.trim()) return
+			const trimmedTitle = newTitle.trim()
+			if (!trimmedTitle) return
 
-			try {
-				const result = await renameNode({
-					nodeId,
-					title: newTitle.trim(),
-				})()
-
-				if (E.isLeft(result)) {
-					throw new Error(result.left.message)
-				}
-			} catch (error) {
-				console.error("Failed to rename node:", error)
-				toast.error("Failed to rename")
-			}
+			await pipe(
+				renameNode({ nodeId, title: trimmedTitle }),
+				TE.fold(
+					(error) => async () => {
+						console.error("[FileTreePanel] Failed to rename node:", error.message)
+						toast.error("Failed to rename")
+					},
+					() => async () => {
+						// 重命名成功，无需额外操作（TanStack Query 会自动刷新）
+					},
+				),
+			)()
 		}, [])
 
-		// Handle node move (drag and drop)
+		/**
+		 * 移动节点（拖拽）
+		 */
 		const handleMoveNode = useCallback(
 			async (nodeId: string, newParentId: string | null, newIndex: number) => {
-				try {
-					const result = await moveNode({
+				await pipe(
+					moveNode({
 						newOrder: newIndex,
 						newParentId,
 						nodeId,
-					})()
-
-					if (E.isLeft(result)) {
-						throw new Error(result.left.message)
-					}
-				} catch (error) {
-					console.error("Failed to move node:", error)
-					if (error instanceof Error && error.message.includes("descendants")) {
-						toast.error("Cannot move a folder into itself")
-					} else {
-						toast.error("Failed to move")
-					}
-				}
+					}),
+					TE.fold(
+						(error) => async () => {
+							console.error("[FileTreePanel] Failed to move node:", error.message)
+							if (error.message.includes("descendants")) {
+								toast.error("Cannot move a folder into itself")
+							} else {
+								toast.error("Failed to move")
+							}
+						},
+						() => async () => {
+							// 移动成功，无需额外操作
+						},
+					),
+				)()
 			},
 			[],
 		)
 
-		// Handle diary creation
-		// Requirements: 1.1, 1.5, 3.1
-		// 使用 createDiaryCompatAsync，内部已通过队列处理
-		const handleCreateDiary = useCallback(async () => {
-			if (!workspaceId) {
-				toast.error("Please select a workspace first")
-				return
-			}
-
-			try {
-				// Create diary and get content in one call
-				const { node } = await createDiaryCompatAsync({
-					workspaceId,
-				})
-
-				toast.success("Diary created")
-
-				// Auto-select the new diary file
-				// Requirements: 2.1, 2.2, 2.3, 2.4
-				setSelectedNodeId(node.id)
-
-				// Auto-expand ancestors and scroll to the new diary
-				await autoExpandAndScrollToNode(nodes, node.id, setCollapsed, treeRef)
-
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				void navigate({ to: "/" } as any)
-			} catch (error) {
-				console.error("Failed to create diary:", error)
-				toast.error("Failed to create diary")
-			}
-		}, [workspaceId, setSelectedNodeId, navigate, nodes, setCollapsed])
-
-		// Handle toggle collapsed state
-		// Handle toggle collapsed state
-		// Requirements: 2.2, 1.1, 1.2, 1.3, 1.4, 1.5
+		/**
+		 * 切换折叠状态
+		 */
 		const handleToggleCollapsed = useCallback(
-			async (nodeId: string, collapsed: boolean) => {
-				// Performance monitoring - Requirements: 1.5, 10.1, 10.2, 10.3
-				const startTime = performance.now()
-				console.log("[FileTree Performance] Toggle collapsed started", {
-					collapsed,
-					nodeId,
-					timestamp: dayjs().toISOString(),
-				})
-
-				try {
-					// Use optimistic update - Requirements: 1.1, 1.2, 1.3, 1.4
-					await optimisticToggleCollapsed(nodeId, collapsed)
-
-					const endTime = performance.now()
-					const totalDuration = endTime - startTime
-
-					// Log performance metrics
-					console.log("[FileTree Performance] Toggle collapsed completed", {
-						collapsed,
-						nodeId,
-						timestamp: dayjs().toISOString(),
-						totalDuration: `${totalDuration.toFixed(2)}ms`,
-					})
-
-					// Warning for slow operations (> 100ms threshold)
-					// Note: With optimistic updates, this should rarely trigger
-					if (totalDuration > 100) {
-						console.warn("[FileTree Performance] Slow toggle operation detected", {
-							nodeId,
-							note: "This is unexpected with optimistic updates",
-							threshold: "100ms",
-							totalDuration: `${totalDuration.toFixed(2)}ms`,
-						})
-					}
-				} catch (error) {
-					const errorTime = performance.now()
-					const totalDuration = errorTime - startTime
-
-					console.error("[FileTree Performance] Toggle collapsed failed", {
-						collapsed,
-						error,
-						nodeId,
-						timestamp: dayjs().toISOString(),
-						totalDuration: `${totalDuration.toFixed(2)}ms`,
-					})
-				}
+			(nodeId: string, collapsed: boolean) => {
+				optimisticToggleCollapsed(nodeId, collapsed)
 			},
 			[optimisticToggleCollapsed],
 		)
+
+		// ========================================
+		// Render
+		// ========================================
 
 		return (
 			<FileTree

@@ -4,3 +4,4 @@
  */
 
 export * from "./editor-tab.pipe"
+export * from "./open-tab.pipe"
