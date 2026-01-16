@@ -56,7 +56,7 @@
   - 运行 `bun run test` 确保测试通过
   - 提交: `git commit -m "refactor: remove empty compatibility layers"`
 
-- [-] 3. 删除 Dexie 迁移代码
+- [x] 3. 删除 Dexie 迁移代码
   - [x] 3.1 删除 `flows/migration/` 整个目录
     - 包含 `dexie-to-sqlite.migration.fn.ts`
     - 包含 `dexie-to-sqlite.migration.fn.test.ts`
@@ -82,17 +82,17 @@
   - 运行 `bun run test` 确保测试通过
   - 提交: `git commit -m "refactor: remove Dexie migration code"`
 
-- [ ] 5. 删除示例和测试文件
-  - [ ] 5.1 删除 `examples/` 整个目录
+- [x] 5. 删除示例和测试文件
+  - [x] 5.1 删除 `examples/` 整个目录
     - 包含 `functional-logging-example.ts`
     - _Requirements: 3.1_
-  - [ ] 5.2 删除 `flows/log/performance-test.ts`
+  - [x] 5.2 删除 `flows/log/performance-test.ts`
     - 性能测试脚本，无导入
     - _Requirements: 3.1_
-  - [ ] 5.3 删除 `flows/log/test-logger.flow.ts`
+  - [x] 5.3 删除 `flows/log/test-logger.flow.ts`
     - 日志测试工具，只被已删除的 example 引用
     - _Requirements: 3.1_
-  - [ ] 5.4 更新 `flows/log/index.ts` 移除 test-logger 导出
+  - [x] 5.4 更新 `flows/log/index.ts` 移除 test-logger 导出
     - _Requirements: 7.1, 7.2_
 
 - [ ] 6. Checkpoint - 验证阶段 5
