@@ -130,48 +130,48 @@
 - [ ] 7. 检查点 - 确保核心功能替换完成
   - 确保所有测试通过，如有问题请询问用户。
 
-- [ ] 8. 完全移除 Dexie 代码和依赖
-  - [ ] 8.1 删除 `legacy-database.ts` 文件
+- [x] 8. 完全移除 Dexie 代码和依赖
+  - [x] 8.1 删除 `legacy-database.ts` 文件
     - 删除 `src/io/db/legacy-database.ts`
     - _需求: 1.1, 6.1_
 
-  - [ ] 8.2 更新 `src/io/db/index.ts`
+  - [x] 8.2 更新 `src/io/db/index.ts`
     - 移除 `LegacyDatabase` 和 `legacyDatabase` 导出
     - 清理相关类型导出
     - _需求: 1.2, 6.2_
 
-  - [ ] 8.3 从 package.json 移除 Dexie 依赖
+  - [x] 8.3 从 package.json 移除 Dexie 依赖
     - 移除 `dexie` 包依赖
     - 运行 `bun install` 清理 lock 文件
     - _需求: 1.3, 6.3_
 
-  - [ ] 8.4 编写属性测试用于运行时 IndexedDB 隔离验证
+  - [x] 8.4 编写属性测试用于运行时 IndexedDB 隔离验证
     - **属性 4: 运行时 IndexedDB 隔离**
     - **验证: 需求 1.4, 5.1**
 
-  - [ ] 8.5 ESLint 检查数据库模块
+  - [x] 8.5 ESLint 检查数据库模块
     - 运行 `bun run lint` 检查 `io/db/` 目录
     - 修复所有 ESLint 错误和警告
     - 确保代码质量符合项目标准
     - _需求: 所有数据库相关需求_
 
-- [ ] 9. 清理测试中的 Dexie 模拟和引用
-  - [ ] 9.1 更新 `dexie-to-sqlite.migration.fn.test.ts`
+- [x] 9. 清理测试中的 Dexie 模拟和引用
+  - [x] 9.1 更新 `dexie-to-sqlite.migration.fn.test.ts`
     - 移除 `mockLegacyDatabase` 模拟
     - 移除 Dexie 相关的测试用例
     - 更新测试以验证 SQLite API 使用
     - _需求: 7.1, 7.2_
 
-  - [ ] 9.2 搜索并清理其他测试文件中的 Dexie 引用
+  - [x] 9.2 搜索并清理其他测试文件中的 Dexie 引用
     - 搜索所有 `.test.ts` 文件中的 Dexie 引用
     - 移除或更新相关测试代码
     - _需求: 7.3_
 
-  - [ ] 9.3 编写属性测试用于测试套件 SQLite 验证
+  - [x] 9.3 编写属性测试用于测试套件 SQLite 验证
     - **属性 7: 测试套件 SQLite 验证**
     - **验证: 需求 7.2, 7.4**
 
-  - [ ] 9.4 ESLint 检查测试文件
+  - [x] 9.4 ESLint 检查测试文件
     - 运行 `bun run lint` 检查所有更新的测试文件
     - 修复所有 ESLint 错误和警告
     - 确保测试代码质量符合项目标准

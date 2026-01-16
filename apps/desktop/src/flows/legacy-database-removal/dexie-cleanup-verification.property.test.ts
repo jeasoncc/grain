@@ -1,16 +1,16 @@
 /**
  * @fileoverview Property-based tests for Dexie cleanup verification
- * 
+ *
  * Feature: legacy-database-removal
  * Property 1: 代码库 Dexie 清理完整性
- * 
+ *
  * Validates: Requirements 1.2, 2.4, 3.3, 4.3, 5.3, 7.1, 7.3
  */
 
+import { readdirSync, readFileSync, statSync } from "node:fs"
+import { extname, join } from "node:path"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
-import { readFileSync, readdirSync, statSync } from "node:fs"
-import { join, extname } from "node:path"
 
 // ============================================================================
 // Test Utilities
@@ -44,12 +44,15 @@ function getAllTypeScriptFiles(dir: string, basePath: string = ""): string[] {
 /**
  * 检查文件内容是否包含 Dexie 相关引用
  */
-function checkFileForDexieReferences(filePath: string, content: string): {
+function checkFileForDexieReferences(
+	filePath: string,
+	content: string,
+): {
 	hasDexieReferences: boolean
 	references: string[]
 } {
 	const references: string[] = []
-	
+
 	// 检查 Dexie 相关的导入和使用
 	const dexiePatterns = [
 		/import.*dexie/i,
@@ -74,28 +77,37 @@ function checkFileForDexieReferences(filePath: string, content: string): {
 		/database\.dbVersions/g,
 		/clearIndexedDB/g,
 		/hasDexieData/g,
-		/clearDexieData/g
+		/clearDexieData/g,
 	]
 
-	const lines = content.split('\n')
-	
+	const lines = content.split("\n")
+
 	for (let i = 0; i < lines.length; i++) {
 		const line = lines[i]
-		
+
 		// 跳过注释行（但保留 TODO 注释中的引用）
-		if (line.trim().startsWith('//') && !line.includes('TODO') && !line.includes('FIXME')) {
+		if (line.trim().startsWith("//") && !line.includes("TODO") && !line.includes("FIXME")) {
 			continue
 		}
-		
+
 		// 跳过多行注释（但保留 TODO 注释中的引用）
-		if (line.trim().startsWith('*') && !line.includes('TODO') && !line.includes('FIXME')) {
+		if (line.trim().startsWith("*") && !line.includes("TODO") && !line.includes("FIXME")) {
 			continue
 		}
 
 		// 跳过 JSX 文本内容中的 IndexedDB 引用（UI 显示文本）
-		if (line.includes('<p') || line.includes('<h') || line.includes('{/*') || line.includes('*/}')) {
+		if (
+			line.includes("<p") ||
+			line.includes("<h") ||
+			line.includes("{/*") ||
+			line.includes("*/}")
+		) {
 			// 检查是否是纯文本引用
-			if (line.includes('IndexedDB') && !line.includes('indexedDB.') && !line.includes('window.indexedDB')) {
+			if (
+				line.includes("IndexedDB") &&
+				!line.includes("indexedDB.") &&
+				!line.includes("window.indexedDB")
+			) {
 				continue
 			}
 		}
@@ -109,7 +121,7 @@ function checkFileForDexieReferences(filePath: string, content: string): {
 
 	return {
 		hasDexieReferences: references.length > 0,
-		references
+		references,
 	}
 }
 
@@ -124,7 +136,7 @@ const ALLOWED_EXCEPTIONS = [
 	"flows/migration/dexie-to-sqlite.migration.fn.test.ts",
 	// 遗留数据库文件（将在最后阶段删除）
 	"io/db/legacy-database.ts",
-	"io/db/index.ts"
+	"io/db/index.ts",
 ]
 
 // ============================================================================
@@ -134,45 +146,42 @@ const ALLOWED_EXCEPTIONS = [
 describe("Property 1: 代码库 Dexie 清理完整性", () => {
 	/**
 	 * Property 1: 代码库 Dexie 清理完整性
-	 * 
+	 *
 	 * 对于任何代码文件，该文件不应包含对 legacyDatabase、dexie、或 IndexedDB 的引用
 	 * **验证: 需求 1.2, 2.4, 3.3, 4.3, 5.3, 7.1, 7.3**
 	 */
 	it("should not contain Dexie references in any TypeScript file", () => {
 		const projectRoot = join(process.cwd(), "src")
 		const allFiles = getAllTypeScriptFiles(projectRoot)
-		
+
 		// 使用 fast-check 生成文件路径进行测试
 		fc.assert(
-			fc.property(
-				fc.constantFrom(...allFiles),
-				(filePath) => {
-					// 跳过允许的例外文件
-					const normalizedPath = filePath.replace(/\\/g, "/")
-					if (ALLOWED_EXCEPTIONS.some(exception => normalizedPath.includes(exception))) {
-						return true
-					}
-
-					const fullPath = join(projectRoot, filePath)
-					const content = readFileSync(fullPath, "utf-8")
-					const result = checkFileForDexieReferences(filePath, content)
-
-					// 如果发现 Dexie 引用，提供详细信息
-					if (result.hasDexieReferences) {
-						console.error(`\n❌ Dexie references found in ${filePath}:`)
-						for (const ref of result.references) {
-							console.error(`  ${ref}`)
-						}
-						return false
-					}
-
+			fc.property(fc.constantFrom(...allFiles), (filePath) => {
+				// 跳过允许的例外文件
+				const normalizedPath = filePath.replace(/\\/g, "/")
+				if (ALLOWED_EXCEPTIONS.some((exception) => normalizedPath.includes(exception))) {
 					return true
 				}
-			),
-			{ 
+
+				const fullPath = join(projectRoot, filePath)
+				const content = readFileSync(fullPath, "utf-8")
+				const result = checkFileForDexieReferences(filePath, content)
+
+				// 如果发现 Dexie 引用，提供详细信息
+				if (result.hasDexieReferences) {
+					console.error(`\n❌ Dexie references found in ${filePath}:`)
+					for (const ref of result.references) {
+						console.error(`  ${ref}`)
+					}
+					return false
+				}
+
+				return true
+			}),
+			{
 				numRuns: Math.min(100, allFiles.length),
-				verbose: true
-			}
+				verbose: true,
+			},
 		)
 	})
 
@@ -182,17 +191,16 @@ describe("Property 1: 代码库 Dexie 清理完整性", () => {
 	it("should not have Dexie dependencies in package.json", () => {
 		const packageJsonPath = join(process.cwd(), "package.json")
 		const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"))
-		
+
 		const dependencies = packageJson.dependencies || {}
 		const devDependencies = packageJson.devDependencies || {}
 		const allDeps = { ...dependencies, ...devDependencies }
-		
+
 		// 检查是否包含 Dexie 相关依赖
-		const dexieDeps = Object.keys(allDeps).filter(dep => 
-			dep.toLowerCase().includes("dexie") || 
-			dep.toLowerCase().includes("indexeddb")
+		const dexieDeps = Object.keys(allDeps).filter(
+			(dep) => dep.toLowerCase().includes("dexie") || dep.toLowerCase().includes("indexeddb"),
 		)
-		
+
 		expect(dexieDeps).toEqual([])
 	})
 
@@ -207,32 +215,32 @@ describe("Property 1: 代码库 Dexie 清理完整性", () => {
 					"indexedDB.open(",
 					"window.indexedDB",
 					"global.indexedDB",
-					"self.indexedDB"
+					"self.indexedDB",
 				),
 				(pattern) => {
 					const projectRoot = join(process.cwd(), "src")
 					const allFiles = getAllTypeScriptFiles(projectRoot)
-					
+
 					for (const filePath of allFiles) {
 						// 跳过允许的例外文件
 						const normalizedPath = filePath.replace(/\\/g, "/")
-						if (ALLOWED_EXCEPTIONS.some(exception => normalizedPath.includes(exception))) {
+						if (ALLOWED_EXCEPTIONS.some((exception) => normalizedPath.includes(exception))) {
 							continue
 						}
 
 						const fullPath = join(projectRoot, filePath)
 						const content = readFileSync(fullPath, "utf-8")
-						
+
 						if (content.includes(pattern)) {
 							console.error(`❌ IndexedDB initialization found in ${filePath}: ${pattern}`)
 							return false
 						}
 					}
-					
+
 					return true
-				}
+				},
 			),
-			{ numRuns: 100 }
+			{ numRuns: 100 },
 		)
 	})
 })

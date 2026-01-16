@@ -12,7 +12,7 @@
 
 import { pipe } from "fp-ts/function"
 import * as TE from "fp-ts/TaskEither"
-import { info, success } from "@/io/log/logger.api"
+import { error, info, success } from "@/io/log/logger.api"
 import { type AppError, dbError } from "@/types/error"
 import type { ClearDataResult } from "@/types/rust-api"
 import { api } from "./client.api"
@@ -56,9 +56,11 @@ export const clearLogs = (): TE.TaskEither<AppError, void> =>
 
 			success("[ClearData] 日志数据库清除成功", {}, "clear-data")
 		},
-		(error): AppError => {
-			error("[ClearData] 清除日志数据库失败", { error }, "clear-data")
-			return dbError(`清除日志数据库失败: ${error}`)
+		(unknownError): AppError => {
+			error("[ClearData] 清除日志数据库失败", { error: unknownError }, "clear-data")
+			return dbError(
+				`清除日志数据库失败: ${unknownError instanceof Error ? unknownError.message : String(unknownError)}`,
+			)
 		},
 	)
 
@@ -80,7 +82,7 @@ export const clearAllData = (): TE.TaskEither<AppError, ClearDataResult> =>
 			pipe(
 				clearLogs(),
 				// 日志清理失败不影响主流程
-				TE.orElse(() => TE.right(undefined)),
+				TE.orElse((): TE.TaskEither<AppError, void> => TE.right(undefined)),
 			),
 		),
 	)
@@ -99,7 +101,7 @@ export const clearAllDataKeepUsers = (): TE.TaskEither<AppError, ClearDataResult
 			pipe(
 				clearLogs(),
 				// 日志清理失败不影响主流程
-				TE.orElse(() => TE.right(undefined)),
+				TE.orElse((): TE.TaskEither<AppError, void> => TE.right(undefined)),
 			),
 		),
 	)

@@ -123,5 +123,3 @@ export const clearAllData = (options: ClearDataOptions = {}): TE.TaskEither<AppE
 		(error): AppError =>
 			dbError(`清理所有数据失败: ${error instanceof Error ? error.message : "未知错误"}`),
 	)
-
-

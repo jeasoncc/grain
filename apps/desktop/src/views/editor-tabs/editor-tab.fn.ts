@@ -8,9 +8,8 @@
  * - 不修改输入参数
  */
 
-import { orderBy } from "es-toolkit"
-
 import dayjs from "dayjs"
+import { orderBy } from "es-toolkit"
 import type { EditorInstanceState, EditorTab } from "@/types/editor-tab"
 
 // ==============================
@@ -230,11 +229,7 @@ export const evictLRUEditorStates = (
 	}
 
 	// 按 lastModified 排序（最旧的在前）
-	const sortedEntries = orderBy(
-		entries,
-		[([, state]) => state.lastModified ?? 0],
-		["asc"]
-	)
+	const sortedEntries = orderBy(entries, [([, state]) => state.lastModified ?? 0], ["asc"])
 
 	// 计算需要清理的数量
 	const toEvictCount = entries.length - maxStates

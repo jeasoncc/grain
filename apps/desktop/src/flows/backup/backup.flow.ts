@@ -10,8 +10,8 @@ import { pipe } from "fp-ts/function"
 import * as TE from "fp-ts/TaskEither"
 import * as backupApi from "@/io/api/backup.api"
 import type { BackupData, DatabaseStats, LocalBackupRecord } from "@/types/backup"
-import type { BackupInfo } from "@/types/rust-api"
 import { type AppError, dbError, importError } from "@/types/error"
+import type { BackupInfo } from "@/types/rust-api"
 
 // ============================================================================
 // 备份操作
@@ -120,30 +120,30 @@ export const saveLocalBackup = (
 				throw new Error(backupsResult.left.message)
 			}
 			const backups = backupsResult.right
-			
+
 			// 创建一个兼容的备份记录，使用 BackupInfo 而不是完整的 BackupData
-			const newBackup = { 
-				timestamp: dayjs(backupInfo.createdAt).toISOString(),
+			const newBackup = {
 				// 注意：这里我们不再存储完整的数据，只存储备份信息
 				data: {
+					attachments: [],
+					contents: [],
+					dbVersions: [],
+					drawings: [],
 					metadata: {
-						version: "5.0.0",
-						timestamp: dayjs(backupInfo.createdAt).toISOString(),
-						projectCount: 0, // SQLite API 不提供这些统计信息
-						nodeCount: 0,
-						contentCount: 0,
-						tagCount: 0,
 						appVersion: "0.1.89",
+						contentCount: 0,
+						nodeCount: 0,
+						projectCount: 0, // SQLite API 不提供这些统计信息
+						tagCount: 0,
+						timestamp: dayjs(backupInfo.createdAt).toISOString(),
+						version: "5.0.0",
 					},
+					nodes: [],
+					tags: [],
 					users: [],
 					workspaces: [],
-					nodes: [],
-					contents: [],
-					drawings: [],
-					attachments: [],
-					tags: [],
-					dbVersions: [],
-				} as BackupData
+				} as BackupData,
+				timestamp: dayjs(backupInfo.createdAt).toISOString(),
 			}
 			const recentBackups = [newBackup, ...backups].slice(0, maxBackups)
 			localStorage.setItem(LOCAL_BACKUPS_KEY, JSON.stringify(recentBackups))

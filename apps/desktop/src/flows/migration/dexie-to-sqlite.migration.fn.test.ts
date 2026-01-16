@@ -1,12 +1,13 @@
 /**
  * @file dexie-to-sqlite.migration.fn.test.ts
- * @description Dexie to SQLite 数据迁移工具测试
+ * @description SQLite 迁移工具测试（Dexie 支持已移除）
  *
  * 测试覆盖：
- * - Property 8: Migration Data Preservation - 迁移后数据完整性
- * - Property 9: Migration Rollback - 迁移回滚功能
+ * - 迁移状态管理
+ * - SQLite-only 架构验证
+ * - 向后兼容性测试
  *
- * @requirements 10.2, 10.3, 10.4, 10.5
+ * @requirements 7.1, 7.2, 7.4
  */
 
 /// <reference types="node" />
@@ -15,10 +16,6 @@ import dayjs from "dayjs"
 import * as E from "fp-ts/Either"
 import type * as TE from "fp-ts/TaskEither"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import type { ContentInterface } from "@/types/content"
-import type { NodeInterface } from "@/types/node"
-import type { UserInterface } from "@/types/user"
-import type { WorkspaceInterface } from "@/types/workspace"
 
 // ============================================================================
 // Test Helpers
@@ -31,132 +28,12 @@ async function runTE<Err, A>(te: TE.TaskEither<Err, A>): Promise<E.Either<Err, A
 	return te()
 }
 
-/**
- * 创建测试用的用户
- */
-function createTestUser(overrides: Partial<UserInterface> = {}): UserInterface {
-	return {
-		avatar: "",
-		createDate: dayjs().toISOString(),
-		displayName: "Test User",
-		email: "test@example.com",
-		features: {
-			canExportPDF: false,
-			canUseAllScenes: true,
-			canUseCloudSync: false,
-			showAds: true,
-		},
-		id: "user-1",
-		lastLogin: dayjs().toISOString(),
-		lastTokenCheck: dayjs().toISOString(),
-		plan: "free",
-		planStartDate: dayjs().toISOString(),
-		settings: {
-			autosave: true,
-			fontSize: "14px",
-			language: "en",
-			lastLocation: true,
-			spellCheck: true,
-			theme: "dark",
-		},
-		state: {
-			currentChapter: "",
-			currentProject: "",
-			currentScene: "",
-			currentTitle: "",
-			currentTyping: "",
-			isUserLoggedIn: false,
-			lastCloudSave: "",
-			lastLocalSave: "",
-			lastLocation: "/",
-		},
-		token: "",
-		tokenStatus: "unchecked",
-		username: "testuser",
-		...overrides,
-	}
-}
-
-/**
- * 创建测试用的工作区
- */
-function createTestWorkspace(overrides: Partial<WorkspaceInterface> = {}): WorkspaceInterface {
-	return {
-		author: "Test Author",
-		createDate: dayjs().toISOString(),
-		description: "A test workspace",
-		id: "workspace-1",
-		language: "en",
-		lastOpen: dayjs().toISOString(),
-		owner: "user-1",
-		publisher: "",
-		title: "Test Workspace",
-		...overrides,
-	}
-}
-
-/**
- * 创建测试用的节点
- */
-function createTestNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
-	return {
-		collapsed: false,
-		createDate: dayjs().toISOString(),
-		id: "node-1",
-		lastEdit: dayjs().toISOString(),
-		order: 0,
-		parent: null,
-		tags: [],
-		title: "Test Node",
-		type: "file",
-		workspace: "workspace-1",
-		...overrides,
-	}
-}
-
-/**
- * 创建测试用的内容
- */
-function createTestContent(overrides: Partial<ContentInterface> = {}): ContentInterface {
-	return {
-		content: '{"root":{"children":[]}}',
-		contentType: "lexical",
-		id: "content-1",
-		lastEdit: dayjs().toISOString(),
-		nodeId: "node-1",
-		...overrides,
-	}
-}
-
 // ============================================================================
 // Mock Setup
 // ============================================================================
 
-const { mockRepo, mockLogger, mockLegacyDatabase } = vi.hoisted(() => {
+const { mockLogger } = vi.hoisted(() => {
 	return {
-		mockLegacyDatabase: {
-			contents: {
-				clear: vi.fn(),
-				count: vi.fn(),
-				toArray: vi.fn(),
-			},
-			nodes: {
-				clear: vi.fn(),
-				count: vi.fn(),
-				toArray: vi.fn(),
-			},
-			transaction: vi.fn(),
-			users: {
-				clear: vi.fn(),
-				count: vi.fn(),
-				toArray: vi.fn(),
-			},
-			workspaces: {
-				clear: vi.fn(),
-				count: vi.fn(),
-				toArray: vi.fn(),
-			},
-		},
 		mockLogger: {
 			debug: vi.fn(),
 			error: vi.fn(),
@@ -164,31 +41,13 @@ const { mockRepo, mockLogger, mockLegacyDatabase } = vi.hoisted(() => {
 			success: vi.fn(),
 			warn: vi.fn(),
 		},
-		mockRepo: {
-			createContent: vi.fn(),
-			createNode: vi.fn(),
-			createUser: vi.fn(),
-			createWorkspace: vi.fn(),
-		},
 	}
 })
 
-// Mock repo
-vi.mock("@/io/api", () => ({
-	createContent: mockRepo.createContent,
-	createNode: mockRepo.createNode,
-	createUser: mockRepo.createUser,
-	createWorkspace: mockRepo.createWorkspace,
-}))
-
 // Mock logger
-vi.mock("@/log", () => ({
-	default: mockLogger,
-}))
-
-// Mock legacy database
-vi.mock("@/db/legacy-database", () => ({
-	legacyDatabase: mockLegacyDatabase,
+vi.mock("@/io/log/logger.api", () => ({
+	info: mockLogger.info,
+	warn: mockLogger.warn,
 }))
 
 // Mock localStorage
@@ -265,28 +124,11 @@ describe("dexie-to-sqlite.migration.fn", () => {
 	})
 
 	// ==========================================================================
-	// Dexie Data Detection
+	// SQLite-Only Architecture Tests
 	// ==========================================================================
 
-	describe("hasDexieData", () => {
-		it("should return true when Dexie has data", async () => {
-			mockLegacyDatabase.workspaces.count.mockResolvedValue(1)
-			mockLegacyDatabase.nodes.count.mockResolvedValue(5)
-			mockLegacyDatabase.users.count.mockResolvedValue(1)
-
-			const result = await runTE(hasDexieData())
-
-			expect(E.isRight(result)).toBe(true)
-			if (E.isRight(result)) {
-				expect(result.right).toBe(true)
-			}
-		})
-
-		it("should return false when Dexie is empty", async () => {
-			mockLegacyDatabase.workspaces.count.mockResolvedValue(0)
-			mockLegacyDatabase.nodes.count.mockResolvedValue(0)
-			mockLegacyDatabase.users.count.mockResolvedValue(0)
-
+	describe("SQLite-Only Architecture", () => {
+		it("hasDexieData should always return false (Dexie support removed)", async () => {
 			const result = await runTE(hasDexieData())
 
 			expect(E.isRight(result)).toBe(true)
@@ -295,44 +137,7 @@ describe("dexie-to-sqlite.migration.fn", () => {
 			}
 		})
 
-		it("should return true when only users exist", async () => {
-			mockLegacyDatabase.workspaces.count.mockResolvedValue(0)
-			mockLegacyDatabase.nodes.count.mockResolvedValue(0)
-			mockLegacyDatabase.users.count.mockResolvedValue(1)
-
-			const result = await runTE(hasDexieData())
-
-			expect(E.isRight(result)).toBe(true)
-			if (E.isRight(result)) {
-				expect(result.right).toBe(true)
-			}
-		})
-	})
-
-	// ==========================================================================
-	// needsMigration
-	// ==========================================================================
-
-	describe("needsMigration", () => {
-		it("should return true when status is not_started and has data", async () => {
-			mockLegacyDatabase.workspaces.count.mockResolvedValue(1)
-			mockLegacyDatabase.nodes.count.mockResolvedValue(5)
-			mockLegacyDatabase.users.count.mockResolvedValue(1)
-
-			const result = await runTE(needsMigration())
-
-			expect(E.isRight(result)).toBe(true)
-			if (E.isRight(result)) {
-				expect(result.right).toBe(true)
-			}
-		})
-
-		it("should return false when status is completed", async () => {
-			setMigrationStatus("completed")
-			mockLegacyDatabase.workspaces.count.mockResolvedValue(1)
-			mockLegacyDatabase.nodes.count.mockResolvedValue(5)
-			mockLegacyDatabase.users.count.mockResolvedValue(1)
-
+		it("needsMigration should always return false (no Dexie data exists)", async () => {
 			const result = await runTE(needsMigration())
 
 			expect(E.isRight(result)).toBe(true)
@@ -341,53 +146,7 @@ describe("dexie-to-sqlite.migration.fn", () => {
 			}
 		})
 
-		it("should return false when no data exists", async () => {
-			mockLegacyDatabase.workspaces.count.mockResolvedValue(0)
-			mockLegacyDatabase.nodes.count.mockResolvedValue(0)
-			mockLegacyDatabase.users.count.mockResolvedValue(0)
-
-			const result = await runTE(needsMigration())
-
-			expect(E.isRight(result)).toBe(true)
-			if (E.isRight(result)) {
-				expect(result.right).toBe(false)
-			}
-		})
-	})
-
-	// ==========================================================================
-	// readDexieData
-	// ==========================================================================
-
-	describe("readDexieData", () => {
-		it("should read all data from Dexie", async () => {
-			const testUsers = [createTestUser()]
-			const testWorkspaces = [createTestWorkspace()]
-			const testNodes = [createTestNode()]
-			const testContents = [createTestContent()]
-
-			mockLegacyDatabase.users.toArray.mockResolvedValue(testUsers)
-			mockLegacyDatabase.workspaces.toArray.mockResolvedValue(testWorkspaces)
-			mockLegacyDatabase.nodes.toArray.mockResolvedValue(testNodes)
-			mockLegacyDatabase.contents.toArray.mockResolvedValue(testContents)
-
-			const result = await runTE(readDexieData())
-
-			expect(E.isRight(result)).toBe(true)
-			if (E.isRight(result)) {
-				expect(result.right.users).toHaveLength(1)
-				expect(result.right.workspaces).toHaveLength(1)
-				expect(result.right.nodes).toHaveLength(1)
-				expect(result.right.contents).toHaveLength(1)
-			}
-		})
-
-		it("should return empty arrays when no data exists", async () => {
-			mockLegacyDatabase.users.toArray.mockResolvedValue([])
-			mockLegacyDatabase.workspaces.toArray.mockResolvedValue([])
-			mockLegacyDatabase.nodes.toArray.mockResolvedValue([])
-			mockLegacyDatabase.contents.toArray.mockResolvedValue([])
-
+		it("readDexieData should return empty data snapshot", async () => {
 			const result = await runTE(readDexieData())
 
 			expect(E.isRight(result)).toBe(true)
@@ -398,206 +157,34 @@ describe("dexie-to-sqlite.migration.fn", () => {
 				expect(result.right.contents).toHaveLength(0)
 			}
 		})
-	})
 
-	// ==========================================================================
-	// Property 8: Migration Data Preservation
-	// ==========================================================================
-
-	describe("Property 8: Migration Data Preservation", () => {
-		it("should migrate all users with correct data", async () => {
-			const testUser = createTestUser({ id: "old-user-1" })
-			const newUser = createTestUser({ id: "new-user-1" })
-
-			mockLegacyDatabase.workspaces.count.mockResolvedValue(0)
-			mockLegacyDatabase.nodes.count.mockResolvedValue(0)
-			mockLegacyDatabase.users.count.mockResolvedValue(1)
-			mockLegacyDatabase.users.toArray.mockResolvedValue([testUser])
-			mockLegacyDatabase.workspaces.toArray.mockResolvedValue([])
-			mockLegacyDatabase.nodes.toArray.mockResolvedValue([])
-			mockLegacyDatabase.contents.toArray.mockResolvedValue([])
-
-			mockRepo.createUser.mockReturnValue(() => Promise.resolve(E.right(newUser)))
-
+		it("migrateData should return completed status without performing migration", async () => {
 			const result = await runTE(migrateData())
 
 			expect(E.isRight(result)).toBe(true)
 			if (E.isRight(result)) {
 				expect(result.right.status).toBe("completed")
-				expect(result.right.migratedCounts.users).toBe(1)
-				expect(mockRepo.createUser).toHaveBeenCalledWith(
-					expect.objectContaining({
-						displayName: testUser.displayName,
-						email: testUser.email,
-						username: testUser.username,
-					}),
-				)
+				expect(result.right.migratedCounts.users).toBe(0)
+				expect(result.right.migratedCounts.workspaces).toBe(0)
+				expect(result.right.migratedCounts.nodes).toBe(0)
+				expect(result.right.migratedCounts.contents).toBe(0)
+				expect(result.right.errors).toHaveLength(0)
 			}
 		})
 
-		it("should migrate workspaces with correct owner mapping", async () => {
-			const testUser = createTestUser({ id: "old-user-1" })
-			const newUser = createTestUser({ id: "new-user-1" })
-			const testWorkspace = createTestWorkspace({
-				id: "old-workspace-1",
-				owner: "old-user-1",
-			})
-			const newWorkspace = createTestWorkspace({ id: "new-workspace-1" })
-
-			mockLegacyDatabase.workspaces.count.mockResolvedValue(1)
-			mockLegacyDatabase.nodes.count.mockResolvedValue(0)
-			mockLegacyDatabase.users.count.mockResolvedValue(1)
-			mockLegacyDatabase.users.toArray.mockResolvedValue([testUser])
-			mockLegacyDatabase.workspaces.toArray.mockResolvedValue([testWorkspace])
-			mockLegacyDatabase.nodes.toArray.mockResolvedValue([])
-			mockLegacyDatabase.contents.toArray.mockResolvedValue([])
-
-			mockRepo.createUser.mockReturnValue(() => Promise.resolve(E.right(newUser)))
-			mockRepo.createWorkspace.mockReturnValue(() => Promise.resolve(E.right(newWorkspace)))
-
-			const result = await runTE(migrateData())
+		it("clearDexieData should be a no-op (Dexie support removed)", async () => {
+			const result = await runTE(clearDexieData())
 
 			expect(E.isRight(result)).toBe(true)
-			if (E.isRight(result)) {
-				expect(result.right.status).toBe("completed")
-				expect(result.right.migratedCounts.workspaces).toBe(1)
-				// Verify owner ID was mapped
-				expect(mockRepo.createWorkspace).toHaveBeenCalledWith(
-					expect.objectContaining({
-						owner: "new-user-1", // Mapped from old-user-1
-						title: testWorkspace.title,
-					}),
-				)
-			}
-		})
-
-		it("should migrate nodes with correct workspace and parent mapping", async () => {
-			const testUser = createTestUser({ id: "old-user-1" })
-			const newUser = createTestUser({ id: "new-user-1" })
-			const testWorkspace = createTestWorkspace({ id: "old-workspace-1" })
-			const newWorkspace = createTestWorkspace({ id: "new-workspace-1" })
-			const testNode = createTestNode({
-				id: "old-node-1",
-				workspace: "old-workspace-1",
-			})
-			const newNode = createTestNode({ id: "new-node-1" })
-
-			mockLegacyDatabase.workspaces.count.mockResolvedValue(1)
-			mockLegacyDatabase.nodes.count.mockResolvedValue(1)
-			mockLegacyDatabase.users.count.mockResolvedValue(1)
-			mockLegacyDatabase.users.toArray.mockResolvedValue([testUser])
-			mockLegacyDatabase.workspaces.toArray.mockResolvedValue([testWorkspace])
-			mockLegacyDatabase.nodes.toArray.mockResolvedValue([testNode])
-			mockLegacyDatabase.contents.toArray.mockResolvedValue([])
-
-			mockRepo.createUser.mockReturnValue(() => Promise.resolve(E.right(newUser)))
-			mockRepo.createWorkspace.mockReturnValue(() => Promise.resolve(E.right(newWorkspace)))
-			mockRepo.createNode.mockReturnValue(() => Promise.resolve(E.right(newNode)))
-
-			const result = await runTE(migrateData())
-
-			expect(E.isRight(result)).toBe(true)
-			if (E.isRight(result)) {
-				expect(result.right.status).toBe("completed")
-				expect(result.right.migratedCounts.nodes).toBe(1)
-				// Verify workspace ID was mapped
-				expect(mockRepo.createNode).toHaveBeenCalledWith(
-					expect.objectContaining({
-						title: testNode.title,
-						workspace: "new-workspace-1", // Mapped from old-workspace-1
-					}),
-					undefined,
-					testNode.tags,
-				)
-			}
-		})
-
-		it("should migrate contents with correct node mapping", async () => {
-			const testUser = createTestUser({ id: "old-user-1" })
-			const newUser = createTestUser({ id: "new-user-1" })
-			const testWorkspace = createTestWorkspace({ id: "old-workspace-1" })
-			const newWorkspace = createTestWorkspace({ id: "new-workspace-1" })
-			const testNode = createTestNode({
-				id: "old-node-1",
-				workspace: "old-workspace-1",
-			})
-			const newNode = createTestNode({ id: "new-node-1" })
-			const testContent = createTestContent({
-				id: "old-content-1",
-				nodeId: "old-node-1",
-			})
-			const newContent = createTestContent({ id: "new-content-1" })
-
-			mockLegacyDatabase.workspaces.count.mockResolvedValue(1)
-			mockLegacyDatabase.nodes.count.mockResolvedValue(1)
-			mockLegacyDatabase.users.count.mockResolvedValue(1)
-			mockLegacyDatabase.users.toArray.mockResolvedValue([testUser])
-			mockLegacyDatabase.workspaces.toArray.mockResolvedValue([testWorkspace])
-			mockLegacyDatabase.nodes.toArray.mockResolvedValue([testNode])
-			mockLegacyDatabase.contents.toArray.mockResolvedValue([testContent])
-
-			mockRepo.createUser.mockReturnValue(() => Promise.resolve(E.right(newUser)))
-			mockRepo.createWorkspace.mockReturnValue(() => Promise.resolve(E.right(newWorkspace)))
-			mockRepo.createNode.mockReturnValue(() => Promise.resolve(E.right(newNode)))
-			mockRepo.createContent.mockReturnValue(() => Promise.resolve(E.right(newContent)))
-
-			const result = await runTE(migrateData())
-
-			expect(E.isRight(result)).toBe(true)
-			if (E.isRight(result)) {
-				expect(result.right.status).toBe("completed")
-				expect(result.right.migratedCounts.contents).toBe(1)
-				// Verify node ID was mapped
-				expect(mockRepo.createContent).toHaveBeenCalledWith(
-					expect.objectContaining({
-						content: testContent.content,
-						nodeId: "new-node-1", // Mapped from old-node-1
-					}),
-				)
-			}
-		})
-
-		it("should preserve ID mappings in result", async () => {
-			const testUser = createTestUser({ id: "old-user-1" })
-			const newUser = createTestUser({ id: "new-user-1" })
-			const testWorkspace = createTestWorkspace({ id: "old-workspace-1" })
-			const newWorkspace = createTestWorkspace({ id: "new-workspace-1" })
-			const testNode = createTestNode({
-				id: "old-node-1",
-				workspace: "old-workspace-1",
-			})
-			const newNode = createTestNode({ id: "new-node-1" })
-
-			mockLegacyDatabase.workspaces.count.mockResolvedValue(1)
-			mockLegacyDatabase.nodes.count.mockResolvedValue(1)
-			mockLegacyDatabase.users.count.mockResolvedValue(1)
-			mockLegacyDatabase.users.toArray.mockResolvedValue([testUser])
-			mockLegacyDatabase.workspaces.toArray.mockResolvedValue([testWorkspace])
-			mockLegacyDatabase.nodes.toArray.mockResolvedValue([testNode])
-			mockLegacyDatabase.contents.toArray.mockResolvedValue([])
-
-			mockRepo.createUser.mockReturnValue(() => Promise.resolve(E.right(newUser)))
-			mockRepo.createWorkspace.mockReturnValue(() => Promise.resolve(E.right(newWorkspace)))
-			mockRepo.createNode.mockReturnValue(() => Promise.resolve(E.right(newNode)))
-
-			const result = await runTE(migrateData())
-
-			expect(E.isRight(result)).toBe(true)
-			if (E.isRight(result)) {
-				expect(result.right.idMapping).toBeDefined()
-				expect(result.right.idMapping?.users.get("old-user-1")).toBe("new-user-1")
-				expect(result.right.idMapping?.workspaces.get("old-workspace-1")).toBe("new-workspace-1")
-				expect(result.right.idMapping?.nodes.get("old-node-1")).toBe("new-node-1")
-			}
 		})
 	})
 
 	// ==========================================================================
-	// Property 9: Migration Rollback
+	// Migration Status Management (SQLite-Only)
 	// ==========================================================================
 
-	describe("Property 9: Migration Rollback", () => {
-		it("should set status to rolled_back on rollback", async () => {
+	describe("Migration Status Management (SQLite-Only)", () => {
+		it("should handle rollback migration status", async () => {
 			setMigrationStatus("failed")
 
 			const result = await runTE(rollbackMigration())
@@ -614,58 +201,31 @@ describe("dexie-to-sqlite.migration.fn", () => {
 			expect(E.isRight(result)).toBe(true)
 			expect(getMigrationStatus()).toBe("not_started")
 		})
-
-		it("should set status to failed on migration error", async () => {
-			mockLegacyDatabase.workspaces.count.mockResolvedValue(1)
-			mockLegacyDatabase.nodes.count.mockResolvedValue(0)
-			mockLegacyDatabase.users.count.mockResolvedValue(1)
-			mockLegacyDatabase.users.toArray.mockRejectedValue(new Error("Database error"))
-
-			const result = await runTE(migrateData())
-
-			expect(E.isRight(result)).toBe(true)
-			if (E.isRight(result)) {
-				expect(result.right.status).toBe("failed")
-				expect(result.right.errors).toHaveLength(1)
-			}
-			expect(getMigrationStatus()).toBe("failed")
-		})
-
-		it("should not migrate when status is already completed", async () => {
-			setMigrationStatus("completed")
-			mockLegacyDatabase.workspaces.count.mockResolvedValue(1)
-			mockLegacyDatabase.nodes.count.mockResolvedValue(1)
-			mockLegacyDatabase.users.count.mockResolvedValue(1)
-
-			const result = await runTE(migrateData())
-
-			expect(E.isRight(result)).toBe(true)
-			if (E.isRight(result)) {
-				expect(result.right.status).toBe("completed")
-				expect(result.right.migratedCounts.users).toBe(0)
-				expect(result.right.migratedCounts.workspaces).toBe(0)
-				expect(result.right.migratedCounts.nodes).toBe(0)
-				expect(result.right.migratedCounts.contents).toBe(0)
-			}
-			// Should not call any repo functions
-			expect(mockRepo.createUser).not.toHaveBeenCalled()
-		})
 	})
 
 	// ==========================================================================
-	// clearDexieData
+	// Backward Compatibility Tests
 	// ==========================================================================
 
-	describe("clearDexieData", () => {
-		it("should clear all Dexie tables", async () => {
-			mockLegacyDatabase.transaction.mockImplementation(async (_mode, _tables, callback) => {
-				await callback()
-			})
+	describe("Backward Compatibility", () => {
+		it("should maintain migration interface for existing code", async () => {
+			// Test that all migration functions exist and return expected types
+			expect(typeof hasDexieData).toBe("function")
+			expect(typeof needsMigration).toBe("function")
+			expect(typeof readDexieData).toBe("function")
+			expect(typeof migrateData).toBe("function")
+			expect(typeof clearDexieData).toBe("function")
+			expect(typeof rollbackMigration).toBe("function")
+			expect(typeof resetMigrationStatus).toBe("function")
+		})
 
-			const result = await runTE(clearDexieData())
+		it("should handle migration status persistence across sessions", () => {
+			// Test localStorage persistence
+			setMigrationStatus("completed")
 
-			expect(E.isRight(result)).toBe(true)
-			expect(mockLegacyDatabase.transaction).toHaveBeenCalled()
+			// Simulate page reload by clearing in-memory state
+			const status = getMigrationStatus()
+			expect(status).toBe("completed")
 		})
 	})
 })

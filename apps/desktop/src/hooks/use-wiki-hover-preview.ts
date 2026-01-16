@@ -19,22 +19,25 @@ export function useWikiHoverPreview(): WikiHoverPreviewHook {
 		}
 	}, [timeoutId])
 
-	const showPreview = useCallback((entryId: string, anchorElement: HTMLElement) => {
-		if (timeoutId) {
-			clearTimeout(timeoutId)
-		}
+	const showPreview = useCallback(
+		(entryId: string, anchorElement: HTMLElement) => {
+			if (timeoutId) {
+				clearTimeout(timeoutId)
+			}
 
-		// Slight delay to avoid flickering when moving fast
-		const newTimeoutId = setTimeout(() => {
-			setPreviewState({
-				anchorElement,
-				entryId,
-				isVisible: true,
-			})
-			setTimeoutId(undefined)
-		}, 300)
-		setTimeoutId(newTimeoutId)
-	}, [timeoutId])
+			// Slight delay to avoid flickering when moving fast
+			const newTimeoutId = setTimeout(() => {
+				setPreviewState({
+					anchorElement,
+					entryId,
+					isVisible: true,
+				})
+				setTimeoutId(undefined)
+			}, 300)
+			setTimeoutId(newTimeoutId)
+		},
+		[timeoutId],
+	)
 
 	const hidePreview = useCallback(() => {
 		if (timeoutId) {

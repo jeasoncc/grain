@@ -88,7 +88,7 @@ export const addLogLevel = (entry: Omit<LogEntry, "level">, level: LogLevel): Lo
  * 检测是否在浏览器环境中
  */
 const isBrowser = (): boolean => {
-  return typeof window !== 'undefined' && typeof document !== 'undefined'
+	return typeof window !== "undefined" && typeof document !== "undefined"
 }
 
 /**

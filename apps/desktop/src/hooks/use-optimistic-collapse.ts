@@ -11,10 +11,10 @@
  */
 
 import { useQueryClient } from "@tanstack/react-query"
+import dayjs from "dayjs"
 import { debounce } from "es-toolkit"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
-import dayjs from "dayjs"
 import { queryKeys } from "@/hooks/queries/query-keys"
 import { setNodeCollapsed as setNodeCollapsedApi } from "@/io/api/node.api"
 import { debug, error } from "@/io/log/logger.api"
@@ -125,7 +125,7 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 	// 创建防抖的同步函数 - Requirements: 6.1, 6.4
 	const debouncedSync = useMemo(
 		() => debounce(syncToBackend, debounceMs),
-		[syncToBackend, debounceMs]
+		[syncToBackend, debounceMs],
 	)
 
 	// 组件卸载时立即执行所有待处理的更新 - Requirements: 6.5

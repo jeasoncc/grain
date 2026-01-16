@@ -121,19 +121,17 @@ export const clearMigrationStatus = (): void => {
 
 /**
  * 检测 Dexie 数据是否存在
- * 
+ *
  * @deprecated Dexie support has been removed. This function now always returns false.
  */
-export const hasDexieData = (): TE.TaskEither<AppError, boolean> =>
-	TE.right(false)
+export const hasDexieData = (): TE.TaskEither<AppError, boolean> => TE.right(false)
 
 /**
  * 检查是否需要迁移
- * 
+ *
  * @deprecated Dexie support has been removed. This function now always returns false.
  */
-export const needsMigration = (): TE.TaskEither<AppError, boolean> =>
-	TE.right(false)
+export const needsMigration = (): TE.TaskEither<AppError, boolean> => TE.right(false)
 
 // ============================================================================
 // 数据读取
@@ -141,7 +139,7 @@ export const needsMigration = (): TE.TaskEither<AppError, boolean> =>
 
 /**
  * 读取 Dexie 数据快照
- * 
+ *
  * @deprecated Dexie support has been removed. This function now returns empty data.
  */
 export const readDexieData = (): TE.TaskEither<AppError, DexieDataSnapshot> =>
@@ -162,13 +160,13 @@ export const readDexieData = (): TE.TaskEither<AppError, DexieDataSnapshot> =>
 
 /**
  * 执行数据迁移
- * 
+ *
  * @deprecated Dexie support has been removed. This function now returns a completed status without performing any migration.
  */
 export const migrateData = (): TE.TaskEither<AppError, MigrationResult> => {
 	const startTime = dayjs().toISOString()
 	const completedTime = dayjs().toISOString()
-	
+
 	return TE.right({
 		completedAt: completedTime,
 		errors: [],
@@ -213,7 +211,9 @@ export const resetMigrationStatus = (): TE.TaskEither<AppError, void> =>
 		},
 		(err): AppError => {
 			warn("[Migration] 重置 SQLite 迁移状态失败", { error: err }, "dexie-to-sqlite.migration.fn")
-			return dbError(`重置 SQLite 迁移状态失败: ${err instanceof Error ? err.message : String(err)}`)
+			return dbError(
+				`重置 SQLite 迁移状态失败: ${err instanceof Error ? err.message : String(err)}`,
+			)
 		},
 	)
 
@@ -223,16 +223,14 @@ export const resetMigrationStatus = (): TE.TaskEither<AppError, void> =>
 
 /**
  * 清理 Dexie 数据（迁移完成后调用）
- * 
+ *
  * @deprecated Dexie support has been removed. This function is now a no-op.
  */
-export const clearDexieData = (): TE.TaskEither<AppError, void> =>
-	TE.right(undefined)
+export const clearDexieData = (): TE.TaskEither<AppError, void> => TE.right(undefined)
 
 /**
  * 完整迁移流程（迁移 + 清理）
- * 
+ *
  * @deprecated Dexie support has been removed. This function now returns a completed status without performing any migration.
  */
-export const migrateAndCleanup = (): TE.TaskEither<AppError, MigrationResult> =>
-	migrateData()
+export const migrateAndCleanup = (): TE.TaskEither<AppError, MigrationResult> => migrateData()

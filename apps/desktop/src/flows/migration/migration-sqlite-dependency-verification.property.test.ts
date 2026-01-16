@@ -12,19 +12,19 @@
  * @requirements 5.2, 5.4
  */
 
-import { describe, expect, it } from "vitest"
 import * as fc from "fast-check"
+import { describe, expect, it } from "vitest"
 import {
 	clearDexieData,
 	getMigrationStatus,
 	hasDexieData,
+	type MigrationStatus,
 	migrateData,
 	needsMigration,
 	readDexieData,
 	resetMigrationStatus,
 	rollbackMigration,
 	setMigrationStatus,
-	type MigrationStatus,
 } from "./dexie-to-sqlite.migration.fn"
 
 describe("属性测试: 迁移系统 SQLite 依赖验证", () => {
@@ -211,7 +211,7 @@ describe("属性测试: 迁移系统 SQLite 依赖验证", () => {
 					// 验证状态设置和获取的基本功能
 					expect(() => setMigrationStatus(status)).not.toThrow()
 					expect(() => getMigrationStatus()).not.toThrow()
-					
+
 					// 验证获取的状态是有效的
 					const retrievedStatus = getMigrationStatus()
 					expect(validStatuses.includes(retrievedStatus)).toBe(true)

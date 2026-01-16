@@ -60,7 +60,7 @@ export const getWikiFilesAsync = (
 			// Get all nodes for the workspace to filter by the wiki tag node IDs
 			const allNodesResult = await getNodesByWorkspace(workspaceId)()
 			const allNodes = E.isRight(allNodesResult) ? allNodesResult.right : []
-			
+
 			// Filter nodes that have the wiki tag
 			const nodes = allNodes.filter((node) => nodeIds.includes(node.id))
 

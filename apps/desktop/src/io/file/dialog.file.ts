@@ -59,7 +59,10 @@ export interface DirectorySelectOptions {
  * 检查是否在 Tauri 环境中运行
  */
 export function isTauriEnvironment(): boolean {
-	return typeof window !== "undefined" && !!(window as unknown as { readonly __TAURI__?: unknown }).__TAURI__
+	return (
+		typeof window !== "undefined" &&
+		!!(window as unknown as { readonly __TAURI__?: unknown }).__TAURI__
+	)
 }
 
 // ============================================================================
@@ -215,7 +218,7 @@ export interface FileSelectResult {
 
 /**
  * 创建并配置文件输入元素
- * 
+ *
  * @param config - 输入元素配置
  * @returns 配置好的输入元素
  */
@@ -225,21 +228,21 @@ function createFileInput(config: {
 	readonly accept?: string
 }): HTMLInputElement {
 	const input = document.createElement("input")
-	
+
 	// 使用 setAttribute 来设置属性，避免直接属性赋值
 	input.setAttribute("type", config.type)
 	input.setAttribute("multiple", config.multiple.toString())
-	
+
 	if (config.accept) {
 		input.setAttribute("accept", config.accept)
 	}
-	
+
 	return input
 }
 
 /**
  * 构建文件输入配置
- * 
+ *
  * @param options - 文件选择选项
  * @returns 输入元素配置对象
  */

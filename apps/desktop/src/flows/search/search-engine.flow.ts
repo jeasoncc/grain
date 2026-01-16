@@ -8,11 +8,11 @@
  * @requirements 1.2, 4.1, 6.2
  */
 
-import * as E from "fp-ts/Either"
 import { orderBy } from "es-toolkit"
+import * as E from "fp-ts/Either"
 import lunr from "lunr"
 import { getAllNodes, getContentsByNodeIds, getNodesByWorkspace, getWorkspaceById } from "@/io/api"
-import { success, error } from "@/io/log/logger.api"
+import { error, success } from "@/io/log/logger.api"
 import {
 	calculateSimpleScore,
 	extractHighlights,
@@ -265,8 +265,7 @@ export const search = async (
 				]
 			})
 
-			return orderBy(results, [(item) => item.score], ['desc'])
-				.slice(0, limit)
+			return orderBy(results, [(item) => item.score], ["desc"]).slice(0, limit)
 		}
 
 		return []
@@ -348,8 +347,7 @@ export const simpleSearch = async (
 				return []
 			})
 
-			return orderBy(results, [(item) => item.score], ['desc'])
-				.slice(0, limit)
+			return orderBy(results, [(item) => item.score], ["desc"]).slice(0, limit)
 		}
 
 		return []

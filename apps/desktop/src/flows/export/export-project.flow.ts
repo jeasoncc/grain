@@ -25,7 +25,7 @@ import { saveAs } from "file-saver"
 import * as E from "fp-ts/Either"
 import { pipe } from "fp-ts/function"
 import JSZip from "jszip"
-import { getContentsByNodeIds, getWorkspace, getNodesByWorkspace } from "@/io/api"
+import { getContentsByNodeIds, getNodesByWorkspace, getWorkspace } from "@/io/api"
 import type { NodeInterface, WorkspaceInterface } from "@/types"
 import type { ContentInterface } from "@/types/content"
 import type { ExportFormat, ExportOptions } from "@/types/export"
@@ -49,14 +49,14 @@ const defaultOptions: ExportOptions = {
  */
 function extractTextFromContent(content: string | null): string {
 	if (!content) return ""
-	
+
 	return pipe(
 		E.tryCatch(
 			() => JSON.parse(content),
-			() => content
+			() => content,
 		),
 		E.map((parsed) => extractTextFromNode(parsed.root)),
-		E.getOrElse(() => content)
+		E.getOrElse(() => content),
 	)
 }
 

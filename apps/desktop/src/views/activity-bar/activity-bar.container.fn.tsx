@@ -17,7 +17,6 @@ import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { clearAllData, openFile } from "@/flows"
 import { createCode } from "@/flows/templated/create-code.flow"
-import { error as logError } from "@/io/log/logger.api"
 import {
 	createDiary,
 	createLedger,
@@ -34,7 +33,7 @@ import { touchWorkspace } from "@/flows/workspace/update-workspace.flow"
 import { useIconTheme } from "@/hooks/use-icon-theme"
 import { useNodesByWorkspace } from "@/hooks/use-node"
 import { useAllWorkspaces } from "@/hooks/use-workspace"
-import { error } from "@/io/log/logger.api"
+import { error, error as logError } from "@/io/log/logger.api"
 import { calculateExpandedFoldersForNode } from "@/pipes/node"
 import { useSelectionStore } from "@/state/selection.state"
 import { useSidebarStore } from "@/state/sidebar.state"
@@ -146,7 +145,7 @@ export function ActivityBarContainer(): React.ReactElement {
 				const sortedByLastOpen = orderBy(
 					workspaces,
 					[(w) => dayjs(w.lastOpen || w.createDate).valueOf()],
-					["desc"]
+					["desc"],
 				)
 				setSelectedWorkspaceId(sortedByLastOpen[0].id)
 			} else {
@@ -411,18 +410,15 @@ export function ActivityBarContainer(): React.ReactElement {
 			setSelectedNodeId(null)
 			setHasInitialized(false)
 			toast.success("All data deleted")
-			setTimeout(() => window.location.reload(), 1000)
+			// setTimeout(() => window.location.reload(), 1000)
 		} catch {
 			toast.error("Delete failed")
 		}
 	}, [confirm, setSelectedWorkspaceId, setSelectedNodeId, setHasInitialized])
 
-	const handleNavigate = useCallback(
-		(path: string) => {
-			window.location.assign(path)
-		},
-		[],
-	)
+	const handleNavigate = useCallback((path: string) => {
+		window.location.assign(path)
+	}, [])
 
 	// ==============================
 	// 渲染

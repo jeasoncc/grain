@@ -10,12 +10,12 @@
 // 搜索引擎 Flow
 export {
 	buildSearchIndex,
-	search,
-	simpleSearch,
 	clearSearchIndex,
-	searchEngine,
 	type SearchEngineState,
 	type SearchOptions,
 	type SearchResult,
 	type SearchResultType,
+	search,
+	searchEngine,
+	simpleSearch,
 } from "./search-engine.flow"

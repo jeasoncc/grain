@@ -4,8 +4,8 @@
  * 所有接口和类型定义放在这个文件中
  */
 
-import type { SerializedEditorState } from "lexical"
 import type { EditorInstanceState as BaseEditorInstanceState } from "@grain/editor-lexical"
+import type { SerializedEditorState } from "lexical"
 import type { NodeType } from "@/types/node"
 
 // ==============================
@@ -119,7 +119,9 @@ export interface EditorTabBuilderInterface {
  * 用于构建 EditorInstanceState 对象的链式调用接口
  */
 export interface EditorStateBuilderInterface {
-	readonly serializedState: (state: SerializedEditorState | undefined) => EditorStateBuilderInterface
+	readonly serializedState: (
+		state: SerializedEditorState | undefined,
+	) => EditorStateBuilderInterface
 	readonly selection: (
 		anchor: { readonly key: string; readonly offset: number },
 		focus: { readonly key: string; readonly offset: number },

@@ -38,7 +38,7 @@ vi.mock("@/flows/backup", () => ({
 
 vi.mock("@/io/storage/settings.storage", () => ({
 	getAutoBackupEnabled: vi.fn(() => false),
-	getStorageStats: vi.fn(() => ({ size: 1024, keys: 5 })),
+	getStorageStats: vi.fn(() => ({ keys: 5, size: 1024 })),
 	setAutoBackupEnabled: vi.fn(() => true),
 }))
 

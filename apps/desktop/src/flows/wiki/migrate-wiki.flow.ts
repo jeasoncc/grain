@@ -37,7 +37,7 @@ export interface MigrationResult {
 
 /**
  * 检查工作区是否需要迁移
- * 
+ *
  * Note: Since we're removing Dexie entirely, wiki migration is no longer needed.
  * This function now always returns false as the migration is considered complete.
  *
@@ -45,13 +45,15 @@ export interface MigrationResult {
  * @returns 是否需要迁移 (always false)
  */
 export async function checkMigrationNeeded(workspaceId: string): Promise<boolean> {
-	debug(`Wiki migration check for workspace ${workspaceId}: migration no longer needed (Dexie removed)`)
+	debug(
+		`Wiki migration check for workspace ${workspaceId}: migration no longer needed (Dexie removed)`,
+	)
 	return false
 }
 
 /**
  * 将 Wiki 数据迁移到文件节点
- * 
+ *
  * Note: Since we're removing Dexie entirely, this migration is no longer needed.
  * This function now returns a successful result indicating no migration was needed.
  *
@@ -65,7 +67,7 @@ export async function migrateWikiEntriesToFiles(workspaceId: string): Promise<Mi
 
 /**
  * 如果需要则运行工作区迁移
- * 
+ *
  * Note: Since we're removing Dexie entirely, this migration is no longer needed.
  * This function now always returns null indicating no migration was needed.
  *

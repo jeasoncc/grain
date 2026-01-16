@@ -1,35 +1,35 @@
 /**
  * @file flows/backup/backup.flow.test.ts
  * @description 备份流程单元测试
- * 
+ *
  * 测试范围：
  * - 备份创建和恢复流程
  * - 错误处理
  * - 本地备份管理
  * - 自动备份功能
- * 
+ *
  * 需求: 2.3
  */
 
-import { beforeEach, describe, expect, it, vi } from "vitest"
 import dayjs from "dayjs"
-import {
-	getDatabaseStats,
-	getLocalBackups,
-	saveLocalBackup,
-	restoreLocalBackup,
-	getLastBackupTime,
-	shouldAutoBackup,
-	createAutoBackupManager,
-} from "./backup.flow"
-import type { BackupInfo } from "@/types/rust-api"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { DatabaseStats } from "@/types/backup"
+import type { BackupInfo } from "@/types/rust-api"
+import {
+	createAutoBackupManager,
+	getDatabaseStats,
+	getLastBackupTime,
+	getLocalBackups,
+	restoreLocalBackup,
+	saveLocalBackup,
+	shouldAutoBackup,
+} from "./backup.flow"
 
 // Mock localStorage
 const mockLocalStorage = {
+	clear: vi.fn(),
 	getItem: vi.fn(),
 	setItem: vi.fn(),
-	clear: vi.fn(),
 }
 Object.defineProperty(globalThis, "localStorage", {
 	value: mockLocalStorage,
@@ -49,8 +49,8 @@ Object.defineProperty(globalThis, "clearInterval", {
 // Mock window object for the backup flow
 Object.defineProperty(globalThis, "window", {
 	value: {
-		setInterval: mockSetInterval,
 		clearInterval: mockClearInterval,
+		setInterval: mockSetInterval,
 	},
 })
 
@@ -97,26 +97,26 @@ describe("backup.flow", () => {
 		it("should return stored backups", async () => {
 			const mockBackups = [
 				{
-					timestamp: "2024-01-01T12:00:00Z",
 					data: {
+						attachments: [],
+						contents: [],
+						dbVersions: [],
+						drawings: [],
 						metadata: {
-							version: "5.0.0",
-							timestamp: "2024-01-01T12:00:00Z",
-							projectCount: 1,
-							nodeCount: 5,
-							contentCount: 5,
-							tagCount: 2,
 							appVersion: "0.1.89",
+							contentCount: 5,
+							nodeCount: 5,
+							projectCount: 1,
+							tagCount: 2,
+							timestamp: "2024-01-01T12:00:00Z",
+							version: "5.0.0",
 						},
+						nodes: [],
+						tags: [],
 						users: [],
 						workspaces: [],
-						nodes: [],
-						contents: [],
-						drawings: [],
-						attachments: [],
-						tags: [],
-						dbVersions: [],
 					},
+					timestamp: "2024-01-01T12:00:00Z",
 				},
 			]
 			mockLocalStorage.getItem.mockReturnValue(JSON.stringify(mockBackups))
@@ -144,9 +144,9 @@ describe("backup.flow", () => {
 	describe("saveLocalBackup", () => {
 		it("should save backup to localStorage", async () => {
 			const mockBackupInfo: BackupInfo = {
+				createdAt: new Date("2024-01-01T12:00:00Z").getTime(),
 				filename: "backup_20240101_120000.json",
 				path: "/path/to/backup_20240101_120000.json",
-				createdAt: new Date("2024-01-01T12:00:00Z").getTime(),
 				size: 1024,
 			}
 			mockLocalStorage.getItem.mockReturnValue("[]")
@@ -169,33 +169,33 @@ describe("backup.flow", () => {
 
 		it("should limit backups to maxBackups", async () => {
 			const existingBackups = Array.from({ length: 5 }, (_, i) => ({
-				timestamp: `2024-01-0${i + 1}T12:00:00Z`,
-				data: { 
+				data: {
+					attachments: [],
+					contents: [],
+					dbVersions: [],
+					drawings: [],
 					metadata: {
-						version: "5.0.0",
-						timestamp: `2024-01-0${i + 1}T12:00:00Z`,
-						projectCount: 0,
-						nodeCount: 0,
-						contentCount: 0,
-						tagCount: 0,
 						appVersion: "0.1.89",
-					}, 
-					users: [], 
-					workspaces: [], 
-					nodes: [], 
-					contents: [], 
-					drawings: [], 
-					attachments: [], 
-					tags: [], 
-					dbVersions: [] 
+						contentCount: 0,
+						nodeCount: 0,
+						projectCount: 0,
+						tagCount: 0,
+						timestamp: `2024-01-0${i + 1}T12:00:00Z`,
+						version: "5.0.0",
+					},
+					nodes: [],
+					tags: [],
+					users: [],
+					workspaces: [],
 				},
+				timestamp: `2024-01-0${i + 1}T12:00:00Z`,
 			}))
 			mockLocalStorage.getItem.mockReturnValue(JSON.stringify(existingBackups))
 
 			const mockBackupInfo: BackupInfo = {
+				createdAt: new Date("2024-01-06T12:00:00Z").getTime(),
 				filename: "backup_20240106_120000.json",
 				path: "/path/to/backup_20240106_120000.json",
-				createdAt: new Date("2024-01-06T12:00:00Z").getTime(),
 				size: 1024,
 			}
 
@@ -208,7 +208,7 @@ describe("backup.flow", () => {
 
 			// Verify that only 3 backups are kept
 			const savedData = mockLocalStorage.setItem.mock.calls.find(
-				call => call[0] === "auto-backups"
+				(call) => call[0] === "auto-backups",
 			)?.[1]
 			const parsedData = JSON.parse(savedData as string)
 			expect(parsedData).toHaveLength(3)
@@ -221,9 +221,9 @@ describe("backup.flow", () => {
 			})
 
 			const mockBackupInfo: BackupInfo = {
+				createdAt: new Date("2024-01-01T12:00:00Z").getTime(),
 				filename: "backup_20240101_120000.json",
 				path: "/path/to/backup_20240101_120000.json",
-				createdAt: new Date("2024-01-01T12:00:00Z").getTime(),
 				size: 1024,
 			}
 

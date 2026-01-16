@@ -17,9 +17,9 @@
  * @requirements 3.3
  */
 
-import { useCallback, useMemo, useState } from "react"
 import dayjs from "dayjs"
 import { orderBy } from "es-toolkit"
+import { useCallback, useMemo, useState } from "react"
 import { useNode as useNodeQuery, useNodesByType } from "@/hooks/queries/node.queries"
 import { info, warn } from "@/io/log/logger.api"
 import type { NodeInterface } from "@/types/node"
@@ -42,7 +42,7 @@ export function useDrawingNodes(
 	return useMemo(() => {
 		if (isLoading) return undefined
 		if (!nodes) return []
-		return orderBy(nodes, [(node) => node.title], ['asc'])
+		return orderBy(nodes, [(node) => node.title], ["asc"])
 	}, [nodes, isLoading])
 }
 
@@ -103,7 +103,7 @@ export function useDrawingSearch(
 		if (isLoading) return undefined
 		if (!nodes) return []
 
-		const sorted = orderBy(nodes, [(node) => node.title], ['asc'])
+		const sorted = orderBy(nodes, [(node) => node.title], ["asc"])
 
 		if (!query || query.trim() === "") {
 			return sorted
@@ -131,8 +131,7 @@ export function useRecentDrawings(
 		if (isLoading) return undefined
 		if (!nodes) return []
 
-		return orderBy(nodes, [(node) => dayjs(node.lastEdit).valueOf()], ['desc'])
-			.slice(0, limit)
+		return orderBy(nodes, [(node) => dayjs(node.lastEdit).valueOf()], ["desc"]).slice(0, limit)
 	}, [nodes, limit, isLoading])
 }
 

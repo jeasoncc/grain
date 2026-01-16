@@ -12,8 +12,8 @@
  * @requirements 3.3
  */
 
-import { useMemo } from "react"
 import { orderBy } from "es-toolkit"
+import { useMemo } from "react"
 import {
 	useNode as useNodeQuery,
 	useNodesByParent,
@@ -82,7 +82,7 @@ export function useChildNodes(
 	return useMemo(() => {
 		if (isLoading) return undefined
 		if (!nodes) return []
-		return orderBy(nodes, [(node) => node.order], ['asc'])
+		return orderBy(nodes, [(node) => node.order], ["asc"])
 	}, [nodes, isLoading])
 }
 
@@ -102,7 +102,7 @@ export function useRootNodes(
 	return useMemo(() => {
 		if (isLoading) return undefined
 		if (!nodes) return []
-		return orderBy(nodes, [(node) => node.order], ['asc'])
+		return orderBy(nodes, [(node) => node.order], ["asc"])
 	}, [nodes, isLoading])
 }
 

@@ -172,10 +172,9 @@ export const BackupManagerView = memo(function BackupManagerView({
 													{formatBytes(storageStats.indexedDB.size)}
 												</p>
 												<p className="text-[10px] text-muted-foreground">
-													{(Object.values(storageStats.indexedDB.tables) as readonly number[]).reduce(
-														(a, b) => a + b,
-														0,
-													)}{" "}
+													{(
+														Object.values(storageStats.indexedDB.tables) as readonly number[]
+													).reduce((a, b) => a + b, 0)}{" "}
 													total records
 												</p>
 											</div>
@@ -246,33 +245,32 @@ export const BackupManagerView = memo(function BackupManagerView({
 											{orderBy(
 												Object.entries(storageStats.indexedDB.tableSizes),
 												[([, size]) => size],
-												['desc']
-											)
-												.map(([table, size]) => {
-													const percentage =
-														storageStats.indexedDB.size > 0
-															? (size / storageStats.indexedDB.size) * 100
-															: 0
-													const tables = storageStats.indexedDB.tables as unknown as Record<
-														string,
-														number
-													>
-													const recordCount = tables[table] || 0
-													return (
-														<div key={table} className="space-y-1.5">
-															<div className="flex justify-between items-center">
-																<div className="flex items-center gap-2">
-																	<span className="text-sm font-medium capitalize">{table}</span>
-																	<span className="text-xs text-muted-foreground">
-																		({recordCount} records)
-																	</span>
-																</div>
-																<span className="text-sm font-semibold">{formatBytes(size)}</span>
+												["desc"],
+											).map(([table, size]) => {
+												const percentage =
+													storageStats.indexedDB.size > 0
+														? (size / storageStats.indexedDB.size) * 100
+														: 0
+												const tables = storageStats.indexedDB.tables as unknown as Record<
+													string,
+													number
+												>
+												const recordCount = tables[table] || 0
+												return (
+													<div key={table} className="space-y-1.5">
+														<div className="flex justify-between items-center">
+															<div className="flex items-center gap-2">
+																<span className="text-sm font-medium capitalize">{table}</span>
+																<span className="text-xs text-muted-foreground">
+																	({recordCount} records)
+																</span>
 															</div>
-															<Progress value={percentage} className="h-1.5" />
+															<span className="text-sm font-semibold">{formatBytes(size)}</span>
 														</div>
-													)
-												})}
+														<Progress value={percentage} className="h-1.5" />
+													</div>
+												)
+											})}
 										</div>
 									</div>
 								</>

@@ -12,9 +12,9 @@
  * @requirements 3.3
  */
 
-import { useMemo } from "react"
-import { orderBy } from "es-toolkit"
 import dayjs from "dayjs"
+import { orderBy } from "es-toolkit"
+import { useMemo } from "react"
 import {
 	useWorkspace as useWorkspaceQuery,
 	useWorkspaces as useWorkspacesQuery,
@@ -52,11 +52,7 @@ export function useAllWorkspaces(): readonly WorkspaceInterface[] | undefined {
 
 	return useMemo(() => {
 		if (isLoading || !workspaces) return undefined
-		return orderBy(
-			workspaces,
-			[(workspace) => dayjs(workspace.lastOpen).valueOf()],
-			["desc"]
-		)
+		return orderBy(workspaces, [(workspace) => dayjs(workspace.lastOpen).valueOf()], ["desc"])
 	}, [workspaces, isLoading])
 }
 
@@ -120,7 +116,7 @@ export function useRecentWorkspaces(limit: number = 5): readonly WorkspaceInterf
 		return orderBy(
 			workspaces,
 			[(workspace) => dayjs(workspace.lastOpen).valueOf()],
-			["desc"]
+			["desc"],
 		).slice(0, limit)
 	}, [workspaces, limit, isLoading])
 }
@@ -170,7 +166,7 @@ export function useWorkspaceSearch(
 		const sorted = orderBy(
 			workspaces,
 			[(workspace) => dayjs(workspace.lastOpen).valueOf()],
-			["desc"]
+			["desc"],
 		)
 
 		if (!query || query.trim() === "") {

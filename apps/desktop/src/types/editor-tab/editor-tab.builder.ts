@@ -9,9 +9,9 @@ import type { SerializedEditorState } from "lexical"
 import type {
 	EditorInstanceState,
 	EditorSelectionState,
+	EditorStateBuilderInterface,
 	EditorTab,
 	EditorTabBuilderInterface,
-	EditorStateBuilderInterface,
 	TabType,
 } from "./editor-tab.interface"
 

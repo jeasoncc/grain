@@ -216,7 +216,7 @@ export const ActivityBarView = memo(function ActivityBarView({
 				await onImportFile(file)
 			} finally {
 				if (fileInputRef.current) {
-					fileInputRef.current.setAttribute('value', '')
+					fileInputRef.current.setAttribute("value", "")
 				}
 			}
 		},

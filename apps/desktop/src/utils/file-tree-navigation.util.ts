@@ -7,8 +7,8 @@
  * Requirements: 2.1, 2.3, 2.4
  */
 
-import type { NodeInterface } from "@/types/node"
 import { error, warn } from "@/io/log/logger.api"
+import type { NodeInterface } from "@/types/node"
 
 /**
  * 计算从根节点到目标节点的祖先路径

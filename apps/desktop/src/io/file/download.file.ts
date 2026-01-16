@@ -22,23 +22,26 @@
  */
 /**
  * 创建并配置下载链接元素
- * 
+ *
  * @param config - 链接配置
  * @returns 配置好的链接元素
  */
-function createDownloadLink(config: { readonly download: string; readonly href: string }): HTMLAnchorElement {
+function createDownloadLink(config: {
+	readonly download: string
+	readonly href: string
+}): HTMLAnchorElement {
 	const linkElement = document.createElement("a")
-	
+
 	// 使用 setAttribute 来设置属性，避免直接属性赋值
 	linkElement.setAttribute("download", config.download)
 	linkElement.setAttribute("href", config.href)
-	
+
 	return linkElement
 }
 
 /**
  * 执行下载操作
- * 
+ *
  * @param linkElement - 配置好的链接元素
  */
 function executeDownload(linkElement: HTMLAnchorElement): void {
@@ -61,7 +64,7 @@ export function triggerDownload(
 ): void {
 	const blob = new Blob([text], { type: mimeType })
 	const url = URL.createObjectURL(blob)
-	
+
 	// 函数式组合：创建 -> 执行 -> 清理
 	const linkElement = createDownloadLink({ download: filename, href: url })
 	executeDownload(linkElement)
@@ -82,7 +85,7 @@ export function triggerDownload(
  */
 export function triggerBlobDownload(filename: string, blob: Blob): void {
 	const url = URL.createObjectURL(blob)
-	
+
 	// 函数式组合：创建 -> 执行 -> 清理
 	const linkElement = createDownloadLink({ download: filename, href: url })
 	executeDownload(linkElement)

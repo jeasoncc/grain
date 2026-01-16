@@ -10,8 +10,8 @@
  * @requirements 8.1
  */
 
-import dayjs from "dayjs"
 import { useQuery } from "@tanstack/react-query"
+import dayjs from "dayjs"
 import * as E from "fp-ts/Either"
 import * as userRepo from "@/io/api/user.api"
 import type { UserInterface, UserPlan } from "@/types/user"

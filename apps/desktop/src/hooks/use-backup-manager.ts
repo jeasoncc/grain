@@ -21,7 +21,11 @@ import {
 } from "@/flows/backup"
 import { selectFile } from "@/io/file/dialog.file"
 import { error as logError } from "@/io/log/logger.api"
-import { getAutoBackupEnabled, getStorageStats, setAutoBackupEnabled } from "@/io/storage/settings.storage"
+import {
+	getAutoBackupEnabled,
+	getStorageStats,
+	setAutoBackupEnabled,
+} from "@/io/storage/settings.storage"
 import type { DatabaseStats, LocalBackupRecord } from "@/types/backup"
 import type { ClearDataOptions } from "@/types/storage"
 
@@ -38,7 +42,7 @@ export interface UseBackupManagerReturn {
 
 	// 操作
 	readonly loadStats: () => Promise<void>
-	readonly loadLocalBackups: () => void
+	readonly loadLocalBackups: () => Promise<void>
 	readonly exportJson: () => Promise<void>
 	readonly exportZip: () => Promise<void>
 	readonly restore: () => Promise<void>
@@ -60,7 +64,10 @@ export function useBackupManager(): UseBackupManagerReturn {
 	// ============================================================================
 
 	const [stats, setStats] = useState<DatabaseStats | null>(null)
-	const [storageStats, setStorageStats] = useState<{ readonly size: number; readonly keys: number } | null>(null)
+	const [storageStats, setStorageStats] = useState<{
+		readonly size: number
+		readonly keys: number
+	} | null>(null)
 	const [loading, setLoading] = useState(false)
 	const [autoBackupEnabled, setAutoBackupEnabledState] = useState(false)
 	const [localBackups, setLocalBackups] = useState<readonly LocalBackupRecord[]>([])
@@ -83,9 +90,23 @@ export function useBackupManager(): UseBackupManagerReturn {
 		}
 	}, [])
 
-	const loadLocalBackups = useCallback(() => {
-		const backups = getLocalBackups()
-		setLocalBackups(backups)
+	const loadLocalBackups = useCallback(async () => {
+		try {
+			const backupsResult = await getLocalBackups()()
+			if (backupsResult._tag === "Right") {
+				setLocalBackups(backupsResult.right)
+			} else {
+				logError(
+					"[BackupManager] 加载本地备份失败",
+					{ error: backupsResult.left },
+					"use-backup-manager",
+				)
+				setLocalBackups([])
+			}
+		} catch (err) {
+			logError("[BackupManager] 加载本地备份异常", { error: err }, "use-backup-manager")
+			setLocalBackups([])
+		}
 	}, [])
 
 	useEffect(() => {
@@ -227,7 +248,7 @@ export function useBackupManager(): UseBackupManagerReturn {
 				toast.success("所有数据已清除")
 				await loadStats()
 				setTimeout(() => {
-					window.location.reload()
+					// window.location.reload()
 				}, 1500)
 			} else {
 				toast.error(result.left.message)

@@ -3,8 +3,8 @@
  * @description Lexical JSON 内容生成函数的单元测试
  */
 
-import { describe, expect, it } from "vitest"
 import dayjs from "dayjs"
+import { describe, expect, it } from "vitest"
 import {
 	createDocument,
 	createHeadingNode,

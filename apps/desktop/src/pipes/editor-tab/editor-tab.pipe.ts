@@ -123,11 +123,7 @@ export const evictLRUEditorStates = (
 		return states
 	}
 
-	const sortedEntries = orderBy(
-		entries,
-		[([, state]) => state.lastModified ?? 0],
-		["asc"]
-	)
+	const sortedEntries = orderBy(entries, [([, state]) => state.lastModified ?? 0], ["asc"])
 
 	const toEvictCount = entries.length - maxStates
 

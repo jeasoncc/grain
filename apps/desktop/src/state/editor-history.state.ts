@@ -6,9 +6,9 @@
  * Uses Zustand with custom Map serialization for persistence.
  */
 
+import dayjs from "dayjs"
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import dayjs from "dayjs"
 import {
 	EDITOR_HISTORY_STORAGE_KEY,
 	type EditorHistoryEntry,
@@ -45,10 +45,10 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 				set((state) => {
 					// Create new maps without the specified nodeId (functional approach)
 					const newUndoStack = new Map(
-						[...state.undoStack.entries()].filter(([key]) => key !== nodeId)
+						[...state.undoStack.entries()].filter(([key]) => key !== nodeId),
 					)
 					const newRedoStack = new Map(
-						[...state.redoStack.entries()].filter(([key]) => key !== nodeId)
+						[...state.redoStack.entries()].filter(([key]) => key !== nodeId),
 					)
 
 					return { redoStack: newRedoStack, undoStack: newUndoStack }
