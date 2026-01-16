@@ -12,9 +12,9 @@
  */
 
 import { createRootRoute, Outlet } from "@tanstack/react-router"
-import { useEffect } from "react"
 import { useWorkspaces } from "@/hooks/queries"
 import { useEditorTabs } from "@/hooks/use-editor-tabs"
+import { useGlobalKeyboard } from "@/hooks/use-global-keyboard"
 import { useGlobalUI } from "@/hooks/use-global-ui"
 import { useLayout, useLayoutInit } from "@/hooks/use-layout"
 import { useThemeInitialization } from "@/hooks/use-theme"
@@ -32,6 +32,10 @@ import { FontStyleInjector } from "@/views/utils/font-style-injector"
 export const Route = createRootRoute({
 	component: RootComponent,
 })
+
+// ============================================================================
+// 根组件
+// ============================================================================
 
 function RootComponent() {
 	// ==============================
@@ -68,51 +72,12 @@ function RootComponent() {
 	// Global Keyboard Shortcuts
 	// ==============================
 
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			// Detect Mac platform using userAgent (platform is deprecated)
-			const isMac = /(Mac|iPhone|iPod|iPad)/i.test(navigator.userAgent)
-			const modKey = isMac ? e.metaKey : e.ctrlKey
-
-			// Cmd/Ctrl+K - Toggle Command Palette
-			if (modKey && e.key === "k") {
-				e.preventDefault()
-				commandPalette.toggle()
-				return
-			}
-
-			// Cmd/Ctrl+Shift+F - Toggle Global Search
-			if (modKey && e.shiftKey && e.key === "F") {
-				e.preventDefault()
-				globalSearch.toggle()
-				return
-			}
-
-			// Cmd/Ctrl+B - Toggle Sidebar (Files Panel)
-			if (modKey && e.key === "b") {
-				e.preventDefault()
-				toggleSidebar()
-				return
-			}
-
-			// Ctrl+Tab - Forward Buffer Switcher
-			if (e.ctrlKey && e.key === "Tab" && !e.shiftKey) {
-				e.preventDefault()
-				bufferSwitcher.open("forward")
-				return
-			}
-
-			// Ctrl+Shift+Tab - Backward Buffer Switcher
-			if (e.ctrlKey && e.key === "Tab" && e.shiftKey) {
-				e.preventDefault()
-				bufferSwitcher.open("backward")
-				return
-			}
-		}
-
-		window.addEventListener("keydown", handleKeyDown)
-		return () => window.removeEventListener("keydown", handleKeyDown)
-	}, [commandPalette, globalSearch, bufferSwitcher, toggleSidebar])
+	useGlobalKeyboard({
+		bufferSwitcher,
+		commandPalette,
+		globalSearch,
+		toggleSidebar,
+	})
 
 	// ==============================
 	// Render

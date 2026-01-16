@@ -15,7 +15,7 @@ import { getJson, setJson } from "@/io/storage/settings.storage"
 import type { AppError } from "@/types/error/error.types"
 import { logConfigError } from "@/types/error/error.types"
 import type { LogConfig, LogConfigValidationResult, LogLevel } from "@/types/log/log.interface"
-import { DEFAULT_LOG_CONFIG, LOG_LEVEL_PRIORITY } from "@/types/log/log.interface"
+import { DEFAULT_LOG_CONFIG } from "@/types/log/log.interface"
 
 // Auto-cleanup
 import {
@@ -219,6 +219,30 @@ const ExtendedLogConfigSchema = LogConfigSchema.extend({
 export const getCurrentLogConfig = (): ExtendedLogConfig =>
 	getJson(STORAGE_KEYS.LOG_CONFIG, ExtendedLogConfigSchema, DEFAULT_EXTENDED_LOG_CONFIG)
 
+// ============================================================================
+// 验证辅助函数
+// ============================================================================
+
+/**
+ * 使用 Zod 进行基础 Schema 验证
+ */
+const validateWithZodSchema = (config: Partial<ExtendedLogConfig>): readonly string[] => {
+	const mergedConfig = { ...DEFAULT_EXTENDED_LOG_CONFIG, ...config }
+	const validation = ExtendedLogConfigSchema.safeParse(mergedConfig)
+
+	if (!validation.success) {
+		return validation.error.issues.map((err) => `${err.path.join(".")}: ${err.message}`)
+	}
+	return []
+}
+
+// 导入纯函数验证器
+import { collectConfigWarnings } from "@/pipes/log/config-validation.pipe"
+
+// ============================================================================
+// 配置管理
+// ============================================================================
+
 /**
  * 验证日志配置
  *
@@ -230,48 +254,8 @@ export const validateLogConfigFlow = (
 ): TE.TaskEither<AppError, LogConfigValidationResult> => {
 	return TE.tryCatch(
 		async () => {
-			let errors: readonly string[] = []
-			let warnings: readonly string[] = []
-
-			// 使用 Zod 进行基础验证
-			const mergedConfig = { ...DEFAULT_EXTENDED_LOG_CONFIG, ...config }
-			const validation = ExtendedLogConfigSchema.safeParse(mergedConfig)
-
-			if (!validation.success) {
-				errors = [
-					...errors,
-					...validation.error.issues.map((err) => `${err.path.join(".")}: ${err.message}`),
-				]
-			}
-
-			// 自定义验证规则
-			if (config.batchSize && config.batchDelay !== undefined) {
-				if (config.batchSize > 1 && config.batchDelay === 0) {
-					warnings = [...warnings, "批量大小 > 1 但延迟为 0，将使用异步队列模式"]
-				}
-			}
-
-			if (config.maxEntries && config.autoCleanup?.maxEntries) {
-				if (config.autoCleanup.maxEntries > config.maxEntries) {
-					warnings = [...warnings, "自动清理的最大条目数大于日志配置的最大条目数"]
-				}
-			}
-
-			if (config.minLevel) {
-				const levelPriority = LOG_LEVEL_PRIORITY[config.minLevel]
-				if (levelPriority >= LOG_LEVEL_PRIORITY.warn) {
-					warnings = [
-						...warnings,
-						`最小日志级别设置为 ${config.minLevel}，可能会丢失重要的调试信息`,
-					]
-				}
-			}
-
-			if (config.autoCleanup?.enabled === false && config.maxEntries) {
-				if (config.maxEntries > 50000) {
-					warnings = [...warnings, "禁用自动清理且最大条目数较大，可能导致存储空间不足"]
-				}
-			}
+			const errors = validateWithZodSchema(config)
+			const warnings = collectConfigWarnings(config)
 
 			return {
 				errors,

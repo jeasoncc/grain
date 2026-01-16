@@ -40,4 +40,4 @@ export interface UnifiedSidebarViewProps {
  *
  * 容器组件通常不需要 props，因为它直接连接 stores
  */
-export type UnifiedSidebarContainerProps = {}
+export type UnifiedSidebarContainerProps = Record<string, never>

@@ -6,16 +6,7 @@
  * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  */
 
-import {
-	ChevronDown,
-	ChevronRight,
-	FileText,
-	FolderPlus,
-	MoreHorizontal,
-	Pencil,
-	Plus,
-	Trash2,
-} from "lucide-react"
+import { ChevronDown, ChevronRight, FolderPlus, Plus } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { type NodeApi, type NodeRendererProps, Tree } from "react-arborist"
 import { useIconTheme } from "@/hooks/use-icon-theme"
@@ -23,18 +14,10 @@ import { useTheme } from "@/hooks/use-theme"
 import type { NodeInterface, NodeType } from "@/types/node"
 import { cn } from "@/utils/cn.util"
 import { Button } from "@/views/ui/button"
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuSub,
-	DropdownMenuSubContent,
-	DropdownMenuSubTrigger,
-	DropdownMenuTrigger,
-} from "@/views/ui/dropdown-menu"
 import { Input } from "@/views/ui/input"
 import type { FileTreeProps, TreeData } from "./file-tree.types"
+import { TreeNodeDropdown } from "./tree-node-dropdown.view.fn"
+import { TreeNodeIcon } from "./tree-node-icon.view.fn"
 
 /**
  * FileTree Props 接口
@@ -43,10 +26,13 @@ import type { FileTreeProps, TreeData } from "./file-tree.types"
  */
 export type { FileTreeProps, TreeData } from "./file-tree.types"
 
-function buildTreeData(nodes: NodeInterface[], parentId: string | null = null): TreeData[] {
+function buildTreeData(
+	nodes: readonly NodeInterface[],
+	parentId: string | null = null,
+): TreeData[] {
 	return nodes
 		.filter((n) => n.parent === parentId)
-		.sort((a, b) => a.order - b.order)
+		.toSorted((a, b) => a.order - b.order)
 		.map((node) => ({
 			children: node.type === "folder" ? buildTreeData(nodes, node.id) : undefined,
 			collapsed: node.collapsed ?? true,
@@ -55,6 +41,10 @@ function buildTreeData(nodes: NodeInterface[], parentId: string | null = null): 
 			type: node.type,
 		}))
 }
+
+// ============================================================================
+// 主组件
+// ============================================================================
 
 function TreeNode({
 	node,
@@ -74,49 +64,29 @@ function TreeNode({
 }) {
 	const data = node.data
 	const isFolder = data.type === "folder"
-	const iconTheme = useIconTheme()
 
-	const renderIcon = () => {
-		if (data.type === "folder") {
-			const FolderIcon = node.isOpen
-				? iconTheme.icons.folder.open || iconTheme.icons.folder.default
-				: iconTheme.icons.folder.default
-			return (
-				<FolderIcon
-					className={cn(
-						"size-4 shrink-0 transition-opacity duration-200 group-hover/panel:opacity-100",
-						!hasSelection || node.isSelected ? "opacity-100" : "opacity-40",
-						node.isSelected && "animate-[icon-glow_3s_ease-in-out_infinite]",
-					)}
-					style={{
-						color: folderColor || "#3b82f6",
-						fill: folderColor ? `${folderColor}1A` : "#3b82f61A",
-					}}
-				/>
-			)
+	const handleClick = (e: React.MouseEvent) => {
+		e.stopPropagation()
+		if (isFolder) {
+			node.toggle()
+		} else {
+			node.select()
 		}
-		if (data.type === "drawing") {
-			const CanvasIcon = iconTheme.icons.activityBar.canvas
-			return (
-				<CanvasIcon
-					className={cn(
-						"size-4 shrink-0 text-purple-500 transition-opacity duration-200 group-hover/panel:opacity-100",
-						!hasSelection || node.isSelected ? "opacity-100" : "opacity-40",
-						node.isSelected && "animate-[icon-glow_3s_ease-in-out_infinite]",
-					)}
-				/>
-			)
+	}
+
+	const handleKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === "Enter" || e.key === " ") {
+			e.preventDefault()
+			e.stopPropagation()
+			if (isFolder) {
+				node.toggle()
+			} else {
+				node.select()
+			}
+		} else if (e.key === "F2") {
+			e.preventDefault()
+			node.edit()
 		}
-		const FileIcon = iconTheme.icons.file.default
-		return (
-			<FileIcon
-				className={cn(
-					"size-4 shrink-0 transition-opacity duration-200 group-hover/panel:opacity-100",
-					!hasSelection || node.isSelected ? "opacity-100" : "opacity-40",
-					node.isSelected && "animate-[icon-glow_3s_ease-in-out_infinite]",
-				)}
-			/>
-		)
 	}
 
 	return (
@@ -138,28 +108,8 @@ function TreeNode({
 					: "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
 				node.willReceiveDrop && "bg-sidebar-accent ring-1 ring-primary/20",
 			)}
-			onClick={(e) => {
-				e.stopPropagation()
-				if (isFolder) {
-					node.toggle()
-				} else {
-					node.select()
-				}
-			}}
-			onKeyDown={(e) => {
-				if (e.key === "Enter" || e.key === " ") {
-					e.preventDefault()
-					e.stopPropagation()
-					if (isFolder) {
-						node.toggle()
-					} else {
-						node.select()
-					}
-				} else if (e.key === "F2") {
-					e.preventDefault()
-					node.edit()
-				}
-			}}
+			onClick={handleClick}
+			onKeyDown={handleKeyDown}
 			onDoubleClick={(e) => {
 				e.stopPropagation()
 				node.edit()
@@ -184,7 +134,13 @@ function TreeNode({
 				<span className="w-3.5 -ml-1" />
 			)}
 
-			{renderIcon()}
+			<TreeNodeIcon
+				type={data.type}
+				isOpen={node.isOpen}
+				isSelected={node.isSelected}
+				hasSelection={hasSelection}
+				folderColor={folderColor}
+			/>
 
 			{node.isEditing ? (
 				<Input
@@ -221,56 +177,14 @@ function TreeNode({
 			)}
 
 			{!node.isEditing && (
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<button
-							type="button"
-							onClick={(e) => e.stopPropagation()}
-							className="p-0.5 hover:bg-foreground/10 rounded-sm shrink-0 opacity-0 group-hover:opacity-100"
-						>
-							<MoreHorizontal className="size-3.5 text-muted-foreground" />
-						</button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="start" className="w-48">
-						{isFolder && (
-							<>
-								<DropdownMenuItem onClick={() => onCreateFolder(node.id)}>
-									<FolderPlus className="size-4 mr-2" />
-									New Folder
-								</DropdownMenuItem>
-								<DropdownMenuSub>
-									<DropdownMenuSubTrigger>
-										<Plus className="size-4 mr-2" />
-										New File
-									</DropdownMenuSubTrigger>
-									<DropdownMenuSubContent>
-										<DropdownMenuItem onClick={() => onCreateFile(node.id, "file")}>
-											<FileText className="size-4 mr-2" />
-											Text File
-										</DropdownMenuItem>
-										<DropdownMenuItem onClick={() => onCreateFile(node.id, "drawing")}>
-											<FileText className="size-4 mr-2" />
-											Canvas
-										</DropdownMenuItem>
-									</DropdownMenuSubContent>
-								</DropdownMenuSub>
-								<DropdownMenuSeparator />
-							</>
-						)}
-						<DropdownMenuItem onClick={() => node.edit()}>
-							<Pencil className="size-4 mr-2" />
-							Rename
-						</DropdownMenuItem>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem
-							onClick={() => onDelete(node.id)}
-							className="text-destructive focus:text-destructive"
-						>
-							<Trash2 className="size-4 mr-2" />
-							Delete
-						</DropdownMenuItem>
-					</DropdownMenuContent>
-				</DropdownMenu>
+				<TreeNodeDropdown
+					nodeId={data.id}
+					isFolder={isFolder}
+					onEdit={() => node.edit()}
+					onDelete={onDelete}
+					onCreateFolder={onCreateFolder}
+					onCreateFile={onCreateFile}
+				/>
 			)}
 		</div>
 	)
