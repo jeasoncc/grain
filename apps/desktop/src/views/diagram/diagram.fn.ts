@@ -73,7 +73,9 @@ export const isKrokiEnabled = (state: DiagramState): boolean => {
  * @returns URL 是否有效
  */
 export const isValidKrokiUrl = (url: string): boolean => {
-	if (!url) return false
+	if (!url) {
+		return false
+	}
 	try {
 		const parsed = new URL(url)
 		return parsed.protocol === "http:" || parsed.protocol === "https:"

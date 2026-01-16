@@ -147,7 +147,9 @@ export const reorderTabs = (
 	fromIndex: number,
 	toIndex: number,
 ): readonly EditorTab[] => {
-	if (fromIndex === toIndex) return tabs
+	if (fromIndex === toIndex) {
+		return tabs
+	}
 
 	const tabsArray = [...tabs]
 	const movedTab = tabsArray[fromIndex]
@@ -264,7 +266,9 @@ export const evictLRUEditorStates = (
  * @returns 是否为有效的 EditorTab
  */
 export const isValidTab = (tab: unknown): tab is EditorTab => {
-	if (typeof tab !== "object" || tab === null) return false
+	if (typeof tab !== "object" || tab === null) {
+		return false
+	}
 	const t = tab as Record<string, unknown>
 	return (
 		typeof t.id === "string" &&

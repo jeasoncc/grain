@@ -51,14 +51,18 @@ export function useWikiFiles(workspaceId: string | null): ReadonlyArray<WikiFile
 	const { data: allNodes, isLoading } = useNodesByWorkspace(workspaceId)
 
 	return useMemo(() => {
-		if (isLoading || !allNodes || !workspaceId) return []
+		if (isLoading || !allNodes || !workspaceId) {
+			return []
+		}
 
 		// Filter wiki nodes (nodes with "wiki" tag)
 		const wikiNodes = allNodes.filter(
 			(node) => node.tags?.includes(WIKI_TAG) && node.workspace === workspaceId,
 		)
 
-		if (wikiNodes.length === 0) return []
+		if (wikiNodes.length === 0) {
+			return []
+		}
 
 		// Build node map for path building
 		const nodeMap: ReadonlyMap<string, NodeInterface> = new Map(allNodes.map((n) => [n.id, n]))

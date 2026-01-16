@@ -6,7 +6,6 @@
  * 提供基础的日志记录功能，复杂的业务流程由 flows 层处理。
  */
 
-import { pipe } from "fp-ts/function"
 import * as TE from "fp-ts/TaskEither"
 // Pipes (符合架构规范)
 import {
@@ -15,11 +14,11 @@ import {
 	validateLogConfig,
 } from "@/pipes/log/log-creation.pipe"
 import type { AppError } from "@/types/error/error.types"
-import type { LogConfig, LogEntry, LogLevel } from "@/types/log/log.interface"
+import type { LogConfig, LogLevel } from "@/types/log/log.interface"
 import { DEFAULT_LOG_CONFIG } from "@/types/log/log.interface"
 
 // Storage API (同层依赖，允许)
-import { saveLogsBatchToSQLite, saveLogToSQLite } from "./log.storage.api"
+import { saveLogToSQLite } from "./log.storage.api"
 
 // ============================================================================
 // 简化的日志记录器

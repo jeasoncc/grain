@@ -48,7 +48,9 @@ const defaultOptions: ExportOptions = {
  * 从 Lexical 编辑器 JSON 内容中提取纯文本
  */
 function extractTextFromContent(content: string | null): string {
-	if (!content) return ""
+	if (!content) {
+		return ""
+	}
 
 	return pipe(
 		E.tryCatch(
@@ -64,7 +66,9 @@ function extractTextFromContent(content: string | null): string {
  * 递归从 Lexical 节点树中提取文本
  */
 function extractTextFromNode(node: unknown): string {
-	if (!node) return ""
+	if (!node) {
+		return ""
+	}
 
 	const n = node as Record<string, unknown>
 
@@ -223,7 +227,9 @@ async function getProjectContent(projectId: string) {
 		throw new Error(`Failed to get project: ${projectResult.left.message}`)
 	}
 	const project = projectResult.right
-	if (!project) throw new Error("Project not found")
+	if (!project) {
+		throw new Error("Project not found")
+	}
 
 	const nodesResult = await getNodesByWorkspace(projectId)()
 	if (E.isLeft(nodesResult)) {
@@ -509,7 +515,9 @@ export async function exportToEpub(projectId: string, options: ExportOptions = {
 		const contents = getNodeContents(rootNode, nodes, contentMap)
 
 		return contents.flatMap(({ node, depth, text }) => {
-			if (depth > 0 && !opts.includeSceneTitles) return []
+			if (depth > 0 && !opts.includeSceneTitles) {
+				return []
+			}
 
 			chapterIndex++
 			const chapterId = `chapter-${chapterIndex}`

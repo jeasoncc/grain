@@ -36,10 +36,16 @@ export interface LexicalNode {
  * @returns 提取的纯文本
  */
 export function extractText(node: unknown): string {
-	if (!node || typeof node !== "object") return ""
+	if (!node || typeof node !== "object") {
+		return ""
+	}
 	const n = node as Record<string, unknown>
-	if (n.type === "text") return (n.text as string) || ""
-	if (Array.isArray(n.children)) return n.children.map(extractText).join("")
+	if (n.type === "text") {
+		return (n.text as string) || ""
+	}
+	if (Array.isArray(n.children)) {
+		return n.children.map(extractText).join("")
+	}
 	return ""
 }
 
@@ -51,10 +57,14 @@ export function extractText(node: unknown): string {
  * @returns 提取的纯文本（带换行）
  */
 export function extractTextWithNewlines(node: unknown): string {
-	if (!node || typeof node !== "object") return ""
+	if (!node || typeof node !== "object") {
+		return ""
+	}
 	const n = node as Record<string, unknown>
 
-	if (n.type === "text") return (n.text as string) || ""
+	if (n.type === "text") {
+		return (n.text as string) || ""
+	}
 
 	if (n.type === "paragraph" || n.type === "heading") {
 		const text = Array.isArray(n.children) ? n.children.map(extractText).join("") : ""

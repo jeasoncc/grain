@@ -162,6 +162,8 @@ export const serializeStack = (
 export const deserializeStack = (
 	data: readonly (readonly [string, readonly EditorHistoryEntry[]])[] | undefined,
 ): HistoryStack => {
-	if (!data) return new Map()
+	if (!data) {
+		return new Map()
+	}
 	return new Map(data)
 }

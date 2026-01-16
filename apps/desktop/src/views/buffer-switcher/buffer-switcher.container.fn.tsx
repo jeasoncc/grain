@@ -36,7 +36,9 @@ export const BufferSwitcherContainer = memo(
 		// Keyboard Navigation - Tab 键切换
 		const handleKeyDown = useCallback(
 			(e: KeyboardEvent) => {
-				if (!open) return
+				if (!open) {
+					return
+				}
 
 				if (e.key === "Tab" && e.ctrlKey) {
 					e.preventDefault()
@@ -53,7 +55,9 @@ export const BufferSwitcherContainer = memo(
 		// Keyboard Navigation - Ctrl 释放时确认选择
 		const handleKeyUp = useCallback(
 			(e: KeyboardEvent) => {
-				if (!open) return
+				if (!open) {
+					return
+				}
 
 				if (e.key === "Control") {
 					// 释放 Ctrl 时确认选择

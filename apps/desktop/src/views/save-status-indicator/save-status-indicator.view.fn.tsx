@@ -66,12 +66,18 @@ export const SaveStatusIndicatorView = memo(
 		const statusDisplay = getStatusDisplay()
 
 		const formatLastSaveTime = (timestamp: number | null) => {
-			if (!timestamp) return ""
+			if (!timestamp) {
+				return ""
+			}
 			const now = dayjs().valueOf()
 			const diff = now - timestamp
 
-			if (diff < 60000) return "just now"
-			if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
+			if (diff < 60000) {
+				return "just now"
+			}
+			if (diff < 3600000) {
+				return `${Math.floor(diff / 60000)}m ago`
+			}
 			return dayjs(timestamp).format("HH:mm:ss")
 		}
 

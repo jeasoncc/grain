@@ -12,15 +12,10 @@ import * as TE from "fp-ts/TaskEither"
 import { saveLogsBatchToSQLite } from "@/io/log/log.storage.api"
 import { warn } from "@/io/log/logger.api"
 // IO (符合架构规范)
-import { createSimpleLogger, type SimpleLogger } from "@/io/log/simple-logger.api"
+import { createSimpleLogger } from "@/io/log/simple-logger.api"
 
 // Pipes
-import {
-	addConsoleColors,
-	filterByLevel,
-	formatLogEntry,
-	shouldLog,
-} from "@/pipes/log/log.format.pipe"
+import { filterByLevel } from "@/pipes/log/log.format.pipe"
 import type { AppError } from "@/types/error/error.types"
 import type {
 	LogConfig,

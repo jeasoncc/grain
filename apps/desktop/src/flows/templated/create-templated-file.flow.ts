@@ -187,7 +187,8 @@ const ensureFolderPath = (
 /**
  * 创建模板化文件的高阶函数
  */
-export const createTemplatedFile = <T>(config: TemplateConfig<T>) =>
+export const createTemplatedFile =
+	<T>(config: TemplateConfig<T>) =>
 	(params: TemplatedFileParams<T>): TE.TaskEither<AppError, TemplatedFileResult> => {
 		info(`[Flow] 创建${config.name}...`)
 

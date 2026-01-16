@@ -5,6 +5,16 @@
  * IO operations are in @/flows/wiki.
  */
 
+// Re-export types from @/types/wiki for convenience
+export {
+	type WikiCreationParams,
+	type WikiCreationResult,
+	type WikiFileEntry,
+	WikiFileEntryBuilder,
+	wikiCreationParamsSchema,
+	wikiCreationResultSchema,
+	wikiFileEntrySchema,
+} from "@/types/wiki"
 export {
 	buildNodePath,
 	buildWikiFileEntry,
@@ -12,17 +22,6 @@ export {
 	WIKI_ROOT_FOLDER,
 	WIKI_TAG,
 } from "./wiki.resolve.fn"
-
-// Re-export types from @/types/wiki for convenience
-export {
-	WikiFileEntryBuilder,
-	type WikiCreationParams,
-	type WikiCreationResult,
-	type WikiFileEntry,
-	wikiCreationParamsSchema,
-	wikiCreationResultSchema,
-	wikiFileEntrySchema,
-} from "@/types/wiki"
 
 // NOTE: IO functions (getWikiFiles, getWikiFilesAsync) are in @/flows/wiki
 // Import them from there directly to avoid circular dependencies.

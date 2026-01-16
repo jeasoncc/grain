@@ -79,6 +79,8 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
 
 export function useConfirm() {
 	const ctx = useContext(ConfirmContext)
-	if (!ctx) throw new Error("useConfirm must be used within ConfirmProvider")
+	if (!ctx) {
+		throw new Error("useConfirm must be used within ConfirmProvider")
+	}
 	return ctx.confirm
 }

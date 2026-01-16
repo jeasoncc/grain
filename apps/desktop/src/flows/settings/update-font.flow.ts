@@ -111,7 +111,9 @@ export const updateEditorFont = (params: UpdateEditorFontParams): E.Either<AppEr
 	// 验证并更新字体族
 	if (params.fontFamily !== undefined) {
 		const result = validateNonEmpty(params.fontFamily, "fontFamily")
-		if (E.isLeft(result)) return result
+		if (E.isLeft(result)) {
+			return result
+		}
 		store.setFontFamily(params.fontFamily)
 	}
 
@@ -123,7 +125,9 @@ export const updateEditorFont = (params: UpdateEditorFontParams): E.Either<AppEr
 			FONT_CONSTRAINTS.fontSize.max,
 			"fontSize",
 		)
-		if (E.isLeft(result)) return result
+		if (E.isLeft(result)) {
+			return result
+		}
 		store.setFontSize(params.fontSize)
 	}
 
@@ -135,7 +139,9 @@ export const updateEditorFont = (params: UpdateEditorFontParams): E.Either<AppEr
 			FONT_CONSTRAINTS.lineHeight.max,
 			"lineHeight",
 		)
-		if (E.isLeft(result)) return result
+		if (E.isLeft(result)) {
+			return result
+		}
 		store.setLineHeight(params.lineHeight)
 	}
 
@@ -147,7 +153,9 @@ export const updateEditorFont = (params: UpdateEditorFontParams): E.Either<AppEr
 			FONT_CONSTRAINTS.letterSpacing.max,
 			"letterSpacing",
 		)
-		if (E.isLeft(result)) return result
+		if (E.isLeft(result)) {
+			return result
+		}
 		store.setLetterSpacing(params.letterSpacing)
 	}
 
@@ -172,7 +180,9 @@ export const updateUiFont = (params: UpdateUiFontParams): E.Either<AppError, voi
 	// 验证并更新 UI 字体族
 	if (params.uiFontFamily !== undefined) {
 		const result = validateNonEmpty(params.uiFontFamily, "uiFontFamily")
-		if (E.isLeft(result)) return result
+		if (E.isLeft(result)) {
+			return result
+		}
 		store.setUiFontFamily(params.uiFontFamily)
 	}
 
@@ -184,7 +194,9 @@ export const updateUiFont = (params: UpdateUiFontParams): E.Either<AppError, voi
 			FONT_CONSTRAINTS.uiFontSize.max,
 			"uiFontSize",
 		)
-		if (E.isLeft(result)) return result
+		if (E.isLeft(result)) {
+			return result
+		}
 		store.setUiFontSize(params.uiFontSize)
 	}
 
@@ -224,7 +236,9 @@ export const updateTypography = (params: UpdateTypographyParams): E.Either<AppEr
 			FONT_CONSTRAINTS.cardBorderRadius.max,
 			"cardBorderRadius",
 		)
-		if (E.isLeft(result)) return result
+		if (E.isLeft(result)) {
+			return result
+		}
 		store.setCardBorderRadius(params.cardBorderRadius)
 	}
 
@@ -236,7 +250,9 @@ export const updateTypography = (params: UpdateTypographyParams): E.Either<AppEr
 			FONT_CONSTRAINTS.paragraphSpacing.max,
 			"paragraphSpacing",
 		)
-		if (E.isLeft(result)) return result
+		if (E.isLeft(result)) {
+			return result
+		}
 		store.setParagraphSpacing(params.paragraphSpacing)
 	}
 
@@ -248,7 +264,9 @@ export const updateTypography = (params: UpdateTypographyParams): E.Either<AppEr
 			FONT_CONSTRAINTS.firstLineIndent.max,
 			"firstLineIndent",
 		)
-		if (E.isLeft(result)) return result
+		if (E.isLeft(result)) {
+			return result
+		}
 		store.setFirstLineIndent(params.firstLineIndent)
 	}
 

@@ -138,7 +138,9 @@ export function useRecentTags(
 	limit = 10,
 ): readonly TagInterface[] {
 	const { data } = useTagsByWorkspaceQuery(workspaceId)
-	if (!data) return []
+	if (!data) {
+		return []
+	}
 	// Sort by lastUsed and take top N
 	return orderBy(data, [(tag) => dayjs(tag.lastUsed).valueOf()], ["desc"]).slice(0, limit)
 }

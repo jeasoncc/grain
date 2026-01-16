@@ -36,7 +36,9 @@ export const WordCountBadge = memo(
 			}
 		}, [wordCountResult.total, lastTotal, show])
 
-		if (!show) return null
+		if (!show) {
+			return null
+		}
 
 		return (
 			<div

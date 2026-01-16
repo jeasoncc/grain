@@ -62,7 +62,9 @@ export function hasInvalidAppState(
 	appState: Record<string, unknown> | undefined,
 	maxSafeSize: number,
 ): boolean {
-	if (!appState) return false
+	if (!appState) {
+		return false
+	}
 
 	// 检查滚动位置
 	if (typeof appState.scrollX === "number" && Math.abs(appState.scrollX) > MAX_SAFE_COORD) {
@@ -90,7 +92,9 @@ export function hasInvalidAppState(
  * @returns 清理后的内容字符串
  */
 export function sanitizeDrawingContent(content: string): string {
-	if (!content) return EMPTY_DRAWING_CONTENT
+	if (!content) {
+		return EMPTY_DRAWING_CONTENT
+	}
 
 	try {
 		const data = JSON.parse(content)

@@ -51,7 +51,9 @@ export const exportDialogManager: ExportDialogManagerAPI = {
 		exportDialogListeners.push(listener)
 		return () => {
 			const index = exportDialogListeners.indexOf(listener)
-			if (index > -1) exportDialogListeners.splice(index, 1)
+			if (index > -1) {
+				exportDialogListeners.splice(index, 1)
+			}
 		}
 	},
 }
@@ -89,12 +91,17 @@ export const ExportDialogManagerContainer = memo(
 			dialogState.workspaceTitle || currentWorkspace?.title || "Untitled Workspace"
 
 		const handleOpenChange = (open: boolean) => {
-			if (open) exportDialogManager.open(effectiveWorkspaceId, effectiveWorkspaceTitle)
-			else exportDialogManager.close()
+			if (open) {
+				exportDialogManager.open(effectiveWorkspaceId, effectiveWorkspaceTitle)
+			} else {
+				exportDialogManager.close()
+			}
 		}
 
 		// 如果没有有效的工作区 ID，不渲染对话框
-		if (!effectiveWorkspaceId) return null
+		if (!effectiveWorkspaceId) {
+			return null
+		}
 
 		return (
 			<ExportDialog

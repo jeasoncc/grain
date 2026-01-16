@@ -29,9 +29,15 @@ import type { EditorTabsViewProps } from "./editor-tabs.types"
 
 // 根据标签数量计算最大宽度
 function getTabMaxWidth(tabCount: number): number {
-	if (tabCount <= 3) return 200
-	if (tabCount <= 5) return 160
-	if (tabCount <= 8) return 120
+	if (tabCount <= 3) {
+		return 200
+	}
+	if (tabCount <= 5) {
+		return 160
+	}
+	if (tabCount <= 8) {
+		return 120
+	}
 	return 100
 }
 
@@ -49,7 +55,9 @@ export const EditorTabsView = memo(
 		// 检查是否需要显示滚动按钮
 		const checkScrollState = useCallback(() => {
 			const container = scrollContainerRef.current
-			if (!container) return
+			if (!container) {
+				return
+			}
 
 			const hasOverflow = container.scrollWidth > container.clientWidth
 			setShowScrollButtons(hasOverflow)
@@ -65,7 +73,9 @@ export const EditorTabsView = memo(
 
 		// 滚动到活动标签
 		useEffect(() => {
-			if (!activeTabId || !scrollContainerRef.current) return
+			if (!activeTabId || !scrollContainerRef.current) {
+				return
+			}
 			const activeElement = scrollContainerRef.current.querySelector(
 				`[data-tab-id="${activeTabId}"]`,
 			)

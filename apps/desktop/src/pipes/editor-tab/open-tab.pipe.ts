@@ -8,8 +8,8 @@
 
 import dayjs from "dayjs"
 import type { SerializedEditorState } from "lexical"
-import { EditorStateBuilder, EditorTabBuilder } from "@/types/editor-tab"
 import type { EditorInstanceState, EditorTab, TabType } from "@/types/editor-tab"
+import { EditorStateBuilder, EditorTabBuilder } from "@/types/editor-tab"
 import type { NodeInterface } from "@/types/node"
 import { evictLRUEditorStates, findTabByNodeId } from "./editor-tab.pipe"
 
@@ -88,8 +88,12 @@ const DEFAULT_MAX_EDITOR_STATES = 10
 /**
  * 尝试解析内容为 Lexical JSON
  */
-export const parseContentSafe = (content: string | undefined): SerializedEditorState | undefined => {
-	if (!content) return undefined
+export const parseContentSafe = (
+	content: string | undefined,
+): SerializedEditorState | undefined => {
+	if (!content) {
+		return undefined
+	}
 	try {
 		return JSON.parse(content) as SerializedEditorState
 	} catch {
@@ -173,7 +177,6 @@ export const calculateOpenTabChanges = (input: OpenTabInput): OpenTabResult => {
 		tabId: newTab.id,
 	}
 }
-
 
 /**
  * 计算打开 Tab 需要的状态变更（简化版本）

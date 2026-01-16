@@ -121,7 +121,7 @@ export function useUnifiedSave(options: UseUnifiedSaveOptions): UseUnifiedSaveRe
 	// Refs（用于回调）
 	// ==============================
 
-	const callbacksRef = useRef({
+	const _callbacksRef = useRef({
 		onSaveError,
 		onSaveSuccess,
 	})
@@ -181,7 +181,9 @@ export function useUnifiedSave(options: UseUnifiedSaveOptions): UseUnifiedSaveRe
 	// ==============================
 
 	useEffect(() => {
-		if (!registerShortcut || !nodeId) return
+		if (!registerShortcut || !nodeId) {
+			return
+		}
 
 		const handleSave = async () => {
 			// 检查是否有未保存的更改

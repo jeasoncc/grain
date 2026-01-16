@@ -12,12 +12,7 @@ import * as fc from "fast-check"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { BackupData, BackupMetadata, LocalBackupRecord } from "@/types/backup"
 import type { BackupInfo } from "@/types/rust-api"
-import {
-	getDatabaseStats,
-	getLocalBackups,
-	restoreLocalBackup,
-	saveLocalBackup,
-} from "./backup.flow"
+import { getDatabaseStats, getLocalBackups, saveLocalBackup } from "./backup.flow"
 
 // Mock localStorage
 const mockLocalStorage = {

@@ -64,7 +64,9 @@ export function WikiHoverPreview({
 					setContent("Failed to load content")
 				}
 			} finally {
-				if (mounted) setLoading(false)
+				if (mounted) {
+					setLoading(false)
+				}
 			}
 		}
 
@@ -77,7 +79,9 @@ export function WikiHoverPreview({
 
 	// Calculate position
 	useEffect(() => {
-		if (!anchorElement) return
+		if (!anchorElement) {
+			return
+		}
 
 		const rect = anchorElement.getBoundingClientRect()
 		const top = rect.bottom + window.scrollY + 5
@@ -86,7 +90,9 @@ export function WikiHoverPreview({
 		setPosition({ left, top })
 	}, [anchorElement])
 
-	if (!anchorElement) return null
+	if (!anchorElement) {
+		return null
+	}
 
 	return createPortal(
 		<div

@@ -51,7 +51,9 @@ export function useAllWorkspaces(): readonly WorkspaceInterface[] | undefined {
 	const { data: workspaces, isLoading } = useWorkspacesQuery()
 
 	return useMemo(() => {
-		if (isLoading || !workspaces) return undefined
+		if (isLoading || !workspaces) {
+			return undefined
+		}
 		return orderBy(workspaces, [(workspace) => dayjs(workspace.lastOpen).valueOf()], ["desc"])
 	}, [workspaces, isLoading])
 }
@@ -80,7 +82,9 @@ export function useWorkspace(
 ): WorkspaceInterface | undefined {
 	const { data: workspace, isLoading } = useWorkspaceQuery(workspaceId)
 
-	if (isLoading) return undefined
+	if (isLoading) {
+		return undefined
+	}
 	return workspace ?? undefined
 }
 
@@ -96,8 +100,12 @@ export function useWorkspacesByOwner(
 	const { data: workspaces, isLoading } = useWorkspacesQuery()
 
 	return useMemo(() => {
-		if (isLoading || !workspaces) return undefined
-		if (!ownerId) return []
+		if (isLoading || !workspaces) {
+			return undefined
+		}
+		if (!ownerId) {
+			return []
+		}
 		return workspaces.filter((w) => w.owner === ownerId)
 	}, [workspaces, ownerId, isLoading])
 }
@@ -112,7 +120,9 @@ export function useRecentWorkspaces(limit: number = 5): readonly WorkspaceInterf
 	const { data: workspaces, isLoading } = useWorkspacesQuery()
 
 	return useMemo(() => {
-		if (isLoading || !workspaces) return undefined
+		if (isLoading || !workspaces) {
+			return undefined
+		}
 		return orderBy(
 			workspaces,
 			[(workspace) => dayjs(workspace.lastOpen).valueOf()],
@@ -129,7 +139,9 @@ export function useRecentWorkspaces(limit: number = 5): readonly WorkspaceInterf
 export function useWorkspaceCount(): number | undefined {
 	const { data: workspaces, isLoading } = useWorkspacesQuery()
 
-	if (isLoading || !workspaces) return undefined
+	if (isLoading || !workspaces) {
+		return undefined
+	}
 	return workspaces.length
 }
 
@@ -142,8 +154,12 @@ export function useWorkspaceCount(): number | undefined {
 export function useWorkspaceExists(workspaceId: string | null | undefined): boolean | undefined {
 	const { data: workspace, isLoading } = useWorkspaceQuery(workspaceId)
 
-	if (isLoading) return undefined
-	if (!workspaceId) return false
+	if (isLoading) {
+		return undefined
+	}
+	if (!workspaceId) {
+		return false
+	}
 	return workspace !== null && workspace !== undefined
 }
 
@@ -161,7 +177,9 @@ export function useWorkspaceSearch(
 	const { data: workspaces, isLoading } = useWorkspacesQuery()
 
 	return useMemo(() => {
-		if (isLoading || !workspaces) return undefined
+		if (isLoading || !workspaces) {
+			return undefined
+		}
 
 		const sorted = orderBy(
 			workspaces,

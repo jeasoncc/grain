@@ -39,11 +39,15 @@ export const useContent = (nodeId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!nodeId,
 		queryFn: async (): Promise<ContentInterface | null> => {
-			if (!nodeId) return null
+			if (!nodeId) {
+				return null
+			}
 
 			const result = await contentApi.getContentByNodeId(nodeId)()
 
-			if (result._tag === "Left") throw result.left
+			if (result._tag === "Left") {
+				throw result.left
+			}
 			return result.right
 		},
 		queryKey: queryKeys.contents.byNode(nodeId ?? ""),
@@ -60,11 +64,15 @@ export const useContentVersion = (nodeId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!nodeId,
 		queryFn: async (): Promise<number | null> => {
-			if (!nodeId) return null
+			if (!nodeId) {
+				return null
+			}
 
 			const result = await contentApi.getContentVersion(nodeId)()
 
-			if (result._tag === "Left") throw result.left
+			if (result._tag === "Left") {
+				throw result.left
+			}
 			return result.right
 		},
 		queryKey: queryKeys.contents.version(nodeId ?? ""),

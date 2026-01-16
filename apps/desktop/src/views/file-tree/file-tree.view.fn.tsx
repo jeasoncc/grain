@@ -309,7 +309,9 @@ export function FileTree({
 
 	useEffect(() => {
 		const container = containerRef.current
-		if (!container) return
+		if (!container) {
+			return
+		}
 
 		const updateDimensions = () => {
 			const rect = container.getBoundingClientRect()

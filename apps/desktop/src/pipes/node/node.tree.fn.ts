@@ -94,7 +94,9 @@ export const getNodePath = (
 		currentId: string | null,
 		acc: ReadonlyArray<NodeInterface>,
 	): ReadonlyArray<NodeInterface> => {
-		if (!currentId) return acc
+		if (!currentId) {
+			return acc
+		}
 
 		const node = pipe(
 			nodes,
@@ -102,7 +104,9 @@ export const getNodePath = (
 			O.toNullable,
 		)
 
-		if (!node) return acc
+		if (!node) {
+			return acc
+		}
 
 		return buildPath(node.parent, [node, ...acc])
 	}
@@ -124,13 +128,21 @@ export const wouldCreateCycle = (
 	nodeId: string,
 	newParentId: string | null,
 ): boolean => {
-	if (newParentId === null) return false
-	if (nodeId === newParentId) return true
+	if (newParentId === null) {
+		return false
+	}
+	if (nodeId === newParentId) {
+		return true
+	}
 
 	// Use functional approach to check cycle
 	const checkCycle = (currentId: string | null): boolean => {
-		if (!currentId) return false
-		if (currentId === nodeId) return true
+		if (!currentId) {
+			return false
+		}
+		if (currentId === nodeId) {
+			return true
+		}
 
 		const parent = pipe(
 			nodes,
@@ -249,7 +261,9 @@ export const filterByTag = (
  * @returns 下一个 order 值
  */
 export const getNextOrder = (siblings: ReadonlyArray<NodeInterface>): number => {
-	if (siblings.length === 0) return 0
+	if (siblings.length === 0) {
+		return 0
+	}
 	return pipe(
 		siblings,
 		RA.map((n) => n.order),

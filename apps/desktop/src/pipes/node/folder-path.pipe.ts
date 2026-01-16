@@ -110,7 +110,8 @@ export const resolveFolderPath = (
 			// 找到第一个不存在的，后续都需要创建
 			const currentIndex = results.length - 1
 			return {
-				createFromParentId: currentIndex > 0 ? results[currentIndex - 1].existing?.id ?? null : null,
+				createFromParentId:
+					currentIndex > 0 ? (results[currentIndex - 1].existing?.id ?? null) : null,
 				lastFolder,
 				results,
 				toCreate: folderPath.slice(currentIndex),

@@ -61,7 +61,7 @@ const openTab = (
 		store.setActiveTabId(existing.id)
 		store.editorStates[existing.id] &&
 			store.updateEditorState(existing.id, { lastModified: dayjs().valueOf() })
-		return { tabId: existing.id, isNewTab: false }
+		return { isNewTab: false, tabId: existing.id }
 	}
 
 	const newTab = EditorTabBuilder.create()
@@ -79,10 +79,15 @@ const openTab = (
 	store.addTabWithState(newTab as EditorTab, editorState)
 
 	const openTabIds = new Set(store.tabs.map((t: EditorTab) => t.id))
-	const evicted = evictLRUEditorStates(store.editorStates, store.activeTabId, openTabIds as ReadonlySet<string>, 10)
+	const evicted = evictLRUEditorStates(
+		store.editorStates,
+		store.activeTabId,
+		openTabIds as ReadonlySet<string>,
+		10,
+	)
 	store.setEditorStates(evicted as Record<string, EditorInstanceState>)
 
-	return { tabId: newTab.id, isNewTab: true }
+	return { isNewTab: true, tabId: newTab.id }
 }
 
 // ==============================
@@ -114,10 +119,8 @@ export const openFile = (params: OpenFileParams): TE.TaskEither<AppError, OpenFi
 			const hasContent = content ? parseContent(content) !== undefined : false
 			const { tabId, isNewTab } = openTab(workspaceId, nodeId, title, type, content)
 
-			success("[OpenFile] 完成", { tabId, isNewTab })
-			return { tabId, isNewTab, hasContent }
+			success("[OpenFile] 完成", { isNewTab, tabId })
+			return { hasContent, isNewTab, tabId }
 		}),
 	)
 }
-
-

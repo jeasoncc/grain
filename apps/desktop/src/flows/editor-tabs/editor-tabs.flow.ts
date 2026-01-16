@@ -96,7 +96,9 @@ export const closeOtherTabsFlow = (
 	store: ReturnType<typeof useEditorTabsStore.getState>,
 ): void => {
 	const tab = store.tabs.find((t: EditorTab) => t.id === tabId)
-	if (!tab) return
+	if (!tab) {
+		return
+	}
 
 	const currentEditorState = store.editorStates[tabId]
 

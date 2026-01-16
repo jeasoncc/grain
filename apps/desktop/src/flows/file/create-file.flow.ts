@@ -76,7 +76,12 @@ const openTabForNode = (workspaceId: string, node: NodeInterface, content: strin
 	store.addTabWithState(newTab as EditorTab, editorState)
 
 	const openTabIds = new Set(store.tabs.map((t: EditorTab) => t.id))
-	const evicted = evictLRUEditorStates(store.editorStates, store.activeTabId, openTabIds as ReadonlySet<string>, 10)
+	const evicted = evictLRUEditorStates(
+		store.editorStates,
+		store.activeTabId,
+		openTabIds as ReadonlySet<string>,
+		10,
+	)
 	store.setEditorStates(evicted as Record<string, EditorInstanceState>)
 
 	return newTab.id
@@ -123,5 +128,3 @@ export const createFile = (params: CreateFileParams): TE.TaskEither<AppError, Cr
 		}),
 	)
 }
-
-

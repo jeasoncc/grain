@@ -44,7 +44,9 @@ export const GlobalSearchView = memo(
 	}: GlobalSearchViewProps) => {
 		// 高亮匹配文本
 		const highlightText = (text: string, searchQuery: string) => {
-			if (!searchQuery.trim()) return text
+			if (!searchQuery.trim()) {
+				return text
+			}
 
 			const parts = text.split(new RegExp(`(${searchQuery})`, "gi"))
 			return parts.map((part: string, index: number) =>

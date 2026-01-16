@@ -63,7 +63,7 @@ const generateLexicalContent = (title: string): string => {
 		createHeadingNode(title, "h2"),
 		createParagraphNode([createTextNode("")]),
 	])
-	console.log("coming" + doc)
+	console.log(`coming${doc}`)
 	return JSON.stringify(doc)
 }
 
@@ -76,8 +76,7 @@ const generateContentByType = (type: NodeType, title: string): string =>
 /**
  * 根据文件类型获取标题
  */
-const getTitleByType = (type: NodeType): string =>
-	type === "drawing" ? "New Canvas" : "New File"
+const getTitleByType = (type: NodeType): string => (type === "drawing" ? "New Canvas" : "New File")
 
 /**
  * 根据文件类型获取成功消息
@@ -158,7 +157,9 @@ export const FileTreePanelContainer = memo(
 				setSelectedNodeId(nodeId)
 
 				const node = await getNode(nodeId)
-				if (!node || node.type === "folder") return
+				if (!node || node.type === "folder") {
+					return
+				}
 
 				if (workspaceId) {
 					await pipe(
@@ -289,7 +290,9 @@ export const FileTreePanelContainer = memo(
 		const handleDeleteNode = useCallback(
 			async (nodeId: string) => {
 				const node = await getNode(nodeId)
-				if (!node) return
+				if (!node) {
+					return
+				}
 
 				const isFolder = node.type === "folder"
 				const confirmed = await confirm({
@@ -301,7 +304,9 @@ export const FileTreePanelContainer = memo(
 					title: `Delete ${isFolder ? "folder" : "file"}?`,
 				})
 
-				if (!confirmed) return
+				if (!confirmed) {
+					return
+				}
 
 				await pipe(
 					deleteNode(nodeId),
@@ -328,7 +333,9 @@ export const FileTreePanelContainer = memo(
 		 */
 		const handleRenameNode = useCallback(async (nodeId: string, newTitle: string) => {
 			const trimmedTitle = newTitle.trim()
-			if (!trimmedTitle) return
+			if (!trimmedTitle) {
+				return
+			}
 
 			await pipe(
 				renameNode({ nodeId, title: trimmedTitle }),

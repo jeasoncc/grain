@@ -51,7 +51,9 @@ export interface HighlightOptions {
  * @returns 从节点及其子节点提取的纯文本
  */
 export const extractTextFromLexical = (node: unknown): string => {
-	if (!node || typeof node !== "object") return ""
+	if (!node || typeof node !== "object") {
+		return ""
+	}
 
 	const n = node as LexicalNode
 
@@ -75,7 +77,9 @@ export const extractTextFromLexical = (node: unknown): string => {
  * @returns 从内容中提取的纯文本
  */
 export const extractTextFromContent = (content: string): string => {
-	if (!content) return ""
+	if (!content) {
+		return ""
+	}
 
 	return pipe(
 		O.tryCatch(() => JSON.parse(content) as { readonly root?: unknown }),
@@ -159,7 +163,9 @@ export const extractHighlights = (
 ): ReadonlyArray<string> => {
 	const { maxHighlights = 3, contextLength = 20 } = options
 
-	if (!query || !content) return []
+	if (!query || !content) {
+		return []
+	}
 
 	const lowerContent = content.toLowerCase()
 	const lowerQuery = query.toLowerCase()
@@ -169,10 +175,14 @@ export const extractHighlights = (
 		startIndex: number,
 		accumulator: ReadonlyArray<string>,
 	): ReadonlyArray<string> => {
-		if (accumulator.length >= maxHighlights) return accumulator
+		if (accumulator.length >= maxHighlights) {
+			return accumulator
+		}
 
 		const index = lowerContent.indexOf(lowerQuery, startIndex)
-		if (index === -1) return accumulator
+		if (index === -1) {
+			return accumulator
+		}
 
 		const start = Math.max(0, index - contextLength)
 		const end = Math.min(content.length, index + query.length + contextLength)

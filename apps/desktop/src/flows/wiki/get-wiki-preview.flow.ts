@@ -22,10 +22,14 @@ export interface WikiPreviewData {
  * 从 Lexical JSON 提取纯文本
  */
 function extractTextFromLexical(node: unknown): string {
-	if (!node) return ""
+	if (!node) {
+		return ""
+	}
 	if (typeof node === "object" && node !== null) {
 		const nodeObj = node as { readonly text?: string; readonly children?: ReadonlyArray<unknown> }
-		if (typeof nodeObj.text === "string") return nodeObj.text
+		if (typeof nodeObj.text === "string") {
+			return nodeObj.text
+		}
 		if (Array.isArray(nodeObj.children)) {
 			return nodeObj.children.map(extractTextFromLexical).join(" ")
 		}

@@ -8,6 +8,13 @@
  * @requirements 2.1, 1.4
  */
 
+// 文件夹路径函数
+export {
+	type FolderLookupResult,
+	type FolderPathSegment,
+	findFolderByParentAndTitle,
+	resolveFolderPath,
+} from "./folder-path.pipe"
 // 展开状态计算函数
 export {
 	calculateExpandedFoldersForNode,
@@ -28,10 +35,3 @@ export {
 	type TreeNode,
 	wouldCreateCycle,
 } from "./node.tree.fn"
-// 文件夹路径函数
-export {
-	findFolderByParentAndTitle,
-	resolveFolderPath,
-	type FolderLookupResult,
-	type FolderPathSegment,
-} from "./folder-path.pipe"

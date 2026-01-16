@@ -30,7 +30,7 @@ describe("Property Test: Backup Data Integrity", () => {
 					includeTitle: fc.boolean(),
 					pageBreakBetweenChapters: fc.boolean(),
 				}), // options
-				(projectId, options) => {
+				(_projectId, _options) => {
 					// Import the export functions
 					const exportModule = require("./export-project.flow")
 
@@ -125,7 +125,7 @@ describe("Property Test: Backup Data Integrity", () => {
 					// Null
 					fc.constant(null),
 				),
-				(content) => {
+				(_content) => {
 					// We can't directly test the internal extractTextFromContent function,
 					// but we can test that the module loads without errors
 					const exportModule = require("./export-project.flow")

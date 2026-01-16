@@ -59,8 +59,7 @@ const VALID_ROUTES: readonly RoutePath[] = [
 	"/settings/typography",
 ]
 
-const isValidRoute = (path: string): path is RoutePath =>
-	VALID_ROUTES.includes(path as RoutePath)
+const isValidRoute = (path: string): path is RoutePath => VALID_ROUTES.includes(path as RoutePath)
 
 // ==============================
 // Component
@@ -95,11 +94,15 @@ export function ActivityBarContainer(): React.ReactElement {
 
 	useEffect(() => {
 		const init = async () => {
-			if (workspacesRaw === undefined || hasInitialized) return
+			if (workspacesRaw === undefined || hasInitialized) {
+				return
+			}
 			setHasInitialized(true)
 
 			if (workspaces.length === 0) {
-				if (selectedWorkspaceId) setSelectedWorkspaceId(null)
+				if (selectedWorkspaceId) {
+					setSelectedWorkspaceId(null)
+				}
 				try {
 					const result = await createWorkspace({
 						author: "",
@@ -119,14 +122,25 @@ export function ActivityBarContainer(): React.ReactElement {
 
 			const isValid = selectedWorkspaceId && workspaces.some((w) => w.id === selectedWorkspaceId)
 			if (!isValid) {
-				const sorted = orderBy(workspaces, [(w) => dayjs(w.lastOpen || w.createDate).valueOf()], ["desc"])
+				const sorted = orderBy(
+					workspaces,
+					[(w) => dayjs(w.lastOpen || w.createDate).valueOf()],
+					["desc"],
+				)
 				setSelectedWorkspaceId(sorted[0].id)
 			} else {
 				void touchWorkspace(selectedWorkspaceId)()
 			}
 		}
 		init()
-	}, [workspacesRaw, hasInitialized, workspaces, selectedWorkspaceId, setSelectedWorkspaceId, setActivePanel])
+	}, [
+		workspacesRaw,
+		hasInitialized,
+		workspaces,
+		selectedWorkspaceId,
+		setSelectedWorkspaceId,
+		setActivePanel,
+	])
 
 	// ==============================
 	// Handlers (使用 useMemo 批量创建)
@@ -134,24 +148,60 @@ export function ActivityBarContainer(): React.ReactElement {
 
 	const templateHandlers = useMemo(
 		() => ({
-			onCreateDiary: () =>
-				createTemplate({ creator: createDiary, errorMessage: "Failed to create diary", successMessage: "Diary created" }),
-			onCreateWiki: () =>
-				createTemplate({ creator: createWiki, errorMessage: "Failed to create wiki", successMessage: "Wiki created" }),
-			onCreateLedger: () =>
-				createTemplate({ creator: createLedger, errorMessage: "Failed to create ledger", successMessage: "Ledger created" }),
-			onCreateTodo: () =>
-				createTemplate({ creator: createTodo, errorMessage: "Failed to create todo", successMessage: "Todo created" }),
-			onCreateNote: () =>
-				createTemplate({ creator: createNote, errorMessage: "Failed to create note", successMessage: "Note created" }),
-			onCreateExcalidraw: () =>
-				createTemplate({ creator: createExcalidraw, errorMessage: "Failed to create excalidraw", successMessage: "Excalidraw created" }),
-			onCreateMermaid: () =>
-				createTemplate({ creator: createMermaid, errorMessage: "Failed to create mermaid", successMessage: "Mermaid created" }),
-			onCreatePlantUML: () =>
-				createTemplate({ creator: createPlantUML, errorMessage: "Failed to create plantuml", successMessage: "PlantUML created" }),
 			onCreateCode: () =>
-				createTemplate({ creator: createCode, errorMessage: "Failed to create code file", successMessage: "Code file created" }),
+				createTemplate({
+					creator: createCode,
+					errorMessage: "Failed to create code file",
+					successMessage: "Code file created",
+				}),
+			onCreateDiary: () =>
+				createTemplate({
+					creator: createDiary,
+					errorMessage: "Failed to create diary",
+					successMessage: "Diary created",
+				}),
+			onCreateExcalidraw: () =>
+				createTemplate({
+					creator: createExcalidraw,
+					errorMessage: "Failed to create excalidraw",
+					successMessage: "Excalidraw created",
+				}),
+			onCreateLedger: () =>
+				createTemplate({
+					creator: createLedger,
+					errorMessage: "Failed to create ledger",
+					successMessage: "Ledger created",
+				}),
+			onCreateMermaid: () =>
+				createTemplate({
+					creator: createMermaid,
+					errorMessage: "Failed to create mermaid",
+					successMessage: "Mermaid created",
+				}),
+			onCreateNote: () =>
+				createTemplate({
+					creator: createNote,
+					errorMessage: "Failed to create note",
+					successMessage: "Note created",
+				}),
+			onCreatePlantUML: () =>
+				createTemplate({
+					creator: createPlantUML,
+					errorMessage: "Failed to create plantuml",
+					successMessage: "PlantUML created",
+				}),
+			onCreateTodo: () =>
+				createTemplate({
+					creator: createTodo,
+					errorMessage: "Failed to create todo",
+					successMessage: "Todo created",
+				}),
+			onCreateWiki: () =>
+				createTemplate({
+					creator: createWiki,
+					errorMessage: "Failed to create wiki",
+					successMessage: "Wiki created",
+				}),
 		}),
 		[createTemplate],
 	)
@@ -194,7 +244,9 @@ export function ActivityBarContainer(): React.ReactElement {
 			description: "This action cannot be undone. All workspaces, files, and data will be deleted.",
 			title: "Delete all data?",
 		})
-		if (!ok) return
+		if (!ok) {
+			return
+		}
 		try {
 			await clearAllData()()
 			setSelectedWorkspaceId(null)
@@ -208,7 +260,9 @@ export function ActivityBarContainer(): React.ReactElement {
 
 	const handleNavigate = useCallback(
 		(path: string) => {
-			if (isValidRoute(path)) router.history.push(path)
+			if (isValidRoute(path)) {
+				router.history.push(path)
+			}
 		},
 		[router],
 	)
@@ -245,7 +299,9 @@ export function ActivityBarContainer(): React.ReactElement {
 				open={exportDialogOpen}
 				onOpenChange={setExportDialogOpen}
 				workspaceId={selectedWorkspaceId || workspaces[0]?.id || ""}
-				workspaceTitle={workspaces.find((w) => w.id === (selectedWorkspaceId || workspaces[0]?.id))?.title}
+				workspaceTitle={
+					workspaces.find((w) => w.id === (selectedWorkspaceId || workspaces[0]?.id))?.title
+				}
 			/>
 		</>
 	)

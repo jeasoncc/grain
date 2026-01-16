@@ -19,6 +19,7 @@ import { useSettings } from "@/hooks/use-settings"
 import { useUnifiedSave } from "@/hooks/use-unified-save"
 import { useWikiFiles } from "@/hooks/use-wiki"
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview"
+import { type EditorType, getEditorTypeByFilename } from "@/pipes/editor"
 import {
 	countWordsFromLexicalState,
 	formatWordCount,
@@ -29,7 +30,6 @@ import { useEditorTabsStore } from "@/state/editor-tabs.state"
 import { useSelectionStore } from "@/state/selection.state"
 import { useUIStore } from "@/state/ui.state"
 import { WikiHoverPreviewConnected } from "@/views/blocks/wiki-hover-preview-connected"
-import { type EditorType, getEditorTypeByFilename } from "@/pipes/editor"
 import { EditorTabs } from "@/views/editor-tabs"
 import { ExcalidrawEditorContainer } from "@/views/excalidraw-editor"
 import { KeyboardShortcutsHelp } from "@/views/keyboard-shortcuts-help"
@@ -118,7 +118,9 @@ export const StoryWorkspaceContainer = memo(
 		// 根据文件名扩展名确定编辑器类型
 		// 只有两种类型：lexical 和 excalidraw
 		const editorType: EditorType = useMemo(() => {
-			if (!activeTab?.title) return "lexical"
+			if (!activeTab?.title) {
+				return "lexical"
+			}
 			return getEditorTypeByFilename(activeTab.title)
 		}, [activeTab?.title])
 

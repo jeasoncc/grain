@@ -57,7 +57,9 @@ export const TagGraphPanelView = memo(({ workspaceId, graphData }: TagGraphPanel
 
 	// 初始化节点位置
 	useEffect(() => {
-		if (!graphData || !containerRef.current) return
+		if (!graphData || !containerRef.current) {
+			return
+		}
 
 		const { width, height } = containerRef.current.getBoundingClientRect()
 		const centerX = width / 2
@@ -100,7 +102,9 @@ export const TagGraphPanelView = memo(({ workspaceId, graphData }: TagGraphPanel
 
 	// 力导向布局
 	const simulate = useCallback(() => {
-		if (nodes.length === 0) return
+		if (nodes.length === 0) {
+			return
+		}
 
 		setNodes((prevNodes) => {
 			const newNodes = prevNodes.map((node) => ({ ...node }))
@@ -129,7 +133,9 @@ export const TagGraphPanelView = memo(({ workspaceId, graphData }: TagGraphPanel
 			for (const edge of edges) {
 				const sourceIndex = nodesWithAttraction.findIndex((n) => n.id === edge.source)
 				const targetIndex = nodesWithAttraction.findIndex((n) => n.id === edge.target)
-				if (sourceIndex === -1 || targetIndex === -1) continue
+				if (sourceIndex === -1 || targetIndex === -1) {
+					continue
+				}
 
 				const source = nodesWithAttraction[sourceIndex]
 				const target = nodesWithAttraction[targetIndex]
@@ -148,7 +154,9 @@ export const TagGraphPanelView = memo(({ workspaceId, graphData }: TagGraphPanel
 
 			// 应用速度和阻尼
 			return nodesWithAttraction.map((node) => {
-				if (node.id === dragging) return node
+				if (node.id === dragging) {
+					return node
+				}
 
 				const dampedVx = node.vx * DAMPING
 				const dampedVy = node.vy * DAMPING
@@ -182,10 +190,14 @@ export const TagGraphPanelView = memo(({ workspaceId, graphData }: TagGraphPanel
 	// 绘制
 	useEffect(() => {
 		const canvas = canvasRef.current
-		if (!canvas) return
+		if (!canvas) {
+			return
+		}
 
 		const ctx = canvas.getContext("2d")
-		if (!ctx) return
+		if (!ctx) {
+			return
+		}
 
 		const { width, height } = canvas
 		ctx.clearRect(0, 0, width, height)
@@ -200,7 +212,9 @@ export const TagGraphPanelView = memo(({ workspaceId, graphData }: TagGraphPanel
 		for (const edge of edges) {
 			const source = nodes.find((n) => n.id === edge.source)
 			const target = nodes.find((n) => n.id === edge.target)
-			if (!source || !target) continue
+			if (!source || !target) {
+				continue
+			}
 
 			ctx.beginPath()
 			ctx.moveTo(source.x, source.y)
@@ -234,7 +248,9 @@ export const TagGraphPanelView = memo(({ workspaceId, graphData }: TagGraphPanel
 	useEffect(() => {
 		const container = containerRef.current
 		const canvas = canvasRef.current
-		if (!container || !canvas) return
+		if (!container || !canvas) {
+			return
+		}
 
 		const resize = () => {
 			const { width, height } = container.getBoundingClientRect()
@@ -250,7 +266,9 @@ export const TagGraphPanelView = memo(({ workspaceId, graphData }: TagGraphPanel
 	// 鼠标事件
 	const handleMouseDown = (e: React.MouseEvent) => {
 		const canvas = canvasRef.current
-		if (!canvas) return
+		if (!canvas) {
+			return
+		}
 
 		const rect = canvas.getBoundingClientRect()
 		const x = (e.clientX - rect.left - offset.x) / scale
@@ -274,7 +292,9 @@ export const TagGraphPanelView = memo(({ workspaceId, graphData }: TagGraphPanel
 	const handleMouseMove = (e: React.MouseEvent) => {
 		if (dragging) {
 			const canvas = canvasRef.current
-			if (!canvas) return
+			if (!canvas) {
+				return
+			}
 
 			const rect = canvas.getBoundingClientRect()
 			const x = (e.clientX - rect.left - offset.x) / scale

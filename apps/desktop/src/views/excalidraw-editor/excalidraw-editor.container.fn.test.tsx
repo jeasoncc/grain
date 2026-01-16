@@ -183,7 +183,7 @@ describe("ExcalidrawEditorContainer Property Tests", () => {
 		)
 
 		// 记录初始渲染次数（包括 React 的初始渲染和 effects）
-		const initialRenderCount = renderCount
+		const _initialRenderCount = renderCount
 
 		// 使用 fast-check 生成随机的 onChange 事件序列
 		fc.assert(
@@ -274,7 +274,7 @@ describe("ExcalidrawEditorContainer Resize Debounce Property Tests", () => {
 
 		// 追踪 ResizeObserver 回调
 		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null = null
-		let sizeUpdateCount = 0
+		let _sizeUpdateCount = 0
 
 		// 创建自定义 ResizeObserver mock
 		class TrackingResizeObserver {
@@ -320,10 +320,12 @@ describe("ExcalidrawEditorContainer Resize Debounce Property Tests", () => {
 				(delays, sizes) => {
 					// 确保 sizes 数组长度与 delays 匹配
 					const effectiveSizes = sizes.slice(0, delays.length)
-					if (effectiveSizes.length < 2) return true
+					if (effectiveSizes.length < 2) {
+						return true
+					}
 
 					// 重置计数
-					sizeUpdateCount = 0
+					_sizeUpdateCount = 0
 
 					// 渲染组件
 					const { unmount } = render(<ExcalidrawEditorContainer nodeId="test-node-id" />)
@@ -375,7 +377,7 @@ describe("ExcalidrawEditorContainer Resize Debounce Property Tests", () => {
 					}
 
 					// 计算总时间是否在防抖窗口内
-					const withinDebounceWindow = totalTime < RESIZE_DEBOUNCE_DELAY
+					const _withinDebounceWindow = totalTime < RESIZE_DEBOUNCE_DELAY
 
 					// 推进时间以触发防抖后的更新
 					act(() => {
@@ -807,9 +809,9 @@ describe("Status Update Throttle Property Tests", () => {
 				}),
 				(delays) => {
 					// 追踪调用次数
-					let callCount = 0
+					let _callCount = 0
 					const mockFn = vi.fn(() => {
-						callCount++
+						_callCount++
 					})
 
 					// 创建节流函数
@@ -920,7 +922,7 @@ describe("Status Update Throttle Property Tests", () => {
 	 */
 	it("Property 4: first call should execute immediately", async () => {
 		// 使用配置常量
-		const STATUS_UPDATE_THROTTLE = EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE
+		const _STATUS_UPDATE_THROTTLE = EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE
 
 		// 动态导入 throttle 函数
 		const { throttle } = await import("es-toolkit")
@@ -956,13 +958,13 @@ describe("Status Update Throttle Property Tests", () => {
  */
 describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () => {
 	// 追踪 parseExcalidrawContent 调用次数
-	let parseCallCount = 0
+	let _parseCallCount = 0
 
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mockUseTheme.mockReturnValue({ isDark: false })
 		capturedOnChange = null
-		parseCallCount = 0
+		_parseCallCount = 0
 	})
 
 	/**
@@ -1007,8 +1009,8 @@ describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () =>
 					}
 
 					// 追踪 useEffect 执行次数
-					const effectExecutionCount = 0
-					const originalUseEffect = vi.fn()
+					const _effectExecutionCount = 0
+					const _originalUseEffect = vi.fn()
 
 					// 设置 mock
 					mockUseContentByNodeId.mockReturnValue(mockContent)
@@ -1073,7 +1075,9 @@ describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () =>
 				(nodeIds, contents) => {
 					// 确保 nodeIds 和 contents 长度匹配
 					const effectiveLength = Math.min(nodeIds.length, contents.length)
-					if (effectiveLength < 2) return true
+					if (effectiveLength < 2) {
+						return true
+					}
 
 					// 创建 mock 内容映射
 					const contentMap = new Map<string, (typeof contents)[0]>()
@@ -1086,7 +1090,9 @@ describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () =>
 						// 返回当前 nodeId 对应的内容
 						const currentNodeId = nodeIds[0] // 简化：使用第一个 nodeId
 						const content = contentMap.get(currentNodeId)
-						if (!content) return undefined
+						if (!content) {
+							return undefined
+						}
 						return {
 							content: JSON.stringify(content),
 							contentType: "excalidraw" as const,
@@ -1207,14 +1213,14 @@ describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () =>
  */
 describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 	// 追踪 Excalidraw 组件的 key prop
-	let capturedKeys: string[] = []
+	let _capturedKeys: string[] = []
 
 	beforeEach(() => {
 		vi.clearAllMocks()
 		vi.useFakeTimers()
 		mockUseTheme.mockReturnValue({ isDark: false })
 		capturedOnChange = null
-		capturedKeys = []
+		_capturedKeys = []
 	})
 
 	afterEach(() => {
@@ -1418,7 +1424,9 @@ describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 				(nodeIds, size) => {
 					// 确保 nodeIds 都是唯一的
 					const uniqueNodeIds = [...new Set(nodeIds)]
-					if (uniqueNodeIds.length < 2) return true
+					if (uniqueNodeIds.length < 2) {
+						return true
+					}
 
 					// 创建 mock 内容映射
 					const createMockContent = (nodeId: string) => ({
@@ -1540,7 +1548,7 @@ describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 					// key 只依赖于 nodeId，不依赖于 containerSize
 
 					// 对于每个尺寸变化，key 应该保持为 nodeId
-					for (const size of sizes) {
+					for (const _size of sizes) {
 						// 模拟：即使 containerSize 变化，key 仍然是 nodeId
 						const expectedKey = nodeId
 						// 这是代码中的实际行为
@@ -1870,7 +1878,7 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 		const RESIZE_DEBOUNCE_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_DELAY
 
 		// 追踪 ResizeObserver 的 disconnect 调用
-		let disconnectCalled = false
+		let _disconnectCalled = false
 		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null = null
 		let containerElement: HTMLDivElement | null = null
 
@@ -1884,7 +1892,7 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 			})
 			unobserve = vi.fn()
 			disconnect = vi.fn(() => {
-				disconnectCalled = true
+				_disconnectCalled = true
 			})
 		}
 		vi.stubGlobal("ResizeObserver", TrackingResizeObserver)
@@ -1915,7 +1923,7 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 				fc.integer({ max: AUTO_SAVE_DELAY - 100, min: 100 }),
 				(nodeId, excalidrawData, changeCount, waitBeforeUnmount) => {
 					// 重置追踪状态
-					disconnectCalled = false
+					_disconnectCalled = false
 
 					// 创建 mock 内容
 					const mockContent = {
@@ -2149,7 +2157,6 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 
 		// 创建自定义 ResizeObserver mock
 		class TrackingResizeObserver {
-			constructor(_callback: (entries: ResizeObserverEntry[]) => void) {}
 			observe = vi.fn()
 			unobserve = vi.fn()
 			disconnect = vi.fn(() => {

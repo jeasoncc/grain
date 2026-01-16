@@ -112,7 +112,9 @@ export function useAttachmentsByType(
 ): readonly AttachmentInterface[] | undefined {
 	// For global type filtering, we get all attachments and filter
 	const { data: allAttachments } = useAttachmentsQuery()
-	if (!type || !allAttachments) return allAttachments
+	if (!type || !allAttachments) {
+		return allAttachments
+	}
 	return allAttachments.filter((a) => a.type === type)
 }
 
@@ -164,7 +166,9 @@ export function useProjectAudioFiles(
  */
 export function useGlobalAttachments(): readonly AttachmentInterface[] | undefined {
 	const { data: allAttachments } = useAttachmentsQuery()
-	if (!allAttachments) return undefined
+	if (!allAttachments) {
+		return undefined
+	}
 	return allAttachments.filter((a) => !a.project)
 }
 
@@ -199,7 +203,9 @@ export function useAttachmentCountByProject(
  */
 export function useAttachmentExists(attachmentId: string | null | undefined): boolean | undefined {
 	const { data, isLoading } = useAttachmentQuery(attachmentId)
-	if (isLoading) return undefined
+	if (isLoading) {
+		return undefined
+	}
 	return data !== null && data !== undefined
 }
 
@@ -211,6 +217,8 @@ export function useAttachmentExists(attachmentId: string | null | undefined): bo
  */
 export function useProjectAttachmentSize(projectId: string | null | undefined): number | undefined {
 	const { data: attachments } = useAttachmentsByProjectQuery(projectId)
-	if (!attachments) return undefined
+	if (!attachments) {
+		return undefined
+	}
 	return attachments.reduce((total, a) => total + (a.size || 0), 0)
 }

@@ -47,7 +47,9 @@ export function useNodesByWorkspace(
 ): readonly NodeInterface[] | undefined {
 	const { data: nodes, isLoading } = useNodesByWorkspaceQuery(workspaceId)
 
-	if (isLoading) return undefined
+	if (isLoading) {
+		return undefined
+	}
 	return nodes ?? []
 }
 
@@ -60,7 +62,9 @@ export function useNodesByWorkspace(
 export function useNode(nodeId: string | null | undefined): NodeInterface | undefined {
 	const { data: node, isLoading } = useNodeQuery(nodeId)
 
-	if (isLoading) return undefined
+	if (isLoading) {
+		return undefined
+	}
 	return node ?? undefined
 }
 
@@ -80,8 +84,12 @@ export function useChildNodes(
 	const { data: nodes, isLoading } = useNodesByParent(workspaceId, parentId)
 
 	return useMemo(() => {
-		if (isLoading) return undefined
-		if (!nodes) return []
+		if (isLoading) {
+			return undefined
+		}
+		if (!nodes) {
+			return []
+		}
 		return orderBy(nodes, [(node) => node.order], ["asc"])
 	}, [nodes, isLoading])
 }
@@ -100,8 +108,12 @@ export function useRootNodes(
 	const { data: nodes, isLoading } = useRootNodesQuery(workspaceId)
 
 	return useMemo(() => {
-		if (isLoading) return undefined
-		if (!nodes) return []
+		if (isLoading) {
+			return undefined
+		}
+		if (!nodes) {
+			return []
+		}
 		return orderBy(nodes, [(node) => node.order], ["asc"])
 	}, [nodes, isLoading])
 }
@@ -119,7 +131,9 @@ export function useNodesByType(
 ): readonly NodeInterface[] | undefined {
 	const { data: nodes, isLoading } = useNodesByTypeQuery(workspaceId, type)
 
-	if (isLoading) return undefined
+	if (isLoading) {
+		return undefined
+	}
 	return nodes ?? []
 }
 
@@ -132,7 +146,9 @@ export function useNodesByType(
 export function useNodeCount(workspaceId: string | null | undefined): number | undefined {
 	const { data: nodes, isLoading } = useNodesByWorkspaceQuery(workspaceId)
 
-	if (isLoading) return undefined
+	if (isLoading) {
+		return undefined
+	}
 	return nodes?.length ?? 0
 }
 
@@ -145,8 +161,12 @@ export function useNodeCount(workspaceId: string | null | undefined): number | u
 export function useNodeExists(nodeId: string | null | undefined): boolean | undefined {
 	const { data: node, isLoading } = useNodeQuery(nodeId)
 
-	if (isLoading) return undefined
-	if (!nodeId) return false
+	if (isLoading) {
+		return undefined
+	}
+	if (!nodeId) {
+		return false
+	}
 	return node !== null && node !== undefined
 }
 
@@ -162,8 +182,12 @@ export function useNodesByIds(nodeIds: readonly string[]): readonly NodeInterfac
 	const { data: nodes, isLoading } = useNodesByWorkspaceQuery(undefined)
 
 	return useMemo(() => {
-		if (isLoading) return undefined
-		if (!nodes || !nodeIds || nodeIds.length === 0) return []
+		if (isLoading) {
+			return undefined
+		}
+		if (!nodes || !nodeIds || nodeIds.length === 0) {
+			return []
+		}
 		const idSet = new Set(nodeIds)
 		return nodes.filter((n) => idSet.has(n.id))
 	}, [nodes, nodeIds, isLoading])

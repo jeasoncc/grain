@@ -40,7 +40,9 @@ export const useAttachment = (attachmentId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!attachmentId,
 		queryFn: async (): Promise<AttachmentInterface | null> => {
-			if (!attachmentId) return null
+			if (!attachmentId) {
+				return null
+			}
 			const result = await attachmentApi.getAttachment(attachmentId)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)
@@ -58,7 +60,9 @@ export const useAttachmentsByProject = (projectId: string | null | undefined) =>
 	return useQuery({
 		enabled: !!projectId,
 		queryFn: async (): Promise<readonly AttachmentInterface[]> => {
-			if (!projectId) return []
+			if (!projectId) {
+				return []
+			}
 			const result = await attachmentApi.getAttachmentsByProject(projectId)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)
@@ -80,7 +84,9 @@ export const useAttachmentsByType = (
 	return useQuery({
 		enabled: !!projectId && !!attachmentType,
 		queryFn: async (): Promise<readonly AttachmentInterface[]> => {
-			if (!projectId || !attachmentType) return []
+			if (!projectId || !attachmentType) {
+				return []
+			}
 			const result = await attachmentApi.getAttachmentsByType(projectId, attachmentType)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)
@@ -99,7 +105,9 @@ export const useImagesByProject = (projectId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!projectId,
 		queryFn: async (): Promise<readonly AttachmentInterface[]> => {
-			if (!projectId) return []
+			if (!projectId) {
+				return []
+			}
 			const result = await attachmentApi.getImagesByProject(projectId)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)
@@ -118,7 +126,9 @@ export const useAudioFilesByProject = (projectId: string | null | undefined) => 
 	return useQuery({
 		enabled: !!projectId,
 		queryFn: async (): Promise<readonly AttachmentInterface[]> => {
-			if (!projectId) return []
+			if (!projectId) {
+				return []
+			}
 			const result = await attachmentApi.getAudioFilesByProject(projectId)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)
@@ -137,7 +147,9 @@ export const useAttachmentByPath = (filePath: string | null | undefined) => {
 	return useQuery({
 		enabled: !!filePath,
 		queryFn: async (): Promise<AttachmentInterface | null> => {
-			if (!filePath) return null
+			if (!filePath) {
+				return null
+			}
 			const result = await attachmentApi.getAttachmentByPath(filePath)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)

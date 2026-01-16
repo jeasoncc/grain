@@ -34,7 +34,9 @@ export interface EditorThemeColors {
  * @returns 编辑器主题颜色配置
  */
 export const getEditorThemeColors = (theme: Theme | undefined): EditorThemeColors | undefined => {
-	if (!theme) return undefined
+	if (!theme) {
+		return undefined
+	}
 
 	const { colors } = theme
 

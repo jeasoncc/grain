@@ -93,8 +93,12 @@ export const updateSessionWordCountFlow = (
 	todayDate: string,
 	store: ReturnType<typeof useWritingStore.getState>,
 ): void => {
-	if (!session) return
-	if (session.currentWordCount === wordCount) return
+	if (!session) {
+		return
+	}
+	if (session.currentWordCount === wordCount) {
+		return
+	}
 
 	const today = getTodayDate()
 	const { todayWordCount: newTodayWordCount, todayDate: newTodayDate } =

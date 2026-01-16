@@ -16,21 +16,12 @@ import {
 	XCircle,
 } from "lucide-react"
 import { useMemo, useState } from "react"
-import {
-	clearAllLogsFromSQLite,
-	queryLogsFromSQLite,
-} from "@/io/log/log.storage.api"
+import { clearAllLogsFromSQLite, queryLogsFromSQLite } from "@/io/log/log.storage.api"
 import type { LogEntry, LogLevel } from "@/types/log/log.interface"
 import { cn } from "@/utils/cn.util"
 import { Button } from "@/views/ui/button"
 import { Input } from "@/views/ui/input"
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/views/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/views/ui/select"
 
 export const Route = createFileRoute("/settings/logs")({
 	component: LogsSettingsPage,
@@ -62,12 +53,15 @@ function LogsSettingsPage() {
 	const [searchQuery, setSearchQuery] = useState("")
 	const queryClient = useQueryClient()
 
-	const { data: logsResult, isLoading, refetch } = useQuery({
-		queryKey: ["logs", levelFilter, searchQuery],
+	const {
+		data: logsResult,
+		isLoading,
+		refetch,
+	} = useQuery({
 		queryFn: async () => {
 			const result = await queryLogsFromSQLite({
-				limit: 500,
 				levelFilter: levelFilter === "all" ? undefined : [levelFilter as LogLevel],
+				limit: 500,
 				messageSearch: searchQuery || undefined,
 			})()
 
@@ -76,6 +70,7 @@ function LogsSettingsPage() {
 			}
 			return result.right
 		},
+		queryKey: ["logs", levelFilter, searchQuery],
 		refetchInterval: 5000,
 	})
 
@@ -83,7 +78,9 @@ function LogsSettingsPage() {
 	const total = logsResult?.total ?? 0
 
 	const filteredLogs = useMemo(() => {
-		if (!logs) return []
+		if (!logs) {
+			return []
+		}
 		return [...logs].reverse()
 	}, [logs])
 
@@ -103,7 +100,9 @@ function LogsSettingsPage() {
 
 	const formatTimestamp = (timestamp: string) => {
 		const date = dayjs(timestamp)
-		if (!date.isValid()) return timestamp
+		if (!date.isValid()) {
+			return timestamp
+		}
 		return date.format("YYYY/MM/DD HH:mm:ss")
 	}
 
@@ -171,9 +170,7 @@ function LogsSettingsPage() {
 
 				<div className="rounded-md border bg-background/50">
 					{isLoading ? (
-						<div className="p-12 text-center text-muted-foreground text-sm">
-							Loading logs...
-						</div>
+						<div className="p-12 text-center text-muted-foreground text-sm">Loading logs...</div>
 					) : filteredLogs.length === 0 ? (
 						<div className="p-12 text-center text-muted-foreground text-sm">
 							{total === 0 ? "No logs available" : "No logs match your filter"}
@@ -196,11 +193,7 @@ function LogsSettingsPage() {
 								</thead>
 								<tbody className="divide-y divide-border/50">
 									{filteredLogs.map((log, index) => (
-										<LogRow
-											key={log.id ?? index}
-											log={log}
-											formatTimestamp={formatTimestamp}
-										/>
+										<LogRow key={log.id ?? index} log={log} formatTimestamp={formatTimestamp} />
 									))}
 								</tbody>
 							</table>
@@ -241,9 +234,7 @@ function LogRow({ log, formatTimestamp }: LogRowProps) {
 					{log.level}
 				</span>
 			</td>
-			<td className="px-4 py-2.5 break-all leading-relaxed text-foreground/90">
-				{log.message}
-			</td>
+			<td className="px-4 py-2.5 break-all leading-relaxed text-foreground/90">{log.message}</td>
 		</tr>
 	)
 }

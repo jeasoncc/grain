@@ -151,7 +151,9 @@ export const evictLRUEditorStates = (
  * 验证标签是否有效
  */
 export const isValidTab = (tab: unknown): tab is EditorTab => {
-	if (typeof tab !== "object" || tab === null) return false
+	if (typeof tab !== "object" || tab === null) {
+		return false
+	}
 	const t = tab as Record<string, unknown>
 	return (
 		typeof t.id === "string" &&

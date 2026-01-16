@@ -64,7 +64,9 @@ export const SearchPanelView = memo(
 
 		// 高亮匹配文本
 		const highlightText = (text: string, query: string) => {
-			if (!query.trim()) return text
+			if (!query.trim()) {
+				return text
+			}
 
 			const parts = text.split(new RegExp(`(${query})`, "gi"))
 			return parts.map((part, index) =>

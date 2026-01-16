@@ -1,5 +1,5 @@
 import type { WikiHoverPreviewHook, WikiPreviewState } from "@grain/editor-lexical"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 export function useWikiHoverPreview(): WikiHoverPreviewHook {
 	const [previewState, setPreviewState] = useState<WikiPreviewState>({

@@ -99,7 +99,9 @@ const defaultOptions: Required<OrgmodeExportOptions> = {
  * @returns 格式化后的文本
  */
 export function applyOrgTextFormat(text: string, format: number): string {
-	if (!text) return text
+	if (!text) {
+		return text
+	}
 
 	let result = text
 
@@ -408,7 +410,9 @@ export function exportMultipleToOrgmode(
 	separator: string = "\n\n",
 ): E.Either<ExportError, string> {
 	const results = contents.reduce<E.Either<ExportError, ReadonlyArray<string>>>((acc, item) => {
-		if (E.isLeft(acc)) return acc
+		if (E.isLeft(acc)) {
+			return acc
+		}
 
 		const itemOptions = {
 			...options,

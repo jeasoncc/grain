@@ -93,7 +93,9 @@ const defaultOptions: Required<MarkdownExportOptions> = {
  * @returns 格式化后的文本
  */
 export function applyTextFormat(text: string, format: number): string {
-	if (!text) return text
+	if (!text) {
+		return text
+	}
 
 	let result = text
 
@@ -312,7 +314,9 @@ export function generateFrontMatter(data: Record<string, unknown>): string {
 	let lines: readonly string[] = ["---"]
 
 	for (const [key, value] of Object.entries(data)) {
-		if (value === undefined || value === null) continue
+		if (value === undefined || value === null) {
+			continue
+		}
 
 		if (Array.isArray(value)) {
 			lines = [...lines, `${key}:`]

@@ -43,7 +43,9 @@ export const useUser = (userId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!userId,
 		queryFn: async (): Promise<UserInterface | null> => {
-			if (!userId) return null
+			if (!userId) {
+				return null
+			}
 			const result = await userRepo.getUser(userId)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)
@@ -61,7 +63,9 @@ export const useUserByUsername = (username: string | null | undefined) => {
 	return useQuery({
 		enabled: !!username,
 		queryFn: async (): Promise<UserInterface | null> => {
-			if (!username) return null
+			if (!username) {
+				return null
+			}
 			const result = await userRepo.getUserByUsername(username)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)
@@ -79,7 +83,9 @@ export const useUserByEmail = (email: string | null | undefined) => {
 	return useQuery({
 		enabled: !!email,
 		queryFn: async (): Promise<UserInterface | null> => {
-			if (!email) return null
+			if (!email) {
+				return null
+			}
 			const result = await userRepo.getUserByEmail(email)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)
@@ -113,7 +119,9 @@ export const useUsersByPlan = (plan: UserPlan | null | undefined) => {
 	return useQuery({
 		enabled: !!plan,
 		queryFn: async (): Promise<readonly UserInterface[]> => {
-			if (!plan) return []
+			if (!plan) {
+				return []
+			}
 			const result = await userRepo.getUsers()()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)

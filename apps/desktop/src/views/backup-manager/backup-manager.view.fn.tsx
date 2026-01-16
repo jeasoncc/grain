@@ -164,9 +164,7 @@ export const BackupManagerView = memo(function BackupManagerView({
 														</p>
 													</div>
 												</div>
-												<p className="text-xl font-bold mb-1">
-													{formatBytes(storageStats.size)}
-												</p>
+												<p className="text-xl font-bold mb-1">{formatBytes(storageStats.size)}</p>
 												<p className="text-[10px] text-muted-foreground">
 													{storageStats.keys} keys stored
 												</p>

@@ -121,14 +121,20 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 
 	const saveContent = async (nodeId: string): Promise<boolean> => {
 		const model = models.get(nodeId)
-		if (!model) return false
+		if (!model) {
+			return false
+		}
 
-		if (model.pendingContent === null) return true
+		if (model.pendingContent === null) {
+			return true
+		}
 		if (model.pendingContent === model.lastSavedContent) {
 			models = new Map([...models, [nodeId, { ...model, pendingContent: null }]])
 			return true
 		}
-		if (model.isSaving) return false
+		if (model.isSaving) {
+			return false
+		}
 
 		models = new Map([...models, [nodeId, { ...model, isSaving: true }]])
 		const contentToSave = model.pendingContent
@@ -168,7 +174,9 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 		nodeId: string,
 		delay: number,
 	): DebouncedFunction<(content: string) => Promise<boolean>> | null => {
-		if (delay <= 0) return null
+		if (delay <= 0) {
+			return null
+		}
 		return debounce((_content: string) => saveContent(nodeId), delay)
 	}
 
@@ -275,7 +283,9 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 
 		hasUnsavedChanges: (nodeId: string): boolean => {
 			const model = models.get(nodeId)
-			if (!model) return false
+			if (!model) {
+				return false
+			}
 			return model.pendingContent !== null && model.pendingContent !== model.lastSavedContent
 		},
 
@@ -292,7 +302,9 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 
 		saveNow: async (nodeId: string): Promise<boolean> => {
 			const model = models.get(nodeId)
-			if (!model) return false
+			if (!model) {
+				return false
+			}
 
 			if (model.debouncedSave) {
 				model.debouncedSave.cancel()
@@ -302,13 +314,17 @@ export const createSaveServiceManager = (): SaveServiceManagerInterface => {
 
 		setInitialContent: (nodeId: string, content: string): void => {
 			const model = models.get(nodeId)
-			if (!model) return
+			if (!model) {
+				return
+			}
 			models = new Map([...models, [nodeId, { ...model, lastSavedContent: content }]])
 		},
 
 		updateContent: (nodeId: string, content: string): void => {
 			const model = models.get(nodeId)
-			if (!model) return
+			if (!model) {
+				return
+			}
 
 			const updatedModel = { ...model, pendingContent: content }
 			models = new Map([...models, [nodeId, updatedModel]])

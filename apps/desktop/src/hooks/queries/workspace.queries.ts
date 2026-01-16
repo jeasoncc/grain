@@ -40,7 +40,9 @@ export const useWorkspaces = () => {
 			const result = await workspaceRepo.getWorkspaces()()
 
 			// 这是唯一的「出口」：Left 抛异常，Right 返回值
-			if (result._tag === "Left") throw result.left
+			if (result._tag === "Left") {
+				throw result.left
+			}
 			return result.right
 		},
 		queryKey: queryKeys.workspaces.all,
@@ -62,11 +64,15 @@ export const useWorkspace = (workspaceId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!workspaceId,
 		queryFn: async (): Promise<WorkspaceInterface | null> => {
-			if (!workspaceId) return null
+			if (!workspaceId) {
+				return null
+			}
 
 			const result = await workspaceRepo.getWorkspace(workspaceId)()
 
-			if (result._tag === "Left") throw result.left
+			if (result._tag === "Left") {
+				throw result.left
+			}
 			return result.right
 		},
 		queryKey: queryKeys.workspaces.detail(workspaceId ?? ""),

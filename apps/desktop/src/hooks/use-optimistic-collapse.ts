@@ -13,7 +13,7 @@
 import { useQueryClient } from "@tanstack/react-query"
 import dayjs from "dayjs"
 import { debounce } from "es-toolkit"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { queryKeys } from "@/hooks/queries/query-keys"
 import { setNodeCollapsed as setNodeCollapsedApi } from "@/io/api/node.api"
@@ -63,7 +63,9 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			collapsed: boolean,
 			previousData: readonly NodeInterface[] | undefined,
 		): void => {
-			if (!workspaceId) return
+			if (!workspaceId) {
+				return
+			}
 
 			const queryKey = queryKeys.nodes.byWorkspace(workspaceId)
 			const syncStartTime = performance.now()
@@ -110,7 +112,9 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 
 				// 更新缓存为后端返回的最新数据
 				queryClient.setQueryData<ReadonlyArray<NodeInterface>>(queryKey, (oldData) => {
-					if (!oldData) return oldData
+					if (!oldData) {
+						return oldData
+					}
 
 					return oldData.map((node) => (node.id === nodeId ? result.right : node))
 				})
@@ -141,7 +145,11 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 				syncToBackend(nodeId, update.collapsed, update.previousData)
 			}
 		}
-	}, [syncToBackend, pendingUpdates])
+	}, [
+		syncToBackend,
+		pendingUpdates, // 取消防抖并立即执行所有待处理的更新
+		debouncedSync.cancel,
+	])
 
 	/**
 	 * 乐观更新节点折叠状态
@@ -170,7 +178,9 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 
 			// 2. 立即更新 UI（乐观更新）- Requirements: 1.1, 1.4
 			queryClient.setQueryData<ReadonlyArray<NodeInterface>>(queryKey, (oldData) => {
-				if (!oldData) return oldData
+				if (!oldData) {
+					return oldData
+				}
 
 				return oldData.map((node) => (node.id === nodeId ? { ...node, collapsed } : node))
 			})
@@ -201,7 +211,11 @@ export function useOptimisticCollapse(options: UseOptimisticCollapseOptions) {
 			// 4. 防抖调用后端 API - Requirements: 1.2, 6.1, 6.4
 			debouncedSync(nodeId, collapsed, previousData)
 		},
-		[workspaceId, queryClient],
+		[
+			workspaceId,
+			queryClient, // 4. 防抖调用后端 API - Requirements: 1.2, 6.1, 6.4
+			debouncedSync,
+		],
 	)
 
 	return { toggleCollapsed }

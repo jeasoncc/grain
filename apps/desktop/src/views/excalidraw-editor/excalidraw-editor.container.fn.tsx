@@ -195,7 +195,9 @@ export const ExcalidrawEditorContainer = memo(
 		// 监听容器尺寸 - 使用防抖确保尺寸稳定
 		useEffect(() => {
 			const container = containerRef.current
-			if (!container) return
+			if (!container) {
+				return
+			}
 
 			const { RESIZE_DEBOUNCE_DELAY, SIZE_CHANGE_THRESHOLD, MIN_VALID_SIZE, INITIAL_LAYOUT_DELAY } =
 				EXCALIDRAW_PERFORMANCE_CONFIG

@@ -34,7 +34,7 @@ async function getTypeScriptFiles(dir: string): Promise<string[]> {
 				files.push(fullPath)
 			}
 		}
-	} catch (error) {
+	} catch (_error) {
 		// Directory might not exist, ignore
 	}
 
@@ -202,11 +202,7 @@ describe("Property 6: Wiki Code Cleanup Consistency", () => {
 				const wikiFiles = await getTypeScriptFiles(wikiFlowsDir)
 
 				// Should have the main Wiki flow files
-				const expectedFiles = [
-					"get-wiki-files.flow.ts",
-					"get-wiki-preview.flow.ts",
-					"index.ts",
-				]
+				const expectedFiles = ["get-wiki-files.flow.ts", "get-wiki-preview.flow.ts", "index.ts"]
 
 				for (const expectedFile of expectedFiles) {
 					const found = wikiFiles.some((file) => file.endsWith(expectedFile))
@@ -219,11 +215,7 @@ describe("Property 6: Wiki Code Cleanup Consistency", () => {
 				const indexPath = join(wikiFlowsDir, "index.ts")
 				const indexContent = await readFile(indexPath, "utf-8")
 
-				const expectedExports = [
-					"getWikiFiles",
-					"getWikiFilesAsync",
-					"getWikiPreviewData",
-				]
+				const expectedExports = ["getWikiFiles", "getWikiFilesAsync", "getWikiPreviewData"]
 
 				for (const exportName of expectedExports) {
 					if (!indexContent.includes(exportName)) {

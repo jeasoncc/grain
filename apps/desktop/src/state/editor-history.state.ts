@@ -158,7 +158,9 @@ export const useEditorHistoryStore = create<EditorHistoryStore>()(
 			storage: {
 				getItem: (name) => {
 					const str = localStorage.getItem(name)
-					if (!str) return null
+					if (!str) {
+						return null
+					}
 					const parsed = JSON.parse(str)
 					return {
 						state: {

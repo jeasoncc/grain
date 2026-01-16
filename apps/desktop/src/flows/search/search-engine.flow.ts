@@ -134,7 +134,9 @@ const getWorkspaceFromCache = (
  * 构建搜索索引
  */
 export const buildSearchIndex = async (): Promise<void> => {
-	if (searchEngineState.isIndexing) return
+	if (searchEngineState.isIndexing) {
+		return
+	}
 	searchEngineState = { ...searchEngineState, isIndexing: true }
 
 	try {
@@ -207,8 +209,12 @@ export const search = async (
 	query: string,
 	options: SearchOptions = {},
 ): Promise<readonly SearchResult[]> => {
-	if (!query.trim()) return []
-	if (!searchEngineState.nodeIndex) await buildSearchIndex()
+	if (!query.trim()) {
+		return []
+	}
+	if (!searchEngineState.nodeIndex) {
+		await buildSearchIndex()
+	}
 
 	const { types = ["node"], workspaceId, limit = 50, fuzzy = true } = options
 	const searchQuery = fuzzy ? `${query}~1 ${query}*` : query
@@ -243,8 +249,12 @@ export const search = async (
 			// Build results array
 			const results: readonly SearchResult[] = nodeResults.flatMap((result) => {
 				const node = searchEngineState.indexedData.get(result.ref)
-				if (!node) return []
-				if (workspaceId && node.workspace !== workspaceId) return []
+				if (!node) {
+					return []
+				}
+				if (workspaceId && node.workspace !== workspaceId) {
+					return []
+				}
 
 				const workspace = getWorkspaceFromCache(node.workspace, searchEngineState.workspaceCache)
 				const contentStr = searchEngineState.nodeContents.get(node.id) || ""
@@ -286,7 +296,9 @@ export const simpleSearch = async (
 	query: string,
 	options: SearchOptions = {},
 ): Promise<readonly SearchResult[]> => {
-	if (!query.trim()) return []
+	if (!query.trim()) {
+		return []
+	}
 
 	const { types = ["node"], workspaceId, limit = 50 } = options
 	const lowerQuery = query.toLowerCase()

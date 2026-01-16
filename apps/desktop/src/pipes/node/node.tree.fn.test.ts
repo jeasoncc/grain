@@ -441,7 +441,9 @@ describe("Property-Based Tests", () => {
 					fc.uuid(),
 					(nodes, randomId) => {
 						// 确保 randomId 不在 nodes 中
-						if (nodes.some((n) => n.id === randomId)) return true
+						if (nodes.some((n) => n.id === randomId)) {
+							return true
+						}
 						const path = getNodePath(nodes, randomId)
 						return path.length === 0
 					},

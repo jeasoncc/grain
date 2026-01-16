@@ -211,7 +211,9 @@ export const ActivityBarView = memo(function ActivityBarView({
 	const handleImportFile = useCallback(
 		async (e: React.ChangeEvent<HTMLInputElement>) => {
 			const file = e.target.files?.[0]
-			if (!file) return
+			if (!file) {
+				return
+			}
 			try {
 				await onImportFile(file)
 			} finally {
@@ -225,7 +227,9 @@ export const ActivityBarView = memo(function ActivityBarView({
 
 	// 处理创建工作区
 	const handleCreateWorkspace = useCallback(async () => {
-		if (!newWorkspaceName.trim()) return
+		if (!newWorkspaceName.trim()) {
+			return
+		}
 		await onCreateWorkspace(newWorkspaceName.trim())
 		setNewWorkspaceName("")
 		setShowNewWorkspace(false)
@@ -413,7 +417,9 @@ export const ActivityBarView = memo(function ActivityBarView({
 												className="h-6 text-xs border-none bg-transparent shadow-none focus-visible:ring-0 px-1.5"
 												autoFocus
 												onKeyDown={(e) => {
-													if (e.key === "Enter") handleCreateWorkspace()
+													if (e.key === "Enter") {
+														handleCreateWorkspace()
+													}
 													if (e.key === "Escape") {
 														setShowNewWorkspace(false)
 														setNewWorkspaceName("")

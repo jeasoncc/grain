@@ -13,10 +13,10 @@ import { getContentsByNodeIds, getNodesByWorkspace } from "@/io/api"
 import { getNodesByTag } from "@/io/api/tag.api"
 import { error, info, success } from "@/io/log/logger.api"
 import { WIKI_TAG } from "@/pipes/wiki/wiki.resolve.fn"
-import { WikiFileEntryBuilder } from "@/types/wiki"
-import type { WikiFileEntry } from "@/types/wiki"
 import type { AppError } from "@/types/error"
 import type { NodeInterface } from "@/types/node"
+import type { WikiFileEntry } from "@/types/wiki"
+import { WikiFileEntryBuilder } from "@/types/wiki"
 
 /**
  * Build the path string for a node

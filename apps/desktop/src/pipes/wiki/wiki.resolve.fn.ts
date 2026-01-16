@@ -8,9 +8,8 @@
  */
 
 import dayjs from "dayjs"
-
-import { WikiFileEntryBuilder } from "@/types/wiki"
 import type { WikiFileEntry } from "@/types/wiki"
+import { WikiFileEntryBuilder } from "@/types/wiki"
 
 // ==============================
 // Constants
@@ -292,7 +291,9 @@ export function buildNodePath<T extends NodeLike>(
 		currentNode: T | undefined,
 		accumulator: ReadonlyArray<string>,
 	): ReadonlyArray<string> => {
-		if (!currentNode) return accumulator
+		if (!currentNode) {
+			return accumulator
+		}
 
 		const nextParentId = currentNode.parent ?? currentNode.parentId
 		const nextNode = nextParentId ? nodeMap.get(nextParentId) : undefined

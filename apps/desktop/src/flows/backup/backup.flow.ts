@@ -187,7 +187,9 @@ export const getLastBackupTime = (): string | null => localStorage.getItem(LAST_
  */
 export const shouldAutoBackup = (intervalHours = 24): boolean => {
 	const lastBackup = getLastBackupTime()
-	if (!lastBackup) return true
+	if (!lastBackup) {
+		return true
+	}
 
 	const lastTime = dayjs(lastBackup)
 	const now = dayjs()

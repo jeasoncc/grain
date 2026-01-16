@@ -39,11 +39,15 @@ export const useNodesByWorkspace = (workspaceId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!workspaceId,
 		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
-			if (!workspaceId) return []
+			if (!workspaceId) {
+				return []
+			}
 
 			const result = await nodeFlow.getNodesByWorkspace(workspaceId)()
 
-			if (result._tag === "Left") throw result.left
+			if (result._tag === "Left") {
+				throw result.left
+			}
 			return result.right
 		},
 		queryKey: queryKeys.nodes.byWorkspace(workspaceId ?? ""),
@@ -60,11 +64,15 @@ export const useRootNodes = (workspaceId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!workspaceId,
 		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
-			if (!workspaceId) return []
+			if (!workspaceId) {
+				return []
+			}
 
 			const result = await nodeFlow.getRootNodes(workspaceId)()
 
-			if (result._tag === "Left") throw result.left
+			if (result._tag === "Left") {
+				throw result.left
+			}
 			return result.right
 		},
 		queryKey: queryKeys.nodes.rootNodes(workspaceId ?? ""),
@@ -81,11 +89,15 @@ export const useChildNodes = (parentId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!parentId,
 		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
-			if (!parentId) return []
+			if (!parentId) {
+				return []
+			}
 
 			const result = await nodeFlow.getChildNodes(parentId)()
 
-			if (result._tag === "Left") throw result.left
+			if (result._tag === "Left") {
+				throw result.left
+			}
 			return result.right
 		},
 		queryKey: queryKeys.nodes.children(parentId ?? ""),
@@ -106,11 +118,15 @@ export const useNodesByParent = (
 	return useQuery({
 		enabled: !!workspaceId,
 		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
-			if (!workspaceId) return []
+			if (!workspaceId) {
+				return []
+			}
 
 			const result = await nodeFlow.getNodesByParent(workspaceId, parentId)()
 
-			if (result._tag === "Left") throw result.left
+			if (result._tag === "Left") {
+				throw result.left
+			}
 			return result.right
 		},
 		queryKey: queryKeys.nodes.byParent(workspaceId ?? "", parentId),
@@ -127,11 +143,15 @@ export const useNode = (nodeId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!nodeId,
 		queryFn: async (): Promise<NodeInterface | null> => {
-			if (!nodeId) return null
+			if (!nodeId) {
+				return null
+			}
 
 			const result = await nodeFlow.getNode(nodeId)()
 
-			if (result._tag === "Left") throw result.left
+			if (result._tag === "Left") {
+				throw result.left
+			}
 			return result.right
 		},
 		queryKey: queryKeys.nodes.detail(nodeId ?? ""),
@@ -149,11 +169,15 @@ export const useNodesByType = (workspaceId: string | null | undefined, nodeType:
 	return useQuery({
 		enabled: !!workspaceId,
 		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
-			if (!workspaceId) return []
+			if (!workspaceId) {
+				return []
+			}
 
 			const result = await nodeFlow.getNodesByType(workspaceId, nodeType)()
 
-			if (result._tag === "Left") throw result.left
+			if (result._tag === "Left") {
+				throw result.left
+			}
 			return result.right
 		},
 		queryKey: queryKeys.nodes.byType(workspaceId ?? "", nodeType),
@@ -170,11 +194,15 @@ export const useDescendants = (nodeId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!nodeId,
 		queryFn: async (): Promise<ReadonlyArray<NodeInterface>> => {
-			if (!nodeId) return []
+			if (!nodeId) {
+				return []
+			}
 
 			const result = await nodeFlow.getDescendants(nodeId)()
 
-			if (result._tag === "Left") throw result.left
+			if (result._tag === "Left") {
+				throw result.left
+			}
 			return result.right
 		},
 		queryKey: queryKeys.nodes.descendants(nodeId ?? ""),

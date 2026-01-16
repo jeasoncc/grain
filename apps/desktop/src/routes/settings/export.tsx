@@ -26,7 +26,9 @@ const ORGMODE_SETTINGS_KEY = "orgmode-settings"
 function getOrgmodeSettings(): OrgmodeSettings {
 	try {
 		const stored = localStorage.getItem(ORGMODE_SETTINGS_KEY)
-		if (stored) return JSON.parse(stored)
+		if (stored) {
+			return JSON.parse(stored)
+		}
 	} catch {
 		// Ignore parsing errors and return default settings
 	}

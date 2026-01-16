@@ -44,7 +44,9 @@ export function useTheme() {
 	const setTheme = useCallback(
 		(key: string) => {
 			const theme = getThemeByKey(key)
-			if (!theme) return
+			if (!theme) {
+				return
+			}
 
 			actions.setTheme(key)
 			applyThemeFlow(key, enableTransition)
@@ -113,7 +115,9 @@ export function useThemeInitialization(): void {
 
 	// Initialize theme
 	useEffect(() => {
-		if (isInitialized) return
+		if (isInitialized) {
+			return
+		}
 
 		// Initialize theme system (sets up listeners and applies theme)
 		const cleanup = initThemeFlow()

@@ -115,7 +115,9 @@ export const handleSystemThemeChangeFlow = (
 	enableTransition: boolean,
 	isDark: boolean,
 ): string | null => {
-	if (mode !== "system") return null
+	if (mode !== "system") {
+		return null
+	}
 
 	const newType = isDark ? "dark" : "light"
 	const defaultThemeKey = getDefaultThemeKey(newType)

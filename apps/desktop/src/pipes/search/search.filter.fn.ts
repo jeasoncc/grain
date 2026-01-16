@@ -118,9 +118,15 @@ export const matchesRegex = (item: SearchableItem, pattern: string): boolean => 
 	return pipe(
 		O.tryCatch(() => new RegExp(pattern, "i")),
 		O.map((regex) => {
-			if (regex.test(item.title)) return true
-			if (regex.test(item.content)) return true
-			if (item.tags && regex.test(item.tags.join(" "))) return true
+			if (regex.test(item.title)) {
+				return true
+			}
+			if (regex.test(item.content)) {
+				return true
+			}
+			if (item.tags && regex.test(item.tags.join(" "))) {
+				return true
+			}
 			return false
 		}),
 		O.getOrElse(() => false),
@@ -142,7 +148,9 @@ export const filterByWorkspace = (
 	results: ReadonlyArray<SearchResult>,
 	workspaceId: string | undefined,
 ): ReadonlyArray<SearchResult> => {
-	if (!workspaceId) return results
+	if (!workspaceId) {
+		return results
+	}
 
 	return pipe(
 		results,
@@ -161,7 +169,9 @@ export const filterByType = (
 	results: ReadonlyArray<SearchResult>,
 	types: ReadonlyArray<SearchResultType> | undefined,
 ): ReadonlyArray<SearchResult> => {
-	if (!types || types.length === 0) return results
+	if (!types || types.length === 0) {
+		return results
+	}
 
 	return pipe(
 		results,
@@ -180,7 +190,9 @@ export const filterByMinScore = (
 	results: ReadonlyArray<SearchResult>,
 	minScore: number | undefined,
 ): ReadonlyArray<SearchResult> => {
-	if (minScore === undefined || minScore <= 0) return results
+	if (minScore === undefined || minScore <= 0) {
+		return results
+	}
 
 	return pipe(
 		results,
@@ -217,7 +229,9 @@ export const limitResults = (
 	results: ReadonlyArray<SearchResult>,
 	limit: number | undefined,
 ): ReadonlyArray<SearchResult> => {
-	if (!limit || limit <= 0) return results
+	if (!limit || limit <= 0) {
+		return results
+	}
 
 	return pipe(results, RA.takeLeft(limit))
 }

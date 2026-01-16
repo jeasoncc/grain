@@ -44,7 +44,9 @@ const getTabIcon = (type: EditorTab["type"]) => {
  */
 export const BufferSwitcherView = memo(
 	({ open, onOpenChange, tabs, selectedIndex, onTabClick }: BufferSwitcherViewProps) => {
-		if (tabs.length === 0) return null
+		if (tabs.length === 0) {
+			return null
+		}
 
 		return (
 			<Dialog open={open} onOpenChange={onOpenChange}>

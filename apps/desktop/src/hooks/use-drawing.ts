@@ -40,8 +40,12 @@ export function useDrawingNodes(
 	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing")
 
 	return useMemo(() => {
-		if (isLoading) return undefined
-		if (!nodes) return []
+		if (isLoading) {
+			return undefined
+		}
+		if (!nodes) {
+			return []
+		}
 		return orderBy(nodes, [(node) => node.title], ["asc"])
 	}, [nodes, isLoading])
 }
@@ -74,7 +78,9 @@ export function useDrawing(drawingId: string | null | undefined): NodeInterface 
 	const { data: node, isLoading } = useNodeQuery(drawingId)
 
 	return useMemo(() => {
-		if (isLoading) return undefined
+		if (isLoading) {
+			return undefined
+		}
 		if (node?.type === "drawing") {
 			return node
 		}
@@ -100,8 +106,12 @@ export function useDrawingSearch(
 	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing")
 
 	return useMemo(() => {
-		if (isLoading) return undefined
-		if (!nodes) return []
+		if (isLoading) {
+			return undefined
+		}
+		if (!nodes) {
+			return []
+		}
 
 		const sorted = orderBy(nodes, [(node) => node.title], ["asc"])
 
@@ -128,8 +138,12 @@ export function useRecentDrawings(
 	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing")
 
 	return useMemo(() => {
-		if (isLoading) return undefined
-		if (!nodes) return []
+		if (isLoading) {
+			return undefined
+		}
+		if (!nodes) {
+			return []
+		}
 
 		return orderBy(nodes, [(node) => dayjs(node.lastEdit).valueOf()], ["desc"]).slice(0, limit)
 	}, [nodes, limit, isLoading])
@@ -161,7 +175,9 @@ export function useAllDrawings(): readonly NodeInterface[] | undefined {
 export function useDrawingCount(workspaceId: string | null | undefined): number | undefined {
 	const { data: nodes, isLoading } = useNodesByType(workspaceId, "drawing")
 
-	if (isLoading) return undefined
+	if (isLoading) {
+		return undefined
+	}
 	return nodes?.length ?? 0
 }
 
@@ -174,8 +190,12 @@ export function useDrawingCount(workspaceId: string | null | undefined): number 
 export function useDrawingExists(drawingId: string | null | undefined): boolean | undefined {
 	const { data: node, isLoading } = useNodeQuery(drawingId)
 
-	if (isLoading) return undefined
-	if (!drawingId) return false
+	if (isLoading) {
+		return undefined
+	}
+	if (!drawingId) {
+		return false
+	}
 	return node?.type === "drawing"
 }
 

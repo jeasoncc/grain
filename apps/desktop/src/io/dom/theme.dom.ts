@@ -25,7 +25,9 @@ import type { Theme, ThemeColors } from "@/types/theme/theme.types"
  * @returns 系统主题偏好
  */
 export const getSystemTheme = (): "light" | "dark" => {
-	if (typeof window === "undefined") return "light"
+	if (typeof window === "undefined") {
+		return "light"
+	}
 	return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
 }
 

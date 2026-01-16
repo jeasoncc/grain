@@ -32,7 +32,9 @@ export const useDiagramStore = create<DiagramStore>()(
 
 			testKrokiConnection: async () => {
 				const { krokiServerUrl } = get()
-				if (!krokiServerUrl) return false
+				if (!krokiServerUrl) {
+					return false
+				}
 
 				try {
 					const testDiagram = "@startuml\nBob -> Alice : hello\n@enduml"

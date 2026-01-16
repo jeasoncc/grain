@@ -232,7 +232,9 @@ export function parseInlineContent(
 		const regexCopy = new RegExp(regex.source, regex.flags)
 		const matches = Array.from(text.matchAll(regexCopy))
 		for (const match of matches) {
-			if (match.index === undefined) continue
+			if (match.index === undefined) {
+				continue
+			}
 			const content = match[1] || match[2]
 			const matchStart = match.index
 			const matchEnd = match.index + match[0].length
@@ -304,7 +306,9 @@ export function parseInlineContent(
  */
 export function parseHeadingLine(line: string): LexicalHeadingNode | null {
 	const match = line.match(/^(#{1,6})\s+(.+)$/)
-	if (!match) return null
+	if (!match) {
+		return null
+	}
 
 	const level = match[1].length
 	const text = match[2].trim()
@@ -413,7 +417,9 @@ export function parseMarkdownToDocument(
 			while (currentIndex < lines.length) {
 				const currentLine = lines[currentIndex].trimEnd()
 				const item = parseListItemLine(currentLine)
-				if (!item || item[0] !== listType) break
+				if (!item || item[0] !== listType) {
+					break
+				}
 
 				items = [...items, { checked: item[2], text: item[1] }]
 				currentIndex++

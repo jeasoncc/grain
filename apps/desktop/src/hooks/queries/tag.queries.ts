@@ -22,7 +22,9 @@ export const useTagsByWorkspace = (workspaceId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!workspaceId,
 		queryFn: async (): Promise<readonly TagInterface[]> => {
-			if (!workspaceId) return []
+			if (!workspaceId) {
+				return []
+			}
 			const result = await tagFlow.getTagsByWorkspace(workspaceId)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)
@@ -40,7 +42,9 @@ export const useTag = (tagId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!tagId,
 		queryFn: async (): Promise<TagInterface | null> => {
-			if (!tagId) return null
+			if (!tagId) {
+				return null
+			}
 			const result = await tagFlow.getTag(tagId)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)
@@ -61,7 +65,9 @@ export const useTagByName = (
 	return useQuery({
 		enabled: !!workspaceId && !!name,
 		queryFn: async (): Promise<TagInterface | null> => {
-			if (!workspaceId || !name) return null
+			if (!workspaceId || !name) {
+				return null
+			}
 			const result = await tagFlow.getTagByName(workspaceId, name)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)
@@ -79,7 +85,9 @@ export const useTopTags = (workspaceId: string | null | undefined, limit = 10) =
 	return useQuery({
 		enabled: !!workspaceId,
 		queryFn: async (): Promise<readonly TagInterface[]> => {
-			if (!workspaceId) return []
+			if (!workspaceId) {
+				return []
+			}
 			const result = await tagFlow.getTopTags(workspaceId, limit)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)
@@ -100,7 +108,9 @@ export const useTagSearch = (
 	return useQuery({
 		enabled: !!workspaceId && !!query,
 		queryFn: async (): Promise<readonly TagInterface[]> => {
-			if (!workspaceId || !query) return []
+			if (!workspaceId || !query) {
+				return []
+			}
 			const result = await tagFlow.searchTags(workspaceId, query)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)
@@ -121,7 +131,9 @@ export const useNodesByTag = (
 	return useQuery({
 		enabled: !!workspaceId && !!tagName,
 		queryFn: async (): Promise<readonly string[]> => {
-			if (!workspaceId || !tagName) return []
+			if (!workspaceId || !tagName) {
+				return []
+			}
 			const result = await tagFlow.getNodesByTag(workspaceId, tagName)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)
@@ -139,7 +151,9 @@ export const useTagGraph = (workspaceId: string | null | undefined) => {
 	return useQuery({
 		enabled: !!workspaceId,
 		queryFn: async (): Promise<TagGraphData> => {
-			if (!workspaceId) return { edges: [], nodes: [] }
+			if (!workspaceId) {
+				return { edges: [], nodes: [] }
+			}
 			const result = await tagFlow.getTagGraphData(workspaceId)()
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)

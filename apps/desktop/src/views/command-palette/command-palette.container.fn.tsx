@@ -82,9 +82,9 @@ export const CommandPaletteContainer = memo(
 									TE.fold(
 										(error) => {
 											console.error("Failed to create Excalidraw drawing:", error)
-											return TE.of(undefined as void)
+											return TE.of(undefined as undefined)
 										},
-										() => TE.of(undefined as void),
+										() => TE.of(undefined as undefined),
 									),
 								)
 

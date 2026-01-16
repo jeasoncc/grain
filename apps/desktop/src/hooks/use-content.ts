@@ -42,7 +42,9 @@ export function useContentByNodeId(
 ): ContentInterface | undefined {
 	const { data: content, isLoading } = useContentQuery(nodeId)
 
-	if (isLoading) return undefined
+	if (isLoading) {
+		return undefined
+	}
 	return content ?? undefined
 }
 
@@ -60,7 +62,9 @@ export function useContentById(id: string | null | undefined): ContentInterface 
 	// 如果需要此功能，需要添加对应的 Rust API
 	const { data: content, isLoading } = useContentQuery(id)
 
-	if (isLoading) return undefined
+	if (isLoading) {
+		return undefined
+	}
 	return content ?? undefined
 }
 
@@ -81,7 +85,9 @@ export function useContentsByNodeIds(
 	// 注意：当前 API 不支持批量查询
 	// 如果需要此功能，需要添加对应的 Rust API
 	// 暂时返回空数组
-	if (!nodeIds || nodeIds.length === 0) return []
+	if (!nodeIds || nodeIds.length === 0) {
+		return []
+	}
 	return undefined
 }
 
@@ -96,7 +102,11 @@ export function useContentsByNodeIds(
 export function useContentExists(nodeId: string | null | undefined): boolean | undefined {
 	const { data: content, isLoading } = useContentQuery(nodeId)
 
-	if (isLoading) return undefined
-	if (!nodeId) return false
+	if (isLoading) {
+		return undefined
+	}
+	if (!nodeId) {
+		return false
+	}
 	return content !== null && content !== undefined
 }

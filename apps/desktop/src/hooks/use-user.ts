@@ -139,7 +139,9 @@ export function useUserCount(): number | undefined {
  */
 export function useUserExists(userId: string | null | undefined): boolean | undefined {
 	const { data, isLoading } = useUserQuery(userId)
-	if (isLoading) return undefined
+	if (isLoading) {
+		return undefined
+	}
 	return data !== null && data !== undefined
 }
 
@@ -151,7 +153,9 @@ export function useUserExists(userId: string | null | undefined): boolean | unde
  */
 export function useUsernameExists(username: string | null | undefined): boolean | undefined {
 	const { data, isLoading } = useUserByUsernameQuery(username)
-	if (isLoading) return undefined
+	if (isLoading) {
+		return undefined
+	}
 	return data !== null && data !== undefined
 }
 
@@ -170,7 +174,9 @@ export function useUserSubscription(userId: string | null | undefined):
 	  }
 	| undefined {
 	const { data: user } = useUserQuery(userId)
-	if (!user) return undefined
+	if (!user) {
+		return undefined
+	}
 
 	const isPremium = user.plan === "premium"
 	const isExpired = user.planExpiresAt ? dayjs(user.planExpiresAt).isBefore(dayjs()) : false

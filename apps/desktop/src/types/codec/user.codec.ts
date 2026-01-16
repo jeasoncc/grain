@@ -42,7 +42,9 @@ import type {
  * 解码用户功能权限
  */
 const decodeUserFeatures = (features: RustUserFeatures | null): UserFeatures | undefined => {
-	if (!features) return undefined
+	if (!features) {
+		return undefined
+	}
 	return {
 		canExportPDF: features.canExportPdf,
 		canUseAllScenes: features.canUseAllScenes,
@@ -56,7 +58,9 @@ const decodeUserFeatures = (features: RustUserFeatures | null): UserFeatures | u
  * 解码用户应用状态
  */
 const decodeUserState = (state: RustUserState | null): UserState | undefined => {
-	if (!state) return undefined
+	if (!state) {
+		return undefined
+	}
 	return {
 		currentChapter: state.currentChapter ?? "",
 		currentProject: state.currentProject ?? "",
@@ -74,7 +78,9 @@ const decodeUserState = (state: RustUserState | null): UserState | undefined => 
  * 解码用户设置
  */
 const decodeUserSettings = (settings: RustUserSettings | null): UserSettings | undefined => {
-	if (!settings) return undefined
+	if (!settings) {
+		return undefined
+	}
 	return {
 		autosave: settings.autosave,
 		fontSize: settings.fontSize ?? "16px",
@@ -98,12 +104,8 @@ export const decodeUser = (response: UserResponse): UserInterface => ({
 	id: response.id,
 	lastLogin: dayjs(response.lastLogin).toISOString(),
 	plan: response.plan,
-	planExpiresAt: response.planExpiresAt
-		? dayjs(response.planExpiresAt).toISOString()
-		: undefined,
-	planStartDate: response.planStartDate
-		? dayjs(response.planStartDate).toISOString()
-		: undefined,
+	planExpiresAt: response.planExpiresAt ? dayjs(response.planExpiresAt).toISOString() : undefined,
+	planStartDate: response.planStartDate ? dayjs(response.planStartDate).toISOString() : undefined,
 	serverMessage: response.serverMessage ?? undefined,
 	settings: decodeUserSettings(response.settings),
 	state: decodeUserState(response.state),
@@ -134,7 +136,9 @@ export const decodeUserOptional = (response: UserResponse | null): UserInterface
  * 编码用户功能权限
  */
 const encodeUserFeatures = (features?: UserFeatures): RustUserFeatures | undefined => {
-	if (!features) return undefined
+	if (!features) {
+		return undefined
+	}
 	return {
 		canExportPdf: features.canExportPDF,
 		canUseAllScenes: features.canUseAllScenes,
@@ -148,7 +152,9 @@ const encodeUserFeatures = (features?: UserFeatures): RustUserFeatures | undefin
  * 编码用户应用状态
  */
 const encodeUserState = (state?: UserState): RustUserState | undefined => {
-	if (!state) return undefined
+	if (!state) {
+		return undefined
+	}
 	return {
 		currentChapter: state.currentChapter || undefined,
 		currentProject: state.currentProject || undefined,
@@ -166,7 +172,9 @@ const encodeUserState = (state?: UserState): RustUserState | undefined => {
  * 编码用户设置
  */
 const encodeUserSettings = (settings?: UserSettings): RustUserSettings | undefined => {
-	if (!settings) return undefined
+	if (!settings) {
+		return undefined
+	}
 	return {
 		autosave: settings.autosave,
 		fontSize: settings.fontSize || undefined,
