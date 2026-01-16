@@ -23,9 +23,9 @@ import {
 import { orderBy } from "es-toolkit"
 import { saveAs } from "file-saver"
 import * as E from "fp-ts/Either"
+import { pipe } from "fp-ts/function"
 import JSZip from "jszip"
-import { getContentsByNodeIds } from "@/io/api"
-import { legacyDatabase } from "@/io/db/legacy-database"
+import { getContentsByNodeIds, getWorkspace, getNodesByWorkspace } from "@/io/api"
 import type { NodeInterface, WorkspaceInterface } from "@/types"
 import type { ContentInterface } from "@/types/content"
 import type { ExportFormat, ExportOptions } from "@/types/export"
@@ -49,12 +49,15 @@ const defaultOptions: ExportOptions = {
  */
 function extractTextFromContent(content: string | null): string {
 	if (!content) return ""
-	try {
-		const parsed = JSON.parse(content)
-		return extractTextFromNode(parsed.root)
-	} catch {
-		return content
-	}
+	
+	return pipe(
+		E.tryCatch(
+			() => JSON.parse(content),
+			() => content
+		),
+		E.map((parsed) => extractTextFromNode(parsed.root)),
+		E.getOrElse(() => content)
+	)
 }
 
 /**
@@ -215,10 +218,18 @@ function generateEpubChapterHtml(title: string, content: string): string {
  * 获取项目的完整内容数据（基于 Node 结构）
  */
 async function getProjectContent(projectId: string) {
-	const project = await legacyDatabase.workspaces.get(projectId)
+	const projectResult = await getWorkspace(projectId)()
+	if (E.isLeft(projectResult)) {
+		throw new Error(`Failed to get project: ${projectResult.left.message}`)
+	}
+	const project = projectResult.right
 	if (!project) throw new Error("Project not found")
 
-	const nodes = await legacyDatabase.nodes.where("workspace").equals(projectId).toArray()
+	const nodesResult = await getNodesByWorkspace(projectId)()
+	if (E.isLeft(nodesResult)) {
+		throw new Error(`Failed to get nodes: ${nodesResult.left.message}`)
+	}
+	const nodes = nodesResult.right
 
 	const nodeIds: readonly string[] = nodes.map((n) => n.id)
 	const contentsResult = await getContentsByNodeIds(nodeIds)()

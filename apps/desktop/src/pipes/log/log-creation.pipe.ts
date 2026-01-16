@@ -6,7 +6,7 @@
  * 这些函数可以被 flows 和 io 层安全地使用。
  */
 
-import { warn } from "@/io/log/logger"
+import { warn } from "@/io/log/logger.api"
 import type { LogConfig, LogEntry, LogLevel } from "@/types/log/log.interface"
 import { DEFAULT_LOG_CONFIG } from "@/types/log/log.interface"
 import { addConsoleColors, formatLogEntry, shouldLog } from "./log.format.pipe"

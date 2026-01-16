@@ -38,13 +38,13 @@
     - 简化清理逻辑
     - _需求: 2.4_
 
-  - [ ] 2.5 ESLint 检查备份模块
+  - [x] 2.5 ESLint 检查备份模块
     - 运行 `bun run lint` 检查 `flows/backup/` 目录
     - 修复所有 ESLint 错误和警告
     - 确保代码质量符合项目标准
     - _需求: 所有备份相关需求_
 
-- [ ] 2.6 编写单元测试验证备份功能
+- [x] 2.6 编写单元测试验证备份功能 ✅
   - 测试备份创建和恢复流程
   - 验证错误处理
   - _需求: 2.3_
@@ -52,19 +52,19 @@
 - [ ] 3. 检查点 - 确保备份功能正常工作
   - 确保所有测试通过，如有问题请询问用户。
 
-- [ ] 4. 替换导出功能中的 Dexie 调用
-  - [ ] 4.1 更新 `export-project.flow.ts` 使用 SQLite API
+- [-] 4. 替换导出功能中的 Dexie 调用
+  - [x] 4.1 更新 `export-project.flow.ts` 使用 SQLite API
     - 移除 `legacyDatabase` 导入
     - 替换 `getProjectContent` 函数使用 SQLite API
     - 使用 `getWorkspace`, `getNodesByWorkspace`, `getContentsByNodeIds`
     - _需求: 3.1_
 
-  - [ ] 4.2 验证导出数据格式兼容性
+  - [x] 4.2 验证导出数据格式兼容性
     - 确保导出格式与之前版本兼容
     - 测试导出文件的完整性
     - _需求: 3.2, 3.4_
 
-  - [ ] 4.3 ESLint 检查导出模块
+  - [x] 4.3 ESLint 检查导出模块
     - 运行 `bun run lint` 检查 `flows/export/` 目录
     - 修复所有 ESLint 错误和警告
     - 确保代码质量符合项目标准
@@ -79,49 +79,49 @@
   - 验证导出数据完整性
   - _需求: 3.3_
 
-- [ ] 5. 处理 Wiki 功能
-  - [ ] 5.1 评估 Wiki 功能使用情况
+- [x] 5. 处理 Wiki 功能
+  - [x] 5.1 评估 Wiki 功能使用情况
     - 检查 Wiki 功能是否仍在使用
     - 确定保留或移除策略
     - _需求: 4.1, 4.2_
 
-  - [ ] 5.2 更新或移除 `get-wiki-files.flow.ts`
+  - [x] 5.2 更新或移除 `get-wiki-files.flow.ts`
     - 如果保留：替换 Dexie 调用为 SQLite API
     - 如果移除：删除文件和相关引用
     - _需求: 4.1, 4.2, 4.3_
 
-  - [ ] 5.3 更新或移除 `migrate-wiki.flow.ts`
+  - [x] 5.3 更新或移除 `migrate-wiki.flow.ts`
     - 如果保留：替换 Dexie 调用为 SQLite API
     - 如果移除：删除文件和相关引用
     - _需求: 4.1, 4.2, 4.3_
 
-  - [ ] 5.4 编写属性测试用于 Wiki 代码清理验证
+  - [x] 5.4 编写属性测试用于 Wiki 代码清理验证
     - **属性 6: Wiki 代码清理一致性**
     - **验证: 需求 4.1, 4.2, 4.4**
 
-  - [ ] 5.5 ESLint 检查 Wiki 模块
+  - [x] 5.5 ESLint 检查 Wiki 模块
     - 运行 `bun run lint` 检查 `flows/wiki/` 目录
     - 修复所有 ESLint 错误和警告
     - 确保代码质量符合项目标准
     - _需求: 所有 Wiki 相关需求_
 
-- [ ] 6. 清理迁移系统中的 Dexie 引用
-  - [ ] 6.1 更新 `dexie-to-sqlite.migration.fn.ts`
+- [x] 6. 清理迁移系统中的 Dexie 引用
+  - [x] 6.1 更新 `dexie-to-sqlite.migration.fn.ts`
     - 移除 Dexie 数据检查逻辑 (`hasDexieData`)
     - 移除 Dexie 数据清理逻辑 (`clearDexieData`)
     - 简化迁移状态管理
     - _需求: 5.1, 5.2, 5.3_
 
-  - [ ] 6.2 更新迁移日志消息
+  - [x] 6.2 更新迁移日志消息
     - 修改日志消息反映仅使用 SQLite 的架构
     - 移除 Dexie 相关的日志信息
     - _需求: 5.4_
 
-  - [ ] 6.3 编写属性测试用于迁移系统 SQLite 依赖验证
+  - [x] 6.3 编写属性测试用于迁移系统 SQLite 依赖验证
     - **属性 5: 迁移系统 SQLite 依赖**
     - **验证: 需求 5.2, 5.4**
 
-  - [ ] 6.4 ESLint 检查迁移模块
+  - [x] 6.4 ESLint 检查迁移模块
     - 运行 `bun run lint` 检查 `flows/migration/` 目录
     - 修复所有 ESLint 错误和警告
     - 确保代码质量符合项目标准

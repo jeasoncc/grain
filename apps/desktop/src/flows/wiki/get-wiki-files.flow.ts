@@ -10,7 +10,7 @@
 import * as E from "fp-ts/Either"
 import * as TE from "fp-ts/TaskEither"
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/io/api"
-import { legacyDatabase } from "@/io/db/legacy-database"
+import { getNodesByTag } from "@/io/api/tag.api"
 import { error, info, success } from "@/io/log/logger.api"
 import { WikiFileEntryBuilder } from "@/pipes/wiki/wiki.builder"
 import { WIKI_TAG } from "@/pipes/wiki/wiki.resolve.fn"
@@ -53,17 +53,20 @@ export const getWikiFilesAsync = (
 
 	return TE.tryCatch(
 		async () => {
-			// Query nodes with "wiki" tag using multi-entry index
-			const nodes = await legacyDatabase.nodes
-				.where("tags")
-				.equals(WIKI_TAG)
-				.and((node) => node.workspace === workspaceId)
-				.toArray()
+			// Get node IDs with "wiki" tag using SQLite API
+			const nodeIdsResult = await getNodesByTag(workspaceId, WIKI_TAG)()
+			const nodeIds = E.isRight(nodeIdsResult) ? nodeIdsResult.right : []
+
+			// Get all nodes for the workspace to filter by the wiki tag node IDs
+			const allNodesResult = await getNodesByWorkspace(workspaceId)()
+			const allNodes = E.isRight(allNodesResult) ? allNodesResult.right : []
+			
+			// Filter nodes that have the wiki tag
+			const nodes = allNodes.filter((node) => nodeIds.includes(node.id))
 
 			info("[Wiki] 找到 Wiki 文件", { count: nodes.length }, "get-wiki-files.flow")
 
 			// Get content for all wiki files
-			const nodeIds: ReadonlyArray<string> = nodes.map((n) => n.id)
 			const contentsResult = await getContentsByNodeIds(nodeIds)()
 			const contents = E.isRight(contentsResult) ? contentsResult.right : []
 			const contentMap = new Map(contents.map((c) => [c.nodeId, c.content])) as ReadonlyMap<
@@ -71,9 +74,7 @@ export const getWikiFilesAsync = (
 				string
 			>
 
-			// Get all nodes for path building
-			const allNodesResult = await getNodesByWorkspace(workspaceId)()
-			const allNodes = E.isRight(allNodesResult) ? allNodesResult.right : []
+			// Create node map for path building
 			const nodeMap = new Map(allNodes.map((n) => [n.id, n])) as ReadonlyMap<string, NodeInterface>
 
 			// Build WikiFileEntry array

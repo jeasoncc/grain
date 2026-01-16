@@ -39,8 +39,8 @@ export interface BackupData {
 	readonly dbVersions: readonly unknown[]
 	/** @deprecated Use workspaces instead */
 	readonly projects?: readonly unknown[]
-	/** @deprecated Wiki entries are now stored as file nodes with "wiki" tag */
-	readonly wikiEntries?: readonly unknown[]
+	/** @deprecated Legacy field - Wiki data is now stored as file nodes with "wiki" tag */
+	readonly legacyWikiData?: readonly unknown[]
 }
 
 // ============================================================================

@@ -27,8 +27,8 @@ export interface ExportBundle {
 	readonly projects: readonly WorkspaceInterface[]
 	readonly nodes: readonly NodeInterface[]
 	readonly contents: readonly ContentData[]
-	/** @deprecated Wiki entries are now stored as file nodes with "wiki" tag */
-	readonly wikiEntries?: readonly unknown[]
+	/** @deprecated Legacy field - Wiki data is now stored as file nodes with "wiki" tag */
+	readonly legacyWikiData?: readonly unknown[]
 	readonly attachments: readonly AttachmentData[]
 }
 

@@ -28,10 +28,7 @@ export const createBackup = (): TE.TaskEither<AppError, BackupInfo> => backupApi
 export const exportBackupJson = (): TE.TaskEither<AppError, string> =>
 	pipe(
 		createBackup(),
-		TE.map((backupInfo) => {
-			// SQLite API 已经创建了备份文件，返回文件名
-			return backupInfo.filename
-		}),
+		TE.map((backupInfo) => backupInfo.filename),
 	)
 
 /**
@@ -40,10 +37,7 @@ export const exportBackupJson = (): TE.TaskEither<AppError, string> =>
 export const exportBackupZip = (): TE.TaskEither<AppError, string> =>
 	pipe(
 		createBackup(),
-		TE.map((backupInfo) => {
-			// SQLite API 已经创建了备份文件，返回文件名
-			return backupInfo.filename
-		}),
+		TE.map((backupInfo) => backupInfo.filename),
 	)
 
 // ============================================================================
@@ -56,12 +50,7 @@ export const exportBackupZip = (): TE.TaskEither<AppError, string> =>
 export const restoreBackup = (file: File): TE.TaskEither<AppError, void> =>
 	pipe(
 		TE.tryCatch(
-			async () => {
-				// 对于文件恢复，我们需要使用文件路径
-				// 在实际应用中，文件可能需要先保存到临时位置
-				// 这里假设 file.name 包含完整路径或者 API 能处理 File 对象
-				return file.name
-			},
+			async () => file.name,
 			(error): AppError => importError(`处理备份文件失败: ${error}`),
 		),
 		TE.chain((filePath) => backupApi.restoreBackup(filePath)),
@@ -84,18 +73,16 @@ export const restoreBackupData = (backupPath: string): TE.TaskEither<AppError, v
  */
 export const getDatabaseStats = (): TE.TaskEither<AppError, DatabaseStats> =>
 	TE.tryCatch(
-		async () => {
+		async () => ({
 			// 临时返回默认值，实际应该通过 SQLite API 获取统计信息
-			return {
-				attachmentCount: 0,
-				contentCount: 0,
-				drawingCount: 0,
-				nodeCount: 0,
-				projectCount: 0,
-				tagCount: 0,
-				userCount: 0,
-			}
-		},
+			attachmentCount: 0,
+			contentCount: 0,
+			drawingCount: 0,
+			nodeCount: 0,
+			projectCount: 0,
+			tagCount: 0,
+			userCount: 0,
+		}),
 		(error): AppError => dbError(`获取数据库统计信息失败: ${error}`),
 	)
 
@@ -109,14 +96,14 @@ const LAST_BACKUP_KEY = "last-auto-backup"
 /**
  * 获取本地存储的备份列表
  */
-export const getLocalBackups = (): readonly LocalBackupRecord[] => {
-	try {
-		const stored = localStorage.getItem(LOCAL_BACKUPS_KEY)
-		return stored ? JSON.parse(stored) : []
-	} catch {
-		return []
-	}
-}
+export const getLocalBackups = (): TE.TaskEither<AppError, readonly LocalBackupRecord[]> =>
+	TE.tryCatch(
+		async () => {
+			const stored = localStorage.getItem(LOCAL_BACKUPS_KEY)
+			return stored ? JSON.parse(stored) : []
+		},
+		(error): AppError => dbError(`获取本地备份列表失败: ${error}`),
+	)
 
 /**
  * 保存备份到本地存储
@@ -128,15 +115,20 @@ export const saveLocalBackup = (
 ): TE.TaskEither<AppError, void> =>
 	TE.tryCatch(
 		async () => {
-			const backups = getLocalBackups()
+			const backupsResult = await getLocalBackups()()
+			if (backupsResult._tag === "Left") {
+				throw new Error(backupsResult.left.message)
+			}
+			const backups = backupsResult.right
+			
 			// 创建一个兼容的备份记录，使用 BackupInfo 而不是完整的 BackupData
 			const newBackup = { 
-				timestamp: new Date(backupInfo.createdAt).toISOString(),
+				timestamp: dayjs(backupInfo.createdAt).toISOString(),
 				// 注意：这里我们不再存储完整的数据，只存储备份信息
 				data: {
 					metadata: {
 						version: "5.0.0",
-						timestamp: new Date(backupInfo.createdAt).toISOString(),
+						timestamp: dayjs(backupInfo.createdAt).toISOString(),
 						projectCount: 0, // SQLite API 不提供这些统计信息
 						nodeCount: 0,
 						contentCount: 0,
@@ -155,7 +147,7 @@ export const saveLocalBackup = (
 			}
 			const recentBackups = [newBackup, ...backups].slice(0, maxBackups)
 			localStorage.setItem(LOCAL_BACKUPS_KEY, JSON.stringify(recentBackups))
-			localStorage.setItem(LAST_BACKUP_KEY, new Date(backupInfo.createdAt).toISOString())
+			localStorage.setItem(LAST_BACKUP_KEY, dayjs(backupInfo.createdAt).toISOString())
 		},
 		(error): AppError => dbError(`保存本地备份失败: ${error}`),
 	)
@@ -165,20 +157,22 @@ export const saveLocalBackup = (
  */
 export const restoreLocalBackup = (timestamp: string): TE.TaskEither<AppError, void> =>
 	pipe(
-		TE.tryCatch(
-			async () => {
-				const backups = getLocalBackups()
-				const backup = backups.find((b) => b.timestamp === timestamp)
+		getLocalBackups(),
+		TE.chain((backups) =>
+			TE.tryCatch(
+				async () => {
+					const backup = backups.find((b) => b.timestamp === timestamp)
 
-				if (!backup) {
-					throw new Error(`未找到备份: ${timestamp}`)
-				}
+					if (!backup) {
+						throw new Error(`未找到备份: ${timestamp}`)
+					}
 
-				// 返回时间戳作为备份路径标识符
-				// 实际实现中可能需要根据时间戳查找对应的备份文件路径
-				return timestamp
-			},
-			(error): AppError => importError(`查找本地备份失败: ${error}`),
+					// 返回时间戳作为备份路径标识符
+					// 实际实现中可能需要根据时间戳查找对应的备份文件路径
+					return timestamp
+				},
+				(error): AppError => importError(`查找本地备份失败: ${error}`),
+			),
 		),
 		TE.chain((backupPath) => restoreBackupData(backupPath)),
 	)
@@ -186,9 +180,7 @@ export const restoreLocalBackup = (timestamp: string): TE.TaskEither<AppError, v
 /**
  * 获取上次备份时间
  */
-export const getLastBackupTime = (): string | null => {
-	return localStorage.getItem(LAST_BACKUP_KEY)
-}
+export const getLastBackupTime = (): string | null => localStorage.getItem(LAST_BACKUP_KEY)
 
 /**
  * 检查是否需要自动备份
@@ -249,7 +241,7 @@ export const createAutoBackupManager = () => {
 	}
 
 	return {
-		getLocalBackups,
+		getLocalBackups: () => getLocalBackups()(),
 		start,
 		stop,
 	}
