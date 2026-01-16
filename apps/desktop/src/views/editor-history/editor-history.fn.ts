@@ -8,6 +8,8 @@
  * - 不修改输入参数
  */
 
+import dayjs from "dayjs"
+
 import type { EditorHistoryEntry, HistoryStack } from "@/types/editor-history"
 import { MAX_HISTORY_SIZE } from "@/types/editor-history"
 
@@ -31,7 +33,7 @@ export const createHistoryEntry = (
 ): EditorHistoryEntry => ({
 	content,
 	nodeId,
-	timestamp: new Date().toISOString(),
+	timestamp: dayjs().toISOString(),
 	wordCount,
 })
 

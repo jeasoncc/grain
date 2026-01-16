@@ -5,6 +5,7 @@
  * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  */
 
+import dayjs from "dayjs"
 import { PenTool, Plus, Search, Trash2 } from "lucide-react"
 import { useCallback, useState } from "react"
 import type { NodeInterface } from "@/types/node"
@@ -199,7 +200,7 @@ function DrawingListItem({ drawing, isSelected, onSelect, onDelete }: DrawingLis
 			<div className="flex flex-col items-start gap-0.5 overflow-hidden flex-1">
 				<span className="text-sm font-medium leading-tight truncate w-full">{drawing.title}</span>
 				<span className="text-xs text-muted-foreground/70 truncate w-full font-light">
-					{new Date(drawing.lastEdit).toLocaleDateString()}
+					{dayjs(drawing.lastEdit).format("YYYY/MM/DD")}
 				</span>
 			</div>
 			<Button

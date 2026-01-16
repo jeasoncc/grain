@@ -8,6 +8,7 @@
  * - 容器组件负责确认对话框和事件编排
  */
 
+import dayjs from "dayjs"
 import { memo, useCallback } from "react"
 import { useBackupManager } from "@/hooks/use-backup-manager"
 import { useConfirm } from "@/views/ui/confirm"
@@ -39,7 +40,7 @@ export const BackupManagerContainer = memo(function BackupManagerContainer() {
 			const confirmed = await confirm({
 				cancelText: "取消",
 				confirmText: "确认恢复",
-				description: `确定要恢复 ${new Date(timestamp).toLocaleString()} 的备份吗？`,
+				description: `确定要恢复 ${dayjs(timestamp).format("YYYY/MM/DD HH:mm:ss")} 的备份吗？`,
 				title: "恢复本地备份",
 			})
 

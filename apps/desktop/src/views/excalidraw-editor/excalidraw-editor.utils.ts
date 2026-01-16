@@ -6,6 +6,8 @@
  * @requirements 6.1, 6.3
  */
 
+import dayjs from "dayjs"
+
 /**
  * 硬件加速检测结果
  */
@@ -39,7 +41,7 @@ export function detectHardwareAcceleration(): HardwareAccelerationStatus {
 	const result: HardwareAccelerationStatus = {
 		hardwareAccelerated: false,
 		renderer: null,
-		timestamp: Date.now(),
+		timestamp: dayjs().valueOf(),
 		vendor: null,
 		webglSupported: false,
 		webglVersion: 0,
@@ -97,7 +99,7 @@ export function detectHardwareAcceleration(): HardwareAccelerationStatus {
 		return {
 			hardwareAccelerated: !isSoftwareRenderer,
 			renderer,
-			timestamp: Date.now(),
+			timestamp: dayjs().valueOf(),
 			vendor,
 			webglSupported: true,
 			webglVersion,

@@ -15,6 +15,8 @@
  * ```
  */
 
+import dayjs from "dayjs"
+
 import type {
 	AttachmentCreateInput,
 	AttachmentInterface,
@@ -49,7 +51,7 @@ export const decodeAttachment = (response: AttachmentResponse): AttachmentInterf
 	project: response.projectId ?? undefined,
 	size: response.size ?? undefined,
 	type: decodeAttachmentType(response.attachmentType),
-	uploadedAt: new Date(response.uploadedAt).toISOString(),
+	uploadedAt: dayjs(response.uploadedAt).toISOString(),
 })
 
 /**

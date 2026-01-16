@@ -8,6 +8,7 @@
  */
 
 import { useNavigate } from "@tanstack/react-router"
+import dayjs from "dayjs"
 import * as E from "fp-ts/Either"
 import { memo, useCallback, useEffect, useRef } from "react"
 import { toast } from "sonner"
@@ -365,7 +366,7 @@ export const FileTreePanelContainer = memo(
 				console.log("[FileTree Performance] Toggle collapsed started", {
 					collapsed,
 					nodeId,
-					timestamp: new Date().toISOString(),
+					timestamp: dayjs().toISOString(),
 				})
 
 				try {
@@ -379,7 +380,7 @@ export const FileTreePanelContainer = memo(
 					console.log("[FileTree Performance] Toggle collapsed completed", {
 						collapsed,
 						nodeId,
-						timestamp: new Date().toISOString(),
+						timestamp: dayjs().toISOString(),
 						totalDuration: `${totalDuration.toFixed(2)}ms`,
 					})
 
@@ -401,7 +402,7 @@ export const FileTreePanelContainer = memo(
 						collapsed,
 						error,
 						nodeId,
-						timestamp: new Date().toISOString(),
+						timestamp: dayjs().toISOString(),
 						totalDuration: `${totalDuration.toFixed(2)}ms`,
 					})
 				}

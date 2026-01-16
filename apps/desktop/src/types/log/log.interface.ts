@@ -6,6 +6,7 @@
  * 所有类型都是不可变的，符合函数式编程原则。
  */
 
+import dayjs from "dayjs"
 import { z } from "zod"
 
 /**
@@ -47,7 +48,7 @@ export const LogEntrySchema = z.object({
 	level: LogLevelSchema,
 	message: z.string().min(1, "日志消息不能为空"),
 	source: z.string().optional(),
-	timestamp: z.string().refine((val) => !Number.isNaN(Date.parse(val)), {
+	timestamp: z.string().refine((val) => dayjs(val).isValid(), {
 		message: "Invalid timestamp format",
 	}),
 })
@@ -115,7 +116,7 @@ export interface LogQueryOptions {
 export const LogQueryOptionsSchema = z.object({
 	endTime: z
 		.string()
-		.refine((val) => !Number.isNaN(Date.parse(val)), {
+		.refine((val) => dayjs(val).isValid(), {
 			message: "Invalid end time format",
 		})
 		.optional(),
@@ -126,7 +127,7 @@ export const LogQueryOptionsSchema = z.object({
 	sourceFilter: z.string().optional(),
 	startTime: z
 		.string()
-		.refine((val) => !Number.isNaN(Date.parse(val)), {
+		.refine((val) => dayjs(val).isValid(), {
 			message: "Invalid start time format",
 		})
 		.optional(),

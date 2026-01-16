@@ -5,6 +5,8 @@
  * 这是类型边界层，确保前后端类型解耦。
  */
 
+import dayjs from "dayjs"
+
 import type { NodeCreateInput, NodeInterface, NodeUpdateInput } from "@/types/node"
 import type { CreateNodeRequest, NodeResponse, UpdateNodeRequest } from "@/types/rust-api"
 
@@ -19,9 +21,9 @@ import type { CreateNodeRequest, NodeResponse, UpdateNodeRequest } from "@/types
  */
 export const decodeNode = (response: NodeResponse): NodeInterface => ({
 	collapsed: response.isCollapsed,
-	createDate: new Date(response.createdAt).toISOString(),
+	createDate: dayjs(response.createdAt).toISOString(),
 	id: response.id,
-	lastEdit: new Date(response.updatedAt).toISOString(),
+	lastEdit: dayjs(response.updatedAt).toISOString(),
 	order: response.sortOrder,
 	parent: response.parentId,
 	tags: response.tags ?? undefined,

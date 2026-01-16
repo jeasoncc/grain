@@ -7,6 +7,8 @@
  * Requirements: 1.1, 1.2, 2.1
  */
 
+import dayjs from "dayjs"
+
 import { WikiFileEntryBuilder } from "./wiki.builder"
 import type { WikiFileEntry } from "./wiki.schema"
 
@@ -32,8 +34,8 @@ export const WIKI_TAG = "wiki"
  */
 export function generateWikiTemplate(title: string): string {
 	// Get current date for the date tag
-	const now = new Date()
-	const dateTag = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+	const now = dayjs()
+	const dateTag = now.format("YYYY-MM-DD")
 
 	const template = {
 		root: {

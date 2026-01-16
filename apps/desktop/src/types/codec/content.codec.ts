@@ -5,6 +5,8 @@
  * 这是类型边界层，确保前后端类型解耦。
  */
 
+import dayjs from "dayjs"
+
 import type { ContentCreateInput, ContentInterface, ContentType } from "@/types/content"
 import type { ContentResponse, SaveContentRequest } from "@/types/rust-api"
 
@@ -42,7 +44,7 @@ export const decodeContent = (response: ContentResponse): ContentInterface => ({
 	content: response.content,
 	contentType: inferContentType(response.content),
 	id: response.id,
-	lastEdit: new Date(response.updatedAt).toISOString(),
+	lastEdit: dayjs(response.updatedAt).toISOString(),
 	nodeId: response.nodeId,
 })
 

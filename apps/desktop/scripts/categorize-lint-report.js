@@ -32,9 +32,13 @@ process.stdin.on('end', () => {
  * 规则类别映射
  */
 const RULE_CATEGORIES = {
+  // 专项问题分类（优先匹配）
+  'try-catch': ['grain/no-try-catch', 'functional/no-try-statements'],
+  'date-no-dayjs': ['grain/no-date-constructor', 'grain/no-native-date', 'grain/prefer-dayjs'],
+  
   // Grain 插件规则
   'grain-architecture': ['grain/layer-dependencies', 'grain/file-location', 'grain/no-store-in-views', 'grain/no-side-effects-in-pipes', 'grain/no-react-in-pure-layers'],
-  'grain-functional': ['grain/no-mutation', 'grain/no-object-mutation', 'grain/no-try-catch', 'grain/no-throw', 'grain/no-async-outside-io', 'grain/fp-ts-patterns', 'grain/no-promise-methods'],
+  'grain-functional': ['grain/no-mutation', 'grain/no-object-mutation', 'grain/no-throw', 'grain/no-async-outside-io', 'grain/fp-ts-patterns', 'grain/no-promise-methods'],
   'grain-naming': ['grain/file-naming', 'grain/variable-naming', 'grain/function-naming', 'grain/boolean-naming', 'grain/constant-naming'],
   'grain-complexity': ['grain/max-function-lines', 'grain/max-params', 'grain/max-nesting', 'grain/cyclomatic-complexity', 'grain/max-file-lines'],
   'grain-react': ['grain/require-memo', 'grain/no-inline-functions', 'grain/require-callback', 'grain/hooks-patterns', 'grain/component-patterns'],

@@ -4,6 +4,7 @@
  * 纯展示组件：所有数据通过 props 传入，不直接访问 Store 或 DB
  */
 
+import dayjs from "dayjs"
 import { AlertCircle, Check, Loader2, Save } from "lucide-react"
 import { memo } from "react"
 import { cn } from "@/utils/cn.util"
@@ -66,12 +67,12 @@ export const SaveStatusIndicatorView = memo(
 
 		const formatLastSaveTime = (timestamp: number | null) => {
 			if (!timestamp) return ""
-			const now = Date.now()
+			const now = dayjs().valueOf()
 			const diff = now - timestamp
 
 			if (diff < 60000) return "just now"
 			if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
-			return new Date(timestamp).toLocaleTimeString()
+			return dayjs(timestamp).format("HH:mm:ss")
 		}
 
 		return (

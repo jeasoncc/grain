@@ -10,6 +10,8 @@
  * @requirements 118
  */
 
+import dayjs from "dayjs"
+
 // ==============================
 // Pure Functions
 // ==============================
@@ -28,16 +30,13 @@
  * @param date - 日期，默认为当前时间
  * @returns Lexical JSON 字符串
  */
-export function generateLedgerContent(date: Date = new Date()): string {
+export function generateLedgerContent(date: Date = dayjs().toDate()): string {
+	const d = dayjs(date)
 	// 格式化日期标签：2024-12-25
-	const dateTag = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+	const dateTag = d.format("YYYY-MM-DD")
 
 	// 格式化标题日期：December 25, 2024
-	const titleDate = date.toLocaleDateString("en-US", {
-		day: "numeric",
-		month: "long",
-		year: "numeric",
-	})
+	const titleDate = d.format("MMMM D, YYYY")
 
 	const content = {
 		root: {

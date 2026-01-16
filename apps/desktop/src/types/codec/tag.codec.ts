@@ -15,6 +15,8 @@
  * ```
  */
 
+import dayjs from "dayjs"
+
 import type {
 	CreateTagRequest,
 	TagGraphData as RustTagGraphData,
@@ -33,9 +35,9 @@ import type { TagCreateInput, TagInterface, TagUpdateInput } from "@/types/tag"
  */
 export const decodeTag = (response: TagResponse): TagInterface => ({
 	count: response.count,
-	createDate: new Date(response.createdAt).toISOString(),
+	createDate: dayjs(response.createdAt).toISOString(),
 	id: response.id,
-	lastUsed: new Date(response.lastUsed).toISOString(),
+	lastUsed: dayjs(response.lastUsed).toISOString(),
 	name: response.name,
 	workspace: response.workspaceId,
 })
@@ -104,6 +106,6 @@ export const encodeCreateTag = (input: TagCreateInput): CreateTagRequest => ({
  */
 export const encodeUpdateTag = (input: TagUpdateInput): UpdateTagRequest => ({
 	count: input.count,
-	lastUsed: input.lastUsed ? new Date(input.lastUsed).getTime() : undefined,
+	lastUsed: input.lastUsed ? dayjs(input.lastUsed).valueOf() : undefined,
 	name: input.name,
 })

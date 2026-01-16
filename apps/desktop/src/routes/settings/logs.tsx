@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
+import dayjs from "dayjs"
 import * as E from "fp-ts/Either"
 import {
 	AlertTriangle,
@@ -101,17 +102,9 @@ function LogsSettingsPage() {
 	}
 
 	const formatTimestamp = (timestamp: string) => {
-		const date = new Date(timestamp)
-		if (Number.isNaN(date.getTime())) return timestamp
-		return date.toLocaleString(undefined, {
-			day: "2-digit",
-			hour: "2-digit",
-			hour12: false,
-			minute: "2-digit",
-			month: "2-digit",
-			second: "2-digit",
-			year: "numeric",
-		})
+		const date = dayjs(timestamp)
+		if (!date.isValid()) return timestamp
+		return date.format("YYYY/MM/DD HH:mm:ss")
 	}
 
 	return (

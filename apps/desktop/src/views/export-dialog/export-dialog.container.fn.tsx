@@ -2,6 +2,7 @@
  * Export Dialog 容器组件
  */
 
+import dayjs from "dayjs"
 import { BookOpen, File, FileArchive, FileCode, FileJson, FileText, FileType } from "lucide-react"
 import { memo, useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
@@ -64,11 +65,11 @@ export const ExportDialogContainer = memo(
 					toast.success("Markdown export successful")
 				} else if (format === "json") {
 					const json = await exportAll()
-					triggerDownload(`grain-backup-${new Date().toISOString().slice(0, 10)}.json`, json)
+					triggerDownload(`grain-backup-${dayjs().format("YYYY-MM-DD")}.json`, json)
 					toast.success("JSON backup export successful")
 				} else if (format === "zip") {
 					const zipBlob = await exportAllAsZip()
-					triggerBlobDownload(`grain-backup-${new Date().toISOString().slice(0, 10)}.zip`, zipBlob)
+					triggerBlobDownload(`grain-backup-${dayjs().format("YYYY-MM-DD")}.zip`, zipBlob)
 					toast.success("ZIP archive export successful")
 				} else {
 					// Standard format export

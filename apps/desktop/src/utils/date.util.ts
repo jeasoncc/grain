@@ -123,7 +123,7 @@ export function getWeekdayName(weekday: number): string {
 	return WEEKDAY_NAMES[normalizedWeekday]
 }
 
-export function getDateFolderStructure(date: Date = new Date()): DateFolderStructure {
+export function getDateFolderStructure(date: Date = dayjs().toDate()): DateFolderStructure {
 	const year = date.getFullYear()
 	const month = date.getMonth()
 	const day = date.getDate()
@@ -139,7 +139,7 @@ export function getDateFolderStructure(date: Date = new Date()): DateFolderStruc
 }
 
 export function getDateFolderStructureWithFilename(
-	date: Date = new Date(),
+	date: Date = dayjs().toDate(),
 	prefix = "file",
 ): DateFolderStructureWithFilename {
 	const baseStructure = getDateFolderStructure(date)

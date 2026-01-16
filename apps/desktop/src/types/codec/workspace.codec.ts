@@ -7,6 +7,8 @@
  * 注意：前端和后端现在使用相同的字段名（title），无需转换。
  */
 
+import dayjs from "dayjs"
+
 import type {
 	CreateWorkspaceRequest,
 	UpdateWorkspaceRequest,
@@ -29,11 +31,11 @@ import type {
  */
 export const decodeWorkspace = (response: WorkspaceResponse): WorkspaceInterface => ({
 	author: response.author,
-	createDate: new Date(response.createdAt).toISOString(),
+	createDate: dayjs(response.createdAt).toISOString(),
 	description: response.description,
 	id: response.id,
 	language: response.language,
-	lastOpen: new Date(response.lastOpen).toISOString(),
+	lastOpen: dayjs(response.lastOpen).toISOString(),
 	members: response.members,
 	owner: response.owner,
 	publisher: response.publisher,
@@ -73,7 +75,7 @@ export const encodeUpdateWorkspace = (input: WorkspaceUpdateInput): UpdateWorksp
 	author: input.author,
 	description: input.description,
 	language: input.language,
-	lastOpen: input.lastOpen ? new Date(input.lastOpen).getTime() : undefined,
+	lastOpen: input.lastOpen ? dayjs(input.lastOpen).valueOf() : undefined,
 	members: input.members,
 	owner: input.owner,
 	publisher: input.publisher,
@@ -104,7 +106,7 @@ export const encodeWorkspaceToUpdateRequest = (
 	author: workspace.author,
 	description: workspace.description,
 	language: workspace.language,
-	lastOpen: workspace.lastOpen ? new Date(workspace.lastOpen).getTime() : undefined,
+	lastOpen: workspace.lastOpen ? dayjs(workspace.lastOpen).valueOf() : undefined,
 	members: workspace.members,
 	owner: workspace.owner,
 	publisher: workspace.publisher,

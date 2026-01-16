@@ -15,6 +15,8 @@
  * ```
  */
 
+import dayjs from "dayjs"
+
 import type {
 	CreateUserRequest,
 	UserFeatures as RustUserFeatures,
@@ -89,25 +91,25 @@ const decodeUserSettings = (settings: RustUserSettings | null): UserSettings | u
  */
 export const decodeUser = (response: UserResponse): UserInterface => ({
 	avatar: response.avatar ?? undefined,
-	createDate: new Date(response.createdAt).toISOString(),
+	createDate: dayjs(response.createdAt).toISOString(),
 	displayName: response.displayName ?? undefined,
 	email: response.email ?? undefined,
 	features: decodeUserFeatures(response.features),
 	id: response.id,
-	lastLogin: new Date(response.lastLogin).toISOString(),
+	lastLogin: dayjs(response.lastLogin).toISOString(),
 	plan: response.plan,
 	planExpiresAt: response.planExpiresAt
-		? new Date(response.planExpiresAt).toISOString()
+		? dayjs(response.planExpiresAt).toISOString()
 		: undefined,
 	planStartDate: response.planStartDate
-		? new Date(response.planStartDate).toISOString()
+		? dayjs(response.planStartDate).toISOString()
 		: undefined,
 	serverMessage: response.serverMessage ?? undefined,
 	settings: decodeUserSettings(response.settings),
 	state: decodeUserState(response.state),
 	token: response.token ?? undefined,
 	trialExpiresAt: response.trialExpiresAt
-		? new Date(response.trialExpiresAt).toISOString()
+		? dayjs(response.trialExpiresAt).toISOString()
 		: undefined,
 	username: response.username,
 })
@@ -198,14 +200,14 @@ export const encodeUpdateUser = (input: UserUpdateInput): UpdateUserRequest => (
 	displayName: input.displayName !== undefined ? input.displayName : undefined,
 	email: input.email !== undefined ? input.email : undefined,
 	features: input.features !== undefined ? encodeUserFeatures(input.features) : undefined,
-	lastLogin: input.lastLogin ? new Date(input.lastLogin).getTime() : undefined,
+	lastLogin: input.lastLogin ? dayjs(input.lastLogin).valueOf() : undefined,
 	plan: input.plan,
-	planExpiresAt: input.planExpiresAt ? new Date(input.planExpiresAt).getTime() : undefined,
-	planStartDate: input.planStartDate ? new Date(input.planStartDate).getTime() : undefined,
+	planExpiresAt: input.planExpiresAt ? dayjs(input.planExpiresAt).valueOf() : undefined,
+	planStartDate: input.planStartDate ? dayjs(input.planStartDate).valueOf() : undefined,
 	serverMessage: input.serverMessage !== undefined ? input.serverMessage : undefined,
 	settings: input.settings !== undefined ? encodeUserSettings(input.settings) : undefined,
 	state: input.state !== undefined ? encodeUserState(input.state) : undefined,
 	token: input.token !== undefined ? input.token : undefined,
-	trialExpiresAt: input.trialExpiresAt ? new Date(input.trialExpiresAt).getTime() : undefined,
+	trialExpiresAt: input.trialExpiresAt ? dayjs(input.trialExpiresAt).valueOf() : undefined,
 	username: input.username,
 })
