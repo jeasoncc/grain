@@ -55,13 +55,12 @@ const applyTabChangesToStore = (changes: OpenTabResult): void => {
 			store.setEditorStates(changes.newEditorStates as Record<string, EditorInstanceState>)
 		}
 	} else {
-		// create_new
+		// create_new: 使用原子操作添加 tab 和 state
 		if (changes.newTabs && changes.newEditorStates) {
 			const newTab = changes.newTabs.find((t) => t.id === changes.tabId)
 			const newEditorState = changes.newEditorStates[changes.tabId]
 			if (newTab && newEditorState) {
 				store.addTabWithState(newTab as EditorTab, newEditorState)
-				store.setEditorStates(changes.newEditorStates as Record<string, EditorInstanceState>)
 			}
 		}
 	}
