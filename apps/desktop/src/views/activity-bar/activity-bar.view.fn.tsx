@@ -6,123 +6,19 @@
  * 不直接访问 Store 或 DB，遵循函数式架构原则。
  */
 
-import { Check, Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2 } from "lucide-react"
 import type * as React from "react"
 import { memo } from "react"
 import { useActivityBarView } from "@/hooks/use-activity-bar-view"
-import { cn } from "@/utils/cn.util"
 import { Button } from "@/views/ui/button"
 import { Input } from "@/views/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/views/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/views/ui/tooltip"
 
-import type {
-	ActionButtonProps,
-	ActivityBarProps,
-	ToggleNavItemProps,
-	WorkspaceItemProps,
-} from "./activity-bar.types"
-
-// ==============================
-// 子组件
-// ==============================
-
-const WorkspaceItem = memo(function WorkspaceItem({
-	workspace,
-	isSelected,
-	FolderIcon,
-	onClick,
-}: WorkspaceItemProps) {
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			className={cn(
-				"group relative flex w-full items-center gap-2 rounded-lg px-2 py-1 transition-all duration-200 outline-none",
-				isSelected
-					? "bg-primary/10 text-primary font-medium"
-					: "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
-			)}
-		>
-			<div
-				className={cn(
-					"flex items-center justify-center size-6 shrink-0 rounded-full transition-colors border",
-					isSelected
-						? "bg-background/50 border-primary/20 text-primary shadow-sm"
-						: "bg-muted/30 border-transparent text-muted-foreground/70 group-hover:text-foreground group-hover:bg-background group-hover:border-border/50",
-				)}
-			>
-				<FolderIcon className="size-3" />
-			</div>
-			<span className="flex-1 truncate text-left text-xs">{workspace.title}</span>
-			{isSelected && (
-				<div className="relative flex items-center justify-center size-3 shrink-0 animate-in zoom-in duration-300">
-					<div className="absolute inset-0 bg-primary/20 rounded-full animate-pulse" />
-					<Check className="relative size-2 text-primary stroke-[3]" />
-				</div>
-			)}
-		</button>
-	)
-})
-
-const ActionButton = memo(function ActionButton({
-	icon,
-	label,
-	onClick,
-	active = false,
-	testId,
-}: ActionButtonProps & { readonly testId?: string }) {
-	return (
-		<Tooltip>
-			<TooltipTrigger asChild>
-				<button
-					type="button"
-					onClick={onClick}
-					data-testid={testId}
-					className={cn(
-						"relative flex w-full aspect-square items-center justify-center transition-all",
-						active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
-					)}
-				>
-					{active && (
-						<div className="absolute left-0 top-1/2 h-8 w-[3px] -translate-y-1/2 rounded-r-sm bg-primary" />
-					)}
-					{icon}
-				</button>
-			</TooltipTrigger>
-			<TooltipContent side="right">{label}</TooltipContent>
-		</Tooltip>
-	)
-})
-
-const ToggleNavItem = memo(function ToggleNavItem({
-	to,
-	icon,
-	label,
-	active,
-	onNavigate,
-}: ToggleNavItemProps) {
-	return (
-		<Tooltip>
-			<TooltipTrigger asChild>
-				<button
-					type="button"
-					onClick={() => onNavigate(active ? "/" : to)}
-					className={cn(
-						"relative flex w-full aspect-square items-center justify-center transition-all",
-						active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
-					)}
-				>
-					{active && (
-						<div className="absolute left-0 top-1/2 h-8 w-[3px] -translate-y-1/2 rounded-r-sm bg-primary" />
-					)}
-					{icon}
-				</button>
-			</TooltipTrigger>
-			<TooltipContent side="right">{label}</TooltipContent>
-		</Tooltip>
-	)
-})
+import type { ActivityBarProps } from "./activity-bar.types"
+import { ActionButton } from "./action-button.view.fn"
+import { ToggleNavItem } from "./toggle-nav-item.view.fn"
+import { WorkspaceItem } from "./workspace-item.view.fn"
 
 // ==============================
 // 主组件
