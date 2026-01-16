@@ -283,8 +283,9 @@ export function ActivityBarContainer(): React.ReactElement {
 					}
 
 					// 导航到主页面（如果当前不在主页面）
+					// 使用 replace 避免在历史中添加条目
 					if (location.pathname !== "/") {
-						router.history.push("/")
+						router.history.replace("/")
 					}
 
 					return TE.right(result)
