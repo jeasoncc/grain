@@ -8,7 +8,7 @@ import {
 	isTauriEnvironment,
 	selectExportDirectory,
 	setDefaultExportPath,
-} from "@/pipes/export"
+} from "@/flows/export"
 import { Button } from "@/views/ui/button"
 import { Input } from "@/views/ui/input"
 import { Label } from "@/views/ui/label"
