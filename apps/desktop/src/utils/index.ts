@@ -9,8 +9,6 @@
 export { cn } from "./cn.util"
 // 日期工具
 export * from "./date.util"
-// 错误类型
-export * from "./error.util"
 // 字体配置
 export * from "./font.util"
 // 格式化工具

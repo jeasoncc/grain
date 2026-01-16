@@ -127,8 +127,6 @@ export {
 	useThemeKey,
 	useThemeMode,
 } from "./use-theme"
-// Theme DOM Hooks (re-export from io for backward compatibility)
-export { applyThemeWithTransition, getSystemTheme } from "./use-theme-dom"
 // Writing Hooks
 export {
 	useFocusMode,

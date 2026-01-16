@@ -6,7 +6,6 @@
  */
 
 export * from "./api"
-export * from "./db"
 export * from "./dom"
 export * from "./file"
 export * from "./log"

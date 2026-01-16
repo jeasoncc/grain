@@ -84,17 +84,8 @@ export * as diagramView from "./diagram"
 // Drawing 工具
 export * as drawingView from "./drawing"
 
-// Editor 配置
-export * as editorView from "./editor"
-
 // Editor History
 export * as editorHistoryView from "./editor-history"
-
-// Icon Theme
-export * as iconThemeView from "./icon-theme"
-
-// Ledger 模板
-export * as ledgerView from "./ledger"
 
 // Theme 配置
 export * as themeView from "./theme"

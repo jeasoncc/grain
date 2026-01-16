@@ -26,8 +26,6 @@ export {
 	exportWorkspaceToMarkdown,
 	serializeBundle,
 } from "./export.bundle.fn"
-// Download 工具
-export { triggerBlobDownload, triggerDownload } from "./export.download.fn"
 // JSON 导出
 export {
 	createExportDocument,
