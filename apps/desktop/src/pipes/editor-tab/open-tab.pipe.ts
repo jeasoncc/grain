@@ -18,7 +18,7 @@ import { evictLRUEditorStates, findTabByNodeId } from "./editor-tab.pipe"
 // ==============================
 
 /**
- * 打开 Tab 的输入参数
+ * 打开 Tab 的输入参数（完整节点版本）
  */
 export interface OpenTabInput {
 	/** 节点信息 */
@@ -33,6 +33,28 @@ export interface OpenTabInput {
 	readonly currentEditorStates: Readonly<Record<string, EditorInstanceState>>
 	/** 当前活动 tab ID */
 	readonly activeTabId: string | null
+	/** 最大缓存状态数 */
+	readonly maxEditorStates?: number
+}
+
+/**
+ * 打开 Tab 的输入参数（简化版本，用于 openFile）
+ */
+export interface OpenTabSimpleInput {
+	/** 节点 ID */
+	readonly nodeId: string
+	/** 节点标题 */
+	readonly title: string
+	/** 节点类型 */
+	readonly type: TabType
+	/** 工作区 ID */
+	readonly workspaceId: string
+	/** 初始内容（可选） */
+	readonly content?: string
+	/** 当前 tabs 列表 */
+	readonly currentTabs: readonly EditorTab[]
+	/** 当前 editorStates */
+	readonly currentEditorStates: Readonly<Record<string, EditorInstanceState>>
 	/** 最大缓存状态数 */
 	readonly maxEditorStates?: number
 }
@@ -119,6 +141,86 @@ export const calculateOpenTabChanges = (input: OpenTabInput): OpenTabResult => {
 		.nodeId(node.id)
 		.title(node.title)
 		.type(node.type as TabType)
+		.build()
+
+	// 3. 创建 EditorState
+	const parsedContent = parseContentSafe(content)
+	const newEditorState = parsedContent
+		? EditorStateBuilder.fromDefault().serializedState(parsedContent).build()
+		: EditorStateBuilder.fromDefault().build()
+
+	// 4. 计算新的 tabs 列表
+	const newTabs = [...currentTabs, newTab as EditorTab]
+
+	// 5. 计算新的 editorStates（包含 LRU 清理）
+	const openTabIds = new Set(newTabs.map((t) => t.id))
+	const statesWithNew = {
+		...currentEditorStates,
+		[newTab.id]: newEditorState,
+	}
+	const evictedStates = evictLRUEditorStates(
+		statesWithNew,
+		newTab.id,
+		openTabIds as ReadonlySet<string>,
+		maxEditorStates,
+	)
+
+	return {
+		action: "create_new",
+		newActiveTabId: newTab.id,
+		newEditorStates: evictedStates,
+		newTabs,
+		tabId: newTab.id,
+	}
+}
+
+
+/**
+ * 计算打开 Tab 需要的状态变更（简化版本）
+ *
+ * 用于 openFile 场景，只需要 nodeId/title/type
+ */
+export const calculateOpenTabChangesSimple = (input: OpenTabSimpleInput): OpenTabResult => {
+	const {
+		nodeId,
+		title,
+		type,
+		workspaceId,
+		content,
+		currentTabs,
+		currentEditorStates,
+		maxEditorStates = DEFAULT_MAX_EDITOR_STATES,
+	} = input
+
+	// 1. 检查是否已存在
+	const existingTab = findTabByNodeId(currentTabs, nodeId)
+
+	if (existingTab) {
+		// Tab 已存在，只需激活
+		const updatedEditorStates = currentEditorStates[existingTab.id]
+			? {
+					...currentEditorStates,
+					[existingTab.id]: {
+						...currentEditorStates[existingTab.id],
+						lastModified: dayjs().valueOf(),
+					},
+				}
+			: currentEditorStates
+
+		return {
+			action: "activate_existing",
+			newActiveTabId: existingTab.id,
+			newEditorStates: updatedEditorStates,
+			tabId: existingTab.id,
+		}
+	}
+
+	// 2. 创建新 Tab
+	const newTab = EditorTabBuilder.create()
+		.workspaceId(workspaceId)
+		.nodeId(nodeId)
+		.title(title)
+		.type(type)
 		.build()
 
 	// 3. 创建 EditorState
