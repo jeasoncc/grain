@@ -8,6 +8,7 @@
  * - 写入操作使用纯 TaskEither 管道（在 actions 中）
  */
 
+import dayjs from "dayjs"
 import { useQuery } from "@tanstack/react-query"
 import { orderBy } from "es-toolkit"
 import * as E from "fp-ts/Either"
@@ -26,7 +27,7 @@ export const useAttachments = () => {
 				throw new Error(result.left.message)
 			}
 			// 按上传时间排序（最新的在前）
-			return orderBy(result.right, [(item) => new Date(item.uploadedAt).getTime()], ["desc"])
+			return orderBy(result.right, [(item) => dayjs(item.uploadedAt).valueOf()], ["desc"])
 		},
 		queryKey: queryKeys.attachments.all,
 	})
@@ -63,7 +64,7 @@ export const useAttachmentsByProject = (projectId: string | null | undefined) =>
 				throw new Error(result.left.message)
 			}
 			// 按上传时间排序（最新的在前）
-			return orderBy(result.right, [(item) => new Date(item.uploadedAt).getTime()], ["desc"])
+			return orderBy(result.right, [(item) => dayjs(item.uploadedAt).valueOf()], ["desc"])
 		},
 		queryKey: queryKeys.attachments.byProject(projectId ?? ""),
 	})
@@ -85,7 +86,7 @@ export const useAttachmentsByType = (
 				throw new Error(result.left.message)
 			}
 			// 按上传时间排序（最新的在前）
-			return orderBy(result.right, [(item) => new Date(item.uploadedAt).getTime()], ["desc"])
+			return orderBy(result.right, [(item) => dayjs(item.uploadedAt).valueOf()], ["desc"])
 		},
 		queryKey: queryKeys.attachments.byType(projectId ?? "", attachmentType ?? ""),
 	})
@@ -104,7 +105,7 @@ export const useImagesByProject = (projectId: string | null | undefined) => {
 				throw new Error(result.left.message)
 			}
 			// 按上传时间排序（最新的在前）
-			return orderBy(result.right, [(item) => new Date(item.uploadedAt).getTime()], ["desc"])
+			return orderBy(result.right, [(item) => dayjs(item.uploadedAt).valueOf()], ["desc"])
 		},
 		queryKey: queryKeys.attachments.imagesByProject(projectId ?? ""),
 	})
@@ -123,7 +124,7 @@ export const useAudioFilesByProject = (projectId: string | null | undefined) => 
 				throw new Error(result.left.message)
 			}
 			// 按上传时间排序（最新的在前）
-			return orderBy(result.right, [(item) => new Date(item.uploadedAt).getTime()], ["desc"])
+			return orderBy(result.right, [(item) => dayjs(item.uploadedAt).valueOf()], ["desc"])
 		},
 		queryKey: queryKeys.attachments.audioByProject(projectId ?? ""),
 	})

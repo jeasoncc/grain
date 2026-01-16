@@ -10,6 +10,7 @@
  * @requirements 8.1
  */
 
+import dayjs from "dayjs"
 import { useQuery } from "@tanstack/react-query"
 import * as E from "fp-ts/Either"
 import * as userRepo from "@/io/api/user.api"
@@ -28,7 +29,7 @@ export const useUsers = () => {
 			}
 			// 按最后登录时间排序（最新的在前）
 			return result.right.sort(
-				(a, b) => new Date(b.lastLogin).getTime() - new Date(a.lastLogin).getTime(),
+				(a, b) => dayjs(b.lastLogin).valueOf() - dayjs(a.lastLogin).valueOf(),
 			)
 		},
 		queryKey: queryKeys.users.all,
