@@ -461,6 +461,7 @@ export const initAutoCleanup = (
 		config ? updateAutoCleanupConfig(config) : TE.right(getAutoCleanupConfig()),
 		TE.map((finalConfig) => {
 			startAutoCleanupTimer(finalConfig)
+			return undefined
 		}),
 	)
 

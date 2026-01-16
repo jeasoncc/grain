@@ -59,6 +59,7 @@ describe("Export Project Compatibility", () => {
 		}
 
 		// Test invalid format
+		// biome-ignore lint/suspicious/noExplicitAny: Testing invalid input type
 		await expect(exportProject("test-id", "invalid" as any)).rejects.toThrow("不支持的导出格式")
 	})
 })

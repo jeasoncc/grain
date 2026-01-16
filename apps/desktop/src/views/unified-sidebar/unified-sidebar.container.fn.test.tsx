@@ -61,14 +61,15 @@ vi.mock("./unified-sidebar.view.fn", () => ({
 		onSelectDrawing,
 		onCreateDrawing,
 		onDeleteDrawing,
+		// biome-ignore lint/suspicious/noExplicitAny: Mock component props
 	}: any) => (
 		<div data-testid="unified-sidebar-view">
 			<div data-testid="active-panel">{activePanel}</div>
 			<div data-testid="is-open">{String(isOpen)}</div>
-			<button onClick={onRestoreFromCollapse}>Restore</button>
-			<button onClick={() => onSelectDrawing({ id: "drawing-1" })}>Select Drawing</button>
-			<button onClick={onCreateDrawing}>Create Drawing</button>
-			<button onClick={() => onDeleteDrawing("drawing-1", "Drawing 1")}>Delete Drawing</button>
+			<button type="button" onClick={onRestoreFromCollapse}>Restore</button>
+			<button type="button" onClick={() => onSelectDrawing({ id: "drawing-1" })}>Select Drawing</button>
+			<button type="button" onClick={onCreateDrawing}>Create Drawing</button>
+			<button type="button" onClick={() => onDeleteDrawing("drawing-1", "Drawing 1")}>Delete Drawing</button>
 		</div>
 	),
 }))

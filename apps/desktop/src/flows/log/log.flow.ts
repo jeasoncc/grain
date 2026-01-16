@@ -38,6 +38,7 @@ import { createBatchLogFlow, forceFlushAllLogs, getBufferStatus } from "./batch-
 // Configuration
 import {
 	applyLogConfigPreset,
+	type ExtendedLogConfig,
 	getCurrentLogConfig as getCurrentExtendedLogConfig,
 	getLogConfigPresets,
 	updateLogConfig as updateExtendedLogConfig,
@@ -338,7 +339,8 @@ export const getCurrentExtendedLogConfigFlow = () => getCurrentExtendedLogConfig
  * @param config - 新的配置
  * @returns TaskEither<AppError, ExtendedLogConfig>
  */
-export const updateExtendedLogConfigFlow = (config: any) => updateExtendedLogConfig(config)
+export const updateExtendedLogConfigFlow = (config: Partial<ExtendedLogConfig>) =>
+	updateExtendedLogConfig(config)
 
 /**
  * 验证日志配置
@@ -346,7 +348,8 @@ export const updateExtendedLogConfigFlow = (config: any) => updateExtendedLogCon
  * @param config - 要验证的配置
  * @returns TaskEither<AppError, LogConfigValidationResult>
  */
-export const validateLogConfigFlow = (config: any) => validateLogConfig(config)
+export const validateLogConfigFlow = (config: Partial<ExtendedLogConfig>) =>
+	validateLogConfig(config)
 
 /**
  * 应用日志配置预设

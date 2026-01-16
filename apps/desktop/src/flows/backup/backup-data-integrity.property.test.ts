@@ -359,7 +359,7 @@ describe("Property Test: Backup Data Integrity", () => {
 						expect(newBackup).toHaveProperty("data")
 
 						// Verify all timestamps are valid dates
-						savedBackups.forEach((backup: any) => {
+						savedBackups.forEach((backup: { timestamp: string; data: unknown }) => {
 							expect(() => new Date(backup.timestamp)).not.toThrow()
 						})
 					}

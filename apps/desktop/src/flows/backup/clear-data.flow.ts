@@ -59,7 +59,7 @@ export const clearCookies = (): TE.TaskEither<AppError, void> =>
 						`${name}=;expires=${expireDate};path=/;domain=.${window.location.hostname}`,
 					]
 					for (const setting of cookieSettings) {
-						// eslint-disable-next-line functional/immutable-data
+						// biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API not widely supported yet
 						document.cookie = setting
 					}
 				}

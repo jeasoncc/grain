@@ -159,6 +159,7 @@ export const flushLogBuffer = (
 				...logBuffer,
 				isFlushPending: false,
 			}
+			return undefined
 		}),
 		TE.mapLeft((error) => {
 			// 刷新失败时，重新添加到缓冲区（避免丢失日志）
