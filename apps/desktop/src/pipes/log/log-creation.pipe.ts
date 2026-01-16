@@ -6,6 +6,7 @@
  * 这些函数可以被 flows 和 io 层安全地使用。
  */
 
+import { warn } from "@/io/log/logger"
 import type { LogConfig, LogEntry, LogLevel } from "@/types/log/log.interface"
 import { DEFAULT_LOG_CONFIG } from "@/types/log/log.interface"
 import { addConsoleColors, formatLogEntry, shouldLog } from "./log.format.pipe"
@@ -139,7 +140,7 @@ export const createLoggerConfig = (config: Partial<LogConfig> = {}): LogConfig =
 	const validation = validateLogConfig(config)
 
 	if (!validation.isValid) {
-		console.warn("Invalid log config, using defaults:", validation.errors)
+		warn("[LogCreation] Invalid log config, using defaults", { errors: validation.errors })
 		return DEFAULT_LOG_CONFIG
 	}
 

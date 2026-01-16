@@ -8,6 +8,7 @@
  * @requirements 8.1
  */
 
+import dayjs from "dayjs"
 import {
 	useCurrentUserQuery,
 	useUserByEmailQuery,
@@ -172,7 +173,7 @@ export function useUserSubscription(userId: string | null | undefined):
 	if (!user) return undefined
 
 	const isPremium = user.plan === "premium"
-	const isExpired = user.planExpiresAt ? new Date(user.planExpiresAt) < new Date() : false
+	const isExpired = user.planExpiresAt ? dayjs(user.planExpiresAt).isBefore(dayjs()) : false
 
 	return {
 		expiresAt: user.planExpiresAt,

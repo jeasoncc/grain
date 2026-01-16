@@ -21,6 +21,7 @@
 
 import { pipe } from "fp-ts/function"
 import * as TE from "fp-ts/TaskEither"
+import dayjs from "dayjs"
 import { debug, error, warn } from "@/io/log/logger.api"
 import { decodeNode, decodeNodes, encodeCreateNode, encodeUpdateNode } from "@/types/codec"
 import type { AppError } from "@/types/error"
@@ -271,7 +272,7 @@ export const setNodeCollapsed = (
 	debug("[API Performance] setNodeCollapsed started", {
 		collapsed,
 		nodeId,
-		timestamp: new Date().toISOString(),
+		timestamp: dayjs().toISOString(),
 	})
 
 	return pipe(
@@ -284,7 +285,7 @@ export const setNodeCollapsed = (
 				collapsed,
 				duration: `${duration.toFixed(2)}ms`,
 				nodeId,
-				timestamp: new Date().toISOString(),
+				timestamp: dayjs().toISOString(),
 			})
 
 			// Warning for slow API calls (> 50ms threshold)
@@ -308,7 +309,7 @@ export const setNodeCollapsed = (
 				duration: `${duration.toFixed(2)}ms`,
 				error: err,
 				nodeId,
-				timestamp: new Date().toISOString(),
+				timestamp: dayjs().toISOString(),
 			})
 
 			return err

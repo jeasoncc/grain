@@ -14,6 +14,7 @@
 
 import { useMemo } from "react"
 import { orderBy } from "es-toolkit"
+import dayjs from "dayjs"
 import {
 	useWorkspace as useWorkspaceQuery,
 	useWorkspaces as useWorkspacesQuery,
@@ -53,7 +54,7 @@ export function useAllWorkspaces(): readonly WorkspaceInterface[] | undefined {
 		if (isLoading || !workspaces) return undefined
 		return orderBy(
 			workspaces,
-			[(workspace) => new Date(workspace.lastOpen).getTime()],
+			[(workspace) => dayjs(workspace.lastOpen).valueOf()],
 			["desc"]
 		)
 	}, [workspaces, isLoading])
@@ -118,7 +119,7 @@ export function useRecentWorkspaces(limit: number = 5): readonly WorkspaceInterf
 		if (isLoading || !workspaces) return undefined
 		return orderBy(
 			workspaces,
-			[(workspace) => new Date(workspace.lastOpen).getTime()],
+			[(workspace) => dayjs(workspace.lastOpen).valueOf()],
 			["desc"]
 		).slice(0, limit)
 	}, [workspaces, limit, isLoading])
@@ -168,7 +169,7 @@ export function useWorkspaceSearch(
 
 		const sorted = orderBy(
 			workspaces,
-			[(workspace) => new Date(workspace.lastOpen).getTime()],
+			[(workspace) => dayjs(workspace.lastOpen).valueOf()],
 			["desc"]
 		)
 

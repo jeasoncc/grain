@@ -8,6 +8,7 @@
  * @requirements 8.2
  */
 
+import dayjs from "dayjs"
 import { orderBy } from "es-toolkit"
 import {
 	useNodesByTag as useNodesByTagQuery,
@@ -141,7 +142,7 @@ export function useRecentTags(
 	// Sort by lastUsed and take top N
 	return orderBy(
 		data,
-		[(tag) => new Date(tag.lastUsed).getTime()],
+		[(tag) => dayjs(tag.lastUsed).valueOf()],
 		["desc"]
 	).slice(0, limit)
 }
