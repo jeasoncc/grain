@@ -257,6 +257,8 @@ export function ActivityBarContainer(): React.ReactElement {
 		}
 		try {
 			await clearAllData()()
+			// Clear all TanStack Query caches to prevent stale data errors
+			queryClient.clear()
 			setSelectedWorkspaceId(null)
 			setSelectedNodeId(null)
 			setHasInitialized(false)
@@ -264,7 +266,7 @@ export function ActivityBarContainer(): React.ReactElement {
 		} catch {
 			toast.error("Delete failed")
 		}
-	}, [confirm, setSelectedWorkspaceId, setSelectedNodeId])
+	}, [confirm, setSelectedWorkspaceId, setSelectedNodeId, queryClient])
 
 	const handleNavigate = useCallback(
 		(path: string) => {
