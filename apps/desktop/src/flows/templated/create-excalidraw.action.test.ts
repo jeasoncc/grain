@@ -11,6 +11,7 @@
  * @requirements 7.2
  */
 
+import dayjs from "dayjs"
 import { describe, expect, it } from "vitest"
 import { adaptExcalidrawParams, type CreateExcalidrawParams } from "./create-excalidraw.flow"
 
@@ -39,7 +40,7 @@ describe("create-excalidraw.action (高阶函数版本)", () => {
 	describe("adaptExcalidrawParams", () => {
 		it("应该正确转换完整参数格式", () => {
 			const params: CreateExcalidrawParams = {
-				date: new Date("2024-01-15T12:00:00.000Z"),
+				date: dayjs("2024-01-15T12:00:00.000Z").toDate(),
 				height: 1080,
 				title: "测试绘图",
 				width: 1920,
@@ -50,7 +51,7 @@ describe("create-excalidraw.action (高阶函数版本)", () => {
 
 			expect(result).toEqual({
 				templateParams: {
-					date: new Date("2024-01-15T12:00:00.000Z"),
+					date: dayjs("2024-01-15T12:00:00.000Z").toDate(),
 					height: 1080,
 					title: "测试绘图",
 					width: 1920,
@@ -79,13 +80,13 @@ describe("create-excalidraw.action (高阶函数版本)", () => {
 
 		it("应该处理只有日期的参数", () => {
 			const params: CreateExcalidrawParams = {
-				date: new Date("2024-01-15T12:00:00.000Z"),
+				date: dayjs("2024-01-15T12:00:00.000Z").toDate(),
 				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			}
 
 			const result = adaptExcalidrawParams(params)
 
-			expect(result.templateParams.date).toEqual(new Date("2024-01-15T12:00:00.000Z"))
+			expect(result.templateParams.date).toEqual(dayjs("2024-01-15T12:00:00.000Z").toDate())
 			expect(result.templateParams.title).toBeUndefined()
 			expect(result.templateParams.width).toBeUndefined()
 			expect(result.templateParams.height).toBeUndefined()
@@ -124,7 +125,7 @@ describe("create-excalidraw.action (高阶函数版本)", () => {
 	describe("类型安全", () => {
 		it("应该接受有效的 CreateExcalidrawParams", () => {
 			const params: CreateExcalidrawParams = {
-				date: new Date(),
+				date: dayjs().toDate(),
 				height: 1080,
 				title: "测试",
 				width: 1920,
@@ -156,7 +157,7 @@ describe("create-excalidraw.action (高阶函数版本)", () => {
 		})
 
 		it("应该处理极端日期", () => {
-			const extremeDate = new Date("1970-01-01T00:00:00.000Z")
+			const extremeDate = dayjs("1970-01-01T00:00:00.000Z").toDate()
 			const params: CreateExcalidrawParams = {
 				date: extremeDate,
 				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
@@ -168,7 +169,7 @@ describe("create-excalidraw.action (高阶函数版本)", () => {
 		})
 
 		it("应该处理未来日期", () => {
-			const futureDate = new Date("2030-12-31T23:59:59.999Z")
+			const futureDate = dayjs("2030-12-31T23:59:59.999Z").toDate()
 			const params: CreateExcalidrawParams = {
 				date: futureDate,
 				workspaceId: "550e8400-e29b-41d4-a716-446655440000",

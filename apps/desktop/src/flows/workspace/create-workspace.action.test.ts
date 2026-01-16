@@ -10,6 +10,7 @@
  * @requirements 7.1, 7.4
  */
 
+import dayjs from "dayjs"
 import * as E from "fp-ts/Either"
 import type * as TE from "fp-ts/TaskEither"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -25,11 +26,11 @@ import type { WorkspaceInterface } from "@/types/workspace/workspace.interface"
 function createTestWorkspace(overrides: Partial<WorkspaceInterface> = {}): WorkspaceInterface {
 	return {
 		author: overrides.author ?? "",
-		createDate: overrides.createDate ?? new Date().toISOString(),
+		createDate: overrides.createDate ?? dayjs().toISOString(),
 		description: overrides.description ?? "",
 		id: overrides.id ?? "550e8400-e29b-41d4-a716-446655440000",
 		language: overrides.language ?? "zh-CN",
-		lastOpen: overrides.lastOpen ?? new Date().toISOString(),
+		lastOpen: overrides.lastOpen ?? dayjs().toISOString(),
 		members: overrides.members ?? [],
 		owner: overrides.owner ?? undefined,
 		publisher: overrides.publisher ?? "",

@@ -14,6 +14,7 @@
  * 目标覆盖率：> 95%
  */
 
+import dayjs from "dayjs"
 import * as E from "fp-ts/Either"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { z } from "zod"
@@ -56,9 +57,9 @@ import { createFileInTree } from "@/flows/node"
 function createMockNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
 	return {
 		collapsed: overrides.collapsed ?? false,
-		createDate: overrides.createDate ?? new Date().toISOString(),
+		createDate: overrides.createDate ?? dayjs().toISOString(),
 		id: overrides.id ?? "550e8400-e29b-41d4-a716-446655440001",
-		lastEdit: overrides.lastEdit ?? new Date().toISOString(),
+		lastEdit: overrides.lastEdit ?? dayjs().toISOString(),
 		order: overrides.order ?? 0,
 		parent: overrides.parent ?? null,
 		tags: overrides.tags ?? [],

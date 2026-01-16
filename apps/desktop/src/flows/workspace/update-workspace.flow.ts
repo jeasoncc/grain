@@ -10,6 +10,7 @@
  * @requirements 7.1, 7.4
  */
 
+import dayjs from "dayjs"
 import { pipe } from "fp-ts/function"
 import * as TE from "fp-ts/TaskEither"
 import * as workspaceRepo from "@/io/api/workspace.api"
@@ -64,7 +65,7 @@ export const touchWorkspace = (workspaceId: string): TE.TaskEither<AppError, voi
 
 	return pipe(
 		workspaceRepo.updateWorkspace(workspaceId, {
-			lastOpen: new Date().toISOString(),
+			lastOpen: dayjs().toISOString(),
 		}),
 		TE.map(() => undefined),
 	)

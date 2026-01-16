@@ -3,6 +3,7 @@
  * @description Wiki 条目创建 Action 测试
  */
 
+import dayjs from "dayjs"
 import * as E from "fp-ts/Either"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { type WikiTemplateParams, wikiConfig } from "./configs/wiki.config"
@@ -51,14 +52,14 @@ describe("createWiki", () => {
 
 		it("generateTemplate 应该生成有效的 JSON", () => {
 			const content = wikiConfig.generateTemplate({
-				date: new Date("2024-12-25"),
+				date: dayjs("2024-12-25").toDate(),
 			})
 			expect(() => JSON.parse(content)).not.toThrow()
 		})
 
 		it("generateFolderPath 应该生成年/月/日三级路径", () => {
 			const path = wikiConfig.generateFolderPath({
-				date: new Date("2024-12-25"),
+				date: dayjs("2024-12-25").toDate(),
 			})
 			expect(path).toHaveLength(3)
 			expect(path[0]).toMatch(/^year-2024/)
@@ -68,7 +69,7 @@ describe("createWiki", () => {
 
 		it("generateTitle 应该生成正确的标题", () => {
 			const title = wikiConfig.generateTitle({
-				date: new Date("2024-12-25T14:30:00"),
+				date: dayjs("2024-12-25T14:30:00").toDate(),
 			})
 			expect(title).toMatch(/^wiki-/)
 		})
@@ -78,7 +79,7 @@ describe("createWiki", () => {
 		it("应该在工作区 ID 无效时返回错误", async () => {
 			const params: TemplatedFileParams<WikiTemplateParams> = {
 				templateParams: {
-					date: new Date("2024-12-25T00:00:00.000Z"),
+					date: dayjs("2024-12-25T00:00:00.000Z").toDate(),
 				},
 				workspaceId: "invalid-uuid",
 			}
@@ -97,7 +98,7 @@ describe("createWiki", () => {
 		it("应该在参数无效时抛出错误", async () => {
 			const params: TemplatedFileParams<WikiTemplateParams> = {
 				templateParams: {
-					date: new Date("2024-12-25T00:00:00.000Z"),
+					date: dayjs("2024-12-25T00:00:00.000Z").toDate(),
 				},
 				workspaceId: "invalid-uuid",
 			}

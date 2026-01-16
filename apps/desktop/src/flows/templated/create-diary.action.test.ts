@@ -42,7 +42,7 @@ describe("create-diary.action (高阶函数版本)", () => {
 
 		it("generateFolderPath 应该生成年/月/日三级路径", () => {
 			const path = diaryConfig.generateFolderPath({
-				date: new Date("2024-12-25"),
+				date: dayjs("2024-12-25").toDate(),
 			})
 			expect(path).toHaveLength(3)
 			expect(path[0]).toMatch(/^year-2024/)
@@ -52,7 +52,7 @@ describe("create-diary.action (高阶函数版本)", () => {
 
 		it("generateTitle 应该生成正确的标题", () => {
 			const title = diaryConfig.generateTitle({
-				date: new Date("2024-12-25T14:30:00"),
+				date: dayjs("2024-12-25T14:30:00").toDate(),
 			})
 			expect(title).toMatch(/^diary-/)
 		})
@@ -65,7 +65,7 @@ describe("create-diary.action (高阶函数版本)", () => {
 	describe("类型安全", () => {
 		it("应该接受有效的 CreateDateTemplateParams", () => {
 			const params: CreateDateTemplateParams = {
-				date: new Date(),
+				date: dayjs().toDate(),
 				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
 			}
 
@@ -89,7 +89,7 @@ describe("create-diary.action (高阶函数版本)", () => {
 		})
 
 		it("应该处理极端日期", () => {
-			const extremeDate = new Date("1970-01-01T00:00:00.000Z")
+			const extremeDate = dayjs("1970-01-01T00:00:00.000Z").toDate()
 			const params: CreateDateTemplateParams = {
 				date: extremeDate,
 				workspaceId: "550e8400-e29b-41d4-a716-446655440000",
@@ -99,7 +99,7 @@ describe("create-diary.action (高阶函数版本)", () => {
 		})
 
 		it("应该处理未来日期", () => {
-			const futureDate = new Date("2030-12-31T23:59:59.999Z")
+			const futureDate = dayjs("2030-12-31T23:59:59.999Z").toDate()
 			const params: CreateDateTemplateParams = {
 				date: futureDate,
 				workspaceId: "550e8400-e29b-41d4-a716-446655440000",

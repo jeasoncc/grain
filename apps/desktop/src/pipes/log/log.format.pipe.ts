@@ -85,21 +85,35 @@ export const addLogLevel = (entry: Omit<LogEntry, "level">, level: LogLevel): Lo
 // ============================================================================
 
 /**
+ * 检测是否在浏览器环境中
+ */
+const isBrowser = (): boolean => {
+  return typeof window !== 'undefined' && typeof document !== 'undefined'
+}
+
+/**
  * 为日志条目添加控制台颜色
  *
  * 纯函数：根据日志级别添加 ANSI 颜色代码
+ * 在浏览器环境中自动禁用颜色代码
  *
  * @param entry - 日志条目
  * @returns 带颜色的控制台输出字符串
  */
 export const addConsoleColors = (entry: LogEntry): string => {
-	const color = LOG_LEVEL_COLORS[entry.level]
-	const icon = LOG_LEVEL_ICONS[entry.level]
-	const reset = "\x1b[0m"
-
 	const timestamp = dayjs(entry.timestamp).format("HH:mm:ss")
+	const icon = LOG_LEVEL_ICONS[entry.level]
 	const levelText = entry.level.toUpperCase().padEnd(7)
 	const sourceText = entry.source ? ` [${entry.source}]` : ""
+
+	// 在浏览器环境中不使用 ANSI 颜色代码
+	if (isBrowser()) {
+		return `${timestamp} ${icon} ${levelText}${sourceText} ${entry.message}`
+	}
+
+	// 在 Node.js 环境中使用颜色代码
+	const color = LOG_LEVEL_COLORS[entry.level]
+	const reset = "\x1b[0m"
 
 	return `${color}${timestamp} ${icon} ${levelText}${reset}${sourceText} ${entry.message}`
 }
