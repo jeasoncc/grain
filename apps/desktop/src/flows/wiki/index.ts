@@ -7,9 +7,3 @@ export {
 	getWikiPreviewData,
 	type WikiPreviewData,
 } from "./get-wiki-preview.flow"
-export {
-	checkMigrationNeeded,
-	type MigrationResult,
-	migrateWikiEntriesToFiles,
-	runMigrationIfNeeded,
-} from "./migrate-wiki.flow"

@@ -32,8 +32,6 @@ export const STORAGE_KEYS = {
 	EXPORT_SETTINGS: "grain-export-settings",
 	/** 上次自动备份时间 */
 	LAST_AUTO_BACKUP: "last-auto-backup",
-	/** 迁移状态 */
-	MIGRATION_STATUS: "grain_dexie_to_sqlite_migration_status",
 } as const
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS]

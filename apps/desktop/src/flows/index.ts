@@ -157,15 +157,10 @@ export {
 } from "./templated"
 
 // ==============================
-// Wiki Flows (迁移)
+// Wiki Flows
 // ==============================
 
-export {
-	checkMigrationNeeded,
-	type MigrationResult,
-	migrateWikiEntriesToFiles,
-	runMigrationIfNeeded,
-} from "./wiki"
+export { getWikiFiles, getWikiFilesAsync, getWikiPreviewData, type WikiPreviewData } from "./wiki"
 
 // ==============================
 // Workspace Flows
@@ -191,12 +186,6 @@ export * as saveFlow from "./save"
 // ==============================
 
 export * as updaterFlow from "./updater"
-
-// ==============================
-// Migration Flows (数据迁移)
-// ==============================
-
-export * as migrationFlow from "./migration"
 
 // ==============================
 // Search Flows (搜索引擎)

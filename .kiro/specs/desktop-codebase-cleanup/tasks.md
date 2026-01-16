@@ -6,7 +6,7 @@
 
 ## Tasks
 
-- [x] 1. 删除空兼容层文件
+- [ ] 1. 删除空兼容层文件
   - [x] 1.1 删除 `io/db/index.ts`
     - 空文件，只有注释说明数据已迁移到 SQLite
     - _Requirements: 1.1, 1.2_
@@ -56,22 +56,22 @@
   - 运行 `bun run test` 确保测试通过
   - 提交: `git commit -m "refactor: remove empty compatibility layers"`
 
-- [ ] 3. 删除 Dexie 迁移代码
-  - [ ] 3.1 删除 `flows/migration/` 整个目录
+- [-] 3. 删除 Dexie 迁移代码
+  - [x] 3.1 删除 `flows/migration/` 整个目录
     - 包含 `dexie-to-sqlite.migration.fn.ts`
     - 包含 `dexie-to-sqlite.migration.fn.test.ts`
     - 包含 `migration-sqlite-dependency-verification.property.test.ts`
     - 包含 `index.ts`
     - _Requirements: 2.1, 2.2_
-  - [ ] 3.2 删除 `flows/wiki/migrate-wiki.flow.ts`
+  - [x] 3.2 删除 `flows/wiki/migrate-wiki.flow.ts`
     - Wiki 迁移不再需要
     - _Requirements: 2.1_
-  - [ ] 3.3 更新 `flows/wiki/index.ts` 移除 migrate-wiki 导出
+  - [x] 3.3 更新 `flows/wiki/index.ts` 移除 migrate-wiki 导出
     - _Requirements: 7.1, 7.2_
-  - [ ] 3.4 更新 `flows/index.ts` 移除 migration 相关导出
+  - [x] 3.4 更新 `flows/index.ts` 移除 migration 相关导出
     - 移除 `checkMigrationNeeded`, `migrateWikiEntriesToFiles`, `runMigrationIfNeeded` 导出
     - _Requirements: 7.1, 7.2_
-  - [ ] 3.5 清理 localStorage 中的迁移状态键（文档记录）
+  - [x] 3.5 清理 localStorage 中的迁移状态键（文档记录）
     - 键名: `grain_dexie_to_sqlite_migration_status`
     - 用户可手动清理或忽略
     - _Requirements: 2.3_

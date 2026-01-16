@@ -205,7 +205,6 @@ describe("Property 6: Wiki Code Cleanup Consistency", () => {
 				const expectedFiles = [
 					"get-wiki-files.flow.ts",
 					"get-wiki-preview.flow.ts",
-					"migrate-wiki.flow.ts",
 					"index.ts",
 				]
 
@@ -224,9 +223,6 @@ describe("Property 6: Wiki Code Cleanup Consistency", () => {
 					"getWikiFiles",
 					"getWikiFilesAsync",
 					"getWikiPreviewData",
-					"checkMigrationNeeded",
-					"migrateWikiEntriesToFiles",
-					"runMigrationIfNeeded",
 				]
 
 				for (const exportName of expectedExports) {
