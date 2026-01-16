@@ -6,7 +6,7 @@
  * 将数据通过 props 传递给纯展示组件 ActivityBarView。
  */
 
-import { useLocation, useNavigate } from "@tanstack/react-router"
+import { useLocation, useRouter } from "@tanstack/react-router"
 import dayjs from "dayjs"
 import { orderBy } from "es-toolkit"
 import * as E from "fp-ts/Either"
@@ -33,8 +33,9 @@ import { touchWorkspace } from "@/flows/workspace/update-workspace.flow"
 import { useIconTheme } from "@/hooks/use-icon-theme"
 import { useNodesByWorkspace } from "@/hooks/use-node"
 import { useAllWorkspaces } from "@/hooks/use-workspace"
-import { error, error as logError } from "@/io/log/logger.api"
+import { error as logError } from "@/io/log/logger.api"
 import { calculateExpandedFoldersForNode } from "@/pipes/node"
+import type { FileRouteTypes } from "@/routeTree.gen"
 import { useSelectionStore } from "@/state/selection.state"
 import { useSidebarStore } from "@/state/sidebar.state"
 import type { TabType } from "@/types/editor-tab"
@@ -48,6 +49,29 @@ import { ActivityBarView } from "./activity-bar.view.fn"
 // ==============================
 // Types
 // ==============================
+
+/** 有效的路由路径类型 */
+type RoutePath = FileRouteTypes["to"]
+
+/** 有效路由列表 */
+const VALID_ROUTES: readonly RoutePath[] = [
+	"/",
+	"/settings",
+	"/settings/about",
+	"/settings/data",
+	"/settings/design",
+	"/settings/diagrams",
+	"/settings/editor",
+	"/settings/export",
+	"/settings/general",
+	"/settings/icons",
+	"/settings/logs",
+	"/settings/typography",
+]
+
+/** 检查路径是否为有效路由 */
+const isValidRoute = (path: string): path is RoutePath =>
+	VALID_ROUTES.includes(path as RoutePath)
 
 /**
  * 模板文件创建函数类型（TaskEither 版本）
@@ -76,7 +100,7 @@ interface CreateTemplateOptions {
  */
 export function ActivityBarContainer(): React.ReactElement {
 	const location = useLocation()
-	const navigate = useNavigate()
+	const router = useRouter()
 	const confirm = useConfirm()
 
 	// ==============================
@@ -260,7 +284,7 @@ export function ActivityBarContainer(): React.ReactElement {
 
 					// 导航到主页面（如果当前不在主页面）
 					if (location.pathname !== "/") {
-						window.location.assign("/")
+						router.history.push("/")
 					}
 
 					return TE.right(result)
@@ -289,7 +313,7 @@ export function ActivityBarContainer(): React.ReactElement {
 			setSelectedNodeId,
 			nodes,
 			setExpandedFolders,
-			navigate,
+			router,
 			location.pathname,
 		],
 	)
@@ -416,9 +440,14 @@ export function ActivityBarContainer(): React.ReactElement {
 		}
 	}, [confirm, setSelectedWorkspaceId, setSelectedNodeId, setHasInitialized])
 
-	const handleNavigate = useCallback((path: string) => {
-		window.location.assign(path)
-	}, [])
+	const handleNavigate = useCallback(
+		(path: string) => {
+			if (isValidRoute(path)) {
+				router.history.push(path)
+			}
+		},
+		[router],
+	)
 
 	// ==============================
 	// 渲染
