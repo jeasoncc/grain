@@ -54,18 +54,17 @@ export const exportBackupZip = (): TE.TaskEither<AppError, string> =>
  * 从文件恢复备份
  */
 export const restoreBackup = (file: File): TE.TaskEither<AppError, void> =>
-	TE.tryCatch(
-		async () => {
-			// 对于文件恢复，我们需要先将文件保存到临时位置
-			// 然后调用 SQLite API 的 restoreBackup
-			// 这里简化处理，假设文件路径可以直接传递给 API
-			// 实际实现可能需要先保存文件到临时目录
-			const result = await backupApi.restoreBackup(file.name)()
-			if (result._tag === "Left") {
-				throw new Error(result.left.message)
-			}
-		},
-		(error): AppError => importError(`恢复备份失败: ${error}`),
+	pipe(
+		TE.tryCatch(
+			async () => {
+				// 对于文件恢复，我们需要使用文件路径
+				// 在实际应用中，文件可能需要先保存到临时位置
+				// 这里假设 file.name 包含完整路径或者 API 能处理 File 对象
+				return file.name
+			},
+			(error): AppError => importError(`处理备份文件失败: ${error}`),
+		),
+		TE.chain((filePath) => backupApi.restoreBackup(filePath)),
 	)
 
 /**
@@ -165,24 +164,23 @@ export const saveLocalBackup = (
  * 从本地存储恢复备份
  */
 export const restoreLocalBackup = (timestamp: string): TE.TaskEither<AppError, void> =>
-	TE.tryCatch(
-		async () => {
-			const backups = getLocalBackups()
-			const backup = backups.find((b) => b.timestamp === timestamp)
+	pipe(
+		TE.tryCatch(
+			async () => {
+				const backups = getLocalBackups()
+				const backup = backups.find((b) => b.timestamp === timestamp)
 
-			if (!backup) {
-				throw new Error(`未找到备份: ${timestamp}`)
-			}
+				if (!backup) {
+					throw new Error(`未找到备份: ${timestamp}`)
+				}
 
-			// 由于我们现在使用 SQLite API，我们需要通过备份路径来恢复
-			// 这里需要根据实际的备份文件路径来调用 restoreBackup
-			// 暂时使用时间戳作为路径标识符
-			const result = await restoreBackupData(timestamp)()
-			if (result._tag === "Left") {
-				throw new Error(result.left.message)
-			}
-		},
-		(error): AppError => importError(`恢复本地备份失败: ${error}`),
+				// 返回时间戳作为备份路径标识符
+				// 实际实现中可能需要根据时间戳查找对应的备份文件路径
+				return timestamp
+			},
+			(error): AppError => importError(`查找本地备份失败: ${error}`),
+		),
+		TE.chain((backupPath) => restoreBackupData(backupPath)),
 	)
 
 /**

@@ -5,8 +5,4 @@
 
 export type {
 	ClearDataOptions,
-	IndexedDBStats,
-	StorageStats,
-	TableSizes,
-	TableStats,
 } from "./storage.interface"

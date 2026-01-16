@@ -32,13 +32,13 @@ vi.mock("@/flows/backup", () => ({
 		() => () => Promise.resolve({ _tag: "Right", right: { totalNodes: 10 } }),
 	),
 	getLocalBackups: vi.fn(() => []),
-	getStorageStats: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: { size: 1024 } })),
 	restoreBackup: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: undefined })),
 	restoreLocalBackup: vi.fn(() => () => Promise.resolve({ _tag: "Right", right: undefined })),
 }))
 
 vi.mock("@/io/storage/settings.storage", () => ({
 	getAutoBackupEnabled: vi.fn(() => false),
+	getStorageStats: vi.fn(() => ({ size: 1024, keys: 5 })),
 	setAutoBackupEnabled: vi.fn(() => true),
 }))
 

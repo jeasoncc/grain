@@ -16,15 +16,14 @@ import {
 	exportBackupZip,
 	getDatabaseStats,
 	getLocalBackups,
-	getStorageStats,
 	restoreBackup,
 	restoreLocalBackup,
 } from "@/flows/backup"
 import { selectFile } from "@/io/file/dialog.file"
 import { error as logError } from "@/io/log/logger.api"
-import { getAutoBackupEnabled, setAutoBackupEnabled } from "@/io/storage/settings.storage"
+import { getAutoBackupEnabled, getStorageStats, setAutoBackupEnabled } from "@/io/storage/settings.storage"
 import type { DatabaseStats, LocalBackupRecord } from "@/types/backup"
-import type { ClearDataOptions, StorageStats } from "@/types/storage"
+import type { ClearDataOptions } from "@/types/storage"
 
 /**
  * 备份管理 Hook 返回值
@@ -32,7 +31,7 @@ import type { ClearDataOptions, StorageStats } from "@/types/storage"
 export interface UseBackupManagerReturn {
 	// 状态
 	readonly stats: DatabaseStats | null
-	readonly storageStats: StorageStats | null
+	readonly storageStats: { readonly size: number; readonly keys: number } | null
 	readonly loading: boolean
 	readonly autoBackupEnabled: boolean
 	readonly localBackups: readonly LocalBackupRecord[]
@@ -61,7 +60,7 @@ export function useBackupManager(): UseBackupManagerReturn {
 	// ============================================================================
 
 	const [stats, setStats] = useState<DatabaseStats | null>(null)
-	const [storageStats, setStorageStats] = useState<StorageStats | null>(null)
+	const [storageStats, setStorageStats] = useState<{ readonly size: number; readonly keys: number } | null>(null)
 	const [loading, setLoading] = useState(false)
 	const [autoBackupEnabled, setAutoBackupEnabledState] = useState(false)
 	const [localBackups, setLocalBackups] = useState<readonly LocalBackupRecord[]>([])
@@ -77,10 +76,8 @@ export function useBackupManager(): UseBackupManagerReturn {
 				setStats(statsResult.right)
 			}
 
-			const storageResult = await getStorageStats()()
-			if (storageResult._tag === "Right") {
-				setStorageStats(storageResult.right)
-			}
+			const storageResult = getStorageStats()
+			setStorageStats(storageResult)
 		} catch (err) {
 			logError("[BackupManager] 加载统计信息失败", { error: err }, "use-backup-manager")
 		}
@@ -250,7 +247,6 @@ export function useBackupManager(): UseBackupManagerReturn {
 		try {
 			const options: ClearDataOptions = {
 				clearCookies: false,
-				clearIndexedDB: true,
 				clearLocalStorage: false,
 				clearSessionStorage: false,
 			}
@@ -275,7 +271,6 @@ export function useBackupManager(): UseBackupManagerReturn {
 		try {
 			const options: ClearDataOptions = {
 				clearCookies: true,
-				clearIndexedDB: false,
 				clearLocalStorage: true,
 				clearSessionStorage: true,
 			}

@@ -7,49 +7,15 @@
 
 import * as TE from "fp-ts/TaskEither"
 import { clearSqliteData as clearSqliteDataApi } from "@/io/api/clear-data.api"
-import { legacyDatabase } from "@/io/db/legacy-database"
 import { type AppError, dbError } from "@/types/error"
 import type { ClearDataResult } from "@/types/rust-api"
-import type { ClearDataOptions, IndexedDBStats, StorageStats, TableSizes } from "@/types/storage"
+import type { ClearDataOptions } from "@/types/storage"
 
 // ============================================================================
 // SQLite 清理
 // ============================================================================
 
 export const clearSqliteData = (): TE.TaskEither<AppError, ClearDataResult> => clearSqliteDataApi()
-
-// ============================================================================
-// IndexedDB 清理
-// ============================================================================
-
-export const clearIndexedDB = (): TE.TaskEither<AppError, void> =>
-	TE.tryCatch(
-		async () => {
-			await legacyDatabase.transaction(
-				"rw",
-				[
-					legacyDatabase.users,
-					legacyDatabase.workspaces,
-					legacyDatabase.nodes,
-					legacyDatabase.contents,
-					legacyDatabase.attachments,
-					legacyDatabase.tags,
-					legacyDatabase.dbVersions,
-				],
-				async () => {
-					await legacyDatabase.users.clear()
-					await legacyDatabase.workspaces.clear()
-					await legacyDatabase.nodes.clear()
-					await legacyDatabase.contents.clear()
-					await legacyDatabase.attachments.clear()
-					await legacyDatabase.tags.clear()
-					await legacyDatabase.dbVersions.clear()
-				},
-			)
-		},
-		(error): AppError =>
-			dbError(`清理 IndexedDB 失败: ${error instanceof Error ? error.message : "未知错误"}`),
-	)
 
 // ============================================================================
 // 浏览器存储清理
@@ -124,7 +90,6 @@ export const clearAllData = (options: ClearDataOptions = {}): TE.TaskEither<AppE
 		async () => {
 			const {
 				clearSqlite: shouldClearSqlite = true,
-				clearIndexedDB: shouldClearIndexedDB = true,
 				clearLocalStorage: shouldClearLocalStorage = true,
 				clearSessionStorage: shouldClearSessionStorage = true,
 				clearCookies: shouldClearCookies = true,
@@ -133,7 +98,6 @@ export const clearAllData = (options: ClearDataOptions = {}): TE.TaskEither<AppE
 
 			const tasks = [
 				shouldClearSqlite ? clearSqliteData() : null,
-				shouldClearIndexedDB ? clearIndexedDB() : null,
 				shouldClearLocalStorage ? clearLocalStorage() : null,
 				shouldClearSessionStorage ? clearSessionStorage() : null,
 				shouldClearCookies ? clearCookies() : null,
@@ -160,78 +124,4 @@ export const clearAllData = (options: ClearDataOptions = {}): TE.TaskEither<AppE
 			dbError(`清理所有数据失败: ${error instanceof Error ? error.message : "未知错误"}`),
 	)
 
-// ============================================================================
-// 统计信息
-// ============================================================================
 
-const calculateDataSize = (data: readonly unknown[]): number => {
-	try {
-		return new Blob([JSON.stringify(data)]).size
-	} catch {
-		return 0
-	}
-}
-
-export const getStorageStats = (): TE.TaskEither<AppError, StorageStats> =>
-	TE.tryCatch(
-		async () => {
-			const [users, workspaces, nodes, contents, attachments, tags] = await Promise.all([
-				legacyDatabase.users.toArray(),
-				legacyDatabase.workspaces.toArray(),
-				legacyDatabase.nodes.toArray(),
-				legacyDatabase.contents.toArray(),
-				legacyDatabase.attachments.toArray(),
-				legacyDatabase.tags.toArray(),
-			])
-
-			const drawingNodes = nodes.filter((n) => n.type === "drawing")
-
-			const tableSizes: TableSizes = {
-				attachments: calculateDataSize(attachments),
-				contents: calculateDataSize(contents),
-				drawings: calculateDataSize(drawingNodes),
-				nodes: calculateDataSize(nodes),
-				tags: calculateDataSize(tags),
-				users: calculateDataSize(users),
-				workspaces: calculateDataSize(workspaces),
-			}
-
-			const totalSize = (Object.values(tableSizes) as readonly number[]).reduce((a, b) => a + b, 0)
-
-			const indexedDBStats: IndexedDBStats = {
-				size: totalSize,
-				tableSizes,
-				tables: {
-					attachments: attachments.length,
-					contents: contents.length,
-					drawings: drawingNodes.length,
-					nodes: nodes.length,
-					tags: tags.length,
-					users: users.length,
-					workspaces: workspaces.length,
-				},
-			}
-
-			const localStorageStats = {
-				keys: Object.keys(localStorage).length,
-				size: new Blob([JSON.stringify(localStorage)]).size,
-			}
-
-			const sessionStorageStats = {
-				keys: Object.keys(sessionStorage).length,
-				size: new Blob([JSON.stringify(sessionStorage)]).size,
-			}
-
-			const cookiesStats = {
-				count: document.cookie.split(";").filter((c) => c.trim()).length,
-			}
-
-			return {
-				cookies: cookiesStats,
-				indexedDB: indexedDBStats,
-				localStorage: localStorageStats,
-				sessionStorage: sessionStorageStats,
-			}
-		},
-		(error): AppError => dbError(`获取存储统计信息失败: ${error}`),
-	)

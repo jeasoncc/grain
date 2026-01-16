@@ -6,33 +6,33 @@
 
 ## 任务
 
-- [ ] 1. 分析和准备阶段
+- [x] 1. 分析和准备阶段
   - 审查所有 Dexie 引用和依赖关系
   - 验证 SQLite API 的可用性和完整性
   - 创建测试基准以验证功能完整性
   - _需求: 1.1, 1.2, 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 1.1 编写属性测试用于代码库 Dexie 清理验证
+- [x] 1.1 编写属性测试用于代码库 Dexie 清理验证
   - **属性 1: 代码库 Dexie 清理完整性**
   - **验证: 需求 1.2, 2.4, 3.3, 4.3, 5.3, 7.1, 7.3**
 
 - [ ] 2. 替换备份功能中的 Dexie 调用
-  - [ ] 2.1 更新 `backup.flow.ts` 使用 SQLite createBackup API
+  - [x] 2.1 更新 `backup.flow.ts` 使用 SQLite createBackup API
     - 移除 `legacyDatabase` 导入
     - 替换 `createBackup` 函数实现
     - 使用 `api.createBackup()` 替代 Dexie 数据访问
     - _需求: 2.1_
 
-  - [ ] 2.2 更新 `backup.flow.ts` 使用 SQLite restoreBackup API
+  - [x] 2.2 更新 `backup.flow.ts` 使用 SQLite restoreBackup API
     - 替换 `restoreBackup` 和 `restoreBackupData` 函数
     - 使用 `api.restoreBackup()` 替代 Dexie 数据写入
     - _需求: 2.2_
 
-  - [ ] 2.3 编写属性测试用于 SQLite API 使用验证
+  - [x] 2.3 编写属性测试用于 SQLite API 使用验证
     - **属性 2: SQLite API 使用一致性**
     - **验证: 需求 2.1, 2.2, 3.1, 6.1, 6.2, 6.3, 6.4**
 
-  - [ ] 2.4 更新 `clear-data.flow.ts` 移除 IndexedDB 清理
+  - [x] 2.4 更新 `clear-data.flow.ts` 移除 IndexedDB 清理
     - 移除 `clearIndexedDB` 函数
     - 保留 SQLite 清理调用
     - 简化清理逻辑

@@ -3,14 +3,13 @@
  */
 
 import type { DatabaseStats, LocalBackupRecord } from "@/types/backup"
-import type { StorageStats } from "@/types/storage"
 
 /**
  * BackupManager View Props
  */
 export interface BackupManagerViewProps {
 	readonly stats: DatabaseStats | null
-	readonly storageStats: StorageStats | null
+	readonly storageStats: { readonly size: number; readonly keys: number } | null
 	readonly loading: boolean
 	readonly autoBackupEnabled: boolean
 	readonly localBackups: readonly LocalBackupRecord[]
