@@ -14,6 +14,7 @@ export { NodeBuilder } from "./node.builder"
 // Interface 导出
 export type {
 	FileNodeType,
+	FlatTreeNode,
 	NodeCreateInput,
 	NodeInterface,
 	NodeType,

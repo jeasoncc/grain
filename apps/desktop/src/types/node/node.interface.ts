@@ -103,3 +103,32 @@ export interface TreeData {
 	readonly collapsed: boolean
 	readonly children?: readonly TreeData[]
 }
+
+/**
+ * FlatTreeNode 接口
+ * 扁平化的树节点，用于虚拟列表渲染
+ * 
+ * 将树形结构扁平化为线性数组，每个节点包含：
+ * - 基本信息（id, title, type）
+ * - 层级信息（depth, parentId）
+ * - 状态信息（isExpanded, hasChildren）
+ * - 排序信息（order）
+ */
+export interface FlatTreeNode {
+	/** 节点的唯一标识符 */
+	readonly id: string
+	/** 节点的显示标题 */
+	readonly title: string
+	/** 节点类型（folder, file, canvas, diary） */
+	readonly type: NodeType
+	/** 节点深度（0 = 根节点，用于计算缩进） */
+	readonly depth: number
+	/** 是否有子节点（仅文件夹） */
+	readonly hasChildren: boolean
+	/** 是否展开（仅文件夹） */
+	readonly isExpanded: boolean
+	/** 父节点 ID，根级节点为 null */
+	readonly parentId: string | null
+	/** 兄弟节点间的排序顺序 */
+	readonly order: number
+}

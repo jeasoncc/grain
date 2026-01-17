@@ -68,10 +68,8 @@ describe("FileTree", () => {
 		onCreateFile: vi.fn(),
 		onCreateFolder: vi.fn(),
 		onDeleteNode: vi.fn(),
-		onMoveNode: vi.fn(),
 		onRenameNode: vi.fn(),
 		onSelectNode: vi.fn(),
-		onToggleCollapsed: vi.fn(),
 		selectedNodeId: null,
 		workspaceId: "workspace-1",
 	}

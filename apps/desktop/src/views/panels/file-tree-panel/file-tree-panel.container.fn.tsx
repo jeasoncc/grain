@@ -25,7 +25,7 @@ import type { FileTreePanelContainerProps } from "./file-tree-panel.types"
  * - 像搭积木一样清晰
  */
 export const FileTreePanelContainer = memo(({ workspaceId }: FileTreePanelContainerProps) => {
-	const { workspaceId: resolvedWorkspaceId, nodes, selectedNodeId, treeRef, handlers } = useFileTreePanel({
+	const { workspaceId: resolvedWorkspaceId, nodes, selectedNodeId, handlers } = useFileTreePanel({
 		workspaceId: workspaceId ?? null,
 	})
 
@@ -39,10 +39,7 @@ export const FileTreePanelContainer = memo(({ workspaceId }: FileTreePanelContai
 			onCreateFile={handlers.onCreateFile}
 			onDeleteNode={handlers.onDeleteNode}
 			onRenameNode={handlers.onRenameNode}
-			onMoveNode={handlers.onMoveNode}
-			onToggleCollapsed={handlers.onToggleCollapsed}
 			onCreateDiary={handlers.onCreateDiary}
-			treeRef={treeRef}
 		/>
 	)
 })

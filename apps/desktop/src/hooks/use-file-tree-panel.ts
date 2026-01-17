@@ -16,14 +16,12 @@
  * 依赖：hooks/, flows/, state/, types/
  */
 
-import type React from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { useCallback, useEffect, useRef } from "react"
 import {
 	createDiaryCompatAsync,
 	createFile,
 	deleteNode,
-	moveNode,
 	openFile,
 	renameNode,
 } from "@/flows"
@@ -53,9 +51,6 @@ export interface UseFileTreePanelReturn {
 	readonly nodes: readonly NodeInterface[]
 	/** 选中的节点 ID */
 	readonly selectedNodeId: string | null
-	/** 树 ref */
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	readonly treeRef: React.RefObject<any>
 	/** 操作处理器 */
 	readonly handlers: {
 		readonly onSelectNode: (nodeId: string) => Promise<void>
@@ -64,8 +59,6 @@ export interface UseFileTreePanelReturn {
 		readonly onCreateDiary: () => Promise<void>
 		readonly onDeleteNode: (nodeId: string) => Promise<void>
 		readonly onRenameNode: (nodeId: string, newTitle: string) => Promise<void>
-		readonly onMoveNode: (nodeId: string, newParentId: string | null, newIndex: number) => Promise<void>
-		readonly onToggleCollapsed: (nodeId: string) => void
 	}
 }
 
@@ -151,8 +144,6 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 	// Refs
 	// ============================================================================
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const treeRef = useRef<any>(null)
 	const prevWorkspaceIdRef = useRef(workspaceId)
 
 	// ============================================================================
@@ -241,15 +232,10 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 					})
 				}
 
-				// treeData 会自动更新，等待后滚动到节点
-				setTimeout(() => {
-					if (treeRef.current?.scrollTo) {
-						treeRef.current.scrollTo(newNodeId)
-					}
-				}, 150)
+				// Note: Scroll to new node is handled by useFileTree hook via selectedNodeId effect
 			}
 		},
-		[workspaceId, setSelectedNodeId, nodes, expandedFolders, setExpandedFolders, treeRef],
+		[workspaceId, setSelectedNodeId, nodes, expandedFolders, setExpandedFolders],
 	)
 
 	const handleCreateFile = useCallback(
@@ -284,15 +270,10 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 					})
 				}
 
-				// treeData 会自动更新，等待后滚动到节点
-				setTimeout(() => {
-					if (treeRef.current?.scrollTo) {
-						treeRef.current.scrollTo(newNodeId)
-					}
-				}, 150)
+				// Note: Scroll to new node is handled by useFileTree hook via selectedNodeId effect
 			}
 		},
-		[workspaceId, setSelectedNodeId, navigate, nodes, expandedFolders, setExpandedFolders, treeRef],
+		[workspaceId, setSelectedNodeId, navigate, nodes, expandedFolders, setExpandedFolders],
 	)
 
 	const handleCreateDiary = useCallback(async () => {
@@ -343,21 +324,6 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 		await renameNode({ nodeId, title: trimmedTitle })()
 	}, [])
 
-	const handleMoveNode = useCallback(
-		async (nodeId: string, newParentId: string | null, newIndex: number) => {
-			await moveNode({
-				newOrder: newIndex,
-				newParentId,
-				nodeId,
-			})()
-		},
-		[],
-	)
-
-	const handleToggleCollapsed = useCallback((nodeId: string) => {
-		useSidebarStore.getState().toggleFolderExpanded(nodeId)
-	}, [])
-
 	// ============================================================================
 	// Return
 	// ============================================================================
@@ -366,7 +332,6 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 		workspaceId,
 		nodes,
 		selectedNodeId,
-		treeRef,
 		handlers: {
 			onSelectNode: handleSelectNode,
 			onCreateFolder: handleCreateFolder,
@@ -374,8 +339,6 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 			onCreateDiary: handleCreateDiary,
 			onDeleteNode: handleDeleteNode,
 			onRenameNode: handleRenameNode,
-			onMoveNode: handleMoveNode,
-			onToggleCollapsed: handleToggleCollapsed,
 		},
 	}
 }

@@ -1,15 +1,14 @@
 /**
- * FileTree Component using react-arborist (纯声明式)
+ * FileTree Component using @tanstack/react-virtual (纯声明式)
  * Displays a hierarchical tree structure with VS Code-like experience.
- * Features: drag-drop, virtualization, keyboard navigation, inline rename.
+ * Features: virtual scrolling, keyboard navigation, expand/collapse.
  *
  * 纯展示组件：所有逻辑封装在 use-file-tree.ts hook 中
  * 组件只负责渲染，像 HTML 一样声明式
  */
 
 import { ChevronsDownUp, ChevronsUpDown, FolderPlus, Plus } from "lucide-react"
-import { useCallback, useMemo } from "react"
-import { Tree } from "react-arborist"
+import { useCallback, useMemo, useRef, useEffect } from "react"
 import { useFileTree } from "@/hooks/use-file-tree"
 import {
 	calculateCollapseAllFolders,
@@ -19,24 +18,24 @@ import {
 import { useSidebarStore } from "@/state/sidebar.state"
 import { Button } from "@/views/ui/button"
 import type { FileTreeProps } from "./file-tree.types"
-import { TreeNode } from "@/views/file-tree/tree-node.view.fn"
+import { TreeNodeRow } from "./tree-node-row.view.fn"
 
 /**
  * FileTree Props 接口
  *
  * 纯展示组件：所有数据和回调通过 props 传入
  */
-export type { FileTreeProps, TreeData } from "./file-tree.types"
+export type { FileTreeProps } from "./file-tree.types"
 
 // ============================================================================
 // 主组件（纯声明式）
 // ============================================================================
 
 /**
- * FileTree - 文件树组件（纯声明式）
+ * FileTree - 文件树组件（虚拟列表版本）
  *
  * 数据流：
- *   props → useFileTree hook → 渲染
+ *   props → useFileTree hook → 虚拟列表 → 渲染
  *
  * 职责：
  * - 纯 UI 渲染
@@ -52,21 +51,15 @@ export function FileTree(props: FileTreeProps) {
 		onCreateFile,
 		onDeleteNode,
 		onRenameNode,
-		onMoveNode,
-		onToggleCollapsed,
-		treeRef: externalTreeRef,
 	} = props
 
 	const {
-		treeData,
-		dimensions,
+		flatNodes,
+		virtualizer,
 		containerRef,
-		treeRef,
-		treeKey,
 		iconTheme,
 		currentTheme,
 		handlers,
-		nodeProps,
 	} = useFileTree({
 		workspaceId,
 		nodes,
@@ -76,25 +69,107 @@ export function FileTree(props: FileTreeProps) {
 		onCreateFile,
 		onDeleteNode,
 		onRenameNode,
-		onMoveNode,
-		onToggleCollapsed,
-		treeRef: externalTreeRef,
 	})
 
-	// Expand/Collapse All handlers
-	const setExpandedFolders = useSidebarStore((state) => state.setExpandedFolders)
+	// Keyboard navigation state
+	const focusedIndexRef = useRef<number>(-1)
+	const treeContainerRef = useRef<HTMLDivElement>(null)
 
+	// Update focused index when selection changes
+	useEffect(() => {
+		if (selectedNodeId) {
+			const index = flatNodes.findIndex((n) => n.id === selectedNodeId)
+			if (index !== -1) {
+				focusedIndexRef.current = index
+			}
+		}
+	}, [selectedNodeId, flatNodes])
+
+	// Keyboard navigation handler
+	const handleKeyDown = useCallback(
+		(e: React.KeyboardEvent) => {
+			if (flatNodes.length === 0) return
+
+			const currentIndex = focusedIndexRef.current
+			let newIndex = currentIndex
+
+			switch (e.key) {
+				case "ArrowDown":
+					e.preventDefault()
+					newIndex = Math.min(currentIndex + 1, flatNodes.length - 1)
+					if (newIndex !== currentIndex) {
+						focusedIndexRef.current = newIndex
+						const node = flatNodes[newIndex]
+						if (node.type !== "folder") {
+							onSelectNode(node.id)
+						}
+						virtualizer.scrollToIndex(newIndex, { align: "auto" })
+					}
+					break
+
+				case "ArrowUp":
+					e.preventDefault()
+					newIndex = Math.max(currentIndex - 1, 0)
+					if (newIndex !== currentIndex) {
+						focusedIndexRef.current = newIndex
+						const node = flatNodes[newIndex]
+						if (node.type !== "folder") {
+							onSelectNode(node.id)
+						}
+						virtualizer.scrollToIndex(newIndex, { align: "auto" })
+					}
+					break
+
+				case "ArrowRight": {
+					e.preventDefault()
+					const node = flatNodes[currentIndex]
+					if (node && node.type === "folder" && !node.isExpanded) {
+						handlers.onToggle(node.id)
+					}
+					break
+				}
+
+				case "ArrowLeft": {
+					e.preventDefault()
+					const node = flatNodes[currentIndex]
+					if (node && node.type === "folder" && node.isExpanded) {
+						handlers.onToggle(node.id)
+					}
+					break
+				}
+
+				case "Enter": {
+					e.preventDefault()
+					const node = flatNodes[currentIndex]
+					if (node) {
+						handlers.onSelect(node.id)
+					}
+					break
+				}
+
+				case " ": {
+					e.preventDefault()
+					const node = flatNodes[currentIndex]
+					if (node && node.type === "folder") {
+						handlers.onToggle(node.id)
+					}
+					break
+				}
+			}
+		},
+		[flatNodes, handlers, onSelectNode, virtualizer],
+	)
+
+	// Expand/Collapse All handlers
 	const handleExpandAll = useCallback(() => {
 		const expandedState = calculateExpandAllFolders(nodes)
-		setExpandedFolders(expandedState)
-		// treeData 会自动更新，因为它依赖 expandedFolders
-	}, [nodes, setExpandedFolders])
+		useSidebarStore.getState().setExpandedFolders(expandedState)
+	}, [nodes])
 
 	const handleCollapseAll = useCallback(() => {
 		const collapsedState = calculateCollapseAllFolders(nodes)
-		setExpandedFolders(collapsedState)
-		// treeData 会自动更新，因为它依赖 expandedFolders
-	}, [nodes, setExpandedFolders])
+		useSidebarStore.getState().setExpandedFolders(collapsedState)
+	}, [nodes])
 
 	const hasAnyFolders = useMemo(() => hasFolders(nodes), [nodes])
 
@@ -113,7 +188,14 @@ export function FileTree(props: FileTreeProps) {
 	}
 
 	return (
-		<div className="group/panel flex h-full w-full flex-col" data-testid="file-tree">
+		<div 
+			ref={treeContainerRef}
+			className="group/panel flex h-full w-full flex-col" 
+			data-testid="file-tree"
+			tabIndex={0}
+			onKeyDown={handleKeyDown}
+		>
+			{/* Header */}
 			<div className="h-11 flex items-center justify-between px-4 shrink-0 group/header">
 				<span className="text-sm font-semibold text-foreground/80 tracking-wide pl-1">
 					Explorer
@@ -160,8 +242,10 @@ export function FileTree(props: FileTreeProps) {
 				</div>
 			</div>
 
-			<div className="flex-1 w-full overflow-hidden pb-6" ref={containerRef}>
-				{treeData.length === 0 ? (
+			{/* Tree Content */}
+			<div className="flex-1 w-full overflow-hidden pb-6">
+				{flatNodes.length === 0 ? (
+					/* Empty State */
 					<div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
 						{(() => {
 							const FileIcon = iconTheme.icons.file.default
@@ -179,27 +263,39 @@ export function FileTree(props: FileTreeProps) {
 						</Button>
 					</div>
 				) : (
-					<div className="w-full h-full">
-						<Tree
-							key={treeKey}
-							ref={treeRef}
-							data={treeData}
-							selection={selectedNodeId ?? undefined}
-							onSelect={handlers.onSelect}
-							onRename={handlers.onRename}
-							onMove={handlers.onMove}
-							onToggle={handlers.onToggle}
-							indent={12}
-							rowHeight={30}
-							overscanCount={5}
-							openByDefault={false}
-							disableMultiSelection
-							className="outline-none"
-							width={dimensions.width}
-							height={dimensions.height}
+					/* Virtual List */
+					<div
+						ref={containerRef}
+						className="h-full w-full overflow-auto"
+						style={{ contain: "strict" }}
+					>
+						<div
+							style={{
+								height: `${virtualizer.getTotalSize()}px`,
+								width: "100%",
+								position: "relative",
+							}}
 						>
-							{(props) => <TreeNode {...props} {...nodeProps} />}
-						</Tree>
+							{virtualizer.getVirtualItems().map((virtualItem) => {
+								const node = flatNodes[virtualItem.index]
+								return (
+									<TreeNodeRow
+										key={node.id}
+										node={node}
+										isSelected={node.id === selectedNodeId}
+										onToggle={handlers.onToggle}
+										onSelect={handlers.onSelect}
+										style={{
+											position: "absolute",
+											top: 0,
+											left: 0,
+											width: "100%",
+											transform: `translateY(${virtualItem.start}px)`,
+										}}
+									/>
+								)
+							})}
+						</div>
 					</div>
 				)}
 			</div>
