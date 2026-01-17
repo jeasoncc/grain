@@ -270,6 +270,14 @@ export function FileTree(props: FileTreeProps) {
 										onSelect={handlers.onSelect}
 										onCreateFile={node.type === "folder" ? () => onCreateFile(node.id, "file") : undefined}
 										onCreateFolder={node.type === "folder" ? () => onCreateFolder(node.id) : undefined}
+										onRename={() => {
+											// TODO: 实现重命名对话框
+											// 暂时使用 prompt 作为临时方案
+											const newTitle = prompt("Enter new name:", node.title)
+											if (newTitle && newTitle !== node.title) {
+												onRenameNode(node.id, newTitle)
+											}
+										}}
 										onDelete={() => onDeleteNode(node.id)}
 										style={{
 											position: "absolute",

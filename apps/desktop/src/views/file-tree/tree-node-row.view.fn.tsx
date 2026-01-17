@@ -14,7 +14,7 @@
  * 依赖：views/, types/
  */
 
-import { ChevronDown, ChevronRight, MoreHorizontal, FilePlus, FolderPlus, Trash2 } from "lucide-react"
+import { ChevronDown, ChevronRight, MoreHorizontal, FilePlus, FolderPlus, Pencil, Trash2 } from "lucide-react"
 import { memo, useCallback, useState } from "react"
 import type { FlatTreeNode } from "@/types/node"
 import { useIconTheme } from "@/hooks/use-icon-theme"
@@ -33,6 +33,7 @@ export interface TreeNodeRowProps {
 	readonly onSelect: (nodeId: string) => void
 	readonly onCreateFile?: (parentId: string) => void
 	readonly onCreateFolder?: (parentId: string) => void
+	readonly onRename?: (nodeId: string) => void
 	readonly onDelete?: (nodeId: string) => void
 	readonly style?: React.CSSProperties
 }
@@ -64,6 +65,7 @@ export const TreeNodeRow = memo(
 		onSelect,
 		onCreateFile,
 		onCreateFolder,
+		onRename,
 		onDelete,
 		style,
 	}: TreeNodeRowProps) => {
@@ -103,6 +105,15 @@ export const TreeNodeRow = memo(
 				setIsMenuOpen(false)
 			},
 			[node.id, onCreateFolder],
+		)
+
+		const handleRename = useCallback(
+			(e: React.MouseEvent) => {
+				e.stopPropagation()
+				onRename?.(node.id)
+				setIsMenuOpen(false)
+			},
+			[node.id, onRename],
 		)
 
 		const handleDelete = useCallback(
@@ -221,6 +232,19 @@ export const TreeNodeRow = memo(
 									>
 										<FolderPlus className="size-4 mr-2" />
 										<span className="text-sm">New Folder</span>
+									</Button>
+								)}
+
+								{/* Rename */}
+								{onRename && (
+									<Button
+										variant="ghost"
+										size="sm"
+										className="justify-start h-8 px-2"
+										onClick={handleRename}
+									>
+										<Pencil className="size-4 mr-2" />
+										<span className="text-sm">Rename</span>
 									</Button>
 								)}
 
