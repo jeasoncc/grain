@@ -8,6 +8,7 @@
  */
 
 import { ChevronsDownUp, ChevronsUpDown, FolderPlus, Plus } from "lucide-react"
+import { useCallback } from "react"
 import { useFileTree } from "@/hooks/use-file-tree"
 import { Button } from "@/views/ui/button"
 import type { FileTreeProps } from "./file-tree.types"
@@ -32,7 +33,8 @@ export type { FileTreeProps } from "./file-tree.types"
  *
  * 职责：
  * - 纯 UI 渲染
- * - 所有逻辑在 useFileTree hook 中
+ * - 处理 UI 交互逻辑（如确认对话框）
+ * - 所有业务逻辑在 useFileTree hook 和 flows 层
  */
 export function FileTree(props: FileTreeProps) {
 	const {
@@ -61,11 +63,34 @@ export function FileTree(props: FileTreeProps) {
 		onSelectNode,
 		onCreateFolder,
 		onCreateFile,
-		onDeleteNode,
+		onDeleteNode: (nodeId: string) => onDeleteNode(nodeId, true),
 		onRenameNode,
 	})
 
+	// ============================================================================
+	// UI 交互逻辑（在 view 层处理）
+	// ============================================================================
 
+	/**
+	 * 处理重命名节点 - 包含输入对话框
+	 * UI 交互逻辑在 view 层，业务逻辑在 hook/flow 层
+	 */
+	const handleRenameWithPrompt = useCallback(
+		(nodeId: string) => {
+			const node = flatNodes.find((n) => n.id === nodeId)
+			if (!node) return
+
+			const newTitle = prompt("Enter new name:", node.title)
+			if (newTitle && newTitle !== node.title) {
+				onRenameNode(nodeId, newTitle)
+			}
+		},
+		[flatNodes, onRenameNode],
+	)
+
+	// ============================================================================
+	// 渲染
+	// ============================================================================
 
 	// No workspace selected
 	if (!workspaceId) {
@@ -185,15 +210,19 @@ export function FileTree(props: FileTreeProps) {
 										onSelect={handlers.onSelect}
 										onCreateFile={node.type === "folder" ? () => onCreateFile(node.id, "file") : undefined}
 										onCreateFolder={node.type === "folder" ? () => onCreateFolder(node.id) : undefined}
-										onRename={() => {
-											// TODO: 实现重命名对话框
-											// 暂时使用 prompt 作为临时方案
-											const newTitle = prompt("Enter new name:", node.title)
-											if (newTitle && newTitle !== node.title) {
-												onRenameNode(node.id, newTitle)
+										onRename={() => handleRenameWithPrompt(node.id)}
+										onDelete={() => {
+											// 直接在这里处理删除确认
+											const isFolder = node.type === "folder"
+											const confirmed = window.confirm(
+												isFolder
+													? `Are you sure you want to delete "${node.title}"? This will also delete all contents inside. This cannot be undone.`
+													: `Are you sure you want to delete "${node.title}"? This cannot be undone.`,
+											)
+											if (confirmed) {
+												onDeleteNode(node.id, confirmed)
 											}
 										}}
-										onDelete={() => onDeleteNode(node.id)}
 										style={nodeStyle}
 									/>
 								)

@@ -12,25 +12,17 @@
  * - 错误处理（在 flows 层）
  * - 日志记录（在 flows 层）
  * - Toast 提示（在 flows 层）
+ * - UI 交互逻辑（在 views 层）
  *
- * 依赖：hooks/, flows/, state/, types/
+ * 依赖：flows/, state/, types/
  */
 
 import { useNavigate } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useRef } from "react"
-import {
-	createDiaryCompatAsync,
-	createFile,
-	deleteNode,
-	openFile,
-	renameNode,
-} from "@/flows"
-import * as nodeFlow from "@/flows/node"
-import {
-	calculateAncestorPathFlow,
-	calculateExpandedAncestorsFlow,
-} from "@/flows/file-tree"
+import { createDiaryCompatAsync, createFile, deleteNode, openFile, renameNode } from "@/flows"
+import { refreshAndExpandToNodeFlow } from "@/flows/file-tree"
+import { generateEmptyContent, getDefaultTitle } from "@/pipes/content"
 import { queryKeys } from "@/hooks/queries/query-keys"
 import { useSelectionStore } from "@/state/selection.state"
 import { useSidebarStore } from "@/state/sidebar.state"
@@ -60,55 +52,10 @@ export interface UseFileTreePanelReturn {
 		readonly onCreateFolder: (parentId: string | null) => Promise<void>
 		readonly onCreateFile: (parentId: string | null, type: NodeType) => Promise<void>
 		readonly onCreateDiary: () => Promise<void>
-		readonly onDeleteNode: (nodeId: string) => Promise<void>
+		readonly onDeleteNode: (nodeId: string, confirmed: boolean) => Promise<void>
 		readonly onRenameNode: (nodeId: string, newTitle: string) => Promise<void>
 	}
 }
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const EXCALIDRAW_EMPTY_CONTENT = JSON.stringify({
-	appState: {},
-	elements: [],
-	files: {},
-})
-
-const LEXICAL_EMPTY_CONTENT = (title: string): string =>
-	JSON.stringify({
-		root: {
-			children: [
-				{
-					children: [{ detail: 0, format: 0, mode: "normal", style: "", text: title, type: "text", version: 1 }],
-					direction: "ltr",
-					format: "",
-					indent: 0,
-					tag: "h2",
-					type: "heading",
-					version: 1,
-				},
-				{
-					children: [{ detail: 0, format: 0, mode: "normal", style: "", text: "", type: "text", version: 1 }],
-					direction: "ltr",
-					format: "",
-					indent: 0,
-					type: "paragraph",
-					version: 1,
-				},
-			],
-			direction: "ltr",
-			format: "",
-			indent: 0,
-			type: "root",
-			version: 1,
-		},
-	})
-
-const generateContentByType = (type: NodeType, title: string): string =>
-	type === "drawing" ? EXCALIDRAW_EMPTY_CONTENT : LEXICAL_EMPTY_CONTENT(title)
-
-const getTitleByType = (type: NodeType): string => (type === "drawing" ? "New Canvas" : "New File")
 
 // ============================================================================
 // Hook
@@ -117,8 +64,9 @@ const getTitleByType = (type: NodeType): string => (type === "drawing" ? "New Ca
 /**
  * FileTreePanel 数据绑定 Hook
  *
- * 纯粹的数据绑定层，不包含业务逻辑、错误处理、日志记录。
+ * 纯粹的数据绑定层，不包含业务逻辑、错误处理、日志记录、UI 交互。
  * 所有业务逻辑、toast 提示、日志记录都在 flows 层完成。
+ * UI 交互逻辑（如 confirm）在 views 层处理。
  *
  * @param params - Hook 参数
  * @returns FileTreePanel 状态和处理器
@@ -169,37 +117,20 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 	// ============================================================================
 
 	/**
-	 * 统一处理创建节点后的展开状态
-	 * 只展开到新节点的祖先路径，折叠其他文件夹
+	 * 刷新节点列表并展开到新节点
+	 * 调用 flow 层的业务逻辑
 	 */
-	const updateExpandedFoldersForNewNode = useCallback(
+	const refreshAndExpandToNode = useCallback(
 		async (newNodeId: string) => {
 			if (!workspaceId) return
 
-			// 刷新节点列表
-			await queryClient.invalidateQueries({
+			await refreshAndExpandToNodeFlow({
+				workspaceId,
+				newNodeId,
+				queryClient,
 				queryKey: queryKeys.nodes.byWorkspace(workspaceId),
+				setExpandedFolders,
 			})
-
-			// 使用 setTimeout 确保数据已刷新
-			setTimeout(() => {
-				void queryClient.fetchQuery({
-					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
-					queryFn: async () => {
-						const result = await nodeFlow.getNodesByWorkspace(workspaceId)()
-						if (result._tag === "Left") return []
-						return result.right
-					},
-				}).then((refreshedNodes) => {
-					if (refreshedNodes && refreshedNodes.length > 0) {
-						const ancestorPath = calculateAncestorPathFlow(refreshedNodes, newNodeId)
-						const expandedAncestors = ancestorPath.length > 0
-							? calculateExpandedAncestorsFlow(ancestorPath)
-							: {}
-						setExpandedFolders(expandedAncestors)
-					}
-				})
-			}, 100)
 		},
 		[workspaceId, queryClient, setExpandedFolders],
 	)
@@ -241,18 +172,18 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 			if (result._tag === "Right" && result.right?.node) {
 				const newNodeId = result.right.node.id
 				setSelectedNodeId(newNodeId)
-				await updateExpandedFoldersForNewNode(newNodeId)
+				await refreshAndExpandToNode(newNodeId)
 			}
 		},
-		[workspaceId, setSelectedNodeId, updateExpandedFoldersForNewNode],
+		[workspaceId, setSelectedNodeId, refreshAndExpandToNode],
 	)
 
 	const handleCreateFile = useCallback(
 		async (parentId: string | null, type: NodeType) => {
 			if (!workspaceId) return
 
-			const title = getTitleByType(type)
-			const content = generateContentByType(type, title)
+			const title = getDefaultTitle(type)
+			const content = generateEmptyContent(type, title)
 
 			const result = await createFile({
 				content,
@@ -267,10 +198,10 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 				setSelectedNodeId(newNodeId)
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				void navigate({ to: "/" } as any)
-				await updateExpandedFoldersForNewNode(newNodeId)
+				await refreshAndExpandToNode(newNodeId)
 			}
 		},
-		[workspaceId, setSelectedNodeId, navigate, updateExpandedFoldersForNewNode],
+		[workspaceId, setSelectedNodeId, navigate, refreshAndExpandToNode],
 	)
 
 	const handleCreateDiary = useCallback(
@@ -286,24 +217,14 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 				setSelectedNodeId(newNodeId)
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				void navigate({ to: "/" } as any)
-				await updateExpandedFoldersForNewNode(newNodeId)
+				await refreshAndExpandToNode(newNodeId)
 			}
 		},
-		[workspaceId, setSelectedNodeId, navigate, updateExpandedFoldersForNewNode],
+		[workspaceId, setSelectedNodeId, navigate, refreshAndExpandToNode],
 	)
 
 	const handleDeleteNode = useCallback(
-		async (nodeId: string) => {
-			const node = await getNode(nodeId)
-			if (!node) return
-
-			const isFolder = node.type === "folder"
-			const confirmed = window.confirm(
-				isFolder
-					? `Are you sure you want to delete "${node.title}"? This will also delete all contents inside. This cannot be undone.`
-					: `Are you sure you want to delete "${node.title}"? This cannot be undone.`,
-			)
-
+		async (nodeId: string, confirmed: boolean) => {
 			if (!confirmed) return
 
 			const result = await deleteNode(nodeId)()
@@ -323,7 +244,7 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 				}
 			}
 		},
-		[workspaceId, selectedNodeId, closeTab, setSelectedNodeId, getNode, queryClient],
+		[workspaceId, selectedNodeId, closeTab, setSelectedNodeId, queryClient],
 	)
 
 	const handleRenameNode = useCallback(

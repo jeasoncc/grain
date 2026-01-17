@@ -105,6 +105,8 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 	const iconTheme = useIconTheme()
 	const { currentTheme } = useTheme()
 	const expandedFolders = useExpandedFolders()
+	const toggleFolderExpanded = useSidebarStore((s) => s.toggleFolderExpanded)
+	const setExpandedFolders = useSidebarStore((s) => s.setExpandedFolders)
 
 	// ============================================================================
 	// Computed Values
@@ -136,11 +138,14 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 
 	/**
 	 * Handle folder toggle (expand/collapse)
-	 * Updates Zustand state directly
+	 * Calls Zustand action via selector
 	 */
-	const handleToggle = useCallback((nodeId: string) => {
-		useSidebarStore.getState().toggleFolderExpanded(nodeId)
-	}, [])
+	const handleToggle = useCallback(
+		(nodeId: string) => {
+			toggleFolderExpanded(nodeId)
+		},
+		[toggleFolderExpanded],
+	)
 
 	/**
 	 * Handle node selection
@@ -161,19 +166,21 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 
 	/**
 	 * Handle expand all folders
+	 * Calls Zustand action via selector
 	 */
 	const handleExpandAll = useCallback(() => {
 		const expandedState = calculateExpandAllFoldersFlow(nodes)
-		useSidebarStore.getState().setExpandedFolders(expandedState)
-	}, [nodes])
+		setExpandedFolders(expandedState)
+	}, [nodes, setExpandedFolders])
 
 	/**
 	 * Handle collapse all folders
+	 * Calls Zustand action via selector
 	 */
 	const handleCollapseAll = useCallback(() => {
 		const collapsedState = calculateCollapseAllFoldersFlow(nodes)
-		useSidebarStore.getState().setExpandedFolders(collapsedState)
-	}, [nodes])
+		setExpandedFolders(collapsedState)
+	}, [nodes, setExpandedFolders])
 
 	// ============================================================================
 	// Effects

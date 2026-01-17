@@ -24,8 +24,8 @@ export interface FileTreeProps {
 	readonly onCreateFolder: (parentId: string | null) => void
 	/** 创建文件回调 */
 	readonly onCreateFile: (parentId: string | null, type: NodeType) => void
-	/** 删除节点回调 */
-	readonly onDeleteNode: (nodeId: string) => void
+	/** 删除节点回调（confirmed 参数由 view 层传入） */
+	readonly onDeleteNode: (nodeId: string, confirmed: boolean) => void
 	/** 重命名节点回调 */
 	readonly onRenameNode: (nodeId: string, newTitle: string) => void
 	/** 创建日记回调（可选） */

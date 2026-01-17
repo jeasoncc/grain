@@ -11,3 +11,6 @@ export {
 	flattenTreeFlow,
 	hasFoldersFlow,
 } from "./flatten-tree.flow"
+
+export { updateExpandedForNewNodeFlow } from "./update-expanded-for-new-node.flow"
+export { refreshAndExpandToNodeFlow } from "./refresh-and-expand-to-node.flow"
