@@ -40,3 +40,21 @@ export type {
 	LexicalTextNode,
 } from "./content.generate.fn"
 
+export {
+	EXCALIDRAW_SOURCE,
+	EXCALIDRAW_VERSION,
+	generateExcalidrawContent,
+	isValidExcalidrawContent,
+	parseExcalidrawContent,
+} from "./excalidraw.content.fn"
+
+export type {
+	ExcalidrawAppState,
+	ExcalidrawContentParams,
+	ExcalidrawDocument,
+} from "./excalidraw.content.fn"
+
+export { generateMermaidContent, generatePlantUMLContent } from "./diagram.content.fn"
+
+export { generateCodeContent } from "./code.content.fn"
+
