@@ -154,24 +154,6 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 	// ============================================================================
 
 	/**
-	 * 初始化展开状态：从数据库加载的节点初始化 Zustand expandedFolders
-	 */
-	useEffect(() => {
-		if (nodes && nodes.length > 0) {
-			const folderNodes = nodes.filter((node) => node.type === "folder")
-			const expandedFolders = folderNodes.reduce(
-				(acc, folder) => ({
-					...acc,
-					[folder.id]: !(folder.collapsed ?? true),
-				}),
-				{} as Record<string, boolean>,
-			)
-
-			useSidebarStore.getState().setExpandedFolders(expandedFolders)
-		}
-	}, [nodes, workspaceId])
-
-	/**
 	 * 工作区切换时清除选中状态
 	 */
 	useEffect(() => {
