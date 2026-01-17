@@ -49,6 +49,8 @@ export interface UseFileTreeReturn {
 	/** 树 ref */
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	readonly treeRef: React.RefObject<any>
+	/** 树的 key（用于强制重新渲染） */
+	readonly treeKey: string
 	/** 图标主题 */
 	readonly iconTheme: ReturnType<typeof useIconTheme>
 	/** 当前主题 */
@@ -151,30 +153,17 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 
 	const treeData = useMemo(() => buildTreeData(nodes, expandedFolders), [nodes, expandedFolders])
 	const hasSelection = !!selectedNodeId
+	
+	// Generate a key based on expandedFolders to force Tree re-render when state changes
+	// 基于 expandedFolders 生成 key，当状态变化时强制 Tree 重新渲染
+	const treeKey = useMemo(
+		() => Object.keys(expandedFolders).sort().join(',') + ':' + Object.values(expandedFolders).join(','),
+		[expandedFolders]
+	)
 
 	// ============================================================================
 	// Effects
 	// ============================================================================
-
-	/**
-	 * Sync expandedFolders state with react-arborist internal state
-	 * 同步 expandedFolders 状态到 react-arborist 内部状态
-	 */
-	useEffect(() => {
-		if (!treeRef.current) return
-
-		// 遍历所有文件夹，同步展开/折叠状态
-		Object.entries(expandedFolders).forEach(([folderId, isExpanded]) => {
-			const node = treeRef.current?.get(folderId)
-			if (node) {
-				if (isExpanded && node.isClosed) {
-					node.open()
-				} else if (!isExpanded && node.isOpen) {
-					node.close()
-				}
-			}
-		})
-	}, [expandedFolders, treeRef])
 
 	/**
 	 * Responsive dimensions: Update tree size when container resizes
@@ -292,6 +281,7 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 		dimensions,
 		containerRef,
 		treeRef,
+		treeKey,
 		iconTheme,
 		currentTheme,
 		hasSelection,

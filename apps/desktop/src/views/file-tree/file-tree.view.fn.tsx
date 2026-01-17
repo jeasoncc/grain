@@ -62,6 +62,7 @@ export function FileTree(props: FileTreeProps) {
 		dimensions,
 		containerRef,
 		treeRef,
+		treeKey,
 		iconTheme,
 		currentTheme,
 		handlers,
@@ -180,6 +181,7 @@ export function FileTree(props: FileTreeProps) {
 				) : (
 					<div className="w-full h-full">
 						<Tree
+							key={treeKey}
 							ref={treeRef}
 							data={treeData}
 							selection={selectedNodeId ?? undefined}
