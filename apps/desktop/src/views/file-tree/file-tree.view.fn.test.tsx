@@ -5,6 +5,7 @@
 
 import { fireEvent, render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
+import dayjs from "dayjs"
 import type { NodeInterface } from "@/types/node"
 import type { FileTreeProps } from "./file-tree.types"
 import { FileTree } from "./file-tree.view.fn"
@@ -41,9 +42,9 @@ describe("FileTree", () => {
 	const mockNodes: NodeInterface[] = [
 		{
 			collapsed: false,
-			createDate: new Date().toISOString(),
+			createDate: dayjs().toISOString(),
 			id: "1",
-			lastEdit: new Date().toISOString(),
+			lastEdit: dayjs().toISOString(),
 			order: 0,
 			parent: null,
 			title: "Test Folder",
@@ -52,9 +53,9 @@ describe("FileTree", () => {
 		},
 		{
 			collapsed: false,
-			createDate: new Date().toISOString(),
+			createDate: dayjs().toISOString(),
 			id: "2",
-			lastEdit: new Date().toISOString(),
+			lastEdit: dayjs().toISOString(),
 			order: 0,
 			parent: "1",
 			title: "Test File",

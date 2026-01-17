@@ -182,27 +182,23 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 			})
 
 			// 使用 setTimeout 确保数据已刷新
-			setTimeout(async () => {
-				try {
-					const refreshedNodes = await queryClient.fetchQuery({
-						queryKey: queryKeys.nodes.byWorkspace(workspaceId),
-						queryFn: async () => {
-							const result = await nodeFlow.getNodesByWorkspace(workspaceId)()
-							if (result._tag === "Left") throw result.left
-							return result.right
-						},
-					})
-
-					if (refreshedNodes) {
+			setTimeout(() => {
+				void queryClient.fetchQuery({
+					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
+					queryFn: async () => {
+						const result = await nodeFlow.getNodesByWorkspace(workspaceId)()
+						if (result._tag === "Left") return []
+						return result.right
+					},
+				}).then((refreshedNodes) => {
+					if (refreshedNodes && refreshedNodes.length > 0) {
 						const ancestorPath = calculateAncestorPathFlow(refreshedNodes, newNodeId)
 						const expandedAncestors = ancestorPath.length > 0
 							? calculateExpandedAncestorsFlow(ancestorPath)
 							: {}
 						setExpandedFolders(expandedAncestors)
 					}
-				} catch (error) {
-					console.error("Failed to update expanded folders:", error)
-				}
+				})
 			}, 100)
 		},
 		[workspaceId, queryClient, setExpandedFolders],
