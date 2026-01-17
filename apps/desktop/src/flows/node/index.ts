@@ -5,6 +5,7 @@
 export * from "./create-node.flow"
 export * from "./delete-node.flow"
 export * from "./ensure-folder.flow"
+export * from "./generate-node-content.flow"
 export * from "./get-node.flow"
 export * from "./get-nodes.flow"
 export * from "./move-node.flow"

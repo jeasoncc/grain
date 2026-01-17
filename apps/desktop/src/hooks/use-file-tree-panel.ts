@@ -22,7 +22,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useRef } from "react"
 import { createDiaryCompatAsync, createFile, deleteNode, openFile, renameNode } from "@/flows"
 import { refreshAndExpandToNodeFlow } from "@/flows/file-tree"
-import { generateEmptyContent, getDefaultTitle } from "@/pipes/content"
+import { generateNodeContentFlow, getNodeDefaultTitleFlow } from "@/flows/node"
 import { queryKeys } from "@/hooks/queries/query-keys"
 import { useSelectionStore } from "@/state/selection.state"
 import { useSidebarStore } from "@/state/sidebar.state"
@@ -182,8 +182,8 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 		async (parentId: string | null, type: NodeType) => {
 			if (!workspaceId) return
 
-			const title = getDefaultTitle(type)
-			const content = generateEmptyContent(type, title)
+			const title = getNodeDefaultTitleFlow(type)
+			const content = generateNodeContentFlow(type, title)
 
 			const result = await createFile({
 				content,

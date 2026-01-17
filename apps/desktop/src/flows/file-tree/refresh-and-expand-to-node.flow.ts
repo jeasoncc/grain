@@ -11,7 +11,7 @@
  */
 
 import type { QueryClient } from "@tanstack/react-query"
-import * as nodeFlow from "@/flows/node"
+import { getNodesByWorkspace } from "@/io/api/node.api"
 import { updateExpandedForNewNodeFlow } from "./update-expanded-for-new-node.flow"
 
 /**
@@ -47,7 +47,7 @@ export const refreshAndExpandToNodeFlow = async (params: {
 				.fetchQuery({
 					queryKey,
 					queryFn: async () => {
-						const result = await nodeFlow.getNodesByWorkspace(workspaceId)()
+						const result = await getNodesByWorkspace(workspaceId)()
 						if (result._tag === "Left") return []
 						return result.right
 					},
