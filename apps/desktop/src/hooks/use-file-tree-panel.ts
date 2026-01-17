@@ -26,9 +26,9 @@ import {
 	renameNode,
 } from "@/flows"
 import {
-	calculateAncestorPath,
-	calculateExpandedAncestors,
-} from "@/pipes/node"
+	calculateAncestorPathFlow,
+	calculateExpandedAncestorsFlow,
+} from "@/flows/file-tree"
 import { useSelectionStore } from "@/state/selection.state"
 import { useSidebarStore } from "@/state/sidebar.state"
 import { useEditorTabs } from "./use-editor-tabs"
@@ -223,9 +223,9 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 				setSelectedNodeId(newNodeId)
 
 				// 自动展开祖先文件夹
-				const ancestorPath = calculateAncestorPath(nodes, newNodeId)
+				const ancestorPath = calculateAncestorPathFlow(nodes, newNodeId)
 				if (ancestorPath.length > 0) {
-					const expandedAncestors = calculateExpandedAncestors(ancestorPath)
+					const expandedAncestors = calculateExpandedAncestorsFlow(ancestorPath)
 					setExpandedFolders({
 						...expandedFolders,
 						...expandedAncestors,
@@ -261,9 +261,9 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 				void navigate({ to: "/" } as any)
 
 				// 自动展开祖先文件夹
-				const ancestorPath = calculateAncestorPath(nodes, newNodeId)
+				const ancestorPath = calculateAncestorPathFlow(nodes, newNodeId)
 				if (ancestorPath.length > 0) {
-					const expandedAncestors = calculateExpandedAncestors(ancestorPath)
+					const expandedAncestors = calculateExpandedAncestorsFlow(ancestorPath)
 					setExpandedFolders({
 						...expandedFolders,
 						...expandedAncestors,

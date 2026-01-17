@@ -78,10 +78,10 @@ export const TreeNodeRow = memo(({ node, isSelected, onToggle, onSelect, style }
 	// Get appropriate icon
 	const Icon = isFolder
 		? node.isExpanded
-			? iconTheme.icons.folder.open
+			? iconTheme.icons.folder.open || iconTheme.icons.folder.default
 			: iconTheme.icons.folder.default
 		: node.type === "drawing"
-			? iconTheme.icons.file.drawing
+			? iconTheme.icons.activityBar.canvas
 			: iconTheme.icons.file.default
 
 	// ============================================================================

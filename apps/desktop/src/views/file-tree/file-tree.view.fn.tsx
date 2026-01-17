@@ -8,14 +8,9 @@
  */
 
 import { ChevronsDownUp, ChevronsUpDown, FolderPlus, Plus } from "lucide-react"
-import { useCallback, useMemo, useRef, useEffect } from "react"
+import type React from "react"
+import { useCallback, useRef, useEffect } from "react"
 import { useFileTree } from "@/hooks/use-file-tree"
-import {
-	calculateCollapseAllFolders,
-	calculateExpandAllFolders,
-	hasFolders,
-} from "@/pipes/node"
-import { useSidebarStore } from "@/state/sidebar.state"
 import { Button } from "@/views/ui/button"
 import type { FileTreeProps } from "./file-tree.types"
 import { TreeNodeRow } from "./tree-node-row.view.fn"
@@ -59,6 +54,7 @@ export function FileTree(props: FileTreeProps) {
 		containerRef,
 		iconTheme,
 		currentTheme,
+		hasAnyFolders,
 		handlers,
 	} = useFileTree({
 		workspaceId,
@@ -160,19 +156,6 @@ export function FileTree(props: FileTreeProps) {
 		[flatNodes, handlers, onSelectNode, virtualizer],
 	)
 
-	// Expand/Collapse All handlers
-	const handleExpandAll = useCallback(() => {
-		const expandedState = calculateExpandAllFolders(nodes)
-		useSidebarStore.getState().setExpandedFolders(expandedState)
-	}, [nodes])
-
-	const handleCollapseAll = useCallback(() => {
-		const collapsedState = calculateCollapseAllFolders(nodes)
-		useSidebarStore.getState().setExpandedFolders(collapsedState)
-	}, [nodes])
-
-	const hasAnyFolders = useMemo(() => hasFolders(nodes), [nodes])
-
 	// No workspace selected
 	if (!workspaceId) {
 		const FolderIcon = iconTheme.icons.folder.default
@@ -205,7 +188,7 @@ export function FileTree(props: FileTreeProps) {
 						variant="ghost"
 						size="icon"
 						className="size-7 hover:bg-sidebar-accent rounded-sm"
-						onClick={handleExpandAll}
+						onClick={handlers.onExpandAll}
 						disabled={!hasAnyFolders}
 						title="全部展开 / Expand All"
 					>
@@ -215,7 +198,7 @@ export function FileTree(props: FileTreeProps) {
 						variant="ghost"
 						size="icon"
 						className="size-7 hover:bg-sidebar-accent rounded-sm"
-						onClick={handleCollapseAll}
+						onClick={handlers.onCollapseAll}
 						disabled={!hasAnyFolders}
 						title="全部折叠 / Collapse All"
 					>

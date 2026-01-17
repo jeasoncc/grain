@@ -48,9 +48,6 @@ export const flattenTree = (
 ): readonly FlatTreeNode[] => {
 	if (nodes.length === 0) return []
 
-	// Create node map for fast lookup
-	const nodeMap = new Map(nodes.map((node) => [node.id, node]))
-
 	// Get children for a given parent ID
 	const getChildren = (parentId: string | null): readonly NodeInterface[] =>
 		nodes.filter((n) => n.parent === parentId).toSorted((a, b) => a.order - b.order)

@@ -3,19 +3,24 @@
  * @description FileTree hook - 封装所有文件树逻辑（虚拟列表版本）
  *
  * 职责：
- * - 扁平化树形数据结构
- * - 管理虚拟滚动
+ * - 绑定树形数据和虚拟滚动
+ * - 管理虚拟滚动状态
  * - 处理所有树操作（选择、展开/折叠）
  * - 提供渲染函数
  *
- * 依赖：hooks/, state/, types/
+ * 依赖：flows/, state/, types/
  */
 
 import type React from "react"
 import { useCallback, useEffect, useMemo, useRef } from "react"
 import { useVirtualizer } from "@tanstack/react-virtual"
+import {
+	calculateCollapseAllFoldersFlow,
+	calculateExpandAllFoldersFlow,
+	flattenTreeFlow,
+	hasFoldersFlow,
+} from "@/flows/file-tree"
 import type { FlatTreeNode, NodeInterface, NodeType } from "@/types/node"
-import { flattenTree } from "@/pipes/node"
 import { useExpandedFolders, useSidebarStore } from "@/state/sidebar.state"
 import { useIconTheme } from "./use-icon-theme"
 import { useTheme } from "./use-theme"
@@ -41,17 +46,21 @@ export interface UseFileTreeReturn {
 	/** 虚拟滚动器实例 */
 	readonly virtualizer: ReturnType<typeof useVirtualizer<HTMLDivElement, Element>>
 	/** 容器 ref */
-	readonly containerRef: React.RefObject<HTMLDivElement>
+	readonly containerRef: React.RefObject<HTMLDivElement | null>
 	/** 图标主题 */
 	readonly iconTheme: ReturnType<typeof useIconTheme>
 	/** 当前主题 */
 	readonly currentTheme: ReturnType<typeof useTheme>["currentTheme"]
 	/** 是否有选中节点 */
 	readonly hasSelection: boolean
+	/** 是否有文件夹 */
+	readonly hasAnyFolders: boolean
 	/** 树操作处理器 */
 	readonly handlers: {
 		readonly onToggle: (nodeId: string) => void
 		readonly onSelect: (nodeId: string) => void
+		readonly onExpandAll: () => void
+		readonly onCollapseAll: () => void
 	}
 	/** TreeNode 额外 props */
 	readonly nodeProps: {
@@ -103,11 +112,12 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 
 	// Flatten tree based on expand state
 	const flatNodes = useMemo(
-		() => flattenTree(nodes, expandedFolders),
+		() => flattenTreeFlow(nodes, expandedFolders),
 		[nodes, expandedFolders],
 	)
 
 	const hasSelection = !!selectedNodeId
+	const hasAnyFolders = useMemo(() => hasFoldersFlow(nodes), [nodes])
 
 	// ============================================================================
 	// Virtual Scrolling
@@ -148,6 +158,22 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 		},
 		[flatNodes, onSelectNode, handleToggle],
 	)
+
+	/**
+	 * Handle expand all folders
+	 */
+	const handleExpandAll = useCallback(() => {
+		const expandedState = calculateExpandAllFoldersFlow(nodes)
+		useSidebarStore.getState().setExpandedFolders(expandedState)
+	}, [nodes])
+
+	/**
+	 * Handle collapse all folders
+	 */
+	const handleCollapseAll = useCallback(() => {
+		const collapsedState = calculateCollapseAllFoldersFlow(nodes)
+		useSidebarStore.getState().setExpandedFolders(collapsedState)
+	}, [nodes])
 
 	// ============================================================================
 	// Effects
@@ -194,9 +220,12 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 		iconTheme,
 		currentTheme,
 		hasSelection,
+		hasAnyFolders,
 		handlers: {
 			onToggle: handleToggle,
 			onSelect: handleSelect,
+			onExpandAll: handleExpandAll,
+			onCollapseAll: handleCollapseAll,
 		},
 		nodeProps,
 	}

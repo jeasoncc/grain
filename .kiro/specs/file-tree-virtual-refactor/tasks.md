@@ -119,18 +119,18 @@ Refactor file tree to use @tanstack/react-virtual with functional architecture. 
     - Space to toggle folder
     - _Requirements: 5.6_
 
-- [ ] 7. Update use-file-tree-panel Hook
-  - [ ] 7.1 Remove onToggleCollapsed handler
+- [x] 7. Update use-file-tree-panel Hook
+  - [x] 7.1 Remove onToggleCollapsed handler
     - Toggle is now handled internally by useFileTree
     - _Requirements: 3.1_
 
-  - [ ] 7.2 Keep auto-expand logic for new files
+  - [x] 7.2 Keep auto-expand logic for new files
     - Use calculateAncestorPath
     - Use calculateExpandedAncestors
     - Update Zustand state
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
 
-  - [ ] 7.3 Implement scroll to new node
+  - [x] 7.3 Implement scroll to new node
     - Use virtualizer.scrollToIndex
     - Find index of new node in flat array
     - _Requirements: 10.2, 10.4_
