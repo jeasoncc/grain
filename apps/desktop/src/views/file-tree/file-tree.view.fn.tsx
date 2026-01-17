@@ -192,7 +192,7 @@ export function FileTree(props: FileTreeProps) {
 						disabled={!hasAnyFolders}
 						title="全部展开 / Expand All"
 					>
-						<ChevronsDownUp className="size-4" />
+						<ChevronsUpDown className="size-4" />
 					</Button>
 					<Button
 						variant="ghost"
@@ -202,7 +202,7 @@ export function FileTree(props: FileTreeProps) {
 						disabled={!hasAnyFolders}
 						title="全部折叠 / Collapse All"
 					>
-						<ChevronsUpDown className="size-4" />
+						<ChevronsDownUp className="size-4" />
 					</Button>
 					<Button
 						variant="ghost"

@@ -26,6 +26,7 @@ import {
 	openFile,
 	renameNode,
 } from "@/flows"
+import * as nodeFlow from "@/flows/node"
 import {
 	calculateAncestorPathFlow,
 	calculateExpandedAncestorsFlow,
@@ -134,7 +135,6 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 	const globalSelectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId)
 	const selectedNodeId = useSelectionStore((s) => s.selectedNodeId)
 	const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId)
-	const expandedFolders = useSidebarStore((s) => s.fileTreeState.expandedFolders)
 	const setExpandedFolders = useSidebarStore((s) => s.setExpandedFolders)
 
 	const workspaceId = propWorkspaceId ?? globalSelectedWorkspaceId
@@ -230,20 +230,33 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
 				})
 
-				// 自动展开祖先文件夹
-				const ancestorPath = calculateAncestorPathFlow(nodes, newNodeId)
-				if (ancestorPath.length > 0) {
-					const expandedAncestors = calculateExpandedAncestorsFlow(ancestorPath)
-					setExpandedFolders({
-						...expandedFolders,
-						...expandedAncestors,
-					})
+				// 等待数据刷新后，只展开到新节点的祖先路径
+				// 使用 refetch 获取最新数据
+				const refreshedNodes = await queryClient.fetchQuery({
+					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
+					queryFn: async () => {
+						const result = await nodeFlow.getNodesByWorkspace(workspaceId)()
+						if (result._tag === "Left") throw result.left
+						return result.right
+					},
+				})
+
+				if (refreshedNodes) {
+					const ancestorPath = calculateAncestorPathFlow(refreshedNodes, newNodeId)
+					if (ancestorPath.length > 0) {
+						// 只展开祖先路径，不保留其他展开状态
+						const expandedAncestors = calculateExpandedAncestorsFlow(ancestorPath)
+						setExpandedFolders(expandedAncestors)
+					} else {
+						// 如果是根节点，清空所有展开状态
+						setExpandedFolders({})
+					}
 				}
 
 				// Note: Scroll to new node is handled by useFileTree hook via selectedNodeId effect
 			}
 		},
-		[workspaceId, setSelectedNodeId, queryClient, nodes, expandedFolders, setExpandedFolders],
+		[workspaceId, setSelectedNodeId, queryClient, setExpandedFolders],
 	)
 
 	const handleCreateFile = useCallback(
@@ -273,20 +286,32 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
 				})
 
-				// 自动展开祖先文件夹
-				const ancestorPath = calculateAncestorPathFlow(nodes, newNodeId)
-				if (ancestorPath.length > 0) {
-					const expandedAncestors = calculateExpandedAncestorsFlow(ancestorPath)
-					setExpandedFolders({
-						...expandedFolders,
-						...expandedAncestors,
-					})
+				// 等待数据刷新后，只展开到新节点的祖先路径
+				const refreshedNodes = await queryClient.fetchQuery({
+					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
+					queryFn: async () => {
+						const result = await nodeFlow.getNodesByWorkspace(workspaceId)()
+						if (result._tag === "Left") throw result.left
+						return result.right
+					},
+				})
+
+				if (refreshedNodes) {
+					const ancestorPath = calculateAncestorPathFlow(refreshedNodes, newNodeId)
+					if (ancestorPath.length > 0) {
+						// 只展开祖先路径，不保留其他展开状态
+						const expandedAncestors = calculateExpandedAncestorsFlow(ancestorPath)
+						setExpandedFolders(expandedAncestors)
+					} else {
+						// 如果是根节点，清空所有展开状态
+						setExpandedFolders({})
+					}
 				}
 
 				// Note: Scroll to new node is handled by useFileTree hook via selectedNodeId effect
 			}
 		},
-		[workspaceId, setSelectedNodeId, navigate, queryClient, nodes, expandedFolders, setExpandedFolders],
+		[workspaceId, setSelectedNodeId, navigate, queryClient, setExpandedFolders],
 	)
 
 	const handleCreateDiary = useCallback(async () => {
