@@ -86,24 +86,14 @@ export function FileTree(props: FileTreeProps) {
 	const handleExpandAll = useCallback(() => {
 		const expandedState = calculateExpandAllFolders(nodes)
 		setExpandedFolders(expandedState)
-		// Sync with react-arborist
-		if (treeRef.current) {
-			Object.keys(expandedState).forEach((folderId) => {
-				treeRef.current?.open(folderId)
-			})
-		}
-	}, [nodes, setExpandedFolders, treeRef])
+		// treeData 会自动更新，因为它依赖 expandedFolders
+	}, [nodes, setExpandedFolders])
 
 	const handleCollapseAll = useCallback(() => {
 		const collapsedState = calculateCollapseAllFolders(nodes)
 		setExpandedFolders(collapsedState)
-		// Sync with react-arborist
-		if (treeRef.current) {
-			Object.keys(collapsedState).forEach((folderId) => {
-				treeRef.current?.close(folderId)
-			})
-		}
-	}, [nodes, setExpandedFolders, treeRef])
+		// treeData 会自动更新，因为它依赖 expandedFolders
+	}, [nodes, setExpandedFolders])
 
 	const hasAnyFolders = useMemo(() => hasFolders(nodes), [nodes])
 

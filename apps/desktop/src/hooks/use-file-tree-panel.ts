@@ -231,26 +231,25 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 				const newNodeId = result.right.node.id
 				setSelectedNodeId(newNodeId)
 
-				// 自动展开祖先文件夹并滚动到新节点
+				// 自动展开祖先文件夹
 				const ancestorPath = calculateAncestorPath(nodes, newNodeId)
 				if (ancestorPath.length > 0) {
 					const expandedAncestors = calculateExpandedAncestors(ancestorPath)
-					// 合并到现有的展开状态
 					setExpandedFolders({
 						...expandedFolders,
 						...expandedAncestors,
 					})
 				}
 
-				// 等待 DOM 更新后滚动
+				// treeData 会自动更新，等待后滚动到节点
 				setTimeout(() => {
 					if (treeRef.current?.scrollTo) {
 						treeRef.current.scrollTo(newNodeId)
 					}
-				}, 100)
+				}, 150)
 			}
 		},
-		[workspaceId, setSelectedNodeId, nodes, setExpandedFolders],
+		[workspaceId, setSelectedNodeId, nodes, expandedFolders, setExpandedFolders, treeRef],
 	)
 
 	const handleCreateFile = useCallback(
@@ -275,26 +274,25 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				void navigate({ to: "/" } as any)
 
-				// 自动展开祖先文件夹并滚动到新节点
+				// 自动展开祖先文件夹
 				const ancestorPath = calculateAncestorPath(nodes, newNodeId)
 				if (ancestorPath.length > 0) {
 					const expandedAncestors = calculateExpandedAncestors(ancestorPath)
-					// 合并到现有的展开状态
 					setExpandedFolders({
 						...expandedFolders,
 						...expandedAncestors,
 					})
 				}
 
-				// 等待 DOM 更新后滚动
+				// treeData 会自动更新，等待后滚动到节点
 				setTimeout(() => {
 					if (treeRef.current?.scrollTo) {
 						treeRef.current.scrollTo(newNodeId)
 					}
-				}, 100)
+				}, 150)
 			}
 		},
-		[workspaceId, setSelectedNodeId, navigate, nodes, setExpandedFolders],
+		[workspaceId, setSelectedNodeId, navigate, nodes, expandedFolders, setExpandedFolders, treeRef],
 	)
 
 	const handleCreateDiary = useCallback(async () => {
