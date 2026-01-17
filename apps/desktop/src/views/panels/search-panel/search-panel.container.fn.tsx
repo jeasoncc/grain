@@ -38,7 +38,7 @@ export const SearchPanelContainer = memo(() => {
 					limit: 100,
 					types: searchState.selectedTypes as SearchResultType[],
 				})
-				setResults(searchResults)
+				setResults([...searchResults])
 			} catch (error) {
 				console.error("Search failed:", error)
 				setResults([])

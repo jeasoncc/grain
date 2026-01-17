@@ -28,8 +28,8 @@ export const useUsers = () => {
 				throw new Error(result.left.message)
 			}
 			// 按最后登录时间排序（最新的在前）
-			return result.right.sort(
-				(a, b) => dayjs(b.lastLogin).valueOf() - dayjs(a.lastLogin).valueOf(),
+			return [...result.right].sort(
+				(a: UserInterface, b: UserInterface) => dayjs(b.lastLogin).valueOf() - dayjs(a.lastLogin).valueOf(),
 			)
 		},
 		queryKey: queryKeys.users.all,

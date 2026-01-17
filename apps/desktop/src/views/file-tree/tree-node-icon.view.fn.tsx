@@ -8,14 +8,14 @@
 
 import { useIconTheme } from "@/hooks/use-icon-theme"
 import { cn } from "@/hooks/use-classnames"
-import type { TreeData } from "./file-tree.types"
+import type { NodeType } from "@/types/node"
 
 // ============================================================================
 // 类型定义
 // ============================================================================
 
 export interface TreeNodeIconProps {
-	readonly type: TreeData["type"]
+	readonly type: NodeType
 	readonly isOpen: boolean
 	readonly isSelected: boolean
 	readonly hasSelection: boolean

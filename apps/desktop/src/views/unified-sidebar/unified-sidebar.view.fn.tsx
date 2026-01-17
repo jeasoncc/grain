@@ -62,7 +62,7 @@ export const UnifiedSidebarView = memo(
 				{activePanel === "drawings" && (
 					<DrawingsPanel
 						workspaceId={workspaceId}
-						drawings={drawings}
+						drawings={[...drawings]}
 						selectedDrawingId={selectedDrawingId}
 						onSelectDrawing={onSelectDrawing}
 						onCreateDrawing={onCreateDrawing}

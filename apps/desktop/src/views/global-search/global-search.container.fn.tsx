@@ -39,7 +39,7 @@ export const GlobalSearchContainer = memo(({ open, onOpenChange }: GlobalSearchC
 			const searchResults = await searchEngine.simpleSearch(searchQuery, {
 				limit: 30,
 			})
-			setResults(searchResults)
+			setResults([...searchResults])
 			setSelectedIndex(0)
 			console.log("[GlobalSearch] 搜索完成", {
 				count: searchResults.length,
