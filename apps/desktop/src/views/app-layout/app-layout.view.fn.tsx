@@ -1,6 +1,6 @@
 /**
  * @file app-layout.view.fn.tsx
- * @description 应用主布局组件
+ * @description 应用主布局组件（纯声明式）
  *
  * 负责组织整个应用的布局结构：
  * - ActivityBar（左侧窄栏）
@@ -8,14 +8,14 @@
  * - 主内容区域（children）
  *
  * 使用 react-resizable-panels 实现可拖拽调整的布局。
- * 布局状态通过 layout.state.ts 管理并持久化。
+ * 所有逻辑封装在 use-app-layout.ts hook 中。
  *
  * 依赖规则：views/ 只能依赖 hooks/, types/
  */
 
-import { type ReactNode, useEffect } from "react"
+import type { ReactNode } from "react"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
-import { useLayout } from "@/hooks/use-layout"
+import { useAppLayout } from "@/hooks/use-app-layout"
 import { ActivityBar } from "@/views/activity-bar"
 import { UnifiedSidebar } from "@/views/unified-sidebar"
 
@@ -25,7 +25,7 @@ export interface AppLayoutProps {
 }
 
 /**
- * 应用主布局组件
+ * 应用主布局组件（纯声明式）
  *
  * 布局结构：
  * ```
@@ -39,77 +39,16 @@ export interface AppLayoutProps {
  * - 侧边栏可拖拽调整宽度（15%-40%）
  * - 拖拽到最小宽度时自动折叠
  * - 布局状态自动持久化到 localStorage
- * - 支持条件渲染侧边栏（根据 activePanel）
  * - 响应式布局：窗口宽度 < 768px 时自动折叠侧边栏
  */
 export function AppLayout({ children }: AppLayoutProps) {
-	const {
-		isSidebarOpen,
-		sidebarWidth,
-		setSidebarWidth,
-		setSidebarCollapsedByDrag,
-		restoreFromCollapse,
-		toggleSidebar,
-	} = useLayout()
-
-	/**
-	 * Handle panel resize
-	 * Updates sidebar width in state
-	 */
-	const handleResize = (sizes: readonly number[]) => {
-		// sizes[0] is sidebar percentage
-		const newWidth = sizes[0]
-		if (newWidth !== undefined) {
-			setSidebarWidth(newWidth)
-		}
-	}
-
-	/**
-	 * Handle panel collapse
-	 * Detects when sidebar is collapsed by drag
-	 */
-	const handleCollapse = () => {
-		setSidebarCollapsedByDrag(true)
-	}
-
-	/**
-	 * Handle panel expand
-	 * Restores sidebar from drag collapse
-	 */
-	const handleExpand = () => {
-		restoreFromCollapse()
-	}
-
-	/**
-	 * Responsive layout: Auto-collapse sidebar on small screens
-	 * Threshold: 768px (tablet breakpoint)
-	 */
-	useEffect(() => {
-		const handleResize = () => {
-			const isSmallScreen = window.innerWidth < 768
-
-			// Auto-collapse on small screens
-			if (isSmallScreen && isSidebarOpen) {
-				toggleSidebar()
-			}
-		}
-
-		// Check on mount
-		handleResize()
-
-		// Listen to window resize
-		window.addEventListener("resize", handleResize)
-		return () => window.removeEventListener("resize", handleResize)
-	}, [isSidebarOpen, toggleSidebar])
+	const { isSidebarOpen, sidebarWidth, handleResize, handleCollapse, handleExpand } = useAppLayout()
 
 	return (
 		<div className="flex h-screen w-screen overflow-hidden">
-			{/* 左侧：ActivityBar（窄栏，固定宽度） */}
 			<ActivityBar />
 
-			{/* 主布局区域：Sidebar + Content（可调整大小） */}
 			<PanelGroup direction="horizontal" autoSaveId="grain-main-layout" onLayout={handleResize}>
-				{/* 左侧：UnifiedSidebar（可调整大小） */}
 				{isSidebarOpen && (
 					<>
 						<Panel
@@ -124,12 +63,10 @@ export function AppLayout({ children }: AppLayoutProps) {
 							<UnifiedSidebar />
 						</Panel>
 
-						{/* 调整手柄 */}
 						<PanelResizeHandle className="w-1 bg-border hover:bg-accent transition-colors" />
 					</>
 				)}
 
-				{/* 主内容区域 */}
 				<Panel id="content" minSize={30}>
 					<div className="h-full overflow-hidden">{children}</div>
 				</Panel>
