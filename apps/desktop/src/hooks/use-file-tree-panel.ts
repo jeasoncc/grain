@@ -186,6 +186,46 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 	// Handlers - 纯粹的 flows 调用绑定
 	// ============================================================================
 
+	/**
+	 * 统一处理创建节点后的展开状态
+	 * 只展开到新节点的祖先路径，折叠其他文件夹
+	 */
+	const updateExpandedFoldersForNewNode = useCallback(
+		async (newNodeId: string) => {
+			if (!workspaceId) return
+
+			// 刷新节点列表
+			await queryClient.invalidateQueries({
+				queryKey: queryKeys.nodes.byWorkspace(workspaceId),
+			})
+
+			// 使用 setTimeout 确保数据已刷新
+			setTimeout(async () => {
+				try {
+					const refreshedNodes = await queryClient.fetchQuery({
+						queryKey: queryKeys.nodes.byWorkspace(workspaceId),
+						queryFn: async () => {
+							const result = await nodeFlow.getNodesByWorkspace(workspaceId)()
+							if (result._tag === "Left") throw result.left
+							return result.right
+						},
+					})
+
+					if (refreshedNodes) {
+						const ancestorPath = calculateAncestorPathFlow(refreshedNodes, newNodeId)
+						const expandedAncestors = ancestorPath.length > 0
+							? calculateExpandedAncestorsFlow(ancestorPath)
+							: {}
+						setExpandedFolders(expandedAncestors)
+					}
+				} catch (error) {
+					console.error("Failed to update expanded folders:", error)
+				}
+			}, 100)
+		},
+		[workspaceId, queryClient, setExpandedFolders],
+	)
+
 	const handleSelectNode = useCallback(
 		async (nodeId: string) => {
 			setSelectedNodeId(nodeId)
@@ -220,44 +260,13 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 				workspaceId,
 			})()
 
-			// 成功时更新选中状态并自动展开祖先
 			if (result._tag === "Right" && result.right?.node) {
 				const newNodeId = result.right.node.id
 				setSelectedNodeId(newNodeId)
-
-				// 刷新节点列表
-				await queryClient.invalidateQueries({
-					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
-				})
-
-				// 使用 setTimeout 确保数据已刷新
-				setTimeout(async () => {
-					try {
-						const refreshedNodes = await queryClient.fetchQuery({
-							queryKey: queryKeys.nodes.byWorkspace(workspaceId),
-							queryFn: async () => {
-								const result = await nodeFlow.getNodesByWorkspace(workspaceId)()
-								if (result._tag === "Left") throw result.left
-								return result.right
-							},
-						})
-
-						if (refreshedNodes) {
-							const ancestorPath = calculateAncestorPathFlow(refreshedNodes, newNodeId)
-							if (ancestorPath.length > 0) {
-								const expandedAncestors = calculateExpandedAncestorsFlow(ancestorPath)
-								setExpandedFolders(expandedAncestors)
-							} else {
-								setExpandedFolders({})
-							}
-						}
-					} catch (error) {
-						console.error("Failed to update expanded folders:", error)
-					}
-				}, 100)
+				await updateExpandedFoldersForNewNode(newNodeId)
 			}
 		},
-		[workspaceId, setSelectedNodeId, queryClient, setExpandedFolders],
+		[workspaceId, setSelectedNodeId, updateExpandedFoldersForNewNode],
 	)
 
 	const handleCreateFile = useCallback(
@@ -275,46 +284,15 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 				workspaceId,
 			})()
 
-			// 成功时更新选中状态并导航
 			if (result._tag === "Right" && result.right && type !== "folder") {
 				const newNodeId = result.right.node.id
 				setSelectedNodeId(newNodeId)
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				void navigate({ to: "/" } as any)
-
-				// 刷新节点列表
-				await queryClient.invalidateQueries({
-					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
-				})
-
-				// 使用 setTimeout 确保数据已刷新
-				setTimeout(async () => {
-					try {
-						const refreshedNodes = await queryClient.fetchQuery({
-							queryKey: queryKeys.nodes.byWorkspace(workspaceId),
-							queryFn: async () => {
-								const result = await nodeFlow.getNodesByWorkspace(workspaceId)()
-								if (result._tag === "Left") throw result.left
-								return result.right
-							},
-						})
-
-						if (refreshedNodes) {
-							const ancestorPath = calculateAncestorPathFlow(refreshedNodes, newNodeId)
-							if (ancestorPath.length > 0) {
-								const expandedAncestors = calculateExpandedAncestorsFlow(ancestorPath)
-								setExpandedFolders(expandedAncestors)
-							} else {
-								setExpandedFolders({})
-							}
-						}
-					} catch (error) {
-						console.error("Failed to update expanded folders:", error)
-					}
-				}, 100)
+				await updateExpandedFoldersForNewNode(newNodeId)
 			}
 		},
-		[workspaceId, setSelectedNodeId, navigate, queryClient, setExpandedFolders],
+		[workspaceId, setSelectedNodeId, navigate, updateExpandedFoldersForNewNode],
 	)
 
 	const handleCreateDiary = useCallback(
@@ -330,40 +308,10 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 				setSelectedNodeId(newNodeId)
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				void navigate({ to: "/" } as any)
-
-				// 刷新节点列表
-				await queryClient.invalidateQueries({
-					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
-				})
-
-				// 使用 setTimeout 确保数据已刷新，只展开到新日记的祖先路径
-				setTimeout(async () => {
-					try {
-						const refreshedNodes = await queryClient.fetchQuery({
-							queryKey: queryKeys.nodes.byWorkspace(workspaceId),
-							queryFn: async () => {
-								const result = await nodeFlow.getNodesByWorkspace(workspaceId)()
-								if (result._tag === "Left") throw result.left
-								return result.right
-							},
-						})
-
-						if (refreshedNodes) {
-							const ancestorPath = calculateAncestorPathFlow(refreshedNodes, newNodeId)
-							if (ancestorPath.length > 0) {
-								const expandedAncestors = calculateExpandedAncestorsFlow(ancestorPath)
-								setExpandedFolders(expandedAncestors)
-							} else {
-								setExpandedFolders({})
-							}
-						}
-					} catch (error) {
-						console.error("Failed to update expanded folders:", error)
-					}
-				}, 100)
+				await updateExpandedFoldersForNewNode(newNodeId)
 			}
 		},
-		[workspaceId, setSelectedNodeId, navigate, queryClient, setExpandedFolders],
+		[workspaceId, setSelectedNodeId, navigate, updateExpandedFoldersForNewNode],
 	)
 
 	const handleDeleteNode = useCallback(
