@@ -17,6 +17,7 @@
  */
 
 import { useNavigate } from "@tanstack/react-router"
+import { useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useRef } from "react"
 import {
 	createDiaryCompatAsync,
@@ -29,6 +30,7 @@ import {
 	calculateAncestorPathFlow,
 	calculateExpandedAncestorsFlow,
 } from "@/flows/file-tree"
+import { queryKeys } from "@/hooks/queries/query-keys"
 import { useSelectionStore } from "@/state/selection.state"
 import { useSidebarStore } from "@/state/sidebar.state"
 import { useEditorTabs } from "./use-editor-tabs"
@@ -128,6 +130,7 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 	// ============================================================================
 
 	const navigate = useNavigate()
+	const queryClient = useQueryClient()
 	const globalSelectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId)
 	const selectedNodeId = useSelectionStore((s) => s.selectedNodeId)
 	const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId)
@@ -222,6 +225,11 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 				const newNodeId = result.right.node.id
 				setSelectedNodeId(newNodeId)
 
+				// 刷新节点列表
+				await queryClient.invalidateQueries({
+					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
+				})
+
 				// 自动展开祖先文件夹
 				const ancestorPath = calculateAncestorPathFlow(nodes, newNodeId)
 				if (ancestorPath.length > 0) {
@@ -235,7 +243,7 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 				// Note: Scroll to new node is handled by useFileTree hook via selectedNodeId effect
 			}
 		},
-		[workspaceId, setSelectedNodeId, nodes, expandedFolders, setExpandedFolders],
+		[workspaceId, setSelectedNodeId, queryClient, nodes, expandedFolders, setExpandedFolders],
 	)
 
 	const handleCreateFile = useCallback(
@@ -260,6 +268,11 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				void navigate({ to: "/" } as any)
 
+				// 刷新节点列表
+				await queryClient.invalidateQueries({
+					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
+				})
+
 				// 自动展开祖先文件夹
 				const ancestorPath = calculateAncestorPathFlow(nodes, newNodeId)
 				if (ancestorPath.length > 0) {
@@ -273,7 +286,7 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 				// Note: Scroll to new node is handled by useFileTree hook via selectedNodeId effect
 			}
 		},
-		[workspaceId, setSelectedNodeId, navigate, nodes, expandedFolders, setExpandedFolders],
+		[workspaceId, setSelectedNodeId, navigate, queryClient, nodes, expandedFolders, setExpandedFolders],
 	)
 
 	const handleCreateDiary = useCallback(async () => {
@@ -306,23 +319,40 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 
 			const result = await deleteNode(nodeId)()
 
-			// 成功时清理状态
+			// 成功时清理状态并刷新列表
 			if (result._tag === "Right") {
 				closeTab(nodeId)
 				if (selectedNodeId === nodeId) {
 					setSelectedNodeId(null)
 				}
+
+				// 刷新节点列表
+				if (workspaceId) {
+					await queryClient.invalidateQueries({
+						queryKey: queryKeys.nodes.byWorkspace(workspaceId),
+					})
+				}
 			}
 		},
-		[selectedNodeId, closeTab, setSelectedNodeId, getNode],
+		[workspaceId, selectedNodeId, closeTab, setSelectedNodeId, getNode, queryClient],
 	)
 
-	const handleRenameNode = useCallback(async (nodeId: string, newTitle: string) => {
-		const trimmedTitle = newTitle.trim()
-		if (!trimmedTitle) return
+	const handleRenameNode = useCallback(
+		async (nodeId: string, newTitle: string) => {
+			const trimmedTitle = newTitle.trim()
+			if (!trimmedTitle) return
 
-		await renameNode({ nodeId, title: trimmedTitle })()
-	}, [])
+			const result = await renameNode({ nodeId, title: trimmedTitle })()
+
+			// 成功时刷新列表
+			if (result._tag === "Right" && workspaceId) {
+				await queryClient.invalidateQueries({
+					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
+				})
+			}
+		},
+		[workspaceId, queryClient],
+	)
 
 	// ============================================================================
 	// Return
