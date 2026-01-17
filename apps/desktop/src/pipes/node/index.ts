@@ -21,6 +21,14 @@ export {
 	type ExpandedFoldersMap,
 	mergeExpandedFoldersForNode,
 } from "./node.expand.fn"
+// 展开状态初始化函数
+export { initializeExpandedFolders } from "./expand-init.pipe"
+// 批量展开/折叠函数
+export {
+	calculateCollapseAllFolders,
+	calculateExpandAllFolders,
+	hasFolders,
+} from "./node.expand-all.pipe"
 // Tree 操作函数
 export {
 	buildTree,

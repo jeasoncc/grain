@@ -7,9 +7,16 @@
  * 组件只负责渲染，像 HTML 一样声明式
  */
 
-import { FolderPlus, Plus } from "lucide-react"
+import { ChevronsDownUp, ChevronsUpDown, FolderPlus, Plus } from "lucide-react"
+import { useCallback, useMemo } from "react"
 import { Tree } from "react-arborist"
 import { useFileTree } from "@/hooks/use-file-tree"
+import {
+	calculateCollapseAllFolders,
+	calculateExpandAllFolders,
+	hasFolders,
+} from "@/pipes/node"
+import { useSidebarStore } from "@/state/sidebar.state"
 import { Button } from "@/views/ui/button"
 import type { FileTreeProps } from "./file-tree.types"
 import { TreeNode } from "@/views/file-tree/tree-node.view.fn"
@@ -73,6 +80,33 @@ export function FileTree(props: FileTreeProps) {
 		treeRef: externalTreeRef,
 	})
 
+	// Expand/Collapse All handlers
+	const setExpandedFolders = useSidebarStore((state) => state.setExpandedFolders)
+
+	const handleExpandAll = useCallback(() => {
+		const expandedState = calculateExpandAllFolders(nodes)
+		setExpandedFolders(expandedState)
+		// Sync with react-arborist
+		if (treeRef.current) {
+			Object.keys(expandedState).forEach((folderId) => {
+				treeRef.current?.open(folderId)
+			})
+		}
+	}, [nodes, setExpandedFolders, treeRef])
+
+	const handleCollapseAll = useCallback(() => {
+		const collapsedState = calculateCollapseAllFolders(nodes)
+		setExpandedFolders(collapsedState)
+		// Sync with react-arborist
+		if (treeRef.current) {
+			Object.keys(collapsedState).forEach((folderId) => {
+				treeRef.current?.close(folderId)
+			})
+		}
+	}, [nodes, setExpandedFolders, treeRef])
+
+	const hasAnyFolders = useMemo(() => hasFolders(nodes), [nodes])
+
 	// No workspace selected
 	if (!workspaceId) {
 		const FolderIcon = iconTheme.icons.folder.default
@@ -94,6 +128,26 @@ export function FileTree(props: FileTreeProps) {
 					Explorer
 				</span>
 				<div className="flex items-center gap-1 opacity-0 group-hover/header:opacity-100 transition-opacity">
+					<Button
+						variant="ghost"
+						size="icon"
+						className="size-7 hover:bg-sidebar-accent rounded-sm"
+						onClick={handleExpandAll}
+						disabled={!hasAnyFolders}
+						title="全部展开 / Expand All"
+					>
+						<ChevronsDownUp className="size-4" />
+					</Button>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="size-7 hover:bg-sidebar-accent rounded-sm"
+						onClick={handleCollapseAll}
+						disabled={!hasAnyFolders}
+						title="全部折叠 / Collapse All"
+					>
+						<ChevronsUpDown className="size-4" />
+					</Button>
 					<Button
 						variant="ghost"
 						size="icon"

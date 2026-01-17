@@ -90,3 +90,16 @@ export interface NodeUpdateInput {
 	readonly collapsed?: boolean
 	readonly tags?: readonly string[]
 }
+
+/**
+ * TreeData 接口
+ * react-arborist 使用的树形数据结构
+ * 用于在 UI 层展示文件树
+ */
+export interface TreeData {
+	readonly id: string
+	readonly name: string
+	readonly type: NodeType
+	readonly collapsed: boolean
+	readonly children?: readonly TreeData[]
+}

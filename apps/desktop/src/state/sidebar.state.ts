@@ -182,7 +182,8 @@ export const useSidebarStore = create<SidebarStore>()(
 			partialize: (state) => ({
 				activePanel: state.activePanel,
 				drawingsState: state.drawingsState,
-				fileTreeState: state.fileTreeState,
+				// fileTreeState 不持久化 - expandedFolders 是运行时状态
+				// fileTreeState is not persisted - expandedFolders is runtime state
 				isOpen: state.isOpen,
 				previousWidth: state.previousWidth,
 				searchState: state.searchState,

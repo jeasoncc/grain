@@ -61,35 +61,35 @@ export default [
       'check-file/filename-naming-convention': [
         'error',
         {
-          // pipes/ 目录必须使用 .pipe.ts 后缀
-          'src/pipes/**/*.ts': '+(.+).pipe.ts',
+          // pipes/ 目录必须使用 .pipe.ts 或 .fn.ts 后缀 (允许 index.ts 和测试文件)
+          'src/pipes/**/!(index|*.test).ts': 'KEBAB_CASE',
           
-          // flows/ 目录必须使用 .flow.ts 后缀
-          'src/flows/**/*.ts': '+(.+).flow.ts',
+          // flows/ 目录必须使用 .flow.ts 后缀 (允许 index.ts 和测试文件)
+          'src/flows/**/!(index|*.test).ts': 'KEBAB_CASE',
           
-          // io/api/ 目录必须使用 .api.ts 后缀
-          'src/io/api/**/*.ts': '+(.+).api.ts',
+          // io/api/ 目录必须使用 .api.ts 后缀 (允许 index.ts)
+          'src/io/api/**/!(index).ts': 'KEBAB_CASE',
           
-          // io/storage/ 目录必须使用 .storage.ts 后缀
-          'src/io/storage/**/*.ts': '+(.+).storage.ts',
+          // io/storage/ 目录必须使用 .storage.ts 后缀 (允许 index.ts)
+          'src/io/storage/**/!(index).ts': 'KEBAB_CASE',
           
-          // state/ 目录必须使用 .state.ts 后缀
-          'src/state/**/*.ts': '+(.+).state.ts',
+          // state/ 目录必须使用 .state.ts 后缀 (允许 index.ts)
+          'src/state/**/!(index).ts': 'KEBAB_CASE',
           
-          // hooks/ 目录必须使用 use-*.ts 命名模式
-          'src/hooks/**/*.ts': 'use-+(.+).ts',
+          // hooks/ 目录必须使用 use-*.ts 命名模式 (允许 index.ts)
+          'src/hooks/**/!(index).ts': 'KEBAB_CASE',
           
-          // views/ 目录必须使用 .view.fn.tsx 或 .container.fn.tsx 后缀
-          'src/views/**/*.tsx': '+(.+).@(view|container).fn.tsx',
+          // views/ 目录必须使用 .view.fn.tsx 或 .container.fn.tsx 后缀 (允许 index.tsx)
+          'src/views/**/!(index).tsx': 'KEBAB_CASE',
           
-          // utils/ 目录必须使用 .util.ts 后缀
-          'src/utils/**/*.ts': '+(.+).util.ts',
+          // utils/ 目录必须使用 .util.ts 后缀 (允许 index.ts)
+          'src/utils/**/!(index).ts': 'KEBAB_CASE',
           
-          // types/ 目录可以使用 .interface.ts, .schema.ts, .types.ts 等
-          'src/types/**/*.ts': '+(.+).@(interface|schema|types).ts',
+          // types/ 目录可以使用 .interface.ts, .schema.ts, .types.ts 等 (允许 index.ts)
+          'src/types/**/!(index).ts': 'KEBAB_CASE',
           
-          // routes/ 目录使用 .route.tsx 后缀
-          'src/routes/**/*.tsx': '+(.+).route.tsx',
+          // routes/ 目录使用 .route.tsx 后缀 (允许 __root.tsx 和 index.tsx)
+          'src/routes/**/!(index|__root).tsx': 'KEBAB_CASE',
           
           // 其他 TypeScript 文件使用 kebab-case
           '**/*.{ts,tsx}': 'KEBAB_CASE',

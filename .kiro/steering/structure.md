@@ -109,20 +109,7 @@ src/
 └── main.tsx              # 应用入口
 ```
 
-## 兼容层（已废弃，待清理）
 
-以下目录作为兼容层保留，新代码不应依赖：
-
-```
-src/
-├── fn/                   # → 已迁移到 pipes/, utils/, flows/, views/
-├── components/           # → 已迁移到 views/
-├── actions/              # → 已迁移到 flows/
-├── stores/               # → 已迁移到 state/
-├── lib/                  # → 已迁移到 utils/
-├── db/                   # → 已迁移到 io/db/（保留为重导出兼容层）
-└── log/                  # → 已迁移到 io/log/（保留为重导出兼容层）
-```
 
 ## Rust Core 结构 (`packages/rust-core/src/`)
 

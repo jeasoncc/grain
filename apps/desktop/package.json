@@ -1,6 +1,6 @@
 {
   "name": "desktop",
-  "version": "0.1.564",
+  "version": "0.1.565",
   "private": true,
   "type": "module",
   "scripts": {
@@ -33,6 +33,12 @@
     "icon:generate": "tauri icon src-tauri/icons/my-new-icon.png",
     "icon:update": "bash ../../scripts/update-icons.sh",
     "lint": "eslint --config eslint.config.grain.js 'src/**/*.{ts,tsx}' --format json | node scripts/categorize-lint-report.js",
+    "lint:files": "eslint --config eslint.config.grain.js",
+    "lint:hooks": "eslint --config eslint.config.grain.js 'src/hooks/**/*.ts'",
+    "lint:views": "eslint --config eslint.config.grain.js 'src/views/**/*.tsx'",
+    "lint:pipes": "eslint --config eslint.config.grain.js 'src/pipes/**/*.ts'",
+    "lint:flows": "eslint --config eslint.config.grain.js 'src/flows/**/*.ts'",
+    "lint:io": "eslint --config eslint.config.grain.js 'src/io/**/*.ts'",
     "lint:grain:report": "eslint --config eslint.config.grain.js 'src/**/*.{ts,tsx}' --format json | node scripts/categorize-lint-report.js",
     "perf:analyze": "npx source-map-explorer 'dist/assets/*.js'",
     "preview": "vite preview",

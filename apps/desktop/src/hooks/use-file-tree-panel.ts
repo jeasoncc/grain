@@ -1,20 +1,24 @@
 /**
  * @file hooks/use-file-tree-panel.ts
- * @description FileTreePanel hook - 封装文件树面板的所有逻辑
+ * @description FileTreePanel hook - 数据绑定层
  *
  * 职责：
- * - 协调 hooks、flows、state
- * - 处理所有文件/文件夹操作
- * - 管理选中状态和导航
+ * - 绑定 state 数据到 React 组件
+ * - 封装 flows 调用为 React callbacks
+ * - 管理 React 特定的状态（refs、effects）
+ *
+ * 不负责：
+ * - 业务逻辑（在 flows 层）
+ * - 错误处理（在 flows 层）
+ * - 日志记录（在 flows 层）
+ * - Toast 提示（在 flows 层）
  *
  * 依赖：hooks/, flows/, state/, types/
  */
 
+import type React from "react"
 import { useNavigate } from "@tanstack/react-router"
-import { pipe } from "fp-ts/function"
-import * as TE from "fp-ts/TaskEither"
 import { useCallback, useEffect, useRef } from "react"
-import { toast } from "sonner"
 import {
 	createDiaryCompatAsync,
 	createFile,
@@ -26,12 +30,9 @@ import {
 import { useEditorTabs } from "./use-editor-tabs"
 import { useNodesByWorkspace } from "./use-node"
 import { useGetNodeById } from "./use-node-operations"
-import { useOptimisticCollapse } from "./use-optimistic-collapse"
-import { createDocument, createHeadingNode, createParagraphNode, createTextNode } from "@/pipes/content"
 import { useSelectionStore } from "@/state/selection.state"
+import { useSidebarStore } from "@/state/sidebar.state"
 import type { NodeInterface, NodeType } from "@/types/node"
-import { autoExpandAndScrollToNode } from "@/utils/file-tree-navigation.util"
-import { useConfirm } from "@/views/ui/confirm"
 
 // ============================================================================
 // Types
@@ -60,7 +61,7 @@ export interface UseFileTreePanelReturn {
 		readonly onDeleteNode: (nodeId: string) => Promise<void>
 		readonly onRenameNode: (nodeId: string, newTitle: string) => Promise<void>
 		readonly onMoveNode: (nodeId: string, newParentId: string | null, newIndex: number) => Promise<void>
-		readonly onToggleCollapsed: (nodeId: string, collapsed: boolean) => void
+		readonly onToggleCollapsed: (nodeId: string) => void
 	}
 }
 
@@ -74,94 +75,71 @@ const EXCALIDRAW_EMPTY_CONTENT = JSON.stringify({
 	files: {},
 })
 
-// ============================================================================
-// Helper Functions (Pure)
-// ============================================================================
+const LEXICAL_EMPTY_CONTENT = (title: string): string =>
+	JSON.stringify({
+		root: {
+			children: [
+				{
+					children: [{ detail: 0, format: 0, mode: "normal", style: "", text: title, type: "text", version: 1 }],
+					direction: "ltr",
+					format: "",
+					indent: 0,
+					tag: "h2",
+					type: "heading",
+					version: 1,
+				},
+				{
+					children: [{ detail: 0, format: 0, mode: "normal", style: "", text: "", type: "text", version: 1 }],
+					direction: "ltr",
+					format: "",
+					indent: 0,
+					type: "paragraph",
+					version: 1,
+				},
+			],
+			direction: "ltr",
+			format: "",
+			indent: 0,
+			type: "root",
+			version: 1,
+		},
+	})
 
-/**
- * 生成新文件的默认 Lexical 内容
- */
-const generateLexicalContent = (title: string): string => {
-	const doc = createDocument([
-		createHeadingNode(title, "h2"),
-		createParagraphNode([createTextNode("")]),
-	])
-	return JSON.stringify(doc)
-}
-
-/**
- * 根据文件类型生成初始内容
- */
 const generateContentByType = (type: NodeType, title: string): string =>
-	type === "drawing" ? EXCALIDRAW_EMPTY_CONTENT : generateLexicalContent(title)
+	type === "drawing" ? EXCALIDRAW_EMPTY_CONTENT : LEXICAL_EMPTY_CONTENT(title)
 
-/**
- * 根据文件类型获取标题
- */
 const getTitleByType = (type: NodeType): string => (type === "drawing" ? "New Canvas" : "New File")
-
-/**
- * 根据文件类型获取成功消息
- */
-const getSuccessMessage = (type: NodeType): string =>
-	type === "drawing" ? "Canvas created" : "File created"
 
 // ============================================================================
 // Hook
 // ============================================================================
 
 /**
- * Hook for FileTreePanel component logic
+ * FileTreePanel 数据绑定 Hook
  *
- * 封装所有文件树面板逻辑：
- * - 文件/文件夹的 CRUD 操作
- * - 节点选择和导航
- * - 拖拽移动
- * - 折叠/展开
+ * 纯粹的数据绑定层，不包含业务逻辑、错误处理、日志记录。
+ * 所有业务逻辑、toast 提示、日志记录都在 flows 层完成。
  *
- * @returns FileTreePanel state and handlers
+ * @param params - Hook 参数
+ * @returns FileTreePanel 状态和处理器
  */
 export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePanelReturn {
 	const { workspaceId: propWorkspaceId } = params
 
 	// ============================================================================
-	// Hooks - Navigation & UI
+	// State Bindings
 	// ============================================================================
 
 	const navigate = useNavigate()
-	const confirm = useConfirm()
-
-	// ============================================================================
-	// Hooks - State
-	// ============================================================================
-
 	const globalSelectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId)
 	const selectedNodeId = useSelectionStore((s) => s.selectedNodeId)
 	const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId)
 
 	const workspaceId = propWorkspaceId ?? globalSelectedWorkspaceId
 
-	// ============================================================================
-	// Hooks - Data
-	// ============================================================================
-
 	const nodes = useNodesByWorkspace(workspaceId) ?? []
 	const { getNode } = useGetNodeById()
 	const { closeTab } = useEditorTabs()
-	const { toggleCollapsed: optimisticToggleCollapsed } = useOptimisticCollapse({ workspaceId })
-
-	// 包装 toggleCollapsed 以兼容 autoExpandAndScrollToNode 的类型要求
-	const setCollapsedAsync = useCallback(
-		async (nodeId: string, collapsed: boolean): Promise<boolean> => {
-			try {
-				optimisticToggleCollapsed(nodeId, collapsed)
-				return true
-			} catch {
-				return false
-			}
-		},
-		[optimisticToggleCollapsed],
-	)
 
 	// ============================================================================
 	// Refs
@@ -176,22 +154,38 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 	// ============================================================================
 
 	/**
+	 * 初始化展开状态：从数据库加载的节点初始化 Zustand expandedFolders
+	 */
+	useEffect(() => {
+		if (nodes && nodes.length > 0) {
+			const folderNodes = nodes.filter((node) => node.type === "folder")
+			const expandedFolders = folderNodes.reduce(
+				(acc, folder) => ({
+					...acc,
+					[folder.id]: !(folder.collapsed ?? true),
+				}),
+				{} as Record<string, boolean>,
+			)
+
+			useSidebarStore.getState().setExpandedFolders(expandedFolders)
+		}
+	}, [nodes, workspaceId])
+
+	/**
 	 * 工作区切换时清除选中状态
 	 */
 	useEffect(() => {
 		if (prevWorkspaceIdRef.current !== workspaceId) {
 			setSelectedNodeId(null)
+			// eslint-disable-next-line functional/immutable-data
 			prevWorkspaceIdRef.current = workspaceId
 		}
 	}, [workspaceId, setSelectedNodeId])
 
 	// ============================================================================
-	// Handlers
+	// Handlers - 纯粹的 flows 调用绑定
 	// ============================================================================
 
-	/**
-	 * 选中节点 - 打开文件到编辑器
-	 */
 	const handleSelectNode = useCallback(
 		async (nodeId: string) => {
 			setSelectedNodeId(nodeId)
@@ -202,233 +196,125 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 			}
 
 			if (workspaceId) {
-				await pipe(
-					openFile({
-						nodeId,
-						title: node.title,
-						type: node.type,
-						workspaceId,
-					}),
-					TE.fold(
-						(error) => async () => {
-							console.error("[FileTreePanel] Failed to open file:", error.message)
-						},
-						() => async () => {
-							// eslint-disable-next-line @typescript-eslint/no-explicit-any
-							void navigate({ to: "/" } as any)
-						},
-					),
-				)()
+				await openFile({
+					nodeId,
+					title: node.title,
+					type: node.type,
+					workspaceId,
+				})()
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				void navigate({ to: "/" } as any)
 			}
 		},
 		[workspaceId, navigate, setSelectedNodeId, getNode],
 	)
 
-	/**
-	 * 创建文件夹
-	 */
 	const handleCreateFolder = useCallback(
 		async (parentId: string | null) => {
-			if (!workspaceId) {
-				toast.error("Please select a workspace first")
-				return
-			}
+			if (!workspaceId) return
 
-			await pipe(
-				createFile({
-					parentId,
-					title: "New Folder",
-					type: "folder",
-					workspaceId,
-				}),
-				TE.fold(
-					(error) => async () => {
-						console.error("[FileTreePanel] Failed to create folder:", error.message)
-						toast.error("Failed to create folder")
-					},
-					(result) => async () => {
-						if (result?.node) {
-							setSelectedNodeId(result.node.id)
-							await autoExpandAndScrollToNode(nodes, result.node.id, setCollapsedAsync, treeRef)
-						}
-						toast.success("Folder created")
-					},
-				),
-			)()
+			const result = await createFile({
+				parentId,
+				title: "New Folder",
+				type: "folder",
+				workspaceId,
+			})()
+
+			// 成功时更新选中状态
+			if (result._tag === "Right" && result.right?.node) {
+				setSelectedNodeId(result.right.node.id)
+			}
 		},
-		[workspaceId, nodes, setCollapsedAsync, setSelectedNodeId],
+		[workspaceId, setSelectedNodeId],
 	)
 
-	/**
-	 * 创建文件
-	 */
 	const handleCreateFile = useCallback(
 		async (parentId: string | null, type: NodeType) => {
-			if (!workspaceId) {
-				toast.error("Please select a workspace first")
-				return
-			}
+			if (!workspaceId) return
 
 			const title = getTitleByType(type)
 			const content = generateContentByType(type, title)
 
-			await pipe(
-				createFile({
-					content,
-					parentId,
-					title,
-					type,
-					workspaceId,
-				}),
-				TE.fold(
-					(error) => async () => {
-						console.error("[FileTreePanel] Failed to create file:", error.message)
-						toast.error("Failed to create file")
-					},
-					(result) => async () => {
-						if (result && type !== "folder") {
-							setSelectedNodeId(result.node.id)
-							await autoExpandAndScrollToNode(nodes, result.node.id, setCollapsedAsync, treeRef)
-							// eslint-disable-next-line @typescript-eslint/no-explicit-any
-							void navigate({ to: "/" } as any)
-						}
-						toast.success(getSuccessMessage(type))
-					},
-				),
-			)()
+			const result = await createFile({
+				content,
+				parentId,
+				title,
+				type,
+				workspaceId,
+			})()
+
+			// 成功时更新选中状态并导航
+			if (result._tag === "Right" && result.right && type !== "folder") {
+				setSelectedNodeId(result.right.node.id)
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				void navigate({ to: "/" } as any)
+			}
 		},
-		[workspaceId, setSelectedNodeId, navigate, nodes, setCollapsedAsync],
+		[workspaceId, setSelectedNodeId, navigate],
 	)
 
-	/**
-	 * 创建日记
-	 */
 	const handleCreateDiary = useCallback(async () => {
-		if (!workspaceId) {
-			toast.error("Please select a workspace first")
-			return
-		}
+		if (!workspaceId) return
 
-		try {
-			const { node } = await createDiaryCompatAsync({ workspaceId })
+		const result = await createDiaryCompatAsync({ workspaceId })
+			.then((res) => ({ success: true as const, data: res }))
+			.catch(() => ({ success: false as const }))
 
-			setSelectedNodeId(node.id)
-			await autoExpandAndScrollToNode(nodes, node.id, setCollapsedAsync, treeRef)
+		if (result.success) {
+			setSelectedNodeId(result.data.node.id)
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			void navigate({ to: "/" } as any)
-
-			toast.success("Diary created")
-		} catch (error) {
-			console.error("[FileTreePanel] Failed to create diary:", error)
-			toast.error("Failed to create diary")
 		}
-	}, [workspaceId, setSelectedNodeId, navigate, nodes, setCollapsedAsync])
+	}, [workspaceId, setSelectedNodeId, navigate])
 
-	/**
-	 * 删除节点
-	 */
 	const handleDeleteNode = useCallback(
 		async (nodeId: string) => {
 			const node = await getNode(nodeId)
-			if (!node) {
-				return
-			}
+			if (!node) return
 
 			const isFolder = node.type === "folder"
-			const confirmed = await confirm({
-				cancelText: "Cancel",
-				confirmText: "Delete",
-				description: isFolder
+			const confirmed = window.confirm(
+				isFolder
 					? `Are you sure you want to delete "${node.title}"? This will also delete all contents inside. This cannot be undone.`
 					: `Are you sure you want to delete "${node.title}"? This cannot be undone.`,
-				title: `Delete ${isFolder ? "folder" : "file"}?`,
-			})
+			)
 
-			if (!confirmed) {
-				return
+			if (!confirmed) return
+
+			const result = await deleteNode(nodeId)()
+
+			// 成功时清理状态
+			if (result._tag === "Right") {
+				closeTab(nodeId)
+				if (selectedNodeId === nodeId) {
+					setSelectedNodeId(null)
+				}
 			}
-
-			await pipe(
-				deleteNode(nodeId),
-				TE.fold(
-					(error) => async () => {
-						console.error("[FileTreePanel] Failed to delete node:", error.message)
-						toast.error("Failed to delete")
-					},
-					() => async () => {
-						closeTab(nodeId)
-						if (selectedNodeId === nodeId) {
-							setSelectedNodeId(null)
-						}
-						toast.success(`${isFolder ? "Folder" : "File"} deleted`)
-					},
-				),
-			)()
 		},
-		[confirm, selectedNodeId, closeTab, setSelectedNodeId, getNode],
+		[selectedNodeId, closeTab, setSelectedNodeId, getNode],
 	)
 
-	/**
-	 * 重命名节点
-	 */
 	const handleRenameNode = useCallback(async (nodeId: string, newTitle: string) => {
 		const trimmedTitle = newTitle.trim()
-		if (!trimmedTitle) {
-			return
-		}
+		if (!trimmedTitle) return
 
-		await pipe(
-			renameNode({ nodeId, title: trimmedTitle }),
-			TE.fold(
-				(error) => async () => {
-					console.error("[FileTreePanel] Failed to rename node:", error.message)
-					toast.error("Failed to rename")
-				},
-				() => async () => {
-					// 重命名成功，无需额外操作（TanStack Query 会自动刷新）
-				},
-			),
-		)()
+		await renameNode({ nodeId, title: trimmedTitle })()
 	}, [])
 
-	/**
-	 * 移动节点（拖拽）
-	 */
 	const handleMoveNode = useCallback(
 		async (nodeId: string, newParentId: string | null, newIndex: number) => {
-			await pipe(
-				moveNode({
-					newOrder: newIndex,
-					newParentId,
-					nodeId,
-				}),
-				TE.fold(
-					(error) => async () => {
-						console.error("[FileTreePanel] Failed to move node:", error.message)
-						if (error.message.includes("descendants")) {
-							toast.error("Cannot move a folder into itself")
-						} else {
-							toast.error("Failed to move")
-						}
-					},
-					() => async () => {
-						// 移动成功，无需额外操作
-					},
-				),
-			)()
+			await moveNode({
+				newOrder: newIndex,
+				newParentId,
+				nodeId,
+			})()
 		},
 		[],
 	)
 
-	/**
-	 * 切换折叠状态
-	 */
-	const handleToggleCollapsed = useCallback(
-		(nodeId: string, collapsed: boolean) => {
-			optimisticToggleCollapsed(nodeId, collapsed)
-		},
-		[optimisticToggleCollapsed],
-	)
+	const handleToggleCollapsed = useCallback((nodeId: string) => {
+		useSidebarStore.getState().toggleFolderExpanded(nodeId)
+	}, [])
 
 	// ============================================================================
 	// Return

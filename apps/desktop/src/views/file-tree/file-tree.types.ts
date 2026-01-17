@@ -4,7 +4,10 @@
  */
 
 import type { TreeNode } from "@/pipes/node"
-import type { NodeInterface, NodeType } from "@/types/node"
+import type { NodeInterface, NodeType, TreeData } from "@/types/node"
+
+// Re-export TreeData for convenience
+export type { TreeData }
 
 /**
  * FileTree Props 接口
@@ -37,18 +40,6 @@ export interface FileTreeProps {
 	/** Tree ref for scrolling (可选) */
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	readonly treeRef?: React.RefObject<any>
-}
-
-/**
- * TreeData 接口
- * react-arborist 使用的树形数据结构
- */
-export interface TreeData {
-	readonly id: string
-	readonly name: string
-	readonly type: NodeType
-	readonly collapsed: boolean
-	readonly children?: readonly TreeData[]
 }
 
 /**

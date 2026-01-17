@@ -11,12 +11,13 @@
  * 依赖：hooks/, state/, types/
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import type React from "react"
 import type { NodeApi } from "react-arborist"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import type { NodeInterface, NodeType, TreeData } from "@/types/node"
+import { useExpandedFolders } from "@/state/sidebar.state"
 import { useIconTheme } from "./use-icon-theme"
 import { useTheme } from "./use-theme"
-import type { NodeInterface, NodeType } from "@/types/node"
-import type { TreeData } from "@/views/file-tree/file-tree.types"
 
 // ============================================================================
 // Types
@@ -41,7 +42,7 @@ export interface UseFileTreeReturn {
 	/** 树形数据 */
 	readonly treeData: readonly TreeData[]
 	/** 树的尺寸 */
-	readonly dimensions: { width: number | string; height: number }
+	readonly dimensions: { readonly width: number | string; readonly height: number }
 	/** 容器 ref */
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	readonly containerRef: React.RefObject<any>
@@ -56,9 +57,9 @@ export interface UseFileTreeReturn {
 	readonly hasSelection: boolean
 	/** 树操作处理器 */
 	readonly handlers: {
-		readonly onSelect: (selectedNodes: NodeApi<TreeData>[]) => void
-		readonly onRename: (args: { id: string; name: string }) => void
-		readonly onMove: (args: { dragIds: string[]; parentId: string | null; index: number }) => void
+		readonly onSelect: (selectedNodes: readonly NodeApi<TreeData>[]) => void
+		readonly onRename: (args: { readonly id: string; readonly name: string }) => void
+		readonly onMove: (args: { readonly dragIds: readonly string[]; readonly parentId: string | null; readonly index: number }) => void
 		readonly onToggle: (id: string) => Promise<void>
 	}
 	/** TreeNode 额外 props */
@@ -77,14 +78,16 @@ export interface UseFileTreeReturn {
 
 function buildTreeData(
 	nodes: readonly NodeInterface[],
+	expandedFolders: Record<string, boolean>,
 	parentId: string | null = null,
-): TreeData[] {
+): readonly TreeData[] {
 	return nodes
 		.filter((n) => n.parent === parentId)
 		.toSorted((a, b) => a.order - b.order)
 		.map((node) => ({
-			children: node.type === "folder" ? buildTreeData(nodes, node.id) : undefined,
-			collapsed: node.collapsed ?? true,
+			children: node.type === "folder" ? buildTreeData(nodes, expandedFolders, node.id) : undefined,
+			// 从 expandedFolders 读取展开状态，默认为 true（折叠）
+			collapsed: !(expandedFolders[node.id] ?? false),
 			id: node.id,
 			name: node.title,
 			type: node.type,
@@ -131,11 +134,12 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 
 	const iconTheme = useIconTheme()
 	const { currentTheme } = useTheme()
+	const expandedFolders = useExpandedFolders()
 
 	// Use window height as fallback to ensure tree renders immediately
 	const [dimensions, setDimensions] = useState<{
-		width: number | string
-		height: number
+		readonly width: number | string
+		readonly height: number
 	}>({
 		height: typeof window !== "undefined" ? window.innerHeight - 100 : 600,
 		width: "100%",
@@ -145,7 +149,7 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 	// Computed Values
 	// ============================================================================
 
-	const treeData = useMemo(() => buildTreeData(nodes), [nodes])
+	const treeData = useMemo(() => buildTreeData(nodes, expandedFolders), [nodes, expandedFolders])
 	const hasSelection = !!selectedNodeId
 
 	// ============================================================================
@@ -187,7 +191,7 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 	 * Only select non-folder nodes
 	 */
 	const handleSelect = useCallback(
-		(selectedNodes: NodeApi<TreeData>[]) => {
+		(selectedNodes: readonly NodeApi<TreeData>[]) => {
 			if (selectedNodes.length > 0 && selectedNodes[0].data.type !== "folder") {
 				onSelectNode(selectedNodes[0].id)
 			}
@@ -200,7 +204,7 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 	 * Trim whitespace and validate
 	 */
 	const handleRename = useCallback(
-		({ id, name }: { id: string; name: string }) => {
+		({ id, name }: { readonly id: string; readonly name: string }) => {
 			if (name.trim()) {
 				onRenameNode(id, name.trim())
 			}
@@ -217,9 +221,9 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 			parentId,
 			index,
 		}: {
-			dragIds: string[]
-			parentId: string | null
-			index: number
+			readonly dragIds: readonly string[]
+			readonly parentId: string | null
+			readonly index: number
 		}) => {
 			if (dragIds.length > 0) {
 				onMoveNode(dragIds[0], parentId, index)
