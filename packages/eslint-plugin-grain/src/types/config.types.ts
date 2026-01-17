@@ -259,7 +259,7 @@ export const STRICT_LAYER_DEPENDENCIES: Record<ArchitectureLayer, ArchitectureLa
 	state: ["types"], // 严格模式：移除 pipes 例外
 	types: [],
 	utils: ["types"],
-	views: ["hooks", "types"],
+	views: ["hooks", "types", "views"], // 允许 views 引用 views（UI 组件复用）
 }
 
 /**

@@ -8,8 +8,6 @@
  */
 
 import { ChevronsDownUp, ChevronsUpDown, FolderPlus, Plus } from "lucide-react"
-import type React from "react"
-import { useCallback, useRef, useEffect } from "react"
 import { useFileTree } from "@/hooks/use-file-tree"
 import { Button } from "@/views/ui/button"
 import type { FileTreeProps } from "./file-tree.types"
@@ -67,94 +65,7 @@ export function FileTree(props: FileTreeProps) {
 		onRenameNode,
 	})
 
-	// Keyboard navigation state
-	const focusedIndexRef = useRef<number>(-1)
-	const treeContainerRef = useRef<HTMLDivElement>(null)
 
-	// Update focused index when selection changes
-	useEffect(() => {
-		if (selectedNodeId) {
-			const index = flatNodes.findIndex((n) => n.id === selectedNodeId)
-			if (index !== -1) {
-				focusedIndexRef.current = index
-			}
-		}
-	}, [selectedNodeId, flatNodes])
-
-	// Keyboard navigation handler
-	const handleKeyDown = useCallback(
-		(e: React.KeyboardEvent) => {
-			if (flatNodes.length === 0) return
-
-			const currentIndex = focusedIndexRef.current
-			let newIndex = currentIndex
-
-			switch (e.key) {
-				case "ArrowDown":
-					e.preventDefault()
-					newIndex = Math.min(currentIndex + 1, flatNodes.length - 1)
-					if (newIndex !== currentIndex) {
-						focusedIndexRef.current = newIndex
-						const node = flatNodes[newIndex]
-						if (node.type !== "folder") {
-							onSelectNode(node.id)
-						}
-						virtualizer.scrollToIndex(newIndex, { align: "auto" })
-					}
-					break
-
-				case "ArrowUp":
-					e.preventDefault()
-					newIndex = Math.max(currentIndex - 1, 0)
-					if (newIndex !== currentIndex) {
-						focusedIndexRef.current = newIndex
-						const node = flatNodes[newIndex]
-						if (node.type !== "folder") {
-							onSelectNode(node.id)
-						}
-						virtualizer.scrollToIndex(newIndex, { align: "auto" })
-					}
-					break
-
-				case "ArrowRight": {
-					e.preventDefault()
-					const node = flatNodes[currentIndex]
-					if (node && node.type === "folder" && !node.isExpanded) {
-						handlers.onToggle(node.id)
-					}
-					break
-				}
-
-				case "ArrowLeft": {
-					e.preventDefault()
-					const node = flatNodes[currentIndex]
-					if (node && node.type === "folder" && node.isExpanded) {
-						handlers.onToggle(node.id)
-					}
-					break
-				}
-
-				case "Enter": {
-					e.preventDefault()
-					const node = flatNodes[currentIndex]
-					if (node) {
-						handlers.onSelect(node.id)
-					}
-					break
-				}
-
-				case " ": {
-					e.preventDefault()
-					const node = flatNodes[currentIndex]
-					if (node && node.type === "folder") {
-						handlers.onToggle(node.id)
-					}
-					break
-				}
-			}
-		},
-		[flatNodes, handlers, onSelectNode, virtualizer],
-	)
 
 	// No workspace selected
 	if (!workspaceId) {
@@ -172,11 +83,8 @@ export function FileTree(props: FileTreeProps) {
 
 	return (
 		<div 
-			ref={treeContainerRef}
 			className="group/panel flex h-full w-full flex-col" 
 			data-testid="file-tree"
-			tabIndex={0}
-			onKeyDown={handleKeyDown}
 		>
 			{/* Header */}
 			<div className="h-11 flex items-center justify-between px-4 shrink-0 group/header">
@@ -261,6 +169,13 @@ export function FileTree(props: FileTreeProps) {
 						>
 							{virtualizer.getVirtualItems().map((virtualItem) => {
 								const node = flatNodes[virtualItem.index]
+								const nodeStyle = {
+									position: "absolute" as const,
+									top: 0,
+									left: 0,
+									width: "100%",
+									transform: `translateY(${virtualItem.start}px)`,
+								}
 								return (
 									<TreeNodeRow
 										key={node.id}
@@ -279,13 +194,7 @@ export function FileTree(props: FileTreeProps) {
 											}
 										}}
 										onDelete={() => onDeleteNode(node.id)}
-										style={{
-											position: "absolute",
-											top: 0,
-											left: 0,
-											width: "100%",
-											transform: `translateY(${virtualItem.start}px)`,
-										}}
+										style={nodeStyle}
 									/>
 								)
 							})}

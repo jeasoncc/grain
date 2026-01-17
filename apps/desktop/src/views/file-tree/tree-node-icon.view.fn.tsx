@@ -7,7 +7,7 @@
  */
 
 import { useIconTheme } from "@/hooks/use-icon-theme"
-import { cn } from "@/utils/cn.util"
+import { cn } from "@/hooks/use-classnames"
 import type { TreeData } from "./file-tree.types"
 
 // ============================================================================

@@ -15,12 +15,12 @@
  */
 
 import { ChevronDown, ChevronRight, MoreHorizontal, FilePlus, FolderPlus, Pencil, Trash2 } from "lucide-react"
-import { memo, useCallback, useState } from "react"
+import React, { memo, useCallback, useState } from "react"
 import type { FlatTreeNode } from "@/types/node"
 import { useIconTheme } from "@/hooks/use-icon-theme"
+import { cn } from "@/hooks/use-classnames"
 import { Button } from "@/views/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/views/ui/popover"
-import { cn } from "@/utils/cn.util"
 
 // ============================================================================
 // Types
