@@ -6,7 +6,6 @@
  * - 内容变化回调
  * - 可见性控制 (CSS visibility)
  * - 独立的 undo/redo 历史记录 (通过独立的 Editor 实例实现)
- * - 初始状态延迟加载（支持新建文件时模板内容的渲染）
  *
  * 历史记录隔离 (Requirements 6.3):
  * 每个 EditorInstance 创建独立的 Editor 组件，
@@ -18,7 +17,7 @@
 
 import type { SerializedEditorState } from "lexical";
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import type { FoldIconStyle } from "../config/fold-icon-config";
 import Editor, { type EditorProps } from "./Editor";
@@ -81,33 +80,6 @@ export function EditorInstance({
   const hasRestoredScroll = useRef(false);
   // 上一次的滚动位置，用于防止重复触发
   const lastScrollTop = useRef(initialScrollTop);
-
-  // 跟踪编辑器是否已经有内容
-  // 用于生成 key，当 initialState 从 null 变为有值时强制重新挂载 Editor
-  const [editorKey, setEditorKey] = useState(() => 
-    initialState ? `${tabId}-initialized` : `${tabId}-empty`
-  );
-  const prevInitialStateRef = useRef(initialState);
-
-  // 当 initialState 从 null/undefined 变为有值时，更新 key 强制重新挂载
-  // 这处理了新建文件时模板内容延迟到达的情况
-  useEffect(() => {
-    const wasEmpty = !prevInitialStateRef.current;
-    const hasContent = !!initialState;
-    
-    if (wasEmpty && hasContent) {
-      // initialState 从空变为有值，需要重新挂载 Editor 以加载新内容
-      setEditorKey(`${tabId}-initialized-${Date.now()}`);
-    }
-    
-    prevInitialStateRef.current = initialState;
-  }, [initialState, tabId]);
-
-  // 当 tabId 变化时重置 key
-  useEffect(() => {
-    setEditorKey(initialState ? `${tabId}-initialized` : `${tabId}-empty`);
-    prevInitialStateRef.current = initialState;
-  }, [tabId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
    * 处理内容变化
@@ -199,7 +171,7 @@ export function EditorInstance({
         data-scroll-container={tabId}
       >
         <Editor
-          key={editorKey}
+          key={tabId}
           initialState={initialState}
           onChange={handleContentChange}
           placeholder={placeholder}

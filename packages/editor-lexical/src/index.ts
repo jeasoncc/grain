@@ -173,3 +173,10 @@ export type {
   FoldIconStyle,
   FoldIconOption,
 } from "./config/fold-icon-config";
+
+// ============================================================================
+// Utils
+// ============================================================================
+export {
+  createInitialDocumentState,
+} from "./utils";

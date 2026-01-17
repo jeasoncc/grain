@@ -38,9 +38,9 @@ export const getDefaultIconTheme = (): IconTheme => {
 /**
  * 获取所有可用的图标主题
  *
- * @returns 所有图标主题数组
+ * @returns 所有图标主题数组（只读）
  */
-export const getAllIconThemes = (): IconTheme[] => {
+export const getAllIconThemes = (): readonly IconTheme[] => {
 	return iconThemes
 }
 
