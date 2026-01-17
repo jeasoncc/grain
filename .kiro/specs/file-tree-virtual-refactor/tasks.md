@@ -11,7 +11,7 @@ Refactor file tree to use @tanstack/react-virtual with functional architecture. 
   - Update package.json
   - _Requirements: 1.4, 6.1_
 
-- [-] 2. Create Tree Flattening Pipe
+- [x] 2. Create Tree Flattening Pipe
   - [x] 2.1 Create `flatten-tree.pipe.ts` with `flattenTree` function
     - Accept nodes array and expandedFolders map
     - Return FlatTreeNode array with depth information
@@ -36,7 +36,7 @@ Refactor file tree to use @tanstack/react-virtual with functional architecture. 
     - **Property 4: Node order is preserved**
     - **Validates: Requirements 2.6**
 
-  - [ ] 2.6 Export from `pipes/node/index.ts`
+  - [x] 2.6 Export from `pipes/node/index.ts`
     - _Requirements: 2.4_
 
 - [x] 3. Update Type Definitions
@@ -48,7 +48,7 @@ Refactor file tree to use @tanstack/react-virtual with functional architecture. 
   - [x] 3.2 Export from `types/node/index.ts`
     - _Requirements: 7.4_
 
-- [-] 4. Create TreeNodeRow Component
+- [x] 4. Create TreeNodeRow Component
   - [x] 4.1 Create `tree-node-row.view.fn.tsx`
     - Accept FlatTreeNode and event handlers
     - Render indentation based on depth (depth * 12px)
@@ -70,9 +70,11 @@ Refactor file tree to use @tanstack/react-virtual with functional architecture. 
     - Test indentation
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-  - [ ] 4.3 Add context menu support
-    - Right-click shows context menu
-    - Menu items: Delete, Create File, Create Folder
+  - [x] 4.3 Add hover action menu
+    - Hover or selection shows ⋯ button
+    - Click opens Popover menu
+    - Menu items: New File, New Folder (folders only), Rename, Delete
+    - Uses shadcn/ui Popover component
     - _Requirements: 5.5_
 
 - [-] 5. Refactor useFileTree Hook

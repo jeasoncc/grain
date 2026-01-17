@@ -268,6 +268,9 @@ export function FileTree(props: FileTreeProps) {
 										isSelected={node.id === selectedNodeId}
 										onToggle={handlers.onToggle}
 										onSelect={handlers.onSelect}
+										onCreateFile={node.type === "folder" ? () => onCreateFile(node.id, "file") : undefined}
+										onCreateFolder={node.type === "folder" ? () => onCreateFolder(node.id) : undefined}
+										onDelete={() => onDeleteNode(node.id)}
 										style={{
 											position: "absolute",
 											top: 0,
