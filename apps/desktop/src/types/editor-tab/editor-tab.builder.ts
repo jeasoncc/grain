@@ -15,12 +15,16 @@ import type {
 	TabType,
 } from "./editor-tab.interface"
 
+import { createInitialDocumentState } from "@grain/editor-lexical"
+
 // ==============================
 // Default Editor State Factory
 // ==============================
 
 /**
  * 创建默认的编辑器实例状态
+ * 
+ * 注意：serializedState 必须有值，使用空文档作为默认值
  */
 export const createDefaultEditorState = (): EditorInstanceState => ({
 	isDirty: false,
@@ -28,7 +32,7 @@ export const createDefaultEditorState = (): EditorInstanceState => ({
 	scrollLeft: 0,
 	scrollTop: 0,
 	selectionState: undefined,
-	serializedState: undefined,
+	serializedState: JSON.parse(createInitialDocumentState("")) as SerializedEditorState,
 })
 
 // ==============================

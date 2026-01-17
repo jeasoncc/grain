@@ -103,6 +103,7 @@ export function MultiEditorContainer({
   const getInitialState = useCallback(
     (tabId: string): string | null => {
       const state = editorStates[tabId];
+      
       if (state?.serializedState) {
         // 如果已经是字符串，直接返回；否则序列化
         if (typeof state.serializedState === "string") {
