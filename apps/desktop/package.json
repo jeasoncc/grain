@@ -1,6 +1,6 @@
 {
   "name": "desktop",
-  "version": "0.1.570",
+  "version": "0.1.575",
   "private": true,
   "type": "module",
   "scripts": {
@@ -121,7 +121,6 @@
     "puppeteer": "^24.34.0",
     "puppeteer-core": "^24.34.0",
     "react": "^19.1.0",
-    "react-arborist": "^3.4.3",
     "react-dom": "^19.1.0",
     "react-error-boundary": "^6.0.0",
     "react-hotkeys-hook": "^5.2.3",

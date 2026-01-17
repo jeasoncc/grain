@@ -92,19 +92,6 @@ export interface NodeUpdateInput {
 }
 
 /**
- * TreeData 接口
- * react-arborist 使用的树形数据结构
- * 用于在 UI 层展示文件树
- */
-export interface TreeData {
-	readonly id: string
-	readonly name: string
-	readonly type: NodeType
-	readonly collapsed: boolean
-	readonly children?: readonly TreeData[]
-}
-
-/**
  * FlatTreeNode 接口
  * 扁平化的树节点，用于虚拟列表渲染
  * 

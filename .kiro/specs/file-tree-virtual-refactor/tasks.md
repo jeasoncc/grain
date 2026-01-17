@@ -87,12 +87,12 @@ Refactor file tree to use @tanstack/react-virtual with functional architecture. 
     - Return flat nodes and virtualizer
     - _Requirements: 1.1, 1.2, 1.4, 2.1, 3.1, 3.2, 7.3_
 
-  - [ ] 5.2 Remove old tree building logic
+  - [x] 5.2 Remove old tree building logic
     - Remove buildTreeData function
     - Remove TreeData type usage
     - _Requirements: 6.2, 6.3_
 
-  - [ ] 5.3 Update return type
+  - [x] 5.3 Update return type
     - Return flatNodes instead of treeData
     - Return virtualizer instance
     - _Requirements: 1.4_
@@ -177,17 +177,18 @@ Refactor file tree to use @tanstack/react-virtual with functional architecture. 
     - _Requirements: 8.4_
 
 - [ ] 11. Remove react-arborist
-  - [ ] 11.1 Remove react-arborist from package.json
+  - [x] 11.1 Remove react-arborist from package.json
     - Run `bun remove react-arborist`
     - _Requirements: 6.1_
 
-  - [ ] 11.2 Verify no imports remain
+  - [x] 11.2 Verify no imports remain
     - Search codebase for "react-arborist"
     - Remove any remaining imports
     - _Requirements: 6.2_
 
-  - [ ] 11.3 Delete old tree-related files if unused
+  - [x] 11.3 Delete old tree-related files if unused
     - Check if any old files can be removed
+    - Deleted: use-tree-node.ts, tree-node.view.fn.tsx
     - _Requirements: 6.3_
 
 - [ ] 12. Integration Testing

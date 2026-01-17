@@ -111,7 +111,7 @@ describe("FileTree", () => {
 
 	it("should render nodes in tree structure", () => {
 		render(<FileTree {...defaultProps} />)
-		// react-arborist renders nodes, so we just verify the component renders
+		// Virtual list renders nodes using @tanstack/react-virtual
 		expect(screen.getByText("Explorer")).toBeInTheDocument()
 	})
 })

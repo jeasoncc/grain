@@ -4,10 +4,7 @@
  */
 
 import type { TreeNode } from "@/pipes/node"
-import type { NodeInterface, NodeType, TreeData } from "@/types/node"
-
-// Re-export TreeData for convenience
-export type { TreeData }
+import type { NodeInterface, NodeType } from "@/types/node"
 
 /**
  * FileTree Props 接口

@@ -19,7 +19,6 @@ export type {
 	NodeInterface,
 	NodeType,
 	NodeUpdateInput,
-	TreeData,
 } from "./node.interface"
 
 // Schema 类型推断导出

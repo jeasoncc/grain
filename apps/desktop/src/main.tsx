@@ -58,7 +58,7 @@ const createApp = (config: AppConfig) => (
 	<StrictMode>
 		<QueryClientProvider client={config.queryClient}>
 			<RouterProvider router={config.router} />
-			{config.isDev && <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />}
+			{config.isDev && <ReactQueryDevtools initialIsOpen={false} buttonPosition="top-right" />}
 		</QueryClientProvider>
 	</StrictMode>
 )
