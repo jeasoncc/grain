@@ -27,11 +27,15 @@ import {
 	openFile,
 	renameNode,
 } from "@/flows"
+import {
+	calculateAncestorPath,
+	calculateExpandedAncestors,
+} from "@/pipes/node"
+import { useSelectionStore } from "@/state/selection.state"
+import { useSidebarStore } from "@/state/sidebar.state"
 import { useEditorTabs } from "./use-editor-tabs"
 import { useNodesByWorkspace } from "./use-node"
 import { useGetNodeById } from "./use-node-operations"
-import { useSelectionStore } from "@/state/selection.state"
-import { useSidebarStore } from "@/state/sidebar.state"
 import type { NodeInterface, NodeType } from "@/types/node"
 
 // ============================================================================
@@ -134,6 +138,8 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 	const globalSelectedWorkspaceId = useSelectionStore((s) => s.selectedWorkspaceId)
 	const selectedNodeId = useSelectionStore((s) => s.selectedNodeId)
 	const setSelectedNodeId = useSelectionStore((s) => s.setSelectedNodeId)
+	const expandedFolders = useSidebarStore((s) => s.fileTreeState.expandedFolders)
+	const setExpandedFolders = useSidebarStore((s) => s.setExpandedFolders)
 
 	const workspaceId = propWorkspaceId ?? globalSelectedWorkspaceId
 
@@ -220,12 +226,31 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 				workspaceId,
 			})()
 
-			// 成功时更新选中状态
+			// 成功时更新选中状态并自动展开祖先
 			if (result._tag === "Right" && result.right?.node) {
-				setSelectedNodeId(result.right.node.id)
+				const newNodeId = result.right.node.id
+				setSelectedNodeId(newNodeId)
+
+				// 自动展开祖先文件夹并滚动到新节点
+				const ancestorPath = calculateAncestorPath(nodes, newNodeId)
+				if (ancestorPath.length > 0) {
+					const expandedAncestors = calculateExpandedAncestors(ancestorPath)
+					// 合并到现有的展开状态
+					setExpandedFolders({
+						...expandedFolders,
+						...expandedAncestors,
+					})
+				}
+
+				// 等待 DOM 更新后滚动
+				setTimeout(() => {
+					if (treeRef.current?.scrollTo) {
+						treeRef.current.scrollTo(newNodeId)
+					}
+				}, 100)
 			}
 		},
-		[workspaceId, setSelectedNodeId],
+		[workspaceId, setSelectedNodeId, nodes, setExpandedFolders],
 	)
 
 	const handleCreateFile = useCallback(
@@ -245,12 +270,31 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 
 			// 成功时更新选中状态并导航
 			if (result._tag === "Right" && result.right && type !== "folder") {
-				setSelectedNodeId(result.right.node.id)
+				const newNodeId = result.right.node.id
+				setSelectedNodeId(newNodeId)
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				void navigate({ to: "/" } as any)
+
+				// 自动展开祖先文件夹并滚动到新节点
+				const ancestorPath = calculateAncestorPath(nodes, newNodeId)
+				if (ancestorPath.length > 0) {
+					const expandedAncestors = calculateExpandedAncestors(ancestorPath)
+					// 合并到现有的展开状态
+					setExpandedFolders({
+						...expandedFolders,
+						...expandedAncestors,
+					})
+				}
+
+				// 等待 DOM 更新后滚动
+				setTimeout(() => {
+					if (treeRef.current?.scrollTo) {
+						treeRef.current.scrollTo(newNodeId)
+					}
+				}, 100)
 			}
 		},
-		[workspaceId, setSelectedNodeId, navigate],
+		[workspaceId, setSelectedNodeId, navigate, nodes, setExpandedFolders],
 	)
 
 	const handleCreateDiary = useCallback(async () => {

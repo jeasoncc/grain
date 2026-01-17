@@ -8,6 +8,11 @@
  * @requirements 2.1, 1.4
  */
 
+// 祖先路径函数
+export {
+	calculateAncestorPath,
+	calculateExpandedAncestors,
+} from "./ancestor-path.pipe"
 // 文件夹路径函数
 export {
 	type FolderLookupResult,
