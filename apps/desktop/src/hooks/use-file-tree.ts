@@ -157,6 +157,26 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 	// ============================================================================
 
 	/**
+	 * Sync expandedFolders state with react-arborist internal state
+	 * 同步 expandedFolders 状态到 react-arborist 内部状态
+	 */
+	useEffect(() => {
+		if (!treeRef.current) return
+
+		// 遍历所有文件夹，同步展开/折叠状态
+		Object.entries(expandedFolders).forEach(([folderId, isExpanded]) => {
+			const node = treeRef.current?.get(folderId)
+			if (node) {
+				if (isExpanded && node.isClosed) {
+					node.open()
+				} else if (!isExpanded && node.isOpen) {
+					node.close()
+				}
+			}
+		})
+	}, [expandedFolders, treeRef])
+
+	/**
 	 * Responsive dimensions: Update tree size when container resizes
 	 */
 	useEffect(() => {
