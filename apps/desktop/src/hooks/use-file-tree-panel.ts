@@ -230,30 +230,31 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
 				})
 
-				// 等待数据刷新后，只展开到新节点的祖先路径
-				// 使用 refetch 获取最新数据
-				const refreshedNodes = await queryClient.fetchQuery({
-					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
-					queryFn: async () => {
-						const result = await nodeFlow.getNodesByWorkspace(workspaceId)()
-						if (result._tag === "Left") throw result.left
-						return result.right
-					},
-				})
+				// 使用 setTimeout 确保数据已刷新
+				setTimeout(async () => {
+					try {
+						const refreshedNodes = await queryClient.fetchQuery({
+							queryKey: queryKeys.nodes.byWorkspace(workspaceId),
+							queryFn: async () => {
+								const result = await nodeFlow.getNodesByWorkspace(workspaceId)()
+								if (result._tag === "Left") throw result.left
+								return result.right
+							},
+						})
 
-				if (refreshedNodes) {
-					const ancestorPath = calculateAncestorPathFlow(refreshedNodes, newNodeId)
-					if (ancestorPath.length > 0) {
-						// 只展开祖先路径，不保留其他展开状态
-						const expandedAncestors = calculateExpandedAncestorsFlow(ancestorPath)
-						setExpandedFolders(expandedAncestors)
-					} else {
-						// 如果是根节点，清空所有展开状态
-						setExpandedFolders({})
+						if (refreshedNodes) {
+							const ancestorPath = calculateAncestorPathFlow(refreshedNodes, newNodeId)
+							if (ancestorPath.length > 0) {
+								const expandedAncestors = calculateExpandedAncestorsFlow(ancestorPath)
+								setExpandedFolders(expandedAncestors)
+							} else {
+								setExpandedFolders({})
+							}
+						}
+					} catch (error) {
+						console.error("Failed to update expanded folders:", error)
 					}
-				}
-
-				// Note: Scroll to new node is handled by useFileTree hook via selectedNodeId effect
+				}, 100)
 			}
 		},
 		[workspaceId, setSelectedNodeId, queryClient, setExpandedFolders],
@@ -286,47 +287,84 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
 				})
 
-				// 等待数据刷新后，只展开到新节点的祖先路径
-				const refreshedNodes = await queryClient.fetchQuery({
-					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
-					queryFn: async () => {
-						const result = await nodeFlow.getNodesByWorkspace(workspaceId)()
-						if (result._tag === "Left") throw result.left
-						return result.right
-					},
-				})
+				// 使用 setTimeout 确保数据已刷新
+				setTimeout(async () => {
+					try {
+						const refreshedNodes = await queryClient.fetchQuery({
+							queryKey: queryKeys.nodes.byWorkspace(workspaceId),
+							queryFn: async () => {
+								const result = await nodeFlow.getNodesByWorkspace(workspaceId)()
+								if (result._tag === "Left") throw result.left
+								return result.right
+							},
+						})
 
-				if (refreshedNodes) {
-					const ancestorPath = calculateAncestorPathFlow(refreshedNodes, newNodeId)
-					if (ancestorPath.length > 0) {
-						// 只展开祖先路径，不保留其他展开状态
-						const expandedAncestors = calculateExpandedAncestorsFlow(ancestorPath)
-						setExpandedFolders(expandedAncestors)
-					} else {
-						// 如果是根节点，清空所有展开状态
-						setExpandedFolders({})
+						if (refreshedNodes) {
+							const ancestorPath = calculateAncestorPathFlow(refreshedNodes, newNodeId)
+							if (ancestorPath.length > 0) {
+								const expandedAncestors = calculateExpandedAncestorsFlow(ancestorPath)
+								setExpandedFolders(expandedAncestors)
+							} else {
+								setExpandedFolders({})
+							}
+						}
+					} catch (error) {
+						console.error("Failed to update expanded folders:", error)
 					}
-				}
-
-				// Note: Scroll to new node is handled by useFileTree hook via selectedNodeId effect
+				}, 100)
 			}
 		},
 		[workspaceId, setSelectedNodeId, navigate, queryClient, setExpandedFolders],
 	)
 
-	const handleCreateDiary = useCallback(async () => {
-		if (!workspaceId) return
+	const handleCreateDiary = useCallback(
+		async () => {
+			if (!workspaceId) return
 
-		const result = await createDiaryCompatAsync({ workspaceId })
-			.then((res) => ({ success: true as const, data: res }))
-			.catch(() => ({ success: false as const }))
+			const result = await createDiaryCompatAsync({ workspaceId })
+				.then((res) => ({ success: true as const, data: res }))
+				.catch(() => ({ success: false as const }))
 
-		if (result.success) {
-			setSelectedNodeId(result.data.node.id)
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			void navigate({ to: "/" } as any)
-		}
-	}, [workspaceId, setSelectedNodeId, navigate])
+			if (result.success) {
+				const newNodeId = result.data.node.id
+				setSelectedNodeId(newNodeId)
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				void navigate({ to: "/" } as any)
+
+				// 刷新节点列表
+				await queryClient.invalidateQueries({
+					queryKey: queryKeys.nodes.byWorkspace(workspaceId),
+				})
+
+				// 使用 setTimeout 确保数据已刷新，只展开到新日记的祖先路径
+				setTimeout(async () => {
+					try {
+						const refreshedNodes = await queryClient.fetchQuery({
+							queryKey: queryKeys.nodes.byWorkspace(workspaceId),
+							queryFn: async () => {
+								const result = await nodeFlow.getNodesByWorkspace(workspaceId)()
+								if (result._tag === "Left") throw result.left
+								return result.right
+							},
+						})
+
+						if (refreshedNodes) {
+							const ancestorPath = calculateAncestorPathFlow(refreshedNodes, newNodeId)
+							if (ancestorPath.length > 0) {
+								const expandedAncestors = calculateExpandedAncestorsFlow(ancestorPath)
+								setExpandedFolders(expandedAncestors)
+							} else {
+								setExpandedFolders({})
+							}
+						}
+					} catch (error) {
+						console.error("Failed to update expanded folders:", error)
+					}
+				}, 100)
+			}
+		},
+		[workspaceId, setSelectedNodeId, navigate, queryClient, setExpandedFolders],
+	)
 
 	const handleDeleteNode = useCallback(
 		async (nodeId: string) => {
