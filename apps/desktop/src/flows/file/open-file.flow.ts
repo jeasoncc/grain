@@ -9,7 +9,7 @@ import * as TE from "fp-ts/TaskEither"
 import type { SerializedEditorState } from "lexical"
 import * as contentRepo from "@/io/api/content.api"
 import { info, success } from "@/io/log/logger.api"
-import { evictLRUEditorStates, findTabByNodeId } from "@/pipes/editor-tab"
+import { findTabByNodeId } from "@/pipes/editor-tab"
 import { useEditorTabsStore } from "@/state/editor-tabs.state"
 import type { EditorInstanceState, EditorTab, TabType } from "@/types/editor-tab"
 import { EditorStateBuilder, EditorTabBuilder } from "@/types/editor-tab"
@@ -77,15 +77,6 @@ const openTab = (
 		: EditorStateBuilder.fromDefault().build()
 
 	store.addTabWithState(newTab as EditorTab, editorState)
-
-	const openTabIds = new Set(store.tabs.map((t: EditorTab) => t.id))
-	const evicted = evictLRUEditorStates(
-		store.editorStates,
-		store.activeTabId,
-		openTabIds as ReadonlySet<string>,
-		10,
-	)
-	store.setEditorStates(evicted as Record<string, EditorInstanceState>)
 
 	return { isNewTab: true, tabId: newTab.id }
 }

@@ -11,19 +11,12 @@ import dayjs from "dayjs"
 import type { SerializedEditorState } from "lexical"
 import {
 	calculateNextActiveTabId,
-	evictLRUEditorStates,
 	findTabByNodeId,
 	getTabsByWorkspace,
 } from "@/pipes/editor-tab"
 import type { useEditorTabsStore } from "@/state/editor-tabs.state"
 import type { EditorInstanceState, EditorTab, OpenTabPayload } from "@/types/editor-tab"
 import { createDefaultEditorState, EditorStateBuilder, EditorTabBuilder } from "@/types/editor-tab"
-
-// ==============================
-// Configuration
-// ==============================
-
-const MAX_EDITOR_STATES = 10
 
 // ==============================
 // Tab Operations Flow
@@ -65,9 +58,6 @@ export const openTabFlow = (
 	// 使用原子操作同时添加 tab、设置 editorState 和激活 tab
 	// 避免多次渲染导致 Lexical 初始化时 initialState 为空的问题
 	store.addTabWithState(newTab as EditorTab, newEditorState)
-
-	// LRU eviction
-	evictEditorStatesFlow(store)
 }
 
 /**
@@ -154,9 +144,6 @@ export const updateEditorStateFlow = (
 		...updates,
 		lastModified: dayjs().valueOf(),
 	})
-
-	// LRU eviction
-	evictEditorStatesFlow(store)
 }
 
 /**
@@ -194,20 +181,6 @@ export const closeTabsByWorkspaceFlow = (
 	store.setTabs(remainingTabs as readonly EditorTab[])
 	store.setActiveTabId(newActiveTabId)
 	store.setEditorStates(newEditorStates)
-}
-
-/**
- * LRU eviction flow (internal)
- */
-const evictEditorStatesFlow = (store: ReturnType<typeof useEditorTabsStore.getState>): void => {
-	const openTabIds = new Set(store.tabs.map((t: EditorTab) => t.id))
-	const evictedStates = evictLRUEditorStates(
-		store.editorStates,
-		store.activeTabId,
-		openTabIds as ReadonlySet<string>,
-		MAX_EDITOR_STATES,
-	)
-	store.setEditorStates(evictedStates as Record<string, EditorInstanceState>)
 }
 
 /**
