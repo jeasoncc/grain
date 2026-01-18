@@ -57,8 +57,8 @@ const getRootElement = (): O.Option<RootElement> =>
 const createApp = (config: AppConfig) => (
 	<StrictMode>
 		<QueryClientProvider client={config.queryClient}>
-			<RouterProvider router={config.router} />
 			{config.isDev && <ReactQueryDevtools initialIsOpen={false} buttonPosition="top-right" />}
+			<RouterProvider router={config.router} />
 		</QueryClientProvider>
 	</StrictMode>
 )
