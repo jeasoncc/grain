@@ -232,12 +232,24 @@ export const ExcalidrawEditorContainer = memo(
 				}
 			}
 
+			// 立即尝试获取尺寸（Web 环境下可能已经有尺寸）
+			const rect = container.getBoundingClientRect()
+			if (rect.width > MIN_VALID_SIZE && rect.height > MIN_VALID_SIZE) {
+				setContainerSize({ 
+					width: Math.floor(rect.width), 
+					height: Math.floor(rect.height) 
+				})
+				sizeStableRef.current = true
+				console.log("[ExcalidrawEditor] 初始容器尺寸:", { 
+					width: Math.floor(rect.width), 
+					height: Math.floor(rect.height) 
+				})
+			}
+
 			const initialTimeout = setTimeout(updateSize, INITIAL_LAYOUT_DELAY)
 
 			const resizeObserver = new ResizeObserver(() => {
-				if (sizeStableRef.current) {
-					updateSize()
-				}
+				updateSize()
 			})
 			resizeObserver.observe(container)
 
@@ -287,8 +299,9 @@ export const ExcalidrawEditorContainer = memo(
 			}
 		}, [])
 
-		// 加载中
+		// 加载中（undefined 表示正在加载，null 表示内容不存在但已加载完成）
 		if (content === undefined) {
+			console.log("[ExcalidrawEditor] 等待内容加载...", { nodeId })
 			return (
 				<div
 					ref={containerRef}
@@ -301,9 +314,19 @@ export const ExcalidrawEditorContainer = memo(
 				</div>
 			)
 		}
+		
+		// content 现在可能是 null（新文件）或 ContentInterface（已有内容）
+		// 两种情况都应该继续渲染，因为数据已经加载完成
 
 		// 等待尺寸和数据
 		if (!containerSize || !initialData) {
+			console.log("[ExcalidrawEditor] 等待容器尺寸或初始数据...", { 
+				nodeId,
+				hasContainerSize: !!containerSize, 
+				hasInitialData: !!initialData,
+				containerSize,
+				initialData: initialData ? "exists" : "null"
+			})
 			return (
 				<div
 					ref={containerRef}
@@ -316,6 +339,14 @@ export const ExcalidrawEditorContainer = memo(
 				</div>
 			)
 		}
+
+		console.log("[ExcalidrawEditor] 渲染 View 组件:", {
+			nodeId,
+			hasInitialData: !!initialData,
+			hasContainerSize: !!containerSize,
+			containerSize,
+			initialDataKeys: initialData ? Object.keys(initialData) : [],
+		})
 
 		return (
 			<div ref={containerRef} className={cn("h-full w-full", className)}>

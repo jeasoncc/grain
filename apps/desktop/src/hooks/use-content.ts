@@ -19,10 +19,14 @@ import type { ContentInterface } from "@/types/content"
  * 根据节点 ID 获取内容（实时更新）
  *
  * 支持懒加载模式 - 内容仅在需要时加载。
- * 加载中或内容不存在时返回 undefined。
+ * 
+ * 返回值说明：
+ * - undefined: 正在加载中
+ * - null: 内容不存在（新创建的节点）
+ * - ContentInterface: 内容已加载
  *
  * @param nodeId - 父节点 ID（可为 null/undefined，用于懒加载）
- * @returns 内容记录，不存在或加载中返回 undefined
+ * @returns 内容记录，加载中返回 undefined，不存在返回 null
  *
  * @example
  * ```tsx
@@ -33,19 +37,23 @@ import type { ContentInterface } from "@/types/content"
  *     return <Loading />;
  *   }
  *
- *   return <EditorComponent initialContent={content.content} />;
+ *   // content 可能是 null（新文件）或 ContentInterface（已有内容）
+ *   return <EditorComponent initialContent={content?.content} />;
  * }
  * ```
  */
 export function useContentByNodeId(
 	nodeId: string | null | undefined,
-): ContentInterface | undefined {
+): ContentInterface | null | undefined {
 	const { data: content, isLoading } = useContentQuery(nodeId)
 
 	if (isLoading) {
 		return undefined
 	}
-	return content ?? undefined
+	// 保留 null 值，不转换为 undefined
+	// null 表示内容不存在（新创建的节点）
+	// undefined 表示正在加载
+	return content === undefined ? null : content
 }
 
 /**
