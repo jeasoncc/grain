@@ -87,16 +87,18 @@ export type {
 // ============================================================================
 export {
   EditorNodes,
-  MentionNode,
-  $createMentionNode,
-  $isMentionNode,
+  // TEMPORARILY DISABLED: MentionNode (has dependency issues)
+  // MentionNode,
+  // $createMentionNode,
+  // $isMentionNode,
   TagNode,
   $createTagNode,
   $isTagNode,
 } from "./nodes";
 
 export type {
-  SerializedMentionNode,
+  // TEMPORARILY DISABLED: SerializedMentionNode (has dependency issues)
+  // SerializedMentionNode,
   SerializedTagNode,
 } from "./nodes";
 
@@ -104,14 +106,16 @@ export type {
 // Plugins
 // ============================================================================
 export {
-  MentionsPlugin,
-  MentionTooltipPlugin,
+  // TEMPORARILY DISABLED: Mentions plugins (has dependency issues)
+  // MentionsPlugin,
+  // MentionTooltipPlugin,
   TagTransformPlugin,
   CodeHighlightPlugin,
   CodeBlockShortcutPlugin,
   PrismLanguagesPlugin,
   ChecklistShortcutPlugin,
-  TableShortcutPlugin,
+  // TEMPORARILY DISABLED: Table plugins (has dependency issues)
+  // TableShortcutPlugin,
   // Re-exported Lexical plugins
   HistoryPlugin,
   RichTextPlugin,
@@ -122,7 +126,8 @@ export {
   AutoLinkPlugin,
   AutoFocusPlugin,
   HorizontalRulePlugin,
-  TablePlugin,
+  // TEMPORARILY DISABLED: TablePlugin (has dependency issues)
+  // TablePlugin,
   ClearEditorPlugin,
   MarkdownShortcutPlugin,
   TabIndentationPlugin,
@@ -130,13 +135,14 @@ export {
 } from "./plugins";
 
 export type {
-  MentionsPluginProps,
-  MentionEntry,
-  WikiEntryInterface, // deprecated, use MentionEntry
-  MentionMenuTextMatch,
-  MentionTooltipPluginProps,
-  WikiPreviewState,
-  WikiHoverPreviewHook,
+  // TEMPORARILY DISABLED: Mentions types (has dependency issues)
+  // MentionsPluginProps,
+  // MentionEntry,
+  // WikiEntryInterface, // deprecated, use MentionEntry
+  // MentionMenuTextMatch,
+  // MentionTooltipPluginProps,
+  // WikiPreviewState,
+  // WikiHoverPreviewHook,
 } from "./plugins";
 
 // ============================================================================

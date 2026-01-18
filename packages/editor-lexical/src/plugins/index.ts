@@ -5,20 +5,21 @@
  */
 
 // Custom plugins
-export { default as MentionsPlugin } from "./mentions-plugin";
-export type { 
-  MentionsPluginProps, 
-  MentionEntry,
-  WikiEntryInterface, // deprecated, use MentionEntry
-  MenuTextMatch as MentionMenuTextMatch 
-} from "./mentions-plugin";
+// TEMPORARILY DISABLED: Mentions plugins (has dependency issues)
+// export { default as MentionsPlugin } from "./mentions-plugin";
+// export type { 
+//   MentionsPluginProps, 
+//   MentionEntry,
+//   WikiEntryInterface, // deprecated, use MentionEntry
+//   MenuTextMatch as MentionMenuTextMatch 
+// } from "./mentions-plugin";
 
-export { default as MentionTooltipPlugin } from "./mention-tooltip-plugin";
-export type { 
-  MentionTooltipPluginProps,
-  WikiPreviewState,
-  WikiHoverPreviewHook
-} from "./mention-tooltip-plugin";
+// export { default as MentionTooltipPlugin } from "./mention-tooltip-plugin";
+// export type { 
+//   MentionTooltipPluginProps,
+//   WikiPreviewState,
+//   WikiHoverPreviewHook
+// } from "./mention-tooltip-plugin";
 
 export { default as TagTransformPlugin } from "./tag-transform-plugin";
 
@@ -26,7 +27,8 @@ export { default as CodeHighlightPlugin } from "./code-highlight-plugin";
 export { default as CodeBlockShortcutPlugin } from "./code-block-shortcut-plugin";
 export { default as PrismLanguagesPlugin } from "./prism-languages-plugin";
 export { default as ChecklistShortcutPlugin } from "./checklist-shortcut-plugin";
-export { default as TableShortcutPlugin } from "./table-shortcut-plugin";
+// TEMPORARILY DISABLED: Table plugins (has dependency issues)
+// export { default as TableShortcutPlugin } from "./table-shortcut-plugin";
 export { default as HorizontalRuleShortcutPlugin } from "./horizontal-rule-shortcut-plugin";
 
 // Re-export commonly used Lexical plugins for convenience
@@ -40,7 +42,8 @@ export { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
 export { AutoLinkPlugin } from "@lexical/react/LexicalAutoLinkPlugin";
 export { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
 export { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin";
-export { TablePlugin } from "@lexical/react/LexicalTablePlugin";
+// TEMPORARILY DISABLED: TablePlugin (has dependency issues)
+// export { TablePlugin } from "@lexical/react/LexicalTablePlugin";
 export { ClearEditorPlugin } from "@lexical/react/LexicalClearEditorPlugin";
 export { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 export { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
