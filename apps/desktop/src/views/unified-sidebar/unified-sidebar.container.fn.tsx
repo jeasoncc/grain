@@ -7,6 +7,7 @@
 import { memo, useCallback } from "react"
 import { useSidebarStore } from "@/state/sidebar.state"
 import { UnifiedSidebarView } from "./unified-sidebar.view.fn"
+import { info } from "@/io"
 
 /**
  * UnifiedSidebarContainer - 统一侧边栏容器组件
@@ -23,7 +24,7 @@ export const UnifiedSidebarContainer = memo(() => {
 
 	// Handle restore from collapse
 	const handleRestoreFromCollapse = useCallback(() => {
-		console.log("[UnifiedSidebar] 恢复侧边栏")
+		info("[UnifiedSidebar] 恢复侧边栏")
 		restoreFromCollapse()
 	}, [restoreFromCollapse])
 

@@ -4,4 +4,3 @@
 
 export * from "./file-tree-panel"
 export * from "./search-panel"
-export * from "./tag-graph-panel"
