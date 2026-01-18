@@ -5,8 +5,8 @@
  * 职责：封装 StoryWorkspace 的所有业务逻辑
  */
 
-import type { MentionEntry } from "@grain/editor-lexical"
 import type { SerializedEditorState } from "lexical"
+import type { MentionEntry } from "@/types/mention.interface"
 import { useCallback, useEffect, useMemo } from "react"
 import { useSettings } from "@/hooks/use-settings"
 import { useUnifiedSave } from "@/hooks/use-unified-save"
