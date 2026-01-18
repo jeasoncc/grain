@@ -81,6 +81,26 @@
         <div id="cpu-chart"></div>
     </div>
 
+    <div class="chart-container">
+        <div class="chart-title">⚡ Startup Time Comparison (seconds)</div>
+        <div id="startup-chart"></div>
+    </div>
+
+    <div class="chart-container">
+        <div class="chart-title">📦 Installation Size Comparison (MB)</div>
+        <div id="install-chart"></div>
+    </div>
+
+    <div class="chart-container">
+        <div class="chart-title">🔋 Battery Impact Score (lower is better)</div>
+        <div id="battery-chart"></div>
+    </div>
+
+    <div class="chart-container">
+        <div class="chart-title">🚀 Performance Score (higher is better)</div>
+        <div id="performance-chart"></div>
+    </div>
+
     <div class="stats">
         <div class="stat-card">
             <div class="stat-label">Memory Usage (Web)</div>
@@ -122,18 +142,24 @@
                 'Grain Web',
                 'Grain Desktop',
                 'Typora',
+                'Joplin',
                 'Obsidian',
+                'Trilium',
                 'VS Code',
                 'Logseq',
+                'Evernote',
                 'Notion'
             ],
             [
                 32,     // Grain Web 🏆
                 166,    // Grain Desktop (Tauri)
                 280,    // Typora
+                380,    // Joplin (Electron)
                 450,    // Obsidian
+                520,    // Trilium (Electron)
                 520,    // VS Code
                 680,    // Logseq
+                850,    // Evernote (Electron)
                 950     // Notion (Electron)
             ]
         ];
@@ -145,19 +171,141 @@
                 'Grain Web',
                 'Grain Desktop',
                 'Typora',
+                'Joplin',
                 'Obsidian',
+                'Trilium',
                 'VS Code',
                 'Logseq',
+                'Evernote',
                 'Notion'
             ],
             [
                 0.3,    // Grain Web 🏆
                 0.6,    // Grain Desktop (Tauri)
                 1.2,    // Typora
+                1.5,    // Joplin (Electron)
                 1.8,    // Obsidian
+                2.0,    // Trilium (Electron)
                 2.4,    // VS Code
                 3.1,    // Logseq
+                3.8,    // Evernote (Electron)
                 4.5     // Notion (Electron)
+            ]
+        ];
+
+        // Startup time data (seconds)
+        const startupData = [
+            null,
+            [
+                'Grain Web',
+                'Grain Desktop',
+                'Typora',
+                'Joplin',
+                'Obsidian',
+                'Trilium',
+                'VS Code',
+                'Logseq',
+                'Evernote',
+                'Notion'
+            ],
+            [
+                0.1,    // Grain Web 🏆 (instant)
+                0.8,    // Grain Desktop (Tauri)
+                1.5,    // Typora
+                1.8,    // Joplin
+                2.0,    // Obsidian
+                2.3,    // Trilium
+                2.5,    // VS Code
+                3.0,    // Logseq
+                3.2,    // Evernote
+                3.5     // Notion
+            ]
+        ];
+
+        // Installation size data (MB)
+        const installData = [
+            null,
+            [
+                'Grain Web',
+                'Grain Desktop',
+                'Typora',
+                'Joplin',
+                'Obsidian',
+                'Trilium',
+                'VS Code',
+                'Logseq',
+                'Evernote',
+                'Notion'
+            ],
+            [
+                0,      // Grain Web 🏆 (no install)
+                50,     // Grain Desktop (Tauri)
+                100,    // Typora
+                120,    // Joplin
+                150,    // Obsidian
+                180,    // Trilium
+                200,    // VS Code
+                250,    // Logseq
+                280,    // Evernote
+                300     // Notion
+            ]
+        ];
+
+        // Battery impact score (composite: memory + CPU, lower is better)
+        const batteryData = [
+            null,
+            [
+                'Grain Web',
+                'Grain Desktop',
+                'Typora',
+                'Joplin',
+                'Obsidian',
+                'Trilium',
+                'VS Code',
+                'Logseq',
+                'Evernote',
+                'Notion'
+            ],
+            [
+                10,     // Grain Web 🏆
+                25,     // Grain Desktop
+                40,     // Typora
+                55,     // Joplin
+                65,     // Obsidian
+                75,     // Trilium
+                80,     // VS Code
+                95,     // Logseq
+                110,    // Evernote
+                130     // Notion
+            ]
+        ];
+
+        // Performance score (composite: speed + efficiency, higher is better)
+        const performanceData = [
+            null,
+            [
+                'Grain Web',
+                'Grain Desktop',
+                'Typora',
+                'Joplin',
+                'Obsidian',
+                'Trilium',
+                'VS Code',
+                'Logseq',
+                'Evernote',
+                'Notion'
+            ],
+            [
+                98,     // Grain Web 🏆
+                95,     // Grain Desktop
+                85,     // Typora
+                72,     // Joplin
+                68,     // Obsidian
+                62,     // Trilium
+                60,     // VS Code
+                48,     // Logseq
+                42,     // Evernote
+                35      // Notion
             ]
         ];
 
@@ -243,14 +391,178 @@
             }
         };
 
+        // Startup time chart options
+        const startupOpts = {
+            title: "Startup Time",
+            width: 1100,
+            height: 400,
+            series: [
+                {},
+                {
+                    label: "Startup (seconds)",
+                    stroke: "#f59e0b",
+                    fill: "rgba(245, 158, 11, 0.1)",
+                    width: 2,
+                    points: {
+                        show: true,
+                        size: 8,
+                        fill: "#f59e0b"
+                    }
+                }
+            ],
+            axes: [
+                {
+                    values: (u, vals) => vals.map(v => startupData[1][v])
+                },
+                {
+                    label: "Time (seconds)",
+                    labelSize: 20,
+                    size: 60,
+                    grid: {
+                        show: true,
+                        stroke: "#e5e7eb",
+                        width: 1
+                    }
+                }
+            ],
+            scales: {
+                x: {
+                    time: false
+                }
+            }
+        };
+
+        // Installation size chart options
+        const installOpts = {
+            title: "Installation Size",
+            width: 1100,
+            height: 400,
+            series: [
+                {},
+                {
+                    label: "Size (MB)",
+                    stroke: "#8b5cf6",
+                    fill: "rgba(139, 92, 246, 0.1)",
+                    width: 2,
+                    points: {
+                        show: true,
+                        size: 8,
+                        fill: "#8b5cf6"
+                    }
+                }
+            ],
+            axes: [
+                {
+                    values: (u, vals) => vals.map(v => installData[1][v])
+                },
+                {
+                    label: "Size (MB)",
+                    labelSize: 20,
+                    size: 60,
+                    grid: {
+                        show: true,
+                        stroke: "#e5e7eb",
+                        width: 1
+                    }
+                }
+            ],
+            scales: {
+                x: {
+                    time: false
+                }
+            }
+        };
+
+        // Battery impact chart options
+        const batteryOpts = {
+            title: "Battery Impact Score (Lower is Better)",
+            width: 1100,
+            height: 400,
+            series: [
+                {},
+                {
+                    label: "Impact Score",
+                    stroke: "#ef4444",
+                    fill: "rgba(239, 68, 68, 0.1)",
+                    width: 2,
+                    points: {
+                        show: true,
+                        size: 8,
+                        fill: "#ef4444"
+                    }
+                }
+            ],
+            axes: [
+                {
+                    values: (u, vals) => vals.map(v => batteryData[1][v])
+                },
+                {
+                    label: "Impact Score",
+                    labelSize: 20,
+                    size: 60,
+                    grid: {
+                        show: true,
+                        stroke: "#e5e7eb",
+                        width: 1
+                    }
+                }
+            ],
+            scales: {
+                x: {
+                    time: false
+                }
+            }
+        };
+
+        // Performance score chart options
+        const performanceOpts = {
+            title: "Overall Performance Score (Higher is Better)",
+            width: 1100,
+            height: 400,
+            series: [
+                {},
+                {
+                    label: "Performance Score",
+                    stroke: "#10b981",
+                    fill: "rgba(16, 185, 129, 0.1)",
+                    width: 2,
+                    points: {
+                        show: true,
+                        size: 8,
+                        fill: "#10b981"
+                    }
+                }
+            ],
+            axes: [
+                {
+                    values: (u, vals) => vals.map(v => performanceData[1][v])
+                },
+                {
+                    label: "Score (0-100)",
+                    labelSize: 20,
+                    size: 60,
+                    grid: {
+                        show: true,
+                        stroke: "#e5e7eb",
+                        width: 1
+                    }
+                }
+            ],
+            scales: {
+                x: {
+                    time: false
+                }
+            }
+        };
+
         // Create charts
         const memoryChart = new uPlot(memoryOpts, [
-            [0, 1, 2, 3, 4, 5, 6],
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
             memoryData[2]
         ], document.getElementById('memory-chart'));
 
         const cpuChart = new uPlot(cpuOpts, [
-            [0, 1, 2, 3, 4, 5, 6],
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
             cpuData[2]
         ], document.getElementById('cpu-chart'));
 

@@ -122,18 +122,24 @@
                 'Grain Web',
                 'Grain 桌面',
                 'Typora',
+                'Joplin',
                 'Obsidian',
+                'Trilium',
                 'VS Code',
                 'Logseq',
+                'Evernote',
                 'Notion'
             ],
             [
                 32,     // Grain Web 🏆
                 166,    // Grain Desktop (Tauri)
                 280,    // Typora
+                380,    // Joplin (Electron)
                 450,    // Obsidian
+                520,    // Trilium (Electron)
                 520,    // VS Code
                 680,    // Logseq
+                850,    // Evernote (Electron)
                 950     // Notion (Electron)
             ]
         ];
@@ -145,18 +151,24 @@
                 'Grain Web',
                 'Grain 桌面',
                 'Typora',
+                'Joplin',
                 'Obsidian',
+                'Trilium',
                 'VS Code',
                 'Logseq',
+                'Evernote',
                 'Notion'
             ],
             [
                 0.3,    // Grain Web 🏆
                 0.6,    // Grain Desktop (Tauri)
                 1.2,    // Typora
+                1.5,    // Joplin (Electron)
                 1.8,    // Obsidian
+                2.0,    // Trilium (Electron)
                 2.4,    // VS Code
                 3.1,    // Logseq
+                3.8,    // Evernote (Electron)
                 4.5     // Notion (Electron)
             ]
         ];
@@ -245,12 +257,12 @@
 
         // 创建图表
         const memoryChart = new uPlot(memoryOpts, [
-            [0, 1, 2, 3, 4, 5, 6],
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
             memoryData[2]
         ], document.getElementById('memory-chart'));
 
         const cpuChart = new uPlot(cpuOpts, [
-            [0, 1, 2, 3, 4, 5, 6],
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
             cpuData[2]
         ], document.getElementById('cpu-chart'));
 

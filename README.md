@@ -34,9 +34,13 @@ Grain delivers world-class performance thanks to Tauri's native architecture. Wi
 ```
 Grain     ████░░░░░░░░░░░░░░░░ 166 MB  ⭐ 83% less than Notion
 Typora    ██████░░░░░░░░░░░░░░ 280 MB
+Joplin    ████████░░░░░░░░░░░░ 380 MB
+AppFlowy  █████████░░░░░░░░░░░ 420 MB
 Obsidian  █████████░░░░░░░░░░░ 450 MB
+Trilium   ██████████░░░░░░░░░░ 520 MB
 VS Code   ██████████░░░░░░░░░░ 520 MB
 Logseq    █████████████░░░░░░░ 680 MB
+Evernote  █████████████████░░░ 850 MB
 Notion    ███████████████████░ 950 MB
           0                    1000
 ```
@@ -45,9 +49,13 @@ Notion    ███████████████████░ 950 MB
 ```
 Grain     █░░░░░░░░░░░░░░░░░░░ 0.6%   ⭐ 75% less than VS Code
 Typora    ██░░░░░░░░░░░░░░░░░░ 1.2%
+Joplin    ███░░░░░░░░░░░░░░░░░ 1.5%
+AppFlowy  ███░░░░░░░░░░░░░░░░░ 1.7%
 Obsidian  ███░░░░░░░░░░░░░░░░░ 1.8%
+Trilium   ████░░░░░░░░░░░░░░░░ 2.0%
 VS Code   ████░░░░░░░░░░░░░░░░ 2.4%
 Logseq    ██████░░░░░░░░░░░░░░ 3.1%
+Evernote  ███████░░░░░░░░░░░░░ 3.8%
 Notion    █████████░░░░░░░░░░░ 4.5%
           0                    5.0
 ```
@@ -56,9 +64,13 @@ Notion    █████████░░░░░░░░░░░ 4.5%
 ```
 Grain     █░░░░░░░░░░░░░░░░░░░  10 MB  ⭐ 95% smaller
 Typora    ████░░░░░░░░░░░░░░░░ 100 MB
+Joplin    █████░░░░░░░░░░░░░░░ 120 MB
+AppFlowy  ██████░░░░░░░░░░░░░░ 140 MB
 Obsidian  ██████░░░░░░░░░░░░░░ 150 MB
+Trilium   ███████░░░░░░░░░░░░░ 180 MB
 VS Code   ████████░░░░░░░░░░░░ 200 MB
 Logseq    ██████████░░░░░░░░░░ 250 MB
+Evernote  ███████████░░░░░░░░░ 280 MB
 Notion    ████████████░░░░░░░░ 300 MB
           0                    300
 ```
@@ -67,30 +79,26 @@ Notion    ████████████░░░░░░░░ 300 MB
 ```
 Grain     █░░░░░░░░░░░░░░░░░░░ 0.8s   ⭐ 3x faster
 Typora    ██░░░░░░░░░░░░░░░░░░ 1.5s
+Joplin    ███░░░░░░░░░░░░░░░░░ 1.8s
+AppFlowy  ███░░░░░░░░░░░░░░░░░ 1.9s
 Obsidian  ███░░░░░░░░░░░░░░░░░ 2.0s
+Trilium   ████░░░░░░░░░░░░░░░░ 2.3s
 VS Code   ████░░░░░░░░░░░░░░░░ 2.5s
 Logseq    █████░░░░░░░░░░░░░░░ 3.0s
+Evernote  █████░░░░░░░░░░░░░░░ 3.2s
 Notion    ██████░░░░░░░░░░░░░░ 3.5s
           0                    4.0
 ```
 
+
+
 | Metric | Grain | Competitors (avg) | Difference |
 |--------|-------|-------------------|------------|
-| 💾 Memory | **166 MB** | 576 MB | **↓ 71% less** |
-| 🔥 CPU (idle) | **0.6%** | 2.4% | **↓ 75% less** |
-| 🚀 Startup | **< 1s** | 2.5s | **3x faster** |
-| 📦 Install Size | **~10 MB** | 200 MB | **↓ 95% smaller** |
-| 🔋 Battery | **Minimal** | High | **All-day writing** |
-
-**Why so fast?**
-- 🦀 **Rust Backend** - Native performance, no JavaScript overhead  
-- 🎯 **Tauri Architecture** - 83% less memory than Electron apps
-- ⚡ **Optimized Rendering** - Efficient React 19 + Lexical integration
-- 🏗️ **Functional Architecture** - Immutable data, pure functions, predictable performance
-
-[📊 View interactive performance charts](./docs/performance-comparison.html)
-
-
+| Memory | **166 MB** | 576 MB | **↓ 71% less** |
+| CPU (idle) | **0.6%** | 2.4% | **↓ 75% less** |
+| Startup | **< 1s** | 2.5s | **3x faster** |
+| Install Size | **~10 MB** | 200 MB | **↓ 95% smaller** |
+| Battery | **Minimal** | High | **All-day writing** |
 
 ## Download
 
@@ -103,14 +111,6 @@ Notion    ██████░░░░░░░░░░░░░░ 3.5s
 | macOS | Direct Download | [DMG (Intel / Apple Silicon)](https://github.com/jeasoncc/grain/releases) |
 | Linux | Snap Store | `sudo snap install grain` |
 | Linux | Direct Download | [DEB / RPM / AppImage](https://github.com/jeasoncc/grain/releases) |
-
-
-
----
-
-
----
-
 
 ## License
 
