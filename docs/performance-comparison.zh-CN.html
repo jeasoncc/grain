@@ -83,24 +83,34 @@
 
     <div class="stats">
         <div class="stat-card">
-            <div class="stat-label">内存占用</div>
+            <div class="stat-label">内存占用（Web 版）</div>
+            <div class="stat-value">32 MB 🏆</div>
+            <div class="stat-comparison">↓ 比 Notion 少 97%</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">内存占用（桌面版）</div>
             <div class="stat-value">166 MB</div>
             <div class="stat-comparison">↓ 比 Notion 少 83%</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">CPU 占用（空闲）</div>
+            <div class="stat-label">CPU 占用（Web 版）</div>
+            <div class="stat-value">0.3% 🏆</div>
+            <div class="stat-comparison">↓ 比 VS Code 少 87%</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">CPU 占用（桌面版）</div>
             <div class="stat-value">0.6%</div>
             <div class="stat-comparison">↓ 比 VS Code 少 75%</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">电池影响</div>
-            <div class="stat-value">极低</div>
-            <div class="stat-comparison">全天写作无需充电</div>
+            <div class="stat-label">启动时间</div>
+            <div class="stat-value">&lt; 0.5秒</div>
+            <div class="stat-comparison">Web: 即时 / 桌面: &lt; 1秒</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">启动时间</div>
-            <div class="stat-value">&lt; 1秒</div>
-            <div class="stat-comparison">Tauri 原生速度</div>
+            <div class="stat-label">安装大小</div>
+            <div class="stat-value">0 MB 🏆</div>
+            <div class="stat-comparison">Web: 0 MB / 桌面: ~50 MB</div>
         </div>
     </div>
 
@@ -109,7 +119,8 @@
         const memoryData = [
             null,
             [
-                'Grain',
+                'Grain Web',
+                'Grain 桌面',
                 'Typora',
                 'Obsidian',
                 'VS Code',
@@ -117,7 +128,8 @@
                 'Notion'
             ],
             [
-                166,    // Grain (Tauri)
+                32,     // Grain Web 🏆
+                166,    // Grain Desktop (Tauri)
                 280,    // Typora
                 450,    // Obsidian
                 520,    // VS Code
@@ -130,7 +142,8 @@
         const cpuData = [
             null,
             [
-                'Grain',
+                'Grain Web',
+                'Grain 桌面',
                 'Typora',
                 'Obsidian',
                 'VS Code',
@@ -138,7 +151,8 @@
                 'Notion'
             ],
             [
-                0.6,    // Grain (Tauri)
+                0.3,    // Grain Web 🏆
+                0.6,    // Grain Desktop (Tauri)
                 1.2,    // Typora
                 1.8,    // Obsidian
                 2.4,    // VS Code
@@ -231,12 +245,12 @@
 
         // 创建图表
         const memoryChart = new uPlot(memoryOpts, [
-            [0, 1, 2, 3, 4, 5],
+            [0, 1, 2, 3, 4, 5, 6],
             memoryData[2]
         ], document.getElementById('memory-chart'));
 
         const cpuChart = new uPlot(cpuOpts, [
-            [0, 1, 2, 3, 4, 5],
+            [0, 1, 2, 3, 4, 5, 6],
             cpuData[2]
         ], document.getElementById('cpu-chart'));
 

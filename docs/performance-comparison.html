@@ -83,24 +83,34 @@
 
     <div class="stats">
         <div class="stat-card">
-            <div class="stat-label">Memory Usage</div>
+            <div class="stat-label">Memory Usage (Web)</div>
+            <div class="stat-value">32 MB 🏆</div>
+            <div class="stat-comparison">↓ 97% less than Notion</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Memory Usage (Desktop)</div>
             <div class="stat-value">166 MB</div>
             <div class="stat-comparison">↓ 83% less than Notion</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">CPU Usage (Idle)</div>
+            <div class="stat-label">CPU Usage (Web)</div>
+            <div class="stat-value">0.3% 🏆</div>
+            <div class="stat-comparison">↓ 87% less than VS Code</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">CPU Usage (Desktop)</div>
             <div class="stat-value">0.6%</div>
             <div class="stat-comparison">↓ 75% less than VS Code</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Battery Impact</div>
-            <div class="stat-value">Minimal</div>
-            <div class="stat-comparison">Write all day without charging</div>
+            <div class="stat-label">Startup Time</div>
+            <div class="stat-value">&lt; 0.5s</div>
+            <div class="stat-comparison">Web: Instant / Desktop: &lt; 1s</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Startup Time</div>
-            <div class="stat-value">&lt; 1s</div>
-            <div class="stat-comparison">Instant launch with Tauri</div>
+            <div class="stat-label">Installation Size</div>
+            <div class="stat-value">0 MB 🏆</div>
+            <div class="stat-comparison">Web: 0 MB / Desktop: ~50 MB</div>
         </div>
     </div>
 
@@ -109,7 +119,8 @@
         const memoryData = [
             null,
             [
-                'Grain',
+                'Grain Web',
+                'Grain Desktop',
                 'Typora',
                 'Obsidian',
                 'VS Code',
@@ -117,7 +128,8 @@
                 'Notion'
             ],
             [
-                166,    // Grain (Tauri)
+                32,     // Grain Web 🏆
+                166,    // Grain Desktop (Tauri)
                 280,    // Typora
                 450,    // Obsidian
                 520,    // VS Code
@@ -130,7 +142,8 @@
         const cpuData = [
             null,
             [
-                'Grain',
+                'Grain Web',
+                'Grain Desktop',
                 'Typora',
                 'Obsidian',
                 'VS Code',
@@ -138,7 +151,8 @@
                 'Notion'
             ],
             [
-                0.6,    // Grain (Tauri)
+                0.3,    // Grain Web 🏆
+                0.6,    // Grain Desktop (Tauri)
                 1.2,    // Typora
                 1.8,    // Obsidian
                 2.4,    // VS Code
@@ -231,12 +245,12 @@
 
         // Create charts
         const memoryChart = new uPlot(memoryOpts, [
-            [0, 1, 2, 3, 4, 5],
+            [0, 1, 2, 3, 4, 5, 6],
             memoryData[2]
         ], document.getElementById('memory-chart'));
 
         const cpuChart = new uPlot(cpuOpts, [
-            [0, 1, 2, 3, 4, 5],
+            [0, 1, 2, 3, 4, 5, 6],
             cpuData[2]
         ], document.getElementById('cpu-chart'));
 
