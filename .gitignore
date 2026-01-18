@@ -97,3 +97,13 @@ scripts/snapcraft-login/output/
 # 用户特定配置（不提交）
 .zshrc-grain.local
 .env.local
+
+# Web 部署运行时文件
+*.log
+*.pid
+logs/
+run/
+
+# Nginx 配置（应该在 docs/deployment/ 中作为示例）
+/nginx.conf
+/nginx-*.conf
