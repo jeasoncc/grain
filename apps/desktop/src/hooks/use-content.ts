@@ -126,8 +126,10 @@ export function useContentExists(nodeId: string | null | undefined): boolean | u
 		return false
 	}
 	
-	return pipe(
-		contentOption,
-		O.isSome
-	)
+	// contentOption 可能是 undefined（不应该发生，但类型系统要求处理）
+	if (contentOption === undefined) {
+		return false
+	}
+	
+	return O.isSome(contentOption)
 }
