@@ -1,0 +1,88 @@
+# Grain Web 部署 Nginx 配置
+# 基于你现有的配置修改
+
+server {
+    listen 80;
+    server_name localhost;
+
+    # 前端静态文件（Grain Desktop Web 版本）
+    root /home/lotus/project/book2/novel-editor/apps/desktop/dist;
+    index index.html;
+
+    # 前端路由（SPA 应用）
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 静态资源缓存
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # API 代理到 Rust 后端
+    location /api/ {
+        proxy_pass http://127.0.0.1:3030/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # 日志
+    access_log /var/log/nginx/grain-web-access.log;
+    error_log /var/log/nginx/grain-web-error.log;
+}
+
+# HTTPS 版本（如果需要）
+# server {
+#     listen 443 ssl http2;
+#     listen [::]:443 ssl http2;
+#     server_name localhost 127.0.0.1;
+#
+#     # SSL 证书（使用你现有的 mkcert 证书）
+#     ssl_certificate /home/lotus/localhost+2.pem;
+#     ssl_certificate_key /home/lotus/localhost+2-key.pem;
+#
+#     # SSL 安全配置
+#     ssl_protocols TLSv1.2 TLSv1.3;
+#     ssl_ciphers HIGH:!aNULL:!MD5;
+#     ssl_prefer_server_ciphers on;
+#     ssl_session_cache shared:SSL:10m;
+#     ssl_session_timeout 10m;
+#
+#     # 前端静态文件
+#     root /home/lotus/project/book2/novel-editor/apps/desktop/dist;
+#     index index.html;
+#
+#     location / {
+#         try_files $uri $uri/ /index.html;
+#     }
+#
+#     # 静态资源缓存
+#     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+#         expires 1y;
+#         add_header Cache-Control "public, immutable";
+#     }
+#
+#     # API 代理
+#     location /api/ {
+#         proxy_pass http://127.0.0.1:3030/api/;
+#         proxy_http_version 1.1;
+#         proxy_set_header Upgrade $http_upgrade;
+#         proxy_set_header Connection 'upgrade';
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#         proxy_cache_bypass $http_upgrade;
+#     }
+#
+#     # 日志
+#     access_log /var/log/nginx/grain-web-https-access.log;
+#     error_log /var/log/nginx/grain-web-https-error.log;
+# }
