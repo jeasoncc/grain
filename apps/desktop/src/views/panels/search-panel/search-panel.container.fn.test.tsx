@@ -11,7 +11,7 @@ vi.mock("@tanstack/react-router", () => ({
 	useNavigate: vi.fn(() => vi.fn()),
 }))
 
-vi.mock("@/fn/search", () => ({
+vi.mock("@/flows/search", () => ({
 	searchEngine: {
 		simpleSearch: vi.fn(() => Promise.resolve([])),
 	},
@@ -79,7 +79,7 @@ describe("SearchPanelContainer", () => {
 	})
 
 	it("should perform search when query changes", async () => {
-		const { searchEngine } = await import("@/fn/search")
+		const { searchEngine } = await import("@/flows/search")
 		const mockSearch = vi.fn(() =>
 			Promise.resolve([
 				{
@@ -125,7 +125,7 @@ describe("SearchPanelContainer", () => {
 	})
 
 	it("should not search when query is empty", async () => {
-		const { searchEngine } = await import("@/fn/search")
+		const { searchEngine } = await import("@/flows/search")
 		const mockSearch = vi.fn(() => Promise.resolve([]))
 		vi.mocked(searchEngine.simpleSearch).mockImplementation(mockSearch)
 
@@ -155,7 +155,7 @@ describe("SearchPanelContainer", () => {
 	})
 
 	it("should handle search errors gracefully", async () => {
-		const { searchEngine } = await import("@/fn/search")
+		const { searchEngine } = await import("@/flows/search")
 		const mockSearch = vi.fn(() => Promise.reject(new Error("Search failed")))
 		vi.mocked(searchEngine.simpleSearch).mockImplementation(mockSearch)
 

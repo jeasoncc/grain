@@ -49,7 +49,7 @@ vi.mock("@/hooks/use-theme", () => ({
 	})),
 }))
 
-vi.mock("@/lib/themes", () => ({
+vi.mock("@/utils/themes.util", () => ({
 	getDarkThemes: vi.fn(() => [
 		{
 			colors: {
@@ -138,7 +138,7 @@ describe("ThemeSelectorContainer", () => {
 	})
 
 	it("should connect to theme data functions", async () => {
-		const { getLightThemes, getDarkThemes } = await import("@/lib/themes")
+		const { getLightThemes, getDarkThemes } = await import("@/utils/themes.util")
 		render(<ThemeSelectorContainer />)
 		expect(getLightThemes).toHaveBeenCalled()
 		expect(getDarkThemes).toHaveBeenCalled()

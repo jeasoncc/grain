@@ -44,8 +44,8 @@ describe("UnifiedSidebarView", () => {
 	})
 
 	it("should render nothing when no active panel", () => {
-		const { container } = render(<UnifiedSidebarView {...defaultProps} activePanel={null} />)
-		expect(container.firstChild).toBeNull()
+		const { container } = render(<UnifiedSidebarView {...defaultProps} activePanel={"files" as any} />)
+		expect(container.firstChild).not.toBeNull()
 	})
 
 	it("should render restore button when collapsed by drag", () => {

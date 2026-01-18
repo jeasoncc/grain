@@ -12,8 +12,9 @@ vi.mock("sonner", () => ({
 	},
 }))
 
-vi.mock("@/actions", () => ({
-	exportProject: vi.fn(),
+// Mock flows - FIXME: These tests need to be updated to match current export API
+vi.mock("@/flows/export", () => ({
+	exportProject: vi.fn(() => Promise.resolve()),
 }))
 
 describe("ExportButtonContainer", () => {
@@ -32,7 +33,7 @@ describe("ExportButtonContainer", () => {
 	})
 
 	it("should call exportProject and show success toast on successful export", async () => {
-		const { exportProject } = await import("@/actions")
+		const { exportProject } = await import("@/flows/export")
 		vi.mocked(exportProject).mockResolvedValue(undefined)
 
 		render(<ExportButtonContainer {...defaultProps} />)
@@ -54,7 +55,7 @@ describe("ExportButtonContainer", () => {
 	})
 
 	it("should show error toast on export failure", async () => {
-		const { exportProject } = await import("@/actions")
+		const { exportProject } = await import("@/flows/export")
 		vi.mocked(exportProject).mockRejectedValue(new Error("Export failed"))
 
 		render(<ExportButtonContainer {...defaultProps} />)
@@ -72,7 +73,7 @@ describe("ExportButtonContainer", () => {
 	})
 
 	it("should show loading state during export", async () => {
-		const { exportProject } = await import("@/actions")
+		const { exportProject } = await import("@/flows/export")
 		let resolveExport: (() => void) | undefined
 		const exportPromise = new Promise<void>((resolve) => {
 			resolveExport = resolve
@@ -103,7 +104,7 @@ describe("ExportButtonContainer", () => {
 	})
 
 	it("should use default workspace title when not provided", async () => {
-		const { exportProject } = await import("@/actions")
+		const { exportProject } = await import("@/flows/export")
 		vi.mocked(exportProject).mockResolvedValue(undefined)
 
 		render(<ExportButtonContainer workspaceId="workspace-1" workspaceTitle={undefined} />)

@@ -119,16 +119,6 @@ function checkForAtSignMentions(text: string): MenuTextMatch | null {
 	return null;
 }
 
-/**
- * 简单的拼音首字母匹配
- * 例如：张三 -> zs, 李四 -> ls
- */
-function getPinyinInitials(text: string): string {
-	// 这里可以集成完整的拼音库，暂时使用简化版本
-	// 实际项目中可以使用 pinyin-pro 等库
-	return text.toLowerCase();
-}
-
 export interface MentionsPluginProps {
 	/** Mention entries for @ autocomplete (renamed from wikiEntries) */
 	mentionEntries?: MentionEntry[];

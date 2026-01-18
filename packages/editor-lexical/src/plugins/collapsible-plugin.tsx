@@ -37,7 +37,7 @@ import {
 /**
  * 插入折叠块
  */
-function insertCollapsible(text: string): boolean {
+function insertCollapsible(_text: string): boolean {
   const selection = $getSelection();
   if (!$isRangeSelection(selection)) return false;
 

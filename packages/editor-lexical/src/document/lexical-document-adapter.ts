@@ -15,7 +15,6 @@ import {
   $getRoot,
   $getSelection,
   $isRangeSelection,
-  $createParagraphNode,
   FORMAT_TEXT_COMMAND,
   COMMAND_PRIORITY_NORMAL,
   KEY_ENTER_COMMAND,

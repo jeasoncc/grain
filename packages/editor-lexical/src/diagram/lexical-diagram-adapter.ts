@@ -5,7 +5,7 @@
 
 import type { DiagramEditorAdapter, DiagramType } from "@grain/editor-core";
 import type { LexicalEditor } from "lexical";
-import { $getRoot, COMMAND_PRIORITY_NORMAL, KEY_ENTER_COMMAND } from "lexical";
+import { $getRoot } from "lexical";
 
 /**
  * Configuration for creating a LexicalDiagramAdapter

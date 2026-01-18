@@ -45,7 +45,7 @@ export class CollapsibleContainerNode extends ElementNode {
     return new CollapsibleContainerNode(node.__open, node.__key);
   }
 
-  createDOM(config: EditorConfig, editor: LexicalEditor): HTMLElement {
+  createDOM(_config: EditorConfig, editor: LexicalEditor): HTMLElement {
     const dom = document.createElement("details");
     dom.classList.add("Collapsible__container");
     dom.open = this.__open;
@@ -143,7 +143,7 @@ export class CollapsibleTitleNode extends ElementNode {
     return new CollapsibleTitleNode(node.__key);
   }
 
-  createDOM(config: EditorConfig): HTMLElement {
+  createDOM(_config: EditorConfig): HTMLElement {
     const dom = document.createElement("summary");
     dom.classList.add("Collapsible__title");
     return dom;
@@ -220,7 +220,7 @@ export class CollapsibleContentNode extends ElementNode {
     return new CollapsibleContentNode(node.__key);
   }
 
-  createDOM(config: EditorConfig): HTMLElement {
+  createDOM(_config: EditorConfig): HTMLElement {
     const dom = document.createElement("div");
     dom.classList.add("Collapsible__content");
     return dom;

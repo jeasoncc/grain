@@ -9,9 +9,6 @@
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import {
-  $createTextNode,
-  $getSelection,
-  $isRangeSelection,
   $isTextNode,
   TextNode,
 } from "lexical";

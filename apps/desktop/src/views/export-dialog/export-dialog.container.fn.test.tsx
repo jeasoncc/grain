@@ -6,16 +6,16 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ExportDialogContainer } from "./export-dialog.container.fn"
 
-// Mock actions
-vi.mock("@/actions", () => ({
+// Mock flows - FIXME: These tests need to be updated to match current export API
+vi.mock("@/flows/export", () => ({
 	exportAllAsync: vi.fn(() => Promise.resolve('{"data": "test"}')),
 	exportAllAsZipAsync: vi.fn(() => Promise.resolve(new Blob(["test"]))),
 	exportAsMarkdownAsync: vi.fn(() => Promise.resolve("# Test Markdown")),
 	exportProject: vi.fn(() => Promise.resolve()),
 }))
 
-// Mock export functions
-vi.mock("@/fn/export", () => ({
+// Mock file operations
+vi.mock("@/io/file", () => ({
 	triggerBlobDownload: vi.fn(),
 	triggerDownload: vi.fn(),
 }))
@@ -63,8 +63,8 @@ describe("ExportDialogContainer", () => {
 	})
 
 	it("should handle export for markdown format", async () => {
-		const { exportAsMarkdownAsync } = await import("@/actions")
-		const { triggerDownload } = await import("@/fn/export")
+		const { exportAsMarkdownAsync } = await import("@/flows/export")
+		const { triggerDownload } = await import("@/io/file")
 		const { toast } = await import("sonner")
 
 		render(<ExportDialogContainer {...defaultProps} />)
@@ -89,8 +89,8 @@ describe("ExportDialogContainer", () => {
 	})
 
 	it("should handle export for json format", async () => {
-		const { exportAllAsync } = await import("@/actions")
-		const { triggerDownload } = await import("@/fn/export")
+		const { exportAllAsync } = await import("@/flows/export")
+		const { triggerDownload } = await import("@/io/file")
 		const { toast } = await import("sonner")
 
 		render(<ExportDialogContainer {...defaultProps} />)
@@ -115,8 +115,8 @@ describe("ExportDialogContainer", () => {
 	})
 
 	it("should handle export for zip format", async () => {
-		const { exportAllAsZipAsync } = await import("@/actions")
-		const { triggerBlobDownload } = await import("@/fn/export")
+		const { exportAllAsZipAsync } = await import("@/flows/export")
+		const { triggerBlobDownload } = await import("@/io/file")
 		const { toast } = await import("sonner")
 
 		render(<ExportDialogContainer {...defaultProps} />)
@@ -141,7 +141,7 @@ describe("ExportDialogContainer", () => {
 	})
 
 	it("should handle export for standard formats", async () => {
-		const { exportProject } = await import("@/actions")
+		const { exportProject } = await import("@/flows/export")
 		const { toast } = await import("sonner")
 
 		render(<ExportDialogContainer {...defaultProps} />)
@@ -167,7 +167,7 @@ describe("ExportDialogContainer", () => {
 	})
 
 	it("should handle export errors", async () => {
-		const { exportProject } = await import("@/actions")
+		const { exportProject } = await import("@/flows/export")
 		const { toast } = await import("sonner")
 
 		vi.mocked(exportProject).mockRejectedValueOnce(new Error("Export failed"))

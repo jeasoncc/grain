@@ -12,14 +12,8 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import {
 	$isListItemNode,
 	$isListNode,
-	ListItemNode,
 } from "@lexical/list";
 import {
-	$getSelection,
-	$isRangeSelection,
-	$isTextNode,
-	COMMAND_PRIORITY_HIGH,
-	KEY_ENTER_COMMAND,
 	TextNode,
 } from "lexical";
 import { useEffect } from "react";
