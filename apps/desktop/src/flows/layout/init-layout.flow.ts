@@ -11,7 +11,7 @@
  * - 错误处理：记录错误但不阻塞应用启动
  */
 
-import { info } from "@/io/log/logger.api"
+import { error, info } from "@/io/log/logger.api"
 import { loadLayoutState } from "@/io/storage"
 import { useLayoutStore } from "@/state"
 import { DEFAULT_LAYOUT_STATE, type LayoutState } from "@/types/layout"

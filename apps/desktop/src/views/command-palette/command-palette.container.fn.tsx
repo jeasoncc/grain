@@ -75,7 +75,7 @@ export const CommandPaletteContainer = memo(
 									),
 									// 3. 成功后，导航到主工作区
 									TE.tap(() => {
-										navigate({ to: "/" })
+										navigate({ to: "/" as any })
 										return TE.right(undefined)
 									}),
 									// 4. 错误处理
@@ -117,7 +117,7 @@ export const CommandPaletteContainer = memo(
 							icon: <Settings className="size-4" />,
 							label: "Open Settings",
 							onSelect: () => {
-								navigate({ to: "/settings/design" })
+								navigate({ to: "/settings/design" as any })
 								onOpenChange(false)
 							},
 						},

@@ -65,7 +65,7 @@ export const SearchPanelContainer = memo(() => {
 				case "node":
 				case "project":
 					// Navigate to Home
-					navigate({ to: "/" })
+					navigate({ to: "/" as any })
 					break
 			}
 		},

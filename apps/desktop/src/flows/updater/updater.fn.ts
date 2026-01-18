@@ -7,7 +7,7 @@
  */
 
 import * as TE from "fp-ts/TaskEither"
-import { info, success } from "@/io/log/logger.api"
+import { error, info, success } from "@/io/log/logger.api"
 import type { AppError } from "@/types/error"
 
 // ==============================

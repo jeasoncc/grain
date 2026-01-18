@@ -10,6 +10,7 @@
 
 import * as E from "fp-ts/Either"
 import { useCallback, useEffect, useState } from "react"
+import { error } from "@/io/log/logger.api"
 import { checkForUpdates, downloadAndInstallUpdate, type UpdateInfo } from "@/flows/updater"
 
 type CheckStatus = "idle" | "checking" | "up-to-date" | "update-available" | "error" | "dev-mode"

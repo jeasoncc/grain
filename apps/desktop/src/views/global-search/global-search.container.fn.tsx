@@ -81,7 +81,7 @@ export const GlobalSearchContainer = memo(({ open, onOpenChange }: GlobalSearchC
 				case "node":
 				case "project":
 					// Navigate to Home，通过文件树打开
-					navigate({ to: "/" })
+					navigate({ to: "/" as any })
 					break
 			}
 
