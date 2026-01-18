@@ -30,6 +30,7 @@ export { default as ChecklistShortcutPlugin } from "./checklist-shortcut-plugin"
 // TEMPORARILY DISABLED: Table plugins (has dependency issues)
 // export { default as TableShortcutPlugin } from "./table-shortcut-plugin";
 export { default as HorizontalRuleShortcutPlugin } from "./horizontal-rule-shortcut-plugin";
+export { default as MarkdownPastePlugin } from "./markdown-paste-plugin";
 
 // Re-export commonly used Lexical plugins for convenience
 // 只导出实际在 Editor 中使用的插件

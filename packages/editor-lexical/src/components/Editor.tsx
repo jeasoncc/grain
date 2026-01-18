@@ -51,6 +51,7 @@ import PrismLanguagesPlugin from "../plugins/prism-languages-plugin";
 import ChecklistShortcutPlugin from "../plugins/checklist-shortcut-plugin";
 import TableShortcutPlugin from "../plugins/table-shortcut-plugin";
 import HorizontalRuleShortcutPlugin from "../plugins/horizontal-rule-shortcut-plugin";
+import MarkdownPastePlugin from "../plugins/markdown-paste-plugin";
 import TableActionsPlugin from "../plugins/table-actions-plugin";
 import EmojiPlugin from "../plugins/emoji-plugin";
 import CollapsiblePlugin from "../plugins/collapsible-plugin";
@@ -214,6 +215,7 @@ export default function Editor({
         <TablePlugin />
         <ClearEditorPlugin />
         <MarkdownShortcutPlugin transformers={[...TRANSFORMERS, CHECK_LIST]} />
+        <MarkdownPastePlugin />
         <TabIndentationPlugin />
 
         {/* Content change listener */}

@@ -14,6 +14,28 @@ Grain is a minimalist writing sanctuary for long-form content. Distraction-free 
 
 Grain delivers world-class performance thanks to Tauri's native architecture. With 10 documents open:
 
+### Memory Usage (MB)
+```
+Grain     ████░░░░░░░░░░░░░░░░ 166 MB  ⭐ 83% less than Notion
+Typora    ██████░░░░░░░░░░░░░░ 280 MB
+Obsidian  █████████░░░░░░░░░░░ 450 MB
+VS Code   ██████████░░░░░░░░░░ 520 MB
+Logseq    █████████████░░░░░░░ 680 MB
+Notion    ███████████████████░ 950 MB
+          0                    1000
+```
+
+### CPU Usage - Idle (%)
+```
+Grain     █░░░░░░░░░░░░░░░░░░░ 0.6%   ⭐ 75% less than VS Code
+Typora    ██░░░░░░░░░░░░░░░░░░ 1.2%
+Obsidian  ███░░░░░░░░░░░░░░░░░ 1.8%
+VS Code   ████░░░░░░░░░░░░░░░░ 2.4%
+Logseq    ██████░░░░░░░░░░░░░░ 3.1%
+Notion    █████████░░░░░░░░░░░ 4.5%
+          0                    5.0
+```
+
 | Metric | Grain | Competitors (avg) | Difference |
 |--------|-------|-------------------|------------|
 | 💾 Memory | **166 MB** | 576 MB | **↓ 71% less** |
@@ -26,7 +48,7 @@ Grain delivers world-class performance thanks to Tauri's native architecture. Wi
 - 🎯 **Tauri Architecture** - 83% less memory than Electron apps
 - ⚡ **Optimized Rendering** - Efficient React + Lexical integration
 
-[📊 View detailed performance comparison](./docs/performance-comparison.html)
+[📊 View interactive charts with uPlot](./docs/performance-comparison.html)
 
 ---
 

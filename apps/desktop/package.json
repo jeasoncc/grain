@@ -1,6 +1,6 @@
 {
   "name": "desktop",
-  "version": "0.1.601",
+  "version": "0.1.603",
   "private": true,
   "type": "module",
   "scripts": {

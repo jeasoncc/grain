@@ -130,6 +130,7 @@ export {
   // TablePlugin,
   ClearEditorPlugin,
   MarkdownShortcutPlugin,
+  MarkdownPastePlugin,
   TabIndentationPlugin,
   OnChangePlugin,
 } from "./plugins";
