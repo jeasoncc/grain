@@ -28,12 +28,11 @@ Grain is a minimalist writing sanctuary for long-form content. Distraction-free 
 
 ## ⚡ Performance
 
-Grain delivers world-class performance with multiple deployment options. With 10 documents open:
+Grain delivers world-class performance thanks to Tauri's native architecture. With 10 documents open:
 
 ### Memory Usage (MB)
 ```
-Grain Web ██░░░░░░░░░░░░░░░░░░  32 MB  🏆 97% less than Notion!
-Grain App ████░░░░░░░░░░░░░░░░ 166 MB  ⭐ 83% less than Notion
+Grain     ████░░░░░░░░░░░░░░░░ 166 MB  ⭐ 83% less than Notion
 Typora    ██████░░░░░░░░░░░░░░ 280 MB
 Obsidian  █████████░░░░░░░░░░░ 450 MB
 VS Code   ██████████░░░░░░░░░░ 520 MB
@@ -44,8 +43,7 @@ Notion    ███████████████████░ 950 MB
 
 ### CPU Usage - Idle (%)
 ```
-Grain Web █░░░░░░░░░░░░░░░░░░░ 0.3%   🏆 87% less than VS Code
-Grain App █░░░░░░░░░░░░░░░░░░░ 0.6%   ⭐ 75% less than VS Code
+Grain     █░░░░░░░░░░░░░░░░░░░ 0.6%   ⭐ 75% less than VS Code
 Typora    ██░░░░░░░░░░░░░░░░░░ 1.2%
 Obsidian  ███░░░░░░░░░░░░░░░░░ 1.8%
 VS Code   ████░░░░░░░░░░░░░░░░ 2.4%
@@ -56,8 +54,7 @@ Notion    █████████░░░░░░░░░░░ 4.5%
 
 ### Installation Size (MB)
 ```
-Grain Web ░░░░░░░░░░░░░░░░░░░░   0 MB  🏆 Zero install!
-Grain App █░░░░░░░░░░░░░░░░░░░  10 MB  ⭐ 96% smaller!
+Grain     █░░░░░░░░░░░░░░░░░░░  10 MB  ⭐ 95% smaller
 Typora    ████░░░░░░░░░░░░░░░░ 100 MB
 Obsidian  ██████░░░░░░░░░░░░░░ 150 MB
 VS Code   ████████░░░░░░░░░░░░ 200 MB
@@ -68,8 +65,7 @@ Notion    ████████████░░░░░░░░ 300 MB
 
 ### Startup Time (seconds)
 ```
-Grain Web ░░░░░░░░░░░░░░░░░░░░ 0.3s   🏆 Instant!
-Grain App █░░░░░░░░░░░░░░░░░░░ 0.8s   ⭐ 4x faster
+Grain     █░░░░░░░░░░░░░░░░░░░ 0.8s   ⭐ 3x faster
 Typora    ██░░░░░░░░░░░░░░░░░░ 1.5s
 Obsidian  ███░░░░░░░░░░░░░░░░░ 2.0s
 VS Code   ████░░░░░░░░░░░░░░░░ 2.5s
@@ -78,25 +74,19 @@ Notion    ██████░░░░░░░░░░░░░░ 3.5s
           0                    4.0
 ```
 
-| Metric | Grain Web | Grain Desktop | Competitors (avg) |
-|--------|-----------|---------------|-------------------|
-| Memory | **32 MB** 🏆 | **166 MB** ⭐ | 576 MB |
-| CPU (idle) | **0.3%** 🏆 | **0.6%** ⭐ | 2.4% |
-| Startup | **< 0.5s** 🏆 | **< 1s** ⭐ | 2-4s |
-| Battery | **Ultra-low** 🏆 | **Minimal** ⭐ | High |
-| Install | **0 MB** 🏆 | **~10 MB** ⭐ | 200 MB |
+| Metric | Grain | Competitors (avg) | Difference |
+|--------|-------|-------------------|------------|
+| 💾 Memory | **166 MB** | 576 MB | **↓ 71% less** |
+| 🔥 CPU (idle) | **0.6%** | 2.4% | **↓ 75% less** |
+| 🚀 Startup | **< 1s** | 2.5s | **3x faster** |
+| 📦 Install Size | **~10 MB** | 200 MB | **↓ 95% smaller** |
+| 🔋 Battery | **Minimal** | High | **All-day writing** |
 
 **Why so fast?**
-- 🌐 **Web Version** - Browser-native, zero installation, 32MB memory
 - 🦀 **Rust Backend** - Native performance, no JavaScript overhead  
 - 🎯 **Tauri Architecture** - 83% less memory than Electron apps
 - ⚡ **Optimized Rendering** - Efficient React 19 + Lexical integration
 - 🏗️ **Functional Architecture** - Immutable data, pure functions, predictable performance
-- 📦 **Tree-shaking** - Only load what you need
-
-**Choose your deployment:**
-- 🌐 **Web** - Instant access, ultra-lightweight (32MB), perfect for quick notes
-- 💻 **Desktop** - Native experience, offline-first (166MB), full feature set
 
 [📊 View interactive performance charts](./docs/performance-comparison.html)
 
