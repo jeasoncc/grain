@@ -14,7 +14,7 @@
  */
 
 import type { ReactNode } from "react"
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
+import { Panel, Group, Separator } from "react-resizable-panels"
 import { useAppLayout } from "@/hooks/use-app-layout"
 import { ActivityBar } from "@/views/activity-bar"
 import { UnifiedSidebar } from "@/views/unified-sidebar"
@@ -42,13 +42,17 @@ export interface AppLayoutProps {
  * - 响应式布局：窗口宽度 < 768px 时自动折叠侧边栏
  */
 export function AppLayout({ children }: AppLayoutProps) {
-	const { isSidebarOpen, sidebarWidth, handleResize, handleCollapse, handleExpand } = useAppLayout()
+	const { isSidebarOpen, sidebarWidth, handleLayoutChanged } = useAppLayout()
 
 	return (
 		<div className="flex h-screen w-screen overflow-hidden">
 			<ActivityBar />
 
-			<PanelGroup direction="horizontal" autoSaveId="grain-main-layout" onLayout={handleResize}>
+			<Group 
+				orientation="horizontal" 
+				id="grain-main-layout"
+				onLayoutChanged={handleLayoutChanged}
+			>
 				{isSidebarOpen && (
 					<>
 						<Panel
@@ -57,20 +61,18 @@ export function AppLayout({ children }: AppLayoutProps) {
 							minSize={15}
 							maxSize={40}
 							collapsible
-							onCollapse={handleCollapse}
-							onExpand={handleExpand}
 						>
 							<UnifiedSidebar />
 						</Panel>
 
-						<PanelResizeHandle className="w-1 bg-border hover:bg-accent transition-colors" />
+						<Separator className="w-1 bg-border hover:bg-accent transition-colors" />
 					</>
 				)}
 
 				<Panel id="content" minSize={30}>
 					<div className="h-full overflow-hidden">{children}</div>
 				</Panel>
-			</PanelGroup>
+			</Group>
 		</div>
 	)
 }

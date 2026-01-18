@@ -10,7 +10,7 @@
  * 依赖：hooks/, state/, types/
  */
 
-import { useEffect } from "react"
+import { useCallback, useEffect } from "react"
 import { useLayout } from "./use-layout"
 
 // ============================================================================
@@ -22,12 +22,8 @@ export interface UseAppLayoutReturn {
 	readonly isSidebarOpen: boolean
 	/** 侧边栏宽度百分比 */
 	readonly sidebarWidth: number
-	/** 处理面板调整大小 */
-	readonly handleResize: (sizes: readonly number[]) => void
-	/** 处理面板折叠 */
-	readonly handleCollapse: () => void
-	/** 处理面板展开 */
-	readonly handleExpand: () => void
+	/** 处理布局变化（v4 API: onLayoutChanged） */
+	readonly handleLayoutChanged: (layout: readonly number[]) => void
 }
 
 // ============================================================================
@@ -39,8 +35,7 @@ export interface UseAppLayoutReturn {
  *
  * 封装所有布局逻辑：
  * - 响应式布局（窗口 < 768px 自动折叠侧边栏）
- * - 面板调整大小
- * - 面板折叠/展开
+ * - 面板调整大小（使用 v4 API）
  *
  * @returns Layout state and handlers
  */
@@ -49,38 +44,22 @@ export function useAppLayout(): UseAppLayoutReturn {
 		isSidebarOpen,
 		sidebarWidth,
 		setSidebarWidth,
-		setSidebarCollapsedByDrag,
-		restoreFromCollapse,
 		toggleSidebar,
 	} = useLayout()
 
 	/**
-	 * Handle panel resize
-	 * Updates sidebar width in state
+	 * Handle layout changed (v4 API: onLayoutChanged)
+	 * Called after the Group's layout has been changed
+	 * 
+	 * @param layout - Array of panel sizes [sidebar%, content%]
 	 */
-	const handleResize = (sizes: readonly number[]) => {
-		// sizes[0] is sidebar percentage
-		const newWidth = sizes[0]
-		if (newWidth !== undefined) {
+	const handleLayoutChanged = useCallback((layout: readonly number[]) => {
+		// layout[0] is sidebar percentage
+		const newWidth = layout[0]
+		if (newWidth !== undefined && newWidth !== sidebarWidth) {
 			setSidebarWidth(newWidth)
 		}
-	}
-
-	/**
-	 * Handle panel collapse
-	 * Detects when sidebar is collapsed by drag
-	 */
-	const handleCollapse = () => {
-		setSidebarCollapsedByDrag(true)
-	}
-
-	/**
-	 * Handle panel expand
-	 * Restores sidebar from drag collapse
-	 */
-	const handleExpand = () => {
-		restoreFromCollapse()
-	}
+	}, [sidebarWidth, setSidebarWidth])
 
 	/**
 	 * Responsive layout: Auto-collapse sidebar on small screens
@@ -107,8 +86,6 @@ export function useAppLayout(): UseAppLayoutReturn {
 	return {
 		isSidebarOpen,
 		sidebarWidth,
-		handleResize,
-		handleCollapse,
-		handleExpand,
+		handleLayoutChanged,
 	}
 }
