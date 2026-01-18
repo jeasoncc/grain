@@ -93,8 +93,8 @@ export function initThemeFlow(): () => void {
 			cleanup?.()
 			systemThemeCleanup?.()
 		}
-	} catch (error) {
-		error("[Theme Flow] Failed to initialize theme system", { error }, "init-theme.flow")
+	} catch (err) {
+		error("[Theme Flow] Failed to initialize theme system", { error: err }, "init-theme.flow")
 
 		// Return no-op cleanup
 		return () => {}
@@ -120,7 +120,7 @@ export function resetThemeFlow(): void {
 		store.setSystemTheme(systemTheme)
 
 		info("[Theme Flow] Theme reset successfully")
-	} catch (error) {
-		error("[Theme Flow] Failed to reset theme", { error }, "init-theme.flow")
+	} catch (err) {
+		error("[Theme Flow] Failed to reset theme", { error: err }, "init-theme.flow")
 	}
 }

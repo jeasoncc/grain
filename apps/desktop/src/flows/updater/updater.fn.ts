@@ -77,11 +77,11 @@ export const checkForUpdates = (): TE.TaskEither<AppError, UpdateInfo> =>
 					available: false,
 					currentVersion: update?.currentVersion || "unknown",
 				}
-			} catch (error) {
-				error("[Updater] 检查更新失败", { error }, "updater.fn")
+			} catch (err) {
+				error("[Updater] 检查更新失败", { error: err }, "updater.fn")
 
 				// 提供更有用的错误信息
-				const errorMessage = error instanceof Error ? error.message : String(error)
+				const errorMessage = err instanceof Error ? err.message : String(err)
 				if (errorMessage.includes("404") || errorMessage.includes("Not Found")) {
 					throw new Error("尚未发布任何版本")
 				}

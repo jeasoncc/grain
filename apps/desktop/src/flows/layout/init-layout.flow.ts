@@ -53,8 +53,8 @@ export function initLayoutFlow(): LayoutState {
 		info("[Layout Flow] Layout initialized successfully", { loadedState }, "init-layout")
 
 		return loadedState
-	} catch (error) {
-		error("[Layout Flow] Failed to initialize layout", { error }, "init-layout.flow")
+	} catch (err) {
+		error("[Layout Flow] Failed to initialize layout", { error: err }, "init-layout.flow")
 
 		// Return current store state as fallback
 		return useLayoutStore.getState()
@@ -79,8 +79,8 @@ export function resetLayoutFlow(): LayoutState {
 		info("[Layout Flow] Layout reset successfully", { currentState }, "init-layout")
 
 		return currentState
-	} catch (error) {
-		error("[Layout Flow] Failed to reset layout", { error }, "init-layout.flow")
+	} catch (err) {
+		error("[Layout Flow] Failed to reset layout", { error: err }, "init-layout.flow")
 		return useLayoutStore.getState()
 	}
 }

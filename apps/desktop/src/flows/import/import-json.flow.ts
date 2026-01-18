@@ -17,6 +17,7 @@ import { createNode } from "@/io/api/node.api"
 import { createWorkspace } from "@/io/api/workspace.api"
 import { info, success } from "@/io/log/logger.api"
 import { type JsonImportOptions, parseImportData } from "@/pipes/import/import.json.fn"
+import type { ContentCreateInput, ContentType } from "@/types/content"
 import type { AppError } from "@/types/error"
 
 /**
@@ -69,7 +70,12 @@ export function importFromJson(
 
 					// 导入内容
 					for (const c of data.contents) {
-						const result = await createContent(c)()
+						const input: ContentCreateInput = {
+							nodeId: c.nodeId,
+							content: c.content,
+							contentType: c.contentType as ContentType,
+						}
+						const result = await createContent(input)()
 						if (E.isLeft(result)) {
 							throw new Error(`Failed to import content: ${result.left.message}`)
 						}

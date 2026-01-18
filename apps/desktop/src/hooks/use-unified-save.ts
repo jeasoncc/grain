@@ -118,15 +118,6 @@ export function useUnifiedSave(options: UseUnifiedSaveOptions): UseUnifiedSaveRe
 	}, [])
 
 	// ==============================
-	// Refs（用于回调）
-	// ==============================
-
-	const _callbacksRef = useRef({
-		onSaveError,
-		onSaveSuccess,
-	})
-
-	// ==============================
 	// 注册/更新 model（组件挂载时）
 	// ==============================
 

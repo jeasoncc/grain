@@ -66,10 +66,10 @@ export function useUpdateChecker(): UseUpdateCheckerReturn {
 			} else {
 				setCheckStatus("up-to-date")
 			}
-		} catch (error) {
-			error("[UpdateChecker] 检查更新失败", { error }, "use-update-checker")
+		} catch (err) {
+			error("[UpdateChecker] 检查更新失败", { error: err }, "use-update-checker")
 			setCheckStatus("error")
-			setErrorMessage(error instanceof Error ? error.message : "Unknown error")
+			setErrorMessage(err instanceof Error ? err.message : "Unknown error")
 		} finally {
 			setIsChecking(false)
 		}
@@ -87,8 +87,8 @@ export function useUpdateChecker(): UseUpdateCheckerReturn {
 			if (E.isLeft(result)) {
 				throw new Error(result.left.message)
 			}
-		} catch (error) {
-			error("[UpdateChecker] 下载安装更新失败", { error }, "use-update-checker")
+		} catch (err) {
+			error("[UpdateChecker] 下载安装更新失败", { error: err }, "use-update-checker")
 			setIsDownloading(false)
 		}
 	}, [])

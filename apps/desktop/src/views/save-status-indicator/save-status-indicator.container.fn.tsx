@@ -28,17 +28,6 @@ export interface SaveStatusIndicatorContainerProps {
 // 订阅 SaveServiceManager 状态变化
 // ============================================================================
 
-/**
- * 创建订阅函数，用于 useSyncExternalStore
- * 由于 saveServiceManager 没有内置订阅机制，我们使用轮询方式
- * 实际上状态变化会通过 SaveStore 触发重渲染
- */
-const _subscribe = (_callback: () => void) => {
-	// SaveStore 的状态变化会触发重渲染
-	// 这里返回一个空的 unsubscribe 函数
-	return () => {}
-}
-
 // ============================================================================
 // Container Component
 // ============================================================================
