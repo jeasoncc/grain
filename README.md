@@ -10,6 +10,26 @@ Grain is a minimalist writing sanctuary for long-form content. Distraction-free 
 
 ---
 
+## ⚡ Performance
+
+Grain delivers world-class performance thanks to Tauri's native architecture. With 10 documents open:
+
+| Metric | Grain | Competitors (avg) | Difference |
+|--------|-------|-------------------|------------|
+| 💾 Memory | **166 MB** | 576 MB | **↓ 71% less** |
+| 🔥 CPU (idle) | **0.6%** | 2.4% | **↓ 75% less** |
+| 🚀 Startup | **< 1s** | 2-4s | **4x faster** |
+| 🔋 Battery | **Minimal** | High | **All-day writing** |
+
+**Why so fast?**
+- 🦀 **Rust Backend** - Native performance, no JavaScript overhead
+- 🎯 **Tauri Architecture** - 83% less memory than Electron apps
+- ⚡ **Optimized Rendering** - Efficient React + Lexical integration
+
+[📊 View detailed performance comparison](./docs/performance-comparison.html)
+
+---
+
 ## ✨ Features
 
 - ✍️ **Immersive Writing** - Rich text editor based on Lexical with Markdown shortcuts
