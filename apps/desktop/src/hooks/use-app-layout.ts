@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect } from "react"
+import type { Layout } from "react-resizable-panels"
 import { useLayout } from "./use-layout"
 
 // ============================================================================
@@ -23,7 +24,7 @@ export interface UseAppLayoutReturn {
 	/** 侧边栏宽度百分比 */
 	readonly sidebarWidth: number
 	/** 处理布局变化（v4 API: onLayoutChanged） */
-	readonly handleLayoutChanged: (layout: readonly number[]) => void
+	readonly handleLayoutChanged: (layout: Layout) => void
 }
 
 // ============================================================================
@@ -51,10 +52,10 @@ export function useAppLayout(): UseAppLayoutReturn {
 	 * Handle layout changed (v4 API: onLayoutChanged)
 	 * Called after the Group's layout has been changed
 	 * 
-	 * @param layout - Array of panel sizes [sidebar%, content%]
+	 * @param layout - Layout object from react-resizable-panels
 	 */
-	const handleLayoutChanged = useCallback((layout: readonly number[]) => {
-		// layout[0] is sidebar percentage
+	const handleLayoutChanged = useCallback((layout: Layout) => {
+		// layout is an array-like object with panel sizes
 		const newWidth = layout[0]
 		if (newWidth !== undefined && newWidth !== sidebarWidth) {
 			setSidebarWidth(newWidth)

@@ -58,8 +58,8 @@ export function AppLayout({ children }: AppLayoutProps) {
 						<Panel
 							id="sidebar"
 							defaultSize={sidebarWidth}
-							minSize={15}
-							maxSize={40}
+							minSize={170}
+							maxSize={500}
 							collapsible
 						>
 							<UnifiedSidebar />

@@ -178,6 +178,13 @@ export function useActivityBarView({
 			active: activePanel === "files" && isSidebarOpen,
 		},
 		{
+			key: "search",
+			Icon: icons.SearchIcon,
+			label: "Search (Ctrl+Shift+F)",
+			onClick: handleSearchClick,
+			active: activePanel === "search" && isSidebarOpen,
+		},
+		{
 			key: "diary",
 			Icon: icons.DiaryIcon,
 			label: "New Diary",
@@ -239,13 +246,6 @@ export function useActivityBarView({
 			label: "New Code File",
 			onClick: onCreateCode,
 			testId: "btn-new-code",
-		},
-		{
-			key: "search",
-			Icon: icons.SearchIcon,
-			label: "Search (Ctrl+Shift+F)",
-			onClick: handleSearchClick,
-			active: activePanel === "search" && isSidebarOpen,
 		},
 	]
 

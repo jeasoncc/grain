@@ -6,10 +6,8 @@
 
 import { PanelLeftOpen } from "lucide-react"
 import { memo } from "react"
-import { DrawingsPanel } from "../panels/drawings-panel"
 import { FileTreePanel } from "../panels/file-tree-panel/"
 import { SearchPanel } from "../panels/search-panel/"
-import { TagGraphPanel } from "../panels/tag-graph-panel/"
 import { Button } from "../ui/button"
 import type { UnifiedSidebarViewProps } from "./unified-sidebar.types"
 
@@ -23,18 +21,7 @@ import type { UnifiedSidebarViewProps } from "./unified-sidebar.types"
  * - Props 驱动渲染
  */
 export const UnifiedSidebarView = memo(
-	({
-		activePanel,
-		isOpen,
-		wasCollapsedByDrag,
-		workspaceId,
-		drawings,
-		selectedDrawingId,
-		onRestoreFromCollapse,
-		onSelectDrawing,
-		onCreateDrawing,
-		onDeleteDrawing,
-	}: UnifiedSidebarViewProps) => {
+	({ activePanel, isOpen, wasCollapsedByDrag, onRestoreFromCollapse }: UnifiedSidebarViewProps) => {
 		// Show restore button when collapsed by drag
 		if (!isOpen && wasCollapsedByDrag) {
 			return (
@@ -59,18 +46,7 @@ export const UnifiedSidebarView = memo(
 		return (
 			<div className="flex flex-col h-full w-full overflow-hidden">
 				{activePanel === "search" && <SearchPanel />}
-				{activePanel === "drawings" && (
-					<DrawingsPanel
-						workspaceId={workspaceId}
-						drawings={[...drawings]}
-						selectedDrawingId={selectedDrawingId}
-						onSelectDrawing={onSelectDrawing}
-						onCreateDrawing={onCreateDrawing}
-						onDeleteDrawing={onDeleteDrawing}
-					/>
-				)}
 				{activePanel === "files" && <FileTreePanel />}
-				{activePanel === "tags" && <TagGraphPanel />}
 			</div>
 		)
 	},

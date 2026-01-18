@@ -135,17 +135,6 @@ export const useSidebarStore = create<SidebarStore>()(
 				}))
 			},
 
-			// Drawings panel actions
-			setSelectedDrawingId: (id: string | null) => {
-				set((state) => ({
-					...state,
-					drawingsState: {
-						...state.drawingsState,
-						selectedDrawingId: id,
-					},
-				}))
-			},
-
 			setWidth: (width: number) => {
 				set((state) => ({
 					...state,
@@ -181,7 +170,6 @@ export const useSidebarStore = create<SidebarStore>()(
 			name: DEFAULT_SIDEBAR_CONFIG.storageKey,
 			partialize: (state) => ({
 				activePanel: state.activePanel,
-				drawingsState: state.drawingsState,
 				// fileTreeState 不持久化 - expandedFolders 是运行时状态
 				// fileTreeState is not persisted - expandedFolders is runtime state
 				isOpen: state.isOpen,
@@ -213,9 +201,6 @@ export const useLegacyWasCollapsedByDrag = () => useSidebarStore((s) => s.wasCol
 /** Select search panel state */
 export const useSearchPanelState = () => useSidebarStore((s) => s.searchState)
 
-/** Select drawings panel state */
-export const useDrawingsPanelState = () => useSidebarStore((s) => s.drawingsState)
-
 /** Select file tree state */
 export const useFileTreeState = () => useSidebarStore((s) => s.fileTreeState)
 
@@ -236,7 +221,6 @@ export const useSidebarActions = () => ({
 	setSearchQuery: useSidebarStore((s) => s.setSearchQuery),
 	setSearchSelectedTypes: useSidebarStore((s) => s.setSearchSelectedTypes),
 	setSearchShowFilters: useSidebarStore((s) => s.setSearchShowFilters),
-	setSelectedDrawingId: useSidebarStore((s) => s.setSelectedDrawingId),
 	setWidth: useSidebarStore((s) => s.setWidth),
 	toggleFolderExpanded: useSidebarStore((s) => s.toggleFolderExpanded),
 	toggleSidebar: useSidebarStore((s) => s.toggleSidebar),

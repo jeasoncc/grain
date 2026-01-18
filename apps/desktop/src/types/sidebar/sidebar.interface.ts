@@ -13,7 +13,7 @@
  * Available sidebar panel types as const array.
  * Used for Zod schema validation and type derivation.
  */
-export const SIDEBAR_PANELS = ["search", "drawings", "files", "tags"] as const
+export const SIDEBAR_PANELS = ["search", "files"] as const
 
 /**
  * Available sidebar panel types.
@@ -32,15 +32,6 @@ export interface SearchPanelState {
 	readonly selectedTypes: readonly string[]
 	/** Whether filter panel is visible */
 	readonly showFilters: boolean
-}
-
-/**
- * Drawings panel state.
- * Tracks selected drawing for preview/edit.
- */
-export interface DrawingsPanelState {
-	/** Currently selected drawing ID, null if none */
-	readonly selectedDrawingId: string | null
 }
 
 /**
@@ -90,8 +81,6 @@ export interface SidebarState {
 
 	/** Search panel state */
 	readonly searchState: SearchPanelState
-	/** Drawings panel state */
-	readonly drawingsState: DrawingsPanelState
 	/** File tree panel state */
 	readonly fileTreeState: FileTreeState
 }
@@ -154,12 +143,6 @@ export interface SidebarActions {
 	 */
 	readonly setSearchShowFilters: (show: boolean) => void
 
-	// Drawings panel actions
-	/**
-	 * Set selected drawing ID.
-	 */
-	readonly setSelectedDrawingId: (id: string | null) => void
-
 	// File tree actions
 	/**
 	 * Set expanded folders map.
@@ -198,17 +181,12 @@ export const DEFAULT_SEARCH_STATE: SearchPanelState = {
 	showFilters: false,
 } as const
 
-export const DEFAULT_DRAWINGS_STATE: DrawingsPanelState = {
-	selectedDrawingId: null,
-} as const
-
 export const DEFAULT_FILE_TREE_STATE: FileTreeState = {
 	expandedFolders: {},
 } as const
 
 export const DEFAULT_SIDEBAR_STATE: SidebarState = {
 	activePanel: "files",
-	drawingsState: DEFAULT_DRAWINGS_STATE,
 	fileTreeState: DEFAULT_FILE_TREE_STATE,
 	isOpen: true,
 	previousWidth: SIDEBAR_DEFAULT_WIDTH,
