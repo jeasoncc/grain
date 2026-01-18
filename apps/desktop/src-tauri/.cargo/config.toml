@@ -2,18 +2,18 @@
 # 文档: https://doc.rust-lang.org/cargo/reference/config.html
 
 # ============================================
-# Linux x86_64 - 使用 mold 链接器
+# Linux x86_64 - 使用 mold 链接器（仅本地开发）
 # ============================================
-[target.x86_64-unknown-linux-gnu]
-linker = "clang"
-rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+# [target.x86_64-unknown-linux-gnu]
+# linker = "clang"
+# rustflags = ["-C", "link-arg=-fuse-ld=mold"]
 
 # ============================================
-# Linux ARM64 - 使用 mold 链接器
+# Linux ARM64 - 使用默认链接器（CI 兼容）
 # ============================================
-[target.aarch64-unknown-linux-gnu]
-linker = "clang"
-rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+# [target.aarch64-unknown-linux-gnu]
+# linker = "clang"
+# rustflags = ["-C", "link-arg=-fuse-ld=mold"]
 
 # ============================================
 # macOS x86_64 - 使用系统链接器（已经很快）
