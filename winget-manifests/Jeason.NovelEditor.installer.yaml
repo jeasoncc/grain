@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.5.0.schema.json
+
+PackageIdentifier: Jeason.NovelEditor
+PackageVersion: 0.1.601
+Platform:
+- Windows.Desktop
+MinimumOSVersion: 10.0.0.0
+InstallerType: wix
+Scope: machine
+InstallModes:
+- interactive
+- silent
+- silentWithProgress
+UpgradeBehavior: install
+Installers:
+- Architecture: x64
+  InstallerUrl: https://github.com/jeasoncc/grain/releases/download/desktop-v0.1.601/grain_0.1.601_x64_zh-CN.msi
+  InstallerSha256: CDF2CC8ED9274C6BE80B21A5066A52CCF2878F3C5728BAA9C93CF42DBC95B6F4
+ManifestType: installer
+ManifestVersion: 1.5.0
