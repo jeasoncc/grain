@@ -9,8 +9,15 @@ import "./styles.css"
 import "@grain/editor-lexical/styles"
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { error, info } from "@/io/log/logger.api"
+import { lazy, Suspense } from "react"
+
+// 懒加载 devtools
+const ReactQueryDevtools = lazy(() =>
+	import("@tanstack/react-query-devtools").then((module) => ({
+		default: module.ReactQueryDevtools,
+	})),
+)
 
 // 类型定义
 interface AppConfig {
@@ -57,8 +64,12 @@ const getRootElement = (): O.Option<RootElement> =>
 const createApp = (config: AppConfig) => (
 	<StrictMode>
 		<QueryClientProvider client={config.queryClient}>
-			{config.isDev && <ReactQueryDevtools initialIsOpen={false} buttonPosition="top-right" />}
 			<RouterProvider router={config.router} />
+			{config.isDev && (
+				<Suspense fallback={null}>
+					<ReactQueryDevtools initialIsOpen={false} buttonPosition="top-right" />
+				</Suspense>
+			)}
 		</QueryClientProvider>
 	</StrictMode>
 )
