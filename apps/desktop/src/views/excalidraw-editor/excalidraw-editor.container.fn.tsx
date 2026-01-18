@@ -16,6 +16,8 @@
  */
 
 import { memo, useCallback, useEffect, useRef, useState } from "react"
+import * as O from "fp-ts/Option"
+import { pipe } from "fp-ts/function"
 import { saveServiceManager } from "@/flows/save"
 import { useContentByNodeId } from "@/hooks/use-content"
 import { useTheme } from "@/hooks/use-theme"
@@ -95,7 +97,7 @@ function serializeExcalidrawData(
 
 export const ExcalidrawEditorContainer = memo(
 	({ nodeId, className }: ExcalidrawEditorContainerProps) => {
-		const content = useContentByNodeId(nodeId)
+		const contentOption = useContentByNodeId(nodeId)
 		const { isDark } = useTheme()
 		const containerRef = useRef<HTMLDivElement>(null)
 
@@ -177,20 +179,30 @@ export const ExcalidrawEditorContainer = memo(
 				return
 			}
 
-			// 只有在未初始化且 content 已加载时才解析内容
-			if (content !== undefined && !isInitializedRef.current) {
-				const parsed = parseExcalidrawContent(content?.content)
-				setInitialData(parsed)
-				isInitializedRef.current = true
-
-				// 设置初始内容用于保存比较
-				if (content?.content) {
-					setInitialContent(content.content)
-				}
-
-				console.log("[ExcalidrawEditor] 初始化数据:", parsed)
+			// 只有在未初始化且 contentOption 已加载时才解析内容
+			if (contentOption !== undefined && !isInitializedRef.current) {
+				pipe(
+					contentOption,
+					O.match(
+						// None: 内容不存在（新文件）
+						() => {
+							const parsed = parseExcalidrawContent(undefined)
+							setInitialData(parsed)
+							isInitializedRef.current = true
+							console.log("[ExcalidrawEditor] 初始化空数据（新文件）")
+						},
+						// Some: 内容存在
+						(content) => {
+							const parsed = parseExcalidrawContent(content.content)
+							setInitialData(parsed)
+							isInitializedRef.current = true
+							setInitialContent(content.content)
+							console.log("[ExcalidrawEditor] 初始化数据:", parsed)
+						}
+					)
+				)
 			}
-		}, [content, nodeId, setInitialContent])
+		}, [contentOption, nodeId, setInitialContent])
 
 		// 监听容器尺寸 - 使用防抖确保尺寸稳定
 		useEffect(() => {
@@ -299,8 +311,8 @@ export const ExcalidrawEditorContainer = memo(
 			}
 		}, [])
 
-		// 加载中（undefined 表示正在加载，null 表示内容不存在但已加载完成）
-		if (content === undefined) {
+		// 加载中（undefined 表示正在加载，Option 表示已加载完成）
+		if (contentOption === undefined) {
 			console.log("[ExcalidrawEditor] 等待内容加载...", { nodeId })
 			return (
 				<div
@@ -315,8 +327,8 @@ export const ExcalidrawEditorContainer = memo(
 			)
 		}
 		
-		// content 现在可能是 null（新文件）或 ContentInterface（已有内容）
-		// 两种情况都应该继续渲染，因为数据已经加载完成
+		// contentOption 现在是 Option<ContentInterface>
+		// 使用 fp-ts match 处理 Some/None 两种情况已在 useEffect 中完成
 
 		// 等待尺寸和数据
 		if (!containerSize || !initialData) {

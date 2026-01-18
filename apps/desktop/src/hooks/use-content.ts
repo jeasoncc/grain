@@ -4,14 +4,18 @@
  *
  * 提供 React hooks 用于访问内容数据，支持实时更新。
  * 使用 TanStack Query 实现响应式数据订阅。
+ * 使用 fp-ts Option 类型表示可能不存在的值。
  *
  * 迁移说明：
  * - 从 dexie-react-hooks 迁移到 TanStack Query
  * - 底层使用 Repository 层访问 SQLite 数据
+ * - 使用 Option 类型替代 null/undefined
  *
  * @requirements 3.3, 5.2
  */
 
+import * as O from "fp-ts/Option"
+import { pipe } from "fp-ts/function"
 import { useContent as useContentQuery } from "@/hooks/queries/content.queries"
 import type { ContentInterface } from "@/types/content"
 
@@ -19,41 +23,44 @@ import type { ContentInterface } from "@/types/content"
  * 根据节点 ID 获取内容（实时更新）
  *
  * 支持懒加载模式 - 内容仅在需要时加载。
+ * 使用 fp-ts Option 类型表示可能不存在的值。
  * 
  * 返回值说明：
  * - undefined: 正在加载中
- * - null: 内容不存在（新创建的节点）
- * - ContentInterface: 内容已加载
+ * - Option<ContentInterface>: 加载完成，使用 match 处理
  *
  * @param nodeId - 父节点 ID（可为 null/undefined，用于懒加载）
- * @returns 内容记录，加载中返回 undefined，不存在返回 null
+ * @returns 加载中返回 undefined，否则返回 Option<ContentInterface>
  *
  * @example
  * ```tsx
  * function Editor({ nodeId }: { nodeId: string }) {
- *   const content = useContentByNodeId(nodeId);
+ *   const contentOption = useContentByNodeId(nodeId);
  *
- *   if (content === undefined) {
+ *   if (contentOption === undefined) {
  *     return <Loading />;
  *   }
  *
- *   // content 可能是 null（新文件）或 ContentInterface（已有内容）
- *   return <EditorComponent initialContent={content?.content} />;
+ *   return pipe(
+ *     contentOption,
+ *     O.match(
+ *       () => <EmptyState />,  // None: 内容不存在
+ *       (content) => <EditorComponent content={content} />  // Some: 有内容
+ *     )
+ *   );
  * }
  * ```
  */
 export function useContentByNodeId(
 	nodeId: string | null | undefined,
-): ContentInterface | null | undefined {
-	const { data: content, isLoading } = useContentQuery(nodeId)
+): O.Option<ContentInterface> | undefined {
+	const { data: contentOption, isLoading } = useContentQuery(nodeId)
 
 	if (isLoading) {
 		return undefined
 	}
-	// 保留 null 值，不转换为 undefined
-	// null 表示内容不存在（新创建的节点）
-	// undefined 表示正在加载
-	return content === undefined ? null : content
+	
+	return contentOption
 }
 
 /**
@@ -63,17 +70,18 @@ export function useContentByNodeId(
  * 需要添加对应的 Repository 和 Query 函数。
  *
  * @param id - 内容记录 ID（可为 null/undefined）
- * @returns 内容记录，不存在或加载中返回 undefined
+ * @returns 加载中返回 undefined，否则返回 Option<ContentInterface>
  */
-export function useContentById(id: string | null | undefined): ContentInterface | undefined {
-	// 注意：当前 API 不支持通过 content ID 查询
-	// 如果需要此功能，需要添加对应的 Rust API
-	const { data: content, isLoading } = useContentQuery(id)
+export function useContentById(
+	id: string | null | undefined,
+): O.Option<ContentInterface> | undefined {
+	const { data: contentOption, isLoading } = useContentQuery(id)
 
 	if (isLoading) {
 		return undefined
 	}
-	return content ?? undefined
+	
+	return contentOption
 }
 
 /**
@@ -103,12 +111,13 @@ export function useContentsByNodeIds(
  * 检查节点是否存在内容（实时更新）
  *
  * 适用于条件渲染或懒加载决策。
+ * 使用 fp-ts Option 的 isSome 判断。
  *
  * @param nodeId - 父节点 ID
  * @returns 存在返回 true，不存在返回 false，加载中返回 undefined
  */
 export function useContentExists(nodeId: string | null | undefined): boolean | undefined {
-	const { data: content, isLoading } = useContentQuery(nodeId)
+	const { data: contentOption, isLoading } = useContentQuery(nodeId)
 
 	if (isLoading) {
 		return undefined
@@ -116,5 +125,9 @@ export function useContentExists(nodeId: string | null | undefined): boolean | u
 	if (!nodeId) {
 		return false
 	}
-	return content !== null && content !== undefined
+	
+	return pipe(
+		contentOption,
+		O.isSome
+	)
 }
