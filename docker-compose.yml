@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  # Rust HTTP API 后端
+  api:
+    build:
+      context: .
+      dockerfile: apps/api-rust/Dockerfile
+    container_name: grain-api
+    ports:
+      - "3030:3030"
+    environment:
+      - GRAIN_HOST=0.0.0.0
+      - GRAIN_PORT=3030
+      - RUST_LOG=info
+    volumes:
+      # 持久化数据库
+      - ./data:/app/data
+    restart: unless-stopped
+
+  # Nginx 静态文件服务（可选）
+  web:
+    image: nginx:alpine
+    container_name: grain-web
+    ports:
+      - "80:80"
+    volumes:
+      - ./apps/desktop/dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+    restart: unless-stopped

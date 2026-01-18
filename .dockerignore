@@ -1,0 +1,27 @@
+# 构建产物
+target/
+dist/
+node_modules/
+.turbo/
+
+# Git
+.git/
+.github/
+
+# 日志
+*.log
+
+# 环境变量
+.env
+.env.*
+
+# 敏感文件
+scripts/snapcraft-login/output/
+
+# IDE
+.vscode/
+.idea/
+
+# 临时文件
+*.tmp
+*.swp

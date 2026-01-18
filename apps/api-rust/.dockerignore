@@ -1,0 +1,8 @@
+target/
+node_modules/
+.git/
+.turbo/
+dist/
+*.log
+.env
+scripts/snapcraft-login/output/
