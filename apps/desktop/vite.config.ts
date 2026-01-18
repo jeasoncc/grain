@@ -43,4 +43,10 @@ export default defineConfig(async () => ({
       ignored: ["**/src-tauri/**"],
     },
   },
+  // Preview server configuration for production build
+  preview: {
+    port: 4173,
+    host: '0.0.0.0', // 监听所有网络接口，允许局域网访问
+    strictPort: true,
+  },
 }));
