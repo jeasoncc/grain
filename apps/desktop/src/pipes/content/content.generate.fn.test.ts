@@ -4,6 +4,7 @@
  */
 
 import dayjs from "dayjs"
+import * as E from "fp-ts/Either"
 import { describe, expect, it } from "vitest"
 import {
 	createDocument,
@@ -373,22 +374,24 @@ describe("content.generate.fn", () => {
 	describe("parseContent", () => {
 		it("should parse valid Lexical JSON", () => {
 			const content = generateDiaryContent()
-			const parsed = parseContent(content)
+			const result = parseContent(content)
 
-			expect(parsed).not.toBeNull()
-			expect(parsed?.root).toBeDefined()
+			expect(E.isRight(result)).toBe(true)
+			if (E.isRight(result)) {
+				expect(result.right.root).toBeDefined()
+			}
 		})
 
-		it("should return null for invalid JSON", () => {
-			const parsed = parseContent("invalid json")
+		it("should return Left for invalid JSON", () => {
+			const result = parseContent("invalid json")
 
-			expect(parsed).toBeNull()
+			expect(E.isLeft(result)).toBe(true)
 		})
 
-		it("should return null for empty string", () => {
-			const parsed = parseContent("")
+		it("should return Left for empty string", () => {
+			const result = parseContent("")
 
-			expect(parsed).toBeNull()
+			expect(E.isLeft(result)).toBe(true)
 		})
 	})
 
@@ -397,11 +400,11 @@ describe("content.generate.fn", () => {
 			const content = generateDiaryContent(new Date(), {
 				tags: ["tag1", "tag2", "tag3"],
 			})
-			const parsed = parseContent(content)
-			if (!parsed) {
+			const result = parseContent(content)
+			if (E.isLeft(result)) {
 				throw new Error("Failed to parse content")
 			}
-			const tags = extractTagsFromDocument(parsed)
+			const tags = extractTagsFromDocument(result.right)
 
 			expect(tags).toEqual(["tag1", "tag2", "tag3"])
 		})

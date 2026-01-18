@@ -183,7 +183,7 @@ describe("ExcalidrawEditorContainer Property Tests", () => {
 		)
 
 		// 记录初始渲染次数（包括 React 的初始渲染和 effects）
-		const _initialRenderCount = renderCount
+		// const initialRenderCount = renderCount
 
 		// 使用 fast-check 生成随机的 onChange 事件序列
 		fc.assert(
@@ -274,7 +274,7 @@ describe("ExcalidrawEditorContainer Resize Debounce Property Tests", () => {
 
 		// 追踪 ResizeObserver 回调
 		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null = null
-		let _sizeUpdateCount = 0
+		// let sizeUpdateCount = 0
 
 		// 创建自定义 ResizeObserver mock
 		class TrackingResizeObserver {
@@ -325,7 +325,7 @@ describe("ExcalidrawEditorContainer Resize Debounce Property Tests", () => {
 					}
 
 					// 重置计数
-					_sizeUpdateCount = 0
+					// sizeUpdateCount = 0
 
 					// 渲染组件
 					const { unmount } = render(<ExcalidrawEditorContainer nodeId="test-node-id" />)
@@ -377,7 +377,7 @@ describe("ExcalidrawEditorContainer Resize Debounce Property Tests", () => {
 					}
 
 					// 计算总时间是否在防抖窗口内
-					const _withinDebounceWindow = totalTime < RESIZE_DEBOUNCE_DELAY
+					// const withinDebounceWindow = totalTime < RESIZE_DEBOUNCE_DELAY
 
 					// 推进时间以触发防抖后的更新
 					act(() => {
@@ -486,7 +486,7 @@ describe("ExcalidrawEditorContainer Size Threshold Property Tests", () => {
 				),
 				(initialSize, smallChanges) => {
 					// 渲染组件
-					const { unmount, rerender } = render(<ExcalidrawEditorContainer nodeId="test-node-id" />)
+					const { unmount } = render(<ExcalidrawEditorContainer nodeId="test-node-id" />)
 
 					// 等待初始布局延迟
 					act(() => {
@@ -922,7 +922,7 @@ describe("Status Update Throttle Property Tests", () => {
 	 */
 	it("Property 4: first call should execute immediately", async () => {
 		// 使用配置常量
-		const _STATUS_UPDATE_THROTTLE = EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE
+		// const STATUS_UPDATE_THROTTLE = EXCALIDRAW_PERFORMANCE_CONFIG.STATUS_UPDATE_THROTTLE
 
 		// 动态导入 throttle 函数
 		const { throttle } = await import("es-toolkit")
@@ -958,13 +958,13 @@ describe("Status Update Throttle Property Tests", () => {
  */
 describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () => {
 	// 追踪 parseExcalidrawContent 调用次数
-	let _parseCallCount = 0
+	// let parseCallCount = 0
 
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mockUseTheme.mockReturnValue({ isDark: false })
 		capturedOnChange = null
-		_parseCallCount = 0
+		// parseCallCount = 0
 	})
 
 	/**
@@ -1009,8 +1009,8 @@ describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () =>
 					}
 
 					// 追踪 useEffect 执行次数
-					const _effectExecutionCount = 0
-					const _originalUseEffect = vi.fn()
+					// const effectExecutionCount = 0
+					// const originalUseEffect = vi.fn()
 
 					// 设置 mock
 					mockUseContentByNodeId.mockReturnValue(mockContent)
@@ -1213,14 +1213,14 @@ describe("ExcalidrawEditorContainer Content Parsing Cache Property Tests", () =>
  */
 describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 	// 追踪 Excalidraw 组件的 key prop
-	let _capturedKeys: string[] = []
+	// let capturedKeys: string[] = []
 
 	beforeEach(() => {
 		vi.clearAllMocks()
 		vi.useFakeTimers()
 		mockUseTheme.mockReturnValue({ isDark: false })
 		capturedOnChange = null
-		_capturedKeys = []
+		// capturedKeys = []
 	})
 
 	afterEach(() => {
@@ -1548,7 +1548,7 @@ describe("ExcalidrawEditorContainer Instance Stability Property Tests", () => {
 					// key 只依赖于 nodeId，不依赖于 containerSize
 
 					// 对于每个尺寸变化，key 应该保持为 nodeId
-					for (const _size of sizes) {
+					for (let i = 0; i < sizes.length; i++) {
 						// 模拟：即使 containerSize 变化，key 仍然是 nodeId
 						const expectedKey = nodeId
 						// 这是代码中的实际行为
@@ -1878,7 +1878,7 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 		const RESIZE_DEBOUNCE_DELAY = EXCALIDRAW_PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_DELAY
 
 		// 追踪 ResizeObserver 的 disconnect 调用
-		let _disconnectCalled = false
+		// let disconnectCalled = false
 		let resizeCallback: ((entries: ResizeObserverEntry[]) => void) | null = null
 		let containerElement: HTMLDivElement | null = null
 
@@ -1892,7 +1892,7 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 			})
 			unobserve = vi.fn()
 			disconnect = vi.fn(() => {
-				_disconnectCalled = true
+				// disconnectCalled = true
 			})
 		}
 		vi.stubGlobal("ResizeObserver", TrackingResizeObserver)
@@ -1923,7 +1923,7 @@ describe("ExcalidrawEditorContainer Resource Cleanup Property Tests", () => {
 				fc.integer({ max: AUTO_SAVE_DELAY - 100, min: 100 }),
 				(nodeId, excalidrawData, changeCount, waitBeforeUnmount) => {
 					// 重置追踪状态
-					_disconnectCalled = false
+					// disconnectCalled = false
 
 					// 创建 mock 内容
 					const mockContent = {

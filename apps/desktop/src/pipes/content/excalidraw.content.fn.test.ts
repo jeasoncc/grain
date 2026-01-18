@@ -3,6 +3,7 @@
  * @description Excalidraw JSON 内容生成函数的单元测试
  */
 
+import * as E from "fp-ts/Either"
 import { describe, expect, it } from "vitest"
 import {
 	createDefaultAppState,
@@ -221,34 +222,37 @@ describe("excalidraw.content.fn", () => {
 	describe("parseExcalidrawContent", () => {
 		it("should parse valid Excalidraw JSON", () => {
 			const content = generateExcalidrawContent()
-			const parsed = parseExcalidrawContent(content)
+			const result = parseExcalidrawContent(content)
 
-			expect(parsed).not.toBeNull()
-			expect(parsed?.type).toBe("excalidraw")
+			if (E.isRight(result)) {
+				expect(result.right.type).toBe("excalidraw")
+			} else {
+				throw new Error("Failed to parse valid content")
+			}
 		})
 
-		it("should return null for invalid JSON", () => {
-			const parsed = parseExcalidrawContent("invalid json")
+		it("should return Left for invalid JSON", () => {
+			const result = parseExcalidrawContent("invalid json")
 
-			expect(parsed).toBeNull()
+			expect(E.isLeft(result)).toBe(true)
 		})
 
-		it("should return null for empty string", () => {
-			const parsed = parseExcalidrawContent("")
+		it("should return Left for empty string", () => {
+			const result = parseExcalidrawContent("")
 
-			expect(parsed).toBeNull()
+			expect(E.isLeft(result)).toBe(true)
 		})
 
-		it("should return null for JSON without type field", () => {
-			const parsed = parseExcalidrawContent(
+		it("should return Left for JSON without type field", () => {
+			const result = parseExcalidrawContent(
 				JSON.stringify({ appState: {}, elements: [], files: {} }),
 			)
 
-			expect(parsed).toBeNull()
+			expect(E.isLeft(result)).toBe(true)
 		})
 
-		it("should return null for JSON with wrong type", () => {
-			const parsed = parseExcalidrawContent(
+		it("should return Left for JSON with wrong type", () => {
+			const result = parseExcalidrawContent(
 				JSON.stringify({
 					appState: {},
 					elements: [],
@@ -257,39 +261,43 @@ describe("excalidraw.content.fn", () => {
 				}),
 			)
 
-			expect(parsed).toBeNull()
+			expect(E.isLeft(result)).toBe(true)
 		})
 
-		it("should return null for JSON without elements array", () => {
-			const parsed = parseExcalidrawContent(
+		it("should return Left for JSON without elements array", () => {
+			const result = parseExcalidrawContent(
 				JSON.stringify({ appState: {}, files: {}, type: "excalidraw" }),
 			)
 
-			expect(parsed).toBeNull()
+			expect(E.isLeft(result)).toBe(true)
 		})
 
-		it("should return null for JSON without appState object", () => {
-			const parsed = parseExcalidrawContent(
+		it("should return Left for JSON without appState object", () => {
+			const result = parseExcalidrawContent(
 				JSON.stringify({ elements: [], files: {}, type: "excalidraw" }),
 			)
 
-			expect(parsed).toBeNull()
+			expect(E.isLeft(result)).toBe(true)
 		})
 
-		it("should return null for JSON without files object", () => {
-			const parsed = parseExcalidrawContent(
+		it("should return Left for JSON without files object", () => {
+			const result = parseExcalidrawContent(
 				JSON.stringify({ appState: {}, elements: [], type: "excalidraw" }),
 			)
 
-			expect(parsed).toBeNull()
+			expect(E.isLeft(result)).toBe(true)
 		})
 
 		it("should parse content with elements", () => {
 			const doc = createExcalidrawDocument([{ id: "test" }])
 			const content = JSON.stringify(doc)
-			const parsed = parseExcalidrawContent(content)
+			const result = parseExcalidrawContent(content)
 
-			expect(parsed?.elements).toHaveLength(1)
+			if (E.isRight(result)) {
+				expect(result.right.elements).toHaveLength(1)
+			} else {
+				throw new Error("Failed to parse content with elements")
+			}
 		})
 	})
 
@@ -337,12 +345,15 @@ describe("excalidraw.content.fn", () => {
 	describe("integration", () => {
 		it("should generate content that can be parsed back", () => {
 			const content = generateExcalidrawContent()
-			const parsed = parseExcalidrawContent(content)
+			const result = parseExcalidrawContent(content)
 
-			expect(parsed).not.toBeNull()
-			expect(parsed?.type).toBe("excalidraw")
-			expect(parsed?.elements).toEqual([])
-			expect(parsed?.files).toEqual({})
+			if (E.isRight(result)) {
+				expect(result.right.type).toBe("excalidraw")
+				expect(result.right.elements).toEqual([])
+				expect(result.right.files).toEqual({})
+			} else {
+				throw new Error("Failed to parse generated content")
+			}
 		})
 
 		it("should generate content that passes validation", () => {
@@ -353,13 +364,22 @@ describe("excalidraw.content.fn", () => {
 
 		it("should maintain data integrity through parse cycle", () => {
 			const original = generateExcalidrawContent()
-			const parsed = parseExcalidrawContent(original)
-			const reparsed = JSON.stringify(parsed, null, 2)
-			const parsedAgain = parseExcalidrawContent(reparsed)
+			const result1 = parseExcalidrawContent(original)
+			
+			if (E.isLeft(result1)) {
+				throw new Error("Failed to parse original content")
+			}
+			
+			const reparsed = JSON.stringify(result1.right, null, 2)
+			const result2 = parseExcalidrawContent(reparsed)
 
-			expect(parsedAgain?.type).toBe(parsed?.type)
-			expect(parsedAgain?.version).toBe(parsed?.version)
-			expect(parsedAgain?.source).toBe(parsed?.source)
+			if (E.isLeft(result2)) {
+				throw new Error("Failed to parse reparsed content")
+			}
+
+			expect(result2.right.type).toBe(result1.right.type)
+			expect(result2.right.version).toBe(result1.right.version)
+			expect(result2.right.source).toBe(result1.right.source)
 		})
 	})
 })

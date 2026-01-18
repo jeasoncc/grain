@@ -371,7 +371,7 @@ describe("Property-Based Tests", () => {
 					}),
 					(nodes) => {
 						const tree = buildTree(nodes)
-						const countTreeNodes = (treeNodes: TreeNode[]): number =>
+						const countTreeNodes = (treeNodes: readonly TreeNode[]): number =>
 							treeNodes.reduce((sum, n) => sum + 1 + countTreeNodes(n.children), 0)
 						// 所有根节点（parent === null）应该在树中
 						const rootCount = nodes.filter((n) => n.parent === null).length
@@ -391,7 +391,7 @@ describe("Property-Based Tests", () => {
 					}),
 					(nodes) => {
 						const tree = buildTree(nodes)
-						const isSorted = (treeNodes: TreeNode[]): boolean => {
+						const isSorted = (treeNodes: readonly TreeNode[]): boolean => {
 							for (let i = 1; i < treeNodes.length; i++) {
 								const prevNode = nodes.find((n) => n.id === treeNodes[i - 1].id)
 								const currNode = nodes.find((n) => n.id === treeNodes[i].id)

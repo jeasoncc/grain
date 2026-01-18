@@ -24,9 +24,14 @@ describe("import.markdown.fn", () => {
 
 	describe("parseFrontMatter", () => {
 		it("should return undefined for content without front matter", () => {
-			const [fm, remaining] = parseFrontMatter("Hello World")
-			expect(fm).toBeUndefined()
-			expect(remaining).toBe("Hello World")
+			const result = parseFrontMatter("Hello World")
+			if (E.isRight(result)) {
+				const [fm, remaining] = result.right
+				expect(fm).toBeUndefined()
+				expect(remaining).toBe("Hello World")
+			} else {
+				throw new Error("Failed to parse content without front matter")
+			}
 		})
 
 		it("should parse simple key-value pairs", () => {
@@ -35,13 +40,18 @@ title: Test Document
 author: John Doe
 ---
 Content here`
-			const [fm, remaining] = parseFrontMatter(content)
+			const result = parseFrontMatter(content)
 
-			expect(fm).toEqual({
-				author: "John Doe",
-				title: "Test Document",
-			})
-			expect(remaining).toBe("Content here")
+			if (E.isRight(result)) {
+				const [fm, remaining] = result.right
+				expect(fm).toEqual({
+					author: "John Doe",
+					title: "Test Document",
+				})
+				expect(remaining).toBe("Content here")
+			} else {
+				throw new Error("Failed to parse simple key-value pairs")
+			}
 		})
 
 		it("should parse arrays in front matter", () => {
@@ -53,30 +63,45 @@ tags:
   - tag3
 ---
 Content`
-			const [fm, _remaining] = parseFrontMatter(content)
+			const result = parseFrontMatter(content)
 
-			expect(fm?.title).toBe("Test")
-			expect(fm?.tags).toEqual(["tag1", "tag2", "tag3"])
+			if (E.isRight(result)) {
+				const [fm, _remaining] = result.right
+				expect(fm?.title).toBe("Test")
+				expect(fm?.tags).toEqual(["tag1", "tag2", "tag3"])
+			} else {
+				throw new Error("Failed to parse arrays in front matter")
+			}
 		})
 
 		it("should return undefined for unclosed front matter", () => {
 			const content = `---
 title: Test
 Content without closing`
-			const [fm, remaining] = parseFrontMatter(content)
+			const result = parseFrontMatter(content)
 
-			expect(fm).toBeUndefined()
-			expect(remaining).toBe(content)
+			if (E.isRight(result)) {
+				const [fm, remaining] = result.right
+				expect(fm).toBeUndefined()
+				expect(remaining).toBe(content)
+			} else {
+				throw new Error("Failed to handle unclosed front matter")
+			}
 		})
 
 		it("should handle empty front matter", () => {
 			const content = `---
 ---
 Content`
-			const [fm, remaining] = parseFrontMatter(content)
+			const result = parseFrontMatter(content)
 
-			expect(fm).toEqual({})
-			expect(remaining).toBe("Content")
+			if (E.isRight(result)) {
+				const [fm, remaining] = result.right
+				expect(fm).toEqual({})
+				expect(remaining).toBe("Content")
+			} else {
+				throw new Error("Failed to handle empty front matter")
+			}
 		})
 	})
 
@@ -296,7 +321,7 @@ Content`
 
 			expect(doc.root.children).toHaveLength(1)
 			expect(doc.root.children[0].type).toBe("list")
-			const list = doc.root.children[0] as {
+			const list = doc.root.children[0] as unknown as {
 				listType: string
 				children: unknown[]
 			}
@@ -316,7 +341,7 @@ Content`
 			const doc = parseMarkdownToDocument("- [ ] Todo\n- [x] Done")
 
 			expect(doc.root.children).toHaveLength(1)
-			const list = doc.root.children[0] as {
+			const list = doc.root.children[0] as unknown as {
 				listType: string
 				children: Array<{ checked?: boolean }>
 			}

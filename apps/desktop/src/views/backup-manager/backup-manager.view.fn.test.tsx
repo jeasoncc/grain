@@ -19,38 +19,8 @@ describe("BackupManagerView", () => {
 	}
 
 	const mockStorageStats = {
-		cookies: {
-			count: 3,
-		},
-		indexedDB: {
-			size: 1024000,
-			tableSizes: {
-				attachments: 40960,
-				contents: 128000,
-				drawings: 51200,
-				nodes: 256000,
-				tags: 25600,
-				users: 10240,
-				workspaces: 512000,
-			},
-			tables: {
-				attachments: 8,
-				contents: 15,
-				drawings: 3,
-				nodes: 20,
-				tags: 12,
-				users: 2,
-				workspaces: 5,
-			},
-		},
-		localStorage: {
-			keys: 10,
-			size: 2048,
-		},
-		sessionStorage: {
-			keys: 5,
-			size: 1024,
-		},
+		keys: 10,
+		size: 2048,
 	}
 
 	const defaultProps: BackupManagerViewProps = {

@@ -138,7 +138,7 @@ describe("Property Test: Backup Data Integrity", () => {
 		 */
 
 		fc.assert(
-			fc.property(
+			fc.asyncProperty(
 				backupInfoGenerator,
 				fc.array(localBackupRecordGenerator, { maxLength: 3 }),
 				async (backupInfo, existingBackups) => {
@@ -208,7 +208,7 @@ describe("Property Test: Backup Data Integrity", () => {
 		 */
 
 		fc.assert(
-			fc.property(
+			fc.asyncProperty(
 				fc.array(localBackupRecordGenerator, { maxLength: 5, minLength: 1 }),
 				async (backups) => {
 					// Clear mocks before each test
@@ -264,7 +264,7 @@ describe("Property Test: Backup Data Integrity", () => {
 		 */
 
 		fc.assert(
-			fc.property(
+			fc.asyncProperty(
 				fc.constant(null), // No input needed for stats
 				async () => {
 					const statsResult = await getDatabaseStats()()
@@ -316,7 +316,7 @@ describe("Property Test: Backup Data Integrity", () => {
 		 */
 
 		fc.assert(
-			fc.property(
+			fc.asyncProperty(
 				backupInfoGenerator,
 				fc.integer({ max: 5, min: 1 }), // maxBackups (smaller range)
 				fc.array(localBackupRecordGenerator, { maxLength: 3, minLength: 0 }), // existing backups (smaller)
