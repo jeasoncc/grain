@@ -112,7 +112,7 @@
     "immer": "^11.1.3",
     "jszip": "^3.10.1",
     "lexical": "^0.39.0",
-    "lucide-react": "^0.562.0",
+    "lucide-react": "^0.563.0",
     "lunr": "^2.3.9",
     "mermaid": "^11.12.2",
     "million": "^3.1.11",
@@ -134,7 +134,7 @@
     "zustand": "^5.0.10"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.11",
+    "@biomejs/biome": "2.3.13",
     "@grain/eslint-plugin": "workspace:*",
     "@tanstack/react-query-devtools": "^5.91.2",
     "@tauri-apps/cli": "^2",
