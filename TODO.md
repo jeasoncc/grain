@@ -211,26 +211,33 @@
 
 ## 🎯 里程碑
 
+> **⚠️ 状态审计 (2026-02-28):** 以下里程碑已根据代码库实际情况修正。
+
 ### Milestone 1: Org-mode MVP (2 周)
-- ✅ 基础标题、TODO、链接支持
-- ✅ 基础导入导出
-- ✅ 可以创建和编辑简单的 Org 文档
+- ❌ 基础标题、TODO、链接支持 — 无 OrgHeadingNode/OrgTodoNode/OrgLinkNode 实现
+- 🔶 基础导入导出 — 仅有 Lexical→Org 导出 (`export.orgmode.fn.ts`)，无 Org→Lexical 导入
+- ❌ 可以创建和编辑简单的 Org 文档 — 编辑器中无 Org-mode 自定义节点
 
 ### Milestone 2: Typst 导出 MVP (1 周)
-- ✅ Typst 核心集成
-- ✅ 基础 Org → Typst 转换
-- ✅ 1-2 个精美模板
-- ✅ 可以导出精美 PDF
+- ❌ Typst 核心集成 — 代码库中无任何 Typst 相关代码
+- ❌ 基础 Org → Typst 转换 — 未实现
+- ❌ 1-2 个精美模板 — 无 .typ 模板文件
+- ❌ 可以导出精美 PDF — 未实现
 
 ### Milestone 3: 完整 Org-mode (5 周)
-- ✅ 所有 Org-mode 核心语法
-- ✅ Agenda 视图
-- ✅ 完整导出功能
+- ❌ 所有 Org-mode 核心语法 — 未实现
+- ❌ Agenda 视图 — 未实现
+- ❌ 完整导出功能 — 仅有基础 Org 导出
 
 ### Milestone 4: 完整 Typst 系统 (5 周)
-- ✅ 完整模板库
-- ✅ 自定义模板编辑器
-- ✅ 批量导出和高级功能
+- ❌ 完整模板库 — 未实现
+- ❌ 自定义模板编辑器 — 未实现
+- ❌ 批量导出和高级功能 — 未实现
+
+### 已验证的实际完成项
+- ✅ Lexical → Org-mode 导出 (`apps/desktop/src/pipes/export/export.orgmode.fn.ts`，含测试)
+- ✅ 复选框快捷键插件 (`packages/editor-lexical/src/plugins/checklist-shortcut-plugin.tsx`，支持 `[ ]` 和 `[x]`)
+- ✅ 标题折叠插件 (`packages/editor-lexical/src/plugins/heading-fold-plugin.tsx`)
 
 ---
 
@@ -244,4 +251,4 @@
 ---
 
 **创建日期：** 2026-01-18
-**最后更新：** 2026-01-18
+**最后更新：** 2026-02-28（里程碑状态审计）
