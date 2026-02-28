@@ -55,7 +55,7 @@ export function CTASection() {
                 asChild
               >
                 <Link
-                  href="https://github.com/jeasoncc/novel-editor"
+                  href="https://github.com/jeasoncc/grain"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

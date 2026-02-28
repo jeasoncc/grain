@@ -66,7 +66,7 @@ export function NotFoundContent() {
               关于
             </Link>
             <Link
-              href="https://github.com/jeasoncc/novel-editor"
+              href="https://github.com/jeasoncc/grain"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition"

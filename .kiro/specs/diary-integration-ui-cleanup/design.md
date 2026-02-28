@@ -231,7 +231,7 @@ const useUISettingsStore = create<UISettingsState>()(
       tabPosition: "right-sidebar", // default
       setTabPosition: (position) => set({ tabPosition: position }),
     }),
-    { name: "novel-editor-ui-settings" }
+    { name: "grain-ui-settings" }
   )
 );
 ```

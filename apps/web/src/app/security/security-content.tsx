@@ -35,7 +35,7 @@ const securityPolicy = [
           <br />
           请通过以下方式报告：
           <ul className="list-disc list-inside ml-6 mt-2 space-y-1">
-            <li>发送邮件至：security@novel-editor.com</li>
+            <li>发送邮件至：security@grain.app</li>
             <li>或在 GitHub 上创建私有安全建议（Security Advisory）</li>
           </ul>
         </li>
@@ -216,14 +216,14 @@ export function SecurityPageContent() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" asChild>
-                  <a href="mailto:security@novel-editor.com">
+                  <a href="mailto:security@grain.app">
                     <Mail className="w-5 h-5 mr-2" />
                     发送邮件
                   </a>
                 </Button>
                 <Button variant="outline" size="lg" asChild>
                   <Link
-                    href="https://github.com/jeasoncc/novel-editor/security/advisories/new"
+                    href="https://github.com/jeasoncc/grain/security/advisories/new"
                     target="_blank"
                     rel="noopener noreferrer"
                   >

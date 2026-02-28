@@ -144,7 +144,7 @@ export function ContributingPageContent() {
                         1. 克隆项目
                       </h3>
                       <code className="block p-3 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm font-mono text-gray-900 dark:text-white">
-                        git clone https://github.com/jeasoncc/novel-editor.git
+                        git clone https://github.com/jeasoncc/grain.git
                       </code>
                     </div>
                     <div>
@@ -185,7 +185,7 @@ export function ContributingPageContent() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" asChild>
                   <Link
-                    href="https://github.com/jeasoncc/novel-editor"
+                    href="https://github.com/jeasoncc/grain"
                     target="_blank"
                     rel="noopener noreferrer"
                   >

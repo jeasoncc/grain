@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Novel Editor",
-    "slug": "novel-editor-mobile",
+    "name": "Grain",
+    "slug": "grain-mobile",
     "version": "0.1.7",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,14 +16,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.lotus.noveleditor"
+      "bundleIdentifier": "com.lotus.grain"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.lotus.noveleditor"
+      "package": "com.lotus.grain"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -31,7 +31,7 @@
     "plugins": [
       "expo-router"
     ],
-    "scheme": "novel-editor",
+    "scheme": "grain",
     "experiments": {
       "typedRoutes": true
     }

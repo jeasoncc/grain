@@ -4,7 +4,7 @@
 
 - [x] 1. Create editor package structure
   - [x] 1.1 Create `packages/editor` directory with package.json
-    - Set name to `@novel-editor/editor`
+    - Set name to `@grain/editor`
     - Configure peer dependencies: react, react-dom, lexical, @lexical/react, @lexical/code, @lexical/hashtag, @lexical/link, @lexical/list, @lexical/markdown, @lexical/overflow, @lexical/rich-text, @lexical/table
     - Configure build scripts
     - _Requirements: 1.1, 1.4, 5.4_
@@ -116,16 +116,16 @@
 ## Phase 7: Desktop App Integration
 
 - [x] 8. Update desktop app to use editor package
-  - [x] 8.1 Add `@novel-editor/editor` dependency to desktop app
+  - [x] 8.1 Add `@grain/editor` dependency to desktop app
     - Use `workspace:*` protocol in package.json
     - _Requirements: 4.1, 4.2, 5.4_
   - [x] 8.2 Update imports in `story-workspace.tsx`
-    - Replace `@/components/editor/MultiEditorContainer` with `@novel-editor/editor`
-    - Replace `@/components/editor/Editor` with `@novel-editor/editor`
+    - Replace `@/components/editor/MultiEditorContainer` with `@grain/editor`
+    - Replace `@/components/editor/Editor` with `@grain/editor`
     - _Requirements: 4.1, 4.3_
   - [x] 8.3 Update other files importing from editor
     - Search for imports from `@/components/editor`
-    - Update to use `@novel-editor/editor` where appropriate
+    - Update to use `@grain/editor` where appropriate
     - _Requirements: 4.1_
   - [x] 8.4 Verify desktop app builds and runs correctly
     - Run desktop dev server

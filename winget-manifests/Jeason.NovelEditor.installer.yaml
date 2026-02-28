@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.5.0.schema.json
 
-PackageIdentifier: Jeason.NovelEditor
+PackageIdentifier: Jeason.Grain
 PackageVersion: 0.1.601
 Platform:
 - Windows.Desktop

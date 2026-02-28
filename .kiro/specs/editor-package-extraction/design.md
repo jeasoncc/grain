@@ -6,7 +6,7 @@
 
 ### Goals
 
-1. 创建独立的 `@novel-editor/editor` 包
+1. 创建独立的 `@grain/editor` 包
 2. 保持与现有 desktop 应用的完全兼容
 3. 提供清晰的模块结构和 TypeScript 类型支持
 4. 支持多编辑器实例的独立状态管理
@@ -174,7 +174,7 @@ export interface SerializedTagNode extends SerializedLexicalNode {
 
 ### Property 1: Package Export Completeness
 
-*For any* expected public API (Editor, EditorInstance, MultiEditorContainer, nodes, plugins, themes), importing from `@novel-editor/editor` should provide access to that API.
+*For any* expected public API (Editor, EditorInstance, MultiEditorContainer, nodes, plugins, themes), importing from `@grain/editor` should provide access to that API.
 
 **Validates: Requirements 1.2**
 

@@ -70,9 +70,9 @@ function getDefaultPlatforms(): PlatformData[] {
       name: "Linux",
       platform: "Linux" as const,
       formats: [
-        { name: "AppImage", extension: ".AppImage", size: "85 MB", recommended: true, url: "https://github.com/jeasoncc/novel-editor/releases/latest" },
-        { name: "DEB", extension: ".deb", size: "82 MB", recommended: false, url: "https://github.com/jeasoncc/novel-editor/releases/latest" },
-        { name: "RPM", extension: ".rpm", size: "84 MB", recommended: false, url: "https://github.com/jeasoncc/novel-editor/releases/latest" },
+        { name: "AppImage", extension: ".AppImage", size: "85 MB", recommended: true, url: "https://github.com/jeasoncc/grain/releases/latest" },
+        { name: "DEB", extension: ".deb", size: "82 MB", recommended: false, url: "https://github.com/jeasoncc/grain/releases/latest" },
+        { name: "RPM", extension: ".rpm", size: "84 MB", recommended: false, url: "https://github.com/jeasoncc/grain/releases/latest" },
       ],
       version: "v0.1.0",
       downloadCount: "2.5K+",
@@ -82,8 +82,8 @@ function getDefaultPlatforms(): PlatformData[] {
       name: "Windows",
       platform: "Windows" as const,
       formats: [
-        { name: "MSI Installer", extension: ".msi", size: "88 MB", recommended: true, url: "https://github.com/jeasoncc/novel-editor/releases/latest" },
-        { name: "Portable EXE", extension: ".exe", size: "87 MB", recommended: false, url: "https://github.com/jeasoncc/novel-editor/releases/latest" },
+        { name: "MSI Installer", extension: ".msi", size: "88 MB", recommended: true, url: "https://github.com/jeasoncc/grain/releases/latest" },
+        { name: "Portable EXE", extension: ".exe", size: "87 MB", recommended: false, url: "https://github.com/jeasoncc/grain/releases/latest" },
       ],
       version: "v0.1.0",
       downloadCount: "3.2K+",
@@ -93,8 +93,8 @@ function getDefaultPlatforms(): PlatformData[] {
       name: "macOS",
       platform: "macOS" as const,
       formats: [
-        { name: "DMG (Intel)", extension: ".dmg", size: "86 MB", recommended: true, url: "https://github.com/jeasoncc/novel-editor/releases/latest" },
-        { name: "DMG (Apple Silicon)", extension: "-arm64.dmg", size: "83 MB", recommended: true, url: "https://github.com/jeasoncc/novel-editor/releases/latest" },
+        { name: "DMG (Intel)", extension: ".dmg", size: "86 MB", recommended: true, url: "https://github.com/jeasoncc/grain/releases/latest" },
+        { name: "DMG (Apple Silicon)", extension: "-arm64.dmg", size: "83 MB", recommended: true, url: "https://github.com/jeasoncc/grain/releases/latest" },
       ],
       version: "v0.1.0",
       downloadCount: "1.8K+",
@@ -130,7 +130,7 @@ export function DownloadSection({ hideHeader = false }: DownloadSectionProps) {
         }
 
         const response = await fetch(
-          "https://api.github.com/repos/jeasoncc/novel-editor/releases/latest",
+          "https://api.github.com/repos/jeasoncc/grain/releases/latest",
           {
             headers,
             // 设置超时（通过 AbortController 或直接检查）
@@ -451,7 +451,7 @@ export function DownloadSection({ hideHeader = false }: DownloadSectionProps) {
                   <p className="text-sm text-yellow-800 dark:text-yellow-300">
                     无法从 GitHub API 获取最新版本信息（可能是速率限制或仓库尚未发布版本）。所有下载按钮将直接链接到{" "}
                     <a
-                      href="https://github.com/jeasoncc/novel-editor/releases"
+                      href="https://github.com/jeasoncc/grain/releases"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="underline hover:no-underline font-semibold"
@@ -685,7 +685,7 @@ export function DownloadSection({ hideHeader = false }: DownloadSectionProps) {
                 需要帮助？
               </span>
               <a
-                href="https://github.com/jeasoncc/novel-editor/issues"
+                href="https://github.com/jeasoncc/grain/issues"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white hover:underline group/link"

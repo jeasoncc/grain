@@ -4,7 +4,7 @@
 
 This design document outlines enhancements to the editor module's mention and tag plugins, sidebar interaction improvements, and internationalization updates. The changes focus on improving usability, visual feedback, and language consistency across the application.
 
-The editor module (`@novel-editor/editor`) is a shared package used by the desktop application. Changes to the editor plugins will benefit all consumers of this package. The desktop application will receive sidebar enhancements and language setting updates.
+The editor module (`@grain/editor`) is a shared package used by the desktop application. Changes to the editor plugins will benefit all consumers of this package. The desktop application will receive sidebar enhancements and language setting updates.
 
 ## Architecture
 
@@ -12,7 +12,7 @@ The editor module (`@novel-editor/editor`) is a shared package used by the deskt
 
 ```
 Desktop Application (apps/desktop)
-├── Editor Module (@novel-editor/editor)
+├── Editor Module (@grain/editor)
 │   ├── MentionsPlugin (@ autocomplete)
 │   ├── TagPickerPlugin (#[ autocomplete) - TO BE REMOVED
 │   └── TagTransformPlugin (#[tag] conversion)
