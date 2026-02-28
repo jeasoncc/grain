@@ -112,8 +112,8 @@ import type { IconTheme } from "./icon-theme.interface"
 
 export const iconThemes: readonly IconTheme[] = [
 	{
-		author: "Novel Editor Team",
-		description: "Novel Editor default icon theme",
+		author: "Grain Team",
+		description: "Grain default icon theme",
 		icons: {
 			activityBar: {
 				canvas: Pencil,
@@ -159,7 +159,7 @@ export const iconThemes: readonly IconTheme[] = [
 		name: "Default",
 	},
 	{
-		author: "Novel Editor Team",
+		author: "Grain Team",
 		description: "Clean and unified icon style",
 		icons: {
 			activityBar: {
@@ -206,7 +206,7 @@ export const iconThemes: readonly IconTheme[] = [
 		name: "Minimal",
 	},
 	{
-		author: "Novel Editor Team",
+		author: "Grain Team",
 		description: "Traditional file icon style",
 		icons: {
 			activityBar: {
@@ -253,7 +253,7 @@ export const iconThemes: readonly IconTheme[] = [
 		name: "Classic",
 	},
 	{
-		author: "Novel Editor Team",
+		author: "Grain Team",
 		description: "Modern icon design",
 		icons: {
 			activityBar: {
@@ -300,7 +300,7 @@ export const iconThemes: readonly IconTheme[] = [
 		name: "Modern",
 	},
 	{
-		author: "Novel Editor Team",
+		author: "Grain Team",
 		description: "Elegant and exquisite icon style",
 		icons: {
 			activityBar: {
@@ -347,7 +347,7 @@ export const iconThemes: readonly IconTheme[] = [
 		name: "Elegant",
 	},
 	{
-		author: "Novel Editor Team",
+		author: "Grain Team",
 		description: "Icon theme designed for writing",
 		icons: {
 			activityBar: {
@@ -394,7 +394,7 @@ export const iconThemes: readonly IconTheme[] = [
 		name: "Writer",
 	},
 	{
-		author: "Novel Editor Team",
+		author: "Grain Team",
 		description: "Hard-edged technical style icons",
 		icons: {
 			activityBar: {
@@ -441,7 +441,7 @@ export const iconThemes: readonly IconTheme[] = [
 		name: "Technical",
 	},
 	{
-		author: "Novel Editor Team",
+		author: "Grain Team",
 		description: "Fresh and natural icon style",
 		icons: {
 			activityBar: {
@@ -488,7 +488,7 @@ export const iconThemes: readonly IconTheme[] = [
 		name: "Nature",
 	},
 	{
-		author: "Novel Editor Team",
+		author: "Grain Team",
 		description: "Developer focused icons",
 		icons: {
 			activityBar: {
@@ -535,7 +535,7 @@ export const iconThemes: readonly IconTheme[] = [
 		name: "Code Icons",
 	},
 	{
-		author: "Novel Editor Team",
+		author: "Grain Team",
 		description: "Professional office icons",
 		icons: {
 			activityBar: {
@@ -582,7 +582,7 @@ export const iconThemes: readonly IconTheme[] = [
 		name: "Business Icons",
 	},
 	{
-		author: "Novel Editor Team",
+		author: "Grain Team",
 		description: "Artistic and expressive icons",
 		icons: {
 			activityBar: {
@@ -629,7 +629,7 @@ export const iconThemes: readonly IconTheme[] = [
 		name: "Creative Icons",
 	},
 	{
-		author: "Novel Editor Team",
+		author: "Grain Team",
 		description: "Scholarly and research icons",
 		icons: {
 			activityBar: {
@@ -676,7 +676,7 @@ export const iconThemes: readonly IconTheme[] = [
 		name: "Academic Icons",
 	},
 	{
-		author: "Novel Editor Team",
+		author: "Grain Team",
 		description: "Computer hardware icons",
 		icons: {
 			activityBar: {
@@ -723,7 +723,7 @@ export const iconThemes: readonly IconTheme[] = [
 		name: "Hardware",
 	},
 	{
-		author: "Novel Editor Team",
+		author: "Grain Team",
 		description: "Utility and tools icons",
 		icons: {
 			activityBar: {
@@ -770,7 +770,7 @@ export const iconThemes: readonly IconTheme[] = [
 		name: "Tools",
 	},
 	{
-		author: "Novel Editor Team",
+		author: "Grain Team",
 		description: "Geometric shape icons",
 		icons: {
 			activityBar: {
@@ -817,7 +817,7 @@ export const iconThemes: readonly IconTheme[] = [
 		name: "Shapes",
 	},
 	{
-		author: "Novel Editor Team",
+		author: "Grain Team",
 		description: "Heart and affection icons",
 		icons: {
 			activityBar: {
@@ -864,7 +864,7 @@ export const iconThemes: readonly IconTheme[] = [
 		name: "Love",
 	},
 	{
-		author: "Novel Editor Team",
+		author: "Grain Team",
 		description: "Dark mode optimized icons",
 		icons: {
 			activityBar: {

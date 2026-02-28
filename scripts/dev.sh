@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Novel Editor 开发脚本
+# Grain 开发脚本
 
-echo "🚀 Novel Editor Monorepo"
+echo "🚀 Grain Monorepo"
 echo ""
 echo "选择要启动的项目:"
 echo "1) 官网 (Next.js)"

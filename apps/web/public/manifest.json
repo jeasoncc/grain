@@ -1,6 +1,6 @@
 {
-  "name": "Novel Editor",
-  "short_name": "Novel Editor",
+  "name": "Grain",
+  "short_name": "Grain",
   "description": "专业的长篇小说写作工具",
   "start_url": "/",
   "display": "standalone",

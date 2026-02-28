@@ -34,12 +34,12 @@ export function DonatePageContent() {
               </div>
               
               <h1 className="text-5xl md:text-6xl font-black mb-6 text-gray-900 dark:text-white tracking-tight relative inline-block group/title">
-                <span className="relative z-10">支持 Novel Editor</span>
+                <span className="relative z-10">支持 Grain</span>
                 <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-24 h-1 bg-gray-300 dark:bg-gray-700 rounded-full opacity-0 group-hover/title:opacity-100 transition-opacity duration-300"></span>
               </h1>
               
               <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 leading-relaxed font-light mb-8">
-                Novel Editor 是开源免费的项目，您的支持将帮助我们持续改进
+                Grain 是开源免费的项目，您的支持将帮助我们持续改进
               </p>
             </div>
           </ScrollReveal>

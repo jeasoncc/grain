@@ -11,7 +11,7 @@ const securityPolicy = [
   {
     icon: <Shield className="w-6 h-6" />,
     title: "支持的版本",
-    description: "我们目前支持以下版本的 Novel Editor，并提供安全更新：",
+    description: "我们目前支持以下版本的 Grain，并提供安全更新：",
     content: (
       <ul className="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-300">
         <li>最新主版本（当前开发分支）</li>

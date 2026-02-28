@@ -65,7 +65,7 @@ export function ChangelogSection() {
         <ScrollReveal>
           <SectionHeader
             title="更新日志"
-            description="了解 Novel Editor 的最新功能和改进"
+            description="了解 Grain 的最新功能和改进"
             subtitle="Changelog"
           />
         </ScrollReveal>

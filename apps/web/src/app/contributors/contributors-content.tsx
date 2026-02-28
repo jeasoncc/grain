@@ -52,7 +52,7 @@ export function ContributorsPageContent() {
                 贡献者
               </h1>
               <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 leading-relaxed font-light">
-                感谢所有为 Novel Editor 做出贡献的优秀开发者
+                感谢所有为 Grain 做出贡献的优秀开发者
               </p>
             </div>
           </ScrollReveal>
@@ -72,7 +72,7 @@ export function ContributorsPageContent() {
                   感谢所有贡献者！
                 </h2>
                 <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-center mb-6">
-                  Novel Editor 是一个开源项目，它的成功离不开社区的每一个贡献。
+                  Grain 是一个开源项目，它的成功离不开社区的每一个贡献。
                   无论是代码、文档、反馈还是分享，都让这个项目变得更好。
                 </p>
                 <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-center">
@@ -187,7 +187,7 @@ export function ContributorsPageContent() {
                 加入我们的社区
               </h2>
               <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-                让我们一起打造更好的 Novel Editor
+                让我们一起打造更好的 Grain
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" asChild>

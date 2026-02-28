@@ -1,6 +1,6 @@
-# Novel Editor（小说创作编辑器）
+# Grain（小说创作编辑器）
 
-Novel Editor 是一款基于 **Tauri**、**React** 与 **Shadcn UI** 打造的跨平台写作环境，专注于长篇小说创作。它兼顾沉浸式编辑体验、项目组织、资料管理以及多平台打包发布能力，让作者可以在 Linux、Windows 和 macOS 上获得一致的离线创作流程。
+Grain 是一款基于 **Tauri**、**React** 与 **Shadcn UI** 打造的跨平台写作环境，专注于长篇小说创作。它兼顾沉浸式编辑体验、项目组织、资料管理以及多平台打包发布能力，让作者可以在 Linux、Windows 和 macOS 上获得一致的离线创作流程。
 
 > 🇺🇸 English documentation is available in [`README.md`](./README.md)
 

@@ -50,7 +50,7 @@ export function HeroSection() {
           <ScrollReveal direction="up" delay={200}>
             <h1 className="text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black mb-8 leading-[0.95] tracking-[-0.04em] text-gray-900 dark:text-white relative inline-block group/title cursor-default">
               <span className="relative z-10 drop-shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:drop-shadow-[0_2px_8px_rgba(255,255,255,0.05)] transition-all duration-500 group-hover/title:drop-shadow-[0_4px_16px_rgba(0,0,0,0.08)] dark:group-hover/title:drop-shadow-[0_4px_16px_rgba(255,255,255,0.1)]">
-                Novel Editor
+                Grain
               </span>
               {/* 多层文字光晕效果 - 更精细 */}
               <span className="absolute inset-0 blur-2xl opacity-20 dark:opacity-10 bg-gray-900 dark:bg-white -z-10 group-hover/title:opacity-30 dark:group-hover/title:opacity-15 transition-opacity duration-500 animate-subtle-pulse"></span>
@@ -65,7 +65,7 @@ export function HeroSection() {
           {/* Description */}
           <ScrollReveal direction="up" delay={300}>
             <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-16 max-w-3xl mx-auto leading-[1.7] font-light tracking-tight">
-              Novel Editor 是一款基于{" "}
+              Grain 是一款基于{" "}
               <span className="font-semibold text-gray-900 dark:text-white relative inline-block">
                 <span className="relative z-10">Tauri</span>
                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-gray-900/20 dark:bg-white/20 rounded-full"></span>

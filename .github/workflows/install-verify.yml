@@ -23,7 +23,7 @@ on:
 
 env:
   PACKAGE_ID: grain
-  PACKAGE_NAME: Novel Editor
+  PACKAGE_NAME: Grain
 
 jobs:
   # 获取版本号并等待

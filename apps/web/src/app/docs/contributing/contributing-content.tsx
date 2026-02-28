@@ -66,7 +66,7 @@ export function ContributingPageContent() {
                 贡献指南
               </h1>
               <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 leading-relaxed font-light">
-                Novel Editor 是一个开源项目，欢迎你的参与和贡献
+                Grain 是一个开源项目，欢迎你的参与和贡献
               </p>
             </div>
           </ScrollReveal>

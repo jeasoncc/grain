@@ -1,7 +1,7 @@
 [Desktop Entry]
-Name=Novel Editor
+Name=Grain
 Comment=Minimal novel writing editor built with Tauri, React, and SQLite
-Exec=novel-editor
+Exec=grain
 Icon=icon
 Type=Application
 Categories=Utility;

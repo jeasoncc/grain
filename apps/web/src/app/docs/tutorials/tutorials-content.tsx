@@ -14,7 +14,7 @@ const sections = [
     content: [
       {
         subtitle: "下载和安装",
-        text: "访问下载页面，选择适合你操作系统的版本。Novel Editor 支持 Linux、Windows 和 macOS。",
+        text: "访问下载页面，选择适合你操作系统的版本。Grain 支持 Linux、Windows 和 macOS。",
       },
       {
         subtitle: "首次启动",
@@ -106,7 +106,7 @@ export function TutorialsPageContent() {
                 使用教程
               </h1>
               <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 leading-relaxed font-light">
-                从入门到精通，掌握 Novel Editor 的所有功能
+                从入门到精通，掌握 Grain 的所有功能
               </p>
             </div>
           </ScrollReveal>

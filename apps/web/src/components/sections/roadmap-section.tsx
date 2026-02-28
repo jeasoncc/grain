@@ -80,7 +80,7 @@ export function RoadmapSection() {
         <ScrollReveal>
           <SectionHeader
             title="产品路线图"
-            description="了解 Novel Editor 的发展方向和即将推出的功能"
+            description="了解 Grain 的发展方向和即将推出的功能"
             subtitle="Roadmap"
           />
         </ScrollReveal>

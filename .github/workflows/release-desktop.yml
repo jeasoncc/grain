@@ -474,7 +474,7 @@ jobs:
           Write-Output "创建自签名证书..."
           Write-Output "  Subject: $publisher"
           $cert = New-SelfSignedCertificate -Type Custom -Subject $publisher `
-            -KeyUsage DigitalSignature -FriendlyName "Novel Editor" `
+            -KeyUsage DigitalSignature -FriendlyName "Grain" `
             -CertStoreLocation "Cert:\CurrentUser\My" `
             -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
           

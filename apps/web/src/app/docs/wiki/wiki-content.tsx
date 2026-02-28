@@ -11,8 +11,8 @@ const wikiSections = [
     icon: <BookOpen className="w-6 h-6" />,
     content: [
       {
-        subtitle: "Novel Editor 是什么？",
-        text: "Novel Editor 是一款现代化的跨平台桌面写作应用，专为长篇小说创作而设计。它结合了沉浸式编辑体验、强大的项目管理能力和可靠的数据存储，让作者可以专注于创作本身。",
+        subtitle: "Grain 是什么？",
+        text: "Grain 是一款现代化的跨平台桌面写作应用，专为长篇小说创作而设计。它结合了沉浸式编辑体验、强大的项目管理能力和可靠的数据存储，让作者可以专注于创作本身。",
       },
       {
         subtitle: "核心特性",
@@ -46,7 +46,7 @@ const wikiSections = [
     content: [
       {
         subtitle: "整体架构",
-        text: "Novel Editor 采用前后端分离的架构。前端使用 React 构建用户界面，后端使用 Tauri 提供系统级能力。数据存储在浏览器的 IndexedDB 中，确保离线可用性。",
+        text: "Grain 采用前后端分离的架构。前端使用 React 构建用户界面，后端使用 Tauri 提供系统级能力。数据存储在浏览器的 IndexedDB 中，确保离线可用性。",
       },
       {
         subtitle: "目录结构",
@@ -225,7 +225,7 @@ export function WikiPageContent() {
           Wiki 文档
         </h1>
         <p className="text-base text-gray-600 dark:text-gray-400 leading-relaxed">
-          深入了解 Novel Editor 的架构设计、功能实现和技术细节
+          深入了解 Grain 的架构设计、功能实现和技术细节
         </p>
       </div>
 

@@ -47,7 +47,7 @@ export function DonationSection() {
         <ScrollReveal>
           <SectionHeader
             title="支持项目"
-            description="Novel Editor 是开源免费的项目，您的支持将帮助我们持续改进"
+            description="Grain 是开源免费的项目，您的支持将帮助我们持续改进"
             subtitle="Donate"
           />
         </ScrollReveal>

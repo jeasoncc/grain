@@ -143,7 +143,7 @@ jobs:
           Architecture: amd64
           Depends: \${shlibs:Depends}, \${misc:Depends}
           Description: A modern, powerful novel writing application
-           Novel Editor is a professional writing tool designed specifically for
+           Grain is a professional writing tool designed specifically for
            novelists and long-form fiction writers. Built with modern technologies,
            it provides a distraction-free writing environment with powerful
            organizational features.

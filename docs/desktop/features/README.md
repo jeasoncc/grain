@@ -1,6 +1,6 @@
 # Desktop 功能文档
 
-这里是 Novel Editor Desktop 应用的所有功能文档。
+这里是 Grain Desktop 应用的所有功能文档。
 
 ## 🎯 核心功能
 

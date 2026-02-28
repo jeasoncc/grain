@@ -19,7 +19,7 @@ const testimonials = [
   {
     name: "张明",
     role: "网络小说作家",
-    content: "Novel Editor 彻底改变了我的写作流程。树形大纲功能让我可以轻松管理复杂的剧情线，角色数据库也非常实用。",
+    content: "Grain 彻底改变了我的写作流程。树形大纲功能让我可以轻松管理复杂的剧情线，角色数据库也非常实用。",
     rating: 5,
     verified: true,
     time: "2周前",
@@ -27,7 +27,7 @@ const testimonials = [
   {
     name: "李雪",
     role: "独立作者",
-    content: "作为一名全职写作的自由职业者，我需要在不同设备间切换。Novel Editor 的离线功能和自动备份让我非常安心。",
+    content: "作为一名全职写作的自由职业者，我需要在不同设备间切换。Grain 的离线功能和自动备份让我非常安心。",
     rating: 5,
     verified: true,
     time: "1个月前",
@@ -51,7 +51,7 @@ const testimonials = [
   {
     name: "刘阳",
     role: "业余小说家",
-    content: "之前用过很多写作软件，Novel Editor 是我用过最顺手的。命令面板和快捷键设计很人性化，大大提升了我的创作效率。",
+    content: "之前用过很多写作软件，Grain 是我用过最顺手的。命令面板和快捷键设计很人性化，大大提升了我的创作效率。",
     rating: 5,
     verified: false,
     time: "2个月前",
@@ -59,7 +59,7 @@ const testimonials = [
   {
     name: "赵琳",
     role: "职业编剧",
-    content: "作为编剧，我需要管理大量角色和场景。Novel Editor 的角色管理和世界观构建功能完美满足了我的需求，强烈推荐！",
+    content: "作为编剧，我需要管理大量角色和场景。Grain 的角色管理和世界观构建功能完美满足了我的需求，强烈推荐！",
     rating: 5,
     verified: true,
     time: "3周前",

@@ -18,10 +18,10 @@ export function AboutPageContent() {
                 <FileText className="w-10 h-10 text-gray-900 dark:text-white" />
               </div>
               <h1 className="text-5xl md:text-6xl font-black mb-6 text-gray-900 dark:text-white tracking-tight">
-                关于 Novel Editor
+                关于 Grain
               </h1>
               <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 leading-relaxed font-light">
-                Novel Editor 是一款现代化的跨平台桌面写作应用，专为长篇小说创作而设计。
+                Grain 是一款现代化的跨平台桌面写作应用，专为长篇小说创作而设计。
                 我们致力于为创作者提供最好的写作体验。
               </p>
             </div>
@@ -39,12 +39,12 @@ export function AboutPageContent() {
               </h2>
               <div className="prose prose-lg dark:prose-invert max-w-none">
                 <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                  Novel Editor 的使命是帮助创作者专注于创作本身，而不是被工具困扰。
+                  Grain 的使命是帮助创作者专注于创作本身，而不是被工具困扰。
                   我们相信，一个好的写作工具应该是透明、可靠、易于使用的。
                 </p>
                 <p className="text-gray-600 dark:text-gray-300 leading-relaxed mt-4">
                   通过现代化的技术栈和精心设计的用户体验，我们打造了一款真正适合长篇小说创作的工具。
-                  无论你是网络小说作者、独立作者，还是学生创作者，Novel Editor 都能帮助你更好地创作。
+                  无论你是网络小说作者、独立作者，还是学生创作者，Grain 都能帮助你更好地创作。
                 </p>
               </div>
             </div>
@@ -116,7 +116,7 @@ export function AboutPageContent() {
                 加入我们
               </h2>
               <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
-                Novel Editor 是一个开源项目，欢迎参与贡献。
+                Grain 是一个开源项目，欢迎参与贡献。
                 无论是代码、文档、反馈还是分享，都是对我们的支持。
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">

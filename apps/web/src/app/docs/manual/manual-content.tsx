@@ -27,7 +27,7 @@ const manualSections = [
       {
         subtitle: "首次启动",
         steps: [
-          "下载并安装 Novel Editor（支持 Linux、Windows、macOS）",
+          "下载并安装 Grain（支持 Linux、Windows、macOS）",
           "启动应用，首次运行会自动进入欢迎界面",
           "创建一个新项目：点击「新建项目」按钮",
           "输入项目名称和作者信息",
@@ -106,7 +106,7 @@ const manualSections = [
     content: [
       {
         subtitle: "项目结构",
-        text: "Novel Editor 的项目采用层次化结构：项目 → 章节 → 场景。每个层级都有其特定的用途：",
+        text: "Grain 的项目采用层次化结构：项目 → 章节 → 场景。每个层级都有其特定的用途：",
         items: [
           "项目：包含完整小说的所有内容",
           "章节：将小说分成逻辑部分（如第一章、第二章）",
@@ -477,7 +477,7 @@ export function ManualPageContent() {
           操作手册
         </h1>
         <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed">
-          详细的功能使用指南，帮助你充分利用 Novel Editor 的所有功能
+          详细的功能使用指南，帮助你充分利用 Grain 的所有功能
         </p>
       </div>
 

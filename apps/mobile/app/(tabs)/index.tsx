@@ -7,7 +7,7 @@ export default function ProjectsScreen() {
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
           <Text style={styles.title}>项目</Text>
-          <Text style={styles.subtitle}>欢迎使用 Novel Editor Mobile</Text>
+          <Text style={styles.subtitle}>欢迎使用 Grain Mobile</Text>
           <Text style={styles.description}>
             功能开发中，敬请期待...
           </Text>

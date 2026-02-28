@@ -1,6 +1,6 @@
-# Novel Editor 官网
+# Grain 官网
 
-这是 Novel Editor 项目的官方网站，基于 Next.js 15 构建，使用 React 19、TypeScript 和 Tailwind CSS。
+这是 Grain 项目的官方网站，基于 Next.js 15 构建，使用 React 19、TypeScript 和 Tailwind CSS。
 
 ## ✨ 特性
 
