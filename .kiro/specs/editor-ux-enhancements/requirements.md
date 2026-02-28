@@ -6,7 +6,7 @@ This specification defines enhancements to the editor module and desktop applica
 
 ## Glossary
 
-- **Editor Module**: The `@novel-editor/editor` package containing Lexical-based rich text editing components
+- **Editor Module**: The `@grain/editor` package containing Lexical-based rich text editing components
 - **Mention Plugin**: The `@` symbol autocomplete feature for referencing wiki entries
 - **Tag Plugin**: The `#[tag]` feature for inline tag insertion
 - **Typeahead Menu**: The dropdown suggestion panel that appears during autocomplete

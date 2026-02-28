@@ -122,7 +122,7 @@ export function AboutPageContent() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" asChild>
                   <Link
-                    href="https://github.com/jeasoncc/novel-editor"
+                    href="https://github.com/jeasoncc/grain"
                     target="_blank"
                     rel="noopener noreferrer"
                   >

@@ -66,7 +66,7 @@ export function PrintStyles() {
         }
 
         a[href^="/"]:after {
-          content: " (https://novel-editor.com" attr(href) ")";
+          content: " (https://grain.app" attr(href) ")";
           font-size: 0.8em;
           color: #666;
         }

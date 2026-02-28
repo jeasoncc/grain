@@ -204,10 +204,10 @@ export function ConductPageContent() {
                     <li>
                       <strong className="text-gray-900 dark:text-white">发送邮件：</strong>
                       <a
-                        href="mailto:conduct@novel-editor.com"
+                        href="mailto:conduct@grain.app"
                         className="text-blue-600 dark:text-blue-400 hover:underline ml-2"
                       >
-                        conduct@novel-editor.com
+                        conduct@grain.app
                       </a>
                     </li>
                     <li>
@@ -244,7 +244,7 @@ export function ConductPageContent() {
                 </Button>
                 <Button variant="outline" size="lg" asChild>
                   <Link
-                    href="https://github.com/jeasoncc/novel-editor"
+                    href="https://github.com/jeasoncc/grain"
                     target="_blank"
                     rel="noopener noreferrer"
                   >

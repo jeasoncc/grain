@@ -198,7 +198,7 @@ export function ContributorsPageContent() {
                 </Button>
                 <Button variant="outline" size="lg" asChild>
                   <Link
-                    href="https://github.com/jeasoncc/novel-editor"
+                    href="https://github.com/jeasoncc/grain"
                     target="_blank"
                     rel="noopener noreferrer"
                   >

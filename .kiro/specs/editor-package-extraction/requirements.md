@@ -2,7 +2,7 @@
 
 ## Introduction
 
-本文档定义了将编辑器模块从 `apps/desktop/src/components/editor` 抽取为独立的 Turborepo package (`@novel-editor/editor`) 的需求。这个重构将使编辑器成为一个独立的、可复用的模块，便于在多个应用之间共享，并支持独立开发和测试。
+本文档定义了将编辑器模块从 `apps/desktop/src/components/editor` 抽取为独立的 Turborepo package (`@grain/editor`) 的需求。这个重构将使编辑器成为一个独立的、可复用的模块，便于在多个应用之间共享，并支持独立开发和测试。
 
 ## Glossary
 
@@ -56,7 +56,7 @@
 
 #### Acceptance Criteria
 
-1. WHEN the desktop app imports the editor THEN the system SHALL use the package import path (`@novel-editor/editor`)
+1. WHEN the desktop app imports the editor THEN the system SHALL use the package import path (`@grain/editor`)
 2. WHEN the desktop app builds THEN the system SHALL resolve the editor package through Turborepo workspace
 3. WHEN the editor is rendered in desktop app THEN the system SHALL display identical behavior to the pre-extraction version
 4. WHEN the editor package is updated THEN the system SHALL trigger rebuild of dependent applications
