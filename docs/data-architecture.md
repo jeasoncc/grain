@@ -1,10 +1,10 @@
 # Data Architecture Guide
 
-This document describes the data management strategy for Novel Editor, establishing clear guidelines for when to use each data management tool.
+This document describes the data management strategy for Grain, establishing clear guidelines for when to use each data management tool.
 
 ## Overview
 
-Novel Editor follows a **data-driven architecture** where:
+Grain follows a **data-driven architecture** where:
 - **Data is the single source of truth** - Components render data, they don't own it
 - **Clear separation of concerns** - Each tool has a specific purpose
 - **Reactive updates** - Data changes automatically trigger UI updates

@@ -1,6 +1,6 @@
 # Web 项目文档
 
-这里是 Novel Editor Web 官网项目的完整文档集合。
+这里是 Grain Web 官网项目的完整文档集合。
 
 ## 📚 核心文档
 

@@ -56,7 +56,7 @@ export function DownloadPageContent() {
               {/* 标题 - 极致精致版 */}
               <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black mb-8 text-gray-900 dark:text-white tracking-tight relative inline-block group/title cursor-default">
                 <span className="relative z-10 drop-shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:drop-shadow-[0_2px_8px_rgba(255,255,255,0.05)] transition-all duration-500 group-hover/title:drop-shadow-[0_4px_20px_rgba(0,0,0,0.1)] dark:group-hover/title:drop-shadow-[0_4px_20px_rgba(255,255,255,0.15)]">
-                  下载 Novel Editor
+                  下载 Grain
                 </span>
                 {/* 多层文字光晕效果 - 增强 */}
                 <span className="absolute inset-0 blur-2xl opacity-25 dark:opacity-12 bg-gray-900 dark:bg-white -z-10 group-hover/title:opacity-35 dark:group-hover/title:opacity-18 transition-opacity duration-500 animate-subtle-pulse"></span>

@@ -421,7 +421,7 @@ export function DownloadSection({ hideHeader = false }: DownloadSectionProps) {
         {!hideHeader && (
           <ScrollReveal>
             <SectionHeader
-              title="下载 Novel Editor"
+              title="下载 Grain"
               description="选择适合你的平台，立即开始创作之旅"
               subtitle="Download"
             />

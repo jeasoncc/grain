@@ -111,7 +111,7 @@ export function ApiPageContent() {
                 API 参考
               </h1>
               <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 leading-relaxed font-light">
-                完整的 API 文档，帮助你扩展和自定义 Novel Editor
+                完整的 API 文档，帮助你扩展和自定义 Grain
               </p>
             </div>
           </ScrollReveal>

@@ -1,6 +1,6 @@
-# Novel Editor Documentation
+# Grain Documentation
 
-Welcome to the Novel Editor documentation center. Here you'll find everything you need to use, develop, and contribute to Novel Editor.
+Welcome to the Grain documentation center. Here you'll find everything you need to use, develop, and contribute to Grain.
 
 ## 📖 Documentation Index
 

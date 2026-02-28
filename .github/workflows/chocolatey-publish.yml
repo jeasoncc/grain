@@ -99,7 +99,7 @@ jobs:
               <version>$version</version>
               <packageSourceUrl>https://github.com/${{ github.repository }}</packageSourceUrl>
               <owners>Jeason</owners>
-              <title>Novel Editor</title>
+              <title>Grain</title>
               <authors>Jeason</authors>
               <projectUrl>https://github.com/${{ github.repository }}</projectUrl>
               <iconUrl>https://raw.githubusercontent.com/${{ github.repository }}/main/apps/desktop/src-tauri/icons/128x128.png</iconUrl>
@@ -112,7 +112,7 @@ jobs:
               <tags>novel editor writing tool desktop tauri rust</tags>
               <summary>A modern, powerful novel writing application for serious writers</summary>
               <description>
-          Novel Editor is a professional writing tool designed specifically for novelists and long-form fiction writers. Built with modern technologies, it provides a distraction-free writing environment with powerful organizational features.
+          Grain is a professional writing tool designed specifically for novelists and long-form fiction writers. Built with modern technologies, it provides a distraction-free writing environment with powerful organizational features.
           
           Features:
           * Rich text editing with Lexical editor

@@ -8,7 +8,7 @@ const termsSections = [
   {
     icon: <CheckCircle className="w-6 h-6" />,
     title: "使用许可",
-    content: "Novel Editor 是基于 MIT 许可证发布的自由软件。你可以自由使用、修改和分发本软件。",
+    content: "Grain 是基于 MIT 许可证发布的自由软件。你可以自由使用、修改和分发本软件。",
   },
   {
     icon: <AlertCircle className="w-6 h-6" />,
@@ -23,7 +23,7 @@ const termsSections = [
   {
     icon: <FileText className="w-6 h-6" />,
     title: "知识产权",
-    content: "你的创作内容的知识产权完全属于你。Novel Editor 不会对用户创作的内容主张任何权利。",
+    content: "你的创作内容的知识产权完全属于你。Grain 不会对用户创作的内容主张任何权利。",
   },
 ];
 
@@ -42,7 +42,7 @@ export function TermsPageContent() {
                 使用条款
               </h1>
               <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 leading-relaxed font-light">
-                请在使用 Novel Editor 前仔细阅读本使用条款
+                请在使用 Grain 前仔细阅读本使用条款
               </p>
             </div>
           </ScrollReveal>
@@ -92,7 +92,7 @@ export function TermsPageContent() {
               </h3>
               <div className="space-y-4 text-gray-600 dark:text-gray-300 leading-relaxed">
                 <p>
-                  通过使用 Novel Editor，你同意遵守以下条款：
+                  通过使用 Grain，你同意遵守以下条款：
                 </p>
                 <ol className="list-decimal list-inside space-y-3 ml-4">
                   <li>
@@ -111,7 +111,7 @@ export function TermsPageContent() {
                   </li>
                   <li>
                     <strong className="text-gray-900 dark:text-white">版权声明：</strong>
-                    用户的创作内容的知识产权完全属于用户。Novel Editor 不会对
+                    用户的创作内容的知识产权完全属于用户。Grain 不会对
                     用户创作的内容主张任何权利或控制权。
                   </li>
                   <li>

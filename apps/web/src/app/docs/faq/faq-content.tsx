@@ -8,12 +8,12 @@ import { cn } from "@/lib/utils";
 
 const faqs = [
   {
-    question: "Novel Editor 是免费的吗？",
-    answer: "是的，Novel Editor 是完全免费和开源的。它基于 MIT 许可证发布，你可以自由使用、修改和分发。",
+    question: "Grain 是免费的吗？",
+    answer: "是的，Grain 是完全免费和开源的。它基于 MIT 许可证发布，你可以自由使用、修改和分发。",
   },
   {
     question: "支持哪些操作系统？",
-    answer: "Novel Editor 支持 Linux、Windows 和 macOS。每个平台都提供相应的安装包，你可以在下载页面找到适合你系统的版本。",
+    answer: "Grain 支持 Linux、Windows 和 macOS。每个平台都提供相应的安装包，你可以在下载页面找到适合你系统的版本。",
   },
   {
     question: "我的数据安全吗？",
@@ -29,11 +29,11 @@ const faqs = [
   },
   {
     question: "支持中文输入吗？",
-    answer: "完全支持！Novel Editor 对中文进行了优化，包括中文字体渲染和输入体验。",
+    answer: "完全支持！Grain 对中文进行了优化，包括中文字体渲染和输入体验。",
   },
   {
     question: "可以自定义主题吗？",
-    answer: "是的，Novel Editor 支持多种内置主题，包括暗色模式。你还可以在设置中调整颜色和字体偏好。",
+    answer: "是的，Grain 支持多种内置主题，包括暗色模式。你还可以在设置中调整颜色和字体偏好。",
   },
   {
     question: "如何贡献代码？",

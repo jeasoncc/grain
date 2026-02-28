@@ -123,7 +123,7 @@ jobs:
           pkg_postinst() {
           	xdg_pkg_postinst
           	
-          	elog "Novel Editor has been installed."
+          	elog "Grain has been installed."
           	elog "You can start it from your application menu or by running 'grain'"
           }
           EOF
@@ -138,7 +138,7 @@ jobs:
           		<name>Jeason</name>
           	</maintainer>
           	<longdescription lang="en">
-          		Novel Editor is a professional writing tool designed specifically for
+          		Grain is a professional writing tool designed specifically for
           		novelists and long-form fiction writers. Built with modern technologies,
           		it provides a distraction-free writing environment with powerful
           		organizational features.
@@ -174,7 +174,7 @@ jobs:
           <repositories xmlns="" version="1.0">
           	<repo quality="experimental" status="unofficial">
           		<name>grain-overlay</name>
-          		<description>Novel Editor Gentoo Overlay</description>
+          		<description>Grain Gentoo Overlay</description>
           		<homepage>https://github.com/${{ github.repository }}</homepage>
           		<owner type="person">
           			<email>xiaomiquan@aliyun.com</email>
@@ -220,9 +220,9 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           
           cat > gentoo-overlay/README.md << EOF
-          # Novel Editor Gentoo Overlay
+          # Grain Gentoo Overlay
           
-          This overlay provides the Novel Editor package for Gentoo Linux.
+          This overlay provides the Grain package for Gentoo Linux.
           
           ## Installation
           
@@ -238,7 +238,7 @@ jobs:
           # Sync the overlay
           emerge --sync grain-overlay
           
-          # Install Novel Editor
+          # Install Grain
           emerge --ask app-editors/grain
           \`\`\`
           

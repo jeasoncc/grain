@@ -1,13 +1,13 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=Novel Editor
+Name=Grain
 Name[zh_CN]=小说编辑器
 Comment=Modern novel writing application
 Comment[zh_CN]=现代化的小说编辑器
-Exec=novel-editor
-Icon=novel-editor
+Exec=grain
+Icon=grain
 Terminal=false
 Categories=Office;WordProcessor;Literature;
 Keywords=novel;writing;editor;markdown;
-StartupWMClass=novel-editor
+StartupWMClass=grain

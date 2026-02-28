@@ -110,7 +110,7 @@ jobs:
           BuildArch:      x86_64
           
           %description
-          Novel Editor is a professional writing tool designed specifically for
+          Grain is a professional writing tool designed specifically for
           novelists and long-form fiction writers. Built with modern technologies,
           it provides a distraction-free writing environment with powerful
           organizational features.

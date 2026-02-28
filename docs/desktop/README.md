@@ -1,6 +1,6 @@
 # Desktop 应用文档
 
-Novel Editor Desktop 应用的完整文档集合。
+Grain Desktop 应用的完整文档集合。
 
 ## 📚 核心文档
 

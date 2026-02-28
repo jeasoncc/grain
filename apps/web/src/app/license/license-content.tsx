@@ -10,7 +10,7 @@ const licenseInfo = [
   {
     icon: <Code className="w-6 h-6" />,
     title: "MIT 许可证",
-    description: "Novel Editor 基于 MIT 许可证发布，这是最宽松的开源许可证之一。",
+    description: "Grain 基于 MIT 许可证发布，这是最宽松的开源许可证之一。",
   },
   {
     icon: <FileText className="w-6 h-6" />,
@@ -26,7 +26,7 @@ const licenseInfo = [
 
 const mitLicense = `MIT License
 
-Copyright (c) ${new Date().getFullYear()} Novel Editor Contributors
+Copyright (c) ${new Date().getFullYear()} Grain Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -61,7 +61,7 @@ export function LicensePageContent() {
                 许可证
               </h1>
               <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 leading-relaxed font-light">
-                Novel Editor 基于 MIT 许可证发布，完全开源和自由
+                Grain 基于 MIT 许可证发布，完全开源和自由
               </p>
             </div>
           </ScrollReveal>
@@ -119,7 +119,7 @@ export function LicensePageContent() {
                     <strong className="text-gray-900 dark:text-white">✅ 你可以：</strong>
                   </p>
                   <ul className="list-disc list-inside space-y-2 ml-4">
-                    <li>自由使用 Novel Editor，包括商业用途</li>
+                    <li>自由使用 Grain，包括商业用途</li>
                     <li>修改源代码以满足你的需求</li>
                     <li>分发原版或修改后的软件</li>
                     <li>将代码合并到你的项目中</li>

@@ -1,6 +1,6 @@
-# Novel Editor
+# Grain
 
-Novel Editor is a modern, cross-platform writing environment built with **Tauri**, **React**, and **Shadcn UI**. It focuses on long-form fiction projects, blending a distraction-free editor with powerful project organization, research management, and release-ready packaging for Linux, Windows, and macOS.
+Grain is a modern, cross-platform writing environment built with **Tauri**, **React**, and **Shadcn UI**. It focuses on long-form fiction projects, blending a distraction-free editor with powerful project organization, research management, and release-ready packaging for Linux, Windows, and macOS.
 
 > 🇨🇳 Read this document in Chinese: [`README.zh-CN.md`](./README.zh-CN.md)
 

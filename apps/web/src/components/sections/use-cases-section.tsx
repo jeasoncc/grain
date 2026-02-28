@@ -68,7 +68,7 @@ export function UseCasesSection() {
         <ScrollReveal>
           <SectionHeader
             title="适用场景"
-            description="Novel Editor 适合各种类型的创作者和创作场景"
+            description="Grain 适合各种类型的创作者和创作场景"
             subtitle="Use Cases"
           />
         </ScrollReveal>

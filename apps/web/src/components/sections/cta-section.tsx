@@ -29,7 +29,7 @@ export function CTASection() {
 
           <ScrollReveal direction="up" delay={200}>
             <p className="text-xl md:text-2xl text-gray-400 mb-14 leading-[1.8] font-light max-w-2xl mx-auto">
-              立即下载 Novel Editor，开启你的创作之旅。
+              立即下载 Grain，开启你的创作之旅。
               <br />
               免费、开源、功能强大，专为长篇小说创作而设计。
             </p>

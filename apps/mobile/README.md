@@ -1,10 +1,10 @@
-# Novel Editor Mobile
+# Grain Mobile
 
-Novel Editor 移动端应用 - 专业的长篇小说写作工具
+Grain 移动端应用 - 专业的长篇小说写作工具
 
 ## 📱 简介
 
-这是 Novel Editor 的移动端版本，基于 React Native 和 Expo 构建，提供与桌面版相同的功能和体验。
+这是 Grain 的移动端版本，基于 React Native 和 Expo 构建，提供与桌面版相同的功能和体验。
 
 ## ✨ 功能特性
 

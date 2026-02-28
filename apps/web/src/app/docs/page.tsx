@@ -8,7 +8,7 @@ const docCategories = [
   {
     icon: <GraduationCap className="w-8 h-8" />,
     title: "教程",
-    description: "从入门到精通的完整教程，帮助你快速上手 Novel Editor。",
+    description: "从入门到精通的完整教程，帮助你快速上手 Grain。",
     href: "/docs/tutorials",
     color: "bg-blue-50 dark:bg-blue-900/20",
   },
@@ -63,10 +63,10 @@ export default function DocsPage() {
     <div className="prose prose-gray dark:prose-invert max-w-none">
       <div className="mb-12">
         <h1 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
-          欢迎使用 Novel Editor 文档
+          欢迎使用 Grain 文档
         </h1>
         <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed">
-          探索 Novel Editor 的所有功能和特性，学习如何使用它来提升你的写作效率。
+          探索 Grain 的所有功能和特性，学习如何使用它来提升你的写作效率。
         </p>
       </div>
 
@@ -94,7 +94,7 @@ export default function DocsPage() {
           文档分类
         </h2>
         <p className="text-gray-600 dark:text-gray-300 mb-8">
-          选择你感兴趣的文档类别，深入了解 Novel Editor
+          选择你感兴趣的文档类别，深入了解 Grain
         </p>
         <div className="grid md:grid-cols-2 gap-6">
           {docCategories.map((category) => (

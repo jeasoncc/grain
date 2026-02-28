@@ -140,7 +140,7 @@ jobs:
           
             url "https://github.com/${{ github.repository }}/releases/download/desktop-v#{version}/grain_#{version}_aarch64.dmg",
                 verified: "github.com/${{ github.repository }}/"
-            name "Novel Editor"
+            name "Grain"
             desc "Modern, powerful novel writing application for serious writers"
             homepage "https://github.com/${{ github.repository }}"
           

@@ -1,5 +1,5 @@
 /* ========================================
-   Novel Editor - Tailwind CSS v4 + shadcn/ui
+   Grain - Tailwind CSS v4 + shadcn/ui
    ======================================== */
 
 /* Import Tailwind */
@@ -454,35 +454,35 @@ kbd {
   background-color: var(--editor-selection);
 }
 
-/* Novel Editor Specific Styles */
-.novel-editor-content {
+/* Grain Specific Styles */
+.grain-content {
   position: relative;
 }
 
-/* Novel Editor Selection Styles */
-.novel-editor-content ::selection {
+/* Grain Selection Styles */
+.grain-content ::selection {
   background-color: var(--editor-selection);
   color: inherit;
 }
 
-.dark .novel-editor-content ::selection {
+.dark .grain-content ::selection {
   background-color: var(--editor-selection);
 }
 
 /* Lexical Editor Selected Node Styles */
-.novel-editor-content [data-lexical-decorator="true"].selected,
-.novel-editor-content .lexical-selected {
+.grain-content [data-lexical-decorator="true"].selected,
+.grain-content .lexical-selected {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
 /* Current Line Highlight Effect */
-.novel-editor-content [data-lexical-editor="true"] > p:focus-within,
-.novel-editor-content [data-lexical-editor="true"] > div:focus-within,
-.novel-editor-content [data-lexical-editor="true"] > h1:focus-within,
-.novel-editor-content [data-lexical-editor="true"] > h2:focus-within,
-.novel-editor-content [data-lexical-editor="true"] > h3:focus-within,
-.novel-editor-content [data-lexical-editor="true"] > blockquote:focus-within {
+.grain-content [data-lexical-editor="true"] > p:focus-within,
+.grain-content [data-lexical-editor="true"] > div:focus-within,
+.grain-content [data-lexical-editor="true"] > h1:focus-within,
+.grain-content [data-lexical-editor="true"] > h2:focus-within,
+.grain-content [data-lexical-editor="true"] > h3:focus-within,
+.grain-content [data-lexical-editor="true"] > blockquote:focus-within {
   background-color: var(--editor-line-highlight, color-mix(in srgb, var(--muted) 50%, transparent));
   margin-left: -1rem;
   margin-right: -1rem;
@@ -493,23 +493,23 @@ kbd {
 }
 
 /* Typewriter Mode Style Enhancement */
-.novel-editor-content.typewriter-mode {
+.grain-content.typewriter-mode {
   /* Typewriter Mode Base Styles */
   scroll-behavior: smooth;
 }
 
-.novel-editor-content.typewriter-mode [data-lexical-editor="true"] > *:not(:focus-within) {
+.grain-content.typewriter-mode [data-lexical-editor="true"] > *:not(:focus-within) {
   opacity: 0.6;
   transition: opacity 0.3s ease;
 }
 
-.novel-editor-content.typewriter-mode [data-lexical-editor="true"] > *:focus-within {
+.grain-content.typewriter-mode [data-lexical-editor="true"] > *:focus-within {
   opacity: 1;
   transition: opacity 0.15s ease;
 }
 
 /* Typewriter Mode Current Line Center Indicator */
-.novel-editor-content.typewriter-mode::before {
+.grain-content.typewriter-mode::before {
   content: "";
   position: fixed;
   left: 0;

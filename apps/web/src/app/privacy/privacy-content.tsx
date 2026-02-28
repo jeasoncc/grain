@@ -8,7 +8,7 @@ const privacySections = [
   {
     icon: <Lock className="w-6 h-6" />,
     title: "数据存储",
-    content: "Novel Editor 的所有数据都存储在本地设备上，使用浏览器的 IndexedDB 数据库。你的创作内容、角色信息、项目数据等都不会上传到任何服务器。",
+    content: "Grain 的所有数据都存储在本地设备上，使用浏览器的 IndexedDB 数据库。你的创作内容、角色信息、项目数据等都不会上传到任何服务器。",
   },
   {
     icon: <Eye className="w-6 h-6" />,
@@ -92,7 +92,7 @@ export function PrivacyPageContent() {
               </h3>
               <div className="space-y-4 text-gray-600 dark:text-gray-300 leading-relaxed">
                 <p>
-                  Novel Editor 是一款完全离线的桌面应用程序。我们设计的核心理念是保护用户隐私，
+                  Grain 是一款完全离线的桌面应用程序。我们设计的核心理念是保护用户隐私，
                   因此应用不会收集、传输或存储任何数据到外部服务器。
                 </p>
                 <p>
@@ -102,7 +102,7 @@ export function PrivacyPageContent() {
                 </p>
                 <p>
                   <strong className="text-gray-900 dark:text-white">无网络连接：</strong>
-                  Novel Editor 可以在完全离线的情况下工作。应用不需要网络连接，
+                  Grain 可以在完全离线的情况下工作。应用不需要网络连接，
                   也不会向任何服务器发送数据请求。
                 </p>
                 <p>

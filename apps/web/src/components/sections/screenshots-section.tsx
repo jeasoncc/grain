@@ -12,7 +12,7 @@ const screenshots = [
   {
     id: 1,
     title: "主界面概览",
-    description: "Novel Editor 的主界面，展示清晰的工作区和导航结构",
+    description: "Grain 的主界面，展示清晰的工作区和导航结构",
     image: "https://s3.bmp.ovh/imgs/2025/12/01/17e3f22342be954f.png",
   },
   {
@@ -129,7 +129,7 @@ export function ScreenshotsSection() {
         <ScrollReveal>
           <SectionHeader
             title="应用截图"
-            description="一睹 Novel Editor 的界面设计和功能布局"
+            description="一睹 Grain 的界面设计和功能布局"
             subtitle="Screenshots"
           />
         </ScrollReveal>

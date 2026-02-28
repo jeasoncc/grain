@@ -9,14 +9,14 @@ import { cn } from "@/lib/utils";
 
 const faqs = [
   {
-    question: "Novel Editor 是免费的吗？",
+    question: "Grain 是免费的吗？",
     answer:
-      "是的，Novel Editor 完全免费且开源。项目采用 MIT 许可证，你可以自由使用、修改和分发。",
+      "是的，Grain 完全免费且开源。项目采用 MIT 许可证，你可以自由使用、修改和分发。",
   },
   {
     question: "支持哪些操作系统？",
     answer:
-      "Novel Editor 支持 Linux（AppImage、DEB、RPM）、Windows（MSI、EXE）和 macOS（DMG）。",
+      "Grain 支持 Linux（AppImage、DEB、RPM）、Windows（MSI、EXE）和 macOS（DMG）。",
   },
   {
     question: "数据存储在哪里？",
@@ -31,7 +31,7 @@ const faqs = [
   {
     question: "如何备份我的作品？",
     answer:
-      "Novel Editor 提供每日自动备份功能，你也可以随时手动导出备份。备份文件采用 JSON 或 ZIP 格式，可以轻松恢复。",
+      "Grain 提供每日自动备份功能，你也可以随时手动导出备份。备份文件采用 JSON 或 ZIP 格式，可以轻松恢复。",
   },
   {
     question: "支持云同步吗？",
@@ -76,7 +76,7 @@ export function FAQSection() {
         <ScrollReveal>
           <SectionHeader
             title="常见问题"
-            description="解答你关于 Novel Editor 的疑问"
+            description="解答你关于 Grain 的疑问"
             subtitle="FAQ"
           >
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-800 mb-4 mt-4 border-2 border-gray-300 dark:border-gray-700">
