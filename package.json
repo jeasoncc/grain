@@ -48,7 +48,7 @@
     "test:desktop": "turbo run test --filter=desktop"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.2",
+    "@biomejs/biome": "^2.4.4",
     "@playwright/test": "^1.57.0",
     "@sinclair/typebox": "^0.34.0",
     "playwright": "^1.57.0",
