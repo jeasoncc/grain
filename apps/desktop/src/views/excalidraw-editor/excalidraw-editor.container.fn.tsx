@@ -15,9 +15,14 @@
  * @requirements 2.1, 3.1, 3.2, 4.1, 4.2, 5.2, 5.4, 7.1, 7.2, 7.3, 7.4
  */
 
-import { memo, useCallback, useEffect, useRef, useState } from "react"
-import * as O from "fp-ts/Option"
 import { pipe } from "fp-ts/function"
+import * as O from "fp-ts/Option"
+import { memo, useCallback, useEffect, useRef, useState } from "react"
+import { saveServiceManager } from "@/flows/save"
+import { error as logError } from "@/io/log/logger.api"
+import { useContentByNodeId } from "@/hooks/use-content"
+import * as O from "fp-ts/Option"
+import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { saveServiceManager } from "@/flows/save"
 import { useContentByNodeId } from "@/hooks/use-content"
 import { useTheme } from "@/hooks/use-theme"
@@ -69,7 +74,7 @@ function parseExcalidrawContent(content: string | undefined): ExcalidrawInitialD
 			files: parsed.files || {},
 		}
 	} catch (error) {
-		console.error("[ExcalidrawEditor] 解析内容失败:", error)
+		logError("[ExcalidrawEditor] 解析内容失败:", error)
 		return EMPTY_EXCALIDRAW_DATA
 	}
 }
@@ -131,10 +136,10 @@ export const ExcalidrawEditorContainer = memo(
 			contentType: "excalidraw",
 			nodeId,
 			onSaveError: (error) => {
-				console.error("[ExcalidrawEditor] 保存失败:", error)
+			logError("[ExcalidrawEditor] 保存失败:", error)
 			},
 			onSaveSuccess: () => {
-				console.log("[ExcalidrawEditor] 内容保存成功")
+			logInfo("[ExcalidrawEditor] 内容保存成功")
 			},
 			registerShortcut: false, // Excalidraw 有自己的快捷键处理
 			tabId: activeTabId ?? undefined,
@@ -156,7 +161,10 @@ export const ExcalidrawEditorContainer = memo(
 
 			// 如果 nodeId 变化，重置状态
 			if (nodeIdChanged) {
-				console.log("[ExcalidrawEditor] nodeId 变化，重置状态:", {
+			logInfo("[ExcalidrawEditor] nodeId 变化，重置状态:", {
+				from: prevNodeIdRef.current,
+				to: nodeId,
+			})
 					from: prevNodeIdRef.current,
 					to: nodeId,
 				})
@@ -172,7 +180,7 @@ export const ExcalidrawEditorContainer = memo(
 			// 检查是否有待保存的内容（单例模式下，model 可能已存在）
 			const pendingContent = saveServiceManager.getPendingContent(nodeId)
 			if (pendingContent !== null && !isInitializedRef.current) {
-				console.log("[ExcalidrawEditor] 使用待保存的内容")
+			logInfo("[ExcalidrawEditor] 使用待保存的内容")
 				const parsed = parseExcalidrawContent(pendingContent)
 				setInitialData(parsed)
 				isInitializedRef.current = true
@@ -189,7 +197,7 @@ export const ExcalidrawEditorContainer = memo(
 							const parsed = parseExcalidrawContent(undefined)
 							setInitialData(parsed)
 							isInitializedRef.current = true
-							console.log("[ExcalidrawEditor] 初始化空数据（新文件）")
+						logInfo("[ExcalidrawEditor] 初始化空数据（新文件）")
 						},
 						// Some: 内容存在
 						(content) => {
@@ -197,9 +205,9 @@ export const ExcalidrawEditorContainer = memo(
 							setInitialData(parsed)
 							isInitializedRef.current = true
 							setInitialContent(content.content)
-							console.log("[ExcalidrawEditor] 初始化数据:", parsed)
-						}
-					)
+						logInfo("[ExcalidrawEditor] 初始化数据:", parsed)
+						},
+					),
 				)
 			}
 		}, [contentOption, nodeId, setInitialContent])
@@ -238,7 +246,7 @@ export const ExcalidrawEditorContainer = memo(
 						resizeTimeout = setTimeout(() => {
 							setContainerSize({ height, width })
 							sizeStableRef.current = true
-							console.log("[ExcalidrawEditor] 容器尺寸:", { height, width })
+						logInfo("[ExcalidrawEditor] 容器尺寸:", { height, width })
 						}, RESIZE_DEBOUNCE_DELAY)
 					}
 				}
@@ -247,14 +255,17 @@ export const ExcalidrawEditorContainer = memo(
 			// 立即尝试获取尺寸（Web 环境下可能已经有尺寸）
 			const rect = container.getBoundingClientRect()
 			if (rect.width > MIN_VALID_SIZE && rect.height > MIN_VALID_SIZE) {
-				setContainerSize({ 
-					width: Math.floor(rect.width), 
-					height: Math.floor(rect.height) 
+				setContainerSize({
+					height: Math.floor(rect.height),
+					width: Math.floor(rect.width),
 				})
 				sizeStableRef.current = true
-				console.log("[ExcalidrawEditor] 初始容器尺寸:", { 
-					width: Math.floor(rect.width), 
-					height: Math.floor(rect.height) 
+			logInfo("[ExcalidrawEditor] 初始容器尺寸:", {
+				height: Math.floor(rect.height),
+				width: Math.floor(rect.width),
+			})
+					height: Math.floor(rect.height),
+					width: Math.floor(rect.width),
 				})
 			}
 
@@ -299,7 +310,7 @@ export const ExcalidrawEditorContainer = memo(
 		 */
 		useEffect(() => {
 			return () => {
-				console.log("[ExcalidrawEditor] 组件卸载，清理本地资源")
+				logInfo("[ExcalidrawEditor] 组件卸载，清理本地资源")
 
 				// 清理本地 refs
 				currentDataRef.current = null
@@ -313,7 +324,7 @@ export const ExcalidrawEditorContainer = memo(
 
 		// 加载中（undefined 表示正在加载，Option 表示已加载完成）
 		if (contentOption === undefined) {
-			console.log("[ExcalidrawEditor] 等待内容加载...", { nodeId })
+			logInfo("[ExcalidrawEditor] 等待内容加载...", { nodeId })
 			return (
 				<div
 					ref={containerRef}
@@ -326,18 +337,24 @@ export const ExcalidrawEditorContainer = memo(
 				</div>
 			)
 		}
-		
+
 		// contentOption 现在是 Option<ContentInterface>
 		// 使用 fp-ts match 处理 Some/None 两种情况已在 useEffect 中完成
 
 		// 等待尺寸和数据
 		if (!containerSize || !initialData) {
-			console.log("[ExcalidrawEditor] 等待容器尺寸或初始数据...", { 
-				nodeId,
-				hasContainerSize: !!containerSize, 
-				hasInitialData: !!initialData,
+			logInfo("[ExcalidrawEditor] 等待容器尺寸或初始数据...", {
 				containerSize,
-				initialData: initialData ? "exists" : "null"
+				hasContainerSize: !!containerSize,
+				hasInitialData: !!initialData,
+				initialData: initialData ? "exists" : "null",
+				nodeId,
+			})
+				containerSize,
+				hasContainerSize: !!containerSize,
+				hasInitialData: !!initialData,
+				initialData: initialData ? "exists" : "null",
+				nodeId,
 			})
 			return (
 				<div
@@ -352,12 +369,18 @@ export const ExcalidrawEditorContainer = memo(
 			)
 		}
 
-		console.log("[ExcalidrawEditor] 渲染 View 组件:", {
-			nodeId,
-			hasInitialData: !!initialData,
-			hasContainerSize: !!containerSize,
+		logInfo("[ExcalidrawEditor] 渲染 View 组件:", {
 			containerSize,
+			hasContainerSize: !!containerSize,
+			hasInitialData: !!initialData,
 			initialDataKeys: initialData ? Object.keys(initialData) : [],
+			nodeId,
+		})
+			containerSize,
+			hasContainerSize: !!containerSize,
+			hasInitialData: !!initialData,
+			initialDataKeys: initialData ? Object.keys(initialData) : [],
+			nodeId,
 		})
 
 		return (

@@ -14,7 +14,7 @@
  */
 
 import type { ReactNode } from "react"
-import { Panel, Group, Separator } from "react-resizable-panels"
+import { Group, Panel, Separator } from "react-resizable-panels"
 import { useAppLayout } from "@/hooks/use-app-layout"
 import { ActivityBar } from "@/views/activity-bar"
 import { UnifiedSidebar } from "@/views/unified-sidebar"
@@ -48,20 +48,10 @@ export function AppLayout({ children }: AppLayoutProps) {
 		<div className="flex h-screen w-screen overflow-hidden">
 			<ActivityBar />
 
-			<Group 
-				orientation="horizontal" 
-				id="grain-main-layout"
-				onLayoutChanged={handleLayoutChanged}
-			>
+			<Group orientation="horizontal" id="grain-main-layout" onLayoutChanged={handleLayoutChanged}>
 				{isSidebarOpen && (
 					<>
-						<Panel
-							id="sidebar"
-							defaultSize={sidebarWidth}
-							minSize={170}
-							maxSize={500}
-							collapsible
-						>
+						<Panel id="sidebar" defaultSize={sidebarWidth} minSize={170} maxSize={500} collapsible>
 							<UnifiedSidebar />
 						</Panel>
 

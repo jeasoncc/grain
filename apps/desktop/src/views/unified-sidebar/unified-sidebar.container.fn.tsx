@@ -5,9 +5,9 @@
  */
 
 import { memo, useCallback } from "react"
+import { info } from "@/io"
 import { useSidebarStore } from "@/state/sidebar.state"
 import { UnifiedSidebarView } from "./unified-sidebar.view.fn"
-import { info } from "@/io"
 
 /**
  * UnifiedSidebarContainer - 统一侧边栏容器组件

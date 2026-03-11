@@ -1,57 +1,171 @@
-// 简单的认证管理（生产环境应该使用更安全的方案）
-const AUTH_TOKEN_KEY = "admin_auth_token";
-const AUTH_USER_KEY = "admin_user";
+import bcrypt from "bcrypt"
+import jwt from "jsonwebtoken"
 
+/**
+ * 用户接口
+ * User interface
+ */
 export interface User {
-	username: string;
-	name?: string;
+	readonly username: string
+	readonly name?: string
 }
 
-// 简单的认证逻辑（实际项目中应该调用 API）
-export const auth = {
-	// 登录（简化版，实际应该调用 API）
-	login: async (
-		username: string,
-		password: string,
-	): Promise<{ success: boolean; error?: string }> => {
-		// 这里简化处理，实际应该调用后端 API
-		// 临时：简单的用户名密码验证
-		if (username === "admin" && password === "admin123") {
-			const token = `token_${Date.now()}`;
-			localStorage.setItem(AUTH_TOKEN_KEY, token);
-			localStorage.setItem(
-				AUTH_USER_KEY,
-				JSON.stringify({ username, name: "管理员" }),
-			);
-			return { success: true };
-		}
-		return { success: false, error: "用户名或密码错误" };
-	},
+/**
+ * 登录凭证
+ * Login credentials
+ */
+interface LoginCredentials {
+	readonly username: string
+	readonly password: string
+}
 
-	// 登出
-	logout: () => {
-		localStorage.removeItem(AUTH_TOKEN_KEY);
-		localStorage.removeItem(AUTH_USER_KEY);
-	},
+/**
+ * 认证令牌
+ * Authentication token
+ */
+interface AuthToken {
+	readonly token: string
+	readonly expiresIn: number
+}
 
-	// 检查是否已登录
-	isAuthenticated: (): boolean => {
-		return !!localStorage.getItem(AUTH_TOKEN_KEY);
-	},
+/**
+ * JWT Payload
+ */
+interface JWTPayload {
+	readonly username: string
+	readonly iat: number
+	readonly exp: number
+}
 
-	// 获取当前用户
-	getCurrentUser: (): User | null => {
-		const userStr = localStorage.getItem(AUTH_USER_KEY);
-		if (!userStr) return null;
-		try {
-			return JSON.parse(userStr);
-		} catch {
-			return null;
-		}
-	},
+// ============================================================================
+// 配置 / Configuration
+// ============================================================================
 
-	// 获取 token
-	getToken: (): string | null => {
-		return localStorage.getItem(AUTH_TOKEN_KEY);
-	},
-};
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin"
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH
+const JWT_SECRET = process.env.JWT_SECRET
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h"
+
+if (!ADMIN_PASSWORD_HASH) {
+	console.error("错误：ADMIN_PASSWORD_HASH 环境变量未设置")
+	console.error("请运行：bun run scripts/generate-password-hash.ts <password>")
+}
+
+if (!JWT_SECRET) {
+	console.error("错误：JWT_SECRET 环境变量未设置")
+	console.error("请在 .env.local 中设置一个安全的随机字符串")
+}
+
+// ============================================================================
+// 认证函数 / Authentication Functions
+// ============================================================================
+
+/**
+ * 验证用户凭证
+ * Verify user credentials
+ *
+ * @param credentials - 用户名和密码 / Username and password
+ * @returns Promise<boolean> - 验证是否成功 / Whether verification succeeded
+ */
+export async function verifyCredentials(
+	credentials: LoginCredentials,
+): Promise<boolean> {
+	const { username, password } = credentials
+
+	// 验证用户名
+	if (username !== ADMIN_USERNAME) {
+		return false
+	}
+
+	// 验证密码
+	if (!ADMIN_PASSWORD_HASH) {
+		return false
+	}
+
+	try {
+		return await bcrypt.compare(password, ADMIN_PASSWORD_HASH)
+	} catch (error) {
+		console.error("密码验证失败:", error)
+		return false
+	}
+}
+
+/**
+ * 生成 JWT token
+ * Generate JWT token
+ *
+ * @param username - 用户名 / Username
+ * @returns AuthToken - 包含 token 和过期时间 / Token and expiration time
+ */
+export function generateToken(username: string): AuthToken {
+	if (!JWT_SECRET) {
+		throw new Error("JWT_SECRET 未配置")
+	}
+
+	const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
+
+	// 计算过期时间（秒）
+	const decoded = jwt.decode(token) as JWTPayload
+	const expiresIn = decoded.exp - decoded.iat
+
+	return { token, expiresIn }
+}
+
+/**
+ * 验证 JWT token
+ * Verify JWT token
+ *
+ * @param token - JWT token
+ * @returns JWTPayload | null - 解码后的 payload 或 null
+ */
+export function verifyToken(token: string): JWTPayload | null {
+	if (!JWT_SECRET) {
+		return null
+	}
+
+	try {
+		return jwt.verify(token, JWT_SECRET) as JWTPayload
+	} catch (error) {
+		console.error("Token 验证失败:", error)
+		return null
+	}
+}
+
+/**
+ * 登录函数
+ * Login function
+ *
+ * @param credentials - 用户凭证 / User credentials
+ * @returns Promise<AuthToken | null> - 认证 token 或 null
+ */
+export async function login(
+	credentials: LoginCredentials,
+): Promise<AuthToken | null> {
+	const isValid = await verifyCredentials(credentials)
+
+	if (!isValid) {
+		return null
+	}
+
+	return generateToken(credentials.username)
+}
+
+/**
+ * 获取当前用户信息
+ * Get current user info
+ *
+ * @param token - JWT token
+ * @returns User | null
+ */
+export function getCurrentUser(token: string): User | null {
+	const payload = verifyToken(token)
+
+	if (!payload) {
+		return null
+	}
+
+	return {
+		username: payload.username,
+		name: "管理员",
+	}
+}

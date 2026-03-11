@@ -23,7 +23,7 @@ import type { ContentInterface } from "@/types/content"
  *
  * 支持懒加载模式 - 内容仅在需要时加载。
  * 使用 fp-ts Option 类型表示可能不存在的值。
- * 
+ *
  * 返回值说明：
  * - undefined: 正在加载中
  * - Option<ContentInterface>: 加载完成，使用 match 处理
@@ -58,7 +58,7 @@ export function useContentByNodeId(
 	if (isLoading) {
 		return undefined
 	}
-	
+
 	return contentOption
 }
 
@@ -79,7 +79,7 @@ export function useContentById(
 	if (isLoading) {
 		return undefined
 	}
-	
+
 	return contentOption
 }
 
@@ -124,11 +124,11 @@ export function useContentExists(nodeId: string | null | undefined): boolean | u
 	if (!nodeId) {
 		return false
 	}
-	
+
 	// contentOption 可能是 undefined（不应该发生，但类型系统要求处理）
 	if (contentOption === undefined) {
 		return false
 	}
-	
+
 	return O.isSome(contentOption)
 }

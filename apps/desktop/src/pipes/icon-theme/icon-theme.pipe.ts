@@ -8,7 +8,7 @@
  * - 不修改输入参数
  */
 
-import type { LucideIcon } from "lucide-react"
+import type { IconComponent } from "@/types/icon/icon.interface"
 import type { IconTheme } from "@/types/icon-theme"
 import { iconThemes } from "@/types/icon-theme/icon-theme.config"
 
@@ -69,7 +69,7 @@ export const getIconForTypeFromTheme = (
 	theme: IconTheme,
 	type: "project" | "character" | "world" | "folder" | "file",
 	state: "default" | "open" = "default",
-): LucideIcon => {
+): IconComponent => {
 	const iconConfig = theme.icons[type]
 
 	if (state === "open" && "open" in iconConfig && iconConfig.open) {
@@ -89,7 +89,7 @@ export const getIconForTypeFromTheme = (
 export const getActivityBarIconFromTheme = (
 	theme: IconTheme,
 	type: keyof IconTheme["icons"]["activityBar"],
-): LucideIcon => {
+): IconComponent => {
 	return theme.icons.activityBar[type]
 }
 
@@ -103,7 +103,7 @@ export const getActivityBarIconFromTheme = (
 export const getSettingsPageIconFromTheme = (
 	theme: IconTheme,
 	type: keyof IconTheme["icons"]["settingsPage"],
-): LucideIcon => {
+): IconComponent => {
 	return theme.icons.settingsPage[type]
 }
 

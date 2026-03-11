@@ -51,10 +51,7 @@ export const calculateAncestorPath = (
 	if (targetNode.parent === null) return []
 
 	// Build path recursively
-	const buildPath = (
-		currentNode: NodeInterface,
-		depth: number,
-	): readonly string[] => {
+	const buildPath = (currentNode: NodeInterface, depth: number): readonly string[] => {
 		// Prevent infinite loops
 		if (depth >= 100) return []
 
@@ -66,9 +63,7 @@ export const calculateAncestorPath = (
 
 		// Only include folders in the path
 		const parentPath = buildPath(parentNode, depth + 1)
-		return parentNode.type === "folder"
-			? [...parentPath, parentNode.id]
-			: parentPath
+		return parentNode.type === "folder" ? [...parentPath, parentNode.id] : parentPath
 	}
 
 	return buildPath(targetNode, 0)

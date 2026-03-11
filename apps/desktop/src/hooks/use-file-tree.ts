@@ -11,17 +11,17 @@
  * 依赖：flows/, state/, types/
  */
 
+import { useVirtualizer } from "@tanstack/react-virtual"
 import type React from "react"
 import { useCallback, useEffect, useMemo, useRef } from "react"
-import { useVirtualizer } from "@tanstack/react-virtual"
 import {
 	calculateCollapseAllFoldersFlow,
 	calculateExpandAllFoldersFlow,
 	flattenTreeFlow,
 	hasFoldersFlow,
 } from "@/flows/file-tree"
-import type { FlatTreeNode, NodeInterface, NodeType } from "@/types/node"
 import { useExpandedFolders, useSidebarStore } from "@/state/sidebar.state"
+import type { FlatTreeNode, NodeInterface, NodeType } from "@/types/node"
 import { useIconTheme } from "./use-icon-theme"
 import { useTheme } from "./use-theme"
 
@@ -88,14 +88,7 @@ export interface UseFileTreeReturn {
  * @returns FileTree state and handlers
  */
 export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
-	const {
-		nodes,
-		selectedNodeId,
-		onSelectNode,
-		onCreateFolder,
-		onCreateFile,
-		onDeleteNode,
-	} = params
+	const { nodes, selectedNodeId, onSelectNode, onCreateFolder, onCreateFile, onDeleteNode } = params
 
 	// ============================================================================
 	// State & Refs
@@ -113,10 +106,7 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 	// ============================================================================
 
 	// Flatten tree based on expand state
-	const flatNodes = useMemo(
-		() => flattenTreeFlow(nodes, expandedFolders),
-		[nodes, expandedFolders],
-	)
+	const flatNodes = useMemo(() => flattenTreeFlow(nodes, expandedFolders), [nodes, expandedFolders])
 
 	const hasSelection = !!selectedNodeId
 	const hasAnyFolders = useMemo(() => hasFoldersFlow(nodes), [nodes])
@@ -127,8 +117,8 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 
 	const virtualizer = useVirtualizer({
 		count: flatNodes.length,
-		getScrollElement: () => containerRef.current,
 		estimateSize: () => 30, // 30px per row
+		getScrollElement: () => containerRef.current,
 		overscan: 5, // Render 5 extra items above/below viewport
 	})
 
@@ -207,11 +197,11 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 	 */
 	const nodeProps = useMemo(
 		() => ({
-			onDelete: onDeleteNode,
-			onCreateFolder,
-			onCreateFile,
 			folderColor: currentTheme?.colors.folderColor,
 			hasSelection,
+			onCreateFile,
+			onCreateFolder,
+			onDelete: onDeleteNode,
 		}),
 		[onDeleteNode, onCreateFolder, onCreateFile, currentTheme?.colors.folderColor, hasSelection],
 	)
@@ -221,19 +211,19 @@ export function useFileTree(params: UseFileTreeParams): UseFileTreeReturn {
 	// ============================================================================
 
 	return {
-		flatNodes,
-		virtualizer,
 		containerRef,
-		iconTheme,
 		currentTheme,
-		hasSelection,
-		hasAnyFolders,
+		flatNodes,
 		handlers: {
-			onToggle: handleToggle,
-			onSelect: handleSelect,
-			onExpandAll: handleExpandAll,
 			onCollapseAll: handleCollapseAll,
+			onExpandAll: handleExpandAll,
+			onSelect: handleSelect,
+			onToggle: handleToggle,
 		},
+		hasAnyFolders,
+		hasSelection,
+		iconTheme,
 		nodeProps,
+		virtualizer,
 	}
 }

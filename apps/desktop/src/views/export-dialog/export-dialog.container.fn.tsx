@@ -3,16 +3,21 @@
  */
 
 import dayjs from "dayjs"
-import { BookOpen, File, FileArchive, FileCode, FileJson, FileText, FileType } from "lucide-react"
-import { memo, useCallback, useMemo, useState } from "react"
-import { toast } from "sonner"
+import { BookOpen, BookOpen, File, File, FileArchive, FileArchive, FileCode, FileCode, FileJson, FileJson, FileText, FileText, FileType, FileType } from "lucide-react"
+import { memo, memo, useCallback, useCallback, useMemo, useMemo, useState, useState } from "react"
+import { toast, toast } from "sonner"
 import {
 	exportAllAsync as exportAll,
+	exportAllAsync as exportAll,
+	exportAllAsZipAsync as exportAllAsZip,
 	exportAllAsZipAsync as exportAllAsZip,
 	exportAsMarkdownAsync as exportAsMarkdown,
+	exportAsMarkdownAsync as exportAsMarkdown,
+	exportProject,
 	exportProject,
 } from "@/flows"
 import { triggerBlobDownload, triggerDownload } from "@/io/file"
+import { error as logError } from "@/io/log/logger.api"
 import type { ExportFormat, ExportOptions } from "@/pipes/export"
 import type { ExportDialogContainerProps, ExtendedExportFormat } from "./export-dialog.types"
 import { ExportDialogView } from "./export-dialog.view.fn"
@@ -78,7 +83,7 @@ export const ExportDialogContainer = memo(
 				}
 				onOpenChange(false)
 			} catch (error) {
-				console.error("Export error:", error)
+				logError("Export error:", error)
 				toast.error(error instanceof Error ? error.message : "Export failed, please try again")
 			} finally {
 				setIsExporting(false)

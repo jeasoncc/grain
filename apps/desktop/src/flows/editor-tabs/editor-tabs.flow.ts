@@ -9,11 +9,7 @@
 
 import dayjs from "dayjs"
 import type { SerializedEditorState } from "lexical"
-import {
-	calculateNextActiveTabId,
-	findTabByNodeId,
-	getTabsByWorkspace,
-} from "@/pipes/editor-tab"
+import { calculateNextActiveTabId, findTabByNodeId, getTabsByWorkspace } from "@/pipes/editor-tab"
 import type { useEditorTabsStore } from "@/state/editor-tabs.state"
 import type { EditorInstanceState, EditorTab, OpenTabPayload } from "@/types/editor-tab"
 import { createDefaultEditorState, EditorStateBuilder, EditorTabBuilder } from "@/types/editor-tab"

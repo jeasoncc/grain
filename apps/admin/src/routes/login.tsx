@@ -116,11 +116,6 @@ function LoginPage() {
 								</span>
 							)}
 						</Button>
-						<div className="text-xs text-muted-foreground text-center pt-4 border-t">
-							<p className="mb-1">测试账号信息</p>
-							<p className="font-mono">用户名: admin</p>
-							<p className="font-mono">密码: admin123</p>
-						</div>
 					</form>
 				</CardContent>
 			</Card>

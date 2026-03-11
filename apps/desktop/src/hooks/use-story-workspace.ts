@@ -6,18 +6,25 @@
  */
 
 import type { SerializedEditorState } from "lexical"
-import type { MentionEntry } from "@/types/mention.interface"
+import { useCallback, useEffect, useMemo } from "react"
+import { error as logError, info as logInfo } from "@/io/log/logger.api"
+import { useSettings } from "@/hooks/use-settings"
 import { useCallback, useEffect, useMemo } from "react"
 import { useSettings } from "@/hooks/use-settings"
 import { useUnifiedSave } from "@/hooks/use-unified-save"
 import { useWikiFiles } from "@/hooks/use-wiki"
 import { useWikiHoverPreview } from "@/hooks/use-wiki-hover-preview"
 import { type EditorType, getEditorTypeByFilename } from "@/pipes/editor"
-import { countWordsFromLexicalState, formatWordCount, formatWordCountDetail } from "@/pipes/word-count"
+import {
+	countWordsFromLexicalState,
+	formatWordCount,
+	formatWordCountDetail,
+} from "@/pipes/word-count"
 import { useFoldIconStyle } from "@/state/editor-settings.state"
 import { useEditorTabsStore } from "@/state/editor-tabs.state"
 import { useSelectionStore } from "@/state/selection.state"
 import { useUIStore } from "@/state/ui.state"
+import type { MentionEntry } from "@/types/mention.interface"
 import type { WorkspaceInterface } from "@/types/workspace"
 
 export interface UseStoryWorkspaceParams {
@@ -68,10 +75,10 @@ export function useStoryWorkspace({ workspaces, activeWorkspaceId }: UseStoryWor
 		contentType: "lexical",
 		nodeId: activeTab?.nodeId ?? "",
 		onSaveError: (error) => {
-			console.error("[StoryWorkspace] 保存失败:", error)
+		logError("[StoryWorkspace] 保存失败:", error)
 		},
 		onSaveSuccess: () => {
-			console.log("[StoryWorkspace] 内容保存成功")
+		logInfo("[StoryWorkspace] 内容保存成功")
 		},
 		tabId: activeTabId ?? undefined,
 	})
@@ -139,37 +146,37 @@ export function useStoryWorkspace({ workspaces, activeWorkspaceId }: UseStoryWor
 	const showWordCount = showWordCountBadge && !isExcalidrawTab && !!activeTab
 
 	return {
-		// Data
-		selectedWorkspaceId,
-		tabs,
-		activeTabId,
 		activeTab,
+		activeTabId,
 		editorStates,
-		lexicalTabs,
-		mentionEntries,
-		wikiFiles,
 
 		// Editor
 		editorType,
-		isExcalidrawTab,
 		foldIconStyle,
-
-		// UI
-		rightSidebarOpen,
-		toggleRightSidebar,
-		tabPosition,
-
-		// Word count
-		wordCountResult,
-		wordCountMode,
-		wordCountDisplayText,
-		showWordCount,
+		handleMultiEditorContentChange,
 
 		// Handlers
 		handleScrollChange,
-		handleMultiEditorContentChange,
+		isExcalidrawTab,
+		lexicalTabs,
+		mentionEntries,
+
+		// UI
+		rightSidebarOpen,
+		// Data
+		selectedWorkspaceId,
+		showWordCount,
+		tabPosition,
+		tabs,
+		toggleRightSidebar,
 
 		// Wiki hover preview (pass through)
 		useWikiHoverPreview,
+		wikiFiles,
+		wordCountDisplayText,
+		wordCountMode,
+
+		// Word count
+		wordCountResult,
 	}
 }

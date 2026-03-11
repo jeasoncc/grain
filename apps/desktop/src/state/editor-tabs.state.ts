@@ -42,12 +42,7 @@ type EditorTabsStore = EditorTabsState & EditorTabsStoreActions
 // ==============================
 
 export const useEditorTabsStore = create<EditorTabsStore>()((set) => ({
-	// ==============================
-	// Initial State (must be defined first)
-	// ==============================
-	tabs: [],
 	activeTabId: null,
-	editorStates: {},
 
 	// ==============================
 	// Pure State Setters (no business logic)
@@ -72,6 +67,7 @@ export const useEditorTabsStore = create<EditorTabsStore>()((set) => ({
 			tabs: [...state.tabs, tab],
 		}))
 	},
+	editorStates: {},
 
 	removeEditorState: (tabId) => {
 		set((state) => {
@@ -117,6 +113,10 @@ export const useEditorTabsStore = create<EditorTabsStore>()((set) => ({
 			tabs: [...tabs],
 		}))
 	},
+	// ==============================
+	// Initial State (must be defined first)
+	// ==============================
+	tabs: [],
 
 	updateEditorState: (tabId, updates) => {
 		set((state) => ({

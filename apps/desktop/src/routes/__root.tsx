@@ -98,10 +98,7 @@ function RootComponent() {
 				workspaces={workspaces}
 				selectedWorkspaceId={selectedWorkspaceId}
 			/>
-			<GlobalSearchContainer
-				open={globalSearch.isOpen}
-				onOpenChange={globalSearch.setOpen}
-			/>
+			<GlobalSearchContainer open={globalSearch.isOpen} onOpenChange={globalSearch.setOpen} />
 			<BufferSwitcherContainer
 				open={bufferSwitcher.isOpen}
 				onOpenChange={bufferSwitcher.setOpen}

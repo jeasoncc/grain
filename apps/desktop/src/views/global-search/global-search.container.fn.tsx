@@ -7,6 +7,10 @@
 import { useNavigate } from "@tanstack/react-router"
 import { memo, useCallback, useEffect, useState } from "react"
 import { searchEngine } from "@/flows/search"
+import { info as logInfo, error as logError } from "@/io/log/logger.api"
+import type { GlobalSearchContainerProps, SearchResult } from "./global-search.types"
+import { memo, useCallback, useEffect, useState } from "react"
+import { searchEngine } from "@/flows/search"
 import type { GlobalSearchContainerProps, SearchResult } from "./global-search.types"
 import { GlobalSearchView } from "./global-search.view.fn"
 
@@ -35,17 +39,19 @@ export const GlobalSearchContainer = memo(({ open, onOpenChange }: GlobalSearchC
 
 		setLoading(true)
 		try {
-			console.log("[GlobalSearch] 开始搜索", { query: searchQuery })
+			logInfo("[GlobalSearch] 开始搜索", { query: searchQuery })
 			const searchResults = await searchEngine.simpleSearch(searchQuery, {
 				limit: 30,
 			})
 			setResults([...searchResults])
 			setSelectedIndex(0)
-			console.log("[GlobalSearch] 搜索完成", {
+			logInfo("[GlobalSearch] 搜索完成", {
+				count: searchResults.length,
+			})
 				count: searchResults.length,
 			})
 		} catch (error) {
-			console.error("[GlobalSearch] 搜索失败", error)
+			logError("[GlobalSearch] 搜索失败", error)
 			setResults([])
 		} finally {
 			setLoading(false)
@@ -69,7 +75,10 @@ export const GlobalSearchContainer = memo(({ open, onOpenChange }: GlobalSearchC
 	// 处理结果选择
 	const handleSelectResult = useCallback(
 		(result: SearchResult) => {
-			console.log("[GlobalSearch] 选择结果", {
+			logInfo("[GlobalSearch] 选择结果", {
+				id: result.id,
+				type: result.type,
+			})
 				id: result.id,
 				type: result.type,
 			})

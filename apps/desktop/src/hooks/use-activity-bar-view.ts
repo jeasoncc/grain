@@ -76,22 +76,22 @@ export function useActivityBarView({
 	// ==============================
 
 	const icons = {
-		FilesIcon: iconTheme.icons.activityBar.files,
-		SearchIcon: iconTheme.icons.activityBar.search,
-		DiaryIcon: iconTheme.icons.activityBar.diary,
-		WikiIcon: iconTheme.icons.activityBar.library,
-		LedgerIcon: iconTheme.icons.activityBar.ledger,
-		TodoIcon: iconTheme.icons.activityBar.todo,
-		NoteIcon: iconTheme.icons.activityBar.note,
-		ExcalidrawIcon: iconTheme.icons.activityBar.canvas,
-		MermaidIcon: iconTheme.icons.activityBar.mermaid,
-		PlantUMLIcon: iconTheme.icons.activityBar.plantuml,
 		CodeIcon: iconTheme.icons.activityBar.code,
-		SettingsIcon: iconTheme.icons.activityBar.settings,
-		ImportIcon: iconTheme.icons.activityBar.import,
+		DiaryIcon: iconTheme.icons.activityBar.diary,
+		ExcalidrawIcon: iconTheme.icons.activityBar.canvas,
 		ExportIcon: iconTheme.icons.activityBar.export,
-		MoreIcon: iconTheme.icons.activityBar.more,
+		FilesIcon: iconTheme.icons.activityBar.files,
 		FolderIcon: iconTheme.icons.activityBar.library,
+		ImportIcon: iconTheme.icons.activityBar.import,
+		LedgerIcon: iconTheme.icons.activityBar.ledger,
+		MermaidIcon: iconTheme.icons.activityBar.mermaid,
+		MoreIcon: iconTheme.icons.activityBar.more,
+		NoteIcon: iconTheme.icons.activityBar.note,
+		PlantUMLIcon: iconTheme.icons.activityBar.plantuml,
+		SearchIcon: iconTheme.icons.activityBar.search,
+		SettingsIcon: iconTheme.icons.activityBar.settings,
+		TodoIcon: iconTheme.icons.activityBar.todo,
+		WikiIcon: iconTheme.icons.activityBar.library,
 	}
 
 	// ==============================
@@ -171,78 +171,78 @@ export function useActivityBarView({
 
 	const navItems: readonly NavItem[] = [
 		{
-			key: "files",
+			active: activePanel === "files" && isSidebarOpen,
 			Icon: icons.FilesIcon,
+			key: "files",
 			label: "Files",
 			onClick: handleFilesClick,
-			active: activePanel === "files" && isSidebarOpen,
 		},
 		{
-			key: "search",
+			active: activePanel === "search" && isSidebarOpen,
 			Icon: icons.SearchIcon,
+			key: "search",
 			label: "Search (Ctrl+Shift+F)",
 			onClick: handleSearchClick,
-			active: activePanel === "search" && isSidebarOpen,
 		},
 		{
-			key: "diary",
 			Icon: icons.DiaryIcon,
+			key: "diary",
 			label: "New Diary",
 			onClick: onCreateDiary,
 			testId: "btn-new-diary",
 		},
 		{
-			key: "wiki",
 			Icon: icons.WikiIcon,
+			key: "wiki",
 			label: "New Wiki",
 			onClick: onCreateWiki,
 			testId: "btn-new-wiki",
 		},
 		{
-			key: "ledger",
 			Icon: icons.LedgerIcon,
+			key: "ledger",
 			label: "New Ledger",
 			onClick: onCreateLedger,
 			testId: "btn-new-ledger",
 		},
 		{
-			key: "todo",
 			Icon: icons.TodoIcon,
+			key: "todo",
 			label: "New Todo",
 			onClick: onCreateTodo,
 			testId: "btn-new-todo",
 		},
 		{
-			key: "note",
 			Icon: icons.NoteIcon,
+			key: "note",
 			label: "New Note",
 			onClick: onCreateNote,
 			testId: "btn-new-note",
 		},
 		{
-			key: "excalidraw",
 			Icon: icons.ExcalidrawIcon,
+			key: "excalidraw",
 			label: "New Excalidraw",
 			onClick: onCreateExcalidraw,
 			testId: "btn-new-excalidraw",
 		},
 		{
-			key: "mermaid",
 			Icon: icons.MermaidIcon,
+			key: "mermaid",
 			label: "New Mermaid",
 			onClick: onCreateMermaid,
 			testId: "btn-new-mermaid",
 		},
 		{
-			key: "plantuml",
 			Icon: icons.PlantUMLIcon,
+			key: "plantuml",
 			label: "New PlantUML",
 			onClick: onCreatePlantUML,
 			testId: "btn-new-plantuml",
 		},
 		{
-			key: "code",
 			Icon: icons.CodeIcon,
+			key: "code",
 			label: "New Code File",
 			onClick: onCreateCode,
 			testId: "btn-new-code",
@@ -254,27 +254,27 @@ export function useActivityBarView({
 	// ==============================
 
 	return {
+		closeNewWorkspaceInput,
 		// Refs
 		fileInputRef,
-
-		// State
-		showNewWorkspace,
-		newWorkspaceName,
-		setNewWorkspaceName,
-
-		// Icons
-		icons,
-
-		// Nav Items
-		navItems,
+		handleCreateWorkspace,
+		handleFileInputChange,
 
 		// Handlers
 		handleImportClick,
-		handleFileInputChange,
-		handleCreateWorkspace,
 		handleNewWorkspaceKeyDown,
+
+		// Icons
+		icons,
 		isActive,
+
+		// Nav Items
+		navItems,
+		newWorkspaceName,
 		openNewWorkspaceInput,
-		closeNewWorkspaceInput,
+		setNewWorkspaceName,
+
+		// State
+		showNewWorkspace,
 	}
 }

@@ -41,26 +41,24 @@ export interface UseAppLayoutReturn {
  * @returns Layout state and handlers
  */
 export function useAppLayout(): UseAppLayoutReturn {
-	const {
-		isSidebarOpen,
-		sidebarWidth,
-		setSidebarWidth,
-		toggleSidebar,
-	} = useLayout()
+	const { isSidebarOpen, sidebarWidth, setSidebarWidth, toggleSidebar } = useLayout()
 
 	/**
 	 * Handle layout changed (v4 API: onLayoutChanged)
 	 * Called after the Group's layout has been changed
-	 * 
+	 *
 	 * @param layout - Layout object from react-resizable-panels
 	 */
-	const handleLayoutChanged = useCallback((layout: Layout) => {
-		// layout is an array-like object with panel sizes
-		const newWidth = layout[0]
-		if (newWidth !== undefined && newWidth !== sidebarWidth) {
-			setSidebarWidth(newWidth)
-		}
-	}, [sidebarWidth, setSidebarWidth])
+	const handleLayoutChanged = useCallback(
+		(layout: Layout) => {
+			// layout is an array-like object with panel sizes
+			const newWidth = layout[0]
+			if (newWidth !== undefined && newWidth !== sidebarWidth) {
+				setSidebarWidth(newWidth)
+			}
+		},
+		[sidebarWidth, setSidebarWidth],
+	)
 
 	/**
 	 * Responsive layout: Auto-collapse sidebar on small screens
@@ -85,8 +83,8 @@ export function useAppLayout(): UseAppLayoutReturn {
 	}, [isSidebarOpen, toggleSidebar])
 
 	return {
+		handleLayoutChanged,
 		isSidebarOpen,
 		sidebarWidth,
-		handleLayoutChanged,
 	}
 }

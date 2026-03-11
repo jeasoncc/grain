@@ -365,11 +365,11 @@ describe("excalidraw.content.fn", () => {
 		it("should maintain data integrity through parse cycle", () => {
 			const original = generateExcalidrawContent()
 			const result1 = parseExcalidrawContent(original)
-			
+
 			if (E.isLeft(result1)) {
 				throw new Error("Failed to parse original content")
 			}
-			
+
 			const reparsed = JSON.stringify(result1.right, null, 2)
 			const result2 = parseExcalidrawContent(reparsed)
 

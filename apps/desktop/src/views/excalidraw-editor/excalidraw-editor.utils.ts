@@ -7,6 +7,7 @@
  */
 
 import dayjs from "dayjs"
+import { error as logError, info as logInfo, warn as logWarn } from "@/io/log/logger.api"
 
 /**
  * 硬件加速检测结果
@@ -105,7 +106,7 @@ export function detectHardwareAcceleration(): HardwareAccelerationStatus {
 			webglVersion,
 		}
 	} catch (error) {
-		console.error("[ExcalidrawEditor] 硬件加速检测失败:", error)
+		logError("[ExcalidrawEditor] 硬件加速检测失败:", error)
 		return result
 	}
 }
@@ -120,24 +121,27 @@ export function detectHardwareAcceleration(): HardwareAccelerationStatus {
  */
 export function logHardwareAccelerationStatus(status: HardwareAccelerationStatus): void {
 	if (!status.webglSupported) {
-		console.warn("[ExcalidrawEditor] WebGL 不可用，Excalidraw 性能可能受影响")
-		console.warn("[ExcalidrawEditor] 建议：检查浏览器/WebView 设置，确保 WebGL 已启用")
+		logWarn("[ExcalidrawEditor] WebGL 不可用，Excalidraw 性能可能受影响")
+		logWarn("[ExcalidrawEditor] 建议：检查浏览器/WebView 设置，确保 WebGL 已启用")
+
 		return
 	}
 
 	if (!status.hardwareAccelerated) {
-		console.warn("[ExcalidrawEditor] 硬件加速未启用，使用软件渲染")
-		console.warn(`[ExcalidrawEditor] 当前渲染器: ${status.renderer || "未知"}`)
-		console.warn("[ExcalidrawEditor] 建议解决方案：")
-		console.warn("  1. 检查系统 GPU 驱动是否正常安装")
-		console.warn("  2. 在 Tauri 配置中启用硬件加速")
-		console.warn("  3. 检查系统是否禁用了 GPU 加速")
+		logWarn("[ExcalidrawEditor] 硬件加速未启用，使用软件渲染")
+		logWarn(`[ExcalidrawEditor] 当前渲染器: ${status.renderer || "未知"}`)
+		logWarn("[ExcalidrawEditor] 建议解决方案：")
+		logWarn("  1. 检查系统 GPU 驱动是否正常安装")
+		logWarn("  2. 在 Tauri 配置中启用硬件加速")
+		logWarn("  3. 检查系统是否禁用了 GPU 加速")
+
 		return
 	}
 
 	// 硬件加速正常
-	console.log(`[ExcalidrawEditor] 硬件加速已启用 (WebGL${status.webglVersion})`)
-	console.log(`[ExcalidrawEditor] GPU: ${status.vendor || "未知"} - ${status.renderer || "未知"}`)
+	logInfo(`[ExcalidrawEditor] 硬件加速已启用 (WebGL${status.webglVersion})`)
+	logInfo(`[ExcalidrawEditor] GPU: ${status.vendor || "未知"} - ${status.renderer || "未知"}`)
+
 }
 
 /**

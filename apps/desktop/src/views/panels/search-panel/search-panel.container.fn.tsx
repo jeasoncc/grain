@@ -8,7 +8,8 @@ import { useNavigate } from "@tanstack/react-router"
 import { memo, useCallback, useEffect, useState } from "react"
 import type { SearchResult, SearchResultType } from "@/flows/search"
 import { searchEngine } from "@/flows/search"
-import { useSidebarStore } from "@/state/sidebar.state"
+import { error as logError } from "@/io/log/logger.api"
+import { useSidebarStore, useSidebarStore } from "@/state/sidebar.state"
 import { SearchPanelView } from "./search-panel.view.fn"
 
 export const SearchPanelContainer = memo(() => {
@@ -40,7 +41,7 @@ export const SearchPanelContainer = memo(() => {
 				})
 				setResults([...searchResults])
 			} catch (error) {
-				console.error("Search failed:", error)
+				logError("Search failed:", error)
 				setResults([])
 			} finally {
 				setLoading(false)

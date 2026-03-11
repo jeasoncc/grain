@@ -1,7 +1,7 @@
 /**
  * Icon Theme Domain - 类型定义
  */
-import type { LucideIcon } from "lucide-react"
+import type { IconComponent } from "@/types/icon/icon.interface"
 
 // ============================================================================
 // Types
@@ -10,57 +10,57 @@ import type { LucideIcon } from "lucide-react"
 export interface IconThemeIcons {
 	// 文件类型图标
 	readonly project: {
-		readonly default: LucideIcon
-		readonly open?: LucideIcon
+		readonly default: IconComponent
+		readonly open?: IconComponent
 	}
 	readonly folder: {
-		readonly default: LucideIcon
-		readonly open?: LucideIcon
+		readonly default: IconComponent
+		readonly open?: IconComponent
 	}
 	readonly file: {
-		readonly default: LucideIcon
+		readonly default: IconComponent
 	}
 	readonly character: {
-		readonly default: LucideIcon
+		readonly default: IconComponent
 	}
 	readonly world: {
-		readonly default: LucideIcon
+		readonly default: IconComponent
 	}
 	// ActivityBar 图标
 	readonly activityBar: {
-		readonly library: LucideIcon
-		readonly search: LucideIcon
-		readonly outline: LucideIcon
-		readonly canvas: LucideIcon
-		readonly chapters: LucideIcon
-		readonly files: LucideIcon
-		readonly diary: LucideIcon
-		readonly ledger: LucideIcon
-		readonly todo: LucideIcon
-		readonly note: LucideIcon
-		readonly mermaid: LucideIcon
-		readonly plantuml: LucideIcon
-		readonly code: LucideIcon
-		readonly tags: LucideIcon
-		readonly statistics: LucideIcon
-		readonly settings: LucideIcon
-		readonly create: LucideIcon
-		readonly import: LucideIcon
-		readonly export: LucideIcon
-		readonly more: LucideIcon
+		readonly library: IconComponent
+		readonly search: IconComponent
+		readonly outline: IconComponent
+		readonly canvas: IconComponent
+		readonly chapters: IconComponent
+		readonly files: IconComponent
+		readonly diary: IconComponent
+		readonly ledger: IconComponent
+		readonly todo: IconComponent
+		readonly note: IconComponent
+		readonly mermaid: IconComponent
+		readonly plantuml: IconComponent
+		readonly code: IconComponent
+		readonly tags: IconComponent
+		readonly statistics: IconComponent
+		readonly settings: IconComponent
+		readonly create: IconComponent
+		readonly import: IconComponent
+		readonly export: IconComponent
+		readonly more: IconComponent
 	}
 	// 设置页面图标
 	readonly settingsPage: {
-		readonly appearance: LucideIcon
-		readonly icons: LucideIcon
-		readonly diagrams: LucideIcon
-		readonly general: LucideIcon
-		readonly editor: LucideIcon
-		readonly data: LucideIcon
-		readonly export: LucideIcon
-		readonly scroll: LucideIcon
-		readonly logs: LucideIcon
-		readonly about: LucideIcon
+		readonly appearance: IconComponent
+		readonly icons: IconComponent
+		readonly diagrams: IconComponent
+		readonly general: IconComponent
+		readonly editor: IconComponent
+		readonly data: IconComponent
+		readonly export: IconComponent
+		readonly scroll: IconComponent
+		readonly logs: IconComponent
+		readonly about: IconComponent
 	}
 }
 

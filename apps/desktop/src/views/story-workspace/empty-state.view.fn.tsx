@@ -15,7 +15,9 @@ export const EmptyState = memo(function EmptyState({ hasFiles }: EmptyStateProps
 			{hasFiles ? (
 				<>
 					<p className="text-lg">Select a file from the file tree to start editing</p>
-					<p className="text-sm opacity-70">Choose a file from the left sidebar or create a new one</p>
+					<p className="text-sm opacity-70">
+						Choose a file from the left sidebar or create a new one
+					</p>
 				</>
 			) : (
 				<>

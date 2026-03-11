@@ -1,63 +1,80 @@
-import { Elysia, t } from 'elysia';
-import { addVisitor, queryVisitors, getStats } from '@/data/storage';
-import { parseUserAgent, getClientIP } from '@/utils/visitor';
-import { randomUUID } from 'crypto';
+import { Elysia, t } from 'elysia'
+import { addVisitor, queryVisitors, getStats } from '@/data/storage'
+import { parseUserAgent, getClientIP } from '@/utils/visitor'
+import { randomUUID } from 'crypto'
+import { createVisitorSchema } from '@/schemas/visitor.schema'
+import { ZodError } from 'zod'
 
 export const visitorsRoutes = new Elysia({ prefix: '/visitors' })
-  // 提交访客信息
-  .post('/', async ({ body, headers }) => {
-    try {
-      const {
-        path,
-        query,
-        referer,
-        userAgent,
-        metadata,
-      } = body;
-      
-      const ip = getClientIP(headers);
-      const timestamp = Date.now();
-      const finalUserAgent = userAgent || headers.get('user-agent') || '';
-      
-      const { browser, os, device } = parseUserAgent(finalUserAgent);
-      
-      const visitor = {
-        id: randomUUID(),
-        ip,
-        userAgent: finalUserAgent,
-        referer: referer || headers.get('referer') || undefined,
-        path: path || headers.get('x-path') || '/',
-        query: query || {},
-        device,
-        browser,
-        os,
-        timestamp,
-        visitedAt: new Date(timestamp).toISOString(),
-        metadata: metadata || {},
-      };
-      
-      await addVisitor(visitor);
-      
-      return {
-        success: true,
-        data: visitor,
-      };
-    } catch (error) {
-      console.error('Error adding visitor:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    }
-  }, {
-    body: t.Object({
-      path: t.Optional(t.String()),
-      query: t.Optional(t.Record(t.String(), t.String())),
-      referer: t.Optional(t.String()),
-      userAgent: t.Optional(t.String()),
-      metadata: t.Optional(t.Record(t.String(), t.Any())),
-    }),
-  })
+	// 提交访客信息
+	.post('/', async ({ body, headers, set }) => {
+		try {
+			// 验证输入
+			const validatedData = createVisitorSchema.parse({
+				ip: getClientIP(headers),
+				path: body.path || headers.get('x-path') || '/',
+				userAgent: body.userAgent || headers.get('user-agent') || '',
+				referer: body.referer || headers.get('referer') || '',
+				query: body.query,
+				metadata: body.metadata,
+			})
+
+			const timestamp = Date.now()
+			const { browser, os, device } = parseUserAgent(validatedData.userAgent || '')
+
+			const visitor = {
+				id: randomUUID(),
+				ip: validatedData.ip,
+				userAgent: validatedData.userAgent || '',
+				referer: validatedData.referer,
+				path: validatedData.path,
+				query: validatedData.query || {},
+				device,
+				browser,
+				os,
+				timestamp,
+				visitedAt: new Date(timestamp).toISOString(),
+				metadata: validatedData.metadata || {},
+			}
+
+			await addVisitor(visitor)
+
+			return {
+				success: true,
+				data: { id: visitor.id },
+			}
+		} catch (error) {
+			// 处理验证错误
+			if (error instanceof ZodError) {
+				set.status = 400
+				return {
+					success: false,
+					error: '输入数据格式无效',
+					details: error.errors.map(e => ({
+						field: e.path.join('.'),
+						message: e.message,
+					})),
+				}
+			}
+
+			// 记录错误但不暴露给客户端
+			console.error('[Visitor API] Error:', error instanceof Error ? error.message : 'Unknown error')
+
+			set.status = 500
+			return {
+				success: false,
+				error: '服务器内部错误',
+			}
+		}
+	}, {
+		body: t.Object({
+			path: t.Optional(t.String()),
+			query: t.Optional(t.Record(t.String(), t.String())),
+			referer: t.Optional(t.String()),
+			userAgent: t.Optional(t.String()),
+			metadata: t.Optional(t.Record(t.String(), t.Any())),
+		}),
+	})
   
   // 查询访客列表
   .get('/', async ({ query }) => {

@@ -36,7 +36,7 @@ const DEFAULT_STALE_TIME = 60 * 1000
  * @example
  * ```tsx
  * const contentOption = useContent(nodeId);
- * 
+ *
  * pipe(
  *   contentOption,
  *   O.match(
@@ -59,7 +59,7 @@ export const useContent = (nodeId: string | null | undefined) => {
 			if (result._tag === "Left") {
 				throw result.left
 			}
-			
+
 			// 将 null | ContentInterface 转换为 Option<ContentInterface>
 			return result.right === null ? O.none : O.some(result.right)
 		},
@@ -87,7 +87,7 @@ export const useContentVersion = (nodeId: string | null | undefined) => {
 			if (result._tag === "Left") {
 				throw result.left
 			}
-			
+
 			return result.right === null ? O.none : O.some(result.right)
 		},
 		queryKey: queryKeys.contents.version(nodeId ?? ""),

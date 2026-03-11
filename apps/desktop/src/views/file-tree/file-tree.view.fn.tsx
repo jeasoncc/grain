@@ -48,24 +48,17 @@ export function FileTree(props: FileTreeProps) {
 		onRenameNode,
 	} = props
 
-	const {
-		flatNodes,
-		virtualizer,
-		containerRef,
-		iconTheme,
-		currentTheme,
-		hasAnyFolders,
-		handlers,
-	} = useFileTree({
-		workspaceId,
-		nodes,
-		selectedNodeId,
-		onSelectNode,
-		onCreateFolder,
-		onCreateFile,
-		onDeleteNode: (nodeId: string) => onDeleteNode(nodeId, true),
-		onRenameNode,
-	})
+	const { flatNodes, virtualizer, containerRef, iconTheme, currentTheme, hasAnyFolders, handlers } =
+		useFileTree({
+			nodes,
+			onCreateFile,
+			onCreateFolder,
+			onDeleteNode: (nodeId: string) => onDeleteNode(nodeId, true),
+			onRenameNode,
+			onSelectNode,
+			selectedNodeId,
+			workspaceId,
+		})
 
 	// ============================================================================
 	// UI 交互逻辑（在 view 层处理）
@@ -107,10 +100,7 @@ export function FileTree(props: FileTreeProps) {
 	}
 
 	return (
-		<div 
-			className="group/panel flex h-full w-full flex-col" 
-			data-testid="file-tree"
-		>
+		<div className="group/panel flex h-full w-full flex-col" data-testid="file-tree">
 			{/* Header */}
 			<div className="h-11 flex items-center justify-between px-4 shrink-0 group/header">
 				<span className="text-sm font-semibold text-foreground/80 tracking-wide pl-1">
@@ -188,18 +178,18 @@ export function FileTree(props: FileTreeProps) {
 						<div
 							style={{
 								height: `${virtualizer.getTotalSize()}px`,
-								width: "100%",
 								position: "relative",
+								width: "100%",
 							}}
 						>
 							{virtualizer.getVirtualItems().map((virtualItem) => {
 								const node = flatNodes[virtualItem.index]
 								const nodeStyle = {
+									left: 0,
 									position: "absolute" as const,
 									top: 0,
-									left: 0,
-									width: "100%",
 									transform: `translateY(${virtualItem.start}px)`,
+									width: "100%",
 								}
 								return (
 									<TreeNodeRow
@@ -208,8 +198,12 @@ export function FileTree(props: FileTreeProps) {
 										isSelected={node.id === selectedNodeId}
 										onToggle={handlers.onToggle}
 										onSelect={handlers.onSelect}
-										onCreateFile={node.type === "folder" ? () => onCreateFile(node.id, "file") : undefined}
-										onCreateFolder={node.type === "folder" ? () => onCreateFolder(node.id) : undefined}
+										onCreateFile={
+											node.type === "folder" ? () => onCreateFile(node.id, "file") : undefined
+										}
+										onCreateFolder={
+											node.type === "folder" ? () => onCreateFolder(node.id) : undefined
+										}
 										onRename={() => handleRenameWithPrompt(node.id)}
 										onDelete={() => {
 											// 直接在这里处理删除确认

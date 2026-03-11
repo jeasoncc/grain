@@ -8,6 +8,15 @@ import { Download, Moon, PenTool, Search, Settings, Sun } from "lucide-react"
 import { memo, useMemo } from "react"
 import { openFile } from "@/flows"
 import { createExcalidraw } from "@/flows/templated"
+import { error as logError } from "@/io/log/logger.api"
+import { useTheme } from "@/hooks/use-theme"
+import dayjs from "dayjs"
+import { pipe } from "fp-ts/function"
+import * as TE from "fp-ts/TaskEither"
+import { Download, Moon, PenTool, Search, Settings, Sun } from "lucide-react"
+import { memo, useMemo } from "react"
+import { openFile } from "@/flows"
+import { createExcalidraw } from "@/flows/templated"
 import { useTheme } from "@/hooks/use-theme"
 import type { TabType } from "@/types/editor-tab"
 import { exportDialogManager } from "@/views/export-dialog-manager"
@@ -81,7 +90,7 @@ export const CommandPaletteContainer = memo(
 									// 4. 错误处理
 									TE.fold(
 										(error) => {
-											console.error("Failed to create Excalidraw drawing:", error)
+												logError("Failed to create Excalidraw drawing:", error)
 											return TE.of(undefined as undefined)
 										},
 										() => TE.of(undefined as undefined),

@@ -14,11 +14,20 @@
  * 依赖：views/, types/
  */
 
-import { ChevronDown, ChevronRight, MoreHorizontal, FilePlus, FolderPlus, Pencil, Trash2 } from "lucide-react"
-import React, { memo, useCallback, useState } from "react"
-import type { FlatTreeNode } from "@/types/node"
-import { useIconTheme } from "@/hooks/use-icon-theme"
+import {
+	ChevronDown,
+	ChevronRight,
+	FilePlus,
+	FolderPlus,
+	MoreHorizontal,
+	Pencil,
+	Trash2,
+} from "lucide-react"
+import type React from "react"
+import { memo, useCallback, useState } from "react"
 import { cn } from "@/hooks/use-classnames"
+import { useIconTheme } from "@/hooks/use-icon-theme"
+import type { FlatTreeNode } from "@/types/node"
 import { Button } from "@/views/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/views/ui/popover"
 
@@ -125,20 +134,20 @@ export const TreeNodeRow = memo(
 			[node.id, onDelete],
 		)
 
-	// ============================================================================
-	// Icon Selection
-	// ============================================================================
+		// ============================================================================
+		// Icon Selection
+		// ============================================================================
 
-	const isFolder = node.type === "folder"
+		const isFolder = node.type === "folder"
 
-	// Get appropriate icon
-	const Icon = isFolder
-		? node.isExpanded
-			? iconTheme.icons.folder.open || iconTheme.icons.folder.default
-			: iconTheme.icons.folder.default
-		: node.type === "drawing"
-			? iconTheme.icons.activityBar.canvas
-			: iconTheme.icons.file.default
+		// Get appropriate icon
+		const Icon = isFolder
+			? node.isExpanded
+				? iconTheme.icons.folder.open || iconTheme.icons.folder.default
+				: iconTheme.icons.folder.default
+			: node.type === "drawing"
+				? iconTheme.icons.activityBar.canvas
+				: iconTheme.icons.file.default
 
 		// ============================================================================
 		// Render
@@ -174,7 +183,11 @@ export const TreeNodeRow = memo(
 						onClick={handleToggle}
 						aria-label={node.isExpanded ? "Collapse folder" : "Expand folder"}
 					>
-						{node.isExpanded ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
+						{node.isExpanded ? (
+							<ChevronDown className="size-3" />
+						) : (
+							<ChevronRight className="size-3" />
+						)}
 					</Button>
 				) : (
 					<div className="size-4 shrink-0 mr-1" />

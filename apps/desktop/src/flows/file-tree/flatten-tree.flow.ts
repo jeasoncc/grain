@@ -81,7 +81,4 @@ export const calculateCollapseAllFoldersFlow = (
  * @param nodes - All nodes
  * @returns True if any node is a folder
  */
-export const hasFoldersFlow = (nodes: readonly NodeInterface[]): boolean =>
-	hasFolders(nodes)
-
-
+export const hasFoldersFlow = (nodes: readonly NodeInterface[]): boolean => hasFolders(nodes)

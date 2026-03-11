@@ -27,10 +27,10 @@ import { createMermaid } from "@/flows/templated/create-mermaid.flow"
 import { createPlantUML } from "@/flows/templated/create-plantuml.flow"
 import { createWorkspace } from "@/flows/workspace/create-workspace.flow"
 import { touchWorkspace } from "@/flows/workspace/update-workspace.flow"
+import { queryKeys } from "@/hooks/queries/query-keys"
 import { useCreateTemplate } from "@/hooks/use-create-template"
 import { useIconTheme } from "@/hooks/use-icon-theme"
 import { useAllWorkspaces } from "@/hooks/use-workspace"
-import { queryKeys } from "@/hooks/queries/query-keys"
 import { error as logError } from "@/io/log/logger.api"
 import type { FileRouteTypes } from "@/routeTree.gen"
 import { useSelectionStore } from "@/state/selection.state"
@@ -286,25 +286,25 @@ export function useActivityBar() {
 	// ==============================
 
 	return {
-		// Data
-		workspaces,
-		selectedWorkspaceId,
 		activePanel,
-		isSidebarOpen,
-		iconTheme,
 		currentPath: location.pathname,
 		exportDialogOpen,
+		iconTheme,
+		isSidebarOpen,
+		onCreateWorkspace: handleCreateWorkspace,
+		onDeleteAllData: handleDeleteAllData,
+		onImportFile: handleImportFile,
+		onNavigate: handleNavigate,
+		onOpenExportDialog: handleOpenExportDialog,
 
 		// Actions
 		onSelectWorkspace: handleSelectWorkspace,
-		onCreateWorkspace: handleCreateWorkspace,
 		onSetActivePanel: setActivePanel,
 		onToggleSidebar: toggleSidebar,
-		onImportFile: handleImportFile,
-		onOpenExportDialog: handleOpenExportDialog,
-		onDeleteAllData: handleDeleteAllData,
-		onNavigate: handleNavigate,
+		selectedWorkspaceId,
 		setExportDialogOpen,
+		// Data
+		workspaces,
 
 		// Template handlers
 		...templateHandlers,

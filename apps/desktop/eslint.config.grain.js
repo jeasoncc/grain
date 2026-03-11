@@ -45,6 +45,10 @@ export default [
       // 函数式编程规则
       'grain/no-try-catch': 'error',
       'grain/no-console-log': 'error',
+      'no-console': ['error', { allow: [] }],
+      'grain/no-date-constructor': 'error',
+      'grain/no-try-catch': 'error',
+      'grain/no-console-log': 'error',
       'grain/no-date-constructor': 'error',
       'grain/no-lodash': 'error',
       'grain/no-mutation': 'error',

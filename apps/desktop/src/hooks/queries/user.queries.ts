@@ -29,7 +29,8 @@ export const useUsers = () => {
 			}
 			// 按最后登录时间排序（最新的在前）
 			return [...result.right].sort(
-				(a: UserInterface, b: UserInterface) => dayjs(b.lastLogin).valueOf() - dayjs(a.lastLogin).valueOf(),
+				(a: UserInterface, b: UserInterface) =>
+					dayjs(b.lastLogin).valueOf() - dayjs(a.lastLogin).valueOf(),
 			)
 		},
 		queryKey: queryKeys.users.all,

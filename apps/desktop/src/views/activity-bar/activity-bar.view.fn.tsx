@@ -14,9 +14,8 @@ import { Button } from "@/views/ui/button"
 import { Input } from "@/views/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/views/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/views/ui/tooltip"
-
-import type { ActivityBarProps } from "./activity-bar.types"
 import { ActionButton } from "./action-button.view.fn"
+import type { ActivityBarProps } from "./activity-bar.types"
 import { ToggleNavItem } from "./toggle-nav-item.view.fn"
 import { WorkspaceItem } from "./workspace-item.view.fn"
 
@@ -64,22 +63,22 @@ export const ActivityBarView = memo(function ActivityBarView({
 		openNewWorkspaceInput,
 	} = useActivityBarView({
 		activePanel,
-		isSidebarOpen,
 		currentPath,
 		iconTheme,
-		onToggleSidebar,
-		onSetActivePanel,
+		isSidebarOpen,
+		onCreateCode,
+		onCreateDiary,
+		onCreateExcalidraw,
+		onCreateLedger,
+		onCreateMermaid,
+		onCreateNote,
+		onCreatePlantUML,
+		onCreateTodo,
+		onCreateWiki,
 		onCreateWorkspace,
 		onImportFile,
-		onCreateDiary,
-		onCreateWiki,
-		onCreateLedger,
-		onCreateTodo,
-		onCreateNote,
-		onCreateExcalidraw,
-		onCreateMermaid,
-		onCreatePlantUML,
-		onCreateCode,
+		onSetActivePanel,
+		onToggleSidebar,
 	})
 
 	return (

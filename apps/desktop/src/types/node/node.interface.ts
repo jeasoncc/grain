@@ -94,7 +94,7 @@ export interface NodeUpdateInput {
 /**
  * FlatTreeNode 接口
  * 扁平化的树节点，用于虚拟列表渲染
- * 
+ *
  * 将树形结构扁平化为线性数组，每个节点包含：
  * - 基本信息（id, title, type）
  * - 层级信息（depth, parentId）

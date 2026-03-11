@@ -4,7 +4,7 @@
   "author": "Jeason",
   "description": "A minimalist writing sanctuary for long-form content. Pure, elegant, and distraction-free.",
   "email": "xiaomiquan@aliyun.com",
-  "version": "0.1.605",
+  "version": "0.1.606",
   "license": "MIT",
   "homepage": "https://github.com/jeasoncc/grain",
   "repository": {
@@ -48,6 +48,7 @@
     "test:desktop": "turbo run test --filter=desktop"
   },
   "devDependencies": {
+    "ajv": "^8.12.0",
     "@biomejs/biome": "^2.3.2",
     "@playwright/test": "^1.57.0",
     "@sinclair/typebox": "^0.34.0",

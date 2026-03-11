@@ -17,19 +17,20 @@
  * 依赖：flows/, state/, types/
  */
 
-import { useNavigate } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
-import { useCallback, useEffect, useRef } from "react"
-import { createDiaryCompatAsync, createFile, deleteNode, openFile, renameNode } from "@/flows"
-import { refreshAndExpandToNodeFlow } from "@/flows/file-tree"
-import { generateNodeContentFlow, getNodeDefaultTitleFlow } from "@/flows/node"
-import { queryKeys } from "@/hooks/queries/query-keys"
-import { useSelectionStore } from "@/state/selection.state"
-import { useSidebarStore } from "@/state/sidebar.state"
-import { useEditorTabs } from "./use-editor-tabs"
-import { useNodesByWorkspace } from "./use-node"
-import { useGetNodeById } from "./use-node-operations"
-import type { NodeInterface, NodeType } from "@/types/node"
+import { useNavigate } from "@tanstack/react-router"
+import { useCallback, useEffect, useMemo, useRef } from "react"
+import { createDiaryCompatAsync, createDiaryCompatAsync, createFile, createFile, deleteNode, deleteNode, openFile, openFile, renameNode, renameNode } from "@/flows"
+import { refreshAndExpandToNodeFlow, refreshAndExpandToNodeFlow } from "@/flows/file-tree"
+import { generateNodeContentFlow, generateNodeContentFlow, getNodeDefaultTitleFlow, getNodeDefaultTitleFlow } from "@/flows/node"
+import { queryKeys, queryKeys } from "@/hooks/queries/query-keys"
+import { useSelectionStore, useSelectionStore } from "@/state/selection.state"
+import { useSidebarStore, useSidebarStore } from "@/state/sidebar.state"
+import type { NodeInterface, NodeInterface, NodeType, NodeType } from "@/types/node"
+import type { QueryClientInterface } from "@/types/query/query-client.interface"
+import { useEditorTabs, useEditorTabs } from "./use-editor-tabs"
+import { useNodesByWorkspace, useNodesByWorkspace } from "./use-node"
+import { useGetNodeById, useGetNodeById } from "./use-node-operations"
 
 // ============================================================================
 // Types
@@ -120,19 +121,28 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 	 * 刷新节点列表并展开到新节点
 	 * 调用 flow 层的业务逻辑
 	 */
+	/**
+	 * 刷新节点列表并展开到新节点
+	 * 调用 flow 层的业务逻辑
+	 */
+	const queryClientAdapter = useMemo<QueryClientInterface>(() => ({
+		fetchQuery: (options) => queryClient.fetchQuery(options),
+		invalidateQueries: (options) => queryClient.invalidateQueries(options),
+	}), [queryClient])
+	
 	const refreshAndExpandToNode = useCallback(
 		async (newNodeId: string) => {
 			if (!workspaceId) return
-
+			
 			await refreshAndExpandToNodeFlow({
-				workspaceId,
 				newNodeId,
-				queryClient,
+				queryClient: queryClientAdapter,
 				queryKey: queryKeys.nodes.byWorkspace(workspaceId),
 				setExpandedFolders,
+				workspaceId,
 			})
 		},
-		[workspaceId, queryClient, setExpandedFolders],
+		[workspaceId, queryClientAdapter, setExpandedFolders],
 	)
 
 	const handleSelectNode = useCallback(
@@ -209,7 +219,7 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 			if (!workspaceId) return
 
 			const result = await createDiaryCompatAsync({ workspaceId })
-				.then((res) => ({ success: true as const, data: res }))
+				.then((res) => ({ data: res, success: true as const }))
 				.catch(() => ({ success: false as const }))
 
 			if (result.success) {
@@ -269,16 +279,16 @@ export function useFileTreePanel(params: UseFileTreePanelParams): UseFileTreePan
 	// ============================================================================
 
 	return {
-		workspaceId,
-		nodes,
-		selectedNodeId,
 		handlers: {
-			onSelectNode: handleSelectNode,
-			onCreateFolder: handleCreateFolder,
-			onCreateFile: handleCreateFile,
 			onCreateDiary: handleCreateDiary,
+			onCreateFile: handleCreateFile,
+			onCreateFolder: handleCreateFolder,
 			onDeleteNode: handleDeleteNode,
 			onRenameNode: handleRenameNode,
+			onSelectNode: handleSelectNode,
 		},
+		nodes,
+		selectedNodeId,
+		workspaceId,
 	}
 }

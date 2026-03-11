@@ -71,9 +71,9 @@ export function importFromJson(
 					// 导入内容
 					for (const c of data.contents) {
 						const input: ContentCreateInput = {
-							nodeId: c.nodeId,
 							content: c.content,
 							contentType: c.contentType as ContentType,
+							nodeId: c.nodeId,
 						}
 						const result = await createContent(input)()
 						if (E.isLeft(result)) {

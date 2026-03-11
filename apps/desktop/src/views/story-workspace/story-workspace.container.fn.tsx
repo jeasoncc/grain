@@ -49,7 +49,7 @@ export const StoryWorkspaceContainer = memo(function StoryWorkspaceContainer({
 		handleScrollChange,
 		handleMultiEditorContentChange,
 		useWikiHoverPreview,
-	} = useStoryWorkspace({ workspaces, activeWorkspaceId })
+	} = useStoryWorkspace({ activeWorkspaceId, workspaces })
 
 	return (
 		<TooltipProvider>

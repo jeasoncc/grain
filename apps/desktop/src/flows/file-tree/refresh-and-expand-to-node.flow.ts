@@ -10,8 +10,8 @@
  * 依赖：flows/, pipes/, types/
  */
 
-import type { QueryClient } from "@tanstack/react-query"
 import { getNodesByWorkspace } from "@/io/api/node.api"
+import type { QueryClientInterface } from "@/types/query/query-client.interface"
 import { updateExpandedForNewNodeFlow } from "./update-expanded-for-new-node.flow"
 
 /**
@@ -30,7 +30,7 @@ import { updateExpandedForNewNodeFlow } from "./update-expanded-for-new-node.flo
 export const refreshAndExpandToNodeFlow = async (params: {
 	readonly workspaceId: string
 	readonly newNodeId: string
-	readonly queryClient: QueryClient
+	readonly queryClient: QueryClientInterface
 	readonly queryKey: readonly unknown[]
 	readonly setExpandedFolders: (folders: Record<string, boolean>) => void
 }): Promise<void> => {
@@ -45,12 +45,12 @@ export const refreshAndExpandToNodeFlow = async (params: {
 			// 3. 重新获取节点数据
 			void queryClient
 				.fetchQuery({
-					queryKey,
 					queryFn: async () => {
 						const result = await getNodesByWorkspace(workspaceId)()
 						if (result._tag === "Left") return []
 						return result.right
 					},
+					queryKey,
 				})
 				.then((refreshedNodes) => {
 					if (refreshedNodes && refreshedNodes.length > 0) {

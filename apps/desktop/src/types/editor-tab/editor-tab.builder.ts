@@ -4,6 +4,7 @@
  * 使用函数式 Builder 模式构建复杂对象，支持链式调用
  */
 
+import { createInitialDocumentState } from "@grain/editor-lexical"
 import dayjs from "dayjs"
 import type { SerializedEditorState } from "lexical"
 import type {
@@ -15,15 +16,13 @@ import type {
 	TabType,
 } from "./editor-tab.interface"
 
-import { createInitialDocumentState } from "@grain/editor-lexical"
-
 // ==============================
 // Default Editor State Factory
 // ==============================
 
 /**
  * 创建默认的编辑器实例状态
- * 
+ *
  * 注意：serializedState 必须有值，使用空文档作为默认值
  */
 export const createDefaultEditorState = (): EditorInstanceState => ({

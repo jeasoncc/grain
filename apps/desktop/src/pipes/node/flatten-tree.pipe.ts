@@ -11,8 +11,7 @@
  * 依赖：types/
  */
 
-import type { NodeInterface } from "@/types/node"
-import type { FlatTreeNode } from "@/types/node"
+import type { FlatTreeNode, NodeInterface } from "@/types/node"
 
 /**
  * Flatten tree structure into linear array for virtual rendering
@@ -63,14 +62,14 @@ export const flattenTree = (
 
 			// Current node
 			const flatNode: FlatTreeNode = {
-				id: node.id,
-				title: node.title,
-				type: node.type,
 				depth,
 				hasChildren,
+				id: node.id,
 				isExpanded,
-				parentId: node.parent,
 				order: node.order,
+				parentId: node.parent,
+				title: node.title,
+				type: node.type,
 			}
 
 			// If folder is expanded, include children
