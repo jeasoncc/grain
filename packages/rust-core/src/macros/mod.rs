@@ -136,25 +136,25 @@ macro_rules! warp_routes {
 #[macro_export]
 macro_rules! warp_route_with_body {
     ($db:expr, $endpoint:ty, $method:ident, $path:literal) => {{
+        use std::sync::Arc;
         use warp::Filter;
         use $crate::api::ApiEndpoint;
         use $crate::macros::{json_body, with_db, AppRejection};
-        use std::sync::Arc;
 
         let db = Arc::new($db);
         warp::path!($path)
-            .and(warp::$method())
-            .and(with_db(db))
-            .and(json_body::<<$endpoint as ApiEndpoint>::Input>())
-            .and_then(
-                |db: Arc<sea_orm::DatabaseConnection>,
-                 input: <$endpoint as ApiEndpoint>::Input| async move {
-                    <$endpoint>::execute(&db, input)
-                        .await
-                        .map(|output| warp::reply::json(&output))
-                        .map_err(|e| warp::reject::custom(AppRejection(e)))
-                },
-            )
+                    .and(warp::$method())
+                    .and(with_db(db))
+                    .and(json_body::<<$endpoint as ApiEndpoint>::Input>())
+                    .and_then(
+                        |db: Arc<sea_orm::DatabaseConnection>,
+                         input: <$endpoint as ApiEndpoint>::Input| async move {
+                            <$endpoint>::execute(&db, input)
+                                .await
+                                .map(|output| warp::reply::json(&output))
+                                .map_err(|e| warp::reject::custom(AppRejection(e)))
+                        },
+                    )
     }};
 }
 
@@ -162,25 +162,25 @@ macro_rules! warp_route_with_body {
 #[macro_export]
 macro_rules! warp_route_with_query {
     ($db:expr, $endpoint:ty, $method:ident, $path:literal) => {{
+        use std::sync::Arc;
         use warp::Filter;
         use $crate::api::ApiEndpoint;
         use $crate::macros::{query_params, with_db, AppRejection};
-        use std::sync::Arc;
 
         let db = Arc::new($db);
         warp::path!($path)
-            .and(warp::$method())
-            .and(with_db(db))
-            .and(query_params::<<$endpoint as ApiEndpoint>::Input>())
-            .and_then(
-                |db: Arc<sea_orm::DatabaseConnection>,
-                 input: <$endpoint as ApiEndpoint>::Input| async move {
-                    <$endpoint>::execute(&db, input)
-                        .await
-                        .map(|output| warp::reply::json(&output))
-                        .map_err(|e| warp::reject::custom(AppRejection(e)))
-                },
-            )
+                    .and(warp::$method())
+                    .and(with_db(db))
+                    .and(query_params::<<$endpoint as ApiEndpoint>::Input>())
+                    .and_then(
+                        |db: Arc<sea_orm::DatabaseConnection>,
+                         input: <$endpoint as ApiEndpoint>::Input| async move {
+                            <$endpoint>::execute(&db, input)
+                                .await
+                                .map(|output| warp::reply::json(&output))
+                                .map_err(|e| warp::reject::custom(AppRejection(e)))
+                        },
+                    )
     }};
 }
 

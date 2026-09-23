@@ -7,6 +7,7 @@
 
 export * from "./api"
 export * from "./dom"
+export * from "./event"
 export * from "./file"
 export * from "./log"
 export * from "./storage"

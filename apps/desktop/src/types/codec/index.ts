@@ -28,6 +28,8 @@ export {
 export {
 	decodeContent,
 	decodeContentOptional,
+	decodeContents,
+	decodeLegacyMigrationContents,
 	encodeContentToSaveRequest,
 	encodeCreateContent,
 	encodeUpdateContent,

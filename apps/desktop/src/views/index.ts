@@ -44,6 +44,9 @@ export * from "./global-search"
 // Keyboard Shortcuts Help
 export * from "./keyboard-shortcuts-help"
 
+// Org filesystem workspace
+export * from "./org-workspace"
+
 // Panels
 export * from "./panels"
 

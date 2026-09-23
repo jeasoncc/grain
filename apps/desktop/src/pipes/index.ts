@@ -23,8 +23,12 @@ export * as exportPipe from "./export"
 export * as importPipe from "./import"
 // Ledger 管道（记账模板）
 export * as ledgerPipe from "./ledger"
+// Legacy SQLite/Lexical migration planning
+export * as migrationPipe from "./migration"
 // Node 管道（节点树操作）
 export * as nodePipe from "./node"
+// Org 文本局部变换
+export * as orgPipe from "./org"
 // Search 管道（搜索引擎）
 export * as searchPipe from "./search"
 // Tag 管道（标签提取和处理）

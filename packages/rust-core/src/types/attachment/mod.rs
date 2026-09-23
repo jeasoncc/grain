@@ -9,4 +9,6 @@ pub use attachment_entity::{
     ActiveModel as AttachmentActiveModel, AttachmentType, Column as AttachmentColumn,
     Entity as AttachmentEntity, Model as AttachmentModel,
 };
-pub use attachment_interface::{AttachmentResponse, CreateAttachmentRequest, UpdateAttachmentRequest};
+pub use attachment_interface::{
+    AttachmentResponse, CreateAttachmentRequest, UpdateAttachmentRequest,
+};

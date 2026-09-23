@@ -11,7 +11,7 @@
  * 依赖规则：routes/ 只能依赖 views/, hooks/, types/
  */
 
-import { createRootRoute, Outlet } from "@tanstack/react-router"
+import { createRootRoute, Outlet, useLocation } from "@tanstack/react-router"
 import { useWorkspaces } from "@/hooks/queries"
 import { useEditorTabs } from "@/hooks/use-editor-tabs"
 import { useGlobalKeyboard } from "@/hooks/use-global-keyboard"
@@ -38,6 +38,9 @@ export const Route = createRootRoute({
 // ============================================================================
 
 function RootComponent() {
+	const location = useLocation()
+	const isLegacyRoute = location.pathname === "/legacy"
+
 	// ==============================
 	// Initialization
 	// ==============================
@@ -92,28 +95,29 @@ function RootComponent() {
 			</AppLayout>
 
 			<Toaster />
-			<CommandPaletteContainer
-				open={commandPalette.isOpen}
-				onOpenChange={commandPalette.setOpen}
-				workspaces={workspaces}
-				selectedWorkspaceId={selectedWorkspaceId}
-			/>
-			<GlobalSearchContainer
-				open={globalSearch.isOpen}
-				onOpenChange={globalSearch.setOpen}
-			/>
-			<BufferSwitcherContainer
-				open={bufferSwitcher.isOpen}
-				onOpenChange={bufferSwitcher.setOpen}
-				tabs={tabs}
-				activeTabId={activeTabId}
-				onSelectTab={setActiveTab}
-				initialDirection={bufferSwitcher.direction}
-			/>
-			<ExportDialogManagerContainer
-				selectedWorkspaceId={selectedWorkspaceId}
-				workspaces={workspaces}
-			/>
+			{isLegacyRoute && (
+				<>
+					<CommandPaletteContainer
+						open={commandPalette.isOpen}
+						onOpenChange={commandPalette.setOpen}
+						workspaces={workspaces}
+						selectedWorkspaceId={selectedWorkspaceId}
+					/>
+					<GlobalSearchContainer open={globalSearch.isOpen} onOpenChange={globalSearch.setOpen} />
+					<BufferSwitcherContainer
+						open={bufferSwitcher.isOpen}
+						onOpenChange={bufferSwitcher.setOpen}
+						tabs={tabs}
+						activeTabId={activeTabId}
+						onSelectTab={setActiveTab}
+						initialDirection={bufferSwitcher.direction}
+					/>
+					<ExportDialogManagerContainer
+						selectedWorkspaceId={selectedWorkspaceId}
+						workspaces={workspaces}
+					/>
+				</>
+			)}
 
 			<DevtoolsWrapper />
 		</ConfirmProvider>

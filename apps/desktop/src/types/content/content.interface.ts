@@ -40,6 +40,11 @@ export interface ContentInterface {
 
 	/** ISO 8601 格式的最后修改时间戳 */
 	readonly lastEdit: ISODateString
+
+	/** Exact legacy row metadata retained only for migration/recovery audit. */
+	readonly legacyVersion?: string
+	readonly legacyCreatedAt?: string
+	readonly legacyUpdatedAt?: string
 }
 
 /**

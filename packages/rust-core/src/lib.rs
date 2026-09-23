@@ -33,6 +33,7 @@ pub mod api;
 pub mod db;
 pub mod r#fn;
 pub mod macros;
+pub mod org_filesystem;
 pub mod server;
 pub mod tauri;
 pub mod types;
@@ -107,8 +108,8 @@ pub use types::attachment::{
 // ============================================
 
 pub use types::log::{
-    CreateLogEntryRequest, LogQueryOptions, LogEntryResponse, LogQueryResult, LogStats,
-    LogLevel, LogEntity, LogModel,
+    CreateLogEntryRequest, LogEntity, LogEntryResponse, LogLevel, LogModel, LogQueryOptions,
+    LogQueryResult, LogStats,
 };
 
 // ============================================

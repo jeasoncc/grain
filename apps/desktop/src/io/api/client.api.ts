@@ -31,6 +31,7 @@ import type {
 	CreateTagRequest,
 	CreateUserRequest,
 	CreateWorkspaceRequest,
+	LegacyMigrationSnapshotResponse,
 	MoveNodeRequest,
 	NodeResponse,
 	SaveContentRequest,
@@ -160,7 +161,13 @@ export interface ApiClient {
 	readonly reorderNodes: (nodeIds: readonly string[]) => TE.TaskEither<AppError, void>
 	readonly deleteNodesBatch: (nodeIds: readonly string[]) => TE.TaskEither<AppError, void>
 
+	// Legacy migration API
+	readonly getLegacyMigrationSnapshot: (
+		workspaceId: string,
+	) => TE.TaskEither<AppError, LegacyMigrationSnapshotResponse>
+
 	// Content API
+	readonly getAllContents: () => TE.TaskEither<AppError, readonly ContentResponse[]>
 	readonly getContent: (nodeId: string) => TE.TaskEither<AppError, ContentResponse | null>
 	readonly saveContent: (request: SaveContentRequest) => TE.TaskEither<AppError, ContentResponse>
 	readonly getContentVersion: (nodeId: string) => TE.TaskEither<AppError, number | null>
@@ -401,6 +408,11 @@ export const createApiClient = (): ApiClient => {
 						method: "POST",
 					}),
 
+		// ============================================
+		// Content API
+		// ============================================
+		getAllContents: () => (isTauri ? invokeTE("get_all_contents") : fetchTE("/api/contents")),
+
 		getAttachment: (id: string) =>
 			isTauri ? invokeTE("get_attachment", { id }) : fetchTE(`/api/attachments/${id}`),
 
@@ -434,9 +446,6 @@ export const createApiClient = (): ApiClient => {
 				? invokeTE("get_child_nodes", { parentId })
 				: fetchTE(`/api/nodes/${parentId}/children`),
 
-		// ============================================
-		// Content API
-		// ============================================
 		getContent: (nodeId: string) =>
 			isTauri ? invokeTE("get_content", { nodeId }) : fetchTE(`/api/nodes/${nodeId}/content`),
 
@@ -456,6 +465,11 @@ export const createApiClient = (): ApiClient => {
 			isTauri
 				? invokeTE("get_images_by_project", { projectId })
 				: fetchTE(`/api/projects/${projectId}/attachments?type=image`),
+
+		getLegacyMigrationSnapshot: (workspaceId: string) =>
+			isTauri
+				? invokeTE("get_legacy_migration_snapshot", { workspaceId })
+				: fetchTE(`/api/workspaces/${workspaceId}/legacy-migration-snapshot`),
 
 		getNextSortOrder: (workspaceId: string, parentId: string | null) =>
 			isTauri

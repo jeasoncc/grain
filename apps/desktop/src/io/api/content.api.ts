@@ -12,6 +12,7 @@ import { debug } from "@/io/log/logger.api"
 import {
 	decodeContent,
 	decodeContentOptional,
+	decodeContents,
 	encodeCreateContent,
 	encodeUpdateContent,
 } from "@/types/codec"
@@ -22,6 +23,10 @@ import { api } from "./client.api"
 // ============================================
 // 查询操作
 // ============================================
+
+/** Read every legacy content row, including rows whose node no longer exists. */
+export const getAllContents = (): TE.TaskEither<AppError, readonly ContentInterface[]> =>
+	pipe(api.getAllContents(), TE.map(decodeContents))
 
 /**
  * 获取节点内容

@@ -259,7 +259,9 @@ mod tests {
 
     #[test]
     fn test_is_valid_backup_filename_invalid_extension() {
-        assert!(!is_valid_backup_filename("grain-backup-20240101_120000.tar"));
+        assert!(!is_valid_backup_filename(
+            "grain-backup-20240101_120000.tar"
+        ));
     }
 
     #[test]

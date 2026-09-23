@@ -9,28 +9,40 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LegacyRouteImport } from './routes/legacy'
+import { Route as OrgRouteImport } from './routes/org'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
-import { Route as SettingsTypographyRouteImport } from './routes/settings/typography'
-import { Route as SettingsLogsRouteImport } from './routes/settings/logs'
-import { Route as SettingsIconsRouteImport } from './routes/settings/icons'
-import { Route as SettingsGeneralRouteImport } from './routes/settings/general'
-import { Route as SettingsExportRouteImport } from './routes/settings/export'
-import { Route as SettingsEditorRouteImport } from './routes/settings/editor'
-import { Route as SettingsDiagramsRouteImport } from './routes/settings/diagrams'
-import { Route as SettingsDesignRouteImport } from './routes/settings/design'
-import { Route as SettingsDataRouteImport } from './routes/settings/data'
 import { Route as SettingsAboutRouteImport } from './routes/settings/about'
+import { Route as SettingsDataRouteImport } from './routes/settings/data'
+import { Route as SettingsDesignRouteImport } from './routes/settings/design'
+import { Route as SettingsDiagramsRouteImport } from './routes/settings/diagrams'
+import { Route as SettingsEditorRouteImport } from './routes/settings/editor'
+import { Route as SettingsExportRouteImport } from './routes/settings/export'
+import { Route as SettingsGeneralRouteImport } from './routes/settings/general'
+import { Route as SettingsIconsRouteImport } from './routes/settings/icons'
+import { Route as SettingsLogsRouteImport } from './routes/settings/logs'
+import { Route as SettingsTypographyRouteImport } from './routes/settings/typography'
 
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegacyRoute = LegacyRouteImport.update({
+  id: '/legacy',
+  path: '/legacy',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() => import('./routes/legacy.lazy').then((d) => d.Route))
+const OrgRoute = OrgRouteImport.update({
+  id: '/org',
+  path: '/org',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
@@ -38,44 +50,9 @@ const SettingsIndexRoute = SettingsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => SettingsRoute,
 } as any)
-const SettingsTypographyRoute = SettingsTypographyRouteImport.update({
-  id: '/typography',
-  path: '/typography',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsLogsRoute = SettingsLogsRouteImport.update({
-  id: '/logs',
-  path: '/logs',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsIconsRoute = SettingsIconsRouteImport.update({
-  id: '/icons',
-  path: '/icons',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsGeneralRoute = SettingsGeneralRouteImport.update({
-  id: '/general',
-  path: '/general',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsExportRoute = SettingsExportRouteImport.update({
-  id: '/export',
-  path: '/export',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsEditorRoute = SettingsEditorRouteImport.update({
-  id: '/editor',
-  path: '/editor',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsDiagramsRoute = SettingsDiagramsRouteImport.update({
-  id: '/diagrams',
-  path: '/diagrams',
-  getParentRoute: () => SettingsRoute,
-} as any)
-const SettingsDesignRoute = SettingsDesignRouteImport.update({
-  id: '/design',
-  path: '/design',
+const SettingsAboutRoute = SettingsAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsDataRoute = SettingsDataRouteImport.update({
@@ -83,14 +60,51 @@ const SettingsDataRoute = SettingsDataRouteImport.update({
   path: '/data',
   getParentRoute: () => SettingsRoute,
 } as any)
-const SettingsAboutRoute = SettingsAboutRouteImport.update({
-  id: '/about',
-  path: '/about',
+const SettingsDesignRoute = SettingsDesignRouteImport.update({
+  id: '/design',
+  path: '/design',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsDiagramsRoute = SettingsDiagramsRouteImport.update({
+  id: '/diagrams',
+  path: '/diagrams',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsEditorRoute = SettingsEditorRouteImport.update({
+  id: '/editor',
+  path: '/editor',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsExportRoute = SettingsExportRouteImport.update({
+  id: '/export',
+  path: '/export',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsGeneralRoute = SettingsGeneralRouteImport.update({
+  id: '/general',
+  path: '/general',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsIconsRoute = SettingsIconsRouteImport.update({
+  id: '/icons',
+  path: '/icons',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsLogsRoute = SettingsLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsTypographyRoute = SettingsTypographyRouteImport.update({
+  id: '/typography',
+  path: '/typography',
   getParentRoute: () => SettingsRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/legacy': typeof LegacyRoute
+  '/org': typeof OrgRoute
   '/settings': typeof SettingsRouteWithChildren
   '/settings/about': typeof SettingsAboutRoute
   '/settings/data': typeof SettingsDataRoute
@@ -106,6 +120,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/legacy': typeof LegacyRoute
+  '/org': typeof OrgRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/data': typeof SettingsDataRoute
   '/settings/design': typeof SettingsDesignRoute
@@ -121,6 +137,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/legacy': typeof LegacyRoute
+  '/org': typeof OrgRoute
   '/settings': typeof SettingsRouteWithChildren
   '/settings/about': typeof SettingsAboutRoute
   '/settings/data': typeof SettingsDataRoute
@@ -138,6 +156,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/legacy'
+    | '/org'
     | '/settings'
     | '/settings/about'
     | '/settings/data'
@@ -153,6 +173,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/legacy'
+    | '/org'
     | '/settings/about'
     | '/settings/data'
     | '/settings/design'
@@ -167,6 +189,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/legacy'
+    | '/org'
     | '/settings'
     | '/settings/about'
     | '/settings/data'
@@ -183,23 +207,39 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LegacyRoute: typeof LegacyRoute
+  OrgRoute: typeof OrgRoute
   SettingsRoute: typeof SettingsRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legacy': {
+      id: '/legacy'
+      path: '/legacy'
+      fullPath: '/legacy'
+      preLoaderRoute: typeof LegacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/org': {
+      id: '/org'
+      path: '/org'
+      fullPath: '/org'
+      preLoaderRoute: typeof OrgRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/': {
@@ -209,60 +249,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsIndexRouteImport
       parentRoute: typeof SettingsRoute
     }
-    '/settings/typography': {
-      id: '/settings/typography'
-      path: '/typography'
-      fullPath: '/settings/typography'
-      preLoaderRoute: typeof SettingsTypographyRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/logs': {
-      id: '/settings/logs'
-      path: '/logs'
-      fullPath: '/settings/logs'
-      preLoaderRoute: typeof SettingsLogsRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/icons': {
-      id: '/settings/icons'
-      path: '/icons'
-      fullPath: '/settings/icons'
-      preLoaderRoute: typeof SettingsIconsRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/general': {
-      id: '/settings/general'
-      path: '/general'
-      fullPath: '/settings/general'
-      preLoaderRoute: typeof SettingsGeneralRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/export': {
-      id: '/settings/export'
-      path: '/export'
-      fullPath: '/settings/export'
-      preLoaderRoute: typeof SettingsExportRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/editor': {
-      id: '/settings/editor'
-      path: '/editor'
-      fullPath: '/settings/editor'
-      preLoaderRoute: typeof SettingsEditorRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/diagrams': {
-      id: '/settings/diagrams'
-      path: '/diagrams'
-      fullPath: '/settings/diagrams'
-      preLoaderRoute: typeof SettingsDiagramsRouteImport
-      parentRoute: typeof SettingsRoute
-    }
-    '/settings/design': {
-      id: '/settings/design'
-      path: '/design'
-      fullPath: '/settings/design'
-      preLoaderRoute: typeof SettingsDesignRouteImport
+    '/settings/about': {
+      id: '/settings/about'
+      path: '/about'
+      fullPath: '/settings/about'
+      preLoaderRoute: typeof SettingsAboutRouteImport
       parentRoute: typeof SettingsRoute
     }
     '/settings/data': {
@@ -272,11 +263,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsDataRouteImport
       parentRoute: typeof SettingsRoute
     }
-    '/settings/about': {
-      id: '/settings/about'
-      path: '/about'
-      fullPath: '/settings/about'
-      preLoaderRoute: typeof SettingsAboutRouteImport
+    '/settings/design': {
+      id: '/settings/design'
+      path: '/design'
+      fullPath: '/settings/design'
+      preLoaderRoute: typeof SettingsDesignRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/diagrams': {
+      id: '/settings/diagrams'
+      path: '/diagrams'
+      fullPath: '/settings/diagrams'
+      preLoaderRoute: typeof SettingsDiagramsRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/editor': {
+      id: '/settings/editor'
+      path: '/editor'
+      fullPath: '/settings/editor'
+      preLoaderRoute: typeof SettingsEditorRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/export': {
+      id: '/settings/export'
+      path: '/export'
+      fullPath: '/settings/export'
+      preLoaderRoute: typeof SettingsExportRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/general': {
+      id: '/settings/general'
+      path: '/general'
+      fullPath: '/settings/general'
+      preLoaderRoute: typeof SettingsGeneralRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/icons': {
+      id: '/settings/icons'
+      path: '/icons'
+      fullPath: '/settings/icons'
+      preLoaderRoute: typeof SettingsIconsRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/logs': {
+      id: '/settings/logs'
+      path: '/logs'
+      fullPath: '/settings/logs'
+      preLoaderRoute: typeof SettingsLogsRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/typography': {
+      id: '/settings/typography'
+      path: '/typography'
+      fullPath: '/settings/typography'
+      preLoaderRoute: typeof SettingsTypographyRouteImport
       parentRoute: typeof SettingsRoute
     }
   }
@@ -316,6 +356,8 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LegacyRoute: LegacyRoute,
+  OrgRoute: OrgRoute,
   SettingsRoute: SettingsRouteWithChildren,
 }
 export const routeTree = rootRouteImport

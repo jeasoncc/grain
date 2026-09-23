@@ -106,10 +106,11 @@ function createTestIconTheme(): IconTheme {
 /**
  * 创建默认的 ActivityBarProps
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: centralized test fixture defaults keep individual cases concise.
 function createDefaultProps(overrides: Partial<ActivityBarProps> = {}): ActivityBarProps {
 	return {
 		activePanel: overrides.activePanel ?? "files",
-		currentPath: overrides.currentPath ?? "/",
+		currentPath: overrides.currentPath ?? "/legacy",
 		iconTheme: overrides.iconTheme ?? createTestIconTheme(),
 		isSidebarOpen: overrides.isSidebarOpen ?? true,
 		onCreateCode: overrides.onCreateCode ?? vi.fn(),
@@ -188,14 +189,25 @@ describe("ActivityBarView", () => {
 	})
 
 	describe("用户交互", () => {
+		it("shows only the real Org diary action on the default Org route", () => {
+			const onCreateDiary = vi.fn()
+			const props = createDefaultProps({ currentPath: "/", onCreateDiary })
+			const { container } = render(<ActivityBarView {...props} />)
+
+			const buttons = container.querySelectorAll("nav button")
+			expect(buttons).toHaveLength(1)
+			expect(container.querySelector('a[href="/legacy"]')).not.toBeInTheDocument()
+			fireEvent.click(buttons[0])
+			expect(onCreateDiary).toHaveBeenCalledOnce()
+		})
+
 		it("should call onCreateDiary when diary button clicked", () => {
 			const onCreateDiary = vi.fn()
 			const props = createDefaultProps({ onCreateDiary })
 			const { container } = render(<ActivityBarView {...props} />)
 
-			// 通过索引获取按钮（Files=0, Diary=1, Wiki=2, Ledger=3, Search=4）
 			const buttons = container.querySelectorAll("nav button")
-			fireEvent.click(buttons[1])
+			fireEvent.click(buttons[2])
 
 			expect(onCreateDiary).toHaveBeenCalledTimes(1)
 		})
@@ -206,7 +218,7 @@ describe("ActivityBarView", () => {
 			const { container } = render(<ActivityBarView {...props} />)
 
 			const buttons = container.querySelectorAll("nav button")
-			fireEvent.click(buttons[2])
+			fireEvent.click(buttons[3])
 
 			expect(onCreateWiki).toHaveBeenCalledTimes(1)
 		})
@@ -217,7 +229,7 @@ describe("ActivityBarView", () => {
 			const { container } = render(<ActivityBarView {...props} />)
 
 			const buttons = container.querySelectorAll("nav button")
-			fireEvent.click(buttons[3])
+			fireEvent.click(buttons[4])
 
 			expect(onCreateLedger).toHaveBeenCalledTimes(1)
 		})
@@ -260,7 +272,7 @@ describe("ActivityBarView", () => {
 			const { container } = render(<ActivityBarView {...props} />)
 
 			const buttons = container.querySelectorAll("nav button")
-			fireEvent.click(buttons[4])
+			fireEvent.click(buttons[1])
 
 			expect(onSetActivePanel).toHaveBeenCalledWith("search")
 		})

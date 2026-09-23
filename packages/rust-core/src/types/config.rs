@@ -53,8 +53,8 @@ impl AppConfig {
             .map(PathBuf::from)
             .unwrap_or_else(|_| Self::default().data_dir);
 
-        let db_filename = std::env::var("GRAIN_DB_FILENAME")
-            .unwrap_or_else(|_| "grain.db".to_string());
+        let db_filename =
+            std::env::var("GRAIN_DB_FILENAME").unwrap_or_else(|_| "grain.db".to_string());
 
         let enable_encryption = std::env::var("GRAIN_ENABLE_ENCRYPTION")
             .map(|v| v == "true" || v == "1")

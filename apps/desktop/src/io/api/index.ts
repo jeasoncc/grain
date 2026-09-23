@@ -17,6 +17,8 @@ export * from "./clear-data.api"
 export * from "./client.api"
 // Content API
 export * from "./content.api"
+// Legacy migration API
+export * from "./migration.api"
 // Node API
 export * from "./node.api"
 // Tag API

@@ -1,183 +1,116 @@
-# Novel Editor
+# Grain Desktop
 
-Novel Editor is a modern, cross-platform writing environment built with **Tauri**, **React**, and **Shadcn UI**. It focuses on long-form fiction projects, blending a distraction-free editor with powerful project organization, research management, and release-ready packaging for Linux, Windows, and macOS.
+Grain Desktop is the Tauri application for the local-first Org-mode workspace described in the [repository README](../../README.md).
 
-> 🇨🇳 Read this document in Chinese: [`README.zh-CN.md`](./README.zh-CN.md)
+## Product boundary
 
----
-![](https://s3.bmp.ovh/imgs/2025/11/30/17e3f22342be954f.png)
+The default routes, `/` and `/org`, operate on real `.org` files through capability-scoped Tauri commands. `/legacy` is a lazy-loaded compatibility route for migration from the former SQLite/Lexical document model.
 
-![](https://s3.bmp.ovh/imgs/2025/11/30/20c87f8ef08b246d.png)
-## Highlights
+```text
+React view
+  → hook/controller
+  → flow
+  → pure Org pipe or IO repository
+  → Tauri command
+  → retained Rust directory capability
+  → .org file
+```
 
-- ✍️ **Immersive writing**: Rich Lexical-based editor with formatting, keyboard shortcuts, and an optional focus mode.
-- 📂 **Project structure**: Chapters, scenes, characters, and world-building assets live side by side with search and tagging.
-- 🔍 **Global search**: Fast full-text search across scenes, characters, and world-building with keyboard navigation.
-- 💾 **Auto backup**: Automatic daily backups with manual export/restore in JSON or ZIP format.
-- 🧠 **Knowledge workspace**: Link notes, references, and research; visualize timelines and relationships.
-- ⚙️ **Reliable storage**: IndexedDB + Dexie keep drafts safe offline; optional cloud sync keeps devices aligned.
-- 🧪 **Quality pipeline**: Automated linting, testing, and desktop packaging through CI and Tauri.
-- 🚢 **Production ready**: One command to build installers (AppImage, DEB, RPM, MSI, DMG) with signing hooks.
+Org text must not be serialized through Lexical JSON. Parsers and UI decorations may interpret text, but ordinary saves preserve the editor's raw string.
 
----
+## Main modules
 
-## Key Capabilities
+| Path | Responsibility |
+|---|---|
+| `src/views/org-workspace/` | Workspace shell, file tree, dialogs, agenda and backlinks |
+| `src/views/org-editor/` | CodeMirror Org editor integration |
+| `src/hooks/use-org-workspace.ts` | Runtime orchestration, dirty state and stale-request guards |
+| `src/flows/org-workspace/` | Explicit business flows |
+| `src/pipes/org/` | Pure Org parsing and local text transformations |
+| `src/pipes/migration/` | Legacy migration planning and recovery SQL |
+| `src/io/file/org-file.repository.ts` | Typed Tauri filesystem boundary |
+| `src/io/event/` | Workspace invalidation and diary requests |
+| `src/routes/legacy.lazy.tsx` | Lazy legacy SQLite/Lexical surface |
+| `src-tauri/` | Desktop shell using `packages/rust-core` |
 
-### Writing Experience
-- Rich-text editor with styling, markdown shortcuts, templates, and dark/light themes.
-- Immersive full-screen mode, customizable layouts, and distraction controls.
-- **Collapsible sidebar** (`Ctrl+B`): Hide the book library for maximum writing space.
-- Inline comments, version history, and compare views for safe iteration.
+The security-critical Rust implementation is in:
 
-### Project Organization
-- Tree-based project navigator covering books → chapters → scenes.
-- Character, location, and lore databases with custom fields and tags.
-- **Search & Replace**:
-  - In-file search/replace (`Ctrl+F` / `Ctrl+H`): Case-sensitive, whole word, regex support
-  - Global search (`Ctrl+Shift+F`): Fast full-text search across scenes, characters, and world-building with keyword highlighting and smart ranking
-- **Backup & restore**: Automatic daily backups + manual export in JSON/ZIP format.
-- Import/export (Markdown, DOCX, PDF, EPUB) to keep work portable.
+- `packages/rust-core/src/org_filesystem.rs`
+- `packages/rust-core/src/tauri/commands/org_document_commands.rs`
+- `packages/rust-core/src/tauri/commands/org_index_commands.rs`
+- `packages/rust-core/src/tauri/commands/legacy_migration_commands.rs`
 
-### Productivity Toolkit
-- Daily writing goals, progress dashboards, and timeline visualizations.
-- Scene cards, outline boards, and plot arc planning widgets.
-- Optional AI-assisted brainstorming, synopsis generation, and editing helpers.
+## Development
 
-### Platform & Packaging
-- Offline-first desktop app powered by Tauri.
-- Multi-platform packaging with preconfigured icons, updater hooks, and signing scripts.
-- Structured logging (in-app log viewer + Dexie persistence) for debugging and support.
-
----
-
-## Roadmap Snapshot
-
-- **Near term**: project templates, Create/Import dialogs, autosave & snapshots, per-entity metadata, lint/test coverage.
-- **Mid term**: collaborative sync backend (WebDAV/Supabase), AI-assisted features, extended export formats, spell/grammar tooling.
-- **Long term**: plugin system, mobile companion, real-time collaboration, community content marketplace.
-
-Follow progress in [`docs/roadmap.md`](docs/roadmap.md) (coming soon) and on issue labels (`status:planned`, `status:in-progress`).
-
----
-
-## Tech Stack
-
-- **Frontend**: React, TypeScript, Vite, Tailwind CSS, Shadcn UI, Lexical.
-- **State & Data**: Dexie.js (IndexedDB), TanStack Query & Router, Zustand for local state.
-- **Desktop Shell**: Tauri (Rust), Consola logging, cross-platform packaging assets.
-- **Tooling**: Biome (format/lint), Vitest, Playwright (E2E), GitHub Actions CI.
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js ≥ 20
-- Rust & Cargo (Tauri toolchain)
-- Optional: Bun for faster scripts
-- Platform-specific [Tauri prerequisites](https://tauri.app/v1/guides/getting-started/prerequisites)
-
-### Install Dependencies
+From the repository root:
 
 ```bash
-# using npm
-npm install
-
-# or using bun
 bun install
+cd apps/desktop
+bun run tauri dev
 ```
 
-### Development
+Useful commands:
 
 ```bash
-npm run dev         # Start Vite + Tauri dev in watch mode
-npm run tauri dev   # Run only the Tauri shell with live reload
+bun run type:check       # TypeScript without emit
+bun run test             # Complete Vitest suite
+bun run build            # TypeScript + production Vite bundle
+bun run tauri build      # Native installer build
+bunx biome check src     # Scoped formatting/lint check
 ```
 
-The frontend dev server lives at `http://localhost:1420`.
+The Vite development URL (`http://localhost:1420`) exists for the Tauri WebView. Local Org filesystem functionality requires the desktop runtime.
 
-### Production Build
+## Focused Org verification
 
 ```bash
-npm run build       # Type-check, bundle frontend, and prepare Tauri artifacts
-npm run preview     # Preview the built frontend
-npm run tauri build # Produce platform installers (AppImage, DEB, RPM, MSI, DMG)
+bunx vitest run \
+  src/hooks/use-org-workspace.test.ts \
+  src/io/file/org-file.repository.test.ts \
+  src/flows/org-workspace/org-workspace.flow.test.ts \
+  src/pipes/org/org-text.pipe.test.ts \
+  src/views/org-workspace/org-action-dialog.view.fn.test.tsx
+
+cargo test --manifest-path ../../packages/rust-core/Cargo.toml --offline --lib
 ```
 
-> Linux packaging requires `patchelf`, `appimagetool`, `desktop-file-utils`, and `fuse2`.
+The complete desktop suite still contains stale contracts for legacy-only Story, search, and file-tree components. Do not interpret those failures as permission to weaken the focused Org filesystem tests.
 
----
+## Default workspace
 
-## Development Scripts
+The welcome screen offers:
 
-| Script       | Description                                      |
-|--------------|--------------------------------------------------|
-| `dev`        | Start Vite + Tauri development environment       |
-| `build`      | Run `tsc`, bundle frontend, prepare Tauri output |
-| `preview`    | Serve production build locally                   |
-| `tauri`      | Proxy command to the Tauri CLI                   |
-| `format`     | Format with Biome                                 |
-| `lint`       | Lint with Biome                                   |
-| `check`      | Type + lint checks via Biome                      |
-| `test`       | Run unit and component tests (Vitest)             |
-| `test:e2e`   | Run Playwright end-to-end suite                   |
-| `diff`       | Save staged diff to `diff.txt`                    |
+- **Open Documents/Grain** — explicitly creates or opens the fixed default directory.
+- **Choose another…** — opens the native directory picker.
 
----
+After the user chooses the default workspace, a non-authoritative UI preference permits restart recovery. Recovery only opens an already-existing fixed directory; it does not recreate a directory removed by the user. Arbitrary previously selected paths are not reopened through ambient authority.
 
-## Architecture Overview
+## File mutation rules
 
-```
-src/
-├─ components/         Reusable UI primitives and blocks
-│  ├─ ui/              Shadcn-derived primitives
-│  └─ blocks/          Feature-level components (EmptyProject, dialogs, etc.)
-├─ routes/             TanStack router tree
-├─ db/                 Dexie schema + CRUD helpers
-├─ lib/                Cross-cutting utilities (logging, helpers)
-├─ assets/             Static assets bundled by Vite
-└─ styles.css          Tailwind layers & global styles
+1. Workspace paths must come from a retained approved capability.
+2. Document paths must be normalized relative `.org` paths.
+3. Ordinary writes, moves, and deletes require an expected revision.
+4. UI events are invalidation hints, not trusted filesystem state.
+5. Async reads must not replace dirty buffers or newer requests.
+6. Refile and archive copy first, verify the destination, and only then remove the source.
+7. Migration must publish into a new top-level directory and must never merge into existing output.
+8. SQLite Org indexes must remain foreign-key-free, disposable, and rebuildable.
 
-src-tauri/
-├─ src/main.rs         Tauri entrypoint & command handlers
-├─ src/lib.rs          Shared Rust utilities
-├─ icons/              Platform-specific icon sets
-└─ tauri.conf.json     Tauri configuration
-```
+## Editor transition
 
-Key flows:
+CodeMirror is the primary editor and operates on raw Org text. Lexical remains installed only because the explicit legacy route must read historical documents until migration recovery has been validated against an authorized database copy.
 
-- React + TanStack Router orchestrate UI layout, with state fetched via TanStack Query.
-- Dexie schemas define books, chapters, scenes, and research entities; hooks expose typed CRUD operations.
-- Tauri commands bridge to filesystem, sync services, and OS-level integrations.
-- Consola-powered logs stream to a `log` route for diagnostics.
+Do not add new Lexical-based document features. New writing functionality belongs in the Org workspace.
 
----
+## Known release gates
 
-## Quality & Testing
+- Real historical database-copy migration and destructive recovery acceptance
+- Read-only legacy mode followed by removal of legacy body writes
+- Removal of remaining Lexical dependencies
+- Windows-equivalent ACL, identity and atomic no-clobber guarantees
+- Cleanup of stale legacy UI tests
 
-- **Type safety**: Strict TypeScript + Biome checks in CI.
-- **Unit/component tests**: Vitest + React Testing Library for logic and UI.
-- **End-to-end**: Playwright covers project lifecycle smoke tests.
-- **Rust**: `cargo test` for Tauri-side logic; Clippy and rustfmt keep code consistent.
-- **Continuous integration**: GitHub Actions (or your preferred CI) runs lint, tests, build, and packaging checks on each PR.
+## Packaging
 
----
-
-## Contributing
-
-1. Fork and create a feature branch.
-2. Run `npm run lint` and `npm run test` before opening a PR.
-3. Include screenshots or demo videos for UI-facing changes.
-4. For desktop changes, note your OS and packaging steps tested.
-
-Issue templates and contribution guidelines live under `.github/` (coming soon). Discussions and roadmap feedback are welcome.
-
----
-
-## License
-
-This project is released under the MIT License. See [`LICENSE`](./LICENSE) for details.
-
-
+Tauri configuration is in `src-tauri/tauri.conf.json`. Platform prerequisites follow the [Tauri 2 documentation](https://v2.tauri.app/start/prerequisites/). On Linux, development requires WebKitGTK 4.1 libraries.

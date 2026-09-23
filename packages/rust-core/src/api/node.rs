@@ -18,7 +18,10 @@
 
 use sea_orm::DatabaseConnection;
 
-use super::{ApiEndpoint, IdInput, IdWithBodyInput, NextSortOrderInput, NoOutput, ParentIdInput, WorkspaceIdInput};
+use super::{
+    ApiEndpoint, IdInput, IdWithBodyInput, NextSortOrderInput, NoOutput, ParentIdInput,
+    WorkspaceIdInput,
+};
 use crate::db::node_db_fn;
 use crate::types::node::{
     CreateNodeRequest, MoveNodeRequest, NodeResponse, NodeType, UpdateNodeRequest,
@@ -411,7 +414,10 @@ mod tests {
         let created = CreateNode::execute(&db, create_input).await.unwrap();
         assert_eq!(created.title, "测试节点");
         assert_eq!(created.node_type, NodeType::File);
-        assert_eq!(created.tags, Some(vec!["tag1".to_string(), "tag2".to_string()]));
+        assert_eq!(
+            created.tags,
+            Some(vec!["tag1".to_string(), "tag2".to_string()])
+        );
 
         // 2. 通过 ID 获取
         let get_input = IdInput::new(&created.id);

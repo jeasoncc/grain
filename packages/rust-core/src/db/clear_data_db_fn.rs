@@ -4,14 +4,11 @@
 
 use crate::types::error::{AppError, AppResult};
 use crate::types::{
-    attachment::AttachmentEntity as Attachment,
-    content::ContentEntity as Content,
-    node::NodeEntity as Node,
-    tag::TagEntity as Tag,
-    user::UserEntity as User,
+    attachment::AttachmentEntity as Attachment, content::ContentEntity as Content,
+    node::NodeEntity as Node, tag::TagEntity as Tag, user::UserEntity as User,
     workspace::WorkspaceEntity as Workspace,
 };
-use sea_orm::{DatabaseConnection, EntityTrait, TransactionTrait};
+use sea_orm::{ConnectionTrait, DatabaseConnection, EntityTrait, Statement, TransactionTrait};
 use tracing::info;
 
 /// 清除所有数据的选项
@@ -72,69 +69,94 @@ pub async fn clear_all_data(
 ) -> AppResult<ClearDataResult> {
     info!("开始清除 SQLite 数据...");
 
-    let txn = db.begin().await.map_err(|e| {
-        AppError::DatabaseError(format!("开启事务失败: {}", e))
-    })?;
+    let txn = db
+        .begin()
+        .await
+        .map_err(|e| AppError::DatabaseError(format!("开启事务失败: {}", e)))?;
 
     let mut result = ClearDataResult::default();
 
+    // Derived Org indexes are FK-free by design, so a data/workspace wipe must clear them
+    // explicitly. Org files remain untouched and can rebuild these rows later.
+    if options.clear_workspaces {
+        for table in [
+            "org_index_agenda",
+            "org_index_links",
+            "org_index_headings",
+            "org_index_documents",
+        ] {
+            txn.execute(Statement::from_string(
+                txn.get_database_backend(),
+                format!("DELETE FROM {table}"),
+            ))
+            .await
+            .map_err(|e| AppError::DatabaseError(format!("清除 Org 派生索引 {table} 失败: {e}")))?;
+        }
+    }
+
     // 1. 清除内容（依赖节点）
     if options.clear_contents {
-        let deleted = Content::delete_many().exec(&txn).await.map_err(|e| {
-            AppError::DatabaseError(format!("清除内容失败: {}", e))
-        })?;
+        let deleted = Content::delete_many()
+            .exec(&txn)
+            .await
+            .map_err(|e| AppError::DatabaseError(format!("清除内容失败: {}", e)))?;
         result.contents_deleted = deleted.rows_affected;
         info!("已删除 {} 条内容记录", result.contents_deleted);
     }
 
     // 2. 清除附件（依赖工作区）
     if options.clear_attachments {
-        let deleted = Attachment::delete_many().exec(&txn).await.map_err(|e| {
-            AppError::DatabaseError(format!("清除附件失败: {}", e))
-        })?;
+        let deleted = Attachment::delete_many()
+            .exec(&txn)
+            .await
+            .map_err(|e| AppError::DatabaseError(format!("清除附件失败: {}", e)))?;
         result.attachments_deleted = deleted.rows_affected;
         info!("已删除 {} 条附件记录", result.attachments_deleted);
     }
 
     // 3. 清除节点（依赖工作区）
     if options.clear_nodes {
-        let deleted = Node::delete_many().exec(&txn).await.map_err(|e| {
-            AppError::DatabaseError(format!("清除节点失败: {}", e))
-        })?;
+        let deleted = Node::delete_many()
+            .exec(&txn)
+            .await
+            .map_err(|e| AppError::DatabaseError(format!("清除节点失败: {}", e)))?;
         result.nodes_deleted = deleted.rows_affected;
         info!("已删除 {} 条节点记录", result.nodes_deleted);
     }
 
     // 4. 清除标签（依赖工作区）
     if options.clear_tags {
-        let deleted = Tag::delete_many().exec(&txn).await.map_err(|e| {
-            AppError::DatabaseError(format!("清除标签失败: {}", e))
-        })?;
+        let deleted = Tag::delete_many()
+            .exec(&txn)
+            .await
+            .map_err(|e| AppError::DatabaseError(format!("清除标签失败: {}", e)))?;
         result.tags_deleted = deleted.rows_affected;
         info!("已删除 {} 条标签记录", result.tags_deleted);
     }
 
     // 5. 清除工作区
     if options.clear_workspaces {
-        let deleted = Workspace::delete_many().exec(&txn).await.map_err(|e| {
-            AppError::DatabaseError(format!("清除工作区失败: {}", e))
-        })?;
+        let deleted = Workspace::delete_many()
+            .exec(&txn)
+            .await
+            .map_err(|e| AppError::DatabaseError(format!("清除工作区失败: {}", e)))?;
         result.workspaces_deleted = deleted.rows_affected;
         info!("已删除 {} 条工作区记录", result.workspaces_deleted);
     }
 
     // 6. 清除用户
     if options.clear_users {
-        let deleted = User::delete_many().exec(&txn).await.map_err(|e| {
-            AppError::DatabaseError(format!("清除用户失败: {}", e))
-        })?;
+        let deleted = User::delete_many()
+            .exec(&txn)
+            .await
+            .map_err(|e| AppError::DatabaseError(format!("清除用户失败: {}", e)))?;
         result.users_deleted = deleted.rows_affected;
         info!("已删除 {} 条用户记录", result.users_deleted);
     }
 
-    txn.commit().await.map_err(|e| {
-        AppError::DatabaseError(format!("提交事务失败: {}", e))
-    })?;
+    txn.commit()
+        .await
+        .map_err(|e| AppError::DatabaseError(format!("提交事务失败: {}", e)))?;
 
     info!("SQLite 数据清除完成: {:?}", result);
     Ok(result)
@@ -174,7 +196,7 @@ impl ClearDataResult {
 mod tests {
     use super::*;
     use crate::db::test_utils::setup_test_db;
-    use crate::db::{node_db_fn, workspace_db_fn, content_db_fn};
+    use crate::db::{content_db_fn, node_db_fn, workspace_db_fn};
     use crate::types::node::NodeType;
 
     #[tokio::test]
@@ -200,9 +222,14 @@ mod tests {
         .await
         .unwrap();
 
-        content_db_fn::create(&db, "content-1".to_string(), node_id, "测试内容".to_string())
-            .await
-            .unwrap();
+        content_db_fn::create(
+            &db,
+            "content-1".to_string(),
+            node_id,
+            "测试内容".to_string(),
+        )
+        .await
+        .unwrap();
 
         // 清除所有数据
         let result = clear_all_data(&db, ClearDataOptions::all()).await.unwrap();
@@ -223,7 +250,9 @@ mod tests {
             .unwrap();
 
         // 只清除数据库数据
-        let result = clear_all_data(&db, ClearDataOptions::database_only()).await.unwrap();
+        let result = clear_all_data(&db, ClearDataOptions::database_only())
+            .await
+            .unwrap();
 
         assert!(result.workspaces_deleted >= 1);
         assert_eq!(result.users_deleted, 0); // 用户不应被删除

@@ -121,13 +121,14 @@ pub async fn update(
     size: Option<Option<i64>>,
     mime_type: Option<Option<String>>,
 ) -> Result<AttachmentModel, DbErr> {
-    let attachment = AttachmentEntity::find_by_id(id)
-        .one(db)
-        .await?
-        .ok_or(DbErr::RecordNotFound(format!(
-            "Attachment {} not found",
-            id
-        )))?;
+    let attachment =
+        AttachmentEntity::find_by_id(id)
+            .one(db)
+            .await?
+            .ok_or(DbErr::RecordNotFound(format!(
+                "Attachment {} not found",
+                id
+            )))?;
 
     let mut model: AttachmentActiveModel = attachment.into();
 
@@ -279,8 +280,7 @@ mod property_tests {
 
     /// Generate a valid file name (non-empty, alphanumeric with extension)
     fn arb_file_name() -> impl Strategy<Value = String> {
-        "[a-zA-Z][a-zA-Z0-9_]{0,20}\\.(png|jpg|mp3|wav|pdf|txt)"
-            .prop_map(|s| s.to_string())
+        "[a-zA-Z][a-zA-Z0-9_]{0,20}\\.(png|jpg|mp3|wav|pdf|txt)".prop_map(|s| s.to_string())
     }
 
     /// Generate a valid file path
@@ -291,10 +291,7 @@ mod property_tests {
 
     /// Generate optional file size
     fn arb_size() -> impl Strategy<Value = Option<i64>> {
-        prop_oneof![
-            Just(None),
-            (1i64..10_000_000i64).prop_map(Some),
-        ]
+        prop_oneof![Just(None), (1i64..10_000_000i64).prop_map(Some),]
     }
 
     /// Generate optional MIME type

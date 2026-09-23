@@ -174,7 +174,9 @@ mod tests {
         assert!(result.is_ok());
 
         // 文件夹不应该有内容
-        let content = content_db_fn::find_by_node_id(&db, "folder-1").await.unwrap();
+        let content = content_db_fn::find_by_node_id(&db, "folder-1")
+            .await
+            .unwrap();
         assert!(content.is_none());
     }
 

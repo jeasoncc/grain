@@ -1,9 +1,7 @@
 //! Attachment Tauri Commands
 
 use crate::db::attachment_db_fn;
-use crate::{
-    AttachmentResponse, AttachmentType, CreateAttachmentRequest, UpdateAttachmentRequest,
-};
+use crate::{AttachmentResponse, AttachmentType, CreateAttachmentRequest, UpdateAttachmentRequest};
 use sea_orm::DatabaseConnection;
 use tauri::State;
 

@@ -225,6 +225,72 @@ impl DbConnection {
         ))
         .await?;
 
+        // Derived Org indexes are an intentionally FK-free cache. Every row is scoped by the
+        // approved workspace display root, so all of this data can be deleted and rebuilt without
+        // touching Org files or the legacy contents table.
+        let org_index_schema = [
+            r#"
+            CREATE TABLE IF NOT EXISTS org_index_documents (
+                workspace_root TEXT NOT NULL,
+                relative_path TEXT NOT NULL,
+                revision TEXT NOT NULL,
+                title TEXT,
+                PRIMARY KEY (workspace_root, relative_path)
+            )
+            "#,
+            r#"
+            CREATE TABLE IF NOT EXISTS org_index_headings (
+                workspace_root TEXT NOT NULL,
+                relative_path TEXT NOT NULL,
+                line INTEGER NOT NULL,
+                level INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                todo_keyword TEXT,
+                org_id TEXT,
+                custom_id TEXT,
+                PRIMARY KEY (workspace_root, relative_path, line)
+            )
+            "#,
+            r#"
+            CREATE TABLE IF NOT EXISTS org_index_links (
+                workspace_root TEXT NOT NULL,
+                source_relative_path TEXT NOT NULL,
+                line INTEGER NOT NULL,
+                column INTEGER NOT NULL,
+                target_kind TEXT NOT NULL,
+                target_relative_path TEXT,
+                target_value TEXT,
+                label TEXT NOT NULL,
+                PRIMARY KEY (workspace_root, source_relative_path, line, column)
+            )
+            "#,
+            r#"
+            CREATE TABLE IF NOT EXISTS org_index_agenda (
+                workspace_root TEXT NOT NULL,
+                relative_path TEXT NOT NULL,
+                line INTEGER NOT NULL,
+                column INTEGER NOT NULL,
+                kind TEXT NOT NULL,
+                date TEXT NOT NULL,
+                heading TEXT,
+                todo_keyword TEXT,
+                PRIMARY KEY (workspace_root, relative_path, line, column, kind)
+            )
+            "#,
+            "CREATE INDEX IF NOT EXISTS idx_org_index_documents_workspace_path ON org_index_documents(workspace_root, relative_path)",
+            "CREATE INDEX IF NOT EXISTS idx_org_index_headings_workspace_path ON org_index_headings(workspace_root, relative_path)",
+            "CREATE INDEX IF NOT EXISTS idx_org_index_links_workspace_path ON org_index_links(workspace_root, source_relative_path)",
+            "CREATE INDEX IF NOT EXISTS idx_org_index_links_target_path ON org_index_links(workspace_root, target_relative_path)",
+            "CREATE INDEX IF NOT EXISTS idx_org_index_agenda_workspace_path ON org_index_agenda(workspace_root, relative_path)",
+        ];
+        for sql in org_index_schema {
+            db.execute(Statement::from_string(
+                db.get_database_backend(),
+                sql.to_owned(),
+            ))
+            .await?;
+        }
+
         info!("数据库表结构创建完成");
         Ok(())
     }

@@ -5,9 +5,7 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::types::{
-        ContentResponse, ContentType, NodeResponse, NodeType, WorkspaceResponse,
-    };
+    use crate::types::{ContentResponse, ContentType, NodeResponse, NodeType, WorkspaceResponse};
 
     /// 验证 WorkspaceResponse 序列化使用 camelCase
     #[test]
@@ -30,8 +28,14 @@ mod tests {
 
         // 验证使用 camelCase
         assert!(json.contains("lastOpen"), "应使用 lastOpen 而非 last_open");
-        assert!(json.contains("createdAt"), "应使用 createdAt 而非 created_at");
-        assert!(json.contains("updatedAt"), "应使用 updatedAt 而非 updated_at");
+        assert!(
+            json.contains("createdAt"),
+            "应使用 createdAt 而非 created_at"
+        );
+        assert!(
+            json.contains("updatedAt"),
+            "应使用 updatedAt 而非 updated_at"
+        );
 
         // 验证不使用 snake_case
         assert!(!json.contains("last_open"), "不应使用 snake_case");
@@ -111,7 +115,11 @@ mod tests {
 
         for (node_type, expected) in types {
             let json = serde_json::to_string(&node_type).unwrap();
-            assert_eq!(json, expected, "NodeType::{:?} 应序列化为 {}", node_type, expected);
+            assert_eq!(
+                json, expected,
+                "NodeType::{:?} 应序列化为 {}",
+                node_type, expected
+            );
         }
     }
 
@@ -145,7 +153,11 @@ mod tests {
 
         for (content_type, expected) in types {
             let json = serde_json::to_string(&content_type).unwrap();
-            assert_eq!(json, expected, "ContentType::{:?} 应序列化为 {}", content_type, expected);
+            assert_eq!(
+                json, expected,
+                "ContentType::{:?} 应序列化为 {}",
+                content_type, expected
+            );
         }
     }
 

@@ -40,9 +40,9 @@ pub async fn init_log_database(db: &DatabaseConnection) -> AppResult<()> {
         CREATE INDEX IF NOT EXISTS idx_logs_created_at ON logs(created_at);
     "#;
 
-    db.execute_unprepared(sql)
-        .await
-        .map_err(|e| AppError::DatabaseError(format!("Failed to initialize log database: {}", e)))?;
+    db.execute_unprepared(sql).await.map_err(|e| {
+        AppError::DatabaseError(format!("Failed to initialize log database: {}", e))
+    })?;
 
     Ok(())
 }
@@ -101,7 +101,7 @@ pub async fn save_logs_batch(
     }
 
     let mut results = Vec::new();
-    
+
     for request in entries {
         let result = save_log_entry(db, request).await?;
         results.push(result);
@@ -141,7 +141,10 @@ pub async fn query_logs(
     }
 
     // 获取总数
-    let total = query.clone().count(db).await
+    let total = query
+        .clone()
+        .count(db)
+        .await
         .map_err(|e| AppError::DatabaseError(format!("Failed to count logs: {}", e)))?;
 
     // 应用排序（按时间戳降序）
@@ -150,13 +153,15 @@ pub async fn query_logs(
     // 应用分页
     let offset = options.offset.unwrap_or(0);
     let limit = options.limit.unwrap_or(100);
-    
+
     if offset > 0 {
         query = query.offset(offset as u64);
     }
     query = query.limit(limit as u64);
 
-    let entries = query.all(db).await
+    let entries = query
+        .all(db)
+        .await
         .map_err(|e| AppError::DatabaseError(format!("Failed to query logs: {}", e)))?;
 
     let has_more = (offset + limit) < total as i32;
@@ -170,10 +175,7 @@ pub async fn query_logs(
 }
 
 /// 清理旧日志条目
-pub async fn clear_old_logs(
-    db: &DatabaseConnection,
-    before_date: &str,
-) -> AppResult<i64> {
+pub async fn clear_old_logs(db: &DatabaseConnection, before_date: &str) -> AppResult<i64> {
     let result = LogEntity::delete_many()
         .filter(crate::types::log::entity::Column::Timestamp.lt(before_date))
         .exec(db)
@@ -196,7 +198,9 @@ pub async fn clear_all_logs(db: &DatabaseConnection) -> AppResult<i64> {
 /// 获取日志统计信息
 pub async fn get_log_stats(db: &DatabaseConnection) -> AppResult<LogStats> {
     // 获取总条目数
-    let total_entries = LogEntity::find().count(db).await
+    let total_entries = LogEntity::find()
+        .count(db)
+        .await
         .map_err(|e| AppError::DatabaseError(format!("Failed to count total logs: {}", e)))?;
 
     // 按级别统计
@@ -250,7 +254,8 @@ pub async fn get_log_stats(db: &DatabaseConnection) -> AppResult<LogStats> {
 
 /// 将日志模型转换为响应格式
 fn log_model_to_response(model: LogModel) -> LogEntryResponse {
-    let context = model.context
+    let context = model
+        .context
         .and_then(|ctx| serde_json::from_str(&ctx).ok());
 
     LogEntryResponse {

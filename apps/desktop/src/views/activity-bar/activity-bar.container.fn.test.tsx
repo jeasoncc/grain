@@ -1,851 +1,156 @@
-/**
- * @file activity-bar.container.fn.test.tsx
- * @description ActivityBarContainer 组件单元测试
- *
- * 测试覆盖：
- * - 数据获取和传递
- * - 回调函数调用
- * - 与 hooks 和 stores 的集成
- * - 初始化逻辑
- * - 错误处理
- *
- * Mock 策略：
- * - 使用可配置的 mock 状态变量控制 store 返回值
- * - 所有外部依赖（hooks, stores, actions）都被 mock
- * - View 组件被 mock 为简单的按钮集合以便测试回调
- *
- * @requirements 7.2
- */
-
-import { render, screen, waitFor } from "@testing-library/react"
-import * as E from "fp-ts/Either"
+import { fireEvent, render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import type { IconTheme } from "@/types/icon-theme"
-import type { WorkspaceInterface } from "@/types/workspace"
 import { ActivityBarContainer } from "./activity-bar.container.fn"
-import type { ActivityBarProps } from "./activity-bar.types"
 
-// ============================================================================
-// Mock State (可配置)
-// ============================================================================
-
-let mockSelectedWorkspaceId: string | null = null
-
-// ============================================================================
-// Hoisted Mocks (必须在 vi.mock 之前定义)
-// ============================================================================
-
-const {
-	mockNavigate,
-	mockConfirm,
-	mockAddWorkspace,
-	mockClearAllData,
-	mockTouchWorkspace,
-	mockUseAllWorkspaces,
-	mockUseIconTheme,
-	mockCreateLedgerCompatAsync,
-	mockCreateDiaryCompatAsync,
-	mockCreateWikiCompatAsync,
-	mockSetSelectedWorkspaceId,
-	mockSetSelectedNodeId,
-	mockSetActivePanel,
-	mockToggleSidebar,
-	mockOpenTab,
-	mockUpdateEditorState,
-} = vi.hoisted(() => ({
-	mockAddWorkspace: vi.fn(),
-	mockClearAllData: vi.fn(),
-	mockConfirm: vi.fn(),
-	mockCreateDiaryCompatAsync: vi.fn(),
-	mockCreateLedgerCompatAsync: vi.fn(),
-	mockCreateWikiCompatAsync: vi.fn(),
-	mockNavigate: vi.fn(),
-	mockOpenTab: vi.fn(),
-	mockSetActivePanel: vi.fn(),
-	mockSetSelectedNodeId: vi.fn(),
-	mockSetSelectedWorkspaceId: vi.fn(),
-	mockToggleSidebar: vi.fn(),
-	mockTouchWorkspace: vi.fn(),
-	mockUpdateEditorState: vi.fn(),
-	mockUseAllWorkspaces: vi.fn(),
-	mockUseIconTheme: vi.fn(),
+const { mockExportDialog, mockUseActivityBar, mockView } = vi.hoisted(() => ({
+	mockExportDialog: vi.fn(),
+	mockUseActivityBar: vi.fn(),
+	mockView: vi.fn(),
 }))
 
-const mockLocation = { pathname: "/" }
-
-// ============================================================================
-// Mocks
-// ============================================================================
-
-// Mock TanStack Router
-vi.mock("@tanstack/react-router", () => ({
-	useLocation: () => mockLocation,
-	useNavigate: () => mockNavigate,
+vi.mock("@/hooks/use-activity-bar", () => ({
+	useActivityBar: () => mockUseActivityBar(),
 }))
 
-// Mock sonner toast
-vi.mock("sonner", () => ({
-	toast: {
-		error: vi.fn(),
-		info: vi.fn(),
-		success: vi.fn(),
-	},
-}))
-
-// Mock confirm dialog
-vi.mock("@/components/ui/confirm", () => ({
-	useConfirm: () => mockConfirm,
-}))
-
-// Mock ExportDialog component
-vi.mock("@/components/blocks/export-dialog", () => ({
-	ExportDialog: ({ open }: { open: boolean }) => (
-		<div data-testid="export-dialog">{open ? "Open" : "Closed"}</div>
-	),
-}))
-
-// Mock database functions
-vi.mock("@/db", () => ({
-	addWorkspace: mockAddWorkspace,
-	clearAllData: mockClearAllData,
-	touchWorkspace: mockTouchWorkspace,
-}))
-
-// Mock hooks
-vi.mock("@/hooks/use-workspace", () => ({
-	useAllWorkspaces: () => mockUseAllWorkspaces(),
-}))
-
-vi.mock("@/hooks/use-icon-theme", () => ({
-	useIconTheme: () => mockUseIconTheme(),
-}))
-
-// Mock actions
-vi.mock("@/flows/templated/create-ledger.flow", () => ({
-	createLedgerCompatAsync: mockCreateLedgerCompatAsync,
-}))
-
-vi.mock("@/flows/templated/create-wiki.flow", () => ({
-	createWikiCompatAsync: mockCreateWikiCompatAsync,
-}))
-
-vi.mock("@/flows/templated/create-diary.flow", () => ({
-	createDiaryCompatAsync: mockCreateDiaryCompatAsync,
-}))
-
-// Mock stores
-vi.mock("@/state/selection.state", () => ({
-	useSelectionStore: (selector: (state: any) => any) => {
-		const state = {
-			selectedWorkspaceId: mockSelectedWorkspaceId,
-			setSelectedNodeId: mockSetSelectedNodeId,
-			setSelectedWorkspaceId: mockSetSelectedWorkspaceId,
-		}
-		return selector ? selector(state) : state
-	},
-}))
-
-vi.mock("@/state/sidebar.state", () => ({
-	useSidebarStore: () => ({
-		activePanel: "files",
-		isOpen: true,
-		setActivePanel: mockSetActivePanel,
-		toggleSidebar: mockToggleSidebar,
-	}),
-}))
-
-vi.mock("@/state/editor-tabs.state", () => ({
-	useEditorTabsStore: (selector: (state: any) => any) => {
-		const state = {
-			openTab: mockOpenTab,
-			updateEditorState: mockUpdateEditorState,
-		}
-		return selector ? selector(state) : state
-	},
-}))
-
-// Mock ActivityBarView
 vi.mock("./activity-bar.view.fn", () => ({
-	ActivityBarView: (props: ActivityBarProps) => (
-		<div data-testid="activity-bar-view">
-			<button onClick={() => props.onSelectWorkspace("ws-1")}>Select Workspace</button>
-			<button onClick={() => props.onCreateWorkspace("New Workspace")}>Create Workspace</button>
-			<button onClick={() => props.onCreateDiary()}>Create Diary</button>
-			<button onClick={() => props.onCreateWiki()}>Create Wiki</button>
-			<button onClick={() => props.onCreateLedger()}>Create Ledger</button>
-			<button onClick={() => props.onImportFile(new File([], "test.json"))}>Import File</button>
-			<button onClick={() => props.onOpenExportDialog()}>Export</button>
-			<button onClick={() => props.onDeleteAllData()}>Delete All</button>
-			<button onClick={() => props.onNavigate("/settings")}>Navigate</button>
-			<button onClick={() => props.onSetActivePanel("search")}>Set Panel</button>
-			<button onClick={() => props.onToggleSidebar()}>Toggle Sidebar</button>
-		</div>
-	),
+	ActivityBarView: (props: {
+		readonly currentPath: string
+		readonly onCreateDiary: () => void
+		readonly onNavigate: (path: string) => void
+		readonly selectedWorkspaceId: string | null
+	}) => {
+		mockView(props)
+		return (
+			<div data-testid="activity-bar-view">
+				<span>{props.currentPath}</span>
+				<span>{props.selectedWorkspaceId ?? "none"}</span>
+				<button type="button" onClick={props.onCreateDiary}>
+					Create diary
+				</button>
+				<button type="button" onClick={() => props.onNavigate("/org")}>
+					Open Org
+				</button>
+			</div>
+		)
+	},
 }))
 
-// ============================================================================
-// Test Helpers
-// ============================================================================
+vi.mock("@/views/export-dialog", () => ({
+	ExportDialog: (props: {
+		readonly open: boolean
+		readonly workspaceId: string
+		readonly workspaceTitle?: string
+	}) => {
+		mockExportDialog(props)
+		return <div data-testid="export-dialog">{props.workspaceId}</div>
+	},
+}))
 
-function createTestWorkspace(overrides: Partial<WorkspaceInterface> = {}): WorkspaceInterface {
-	return {
-		author: overrides.author ?? "",
-		createDate: overrides.createDate ?? new Date().toISOString(),
-		description: overrides.description ?? "",
-		id: overrides.id ?? "workspace-1",
-		language: overrides.language ?? "zh-CN",
-		lastOpen: overrides.lastOpen ?? new Date().toISOString(),
-		members: overrides.members ?? [],
-		owner: overrides.owner ?? undefined,
-		publisher: overrides.publisher ?? "",
-		title: overrides.title ?? "Test Workspace",
-	}
+const workspace = {
+	createDate: "2026-01-01T00:00:00.000Z",
+	description: "",
+	id: "workspace-1",
+	lastOpen: "2026-01-02T00:00:00.000Z",
+	title: "Writing",
 }
 
-function createTestIconTheme(): IconTheme {
-	return {
-		description: "Test theme for testing",
-		icons: {
-			activityBar: {
-				canvas: {} as any,
-				chapters: {} as any,
-				code: {} as any,
-				create: {} as any,
-				diary: {} as any,
-				export: {} as any,
-				files: {} as any,
-				import: {} as any,
-				ledger: {} as any,
-				library: {} as any,
-				mermaid: {} as any,
-				more: {} as any,
-				note: {} as any,
-				outline: {} as any,
-				plantuml: {} as any,
-				search: {} as any,
-				settings: {} as any,
-				statistics: {} as any,
-				tags: {} as any,
-				todo: {} as any,
-			},
-			character: { default: {} as any },
-			file: { default: {} as any },
-			folder: { default: {} as any },
-			project: { default: {} as any },
-			settingsPage: {
-				about: {} as any,
-				appearance: {} as any,
-				data: {} as any,
-				diagrams: {} as any,
-				editor: {} as any,
-				export: {} as any,
-				general: {} as any,
-				icons: {} as any,
-				logs: {} as any,
-				scroll: {} as any,
-			},
-			world: { default: {} as any },
-		},
-		key: "test-theme",
-		name: "Test Theme",
-	}
-}
-
-/**
- * 渲染带有选中工作区的组件
- */
-function renderWithSelectedWorkspace(workspaceId: string) {
-	mockSelectedWorkspaceId = workspaceId
-	mockUseAllWorkspaces.mockReturnValue([createTestWorkspace({ id: workspaceId })])
-	return render(<ActivityBarContainer />)
-}
-
-// ============================================================================
-// Unit Tests
-// ============================================================================
+const createActivityBarState = (overrides: Record<string, unknown> = {}) => ({
+	activePanel: "files",
+	currentPath: "/",
+	exportDialogOpen: false,
+	iconTheme: {},
+	isSidebarOpen: true,
+	onCreateCode: vi.fn(),
+	onCreateDiary: vi.fn(),
+	onCreateExcalidraw: vi.fn(),
+	onCreateLedger: vi.fn(),
+	onCreateMermaid: vi.fn(),
+	onCreateNote: vi.fn(),
+	onCreatePlantUML: vi.fn(),
+	onCreateTodo: vi.fn(),
+	onCreateWiki: vi.fn(),
+	onCreateWorkspace: vi.fn(),
+	onDeleteAllData: vi.fn(),
+	onImportFile: vi.fn(),
+	onNavigate: vi.fn(),
+	onOpenExportDialog: vi.fn(),
+	onSelectWorkspace: vi.fn(),
+	onSetActivePanel: vi.fn(),
+	onToggleSidebar: vi.fn(),
+	selectedWorkspaceId: workspace.id,
+	setExportDialogOpen: vi.fn(),
+	workspaces: [workspace],
+	...overrides,
+})
 
 describe("ActivityBarContainer", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
-
-		// 重置 mock 状态
-		mockSelectedWorkspaceId = null
-
-		// 设置默认 mock 返回值
-		mockUseAllWorkspaces.mockReturnValue([])
-		mockUseIconTheme.mockReturnValue(createTestIconTheme())
-		mockAddWorkspace.mockReturnValue(() => Promise.resolve(E.right({ id: "new-ws" })))
-		mockClearAllData.mockReturnValue(() => Promise.resolve(E.right(undefined)))
-		mockTouchWorkspace.mockReturnValue(() => Promise.resolve(E.right(undefined)))
-		mockConfirm.mockResolvedValue(false)
 	})
 
-	describe("数据获取和传递", () => {
-		it("should fetch workspaces and pass to view", () => {
-			const workspaces = [
-				createTestWorkspace({ id: "ws-1", title: "Workspace 1" }),
-				createTestWorkspace({ id: "ws-2", title: "Workspace 2" }),
-			]
-			mockUseAllWorkspaces.mockReturnValue(workspaces)
+	it("passes the current Org shell state and callbacks to the view", () => {
+		const state = createActivityBarState()
+		mockUseActivityBar.mockReturnValue(state)
 
-			render(<ActivityBarContainer />)
+		render(<ActivityBarContainer />)
 
-			expect(mockUseAllWorkspaces).toHaveBeenCalled()
-			expect(screen.getByTestId("activity-bar-view")).toBeInTheDocument()
-		})
-
-		it("should pass icon theme to view", () => {
-			const iconTheme = createTestIconTheme()
-			mockUseIconTheme.mockReturnValue(iconTheme)
-
-			render(<ActivityBarContainer />)
-
-			expect(mockUseIconTheme).toHaveBeenCalled()
-		})
-
-		it("should handle undefined workspaces", () => {
-			mockUseAllWorkspaces.mockReturnValue(undefined)
-
-			render(<ActivityBarContainer />)
-
-			expect(screen.getByTestId("activity-bar-view")).toBeInTheDocument()
-		})
+		expect(screen.getByTestId("activity-bar-view")).toHaveTextContent("/")
+		expect(screen.getByTestId("activity-bar-view")).toHaveTextContent(workspace.id)
+		expect(mockView).toHaveBeenCalledWith(
+			expect.objectContaining({
+				currentPath: "/",
+				selectedWorkspaceId: workspace.id,
+				workspaces: [workspace],
+			}),
+		)
+		fireEvent.click(screen.getByRole("button", { name: "Create diary" }))
+		fireEvent.click(screen.getByRole("button", { name: "Open Org" }))
+		expect(state.onCreateDiary).toHaveBeenCalledOnce()
+		expect(state.onNavigate).toHaveBeenCalledWith("/org")
 	})
 
-	describe("初始化逻辑", () => {
-		it("should create default workspace when no workspaces exist", async () => {
-			mockUseAllWorkspaces.mockReturnValue([])
-			mockAddWorkspace.mockReturnValue(() => Promise.resolve(E.right({ id: "default-ws" })))
+	it("binds the export dialog to the selected workspace", () => {
+		const state = createActivityBarState({ exportDialogOpen: true })
+		mockUseActivityBar.mockReturnValue(state)
 
-			render(<ActivityBarContainer />)
+		render(<ActivityBarContainer />)
 
-			await waitFor(() => {
-				expect(mockAddWorkspace).toHaveBeenCalledWith("My Workspace", {
-					author: "",
-					description: "",
-					language: "en",
-				})
-			})
-
-			await waitFor(() => {
-				expect(mockSetSelectedWorkspaceId).toHaveBeenCalledWith("default-ws")
-			})
-
-			await waitFor(() => {
-				expect(mockSetActivePanel).toHaveBeenCalledWith("files")
-			})
-		})
-
-		it("should select most recently opened workspace on init", async () => {
-			const workspaces = [
-				createTestWorkspace({
-					id: "ws-1",
-					lastOpen: "2024-01-01T00:00:00.000Z",
-				}),
-				createTestWorkspace({
-					id: "ws-2",
-					lastOpen: "2024-01-02T00:00:00.000Z",
-				}),
-			]
-			mockUseAllWorkspaces.mockReturnValue(workspaces)
-
-			render(<ActivityBarContainer />)
-
-			await waitFor(() => {
-				expect(mockSetSelectedWorkspaceId).toHaveBeenCalledWith("ws-2")
-			})
-		})
-
-		it("should touch workspace on init when workspace is already selected", async () => {
-			const workspaces = [createTestWorkspace({ id: "ws-1" })]
-			mockSelectedWorkspaceId = "ws-1"
-			mockUseAllWorkspaces.mockReturnValue(workspaces)
-
-			render(<ActivityBarContainer />)
-
-			await waitFor(() => {
-				expect(mockTouchWorkspace).toHaveBeenCalledWith("ws-1")
-			})
-		})
+		expect(mockExportDialog).toHaveBeenCalledWith(
+			expect.objectContaining({
+				onOpenChange: state.setExportDialogOpen,
+				open: true,
+				workspaceId: workspace.id,
+				workspaceTitle: workspace.title,
+			}),
+		)
 	})
 
-	describe("工作区操作", () => {
-		it("should handle workspace selection", async () => {
-			mockUseAllWorkspaces.mockReturnValue([createTestWorkspace()])
+	it("falls back to the first workspace for export when none is selected", () => {
+		mockUseActivityBar.mockReturnValue(createActivityBarState({ selectedWorkspaceId: null }))
 
-			render(<ActivityBarContainer />)
+		render(<ActivityBarContainer />)
 
-			const selectButton = screen.getByText("Select Workspace")
-			selectButton.click()
-
-			await waitFor(() => {
-				expect(mockSetSelectedWorkspaceId).toHaveBeenCalledWith("ws-1")
-			})
-
-			await waitFor(() => {
-				expect(mockTouchWorkspace).toHaveBeenCalledWith("ws-1")
-			})
-		})
-
-		it("should handle workspace creation", async () => {
-			mockUseAllWorkspaces.mockReturnValue([])
-			mockAddWorkspace.mockReturnValue(() => Promise.resolve(E.right({ id: "new-ws" })))
-
-			render(<ActivityBarContainer />)
-
-			const createButton = screen.getByText("Create Workspace")
-			createButton.click()
-
-			await waitFor(() => {
-				expect(mockAddWorkspace).toHaveBeenCalledWith("New Workspace", {
-					author: "",
-					description: "",
-					language: "en",
-				})
-			})
-
-			await waitFor(() => {
-				expect(mockSetSelectedWorkspaceId).toHaveBeenCalledWith("new-ws")
-			})
-		})
-
-		it("should handle workspace creation failure", async () => {
-			mockUseAllWorkspaces.mockReturnValue([])
-			mockAddWorkspace.mockReturnValue(() =>
-				Promise.resolve(E.left({ message: "Failed", type: "DB_ERROR" as const })),
-			)
-
-			const { toast } = await import("sonner")
-
-			render(<ActivityBarContainer />)
-
-			const createButton = screen.getByText("Create Workspace")
-			createButton.click()
-
-			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Failed to create workspace")
-			})
-		})
+		expect(screen.getByTestId("export-dialog")).toHaveTextContent(workspace.id)
+		expect(mockExportDialog).toHaveBeenCalledWith(
+			expect.objectContaining({
+				workspaceId: workspace.id,
+				workspaceTitle: workspace.title,
+			}),
+		)
 	})
 
-	describe("文件创建操作", () => {
-		/**
-		 * Property 1: Diary creation triggers correct function call
-		 * *For any* workspace ID and date, when `handleCreateDiary` is called,
-		 * `createDiaryCompatAsync` should be called with the correct workspace ID and current date.
-		 * **Validates: Requirements 1.1**
-		 */
-		it("should call createDiaryCompatAsync with correct params when creating diary", async () => {
-			renderWithSelectedWorkspace("ws-1")
-
-			mockCreateDiaryCompatAsync.mockResolvedValue({
-				content: "{}",
-				node: { id: "diary-1", title: "Diary", type: "diary" },
-				parsedContent: {},
-			})
-
-			const diaryButton = screen.getByText("Create Diary")
-			diaryButton.click()
-
-			await waitFor(() => {
-				expect(mockCreateDiaryCompatAsync).toHaveBeenCalledWith({
-					date: expect.any(Date),
-					workspaceId: "ws-1",
-				})
-			})
-		})
-
-		/**
-		 * Property 3: Successful creation opens file in EditorTabs
-		 * *For any* successful templated file creation (Diary, Wiki, or Ledger),
-		 * the `openTab` function should be called with the correct node information.
-		 * **Validates: Requirements 1.2**
-		 */
-		it("should open tab after successful diary creation", async () => {
-			renderWithSelectedWorkspace("ws-1")
-
-			mockCreateDiaryCompatAsync.mockResolvedValue({
-				content: "{}",
-				node: { id: "diary-1", title: "Diary 2024-12-27", type: "diary" },
-				parsedContent: { root: { children: [] } },
-			})
-
-			const { toast } = await import("sonner")
-
-			const diaryButton = screen.getByText("Create Diary")
-			diaryButton.click()
-
-			await waitFor(() => {
-				expect(mockOpenTab).toHaveBeenCalledWith({
-					nodeId: "diary-1",
-					title: "Diary 2024-12-27",
-					type: "diary",
-					workspaceId: "ws-1",
-				})
-			})
-
-			await waitFor(() => {
-				expect(toast.success).toHaveBeenCalledWith("Diary created")
-			})
-		})
-
-		/**
-		 * 测试 Diary 创建后预加载编辑器内容
-		 * **Validates: Requirements 1.2, 3.1**
-		 */
-		it("should preload editor content after diary creation", async () => {
-			renderWithSelectedWorkspace("ws-1")
-
-			const parsedContent = { root: { children: [] } }
-			mockCreateDiaryCompatAsync.mockResolvedValue({
-				content: "{}",
-				node: { id: "diary-1", title: "Diary 2024-12-27", type: "diary" },
-				parsedContent,
-			})
-
-			const diaryButton = screen.getByText("Create Diary")
-			diaryButton.click()
-
-			await waitFor(() => {
-				expect(mockUpdateEditorState).toHaveBeenCalledWith("diary-1", {
-					serializedState: parsedContent,
-				})
-			})
-		})
-
-		/**
-		 * 测试 Diary 创建后选中文件树中的新文件
-		 * **Validates: Requirements 1.3**
-		 */
-		it("should select new file in file tree after diary creation", async () => {
-			renderWithSelectedWorkspace("ws-1")
-
-			mockCreateDiaryCompatAsync.mockResolvedValue({
-				content: "{}",
-				node: { id: "diary-1", title: "Diary 2024-12-27", type: "diary" },
-				parsedContent: {},
-			})
-
-			const diaryButton = screen.getByText("Create Diary")
-			diaryButton.click()
-
-			await waitFor(() => {
-				expect(mockSetSelectedNodeId).toHaveBeenCalledWith("diary-1")
-			})
-		})
-
-		/**
-		 * 测试 Diary 创建失败时的错误处理
-		 * **Validates: Requirements 1.4**
-		 */
-		it("should handle diary creation failure", async () => {
-			renderWithSelectedWorkspace("ws-1")
-
-			mockCreateDiaryCompatAsync.mockRejectedValue(new Error("Failed to create diary"))
-
-			const { toast } = await import("sonner")
-
-			const diaryButton = screen.getByText("Create Diary")
-			diaryButton.click()
-
-			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Failed to create diary")
-			})
-		})
-
-		it("should handle wiki creation", async () => {
-			renderWithSelectedWorkspace("ws-1")
-
-			mockCreateWikiCompatAsync.mockResolvedValue({
-				content: "{}",
-				node: { id: "wiki-1", title: "Wiki", type: "file" },
-				parsedContent: {},
-			})
-
-			const { toast } = await import("sonner")
-
-			const wikiButton = screen.getByText("Create Wiki")
-			wikiButton.click()
-
-			await waitFor(() => {
-				expect(mockCreateWikiCompatAsync).toHaveBeenCalledWith({
-					date: expect.any(Date),
-					workspaceId: "ws-1",
-				})
-			})
-
-			await waitFor(() => {
-				expect(mockOpenTab).toHaveBeenCalledWith({
-					nodeId: "wiki-1",
-					title: "Wiki",
-					type: "file",
-					workspaceId: "ws-1",
-				})
-			})
-
-			await waitFor(() => {
-				expect(toast.success).toHaveBeenCalledWith("Wiki created")
-			})
-		})
-
-		it("should handle wiki creation failure", async () => {
-			renderWithSelectedWorkspace("ws-1")
-
-			mockCreateWikiCompatAsync.mockRejectedValue(new Error("Failed to create wiki"))
-
-			const { toast } = await import("sonner")
-
-			const wikiButton = screen.getByText("Create Wiki")
-			wikiButton.click()
-
-			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Failed to create wiki")
-			})
-		})
-
-		it("should handle ledger creation", async () => {
-			renderWithSelectedWorkspace("ws-1")
-
-			mockCreateLedgerCompatAsync.mockResolvedValue({
-				content: "{}",
-				node: { id: "ledger-1", title: "Ledger", type: "ledger" },
-				parsedContent: {},
-			})
-
-			const { toast } = await import("sonner")
-
-			const ledgerButton = screen.getByText("Create Ledger")
-			ledgerButton.click()
-
-			await waitFor(() => {
-				expect(mockCreateLedgerCompatAsync).toHaveBeenCalledWith({
-					date: expect.any(Date),
-					workspaceId: "ws-1",
-				})
-			})
-
-			await waitFor(() => {
-				expect(mockOpenTab).toHaveBeenCalledWith({
-					nodeId: "ledger-1",
-					title: "Ledger",
-					type: "ledger",
-					workspaceId: "ws-1",
-				})
-			})
-
-			await waitFor(() => {
-				expect(toast.success).toHaveBeenCalledWith("Ledger created")
-			})
-		})
-
-		it("should handle ledger creation failure", async () => {
-			renderWithSelectedWorkspace("ws-1")
-
-			mockCreateLedgerCompatAsync.mockRejectedValue(new Error("Failed to create ledger"))
-
-			const { toast } = await import("sonner")
-
-			const ledgerButton = screen.getByText("Create Ledger")
-			ledgerButton.click()
-
-			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Failed to create ledger")
-			})
-		})
-
-		it("should show error when creating diary without workspace", async () => {
-			mockUseAllWorkspaces.mockReturnValue([])
-
-			const { toast } = await import("sonner")
-
-			render(<ActivityBarContainer />)
-
-			const diaryButton = screen.getByText("Create Diary")
-			diaryButton.click()
-
-			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Please select a workspace first")
-			})
-
-			// 确保没有调用创建函数
-			expect(mockCreateDiaryCompatAsync).not.toHaveBeenCalled()
-		})
-
-		it("should show error when creating ledger without workspace", async () => {
-			mockUseAllWorkspaces.mockReturnValue([])
-
-			const { toast } = await import("sonner")
-
-			render(<ActivityBarContainer />)
-
-			const ledgerButton = screen.getByText("Create Ledger")
-			ledgerButton.click()
-
-			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Please select a workspace first")
-			})
-
-			// 确保没有调用创建函数
-			expect(mockCreateLedgerCompatAsync).not.toHaveBeenCalled()
-		})
-	})
-
-	describe("导入导出操作", () => {
-		it("should show info message for import", async () => {
-			mockUseAllWorkspaces.mockReturnValue([createTestWorkspace()])
-
-			const { toast } = await import("sonner")
-
-			render(<ActivityBarContainer />)
-
-			const importButton = screen.getByText("Import File")
-			importButton.click()
-
-			await waitFor(() => {
-				expect(toast.info).toHaveBeenCalledWith("Import functionality is being reimplemented")
-			})
-		})
-
-		it("should open export dialog", () => {
-			mockUseAllWorkspaces.mockReturnValue([createTestWorkspace()])
-
-			render(<ActivityBarContainer />)
-
-			const exportButton = screen.getByText("Export")
-			exportButton.click()
-
-			expect(screen.getByTestId("export-dialog")).toHaveTextContent("Open")
-		})
-	})
-
-	describe("数据删除操作", () => {
-		it("should handle delete all data when confirmed", async () => {
-			mockUseAllWorkspaces.mockReturnValue([createTestWorkspace()])
-			mockConfirm.mockResolvedValue(true)
-
-			const { toast } = await import("sonner")
-
-			// 保存原始值
-			const originalLocation = window.location
-			const reloadMock = vi.fn()
-
-			// Mock window.location.reload
-			Object.defineProperty(window, "location", {
-				configurable: true,
-				value: { reload: reloadMock },
-				writable: true,
-			})
-
-			render(<ActivityBarContainer />)
-
-			const deleteButton = screen.getByText("Delete All")
-			deleteButton.click()
-
-			await waitFor(() => {
-				expect(mockConfirm).toHaveBeenCalledWith({
-					cancelText: "Cancel",
-					confirmText: "Delete",
-					description: expect.any(String),
-					title: "Delete all data?",
-				})
-			})
-
-			await waitFor(() => {
-				expect(mockClearAllData).toHaveBeenCalled()
-			})
-
-			await waitFor(() => {
-				expect(mockSetSelectedWorkspaceId).toHaveBeenCalledWith(null)
-			})
-
-			await waitFor(() => {
-				expect(mockSetSelectedNodeId).toHaveBeenCalledWith(null)
-			})
-
-			await waitFor(() => {
-				expect(toast.success).toHaveBeenCalledWith("All data deleted")
-			})
-
-			// 恢复原始值
-			Object.defineProperty(window, "location", {
-				configurable: true,
-				value: originalLocation,
-				writable: true,
-			})
-		})
-
-		it("should handle delete failure", async () => {
-			mockUseAllWorkspaces.mockReturnValue([createTestWorkspace()])
-			mockConfirm.mockResolvedValue(true)
-			mockClearAllData.mockReturnValue(() =>
-				Promise.resolve(E.left({ message: "Failed", type: "DB_ERROR" as const })),
-			)
-
-			const { toast } = await import("sonner")
-
-			render(<ActivityBarContainer />)
-
-			const deleteButton = screen.getByText("Delete All")
-			deleteButton.click()
-
-			await waitFor(() => {
-				expect(toast.error).toHaveBeenCalledWith("Delete failed")
-			})
-		})
-
-		it("should not delete when not confirmed", async () => {
-			mockUseAllWorkspaces.mockReturnValue([createTestWorkspace()])
-			mockConfirm.mockResolvedValue(false)
-
-			render(<ActivityBarContainer />)
-
-			const deleteButton = screen.getByText("Delete All")
-			deleteButton.click()
-
-			await waitFor(() => {
-				expect(mockConfirm).toHaveBeenCalled()
-			})
-
-			// 等待一小段时间确保没有调用删除
-			await new Promise((resolve) => setTimeout(resolve, 100))
-			expect(mockClearAllData).not.toHaveBeenCalled()
-		})
-	})
-
-	describe("导航操作", () => {
-		it("should handle navigation", () => {
-			mockUseAllWorkspaces.mockReturnValue([createTestWorkspace()])
-
-			render(<ActivityBarContainer />)
-
-			const navigateButton = screen.getByText("Navigate")
-			navigateButton.click()
-
-			expect(mockNavigate).toHaveBeenCalledWith({ to: "/settings" })
-		})
-	})
-
-	describe("侧边栏操作", () => {
-		it("should handle panel change", () => {
-			mockUseAllWorkspaces.mockReturnValue([createTestWorkspace()])
-
-			render(<ActivityBarContainer />)
-
-			const panelButton = screen.getByText("Set Panel")
-			panelButton.click()
-
-			expect(mockSetActivePanel).toHaveBeenCalledWith("search")
-		})
-
-		it("should handle sidebar toggle", () => {
-			mockUseAllWorkspaces.mockReturnValue([createTestWorkspace()])
-
-			render(<ActivityBarContainer />)
-
-			const toggleButton = screen.getByText("Toggle Sidebar")
-			toggleButton.click()
-
-			expect(mockToggleSidebar).toHaveBeenCalled()
-		})
+	it("uses an empty export target when no legacy workspace exists", () => {
+		mockUseActivityBar.mockReturnValue(
+			createActivityBarState({ selectedWorkspaceId: null, workspaces: [] }),
+		)
+
+		render(<ActivityBarContainer />)
+
+		expect(mockExportDialog).toHaveBeenCalledWith(
+			expect.objectContaining({
+				workspaceId: "",
+				workspaceTitle: undefined,
+			}),
+		)
 	})
 })

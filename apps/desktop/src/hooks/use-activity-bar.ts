@@ -27,10 +27,11 @@ import { createMermaid } from "@/flows/templated/create-mermaid.flow"
 import { createPlantUML } from "@/flows/templated/create-plantuml.flow"
 import { createWorkspace } from "@/flows/workspace/create-workspace.flow"
 import { touchWorkspace } from "@/flows/workspace/update-workspace.flow"
+import { queryKeys } from "@/hooks/queries/query-keys"
 import { useCreateTemplate } from "@/hooks/use-create-template"
 import { useIconTheme } from "@/hooks/use-icon-theme"
 import { useAllWorkspaces } from "@/hooks/use-workspace"
-import { queryKeys } from "@/hooks/queries/query-keys"
+import { requestOrgDiaryCreation } from "@/io/event"
 import { error as logError } from "@/io/log/logger.api"
 import type { FileRouteTypes } from "@/routeTree.gen"
 import { useSelectionStore } from "@/state/selection.state"
@@ -45,6 +46,8 @@ type RoutePath = FileRouteTypes["to"]
 
 const VALID_ROUTES: readonly RoutePath[] = [
 	"/",
+	"/legacy",
+	"/org",
 	"/settings",
 	"/settings/about",
 	"/settings/data",
@@ -93,8 +96,9 @@ export function useActivityBar() {
 	// ==============================
 
 	useEffect(() => {
+		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy initialization is kept intact until SQLite removal.
 		const init = async () => {
-			if (workspacesRaw === undefined || hasInitialized) {
+			if (location.pathname !== "/legacy" || workspacesRaw === undefined || hasInitialized) {
 				return
 			}
 			setHasInitialized(true)
@@ -135,6 +139,7 @@ export function useActivityBar() {
 		}
 		init()
 	}, [
+		location.pathname,
 		workspacesRaw,
 		hasInitialized,
 		workspaces,
@@ -148,6 +153,23 @@ export function useActivityBar() {
 	// Template Handlers
 	// ==============================
 
+	const handleCreateDiary = useCallback(() => {
+		if (location.pathname === "/legacy") {
+			void createTemplate({
+				creator: createDiary,
+				errorMessage: "Failed to create diary",
+				successMessage: "Diary created",
+			})
+			return
+		}
+		if (location.pathname !== "/" && location.pathname !== "/org") {
+			router.history.push("/")
+			window.setTimeout(requestOrgDiaryCreation, 50)
+			return
+		}
+		requestOrgDiaryCreation()
+	}, [createTemplate, location.pathname, router])
+
 	const templateHandlers = useMemo(
 		() => ({
 			onCreateCode: () =>
@@ -156,12 +178,7 @@ export function useActivityBar() {
 					errorMessage: "Failed to create code file",
 					successMessage: "Code file created",
 				}),
-			onCreateDiary: () =>
-				createTemplate({
-					creator: createDiary,
-					errorMessage: "Failed to create diary",
-					successMessage: "Diary created",
-				}),
+			onCreateDiary: handleCreateDiary,
 			onCreateExcalidraw: () =>
 				createTemplate({
 					creator: createExcalidraw,
@@ -205,7 +222,7 @@ export function useActivityBar() {
 					successMessage: "Wiki created",
 				}),
 		}),
-		[createTemplate],
+		[createTemplate, handleCreateDiary],
 	)
 
 	// ==============================
@@ -216,9 +233,10 @@ export function useActivityBar() {
 		async (workspaceId: string) => {
 			setSelectedWorkspaceId(workspaceId)
 			void touchWorkspace(workspaceId)()
+			router.history.push("/legacy")
 			toast.success("Workspace selected")
 		},
-		[setSelectedWorkspaceId],
+		[router, setSelectedWorkspaceId],
 	)
 
 	const handleCreateWorkspace = useCallback(
@@ -235,13 +253,14 @@ export function useActivityBar() {
 			})()
 			if (E.isRight(result)) {
 				setSelectedWorkspaceId(result.right.id)
+				router.history.push("/legacy")
 				await queryClient.invalidateQueries({ queryKey: queryKeys.workspaces.all })
 				toast.success("Workspace created")
 			} else {
 				toast.error("Failed to create workspace")
 			}
 		},
-		[setSelectedWorkspaceId, queryClient],
+		[setSelectedWorkspaceId, queryClient, router],
 	)
 
 	const handleDeleteAllData = useCallback(async () => {
@@ -286,25 +305,25 @@ export function useActivityBar() {
 	// ==============================
 
 	return {
-		// Data
-		workspaces,
-		selectedWorkspaceId,
 		activePanel,
-		isSidebarOpen,
-		iconTheme,
 		currentPath: location.pathname,
 		exportDialogOpen,
+		iconTheme,
+		isSidebarOpen,
+		onCreateWorkspace: handleCreateWorkspace,
+		onDeleteAllData: handleDeleteAllData,
+		onImportFile: handleImportFile,
+		onNavigate: handleNavigate,
+		onOpenExportDialog: handleOpenExportDialog,
 
 		// Actions
 		onSelectWorkspace: handleSelectWorkspace,
-		onCreateWorkspace: handleCreateWorkspace,
 		onSetActivePanel: setActivePanel,
 		onToggleSidebar: toggleSidebar,
-		onImportFile: handleImportFile,
-		onOpenExportDialog: handleOpenExportDialog,
-		onDeleteAllData: handleDeleteAllData,
-		onNavigate: handleNavigate,
+		selectedWorkspaceId,
 		setExportDialogOpen,
+		// Data
+		workspaces,
 
 		// Template handlers
 		...templateHandlers,

@@ -23,8 +23,8 @@
 //! );
 //! ```
 
-pub mod content;
 pub mod clear_data;
+pub mod content;
 pub mod inputs;
 pub mod node;
 pub mod transaction;
@@ -132,8 +132,8 @@ pub type NoOutput = ();
 // 重新导出
 // ============================================================================
 
-pub use content::*;
 pub use clear_data::*;
+pub use content::*;
 pub use inputs::*;
 pub use node::*;
 pub use transaction::*;

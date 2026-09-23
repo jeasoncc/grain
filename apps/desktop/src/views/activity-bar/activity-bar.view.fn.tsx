@@ -6,7 +6,7 @@
  * 不直接访问 Store 或 DB，遵循函数式架构原则。
  */
 
-import { Plus, Trash2 } from "lucide-react"
+import { FileText, Plus, Trash2 } from "lucide-react"
 import type * as React from "react"
 import { memo } from "react"
 import { useActivityBarView } from "@/hooks/use-activity-bar-view"
@@ -14,9 +14,8 @@ import { Button } from "@/views/ui/button"
 import { Input } from "@/views/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/views/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/views/ui/tooltip"
-
-import type { ActivityBarProps } from "./activity-bar.types"
 import { ActionButton } from "./action-button.view.fn"
+import type { ActivityBarProps } from "./activity-bar.types"
 import { ToggleNavItem } from "./toggle-nav-item.view.fn"
 import { WorkspaceItem } from "./workspace-item.view.fn"
 
@@ -64,22 +63,22 @@ export const ActivityBarView = memo(function ActivityBarView({
 		openNewWorkspaceInput,
 	} = useActivityBarView({
 		activePanel,
-		isSidebarOpen,
 		currentPath,
 		iconTheme,
-		onToggleSidebar,
-		onSetActivePanel,
+		isSidebarOpen,
+		onCreateCode,
+		onCreateDiary,
+		onCreateExcalidraw,
+		onCreateLedger,
+		onCreateMermaid,
+		onCreateNote,
+		onCreatePlantUML,
+		onCreateTodo,
+		onCreateWiki,
 		onCreateWorkspace,
 		onImportFile,
-		onCreateDiary,
-		onCreateWiki,
-		onCreateLedger,
-		onCreateTodo,
-		onCreateNote,
-		onCreateExcalidraw,
-		onCreateMermaid,
-		onCreatePlantUML,
-		onCreateCode,
+		onSetActivePanel,
+		onToggleSidebar,
 	})
 
 	return (
@@ -89,7 +88,12 @@ export const ActivityBarView = memo(function ActivityBarView({
 		>
 			<TooltipProvider>
 				<nav className="flex flex-col items-center w-full">
-					{navItems.map(({ key, Icon, label, onClick, active, testId }) => (
+					{(currentPath === "/legacy"
+						? navItems
+						: currentPath === "/" || currentPath === "/org"
+							? navItems.filter(({ key }) => key === "diary")
+							: []
+					).map(({ key, Icon, label, onClick, active, testId }) => (
 						<ActionButton
 							key={key}
 							icon={<Icon className="size-5" />}
@@ -104,131 +108,141 @@ export const ActivityBarView = memo(function ActivityBarView({
 				<div className="flex-1" />
 
 				<div className="flex flex-col items-center w-full">
-					<Popover>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<PopoverTrigger asChild>
-									<button
-										type="button"
-										className="relative flex w-full aspect-square items-center justify-center text-muted-foreground transition-all hover:text-foreground"
-									>
-										<icons.MoreIcon className="size-5" />
-									</button>
-								</PopoverTrigger>
-							</TooltipTrigger>
-							<TooltipContent side="right">More</TooltipContent>
-						</Tooltip>
-						<PopoverContent
-							side="right"
-							align="end"
-							className="w-56 p-0 overflow-hidden shadow-2xl border border-border/40 bg-popover/95 backdrop-blur-xl rounded-xl"
-						>
-							<div className="flex flex-col py-1">
-								<div className="px-3 py-1.5 flex items-center justify-between border-b border-border/30">
-									<span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest">
-										Workspaces
-									</span>
-									<span className="flex items-center justify-center min-w-[1rem] h-3.5 text-[9px] font-medium rounded-full bg-primary/10 text-primary px-1">
-										{workspaces.length}
-									</span>
-								</div>
-
-								<div className="max-h-[200px] overflow-y-auto p-1 custom-scrollbar">
-									{workspaces.length > 0 ? (
-										<div className="space-y-0.5">
-											{workspaces.map((workspace) => (
-												<WorkspaceItem
-													key={workspace.id}
-													workspace={workspace}
-													isSelected={selectedWorkspaceId === workspace.id}
-													FolderIcon={icons.FolderIcon}
-													onClick={() => onSelectWorkspace(workspace.id)}
-												/>
-											))}
-										</div>
-									) : (
-										<div className="px-2 py-4 text-center">
-											<div className="size-6 mx-auto mb-1.5 rounded-full bg-muted/30 flex items-center justify-center">
-												<icons.FolderIcon className="size-3 text-muted-foreground/40" />
-											</div>
-											<p className="text-[10px] text-muted-foreground/60 italic">No workspaces</p>
-										</div>
-									)}
-								</div>
-
-								<div className="h-px bg-border/40 mx-2 my-0.5" />
-
-								<div className="px-1 pb-1 space-y-0.5">
-									{showNewWorkspace ? (
-										<div className="flex items-center gap-1.5 p-0.5 animate-in fade-in slide-in-from-left-2 duration-200 bg-muted/30 rounded-lg border border-border/40">
-											<Input
-												value={newWorkspaceName}
-												onChange={(e) => setNewWorkspaceName(e.target.value)}
-												placeholder="Name..."
-												className="h-6 text-xs border-none bg-transparent shadow-none focus-visible:ring-0 px-1.5"
-												autoFocus
-												onKeyDown={handleNewWorkspaceKeyDown}
-											/>
-											<Button
-												size="icon"
-												variant="ghost"
-												className="size-6 hover:bg-primary/10 hover:text-primary rounded-full"
-												onClick={handleCreateWorkspace}
-											>
-												<Plus className="size-3" />
-											</Button>
-										</div>
-									) : (
+					{currentPath === "/legacy" && (
+						<Popover>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<PopoverTrigger asChild>
 										<button
 											type="button"
-											onClick={openNewWorkspaceInput}
+											className="relative flex w-full aspect-square items-center justify-center text-muted-foreground transition-all hover:text-foreground"
+										>
+											<icons.MoreIcon className="size-5" />
+										</button>
+									</PopoverTrigger>
+								</TooltipTrigger>
+								<TooltipContent side="right">More</TooltipContent>
+							</Tooltip>
+							<PopoverContent
+								side="right"
+								align="end"
+								className="w-56 p-0 overflow-hidden shadow-2xl border border-border/40 bg-popover/95 backdrop-blur-xl rounded-xl"
+							>
+								<div className="flex flex-col py-1">
+									<div className="px-3 py-1.5 flex items-center justify-between border-b border-border/30">
+										<span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest">
+											Workspaces
+										</span>
+										<span className="flex items-center justify-center min-w-[1rem] h-3.5 text-[9px] font-medium rounded-full bg-primary/10 text-primary px-1">
+											{workspaces.length}
+										</span>
+									</div>
+
+									<div className="max-h-[200px] overflow-y-auto p-1 custom-scrollbar">
+										{workspaces.length > 0 ? (
+											<div className="space-y-0.5">
+												{workspaces.map((workspace) => (
+													<WorkspaceItem
+														key={workspace.id}
+														workspace={workspace}
+														isSelected={selectedWorkspaceId === workspace.id}
+														FolderIcon={icons.FolderIcon}
+														onClick={() => onSelectWorkspace(workspace.id)}
+													/>
+												))}
+											</div>
+										) : (
+											<div className="px-2 py-4 text-center">
+												<div className="size-6 mx-auto mb-1.5 rounded-full bg-muted/30 flex items-center justify-center">
+													<icons.FolderIcon className="size-3 text-muted-foreground/40" />
+												</div>
+												<p className="text-[10px] text-muted-foreground/60 italic">No workspaces</p>
+											</div>
+										)}
+									</div>
+
+									<div className="h-px bg-border/40 mx-2 my-0.5" />
+
+									<div className="px-1 pb-1 space-y-0.5">
+										{showNewWorkspace ? (
+											<div className="flex items-center gap-1.5 p-0.5 animate-in fade-in slide-in-from-left-2 duration-200 bg-muted/30 rounded-lg border border-border/40">
+												<Input
+													value={newWorkspaceName}
+													onChange={(e) => setNewWorkspaceName(e.target.value)}
+													placeholder="Name..."
+													className="h-6 text-xs border-none bg-transparent shadow-none focus-visible:ring-0 px-1.5"
+													autoFocus
+													onKeyDown={handleNewWorkspaceKeyDown}
+												/>
+												<Button
+													size="icon"
+													variant="ghost"
+													className="size-6 hover:bg-primary/10 hover:text-primary rounded-full"
+													onClick={handleCreateWorkspace}
+												>
+													<Plus className="size-3" />
+												</Button>
+											</div>
+										) : (
+											<button
+												type="button"
+												onClick={openNewWorkspaceInput}
+												className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all"
+											>
+												<div className="flex items-center justify-center size-6 shrink-0 rounded-full bg-muted/30">
+													<Plus className="size-3" />
+												</div>
+												<span>New Workspace</span>
+											</button>
+										)}
+
+										<button
+											type="button"
+											onClick={handleImportClick}
 											className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all"
 										>
 											<div className="flex items-center justify-center size-6 shrink-0 rounded-full bg-muted/30">
-												<Plus className="size-3" />
+												<icons.ImportIcon className="size-3" />
 											</div>
-											<span>New Workspace</span>
+											<span>Import from JSON</span>
 										</button>
-									)}
+										<button
+											type="button"
+											onClick={onOpenExportDialog}
+											className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all"
+										>
+											<div className="flex items-center justify-center size-6 shrink-0 rounded-full bg-muted/30">
+												<icons.ExportIcon className="size-3" />
+											</div>
+											<span>Export Data</span>
+										</button>
 
-									<button
-										type="button"
-										onClick={handleImportClick}
-										className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all"
-									>
-										<div className="flex items-center justify-center size-6 shrink-0 rounded-full bg-muted/30">
-											<icons.ImportIcon className="size-3" />
-										</div>
-										<span>Import from JSON</span>
-									</button>
-									<button
-										type="button"
-										onClick={onOpenExportDialog}
-										className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-all"
-									>
-										<div className="flex items-center justify-center size-6 shrink-0 rounded-full bg-muted/30">
-											<icons.ExportIcon className="size-3" />
-										</div>
-										<span>Export Data</span>
-									</button>
+										<div className="h-px bg-border/40 mx-1.5 my-0.5" />
 
-									<div className="h-px bg-border/40 mx-1.5 my-0.5" />
-
-									<button
-										type="button"
-										onClick={onDeleteAllData}
-										className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-xs text-destructive/80 hover:bg-destructive/10 hover:text-destructive transition-all group"
-										disabled={workspaces.length === 0}
-									>
-										<div className="flex items-center justify-center size-6 shrink-0 rounded-full bg-destructive/5 group-hover:bg-destructive/10 transition-colors">
-											<Trash2 className="size-3" />
-										</div>
-										<span>Delete All Data</span>
-									</button>
+										<button
+											type="button"
+											onClick={onDeleteAllData}
+											className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-xs text-destructive/80 hover:bg-destructive/10 hover:text-destructive transition-all group"
+											disabled={workspaces.length === 0}
+										>
+											<div className="flex items-center justify-center size-6 shrink-0 rounded-full bg-destructive/5 group-hover:bg-destructive/10 transition-colors">
+												<Trash2 className="size-3" />
+											</div>
+											<span>Delete All Data</span>
+										</button>
+									</div>
 								</div>
-							</div>
-						</PopoverContent>
-					</Popover>
+							</PopoverContent>
+						</Popover>
+					)}
+
+					<ToggleNavItem
+						to="/org"
+						icon={<FileText className="size-5" />}
+						label="Org workspace"
+						active={currentPath === "/" || isActive("/org")}
+						onNavigate={onNavigate}
+					/>
 
 					<ToggleNavItem
 						to="/settings/design"

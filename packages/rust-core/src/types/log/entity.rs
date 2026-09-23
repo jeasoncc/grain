@@ -6,7 +6,9 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// 日志级别枚举
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, EnumIter, DeriveActiveEnum)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, EnumIter, DeriveActiveEnum,
+)]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::None)")]
 pub enum LogLevel {
     #[sea_orm(string_value = "trace")]
@@ -69,28 +71,28 @@ pub struct Model {
     /// 日志 ID（主键）
     #[sea_orm(primary_key)]
     pub id: i32,
-    
+
     /// 日志唯一标识符（UUID）
     #[sea_orm(unique)]
     pub uuid: String,
-    
+
     /// 时间戳（ISO 8601 格式）
     pub timestamp: String,
-    
+
     /// 日志级别
     pub level: LogLevel,
-    
+
     /// 日志消息
     pub message: String,
-    
+
     /// 上下文信息（JSON 格式，可选）
     #[sea_orm(column_type = "Text", nullable)]
     pub context: Option<String>,
-    
+
     /// 日志来源（可选）
     #[sea_orm(nullable)]
     pub source: Option<String>,
-    
+
     /// 创建时间（数据库记录创建时间）
     pub created_at: DateTimeUtc,
 }

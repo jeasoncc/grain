@@ -30,3 +30,27 @@ export {
 
 // Download 相关导出
 export { triggerBlobDownload, triggerDownload } from "./download.file"
+
+// Org filesystem repository
+export {
+	clearOrgDerivedIndex,
+	createOrgDirectory,
+	createOrgFileRepository,
+	deleteOrgDocument,
+	getOrgDerivedIndexStats,
+	type InvokeCommand,
+	moveOrgDocument,
+	ORG_FILE_COMMANDS,
+	type OrgFileRepository,
+	orgFileRepository,
+	readOrgDocument,
+	releaseOrgWorkspace,
+	replaceOrgDerivedIndex,
+	scanOrgWorkspace,
+	selectOrgWorkspace,
+	unwatchOrgWorkspace,
+	verifyOrgMigration,
+	watchOrgWorkspace,
+	writeOrgDocument,
+	writeOrgMigration,
+} from "./org-file.repository"

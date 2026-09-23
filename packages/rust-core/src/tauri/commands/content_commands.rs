@@ -6,6 +6,16 @@ use sea_orm::DatabaseConnection;
 use tauri::State;
 
 #[tauri::command]
+pub async fn get_all_contents(
+    db: State<'_, DatabaseConnection>,
+) -> Result<Vec<ContentResponse>, String> {
+    content_db_fn::find_all(&db)
+        .await
+        .map(|contents| contents.into_iter().map(ContentResponse::from).collect())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn get_content(
     db: State<'_, DatabaseConnection>,
     node_id: String,

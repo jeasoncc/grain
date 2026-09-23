@@ -2,16 +2,14 @@
 //!
 //! 提供前端调用的日志操作接口
 
-use tauri::State;
 use sea_orm::DatabaseConnection;
+use tauri::State;
 
 use crate::{
     db::log_db_fn,
-    types::{
-        log::{
-            request::{CreateLogEntryRequest, LogQueryOptions},
-            response::{LogEntryResponse, LogQueryResult, LogStats},
-        },
+    types::log::{
+        request::{CreateLogEntryRequest, LogQueryOptions},
+        response::{LogEntryResponse, LogQueryResult, LogStats},
     },
 };
 
@@ -92,7 +90,7 @@ pub async fn clear_all_logs(db: State<'_, DatabaseConnection>) -> Result<i64, St
 }
 
 /// 检查是否需要从 IndexedDB 迁移
-/// 
+///
 /// 注意：这个函数目前总是返回 false，因为迁移逻辑在前端处理
 /// 实际的迁移检查应该在前端通过检查 IndexedDB 是否存在日志数据来实现
 #[tauri::command]
@@ -103,7 +101,7 @@ pub async fn check_needs_migration() -> Result<bool, String> {
 }
 
 /// 标记迁移完成
-/// 
+///
 /// 可以创建一个标记文件或在配置中记录迁移状态
 #[tauri::command]
 pub async fn mark_migration_complete() -> Result<(), String> {

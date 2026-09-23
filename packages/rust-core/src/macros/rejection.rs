@@ -97,17 +97,14 @@ pub async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> 
         // 业务逻辑错误
         let app_error = &app_rejection.0;
         (
-            StatusCode::from_u16(app_error.status_code()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
+            StatusCode::from_u16(app_error.status_code())
+                .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
             app_error.error_code(),
             app_error.to_string(),
         )
     } else if err.is_not_found() {
         // 路由未找到
-        (
-            StatusCode::NOT_FOUND,
-            "NOT_FOUND",
-            "路由未找到".to_string(),
-        )
+        (StatusCode::NOT_FOUND, "NOT_FOUND", "路由未找到".to_string())
     } else if let Some(_) = err.find::<warp::reject::MethodNotAllowed>() {
         // 方法不允许
         (
@@ -215,7 +212,7 @@ mod tests {
     async fn test_handle_rejection_app_error() {
         let error = AppError::not_found("测试");
         let rejection = warp::reject::custom(AppRejection(error));
-        
+
         let result = handle_rejection(rejection).await;
         assert!(result.is_ok());
     }
@@ -223,7 +220,7 @@ mod tests {
     #[tokio::test]
     async fn test_handle_rejection_not_found() {
         let rejection = warp::reject::not_found();
-        
+
         let result = handle_rejection(rejection).await;
         assert!(result.is_ok());
     }

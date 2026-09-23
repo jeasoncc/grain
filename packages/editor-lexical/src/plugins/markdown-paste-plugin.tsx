@@ -8,7 +8,7 @@
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $convertFromMarkdownString, TRANSFORMERS, CHECK_LIST } from "@lexical/markdown";
 import { useEffect } from "react";
-import { COMMAND_PRIORITY_LOW, PASTE_COMMAND, type LexicalCommand } from "lexical";
+import { COMMAND_PRIORITY_LOW, PASTE_COMMAND } from "lexical";
 
 /**
  * MarkdownPastePlugin component

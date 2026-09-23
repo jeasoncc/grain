@@ -69,6 +69,7 @@ pub fn create_builder() -> tauri::Builder<tauri::Wry> {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .manage(OrgWorkspaceRegistry::default())
         .setup(move |app| {
             let config_clone = config.clone();
 
@@ -96,6 +97,25 @@ pub fn create_builder() -> tauri::Builder<tauri::Wry> {
             get_downloads_dir,
             get_home_dir,
             ensure_directory_and_save,
+            // Org 文档命令
+            open_default_org_workspace,
+            reopen_default_org_workspace,
+            select_org_workspace,
+            watch_org_workspace,
+            unwatch_org_workspace,
+            release_org_workspace,
+            scan_org_workspace,
+            read_org_document,
+            read_org_migration_recovery_bundle,
+            write_org_document,
+            write_org_migration,
+            verify_org_migration,
+            create_org_directory,
+            move_org_document,
+            delete_org_document,
+            replace_org_derived_index,
+            clear_org_derived_index,
+            get_org_derived_index_stats,
             // 工作区命令
             get_workspaces,
             get_workspace,
@@ -118,7 +138,10 @@ pub fn create_builder() -> tauri::Builder<tauri::Wry> {
             delete_nodes_batch,
             reorder_nodes,
             duplicate_node,
+            // 只读旧数据迁移快照命令
+            get_legacy_migration_snapshot,
             // 内容命令
+            get_all_contents,
             get_content,
             save_content,
             get_content_version,

@@ -164,6 +164,24 @@ export interface SaveContentRequest {
 	readonly expectedVersion?: number
 }
 
+/** Atomic legacy migration read model returned from one backend snapshot. */
+export interface LegacyMigrationSnapshotResponse {
+	readonly workspaceTitle: string
+	readonly workspaceNodes: readonly NodeResponse[]
+	readonly allNodes: readonly NodeResponse[]
+	readonly allContents: readonly LegacyMigrationContentResponse[]
+}
+
+/** Lossless migration-only content row; SQLite integers cross IPC as decimal strings. */
+export interface LegacyMigrationContentResponse {
+	readonly id: string
+	readonly nodeId: string
+	readonly content: string
+	readonly version: string
+	readonly createdAt: string
+	readonly updatedAt: string
+}
+
 /** 内容响应 */
 export interface ContentResponse {
 	/** 内容 ID (UUID) */
@@ -172,6 +190,8 @@ export interface ContentResponse {
 	readonly nodeId: string
 	/** 内容 (JSON 字符串) */
 	readonly content: string
+	/** 后端保存的内容类型（旧数据库行默认为 lexical） */
+	readonly contentType: "lexical" | "excalidraw" | "text"
 	/** 版本号 */
 	readonly version: number
 	/** 创建时间戳 (毫秒) */

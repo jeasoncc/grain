@@ -64,6 +64,6 @@ pub use attachment::{
 
 // 重新导出 Log 类型
 pub use log::{
-    CreateLogEntryRequest, LogQueryOptions, LogEntryResponse, LogQueryResult, LogStats,
-    LogLevel, LogEntity, LogModel,
+    CreateLogEntryRequest, LogEntity, LogEntryResponse, LogLevel, LogModel, LogQueryOptions,
+    LogQueryResult, LogStats,
 };

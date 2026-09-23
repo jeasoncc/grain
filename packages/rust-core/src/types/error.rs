@@ -189,7 +189,10 @@ mod tests {
         assert_eq!(AppError::Unauthorized("test".into()).status_code(), 401);
         assert_eq!(AppError::InternalError("test".into()).status_code(), 500);
         assert_eq!(AppError::IoError("test".into()).status_code(), 500);
-        assert_eq!(AppError::SerializationError("test".into()).status_code(), 400);
+        assert_eq!(
+            AppError::SerializationError("test".into()).status_code(),
+            400
+        );
         assert_eq!(AppError::BackupError("test".into()).status_code(), 500);
         assert_eq!(AppError::KeyringError("test".into()).status_code(), 500);
     }
@@ -213,8 +216,14 @@ mod tests {
             AppError::InternalError("test".into()).error_code(),
             "INTERNAL_ERROR"
         );
-        assert_eq!(AppError::BackupError("test".into()).error_code(), "BACKUP_ERROR");
-        assert_eq!(AppError::KeyringError("test".into()).error_code(), "KEYRING_ERROR");
+        assert_eq!(
+            AppError::BackupError("test".into()).error_code(),
+            "BACKUP_ERROR"
+        );
+        assert_eq!(
+            AppError::KeyringError("test".into()).error_code(),
+            "KEYRING_ERROR"
+        );
     }
 
     #[test]

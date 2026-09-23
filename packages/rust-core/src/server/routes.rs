@@ -10,12 +10,13 @@ use crate::api::{
     clear_data::{ClearAllData, ClearDataKeepUsers},
     content::{GetContent, SaveContent},
     node::{
-        CreateNode, DeleteNode, GetChildNodes, GetNextSortOrder, GetNode, GetNodesByWorkspace, GetRootNodes,
-        MoveNode, UpdateNode,
+        CreateNode, DeleteNode, GetChildNodes, GetNextSortOrder, GetNode, GetNodesByWorkspace,
+        GetRootNodes, MoveNode, UpdateNode,
     },
     transaction::{CreateNodeWithContent, CreateNodeWithContentRequest, DeleteNodeRecursive},
     workspace::{CreateWorkspace, DeleteWorkspace, GetWorkspace, GetWorkspaces, UpdateWorkspace},
-    ApiEndpoint, IdInput, IdWithBodyInput, NextSortOrderInput, NodeIdInput, ParentIdInput, WorkspaceIdInput,
+    ApiEndpoint, IdInput, IdWithBodyInput, NextSortOrderInput, NodeIdInput, ParentIdInput,
+    WorkspaceIdInput,
 };
 use crate::macros::AppRejection;
 use crate::{
@@ -262,7 +263,9 @@ fn get_next_sort_order(
         .and(warp::query::<std::collections::HashMap<String, String>>())
         .and(with_db(db))
         .and_then(
-            |workspace_id: String, query: std::collections::HashMap<String, String>, db: Arc<DatabaseConnection>| async move {
+            |workspace_id: String,
+             query: std::collections::HashMap<String, String>,
+             db: Arc<DatabaseConnection>| async move {
                 // 解析 parentId 查询参数，"null" 字符串转为 None
                 let parent_id = query.get("parentId").and_then(|v| {
                     if v == "null" || v.is_empty() {
@@ -271,7 +274,7 @@ fn get_next_sort_order(
                         Some(v.clone())
                     }
                 });
-                
+
                 GetNextSortOrder::execute(&db, NextSortOrderInput::new(&workspace_id, parent_id))
                     .await
                     .map(|r| warp::reply::json(&r))
@@ -300,12 +303,14 @@ fn get_child_nodes(
     warp::path!("api" / "nodes" / String / "children")
         .and(warp::get())
         .and(with_db(db))
-        .and_then(|parent_id: String, db: Arc<DatabaseConnection>| async move {
-            GetChildNodes::execute(&db, ParentIdInput::new(&parent_id))
-                .await
-                .map(|r| warp::reply::json(&r))
-                .map_err(|e| warp::reject::custom(AppRejection::from(e)))
-        })
+        .and_then(
+            |parent_id: String, db: Arc<DatabaseConnection>| async move {
+                GetChildNodes::execute(&db, ParentIdInput::new(&parent_id))
+                    .await
+                    .map(|r| warp::reply::json(&r))
+                    .map_err(|e| warp::reject::custom(AppRejection::from(e)))
+            },
+        )
 }
 
 fn create_node(

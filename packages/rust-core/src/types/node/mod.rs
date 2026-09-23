@@ -12,8 +12,8 @@ pub mod node_interface;
 // 重新导出所有公共类型
 pub use node_builder::NodeBuilder;
 pub use node_entity::{
-    ActiveModel as NodeActiveModel, Column as NodeColumn, Entity as NodeEntity,
-    Model as NodeModel, Relation as NodeRelation,
+    ActiveModel as NodeActiveModel, Column as NodeColumn, Entity as NodeEntity, Model as NodeModel,
+    Relation as NodeRelation,
 };
 pub use node_interface::{
     CreateNodeRequest, MoveNodeRequest, NodeResponse, NodeType, UpdateNodeRequest,

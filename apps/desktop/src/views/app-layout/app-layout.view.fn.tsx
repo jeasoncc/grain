@@ -13,8 +13,9 @@
  * 依赖规则：views/ 只能依赖 hooks/, types/
  */
 
+import { useLocation } from "@tanstack/react-router"
 import type { ReactNode } from "react"
-import { Panel, Group, Separator } from "react-resizable-panels"
+import { Group, Panel, Separator } from "react-resizable-panels"
 import { useAppLayout } from "@/hooks/use-app-layout"
 import { ActivityBar } from "@/views/activity-bar"
 import { UnifiedSidebar } from "@/views/unified-sidebar"
@@ -43,25 +44,17 @@ export interface AppLayoutProps {
  */
 export function AppLayout({ children }: AppLayoutProps) {
 	const { isSidebarOpen, sidebarWidth, handleLayoutChanged } = useAppLayout()
+	const location = useLocation()
+	const showLegacySidebar = isSidebarOpen && location.pathname === "/legacy"
 
 	return (
 		<div className="flex h-screen w-screen overflow-hidden">
 			<ActivityBar />
 
-			<Group 
-				orientation="horizontal" 
-				id="grain-main-layout"
-				onLayoutChanged={handleLayoutChanged}
-			>
-				{isSidebarOpen && (
+			<Group orientation="horizontal" id="grain-main-layout" onLayoutChanged={handleLayoutChanged}>
+				{showLegacySidebar && (
 					<>
-						<Panel
-							id="sidebar"
-							defaultSize={sidebarWidth}
-							minSize={170}
-							maxSize={500}
-							collapsible
-						>
+						<Panel id="sidebar" defaultSize={sidebarWidth} minSize={170} maxSize={500} collapsible>
 							<UnifiedSidebar />
 						</Panel>
 

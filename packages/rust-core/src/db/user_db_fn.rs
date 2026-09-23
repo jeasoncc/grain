@@ -171,7 +171,21 @@ pub async fn update(
 pub async fn update_last_login(db: &DatabaseConnection, id: &str) -> Result<UserModel, DbErr> {
     let now = chrono::Utc::now().timestamp_millis();
     update(
-        db, id, None, None, None, None, Some(now), None, None, None, None, None, None, None, None,
+        db,
+        id,
+        None,
+        None,
+        None,
+        None,
+        Some(now),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
         None,
     )
     .await

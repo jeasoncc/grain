@@ -11,7 +11,12 @@ pub async fn get_workspaces(
 ) -> Result<Vec<WorkspaceResponse>, String> {
     workspace_db_fn::find_all(&db)
         .await
-        .map(|workspaces| workspaces.into_iter().map(WorkspaceResponse::from).collect())
+        .map(|workspaces| {
+            workspaces
+                .into_iter()
+                .map(WorkspaceResponse::from)
+                .collect()
+        })
         .map_err(|e| e.to_string())
 }
 
@@ -51,10 +56,7 @@ pub async fn update_workspace(
 }
 
 #[tauri::command]
-pub async fn delete_workspace(
-    db: State<'_, DatabaseConnection>,
-    id: String,
-) -> Result<(), String> {
+pub async fn delete_workspace(db: State<'_, DatabaseConnection>, id: String) -> Result<(), String> {
     workspace_db_fn::delete(&db, &id)
         .await
         .map_err(|e| e.to_string())

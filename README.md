@@ -1,119 +1,149 @@
 <div align="center">
 
-```
-   ______           _       
-  / ____/________ _(_)___   
- / / __/ ___/ __ `/ / __ \  
-/ /_/ / /  / /_/ / / / / /  
-\____/_/   \__,_/_/_/ /_/   
-                            
-    🌾 Pure. Elegant. Focused. 🌾
-```
+# Grain
 
-**A minimalist writing sanctuary for long-form content**
+**A local-first Org-mode desktop client**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Downloads](https://img.shields.io/github/downloads/jeasoncc/grain/total.svg)](https://github.com/jeasoncc/grain/releases)
-[![Stars](https://img.shields.io/github/stars/jeasoncc/grain.svg)](https://github.com/jeasoncc/grain/stargazers)
+Your writing lives in standard `.org` files. Grain adds a focused editor, agenda, capture, links, and safe desktop file operations without turning a database into the source of truth.
+
+[中文说明](./README.zh-CN.md) · [Desktop development guide](./apps/desktop/README.md) · [Documentation](./docs/README.md)
 
 </div>
 
 ---
 
-![Grain Editor](https://s3.bmp.ovh/imgs/2025/12/13/6647787c1fa17679.png)
+## What Grain is
 
-Grain is a minimalist writing sanctuary for long-form content. Distraction-free by design, powerful when you need it. Write novels, essays, research papers, or build your knowledge base—all in one elegant space.
+Grain is being rebuilt around a simple rule:
 
----
+> **Org files are authoritative. SQLite is disposable derived state.**
 
-## ⚡ Performance
+The default desktop experience opens a real local directory and edits its `.org` files directly. The application database may contain rebuildable indexes, caches, and UI state, but it is not the canonical document store.
 
-Grain delivers world-class performance thanks to Tauri's native architecture. With 10 documents open:
+The previous SQLite/Lexical application remains available only as an explicitly separated legacy migration surface while migration verification is completed.
 
-### Memory Usage (MB)
-```
-Grain     ████░░░░░░░░░░░░░░░░ 166 MB  ⭐ 83% less than Notion
-Typora    ██████░░░░░░░░░░░░░░ 280 MB
-Joplin    ████████░░░░░░░░░░░░ 380 MB
-AppFlowy  █████████░░░░░░░░░░░ 420 MB
-Obsidian  █████████░░░░░░░░░░░ 450 MB
-Trilium   ██████████░░░░░░░░░░ 520 MB
-VS Code   ██████████░░░░░░░░░░ 520 MB
-Logseq    █████████████░░░░░░░ 680 MB
-Evernote  █████████████████░░░ 850 MB
-Notion    ███████████████████░ 950 MB
-          0                    1000
-```
+## Current capabilities
 
-### CPU Usage - Idle (%)
-```
-Grain     █░░░░░░░░░░░░░░░░░░░ 0.6%   ⭐ 75% less than VS Code
-Typora    ██░░░░░░░░░░░░░░░░░░ 1.2%
-Joplin    ███░░░░░░░░░░░░░░░░░ 1.5%
-AppFlowy  ███░░░░░░░░░░░░░░░░░ 1.7%
-Obsidian  ███░░░░░░░░░░░░░░░░░ 1.8%
-Trilium   ████░░░░░░░░░░░░░░░░ 2.0%
-VS Code   ████░░░░░░░░░░░░░░░░ 2.4%
-Logseq    ██████░░░░░░░░░░░░░░ 3.1%
-Evernote  ███████░░░░░░░░░░░░░ 3.8%
-Notion    █████████░░░░░░░░░░░ 4.5%
-          0                    5.0
+- Raw-text Org editing with CodeMirror 6
+- Recursive workspace tree with real files and empty directories
+- Safe create, read, revision-checked write, move, rename, and delete operations
+- `TODO`, heading level, checkbox, subtree move, refile, and archive operations
+- Agenda extraction and TODO capture
+- `file:`, `id:`, and `CUSTOM_ID` link navigation
+- Backlinks with exact source navigation
+- Daily notes at `diary/YYYY-MM-DD.org`
+- Default workspace at the system Documents directory under `Grain`
+- External file watching, polling fallback, dirty-buffer protection, and conflict reporting
+- Rebuildable SQLite indexes for documents, headings, links, and agenda entries
+- Auditable legacy migration with raw backups, manifests, hashes, recovery SQL, and recovery drills
+
+## Storage model
+
+```text
+Documents/Grain/             Canonical user content
+├── inbox.org
+├── projects/
+└── diary/YYYY-MM-DD.org
+
+Application data directory/  Non-canonical application state
+└── grain.db                 Derived indexes, caches, UI state, and temporary legacy data
 ```
 
-### Installation Size (MB)
+Deleting the derived Org index must not delete or invalidate the Org files. The index can be rebuilt by scanning the workspace.
+
+## Safety model
+
+Local file access is implemented by Tauri and Rust rather than browser filesystem APIs.
+
+- A selected workspace is retained as a capability-scoped directory handle.
+- Relative paths reject traversal, absolute paths, backslashes, and non-Org document targets.
+- Symlink escapes are rejected and workspace scans do not follow symlink directories.
+- Ordinary writes require an expected revision and reject stale content.
+- Migration publication uses staged artifacts and atomic no-clobber operations on supported platforms.
+- Refile and archive use copy-first behavior and preserve recoverable duplicates after partial failure.
+- The fixed default workspace is created only after an explicit user action. Automatic restart recovery never silently recreates a removed directory.
+
+## Editor transition
+
+| Surface | Editor | Status |
+|---|---|---|
+| Default `/` and `/org` workspace | CodeMirror 6 over raw Org text | Primary |
+| Explicit `/legacy` workspace | Lexical over legacy SQLite content | Migration compatibility only |
+
+The legacy route is lazy-loaded and is not presented as a peer application in the main activity bar. Lexical will be removed after a verified migration/recovery run against an authorized historical database copy.
+
+## Repository layout
+
+```text
+apps/desktop/                 Tauri desktop UI
+apps/desktop/src/flows/       Business flows
+apps/desktop/src/io/          Tauri/API/event boundaries
+apps/desktop/src/pipes/org/   Pure Org text transformations
+apps/desktop/src/views/       React views and containers
+packages/rust-core/           Capability filesystem, database, and Tauri commands
+packages/editor-codemirror/   CodeMirror editor package
+packages/editor-lexical/      Legacy editor package
 ```
-Grain     █░░░░░░░░░░░░░░░░░░░  10 MB  ⭐ 95% smaller
-Typora    ████░░░░░░░░░░░░░░░░ 100 MB
-Joplin    █████░░░░░░░░░░░░░░░ 120 MB
-AppFlowy  ██████░░░░░░░░░░░░░░ 140 MB
-Obsidian  ██████░░░░░░░░░░░░░░ 150 MB
-Trilium   ███████░░░░░░░░░░░░░ 180 MB
-VS Code   ████████░░░░░░░░░░░░ 200 MB
-Logseq    ██████████░░░░░░░░░░ 250 MB
-Evernote  ███████████░░░░░░░░░ 280 MB
-Notion    ████████████░░░░░░░░ 300 MB
-          0                    300
+
+## Development
+
+### Requirements
+
+- Bun 1.1+
+- Node.js 20+
+- Rust stable toolchain
+- Tauri 2 system prerequisites
+- Linux: WebKitGTK 4.1 development packages
+
+### Install
+
+```bash
+bun install
 ```
 
-### Startup Time (seconds)
-```
-Grain     █░░░░░░░░░░░░░░░░░░░ 0.8s   ⭐ 3x faster
-Typora    ██░░░░░░░░░░░░░░░░░░ 1.5s
-Joplin    ███░░░░░░░░░░░░░░░░░ 1.8s
-AppFlowy  ███░░░░░░░░░░░░░░░░░ 1.9s
-Obsidian  ███░░░░░░░░░░░░░░░░░ 2.0s
-Trilium   ████░░░░░░░░░░░░░░░░ 2.3s
-VS Code   ████░░░░░░░░░░░░░░░░ 2.5s
-Logseq    █████░░░░░░░░░░░░░░░ 3.0s
-Evernote  █████░░░░░░░░░░░░░░░ 3.2s
-Notion    ██████░░░░░░░░░░░░░░ 3.5s
-          0                    4.0
+### Run the desktop application
+
+```bash
+cd apps/desktop
+bun run tauri dev
 ```
 
+Vite listens on `http://localhost:1420` for the Tauri WebView during development. It is not a browser-based replacement for the desktop filesystem boundary.
 
+### Verify the main Org path
 
-| Metric | Grain | Competitors (avg) | Difference |
-|--------|-------|-------------------|------------|
-| Memory | **166 MB** | 576 MB | **↓ 71% less** |
-| CPU (idle) | **0.6%** | 2.4% | **↓ 75% less** |
-| Startup | **< 1s** | 2.5s | **3x faster** |
-| Install Size | **~10 MB** | 200 MB | **↓ 95% smaller** |
-| Battery | **Minimal** | High | **All-day writing** |
+```bash
+cd apps/desktop
+bun run type:check
+bunx vitest run \
+  src/hooks/use-org-workspace.test.ts \
+  src/io/file/org-file.repository.test.ts \
+  src/flows/org-workspace/org-workspace.flow.test.ts
 
-## Download
+cd ../..
+cargo test --manifest-path packages/rust-core/Cargo.toml --offline --lib
+```
 
-### All Platforms
+### Build
 
-| Platform | Method | Install Command / Link |
-|----------|--------|------------------------|
-| Windows | Microsoft Store | [Grain / 小麦](ms-windows-store://pdp/?productid=9NV7M2PW25B3) |
-| Windows | Direct Download | [MSI / NSIS / MSIX](https://github.com/jeasoncc/grain/releases) |
-| macOS | Direct Download | [DMG (Intel / Apple Silicon)](https://github.com/jeasoncc/grain/releases) |
-| Linux | Snap Store | `sudo snap install grain` |
-| Linux | Direct Download | [DEB / RPM / AppImage](https://github.com/jeasoncc/grain/releases) |
+```bash
+cd apps/desktop
+bun run build
+bun run tauri build
+```
+
+## Migration status
+
+The file-authoritative Org path, editor, agenda, links, derived indexes, migration artifacts, and synthetic recovery drill are implemented. Before deleting the final legacy write paths, the project still requires:
+
+1. A complete migration and recovery drill against an explicitly authorized copy of a historical `grain.db`.
+2. Conversion of `/legacy` to read-only mode after that drill passes.
+3. Removal of remaining Lexical and legacy SQLite body-writing code.
+4. Equivalent Windows ACL, file-identity, and atomic publication guarantees for migration and move operations.
+5. Continued cleanup of stale tests for legacy-only UI surfaces.
+
+No real historical database should be read or modified without explicit authorization.
 
 ## License
 
-MIT License - see [LICENSE](./LICENSE) for details
-
-
+MIT — see [LICENSE](./LICENSE).

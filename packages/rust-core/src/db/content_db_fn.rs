@@ -4,7 +4,9 @@
 
 use crate::types::content::{content_entity as content, ContentEntity as Content};
 use crate::types::error::{AppError, AppResult};
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, Set,
+};
 use tracing::info;
 
 // ============================================================================
@@ -15,6 +17,16 @@ use tracing::info;
 pub async fn find_by_id(db: &DatabaseConnection, id: &str) -> AppResult<Option<content::Model>> {
     let content = Content::find_by_id(id).one(db).await?;
     Ok(content)
+}
+
+/// 查询所有内容，使用稳定顺序供迁移和备份读取。
+pub async fn find_all(db: &DatabaseConnection) -> AppResult<Vec<content::Model>> {
+    let contents = Content::find()
+        .order_by_asc(content::Column::NodeId)
+        .order_by_asc(content::Column::Id)
+        .all(db)
+        .await?;
+    Ok(contents)
 }
 
 /// 根据节点 ID 查询内容
@@ -207,6 +219,41 @@ mod tests {
         let content = result.unwrap();
         assert!(content.is_some());
         assert_eq!(content.unwrap().content, "test");
+    }
+
+    #[tokio::test]
+    async fn test_find_all_uses_deterministic_node_and_content_id_order() {
+        let db = setup_test_db().await;
+        let first_node_id = create_test_node(&db).await;
+        let second_node_id = create_test_node(&db).await;
+        let (first_node_id, second_node_id) = if first_node_id < second_node_id {
+            (first_node_id, second_node_id)
+        } else {
+            (second_node_id, first_node_id)
+        };
+
+        create(
+            &db,
+            "content-z".to_string(),
+            second_node_id,
+            "second".to_string(),
+        )
+        .await
+        .unwrap();
+        create(
+            &db,
+            "content-a".to_string(),
+            first_node_id.clone(),
+            "first".to_string(),
+        )
+        .await
+        .unwrap();
+
+        let contents = find_all(&db).await.unwrap();
+        assert_eq!(contents.len(), 2);
+        assert_eq!(contents[0].node_id, first_node_id);
+        assert_eq!(contents[0].id, "content-a");
+        assert_eq!(contents[1].id, "content-z");
     }
 
     #[tokio::test]

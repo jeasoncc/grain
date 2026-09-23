@@ -20,6 +20,8 @@ export * from "./backup"
 export * from "./content"
 // Node 类型模块
 export * from "./node"
+// Org 文件工作区类型模块
+export * from "./org"
 // Shared 基础类型模块
 export * from "./shared"
 // Storage 类型模块

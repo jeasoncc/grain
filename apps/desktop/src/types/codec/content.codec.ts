@@ -8,7 +8,11 @@
 import dayjs from "dayjs"
 
 import type { ContentCreateInput, ContentInterface, ContentType } from "@/types/content"
-import type { ContentResponse, SaveContentRequest } from "@/types/rust-api"
+import type {
+	ContentResponse,
+	LegacyMigrationContentResponse,
+	SaveContentRequest,
+} from "@/types/rust-api"
 
 // ============================================
 // 解码：Rust 类型 → 前端类型
@@ -45,6 +49,9 @@ export const decodeContent = (response: ContentResponse): ContentInterface => ({
 	contentType: inferContentType(response.content),
 	id: response.id,
 	lastEdit: dayjs(response.updatedAt).toISOString(),
+	legacyCreatedAt: String(response.createdAt),
+	legacyUpdatedAt: String(response.updatedAt),
+	legacyVersion: String(response.version),
 	nodeId: response.nodeId,
 })
 
@@ -53,6 +60,37 @@ export const decodeContent = (response: ContentResponse): ContentInterface => ({
  */
 export const decodeContentOptional = (response: ContentResponse | null): ContentInterface | null =>
 	response ? decodeContent(response) : null
+
+/**
+ * Decode legacy rows using their bytes as the discriminator. The legacy table has no
+ * content_type column, so Rust's response enum default is not source metadata and must
+ * not override text/Excalidraw/Lexical inference.
+ */
+export const decodeContents = (
+	responses: readonly ContentResponse[],
+): readonly ContentInterface[] => responses.map(decodeContent)
+
+/** Decode migration-only rows while retaining SQLite integer metadata as exact decimal strings. */
+export const decodeLegacyMigrationContents = (
+	responses: readonly LegacyMigrationContentResponse[],
+): readonly ContentInterface[] =>
+	responses.map((response) => {
+		const updatedAt = Number(response.updatedAt)
+		const parsedDate = dayjs(updatedAt)
+		return {
+			content: response.content,
+			contentType: inferContentType(response.content),
+			id: response.id,
+			lastEdit:
+				Number.isSafeInteger(updatedAt) && parsedDate.isValid()
+					? parsedDate.toISOString()
+					: new Date(0).toISOString(),
+			legacyCreatedAt: response.createdAt,
+			legacyUpdatedAt: response.updatedAt,
+			legacyVersion: response.version,
+			nodeId: response.nodeId,
+		}
+	})
 
 // ============================================
 // 编码：前端类型 → Rust 请求类型
