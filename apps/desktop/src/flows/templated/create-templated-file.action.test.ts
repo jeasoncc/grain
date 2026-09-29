@@ -16,6 +16,7 @@
 
 import dayjs from "dayjs"
 import * as E from "fp-ts/Either"
+import * as TE from "fp-ts/TaskEither"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { z } from "zod"
 import type { NodeInterface } from "@/types/node"
@@ -30,22 +31,22 @@ import {
 // Mocks
 // ============================================================================
 
-vi.mock("@/flows/node", () => ({
-	createFileInTree: vi.fn(),
+vi.mock("@/flows/file", () => ({
+	createFile: vi.fn(),
 }))
 
-vi.mock("@/log/index", () => ({
-	default: {
-		debug: vi.fn(),
-		error: vi.fn(),
-		info: vi.fn(),
-		start: vi.fn(),
-		success: vi.fn(),
-		warn: vi.fn(),
-	},
+vi.mock("@/io/api/node.api", () => ({
+	createNode: vi.fn(),
+	getNodesByWorkspace: vi.fn(),
 }))
 
-import { createFileInTree } from "@/flows/node"
+vi.mock("@/io/log/logger.api", () => ({
+	info: vi.fn(),
+	success: vi.fn(),
+}))
+
+import { createFile } from "@/flows/file"
+import { createNode, getNodesByWorkspace } from "@/io/api/node.api"
 
 // ============================================================================
 // Test Helpers
@@ -72,16 +73,9 @@ function createMockNode(overrides: Partial<NodeInterface> = {}): NodeInterface {
 /**
  * 创建 mock 文件创建结果
  */
-const createMockFileResult = (
-	nodeOverrides: Partial<NodeInterface> = {},
-	parentOverrides: Partial<NodeInterface> = {},
-) => ({
+const createMockFileResult = (nodeOverrides: Partial<NodeInterface> = {}) => ({
 	node: createMockNode(nodeOverrides),
-	parentFolder: createMockNode({
-		title: "Parent Folder",
-		type: "folder",
-		...parentOverrides,
-	}),
+	tabId: null,
 })
 
 /**
@@ -175,6 +169,17 @@ describe("createTemplatedFile", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		testConfig = createTestTemplateConfig()
+		vi.mocked(getNodesByWorkspace).mockReturnValue(TE.right([]))
+		vi.mocked(createNode).mockImplementation((input) =>
+			TE.right(
+				createMockNode({
+					parent: input.parent,
+					title: input.title,
+					type: "folder",
+					workspace: input.workspace,
+				}),
+			),
+		)
 	})
 
 	afterEach(() => {
@@ -194,26 +199,28 @@ describe("createTemplatedFile", () => {
 
 		it("应该使用配置中的根文件夹", async () => {
 			const mockResult = createMockFileResult()
-			vi.mocked(createFileInTree).mockResolvedValue(mockResult)
+			vi.mocked(createFile).mockReturnValue(TE.right(mockResult))
 
 			const createFn = createTemplatedFile(testConfig)
 			await createFn(validParams)()
 
-			expect(vi.mocked(createFileInTree)).toHaveBeenCalledWith(
+			expect(vi.mocked(createNode)).toHaveBeenCalledWith(
 				expect.objectContaining({
-					folderPath: ["TestFolder", "工作"],
+					parent: null,
+					title: "TestFolder",
+					type: "folder",
 				}),
 			)
 		})
 
 		it("应该使用配置中的文件类型", async () => {
 			const mockResult = createMockFileResult()
-			vi.mocked(createFileInTree).mockResolvedValue(mockResult)
+			vi.mocked(createFile).mockReturnValue(TE.right(mockResult))
 
 			const createFn = createTemplatedFile(testConfig)
 			await createFn(validParams)()
 
-			expect(vi.mocked(createFileInTree)).toHaveBeenCalledWith(
+			expect(vi.mocked(createFile)).toHaveBeenCalledWith(
 				expect.objectContaining({
 					type: "file",
 				}),
@@ -222,12 +229,12 @@ describe("createTemplatedFile", () => {
 
 		it("应该使用配置中的标签", async () => {
 			const mockResult = createMockFileResult()
-			vi.mocked(createFileInTree).mockResolvedValue(mockResult)
+			vi.mocked(createFile).mockReturnValue(TE.right(mockResult))
 
 			const createFn = createTemplatedFile(testConfig)
 			await createFn(validParams)()
 
-			expect(vi.mocked(createFileInTree)).toHaveBeenCalledWith(
+			expect(vi.mocked(createFile)).toHaveBeenCalledWith(
 				expect.objectContaining({
 					tags: ["test"],
 				}),
@@ -242,7 +249,7 @@ describe("createTemplatedFile", () => {
 	describe("参数校验", () => {
 		beforeEach(() => {
 			const mockResult = createMockFileResult()
-			vi.mocked(createFileInTree).mockResolvedValue(mockResult)
+			vi.mocked(createFile).mockReturnValue(TE.right(mockResult))
 		})
 
 		it("应该接受有效的参数", async () => {
@@ -251,17 +258,13 @@ describe("createTemplatedFile", () => {
 			expect(E.isRight(result)).toBe(true)
 		})
 
-		it("应该拒绝无效的工作区 ID", async () => {
+		it("应该接受非空的工作区 ID", async () => {
 			const result = await createTemplatedFileWithInvalidParams(testConfig, {
 				templateParams: validTemplateParams,
-				workspaceId: "invalid-id",
+				workspaceId: "workspace-id",
 			})()
 
-			expect(E.isLeft(result)).toBe(true)
-			if (E.isLeft(result)) {
-				expect(result.left.type).toBe("VALIDATION_ERROR")
-				expect(result.left.message).toContain("UUID")
-			}
+			expect(E.isRight(result)).toBe(true)
 		})
 
 		it("应该拒绝空的工作区 ID", async () => {
@@ -314,7 +317,7 @@ describe("createTemplatedFile", () => {
 	describe("模板生成", () => {
 		beforeEach(() => {
 			const mockResult = createMockFileResult()
-			vi.mocked(createFileInTree).mockResolvedValue(mockResult)
+			vi.mocked(createFile).mockReturnValue(TE.right(mockResult))
 		})
 
 		it("应该调用模板生成函数", async () => {
@@ -334,7 +337,7 @@ describe("createTemplatedFile", () => {
 			expect(generateTemplateSpy).toHaveBeenCalledWith(validTemplateParams)
 		})
 
-		it("应该验证生成的内容是有效的 JSON", async () => {
+		it("应该保留无法解析为 JSON 的内容", async () => {
 			const config = createTestTemplateConfig({
 				generateTemplate: () => "invalid json",
 			})
@@ -342,10 +345,9 @@ describe("createTemplatedFile", () => {
 			const createFn = createTemplatedFile(config)
 			const result = await createFn(validParams)()
 
-			expect(E.isLeft(result)).toBe(true)
-			if (E.isLeft(result)) {
-				expect(result.left.type).toBe("VALIDATION_ERROR")
-				expect(result.left.message).toContain("内容解析失败")
+			expect(E.isRight(result)).toBe(true)
+			if (E.isRight(result)) {
+				expect(result.right.parsedContent).toBe("invalid json")
 			}
 		})
 	})
@@ -359,7 +361,7 @@ describe("createTemplatedFile", () => {
 			const mockResult = createMockFileResult({
 				title: "测试文件 (工作)",
 			})
-			vi.mocked(createFileInTree).mockResolvedValue(mockResult)
+			vi.mocked(createFile).mockReturnValue(TE.right(mockResult))
 
 			const createFn = createTemplatedFile(testConfig)
 			const result = await createFn(validParams)()
@@ -373,17 +375,17 @@ describe("createTemplatedFile", () => {
 			}
 		})
 
-		it("应该传递正确的参数给 createFileInTree", async () => {
+		it("应该传递正确的参数给 createFile", async () => {
 			const mockResult = createMockFileResult()
-			vi.mocked(createFileInTree).mockResolvedValue(mockResult)
+			vi.mocked(createFile).mockReturnValue(TE.right(mockResult))
 
 			const createFn = createTemplatedFile(testConfig)
 			await createFn(validParams)()
 
-			expect(vi.mocked(createFileInTree)).toHaveBeenCalledWith({
+			expect(vi.mocked(createFile)).toHaveBeenCalledWith({
+				collapsed: true,
 				content: expect.any(String),
-				folderPath: ["TestFolder", "工作"],
-				foldersCollapsed: true,
+				parentId: expect.any(String),
 				tags: ["test"],
 				title: "测试文件 (工作)",
 				type: "file",
@@ -393,7 +395,7 @@ describe("createTemplatedFile", () => {
 
 		it("应该返回解析后的内容", async () => {
 			const mockResult = createMockFileResult()
-			vi.mocked(createFileInTree).mockResolvedValue(mockResult)
+			vi.mocked(createFile).mockReturnValue(TE.right(mockResult))
 
 			const createFn = createTemplatedFile(testConfig)
 			const result = await createFn(validParams)()
@@ -412,7 +414,9 @@ describe("createTemplatedFile", () => {
 
 	describe("错误处理", () => {
 		it("应该在文件创建失败时返回 DB_ERROR", async () => {
-			vi.mocked(createFileInTree).mockRejectedValue(new Error("Database connection failed"))
+			vi.mocked(createFile).mockReturnValue(
+				TE.left({ message: "Database connection failed", type: "DB_ERROR" }),
+			)
 
 			const createFn = createTemplatedFile(testConfig)
 			const result = await createFn(validParams)()
@@ -420,7 +424,7 @@ describe("createTemplatedFile", () => {
 			expect(E.isLeft(result)).toBe(true)
 			if (E.isLeft(result)) {
 				expect(result.left.type).toBe("DB_ERROR")
-				expect(result.left.message).toContain("创建文件失败")
+				expect(result.left.message).toContain("Database connection failed")
 			}
 		})
 	})
@@ -432,7 +436,7 @@ describe("createTemplatedFile", () => {
 	describe("边界情况", () => {
 		beforeEach(() => {
 			const mockResult = createMockFileResult()
-			vi.mocked(createFileInTree).mockResolvedValue(mockResult)
+			vi.mocked(createFile).mockReturnValue(TE.right(mockResult))
 		})
 
 		it("应该处理最小有效参数", async () => {
@@ -469,6 +473,17 @@ describe("createTemplatedFileAsync", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		testConfig = createTestTemplateConfig()
+		vi.mocked(getNodesByWorkspace).mockReturnValue(TE.right([]))
+		vi.mocked(createNode).mockImplementation((input) =>
+			TE.right(
+				createMockNode({
+					parent: input.parent,
+					title: input.title,
+					type: "folder",
+					workspace: input.workspace,
+				}),
+			),
+		)
 	})
 
 	afterEach(() => {
@@ -480,7 +495,7 @@ describe("createTemplatedFileAsync", () => {
 		const mockResult = createMockFileResult({
 			title: "测试文件 (工作)",
 		})
-		vi.mocked(createFileInTree).mockResolvedValue(mockResult)
+		vi.mocked(createFile).mockReturnValue(TE.right(mockResult))
 
 		const createFnAsync = createTemplatedFileAsync(testConfig)
 		const result = await createFnAsync(validParams)
@@ -492,11 +507,11 @@ describe("createTemplatedFileAsync", () => {
 	})
 
 	it("应该在文件创建失败时抛出错误", async () => {
-		vi.mocked(createFileInTree).mockRejectedValue(new Error("Database error"))
+		vi.mocked(createFile).mockReturnValue(TE.left({ message: "Database error", type: "DB_ERROR" }))
 
 		const createFnAsync = createTemplatedFileAsync(testConfig)
 
-		await expect(createFnAsync(validParams)).rejects.toThrow("创建文件失败")
+		await expect(createFnAsync(validParams)).rejects.toThrow("Database error")
 	})
 
 	it("应该在参数校验失败时抛出错误", async () => {
@@ -505,7 +520,7 @@ describe("createTemplatedFileAsync", () => {
 		await expect(
 			createFnAsync({
 				templateParams: validTemplateParams,
-				workspaceId: "invalid-id",
+				workspaceId: "",
 			} as TemplatedFileParams<TestTemplateParams>),
 		).rejects.toThrow()
 	})

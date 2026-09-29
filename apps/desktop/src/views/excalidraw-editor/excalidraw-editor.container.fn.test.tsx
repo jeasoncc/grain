@@ -6,6 +6,7 @@
 
 import { act, render, screen } from "@testing-library/react"
 import * as fc from "fast-check"
+import * as O from "fp-ts/Option"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { EXCALIDRAW_PERFORMANCE_CONFIG } from "./excalidraw-editor.config"
 import { ExcalidrawEditorContainer } from "./excalidraw-editor.container.fn"
@@ -43,7 +44,13 @@ vi.mock("@excalidraw/excalidraw", () => ({
 // Mock hooks
 const mockUseContentByNodeId = vi.fn()
 vi.mock("@/hooks/use-content", () => ({
-	useContentByNodeId: () => mockUseContentByNodeId(),
+	useContentByNodeId: () => {
+		const value = mockUseContentByNodeId()
+		if (value === undefined) return undefined
+		if (value === null) return O.none
+		if (value._tag === "None" || value._tag === "Some") return value
+		return O.some(value)
+	},
 }))
 
 const mockUseTheme = vi.fn(() => ({ isDark: false }))

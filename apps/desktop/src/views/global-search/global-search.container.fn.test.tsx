@@ -22,10 +22,10 @@ import type { GlobalSearchViewProps } from "./global-search.types"
 // ============================================================================
 
 // Mock search engine
-const mockSimpleSearch = vi.fn()
-vi.mock("@/fn/search", () => ({
+const mockSimpleSearch = vi.hoisted(() => vi.fn())
+vi.mock("@/flows/search", () => ({
 	searchEngine: {
-		simpleSearch: (...args: any[]) => mockSimpleSearch(...args),
+		simpleSearch: mockSimpleSearch,
 	},
 }))
 
@@ -54,19 +54,26 @@ vi.mock("./global-search.view.fn", () => ({
 			<div data-testid="loading">{String(props.loading)}</div>
 			<div data-testid="results-count">{props.results.length}</div>
 			<div data-testid="selected-index">{props.selectedIndex}</div>
-			<button onClick={() => props.onQueryChange("test query")}>Change Query</button>
-			<button onClick={() => props.onSelectResult(props.results[0])}>Select Result</button>
+			<button type="button" onClick={() => props.onQueryChange("test query")}>
+				Change Query
+			</button>
+			<button type="button" onClick={() => props.onSelectResult(props.results[0])}>
+				Select Result
+			</button>
 			<button
+				type="button"
 				onClick={() =>
 					props.onKeyDown({
 						key: "ArrowDown",
 						preventDefault: vi.fn(),
-					} as any)
+					} as unknown as React.KeyboardEvent)
 				}
 			>
 				Key Down
 			</button>
-			<button onClick={() => props.onOpenChange(false)}>Close</button>
+			<button type="button" onClick={() => props.onOpenChange(false)}>
+				Close
+			</button>
 		</div>
 	),
 }))

@@ -21,9 +21,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const mockSetTheme = vi.fn()
 const mockSetMode = vi.fn()
-const mockToggleMode = vi.fn()
 const mockSetEnableTransition = vi.fn()
 const mockGetState = vi.fn()
+
+const createMockThemeState = (mode: "light" | "dark" | "system" = "dark") => ({
+	enableTransition: false,
+	mode,
+	setEnableTransition: mockSetEnableTransition,
+	setMode: mockSetMode,
+	setTheme: mockSetTheme,
+	themeKey: "github-dark",
+})
 
 vi.mock("@/state/theme.state", () => ({
 	useThemeStore: {
@@ -31,15 +39,14 @@ vi.mock("@/state/theme.state", () => ({
 	},
 }))
 
-vi.mock("@/log", () => ({
-	default: {
-		debug: vi.fn(),
-		error: vi.fn(),
-		info: vi.fn(),
-		start: vi.fn(),
-		success: vi.fn(),
-		warn: vi.fn(),
-	},
+vi.mock("@/io/dom/theme.dom", () => ({
+	applyThemeWithTransition: vi.fn(),
+	getSystemTheme: vi.fn(() => "light"),
+}))
+
+vi.mock("@/io/log/logger.api", () => ({
+	info: vi.fn(),
+	success: vi.fn(),
 }))
 
 // Import after mocking
@@ -57,13 +64,7 @@ import {
 describe("update-theme.flow", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
-		mockGetState.mockReturnValue({
-			mode: "dark",
-			setEnableTransition: mockSetEnableTransition,
-			setMode: mockSetMode,
-			setTheme: mockSetTheme,
-			toggleMode: mockToggleMode,
-		})
+		mockGetState.mockReturnValue(createMockThemeState())
 	})
 
 	// ==========================================================================
@@ -100,7 +101,7 @@ describe("update-theme.flow", () => {
 		})
 
 		it("should handle various valid theme keys", () => {
-			const validKeys = ["light", "dark", "github-dark", "monokai", "nord"]
+			const validKeys = ["default-light", "default-dark", "github-dark", "monokai", "nord"]
 
 			for (const key of validKeys) {
 				vi.clearAllMocks()
@@ -156,47 +157,24 @@ describe("update-theme.flow", () => {
 
 	describe("toggleThemeMode", () => {
 		it("should return Right with new mode after toggle", () => {
-			mockGetState.mockReturnValue({
-				mode: "light",
-				setEnableTransition: mockSetEnableTransition,
-				setMode: mockSetMode,
-				setTheme: mockSetTheme,
-				toggleMode: mockToggleMode,
-			})
+			mockGetState.mockReturnValue(createMockThemeState("light"))
 
 			const result = toggleThemeMode()
 
 			expect(E.isRight(result)).toBe(true)
 			if (E.isRight(result)) {
-				expect(result.right).toBe("light")
+				expect(result.right).toBe("dark")
 			}
-			expect(mockToggleMode).toHaveBeenCalled()
+			expect(mockSetMode).toHaveBeenCalledWith("dark")
 		})
 
-		it("should call toggleMode on store", () => {
+		it("should update the store to the next mode", () => {
 			toggleThemeMode()
 
-			expect(mockToggleMode).toHaveBeenCalledTimes(1)
+			expect(mockSetMode).toHaveBeenCalledWith("system")
 		})
 
-		it("should return current mode from store after toggle", () => {
-			// 模拟 toggle 后模式变为 system
-			mockGetState
-				.mockReturnValueOnce({
-					mode: "dark",
-					setEnableTransition: mockSetEnableTransition,
-					setMode: mockSetMode,
-					setTheme: mockSetTheme,
-					toggleMode: mockToggleMode,
-				})
-				.mockReturnValueOnce({
-					mode: "system",
-					setEnableTransition: mockSetEnableTransition,
-					setMode: mockSetMode,
-					setTheme: mockSetTheme,
-					toggleMode: mockToggleMode,
-				})
-
+		it("should return the computed next mode", () => {
 			const result = toggleThemeMode()
 
 			expect(E.isRight(result)).toBe(true)

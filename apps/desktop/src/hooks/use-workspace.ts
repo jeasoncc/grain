@@ -47,8 +47,8 @@ import type { WorkspaceInterface } from "@/types/workspace"
  * }
  * ```
  */
-export function useAllWorkspaces(): readonly WorkspaceInterface[] | undefined {
-	const { data: workspaces, isLoading } = useWorkspacesQuery()
+export function useAllWorkspaces(enabled = true): readonly WorkspaceInterface[] | undefined {
+	const { data: workspaces, isLoading } = useWorkspacesQuery(enabled)
 
 	return useMemo(() => {
 		if (isLoading || !workspaces) {

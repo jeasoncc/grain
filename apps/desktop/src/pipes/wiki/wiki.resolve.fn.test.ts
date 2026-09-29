@@ -17,38 +17,18 @@ vi.mock("@/io/api", () => ({
 	getNodesByWorkspace: vi.fn(),
 }))
 
-// 使用 vi.hoisted 来创建可以在 vi.mock 中使用的变量
-const { nodesMock } = vi.hoisted(() => {
-	const mock = {
-		and: vi.fn(),
-		equals: vi.fn(),
-		toArray: vi.fn(),
-		where: vi.fn(),
-	}
-	mock.where.mockReturnValue(mock)
-	mock.equals.mockReturnValue(mock)
-	mock.and.mockReturnValue(mock)
-	return { nodesMock: mock }
-})
-
-vi.mock("@/db/database", () => ({
-	database: {
-		nodes: nodesMock,
-	},
+vi.mock("@/io/api/tag.api", () => ({
+	getNodesByTag: vi.fn(),
 }))
 
-vi.mock("@/log/index", () => ({
-	default: {
-		debug: vi.fn(),
-		error: vi.fn(),
-		info: vi.fn(),
-		start: vi.fn(),
-		success: vi.fn(),
-		warn: vi.fn(),
-	},
+vi.mock("@/io/log/logger.api", () => ({
+	error: vi.fn(),
+	info: vi.fn(),
+	success: vi.fn(),
 }))
 
 import { getContentsByNodeIds, getNodesByWorkspace } from "@/io/api"
+import { getNodesByTag } from "@/io/api/tag.api"
 
 // ============================================================================
 // Test Data
@@ -159,7 +139,7 @@ describe("Wiki Resolution Functions", () => {
 
 	describe("getWikiFilesAsync", () => {
 		it("应该成功获取 Wiki 文件列表", async () => {
-			nodesMock.toArray.mockResolvedValue([mockNode])
+			vi.mocked(getNodesByTag).mockReturnValue(() => Promise.resolve(E.right([MOCK_NODE_ID])))
 			vi.mocked(getContentsByNodeIds).mockReturnValue(() => Promise.resolve(E.right([mockContent])))
 			vi.mocked(getNodesByWorkspace).mockReturnValue(() => Promise.resolve(E.right([mockNode])))
 
@@ -180,7 +160,7 @@ describe("Wiki Resolution Functions", () => {
 		})
 
 		it("应该处理空的 Wiki 文件列表", async () => {
-			nodesMock.toArray.mockResolvedValue([])
+			vi.mocked(getNodesByTag).mockReturnValue(() => Promise.resolve(E.right([])))
 			vi.mocked(getContentsByNodeIds).mockReturnValue(() => Promise.resolve(E.right([])))
 			vi.mocked(getNodesByWorkspace).mockReturnValue(() => Promise.resolve(E.right([])))
 
@@ -192,15 +172,16 @@ describe("Wiki Resolution Functions", () => {
 			}
 		})
 
-		it("应该处理数据库查询失败", async () => {
-			nodesMock.toArray.mockRejectedValue(new Error("查询失败"))
+		it("应该将标签查询的 Left 视为空列表", async () => {
+			vi.mocked(getNodesByTag).mockReturnValue(() =>
+				Promise.resolve(E.left({ message: "查询失败", type: "DB_ERROR" as const })),
+			)
+			vi.mocked(getNodesByWorkspace).mockReturnValue(() => Promise.resolve(E.right([mockNode])))
+			vi.mocked(getContentsByNodeIds).mockReturnValue(() => Promise.resolve(E.right([])))
 
 			const result = await getWikiFilesAsync(MOCK_WORKSPACE_ID)()
 
-			expect(E.isLeft(result)).toBe(true)
-			if (E.isLeft(result)) {
-				expect(result.left.type).toBe("DB_ERROR")
-			}
+			expect(result).toEqual(E.right([]))
 		})
 
 		it("应该构建正确的文件路径", async () => {
@@ -216,7 +197,7 @@ describe("Wiki Resolution Functions", () => {
 				parent: MOCK_PARENT_ID,
 			}
 
-			nodesMock.toArray.mockResolvedValue([childNode])
+			vi.mocked(getNodesByTag).mockReturnValue(() => Promise.resolve(E.right([MOCK_NODE_ID])))
 			vi.mocked(getContentsByNodeIds).mockReturnValue(() => Promise.resolve(E.right([mockContent])))
 			vi.mocked(getNodesByWorkspace).mockReturnValue(() =>
 				Promise.resolve(E.right([parentNode, childNode])),
@@ -231,7 +212,7 @@ describe("Wiki Resolution Functions", () => {
 		})
 
 		it("应该处理缺失的内容", async () => {
-			nodesMock.toArray.mockResolvedValue([mockNode])
+			vi.mocked(getNodesByTag).mockReturnValue(() => Promise.resolve(E.right([MOCK_NODE_ID])))
 			vi.mocked(getContentsByNodeIds).mockReturnValue(() => Promise.resolve(E.right([])))
 			vi.mocked(getNodesByWorkspace).mockReturnValue(() => Promise.resolve(E.right([mockNode])))
 

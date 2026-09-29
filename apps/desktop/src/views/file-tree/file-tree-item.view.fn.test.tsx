@@ -126,10 +126,9 @@ describe("FileTreeItem", () => {
 	})
 
 	it("should show chevron for folder nodes", () => {
-		render(<FileTreeItem {...defaultProps} node={mockFolderNode} />)
+		const { container } = render(<FileTreeItem {...defaultProps} node={mockFolderNode} />)
 
-		const chevron = screen.getByRole("button")
-		expect(chevron).toBeInTheDocument()
+		expect(container.querySelector(".lucide-chevron-down")).toBeInTheDocument()
 	})
 
 	it("should toggle folder when chevron clicked", () => {

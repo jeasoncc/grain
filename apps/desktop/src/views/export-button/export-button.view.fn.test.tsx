@@ -28,11 +28,10 @@ describe("ExportButtonView", () => {
 		const onExport = vi.fn()
 		render(<ExportButtonView {...defaultProps} onExport={onExport} />)
 
-		// Open dropdown
+		// Radix opens dropdown menus on primary pointer down.
 		const button = screen.getByRole("button", { name: /export/i })
-		fireEvent.click(button)
+		fireEvent.pointerDown(button, { button: 0, ctrlKey: false })
 
-		// Wait for dropdown to open and find format option
 		const txtOption = await screen.findByText(/plain text/i)
 		fireEvent.click(txtOption)
 
@@ -42,9 +41,8 @@ describe("ExportButtonView", () => {
 	it("should render all export format options", async () => {
 		render(<ExportButtonView {...defaultProps} />)
 
-		// Open dropdown
 		const button = screen.getByRole("button", { name: /export/i })
-		fireEvent.click(button)
+		fireEvent.pointerDown(button, { button: 0, ctrlKey: false })
 
 		// Check all formats are present
 		expect(await screen.findByText(/plain text/i)).toBeInTheDocument()
@@ -56,15 +54,15 @@ describe("ExportButtonView", () => {
 	it("should disable format options when isExporting is true", async () => {
 		render(<ExportButtonView {...defaultProps} isExporting={true} />)
 
-		// Open dropdown
 		const button = screen.getByRole("button", { name: /exporting/i })
-		fireEvent.click(button)
+		fireEvent.pointerDown(button, { button: 0, ctrlKey: false })
 
-		// Wait for dropdown to open
-		const txtOption = await screen.findByText(/plain text/i)
-
-		// All options should be disabled
-		expect(txtOption.closest("div[role='menuitem']")).toHaveAttribute("data-disabled", "true")
+		const options = await screen.findAllByRole("menuitem")
+		expect(options).toHaveLength(4)
+		for (const option of options) {
+			expect(option).toHaveAttribute("data-disabled")
+			expect(option).toHaveAttribute("aria-disabled", "true")
+		}
 	})
 
 	it("should apply custom variant prop", () => {

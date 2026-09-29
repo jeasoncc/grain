@@ -111,12 +111,12 @@ const withSelectedLegacyWorkspace = (
 const WorkspaceToolsMenu = ({
 	controller,
 	isBusy,
-	workspaces,
 }: {
 	readonly controller: OrgWorkspaceController
 	readonly isBusy: boolean
-	readonly workspaces: readonly WorkspaceInterface[]
 }) => {
+	const [legacySourcesEnabled, setLegacySourcesEnabled] = useState(false)
+	const workspaces = useAllWorkspaces(legacySourcesEnabled) ?? []
 	const migrationSupported =
 		navigator.userAgent.includes("Linux") || navigator.userAgent.includes("Macintosh")
 	const migrationUnavailable = !controller.workspace || workspaces.length === 0 || isBusy
@@ -155,8 +155,14 @@ const WorkspaceToolsMenu = ({
 						Open legacy SQLite workspace
 					</Link>
 				</DropdownMenuItem>
+				{!legacySourcesEnabled && (
+					<DropdownMenuItem onClick={() => setLegacySourcesEnabled(true)}>
+						<DatabaseBackup className="mr-2 size-4" />
+						Load legacy migration sources…
+					</DropdownMenuItem>
+				)}
 				<DropdownMenuItem
-					disabled={!migrationSupported || migrationUnavailable}
+					disabled={!legacySourcesEnabled || !migrationSupported || migrationUnavailable}
 					onClick={() =>
 						withSelectedLegacyWorkspace(workspaces, (selected) => {
 							void controller.migrateLegacyWorkspace(selected)
@@ -167,7 +173,7 @@ const WorkspaceToolsMenu = ({
 					Migrate legacy workspace
 				</DropdownMenuItem>
 				<DropdownMenuItem
-					disabled={migrationUnavailable}
+					disabled={!legacySourcesEnabled || migrationUnavailable}
 					onClick={() =>
 						withSelectedLegacyWorkspace(workspaces, (selected) => {
 							void controller.verifyLegacyMigration(selected)
@@ -178,7 +184,7 @@ const WorkspaceToolsMenu = ({
 					Verify migration
 				</DropdownMenuItem>
 				<DropdownMenuItem
-					disabled={migrationUnavailable}
+					disabled={!legacySourcesEnabled || migrationUnavailable}
 					onClick={() =>
 						withSelectedLegacyWorkspace(workspaces, (selected) => {
 							void controller.runLegacyRecoveryDrill(selected)
@@ -196,7 +202,6 @@ const WorkspaceToolsMenu = ({
 interface OrgWorkspaceHeaderProps {
 	readonly controller: OrgWorkspaceController
 	readonly isBusy: boolean
-	readonly legacyWorkspaces: readonly WorkspaceInterface[]
 	readonly showAgenda: boolean
 	readonly onOpenCapture: () => void
 	readonly onToggleAgenda: () => void
@@ -205,7 +210,6 @@ interface OrgWorkspaceHeaderProps {
 const OrgWorkspaceHeader = ({
 	controller,
 	isBusy,
-	legacyWorkspaces,
 	showAgenda,
 	onOpenCapture,
 	onToggleAgenda,
@@ -258,7 +262,7 @@ const OrgWorkspaceHeader = ({
 					"Open directory"
 				)}
 			</Button>
-			<WorkspaceToolsMenu controller={controller} isBusy={isBusy} workspaces={legacyWorkspaces} />
+			<WorkspaceToolsMenu controller={controller} isBusy={isBusy} />
 			<Button
 				size="sm"
 				disabled={!controller.activeDocument || !controller.isDirty || isBusy}
@@ -333,7 +337,6 @@ const OrgWorkspaceEmptyState = ({
 
 export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	const controller = useOrgWorkspace()
-	const legacyWorkspaces = useAllWorkspaces() ?? []
 	const isBusy = controller.isLoading || controller.isSaving
 	const [showAgenda, setShowAgenda] = useState(false)
 	const [showCapture, setShowCapture] = useState(false)
@@ -355,7 +358,6 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 			<OrgWorkspaceHeader
 				controller={controller}
 				isBusy={isBusy}
-				legacyWorkspaces={legacyWorkspaces}
 				showAgenda={showAgenda}
 				onOpenCapture={() => setShowCapture(true)}
 				onToggleAgenda={() => setShowAgenda((current) => !current)}

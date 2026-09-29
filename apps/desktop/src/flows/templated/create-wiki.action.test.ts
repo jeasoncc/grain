@@ -10,30 +10,9 @@ import { type WikiTemplateParams, wikiConfig } from "./configs/wiki.config"
 import { createWiki, createWikiAsync } from "./create-date-template.flow"
 import type { TemplatedFileParams } from "./create-templated-file.flow"
 
-// Mock dependencies
-vi.mock("@/flows/node", () => ({
-	createFileInTree: vi.fn().mockResolvedValue({
-		node: {
-			createDate: "2024-12-25T00:00:00.000Z",
-			id: "test-wiki-id",
-			lastEdit: "2024-12-25T00:00:00.000Z",
-			order: 0,
-			parent: "wiki-folder-id",
-			tags: ["wiki"],
-			title: "wiki-1234567890-test-title",
-			type: "file",
-			workspace: "test-workspace",
-		},
-	}),
-}))
-
-vi.mock("@/log", () => ({
-	default: {
-		error: vi.fn(),
-		info: vi.fn(),
-		start: vi.fn(),
-		success: vi.fn(),
-	},
+vi.mock("@/io/log/logger.api", () => ({
+	info: vi.fn(),
+	success: vi.fn(),
 }))
 
 describe("createWiki", () => {
@@ -45,7 +24,7 @@ describe("createWiki", () => {
 		it("应该有正确的配置", () => {
 			expect(wikiConfig.name).toBe("Wiki")
 			expect(wikiConfig.rootFolder).toBe("Wiki")
-			expect(wikiConfig.fileType).toBe("file")
+			expect(wikiConfig.fileType).toBe("wiki")
 			expect(wikiConfig.tag).toBe("wiki")
 			expect(wikiConfig.foldersCollapsed).toBe(true)
 		})
@@ -81,7 +60,7 @@ describe("createWiki", () => {
 				templateParams: {
 					date: dayjs("2024-12-25T00:00:00.000Z").toDate(),
 				},
-				workspaceId: "invalid-uuid",
+				workspaceId: "",
 			}
 
 			const result = await createWiki(params)()
@@ -89,7 +68,7 @@ describe("createWiki", () => {
 			expect(E.isLeft(result)).toBe(true)
 			if (E.isLeft(result)) {
 				expect(result.left.type).toBe("VALIDATION_ERROR")
-				expect(result.left.message).toContain("基础参数校验失败")
+				expect(result.left.message).toContain("参数校验失败")
 			}
 		})
 	})
@@ -100,10 +79,10 @@ describe("createWiki", () => {
 				templateParams: {
 					date: dayjs("2024-12-25T00:00:00.000Z").toDate(),
 				},
-				workspaceId: "invalid-uuid",
+				workspaceId: "",
 			}
 
-			await expect(createWikiAsync(params)).rejects.toThrow("基础参数校验失败")
+			await expect(createWikiAsync(params)).rejects.toThrow("参数校验失败")
 		})
 	})
 })

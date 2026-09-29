@@ -80,23 +80,14 @@ async function runTE<Err, A>(te: TE.TaskEither<Err, A>): Promise<E.Either<Err, A
 const mockGetNodeByIdOrFail = vi.fn()
 const mockGetContentByNodeIdOrFail = vi.fn()
 
-vi.mock("@/db/node.db.fn", () => ({
+vi.mock("@/io/api", () => ({
+	getContentByNodeIdOrFail: (...args: unknown[]) => mockGetContentByNodeIdOrFail(...args),
 	getNodeByIdOrFail: (...args: unknown[]) => mockGetNodeByIdOrFail(...args),
 }))
 
-vi.mock("@/db/content.db.fn", () => ({
-	getContentByNodeIdOrFail: (...args: unknown[]) => mockGetContentByNodeIdOrFail(...args),
-}))
-
-vi.mock("@/log", () => ({
-	default: {
-		debug: vi.fn(),
-		error: vi.fn(),
-		info: vi.fn(),
-		start: vi.fn(),
-		success: vi.fn(),
-		warn: vi.fn(),
-	},
+vi.mock("@/io/log/logger.api", () => ({
+	info: vi.fn(),
+	success: vi.fn(),
 }))
 
 // Logger removed - not needed in tests

@@ -16,7 +16,7 @@ describe("useSettings", () => {
 	// 每个测试后重置 store 状态
 	afterEach(() => {
 		useSettings.setState({
-			autoSave: true,
+			autoSave: false,
 			autoSaveInterval: 3,
 		})
 	})
@@ -26,9 +26,9 @@ describe("useSettings", () => {
 	// ==========================================================================
 
 	describe("默认值", () => {
-		it("autoSave 默认为 true", () => {
+		it("autoSave 默认为 false，避免未确认的后台写入", () => {
 			const { autoSave } = useSettings.getState()
-			expect(autoSave).toBe(true)
+			expect(autoSave).toBe(false)
 		})
 
 		it("autoSaveInterval 默认为 3 秒", () => {

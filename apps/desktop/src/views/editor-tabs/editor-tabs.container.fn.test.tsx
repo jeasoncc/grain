@@ -8,13 +8,28 @@ import type { EditorTab } from "@/types/editor-tab"
 import { TooltipProvider } from "@/views/ui/tooltip"
 import { EditorTabsContainer } from "./editor-tabs.container.fn"
 
-// Mock the store
-vi.mock("@/state/editor-tabs.state", () => ({
-	useEditorTabsStore: vi.fn(),
-}))
+const mockSetActiveTabId = vi.fn()
+const mockRemoveTab = vi.fn()
+const mockRemoveEditorState = vi.fn()
+let mockTabs: EditorTab[] = []
+let mockActiveTabId: string | null = null
 
-// Import after mocking
-import { useEditorTabsStore } from "@/state/editor-tabs.state"
+// Mock the current selector-based store contract used by useEditorTabs.
+vi.mock("@/state/editor-tabs.state", () => ({
+	useActiveTab: () => mockTabs.find((tab) => tab.id === mockActiveTabId) ?? null,
+	useActiveTabId: () => mockActiveTabId,
+	useEditorTabsStore: Object.assign(vi.fn(), {
+		getState: () => ({
+			activeTabId: mockActiveTabId,
+			editorStates: {},
+			removeEditorState: mockRemoveEditorState,
+			removeTab: mockRemoveTab,
+			setActiveTabId: mockSetActiveTabId,
+			tabs: mockTabs,
+		}),
+	}),
+	useTabs: () => mockTabs,
+}))
 
 // 测试辅助函数：创建测试标签
 function createTestTab(overrides?: Partial<EditorTab>): EditorTab {
@@ -35,26 +50,14 @@ function renderWithTooltip(ui: React.ReactElement) {
 }
 
 describe("EditorTabsContainer", () => {
-	const mockSetActiveTab = vi.fn()
-	const mockCloseTab = vi.fn()
-
 	beforeEach(() => {
 		vi.clearAllMocks()
-
-		// 默认 mock 实现
-		vi.mocked(useEditorTabsStore).mockImplementation((selector: any) => {
-			const state = {
-				activeTabId: "tab-1",
-				closeTab: mockCloseTab,
-				setActiveTab: mockSetActiveTab,
-				tabs: [
-					createTestTab({ id: "tab-1", workspaceId: "workspace-1" }),
-					createTestTab({ id: "tab-2", workspaceId: "workspace-1" }),
-					createTestTab({ id: "tab-3", workspaceId: "workspace-2" }),
-				],
-			}
-			return selector(state)
-		})
+		mockActiveTabId = "tab-1"
+		mockTabs = [
+			createTestTab({ id: "tab-1", workspaceId: "workspace-1" }),
+			createTestTab({ id: "tab-2", workspaceId: "workspace-1" }),
+			createTestTab({ id: "tab-3", workspaceId: "workspace-2" }),
+		]
 	})
 
 	it("should render tabs from store", () => {
@@ -81,7 +84,7 @@ describe("EditorTabsContainer", () => {
 		const tabs = screen.getAllByText("Test Document")
 		fireEvent.click(tabs[0])
 
-		expect(mockSetActiveTab).toHaveBeenCalledWith("tab-1")
+		expect(mockSetActiveTabId).toHaveBeenCalledWith("tab-1")
 	})
 
 	it("should call closeTab when close button is clicked", () => {
@@ -97,7 +100,7 @@ describe("EditorTabsContainer", () => {
 
 		fireEvent.click(closeButton!)
 
-		expect(mockCloseTab).toHaveBeenCalledWith("tab-1")
+		expect(mockRemoveTab).toHaveBeenCalledWith("tab-1")
 	})
 
 	it("should render nothing when no tabs for workspace", () => {

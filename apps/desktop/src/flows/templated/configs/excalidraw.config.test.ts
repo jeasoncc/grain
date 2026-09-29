@@ -29,7 +29,7 @@ describe("excalidrawConfig", () => {
 		it("应该包含所有必需的配置字段", () => {
 			expect(excalidrawConfig.name).toBe("Excalidraw 绘图")
 			expect(excalidrawConfig.rootFolder).toBe("excalidraw")
-			expect(excalidrawConfig.fileType).toBe("canvas")
+			expect(excalidrawConfig.fileType).toBe("drawing")
 			expect(excalidrawConfig.tag).toBe("excalidraw")
 			expect(excalidrawConfig.foldersCollapsed).toBe(true)
 			expect(typeof excalidrawConfig.generateTemplate).toBe("function")
@@ -42,10 +42,10 @@ describe("excalidrawConfig", () => {
 			expect(excalidrawConfig.rootFolder).toBe("excalidraw")
 		})
 
-		it("fileType 应该为 canvas", () => {
-			// 确保 fileType 不是 "folder"
+		it("fileType 应该为 drawing", () => {
+			// 绘图使用专用类型，而不是通用文件夹类型
 			expect(excalidrawConfig.fileType).not.toBe("folder")
-			expect(excalidrawConfig.fileType).toBe("canvas")
+			expect(excalidrawConfig.fileType).toBe("drawing")
 		})
 
 		it("tag 应该为 excalidraw", () => {
@@ -145,7 +145,7 @@ describe("excalidrawConfig", () => {
 
 			const result = excalidrawConfig.generateTitle(params)
 
-			expect(result).toBe("My Custom Drawing")
+			expect(result).toBe("My Custom Drawing.excalidraw")
 		})
 
 		it("应该生成默认标题（如果未提供自定义标题）", () => {
@@ -296,7 +296,7 @@ describe("excalidrawConfig", () => {
 
 			// 4. 生成标题
 			const title = excalidrawConfig.generateTitle(params)
-			expect(title).toBe("Test Drawing")
+			expect(title).toBe("Test Drawing.excalidraw")
 		})
 	})
 })

@@ -185,10 +185,9 @@ describe("BackupManagerView", () => {
 	it("should render storage stats when available", () => {
 		render(<BackupManagerView {...defaultProps} />)
 		expect(screen.getByText("Storage Usage")).toBeInTheDocument()
-		expect(screen.getByText("IndexedDB")).toBeInTheDocument()
 		expect(screen.getByText("localStorage")).toBeInTheDocument()
-		expect(screen.getByText("sessionStorage")).toBeInTheDocument()
-		expect(screen.getByText("Cookies")).toBeInTheDocument()
+		expect(screen.getByText("2 KB")).toBeInTheDocument()
+		expect(screen.getByText("10 keys stored")).toBeInTheDocument()
 	})
 
 	it("should not render storage stats when null", () => {

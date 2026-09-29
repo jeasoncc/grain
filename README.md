@@ -16,11 +16,11 @@ Your writing lives in standard `.org` files. Grain adds a focused editor, agenda
 
 Grain is being rebuilt around a simple rule:
 
-> **Org files are authoritative. SQLite is disposable derived state.**
+> **For the new Org workspace, Org files are authoritative and its SQLite indexes are disposable.**
 
-The default desktop experience opens a real local directory and edits its `.org` files directly. The application database may contain rebuildable indexes, caches, and UI state, but it is not the canonical document store.
+The default desktop experience opens a real local directory and edits its `.org` files directly. New Org indexes, caches, and UI state are rebuildable and are not canonical document storage.
 
-The previous SQLite/Lexical application remains available only as an explicitly separated legacy migration surface while migration verification is completed.
+An existing `grain.db` from the previous SQLite/Lexical application is different: it may still contain the only copy of unmigrated writing and **must not be deleted or treated as disposable**. The legacy application remains available only as an explicitly separated migration surface while verification is completed against an authorized database copy.
 
 ## Current capabilities
 
@@ -45,11 +45,12 @@ Documents/Grain/             Canonical user content
 ├── projects/
 └── diary/YYYY-MM-DD.org
 
-Application data directory/  Non-canonical application state
-└── grain.db                 Derived indexes, caches, UI state, and temporary legacy data
+Application data directory/  Application state
+├── grain-org-index.db      Rebuildable from the Org workspace; normal desktop startup
+└── grain.db                Historical; potentially canonical until explicitly migrated and verified
 ```
 
-Deleting the derived Org index must not delete or invalidate the Org files. The index can be rebuilt by scanning the workspace.
+Deleting the derived Org index must not delete or invalidate the Org files; it can be rebuilt by scanning the workspace. Never delete a historical `grain.db` merely because the new Org index is disposable.
 
 ## Safety model
 

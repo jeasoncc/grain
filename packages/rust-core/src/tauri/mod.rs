@@ -16,7 +16,7 @@ pub use commands::*;
 use crate::db::connection::DbConnection;
 use crate::AppConfig;
 use tauri::Manager;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 /// 初始化日志系统
@@ -59,9 +59,16 @@ async fn init_database(config: &AppConfig) -> Result<sea_orm::DatabaseConnection
 pub fn create_builder() -> tauri::Builder<tauri::Wry> {
     info!("启动 Grain Desktop 应用...");
 
-    // 创建应用配置
-    let config = AppConfig::default();
+    // Normal Org startup gets a separate disposable database. The historical grain.db is only
+    // selected by an explicit process-level opt-in, never merely because that file already exists.
+    let legacy_mode = AppConfig::tauri_legacy_mode_enabled();
+    let config = AppConfig::for_tauri_mode(legacy_mode);
     info!("数据目录: {:?}", config.data_dir);
+    if legacy_mode {
+        warn!("GRAIN_TAURI_LEGACY_MODE is enabled; the desktop will open the historical database");
+    } else {
+        info!("Org 派生索引数据库: {:?}", config.db_path());
+    }
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())

@@ -74,7 +74,7 @@ export function useActivityBar() {
 	const queryClient = useQueryClient()
 
 	// Data
-	const workspacesRaw = useAllWorkspaces()
+	const workspacesRaw = useAllWorkspaces(location.pathname === "/legacy")
 	const workspaces = workspacesRaw ?? []
 	const iconTheme = useIconTheme()
 

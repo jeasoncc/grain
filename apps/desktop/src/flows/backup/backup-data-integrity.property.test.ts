@@ -9,7 +9,7 @@
  */
 
 import * as fc from "fast-check"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest"
 import type { BackupData, BackupMetadata, LocalBackupRecord } from "@/types/backup"
 import type { BackupInfo } from "@/types/rust-api"
 import { getDatabaseStats, getLocalBackups, saveLocalBackup } from "./backup.flow"
@@ -20,9 +20,7 @@ const mockLocalStorage = {
 	getItem: vi.fn(),
 	setItem: vi.fn(),
 }
-Object.defineProperty(globalThis, "localStorage", {
-	value: mockLocalStorage,
-})
+vi.stubGlobal("localStorage", mockLocalStorage)
 
 // Generators for test data
 const backupMetadataGenerator = fc.record({
@@ -69,6 +67,10 @@ describe("Property Test: Backup Data Integrity", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mockLocalStorage.getItem.mockReturnValue(null)
+	})
+
+	afterAll(() => {
+		vi.unstubAllGlobals()
 	})
 
 	it("Property 3.1: Backup data structure consistency", () => {
@@ -129,7 +131,7 @@ describe("Property Test: Backup Data Integrity", () => {
 		)
 	})
 
-	it("Property 3.2: Local backup save/load round-trip integrity", () => {
+	it("Property 3.2: Local backup save/load round-trip integrity", async () => {
 		/**
 		 * **Feature: legacy-database-removal, Property 3.2: 本地备份往返完整性**
 		 *
@@ -137,7 +139,7 @@ describe("Property Test: Backup Data Integrity", () => {
 		 * and maintain data integrity.
 		 */
 
-		fc.assert(
+		await fc.assert(
 			fc.asyncProperty(
 				backupInfoGenerator,
 				fc.array(localBackupRecordGenerator, { maxLength: 3 }),
@@ -199,7 +201,7 @@ describe("Property Test: Backup Data Integrity", () => {
 		)
 	})
 
-	it("Property 3.3: Backup format version compatibility", () => {
+	it("Property 3.3: Backup format version compatibility", async () => {
 		/**
 		 * **Feature: legacy-database-removal, Property 3.3: 备份格式版本兼容性**
 		 *
@@ -207,7 +209,7 @@ describe("Property Test: Backup Data Integrity", () => {
 		 * handle them gracefully and maintain backward compatibility.
 		 */
 
-		fc.assert(
+		await fc.assert(
 			fc.asyncProperty(
 				fc.array(localBackupRecordGenerator, { maxLength: 5, minLength: 1 }),
 				async (backups) => {
@@ -255,7 +257,7 @@ describe("Property Test: Backup Data Integrity", () => {
 		)
 	})
 
-	it("Property 3.4: Database stats consistency", () => {
+	it("Property 3.4: Database stats consistency", async () => {
 		/**
 		 * **Feature: legacy-database-removal, Property 3.4: 数据库统计一致性**
 		 *
@@ -263,7 +265,7 @@ describe("Property Test: Backup Data Integrity", () => {
 		 * and contain all required statistical fields.
 		 */
 
-		fc.assert(
+		await fc.assert(
 			fc.asyncProperty(
 				fc.constant(null), // No input needed for stats
 				async () => {
@@ -307,7 +309,7 @@ describe("Property Test: Backup Data Integrity", () => {
 		)
 	})
 
-	it("Property 3.5: Backup size limits and constraints", () => {
+	it("Property 3.5: Backup size limits and constraints", async () => {
 		/**
 		 * **Feature: legacy-database-removal, Property 3.5: 备份大小限制和约束**
 		 *
@@ -315,7 +317,7 @@ describe("Property Test: Backup Data Integrity", () => {
 		 * respect maximum backup limits and maintain only the specified number of backups.
 		 */
 
-		fc.assert(
+		await fc.assert(
 			fc.asyncProperty(
 				backupInfoGenerator,
 				fc.integer({ max: 5, min: 1 }), // maxBackups (smaller range)

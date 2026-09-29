@@ -29,24 +29,17 @@ async function runTE<Err, A>(te: TE.TaskEither<Err, A>): Promise<E.Either<Err, A
 // Mock Setup
 // ============================================================================
 
-const mockDeleteWorkspaceWithContents = vi.fn()
+const mockDeleteWorkspace = vi.fn()
 
-vi.mock("@/db/workspace.db.fn", () => ({
-	deleteWorkspaceWithContents: (...args: unknown[]) => mockDeleteWorkspaceWithContents(...args),
+vi.mock("@/io/api/workspace.api", () => ({
+	deleteWorkspace: (...args: unknown[]) => mockDeleteWorkspace(...args),
 }))
 
-vi.mock("@/log", () => ({
-	default: {
-		debug: vi.fn(),
-		error: vi.fn(),
-		info: vi.fn(),
-		start: vi.fn(),
-		success: vi.fn(),
-		warn: vi.fn(),
-	},
+vi.mock("@/io/log/logger.api", () => ({
+	info: vi.fn(),
+	success: vi.fn(),
 }))
 
-// Logger removed - not needed in tests
 import { deleteWorkspace } from "./delete-workspace.flow"
 
 // ============================================================================
@@ -59,17 +52,17 @@ describe("deleteWorkspace", () => {
 	})
 
 	it("should delete workspace and all associated data", async () => {
-		mockDeleteWorkspaceWithContents.mockReturnValue(() => Promise.resolve(E.right(undefined)))
+		mockDeleteWorkspace.mockReturnValue(() => Promise.resolve(E.right(undefined)))
 
 		const result = await runTE(deleteWorkspace("ws-1"))
 
 		expect(E.isRight(result)).toBe(true)
-		expect(mockDeleteWorkspaceWithContents).toHaveBeenCalledWith("ws-1")
+		expect(mockDeleteWorkspace).toHaveBeenCalledWith("ws-1")
 	})
 
 	it("should return Left with error on failure", async () => {
 		const error = { message: "Database error", type: "DB_ERROR" as const }
-		mockDeleteWorkspaceWithContents.mockReturnValue(() => Promise.resolve(E.left(error)))
+		mockDeleteWorkspace.mockReturnValue(() => Promise.resolve(E.left(error)))
 
 		const result = await runTE(deleteWorkspace("ws-1"))
 
@@ -80,7 +73,7 @@ describe("deleteWorkspace", () => {
 	})
 
 	it("should log start and success messages", async () => {
-		mockDeleteWorkspaceWithContents.mockReturnValue(() => Promise.resolve(E.right(undefined)))
+		mockDeleteWorkspace.mockReturnValue(() => Promise.resolve(E.right(undefined)))
 
 		await runTE(deleteWorkspace("ws-123"))
 

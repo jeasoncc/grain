@@ -93,21 +93,24 @@ export function parseLexicalContent(content: string): E.Either<ExportError, Lexi
 		})
 	}
 
-	return E.tryCatch(
-		() => {
-			const parsed = JSON.parse(content) as LexicalDocument
-
-			if (!parsed.root) {
-				throw new Error("无效的 Lexical 文档结构：缺少 root 节点")
-			}
-
-			return parsed
-		},
+	const parsed = E.tryCatch(
+		() => JSON.parse(content) as LexicalDocument,
 		(error) => ({
 			message: `JSON 解析失败: ${error instanceof Error ? error.message : String(error)}`,
 			type: "PARSE_ERROR" as const,
 		}),
 	)
+
+	if (E.isLeft(parsed)) {
+		return parsed
+	}
+	if (!parsed.right.root) {
+		return E.left({
+			message: "无效的 Lexical 文档结构：缺少 root 节点",
+			type: "INVALID_CONTENT",
+		})
+	}
+	return parsed
 }
 
 /**

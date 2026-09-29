@@ -65,24 +65,15 @@ const mockAddNode = vi.fn()
 const mockGetNextOrder = vi.fn()
 const mockAddContent = vi.fn()
 
-vi.mock("@/db/node.db.fn", () => ({
+vi.mock("@/io/api", () => ({
+	addContent: (...args: unknown[]) => mockAddContent(...args),
 	addNode: (...args: unknown[]) => mockAddNode(...args),
 	getNextOrder: (...args: unknown[]) => mockGetNextOrder(...args),
 }))
 
-vi.mock("@/db/content.db.fn", () => ({
-	addContent: (...args: unknown[]) => mockAddContent(...args),
-}))
-
-vi.mock("@/log", () => ({
-	default: {
-		debug: vi.fn(),
-		error: vi.fn(),
-		info: vi.fn(),
-		start: vi.fn(),
-		success: vi.fn(),
-		warn: vi.fn(),
-	},
+vi.mock("@/io/log/logger.api", () => ({
+	info: vi.fn(),
+	success: vi.fn(),
 }))
 
 // Logger removed - not needed in tests

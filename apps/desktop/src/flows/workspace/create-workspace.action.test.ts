@@ -51,22 +51,15 @@ async function runTE<Err, A>(te: TE.TaskEither<Err, A>): Promise<E.Either<Err, A
 
 const mockAddWorkspace = vi.fn()
 
-vi.mock("@/db/workspace.db.fn", () => ({
-	addWorkspace: (...args: unknown[]) => mockAddWorkspace(...args),
+vi.mock("@/io/api/workspace.api", () => ({
+	createWorkspace: (...args: unknown[]) => mockAddWorkspace(...args),
 }))
 
-vi.mock("@/log", () => ({
-	default: {
-		debug: vi.fn(),
-		error: vi.fn(),
-		info: vi.fn(),
-		start: vi.fn(),
-		success: vi.fn(),
-		warn: vi.fn(),
-	},
+vi.mock("@/io/log/logger.api", () => ({
+	info: vi.fn(),
+	success: vi.fn(),
 }))
 
-// Logger removed - not needed in tests
 import { createWorkspace } from "./create-workspace.flow"
 
 // ============================================================================
@@ -124,13 +117,14 @@ describe("createWorkspace", () => {
 			expect(result.right.members).toEqual(["user-1", "user-2"])
 			expect(result.right.owner).toBe("owner-1")
 		}
-		expect(mockAddWorkspace).toHaveBeenCalledWith("My Workspace", {
+		expect(mockAddWorkspace).toHaveBeenCalledWith({
 			author: "Test Author",
 			description: "Test Description",
 			language: "en",
 			members: ["user-1", "user-2"],
 			owner: "owner-1",
 			publisher: "Test Publisher",
+			title: "My Workspace",
 		})
 	})
 

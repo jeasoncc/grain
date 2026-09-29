@@ -33,8 +33,9 @@ const DEFAULT_STALE_TIME = 30 * 1000
  * const { data: workspaces, isLoading, error } = useWorkspaces();
  * ```
  */
-export const useWorkspaces = () => {
+export const useWorkspaces = (enabled = true) => {
 	return useQuery({
+		enabled,
 		queryFn: async (): Promise<readonly WorkspaceInterface[]> => {
 			// 执行 TaskEither，解包结果
 			const result = await workspaceRepo.getWorkspaces()()

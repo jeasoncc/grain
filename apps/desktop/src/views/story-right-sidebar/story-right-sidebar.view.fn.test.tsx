@@ -43,6 +43,9 @@ describe("StoryRightSidebarView", () => {
 		tabs: mockTabs,
 	}
 
+	const getTab = (title: string): HTMLElement =>
+		screen.getByText(title).closest<HTMLElement>('[role="button"]')!
+
 	it("should render when tabPosition is right-sidebar", () => {
 		render(<StoryRightSidebarView {...defaultProps} />)
 		expect(screen.getByText("Open Tabs")).toBeInTheDocument()
@@ -72,18 +75,15 @@ describe("StoryRightSidebarView", () => {
 
 	it("should show dirty indicator for unsaved tabs", () => {
 		render(<StoryRightSidebarView {...defaultProps} />)
-		const diaryTab = screen.getByText("Test Diary").closest("button")
-		expect(diaryTab?.textContent).toContain("●")
+		const diaryTab = getTab("Test Diary")
+		expect(diaryTab).toHaveTextContent("●")
 	})
 
 	it("should call onSetActiveTab when tab is clicked", () => {
 		const onSetActiveTab = vi.fn()
 		render(<StoryRightSidebarView {...defaultProps} onSetActiveTab={onSetActiveTab} />)
 
-		const tab2 = screen.getByText("Test Diary").closest("button")
-		if (tab2) {
-			fireEvent.click(tab2)
-		}
+		fireEvent.click(getTab("Test Diary"))
 		expect(onSetActiveTab).toHaveBeenCalledWith("tab-2")
 	})
 
@@ -91,39 +91,33 @@ describe("StoryRightSidebarView", () => {
 		const onCloseTab = vi.fn()
 		render(<StoryRightSidebarView {...defaultProps} onCloseTab={onCloseTab} />)
 
-		const tab1 = screen.getByText("Test File 1").closest("button")
-		if (tab1) {
-			// Find the close button within the tab
-			const closeButtons = tab1.querySelectorAll("button")
-			const closeButton = Array.from(closeButtons).find((btn) => btn !== tab1)
-			if (closeButton) {
-				fireEvent.click(closeButton)
-			}
-		}
+		const closeButton = getTab("Test File 1").querySelector("button")
+		expect(closeButton).not.toBeNull()
+		fireEvent.click(closeButton!)
 		expect(onCloseTab).toHaveBeenCalledWith("tab-1")
 	})
 
 	it("should highlight active tab", () => {
 		render(<StoryRightSidebarView {...defaultProps} activeTabId="tab-2" />)
-		const activeTab = screen.getByText("Test Diary").closest("button")
+		const activeTab = getTab("Test Diary")
 		expect(activeTab).toHaveClass("bg-primary/10")
 	})
 
 	it("should render correct icon for file type", () => {
 		render(<StoryRightSidebarView {...defaultProps} />)
-		const tab1 = screen.getByText("Test File 1").closest("button")
-		expect(tab1?.querySelector("svg")).toBeInTheDocument()
+		const tab1 = getTab("Test File 1")
+		expect(tab1.querySelector("svg")).toBeInTheDocument()
 	})
 
 	it("should render correct icon for diary type", () => {
 		render(<StoryRightSidebarView {...defaultProps} />)
-		const tab2 = screen.getByText("Test Diary").closest("button")
-		expect(tab2?.querySelector("svg")).toBeInTheDocument()
+		const tab2 = getTab("Test Diary")
+		expect(tab2.querySelector("svg")).toBeInTheDocument()
 	})
 
 	it("should render correct icon for drawing type", () => {
 		render(<StoryRightSidebarView {...defaultProps} />)
-		const tab3 = screen.getByText("Test Drawing").closest("button")
-		expect(tab3?.querySelector("svg")).toBeInTheDocument()
+		const tab3 = getTab("Test Drawing")
+		expect(tab3.querySelector("svg")).toBeInTheDocument()
 	})
 })

@@ -97,6 +97,24 @@ After the user chooses the default workspace, a non-authoritative UI preference 
 7. Migration must publish into a new top-level directory and must never merge into existing output.
 8. SQLite Org indexes must remain foreign-key-free, disposable, and rebuildable.
 
+## SQLite startup modes
+
+Normal Tauri startup opens `grain-org-index.db`, not the historical `grain.db`. The Org index
+commands continue to use the managed SeaORM connection, but canonical document bodies remain in
+`.org` files. The shared schema currently also creates empty compatibility/support tables in this
+separate database; their presence does not authorize reading or migrating a historical database.
+
+Access to `grain.db` is process-level opt-in for deliberate legacy recovery work:
+
+```bash
+GRAIN_TAURI_LEGACY_MODE=1 bun run tauri dev
+```
+
+Legacy mode opens the historical database read/write and schema initialization may mutate it. Use
+it only against an authorized backup/copy. Merely having `grain.db` in the data directory never
+enables this mode, and `GRAIN_DB_FILENAME` configures the API server but does not override the
+Tauri safety default. Restart without the variable to return to normal Org mode.
+
 ## Editor transition
 
 CodeMirror is the primary editor and operates on raw Org text. Lexical remains installed only because the explicit legacy route must read historical documents until migration recovery has been validated against an authorized database copy.

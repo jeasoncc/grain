@@ -37,43 +37,12 @@ export const Route = createRootRoute({
 // 根组件
 // ============================================================================
 
-function RootComponent() {
-	const location = useLocation()
-	const isLegacyRoute = location.pathname === "/legacy"
-
-	// ==============================
-	// Initialization
-	// ==============================
-
-	// Initialize layout state from localStorage
-	useLayoutInit()
-
-	// Initialize theme system (applies theme and sets up listeners)
-	useThemeInitialization()
-
-	// ==============================
-	// Data Hooks
-	// ==============================
-
-	// Workspace data
+const LegacyGlobalSurfaces = () => {
 	const { data: workspaces = [] } = useWorkspaces()
 	const selectedWorkspaceId = useSelectedWorkspaceId()
-
-	// Editor tabs data
 	const { tabs, activeTabId, setActiveTab } = useEditorTabs()
-
-	// ==============================
-	// Global UI State
-	// ==============================
-
 	const { commandPalette, globalSearch, bufferSwitcher } = useGlobalUI()
-
-	// Layout actions (获取在组件顶层，避免在事件处理器中调用 getState)
 	const { toggleSidebar } = useLayout()
-
-	// ==============================
-	// Global Keyboard Shortcuts
-	// ==============================
 
 	useGlobalKeyboard({
 		bufferSwitcher,
@@ -82,43 +51,46 @@ function RootComponent() {
 		toggleSidebar,
 	})
 
-	// ==============================
-	// Render
-	// ==============================
+	return (
+		<>
+			<CommandPaletteContainer
+				open={commandPalette.isOpen}
+				onOpenChange={commandPalette.setOpen}
+				workspaces={workspaces}
+				selectedWorkspaceId={selectedWorkspaceId}
+			/>
+			<GlobalSearchContainer open={globalSearch.isOpen} onOpenChange={globalSearch.setOpen} />
+			<BufferSwitcherContainer
+				open={bufferSwitcher.isOpen}
+				onOpenChange={bufferSwitcher.setOpen}
+				tabs={tabs}
+				activeTabId={activeTabId}
+				onSelectTab={setActiveTab}
+				initialDirection={bufferSwitcher.direction}
+			/>
+			<ExportDialogManagerContainer
+				selectedWorkspaceId={selectedWorkspaceId}
+				workspaces={workspaces}
+			/>
+		</>
+	)
+}
+
+function RootComponent() {
+	const location = useLocation()
+	const isLegacyRoute = location.pathname === "/legacy"
+
+	useLayoutInit()
+	useThemeInitialization()
 
 	return (
 		<ConfirmProvider>
 			<FontStyleInjector />
-
 			<AppLayout>
 				<Outlet />
 			</AppLayout>
-
 			<Toaster />
-			{isLegacyRoute && (
-				<>
-					<CommandPaletteContainer
-						open={commandPalette.isOpen}
-						onOpenChange={commandPalette.setOpen}
-						workspaces={workspaces}
-						selectedWorkspaceId={selectedWorkspaceId}
-					/>
-					<GlobalSearchContainer open={globalSearch.isOpen} onOpenChange={globalSearch.setOpen} />
-					<BufferSwitcherContainer
-						open={bufferSwitcher.isOpen}
-						onOpenChange={bufferSwitcher.setOpen}
-						tabs={tabs}
-						activeTabId={activeTabId}
-						onSelectTab={setActiveTab}
-						initialDirection={bufferSwitcher.direction}
-					/>
-					<ExportDialogManagerContainer
-						selectedWorkspaceId={selectedWorkspaceId}
-						workspaces={workspaces}
-					/>
-				</>
-			)}
-
+			{isLegacyRoute && <LegacyGlobalSurfaces />}
 			<DevtoolsWrapper />
 		</ConfirmProvider>
 	)

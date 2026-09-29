@@ -212,5 +212,5 @@ export function parseExcalidrawContent(content: string): E.Either<Error, Excalid
  * @returns 是否为有效的 Excalidraw 内容
  */
 export function isValidExcalidrawContent(content: string): boolean {
-	return parseExcalidrawContent(content) !== null
+	return E.isRight(parseExcalidrawContent(content))
 }

@@ -32,22 +32,15 @@ async function runTE<Err, A>(te: TE.TaskEither<Err, A>): Promise<E.Either<Err, A
 
 const mockUpdateWorkspace = vi.fn()
 
-vi.mock("@/db/workspace.db.fn", () => ({
+vi.mock("@/io/api/workspace.api", () => ({
 	updateWorkspace: (...args: unknown[]) => mockUpdateWorkspace(...args),
 }))
 
-vi.mock("@/log", () => ({
-	default: {
-		debug: vi.fn(),
-		error: vi.fn(),
-		info: vi.fn(),
-		start: vi.fn(),
-		success: vi.fn(),
-		warn: vi.fn(),
-	},
+vi.mock("@/io/log/logger.api", () => ({
+	info: vi.fn(),
+	success: vi.fn(),
 }))
 
-// Logger removed - not needed in tests
 import { updateWorkspace } from "./update-workspace.flow"
 
 // ============================================================================
@@ -97,8 +90,10 @@ describe("updateWorkspace", () => {
 		})
 	})
 
-	it("should return Left with NOT_FOUND when workspace does not exist", async () => {
-		mockUpdateWorkspace.mockReturnValue(() => Promise.resolve(E.right(0)))
+	it("should propagate NOT_FOUND when workspace does not exist", async () => {
+		mockUpdateWorkspace.mockReturnValue(() =>
+			Promise.resolve(E.left({ message: "Workspace not found", type: "NOT_FOUND" as const })),
+		)
 
 		const result = await runTE(
 			updateWorkspace({

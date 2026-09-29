@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
+import { act, render, screen } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { WorkspaceInterface } from "@/types/workspace"
 import {
 	ExportDialogManagerContainer,
@@ -7,7 +7,7 @@ import {
 } from "./export-dialog-manager.container.fn"
 
 // Mock ExportDialog component
-vi.mock("@/components/export-dialog", () => ({
+vi.mock("@/views/export-dialog", () => ({
 	ExportDialog: vi.fn(({ open, workspaceId, workspaceTitle }) => (
 		<div data-testid="export-dialog">
 			{open && (
@@ -21,6 +21,10 @@ vi.mock("@/components/export-dialog", () => ({
 }))
 
 describe("ExportDialogManagerContainer", () => {
+	beforeEach(() => {
+		exportDialogManager.close()
+	})
+
 	const mockWorkspaces: WorkspaceInterface[] = [
 		{
 			author: "Test Author",
@@ -84,8 +88,10 @@ describe("ExportDialogManagerContainer", () => {
 		// Initially closed
 		expect(screen.queryByTestId("workspace-id")).not.toBeInTheDocument()
 
-		// Open dialog
-		exportDialogManager.open("ws2", "Custom Title")
+		// Open dialog through the manager's subscription.
+		act(() => {
+			exportDialogManager.open("ws2", "Custom Title")
+		})
 		rerender(<ExportDialogManagerContainer selectedWorkspaceId="ws1" workspaces={mockWorkspaces} />)
 
 		expect(screen.getByTestId("workspace-id")).toHaveTextContent("ws2")
@@ -100,7 +106,9 @@ describe("ExportDialogManagerContainer", () => {
 
 		expect(screen.getByTestId("workspace-id")).toBeInTheDocument()
 
-		exportDialogManager.close()
+		act(() => {
+			exportDialogManager.close()
+		})
 		rerender(<ExportDialogManagerContainer selectedWorkspaceId="ws1" workspaces={mockWorkspaces} />)
 
 		expect(screen.queryByTestId("workspace-id")).not.toBeInTheDocument()

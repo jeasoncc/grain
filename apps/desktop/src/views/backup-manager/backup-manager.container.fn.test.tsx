@@ -3,106 +3,50 @@
  */
 
 import { render, screen, waitFor } from "@testing-library/react"
-import * as TE from "fp-ts/TaskEither"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { BackupManagerContainer } from "./backup-manager.container.fn"
 
-// Mock dependencies
-vi.mock("sonner", () => ({
-	toast: {
-		error: vi.fn(),
-		info: vi.fn(),
-		success: vi.fn(),
-	},
+const mockUseBackupManager = vi.fn()
+
+vi.mock("@/hooks/use-backup-manager", () => ({
+	useBackupManager: () => mockUseBackupManager(),
 }))
 
-vi.mock("@/components/ui/confirm", () => ({
+vi.mock("@/views/ui/confirm", () => ({
 	useConfirm: () => vi.fn().mockResolvedValue(true),
 }))
 
-vi.mock("@/db/backup.db.fn", () => ({
-	autoBackupManager: {
-		start: vi.fn(),
-		stop: vi.fn(),
+const createBackupManager = () => ({
+	autoBackupEnabled: localStorage.getItem("auto-backup-enabled") === "true",
+	clearAll: vi.fn(),
+	clearDatabase: vi.fn(),
+	clearSettings: vi.fn(),
+	exportJson: vi.fn(),
+	exportZip: vi.fn(),
+	loading: false,
+	loadLocalBackups: vi.fn(),
+	loadStats: vi.fn(),
+	localBackups: [],
+	restore: vi.fn(),
+	restoreLocal: vi.fn(),
+	stats: {
+		attachmentCount: 8,
+		contentCount: 15,
+		drawingCount: 3,
+		nodeCount: 20,
+		projectCount: 5,
+		tagCount: 12,
+		userCount: 2,
 	},
-	exportBackupJson: vi.fn(() => vi.fn(() => Promise.resolve(TE.right({})))),
-	exportBackupZip: vi.fn(() => vi.fn(() => Promise.resolve(TE.right({})))),
-	getDatabaseStats: vi.fn(() =>
-		vi.fn(() =>
-			Promise.resolve(
-				TE.right({
-					attachmentCount: 8,
-					contentCount: 15,
-					drawingCount: 3,
-					nodeCount: 20,
-					projectCount: 5,
-					tagCount: 12,
-					userCount: 2,
-				}),
-			),
-		),
-	),
-	getLocalBackups: vi.fn(() => []),
-	restoreBackup: vi.fn(() => vi.fn(() => Promise.resolve(TE.right({})))),
-	restoreLocalBackup: vi.fn(() => vi.fn(() => Promise.resolve(TE.right({})))),
-}))
-
-vi.mock("@/db/clear-data.db.fn", () => ({
-	clearAllData: vi.fn(() => vi.fn(() => Promise.resolve(TE.right({})))),
-	getStorageStats: vi.fn(() =>
-		vi.fn(() =>
-			Promise.resolve(
-				TE.right({
-					cookies: {
-						count: 3,
-					},
-					indexedDB: {
-						size: 1024000,
-						tableSizes: {
-							attachments: 40960,
-							contents: 128000,
-							drawings: 51200,
-							nodes: 256000,
-							tags: 25600,
-							users: 10240,
-							workspaces: 512000,
-						},
-						tables: {
-							attachments: 8,
-							contents: 15,
-							drawings: 3,
-							nodes: 20,
-							tags: 12,
-							users: 2,
-							workspaces: 5,
-						},
-					},
-					localStorage: {
-						keys: 10,
-						size: 2048,
-					},
-					sessionStorage: {
-						keys: 5,
-						size: 1024,
-					},
-				}),
-			),
-		),
-	),
-}))
-
-vi.mock("@/log", () => ({
-	default: {
-		error: vi.fn(),
-		info: vi.fn(),
-		success: vi.fn(),
-	},
-}))
+	storageStats: { keys: 10, size: 2048 },
+	toggleAutoBackup: vi.fn(),
+})
 
 describe("BackupManagerContainer", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		localStorage.clear()
+		mockUseBackupManager.mockImplementation(createBackupManager)
 	})
 
 	it("should render and fetch data on mount", async () => {

@@ -1809,24 +1809,9 @@ pub(crate) fn validate_relative_org_path(path: &Path) -> OrgFilesystemResult<Pat
     Ok(path)
 }
 
+/// Validates the portable path spelling as well as its platform path components. Checking the
+/// original string prevents `Path::components` from normalizing away `.` or repeated separators.
 fn validate_relative_directory_path(path: &Path) -> OrgFilesystemResult<PathBuf> {
-    if path.as_os_str().is_empty()
-        || path.is_absolute()
-        || path
-            .components()
-            .any(|component| !matches!(component, Component::Normal(_)))
-    {
-        return Err(OrgFilesystemError::InvalidPath(path.display().to_string()));
-    }
-    // Validate that command payload paths can be represented by the portable API format.
-    portable_relative_path(path)?;
-    Ok(path.to_path_buf())
-}
-
-/// Validates the portable path spelling as well as its platform path components. In particular,
-/// checking the original string prevents `Path::components` from normalizing away `.` or repeated
-/// separators before they can be rejected.
-fn validate_portable_relative_path(path: &Path) -> OrgFilesystemResult<PathBuf> {
     let display = path
         .to_str()
         .ok_or_else(|| OrgFilesystemError::InvalidPath("path is not valid UTF-8".to_owned()))?;
@@ -1843,9 +1828,17 @@ fn validate_portable_relative_path(path: &Path) -> OrgFilesystemResult<PathBuf> 
         || display
             .split('/')
             .any(|component| component.is_empty() || component == "." || component == "..")
+        || path.is_absolute()
+        || path
+            .components()
+            .any(|component| !matches!(component, Component::Normal(_)))
     {
         return Err(OrgFilesystemError::InvalidPath(display.to_owned()));
     }
+    Ok(path.to_path_buf())
+}
+
+fn validate_portable_relative_path(path: &Path) -> OrgFilesystemResult<PathBuf> {
     validate_relative_directory_path(path)
 }
 
@@ -2159,7 +2152,13 @@ mod tests {
     #[test]
     fn traversal_and_absolute_paths_are_rejected() {
         let workspace = tempdir().unwrap();
-        for path in ["../escape.org", "nested/../../escape.org"] {
+        for path in [
+            "../escape.org",
+            "nested/../../escape.org",
+            "nested\\escape.org",
+            "nested//escape.org",
+            "nested/./escape.org",
+        ] {
             assert!(matches!(
                 read_org_document(workspace.path(), path),
                 Err(OrgFilesystemError::InvalidPath(_))

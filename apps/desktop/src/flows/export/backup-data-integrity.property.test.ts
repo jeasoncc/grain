@@ -10,6 +10,8 @@
 
 import * as fc from "fast-check"
 import { describe, expect, it } from "vitest"
+import type { ExportFormat } from "@/types/export"
+import * as exportModule from "./export-project.flow"
 
 describe("Property Test: Backup Data Integrity", () => {
 	it("Property 3: Export functions maintain consistent interface", () => {
@@ -31,9 +33,6 @@ describe("Property Test: Backup Data Integrity", () => {
 					pageBreakBetweenChapters: fc.boolean(),
 				}), // options
 				(_projectId, _options) => {
-					// Import the export functions
-					const exportModule = require("./export-project.flow")
-
 					// Verify all expected functions exist
 					expect(exportModule.exportProject).toBeDefined()
 					expect(typeof exportModule.exportProject).toBe("function")
@@ -80,10 +79,10 @@ describe("Property Test: Backup Data Integrity", () => {
 					.string()
 					.filter((s) => !["pdf", "docx", "txt", "epub"].includes(s)), // invalid format
 				async (projectId, invalidFormat) => {
-					const exportModule = require("./export-project.flow")
-
 					// The property: invalid formats should be rejected
-					await expect(exportModule.exportProject(projectId, invalidFormat)).rejects.toThrow(
+					await expect(
+						exportModule.exportProject(projectId, invalidFormat as ExportFormat),
+					).rejects.toThrow(
 						"不支持的导出格式",
 					)
 
@@ -127,9 +126,7 @@ describe("Property Test: Backup Data Integrity", () => {
 				),
 				(_content) => {
 					// We can't directly test the internal extractTextFromContent function,
-					// but we can test that the module loads without errors
-					const exportModule = require("./export-project.flow")
-
+					// but we can test that the module loads without errors.
 					// The property: module should load successfully regardless of content types
 					expect(exportModule).toBeDefined()
 					expect(exportModule.exportToTxt).toBeDefined()

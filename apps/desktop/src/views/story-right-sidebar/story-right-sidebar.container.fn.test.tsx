@@ -7,47 +7,48 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { StoryRightSidebarContainer } from "./story-right-sidebar.container.fn"
 
 // Mock stores
+let mockTabPosition: "right-sidebar" | "top" = "right-sidebar"
+
 vi.mock("@/state/ui.state", () => ({
-	useUIStore: vi.fn((selector) => {
-		const state = {
-			tabPosition: "right-sidebar" as const,
-		}
-		return selector(state)
-	}),
+	useUIStore: vi.fn((selector) => selector({ tabPosition: mockTabPosition })),
 }))
 
+const mockTabs = [
+	{
+		id: "tab-1",
+		isDirty: false,
+		nodeId: "node-1",
+		title: "Test File 1",
+		type: "file" as const,
+		workspaceId: "workspace-1",
+	},
+	{
+		id: "tab-2",
+		isDirty: false,
+		nodeId: "node-2",
+		title: "Test File 2",
+		type: "file" as const,
+		workspaceId: "workspace-2",
+	},
+]
+
 vi.mock("@/state/editor-tabs.state", () => ({
-	useEditorTabsStore: vi.fn((selector) => {
-		const state = {
+	useActiveTab: () => mockTabs[0],
+	useActiveTabId: () => "tab-1",
+	useEditorTabsStore: Object.assign(vi.fn(), {
+		getState: () => ({
 			activeTabId: "tab-1",
-			closeTab: vi.fn(),
-			setActiveTab: vi.fn(),
-			tabs: [
-				{
-					id: "tab-1",
-					isDirty: false,
-					nodeId: "node-1",
-					title: "Test File 1",
-					type: "file" as const,
-					workspaceId: "workspace-1",
-				},
-				{
-					id: "tab-2",
-					isDirty: false,
-					nodeId: "node-2",
-					title: "Test File 2",
-					type: "file" as const,
-					workspaceId: "workspace-2",
-				},
-			],
-		}
-		return selector(state)
+			editorStates: {},
+			tabs: mockTabs,
+		}),
 	}),
+	useTabs: () => mockTabs,
 }))
 
 describe("StoryRightSidebarContainer", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
+		mockTabPosition = "right-sidebar"
 	})
 
 	it("should render with workspace tabs", () => {
@@ -67,27 +68,11 @@ describe("StoryRightSidebarContainer", () => {
 		expect(screen.getByText("1")).toBeInTheDocument()
 	})
 
-	it("should not render when tabPosition is top", async () => {
-		const { useUIStore } = await import("@/state/ui.state")
-		// const originalMock = vi.mocked(useUIStore)
-
-		vi.mocked(useUIStore).mockImplementation((selector: any) => {
-			const state = {
-				tabPosition: "top" as const,
-			}
-			return selector(state)
-		})
+	it("should not render when tabPosition is top", () => {
+		mockTabPosition = "top"
 
 		render(<StoryRightSidebarContainer workspaceId="workspace-1" />)
 		expect(screen.queryByText("Open Tabs")).not.toBeInTheDocument()
-
-		// Restore original mock
-		vi.mocked(useUIStore).mockImplementation((selector: any) => {
-			const state = {
-				tabPosition: "right-sidebar" as const,
-			}
-			return selector(state)
-		})
 	})
 
 	it("should not render when workspace has no tabs", () => {
@@ -100,7 +85,7 @@ describe("StoryRightSidebarContainer", () => {
 		// The component should render with the filtered tabs
 		expect(screen.getByText("Open Tabs")).toBeInTheDocument()
 		expect(screen.getByText("Test File 1")).toBeInTheDocument()
-		const tab = screen.getByText("Test File 1").closest("button")
+		const tab = screen.getByText("Test File 1").closest('[role="button"]')
 		expect(tab).toHaveClass("bg-primary/10") // Active tab styling
 	})
 })

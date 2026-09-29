@@ -11,6 +11,7 @@ import { WordCountBadge, WordCountDisplay } from "./word-count-badge.view.fn"
 describe("WordCountBadge", () => {
 	const defaultProps: WordCountBadgeProps = {
 		countMode: "chinese",
+		displayText: "100 words",
 		show: true,
 		wordCountResult: {
 			characters: 100,
@@ -30,11 +31,9 @@ describe("WordCountBadge", () => {
 		expect(container.firstChild).toBeNull()
 	})
 
-	it("should show detail when showDetail is true", () => {
-		render(<WordCountBadge {...defaultProps} showDetail={true} />)
-		// 详细模式会显示中文字数和英文词数
-		const text = screen.getByText(/50.*50/)
-		expect(text).toBeInTheDocument()
+	it("should render detailed text supplied by the container", () => {
+		render(<WordCountBadge {...defaultProps} displayText="Chinese 50 · English 50" />)
+		expect(screen.getByText("Chinese 50 · English 50")).toBeInTheDocument()
 	})
 
 	it("should become visible when word count changes", async () => {
@@ -44,6 +43,7 @@ describe("WordCountBadge", () => {
 		rerender(
 			<WordCountBadge
 				{...defaultProps}
+				displayText="150 words"
 				wordCountResult={{
 					characters: 150,
 					chineseChars: 75,
@@ -54,7 +54,7 @@ describe("WordCountBadge", () => {
 		)
 
 		// 徽章应该变为可见
-		const badge = screen.getByText(/150/).closest("div")
+		const badge = screen.getByText("150 words").closest("div")
 		expect(badge).toHaveClass("opacity-100")
 	})
 
@@ -68,6 +68,7 @@ describe("WordCountBadge", () => {
 describe("WordCountDisplay", () => {
 	const defaultProps: WordCountDisplayProps = {
 		countMode: "chinese",
+		displayText: "100 words",
 		wordCountResult: {
 			characters: 100,
 			chineseChars: 50,
@@ -93,11 +94,9 @@ describe("WordCountDisplay", () => {
 		expect(icon).not.toBeInTheDocument()
 	})
 
-	it("should show detail when showDetail is true", () => {
-		render(<WordCountDisplay {...defaultProps} showDetail={true} />)
-		// 详细模式会显示中文字数和英文词数
-		const text = screen.getByText(/50.*50/)
-		expect(text).toBeInTheDocument()
+	it("should render detailed text supplied by the container", () => {
+		render(<WordCountDisplay {...defaultProps} displayText="Chinese 50 · English 50" />)
+		expect(screen.getByText("Chinese 50 · English 50")).toBeInTheDocument()
 	})
 
 	it("should apply custom className", () => {
@@ -106,12 +105,11 @@ describe("WordCountDisplay", () => {
 		expect(display).toHaveClass("custom-class")
 	})
 
-	it("should format count based on countMode", () => {
+	it("should update when the container supplies new display text", () => {
 		const { rerender } = render(<WordCountDisplay {...defaultProps} />)
-		expect(screen.getByText(/100/)).toBeInTheDocument()
+		expect(screen.getByText("100 words")).toBeInTheDocument()
 
-		// 切换到英文模式
-		rerender(<WordCountDisplay {...defaultProps} countMode="english" />)
-		expect(screen.getByText(/100/)).toBeInTheDocument()
+		rerender(<WordCountDisplay {...defaultProps} countMode="english" displayText="50 words" />)
+		expect(screen.getByText("50 words")).toBeInTheDocument()
 	})
 })

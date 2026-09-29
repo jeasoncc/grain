@@ -1,4 +1,6 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { render, screen } from "@testing-library/react"
+import type { ReactElement } from "react"
 import { describe, expect, it, vi } from "vitest"
 import { FileTreePanelContainer } from "./file-tree-panel.container.fn"
 
@@ -7,7 +9,7 @@ vi.mock("@tanstack/react-router", () => ({
 	useNavigate: vi.fn(() => vi.fn()),
 }))
 
-vi.mock("@/components/file-tree", () => ({
+vi.mock("@/views/file-tree", () => ({
 	FileTree: vi.fn(() => <div data-testid="file-tree">FileTree</div>),
 }))
 
@@ -17,6 +19,14 @@ vi.mock("@/components/ui/confirm", () => ({
 
 vi.mock("@/hooks/use-node", () => ({
 	useNodesByWorkspace: vi.fn(() => []),
+}))
+
+vi.mock("@/hooks/use-editor-tabs", () => ({
+	useEditorTabs: vi.fn(() => ({ closeTab: vi.fn() })),
+}))
+
+vi.mock("@/hooks/use-node-operations", () => ({
+	useGetNodeById: vi.fn(() => ({ getNode: vi.fn() })),
 }))
 
 vi.mock("@/state/editor-tabs.state", () => ({
@@ -42,6 +52,10 @@ vi.mock("@/state/selection.state", () => ({
 	}),
 }))
 
+vi.mock("@/state/sidebar.state", () => ({
+	useSidebarStore: vi.fn((selector) => selector({ setExpandedFolders: vi.fn() })),
+}))
+
 vi.mock("@/actions", () => ({
 	createDiaryCompatAsync: vi.fn(),
 	createNode: vi.fn(),
@@ -63,19 +77,27 @@ vi.mock("sonner", () => ({
 	},
 }))
 
+const renderWithQueryClient = (ui: ReactElement) => {
+	const queryClient = new QueryClient({
+		defaultOptions: { queries: { retry: false } },
+	})
+
+	return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>)
+}
+
 describe("FileTreePanelContainer", () => {
 	it("should render FileTree component", () => {
-		render(<FileTreePanelContainer />)
+		renderWithQueryClient(<FileTreePanelContainer />)
 		expect(screen.getByTestId("file-tree")).toBeInTheDocument()
 	})
 
 	it("should render with custom workspaceId prop", () => {
-		render(<FileTreePanelContainer workspaceId="custom-workspace" />)
+		renderWithQueryClient(<FileTreePanelContainer workspaceId="custom-workspace" />)
 		expect(screen.getByTestId("file-tree")).toBeInTheDocument()
 	})
 
 	it("should render without workspaceId prop", () => {
-		render(<FileTreePanelContainer />)
+		renderWithQueryClient(<FileTreePanelContainer />)
 		expect(screen.getByTestId("file-tree")).toBeInTheDocument()
 	})
 })

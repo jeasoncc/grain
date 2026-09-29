@@ -337,4 +337,27 @@ mod tests {
         assert!(result.is_ok());
         assert!(config.db_path().exists());
     }
+
+    #[tokio::test]
+    async fn normal_tauri_database_does_not_open_legacy_path() {
+        let temp_dir = tempdir().unwrap();
+        // A directory cannot be opened as SQLite. Successful startup therefore demonstrates that
+        // the legacy path was neither opened nor replaced, without inspecting any DB contents.
+        let legacy_path = temp_dir
+            .path()
+            .join(crate::types::config::LEGACY_DB_FILENAME);
+        std::fs::create_dir(&legacy_path).unwrap();
+        let mut config = AppConfig::for_tauri_mode(false);
+        config.data_dir = temp_dir.path().to_path_buf();
+        config.enable_encryption = false;
+
+        DbConnection::connect(&config).await.unwrap();
+
+        assert!(legacy_path.is_dir());
+        assert!(config.db_path().is_file());
+        assert_eq!(
+            config.db_filename,
+            crate::types::config::ORG_DERIVED_DB_FILENAME
+        );
+    }
 }

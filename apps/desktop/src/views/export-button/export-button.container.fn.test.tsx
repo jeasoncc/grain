@@ -12,8 +12,7 @@ vi.mock("sonner", () => ({
 	},
 }))
 
-// Mock flows - FIXME: These tests need to be updated to match current export API
-vi.mock("@/flows/export", () => ({
+vi.mock("@/flows", () => ({
 	exportProject: vi.fn(() => Promise.resolve()),
 }))
 
@@ -33,14 +32,14 @@ describe("ExportButtonContainer", () => {
 	})
 
 	it("should call exportProject and show success toast on successful export", async () => {
-		const { exportProject } = await import("@/flows/export")
+		const { exportProject } = await import("@/flows")
 		vi.mocked(exportProject).mockResolvedValue(undefined)
 
 		render(<ExportButtonContainer {...defaultProps} />)
 
-		// Open dropdown and select format
+		// Radix opens dropdown menus on primary pointer down.
 		const button = screen.getByRole("button", { name: /export/i })
-		fireEvent.click(button)
+		fireEvent.pointerDown(button, { button: 0, ctrlKey: false })
 
 		const txtOption = await screen.findByText(/plain text/i)
 		fireEvent.click(txtOption)
@@ -55,14 +54,13 @@ describe("ExportButtonContainer", () => {
 	})
 
 	it("should show error toast on export failure", async () => {
-		const { exportProject } = await import("@/flows/export")
+		const { exportProject } = await import("@/flows")
 		vi.mocked(exportProject).mockRejectedValue(new Error("Export failed"))
 
 		render(<ExportButtonContainer {...defaultProps} />)
 
-		// Open dropdown and select format
 		const button = screen.getByRole("button", { name: /export/i })
-		fireEvent.click(button)
+		fireEvent.pointerDown(button, { button: 0, ctrlKey: false })
 
 		const pdfOption = await screen.findByText(/pdf document/i)
 		fireEvent.click(pdfOption)
@@ -73,7 +71,7 @@ describe("ExportButtonContainer", () => {
 	})
 
 	it("should show loading state during export", async () => {
-		const { exportProject } = await import("@/flows/export")
+		const { exportProject } = await import("@/flows")
 		let resolveExport: (() => void) | undefined
 		const exportPromise = new Promise<void>((resolve) => {
 			resolveExport = resolve
@@ -82,9 +80,8 @@ describe("ExportButtonContainer", () => {
 
 		render(<ExportButtonContainer {...defaultProps} />)
 
-		// Open dropdown and select format
 		const button = screen.getByRole("button", { name: /export/i })
-		fireEvent.click(button)
+		fireEvent.pointerDown(button, { button: 0, ctrlKey: false })
 
 		const docxOption = await screen.findByText(/word document/i)
 		fireEvent.click(docxOption)
@@ -104,14 +101,13 @@ describe("ExportButtonContainer", () => {
 	})
 
 	it("should use default workspace title when not provided", async () => {
-		const { exportProject } = await import("@/flows/export")
+		const { exportProject } = await import("@/flows")
 		vi.mocked(exportProject).mockResolvedValue(undefined)
 
 		render(<ExportButtonContainer workspaceId="workspace-1" workspaceTitle={undefined} />)
 
-		// Open dropdown and select format
 		const button = screen.getByRole("button", { name: /export/i })
-		fireEvent.click(button)
+		fireEvent.pointerDown(button, { button: 0, ctrlKey: false })
 
 		const epubOption = await screen.findByText(/e-book/i)
 		fireEvent.click(epubOption)

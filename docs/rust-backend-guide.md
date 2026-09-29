@@ -325,9 +325,16 @@ RUST_LOG=grain=debug,sea_orm=warn cargo run
 
 ## 数据库位置
 
+API 服务和显式旧版桌面模式使用历史数据库：
+
 - Linux: `~/.local/share/grain/grain.db`
 - macOS: `~/Library/Application Support/grain/grain.db`
 - Windows: `C:\Users\<User>\AppData\Roaming\grain\grain.db`
+
+普通 Org 桌面启动在同一数据目录使用独立的 `grain-org-index.db`，不会因为历史
+`grain.db` 存在而打开它。只有以 `GRAIN_TAURI_LEGACY_MODE=1` 启动 Tauri 才会选择
+`grain.db`；该模式是读写模式，应仅用于获得授权的备份副本。API 服务仍可通过
+`GRAIN_DB_FILENAME` 配置文件名，但该变量不会绕过 Tauri 的默认隔离。
 
 ## 备份位置
 

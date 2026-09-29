@@ -28,7 +28,7 @@ describe("create-ledger.action (高阶函数版本)", () => {
 		it("应该有正确的配置", () => {
 			expect(ledgerConfig.name).toBe("记账")
 			expect(ledgerConfig.rootFolder).toBe("Ledger")
-			expect(ledgerConfig.fileType).toBe("file")
+			expect(ledgerConfig.fileType).toBe("ledger")
 			expect(ledgerConfig.tag).toBe("ledger")
 			expect(ledgerConfig.foldersCollapsed).toBe(true)
 		})

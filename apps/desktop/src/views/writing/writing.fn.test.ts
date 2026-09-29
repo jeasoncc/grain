@@ -23,13 +23,13 @@ import {
 
 describe("getTodayDate", () => {
 	it("should return date in YYYY-MM-DD format", () => {
-		const date = new Date("2024-03-15T10:30:00Z")
+		const date = new Date(2024, 2, 15, 10, 30)
 		const result = getTodayDate(date)
 		expect(result).toBe("2024-03-15")
 	})
 
 	it("should handle different dates correctly", () => {
-		const date = new Date("2023-12-31T23:59:59Z")
+		const date = new Date(2023, 11, 31, 23, 59, 59)
 		const result = getTodayDate(date)
 		expect(result).toBe("2023-12-31")
 	})
@@ -37,12 +37,12 @@ describe("getTodayDate", () => {
 
 describe("isToday", () => {
 	it("should return true for matching date", () => {
-		const today = new Date("2024-03-15T10:30:00Z")
+		const today = new Date(2024, 2, 15, 10, 30)
 		expect(isToday("2024-03-15", today)).toBe(true)
 	})
 
 	it("should return false for non-matching date", () => {
-		const today = new Date("2024-03-15T10:30:00Z")
+		const today = new Date(2024, 2, 15, 10, 30)
 		expect(isToday("2024-03-14", today)).toBe(false)
 	})
 })

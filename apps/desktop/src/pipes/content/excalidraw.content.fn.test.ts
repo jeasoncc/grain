@@ -39,39 +39,22 @@ describe("excalidraw.content.fn", () => {
 	// ==============================
 
 	describe("createDefaultAppState", () => {
-		it("should create app state with correct structure", () => {
-			const appState = createDefaultAppState()
-
-			expect(appState.viewBackgroundColor).toBe("#ffffff")
-			expect(appState.currentItemStrokeColor).toBe("#000000")
-			expect(appState.currentItemBackgroundColor).toBe("transparent")
-			expect(appState.zoom).toEqual({ value: 1 })
-			expect(appState.scrollX).toBe(0)
-			expect(appState.scrollY).toBe(0)
+		it("should create the safe minimal app state", () => {
+			expect(createDefaultAppState()).toEqual({
+				gridSize: null,
+				scrollX: 0,
+				scrollY: 0,
+				viewBackgroundColor: "#ffffff",
+				zoom: { value: 1 },
+			})
 		})
 
-		it("should have all required fields", () => {
+		it("should leave optional drawing preferences to Excalidraw defaults", () => {
 			const appState = createDefaultAppState()
 
-			expect(appState).toHaveProperty("viewBackgroundColor")
-			expect(appState).toHaveProperty("currentItemStrokeColor")
-			expect(appState).toHaveProperty("currentItemBackgroundColor")
-			expect(appState).toHaveProperty("currentItemFillStyle")
-			expect(appState).toHaveProperty("currentItemStrokeWidth")
-			expect(appState).toHaveProperty("currentItemStrokeStyle")
-			expect(appState).toHaveProperty("currentItemRoughness")
-			expect(appState).toHaveProperty("currentItemOpacity")
-			expect(appState).toHaveProperty("currentItemFontFamily")
-			expect(appState).toHaveProperty("currentItemFontSize")
-			expect(appState).toHaveProperty("currentItemTextAlign")
-			expect(appState).toHaveProperty("currentItemStartArrowhead")
-			expect(appState).toHaveProperty("currentItemEndArrowhead")
-			expect(appState).toHaveProperty("scrollX")
-			expect(appState).toHaveProperty("scrollY")
-			expect(appState).toHaveProperty("zoom")
-			expect(appState).toHaveProperty("currentItemRoundness")
-			expect(appState).toHaveProperty("gridSize")
-			expect(appState).toHaveProperty("colorPalette")
+			expect(appState).not.toHaveProperty("currentItemStrokeColor")
+			expect(appState).not.toHaveProperty("currentItemBackgroundColor")
+			expect(appState).not.toHaveProperty("colorPalette")
 		})
 	})
 

@@ -62,15 +62,9 @@ vi.mock("@/state/font.state", () => ({
 	},
 }))
 
-vi.mock("@/log/index", () => ({
-	default: {
-		debug: vi.fn(),
-		error: vi.fn(),
-		info: vi.fn(),
-		start: vi.fn(),
-		success: vi.fn(),
-		warn: vi.fn(),
-	},
+vi.mock("@/io/log/logger.api", () => ({
+	info: vi.fn(),
+	success: vi.fn(),
 }))
 
 // ============================================================================
@@ -80,7 +74,7 @@ vi.mock("@/log/index", () => ({
 const validEditorFontParams: UpdateEditorFontParams = {
 	fontFamily: "JetBrains Mono",
 	fontSize: 16,
-	letterSpacing: 0.5,
+	letterSpacing: 0.1,
 	lineHeight: 1.8,
 }
 
@@ -94,7 +88,7 @@ const validTypographyParams: UpdateTypographyParams = {
 	cardBorderRadius: 12,
 	cardSize: "large",
 	firstLineIndent: 2,
-	paragraphSpacing: 20,
+	paragraphSpacing: 2,
 }
 
 // ============================================================================
@@ -123,7 +117,7 @@ describe("updateEditorFont", () => {
 			expect(mockFontStore.setFontFamily).toHaveBeenCalledWith("JetBrains Mono")
 			expect(mockFontStore.setFontSize).toHaveBeenCalledWith(16)
 			expect(mockFontStore.setLineHeight).toHaveBeenCalledWith(1.8)
-			expect(mockFontStore.setLetterSpacing).toHaveBeenCalledWith(0.5)
+			expect(mockFontStore.setLetterSpacing).toHaveBeenCalledWith(0.1)
 		})
 
 		it("应该只更新提供的字体族", () => {
@@ -152,10 +146,10 @@ describe("updateEditorFont", () => {
 		})
 
 		it("应该只更新提供的字间距", () => {
-			const result = updateEditorFont({ letterSpacing: 1.0 })
+			const result = updateEditorFont({ letterSpacing: 0.1 })
 
 			expect(E.isRight(result)).toBe(true)
-			expect(mockFontStore.setLetterSpacing).toHaveBeenCalledWith(1.0)
+			expect(mockFontStore.setLetterSpacing).toHaveBeenCalledWith(0.1)
 		})
 	})
 
@@ -241,32 +235,32 @@ describe("updateEditorFont", () => {
 
 	describe("边界值测试", () => {
 		it("应该接受最小有效字体大小", () => {
-			const result = updateEditorFont({ fontSize: 8 })
+			const result = updateEditorFont({ fontSize: 12 })
 			expect(E.isRight(result)).toBe(true)
 		})
 
 		it("应该接受最大有效字体大小", () => {
-			const result = updateEditorFont({ fontSize: 72 })
+			const result = updateEditorFont({ fontSize: 32 })
 			expect(E.isRight(result)).toBe(true)
 		})
 
 		it("应该接受最小有效行高", () => {
-			const result = updateEditorFont({ lineHeight: 1.0 })
+			const result = updateEditorFont({ lineHeight: 1.2 })
 			expect(E.isRight(result)).toBe(true)
 		})
 
 		it("应该接受最大有效行高", () => {
-			const result = updateEditorFont({ lineHeight: 3.0 })
+			const result = updateEditorFont({ lineHeight: 2.5 })
 			expect(E.isRight(result)).toBe(true)
 		})
 
 		it("应该接受最小有效字间距", () => {
-			const result = updateEditorFont({ letterSpacing: -2 })
+			const result = updateEditorFont({ letterSpacing: -0.05 })
 			expect(E.isRight(result)).toBe(true)
 		})
 
 		it("应该接受最大有效字间距", () => {
-			const result = updateEditorFont({ letterSpacing: 5 })
+			const result = updateEditorFont({ letterSpacing: 0.2 })
 			expect(E.isRight(result)).toBe(true)
 		})
 	})
@@ -352,7 +346,7 @@ describe("updateTypography", () => {
 			expect(E.isRight(result)).toBe(true)
 			expect(mockFontStore.setCardSize).toHaveBeenCalledWith("large")
 			expect(mockFontStore.setCardBorderRadius).toHaveBeenCalledWith(12)
-			expect(mockFontStore.setParagraphSpacing).toHaveBeenCalledWith(20)
+			expect(mockFontStore.setParagraphSpacing).toHaveBeenCalledWith(2)
 			expect(mockFontStore.setFirstLineIndent).toHaveBeenCalledWith(2)
 		})
 
@@ -372,10 +366,10 @@ describe("updateTypography", () => {
 		})
 
 		it("应该只更新提供的段落间距", () => {
-			const result = updateTypography({ paragraphSpacing: 24 })
+			const result = updateTypography({ paragraphSpacing: 2 })
 
 			expect(E.isRight(result)).toBe(true)
-			expect(mockFontStore.setParagraphSpacing).toHaveBeenCalledWith(24)
+			expect(mockFontStore.setParagraphSpacing).toHaveBeenCalledWith(2)
 		})
 
 		it("应该只更新提供的首行缩进", () => {
