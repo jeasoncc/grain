@@ -197,7 +197,7 @@ const decorationsForLine = (
 			),
 		)
 	}
-	const tags = /\s(:[\p{L}\p{N}_@#%:]+:)\s*$/u.exec(line.text)
+	const tags = /\s(:[^\s:]+(?::[^\s:]+)*:)\s*$/u.exec(line.text)
 	if (tags?.index !== undefined) {
 		const tagFrom = line.from + tags.index + tags[0].indexOf(":")
 		ranges.push(Decoration.mark({ class: "cm-org-tags" }).range(tagFrom, tagFrom + tags[1].length))

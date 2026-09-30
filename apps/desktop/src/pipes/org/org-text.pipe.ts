@@ -348,8 +348,8 @@ export const setOrgHeadingTagsAt = (
 	const normalized = tags
 		.map((tag) => tag.trim().replace(/^:+|:+$/g, ""))
 		.filter((tag) => tag.length > 0)
-	if (normalized.some((tag) => !/^[\p{L}\p{N}_@#%]+$/u.test(tag))) {
-		throw new Error("Org tags may contain letters, numbers, _, @, #, and % only.")
+	if (normalized.some((tag) => !/^[^\s:\r\n]+$/u.test(tag))) {
+		throw new Error("Org tags must not contain whitespace or colons.")
 	}
 	const replacement = normalized.length > 0 ? `:${normalized.join(":")}:` : ""
 	const existing = /([ \t]+)((?::[^\s:]+)+:)[ \t]*$/.exec(heading.text)

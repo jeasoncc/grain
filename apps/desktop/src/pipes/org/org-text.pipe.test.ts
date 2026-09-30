@@ -194,6 +194,9 @@ describe("Org heading metadata transformations", () => {
 			"* TODO Heading\nbody :untouched:\n",
 		)
 		expect(apply("* Heading", setOrgHeadingTagsAt("* Heading", 3, ["one"]))).toBe("* Heading :one:")
+		expect(apply("* Heading", setOrgHeadingTagsAt("* Heading", 3, ["project-work", "中文"]))).toBe(
+			"* Heading :project-work:中文:",
+		)
 	})
 
 	it("updates or inserts planning without touching timestamp details", () => {
@@ -227,7 +230,7 @@ describe("Org heading metadata transformations", () => {
 	it("rejects impossible dates and invalid tags", () => {
 		expect(() => setOrgPlanningAt("* Heading", 2, "SCHEDULED", "2025-02-31")).toThrow()
 		expect(() => insertOrgTimestampAt("", 0, "2025-99-99", true)).toThrow()
-		expect(() => setOrgHeadingTagsAt("* Heading", 2, ["bad-tag"])).toThrow()
+		expect(() => setOrgHeadingTagsAt("* Heading", 2, ["bad:tag"])).toThrow()
 	})
 
 	it("inserts LF planning lines while preserving EOF newline state", () => {

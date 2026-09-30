@@ -40,15 +40,18 @@ interface OrgMetadataDialog {
 	readonly cursor: number
 	readonly content: string
 	readonly relativePath: string
-	readonly revision: string
 }
 
-const headingTagsAt = (content: string, cursor: number): string => {
+const headingTextAt = (content: string, cursor: number): string | null => {
 	const position = Math.max(0, Math.min(cursor, content.length))
 	const headings = [...content.matchAll(/^(\*+)\s+.*$/gm)].filter(
 		(match) => match.index <= position,
 	)
-	const heading = headings.at(-1)?.[0] ?? ""
+	return headings.at(-1)?.[0] ?? null
+}
+
+const headingTagsAt = (content: string, cursor: number): string => {
+	const heading = headingTextAt(content, cursor) ?? ""
 	const tags = /\s+((?::[^\s:]+)+:)\s*\r?$/.exec(heading)?.[1]
 	return tags ? tags.slice(1, -1).split(":").join(" ") : ""
 }
@@ -103,14 +106,12 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 			cursor: position,
 			content: controller.content,
 			relativePath: document.relativePath,
-			revision: document.revision,
 		})
 	}
 	const metadataIsCurrent = () =>
 		Boolean(
 			metadataDialog &&
 				controller.activeDocument?.relativePath === metadataDialog.relativePath &&
-				controller.activeDocument.revision === metadataDialog.revision &&
 				controller.content === metadataDialog.content &&
 				!isBusy,
 		)
@@ -422,6 +423,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 				title="Heading tags"
 				description="Set tags on the current heading. Separate multiple tags with spaces, commas, or colons; leave empty to remove them."
 				inputLabel="Tags"
+				invalidMessage="One or more tags are invalid. Separate tags with spaces, commas, or colons."
 				defaultValue={
 					metadataDialog?.type === "tags"
 						? headingTagsAt(metadataDialog.content, metadataDialog.cursor)
@@ -432,10 +434,20 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 					if (!open) setMetadataDialog(null)
 				}}
 				onSubmit={(value) => {
-					if (metadataDialog?.type !== "tags") return false
-					return applyMetadataEdit((content, position) =>
-						setOrgHeadingTagsAt(content, position, value.split(/[\s,:]+/)),
-					)
+					if (metadataDialog?.type !== "tags" || !metadataIsCurrent()) return false
+					try {
+						const edit = setOrgHeadingTagsAt(
+							metadataDialog.content,
+							metadataDialog.cursor,
+							value.split(/[\s,:]+/),
+						)
+						if (!edit) {
+							return !value && headingTextAt(metadataDialog.content, metadataDialog.cursor) !== null
+						}
+						return applyTextEdit(edit)
+					} catch {
+						return false
+					}
 				}}
 			/>
 			<OrgInputDialog
