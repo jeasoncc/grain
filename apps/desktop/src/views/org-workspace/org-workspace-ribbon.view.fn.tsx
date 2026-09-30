@@ -71,7 +71,7 @@ export const OrgWorkspaceRibbon = ({
 			<RibbonAction disabled={isBusy} label="Quick capture" onClick={onCapture}>
 				<NotebookPen className="size-[17px]" />
 			</RibbonAction>
-			<RibbonAction disabled={isBusy} label="Today’s note" onClick={onCreateDiary}>
+			<RibbonAction disabled={isBusy} label="New diary (today)" onClick={onCreateDiary}>
 				<FilePenLine className="size-[17px]" />
 			</RibbonAction>
 			<Tooltip>

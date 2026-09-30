@@ -466,6 +466,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 										controller={controller}
 										isBusy={isBusy}
 										tools={<WorkspaceToolsMenu controller={controller} isBusy={isBusy} />}
+										onCreateDiary={() => void createDiary()}
 										onHide={() => setSidebarVisible(false)}
 										onShowEditor={() => setShowAgenda(false)}
 									/>
@@ -584,7 +585,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 					{
 						disabled: isBusy,
 						icon: orgCommandIcons.diary,
-						label: "Open today’s note",
+						label: "New diary (today)",
 						run: () => void createDiary(),
 					},
 					{ icon: orgCommandIcons.files, label: "Show editor", run: () => setShowAgenda(false) },

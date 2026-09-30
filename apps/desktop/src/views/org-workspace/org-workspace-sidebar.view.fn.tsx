@@ -1,4 +1,5 @@
 import {
+	CalendarPlus,
 	ChevronRight,
 	Copy,
 	FilePenLine,
@@ -32,6 +33,7 @@ export interface OrgWorkspaceSidebarProps {
 	readonly controller: OrgWorkspaceController
 	readonly isBusy: boolean
 	readonly tools: ReactNode
+	readonly onCreateDiary: () => void
 	readonly onHide: () => void
 	readonly onShowEditor: () => void
 }
@@ -176,6 +178,7 @@ export const OrgWorkspaceSidebar = memo(function OrgWorkspaceSidebar({
 	controller,
 	isBusy,
 	tools,
+	onCreateDiary,
 	onHide,
 	onShowEditor,
 }: OrgWorkspaceSidebarProps) {
@@ -291,6 +294,19 @@ export const OrgWorkspaceSidebar = memo(function OrgWorkspaceSidebar({
 						{clipboardStatus}
 					</div>
 				)}
+				<div className="px-2 pb-1">
+					<button
+						type="button"
+						disabled={isBusy}
+						onClick={onCreateDiary}
+						className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-xs font-medium text-foreground transition-colors duration-150 hover:bg-sidebar-accent disabled:cursor-not-allowed disabled:opacity-40"
+						title="Create or open diary/YYYY-MM-DD.org"
+					>
+						<CalendarPlus className="size-4 text-muted-foreground" />
+						<span>New diary</span>
+						<span className="ml-auto text-[10px] font-normal text-muted-foreground">Today</span>
+					</button>
+				</div>
 				<div className="flex h-8 shrink-0 items-center gap-0.5 px-2">
 					<span className="min-w-0 flex-1 px-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
 						Files
