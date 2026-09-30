@@ -10,7 +10,7 @@ import {
 	ShieldCheck,
 	Trash2,
 } from "lucide-react"
-import { memo, useCallback, useEffect, useState } from "react"
+import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { Group, Panel, Separator } from "react-resizable-panels"
 import { type OrgWorkspaceController, useOrgWorkspace } from "@/hooks/use-org-workspace"
 import { useAllWorkspaces } from "@/hooks/use-workspace"
@@ -28,6 +28,8 @@ import {
 import { OrgCaptureDialog } from "./org-action-dialog.view.fn"
 import { OrgAgendaContainer } from "./org-agenda.container.fn"
 import { OrgDocumentPane } from "./org-document-pane.view.fn"
+import { OrgInspector } from "./org-inspector.view.fn"
+import { OrgQuickOpen } from "./org-quick-open.view.fn"
 import { OrgWorkspaceSidebar } from "./org-workspace-sidebar.view.fn"
 
 export interface OrgTodoCapturePromptResult {
@@ -260,6 +262,17 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	const [showAgenda, setShowAgenda] = useState(false)
 	const [showCapture, setShowCapture] = useState(false)
 	const [sidebarVisible, setSidebarVisible] = useState(true)
+	const [inspectorVisible, setInspectorVisible] = useState(false)
+	const [quickOpenVisible, setQuickOpenVisible] = useState(false)
+	const [openDocumentPaths, setOpenDocumentPaths] = useState<readonly string[]>([])
+	const navigationRequestRef = useRef(0)
+	const [navigationHistory, setNavigationHistory] = useState<{
+		readonly index: number
+		readonly paths: readonly string[]
+	}>({ index: -1, paths: [] })
+	const workspaceDocumentKey = controller.workspace?.documents
+		.map((document) => document.relativePath)
+		.join("\u0000") ?? ""
 	const createDiary = useCallback(async () => {
 		const result = await createOrgDiaryFromController(controller)
 		if (result === "no-workspace") {
@@ -270,6 +283,66 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	}, [controller])
 
 	useEffect(() => listenForOrgDiaryCreation(() => void createDiary()), [createDiary])
+	useEffect(() => {
+		setOpenDocumentPaths([])
+		setNavigationHistory({ index: -1, paths: [] })
+	}, [controller.workspace?.rootPath])
+	useEffect(() => {
+		const path = controller.activeDocument?.relativePath
+		if (!path) return
+		navigationRequestRef.current += 1
+		setOpenDocumentPaths((current) => current.includes(path) ? current : [...current, path])
+		setNavigationHistory((current) => {
+			if (current.paths[current.index] === path) return current
+			const paths = [...current.paths.slice(0, current.index + 1), path]
+			return { index: paths.length - 1, paths }
+		})
+	}, [controller.activeDocument?.relativePath])
+	useEffect(() => {
+		const available = new Set(workspaceDocumentKey ? workspaceDocumentKey.split("\u0000") : [])
+		setOpenDocumentPaths((current) => current.filter((path) => available.has(path)))
+		setNavigationHistory((current) => {
+			const activePath = current.paths[current.index]
+			const paths = current.paths.filter((path) => available.has(path))
+			const activeIndex = activePath ? paths.lastIndexOf(activePath) : -1
+			return { index: activeIndex >= 0 ? activeIndex : Math.min(current.index, paths.length - 1), paths }
+		})
+	}, [workspaceDocumentKey])
+	useEffect(() => {
+		const onKeyDown = (event: KeyboardEvent) => {
+			if ((event.metaKey || event.ctrlKey) && event.key.toLocaleLowerCase() === "o") {
+				event.preventDefault()
+				setQuickOpenVisible(true)
+			}
+		}
+		window.addEventListener("keydown", onKeyDown)
+		return () => window.removeEventListener("keydown", onKeyDown)
+	}, [])
+
+	const navigateHistory = (offset: -1 | 1) => {
+		const previousIndex = navigationHistory.index
+		const nextIndex = previousIndex + offset
+		const path = navigationHistory.paths[nextIndex]
+		if (!path) return
+		const requestId = navigationRequestRef.current + 1
+		navigationRequestRef.current = requestId
+		setNavigationHistory((current) => ({ ...current, index: nextIndex }))
+		void controller.openDocumentPath(path).then((opened) => {
+			if (!opened && requestId === navigationRequestRef.current) {
+				setNavigationHistory((current) => ({ ...current, index: previousIndex }))
+			}
+		})
+	}
+	const closeTab = (relativePath: string) => {
+		if (relativePath !== controller.activeDocument?.relativePath) {
+			setOpenDocumentPaths((current) => current.filter((path) => path !== relativePath))
+			return
+		}
+		const remaining = openDocumentPaths.filter((path) => path !== relativePath)
+		void controller.closeActiveDocument().then((closed) => {
+			if (closed) setOpenDocumentPaths(remaining)
+		})
+	}
 
 	return (
 		<div className="flex h-full min-h-0 w-full flex-col bg-background">
@@ -287,6 +360,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 									onCapture={() => setShowCapture(true)}
 									onCreateDiary={() => void createDiary()}
 									onHide={() => setSidebarVisible(false)}
+									onQuickOpen={() => setQuickOpenVisible(true)}
 									onShowAgenda={() => setShowAgenda(true)}
 									onShowEditor={() => setShowAgenda(false)}
 								/>
@@ -307,10 +381,34 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 									<OrgAgendaContainer controller={controller} onShowEditor={() => setShowAgenda(false)} />
 								</div>
 							) : (
-								<OrgDocumentPane controller={controller} isBusy={isBusy} sidebarVisible={sidebarVisible} onShowSidebar={() => setSidebarVisible(true)} />
+								<OrgDocumentPane
+									canGoBack={navigationHistory.index > 0}
+									canGoForward={navigationHistory.index >= 0 && navigationHistory.index < navigationHistory.paths.length - 1}
+									controller={controller}
+									inspectorVisible={inspectorVisible}
+									isBusy={isBusy}
+									openDocumentPaths={openDocumentPaths}
+									sidebarVisible={sidebarVisible}
+									onCloseTab={closeTab}
+									onGoBack={() => navigateHistory(-1)}
+									onGoForward={() => navigateHistory(1)}
+									onSelectTab={(relativePath) => {
+										if (relativePath !== controller.activeDocument?.relativePath) void controller.openDocumentPath(relativePath)
+									}}
+									onShowInspector={() => setInspectorVisible(true)}
+									onShowSidebar={() => setSidebarVisible(true)}
+								/>
 							)}
 						</div>
 					</Panel>
+					{inspectorVisible && !showAgenda && (
+						<>
+							<Separator className="relative w-1 bg-transparent after:absolute after:inset-y-0 after:left-1/2 after:w-px after:-translate-x-1/2 after:bg-border hover:after:bg-primary/40" />
+							<Panel id="org-inspector" defaultSize={280} minSize={220} maxSize={420}>
+								<OrgInspector controller={controller} onClose={() => setInspectorVisible(false)} />
+							</Panel>
+						</>
+					)}
 				</Group>
 			) : (
 				<OrgWorkspaceEmptyState
@@ -320,6 +418,16 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 				/>
 			)}
 			<OrgCaptureDialog open={showCapture} onOpenChange={setShowCapture} onSubmit={(title, targetPath) => void controller.captureTodo(title, targetPath)} />
+			<OrgQuickOpen
+				documents={controller.workspace?.documents ?? []}
+				open={quickOpenVisible}
+				onOpenChange={setQuickOpenVisible}
+				onSelect={async (document) => {
+					const opened = await controller.openDocument(document)
+					if (opened) setShowAgenda(false)
+					return opened
+				}}
+			/>
 		</div>
 	)
 })

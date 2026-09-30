@@ -39,6 +39,7 @@ import type { WorkspaceInterface } from "@/types/workspace"
 import { createDebouncedOrgWorkspaceRefresh, matchesOrgWorkspaceWatch } from "./org-workspace-watch"
 
 export const ORG_WORKSPACE_PREFERENCE_KEY = "grain:org-workspace-preference"
+export const ORG_AUTOSAVE_DELAY_MS = 1000
 const DEFAULT_ORG_WORKSPACE_PREFERENCE = "default"
 
 export interface OrgWorkspacePreferenceStorage {
@@ -120,6 +121,7 @@ export interface OrgWorkspaceController {
 	readonly clearDerivedIndex: () => Promise<void>
 	readonly updateContent: (content: string) => void
 	readonly saveDocument: () => Promise<void>
+	readonly closeActiveDocument: () => Promise<boolean>
 }
 
 const initialOrgContent = (relativePath: string): string => {
@@ -135,6 +137,12 @@ const directoryAndAncestors = (relativePath: string): readonly string[] => {
 
 const shouldSkipExternalCheck = (checking: boolean, mutating: boolean): boolean =>
 	checking || mutating
+
+export const canContinueAfterOrgSave = (
+	saved: boolean,
+	contentBeingSaved: string | null,
+	latestContent: string,
+): boolean => saved && contentBeingSaved !== null && contentBeingSaved === latestContent
 
 const canRefreshWorkspace = (
 	workspace: OrgWorkspaceInterface | null,
@@ -184,6 +192,10 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	const openRequestRef = useRef(0)
 	const mutationInProgressRef = useRef(false)
 	const refreshWorkspaceRef = useRef<() => Promise<void>>(async () => undefined)
+	const saveDocumentWithResultRef = useRef<() => Promise<boolean>>(async () => false)
+	const saveInFlightRef = useRef<Promise<boolean> | null>(null)
+	const saveInFlightContentRef = useRef<string | null>(null)
+	const autosaveFailedContentRef = useRef<string | null>(null)
 	const restoreAttemptedRef = useRef(false)
 	const refreshRetryTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 	const workspaceRoot = workspace?.rootPath ?? null
@@ -460,11 +472,23 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			entry: OrgDocumentEntryInterface,
 			expectedRevision?: string | null,
 		): Promise<boolean> => {
-			if (!workspace || mutationInProgressRef.current) {
-				return false
+			if (!workspace) return false
+			let awaitedAutosave = false
+			if (mutationInProgressRef.current) {
+				const inFlight = saveInFlightRef.current
+				if (!inFlight) return false
+				const contentBeingSaved = saveInFlightContentRef.current
+				const saved = await inFlight
+				if (!canContinueAfterOrgSave(saved, contentBeingSaved, latestContentRef.current)) {
+					setError("New edits arrived while saving; navigation was paused until they are saved.")
+					return false
+				}
+				awaitedAutosave = true
 			}
-			if (isDirty && !window.confirm("Discard unsaved changes and open another document?")) {
-				return false
+			if (isDirty && !awaitedAutosave) {
+				const contentAtNavigation = latestContentRef.current
+				const saved = await saveDocumentWithResultRef.current()
+				if (!saved || latestContentRef.current !== contentAtNavigation) return false
 			}
 			const requestId = openRequestRef.current + 1
 			const contentAtStart = latestContentRef.current
@@ -663,13 +687,14 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 
 	const updateContent = useCallback((nextContent: string) => {
 		latestContentRef.current = nextContent
+		autosaveFailedContentRef.current = null
 		setContent(nextContent)
 		setDirty(true)
 	}, [])
 
-	const saveDocument = useCallback(async () => {
+	const saveDocumentWithResult = useCallback(async (): Promise<boolean> => {
 		if (!workspace || !activeDocument || mutationInProgressRef.current) {
-			return
+			return false
 		}
 		openRequestRef.current += 1
 		mutationInProgressRef.current = true
@@ -678,18 +703,25 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		const contentBeingSaved = latestContentRef.current
 		setSaving(true)
 		setError(null)
-		const result = await saveOrgDocumentFlow({
+		const saveTask = saveOrgDocumentFlow({
 			content: contentBeingSaved,
 			expectedRevision: sourceRevision,
 			relativePath: sourcePath,
 			workspaceRoot: workspace.rootPath,
 		})()
+		saveInFlightContentRef.current = contentBeingSaved
+		saveInFlightRef.current = saveTask.then(E.isRight)
+		const result = await saveTask
+		saveInFlightRef.current = null
+		saveInFlightContentRef.current = null
 		mutationInProgressRef.current = false
 		setSaving(false)
 		if (E.isLeft(result)) {
+			autosaveFailedContentRef.current = contentBeingSaved
 			setError(result.left.message)
-			return
+			return false
 		}
+		autosaveFailedContentRef.current = null
 		setActiveDocument((current) =>
 			current?.relativePath === sourcePath && current.revision === sourceRevision
 				? { ...current, content: contentBeingSaved, revision: result.right.revision }
@@ -711,7 +743,44 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		) {
 			setDirty(false)
 		}
+		return true
 	}, [activeDocument, workspace])
+
+	useEffect(() => {
+		saveDocumentWithResultRef.current = saveDocumentWithResult
+	}, [saveDocumentWithResult])
+
+	const saveDocument = useCallback(async (): Promise<void> => {
+		await saveDocumentWithResult()
+	}, [saveDocumentWithResult])
+
+	const closeActiveDocument = useCallback(async (): Promise<boolean> => {
+		const contentAtClose = latestContentRef.current
+		if (isDirty) {
+			const saved = await saveDocumentWithResult()
+			if (!saved || latestContentRef.current !== contentAtClose) return false
+		}
+		openRequestRef.current += 1
+		setActiveDocument(null)
+		setContent("")
+		latestContentRef.current = ""
+		setDirty(false)
+		setRevealTarget(null)
+		return true
+	}, [isDirty, saveDocumentWithResult])
+
+	useEffect(() => {
+		if (
+			!isDirty ||
+			isLoading ||
+			isSaving ||
+			!workspace ||
+			!activeDocument ||
+			autosaveFailedContentRef.current === content
+		) return
+		const timer = window.setTimeout(() => void saveDocument(), ORG_AUTOSAVE_DELAY_MS)
+		return () => window.clearTimeout(timer)
+	}, [activeDocument, content, isDirty, isLoading, isSaving, saveDocument, workspace])
 
 	const captureTodo = useCallback(
 		async (title: string, targetRelativePath = "inbox.org") => {
@@ -760,11 +829,23 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 
 	const createDocument = useCallback(
 		async (relativePath: string) => {
-			if (!workspace || mutationInProgressRef.current || !relativePath.trim()) {
-				return
+			if (!workspace || !relativePath.trim()) return
+			let awaitedAutosave = false
+			if (mutationInProgressRef.current) {
+				const inFlight = saveInFlightRef.current
+				if (!inFlight) return
+				const contentBeingSaved = saveInFlightContentRef.current
+				const saved = await inFlight
+				if (!canContinueAfterOrgSave(saved, contentBeingSaved, latestContentRef.current)) {
+					setError("New edits arrived while saving; note creation was paused until they are saved.")
+					return
+				}
+				awaitedAutosave = true
 			}
-			if (isDirty && !window.confirm("Discard unsaved changes and create a new document?")) {
-				return
+			if (isDirty && !awaitedAutosave) {
+				const contentAtCreation = latestContentRef.current
+				const saved = await saveDocumentWithResultRef.current()
+				if (!saved || latestContentRef.current !== contentAtCreation) return
 			}
 			openRequestRef.current += 1
 			mutationInProgressRef.current = true
@@ -1122,6 +1203,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		archiveSubtree,
 		captureTodo,
 		clearDerivedIndex,
+		closeActiveDocument,
 		content,
 		createDirectory,
 		createDocument,

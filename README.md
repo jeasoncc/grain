@@ -25,6 +25,9 @@ An existing `grain.db` from the previous SQLite/Lexical application is different
 ## Current capabilities
 
 - Raw-text Org editing with CodeMirror 6
+- Obsidian-style resizable workspace with note tabs, back/forward history, and Quick Open
+- Conflict-aware autosave plus explicit `Mod-S`
+- Optional Outline, Properties, and Backlinks inspector
 - Recursive workspace tree with real files and empty directories
 - Safe create, read, revision-checked write, move, rename, and delete operations
 - `TODO`, heading level, checkbox, subtree move, refile, and archive operations

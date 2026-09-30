@@ -38,6 +38,7 @@ export interface OrgWorkspaceSidebarProps {
 	readonly onCapture: () => void
 	readonly onCreateDiary: () => void
 	readonly onHide: () => void
+	readonly onQuickOpen: () => void
 	readonly onShowAgenda: () => void
 	readonly onShowEditor: () => void
 }
@@ -147,6 +148,7 @@ export const OrgWorkspaceSidebar = memo(function OrgWorkspaceSidebar({
 	onCapture,
 	onCreateDiary,
 	onHide,
+	onQuickOpen,
 	onShowAgenda,
 	onShowEditor,
 }: OrgWorkspaceSidebarProps) {
@@ -253,6 +255,9 @@ export const OrgWorkspaceSidebar = memo(function OrgWorkspaceSidebar({
 				</div>
 
 				<nav className="shrink-0 border-t p-2" aria-label="Workspace navigation">
+					<button type="button" className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-xs text-muted-foreground hover:bg-accent/70 hover:text-foreground" onClick={onQuickOpen}>
+						<Search className="size-4" />Quick open <kbd className="ml-auto text-[10px] opacity-70">Ctrl O</kbd>
+					</button>
 					<button type="button" className={`flex h-8 w-full items-center gap-2 rounded-md px-2 text-xs ${activeView === "agenda" ? "bg-accent font-medium" : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"}`} onClick={onShowAgenda}>
 						<CalendarDays className="size-4" />Agenda
 					</button>

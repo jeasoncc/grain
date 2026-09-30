@@ -22,9 +22,9 @@ Org text must not be serialized through Lexical JSON. Parsers and UI decorations
 
 | Path | Responsibility |
 |---|---|
-| `src/views/org-workspace/` | Workspace shell, file tree, dialogs, agenda and backlinks |
+| `src/views/org-workspace/` | Resizable shell, tabs, Quick Open, file tree, agenda, inspector and dialogs |
 | `src/views/org-editor/` | CodeMirror Org editor integration |
-| `src/hooks/use-org-workspace.ts` | Runtime orchestration, dirty state and stale-request guards |
+| `src/hooks/use-org-workspace.ts` | Runtime orchestration, conflict-aware autosave, dirty state and stale-request guards |
 | `src/flows/org-workspace/` | Explicit business flows |
 | `src/pipes/org/` | Pure Org parsing and local text transformations |
 | `src/pipes/migration/` | Legacy migration planning and recovery SQL |

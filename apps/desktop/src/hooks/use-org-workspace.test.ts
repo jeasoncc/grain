@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 import type { OrgDocumentInterface, OrgWorkspaceInterface } from "@/types/org"
 import {
+	canContinueAfterOrgSave,
 	hasDefaultWorkspacePreference,
 	isDirtyCaptureTarget,
 	ORG_WORKSPACE_PREFERENCE_KEY,
@@ -38,6 +39,15 @@ describe("Org workspace preference", () => {
 		expect(hasDefaultWorkspacePreference(storage)).toBe(true)
 		setDefaultWorkspacePreference(false, storage)
 		expect(hasDefaultWorkspacePreference(storage)).toBe(false)
+	})
+})
+
+describe("Org autosave navigation guard", () => {
+	it("continues only when the exact latest editor content was persisted", () => {
+		expect(canContinueAfterOrgSave(true, "saved", "saved")).toBe(true)
+		expect(canContinueAfterOrgSave(true, "older", "new edit")).toBe(false)
+		expect(canContinueAfterOrgSave(false, "saved", "saved")).toBe(false)
+		expect(canContinueAfterOrgSave(true, null, "saved")).toBe(false)
 	})
 })
 
