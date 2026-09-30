@@ -23,6 +23,12 @@ describe("orgHeadingFoldRange", () => {
 		})
 	})
 
+	it("ignores heading-like lines inside Org blocks", () => {
+		const source = "* Outer\n#+begin_src text\n* literal\n#+end_src\nbody\n* Next"
+		expect(orgHeadingFoldRange(source, source.indexOf("* literal"))).toBeNull()
+		expect(orgHeadingFoldRange(source, 0)).toEqual({ from: 7, to: source.indexOf("* Next") - 1 })
+	})
+
 	it("folds a top-level heading through the end of the document", () => {
 		const source = "* Top\nbody\n** Child\nchild body"
 

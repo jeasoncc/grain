@@ -15,6 +15,10 @@ export interface OrgEditorProps {
 	readonly onOpenOrgLink?: (target: OrgLinkClickTarget) => void
 	readonly onRefileSubtree?: (cursor: number) => void
 	readonly onArchiveSubtree?: (cursor: number) => void
+	readonly onEditTags?: (cursor: number) => void
+	readonly onSchedule?: (cursor: number) => void
+	readonly onDeadline?: (cursor: number) => void
+	readonly onSetProperty?: (cursor: number) => void
 	readonly onCursorChange?: (cursor: number) => void
 	readonly revealTarget?: OrgEditorRevealTarget | null
 	readonly readOnly?: boolean

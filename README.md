@@ -32,8 +32,8 @@ An existing `grain.db` from the previous SQLite/Lexical application is different
 - Optional Outline, Properties, and Backlinks inspector
 - Recursive workspace tree with real files and empty directories
 - Safe create, read, revision-checked write, move, rename, and delete operations
-- `TODO`, heading level, checkbox, subtree move, refile, and archive operations
-- Agenda extraction and TODO capture
+- Org-style folding, heading/list editing, configurable TODO workflows, tags, planning dates, properties, timestamps, subtree move, refile, and archive
+- Agenda extraction, sparse-outline filtering, and TODO capture
 - `file:`, `id:`, and `CUSTOM_ID` link navigation
 - Backlinks with exact source navigation
 - Daily notes at `diary/YYYY-MM-DD.org`

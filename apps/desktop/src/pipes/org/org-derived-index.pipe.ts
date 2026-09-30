@@ -34,7 +34,8 @@ const todoKeywordsFrom = (
 	lines: readonly string[],
 	blockLines: readonly boolean[],
 ): ReadonlySet<string> => {
-	const keywords = new Set(["TODO", "DONE"])
+	const keywords = new Set<string>()
+	let hasDirective = false
 	for (const [index, line] of lines.entries()) {
 		if (blockLines[index] || ORDINARY_COMMENT.test(line)) {
 			continue
@@ -43,6 +44,7 @@ const todoKeywordsFrom = (
 		if (!directive) {
 			continue
 		}
+		hasDirective = true
 		for (const token of directive[1].split(/\s+/)) {
 			const keyword = token.replace(/\([^)]*\)$/, "")
 			if (keyword && keyword !== "|") {
@@ -50,7 +52,7 @@ const todoKeywordsFrom = (
 			}
 		}
 	}
-	return keywords
+	return hasDirective ? keywords : new Set(["TODO", "DONE"])
 }
 
 const headingParts = (

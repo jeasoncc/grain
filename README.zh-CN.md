@@ -30,8 +30,8 @@
 - 可选的 Outline、Properties 与 Backlinks 检查面板
 - 真实文件和空目录组成的递归 workspace 树
 - 安全的新建、读取、revision 写入、移动、重命名和删除
-- TODO、标题层级、checkbox、subtree move、Refile 和 Archive
-- Agenda 提取与 TODO Capture
+- Org 风格折叠、标题/列表编辑、可配置 TODO 流程、Tags、Planning 日期、Properties、时间戳、subtree move、Refile 和 Archive
+- Agenda 提取、稀疏 Outline 过滤与 TODO Capture
 - `file:`、`id:`、`CUSTOM_ID` 链接跳转
 - Backlinks 与精确来源定位
 - `diary/YYYY-MM-DD.org` 日记文件

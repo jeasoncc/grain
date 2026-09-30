@@ -1,26 +1,62 @@
 import {
 	Archive,
 	ArrowLeft,
+	CalendarClock,
 	ArrowRight,
 	FileText,
+	Flag,
+	KeyRound,
 	MoreHorizontal,
 	PanelLeftOpen,
 	PanelRightOpen,
 	Save,
 	Send,
+	Tags,
 	X,
 } from "lucide-react"
-import { memo, useState } from "react"
+import { memo, useEffect, useState } from "react"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
+import {
+	setOrgHeadingTagsAt,
+	setOrgPlanningAt,
+	setOrgPropertyAt,
+	type OrgTextEdit,
+} from "@/pipes/org"
 import { OrgEditor } from "@/views/org-editor"
 import { Button } from "@/views/ui/button"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/views/ui/dropdown-menu"
 import { OrgConfirmDialog, OrgInputDialog } from "./org-action-dialog.view.fn"
+
+type OrgMetadataType = "tags" | "scheduled" | "deadline" | "property"
+
+interface OrgMetadataDialog {
+	readonly type: OrgMetadataType
+	readonly cursor: number
+	readonly content: string
+	readonly relativePath: string
+	readonly revision: string
+}
+
+const headingTagsAt = (content: string, cursor: number): string => {
+	const position = Math.max(0, Math.min(cursor, content.length))
+	const headings = [...content.matchAll(/^(\*+)\s+.*$/gm)].filter(
+		(match) => match.index <= position,
+	)
+	const heading = headings.at(-1)?.[0] ?? ""
+	const tags = /\s+((?::[^\s:]+)+:)\s*\r?$/.exec(heading)?.[1]
+	return tags ? tags.slice(1, -1).split(":").join(" ") : ""
+}
+
+const today = (): string => {
+	const now = new Date()
+	return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+}
 
 export const OrgDocumentPane = memo(function OrgDocumentPane({
 	controller,
@@ -56,8 +92,51 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	const [cursor, setCursor] = useState(0)
 	const [refilePosition, setRefilePosition] = useState<number | null>(null)
 	const [archivePosition, setArchivePosition] = useState<number | null>(null)
+	const [metadataDialog, setMetadataDialog] = useState<OrgMetadataDialog | null>(null)
 	const line = controller.content.slice(0, cursor).split(/\r\n|\n|\r/).length
 	const wordCount = controller.content.match(/\S+/gu)?.length ?? 0
+	const openMetadataDialog = (type: OrgMetadataType, position: number) => {
+		const document = controller.activeDocument
+		if (!document || isBusy) return
+		setMetadataDialog({
+			type,
+			cursor: position,
+			content: controller.content,
+			relativePath: document.relativePath,
+			revision: document.revision,
+		})
+	}
+	const metadataIsCurrent = () =>
+		Boolean(
+			metadataDialog &&
+				controller.activeDocument?.relativePath === metadataDialog.relativePath &&
+				controller.activeDocument.revision === metadataDialog.revision &&
+				controller.content === metadataDialog.content &&
+				!isBusy,
+		)
+	const applyTextEdit = (edit: OrgTextEdit | null): boolean => {
+		if (!edit || !metadataDialog) return false
+		controller.updateContent(
+			metadataDialog.content.slice(0, edit.from) +
+				edit.insert +
+				metadataDialog.content.slice(edit.to),
+		)
+		setCursor(edit.cursor)
+		return true
+	}
+	const applyMetadataEdit = (
+		createEdit: (content: string, position: number) => OrgTextEdit | null,
+	): boolean => {
+		if (!metadataDialog || !metadataIsCurrent()) return false
+		try {
+			return applyTextEdit(createEdit(metadataDialog.content, metadataDialog.cursor))
+		} catch {
+			return false
+		}
+	}
+	useEffect(() => {
+		setMetadataDialog(null)
+	}, [controller.activeDocument?.relativePath, controller.activeDocument?.revision])
 
 	return (
 		<main className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
@@ -164,6 +243,39 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end">
 								<DropdownMenuItem
+									disabled={isBusy}
+									onClick={() => openMetadataDialog("tags", cursor)}
+								>
+									<Tags className="mr-2 size-4" />
+									Heading tags{" "}
+									<span className="ml-auto text-[10px] text-muted-foreground">C-c C-q</span>
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									disabled={isBusy}
+									onClick={() => openMetadataDialog("scheduled", cursor)}
+								>
+									<CalendarClock className="mr-2 size-4" />
+									Schedule{" "}
+									<span className="ml-auto text-[10px] text-muted-foreground">C-c C-s</span>
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									disabled={isBusy}
+									onClick={() => openMetadataDialog("deadline", cursor)}
+								>
+									<Flag className="mr-2 size-4" />
+									Deadline{" "}
+									<span className="ml-auto text-[10px] text-muted-foreground">C-c C-d</span>
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									disabled={isBusy}
+									onClick={() => openMetadataDialog("property", cursor)}
+								>
+									<KeyRound className="mr-2 size-4" />
+									Set property{" "}
+									<span className="ml-auto text-[10px] text-muted-foreground">C-c C-p</span>
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem
 									disabled={isBusy || controller.isDirty}
 									onClick={() => setRefilePosition(cursor)}
 								>
@@ -191,6 +303,10 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 							onCursorChange={setCursor}
 							onRefileSubtree={setRefilePosition}
 							onArchiveSubtree={setArchivePosition}
+							onEditTags={(position) => openMetadataDialog("tags", position)}
+							onSchedule={(position) => openMetadataDialog("scheduled", position)}
+							onDeadline={(position) => openMetadataDialog("deadline", position)}
+							onSetProperty={(position) => openMetadataDialog("property", position)}
 							onSave={() => void controller.saveDocument()}
 							readOnly={isBusy}
 							revealTarget={
@@ -300,6 +416,70 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 					</>
 				)}
 			</footer>
+			<OrgInputDialog
+				allowEmpty
+				open={metadataDialog?.type === "tags"}
+				title="Heading tags"
+				description="Set tags on the current heading. Separate multiple tags with spaces, commas, or colons; leave empty to remove them."
+				inputLabel="Tags"
+				defaultValue={
+					metadataDialog?.type === "tags"
+						? headingTagsAt(metadataDialog.content, metadataDialog.cursor)
+						: ""
+				}
+				confirmLabel="Set tags"
+				onOpenChange={(open) => {
+					if (!open) setMetadataDialog(null)
+				}}
+				onSubmit={(value) => {
+					if (metadataDialog?.type !== "tags") return false
+					return applyMetadataEdit((content, position) =>
+						setOrgHeadingTagsAt(content, position, value.split(/[\s,:]+/)),
+					)
+				}}
+			/>
+			<OrgInputDialog
+				open={metadataDialog?.type === "scheduled" || metadataDialog?.type === "deadline"}
+				title={metadataDialog?.type === "deadline" ? "Set deadline" : "Schedule heading"}
+				description="Use an Org planning date in YYYY-MM-DD format."
+				inputLabel="Date"
+				invalidMessage="Enter a date in YYYY-MM-DD format."
+				defaultValue={today()}
+				confirmLabel={metadataDialog?.type === "deadline" ? "Set deadline" : "Schedule"}
+				onOpenChange={(open) => {
+					if (!open) setMetadataDialog(null)
+				}}
+				onSubmit={(value) => {
+					if (metadataDialog?.type !== "scheduled" && metadataDialog?.type !== "deadline")
+						return false
+					const kind = metadataDialog.type === "deadline" ? "DEADLINE" : "SCHEDULED"
+					return applyMetadataEdit((content, position) =>
+						setOrgPlanningAt(content, position, kind, value),
+					)
+				}}
+			/>
+			<OrgInputDialog
+				open={metadataDialog?.type === "property"}
+				title="Set property"
+				description="Set a property on the current heading using KEY=VALUE."
+				inputLabel="Property"
+				invalidMessage="Enter a property as KEY=VALUE."
+				defaultValue="ID="
+				confirmLabel="Set property"
+				onOpenChange={(open) => {
+					if (!open) setMetadataDialog(null)
+				}}
+				onSubmit={(value) => {
+					if (metadataDialog?.type !== "property") return false
+					const separator = value.indexOf("=")
+					if (separator <= 0) return false
+					const key = value.slice(0, separator).trim()
+					if (!/^[A-Za-z0-9_@#%-]+$/.test(key)) return false
+					return applyMetadataEdit((content, position) =>
+						setOrgPropertyAt(content, position, key, value.slice(separator + 1)),
+					)
+				}}
+			/>
 			<OrgInputDialog
 				open={refilePosition !== null}
 				title="Refile subtree"

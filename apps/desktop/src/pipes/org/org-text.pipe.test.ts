@@ -3,8 +3,13 @@ import {
 	appendOrgTodoCapture,
 	changeOrgHeadingLevelAt,
 	cycleOrgTodoAt,
+	insertOrgTimestampAt,
 	moveOrgSubtreeAt,
 	type OrgTextEdit,
+	parseOrgTodoKeywords,
+	setOrgHeadingTagsAt,
+	setOrgPlanningAt,
+	setOrgPropertyAt,
 	toggleOrgCheckboxAt,
 } from "./org-text.pipe"
 
@@ -59,6 +64,35 @@ describe("Org local text transformations", () => {
 		expect(third).toBe(source)
 	})
 
+	it("parses and cycles configured TODO sequences", () => {
+		const source =
+			"#+TODO: NEXT(n) WAIT(w@) | DONE(d!) CANCELLED(c)\n#+SEQ_TODO: IDEA | DROPPED\n* Heading"
+		expect(parseOrgTodoKeywords(source)).toEqual({
+			done: ["DONE", "CANCELLED", "DROPPED"],
+			todo: ["NEXT", "WAIT", "IDEA"],
+		})
+
+		const next = apply(source, cycleOrgTodoAt(source, source.indexOf("Heading")))
+		const wait = apply(next, cycleOrgTodoAt(next, next.lastIndexOf("Heading")))
+		const done = apply(wait, cycleOrgTodoAt(wait, wait.lastIndexOf("Heading")))
+		const cancelled = apply(done, cycleOrgTodoAt(done, done.lastIndexOf("Heading")))
+		const none = apply(cancelled, cycleOrgTodoAt(cancelled, cancelled.lastIndexOf("Heading")))
+		expect(next).toContain("* NEXT Heading")
+		expect(wait).toContain("* WAIT Heading")
+		expect(done).toContain("* DONE Heading")
+		expect(cancelled).toContain("* CANCELLED Heading")
+		expect(none).toBe(source)
+
+		const secondSequence = `${source}\n* IDEA Explore`
+		expect(
+			apply(secondSequence, cycleOrgTodoAt(secondSequence, secondSequence.lastIndexOf("Explore"))),
+		).toContain("* DROPPED Explore")
+	})
+
+	it("uses default TODO and DONE states when no directive is present", () => {
+		expect(parseOrgTodoKeywords("* Plain")).toEqual({ done: ["DONE"], todo: ["TODO"] })
+	})
+
 	it("promotes and demotes only the heading star prefix", () => {
 		const source = "** TODO Keep spacing  :tag:"
 		expect(apply(source, changeOrgHeadingLevelAt(source, 12, -1))).toBe(
@@ -109,11 +143,36 @@ describe("Org local text transformations", () => {
 		).toBe("* B\n* A\n")
 	})
 
+	it("preserves lone-CR documents during subtree and metadata edits", () => {
+		const source = "* One\rbody\r* Two\rbody two\r"
+		const moved = apply(source, moveOrgSubtreeAt(source, source.indexOf("Two"), -1))
+		expect(moved).toBe("* Two\rbody two\r* One\rbody\r")
+		expect(
+			apply(moved, setOrgPlanningAt(moved, moved.indexOf("body two"), "SCHEDULED", "2025-01-02")),
+		).toBe("* Two\rSCHEDULED: <2025-01-02>\rbody two\r* One\rbody\r")
+	})
+
 	it("does not move a subtree across its parent boundary", () => {
 		const source = "* Parent\n** Only\nbody\n* Sibling"
 		expect(moveOrgSubtreeAt(source, source.indexOf("Only"), -1)).toBeNull()
 		expect(moveOrgSubtreeAt(source, source.indexOf("Only"), 1)).toBeNull()
 		expect(moveOrgSubtreeAt(source, source.indexOf("body"), 1)).toBeNull()
+	})
+
+	it("ignores heading-like text and TODO directives inside Org blocks", () => {
+		const source =
+			"* Outer\n#+begin_src text\n#+TODO: NEXT | COMPLETE\n* NEXT literal\n#+end_src\nbody"
+		const literal = source.indexOf("literal")
+		expect(parseOrgTodoKeywords(source)).toEqual({ todo: ["TODO"], done: ["DONE"] })
+		expect(cycleOrgTodoAt(source, literal)).toBeNull()
+		expect(changeOrgHeadingLevelAt(source, literal, 1)).toBeNull()
+		expect(moveOrgSubtreeAt(source, literal, 1)).toBeNull()
+		expect(setOrgPlanningAt(source, literal, "SCHEDULED", "2025-01-01")).toBeNull()
+		const loneCr = source.replaceAll("\n", "\r")
+		expect(parseOrgTodoKeywords(loneCr)).toEqual({ todo: ["TODO"], done: ["DONE"] })
+		expect(
+			setOrgPlanningAt(loneCr, loneCr.indexOf("literal"), "SCHEDULED", "2025-01-01"),
+		).toBeNull()
 	})
 
 	it("does not treat a cursor at zero as belonging to the second line", () => {
@@ -123,5 +182,119 @@ describe("Org local text transformations", () => {
 	it("returns no edit for unrelated lines", () => {
 		expect(cycleOrgTodoAt("plain text", 3)).toBeNull()
 		expect(toggleOrgCheckboxAt("- no checkbox", 4)).toBeNull()
+	})
+})
+
+describe("Org heading metadata transformations", () => {
+	it("sets and removes only trailing heading tags", () => {
+		const source = "* TODO Heading  :old:tags:\nbody :untouched:\n"
+		const tagged = apply(source, setOrgHeadingTagsAt(source, source.indexOf("body"), ["new", "x"]))
+		expect(tagged).toBe("* TODO Heading  :new:x:\nbody :untouched:\n")
+		expect(apply(tagged, setOrgHeadingTagsAt(tagged, tagged.indexOf("body"), []))).toBe(
+			"* TODO Heading\nbody :untouched:\n",
+		)
+		expect(apply("* Heading", setOrgHeadingTagsAt("* Heading", 3, ["one"]))).toBe("* Heading :one:")
+	})
+
+	it("updates or inserts planning without touching timestamp details", () => {
+		const source = "* Heading\nSCHEDULED: <2025-01-01 Wed +1w>  custom\nbody"
+		expect(
+			apply(source, setOrgPlanningAt(source, source.indexOf("body"), "SCHEDULED", "2026-02-03")),
+		).toBe("* Heading\nSCHEDULED: <2026-02-03 +1w>  custom\nbody")
+		const withDeadline = apply(
+			source,
+			setOrgPlanningAt(source, source.indexOf("body"), "DEADLINE", "2026-04-05"),
+		)
+		expect(withDeadline).toBe(
+			"* Heading\nSCHEDULED: <2025-01-01 Wed +1w>  custom DEADLINE: <2026-04-05>\nbody",
+		)
+	})
+
+	it("keeps CLOSED and planning metadata on one planning line", () => {
+		const source = "* DONE Heading\nCLOSED: [2025-01-01 Wed]\nbody"
+		const scheduled = apply(
+			source,
+			setOrgPlanningAt(source, source.indexOf("body"), "SCHEDULED", "2025-02-03"),
+		)
+		expect(scheduled).toBe("* DONE Heading\nCLOSED: [2025-01-01 Wed] SCHEDULED: <2025-02-03>\nbody")
+		expect(
+			apply(scheduled, setOrgPropertyAt(scheduled, scheduled.indexOf("body"), "ID", "closed")),
+		).toBe(
+			"* DONE Heading\nCLOSED: [2025-01-01 Wed] SCHEDULED: <2025-02-03>\n:PROPERTIES:\n:ID: closed\n:END:\nbody",
+		)
+	})
+
+	it("rejects impossible dates and invalid tags", () => {
+		expect(() => setOrgPlanningAt("* Heading", 2, "SCHEDULED", "2025-02-31")).toThrow()
+		expect(() => insertOrgTimestampAt("", 0, "2025-99-99", true)).toThrow()
+		expect(() => setOrgHeadingTagsAt("* Heading", 2, ["bad-tag"])).toThrow()
+	})
+
+	it("inserts LF planning lines while preserving EOF newline state", () => {
+		expect(
+			apply("* Heading\nbody", setOrgPlanningAt("* Heading\nbody", 2, "DEADLINE", "2025-12-31")),
+		).toBe("* Heading\nDEADLINE: <2025-12-31>\nbody")
+		expect(apply("* Heading", setOrgPlanningAt("* Heading", 2, "SCHEDULED", "2025-12-31"))).toBe(
+			"* Heading\nSCHEDULED: <2025-12-31>",
+		)
+		expect(
+			apply("* Heading\n", setOrgPlanningAt("* Heading\n", 2, "SCHEDULED", "2025-12-31")),
+		).toBe("* Heading\nSCHEDULED: <2025-12-31>\n")
+	})
+
+	it("updates and inserts heading properties", () => {
+		const source = "* Heading\n:PROPERTIES:\n:ID: old\n:ODD: untouched  \n:END:\nbody"
+		expect(apply(source, setOrgPropertyAt(source, source.indexOf("body"), "ID", "new"))).toBe(
+			"* Heading\n:PROPERTIES:\n:ID: new\n:ODD: untouched  \n:END:\nbody",
+		)
+		expect(apply(source, setOrgPropertyAt(source, source.indexOf("body"), "Owner", "Ada"))).toBe(
+			"* Heading\n:PROPERTIES:\n:ID: old\n:ODD: untouched  \n:Owner: Ada\n:END:\nbody",
+		)
+	})
+
+	it("does not cross a later heading when a property drawer is unterminated", () => {
+		const source = "* Broken\n:PROPERTIES:\n:ID: first\n* Later\n:PROPERTIES:\n:ID: second\n:END:\n"
+		expect(setOrgPropertyAt(source, source.indexOf("first"), "OWNER", "Ada")).toBeNull()
+		expect(source).toContain(":ID: second")
+	})
+
+	it("creates a property drawer after planning and preserves LF EOF state", () => {
+		const source = "* Heading\nSCHEDULED: <2025-01-01>\nbody"
+		expect(apply(source, setOrgPropertyAt(source, source.indexOf("body"), "ID", "abc"))).toBe(
+			"* Heading\nSCHEDULED: <2025-01-01>\n:PROPERTIES:\n:ID: abc\n:END:\nbody",
+		)
+		expect(apply("* Heading", setOrgPropertyAt("* Heading", 2, "ID", "abc"))).toBe(
+			"* Heading\n:PROPERTIES:\n:ID: abc\n:END:",
+		)
+	})
+
+	it("preserves CRLF for metadata insertions and unknown text", () => {
+		const planningSource = "#+odd: raw\r\n* Heading\r\nbody\r\n"
+		const planned = apply(
+			planningSource,
+			setOrgPlanningAt(planningSource, planningSource.indexOf("body"), "SCHEDULED", "2025-06-07"),
+		)
+		expect(planned).toBe("#+odd: raw\r\n* Heading\r\nSCHEDULED: <2025-06-07>\r\nbody\r\n")
+		const properties = apply(
+			planned,
+			setOrgPropertyAt(planned, planned.indexOf("body"), "ID", "crlf"),
+		)
+		expect(properties).toBe(
+			"#+odd: raw\r\n* Heading\r\nSCHEDULED: <2025-06-07>\r\n:PROPERTIES:\r\n:ID: crlf\r\n:END:\r\nbody\r\n",
+		)
+		expect(
+			apply(properties, setOrgHeadingTagsAt(properties, properties.indexOf("body"), ["tag"])),
+		).toContain("* Heading :tag:\r\n")
+	})
+
+	it("inserts active and inactive timestamps exactly at the cursor", () => {
+		const source = "before  after\r\n"
+		expect(apply(source, insertOrgTimestampAt(source, 7, "2025-08-09", true))).toBe(
+			"before <2025-08-09> after\r\n",
+		)
+		expect(apply(source, insertOrgTimestampAt(source, 7, "2025-08-09", false))).toBe(
+			"before [2025-08-09] after\r\n",
+		)
+		expect(insertOrgTimestampAt(source, 7, "2025-08-09", true).cursor).toBe(19)
 	})
 })

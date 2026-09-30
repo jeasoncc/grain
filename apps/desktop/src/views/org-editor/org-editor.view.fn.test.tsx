@@ -71,6 +71,27 @@ describe("OrgEditor", () => {
 		expect(getEditorView().state.doc.toString()).toBe(source)
 	})
 
+	it("highlights and cycles configured TODO workflows", () => {
+		const onChange = vi.fn()
+		render(
+			<OrgEditor
+				value={"#+TODO: NEXT WAIT | COMPLETE CANCELED\n* WAIT Review"}
+				onChange={onChange}
+				onSave={vi.fn()}
+			/>,
+		)
+		const view = getEditorView()
+		const editor = screen.getByRole("textbox")
+		expect(document.querySelector(".cm-org-todo")?.textContent).toBe("WAIT")
+		view.dispatch({ selection: { anchor: view.state.doc.line(2).from + 2 } })
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "t" })
+		expect(onChange).toHaveBeenLastCalledWith(
+			"#+TODO: NEXT WAIT | COMPLETE CANCELED\n* COMPLETE Review",
+		)
+		expect(document.querySelector(".cm-org-done")?.textContent).toBe("COMPLETE")
+	})
+
 	it("folds an Org subtree without changing its text", () => {
 		const source = "* Parent\nbody\n** Child\nchild body\n* Sibling\nsibling body"
 		const onChange = vi.fn()
@@ -128,7 +149,9 @@ describe("OrgEditor", () => {
 
 	it("keeps Org editing commands CRLF-safe", () => {
 		const onChange = vi.fn()
-		render(<OrgEditor value={"intro\r\n* Note\r\n- [ ] task"} onChange={onChange} onSave={vi.fn()} />)
+		render(
+			<OrgEditor value={"intro\r\n* Note\r\n- [ ] task"} onChange={onChange} onSave={vi.fn()} />,
+		)
 		const view = getEditorView()
 		const editor = screen.getByRole("textbox")
 
@@ -152,6 +175,58 @@ describe("OrgEditor", () => {
 		view.dispatch({ selection: { anchor: 0 } })
 		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
 		expect(fireEvent.keyDown(editor, { ctrlKey: true, key: "o" })).toBe(false)
+	})
+
+	it("dispatches Org metadata chords and inserts timestamps", () => {
+		const onEditTags = vi.fn()
+		const onSchedule = vi.fn()
+		const onDeadline = vi.fn()
+		const onSetProperty = vi.fn()
+		const onChange = vi.fn()
+		render(
+			<OrgEditor
+				value="* Note"
+				onChange={onChange}
+				onSave={vi.fn()}
+				onEditTags={onEditTags}
+				onSchedule={onSchedule}
+				onDeadline={onDeadline}
+				onSetProperty={onSetProperty}
+			/>,
+		)
+		const view = getEditorView()
+		const editor = screen.getByRole("textbox")
+		view.dispatch({ selection: { anchor: 2 } })
+		for (const [key, callback] of [
+			["q", onEditTags],
+			["s", onSchedule],
+			["d", onDeadline],
+			["p", onSetProperty],
+		] as const) {
+			fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+			fireEvent.keyDown(editor, { ctrlKey: true, key })
+			expect(callback).toHaveBeenLastCalledWith(2)
+		}
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(editor, { key: "." })
+		expect(onChange.mock.lastCall?.[0]).toMatch(/^\* <\d{4}-\d{2}-\d{2}>Note$/)
+	})
+
+	it("does not open metadata commands while read-only", () => {
+		const onSchedule = vi.fn()
+		render(
+			<OrgEditor
+				value="* Note"
+				onChange={vi.fn()}
+				onSave={vi.fn()}
+				readOnly
+				onSchedule={onSchedule}
+			/>,
+		)
+		const editor = screen.getByRole("textbox")
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "s" })
+		expect(onSchedule).not.toHaveBeenCalled()
 	})
 
 	it("continues Org lists and inserts sibling headings", () => {

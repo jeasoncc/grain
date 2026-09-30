@@ -28,6 +28,44 @@ describe("Org action dialogs", () => {
 		expect(onOpenChange).toHaveBeenCalledWith(false)
 	})
 
+	it("supports intentional empty values and keeps rejected input open", () => {
+		const allowEmptySubmit = vi.fn()
+		const allowEmptyOpenChange = vi.fn()
+		const { rerender } = render(
+			<OrgInputDialog
+				open
+				allowEmpty
+				title="Tags"
+				description="Tags"
+				inputLabel="Tags"
+				defaultValue="work"
+				confirmLabel="Set"
+				onOpenChange={allowEmptyOpenChange}
+				onSubmit={allowEmptySubmit}
+			/>,
+		)
+		fireEvent.change(screen.getByRole("textbox", { name: "Tags" }), { target: { value: " " } })
+		fireEvent.click(screen.getByRole("button", { name: "Set" }))
+		expect(allowEmptySubmit).toHaveBeenCalledWith("")
+		expect(allowEmptyOpenChange).toHaveBeenCalledWith(false)
+
+		const rejectedOpenChange = vi.fn()
+		rerender(
+			<OrgInputDialog
+				open
+				title="Date"
+				description="Date"
+				inputLabel="Date"
+				defaultValue="invalid"
+				confirmLabel="Set date"
+				onOpenChange={rejectedOpenChange}
+				onSubmit={() => false}
+			/>,
+		)
+		fireEvent.click(screen.getByRole("button", { name: "Set date" }))
+		expect(rejectedOpenChange).not.toHaveBeenCalled()
+	})
+
 	it("captures a TODO and defaults an empty target to inbox.org", () => {
 		const onSubmit = vi.fn()
 		render(<OrgCaptureDialog open onOpenChange={vi.fn()} onSubmit={onSubmit} />)

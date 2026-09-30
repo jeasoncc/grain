@@ -41,6 +41,14 @@ describe("Org derived index parsing", () => {
 		])
 	})
 
+	it("does not retain default TODO states when a custom workflow replaces them", () => {
+		const source = "#+TODO: NEXT | COMPLETE\n* TODO is part of this title\n* NEXT Actual task"
+		expect(parseOrgIndexHeadings("custom.org", source)).toMatchObject([
+			{ title: "TODO is part of this title", todoKeyword: null },
+			{ title: "Actual task", todoKeyword: "NEXT" },
+		])
+	})
+
 	it.each(["\r\n", "\r"])("handles %j line endings throughout the payload", (newline) => {
 		const payload = buildOrgDerivedIndexDocument(
 			"windows.org",

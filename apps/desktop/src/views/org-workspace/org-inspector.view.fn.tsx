@@ -1,5 +1,5 @@
 import * as E from "fp-ts/Either"
-import { FileKey2, Link2, ListTree, X } from "lucide-react"
+import { FileKey2, Link2, ListTree, Search, X } from "lucide-react"
 import { memo, useEffect, useMemo, useRef, useState } from "react"
 import { loadOrgBacklinksFlow, type OrgBacklink } from "@/flows/org-workspace"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
@@ -52,6 +52,7 @@ export const OrgInspector = memo(function OrgInspector({
 	readonly onClose: () => void
 }) {
 	const [tab, setTab] = useState<InspectorTab>("outline")
+	const [outlineQuery, setOutlineQuery] = useState("")
 	const [backlinks, setBacklinks] = useState<readonly OrgBacklink[]>([])
 	const [backlinkError, setBacklinkError] = useState<string | null>(null)
 	const [isLoading, setLoading] = useState(false)
@@ -66,6 +67,28 @@ export const OrgInspector = memo(function OrgInspector({
 		() => parseOrgInspectorProperties(controller.content),
 		[controller.content],
 	)
+	const visibleHeadings = useMemo(() => {
+		const query = outlineQuery.trim().toLocaleLowerCase()
+		if (!query) return headings
+		const visible = new Set<number>()
+		headings.forEach((heading, index) => {
+			if (!`${heading.todoKeyword ?? ""} ${heading.title}`.toLocaleLowerCase().includes(query))
+				return
+			visible.add(index)
+			let parentLevel = heading.level
+			for (let candidate = index - 1; candidate >= 0 && parentLevel > 1; candidate -= 1) {
+				if (headings[candidate].level < parentLevel) {
+					visible.add(candidate)
+					parentLevel = headings[candidate].level
+				}
+			}
+		})
+		return headings.filter((_, index) => visible.has(index))
+	}, [headings, outlineQuery])
+
+	useEffect(() => {
+		setOutlineQuery("")
+	}, [activeDocument?.relativePath])
 
 	useEffect(() => {
 		const generation = ++generationRef.current
@@ -128,13 +151,26 @@ export const OrgInspector = memo(function OrgInspector({
 				</Button>
 			</div>
 
+			{tab === "outline" && activeDocument && (
+				<label className="mx-2 mt-2 flex h-8 shrink-0 items-center gap-2 rounded-md border border-transparent bg-background/60 px-2 text-muted-foreground focus-within:border-ring/40">
+					<Search className="size-3.5" />
+					<input
+						value={outlineQuery}
+						onChange={(event) => setOutlineQuery(event.target.value)}
+						placeholder="Filter outline…"
+						aria-label="Filter outline as sparse tree"
+						className="min-w-0 flex-1 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
+					/>
+					{outlineQuery && <span className="text-[10px]">{visibleHeadings.length}</span>}
+				</label>
+			)}
 			<div className="min-h-0 flex-1 overflow-auto p-2">
 				{!activeDocument ? (
 					<p className="px-2 py-3 text-xs text-muted-foreground">Open a note to inspect it.</p>
 				) : tab === "outline" ? (
-					headings.length > 0 ? (
+					visibleHeadings.length > 0 ? (
 						<ul className="space-y-px">
-							{headings.map((heading) => (
+							{visibleHeadings.map((heading) => (
 								<li key={`${heading.line}:${heading.title}`}>
 									<button
 										type="button"
@@ -153,7 +189,9 @@ export const OrgInspector = memo(function OrgInspector({
 							))}
 						</ul>
 					) : (
-						<p className="px-2 py-3 text-xs text-muted-foreground">No headings in this note.</p>
+						<p className="px-2 py-3 text-xs text-muted-foreground">
+							{outlineQuery ? "No matching headings." : "No headings in this note."}
+						</p>
 					)
 				) : tab === "properties" ? (
 					properties.length > 0 ? (

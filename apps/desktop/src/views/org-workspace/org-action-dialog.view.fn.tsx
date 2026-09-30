@@ -11,41 +11,51 @@ import {
 import { Input } from "@/views/ui/input"
 
 export interface OrgInputDialogProps {
+	readonly allowEmpty?: boolean
 	readonly confirmLabel: string
 	readonly defaultValue: string
 	readonly description: string
 	readonly inputLabel: string
+	readonly invalidMessage?: string
 	readonly open: boolean
 	readonly title: string
 	readonly onOpenChange: (open: boolean) => void
-	readonly onSubmit: (value: string) => void
+	readonly onSubmit: (value: string) => boolean | void
 }
 
 export const OrgInputDialog = ({
+	allowEmpty = false,
 	confirmLabel,
 	defaultValue,
 	description,
 	inputLabel,
+	invalidMessage = "Check the value and try again.",
 	open,
 	title,
 	onOpenChange,
 	onSubmit,
 }: OrgInputDialogProps) => {
 	const [value, setValue] = useState(defaultValue)
+	const [submitRejected, setSubmitRejected] = useState(false)
 	const inputId = useId()
 
 	useEffect(() => {
 		if (open) {
 			setValue(defaultValue)
+			setSubmitRejected(false)
 		}
 	}, [defaultValue, open])
 
 	const submit = () => {
 		const normalized = value.trim()
-		if (!normalized) {
+		if (!allowEmpty && !normalized) {
 			return
 		}
-		onSubmit(normalized)
+		const accepted = onSubmit(normalized)
+		if (accepted === false) {
+			setSubmitRejected(true)
+			return
+		}
 		onOpenChange(false)
 	}
 
@@ -68,14 +78,23 @@ export const OrgInputDialog = ({
 							id={inputId}
 							autoFocus
 							value={value}
-							onChange={(event) => setValue(event.target.value)}
+							aria-invalid={submitRejected}
+							onChange={(event) => {
+								setValue(event.target.value)
+								setSubmitRejected(false)
+							}}
 						/>
 					</label>
+					{submitRejected && (
+						<p role="alert" className="mt-2 text-xs text-destructive">
+							{invalidMessage}
+						</p>
+					)}
 					<DialogFooter className="mt-6">
 						<Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
 							Cancel
 						</Button>
-						<Button type="submit" disabled={!value.trim()}>
+						<Button type="submit" disabled={!allowEmpty && !value.trim()}>
 							{confirmLabel}
 						</Button>
 					</DialogFooter>

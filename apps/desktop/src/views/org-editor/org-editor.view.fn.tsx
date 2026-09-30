@@ -21,7 +21,9 @@ import { memo, useEffect, useRef } from "react"
 import {
 	changeOrgHeadingLevelAt,
 	cycleOrgTodoAt,
+	insertOrgTimestampAt,
 	moveOrgSubtreeAt,
+	parseOrgTodoKeywords,
 	type OrgTextEdit,
 	orgFileLinkAt,
 	orgLinkTargetAt,
@@ -31,6 +33,14 @@ import type { OrgEditorProps } from "./org-editor.types"
 import { orgHeadingFoldRange } from "./org-fold.pipe"
 
 const externalValueUpdate = Annotation.define<boolean>()
+
+const localDate = (): string => {
+	const now = new Date()
+	const year = now.getFullYear()
+	const month = String(now.getMonth() + 1).padStart(2, "0")
+	const day = String(now.getDate()).padStart(2, "0")
+	return `${year}-${month}-${day}`
+}
 
 const lineSeparatorFor = (content: string): string => {
 	if (content.includes("\r\n")) {
@@ -79,7 +89,9 @@ const applyOrgEdit = (view: EditorView, createEdit: OrgEditFactory): boolean => 
 	return true
 }
 
-const orgListItem = (text: string): { readonly content: string; readonly prefix: string } | null => {
+const orgListItem = (
+	text: string,
+): { readonly content: string; readonly prefix: string } | null => {
 	const item = /^(\s*)(?:(- |\+ |\* )|(\d+)([.)])\s+)(\[[ X-]\]\s+)?(.*)$/i.exec(text)
 	if (!item || (item[2] === "* " && item[1].length === 0)) {
 		return null
@@ -99,7 +111,7 @@ const insertOrgMetaItem = (view: EditorView): boolean => {
 	const line = view.state.doc.lineAt(head)
 	const heading = /^(\*+)\s+/.exec(line.text)
 	const item = orgListItem(line.text)
-	const prefix = heading ? `${heading[1]} ` : item?.prefix ?? null
+	const prefix = heading ? `${heading[1]} ` : (item?.prefix ?? null)
 	if (!prefix) {
 		return false
 	}
@@ -142,23 +154,27 @@ const continueOrgList = (view: EditorView): boolean => {
 	return true
 }
 
-const decorationsForLine = (line: {
-	readonly from: number
-	readonly text: string
-}): readonly Range<Decoration>[] => {
+const decorationsForLine = (
+	line: { readonly from: number; readonly text: string },
+	todoKeywords: ReadonlySet<string>,
+	doneKeywords: ReadonlySet<string>,
+): readonly Range<Decoration>[] => {
 	const ranges: Range<Decoration>[] = []
-	const heading = /^(\*+)\s+(?:(TODO|DONE)\s+)?/.exec(line.text)
+	const candidate = /^(\*+)(\s+)(\S+)(?:\s+|$)/.exec(line.text)
+	const keyword = candidate?.[3]
+	const heading = /^(\*+)\s+/.exec(line.text)
 	if (heading) {
 		const level = Math.min(heading[1].length, 6)
 		ranges.push(
 			Decoration.line({ class: `cm-org-heading cm-org-heading-${level}` }).range(line.from),
 		)
-		if (heading[2]) {
-			const keywordFrom = line.from + heading[1].length + 1
+		if (keyword && (todoKeywords.has(keyword) || doneKeywords.has(keyword))) {
+			const keywordFrom = line.from + candidate[1].length + candidate[2].length
+			const stateClass = doneKeywords.has(keyword) ? "cm-org-done" : "cm-org-todo"
 			ranges.push(
-				Decoration.mark({ class: `cm-org-keyword cm-org-${heading[2].toLowerCase()}` }).range(
+				Decoration.mark({ class: `cm-org-keyword ${stateClass}` }).range(
 					keywordFrom,
-					keywordFrom + heading[2].length,
+					keywordFrom + keyword.length,
 				),
 			)
 		}
@@ -195,10 +211,13 @@ const decorationsForVisibleRange = (
 	to: number,
 ): readonly Range<Decoration>[] => {
 	const ranges: Range<Decoration>[] = []
+	const keywords = parseOrgTodoKeywords(view.state.sliceDoc())
+	const todoKeywords = new Set(keywords.todo)
+	const doneKeywords = new Set(keywords.done)
 	let position = from
 	while (position <= to) {
 		const line = view.state.doc.lineAt(position)
-		ranges.push(...decorationsForLine(line))
+		ranges.push(...decorationsForLine(line, todoKeywords, doneKeywords))
 		if (line.to >= to) {
 			break
 		}
@@ -296,6 +315,10 @@ export const OrgEditor = memo(function OrgEditor({
 	onOpenOrgLink,
 	onRefileSubtree,
 	onArchiveSubtree,
+	onEditTags,
+	onSchedule,
+	onDeadline,
+	onSetProperty,
 	onCursorChange,
 	revealTarget,
 	readOnly = false,
@@ -309,6 +332,10 @@ export const OrgEditor = memo(function OrgEditor({
 	const onOpenOrgLinkRef = useRef(onOpenOrgLink)
 	const onRefileSubtreeRef = useRef(onRefileSubtree)
 	const onArchiveSubtreeRef = useRef(onArchiveSubtree)
+	const onEditTagsRef = useRef(onEditTags)
+	const onScheduleRef = useRef(onSchedule)
+	const onDeadlineRef = useRef(onDeadline)
+	const onSetPropertyRef = useRef(onSetProperty)
 	const onCursorChangeRef = useRef(onCursorChange)
 	const documentPathRef = useRef(documentPath)
 	const initialValueRef = useRef(value)
@@ -324,6 +351,10 @@ export const OrgEditor = memo(function OrgEditor({
 	onOpenOrgLinkRef.current = onOpenOrgLink
 	onRefileSubtreeRef.current = onRefileSubtree
 	onArchiveSubtreeRef.current = onArchiveSubtree
+	onEditTagsRef.current = onEditTags
+	onScheduleRef.current = onSchedule
+	onDeadlineRef.current = onDeadline
+	onSetPropertyRef.current = onSetProperty
 	onCursorChangeRef.current = onCursorChange
 	documentPathRef.current = documentPath
 
@@ -354,19 +385,19 @@ export const OrgEditor = memo(function OrgEditor({
 						keydown: (event, editor) => {
 							const now = Date.now()
 							const key = event.key.toLocaleLowerCase()
-							if (orgChordDeadline > now && event.ctrlKey && !event.altKey && !event.metaKey) {
+							if (orgChordDeadline > now && !event.altKey && !event.metaKey) {
 								orgChordDeadline = 0
-								if (key === "t") {
+								if (event.ctrlKey && key === "t") {
 									event.preventDefault()
 									applyOrgEdit(editor, cycleOrgTodoAt)
 									return true
 								}
-								if (key === "c") {
+								if (event.ctrlKey && key === "c") {
 									event.preventDefault()
 									applyOrgEdit(editor, toggleOrgCheckboxAt)
 									return true
 								}
-								if (key === "o") {
+								if (event.ctrlKey && key === "o") {
 									event.preventDefault()
 									if (!documentPathRef.current) return true
 									const position = sourceOffsetFromEditor(editor, editor.state.selection.main.head)
@@ -381,6 +412,34 @@ export const OrgEditor = memo(function OrgEditor({
 										onOpenFileLinkRef.current(fileTarget)
 										return true
 									}
+									return true
+								}
+								const cursor = sourceOffsetFromEditor(editor, editor.state.selection.main.head)
+								if (event.ctrlKey && key === "q") {
+									event.preventDefault()
+									if (!editor.state.readOnly) onEditTagsRef.current?.(cursor)
+									return true
+								}
+								if (event.ctrlKey && key === "s") {
+									event.preventDefault()
+									if (!editor.state.readOnly) onScheduleRef.current?.(cursor)
+									return true
+								}
+								if (event.ctrlKey && key === "d") {
+									event.preventDefault()
+									if (!editor.state.readOnly) onDeadlineRef.current?.(cursor)
+									return true
+								}
+								if (event.ctrlKey && key === "p") {
+									event.preventDefault()
+									if (!editor.state.readOnly) onSetPropertyRef.current?.(cursor)
+									return true
+								}
+								if (!event.ctrlKey && (key === "." || key === "!")) {
+									event.preventDefault()
+									applyOrgEdit(editor, (content, position) =>
+										insertOrgTimestampAt(content, position, localDate(), key === "."),
+									)
 									return true
 								}
 								return false

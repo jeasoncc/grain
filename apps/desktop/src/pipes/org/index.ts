@@ -36,8 +36,15 @@ export {
 	appendOrgTodoCapture,
 	changeOrgHeadingLevelAt,
 	cycleOrgTodoAt,
+	insertOrgTimestampAt,
 	moveOrgSubtreeAt,
+	type OrgPlanningKind,
 	type OrgTextEdit,
+	type OrgTodoKeywords,
+	parseOrgTodoKeywords,
+	setOrgHeadingTagsAt,
+	setOrgPlanningAt,
+	setOrgPropertyAt,
 	toggleOrgCheckboxAt,
 } from "./org-text.pipe"
 export { buildOrgWorkspaceTree } from "./org-workspace-tree.pipe"

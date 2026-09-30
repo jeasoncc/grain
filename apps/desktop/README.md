@@ -55,9 +55,13 @@ The editor keeps raw Org text intact while supporting an initial Org-compatible 
 | `Ctrl-C Ctrl-T` | Cycle heading TODO state |
 | `Ctrl-C Ctrl-C` | Toggle a checkbox at the cursor |
 | `Ctrl-C Ctrl-O` | Open the Org link at the cursor |
+| `Ctrl-C Ctrl-Q` | Set heading tags |
+| `Ctrl-C Ctrl-S` / `Ctrl-C Ctrl-D` | Schedule a heading or set its deadline |
+| `Ctrl-C Ctrl-P` | Set a heading property |
+| `Ctrl-C .` / `Ctrl-C !` | Insert an active or inactive timestamp |
 | `Mod-S` | Save immediately |
 
-This is not yet complete GNU Emacs Org-mode emulation; scheduling, tags, timestamps, sparse trees and configurable TODO sequences remain follow-up work.
+`#+TODO` and `#+SEQ_TODO` workflows are honored when cycling TODO states. The Outline inspector provides a heading-filtered sparse-tree view. Grain still does not attempt complete GNU Emacs keymap emulation.
 
 ## Development
 
