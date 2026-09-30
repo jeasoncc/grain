@@ -11,7 +11,10 @@ const BACKLINK_DEBOUNCE_MS = 200
 type InspectorTab = "outline" | "properties" | "backlinks"
 
 const sourceName = (backlink: OrgBacklink) =>
-	backlink.sourceHeading ?? backlink.sourceTitle ?? backlink.sourceRelativePath.split("/").at(-1) ?? "Untitled"
+	backlink.sourceHeading ??
+	backlink.sourceTitle ??
+	backlink.sourceRelativePath.split("/").at(-1) ??
+	"Untitled"
 
 export const parseOrgInspectorProperties = (
 	source: string,
@@ -91,20 +94,38 @@ export const OrgInspector = memo(function OrgInspector({
 	}, [activeDocument, controller.content, tab, workspace])
 
 	return (
-		<aside className="flex h-full min-w-0 flex-col bg-muted/30" aria-label="Note inspector">
-			<div className="flex h-11 shrink-0 items-center border-b px-2">
+		<aside className="flex h-full min-w-0 flex-col bg-sidebar" aria-label="Note inspector">
+			<div className="flex h-10 shrink-0 items-center border-b border-sidebar-border px-1.5">
 				<div className="flex min-w-0 flex-1 items-center gap-0.5">
-					{([
-						["outline", ListTree, "Outline"],
-						["properties", FileKey2, "Properties"],
-						["backlinks", Link2, "Backlinks"],
-					] as const).map(([value, Icon, label]) => (
-						<button key={value} type="button" title={label} aria-label={label} aria-pressed={tab === value} onClick={() => setTab(value)} className={`flex size-8 items-center justify-center rounded-md ${tab === value ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"}`}>
+					{(
+						[
+							["outline", ListTree, "Outline"],
+							["properties", FileKey2, "Properties"],
+							["backlinks", Link2, "Backlinks"],
+						] as const
+					).map(([value, Icon, label]) => (
+						<button
+							key={value}
+							type="button"
+							title={label}
+							aria-label={label}
+							aria-pressed={tab === value}
+							onClick={() => setTab(value)}
+							className={`flex size-8 items-center justify-center rounded-md transition-colors duration-150 ${tab === value ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"}`}
+						>
 							<Icon className="size-4" />
 						</button>
 					))}
 				</div>
-				<Button variant="ghost" size="icon" aria-label="Close inspector" title="Close inspector" onClick={onClose}><X className="size-4" /></Button>
+				<Button
+					variant="ghost"
+					size="icon"
+					aria-label="Close inspector"
+					title="Close inspector"
+					onClick={onClose}
+				>
+					<X className="size-4" />
+				</Button>
 			</div>
 
 			<div className="min-h-0 flex-1 overflow-auto p-2">
@@ -115,40 +136,70 @@ export const OrgInspector = memo(function OrgInspector({
 						<ul className="space-y-px">
 							{headings.map((heading) => (
 								<li key={`${heading.line}:${heading.title}`}>
-									<button type="button" className="flex min-h-7 w-full items-center rounded-md pr-2 text-left text-xs text-muted-foreground hover:bg-accent/70 hover:text-foreground" style={{ paddingLeft: `${Math.min(heading.level, 6) * 8}px` }} onClick={() => void controller.openDocumentAt(activeDocument.relativePath, heading.line)}>
-										<span className="truncate">{heading.todoKeyword ? `${heading.todoKeyword} ` : ""}{heading.title}</span>
+									<button
+										type="button"
+										className="flex min-h-7 w-full items-center rounded-md pr-2 text-left text-xs text-muted-foreground hover:bg-accent/70 hover:text-foreground"
+										style={{ paddingLeft: `${Math.min(heading.level, 6) * 8}px` }}
+										onClick={() =>
+											void controller.openDocumentAt(activeDocument.relativePath, heading.line)
+										}
+									>
+										<span className="truncate">
+											{heading.todoKeyword ? `${heading.todoKeyword} ` : ""}
+											{heading.title}
+										</span>
 									</button>
 								</li>
 							))}
 						</ul>
-					) : <p className="px-2 py-3 text-xs text-muted-foreground">No headings in this note.</p>
+					) : (
+						<p className="px-2 py-3 text-xs text-muted-foreground">No headings in this note.</p>
+					)
 				) : tab === "properties" ? (
 					properties.length > 0 ? (
 						<dl className="space-y-3 px-2 py-1">
 							{properties.map((property, index) => (
 								<div key={`${property.key}:${index}`} className="min-w-0">
-									<dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{property.key}</dt>
-									<dd className="mt-0.5 break-words text-xs text-foreground">{property.value || "—"}</dd>
+									<dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+										{property.key}
+									</dt>
+									<dd className="mt-0.5 break-words text-xs text-foreground">
+										{property.value || "—"}
+									</dd>
 								</div>
 							))}
 						</dl>
-					) : <p className="px-2 py-3 text-xs text-muted-foreground">No file properties found.</p>
+					) : (
+						<p className="px-2 py-3 text-xs text-muted-foreground">No file properties found.</p>
+					)
 				) : backlinkError ? (
-					<p role="alert" className="px-2 py-3 text-xs text-destructive">{backlinkError}</p>
+					<p role="alert" className="px-2 py-3 text-xs text-destructive">
+						{backlinkError}
+					</p>
 				) : isLoading ? (
 					<p className="px-2 py-3 text-xs text-muted-foreground">Loading backlinks…</p>
 				) : backlinks.length > 0 ? (
 					<ul className="space-y-1">
 						{backlinks.map((backlink) => (
 							<li key={`${backlink.sourceRelativePath}:${backlink.line}:${backlink.column}`}>
-								<button type="button" className="w-full rounded-md px-2 py-2 text-left hover:bg-accent/70" onClick={() => void controller.openDocumentAt(backlink.sourceRelativePath, backlink.line)}>
+								<button
+									type="button"
+									className="w-full rounded-md px-2 py-2 text-left hover:bg-accent/70"
+									onClick={() =>
+										void controller.openDocumentAt(backlink.sourceRelativePath, backlink.line)
+									}
+								>
 									<span className="block truncate text-xs font-medium">{sourceName(backlink)}</span>
-									<span className="mt-0.5 block truncate text-[10px] text-muted-foreground">{backlink.sourceRelativePath}:{backlink.line}</span>
+									<span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+										{backlink.sourceRelativePath}:{backlink.line}
+									</span>
 								</button>
 							</li>
 						))}
 					</ul>
-				) : <p className="px-2 py-3 text-xs text-muted-foreground">No backlinks to this note.</p>}
+				) : (
+					<p className="px-2 py-3 text-xs text-muted-foreground">No backlinks to this note.</p>
+				)}
 			</div>
 		</aside>
 	)

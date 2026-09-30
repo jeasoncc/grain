@@ -23,8 +23,10 @@
 ## 已实现功能
 
 - 使用 CodeMirror 6 直接编辑原始 Org 文本
-- Obsidian 风格可调整 workspace，支持文档标签、前进/后退和 Quick Open
+- Obsidian 风格 Ribbon、可调整面板、文档标签、前进/后退和状态栏
+- 模糊 Quick Open（`Mod-O`）与 Org 原生命令面板（`Mod-P` 或 `Mod-K`）
 - 带 revision 冲突保护的自动保存，同时保留 `Mod-S`
+- workspace 授权后恢复标签、活动文档、面板可见性和文件树折叠状态
 - 可选的 Outline、Properties 与 Backlinks 检查面板
 - 真实文件和空目录组成的递归 workspace 树
 - 安全的新建、读取、revision 写入、移动、重命名和删除

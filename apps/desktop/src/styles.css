@@ -230,99 +230,33 @@ h6 { font-size: 0.75rem; font-weight: 600; line-height: 1.5; }
 }
 
 /* ========================================
-   Focus Style Optimization - Remove Default Outline, Use Custom Styles
+   Keyboard focus
    ======================================== */
 
-/* Remove default focus outline from all elements (use !important for priority) */
-*:focus {
-  outline: none !important;
-}
-
 *:focus:not(:focus-visible) {
-  outline: none !important;
-  box-shadow: none !important;
+  outline: none;
 }
 
-/* Only show focus styles during keyboard navigation (maintain accessibility) */
 *:focus-visible {
-  outline: 2px solid hsl(var(--ring)) !important;
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
-  border-radius: 4px;
-}
-
-/* Focus styles for buttons and interactive elements */
-button:focus,
-button:focus-visible,
-a:focus,
-a:focus-visible,
-[role="button"]:focus,
-[role="button"]:focus-visible {
-  outline: none !important;
-}
-
-button:focus-visible,
-a:focus-visible,
-[role="button"]:focus-visible {
-  outline: 2px solid hsl(var(--ring)) !important;
-  outline-offset: 2px;
-}
-
-/* Focus styles for input fields */
-input:focus,
-textarea:focus,
-select:focus {
-  outline: none !important;
 }
 
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: none !important;
-  border-color: hsl(var(--ring));
-  box-shadow: 0 0 0 3px color-mix(in srgb, hsl(var(--ring)) 15%, transparent);
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 15%, transparent);
+  outline: none;
 }
 
-/* Dialogs and popovers don't show focus outline */
 [role="dialog"]:focus,
 [role="menu"]:focus,
-[role="listbox"]:focus,
-[role="combobox"]:focus,
-[role="option"]:focus {
-  outline: none !important;
-}
-
-/* Radix UI Components Special Handling */
 [data-radix-focus-guard]:focus,
-[data-radix-popper-content-wrapper]:focus {
-  outline: none !important;
-}
-
-/* Focus for all div and span elements */
-div:focus:not(:focus-visible),
-span:focus:not(:focus-visible) {
-  outline: none !important;
-}
-
-/* Focus styles for editor content area */
-.editor-container:focus,
-.editor-container:focus-within {
-  outline: none;
-}
-
-/* Canvas and Drawing Area */
+[data-radix-popper-content-wrapper]:focus,
+.editor-container:focus-within,
 canvas:focus {
   outline: none;
-}
-
-/* Custom scrollbar doesn't show focus */
-[data-radix-scroll-area-viewport]:focus {
-  outline: none;
-}
-
-/* Focus State */
-*:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
 }
 
 /* ========================================
@@ -750,38 +684,6 @@ button, .no-select {
   color: var(--muted-foreground);
   gap: 0.5rem;
 }
-
-/* ========================================
-   Global Focus Outline Removal (Highest Priority)
-   ======================================== */
-
-/* Force Remove All Focus Outlines - On Mouse Click */
-html *:focus:not(:focus-visible) {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Ensure All Elements Have No Outline by Default */
-html * {
-  outline: none;
-}
-
-/* Only Show on Keyboard Navigation (Tab Key) */
-html *:focus-visible {
-  outline: 2px solid hsl(var(--ring)) !important;
-  outline-offset: 2px;
-}
-
-/* Completely Remove Focus Outline from Special Elements */
-html div:focus,
-html span:focus,
-html [role="dialog"]:focus,
-html [role="menu"]:focus,
-html [data-radix-focus-guard]:focus {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
 
 /* ========================================
    Character Mention Styles

@@ -164,9 +164,16 @@ const orgHighlightPlugin = ViewPlugin.fromClass(
 )
 
 const editorTheme = EditorView.theme({
+	".cm-activeLine": {
+		backgroundColor: "color-mix(in srgb, var(--muted) 35%, transparent)",
+	},
 	".cm-content": {
+		boxSizing: "border-box",
+		margin: "0 auto",
+		maxWidth: "820px",
 		minHeight: "100%",
-		padding: "1.25rem",
+		padding: "2rem 2rem 6rem",
+		width: "calc(100% - 2rem)",
 	},
 	".cm-focused": {
 		outline: "none",
@@ -178,9 +185,9 @@ const editorTheme = EditorView.theme({
 	".cm-org-heading": {
 		fontWeight: "600",
 	},
-	".cm-org-heading-1": { fontSize: "1.35em" },
-	".cm-org-heading-2": { fontSize: "1.2em" },
-	".cm-org-heading-3": { fontSize: "1.1em" },
+	".cm-org-heading-1": { fontSize: "1.4em", fontWeight: "650" },
+	".cm-org-heading-2": { fontSize: "1.22em", fontWeight: "650" },
+	".cm-org-heading-3": { fontSize: "1.1em", fontWeight: "600" },
 	".cm-org-keyword": {
 		borderRadius: "0.2rem",
 		fontWeight: "700",
@@ -189,8 +196,10 @@ const editorTheme = EditorView.theme({
 	".cm-org-tags": { color: "var(--primary)" },
 	".cm-org-todo": { color: "var(--destructive)" },
 	".cm-scroller": {
-		fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-		lineHeight: "1.5rem",
+		fontFamily:
+			"var(--font-editor, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace)",
+		fontSize: "var(--editor-font-size, 15px)",
+		lineHeight: "var(--editor-line-height, 1.6)",
 		overflow: "auto",
 	},
 	"&": {
