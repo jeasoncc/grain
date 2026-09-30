@@ -52,6 +52,15 @@ const Harness = ({
 	)
 }
 
+const openPlanning = (kind: "SCHEDULED" | "DEADLINE") => {
+	const editor = screen.getByRole("textbox")
+	fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+	fireEvent.keyDown(editor, { ctrlKey: true, key: kind === "SCHEDULED" ? "s" : "d" })
+	return screen.getByRole("combobox", {
+		name: kind === "SCHEDULED" ? "Schedule (YYYY-MM-DD):" : "Deadline (YYYY-MM-DD):",
+	})
+}
+
 const openTags = () => {
 	const editor = screen.getByRole("textbox")
 	fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
@@ -63,6 +72,114 @@ const viewFromEditor = () => {
 	if (!view) throw new Error("No editor")
 	return view
 }
+
+describe("property minibuffer transactions", () => {
+	it("validates, updates locally, and undoes in one transaction", () => {
+		const source = "* Note\r\n:PROPERTIES:\r\n:ID: abc\r\n:END:\r\nbody"
+		render(<Harness source={source} />)
+		const view = viewFromEditor()
+		act(() => view.dispatch({ selection: { anchor: 2 } }))
+		const editor = screen.getByRole("textbox")
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "p" })
+		const input = screen.getByRole("combobox", { name: "Property (KEY=VALUE):" })
+		expect(input).toHaveValue("ID=abc")
+		expect(screen.queryByRole("dialog")).toBeNull()
+		fireEvent.change(input, { target: { value: "BAD KEY=x" } })
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(screen.getByRole("alert")).toHaveTextContent("KEY=VALUE")
+		expect(view.state.sliceDoc()).toBe(source)
+		fireEvent.change(input, { target: { value: "ID=中文=value" } })
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(view.state.sliceDoc()).toBe(source.replace("abc", "中文=value"))
+		expect(editor).toHaveFocus()
+		act(() => {
+			undo(view)
+		})
+		expect(view.state.sliceDoc()).toBe(source)
+		expect(view.state.selection.main.head).toBe(2)
+	})
+	it("refuses a damaged drawer rather than overwriting an existing key", () => {
+		const source = "* Note\n:PROPERTIES:\n:ID: abc\n** Child"
+		render(<Harness source={source} />)
+		const editor = screen.getByRole("textbox")
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "p" })
+		expect(screen.queryByRole("combobox")).toBeNull()
+		expect(screen.getByText(/missing :END:/)).toBeVisible()
+		expect(viewFromEditor().state.sliceDoc()).toBe(source)
+	})
+})
+
+describe("planning minibuffer transactions", () => {
+	it.each([
+		"SCHEDULED",
+		"DEADLINE",
+	] as const)("opens %s without a modal, validates, commits, and isolates undo", (kind) => {
+		const source = `* Note\r\n${kind}: <2026-09-27 Sun 10:30 +1w>\r\nbody`
+		render(<Harness source={source} />)
+		const view = viewFromEditor()
+		act(() => view.dispatch({ selection: { anchor: 2 } }))
+		const input = openPlanning(kind)
+		expect(input).toHaveValue("2026-09-27")
+		expect(screen.queryByRole("dialog")).toBeNull()
+		fireEvent.change(input, { target: { value: "2026-02-29" } })
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(screen.getByRole("alert")).toHaveTextContent("real calendar date")
+		expect(view.state.sliceDoc()).toBe(source)
+		fireEvent.change(input, { target: { value: "2026-10-01" } })
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(view.state.sliceDoc()).toBe(source.replace("2026-09-27 Sun", "2026-10-01"))
+		expect(screen.getByRole("textbox")).toHaveFocus()
+		act(() => {
+			undo(view)
+		})
+		expect(view.state.sliceDoc()).toBe(source)
+		expect(view.state.selection.main.head).toBe(2)
+		act(() => {
+			redo(view)
+		})
+		expect(view.state.sliceDoc()).toContain("2026-10-01 10:30 +1w")
+	})
+
+	it("allows no-op accept without stripping timestamp details", () => {
+		const source = "* Note\nSCHEDULED: <2026-09-30 Wed 10:30 +1w>"
+		render(<Harness source={source} />)
+		fireEvent.keyDown(openPlanning("SCHEDULED"), { key: "Enter" })
+		expect(viewFromEditor().state.sliceDoc()).toBe(source)
+		expect(screen.getByText("Schedule unchanged")).toBeVisible()
+	})
+
+	it("keeps a planning prompt across revision-only saves and refuses stale content", () => {
+		const { rerender } = render(<Harness />)
+		const input = openPlanning("DEADLINE")
+		fireEvent.change(input, { target: { value: "2026-10-01" } })
+		rerender(<Harness revision="saved" />)
+		expect(input).toHaveFocus()
+		const view = viewFromEditor()
+		act(() =>
+			view.dispatch({ changes: { from: view.state.doc.length, insert: "\nExternal edit" } }),
+		)
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(screen.getByRole("alert")).toHaveTextContent("content changed")
+		expect(view.state.sliceDoc()).not.toContain("DEADLINE:")
+	})
+
+	it.each([
+		"mouse",
+		"keyboard",
+	])("hands off %s menu focus to the planning minibuffer", async (mode) => {
+		render(<Harness />)
+		const trigger = screen.getByRole("button", { name: "Note actions" })
+		if (mode === "mouse") fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false })
+		else fireEvent.keyDown(trigger, { key: "ArrowDown" })
+		const item = await screen.findByRole("menuitem", { name: /^Schedule/ })
+		if (mode === "mouse") fireEvent.click(item)
+		else fireEvent.keyDown(item, { key: "Enter" })
+		await waitFor(() => expect(screen.queryByRole("menu")).toBeNull())
+		await waitFor(() => expect(screen.getByRole("combobox")).toHaveFocus())
+	})
+})
 
 describe("Tags command vertical slice", () => {
 	it("commits through one buffer transaction, restores focus, and supports one undo", () => {

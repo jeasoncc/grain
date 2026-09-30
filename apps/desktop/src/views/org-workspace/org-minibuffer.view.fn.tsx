@@ -21,11 +21,17 @@ export const OrgMinibuffer = ({
 	const historyDraftRef = useRef("")
 	const [error, setError] = useState<string | null>(null)
 	const historyRef = useRef<string[]>([])
+	const historiesRef = useRef(new Map<string, string[]>())
 	const historyIndexRef = useRef(-1)
 	const id = useId()
-	const tokenFrom = caret - (input.slice(0, caret).match(/[^\s,:]*$/)?.[0].length ?? 0)
-	const tokenTo = caret + (input.slice(caret).match(/^[^\s,:]*/)?.[0].length ?? 0)
-	const token = input.slice(tokenFrom, caret)
+	const wholeValue = session?.completion === "value"
+	const tokenFrom = wholeValue
+		? 0
+		: caret - (input.slice(0, caret).match(/[^\s,:]*$/)?.[0].length ?? 0)
+	const tokenTo = wholeValue
+		? input.length
+		: caret + (input.slice(caret).match(/^[^\s,:]*/)?.[0].length ?? 0)
+	const token = wholeValue ? input.trim() : input.slice(tokenFrom, caret)
 	const candidates = useMemo(() => {
 		const used = new Set(`${input.slice(0, tokenFrom)} ${input.slice(tokenTo)}`.split(/[\s,:]+/))
 		return (session?.candidates ?? [])
@@ -45,6 +51,7 @@ export const OrgMinibuffer = ({
 		setSelected(0)
 		setError(null)
 		historyIndexRef.current = -1
+		historyRef.current = historiesRef.current.get(session.historyKey ?? session.prompt) ?? []
 		composingRef.current = false
 		inputRef.current?.focus()
 	}, [session?.id])
@@ -66,7 +73,7 @@ export const OrgMinibuffer = ({
 	const complete = (candidate: string | undefined) => {
 		if (!candidate) return
 		const suffix = input.slice(tokenTo)
-		const separator = suffix && /^[\s,:]/.test(suffix) ? "" : " "
+		const separator = wholeValue || (suffix && /^[\s,:]/.test(suffix)) ? "" : " "
 		setInput(input.slice(0, tokenFrom) + candidate + separator + suffix)
 		const nextCaret = tokenFrom + candidate.length + separator.length
 		setCaret(nextCaret)
@@ -81,11 +88,13 @@ export const OrgMinibuffer = ({
 			setError(result.message)
 			return
 		}
-		if (input.trim())
+		if (input.trim()) {
 			historyRef.current = [input, ...historyRef.current.filter((entry) => entry !== input)].slice(
 				0,
 				50,
 			)
+			historiesRef.current.set(session.historyKey ?? session.prompt, historyRef.current)
+		}
 	}
 
 	return (
@@ -96,7 +105,7 @@ export const OrgMinibuffer = ({
 			<div
 				id={`${id}-results`}
 				role="listbox"
-				aria-label="Tag completions"
+				aria-label={`${session.prompt.replace(/:$/, "")} completions`}
 				className="max-h-[min(12rem,30vh)] overflow-auto px-2 py-1"
 			>
 				{candidates.map((candidate, index) => (

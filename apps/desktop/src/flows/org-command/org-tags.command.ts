@@ -4,11 +4,15 @@ import {
 	setOrgHeadingTagsAt,
 } from "../../pipes/org/org-text.pipe"
 
-export interface OrgTagsCommandContext {
-	readonly relativePath: string
-	readonly content: string
-	readonly cursor: number
-}
+import {
+	guardOrgCommandOrigin,
+	guardOrgHeadingCommand,
+	type OrgBufferCommand,
+	type OrgBufferCommandContext,
+	type OrgBufferCommandRejected,
+} from "./org-buffer-command"
+
+export type OrgTagsCommandContext = OrgBufferCommandContext
 
 export type OrgTagsRejectionReason =
 	| "invalid-cursor"
@@ -17,11 +21,7 @@ export type OrgTagsRejectionReason =
 	| "path-changed"
 	| "content-changed"
 
-export interface OrgTagsCommandRejected {
-	readonly kind: "rejected"
-	readonly reason: OrgTagsRejectionReason
-	readonly message: string
-}
+export type OrgTagsCommandRejected = OrgBufferCommandRejected
 
 export type OrgTagsCommandPreparation =
 	| {
@@ -78,13 +78,8 @@ const headingTagsAt = (content: string, cursor: number) => {
 export const prepareOrgTagsCommand = (
 	context: OrgTagsCommandContext,
 ): OrgTagsCommandPreparation => {
-	if (
-		!Number.isInteger(context.cursor) ||
-		context.cursor < 0 ||
-		context.cursor > context.content.length
-	) {
-		return rejected("invalid-cursor")
-	}
+	const guard = guardOrgHeadingCommand(context)
+	if (guard) return guard
 	const scanned = headingTagsAt(context.content, context.cursor)
 	if (scanned.cursorInBlock) return rejected("inside-block")
 	if (scanned.currentTags === null) return rejected("no-heading")
@@ -106,8 +101,8 @@ export const executeOrgTagsCommand = (
 	currentContext: OrgTagsCommandContext,
 	input: string,
 ): OrgTagsCommandResult => {
-	if (sessionContext.relativePath !== currentContext.relativePath) return rejected("path-changed")
-	if (sessionContext.content !== currentContext.content) return rejected("content-changed")
+	const guard = guardOrgCommandOrigin(sessionContext, currentContext)
+	if (guard) return guard
 	const preparation = prepareOrgTagsCommand(sessionContext)
 	if (preparation.kind === "rejected") return preparation
 	const tags = [...new Set(input.split(/[\s,:]+/u).filter(Boolean))]
@@ -117,4 +112,14 @@ export const executeOrgTagsCommand = (
 		return { kind: "no-change", reason: "unchanged-tags" }
 	}
 	return { kind: "edit", edit }
+}
+
+export const orgTagsBufferCommand: OrgBufferCommand = {
+	id: "org.heading.tags",
+	prompt: "Tags:",
+	completion: "token",
+	updatedMessage: "Tags updated",
+	unchangedMessage: "Tags unchanged",
+	prepare: prepareOrgTagsCommand,
+	execute: executeOrgTagsCommand,
 }

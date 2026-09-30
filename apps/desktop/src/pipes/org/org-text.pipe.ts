@@ -1,3 +1,5 @@
+import { parseOrgPlanningLine } from "./org-planning-line.pipe"
+
 const normalizedCaptureTitle = (title: string): string =>
 	title.trim().replace(/\s*[\r\n]+\s*/g, " ")
 
@@ -312,7 +314,7 @@ const linePositionFrom = (content: string, from: number): OrgLinePosition => {
 	return line ?? { breakTo: content.length, contentTo: content.length, from, text: "" }
 }
 
-const headingPositionAt = (content: string, cursor: number): OrgLinePosition | null => {
+export const headingPositionAt = (content: string, cursor: number): OrgLinePosition | null => {
 	const safeCursor = Math.max(0, Math.min(cursor, content.length))
 	if (positionIsInOrgBlock(orgBlockRanges(content), safeCursor)) return null
 	const headings = orgHeadingPositions(content)
@@ -332,7 +334,7 @@ const newlineFrom = (content: string): "\n" | "\r" | "\r\n" =>
 
 const insertedLinesAt = (content: string, position: number, lines: readonly string[]): string => {
 	const newline = newlineFrom(content)
-	if (position < content.length || content.endsWith("\n")) {
+	if (position < content.length || /[\r\n]$/.test(content)) {
 		return `${lines.join(newline)}${newline}`
 	}
 	return `${newline}${lines.join(newline)}`
@@ -369,7 +371,7 @@ export const setOrgHeadingTagsAt = (
 
 export type OrgPlanningKind = "SCHEDULED" | "DEADLINE"
 
-const validOrgDate = (date: string): boolean => {
+export const validOrgDate = (date: string): boolean => {
 	const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date)
 	if (!match) return false
 	const year = Number(match[1])
@@ -382,8 +384,6 @@ const validOrgDate = (date: string): boolean => {
 		parsed.getUTCDate() === day
 	)
 }
-
-const PLANNING_LINE = /^[ \t]*(?:(?:CLOSED|SCHEDULED|DEADLINE):[ \t]*[<\[][^>\]]+[>\]][ \t]*)+/
 
 /** Sets a planning date on the line directly below the containing heading. */
 export const setOrgPlanningAt = (
@@ -400,16 +400,12 @@ export const setOrgPlanningAt = (
 		return null
 	}
 	const next = linePositionFrom(content, heading.breakTo)
-	if (heading.breakTo < content.length && PLANNING_LINE.test(next.text)) {
-		const target = new RegExp(
-			`\\b${kind}:[ \\t]*[<\\[](?<date>\\d{4}-\\d{2}-\\d{2})(?:[ \\t]+[A-Za-z]{3})?`,
-		)
-		const match = target.exec(next.text)
-		const matchedDate = match?.groups?.date
-		if (match && matchedDate) {
-			const from = next.from + match.index + match[0].lastIndexOf(matchedDate)
-			return editFrom(cursor, from, next.from + match.index + match[0].length, date)
-		}
+	const planning = parseOrgPlanningLine(next.text)
+	if (planning.kind === "invalid") throw new Error(planning.message)
+	if (heading.breakTo < content.length && planning.kind === "planning") {
+		const field = planning.fields.find((field) => field.kind === kind)
+		if (field)
+			return editFrom(cursor, next.from + field.dateFrom, next.from + field.dateAndWeekdayTo, date)
 		const separator = next.text.length > 0 && !/[ \t]$/.test(next.text) ? " " : ""
 		return editFrom(cursor, next.contentTo, next.contentTo, `${separator}${kind}: <${date}>`)
 	}
@@ -417,7 +413,70 @@ export const setOrgPlanningAt = (
 	return editFrom(cursor, heading.breakTo, heading.breakTo, insert)
 }
 
-const escapedRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+export interface OrgPropertySourceRange {
+	readonly key: string
+	readonly value: string
+	readonly valueFrom: number
+	readonly valueTo: number
+}
+export type OrgPropertyDrawerSnapshot =
+	| { readonly kind: "absent"; readonly from: number }
+	| {
+			readonly kind: "drawer"
+			readonly endFrom: number
+			readonly properties: readonly OrgPropertySourceRange[]
+	  }
+	| { readonly kind: "invalid"; readonly message: string }
+
+/** Validate the entire drawer before permitting even an update to an existing key. */
+export const orgPropertyDrawerAt = (
+	content: string,
+	cursor: number,
+): OrgPropertyDrawerSnapshot | null => {
+	const heading = headingPositionAt(content, cursor)
+	if (!heading) return null
+	let from = heading.breakTo
+	const next = linePositionFrom(content, from)
+	const planning = parseOrgPlanningLine(next.text)
+	if (planning.kind === "invalid") return { kind: "invalid", message: planning.message }
+	if (planning.kind === "planning") from = next.breakTo
+	const start = linePositionFrom(content, from)
+	if (!/^[ \t]*:PROPERTIES:[ \t]*$/i.test(start.text)) return { kind: "absent", from }
+	const properties: OrgPropertySourceRange[] = []
+	const keys = new Set<string>()
+	for (const line of rawOrgLines(content)) {
+		if (line.from < start.breakTo) continue
+		if (/^\*+[ \t]+/.test(line.text)) break
+		if (/^[ \t]*:END:[ \t]*$/i.test(line.text))
+			return { kind: "drawer", endFrom: line.from, properties }
+		if (/^[ \t]*:PROPERTIES:[ \t]*$/i.test(line.text))
+			return {
+				kind: "invalid",
+				message:
+					"The property drawer contains a nested drawer. Repair it before setting properties.",
+			}
+		const match = /^([ \t]*:([^:\s]+):[ \t]*)(.*?)([ \t]*)$/.exec(line.text)
+		if (match) {
+			const key = match[2]
+			if (keys.has(key.toUpperCase()))
+				return {
+					kind: "invalid",
+					message: `The property drawer contains duplicate ${key} keys. Resolve them before setting properties.`,
+				}
+			keys.add(key.toUpperCase())
+			properties.push({
+				key,
+				value: match[3],
+				valueFrom: line.from + match[1].length,
+				valueTo: line.from + match[1].length + match[3].length,
+			})
+		}
+	}
+	return {
+		kind: "invalid",
+		message: "The property drawer is missing :END:. Repair it before setting properties.",
+	}
+}
 
 /** Updates or creates a property in the containing heading's PROPERTIES drawer. */
 export const setOrgPropertyAt = (
@@ -427,46 +486,26 @@ export const setOrgPropertyAt = (
 	value: string,
 ): OrgTextEdit | null => {
 	const normalizedKey = key.trim().replace(/^:+|:+$/g, "")
+	if (/^(?:END|PROPERTIES)$/i.test(normalizedKey))
+		throw new Error("END and PROPERTIES are reserved drawer markers, not property keys.")
 	if (!normalizedKey || /[\s:\r\n]/.test(normalizedKey) || /[\r\n]/.test(value)) {
 		throw new Error("Org property keys and values must each fit on one line.")
 	}
-	const heading = headingPositionAt(content, cursor)
-	if (!heading) {
-		return null
+	const drawer = orgPropertyDrawerAt(content, cursor)
+	if (!drawer || drawer.kind === "invalid") return null
+	if (drawer.kind === "drawer") {
+		const property = drawer.properties.find(
+			(field) => field.key.toUpperCase() === normalizedKey.toUpperCase(),
+		)
+		if (property) return editFrom(cursor, property.valueFrom, property.valueTo, value)
+		return editFrom(
+			cursor,
+			drawer.endFrom,
+			drawer.endFrom,
+			`:${normalizedKey}: ${value}${newlineFrom(content)}`,
+		)
 	}
-
-	let drawerFrom = heading.breakTo
-	if (drawerFrom < content.length) {
-		const possiblePlanning = linePositionFrom(content, drawerFrom)
-		if (PLANNING_LINE.test(possiblePlanning.text)) {
-			drawerFrom = possiblePlanning.breakTo
-		}
-	}
-	const drawerStart = linePositionFrom(content, drawerFrom)
-	if (/^[ \t]*:PROPERTIES:[ \t]*$/i.test(drawerStart.text)) {
-		let position = drawerStart.breakTo
-		while (position < content.length) {
-			const line = linePositionFrom(content, position)
-			if (/^\*+[ \t]+/.test(line.text)) {
-				return null
-			}
-			if (/^[ \t]*:END:[ \t]*$/i.test(line.text)) {
-				const insert = `:${normalizedKey}: ${value}${newlineFrom(content)}`
-				return editFrom(cursor, line.from, line.from, insert)
-			}
-			const property = new RegExp(
-				`^([ \\t]*:${escapedRegExp(normalizedKey)}:[ \\t]*)(.*?)([ \\t]*)$`,
-				"i",
-			).exec(line.text)
-			if (property) {
-				const from = line.from + property[1].length
-				return editFrom(cursor, from, from + property[2].length, value)
-			}
-			position = line.breakTo
-		}
-		return null
-	}
-
+	const drawerFrom = drawer.from
 	const insert = insertedLinesAt(content, drawerFrom, [
 		":PROPERTIES:",
 		`:${normalizedKey}: ${value}`,

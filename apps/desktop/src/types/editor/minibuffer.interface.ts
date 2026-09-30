@@ -2,6 +2,8 @@
 export interface OrgMinibufferSession {
 	readonly id: number
 	readonly prompt: string
+	readonly historyKey?: string
+	readonly completion?: "token" | "value"
 	readonly initialInput: string
 	readonly candidates: readonly string[]
 	readonly onAccept: (

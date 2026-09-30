@@ -64,6 +64,46 @@ describe("Org minibuffer", () => {
 		expect(input).toHaveValue("draft")
 	})
 
+	it("supports whole-value completion without token separators", () => {
+		render(
+			<OrgMinibuffer
+				session={makeSession({
+					prompt: "Schedule:",
+					completion: "value",
+					initialInput: "2026",
+					candidates: ["2026-09-30"],
+				})}
+			/>,
+		)
+		const input = screen.getByRole("combobox")
+		fireEvent.keyDown(input, { key: "Tab" })
+		expect(input).toHaveValue("2026-09-30")
+	})
+
+	it("isolates command histories rather than offering tags as planning dates", () => {
+		const { rerender } = render(<OrgMinibuffer session={makeSession({ historyKey: "tags" })} />)
+		let input = screen.getByRole("combobox")
+		fireEvent.change(input, { target: { value: "work" } })
+		fireEvent.keyDown(input, { key: "Enter" })
+		rerender(
+			<OrgMinibuffer
+				session={makeSession({
+					id: 2,
+					historyKey: "schedule",
+					prompt: "Schedule:",
+					completion: "value",
+					initialInput: "2026-09-30",
+				})}
+			/>,
+		)
+		input = screen.getByRole("combobox")
+		fireEvent.keyDown(input, { key: "p", altKey: true })
+		expect(input).toHaveValue("2026-09-30")
+		rerender(<OrgMinibuffer session={makeSession({ id: 3, historyKey: "tags" })} />)
+		fireEvent.keyDown(screen.getByRole("combobox"), { key: "p", altKey: true })
+		expect(screen.getByRole("combobox")).toHaveValue("work")
+	})
+
 	it("retains rejected input and shows the exact command error", () => {
 		const session = makeSession({
 			onAccept: () => ({ ok: false, message: "The Org content changed." }),

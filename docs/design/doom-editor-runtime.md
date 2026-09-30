@@ -37,7 +37,7 @@ Implemented as an initial slice, not a completed command kernel:
 
 - `flows/org-command/org-tags.command.ts`: pure preparation/execution protocol.
   Rejects preamble/block contexts and stale path/content; distinguishes no-op.
-- `hooks/use-org-tags-minibuffer.ts`: session orchestration and buffer commit.
+- `hooks/use-org-command-minibuffer.ts`: shared session orchestration and buffer commit (formerly Tags-specific).
   Revision-only autosave does not invalidate a prompt. Loading/saving prevents
   commit but retains input for retry. Workspace/document switches cancel it.
 - `types/editor/minibuffer.interface.ts`: parameter-session contract.
@@ -61,6 +61,41 @@ Automated acceptance includes CRLF/lone-CR source preservation, malformed blocks
 menu-focus handoff, undo/redo/selection restoration, revision-only saves, busy
 retry, changed content, workspace switch and IME composition. User acceptance is
 still required; unit tests are not proof of Doom-equivalent ergonomics.
+
+## S2a: shared parameter commands and planning dates
+
+Tags, Schedule, Deadline and Property now share a typed `OrgBufferCommand` contract and one
+session/transaction host. Captured workspace, file path, source, editor target and
+session generation are checked before commit. Superseded or unmounted sessions
+cannot commit or cancel a newer command. No file IO is added to this host.
+
+Schedule (`C-c C-s`) and Deadline (`C-c C-d`) use the bottom minibuffer. Existing
+dates are prefilled; absent dates default to the caller-supplied local date.
+Whole-value completion does not insert tag separators. Memory histories are
+isolated by command ID. Invalid dates retain input with specific feedback.
+Accepting an unchanged date preserves all timestamp bytes, including weekday,
+time and repeater/warning details. Changed dates remove the possibly incorrect
+weekday while preserving other details. Common Chinese/Japanese weekdays are
+recognized; unsupported weekday formats are rejected rather than retained with
+a changed date. Empty input is invalid, not date removal.
+
+Preparation, no-op detection and mutation share `parseOrgPlanningLine` source
+ranges. Mismatched/unterminated timestamps and duplicate fields are rejected,
+not silently guessed or duplicated. Opaque text is retained; nested field names
+are not mistaken for top-level planning fields. Existing malformed planning lines
+remain editable as raw Org text.
+
+This is **not** a full Org date reader: relative dates, calendar navigation,
+time editing and repeater editing are not provided by these prompts. Refile and
+Archive dialogs still exist. The overall S2 phase is not complete.
+
+Property (`C-c C-p`) uses whole-value `KEY=VALUE` input and completion from the
+current heading's properties. Existing ID values are prefilled rather than
+silently cleared. Empty VALUE sets an empty value; it does not delete a property.
+Preparation and mutation use the same complete-drawer source ranges. Missing
+`:END:`, nested drawers, duplicate case-insensitive keys and reserved marker keys
+(`END`, `PROPERTIES`) are rejected. Unknown lines and existing whitespace remain
+untouched. The pane no longer splices metadata edits into a React-owned string.
 
 ## Next decision gates and work
 
