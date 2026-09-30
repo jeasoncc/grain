@@ -1,19 +1,17 @@
 import { Link } from "@tanstack/react-router"
 import dayjs from "dayjs"
 import {
-	CalendarDays,
 	Database,
 	DatabaseBackup,
-	FilePenLine,
 	FolderOpen,
-	ListTodo,
 	MoreHorizontal,
+	PanelLeftOpen,
 	RotateCcw,
-	Save,
 	ShieldCheck,
 	Trash2,
 } from "lucide-react"
-import { memo, useEffect, useState } from "react"
+import { memo, useCallback, useEffect, useState } from "react"
+import { Group, Panel, Separator } from "react-resizable-panels"
 import { type OrgWorkspaceController, useOrgWorkspace } from "@/hooks/use-org-workspace"
 import { useAllWorkspaces } from "@/hooks/use-workspace"
 import { listenForOrgDiaryCreation } from "@/io/event"
@@ -48,9 +46,6 @@ export const promptOrgTodoCapture = (): OrgTodoCapturePromptResult | null => {
 	}
 	return { targetRelativePath: target.trim() || "inbox.org", title }
 }
-
-const isCaptureDisabled = (hasWorkspace: boolean, isBusy: boolean): boolean =>
-	!hasWorkspace || isBusy
 
 export const createOrgDiaryFromController = async (
 	controller: OrgWorkspaceController,
@@ -199,82 +194,6 @@ const WorkspaceToolsMenu = ({
 	)
 }
 
-interface OrgWorkspaceHeaderProps {
-	readonly controller: OrgWorkspaceController
-	readonly isBusy: boolean
-	readonly showAgenda: boolean
-	readonly onOpenCapture: () => void
-	readonly onToggleAgenda: () => void
-}
-
-const OrgWorkspaceHeader = ({
-	controller,
-	isBusy,
-	showAgenda,
-	onOpenCapture,
-	onToggleAgenda,
-}: OrgWorkspaceHeaderProps) => (
-	<header className="flex h-12 shrink-0 items-center gap-3 border-b px-3">
-		<div className="min-w-0 flex-1">
-			<p className="truncate text-sm font-medium">Org workspace</p>
-			<p className="truncate text-xs text-muted-foreground">
-				{controller.workspace?.rootPath ?? "Open a directory containing .org files"}
-			</p>
-		</div>
-		<span className="hidden text-xs text-muted-foreground sm:inline">
-			{controller.isSaving ? "Saving…" : controller.isDirty ? "Unsaved" : "Saved"}
-		</span>
-		<div className="flex shrink-0 items-center gap-1">
-			<Button
-				variant={showAgenda ? "secondary" : "ghost"}
-				size="sm"
-				disabled={!controller.workspace}
-				aria-pressed={showAgenda}
-				onClick={onToggleAgenda}
-			>
-				{showAgenda ? (
-					<FilePenLine className="size-4 lg:mr-2" />
-				) : (
-					<CalendarDays className="size-4 lg:mr-2" />
-				)}
-				<span className="hidden lg:inline">{showAgenda ? "Editor" : "Agenda"}</span>
-			</Button>
-			<Button
-				variant="ghost"
-				size="sm"
-				disabled={isCaptureDisabled(controller.workspace !== null, isBusy)}
-				onClick={onOpenCapture}
-			>
-				<ListTodo className="size-4 lg:mr-2" />
-				<span className="hidden lg:inline">Capture</span>
-			</Button>
-			<Button
-				variant="ghost"
-				size={controller.workspace ? "icon" : "sm"}
-				title={controller.workspace ? "Open another Org directory" : undefined}
-				disabled={isBusy}
-				onClick={() => void controller.selectWorkspace()}
-			>
-				<FolderOpen className={controller.workspace ? "size-4" : "mr-2 size-4"} />
-				{controller.workspace ? (
-					<span className="sr-only">Open another Org directory</span>
-				) : (
-					"Open directory"
-				)}
-			</Button>
-			<WorkspaceToolsMenu controller={controller} isBusy={isBusy} />
-			<Button
-				size="sm"
-				disabled={!controller.activeDocument || !controller.isDirty || isBusy}
-				onClick={() => void controller.saveDocument()}
-			>
-				<Save className="size-4 lg:mr-2" />
-				<span className="hidden lg:inline">Save</span>
-			</Button>
-		</div>
-	</header>
-)
-
 const OrgWorkspaceNotice = ({ controller }: { readonly controller: OrgWorkspaceController }) => {
 	if (controller.error) {
 		return (
@@ -340,39 +259,59 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	const isBusy = controller.isLoading || controller.isSaving
 	const [showAgenda, setShowAgenda] = useState(false)
 	const [showCapture, setShowCapture] = useState(false)
+	const [sidebarVisible, setSidebarVisible] = useState(true)
+	const createDiary = useCallback(async () => {
+		const result = await createOrgDiaryFromController(controller)
+		if (result === "no-workspace") {
+			window.alert("Open an Org workspace before creating a diary file.")
+			return
+		}
+		setShowAgenda(false)
+	}, [controller])
 
-	useEffect(
-		() =>
-			listenForOrgDiaryCreation(() => {
-				void createOrgDiaryFromController(controller).then((result) => {
-					if (result === "no-workspace") {
-						window.alert("Open an Org workspace before creating a diary file.")
-					}
-				})
-			}),
-		[controller],
-	)
+	useEffect(() => listenForOrgDiaryCreation(() => void createDiary()), [createDiary])
 
 	return (
 		<div className="flex h-full min-h-0 w-full flex-col bg-background">
-			<OrgWorkspaceHeader
-				controller={controller}
-				isBusy={isBusy}
-				showAgenda={showAgenda}
-				onOpenCapture={() => setShowCapture(true)}
-				onToggleAgenda={() => setShowAgenda((current) => !current)}
-			/>
-			<OrgWorkspaceNotice controller={controller} />
-
+			{!controller.workspace && <OrgWorkspaceNotice controller={controller} />}
 			{controller.workspace ? (
-				<div className="flex min-h-0 flex-1">
-					<OrgWorkspaceSidebar controller={controller} isBusy={isBusy} />
-					{showAgenda ? (
-						<OrgAgendaContainer controller={controller} onShowEditor={() => setShowAgenda(false)} />
-					) : (
-						<OrgDocumentPane controller={controller} isBusy={isBusy} />
+				<Group orientation="horizontal" id="org-workspace-layout">
+					{sidebarVisible && (
+						<>
+							<Panel id="org-sidebar" defaultSize={280} minSize={220} maxSize={420}>
+								<OrgWorkspaceSidebar
+									activeView={showAgenda ? "agenda" : "editor"}
+									controller={controller}
+									isBusy={isBusy}
+									tools={<WorkspaceToolsMenu controller={controller} isBusy={isBusy} />}
+									onCapture={() => setShowCapture(true)}
+									onCreateDiary={() => void createDiary()}
+									onHide={() => setSidebarVisible(false)}
+									onShowAgenda={() => setShowAgenda(true)}
+									onShowEditor={() => setShowAgenda(false)}
+								/>
+							</Panel>
+							<Separator className="relative w-1 bg-transparent after:absolute after:inset-y-0 after:left-1/2 after:w-px after:-translate-x-1/2 after:bg-border hover:after:bg-primary/40" />
+						</>
 					)}
-				</div>
+					<Panel id="org-main" minSize={360}>
+						<div className="flex h-full min-h-0 flex-col">
+							<OrgWorkspaceNotice controller={controller} />
+							{showAgenda ? (
+								<div className="relative flex min-h-0 flex-1 flex-col">
+									{!sidebarVisible && (
+										<Button variant="ghost" size="icon" className="absolute left-2 top-2 z-10" aria-label="Show sidebar" onClick={() => setSidebarVisible(true)}>
+											<PanelLeftOpen className="size-4" />
+										</Button>
+									)}
+									<OrgAgendaContainer controller={controller} onShowEditor={() => setShowAgenda(false)} />
+								</div>
+							) : (
+								<OrgDocumentPane controller={controller} isBusy={isBusy} sidebarVisible={sidebarVisible} onShowSidebar={() => setSidebarVisible(true)} />
+							)}
+						</div>
+					</Panel>
+				</Group>
 			) : (
 				<OrgWorkspaceEmptyState
 					isLoading={controller.isLoading}
@@ -380,11 +319,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 					onChooseDirectory={() => void controller.selectWorkspace()}
 				/>
 			)}
-			<OrgCaptureDialog
-				open={showCapture}
-				onOpenChange={setShowCapture}
-				onSubmit={(title, targetPath) => void controller.captureTodo(title, targetPath)}
-			/>
+			<OrgCaptureDialog open={showCapture} onOpenChange={setShowCapture} onSubmit={(title, targetPath) => void controller.captureTodo(title, targetPath)} />
 		</div>
 	)
 })

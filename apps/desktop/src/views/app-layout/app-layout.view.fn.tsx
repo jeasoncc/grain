@@ -45,11 +45,12 @@ export interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
 	const { isSidebarOpen, sidebarWidth, handleLayoutChanged } = useAppLayout()
 	const location = useLocation()
-	const showLegacySidebar = isSidebarOpen && location.pathname === "/legacy"
+	const isLegacyRoute = location.pathname === "/legacy"
+	const showLegacySidebar = isSidebarOpen && isLegacyRoute
 
 	return (
 		<div className="flex h-screen w-screen overflow-hidden">
-			<ActivityBar />
+			{isLegacyRoute && <ActivityBar />}
 
 			<Group orientation="horizontal" id="grain-main-layout" onLayoutChanged={handleLayoutChanged}>
 				{showLegacySidebar && (
