@@ -1,4 +1,10 @@
-import { defaultKeymap, history, historyKeymap, indentMore } from "@codemirror/commands"
+import {
+	defaultKeymap,
+	history,
+	historyKeymap,
+	indentMore,
+	isolateHistory,
+} from "@codemirror/commands"
 import {
 	foldAll,
 	foldGutter,
@@ -310,6 +316,7 @@ export const OrgEditor = memo(function OrgEditor({
 	value,
 	onChange,
 	onSave,
+	onCommandTarget,
 	documentPath,
 	onOpenFileLink,
 	onOpenOrgLink,
@@ -328,6 +335,7 @@ export const OrgEditor = memo(function OrgEditor({
 	const viewRef = useRef<EditorView | null>(null)
 	const onChangeRef = useRef(onChange)
 	const onSaveRef = useRef(onSave)
+	const onCommandTargetRef = useRef(onCommandTarget)
 	const onOpenFileLinkRef = useRef(onOpenFileLink)
 	const onOpenOrgLinkRef = useRef(onOpenOrgLink)
 	const onRefileSubtreeRef = useRef(onRefileSubtree)
@@ -347,6 +355,7 @@ export const OrgEditor = memo(function OrgEditor({
 
 	onChangeRef.current = onChange
 	onSaveRef.current = onSave
+	onCommandTargetRef.current = onCommandTarget
 	onOpenFileLinkRef.current = onOpenFileLink
 	onOpenOrgLinkRef.current = onOpenOrgLink
 	onRefileSubtreeRef.current = onRefileSubtree
@@ -622,7 +631,47 @@ export const OrgEditor = memo(function OrgEditor({
 
 		onCursorChangeRef.current?.(sourceOffsetFromEditor(view, view.state.selection.main.head))
 		viewRef.current = view
+		onCommandTargetRef.current?.({
+			applyEdit: (expectedSource, edit) => {
+				if (
+					viewRef.current !== view ||
+					view.state.readOnly ||
+					view.state.sliceDoc() !== expectedSource
+				)
+					return false
+				if (
+					!Number.isInteger(edit.from) ||
+					!Number.isInteger(edit.to) ||
+					!Number.isInteger(edit.cursor) ||
+					edit.from < 0 ||
+					edit.to < edit.from ||
+					edit.to > expectedSource.length
+				)
+					return false
+				const insert = edit.insert.replace(/\r\n|\r|\n/g, view.state.lineBreak)
+				const nextSource =
+					expectedSource.slice(0, edit.from) + insert + expectedSource.slice(edit.to)
+				if (edit.cursor < 0 || edit.cursor > nextSource.length) return false
+				view.dispatch({
+					annotations: isolateHistory.of("full"),
+					changes: {
+						from: editorOffsetFromSource(expectedSource, edit.from, view.state.lineBreak),
+						to: editorOffsetFromSource(expectedSource, edit.to, view.state.lineBreak),
+						insert,
+					},
+					selection: {
+						anchor: editorOffsetFromSource(nextSource, edit.cursor, view.state.lineBreak),
+					},
+					scrollIntoView: true,
+				})
+				return true
+			},
+			restoreFocus: () => {
+				if (viewRef.current === view) view.focus()
+			},
+		})
 		return () => {
+			onCommandTargetRef.current?.(null)
 			viewRef.current = null
 			view.destroy()
 		}

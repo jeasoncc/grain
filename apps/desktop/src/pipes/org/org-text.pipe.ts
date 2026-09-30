@@ -68,20 +68,23 @@ interface OrgTodoSequence extends OrgTodoKeywords {
 interface OrgBlockRange {
 	readonly from: number
 	readonly to: number
+	readonly closed: boolean
 }
 
-const orgBlockRanges = (content: string): readonly OrgBlockRange[] => {
+export const orgBlockRanges = (content: string): readonly OrgBlockRange[] => {
 	const ranges: OrgBlockRange[] = []
-	let blockFrom: number | null = null
+	let block: { readonly from: number; readonly type: string } | null = null
 	for (const line of rawOrgLines(content)) {
-		if (blockFrom === null && /^[ \t]*#\+begin_[A-Za-z0-9_-]+\b/i.test(line.text)) {
-			blockFrom = line.from
-		} else if (blockFrom !== null && /^[ \t]*#\+end_[A-Za-z0-9_-]+\b/i.test(line.text)) {
-			ranges.push({ from: blockFrom, to: line.breakTo })
-			blockFrom = null
+		const begin = /^[ \t]*#\+begin_([A-Za-z0-9_-]+)\b/i.exec(line.text)
+		const end = /^[ \t]*#\+end_([A-Za-z0-9_-]+)\b/i.exec(line.text)
+		if (block === null && begin) {
+			block = { from: line.from, type: begin[1].toLowerCase() }
+		} else if (block && end?.[1].toLowerCase() === block.type) {
+			ranges.push({ from: block.from, to: line.breakTo, closed: true })
+			block = null
 		}
 	}
-	if (blockFrom !== null) ranges.push({ from: blockFrom, to: content.length })
+	if (block) ranges.push({ from: block.from, to: content.length, closed: false })
 	return ranges
 }
 

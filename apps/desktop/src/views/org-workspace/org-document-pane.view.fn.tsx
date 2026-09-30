@@ -14,15 +14,11 @@ import {
 	Tags,
 	X,
 } from "lucide-react"
-import { memo, useEffect, useState } from "react"
+import { memo, useEffect, useRef, useState } from "react"
+import { useOrgTagsMinibuffer } from "@/hooks/use-org-tags-minibuffer"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
-import {
-	setOrgHeadingTagsAt,
-	setOrgPlanningAt,
-	setOrgPropertyAt,
-	type OrgTextEdit,
-} from "@/pipes/org"
-import { OrgEditor } from "@/views/org-editor"
+import { setOrgPlanningAt, setOrgPropertyAt, type OrgTextEdit } from "@/pipes/org"
+import { OrgEditor, type OrgEditorCommandTarget } from "@/views/org-editor"
 import { Button } from "@/views/ui/button"
 import {
 	DropdownMenu,
@@ -32,6 +28,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/views/ui/dropdown-menu"
 import { OrgConfirmDialog, OrgInputDialog } from "./org-action-dialog.view.fn"
+import { OrgMinibuffer } from "./org-minibuffer.view.fn"
 
 type OrgMetadataType = "tags" | "scheduled" | "deadline" | "property"
 
@@ -40,20 +37,6 @@ interface OrgMetadataDialog {
 	readonly cursor: number
 	readonly content: string
 	readonly relativePath: string
-}
-
-const headingTextAt = (content: string, cursor: number): string | null => {
-	const position = Math.max(0, Math.min(cursor, content.length))
-	const headings = [...content.matchAll(/^(\*+)\s+.*$/gm)].filter(
-		(match) => match.index <= position,
-	)
-	return headings.at(-1)?.[0] ?? null
-}
-
-const headingTagsAt = (content: string, cursor: number): string => {
-	const heading = headingTextAt(content, cursor) ?? ""
-	const tags = /\s+((?::[^\s:]+)+:)\s*\r?$/.exec(heading)?.[1]
-	return tags ? tags.slice(1, -1).split(":").join(" ") : ""
 }
 
 const today = (): string => {
@@ -96,11 +79,21 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	const [refilePosition, setRefilePosition] = useState<number | null>(null)
 	const [archivePosition, setArchivePosition] = useState<number | null>(null)
 	const [metadataDialog, setMetadataDialog] = useState<OrgMetadataDialog | null>(null)
+	const commandTargetRef = useRef<OrgEditorCommandTarget | null>(null)
+	const minibufferFocusRef = useRef<(() => void) | null>(null)
+	const tagsCommand = useOrgTagsMinibuffer(controller, isBusy, commandTargetRef)
+	const minibuffer = tagsCommand.session
+	const echo = tagsCommand.echo
 	const line = controller.content.slice(0, cursor).split(/\r\n|\n|\r/).length
 	const wordCount = controller.content.match(/\S+/gu)?.length ?? 0
 	const openMetadataDialog = (type: OrgMetadataType, position: number) => {
 		const document = controller.activeDocument
 		if (!document || isBusy) return
+		if (type === "tags") {
+			setMetadataDialog(null)
+			tagsCommand.open(position)
+			return
+		}
 		setMetadataDialog({
 			type,
 			cursor: position,
@@ -242,7 +235,16 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 									<MoreHorizontal className="size-4" />
 								</Button>
 							</DropdownMenuTrigger>
-							<DropdownMenuContent align="end">
+							<DropdownMenuContent
+								align="end"
+								onCloseAutoFocus={(event) => {
+									if (minibuffer) {
+										event.preventDefault()
+										// Focus after Radix has removed its modal focus scope.
+										window.setTimeout(() => minibufferFocusRef.current?.(), 0)
+									}
+								}}
+							>
 								<DropdownMenuItem
 									disabled={isBusy}
 									onClick={() => openMetadataDialog("tags", cursor)}
@@ -300,6 +302,9 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 							documentPath={controller.activeDocument.relativePath}
 							value={controller.content}
 							onChange={controller.updateContent}
+							onCommandTarget={(target) => {
+								commandTargetRef.current = target
+							}}
 							onOpenOrgLink={(target) => void controller.openOrgLink(target)}
 							onCursorChange={setCursor}
 							onRefileSubtree={setRefilePosition}
@@ -400,7 +405,16 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 					</div>
 				</div>
 			)}
+			<OrgMinibuffer
+				session={minibuffer}
+				onFocusTarget={(focus) => {
+					minibufferFocusRef.current = focus
+				}}
+			/>
 			<footer className="flex h-[22px] shrink-0 items-center justify-end gap-1.5 border-t border-border/70 bg-muted/20 px-2 text-[11px] text-muted-foreground">
+				<output aria-live="polite" className="mr-auto truncate text-foreground">
+					{echo}
+				</output>
 				{controller.activeDocument && (
 					<>
 						<output aria-live="polite">
@@ -417,39 +431,6 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 					</>
 				)}
 			</footer>
-			<OrgInputDialog
-				allowEmpty
-				open={metadataDialog?.type === "tags"}
-				title="Heading tags"
-				description="Set tags on the current heading. Separate multiple tags with spaces, commas, or colons; leave empty to remove them."
-				inputLabel="Tags"
-				invalidMessage="One or more tags are invalid. Separate tags with spaces, commas, or colons."
-				defaultValue={
-					metadataDialog?.type === "tags"
-						? headingTagsAt(metadataDialog.content, metadataDialog.cursor)
-						: ""
-				}
-				confirmLabel="Set tags"
-				onOpenChange={(open) => {
-					if (!open) setMetadataDialog(null)
-				}}
-				onSubmit={(value) => {
-					if (metadataDialog?.type !== "tags" || !metadataIsCurrent()) return false
-					try {
-						const edit = setOrgHeadingTagsAt(
-							metadataDialog.content,
-							metadataDialog.cursor,
-							value.split(/[\s,:]+/),
-						)
-						if (!edit) {
-							return !value && headingTextAt(metadataDialog.content, metadataDialog.cursor) !== null
-						}
-						return applyTextEdit(edit)
-					} catch {
-						return false
-					}
-				}}
-			/>
 			<OrgInputDialog
 				open={metadataDialog?.type === "scheduled" || metadataDialog?.type === "deadline"}
 				title={metadataDialog?.type === "deadline" ? "Set deadline" : "Schedule heading"}

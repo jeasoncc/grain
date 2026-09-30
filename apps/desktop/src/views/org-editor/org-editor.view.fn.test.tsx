@@ -3,6 +3,7 @@ import { EditorView } from "@codemirror/view"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 import { OrgEditor } from "./org-editor.view.fn"
+import type { OrgEditorCommandTarget } from "./org-editor.types"
 
 function getEditorView(): EditorView {
 	const content = screen.getByRole("textbox")
@@ -14,6 +15,39 @@ function getEditorView(): EditorView {
 }
 
 describe("OrgEditor", () => {
+	it("guards buffer command transactions against stale source, invalid ranges, and readonly", () => {
+		let target: OrgEditorCommandTarget | null = null
+		const onCommandTarget = (current: OrgEditorCommandTarget | null) => {
+			target = current
+		}
+		const { rerender, unmount } = render(
+			<OrgEditor
+				value="* Note"
+				onChange={vi.fn()}
+				onSave={vi.fn()}
+				onCommandTarget={onCommandTarget}
+			/>,
+		)
+		const port = target as OrgEditorCommandTarget | null
+		if (!port) throw new Error("Missing command target")
+		expect(port.applyEdit("stale", { from: 0, to: 0, insert: "X", cursor: 0 })).toBe(false)
+		expect(port.applyEdit("* Note", { from: -1, to: 0, insert: "X", cursor: 0 })).toBe(false)
+		expect(port.applyEdit("* Note", { from: 0, to: 0, insert: "X", cursor: 999 })).toBe(false)
+		rerender(
+			<OrgEditor
+				value="* Note"
+				onChange={vi.fn()}
+				onSave={vi.fn()}
+				onCommandTarget={onCommandTarget}
+				readOnly
+			/>,
+		)
+		expect(port.applyEdit("* Note", { from: 6, to: 6, insert: " :work:", cursor: 2 })).toBe(false)
+		unmount()
+		expect(target).toBeNull()
+		expect(port.applyEdit("* Note", { from: 6, to: 6, insert: " :work:", cursor: 2 })).toBe(false)
+	})
+
 	it("keeps Org source as raw text and reports document edits", () => {
 		const onChange = vi.fn()
 		render(

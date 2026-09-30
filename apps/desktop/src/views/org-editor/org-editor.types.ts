@@ -1,4 +1,10 @@
-import type { OrgLinkClickTarget } from "@/pipes/org"
+import type { OrgLinkClickTarget, OrgTextEdit } from "@/pipes/org"
+
+/** Buffer-local transaction boundary; never performs filesystem IO. */
+export interface OrgEditorCommandTarget {
+	readonly applyEdit: (expectedSource: string, edit: OrgTextEdit) => boolean
+	readonly restoreFocus: () => void
+}
 
 export interface OrgEditorRevealTarget {
 	readonly line: number
@@ -10,6 +16,7 @@ export interface OrgEditorProps {
 	readonly value: string
 	readonly onChange: (value: string) => void
 	readonly onSave: () => void
+	readonly onCommandTarget?: (target: OrgEditorCommandTarget | null) => void
 	readonly documentPath?: string
 	readonly onOpenFileLink?: (relativePath: string) => void
 	readonly onOpenOrgLink?: (target: OrgLinkClickTarget) => void

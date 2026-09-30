@@ -55,11 +55,13 @@ The editor keeps raw Org text intact while supporting an initial Org-compatible 
 | `Ctrl-C Ctrl-T` | Cycle heading TODO state |
 | `Ctrl-C Ctrl-C` | Toggle a checkbox at the cursor |
 | `Ctrl-C Ctrl-O` | Open the Org link at the cursor |
-| `Ctrl-C Ctrl-Q` | Set heading tags |
+| `Ctrl-C Ctrl-Q` | Set heading tags in the bottom minibuffer |
 | `Ctrl-C Ctrl-S` / `Ctrl-C Ctrl-D` | Schedule a heading or set its deadline |
 | `Ctrl-C Ctrl-P` | Set a heading property |
 | `Ctrl-C .` / `Ctrl-C !` | Insert an active or inactive timestamp |
 | `Mod-S` | Save immediately |
+
+Heading Tags uses a non-modal bottom minibuffer: Enter accepts, Tab completes existing document tags, C-n/C-p selects candidates, M-p/M-n browses session history, and Esc/C-g cancels. Edits commit as isolated CodeMirror undo transactions. Other parameter dialogs have not yet migrated. See [editor runtime design](../../docs/design/doom-editor-runtime.md).
 
 `#+TODO` and `#+SEQ_TODO` workflows are honored when cycling TODO states. The Outline inspector provides a heading-filtered sparse-tree view. Grain still does not attempt complete GNU Emacs keymap emulation.
 
