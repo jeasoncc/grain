@@ -1,5 +1,13 @@
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands"
-import { foldGutter, foldKeymap, foldService } from "@codemirror/language"
+import { defaultKeymap, history, historyKeymap, indentMore } from "@codemirror/commands"
+import {
+	foldAll,
+	foldGutter,
+	foldKeymap,
+	foldedRanges,
+	foldService,
+	toggleFold,
+	unfoldAll,
+} from "@codemirror/language"
 import { Annotation, Compartment, EditorState, type Range, Transaction } from "@codemirror/state"
 import {
 	Decoration,
@@ -50,21 +58,86 @@ const applyOrgEdit = (view: EditorView, createEdit: OrgEditFactory): boolean => 
 	if (view.state.readOnly) {
 		return false
 	}
-	const source = view.state.doc.toString()
+	const source = view.state.sliceDoc()
 	const edit = createEdit(source, sourceOffsetFromEditor(view, view.state.selection.main.head))
 	if (!edit) {
 		return false
 	}
+	const normalizedInsert = edit.insert.replace(/\r\n|\r|\n/g, view.state.lineBreak)
+	const nextSource = source.slice(0, edit.from) + normalizedInsert + source.slice(edit.to)
 	view.dispatch({
 		changes: {
 			from: editorOffsetFromSource(source, edit.from, view.state.lineBreak),
-			insert: edit.insert.replace(/\r\n|\r|\n/g, view.state.lineBreak),
+			insert: normalizedInsert,
 			to: editorOffsetFromSource(source, edit.to, view.state.lineBreak),
 		},
 		scrollIntoView: true,
 		selection: {
-			anchor: editorOffsetFromSource(source, edit.cursor, view.state.lineBreak),
+			anchor: editorOffsetFromSource(nextSource, edit.cursor, view.state.lineBreak),
 		},
+	})
+	return true
+}
+
+const orgListItem = (text: string): { readonly content: string; readonly prefix: string } | null => {
+	const item = /^(\s*)(?:(- |\+ |\* )|(\d+)([.)])\s+)(\[[ X-]\]\s+)?(.*)$/i.exec(text)
+	if (!item || (item[2] === "* " && item[1].length === 0)) {
+		return null
+	}
+	const marker = item[2] ?? `${Number(item[3]) + 1}${item[4]} `
+	return {
+		content: item[6] ?? "",
+		prefix: `${item[1]}${marker}${item[5] ? "[ ] " : ""}`,
+	}
+}
+
+const insertOrgMetaItem = (view: EditorView): boolean => {
+	if (view.state.readOnly) {
+		return false
+	}
+	const head = view.state.selection.main.head
+	const line = view.state.doc.lineAt(head)
+	const heading = /^(\*+)\s+/.exec(line.text)
+	const item = orgListItem(line.text)
+	const prefix = heading ? `${heading[1]} ` : item?.prefix ?? null
+	if (!prefix) {
+		return false
+	}
+	const insert = `${view.state.lineBreak}${prefix}`
+	view.dispatch({
+		changes: { from: line.to, insert },
+		selection: { anchor: line.to + 1 + prefix.length },
+		scrollIntoView: true,
+	})
+	return true
+}
+
+const continueOrgList = (view: EditorView): boolean => {
+	if (view.state.readOnly || !view.state.selection.main.empty) {
+		return false
+	}
+	const head = view.state.selection.main.head
+	const line = view.state.doc.lineAt(head)
+	if (head !== line.to) {
+		return false
+	}
+	const item = orgListItem(line.text)
+	if (!item) {
+		return false
+	}
+	if (!item.content.trim()) {
+		view.dispatch({
+			changes: { from: line.from, insert: "", to: line.to },
+			selection: { anchor: line.from },
+		})
+		return true
+	}
+	const prefix = item.prefix
+	const insert = `${view.state.lineBreak}${prefix}`
+	view.dispatch({
+		changes: { from: head, insert },
+		selection: { anchor: head + 1 + prefix.length },
+		scrollIntoView: true,
 	})
 	return true
 }
@@ -175,7 +248,7 @@ const editorTheme = EditorView.theme({
 		padding: "2rem 2rem 6rem",
 		width: "calc(100% - 2rem)",
 	},
-	".cm-focused": {
+	"&.cm-focused": {
 		outline: "none",
 	},
 	".cm-org-directive, .cm-org-property": {
@@ -263,6 +336,7 @@ export const OrgEditor = memo(function OrgEditor({
 		const readOnlyCompartment = readOnlyCompartmentRef.current
 		const accessibilityCompartment = accessibilityCompartmentRef.current
 		const lineSeparatorCompartment = lineSeparatorCompartmentRef.current
+		let orgChordDeadline = 0
 		const view = new EditorView({
 			parent: host,
 			state: EditorState.create({
@@ -277,6 +351,54 @@ export const OrgEditor = memo(function OrgEditor({
 					foldGutter(),
 					EditorView.lineWrapping,
 					EditorView.domEventHandlers({
+						keydown: (event, editor) => {
+							const now = Date.now()
+							const key = event.key.toLocaleLowerCase()
+							if (orgChordDeadline > now && event.ctrlKey && !event.altKey && !event.metaKey) {
+								orgChordDeadline = 0
+								if (key === "t") {
+									event.preventDefault()
+									applyOrgEdit(editor, cycleOrgTodoAt)
+									return true
+								}
+								if (key === "c") {
+									event.preventDefault()
+									applyOrgEdit(editor, toggleOrgCheckboxAt)
+									return true
+								}
+								if (key === "o") {
+									event.preventDefault()
+									if (!documentPathRef.current) return true
+									const position = sourceOffsetFromEditor(editor, editor.state.selection.main.head)
+									const content = editor.state.sliceDoc()
+									const orgTarget = orgLinkTargetAt(content, position, documentPathRef.current)
+									if (orgTarget && onOpenOrgLinkRef.current) {
+										onOpenOrgLinkRef.current(orgTarget)
+										return true
+									}
+									const fileTarget = orgFileLinkAt(content, position, documentPathRef.current)
+									if (fileTarget && onOpenFileLinkRef.current) {
+										onOpenFileLinkRef.current(fileTarget)
+										return true
+									}
+									return true
+								}
+								return false
+							}
+							orgChordDeadline = 0
+							if (
+								key === "c" &&
+								event.ctrlKey &&
+								!event.altKey &&
+								!event.metaKey &&
+								editor.state.selection.main.empty
+							) {
+								event.preventDefault()
+								orgChordDeadline = now + 1200
+								return true
+							}
+							return false
+						},
 						// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: modifier, position, typed-link, and compatibility checks form one event transaction.
 						mousedown: (event, editor) => {
 							if (
@@ -290,14 +412,15 @@ export const OrgEditor = memo(function OrgEditor({
 							if (position === null) {
 								return false
 							}
-							const content = editor.state.doc.toString()
-							const orgTarget = orgLinkTargetAt(content, position, documentPathRef.current)
+							const content = editor.state.sliceDoc()
+							const sourcePosition = sourceOffsetFromEditor(editor, position)
+							const orgTarget = orgLinkTargetAt(content, sourcePosition, documentPathRef.current)
 							if (orgTarget && onOpenOrgLinkRef.current) {
 								event.preventDefault()
 								onOpenOrgLinkRef.current(orgTarget)
 								return true
 							}
-							const fileTarget = orgFileLinkAt(content, position, documentPathRef.current)
+							const fileTarget = orgFileLinkAt(content, sourcePosition, documentPathRef.current)
 							if (!fileTarget || !onOpenFileLinkRef.current) {
 								return false
 							}
@@ -307,6 +430,39 @@ export const OrgEditor = memo(function OrgEditor({
 						},
 					}),
 					keymap.of([
+						{
+							key: "Tab",
+							run: (editor) => {
+								const line = editor.state.doc.lineAt(editor.state.selection.main.head)
+								if (/^\*+\s/.test(line.text)) {
+									toggleFold(editor)
+									return true
+								}
+								return indentMore(editor)
+							},
+						},
+						{
+							key: "Shift-Tab",
+							preventDefault: true,
+							run: (editor) => {
+								let hasFoldedRange = false
+								foldedRanges(editor.state).between(0, editor.state.doc.length, () => {
+									hasFoldedRange = true
+								})
+								if (hasFoldedRange) unfoldAll(editor)
+								else foldAll(editor)
+								return true
+							},
+						},
+						{
+							key: "Alt-Enter",
+							preventDefault: true,
+							run: insertOrgMetaItem,
+						},
+						{
+							key: "Enter",
+							run: continueOrgList,
+						},
 						{
 							key: "Alt-ArrowLeft",
 							run: (editor) =>

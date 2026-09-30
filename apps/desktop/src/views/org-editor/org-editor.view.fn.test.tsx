@@ -55,6 +55,7 @@ describe("OrgEditor", () => {
 		view.dispatch({ selection: { anchor: 0 } })
 		fireEvent.keyDown(screen.getByRole("textbox"), { altKey: true, key: "ArrowDown" })
 		expect(onChange).toHaveBeenLastCalledWith("* Two\r\nbody two\r\n* One\r\nbody\r\n")
+		expect(view.state.doc.lineAt(view.state.selection.main.head).text).toBe("* One")
 		expect(onChange.mock.lastCall?.[0]).not.toContain("\r\r\n")
 	})
 
@@ -82,6 +83,104 @@ describe("OrgEditor", () => {
 		expect(document.querySelector(".cm-foldPlaceholder")).not.toBeNull()
 		expect(view.state.doc.toString()).toBe(source)
 		expect(onChange).not.toHaveBeenCalled()
+	})
+
+	it("uses Org-style Tab folding on headings", () => {
+		const source = "* Parent\nbody\n** Child\nchild body\n* Sibling"
+		render(<OrgEditor value={source} onChange={vi.fn()} onSave={vi.fn()} />)
+		const view = getEditorView()
+		view.dispatch({ selection: { anchor: 0 } })
+		fireEvent.keyDown(screen.getByRole("textbox"), { key: "Tab" })
+		expect(document.querySelector(".cm-foldPlaceholder")).not.toBeNull()
+		expect(view.state.doc.toString()).toBe(source)
+	})
+
+	it("uses actual fold state for Shift-Tab and indents non-headings with Tab", () => {
+		const onChange = vi.fn()
+		render(<OrgEditor value={"* Parent\nbody\n* Sibling"} onChange={onChange} onSave={vi.fn()} />)
+		const view = getEditorView()
+		const editor = screen.getByRole("textbox")
+		expect(foldCode(view)).toBe(true)
+		expect(document.querySelector(".cm-foldPlaceholder")).not.toBeNull()
+		fireEvent.keyDown(editor, { shiftKey: true, key: "Tab" })
+		expect(document.querySelector(".cm-foldPlaceholder")).toBeNull()
+
+		view.dispatch({ selection: { anchor: view.state.doc.line(2).from } })
+		fireEvent.keyDown(editor, { key: "Tab" })
+		expect(onChange).toHaveBeenLastCalledWith("* Parent\n  body\n* Sibling")
+	})
+
+	it("supports Org Ctrl-c chords for TODO and checkboxes", () => {
+		const onChange = vi.fn()
+		render(<OrgEditor value={"* Note\n- [ ] task"} onChange={onChange} onSave={vi.fn()} />)
+		const view = getEditorView()
+		const editor = screen.getByRole("textbox")
+		view.dispatch({ selection: { anchor: 2 } })
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "t" })
+		expect(onChange).toHaveBeenLastCalledWith("* TODO Note\n- [ ] task")
+
+		view.dispatch({ selection: { anchor: view.state.doc.line(2).from + 3 } })
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		expect(onChange).toHaveBeenLastCalledWith("* TODO Note\n- [X] task")
+	})
+
+	it("keeps Org editing commands CRLF-safe", () => {
+		const onChange = vi.fn()
+		render(<OrgEditor value={"intro\r\n* Note\r\n- [ ] task"} onChange={onChange} onSave={vi.fn()} />)
+		const view = getEditorView()
+		const editor = screen.getByRole("textbox")
+
+		view.dispatch({ selection: { anchor: view.state.doc.line(2).from + 2 } })
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "t" })
+		expect(onChange).toHaveBeenLastCalledWith("intro\r\n* TODO Note\r\n- [ ] task")
+
+		view.dispatch({ selection: { anchor: view.state.doc.length } })
+		fireEvent.keyDown(editor, { key: "Enter" })
+		expect(onChange).toHaveBeenLastCalledWith("intro\r\n* TODO Note\r\n- [ ] task\r\n- [ ] ")
+		expect(view.state.selection.main.head).toBe(view.state.doc.length)
+	})
+
+	it("preserves native copy with a selection and consumes recognized Org chords", () => {
+		render(<OrgEditor value="plain text" onChange={vi.fn()} onSave={vi.fn()} />)
+		const view = getEditorView()
+		const editor = screen.getByRole("textbox")
+		view.dispatch({ selection: { anchor: 0, head: 5 } })
+		expect(fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })).toBe(true)
+		view.dispatch({ selection: { anchor: 0 } })
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		expect(fireEvent.keyDown(editor, { ctrlKey: true, key: "o" })).toBe(false)
+	})
+
+	it("continues Org lists and inserts sibling headings", () => {
+		const onChange = vi.fn()
+		render(<OrgEditor value={"* First\n- [X] done"} onChange={onChange} onSave={vi.fn()} />)
+		const view = getEditorView()
+		const editor = screen.getByRole("textbox")
+		view.dispatch({ selection: { anchor: view.state.doc.length } })
+		fireEvent.keyDown(editor, { key: "Enter" })
+		expect(onChange).toHaveBeenLastCalledWith("* First\n- [X] done\n- [ ] ")
+		fireEvent.keyDown(editor, { key: "Enter" })
+		expect(onChange).toHaveBeenLastCalledWith("* First\n- [X] done\n")
+
+		view.dispatch({ selection: { anchor: 2 } })
+		fireEvent.keyDown(editor, { altKey: true, key: "Enter" })
+		expect(onChange).toHaveBeenLastCalledWith("* First\n* \n- [X] done\n")
+	})
+
+	it("continues ordered and indented star list markers", () => {
+		const onChange = vi.fn()
+		render(<OrgEditor value={"1. first\n  * nested"} onChange={onChange} onSave={vi.fn()} />)
+		const view = getEditorView()
+		const editor = screen.getByRole("textbox")
+		view.dispatch({ selection: { anchor: view.state.doc.line(1).to } })
+		fireEvent.keyDown(editor, { key: "Enter" })
+		expect(onChange).toHaveBeenLastCalledWith("1. first\n2. \n  * nested")
+		view.dispatch({ selection: { anchor: view.state.doc.length } })
+		fireEvent.keyDown(editor, { key: "Enter" })
+		expect(onChange).toHaveBeenLastCalledWith("1. first\n2. \n  * nested\n  * ")
 	})
 
 	it("applies external values without echoing onChange", () => {

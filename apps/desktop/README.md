@@ -40,6 +40,25 @@ The security-critical Rust implementation is in:
 - `packages/rust-core/src/tauri/commands/org_index_commands.rs`
 - `packages/rust-core/src/tauri/commands/legacy_migration_commands.rs`
 
+## Org editing keys
+
+The editor keeps raw Org text intact while supporting an initial Org-compatible command set:
+
+| Key | Action |
+|---|---|
+| `Tab` on a heading | Toggle subtree folding |
+| `Shift-Tab` | Fold or unfold the document globally |
+| `Alt-Left` / `Alt-Right` | Promote or demote a heading |
+| `Alt-Up` / `Alt-Down` | Move a subtree |
+| `Alt-Enter` | Insert a sibling heading or list item |
+| `Enter` at the end of a list item | Continue the list; an empty item ends it |
+| `Ctrl-C Ctrl-T` | Cycle heading TODO state |
+| `Ctrl-C Ctrl-C` | Toggle a checkbox at the cursor |
+| `Ctrl-C Ctrl-O` | Open the Org link at the cursor |
+| `Mod-S` | Save immediately |
+
+This is not yet complete GNU Emacs Org-mode emulation; scheduling, tags, timestamps, sparse trees and configurable TODO sequences remain follow-up work.
+
 ## Development
 
 From the repository root:
