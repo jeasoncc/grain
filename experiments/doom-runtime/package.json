@@ -1,0 +1,16 @@
+{
+  "name": "grain-doom-runtime-probes",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=26" },
+  "scripts": {
+    "test": "node vim-raw-source.probe.mjs && node buffer-window.probe.mjs && node vim-ownership.probe.mjs"
+  },
+  "dependencies": {
+    "@codemirror/state": "6.7.5",
+    "@codemirror/view": "6.43.12",
+    "@codemirror/commands": "6.11.1",
+    "@replit/codemirror-vim": "6.4.0",
+    "jsdom": "30.1.1"
+  }
+}

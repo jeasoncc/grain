@@ -180,6 +180,34 @@ behaviors are covered through real CodeMirror/pane integration, not only pure
 router tests. Leader maps, Vim operators/motions/registers and arbitrary keymap
 configuration remain pending feasibility work.
 
+## S3: disposable ownership/Vim evidence (not runtime adoption)
+
+Reproducible probes are preserved in
+[`experiments/doom-runtime`](../../experiments/doom-runtime/README.md), outside the
+application workspace packages. A fresh pinned `npm ci` on 2026-10-02 passed
+16/16 Vim/raw-source cases, 18/18 canonical-buffer/window cases and 14/14 combined
+ownership cases. Production dependencies and modes are unchanged.
+
+The canonical-buffer prototype uses public history/StateEffect APIs with
+history-free, selection-owning window projections. A/B dirty buffers, shared text
+and undo across windows, stale/ABA rejection, external CAS conflict and saved
+capture/new-edit races pass with synthetic files. This does not establish real
+filesystem identity, watcher behavior, plugin-effect forwarding or typing groups.
+
+Composition is **not automatic**: ordinary Vim undo/redo does not reach canonical
+history. A public custom route passes narrow normal-mode cases, but needs global
+mapping/adapter ownership policy. A transient Vim operator range caused initial
+failures; the final probe intentionally restores its range-start cursor. That
+lossy policy is not accepted as production cursor semantics. Exact intra-line
+cursor, visual/block editing and arbitrary extension effects remain gates.
+
+Vim modes live in view plugins and reset on saved-state switch; registers/maps are
+global. Ownership probes use literal CR with an LF separator, preserving source
+strings without proving native mixed/lone-CR line editing. Real Chinese IME,
+Tauri input/focus, extension compatibility and measured workload performance remain
+unverified. Neither Evil defaults nor a full buffer/window architecture are
+approved by passing synthetic probes alone.
+
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.

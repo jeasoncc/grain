@@ -69,6 +69,8 @@ Press `Ctrl-C` with no selection to start the Org prefix; after 350 ms, passive 
 
 Heading Tags, Schedule, Deadline and Property use a non-modal bottom minibuffer: Enter accepts, Tab completes, C-n/C-p selects candidates, M-p/M-n browses per-command session history, and Esc/C-g cancels. Planning prompts prefill existing dates or today's date and validate real YYYY-MM-DD calendar dates; they are not full Org date readers. Edits commit as isolated CodeMirror undo transactions. Property uses KEY=VALUE, with existing properties as completion candidates. Refile and Archive also use bottom parameters: Refile completes workspace-relative Org files; Archive defaults to no and requires explicit yes. Both require saved source content, retain the existing copy-first verification flow, and cannot be canceled after transfer begins. A failed/uncertain transfer retires the prompt; reread both files before retrying. See [editor runtime design](../../docs/design/doom-editor-runtime.md).
 
+Runtime feasibility probes live separately in [experiments/doom-runtime](../../experiments/doom-runtime/README.md). They exercise Vim and canonical buffer/window ownership with synthetic data; they do not enable Vim, independent dirty buffers or split windows in the application.
+
 `#+TODO` and `#+SEQ_TODO` workflows are honored when cycling TODO states. The Outline inspector provides a heading-filtered sparse-tree view. Grain still does not attempt complete GNU Emacs keymap emulation.
 
 ## Development
