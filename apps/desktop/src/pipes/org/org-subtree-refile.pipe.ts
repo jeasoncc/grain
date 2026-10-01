@@ -1,3 +1,5 @@
+import { orgBlockRanges } from "./org-text.pipe"
+
 export type OrgNewline = "\n" | "\r\n" | "\r"
 
 /** An exact source range containing one Org heading and its complete subtree. */
@@ -66,6 +68,9 @@ export const extractOrgSubtreeAt = (
 	if (lineIndex === -1) {
 		return null
 	}
+	const blocks = orgBlockRanges(source)
+	const inBlock = (from: number) => blocks.some((block) => from >= block.from && from < block.to)
+	if (inBlock(lines[lineIndex].from)) return null
 	const selected = headingLine(source, lines[lineIndex])
 	if (!selected) {
 		return null
@@ -73,6 +78,7 @@ export const extractOrgSubtreeAt = (
 
 	let to = source.length
 	for (const line of lines.slice(lineIndex + 1)) {
+		if (inBlock(line.from)) continue
 		const heading = headingLine(source, line)
 		if (heading && heading.level <= selected.level) {
 			to = heading.from

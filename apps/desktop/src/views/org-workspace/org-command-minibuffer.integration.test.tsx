@@ -12,18 +12,35 @@ const Harness = ({
 	revision = "one",
 	busy = false,
 	root = "/workspace",
+	refileSubtree = vi
+		.fn<OrgWorkspaceController["refileSubtree"]>()
+		.mockResolvedValue({ kind: "success" }),
+	archiveSubtree = vi
+		.fn<OrgWorkspaceController["archiveSubtree"]>()
+		.mockResolvedValue({ kind: "success" }),
 }: {
 	source?: string
 	path?: string
 	revision?: string
 	busy?: boolean
 	root?: string
+	refileSubtree?: OrgWorkspaceController["refileSubtree"]
+	archiveSubtree?: OrgWorkspaceController["archiveSubtree"]
 }) => {
 	const [content, setContent] = useState(source)
 	const controller = {
 		content,
 		activeDocument: { relativePath: path, revision, content },
-		workspace: { rootPath: root },
+		workspace: {
+			rootPath: root,
+			documents: [
+				{ relativePath: path },
+				{ relativePath: "inbox.org" },
+				{ relativePath: "projects/work.org" },
+			],
+		},
+		refileSubtree,
+		archiveSubtree,
 		updateContent: setContent,
 		isDirty: content !== source,
 		isLoading: false,
@@ -280,5 +297,125 @@ describe("Tags command vertical slice", () => {
 		fireEvent.keyDown(editor, { ctrlKey: true, key: "q" })
 		expect(screen.queryByRole("combobox")).toBeNull()
 		expect(screen.getByText("The cursor does not belong to an Org heading.")).toBeInTheDocument()
+	})
+})
+
+const openTransfer = (kind: "refile" | "archive") => {
+	const editor = screen.getByRole("textbox")
+	fireEvent.keyDown(
+		editor,
+		kind === "refile"
+			? { ctrlKey: true, shiftKey: true, key: "r" }
+			: { ctrlKey: true, altKey: true, key: "a" },
+	)
+	return screen.getByRole("combobox", {
+		name: kind === "refile" ? "Refile to Org file:" : "Archive subtree (yes/no):",
+	})
+}
+
+describe("subtree transfer bottom sessions", () => {
+	it("completes targets excluding the source and reports unsafe targets inline", async () => {
+		const refileSubtree = vi
+			.fn<OrgWorkspaceController["refileSubtree"]>()
+			.mockResolvedValue({ kind: "success" })
+		render(<Harness refileSubtree={refileSubtree} />)
+		const view = viewFromEditor()
+		const source = view.state.sliceDoc()
+		const input = openTransfer("refile")
+		expect(screen.queryByRole("dialog")).toBeNull()
+		fireEvent.change(input, { target: { value: "" } })
+		expect(screen.getByRole("option", { name: "inbox.org" })).toBeVisible()
+		expect(screen.getByRole("option", { name: "projects/work.org" })).toBeVisible()
+		expect(screen.queryByRole("option", { name: "note.org" })).toBeNull()
+		fireEvent.change(input, { target: { value: "../outside.org" } })
+		fireEvent.keyDown(input, { key: "Enter" })
+		await waitFor(() =>
+			expect(screen.getByRole("alert")).toHaveTextContent("safe workspace-relative"),
+		)
+		expect(screen.getByRole("combobox")).toBe(input)
+		expect(refileSubtree).not.toHaveBeenCalled()
+		expect(view.state.sliceDoc()).toBe(source)
+	})
+
+	it("retains revision-only sessions and rejects changed source before effects", async () => {
+		const refileSubtree = vi
+			.fn<OrgWorkspaceController["refileSubtree"]>()
+			.mockResolvedValue({ kind: "success" })
+		const { rerender } = render(<Harness refileSubtree={refileSubtree} />)
+		const input = openTransfer("refile")
+		rerender(<Harness revision="saved" refileSubtree={refileSubtree} />)
+		expect(screen.getByRole("combobox")).toBe(input)
+		expect(input).toHaveFocus()
+		const view = viewFromEditor()
+		act(() =>
+			view.dispatch({ changes: { from: view.state.doc.length, insert: "\nExternal edit" } }),
+		)
+		const changed = view.state.sliceDoc()
+		fireEvent.keyDown(input, { key: "Enter" })
+		await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("content changed"))
+		expect(refileSubtree).not.toHaveBeenCalled()
+		expect(view.state.sliceDoc()).toBe(changed)
+	})
+
+	it.each([
+		"refile",
+		"archive",
+	] as const)("locks duplicate Enter and Escape during deferred %s", async (kind) => {
+		let resolve!: (outcome: { kind: "success" }) => void
+		const effect = vi.fn(
+			() =>
+				new Promise<{ kind: "success" }>((done) => {
+					resolve = done
+				}),
+		)
+		render(<Harness refileSubtree={effect} archiveSubtree={effect} />)
+		const input = openTransfer(kind)
+		if (kind === "archive") fireEvent.change(input, { target: { value: "yes" } })
+		fireEvent.keyDown(input, { key: "Enter" })
+		fireEvent.keyDown(input, { key: "Enter" })
+		fireEvent.keyDown(input, { key: "Escape" })
+		expect(screen.getByRole("combobox")).toBe(input)
+		expect(effect).toHaveBeenCalledOnce()
+		await act(async () => {
+			resolve({ kind: "success" })
+		})
+		await waitFor(() => expect(screen.queryByRole("combobox")).toBeNull())
+		expect(screen.getByRole("textbox")).toHaveFocus()
+	})
+
+	it.each([
+		"partial",
+		"rejected",
+	] as const)("retires a %s transfer and preserves the source without retry", async (kind) => {
+		const refileSubtree = vi
+			.fn<OrgWorkspaceController["refileSubtree"]>()
+			.mockResolvedValue({ kind, message: "Reread both documents before retrying." })
+		render(<Harness refileSubtree={refileSubtree} />)
+		const view = viewFromEditor()
+		const source = view.state.sliceDoc()
+		const input = openTransfer("refile")
+		fireEvent.keyDown(input, { key: "Enter" })
+		await waitFor(() => expect(screen.queryByRole("combobox")).toBeNull())
+		expect(screen.getByText("Reread both documents before retrying.")).toBeVisible()
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(refileSubtree).toHaveBeenCalledExactlyOnceWith(0, "inbox.org")
+		expect(view.state.sliceDoc()).toBe(source)
+	})
+
+	it.each(["default", "cancel", "yes"])("archive %s requires explicit consent", async (choice) => {
+		const archiveSubtree = vi
+			.fn<OrgWorkspaceController["archiveSubtree"]>()
+			.mockResolvedValue({ kind: "success" })
+		render(<Harness archiveSubtree={archiveSubtree} />)
+		const source = viewFromEditor().state.sliceDoc()
+		const input = openTransfer("archive")
+		expect(input).toHaveValue("no")
+		expect(screen.queryByRole("dialog")).toBeNull()
+		if (choice === "yes") fireEvent.change(input, { target: { value: "yes" } })
+		fireEvent.keyDown(input, { key: choice === "cancel" ? "Escape" : "Enter" })
+		await waitFor(() => expect(screen.queryByRole("combobox")).toBeNull())
+		if (choice === "yes") expect(archiveSubtree).toHaveBeenCalledExactlyOnceWith(0)
+		else expect(archiveSubtree).not.toHaveBeenCalled()
+		expect(viewFromEditor().state.sliceDoc()).toBe(source)
 	})
 })

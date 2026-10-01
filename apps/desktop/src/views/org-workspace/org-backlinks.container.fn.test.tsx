@@ -32,7 +32,7 @@ const backlink = (label: string, line = 3): OrgBacklink => ({
 
 const controller = (content: string): OrgWorkspaceController => ({
 	activeDocument: { content: "saved", relativePath: "target.org", revision: "one" },
-	archiveSubtree: vi.fn(async () => undefined),
+	archiveSubtree: vi.fn(async () => ({ kind: "success" as const })),
 	captureTodo: vi.fn(async () => undefined),
 	clearDerivedIndex: vi.fn(async () => undefined),
 	closeActiveDocument: vi.fn(async () => true),
@@ -54,7 +54,7 @@ const controller = (content: string): OrgWorkspaceController => ({
 	openDocumentPath: vi.fn(async () => true),
 	openOrgLink: vi.fn(async () => true),
 	rebuildDerivedIndex: vi.fn(async () => undefined),
-	refileSubtree: vi.fn(async () => undefined),
+	refileSubtree: vi.fn(async () => ({ kind: "success" as const })),
 	refreshWorkspace: vi.fn(async () => undefined),
 	revealTarget: null,
 	runLegacyRecoveryDrill: vi.fn(async () => undefined),

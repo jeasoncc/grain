@@ -2,10 +2,14 @@ import { act, cleanup, renderHook } from "@testing-library/react"
 import * as E from "fp-ts/Either"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
+	archiveOrgSubtreeFlow,
+	ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
+	refileOrgSubtreeFlow,
 	openDefaultOrgWorkspaceFlow,
 	openOrgDocumentFlow,
 	saveOrgDocumentFlow,
 } from "@/flows/org-workspace"
+import type { OrgSubtreeTransferOutcome } from "./use-org-workspace"
 import type { OrgDocumentInterface, OrgWorkspaceInterface } from "@/types/org"
 import {
 	canContinueAfterOrgSave,
@@ -19,6 +23,10 @@ import {
 
 vi.mock("@tanstack/react-router", () => ({ useBlocker: vi.fn() }))
 vi.mock("@/flows/org-workspace", () => ({
+	archiveOrgSubtreeFlow: vi.fn(),
+	refileOrgSubtreeFlow: vi.fn(),
+	ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE:
+		"The target copy succeeded, but source removal was not confirmed. Treat this as a possible duplicate copy: reread both documents and remove one copy only after verifying that both contain the subtree. No destructive rollback was attempted.",
 	openDefaultOrgWorkspaceFlow: vi.fn(),
 	openOrgDocumentFlow: vi.fn(),
 	saveOrgDocumentFlow: vi.fn(),
@@ -104,6 +112,241 @@ const deferred = <T>() => {
 	})
 	return { promise, resolve }
 }
+
+describe("Org subtree transfer outcomes", () => {
+	const moved = {
+		source: { ...captured, content: "", revision: "removed" },
+		target: { ...captured, relativePath: "archive.org", revision: "copied" },
+	}
+	const validation = {
+		type: "ORG_SUBTREE_REFILE_VALIDATION_ERROR" as const,
+		message: "Invalid subtree target",
+	}
+	beforeEach(() => {
+		vi.useFakeTimers()
+		vi.resetAllMocks()
+		window.localStorage.clear()
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () => E.right(workspace))
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () => E.right(captured))
+		vi.mocked(refileOrgSubtreeFlow).mockReturnValue(async () => E.right(moved))
+		vi.mocked(archiveOrgSubtreeFlow).mockReturnValue(async () => E.right(moved))
+	})
+	afterEach(() => {
+		cleanup()
+		vi.useRealTimers()
+	})
+	const setup = async () => {
+		const hook = renderHook(() => useOrgWorkspace())
+		await act(async () => {
+			await hook.result.current.openDefaultWorkspace()
+		})
+		await act(async () => {
+			await hook.result.current.openDocument(workspace.documents[1])
+		})
+		return hook
+	}
+
+	it("rejects absent workspace, absent document, and dirty input without starting a transfer", async () => {
+		const { result } = renderHook(() => useOrgWorkspace())
+		await act(async () => {
+			expect(await result.current.archiveSubtree(0)).toEqual({
+				kind: "rejected",
+				message: expect.stringContaining("workspace"),
+			})
+			await result.current.openDefaultWorkspace()
+		})
+		await act(async () => {
+			expect(await result.current.archiveSubtree(0)).toEqual({
+				kind: "rejected",
+				message: expect.stringContaining("document"),
+			})
+			await result.current.openDocument(workspace.documents[1])
+		})
+		act(() => result.current.updateContent("dirty"))
+		await act(async () => {
+			expect(await result.current.refileSubtree(0, "archive.org")).toEqual({
+				kind: "rejected",
+				message: "Save the current document before refiling or archiving a subtree.",
+			})
+		})
+		expect(refileOrgSubtreeFlow).not.toHaveBeenCalled()
+		expect(archiveOrgSubtreeFlow).not.toHaveBeenCalled()
+	})
+
+	it.each(["refile", "archive"] as const)(
+		"rejects a same-render content update before %s starts",
+		async (operation) => {
+			const { result } = await setup()
+			await act(async () => {
+				result.current.updateContent("same-render edit")
+				expect(
+					await (operation === "refile"
+						? result.current.refileSubtree(0, "archive.org")
+						: result.current.archiveSubtree(0)),
+				).toEqual({
+					kind: "rejected",
+					message: "Save the current document before refiling or archiving a subtree.",
+				})
+			})
+			expect(result.current.content).toBe("same-render edit")
+			expect(result.current.activeDocument).toEqual(captured)
+			expect(result.current.isDirty).toBe(true)
+			expect(refileOrgSubtreeFlow).not.toHaveBeenCalled()
+			expect(archiveOrgSubtreeFlow).not.toHaveBeenCalled()
+		},
+	)
+
+	it.each([
+		"refile",
+		"archive",
+	])("reports successful %s and updates persisted revisions", async (operation) => {
+		const { result } = await setup()
+		await act(async () => {
+			expect(
+				await (operation === "refile"
+					? result.current.refileSubtree(0, "archive.org")
+					: result.current.archiveSubtree(0)),
+			).toEqual({ kind: "success" })
+		})
+		expect(result.current.activeDocument).toEqual(moved.source)
+		expect(result.current.content).toBe("")
+		expect(result.current.isDirty).toBe(false)
+		expect(result.current.isSaving).toBe(false)
+		expect(result.current.workspace?.documents).toContainEqual({
+			relativePath: "archive.org",
+			revision: "copied",
+		})
+	})
+
+	it("returns flow rejection messages unchanged", async () => {
+		const { result } = await setup()
+		vi.mocked(refileOrgSubtreeFlow).mockReturnValueOnce(async () => E.left(validation))
+		await act(async () => {
+			expect(await result.current.refileSubtree(0, "archive.org")).toEqual({
+				kind: "rejected",
+				message: validation.message,
+			})
+		})
+		expect(result.current.error).toBe(validation.message)
+		expect(result.current.activeDocument).toEqual(captured)
+	})
+
+	it("reports an uncertain target write as partial without claiming persisted revisions", async () => {
+		const { result } = await setup()
+		const message = "Target may contain the subtree. Reread both documents; do not retry automatically."
+		vi.mocked(refileOrgSubtreeFlow).mockReturnValueOnce(async () =>
+			E.left({
+				type: "ORG_SUBTREE_REFILE_UNCERTAIN_WRITE_ERROR",
+				cause: {
+					type: "ORG_FILE_ERROR",
+					command: "write_org_document",
+					operation: "write",
+					cause: "unconfirmed write",
+					message: "unconfirmed write",
+				},
+				targetRelativePath: "archive.org",
+				message,
+			}),
+		)
+		await act(async () => {
+			expect(await result.current.refileSubtree(0, "archive.org")).toEqual({
+				kind: "partial",
+				message,
+			})
+		})
+		expect(result.current.error).toBe(message)
+		expect(result.current.workspace).toEqual(workspace)
+		expect(result.current.activeDocument).toEqual(captured)
+		expect(result.current.content).toBe(captured.content)
+		expect(result.current.isSaving).toBe(false)
+		expect(refileOrgSubtreeFlow).toHaveBeenCalledOnce()
+	})
+
+	it("reports partial copy and retains its persisted target and recovery message", async () => {
+		const { result } = await setup()
+		vi.mocked(refileOrgSubtreeFlow).mockReturnValueOnce(async () =>
+			E.left({
+				type: "ORG_SUBTREE_REFILE_PARTIAL_ERROR",
+				message: ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
+				recovery: ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
+				cause: validation,
+				target: moved.target,
+			}),
+		)
+		await act(async () => {
+			expect(await result.current.refileSubtree(0, "archive.org")).toEqual({
+				kind: "partial",
+				message: ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
+			})
+		})
+		expect(result.current.error).toBe(ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE)
+		expect(result.current.workspace?.documents).toContainEqual({
+			relativePath: "archive.org",
+			revision: "copied",
+		})
+		expect(result.current.activeDocument).toEqual(captured)
+		expect(result.current.isSaving).toBe(false)
+	})
+
+	it("rejects concurrent mutations, but reports moved files as success when newer input is retained", async () => {
+		const { result } = await setup()
+		const transfer = deferred<Awaited<ReturnType<ReturnType<typeof refileOrgSubtreeFlow>>>>()
+		vi.mocked(refileOrgSubtreeFlow).mockReturnValueOnce(() => transfer.promise)
+		let outcome!: Promise<OrgSubtreeTransferOutcome>
+		act(() => {
+			outcome = result.current.refileSubtree(0, "archive.org")
+		})
+		expect(result.current.isSaving).toBe(true)
+		await act(async () => {
+			expect(await result.current.archiveSubtree(0)).toEqual({
+				kind: "rejected",
+				message: expect.stringContaining("in progress"),
+			})
+		})
+		act(() => result.current.updateContent("newer input"))
+		await act(async () => {
+			transfer.resolve(E.right(moved))
+			expect(await outcome).toEqual({
+				kind: "success",
+				message: expect.stringContaining("newer editor input was retained"),
+			})
+		})
+		expect(result.current.content).toBe("newer input")
+		expect(result.current.isDirty).toBe(true)
+		expect(result.current.activeDocument).toEqual(moved.source)
+		expect(result.current.error).toContain("newer editor input was retained")
+		expect(refileOrgSubtreeFlow).toHaveBeenCalledTimes(1)
+		expect(archiveOrgSubtreeFlow).not.toHaveBeenCalled()
+	})
+
+	it.each([
+		"throw",
+		"reject",
+	])("releases mutation and saving state after an unexpected %s without claiming rollback", async (failure) => {
+		const { result } = await setup()
+		if (failure === "throw") {
+			vi.mocked(refileOrgSubtreeFlow).mockImplementationOnce(() => {
+				throw new Error("unexpected")
+			})
+		} else {
+			vi.mocked(refileOrgSubtreeFlow).mockReturnValueOnce(async () => {
+				throw new Error("unexpected")
+			})
+		}
+		await act(async () => {
+			expect(await result.current.refileSubtree(0, "archive.org")).toEqual({
+				kind: "partial",
+				message: expect.stringContaining("Do not automatically retry"),
+			})
+		})
+		expect(result.current.isSaving).toBe(false)
+		expect(result.current.error).toContain("Reread both source and target")
+		expect(refileOrgSubtreeFlow).toHaveBeenCalledTimes(1)
+		await act(async () => {
+			expect(await result.current.archiveSubtree(0)).toEqual({ kind: "success" })
+		})
+	})
+})
 
 describe("Org document navigation cancellation", () => {
 	beforeEach(() => {

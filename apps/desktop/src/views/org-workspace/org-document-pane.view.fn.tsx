@@ -14,7 +14,7 @@ import {
 	Tags,
 	X,
 } from "lucide-react"
-import { memo, useLayoutEffect, useRef, useState } from "react"
+import { memo, useRef, useState } from "react"
 import { useOrgCommandMinibuffer } from "@/hooks/use-org-command-minibuffer"
 import { orgTagsBufferCommand } from "@/flows/org-command/org-tags.command"
 import { createOrgPlanningCommand } from "@/flows/org-command/org-planning.command"
@@ -29,7 +29,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/views/ui/dropdown-menu"
-import { OrgConfirmDialog, OrgInputDialog } from "./org-action-dialog.view.fn"
 import { OrgMinibuffer } from "./org-minibuffer.view.fn"
 
 type OrgMetadataType = "tags" | "scheduled" | "deadline" | "property"
@@ -73,25 +72,18 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	readonly parameterSessionSuspended?: boolean
 }) {
 	const [cursor, setCursor] = useState(0)
-	const [refilePosition, setRefilePosition] = useState<number | null>(null)
-	const [archivePosition, setArchivePosition] = useState<number | null>(null)
 	const commandTargetRef = useRef<OrgEditorCommandTarget | null>(null)
 	const minibufferFocusRef = useRef<(() => void) | null>(null)
 	const parameterCommand = useOrgCommandMinibuffer(
 		controller,
 		isBusy,
 		commandTargetRef,
-		parameterSessionSuspended || refilePosition !== null || archivePosition !== null,
+		parameterSessionSuspended,
 	)
 	const minibuffer = parameterCommand.session
 	const echo = parameterCommand.echo
 	const line = controller.content.slice(0, cursor).split(/\r\n|\n|\r/).length
 	const wordCount = controller.content.match(/\S+/gu)?.length ?? 0
-	useLayoutEffect(() => {
-		if (!parameterSessionSuspended) return
-		setRefilePosition(null)
-		setArchivePosition(null)
-	}, [parameterSessionSuspended])
 	const openMetadataCommand = (type: OrgMetadataType, position: number) => {
 		const document = controller.activeDocument
 		if (!document || isBusy) return
@@ -259,14 +251,14 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 								<DropdownMenuSeparator />
 								<DropdownMenuItem
 									disabled={isBusy || controller.isDirty}
-									onClick={() => setRefilePosition(cursor)}
+									onClick={() => parameterCommand.openRefile(cursor)}
 								>
 									<Send className="mr-2 size-4" />
 									Refile subtree
 								</DropdownMenuItem>
 								<DropdownMenuItem
 									disabled={isBusy || controller.isDirty}
-									onClick={() => setArchivePosition(cursor)}
+									onClick={() => parameterCommand.openArchive(cursor)}
 								>
 									<Archive className="mr-2 size-4" />
 									Archive subtree
@@ -287,10 +279,10 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 							onOpenOrgLink={(target) => void controller.openOrgLink(target)}
 							onCursorChange={setCursor}
 							onRefileSubtree={(position) => {
-								if (!parameterSessionSuspended) setRefilePosition(position)
+								if (!parameterSessionSuspended) parameterCommand.openRefile(position)
 							}}
 							onArchiveSubtree={(position) => {
-								if (!parameterSessionSuspended) setArchivePosition(position)
+								if (!parameterSessionSuspended) parameterCommand.openArchive(position)
 							}}
 							onEditTags={(position) => openMetadataCommand("tags", position)}
 							onSchedule={(position) => openMetadataCommand("scheduled", position)}
@@ -395,7 +387,11 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 				}}
 			/>
 			<footer className="flex h-[22px] shrink-0 items-center justify-end gap-1.5 border-t border-border/70 bg-muted/20 px-2 text-[11px] text-muted-foreground">
-				<output aria-live="polite" className="mr-auto truncate text-foreground">
+				<output
+					aria-live="polite"
+					title={echo ?? undefined}
+					className="mr-auto truncate text-foreground"
+				>
 					{echo}
 				</output>
 				{controller.activeDocument && (
@@ -414,32 +410,6 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 					</>
 				)}
 			</footer>
-			<OrgInputDialog
-				open={refilePosition !== null}
-				title="Refile subtree"
-				description="Copy this subtree to another Org file, verify it, then remove the source copy."
-				inputLabel="Target Org file"
-				defaultValue="inbox.org"
-				confirmLabel="Refile"
-				onOpenChange={(open) => {
-					if (!open) setRefilePosition(null)
-				}}
-				onSubmit={(target) => {
-					if (refilePosition !== null) void controller.refileSubtree(refilePosition, target)
-				}}
-			/>
-			<OrgConfirmDialog
-				open={archivePosition !== null}
-				title="Archive subtree?"
-				description="Move this subtree to the sibling archive file after verifying the target copy."
-				confirmLabel="Archive"
-				onOpenChange={(open) => {
-					if (!open) setArchivePosition(null)
-				}}
-				onConfirm={() => {
-					if (archivePosition !== null) void controller.archiveSubtree(archivePosition)
-				}}
-			/>
 		</main>
 	)
 })

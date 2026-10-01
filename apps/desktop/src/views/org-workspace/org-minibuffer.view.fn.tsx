@@ -1,6 +1,9 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react"
 
-import type { OrgMinibufferSession } from "@/types/editor/minibuffer.interface"
+import type {
+	OrgMinibufferAcceptResult,
+	OrgMinibufferSession,
+} from "@/types/editor/minibuffer.interface"
 export type { OrgMinibufferSession } from "@/types/editor/minibuffer.interface"
 
 /** Non-modal parameter session. The originating buffer owns all edits and IO. */
@@ -13,6 +16,9 @@ export const OrgMinibuffer = ({
 }) => {
 	const inputRef = useRef<HTMLInputElement>(null)
 	const composingRef = useRef(false)
+	const generationRef = useRef<{ session: OrgMinibufferSession; id: number } | null>(null)
+	const acceptingRef = useRef(false)
+	const [accepting, setAccepting] = useState(false)
 	const [input, setInput] = useState("")
 	const [selected, setSelected] = useState(0)
 	const [caret, setCaret] = useState(0)
@@ -42,7 +48,10 @@ export const OrgMinibuffer = ({
 			.slice(0, 30)
 	}, [session?.candidates, input, token, tokenFrom, tokenTo])
 
-	useEffect(() => {
+	useLayoutEffect(() => {
+		generationRef.current = session ? { session, id: session.id } : null
+		acceptingRef.current = false
+		setAccepting(false)
 		if (!session) return
 		setInput(session.initialInput)
 		setCaret(session.initialInput.length)
@@ -54,7 +63,11 @@ export const OrgMinibuffer = ({
 		historyRef.current = historiesRef.current.get(session.historyKey ?? session.prompt) ?? []
 		composingRef.current = false
 		inputRef.current?.focus()
-	}, [session?.id])
+		return () => {
+			generationRef.current = null
+			acceptingRef.current = false
+		}
+	}, [session, session?.id])
 	useEffect(() => {
 		setSelected(0)
 	}, [candidates])
@@ -71,7 +84,7 @@ export const OrgMinibuffer = ({
 
 	if (!session) return null
 	const complete = (candidate: string | undefined) => {
-		if (!candidate) return
+		if (!candidate || acceptingRef.current) return
 		const suffix = input.slice(tokenTo)
 		const separator = wholeValue || (suffix && /^[\s,:]/.test(suffix)) ? "" : " "
 		setInput(input.slice(0, tokenFrom) + candidate + separator + suffix)
@@ -82,28 +95,62 @@ export const OrgMinibuffer = ({
 		setError(null)
 		inputRef.current?.focus()
 	}
+	const cancel = () => {
+		if (acceptingRef.current && session.cancelWhileAccepting === false) return
+		generationRef.current = null
+		acceptingRef.current = false
+		setAccepting(false)
+		session.onCancel()
+	}
 	const accept = () => {
+		const generation = generationRef.current
+		if (acceptingRef.current || !generation) return
+		acceptingRef.current = true
 		const value =
 			session.acceptCandidate && !session.candidates.includes(input)
 				? (candidates[selected] ?? input)
 				: input
-		const result = session.onAccept(value)
-		if (!result.ok) {
-			setError(result.message)
-			return
+		const isCurrent = () =>
+			generationRef.current === generation &&
+			generation.session === session &&
+			generation.id === session.id
+		const finish = (result: OrgMinibufferAcceptResult) => {
+			if (!isCurrent()) return
+			acceptingRef.current = false
+			setAccepting(false)
+			if (!result.ok) {
+				setError(result.message)
+				return
+			}
+			setError(null)
+			if (value.trim()) {
+				historyRef.current = [
+					value,
+					...historyRef.current.filter((entry) => entry !== value),
+				].slice(0, 50)
+				historiesRef.current.set(session.historyKey ?? session.prompt, historyRef.current)
+			}
 		}
-		if (value.trim()) {
-			historyRef.current = [value, ...historyRef.current.filter((entry) => entry !== value)].slice(
-				0,
-				50,
-			)
-			historiesRef.current.set(session.historyKey ?? session.prompt, historyRef.current)
+		const fail = (reason: unknown) => {
+			finish({ ok: false, message: reason instanceof Error ? reason.message : String(reason) })
+		}
+		try {
+			const result = session.onAccept(value)
+			if ("then" in result) {
+				if (isCurrent()) setAccepting(true)
+				void result.then(finish, fail)
+			} else {
+				finish(result)
+			}
+		} catch (reason) {
+			fail(reason)
 		}
 	}
 
 	return (
 		<section
 			aria-label="Minibuffer"
+			aria-busy={accepting}
 			data-org-parameter-input="true"
 			className="shrink-0 border-t border-border bg-background shadow-[0_-8px_24px_-16px_rgba(0,0,0,0.4)]"
 		>
@@ -120,6 +167,7 @@ export const OrgMinibuffer = ({
 						type="button"
 						role="option"
 						aria-selected={index === selected}
+						disabled={accepting}
 						tabIndex={-1}
 						onMouseDown={(event) => event.preventDefault()}
 						onClick={() => complete(candidate)}
@@ -147,14 +195,18 @@ export const OrgMinibuffer = ({
 					aria-invalid={Boolean(error)}
 					aria-describedby={error ? `${id}-error` : `${id}-help`}
 					value={input}
+					readOnly={accepting}
 					onCompositionStart={() => {
 						composingRef.current = true
 					}}
 					onCompositionEnd={() => {
 						composingRef.current = false
 					}}
-					onSelect={(event) => setCaret(event.currentTarget.selectionStart ?? input.length)}
+					onSelect={(event) => {
+						if (!acceptingRef.current) setCaret(event.currentTarget.selectionStart ?? input.length)
+					}}
 					onChange={(event) => {
+						if (acceptingRef.current) return
 						setInput(event.target.value)
 						setCaret(event.target.selectionStart ?? event.target.value.length)
 						setError(null)
@@ -166,7 +218,9 @@ export const OrgMinibuffer = ({
 						const key = event.key.toLowerCase()
 						if (key === "escape" || (event.ctrlKey && key === "g")) {
 							event.preventDefault()
-							session.onCancel()
+							cancel()
+						} else if (acceptingRef.current) {
+							event.preventDefault()
 						} else if (key === "enter") {
 							event.preventDefault()
 							accept()
@@ -202,7 +256,8 @@ export const OrgMinibuffer = ({
 				/>
 				<button
 					type="button"
-					onClick={session.onCancel}
+					onClick={cancel}
+					disabled={accepting && session.cancelWhileAccepting === false}
 					className="rounded px-1 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
 					aria-label="Cancel minibuffer"
 				>

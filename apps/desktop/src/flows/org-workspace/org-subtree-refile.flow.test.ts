@@ -164,14 +164,27 @@ describe("refileOrgSubtreeFlow", () => {
 			input,
 			repositoryWith({ readDocument: () => TE.left(readFailure), writeDocument: sourceWrite }),
 		)()
+		const targetWrite = vi.fn(() => TE.left(targetFailure))
 		const targetResult = await refileOrgSubtreeFlow(
 			input,
-			repositoryWith({ writeDocument: () => TE.left(targetFailure) }),
+			repositoryWith({ writeDocument: targetWrite }),
 		)()
 
 		expect(scanResult).toEqual({ _tag: "Left", left: scanFailure })
 		expect(readResult).toEqual({ _tag: "Left", left: readFailure })
-		expect(targetResult).toEqual({ _tag: "Left", left: targetFailure })
+		expect(targetResult).toEqual({
+			_tag: "Left",
+			left: {
+				type: "ORG_SUBTREE_REFILE_UNCERTAIN_WRITE_ERROR",
+				cause: targetFailure,
+				targetRelativePath: "target.org",
+				message:
+					"The target write did not report a confirmed result; the target may already contain the subtree. This operation did not remove the source. Reread both documents and reconcile any duplicate before retrying. Do not retry automatically. No rollback was attempted. Original error: target conflict",
+			},
+		})
+		expect(targetWrite).toHaveBeenCalledExactlyOnceWith(
+			expect.objectContaining({ relativePath: "target.org" }),
+		)
 		expect(sourceWrite).not.toHaveBeenCalled()
 	})
 

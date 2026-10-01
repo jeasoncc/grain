@@ -43,7 +43,15 @@ export interface OrgSubtreeRefilePartialError {
 	readonly target: OrgDocumentInterface
 }
 
+export interface OrgSubtreeRefileUncertainWriteError {
+	readonly type: "ORG_SUBTREE_REFILE_UNCERTAIN_WRITE_ERROR"
+	readonly message: string
+	readonly cause: OrgFileError
+	readonly targetRelativePath: string
+}
+
 export type OrgSubtreeRefileFlowError =
+	| OrgSubtreeRefileUncertainWriteError
 	| OrgFileError
 	| OrgSubtreeRefileValidationError
 	| OrgSubtreeRefilePartialError
@@ -112,7 +120,7 @@ export const refileOrgSubtreeFlow = (
 						revision: "<missing>",
 					})
 		}),
-		TE.chain((targetBefore) => {
+		TE.chainW((targetBefore) => {
 			const targetContent = appendOrgSubtree(targetBefore.content, subtree.text)
 			return pipe(
 				repository.writeDocument({
@@ -121,6 +129,14 @@ export const refileOrgSubtreeFlow = (
 					relativePath: input.targetRelativePath,
 					workspaceRoot: input.workspaceRoot,
 				}),
+				TE.mapLeft(
+					(cause): OrgSubtreeRefileUncertainWriteError => ({
+						type: "ORG_SUBTREE_REFILE_UNCERTAIN_WRITE_ERROR",
+						cause,
+						targetRelativePath: input.targetRelativePath,
+						message: `The target write did not report a confirmed result; the target may already contain the subtree. This operation did not remove the source. Reread both documents and reconcile any duplicate before retrying. Do not retry automatically. No rollback was attempted. Original error: ${cause.message}`,
+					}),
+				),
 				TE.map(
 					(writtenTarget): OrgDocumentInterface => ({ ...writtenTarget, content: targetContent }),
 				),

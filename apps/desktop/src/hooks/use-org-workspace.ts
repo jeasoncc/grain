@@ -79,6 +79,11 @@ export interface OrgWorkspaceRevealTarget {
 	readonly requestId: number
 }
 
+export type OrgSubtreeTransferOutcome =
+	| { readonly kind: "success"; readonly message?: string }
+	| { readonly kind: "rejected"; readonly message: string }
+	| { readonly kind: "partial"; readonly message: string }
+
 export interface OrgWorkspaceController {
 	readonly workspace: OrgWorkspaceInterface | null
 	readonly activeDocument: OrgDocumentInterface | null
@@ -110,8 +115,11 @@ export interface OrgWorkspaceController {
 	readonly openOrgLink: (target: OrgLinkClickTarget) => Promise<boolean>
 	readonly createDocument: (relativePath: string) => Promise<void>
 	readonly captureTodo: (title: string, targetRelativePath?: string) => Promise<void>
-	readonly refileSubtree: (cursor: number, targetRelativePath: string) => Promise<void>
-	readonly archiveSubtree: (cursor: number) => Promise<void>
+	readonly refileSubtree: (
+		cursor: number,
+		targetRelativePath: string,
+	) => Promise<OrgSubtreeTransferOutcome>
+	readonly archiveSubtree: (cursor: number) => Promise<OrgSubtreeTransferOutcome>
 	readonly createDirectory: (relativePath: string) => Promise<void>
 	readonly moveActiveDocument: (targetRelativePath: string) => Promise<void>
 	readonly deleteActiveDocument: () => Promise<void>
@@ -631,18 +639,28 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	)
 
 	const transferSubtree = useCallback(
-		async (cursor: number, targetRelativePath?: string) => {
-			if (!workspace || !activeDocument || mutationInProgressRef.current) {
-				return
+		async (cursor: number, targetRelativePath?: string): Promise<OrgSubtreeTransferOutcome> => {
+			const rejectionMessage = !workspace
+				? "Open an Org workspace before refiling or archiving a subtree."
+				: !activeDocument
+					? "Open a document before refiling or archiving a subtree."
+					: mutationInProgressRef.current
+						? "Another workspace mutation is in progress; subtree transfer was not started."
+						: isDirty || latestContentRef.current !== activeDocument.content
+							? "Save the current document before refiling or archiving a subtree."
+							: null
+			if (rejectionMessage) {
+				setError(rejectionMessage)
+				return { kind: "rejected", message: rejectionMessage }
 			}
-			if (isDirty) {
-				setError("Save the current document before refiling or archiving a subtree.")
-				return
+			if (!workspace || !activeDocument) {
+				return { kind: "rejected", message: "No active Org document is available." }
 			}
 			const sourceContent = latestContentRef.current
 			const sourcePath = activeDocument.relativePath
 			const expectedSourceRevision = activeDocument.revision
 			openRequestRef.current += 1
+			setLoading(false)
 			mutationInProgressRef.current = true
 			setSaving(true)
 			setError(null)
@@ -654,40 +672,52 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				sourceRelativePath: sourcePath,
 				workspaceRoot: workspace.rootPath,
 			}
-			const result = await (targetRelativePath
-				? refileOrgSubtreeFlow({ ...commonInput, targetRelativePath })()
-				: archiveOrgSubtreeFlow(commonInput)())
-			mutationInProgressRef.current = false
-			setSaving(false)
-			if (E.isLeft(result)) {
-				if (result.left.type === "ORG_SUBTREE_REFILE_PARTIAL_ERROR") {
-					const persistedTarget = result.left.target
-					setWorkspace((current) =>
-						current ? updateWorkspaceDocument(current, persistedTarget) : current,
+			try {
+				const result = await (targetRelativePath
+					? refileOrgSubtreeFlow({ ...commonInput, targetRelativePath })()
+					: archiveOrgSubtreeFlow(commonInput)())
+				if (E.isLeft(result)) {
+					const partial =
+						result.left.type === "ORG_SUBTREE_REFILE_PARTIAL_ERROR" ||
+						result.left.type === "ORG_SUBTREE_REFILE_UNCERTAIN_WRITE_ERROR"
+					if (result.left.type === "ORG_SUBTREE_REFILE_PARTIAL_ERROR") {
+						const persistedTarget = result.left.target
+						setWorkspace((current) =>
+							current ? updateWorkspaceDocument(current, persistedTarget) : current,
+						)
+					}
+					setError(result.left.message)
+					return { kind: partial ? "partial" : "rejected", message: result.left.message }
+				}
+				setWorkspace((current) => {
+					if (!current) {
+						return current
+					}
+					return updateWorkspaceDocument(
+						updateWorkspaceDocument(current, result.right.target),
+						result.right.source,
 					)
+				})
+				setActiveDocument(result.right.source)
+				if (latestContentRef.current === sourceContent) {
+					setContent(result.right.source.content)
+					latestContentRef.current = result.right.source.content
+					setDirty(false)
+					return { kind: "success" }
 				}
-				setError(result.left.message)
-				return
-			}
-			setWorkspace((current) => {
-				if (!current) {
-					return current
-				}
-				return updateWorkspaceDocument(
-					updateWorkspaceDocument(current, result.right.target),
-					result.right.source,
-				)
-			})
-			setActiveDocument(result.right.source)
-			if (latestContentRef.current === sourceContent) {
-				setContent(result.right.source.content)
-				latestContentRef.current = result.right.source.content
-				setDirty(false)
-			} else {
 				setDirty(true)
-				setError(
-					"The subtree moved, but newer editor input was retained. Review and save the source to reconcile it.",
-				)
+				const message =
+					"The subtree moved, but newer editor input was retained. Review and save the source to reconcile it."
+				setError(message)
+				return { kind: "success", message }
+			} catch {
+				const message =
+					"Subtree transfer ended unexpectedly; files may have changed. Reread both source and target documents before reconciling them. Do not automatically retry; rollback was not confirmed."
+				setError(message)
+				return { kind: "partial", message }
+			} finally {
+				mutationInProgressRef.current = false
+				setSaving(false)
 			}
 		},
 		[activeDocument, isDirty, workspace],

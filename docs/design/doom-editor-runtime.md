@@ -86,8 +86,7 @@ are not mistaken for top-level planning fields. Existing malformed planning line
 remain editable as raw Org text.
 
 This is **not** a full Org date reader: relative dates, calendar navigation,
-time editing and repeater editing are not provided by these prompts. Refile and
-Archive dialogs still exist. The overall S2 phase is not complete.
+time editing and repeater editing are not provided by these prompts. Refile and Archive have since migrated in S2c below. The overall S2 phase is not complete.
 
 Property (`C-c C-p`) uses whole-value `KEY=VALUE` input and completion from the
 current heading's properties. Existing ID values are prefilled rather than
@@ -110,7 +109,7 @@ inline errors and one pending selection at a time. Both support Esc/C-g. Workspa
 keyboard routing honors `defaultPrevented` and parameter-surface ownership, so
 Org chord suffixes no longer also open shell prompts. Metadata sessions suspend
 while workspace parameter surfaces own input; Note actions cannot open conflicting
-Refile/Archive dialogs.
+transfer parameter surfaces.
 
 Quick Open owns a cancellable session and passes an AbortSignal to navigation.
 Abort releases request-owned loading immediately and prevents late document
@@ -124,6 +123,34 @@ before handing off to the selected action; successful Quick Open focuses the
 opened editor only if its workspace/path remain current. Path tabs still do not
 constitute independent buffers. Buffer Switch, multi-window ownership, Which-Key
 and asynchronous workspace-wide completion remain unfinished.
+
+## S2c: Refile/Archive effect parameters
+
+Refile and Archive now share parameter ownership with metadata commands, but their
+filesystem effects remain explicit controller/flow calls, not buffer transactions.
+Refile completes safe workspace-relative Org file paths, excluding source aliases.
+Creating a new safe target remains supported by the existing transfer flow. Heading
+target completion is **not** implemented yet. Cursor must be on the heading line.
+Archive defaults to `no`; only explicit `yes` starts transfer.
+
+Both reject unsaved source input, stale source/path/root and a replaced editor
+before invoking effects. The controller also checks latest content against the
+committed document, including same-render input not yet reflected in `isDirty`.
+Async acceptance locks duplicate submissions and cancellation once effects begin.
+Pure validation errors retain input; every filesystem outcome retires the prompt,
+including unexpected controller rejection, so it cannot be blindly resubmitted.
+Failure/reconciliation echo is persistent, with the full message in its title.
+
+The controller reports success/rejection/partial outcomes. Target-write errors
+are marked uncertain even if an API reports failure: atomic publication can have
+happened before cleanup/fsync returned an error. The source was not removed by
+that failed target-write step. The warning directs users to reread both files and
+reconcile possible duplicates, not retry or perform pathname rollback. Existing
+confirmed-target partial-success recovery wording remains intact.
+
+Subtree extraction now shares Org block ranges. Fake headings and mismatched end
+markers inside source blocks cannot truncate the copied subtree. LF/CRLF/lone-CR,
+Unicode, NUL and original EOF remain source-range operations.
 
 ## Next decision gates and work
 
