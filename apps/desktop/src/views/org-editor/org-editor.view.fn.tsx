@@ -24,6 +24,8 @@ import {
 	type ViewUpdate,
 } from "@codemirror/view"
 import { memo, useEffect, useRef } from "react"
+import { resolveOrgPrefixKey } from "@/flows/org-command/org-prefix-keymap"
+import type { OrgPrefixSession } from "@/types/editor/org-keymap.interface"
 import {
 	changeOrgHeadingLevelAt,
 	cycleOrgTodoAt,
@@ -317,6 +319,9 @@ export const OrgEditor = memo(function OrgEditor({
 	onChange,
 	onSave,
 	onCommandTarget,
+	onPrefixChange,
+	prefixContextKey,
+	prefixTimeoutMs = null,
 	documentPath,
 	onOpenFileLink,
 	onOpenOrgLink,
@@ -336,6 +341,9 @@ export const OrgEditor = memo(function OrgEditor({
 	const onChangeRef = useRef(onChange)
 	const onSaveRef = useRef(onSave)
 	const onCommandTargetRef = useRef(onCommandTarget)
+	const onPrefixChangeRef = useRef(onPrefixChange)
+	const prefixTimeoutRef = useRef(prefixTimeoutMs)
+	const clearPrefixRef = useRef<() => void>(() => {})
 	const onOpenFileLinkRef = useRef(onOpenFileLink)
 	const onOpenOrgLinkRef = useRef(onOpenOrgLink)
 	const onRefileSubtreeRef = useRef(onRefileSubtree)
@@ -356,6 +364,8 @@ export const OrgEditor = memo(function OrgEditor({
 	onChangeRef.current = onChange
 	onSaveRef.current = onSave
 	onCommandTargetRef.current = onCommandTarget
+	onPrefixChangeRef.current = onPrefixChange
+	prefixTimeoutRef.current = prefixTimeoutMs
 	onOpenFileLinkRef.current = onOpenFileLink
 	onOpenOrgLinkRef.current = onOpenOrgLink
 	onRefileSubtreeRef.current = onRefileSubtree
@@ -376,7 +386,26 @@ export const OrgEditor = memo(function OrgEditor({
 		const readOnlyCompartment = readOnlyCompartmentRef.current
 		const accessibilityCompartment = accessibilityCompartmentRef.current
 		const lineSeparatorCompartment = lineSeparatorCompartmentRef.current
-		let orgChordDeadline = 0
+		let prefix: OrgPrefixSession | null = null
+		let prefixId = 0
+		let prefixTimer: ReturnType<typeof setTimeout> | null = null
+		const publishPrefix = (next: OrgPrefixSession | null) => {
+			if (prefix === next) return
+			if (prefixTimer !== null) clearTimeout(prefixTimer)
+			prefixTimer = null
+			prefix = next
+			onPrefixChangeRef.current?.(next)
+			if (next && next.expiresAt !== null)
+				prefixTimer = setTimeout(
+					() => {
+						if (prefix === next) publishPrefix(null)
+					},
+					Math.max(0, next.expiresAt - Date.now()),
+				)
+		}
+		clearPrefixRef.current = () => publishPrefix(null)
+		const onWindowBlur = () => publishPrefix(null)
+		window.addEventListener("blur", onWindowBlur)
 		const view = new EditorView({
 			parent: host,
 			state: EditorState.create({
@@ -392,83 +421,74 @@ export const OrgEditor = memo(function OrgEditor({
 					EditorView.lineWrapping,
 					EditorView.domEventHandlers({
 						keydown: (event, editor) => {
-							const now = Date.now()
-							const key = event.key.toLocaleLowerCase()
-							if (orgChordDeadline > now && !event.altKey && !event.metaKey) {
-								orgChordDeadline = 0
-								if (event.ctrlKey && key === "t") {
-									event.preventDefault()
-									applyOrgEdit(editor, cycleOrgTodoAt)
-									return true
+							const routed = resolveOrgPrefixKey(
+								prefix,
+								{
+									key: event.key,
+									ctrlKey: event.ctrlKey,
+									metaKey: event.metaKey,
+									altKey: event.altKey,
+									shiftKey: event.shiftKey,
+									isComposing: event.isComposing,
+									keyCode: event.keyCode,
+									defaultPrevented: event.defaultPrevented,
+								},
+								Date.now(),
+								editor.state.selection.main.empty,
+								prefixId + 1,
+								prefixTimeoutRef.current,
+							)
+							if (routed.session && routed.session !== prefix) prefixId = routed.session.id
+							publishPrefix(routed.session)
+							if (!routed.consumed) return false
+							event.preventDefault()
+							const command = routed.commandId
+							if (!command) return true
+							const cursor = sourceOffsetFromEditor(editor, editor.state.selection.main.head)
+							if (command === "todo") applyOrgEdit(editor, cycleOrgTodoAt)
+							else if (command === "checkbox") applyOrgEdit(editor, toggleOrgCheckboxAt)
+							else if (command === "link") {
+								if (!documentPathRef.current) return true
+								const content = editor.state.sliceDoc()
+								const orgTarget = orgLinkTargetAt(content, cursor, documentPathRef.current)
+								if (orgTarget && onOpenOrgLinkRef.current) onOpenOrgLinkRef.current(orgTarget)
+								else {
+									const fileTarget = orgFileLinkAt(content, cursor, documentPathRef.current)
+									if (fileTarget) onOpenFileLinkRef.current?.(fileTarget)
 								}
-								if (event.ctrlKey && key === "c") {
-									event.preventDefault()
-									applyOrgEdit(editor, toggleOrgCheckboxAt)
-									return true
+							} else if (command === "timestamp-active" || command === "timestamp-inactive") {
+								applyOrgEdit(editor, (content, position) =>
+									insertOrgTimestampAt(
+										content,
+										position,
+										localDate(),
+										command === "timestamp-active",
+									),
+								)
+							} else if (!editor.state.readOnly) {
+								const callbacks = {
+									tags: onEditTagsRef.current,
+									scheduled: onScheduleRef.current,
+									deadline: onDeadlineRef.current,
+									property: onSetPropertyRef.current,
+									refile: onRefileSubtreeRef.current,
+									archive: onArchiveSubtreeRef.current,
 								}
-								if (event.ctrlKey && key === "o") {
-									event.preventDefault()
-									if (!documentPathRef.current) return true
-									const position = sourceOffsetFromEditor(editor, editor.state.selection.main.head)
-									const content = editor.state.sliceDoc()
-									const orgTarget = orgLinkTargetAt(content, position, documentPathRef.current)
-									if (orgTarget && onOpenOrgLinkRef.current) {
-										onOpenOrgLinkRef.current(orgTarget)
-										return true
-									}
-									const fileTarget = orgFileLinkAt(content, position, documentPathRef.current)
-									if (fileTarget && onOpenFileLinkRef.current) {
-										onOpenFileLinkRef.current(fileTarget)
-										return true
-									}
-									return true
-								}
-								const cursor = sourceOffsetFromEditor(editor, editor.state.selection.main.head)
-								if (event.ctrlKey && key === "q") {
-									event.preventDefault()
-									if (!editor.state.readOnly) onEditTagsRef.current?.(cursor)
-									return true
-								}
-								if (event.ctrlKey && key === "s") {
-									event.preventDefault()
-									if (!editor.state.readOnly) onScheduleRef.current?.(cursor)
-									return true
-								}
-								if (event.ctrlKey && key === "d") {
-									event.preventDefault()
-									if (!editor.state.readOnly) onDeadlineRef.current?.(cursor)
-									return true
-								}
-								if (event.ctrlKey && key === "p") {
-									event.preventDefault()
-									if (!editor.state.readOnly) onSetPropertyRef.current?.(cursor)
-									return true
-								}
-								if (!event.ctrlKey && (key === "." || key === "!")) {
-									event.preventDefault()
-									applyOrgEdit(editor, (content, position) =>
-										insertOrgTimestampAt(content, position, localDate(), key === "."),
-									)
-									return true
-								}
-								return false
+								callbacks[command]?.(cursor)
 							}
-							orgChordDeadline = 0
-							if (
-								key === "c" &&
-								event.ctrlKey &&
-								!event.altKey &&
-								!event.metaKey &&
-								editor.state.selection.main.empty
-							) {
-								event.preventDefault()
-								orgChordDeadline = now + 1200
-								return true
-							}
+							return true
+						},
+						blur: () => {
+							publishPrefix(null)
+							return false
+						},
+						compositionstart: () => {
+							publishPrefix(null)
 							return false
 						},
 						// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: modifier, position, typed-link, and compatibility checks form one event transaction.
 						mousedown: (event, editor) => {
+							publishPrefix(null)
 							if (
 								event.button !== 0 ||
 								(!event.metaKey && !event.ctrlKey) ||
@@ -671,6 +691,10 @@ export const OrgEditor = memo(function OrgEditor({
 			},
 		})
 		return () => {
+			window.removeEventListener("blur", onWindowBlur)
+			publishPrefix(null)
+			if (prefixTimer !== null) clearTimeout(prefixTimer)
+			clearPrefixRef.current = () => {}
 			onCommandTargetRef.current?.(null)
 			viewRef.current = null
 			view.destroy()
@@ -678,11 +702,16 @@ export const OrgEditor = memo(function OrgEditor({
 	}, [])
 
 	useEffect(() => {
+		clearPrefixRef.current()
+	}, [documentPath, prefixContextKey, readOnly, prefixTimeoutMs])
+
+	useEffect(() => {
 		const view = viewRef.current
 		if (!view || view.state.sliceDoc() === value) {
 			return
 		}
 
+		clearPrefixRef.current()
 		// Reconfigure first so CodeMirror parses the replacement with its own separator policy.
 		// Combining this effect with the change would parse using the previous policy.
 		view.dispatch({
@@ -701,6 +730,7 @@ export const OrgEditor = memo(function OrgEditor({
 		if (!view || !revealTarget) {
 			return
 		}
+		clearPrefixRef.current()
 		const lineNumber = Math.max(1, Math.min(revealTarget.line, view.state.doc.lines))
 		const line = view.state.doc.line(lineNumber)
 		view.dispatch({ scrollIntoView: true, selection: { anchor: line.from } })

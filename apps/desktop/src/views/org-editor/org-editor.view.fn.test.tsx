@@ -1,7 +1,7 @@
 import { foldCode } from "@codemirror/language"
 import { EditorView } from "@codemirror/view"
-import { fireEvent, render, screen } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { OrgEditor } from "./org-editor.view.fn"
 import type { OrgEditorCommandTarget } from "./org-editor.types"
 
@@ -15,6 +15,127 @@ function getEditorView(): EditorView {
 }
 
 describe("OrgEditor", () => {
+	afterEach(() => {
+		cleanup()
+		vi.useRealTimers()
+	})
+
+	it("publishes prefix sessions, preserves modifier keys, and clears after idle or cleanup", () => {
+		vi.useFakeTimers()
+		const onPrefixChange = vi.fn()
+		const onEditTags = vi.fn()
+		const onChange = vi.fn()
+		const { unmount } = render(
+			<OrgEditor
+				value="* Note"
+				onChange={onChange}
+				onSave={vi.fn()}
+				onPrefixChange={onPrefixChange}
+				prefixTimeoutMs={1200}
+				onEditTags={onEditTags}
+			/>,
+		)
+		const editor = screen.getByRole("textbox")
+		getEditorView().dispatch({ selection: { anchor: 2 } })
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		const session = onPrefixChange.mock.lastCall?.[0]
+		expect(session).toMatchObject({ label: "C-c", expiresAt: Date.now() + 1200 })
+		for (const key of ["Control", "Shift", "Alt", "Meta", "AltGraph"]) {
+			expect(fireEvent.keyDown(editor, { key })).toBe(true)
+		}
+		expect(onPrefixChange).toHaveBeenCalledTimes(1)
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "q" })
+		expect(onEditTags).toHaveBeenCalledExactlyOnceWith(2)
+		expect(onPrefixChange.mock.calls.map(([value]) => value)).toEqual([session, null])
+
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		act(() => vi.advanceTimersByTime(1199))
+		expect(onPrefixChange.mock.lastCall?.[0]).not.toBeNull()
+		act(() => vi.advanceTimersByTime(1))
+		expect(onPrefixChange.mock.lastCall?.[0]).toBeNull()
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "q" })
+		expect(onEditTags).toHaveBeenCalledTimes(1)
+
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		unmount()
+		expect(onPrefixChange.mock.lastCall?.[0]).toBeNull()
+		const calls = onPrefixChange.mock.calls.length
+		act(() => vi.advanceTimersByTime(1200))
+		expect(onPrefixChange).toHaveBeenCalledTimes(calls)
+		expect(onChange).not.toHaveBeenCalled()
+	})
+
+	it("clears an indefinite prefix on window blur even while CodeMirror remains active", () => {
+		vi.useFakeTimers()
+		const onPrefixChange = vi.fn()
+		const onEditTags = vi.fn()
+		render(
+			<OrgEditor
+				value="* Note"
+				onChange={vi.fn()}
+				onSave={vi.fn()}
+				onPrefixChange={onPrefixChange}
+				onEditTags={onEditTags}
+			/>,
+		)
+		const view = getEditorView()
+		act(() => view.focus())
+		const editor = screen.getByRole("textbox")
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		expect(onPrefixChange.mock.lastCall?.[0]).toMatchObject({ expiresAt: null })
+		act(() => vi.advanceTimersByTime(60_000))
+		expect(onPrefixChange.mock.lastCall?.[0]).not.toBeNull()
+		expect(view.hasFocus).toBe(true)
+		fireEvent.blur(window)
+		expect(editor).toHaveFocus()
+		expect(view.hasFocus).toBe(true)
+		expect(onPrefixChange.mock.lastCall?.[0]).toBeNull()
+		expect(fireEvent.keyDown(editor, { ctrlKey: true, key: "q" })).toBe(true)
+		expect(onEditTags).not.toHaveBeenCalled()
+	})
+
+	it("clears a prefix before same-document reveal selection and focus", () => {
+		const onPrefixChange = vi.fn()
+		const onEditTags = vi.fn()
+		const props = {
+			value: "one\ntwo\nthree",
+			onChange: vi.fn(),
+			onSave: vi.fn(),
+			onPrefixChange,
+			onEditTags,
+		}
+		const { rerender } = render(<OrgEditor {...props} />)
+		const view = getEditorView()
+		const editor = screen.getByRole("textbox")
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		expect(onPrefixChange.mock.lastCall?.[0]).toMatchObject({ expiresAt: null })
+		const dispatch = view.dispatch.bind(view)
+		const focus = view.focus.bind(view)
+		const dispatchSpy = vi
+			.spyOn(view, "dispatch")
+			.mockImplementation((...args: Parameters<typeof view.dispatch>) => {
+				expect(onPrefixChange.mock.lastCall?.[0]).toBeNull()
+				dispatch(...args)
+			})
+		const focusSpy = vi.spyOn(view, "focus").mockImplementation(() => {
+			expect(onPrefixChange.mock.lastCall?.[0]).toBeNull()
+			focus()
+		})
+		rerender(<OrgEditor {...props} revealTarget={{ line: 3, requestId: 1 }} />)
+		expect(dispatchSpy).toHaveBeenCalled()
+		expect(focusSpy).toHaveBeenCalled()
+		expect(view.state.selection.main.head).toBe(8)
+		expect(editor).toHaveFocus()
+		expect(onPrefixChange.mock.calls.map(([prefix]) => prefix?.label ?? null)).toEqual([
+			"C-c",
+			null,
+		])
+		expect(fireEvent.keyDown(editor, { ctrlKey: true, key: "q" })).toBe(true)
+		expect(onEditTags).not.toHaveBeenCalled()
+		dispatchSpy.mockRestore()
+		focusSpy.mockRestore()
+	})
+
 	it("guards buffer command transactions against stale source, invalid ranges, and readonly", () => {
 		let target: OrgEditorCommandTarget | null = null
 		const onCommandTarget = (current: OrgEditorCommandTarget | null) => {
@@ -163,6 +284,29 @@ describe("OrgEditor", () => {
 		view.dispatch({ selection: { anchor: view.state.doc.line(2).from } })
 		fireEvent.keyDown(editor, { key: "Tab" })
 		expect(onChange).toHaveBeenLastCalledWith("* Parent\n  body\n* Sibling")
+	})
+
+	it("routes subtree transfer chords, including a nested extra prefix", () => {
+		const refile = vi.fn()
+		const archive = vi.fn()
+		render(
+			<OrgEditor
+				value="* Note"
+				onChange={vi.fn()}
+				onSave={vi.fn()}
+				onRefileSubtree={refile}
+				onArchiveSubtree={archive}
+			/>,
+		)
+		const editor = screen.getByRole("textbox")
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		expect(fireEvent.keyDown(editor, { ctrlKey: true, key: "w" })).toBe(false)
+		expect(refile).toHaveBeenCalledWith(0)
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		expect(fireEvent.keyDown(editor, { ctrlKey: true, key: "x" })).toBe(false)
+		expect(archive).not.toHaveBeenCalled()
+		expect(fireEvent.keyDown(editor, { ctrlKey: true, key: "a" })).toBe(false)
+		expect(archive).toHaveBeenCalledWith(0)
 	})
 
 	it("supports Org Ctrl-c chords for TODO and checkboxes", () => {

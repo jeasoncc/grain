@@ -121,8 +121,9 @@ candidate navigation alone never previews or switches the real buffer.
 Cancellation restores origin focus. Successful command execution restores origin
 before handing off to the selected action; successful Quick Open focuses the
 opened editor only if its workspace/path remain current. Path tabs still do not
-constitute independent buffers. Buffer Switch, multi-window ownership, Which-Key
-and asynchronous workspace-wide completion remain unfinished.
+constitute independent buffers. Buffer Switch, multi-window ownership and
+asynchronous workspace-wide completion remain unfinished; initial Org prefix
+Which-Key discovery is implemented in S2d below.
 
 ## S2c: Refile/Archive effect parameters
 
@@ -151,6 +152,33 @@ confirmed-target partial-success recovery wording remains intact.
 Subtree extraction now shares Org block ranges. Fake headings and mismatched end
 markers inside source blocks cannot truncate the copied subtree. LF/CRLF/lone-CR,
 Unicode, NUL and original EOF remain source-range operations.
+
+## S2d: Org prefix routing and Which-Key discovery
+
+`org-prefix-keymap.ts` now resolves immutable prefix snapshots with caller-supplied
+time and identity. Routing and hint labels share readonly keymap tables. It is a
+small Org prefix mechanism, not an Evil engine or a complete configuration API.
+
+The `C-c` table retains existing commands and adds `C-c C-w` Refile. `C-c C-x`
+transitions to a nested map with `C-a` Archive; both delegate to guarded transfer
+parameters. Unknown suffixes clear the prefix and fall through; recognized
+commands consume the browser shortcut even when their applicability guard rejects.
+Selected idle Ctrl-C remains native copy. Modifier-only keydowns do not destroy
+an unfinished prefix. IME/composing events never trigger an Org command.
+
+Which-Key is a passive region, delayed by 350 ms, with no inputs/buttons/focus
+capture. It explains a pending prefix; it is neither parameter entry nor a popup
+tool buffer. Minibuffer and workspace parameter ownership hide it. Prefix sessions
+wait indefinitely by default, permitting time to read hints. Optional finite
+`prefixTimeoutMs` values are bounded by the browser's signed-32-bit timer limit;
+this prop is not yet a persisted/user-editable configuration layer.
+
+Esc/C-g, editor/window blur, pointer navigation, composition, file/workspace
+context changes, readonly transitions and same-document programmatic reveal clear
+pending prefixes. Timers are identity-checked and removed on unmount. These
+behaviors are covered through real CodeMirror/pane integration, not only pure
+router tests. Leader maps, Vim operators/motions/registers and arbitrary keymap
+configuration remain pending feasibility work.
 
 ## Next decision gates and work
 

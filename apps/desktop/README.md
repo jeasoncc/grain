@@ -58,8 +58,12 @@ The editor keeps raw Org text intact while supporting an initial Org-compatible 
 | `Ctrl-C Ctrl-Q` | Set heading tags in the bottom minibuffer |
 | `Ctrl-C Ctrl-S` / `Ctrl-C Ctrl-D` | Schedule a heading or set its deadline in the bottom minibuffer |
 | `Ctrl-C Ctrl-P` | Set a heading property in the bottom minibuffer |
+| `Ctrl-C Ctrl-W` | Refile subtree using bottom target completion |
+| `Ctrl-C Ctrl-X Ctrl-A` | Archive subtree with explicit yes/no confirmation |
 | `Ctrl-C .` / `Ctrl-C !` | Insert an active or inactive timestamp |
 | `Mod-S` | Save immediately |
+
+Press `Ctrl-C` with no selection to start the Org prefix; after 350 ms, passive Which-Key help shows the next bindings without taking focus. `Ctrl-C Ctrl-X` opens the extra-command prefix. Prefixes wait by default rather than expiring while you read; Esc/C-g, application/editor blur, pointer navigation, composition or context navigation cancels them. Selected Ctrl-C still copies normally. Optional finite expiry is available through the editor's `prefixTimeoutMs` prop (null by default); this is not yet a user configuration system.
 
 `Ctrl-P` / `Ctrl-K` now opens Execute command in the bottom minibuffer; `Ctrl-O` opens a nonmodal bottom Quick Open picker. Escape/C-g cancels. Quick Open cancellation aborts pending navigation without undoing any save already started. Workspace shortcuts defer to consumed editor chords, IME composition and active parameter input.
 

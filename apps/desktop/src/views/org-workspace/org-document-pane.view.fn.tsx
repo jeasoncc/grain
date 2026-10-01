@@ -30,6 +30,8 @@ import {
 	DropdownMenuTrigger,
 } from "@/views/ui/dropdown-menu"
 import { OrgMinibuffer } from "./org-minibuffer.view.fn"
+import { OrgWhichKey } from "./org-which-key.view.fn"
+import type { OrgPrefixSession } from "@/types/editor/org-keymap.interface"
 
 type OrgMetadataType = "tags" | "scheduled" | "deadline" | "property"
 
@@ -72,6 +74,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	readonly parameterSessionSuspended?: boolean
 }) {
 	const [cursor, setCursor] = useState(0)
+	const [prefix, setPrefix] = useState<OrgPrefixSession | null>(null)
 	const commandTargetRef = useRef<OrgEditorCommandTarget | null>(null)
 	const minibufferFocusRef = useRef<(() => void) | null>(null)
 	const parameterCommand = useOrgCommandMinibuffer(
@@ -271,6 +274,8 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 							key={controller.activeDocument.relativePath}
 							ariaLabel={`Editing ${controller.activeDocument.relativePath}`}
 							documentPath={controller.activeDocument.relativePath}
+							prefixContextKey={`${controller.workspace?.rootPath ?? ""}\u0000${controller.activeDocument.relativePath}`}
+							onPrefixChange={setPrefix}
 							value={controller.content}
 							onChange={controller.updateContent}
 							onCommandTarget={(target) => {
@@ -380,6 +385,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 					</div>
 				</div>
 			)}
+			<OrgWhichKey prefix={!minibuffer && !parameterSessionSuspended ? prefix : null} />
 			<OrgMinibuffer
 				session={minibuffer}
 				onFocusTarget={(focus) => {

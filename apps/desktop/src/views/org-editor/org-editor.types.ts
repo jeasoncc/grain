@@ -1,4 +1,5 @@
 import type { OrgLinkClickTarget, OrgTextEdit } from "@/pipes/org"
+import type { OrgPrefixSession } from "@/types/editor/org-keymap.interface"
 
 /** Buffer-local transaction boundary; never performs filesystem IO. */
 export interface OrgEditorCommandTarget {
@@ -17,6 +18,10 @@ export interface OrgEditorProps {
 	readonly onChange: (value: string) => void
 	readonly onSave: () => void
 	readonly onCommandTarget?: (target: OrgEditorCommandTarget | null) => void
+	readonly onPrefixChange?: (prefix: OrgPrefixSession | null) => void
+	readonly prefixContextKey?: string
+	/** Null/default waits for the next key; a finite millisecond value enables expiry. */
+	readonly prefixTimeoutMs?: number | null
 	readonly documentPath?: string
 	readonly onOpenFileLink?: (relativePath: string) => void
 	readonly onOpenOrgLink?: (target: OrgLinkClickTarget) => void
