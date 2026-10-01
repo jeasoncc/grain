@@ -97,6 +97,34 @@ Preparation and mutation use the same complete-drawer source ranges. Missing
 (`END`, `PROPERTIES`) are rejected. Unknown lines and existing whitespace remain
 untouched. The pane no longer splices metadata edits into a React-owned string.
 
+## S2b: workspace command inlet and bottom navigation parameters
+
+A pure workspace command catalog defines stable IDs, context availability, labels
+and icon keys for the existing shell commands. Ribbon actions and Execute command
+use the same guarded dispatcher. This is a shell catalog, not yet a complete
+registry of every Org editing operation or plugin command.
+
+Execute command (`Mod-P` / `Mod-K`) now uses the bottom minibuffer. Quick Open
+(`Mod-O`) is a nonmodal bottom picker with preserved fuzzy ranking, IME-safe keys,
+inline errors and one pending selection at a time. Both support Esc/C-g. Workspace
+keyboard routing honors `defaultPrevented` and parameter-surface ownership, so
+Org chord suffixes no longer also open shell prompts. Metadata sessions suspend
+while workspace parameter surfaces own input; Note actions cannot open conflicting
+Refile/Archive dialogs.
+
+Quick Open owns a cancellable session and passes an AbortSignal to navigation.
+Abort releases request-owned loading immediately and prevents late document
+commit, but cannot undo a save already started. Closing the active tab also
+invalidates a pending read and releases its loading state. Older aborts/results
+must not clear a newer request's loading/error state. Failed opens retain input;
+candidate navigation alone never previews or switches the real buffer.
+
+Cancellation restores origin focus. Successful command execution restores origin
+before handing off to the selected action; successful Quick Open focuses the
+opened editor only if its workspace/path remain current. Path tabs still do not
+constitute independent buffers. Buffer Switch, multi-window ownership, Which-Key
+and asynchronous workspace-wide completion remain unfinished.
+
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.

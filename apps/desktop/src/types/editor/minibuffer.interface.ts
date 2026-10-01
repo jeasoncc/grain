@@ -4,6 +4,8 @@ export interface OrgMinibufferSession {
 	readonly prompt: string
 	readonly historyKey?: string
 	readonly completion?: "token" | "value"
+	/** Command/file selection can accept the highlighted candidate, unlike free-form metadata. */
+	readonly acceptCandidate?: boolean
 	readonly initialInput: string
 	readonly candidates: readonly string[]
 	readonly onAccept: (

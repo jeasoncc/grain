@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from "react"
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react"
 import type { OrgBufferCommand } from "@/flows/org-command/org-buffer-command"
 import type { OrgMinibufferSession } from "@/types/editor/minibuffer.interface"
 import type { OrgEditorCommandTarget } from "@/views/org-editor"
@@ -9,12 +9,13 @@ export const useOrgCommandMinibuffer = (
 	controller: OrgWorkspaceController,
 	isBusy: boolean,
 	targetRef: RefObject<OrgEditorCommandTarget | null>,
+	suspended = false,
 ) => {
 	const [session, setSession] = useState<OrgMinibufferSession | null>(null)
 	const [echo, setEcho] = useState<string | null>(null)
 	const sessionIdRef = useRef(0)
-	const runtimeRef = useRef({ controller, isBusy })
-	runtimeRef.current = { controller, isBusy }
+	const runtimeRef = useRef({ controller, isBusy, suspended })
+	runtimeRef.current = { controller, isBusy, suspended }
 
 	useEffect(
 		() => () => {
@@ -27,6 +28,12 @@ export const useOrgCommandMinibuffer = (
 		setSession(null)
 		setEcho(null)
 	}, [controller.workspace?.rootPath, controller.activeDocument?.relativePath])
+	useLayoutEffect(() => {
+		if (!suspended) return
+		++sessionIdRef.current
+		setSession(null)
+		setEcho(null)
+	}, [suspended])
 	useEffect(() => {
 		if (!echo) return
 		const timer = window.setTimeout(() => setEcho(null), 3500)
@@ -36,7 +43,7 @@ export const useOrgCommandMinibuffer = (
 	const open = (command: OrgBufferCommand, cursor: number) => {
 		const document = controller.activeDocument
 		const target = targetRef.current
-		if (!document || !target || isBusy) return
+		if (!document || !target || isBusy || suspended) return
 		const prepared = command.prepare({
 			relativePath: document.relativePath,
 			content: controller.content,
@@ -50,6 +57,7 @@ export const useOrgCommandMinibuffer = (
 		const sessionId = ++sessionIdRef.current
 		setEcho(null)
 		const originIsActive = () =>
+			!runtimeRef.current.suspended &&
 			sessionIdRef.current === sessionId &&
 			runtimeRef.current.controller.workspace?.rootPath === root &&
 			runtimeRef.current.controller.activeDocument?.relativePath ===

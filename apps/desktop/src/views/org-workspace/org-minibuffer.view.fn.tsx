@@ -83,13 +83,17 @@ export const OrgMinibuffer = ({
 		inputRef.current?.focus()
 	}
 	const accept = () => {
-		const result = session.onAccept(input)
+		const value =
+			session.acceptCandidate && !session.candidates.includes(input)
+				? (candidates[selected] ?? input)
+				: input
+		const result = session.onAccept(value)
 		if (!result.ok) {
 			setError(result.message)
 			return
 		}
-		if (input.trim()) {
-			historyRef.current = [input, ...historyRef.current.filter((entry) => entry !== input)].slice(
+		if (value.trim()) {
+			historyRef.current = [value, ...historyRef.current.filter((entry) => entry !== value)].slice(
 				0,
 				50,
 			)
@@ -100,6 +104,7 @@ export const OrgMinibuffer = ({
 	return (
 		<section
 			aria-label="Minibuffer"
+			data-org-parameter-input="true"
 			className="shrink-0 border-t border-border bg-background shadow-[0_-8px_24px_-16px_rgba(0,0,0,0.4)]"
 		>
 			<div

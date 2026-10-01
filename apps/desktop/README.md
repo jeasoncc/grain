@@ -61,6 +61,8 @@ The editor keeps raw Org text intact while supporting an initial Org-compatible 
 | `Ctrl-C .` / `Ctrl-C !` | Insert an active or inactive timestamp |
 | `Mod-S` | Save immediately |
 
+`Ctrl-P` / `Ctrl-K` now opens Execute command in the bottom minibuffer; `Ctrl-O` opens a nonmodal bottom Quick Open picker. Escape/C-g cancels. Quick Open cancellation aborts pending navigation without undoing any save already started. Workspace shortcuts defer to consumed editor chords, IME composition and active parameter input.
+
 Heading Tags, Schedule, Deadline and Property use a non-modal bottom minibuffer: Enter accepts, Tab completes, C-n/C-p selects candidates, M-p/M-n browses per-command session history, and Esc/C-g cancels. Planning prompts prefill existing dates or today's date and validate real YYYY-MM-DD calendar dates; they are not full Org date readers. Edits commit as isolated CodeMirror undo transactions. Property uses KEY=VALUE, with existing properties as completion candidates. Refile/Archive dialogs have not yet migrated. See [editor runtime design](../../docs/design/doom-editor-runtime.md).
 
 `#+TODO` and `#+SEQ_TODO` workflows are honored when cycling TODO states. The Outline inspector provides a heading-filtered sparse-tree view. Grain still does not attempt complete GNU Emacs keymap emulation.

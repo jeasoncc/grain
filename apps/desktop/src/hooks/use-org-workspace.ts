@@ -96,6 +96,7 @@ export interface OrgWorkspaceController {
 	readonly openDocument: (
 		entry: OrgDocumentEntryInterface,
 		expectedRevision?: string | null,
+		signal?: AbortSignal,
 	) => Promise<boolean>
 	readonly openDocumentPath: (
 		relativePath: string,
@@ -471,14 +472,16 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		async (
 			entry: OrgDocumentEntryInterface,
 			expectedRevision?: string | null,
+			signal?: AbortSignal,
 		): Promise<boolean> => {
-			if (!workspace) return false
+			if (!workspace || signal?.aborted) return false
 			let awaitedAutosave = false
 			if (mutationInProgressRef.current) {
 				const inFlight = saveInFlightRef.current
 				if (!inFlight) return false
 				const contentBeingSaved = saveInFlightContentRef.current
 				const saved = await inFlight
+				if (signal?.aborted) return false
 				if (!canContinueAfterOrgSave(saved, contentBeingSaved, latestContentRef.current)) {
 					setError("New edits arrived while saving; navigation was paused until they are saved.")
 					return false
@@ -488,6 +491,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			if (isDirty && !awaitedAutosave) {
 				const contentAtNavigation = latestContentRef.current
 				const saved = await saveDocumentWithResultRef.current()
+				if (signal?.aborted) return false
 				if (!saved || latestContentRef.current !== contentAtNavigation) return false
 			}
 			const requestId = openRequestRef.current + 1
@@ -495,34 +499,49 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			openRequestRef.current = requestId
 			setLoading(true)
 			setError(null)
-			const result = await openOrgDocumentFlow({
-				relativePath: entry.relativePath,
-				workspaceRoot: workspace.rootPath,
-			})()
-			if (requestId !== openRequestRef.current) {
-				return false
+			const cancelRead = () => {
+				if (openRequestRef.current !== requestId) return
+				openRequestRef.current += 1
+				setLoading(false)
 			}
-			setLoading(false)
-			if (latestContentRef.current !== contentAtStart) {
-				setError("Document changed while another document was opening; the open was cancelled.")
-				return false
+			signal?.addEventListener("abort", cancelRead, { once: true })
+			try {
+				if (signal?.aborted) {
+					cancelRead()
+					return false
+				}
+				const result = await openOrgDocumentFlow({
+					relativePath: entry.relativePath,
+					workspaceRoot: workspace.rootPath,
+				})()
+				if (requestId !== openRequestRef.current) {
+					return false
+				}
+				setLoading(false)
+				if (signal?.aborted) return false
+				if (latestContentRef.current !== contentAtStart) {
+					setError("Document changed while another document was opening; the open was cancelled.")
+					return false
+				}
+				if (E.isLeft(result)) {
+					setError(result.left.message)
+					return false
+				}
+				if (expectedRevision && result.right.revision !== expectedRevision) {
+					setError(`Org link target changed while opening: ${entry.relativePath}`)
+					return false
+				}
+				// Invalidate refreshes that may have started while this document was opening.
+				openRequestRef.current += 1
+				setRevealTarget(null)
+				setActiveDocument(result.right)
+				setContent(result.right.content)
+				latestContentRef.current = result.right.content
+				setDirty(false)
+				return true
+			} finally {
+				signal?.removeEventListener("abort", cancelRead)
 			}
-			if (E.isLeft(result)) {
-				setError(result.left.message)
-				return false
-			}
-			if (expectedRevision && result.right.revision !== expectedRevision) {
-				setError(`Org link target changed while opening: ${entry.relativePath}`)
-				return false
-			}
-			// Invalidate refreshes that may have started while this document was opening.
-			openRequestRef.current += 1
-			setRevealTarget(null)
-			setActiveDocument(result.right)
-			setContent(result.right.content)
-			latestContentRef.current = result.right.content
-			setDirty(false)
-			return true
 		},
 		[isDirty, workspace],
 	)
@@ -761,6 +780,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			if (!saved || latestContentRef.current !== contentAtClose) return false
 		}
 		openRequestRef.current += 1
+		setLoading(false)
 		setActiveDocument(null)
 		setContent("")
 		latestContentRef.current = ""
@@ -777,7 +797,8 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			!workspace ||
 			!activeDocument ||
 			autosaveFailedContentRef.current === content
-		) return
+		)
+			return
 		const timer = window.setTimeout(() => void saveDocument(), ORG_AUTOSAVE_DELAY_MS)
 		return () => window.clearTimeout(timer)
 	}, [activeDocument, content, isDirty, isLoading, isSaving, saveDocument, workspace])

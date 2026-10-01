@@ -14,7 +14,7 @@ import {
 	Tags,
 	X,
 } from "lucide-react"
-import { memo, useRef, useState } from "react"
+import { memo, useLayoutEffect, useRef, useState } from "react"
 import { useOrgCommandMinibuffer } from "@/hooks/use-org-command-minibuffer"
 import { orgTagsBufferCommand } from "@/flows/org-command/org-tags.command"
 import { createOrgPlanningCommand } from "@/flows/org-command/org-planning.command"
@@ -54,6 +54,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	onShowSidebar,
 	openDocumentPaths,
 	sidebarVisible,
+	parameterSessionSuspended = false,
 }: {
 	readonly canGoBack: boolean
 	readonly canGoForward: boolean
@@ -69,17 +70,28 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	readonly onShowSidebar: () => void
 	readonly openDocumentPaths: readonly string[]
 	readonly sidebarVisible: boolean
+	readonly parameterSessionSuspended?: boolean
 }) {
 	const [cursor, setCursor] = useState(0)
 	const [refilePosition, setRefilePosition] = useState<number | null>(null)
 	const [archivePosition, setArchivePosition] = useState<number | null>(null)
 	const commandTargetRef = useRef<OrgEditorCommandTarget | null>(null)
 	const minibufferFocusRef = useRef<(() => void) | null>(null)
-	const parameterCommand = useOrgCommandMinibuffer(controller, isBusy, commandTargetRef)
+	const parameterCommand = useOrgCommandMinibuffer(
+		controller,
+		isBusy,
+		commandTargetRef,
+		parameterSessionSuspended || refilePosition !== null || archivePosition !== null,
+	)
 	const minibuffer = parameterCommand.session
 	const echo = parameterCommand.echo
 	const line = controller.content.slice(0, cursor).split(/\r\n|\n|\r/).length
 	const wordCount = controller.content.match(/\S+/gu)?.length ?? 0
+	useLayoutEffect(() => {
+		if (!parameterSessionSuspended) return
+		setRefilePosition(null)
+		setArchivePosition(null)
+	}, [parameterSessionSuspended])
 	const openMetadataCommand = (type: OrgMetadataType, position: number) => {
 		const document = controller.activeDocument
 		if (!document || isBusy) return
@@ -192,7 +204,13 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 						)}
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
-								<Button variant="ghost" size="icon" aria-label="Note actions" title="Note actions">
+								<Button
+									variant="ghost"
+									size="icon"
+									aria-label="Note actions"
+									title="Note actions"
+									disabled={parameterSessionSuspended}
+								>
 									<MoreHorizontal className="size-4" />
 								</Button>
 							</DropdownMenuTrigger>
@@ -268,8 +286,12 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 							}}
 							onOpenOrgLink={(target) => void controller.openOrgLink(target)}
 							onCursorChange={setCursor}
-							onRefileSubtree={setRefilePosition}
-							onArchiveSubtree={setArchivePosition}
+							onRefileSubtree={(position) => {
+								if (!parameterSessionSuspended) setRefilePosition(position)
+							}}
+							onArchiveSubtree={(position) => {
+								if (!parameterSessionSuspended) setArchivePosition(position)
+							}}
 							onEditTags={(position) => openMetadataCommand("tags", position)}
 							onSchedule={(position) => openMetadataCommand("scheduled", position)}
 							onDeadline={(position) => openMetadataCommand("deadline", position)}

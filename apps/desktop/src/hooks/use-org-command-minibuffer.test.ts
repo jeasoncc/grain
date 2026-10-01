@@ -14,6 +14,25 @@ const makeController = (rootPath = "/workspace") =>
 const makeTarget = () => ({ applyEdit: vi.fn(() => true), restoreFocus: vi.fn() })
 
 describe("buffer parameter session origin ownership", () => {
+	it("dismisses and invalidates buffer parameters while a workspace parameter surface owns input", () => {
+		const target = makeTarget()
+		const { result, rerender } = renderHook(
+			({ suspended }) =>
+				useOrgCommandMinibuffer(makeController(), false, { current: target }, suspended),
+			{ initialProps: { suspended: false } },
+		)
+		act(() => result.current.open(orgTagsBufferCommand, 2))
+		const old = result.current.session!
+		rerender({ suspended: true })
+		expect(result.current.session).toBeNull()
+		act(() => {
+			expect(old.onAccept("work")).toMatchObject({ ok: false })
+			result.current.open(orgTagsBufferCommand, 2)
+		})
+		expect(result.current.session).toBeNull()
+		expect(target.applyEdit).not.toHaveBeenCalled()
+		expect(target.restoreFocus).not.toHaveBeenCalled()
+	})
 	it("rejects an older callback after another command replaces its session", () => {
 		const target = makeTarget()
 		const { result } = renderHook(() =>

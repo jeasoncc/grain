@@ -13,6 +13,12 @@ import {
 import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { Group, Panel, Separator } from "react-resizable-panels"
 import { type OrgWorkspaceController, useOrgWorkspace } from "@/hooks/use-org-workspace"
+import {
+	deriveOrgWorkspaceCommands,
+	guardOrgWorkspaceCommand,
+	resolveOrgWorkspaceKeyboardCommand,
+	type OrgWorkspaceCommandId,
+} from "@/flows/org-command/org-workspace-command"
 import { useAllWorkspaces } from "@/hooks/use-workspace"
 import { listenForOrgDiaryCreation } from "@/io/event"
 import type { WorkspaceInterface } from "@/types/workspace"
@@ -269,6 +275,8 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	const [commandPaletteVisible, setCommandPaletteVisible] = useState(false)
 	const [openDocumentPaths, setOpenDocumentPaths] = useState<readonly string[]>([])
 	const navigationRequestRef = useRef(0)
+	const workspaceViewRef = useRef<HTMLDivElement>(null)
+	const pendingFileFocusRef = useRef<{ readonly root: string; readonly path: string } | null>(null)
 	const [sessionRoot, setSessionRoot] = useState<string | null>(null)
 	const [navigationHistory, setNavigationHistory] = useState<{
 		readonly index: number
@@ -284,6 +292,72 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 		}
 		setShowAgenda(false)
 	}, [controller])
+
+	const commandContext = {
+		hasWorkspace: Boolean(controller.workspace),
+		hasDocument: Boolean(controller.activeDocument),
+		isDirty: controller.isDirty,
+		isBusy,
+		sidebarVisible,
+		inspectorVisible,
+	}
+	const workspaceCommands = deriveOrgWorkspaceCommands(commandContext)
+	const dispatchWorkspaceCommand = (id: OrgWorkspaceCommandId) => {
+		if (!guardOrgWorkspaceCommand(id, commandContext)) return false
+		setCommandPaletteVisible(false)
+		if (id !== "quick-open") setQuickOpenVisible(false)
+		switch (id) {
+			case "quick-open":
+				setCommandPaletteVisible(false)
+				setQuickOpenVisible(true)
+				break
+			case "save":
+				void controller.saveDocument()
+				break
+			case "refresh":
+				void controller.refreshWorkspace()
+				break
+			case "agenda":
+				setShowAgenda(true)
+				break
+			case "capture":
+				setShowCapture(true)
+				break
+			case "diary":
+				void createDiary()
+				break
+			case "editor":
+				setShowAgenda(false)
+				break
+			case "toggle-sidebar":
+				setSidebarVisible((visible) => !visible)
+				break
+			case "toggle-inspector":
+				setInspectorVisible((visible) => !visible)
+				break
+		}
+		return true
+	}
+	const commandDispatcherRef = useRef(dispatchWorkspaceCommand)
+	commandDispatcherRef.current = dispatchWorkspaceCommand
+
+	useEffect(() => {
+		if (quickOpenVisible) return
+		const pending = pendingFileFocusRef.current
+		pendingFileFocusRef.current = null
+		if (
+			pending &&
+			pending.root === controller.workspace?.rootPath &&
+			pending.path === controller.activeDocument?.relativePath &&
+			!commandPaletteVisible
+		)
+			workspaceViewRef.current?.querySelector<HTMLElement>(".cm-content")?.focus()
+	}, [
+		quickOpenVisible,
+		controller.workspace?.rootPath,
+		controller.activeDocument?.relativePath,
+		commandPaletteVisible,
+	])
 
 	useEffect(() => listenForOrgDiaryCreation(() => void createDiary()), [createDiary])
 	useEffect(() => {
@@ -388,22 +462,45 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	}, [workspaceDocumentKey])
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
-			if (!(event.metaKey || event.ctrlKey)) return
-			const key = event.key.toLocaleLowerCase()
-			if (key === "o") {
-				event.preventDefault()
-				setQuickOpenVisible(true)
-			} else if (key === "p" || key === "k") {
-				event.preventDefault()
+			const target = event.target instanceof Element ? event.target : null
+			const command = resolveOrgWorkspaceKeyboardCommand({
+				...{
+					key: event.key,
+					ctrlKey: event.ctrlKey,
+					metaKey: event.metaKey,
+					altKey: event.altKey,
+					shiftKey: event.shiftKey,
+					isComposing: event.isComposing,
+					keyCode: event.keyCode,
+					defaultPrevented: event.defaultPrevented,
+				},
+				isParameterInput: Boolean(
+					target?.closest('[data-org-parameter-input], [role="dialog"], [role="alertdialog"]'),
+				),
+			})
+			if (!command) return
+			event.preventDefault()
+			if (command === "execute-command") {
+				setQuickOpenVisible(false)
 				setCommandPaletteVisible(true)
-			}
+			} else commandDispatcherRef.current(command)
 		}
 		window.addEventListener("keydown", onKeyDown)
 		return () => window.removeEventListener("keydown", onKeyDown)
 	}, [])
 	useEffect(() => {
 		const onTabNavigation = (event: KeyboardEvent) => {
-			if (!event.ctrlKey || event.key !== "Tab" || openDocumentPaths.length < 2) return
+			if (
+				event.defaultPrevented ||
+				event.isComposing ||
+				event.keyCode === 229 ||
+				!(event.target instanceof Element) ||
+				event.target.closest('[data-org-parameter-input], [role="dialog"]') ||
+				!event.ctrlKey ||
+				event.key !== "Tab" ||
+				openDocumentPaths.length < 2
+			)
+				return
 			event.preventDefault()
 			const currentIndex = openDocumentPaths.indexOf(controller.activeDocument?.relativePath ?? "")
 			const offset = event.shiftKey ? -1 : 1
@@ -442,19 +539,19 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	}
 
 	return (
-		<div className="flex h-full min-h-0 w-full flex-col bg-background">
+		<div ref={workspaceViewRef} className="flex h-full min-h-0 w-full flex-col bg-background">
 			{!controller.workspace && <OrgWorkspaceNotice controller={controller} />}
 			{controller.workspace ? (
 				<div className="flex min-h-0 flex-1">
 					<OrgWorkspaceRibbon
 						activeView={showAgenda ? "agenda" : "editor"}
 						isBusy={isBusy}
-						onCapture={() => setShowCapture(true)}
-						onCreateDiary={() => void createDiary()}
-						onQuickOpen={() => setQuickOpenVisible(true)}
-						onShowAgenda={() => setShowAgenda(true)}
+						onCapture={() => dispatchWorkspaceCommand("capture")}
+						onCreateDiary={() => dispatchWorkspaceCommand("diary")}
+						onQuickOpen={() => dispatchWorkspaceCommand("quick-open")}
+						onShowAgenda={() => dispatchWorkspaceCommand("agenda")}
 						onShowFiles={() => {
-							setShowAgenda(false)
+							dispatchWorkspaceCommand("editor")
 							setSidebarVisible(true)
 						}}
 					/>
@@ -466,7 +563,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 										controller={controller}
 										isBusy={isBusy}
 										tools={<WorkspaceToolsMenu controller={controller} isBusy={isBusy} />}
-										onCreateDiary={() => void createDiary()}
+										onCreateDiary={() => dispatchWorkspaceCommand("diary")}
 										onHide={() => setSidebarVisible(false)}
 										onShowEditor={() => setShowAgenda(false)}
 									/>
@@ -509,6 +606,9 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 											navigationHistory.index < navigationHistory.paths.length - 1
 										}
 										controller={controller}
+										parameterSessionSuspended={
+											quickOpenVisible || commandPaletteVisible || showCapture
+										}
 										inspectorVisible={inspectorVisible}
 										isBusy={isBusy}
 										openDocumentPaths={openDocumentPaths}
@@ -516,7 +616,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 										onCloseTab={closeTab}
 										onGoBack={() => navigateHistory(-1)}
 										onGoForward={() => navigateHistory(1)}
-										onQuickOpen={() => setQuickOpenVisible(true)}
+										onQuickOpen={() => dispatchWorkspaceCommand("quick-open")}
 										onSelectTab={(relativePath) => {
 											if (relativePath !== controller.activeDocument?.relativePath)
 												void controller.openDocumentPath(relativePath)
@@ -555,60 +655,27 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 			<OrgCommandPalette
 				open={commandPaletteVisible}
 				onOpenChange={setCommandPaletteVisible}
-				commands={[
-					{
-						icon: orgCommandIcons.quickOpen,
-						label: "Quick open",
-						run: () => setQuickOpenVisible(true),
-						shortcut: "Ctrl O",
-					},
-					{
-						disabled: !controller.isDirty || isBusy,
-						icon: orgCommandIcons.save,
-						label: "Save current note",
-						run: () => void controller.saveDocument(),
-						shortcut: "Ctrl S",
-					},
-					{
-						disabled: isBusy,
-						icon: orgCommandIcons.refresh,
-						label: "Refresh workspace",
-						run: () => void controller.refreshWorkspace(),
-					},
-					{ icon: orgCommandIcons.agenda, label: "Open agenda", run: () => setShowAgenda(true) },
-					{
-						disabled: isBusy,
-						icon: orgCommandIcons.capture,
-						label: "Quick capture",
-						run: () => setShowCapture(true),
-					},
-					{
-						disabled: isBusy,
-						icon: orgCommandIcons.diary,
-						label: "New diary (today)",
-						run: () => void createDiary(),
-					},
-					{ icon: orgCommandIcons.files, label: "Show editor", run: () => setShowAgenda(false) },
-					{
-						icon: orgCommandIcons.sidebar,
-						label: sidebarVisible ? "Hide file sidebar" : "Show file sidebar",
-						run: () => setSidebarVisible((visible) => !visible),
-					},
-					{
-						disabled: !controller.activeDocument,
-						icon: orgCommandIcons.inspector,
-						label: inspectorVisible ? "Hide note inspector" : "Show note inspector",
-						run: () => setInspectorVisible((visible) => !visible),
-					},
-				]}
+				sessionKey={controller.workspace?.rootPath}
+				commands={workspaceCommands.map((command) => ({
+					...command,
+					icon: orgCommandIcons[command.icon],
+					run: () => dispatchWorkspaceCommand(command.id),
+				}))}
 			/>
 			<OrgQuickOpen
 				documents={controller.workspace?.documents ?? []}
 				open={quickOpenVisible}
 				onOpenChange={setQuickOpenVisible}
-				onSelect={async (document) => {
-					const opened = await controller.openDocument(document)
-					if (opened) setShowAgenda(false)
+				sessionKey={controller.workspace?.rootPath}
+				onSelect={async (document, signal) => {
+					const opened = await controller.openDocument(document, undefined, signal)
+					if (opened && !signal?.aborted) {
+						pendingFileFocusRef.current = {
+							root: controller.workspace?.rootPath ?? "",
+							path: document.relativePath,
+						}
+						setShowAgenda(false)
+					}
 					return opened
 				}}
 			/>
