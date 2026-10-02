@@ -38,6 +38,7 @@ import { OrgDocumentPane } from "./org-document-pane.view.fn"
 import type { OrgEditorSessionSnapshot } from "@/views/org-editor/org-editor.types"
 import { OrgInspector } from "./org-inspector.view.fn"
 import { OrgQuickOpen } from "./org-quick-open.view.fn"
+import { OrgBufferSwitch } from "./org-buffer-switch.view.fn"
 import { OrgWorkspaceRibbon } from "./org-workspace-ribbon.view.fn"
 import { OrgWorkspaceSidebar } from "./org-workspace-sidebar.view.fn"
 
@@ -273,6 +274,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	const [sidebarVisible, setSidebarVisible] = useState(true)
 	const [inspectorVisible, setInspectorVisible] = useState(false)
 	const [quickOpenVisible, setQuickOpenVisible] = useState(false)
+	const [bufferSwitchVisible, setBufferSwitchVisible] = useState(false)
 	const [commandPaletteVisible, setCommandPaletteVisible] = useState(false)
 	const [openDocumentPaths, setOpenDocumentPaths] = useState<readonly string[]>([])
 	const navigationRequestRef = useRef(0)
@@ -292,7 +294,11 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 			if (!retained.has(key)) editorSessionCacheRef.current.delete(key)
 		}
 	}, [controller.workspaceSessionId, controller.openBuffers])
-	const pendingFileFocusRef = useRef<{ readonly root: string; readonly path: string } | null>(null)
+	const pendingFileFocusRef = useRef<{
+		readonly scope: string | null
+		readonly root: string
+		readonly path: string
+	} | null>(null)
 	const [sessionRoot, setSessionRoot] = useState<string | null>(null)
 	const [navigationHistory, setNavigationHistory] = useState<{
 		readonly index: number
@@ -309,9 +315,18 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 		setShowAgenda(false)
 	}, [controller])
 
+	const controllerRef = useRef(controller)
+	controllerRef.current = controller
+	const commandEchoSequenceRef = useRef(0)
+	const [commandEcho, setCommandEcho] = useState<{
+		readonly scope: string | null
+		readonly message: string
+	} | null>(null)
 	const commandContext = {
 		hasWorkspace: Boolean(controller.workspace),
 		hasDocument: Boolean(controller.activeDocument),
+		hasBuffers: Boolean(controller.openBuffers?.length),
+		hasDirtyBuffers: Boolean(controller.openBuffers?.some((buffer) => buffer.isDirty)),
 		isDirty: controller.isDirty,
 		isBusy,
 		sidebarVisible,
@@ -320,13 +335,34 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	const workspaceCommands = deriveOrgWorkspaceCommands(commandContext)
 	const dispatchWorkspaceCommand = (id: OrgWorkspaceCommandId) => {
 		if (!guardOrgWorkspaceCommand(id, commandContext)) return false
+		const echoSequence = ++commandEchoSequenceRef.current
+		setCommandEcho(null)
 		setCommandPaletteVisible(false)
 		if (id !== "quick-open") setQuickOpenVisible(false)
+		if (id !== "buffer-switch") setBufferSwitchVisible(false)
 		switch (id) {
 			case "quick-open":
 				setCommandPaletteVisible(false)
 				setQuickOpenVisible(true)
 				break
+			case "buffer-switch":
+				setBufferSwitchVisible(true)
+				break
+			case "save-all": {
+				const scope = controller.workspaceSessionId
+				void controller.saveAllDocuments().then((result) => {
+					if (
+						echoSequence !== commandEchoSequenceRef.current ||
+						controllerRef.current.workspaceSessionId !== scope
+					)
+						return
+					setCommandEcho({
+						scope,
+						message: `${result.savedPaths.length} buffer(s) saved; ${result.remainingDirtyPaths.length} still unsaved.${result.message ? ` ${result.message}` : ""}`,
+					})
+				})
+				break
+			}
 			case "save":
 				void controller.saveDocument()
 				break
@@ -358,11 +394,12 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	commandDispatcherRef.current = dispatchWorkspaceCommand
 
 	useEffect(() => {
-		if (quickOpenVisible) return
+		if (quickOpenVisible || bufferSwitchVisible) return
 		const pending = pendingFileFocusRef.current
 		pendingFileFocusRef.current = null
 		if (
 			pending &&
+			pending.scope === controller.workspaceSessionId &&
 			pending.root === controller.workspace?.rootPath &&
 			pending.path === controller.activeDocument?.relativePath &&
 			!commandPaletteVisible
@@ -370,6 +407,8 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 			workspaceViewRef.current?.querySelector<HTMLElement>(".cm-content")?.focus()
 	}, [
 		quickOpenVisible,
+		bufferSwitchVisible,
+		controller.workspaceSessionId,
 		controller.workspace?.rootPath,
 		controller.activeDocument?.relativePath,
 		commandPaletteVisible,
@@ -380,8 +419,11 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 		const rootPath = controller.workspace?.rootPath
 		const grant = controller.workspaceSessionId ?? rootPath ?? null
 		setQuickOpenVisible(false)
+		setBufferSwitchVisible(false)
 		setCommandPaletteVisible(false)
 		setShowCapture(false)
+		commandEchoSequenceRef.current += 1
+		setCommandEcho(null)
 		pendingFileFocusRef.current = null
 		hydratedSessionRef.current = null
 		setSessionRoot(null)
@@ -517,6 +559,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 			event.preventDefault()
 			if (command === "execute-command") {
 				setQuickOpenVisible(false)
+				setBufferSwitchVisible(false)
 				setCommandPaletteVisible(true)
 			} else commandDispatcherRef.current(command)
 		}
@@ -648,7 +691,10 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 										controller={controller}
 										editorSessionCache={editorSessionCacheRef.current}
 										parameterSessionSuspended={
-											quickOpenVisible || commandPaletteVisible || showCapture
+											quickOpenVisible ||
+											bufferSwitchVisible ||
+											commandPaletteVisible ||
+											showCapture
 										}
 										inspectorVisible={inspectorVisible}
 										isBusy={isBusy}
@@ -688,6 +734,17 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 					onChooseDirectory={() => void controller.selectWorkspace()}
 				/>
 			)}
+			{commandEcho && commandEcho.scope === controller.workspaceSessionId && (
+				<output
+					role="status"
+					aria-live="polite"
+					aria-label="Workspace command result"
+					title={commandEcho.message}
+					className="block h-6 shrink-0 truncate border-t px-3 text-xs leading-6 text-muted-foreground"
+				>
+					{commandEcho.message}
+				</output>
+			)}
 			<OrgCaptureDialog
 				open={showCapture}
 				onOpenChange={setShowCapture}
@@ -703,6 +760,29 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 					run: () => dispatchWorkspaceCommand(command.id),
 				}))}
 			/>
+			<OrgBufferSwitch
+				buffers={controller.openBuffers ?? []}
+				activeBufferId={controller.activeBufferId}
+				open={bufferSwitchVisible}
+				onOpenChange={setBufferSwitchVisible}
+				sessionKey={controller.workspaceSessionId ?? "unapproved"}
+				onSelect={async (buffer, signal) => {
+					const opened = await controller.switchBuffer(buffer.bufferId, signal)
+					if (
+						opened &&
+						!signal?.aborted &&
+						controllerRef.current.workspaceSessionId === controller.workspaceSessionId
+					) {
+						pendingFileFocusRef.current = {
+							scope: controller.workspaceSessionId,
+							root: controller.workspace?.rootPath ?? "",
+							path: buffer.relativePath,
+						}
+						setShowAgenda(false)
+					}
+					return opened
+				}}
+			/>
 			<OrgQuickOpen
 				documents={controller.workspace?.documents ?? []}
 				open={quickOpenVisible}
@@ -710,8 +790,13 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 				sessionKey={controller.workspaceSessionId ?? controller.workspace?.rootPath}
 				onSelect={async (document, signal) => {
 					const opened = await controller.openDocument(document, undefined, signal)
-					if (opened && !signal?.aborted) {
+					if (
+						opened &&
+						!signal?.aborted &&
+						controllerRef.current.workspaceSessionId === controller.workspaceSessionId
+					) {
 						pendingFileFocusRef.current = {
+							scope: controller.workspaceSessionId,
 							root: controller.workspace?.rootPath ?? "",
 							path: document.relativePath,
 						}

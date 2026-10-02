@@ -32,6 +32,8 @@ const keyboard: OrgWorkspaceKeyboardInput = {
 const ids = [
 	"quick-open",
 	"save",
+	"buffer-switch",
+	"save-all",
 	"refresh",
 	"agenda",
 	"capture",
@@ -46,6 +48,8 @@ describe("workspace command definitions and guards", () => {
 		expect(orgWorkspaceCommandDefinitions).toEqual([
 			{ id: "quick-open", label: "Quick open", icon: "quickOpen", shortcut: "Ctrl O" },
 			{ id: "save", label: "Save current note", icon: "save", shortcut: "Ctrl S" },
+			{ id: "buffer-switch", label: "Switch buffer", icon: "files", shortcut: "Ctrl Shift B" },
+			{ id: "save-all", label: "Save all buffers", icon: "save", shortcut: "Ctrl Shift S" },
 			{ id: "refresh", label: "Refresh workspace", icon: "refresh" },
 			{ id: "agenda", label: "Open agenda", icon: "agenda" },
 			{ id: "capture", label: "Quick capture", icon: "capture" },
@@ -77,10 +81,12 @@ describe("workspace command definitions and guards", () => {
 	})
 
 	it("exhaustively derives guards across all context flag combinations", () => {
-		for (let mask = 0; mask < 64; mask++) {
+		for (let mask = 0; mask < 256; mask++) {
 			const current: OrgWorkspaceCommandContext = {
 				hasWorkspace: Boolean(mask & 1),
 				hasDocument: Boolean(mask & 2),
+				hasBuffers: Boolean(mask & 64),
+				hasDirtyBuffers: Boolean(mask & 128),
 				isDirty: Boolean(mask & 4),
 				isBusy: Boolean(mask & 8),
 				sidebarVisible: Boolean(mask & 16),
@@ -88,6 +94,8 @@ describe("workspace command definitions and guards", () => {
 			}
 			const expectedEnabled = {
 				"quick-open": current.hasWorkspace,
+				"buffer-switch": current.hasWorkspace && Boolean(current.hasBuffers) && !current.isBusy,
+				"save-all": current.hasWorkspace && Boolean(current.hasDirtyBuffers) && !current.isBusy,
 				save: current.hasWorkspace && current.hasDocument && current.isDirty && !current.isBusy,
 				refresh: current.hasWorkspace && !current.isBusy,
 				agenda: current.hasWorkspace,
@@ -151,6 +159,30 @@ describe("workspace keyboard routing", () => {
 		}
 	})
 
+	it("routes explicit shifted buffer commands while respecting input ownership", () => {
+		for (const [key, expected] of [
+			["b", "buffer-switch"],
+			["s", "save-all"],
+		]) {
+			for (const modifier of [
+				{ ctrlKey: true, metaKey: false },
+				{ ctrlKey: false, metaKey: true },
+			]) {
+				const event = { ...keyboard, ...modifier, key, shiftKey: true }
+				expect(resolveOrgWorkspaceKeyboardCommand(event)).toBe(expected)
+				for (const guard of [
+					{ defaultPrevented: true },
+					{ isParameterInput: true },
+					{ isComposing: true },
+					{ keyCode: 229 },
+					{ altKey: true },
+				]) {
+					expect(resolveOrgWorkspaceKeyboardCommand({ ...event, ...guard })).toBeNull()
+				}
+			}
+		}
+	})
+
 	it("ignores every supported key when any event ownership/modifier guard applies", () => {
 		const guards: Partial<OrgWorkspaceKeyboardInput>[] = [
 			{ defaultPrevented: true },
@@ -158,7 +190,6 @@ describe("workspace keyboard routing", () => {
 			{ keyCode: 229 },
 			{ isParameterInput: true },
 			{ altKey: true },
-			{ shiftKey: true },
 			{ ctrlKey: false, metaKey: false },
 		]
 		for (const key of ["o", "p", "k", "s"]) {
@@ -166,6 +197,11 @@ describe("workspace keyboard routing", () => {
 				expect(resolveOrgWorkspaceKeyboardCommand({ ...keyboard, key, ...guard })).toBeNull()
 			}
 		}
+	})
+
+	it("does not invent shifted variants for other commands", () => {
+		for (const key of ["o", "p", "k", "z"])
+			expect(resolveOrgWorkspaceKeyboardCommand({ ...keyboard, key, shiftKey: true })).toBeNull()
 	})
 
 	it("does not double-dispatch CodeMirror C-c C-p/C-o suffixes or Mod-S", () => {

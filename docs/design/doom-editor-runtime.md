@@ -247,17 +247,41 @@ failed inactive close, external conflict and same-root new-grant isolation.
 Full desktop suite: 137 files / 2024 cases; Rust: 201 cases; typecheck/build pass.
 These are automated evidence, not Chinese IME or native desktop UX acceptance.
 
-Still missing: Buffer Switch command, save-all/background inactive autosave,
-shared-buffer windows/projection effects, restart recovery and modal-engine
-adoption. The pure buffer lifecycle protocol is tested separately; it is not a
+The S4a checkpoint did not yet include Buffer Switch/save-all (added in S4b
+below). Background inactive autosave, shared-buffer windows/projection effects,
+restart recovery and modal-engine adoption remain missing. The pure buffer lifecycle protocol is tested separately; it is not a
 claim that the full canonical multi-window engine has replaced this handoff.
+
+## S4b: buffer commands and nonblocking captured saves
+
+`buffer-switch` and `save-all` join the guarded shell catalog (Mod-Shift-B/S).
+The shared navigation picker backs both Quick Open and Buffer Switch; it owns
+nonmodal bottom input, fuzzy path ranking, Tab completion, stable-ID selection,
+IME/consumed-event priority, focus and abort generations. Buffer candidates come
+from the memory registry, not only files: deleted dirty buffers stay selectable.
+Switching validates the live logical ID; close/delete/implicit clean removal
+retire IDs, while explicit rename retains them. Old IDs cannot reopen replacements.
+
+Save All snapshots dirty bodies/base revisions, owns one batch mutation token and
+writes sequentially through the existing grant/revision flow. Confirmed writes
+advance only their own baselines; newer source input remains dirty. The first
+failure retires the batch with saved/remaining paths; no rollback or blind retry.
+Affected autosave pauses latch across further edits until explicit confirmed
+save/reconciliation. Ordinary and batch captures keep native editor input enabled;
+loading/transfer still locks editing. This avoids save-driven readonly transitions
+interrupting composition, without claiming real Chinese IME acceptance.
+
+Command results use bounded, grant/generation-scoped echo; opened-editor focus
+also carries grant identity. Four additional real hook/pane/CM integration cases
+cover multi-buffer capture, editable deferred saves, ID switching/cancel and the
+real deleted-buffer picker. Desktop 139 files / 2090 cases, typecheck/build pass.
 
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.
 2. Validate existing Vim extensions, IME, undo/registers/macros and text-object APIs.
-3. Extend the verified one-active-view memory handoff to explicit buffer switching,
-   save-all and multiple windows, with extension effects/selection ownership guards.
+3. Extend the verified buffer switching/save-all handoff to multiple windows,
+   with explicit extension effects/selection/history ownership guards.
 4. Establish shared source-range Org semantics and measured large-file behavior.
 5. Promote the command/session host; migrate planning/properties, Quick Open,
    Refile and Capture one workflow at a time.

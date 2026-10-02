@@ -1,5 +1,7 @@
 export type OrgWorkspaceCommandId =
 	| "quick-open"
+	| "buffer-switch"
+	| "save-all"
 	| "save"
 	| "refresh"
 	| "agenda"
@@ -35,6 +37,8 @@ export interface OrgWorkspaceCommandEntry extends OrgWorkspaceCommandDefinition 
 export interface OrgWorkspaceCommandContext {
 	readonly hasWorkspace: boolean
 	readonly hasDocument: boolean
+	readonly hasBuffers?: boolean
+	readonly hasDirtyBuffers?: boolean
 	readonly isDirty: boolean
 	readonly isBusy: boolean
 	readonly sidebarVisible: boolean
@@ -44,6 +48,8 @@ export interface OrgWorkspaceCommandContext {
 export const orgWorkspaceCommandDefinitions: readonly OrgWorkspaceCommandDefinition[] = [
 	{ id: "quick-open", label: "Quick open", icon: "quickOpen", shortcut: "Ctrl O" },
 	{ id: "save", label: "Save current note", icon: "save", shortcut: "Ctrl S" },
+	{ id: "buffer-switch", label: "Switch buffer", icon: "files", shortcut: "Ctrl Shift B" },
+	{ id: "save-all", label: "Save all buffers", icon: "save", shortcut: "Ctrl Shift S" },
 	{ id: "refresh", label: "Refresh workspace", icon: "refresh" },
 	{ id: "agenda", label: "Open agenda", icon: "agenda" },
 	{ id: "capture", label: "Quick capture", icon: "capture" },
@@ -60,6 +66,14 @@ export const deriveOrgWorkspaceCommands = (
 		let label = definition.label
 		let disabled = false
 		switch (definition.id) {
+			case "buffer-switch":
+				disabled =
+					!context.hasWorkspace || !(context.hasBuffers ?? context.hasDocument) || context.isBusy
+				break
+			case "save-all":
+				disabled =
+					!context.hasWorkspace || !(context.hasDirtyBuffers ?? context.isDirty) || context.isBusy
+				break
 			case "save":
 				disabled =
 					!context.hasWorkspace || !context.hasDocument || !context.isDirty || context.isBusy
@@ -109,7 +123,12 @@ export interface OrgWorkspaceKeyboardInput {
 	readonly isParameterInput: boolean
 }
 
-export type OrgWorkspaceKeyboardCommand = "quick-open" | "execute-command" | "save"
+export type OrgWorkspaceKeyboardCommand =
+	| "quick-open"
+	| "execute-command"
+	| "save"
+	| "buffer-switch"
+	| "save-all"
 
 /** Resolve only; the window boundary owns preventDefault and command dispatch. */
 export const resolveOrgWorkspaceKeyboardCommand = (
@@ -121,9 +140,13 @@ export const resolveOrgWorkspaceKeyboardCommand = (
 		input.keyCode === 229 ||
 		input.isParameterInput ||
 		input.altKey ||
-		input.shiftKey ||
 		(!input.ctrlKey && !input.metaKey)
 	) {
+		return null
+	}
+	if (input.shiftKey) {
+		if (input.key.toLowerCase() === "b") return "buffer-switch"
+		if (input.key.toLowerCase() === "s") return "save-all"
 		return null
 	}
 	// CodeMirror-consumed chord suffixes and Mod-S must arrive defaultPrevented.

@@ -55,6 +55,8 @@ The editor keeps raw Org text intact while supporting an initial Org-compatible 
 | `Ctrl-C Ctrl-T` | Cycle heading TODO state |
 | `Ctrl-C Ctrl-C` | Toggle a checkbox at the cursor |
 | `Ctrl-C Ctrl-O` | Open the Org link at the cursor |
+| `Ctrl-Shift-B` | Switch an already-open buffer (including unsaved/missing files) |
+| `Ctrl-Shift-S` | Save all dirty buffers with per-file revision checks |
 | `Ctrl-C Ctrl-Q` | Set heading tags in the bottom minibuffer |
 | `Ctrl-C Ctrl-S` / `Ctrl-C Ctrl-D` | Schedule a heading or set its deadline in the bottom minibuffer |
 | `Ctrl-C Ctrl-P` | Set a heading property in the bottom minibuffer |
@@ -71,7 +73,7 @@ Heading Tags, Schedule, Deadline and Property use a non-modal bottom minibuffer:
 
 Runtime feasibility probes live separately in [experiments/doom-runtime](../../experiments/doom-runtime/README.md). They exercise Vim and canonical buffer/window ownership with synthetic data; they do not enable Vim or split windows in the application.
 
-The application now retains independent in-memory Org buffers: switching A → B → A does not force a save and preserves each source, revision, CodeMirror history, cursor and scroll. Tabs show inactive unsaved state too. Closing a dirty inactive tab uses revision-checked save; failure retains the buffer. The active buffer alone autosaves; inactive dirty buffers do not autosave yet. Native close and workspace replacement protect aggregate dirty state. This is memory-only, not a restart recovery journal or a shared-buffer split-window implementation.
+The application now retains independent in-memory Org buffers: switching A → B → A does not force a save and preserves each source, revision, CodeMirror history, cursor and scroll. Tabs show inactive unsaved state too. Closing a dirty inactive tab uses revision-checked save; failure retains the buffer. The active buffer alone autosaves; inactive dirty buffers do not autosave yet. Switch Buffer and Save All are available from Execute command or Ctrl-Shift-B/Ctrl-Shift-S (Meta equivalents on macOS). Save All snapshots bodies/revisions, saves sequentially without navigating, advances confirmed baselines and preserves newer input. Failure stops the batch without rollback; affected autosave is latched off even after typing until an explicit successful save/reconciliation. Ordinary and batch saves do not disable editor typing/composition, unlike loading/transfers. Native close and workspace replacement protect aggregate dirty state. This is memory-only, not a restart recovery journal or a shared-buffer split-window implementation.
 
 Workspace approvals issue native capability leases. Every Org filesystem/index invocation must carry the originating token; stale grants cannot acquire a later same-path directory. Same-path reapproval retains the original descriptor and rejects inode replacement. Releases remove only their exact grant. Linux watches are descriptor-bound; other platforms currently fail closed for watching and retain active-document polling/manual workspace refresh.
 

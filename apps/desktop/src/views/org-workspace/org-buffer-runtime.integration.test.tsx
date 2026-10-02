@@ -1,4 +1,5 @@
 import { undo, undoDepth } from "@codemirror/commands"
+import { EditorState, Transaction } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import * as E from "fp-ts/Either"
@@ -18,6 +19,7 @@ import {
 } from "@/io/file/org-file.repository"
 import type { OrgDocumentInterface, OrgWorkspaceInterface } from "@/types/org"
 import type { OrgEditorSessionSnapshot } from "@/views/org-editor/org-editor.types"
+import { OrgBufferSwitch } from "./org-buffer-switch.view.fn"
 import { OrgDocumentPane } from "./org-document-pane.view.fn"
 
 // Only filesystem/host boundaries are replaced: hook, pane, editor and CM history are real.
@@ -61,6 +63,10 @@ let workspace: OrgWorkspaceInterface
 let controller: OrgWorkspaceController
 let cache: Map<string, OrgEditorSessionSnapshot>
 let setAgenda: (value: boolean) => void
+let setPickerOpen: (value: boolean) => void
+const switchSelectedBuffer = vi.fn((bufferId: string, signal?: AbortSignal) =>
+	controller.switchBuffer(bufferId, signal),
+)
 const noop = () => undefined
 
 function Runtime() {
@@ -69,6 +75,8 @@ function Runtime() {
 	cache = cacheRef.current
 	const [agenda, toggleAgenda] = useState(false)
 	setAgenda = toggleAgenda
+	const [pickerOpen, togglePicker] = useState(false)
+	setPickerOpen = togglePicker
 	// Same parent-owned cache and grant/buffer pruning as the production container.
 	useEffect(() => {
 		const retained = new Set(
@@ -81,6 +89,14 @@ function Runtime() {
 	return (
 		<>
 			{controller.error && <div role="alert">{controller.error}</div>}
+			<OrgBufferSwitch
+				buffers={controller.openBuffers}
+				activeBufferId={controller.activeBufferId}
+				open={pickerOpen}
+				onOpenChange={togglePicker}
+				sessionKey={controller.workspaceSessionId ?? ""}
+				onSelect={(buffer, signal) => switchSelectedBuffer(buffer.bufferId, signal)}
+			/>
 			{agenda ? (
 				<div>Workspace agenda</div>
 			) : (
@@ -154,6 +170,7 @@ function externalA() {
 beforeEach(() => {
 	vi.useFakeTimers()
 	vi.resetAllMocks()
+	switchSelectedBuffer.mockImplementation((bufferId, signal) => controller.switchBuffer(bufferId, signal))
 	window.localStorage.clear()
 	vi.spyOn(window, "confirm").mockReturnValue(true)
 	disk = new Map([
@@ -191,6 +208,150 @@ afterEach(() => {
 })
 
 describe("production Org buffer runtime", () => {
+	it("Save All writes distinct dirty A/B snapshots and preserves both open buffers and CM histories", async () => {
+		await setup()
+		edit("A batch")
+		await open("b.org")
+		edit("B batch")
+		const ids = controller.openBuffers.map((buffer) => buffer.bufferId)
+		const activeId = controller.activeBufferId
+		await act(async () => {
+			expect(await controller.saveAllDocuments()).toEqual({
+				kind: "success", savedPaths: ["a.org", "b.org"], remainingDirtyPaths: [],
+			})
+		})
+		expect(vi.mocked(saveOrgDocumentFlow).mock.calls.map(([input]) => input)).toEqual([
+			{ workspaceRoot: "/notes", capabilityToken: "G1", relativePath: "a.org", content: rawA + "A batch", expectedRevision: "a-1" },
+			{ workspaceRoot: "/notes", capabilityToken: "G1", relativePath: "b.org", content: rawB + "B batch", expectedRevision: "b-1" },
+		])
+		expect(controller.activeBufferId).toBe(activeId)
+		expect(controller.openBuffers.map((buffer) => buffer.bufferId)).toEqual(ids)
+		expect(controller.openBuffers.every((buffer) => !buffer.isDirty)).toBe(true)
+		expect(undoDepth(view().state)).toBe(1)
+		undoEditor()
+		expect(controller.content).toBe(rawB)
+		await act(async () => { expect(await controller.switchBuffer(ids[0]!)).toBe(true) })
+		expect(view().state.sliceDoc()).toBe(rawA + "A batch")
+		expect(undoDepth(view().state)).toBe(1)
+		undoEditor()
+		expect(controller.content).toBe(rawA)
+		expect(controller.isDirty).toBe(true)
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(2)
+	})
+
+	it("keeps the active CM writable during a deferred Save All and preserves newer input after partial failure and Ctrl-Z", async () => {
+		await setup()
+		edit("A batch")
+		await open("b.org")
+		edit("B captured")
+		let finish!: (result: Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>) => void
+		const pending = new Promise<Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>>((resolve) => { finish = resolve })
+		vi.mocked(saveOrgDocumentFlow).mockImplementation((input) => async () => {
+			if (input.relativePath === "b.org") return pending
+			disk.set(input.relativePath, { relativePath: input.relativePath, content: input.content, revision: "a-confirmed" })
+			return E.right({ relativePath: input.relativePath, revision: "a-confirmed" })
+		})
+		let saving!: ReturnType<typeof controller.saveAllDocuments>
+		await act(async () => { saving = controller.saveAllDocuments(); await Promise.resolve() })
+		expect(controller.isSaving).toBe(true)
+		expect(controller.isEditorReadOnly).toBe(false)
+		expect(view().state.facet(EditorState.readOnly)).toBe(false)
+		expect(view().contentDOM).toHaveAttribute("contenteditable", "true")
+		// A real CM transaction, not a browser/native IME simulation. Separate undo group.
+		act(() => view().dispatch({
+			changes: { from: view().state.doc.length, insert: " newer input" },
+			annotations: Transaction.userEvent.of("input"),
+		}))
+		await act(async () => {
+			finish(E.left({ type: "ORG_FILE_ERROR", operation: "write", command: "write", cause: null, message: "write denied" }))
+			expect(await saving).toMatchObject({ kind: "partial", savedPaths: ["a.org"], remainingDirtyPaths: ["b.org"] })
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenLastCalledWith(expect.objectContaining({
+			relativePath: "b.org", content: rawB + "B captured", expectedRevision: "b-1", capabilityToken: "G1",
+		}))
+		expect(controller.content).toBe(rawB + "B captured newer input")
+		expect(view().state.sliceDoc()).toBe(controller.content)
+		expect(controller.isEditorReadOnly).toBe(false)
+		expect(view().state.facet(EditorState.readOnly)).toBe(false)
+		act(() => { fireEvent.keyDown(view().contentDOM, { key: "z", code: "KeyZ", ctrlKey: true }) })
+		expect(view().state.sliceDoc()).toBe(rawB + "B captured")
+		expect(controller.content).toBe(rawB + "B captured")
+		expect(controller.openBuffers).toHaveLength(2)
+		expect(controller.isDirty).toBe(true)
+	})
+
+	it("switches existing IDs without forcing saves, restores CM cache and rejects late reads after abort", async () => {
+		await setup()
+		const aId = controller.activeBufferId!
+		edit("A parked")
+		act(() => view().dispatch({ selection: { anchor: 4 } }))
+		await open("b.org")
+		edit("B stays")
+		const bId = controller.activeBufferId!
+		await act(async () => { expect(await controller.switchBuffer(aId)).toBe(true) })
+		expect(view().state.sliceDoc()).toBe(rawA + "A parked")
+		expect(view().state.selection.main.head).toBe(4)
+		expect(undoDepth(view().state)).toBe(1)
+		await act(async () => { expect(await controller.switchBuffer(bId)).toBe(true) })
+		expect(view().state.sliceDoc()).toBe(rawB + "B stays")
+		let finish!: (result: Awaited<ReturnType<ReturnType<typeof openOrgDocumentFlow>>>) => void
+		const pending = new Promise<Awaited<ReturnType<ReturnType<typeof openOrgDocumentFlow>>>>((resolve) => { finish = resolve })
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(() => pending)
+		const abort = new AbortController()
+		let switching!: Promise<boolean>
+		act(() => { switching = controller.switchBuffer(aId, abort.signal) })
+		expect(controller.isLoading).toBe(true)
+		expect(controller.isEditorReadOnly).toBe(true)
+		expect(view().state.facet(EditorState.readOnly)).toBe(true)
+		expect(view().state.sliceDoc()).toBe(rawB + "B stays")
+		act(() => abort.abort())
+		expect(controller.isLoading).toBe(false)
+		expect(controller.isEditorReadOnly).toBe(false)
+		expect(view().state.facet(EditorState.readOnly)).toBe(false)
+		await act(async () => {
+			finish(E.right(disk.get("a.org")!))
+			expect(await switching).toBe(false)
+		})
+		expect(controller.activeBufferId).toBe(bId)
+		expect(view().state.sliceDoc()).toBe(rawB + "B stays")
+		undoEditor()
+		expect(controller.content).toBe(rawB)
+		await act(async () => { expect(await controller.switchBuffer(aId)).toBe(true) })
+		undoEditor()
+		expect(controller.content).toBe(rawA)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
+	it("binds the real Buffer Switch picker to logical IDs and restores a deleted dirty buffer", async () => {
+		await setup()
+		const aId = controller.activeBufferId!
+		edit("deleted but kept")
+		await open("b.org")
+		disk.delete("a.org")
+		workspace = { ...workspace, documents: [{ relativePath: "b.org", revision: "b-1" }] }
+		await act(async () => { await controller.refreshWorkspace() })
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () => E.left({
+			type: "ORG_FILE_ERROR", operation: "read", command: "read", cause: null, message: "file missing",
+		}))
+		act(() => setPickerOpen(true))
+		const input = screen.getByRole("combobox", { name: "Search open buffers" })
+		const selected = () => screen.getAllByRole("option").find((option) => option.getAttribute("aria-selected") === "true")!
+		expect(selected()).toHaveAccessibleName("a.org · Unsaved · External conflict")
+		fireEvent.keyDown(input, { key: "n", ctrlKey: true })
+		expect(selected()).toHaveAccessibleName("b.org · Current")
+		fireEvent.keyDown(input, { key: "p", ctrlKey: true })
+		fireEvent.keyDown(input, { key: "Enter", isComposing: true })
+		expect(switchSelectedBuffer).not.toHaveBeenCalled()
+		await act(async () => { fireEvent.keyDown(input, { key: "Enter" }) })
+		expect(switchSelectedBuffer).toHaveBeenCalledExactlyOnceWith(aId, expect.any(AbortSignal))
+		expect(screen.queryByRole("combobox", { name: "Search open buffers" })).not.toBeInTheDocument()
+		expect(controller.activeBufferId).toBe(aId)
+		expect(view().state.sliceDoc()).toBe(rawA + "deleted but kept")
+		undoEditor()
+		expect(controller.content).toBe(rawA)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
 	it("parks dirty A/B without writes, restores raw source, cursor/scroll and independent undo, and rebinds saves", async () => {
 		await setup()
 		const aId = controller.activeBufferId

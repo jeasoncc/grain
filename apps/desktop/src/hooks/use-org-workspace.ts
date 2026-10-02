@@ -85,6 +85,26 @@ export type OrgSubtreeTransferOutcome =
 	| { readonly kind: "rejected"; readonly message: string }
 	| { readonly kind: "partial"; readonly message: string }
 
+export type OrgSaveAllOutcome =
+	| {
+			readonly kind: "success"
+			readonly savedPaths: readonly string[]
+			readonly remainingDirtyPaths: readonly string[]
+			readonly message?: string
+	  }
+	| {
+			readonly kind: "partial"
+			readonly savedPaths: readonly string[]
+			readonly remainingDirtyPaths: readonly string[]
+			readonly message?: string
+	  }
+	| {
+			readonly kind: "rejected"
+			readonly savedPaths: readonly string[]
+			readonly remainingDirtyPaths: readonly string[]
+			readonly message?: string
+	  }
+
 export interface OrgOpenBufferSummary {
 	readonly bufferId: string
 	readonly relativePath: string
@@ -105,11 +125,14 @@ export interface OrgWorkspaceController {
 	readonly activeBufferId: string | null
 	readonly openBuffers: readonly OrgOpenBufferSummary[]
 	readonly closeDocumentPath: (relativePath: string) => Promise<boolean>
+	readonly switchBuffer: (bufferId: string, signal?: AbortSignal) => Promise<boolean>
 	readonly workspace: OrgWorkspaceInterface | null
 	readonly activeDocument: OrgDocumentInterface | null
 	readonly content: string
 	readonly isDirty: boolean
 	readonly isLoading: boolean
+	/** Ordinary/batch saves capture source without disabling typing or composition. */
+	readonly isEditorReadOnly: boolean
 	readonly isSaving: boolean
 	readonly error: string | null
 	readonly migrationStatus: string | null
@@ -126,6 +149,7 @@ export interface OrgWorkspaceController {
 	readonly openDocumentPath: (
 		relativePath: string,
 		expectedRevision?: string | null,
+		signal?: AbortSignal,
 	) => Promise<boolean>
 	readonly openDocumentAt: (
 		relativePath: string,
@@ -150,6 +174,7 @@ export interface OrgWorkspaceController {
 	readonly clearDerivedIndex: () => Promise<void>
 	readonly updateContent: (content: string) => void
 	readonly saveDocument: () => Promise<void>
+	readonly saveAllDocuments: () => Promise<OrgSaveAllOutcome>
 	readonly closeActiveDocument: () => Promise<boolean>
 }
 
@@ -230,9 +255,11 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		setLoading(false)
 	}
 	const refreshWorkspaceRef = useRef<() => Promise<void>>(async () => undefined)
+	const saveAllOwnerRef = useRef<symbol | null>(null)
 	const saveInFlightRef = useRef<Promise<boolean> | null>(null)
 	const saveInFlightContentRef = useRef<string | null>(null)
-	const autosaveFailedContentRef = useRef<string | null>(null)
+	// Latched per working copy; editing cannot make an uncertain write safe to retry.
+	const autosavePausedRef = useRef(new Set<string>())
 	const restoreAttemptedRef = useRef(false)
 	const refreshRetryTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 	const workspaceRoot = workspace?.rootPath ?? null
@@ -356,6 +383,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			if (E.isLeft(result)) {
 				if (dirtyPath(activeDocument.relativePath)) {
 					conflictsRef.current.add(activeDocument.relativePath)
+					autosavePausedRef.current.add(activeDocument.relativePath)
 				}
 				setError(`Cannot refresh ${activeDocument.relativePath}: ${result.left.message}`)
 				return
@@ -365,6 +393,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			}
 			if (dirtyPath(activeDocument.relativePath) || generation !== editGenerationRef.current) {
 				conflictsRef.current.add(activeDocument.relativePath)
+				autosavePausedRef.current.add(activeDocument.relativePath)
 				setError(`External modification detected for ${activeDocument.relativePath}.`)
 				return
 			}
@@ -420,6 +449,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			const entry = result.right.documents.find((document) => document.relativePath === path)
 			if (buffer.isDirty && entry?.revision !== buffer.document.revision) {
 				conflictsRef.current.add(path)
+				autosavePausedRef.current.add(path)
 				setError(`External modification detected for ${path}.`)
 			}
 		}
@@ -434,10 +464,17 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		if (!scannedDocument) {
 			if (dirtyPath(sourceDocument.relativePath) || generation !== editGenerationRef.current) {
 				conflictsRef.current.add(sourceDocument.relativePath)
+				autosavePausedRef.current.add(sourceDocument.relativePath)
 				setError(
 					`The open document ${sourceDocument.relativePath} no longer exists in the workspace.`,
 				)
 			} else {
+				parkedRef.current.delete(sourceDocument.relativePath)
+				bufferIdsRef.current.delete(sourceDocument.relativePath)
+				conflictsRef.current.delete(sourceDocument.relativePath)
+				autosavePausedRef.current.delete(sourceDocument.relativePath)
+				setRevealTarget(null)
+				setDirty(false)
 				activationRef.current += 1
 				activeRef.current = null
 				setActiveDocument(null)
@@ -451,6 +488,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		}
 		if (dirtyPath(sourceDocument.relativePath) || generation !== editGenerationRef.current) {
 			conflictsRef.current.add(sourceDocument.relativePath)
+			autosavePausedRef.current.add(sourceDocument.relativePath)
 			setError(`External modification detected for ${sourceDocument.relativePath}.`)
 			return
 		}
@@ -641,8 +679,8 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					parkedRef.current.clear()
 					bufferIdsRef.current.clear()
 					conflictsRef.current.clear()
+					autosavePausedRef.current.clear()
 					activeRef.current = null
-					autosaveFailedContentRef.current = null
 					setRevealTarget(null)
 					setDefaultWorkspacePreference(source !== "picker")
 					// Invalidate refreshes that may have started while the native picker was open.
@@ -704,7 +742,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			signal?: AbortSignal,
 			// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: parking is committed only after all read, edit, abort, and revision guards pass.
 		): Promise<boolean> => {
-			if (!workspace || !isCurrentOrigin() || signal?.aborted) {
+			if (!workspace || !isCurrentOrigin() || signal?.aborted || saveAllOwnerRef.current) {
 				return false
 			}
 			if (activeRef.current?.relativePath === entry.relativePath) {
@@ -714,6 +752,9 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				}
 				return true
 			}
+			const targetBufferId = bufferIdsRef.current.get(entry.relativePath)
+			const isSameTargetBuffer = () =>
+				!targetBufferId || bufferIdsRef.current.get(entry.relativePath) === targetBufferId
 			if (mutationInProgressRef.current) {
 				const inFlight = saveInFlightRef.current
 				if (!inFlight) {
@@ -730,7 +771,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					return false
 				}
 			}
-			if (mutationInProgressRef.current || !isCurrentOrigin()) return false
+			if (mutationInProgressRef.current || !isCurrentOrigin() || !isSameTargetBuffer()) return false
 			const parked = parkedRef.current.get(entry.relativePath)
 			const editGenerationAtStart = editGenerationRef.current
 			const requestId = openRequestRef.current + 1
@@ -760,7 +801,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					return false
 				}
 				setLoading(false)
-				if (signal?.aborted) {
+				if (signal?.aborted || !isSameTargetBuffer()) {
 					return false
 				}
 				if (
@@ -779,6 +820,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					(E.isLeft(result) || result.right.revision !== parked.document.revision)
 				) {
 					conflictsRef.current.add(entry.relativePath)
+					autosavePausedRef.current.add(entry.relativePath)
 					setError(`External modification detected for ${entry.relativePath}.`)
 				}
 				const nextDocument = parked?.isDirty
@@ -817,7 +859,6 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				setContent(nextContent)
 				latestContentRef.current = nextContent
 				editGenerationRef.current += 1
-				autosaveFailedContentRef.current = null
 				setDirty(Boolean(parked?.isDirty))
 				return true
 			} finally {
@@ -828,8 +869,12 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	)
 
 	const openDocumentPath = useCallback(
-		async (relativePath: string, expectedRevision?: string | null): Promise<boolean> => {
-			if (!isCurrentOrigin()) return false
+		async (
+			relativePath: string,
+			expectedRevision?: string | null,
+			signal?: AbortSignal,
+		): Promise<boolean> => {
+			if (!isCurrentOrigin() || signal?.aborted) return false
 			const entry =
 				workspace?.documents.find((document) => document.relativePath === relativePath) ??
 				parkedRef.current.get(relativePath)?.document
@@ -837,9 +882,29 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				setError(`Org link target does not exist: ${relativePath}`)
 				return false
 			}
-			return openDocument(entry, expectedRevision)
+			return openDocument(entry, expectedRevision, signal)
 		},
 		[openDocument, workspace, originSession, originActivation, originPath],
+	)
+
+	const switchBuffer = useCallback(
+		async (bufferId: string, signal?: AbortSignal): Promise<boolean> => {
+			if (
+				!isCurrentOrigin() ||
+				signal?.aborted ||
+				mutationInProgressRef.current ||
+				saveAllOwnerRef.current
+			) {
+				return false
+			}
+			// IDs are opaque and grant-local: only resolve live buffers in the latest map.
+			const path = [...bufferIdsRef.current].find(([, id]) => id === bufferId)?.[0]
+			if (!path) return false
+			if (activeRef.current?.relativePath === path) return true
+			if (!parkedRef.current.has(path)) return false
+			return openDocumentPath(path, undefined, signal)
+		},
+		[openDocumentPath, originSession, originActivation, originPath],
 	)
 
 	const openDocumentAt = useCallback(
@@ -1062,7 +1127,6 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			if (!isCurrentOrigin()) return
 			editGenerationRef.current += 1
 			latestContentRef.current = nextContent
-			autosaveFailedContentRef.current = null
 			setContent(nextContent)
 			setDirty(nextContent !== activeRef.current?.content)
 		},
@@ -1098,11 +1162,18 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			if (!isCurrentOrigin()) return false
 			if (E.isLeft(result)) {
 				conflictsRef.current.add(sourcePath)
-				autosaveFailedContentRef.current = contentBeingSaved
+				autosavePausedRef.current.add(sourcePath)
 				setError(result.left.message)
 				return false
 			}
-			autosaveFailedContentRef.current = null
+			if (
+				result.right.relativePath !== sourcePath ||
+				typeof result.right.revision !== "string" ||
+				!result.right.revision
+			) {
+				throw new Error("Unexpected save confirmation")
+			}
+			autosavePausedRef.current.delete(sourcePath)
 			conflictsRef.current.delete(sourcePath)
 			if (activeRef.current?.relativePath === sourcePath) {
 				activeRef.current = {
@@ -1132,7 +1203,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			return true
 		} catch {
 			if (mutationOwnerRef.current === owner && isCurrentOrigin()) {
-				autosaveFailedContentRef.current = contentBeingSaved
+				autosavePausedRef.current.add(sourcePath)
 				conflictsRef.current.add(sourcePath)
 				setError(
 					"Save ended unexpectedly; files may have changed. The editor body was retained. Refresh and reconcile before a manual retry; no rollback was attempted.",
@@ -1148,6 +1219,156 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		}
 	}, [activeDocument, workspace, originSession, originActivation, originPath])
 
+	// One owner covers the entire snapshot; never nest the active save's lock.
+	const saveAllDocuments = useCallback(async (): Promise<OrgSaveAllOutcome> => {
+		const remainingPaths = () => [
+			...[...parkedRef.current.entries()]
+				.filter(([, buffer]) => buffer.isDirty)
+				.map(([path]) => path),
+			...(activeRef.current && dirtyPath(activeRef.current.relativePath)
+				? [activeRef.current.relativePath]
+				: []),
+		]
+		const savedPaths: string[] = []
+		const outcome = (kind: OrgSaveAllOutcome["kind"], message?: string): OrgSaveAllOutcome => ({
+			kind,
+			savedPaths: [...savedPaths],
+			remainingDirtyPaths: remainingPaths(),
+			...(message ? { message } : {}),
+		})
+		if (!workspace || !isCurrentOrigin()) {
+			return outcome(
+				"rejected",
+				"The workspace or active buffer is no longer current; save all was not started.",
+			)
+		}
+		if (mutationInProgressRef.current || saveInFlightRef.current) {
+			return outcome(
+				"rejected",
+				"Another workspace mutation is in progress; save all was not started.",
+			)
+		}
+		const selected: {
+			document: OrgDocumentInterface
+			content: string
+			parked: ParkedOrgBuffer | null
+		}[] = [...parkedRef.current.values()]
+			.filter((buffer) => buffer.isDirty)
+			.map((buffer) => ({
+				document: buffer.document,
+				content: buffer.content,
+				parked: buffer,
+			}))
+		const active = activeRef.current
+		const activeCapture =
+			active && dirtyPath(active.relativePath)
+				? { document: active, content: latestContentRef.current, parked: null }
+				: null
+		if (activeCapture) selected.push(activeCapture)
+		if (!selected.length) return outcome("success")
+		const owner = Symbol("saveAllDocuments")
+		mutationOwnerRef.current = owner
+		saveAllOwnerRef.current = owner
+		mutationInProgressRef.current = true
+		openRequestRef.current += 1
+		setLoading(false)
+		setSaving(true)
+		setError(null)
+		// Batch navigation must not treat any individual write as permission to proceed.
+		let completeWaiter!: (saved: boolean) => void
+		saveInFlightRef.current = new Promise<boolean>((resolve) => {
+			completeWaiter = resolve
+		})
+		saveInFlightContentRef.current = null
+		const current = () => mutationOwnerRef.current === owner && isCurrentOrigin()
+		const fail = (message: string): OrgSaveAllOutcome => {
+			if (current()) {
+				// Pause even unwritten members, but do not invent external conflicts for them.
+				for (const capture of selected) {
+					if (!savedPaths.includes(capture.document.relativePath)) {
+						autosavePausedRef.current.add(capture.document.relativePath)
+					}
+				}
+				setError(message)
+			}
+			return outcome(savedPaths.length ? "partial" : "rejected", message)
+		}
+		let writingPath: string | null = null
+		try {
+			for (const capture of selected) {
+				const { document, content: body, parked } = capture
+				if (
+					!current() ||
+					(parked
+						? parkedRef.current.get(document.relativePath) !== parked
+						: activeRef.current !== document)
+				) {
+					return fail(
+						"The save-all snapshot is no longer current. Reread affected files before a manual retry.",
+					)
+				}
+				writingPath = document.relativePath
+				const result = await saveOrgDocumentFlow({
+					content: body,
+					expectedRevision: document.revision,
+					relativePath: document.relativePath,
+					capabilityToken: workspace.capabilityToken,
+					workspaceRoot: workspace.rootPath,
+				})()
+				if (!current())
+					return fail(
+						"The save-all origin changed during a write; files may have changed. Reread affected files; do not automatically retry.",
+					)
+				if (E.isLeft(result)) {
+					conflictsRef.current.add(document.relativePath)
+					return fail(
+						`Save all stopped at ${document.relativePath}: ${result.left.message}. Buffers were retained; files may have changed. Reread affected files before a manual retry. Do not automatically retry.`,
+					)
+				}
+				if (
+					result.right.relativePath !== document.relativePath ||
+					typeof result.right.revision !== "string" ||
+					!result.right.revision
+				) {
+					throw new Error("Unexpected save confirmation")
+				}
+				const persisted = { ...document, content: body, revision: result.right.revision }
+				if (parked) {
+					parkedRef.current.set(document.relativePath, {
+						...parked,
+						document: persisted,
+						isDirty: parked.content !== body,
+					})
+				} else {
+					activeRef.current = persisted
+					setActiveDocument(persisted)
+					setDirty(latestContentRef.current !== body)
+				}
+				conflictsRef.current.delete(document.relativePath)
+				autosavePausedRef.current.delete(document.relativePath)
+				setWorkspace((value) => (value ? updateWorkspaceDocument(value, persisted) : value))
+				savedPaths.push(document.relativePath)
+				publishBuffers((version) => version + 1)
+			}
+			return remainingPaths().length
+				? outcome("partial", "Captured edits were saved, but newer editor input remains unsaved.")
+				: outcome("success")
+		} catch {
+			if (writingPath && current()) conflictsRef.current.add(writingPath)
+			return fail(
+				`Save all ended unexpectedly${writingPath ? ` at ${writingPath}` : ""}; files may have changed. All editor bodies were retained. Reread affected files before reconciling; do not automatically retry. No rollback was attempted.`,
+			)
+		} finally {
+			if (mutationOwnerRef.current === owner) {
+				saveInFlightRef.current = null
+				saveInFlightContentRef.current = null
+			}
+			if (saveAllOwnerRef.current === owner) saveAllOwnerRef.current = null
+			finishMutation(owner)
+			completeWaiter(false)
+		}
+	}, [workspace, dirtyPath, originSession, originActivation, originPath])
+
 	const saveDocument = useCallback(async (): Promise<void> => {
 		await saveDocumentWithResult()
 	}, [saveDocumentWithResult, originSession, originActivation, originPath])
@@ -1160,13 +1381,20 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		}
 		if (activeRef.current && (isDirty || latestContentRef.current !== activeRef.current.content)) {
 			const saved = await saveDocumentWithResult()
-			if (!isCurrentOrigin() || !saved || latestContentRef.current !== contentAtClose) {
+			if (
+				!isCurrentOrigin() ||
+				mutationInProgressRef.current ||
+				!saved ||
+				latestContentRef.current !== contentAtClose
+			) {
 				return false
 			}
 		}
 		if (activeRef.current) {
 			parkedRef.current.delete(activeRef.current.relativePath)
+			bufferIdsRef.current.delete(activeRef.current.relativePath)
 			conflictsRef.current.delete(activeRef.current.relativePath)
+			autosavePausedRef.current.delete(activeRef.current.relativePath)
 		}
 		activationRef.current += 1
 		activeRef.current = null
@@ -1220,8 +1448,16 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					}
 					if (E.isLeft(result)) {
 						conflictsRef.current.add(relativePath)
+						autosavePausedRef.current.add(relativePath)
 						setError(result.left.message)
 						return false
+					}
+					if (
+						result.right.relativePath !== relativePath ||
+						typeof result.right.revision !== "string" ||
+						!result.right.revision
+					) {
+						throw new Error("Unexpected save confirmation")
 					}
 					setWorkspace((current) =>
 						current
@@ -1235,6 +1471,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				} catch {
 					if (mutationOwnerRef.current !== owner || !isCurrentOrigin()) return false
 					conflictsRef.current.add(relativePath)
+					autosavePausedRef.current.add(relativePath)
 					setError(
 						`Cannot save ${relativePath}; the buffer was retained. Files may have changed. Refresh and reconcile before a manual retry; no rollback was attempted.`,
 					)
@@ -1245,7 +1482,9 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				}
 			}
 			parkedRef.current.delete(relativePath)
+			bufferIdsRef.current.delete(relativePath)
 			conflictsRef.current.delete(relativePath)
+			autosavePausedRef.current.delete(relativePath)
 			publishBuffers((version) => version + 1)
 			return true
 		},
@@ -1259,14 +1498,19 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			isSaving ||
 			!workspace ||
 			!activeDocument ||
-			autosaveFailedContentRef.current === content
+			autosavePausedRef.current.has(activeDocument.relativePath) ||
+			conflictsRef.current.has(activeDocument.relativePath)
 		) {
 			return
 		}
 		const timer = window.setTimeout(() => {
 			// A synchronous failure can finish before React publishes the busy state,
 			// leaving this previously scheduled timer alive. Recheck at execution.
-			if (autosaveFailedContentRef.current !== latestContentRef.current) void saveDocument()
+			if (
+				!autosavePausedRef.current.has(activeDocument.relativePath) &&
+				!conflictsRef.current.has(activeDocument.relativePath)
+			)
+				void saveDocument()
 		}, ORG_AUTOSAVE_DELAY_MS)
 		return () => window.clearTimeout(timer)
 	}, [activeDocument, content, isDirty, isLoading, isSaving, saveDocument, workspace])
@@ -1334,7 +1578,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	const createDocument = useCallback(
 		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: creation, editor freshness checks, and parking are one transaction.
 		async (relativePath: string) => {
-			if (!workspace || !isCurrentOrigin() || !relativePath.trim()) {
+			if (!workspace || !isCurrentOrigin() || !relativePath.trim() || saveAllOwnerRef.current) {
 				return
 			}
 			if (dirtyPath(relativePath)) {
@@ -1526,6 +1770,12 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				if (id) {
 					bufferIdsRef.current.set(result.right.relativePath, id)
 				}
+				const wasPaused = autosavePausedRef.current.delete(sourcePath)
+				const hadConflict = conflictsRef.current.delete(sourcePath)
+				autosavePausedRef.current.delete(result.right.relativePath)
+				conflictsRef.current.delete(result.right.relativePath)
+				if (wasPaused) autosavePausedRef.current.add(result.right.relativePath)
+				if (hadConflict) conflictsRef.current.add(result.right.relativePath)
 				parkedRef.current.delete(result.right.relativePath)
 				activationRef.current += 1
 				if (activeRef.current)
@@ -1891,12 +2141,15 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			)
 			if (generationAtDelete !== editGenerationRef.current) {
 				conflictsRef.current.add(sourcePath)
+				autosavePausedRef.current.add(sourcePath)
 				setDirty(true)
 				setError(`The file ${sourcePath} was deleted, but newer editor input was retained.`)
 				return
 			}
 			parkedRef.current.delete(sourcePath)
+			bufferIdsRef.current.delete(sourcePath)
 			conflictsRef.current.delete(sourcePath)
+			autosavePausedRef.current.delete(sourcePath)
 			activationRef.current += 1
 			activeRef.current = null
 			setActiveDocument(null)
@@ -1930,6 +2183,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		error,
 		isDirty,
 		isLoading: isLoading || !nativeCloseReady,
+		isEditorReadOnly: isLoading || !nativeCloseReady || (isSaving && !saveInFlightRef.current),
 		isSaving,
 		migrateLegacyWorkspace,
 		migrationStatus,
@@ -1939,6 +2193,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		openDocument,
 		openDocumentAt,
 		openDocumentPath,
+		switchBuffer,
 		openOrgLink,
 		rebuildDerivedIndex,
 		refileSubtree,
@@ -1946,6 +2201,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		revealTarget,
 		runLegacyRecoveryDrill,
 		saveDocument,
+		saveAllDocuments,
 		selectWorkspace,
 		updateContent,
 		verifyLegacyMigration,

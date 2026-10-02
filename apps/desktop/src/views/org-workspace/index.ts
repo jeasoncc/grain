@@ -13,5 +13,6 @@ export { OrgCommandPalette, orgCommandIcons } from "./org-command-palette.view.f
 export { OrgDocumentPane } from "./org-document-pane.view.fn"
 export { OrgInspector } from "./org-inspector.view.fn"
 export { OrgQuickOpen } from "./org-quick-open.view.fn"
+export { OrgBufferSwitch, type OrgBufferSwitchProps } from "./org-buffer-switch.view.fn"
 export { OrgWorkspaceContainer } from "./org-workspace.container.fn"
 export { OrgWorkspaceRibbon } from "./org-workspace-ribbon.view.fn"

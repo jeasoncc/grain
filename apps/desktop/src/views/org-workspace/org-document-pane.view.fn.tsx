@@ -304,7 +304,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 							onDeadline={(position) => openMetadataCommand("deadline", position)}
 							onSetProperty={(position) => openMetadataCommand("property", position)}
 							onSave={() => void controller.saveDocument()}
-							readOnly={isBusy}
+							readOnly={controller.isEditorReadOnly ?? isBusy}
 							revealTarget={
 								controller.revealTarget?.relativePath === controller.activeDocument.relativePath
 									? controller.revealTarget
