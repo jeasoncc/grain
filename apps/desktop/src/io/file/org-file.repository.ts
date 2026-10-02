@@ -51,13 +51,16 @@ export type InvokeCommand = <Result>(
 export interface OrgFileRepository {
 	readonly clearDerivedIndex: (
 		workspaceRoot: string,
+		capabilityToken?: string,
 	) => TE.TaskEither<OrgFileError, OrgDerivedIndexStats>
 	readonly getDerivedIndexStats: (
 		workspaceRoot: string,
+		capabilityToken?: string,
 	) => TE.TaskEither<OrgFileError, OrgDerivedIndexStats>
 	readonly replaceDerivedIndex: (
 		workspaceRoot: string,
 		payload: OrgDerivedIndexInput,
+		capabilityToken?: string,
 	) => TE.TaskEither<OrgFileError, OrgDerivedIndexStats>
 	readonly createDirectory: (input: CreateOrgDirectoryInput) => TE.TaskEither<OrgFileError, void>
 	readonly deleteDocument: (input: DeleteOrgDocumentInput) => TE.TaskEither<OrgFileError, void>
@@ -67,20 +70,30 @@ export interface OrgFileRepository {
 	readonly openDefaultWorkspace: () => TE.TaskEither<OrgFileError, OrgWorkspaceInterface>
 	readonly reopenDefaultWorkspace: () => TE.TaskEither<OrgFileError, OrgWorkspaceInterface | null>
 	readonly selectWorkspace: () => TE.TaskEither<OrgFileError, OrgWorkspaceInterface | null>
-	readonly releaseWorkspace: (workspaceRoot: string) => TE.TaskEither<OrgFileError, void>
+	readonly releaseWorkspace: (
+		workspaceRoot: string,
+		capabilityToken?: string,
+	) => TE.TaskEither<OrgFileError, void>
 	readonly scanWorkspace: (
 		workspaceRoot: string,
+		capabilityToken?: string,
 	) => TE.TaskEither<OrgFileError, OrgWorkspaceScanInterface>
 	readonly watchWorkspace: (
 		workspaceRoot: string,
+		capabilityToken?: string,
 	) => TE.TaskEither<OrgFileError, OrgWorkspaceWatchToken>
-	readonly unwatchWorkspace: (token: OrgWorkspaceWatchToken) => TE.TaskEither<OrgFileError, void>
+	readonly unwatchWorkspace: (
+		token: OrgWorkspaceWatchToken,
+		workspaceRoot?: string,
+		capabilityToken?: string,
+	) => TE.TaskEither<OrgFileError, void>
 	readonly readDocument: (
 		input: OpenOrgDocumentInput,
 	) => TE.TaskEither<OrgFileError, OrgDocumentInterface>
 	readonly readMigrationRecovery: (
 		workspaceRoot: string,
 		manifestRelativePath: string,
+		capabilityToken?: string,
 	) => TE.TaskEither<OrgFileError, OrgMigrationRecoveryBundleInterface>
 	readonly writeDocument: (
 		document: WriteOrgDocumentInput,
@@ -123,44 +136,53 @@ const invokeTask = <Result>(
 		(cause) => mapCommandError(operation, command, cause),
 	)
 
+// Omit absent grants for legacy fixtures; native commands enforce approval.
+const capabilityPayload = (capabilityToken?: string): Record<string, unknown> =>
+	capabilityToken === undefined ? {} : { capabilityToken }
+
 /** Creates a repository whose only side effect is the supplied Tauri command invoker. */
 export const createOrgFileRepository = (
 	invokeCommand: InvokeCommand = invoke,
 ): OrgFileRepository => ({
-	clearDerivedIndex: (workspaceRoot) =>
+	clearDerivedIndex: (workspaceRoot, capabilityToken) =>
 		invokeTask<OrgDerivedIndexStats>(
 			invokeCommand,
 			"clearDerivedIndex",
 			ORG_FILE_COMMANDS.clearDerivedIndex,
 			{
+				...capabilityPayload(capabilityToken),
 				workspaceRoot,
 			},
 		),
-	createDirectory: ({ workspaceRoot, relativePath }) =>
+	createDirectory: ({ workspaceRoot, relativePath, capabilityToken }) =>
 		invokeTask<void>(invokeCommand, "createDirectory", ORG_FILE_COMMANDS.createDirectory, {
+			...capabilityPayload(capabilityToken),
 			relativePath,
 			workspaceRoot,
 		}),
-	deleteDocument: ({ workspaceRoot, relativePath, expectedRevision }) =>
+	deleteDocument: ({ workspaceRoot, relativePath, expectedRevision, capabilityToken }) =>
 		invokeTask<void>(invokeCommand, "delete", ORG_FILE_COMMANDS.delete, {
+			...capabilityPayload(capabilityToken),
 			expectedRevision,
 			relativePath,
 			workspaceRoot,
 		}),
-	getDerivedIndexStats: (workspaceRoot) =>
+	getDerivedIndexStats: (workspaceRoot, capabilityToken) =>
 		invokeTask<OrgDerivedIndexStats>(
 			invokeCommand,
 			"getDerivedIndexStats",
 			ORG_FILE_COMMANDS.getDerivedIndexStats,
-			{ workspaceRoot },
+			{ ...capabilityPayload(capabilityToken), workspaceRoot },
 		),
 	moveDocument: ({
 		workspaceRoot,
 		sourceRelativePath,
 		targetRelativePath,
 		expectedSourceRevision,
+		capabilityToken,
 	}) =>
 		invokeTask<OrgDocumentWriteResultInterface>(invokeCommand, "move", ORG_FILE_COMMANDS.move, {
+			...capabilityPayload(capabilityToken),
 			expectedSourceRevision,
 			sourceRelativePath,
 			targetRelativePath,
@@ -173,20 +195,32 @@ export const createOrgFileRepository = (
 			ORG_FILE_COMMANDS.openDefault,
 			{},
 		),
-	readDocument: ({ workspaceRoot, relativePath }) =>
+	readDocument: ({ workspaceRoot, relativePath, capabilityToken }) =>
 		invokeTask<OrgDocumentInterface>(invokeCommand, "read", ORG_FILE_COMMANDS.read, {
+			...capabilityPayload(capabilityToken),
 			relativePath,
 			workspaceRoot,
 		}),
-	readMigrationRecovery: (workspaceRoot, manifestRelativePath) =>
+	readMigrationRecovery: (workspaceRoot, manifestRelativePath, capabilityToken) =>
 		invokeTask<OrgMigrationRecoveryBundleInterface>(
 			invokeCommand,
 			"readMigrationRecovery",
 			ORG_FILE_COMMANDS.readMigrationRecovery,
-			{ manifestRelativePath, workspaceRoot },
+			{ ...capabilityPayload(capabilityToken), manifestRelativePath, workspaceRoot },
 		),
-	releaseWorkspace: (workspaceRoot) =>
-		invokeTask<void>(invokeCommand, "release", ORG_FILE_COMMANDS.release, { workspaceRoot }),
+	releaseWorkspace: (workspaceRoot, capabilityToken) =>
+		capabilityToken
+			? invokeTask<void>(invokeCommand, "release", ORG_FILE_COMMANDS.release, {
+					capabilityToken,
+					workspaceRoot,
+				})
+			: TE.left(
+					mapCommandError(
+						"release",
+						ORG_FILE_COMMANDS.release,
+						"Missing workspace capability token",
+					),
+				),
 	reopenDefaultWorkspace: () =>
 		invokeTask<OrgWorkspaceInterface | null>(
 			invokeCommand,
@@ -194,48 +228,56 @@ export const createOrgFileRepository = (
 			ORG_FILE_COMMANDS.reopenDefault,
 			{},
 		),
-	replaceDerivedIndex: (workspaceRoot, payload) =>
+	replaceDerivedIndex: (workspaceRoot, payload, capabilityToken) =>
 		invokeTask<OrgDerivedIndexStats>(
 			invokeCommand,
 			"replaceDerivedIndex",
 			ORG_FILE_COMMANDS.replaceDerivedIndex,
 			{
+				...capabilityPayload(capabilityToken),
 				payload,
 				workspaceRoot,
 			},
 		),
-	scanWorkspace: (workspaceRoot) =>
+	scanWorkspace: (workspaceRoot, capabilityToken) =>
 		invokeTask<OrgWorkspaceScanInterface>(invokeCommand, "scan", ORG_FILE_COMMANDS.scan, {
+			...capabilityPayload(capabilityToken),
 			workspaceRoot,
 		}),
 	selectWorkspace: () =>
 		invokeTask<OrgWorkspaceInterface | null>(invokeCommand, "select", ORG_FILE_COMMANDS.select, {}),
-	unwatchWorkspace: (token) =>
-		invokeTask<void>(invokeCommand, "unwatch", ORG_FILE_COMMANDS.unwatch, { token }),
-	verifyMigration: ({ workspaceRoot, verificationPath, expectedArtifacts }) =>
+	unwatchWorkspace: (token, workspaceRoot, capabilityToken) =>
+		invokeTask<void>(invokeCommand, "unwatch", ORG_FILE_COMMANDS.unwatch, {
+			...capabilityPayload(capabilityToken),
+			...(workspaceRoot === undefined ? {} : { workspaceRoot }),
+			token,
+		}),
+	verifyMigration: ({ workspaceRoot, verificationPath, expectedArtifacts, capabilityToken }) =>
 		invokeTask<OrgMigrationVerificationResultInterface>(
 			invokeCommand,
 			"verifyMigration",
 			ORG_FILE_COMMANDS.verifyMigration,
-			{ expectedArtifacts, verificationPath, workspaceRoot },
+			{ ...capabilityPayload(capabilityToken), expectedArtifacts, verificationPath, workspaceRoot },
 		),
-	watchWorkspace: (workspaceRoot) =>
+	watchWorkspace: (workspaceRoot, capabilityToken) =>
 		invokeTask<OrgWorkspaceWatchToken>(invokeCommand, "watch", ORG_FILE_COMMANDS.watch, {
+			...capabilityPayload(capabilityToken),
 			workspaceRoot,
 		}),
-	writeDocument: ({ workspaceRoot, relativePath, content, expectedRevision }) =>
+	writeDocument: ({ workspaceRoot, relativePath, content, expectedRevision, capabilityToken }) =>
 		invokeTask<OrgDocumentWriteResultInterface>(invokeCommand, "write", ORG_FILE_COMMANDS.write, {
+			...capabilityPayload(capabilityToken),
 			content,
 			expectedRevision,
 			relativePath,
 			workspaceRoot,
 		}),
-	writeMigration: ({ workspaceRoot, directories, artifacts }) =>
+	writeMigration: ({ workspaceRoot, directories, artifacts, capabilityToken }) =>
 		invokeTask<OrgMigrationWriteResultInterface>(
 			invokeCommand,
 			"writeMigration",
 			ORG_FILE_COMMANDS.writeMigration,
-			{ artifacts, directories, workspaceRoot },
+			{ ...capabilityPayload(capabilityToken), artifacts, directories, workspaceRoot },
 		),
 })
 

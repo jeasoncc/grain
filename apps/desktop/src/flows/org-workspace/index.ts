@@ -12,6 +12,7 @@ export {
 	type LegacyMigrationRecoveryDrillResult,
 	type LegacyMigrationRecoveryMismatchCause,
 	type LegacyMigrationVerificationMismatchCause,
+	type LegacyMigrationWorkspace,
 	migrateLegacyWorkspaceFlow,
 	prepareLegacyMigrationFlow,
 	type RecoveredLegacyContentRow,

@@ -21,6 +21,7 @@ import { createOrgPlanningCommand } from "@/flows/org-command/org-planning.comma
 import { orgPropertyBufferCommand } from "@/flows/org-command/org-property.command"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
 import { OrgEditor, type OrgEditorCommandTarget } from "@/views/org-editor"
+import type { OrgEditorSessionSnapshot } from "@/views/org-editor/org-editor.types"
 import { Button } from "@/views/ui/button"
 import {
 	DropdownMenu,
@@ -56,6 +57,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	openDocumentPaths,
 	sidebarVisible,
 	parameterSessionSuspended = false,
+	editorSessionCache,
 }: {
 	readonly canGoBack: boolean
 	readonly canGoForward: boolean
@@ -72,6 +74,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	readonly openDocumentPaths: readonly string[]
 	readonly sidebarVisible: boolean
 	readonly parameterSessionSuspended?: boolean
+	readonly editorSessionCache?: Map<string, OrgEditorSessionSnapshot>
 }) {
 	const [cursor, setCursor] = useState(0)
 	const [prefix, setPrefix] = useState<OrgPrefixSession | null>(null)
@@ -139,11 +142,12 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 						<div className="flex min-w-0 flex-1 self-stretch overflow-x-auto">
 							{openDocumentPaths.map((path) => {
 								const active = path === controller.activeDocument?.relativePath
+								const buffer = controller.openBuffers?.find((item) => item.relativePath === path)
 								return (
 									<div
 										key={path}
 										className={`group relative flex min-w-32 max-w-56 items-center border-r px-2 transition-colors duration-150 ${active ? "bg-background text-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-primary" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"}`}
-										title={path}
+										title={`${path}${buffer?.isDirty ? " — unsaved" : ""}${buffer?.hasConflict ? " — external conflict" : ""}`}
 									>
 										<button
 											type="button"
@@ -155,7 +159,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 												.at(-1)
 												?.replace(/\.org$/i, "")}
 										</button>
-										{active && controller.isDirty && (
+										{(buffer?.isDirty ?? (active && controller.isDirty)) && (
 											<>
 												<span
 													aria-hidden="true"
@@ -271,10 +275,16 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 					</div>
 					<div className="min-h-0 flex-1 bg-background">
 						<OrgEditor
-							key={controller.activeDocument.relativePath}
+							key={controller.activeBufferId ?? controller.activeDocument.relativePath}
+							sessionKey={
+								controller.workspaceSessionId && controller.activeBufferId
+									? `${controller.workspaceSessionId}\u0000${controller.activeBufferId}`
+									: undefined
+							}
+							sessionCache={editorSessionCache}
 							ariaLabel={`Editing ${controller.activeDocument.relativePath}`}
 							documentPath={controller.activeDocument.relativePath}
-							prefixContextKey={`${controller.workspace?.rootPath ?? ""}\u0000${controller.activeDocument.relativePath}`}
+							prefixContextKey={`${controller.workspaceSessionId ?? ""}\u0000${controller.workspace?.rootPath ?? ""}\u0000${controller.activeBufferId ?? ""}\u0000${controller.activeDocument.relativePath}`}
 							onPrefixChange={setPrefix}
 							value={controller.content}
 							onChange={controller.updateContent}

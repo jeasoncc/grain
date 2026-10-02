@@ -62,6 +62,41 @@ const input = {
 }
 
 describe("refileOrgSubtreeFlow", () => {
+	it.each(["synthetic-refile-capability", undefined])(
+		"forwards capability %s through every refile/archive scan, read, and write",
+		async (capabilityToken) => {
+			for (const archive of [false, true]) {
+				for (const targetExists of [false, true]) {
+					const targetPath = archive ? "source_archive.org" : "target.org"
+					let target = { content: "", relativePath: targetPath, revision: "target-r1" }
+					const scanWorkspace = vi.fn<OrgFileRepository["scanWorkspace"]>(() =>
+						TE.right({ directories: [], documents: targetExists ? [target] : [] }),
+					)
+					const readDocument = vi.fn<OrgFileRepository["readDocument"]>(() => TE.right(target))
+					const writeDocument = vi.fn<OrgFileRepository["writeDocument"]>((request) => {
+						if (request.relativePath === targetPath) {
+							target = { content: request.content, relativePath: targetPath, revision: "written" }
+						}
+						return TE.right({ relativePath: request.relativePath, revision: "written" })
+					})
+					const repository = repositoryWith({ scanWorkspace, readDocument, writeDocument })
+					const request = { ...input, capabilityToken }
+					const result = await (archive
+						? archiveOrgSubtreeFlow(request, repository)
+						: refileOrgSubtreeFlow(request, repository))()
+					expect(result).toHaveProperty("_tag", "Right")
+					expect(scanWorkspace).toHaveBeenCalledExactlyOnceWith("/notes", capabilityToken)
+					expect(readDocument).toHaveBeenCalledTimes(targetExists ? 2 : 1)
+					expect(writeDocument).toHaveBeenCalledTimes(2)
+					for (const [operation] of [...readDocument.mock.calls, ...writeDocument.mock.calls]) {
+						expect(operation.capabilityToken).toBe(capabilityToken)
+						expect(operation.workspaceRoot).toBe("/notes")
+					}
+				}
+			}
+		},
+	)
+
 	it("reads an existing target, writes the appended copy first, then removes the exact source range", async () => {
 		const calls: string[] = []
 		let targetRead = 0
@@ -289,18 +324,21 @@ describe("refileOrgSubtreeFlow", () => {
 		[{ targetRelativePath: "SOURCE.org" }, "different"],
 		[{ targetRelativePath: "https://example.test/target.org" }, "target"],
 		[{ cursor: input.sourceContent.indexOf("body") }, "heading"],
-	])("validates paths, distinct documents, and heading cursor before IO", async (change, message) => {
-		const scanWorkspace = vi.fn(() => TE.right(snapshot))
-		const result = await refileOrgSubtreeFlow(
-			{ ...input, ...change },
-			repositoryWith({ scanWorkspace }),
-		)()
+	])(
+		"validates paths, distinct documents, and heading cursor before IO",
+		async (change, message) => {
+			const scanWorkspace = vi.fn(() => TE.right(snapshot))
+			const result = await refileOrgSubtreeFlow(
+				{ ...input, ...change },
+				repositoryWith({ scanWorkspace }),
+			)()
 
-		expect(result._tag).toBe("Left")
-		if (result._tag === "Left") {
-			expect(result.left.type).toBe("ORG_SUBTREE_REFILE_VALIDATION_ERROR")
-			expect(result.left.message).toContain(message)
-		}
-		expect(scanWorkspace).not.toHaveBeenCalled()
-	})
+			expect(result._tag).toBe("Left")
+			if (result._tag === "Left") {
+				expect(result.left.type).toBe("ORG_SUBTREE_REFILE_VALIDATION_ERROR")
+				expect(result.left.message).toContain(message)
+			}
+			expect(scanWorkspace).not.toHaveBeenCalled()
+		},
+	)
 })

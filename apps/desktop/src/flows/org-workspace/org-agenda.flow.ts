@@ -98,6 +98,9 @@ export const loadOrgAgendaFlow =
 			const opened = await repository.readDocument({
 				relativePath: documentEntry.relativePath,
 				workspaceRoot: workspace.rootPath,
+				...(workspace.capabilityToken === undefined
+					? {}
+					: { capabilityToken: workspace.capabilityToken }),
 			})()
 			if (E.isLeft(opened)) {
 				return E.left({

@@ -29,7 +29,7 @@ const backupMetadataGenerator = fc.record({
 	nodeCount: fc.integer({ max: 1000, min: 0 }),
 	projectCount: fc.integer({ max: 100, min: 0 }),
 	tagCount: fc.integer({ max: 50, min: 0 }),
-	timestamp: fc.date().map((d) => d.toISOString()),
+	timestamp: fc.date({ noInvalidDate: true }).map((d) => d.toISOString()),
 	version: fc.constantFrom("5.0.0", "4.0.0", "3.0.0"),
 }) as fc.Arbitrary<BackupMetadata>
 
@@ -52,7 +52,7 @@ const backupDataGenerator = fc.record({
 }) as fc.Arbitrary<BackupData>
 
 const backupInfoGenerator = fc.record({
-	createdAt: fc.date().map((d) => d.getTime()),
+	createdAt: fc.date({ noInvalidDate: true }).map((d) => d.getTime()),
 	filename: fc.string({ maxLength: 100, minLength: 1 }).map((s) => `backup_${s}.json`),
 	path: fc.string({ maxLength: 200, minLength: 1 }).map((s) => `/path/to/${s}`),
 	size: fc.integer({ max: 1000000, min: 1 }),
@@ -60,7 +60,7 @@ const backupInfoGenerator = fc.record({
 
 const localBackupRecordGenerator = fc.record({
 	data: backupDataGenerator,
-	timestamp: fc.date().map((d) => d.toISOString()),
+	timestamp: fc.date({ noInvalidDate: true }).map((d) => d.toISOString()),
 }) as fc.Arbitrary<LocalBackupRecord>
 
 describe("Property Test: Backup Data Integrity", () => {

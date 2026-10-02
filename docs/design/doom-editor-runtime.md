@@ -120,8 +120,9 @@ candidate navigation alone never previews or switches the real buffer.
 
 Cancellation restores origin focus. Successful command execution restores origin
 before handing off to the selected action; successful Quick Open focuses the
-opened editor only if its workspace/path remain current. Path tabs still do not
-constitute independent buffers. Buffer Switch, multi-window ownership and
+opened editor only if its workspace/path remain current. S2b path tabs initially
+were navigation only; the S4a memory buffer handoff below now retains independent
+source/history. Buffer Switch, multi-window ownership and
 asynchronous workspace-wide completion remain unfinished; initial Org prefix
 Which-Key discovery is implemented in S2d below.
 
@@ -208,15 +209,60 @@ Tauri input/focus, extension compatibility and measured workload performance rem
 unverified. Neither Evil defaults nor a full buffer/window architecture are
 approved by passing synthetic probes alone.
 
+## S4a: independent memory buffers and real native grant authority
+
+The active controller/editor path remains the only active writer. Successful
+navigation atomically parks the previous baseline/working source; the parked
+snapshot is the sole inactive body authority. Navigation does not force-save.
+Reactivation preserves dirty source even when disk changed or disappeared. Clean
+reactivation reads fresh disk source. All callbacks bind grant, activation and path;
+request/edit generations also guard async commits and ABA cases.
+
+Each logical buffer keeps an immutable CodeMirror EditorState/undo/selection plus
+scroll in a memory-only rendering cache. Exact raw-source equality is required to
+reuse it; public reconfiguration installs fresh closures, compartments and labels.
+Cache contents never commit body or write files. Grants/closed buffers prune it;
+no prefix, focus, timer, modal-engine state or recovery journal is retained. Scroll
+restoration yields to reveal, replacement and newer interaction.
+
+Native approvals now mint exact leases. Every filesystem/index/watch operation
+validates its originating live token **before** acquiring the retained descriptor.
+An acquired descriptor never retargets after revocation; a stale queued token
+cannot acquire a new same-root grant. Multiple same-inode approvals share an
+immutable retained root; inode replacement is rejected while leases exist.
+Releasing a stale lease cannot revoke another grant or its watches. Linux watches
+bind descriptors; non-Linux watching fails closed, with active-document polling
+and manual workspace refresh retained.
+
+Native close checks live aggregate dirty/busy state. Editing/mutations wait until
+close-listener registration succeeds; failed registration leaves editing blocked
+with an error. Discard confirmation is explicit; an ongoing file operation is not
+cancelled by close. Every owned mutation uses owner-checked exception cleanup;
+uncertain failures preserve source and require review, not rollback/blind retry.
+Capability tokens belong to the approved Org target, never legacy DB metadata.
+
+Six real hook/pane/CodeMirror integration cases verify independent A/B dirty
+source, history/cursor/scroll, save callback rebinding, Agenda-style remount,
+failed inactive close, external conflict and same-root new-grant isolation.
+Full desktop suite: 137 files / 2024 cases; Rust: 201 cases; typecheck/build pass.
+These are automated evidence, not Chinese IME or native desktop UX acceptance.
+
+Still missing: Buffer Switch command, save-all/background inactive autosave,
+shared-buffer windows/projection effects, restart recovery and modal-engine
+adoption. The pure buffer lifecycle protocol is tested separately; it is not a
+claim that the full canonical multi-window engine has replaced this handoff.
+
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.
 2. Validate existing Vim extensions, IME, undo/registers/macros and text-object APIs.
-3. Validate independent dirty buffers, multiple windows and revision conflicts.
+3. Extend the verified one-active-view memory handoff to explicit buffer switching,
+   save-all and multiple windows, with extension effects/selection ownership guards.
 4. Establish shared source-range Org semantics and measured large-file behavior.
 5. Promote the command/session host; migrate planning/properties, Quick Open,
    Refile and Capture one workflow at a time.
-6. Introduce keymap/Which-Key and buffer/window models after experiments.
+6. Generalize the existing Org Which-Key layer into configurable scoped keymaps;
+   finish buffer/window ownership without importing the lossy Vim probe policy.
 7. Add declarative configuration before arbitrary high-privilege scripts.
 
 Do not equate outline filtering with body sparse-tree visibility, basic TODO

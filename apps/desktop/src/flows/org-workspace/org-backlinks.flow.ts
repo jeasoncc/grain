@@ -154,6 +154,9 @@ export const loadOrgBacklinksFlow =
 					const opened = await repository.readDocument({
 						relativePath: document.relativePath,
 						workspaceRoot: workspace.rootPath,
+						...(workspace.capabilityToken === undefined
+							? {}
+							: { capabilityToken: workspace.capabilityToken }),
 					})()
 					if (E.isLeft(opened)) {
 						return E.left({

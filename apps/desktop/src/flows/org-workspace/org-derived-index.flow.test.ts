@@ -184,6 +184,6 @@ describe("Org derived index workspace flow", () => {
 		expect(result).toEqual(
 			E.right({ agendaCount: 0, documentCount: 0, headingCount: 0, linkCount: 0 }),
 		)
-		expect(clearDerivedIndex).toHaveBeenCalledWith("/notes")
+		expect(clearDerivedIndex).toHaveBeenCalledWith("/notes", undefined)
 	})
 })

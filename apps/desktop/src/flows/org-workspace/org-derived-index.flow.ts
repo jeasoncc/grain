@@ -102,6 +102,9 @@ export const rebuildOrgDerivedIndexFlow =
 			const opened = await repository.readDocument({
 				relativePath: scanned.relativePath,
 				workspaceRoot: workspace.rootPath,
+				...(workspace.capabilityToken === undefined
+					? {}
+					: { capabilityToken: workspace.capabilityToken }),
 			})()
 			if (E.isLeft(opened)) {
 				return opened
@@ -120,7 +123,11 @@ export const rebuildOrgDerivedIndexFlow =
 			)
 		}
 		const payload = aggregateOrgDerivedIndexDocuments(indexes)
-		const replaced = await repository.replaceDerivedIndex(workspace.rootPath, payload)()
+		const replaced = await repository.replaceDerivedIndex(
+			workspace.rootPath,
+			payload,
+			workspace.capabilityToken,
+		)()
 		if (E.isLeft(replaced)) {
 			return replaced
 		}
@@ -134,10 +141,15 @@ export const rebuildOrgDerivedIndexFlow =
 export const clearOrgDerivedIndexFlow =
 	(
 		workspaceRoot: string,
+		capabilityTokenOrRepository?: string | OrgFileRepository,
 		repository: OrgFileRepository = orgFileRepository,
 	): (() => Promise<E.Either<OrgDerivedIndexFlowError, OrgDerivedIndexStats>>) =>
 	async () => {
-		const cleared = await repository.clearDerivedIndex(workspaceRoot)()
+		const capabilityToken =
+			typeof capabilityTokenOrRepository === "string" ? capabilityTokenOrRepository : undefined
+		const selectedRepository =
+			typeof capabilityTokenOrRepository === "object" ? capabilityTokenOrRepository : repository
+		const cleared = await selectedRepository.clearDerivedIndex(workspaceRoot, capabilityToken)()
 		if (E.isLeft(cleared)) {
 			return cleared
 		}

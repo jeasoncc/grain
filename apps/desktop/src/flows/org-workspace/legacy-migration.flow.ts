@@ -20,6 +20,8 @@ import type {
 } from "@/types/org"
 import type { WorkspaceInterface } from "@/types/workspace"
 
+export type LegacyMigrationWorkspace = WorkspaceInterface
+
 export type LegacyMigrationFlowError =
 	| {
 			readonly type: "LEGACY_MIGRATION_ERROR"
@@ -181,7 +183,7 @@ const recoveryDependencies: LegacyMigrationRecoveryDependencies = {
 
 /** Load one consistent legacy snapshot and turn it into a deterministic, side-effect-free plan. */
 export const prepareLegacyMigrationFlow = (
-	workspace: WorkspaceInterface,
+	workspace: LegacyMigrationWorkspace,
 	dependencies: LegacyMigrationPreparationDependencies = preparationDependencies,
 ): TE.TaskEither<LegacyMigrationFlowError, LegacyMigrationPlan> =>
 	pipe(
@@ -208,9 +210,15 @@ const verifyExpectedArtifacts = (
 	verificationPath: string,
 	expectedArtifacts: readonly OrgMigrationArtifactSummaryInterface[],
 	repository: OrgFileRepository,
+	capabilityToken?: string,
 ): TE.TaskEither<LegacyMigrationFlowError, OrgMigrationVerificationResultInterface> =>
 	pipe(
-		repository.verifyMigration({ expectedArtifacts, verificationPath, workspaceRoot }),
+		repository.verifyMigration({
+			capabilityToken,
+			expectedArtifacts,
+			verificationPath,
+			workspaceRoot,
+		}),
 		TE.mapLeft(
 			(cause): LegacyMigrationFlowError => ({
 				cause,
@@ -243,14 +251,34 @@ const verifyExpectedArtifacts = (
 	)
 
 /** Install and immediately verify every planned migration artifact. */
-export const executeLegacyMigrationFlow = (
+export function executeLegacyMigrationFlow(
+	workspaceRoot: string,
+	capabilityToken: string | undefined,
+	plan: LegacyMigrationPlan,
+	repository?: OrgFileRepository,
+): TE.TaskEither<LegacyMigrationFlowError, LegacyMigrationCompletedResult>
+export function executeLegacyMigrationFlow(
 	workspaceRoot: string,
 	plan: LegacyMigrationPlan,
-	repository: OrgFileRepository = orgFileRepository,
-): TE.TaskEither<LegacyMigrationFlowError, LegacyMigrationCompletedResult> =>
-	pipe(
+	repository?: OrgFileRepository,
+	capabilityToken?: string,
+): TE.TaskEither<LegacyMigrationFlowError, LegacyMigrationCompletedResult>
+export function executeLegacyMigrationFlow(
+	workspaceRoot: string,
+	planOrToken: LegacyMigrationPlan | string | undefined,
+	planOrRepository?: LegacyMigrationPlan | OrgFileRepository,
+	repositoryOrToken?: OrgFileRepository | string,
+): TE.TaskEither<LegacyMigrationFlowError, LegacyMigrationCompletedResult> {
+	const legacyOrder = typeof planOrToken === "object"
+	const plan = (legacyOrder ? planOrToken : planOrRepository) as LegacyMigrationPlan
+	const capabilityToken = (legacyOrder ? repositoryOrToken : planOrToken) as string | undefined
+	const repository =
+		((legacyOrder ? planOrRepository : repositoryOrToken) as OrgFileRepository | undefined) ??
+		orgFileRepository
+	return pipe(
 		repository.writeMigration({
 			...createLegacyMigrationArtifactPayload(plan),
+			capabilityToken,
 			workspaceRoot,
 		}),
 		TE.mapLeft(
@@ -262,18 +290,26 @@ export const executeLegacyMigrationFlow = (
 		),
 		TE.chainW((write) =>
 			pipe(
-				verifyExpectedArtifacts(workspaceRoot, write.verificationPath, write.artifacts, repository),
+				verifyExpectedArtifacts(
+					workspaceRoot,
+					write.verificationPath,
+					write.artifacts,
+					repository,
+					capabilityToken,
+				),
 				TE.map((verification) => ({ verification, write })),
 			),
 		),
 	)
+}
 
 /** Rebuild and verify a previously written migration after an application restart. */
 export const verifyLegacyMigrationRecoveryFlow = (
-	workspace: WorkspaceInterface,
+	workspace: LegacyMigrationWorkspace,
 	workspaceRoot: string,
 	dependencies: LegacyMigrationRecoveryDependencies = recoveryDependencies,
 	repository: OrgFileRepository = orgFileRepository,
+	capabilityToken?: string,
 ): TE.TaskEither<LegacyMigrationFlowError, LegacyMigrationRecoveryCompletedResult> =>
 	pipe(
 		prepareLegacyMigrationFlow(workspace, dependencies),
@@ -299,6 +335,7 @@ export const verifyLegacyMigrationRecoveryFlow = (
 							`${plan.rootDirectory}/migration-verification.json`,
 							expectedArtifacts,
 							repository,
+							capabilityToken,
 						),
 						TE.map((verification) => ({ expectedArtifacts, verification })),
 					),
@@ -313,10 +350,11 @@ export const verifyLegacyMigrationRecoveryFlow = (
  */
 export const runLegacyMigrationRecoveryDrillFlow =
 	(
-		workspace: WorkspaceInterface,
+		workspace: LegacyMigrationWorkspace,
 		workspaceRoot: string,
 		dependencies: LegacyMigrationRecoveryDependencies = recoveryDependencies,
 		repository: OrgFileRepository = orgFileRepository,
+		capabilityToken?: string,
 	): TE.TaskEither<LegacyMigrationFlowError, LegacyMigrationRecoveryDrillResult> =>
 	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: preparation, hash verification, capability reads, and exact reconciliation form one audit transaction.
 	async () => {
@@ -346,12 +384,17 @@ export const runLegacyMigrationRecoveryDrillFlow =
 			`${plan.rootDirectory}/migration-verification.json`,
 			expectedArtifacts,
 			repository,
+			capabilityToken,
 		)()
 		if (E.isLeft(verified)) {
 			return verified
 		}
 		const manifestPath = plan.manifestPath
-		const bundle = await repository.readMigrationRecovery(workspaceRoot, manifestPath)()
+		const bundle = await repository.readMigrationRecovery(
+			workspaceRoot,
+			manifestPath,
+			capabilityToken,
+		)()
 		if (E.isLeft(bundle)) {
 			return E.left({
 				cause: bundle.left,
@@ -436,10 +479,11 @@ export const areLegacyMigrationPlansEquivalent = (
 /** Prepare, source-recheck, publish, and post-check one complete legacy migration. */
 export const migrateLegacyWorkspaceFlow =
 	(
-		workspace: WorkspaceInterface,
+		workspace: LegacyMigrationWorkspace,
 		workspaceRoot: string,
 		dependencies: LegacyMigrationPreparationDependencies = preparationDependencies,
 		repository: OrgFileRepository = orgFileRepository,
+		capabilityToken?: string,
 	): TE.TaskEither<LegacyMigrationFlowError, LegacyMigrationCompletedResult> =>
 	async () => {
 		const initial = await prepareLegacyMigrationFlow(workspace, dependencies)()
@@ -460,7 +504,12 @@ export const migrateLegacyWorkspaceFlow =
 				type: "LEGACY_MIGRATION_ERROR",
 			})
 		}
-		const migrated = await executeLegacyMigrationFlow(workspaceRoot, current.right, repository)()
+		const migrated = await executeLegacyMigrationFlow(
+			workspaceRoot,
+			capabilityToken,
+			current.right,
+			repository,
+		)()
 		if (E.isLeft(migrated)) {
 			return migrated
 		}

@@ -53,7 +53,7 @@ export const captureOrgTodoFlow = (
 		return TE.left(captureValidationError("Org capture target must be a relative .org path."))
 	}
 	return pipe(
-		repository.scanWorkspace(input.workspaceRoot),
+		repository.scanWorkspace(input.workspaceRoot, input.capabilityToken),
 		TE.chain((snapshot) => {
 			const exists = snapshot.documents.some(
 				(document) => document.relativePath === input.relativePath,
@@ -70,6 +70,9 @@ export const captureOrgTodoFlow = (
 			const content = appendOrgTodoCapture(document.content, input.title)
 			return pipe(
 				repository.writeDocument({
+					...(input.capabilityToken === undefined
+						? {}
+						: { capabilityToken: input.capabilityToken }),
 					content,
 					expectedRevision: document.revision,
 					relativePath: input.relativePath,
@@ -84,12 +87,22 @@ export const captureOrgTodoFlow = (
 /** Scan a known filesystem path without reading or changing application state. */
 export const scanOrgWorkspaceFlow = (
 	rootPath: string,
+	capabilityTokenOrRepository?: string | OrgFileRepository,
 	repository: OrgFileRepository = orgFileRepository,
-): TE.TaskEither<OrgFileError, OrgWorkspaceInterface> =>
-	pipe(
-		repository.scanWorkspace(rootPath),
-		TE.map((snapshot) => ({ ...snapshot, rootPath })),
+): TE.TaskEither<OrgFileError, OrgWorkspaceInterface> => {
+	const capabilityToken =
+		typeof capabilityTokenOrRepository === "string" ? capabilityTokenOrRepository : undefined
+	const selectedRepository =
+		typeof capabilityTokenOrRepository === "object" ? capabilityTokenOrRepository : repository
+	return pipe(
+		selectedRepository.scanWorkspace(rootPath, capabilityToken),
+		TE.map((snapshot) => ({
+			...snapshot,
+			rootPath,
+			...(capabilityToken === undefined ? {} : { capabilityToken }),
+		})),
 	)
+}
 
 /** Create or open the fixed Documents/Grain workspace at the trusted Tauri boundary. */
 export const openDefaultOrgWorkspaceFlow = (

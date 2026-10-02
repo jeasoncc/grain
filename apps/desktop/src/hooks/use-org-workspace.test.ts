@@ -1,16 +1,36 @@
+import { useBlocker } from "@tanstack/react-router"
 import { act, cleanup, renderHook } from "@testing-library/react"
 import * as E from "fp-ts/Either"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
 	archiveOrgSubtreeFlow,
+	clearOrgDerivedIndexFlow,
+	createOrgDirectoryFlow,
+	deleteOrgDocumentFlow,
+	prepareLegacyMigrationFlow,
+	verifyLegacyMigrationRecoveryFlow,
+	runLegacyMigrationRecoveryDrillFlow,
+	rebuildOrgDerivedIndexFlow,
+	resolveOrgLinkTargetFlow,
+	selectOrgWorkspaceFlow,
+	captureOrgTodoFlow,
+	moveOrgDocumentFlow,
 	ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
-	refileOrgSubtreeFlow,
 	openDefaultOrgWorkspaceFlow,
 	openOrgDocumentFlow,
+	refileOrgSubtreeFlow,
 	saveOrgDocumentFlow,
+	scanOrgWorkspaceFlow,
 } from "@/flows/org-workspace"
-import type { OrgSubtreeTransferOutcome } from "./use-org-workspace"
+import {
+	releaseOrgWorkspace,
+	watchOrgWorkspace,
+	unwatchOrgWorkspace,
+} from "@/io/file/org-file.repository"
+import type { WorkspaceInterface } from "@/types/workspace"
 import type { OrgDocumentInterface, OrgWorkspaceInterface } from "@/types/org"
+import type { OrgSubtreeTransferOutcome } from "./use-org-workspace"
+import * as orgWindowClose from "./use-org-window-close"
 import {
 	canContinueAfterOrgSave,
 	hasDefaultWorkspacePreference,
@@ -24,20 +44,33 @@ import {
 vi.mock("@tanstack/react-router", () => ({ useBlocker: vi.fn() }))
 vi.mock("@/flows/org-workspace", () => ({
 	archiveOrgSubtreeFlow: vi.fn(),
-	refileOrgSubtreeFlow: vi.fn(),
+	clearOrgDerivedIndexFlow: vi.fn(),
+	createOrgDirectoryFlow: vi.fn(),
+	deleteOrgDocumentFlow: vi.fn(),
+	prepareLegacyMigrationFlow: vi.fn(),
+	verifyLegacyMigrationRecoveryFlow: vi.fn(),
+	runLegacyMigrationRecoveryDrillFlow: vi.fn(),
+	rebuildOrgDerivedIndexFlow: vi.fn(),
+	resolveOrgLinkTargetFlow: vi.fn(),
+	selectOrgWorkspaceFlow: vi.fn(),
+
+	captureOrgTodoFlow: vi.fn(),
+	moveOrgDocumentFlow: vi.fn(),
 	ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE:
 		"The target copy succeeded, but source removal was not confirmed. Treat this as a possible duplicate copy: reread both documents and remove one copy only after verifying that both contain the subtree. No destructive rollback was attempted.",
 	openDefaultOrgWorkspaceFlow: vi.fn(),
 	openOrgDocumentFlow: vi.fn(),
+	refileOrgSubtreeFlow: vi.fn(),
 	saveOrgDocumentFlow: vi.fn(),
+	scanOrgWorkspaceFlow: vi.fn(),
 }))
 vi.mock("@/io/event/org-workspace-event.adapter", () => ({
 	orgWorkspaceEventAdapter: { listen: async () => () => undefined },
 }))
 vi.mock("@/io/file/org-file.repository", () => ({
-	releaseOrgWorkspace: () => async () => E.right(undefined),
-	unwatchOrgWorkspace: () => async () => E.right(undefined),
-	watchOrgWorkspace: () => async () => E.left({ message: "Watching disabled in test" }),
+	releaseOrgWorkspace: vi.fn(() => async () => E.right(undefined)),
+	unwatchOrgWorkspace: vi.fn(() => async () => E.right(undefined)),
+	watchOrgWorkspace: vi.fn(() => async () => E.right("watch-G1")),
 }))
 
 const workspace: OrgWorkspaceInterface = {
@@ -47,6 +80,7 @@ const workspace: OrgWorkspaceInterface = {
 		{ relativePath: "inbox.org", revision: "old" },
 	],
 	rootPath: "/notes",
+	capabilityToken: "G1",
 }
 
 const captured: OrgDocumentInterface = {
@@ -119,12 +153,15 @@ describe("Org subtree transfer outcomes", () => {
 		target: { ...captured, relativePath: "archive.org", revision: "copied" },
 	}
 	const validation = {
-		type: "ORG_SUBTREE_REFILE_VALIDATION_ERROR" as const,
 		message: "Invalid subtree target",
+		type: "ORG_SUBTREE_REFILE_VALIDATION_ERROR" as const,
 	}
 	beforeEach(() => {
 		vi.useFakeTimers()
 		vi.resetAllMocks()
+		vi.mocked(watchOrgWorkspace).mockReturnValue(async () => E.right("watch-G1"))
+		vi.mocked(unwatchOrgWorkspace).mockReturnValue(async () => E.right(undefined))
+		vi.mocked(releaseOrgWorkspace).mockReturnValue(async () => E.right(undefined))
 		window.localStorage.clear()
 		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () => E.right(workspace))
 		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () => E.right(captured))
@@ -173,28 +210,28 @@ describe("Org subtree transfer outcomes", () => {
 		expect(archiveOrgSubtreeFlow).not.toHaveBeenCalled()
 	})
 
-	it.each(["refile", "archive"] as const)(
-		"rejects a same-render content update before %s starts",
-		async (operation) => {
-			const { result } = await setup()
-			await act(async () => {
-				result.current.updateContent("same-render edit")
-				expect(
-					await (operation === "refile"
-						? result.current.refileSubtree(0, "archive.org")
-						: result.current.archiveSubtree(0)),
-				).toEqual({
-					kind: "rejected",
-					message: "Save the current document before refiling or archiving a subtree.",
-				})
+	it.each([
+		"refile",
+		"archive",
+	] as const)("rejects a same-render content update before %s starts", async (operation) => {
+		const { result } = await setup()
+		await act(async () => {
+			result.current.updateContent("same-render edit")
+			expect(
+				await (operation === "refile"
+					? result.current.refileSubtree(0, "archive.org")
+					: result.current.archiveSubtree(0)),
+			).toEqual({
+				kind: "rejected",
+				message: "Save the current document before refiling or archiving a subtree.",
 			})
-			expect(result.current.content).toBe("same-render edit")
-			expect(result.current.activeDocument).toEqual(captured)
-			expect(result.current.isDirty).toBe(true)
-			expect(refileOrgSubtreeFlow).not.toHaveBeenCalled()
-			expect(archiveOrgSubtreeFlow).not.toHaveBeenCalled()
-		},
-	)
+		})
+		expect(result.current.content).toBe("same-render edit")
+		expect(result.current.activeDocument).toEqual(captured)
+		expect(result.current.isDirty).toBe(true)
+		expect(refileOrgSubtreeFlow).not.toHaveBeenCalled()
+		expect(archiveOrgSubtreeFlow).not.toHaveBeenCalled()
+	})
 
 	it.each([
 		"refile",
@@ -233,19 +270,20 @@ describe("Org subtree transfer outcomes", () => {
 
 	it("reports an uncertain target write as partial without claiming persisted revisions", async () => {
 		const { result } = await setup()
-		const message = "Target may contain the subtree. Reread both documents; do not retry automatically."
+		const message =
+			"Target may contain the subtree. Reread both documents; do not retry automatically."
 		vi.mocked(refileOrgSubtreeFlow).mockReturnValueOnce(async () =>
 			E.left({
-				type: "ORG_SUBTREE_REFILE_UNCERTAIN_WRITE_ERROR",
 				cause: {
-					type: "ORG_FILE_ERROR",
-					command: "write_org_document",
-					operation: "write",
 					cause: "unconfirmed write",
+					command: "write_org_document",
 					message: "unconfirmed write",
+					operation: "write",
+					type: "ORG_FILE_ERROR",
 				},
-				targetRelativePath: "archive.org",
 				message,
+				targetRelativePath: "archive.org",
+				type: "ORG_SUBTREE_REFILE_UNCERTAIN_WRITE_ERROR",
 			}),
 		)
 		await act(async () => {
@@ -266,11 +304,11 @@ describe("Org subtree transfer outcomes", () => {
 		const { result } = await setup()
 		vi.mocked(refileOrgSubtreeFlow).mockReturnValueOnce(async () =>
 			E.left({
-				type: "ORG_SUBTREE_REFILE_PARTIAL_ERROR",
+				cause: validation,
 				message: ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
 				recovery: ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
-				cause: validation,
 				target: moved.target,
+				type: "ORG_SUBTREE_REFILE_PARTIAL_ERROR",
 			}),
 		)
 		await act(async () => {
@@ -465,11 +503,11 @@ describe("Org document navigation cancellation", () => {
 		await act(async () => {
 			oldRead.resolve(
 				E.left({
-					type: "ORG_FILE_ERROR",
-					operation: "read",
-					command: "read",
 					cause: null,
+					command: "read",
 					message: "Old read error",
+					operation: "read",
+					type: "ORG_FILE_ERROR",
 				}),
 			)
 			expect(await oldOpening).toBe(false)
@@ -479,11 +517,11 @@ describe("Org document navigation cancellation", () => {
 		await act(async () => {
 			newRead.resolve(
 				E.left({
-					type: "ORG_FILE_ERROR",
-					operation: "read",
-					command: "read",
 					cause: null,
+					command: "read",
 					message: "New read error",
+					operation: "read",
+					type: "ORG_FILE_ERROR",
 				}),
 			)
 			expect(await newOpening).toBe(false)
@@ -499,11 +537,11 @@ describe("Org document navigation cancellation", () => {
 			.mockReturnValueOnce(() => read.promise)
 			.mockReturnValueOnce(async () =>
 				E.left({
-					type: "ORG_FILE_ERROR",
-					operation: "read",
-					command: "read",
 					cause: null,
+					command: "read",
 					message: "New read error",
+					operation: "read",
+					type: "ORG_FILE_ERROR",
 				}),
 			)
 		const controller = new AbortController()
@@ -524,20 +562,15 @@ describe("Org document navigation cancellation", () => {
 		expect(result.current.isLoading).toBe(false)
 	})
 
-	it.each([
-		false,
-		true,
-	])("preserves save commit when canceled while awaiting saving (in-flight: %s)", async (inFlight) => {
+	it("preserves save commit when canceled while awaiting an already in-flight save", async () => {
 		const { result } = await setup()
 		const save = deferred<Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => save.promise)
 		act(() => result.current.updateContent("saved edits"))
 		let saving: Promise<void> | undefined
-		if (inFlight) {
-			act(() => {
-				saving = result.current.saveDocument()
-			})
-		}
+		act(() => {
+			saving = result.current.saveDocument()
+		})
 		const controller = new AbortController()
 		let opening!: Promise<boolean>
 		act(() => {
@@ -567,5 +600,1087 @@ describe("Org document navigation cancellation", () => {
 		expect(result.current.isSaving).toBe(false)
 		expect(result.current.isLoading).toBe(false)
 		expect(result.current.error).toBeNull()
+	})
+})
+
+// Buffer snapshots deliberately contain source/baseline only, not editor undo history.
+describe("independent Org buffers", () => {
+	const a = captured
+	const b = { content: "B baseline", relativePath: "z.org", revision: "z-1" }
+	const fileError = {
+		cause: null,
+		command: "read",
+		message: "Disk conflict or missing file",
+		operation: "read" as const,
+		type: "ORG_FILE_ERROR" as const,
+	}
+	beforeEach(() => {
+		vi.useFakeTimers()
+		vi.resetAllMocks()
+		vi.mocked(watchOrgWorkspace).mockReturnValue(async () => E.right("watch-G1"))
+		vi.mocked(unwatchOrgWorkspace).mockReturnValue(async () => E.right(undefined))
+		vi.mocked(releaseOrgWorkspace).mockReturnValue(async () => E.right(undefined))
+		window.localStorage.clear()
+		vi.spyOn(window, "confirm").mockReturnValue(true)
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () => E.right(workspace))
+		vi.mocked(openOrgDocumentFlow).mockImplementation(
+			(input) => async () => E.right(input.relativePath === a.relativePath ? a : b),
+		)
+		vi.mocked(scanOrgWorkspaceFlow).mockReturnValue(async () => E.right(workspace))
+		vi.mocked(saveOrgDocumentFlow).mockImplementation(
+			(input) => async () => E.right({ relativePath: input.relativePath, revision: "saved" }),
+		)
+	})
+	afterEach(() => {
+		cleanup()
+		vi.restoreAllMocks()
+		vi.useRealTimers()
+	})
+	const setup = async () => {
+		const hook = renderHook(() => useOrgWorkspace())
+		await act(async () => {
+			await hook.result.current.openDefaultWorkspace()
+		})
+		await act(async () => {
+			await hook.result.current.openDocumentPath(a.relativePath)
+		})
+		return hook
+	}
+	const parkDirtyA = async () => {
+		const hook = await setup()
+		act(() => hook.result.current.updateContent("A edits"))
+		await act(async () => {
+			expect(await hook.result.current.openDocumentPath(b.relativePath)).toBe(true)
+		})
+		return hook
+	}
+
+	const legacyWorkspace = { id: "legacy", title: "Legacy" } as WorkspaceInterface
+	const throwingOperations = [
+		{
+			name: "migration first prepare",
+			flow: prepareLegacyMigrationFlow,
+			run: (controller: ReturnType<typeof useOrgWorkspace>) =>
+				controller.migrateLegacyWorkspace(legacyWorkspace),
+		},
+		{
+			name: "verify",
+			flow: verifyLegacyMigrationRecoveryFlow,
+			run: (controller: ReturnType<typeof useOrgWorkspace>) =>
+				controller.verifyLegacyMigration(legacyWorkspace),
+		},
+		{
+			name: "recovery",
+			flow: runLegacyMigrationRecoveryDrillFlow,
+			run: (controller: ReturnType<typeof useOrgWorkspace>) =>
+				controller.runLegacyRecoveryDrill(legacyWorkspace),
+		},
+		{
+			name: "index clear",
+			flow: clearOrgDerivedIndexFlow,
+			run: (controller: ReturnType<typeof useOrgWorkspace>) => controller.clearDerivedIndex(),
+		},
+		{
+			name: "index rebuild",
+			flow: rebuildOrgDerivedIndexFlow,
+			run: (controller: ReturnType<typeof useOrgWorkspace>) => controller.rebuildDerivedIndex(),
+		},
+		{
+			name: "capture",
+			flow: captureOrgTodoFlow,
+			run: (controller: ReturnType<typeof useOrgWorkspace>) =>
+				controller.captureTodo("Todo", "other.org"),
+		},
+		{
+			name: "create",
+			flow: saveOrgDocumentFlow,
+			run: (controller: ReturnType<typeof useOrgWorkspace>) =>
+				controller.createDocument("other.org"),
+		},
+		{
+			name: "directory",
+			flow: createOrgDirectoryFlow,
+			run: (controller: ReturnType<typeof useOrgWorkspace>) =>
+				controller.createDirectory("directory"),
+		},
+		{
+			name: "move",
+			flow: moveOrgDocumentFlow,
+			run: (controller: ReturnType<typeof useOrgWorkspace>) =>
+				controller.moveActiveDocument("other.org"),
+		},
+		{
+			name: "delete",
+			flow: deleteOrgDocumentFlow,
+			run: (controller: ReturnType<typeof useOrgWorkspace>) => controller.deleteActiveDocument(),
+		},
+	]
+	for (const mode of ["factoryThrow", "synchronousThrow", "rejectingTask"] as const) {
+		for (const operation of throwingOperations) {
+			it(`${operation.name} releases its owner after ${mode} without losing buffers or retrying`, async () => {
+				let nativeState!: Parameters<typeof orgWindowClose.useOrgWindowClose>[0]
+				vi.spyOn(orgWindowClose, "useOrgWindowClose").mockImplementation((state) => {
+					nativeState = state
+					return true
+				})
+				const { result } = await setup()
+				vi.mocked(operation.flow).mockImplementationOnce(() => {
+					if (mode === "factoryThrow") throw new Error("unexpected")
+					if (mode === "synchronousThrow")
+						return () => {
+							throw new Error("unexpected")
+						}
+					return async () => {
+						throw new Error("unexpected")
+					}
+				})
+				await act(async () => {
+					await operation.run(result.current)
+				})
+				expect(result.current.isSaving).toBe(false)
+				expect(result.current.isLoading).toBe(false)
+				expect(result.current.content).toBe(a.content)
+				expect(result.current.activeDocument).toEqual(a)
+				expect(nativeState.isBusy).toBe(false)
+				expect(result.current.error).toMatch(/may have changed.*Refresh and reconcile/)
+				expect(operation.flow).toHaveBeenCalledTimes(1)
+				vi.mocked(createOrgDirectoryFlow).mockReturnValue(async () => E.right(undefined))
+				await act(async () => {
+					await result.current.createDirectory("next")
+				})
+				expect(result.current.workspace?.directories).toContain("next")
+			})
+		}
+
+		it(`retains active and closing parked save bodies after ${mode}, without autosave looping`, async () => {
+			const { result } = await parkDirtyA()
+			act(() => result.current.updateContent("B edits"))
+			const fail = () => {
+				if (mode === "factoryThrow") throw new Error("unexpected")
+				if (mode === "synchronousThrow")
+					return () => {
+						throw new Error("unexpected")
+					}
+				return async () => {
+					throw new Error("unexpected")
+				}
+			}
+			vi.mocked(saveOrgDocumentFlow).mockImplementationOnce(fail)
+			await act(async () => {
+				expect(await result.current.closeActiveDocument()).toBe(false)
+			})
+			expect(result.current.content).toBe("B edits")
+			expect(result.current.isDirty).toBe(true)
+			expect(result.current.isSaving).toBe(false)
+			await act(async () => {
+				await vi.advanceTimersByTimeAsync(5000)
+			})
+			expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+			vi.mocked(saveOrgDocumentFlow).mockImplementationOnce(fail)
+			await act(async () => {
+				expect(await result.current.closeDocumentPath(a.relativePath)).toBe(false)
+			})
+			expect(result.current.isSaving).toBe(false)
+			expect(result.current.openBuffers).toHaveLength(2)
+			await act(async () => {
+				await result.current.openDocumentPath(a.relativePath)
+			})
+			expect(result.current.content).toBe("A edits")
+		})
+
+		it(`root approval ${mode} releases busy state without releasing an unknown or ambient grant`, async () => {
+			const { result } = await parkDirtyA()
+			vi.mocked(selectOrgWorkspaceFlow).mockImplementationOnce(() => {
+				if (mode === "factoryThrow") throw new Error("unexpected")
+				if (mode === "synchronousThrow")
+					return () => {
+						throw new Error("unexpected")
+					}
+				return async () => {
+					throw new Error("unexpected")
+				}
+			})
+			await act(async () => {
+				await result.current.selectWorkspace()
+			})
+			expect(result.current.isLoading).toBe(false)
+			expect(result.current.workspaceSessionId).toBe("G1")
+			expect(result.current.openBuffers).toHaveLength(2)
+			expect(releaseOrgWorkspace).not.toHaveBeenCalled()
+			await act(async () => {
+				await result.current.openDocumentPath(a.relativePath)
+			})
+			expect(result.current.content).toBe("A edits")
+		})
+	}
+
+	it("rejecting in-flight saves resolve navigation waiters safely and allow a later owned save", async () => {
+		const { result } = await setup()
+		act(() => result.current.updateContent("retained input"))
+		let reject!: (error: Error) => void
+		const task = new Promise<never>((_, fail) => {
+			reject = fail
+		})
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => task)
+		let saving!: Promise<void>
+		let opening!: Promise<boolean>
+		act(() => {
+			saving = result.current.saveDocument()
+		})
+		act(() => {
+			opening = result.current.openDocumentPath(b.relativePath)
+		})
+		await act(async () => {
+			reject(new Error("unknown write outcome"))
+			await saving
+			expect(await opening).toBe(false)
+		})
+		expect(result.current.content).toBe("retained input")
+		expect(result.current.isSaving).toBe(false)
+		await act(async () => {
+			await result.current.saveDocument()
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(2)
+		expect(result.current.isDirty).toBe(false)
+	})
+
+	it("unexpected capture failure retains both dirty active and parked bodies", async () => {
+		const { result } = await parkDirtyA()
+		act(() => result.current.updateContent("B edits"))
+		vi.mocked(captureOrgTodoFlow).mockReturnValueOnce(async () => {
+			throw new Error("unknown outcome")
+		})
+		await act(async () => {
+			await result.current.captureTodo("todo", "other.org")
+		})
+		expect(result.current.content).toBe("B edits")
+		expect(result.current.openBuffers.every((buffer) => buffer.isDirty)).toBe(true)
+		expect(result.current.isSaving).toBe(false)
+		await act(async () => {
+			await result.current.openDocumentPath(a.relativePath)
+		})
+		expect(result.current.content).toBe("A edits")
+	})
+
+	it("failed exact-grant cleanup still releases only the approval owner", async () => {
+		const { result } = await setup()
+		const approval = deferred<Awaited<ReturnType<ReturnType<typeof selectOrgWorkspaceFlow>>>>()
+		vi.mocked(selectOrgWorkspaceFlow).mockReturnValueOnce(() => approval.promise)
+		vi.mocked(releaseOrgWorkspace).mockReturnValueOnce(async () => {
+			throw new Error("release failed")
+		})
+		let selecting!: Promise<void>
+		act(() => {
+			selecting = result.current.selectWorkspace()
+		})
+		act(() => result.current.updateContent("input during approval"))
+		await act(async () => {
+			approval.resolve(E.right({ ...workspace, capabilityToken: "unused-grant" }))
+			await selecting
+		})
+		expect(releaseOrgWorkspace).toHaveBeenCalledExactlyOnceWith(workspace.rootPath, "unused-grant")
+		expect(result.current.isLoading).toBe(false)
+		expect(result.current.content).toBe("input during approval")
+		expect(result.current.workspaceSessionId).toBe("G1")
+	})
+
+	it("a rejected old approval cannot clear the busy flags of a newer owner", async () => {
+		const { result } = await setup()
+		let rejectOld!: (error: Error) => void
+		const oldTask = new Promise<never>((_, reject) => {
+			rejectOld = reject
+		})
+		const next = deferred<Awaited<ReturnType<ReturnType<typeof selectOrgWorkspaceFlow>>>>()
+		vi.mocked(selectOrgWorkspaceFlow)
+			.mockReturnValueOnce(() => oldTask)
+			.mockReturnValueOnce(() => next.promise)
+		let old!: Promise<void>
+		let newer!: Promise<void>
+		act(() => {
+			old = result.current.selectWorkspace()
+		})
+		act(() => {
+			newer = result.current.selectWorkspace()
+		})
+		await act(async () => {
+			rejectOld(new Error("old failure"))
+			await old
+		})
+		expect(result.current.isLoading).toBe(true)
+		vi.mocked(createOrgDirectoryFlow).mockReturnValue(async () => E.right(undefined))
+		await act(async () => {
+			await result.current.createDirectory("blocked")
+		})
+		expect(createOrgDirectoryFlow).not.toHaveBeenCalled()
+		await act(async () => {
+			next.resolve(E.right(null))
+			await newer
+		})
+		expect(result.current.isLoading).toBe(false)
+		await act(async () => {
+			await result.current.createDirectory("allowed")
+		})
+		expect(result.current.workspace?.directories).toContain("allowed")
+	})
+
+	it("rejects saved A editor/save callbacks after B navigation and after ABA navigation", async () => {
+		const { result } = await setup()
+		const old = result.current
+		await act(async () => {
+			await result.current.openDocumentPath(b.relativePath)
+		})
+		act(() => old.updateContent("wrong A input"))
+		await act(async () => {
+			await old.saveDocument()
+		})
+		expect(result.current.content).toBe(b.content)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		await act(async () => {
+			await result.current.openDocumentPath(a.relativePath)
+		})
+		act(() => old.updateContent("stale ABA input"))
+		await act(async () => {
+			await old.saveDocument()
+		})
+		expect(result.current.content).toBe(a.content)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
+	it.each([
+		true,
+		false,
+	])("retains same-render edits during deferred refresh (missing=%s)", async (missing) => {
+		const { result } = await setup()
+		const scan = deferred<Awaited<ReturnType<ReturnType<typeof scanOrgWorkspaceFlow>>>>()
+		vi.mocked(scanOrgWorkspaceFlow).mockReturnValue(() => scan.promise)
+		const old = result.current
+		let refreshing!: Promise<void>
+		act(() => {
+			old.updateContent("live edits")
+			refreshing = old.refreshWorkspace()
+		})
+		await act(async () => {
+			scan.resolve(
+				E.right({
+					...workspace,
+					documents: missing ? [] : [{ relativePath: a.relativePath, revision: "external" }],
+				}),
+			)
+			await refreshing
+		})
+		expect(result.current.content).toBe("live edits")
+		expect(result.current.activeDocument).toEqual(a)
+		expect(result.current.openBuffers[0]?.hasConflict).toBe(true)
+	})
+
+	it.each([
+		"refresh",
+		"poll",
+	] as const)("retains ABA editor changes during a deferred %s read", async (boundary) => {
+		const { result } = await setup()
+		const read = deferred<Awaited<ReturnType<ReturnType<typeof openOrgDocumentFlow>>>>()
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(() => read.promise)
+		vi.mocked(scanOrgWorkspaceFlow).mockReturnValue(async () =>
+			E.right({
+				...workspace,
+				documents: [{ relativePath: a.relativePath, revision: "external" }],
+			}),
+		)
+		let checking: Promise<void> | undefined
+		if (boundary === "refresh") {
+			act(() => {
+				checking = result.current.refreshWorkspace()
+			})
+			await act(async () => {
+				await Promise.resolve()
+			})
+		} else {
+			await act(async () => {
+				await vi.advanceTimersByTimeAsync(2000)
+			})
+		}
+		act(() => {
+			result.current.updateContent("intervening edit")
+			result.current.updateContent(a.content)
+		})
+		await act(async () => {
+			read.resolve(E.right({ ...a, content: "external body", revision: "external" }))
+			await checking
+		})
+		expect(result.current.content).toBe(a.content)
+		expect(result.current.activeDocument).toEqual(a)
+		expect(result.current.error).toContain("External modification")
+	})
+
+	it("releases an approval that arrives after workspace cleanup", async () => {
+		const grant = deferred<Awaited<ReturnType<ReturnType<typeof openDefaultOrgWorkspaceFlow>>>>()
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(() => grant.promise)
+		const { result, unmount } = renderHook(() => useOrgWorkspace())
+		let pending!: Promise<void>
+		act(() => {
+			pending = result.current.openDefaultWorkspace()
+		})
+		unmount()
+		await act(async () => {
+			grant.resolve(E.right({ ...workspace, capabilityToken: "late-lease" }))
+			await pending
+		})
+		expect(releaseOrgWorkspace).toHaveBeenCalledWith(workspace.rootPath, "late-lease")
+	})
+
+	it("releases stale same-root approvals by exact lease without revoking the winner", async () => {
+		const oldGrant = deferred<Awaited<ReturnType<ReturnType<typeof openDefaultOrgWorkspaceFlow>>>>()
+		vi.mocked(openDefaultOrgWorkspaceFlow)
+			.mockReturnValueOnce(() => oldGrant.promise)
+			.mockReturnValueOnce(async () => E.right({ ...workspace, capabilityToken: "winner" }))
+		const { result, unmount } = renderHook(() => useOrgWorkspace())
+		let pending!: Promise<void>
+		act(() => {
+			pending = result.current.openDefaultWorkspace()
+		})
+		await act(async () => {
+			await result.current.openDefaultWorkspace()
+		})
+		await act(async () => {
+			oldGrant.resolve(E.right({ ...workspace, capabilityToken: "stale" }))
+			await pending
+		})
+		expect(result.current.workspaceSessionId).toBe("winner")
+		expect(releaseOrgWorkspace).toHaveBeenCalledWith(workspace.rootPath, "stale")
+		expect(releaseOrgWorkspace).not.toHaveBeenCalledWith(workspace.rootPath, "winner")
+		unmount()
+		expect(releaseOrgWorkspace).toHaveBeenCalledWith(workspace.rootPath, "winner")
+	})
+
+	it("serializes two creations and navigation waiting on the same deferred save", async () => {
+		const { result } = await setup()
+		const saved = deferred<Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>>()
+		const created = deferred<Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>>()
+		vi.mocked(saveOrgDocumentFlow)
+			.mockReturnValueOnce(() => saved.promise)
+			.mockReturnValueOnce(() => created.promise)
+		act(() => result.current.updateContent("A edits"))
+		let saving!: Promise<void>
+		let first!: Promise<void>
+		let second!: Promise<void>
+		let navigating!: Promise<boolean>
+		act(() => {
+			saving = result.current.saveDocument()
+			first = result.current.createDocument("one.org")
+			second = result.current.createDocument("two.org")
+			navigating = result.current.openDocumentPath(b.relativePath)
+		})
+		const reads = vi.mocked(openOrgDocumentFlow).mock.calls.length
+		await act(async () => {
+			saved.resolve(E.right({ relativePath: a.relativePath, revision: "saved" }))
+			await saving
+			await second
+			expect(await navigating).toBe(false)
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(2)
+		expect(openOrgDocumentFlow).toHaveBeenCalledTimes(reads)
+		expect(result.current.isSaving).toBe(true)
+		await act(async () => {
+			created.resolve(E.right({ relativePath: "one.org", revision: "created" }))
+			await first
+		})
+		expect(result.current.activeDocument?.relativePath).toBe("one.org")
+		expect(result.current.isSaving).toBe(false)
+	})
+
+	it("preserves approved leases through scans and releases same-root superseded leases exactly", async () => {
+		vi.mocked(openDefaultOrgWorkspaceFlow)
+			.mockReturnValueOnce(async () => E.right({ ...workspace, capabilityToken: "lease-1" }))
+			.mockReturnValueOnce(async () => E.right({ ...workspace, capabilityToken: "lease-2" }))
+		const hook = await setup()
+		expect(hook.result.current.workspaceSessionId).toBe("lease-1")
+		await act(async () => {
+			await hook.result.current.refreshWorkspace()
+		})
+		expect(hook.result.current.workspace?.capabilityToken).toBe("lease-1")
+		await act(async () => {
+			await hook.result.current.openDefaultWorkspace()
+		})
+		expect(releaseOrgWorkspace).toHaveBeenCalledWith(workspace.rootPath, "lease-1")
+		expect(hook.result.current.workspaceSessionId).toBe("lease-2")
+		hook.unmount()
+		expect(releaseOrgWorkspace).toHaveBeenCalledWith(workspace.rootPath, "lease-2")
+		expect(vi.mocked(releaseOrgWorkspace).mock.calls.every((args) => args.length === 2)).toBe(true)
+	})
+
+	it.each([
+		"delete",
+		"capture",
+		"move",
+		"refile",
+		"archive",
+	] as const)("rejects a retained clean A %s callback after a deferred switch to dirty B", async (command) => {
+		const { result } = await setup()
+		const retained = result.current
+		const read = deferred<Awaited<ReturnType<ReturnType<typeof openOrgDocumentFlow>>>>()
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(() => read.promise)
+		let opening!: Promise<boolean>
+		act(() => {
+			opening = result.current.openDocumentPath(b.relativePath)
+		})
+		await act(async () => {
+			read.resolve(E.right(b))
+			expect(await opening).toBe(true)
+		})
+		act(() => result.current.updateContent("B unsaved body"))
+		await act(async () => {
+			if (command === "delete") await retained.deleteActiveDocument()
+			if (command === "capture") await retained.captureTodo("old A", a.relativePath)
+			if (command === "move") await retained.moveActiveDocument("moved.org")
+			if (command === "refile")
+				expect((await retained.refileSubtree(0, b.relativePath)).kind).toBe("rejected")
+			if (command === "archive") expect((await retained.archiveSubtree(0)).kind).toBe("rejected")
+		})
+		for (const flow of [
+			deleteOrgDocumentFlow,
+			captureOrgTodoFlow,
+			moveOrgDocumentFlow,
+			refileOrgSubtreeFlow,
+			archiveOrgSubtreeFlow,
+		])
+			expect(flow).not.toHaveBeenCalled()
+		expect(result.current.activeDocument).toEqual(b)
+		expect(result.current.content).toBe("B unsaved body")
+		expect(result.current.openBuffers).toHaveLength(2)
+	})
+
+	it("revalidates source generation and grant at the last refile boundary and ignores late outcomes", async () => {
+		const hook = await setup()
+		const transfer = deferred<Awaited<ReturnType<ReturnType<typeof refileOrgSubtreeFlow>>>>()
+		let confirmSourceUnchanged!: () => boolean
+		vi.mocked(refileOrgSubtreeFlow).mockImplementationOnce((input) => {
+			confirmSourceUnchanged = input.confirmSourceUnchanged!
+			return () => transfer.promise
+		})
+		let pending!: Promise<OrgSubtreeTransferOutcome>
+		act(() => {
+			pending = hook.result.current.refileSubtree(0, b.relativePath)
+		})
+		expect(confirmSourceUnchanged()).toBe(true)
+		act(() => {
+			hook.result.current.updateContent("intervening edit")
+		})
+		act(() => {
+			hook.result.current.updateContent(a.content)
+		})
+		expect(confirmSourceUnchanged()).toBe(false)
+		hook.unmount()
+		expect(confirmSourceUnchanged()).toBe(false)
+		transfer.resolve(E.right({ source: { ...a, content: "", revision: "removed" }, target: b }))
+		expect((await pending).kind).toBe("rejected")
+	})
+
+	it("uses a live saved revision for a retained same-activation delete callback", async () => {
+		const { result } = await setup()
+		const retainedDelete = result.current.deleteActiveDocument
+		act(() => result.current.updateContent("saved A body"))
+		await act(async () => {
+			await result.current.saveDocument()
+		})
+		vi.mocked(deleteOrgDocumentFlow).mockReturnValueOnce(async () => E.right(undefined))
+		await act(async () => {
+			await retainedDelete()
+		})
+		expect(deleteOrgDocumentFlow).toHaveBeenCalledWith(
+			expect.objectContaining({ relativePath: a.relativePath, expectedRevision: "saved" }),
+		)
+		expect(result.current.activeDocument).toBeNull()
+	})
+
+	it("carries the approved G1 token through reads, writes, scans, index and watch cleanup", async () => {
+		const hook = await setup()
+		const { result } = hook
+		expect(result.current.workspaceSessionId).toBe("G1")
+		expect(openOrgDocumentFlow).toHaveBeenCalledWith(
+			expect.objectContaining({ capabilityToken: "G1" }),
+		)
+		expect(watchOrgWorkspace).toHaveBeenCalledWith(workspace.rootPath, "G1")
+		// Native scans return filesystem fields, not authority: preserve the original grant.
+		vi.mocked(scanOrgWorkspaceFlow).mockReturnValue(async () =>
+			E.right({ ...workspace, capabilityToken: undefined }),
+		)
+		vi.mocked(rebuildOrgDerivedIndexFlow).mockReturnValue(async () =>
+			E.right({ documentCount: 2, headingCount: 0, linkCount: 0, agendaCount: 0 }),
+		)
+		await act(async () => {
+			await result.current.rebuildDerivedIndex()
+		})
+		expect(rebuildOrgDerivedIndexFlow).toHaveBeenCalledWith(
+			expect.objectContaining({ capabilityToken: "G1" }),
+		)
+		act(() => result.current.updateContent("G1 edited"))
+		await act(async () => {
+			await result.current.saveDocument()
+		})
+		await act(async () => {
+			await result.current.refreshWorkspace()
+		})
+		vi.mocked(createOrgDirectoryFlow).mockReturnValue(async () => E.right(undefined))
+		vi.mocked(captureOrgTodoFlow).mockReturnValue(async () => E.right(captured))
+		vi.mocked(clearOrgDerivedIndexFlow).mockReturnValue(async () =>
+			E.right({ documentCount: 0, headingCount: 0, linkCount: 0, agendaCount: 0 }),
+		)
+		await act(async () => {
+			await result.current.createDirectory("folder")
+		})
+		await act(async () => {
+			await result.current.captureTodo("G1 todo")
+		})
+		await act(async () => {
+			await result.current.clearDerivedIndex()
+		})
+		await act(async () => {
+			await result.current.createDocument("new.org")
+		})
+		for (const flow of [
+			openOrgDocumentFlow,
+			saveOrgDocumentFlow,
+			createOrgDirectoryFlow,
+			captureOrgTodoFlow,
+		]) {
+			for (const [input] of vi.mocked(flow).mock.calls)
+				expect(input).toEqual(expect.objectContaining({ capabilityToken: "G1" }))
+		}
+		expect(scanOrgWorkspaceFlow).toHaveBeenCalledWith(workspace.rootPath, "G1")
+		expect(clearOrgDerivedIndexFlow).toHaveBeenCalledWith(workspace.rootPath, "G1")
+		expect(result.current.workspace?.capabilityToken).toBe("G1")
+		hook.unmount()
+		expect(unwatchOrgWorkspace).toHaveBeenCalledWith("watch-G1", workspace.rootPath, "G1")
+		expect(releaseOrgWorkspace).toHaveBeenCalledWith(workspace.rootPath, "G1")
+	})
+
+	it("rejects every retained G1 command after a deferred same-root G2 grant", async () => {
+		const { result } = await setup()
+		const retained = result.current
+		const grant = deferred<Awaited<ReturnType<ReturnType<typeof openDefaultOrgWorkspaceFlow>>>>()
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValueOnce(() => grant.promise)
+		let opening!: Promise<void>
+		act(() => {
+			opening = result.current.openDefaultWorkspace()
+		})
+		await act(async () => {
+			grant.resolve(E.right({ ...workspace, capabilityToken: "G2" }))
+			await opening
+		})
+		await act(async () => {
+			await result.current.openDocumentPath(b.relativePath)
+		})
+		act(() => result.current.updateContent("G2 dirty B"))
+		vi.clearAllMocks()
+		const legacy = {} as Parameters<typeof retained.verifyLegacyMigration>[0]
+		await act(async () => {
+			await retained.openDocument(workspace.documents[1])
+			await retained.openDocumentPath(a.relativePath)
+			await retained.openDocumentAt(a.relativePath, 1)
+			await retained.openOrgLink({} as Parameters<typeof retained.openOrgLink>[0])
+			await retained.refreshWorkspace()
+			await retained.createDirectory("old-dir")
+			await retained.createDocument("old.org")
+			await retained.captureTodo("old capture")
+			await retained.deleteActiveDocument()
+			await retained.moveActiveDocument("old-move.org")
+			await retained.refileSubtree(0, b.relativePath)
+			await retained.archiveSubtree(0)
+			await retained.migrateLegacyWorkspace(legacy)
+			await retained.verifyLegacyMigration(legacy)
+			await retained.runLegacyRecoveryDrill(legacy)
+			await retained.rebuildDerivedIndex()
+			await retained.clearDerivedIndex()
+			await retained.openDefaultWorkspace()
+			await retained.selectWorkspace()
+			await retained.saveDocument()
+			expect(await retained.closeActiveDocument()).toBe(false)
+			expect(await retained.closeDocumentPath(a.relativePath)).toBe(false)
+			retained.updateContent("stale input")
+		})
+		for (const flow of [
+			openOrgDocumentFlow,
+			scanOrgWorkspaceFlow,
+			resolveOrgLinkTargetFlow,
+			createOrgDirectoryFlow,
+			saveOrgDocumentFlow,
+			captureOrgTodoFlow,
+			deleteOrgDocumentFlow,
+			moveOrgDocumentFlow,
+			refileOrgSubtreeFlow,
+			archiveOrgSubtreeFlow,
+			prepareLegacyMigrationFlow,
+			verifyLegacyMigrationRecoveryFlow,
+			runLegacyMigrationRecoveryDrillFlow,
+			rebuildOrgDerivedIndexFlow,
+			clearOrgDerivedIndexFlow,
+			openDefaultOrgWorkspaceFlow,
+			selectOrgWorkspaceFlow,
+		])
+			expect(flow).not.toHaveBeenCalled()
+		expect(result.current.content).toBe("G2 dirty B")
+		expect(result.current.workspaceSessionId).toBe("G2")
+	})
+
+	it("rejects a retained clean-root callback with dirty A parked under clean B", async () => {
+		const { result } = await setup()
+		const retainedOpen = result.current.openDefaultWorkspace
+		act(() => result.current.updateContent("parked A body"))
+		await act(async () => {
+			await result.current.openDocumentPath(b.relativePath)
+		})
+		vi.clearAllMocks()
+		await act(async () => {
+			await retainedOpen()
+		})
+		expect(openDefaultOrgWorkspaceFlow).not.toHaveBeenCalled()
+		expect(window.confirm).not.toHaveBeenCalled()
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === a.relativePath)?.isDirty,
+		).toBe(true)
+		await act(async () => {
+			await result.current.openDocumentPath(a.relativePath)
+		})
+		expect(result.current.content).toBe("parked A body")
+	})
+
+	it("checks live dirtiness even for a retained callback in the same activation", async () => {
+		const { result } = await setup()
+		const retainedOpen = result.current.openDefaultWorkspace
+		act(() => result.current.updateContent("new unsaved A"))
+		vi.mocked(window.confirm).mockReturnValue(false)
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockClear()
+		await act(async () => {
+			await retainedOpen()
+		})
+		expect(window.confirm).toHaveBeenCalled()
+		expect(openDefaultOrgWorkspaceFlow).not.toHaveBeenCalled()
+		expect(result.current.content).toBe("new unsaved A")
+	})
+
+	it("parks A dirty -> B dirty -> A without writing either buffer or replacing baselines/IDs", async () => {
+		const { result } = await setup()
+		const id = result.current.activeBufferId
+		act(() => result.current.updateContent("A edits"))
+		await act(async () => {
+			expect(await result.current.openDocumentPath(b.relativePath)).toBe(true)
+		})
+		act(() => result.current.updateContent("B edits"))
+		await act(async () => {
+			expect(await result.current.openDocumentPath(a.relativePath)).toBe(true)
+		})
+		expect(result.current.content).toBe("A edits")
+		expect(result.current.activeDocument).toEqual(a)
+		expect(result.current.activeBufferId).toBe(id)
+		expect(result.current.openBuffers).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					baseRevision: a.revision,
+					isDirty: true,
+					relativePath: a.relativePath,
+				}),
+				expect.objectContaining({
+					baseRevision: b.revision,
+					isDirty: true,
+					relativePath: b.relativePath,
+				}),
+			]),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath(b.relativePath)
+		})
+		expect(result.current.content).toBe("B edits")
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
+	it("keeps inactive dirtiness out of autosave but in route/window/workspace guards", async () => {
+		const { result } = await parkDirtyA()
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(1000)
+		})
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(result.current.isDirty).toBe(false)
+		const blocker = vi.mocked(useBlocker).mock.calls.at(-1)?.[0] as unknown as {
+			disabled: boolean
+			enableBeforeUnload: boolean
+			shouldBlockFn: () => boolean
+		}
+		expect(blocker.disabled).toBe(false)
+		expect(blocker.enableBeforeUnload).toBe(true)
+		vi.mocked(window.confirm).mockReturnValue(false)
+		expect(blocker.shouldBlockFn()).toBe(true)
+		const session = result.current.workspaceSessionId
+		await act(async () => {
+			await result.current.openDefaultWorkspace()
+		})
+		expect(openDefaultOrgWorkspaceFlow).toHaveBeenCalledTimes(1)
+		expect(result.current.workspaceSessionId).toBe(session)
+		expect(result.current.openBuffers).toHaveLength(2)
+	})
+
+	it("retains all buffers on failed grants, but clears them and changes session even for the same successful root", async () => {
+		const { result } = await parkDirtyA()
+		const session = result.current.workspaceSessionId
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValueOnce(async () => E.left(fileError))
+		await act(async () => {
+			await result.current.openDefaultWorkspace()
+		})
+		expect(result.current.workspaceSessionId).toBe(session)
+		expect(result.current.openBuffers).toHaveLength(2)
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValueOnce(async () =>
+			E.right({ ...workspace, capabilityToken: "G2" }),
+		)
+		await act(async () => {
+			await result.current.openDefaultWorkspace()
+		})
+		expect(result.current.workspaceSessionId).toBe("G2")
+		expect(result.current.openBuffers).toEqual([])
+		expect(result.current.activeBufferId).toBeNull()
+	})
+
+	it.each([
+		"missing",
+		"changed",
+	])("scan and reopen preserve a dirty %s buffer and mark conflict without inventing an external body", async (kind) => {
+		const { result } = await parkDirtyA()
+		vi.mocked(scanOrgWorkspaceFlow).mockReturnValueOnce(async () =>
+			E.right({
+				...workspace,
+				documents:
+					kind === "missing"
+						? [workspace.documents[0]]
+						: [workspace.documents[0], { relativePath: a.relativePath, revision: "external" }],
+			}),
+		)
+		await act(async () => {
+			await result.current.refreshWorkspace()
+		})
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === a.relativePath)
+				?.hasConflict,
+		).toBe(true)
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () =>
+			kind === "missing"
+				? E.left(fileError)
+				: E.right({ ...a, content: "EXTERNAL", revision: "external" }),
+		)
+		await act(async () => {
+			expect(await result.current.openDocumentPath(a.relativePath)).toBe(true)
+		})
+		expect(result.current.content).toBe("A edits")
+		expect(result.current.activeDocument).toEqual(a)
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === a.relativePath)
+				?.hasConflict,
+		).toBe(true)
+	})
+
+	it("rejects inactive close on revision conflict, retains source, and can retry through existing revision flow", async () => {
+		const { result } = await parkDirtyA()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(async () => E.left(fileError))
+		await act(async () => {
+			expect(await result.current.closeDocumentPath(a.relativePath)).toBe(false)
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledWith({
+			capabilityToken: "G1",
+			content: "A edits",
+			expectedRevision: a.revision,
+			relativePath: a.relativePath,
+			workspaceRoot: workspace.rootPath,
+		})
+		expect(result.current.openBuffers).toHaveLength(2)
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === a.relativePath),
+		).toMatchObject({ hasConflict: true, isDirty: true })
+		await act(async () => {
+			expect(await result.current.closeDocumentPath(a.relativePath)).toBe(true)
+		})
+		expect(result.current.openBuffers).toHaveLength(1)
+		expect(
+			result.current.workspace?.documents.find((entry) => entry.relativePath === a.relativePath)
+				?.revision,
+		).toBe("saved")
+		expect(result.current.content).toBe(b.content)
+	})
+
+	it("rejects capture and move into an inactive dirty target before any writer starts", async () => {
+		const { result } = await parkDirtyA()
+		await act(async () => {
+			await result.current.captureTodo("capture", a.relativePath)
+			await result.current.moveActiveDocument(a.relativePath)
+		})
+		expect(captureOrgTodoFlow).not.toHaveBeenCalled()
+		expect(moveOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === a.relativePath)?.isDirty,
+		).toBe(true)
+	})
+
+	it("serializes inactive save against navigation, capture, workspace grants and active save while retaining active edits", async () => {
+		const { result } = await parkDirtyA()
+		const write = deferred<Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => write.promise)
+		let closing!: Promise<boolean>
+		act(() => {
+			closing = result.current.closeDocumentPath(a.relativePath)
+		})
+		act(() => result.current.updateContent("new B input"))
+		await act(async () => {
+			expect(await result.current.openDocumentPath(a.relativePath)).toBe(false)
+			await result.current.captureTodo("capture", a.relativePath)
+			await result.current.openDefaultWorkspace()
+			await result.current.saveDocument()
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		expect(captureOrgTodoFlow).not.toHaveBeenCalled()
+		expect(openDefaultOrgWorkspaceFlow).toHaveBeenCalledTimes(1)
+		await act(async () => {
+			write.resolve(E.right({ relativePath: a.relativePath, revision: "saved" }))
+			expect(await closing).toBe(true)
+		})
+		expect(result.current.content).toBe("new B input")
+		expect(result.current.isDirty).toBe(true)
+	})
+
+	it("successful active save advances the parked baseline and never resurrects old dirtiness", async () => {
+		const { result } = await setup()
+		act(() => result.current.updateContent("saved A"))
+		await act(async () => {
+			await result.current.saveDocument()
+		})
+		vi.mocked(openOrgDocumentFlow).mockImplementation(
+			(input) => async () =>
+				E.right(
+					input.relativePath === a.relativePath
+						? { ...a, content: "saved A", revision: "saved" }
+						: b,
+				),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath(b.relativePath)
+		})
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === a.relativePath),
+		).toMatchObject({ baseRevision: "saved", isDirty: false })
+		await act(async () => {
+			await result.current.openDocumentPath(a.relativePath)
+		})
+		expect(result.current.content).toBe("saved A")
+		expect(result.current.isDirty).toBe(false)
+		expect(result.current.activeDocument?.revision).toBe("saved")
+	})
+
+	it("cancels a slow navigation on intervening edits even if source returns to its previous value", async () => {
+		const { result } = await setup()
+		const read = deferred<Awaited<ReturnType<ReturnType<typeof openOrgDocumentFlow>>>>()
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(() => read.promise)
+		let opening!: Promise<boolean>
+		act(() => {
+			opening = result.current.openDocumentPath(b.relativePath)
+		})
+		act(() => {
+			result.current.updateContent("temporary")
+			result.current.updateContent(a.content)
+		})
+		await act(async () => {
+			read.resolve(E.right(b))
+			expect(await opening).toBe(false)
+		})
+		expect(result.current.activeDocument).toEqual(a)
+		expect(result.current.openBuffers).toHaveLength(1)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
+	it("preserves a newer active edit while an in-flight save advances its baseline and rejects waiting navigation", async () => {
+		const { result } = await setup()
+		act(() => result.current.updateContent("persist this"))
+		const write = deferred<Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => write.promise)
+		let saving!: Promise<void>
+		let opening!: Promise<boolean>
+		act(() => {
+			saving = result.current.saveDocument()
+			opening = result.current.openDocumentPath(b.relativePath)
+		})
+		// Returning to the OLD baseline is still dirty relative to the newly saved baseline.
+		act(() => result.current.updateContent(a.content))
+		await act(async () => {
+			write.resolve(E.right({ relativePath: a.relativePath, revision: "saved" }))
+			await saving
+			expect(await opening).toBe(false)
+		})
+		expect(result.current.content).toBe(a.content)
+		expect(result.current.activeDocument).toMatchObject({
+			content: "persist this",
+			revision: "saved",
+		})
+		expect(result.current.isDirty).toBe(true)
+		await act(async () => {
+			expect(await result.current.openDocumentPath(b.relativePath)).toBe(true)
+		})
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === a.relativePath),
+		).toMatchObject({ baseRevision: "saved", isDirty: true })
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+	})
+
+	it("rereads clean parked buffers and retains IDs across close/reopen in the same grant", async () => {
+		const { result } = await setup()
+		const id = result.current.activeBufferId
+		await act(async () => {
+			await result.current.openDocumentPath(b.relativePath)
+		})
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () =>
+			E.right({ ...a, content: "fresh disk", revision: "fresh" }),
+		)
+		await act(async () => {
+			expect(await result.current.openDocumentPath(a.relativePath)).toBe(true)
+		})
+		expect(result.current.content).toBe("fresh disk")
+		expect(result.current.activeBufferId).toBe(id)
+		await act(async () => {
+			expect(await result.current.closeActiveDocument()).toBe(true)
+		})
+		await act(async () => {
+			await result.current.openDocumentPath(a.relativePath)
+		})
+		expect(result.current.activeBufferId).toBe(id)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
+	it("cancels a workspace grant if editor input arrives during opening, retaining active and parked copies", async () => {
+		const { result } = await parkDirtyA()
+		const session = result.current.workspaceSessionId
+		const grant = deferred<Awaited<ReturnType<ReturnType<typeof openDefaultOrgWorkspaceFlow>>>>()
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValueOnce(() => grant.promise)
+		let opening!: Promise<void>
+		act(() => {
+			opening = result.current.openDefaultWorkspace()
+		})
+		act(() => result.current.updateContent("new B"))
+		await act(async () => {
+			grant.resolve(E.right(workspace))
+			await opening
+		})
+		expect(result.current.workspaceSessionId).toBe(session)
+		expect(result.current.content).toBe("new B")
+		expect(result.current.openBuffers).toHaveLength(2)
+		await act(async () => {
+			await result.current.openDocumentPath(a.relativePath)
+		})
+		expect(result.current.content).toBe("A edits")
+	})
+
+	it("retains the logical buffer ID when renaming the active document", async () => {
+		const { result } = await setup()
+		const id = result.current.activeBufferId
+		vi.mocked(moveOrgDocumentFlow).mockReturnValueOnce(async () =>
+			E.right({ relativePath: "renamed.org", revision: a.revision }),
+		)
+		await act(async () => {
+			await result.current.moveActiveDocument("renamed.org")
+		})
+		expect(result.current.activeBufferId).toBe(id)
+		expect(result.current.openBuffers[0]?.relativePath).toBe("renamed.org")
 	})
 })

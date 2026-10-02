@@ -21,6 +21,122 @@ const asInvokeCommand = (mock: ReturnType<typeof vi.fn>): InvokeCommand =>
 	mock as unknown as InvokeCommand
 
 describe("org file repository", () => {
+	it.each([
+		"grant-123",
+		undefined,
+		"",
+	])("forwards supplied grants and omits undefined grants across approved commands (%s)", async (capabilityToken) => {
+		const invokeMock = vi.fn().mockResolvedValue(undefined)
+		const repository = createOrgFileRepository(asInvokeCommand(invokeMock))
+		const workspaceRoot = "/notes"
+		const grant = capabilityToken === undefined ? {} : { capabilityToken }
+		const payload = { agenda: [], documents: [], headings: [], links: [] }
+		const documentInput = { capabilityToken, relativePath: "notes.org", workspaceRoot }
+		const migrationInput = { artifacts: [], capabilityToken, directories: [], workspaceRoot }
+		const verificationInput = {
+			capabilityToken,
+			expectedArtifacts: [],
+			verificationPath: "verification.json",
+			workspaceRoot,
+		}
+
+		await repository.clearDerivedIndex(workspaceRoot, capabilityToken)()
+		await repository.getDerivedIndexStats(workspaceRoot, capabilityToken)()
+		await repository.replaceDerivedIndex(workspaceRoot, payload, capabilityToken)()
+		await repository.scanWorkspace(workspaceRoot, capabilityToken)()
+		await repository.watchWorkspace(workspaceRoot, capabilityToken)()
+		await repository.unwatchWorkspace("watch-123", workspaceRoot, capabilityToken)()
+		await repository.readDocument(documentInput)()
+		await repository.writeDocument({
+			...documentInput,
+			content: "* Note",
+			expectedRevision: "rev-1",
+		})()
+		await repository.createDirectory(documentInput)()
+		await repository.deleteDocument({ ...documentInput, expectedRevision: "rev-1" })()
+		await repository.moveDocument({
+			capabilityToken,
+			expectedSourceRevision: "rev-1",
+			sourceRelativePath: "notes.org",
+			targetRelativePath: "moved.org",
+			workspaceRoot,
+		})()
+		await repository.writeMigration(migrationInput)()
+		await repository.verifyMigration(verificationInput)()
+		await repository.readMigrationRecovery(workspaceRoot, "manifest.json", capabilityToken)()
+
+		const root = { ...grant, workspaceRoot }
+		const doc = { ...root, relativePath: "notes.org" }
+		expect(invokeMock.mock.calls).toEqual([
+			[ORG_FILE_COMMANDS.clearDerivedIndex, root],
+			[ORG_FILE_COMMANDS.getDerivedIndexStats, root],
+			[ORG_FILE_COMMANDS.replaceDerivedIndex, { ...root, payload }],
+			[ORG_FILE_COMMANDS.scan, root],
+			[ORG_FILE_COMMANDS.watch, root],
+			[ORG_FILE_COMMANDS.unwatch, { ...root, token: "watch-123" }],
+			[ORG_FILE_COMMANDS.read, doc],
+			[ORG_FILE_COMMANDS.write, { ...doc, content: "* Note", expectedRevision: "rev-1" }],
+			[ORG_FILE_COMMANDS.createDirectory, doc],
+			[ORG_FILE_COMMANDS.delete, { ...doc, expectedRevision: "rev-1" }],
+			[
+				ORG_FILE_COMMANDS.move,
+				{
+					...root,
+					expectedSourceRevision: "rev-1",
+					sourceRelativePath: "notes.org",
+					targetRelativePath: "moved.org",
+				},
+			],
+			[ORG_FILE_COMMANDS.writeMigration, { ...root, artifacts: [], directories: [] }],
+			[
+				ORG_FILE_COMMANDS.verifyMigration,
+				{ ...root, expectedArtifacts: [], verificationPath: "verification.json" },
+			],
+			[ORG_FILE_COMMANDS.readMigrationRecovery, { ...root, manifestRelativePath: "manifest.json" }],
+		])
+	})
+
+	it("releases only a supplied approval lease and fails closed without one", async () => {
+		const invokeMock = vi.fn().mockResolvedValue(undefined)
+		const repository = createOrgFileRepository(asInvokeCommand(invokeMock))
+		expect(await repository.releaseWorkspace("/notes")()).toMatchObject({ _tag: "Left" })
+		expect(await repository.releaseWorkspace("/notes", "")()).toMatchObject({ _tag: "Left" })
+		expect(invokeMock).not.toHaveBeenCalled()
+		expect(await repository.releaseWorkspace("/notes", "grant-123")()).toEqual({
+			_tag: "Right",
+			right: undefined,
+		})
+		expect(invokeMock).toHaveBeenCalledExactlyOnceWith(ORG_FILE_COMMANDS.release, {
+			capabilityToken: "grant-123",
+			workspaceRoot: "/notes",
+		})
+	})
+
+	it("preserves actual native approval tokens without minting scan grants", async () => {
+		const workspace = {
+			capabilityToken: "native-grant",
+			directories: [],
+			documents: entries,
+			rootPath: "/notes",
+		}
+		const snapshot = { directories: [], documents: entries }
+		const invokeMock = vi
+			.fn()
+			.mockResolvedValueOnce(workspace)
+			.mockResolvedValueOnce(workspace)
+			.mockResolvedValueOnce(workspace)
+			.mockResolvedValueOnce(snapshot)
+		const repository = createOrgFileRepository(asInvokeCommand(invokeMock))
+		for (const approve of [
+			repository.openDefaultWorkspace,
+			repository.reopenDefaultWorkspace,
+			repository.selectWorkspace,
+		]) {
+			expect(await approve()()).toEqual({ _tag: "Right", right: workspace })
+		}
+		expect(await repository.scanWorkspace("/notes")()).toEqual({ _tag: "Right", right: snapshot })
+	})
+
 	it("maps default, selected, scan, read, and write arguments to Tauri command payloads", async () => {
 		const workspace = { directories: ["projects"], documents: entries, rootPath: "/notes" }
 		const snapshot = { directories: workspace.directories, documents: entries }

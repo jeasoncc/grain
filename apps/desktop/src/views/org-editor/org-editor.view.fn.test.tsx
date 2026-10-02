@@ -1,9 +1,10 @@
+import { undo, undoDepth } from "@codemirror/commands"
 import { foldCode } from "@codemirror/language"
 import { EditorView } from "@codemirror/view"
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { OrgEditor } from "./org-editor.view.fn"
-import type { OrgEditorCommandTarget } from "./org-editor.types"
+import type { OrgEditorCommandTarget, OrgEditorSessionSnapshot } from "./org-editor.types"
 
 function getEditorView(): EditorView {
 	const content = screen.getByRole("textbox")
@@ -17,7 +18,209 @@ function getEditorView(): EditorView {
 describe("OrgEditor", () => {
 	afterEach(() => {
 		cleanup()
+		vi.restoreAllMocks()
 		vi.useRealTimers()
+	})
+
+	it("retains independent opaque A/B sessions with undo, selection, and scroll", () => {
+		vi.useFakeTimers()
+		const cache = new Map<string, OrgEditorSessionSnapshot>()
+		const mount = (sessionKey: string, value: string) =>
+			render(
+				<OrgEditor
+					sessionKey={sessionKey}
+					sessionCache={cache}
+					value={value}
+					onChange={vi.fn()}
+					onSave={vi.fn()}
+					documentPath="/same/note.org"
+				/>,
+			)
+		let mounted = mount("capability-A", "alpha")
+		let view = getEditorView()
+		view.dispatch({ changes: { from: 5, insert: " A" } })
+		view.dispatch({ selection: { anchor: 1, head: 4 } })
+		view.scrollDOM.scrollTop = 123
+		view.scrollDOM.scrollLeft = 17
+		mounted.unmount()
+		mounted = mount("capability-B", "beta")
+		view = getEditorView()
+		view.dispatch({ changes: { from: 4, insert: " B" } })
+		view.dispatch({ selection: { anchor: 2 } })
+		view.scrollDOM.scrollTop = 45
+		view.scrollDOM.scrollLeft = 9
+		mounted.unmount()
+		mounted = mount("capability-A", "alpha A")
+		view = getEditorView()
+		expect(view.state.selection.main).toMatchObject({ anchor: 1, head: 4 })
+		act(() => vi.advanceTimersByTime(32))
+		expect(view.scrollDOM.scrollTop).toBe(123)
+		expect(view.scrollDOM.scrollLeft).toBe(17)
+		expect(undo(view)).toBe(true)
+		expect(view.state.sliceDoc()).toBe("alpha")
+		mounted.unmount()
+		mounted = mount("capability-B", "beta B")
+		view = getEditorView()
+		expect(view.state.selection.main.head).toBe(2)
+		act(() => vi.advanceTimersByTime(32))
+		expect(view.scrollDOM.scrollTop).toBe(45)
+		expect(view.scrollDOM.scrollLeft).toBe(9)
+		expect(undo(view)).toBe(true)
+		expect(view.state.sliceDoc()).toBe("beta")
+		mounted.unmount()
+	})
+
+	it("rebinds callbacks and current policies without reviving pending prefixes", () => {
+		vi.useFakeTimers()
+		const cache = new Map<string, OrgEditorSessionSnapshot>()
+		const oldChange = vi.fn(),
+			oldSave = vi.fn(),
+			oldTags = vi.fn(),
+			oldPrefix = vi.fn()
+		const mounted = render(
+			<OrgEditor
+				sessionKey="cap"
+				sessionCache={cache}
+				value={"* Note\r\nbody"}
+				onChange={oldChange}
+				onSave={oldSave}
+				onEditTags={oldTags}
+				onPrefixChange={oldPrefix}
+				prefixTimeoutMs={1000}
+			/>,
+		)
+		getEditorView().dispatch({ changes: { from: 6, insert: "!" } })
+		fireEvent.keyDown(screen.getByRole("textbox"), { ctrlKey: true, key: "c" })
+		mounted.unmount()
+		const oldCalls = oldPrefix.mock.calls.length
+		const onChange = vi.fn(),
+			onSave = vi.fn(),
+			onEditTags = vi.fn()
+		const props = {
+			sessionKey: "cap",
+			sessionCache: cache,
+			value: "* Note!\r\nbody",
+			onChange,
+			onSave,
+			onEditTags,
+			ariaLabel: "Restored editor",
+		}
+		const restored = render(<OrgEditor {...props} readOnly />)
+		const view = getEditorView()
+		expect(undoDepth(view.state)).toBe(1)
+		expect(view.state.readOnly).toBe(true)
+		expect(screen.getByRole("textbox", { name: "Restored editor" })).toHaveAttribute(
+			"contenteditable",
+			"false",
+		)
+		expect(view.state.lineBreak).toBe("\r\n")
+		fireEvent.keyDown(screen.getByRole("textbox"), { ctrlKey: true, key: "q" })
+		expect(onEditTags).not.toHaveBeenCalled()
+		fireEvent.keyDown(screen.getByRole("textbox"), { ctrlKey: true, key: "s" })
+		expect(onSave).toHaveBeenCalledOnce()
+		expect(oldSave).not.toHaveBeenCalled()
+		restored.rerender(<OrgEditor {...props} />)
+		fireEvent.keyDown(screen.getByRole("textbox"), { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(screen.getByRole("textbox"), { ctrlKey: true, key: "q" })
+		expect(onEditTags).toHaveBeenCalledOnce()
+		expect(oldTags).not.toHaveBeenCalled()
+		view.dispatch({ changes: { from: view.state.doc.length, insert: "new" } })
+		expect(onChange).toHaveBeenCalledExactlyOnceWith("* Note!\r\nbodynew")
+		expect(oldChange).toHaveBeenCalledTimes(1)
+		restored.unmount()
+		act(() => vi.advanceTimersByTime(2000))
+		expect(oldPrefix).toHaveBeenCalledTimes(oldCalls)
+	})
+
+	it("rejects stale source and workspace identities even for the same path", () => {
+		const cache = new Map<string, OrgEditorSessionSnapshot>()
+		const mount = (sessionKey: string, value: string) =>
+			render(
+				<OrgEditor
+					sessionKey={sessionKey}
+					sessionCache={cache}
+					value={value}
+					documentPath="/same/note.org"
+					onChange={vi.fn()}
+					onSave={vi.fn()}
+				/>,
+			)
+		let mounted = mount("old-workspace-buffer", "original")
+		getEditorView().dispatch({ changes: { from: 8, insert: "!" }, selection: { anchor: 3 } })
+		mounted.unmount()
+		mounted = mount("new-workspace-buffer", "original!")
+		expect(undoDepth(getEditorView().state)).toBe(0)
+		expect(getEditorView().state.selection.main.head).toBe(0)
+		mounted.unmount()
+		mounted = mount("old-workspace-buffer", "external\r\nreplacement")
+		const view = getEditorView()
+		expect(view.state.sliceDoc()).toBe("external\r\nreplacement")
+		expect(view.state.lineBreak).toBe("\r\n")
+		expect(undo(view)).toBe(false)
+		expect(view.state.selection.main.head).toBe(0)
+		mounted.unmount()
+		expect(cache.get("old-workspace-buffer")?.state.sliceDoc()).toBe("external\r\nreplacement")
+		expect(undoDepth(cache.get("old-workspace-buffer")!.state)).toBe(0)
+	})
+
+	it.each([
+		"wheel",
+		"reveal",
+		"external",
+	])("does not restore old scroll after newer %s intent", (intent) => {
+		vi.useFakeTimers()
+		let frame = 0
+		vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => ++frame)
+		const cancel = vi.spyOn(window, "cancelAnimationFrame")
+		const cache = new Map<string, OrgEditorSessionSnapshot>()
+		const props = {
+			sessionKey: "cap",
+			sessionCache: cache,
+			value: "body\nnext",
+			onChange: vi.fn(),
+			onSave: vi.fn(),
+		}
+		let mounted = render(<OrgEditor {...props} />)
+		getEditorView().scrollDOM.scrollTop = 99
+		mounted.unmount()
+		mounted = render(<OrgEditor {...props} />)
+		const view = getEditorView()
+		const restorationFrame = frame
+		if (intent === "wheel") fireEvent.wheel(view.scrollDOM)
+		else if (intent === "reveal")
+			mounted.rerender(<OrgEditor {...props} revealTarget={{ line: 2, requestId: 1 }} />)
+		else mounted.rerender(<OrgEditor {...props} value="replacement" />)
+		expect(cancel).toHaveBeenCalledWith(restorationFrame)
+		view.scrollDOM.scrollTop = 7
+		act(() => vi.advanceTimersByTime(32))
+		expect(view.scrollDOM.scrollTop).toBe(7)
+	})
+
+	it("cancels a pending scroll restoration on unmount", () => {
+		vi.useFakeTimers()
+		const cache = new Map<string, OrgEditorSessionSnapshot>()
+		const mount = () =>
+			render(
+				<OrgEditor
+					sessionKey="cap"
+					sessionCache={cache}
+					value="body"
+					onChange={vi.fn()}
+					onSave={vi.fn()}
+				/>,
+			)
+		let mounted = mount()
+		getEditorView().scrollDOM.scrollTop = 99
+		mounted.unmount()
+		mounted = mount()
+		const view = getEditorView()
+		const cancel = vi.spyOn(window, "cancelAnimationFrame")
+		mounted.unmount()
+		expect(cancel).toHaveBeenCalled()
+		view.scrollDOM.scrollTop = 7
+		act(() => vi.advanceTimersByTime(32))
+		expect(view.scrollDOM.scrollTop).toBe(7)
+		cancel.mockRestore()
 	})
 
 	it("publishes prefix sessions, preserves modifier keys, and clears after idle or cleanup", () => {

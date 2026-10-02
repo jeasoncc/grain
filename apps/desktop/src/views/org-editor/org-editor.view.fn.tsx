@@ -14,7 +14,14 @@ import {
 	toggleFold,
 	unfoldAll,
 } from "@codemirror/language"
-import { Annotation, Compartment, EditorState, type Range, Transaction } from "@codemirror/state"
+import {
+	Annotation,
+	Compartment,
+	EditorState,
+	type Range,
+	StateEffect,
+	Transaction,
+} from "@codemirror/state"
 import {
 	Decoration,
 	type DecorationSet,
@@ -315,6 +322,8 @@ const editorTheme = EditorView.theme({
  * document passed to onChange is exactly CodeMirror's plain string document.
  */
 export const OrgEditor = memo(function OrgEditor({
+	sessionKey,
+	sessionCache,
 	value,
 	onChange,
 	onSave,
@@ -338,6 +347,7 @@ export const OrgEditor = memo(function OrgEditor({
 }: OrgEditorProps) {
 	const hostRef = useRef<HTMLDivElement>(null)
 	const viewRef = useRef<EditorView | null>(null)
+	const cancelScrollRestoreRef = useRef<() => void>(() => {})
 	const onChangeRef = useRef(onChange)
 	const onSaveRef = useRef(onSave)
 	const onCommandTargetRef = useRef(onCommandTarget)
@@ -354,6 +364,7 @@ export const OrgEditor = memo(function OrgEditor({
 	const onSetPropertyRef = useRef(onSetProperty)
 	const onCursorChangeRef = useRef(onCursorChange)
 	const documentPathRef = useRef(documentPath)
+	const initialSessionRef = useRef({ sessionKey, sessionCache })
 	const initialValueRef = useRef(value)
 	const initialReadOnlyRef = useRef(readOnly)
 	const initialAriaLabelRef = useRef(ariaLabel)
@@ -406,248 +417,259 @@ export const OrgEditor = memo(function OrgEditor({
 		clearPrefixRef.current = () => publishPrefix(null)
 		const onWindowBlur = () => publishPrefix(null)
 		window.addEventListener("blur", onWindowBlur)
-		const view = new EditorView({
-			parent: host,
-			state: EditorState.create({
-				doc: initialValueRef.current,
-				extensions: [
-					history(),
-					lineSeparatorCompartment.of(
-						EditorState.lineSeparator.of(lineSeparatorFor(initialValueRef.current)),
-					),
-					orgHighlightPlugin,
-					orgHeadingFolding,
-					foldGutter(),
-					EditorView.lineWrapping,
-					EditorView.domEventHandlers({
-						keydown: (event, editor) => {
-							const routed = resolveOrgPrefixKey(
-								prefix,
-								{
-									key: event.key,
-									ctrlKey: event.ctrlKey,
-									metaKey: event.metaKey,
-									altKey: event.altKey,
-									shiftKey: event.shiftKey,
-									isComposing: event.isComposing,
-									keyCode: event.keyCode,
-									defaultPrevented: event.defaultPrevented,
-								},
-								Date.now(),
-								editor.state.selection.main.empty,
-								prefixId + 1,
-								prefixTimeoutRef.current,
-							)
-							if (routed.session && routed.session !== prefix) prefixId = routed.session.id
-							publishPrefix(routed.session)
-							if (!routed.consumed) return false
-							event.preventDefault()
-							const command = routed.commandId
-							if (!command) return true
-							const cursor = sourceOffsetFromEditor(editor, editor.state.selection.main.head)
-							if (command === "todo") applyOrgEdit(editor, cycleOrgTodoAt)
-							else if (command === "checkbox") applyOrgEdit(editor, toggleOrgCheckboxAt)
-							else if (command === "link") {
-								if (!documentPathRef.current) return true
-								const content = editor.state.sliceDoc()
-								const orgTarget = orgLinkTargetAt(content, cursor, documentPathRef.current)
-								if (orgTarget && onOpenOrgLinkRef.current) onOpenOrgLinkRef.current(orgTarget)
-								else {
-									const fileTarget = orgFileLinkAt(content, cursor, documentPathRef.current)
-									if (fileTarget) onOpenFileLinkRef.current?.(fileTarget)
-								}
-							} else if (command === "timestamp-active" || command === "timestamp-inactive") {
-								applyOrgEdit(editor, (content, position) =>
-									insertOrgTimestampAt(
-										content,
-										position,
-										localDate(),
-										command === "timestamp-active",
-									),
-								)
-							} else if (!editor.state.readOnly) {
-								const callbacks = {
-									tags: onEditTagsRef.current,
-									scheduled: onScheduleRef.current,
-									deadline: onDeadlineRef.current,
-									property: onSetPropertyRef.current,
-									refile: onRefileSubtreeRef.current,
-									archive: onArchiveSubtreeRef.current,
-								}
-								callbacks[command]?.(cursor)
-							}
-							return true
-						},
-						blur: () => {
-							publishPrefix(null)
-							return false
-						},
-						compositionstart: () => {
-							publishPrefix(null)
-							return false
-						},
-						// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: modifier, position, typed-link, and compatibility checks form one event transaction.
-						mousedown: (event, editor) => {
-							publishPrefix(null)
-							if (
-								event.button !== 0 ||
-								(!event.metaKey && !event.ctrlKey) ||
-								!documentPathRef.current
-							) {
-								return false
-							}
-							const position = editor.posAtCoords({ x: event.clientX, y: event.clientY })
-							if (position === null) {
-								return false
-							}
-							const content = editor.state.sliceDoc()
-							const sourcePosition = sourceOffsetFromEditor(editor, position)
-							const orgTarget = orgLinkTargetAt(content, sourcePosition, documentPathRef.current)
-							if (orgTarget && onOpenOrgLinkRef.current) {
-								event.preventDefault()
-								onOpenOrgLinkRef.current(orgTarget)
-								return true
-							}
-							const fileTarget = orgFileLinkAt(content, sourcePosition, documentPathRef.current)
-							if (!fileTarget || !onOpenFileLinkRef.current) {
-								return false
-							}
-							event.preventDefault()
-							onOpenFileLinkRef.current(fileTarget)
-							return true
-						},
-					}),
-					keymap.of([
+		// Rebuild every view-bound extension before attaching a cached state. In
+		// particular, cached listeners/compartments must never revive old refs.
+		const extensions = [
+			history(),
+			lineSeparatorCompartment.of(
+				EditorState.lineSeparator.of(lineSeparatorFor(initialValueRef.current)),
+			),
+			orgHighlightPlugin,
+			orgHeadingFolding,
+			foldGutter(),
+			EditorView.lineWrapping,
+			EditorView.domEventHandlers({
+				keydown: (event, editor) => {
+					const routed = resolveOrgPrefixKey(
+						prefix,
 						{
-							key: "Tab",
-							run: (editor) => {
-								const line = editor.state.doc.lineAt(editor.state.selection.main.head)
-								if (/^\*+\s/.test(line.text)) {
-									toggleFold(editor)
-									return true
-								}
-								return indentMore(editor)
-							},
+							key: event.key,
+							ctrlKey: event.ctrlKey,
+							metaKey: event.metaKey,
+							altKey: event.altKey,
+							shiftKey: event.shiftKey,
+							isComposing: event.isComposing,
+							keyCode: event.keyCode,
+							defaultPrevented: event.defaultPrevented,
 						},
-						{
-							key: "Shift-Tab",
-							preventDefault: true,
-							run: (editor) => {
-								let hasFoldedRange = false
-								foldedRanges(editor.state).between(0, editor.state.doc.length, () => {
-									hasFoldedRange = true
-								})
-								if (hasFoldedRange) unfoldAll(editor)
-								else foldAll(editor)
-								return true
-							},
-						},
-						{
-							key: "Alt-Enter",
-							preventDefault: true,
-							run: insertOrgMetaItem,
-						},
-						{
-							key: "Enter",
-							run: continueOrgList,
-						},
-						{
-							key: "Alt-ArrowLeft",
-							run: (editor) =>
-								applyOrgEdit(editor, (content, cursor) =>
-									changeOrgHeadingLevelAt(content, cursor, -1),
-								),
-						},
-						{
-							key: "Alt-ArrowRight",
-							run: (editor) =>
-								applyOrgEdit(editor, (content, cursor) =>
-									changeOrgHeadingLevelAt(content, cursor, 1),
-								),
-						},
-						{
-							key: "Alt-ArrowUp",
-							run: (editor) =>
-								applyOrgEdit(editor, (content, cursor) => moveOrgSubtreeAt(content, cursor, -1)),
-						},
-						{
-							key: "Alt-ArrowDown",
-							run: (editor) =>
-								applyOrgEdit(editor, (content, cursor) => moveOrgSubtreeAt(content, cursor, 1)),
-						},
-						{
-							key: "Alt-Shift-t",
-							run: (editor) => applyOrgEdit(editor, cycleOrgTodoAt),
-						},
-						{
-							key: "Mod-Shift-x",
-							run: (editor) => applyOrgEdit(editor, toggleOrgCheckboxAt),
-						},
-						{
-							key: "Mod-Shift-r",
-							preventDefault: true,
-							run: (editor) => {
-								if (editor.state.readOnly || !onRefileSubtreeRef.current) {
-									return false
-								}
-								onRefileSubtreeRef.current(
-									sourceOffsetFromEditor(editor, editor.state.selection.main.head),
-								)
-								return true
-							},
-						},
-						{
-							key: "Mod-Alt-a",
-							preventDefault: true,
-							run: (editor) => {
-								if (editor.state.readOnly || !onArchiveSubtreeRef.current) {
-									return false
-								}
-								onArchiveSubtreeRef.current(
-									sourceOffsetFromEditor(editor, editor.state.selection.main.head),
-								)
-								return true
-							},
-						},
-						{
-							key: "Mod-s",
-							preventDefault: true,
-							run: () => {
-								onSaveRef.current()
-								return true
-							},
-						},
-						...foldKeymap,
-						...defaultKeymap,
-						...historyKeymap,
-					]),
-					readOnlyCompartment.of([
-						EditorState.readOnly.of(initialReadOnlyRef.current),
-						EditorView.editable.of(!initialReadOnlyRef.current),
-					]),
-					accessibilityCompartment.of(
-						EditorView.contentAttributes.of({
-							"aria-label": initialAriaLabelRef.current,
-							"aria-multiline": "true",
-						}),
-					),
-					EditorView.updateListener.of((update) => {
-						const isExternalUpdate = update.transactions.some(
-							(transaction) => transaction.annotation(externalValueUpdate) === true,
+						Date.now(),
+						editor.state.selection.main.empty,
+						prefixId + 1,
+						prefixTimeoutRef.current,
+					)
+					if (routed.session && routed.session !== prefix) prefixId = routed.session.id
+					publishPrefix(routed.session)
+					if (!routed.consumed) return false
+					event.preventDefault()
+					const command = routed.commandId
+					if (!command) return true
+					const cursor = sourceOffsetFromEditor(editor, editor.state.selection.main.head)
+					if (command === "todo") applyOrgEdit(editor, cycleOrgTodoAt)
+					else if (command === "checkbox") applyOrgEdit(editor, toggleOrgCheckboxAt)
+					else if (command === "link") {
+						if (!documentPathRef.current) return true
+						const content = editor.state.sliceDoc()
+						const orgTarget = orgLinkTargetAt(content, cursor, documentPathRef.current)
+						if (orgTarget && onOpenOrgLinkRef.current) onOpenOrgLinkRef.current(orgTarget)
+						else {
+							const fileTarget = orgFileLinkAt(content, cursor, documentPathRef.current)
+							if (fileTarget) onOpenFileLinkRef.current?.(fileTarget)
+						}
+					} else if (command === "timestamp-active" || command === "timestamp-inactive") {
+						applyOrgEdit(editor, (content, position) =>
+							insertOrgTimestampAt(content, position, localDate(), command === "timestamp-active"),
 						)
-						if (update.docChanged && !isExternalUpdate) {
-							onChangeRef.current(update.state.sliceDoc())
+					} else if (!editor.state.readOnly) {
+						const callbacks = {
+							tags: onEditTagsRef.current,
+							scheduled: onScheduleRef.current,
+							deadline: onDeadlineRef.current,
+							property: onSetPropertyRef.current,
+							refile: onRefileSubtreeRef.current,
+							archive: onArchiveSubtreeRef.current,
 						}
-						if (update.selectionSet || update.docChanged) {
-							onCursorChangeRef.current?.(
-								sourceOffsetFromEditor(update.view, update.state.selection.main.head),
-							)
-						}
-					}),
-					editorTheme,
-				],
+						callbacks[command]?.(cursor)
+					}
+					return true
+				},
+				blur: () => {
+					publishPrefix(null)
+					return false
+				},
+				compositionstart: () => {
+					publishPrefix(null)
+					return false
+				},
+				// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: modifier, position, typed-link, and compatibility checks form one event transaction.
+				mousedown: (event, editor) => {
+					publishPrefix(null)
+					if (
+						event.button !== 0 ||
+						(!event.metaKey && !event.ctrlKey) ||
+						!documentPathRef.current
+					) {
+						return false
+					}
+					const position = editor.posAtCoords({ x: event.clientX, y: event.clientY })
+					if (position === null) {
+						return false
+					}
+					const content = editor.state.sliceDoc()
+					const sourcePosition = sourceOffsetFromEditor(editor, position)
+					const orgTarget = orgLinkTargetAt(content, sourcePosition, documentPathRef.current)
+					if (orgTarget && onOpenOrgLinkRef.current) {
+						event.preventDefault()
+						onOpenOrgLinkRef.current(orgTarget)
+						return true
+					}
+					const fileTarget = orgFileLinkAt(content, sourcePosition, documentPathRef.current)
+					if (!fileTarget || !onOpenFileLinkRef.current) {
+						return false
+					}
+					event.preventDefault()
+					onOpenFileLinkRef.current(fileTarget)
+					return true
+				},
 			}),
-		})
+			keymap.of([
+				{
+					key: "Tab",
+					run: (editor) => {
+						const line = editor.state.doc.lineAt(editor.state.selection.main.head)
+						if (/^\*+\s/.test(line.text)) {
+							toggleFold(editor)
+							return true
+						}
+						return indentMore(editor)
+					},
+				},
+				{
+					key: "Shift-Tab",
+					preventDefault: true,
+					run: (editor) => {
+						let hasFoldedRange = false
+						foldedRanges(editor.state).between(0, editor.state.doc.length, () => {
+							hasFoldedRange = true
+						})
+						if (hasFoldedRange) unfoldAll(editor)
+						else foldAll(editor)
+						return true
+					},
+				},
+				{
+					key: "Alt-Enter",
+					preventDefault: true,
+					run: insertOrgMetaItem,
+				},
+				{
+					key: "Enter",
+					run: continueOrgList,
+				},
+				{
+					key: "Alt-ArrowLeft",
+					run: (editor) =>
+						applyOrgEdit(editor, (content, cursor) => changeOrgHeadingLevelAt(content, cursor, -1)),
+				},
+				{
+					key: "Alt-ArrowRight",
+					run: (editor) =>
+						applyOrgEdit(editor, (content, cursor) => changeOrgHeadingLevelAt(content, cursor, 1)),
+				},
+				{
+					key: "Alt-ArrowUp",
+					run: (editor) =>
+						applyOrgEdit(editor, (content, cursor) => moveOrgSubtreeAt(content, cursor, -1)),
+				},
+				{
+					key: "Alt-ArrowDown",
+					run: (editor) =>
+						applyOrgEdit(editor, (content, cursor) => moveOrgSubtreeAt(content, cursor, 1)),
+				},
+				{
+					key: "Alt-Shift-t",
+					run: (editor) => applyOrgEdit(editor, cycleOrgTodoAt),
+				},
+				{
+					key: "Mod-Shift-x",
+					run: (editor) => applyOrgEdit(editor, toggleOrgCheckboxAt),
+				},
+				{
+					key: "Mod-Shift-r",
+					preventDefault: true,
+					run: (editor) => {
+						if (editor.state.readOnly || !onRefileSubtreeRef.current) {
+							return false
+						}
+						onRefileSubtreeRef.current(
+							sourceOffsetFromEditor(editor, editor.state.selection.main.head),
+						)
+						return true
+					},
+				},
+				{
+					key: "Mod-Alt-a",
+					preventDefault: true,
+					run: (editor) => {
+						if (editor.state.readOnly || !onArchiveSubtreeRef.current) {
+							return false
+						}
+						onArchiveSubtreeRef.current(
+							sourceOffsetFromEditor(editor, editor.state.selection.main.head),
+						)
+						return true
+					},
+				},
+				{
+					key: "Mod-s",
+					preventDefault: true,
+					run: () => {
+						onSaveRef.current()
+						return true
+					},
+				},
+				...foldKeymap,
+				...defaultKeymap,
+				...historyKeymap,
+			]),
+			readOnlyCompartment.of([
+				EditorState.readOnly.of(initialReadOnlyRef.current),
+				EditorView.editable.of(!initialReadOnlyRef.current),
+			]),
+			accessibilityCompartment.of(
+				EditorView.contentAttributes.of({
+					"aria-label": initialAriaLabelRef.current,
+					"aria-multiline": "true",
+				}),
+			),
+			EditorView.updateListener.of((update) => {
+				const isExternalUpdate = update.transactions.some(
+					(transaction) => transaction.annotation(externalValueUpdate) === true,
+				)
+				if (update.docChanged && !isExternalUpdate) {
+					onChangeRef.current(update.state.sliceDoc())
+				}
+				if (update.selectionSet || update.docChanged) {
+					onCursorChangeRef.current?.(
+						sourceOffsetFromEditor(update.view, update.state.selection.main.head),
+					)
+				}
+			}),
+			editorTheme,
+		]
+		const { sessionKey: key, sessionCache: cache } = initialSessionRef.current
+		const cached = key !== undefined ? cache?.get(key) : undefined
+		const snapshot = cached?.state.sliceDoc() === initialValueRef.current ? cached : undefined
+		const state = snapshot
+			? snapshot.state.update({ effects: StateEffect.reconfigure.of(extensions) }).state
+			: EditorState.create({ doc: initialValueRef.current, extensions })
+		const view = new EditorView({ parent: host, state })
+		let scrollFrame: number | null = null
+		const cancelScrollRestore = () => {
+			if (scrollFrame !== null) window.cancelAnimationFrame(scrollFrame)
+			scrollFrame = null
+		}
+		cancelScrollRestoreRef.current = cancelScrollRestore
+		for (const event of ["scroll", "wheel", "touchstart", "pointerdown", "keydown"]) {
+			view.scrollDOM.addEventListener(event, cancelScrollRestore, { passive: true })
+		}
+		if (snapshot) {
+			scrollFrame = window.requestAnimationFrame(() => {
+				scrollFrame = null
+				if (viewRef.current !== view) return
+				view.scrollDOM.scrollTop = snapshot.scrollTop
+				view.scrollDOM.scrollLeft = snapshot.scrollLeft
+			})
+		}
 
 		onCursorChangeRef.current?.(sourceOffsetFromEditor(view, view.state.selection.main.head))
 		viewRef.current = view
@@ -691,6 +713,18 @@ export const OrgEditor = memo(function OrgEditor({
 			},
 		})
 		return () => {
+			cancelScrollRestore()
+			cancelScrollRestoreRef.current = () => {}
+			for (const event of ["scroll", "wheel", "touchstart", "pointerdown", "keydown"]) {
+				view.scrollDOM.removeEventListener(event, cancelScrollRestore)
+			}
+			if (key !== undefined && cache) {
+				cache.set(key, {
+					state: view.state,
+					scrollTop: view.scrollDOM.scrollTop,
+					scrollLeft: view.scrollDOM.scrollLeft,
+				})
+			}
 			window.removeEventListener("blur", onWindowBlur)
 			publishPrefix(null)
 			if (prefixTimer !== null) clearTimeout(prefixTimer)
@@ -712,6 +746,7 @@ export const OrgEditor = memo(function OrgEditor({
 		}
 
 		clearPrefixRef.current()
+		cancelScrollRestoreRef.current()
 		// Reconfigure first so CodeMirror parses the replacement with its own separator policy.
 		// Combining this effect with the change would parse using the previous policy.
 		view.dispatch({
@@ -731,6 +766,7 @@ export const OrgEditor = memo(function OrgEditor({
 			return
 		}
 		clearPrefixRef.current()
+		cancelScrollRestoreRef.current()
 		const lineNumber = Math.max(1, Math.min(revealTarget.line, view.state.doc.lines))
 		const line = view.state.doc.line(lineNumber)
 		view.dispatch({ scrollIntoView: true, selection: { anchor: line.from } })

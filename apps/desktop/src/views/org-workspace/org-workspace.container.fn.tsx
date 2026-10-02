@@ -35,6 +35,7 @@ import { OrgCaptureDialog } from "./org-action-dialog.view.fn"
 import { OrgAgendaContainer } from "./org-agenda.container.fn"
 import { OrgCommandPalette, orgCommandIcons } from "./org-command-palette.view.fn"
 import { OrgDocumentPane } from "./org-document-pane.view.fn"
+import type { OrgEditorSessionSnapshot } from "@/views/org-editor/org-editor.types"
 import { OrgInspector } from "./org-inspector.view.fn"
 import { OrgQuickOpen } from "./org-quick-open.view.fn"
 import { OrgWorkspaceRibbon } from "./org-workspace-ribbon.view.fn"
@@ -276,6 +277,21 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	const [openDocumentPaths, setOpenDocumentPaths] = useState<readonly string[]>([])
 	const navigationRequestRef = useRef(0)
 	const workspaceViewRef = useRef<HTMLDivElement>(null)
+	const editorSessionCacheRef = useRef(new Map<string, OrgEditorSessionSnapshot>())
+	const hydratedSessionRef = useRef<string | null>(null)
+	const openBufferPathKey = (controller.openBuffers ?? [])
+		.map((buffer) => buffer.relativePath)
+		.join("\u0000")
+	useEffect(() => {
+		const retained = new Set(
+			(controller.openBuffers ?? []).map(
+				(buffer) => `${controller.workspaceSessionId}\u0000${buffer.bufferId}`,
+			),
+		)
+		for (const key of editorSessionCacheRef.current.keys()) {
+			if (!retained.has(key)) editorSessionCacheRef.current.delete(key)
+		}
+	}, [controller.workspaceSessionId, controller.openBuffers])
 	const pendingFileFocusRef = useRef<{ readonly root: string; readonly path: string } | null>(null)
 	const [sessionRoot, setSessionRoot] = useState<string | null>(null)
 	const [navigationHistory, setNavigationHistory] = useState<{
@@ -362,6 +378,12 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	useEffect(() => listenForOrgDiaryCreation(() => void createDiary()), [createDiary])
 	useEffect(() => {
 		const rootPath = controller.workspace?.rootPath
+		const grant = controller.workspaceSessionId ?? rootPath ?? null
+		setQuickOpenVisible(false)
+		setCommandPaletteVisible(false)
+		setShowCapture(false)
+		pendingFileFocusRef.current = null
+		hydratedSessionRef.current = null
 		setSessionRoot(null)
 		if (!rootPath) {
 			setOpenDocumentPaths([])
@@ -406,15 +428,24 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 		}
 		const finishRestore = async () => {
 			if (activePath) await controller.openDocumentPath(activePath)
-			if (!cancelled) setSessionRoot(rootPath)
+			if (!cancelled) {
+				hydratedSessionRef.current = grant
+				setSessionRoot(rootPath)
+			}
 		}
 		void finishRestore()
 		return () => {
 			cancelled = true
 		}
-	}, [controller.workspace?.rootPath])
+	}, [controller.workspace?.rootPath, controller.workspaceSessionId])
 	useEffect(() => {
-		if (!sessionRoot || sessionRoot !== controller.workspace?.rootPath) return
+		if (
+			!sessionRoot ||
+			sessionRoot !== controller.workspace?.rootPath ||
+			hydratedSessionRef.current !==
+				(controller.workspaceSessionId ?? controller.workspace?.rootPath ?? null)
+		)
+			return
 		try {
 			window.localStorage.setItem(
 				`grain:org-session:${sessionRoot}`,
@@ -431,6 +462,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	}, [
 		controller.activeDocument?.relativePath,
 		controller.workspace?.rootPath,
+		controller.workspaceSessionId,
 		inspectorVisible,
 		openDocumentPaths,
 		sessionRoot,
@@ -448,7 +480,10 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 		})
 	}, [controller.activeDocument?.relativePath])
 	useEffect(() => {
-		const available = new Set(workspaceDocumentKey ? workspaceDocumentKey.split("\u0000") : [])
+		const available = new Set([
+			...(workspaceDocumentKey ? workspaceDocumentKey.split("\u0000") : []),
+			...(openBufferPathKey ? openBufferPathKey.split("\u0000") : []),
+		])
 		setOpenDocumentPaths((current) => current.filter((path) => available.has(path)))
 		setNavigationHistory((current) => {
 			const activePath = current.paths[current.index]
@@ -459,7 +494,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 				paths,
 			}
 		})
-	}, [workspaceDocumentKey])
+	}, [workspaceDocumentKey, openBufferPathKey])
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			const target = event.target instanceof Element ? event.target : null
@@ -529,7 +564,10 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	}
 	const closeTab = (relativePath: string) => {
 		if (relativePath !== controller.activeDocument?.relativePath) {
-			setOpenDocumentPaths((current) => current.filter((path) => path !== relativePath))
+			void controller.closeDocumentPath(relativePath).then((closed) => {
+				if (closed)
+					setOpenDocumentPaths((current) => current.filter((path) => path !== relativePath))
+			})
 			return
 		}
 		const remaining = openDocumentPaths.filter((path) => path !== relativePath)
@@ -560,6 +598,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 							<>
 								<Panel id="org-sidebar" defaultSize={280} minSize={220} maxSize={360}>
 									<OrgWorkspaceSidebar
+										key={controller.workspaceSessionId ?? controller.workspace.rootPath}
 										controller={controller}
 										isBusy={isBusy}
 										tools={<WorkspaceToolsMenu controller={controller} isBusy={isBusy} />}
@@ -600,12 +639,14 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 									</div>
 								) : (
 									<OrgDocumentPane
+										key={controller.workspaceSessionId ?? controller.workspace.rootPath}
 										canGoBack={navigationHistory.index > 0}
 										canGoForward={
 											navigationHistory.index >= 0 &&
 											navigationHistory.index < navigationHistory.paths.length - 1
 										}
 										controller={controller}
+										editorSessionCache={editorSessionCacheRef.current}
 										parameterSessionSuspended={
 											quickOpenVisible || commandPaletteVisible || showCapture
 										}
@@ -655,7 +696,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 			<OrgCommandPalette
 				open={commandPaletteVisible}
 				onOpenChange={setCommandPaletteVisible}
-				sessionKey={controller.workspace?.rootPath}
+				sessionKey={controller.workspaceSessionId ?? controller.workspace?.rootPath}
 				commands={workspaceCommands.map((command) => ({
 					...command,
 					icon: orgCommandIcons[command.icon],
@@ -666,7 +707,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 				documents={controller.workspace?.documents ?? []}
 				open={quickOpenVisible}
 				onOpenChange={setQuickOpenVisible}
-				sessionKey={controller.workspace?.rootPath}
+				sessionKey={controller.workspaceSessionId ?? controller.workspace?.rootPath}
 				onSelect={async (document, signal) => {
 					const opened = await controller.openDocument(document, undefined, signal)
 					if (opened && !signal?.aborted) {

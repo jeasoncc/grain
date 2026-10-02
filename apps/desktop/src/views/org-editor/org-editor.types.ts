@@ -1,3 +1,4 @@
+import type { EditorState } from "@codemirror/state"
 import type { OrgLinkClickTarget, OrgTextEdit } from "@/pipes/org"
 import type { OrgPrefixSession } from "@/types/editor/org-keymap.interface"
 
@@ -12,7 +13,17 @@ export interface OrgEditorRevealTarget {
 	readonly requestId: number
 }
 
+/** In-memory only: retains document history/selection, never transient UI sessions. */
+export interface OrgEditorSessionSnapshot {
+	readonly state: EditorState
+	readonly scrollTop: number
+	readonly scrollLeft: number
+}
+
 export interface OrgEditorProps {
+	/** Mount-scoped caller-owned opaque buffer/capability identity, not a document path. */
+	readonly sessionKey?: string
+	readonly sessionCache?: Map<string, OrgEditorSessionSnapshot>
 	/** Raw Org document text. No parsing or serialization is performed. */
 	readonly value: string
 	readonly onChange: (value: string) => void

@@ -14,6 +14,7 @@ import {
 	areLegacyMigrationPlansEquivalent,
 	createLegacyMigrationArtifactPayload,
 	executeLegacyMigrationFlow,
+	migrateLegacyWorkspaceFlow,
 	prepareLegacyMigrationFlow,
 	runLegacyMigrationRecoveryDrillFlow,
 	summarizeLegacyMigrationArtifacts,
@@ -102,6 +103,136 @@ const repositoryWith = (overrides: Partial<OrgFileRepository> = {}): OrgFileRepo
 })
 
 describe("legacy migration flows", () => {
+	it.each(["synthetic-migration-capability", undefined])(
+		"supports the token-second signature with capability %s",
+		async (capabilityToken) => {
+			const plan = planLegacyMigration({ contents, nodes, workspaceTitle: workspace.title })
+			const writeMigration = vi.fn<OrgFileRepository["writeMigration"]>(() =>
+				TE.right({ artifacts: [], verificationPath: "verification.json", writtenPaths: [] }),
+			)
+			const verifyMigration = vi.fn<OrgFileRepository["verifyMigration"]>(() =>
+				TE.right({ checkedCount: 0, mismatches: [] }),
+			)
+			const repository = repositoryWith({ writeMigration, verifyMigration })
+
+			expect(
+				await executeLegacyMigrationFlow("/approved", capabilityToken, plan, repository)(),
+			).toHaveProperty("_tag", "Right")
+			expect(writeMigration).toHaveBeenCalledExactlyOnceWith({
+				...createLegacyMigrationArtifactPayload(plan),
+				capabilityToken,
+				workspaceRoot: "/approved",
+			})
+			expect(verifyMigration).toHaveBeenCalledExactlyOnceWith({
+				capabilityToken,
+				expectedArtifacts: [],
+				verificationPath: "verification.json",
+				workspaceRoot: "/approved",
+			})
+		},
+	)
+
+	it.each(["synthetic-migration-capability", undefined])(
+		"forwards capability %s through publication, verification, and recovery",
+		async (capabilityToken) => {
+			const targetWorkspace = { id: "target-org-workspace", rootPath: "/approved", capabilityToken }
+			const sourceSnapshot = {
+				allContents: contents,
+				allNodes: nodes,
+				workspaceNodes: nodes,
+				workspaceTitle: workspace.title,
+			}
+			const originalSource = JSON.stringify({ workspace, sourceSnapshot })
+			const getLegacyMigrationSnapshot = vi.fn(() => TE.right(sourceSnapshot))
+			const plan = planLegacyMigration({ contents, nodes, workspaceTitle: workspace.title })
+			const dependencies = {
+				getLegacyMigrationSnapshot,
+				summarizeArtifacts: summarizeLegacyMigrationArtifacts,
+			}
+			const writeMigration = vi.fn<OrgFileRepository["writeMigration"]>(() =>
+				TE.right({ artifacts: [], verificationPath: "verification.json", writtenPaths: [] }),
+			)
+			const verifyMigration = vi.fn<OrgFileRepository["verifyMigration"]>(({ expectedArtifacts }) =>
+				TE.right({ checkedCount: expectedArtifacts.length, mismatches: [] }),
+			)
+			const readMigrationRecovery = vi.fn<OrgFileRepository["readMigrationRecovery"]>(() =>
+				TE.right({
+					manifest: plan.manifest,
+					rawBackups: plan.rawBackups.map((backup) => ({ ...backup })),
+					recoverySql: plan.recoverySql,
+				}),
+			)
+			const repository = repositoryWith({ writeMigration, verifyMigration, readMigrationRecovery })
+			expect(
+				await executeLegacyMigrationFlow("/approved", plan, repository, capabilityToken)(),
+			).toHaveProperty("_tag", "Right")
+			expect(
+				await migrateLegacyWorkspaceFlow(
+					workspace,
+					targetWorkspace.rootPath,
+					dependencies,
+					repository,
+					targetWorkspace.capabilityToken,
+				)(),
+			).toHaveProperty("_tag", "Right")
+			expect(
+				await verifyLegacyMigrationRecoveryFlow(
+					workspace,
+					targetWorkspace.rootPath,
+					dependencies,
+					repository,
+					targetWorkspace.capabilityToken,
+				)(),
+			).toHaveProperty("_tag", "Right")
+			expect(
+				await runLegacyMigrationRecoveryDrillFlow(
+					workspace,
+					targetWorkspace.rootPath,
+					dependencies,
+					repository,
+					targetWorkspace.capabilityToken,
+				)(),
+			).toHaveProperty("_tag", "Right")
+			expect(workspace.id).not.toBe(targetWorkspace.id)
+			expect(getLegacyMigrationSnapshot).toHaveBeenCalledTimes(5)
+			for (const args of getLegacyMigrationSnapshot.mock.calls) {
+				expect(args).toEqual([workspace.id])
+			}
+			expect(JSON.stringify({ workspace, sourceSnapshot })).toBe(originalSource)
+			for (const value of [
+				workspace,
+				sourceSnapshot,
+				plan,
+				plan.manifest,
+				createLegacyMigrationArtifactPayload(plan),
+			]) {
+				const serialized = JSON.stringify(value)
+				expect(serialized).not.toContain("capabilityToken")
+				if (capabilityToken) {
+					expect(serialized).not.toContain(capabilityToken)
+				}
+			}
+			expect(writeMigration).toHaveBeenCalledTimes(2)
+			expect(verifyMigration).toHaveBeenCalledTimes(4)
+			for (const [request] of writeMigration.mock.calls) {
+				expect(request).toEqual({
+					...createLegacyMigrationArtifactPayload(plan),
+					capabilityToken: targetWorkspace.capabilityToken,
+					workspaceRoot: targetWorkspace.rootPath,
+				})
+			}
+			for (const [request] of [...writeMigration.mock.calls, ...verifyMigration.mock.calls]) {
+				expect(request.capabilityToken).toBe(capabilityToken)
+				expect(request.workspaceRoot).toBe("/approved")
+			}
+			expect(readMigrationRecovery).toHaveBeenCalledExactlyOnceWith(
+				"/approved",
+				plan.manifestPath,
+				capabilityToken,
+			)
+		},
+	)
+
 	it("detects artifact content drift even when the serialized manifest is unchanged", () => {
 		const plan = planLegacyMigration({ contents, nodes, workspaceTitle: workspace.title })
 		const changed = {

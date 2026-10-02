@@ -32,6 +32,10 @@ const backlink = (label: string, line = 3): OrgBacklink => ({
 
 const controller = (content: string): OrgWorkspaceController => ({
 	activeDocument: { content: "saved", relativePath: "target.org", revision: "one" },
+	activeBufferId: "buffer:target",
+	workspaceSessionId: "capability:test",
+	openBuffers: [],
+	closeDocumentPath: vi.fn(async () => true),
 	archiveSubtree: vi.fn(async () => ({ kind: "success" as const })),
 	captureTodo: vi.fn(async () => undefined),
 	clearDerivedIndex: vi.fn(async () => undefined),

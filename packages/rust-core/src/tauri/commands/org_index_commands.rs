@@ -340,9 +340,11 @@ pub async fn replace_org_derived_index(
     db: State<'_, DatabaseConnection>,
     registry: State<'_, OrgWorkspaceRegistry>,
     workspace_root: String,
+    capability_token: String,
     payload: OrgDerivedIndexInput,
 ) -> Result<OrgDerivedIndexStats, String> {
-    let workspace_capability = registry.require_approved(Path::new(&workspace_root))?;
+    let workspace_capability =
+        registry.require_approved(Path::new(&workspace_root), &capability_token)?;
     let mutation_generation = org_mutation_generation();
     if mutation_generation % 2 != 0 {
         return Err("Org workspace mutation is in progress; retry index rebuild".to_owned());
@@ -434,8 +436,10 @@ pub async fn clear_org_derived_index(
     db: State<'_, DatabaseConnection>,
     registry: State<'_, OrgWorkspaceRegistry>,
     workspace_root: String,
+    capability_token: String,
 ) -> Result<OrgDerivedIndexStats, String> {
-    let _workspace_capability = registry.require_approved(Path::new(&workspace_root))?;
+    let _workspace_capability =
+        registry.require_approved(Path::new(&workspace_root), &capability_token)?;
     let transaction = db.begin().await.map_err(|error| error.to_string())?;
     if let Err(error) = delete_workspace_rows(&transaction, &workspace_root).await {
         let message = error.to_string();
@@ -483,8 +487,10 @@ pub async fn get_org_derived_index_stats(
     db: State<'_, DatabaseConnection>,
     registry: State<'_, OrgWorkspaceRegistry>,
     workspace_root: String,
+    capability_token: String,
 ) -> Result<OrgDerivedIndexStats, String> {
-    let _workspace_capability = registry.require_approved(Path::new(&workspace_root))?;
+    let _workspace_capability =
+        registry.require_approved(Path::new(&workspace_root), &capability_token)?;
     let transaction = db.begin().await.map_err(|error| error.to_string())?;
     let stats = OrgDerivedIndexStats {
         document_count: count_rows(&transaction, "org_index_documents", &workspace_root).await?,

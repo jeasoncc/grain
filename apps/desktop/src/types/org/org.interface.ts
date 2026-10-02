@@ -12,6 +12,8 @@ export interface OrgWorkspaceScanInterface {
 
 /** A selected filesystem workspace and its discovered Org tree. */
 export interface OrgWorkspaceInterface extends OrgWorkspaceScanInterface {
+	/** Native approval lease; scans and legacy fixtures do not mint grants. */
+	readonly capabilityToken?: string
 	readonly rootPath: string
 }
 
@@ -44,6 +46,7 @@ export interface OrgDocumentInterface extends OrgDocumentEntryInterface {
 }
 
 export interface OpenOrgDocumentInput {
+	readonly capabilityToken?: string
 	readonly workspaceRoot: string
 	readonly relativePath: string
 }
@@ -66,11 +69,13 @@ export interface OrgCaptureValidationError {
 }
 
 export interface CreateOrgDirectoryInput {
+	readonly capabilityToken?: string
 	readonly workspaceRoot: string
 	readonly relativePath: string
 }
 
 export interface MoveOrgDocumentInput {
+	readonly capabilityToken?: string
 	readonly workspaceRoot: string
 	readonly sourceRelativePath: string
 	readonly targetRelativePath: string
@@ -89,6 +94,7 @@ export interface OrgMigrationArtifactInterface {
 
 /** Input for installing a complete migration plan below an approved Org workspace. */
 export interface WriteOrgMigrationInput {
+	readonly capabilityToken?: string
 	readonly workspaceRoot: string
 	readonly directories: readonly string[]
 	readonly artifacts: readonly OrgMigrationArtifactInterface[]
@@ -124,6 +130,7 @@ export interface OrgMigrationWriteResultInterface {
 }
 
 export interface VerifyOrgMigrationInput {
+	readonly capabilityToken?: string
 	readonly workspaceRoot: string
 	readonly verificationPath: string
 	readonly expectedArtifacts: readonly OrgMigrationArtifactSummaryInterface[]

@@ -11,6 +11,7 @@ import {
 import type { OrgDocumentInterface, OrgFileError } from "@/types/org"
 
 export interface RefileOrgSubtreeInput {
+	readonly capabilityToken?: string
 	readonly workspaceRoot: string
 	readonly sourceRelativePath: string
 	readonly sourceContent: string
@@ -104,13 +105,14 @@ export const refileOrgSubtreeFlow = (
 
 	const sourceContent = removeOrgSubtree(input.sourceContent, subtree)
 	return pipe(
-		repository.scanWorkspace(input.workspaceRoot),
+		repository.scanWorkspace(input.workspaceRoot, input.capabilityToken),
 		TE.chain((snapshot) => {
 			const targetExists = snapshot.documents.some(
 				(document) => document.relativePath === input.targetRelativePath,
 			)
 			return targetExists
 				? repository.readDocument({
+						capabilityToken: input.capabilityToken,
 						relativePath: input.targetRelativePath,
 						workspaceRoot: input.workspaceRoot,
 					})
@@ -124,6 +126,7 @@ export const refileOrgSubtreeFlow = (
 			const targetContent = appendOrgSubtree(targetBefore.content, subtree.text)
 			return pipe(
 				repository.writeDocument({
+					capabilityToken: input.capabilityToken,
 					content: targetContent,
 					expectedRevision: targetBefore.revision,
 					relativePath: input.targetRelativePath,
@@ -145,6 +148,7 @@ export const refileOrgSubtreeFlow = (
 		TE.chainW((target) =>
 			pipe(
 				repository.readDocument({
+					capabilityToken: input.capabilityToken,
 					relativePath: input.targetRelativePath,
 					workspaceRoot: input.workspaceRoot,
 				}),
@@ -174,6 +178,7 @@ export const refileOrgSubtreeFlow = (
 			}
 			return pipe(
 				repository.writeDocument({
+					capabilityToken: input.capabilityToken,
 					content: sourceContent,
 					expectedRevision: input.expectedSourceRevision,
 					relativePath: input.sourceRelativePath,
