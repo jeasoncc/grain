@@ -339,12 +339,54 @@ read cancellation. Desktop 146 files / 2362 cases, typecheck/build pass; scoped
 review has no remaining critical/warnings. Same-file refile, full Org target
 configuration, multi-window runtime and native/user acceptance remain pending.
 
+## S4c: production canonical buffer and same-buffer split
+
+Main-file views now attach to `flows/org-editor-runtime`: one public CodeMirror
+state owns text/history; window states contain no history. The controller's live
+source mirror drives existing dirty/baseline/CAS ports but is not another editable
+history owner. Canonical preflight guards live grant, logical buffer, expected
+source and readonly mutation state; receipt commits update the mirror once.
+Confirmed filesystem source installations use a separate explicit inlet. Older
+save acknowledgments never overwrite newer text. Parked runtimes retain history.
+
+The production pane can display two projections of its same active buffer. Both
+follow A/B handoff; independent selections, folds and scroll remain local, while
+undo/redo use canonical history and exact origin multi-range selections. Focused
+window routing owns metadata, prefix/reveal and opened-buffer focus; mounting or
+updating a peer cannot steal the command target. Closing a secondary projection
+does not close the buffer. Scratch/capture remain local engines.
+
+The engine preflights complete chained transaction batches and every effect.
+Unknown effects/configuration reject rather than silently disappear. Supported
+local folding, registered compartment/scroll effects stay window-owned; source
+transactions preserve userEvent/time/addToHistory/isolation and typing grouping.
+Filters are not run twice. Stale/ABA, detached, closed and reentrant dispatches
+fail before commit. Unexpected post-commit mirror/projection failures retain the
+canonical source, disable/detach the failing participant and report the error.
+
+Runtime replacement carries a pane mount-incarnation fence; cached runtime-owner
+snapshots cannot resurrect retired history even for append-like unknown changes.
+Legacy history/redo migration runs on callback-free public history seeds, not
+cached filters or stale closures. Unknown clean inactive disk changes reset old
+history; confirmed controller capture/refile/archive target changes install into
+parked runtimes as known changes. Compatibility edits obey normal readonly guards.
+
+Nine production-root split cases and engine/editor/pane tests cover raw newline/
+NUL/Unicode/EOF, one body receipt, history-free projections, undo/redo and detach,
+A/B handoff, focus/metadata, save/new-input races, coherent external changes and
+incarnation reset. Desktop 150 files /2436 cases, typecheck/build pass; scoped
+review found no remaining critical/warnings after the ownership fixes.
+
+This is not different-buffer simultaneous windows, detached/native windows,
+restart recovery, arbitrary extension support, Vim adoption or real IME/desktop
+performance acceptance. Those remain explicit goal requirements/gates.
+
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.
 2. Validate existing Vim extensions, IME, undo/registers/macros and text-object APIs.
-3. Extend the verified buffer switching/save-all handoff to multiple windows,
-   with explicit extension effects/selection/history ownership guards.
+3. Extend the production same-active-buffer split to independent buffer/window
+   routing and detached windows, with extension effects/lifecycle gates.
 4. Establish shared source-range Org semantics and measured large-file behavior.
 5. Promote the command/session host; migrate planning/properties, Quick Open,
    Refile and Capture one workflow at a time.

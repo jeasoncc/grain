@@ -1,4 +1,4 @@
-import { undo, undoDepth } from "@codemirror/commands"
+import { redoDepth, undoDepth } from "@codemirror/commands"
 import { EditorState } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
@@ -79,6 +79,23 @@ const rawA = "* A :raw:\r\n#+begin_export html\r\n<b>untouched</b>\r\n#+end_expo
 const rawB = "* B\nindependent\n"
 let disk: Map<string, OrgDocumentInterface>
 let workspace: OrgWorkspaceInterface
+// Live file history belongs to the canonical runtime, never its CM projection.
+function expectHistory(undoCount: number, redoCount = 0) {
+	expect(controller.activeBufferRuntime).not.toBeNull()
+	expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(undoCount)
+	expect(redoDepth(controller.activeBufferRuntime!.state)).toBe(redoCount)
+	expect(undoDepth(editor().state)).toBe(0)
+	expect(redoDepth(editor().state)).toBe(0)
+}
+function routeUndo() {
+	const runtime = controller.activeBufferRuntime!
+	const beforeUndo = undoDepth(runtime.state)
+	const beforeRedo = redoDepth(runtime.state)
+	act(() => {
+		fireEvent.keyDown(editor().contentDOM, { key: "z", code: "KeyZ", ctrlKey: true })
+	})
+	expectHistory(Math.max(0, beforeUndo - 1), beforeRedo + (beforeUndo > 0 ? 1 : 0))
+}
 function editor(name = `Editing ${controller.activeDocument?.relativePath}`) {
 	const view = EditorView.findFromDOM(screen.getByRole("textbox", { name }))
 	if (!view) throw new Error("Missing production CodeMirror")
@@ -242,10 +259,8 @@ describe("production root capture runtime (real hook, pane, workflow and CodeMir
 		expect(editor().state.sliceDoc()).toBe(before)
 		expect(editor().state.selection.main.head).toBe(5)
 		expect(editor().contentDOM).toHaveFocus()
-		expect(undoDepth(editor().state)).toBe(1)
-		act(() => {
-			expect(undo(editor())).toBe(true)
-		})
+		expectHistory(1)
+		routeUndo()
 		expect(controller.content).toBe(rawA)
 	})
 	it("appends into the clean source Inbox with minimal external update, keeping EOF caret and existing undo history; Org prefixes still work in scratch", async () => {
@@ -268,7 +283,7 @@ describe("production root capture runtime (real hook, pane, workflow and CodeMir
 		})
 		const before = editor().state.sliceDoc()
 		act(() => editor().dispatch({ selection: { anchor: before.length } }))
-		expect(undoDepth(editor().state)).toBe(1)
+		expectHistory(1)
 		await capture()
 		replaceDraft("* TODO child\nraw body")
 		act(() => scratch().dispatch({ selection: { anchor: 3 } }))
@@ -285,10 +300,8 @@ describe("production root capture runtime (real hook, pane, workflow and CodeMir
 		expect(editor().state.selection.main.head).toBe(before.length)
 		expect(disk.get("inbox.org")?.content).toBe(before + "\n* DONE child\nraw body")
 		expect(controller.isDirty).toBe(false)
-		expect(undoDepth(editor().state)).toBe(1)
-		act(() => {
-			expect(undo(editor())).toBe(true)
-		})
+		expectHistory(1)
+		routeUndo()
 		expect(editor().state.sliceDoc()).toBe("* Inbox\noriginal\n* DONE child\nraw body")
 		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
 	})
@@ -312,7 +325,7 @@ describe("production root capture runtime (real hook, pane, workflow and CodeMir
 		editor().scrollDOM.scrollTop = 123
 		editor().scrollDOM.scrollLeft = 17
 		expect(controller.isDirty).toBe(false)
-		expect(undoDepth(editor().state)).toBe(1)
+		expectHistory(1)
 		await capture()
 		// The real sidebar event calls openDocument (not a forced save or a test activation).
 		await act(async () => {
@@ -359,7 +372,7 @@ describe("production root capture runtime (real hook, pane, workflow and CodeMir
 		expect(editor().state.selection.main.head).toBe(position)
 		expect(editor().contentDOM).toHaveFocus()
 		expect(controller.isDirty).toBe(false)
-		expect(undoDepth(editor().state)).toBe(1)
+		expectHistory(1)
 		// Only run the scroll-restore frame; leave debounce/autosave timers paused.
 		// These are JSDOM scroll properties, not evidence of native layout/geometry.
 		act(() => vi.advanceTimersByTime(32))
@@ -371,7 +384,7 @@ describe("production root capture runtime (real hook, pane, workflow and CodeMir
 		expect(editor().state.sliceDoc()).toBe(rawA + appended)
 		expect(controller.content).toBe(rawA + appended)
 		expect(controller.isDirty).toBe(true)
-		expect(undoDepth(editor().state)).toBe(0)
+		expectHistory(0, 1)
 		expect(disk.get("a.org")?.content).toBe(confirmed.content)
 		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
 	})

@@ -1,0 +1,77 @@
+import { isolateHistory } from "@codemirror/commands"
+import {
+	Annotation,
+	type ChangeSpec,
+	type Annotation as CMAnnotation,
+	type EditorSelection,
+	StateEffect,
+	Text,
+	Transaction,
+} from "@codemirror/state"
+
+/** Match the established Org editor parser: split ONLY the chosen separator.
+ * Other newline bytes are literal text, not normalized. */
+export const orgSourceLineSeparator = (source: string): string =>
+	source.includes("\r\n") ? "\r\n" : source.includes("\r") ? "\r" : "\n"
+export const orgSourceText = (source: string, separator = orgSourceLineSeparator(source)): Text =>
+	Text.of(source.split(separator))
+
+/** A structural line break is NOT a literal LF stored within a CRLF/CR line.
+ * Comparing toString() would conflate them and silently lose mixed-EOL edits. */
+function* textUnits(doc: Text, direction: 1 | -1): Generator<number> {
+	const iterator = doc.iter(direction)
+	for (iterator.next(); !iterator.done; iterator.next()) {
+		if (iterator.lineBreak) {
+			yield -1
+		} else if (direction === 1) {
+			for (let i = 0; i < iterator.value.length; i++) {
+				yield iterator.value.charCodeAt(i)
+			}
+		} else {
+			for (let i = iterator.value.length - 1; i >= 0; i--) {
+				yield iterator.value.charCodeAt(i)
+			}
+		}
+	}
+}
+export function minimalTextChange(previous: Text, next: Text): ChangeSpec {
+	let from = 0,
+		endA = previous.length,
+		endB = next.length
+	const forwardA = textUnits(previous, 1),
+		forwardB = textUnits(next, 1)
+	while (from < endA && from < endB && forwardA.next().value === forwardB.next().value) {
+		from++
+	}
+	const backwardA = textUnits(previous, -1),
+		backwardB = textUnits(next, -1)
+	while (endA > from && endB > from && backwardA.next().value === backwardB.next().value) {
+		endA--
+		endB--
+	}
+	return { from, insert: next.slice(from, endB), to: endA }
+}
+export interface OriginSelection {
+	readonly windowId: string
+	readonly selection: EditorSelection
+}
+export const originWindow = Annotation.define<string>()
+export const restoreOriginSelection = StateEffect.define<OriginSelection>({
+	map: (value, mapping) => ({ ...value, selection: value.selection.map(mapping) }),
+})
+export function transactionTraits(tr: Transaction): CMAnnotation<unknown>[] {
+	const result: CMAnnotation<unknown>[] = [Transaction.time.of(tr.annotation(Transaction.time)!)]
+	const userEvent = tr.annotation(Transaction.userEvent)
+	const add = tr.annotation(Transaction.addToHistory)
+	const isolate = tr.annotation(isolateHistory)
+	if (userEvent !== undefined) {
+		result.push(Transaction.userEvent.of(userEvent))
+	}
+	if (add !== undefined) {
+		result.push(Transaction.addToHistory.of(add))
+	}
+	if (isolate !== undefined) {
+		result.push(isolateHistory.of(isolate))
+	}
+	return result
+}

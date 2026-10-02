@@ -1,4 +1,4 @@
-import { undo } from "@codemirror/commands"
+import { redoDepth, undoDepth } from "@codemirror/commands"
 import { EditorView } from "@codemirror/view"
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import * as E from "fp-ts/Either"
@@ -321,8 +321,18 @@ describe("real heading refile runtime with an in-memory filesystem boundary", ()
 		)
 		act(() => {
 			view().dispatch({ changes: { from: view().state.doc.length, insert: "local" } })
-			expect(undo(view())).toBe(true)
 		})
+		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(1)
+		expect(redoDepth(controller.activeBufferRuntime!.state)).toBe(0)
+		expect(undoDepth(view().state)).toBe(0)
+		expect(redoDepth(view().state)).toBe(0)
+		act(() => {
+			fireEvent.keyDown(view().contentDOM, { key: "z", code: "KeyZ", ctrlKey: true })
+		})
+		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(0)
+		expect(redoDepth(controller.activeBufferRuntime!.state)).toBe(1)
+		expect(undoDepth(view().state)).toBe(0)
+		expect(redoDepth(view().state)).toBe(0)
 		expect(controller.content).toBe(source)
 		await act(async () => {
 			await controller.saveDocument()

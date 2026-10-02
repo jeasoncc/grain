@@ -11,10 +11,11 @@ import {
 	PanelRightOpen,
 	Save,
 	Send,
+	Columns2,
 	Tags,
 	X,
 } from "lucide-react"
-import { memo, useRef, useState } from "react"
+import { memo, useEffect, useRef, useState } from "react"
 import { useOrgCommandMinibuffer } from "@/hooks/use-org-command-minibuffer"
 import { orgTagsBufferCommand } from "@/flows/org-command/org-tags.command"
 import { createOrgPlanningCommand } from "@/flows/org-command/org-planning.command"
@@ -76,22 +77,67 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	readonly parameterSessionSuspended?: boolean
 	readonly editorSessionCache?: Map<string, OrgEditorSessionSnapshot>
 }) {
+	const activeDocument = controller.activeDocument
+	// UI mount identity is separate from the durable buffer/cache namespace.
+	const runtimeMountIds = useRef(new WeakMap<object, number>())
+	const nextRuntimeMountId = useRef(0)
+	const runtime = controller.activeBufferRuntime
+	let runtimeMountId = 0
+	if (runtime) {
+		runtimeMountId = runtimeMountIds.current.get(runtime) ?? ++nextRuntimeMountId.current
+		runtimeMountIds.current.set(runtime, runtimeMountId)
+	}
+	const [split, setSplit] = useState(false)
+	const [activeWindow, setActiveWindow] = useState<"primary" | "secondary">("primary")
+	const [windowCommandSuspended, setWindowCommandSuspended] = useState(false)
+	useEffect(() => {
+		if (windowCommandSuspended) setWindowCommandSuspended(false)
+	}, [windowCommandSuspended])
+	const activeWindowRef = useRef<"primary" | "secondary">("primary")
+	const targets = useRef(new Map<string, OrgEditorCommandTarget>())
+	const cursors = useRef(new Map<string, number>())
+	const prefixes = useRef(new Map<string, OrgPrefixSession | null>())
+	const baseSessionKey =
+		controller.workspaceSessionId && controller.activeBufferId
+			? `${controller.workspaceSessionId}\u0000${controller.activeBufferId}`
+			: (activeDocument?.relativePath ?? "")
+	const windowKey = (name: string) => `${baseSessionKey}:window:${name}`
 	const [cursor, setCursor] = useState(0)
 	const [prefix, setPrefix] = useState<OrgPrefixSession | null>(null)
 	const commandTargetRef = useRef<OrgEditorCommandTarget | null>(null)
+	const selectWindow = (name: "primary" | "secondary") => {
+		if (activeWindowRef.current !== name) {
+			setWindowCommandSuspended(true)
+			prefixes.current.set(windowKey(activeWindowRef.current), null)
+			prefixes.current.set(windowKey(name), null)
+			setPrefix(null)
+		}
+		activeWindowRef.current = name
+		setActiveWindow(name)
+		commandTargetRef.current = targets.current.get(windowKey(name)) ?? null
+		setCursor(cursors.current.get(windowKey(name)) ?? 0)
+	}
+
+	useEffect(() => {
+		// Grants are namespaces, not editor/window ownership. Never carry UI metadata
+		// or a target across a new authorization grant.
+		cursors.current.clear()
+		prefixes.current.clear()
+		setPrefix(null)
+	}, [controller.workspaceSessionId])
 	const minibufferFocusRef = useRef<(() => void) | null>(null)
 	const parameterCommand = useOrgCommandMinibuffer(
 		controller,
 		isBusy,
 		commandTargetRef,
-		parameterSessionSuspended,
+		parameterSessionSuspended || windowCommandSuspended,
 	)
 	const minibuffer = parameterCommand.session
 	const echo = parameterCommand.echo
 	const line = controller.content.slice(0, cursor).split(/\r\n|\n|\r/).length
 	const wordCount = controller.content.match(/\S+/gu)?.length ?? 0
 	const openMetadataCommand = (type: OrgMetadataType, position: number) => {
-		const document = controller.activeDocument
+		const document = activeDocument
 		if (!document || isBusy) return
 		parameterCommand.open(
 			type === "tags"
@@ -105,7 +151,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 
 	return (
 		<main className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
-			{controller.activeDocument ? (
+			{activeDocument ? (
 				<>
 					<div className="flex h-10 shrink-0 items-center gap-0.5 border-b bg-muted/20 px-1">
 						{!sidebarVisible && (
@@ -141,7 +187,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 						</Button>
 						<div className="flex min-w-0 flex-1 self-stretch overflow-x-auto">
 							{openDocumentPaths.map((path) => {
-								const active = path === controller.activeDocument?.relativePath
+								const active = path === activeDocument?.relativePath
 								const buffer = controller.openBuffers?.find((item) => item.relativePath === path)
 								return (
 									<div
@@ -189,6 +235,21 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 							onClick={() => void controller.saveDocument()}
 						>
 							<Save className="size-4" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							disabled={!controller.activeBufferRuntime}
+							aria-label={split ? "Close editor split" : "Split editor"}
+							onClick={() => {
+								if (split && activeWindowRef.current === "secondary") {
+									selectWindow("primary")
+									commandTargetRef.current?.restoreFocus()
+								}
+								setSplit(!split)
+							}}
+						>
+							<Columns2 className="size-4" />
 						</Button>
 						{!inspectorVisible && (
 							<Button
@@ -273,44 +334,84 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 							</DropdownMenuContent>
 						</DropdownMenu>
 					</div>
-					<div className="min-h-0 flex-1 bg-background">
-						<OrgEditor
-							key={controller.activeBufferId ?? controller.activeDocument.relativePath}
-							sessionKey={
-								controller.workspaceSessionId && controller.activeBufferId
-									? `${controller.workspaceSessionId}\u0000${controller.activeBufferId}`
-									: undefined
-							}
-							sessionCache={editorSessionCache}
-							ariaLabel={`Editing ${controller.activeDocument.relativePath}`}
-							documentPath={controller.activeDocument.relativePath}
-							prefixContextKey={`${controller.workspaceSessionId ?? ""}\u0000${controller.workspace?.rootPath ?? ""}\u0000${controller.activeBufferId ?? ""}\u0000${controller.activeDocument.relativePath}`}
-							onPrefixChange={setPrefix}
-							value={controller.content}
-							onChange={controller.updateContent}
-							onCommandTarget={(target) => {
-								commandTargetRef.current = target
-							}}
-							onOpenOrgLink={(target) => void controller.openOrgLink(target)}
-							onCursorChange={setCursor}
-							onRefileSubtree={(position) => {
-								if (!parameterSessionSuspended) parameterCommand.openRefile(position)
-							}}
-							onArchiveSubtree={(position) => {
-								if (!parameterSessionSuspended) parameterCommand.openArchive(position)
-							}}
-							onEditTags={(position) => openMetadataCommand("tags", position)}
-							onSchedule={(position) => openMetadataCommand("scheduled", position)}
-							onDeadline={(position) => openMetadataCommand("deadline", position)}
-							onSetProperty={(position) => openMetadataCommand("property", position)}
-							onSave={() => void controller.saveDocument()}
-							readOnly={controller.isEditorReadOnly ?? isBusy}
-							revealTarget={
-								controller.revealTarget?.relativePath === controller.activeDocument.relativePath
-									? controller.revealTarget
-									: null
-							}
-						/>
+					<div
+						className={`grid min-h-0 flex-1 bg-background ${split && controller.activeBufferRuntime ? "grid-cols-2" : "grid-cols-1"}`}
+					>
+						{(
+							(split && controller.activeBufferRuntime
+								? ["primary", "secondary"]
+								: ["primary"]) as ("primary" | "secondary")[]
+						).map((name) => (
+							<div
+								key={name}
+								className="min-h-0 min-w-0 overflow-hidden border-r last:border-r-0"
+								data-org-active-editor-window={activeWindow === name ? "true" : "false"}
+								data-org-editor-window={name}
+								onFocusCapture={() => selectWindow(name)}
+							>
+								<OrgEditor
+									key={`${baseSessionKey}:runtime:${runtimeMountId}`}
+									runtime={controller.activeBufferRuntime}
+									windowId={`${controller.workspaceSessionId ?? "local"}:${name}`}
+									sessionKey={
+										controller.workspaceSessionId && controller.activeBufferId
+											? name === "primary"
+												? baseSessionKey
+												: `${baseSessionKey}:window:secondary`
+											: undefined
+									}
+									sessionCache={editorSessionCache}
+									ariaLabel={`Editing ${activeDocument.relativePath}`}
+									documentPath={activeDocument.relativePath}
+									prefixContextKey={`${controller.workspaceSessionId ?? ""}\u0000${controller.workspace?.rootPath ?? ""}\u0000${controller.activeBufferId ?? ""}\u0000${activeDocument.relativePath}\u0000${activeWindow}`}
+									onPrefixChange={(next) => {
+										prefixes.current.set(windowKey(name), next)
+										if (activeWindowRef.current === name) setPrefix(next)
+									}}
+									value={controller.content}
+									onChange={controller.updateContent}
+									onCommandTarget={(target) => {
+										const key = windowKey(name)
+										if (target) targets.current.set(key, target)
+										else targets.current.delete(key)
+										if (activeWindowRef.current === name) commandTargetRef.current = target
+									}}
+									onOpenOrgLink={(target) => void controller.openOrgLink(target)}
+									onCursorChange={(position) => {
+										cursors.current.set(windowKey(name), position)
+										if (activeWindowRef.current === name) setCursor(position)
+									}}
+									onRefileSubtree={(position) => {
+										if (activeWindowRef.current === name && !parameterSessionSuspended)
+											parameterCommand.openRefile(position)
+									}}
+									onArchiveSubtree={(position) => {
+										if (activeWindowRef.current === name && !parameterSessionSuspended)
+											parameterCommand.openArchive(position)
+									}}
+									onEditTags={(position) => {
+										if (activeWindowRef.current === name) openMetadataCommand("tags", position)
+									}}
+									onSchedule={(position) => {
+										if (activeWindowRef.current === name) openMetadataCommand("scheduled", position)
+									}}
+									onDeadline={(position) => {
+										if (activeWindowRef.current === name) openMetadataCommand("deadline", position)
+									}}
+									onSetProperty={(position) => {
+										if (activeWindowRef.current === name) openMetadataCommand("property", position)
+									}}
+									onSave={() => void controller.saveDocument()}
+									readOnly={controller.isEditorReadOnly ?? isBusy}
+									revealTarget={
+										activeWindow === name &&
+										controller.revealTarget?.relativePath === activeDocument.relativePath
+											? controller.revealTarget
+											: null
+									}
+								/>
+							</div>
+						))}
 					</div>
 				</>
 			) : (
@@ -410,13 +511,13 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 				>
 					{echo}
 				</output>
-				{controller.activeDocument && (
+				{activeDocument && (
 					<>
 						<output aria-live="polite">
 							{controller.isSaving ? "Saving…" : controller.isDirty ? "Edited" : "Saved"}
 						</output>
 						<span aria-hidden="true">·</span>
-						<span className="max-w-72 truncate">{controller.activeDocument.relativePath}</span>
+						<span className="max-w-72 truncate">{activeDocument.relativePath}</span>
 						<span aria-hidden="true">·</span>
 						<span>Ln {line}</span>
 						<span aria-hidden="true">·</span>

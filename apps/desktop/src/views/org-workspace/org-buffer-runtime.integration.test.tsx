@@ -1,4 +1,4 @@
-import { undo, undoDepth } from "@codemirror/commands"
+import { redoDepth, undoDepth } from "@codemirror/commands"
 import { EditorState, Transaction } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
@@ -143,10 +143,26 @@ function edit(suffix: string) {
 		view().dispatch({ changes: { from: view().state.doc.length, insert: suffix } })
 	})
 }
-function undoEditor() {
+// Live file history belongs to the canonical runtime, never its CM projection.
+function expectHistory(undoCount: number, redoCount = 0) {
+	expect(controller.activeBufferRuntime).not.toBeNull()
+	expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(undoCount)
+	expect(redoDepth(controller.activeBufferRuntime!.state)).toBe(redoCount)
+	expect(undoDepth(view().state)).toBe(0)
+	expect(redoDepth(view().state)).toBe(0)
+}
+function routeUndo() {
+	const runtime = controller.activeBufferRuntime!
+	const beforeUndo = undoDepth(runtime.state)
+	const beforeRedo = redoDepth(runtime.state)
 	act(() => {
-		expect(undo(view())).toBe(true)
+		fireEvent.keyDown(view().contentDOM, { key: "z", code: "KeyZ", ctrlKey: true })
 	})
+	expectHistory(Math.max(0, beforeUndo - 1), beforeRedo + (beforeUndo > 0 ? 1 : 0))
+}
+function undoEditor() {
+	expect(undoDepth(controller.activeBufferRuntime!.state)).toBeGreaterThan(0)
+	routeUndo()
 }
 async function setup() {
 	render(<Runtime />)
@@ -170,7 +186,9 @@ function externalA() {
 beforeEach(() => {
 	vi.useFakeTimers()
 	vi.resetAllMocks()
-	switchSelectedBuffer.mockImplementation((bufferId, signal) => controller.switchBuffer(bufferId, signal))
+	switchSelectedBuffer.mockImplementation((bufferId, signal) =>
+		controller.switchBuffer(bufferId, signal),
+	)
 	window.localStorage.clear()
 	vi.spyOn(window, "confirm").mockReturnValue(true)
 	disk = new Map([
@@ -217,22 +235,53 @@ describe("production Org buffer runtime", () => {
 		const activeId = controller.activeBufferId
 		await act(async () => {
 			expect(await controller.saveAllDocuments()).toEqual({
-				kind: "success", savedPaths: ["a.org", "b.org"], remainingDirtyPaths: [],
+				kind: "success",
+				savedPaths: ["a.org", "b.org"],
+				remainingDirtyPaths: [],
 			})
 		})
 		expect(vi.mocked(saveOrgDocumentFlow).mock.calls.map(([input]) => input)).toEqual([
-			{ workspaceRoot: "/notes", capabilityToken: "G1", relativePath: "a.org", content: rawA + "A batch", expectedRevision: "a-1" },
-			{ workspaceRoot: "/notes", capabilityToken: "G1", relativePath: "b.org", content: rawB + "B batch", expectedRevision: "b-1" },
+			{
+				workspaceRoot: "/notes",
+				capabilityToken: "G1",
+				relativePath: "a.org",
+				content: rawA + "A batch",
+				expectedRevision: "a-1",
+			},
+			{
+				workspaceRoot: "/notes",
+				capabilityToken: "G1",
+				relativePath: "b.org",
+				content: rawB + "B batch",
+				expectedRevision: "b-1",
+			},
 		])
 		expect(controller.activeBufferId).toBe(activeId)
 		expect(controller.openBuffers.map((buffer) => buffer.bufferId)).toEqual(ids)
 		expect(controller.openBuffers.every((buffer) => !buffer.isDirty)).toBe(true)
-		expect(undoDepth(view().state)).toBe(1)
+		expectHistory(1)
 		undoEditor()
 		expect(controller.content).toBe(rawB)
-		await act(async () => { expect(await controller.switchBuffer(ids[0]!)).toBe(true) })
+		act(() => {
+			fireEvent.keyDown(view().contentDOM, {
+				key: "Z",
+				code: "KeyZ",
+				keyCode: 90,
+				ctrlKey: true,
+				shiftKey: true,
+			})
+		})
+		expectHistory(1)
+		expect(controller.content).toBe(rawB + "B batch")
+		expect(view().state.sliceDoc()).toBe(rawB + "B batch")
+		expect(controller.isDirty).toBe(false)
+		undoEditor()
+		expect(controller.content).toBe(rawB)
+		await act(async () => {
+			expect(await controller.switchBuffer(ids[0]!)).toBe(true)
+		})
 		expect(view().state.sliceDoc()).toBe(rawA + "A batch")
-		expect(undoDepth(view().state)).toBe(1)
+		expectHistory(1)
 		undoEditor()
 		expect(controller.content).toBe(rawA)
 		expect(controller.isDirty).toBe(true)
@@ -245,35 +294,67 @@ describe("production Org buffer runtime", () => {
 		await open("b.org")
 		edit("B captured")
 		let finish!: (result: Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>) => void
-		const pending = new Promise<Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>>((resolve) => { finish = resolve })
+		const pending = new Promise<Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>>(
+			(resolve) => {
+				finish = resolve
+			},
+		)
 		vi.mocked(saveOrgDocumentFlow).mockImplementation((input) => async () => {
 			if (input.relativePath === "b.org") return pending
-			disk.set(input.relativePath, { relativePath: input.relativePath, content: input.content, revision: "a-confirmed" })
+			disk.set(input.relativePath, {
+				relativePath: input.relativePath,
+				content: input.content,
+				revision: "a-confirmed",
+			})
 			return E.right({ relativePath: input.relativePath, revision: "a-confirmed" })
 		})
 		let saving!: ReturnType<typeof controller.saveAllDocuments>
-		await act(async () => { saving = controller.saveAllDocuments(); await Promise.resolve() })
+		await act(async () => {
+			saving = controller.saveAllDocuments()
+			await Promise.resolve()
+		})
 		expect(controller.isSaving).toBe(true)
 		expect(controller.isEditorReadOnly).toBe(false)
 		expect(view().state.facet(EditorState.readOnly)).toBe(false)
 		expect(view().contentDOM).toHaveAttribute("contenteditable", "true")
 		// A real CM transaction, not a browser/native IME simulation. Separate undo group.
-		act(() => view().dispatch({
-			changes: { from: view().state.doc.length, insert: " newer input" },
-			annotations: Transaction.userEvent.of("input"),
-		}))
+		act(() =>
+			view().dispatch({
+				changes: { from: view().state.doc.length, insert: " newer input" },
+				annotations: Transaction.userEvent.of("input"),
+			}),
+		)
 		await act(async () => {
-			finish(E.left({ type: "ORG_FILE_ERROR", operation: "write", command: "write", cause: null, message: "write denied" }))
-			expect(await saving).toMatchObject({ kind: "partial", savedPaths: ["a.org"], remainingDirtyPaths: ["b.org"] })
+			finish(
+				E.left({
+					type: "ORG_FILE_ERROR",
+					operation: "write",
+					command: "write",
+					cause: null,
+					message: "write denied",
+				}),
+			)
+			expect(await saving).toMatchObject({
+				kind: "partial",
+				savedPaths: ["a.org"],
+				remainingDirtyPaths: ["b.org"],
+			})
 		})
-		expect(saveOrgDocumentFlow).toHaveBeenLastCalledWith(expect.objectContaining({
-			relativePath: "b.org", content: rawB + "B captured", expectedRevision: "b-1", capabilityToken: "G1",
-		}))
+		expect(saveOrgDocumentFlow).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				relativePath: "b.org",
+				content: rawB + "B captured",
+				expectedRevision: "b-1",
+				capabilityToken: "G1",
+			}),
+		)
 		expect(controller.content).toBe(rawB + "B captured newer input")
 		expect(view().state.sliceDoc()).toBe(controller.content)
 		expect(controller.isEditorReadOnly).toBe(false)
 		expect(view().state.facet(EditorState.readOnly)).toBe(false)
-		act(() => { fireEvent.keyDown(view().contentDOM, { key: "z", code: "KeyZ", ctrlKey: true }) })
+		act(() => {
+			fireEvent.keyDown(view().contentDOM, { key: "z", code: "KeyZ", ctrlKey: true })
+		})
 		expect(view().state.sliceDoc()).toBe(rawB + "B captured")
 		expect(controller.content).toBe(rawB + "B captured")
 		expect(controller.openBuffers).toHaveLength(2)
@@ -288,18 +369,28 @@ describe("production Org buffer runtime", () => {
 		await open("b.org")
 		edit("B stays")
 		const bId = controller.activeBufferId!
-		await act(async () => { expect(await controller.switchBuffer(aId)).toBe(true) })
+		await act(async () => {
+			expect(await controller.switchBuffer(aId)).toBe(true)
+		})
 		expect(view().state.sliceDoc()).toBe(rawA + "A parked")
 		expect(view().state.selection.main.head).toBe(4)
-		expect(undoDepth(view().state)).toBe(1)
-		await act(async () => { expect(await controller.switchBuffer(bId)).toBe(true) })
+		expectHistory(1)
+		await act(async () => {
+			expect(await controller.switchBuffer(bId)).toBe(true)
+		})
 		expect(view().state.sliceDoc()).toBe(rawB + "B stays")
 		let finish!: (result: Awaited<ReturnType<ReturnType<typeof openOrgDocumentFlow>>>) => void
-		const pending = new Promise<Awaited<ReturnType<ReturnType<typeof openOrgDocumentFlow>>>>((resolve) => { finish = resolve })
+		const pending = new Promise<Awaited<ReturnType<ReturnType<typeof openOrgDocumentFlow>>>>(
+			(resolve) => {
+				finish = resolve
+			},
+		)
 		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(() => pending)
 		const abort = new AbortController()
 		let switching!: Promise<boolean>
-		act(() => { switching = controller.switchBuffer(aId, abort.signal) })
+		act(() => {
+			switching = controller.switchBuffer(aId, abort.signal)
+		})
 		expect(controller.isLoading).toBe(true)
 		expect(controller.isEditorReadOnly).toBe(true)
 		expect(view().state.facet(EditorState.readOnly)).toBe(true)
@@ -316,7 +407,9 @@ describe("production Org buffer runtime", () => {
 		expect(view().state.sliceDoc()).toBe(rawB + "B stays")
 		undoEditor()
 		expect(controller.content).toBe(rawB)
-		await act(async () => { expect(await controller.switchBuffer(aId)).toBe(true) })
+		await act(async () => {
+			expect(await controller.switchBuffer(aId)).toBe(true)
+		})
 		undoEditor()
 		expect(controller.content).toBe(rawA)
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
@@ -329,20 +422,33 @@ describe("production Org buffer runtime", () => {
 		await open("b.org")
 		disk.delete("a.org")
 		workspace = { ...workspace, documents: [{ relativePath: "b.org", revision: "b-1" }] }
-		await act(async () => { await controller.refreshWorkspace() })
-		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () => E.left({
-			type: "ORG_FILE_ERROR", operation: "read", command: "read", cause: null, message: "file missing",
-		}))
+		await act(async () => {
+			await controller.refreshWorkspace()
+		})
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () =>
+			E.left({
+				type: "ORG_FILE_ERROR",
+				operation: "read",
+				command: "read",
+				cause: null,
+				message: "file missing",
+			}),
+		)
 		act(() => setPickerOpen(true))
 		const input = screen.getByRole("combobox", { name: "Search open buffers" })
-		const selected = () => screen.getAllByRole("option").find((option) => option.getAttribute("aria-selected") === "true")!
+		const selected = () =>
+			screen
+				.getAllByRole("option")
+				.find((option) => option.getAttribute("aria-selected") === "true")!
 		expect(selected()).toHaveAccessibleName("a.org · Unsaved · External conflict")
 		fireEvent.keyDown(input, { key: "n", ctrlKey: true })
 		expect(selected()).toHaveAccessibleName("b.org · Current")
 		fireEvent.keyDown(input, { key: "p", ctrlKey: true })
 		fireEvent.keyDown(input, { key: "Enter", isComposing: true })
 		expect(switchSelectedBuffer).not.toHaveBeenCalled()
-		await act(async () => { fireEvent.keyDown(input, { key: "Enter" }) })
+		await act(async () => {
+			fireEvent.keyDown(input, { key: "Enter" })
+		})
 		expect(switchSelectedBuffer).toHaveBeenCalledExactlyOnceWith(aId, expect.any(AbortSignal))
 		expect(screen.queryByRole("combobox", { name: "Search open buffers" })).not.toBeInTheDocument()
 		expect(controller.activeBufferId).toBe(aId)
@@ -421,7 +527,7 @@ describe("production Org buffer runtime", () => {
 		expect(cache.has(key)).toBe(true)
 		act(() => setAgenda(false))
 		expect(view().state.sliceDoc()).toBe(rawA + "agenda edit")
-		expect(undoDepth(view().state)).toBe(1)
+		expectHistory(1)
 		undoEditor()
 		expect(controller.content).toBe(rawA)
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
@@ -485,7 +591,7 @@ describe("production Org buffer runtime", () => {
 			await controller.saveDocument()
 		})
 		expect(controller.isDirty).toBe(false)
-		expect(undoDepth(view().state)).toBe(1)
+		expectHistory(1)
 		await open("b.org")
 		externalA()
 		await act(async () => {
@@ -494,10 +600,9 @@ describe("production Org buffer runtime", () => {
 		await open("a.org")
 		expect(view().state.sliceDoc()).toBe(disk.get("a.org")?.content)
 		expect(controller.isDirty).toBe(false)
-		expect(undoDepth(view().state)).toBe(0)
-		act(() => {
-			expect(undo(view())).toBe(false)
-		})
+		// An unknown full source replacement must not inherit the old source's history.
+		expectHistory(0)
+		routeUndo()
 		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
 	})
 
@@ -520,11 +625,9 @@ describe("production Org buffer runtime", () => {
 		await open("a.org")
 		act(() => setAgenda(false))
 		expect(view().state.sliceDoc()).toBe(rawA + "saved")
-		expect(undoDepth(view().state)).toBe(0)
+		expectHistory(0)
 		expect(view().state.selection.main.head).toBe(0)
-		act(() => {
-			expect(undo(view())).toBe(false)
-		})
+		routeUndo()
 		expect(openOrgDocumentFlow).toHaveBeenLastCalledWith(
 			expect.objectContaining({ relativePath: "a.org", capabilityToken: "G2" }),
 		)

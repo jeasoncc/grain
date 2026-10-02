@@ -269,9 +269,10 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 		.join("\u0000")
 	useEffect(() => {
 		const retained = new Set(
-			(controller.openBuffers ?? []).map(
-				(buffer) => `${controller.workspaceSessionId}\u0000${buffer.bufferId}`,
-			),
+			(controller.openBuffers ?? []).flatMap((buffer) => {
+				const base = `${controller.workspaceSessionId}\u0000${buffer.bufferId}`
+				return [base, `${base}:window:secondary`]
+			}),
 		)
 		for (const key of editorSessionCacheRef.current.keys()) {
 			if (!retained.has(key)) editorSessionCacheRef.current.delete(key)
@@ -387,7 +388,11 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 			pending.path === controller.activeDocument?.relativePath &&
 			!commandPaletteVisible
 		)
-			workspaceViewRef.current?.querySelector<HTMLElement>(".cm-content")?.focus()
+			(
+				workspaceViewRef.current?.querySelector<HTMLElement>(
+					'[data-org-active-editor-window="true"] .cm-content',
+				) ?? workspaceViewRef.current?.querySelector<HTMLElement>(".cm-content")
+			)?.focus()
 	}, [
 		quickOpenVisible,
 		bufferSwitchVisible,

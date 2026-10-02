@@ -1,4 +1,5 @@
 import type { EditorState } from "@codemirror/state"
+import type { OrgBufferRuntime } from "@/flows/org-editor-runtime"
 import type { OrgLinkClickTarget, OrgTextEdit } from "@/pipes/org"
 import type { OrgPrefixSession } from "@/types/editor/org-keymap.interface"
 
@@ -16,11 +17,19 @@ export interface OrgEditorRevealTarget {
 /** In-memory only: retains document history/selection, never transient UI sessions. */
 export interface OrgEditorSessionSnapshot {
 	readonly state: EditorState
+	readonly source?: string
+	/** Memory-only incarnation ownership; absent only for legacy local snapshots. */
+	readonly runtimeOwner?: OrgBufferRuntime
+	/** History-free window selection/folds; state retains canonical buffer history. */
+	readonly windowState?: EditorState
 	readonly scrollTop: number
 	readonly scrollLeft: number
 }
 
 export interface OrgEditorProps {
+	/** Mount-scoped controller-owned runtime; omitted for local scratch editors. */
+	readonly runtime?: OrgBufferRuntime | null
+	readonly windowId?: string
 	/** Mount-scoped caller-owned opaque buffer/capability identity, not a document path. */
 	readonly sessionKey?: string
 	readonly sessionCache?: Map<string, OrgEditorSessionSnapshot>

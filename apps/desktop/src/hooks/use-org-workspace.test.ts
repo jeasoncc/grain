@@ -1,3 +1,7 @@
+import { history, redoDepth, undoDepth } from "@codemirror/commands"
+import { EditorState } from "@codemirror/state"
+import { EditorView } from "@codemirror/view"
+import type { OrgBufferRuntime, OrgBufferWindowHandle } from "@/flows/org-editor-runtime"
 import { useBlocker } from "@tanstack/react-router"
 import { act, cleanup, renderHook } from "@testing-library/react"
 import * as E from "fp-ts/Either"
@@ -130,6 +134,303 @@ describe("Org capture entry and transient drafts", () => {
 		})
 		return hook
 	}
+	const attachRuntime = (runtime: OrgBufferRuntime, windowId = "workspace-test") => {
+		let handle!: OrgBufferWindowHandle
+		const view = new EditorView({
+			state: EditorState.create({
+				doc: runtime.state.doc,
+				extensions: runtime.historyFreeSourceExtensions,
+			}),
+			dispatchTransactions: (transactions) => handle.dispatchTransactions(transactions),
+		})
+		handle = runtime.attachWindow({ windowId, view })
+		return {
+			view,
+			handle,
+			dispose: () => {
+				handle.detach()
+				view.destroy()
+			},
+		}
+	}
+	it("mirrors a runtime edit synchronously before native close and save capture", async () => {
+		const { result } = await setup()
+		const runtime = result.current.activeBufferRuntime!
+		const editor = attachRuntime(runtime)
+		vi.mocked(saveOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ ...captured, revision: "saved" }),
+		)
+		await act(async () => {
+			editor.view.dispatch({ changes: { from: 0, insert: "new " } })
+			expect(nativeState.hasDirtyBuffers).toBe(true)
+			await result.current.saveDocument()
+		})
+		expect(result.current.content).toBe(runtime.source)
+		expect(runtime.revision).toBe(1)
+		expect(saveOrgDocumentFlow).toHaveBeenCalledWith(
+			expect.objectContaining({ content: runtime.source }),
+		)
+		expect(result.current.isDirty).toBe(false)
+		editor.dispose()
+	})
+	it("retains canonical undo/redo across A/B/A and rejects parked writers", async () => {
+		const { result } = await setup()
+		const runtime = result.current.activeBufferRuntime!
+		const original = runtime.source
+		const first = attachRuntime(runtime)
+		act(() => first.view.dispatch({ changes: { from: 0, insert: "typed " } }))
+		first.dispose()
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		expect(() => runtime.applyControllerSource(runtime.source, "stale")).toThrow()
+		await act(async () => {
+			await result.current.openDocumentPath("inbox.org")
+		})
+		expect(result.current.activeBufferRuntime).toBe(runtime)
+		const second = attachRuntime(runtime)
+		act(() => {
+			expect(second.handle.undo()).toBe(true)
+		})
+		expect(result.current.content).toBe(original)
+		act(() => {
+			expect(second.handle.redo()).toBe(true)
+		})
+		expect(result.current.content).toBe(`typed ${original}`)
+		second.dispose()
+	})
+	it.each([
+		"arbitrary body",
+		"separator only",
+	])("resets unknown clean inactive body/history under the same logical ID: %s", async (kind) => {
+		const { result } = await setup()
+		const runtime = result.current.activeBufferRuntime!
+		const first = attachRuntime(runtime)
+		const second = attachRuntime(runtime, "second-window")
+		act(() => first.view.dispatch({ changes: { from: 0, insert: "typed " } }))
+		const saved = runtime.source
+		const replacement =
+			kind === "separator only" ? saved.replaceAll("\n", "\r\n") : "external\r\nbody"
+		const oldHistory = runtime.state
+		vi.mocked(saveOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ ...captured, content: saved, revision: "saved" }),
+		)
+		await act(async () => {
+			await result.current.saveDocument()
+		})
+		expect(result.current.isDirty).toBe(false)
+		expect(undoDepth(runtime.state)).toBe(1)
+		// Do not detach: both old windows can still exist before view effects run.
+		await act(async () => {
+			expect(await result.current.openDocumentPath("z.org")).toBe(true)
+		})
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ ...captured, content: replacement, revision: "external" }),
+		)
+		await act(async () => {
+			expect(await result.current.openDocumentPath("inbox.org")).toBe(true)
+		})
+		const fresh = result.current.activeBufferRuntime!
+		expect(fresh).not.toBe(runtime)
+		expect(fresh.key).toEqual(runtime.key)
+		expect(runtime.closed).toBe(true)
+		expect(fresh.source).toBe(replacement)
+		expect(undoDepth(fresh.state)).toBe(0)
+		expect(redoDepth(fresh.state)).toBe(0)
+		expect(fresh.adoptLegacyState(oldHistory)).toBe(false)
+		expect(() => first.view.dispatch({ changes: { from: 0, insert: "stale" } })).toThrow()
+		expect(() => second.view.dispatch({ changes: { from: 0, insert: "stale" } })).toThrow()
+		expect(() => runtime.applyControllerSource(saved, replacement)).toThrow()
+		expect(result.current.content).toBe(replacement)
+		expect(result.current.isDirty).toBe(false)
+		first.dispose()
+		second.dispose()
+	})
+	it("retains dirty parked working body and history on an unknown disk replacement", async () => {
+		const { result } = await setup()
+		const runtime = result.current.activeBufferRuntime!
+		const editor = attachRuntime(runtime)
+		act(() => editor.view.dispatch({ changes: { from: 0, insert: "working " } }))
+		const working = runtime.source
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ ...captured, content: "unknown\r\nbody", revision: "external" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("inbox.org")
+		})
+		expect(result.current.activeBufferRuntime).toBe(runtime)
+		expect(runtime.closed).toBe(false)
+		expect(runtime.source).toBe(working)
+		expect(undoDepth(runtime.state)).toBe(1)
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === "inbox.org")?.hasConflict,
+		).toBe(true)
+		act(() => {
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(runtime.source).toBe(captured.content)
+		editor.dispose()
+	})
+	it("retains clean parked canonical history when disk returns the same raw source", async () => {
+		const { result } = await setup()
+		const runtime = result.current.activeBufferRuntime!
+		const editor = attachRuntime(runtime)
+		act(() => editor.view.dispatch({ changes: { from: 0, insert: "saved " } }))
+		const saved = runtime.source
+		vi.mocked(saveOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ ...captured, content: saved, revision: "saved" }),
+		)
+		await act(async () => {
+			await result.current.saveDocument()
+		})
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ ...captured, content: saved, revision: "metadata-only" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("inbox.org")
+		})
+		expect(result.current.activeBufferRuntime).toBe(runtime)
+		expect(undoDepth(runtime.state)).toBe(1)
+		act(() => {
+			expect(editor.handle.undo()).toBe(true)
+		})
+		act(() => {
+			expect(editor.handle.redo()).toBe(true)
+		})
+		expect(runtime.source).toBe(saved)
+		editor.dispose()
+	})
+	it("closes retired and old-grant runtimes and mints a fresh reopened identity", async () => {
+		const { result, unmount } = await setup()
+		const first = result.current.activeBufferRuntime!
+		await act(async () => {
+			expect(await result.current.closeActiveDocument()).toBe(true)
+		})
+		expect(first.closed).toBe(true)
+		expect(result.current.activeBufferRuntime).toBeNull()
+		await act(async () => {
+			await result.current.openDocumentPath("inbox.org")
+		})
+		const reopened = result.current.activeBufferRuntime!
+		expect(reopened.key.bufferId).not.toBe(first.key.bufferId)
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () =>
+			E.right({ ...workspace, capabilityToken: "G2" }),
+		)
+		await act(async () => {
+			await result.current.openDefaultWorkspace()
+		})
+		expect(reopened.closed).toBe(true)
+		await act(async () => {
+			await result.current.openDocumentPath("inbox.org")
+		})
+		const next = result.current.activeBufferRuntime!
+		expect(next.key.workspaceSessionId).toBe("G2")
+		unmount()
+		expect(next.closed).toBe(true)
+	})
+	it("allows runtime typing during own save without installing the older ACK body", async () => {
+		const { result } = await setup()
+		const runtime = result.current.activeBufferRuntime!
+		const editor = attachRuntime(runtime)
+		act(() => editor.view.dispatch({ changes: { from: 0, insert: "first " } }))
+		const saving = runtime.source
+		let resolve!: (value: E.Either<never, OrgDocumentInterface>) => void
+		vi.mocked(saveOrgDocumentFlow).mockReturnValue(
+			() =>
+				new Promise((done) => {
+					resolve = done
+				}),
+		)
+		let pending!: Promise<void>
+		act(() => {
+			pending = result.current.saveDocument()
+		})
+		act(() => editor.view.dispatch({ changes: { from: 0, insert: "newer " } }))
+		await act(async () => {
+			resolve(E.right({ ...captured, content: saving, revision: "saved" }))
+			await pending
+		})
+		expect(runtime.source).toBe(`newer ${saving}`)
+		expect(result.current.content).toBe(runtime.source)
+		expect(result.current.activeDocument?.content).toBe(saving)
+		expect(result.current.isDirty).toBe(true)
+		editor.dispose()
+	})
+	it("retains a paused Source-equals-Base body instead of importing external bytes", async () => {
+		const { result } = await setup()
+		const runtime = result.current.activeBufferRuntime!
+		const original = runtime.source
+		vi.mocked(saveOrgDocumentFlow).mockReturnValue(async () => {
+			throw new Error("uncertain write")
+		})
+		await act(async () => {
+			await result.current.saveDocument()
+		})
+		expect(result.current.isDirty).toBe(false)
+		expect(nativeState.hasDirtyBuffers).toBe(true)
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ ...captured, content: "external", revision: "external" }),
+		)
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(2000)
+		})
+		expect(runtime.source).toBe(original)
+		expect(result.current.content).toBe(original)
+		expect(result.current.openBuffers[0]?.hasConflict).toBe(true)
+	})
+	it("adopts public legacy cache history before first attachment", async () => {
+		const { result } = await setup()
+		const runtime = result.current.activeBufferRuntime!
+		const cached = EditorState.create({ doc: "", extensions: history() }).update({
+			changes: { from: 0, insert: runtime.source },
+		}).state
+		expect(runtime.adoptLegacyState(cached)).toBe(true)
+		const editor = attachRuntime(runtime)
+		act(() => {
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(runtime.source).toBe("")
+		expect(result.current.content).toBe("")
+		expect(result.current.isDirty).toBe(true)
+		editor.dispose()
+	})
+	it("denies runtime writes while an owner read is loading", async () => {
+		const { result } = await setup()
+		const runtime = result.current.activeBufferRuntime!
+		let resolve!: (value: E.Either<never, OrgDocumentInterface>) => void
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(
+			() =>
+				new Promise((done) => {
+					resolve = done
+				}),
+		)
+		let pending!: Promise<boolean>
+		act(() => {
+			pending = result.current.openDocumentPath("z.org")
+		})
+		expect(() => runtime.applyControllerSource(runtime.source, "denied")).toThrow()
+		act(() => result.current.updateContent("compatibility denied"))
+		expect(runtime.source).toBe(captured.content)
+		await act(async () => {
+			resolve(E.right({ ...captured, relativePath: "z.org" }))
+			await pending
+		})
+	})
+	it("does not grant compatibility edits authority when native close protection is unavailable", async () => {
+		const hook = await setup()
+		const runtime = hook.result.current.activeBufferRuntime!
+		vi.mocked(orgWindowClose.useOrgWindowClose).mockReturnValue(false)
+		hook.rerender()
+		act(() => hook.result.current.updateContent("read-only denied"))
+		expect(runtime.source).toBe(captured.content)
+		expect(hook.result.current.content).toBe(captured.content)
+	})
 	it("looks up targets without state effects and forwards explicit heading selection", async () => {
 		const { result } = await setup()
 		const snapshot = { relativePath: "z.org", revision: "fresh", headings: [] }
@@ -363,7 +664,7 @@ describe("Org capture entry and transient drafts", () => {
 		})
 		expect(captureOrgEntryFlow).not.toHaveBeenCalled()
 	})
-	it("blocks busy routing without cancelling a running capture and retains newer input and baseline", async () => {
+	it("blocks busy routing and compatibility edits without cancelling a running capture", async () => {
 		const { result } = await setup()
 		const pending = deferred<Awaited<ReturnType<ReturnType<typeof captureOrgEntryFlow>>>>()
 		vi.mocked(captureOrgEntryFlow).mockReturnValueOnce(() => pending.promise)
@@ -381,13 +682,13 @@ describe("Org capture entry and transient drafts", () => {
 		act(() => result.current.updateContent("newer"))
 		await act(async () => {
 			pending.resolve(E.right({ ...captured, content: "persisted" }))
-			expect(await capturing).toMatchObject({ kind: "success", message: expect.any(String) })
+			expect(await capturing).toEqual({ kind: "success" })
 		})
-		expect(result.current.content).toBe("newer")
+		expect(result.current.content).toBe("persisted")
 		expect(result.current.activeDocument?.content).toBe("persisted")
 		expect(result.current.isSaving).toBe(false)
 		act(() => result.current.updateContent("persisted"))
-		expect(nativeState.hasDirtyBuffers).toBe(true)
+		expect(nativeState.hasDirtyBuffers).toBe(false)
 		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
 			E.right({ ...captured, content: "external", revision: "external" }),
 		)
@@ -395,7 +696,7 @@ describe("Org capture entry and transient drafts", () => {
 			vi.advanceTimersByTime(2000)
 			await Promise.resolve()
 		})
-		expect(result.current.content).toBe("persisted")
+		expect(result.current.content).toBe("external")
 	})
 	it("rejects active and parked dirty targets before flow IO", async () => {
 		const { result } = await setup()
@@ -414,6 +715,133 @@ describe("Org capture entry and transient drafts", () => {
 			})
 		})
 		expect(captureOrgEntryFlow).not.toHaveBeenCalled()
+	})
+	it.each([
+		"captureEntry",
+		"captureTodo",
+		"refile",
+		"archive",
+	] as const)("installs confirmed %s target into parked canonical source and baseline without resetting history", async (operation) => {
+		const targetPath = operation === "archive" ? "z_archive.org" : "inbox.org"
+		if (operation === "archive") {
+			const archiveWorkspace = {
+				...workspace,
+				documents: [...workspace.documents, { relativePath: targetPath, revision: "new" }],
+			}
+			vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () => E.right(archiveWorkspace))
+			vi.mocked(scanOrgWorkspaceFlow).mockReturnValue(async () => E.right(archiveWorkspace))
+		}
+		const { result } = await setup()
+		if (operation === "archive") {
+			await act(async () => {
+				await result.current.openDocumentPath(targetPath)
+			})
+		}
+		const runtime = result.current.activeBufferRuntime!
+		const editor = attachRuntime(runtime)
+		act(() =>
+			editor.view.dispatch({ changes: { from: runtime.source.length, insert: "saved edit\n" } }),
+		)
+		const baseline = runtime.source
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(async () =>
+			E.right({ ...captured, relativePath: targetPath, content: baseline, revision: "saved" }),
+		)
+		await act(async () => {
+			await result.current.saveDocument()
+		})
+		const depth = undoDepth(runtime.state)
+		expect(depth).toBeGreaterThan(0)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const confirmed = {
+			...captured,
+			relativePath: targetPath,
+			content: `${baseline}* Added\n`,
+			revision: "confirmed",
+		}
+		vi.mocked(captureOrgEntryFlow).mockReturnValueOnce(async () => E.right(confirmed))
+		vi.mocked(captureOrgTodoFlow).mockReturnValueOnce(async () => E.right(confirmed))
+		const moved = {
+			source: { ...captured, relativePath: "z.org", content: "", revision: "removed" },
+			target: confirmed,
+		}
+		vi.mocked(refileOrgSubtreeFlow).mockReturnValueOnce(async () => E.right(moved))
+		vi.mocked(archiveOrgSubtreeFlow).mockReturnValueOnce(async () => E.right(moved))
+		await act(async () => {
+			if (operation === "captureEntry") await result.current.captureEntry("* Added\n", "inbox.org")
+			else if (operation === "captureTodo") await result.current.captureTodo("Added", "inbox.org")
+			else if (operation === "refile") await result.current.refileSubtree(0, "inbox.org")
+			else await result.current.archiveSubtree(0)
+		})
+		expect(runtime.source).toBe(confirmed.content)
+		expect(editor.view.state.sliceDoc()).toBe(confirmed.content)
+		expect(undoDepth(runtime.state)).toBe(depth)
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === targetPath),
+		).toMatchObject({ baseRevision: "confirmed", isDirty: false })
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () => E.right(confirmed))
+		await act(async () => {
+			await result.current.openDocumentPath(targetPath)
+		})
+		expect(result.current.activeBufferRuntime).toBe(runtime)
+		expect(result.current.content).toBe(confirmed.content)
+		act(() => {
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(result.current.isDirty).toBe(true)
+		editor.dispose()
+	})
+	it.each([
+		"captureEntry",
+		"captureTodo",
+		"refile",
+	] as const)("retains a programmatically advanced parked target after confirmed %s and pauses reconciliation", async (operation) => {
+		const hook = await setup()
+		const { result } = hook
+		const runtime = result.current.activeBufferRuntime!
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const pending = deferred<E.Either<never, OrgDocumentInterface>>()
+		const confirmed = { ...captured, content: "confirmed disk", revision: "confirmed" }
+		vi.mocked(captureOrgEntryFlow).mockReturnValueOnce(() => pending.promise)
+		vi.mocked(captureOrgTodoFlow).mockReturnValueOnce(() => pending.promise)
+		vi.mocked(refileOrgSubtreeFlow).mockReturnValueOnce(async () => {
+			const result = await pending.promise
+			return E.map((target: OrgDocumentInterface) => ({
+				target,
+				source: { ...captured, relativePath: "z.org", content: "", revision: "removed" },
+			}))(result)
+		})
+		let accepting!: Promise<unknown>
+		act(() => {
+			accepting =
+				operation === "captureEntry"
+					? result.current.captureEntry("* Added", "inbox.org")
+					: operation === "captureTodo"
+						? result.current.captureTodo("Added", "inbox.org")
+						: result.current.refileSubtree(0, "inbox.org")
+		})
+		// Model a non-UI canonical writer that advanced after IO began. Compatibility
+		// and attached UI ports cannot produce this while the controller is busy.
+		vi.spyOn(runtime, "source", "get").mockReturnValue("newer canonical body")
+		const install = vi.spyOn(runtime, "applyControllerSource")
+		await act(async () => {
+			pending.resolve(E.right(confirmed))
+			await accepting
+		})
+		expect(install).not.toHaveBeenCalled()
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === "inbox.org"),
+		).toMatchObject({ baseRevision: "confirmed", isDirty: true, hasConflict: true })
+		expect(result.current.error).toContain("reconcile")
+		await act(async () => {
+			vi.advanceTimersByTime(2000)
+			await Promise.resolve()
+		})
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		hook.unmount()
 	})
 	it("updates clean active, parked and new targets without creating draft buffers", async () => {
 		const { result } = await setup()
@@ -966,7 +1394,7 @@ describe("Org subtree transfer outcomes", () => {
 		expect(result.current.content).toBe(targetBefore.content)
 	})
 
-	it("rejects concurrent mutations, but reports moved files as success when newer input is retained", async () => {
+	it("rejects concurrent mutations and compatibility edits while transferring", async () => {
 		const { result } = await setup()
 		const transfer = deferred<Awaited<ReturnType<ReturnType<typeof refileOrgSubtreeFlow>>>>()
 		vi.mocked(refileOrgSubtreeFlow).mockReturnValueOnce(() => transfer.promise)
@@ -984,15 +1412,12 @@ describe("Org subtree transfer outcomes", () => {
 		act(() => result.current.updateContent("newer input"))
 		await act(async () => {
 			transfer.resolve(E.right(moved))
-			expect(await outcome).toEqual({
-				kind: "success",
-				message: expect.stringContaining("newer editor input was retained"),
-			})
+			expect(await outcome).toEqual({ kind: "success" })
 		})
-		expect(result.current.content).toBe("newer input")
-		expect(result.current.isDirty).toBe(true)
+		expect(result.current.content).toBe(moved.source.content)
+		expect(result.current.isDirty).toBe(false)
 		expect(result.current.activeDocument).toEqual(moved.source)
-		expect(result.current.error).toContain("newer editor input was retained")
+		expect(result.current.error).toContain("in progress")
 		expect(refileOrgSubtreeFlow).toHaveBeenCalledTimes(1)
 		expect(archiveOrgSubtreeFlow).not.toHaveBeenCalled()
 	})
@@ -1743,14 +2168,19 @@ describe("independent Org buffers", () => {
 		act(() => {
 			selecting = result.current.selectWorkspace()
 		})
-		act(() => result.current.updateContent("input during approval"))
+		vi.mocked(selectOrgWorkspaceFlow).mockReturnValueOnce(async () =>
+			E.left({ message: "cancelled" } as never),
+		)
+		await act(async () => {
+			await result.current.selectWorkspace()
+		})
 		await act(async () => {
 			approval.resolve(E.right({ ...workspace, capabilityToken: "unused-grant" }))
 			await selecting
 		})
 		expect(releaseOrgWorkspace).toHaveBeenCalledExactlyOnceWith(workspace.rootPath, "unused-grant")
 		expect(result.current.isLoading).toBe(false)
-		expect(result.current.content).toBe("input during approval")
+		expect(result.current.content).toBe(a.content)
 		expect(result.current.workspaceSessionId).toBe("G1")
 	})
 
@@ -2038,7 +2468,7 @@ describe("independent Org buffers", () => {
 		act(() => {
 			hook.result.current.updateContent(a.content)
 		})
-		expect(confirmSourceUnchanged()).toBe(false)
+		expect(confirmSourceUnchanged()).toBe(true)
 		hook.unmount()
 		expect(confirmSourceUnchanged()).toBe(false)
 		transfer.resolve(E.right({ source: { ...a, content: "", revision: "removed" }, target: b }))
@@ -2386,7 +2816,7 @@ describe("independent Org buffers", () => {
 		).toBe(true)
 	})
 
-	it("serializes inactive save against navigation, capture, workspace grants and active save while retaining active edits", async () => {
+	it("serializes inactive save and blocks compatibility edits during that mutation", async () => {
 		const { result } = await parkDirtyA()
 		const write = deferred<Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => write.promise)
@@ -2408,8 +2838,8 @@ describe("independent Org buffers", () => {
 			write.resolve(E.right({ relativePath: a.relativePath, revision: "saved" }))
 			expect(await closing).toBe(true)
 		})
-		expect(result.current.content).toBe("new B input")
-		expect(result.current.isDirty).toBe(true)
+		expect(result.current.content).toBe(b.content)
+		expect(result.current.isDirty).toBe(false)
 	})
 
 	it("successful active save advances the parked baseline and never resurrects old dirtiness", async () => {
@@ -2440,7 +2870,7 @@ describe("independent Org buffers", () => {
 		expect(result.current.activeDocument?.revision).toBe("saved")
 	})
 
-	it("cancels a slow navigation on intervening edits even if source returns to its previous value", async () => {
+	it("blocks compatibility edits while a slow navigation is loading", async () => {
 		const { result } = await setup()
 		const read = deferred<Awaited<ReturnType<ReturnType<typeof openOrgDocumentFlow>>>>()
 		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(() => read.promise)
@@ -2454,10 +2884,10 @@ describe("independent Org buffers", () => {
 		})
 		await act(async () => {
 			read.resolve(E.right(b))
-			expect(await opening).toBe(false)
+			expect(await opening).toBe(true)
 		})
-		expect(result.current.activeDocument).toEqual(a)
-		expect(result.current.openBuffers).toHaveLength(1)
+		expect(result.current.activeDocument).toEqual(b)
+		expect(result.current.openBuffers).toHaveLength(2)
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 	})
 
@@ -2518,7 +2948,7 @@ describe("independent Org buffers", () => {
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 	})
 
-	it("cancels a workspace grant if editor input arrives during opening, retaining active and parked copies", async () => {
+	it("blocks compatibility edits during workspace approval loading", async () => {
 		const { result } = await parkDirtyA()
 		const session = result.current.workspaceSessionId
 		const grant = deferred<Awaited<ReturnType<ReturnType<typeof openDefaultOrgWorkspaceFlow>>>>()
@@ -2533,12 +2963,12 @@ describe("independent Org buffers", () => {
 			await opening
 		})
 		expect(result.current.workspaceSessionId).toBe(session)
-		expect(result.current.content).toBe("new B")
-		expect(result.current.openBuffers).toHaveLength(2)
+		expect(result.current.content).toBe("")
+		expect(result.current.openBuffers).toHaveLength(0)
 		await act(async () => {
 			await result.current.openDocumentPath(a.relativePath)
 		})
-		expect(result.current.content).toBe("A edits")
+		expect(result.current.content).toBe(a.content)
 	})
 
 	it("retains the logical buffer ID when renaming the active document", async () => {
