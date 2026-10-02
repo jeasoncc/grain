@@ -18,6 +18,7 @@ import {
 	Annotation,
 	Compartment,
 	EditorState,
+	EditorSelection,
 	type Range,
 	StateEffect,
 	Transaction,
@@ -324,6 +325,7 @@ const editorTheme = EditorView.theme({
 export const OrgEditor = memo(function OrgEditor({
 	sessionKey,
 	sessionCache,
+	initialCursor = 0,
 	value,
 	onChange,
 	onSave,
@@ -345,6 +347,9 @@ export const OrgEditor = memo(function OrgEditor({
 	readOnly = false,
 	ariaLabel = "Org document editor",
 }: OrgEditorProps) {
+	const initialCursorRef = useRef(
+		Number.isInteger(initialCursor) ? Math.max(0, Math.min(value.length, initialCursor)) : 0,
+	)
 	const hostRef = useRef<HTMLDivElement>(null)
 	const viewRef = useRef<EditorView | null>(null)
 	const cancelScrollRestoreRef = useRef<() => void>(() => {})
@@ -648,10 +653,44 @@ export const OrgEditor = memo(function OrgEditor({
 		]
 		const { sessionKey: key, sessionCache: cache } = initialSessionRef.current
 		const cached = key !== undefined ? cache?.get(key) : undefined
-		const snapshot = cached?.state.sliceDoc() === initialValueRef.current ? cached : undefined
-		const state = snapshot
-			? snapshot.state.update({ effects: StateEffect.reconfigure.of(extensions) }).state
-			: EditorState.create({ doc: initialValueRef.current, extensions })
+		const source = initialValueRef.current
+		const oldSource = cached?.state.sliceDoc()
+		// The caller scopes this cache key to a registered grant + logical buffer
+		// and prunes old grants. Incoming source remains the only writer: a parked
+		// state may project an append, never an unknown replacement or new policy.
+		const snapshot =
+			cached &&
+			oldSource !== undefined &&
+			cached.state.lineBreak === lineSeparatorFor(oldSource) &&
+			lineSeparatorFor(oldSource) === lineSeparatorFor(source) &&
+			source.startsWith(oldSource)
+				? cached
+				: undefined
+		let restoredState = snapshot?.state
+		if (restoredState && oldSource !== undefined && oldSource !== source) {
+			const changes = restoredState.changes({
+				from: restoredState.doc.length,
+				insert: source.slice(oldSource.length),
+			})
+			restoredState = restoredState.update({
+				annotations: [externalValueUpdate.of(true), Transaction.addToHistory.of(false)],
+				changes,
+				selection: restoredState.selection.map(changes, -1),
+			}).state
+		}
+		const state = restoredState
+			? restoredState.update({ effects: StateEffect.reconfigure.of(extensions) }).state
+			: EditorState.create({
+					doc: initialValueRef.current,
+					extensions,
+					selection: {
+						anchor: editorOffsetFromSource(
+							initialValueRef.current,
+							initialCursorRef.current,
+							lineSeparatorFor(initialValueRef.current),
+						),
+					},
+				})
 		const view = new EditorView({ parent: host, state })
 		let scrollFrame: number | null = null
 		const cancelScrollRestore = () => {
@@ -747,17 +786,66 @@ export const OrgEditor = memo(function OrgEditor({
 
 		clearPrefixRef.current()
 		cancelScrollRestoreRef.current()
-		// Reconfigure first so CodeMirror parses the replacement with its own separator policy.
-		// Combining this effect with the change would parse using the previous policy.
-		view.dispatch({
-			effects: lineSeparatorCompartmentRef.current.reconfigure(
-				EditorState.lineSeparator.of(lineSeparatorFor(value)),
-			),
-		})
-		view.dispatch({
-			annotations: [externalValueUpdate.of(true), Transaction.addToHistory.of(false)],
-			changes: { from: 0, insert: value, to: view.state.doc.length },
-		})
+		const before = view.state.sliceDoc()
+		const separator = lineSeparatorFor(value)
+		const annotations = [externalValueUpdate.of(true), Transaction.addToHistory.of(false)]
+		if (lineSeparatorFor(before) === separator) {
+			let from = 0
+			while (from < before.length && from < value.length && before[from] === value[from]) from++
+			// A CodeMirror position cannot address the middle of a CRLF separator.
+			if (
+				separator === "\r\n" &&
+				(before.slice(from - 1, from + 1) === "\r\n" || value.slice(from - 1, from + 1) === "\r\n")
+			)
+				from--
+			let to = before.length
+			let nextTo = value.length
+			while (to > from && nextTo > from && before[to - 1] === value[nextTo - 1]) {
+				to--
+				nextTo--
+			}
+			if (
+				separator === "\r\n" &&
+				(before.slice(to - 1, to + 1) === "\r\n" || value.slice(nextTo - 1, nextTo + 1) === "\r\n")
+			) {
+				to++
+				nextTo++
+			}
+			const changes = view.state.changes({
+				from: editorOffsetFromSource(before, from, separator),
+				to: editorOffsetFromSource(before, to, separator),
+				insert: value.slice(from, nextTo),
+			})
+			view.dispatch({ annotations, changes, selection: view.state.selection.map(changes, -1) })
+		} else {
+			const selection = view.state.selection
+			const ranges = selection.ranges.map((range) => ({
+				anchor: sourceOffsetFromEditor(view, range.anchor),
+				head: sourceOffsetFromEditor(view, range.head),
+			}))
+			// Reconfigure first: replacement parsing uses the transaction's starting policy.
+			view.dispatch({
+				effects: lineSeparatorCompartmentRef.current.reconfigure(
+					EditorState.lineSeparator.of(separator),
+				),
+			})
+			const changes = view.state.changes({ from: 0, insert: value, to: view.state.doc.length })
+			const position = (raw: number) =>
+				Math.min(
+					changes.newLength,
+					editorOffsetFromSource(value, Math.min(raw, value.length), separator),
+				)
+			view.dispatch({
+				annotations,
+				changes,
+				selection: EditorSelection.create(
+					ranges.map((range) =>
+						EditorSelection.range(position(range.anchor), position(range.head)),
+					),
+					selection.mainIndex,
+				),
+			})
+		}
 	}, [value])
 
 	useEffect(() => {

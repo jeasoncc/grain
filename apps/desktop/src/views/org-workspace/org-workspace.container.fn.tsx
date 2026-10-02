@@ -31,7 +31,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/views/ui/dropdown-menu"
-import { OrgCaptureDialog } from "./org-action-dialog.view.fn"
+import { OrgCaptureWorkflow } from "./org-capture-workflow.view.fn"
 import { OrgAgendaContainer } from "./org-agenda.container.fn"
 import { OrgCommandPalette, orgCommandIcons } from "./org-command-palette.view.fn"
 import { OrgDocumentPane } from "./org-document-pane.view.fn"
@@ -41,23 +41,6 @@ import { OrgQuickOpen } from "./org-quick-open.view.fn"
 import { OrgBufferSwitch } from "./org-buffer-switch.view.fn"
 import { OrgWorkspaceRibbon } from "./org-workspace-ribbon.view.fn"
 import { OrgWorkspaceSidebar } from "./org-workspace-sidebar.view.fn"
-
-export interface OrgTodoCapturePromptResult {
-	readonly targetRelativePath: string
-	readonly title: string
-}
-
-export const promptOrgTodoCapture = (): OrgTodoCapturePromptResult | null => {
-	const title = window.prompt("TODO title:")
-	if (!title?.trim()) {
-		return null
-	}
-	const target = window.prompt("Target Org file (relative to workspace):", "inbox.org")
-	if (target === null) {
-		return null
-	}
-	return { targetRelativePath: target.trim() || "inbox.org", title }
-}
 
 export const createOrgDiaryFromController = async (
 	controller: OrgWorkspaceController,
@@ -394,7 +377,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	commandDispatcherRef.current = dispatchWorkspaceCommand
 
 	useEffect(() => {
-		if (quickOpenVisible || bufferSwitchVisible) return
+		if (quickOpenVisible || bufferSwitchVisible || showCapture) return
 		const pending = pendingFileFocusRef.current
 		pendingFileFocusRef.current = null
 		if (
@@ -408,6 +391,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	}, [
 		quickOpenVisible,
 		bufferSwitchVisible,
+		showCapture,
 		controller.workspaceSessionId,
 		controller.workspace?.rootPath,
 		controller.activeDocument?.relativePath,
@@ -745,10 +729,28 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 					{commandEcho.message}
 				</output>
 			)}
-			<OrgCaptureDialog
+			<OrgCaptureWorkflow
+				controller={controller}
 				open={showCapture}
 				onOpenChange={setShowCapture}
-				onSubmit={(title, targetPath) => void controller.captureTodo(title, targetPath)}
+				onRestoreOrigin={(origin, signal) => {
+					const live = controllerRef.current
+					if (
+						signal?.aborted ||
+						origin.scope.workspaceSessionId !== live.workspaceSessionId ||
+						origin.scope.capabilityToken !== live.workspace?.capabilityToken
+					)
+						return
+					const buffer = live.openBuffers.find((entry) => entry.bufferId === origin.bufferId)
+					if (buffer) {
+						pendingFileFocusRef.current = {
+							scope: live.workspaceSessionId,
+							root: live.workspace?.rootPath ?? "",
+							path: buffer.relativePath,
+						}
+						setShowAgenda(false)
+					}
+				}}
 			/>
 			<OrgCommandPalette
 				open={commandPaletteVisible}

@@ -44,6 +44,8 @@ const controller = (content: string): OrgWorkspaceController => ({
 	})),
 	archiveSubtree: vi.fn(async () => ({ kind: "success" as const })),
 	captureTodo: vi.fn(async () => undefined),
+	captureEntry: vi.fn(async () => ({ kind: "success" as const })),
+	setTransientDirty: vi.fn(),
 	clearDerivedIndex: vi.fn(async () => undefined),
 	closeActiveDocument: vi.fn(async () => true),
 	content,

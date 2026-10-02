@@ -14,6 +14,7 @@ import {
 	resolveOrgLinkTargetFlow,
 	selectOrgWorkspaceFlow,
 	captureOrgTodoFlow,
+	captureOrgEntryFlow,
 	moveOrgDocumentFlow,
 	ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
 	openDefaultOrgWorkspaceFlow,
@@ -22,6 +23,7 @@ import {
 	saveOrgDocumentFlow,
 	scanOrgWorkspaceFlow,
 } from "@/flows/org-workspace"
+import { orgWorkspaceEventAdapter } from "@/io/event/org-workspace-event.adapter"
 import {
 	releaseOrgWorkspace,
 	watchOrgWorkspace,
@@ -55,6 +57,7 @@ vi.mock("@/flows/org-workspace", () => ({
 	selectOrgWorkspaceFlow: vi.fn(),
 
 	captureOrgTodoFlow: vi.fn(),
+	captureOrgEntryFlow: vi.fn(),
 	moveOrgDocumentFlow: vi.fn(),
 	ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE:
 		"The target copy succeeded, but source removal was not confirmed. Treat this as a possible duplicate copy: reread both documents and remove one copy only after verifying that both contain the subtree. No destructive rollback was attempted.",
@@ -65,7 +68,7 @@ vi.mock("@/flows/org-workspace", () => ({
 	scanOrgWorkspaceFlow: vi.fn(),
 }))
 vi.mock("@/io/event/org-workspace-event.adapter", () => ({
-	orgWorkspaceEventAdapter: { listen: async () => () => undefined },
+	orgWorkspaceEventAdapter: { listen: vi.fn(async () => () => undefined) },
 }))
 vi.mock("@/io/file/org-file.repository", () => ({
 	releaseOrgWorkspace: vi.fn(() => async () => E.right(undefined)),
@@ -88,6 +91,388 @@ const captured: OrgDocumentInterface = {
 	relativePath: "inbox.org",
 	revision: "new",
 }
+
+describe("Org capture entry and transient drafts", () => {
+	let nativeState: Parameters<typeof orgWindowClose.useOrgWindowClose>[0]
+	beforeEach(() => {
+		vi.useFakeTimers()
+		vi.resetAllMocks()
+		window.localStorage.clear()
+		vi.spyOn(orgWindowClose, "useOrgWindowClose").mockImplementation((state) => {
+			nativeState = state
+			return true
+		})
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () => E.right(workspace))
+		vi.mocked(openOrgDocumentFlow).mockImplementation(
+			(input) => async () => E.right({ ...captured, relativePath: input.relativePath }),
+		)
+		vi.mocked(captureOrgEntryFlow).mockReturnValue(async () => E.right(captured))
+		vi.mocked(orgWorkspaceEventAdapter.listen).mockResolvedValue(() => undefined)
+		vi.mocked(watchOrgWorkspace).mockReturnValue(async () => E.right("watch"))
+		vi.mocked(scanOrgWorkspaceFlow).mockReturnValue(async () => E.right(workspace))
+		vi.mocked(releaseOrgWorkspace).mockReturnValue(async () => E.right(undefined))
+		vi.spyOn(window, "confirm").mockReturnValue(false)
+	})
+	afterEach(() => {
+		cleanup()
+		vi.restoreAllMocks()
+		vi.useRealTimers()
+	})
+	const setup = async () => {
+		const hook = renderHook(() => useOrgWorkspace())
+		await act(async () => {
+			await hook.result.current.openDefaultWorkspace()
+		})
+		await act(async () => {
+			await hook.result.current.openDocumentPath("inbox.org")
+		})
+		return hook
+	}
+	it("reads transient input live, requires root discard, and allows A/B/A cleanup but not G1/G2 cleanup", async () => {
+		const { result } = await setup()
+		const setter = result.current.setTransientDirty
+		const staleCapture = result.current.captureEntry
+		act(() => {
+			setter("draft", true)
+			expect(nativeState.hasDirtyBuffers).toBe(true)
+		})
+		await act(async () => {
+			await result.current.openDefaultWorkspace()
+		})
+		expect(openDefaultOrgWorkspaceFlow).toHaveBeenCalledTimes(1)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		await act(async () => {
+			await result.current.openDocumentPath("inbox.org")
+		})
+		act(() => setter("draft", false))
+		expect(nativeState.hasDirtyBuffers).toBe(false)
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () =>
+			E.right({ ...workspace, capabilityToken: "G2" }),
+		)
+		await act(async () => {
+			await result.current.openDefaultWorkspace()
+		})
+		act(() => result.current.setTransientDirty("draft", true))
+		act(() => setter("draft", false))
+		expect(nativeState.hasDirtyBuffers).toBe(true)
+		await act(async () => {
+			expect(await staleCapture("* Old", "inbox.org")).toMatchObject({ kind: "rejected" })
+		})
+		expect(captureOrgEntryFlow).not.toHaveBeenCalled()
+	})
+	it("blocks busy routing without cancelling a running capture and retains newer input and baseline", async () => {
+		const { result } = await setup()
+		const pending = deferred<Awaited<ReturnType<ReturnType<typeof captureOrgEntryFlow>>>>()
+		vi.mocked(captureOrgEntryFlow).mockReturnValueOnce(() => pending.promise)
+		let capturing!: ReturnType<typeof result.current.captureEntry>
+		act(() => {
+			capturing = result.current.captureEntry("* New", "inbox.org")
+		})
+		const blocker = vi.mocked(useBlocker).mock.calls.at(-1)![0] as unknown as {
+			shouldBlockFn: () => boolean
+			enableBeforeUnload: boolean
+		}
+		expect(blocker.shouldBlockFn()).toBe(true)
+		expect(blocker.enableBeforeUnload).toBe(true)
+		expect(window.confirm).not.toHaveBeenCalled()
+		act(() => result.current.updateContent("newer"))
+		await act(async () => {
+			pending.resolve(E.right({ ...captured, content: "persisted" }))
+			expect(await capturing).toMatchObject({ kind: "success", message: expect.any(String) })
+		})
+		expect(result.current.content).toBe("newer")
+		expect(result.current.activeDocument?.content).toBe("persisted")
+		expect(result.current.isSaving).toBe(false)
+		act(() => result.current.updateContent("persisted"))
+		expect(nativeState.hasDirtyBuffers).toBe(true)
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ ...captured, content: "external", revision: "external" }),
+		)
+		await act(async () => {
+			vi.advanceTimersByTime(2000)
+			await Promise.resolve()
+		})
+		expect(result.current.content).toBe("persisted")
+	})
+	it("rejects active and parked dirty targets before flow IO", async () => {
+		const { result } = await setup()
+		act(() => result.current.updateContent("dirty"))
+		await act(async () => {
+			expect(await result.current.captureEntry("* New", "inbox.org")).toMatchObject({
+				kind: "rejected",
+			})
+		})
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		await act(async () => {
+			expect(await result.current.captureEntry("* New", "inbox.org")).toMatchObject({
+				kind: "rejected",
+			})
+		})
+		expect(captureOrgEntryFlow).not.toHaveBeenCalled()
+	})
+	it("updates clean active, parked and new targets without creating draft buffers", async () => {
+		const { result } = await setup()
+		await act(async () => {
+			expect(await result.current.captureEntry("* New", "inbox.org")).toEqual({ kind: "success" })
+		})
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		vi.mocked(captureOrgEntryFlow).mockReturnValueOnce(async () =>
+			E.right({ ...captured, content: "parked captured", revision: "parked" }),
+		)
+		await act(async () => {
+			await result.current.captureEntry("* New", "inbox.org")
+		})
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === "inbox.org")
+				?.baseRevision,
+		).toBe("parked")
+		vi.mocked(captureOrgEntryFlow).mockReturnValueOnce(async () =>
+			E.right({ ...captured, relativePath: "new.org" }),
+		)
+		await act(async () => {
+			await result.current.captureEntry("* New", "new.org")
+		})
+		expect(
+			result.current.workspace?.documents.some((entry) => entry.relativePath === "new.org"),
+		).toBe(true)
+		expect(result.current.openBuffers).toHaveLength(2)
+	})
+	it.each([
+		"uncertain write",
+		"malformed confirmation",
+	] as const)("protects the active capture working version after %s, undo, refresh and reactivation until manual save", async (mode) => {
+		let watchHandler!: Parameters<typeof orgWorkspaceEventAdapter.listen>[0]
+		vi.mocked(orgWorkspaceEventAdapter.listen).mockImplementation(async (handler) => {
+			watchHandler = handler
+			return () => undefined
+		})
+		const baseline = { ...captured, content: "* Baseline A\n", revision: "r1" }
+		let disk = baseline
+		// Path-aware reads prevent the B navigation from accidentally returning A's body.
+		vi.mocked(openOrgDocumentFlow).mockImplementation(
+			(input) => async () =>
+				E.right(
+					input.relativePath === "inbox.org"
+						? disk
+						: {
+								content: "* B\n",
+								relativePath: input.relativePath,
+								revision: "b1",
+							},
+				),
+		)
+		vi.mocked(scanOrgWorkspaceFlow).mockImplementation(
+			() => async () =>
+				E.right({
+					...workspace,
+					documents: workspace.documents.map((entry) =>
+						entry.relativePath === "inbox.org" ? { ...entry, revision: disk.revision } : entry,
+					),
+				}),
+		)
+		const { result } = await setup()
+		const id = result.current.activeBufferId!
+		const liveBlocker = vi.mocked(useBlocker).mock.calls.at(-1)![0] as unknown as {
+			shouldBlockFn: () => boolean
+		}
+		vi.mocked(captureOrgEntryFlow).mockImplementationOnce(() => async () => {
+			// The native writer may have installed r2 even though confirmation was lost/invalid.
+			disk = { ...baseline, content: "* Baseline A\n* Captured\n", revision: "r2" }
+			return mode === "malformed confirmation"
+				? E.right({ ...disk, revision: "" })
+				: E.left({
+						type: "ORG_CAPTURE_UNCERTAIN_WRITE_ERROR",
+						targetRelativePath: "inbox.org",
+						cause: null,
+						message: "write may have installed r2",
+					})
+		})
+		await act(async () => {
+			expect(await result.current.captureEntry("* Captured", "inbox.org")).toMatchObject({
+				kind: "uncertain",
+			})
+		})
+		act(() => result.current.updateContent("* User edit\n"))
+		// Hook-level undo to baseline; native editor undo/IME is not simulated here.
+		act(() => result.current.updateContent(baseline.content))
+		expect(result.current.isDirty).toBe(false)
+		const assertProtected = () => {
+			expect(result.current.activeBufferId).toBe(id)
+			expect(result.current.activeDocument).toEqual(baseline)
+			expect(result.current.content).toBe(baseline.content)
+			expect(nativeState.hasDirtyBuffers).toBe(true)
+			expect(nativeState.isBusy).toBe(false)
+			expect(result.current.openBuffers.find((buffer) => buffer.bufferId === id)?.hasConflict).toBe(
+				true,
+			)
+		}
+		assertProtected()
+		await act(async () => {
+			watchHandler({ paths: ["inbox.org"], token: "watch", workspaceRoot: workspace.rootPath })
+			await vi.advanceTimersByTimeAsync(500)
+		})
+		assertProtected()
+		const readsBeforePoll = vi.mocked(openOrgDocumentFlow).mock.calls.length
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(2000)
+		})
+		expect(vi.mocked(openOrgDocumentFlow).mock.calls.length).toBeGreaterThan(readsBeforePoll)
+		assertProtected()
+		// A later confirmed read has both a newer revision and different body bytes.
+		disk = { ...disk, content: "* External r3 body\n", revision: "r3" }
+		await act(async () => {
+			await result.current.refreshWorkspace()
+		})
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(2000)
+		})
+		assertProtected()
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		expect(result.current.openBuffers.find((buffer) => buffer.bufferId === id)).toMatchObject({
+			baseRevision: "r1",
+			isDirty: false,
+			hasConflict: true,
+		})
+		await act(async () => {
+			await result.current.switchBuffer(id)
+		})
+		assertProtected()
+		await act(async () => {
+			expect(await result.current.captureEntry("* Retry", "inbox.org")).toMatchObject({
+				kind: "rejected",
+			})
+			await result.current.openDefaultWorkspace()
+		})
+		expect(openDefaultOrgWorkspaceFlow).toHaveBeenCalledTimes(1)
+		expect(window.confirm).toHaveBeenCalled()
+		expect(liveBlocker.shouldBlockFn()).toBe(true)
+		assertProtected()
+		act(() => result.current.updateContent("* Further edit\n"))
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(6000)
+		})
+		expect(result.current.content).toBe("* Further edit\n")
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(captureOrgEntryFlow).toHaveBeenCalledTimes(1)
+		vi.mocked(saveOrgDocumentFlow).mockImplementation((input) => async () => {
+			disk = { ...baseline, content: input.content, revision: "manual-r4" }
+			return E.right({ relativePath: input.relativePath, revision: disk.revision })
+		})
+		await act(async () => {
+			await result.current.saveDocument()
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				content: "* Further edit\n",
+				expectedRevision: "r1",
+				relativePath: "inbox.org",
+			}),
+		)
+		expect(nativeState.hasDirtyBuffers).toBe(false)
+		expect(result.current.openBuffers.find((buffer) => buffer.bufferId === id)?.hasConflict).toBe(
+			false,
+		)
+		act(() => result.current.updateContent("* Autosave resumed\n"))
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(1000)
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(2)
+		expect(saveOrgDocumentFlow).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				content: "* Autosave resumed\n",
+				expectedRevision: "manual-r4",
+			}),
+		)
+		expect(captureOrgEntryFlow).toHaveBeenCalledTimes(1)
+	})
+	it("requires confirmed ordinary save to close an uncertain capture even after undo to baseline", async () => {
+		const { result } = await setup()
+		const id = result.current.activeBufferId!
+		vi.mocked(captureOrgEntryFlow).mockReturnValueOnce(async () =>
+			E.right({ ...captured, revision: "" }),
+		)
+		await act(async () => {
+			await result.current.captureEntry("* Entry", "inbox.org")
+		})
+		act(() => result.current.updateContent("edit"))
+		act(() => result.current.updateContent(captured.content))
+		expect(result.current.isDirty).toBe(false)
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(async () =>
+			E.left({ type: "IO_ERROR", message: "still unresolved" } as never),
+		)
+		await act(async () => {
+			expect(await result.current.closeActiveDocument()).toBe(false)
+		})
+		expect(result.current.activeBufferId).toBe(id)
+		expect(nativeState.hasDirtyBuffers).toBe(true)
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(6000)
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(async () =>
+			E.right({ relativePath: "inbox.org", revision: "confirmed-close" }),
+		)
+		await act(async () => {
+			expect(await result.current.closeActiveDocument()).toBe(true)
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				content: captured.content,
+				expectedRevision: captured.revision,
+			}),
+		)
+		expect(result.current.openBuffers).toHaveLength(0)
+		expect(nativeState.hasDirtyBuffers).toBe(false)
+		expect(captureOrgEntryFlow).toHaveBeenCalledTimes(1)
+	})
+	it.each([
+		"rejected",
+		"uncertain",
+		"throw",
+		"invalid",
+	])("releases ownership after %s and pauses only uncertain outcomes", async (mode) => {
+		const { result } = await setup()
+		vi.mocked(captureOrgEntryFlow).mockReturnValueOnce(async () => {
+			if (mode === "throw") throw new Error("lost response")
+			if (mode === "invalid") return E.right({ ...captured, revision: "" })
+			return mode === "rejected"
+				? E.left({
+						type: "ORG_CAPTURE_REJECTED_ERROR",
+						phase: "read",
+						noWrite: true,
+						cause: null,
+						message: "read failed",
+					})
+				: E.left({
+						type: "ORG_CAPTURE_UNCERTAIN_WRITE_ERROR",
+						targetRelativePath: "inbox.org",
+						cause: null,
+						message: "write uncertain",
+					})
+		})
+		await act(async () => {
+			expect((await result.current.captureEntry("* New", "inbox.org")).kind).toBe(
+				mode === "rejected" ? "rejected" : "uncertain",
+			)
+		})
+		expect(nativeState.isBusy).toBe(false)
+		expect(nativeState.hasDirtyBuffers).toBe(mode !== "rejected")
+		if (mode === "rejected")
+			await act(async () => {
+				expect(await result.current.captureEntry("* Fixed", "inbox.org")).toEqual({
+					kind: "success",
+				})
+			})
+	})
+})
 
 describe("Org workspace preference", () => {
 	it("persists only the fixed default workspace choice", () => {
@@ -2133,7 +2518,7 @@ describe("Org save-all snapshot transaction", () => {
 		})
 		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(3)
 	})
-	it("retires a clean externally removed active copy and rejects its ID after reopening the same path", async () => {
+	it("retains an unresolved externally removed working copy even after undo to baseline", async () => {
 		const { result } = await setup(1)
 		const oldId = result.current.activeBufferId!
 		// Establish pause/conflict on this copy, then restore its clean body.
@@ -2150,23 +2535,14 @@ describe("Org save-all snapshot transaction", () => {
 		await act(async () => {
 			await result.current.refreshWorkspace()
 		})
-		expect(result.current.activeDocument).toBeNull()
-		expect(result.current.content).toBe("")
-		expect(result.current.activeBufferId).toBeNull()
-		expect(result.current.openBuffers).toEqual([])
-		await act(async () => {
-			await result.current.openDocument(documents[0])
-		})
-		expect(result.current.activeBufferId).not.toBe(oldId)
-		expect(result.current.openBuffers[0].hasConflict).toBe(false)
-		await act(async () => {
-			expect(await result.current.switchBuffer(oldId)).toBe(false)
-		})
-		act(() => result.current.updateContent("new working copy"))
+		expect(result.current.activeDocument).toEqual(documents[0])
+		expect(result.current.content).toBe("base a.org")
+		expect(result.current.activeBufferId).toBe(oldId)
+		expect(result.current.openBuffers[0].hasConflict).toBe(true)
 		await act(async () => {
 			await vi.advanceTimersByTimeAsync(1000)
 		})
-		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(2)
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
 	})
 	it("keeps pause while parking/reactivating, then retires it after a confirmed inactive close", async () => {
 		const { result } = await setup(1)
@@ -2260,6 +2636,7 @@ describe("Org save-all snapshot transaction", () => {
 				await result.current.deleteActiveDocument()
 			})
 		} else {
+			vi.spyOn(window, "confirm").mockReturnValueOnce(true)
 			vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValueOnce(async () =>
 				E.right({ ...workspace, documents, capabilityToken: "G2" }),
 			)
@@ -2299,7 +2676,8 @@ describe("Org save-all snapshot transaction", () => {
 		await act(async () => {
 			await vi.advanceTimersByTimeAsync(1000)
 		})
-		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(2)
+		// The unresolved clean copy requires a confirmed save before close.
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(3)
 	})
 	it("owns native Busy throughout deferred writes, blocks all competing navigation/writers, and retains newer typing", async () => {
 		let nativeState!: Parameters<typeof orgWindowClose.useOrgWindowClose>[0]

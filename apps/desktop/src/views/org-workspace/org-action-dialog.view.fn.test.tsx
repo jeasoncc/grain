@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
-import { OrgCaptureDialog, OrgConfirmDialog, OrgInputDialog } from "./org-action-dialog.view.fn"
+import { OrgConfirmDialog, OrgInputDialog } from "./org-action-dialog.view.fn"
 
 describe("Org action dialogs", () => {
 	it("normalizes and submits a relative path", () => {
@@ -64,17 +64,6 @@ describe("Org action dialogs", () => {
 		)
 		fireEvent.click(screen.getByRole("button", { name: "Set date" }))
 		expect(rejectedOpenChange).not.toHaveBeenCalled()
-	})
-
-	it("captures a TODO and defaults an empty target to inbox.org", () => {
-		const onSubmit = vi.fn()
-		render(<OrgCaptureDialog open onOpenChange={vi.fn()} onSubmit={onSubmit} />)
-
-		fireEvent.change(screen.getByLabelText("Title"), { target: { value: "  Review plan " } })
-		fireEvent.change(screen.getByLabelText("Target Org file"), { target: { value: " " } })
-		fireEvent.click(screen.getByRole("button", { name: "Capture" }))
-
-		expect(onSubmit).toHaveBeenCalledWith("Review plan", "inbox.org")
 	})
 
 	it("requires explicit confirmation for destructive actions", () => {

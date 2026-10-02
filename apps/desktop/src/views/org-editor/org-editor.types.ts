@@ -24,6 +24,8 @@ export interface OrgEditorProps {
 	/** Mount-scoped caller-owned opaque buffer/capability identity, not a document path. */
 	readonly sessionKey?: string
 	readonly sessionCache?: Map<string, OrgEditorSessionSnapshot>
+	/** Initial UTF-16 source caret for a new scratch buffer; cache selection takes priority. */
+	readonly initialCursor?: number
 	/** Raw Org document text. No parsing or serialization is performed. */
 	readonly value: string
 	readonly onChange: (value: string) => void

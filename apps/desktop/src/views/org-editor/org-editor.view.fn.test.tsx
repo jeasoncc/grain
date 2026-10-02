@@ -1,5 +1,6 @@
 import { undo, undoDepth } from "@codemirror/commands"
-import { foldCode } from "@codemirror/language"
+import { foldCode, foldedRanges } from "@codemirror/language"
+import { EditorSelection, EditorState } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
@@ -20,6 +21,130 @@ describe("OrgEditor", () => {
 		cleanup()
 		vi.restoreAllMocks()
 		vi.useRealTimers()
+	})
+
+	it.each([
+		[0, 0],
+		[3, 3],
+		[11, 11],
+		[1, 7],
+		[11, 2],
+		[2, 11],
+	])("preserves append selection %s/%s, scroll, and usable local history", (anchor, head) => {
+		const onChange = vi.fn()
+		const props = { value: "alpha beta", onChange, onSave: vi.fn() }
+		const mounted = render(<OrgEditor {...props} />)
+		const view = getEditorView()
+		view.dispatch({ changes: { from: 0, insert: "!" } })
+		const before = view.state.sliceDoc()
+		view.dispatch({ selection: { anchor, head } })
+		view.scrollDOM.scrollTop = 123
+		view.scrollDOM.scrollLeft = 17
+		onChange.mockClear()
+		mounted.rerender(<OrgEditor {...props} value={`${before}\n* Captured\n`} />)
+		expect(view.state.selection.main).toMatchObject({ anchor, head })
+		expect(view.scrollDOM.scrollTop).toBe(123)
+		expect(view.scrollDOM.scrollLeft).toBe(17)
+		expect(onChange).not.toHaveBeenCalled()
+		expect(undoDepth(view.state)).toBe(1)
+		mounted.rerender(<OrgEditor {...props} value={`${before}\n* Captured\n`} />)
+		expect(undoDepth(view.state)).toBe(1)
+		expect(undo(view)).toBe(true)
+		expect(view.state.sliceDoc()).toBe("alpha beta\n* Captured\n")
+		expect(undo(view)).toBe(false)
+	})
+
+	it.each([
+		"abc\n",
+		"abc\r\n",
+		"abc\r",
+		"abc\r\nLF\nlone\r\0😀",
+	])("keeps an EOF caret before appended raw text: %j", (value) => {
+		const props = { value, onChange: vi.fn(), onSave: vi.fn() }
+		const mounted = render(<OrgEditor {...props} />)
+		const view = getEditorView()
+		const end = view.state.doc.length
+		view.dispatch({ selection: { anchor: end } })
+		const next = `${value}new\0😀\n\r\r\n`
+		mounted.rerender(<OrgEditor {...props} value={next} />)
+		expect(view.state.sliceDoc()).toBe(next)
+		// Separator policy may change, but raw offsets remain at the old EOF.
+		const line = view.state.doc.lineAt(view.state.selection.main.head)
+		expect(
+			view.state.selection.main.head + (line.number - 1) * (view.state.lineBreak.length - 1),
+		).toBe(value.length)
+		expect(props.onChange).not.toHaveBeenCalled()
+		expect(undoDepth(view.state)).toBe(0)
+	})
+
+	it.each([
+		["a\r\nb\r\n", "a\rX\nb\r\n"],
+		["a\rX\nb\r\n", "a\r\nb\r\n"],
+		["a\r\nb\r\n", "a\n\r\nb\r\n"],
+		["a\r\nb\r\n", "a\r\r\nb\r\n"],
+		["a\n\r\0😀end", "b\n\r\0😀"],
+		["a\r\nb\r\n", "x\n"],
+		["abc\n", "\0😀\r\nx\ny\r"],
+		["abc\r", ""],
+	])("replaces raw source exactly without an undo or change echo: %j → %j", (value, next) => {
+		const props = { value, onChange: vi.fn(), onSave: vi.fn() }
+		const mounted = render(<OrgEditor {...props} />)
+		const view = getEditorView()
+		view.dispatch({ selection: { anchor: view.state.doc.length, head: 1 } })
+		mounted.rerender(<OrgEditor {...props} value={next} />)
+		expect(view.state.sliceDoc()).toBe(next)
+		expect(view.state.selection.main.from).toBeGreaterThanOrEqual(0)
+		expect(view.state.selection.main.to).toBeLessThanOrEqual(view.state.doc.length)
+		expect(props.onChange).not.toHaveBeenCalled()
+		expect(undo(view)).toBe(false)
+	})
+
+	it("preserves raw range offsets when separator policy changes", () => {
+		const props = { value: "ab\ncd\nef", onChange: vi.fn(), onSave: vi.fn() }
+		const mounted = render(<OrgEditor {...props} />)
+		const view = getEditorView()
+		view.dispatch({ selection: EditorSelection.create([EditorSelection.range(7, 1)]) })
+		mounted.rerender(<OrgEditor {...props} value={"ab\r\ncd\r\nef"} />)
+		expect(view.state.selection.main).toMatchObject({ anchor: 6, head: 1 })
+	})
+
+	it.each([
+		[undefined, 0],
+		[3, 3],
+		[6, 6],
+		[-1, 0],
+		[99, 6],
+		[1.5, 0],
+		[NaN, 0],
+	])("uses a bounded initial cursor %s only at mount", (initialCursor, expected) => {
+		const props = { value: "abcdef", onChange: vi.fn(), onSave: vi.fn() }
+		const mounted = render(<OrgEditor {...props} initialCursor={initialCursor} />)
+		expect(getEditorView().state.selection.main.head).toBe(expected)
+		mounted.rerender(<OrgEditor {...props} initialCursor={2} />)
+		expect(getEditorView().state.selection.main.head).toBe(expected)
+	})
+
+	it("uses raw initial cursor offsets and lets cached selections win", () => {
+		const props = { value: "a\r\nb", onChange: vi.fn(), onSave: vi.fn(), initialCursor: 4 }
+		const mounted = render(<OrgEditor {...props} />)
+		expect(getEditorView().state.selection.main.head).toBe(3)
+		mounted.unmount()
+		const cache = new Map<string, OrgEditorSessionSnapshot>([
+			[
+				"cap",
+				{
+					state: EditorState.create({
+						doc: props.value,
+						extensions: EditorState.lineSeparator.of("\r\n"),
+						selection: { anchor: 1 },
+					}),
+					scrollTop: 0,
+					scrollLeft: 0,
+				},
+			],
+		])
+		render(<OrgEditor {...props} sessionKey="cap" sessionCache={cache} />)
+		expect(getEditorView().state.selection.main.head).toBe(1)
 	})
 
 	it("retains independent opaque A/B sessions with undo, selection, and scroll", () => {
@@ -70,7 +195,85 @@ describe("OrgEditor", () => {
 		mounted.unmount()
 	})
 
-	it("rebinds callbacks and current policies without reviving pending prefixes", () => {
+	it.each([
+		"abc\n",
+		"abc\r\n",
+		"abc\r",
+		"abc\r\nLF\nlone\r\0😀",
+	])("projects an own append into parked A without losing raw source, EOF, scroll, or history: %j", (value) => {
+		vi.useFakeTimers()
+		const cache = new Map<string, OrgEditorSessionSnapshot>()
+		const onChange = vi.fn()
+		const mount = (sessionKey: string, source: string) =>
+			render(
+				<OrgEditor
+					sessionKey={sessionKey}
+					sessionCache={cache}
+					value={source}
+					onChange={onChange}
+					onSave={vi.fn()}
+					initialCursor={1}
+				/>,
+			)
+		let mounted = mount("grant-A/logical-A", value)
+		let view = getEditorView()
+		view.dispatch({ changes: { from: 0, insert: "!" } })
+		view.dispatch({ selection: { anchor: view.state.doc.length } })
+		const oldSource = view.state.sliceDoc()
+		const oldEOF = view.state.doc.length
+		const separator = view.state.lineBreak
+		view.scrollDOM.scrollTop = 123
+		view.scrollDOM.scrollLeft = 17
+		mounted.unmount()
+		const parked = cache.get("grant-A/logical-A")!
+		mounted = mount("grant-A/logical-B", "other buffer")
+		getEditorView().dispatch({ changes: { from: 0, insert: "B" } })
+		mounted.unmount()
+		onChange.mockClear()
+		const append = `${separator}* Captured\0😀${separator}`
+		mounted = mount("grant-A/logical-A", oldSource + append)
+		view = getEditorView()
+		expect(view.state.sliceDoc()).toBe(oldSource + append)
+		expect(view.state.selection.main.head).toBe(oldEOF)
+		expect(undoDepth(view.state)).toBe(1)
+		expect(onChange).not.toHaveBeenCalled()
+		// Restoration derives a state; it never mutates the parked source/cache.
+		expect(cache.get("grant-A/logical-A")).toBe(parked)
+		expect(parked.state.sliceDoc()).toBe(oldSource)
+		act(() => vi.advanceTimersByTime(32))
+		expect(view.scrollDOM.scrollTop).toBe(123)
+		expect(view.scrollDOM.scrollLeft).toBe(17)
+		expect(undo(view)).toBe(true)
+		expect(view.state.sliceDoc()).toBe(value + append)
+		expect(undo(view)).toBe(false)
+		mounted.unmount()
+	})
+
+	it.each([
+		["abc\n", "abc!\n\r\nnew"],
+		["abc\r", "abc!\r\nnew"],
+		["abc\r\n", "unknown\r\nreplacement"],
+	])("resets parked history for unknown replacements or changed separator policy: %j", (value, next) => {
+		const cache = new Map<string, OrgEditorSessionSnapshot>()
+		const props = {
+			sessionKey: "grant/logical",
+			sessionCache: cache,
+			onChange: vi.fn(),
+			onSave: vi.fn(),
+		}
+		const mounted = render(<OrgEditor {...props} value={value} />)
+		getEditorView().dispatch({ changes: { from: 3, insert: "!" }, selection: { anchor: 2 } })
+		mounted.unmount()
+		render(<OrgEditor {...props} value={next} initialCursor={1} />)
+		const view = getEditorView()
+		expect(view.state.sliceDoc()).toBe(next)
+		expect(view.state.selection.main.head).toBe(1)
+		expect(undoDepth(view.state)).toBe(0)
+		expect(undo(view)).toBe(false)
+		expect(props.onChange).toHaveBeenCalledTimes(1)
+	})
+
+	it("rebinds callbacks and current policies after a parked append without reviving pending prefixes", () => {
 		vi.useFakeTimers()
 		const cache = new Map<string, OrgEditorSessionSnapshot>()
 		const oldChange = vi.fn(),
@@ -90,6 +293,8 @@ describe("OrgEditor", () => {
 			/>,
 		)
 		getEditorView().dispatch({ changes: { from: 6, insert: "!" } })
+		expect(foldCode(getEditorView())).toBe(true)
+		const oldFoldCount = foldedRanges(getEditorView().state).size
 		fireEvent.keyDown(screen.getByRole("textbox"), { ctrlKey: true, key: "c" })
 		mounted.unmount()
 		const oldCalls = oldPrefix.mock.calls.length
@@ -99,7 +304,7 @@ describe("OrgEditor", () => {
 		const props = {
 			sessionKey: "cap",
 			sessionCache: cache,
-			value: "* Note!\r\nbody",
+			value: "* Note!\r\nbody\r\n* Captured\r\nnew body",
 			onChange,
 			onSave,
 			onEditTags,
@@ -114,6 +319,8 @@ describe("OrgEditor", () => {
 			"false",
 		)
 		expect(view.state.lineBreak).toBe("\r\n")
+		expect(foldedRanges(view.state).size).toBe(oldFoldCount)
+		expect(onChange).not.toHaveBeenCalled()
 		fireEvent.keyDown(screen.getByRole("textbox"), { ctrlKey: true, key: "q" })
 		expect(onEditTags).not.toHaveBeenCalled()
 		fireEvent.keyDown(screen.getByRole("textbox"), { ctrlKey: true, key: "s" })
@@ -125,7 +332,7 @@ describe("OrgEditor", () => {
 		expect(onEditTags).toHaveBeenCalledOnce()
 		expect(oldTags).not.toHaveBeenCalled()
 		view.dispatch({ changes: { from: view.state.doc.length, insert: "new" } })
-		expect(onChange).toHaveBeenCalledExactlyOnceWith("* Note!\r\nbodynew")
+		expect(onChange).toHaveBeenCalledExactlyOnceWith(`${props.value}new`)
 		expect(oldChange).toHaveBeenCalledTimes(1)
 		restored.unmount()
 		act(() => vi.advanceTimersByTime(2000))
@@ -148,7 +355,7 @@ describe("OrgEditor", () => {
 		let mounted = mount("old-workspace-buffer", "original")
 		getEditorView().dispatch({ changes: { from: 8, insert: "!" }, selection: { anchor: 3 } })
 		mounted.unmount()
-		mounted = mount("new-workspace-buffer", "original!")
+		mounted = mount("new-workspace-buffer", "original! appended")
 		expect(undoDepth(getEditorView().state)).toBe(0)
 		expect(getEditorView().state.selection.main.head).toBe(0)
 		mounted.unmount()

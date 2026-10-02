@@ -276,6 +276,39 @@ also carries grant identity. Four additional real hook/pane/CM integration cases
 cover multi-buffer capture, editable deferred saves, ID switching/cancel and the
 real deleted-buffer picker. Desktop 139 files / 2090 cases, typecheck/build pass.
 
+## S5a: Capture parameter → popup tool buffer → explicit effect
+
+Capture no longer uses the TODO argument Dialog or window prompts. A bottom
+minibuffer chooses literal `todo`/`note` data; a separate nonmodal scratch Org
+editor owns multiline draft text and target input. It is a tool window, not a
+fake argument minibuffer or another writer for the originating file buffer.
+C-c C-c / Mod-S finish, C-c C-k / C-g abort before write; IME, consumed events,
+accepted editor prefixes, multiple-selection copying and held-key repeats take
+priority. Template acceptance focuses scratch once at its declared raw cursor.
+
+Draft dirty contributions are workspace-grant scoped, synchronous before React
+publication, memory-only, and included in close/route/root-discard checks. File
+mutations block route exit until their owned effect finishes; dismissal cannot
+cancel or roll back an already-started write. `captureOrgEntryFlow` validates
+exact RPC file identities and nonempty revisions, preserves existing/raw entry
+bytes, rejects unclosed target blocks, and writes through the same grant/CAS port.
+Every failed or malformed post-write confirmation is uncertain: keep a copyable
+readonly draft, retire acceptance and require reread/reconciliation, no retry.
+
+Capture target dirty buffers are rejected before effects. Confirmed results
+advance only the target baseline; newer input is retained and autosave paused.
+Unresolved buffers remain protected after undo to their old baseline, through
+watch/poll/refresh and parking. Source caret/history preservation uses minimal
+external changes and, for inactive clean buffers, defensive same-ID append-only
+cached-state projection with unchanged separator policy followed by public
+reconfigure. Unknown body replacements/new grants cannot adopt old cached history.
+
+Eight production-root cases plus real-CM keyboard integration verify the complete
+sequence and parked target path with exact EOF semantics. Desktop 143 files /
+2255 cases, typecheck/build pass; static review found no remaining scoped issues.
+No real native/Chinese IME acceptance, shared-file multi-window runtime, full
+capture configuration/interpolation or persistent draft recovery is implied.
+
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.

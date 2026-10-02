@@ -5,6 +5,7 @@ import {
 	archiveOrgSubtreeFlow,
 	areLegacyMigrationPlansEquivalent,
 	captureOrgTodoFlow,
+	captureOrgEntryFlow,
 	clearOrgDerivedIndexFlow,
 	createOrgDirectoryFlow,
 	deleteOrgDocumentFlow,
@@ -78,6 +79,11 @@ export interface OrgWorkspaceRevealTarget {
 	readonly relativePath: string
 	readonly line: number
 	readonly requestId: number
+}
+
+export type OrgCaptureOutcome = {
+	readonly kind: "success" | "rejected" | "uncertain"
+	readonly message?: string
 }
 
 export type OrgSubtreeTransferOutcome =
@@ -158,6 +164,11 @@ export interface OrgWorkspaceController {
 	) => Promise<boolean>
 	readonly openOrgLink: (target: OrgLinkClickTarget) => Promise<boolean>
 	readonly createDocument: (relativePath: string) => Promise<void>
+	readonly captureEntry: (
+		entrySource: string,
+		targetRelativePath: string,
+	) => Promise<OrgCaptureOutcome>
+	readonly setTransientDirty: (id: string, dirty: boolean) => void
 	readonly captureTodo: (title: string, targetRelativePath?: string) => Promise<void>
 	readonly refileSubtree: (
 		cursor: number,
@@ -281,6 +292,8 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		activationRef.current === originActivation &&
 		(activeRef.current?.relativePath ?? null) === originPath
 	// Only inactive buffers live here. The existing controller remains the active writer.
+	const transientDirtyRef = useRef(new Map<string, boolean>())
+	const transientGenerationRef = useRef(0)
 	const parkedRef = useRef(new Map<string, ParkedOrgBuffer>())
 	const bufferIdsRef = useRef(new Map<string, string>())
 	const bufferSequenceRef = useRef(0)
@@ -304,9 +317,31 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			Boolean(parkedRef.current.get(path)?.isDirty),
 		[],
 	)
+	const protectedPath = (path: string) =>
+		dirtyPath(path) || autosavePausedRef.current.has(path) || conflictsRef.current.has(path)
 	const hasDirtyBuffers = () =>
+		[...transientDirtyRef.current.values()].some(Boolean) ||
+		autosavePausedRef.current.size > 0 ||
+		conflictsRef.current.size > 0 ||
 		Boolean(activeRef.current && dirtyPath(activeRef.current.relativePath)) ||
 		[...parkedRef.current.values()].some((buffer) => buffer.isDirty)
+	const setTransientDirty = useCallback(
+		(id: string, dirty: boolean) => {
+			// Draft ownership is grant-local, not tied to editor activation (A/B/A).
+			if (
+				!mountedRef.current ||
+				grantRef.current !== originGrant ||
+				sessionRef.current !== originSession
+			)
+				return
+			if (Boolean(transientDirtyRef.current.get(id)) === dirty) return
+			transientGenerationRef.current += 1
+			if (dirty) transientDirtyRef.current.set(id, true)
+			else transientDirtyRef.current.delete(id)
+			publishBuffers((version) => version + 1)
+		},
+		[originGrant, originSession],
+	)
 	const aggregateDirty = hasDirtyBuffers()
 	const openBuffers: readonly OrgOpenBufferSummary[] = [
 		...[...parkedRef.current.entries()].map(([relativePath, buffer]) => ({
@@ -332,10 +367,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	const nativeCloseReady = useOrgWindowClose(
 		{
 			get hasDirtyBuffers() {
-				return (
-					Boolean(activeRef.current && latestContentRef.current !== activeRef.current.content) ||
-					[...parkedRef.current.values()].some((buffer) => buffer.isDirty)
-				)
+				return hasDirtyBuffers()
 			},
 			get isBusy() {
 				return mutationInProgressRef.current
@@ -347,9 +379,15 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	nativeCloseReadyRef.current = nativeCloseReady
 
 	useBlocker({
-		disabled: !aggregateDirty,
-		enableBeforeUnload: aggregateDirty,
-		shouldBlockFn: () => !window.confirm("Discard unsaved Org document changes?"),
+		disabled: false,
+		enableBeforeUnload: aggregateDirty || isSaving || isLoading,
+		shouldBlockFn: () => {
+			if (mutationInProgressRef.current) {
+				setError("A workspace operation is running; wait for it to finish before leaving.")
+				return true
+			}
+			return hasDirtyBuffers() && !window.confirm("Discard unsaved Org document changes?")
+		},
 	})
 
 	useEffect(() => {
@@ -381,7 +419,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				return
 			}
 			if (E.isLeft(result)) {
-				if (dirtyPath(activeDocument.relativePath)) {
+				if (protectedPath(activeDocument.relativePath)) {
 					conflictsRef.current.add(activeDocument.relativePath)
 					autosavePausedRef.current.add(activeDocument.relativePath)
 				}
@@ -391,7 +429,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			if (result.right.revision === activeDocument.revision) {
 				return
 			}
-			if (dirtyPath(activeDocument.relativePath) || generation !== editGenerationRef.current) {
+			if (protectedPath(activeDocument.relativePath) || generation !== editGenerationRef.current) {
 				conflictsRef.current.add(activeDocument.relativePath)
 				autosavePausedRef.current.add(activeDocument.relativePath)
 				setError(`External modification detected for ${activeDocument.relativePath}.`)
@@ -462,7 +500,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			(document) => document.relativePath === sourceDocument.relativePath,
 		)
 		if (!scannedDocument) {
-			if (dirtyPath(sourceDocument.relativePath) || generation !== editGenerationRef.current) {
+			if (protectedPath(sourceDocument.relativePath) || generation !== editGenerationRef.current) {
 				conflictsRef.current.add(sourceDocument.relativePath)
 				autosavePausedRef.current.add(sourceDocument.relativePath)
 				setError(
@@ -486,7 +524,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		if (scannedDocument.revision === sourceDocument.revision) {
 			return
 		}
-		if (dirtyPath(sourceDocument.relativePath) || generation !== editGenerationRef.current) {
+		if (protectedPath(sourceDocument.relativePath) || generation !== editGenerationRef.current) {
 			conflictsRef.current.add(sourceDocument.relativePath)
 			autosavePausedRef.current.add(sourceDocument.relativePath)
 			setError(`External modification detected for ${sourceDocument.relativePath}.`)
@@ -506,7 +544,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			return
 		}
 		if (
-			dirtyPath(sourceDocument.relativePath) ||
+			protectedPath(sourceDocument.relativePath) ||
 			generation !== editGenerationRef.current ||
 			latestContentRef.current !== contentAtStart ||
 			mutationInProgressRef.current
@@ -617,6 +655,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				return
 			}
 			const confirmationGeneration = editGenerationRef.current
+			const transientGeneration = transientGenerationRef.current
 			const approvedDirty = hasDirtyBuffers()
 			if (approvedDirty && !window.confirm("Discard unsaved changes and open another workspace?")) {
 				return
@@ -625,6 +664,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				!isCurrentOrigin() ||
 				nonApprovalMutation() ||
 				confirmationGeneration !== editGenerationRef.current ||
+				transientGeneration !== transientGenerationRef.current ||
 				(hasDirtyBuffers() && !approvedDirty)
 			)
 				return
@@ -667,6 +707,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				if (result.right) {
 					if (
 						editGenerationRef.current !== editGenerationAtStart ||
+						transientGeneration !== transientGenerationRef.current ||
 						(hasDirtyBuffers() && !approvedDirty)
 					) {
 						setError("Document changed while opening a workspace; the open was cancelled.")
@@ -676,6 +717,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					activationRef.current += 1
 					sessionRef.current = result.right.capabilityToken ?? null
 					setWorkspaceSessionId(sessionRef.current)
+					transientDirtyRef.current.clear()
 					parkedRef.current.clear()
 					bufferIdsRef.current.clear()
 					conflictsRef.current.clear()
@@ -811,19 +853,20 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					setError("Document changed while another document was opening; the open was cancelled.")
 					return false
 				}
-				if (E.isLeft(result) && !parked?.isDirty) {
+				const protectedParked = parked && protectedPath(entry.relativePath)
+				if (E.isLeft(result) && !protectedParked) {
 					setError(result.left.message)
 					return false
 				}
 				if (
-					parked?.isDirty &&
+					protectedParked &&
 					(E.isLeft(result) || result.right.revision !== parked.document.revision)
 				) {
 					conflictsRef.current.add(entry.relativePath)
 					autosavePausedRef.current.add(entry.relativePath)
 					setError(`External modification detected for ${entry.relativePath}.`)
 				}
-				const nextDocument = parked?.isDirty
+				const nextDocument = protectedParked
 					? parked.document
 					: E.isRight(result)
 						? result.right
@@ -831,7 +874,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				if (!nextDocument) {
 					return false
 				}
-				if (!parked?.isDirty) {
+				if (!protectedParked) {
 					conflictsRef.current.delete(entry.relativePath)
 				}
 				if (expectedRevision && nextDocument.revision !== expectedRevision) {
@@ -855,11 +898,11 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				activationRef.current += 1
 				activeRef.current = nextDocument
 				setActiveDocument(nextDocument)
-				const nextContent = parked?.isDirty ? parked.content : nextDocument.content
+				const nextContent = protectedParked ? parked.content : nextDocument.content
 				setContent(nextContent)
 				latestContentRef.current = nextContent
 				editGenerationRef.current += 1
-				setDirty(Boolean(parked?.isDirty))
+				setDirty(nextContent !== nextDocument.content)
 				return true
 			} finally {
 				signal?.removeEventListener("abort", cancelRead)
@@ -1379,7 +1422,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		if (mutationInProgressRef.current) {
 			return false
 		}
-		if (activeRef.current && (isDirty || latestContentRef.current !== activeRef.current.content)) {
+		if (activeRef.current && protectedPath(activeRef.current.relativePath)) {
 			const saved = await saveDocumentWithResult()
 			if (
 				!isCurrentOrigin() ||
@@ -1422,7 +1465,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			if (!workspace || !isCurrentOrigin() || mutationInProgressRef.current) {
 				return false
 			}
-			if (buffer.isDirty) {
+			if (protectedPath(relativePath)) {
 				const session = sessionRef.current
 				openRequestRef.current += 1
 				setLoading(false)
@@ -1514,6 +1557,107 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		}, ORG_AUTOSAVE_DELAY_MS)
 		return () => window.clearTimeout(timer)
 	}, [activeDocument, content, isDirty, isLoading, isSaving, saveDocument, workspace])
+
+	const captureEntry = useCallback(
+		async (entrySource: string, targetRelativePath: string): Promise<OrgCaptureOutcome> => {
+			if (!workspace || !isCurrentOrigin())
+				return { kind: "rejected", message: "The workspace or source buffer is no longer current." }
+			const relativePath = targetRelativePath.trim()
+			if (mutationInProgressRef.current || protectedPath(relativePath)) {
+				const message = mutationInProgressRef.current
+					? "Another workspace operation is running; wait before capturing."
+					: `Save or reconcile changes before capturing to ${relativePath}.`
+				setError(message)
+				return { kind: "rejected", message }
+			}
+			const targetActive = activeRef.current?.relativePath === relativePath
+			const generation = editGenerationRef.current
+			const body = latestContentRef.current
+			const parked = parkedRef.current.get(relativePath)
+			const owner = Symbol("captureEntry")
+			mutationOwnerRef.current = owner
+			mutationInProgressRef.current = true
+			openRequestRef.current += 1
+			setLoading(false)
+			setSaving(true)
+			setError(null)
+			const current = () => mutationOwnerRef.current === owner && isCurrentOrigin()
+			const uncertain = (message: string): OrgCaptureOutcome => {
+				if (current()) {
+					autosavePausedRef.current.add(relativePath)
+					conflictsRef.current.add(relativePath)
+					setError(message)
+					publishBuffers((version) => version + 1)
+				}
+				return { kind: "uncertain", message }
+			}
+			try {
+				const result = await captureOrgEntryFlow({
+					entrySource,
+					relativePath,
+					workspaceRoot: workspace.rootPath,
+					capabilityToken: workspace.capabilityToken,
+				})()
+				if (!current())
+					return {
+						kind: "uncertain",
+						message: "Capture origin changed; reread the target before retrying.",
+					}
+				if (E.isLeft(result)) {
+					if (result.left.type === "ORG_CAPTURE_UNCERTAIN_WRITE_ERROR")
+						return uncertain(result.left.message)
+					setError(result.left.message)
+					return { kind: "rejected", message: result.left.message }
+				}
+				const confirmed = result.right
+				if (
+					confirmed.relativePath !== relativePath ||
+					typeof confirmed.revision !== "string" ||
+					!confirmed.revision ||
+					typeof confirmed.content !== "string"
+				)
+					return uncertain(
+						"Capture returned an invalid confirmation; reread the target and reconcile. Do not retry automatically.",
+					)
+				setWorkspace((value) => (value ? updateWorkspaceDocument(value, confirmed) : value))
+				let newer = false
+				if (targetActive) {
+					newer = generation !== editGenerationRef.current || body !== latestContentRef.current
+					activeRef.current = confirmed
+					setActiveDocument(confirmed)
+					if (!newer) {
+						latestContentRef.current = confirmed.content
+						setContent(confirmed.content)
+					}
+					setDirty(latestContentRef.current !== confirmed.content)
+				} else if (parked && parkedRef.current.get(relativePath) === parked) {
+					parkedRef.current.set(relativePath, {
+						...parked,
+						document: confirmed,
+						content: confirmed.content,
+						isDirty: false,
+					})
+				}
+				if (newer) {
+					const message =
+						"Captured successfully, but newer editor input was retained. Reread and reconcile the target before saving."
+					autosavePausedRef.current.add(relativePath)
+					conflictsRef.current.add(relativePath)
+					setError(message)
+					return { kind: "success", message }
+				}
+				publishBuffers((version) => version + 1)
+				return { kind: "success" }
+			} catch {
+				return uncertain(
+					"Capture ended unexpectedly; the target may already contain the entry. Reread and reconcile before retrying. Do not retry automatically. No rollback was attempted.",
+				)
+			} finally {
+				finishMutation(owner)
+			}
+		},
+		[workspace, dirtyPath, originSession, originActivation, originPath],
+	)
 
 	const captureTodo = useCallback(
 		async (title: string, targetRelativePath = "inbox.org") => {
@@ -2172,6 +2316,8 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		activeDocument,
 		archiveSubtree,
 		captureTodo,
+		captureEntry,
+		setTransientDirty,
 		clearDerivedIndex,
 		closeActiveDocument,
 		closeDocumentPath,

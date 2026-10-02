@@ -10,6 +10,11 @@ export {
 } from "./org-backlinks.container.fn"
 export { OrgBacklinksView, type OrgBacklinksViewProps } from "./org-backlinks.view.fn"
 export { OrgCommandPalette, orgCommandIcons } from "./org-command-palette.view.fn"
+export {
+	OrgCaptureWorkflow,
+	type OrgCaptureWorkflowProps,
+	type OrgCaptureOrigin,
+} from "./org-capture-workflow.view.fn"
 export { OrgDocumentPane } from "./org-document-pane.view.fn"
 export { OrgInspector } from "./org-inspector.view.fn"
 export { OrgQuickOpen } from "./org-quick-open.view.fn"

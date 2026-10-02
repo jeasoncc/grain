@@ -67,3 +67,4 @@ export * from "./theme"
 export * from "./ui"
 // Writing 类型模块
 export * from "./writing"
+export * from "./editor"
