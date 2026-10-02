@@ -213,9 +213,15 @@ export const OrgMinibuffer = ({
 					}}
 					onKeyDown={(event) => {
 						event.stopPropagation()
+						if (event.defaultPrevented || event.nativeEvent.defaultPrevented) return
 						if (composingRef.current || event.nativeEvent.isComposing || event.keyCode === 229)
 							return
 						const key = event.key.toLowerCase()
+						// A held press must not accept a second phase, even after its session resets.
+						if (key === "enter" && event.repeat) {
+							event.preventDefault()
+							return
+						}
 						if (key === "escape" || (event.ctrlKey && key === "g")) {
 							event.preventDefault()
 							cancel()
@@ -254,6 +260,18 @@ export const OrgMinibuffer = ({
 					}}
 					className="min-w-0 flex-1 bg-transparent py-2 text-foreground outline-none"
 				/>
+				<button
+					type="button"
+					onClick={(event) => {
+						if (event.detail > 1) return
+						accept()
+					}}
+					disabled={accepting}
+					className="rounded px-1 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
+					aria-label="Accept minibuffer"
+				>
+					RET
+				</button>
 				<button
 					type="button"
 					onClick={cancel}

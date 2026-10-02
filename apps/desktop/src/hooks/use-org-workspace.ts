@@ -16,6 +16,7 @@ import {
 	prepareLegacyMigrationFlow,
 	rebuildOrgDerivedIndexFlow,
 	refileOrgSubtreeFlow,
+	readOrgRefileTargetFlow,
 	reopenDefaultOrgWorkspaceFlow,
 	resolveOrgLinkTargetFlow,
 	runLegacyMigrationRecoveryDrillFlow,
@@ -31,6 +32,11 @@ import {
 	watchOrgWorkspace,
 } from "@/io/file/org-file.repository"
 import type { OrgLinkClickTarget } from "@/pipes/org"
+import type {
+	OrgRefileTargetSnapshot,
+	OrgRefileHeadingTarget,
+} from "@/pipes/org/org-refile-target.pipe"
+import { deriveOrgArchivePath, isSafeRelativeOrgPath } from "@/pipes/org/org-subtree-refile.pipe"
 import type {
 	OrgDocumentEntryInterface,
 	OrgDocumentInterface,
@@ -84,6 +90,15 @@ export interface OrgWorkspaceRevealTarget {
 export type OrgCaptureOutcome = {
 	readonly kind: "success" | "rejected" | "uncertain"
 	readonly message?: string
+}
+
+export type OrgRefileTargetOutcome =
+	| { readonly kind: "ready"; readonly snapshot: OrgRefileTargetSnapshot }
+	| { readonly kind: "rejected"; readonly message: string }
+
+export interface OrgRefileTargetSelection {
+	readonly expectedTargetRevision: string
+	readonly targetHeading?: Pick<OrgRefileHeadingTarget, "from" | "heading">
 }
 
 export type OrgSubtreeTransferOutcome =
@@ -170,9 +185,11 @@ export interface OrgWorkspaceController {
 	) => Promise<OrgCaptureOutcome>
 	readonly setTransientDirty: (id: string, dirty: boolean) => void
 	readonly captureTodo: (title: string, targetRelativePath?: string) => Promise<void>
+	readonly readRefileTarget: (path: string, signal?: AbortSignal) => Promise<OrgRefileTargetOutcome>
 	readonly refileSubtree: (
 		cursor: number,
 		targetRelativePath: string,
+		target?: OrgRefileTargetSelection,
 	) => Promise<OrgSubtreeTransferOutcome>
 	readonly archiveSubtree: (cursor: number) => Promise<OrgSubtreeTransferOutcome>
 	readonly createDirectory: (relativePath: string) => Promise<void>
@@ -254,6 +271,9 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	const [revealTarget, setRevealTarget] = useState<OrgWorkspaceRevealTarget | null>(null)
 	const revealRequestRef = useRef(0)
 	const linkRequestRef = useRef(0)
+	const refileTargetRequestRef = useRef(0)
+	const liveWorkspaceRef = useRef(workspace)
+	liveWorkspaceRef.current = workspace
 	const openRequestRef = useRef(0)
 	const mutationInProgressRef = useRef(false)
 	const mutationOwnerRef = useRef<symbol | null>(null)
@@ -485,7 +505,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		setWorkspace({ ...result.right, capabilityToken: workspace.capabilityToken })
 		for (const [path, buffer] of parkedRef.current) {
 			const entry = result.right.documents.find((document) => document.relativePath === path)
-			if (buffer.isDirty && entry?.revision !== buffer.document.revision) {
+			if (protectedPath(path) && entry?.revision !== buffer.document.revision) {
 				conflictsRef.current.add(path)
 				autosavePausedRef.current.add(path)
 				setError(`External modification detected for ${path}.`)
@@ -675,6 +695,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			rootApprovalOwnerRef.current = owner
 			mutationOwnerRef.current = owner
 			mutationInProgressRef.current = true
+			refileTargetRequestRef.current += 1
 			let granted: OrgWorkspaceInterface | null = null
 			try {
 				setLoading(true)
@@ -1041,17 +1062,115 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		[activeDocument, openDocumentAt, workspace, originSession, originActivation, originPath],
 	)
 
+	const readRefileTarget = useCallback(
+		async (path: string, signal?: AbortSignal): Promise<OrgRefileTargetOutcome> => {
+			const rejected = (message: string): OrgRefileTargetOutcome => ({ kind: "rejected", message })
+			const source = activeRef.current
+			// Every lookup supersedes earlier requests, including rejected lookups.
+			const request = ++refileTargetRequestRef.current
+			if (
+				signal?.aborted ||
+				!isCurrentOrigin() ||
+				!workspace ||
+				!source ||
+				liveWorkspaceRef.current?.rootPath !== workspace.rootPath ||
+				mutationInProgressRef.current ||
+				protectedPath(source.relativePath) ||
+				protectedPath(path)
+			)
+				return rejected(
+					"Save or resolve the current and target buffers before looking up a refile target.",
+				)
+			if (
+				typeof path !== "string" ||
+				!isSafeRelativeOrgPath(path) ||
+				!isSafeRelativeOrgPath(source.relativePath) ||
+				path.normalize("NFC").toLocaleLowerCase("en-US") ===
+					source.relativePath.normalize("NFC").toLocaleLowerCase("en-US")
+			)
+				return rejected("Refile target must be a safe, distinct relative Org path.")
+			const generation = editGenerationRef.current
+			const sourceContent = latestContentRef.current
+			const parkedTarget = parkedRef.current.get(path)
+			const current = () =>
+				!signal?.aborted &&
+				isCurrentOrigin() &&
+				request === refileTargetRequestRef.current &&
+				liveWorkspaceRef.current?.rootPath === workspace.rootPath &&
+				activeRef.current === source &&
+				latestContentRef.current === sourceContent &&
+				editGenerationRef.current === generation &&
+				!mutationInProgressRef.current &&
+				!protectedPath(source.relativePath) &&
+				!protectedPath(path) &&
+				parkedRef.current.get(path) === parkedTarget
+			let abortListener: (() => void) | undefined
+			const cancelled = new Promise<OrgRefileTargetOutcome>((resolve) => {
+				abortListener = () => resolve(rejected("Refile target lookup was cancelled."))
+				signal?.addEventListener("abort", abortListener, { once: true })
+			})
+			try {
+				const lookup = (async (): Promise<OrgRefileTargetOutcome> => {
+					try {
+						const result = await readOrgRefileTargetFlow({
+							workspaceRoot: workspace.rootPath,
+							capabilityToken: workspace.capabilityToken,
+							sourceRelativePath: source.relativePath,
+							targetRelativePath: path,
+							confirmCurrent: current,
+						})()
+						if (!current())
+							return rejected("Refile target lookup is stale; request a fresh target.")
+						return E.isLeft(result)
+							? rejected(result.left.message)
+							: { kind: "ready", snapshot: result.right }
+					} catch {
+						return rejected("Cannot read the refile target.")
+					}
+				})()
+				return await Promise.race([lookup, cancelled])
+			} finally {
+				if (abortListener) signal?.removeEventListener("abort", abortListener)
+			}
+		},
+		[workspace, dirtyPath, originGrant, originSession, originActivation, originPath],
+	)
+
 	const transferSubtree = useCallback(
 		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: source/target guards and partial write outcomes are one transaction.
-		async (cursor: number, targetRelativePath?: string): Promise<OrgSubtreeTransferOutcome> => {
+		async (
+			cursor: number,
+			targetRelativePath?: string,
+			target?: OrgRefileTargetSelection,
+		): Promise<OrgSubtreeTransferOutcome> => {
 			const sourceDocument = activeRef.current
 			if (!isCurrentOrigin())
 				return { kind: "rejected", message: "The source buffer is no longer active." }
 			const sourceGeneration = editGenerationRef.current
+			if (
+				target !== undefined &&
+				(!target ||
+					typeof target !== "object" ||
+					typeof target.expectedTargetRevision !== "string" ||
+					!target.expectedTargetRevision.trim() ||
+					(target.targetHeading !== undefined &&
+						(!target.targetHeading ||
+							typeof target.targetHeading !== "object" ||
+							target.expectedTargetRevision === "<missing>" ||
+							!Number.isSafeInteger(target.targetHeading.from) ||
+							target.targetHeading.from < 0 ||
+							typeof target.targetHeading.heading !== "string" ||
+							!/^\*+[ \t]+/.test(target.targetHeading.heading) ||
+							/[\r\n]/.test(target.targetHeading.heading))))
+			)
+				return { kind: "rejected", message: "Invalid refile target selection." }
 			const rejectionMessage =
-				targetRelativePath && dirtyPath(targetRelativePath)
+				targetRelativePath && protectedPath(targetRelativePath)
 					? "Save or discard the target buffer before refiling a subtree."
-					: !targetRelativePath && [...parkedRef.current.values()].some((buffer) => buffer.isDirty)
+					: !targetRelativePath &&
+							(autosavePausedRef.current.size > 0 ||
+								conflictsRef.current.size > 0 ||
+								[...parkedRef.current.values()].some((buffer) => buffer.isDirty))
 						? "Save or discard inactive buffers before archiving a subtree."
 						: !workspace
 							? "Open an Org workspace before refiling or archiving a subtree."
@@ -1059,7 +1178,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 								? "Open a document before refiling or archiving a subtree."
 								: mutationInProgressRef.current
 									? "Another workspace mutation is in progress; subtree transfer was not started."
-									: dirtyPath(sourceDocument.relativePath)
+									: protectedPath(sourceDocument.relativePath)
 										? "Save the current document before refiling or archiving a subtree."
 										: null
 			if (rejectionMessage) {
@@ -1071,19 +1190,40 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			}
 			const sourceContent = latestContentRef.current
 			const sourcePath = sourceDocument.relativePath
+			const affectedTargetPath = targetRelativePath ?? deriveOrgArchivePath(sourcePath)
+			const targetBuffer = affectedTargetPath
+				? parkedRef.current.get(affectedTargetPath)
+				: undefined
+			const latchAffectedPaths = () => {
+				for (const path of [sourcePath, affectedTargetPath]) {
+					if (!path) continue
+					autosavePausedRef.current.add(path)
+					conflictsRef.current.add(path)
+				}
+				refileTargetRequestRef.current += 1
+				publishBuffers((version) => version + 1)
+			}
 			const expectedSourceRevision = sourceDocument.revision
 			openRequestRef.current += 1
 			setLoading(false)
 			const owner = Symbol("transferSubtree")
 			mutationOwnerRef.current = owner
 			mutationInProgressRef.current = true
+			refileTargetRequestRef.current += 1
 			setSaving(true)
 			setError(null)
 			const commonInput = {
 				confirmSourceUnchanged: () =>
 					isCurrentOrigin() &&
 					editGenerationRef.current === sourceGeneration &&
-					latestContentRef.current === sourceContent,
+					latestContentRef.current === sourceContent &&
+					activeRef.current === sourceDocument &&
+					liveWorkspaceRef.current?.rootPath === workspace.rootPath &&
+					!protectedPath(sourcePath) &&
+					(!affectedTargetPath ||
+						(!protectedPath(affectedTargetPath) &&
+							parkedRef.current.get(affectedTargetPath) === targetBuffer)),
+				isProtectedPath: (path: string) => protectedPath(path),
 				cursor,
 				expectedSourceRevision,
 				sourceContent,
@@ -1093,7 +1233,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			}
 			try {
 				const result = await (targetRelativePath
-					? refileOrgSubtreeFlow({ ...commonInput, targetRelativePath })()
+					? refileOrgSubtreeFlow({ ...commonInput, ...target, targetRelativePath })()
 					: archiveOrgSubtreeFlow(commonInput)())
 				if (!isCurrentOrigin()) {
 					finishMutation(owner)
@@ -1103,6 +1243,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					const partial =
 						result.left.type === "ORG_SUBTREE_REFILE_PARTIAL_ERROR" ||
 						result.left.type === "ORG_SUBTREE_REFILE_UNCERTAIN_WRITE_ERROR"
+					if (partial) latchAffectedPaths()
 					if (result.left.type === "ORG_SUBTREE_REFILE_PARTIAL_ERROR") {
 						const persistedTarget = result.left.target
 						setWorkspace((current) =>
@@ -1143,6 +1284,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 						kind: "partial",
 						message: "The source buffer is no longer active; reread the affected files.",
 					}
+				latchAffectedPaths()
 				const message =
 					"Subtree transfer ended unexpectedly; files may have changed. Reread both source and target documents before reconciling them. Do not automatically retry; rollback was not confirmed."
 				setError(message)
@@ -1155,8 +1297,8 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	)
 
 	const refileSubtree = useCallback(
-		async (cursor: number, targetRelativePath: string) =>
-			transferSubtree(cursor, targetRelativePath),
+		async (cursor: number, targetRelativePath: string, target?: OrgRefileTargetSelection) =>
+			transferSubtree(cursor, targetRelativePath, target),
 		[transferSubtree, originSession, originActivation, originPath],
 	)
 
@@ -1182,6 +1324,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		}
 		openRequestRef.current += 1
 		mutationInProgressRef.current = true
+		refileTargetRequestRef.current += 1
 		const owner = Symbol("save")
 		mutationOwnerRef.current = owner
 		const sourcePath = activeRef.current!.relativePath
@@ -1313,6 +1456,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		mutationOwnerRef.current = owner
 		saveAllOwnerRef.current = owner
 		mutationInProgressRef.current = true
+		refileTargetRequestRef.current += 1
 		openRequestRef.current += 1
 		setLoading(false)
 		setSaving(true)
@@ -1472,6 +1616,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				const owner = Symbol("closeDocumentPath")
 				mutationOwnerRef.current = owner
 				mutationInProgressRef.current = true
+				refileTargetRequestRef.current += 1
 				setSaving(true)
 				try {
 					const result = await saveOrgDocumentFlow({
@@ -1577,6 +1722,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			const owner = Symbol("captureEntry")
 			mutationOwnerRef.current = owner
 			mutationInProgressRef.current = true
+			refileTargetRequestRef.current += 1
 			openRequestRef.current += 1
 			setLoading(false)
 			setSaving(true)
@@ -1674,6 +1820,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			const owner = Symbol("captureTodo")
 			mutationOwnerRef.current = owner
 			mutationInProgressRef.current = true
+			refileTargetRequestRef.current += 1
 			setSaving(true)
 			setError(null)
 			try {
@@ -1750,6 +1897,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			const generationAtStart = editGenerationRef.current
 			openRequestRef.current += 1
 			mutationInProgressRef.current = true
+			refileTargetRequestRef.current += 1
 			setSaving(true)
 			setError(null)
 			try {
@@ -1832,6 +1980,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			const owner = Symbol("createDirectory")
 			mutationOwnerRef.current = owner
 			mutationInProgressRef.current = true
+			refileTargetRequestRef.current += 1
 			setSaving(true)
 			setError(null)
 			try {
@@ -1890,6 +2039,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			const owner = Symbol("moveActiveDocument")
 			mutationOwnerRef.current = owner
 			mutationInProgressRef.current = true
+			refileTargetRequestRef.current += 1
 			setSaving(true)
 			setError(null)
 			try {
@@ -1964,6 +2114,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			const owner = Symbol("migrateLegacyWorkspace")
 			mutationOwnerRef.current = owner
 			mutationInProgressRef.current = true
+			refileTargetRequestRef.current += 1
 			setLoading(true)
 			setError(null)
 			setMigrationStatus(null)
@@ -2080,6 +2231,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			const owner = Symbol("verifyLegacyMigration")
 			mutationOwnerRef.current = owner
 			mutationInProgressRef.current = true
+			refileTargetRequestRef.current += 1
 			setLoading(true)
 			setError(null)
 			setMigrationStatus(null)
@@ -2128,6 +2280,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		const owner = Symbol("rebuildDerivedIndex")
 		mutationOwnerRef.current = owner
 		mutationInProgressRef.current = true
+		refileTargetRequestRef.current += 1
 		setLoading(true)
 		setError(null)
 		setDerivedIndexStatus(null)
@@ -2173,6 +2326,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		const owner = Symbol("clearDerivedIndex")
 		mutationOwnerRef.current = owner
 		mutationInProgressRef.current = true
+		refileTargetRequestRef.current += 1
 		setLoading(true)
 		setError(null)
 		setDerivedIndexStatus(null)
@@ -2205,6 +2359,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			const owner = Symbol("runLegacyRecoveryDrill")
 			mutationOwnerRef.current = owner
 			mutationInProgressRef.current = true
+			refileTargetRequestRef.current += 1
 			setLoading(true)
 			setError(null)
 			setMigrationStatus(null)
@@ -2255,6 +2410,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		const owner = Symbol("deleteActiveDocument")
 		mutationOwnerRef.current = owner
 		mutationInProgressRef.current = true
+		refileTargetRequestRef.current += 1
 		setSaving(true)
 		setError(null)
 		const sourcePath = sourceDocument.relativePath
@@ -2343,6 +2499,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		openOrgLink,
 		rebuildDerivedIndex,
 		refileSubtree,
+		readRefileTarget,
 		refreshWorkspace,
 		revealTarget,
 		runLegacyRecoveryDrill,

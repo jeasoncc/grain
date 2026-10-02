@@ -20,6 +20,7 @@ import {
 	openDefaultOrgWorkspaceFlow,
 	openOrgDocumentFlow,
 	refileOrgSubtreeFlow,
+	readOrgRefileTargetFlow,
 	saveOrgDocumentFlow,
 	scanOrgWorkspaceFlow,
 } from "@/flows/org-workspace"
@@ -64,6 +65,7 @@ vi.mock("@/flows/org-workspace", () => ({
 	openDefaultOrgWorkspaceFlow: vi.fn(),
 	openOrgDocumentFlow: vi.fn(),
 	refileOrgSubtreeFlow: vi.fn(),
+	readOrgRefileTargetFlow: vi.fn(),
 	saveOrgDocumentFlow: vi.fn(),
 	scanOrgWorkspaceFlow: vi.fn(),
 }))
@@ -128,6 +130,205 @@ describe("Org capture entry and transient drafts", () => {
 		})
 		return hook
 	}
+	it("looks up targets without state effects and forwards explicit heading selection", async () => {
+		const { result } = await setup()
+		const snapshot = { relativePath: "z.org", revision: "fresh", headings: [] }
+		vi.mocked(readOrgRefileTargetFlow).mockReturnValue(async () => E.right(snapshot))
+		expect(await result.current.readRefileTarget("z.org")).toEqual({ kind: "ready", snapshot })
+		expect(readOrgRefileTargetFlow).toHaveBeenCalledWith(
+			expect.objectContaining({
+				workspaceRoot: "/notes",
+				capabilityToken: "G1",
+				sourceRelativePath: "inbox.org",
+				targetRelativePath: "z.org",
+			}),
+		)
+		expect(result.current.isLoading).toBe(false)
+		expect(result.current.isSaving).toBe(false)
+		expect(result.current.activeDocument?.relativePath).toBe("inbox.org")
+		const target = {
+			expectedTargetRevision: "fresh",
+			targetHeading: { from: 9, heading: "** Exact" },
+		}
+		vi.mocked(refileOrgSubtreeFlow).mockReturnValue(async () =>
+			E.right({ source: captured, target: { ...captured, relativePath: "z.org" } }),
+		)
+		await act(async () => {
+			await result.current.refileSubtree(0, "z.org", target)
+		})
+		expect(refileOrgSubtreeFlow).toHaveBeenCalledWith(
+			expect.objectContaining({ ...target, targetRelativePath: "z.org" }),
+		)
+	})
+	it("cancels immediately without waiting for native IO and removes its listener", async () => {
+		const { result } = await setup()
+		let resolve!: (
+			value: E.Either<never, { relativePath: string; revision: string; headings: [] }>,
+		) => void
+		vi.mocked(readOrgRefileTargetFlow).mockReturnValue(
+			() =>
+				new Promise((r) => {
+					resolve = r
+				}),
+		)
+		const controller = new AbortController()
+		const remove = vi.spyOn(controller.signal, "removeEventListener")
+		const pending = result.current.readRefileTarget("z.org", controller.signal)
+		controller.abort()
+		expect(await pending).toMatchObject({ kind: "rejected" })
+		expect(remove).toHaveBeenCalledWith("abort", expect.any(Function))
+		await act(async () => {
+			resolve(E.right({ relativePath: "z.org", revision: "late", headings: [] }))
+			await Promise.resolve()
+		})
+		expect(result.current.activeDocument?.relativePath).toBe("inbox.org")
+		expect(
+			result.current.workspace?.documents.find((d) => d.relativePath === "z.org")?.revision,
+		).toBe("z-1")
+	})
+	it("invalidates a pending lookup even when the newer lookup is rejected before IO", async () => {
+		const { result } = await setup()
+		const pendingRead = deferred<Awaited<ReturnType<ReturnType<typeof readOrgRefileTargetFlow>>>>()
+		let current!: () => boolean
+		vi.mocked(readOrgRefileTargetFlow).mockImplementationOnce((input) => {
+			current = input.confirmCurrent!
+			return () => pendingRead.promise
+		})
+		const pending = result.current.readRefileTarget("z.org")
+		expect(current()).toBe(true)
+		expect((await result.current.readRefileTarget("../unsafe.org")).kind).toBe("rejected")
+		expect(current()).toBe(false)
+		pendingRead.resolve(E.right({ relativePath: "z.org", revision: "late", headings: [] }))
+		expect((await pending).kind).toBe("rejected")
+		expect(readOrgRefileTargetFlow).toHaveBeenCalledOnce()
+	})
+
+	it("rejects source-edit ABA and stale activation before publication", async () => {
+		const { result } = await setup()
+		const staleReader = result.current.readRefileTarget
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		await act(async () => {
+			await result.current.openDocumentPath("inbox.org")
+		})
+		expect(await staleReader("z.org")).toMatchObject({ kind: "rejected" })
+		expect(readOrgRefileTargetFlow).not.toHaveBeenCalled()
+		let resolve!: (
+			value: E.Either<never, { relativePath: string; revision: string; headings: [] }>,
+		) => void
+		vi.mocked(readOrgRefileTargetFlow).mockReturnValueOnce(
+			() =>
+				new Promise((r) => {
+					resolve = r
+				}),
+		)
+		const pending = result.current.readRefileTarget("z.org")
+		act(() => {
+			result.current.updateContent("* Changed\n")
+			result.current.updateContent(captured.content)
+		})
+		resolve(E.right({ relativePath: "z.org", revision: "late", headings: [] }))
+		expect(await pending).toMatchObject({ kind: "rejected" })
+	})
+	it.each([
+		"lease",
+		"close",
+		"rename",
+	])("rejects pending snapshots after source context changes: %s", async (action) => {
+		const { result } = await setup()
+		let resolve!: (
+			value: E.Either<never, { relativePath: string; revision: string; headings: [] }>,
+		) => void
+		vi.mocked(readOrgRefileTargetFlow).mockReturnValue(
+			() =>
+				new Promise((r) => {
+					resolve = r
+				}),
+		)
+		const oldReader = result.current.readRefileTarget
+		const pending = oldReader("z.org")
+		if (action === "lease") {
+			vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () =>
+				E.right({ ...workspace, capabilityToken: "G2" }),
+			)
+			await act(async () => {
+				await result.current.openDefaultWorkspace()
+			})
+		} else if (action === "close") {
+			await act(async () => {
+				await result.current.closeActiveDocument()
+			})
+		} else {
+			vi.mocked(moveOrgDocumentFlow).mockReturnValue(async () =>
+				E.right({ ...captured, relativePath: "renamed.org" }),
+			)
+			await act(async () => {
+				await result.current.moveActiveDocument("renamed.org")
+			})
+		}
+		resolve(E.right({ relativePath: "z.org", revision: "late", headings: [] }))
+		expect(await pending).toMatchObject({ kind: "rejected" })
+		expect(await oldReader("z.org")).toMatchObject({ kind: "rejected" })
+		expect(readOrgRefileTargetFlow).toHaveBeenCalledTimes(1)
+	})
+	it("does not expose an older lookup after a newer request completes", async () => {
+		const { result } = await setup()
+		let resolve!: (
+			value: E.Either<never, { relativePath: string; revision: string; headings: [] }>,
+		) => void
+		vi.mocked(readOrgRefileTargetFlow).mockReturnValueOnce(
+			() =>
+				new Promise((r) => {
+					resolve = r
+				}),
+		)
+		const pending = result.current.readRefileTarget("z.org")
+		vi.mocked(readOrgRefileTargetFlow).mockReturnValueOnce(async () =>
+			E.right({ relativePath: "z.org", revision: "new", headings: [] }),
+		)
+		expect(await result.current.readRefileTarget("z.org")).toMatchObject({ kind: "ready" })
+		resolve(E.right({ relativePath: "z.org", revision: "old", headings: [] }))
+		expect(await pending).toMatchObject({ kind: "rejected" })
+	})
+	it.each([
+		"inbox.org",
+		"z.org",
+	])("protects unresolved clean-body source/target %s against read and transfer", async (path) => {
+		const { result } = await setup()
+		vi.mocked(captureOrgEntryFlow).mockReturnValue(async () =>
+			E.right({ ...captured, relativePath: "foreign.org" }),
+		)
+		await act(async () => {
+			await result.current.captureEntry("* Entry\n", path)
+		})
+		expect(result.current.isDirty).toBe(false)
+		expect(await result.current.readRefileTarget("z.org")).toMatchObject({ kind: "rejected" })
+		expect(readOrgRefileTargetFlow).not.toHaveBeenCalled()
+		await act(async () => {
+			expect(await result.current.refileSubtree(0, "z.org")).toMatchObject({ kind: "rejected" })
+		})
+		expect(refileOrgSubtreeFlow).not.toHaveBeenCalled()
+	})
+	it("rejects dirty inactive targets and invalid heading selections before IO", async () => {
+		const { result } = await setup()
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		act(() => result.current.updateContent("* Dirty\n"))
+		await act(async () => {
+			await result.current.openDocumentPath("inbox.org")
+		})
+		expect(await result.current.readRefileTarget("z.org")).toMatchObject({ kind: "rejected" })
+		expect(readOrgRefileTargetFlow).not.toHaveBeenCalled()
+		expect(
+			await result.current.refileSubtree(0, "z.org", {
+				expectedTargetRevision: "<missing>",
+				targetHeading: { from: 0, heading: "* Bad" },
+			}),
+		).toMatchObject({ kind: "rejected" })
+		expect(refileOrgSubtreeFlow).not.toHaveBeenCalled()
+	})
 	it("reads transient input live, requires root discard, and allows A/B/A cleanup but not G1/G2 cleanup", async () => {
 		const { result } = await setup()
 		const setter = result.current.setTransientDirty
@@ -713,6 +914,58 @@ describe("Org subtree transfer outcomes", () => {
 		expect(result.current.isSaving).toBe(false)
 	})
 
+	it("keeps an open target's body and baseline after a confirmed partial copy", async () => {
+		const { result } = await setup()
+		const targetBefore = {
+			relativePath: "archive.org",
+			revision: "before",
+			content: "* Existing\n",
+		}
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () => E.right(targetBefore))
+		await act(async () => {
+			await result.current.openDocument(targetBefore)
+		})
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () => E.right(captured))
+		await act(async () => {
+			await result.current.openDocument(captured)
+		})
+		let guard!: () => boolean
+		let protectedPath!: (path: string) => boolean
+		vi.mocked(refileOrgSubtreeFlow).mockImplementationOnce((input) => {
+			guard = input.confirmSourceUnchanged!
+			protectedPath = (input as typeof input & { isProtectedPath: (path: string) => boolean })
+				.isProtectedPath
+			expect(guard()).toBe(true)
+			return async () =>
+				E.left({
+					type: "ORG_SUBTREE_REFILE_PARTIAL_ERROR",
+					cause: validation,
+					message: ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
+					recovery: ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
+					target: moved.target,
+				})
+		})
+		await act(async () => {
+			await result.current.refileSubtree(0, "archive.org")
+		})
+		expect(protectedPath(captured.relativePath)).toBe(true)
+		expect(protectedPath("archive.org")).toBe(true)
+		expect(guard()).toBe(false)
+		expect(result.current.workspace?.documents).toContainEqual({
+			relativePath: "archive.org",
+			revision: "copied",
+		})
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === "archive.org"),
+		).toMatchObject({ baseRevision: "before", hasConflict: true })
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () => E.right(moved.target))
+		await act(async () => {
+			await result.current.openDocument(targetBefore)
+		})
+		expect(result.current.activeDocument).toEqual(targetBefore)
+		expect(result.current.content).toBe(targetBefore.content)
+	})
+
 	it("rejects concurrent mutations, but reports moved files as success when newer input is retained", async () => {
 		const { result } = await setup()
 		const transfer = deferred<Awaited<ReturnType<ReturnType<typeof refileOrgSubtreeFlow>>>>()
@@ -768,8 +1021,70 @@ describe("Org subtree transfer outcomes", () => {
 		expect(result.current.error).toContain("Reread both source and target")
 		expect(refileOrgSubtreeFlow).toHaveBeenCalledTimes(1)
 		await act(async () => {
-			expect(await result.current.archiveSubtree(0)).toEqual({ kind: "success" })
+			expect(await result.current.archiveSubtree(0)).toMatchObject({ kind: "rejected" })
 		})
+		expect(archiveOrgSubtreeFlow).not.toHaveBeenCalled()
+	})
+
+	it.each([
+		"uncertain",
+		"partial",
+		"throw",
+	] as const)("protects both paths after %s, including baseline undo and a source-only manual save", async (mode) => {
+		const { result } = await setup()
+		vi.mocked(refileOrgSubtreeFlow).mockReturnValueOnce(async () => {
+			if (mode === "throw") throw new Error("lost receipt")
+			return mode === "partial"
+				? E.left({
+						type: "ORG_SUBTREE_REFILE_PARTIAL_ERROR",
+						cause: validation,
+						message: ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
+						recovery: ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
+						target: moved.target,
+					})
+				: E.left({
+						type: "ORG_SUBTREE_REFILE_UNCERTAIN_WRITE_ERROR",
+						targetRelativePath: "archive.org",
+						message: "lost receipt",
+						cause: {
+							type: "ORG_FILE_ERROR",
+							operation: "write",
+							command: "write_org_document",
+							message: "lost receipt",
+							cause: null,
+						},
+					})
+		})
+		await act(async () => {
+			expect((await result.current.refileSubtree(0, "archive.org")).kind).toBe("partial")
+		})
+		act(() => result.current.updateContent("temporary edit"))
+		act(() => result.current.updateContent(captured.content))
+		expect(result.current.isDirty).toBe(false)
+		expect(result.current.openBuffers[0].hasConflict).toBe(true)
+		await act(async () => {
+			expect((await result.current.readRefileTarget("archive.org")).kind).toBe("rejected")
+			expect((await result.current.refileSubtree(0, "archive.org")).kind).toBe("rejected")
+			expect((await result.current.archiveSubtree(0)).kind).toBe("rejected")
+		})
+		expect(readOrgRefileTargetFlow).not.toHaveBeenCalled()
+		expect(refileOrgSubtreeFlow).toHaveBeenCalledOnce()
+		expect(archiveOrgSubtreeFlow).not.toHaveBeenCalled()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(async () =>
+			E.right({ relativePath: captured.relativePath, revision: "saved" }),
+		)
+		await act(async () => {
+			await result.current.saveDocument()
+		})
+		expect(result.current.openBuffers[0].hasConflict).toBe(false)
+		await act(async () => {
+			expect((await result.current.readRefileTarget("archive.org")).kind).toBe("rejected")
+			expect((await result.current.refileSubtree(0, "archive.org")).kind).toBe("rejected")
+			expect((await result.current.archiveSubtree(0)).kind).toBe("rejected")
+		})
+		expect(readOrgRefileTargetFlow).not.toHaveBeenCalled()
+		expect(refileOrgSubtreeFlow).toHaveBeenCalledOnce()
+		expect(archiveOrgSubtreeFlow).not.toHaveBeenCalled()
 	})
 })
 

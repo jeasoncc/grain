@@ -46,6 +46,10 @@ const controller = (content: string): OrgWorkspaceController => ({
 	captureTodo: vi.fn(async () => undefined),
 	captureEntry: vi.fn(async () => ({ kind: "success" as const })),
 	setTransientDirty: vi.fn(),
+	readRefileTarget: vi.fn(async (relativePath: string) => ({
+		kind: "ready" as const,
+		snapshot: { relativePath, revision: "test-revision", headings: [] },
+	})),
 	clearDerivedIndex: vi.fn(async () => undefined),
 	closeActiveDocument: vi.fn(async () => true),
 	content,

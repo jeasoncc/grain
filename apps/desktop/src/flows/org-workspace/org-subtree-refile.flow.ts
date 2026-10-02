@@ -1,13 +1,16 @@
-import { pipe } from "fp-ts/function"
+import * as E from "fp-ts/Either"
 import * as TE from "fp-ts/TaskEither"
 import { type OrgFileRepository, orgFileRepository } from "@/io/file/org-file.repository"
 import {
-	appendOrgSubtree,
 	deriveOrgArchivePath,
 	extractOrgSubtreeAt,
 	isSafeRelativeOrgPath,
 	removeOrgSubtree,
 } from "@/pipes/org/org-subtree-refile.pipe"
+import {
+	planOrgRefileInsertion,
+	type OrgRefileHeadingTarget,
+} from "@/pipes/org/org-refile-target.pipe"
 import type { OrgDocumentInterface, OrgFileError } from "@/types/org"
 
 export interface RefileOrgSubtreeInput {
@@ -18,8 +21,12 @@ export interface RefileOrgSubtreeInput {
 	readonly expectedSourceRevision: string
 	readonly cursor: number
 	readonly targetRelativePath: string
-	/** Last-moment guard checked after target copy and before source removal. */
+	readonly expectedTargetRevision?: string
+	readonly targetHeading?: Pick<OrgRefileHeadingTarget, "from" | "heading">
+	/** Live guard checked immediately before target copy and again before source removal. */
 	readonly confirmSourceUnchanged?: () => boolean
+	/** Live dirty/conflict protection for either affected document. */
+	readonly isProtectedPath?: (relativePath: string) => boolean
 }
 
 export interface OrgSubtreeRefileResult {
@@ -62,6 +69,23 @@ const validationError = (message: string): OrgSubtreeRefileValidationError => ({
 	type: "ORG_SUBTREE_REFILE_VALIDATION_ERROR",
 })
 
+const validRevision = (revision: unknown): revision is string =>
+	typeof revision === "string" && revision.trim().length > 0 && revision !== "<missing>"
+
+const validWrite = (
+	value: unknown,
+	path: string,
+): value is { relativePath: string; revision: string } =>
+	!!value &&
+	typeof value === "object" &&
+	"relativePath" in value &&
+	value.relativePath === path &&
+	"revision" in value &&
+	validRevision(value.revision)
+
+const validDocument = (value: unknown, path: string): value is OrgDocumentInterface =>
+	validWrite(value, path) && "content" in value && typeof value.content === "string"
+
 const comparablePath = (relativePath: string): string =>
 	relativePath.normalize("NFC").toLocaleLowerCase("en-US")
 
@@ -98,102 +122,165 @@ export const refileOrgSubtreeFlow = (
 	if (comparablePath(input.sourceRelativePath) === comparablePath(input.targetRelativePath)) {
 		return TE.left(validationError("Org refile source and target must be different documents."))
 	}
+	if (typeof input.sourceContent !== "string" || !validRevision(input.expectedSourceRevision)) {
+		return TE.left(validationError("Org refile source must be saved with a nonempty revision."))
+	}
+	if (input.targetHeading !== undefined && input.expectedTargetRevision === undefined) {
+		return TE.left(validationError("A heading target requires its snapshot revision."))
+	}
 	const subtree = extractOrgSubtreeAt(input.sourceContent, input.cursor)
 	if (!subtree) {
 		return TE.left(validationError("Org refile cursor must be on a heading line."))
 	}
-
 	const sourceContent = removeOrgSubtree(input.sourceContent, subtree)
-	return pipe(
-		repository.scanWorkspace(input.workspaceRoot, input.capabilityToken),
-		TE.chain((snapshot) => {
-			const targetExists = snapshot.documents.some(
+	return async () => {
+		let phase: "scan" | "read" | "targetWrite" | "confirm" | "guard" | "sourceWrite" = "scan"
+		let target: OrgDocumentInterface | undefined
+		const classify = (cause: OrgFileError): OrgSubtreeRefileFlowError => {
+			if (target) return partialError(cause, target)
+			if (phase === "targetWrite")
+				return {
+					type: "ORG_SUBTREE_REFILE_UNCERTAIN_WRITE_ERROR",
+					cause,
+					targetRelativePath: input.targetRelativePath,
+					message: `The target write did not report a confirmed result; the target may already contain the subtree. This operation did not remove the source. Reread both documents and reconcile any duplicate before retrying. Do not retry automatically. No rollback was attempted. Original error: ${cause.message}`,
+				}
+			return cause
+		}
+		try {
+			const transferAllowed = (): boolean => {
+				const confirm = input.confirmSourceUnchanged
+				const protectedPath = input.isProtectedPath
+				return (
+					(confirm === undefined || confirm() === true) &&
+					(protectedPath === undefined ||
+						(protectedPath(input.sourceRelativePath) !== true &&
+							protectedPath(input.targetRelativePath) !== true))
+				)
+			}
+			const scanned = await repository.scanWorkspace(input.workspaceRoot, input.capabilityToken)()
+			if (E.isLeft(scanned)) return E.left(classify(scanned.left))
+			const snapshot = scanned.right
+			if (
+				!snapshot ||
+				!Array.isArray(snapshot.documents) ||
+				snapshot.documents.some(
+					(document) =>
+						!document ||
+						!isSafeRelativeOrgPath(document.relativePath) ||
+						!validRevision(document.revision),
+				)
+			)
+				throw new Error("Malformed workspace scan confirmation.")
+			const exists = snapshot.documents.some(
 				(document) => document.relativePath === input.targetRelativePath,
 			)
-			return targetExists
-				? repository.readDocument({
-						capabilityToken: input.capabilityToken,
-						relativePath: input.targetRelativePath,
-						workspaceRoot: input.workspaceRoot,
-					})
-				: TE.right<OrgFileError, OrgDocumentInterface>({
-						content: "",
-						relativePath: input.targetRelativePath,
-						revision: "<missing>",
-					})
-		}),
-		TE.chainW((targetBefore) => {
-			const targetContent = appendOrgSubtree(targetBefore.content, subtree.text)
-			return pipe(
-				repository.writeDocument({
-					capabilityToken: input.capabilityToken,
-					content: targetContent,
-					expectedRevision: targetBefore.revision,
-					relativePath: input.targetRelativePath,
-					workspaceRoot: input.workspaceRoot,
-				}),
-				TE.mapLeft(
-					(cause): OrgSubtreeRefileUncertainWriteError => ({
-						type: "ORG_SUBTREE_REFILE_UNCERTAIN_WRITE_ERROR",
-						cause,
-						targetRelativePath: input.targetRelativePath,
-						message: `The target write did not report a confirmed result; the target may already contain the subtree. This operation did not remove the source. Reread both documents and reconcile any duplicate before retrying. Do not retry automatically. No rollback was attempted. Original error: ${cause.message}`,
-					}),
-				),
-				TE.map(
-					(writtenTarget): OrgDocumentInterface => ({ ...writtenTarget, content: targetContent }),
-				),
-			)
-		}),
-		TE.chainW((target) =>
-			pipe(
-				repository.readDocument({
+			let targetBefore: OrgDocumentInterface = {
+				content: "",
+				relativePath: input.targetRelativePath,
+				revision: "<missing>",
+			}
+			if (exists) {
+				phase = "read"
+				const read = await repository.readDocument({
 					capabilityToken: input.capabilityToken,
 					relativePath: input.targetRelativePath,
 					workspaceRoot: input.workspaceRoot,
-				}),
-				TE.mapLeft((cause) => partialError(cause, target)),
-				TE.chainW((confirmed) =>
-					confirmed.revision === target.revision && confirmed.content === target.content
-						? TE.right(target)
-						: TE.left(
-								partialError(
-									validationError(
-										"The target changed before source removal; the source was preserved.",
-									),
-									target,
-								),
-							),
-				),
-			),
-		),
-		TE.chainW((target) => {
-			if (input.confirmSourceUnchanged && !input.confirmSourceUnchanged()) {
-				return TE.left(
+				})()
+				if (E.isLeft(read)) return E.left(classify(read.left))
+				if (!validDocument(read.right, input.targetRelativePath))
+					throw new Error("Malformed target read confirmation.")
+				targetBefore = read.right
+			}
+			if (
+				input.expectedTargetRevision !== undefined &&
+				input.expectedTargetRevision !== targetBefore.revision
+			) {
+				return E.left(
+					validationError("The target snapshot revision changed; refresh the target selection."),
+				)
+			}
+			const plan = planOrgRefileInsertion(targetBefore.content, subtree.text, input.targetHeading)
+			if (E.isLeft(plan)) return E.left(validationError(plan.left.message))
+			const targetContent = plan.right.content
+			phase = "guard"
+			if (!transferAllowed()) {
+				return E.left(
+					validationError(
+						"The source editor changed or an affected document is protected; no copy was written.",
+					),
+				)
+			}
+			phase = "targetWrite"
+			const written = await repository.writeDocument({
+				capabilityToken: input.capabilityToken,
+				content: targetContent,
+				expectedRevision: targetBefore.revision,
+				relativePath: input.targetRelativePath,
+				workspaceRoot: input.workspaceRoot,
+			})()
+			if (E.isLeft(written)) return E.left(classify(written.left))
+			if (!validWrite(written.right, input.targetRelativePath))
+				throw new Error("Malformed target write confirmation.")
+			target = { ...written.right, content: targetContent }
+			phase = "confirm"
+			const confirmed = await repository.readDocument({
+				capabilityToken: input.capabilityToken,
+				relativePath: input.targetRelativePath,
+				workspaceRoot: input.workspaceRoot,
+			})()
+			if (E.isLeft(confirmed)) return E.left(classify(confirmed.left))
+			if (
+				!validDocument(confirmed.right, input.targetRelativePath) ||
+				confirmed.right.revision !== target.revision ||
+				confirmed.right.content !== target.content
+			) {
+				return E.left(
+					partialError(
+						validationError("The target changed before source removal; the source was preserved."),
+						target,
+					),
+				)
+			}
+			phase = "guard"
+			if (!transferAllowed()) {
+				return E.left(
 					partialError(
 						validationError("The source editor changed while the target copy was being written."),
 						target,
 					),
 				)
 			}
-			return pipe(
-				repository.writeDocument({
-					capabilityToken: input.capabilityToken,
-					content: sourceContent,
-					expectedRevision: input.expectedSourceRevision,
-					relativePath: input.sourceRelativePath,
-					workspaceRoot: input.workspaceRoot,
+			phase = "sourceWrite"
+			const source = await repository.writeDocument({
+				capabilityToken: input.capabilityToken,
+				content: sourceContent,
+				expectedRevision: input.expectedSourceRevision,
+				relativePath: input.sourceRelativePath,
+				workspaceRoot: input.workspaceRoot,
+			})()
+			if (E.isLeft(source)) return E.left(classify(source.left))
+			if (!validWrite(source.right, input.sourceRelativePath))
+				throw new Error("Malformed source write confirmation; source removal is uncertain.")
+			return E.right({ source: { ...source.right, content: sourceContent }, target })
+		} catch (cause) {
+			const operation =
+				phase === "scan"
+					? "scan"
+					: phase === "targetWrite" || phase === "sourceWrite"
+						? "write"
+						: "read"
+			return E.left(
+				classify({
+					type: "ORG_FILE_ERROR",
+					operation,
+					command: `${operation}_org_${operation === "scan" ? "workspace" : "document"}`,
+					cause,
+					message: cause instanceof Error ? cause.message : String(cause),
 				}),
-				TE.map(
-					(writtenSource): OrgSubtreeRefileResult => ({
-						source: { ...writtenSource, content: sourceContent },
-						target,
-					}),
-				),
-				TE.mapLeft((cause) => partialError(cause, target)),
 			)
-		}),
-	)
+		}
+	}
 }
 
 /** Refiles to the conventional sibling `<stem>_archive.org` document. */
@@ -203,6 +290,6 @@ export const archiveOrgSubtreeFlow = (
 ): TE.TaskEither<OrgSubtreeRefileFlowError, OrgSubtreeRefileResult> => {
 	const targetRelativePath = deriveOrgArchivePath(input.sourceRelativePath)
 	return targetRelativePath
-		? refileOrgSubtreeFlow({ ...input, targetRelativePath }, repository)
+		? refileOrgSubtreeFlow({ ...input, targetHeading: undefined, targetRelativePath }, repository)
 		: TE.left(validationError("Cannot derive a safe archive path for this Org document."))
 }

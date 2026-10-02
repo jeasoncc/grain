@@ -1,7 +1,7 @@
 import * as TE from "fp-ts/TaskEither"
 import { describe, expect, it, vi } from "vitest"
 import type { OrgFileRepository } from "@/io/file/org-file.repository"
-import type { OrgFileError } from "@/types/org"
+import type { OrgDocumentInterface, OrgFileError } from "@/types/org"
 import {
 	archiveOrgSubtreeFlow,
 	ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
@@ -62,40 +62,40 @@ const input = {
 }
 
 describe("refileOrgSubtreeFlow", () => {
-	it.each(["synthetic-refile-capability", undefined])(
-		"forwards capability %s through every refile/archive scan, read, and write",
-		async (capabilityToken) => {
-			for (const archive of [false, true]) {
-				for (const targetExists of [false, true]) {
-					const targetPath = archive ? "source_archive.org" : "target.org"
-					let target = { content: "", relativePath: targetPath, revision: "target-r1" }
-					const scanWorkspace = vi.fn<OrgFileRepository["scanWorkspace"]>(() =>
-						TE.right({ directories: [], documents: targetExists ? [target] : [] }),
-					)
-					const readDocument = vi.fn<OrgFileRepository["readDocument"]>(() => TE.right(target))
-					const writeDocument = vi.fn<OrgFileRepository["writeDocument"]>((request) => {
-						if (request.relativePath === targetPath) {
-							target = { content: request.content, relativePath: targetPath, revision: "written" }
-						}
-						return TE.right({ relativePath: request.relativePath, revision: "written" })
-					})
-					const repository = repositoryWith({ scanWorkspace, readDocument, writeDocument })
-					const request = { ...input, capabilityToken }
-					const result = await (archive
-						? archiveOrgSubtreeFlow(request, repository)
-						: refileOrgSubtreeFlow(request, repository))()
-					expect(result).toHaveProperty("_tag", "Right")
-					expect(scanWorkspace).toHaveBeenCalledExactlyOnceWith("/notes", capabilityToken)
-					expect(readDocument).toHaveBeenCalledTimes(targetExists ? 2 : 1)
-					expect(writeDocument).toHaveBeenCalledTimes(2)
-					for (const [operation] of [...readDocument.mock.calls, ...writeDocument.mock.calls]) {
-						expect(operation.capabilityToken).toBe(capabilityToken)
-						expect(operation.workspaceRoot).toBe("/notes")
+	it.each([
+		"synthetic-refile-capability",
+		undefined,
+	])("forwards capability %s through every refile/archive scan, read, and write", async (capabilityToken) => {
+		for (const archive of [false, true]) {
+			for (const targetExists of [false, true]) {
+				const targetPath = archive ? "source_archive.org" : "target.org"
+				let target = { content: "", relativePath: targetPath, revision: "target-r1" }
+				const scanWorkspace = vi.fn<OrgFileRepository["scanWorkspace"]>(() =>
+					TE.right({ directories: [], documents: targetExists ? [target] : [] }),
+				)
+				const readDocument = vi.fn<OrgFileRepository["readDocument"]>(() => TE.right(target))
+				const writeDocument = vi.fn<OrgFileRepository["writeDocument"]>((request) => {
+					if (request.relativePath === targetPath) {
+						target = { content: request.content, relativePath: targetPath, revision: "written" }
 					}
+					return TE.right({ relativePath: request.relativePath, revision: "written" })
+				})
+				const repository = repositoryWith({ scanWorkspace, readDocument, writeDocument })
+				const request = { ...input, capabilityToken }
+				const result = await (archive
+					? archiveOrgSubtreeFlow(request, repository)
+					: refileOrgSubtreeFlow(request, repository))()
+				expect(result).toHaveProperty("_tag", "Right")
+				expect(scanWorkspace).toHaveBeenCalledExactlyOnceWith("/notes", capabilityToken)
+				expect(readDocument).toHaveBeenCalledTimes(targetExists ? 2 : 1)
+				expect(writeDocument).toHaveBeenCalledTimes(2)
+				for (const [operation] of [...readDocument.mock.calls, ...writeDocument.mock.calls]) {
+					expect(operation.capabilityToken).toBe(capabilityToken)
+					expect(operation.workspaceRoot).toBe("/notes")
 				}
 			}
-		},
-	)
+		}
+	})
 
 	it("reads an existing target, writes the appended copy first, then removes the exact source range", async () => {
 		const calls: string[] = []
@@ -273,8 +273,9 @@ describe("refileOrgSubtreeFlow", () => {
 		const writeDocument = vi.fn((request) =>
 			TE.right({ relativePath: request.relativePath, revision: "written" }),
 		)
+		let guardCalls = 0
 		const result = await refileOrgSubtreeFlow(
-			{ ...input, confirmSourceUnchanged: () => false },
+			{ ...input, confirmSourceUnchanged: () => ++guardCalls === 1 },
 			repositoryWith({
 				readDocument: (request) =>
 					TE.right({
@@ -324,21 +325,398 @@ describe("refileOrgSubtreeFlow", () => {
 		[{ targetRelativePath: "SOURCE.org" }, "different"],
 		[{ targetRelativePath: "https://example.test/target.org" }, "target"],
 		[{ cursor: input.sourceContent.indexOf("body") }, "heading"],
-	])(
-		"validates paths, distinct documents, and heading cursor before IO",
-		async (change, message) => {
-			const scanWorkspace = vi.fn(() => TE.right(snapshot))
-			const result = await refileOrgSubtreeFlow(
-				{ ...input, ...change },
-				repositoryWith({ scanWorkspace }),
-			)()
+	])("validates paths, distinct documents, and heading cursor before IO", async (change, message) => {
+		const scanWorkspace = vi.fn(() => TE.right(snapshot))
+		const result = await refileOrgSubtreeFlow(
+			{ ...input, ...change },
+			repositoryWith({ scanWorkspace }),
+		)()
 
-			expect(result._tag).toBe("Left")
-			if (result._tag === "Left") {
-				expect(result.left.type).toBe("ORG_SUBTREE_REFILE_VALIDATION_ERROR")
-				expect(result.left.message).toContain(message)
+		expect(result._tag).toBe("Left")
+		if (result._tag === "Left") {
+			expect(result.left.type).toBe("ORG_SUBTREE_REFILE_VALIDATION_ERROR")
+			expect(result.left.message).toContain(message)
+		}
+		expect(scanWorkspace).not.toHaveBeenCalled()
+	})
+})
+
+/** Stateful raw-text RPC fixture: successful writes become the next fresh read. */
+const persistedRepository = (content = "* Parent\nbody\n* Parent\nsecond\n") => {
+	let target = { content, relativePath: "target.org", revision: "target-r1" }
+	const readDocument = vi.fn<OrgFileRepository["readDocument"]>(() => TE.right(target))
+	const writeDocument = vi.fn<OrgFileRepository["writeDocument"]>((request) => {
+		if (request.relativePath === "target.org")
+			target = {
+				content: request.content,
+				relativePath: request.relativePath,
+				revision: "target-r2",
 			}
-			expect(scanWorkspace).not.toHaveBeenCalled()
-		},
-	)
+		return TE.right({
+			relativePath: request.relativePath,
+			revision: request.relativePath === "target.org" ? "target-r2" : "source-r2",
+		})
+	})
+	return {
+		repository: repositoryWith({ readDocument, writeDocument }),
+		readDocument,
+		writeDocument,
+	}
+}
+
+const headingInput = {
+	...input,
+	expectedTargetRevision: "target-r1",
+	targetHeading: { from: 0, heading: "* Parent" },
+}
+
+describe("snapshot refile RPC boundaries", () => {
+	it("inserts under the exact duplicate heading offset, retaining raw unknown blocks, NUL and CRLF", async () => {
+		const target = "* Parent\r\nfirst\r\n* Parent\r\nsecond\r\n* Peer\r\n"
+		const fixture = persistedRepository(target)
+		const sourceContent =
+			"** Move\r\nbody\0\r\n#+begin_future\r\n* literal\r\n#+end_future\r\n*** Child\r\nx\r\n** Keep\r\n"
+		const result = await refileOrgSubtreeFlow(
+			{
+				...headingInput,
+				sourceContent,
+				cursor: 0,
+				targetHeading: { from: target.indexOf("* Parent", 1), heading: "* Parent" },
+			},
+			fixture.repository,
+		)()
+		expect(result._tag).toBe("Right")
+		expect(fixture.writeDocument.mock.calls[0][0].content).toBe(
+			target.replace(
+				"* Peer",
+				"** Move\r\nbody\0\r\n#+begin_future\r\n* literal\r\n#+end_future\r\n*** Child\r\nx\r\n* Peer",
+			),
+		)
+		expect(fixture.writeDocument.mock.calls[1][0].content).toBe("** Keep\r\n")
+	})
+
+	it.each([
+		{ expectedTargetRevision: "stale" },
+		{ expectedTargetRevision: undefined },
+		{ targetHeading: { from: 1, heading: "* Parent" } },
+		{ targetHeading: { from: 0, heading: "* Changed" } },
+		{ expectedSourceRevision: "" },
+		{ expectedSourceRevision: "<missing>" },
+	])("rejects stale revision/offset/line and unsaved source without writes: %j", async (change) => {
+		const fixture = persistedRepository()
+		const result = await refileOrgSubtreeFlow({ ...headingInput, ...change }, fixture.repository)()
+		expect(result).toHaveProperty("left.type", "ORG_SUBTREE_REFILE_VALIDATION_ERROR")
+		expect(fixture.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it.each([
+		"* Parent\n#+begin_future\n* hidden",
+		"* Parent\n#+begin_src\ncode",
+	])("rejects root appends into unclosed target blocks", async (content) => {
+		const fixture = persistedRepository(content)
+		const result = await refileOrgSubtreeFlow(input, fixture.repository)()
+		expect(result).toHaveProperty("left.type", "ORG_SUBTREE_REFILE_VALIDATION_ERROR")
+		expect(fixture.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it("compares explicit missing-target snapshot revisions and ignores archive heading", async () => {
+		const fixture = persistedRepository()
+		fixture.repository = repositoryWith({
+			...fixture.repository,
+			scanWorkspace: () => TE.right({ directories: [], documents: [] }),
+		})
+		const rejected = await refileOrgSubtreeFlow(
+			{ ...input, expectedTargetRevision: "old" },
+			fixture.repository,
+		)()
+		expect(rejected).toHaveProperty("left.type", "ORG_SUBTREE_REFILE_VALIDATION_ERROR")
+		expect(fixture.writeDocument).not.toHaveBeenCalled()
+		const archived = await archiveOrgSubtreeFlow(
+			{ ...headingInput, expectedTargetRevision: "<missing>" },
+			repositoryWith({
+				scanWorkspace: () => TE.right({ directories: [], documents: [] }),
+				readDocument: () =>
+					TE.right({
+						relativePath: "source_archive.org",
+						revision: "source_archive.org-written",
+						content: "* Move\nbody\n** Child\nchild\n",
+					}),
+			}),
+		)()
+		expect(archived._tag).toBe("Right")
+	})
+
+	it.each([
+		"scan",
+		"read",
+		"targetWrite",
+		"confirm",
+		"guard",
+		"sourceWrite",
+	] as const)("classifies throws at %s, both construction and execution", async (phase) => {
+		for (const deferred of [false, true]) {
+			const fixture = persistedRepository()
+			const boom = () => {
+				throw new Error("boundary throw")
+			}
+			const throwing = () => (deferred ? async () => boom() : boom())
+			let reads = 0
+			let writes = 0
+			let guards = 0
+			const repository = repositoryWith({
+				...fixture.repository,
+				scanWorkspace: phase === "scan" ? throwing : fixture.repository.scanWorkspace,
+				readDocument: (request) => {
+					reads++
+					return (phase === "read" && reads === 1) || (phase === "confirm" && reads === 2)
+						? throwing()
+						: fixture.readDocument(request)
+				},
+				writeDocument: (request) => {
+					writes++
+					return (phase === "targetWrite" && writes === 1) ||
+						(phase === "sourceWrite" && writes === 2)
+						? throwing()
+						: fixture.writeDocument(request)
+				},
+			})
+			const result = await refileOrgSubtreeFlow(
+				{
+					...headingInput,
+					confirmSourceUnchanged:
+						phase === "guard" ? () => (++guards === 1 ? true : boom()) : undefined,
+				},
+				repository,
+			)()
+			expect(result).toHaveProperty(
+				"left.type",
+				phase === "targetWrite"
+					? "ORG_SUBTREE_REFILE_UNCERTAIN_WRITE_ERROR"
+					: phase === "scan" || phase === "read"
+						? "ORG_FILE_ERROR"
+						: "ORG_SUBTREE_REFILE_PARTIAL_ERROR",
+			)
+			expect(writes).toBe(
+				phase === "scan" || phase === "read" ? 0 : phase === "sourceWrite" ? 2 : 1,
+			)
+		}
+	})
+
+	it.each([
+		"wrong-path",
+		"empty-revision",
+		"missing-revision",
+		"wrong-content",
+		"null",
+	])("preserves source on malformed/mismatched reread: %s", async (kind) => {
+		const fixture = persistedRepository()
+		let reads = 0
+		const result = await refileOrgSubtreeFlow(
+			headingInput,
+			repositoryWith({
+				...fixture.repository,
+				readDocument: (request) => {
+					reads++
+					if (reads === 1) return fixture.readDocument(request)
+					const content = fixture.writeDocument.mock.calls[0][0].content
+					return TE.right(
+						(kind === "null"
+							? null
+							: {
+									relativePath: kind === "wrong-path" ? "other.org" : "target.org",
+									revision:
+										kind === "empty-revision"
+											? ""
+											: kind === "missing-revision"
+												? "<missing>"
+												: "target-r2",
+									content: kind === "wrong-content" ? "externally changed" : content,
+								}) as unknown as OrgDocumentInterface,
+					)
+				},
+			}),
+		)()
+		expect(result).toHaveProperty("left.type", "ORG_SUBTREE_REFILE_PARTIAL_ERROR")
+		expect(result).toHaveProperty("left.target.relativePath", "target.org")
+		expect(fixture.writeDocument).toHaveBeenCalledTimes(1)
+	})
+
+	it.each([
+		"read",
+		"targetWrite",
+		"sourceWrite",
+	] as const)("rejects malformed %s identity/revision without relabeling", async (phase) => {
+		for (const revision of ["", "<missing>", "valid"]) {
+			const fixture = persistedRepository()
+			let writes = 0
+			const bad = {
+				relativePath: revision === "valid" ? "other.org" : "target.org",
+				revision,
+				content: "* Parent\n",
+			}
+			const result = await refileOrgSubtreeFlow(
+				headingInput,
+				repositoryWith({
+					...fixture.repository,
+					readDocument: phase === "read" ? () => TE.right(bad) : fixture.readDocument,
+					writeDocument: (request) => {
+						writes++
+						return (phase === "targetWrite" && writes === 1) ||
+							(phase === "sourceWrite" && writes === 2)
+							? TE.right(bad)
+							: fixture.writeDocument(request)
+					},
+				}),
+			)()
+			expect(result).toHaveProperty(
+				"left.type",
+				phase === "read"
+					? "ORG_FILE_ERROR"
+					: phase === "targetWrite"
+						? "ORG_SUBTREE_REFILE_UNCERTAIN_WRITE_ERROR"
+						: "ORG_SUBTREE_REFILE_PARTIAL_ERROR",
+			)
+			expect(writes).toBe(phase === "read" ? 0 : phase === "targetWrite" ? 1 : 2)
+		}
+	})
+})
+
+describe("live transfer guards", () => {
+	it("does not interpret truthy nonboolean protection flags as protected", async () => {
+		const fixture = persistedRepository()
+		const result = await refileOrgSubtreeFlow(
+			{
+				...headingInput,
+				isProtectedPath: (() => "true") as unknown as (path: string) => boolean,
+			},
+			fixture.repository,
+		)()
+		expect(result._tag).toBe("Right")
+		expect(fixture.writeDocument).toHaveBeenCalledTimes(2)
+	})
+
+	it.each([
+		"scan",
+		"read",
+	] as const)("rejects changes during deferred %s before either write", async (boundary) => {
+		for (const change of [
+			"body",
+			"target-dirty",
+			"source-protected",
+			"target-protected",
+		] as const) {
+			const fixture = persistedRepository()
+			let unchanged = true
+			const protectedPaths = new Set<string>()
+			let release!: () => void
+			const waiting = new Promise<void>((resolve) => {
+				release = resolve
+			})
+			let entered!: () => void
+			const started = new Promise<void>((resolve) => {
+				entered = resolve
+			})
+			const repository = repositoryWith({
+				...fixture.repository,
+				scanWorkspace:
+					(...args) =>
+					async () => {
+						if (boundary === "scan") {
+							entered()
+							await waiting
+						}
+						return fixture.repository.scanWorkspace(...args)()
+					},
+				readDocument: (request) => async () => {
+					if (boundary === "read") {
+						entered()
+						await waiting
+					}
+					return fixture.readDocument(request)()
+				},
+			})
+			const task = refileOrgSubtreeFlow(
+				{
+					...headingInput,
+					confirmSourceUnchanged: () => unchanged,
+					isProtectedPath: (path) => protectedPaths.has(path),
+				},
+				repository,
+			)()
+			await started
+			if (change === "body" || change === "target-dirty") unchanged = false
+			else protectedPaths.add(change === "source-protected" ? "source.org" : "target.org")
+			release()
+			expect(await task).toHaveProperty("left.type", "ORG_SUBTREE_REFILE_VALIDATION_ERROR")
+			expect(fixture.writeDocument).not.toHaveBeenCalled()
+		}
+	})
+
+	it.each([
+		"confirm",
+		"protected",
+		"getter",
+	] as const)("owns %s exceptions before and after target persistence", async (kind) => {
+		for (const afterWrite of [false, true]) {
+			const fixture = persistedRepository()
+			const boom = () => {
+				throw new Error("guard failed")
+			}
+			const shouldThrow = () => !afterWrite || fixture.writeDocument.mock.calls.length > 0
+			const request = {
+				...headingInput,
+				confirmSourceUnchanged: () => (kind === "confirm" && shouldThrow() ? boom() : true),
+				isProtectedPath: () => (kind === "protected" && shouldThrow() ? boom() : false),
+			}
+			if (kind === "getter")
+				Object.defineProperty(request, "confirmSourceUnchanged", {
+					get: () => (shouldThrow() ? boom() : () => true),
+				})
+			const task = refileOrgSubtreeFlow(request, fixture.repository)
+			const result = await task()
+			expect(result).toHaveProperty(
+				"left.type",
+				afterWrite ? "ORG_SUBTREE_REFILE_PARTIAL_ERROR" : "ORG_FILE_ERROR",
+			)
+			expect(result).toHaveProperty(afterWrite ? "left.cause.operation" : "left.operation", "read")
+			expect(fixture.writeDocument).toHaveBeenCalledTimes(afterWrite ? 1 : 0)
+			if (afterWrite) expect(result).toHaveProperty("left.target.relativePath", "target.org")
+		}
+	})
+
+	it.each([
+		"source.org",
+		"target.org",
+	])("rechecks protection of %s after target confirmation", async (protectedPath) => {
+		const fixture = persistedRepository()
+		const result = await refileOrgSubtreeFlow(
+			{
+				...headingInput,
+				isProtectedPath: (path) =>
+					fixture.writeDocument.mock.calls.length > 0 && path === protectedPath,
+			},
+			fixture.repository,
+		)()
+		expect(result).toHaveProperty("left.type", "ORG_SUBTREE_REFILE_PARTIAL_ERROR")
+		expect(result).toHaveProperty("left.target.relativePath", "target.org")
+		expect(fixture.writeDocument).toHaveBeenCalledTimes(1)
+	})
+
+	it.each([
+		false,
+		null,
+		1,
+		"true",
+	])("requires literal true from a provided source guard (%s)", async (value) => {
+		const fixture = persistedRepository()
+		const result = await refileOrgSubtreeFlow(
+			{
+				...headingInput,
+				confirmSourceUnchanged: (() => value) as () => boolean,
+			},
+			fixture.repository,
+		)()
+		expect(result).toHaveProperty("left.type", "ORG_SUBTREE_REFILE_VALIDATION_ERROR")
+		expect(fixture.writeDocument).not.toHaveBeenCalled()
+	})
 })

@@ -23,6 +23,112 @@ const deferredAccept = () => {
 }
 
 describe("Org minibuffer", () => {
+	it("consumes held Enter across a new session without accepting its default", () => {
+		const first = makeSession()
+		const { rerender } = render(<OrgMinibuffer session={first} />)
+		const input = screen.getByRole("combobox")
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(first.onAccept).toHaveBeenCalledOnce()
+		const next = makeSession({ id: 2, initialInput: "(file root)" })
+		rerender(<OrgMinibuffer session={next} />)
+		expect(fireEvent.keyDown(input, { key: "Enter", repeat: true })).toBe(false)
+		expect(next.onAccept).not.toHaveBeenCalled()
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(next.onAccept).toHaveBeenCalledExactlyOnceWith("(file root)")
+	})
+
+	it.each([
+		0, 1,
+	])("accepts single click detail %s but ignores a double click across sessions", (detail) => {
+		const first = makeSession()
+		const { rerender } = render(<OrgMinibuffer session={first} />)
+		const button = screen.getByRole("button", { name: "Accept minibuffer" })
+		fireEvent.click(button, { detail })
+		expect(first.onAccept).toHaveBeenCalledOnce()
+		const next = makeSession({ id: 2 })
+		rerender(<OrgMinibuffer session={next} />)
+		fireEvent.click(button, { detail: 2 })
+		expect(next.onAccept).not.toHaveBeenCalled()
+		fireEvent.click(button, { detail: 1 })
+		expect(next.onAccept).toHaveBeenCalledOnce()
+	})
+
+	it.each(["react", "native"])("ignores keys already consumed by the %s stage", (stage) => {
+		let consumed = false
+		const first = makeSession({ initialInput: "writing" })
+		const wrap = (session: OrgMinibufferSession) => (
+			<div
+				onKeyDownCapture={(event) => {
+					if (consumed && stage === "react") event.preventDefault()
+				}}
+			>
+				<button type="button">Outside</button>
+				<OrgMinibuffer session={session} />
+			</div>
+		)
+		const { rerender } = render(wrap(first))
+		const input = screen.getByRole("combobox")
+		fireEvent.keyDown(input, { key: "Enter" })
+		const next = makeSession({ id: 2 })
+		rerender(wrap(next))
+		consumed = true
+		input.addEventListener("keydown", (event) => {
+			if (stage === "native") event.preventDefault()
+		})
+		const outside = screen.getByRole("button", { name: "Outside" })
+		outside.focus()
+		for (const key of [
+			{ key: "Enter" },
+			{ key: "Escape" },
+			{ key: "g", ctrlKey: true },
+			{ key: "Tab" },
+			{ key: "n", ctrlKey: true },
+			{ key: "ArrowDown" },
+			{ key: "p", altKey: true },
+			{ key: "n", altKey: true },
+		]) {
+			fireEvent.keyDown(input, key)
+			expect(input).toHaveValue("")
+			expect(screen.getByRole("option", { name: "grain" })).toHaveAttribute("aria-selected", "true")
+			expect(outside).toHaveFocus()
+		}
+		expect(next.onAccept).not.toHaveBeenCalled()
+		expect(next.onCancel).not.toHaveBeenCalled()
+	})
+
+	it("allows repeated navigation and cancellation, but leaves IME and Shift-Tab native", () => {
+		const session = makeSession()
+		render(<OrgMinibuffer session={session} />)
+		const input = screen.getByRole("combobox")
+		fireEvent.keyDown(input, { key: "ArrowDown", repeat: true })
+		fireEvent.keyDown(input, { key: "n", ctrlKey: true, repeat: true })
+		expect(screen.getByRole("option", { name: "writing" })).toHaveAttribute("aria-selected", "true")
+		fireEvent.keyDown(input, { key: "ArrowUp", repeat: true })
+		expect(screen.getByRole("option", { name: "work" })).toHaveAttribute("aria-selected", "true")
+		expect(fireEvent.keyDown(input, { key: "Tab", shiftKey: true })).toBe(true)
+		fireEvent.compositionStart(input)
+		expect(fireEvent.keyDown(input, { key: "Enter", repeat: true })).toBe(true)
+		fireEvent.compositionEnd(input)
+		expect(fireEvent.keyDown(input, { key: "Enter", isComposing: true })).toBe(true)
+		expect(fireEvent.keyDown(input, { key: "Enter", keyCode: 229 })).toBe(true)
+		expect(session.onAccept).not.toHaveBeenCalled()
+		fireEvent.keyDown(input, { key: "Escape", repeat: true })
+		expect(session.onCancel).toHaveBeenCalledOnce()
+	})
+
+	it("does not replay a closed metadata acceptance from a detached held-key target", () => {
+		const session = makeSession({ initialInput: "Private_Profile_No_File" })
+		const { rerender } = render(<OrgMinibuffer session={session} />)
+		const input = screen.getByRole("combobox")
+		fireEvent.keyDown(input, { key: "Enter" })
+		rerender(<OrgMinibuffer session={null} />)
+		fireEvent.keyDown(input, { key: "Enter", repeat: true })
+		fireEvent.keyDown(input, { key: "Escape" })
+		expect(session.onAccept).toHaveBeenCalledExactlyOnceWith("Private_Profile_No_File")
+		expect(session.onCancel).not.toHaveBeenCalled()
+		expect(screen.queryByRole("combobox")).toBeNull()
+	})
+
 	it("locks input, candidates, and repeated Enter until deferred acceptance completes", async () => {
 		const pending = deferredAccept()
 		const session = makeSession({ onAccept: vi.fn(() => pending.promise) })

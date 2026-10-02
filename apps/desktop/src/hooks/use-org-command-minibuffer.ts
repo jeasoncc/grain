@@ -15,12 +15,13 @@ import type {
 	OrgMinibufferSession,
 	OrgMinibufferAcceptResult,
 } from "@/types/editor/minibuffer.interface"
+import { orgRefileTargetCandidates, RootCandidateLabel } from "@/pipes/org/org-refile-target.pipe"
 import type { OrgEditorCommandTarget } from "@/views/org-editor"
 import type { OrgWorkspaceController } from "./use-org-workspace"
 
 type ParameterDescription = Pick<
 	OrgMinibufferSession,
-	"prompt" | "historyKey" | "completion" | "cancelWhileAccepting"
+	"prompt" | "historyKey" | "completion" | "cancelWhileAccepting" | "acceptCandidate"
 >
 type ParameterCommit = (
 	origin: OrgBufferCommandContext,
@@ -41,22 +42,43 @@ export const useOrgCommandMinibuffer = (
 	const [echo, setEcho] = useState<string | null>(null)
 	const sessionIdRef = useRef(0)
 	const committingRef = useRef(false)
+	const lookupRef = useRef<{ abort: AbortController; isActive: () => boolean } | null>(null)
+	const abortLookup = () => {
+		lookupRef.current?.abort.abort()
+		lookupRef.current = null
+	}
 	const persistentEchoRef = useRef(false)
 	const runtimeRef = useRef({ controller, isBusy, suspended })
 	runtimeRef.current = { controller, isBusy, suspended }
 	useEffect(
 		() => () => {
 			++sessionIdRef.current
+			abortLookup()
 		},
 		[],
 	)
 	useEffect(() => {
 		++sessionIdRef.current
+		abortLookup()
 		setSession(null)
 		setEcho(null)
-	}, [controller.workspace?.rootPath, controller.activeDocument?.relativePath])
+	}, [
+		controller.workspace?.rootPath,
+		controller.workspace?.capabilityToken,
+		controller.workspaceSessionId,
+		controller.activeBufferId,
+		controller.activeDocument?.relativePath,
+	])
+	useLayoutEffect(() => {
+		if (lookupRef.current && !lookupRef.current.isActive()) {
+			abortLookup()
+			++sessionIdRef.current
+			setSession(null)
+		}
+	})
 	useLayoutEffect(() => {
 		if (!suspended) return
+		abortLookup()
 		++sessionIdRef.current
 		setSession(null)
 		setEcho(null)
@@ -75,7 +97,8 @@ export const useOrgCommandMinibuffer = (
 	) => {
 		const document = controller.activeDocument
 		const target = targetRef.current
-		if (!document || !target || isBusy || suspended || committingRef.current) return
+		if (!document || !target || isBusy || suspended || committingRef.current || lookupRef.current)
+			return
 		const prepared = prepare({
 			relativePath: document.relativePath,
 			content: controller.content,
@@ -86,17 +109,24 @@ export const useOrgCommandMinibuffer = (
 			return
 		}
 		const root = controller.workspace?.rootPath
+		const grant = controller.workspace?.capabilityToken
+		const workspaceSessionId = controller.workspaceSessionId
+		const activeBufferId = controller.activeBufferId
 		const sessionId = ++sessionIdRef.current
 		setEcho(null)
 		const originIsActive = () =>
 			!runtimeRef.current.suspended &&
 			sessionIdRef.current === sessionId &&
 			runtimeRef.current.controller.workspace?.rootPath === root &&
+			runtimeRef.current.controller.workspace?.capabilityToken === grant &&
+			runtimeRef.current.controller.workspaceSessionId === workspaceSessionId &&
+			runtimeRef.current.controller.activeBufferId === activeBufferId &&
 			runtimeRef.current.controller.activeDocument?.relativePath ===
 				prepared.context.relativePath &&
 			targetRef.current === target
 		const finish = (message: string, persistent = false) => {
 			if (!originIsActive()) return
+			abortLookup()
 			++sessionIdRef.current
 			setSession(null)
 			persistentEchoRef.current = persistent
@@ -115,7 +145,13 @@ export const useOrgCommandMinibuffer = (
 				const current = runtimeRef.current
 				if (!originIsActive())
 					return { ok: false, message: "The originating command or buffer is no longer active." }
-				if (current.isBusy || committingRef.current)
+				if (
+					current.isBusy ||
+					current.controller.isSaving ||
+					current.controller.isLoading ||
+					committingRef.current ||
+					lookupRef.current
+				)
 					return {
 						ok: false,
 						message: "The buffer is saving or loading. Try again when it finishes.",
@@ -176,7 +212,7 @@ export const useOrgCommandMinibuffer = (
 			historyKey: archive ? "org.subtree.archive" : "org.subtree.refile",
 			prompt: archive ? "Archive subtree (yes/no):" : "Refile to Org file:",
 			completion: "value",
-			cancelWhileAccepting: false,
+			cancelWhileAccepting: archive ? false : true,
 		}
 		const prepare = archive
 			? prepareOrgArchiveCommand
@@ -186,7 +222,13 @@ export const useOrgCommandMinibuffer = (
 						controller.workspace?.documents.map((document) => document.relativePath) ?? [],
 					)
 		launch(description, prepare, cursor, async (origin, current, _target, finish, input) => {
-			if (current.isDirty)
+			if (
+				current.isDirty ||
+				current.openBuffers?.some(
+					(buffer) =>
+						buffer.bufferId === current.activeBufferId && (buffer.isDirty || buffer.hasConflict),
+				)
+			)
 				return {
 					ok: false,
 					message: "Save the current document before refiling or archiving a subtree.",
@@ -203,6 +245,117 @@ export const useOrgCommandMinibuffer = (
 			if (result.kind === "cancel") {
 				finish("Canceled")
 				return { ok: true }
+			}
+			if (
+				!archive &&
+				"targetRelativePath" in result &&
+				typeof result.targetRelativePath === "string"
+			) {
+				const targetPath = result.targetRelativePath
+				const generation = sessionIdRef.current
+				const abort = new AbortController()
+				const isActive = () => {
+					const live = runtimeRef.current
+					return (
+						!live.suspended &&
+						sessionIdRef.current === generation &&
+						live.controller.workspace?.rootPath === current.workspace?.rootPath &&
+						live.controller.workspace?.capabilityToken === current.workspace?.capabilityToken &&
+						live.controller.workspaceSessionId === current.workspaceSessionId &&
+						live.controller.activeBufferId === current.activeBufferId &&
+						live.controller.activeDocument?.relativePath === origin.relativePath &&
+						live.controller.content === origin.content &&
+						targetRef.current === _target
+					)
+				}
+				lookupRef.current = { abort, isActive }
+				try {
+					const lookup = await current.readRefileTarget(targetPath, abort.signal)
+					if (abort.signal.aborted || !isActive())
+						return { ok: false, message: "The originating command or buffer is no longer active." }
+					if (lookup.kind === "rejected") return { ok: false, message: lookup.message }
+					// Own immutable DTOs, never a mutable controller cache or user-entered offset.
+					const snapshot = Object.freeze({
+						...lookup.snapshot,
+						headings: Object.freeze(
+							lookup.snapshot.headings.map((heading) => Object.freeze({ ...heading })),
+						),
+					})
+					const candidates = orgRefileTargetCandidates(snapshot, true)
+					lookupRef.current = null
+					launch(
+						{
+							prompt: "Refile under heading:",
+							historyKey: "org.subtree.refile.heading",
+							completion: "value",
+							acceptCandidate: true,
+							cancelWhileAccepting: false,
+						},
+						() => ({
+							kind: "ready",
+							context: origin,
+							initialInput: RootCandidateLabel,
+							candidates: candidates.map((candidate) => candidate.label),
+						}),
+						cursor,
+						async (headingOrigin, live, _editor, retire, label) => {
+							const candidate = candidates.find((candidate) => candidate.label === label)
+							if (!candidate)
+								return {
+									ok: false,
+									message: "Choose an exact target heading from the completion list.",
+								}
+							if (
+								live.isDirty ||
+								live.openBuffers?.some(
+									(buffer) =>
+										buffer.bufferId === live.activeBufferId &&
+										(buffer.isDirty || buffer.hasConflict),
+								)
+							)
+								return {
+									ok: false,
+									message: "Save the current document before refiling or archiving a subtree.",
+								}
+							try {
+								const outcome = await live.refileSubtree(headingOrigin.cursor, targetPath, {
+									expectedTargetRevision: snapshot.revision,
+									...(candidate.kind === "heading"
+										? {
+												targetHeading: {
+													from: candidate.target.from,
+													heading: candidate.target.heading,
+												},
+											}
+										: {}),
+								})
+								retire(
+									outcome.message ??
+										(outcome.kind === "success"
+											? "Subtree refiled"
+											: "Transfer failed. Review the target and reopen refile for a fresh selection."),
+									outcome.kind !== "success" || Boolean(outcome.message),
+								)
+								return outcome.kind === "success"
+									? { ok: true }
+									: { ok: false, message: outcome.message }
+							} catch {
+								const message =
+									"Transfer ended without a confirmed result; files may have changed. Reread both documents before reconciling them. Do not automatically retry; no rollback was attempted."
+								retire(message, true)
+								return { ok: false, message }
+							}
+						},
+					)
+					return { ok: true }
+				} catch {
+					return {
+						ok: false,
+						message: "Could not read the target. Review the file path and try again.",
+					}
+				} finally {
+					if (lookupRef.current?.abort === abort) lookupRef.current = null
+				}
 			}
 			try {
 				const outcome =

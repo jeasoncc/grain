@@ -309,6 +309,36 @@ sequence and parked target path with exact EOF semantics. Desktop 143 files /
 No real native/Chinese IME acceptance, shared-file multi-window runtime, full
 capture configuration/interpolation or persistent draft recovery is implied.
 
+## S5b: snapshot-bound heading Refile
+
+Refile has a cancellable, read-only file lookup followed by a separate heading
+parameter session. `(file root)` is explicit; heading labels include outline and
+line number so duplicate titles do not become identity. The immutable snapshot
+binds revision, UTF-16 source offset and complete heading line. Lookup holds no
+mutation owner/global loading state, abort returns immediately, and source/grant/
+activation/generation guards reject late or busy-ABA results.
+
+`planOrgRefileInsertion` enumerates only headings outside shared raw block ranges,
+inserts at the chosen subtree end before its peer and changes only legitimate
+incoming heading star runs to child level. Existing bytes, mixed endings, NUL,
+Unicode and raw EOF survive; unsafe unclosed block cases reject before effects.
+The flow validates exact RPC identities/revisions, rechecks live protected-path
+and source guards immediately before first write and after target confirmation.
+Any target post-write failure is uncertain; source failure leaves a known target
+copy as partial. Neither rollback nor automatic retry is performed.
+
+Both affected paths latch protection after uncertain/partial/throw outcomes;
+undo-to-baseline or saving only the source cannot unlock the target. Subsequent
+lookups/transfers, automatic import/save, root discard and close obey the latch.
+The minibuffer honors native/synthetic consumed input and filters held Enter so
+one keypress cannot accept both phases. Archive retains its yes/no root-only flow.
+
+Four real hook/pane/CM/flow cases use a synthetic repository to verify IO ordering,
+exact tokens/revisions/raw bytes, stale targets, both-path latching and immediate
+read cancellation. Desktop 146 files / 2362 cases, typecheck/build pass; scoped
+review has no remaining critical/warnings. Same-file refile, full Org target
+configuration, multi-window runtime and native/user acceptance remain pending.
+
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.
