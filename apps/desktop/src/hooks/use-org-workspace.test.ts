@@ -3018,6 +3018,109 @@ describe("independent Org buffers", () => {
 		expect(result.current.content).toBe(a.content)
 	})
 
+	it("isolates same-root/path identities and runtime incarnations from retained G1 lifecycle callbacks", async () => {
+		const { result } = await setup()
+		const old = result.current
+		const oldId = old.activeBufferId!
+		const oldRuntime = old.activeBufferRuntime!
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValueOnce(async () =>
+			E.right({ ...workspace, capabilityToken: "G2" }),
+		)
+		await act(async () => {
+			await result.current.openDefaultWorkspace()
+		})
+		await act(async () => {
+			await result.current.openDocumentPath(a.relativePath)
+		})
+		const id = result.current.activeBufferId!
+		const runtime = result.current.activeBufferRuntime!
+		expect(id).not.toBe(oldId)
+		expect(runtime).not.toBe(oldRuntime)
+		vi.mocked(openOrgDocumentFlow).mockClear()
+		vi.mocked(moveOrgDocumentFlow).mockClear()
+		vi.mocked(deleteOrgDocumentFlow).mockClear()
+		await act(async () => {
+			expect(await old.switchBuffer(id)).toBe(false)
+			expect(await old.closeDocumentPath(a.relativePath)).toBe(false)
+			expect(await old.closeActiveDocument()).toBe(false)
+			await old.moveActiveDocument("stale.org")
+			await old.deleteActiveDocument()
+		})
+		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(moveOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(deleteOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(result.current.activeBufferId).toBe(id)
+		expect(result.current.activeBufferRuntime).toBe(runtime)
+		expect(result.current.openBuffers).toHaveLength(1)
+		await act(async () => {
+			expect(await result.current.closeActiveDocument()).toBe(true)
+		})
+		await act(async () => {
+			await result.current.openDocumentPath(a.relativePath)
+		})
+		expect(result.current.activeBufferId).not.toBe(id)
+		expect(result.current.activeBufferRuntime).not.toBe(runtime)
+	})
+
+	it("retires a clean externally removed active identity before reopening the same path", async () => {
+		const { result } = await setup()
+		const id = result.current.activeBufferId!
+		const runtime = result.current.activeBufferRuntime!
+		vi.mocked(scanOrgWorkspaceFlow).mockReturnValueOnce(async () =>
+			E.right({ ...workspace, documents: [] }),
+		)
+		await act(async () => {
+			await result.current.refreshWorkspace()
+		})
+		expect(result.current.openBuffers).toEqual([])
+		expect(result.current.activeBufferId).toBeNull()
+		vi.mocked(openOrgDocumentFlow).mockClear()
+		await act(async () => {
+			expect(await result.current.switchBuffer(id)).toBe(false)
+		})
+		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
+		vi.mocked(scanOrgWorkspaceFlow).mockReturnValueOnce(async () => E.right(workspace))
+		await act(async () => {
+			await result.current.refreshWorkspace()
+		})
+		await act(async () => {
+			expect(await result.current.openDocumentPath(a.relativePath)).toBe(true)
+		})
+		expect(result.current.activeBufferId).not.toBeNull()
+		expect(result.current.activeBufferRuntime).not.toBeNull()
+		expect(result.current.activeBufferId).not.toBe(id)
+		expect(result.current.activeBufferRuntime).not.toBe(runtime)
+	})
+
+	it("retires an approved clean destination before preserving the source rename identity", async () => {
+		const { result } = await setup()
+		const sourceId = result.current.activeBufferId!
+		await act(async () => {
+			await result.current.openDocumentPath(b.relativePath)
+		})
+		const destinationId = result.current.activeBufferId!
+		await act(async () => {
+			await result.current.openDocumentPath(a.relativePath)
+		})
+		vi.mocked(moveOrgDocumentFlow).mockReturnValueOnce(async () =>
+			E.right({ relativePath: b.relativePath, revision: "moved" }),
+		)
+		await act(async () => {
+			await result.current.moveActiveDocument(b.relativePath)
+		})
+		expect(result.current.activeBufferId).toBe(sourceId)
+		expect(result.current.openBuffers).toHaveLength(1)
+		expect(result.current.openBuffers[0]).toMatchObject({
+			bufferId: sourceId,
+			relativePath: b.relativePath,
+		})
+		vi.mocked(openOrgDocumentFlow).mockClear()
+		await act(async () => {
+			expect(await result.current.switchBuffer(destinationId)).toBe(false)
+		})
+		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
 	it("retains the logical buffer ID when renaming the active document", async () => {
 		const { result } = await setup()
 		const id = result.current.activeBufferId

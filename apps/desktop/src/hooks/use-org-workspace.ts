@@ -31,6 +31,7 @@ import {
 } from "@/flows/org-workspace/org-save-all.flow"
 import { saveOrgWorkingCopyFlow } from "@/flows/org-workspace/org-save-working-copy.flow"
 import type { OrgBufferRuntime } from "@/flows/org-editor-runtime"
+import { createOrgBufferIdentityRegistry } from "@/flows/org-editor-runtime/org-buffer-identity-registry"
 import { createOrgWorkspaceRuntimeRegistry } from "@/flows/org-editor-runtime/org-workspace-runtime-registry"
 import { orgWorkspaceEventAdapter } from "@/io/event/org-workspace-event.adapter"
 import {
@@ -336,21 +337,26 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	const transientDirtyRef = useRef(new Map<string, boolean>())
 	const transientGenerationRef = useRef(0)
 	const parkedRef = useRef(new Map<string, ParkedOrgBuffer>())
-	const bufferIdsRef = useRef(new Map<string, string>())
-	const bufferSequenceRef = useRef(0)
+	const identityRegistryRef = useRef<ReturnType<typeof createOrgBufferIdentityRegistry> | null>(
+		null,
+	)
+	if (!identityRegistryRef.current) identityRegistryRef.current = createOrgBufferIdentityRegistry()
+	const bufferIdentity = identityRegistryRef.current
+	const identityScope =
+		originGrant && originSession ? { grant: originGrant, sessionId: originSession } : null
 	const conflictsRef = useRef(new Set<string>())
 	const editGenerationRef = useRef(0)
 	const activeRef = useRef(activeDocument)
 	activeRef.current = activeDocument
 	const [, publishBuffers] = useState(0)
-	const bufferIdFor = useCallback((path: string): string => {
-		let id = bufferIdsRef.current.get(path)
-		if (!id) {
-			id = `${sessionRef.current}:buffer-${++bufferSequenceRef.current}`
-			bufferIdsRef.current.set(path, id)
-		}
-		return id
-	}, [])
+	const bufferIdFor = useCallback(
+		(path: string): string =>
+			bufferIdentity.ensure(
+				originGrant && originSession ? { grant: originGrant, sessionId: originSession } : null,
+				path,
+			),
+		[bufferIdentity, originGrant, originSession],
+	)
 	const mirrorSource = (value: string) => {
 		if (latestContentRef.current === value) return
 		editGenerationRef.current += 1
@@ -364,12 +370,12 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	})
 	const runtimeFor = (id: string) => registry.get(runtimeKey(id))
 	const retireBuffer = (path: string) => {
-		const id = bufferIdsRef.current.get(path)
+		const id = bufferIdentity.lookup(identityScope, path)
 		if (id) registry.retire(runtimeKey(id))
-		bufferIdsRef.current.delete(path)
+		bufferIdentity.retire(identityScope, path)
 	}
 	const installParkedSource = (path: string, value: string) => {
-		const id = bufferIdsRef.current.get(path)
+		const id = bufferIdentity.lookup(identityScope, path)
 		if (id) registry.install(runtimeKey(id), value)
 	}
 	const closeRuntimes = () => {
@@ -386,22 +392,22 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			mirrorSource(value)
 			return
 		}
-		const id = bufferIdFor(document.relativePath)
+		const identityScope = { grant, sessionId: session }
+		const id = bufferIdentity.ensure(identityScope, document.relativePath)
 		registry.activate(
 			runtimeKey(id),
 			value,
 			{
 				readCommitContext: (key, previous, next): OrgRuntimeCommitContext => {
 					const path = activeRef.current?.relativePath
-					const parkedPath = [...bufferIdsRef.current].find(
-						([, bufferId]) => bufferId === key.bufferId,
-					)?.[0]
+					const parkedPath = bufferIdentity.findPath(identityScope, key.bufferId)
 					return {
 						mounted: mountedRef.current,
 						closeReady: nativeCloseReadyRef.current,
 						grantMatches: grantRef.current === grant,
 						sessionMatches: sessionRef.current === session,
-						isActiveOwner: path !== undefined && bufferIdsRef.current.get(path) === key.bufferId,
+						isActiveOwner:
+							path !== undefined && bufferIdentity.lookup(identityScope, path) === key.bufferId,
 						previous,
 						next,
 						activeSource: latestContentRef.current,
@@ -413,9 +419,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					}
 				},
 				commitSource: (key, source) => {
-					const path = [...bufferIdsRef.current].find(
-						([, bufferId]) => bufferId === key.bufferId,
-					)?.[0]
+					const path = bufferIdentity.findPath(identityScope, key.bufferId)
 					if (path === activeRef.current?.relativePath) mirrorSource(source)
 					else if (path) {
 						const parked = parkedRef.current.get(path)
@@ -434,7 +438,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 						grantRef.current === grant &&
 						sessionRef.current === session &&
 						key.workspaceSessionId === session &&
-						[...bufferIdsRef.current.values()].includes(key.bufferId)
+						bufferIdentity.findPath(identityScope, key.bufferId) !== undefined
 					)
 						setError(failure.message)
 				},
@@ -481,7 +485,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		} else {
 			const parked = parkedRef.current.get(path)
 			if (parked) {
-				const id = bufferIdsRef.current.get(path)
+				const id = bufferIdentity.lookup(identityScope, path)
 				const runtime = id ? runtimeFor(id) : undefined
 				newer =
 					parked !== expected ||
@@ -823,6 +827,11 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		return () => {
 			mountedRef.current = false
 			registry.close()
+			bufferIdentity.clearScope(
+				grantRef.current && sessionRef.current
+					? { grant: grantRef.current, sessionId: sessionRef.current }
+					: null,
+			)
 			openRequestRef.current += 1
 			sessionRef.current = null
 			if (refreshRetryTimerRef.current !== undefined) {
@@ -900,13 +909,18 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 						return
 					}
 					closeRuntimes()
+					bufferIdentity.clearScope(identityScope)
 					grantRef.current = result.right
 					activationRef.current += 1
 					sessionRef.current = result.right.capabilityToken ?? null
 					setWorkspaceSessionId(sessionRef.current)
 					transientDirtyRef.current.clear()
 					parkedRef.current.clear()
-					bufferIdsRef.current.clear()
+					if (sessionRef.current)
+						bufferIdentity.openScope({
+							grant: result.right,
+							sessionId: sessionRef.current,
+						})
 					conflictsRef.current.clear()
 					autosavePausedRef.current.clear()
 					activeRef.current = null
@@ -980,9 +994,10 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				}
 				return true
 			}
-			const targetBufferId = bufferIdsRef.current.get(entry.relativePath)
+			const targetBufferId = bufferIdentity.lookup(identityScope, entry.relativePath)
 			const isSameTargetBuffer = () =>
-				!targetBufferId || bufferIdsRef.current.get(entry.relativePath) === targetBufferId
+				!targetBufferId ||
+				bufferIdentity.lookup(identityScope, entry.relativePath) === targetBufferId
 			if (mutationInProgressRef.current) {
 				const inFlight = saveInFlightRef.current
 				if (!inFlight) {
@@ -1084,7 +1099,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				// Known controller writes already update the parked source; protected
 				// working copies must retain their body/history instead of importing disk.
 				if (parked && !protectedParked && parked.content !== nextDocument.content) {
-					const id = bufferIdsRef.current.get(entry.relativePath)
+					const id = bufferIdentity.lookup(identityScope, entry.relativePath)
 					if (id) {
 						registry.retire(runtimeKey(id))
 					}
@@ -1135,7 +1150,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				return false
 			}
 			// IDs are opaque and grant-local: only resolve live buffers in the latest map.
-			const path = [...bufferIdsRef.current].find(([, id]) => id === bufferId)?.[0]
+			const path = bufferIdentity.findPath(identityScope, bufferId)
 			if (!path) return false
 			if (activeRef.current?.relativePath === path) return true
 			if (!parkedRef.current.has(path)) return false
@@ -1493,7 +1508,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				(mutationInProgressRef.current && !saveInFlightRef.current)
 			)
 				return
-			const id = originPath ? bufferIdsRef.current.get(originPath) : undefined
+			const id = originPath ? bufferIdentity.lookup(identityScope, originPath) : undefined
 			const runtime = id ? runtimeFor(id) : undefined
 			if (!runtime || nextContent === runtime.source) return
 			// Compatibility edits obey the same busy/read-only gate as runtime UI edits.
@@ -1517,7 +1532,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		mutationOwnerRef.current = owner
 		const sourcePath = activeRef.current!.relativePath
 		const sourceDocument = { ...activeRef.current! }
-		const logicalBufferId = bufferIdsRef.current.get(sourcePath)
+		const logicalBufferId = bufferIdentity.lookup(identityScope, sourcePath)
 		const sourceRevision = sourceDocument.revision
 		const contentBeingSaved = latestContentRef.current
 		setSaving(true)
@@ -1533,7 +1548,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			mutationOwnerRef.current === owner &&
 			isCurrentOrigin() &&
 			logicalBufferId !== undefined &&
-			bufferIdsRef.current.get(sourcePath) === logicalBufferId
+			bufferIdentity.lookup(identityScope, sourcePath) === logicalBufferId
 		try {
 			const result = await saveOrgWorkingCopyFlow(capture, {
 				write: saveOrgDocumentFlow,
@@ -1642,7 +1657,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					parked: buffer,
 					expectedDocument: document,
 					originalActiveDocument: null,
-					logicalBufferId: bufferIdsRef.current.get(document.relativePath),
+					logicalBufferId: bufferIdentity.lookup(identityScope, document.relativePath),
 					workspaceRoot: workspace.rootPath,
 					capabilityToken: workspace.capabilityToken,
 				}
@@ -1657,7 +1672,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 						parked: null,
 						expectedDocument: activeBaseline,
 						originalActiveDocument: active,
-						logicalBufferId: bufferIdsRef.current.get(active.relativePath),
+						logicalBufferId: bufferIdentity.lookup(identityScope, active.relativePath),
 						workspaceRoot: workspace.rootPath,
 						capabilityToken: workspace.capabilityToken,
 					}
@@ -1719,7 +1734,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					if (
 						!current() ||
 						!logicalBufferId ||
-						bufferIdsRef.current.get(document.relativePath) !== logicalBufferId
+						bufferIdentity.lookup(identityScope, document.relativePath) !== logicalBufferId
 					)
 						return false
 					const liveParked = parked ? parkedRef.current.get(document.relativePath) : undefined
@@ -1737,7 +1752,11 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					receipt,
 				) => {
 					const path = document.relativePath
-					if (!current() || !logicalBufferId || bufferIdsRef.current.get(path) !== logicalBufferId)
+					if (
+						!current() ||
+						!logicalBufferId ||
+						bufferIdentity.lookup(identityScope, path) !== logicalBufferId
+					)
 						throw new Error("The captured buffer lease is no longer current")
 					const liveParked = parked ? parkedRef.current.get(path) : undefined
 					const plan = planOrgWorkingCopyAck({
@@ -1862,13 +1881,13 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				setSaving(true)
 				let closingBuffer = buffer
 				const capturedDocument = { ...buffer.document }
-				const logicalBufferId = bufferIdsRef.current.get(relativePath)
+				const logicalBufferId = bufferIdentity.lookup(identityScope, relativePath)
 				const currentOwner = () =>
 					mutationOwnerRef.current === owner &&
 					isCurrentOrigin() &&
 					session === sessionRef.current &&
 					logicalBufferId !== undefined &&
-					bufferIdsRef.current.get(relativePath) === logicalBufferId
+					bufferIdentity.lookup(identityScope, relativePath) === logicalBufferId
 				const currentRetirement = () =>
 					currentOwner() && parkedRef.current.get(relativePath) === closingBuffer
 				const capture = Object.freeze({
@@ -2283,6 +2302,9 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				return
 			}
 			openRequestRef.current += 1
+			const sourcePath = sourceDocument.relativePath
+			const sourceId = bufferIdentity.lookup(identityScope, sourcePath)
+			const targetId = bufferIdentity.lookup(identityScope, targetRelativePath)
 			const owner = Symbol("moveActiveDocument")
 			mutationOwnerRef.current = owner
 			mutationInProgressRef.current = true
@@ -2304,12 +2326,26 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					setError(result.left.message)
 					return
 				}
-				const sourcePath = sourceDocument.relativePath
-				const id = bufferIdsRef.current.get(sourcePath)
-				bufferIdsRef.current.delete(sourcePath)
-				retireBuffer(result.right.relativePath)
-				if (id) {
-					bufferIdsRef.current.set(result.right.relativePath, id)
+				if (
+					!sourceId ||
+					bufferIdentity.lookup(identityScope, sourcePath) !== sourceId ||
+					bufferIdentity.lookup(identityScope, result.right.relativePath) !== targetId
+				) {
+					setError("Buffer identity changed while moving; refresh and reconcile.")
+					return
+				}
+				// The root approved the overwrite and verified both mappings after IO.
+				if (result.right.relativePath !== sourcePath) retireBuffer(result.right.relativePath)
+				if (
+					!bufferIdentity.moveApproved(
+						identityScope,
+						sourcePath,
+						result.right.relativePath,
+						sourceId,
+					)
+				) {
+					setError("Buffer identity changed while moving; refresh and reconcile.")
+					return
 				}
 				const wasPaused = autosavePausedRef.current.delete(sourcePath)
 				const hadConflict = conflictsRef.current.delete(sourcePath)

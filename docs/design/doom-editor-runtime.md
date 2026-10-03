@@ -437,10 +437,19 @@ checks before writing: a later member drifting while the first write awaits must
 not start IO. Earlier confirmed paths remain acknowledged, with affected members
 paused until explicit reconciliation.
 
+`org-buffer-identity-registry.ts` owns path-to-logical-ID lifecycle without text,
+history or filesystem authority. All hook allocation, lookup, reverse lookup,
+approved rename and retirement now use this scope-bound reservoir. Matching
+requires the exact grant object and session, not a root label; clearing an old
+scope cannot clear G2. Rename retains ID, while close/delete/clean external
+removal retire it, and reopen allocates a distinct identity/runtime. Reopen tests
+assert successful navigation and non-null objects rather than accepting null as
+merely different from a retired object.
+
 This is the beginning, not completion, of splitting lifecycle/state reservoirs,
 file effects and presentation. It does not weaken the experience target to avoid
-larger window/config/workflow work. Full desktop verification: 155 files /2555
-cases, typecheck/build pass (2026-10-03 14:48 +08:00).
+larger window/config/workflow work. Full desktop verification: 156 files /2563
+cases, typecheck/build pass (2026-10-03 15:02 +08:00).
 
 ## Next decision gates and work
 
