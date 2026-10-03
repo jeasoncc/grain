@@ -1,4 +1,6 @@
 import { isolateHistory } from "@codemirror/commands"
+import type { OrgTextEdit } from "@/pipes/org/org-text.pipe"
+import { OrgBufferRuntimeError } from "./org-buffer-runtime.types"
 import {
 	Annotation,
 	type ChangeSpec,
@@ -51,6 +53,65 @@ export function minimalTextChange(previous: Text, next: Text): ChangeSpec {
 	}
 	return { from, insert: next.slice(from, endB), to: endA }
 }
+/** Validate before constructing transactions. All ranges address the original raw source. */
+export function rawSourceBatch(source: string, edits: readonly OrgTextEdit[]) {
+	if (!Array.isArray(edits)) {
+		throw new OrgBufferRuntimeError(
+			"invalid-edit",
+			"Command batch must be an array of raw-source edits",
+		)
+	}
+	const separator = orgSourceLineSeparator(source)
+	const validOffset = (position: number) =>
+		Number.isInteger(position) &&
+		position >= 0 &&
+		position <= source.length &&
+		!(source[position - 1] === "\r" && source[position] === "\n")
+	let end = 0,
+		previousFrom = -1
+	const pieces: string[] = []
+	for (const edit of edits) {
+		if (
+			!edit ||
+			!validOffset(edit.from) ||
+			!validOffset(edit.to) ||
+			edit.to < edit.from ||
+			edit.from < end ||
+			edit.from <= previousFrom ||
+			typeof edit.insert !== "string"
+		) {
+			throw new OrgBufferRuntimeError(
+				"invalid-edit",
+				"Command batch must use sorted, nonoverlapping raw-source ranges",
+			)
+		}
+		pieces.push(source.slice(end, edit.from), edit.insert)
+		end = edit.to
+		previousFrom = edit.from
+	}
+	pieces.push(source.slice(end))
+	const nextSource = pieces.join("")
+	if (orgSourceLineSeparator(nextSource) !== separator) {
+		throw new OrgBufferRuntimeError(
+			"invalid-edit",
+			"Command edits must preserve the source separator",
+		)
+	}
+	const offset = (position: number) =>
+		position -
+		(separator.length === 2 ? (source.slice(0, position).match(/\r\n/g)?.length ?? 0) : 0)
+	return {
+		nextSource,
+		changes: edits
+			.filter((edit) => source.slice(edit.from, edit.to) !== edit.insert)
+			.map((edit) => ({
+				from: offset(edit.from),
+				to: offset(edit.to),
+				insert: orgSourceText(edit.insert, separator),
+			})),
+	}
+}
+
 export interface OriginSelection {
 	readonly windowId: string
 	readonly selection: EditorSelection

@@ -3,6 +3,7 @@ import type { OrgRuntimeCommitContext } from "@/types/editor/org-runtime-owner.i
 import { createOrgBufferRuntime } from "@/flows/org-editor-runtime"
 import type { OrgTextEdit } from "@/pipes/org/org-text.pipe"
 import type { OrgBufferKey, OrgBufferRuntime } from "./org-buffer-runtime.types"
+import { rawSourceBatch } from "./org-buffer-runtime.helpers"
 
 export interface OrgWorkspaceRuntimePorts {
 	/** Bound by Root to the grant/session captured at creation. */
@@ -99,12 +100,13 @@ export const createOrgWorkspaceRuntimeRegistry = () => {
 		if (!isCurrentOwner() || get(key)?.source !== expected) return false
 		return install(key, source)
 	}
-	/** One synchronous command permit, tied to the live runtime lease and exact raw edit. */
-	const applyCommandEdit = (
+	/** One synchronous command permit, tied to the live runtime lease and exact raw batch. */
+	const runCommand = (
 		key: OrgBufferKey,
 		expected: string,
-		edit: OrgTextEdit,
+		edits: readonly OrgTextEdit[],
 		isCurrentOwner: () => boolean,
+		apply: (runtime: OrgBufferRuntime) => boolean,
 	): boolean => {
 		if (installation || command) return false
 		const runtime = get(key)
@@ -116,14 +118,32 @@ export const createOrgWorkspaceRuntimeRegistry = () => {
 			get(key) !== runtime
 		)
 			return false
-		const next = expected.slice(0, edit.from) + edit.insert + expected.slice(edit.to)
+		const { nextSource: next } = rawSourceBatch(expected, edits)
 		command = { runtime, expected, next, isCurrentOwner }
 		try {
-			return runtime.applyCommandEdit(expected, edit)
+			return apply(runtime)
 		} finally {
 			command = null
 		}
 	}
+	const applyCommandEdit = (
+		key: OrgBufferKey,
+		expected: string,
+		edit: OrgTextEdit,
+		isCurrentOwner: () => boolean,
+	) =>
+		runCommand(key, expected, [edit], isCurrentOwner, (runtime) =>
+			runtime.applyCommandEdit(expected, edit),
+		)
+	const applyCommandEdits = (
+		key: OrgBufferKey,
+		expected: string,
+		edits: readonly OrgTextEdit[],
+		isCurrentOwner: () => boolean,
+	) =>
+		runCommand(key, expected, edits, isCurrentOwner, (runtime) =>
+			runtime.applyCommandEdits(expected, edits),
+		)
 	const activate = (
 		key: OrgBufferKey,
 		source: string,
@@ -156,5 +176,15 @@ export const createOrgWorkspaceRuntimeRegistry = () => {
 		for (const runtime of runtimes.values()) runtime.close()
 		runtimes.clear()
 	}
-	return { get, create, install, updateSource, applyCommandEdit, activate, retire, close }
+	return {
+		get,
+		create,
+		install,
+		updateSource,
+		applyCommandEdit,
+		applyCommandEdits,
+		activate,
+		retire,
+		close,
+	}
 }

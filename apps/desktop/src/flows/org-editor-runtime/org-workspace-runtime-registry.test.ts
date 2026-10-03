@@ -55,6 +55,70 @@ const setup = () => {
 
 describe("Org workspace runtime reservoir", () => {
 	const edit = { from: 0, to: 8, insert: "DONE", cursor: 4 }
+	const edits = [
+		{ from: 0, to: 1, insert: "X", cursor: 0 },
+		{ from: 6, to: 8, insert: "Y", cursor: 0 },
+	] as const
+	it.each([
+		false,
+		true,
+	])("guards atomic command batches with exact authority (parked=%s)", (parked) => {
+		const { registry, key, ports, park } = setup()
+		const runtime = registry.create(key, "original\r\n", ports)
+		if (parked) park()
+		expect(() => runtime.applyCommandEdits(runtime.source, edits)).toThrow(
+			"Commit guard rejected source",
+		)
+		expect(registry.applyCommandEdits(key, runtime.source, edits, () => false)).toBe(false)
+		expect(registry.applyCommandEdits(key, "stale", edits, () => true)).toBe(false)
+		let checks = 0
+		expect(() =>
+			registry.applyCommandEdits(key, runtime.source, edits, () => ++checks === 1),
+		).toThrow("Commit guard rejected source")
+		expect(runtime.source).toBe("original\r\n")
+		expect(() =>
+			registry.applyCommandEdits(key, runtime.source, [...edits].reverse(), () => true),
+		).toThrow("sorted, nonoverlapping")
+		expect(ports.commitSource).not.toHaveBeenCalled()
+		expect(registry.applyCommandEdits(key, runtime.source, edits, () => true)).toBe(true)
+		expect(runtime.source).toBe("XriginY\r\n")
+		expect(runtime.revision).toBe(1)
+		expect(ports.commitSource).toHaveBeenCalledExactlyOnceWith(key, runtime.source)
+	})
+	it("clears batch permits after failures and rejects forged null-origin and nested operations", () => {
+		const { registry, key, ports } = setup()
+		const runtime = registry.create(key, "original\r\n", ports)
+		const apply = vi.spyOn(runtime, "applyCommandEdits").mockImplementationOnce(() => {
+			expect(registry.applyCommandEdits(key, runtime.source, edits, () => true)).toBe(false)
+			expect(registry.applyCommandEdit(key, runtime.source, edit, () => true)).toBe(false)
+			expect(registry.install(key, "nested")).toBe(false)
+			expect(() => runtime.applyControllerSource(runtime.source, "XriginY\r\n")).toThrow(
+				"Commit guard rejected source",
+			)
+			throw new Error("batch failed")
+		})
+		expect(() => registry.applyCommandEdits(key, runtime.source, edits, () => true)).toThrow(
+			"batch failed",
+		)
+		apply.mockRestore()
+		expect(() => runtime.applyCommandEdits(runtime.source, edits)).toThrow(
+			"Commit guard rejected source",
+		)
+		expect(registry.applyCommandEdits(key, runtime.source, edits, () => true)).toBe(true)
+	})
+	it("rejects retired/recreated batch leases", () => {
+		const { registry, key, ports } = setup()
+		const runtime = registry.create(key, "original\r\n", ports)
+		expect(
+			registry.applyCommandEdits(key, runtime.source, edits, () => {
+				registry.retire(key)
+				registry.create(key, "original\r\n", ports)
+				return true
+			}),
+		).toBe(false)
+		expect(runtime.closed).toBe(true)
+		expect(ports.commitSource).not.toHaveBeenCalled()
+	})
 	it.each([false, true])("scopes command permits to exact live leases (parked=%s)", (parked) => {
 		const { registry, key, ports, park } = setup()
 		const runtime = registry.create(key, "original\r\n", ports)

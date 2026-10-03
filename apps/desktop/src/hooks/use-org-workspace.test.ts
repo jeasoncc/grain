@@ -241,6 +241,154 @@ describe("Org capture entry and transient drafts", () => {
 			},
 		}
 	}
+	const todoStamp = "[2026-07-01 Wed 00:01]"
+	it.each([
+		["#+TODO: NEXT(n) | FINISHED(f!)", "NEXT", "FINISHED"],
+		["#+TODO: NEXT(n/!) | FINISHED(f)", "NEXT", "FINISHED"],
+		["#+TODO: NEXT(n/!) | FINISHED(f!)", "NEXT", "FINISHED"],
+		["#+TODO: NEXT(n) | FINISHED(f/!)", "FINISHED", ""],
+	])("cycles custom logging state atomically: %s", async (declaration, from, to) => {
+		const { result } = await setup()
+		const source = `${declaration}\r\n* ${from} café 😀\r\n<2026-07-01 Wed>\r\nbody\r\n`
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		const active = result.current.activeBufferRuntime
+		await act(async () => {
+			expect(
+				await result.current.executeAgendaCommand(agendaRow(source), {
+					kind: "cycle-todo",
+					timestamp: todoStamp,
+				}),
+			).toEqual({ kind: "confirmed" })
+		})
+		const parked = result.current.liveBuffers.find(
+			(buffer) => buffer.document.relativePath === "z.org",
+		)!
+		const log = `- State "${to}"${" ".repeat(12 - to.length)}from "${from}" ${todoStamp}\r\n`
+		expect(parked.runtime.source).toBe(
+			source.replace(`* ${from} café 😀\r\n`, `* ${to ? `${to} ` : ""}café 😀\r\n${log}`),
+		)
+		expect(parked.runtime.source.match(/- State/g)).toHaveLength(1)
+		expect(parked.isDirty).toBe(true)
+		expect(parked.document.revision).toBe("z-1")
+		expect(undoDepth(parked.runtime.state)).toBe(1)
+		expect(result.current.activeBufferRuntime).toBe(active)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		const editor = attachRuntime(parked.runtime, result.current, "todo-undo")
+		act(() => {
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(parked.runtime.source).toBe(source)
+		act(() => {
+			expect(editor.handle.redo()).toBe(true)
+		})
+		expect(undoDepth(parked.runtime.state)).toBe(1)
+		editor.dispose()
+	})
+	it("batches startup CLOSED and drawer logs in a dirty live buffer without changing disk revision", async () => {
+		const { result } = await setup()
+		const source =
+			"#+STARTUP: logdone logdrawer\r\n#+TODO: NEXT | FINISHED(!)\n* NEXT café 😀\r\n:PROPERTIES:\r\n:ID: untouched\r\n:END:\r\n<2026-07-01 Wed>\r\nbody\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const runtime = result.current.activeBufferRuntime!
+		const editor = attachRuntime(runtime, result.current, "todo-dirty")
+		act(() =>
+			editor.view.dispatch({
+				changes: { from: editor.view.state.doc.length, insert: "unsaved\r\n" },
+				annotations: isolateHistory.of("full"),
+			}),
+		)
+		const original = runtime.source
+		const depth = undoDepth(runtime.state)
+		vi.mocked(openOrgDocumentFlow).mockClear()
+		await act(async () => {
+			expect(
+				await result.current.executeAgendaCommand(
+					agendaRow(original, "z.org", result.current.activeBufferId!, true),
+					{ kind: "cycle-todo", timestamp: todoStamp },
+				),
+			).toEqual({ kind: "confirmed" })
+		})
+		const expected = original
+			.replace("* NEXT café 😀\r\n", `* FINISHED café 😀\r\nCLOSED: ${todoStamp}\r\n`)
+			.replace(
+				":END:\r\n",
+				`:END:\r\n:LOGBOOK:\r\n- State "FINISHED"    from "NEXT" ${todoStamp}\r\n:END:\r\n`,
+			)
+		expect(runtime.source).toBe(expected)
+		expect(result.current.content).toBe(expected)
+		expect(result.current.activeDocument?.revision).toBe("z-1")
+		expect(result.current.isDirty).toBe(true)
+		expect(undoDepth(runtime.state)).toBe(depth + 1)
+		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		act(() => {
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(runtime.source).toBe(original)
+		expect(result.current.isDirty).toBe(true)
+		editor.dispose()
+	})
+	it.each([
+		"NEXT(n/@) | FINISHED(f)",
+		"NEXT(n) | FINISHED(f@)",
+		"NEXT(n/@) | FINISHED(f!)",
+	])("rejects note-required %s without allocating an unopened buffer", async (states) => {
+		const observed = observeParkedReservoir()
+		const { result } = await setup()
+		const source = `#+TODO: ${states}\n* NEXT task\n<2026-07-01 Wed>\n`
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		const create = vi.spyOn(runtimeFactory, "createOrgBufferRuntime")
+		const park = vi.spyOn(observed.reservoir, "park")
+		const before = result.current.liveBuffers
+		await act(async () => {
+			expect(
+				await result.current.executeAgendaCommand(agendaRow(source), {
+					kind: "cycle-todo",
+					timestamp: todoStamp,
+				}),
+			).toMatchObject({ kind: "rejected", message: expect.stringContaining("requires a note") })
+		})
+		expect(create).not.toHaveBeenCalled()
+		expect(park).not.toHaveBeenCalled()
+		expect(result.current.liveBuffers).toEqual(before)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it("rejects invalid TODO clocks before reading or allocating", async () => {
+		const observed = observeParkedReservoir()
+		const { result } = await setup()
+		const create = vi.spyOn(runtimeFactory, "createOrgBufferRuntime")
+		const park = vi.spyOn(observed.reservoir, "park")
+		vi.mocked(openOrgDocumentFlow).mockClear()
+		for (const timestamp of [
+			"",
+			"[2026-07-01 Tue 00:01]",
+			"[2026-07-01 Wed 24:00]",
+			"[2026-02-30 Mon 00:01]",
+			"2026-07-01",
+		]) {
+			await act(async () => {
+				expect(
+					await result.current.executeAgendaCommand(agendaRow("* TODO task\n<2026-07-01 Wed>\n"), {
+						kind: "cycle-todo",
+						timestamp,
+					}),
+				).toMatchObject({ kind: "rejected" })
+			})
+		}
+		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(create).not.toHaveBeenCalled()
+		expect(park).not.toHaveBeenCalled()
+		expect(result.current.liveBuffers).toHaveLength(1)
+	})
 	it.each([
 		"schedule",
 		"deadline",

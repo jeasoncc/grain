@@ -92,6 +92,94 @@ function expectCode(fn: () => unknown, code: string) {
 }
 
 describe("canonical Org buffer/window runtime", () => {
+	it.each([
+		"\n",
+		"\r\n",
+		"\r",
+		"\r\nbare\n",
+	])("command batches retain sparse ranges and original coordinates (%j)", (eol) => {
+		const source = `* TODO first${eol}unchanged middle${eol}* TODO last${eol}`
+		const canCommit = vi.fn(() => true)
+		const { runtime, onCommit } = buffer(source, { canCommit })
+		const middle = runtime.state.doc.line(2).from + 3
+		const a = window(runtime, "a", { selection: EditorSelection.cursor(middle) })
+		const b = window(runtime, "b")
+		const update = vi.spyOn(a.view, "update")
+		const last = source.lastIndexOf("TODO")
+		const lastOffset =
+			last -
+			(runtime.state.lineBreak === "\r\n" ? (source.slice(0, last).match(/\r\n/g)?.length ?? 0) : 0)
+		const edits = [
+			{ from: 2, to: 6, insert: "COMPLETED", cursor: 0 },
+			{ from: last, to: last + 4, insert: "DONE", cursor: 0 },
+		] as const
+		expect(runtime.applyCommandEdits(source, edits)).toBe(true)
+		const next =
+			source.slice(0, 2) + "COMPLETED" + source.slice(6, last) + "DONE" + source.slice(last + 4)
+		expect(runtime.source).toBe(next)
+		expect(runtime.revision).toBe(1)
+		expect(canCommit).toHaveBeenCalledExactlyOnceWith(source, next, null, "command")
+		expect(onCommit).toHaveBeenCalledTimes(1)
+		expect(undoDepth(runtime.state)).toBe(1)
+		expect(a.view.state.selection.main.head).toBe(middle + 5)
+		expect(b.view.state.sliceDoc()).toBe(next)
+		const ranges: [number, number][] = []
+		update.mock.calls[0][0][0].changes.iterChangedRanges((from, to) => ranges.push([from, to]))
+		expect(ranges).toEqual([
+			[2, 6],
+			[lastOffset, lastOffset + 4],
+		])
+		expect(b.handle.undo()).toBe(true)
+		expect(runtime.source).toBe(source)
+		expect(b.handle.redo()).toBe(true)
+		expect(runtime.source).toBe(next)
+	})
+	it("rejects invalid command batches before guards, history, callbacks or projections", () => {
+		const source = "abc\r\ndef"
+		const canCommit = vi.fn(() => true)
+		const { runtime, onCommit } = buffer(source, { canCommit })
+		const a = window(runtime, "a")
+		const update = vi.spyOn(a.view, "update")
+		const before = runtime.state
+		const edit = (from: number, to: number, insert = "X") => ({ from, to, insert, cursor: 0 })
+		for (const edits of [
+			[edit(0, 1), edit(-1, 0)],
+			[edit(5, 6), edit(0, 1)],
+			[edit(0, 2), edit(1, 3)],
+			[edit(0, 0), edit(0, 1)],
+			[edit(4, 4)],
+			[edit(0.5, 1)],
+			[edit(0, 99)],
+			[edit(0, 1), edit(5, 6, 1 as unknown as string)],
+			[edit(3, 5, "\n")],
+		])
+			expectCode(() => runtime.applyCommandEdits(source, edits), "invalid-edit")
+		expectCode(() => runtime.applyCommandEdits("stale", []), "stale-source")
+		expect(runtime.applyCommandEdits(source, [])).toBe(false)
+		expect(runtime.applyCommandEdits(source, [edit(0, 1, "a")])).toBe(false)
+		expect(runtime.state).toBe(before)
+		expect(runtime.revision).toBe(0)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(canCommit).not.toHaveBeenCalled()
+		expect(onCommit).not.toHaveBeenCalled()
+		expect(update).not.toHaveBeenCalled()
+	})
+	it("denies an entire valid command batch without effects", () => {
+		const { runtime, onCommit } = buffer("abcdef", { canCommit: () => false })
+		const a = window(runtime, "a")
+		const before = runtime.state
+		expectCode(
+			() =>
+				runtime.applyCommandEdits(runtime.source, [
+					{ from: 0, to: 1, insert: "X", cursor: 0 },
+					{ from: 4, to: 5, insert: "Y", cursor: 0 },
+				]),
+			"commit-denied",
+		)
+		expect(runtime.state).toBe(before)
+		expect(a.view.state.sliceDoc()).toBe("abcdef")
+		expect(onCommit).not.toHaveBeenCalled()
+	})
 	it.each(["\n", "\r\n", "\r"])("commands use raw coordinates and isolated history (%j)", (eol) => {
 		const source = `* TODO first${eol}* TODO second${eol}`
 		const { runtime, onCommit } = buffer(source)

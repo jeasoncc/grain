@@ -19,6 +19,7 @@ import {
 	orgSourceLineSeparator,
 	orgSourceText,
 	originWindow,
+	rawSourceBatch,
 	restoreOriginSelection,
 	transactionTraits,
 } from "./org-buffer-runtime.helpers"
@@ -432,28 +433,15 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 			}
 		},
 		applyCommandEdit(previousExpectedSource, edit) {
+			return runtime.applyCommandEdits(previousExpectedSource, [edit])
+		},
+		applyCommandEdits(previousExpectedSource, edits) {
 			guard()
 			if (previousExpectedSource !== state.sliceDoc()) {
 				fail("stale-source", "Command source baseline is stale")
 			}
-			if (
-				!Number.isInteger(edit.from) ||
-				!Number.isInteger(edit.to) ||
-				edit.from < 0 ||
-				edit.to < edit.from ||
-				edit.to > previousExpectedSource.length ||
-				typeof edit.insert !== "string"
-			) {
-				fail("invalid-edit", "Command edit must use valid raw-source coordinates")
-			}
-			const nextSource =
-				previousExpectedSource.slice(0, edit.from) +
-				edit.insert +
-				previousExpectedSource.slice(edit.to)
+			const { nextSource, changes } = rawSourceBatch(previousExpectedSource, edits)
 			if (nextSource === previousExpectedSource) return false
-			if (orgSourceLineSeparator(nextSource) !== state.lineBreak) {
-				fail("invalid-edit", "Command edits must preserve the source separator")
-			}
 			busy = true
 			try {
 				const tr = state.update({
@@ -462,9 +450,12 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 						isolateHistory.of("full"),
 						Transaction.userEvent.of("input.org-command"),
 					],
-					changes: minimalTextChange(state.doc, orgSourceText(nextSource, state.lineBreak)),
+					changes,
 					filter: false,
 				})
+				if (tr.state.sliceDoc() !== nextSource) {
+					fail("invalid-edit", "Command edits must preserve structural separator boundaries")
+				}
 				const projections = buildProjections([tr])
 				commit(tr.state, projections, null, null, "command")
 				return true

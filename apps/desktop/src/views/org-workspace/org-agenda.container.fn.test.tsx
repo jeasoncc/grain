@@ -174,6 +174,104 @@ afterEach(() => {
 
 describe("production OrgAgendaContainer working-copy actions", () => {
 	it.each([
+		["#+TODO: NEXT | FINISHED(f@)\r\n", "requires a note"],
+		["#+TODO: NEXT | FINISHED\r\n#+PROPERTY: LOGGING logdone\r\n", "unsupported-logging-policy"],
+	])("renders TODO policy refusal from the production planner (%s)", async (directives, message) => {
+		const raw = source.replace("#+TODO: NEXT | FINISHED\r\n", directives)
+		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
+		await setup()
+		await open("tasks.org")
+		const runtime = controller.activeBufferRuntime!
+		await cycleSecondKeyboard()
+		expect(screen.getByRole("status")).toHaveTextContent(message)
+		expect(runtime.source).toBe(raw)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(controller.isDirty).toBe(false)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+		const rows = screen
+			.getAllByRole("button")
+			.filter((button) => button.hasAttribute("data-agenda-open"))
+		for (const row of rows) expect(within(row).getByText("NEXT")).toBeInTheDocument()
+	})
+
+	it("logs with an empty CUSTOM_ID property and projects exact output and undo to the editor", async () => {
+		vi.setSystemTime(new Date(2026, 8, 30, 23, 59))
+		const raw = source
+			.replace(
+				"#+TODO: NEXT | FINISHED\r\n",
+				"#+TODO: NEXT | FINISHED(!)\r\n#+STARTUP: logdone logdrawer\r\n",
+			)
+			.replace(
+				"DEADLINE: <2026-07-01 Wed>\r\n#+begin_export",
+				"DEADLINE: <2026-07-01 Wed>\r\n:PROPERTIES:\r\n:CUSTOM_ID:\r\n:END:\r\n#+begin_export",
+			)
+		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
+		await setup()
+		await open("tasks.org")
+		const runtime = live().runtime
+		const editor = attach(runtime)
+		await cycleSecondKeyboard()
+		const stamp = "[2026-09-30 Wed 23:59]"
+		const expected = raw.replace(
+			"* NEXT 😀 duplicate\r\nDEADLINE: <2026-07-01 Wed>\r\n:PROPERTIES:\r\n:CUSTOM_ID:\r\n:END:\r\n",
+			`* FINISHED 😀 duplicate\r\nCLOSED: ${stamp} DEADLINE: <2026-07-01 Wed>\r\n:PROPERTIES:\r\n:CUSTOM_ID:\r\n:END:\r\n:LOGBOOK:\r\n- State "FINISHED"    from "NEXT" ${stamp}\r\n:END:\r\n`,
+		)
+		expect(runtime.source).toBe(expected)
+		expect(editor.view.state.sliceDoc()).toBe(expected)
+		expectChangedRows()
+		expect(undoDepth(runtime.state)).toBe(1)
+		await act(async () => {
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(runtime.source).toBe(raw)
+		expect(editor.view.state.sliceDoc()).toBe(raw)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(redoDepth(runtime.state)).toBe(1)
+		expect(controller.isDirty).toBe(false)
+		expect(screen.getAllByText("NEXT")).toHaveLength(2)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it.each([
+		":LOGBOOK:\r\n:OTHER:\r\n:END:\r\n",
+		":PROPERTIES:\r\n:LOGBOOK:\r\n:END:\r\n",
+		":LOGBOOK:\r\n:END:\r\n:LOGBOOK:\r\n:END:\r\n",
+		":PROPERTIES:\r\n:END:\r\n:PROPERTIES:\r\n:END:\r\n",
+		":LOGBOOK:\r\nunclosed\r\n",
+		":PROPERTIES:\r\n:CUSTOM_ID:\r\n",
+	])("rejects malformed drawers with zero agenda/editor edits (%s)", async (body) => {
+		const raw = source
+			.replace(
+				"#+TODO: NEXT | FINISHED\r\n",
+				"#+TODO: NEXT | FINISHED(!)\r\n#+STARTUP: logdone logdrawer\r\n",
+			)
+			.replace(
+				"DEADLINE: <2026-07-01 Wed>\r\n#+begin_export",
+				`DEADLINE: <2026-07-01 Wed>\r\n${body}#+begin_export`,
+			)
+		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
+		await setup()
+		await open("tasks.org")
+		const runtime = live().runtime
+		const editor = attach(runtime)
+		const update = vi.spyOn(editor.view, "update")
+		await cycleSecondKeyboard()
+		expect(screen.getByRole("status")).toHaveTextContent("Cannot change TODO state:")
+		expect(runtime.source).toBe(raw)
+		expect(editor.view.state.sliceDoc()).toBe(raw)
+		expect(
+			update.mock.calls
+				.flatMap(([transactions]) => transactions)
+				.some((transaction) => transaction.docChanged),
+		).toBe(false)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(redoDepth(runtime.state)).toBe(0)
+		expect(controller.isDirty).toBe(false)
+		expect(screen.getAllByText("NEXT")).toHaveLength(2)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it.each([
 		"button",
 		"keyboard",
 	])("prepares an unopened schedule via %s without allocating; bottom parameters edit the second duplicate only and preserve working-copy history and CAS", async (action) => {

@@ -34,7 +34,7 @@ import {
 	ViewPlugin,
 	type ViewUpdate,
 } from "@codemirror/view"
-import { memo, useEffect, useRef } from "react"
+import { memo, useEffect, useRef, useState } from "react"
 import { resolveOrgPrefixKey } from "@/flows/org-command/org-prefix-keymap"
 import {
 	createOrgWindowEffectRegistry,
@@ -42,7 +42,8 @@ import {
 } from "@/flows/org-editor-runtime"
 import {
 	changeOrgHeadingLevelAt,
-	cycleOrgTodoAt,
+	formatOrgLocalTimestamp,
+	planOrgTodoTransition,
 	insertOrgTimestampAt,
 	moveOrgSubtreeAt,
 	type OrgTextEdit,
@@ -53,7 +54,7 @@ import {
 } from "@/pipes/org"
 import { parseOrgSparseTreeQuery } from "@/pipes/org/org-sparse-tree.pipe"
 import type { OrgPrefixSession } from "@/types/editor/org-keymap.interface"
-import type { OrgEditorProps } from "./org-editor.types"
+import type { OrgEditorCommandTarget, OrgEditorProps } from "./org-editor.types"
 import { orgHeadingFoldRange } from "./org-fold.pipe"
 import { editorOffsetFromSource } from "./org-source-offset.pipe"
 import { safeOrgSparseBoundaryChange } from "./org-sparse-boundary.pipe"
@@ -348,6 +349,8 @@ export const OrgEditor = memo(function OrgEditor({
 	value,
 	onChange,
 	onSave,
+	todoClock = () => formatOrgLocalTimestamp(new Date()),
+	onTodoRejected,
 	onCommandTarget,
 	onPrefixChange,
 	prefixContextKey,
@@ -379,6 +382,10 @@ export const OrgEditor = memo(function OrgEditor({
 	const cancelScrollRestoreRef = useRef<() => void>(() => {})
 	const onChangeRef = useRef(onChange)
 	const onSaveRef = useRef(onSave)
+	const [todoMessage, setTodoMessage] = useState<string | null>(null)
+	const todoClockRef = useRef(todoClock)
+	const onTodoRejectedRef = useRef(onTodoRejected)
+	const commandTargetRef = useRef<OrgEditorCommandTarget | null>(null)
 	const onCommandTargetRef = useRef(onCommandTarget)
 	const onPrefixChangeRef = useRef(onPrefixChange)
 	const prefixTimeoutRef = useRef(prefixTimeoutMs)
@@ -404,6 +411,8 @@ export const OrgEditor = memo(function OrgEditor({
 
 	onChangeRef.current = onChange
 	onSaveRef.current = onSave
+	todoClockRef.current = todoClock
+	onTodoRejectedRef.current = onTodoRejected
 	onCommandTargetRef.current = onCommandTarget
 	onPrefixChangeRef.current = onPrefixChange
 	prefixTimeoutRef.current = prefixTimeoutMs
@@ -437,6 +446,43 @@ export const OrgEditor = memo(function OrgEditor({
 		const applyOrgEdit = (view: EditorView, edit: OrgEditFactory) =>
 			applySourceEdit(view, edit, bufferRuntime !== null)
 		const batchController = createOrgSparseBatchController(() => viewRef.current)
+		const transitionTodo = (editor: EditorView): boolean => {
+			if (editor.state.readOnly) return true
+			const source = editor.state.sliceDoc()
+			let stamp: string
+			try {
+				stamp = todoClockRef.current()
+			} catch {
+				setTodoMessage("Invalid local TODO timestamp.")
+				onTodoRejectedRef.current?.("invalid-timestamp")
+				return true
+			}
+			const plan = planOrgTodoTransition(
+				source,
+				sourceOffsetFromEditor(editor, editor.state.selection.main.head),
+				stamp,
+			)
+			setTodoMessage(
+				plan.kind === "rejected"
+					? plan.reason === "needs-note"
+						? "This TODO transition requires a note; the state was not changed."
+						: `Cannot change TODO state: ${plan.reason}.`
+					: null,
+			)
+			if (plan.kind === "rejected") onTodoRejectedRef.current?.(plan.reason)
+			if (plan.kind === "edit") {
+				const applied = commandTargetRef.current?.applyEdits?.(source, {
+					changes: plan.edits,
+					cursor: plan.edits[0].cursor,
+					requiredVisibleRanges: plan.edits.map(({ from, to }) => ({ from, to })),
+				})
+				if (!applied) {
+					setTodoMessage("TODO change was refused; reveal the affected text and retry.")
+					onTodoRejectedRef.current?.("commit-refused")
+				}
+			}
+			return true
+		}
 		const standaloneHistory = createOrgSparseHistoryController(
 			() => viewRef.current,
 			effectRegistry.knownEffect,
@@ -522,6 +568,15 @@ export const OrgEditor = memo(function OrgEditor({
 					return false
 				},
 				keydown: (event, editor) => {
+					// These guards must also fence the later CodeMirror shortcut keymap.
+					const todoShortcut = event.altKey && event.shiftKey && event.key.toLowerCase() === "t"
+					if (
+						todoShortcut &&
+						(event.repeat || event.isComposing || event.keyCode === 229 || event.defaultPrevented)
+					)
+						return true
+					if (event.repeat && (prefix || (event.ctrlKey && event.key.toLowerCase() === "c")))
+						return true
 					const routed = resolveOrgPrefixKey(
 						prefix,
 						{
@@ -553,7 +608,7 @@ export const OrgEditor = memo(function OrgEditor({
 					}
 					const cursor = sourceOffsetFromEditor(editor, editor.state.selection.main.head)
 					if (command === "todo") {
-						applyOrgEdit(editor, cycleOrgTodoAt)
+						if (!event.repeat) transitionTodo(editor)
 					} else if (command === "checkbox") {
 						applyOrgEdit(editor, toggleOrgCheckboxAt)
 					} else if (command === "link") {
@@ -691,7 +746,8 @@ export const OrgEditor = memo(function OrgEditor({
 				},
 				{
 					key: "Alt-Shift-t",
-					run: (editor) => applyOrgEdit(editor, cycleOrgTodoAt),
+					preventDefault: true,
+					run: transitionTodo,
 				},
 				{
 					key: "Mod-Shift-x",
@@ -912,7 +968,7 @@ export const OrgEditor = memo(function OrgEditor({
 
 		onCursorChangeRef.current?.(sourceOffsetFromEditor(view, view.state.selection.main.head))
 		viewRef.current = view
-		onCommandTargetRef.current?.({
+		const commandTarget: OrgEditorCommandTarget = {
 			applyEdit: (expectedSource, edit) => {
 				if (
 					viewRef.current !== view ||
@@ -1088,8 +1144,11 @@ export const OrgEditor = memo(function OrgEditor({
 					view.focus()
 				}
 			},
-		})
+		}
+		commandTargetRef.current = commandTarget
+		onCommandTargetRef.current?.(commandTarget)
 		return () => {
+			commandTargetRef.current = null
 			cancelScrollRestore()
 			cancelScrollRestoreRef.current = () => {}
 			for (const event of ["scroll", "wheel", "touchstart", "pointerdown", "keydown"]) {
@@ -1252,5 +1311,14 @@ export const OrgEditor = memo(function OrgEditor({
 		})
 	}, [ariaLabel])
 
-	return <div ref={hostRef} className="h-full min-h-0 w-full" />
+	return (
+		<div className="flex h-full min-h-0 w-full flex-col">
+			{todoMessage && (
+				<div role="status" className="shrink-0 px-3 py-1 text-sm">
+					{todoMessage}
+				</div>
+			)}
+			<div ref={hostRef} className="min-h-0 w-full flex-1" />
+		</div>
+	)
 })

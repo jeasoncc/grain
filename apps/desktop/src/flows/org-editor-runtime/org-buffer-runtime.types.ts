@@ -83,5 +83,7 @@ export interface OrgBufferRuntime {
 	applyControllerSource(previousExpectedSource: string, nextSource: string): boolean
 	/** Raw-source edit, committed as one isolated canonical history event, without a window origin. */
 	applyCommandEdit(previousExpectedSource: string, edit: OrgTextEdit): boolean
+	/** Sorted, nonoverlapping original raw-source ranges; one atomic isolated history event. */
+	applyCommandEdits(previousExpectedSource: string, edits: readonly OrgTextEdit[]): boolean
 	close(): void
 }

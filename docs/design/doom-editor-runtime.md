@@ -644,6 +644,38 @@ Verification: 170 files /2880 tests, typecheck/build pass
 (2026-10-04 01:06 +08:00). ISO-date entry is not the full Org date reader,
 calendar/repeater UI, unified application tool host or TODO logging.
 
+## TODO timestamp logging: shared source-range planner
+
+Editor (runtime and standalone) and Agenda use `planOrgTodoTransition` with an
+explicit validated local timestamp. State `!` / outgoing `/!` flags and final
+ordered file STARTUP policy govern state logs and CLOSED. No implicit logging
+default is enabled. `logdrawer` selects a valid log drawer; ordinary non-drawer
+logs remain source lines. Note `@` and a final `lognotedone` only reject when the
+chosen transition actually requires a note, visibly and without changing state.
+
+```text
+TODO shortcut / Agenda t -> current source + injected local clock
+ -> eligible sequence / applicable policy -> atomic original-coordinate edits
+ -> heading + CLOSED + state log -> one canonical history event -> later CAS
+```
+
+Existing CLOSED colon spacing and date/weekday/time component shape remain
+intact, with present known components updated truthfully. Other planning fields,
+unknown source and raw newline payloads are preserved; one undo restores bytes.
+Properties validation accepts empty values while rejecting nested/duplicate or
+unclosed drawers. Unsupported heading-local LOGGING is evaluated only for the
+target and applicable ancestors, not unrelated siblings or excluded source.
+
+The registry's command-batch permit has exact scope/source and readonly/notify
+fences, not no-history installation authority. Per-window editing uses the
+existing atomic range/visibility contract. Clock failure, malformed policy,
+required notes and sparse hidden edits are rejected before commit; production
+Editor/Agenda tests assert rendered rejection messages, peer mapping/folds,
+consumed/IME/repeat safety, full undo and timezone behavior.
+Verification: 173 files /2988 tests, typecheck/build pass
+(2026-10-04 02:15 +08:00). Multiline note workflows, full property inheritance
+and complete logging-policy compatibility remain unfinished requirements.
+
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.

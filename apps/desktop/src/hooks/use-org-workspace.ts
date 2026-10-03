@@ -37,7 +37,12 @@ import {
 } from "@/flows/org-editor-runtime/org-parked-working-copy-reservoir"
 import { createOrgBufferIdentityRegistry } from "@/flows/org-editor-runtime/org-buffer-identity-registry"
 import type { OrgWorkspaceRuntimePorts } from "@/flows/org-editor-runtime/org-workspace-runtime-registry"
-import { cycleOrgTodoAt, validOrgDate, type OrgTextEdit } from "@/pipes/org/org-text.pipe"
+import { validOrgDate, type OrgTextEdit } from "@/pipes/org/org-text.pipe"
+import {
+	planOrgTodoTransition,
+	validOrgLocalTimestamp,
+	formatOrgLocalTimestamp,
+} from "@/pipes/org/org-todo-logging.pipe"
 import { createOrgPlanningCommand } from "@/flows/org-command/org-planning.command"
 import {
 	hasOrgAgendaActionOrigin,
@@ -176,7 +181,7 @@ export type OrgAgendaActionOutcome = {
 }
 
 export type OrgAgendaCommand =
-	| { readonly kind: "cycle-todo" }
+	| { readonly kind: "cycle-todo"; readonly timestamp?: string }
 	| { readonly kind: "schedule" | "deadline"; readonly date: string }
 
 export type OrgAgendaPlanningPreparation =
@@ -193,16 +198,24 @@ const planAgendaOperation = (
 	raw: string,
 	operation: OrgAgendaOperation,
 ):
-	| { readonly kind: "edit"; readonly edit: OrgTextEdit }
+	| { readonly kind: "edit"; readonly edits: readonly OrgTextEdit[]; readonly done?: boolean }
 	| OrgAgendaPlanningPreparation
 	| OrgAgendaActionOutcome => {
 	if (!entry.origin?.heading)
 		return { kind: "rejected", message: "This agenda entry has no actionable heading." }
 	if (operation.kind === "cycle-todo") {
-		const edit = cycleOrgTodoAt(raw, entry.origin.heading.from)
-		return edit
-			? { kind: "edit", edit }
-			: { kind: "rejected", message: "This agenda entry has no actionable heading." }
+		const plan = planOrgTodoTransition(raw, entry.origin.heading.from, operation.timestamp ?? "")
+		return plan.kind === "edit"
+			? plan
+			: plan.kind === "noop"
+				? { kind: "unchanged" }
+				: {
+						kind: "rejected",
+						message:
+							plan.reason === "needs-note"
+								? "This TODO transition requires a note; the state was not changed."
+								: `Cannot change TODO state: ${plan.reason}.`,
+					}
 	}
 	const field = operation.kind === "prepare" ? operation.field : operation.kind
 	const planner = createOrgPlanningCommand(field === "schedule" ? "SCHEDULED" : "DEADLINE", "")
@@ -219,7 +232,7 @@ const planAgendaOperation = (
 	}
 	const result = planner.execute(context, context, operation.date)
 	return result.kind === "edit"
-		? result
+		? { kind: "edit", edits: [result.edit] }
 		: result.kind === "no-change"
 			? { kind: "unchanged" }
 			: {
@@ -1404,6 +1417,17 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		): Promise<OrgAgendaActionOutcome | OrgAgendaPlanningPreparation> => {
 			const stale = (): OrgAgendaActionOutcome => ({ kind: "stale" })
 			const rejected = (message: string): OrgAgendaActionOutcome => ({ kind: "rejected", message })
+			// Capture the clock once at the effect boundary, before reads or allocation.
+			if (operation.kind === "cycle-todo") {
+				let timestamp: string
+				try {
+					timestamp = operation.timestamp ?? formatOrgLocalTimestamp(new Date())
+				} catch {
+					return rejected("Invalid local TODO timestamp.")
+				}
+				if (!validOrgLocalTimestamp(timestamp)) return rejected("Invalid local TODO timestamp.")
+				operation = { ...operation, timestamp }
+			}
 			// Calendar validation precedes reads, owner acquisition, identity allocation and edits.
 			if (
 				operation.kind !== "cycle-todo" &&
@@ -1558,7 +1582,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					return stale()
 				const planned = planAgendaOperation(entry, raw, operation)
 				if (planned.kind !== "edit") return planned
-				const edit = planned.edit
+				const edits = planned.edits
 				const commandOwner = () =>
 					owns() &&
 					bufferIdentity.lookup(currentScope, path) === id &&
@@ -1583,7 +1607,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				// manufacture a committed outcome. Recheck ownership after callbacks.
 				options?.onCommitStarted?.()
 				if (!commandOwner()) return stale()
-				return registry.applyCommandEdit(key, raw, edit, commandOwner)
+				return registry.applyCommandEdits(key, raw, edits, commandOwner)
 					? { kind: "confirmed" }
 					: stale()
 			} catch {

@@ -43,6 +43,9 @@ export interface OrgEditorProps {
 	readonly value: string
 	readonly onChange: (value: string) => void
 	readonly onSave: () => void
+	/** Effect boundary for TODO logging; defaults to the current local time. */
+	readonly todoClock?: () => string
+	readonly onTodoRejected?: (reason: string) => void
 	readonly onCommandTarget?: (target: OrgEditorCommandTarget | null) => void
 	readonly onPrefixChange?: (prefix: OrgPrefixSession | null) => void
 	readonly prefixContextKey?: string
