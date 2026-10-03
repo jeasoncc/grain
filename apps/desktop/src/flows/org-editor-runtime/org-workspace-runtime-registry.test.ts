@@ -24,6 +24,7 @@ const setup = () => {
 			parkedSource: source,
 			runtimeBufferId: key.bufferId,
 			loading: false,
+			notificationInProgress: false,
 			mutationInProgress: false,
 			ordinarySaveInFlight: false,
 		}),
@@ -82,6 +83,28 @@ describe("Org workspace runtime reservoir", () => {
 			"Commit guard rejected source",
 		)
 		expect(runtime.source).toBe("confirmed\r\n")
+	})
+	it.each([
+		false,
+		true,
+	])("notification rejects public authorized installation (parked=%s)", (parked) => {
+		const { registry, key, ports, park } = setup()
+		const runtime = registry.create(key, "original\r\n", ports)
+		if (parked) park()
+		const context = ports.readCommitContext(key, runtime.source, "confirmed")
+		vi.mocked(ports.readCommitContext).mockReturnValue({
+			...context,
+			notificationInProgress: true,
+			mutationInProgress: true,
+			ordinarySaveInFlight: true,
+		})
+		const state = runtime.state
+		expect(() => registry.install(key, "confirmed")).toThrow("Commit guard rejected source")
+		expect(runtime.state).toBe(state)
+		expect(runtime.source).toBe("original\r\n")
+		expect(ports.commitSource).not.toHaveBeenCalled()
+		vi.mocked(ports.readCommitContext).mockReturnValue(context)
+		expect(registry.install(key, "confirmed")).toBe(true)
 	})
 	it("clears authority in finally after an install throws", () => {
 		const { registry, key, ports, park } = setup()

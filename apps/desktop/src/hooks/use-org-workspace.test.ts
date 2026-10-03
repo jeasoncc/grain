@@ -1,3 +1,6 @@
+import * as registryFactory from "@/flows/org-editor-runtime/org-workspace-runtime-registry"
+import * as parkedFactory from "@/flows/org-editor-runtime/org-parked-working-copy-reservoir"
+import type { OrgBufferIdentityScope } from "@/flows/org-editor-runtime/org-buffer-identity-registry"
 import { history, redoDepth, undoDepth } from "@codemirror/commands"
 import { EditorState } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
@@ -55,6 +58,30 @@ import {
 	updateWorkspaceDocument,
 	useOrgWorkspace,
 } from "./use-org-workspace"
+
+// Observe the real narrow lifecycle port, never React internals or Map storage.
+const observeParkedReservoir = () => {
+	const create = parkedFactory.createOrgParkedWorkingCopyReservoir
+	let reservoir!: ReturnType<typeof create>
+	let scope!: OrgBufferIdentityScope
+	vi.spyOn(parkedFactory, "createOrgParkedWorkingCopyReservoir").mockImplementation((...args) => {
+		reservoir = create(...args)
+		const open = reservoir.openScope
+		reservoir.openScope = (candidate) => {
+			scope = candidate
+			return open(candidate)
+		}
+		return reservoir
+	})
+	return {
+		get reservoir() {
+			return reservoir
+		},
+		get scope() {
+			return scope
+		},
+	}
+}
 
 vi.mock("@tanstack/react-router", () => ({ useBlocker: vi.fn() }))
 vi.mock("@/flows/org-workspace", () => ({
@@ -3246,40 +3273,164 @@ describe("Org save-all snapshot transaction", () => {
 			expect.objectContaining({ content: "newest parked body", expectedRevision: "ack" }),
 		)
 	})
-	it.each([
-		"same-revision",
-		"new-revision",
-	])("rejects parked batch baseline drift (%s) without overwriting and latches conflict", async (mode) => {
+	it("rejects real active transactions, undo and known installations during Save All parked ACK notification", async () => {
+		const observed = observeParkedReservoir()
+		const createRuntime = runtimeFactory.createOrgBufferRuntime
+		const commits = vi.fn()
+		vi.spyOn(runtimeFactory, "createOrgBufferRuntime").mockImplementation((options) =>
+			createRuntime({
+				...options,
+				onCommit: (commit) => {
+					commits(commit)
+					options.onCommit(commit)
+				},
+			}),
+		)
+		const createRegistry = registryFactory.createOrgWorkspaceRuntimeRegistry
+		let registry!: ReturnType<typeof createRegistry>
+		vi.spyOn(registryFactory, "createOrgWorkspaceRuntimeRegistry").mockImplementation(() => {
+			registry = createRegistry()
+			return registry
+		})
 		const { result } = await setup(2)
+		const runtime = result.current.activeBufferRuntime!
+		let handle!: OrgBufferWindowHandle
+		const view = new EditorView({
+			state: EditorState.create({
+				doc: runtime.state.doc,
+				extensions: runtime.historyFreeSourceExtensions,
+			}),
+			dispatchTransactions: (transactions) => handle.dispatchTransactions(transactions),
+		})
+		handle = runtime.attachWindow({ windowId: "ack-reentrancy", view })
+		act(() => view.dispatch({ changes: { from: 0, insert: "typed " } }))
+		const source = runtime.source
+		const state = runtime.state
+		const revision = runtime.revision
+		const depth = undoDepth(state)
+		expect(depth).toBeGreaterThan(0)
+		const parked = observed.reservoir.read(observed.scope, "a.org")!
+		const parkedRuntime = registry.get({ ...runtime.key, bufferId: parked.bufferId })!
+		const parkedState = parkedRuntime.state
 		const pending = deferred<SaveResult>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
-		let parked!: { document: OrgDocumentInterface; content: string; isDirty: boolean }
-		const get = Map.prototype.get
-		const spy = vi.spyOn(Map.prototype, "get").mockImplementation(function (
-			this: Map<unknown, unknown>,
-			key: unknown,
-		) {
-			const value = get.call(this, key)
-			if (
-				key === "a.org" &&
-				value?.document?.revision === "a.org-1" &&
-				value.content === "edited a.org"
-			)
-				parked = value
-			return value
-		})
 		let saving!: ReturnType<typeof result.current.saveAllDocuments>
 		act(() => {
 			saving = result.current.saveAllDocuments()
 		})
-		spy.mockRestore()
-		expect(parked).toBeDefined()
+		commits.mockClear()
+		const listener = vi.fn(() => {
+			expect(observed.reservoir.canMutate()).toBe(false)
+			expect(() => view.dispatch({ changes: { from: 0, insert: "nested " } })).toThrow(
+				"Commit guard rejected source",
+			)
+			expect(() => handle.undo()).toThrow("Commit guard rejected source")
+			expect(() => registry.install(runtime.key, "nested active installation")).toThrow(
+				"Commit guard rejected source",
+			)
+			expect(() => registry.install(parkedRuntime.key, "nested parked installation")).toThrow(
+				"Commit guard rejected source",
+			)
+			expect(runtime.state).toBe(state)
+			expect(runtime.source).toBe(source)
+			expect(runtime.revision).toBe(revision)
+			expect(undoDepth(runtime.state)).toBe(depth)
+			expect(redoDepth(runtime.state)).toBe(0)
+			expect(parkedRuntime.state).toBe(parkedState)
+			expect(commits).not.toHaveBeenCalled()
+			// Rejection must not roll back the receipt already published to observers.
+			expect(observed.reservoir.read(observed.scope, "a.org")).toMatchObject({
+				document: { content: "edited a.org", revision: "ack" },
+				isDirty: false,
+			})
+		})
+		const stop = observed.reservoir.subscribe(listener)
+		try {
+			await act(async () => {
+				pending.resolve(E.right({ relativePath: "a.org", revision: "ack" }))
+				expect(await saving).toMatchObject({ kind: "success", remainingDirtyPaths: [] })
+			})
+			expect(listener).toHaveBeenCalledOnce()
+			expect(commits).not.toHaveBeenCalled()
+			expect(result.current.content).toBe(source)
+			expect(result.current.activeDocument?.content).toBe(source)
+			expect(runtime.state).toBe(state)
+			expect(view.state.doc.toString()).toBe(source)
+			expect(result.current.openBuffers.every((buffer) => !buffer.isDirty)).toBe(true)
+			expect(saveOrgDocumentFlow).toHaveBeenLastCalledWith(
+				expect.objectContaining({
+					relativePath: "b.org",
+					content: source,
+				}),
+			)
+			// No accepted mirror/phantom edit: the next real undo still consumes the original event.
+			act(() => {
+				expect(handle.undo()).toBe(true)
+			})
+			expect(runtime.source).toBe("edited b.org")
+			expect(result.current.content).toBe("edited b.org")
+			expect(result.current.isDirty).toBe(true)
+		} finally {
+			stop()
+			handle.detach()
+			view.destroy()
+		}
+	})
+	it("subscribes the real root to parked receipts and fences reentrant foreign retirement", async () => {
+		const observed = observeParkedReservoir()
+		const { result } = await setup(2)
+		const { reservoir, scope } = observed
+		const parked = reservoir.read(scope, "a.org")!
+		const foreign = { sessionId: scope.sessionId, grant: {} }
+		let nestedClose!: Promise<boolean>
+		const listener = vi.fn(() => {
+			nestedClose = result.current.closeDocumentPath("a.org")
+			result.current.updateContent("nested active input")
+			const snapshot = reservoir.getSnapshot()
+			expect(reservoir.retire(foreign, parked.bufferId)).toBe(false)
+			expect(reservoir.retire(scope, parked.bufferId)).toBe(false)
+			expect(reservoir.getSnapshot()).toBe(snapshot)
+		})
+		const stop = reservoir.subscribe(listener)
+		act(() => {
+			reservoir.mirrorReplacement(scope, parked.bufferId, {
+				previous: parked.content,
+				source: parked.document.content,
+			})
+		})
+		expect(listener).toHaveBeenCalledOnce()
+		expect(await nestedClose).toBe(false)
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.bufferId === parked.bufferId)?.isDirty,
+		).toBe(false)
+		expect(result.current.content).toBe("edited b.org")
+		expect(result.current.error).toContain("reentrant")
+		stop()
+	})
+	it.each([
+		"same-revision",
+		"new-revision",
+	])("rejects parked batch baseline drift (%s) without overwriting and latches conflict", async (mode) => {
+		const observed = observeParkedReservoir()
+		const { result } = await setup(2)
+		const pending = deferred<SaveResult>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+		const parked = observed.reservoir.read(observed.scope, "a.org")!
+		let saving!: ReturnType<typeof result.current.saveAllDocuments>
+		act(() => {
+			saving = result.current.saveAllDocuments()
+		})
 		const drift = {
 			...documents[0],
 			content: "drift under same ID",
 			revision: mode === "same-revision" ? "a.org-1" : "new-revision",
 		}
-		parked.document = drift
+		act(() => {
+			observed.reservoir.installConfirmedBaseline(observed.scope, parked.bufferId, parked, {
+				document: drift,
+				isDirty: true,
+			})
+		})
 		await act(async () => {
 			pending.resolve(E.right({ relativePath: "a.org", revision: "must-not-install" }))
 			expect(await saving).toMatchObject({
@@ -3287,7 +3438,7 @@ describe("Org save-all snapshot transaction", () => {
 				remainingDirtyPaths: ["a.org", "b.org"],
 			})
 		})
-		expect(parked.document).toBe(drift)
+		expect(observed.reservoir.read(observed.scope, "a.org")?.document).toEqual(drift)
 		expect(parked.content).toBe("edited a.org")
 		expect(
 			result.current.openBuffers.find((buffer) => buffer.relativePath === "a.org"),
@@ -3333,6 +3484,7 @@ describe("Org save-all snapshot transaction", () => {
 		[3, "relativePath"],
 		[3, "logicalID"],
 	] as const)("stops before a later member write on baseline/lease drift (count %s, %s)", async (count, drift) => {
+		const observed = observeParkedReservoir()
 		const { result } = await setup(count)
 		const pending = deferred<SaveResult>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
@@ -3371,7 +3523,19 @@ describe("Org save-all snapshot transaction", () => {
 		const id = ids.get("b.org")!
 		try {
 			if (drift === "logicalID") ids.set("b.org", "replacement-logical-ID")
-			else documents[1][drift] = `mutated ${drift}`
+			else if (count === 3) {
+				const parked = observed.reservoir.read(observed.scope, "b.org")!
+				// Paths cannot be corrupted through this port; replace the baseline instead.
+				act(() => {
+					observed.reservoir.installConfirmedBaseline(observed.scope, parked.bufferId, parked, {
+						document: {
+							...parked.document,
+							[drift === "relativePath" ? "revision" : drift]: `mutated ${drift}`,
+						},
+						isDirty: true,
+					})
+				})
+			} else documents[1][drift] = `mutated ${drift}`
 			expect(captured).toEqual(original)
 			await act(async () => {
 				pending.resolve(E.right({ relativePath: "a.org", revision: "first-confirmed" }))
@@ -4021,38 +4185,30 @@ describe("Org save-all snapshot transaction", () => {
 	})
 
 	it("preserves a newer same-ID inactive baseline and body, latching conflict without retirement or retry", async () => {
+		const observed = observeParkedReservoir()
 		const { result } = await setup(2)
 		const id = result.current.openBuffers.find(
 			(buffer) => buffer.relativePath === "a.org",
 		)!.bufferId
 		const pending = deferred<SaveResult>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
-		// Narrow structural fault injection: retain the actual parked fixture only
-		// during capture, without exposing any production mutation API.
-		let parked!: { document: OrgDocumentInterface; content: string; isDirty: boolean }
-		const get = Map.prototype.get
-		const spy = vi.spyOn(Map.prototype, "get").mockImplementation(function (
-			this: Map<unknown, unknown>,
-			key: unknown,
-		) {
-			const value = get.call(this, key)
-			if (
-				key === "a.org" &&
-				value?.document?.revision === "a.org-1" &&
-				value.content === "edited a.org"
-			)
-				parked = value
-			return value
-		})
+		let parked = observed.reservoir.read(observed.scope, "a.org")!
 		let closing!: Promise<boolean>
 		act(() => {
 			closing = result.current.closeDocumentPath("a.org")
 		})
-		spy.mockRestore()
-		expect(parked).toBeDefined()
-		parked.document = { ...documents[0], content: "newer baseline", revision: "newer-revision" }
-		parked.content = "newer working body"
-		parked.isDirty = true
+		act(() => {
+			parked = observed.reservoir.installConfirmedBaseline(
+				observed.scope,
+				parked.bufferId,
+				parked,
+				{
+					document: { ...documents[0], content: "newer baseline", revision: "newer-revision" },
+					content: "newer working body",
+					isDirty: true,
+				},
+			)!
+		})
 		await act(async () => {
 			pending.resolve(E.right({ relativePath: "a.org", revision: "old-write-ack" }))
 			expect(await closing).toBe(false)

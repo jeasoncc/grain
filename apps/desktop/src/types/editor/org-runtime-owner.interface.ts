@@ -16,6 +16,8 @@ export interface OrgRuntimeCommitContext {
 	}
 	readonly runtimeBufferId: string
 	readonly loading: boolean
+	/** Independent fence: observer notification must not permit any source commit. */
+	readonly notificationInProgress: boolean
 	readonly mutationInProgress: boolean
 	readonly ordinarySaveInFlight: boolean
 }
@@ -29,6 +31,7 @@ export type OrgRuntimeCommitRejection =
 	| "stale-source"
 	| "loading"
 	| "mutation-in-progress"
+	| "notification-in-progress"
 
 export type OrgRuntimeCommitDecision =
 	| {

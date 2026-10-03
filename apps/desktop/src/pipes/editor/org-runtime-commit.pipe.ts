@@ -19,6 +19,12 @@ export const guardOrgRuntimeCommit = (
 	if (!context.grantMatches) return reject("wrong-grant", "The workspace grant has changed.")
 	if (!context.sessionMatches) return reject("wrong-session", "The workspace session has changed.")
 
+	if (context.notificationInProgress)
+		return reject(
+			"notification-in-progress",
+			"Cannot commit source during reentrant observer notification.",
+		)
+
 	const installation = context.authorizedInstallation
 	const authorized = Boolean(
 		installation &&

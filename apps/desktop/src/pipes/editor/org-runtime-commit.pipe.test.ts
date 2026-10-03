@@ -13,6 +13,7 @@ const base: OrgRuntimeCommitContext = Object.freeze({
 	activeSource: "old",
 	runtimeBufferId: "G1:buffer-1",
 	loading: false,
+	notificationInProgress: false,
 	mutationInProgress: false,
 	ordinarySaveInFlight: false,
 })
@@ -142,6 +143,28 @@ describe("guardOrgRuntimeCommit", () => {
 			expect(decision).toMatchObject({ kind: "rejected", reason: expected })
 			if (decision.kind === "rejected") expect(decision.message.length).toBeGreaterThan(0)
 		} else expect(decision).toEqual(expected)
+	})
+
+	it.each([
+		["active edit", {}],
+		["ordinary save edit", { mutationInProgress: true, ordinarySaveInFlight: true }],
+		["active installation", { authorizedInstallation: installation }],
+		[
+			"parked installation",
+			{
+				isActiveOwner: false,
+				parkedSource: "old",
+				authorizedInstallation: installation,
+				ordinarySaveInFlight: true,
+			},
+		],
+	] as const)("notification rejects %s before save/installation exceptions", (_name, patch) => {
+		const context = Object.freeze({ ...base, ...patch, notificationInProgress: true })
+		expect(guardOrgRuntimeCommit(context)).toEqual({
+			kind: "rejected",
+			reason: "notification-in-progress",
+			message: "Cannot commit source during reentrant observer notification.",
+		})
 	})
 
 	it("exhaustively preserves the Boolean contract across authority, destination, bodies and installations", () => {

@@ -446,10 +446,23 @@ removal retire it, and reopen allocates a distinct identity/runtime. Reopen test
 assert successful navigation and non-null objects rather than accepting null as
 merely different from a retired object.
 
+`org-parked-working-copy-reservoir.ts` now owns immutable parked mirror/baseline
+snapshots, exact scope/ID lifecycle and stable revision subscriptions. The hook
+uses `useSyncExternalStore` for these snapshots rather than owning a mutable
+parked Map. Park/mirror/confirmed-baseline/activation/rename/retirement are
+explicit operations; pure plans remain outside the reservoir, and canonical
+source/history remain runtime-owned. Listener failures cannot unwind committed
+mirrors; reentrant mutations are rejected before commit. The runtime permit has
+an independent notification fence, not a fake mutation flag that ordinary-save
+or authorized-install exceptions could bypass. Production tests dispatch real
+transactions, undo and installs during a Save All ACK notification to prove this.
+Snapshot/subscription access is internal to the persistent React root, not an
+extension-facing unscoped permission API.
+
 This is the beginning, not completion, of splitting lifecycle/state reservoirs,
 file effects and presentation. It does not weaken the experience target to avoid
-larger window/config/workflow work. Full desktop verification: 156 files /2563
-cases, typecheck/build pass (2026-10-03 15:02 +08:00).
+larger window/config/workflow work. Full desktop verification: 157 files /2577
+cases, typecheck/build pass (2026-10-03 16:09 +08:00).
 
 ## Next decision gates and work
 
