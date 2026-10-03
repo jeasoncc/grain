@@ -15,8 +15,13 @@ privileges, recovery journals and general-purpose editing scope remain separate
 product/security decisions. Continue implementation and verification without
 waiting for user approval at ordinary phase commits.
 
-The full goal report is the Org-roam node `4212813a-27e4-4f70-9fb8-c2c6867a9741`,
-“Grain面向Doom工作环境的编辑器重构目标”, dated 2026-09-30.
+The authoritative implementation goal is now the Org-roam node
+`f46e42b4-809e-454f-abff-3e37f79473c9`,
+“Grain面向Doom体验一致性的工作环境架构与实施目标”, dated 2026-10-03:
+`~/org-roam/report/year-2026-Horse/month-10-October/day-03-Saturday/Grain面向Doom体验一致性的工作环境架构与实施目标.org`.
+Continue implementation, verification and goal updates against this new document.
+The previous September 30 goal is historical only; do not append work to it.
+Changing the document does not reset progress, reduce requirements or complete the goal.
 
 ## Target boundaries
 
