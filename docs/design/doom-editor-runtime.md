@@ -349,7 +349,7 @@ read cancellation. Desktop 146 files / 2362 cases, typecheck/build pass; scoped
 review has no remaining critical/warnings. Same-file refile, full Org target
 configuration, multi-window runtime and native/user acceptance remain pending.
 
-## S4c: production canonical buffer and same-buffer split
+## S4c: production canonical buffer and same-buffer split (historical milestone)
 
 Main-file views now attach to `flows/org-editor-runtime`: one public CodeMirror
 state owns text/history; window states contain no history. The controller's live
@@ -387,7 +387,8 @@ A/B handoff, focus/metadata, save/new-input races, coherent external changes and
 incarnation reset. Desktop 150 files /2436 cases, typecheck/build pass; scoped
 review found no remaining critical/warnings after the ownership fixes.
 
-This is not different-buffer simultaneous windows, detached/native windows,
+At the S4c milestone this was not different-buffer simultaneous windows (now
+implemented in the independent split slice below), detached/native windows,
 restart recovery, arbitrary extension support, Vim adoption or real IME/desktop
 performance acceptance. Those remain explicit goal requirements/gates.
 
@@ -464,12 +465,45 @@ file effects and presentation. It does not weaken the experience target to avoid
 larger window/config/workflow work. Full desktop verification: 157 files /2577
 cases, typecheck/build pass (2026-10-03 16:09 +08:00).
 
+## Independent split buffers: production window routing
+
+Split starts with one shared buffer, then navigation changes only the focused
+binding. Open-memory focus handoff is synchronous, without an asynchronous read
+that loses the first command; `.org` remains the persistent authority, with
+watch/refresh/CAS handling disk changes. Live snapshots expose canonical runtime
+and mirror/baseline state, not a second body/history owner. Registered window
+leases authorize active **and** parked edits. A null-origin direct source commit
+is denied unless the trusted registry explicitly authorizes installation.
+
+```text
+Window primary -> scoped lease -> canonical A -> active/parked source mirror
+Window secondary -> scoped lease -> canonical B -> active/parked source mirror
+Focus -> memory-only context activation -> metadata / save / link / reveal
+Undo caller lease -> history transaction; restored selection origin is separate
+```
+
+Busy cross-buffer focus is visibly deferred/read-only rather than invalidating
+an in-flight save owner. Consumed/IME events cannot activate or trigger commands;
+copy and navigation remain available. Once busy clears, toolbar availability and
+commands use the fenced pending origin—even without another editor key/focus
+event—and fresh controller/parameter refs. Pointer modifier-link navigation
+activates its originating window rather than stealing the peer's context.
+
+Actual container/CodeMirror regressions cover A/B independent editing/history,
+focus Tags/Save, newer parked Save All input, close-focused-buffer peer survival,
+close-all/reopen/close-split, rename identity, revoked/rebound leases, history
+caller versus selection origin, pending copy→toolbar commands, links, consumed
+and composition guards, and same-root G1/G2 cache fencing. Final automated
+verification: 157 files /2601 tests, typecheck/build pass (2026-10-03 17:21 +08:00).
+This does not claim detached/native windows, fully independent mutation owners,
+real native Chinese IME or user workflow acceptance.
+
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.
 2. Validate existing Vim extensions, IME, undo/registers/macros and text-object APIs.
-3. Extend the production same-active-buffer split to independent buffer/window
-   routing and detached windows, with extension effects/lifecycle gates.
+3. Extend production independent split routing to detached/native windows and
+   independent effect-owner contexts, with extension effects/lifecycle gates.
 4. Establish shared source-range Org semantics and measured large-file behavior.
 5. Promote the command/session host; migrate planning/properties, Quick Open,
    Refile and Capture one workflow at a time.

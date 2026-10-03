@@ -13,6 +13,8 @@ function fixture() {
 	const updateContent = vi.fn()
 	const saveDocument = vi.fn()
 	const controller = {
+		activeBufferId: path,
+		activeBufferRuntime: null,
 		activeDocument: { relativePath: path, content: source },
 		workspace: { rootPath: "/workspace/one", documents: [] },
 		content: source,

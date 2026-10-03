@@ -167,7 +167,7 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 		if (changed) {
 			let allowed = false
 			try {
-				allowed = options.canCommit(previousSource, source)
+				allowed = options.canCommit(previousSource, source, origin)
 			} catch (cause) {
 				fail("callback-failed", "Commit guard threw before canonical advance", cause)
 			}
@@ -384,7 +384,8 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 						selection: restored.value.selection,
 					}).state
 				: tr.state
-			commit(next, projections, target.options.windowId, null)
+			// Selection restoration belongs to the historical origin; authority belongs to the caller.
+			commit(next, projections, slot.options.windowId, null)
 			return true
 		} finally {
 			busy = false

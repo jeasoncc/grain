@@ -9,6 +9,7 @@ export interface OrgWorkspaceRuntimePorts {
 		key: OrgBufferKey,
 		previous: string,
 		next: string,
+		originWindowId: string | null,
 	) => OrgRuntimeCommitContext
 	readonly commitSource: (key: OrgBufferKey, source: string) => void
 	/** Root must prove the captured grant and key are still current, including parked keys. */
@@ -36,8 +37,8 @@ export const createOrgWorkspaceRuntimeRegistry = () => {
 		const runtime = createOrgBufferRuntime({
 			key,
 			source,
-			canCommit: (previous, next) => {
-				const context = ports.readCommitContext(key, previous, next)
+			canCommit: (previous, next, originWindowId) => {
+				const context = ports.readCommitContext(key, previous, next, originWindowId)
 				return (
 					guardOrgRuntimeCommit({
 						...context,
@@ -68,6 +69,16 @@ export const createOrgWorkspaceRuntimeRegistry = () => {
 		} finally {
 			installation = null
 		}
+	}
+	/** Legacy Root edits retain no-history semantics, but cannot borrow stale owner authority. */
+	const updateSource = (
+		key: OrgBufferKey,
+		expected: string,
+		source: string,
+		isCurrentOwner: () => boolean,
+	): boolean => {
+		if (!isCurrentOwner() || get(key)?.source !== expected) return false
+		return install(key, source)
 	}
 	const activate = (
 		key: OrgBufferKey,
@@ -101,5 +112,5 @@ export const createOrgWorkspaceRuntimeRegistry = () => {
 		for (const runtime of runtimes.values()) runtime.close()
 		runtimes.clear()
 	}
-	return { get, create, install, activate, retire, close }
+	return { get, create, install, updateSource, activate, retire, close }
 }

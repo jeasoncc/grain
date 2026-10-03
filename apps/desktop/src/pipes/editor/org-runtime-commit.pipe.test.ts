@@ -8,6 +8,8 @@ const base: OrgRuntimeCommitContext = Object.freeze({
 	grantMatches: true,
 	sessionMatches: true,
 	isActiveOwner: true,
+	originWindowId: "window-A",
+	registeredWindowBufferId: "G1:buffer-1",
 	previous: "old",
 	next: "new",
 	activeSource: "old",
@@ -24,35 +26,60 @@ const accepted = (destination: "active" | "parked", reason: "edit" | "installati
 	reason,
 })
 
-// Independent transcription of the pre-extraction Boolean contract.
-const legacyAccepts = (c: OrgRuntimeCommitContext): boolean => {
-	const exactOwner =
-		c.mounted && c.closeReady && c.grantMatches && c.sessionMatches && c.isActiveOwner
-	const i = c.authorizedInstallation
+// Independent authority contract with explicit legitimate window leases.
+const authorityAccepts = (c: OrgRuntimeCommitContext): boolean => {
 	if (
-		!exactOwner &&
-		i?.bufferId === c.runtimeBufferId &&
-		i.expected === c.previous &&
-		i.next === c.next &&
-		c.mounted &&
-		c.closeReady &&
-		c.grantMatches &&
-		c.sessionMatches &&
-		c.parkedSource !== undefined &&
-		c.parkedSource === c.previous
+		!c.mounted ||
+		!c.closeReady ||
+		!c.grantMatches ||
+		!c.sessionMatches ||
+		c.notificationInProgress
 	)
-		return true
+		return false
+	const i = c.authorizedInstallation
+	const authorized = Boolean(
+		i && i.bufferId === c.runtimeBufferId && i.expected === c.previous && i.next === c.next,
+	)
+	const source = c.isActiveOwner ? c.activeSource : c.parkedSource
 	return (
-		exactOwner &&
-		c.previous === c.activeSource &&
-		(Boolean(
-			i && i.bufferId === c.runtimeBufferId && i.expected === c.previous && i.next === c.next,
-		) ||
-			(!c.loading && (!c.mutationInProgress || c.ordinarySaveInFlight)))
+		source === c.previous &&
+		(authorized ||
+			(Boolean(c.originWindowId) &&
+				c.registeredWindowBufferId === c.runtimeBufferId &&
+				!c.loading &&
+				(!c.mutationInProgress || c.ordinarySaveInFlight)))
 	)
 }
 
 describe("guardOrgRuntimeCommit", () => {
+	it.each([
+		true,
+		false,
+	])("requires exact leases for ordinary edits (active=%s)", (isActiveOwner) => {
+		const context = { ...base, isActiveOwner, parkedSource: base.previous }
+		for (const patch of [
+			{ originWindowId: null },
+			{ originWindowId: undefined },
+			{ registeredWindowBufferId: undefined }, // missing or revoked
+			{ registeredWindowBufferId: "B" }, // wrong or rebound
+		]) {
+			expect(guardOrgRuntimeCommit({ ...context, ...patch })).toMatchObject({
+				kind: "rejected",
+				reason: "inactive-owner",
+			})
+		}
+		expect(guardOrgRuntimeCommit(context)).toEqual(
+			accepted(isActiveOwner ? "active" : "parked", "edit"),
+		)
+		expect(
+			guardOrgRuntimeCommit({
+				...context,
+				originWindowId: null,
+				registeredWindowBufferId: undefined,
+				authorizedInstallation: installation,
+			}),
+		).toEqual(accepted(isActiveOwner ? "active" : "parked", "installation"))
+	})
 	it.each([
 		["ordinary edit", {}, accepted("active", "edit")],
 		[
@@ -84,17 +111,22 @@ describe("guardOrgRuntimeCommit", () => {
 		],
 		[
 			"no user-writable inactive buffer",
-			{ isActiveOwner: false, parkedSource: "old" },
+			{ isActiveOwner: false, parkedSource: "old", originWindowId: null },
 			"inactive-owner",
 		],
 		[
 			"no parked body",
-			{ isActiveOwner: false, authorizedInstallation: installation },
+			{ isActiveOwner: false, authorizedInstallation: installation, originWindowId: null },
 			"inactive-owner",
 		],
 		[
 			"wrong parked body",
-			{ isActiveOwner: false, parkedSource: "different", authorizedInstallation: installation },
+			{
+				isActiveOwner: false,
+				parkedSource: "different",
+				authorizedInstallation: installation,
+				originWindowId: null,
+			},
 			"inactive-owner",
 		],
 		[
@@ -199,7 +231,7 @@ describe("guardOrgRuntimeCommit", () => {
 							authorizedInstallation,
 						})
 						const decision = guardOrgRuntimeCommit(context)
-						expect(decision.kind === "accepted").toBe(legacyAccepts(context))
+						expect(decision.kind === "accepted").toBe(authorityAccepts(context))
 						if (decision.kind === "accepted") {
 							expect(decision.destination).toBe(context.isActiveOwner ? "active" : "parked")
 							expect(decision.reason).toBe(
@@ -253,6 +285,7 @@ describe("guardOrgRuntimeCommit", () => {
 				...context,
 				isActiveOwner: false,
 				parkedSource: other,
+				originWindowId: null,
 				authorizedInstallation: { ...installation, expected: previous },
 			}),
 		).toMatchObject({ kind: "rejected", reason: "inactive-owner" })
@@ -260,9 +293,14 @@ describe("guardOrgRuntimeCommit", () => {
 
 	it("ABA active ownership permits the retained runtime only with the current literal body", () => {
 		expect(guardOrgRuntimeCommit(base)).toEqual(accepted("active", "edit"))
-		expect(guardOrgRuntimeCommit({ ...base, isActiveOwner: false, parkedSource: "old" }).kind).toBe(
-			"rejected",
-		)
+		expect(
+			guardOrgRuntimeCommit({
+				...base,
+				isActiveOwner: false,
+				parkedSource: "old",
+				originWindowId: null,
+			}).kind,
+		).toBe("rejected")
 		expect(guardOrgRuntimeCommit({ ...base, activeSource: "after B" }).kind).toBe("rejected")
 		expect(
 			guardOrgRuntimeCommit({ ...base, previous: "after B", activeSource: "after B" }),

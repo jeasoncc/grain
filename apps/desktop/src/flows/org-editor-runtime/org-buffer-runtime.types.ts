@@ -42,7 +42,11 @@ export class OrgBufferRuntimeError extends Error {
 export interface OrgBufferRuntimeOptions {
 	readonly key: OrgBufferKey
 	readonly source: string
-	readonly canCommit: (previousSource: string, nextSource: string) => boolean
+	readonly canCommit: (
+		previousSource: string,
+		nextSource: string,
+		originWindowId: string | null,
+	) => boolean
 	readonly onCommit: (receipt: OrgBufferCommitReceipt) => void
 	readonly onError?: (error: OrgBufferRuntimeError) => void
 }

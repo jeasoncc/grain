@@ -6,9 +6,11 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import * as E from "fp-ts/Either"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
+	moveOrgDocumentFlow,
 	openDefaultOrgWorkspaceFlow,
 	openOrgDocumentFlow,
 	saveOrgDocumentFlow,
+	resolveOrgLinkTargetFlow,
 	scanOrgWorkspaceFlow,
 } from "@/flows/org-workspace"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
@@ -94,13 +96,11 @@ vi.mock("@/flows/org-editor-runtime", async (original) => {
 	}
 })
 function views() {
-	return screen
-		.getAllByRole("textbox", { name: `Editing ${controller.activeDocument?.relativePath}` })
-		.map((node) => {
-			const view = EditorView.findFromDOM(node)
-			if (!view) throw new Error("Missing production EditorView")
-			return view
-		})
+	return screen.getAllByRole("textbox", { name: /^Editing / }).map((node) => {
+		const view = EditorView.findFromDOM(node)
+		if (!view) throw new Error("Missing production EditorView")
+		return view
+	})
 }
 const left = () => views()[0]
 const right = () => views()[1]
@@ -131,7 +131,11 @@ function key(view: EditorView, redo = false) {
 function source(expected: string) {
 	expect(controller.content).toBe(expected)
 	expect(controller.activeBufferRuntime!.source).toBe(expected)
-	for (const view of views()) {
+	for (const view of views().filter(
+		(view) =>
+			view.contentDOM.getAttribute("aria-label") ===
+			`Editing ${controller.activeDocument?.relativePath}`,
+	)) {
 		expect(view.state.sliceDoc()).toBe(expected)
 		expect(undoDepth(view.state)).toBe(0)
 		expect(redoDepth(view.state)).toBe(0)
@@ -149,8 +153,17 @@ async function open(path: string) {
 		expect(await controller.openDocumentPath(path)).toBe(true)
 	})
 }
+let consumeReactKey = false
 async function setup() {
-	render(<OrgWorkspaceContainer />)
+	render(
+		<div
+			onKeyDownCapture={(event) => {
+				if (consumeReactKey) event.preventDefault()
+			}}
+		>
+			<OrgWorkspaceContainer />
+		</div>,
+	)
 	await act(async () => {
 		await controller.openDefaultWorkspace()
 	})
@@ -162,6 +175,7 @@ async function setup() {
 beforeEach(() => {
 	vi.useFakeTimers()
 	vi.resetAllMocks()
+	consumeReactKey = false
 
 	window.localStorage.clear()
 	vi.spyOn(window, "matchMedia").mockImplementation((query) => ({
@@ -178,6 +192,7 @@ beforeEach(() => {
 	disk = new Map([
 		["a.org", { relativePath: "a.org", content: rawA, revision: "a-1" }],
 		["b.org", { relativePath: "b.org", content: rawB, revision: "b-1" }],
+		["c.org", { relativePath: "c.org", content: "* C\n", revision: "c-1" }],
 	])
 	workspace = {
 		rootPath: "/notes",
@@ -209,7 +224,155 @@ afterEach(() => {
 	vi.restoreAllMocks()
 })
 
-describe("production root same-buffer split (synthetic host IO, real hook/pane/editor/runtime)", () => {
+describe("production root independently bound split (synthetic host IO, real hook/pane/editor/runtime)", () => {
+	it("ordinary parked-window key hands off before input, and immediate metadata/save use fresh A source and target", async () => {
+		await setup()
+		const a = left()
+		act(() => a.dispatch({ selection: { anchor: a.state.doc.length } }))
+		type(a, "A edit")
+		const runtimeA = controller.activeBufferRuntime!
+		focus(right())
+		await open("b.org")
+		const b = right(),
+			runtimeB = controller.activeBufferRuntime!
+		type(b, "B edit")
+		// Deliver directly to the parked DOM: no helper focus/activation before the key.
+		await act(async () => {
+			fireEvent.keyDown(a.contentDOM, { key: "s", ctrlKey: true })
+			await Promise.resolve()
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		expect(saveOrgDocumentFlow).toHaveBeenCalledWith(
+			expect.objectContaining({ relativePath: "a.org", content: rawA + "A edit" }),
+		)
+		focus(a)
+		focus(b)
+		act(() => a.dispatch({ selection: { anchor: 2 } }))
+		fireEvent.keyDown(a.contentDOM, { key: "c", ctrlKey: true })
+		fireEvent.keyDown(a.contentDOM, { key: "q", ctrlKey: true })
+		const input = screen.getByRole("combobox", { name: "Tags:" })
+		fireEvent.change(input, { target: { value: "freshA" } })
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(runtimeA.source).toBe(rawA.replace(":raw:", ":freshA:") + "A edit")
+		expect(runtimeB.source).toBe("B edit" + rawB)
+		focus(b)
+		const typing = new KeyboardEvent("keydown", { key: "x", bubbles: true, cancelable: true })
+		fireEvent(a.contentDOM, typing)
+		expect(typing.defaultPrevented).toBe(false)
+		expect(controller.activeBufferRuntime).toBe(runtimeA)
+		expect(a.state.facet(EditorState.readOnly)).toBe(false)
+		// jsdom has no native text insertion; deliver the browser's subsequent transaction.
+		const before = runtimeA.source
+		const at = a.state.selection.main.from
+		act(() => a.dispatch({ changes: { from: at, insert: "x" }, userEvent: "input.type" }))
+		expect(runtimeA.source).toBe(before.slice(0, at) + "x" + before.slice(at))
+		expect(runtimeB.source).toBe("B edit" + rawB)
+	})
+
+	it("actual focused B tab close keeps parked A mounted, usable and its history intact", async () => {
+		await setup()
+		const a = left()
+		const runtimeA = controller.activeBufferRuntime!
+		type(a, "kept")
+		focus(right())
+		await open("b.org")
+		const runtimeB = controller.activeBufferRuntime!
+		await act(async () => {
+			fireEvent.click(screen.getByRole("button", { name: "Close b.org" }))
+		})
+		expect(runtimeB.closed).toBe(true)
+		expect(controller.activeBufferRuntime).toBe(runtimeA)
+		expect(left()).toBe(a)
+		expect(views().every((view) => view.state.sliceDoc() === "kept" + rawA)).toBe(true)
+		expect(undoDepth(runtimeA.state)).toBe(1)
+		key(a)
+		expect(runtimeA.source).toBe(rawA)
+		type(a, "usable")
+		expect(runtimeA.source).toBe("usable" + rawA)
+	})
+
+	it("secondary close all tabs, open C and close split retains exactly one working C lease/target", async () => {
+		await setup()
+		focus(right())
+		await open("b.org")
+		await act(async () => {
+			fireEvent.click(screen.getByRole("button", { name: "Close b.org" }))
+		})
+		await act(async () => {
+			fireEvent.click(screen.getByRole("button", { name: "Close a.org" }))
+		})
+		expect(controller.activeDocument).toBeNull()
+		expect(screen.queryAllByRole("textbox", { name: /^Editing / })).toHaveLength(0)
+		await open("c.org")
+		fireEvent.click(screen.getByRole("button", { name: "Close editor split" }))
+		expect(views()).toHaveLength(1)
+		expect(left().contentDOM.getAttribute("aria-label")).toBe("Editing c.org")
+		type(left(), "C edit")
+		expect(controller.activeBufferRuntime!.source).toBe("C edit* C\n")
+		fireEvent.keyDown(left().contentDOM, { ctrlKey: true, key: "s" })
+		await act(async () => {
+			await Promise.resolve()
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledWith(
+			expect.objectContaining({ relativePath: "c.org", content: "C edit* C\n" }),
+		)
+	})
+
+	it.each([
+		"ctrlKey",
+		"metaKey",
+	] as const)("real CM %s mousedown link on unfocused A routes fresh A controller, preserves B and refuses busy handoff", async (modifier) => {
+		const linkedA = "* A\n[[file:c.org][C]]\n"
+		disk.set("a.org", { relativePath: "a.org", content: linkedA, revision: "a-1" })
+		await setup()
+		const a = left()
+		focus(right())
+		await open("b.org")
+		const b = right(),
+			runtimeB = controller.activeBufferRuntime!
+		vi.spyOn(a, "posAtCoords").mockReturnValue(linkedA.indexOf("file:") + 2)
+		vi.mocked(resolveOrgLinkTargetFlow).mockReturnValue(() =>
+			Promise.resolve(E.right({ relativePath: "c.org", line: 1, expectedRevision: "c-1" })),
+		)
+		type(b, "dirty")
+		let finish!: (result: Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>) => void
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(
+			() =>
+				new Promise((resolve) => {
+					finish = resolve
+				}),
+		)
+		let saving!: Promise<void>
+		await act(async () => {
+			saving = controller.saveDocument()
+			await Promise.resolve()
+		})
+		const scans = vi.mocked(scanOrgWorkspaceFlow).mock.calls.length
+		fireEvent.mouseDown(a.contentDOM, { button: 0, [modifier]: true })
+		expect(scanOrgWorkspaceFlow).toHaveBeenCalledTimes(scans)
+		expect(controller.activeBufferRuntime).toBe(runtimeB)
+		expect(resolveOrgLinkTargetFlow).not.toHaveBeenCalled()
+		expect(left()).toBe(a)
+		await act(async () => {
+			finish(E.right({ relativePath: "b.org", revision: "b-saved" }))
+			await saving
+		})
+		await act(async () => {
+			fireEvent.mouseDown(a.contentDOM, { button: 0, [modifier]: true })
+			await Promise.resolve()
+		})
+		expect(resolveOrgLinkTargetFlow).toHaveBeenCalledWith(
+			expect.anything(),
+			"a.org",
+			linkedA,
+			expect.objectContaining({ relativePath: "c.org" }),
+		)
+		expect(controller.activeDocument!.relativePath).toBe("c.org")
+		expect(left().contentDOM.getAttribute("aria-label")).toBe("Editing c.org")
+		expect(right()).toBe(b)
+		expect(runtimeB.source).toBe("dirty" + rawB)
+	})
+
 	it("commits ordinary left/right input once, restores origin range on peer undo, and closes focused secondary without losing history", async () => {
 		await setup()
 		const a = left(),
@@ -265,7 +428,7 @@ describe("production root same-buffer split (synthetic host IO, real hook/pane/e
 		expect(disk.get("a.org")!.content).toBe(first + "RIGHT")
 	})
 
-	it("keeps both windows on B, parks dirty per-ID history and restores individual A/B caret/fold/scroll caches", async () => {
+	it("navigates only the focused window and retains independent A/B source, history and view caches", async () => {
 		await setup()
 		const runtimeA = controller.activeBufferRuntime!,
 			idA = controller.activeBufferId
@@ -297,19 +460,20 @@ describe("production root same-buffer split (synthetic host IO, real hook/pane/e
 		type(right(), "B edit")
 		left().scrollDOM.scrollTop = 12
 		right().scrollDOM.scrollTop = 66
-		const selectionB = views().map((v) => v.state.selection.toJSON())
+		const selectionB = right().state.selection.toJSON()
 		expect(controller.openBuffers.filter((buffer) => buffer.isDirty)).toHaveLength(2)
 		await open("a.org")
 		act(() => vi.advanceTimersByTime(32))
 		expect(controller.activeBufferId).toBe(idA)
 		expect(controller.activeBufferRuntime).toBe(runtimeA)
-		expect(left()).not.toBe(originalAViews[0])
+		expect(left()).toBe(originalAViews[0])
 		expect(right()).not.toBe(originalAViews[1])
 		source(rawA + "A edit")
-		expect(views().map((v) => v.state.selection.toJSON())).toEqual(selectionA)
+		expect(right().state.selection.toJSON()).toEqual(selectionA[1])
+		expect(left().state.selection.main.head).toBe(2)
 		expect(folds(left())).toBe(1)
 		expect(folds(right())).toBe(0)
-		expect(views().map((v) => v.scrollDOM.scrollTop)).toEqual([44, 99])
+		expect(views().map((v) => v.scrollDOM.scrollTop)).toEqual([12, 99])
 		key(right())
 		source(rawA)
 		expect(runtimeB.source).toBe(rawB + "B edit")
@@ -317,8 +481,395 @@ describe("production root same-buffer split (synthetic host IO, real hook/pane/e
 		await open("b.org")
 		act(() => vi.advanceTimersByTime(32))
 		source(rawB + "B edit")
-		expect(views().map((v) => v.state.selection.toJSON())).toEqual(selectionB)
-		expect(views().map((v) => v.scrollDOM.scrollTop)).toEqual([12, 66])
+		expect(right().state.selection.toJSON()).toEqual(selectionB)
+		expect(right().scrollDOM.scrollTop).toBe(66)
+		expect(left().state.sliceDoc()).toBe(rawA)
+		expect(left().scrollDOM.scrollTop).toBe(12)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
+	it("routes independent edits, undo, focus metadata and save to the focused buffer without reopening IO", async () => {
+		await setup()
+		focus(right())
+		await open("b.org")
+		const a = left(),
+			b = right()
+		const runtimeB = controller.activeBufferRuntime!
+		const idB = controller.activeBufferId
+		const runtimeA = controller.liveBuffers.find(
+			(buffer) => buffer.document.relativePath === "a.org",
+		)!.runtime
+		const reads = vi.mocked(openOrgDocumentFlow).mock.calls.length
+		act(() => a.dispatch({ selection: { anchor: a.state.doc.length } }))
+		type(a, "A edit")
+		expect(controller.activeBufferRuntime).toBe(runtimeA)
+		act(() => b.dispatch({ selection: { anchor: b.state.doc.length } }))
+		type(b, "B edit")
+		expect(controller.activeBufferId).toBe(idB)
+		expect(a.state.sliceDoc()).toBe(rawA + "A edit")
+		expect(b.state.sliceDoc()).toBe(rawB + "B edit")
+		key(a)
+		expect(runtimeA.source).toBe(rawA)
+		expect(runtimeB.source).toBe(rawB + "B edit")
+		key(b)
+		expect(runtimeB.source).toBe(rawB)
+		key(a, true)
+		expect(runtimeA.source).toBe(rawA + "A edit")
+		expect(views()).toEqual([a, b])
+		act(() => b.dispatch({ selection: { anchor: 2 } }))
+		focus(b)
+		expect(controller.activeBufferRuntime).toBe(runtimeB)
+		fireEvent.keyDown(b.contentDOM, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(b.contentDOM, { ctrlKey: true, key: "q" })
+		const input = screen.getByRole("combobox", { name: "Tags:" })
+		fireEvent.change(input, { target: { value: "b:focused" } })
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(runtimeB.source).toBe(rawB.replace("* B", "* B :b:focused:"))
+		expect(runtimeA.source).toBe(rawA + "A edit")
+		focus(a)
+		await act(async () => {
+			fireEvent.keyDown(a.contentDOM, { ctrlKey: true, key: "s" })
+			await Promise.resolve()
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		expect(saveOrgDocumentFlow).toHaveBeenCalledWith(
+			expect.objectContaining({ relativePath: "a.org", content: rawA + "A edit" }),
+		)
+		expect(controller.openBuffers.find((buffer) => buffer.relativePath === "b.org")!.isDirty).toBe(
+			true,
+		)
+		expect(openOrgDocumentFlow).toHaveBeenCalledTimes(reads)
+		expect(views()).toEqual([a, b])
+	})
+
+	it("defers focus handoff while a save owns B, then activates A synchronously without replacing either view", async () => {
+		await setup()
+		focus(right())
+		await open("b.org")
+		const a = left(),
+			b = right()
+		act(() => b.dispatch({ selection: { anchor: b.state.doc.length } }))
+		type(b, "captured")
+		let finish!: (result: Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>) => void
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(
+			() =>
+				new Promise((resolve) => {
+					finish = resolve
+				}),
+		)
+		let saving!: Promise<void>
+		await act(async () => {
+			saving = controller.saveDocument()
+			await Promise.resolve()
+		})
+		focus(a)
+		expect(controller.activeDocument!.relativePath).toBe("b.org")
+		expect(a.state.facet(EditorState.readOnly)).toBe(true)
+		expect(b.state.facet(EditorState.readOnly)).toBe(false)
+		act(() => a.dispatch({ selection: { anchor: 0, head: 3 } }))
+		const copy = new KeyboardEvent("keydown", {
+			key: "c",
+			ctrlKey: true,
+			bubbles: true,
+			cancelable: true,
+		})
+		fireEvent(a.contentDOM, copy)
+		expect(copy.defaultPrevented).toBe(false)
+		const nativeArrow = vi.fn((event: Event) => expect(event.defaultPrevented).toBe(false))
+		a.contentDOM.addEventListener("keydown", nativeArrow, true)
+		const arrow = new KeyboardEvent("keydown", {
+			key: "ArrowRight",
+			bubbles: true,
+			cancelable: true,
+		})
+		fireEvent(a.contentDOM, arrow)
+		a.contentDOM.removeEventListener("keydown", nativeArrow, true)
+		expect(nativeArrow).toHaveBeenCalledTimes(1)
+		const skippedKeys = () => {
+			fireEvent.keyDown(a.contentDOM, { key: "中", isComposing: true })
+			fireEvent.keyDown(a.contentDOM, { key: "Process", keyCode: 229 })
+			consumeReactKey = true
+			fireEvent.keyDown(a.contentDOM, { key: "s", ctrlKey: true })
+			consumeReactKey = false
+			const consume = (event: Event) => event.preventDefault()
+			document.addEventListener("keydown", consume, true)
+			try {
+				fireEvent.keyDown(a.contentDOM, { key: "s", metaKey: true })
+			} finally {
+				document.removeEventListener("keydown", consume, true)
+			}
+			expect(controller.activeDocument!.relativePath).toBe("b.org")
+		}
+		skippedKeys()
+		const save = new KeyboardEvent("keydown", {
+			key: "s",
+			ctrlKey: true,
+			bubbles: true,
+			cancelable: true,
+		})
+		fireEvent(a.contentDOM, save)
+		expect(save.defaultPrevented).toBe(true)
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		await act(async () => {
+			finish(E.right({ relativePath: "b.org", revision: "b-saved" }))
+			await saving
+		})
+		// ACK and consumed/composing keys must not implicitly activate the parked window.
+		skippedKeys()
+		act(() => a.dispatch({ selection: { anchor: 0, head: 3 } }))
+		const copyAfterAck = new KeyboardEvent("keydown", {
+			key: "c",
+			ctrlKey: true,
+			bubbles: true,
+			cancelable: true,
+		})
+		fireEvent(a.contentDOM, copyAfterAck)
+		expect(copyAfterAck.defaultPrevented).toBe(false)
+		a.contentDOM.addEventListener("keydown", nativeArrow, true)
+		fireEvent.keyDown(a.contentDOM, { key: "ArrowLeft", shiftKey: true })
+		a.contentDOM.removeEventListener("keydown", nativeArrow, true)
+		expect(nativeArrow).toHaveBeenCalledTimes(2)
+		expect(a.state.facet(EditorState.readOnly)).toBe(false)
+		expect(controller.activeDocument!.relativePath).toBe("a.org")
+		// Selected copy after ACK still belongs to A and is not a command prefix.
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		focus(b)
+		focus(a)
+		expect(controller.activeDocument!.relativePath).toBe("a.org")
+		expect(views()).toEqual([a, b])
+		expect(a.state.sliceDoc()).toBe(rawA)
+		expect(b.state.sliceDoc()).toBe(rawB + "captured")
+	})
+
+	it.each([
+		"save",
+		"retire",
+		"G2",
+	] as const)("actual toolbar Save uses fenced pending A after B ACK (%s)", async (outcome) => {
+		await setup()
+		const a = left()
+		type(a, "dirty A")
+		const aSource = a.state.sliceDoc()
+		const runtimeA = controller.activeBufferRuntime!
+		focus(right())
+		await open("b.org")
+		const b = right()
+		type(b, "dirty B")
+		const bSource = b.state.sliceDoc()
+		let finish!: (result: Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>) => void
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(
+			() =>
+				new Promise((resolve) => {
+					finish = resolve
+				}),
+		)
+		let saving!: Promise<void>
+		await act(async () => {
+			saving = controller.saveDocument()
+			await Promise.resolve()
+		})
+		focus(a)
+		act(() => a.dispatch({ selection: { anchor: 2, head: 3 } }))
+		fireEvent.keyDown(a.contentDOM, { key: "c", ctrlKey: true })
+		const selection = a.state.selection.main
+		expect(controller.activeDocument!.relativePath).toBe("b.org")
+		expect(screen.getByRole("button", { name: "Save document" }).hasAttribute("disabled")).toBe(
+			true,
+		)
+		await act(async () => {
+			finish(E.right({ relativePath: "b.org", revision: "b-saved" }))
+			await saving
+		})
+		expect(controller.activeDocument!.relativePath).toBe("b.org")
+		expect(controller.isDirty).toBe(false)
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		// No editor focus/key/selection event after ACK. Only the actual button
+		// may resolve the pending origin, and it must read the fresh controller.
+		if (outcome === "save") {
+			const save = screen.getByRole("button", { name: "Save document" })
+			expect(save.hasAttribute("disabled")).toBe(false)
+			await act(async () => {
+				fireEvent.click(save)
+				await Promise.resolve()
+			})
+			expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(2)
+			expect(saveOrgDocumentFlow).toHaveBeenLastCalledWith(
+				expect.objectContaining({
+					relativePath: "a.org",
+					content: aSource,
+					expectedRevision: "a-1",
+					capabilityToken: "G1",
+					workspaceRoot: "/notes",
+				}),
+			)
+			expect(
+				vi
+					.mocked(saveOrgDocumentFlow)
+					.mock.calls.filter(([input]) => input.relativePath === "b.org"),
+			).toHaveLength(1)
+			expect(controller.activeDocument!.relativePath).toBe("a.org")
+			expect(controller.activeDocument!.revision).toBe("a.org-saved")
+			expect(controller.isDirty).toBe(false)
+			expect(controller.content).toBe(aSource)
+			expect(a.state.selection.main.anchor).toBe(selection.anchor)
+			expect(a.state.selection.main.head).toBe(selection.head)
+			expect(b.state.sliceDoc()).toBe(bSource)
+		} else {
+			await act(async () => {
+				if (outcome === "retire") expect(await controller.closeDocumentPath("a.org")).toBe(true)
+				else {
+					workspace = { ...workspace, capabilityToken: "G2" }
+					await controller.openDefaultWorkspace()
+				}
+			})
+			if (outcome === "G2") await open("a.org")
+			expect(runtimeA.closed).toBe(true)
+			const calls = vi.mocked(saveOrgDocumentFlow).mock.calls.length
+			const save = screen.getByRole("button", { name: "Save document" })
+			expect(save.hasAttribute("disabled")).toBe(true)
+			fireEvent.click(save)
+			expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(calls)
+		}
+	})
+
+	it("toolbar resolves refused A focus after B save ACK without another editor event", async () => {
+		await setup()
+		const a = left()
+		focus(right())
+		await open("b.org")
+		const b = right()
+		type(b, "saved B")
+		const bSource = b.state.sliceDoc()
+		let finish!: (result: Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>) => void
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(
+			() =>
+				new Promise((resolve) => {
+					finish = resolve
+				}),
+		)
+		let saving!: Promise<void>
+		await act(async () => {
+			saving = controller.saveDocument()
+			await Promise.resolve()
+		})
+		focus(a)
+		act(() => a.dispatch({ selection: { anchor: 2, head: 3 } }))
+		fireEvent.keyDown(a.contentDOM, { key: "c", ctrlKey: true })
+		const selection = a.state.selection.main
+		expect(controller.activeDocument!.relativePath).toBe("b.org")
+		const trigger = screen.getByRole("button", { name: "Note actions" })
+		fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false })
+		fireEvent.click(trigger)
+		expect(screen.queryByRole("menu")).toBeNull()
+		expect(screen.queryByRole("combobox", { name: "Tags:" })).toBeNull()
+		await act(async () => {
+			finish(E.right({ relativePath: "b.org", revision: "b-saved" }))
+			await saving
+		})
+		// No editor focus, key, or selection event after ACK: the actual toolbar
+		// must recover the refused origin and use the freshly rendered hook.
+		fireEvent.pointerDown(screen.getByRole("button", { name: "Note actions" }), {
+			button: 0,
+			ctrlKey: false,
+		})
+		fireEvent.click(screen.getByRole("button", { name: "Note actions" }))
+		fireEvent.click(screen.getByRole("menuitem", { name: /Heading tags/ }))
+		const input = screen.getByRole("combobox", { name: "Tags:" })
+		fireEvent.change(input, { target: { value: "toolbarA" } })
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(a.state.sliceDoc()).toContain("* A :toolbarA:")
+		expect(b.state.sliceDoc()).toBe(bSource)
+		expect(controller.activeDocument!.relativePath).toBe("a.org")
+		expect(a.state.selection.main.anchor).toBe(selection.anchor)
+		expect(a.state.selection.main.head).toBe(selection.head)
+		expect(a.hasFocus).toBe(true)
+	})
+
+	it("save all ACK retains newer input committed through the mounted parked A lease", async () => {
+		await setup()
+		act(() => left().dispatch({ selection: { anchor: left().state.doc.length } }))
+		type(left(), "captured A")
+		focus(right())
+		await open("b.org")
+		const a = left(),
+			b = right()
+		act(() => b.dispatch({ selection: { anchor: b.state.doc.length } }))
+		type(b, "captured B")
+		const runtimeA = controller.liveBuffers.find(
+			(buffer) => buffer.document.relativePath === "a.org",
+		)!.runtime
+		let finish!: (result: Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>) => void
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(
+			() =>
+				new Promise((resolve) => {
+					finish = resolve
+				}),
+		)
+		let saving!: ReturnType<OrgWorkspaceController["saveAllDocuments"]>
+		await act(async () => {
+			saving = controller.saveAllDocuments()
+			await Promise.resolve()
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledWith(
+			expect.objectContaining({ relativePath: "a.org", content: rawA + "captured A" }),
+		)
+		// Direct CM dispatch represents already-delivered/in-flight input, not typing into the busy read-only pane.
+		act(() =>
+			a.dispatch({
+				changes: { from: a.state.doc.length, insert: " newer A" },
+				userEvent: "input.type",
+			}),
+		)
+		expect(controller.activeDocument!.relativePath).toBe("b.org")
+		await act(async () => {
+			finish(E.right({ relativePath: "a.org", revision: "a-captured-saved" }))
+			expect(await saving).toMatchObject({
+				kind: "partial",
+				savedPaths: ["a.org", "b.org"],
+				remainingDirtyPaths: ["a.org"],
+			})
+		})
+		expect(runtimeA.source).toBe(rawA + "captured A newer A")
+		expect(a.state.sliceDoc()).toBe(runtimeA.source)
+		expect(controller.openBuffers.find((buffer) => buffer.relativePath === "a.org")).toMatchObject({
+			isDirty: true,
+			baseRevision: "a-captured-saved",
+		})
+		expect(views()).toEqual([a, b])
+		focus(a)
+		key(a)
+		// The two adjacent synthetic input.type transactions form one canonical undo group.
+		expect(runtimeA.source).toBe(rawA)
+		expect(b.state.sliceDoc()).toBe(rawB + "captured B")
+	})
+
+	it("renames a bound buffer without changing identity and closes it without retiring the peer", async () => {
+		await setup()
+		focus(right())
+		await open("b.org")
+		const a = left(),
+			b = right(),
+			runtimeB = controller.activeBufferRuntime!,
+			idB = controller.activeBufferId
+		vi.mocked(moveOrgDocumentFlow).mockReturnValueOnce(async () =>
+			E.right({ relativePath: "renamed.org", revision: "b-1" }),
+		)
+		await act(async () => {
+			await controller.moveActiveDocument("renamed.org")
+		})
+		expect(controller.activeDocument!.relativePath).toBe("renamed.org")
+		expect(controller.activeBufferId).toBe(idB)
+		expect(controller.activeBufferRuntime).toBe(runtimeB)
+		expect(views()).toEqual([a, b])
+		expect(b.contentDOM).toHaveAttribute("aria-label", "Editing renamed.org")
+		focus(a)
+		await act(async () => {
+			expect(await controller.closeDocumentPath("renamed.org")).toBe(true)
+		})
+		expect(runtimeB.closed).toBe(true)
+		expect(left()).toBe(a)
+		source(rawA)
+		expect(controller.openBuffers.map((buffer) => buffer.relativePath)).toEqual(["a.org"])
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 	})
 
@@ -391,6 +942,7 @@ describe("production root same-buffer split (synthetic host IO, real hook/pane/e
 		})
 		source(rawB)
 		expect(views()).toHaveLength(2)
+		expect(right().state.sliceDoc()).toBe(rawA)
 		for (const view of views()) expect(view.state.facet(EditorState.readOnly)).toBe(false)
 	})
 
@@ -494,8 +1046,11 @@ describe("production root same-buffer split (synthetic host IO, real hook/pane/e
 		source("* reset\nbody")
 	})
 
-	it("fences G1 old runtime/handles/cache after G2 approval even at the same root and path", async () => {
+	it("fences both independent G1 bindings and caches after G2 approval even at the same root and path", async () => {
 		await setup()
+		const oldPeerRuntime = controller.activeBufferRuntime!
+		focus(right())
+		await open("b.org")
 		const oldRuntime = controller.activeBufferRuntime!,
 			oldSession = controller.workspaceSessionId,
 			oldViews = views()
@@ -513,6 +1068,7 @@ describe("production root same-buffer split (synthetic host IO, real hook/pane/e
 		fireEvent.click(screen.getByRole("button", { name: "Split editor" }))
 		expect(controller.workspaceSessionId).not.toBe(oldSession)
 		expect(oldRuntime.closed).toBe(true)
+		expect(oldPeerRuntime.closed).toBe(true)
 		expect(controller.activeBufferRuntime).not.toBe(oldRuntime)
 		expect(views()).toHaveLength(2)
 		expect(folds(left())).toBe(0)

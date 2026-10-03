@@ -9,6 +9,10 @@ export interface OrgRuntimeCommitContext {
 	readonly next: string
 	readonly activeSource: string
 	readonly parkedSource?: string
+	/** Explicit controller lease for the committing window, scoped to the current grant/session. */
+	readonly originWindowId?: string | null
+	/** Present only after Root verifies the origin lease's exact captured grant and session. */
+	readonly registeredWindowBufferId?: string
 	readonly authorizedInstallation?: {
 		readonly bufferId: string
 		readonly expected: string

@@ -32,14 +32,29 @@ export const guardOrgRuntimeCommit = (
 			installation.expected === context.previous &&
 			installation.next === context.next,
 	)
+	const validLease = Boolean(
+		context.originWindowId && context.registeredWindowBufferId === context.runtimeBufferId,
+	)
 	if (!context.isActiveOwner) {
 		if (authorized && context.parkedSource === context.previous)
 			return { kind: "accepted", destination: "parked", reason: "installation" }
-		return reject("inactive-owner", "Only an authorized installation may update a parked buffer.")
+		if (!validLease)
+			return reject(
+				"inactive-owner",
+				"A matching window lease is required to edit a parked buffer.",
+			)
+		if (context.parkedSource !== context.previous)
+			return reject("stale-source", "The parked source has changed.")
+		if (context.loading) return reject("loading", "A workspace source is being loaded.")
+		if (context.mutationInProgress && !context.ordinarySaveInFlight)
+			return reject("mutation-in-progress", "A workspace mutation is in progress.")
+		return { kind: "accepted", destination: "parked", reason: "edit" }
 	}
 	if (context.previous !== context.activeSource)
 		return reject("stale-source", "The active source has changed.")
 	if (authorized) return { kind: "accepted", destination: "active", reason: "installation" }
+	if (!validLease)
+		return reject("inactive-owner", "A matching window lease is required to edit this buffer.")
 	if (context.loading) return reject("loading", "A workspace source is being loaded.")
 	if (context.mutationInProgress && !context.ordinarySaveInFlight)
 		return reject("mutation-in-progress", "A workspace mutation is in progress.")

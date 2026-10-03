@@ -151,7 +151,25 @@ export interface OrgOpenBufferSummary {
 	readonly hasConflict: boolean
 }
 
+export interface OrgLiveBuffer {
+	readonly bufferId: string
+	readonly document: OrgDocumentInterface
+	readonly content: string
+	readonly runtime: OrgBufferRuntime
+	readonly isDirty: boolean
+}
+
 export interface OrgWorkspaceController {
+	/** Live working-copy views; .org refresh/watch/CAS remains the disk authority. */
+	readonly liveBuffers: readonly OrgLiveBuffer[]
+	/** Mounted view lease permitting exact-source edits to its parked canonical runtime. */
+	readonly registerBufferWindow: (windowId: string, bufferId: string) => () => void
+	/**
+	 * Synchronous memory-only context handoff, preserving canonical history.
+	 * Returns false during file effects: callers must defer cross-buffer focus/commands
+	 * and visibly lock the non-current view until the captured effect owner settles.
+	 */
+	readonly activateOpenBuffer: (bufferId: string) => boolean
 	readonly workspaceSessionId: string | null
 	readonly activeBufferId: string | null
 	readonly activeBufferRuntime: OrgBufferRuntime | null
@@ -331,6 +349,16 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	const registryRef = useRef<ReturnType<typeof createOrgWorkspaceRuntimeRegistry> | null>(null)
 	if (!registryRef.current) registryRef.current = createOrgWorkspaceRuntimeRegistry()
 	const registry = registryRef.current
+	const bufferWindowLeasesRef = useRef(
+		new Map<
+			string,
+			{
+				readonly bufferId: string
+				readonly grant: OrgWorkspaceInterface
+				readonly session: string
+			}
+		>(),
+	)
 	const [activeBufferRuntime, setActiveBufferRuntime] = useState<OrgBufferRuntime | null>(null)
 	const transientDirtyRef = useRef(new Map<string, boolean>())
 	const transientGenerationRef = useRef(0)
@@ -392,6 +420,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		if (id) registry.install(runtimeKey(id), value)
 	}
 	const closeRuntimes = () => {
+		bufferWindowLeasesRef.current.clear()
 		registry.close()
 		setActiveBufferRuntime(null)
 	}
@@ -411,14 +440,20 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			runtimeKey(id),
 			value,
 			{
-				readCommitContext: (key, previous, next): OrgRuntimeCommitContext => {
+				readCommitContext: (key, previous, next, originWindowId): OrgRuntimeCommitContext => {
+					const lease = originWindowId
+						? bufferWindowLeasesRef.current.get(originWindowId)
+						: undefined
 					const path = activeRef.current?.relativePath
 					const parkedPath = bufferIdentity.findPath(identityScope, key.bufferId)
 					return {
 						mounted: mountedRef.current,
 						closeReady: nativeCloseReadyRef.current,
 						grantMatches: grantRef.current === grant,
-						sessionMatches: sessionRef.current === session,
+						sessionMatches: sessionRef.current === session && key.workspaceSessionId === session,
+						originWindowId,
+						registeredWindowBufferId:
+							lease?.grant === grant && lease.session === session ? lease.bufferId : undefined,
 						isActiveOwner:
 							path !== undefined && bufferIdentity.lookup(identityScope, path) === key.bufferId,
 						previous,
@@ -583,6 +618,103 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				]
 			: []),
 	]
+
+	const liveBuffers: readonly OrgLiveBuffer[] = [
+		...parkedReservoir.list(identityScope).map((buffer) => ({
+			bufferId: buffer.bufferId,
+			document: buffer.document,
+			content: buffer.content,
+			runtime: runtimeFor(buffer.bufferId)!,
+			isDirty: buffer.isDirty,
+		})),
+		...(activeDocument && activeBufferRuntime
+			? [
+					{
+						bufferId: bufferIdFor(activeDocument.relativePath),
+						document: activeDocument,
+						content,
+						runtime: activeBufferRuntime,
+						isDirty,
+					},
+				]
+			: []),
+	].filter((buffer) => Boolean(buffer.runtime))
+
+	const registerBufferWindow = useCallback(
+		(windowId: string, bufferId: string): (() => void) => {
+			if (
+				!windowId ||
+				!mountedRef.current ||
+				!parkedReservoir.canMutate() ||
+				!originGrant ||
+				!originSession ||
+				grantRef.current !== originGrant ||
+				sessionRef.current !== originSession
+			)
+				return () => undefined
+			const path = bufferIdentity.findPath(identityScope, bufferId)
+			if (
+				!path ||
+				!runtimeFor(bufferId) ||
+				(activeRef.current?.relativePath !== path && !parkedReservoir.read(identityScope, path))
+			)
+				return () => undefined
+			const lease = { bufferId, grant: originGrant, session: originSession }
+			bufferWindowLeasesRef.current.set(windowId, lease)
+			return () => {
+				if (bufferWindowLeasesRef.current.get(windowId) === lease)
+					bufferWindowLeasesRef.current.delete(windowId)
+			}
+		},
+		[originGrant, originSession],
+	)
+
+	const activateOpenBuffer = useCallback(
+		(bufferId: string): boolean => {
+			// Focus changes are grant-local, not tied to the previously active pane.
+			if (
+				!mountedRef.current ||
+				!nativeCloseReadyRef.current ||
+				!parkedReservoir.canMutate() ||
+				!originGrant ||
+				!originSession ||
+				grantRef.current !== originGrant ||
+				sessionRef.current !== originSession ||
+				loadingRef.current ||
+				mutationInProgressRef.current ||
+				saveInFlightRef.current ||
+				saveAllOwnerRef.current
+			)
+				return false
+			const path = bufferIdentity.findPath(identityScope, bufferId)
+			if (!path) return false
+			if (activeRef.current?.relativePath === path) return true
+			const parked = parkedReservoir.read(identityScope, path)
+			const runtime = runtimeFor(bufferId)
+			if (!parked || !runtime || runtime.closed || runtime.source !== parked.content) return false
+			const previous = activeRef.current
+			if (previous)
+				parkedReservoir.park(identityScope, bufferIdFor(previous.relativePath), {
+					document: previous,
+					content: latestContentRef.current,
+					editGeneration: editGenerationRef.current,
+					isDirty: latestContentRef.current !== previous.content,
+				})
+			parkedReservoir.takeToActivate(identityScope, bufferId)
+			openRequestRef.current += 1
+			activationRef.current += 1
+			activeRef.current = parked.document
+			setActiveDocument(parked.document)
+			latestContentRef.current = parked.content
+			editGenerationRef.current += 1
+			setContent(parked.content)
+			setDirty(parked.isDirty)
+			setActiveBufferRuntime(runtime)
+			setRevealTarget(null)
+			return true
+		},
+		[originGrant, originSession, bufferIdFor],
+	)
 
 	const nativeCloseReady = useOrgWindowClose(
 		{
@@ -856,6 +988,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		mountedRef.current = true
 		return () => {
 			mountedRef.current = false
+			bufferWindowLeasesRef.current.clear()
 			registry.close()
 			bufferIdentity.clearScope(
 				grantRef.current && sessionRef.current
@@ -1538,6 +1671,8 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			if (
 				!isCurrentOrigin() ||
 				loadingRef.current ||
+				!nativeCloseReadyRef.current ||
+				!parkedReservoir.canMutate() ||
 				(mutationInProgressRef.current && !saveInFlightRef.current)
 			)
 				return
@@ -1546,7 +1681,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			if (!runtime || nextContent === runtime.source) return
 			// Compatibility edits obey the same busy/read-only gate as runtime UI edits.
 			try {
-				runtime.applyControllerSource(latestContentRef.current, nextContent)
+				registry.updateSource(runtime.key, latestContentRef.current, nextContent, isCurrentOrigin)
 			} catch (failure) {
 				setError(failure instanceof Error ? failure.message : "Cannot update Org source")
 			}
@@ -2787,6 +2922,9 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	}, [activeDocument, workspace, dirtyPath, originSession, originActivation, originPath])
 
 	return {
+		liveBuffers,
+		registerBufferWindow,
+		activateOpenBuffer,
 		activeBufferRuntime,
 		activeBufferId: activeDocument ? bufferIdFor(activeDocument.relativePath) : null,
 		activeDocument,

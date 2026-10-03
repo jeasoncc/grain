@@ -1,8 +1,8 @@
 import * as registryFactory from "@/flows/org-editor-runtime/org-workspace-runtime-registry"
 import * as parkedFactory from "@/flows/org-editor-runtime/org-parked-working-copy-reservoir"
 import type { OrgBufferIdentityScope } from "@/flows/org-editor-runtime/org-buffer-identity-registry"
-import { history, redoDepth, undoDepth } from "@codemirror/commands"
-import { EditorState } from "@codemirror/state"
+import { history, isolateHistory, redoDepth, undoDepth } from "@codemirror/commands"
+import { EditorSelection, EditorState } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
 import type {
 	OrgBufferRuntime,
@@ -169,7 +169,13 @@ describe("Org capture entry and transient drafts", () => {
 		})
 		return hook
 	}
-	const attachRuntime = (runtime: OrgBufferRuntime, windowId = "workspace-test") => {
+	const attachRuntime = (
+		runtime: OrgBufferRuntime,
+		owner: ReturnType<typeof useOrgWorkspace>,
+		windowId = "workspace-test",
+		register = true,
+	) => {
+		const release = register ? owner.registerBufferWindow(windowId, runtime.key.bufferId) : () => {}
 		let handle!: OrgBufferWindowHandle
 		const view = new EditorView({
 			state: EditorState.create({
@@ -183,11 +189,260 @@ describe("Org capture entry and transient drafts", () => {
 			view,
 			handle,
 			dispose: () => {
+				release()
 				handle.detach()
 				view.destroy()
 			},
 		}
 	}
+	it("edits parked live buffers only through matching window leases and preserves history on focus", async () => {
+		const { result } = await setup()
+		const a = result.current.activeBufferRuntime!
+		const aId = result.current.activeBufferId!
+		const editor = attachRuntime(a, result.current, "pane-a", false)
+		const releaseOld = result.current.registerBufferWindow("pane-a", aId)
+		const release = result.current.registerBufferWindow("pane-a", aId)
+		releaseOld() // stale cleanup cannot revoke a replacement lease
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const b = result.current.activeBufferRuntime!
+		const bId = result.current.activeBufferId!
+		act(() => {
+			editor.view.dispatch({ changes: { from: 0, insert: "parked " } })
+		})
+		expect(result.current.content).toBe(captured.content)
+		expect(result.current.liveBuffers.find((buffer) => buffer.bufferId === aId)).toMatchObject({
+			content: `parked ${captured.content}`,
+			isDirty: true,
+		})
+		expect(result.current.liveBuffers.find((buffer) => buffer.bufferId === aId)?.runtime).toBe(a)
+		const depth = undoDepth(a.state)
+		const reads = vi.mocked(openOrgDocumentFlow).mock.calls.length
+		const activate = result.current.activateOpenBuffer
+		act(() => {
+			expect(activate(aId)).toBe(true)
+			expect(activate(bId)).toBe(true)
+			expect(activate(aId)).toBe(true)
+		})
+		expect(result.current.activeBufferRuntime).toBe(a)
+		expect(result.current.content).toBe(`parked ${captured.content}`)
+		expect(undoDepth(a.state)).toBe(depth)
+		expect(result.current.liveBuffers.find((buffer) => buffer.bufferId === bId)?.runtime).toBe(b)
+		expect(vi.mocked(openOrgDocumentFlow).mock.calls.length).toBe(reads)
+		act(() => {
+			expect(activate(bId)).toBe(true)
+		})
+		release()
+		const before = a.source
+		act(() => {
+			expect(() => editor.view.dispatch({ changes: { from: 0, insert: "denied " } })).toThrow()
+		})
+		expect(a.source).toBe(before)
+		const wrong = result.current.registerBufferWindow("pane-a", bId)
+		act(() => {
+			expect(() => editor.view.dispatch({ changes: { from: 0, insert: "wrong " } })).toThrow()
+		})
+		expect(a.source).toBe(before)
+		wrong()
+		editor.dispose()
+	})
+
+	it("revoked and rebound attached windows cannot edit/undo/redo either parked or focused A", async () => {
+		const { result } = await setup()
+		const a = result.current.activeBufferRuntime!
+		const editor = attachRuntime(a, result.current, "revoked-A", false)
+		const release = result.current.registerBufferWindow("revoked-A", a.key.bufferId)
+		act(() => {
+			editor.view.dispatch({
+				changes: { from: 0, insert: "one " },
+				annotations: isolateHistory.of("full"),
+			})
+			editor.view.dispatch({
+				changes: { from: 0, insert: "two " },
+				annotations: isolateHistory.of("full"),
+			})
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(undoDepth(a.state)).toBe(1)
+		expect(redoDepth(a.state)).toBe(1)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const bId = result.current.activeBufferId!
+		release()
+		const baseline = a.state
+		const deny = () => {
+			expect(() => editor.view.dispatch({ changes: { from: 0, insert: "denied " } })).toThrow(
+				"Commit guard rejected source",
+			)
+			expect(() => editor.handle.undo()).toThrow("Commit guard rejected source")
+			expect(() => editor.handle.redo()).toThrow("Commit guard rejected source")
+			expect(a.state).toBe(baseline)
+		}
+		act(deny)
+		act(() => {
+			expect(result.current.activateOpenBuffer(a.key.bufferId)).toBe(true)
+		})
+		act(deny)
+		const rebound = result.current.registerBufferWindow("revoked-A", bId)
+		act(deny)
+		act(() => {
+			expect(result.current.activateOpenBuffer(bId)).toBe(true)
+		})
+		act(deny)
+		rebound()
+		editor.dispose()
+	})
+
+	it("parked history checks caller Y's lease independently of historical origin X selection", async () => {
+		const { result } = await setup()
+		const a = result.current.activeBufferRuntime!
+		const x = attachRuntime(a, result.current, "history-X", false)
+		const y = attachRuntime(a, result.current, "history-Y", false)
+		const releaseX = result.current.registerBufferWindow("history-X", a.key.bufferId)
+		let releaseY = result.current.registerBufferWindow("history-Y", a.key.bufferId)
+		const original = a.source
+		act(() => {
+			x.view.dispatch({
+				selection: EditorSelection.create(
+					[EditorSelection.cursor(3), EditorSelection.cursor(6)],
+					1,
+				),
+			})
+			y.view.dispatch({ selection: { anchor: 1 } })
+		})
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		act(() => {
+			x.view.dispatch({
+				changes: { from: 0, insert: "X " },
+				selection: EditorSelection.create(
+					[EditorSelection.cursor(5), EditorSelection.cursor(8)],
+					1,
+				),
+			})
+		})
+		const edited = a.state
+		releaseY()
+		act(() => {
+			expect(() => y.handle.undo()).toThrow("Commit guard rejected source")
+		})
+		expect(a.state).toBe(edited)
+		releaseY = result.current.registerBufferWindow("history-Y", a.key.bufferId)
+		releaseX()
+		act(() => {
+			expect(y.handle.undo()).toBe(true)
+		})
+		expect(a.source).toBe(original)
+		expect(x.view.state.selection.ranges.map((range) => range.anchor)).toEqual([3, 6])
+		expect(x.view.state.selection.mainIndex).toBe(1)
+		expect(a.state.selection.eq(x.view.state.selection)).toBe(true)
+		expect(y.view.state.selection.main.anchor).toBe(1)
+		act(() => {
+			expect(y.handle.redo()).toBe(true)
+		})
+		expect(a.source).toBe(`X ${original}`)
+		expect(x.view.state.selection.ranges.map((range) => range.anchor)).toEqual([5, 8])
+		expect(a.state.selection.eq(x.view.state.selection)).toBe(true)
+		releaseY()
+		x.dispose()
+		y.dispose()
+	})
+
+	it("refuses synchronous focus during an ordinary save without disabling leased parked typing", async () => {
+		const { result } = await setup()
+		const a = result.current.activeBufferRuntime!
+		const aId = result.current.activeBufferId!
+		const editor = attachRuntime(a, result.current, "saving-pane", false)
+		const release = result.current.registerBufferWindow("saving-pane", aId)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		let resolve!: (value: E.Either<never, OrgDocumentInterface>) => void
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(
+			() =>
+				new Promise((done) => {
+					resolve = done
+				}),
+		)
+		act(() => {
+			result.current.updateContent("save snapshot")
+		})
+		let pending!: Promise<void>
+		act(() => {
+			pending = result.current.saveDocument()
+		})
+		act(() => {
+			expect(result.current.activateOpenBuffer(aId)).toBe(false)
+			editor.view.dispatch({ changes: { from: 0, insert: "during save " } })
+		})
+		expect(a.source).toBe(`during save ${captured.content}`)
+		await act(async () => {
+			resolve(E.right({ content: "save snapshot", relativePath: "z.org", revision: "saved" }))
+			await pending
+		})
+		act(() => {
+			expect(result.current.activateOpenBuffer(aId)).toBe(true)
+		})
+		expect(result.current.content).toBe(a.source)
+		release()
+		editor.dispose()
+	})
+
+	it("fences synchronous focus and parked edits while loading and notifying", async () => {
+		const observed = observeParkedReservoir()
+		const { result } = await setup()
+		const a = result.current.activeBufferRuntime!
+		const aId = result.current.activeBufferId!
+		const editor = attachRuntime(a, result.current, "pane-a", false)
+		const release = result.current.registerBufferWindow("pane-a", aId)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		let focusDenied = false
+		let commitDenied = false
+		const stop = observed.reservoir.subscribe(() => {
+			focusDenied = !result.current.activateOpenBuffer(aId)
+			try {
+				editor.view.dispatch({ changes: { from: 0, insert: "reentrant " } })
+			} catch {
+				commitDenied = true
+			}
+		})
+		act(() => {
+			editor.view.dispatch({ changes: { from: 0, insert: "accepted " } })
+		})
+		expect(focusDenied).toBe(true)
+		expect(commitDenied).toBe(true)
+		expect(a.source).toBe(`accepted ${captured.content}`)
+		stop()
+		const source = a.source
+		let resolve!: (value: E.Either<never, OrgDocumentInterface>) => void
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(
+			() =>
+				new Promise((done) => {
+					resolve = done
+				}),
+		)
+		let pending!: Promise<boolean>
+		act(() => {
+			pending = result.current.openDocument({ relativePath: "third.org", revision: "new" })
+		})
+		act(() => {
+			expect(result.current.activateOpenBuffer(aId)).toBe(false)
+			expect(() => editor.view.dispatch({ changes: { from: 0, insert: "loading " } })).toThrow()
+		})
+		expect(a.source).toBe(source)
+		await act(async () => {
+			resolve(E.right({ ...captured, relativePath: "third.org" }))
+			await pending
+		})
+		release()
+		editor.dispose()
+	})
+
 	it("does not echo retained G1 runtime failures into same-root G2, even from a parked key", async () => {
 		const create = runtimeFactory.createOrgBufferRuntime
 		let oldFailure: OrgBufferRuntimeOptions["onError"]
@@ -227,10 +482,33 @@ describe("Org capture entry and transient drafts", () => {
 		expect(result.current.activeBufferRuntime).toBe(currentRuntime)
 		expect(currentRuntime.source).toBe(captured.content)
 	})
+	it("authorizes fresh legacy updates without a window lease or history but denies bare source commits", async () => {
+		const { result } = await setup()
+		const runtime = result.current.activeBufferRuntime!
+		const oldUpdate = result.current.updateContent
+		expect(() => runtime.applyControllerSource(runtime.source, "bare")).toThrow(
+			"Commit guard rejected source",
+		)
+		act(() => {
+			result.current.updateContent("legacy body")
+		})
+		expect(runtime.source).toBe("legacy body")
+		expect(result.current.content).toBe("legacy body")
+		expect(undoDepth(runtime.state)).toBe(0)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		act(() => {
+			oldUpdate("stale legacy body")
+		})
+		expect(runtime.source).toBe("legacy body")
+		expect(result.current.content).toBe(captured.content)
+	})
+
 	it("mirrors a runtime edit synchronously before native close and save capture", async () => {
 		const { result } = await setup()
 		const runtime = result.current.activeBufferRuntime!
-		const editor = attachRuntime(runtime)
+		const editor = attachRuntime(runtime, result.current)
 		vi.mocked(saveOrgDocumentFlow).mockReturnValue(async () =>
 			E.right({ ...captured, revision: "saved" }),
 		)
@@ -251,7 +529,7 @@ describe("Org capture entry and transient drafts", () => {
 		const { result } = await setup()
 		const runtime = result.current.activeBufferRuntime!
 		const original = runtime.source
-		const first = attachRuntime(runtime)
+		const first = attachRuntime(runtime, result.current)
 		act(() => first.view.dispatch({ changes: { from: 0, insert: "typed " } }))
 		first.dispose()
 		await act(async () => {
@@ -262,7 +540,7 @@ describe("Org capture entry and transient drafts", () => {
 			await result.current.openDocumentPath("inbox.org")
 		})
 		expect(result.current.activeBufferRuntime).toBe(runtime)
-		const second = attachRuntime(runtime)
+		const second = attachRuntime(runtime, result.current)
 		act(() => {
 			expect(second.handle.undo()).toBe(true)
 		})
@@ -279,8 +557,8 @@ describe("Org capture entry and transient drafts", () => {
 	])("resets unknown clean inactive body/history under the same logical ID: %s", async (kind) => {
 		const { result } = await setup()
 		const runtime = result.current.activeBufferRuntime!
-		const first = attachRuntime(runtime)
-		const second = attachRuntime(runtime, "second-window")
+		const first = attachRuntime(runtime, result.current)
+		const second = attachRuntime(runtime, result.current, "second-window")
 		act(() => first.view.dispatch({ changes: { from: 0, insert: "typed " } }))
 		const saved = runtime.source
 		const replacement =
@@ -323,7 +601,7 @@ describe("Org capture entry and transient drafts", () => {
 	it("retains dirty parked working body and history on an unknown disk replacement", async () => {
 		const { result } = await setup()
 		const runtime = result.current.activeBufferRuntime!
-		const editor = attachRuntime(runtime)
+		const editor = attachRuntime(runtime, result.current)
 		act(() => editor.view.dispatch({ changes: { from: 0, insert: "working " } }))
 		const working = runtime.source
 		await act(async () => {
@@ -351,7 +629,7 @@ describe("Org capture entry and transient drafts", () => {
 	it("retains clean parked canonical history when disk returns the same raw source", async () => {
 		const { result } = await setup()
 		const runtime = result.current.activeBufferRuntime!
-		const editor = attachRuntime(runtime)
+		const editor = attachRuntime(runtime, result.current)
 		act(() => editor.view.dispatch({ changes: { from: 0, insert: "saved " } }))
 		const saved = runtime.source
 		vi.mocked(saveOrgDocumentFlow).mockReturnValue(async () =>
@@ -411,7 +689,7 @@ describe("Org capture entry and transient drafts", () => {
 	it("allows runtime typing during own save without installing the older ACK body", async () => {
 		const { result } = await setup()
 		const runtime = result.current.activeBufferRuntime!
-		const editor = attachRuntime(runtime)
+		const editor = attachRuntime(runtime, result.current)
 		act(() => editor.view.dispatch({ changes: { from: 0, insert: "first " } }))
 		const saving = runtime.source
 		let resolve!: (value: E.Either<never, OrgDocumentInterface>) => void
@@ -465,7 +743,7 @@ describe("Org capture entry and transient drafts", () => {
 			changes: { from: 0, insert: runtime.source },
 		}).state
 		expect(runtime.adoptLegacyState(cached)).toBe(true)
-		const editor = attachRuntime(runtime)
+		const editor = attachRuntime(runtime, result.current)
 		act(() => {
 			expect(editor.handle.undo()).toBe(true)
 		})
@@ -812,7 +1090,7 @@ describe("Org capture entry and transient drafts", () => {
 			})
 		}
 		const runtime = result.current.activeBufferRuntime!
-		const editor = attachRuntime(runtime)
+		const editor = attachRuntime(runtime, result.current)
 		act(() =>
 			editor.view.dispatch({ changes: { from: runtime.source.length, insert: "saved edit\n" } }),
 		)
@@ -3302,6 +3580,7 @@ describe("Org save-all snapshot transaction", () => {
 			}),
 			dispatchTransactions: (transactions) => handle.dispatchTransactions(transactions),
 		})
+		const release = result.current.registerBufferWindow("ack-reentrancy", runtime.key.bufferId)
 		handle = runtime.attachWindow({ windowId: "ack-reentrancy", view })
 		act(() => view.dispatch({ changes: { from: 0, insert: "typed " } }))
 		const source = runtime.source
@@ -3373,6 +3652,7 @@ describe("Org save-all snapshot transaction", () => {
 		} finally {
 			stop()
 			handle.detach()
+			release()
 			view.destroy()
 		}
 	})

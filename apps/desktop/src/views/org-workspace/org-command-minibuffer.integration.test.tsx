@@ -42,6 +42,8 @@ const Harness = ({
 	const [content, setContent] = useState(source)
 	const controller = {
 		content,
+		activeBufferId: path,
+		activeBufferRuntime: null,
 		activeDocument: { relativePath: path, revision, content },
 		workspace: {
 			rootPath: root,

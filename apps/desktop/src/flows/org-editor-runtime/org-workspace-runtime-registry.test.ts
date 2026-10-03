@@ -72,6 +72,33 @@ describe("Org workspace runtime reservoir", () => {
 		expect([second, foreign, replacement].every((runtime) => runtime.closed)).toBe(true)
 		expect(registry.get(foreign.key)).toBeUndefined()
 	})
+	it.each([
+		false,
+		true,
+	])("bare direct source commits need explicit registry installation (parked=%s)", (parked) => {
+		const { registry, key, ports, park } = setup()
+		const runtime = registry.create(key, "original\r\n", ports)
+		if (parked) park()
+		const baseline = runtime.state
+		expect(() => runtime.applyControllerSource(runtime.source, "bare")).toThrow(
+			"Commit guard rejected source",
+		)
+		expect(runtime.state).toBe(baseline)
+		expect(registry.install(key, "authorized")).toBe(true)
+		expect(runtime.source).toBe("authorized")
+		expect(() => runtime.applyControllerSource(runtime.source, "bare again")).toThrow(
+			"Commit guard rejected source",
+		)
+	})
+	it("authorizes legacy updates only after a fresh owner and exact baseline check", () => {
+		const { registry, key, ports } = setup()
+		const runtime = registry.create(key, "original\r\n", ports)
+		expect(registry.updateSource(key, runtime.source, "stale owner", () => false)).toBe(false)
+		expect(registry.updateSource(key, "wrong baseline", "next", () => true)).toBe(false)
+		expect(ports.commitSource).not.toHaveBeenCalled()
+		expect(registry.updateSource(key, runtime.source, "next", () => true)).toBe(true)
+		expect(runtime.source).toBe("next")
+	})
 	it("scopes known parked installations but never grants parked user edits", () => {
 		const { registry, key, ports, park } = setup()
 		const runtime = registry.create(key, "original\r\n", ports)
@@ -91,7 +118,7 @@ describe("Org workspace runtime reservoir", () => {
 		const { registry, key, ports, park } = setup()
 		const runtime = registry.create(key, "original\r\n", ports)
 		if (parked) park()
-		const context = ports.readCommitContext(key, runtime.source, "confirmed")
+		const context = ports.readCommitContext(key, runtime.source, "confirmed", null)
 		vi.mocked(ports.readCommitContext).mockReturnValue({
 			...context,
 			notificationInProgress: true,
@@ -146,7 +173,7 @@ describe("Org workspace runtime reservoir", () => {
 		const { registry, key, ports } = setup()
 		const runtime = registry.create(key, "original\r\n", ports)
 		vi.mocked(ports.readCommitContext).mockReturnValue({
-			...ports.readCommitContext(key, runtime.source, "next"),
+			...ports.readCommitContext(key, runtime.source, "next", null),
 			grantMatches: false,
 		})
 		expect(() => registry.install(key, "next")).toThrow("Commit guard rejected source")
