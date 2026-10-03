@@ -407,10 +407,20 @@ use the pure guard. Snapshot/mirror adapters remain explicit in the controller,
 including old-grant error fencing. This registry owns no filesystem or Org rules
 and stores no competing body string.
 
+`org-save-all.flow.ts` now owns sequential snapshot CAS writes, fresh/owner
+checks, exact receipt validation, synchronous confirmed commits and classified
+first-failure outcomes. The hook only captures inputs, supplies mirror/baseline
+ports, maps pause/conflict/echo and releases its owner in `finally`; it does not
+run the batch's write loop. Confirmed paths are retained after partial failure;
+newer input remains dirty. A production-hook regression covers the terminal
+flow-to-hook microtask gap: final commit followed by unmount must not return
+success or emit into another origin. The hook rechecks ownership immediately
+when the flow settles, even on success.
+
 This is the beginning, not completion, of splitting lifecycle/state reservoirs,
 file effects and presentation. It does not weaken the experience target to avoid
-larger window/config/workflow work. Full desktop verification: 152 files /2478
-cases, typecheck/build pass (2026-10-03).
+larger window/config/workflow work. Full desktop verification: 153 files /2493
+cases, typecheck/build pass (2026-10-03 14:01 +08:00).
 
 ## Next decision gates and work
 

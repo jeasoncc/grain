@@ -3621,6 +3621,44 @@ describe("Org save-all snapshot transaction", () => {
 		expect(result.current.isSaving).toBe(false)
 		expect(result.current.activeDocument?.relativePath).toBe("a.org")
 	})
+	it("retains the final confirmed path but rejects a completion retired in the terminal microtask gap", async () => {
+		const hook = await setup(1)
+		const pending = deferred<SaveResult>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+		let saving!: ReturnType<typeof hook.result.current.saveAllDocuments>
+		act(() => {
+			saving = hook.result.current.saveAllDocuments()
+		})
+		// Registered after the flow's await: the flow commits first, then unmount
+		// retires the origin before the hook's own await continuation runs.
+		const retired = pending.promise.then(() => hook.unmount())
+		let outcome!: Awaited<typeof saving>
+		await act(async () => {
+			pending.resolve(E.right({ relativePath: "a.org", revision: "confirmed-final" }))
+			await retired
+			outcome = await saving
+		})
+		expect(outcome).toMatchObject({
+			kind: "partial",
+			savedPaths: ["a.org"],
+			remainingDirtyPaths: [],
+		})
+		expect(outcome.message).toMatch(/completion is stale.*origin is no longer current/i)
+		expect(outcome.message).toMatch(/confirmed writes were retained/i)
+		expect(outcome.message).toMatch(/no rollback.*do not automatically retry/i)
+		// A fresh hook must not inherit the retired completion's error/conflict/pause.
+		const fresh = await setup(1)
+		expect(fresh.result.current.error).toBeNull()
+		expect(fresh.result.current.openBuffers[0].hasConflict).toBe(false)
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(1000)
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(2)
+		expect(saveOrgDocumentFlow).toHaveBeenLastCalledWith(
+			expect.objectContaining({ relativePath: "a.org", expectedRevision: "a.org-1" }),
+		)
+	})
 	it("ignores a deferred completion after unmount and stops remaining writes", async () => {
 		const hook = await setup()
 		const pending = deferred<SaveResult>()

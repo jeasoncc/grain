@@ -25,6 +25,10 @@ import {
 	selectOrgWorkspaceFlow,
 	verifyLegacyMigrationRecoveryFlow,
 } from "@/flows/org-workspace"
+import {
+	saveAllOrgDocumentsFlow,
+	type OrgSaveAllCapture,
+} from "@/flows/org-workspace/org-save-all.flow"
 import type { OrgBufferRuntime } from "@/flows/org-editor-runtime"
 import { createOrgWorkspaceRuntimeRegistry } from "@/flows/org-editor-runtime/org-workspace-runtime-registry"
 import { orgWorkspaceEventAdapter } from "@/io/event/org-workspace-event.adapter"
@@ -1613,21 +1617,27 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				"Another workspace mutation is in progress; save all was not started.",
 			)
 		}
-		const selected: {
-			document: OrgDocumentInterface
-			content: string
-			parked: ParkedOrgBuffer | null
-		}[] = [...parkedRef.current.values()]
+		const selected: (OrgSaveAllCapture & {
+			readonly parked: ParkedOrgBuffer | null
+		})[] = [...parkedRef.current.values()]
 			.filter((buffer) => buffer.isDirty)
 			.map((buffer) => ({
 				document: buffer.document,
 				content: buffer.content,
 				parked: buffer,
+				workspaceRoot: workspace.rootPath,
+				capabilityToken: workspace.capabilityToken,
 			}))
 		const active = activeRef.current
 		const activeCapture =
 			active && dirtyPath(active.relativePath)
-				? { document: active, content: latestContentRef.current, parked: null }
+				? {
+						document: active,
+						content: latestContentRef.current,
+						parked: null,
+						workspaceRoot: workspace.rootPath,
+						capabilityToken: workspace.capabilityToken,
+					}
 				: null
 		if (activeCapture) selected.push(activeCapture)
 		if (!selected.length) return outcome("success")
@@ -1659,71 +1669,53 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			}
 			return outcome(savedPaths.length ? "partial" : "rejected", message)
 		}
-		let writingPath: string | null = null
 		try {
-			for (const capture of selected) {
-				const { document, content: body, parked } = capture
-				if (
-					!current() ||
+			const result = await saveAllOrgDocumentsFlow(selected, {
+				write: saveOrgDocumentFlow,
+				isFresh: ({ document, parked }) =>
+					current() &&
 					(parked
-						? parkedRef.current.get(document.relativePath) !== parked
-						: activeRef.current !== document)
-				) {
-					return fail(
-						"The save-all snapshot is no longer current. Reread affected files before a manual retry.",
-					)
-				}
-				writingPath = document.relativePath
-				const result = await saveOrgDocumentFlow({
-					content: body,
-					expectedRevision: document.revision,
-					relativePath: document.relativePath,
-					capabilityToken: workspace.capabilityToken,
-					workspaceRoot: workspace.rootPath,
-				})()
-				if (!current())
-					return fail(
-						"The save-all origin changed during a write; files may have changed. Reread affected files; do not automatically retry.",
-					)
-				if (E.isLeft(result)) {
-					conflictsRef.current.add(document.relativePath)
-					return fail(
-						`Save all stopped at ${document.relativePath}: ${result.left.message}. Buffers were retained; files may have changed. Reread affected files before a manual retry. Do not automatically retry.`,
-					)
-				}
+						? parkedRef.current.get(document.relativePath) === parked
+						: activeRef.current === document),
+				isOwnerCurrent: current,
+				commitConfirmed: ({ document, content: body, parked }, receipt) => {
+					const persisted = { ...document, content: body, revision: receipt.revision }
+					if (parked) {
+						parkedRef.current.set(document.relativePath, {
+							...parked,
+							document: persisted,
+							isDirty: parked.content !== body,
+						})
+					} else {
+						activeRef.current = persisted
+						setActiveDocument(persisted)
+						setDirty(latestContentRef.current !== body)
+					}
+					conflictsRef.current.delete(document.relativePath)
+					autosavePausedRef.current.delete(document.relativePath)
+					setWorkspace((value) => (value ? updateWorkspaceDocument(value, persisted) : value))
+					publishBuffers((version) => version + 1)
+				},
+			})
+			savedPaths.push(...result.confirmedPaths)
+			if (!current()) {
+				return fail(
+					"The save-all completion is stale because its origin is no longer current. Confirmed writes were retained; no rollback was attempted. Reread affected files before reconciling; do not automatically retry.",
+				)
+			}
+			if (result.kind !== "success") {
 				if (
-					result.right.relativePath !== document.relativePath ||
-					typeof result.right.revision !== "string" ||
-					!result.right.revision
+					current() &&
+					result.writingPath &&
+					["write-left", "unexpected", "commit"].includes(result.failureKind)
 				) {
-					throw new Error("Unexpected save confirmation")
+					conflictsRef.current.add(result.writingPath)
 				}
-				const persisted = { ...document, content: body, revision: result.right.revision }
-				if (parked) {
-					parkedRef.current.set(document.relativePath, {
-						...parked,
-						document: persisted,
-						isDirty: parked.content !== body,
-					})
-				} else {
-					activeRef.current = persisted
-					setActiveDocument(persisted)
-					setDirty(latestContentRef.current !== body)
-				}
-				conflictsRef.current.delete(document.relativePath)
-				autosavePausedRef.current.delete(document.relativePath)
-				setWorkspace((value) => (value ? updateWorkspaceDocument(value, persisted) : value))
-				savedPaths.push(document.relativePath)
-				publishBuffers((version) => version + 1)
+				return fail(result.message)
 			}
 			return remainingPaths().length
 				? outcome("partial", "Captured edits were saved, but newer editor input remains unsaved.")
 				: outcome("success")
-		} catch {
-			if (writingPath && current()) conflictsRef.current.add(writingPath)
-			return fail(
-				`Save all ended unexpectedly${writingPath ? ` at ${writingPath}` : ""}; files may have changed. All editor bodies were retained. Reread affected files before reconciling; do not automatically retry. No rollback was attempted.`,
-			)
 		} finally {
 			if (mutationOwnerRef.current === owner) {
 				saveInFlightRef.current = null
