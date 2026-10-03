@@ -11,6 +11,7 @@ import { Decoration, type DecorationSet, EditorView, keymap } from "@codemirror/
 import { buildOrgSparseTreePlan } from "@/pipes/org/org-sparse-tree.pipe"
 import type { OrgSparseTreePlan, OrgSparseTreeQuery } from "@/types/org"
 import { editorOffsetFromSource } from "./org-source-offset.pipe"
+import { safeOrgSparseBoundaryChange } from "./org-sparse-boundary.pipe"
 
 type HiddenRange = { readonly from: number; readonly to: number }
 export interface OrgSparseTreeState {
@@ -32,6 +33,23 @@ export const clearOrgSparseTree = StateEffect.define<null>()
 const ownedHistory = Facet.define<(transaction: Transaction) => boolean>()
 const isOwnedHistory = (tr: Transaction) =>
 	tr.startState.facet(ownedHistory).some((owns) => owns(tr))
+
+// Batch authority is synchronous and private to the mounted editor, not forgeable metadata.
+const ownedBatch = Facet.define<(transaction: Transaction) => boolean>()
+export function createOrgSparseBatchController(getView: () => EditorView | null) {
+	let depth = 0
+	return {
+		extension: ownedBatch.of((tr) => depth > 0 && getView()?.state === tr.startState),
+		run<T>(apply: () => T): T {
+			depth++
+			try {
+				return apply()
+			} finally {
+				depth--
+			}
+		},
+	}
+}
 
 export function createOrgSparseHistoryController(
 	getView: () => EditorView | null,
@@ -124,14 +142,27 @@ export const allowOrgSparseTreeSourceTransaction = (
 		return false
 	if (!transaction.docChanged) return true
 	let allowed = true
-	transaction.changes.iterChangedRanges((from, to) => {
+	const batchOwned = transaction.startState.facet(ownedBatch).some((owns) => owns(transaction))
+	transaction.changes.iterChanges((from, to, _fromB, _toB, inserted) => {
 		if (
 			sparse.hiddenRanges.some((hidden) =>
 				from === to
 					? from >= hidden.from && from < hidden.to
 					: (from < hidden.to && to > hidden.from) ||
 						// Do not join a visible line to the hidden heading by deleting its separator.
-						(hidden.from > 0 && from <= hidden.from - 1 && to >= hidden.from),
+						(hidden.from > 0 &&
+							from <= hidden.from - 1 &&
+							to >= hidden.from &&
+							!(
+								batchOwned &&
+								to === hidden.from &&
+								safeOrgSparseBoundaryChange(
+									transaction.startState.sliceDoc(),
+									transaction.startState.sliceDoc(0, from).length,
+									transaction.startState.sliceDoc(0, to).length,
+									inserted.sliceString(0, inserted.length, transaction.startState.lineBreak),
+								)
+							)),
 			)
 		)
 			allowed = false

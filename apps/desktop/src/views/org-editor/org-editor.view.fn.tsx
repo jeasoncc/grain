@@ -56,10 +56,12 @@ import type { OrgPrefixSession } from "@/types/editor/org-keymap.interface"
 import type { OrgEditorProps } from "./org-editor.types"
 import { orgHeadingFoldRange } from "./org-fold.pipe"
 import { editorOffsetFromSource } from "./org-source-offset.pipe"
+import { safeOrgSparseBoundaryChange } from "./org-sparse-boundary.pipe"
 import {
 	allowOrgSparseTreeSourceTransaction,
 	clearOrgSparseTree,
 	createOrgSparseHistoryController,
+	createOrgSparseBatchController,
 	orgSparseTreeField,
 	setOrgSparseTree,
 } from "./org-sparse-tree.extension"
@@ -434,6 +436,7 @@ export const OrgEditor = memo(function OrgEditor({
 		effectRegistryRef.current = effectRegistry
 		const applyOrgEdit = (view: EditorView, edit: OrgEditFactory) =>
 			applySourceEdit(view, edit, bufferRuntime !== null)
+		const batchController = createOrgSparseBatchController(() => viewRef.current)
 		const standaloneHistory = createOrgSparseHistoryController(
 			() => viewRef.current,
 			effectRegistry.knownEffect,
@@ -483,6 +486,7 @@ export const OrgEditor = memo(function OrgEditor({
 		// Rebuild every view-bound extension before attaching a cached state. In
 		// particular, cached listeners/compartments must never revive old refs.
 		const extensions = [
+			batchController.extension,
 			...(bufferRuntime
 				? [bufferRuntime.historyFreeSourceExtensions]
 				: [
@@ -948,6 +952,102 @@ export const OrgEditor = memo(function OrgEditor({
 					},
 				})
 				return view.state.sliceDoc() === nextSource
+			},
+			applyEdits: (expectedSource, batch) => {
+				if (
+					viewRef.current !== view ||
+					view.state.readOnly ||
+					view.state.sliceDoc() !== expectedSource
+				)
+					return false
+				const validOffset = (source: string, position: number) =>
+					Number.isInteger(position) &&
+					position >= 0 &&
+					position <= source.length &&
+					!(source[position - 1] === "\r" && source[position] === "\n")
+				const validRange = (range: { readonly from: number; readonly to: number }) =>
+					range !== null &&
+					typeof range === "object" &&
+					validOffset(expectedSource, range.from) &&
+					validOffset(expectedSource, range.to) &&
+					range.to >= range.from
+				if (
+					!batch ||
+					!Array.isArray(batch.changes) ||
+					!batch.changes.every(
+						(change) => validRange(change) && typeof change.insert === "string",
+					) ||
+					(batch.requiredVisibleRanges !== undefined &&
+						!Array.isArray(batch.requiredVisibleRanges)) ||
+					!(batch.requiredVisibleRanges ?? []).every(validRange)
+				)
+					return false
+				const changes = [...batch.changes].sort((a, b) => a.from - b.from || a.to - b.to)
+				if (
+					changes.some(
+						(change, index) =>
+							index > 0 &&
+							(change.from < changes[index - 1].to || change.from === changes[index - 1].from),
+					)
+				)
+					return false
+				const sparse = view.state.field(orgSparseTreeField)
+				if (
+					sparse &&
+					(batch.requiredVisibleRanges ?? []).some(({ from, to }) => {
+						const start = editorOffsetFromSource(expectedSource, from, view.state.lineBreak)
+						const end = editorOffsetFromSource(expectedSource, to, view.state.lineBreak)
+						return sparse.hiddenRanges.some((hidden) =>
+							start === end
+								? start >= hidden.from && start < hidden.to
+								: start < hidden.to && end > hidden.from,
+						)
+					})
+				)
+					return false
+				if (!changes.length) return validOffset(expectedSource, batch.cursor)
+				const normalized = changes.map((change) => ({
+					...change,
+					insert: bufferRuntime
+						? change.insert
+						: change.insert.replace(/\r\n|\r|\n/g, view.state.lineBreak),
+				}))
+				// Owned subtree deletion and separator replacement must preserve the hidden boundary.
+				if (
+					sparse &&
+					normalized.some(({ from, to, insert }) =>
+						sparse.hiddenRanges.some((hidden) => {
+							const end = editorOffsetFromSource(expectedSource, to, view.state.lineBreak)
+							if (end !== hidden.from || from === to) return false
+							return !safeOrgSparseBoundaryChange(expectedSource, from, to, insert)
+						}),
+					)
+				)
+					return false
+				let nextSource = expectedSource
+				for (const change of [...normalized].reverse())
+					nextSource =
+						nextSource.slice(0, change.from) + change.insert + nextSource.slice(change.to)
+				if (!validOffset(nextSource, batch.cursor)) return false
+				return batchController.run(() => {
+					view.dispatch({
+						annotations: isolateHistory.of("full"),
+						changes: normalized.map(({ from, to, insert }) => ({
+							from: editorOffsetFromSource(expectedSource, from, view.state.lineBreak),
+							to: editorOffsetFromSource(expectedSource, to, view.state.lineBreak),
+							insert,
+						})),
+						selection: {
+							anchor: editorOffsetFromSource(nextSource, batch.cursor, view.state.lineBreak),
+						},
+						scrollIntoView: true,
+					})
+					return (
+						view.state.sliceDoc() === nextSource &&
+						view.state.selection.main.head ===
+							editorOffsetFromSource(nextSource, batch.cursor, view.state.lineBreak)
+					)
+				})
 			},
 			applyView: (expectedSource, operation) => {
 				if (

@@ -419,6 +419,17 @@ describe("snapshot refile RPC boundaries", () => {
 		expect(fixture.writeDocument).not.toHaveBeenCalled()
 	})
 
+	it("rejects an unclosed drawer in a later target peer without native writes", async () => {
+		const fixture = persistedRepository("* Target\n* Peer\n:LOGBOOK:\nunclosed\n")
+		const result = await refileOrgSubtreeFlow(
+			{ ...headingInput, targetHeading: { from: 0, heading: "* Target" } },
+			fixture.repository,
+		)()
+		expect(result).toHaveProperty("left.type", "ORG_SUBTREE_REFILE_VALIDATION_ERROR")
+		expect(result).toHaveProperty("left.message", "Target source has an unclosed drawer.")
+		expect(fixture.writeDocument).not.toHaveBeenCalled()
+	})
+
 	it("compares explicit missing-target snapshot revisions and ignores archive heading", async () => {
 		const fixture = persistedRepository()
 		fixture.repository = repositoryWith({

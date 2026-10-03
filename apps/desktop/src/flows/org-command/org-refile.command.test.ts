@@ -23,9 +23,29 @@ describe("subtree transfer parameters", () => {
 			]),
 		).toMatchObject({
 			kind: "ready",
-			candidates: ["inbox.org", "projects/grain.org"],
+			candidates: ["notes.org", "inbox.org", "projects/grain.org"],
 			initialInput: "inbox.org",
 		})
+	})
+	it.each([
+		"café.org",
+		"cafe\u0301.org",
+	])("keeps exact canonical source %s once even when absent from listing", (relativePath) => {
+		const source = { ...context(), relativePath }
+		const alias = relativePath === "café.org" ? "cafe\u0301.org" : "café.org"
+		for (const paths of [[], [alias, relativePath, relativePath, "CAFÉ.org", "other.org"]]) {
+			const plan = prepareOrgRefileCommand(source, paths)
+			expect(plan).toMatchObject({
+				kind: "ready",
+				candidates: paths.length ? [relativePath, "other.org"] : [relativePath],
+			})
+		}
+		expect(executeOrgRefileCommand(source, source, relativePath)).toMatchObject({ kind: "local" })
+		for (const input of [alias, "CAFÉ.org"])
+			expect(executeOrgRefileCommand(source, source, input)).toMatchObject({
+				kind: "rejected",
+				reason: "same-document",
+			})
 	})
 	it.each([
 		"",
@@ -33,11 +53,17 @@ describe("subtree transfer parameters", () => {
 		"/tmp/file.org",
 		"folder\\file.org",
 		"file.txt",
-		"notes.org",
 		"NOTES.org",
 	])("rejects unsafe or same-source target %j", (input) => {
 		const source = context()
 		expect(executeOrgRefileCommand(source, source, input)).toMatchObject({ kind: "rejected" })
+	})
+	it("routes only the exact source into the local protocol", () => {
+		const source = context()
+		expect(executeOrgRefileCommand(source, source, "notes.org")).toEqual({
+			kind: "local",
+			targetRelativePath: "notes.org",
+		})
 	})
 	it("permits a safe new target and rejects stale origin", () => {
 		const source = context()

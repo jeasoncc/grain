@@ -1,4 +1,4 @@
-import { orgBlockRanges } from "./org-text.pipe"
+import { structuralOrgSourceLines } from "./org-text.pipe"
 
 export type OrgNewline = "\n" | "\r\n" | "\r"
 
@@ -68,8 +68,8 @@ export const extractOrgSubtreeAt = (
 	if (lineIndex === -1) {
 		return null
 	}
-	const blocks = orgBlockRanges(source)
-	const inBlock = (from: number) => blocks.some((block) => from >= block.from && from < block.to)
+	const eligible = new Set(structuralOrgSourceLines(source).map((line) => line.from))
+	const inBlock = (from: number) => !eligible.has(from)
 	if (inBlock(lines[lineIndex].from)) return null
 	const selected = headingLine(source, lines[lineIndex])
 	if (!selected) {

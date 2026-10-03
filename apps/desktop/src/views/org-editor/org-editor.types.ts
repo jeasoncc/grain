@@ -1,12 +1,13 @@
 import type { EditorState } from "@codemirror/state"
 import type { OrgBufferViewPayload } from "@/flows/org-command/org-buffer-command"
 import type { OrgBufferRuntime } from "@/flows/org-editor-runtime"
-import type { OrgLinkClickTarget, OrgTextEdit } from "@/pipes/org"
+import type { OrgLinkClickTarget, OrgTextEdit, OrgTextEditBatch } from "@/pipes/org"
 import type { OrgPrefixSession } from "@/types/editor/org-keymap.interface"
 
 /** Buffer-local transaction boundary; never performs filesystem IO. */
 export interface OrgEditorCommandTarget {
 	readonly applyEdit: (expectedSource: string, edit: OrgTextEdit) => boolean
+	readonly applyEdits?: (expectedSource: string, batch: OrgTextEditBatch) => boolean
 	/** Window-local presentation only; never modifies source or buffer history. */
 	readonly applyView?: (expectedSource: string, operation: OrgBufferViewPayload) => boolean
 	readonly restoreFocus: () => void

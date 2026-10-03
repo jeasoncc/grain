@@ -149,6 +149,7 @@ export interface OrgOpenBufferSummary {
 	readonly isDirty: boolean
 	readonly baseRevision: string
 	readonly hasConflict: boolean
+	readonly autosavePaused?: boolean
 }
 
 export interface OrgLiveBuffer {
@@ -603,6 +604,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				baseRevision: buffer.document.revision,
 				bufferId: bufferIdFor(relativePath),
 				hasConflict: conflictsRef.current.has(relativePath),
+				autosavePaused: autosavePausedRef.current.has(relativePath),
 				isDirty: buffer.isDirty,
 				relativePath,
 			})),
@@ -612,6 +614,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 						baseRevision: activeDocument.revision,
 						bufferId: bufferIdFor(activeDocument.relativePath),
 						hasConflict: conflictsRef.current.has(activeDocument.relativePath),
+						autosavePaused: autosavePausedRef.current.has(activeDocument.relativePath),
 						isDirty,
 						relativePath: activeDocument.relativePath,
 					},

@@ -186,6 +186,143 @@ describe("OrgEditor runtime projection", () => {
 		expect(runtime.source).toBe(source + insert)
 	})
 
+	it.each([
+		"\n",
+		"\r\n",
+		"\r",
+	])("applies source-coordinate batches atomically with %j", (separator) => {
+		const source = `* TODO One${separator}body${separator}* TODO Two${separator}`
+		const { runtime, onCommit } = makeRuntime(source)
+		let target: OrgEditorCommandTarget | null = null
+		const mounted = render(
+			<OrgEditor
+				runtime={runtime}
+				value={source}
+				onChange={vi.fn()}
+				onSave={vi.fn()}
+				ariaLabel="primary"
+				onCommandTarget={(next) => {
+					target = next
+				}}
+			/>,
+		)
+		const second = source.indexOf("Two")
+		const batch = {
+			changes: [
+				{ from: second, to: second + 3, insert: "Second" },
+				{ from: 7, to: 10, insert: "First" },
+			],
+			cursor: source.length + 5,
+		}
+		act(() => {
+			expect(target!.applyEdits!("stale", batch)).toBe(false)
+			expect(target!.applyEdits!(source, { ...batch, cursor: -1 })).toBe(false)
+			expect(
+				target!.applyEdits!(source, {
+					...batch,
+					changes: [
+						{ from: 0, to: 3, insert: "x" },
+						{ from: 2, to: 4, insert: "y" },
+					],
+				}),
+			).toBe(false)
+			if (separator === "\r\n")
+				expect(
+					target!.applyEdits!(source, {
+						changes: [
+							{ from: source.indexOf("\r") + 1, to: source.indexOf("\r") + 1, insert: "x" },
+						],
+						cursor: 0,
+					}),
+				).toBe(false)
+			expect(target!.applyEdits!(source, batch)).toBe(true)
+		})
+		expect(runtime.source).toBe(source.replace("One", "First").replace("Two", "Second"))
+		expect(viewFor().state.selection.main.head).toBe(viewFor().state.doc.length)
+		expect(onCommit).toHaveBeenCalledOnce()
+		expect(undoDepth(runtime.state)).toBe(1)
+		act(() => key(viewFor(), "z"))
+		expect(runtime.source).toBe(source)
+		const stale = target!
+		mounted.rerender(
+			<OrgEditor
+				runtime={runtime}
+				value={source}
+				onChange={vi.fn()}
+				onSave={vi.fn()}
+				readOnly
+				ariaLabel="primary"
+				onCommandTarget={(next) => {
+					target = next
+				}}
+			/>,
+		)
+		expect(target!.applyEdits!(source, batch)).toBe(false)
+		mounted.unmount()
+		expect(target).toBeNull()
+		expect(stale.applyEdits!(source, batch)).toBe(false)
+	})
+
+	it("checks sparse batch dependencies and privately permits separator reinsertion only", () => {
+		const source = "* TODO Visible\nbody\n* Hidden\nsecret\n* TODO Last\n"
+		const { runtime, onCommit } = makeRuntime(source)
+		let target: OrgEditorCommandTarget | null = null
+		render(
+			<OrgEditor
+				runtime={runtime}
+				value={source}
+				onChange={vi.fn()}
+				onSave={vi.fn()}
+				ariaLabel="primary"
+				onCommandTarget={(next) => {
+					target = next
+				}}
+			/>,
+		)
+		const start = source.indexOf("* Hidden")
+		act(() => {
+			expect(target!.applyView!(source, { kind: "sparse-tree", query: "todo" })).toBe(true)
+			const batch = { changes: [{ from: 7, to: 14, insert: "Changed" }], cursor: 7 }
+			expect(
+				target!.applyEdits!(source, {
+					...batch,
+					requiredVisibleRanges: [{ from: start, to: start + 2 }],
+				}),
+			).toBe(false)
+			expect(
+				target!.applyEdits!(source, {
+					...batch,
+					changes: [...batch.changes, { from: start + 2, to: start + 3, insert: "X" }],
+				}),
+			).toBe(false)
+			// A direct/filter:false transaction cannot acquire the private batch authority.
+			expect(() =>
+				viewFor().dispatch({
+					filter: false,
+					changes: { from: start - 1, to: start, insert: "\nnew\n" },
+				}),
+			).toThrow()
+			expect(runtime.source).toBe(source)
+			expect(
+				target!.applyEdits!(source, {
+					changes: [{ from: start - 1, to: start, insert: "new\n" }],
+					cursor: 0,
+				}),
+			).toBe(false)
+			expect(
+				target!.applyEdits!(source, {
+					changes: [{ from: start - 1, to: start, insert: "\nnew\n" }],
+					cursor: start + 1,
+					requiredVisibleRanges: [{ from: start - 1, to: start }],
+				}),
+			).toBe(true)
+		})
+		expect(runtime.source).toBe(source.slice(0, start) + "new\n" + source.slice(start))
+		expect(onCommit).toHaveBeenCalledOnce()
+		act(() => key(viewFor(), "z"))
+		expect(runtime.source).toBe(source)
+	})
+
 	it("imports both legacy history branches once, parks canonical history separately, and never adopts stale cache over live history", () => {
 		const cache = new Map<string, OrgEditorSessionSnapshot>()
 		const props = {

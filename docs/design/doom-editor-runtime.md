@@ -539,6 +539,43 @@ held acceptance, stale catalog targets and source-derived completion. Verificati
 This is bounded query support, not full Org sparse grammar/tag inheritance,
 TODO logging, measured large-file performance or native IME acceptance.
 
+## Same-file Refile: atomic buffer edit, not filesystem transfer
+
+The exact current path is a file candidate, including when absent from the last
+workspace scan; normalized aliases are not interchangeable local targets.
+Current-file heading lookup uses a frozen canonical-source snapshot without
+scan/read/write RPCs. Dirty local sources are valid, but unresolved pause/conflict,
+busy state and changed source/window/grant/incarnation reject acceptance.
+Cross-file Refile/Archive keep their saved-source/copy-first/dual-path protocol.
+
+```text
+Current file -> frozen local headings -> target / file root -> fresh guards
+  -> pure remove/relevel/insert source ranges -> one origin-window transaction
+  -> one canonical undo event -> normal later CAS save with original baseline
+```
+
+`planOrgSameFileRefile` returns an atomic edit batch in original raw coordinates,
+not a whole-document replacement or two separate dispatches. The editor validates
+ranges and visibility before committing; unchanged peer selections/folds keep
+meaningful mappings through move, undo and redo. Toolbar transfer clears any
+metadata-specific selection wrapper so the destination caret is retained.
+
+Sparse hidden source/target cannot be modified indirectly; visible moves with
+unrelated hidden intervening content remain usable. Boundary insertion has narrow
+private per-view authority and validates complete actual CRLF/LF/lone-CR
+separators. Safe whole-subtree removal must preserve the following heading's line
+boundary; ordinary Backspace/Delete cannot borrow this authority. Unclosed
+incoming or target drawers/blocks are rejected before edits/writes, including a
+malformed drawer in a later destination peer.
+
+Real production/editor regressions cover atomic two-range transactions,
+same-buffer peer cursor/folds/history, dirty local workflow and later CAS,
+visible/hidden sparse targets, raw EOF/separators, no-op/self/descendant targets,
+late unresolved state, focus/IME/held acceptance and canonical/alias candidates.
+Verification: 168 files /2741 tests, typecheck/build pass
+(2026-10-03 20:16 +08:00). Full configurable targets and native/user acceptance
+remain separate unfinished requirements.
+
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.

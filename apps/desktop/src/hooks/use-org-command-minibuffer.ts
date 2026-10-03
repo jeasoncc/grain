@@ -15,7 +15,13 @@ import type {
 	OrgMinibufferSession,
 	OrgMinibufferAcceptResult,
 } from "@/types/editor/minibuffer.interface"
-import { orgRefileTargetCandidates, RootCandidateLabel } from "@/pipes/org/org-refile-target.pipe"
+import {
+	createOrgRefileTargetSnapshot,
+	orgRefileTargetCandidates,
+	RootCandidateLabel,
+} from "@/pipes/org/org-refile-target.pipe"
+import { extractOrgSubtreeAt } from "@/pipes/org/org-subtree-refile.pipe"
+import { planOrgSameFileRefile } from "@/pipes/org/org-same-file-refile.pipe"
 import { buildOrgSparseTreePlan, parseOrgSparseTreeQuery } from "@/pipes/org/org-sparse-tree.pipe"
 import type { OrgEditorCommandTarget } from "@/views/org-editor"
 import type { OrgWorkspaceController } from "./use-org-workspace"
@@ -220,7 +226,7 @@ export const useOrgCommandMinibuffer = (
 			},
 		)
 	const openTransfer = (archive: boolean, cursor: number) => {
-		if (controller.isDirty) {
+		if (archive && controller.isDirty) {
 			setEcho("Save the current document before refiling or archiving a subtree.")
 			return
 		}
@@ -239,10 +245,11 @@ export const useOrgCommandMinibuffer = (
 					)
 		launch(description, prepare, cursor, async (origin, current, _target, finish, input) => {
 			if (
-				current.isDirty ||
+				(archive && current.isDirty) ||
 				current.openBuffers?.some(
 					(buffer) =>
-						buffer.bufferId === current.activeBufferId && (buffer.isDirty || buffer.hasConflict),
+						buffer.bufferId === current.activeBufferId &&
+						(buffer.hasConflict || buffer.autosavePaused),
 				)
 			)
 				return {
@@ -262,6 +269,75 @@ export const useOrgCommandMinibuffer = (
 				finish("Canceled")
 				return { ok: true }
 			}
+			if (result.kind === "local" && "targetRelativePath" in result) {
+				// Canonical memory only: no target RPC, persistent index, or loading owner.
+				const snapshot = createOrgRefileTargetSnapshot(origin.relativePath, "", origin.content)
+				const moved = extractOrgSubtreeAt(origin.content, origin.cursor)!
+				const candidates = orgRefileTargetCandidates(snapshot, true).filter(
+					(candidate) =>
+						candidate.kind === "root" ||
+						candidate.target.from < moved.from ||
+						candidate.target.from >= moved.to,
+				)
+				launch(
+					{
+						prompt: "Refile under heading:",
+						historyKey: "org.subtree.refile.heading",
+						completion: "value",
+						acceptCandidate: true,
+					},
+					() => ({
+						kind: "ready",
+						context: origin,
+						initialInput: RootCandidateLabel,
+						candidates: candidates.map((candidate) => candidate.label),
+					}),
+					cursor,
+					(headingOrigin, live, editor, retire, label) => {
+						if (
+							live.openBuffers?.some(
+								(buffer) =>
+									buffer.bufferId === live.activeBufferId &&
+									(buffer.hasConflict || buffer.autosavePaused),
+							)
+						)
+							return { ok: false, message: "Resolve the current buffer conflict before refiling." }
+						const candidate = candidates.find((entry) => entry.label === label)
+						if (!candidate)
+							return {
+								ok: false,
+								message: "Choose an exact target heading from the completion list.",
+							}
+						const plan = planOrgSameFileRefile(
+							live.content,
+							headingOrigin.cursor,
+							headingOrigin.content,
+							candidate.kind === "heading" ? candidate.target : undefined,
+						)
+						if (plan.kind === "rejected") return { ok: false, message: plan.message }
+						if (!editor.applyEdits)
+							return { ok: false, message: "This editor does not support atomic refile batches." }
+						if (!editor.applyEdits?.(headingOrigin.content, plan.batch))
+							return {
+								ok: false,
+								message: "The originating editor cannot apply this move. Cancel and retry.",
+							}
+						retire(plan.kind === "no-change" ? "Subtree already in place" : "Subtree refiled")
+						return { ok: true }
+					},
+				)
+				return { ok: true }
+			}
+			if (
+				current.isDirty ||
+				current.openBuffers?.some(
+					(buffer) => buffer.bufferId === current.activeBufferId && buffer.isDirty,
+				)
+			)
+				return {
+					ok: false,
+					message: "Save the current document before refiling or archiving a subtree.",
+				}
 			if (
 				!archive &&
 				"targetRelativePath" in result &&

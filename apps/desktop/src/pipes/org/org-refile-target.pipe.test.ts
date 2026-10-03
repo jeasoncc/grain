@@ -117,6 +117,34 @@ describe("Org refile targets", () => {
 			expect(E.isLeft(planOrgRefileInsertion(source, "* New", target))).toBe(true)
 	})
 
+	it("keeps closed drawers and fake drawer markers in literal blocks byte exact", () => {
+		const incoming =
+			"* Move\r\n:LOGBOOK:\r\nentry\0\r\n:END:\r\n#+begin_src\r\n:LOGBOOK:\r\n#+end_src\r\n#+begin_unknown\r\n:PROPERTIES:\r\n#+end_unknown\r\n"
+		const result = planOrgRefileInsertion("* Target\r\n* Peer\r\n", incoming, {
+			from: 0,
+			heading: "* Target",
+		})
+		expect(E.isRight(result)).toBe(true)
+		if (E.isRight(result))
+			expect(result.right.content).toBe("* Target\r\n*" + incoming + "* Peer\r\n")
+		const malformed = "* Target\n:LOGBOOK:\n* Peer\n"
+		expect(
+			E.isLeft(planOrgRefileInsertion(malformed, "* Move", { from: 0, heading: "* Target" })),
+		).toBe(true)
+		expect(E.isLeft(planOrgRefileInsertion(malformed, "* Move"))).toBe(true)
+	})
+	it("rejects an unclosed target drawer after the selected heading's next peer", () => {
+		const target = "* Target\n* Peer\n:LOGBOOK:\nunclosed\n"
+		const result = planOrgRefileInsertion(target, "* Move\n", {
+			from: 0,
+			heading: "* Target",
+		})
+		expect(result).toMatchObject({
+			_tag: "Left",
+			left: { message: "Target source has an unclosed drawer." },
+		})
+	})
+
 	it("rejects malformed incoming subtrees and unclosed blocks rather than swallowing existing peers", () => {
 		for (const incoming of [
 			"",
@@ -126,6 +154,8 @@ describe("Org refile targets", () => {
 			"* A\n* B",
 			"** A\n* B",
 			"* A\n#+begin_weird\n* Fake",
+			"* Move\n:LOGBOOK:\nno end\n",
+			"* Move\r\n:PROPERTIES:\r\n:K: v\r\n",
 			"#+begin_src\n* Fake",
 		]) {
 			expect(

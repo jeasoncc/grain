@@ -240,6 +240,113 @@ afterEach(() => {
 })
 
 describe("real heading refile runtime with an in-memory filesystem boundary", () => {
+	it.each([
+		false,
+		true,
+	])("moves locally from a saved/dirty source (%s) with one canonical undo and deferred CAS", async (dirty) => {
+		const initial = source + "* Destination\r\nkeep\r\n* Peer\r\n"
+		disk.set("source.org", { relativePath: "source.org", content: initial, revision: "source-1" })
+		await setup()
+		if (dirty)
+			act(() => {
+				view().dispatch({
+					changes: { from: view().state.doc.toString().indexOf("keep"), insert: "dirty " },
+				})
+			})
+		const original = controller.content
+		const originalSelection = view().state.selection
+		const depth = undoDepth(controller.activeBufferRuntime!.state)
+		const reads = boundary.read.mock.calls.length
+		const scans = boundary.scan.mock.calls.length
+		fireEvent.keyDown(screen.getByRole("textbox"), { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(screen.getByRole("textbox"), { ctrlKey: true, key: "w" })
+		const file = screen.getByRole("combobox", { name: "Refile to Org file:" })
+		fireEvent.change(file, { target: { value: "source.org" } })
+		await accept(file)
+		const headingInput = screen.getByRole("combobox", { name: "Refile under heading:" })
+		expect(screen.queryByRole("option", { name: /TODO 😀/ })).toBeNull()
+		expect(screen.queryByRole("option", { name: /child/ })).toBeNull()
+		fireEvent.change(headingInput, { target: { value: "Destination" } })
+		fireEvent.keyDown(headingInput, { key: "Tab" })
+		await accept(headingInput)
+		const expected = `* Destination\r\n${dirty ? "dirty " : ""}keep\r\n${inserted}* Peer\r\n`
+		expect(controller.content).toBe(expected)
+		expect(controller.isDirty).toBe(true)
+		expect(
+			controller.openBuffers.find((buffer) => buffer.relativePath === "source.org")?.baseRevision,
+		).toBe("source-1")
+		expect(boundary.read).toHaveBeenCalledTimes(reads)
+		expect(boundary.scan).toHaveBeenCalledTimes(scans)
+		expect(boundary.write).not.toHaveBeenCalled()
+		expect(disk.get("source.org")!.content).toBe(initial)
+		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(depth + 1)
+		fireEvent.keyDown(screen.getByRole("textbox"), { ctrlKey: true, key: "z" })
+		await flush()
+		expect(controller.content).toBe(original)
+		expect(view().state.selection.eq(originalSelection)).toBe(true)
+		// Reapply, then allow ordinary native CAS autosave to own the only write.
+		act(() => {
+			view().dispatch({ changes: { from: 0, to: view().state.doc.length, insert: expected } })
+		})
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(2000)
+		})
+		await flush()
+		expect(
+			boundary.write.mock.calls.map(([input]) => [input.relativePath, input.expectedRevision]),
+		).toEqual([["source.org", "source-1"]])
+	})
+	it.each([
+		["same", "incoming"],
+		["same", "target"],
+		["cross", "incoming"],
+		["cross", "target"],
+	])("rejects %s-file malformed %s drawers before any mutation", async (scope, malformed) => {
+		const incoming = "* Move\n" + (malformed === "incoming" ? ":LOGBOOK:\nunclosed\n" : "body\n")
+		const destination =
+			"* Projects\n" + (malformed === "target" ? ":LOGBOOK:\nunclosed\n" : "body\n") + "* Peer\n"
+		const initial =
+			scope === "same"
+				? malformed === "incoming"
+					? destination + incoming
+					: incoming + destination
+				: incoming
+		disk.set("source.org", { relativePath: "source.org", content: initial, revision: "source-1" })
+		disk.set("target.org", {
+			relativePath: "target.org",
+			content: destination,
+			revision: "target-1",
+		})
+		await setup()
+		act(() => view().dispatch({ selection: { anchor: initial.indexOf("* Move") + 2 } }))
+		fireEvent.keyDown(screen.getByRole("textbox"), { ctrlKey: true, shiftKey: true, key: "r" })
+		const file = screen.getByRole("combobox", { name: "Refile to Org file:" })
+		fireEvent.change(file, { target: { value: scope === "same" ? "source.org" : "target.org" } })
+		await accept(file)
+		const input = screen.getByRole("combobox", { name: "Refile under heading:" })
+		fireEvent.change(input, { target: { value: "Projects" } })
+		fireEvent.keyDown(input, { key: "Tab" })
+		await accept(input)
+		expect(controller.content).toBe(initial)
+		expect(view().state.sliceDoc()).toBe(initial)
+		expect(controller.isDirty).toBe(false)
+		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(0)
+		expect(boundary.write).not.toHaveBeenCalled()
+		expect(disk.get("source.org")!.content).toBe(initial)
+		expect(disk.get("target.org")!.content).toBe(destination)
+	})
+	it("accepts a file-root no-op without history, dirty state, lookup or writes", async () => {
+		await setup()
+		fireEvent.keyDown(screen.getByRole("textbox"), { ctrlKey: true, shiftKey: true, key: "r" })
+		const file = screen.getByRole("combobox", { name: "Refile to Org file:" })
+		fireEvent.change(file, { target: { value: "source.org" } })
+		await accept(file)
+		await accept(screen.getByRole("combobox", { name: "Refile under heading:" }))
+		expect(controller.content).toBe(source)
+		expect(controller.isDirty).toBe(false)
+		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(0)
+		expect(events).toEqual([])
+	})
 	it("separates lookup from writes, confirms target copy before removing source, preserving raw bytes and peer", async () => {
 		await setup()
 		const input = await heading()

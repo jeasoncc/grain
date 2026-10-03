@@ -1,6 +1,6 @@
 import * as E from "fp-ts/Either"
 import { appendOrgSubtree, detectOrgNewline, extractOrgSubtreeAt } from "./org-subtree-refile.pipe"
-import { orgBlockRanges } from "./org-text.pipe"
+import { orgBlockRanges, orgDrawerRanges, structuralOrgSourceLines } from "./org-text.pipe"
 
 export interface OrgRefileHeadingTarget {
 	readonly from: number
@@ -48,11 +48,11 @@ const linesOf = (source: string): readonly Line[] => {
 
 /** UTF-16 source offsets; unknown block types are protected by the shared raw block scanner. */
 export const enumerateOrgRefileHeadings = (source: string): readonly OrgRefileHeadingTarget[] => {
-	const blocks = orgBlockRanges(source)
+	const eligible = new Set(structuralOrgSourceLines(source).map((line) => line.from))
 	const parents: { level: number; title: string }[] = []
 	const headings: OrgRefileHeadingTarget[] = []
 	for (const line of linesOf(source)) {
-		if (blocks.some((block) => line.from >= block.from && line.from < block.to)) continue
+		if (!eligible.has(line.from)) continue
 		const match = /^(\*+)[ \t]+(.*)$/.exec(line.text)
 		if (!match) continue
 		const level = match[1].length
@@ -102,6 +102,9 @@ export interface OrgRefileTargetValidationError {
 	readonly message: string
 }
 export interface OrgRefileInsertionPlan {
+	/** Original target-source insertion coordinate and complete boundary payload. */
+	readonly insertionOffset: number
+	readonly boundaryPayload: string
 	readonly content: string
 	/** Releveled source only; boundary separators are not part of this string. */
 	readonly insertedSource: string
@@ -130,8 +133,13 @@ export const planOrgRefileInsertion = (
 	if (!root || root.from !== 0) return invalid("Incoming source must start with a real heading.")
 	if (orgBlockRanges(subtreeSource).some((block) => !block.closed))
 		return invalid("Incoming source has an unclosed block.")
+	if (orgDrawerRanges(subtreeSource).some((drawer) => !drawer.closed))
+		return invalid("Incoming source has an unclosed drawer.")
 	if (incoming.slice(1).some((heading) => heading.level <= root.level))
 		return invalid("Incoming source must contain exactly one subtree.")
+
+	if (orgDrawerRanges(targetSource).some((drawer) => !drawer.closed))
+		return invalid("Target source has an unclosed drawer.")
 
 	let at = targetSource.length
 	let delta = 0
@@ -179,6 +187,8 @@ export const planOrgRefileInsertion = (
 	const from = joined.length - insertedSource.length
 	const separator = suffix && !/[\r\n]$/.test(joined) ? detectOrgNewline(targetSource) : ""
 	return E.right({
+		insertionOffset: at,
+		boundaryPayload: joined.slice(at) + separator,
 		content: joined + separator + suffix,
 		insertedSource,
 		from,

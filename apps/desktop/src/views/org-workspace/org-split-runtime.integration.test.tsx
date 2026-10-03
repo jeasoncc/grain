@@ -154,6 +154,34 @@ async function open(path: string) {
 		expect(await controller.openDocumentPath(path)).toBe(true)
 	})
 }
+async function localHeading(editor: EditorView, destination = "Second", toolbar = false) {
+	if (toolbar) {
+		fireEvent.pointerDown(screen.getByRole("button", { name: "Note actions" }), {
+			button: 0,
+			ctrlKey: false,
+		})
+		fireEvent.click(screen.getByRole("button", { name: "Note actions" }))
+		fireEvent.click(screen.getByRole("menuitem", { name: /Refile subtree/ }))
+	} else fireEvent.keyDown(editor.contentDOM, { ctrlKey: true, shiftKey: true, key: "r" })
+	const file = screen.getByRole("combobox", { name: "Refile to Org file:" })
+	fireEvent.change(file, { target: { value: "a.org" } })
+	fireEvent.keyDown(file, { key: "Enter" })
+	await act(async () => {
+		await Promise.resolve()
+	})
+	const heading = screen.getByRole("combobox", { name: "Refile under heading:" })
+	fireEvent.change(heading, { target: { value: destination } })
+	fireEvent.keyDown(heading, { key: "Tab" })
+	return heading
+}
+async function acceptHeading(heading: HTMLElement) {
+	fireEvent.keyDown(heading, { key: "Enter" })
+	await act(async () => {
+		await Promise.resolve()
+	})
+}
+const rangeRects = Object.getOwnPropertyDescriptor(Range.prototype, "getClientRects")
+const rangeBounds = Object.getOwnPropertyDescriptor(Range.prototype, "getBoundingClientRect")
 let consumeReactKey = false
 async function setup() {
 	render(
@@ -177,6 +205,11 @@ beforeEach(() => {
 	vi.useFakeTimers()
 	vi.resetAllMocks()
 	consumeReactKey = false
+	Object.defineProperty(Range.prototype, "getClientRects", { configurable: true, value: () => [] })
+	Object.defineProperty(Range.prototype, "getBoundingClientRect", {
+		configurable: true,
+		value: () => new DOMRect(),
+	})
 
 	window.localStorage.clear()
 	vi.spyOn(window, "matchMedia").mockImplementation((query) => ({
@@ -221,11 +254,362 @@ beforeEach(() => {
 })
 afterEach(() => {
 	cleanup()
+	for (const [key, descriptor] of [
+		["getClientRects", rangeRects],
+		["getBoundingClientRect", rangeBounds],
+	] as const) {
+		if (descriptor) Object.defineProperty(Range.prototype, key, descriptor)
+		else Reflect.deleteProperty(Range.prototype, key)
+	}
 	vi.useRealTimers()
 	vi.restoreAllMocks()
 })
 
 describe("production root independently bound split (synthetic host IO, real hook/pane/editor/runtime)", () => {
+	it.each([
+		false,
+		true,
+	])("SAMEBUFFER refile maps intervening peer multi-selection and fold; undo/redo from either window (%s)", async (peerUndo) => {
+		const raw = "* Move\nmove😀\n* Middle\nunchanged body\n** Child\nchild body\n* Second\nend\n"
+		disk.set("a.org", { relativePath: "a.org", content: raw, revision: "a-1" })
+		await setup()
+		const a = left(),
+			peer = right(),
+			runtime = controller.activeBufferRuntime!
+		act(() => {
+			peer.dispatch({ selection: { anchor: raw.indexOf("** Child") } })
+			foldCode(peer)
+			peer.dispatch({
+				selection: EditorSelection.create(
+					[
+						EditorSelection.cursor(raw.indexOf("unchanged") + 3),
+						EditorSelection.range(raw.indexOf("Child"), raw.indexOf("Child") + 4),
+					],
+					1,
+				),
+			})
+		})
+		const selection = peer.state.selection
+		const oldFolds: [number, number][] = []
+		foldedRanges(peer.state).between(0, raw.length, (from, to) => {
+			oldFolds.push([from, to])
+		})
+		expect(oldFolds).toHaveLength(1)
+		focus(a)
+		act(() => a.dispatch({ selection: { anchor: 2 } }))
+		const originSelection = runtime.state.selection
+		await acceptHeading(await localHeading(a))
+		const removed = raw.indexOf("* Middle")
+		const expected = raw.slice(removed) + "** Move\nmove😀\n"
+		source(expected)
+		expect(peer.state.selection.ranges.map(({ anchor, head }) => [anchor, head])).toEqual(
+			selection.ranges.map(({ anchor, head }) => [anchor - removed, head - removed]),
+		)
+		expect(peer.state.selection.mainIndex).toBe(1)
+		const mappedFolds: [number, number][] = []
+		foldedRanges(peer.state).between(0, expected.length, (from, to) => {
+			mappedFolds.push([from, to])
+		})
+		expect(mappedFolds).toEqual(oldFolds.map(([from, to]) => [from - removed, to - removed]))
+		expect(a.state.selection.main.head).toBe(expected.indexOf("** Move"))
+		expect(undoDepth(runtime.state)).toBe(1)
+		key(peerUndo ? peer : a)
+		source(raw)
+		expect(runtime.state.selection.eq(originSelection)).toBe(true)
+		key(peerUndo ? a : peer, true)
+		source(expected)
+		expect(runtime.state.selection.main.head).toBe(expected.indexOf("** Move"))
+		expect(undoDepth(runtime.state)).toBe(1)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it.each([
+		"visible",
+		"mixed-boundary",
+		"no-change-hidden-source",
+		"hidden-target",
+		"hidden-source",
+	])("sparse refile %s retains unrelated hidden bytes and rejects hidden participants without history", async (mode) => {
+		const raw =
+			mode === "no-change-hidden-source"
+				? "* Second :keep:\nbody\n** Move :keep:\nmove\n*** Hidden child :other:\nretained child\n"
+				: mode === "mixed-boundary"
+					? "* Move :keep:\r\nmove\r\n* Hidden :other:\r\nuntouched\0😀\r\n* Second :keep:\r\nend\r* Peer :other:\r\npeer\r\n"
+					: "* Move :keep:\nmove\n" +
+						(mode === "hidden-source" ? "** Hidden child :other:\nretained child\n" : "") +
+						"* Hidden :other:\nuntouched\0😀\n* Second :keep:\nend\n"
+		disk.set("a.org", { relativePath: "a.org", content: raw, revision: "a-1" })
+		await setup()
+		const a = left(),
+			runtime = controller.activeBufferRuntime!
+		focus(a)
+		fireEvent.keyDown(a.contentDOM, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(a.contentDOM, { key: "/" })
+		const sparse = screen.getByRole("combobox", { name: /^Sparse tree/ })
+		fireEvent.change(sparse, { target: { value: "tag:keep" } })
+		fireEvent.keyDown(sparse, { key: "Enter" })
+		expect(a.state.field(orgSparseTreeField)?.plan.hiddenRanges.length).toBeGreaterThan(0)
+		const reads = vi.mocked(openOrgDocumentFlow).mock.calls.length
+		const scans = vi.mocked(scanOrgWorkspaceFlow).mock.calls.length
+		act(() => a.dispatch({ selection: { anchor: raw.indexOf("Move") } }))
+		const heading = await localHeading(a, mode === "hidden-target" ? "Hidden" : "Second")
+		if (mode === "hidden-source") {
+			// The heading is visible, but its full moved subtree includes hidden bytes.
+			expect(a.contentDOM).not.toHaveTextContent("Hidden child")
+		}
+		const transactions = vi.spyOn(a, "update")
+		await acceptHeading(heading)
+		if (mode === "visible" || mode === "mixed-boundary") {
+			const expected =
+				mode === "mixed-boundary"
+					? "* Hidden :other:\r\nuntouched\0😀\r\n* Second :keep:\r\nend\r** Move :keep:\r\nmove\r\n* Peer :other:\r\npeer\r\n"
+					: raw.slice(raw.indexOf("* Hidden")) + "** Move :keep:\nmove\n"
+			source(expected)
+			const changed = transactions.mock.calls.flatMap(([txs]) => txs).filter((tr) => tr.docChanged)
+			expect(changed).toHaveLength(1)
+			const ranges: [number, number, string][] = []
+			changed[0].changes.iterChanges((from, to, _a, _b, insert) =>
+				ranges.push([from, to, insert.toString()]),
+			)
+			expect(ranges).toHaveLength(2)
+			expect(ranges[0]).toEqual([0, 19, ""])
+			if (mode === "mixed-boundary")
+				expect(ranges[1]).toEqual([
+					raw.replace(/\r\n/g, "\n").indexOf("* Peer") - 1,
+					raw.replace(/\r\n/g, "\n").indexOf("* Peer"),
+					"\r** Move :keep:\nmove\n",
+				])
+			else expect(ranges[1]).toEqual([raw.length, raw.length, "** Move :keep:\nmove\n"])
+			expect(undoDepth(runtime.state)).toBe(1)
+		} else {
+			source(raw)
+			expect(undoDepth(runtime.state)).toBe(0)
+			expect(controller.isDirty).toBe(false)
+			expect(redoDepth(runtime.state)).toBe(0)
+			expect(
+				screen.getByText("The originating editor cannot apply this move. Cancel and retry."),
+			).toBeInTheDocument()
+		}
+		expect(openOrgDocumentFlow).toHaveBeenCalledTimes(reads)
+		expect(scanOrgWorkspaceFlow).toHaveBeenCalledTimes(scans)
+		expect(disk.get("a.org")!.content).toBe(raw)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it("metadata toolbar then refile toolbar uses fresh source and places destination caret", async () => {
+		await setup()
+		const a = left(),
+			runtime = controller.activeBufferRuntime!
+		focus(a)
+		act(() => a.dispatch({ selection: { anchor: 2 } }))
+		fireEvent.pointerDown(screen.getByRole("button", { name: "Note actions" }), {
+			button: 0,
+			ctrlKey: false,
+		})
+		fireEvent.click(screen.getByRole("button", { name: "Note actions" }))
+		fireEvent.click(screen.getByRole("menuitem", { name: /Heading tags/ }))
+		const tags = screen.getByRole("combobox", { name: /^Tags/ })
+		fireEvent.change(tags, { target: { value: "fresh" } })
+		fireEvent.keyDown(tags, { key: "Enter" })
+		expect(runtime.source).toContain("* A :fresh:")
+		await acceptHeading(await localHeading(a, "Second", true))
+		expect(runtime.source).toBe("* Second\r\nsecond body\r\nEOF\r\n** A :fresh:\r\nbody\0😀\r\n")
+		expect(a.state.selection.main.head).toBe(a.state.doc.toString().indexOf("** A"))
+		expect(a.contentDOM).toHaveFocus()
+		expect(undoDepth(runtime.state)).toBe(2)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it("late production conflict/autosave pause fences local heading acceptance", async () => {
+		await setup()
+		const a = left(),
+			runtime = controller.activeBufferRuntime!
+		focus(a)
+		act(() => a.dispatch({ changes: { from: a.state.doc.length, insert: " dirty" } }))
+		act(() => a.dispatch({ selection: { anchor: 2 } }))
+		const heading = await localHeading(a)
+		const before = runtime.source,
+			depth = undoDepth(runtime.state)
+		disk.set("a.org", { relativePath: "a.org", content: rawA + " external", revision: "a-2" })
+		workspace = {
+			...workspace,
+			documents: workspace.documents.map((entry) =>
+				entry.relativePath === "a.org" ? { ...entry, revision: "a-2" } : entry,
+			),
+		}
+		await act(async () => {
+			await controller.refreshWorkspace()
+		})
+		expect(controller.openBuffers.find((buffer) => buffer.relativePath === "a.org")).toMatchObject({
+			hasConflict: true,
+			autosavePaused: true,
+		})
+		await acceptHeading(heading)
+		source(before)
+		expect(undoDepth(runtime.state)).toBe(depth)
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(2000)
+		})
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it("focusing a SAMEBUFFER peer cancels the originating local heading session", async () => {
+		await setup()
+		const a = left(),
+			runtime = controller.activeBufferRuntime!
+		focus(a)
+		act(() => a.dispatch({ selection: { anchor: 2 } }))
+		const heading = await localHeading(a)
+		focus(right())
+		expect(screen.queryByRole("combobox", { name: "Refile under heading:" })).toBeNull()
+		await acceptHeading(heading)
+		source(rawA)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
+	it.each([
+		false,
+		true,
+	])("same-file refile in independent A/B changes only A and autosaves its original CAS base (%s)", async (dirty) => {
+		await setup()
+		const a = left(),
+			runtimeA = controller.activeBufferRuntime!
+		focus(right())
+		await open("b.org")
+		const b = right(),
+			runtimeB = controller.activeBufferRuntime!
+		focus(a)
+		if (dirty) {
+			act(() => a.dispatch({ selection: { anchor: a.state.doc.length } }))
+			type(a, " dirty")
+		}
+		act(() => a.dispatch({ selection: { anchor: 2 } }))
+		const origin = runtimeA.source
+		const depth = undoDepth(runtimeA.state)
+		const reads = vi.mocked(openOrgDocumentFlow).mock.calls.length
+		const scans = vi.mocked(scanOrgWorkspaceFlow).mock.calls.length
+		fireEvent.keyDown(a.contentDOM, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(a.contentDOM, { ctrlKey: true, key: "w" })
+		const file = screen.getByRole("combobox", { name: "Refile to Org file:" })
+		fireEvent.change(file, { target: { value: "a.org" } })
+		fireEvent.keyDown(file, { key: "Enter" })
+		await act(async () => {
+			await Promise.resolve()
+		})
+		const heading = screen.getByRole("combobox", { name: "Refile under heading:" })
+		act(() => a.dispatch({ selection: EditorSelection.range(0, 2) }))
+		const selection = runtimeA.state.selection
+		fireEvent.change(heading, { target: { value: "Second" } })
+		fireEvent.keyDown(heading, { key: "Tab" })
+		fireEvent.keyDown(heading, { key: "Enter" })
+		await act(async () => {
+			await Promise.resolve()
+		})
+		const expected = `* Second\r\nsecond body\r\nEOF${dirty ? " dirty" : ""}\r\n** A :raw:\r\nbody\0😀\r\n`
+		expect(runtimeA.source).toBe(expected)
+		expect(runtimeB.source).toBe(rawB)
+		expect(b.state.sliceDoc()).toBe(rawB)
+		expect(undoDepth(runtimeB.state)).toBe(0)
+		expect(undoDepth(runtimeA.state)).toBe(depth + 1)
+		expect(openOrgDocumentFlow).toHaveBeenCalledTimes(reads)
+		expect(scanOrgWorkspaceFlow).toHaveBeenCalledTimes(scans)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(disk.get("a.org")!.content).toBe(rawA)
+		expect(
+			controller.openBuffers.find((buffer) => buffer.relativePath === "a.org")?.baseRevision,
+		).toBe("a-1")
+		key(a)
+		expect(runtimeA.source).toBe(origin)
+		expect(runtimeA.state.selection.eq(selection)).toBe(true)
+		key(a, true)
+		expect(runtimeA.source).toBe(expected)
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(2000)
+		})
+		expect(
+			vi
+				.mocked(saveOrgDocumentFlow)
+				.mock.calls.map(([input]) => [input.relativePath, input.expectedRevision]),
+		).toEqual([["a.org", "a-1"]])
+	})
+	it.each([
+		"edit",
+		"peer-focus",
+		"grant",
+		"retire",
+		"reincarnate",
+	])("refuses stale local heading selection after %s", async (change) => {
+		await setup()
+		const a = left(),
+			peer = right(),
+			runtime = controller.activeBufferRuntime!
+		focus(a)
+		act(() => a.dispatch({ selection: { anchor: 2 } }))
+		fireEvent.keyDown(a.contentDOM, { ctrlKey: true, shiftKey: true, key: "r" })
+		const file = screen.getByRole("combobox", { name: "Refile to Org file:" })
+		fireEvent.change(file, { target: { value: "a.org" } })
+		fireEvent.keyDown(file, { key: "Enter" })
+		await act(async () => {
+			await Promise.resolve()
+		})
+		const heading = screen.getByRole("combobox", { name: "Refile under heading:" })
+		fireEvent.change(heading, { target: { value: "Second" } })
+		fireEvent.keyDown(heading, { key: "Tab" })
+		if (change === "edit")
+			act(() => peer.dispatch({ changes: { from: peer.state.doc.length, insert: " peer" } }))
+		if (change === "peer-focus") {
+			focus(peer)
+			await open("b.org")
+		}
+		if (change === "grant") {
+			workspace = { ...workspace, capabilityToken: "G2" }
+			await act(async () => {
+				await controller.openDefaultWorkspace()
+			})
+		}
+		if (change === "retire" || change === "reincarnate") {
+			await act(async () => {
+				await controller.closeDocumentPath("a.org")
+			})
+			if (change === "reincarnate") await open("a.org")
+		}
+		fireEvent.keyDown(heading, { key: "Enter" })
+		await act(async () => {
+			await Promise.resolve()
+		})
+		expect(runtime.source).toBe(rawA + (change === "edit" ? " peer" : ""))
+		expect(undoDepth(runtime.state)).toBe(change === "edit" ? 1 : 0)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it("same-file file/heading stages ignore held, consumed and IME Enter and cancel without mutation", async () => {
+		await setup()
+		const a = left(),
+			runtime = controller.activeBufferRuntime!
+		focus(a)
+		act(() => a.dispatch({ selection: { anchor: 2 } }))
+		fireEvent.keyDown(a.contentDOM, { ctrlKey: true, shiftKey: true, key: "r" })
+		const file = screen.getByRole("combobox", { name: "Refile to Org file:" })
+		fireEvent.change(file, { target: { value: "a.org" } })
+		fireEvent.compositionStart(file)
+		fireEvent.keyDown(file, { key: "Enter", isComposing: true })
+		expect(screen.queryByRole("combobox", { name: "Refile under heading:" })).toBeNull()
+		fireEvent.compositionEnd(file)
+		consumeReactKey = true
+		fireEvent.keyDown(file, { key: "Enter" })
+		expect(screen.queryByRole("combobox", { name: "Refile under heading:" })).toBeNull()
+		consumeReactKey = false
+		fireEvent.keyDown(file, { key: "Enter" })
+		await act(async () => {
+			await Promise.resolve()
+		})
+		const heading = screen.getByRole("combobox", { name: "Refile under heading:" })
+		fireEvent.keyDown(heading, { key: "Enter", repeat: true })
+		expect(screen.getByRole("combobox", { name: "Refile under heading:" })).toBe(heading)
+		fireEvent.compositionStart(heading)
+		fireEvent.keyDown(heading, { key: "Enter", isComposing: true })
+		fireEvent.compositionEnd(heading)
+		fireEvent.keyDown(heading, { key: "Escape" })
+		expect(runtime.source).toBe(rawA)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
 	it.each([
 		["todo", "TODO Work", "DONE Needle"],
 		["tag:work", "TODO Work", "DONE Needle"],

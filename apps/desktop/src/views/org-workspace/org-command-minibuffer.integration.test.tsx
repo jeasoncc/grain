@@ -404,7 +404,7 @@ describe("subtree transfer bottom sessions", () => {
 		})
 	})
 
-	it("completes targets excluding the source and reports unsafe targets inline", async () => {
+	it("completes targets including the exact source and reports unsafe targets inline", async () => {
 		const refileSubtree = vi
 			.fn<OrgWorkspaceController["refileSubtree"]>()
 			.mockResolvedValue({ kind: "success" })
@@ -416,7 +416,7 @@ describe("subtree transfer bottom sessions", () => {
 		fireEvent.change(input, { target: { value: "" } })
 		expect(screen.getByRole("option", { name: "inbox.org" })).toBeVisible()
 		expect(screen.getByRole("option", { name: "projects/work.org" })).toBeVisible()
-		expect(screen.queryByRole("option", { name: "note.org" })).toBeNull()
+		expect(screen.getByRole("option", { name: "note.org" })).toBeVisible()
 		fireEvent.change(input, { target: { value: "../outside.org" } })
 		fireEvent.keyDown(input, { key: "Enter" })
 		await waitFor(() =>

@@ -42,6 +42,7 @@ export {
 	moveOrgSubtreeAt,
 	type OrgPlanningKind,
 	type OrgTextEdit,
+	type OrgTextEditBatch,
 	type OrgTodoKeywords,
 	parseOrgTodoKeywords,
 	setOrgHeadingTagsAt,

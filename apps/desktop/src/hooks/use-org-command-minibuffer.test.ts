@@ -366,19 +366,49 @@ describe("two-phase refile ownership", () => {
 		expect(controller.refileSubtree).not.toHaveBeenCalled()
 		expect(target.restoreFocus).not.toHaveBeenCalled()
 	})
-	it("does not lookup dirty sources", () => {
+	it("offers dirty sources without looking up disk", () => {
 		const controller = { ...makeController(), isDirty: true }
 		const { result } = renderHook(() =>
 			useOrgCommandMinibuffer(controller, false, { current: makeTarget() }),
 		)
 		act(() => result.current.openRefile(2))
-		expect(result.current.session).toBeNull()
+		expect(result.current.session?.candidates).toContain("note.org")
 		expect(controller.readRefileTarget).not.toHaveBeenCalled()
 	})
 })
 
 describe("subtree transfer parameter sessions", () => {
-	it("offers workspace targets but never the source", () => {
+	it.each([
+		"hasConflict",
+		"autosavePaused",
+	] as const)("refuses local selection with unresolved %s", async (flag) => {
+		const base = makeController()
+		const controller = {
+			...base,
+			openBuffers: [
+				{
+					bufferId: base.activeBufferId!,
+					relativePath: "note.org",
+					baseRevision: "r1",
+					isDirty: true,
+					hasConflict: false,
+					[flag]: true,
+				},
+			],
+		}
+		const target = makeTarget()
+		const { result } = renderHook(() =>
+			useOrgCommandMinibuffer(controller, false, { current: target }),
+		)
+		act(() => result.current.openRefile(2))
+		await act(async () => {
+			expect(await result.current.session!.onAccept("note.org")).toMatchObject({ ok: false })
+		})
+		expect(controller.readRefileTarget).not.toHaveBeenCalled()
+		expect(controller.refileSubtree).not.toHaveBeenCalled()
+		expect(target.applyEdit).not.toHaveBeenCalled()
+	})
+	it("offers workspace targets including the exact source", () => {
 		const controller = makeController()
 		const { result } = renderHook(() =>
 			useOrgCommandMinibuffer(controller, false, { current: makeTarget() }),
@@ -387,7 +417,7 @@ describe("subtree transfer parameter sessions", () => {
 		expect(result.current.session).toMatchObject({
 			prompt: "Refile to Org file:",
 			initialInput: "inbox.org",
-			candidates: ["inbox.org", "projects/work.org"],
+			candidates: ["note.org", "inbox.org", "projects/work.org"],
 			cancelWhileAccepting: true,
 		})
 		expect(controller.refileSubtree).not.toHaveBeenCalled()
@@ -396,8 +426,8 @@ describe("subtree transfer parameter sessions", () => {
 	it.each([
 		"../outside.org",
 		"/outside.org",
-		"note.org",
-	])("rejects unsafe or source target %s without effects", async (input) => {
+		"NOTE.org",
+	])("rejects unsafe or alias target %s without effects", async (input) => {
 		const controller = makeController()
 		const target = makeTarget()
 		const { result } = renderHook(() =>

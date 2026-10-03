@@ -14,6 +14,17 @@ export const appendOrgTodoCapture = (source: string, title: string): string => {
 	return `${source}${separator}* TODO ${normalizedTitle}${lineEnding}`
 }
 
+/** Atomic replacements in original raw-source coordinates; cursor in final raw source. */
+export interface OrgTextEditBatch {
+	readonly changes: readonly {
+		readonly from: number
+		readonly to: number
+		readonly insert: string
+	}[]
+	readonly cursor: number
+	readonly requiredVisibleRanges?: readonly { readonly from: number; readonly to: number }[]
+}
+
 export interface OrgTextEdit {
 	readonly from: number
 	readonly to: number
@@ -87,7 +98,8 @@ const scanOrgSource = (content: string, states: ReadonlySet<string>, excludeComm
 	const ranges: OrgBlockRange[] = []
 	const lines: RawOrgLine[] = []
 	let block: { readonly from: number; readonly type: string } | null = null
-	let inDrawer = false
+	const drawers: OrgBlockRange[] = []
+	let drawerFrom: number | null = null
 	let commentLevel: number | null = null
 	for (const line of rawOrgLines(content)) {
 		if (block) {
@@ -98,8 +110,11 @@ const scanOrgSource = (content: string, states: ReadonlySet<string>, excludeComm
 			}
 			continue
 		}
-		if (inDrawer) {
-			if (/^[ \t]*:END:[ \t]*$/i.test(line.text)) inDrawer = false
+		if (drawerFrom !== null) {
+			if (/^[ \t]*:END:[ \t]*$/i.test(line.text)) {
+				drawers.push({ from: drawerFrom, to: line.breakTo, closed: true })
+				drawerFrom = null
+			}
 			continue
 		}
 		const heading = /^(\*+)[ \t]+(.*)$/.exec(line.text)
@@ -110,7 +125,7 @@ const scanOrgSource = (content: string, states: ReadonlySet<string>, excludeComm
 		}
 		if (commentLevel !== null) continue
 		if (/^[ \t]*:[\w-]+:[ \t]*$/.test(line.text) && !/^[ \t]*:END:/i.test(line.text)) {
-			inDrawer = true
+			drawerFrom = line.from
 			continue
 		}
 		const begin = /^[ \t]*#\+begin_([A-Za-z0-9_-]+)\b/i.exec(line.text)
@@ -118,12 +133,21 @@ const scanOrgSource = (content: string, states: ReadonlySet<string>, excludeComm
 		else lines.push(line)
 	}
 	if (block) ranges.push({ from: block.from, to: content.length, closed: false })
-	return { ranges, lines }
+	if (drawerFrom !== null) drawers.push({ from: drawerFrom, to: content.length, closed: false })
+	return { ranges, drawers, lines }
 }
 
 /** Lexical literal protection includes blocks in COMMENT subtrees, but not drawer markers. */
 export const orgBlockRanges = (content: string): readonly OrgBlockRange[] =>
 	scanOrgSource(content, new Set(), false).ranges
+
+/** Drawer markers are eligible only outside literal blocks and existing drawers. */
+export const orgDrawerRanges = (content: string): readonly OrgBlockRange[] =>
+	scanOrgSource(content, new Set(), false).drawers
+
+/** Structural source eligibility preserves COMMENT headings while excluding literal drawers/blocks. */
+export const structuralOrgSourceLines = (content: string) =>
+	scanOrgSource(content, new Set(), false).lines
 
 /** Shared eligibility grammar for TODO declarations and sparse headings. */
 export const eligibleOrgSourceLines = (content: string, states: ReadonlySet<string>) =>

@@ -21,18 +21,20 @@ export const prepareOrgRefileCommand = (
 			message: "Place the cursor on the heading line of the subtree to refile.",
 		}
 	const candidates = paths.filter(
-		(path) => isSafeRelativeOrgPath(path) && comparable(path) !== comparable(context.relativePath),
+		(path) =>
+			isSafeRelativeOrgPath(path) &&
+			(path === context.relativePath || comparable(path) !== comparable(context.relativePath)),
 	)
 	return {
 		kind: "ready",
 		context: { ...context },
-		candidates,
+		candidates: [...new Set([context.relativePath, ...candidates])],
 		initialInput:
 			comparable(context.relativePath) !== "inbox.org" ? "inbox.org" : (candidates[0] ?? ""),
 	}
 }
 export type OrgRefileCommandResult =
-	| { readonly kind: "transfer"; readonly targetRelativePath: string }
+	| { readonly kind: "transfer" | "local"; readonly targetRelativePath: string }
 	| OrgBufferCommandRejected
 /** Validate target parameters only. Filesystem effects remain in the existing copy-first flow. */
 export const executeOrgRefileCommand = (
@@ -56,6 +58,7 @@ export const executeOrgRefileCommand = (
 			message:
 				"Choose a safe workspace-relative lowercase .org path; absolute paths and traversal are not allowed.",
 		}
+	if (targetRelativePath === origin.relativePath) return { kind: "local", targetRelativePath }
 	if (comparable(targetRelativePath) === comparable(origin.relativePath))
 		return {
 			kind: "rejected",

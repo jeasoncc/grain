@@ -352,10 +352,13 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 		)
 	}
 	const toolbarTransfer = (type: "refile" | "archive") => {
-		if (!resolveToolbarWindow() || controllerRef.current.isDirty) return
+		if (!resolveToolbarWindow() || (type === "archive" && controllerRef.current.isDirty)) return
 		const position = cursors.current.get(windowKey(activeWindowRef.current)) ?? 0
-		if (type === "refile") parameterCommandRef.current.openRefile(position)
-		else parameterCommandRef.current.openArchive(position)
+		if (type === "refile") {
+			commandTargetRef.current = targets.current.get(windowKey(activeWindowRef.current)) ?? null
+			if (!commandTargetRef.current) return
+			parameterCommandRef.current.openRefile(position)
+		} else parameterCommandRef.current.openArchive(position)
 	}
 	const openMetadataCommandRef = useRef(openMetadataCommand)
 	openMetadataCommandRef.current = openMetadataCommand
@@ -609,10 +612,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 									<span className="ml-auto text-[10px] text-muted-foreground">C-c C-p</span>
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />
-								<DropdownMenuItem
-									disabled={isBusy || toolbarIsDirty}
-									onClick={() => toolbarTransfer("refile")}
-								>
+								<DropdownMenuItem disabled={isBusy} onClick={() => toolbarTransfer("refile")}>
 									<Send className="mr-2 size-4" />
 									Refile subtree
 								</DropdownMenuItem>
