@@ -8,7 +8,9 @@ import type {
 } from "@/types/org"
 import { saveOrgDocumentFlow } from "./org-workspace.flow"
 
-/** Values captured by the root before taking the batch mutation owner. */
+/** Values captured by the root before taking the batch mutation owner.
+ * The root supplies an immutable baseline copy, not a live document reference.
+ */
 export interface OrgSaveAllCapture {
 	readonly document: Readonly<OrgDocumentInterface>
 	readonly content: string
@@ -17,7 +19,7 @@ export interface OrgSaveAllCapture {
 }
 
 export interface OrgSaveAllPorts<C extends OrgSaveAllCapture> {
-	/** Owner/origin and capture identity must still be current before each write. */
+	/** Owner/origin, logical ID, reference identity and disk baseline must be current before each write. */
 	readonly isFresh: (capture: C) => boolean
 	/** Checked after every awaited write, before interpreting or committing it. */
 	readonly isOwnerCurrent: () => boolean

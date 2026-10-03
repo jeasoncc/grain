@@ -38,6 +38,10 @@ import {
 	unwatchOrgWorkspace,
 	watchOrgWorkspace,
 } from "@/io/file/org-file.repository"
+import {
+	guardOrgWorkingCopyBaseline,
+	planOrgWorkingCopyAck,
+} from "@/pipes/editor/org-working-copy-ack.pipe"
 import type { OrgRuntimeCommitContext } from "@/types/editor/org-runtime-owner.interface"
 import type { OrgLinkClickTarget } from "@/pipes/org"
 import type {
@@ -1512,7 +1516,9 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		const owner = Symbol("save")
 		mutationOwnerRef.current = owner
 		const sourcePath = activeRef.current!.relativePath
-		const sourceRevision = activeRef.current!.revision
+		const sourceDocument = { ...activeRef.current! }
+		const logicalBufferId = bufferIdsRef.current.get(sourcePath)
+		const sourceRevision = sourceDocument.revision
 		const contentBeingSaved = latestContentRef.current
 		setSaving(true)
 		setError(null)
@@ -1523,7 +1529,11 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			capabilityToken: workspace.capabilityToken,
 			workspaceRoot: workspace.rootPath,
 		})
-		const current = () => mutationOwnerRef.current === owner && isCurrentOrigin()
+		const current = () =>
+			mutationOwnerRef.current === owner &&
+			isCurrentOrigin() &&
+			logicalBufferId !== undefined &&
+			bufferIdsRef.current.get(sourcePath) === logicalBufferId
 		try {
 			const result = await saveOrgWorkingCopyFlow(capture, {
 				write: saveOrgDocumentFlow,
@@ -1537,33 +1547,25 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					saveInFlightRef.current = settled
 				},
 				commitConfirmed: (_, receipt) => {
+					if (!current()) throw new Error("The save owner is no longer current")
+					const plan = planOrgWorkingCopyAck({
+						expectedDocument: sourceDocument,
+						currentDocument: activeRef.current,
+						workingSource: latestContentRef.current,
+						capturedSource: contentBeingSaved,
+						receipt,
+					})
+					if (plan.kind === "rejected") {
+						autosavePausedRef.current.add(sourcePath)
+						conflictsRef.current.add(sourcePath)
+						throw new Error(plan.reason)
+					}
+					activeRef.current = plan.document
+					setActiveDocument(plan.document)
+					setDirty(plan.isDirty)
 					autosavePausedRef.current.delete(sourcePath)
 					conflictsRef.current.delete(sourcePath)
-					if (activeRef.current?.relativePath === sourcePath) {
-						activeRef.current = {
-							...activeRef.current,
-							content: contentBeingSaved,
-							revision: receipt.revision,
-						}
-					}
-					setActiveDocument((value) =>
-						value?.relativePath === sourcePath && value.revision === sourceRevision
-							? { ...value, content: contentBeingSaved, revision: receipt.revision }
-							: value,
-					)
-					setWorkspace((value) =>
-						value
-							? {
-									...value,
-									documents: value.documents.map((document) =>
-										document.relativePath === sourcePath ? receipt : document,
-									),
-								}
-							: value,
-					)
-					if (activeRef.current?.relativePath === sourcePath) {
-						setDirty(latestContentRef.current !== contentBeingSaved)
-					}
+					setWorkspace((value) => (value ? updateWorkspaceDocument(value, plan.document) : value))
 				},
 			})
 			// The flow's terminal await introduces another ownership gap.
@@ -1627,22 +1629,35 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		}
 		const selected: (OrgSaveAllCapture & {
 			readonly parked: ParkedOrgBuffer | null
+			readonly logicalBufferId: string | undefined
+			readonly expectedDocument: OrgDocumentInterface
+			readonly originalActiveDocument: OrgDocumentInterface | null
 		})[] = [...parkedRef.current.values()]
 			.filter((buffer) => buffer.isDirty)
-			.map((buffer) => ({
-				document: buffer.document,
-				content: buffer.content,
-				parked: buffer,
-				workspaceRoot: workspace.rootPath,
-				capabilityToken: workspace.capabilityToken,
-			}))
+			.map((buffer) => {
+				const document = Object.freeze({ ...buffer.document })
+				return {
+					document,
+					content: buffer.content,
+					parked: buffer,
+					expectedDocument: document,
+					originalActiveDocument: null,
+					logicalBufferId: bufferIdsRef.current.get(document.relativePath),
+					workspaceRoot: workspace.rootPath,
+					capabilityToken: workspace.capabilityToken,
+				}
+			})
 		const active = activeRef.current
+		const activeBaseline = active ? Object.freeze({ ...active }) : null
 		const activeCapture =
-			active && dirtyPath(active.relativePath)
+			active && activeBaseline && dirtyPath(active.relativePath)
 				? {
-						document: active,
+						document: activeBaseline,
 						content: latestContentRef.current,
 						parked: null,
+						expectedDocument: activeBaseline,
+						originalActiveDocument: active,
+						logicalBufferId: bufferIdsRef.current.get(active.relativePath),
 						workspaceRoot: workspace.rootPath,
 						capabilityToken: workspace.capabilityToken,
 					}
@@ -1664,13 +1679,27 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			completeWaiter = resolve
 		})
 		saveInFlightContentRef.current = null
-		const current = () => mutationOwnerRef.current === owner && isCurrentOrigin()
+		// Batch ownership is independent of a member's live baseline path. Member
+		// authority is checked separately before its write, retaining earlier ACKs.
+		const current = () =>
+			mutationOwnerRef.current === owner &&
+			nativeCloseReadyRef.current &&
+			mountedRef.current &&
+			grantRef.current === originGrant &&
+			sessionRef.current === originSession &&
+			activationRef.current === originActivation
 		const fail = (message: string): OrgSaveAllOutcome => {
 			if (current()) {
 				// Pause even unwritten members, but do not invent external conflicts for them.
 				for (const capture of selected) {
 					if (!savedPaths.includes(capture.document.relativePath)) {
 						autosavePausedRef.current.add(capture.document.relativePath)
+						// Path drift must not let the retained body autosave under
+						// its corrupted live path while awaiting reconciliation.
+						const liveDocument = capture.parked
+							? parkedRef.current.get(capture.document.relativePath)?.document
+							: activeRef.current
+						if (liveDocument) autosavePausedRef.current.add(liveDocument.relativePath)
 					}
 				}
 				setError(message)
@@ -1680,28 +1709,63 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		try {
 			const result = await saveAllOrgDocumentsFlow(selected, {
 				write: saveOrgDocumentFlow,
-				isFresh: ({ document, parked }) =>
-					current() &&
-					(parked
-						? parkedRef.current.get(document.relativePath) === parked
-						: activeRef.current === document),
+				isFresh: ({
+					document,
+					parked,
+					originalActiveDocument,
+					logicalBufferId,
+					expectedDocument,
+				}) => {
+					if (
+						!current() ||
+						!logicalBufferId ||
+						bufferIdsRef.current.get(document.relativePath) !== logicalBufferId
+					)
+						return false
+					const liveParked = parked ? parkedRef.current.get(document.relativePath) : undefined
+					return (
+						(parked ? liveParked === parked : activeRef.current === originalActiveDocument) &&
+						!guardOrgWorkingCopyBaseline(
+							expectedDocument,
+							parked ? liveParked?.document : activeRef.current,
+						)
+					)
+				},
 				isOwnerCurrent: current,
-				commitConfirmed: ({ document, content: body, parked }, receipt) => {
-					const persisted = { ...document, content: body, revision: receipt.revision }
-					if (parked) {
-						parkedRef.current.set(document.relativePath, {
-							...parked,
-							document: persisted,
-							isDirty: parked.content !== body,
+				commitConfirmed: (
+					{ document, content: body, parked, logicalBufferId, expectedDocument },
+					receipt,
+				) => {
+					const path = document.relativePath
+					if (!current() || !logicalBufferId || bufferIdsRef.current.get(path) !== logicalBufferId)
+						throw new Error("The captured buffer lease is no longer current")
+					const liveParked = parked ? parkedRef.current.get(path) : undefined
+					const plan = planOrgWorkingCopyAck({
+						expectedDocument,
+						currentDocument: parked ? liveParked?.document : activeRef.current,
+						workingSource: parked ? (liveParked?.content ?? "") : latestContentRef.current,
+						capturedSource: body,
+						receipt,
+					})
+					if (plan.kind === "rejected") {
+						autosavePausedRef.current.add(path)
+						conflictsRef.current.add(path)
+						throw new Error(plan.reason)
+					}
+					if (parked && liveParked) {
+						parkedRef.current.set(path, {
+							...liveParked,
+							document: plan.document,
+							isDirty: plan.isDirty,
 						})
 					} else {
-						activeRef.current = persisted
-						setActiveDocument(persisted)
-						setDirty(latestContentRef.current !== body)
+						activeRef.current = plan.document
+						setActiveDocument(plan.document)
+						setDirty(plan.isDirty)
 					}
-					conflictsRef.current.delete(document.relativePath)
-					autosavePausedRef.current.delete(document.relativePath)
-					setWorkspace((value) => (value ? updateWorkspaceDocument(value, persisted) : value))
+					conflictsRef.current.delete(path)
+					autosavePausedRef.current.delete(path)
+					setWorkspace((value) => (value ? updateWorkspaceDocument(value, plan.document) : value))
 					publishBuffers((version) => version + 1)
 				},
 			})
@@ -1797,6 +1861,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				refileTargetRequestRef.current += 1
 				setSaving(true)
 				let closingBuffer = buffer
+				const capturedDocument = { ...buffer.document }
 				const logicalBufferId = bufferIdsRef.current.get(relativePath)
 				const currentOwner = () =>
 					mutationOwnerRef.current === owner &&
@@ -1821,23 +1886,26 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 						isCurrent: currentOwner,
 						commitConfirmed: (_, receipt) => {
 							const parked = parkedRef.current.get(relativePath)
-							if (
-								!currentOwner() ||
-								!parked ||
-								parked.document.revision !== capture.expectedRevision
-							) {
-								throw new Error("The captured baseline is no longer current")
+							if (!currentOwner() || !parked)
+								throw new Error("The captured buffer lease is no longer current")
+							const plan = planOrgWorkingCopyAck({
+								expectedDocument: capturedDocument,
+								currentDocument: parked.document,
+								workingSource: parked.content,
+								capturedSource: capture.content,
+								receipt,
+							})
+							if (plan.kind === "rejected") {
+								autosavePausedRef.current.add(relativePath)
+								conflictsRef.current.add(relativePath)
+								throw new Error(plan.reason)
 							}
-							const persisted = {
-								...parked.document,
-								content: capture.content,
-								revision: receipt.revision,
-							}
+							const persisted = plan.document
 							// ACK the disk baseline without touching working source or runtime history.
 							const successor = {
 								...parked,
 								document: persisted,
-								isDirty: parked.content !== capture.content,
+								isDirty: plan.isDirty,
 							}
 							// A replacement receives the ACK, but never permission to retire.
 							if (parked === closingBuffer) closingBuffer = successor

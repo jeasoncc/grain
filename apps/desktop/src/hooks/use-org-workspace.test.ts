@@ -45,6 +45,7 @@ import type { OrgSubtreeTransferOutcome } from "./use-org-workspace"
 import * as orgWindowClose from "./use-org-window-close"
 import * as windowCloseAdapter from "@/io/event/org-window-close.adapter"
 import * as workingCopyFlow from "@/flows/org-workspace/org-save-working-copy.flow"
+import * as saveAllFlow from "@/flows/org-workspace/org-save-all.flow"
 import {
 	canContinueAfterOrgSave,
 	hasDefaultWorkspacePreference,
@@ -3091,6 +3092,210 @@ describe("Org save-all snapshot transaction", () => {
 		}
 		return hook
 	}
+	it("ACKs the live same-ID parked mirror after deferred batch write without losing newer input", async () => {
+		const create = runtimeFactory.createOrgBufferRuntime
+		let firstOptions!: OrgBufferRuntimeOptions
+		vi.spyOn(runtimeFactory, "createOrgBufferRuntime").mockImplementation((options) => {
+			if (options.source === "base a.org") firstOptions = options
+			return create(options)
+		})
+		const { result } = await setup(2)
+		const id = result.current.openBuffers.find(
+			(buffer) => buffer.relativePath === "a.org",
+		)!.bufferId
+		const pending = deferred<SaveResult>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+		let saving!: ReturnType<typeof result.current.saveAllDocuments>
+		act(() => {
+			saving = result.current.saveAllDocuments()
+		})
+		act(() => {
+			firstOptions.onCommit({
+				key: firstOptions.key,
+				previousSource: "edited a.org",
+				source: "newest parked body",
+				revision: 3,
+				originWindowId: null,
+			})
+		})
+		await act(async () => {
+			pending.resolve(E.right({ relativePath: "a.org", revision: "ack" }))
+			expect(await saving).toMatchObject({ kind: "partial", remainingDirtyPaths: ["a.org"] })
+		})
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === "a.org"),
+		).toMatchObject({ bufferId: id, baseRevision: "ack", isDirty: true, hasConflict: false })
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () =>
+			E.right({ ...documents[0], content: "edited a.org", revision: "ack" }),
+		)
+		await act(async () => {
+			expect(await result.current.switchBuffer(id)).toBe(true)
+		})
+		expect(result.current.content).toBe("newest parked body")
+		expect(result.current.activeDocument).toMatchObject({
+			content: "edited a.org",
+			revision: "ack",
+		})
+		await act(async () => {
+			await result.current.saveDocument()
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenLastCalledWith(
+			expect.objectContaining({ content: "newest parked body", expectedRevision: "ack" }),
+		)
+	})
+	it.each([
+		"same-revision",
+		"new-revision",
+	])("rejects parked batch baseline drift (%s) without overwriting and latches conflict", async (mode) => {
+		const { result } = await setup(2)
+		const pending = deferred<SaveResult>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+		let parked!: { document: OrgDocumentInterface; content: string; isDirty: boolean }
+		const get = Map.prototype.get
+		const spy = vi.spyOn(Map.prototype, "get").mockImplementation(function (
+			this: Map<unknown, unknown>,
+			key: unknown,
+		) {
+			const value = get.call(this, key)
+			if (
+				key === "a.org" &&
+				value?.document?.revision === "a.org-1" &&
+				value.content === "edited a.org"
+			)
+				parked = value
+			return value
+		})
+		let saving!: ReturnType<typeof result.current.saveAllDocuments>
+		act(() => {
+			saving = result.current.saveAllDocuments()
+		})
+		spy.mockRestore()
+		expect(parked).toBeDefined()
+		const drift = {
+			...documents[0],
+			content: "drift under same ID",
+			revision: mode === "same-revision" ? "a.org-1" : "new-revision",
+		}
+		parked.document = drift
+		await act(async () => {
+			pending.resolve(E.right({ relativePath: "a.org", revision: "must-not-install" }))
+			expect(await saving).toMatchObject({
+				kind: "rejected",
+				remainingDirtyPaths: ["a.org", "b.org"],
+			})
+		})
+		expect(parked.document).toBe(drift)
+		expect(parked.content).toBe("edited a.org")
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === "a.org"),
+		).toMatchObject({ baseRevision: drift.revision, hasConflict: true })
+		expect(result.current.error).not.toBeNull()
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(1000)
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+	})
+	it.each([
+		"same-revision",
+		"new-revision",
+	])("rejects active batch baseline drift (%s) instead of overwriting", async (mode) => {
+		const { result } = await setup(1)
+		const pending = deferred<SaveResult>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+		let saving!: ReturnType<typeof result.current.saveAllDocuments>
+		act(() => {
+			saving = result.current.saveAllDocuments()
+		})
+		// Simulate baseline corruption after capture without adding production authority.
+		const baseline = result.current.activeDocument as { content: string; revision: string }
+		baseline.content = "drift"
+		if (mode === "new-revision") baseline.revision = "new-revision"
+		await act(async () => {
+			pending.resolve(E.right({ relativePath: "a.org", revision: "must-not-install" }))
+			await saving
+		})
+		expect(result.current.activeDocument?.content).toBe("drift")
+		expect(result.current.content).toBe("edited a.org")
+		expect(result.current.openBuffers[0].hasConflict).toBe(true)
+		baseline.content = "base a.org"
+		baseline.revision = "a.org-1"
+	})
+	it.each([
+		[2, "revision"],
+		[2, "content"],
+		[2, "relativePath"],
+		[2, "logicalID"],
+		[3, "revision"],
+		[3, "content"],
+		[3, "relativePath"],
+		[3, "logicalID"],
+	] as const)("stops before a later member write on baseline/lease drift (count %s, %s)", async (count, drift) => {
+		const { result } = await setup(count)
+		const pending = deferred<SaveResult>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+		const flow = vi.spyOn(saveAllFlow, "saveAllOrgDocumentsFlow")
+		let ids!: Map<string, string>
+		const get = Map.prototype.get
+		const mapSpy = vi.spyOn(Map.prototype, "get").mockImplementation(function (
+			this: Map<unknown, unknown>,
+			key: unknown,
+		) {
+			const value = get.call(this, key)
+			if (
+				key === "b.org" &&
+				typeof value === "string" &&
+				value ===
+					result.current.openBuffers.find((buffer) => buffer.relativePath === "b.org")?.bufferId
+			)
+				ids = this as Map<string, string>
+			return value
+		})
+		let saving!: ReturnType<typeof result.current.saveAllDocuments>
+		act(() => {
+			saving = result.current.saveAllDocuments()
+		})
+		mapSpy.mockRestore()
+		const captures = flow.mock.calls[0][0]
+		const captured = captures[1].document
+		expect(Object.isFrozen(captured)).toBe(true)
+		expect(captured).not.toBe(documents[1])
+		expect(captured).toMatchObject({
+			relativePath: "b.org",
+			revision: "b.org-1",
+			content: "base b.org",
+		})
+		const original = { ...documents[1] }
+		const id = ids.get("b.org")!
+		try {
+			if (drift === "logicalID") ids.set("b.org", "replacement-logical-ID")
+			else documents[1][drift] = `mutated ${drift}`
+			expect(captured).toEqual(original)
+			await act(async () => {
+				pending.resolve(E.right({ relativePath: "a.org", revision: "first-confirmed" }))
+				expect(await saving).toMatchObject({ kind: "partial", savedPaths: ["a.org"] })
+			})
+			expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+			expect(saveOrgDocumentFlow).toHaveBeenCalledWith(
+				expect.objectContaining({ relativePath: "a.org", expectedRevision: "a.org-1" }),
+			)
+			expect(
+				result.current.workspace?.documents.find((document) => document.relativePath === "a.org")
+					?.revision,
+			).toBe("first-confirmed")
+			if (count === 2) expect(result.current.content).toBe("edited b.org")
+			else
+				expect(
+					result.current.openBuffers.find((buffer) => buffer.relativePath === "b.org")?.isDirty,
+				).toBe(true)
+			await act(async () => {
+				await vi.advanceTimersByTimeAsync(1000)
+			})
+			expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		} finally {
+			Object.assign(documents[1], original)
+			ids.set("b.org", id)
+		}
+	})
 	it("saves each dirty buffer with its own exact G1 body and revision without navigating or closing", async () => {
 		const { result } = await setup()
 		const ids = result.current.openBuffers.map((buffer) => buffer.bufferId)

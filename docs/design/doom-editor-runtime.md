@@ -427,10 +427,20 @@ Old-grant results cannot mutate an already-live G2. A throwing write-start
 notification drains the already-started effect before releasing Busy; handling
 promise rejection alone is not enough to preserve native-close protection.
 
+`guardOrgWorkingCopyBaseline` and `planOrgWorkingCopyAck` now share the pure
+baseline contract across active save, inactive close and Save All. Path, revision
+and baseline bytes must match; confirmed captured content advances the disk
+baseline, never the live working source/history. Save All ACKs the current same-ID
+parked snapshot rather than spreading its stale capture over newer input. Actual
+batch IO uses frozen baseline copies, with per-member owner/ID/reference/baseline
+checks before writing: a later member drifting while the first write awaits must
+not start IO. Earlier confirmed paths remain acknowledged, with affected members
+paused until explicit reconciliation.
+
 This is the beginning, not completion, of splitting lifecycle/state reservoirs,
 file effects and presentation. It does not weaken the experience target to avoid
-larger window/config/workflow work. Full desktop verification: 154 files /2527
-cases, typecheck/build pass (2026-10-03 14:30 +08:00).
+larger window/config/workflow work. Full desktop verification: 155 files /2555
+cases, typecheck/build pass (2026-10-03 14:48 +08:00).
 
 ## Next decision gates and work
 
