@@ -6,9 +6,14 @@ Preserve Tauri, capability-scoped Rust filesystem access, revision-checked write
 raw Org files, disposable indexes, and migration/recovery isolation. Reconstruct
 the editor runtime incrementally rather than rewrite the entire application.
 
-The product direction is Doom-style workflows, not a claim of ELisp/package
-compatibility. Evil defaults, scripting privileges, recovery journals, and the
-scope of general-purpose editing remain decision gates.
+The user-confirmed product direction is Doom experience consistency: keyboard
+interaction, command composition, buffers/windows and practical workflows.
+ELisp/Doom package binary/runtime compatibility is explicitly **not a goal or a
+decision gate**. Implement required behaviors natively; evaluate controlled tool
+bridges only for concrete needs, not ecosystem emulation. Evil defaults, scripting
+privileges, recovery journals and general-purpose editing scope remain separate
+product/security decisions. Continue implementation and verification without
+waiting for user approval at ordinary phase commits.
 
 The full goal report is the Org-roam node `4212813a-27e4-4f70-9fb8-c2c6867a9741`,
 “Grain面向Doom工作环境的编辑器重构目标”, dated 2026-09-30.
@@ -380,6 +385,27 @@ review found no remaining critical/warnings after the ownership fixes.
 This is not different-buffer simultaneous windows, detached/native windows,
 restart recovery, arbitrary extension support, Vim adoption or real IME/desktop
 performance acceptance. Those remain explicit goal requirements/gates.
+
+## Architecture convergence: owner rules leave React
+
+The workspace hook still coordinates too many responsibilities. The first
+convergence step extracts `guardOrgRuntimeCommit` into a pure data-shaped policy:
+immutable owner snapshot → accepted active/parked installation or classified
+rejection. The React boundary gathers current refs; it no longer invents permit
+rules in the runtime factory closure. Exact lease/session/source and readonly
+semantics remain unchanged, with exhaustive parity and regression evidence.
+
+`org-workspace-runtime-registry.ts` then extracts the narrowly scoped lifecycle
+reservoir: creation/get, authorized source installation, retirement and closure.
+Install authorization clears in owner-checked `finally`; commit decisions still
+use the pure guard. Snapshot/mirror adapters remain explicit in the controller,
+including old-grant error fencing. This registry owns no filesystem or Org rules
+and stores no competing body string.
+
+This is the beginning, not completion, of splitting lifecycle/state reservoirs,
+file effects and presentation. It does not weaken the experience target to avoid
+larger window/config/workflow work. Full desktop verification: 152 files /2478
+cases, typecheck/build pass (2026-10-03).
 
 ## Next decision gates and work
 

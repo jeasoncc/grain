@@ -1,7 +1,12 @@
 import { history, redoDepth, undoDepth } from "@codemirror/commands"
 import { EditorState } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
-import type { OrgBufferRuntime, OrgBufferWindowHandle } from "@/flows/org-editor-runtime"
+import type {
+	OrgBufferRuntime,
+	OrgBufferWindowHandle,
+	OrgBufferRuntimeOptions,
+} from "@/flows/org-editor-runtime"
+import * as runtimeFactory from "@/flows/org-editor-runtime"
 import { useBlocker } from "@tanstack/react-router"
 import { act, cleanup, renderHook } from "@testing-library/react"
 import * as E from "fp-ts/Either"
@@ -153,6 +158,45 @@ describe("Org capture entry and transient drafts", () => {
 			},
 		}
 	}
+	it("does not echo retained G1 runtime failures into same-root G2, even from a parked key", async () => {
+		const create = runtimeFactory.createOrgBufferRuntime
+		let oldFailure: OrgBufferRuntimeOptions["onError"]
+		vi.spyOn(runtimeFactory, "createOrgBufferRuntime").mockImplementation((options) => {
+			oldFailure ??= options.onError
+			return create(options)
+		})
+		const { result } = await setup()
+		const oldRuntime = result.current.activeBufferRuntime!
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		// Parked errors in the current grant remain visible.
+		act(() => {
+			oldFailure!(
+				new runtimeFactory.OrgBufferRuntimeError("projection-failed", "parked G1 failure"),
+			)
+		})
+		expect(result.current.error).not.toBeNull()
+		vi.spyOn(window, "confirm").mockReturnValue(true)
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValueOnce(async () =>
+			E.right({ ...workspace, capabilityToken: "G2" }),
+		)
+		await act(async () => {
+			await result.current.openDefaultWorkspace()
+		})
+		await act(async () => {
+			await result.current.openDocumentPath("inbox.org")
+		})
+		const currentRuntime = result.current.activeBufferRuntime!
+		expect(oldRuntime.closed).toBe(true)
+		expect(result.current.error).toBeNull()
+		act(() => {
+			oldFailure!(new runtimeFactory.OrgBufferRuntimeError("projection-failed", "late G1 failure"))
+		})
+		expect(result.current.error).toBeNull()
+		expect(result.current.activeBufferRuntime).toBe(currentRuntime)
+		expect(currentRuntime.source).toBe(captured.content)
+	})
 	it("mirrors a runtime edit synchronously before native close and save capture", async () => {
 		const { result } = await setup()
 		const runtime = result.current.activeBufferRuntime!
