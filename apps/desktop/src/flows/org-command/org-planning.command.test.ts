@@ -95,6 +95,23 @@ describe("planning buffer commands", () => {
 		})
 	})
 
+	it.each([
+		":PROPERTIES:\n:ID: abc",
+		":PROPERTIES:\n:PROPERTIES:\n:END:",
+		":PROPERTIES:\n:END: value\n:END:",
+		":PROPERTIES: value\n:END:",
+		":END:",
+		"SCHEDULED: <2026-09-30>\n:END:",
+	])("rejects damaged drawers and reserved markers %j, even for an unchanged date", (body) => {
+		const origin = context(`* Note\n${body}`)
+		const command = createOrgPlanningCommand("SCHEDULED", "2026-09-30")
+		expect(command.prepare(origin)).toMatchObject({ kind: "rejected", reason: "invalid-drawer" })
+		expect(command.execute(origin, origin, "2026-09-30")).toMatchObject({
+			kind: "rejected",
+			reason: "invalid-drawer",
+		})
+	})
+
 	it("accepts leap days and EOF without a newline", () => {
 		expect(apply("* Note", "2028-02-29")).toBe("* Note\nSCHEDULED: <2028-02-29>")
 	})

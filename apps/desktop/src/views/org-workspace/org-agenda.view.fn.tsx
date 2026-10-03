@@ -8,6 +8,9 @@ export interface OrgAgendaViewProps {
 	readonly isLoading: boolean
 	readonly onOpenEntry: (entry: OrgAgendaEntry) => void
 	readonly onCycleTodo?: (entry: OrgAgendaEntry) => void
+	readonly onSchedule?: (entry: OrgAgendaEntry) => void
+	readonly onDeadline?: (entry: OrgAgendaEntry) => void
+	readonly onCancelAction?: () => void
 	readonly actionPending?: boolean
 	readonly actionStatus?: string | null
 	readonly focusScope?: string
@@ -43,8 +46,23 @@ const kindLabel = (kind: OrgAgendaEntry["kind"]): string => {
 	return "Timestamp"
 }
 
-const entryKey = (entry: OrgAgendaEntry): string =>
-	JSON.stringify([entry.relativePath, entry.line, entry.column, entry.kind, entry.date])
+const entryKey = (entry: OrgAgendaEntry, entries: readonly OrgAgendaEntry[]): string => {
+	const heading = entry.origin?.heading
+	if (!heading)
+		return JSON.stringify([entry.relativePath, entry.line, entry.column, entry.kind, entry.date])
+	// Dates, planning-line positions and TODO spelling are not row identity.
+	const ordinal =
+		entry.kind === "timestamp"
+			? entries.filter(
+					(candidate) =>
+						candidate.relativePath === entry.relativePath &&
+						candidate.kind === "timestamp" &&
+						candidate.origin?.heading?.from === heading.from &&
+						candidate.origin.timestamp.from < entry.origin!.timestamp.from,
+				).length
+			: null
+	return JSON.stringify([entry.relativePath, heading.from, entry.kind, ordinal])
+}
 
 export const OrgAgendaView = memo(function OrgAgendaView({
 	entries,
@@ -52,6 +70,9 @@ export const OrgAgendaView = memo(function OrgAgendaView({
 	isLoading,
 	onOpenEntry,
 	onCycleTodo,
+	onSchedule,
+	onDeadline,
+	onCancelAction,
 	actionPending = false,
 	actionStatus,
 	focusScope,
@@ -61,16 +82,19 @@ export const OrgAgendaView = memo(function OrgAgendaView({
 	const orderedEntries = groups.flatMap((group) => group.entries)
 	const selectedIndex = Math.max(
 		0,
-		orderedEntries.findIndex((entry) => entryKey(entry) === selectedKey),
+		orderedEntries.findIndex((entry) => entryKey(entry, entries) === selectedKey),
 	)
 	const selectedEntry = orderedEntries[selectedIndex]
 
 	const rootRef = useRef<HTMLElement>(null)
 	const ownsFocus = useRef(false)
+	const focusedAction = useRef("open")
 	const previousScope = useRef(focusScope)
 	useLayoutEffect(() => {
 		const track = (event: FocusEvent) => {
 			ownsFocus.current = !!rootRef.current?.contains(event.target as Node)
+			if (ownsFocus.current)
+				focusedAction.current = (event.target as HTMLElement).dataset.agendaAction ?? "open"
 		}
 		document.addEventListener("focusin", track)
 		return () => document.removeEventListener("focusin", track)
@@ -87,12 +111,37 @@ export const OrgAgendaView = memo(function OrgAgendaView({
 		// reclaim focus after the user has explicitly focused another surface.
 		if (!root || !ownsFocus.current || root.contains(document.activeElement)) return
 		if (document.activeElement !== document.body) return
-		const rows = root.querySelectorAll<HTMLButtonElement>("[data-agenda-open]")
-		;(rows[selectedIndex] ?? root).focus()
+		const rows = root.querySelectorAll<HTMLElement>("[data-agenda-key]")
+		;(
+			rows[selectedIndex]?.querySelector<HTMLElement>(
+				`[data-agenda-action="${focusedAction.current}"]`,
+			) ??
+			rows[selectedIndex]?.querySelector<HTMLElement>("[data-agenda-open]") ??
+			root
+		).focus()
 	}, [entries, error, isLoading, actionPending, focusScope, selectedIndex])
 
 	const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
 		const target = event.target as HTMLElement
+		// Focus can change before React publishes onFocus's selected-key update.
+		// Resolve the event's actual row rather than routing an action to the old selection.
+		const focusedKey = target.closest<HTMLElement>("[data-agenda-key]")?.dataset.agendaKey
+		const actionEntry =
+			orderedEntries.find((entry) => entryKey(entry, entries) === focusedKey) ?? selectedEntry
+		const actionIndex = actionEntry ? orderedEntries.indexOf(actionEntry) : selectedIndex
+		if (
+			actionPending &&
+			onCancelAction &&
+			!event.defaultPrevented &&
+			event.keyCode !== 229 &&
+			!event.nativeEvent.isComposing &&
+			!event.repeat &&
+			(event.key === "Escape" || (event.ctrlKey && event.key === "g"))
+		) {
+			event.preventDefault()
+			onCancelAction()
+			return
+		}
 		if (
 			event.defaultPrevented ||
 			event.nativeEvent.isComposing ||
@@ -106,7 +155,7 @@ export const OrgAgendaView = memo(function OrgAgendaView({
 			window.getSelection()?.toString() ||
 			(target.closest('button, a, [role="button"]') && !target.closest("[data-agenda-open]")) ||
 			actionPending ||
-			!selectedEntry
+			!actionEntry
 		)
 			return
 
@@ -118,17 +167,27 @@ export const OrgAgendaView = memo(function OrgAgendaView({
 					: 0
 		if (direction) {
 			event.preventDefault()
-			const nextIndex = Math.max(0, Math.min(orderedEntries.length - 1, selectedIndex + direction))
-			setSelectedKey(entryKey(orderedEntries[nextIndex]))
+			const nextIndex = Math.max(0, Math.min(orderedEntries.length - 1, actionIndex + direction))
+			setSelectedKey(entryKey(orderedEntries[nextIndex], entries))
 			event.currentTarget
 				.querySelectorAll<HTMLButtonElement>("[data-agenda-open]")
 				[nextIndex]?.focus()
 		} else if (event.key === "Enter") {
 			event.preventDefault()
-			onOpenEntry(selectedEntry)
-		} else if (event.key === "t" && onCycleTodo) {
-			event.preventDefault()
-			if (!event.repeat) onCycleTodo(selectedEntry)
+			onOpenEntry(actionEntry)
+		} else {
+			const action =
+				event.key === "t"
+					? onCycleTodo
+					: event.key === "s"
+						? onSchedule
+						: event.key === "d"
+							? onDeadline
+							: undefined
+			if (action) {
+				event.preventDefault()
+				if (!event.repeat) action(actionEntry)
+			}
 		}
 	}
 
@@ -167,20 +226,22 @@ export const OrgAgendaView = memo(function OrgAgendaView({
 							<ul className="space-y-1">
 								{group.entries.map((entry) => (
 									<li
-										key={entryKey(entry)}
+										key={entryKey(entry, entries)}
 										data-selected={entry === selectedEntry}
+										data-agenda-key={entryKey(entry, entries)}
 										className="flex items-center gap-2"
 									>
 										<button
 											type="button"
 											className="flex min-h-14 w-full items-start gap-3 rounded-md border px-3 py-2.5 text-left transition-colors duration-150 hover:bg-muted/60 aria-[current=true]:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring"
 											data-agenda-open
+											data-agenda-action="open"
 											aria-current={entry === selectedEntry ? "true" : undefined}
 											aria-disabled={actionPending}
-											onFocus={() => setSelectedKey(entryKey(entry))}
+											onFocus={() => setSelectedKey(entryKey(entry, entries))}
 											onClick={() => {
 												if (actionPending) return
-												setSelectedKey(entryKey(entry))
+												setSelectedKey(entryKey(entry, entries))
 												onOpenEntry(entry)
 											}}
 										>
@@ -206,15 +267,40 @@ export const OrgAgendaView = memo(function OrgAgendaView({
 											<button
 												type="button"
 												aria-disabled={actionPending}
+												data-agenda-action="cycle-todo"
 												aria-label={`Cycle TODO for ${entry.heading ?? "(No heading)"}`}
 												className="shrink-0 rounded-md border px-3 py-2 text-xs aria-disabled:opacity-50"
-												onFocus={() => setSelectedKey(entryKey(entry))}
+												onFocus={() => setSelectedKey(entryKey(entry, entries))}
 												onClick={() => {
 													if (!actionPending) onCycleTodo(entry)
 												}}
 											>
 												Cycle TODO
 											</button>
+										)}
+										{(
+											[
+												["schedule", onSchedule],
+												["deadline", onDeadline],
+											] as const
+										).map(
+											([kind, action]) =>
+												action && (
+													<button
+														key={kind}
+														type="button"
+														data-agenda-action={kind}
+														aria-disabled={actionPending}
+														aria-label={`${kind === "schedule" ? "Schedule" : "Deadline"} for ${entry.heading ?? "(No heading)"}`}
+														className="shrink-0 rounded-md border px-3 py-2 text-xs aria-disabled:opacity-50"
+														onFocus={() => setSelectedKey(entryKey(entry, entries))}
+														onClick={() => {
+															if (!actionPending) action(entry)
+														}}
+													>
+														{kind === "schedule" ? "Schedule" : "Deadline"}
+													</button>
+												),
 										)}
 									</li>
 								))}

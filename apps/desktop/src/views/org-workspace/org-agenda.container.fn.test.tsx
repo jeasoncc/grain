@@ -61,7 +61,13 @@ function Harness() {
 	return (
 		<>
 			<input aria-label="Other surface" />
-			{visible ? <OrgAgendaContainer controller={controller} onShowEditor={showEditor} /> : null}
+			{visible ? (
+				<OrgAgendaContainer
+					controller={controller}
+					onShowEditor={showEditor}
+					now={() => new Date(2026, 8, 30, 23, 59)}
+				/>
+			) : null}
 		</>
 	)
 }
@@ -167,6 +173,87 @@ afterEach(() => {
 })
 
 describe("production OrgAgendaContainer working-copy actions", () => {
+	it.each([
+		"button",
+		"keyboard",
+	])("prepares an unopened schedule via %s without allocating; bottom parameters edit the second duplicate only and preserve working-copy history and CAS", async (action) => {
+		await setup()
+		const active = controller.activeBufferRuntime
+		const before = controller.liveBuffers.map((buffer) => buffer.bufferId)
+		const button = screen.getAllByRole("button", { name: "Schedule for 😀 duplicate" })[1]
+		const originalRow = button
+			.closest("li")!
+			.querySelector<HTMLButtonElement>("[data-agenda-open]")!
+		await act(async () => {
+			if (action === "button") {
+				button.focus()
+				fireEvent.click(button)
+			} else {
+				originalRow.focus()
+				fireEvent.keyDown(originalRow, { key: "s" })
+			}
+		})
+		const input = screen.getByRole("combobox")
+		expect(input).toHaveValue("2026-09-30")
+		expect(controller.liveBuffers.map((buffer) => buffer.bufferId)).toEqual(before)
+		expect(controller.activeBufferRuntime).toBe(active)
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+		await act(async () => {
+			fireEvent.change(input, { target: { value: "2026-08-01" } })
+			fireEvent.keyDown(input, { key: "Enter" })
+		})
+		const planned = source.replace(
+			"* NEXT 😀 duplicate\r\nDEADLINE: <2026-07-01 Wed>\r\n#+begin_export",
+			"* NEXT 😀 duplicate\r\nDEADLINE: <2026-07-01 Wed> SCHEDULED: <2026-08-01>\r\n#+begin_export",
+		)
+		expect(live().content).toBe(planned)
+		expect(live().isDirty).toBe(true)
+		expect(controller.activeBufferRuntime).toBe(active)
+		expect(showEditor).not.toHaveBeenCalled()
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+		expect(undoDepth(live().runtime.state)).toBe(1)
+		expect(screen.getByRole("heading", { name: "2026-08-01" })).toBeInTheDocument()
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(20)
+		})
+		expect(document.activeElement).toBe(action === "button" ? button : originalRow)
+		expect(originalRow).toHaveAttribute("aria-current", "true")
+		const editor = attach(live().runtime)
+		await act(async () => {
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(live().content).toBe(source)
+		await act(async () => {
+			expect(editor.handle.redo()).toBe(true)
+		})
+		await act(async () => {
+			await controller.saveAllDocuments()
+		})
+		expect(orgFileRepository.writeDocument).toHaveBeenCalledExactlyOnceWith(
+			expect.objectContaining({ content: planned, expectedRevision: "tasks-1" }),
+		)
+	})
+
+	it("accepting the existing deadline is unchanged and does not allocate an unopened target or create history", async () => {
+		await setup()
+		const before = controller.liveBuffers.map((buffer) => buffer.bufferId)
+		await act(async () => {
+			const row = screen
+				.getAllByRole("button", { name: "Deadline for 😀 duplicate" })[1]
+				.closest("li")!
+				.querySelector<HTMLButtonElement>("[data-agenda-open]")!
+			row.focus()
+			fireEvent.keyDown(row, { key: "d" })
+		})
+		expect(screen.getByRole("combobox")).toHaveValue("2026-07-01")
+		await act(async () => {
+			fireEvent.keyDown(screen.getByRole("combobox"), { key: "Enter" })
+		})
+		expect(screen.queryByRole("combobox")).not.toBeInTheDocument()
+		expect(screen.getByRole("status")).toHaveTextContent("Deadline unchanged")
+		expect(controller.liveBuffers.map((buffer) => buffer.bufferId)).toEqual(before)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
 	it("keyboard t targets the second duplicate anchor, parks unopened dirty source without activation/writes, and has one undo event and original Save All CAS", async () => {
 		await setup()
 		const active = controller.activeBufferRuntime
@@ -478,7 +565,10 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 						onShowEditor={showEditor}
 					/>,
 				)
-			if (mode === "supersede") fireEvent.click(screen.getAllByRole("button")[2])
+			if (mode === "supersede")
+				fireEvent.click(
+					screen.getByRole("main").querySelectorAll<HTMLButtonElement>("[data-agenda-open]")[1],
+				)
 		})
 		await act(async () => {
 			settle(true)

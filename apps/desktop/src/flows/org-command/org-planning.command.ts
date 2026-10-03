@@ -1,6 +1,7 @@
 import { parseOrgPlanningLine } from "@/pipes/org/org-planning-line.pipe"
 import {
 	headingPositionAt,
+	orgPropertyDrawerAt,
 	setOrgPlanningAt,
 	validOrgDate,
 	type OrgPlanningKind,
@@ -29,6 +30,36 @@ const planningAt = (
 			reason: "invalid-planning",
 			message:
 				"The planning line contains an invalid calendar date. Edit it directly before changing its date.",
+		}
+	const adjacent =
+		heading && planning.kind === "planning"
+			? context.content
+					.slice(heading.breakTo + text.length)
+					.replace(/^(?:\r\n|\r|\n)/, "")
+					.split(/\r\n|\r|\n/, 1)[0]
+			: text
+	if (
+		/^[ \t]*:(?:END|PROPERTIES):/i.test(adjacent) &&
+		!/^[ \t]*:PROPERTIES:[ \t]*$/i.test(adjacent)
+	)
+		return {
+			kind: "rejected",
+			reason: "invalid-drawer",
+			message:
+				"Malformed or misplaced reserved drawer marker. Repair it before changing its planning date.",
+		}
+	const drawer = orgPropertyDrawerAt(context.content, context.cursor)
+	if (drawer?.kind === "invalid")
+		return { kind: "rejected", reason: "invalid-drawer", message: drawer.message }
+	if (
+		drawer?.kind === "drawer" &&
+		drawer.properties.some((field) => /^(?:END|PROPERTIES)$/i.test(field.key))
+	)
+		return {
+			kind: "rejected",
+			reason: "invalid-drawer",
+			message:
+				"END and PROPERTIES are reserved drawer markers. Repair the drawer before changing its planning date.",
 		}
 	return {
 		date:

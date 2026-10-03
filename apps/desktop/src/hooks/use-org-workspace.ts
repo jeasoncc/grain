@@ -37,7 +37,8 @@ import {
 } from "@/flows/org-editor-runtime/org-parked-working-copy-reservoir"
 import { createOrgBufferIdentityRegistry } from "@/flows/org-editor-runtime/org-buffer-identity-registry"
 import type { OrgWorkspaceRuntimePorts } from "@/flows/org-editor-runtime/org-workspace-runtime-registry"
-import { cycleOrgTodoAt } from "@/pipes/org/org-text.pipe"
+import { cycleOrgTodoAt, validOrgDate, type OrgTextEdit } from "@/pipes/org/org-text.pipe"
+import { createOrgPlanningCommand } from "@/flows/org-command/org-planning.command"
 import {
 	hasOrgAgendaActionOrigin,
 	validateOrgAgendaOrigin,
@@ -170,11 +171,81 @@ export interface OrgLiveBuffer {
 }
 
 export type OrgAgendaActionOutcome = {
-	readonly kind: "confirmed" | "rejected" | "stale"
+	readonly kind: "confirmed" | "unchanged" | "rejected" | "stale"
 	readonly message?: string
 }
 
+export type OrgAgendaCommand =
+	| { readonly kind: "cycle-todo" }
+	| { readonly kind: "schedule" | "deadline"; readonly date: string }
+
+export type OrgAgendaPlanningPreparation =
+	| { readonly kind: "ready"; readonly entry: OrgAgendaEntry; readonly date: string | null }
+	| { readonly kind: "stale" | "rejected"; readonly message?: string }
+
+type OrgAgendaOperation =
+	| OrgAgendaCommand
+	| { readonly kind: "prepare"; readonly field: "schedule" | "deadline" }
+
+/** Pure source-range planning, shared by preparation and execution before any allocation. */
+const planAgendaOperation = (
+	entry: OrgAgendaEntry,
+	raw: string,
+	operation: OrgAgendaOperation,
+):
+	| { readonly kind: "edit"; readonly edit: OrgTextEdit }
+	| OrgAgendaPlanningPreparation
+	| OrgAgendaActionOutcome => {
+	if (!entry.origin?.heading)
+		return { kind: "rejected", message: "This agenda entry has no actionable heading." }
+	if (operation.kind === "cycle-todo") {
+		const edit = cycleOrgTodoAt(raw, entry.origin.heading.from)
+		return edit
+			? { kind: "edit", edit }
+			: { kind: "rejected", message: "This agenda entry has no actionable heading." }
+	}
+	const field = operation.kind === "prepare" ? operation.field : operation.kind
+	const planner = createOrgPlanningCommand(field === "schedule" ? "SCHEDULED" : "DEADLINE", "")
+	const context = {
+		relativePath: entry.relativePath,
+		content: raw,
+		cursor: entry.origin.heading.from,
+	}
+	if (operation.kind === "prepare") {
+		const prepared = planner.prepare(context)
+		return prepared.kind === "rejected"
+			? { kind: "rejected", message: prepared.message }
+			: { kind: "ready", entry, date: prepared.initialInput || null }
+	}
+	const result = planner.execute(context, context, operation.date)
+	return result.kind === "edit"
+		? result
+		: result.kind === "no-change"
+			? { kind: "unchanged" }
+			: {
+					kind: "rejected",
+					message: result.kind === "rejected" ? result.message : "Unsupported agenda command.",
+				}
+}
+
+/** Observation only: does not authorize a command or replace Root's fresh guards. */
+export interface OrgAgendaExecutionOptions {
+	readonly onCommitStarted?: () => void
+}
+
 export interface OrgWorkspaceController {
+	readonly executeAgendaCommand: (
+		entry: OrgAgendaEntry,
+		command: OrgAgendaCommand,
+		signal?: AbortSignal,
+		options?: OrgAgendaExecutionOptions,
+	) => Promise<OrgAgendaActionOutcome>
+	/** Revalidates the current target without allocating a buffer or changing provenance. */
+	readonly prepareAgendaPlanning: (
+		entry: OrgAgendaEntry,
+		kind: "schedule" | "deadline",
+		signal?: AbortSignal,
+	) => Promise<OrgAgendaPlanningPreparation>
 	readonly actOnAgendaEntry: (
 		entry: OrgAgendaEntry,
 		signal?: AbortSignal,
@@ -1324,10 +1395,22 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		[workspace, bufferIdFor, originSession, originActivation, originPath],
 	)
 
-	const actOnAgendaEntry = useCallback(
-		async (entry: OrgAgendaEntry, signal?: AbortSignal): Promise<OrgAgendaActionOutcome> => {
+	const runAgendaOperation = useCallback(
+		async (
+			entry: OrgAgendaEntry,
+			operation: OrgAgendaOperation,
+			signal?: AbortSignal,
+			options?: OrgAgendaExecutionOptions,
+		): Promise<OrgAgendaActionOutcome | OrgAgendaPlanningPreparation> => {
 			const stale = (): OrgAgendaActionOutcome => ({ kind: "stale" })
 			const rejected = (message: string): OrgAgendaActionOutcome => ({ kind: "rejected", message })
+			// Calendar validation precedes reads, owner acquisition, identity allocation and edits.
+			if (
+				operation.kind !== "cycle-todo" &&
+				operation.kind !== "prepare" &&
+				!validOrgDate(operation.date)
+			)
+				return rejected("Enter a real calendar date in YYYY-MM-DD format.")
 			const grant = originGrant
 			const session = originSession
 			const origin = entry.origin
@@ -1359,7 +1442,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				return rejected("A workspace operation is running.")
 			const path = entry.relativePath
 			if (conflictsRef.current.has(path) || autosavePausedRef.current.has(path))
-				return rejected("Resolve the target buffer conflict before changing TODO state.")
+				return rejected("Resolve the target buffer conflict before changing the agenda heading.")
 			const owner = Symbol("agendaCommand")
 			agendaCommandOwnerRef.current = owner
 			const owns = () => current() && agendaCommandOwnerRef.current === owner
@@ -1426,8 +1509,8 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 						}).valid
 					)
 						return stale()
-					if (!origin.heading || !cycleOrgTodoAt(raw, origin.heading.from))
-						return rejected("This agenda entry has no actionable heading.")
+					const planned = planAgendaOperation(entry, raw, operation)
+					if (planned.kind !== "edit") return planned
 					id = bufferIdentity.ensure(currentScope, path)
 					// Publish the close-gate copy before any command can make it dirty.
 					if (
@@ -1473,9 +1556,9 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					}).valid
 				)
 					return stale()
-				if (!origin.heading) return rejected("This agenda entry has no actionable heading.")
-				const edit = cycleOrgTodoAt(raw, origin.heading.from)
-				if (!edit) return rejected("This agenda entry has no actionable heading.")
+				const planned = planAgendaOperation(entry, raw, operation)
+				if (planned.kind !== "edit") return planned
+				const edit = planned.edit
 				const commandOwner = () =>
 					owns() &&
 					bufferIdentity.lookup(currentScope, path) === id &&
@@ -1495,17 +1578,46 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 								}
 							: {}),
 					}).valid
+				if (!commandOwner()) return stale()
+				// This observation precedes publication; a throwing observer cannot
+				// manufacture a committed outcome. Recheck ownership after callbacks.
+				options?.onCommitStarted?.()
+				if (!commandOwner()) return stale()
 				return registry.applyCommandEdit(key, raw, edit, commandOwner)
 					? { kind: "confirmed" }
 					: stale()
 			} catch {
-				return owns() ? rejected("Cannot change agenda TODO state.") : stale()
+				return owns() ? rejected("Cannot change the agenda heading.") : stale()
 			} finally {
 				signal?.removeEventListener("abort", cancel)
 				cancel()
 			}
 		},
 		[originGrant, originSession],
+	)
+
+	const executeAgendaCommand = useCallback(
+		(
+			entry: OrgAgendaEntry,
+			command: OrgAgendaCommand,
+			signal?: AbortSignal,
+			options?: OrgAgendaExecutionOptions,
+		) => runAgendaOperation(entry, command, signal, options) as Promise<OrgAgendaActionOutcome>,
+		[runAgendaOperation],
+	)
+	const actOnAgendaEntry = useCallback(
+		(entry: OrgAgendaEntry, signal?: AbortSignal) =>
+			executeAgendaCommand(entry, { kind: "cycle-todo" }, signal),
+		[executeAgendaCommand],
+	)
+	const prepareAgendaPlanning = useCallback(
+		(entry: OrgAgendaEntry, field: "schedule" | "deadline", signal?: AbortSignal) =>
+			runAgendaOperation(
+				entry,
+				{ kind: "prepare", field },
+				signal,
+			) as Promise<OrgAgendaPlanningPreparation>,
+		[runAgendaOperation],
 	)
 
 	const openDocumentPath = useCallback(
@@ -3178,6 +3290,8 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		switchBuffer,
 		openOrgLink,
 		actOnAgendaEntry,
+		executeAgendaCommand,
+		prepareAgendaPlanning,
 		rebuildDerivedIndex,
 		refileSubtree,
 		readRefileTarget,

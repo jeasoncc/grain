@@ -611,6 +611,39 @@ Verification: 169 files /2807 tests, typecheck/build pass
 (2026-10-03 23:53 +08:00). Schedule/Deadline tool commands, unified global tool
 registry, full TODO logging and native/user acceptance remain unfinished.
 
+## Agenda Schedule / Deadline parameter workflow
+
+`executeAgendaCommand` handles a typed TODO/planning union through the existing
+validated canonical-command path; the TODO API is a wrapper, not a separate
+permission system. Date validation precedes reads or allocation. Allocation-free
+preparation retrieves the existing requested field—not just the selected row's
+timestamp—and falls back to externally injected local today when absent.
+
+`useOrgAgendaParameters` owns only a scoped immutable row/session snapshot.
+The shared bottom `OrgMinibuffer` provides `s`/`d` parameter entry, strict ISO
+validation, history, IME/consumed/repeat priority and cancellation. Existing
+planning pipes preserve accepted format, time/repeater and unknown suffix rules;
+an identical date is explicit unchanged, with no history or raw-source rewrite.
+Changed dates create one canonical undo event and rebuild unsaved Agenda groups.
+
+```text
+s / d -> validated preparation (no allocation) -> scoped date minibuffer
+ -> strict date + fresh provenance -> cancellable read
+ -> synchronous onCommitStarted -> cancellation locked -> canonical command ACK
+ -> original heading/action focus after regrouping; later normal CAS persistence
+```
+
+Root rechecks ownership after the lifecycle observer and before publication;
+the observer never grants authority. Reads remain abortable, but cancelling after
+canonical publication cannot suppress confirmed outcomes or display “cancelled”.
+Disposal/new scope still suppresses foreign UI effects without undoing the edit.
+Production and adapter tests cover field-specific prefill, no-op/date errors,
+raw separators/repeaters, dirty/unopened targets, source/G2 drift, read cancellation,
+commit/terminal-gap cancellation, same-heading selection/focus and later Save All.
+Verification: 170 files /2880 tests, typecheck/build pass
+(2026-10-04 01:06 +08:00). ISO-date entry is not the full Org date reader,
+calendar/repeater UI, unified application tool host or TODO logging.
+
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.

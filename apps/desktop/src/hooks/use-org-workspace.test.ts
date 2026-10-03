@@ -12,7 +12,18 @@ import type {
 } from "@/flows/org-editor-runtime"
 import * as runtimeFactory from "@/flows/org-editor-runtime"
 import { useBlocker } from "@tanstack/react-router"
-import { act, cleanup, renderHook } from "@testing-library/react"
+import {
+	act,
+	cleanup,
+	fireEvent,
+	render,
+	renderHook,
+	screen,
+	waitFor,
+} from "@testing-library/react"
+import { createElement } from "react"
+import { useOrgAgendaParameters } from "@/hooks/use-org-agenda-parameters"
+import { OrgAgendaContainer } from "@/views/org-workspace/org-agenda.container.fn"
 import * as E from "fp-ts/Either"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
@@ -29,6 +40,7 @@ import {
 	captureOrgTodoFlow,
 	captureOrgEntryFlow,
 	moveOrgDocumentFlow,
+	loadOrgAgendaFlow,
 	ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
 	openDefaultOrgWorkspaceFlow,
 	openOrgDocumentFlow,
@@ -100,6 +112,7 @@ vi.mock("@/flows/org-workspace", () => ({
 	captureOrgTodoFlow: vi.fn(),
 	captureOrgEntryFlow: vi.fn(),
 	moveOrgDocumentFlow: vi.fn(),
+	loadOrgAgendaFlow: vi.fn(),
 	ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE:
 		"The target copy succeeded, but source removal was not confirmed. Treat this as a possible duplicate copy: reread both documents and remove one copy only after verifying that both contain the subtree. No destructive rollback was attempted.",
 	openDefaultOrgWorkspaceFlow: vi.fn(),
@@ -228,6 +241,881 @@ describe("Org capture entry and transient drafts", () => {
 			},
 		}
 	}
+	it.each([
+		"schedule",
+		"deadline",
+	] as const)("rejects invalid %s dates before reading or allocating", async (kind) => {
+		const observed = observeParkedReservoir()
+		const { result } = await setup()
+		const create = vi.spyOn(runtimeFactory, "createOrgBufferRuntime")
+		const park = vi.spyOn(observed.reservoir, "park")
+		vi.mocked(openOrgDocumentFlow).mockClear()
+		const before = result.current.liveBuffers
+		for (const date of [
+			"2026-02-29",
+			"2026-04-31",
+			"2026-13-01",
+			"2026-7-01",
+			"",
+			"2026-07-01 trailing",
+		]) {
+			await act(async () => {
+				expect(
+					await result.current.executeAgendaCommand(agendaRow("* TODO task\n<2026-07-01 Wed>\n"), {
+						kind,
+						date,
+					}),
+				).toMatchObject({ kind: "rejected" })
+			})
+		}
+		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(create).not.toHaveBeenCalled()
+		expect(park).not.toHaveBeenCalled()
+		expect(result.current.liveBuffers).toEqual(before)
+		expect(result.current.isLoading).toBe(false)
+	})
+	it.each([
+		"schedule",
+		"deadline",
+	] as const)("prepares unopened %s from current metadata without allocating a ghost", async (field) => {
+		const observed = observeParkedReservoir()
+		const { result } = await setup()
+		const source =
+			"* TODO 😀 task\r\nSCHEDULED: <2026-07-01 Wed> DEADLINE: <2026-07-03 Fri>\r\nbody\r\n"
+		const selected = parseOrgAgenda("z.org", source).find(
+			(entry) => entry.kind === (field === "schedule" ? "deadline" : "scheduled"),
+		)!
+		const row = {
+			...selected,
+			origin: {
+				...selected.origin,
+				...agendaRow(source).origin!,
+				timestamp: selected.origin!.timestamp,
+				workspaceRoot: workspace.rootPath,
+				capabilityToken: workspace.capabilityToken,
+				sourceRevision: "z-1",
+				diskRevision: "z-1",
+				workspaceSessionId: result.current.workspaceSessionId!,
+			},
+		}
+		const create = vi.spyOn(runtimeFactory, "createOrgBufferRuntime")
+		const park = vi.spyOn(observed.reservoir, "park")
+		const before = result.current.liveBuffers
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			expect(await result.current.prepareAgendaPlanning(row, field)).toEqual({
+				kind: "ready",
+				entry: row,
+				date: field === "schedule" ? "2026-07-01" : "2026-07-03",
+			})
+		})
+		expect(row.kind).toBe(field === "schedule" ? "deadline" : "scheduled")
+		expect(create).not.toHaveBeenCalled()
+		expect(park).not.toHaveBeenCalled()
+		expect(result.current.liveBuffers).toEqual(before)
+		expect(result.current.activeDocument?.relativePath).toBe("inbox.org")
+		expect(result.current.revealTarget).toBeNull()
+		expect(result.current.isLoading).toBe(false)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it.each([
+		"schedule",
+		"deadline",
+	] as const)("prepares live %s with null when absent and preserves raw history and revision", async (field) => {
+		const { result } = await setup()
+		const source = "* TODO task\r\n<2026-07-01 Wed>\r\nbody\r\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const runtime = result.current.activeBufferRuntime!
+		const editor = attachRuntime(runtime, result.current, `prepare-${field}`)
+		act(() =>
+			editor.view.dispatch({
+				changes: { from: editor.view.state.doc.length, insert: "unsaved\n" },
+			}),
+		)
+		const raw = runtime.source
+		const revision = runtime.revision
+		const depth = undoDepth(runtime.state)
+		const row = agendaRow(raw, "z.org", result.current.activeBufferId!, true)
+		vi.mocked(openOrgDocumentFlow).mockClear()
+		await act(async () => {
+			expect(await result.current.prepareAgendaPlanning(row, field)).toEqual({
+				kind: "ready",
+				entry: row,
+				date: null,
+			})
+		})
+		expect(runtime.source).toBe(raw)
+		expect(runtime.revision).toBe(revision)
+		expect(undoDepth(runtime.state)).toBe(depth)
+		expect(result.current.content).toBe(raw)
+		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
+		editor.dispose()
+	})
+	it.each([
+		"schedule",
+		"deadline",
+	] as const)("applies one canonical %s edit, supports undo, and saves inactive exact CAS", async (kind) => {
+		const { result } = await setup()
+		const source =
+			"* TODO 😀 task\r\nSCHEDULED: <2026-07-01 Wed> DEADLINE: <2026-07-03 Fri>\r\nbody\r\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		const active = result.current.activeBufferRuntime
+		const row = agendaRow(source)
+		await act(async () => {
+			expect(await result.current.executeAgendaCommand(row, { kind, date: "2026-07-09" })).toEqual({
+				kind: "confirmed",
+			})
+		})
+		const parked = result.current.liveBuffers.find(
+			(buffer) => buffer.document.relativePath === "z.org",
+		)!
+		const expected = source.replace(
+			kind === "schedule" ? "<2026-07-01 Wed>" : "<2026-07-03 Fri>",
+			"<2026-07-09>",
+		)
+		expect(parked.runtime.source).toBe(expected)
+		expect(parked.content).toBe(expected)
+		expect(undoDepth(parked.runtime.state)).toBe(1)
+		expect(result.current.activeBufferRuntime).toBe(active)
+		expect(nativeState.hasDirtyBuffers).toBe(true)
+		const editor = attachRuntime(parked.runtime, result.current, `planning-undo-${kind}`)
+		act(() => {
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(parked.runtime.source).toBe(source)
+		expect(redoDepth(parked.runtime.state)).toBe(1)
+		act(() => {
+			expect(editor.handle.redo()).toBe(true)
+		})
+		vi.mocked(saveOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ relativePath: "z.org", revision: "z-2" }),
+		)
+		await act(async () => {
+			expect(await result.current.saveAllDocuments()).toMatchObject({
+				kind: "success",
+				savedPaths: ["z.org"],
+			})
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledExactlyOnceWith({
+			content: expected,
+			expectedRevision: "z-1",
+			relativePath: "z.org",
+			capabilityToken: "G1",
+			workspaceRoot: "/notes",
+		})
+		expect(result.current.activeBufferRuntime).toBe(active)
+		expect(
+			result.current.liveBuffers.find((buffer) => buffer.bufferId === parked.bufferId),
+		).toMatchObject({ isDirty: false, document: { revision: "z-2" } })
+		editor.dispose()
+	})
+	it.each([
+		"schedule",
+		"deadline",
+	] as const)("leaves unchanged %s raw bytes, canonical revision and history intact", async (kind) => {
+		const observed = observeParkedReservoir()
+		const { result } = await setup()
+		const source =
+			"* TODO 😀 task\r\nSCHEDULED: <2026-07-01 Wed> DEADLINE: <2026-07-03 Fri>\r\nbody\r\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		const create = vi.spyOn(runtimeFactory, "createOrgBufferRuntime")
+		const park = vi.spyOn(observed.reservoir, "park")
+		const command = { kind, date: kind === "schedule" ? "2026-07-01" : "2026-07-03" }
+		await act(async () => {
+			expect(await result.current.executeAgendaCommand(agendaRow(source), command)).toEqual({
+				kind: "unchanged",
+			})
+		})
+		expect(create).not.toHaveBeenCalled()
+		expect(park).not.toHaveBeenCalled()
+		expect(result.current.liveBuffers).toHaveLength(1)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const runtime = result.current.activeBufferRuntime!
+		const revision = runtime.revision
+		const depth = undoDepth(runtime.state)
+		const redo = redoDepth(runtime.state)
+		vi.mocked(openOrgDocumentFlow).mockClear()
+		await act(async () => {
+			expect(
+				await result.current.executeAgendaCommand(
+					agendaRow(source, "z.org", result.current.activeBufferId!, true),
+					command,
+				),
+			).toEqual({ kind: "unchanged" })
+		})
+		expect(runtime.source).toBe(source)
+		expect(result.current.content).toBe(source)
+		expect(runtime.revision).toBe(revision)
+		expect(undoDepth(runtime.state)).toBe(depth)
+		expect(redoDepth(runtime.state)).toBe(redo)
+		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it.each([
+		"throw",
+		"abort",
+		"source-drift",
+	] as const)("rechecks a fresh Root owner after a %s commit-start observer", async (effect) => {
+		const { result } = await setup()
+		const source = "* TODO task\nSCHEDULED: <2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const runtime = result.current.activeBufferRuntime!
+		const revision = runtime.revision
+		const row = agendaRow(source, "z.org", result.current.activeBufferId!, true)
+		const controller = new AbortController()
+		const onCommitStarted = vi.fn(() => {
+			if (effect === "throw") throw new Error("observer failed before publication")
+			if (effect === "abort") controller.abort()
+			if (effect === "source-drift") result.current.updateContent(source + "new body\n")
+		})
+		await act(async () => {
+			expect(
+				await result.current.executeAgendaCommand(
+					row,
+					{ kind: "schedule", date: "2026-07-09" },
+					controller.signal,
+					{ onCommitStarted },
+				),
+			).toMatchObject({ kind: effect === "throw" ? "rejected" : "stale" })
+		})
+		expect(onCommitStarted).toHaveBeenCalledTimes(1)
+		expect(runtime.source).toBe(effect === "source-drift" ? source + "new body\n" : source)
+		expect(result.current.content).toBe(runtime.source)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(redoDepth(runtime.state)).toBe(0)
+		if (effect !== "source-drift") expect(runtime.revision).toBe(revision)
+		expect(result.current.isLoading).toBe(false)
+		expect(nativeState.isBusy).toBe(false)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it("does not release a fresh Root read owner started reentrantly by the commit-start observer", async () => {
+		const hook = renderHook(() => useOrgWorkspace())
+		agendaOwner = () => hook.result.current
+		await act(async () => {
+			await hook.result.current.openDefaultWorkspace()
+		})
+		const source = "* TODO task\nSCHEDULED: <2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			await hook.result.current.openDocumentPath("z.org")
+		})
+		const runtime = hook.result.current.activeBufferRuntime!
+		const revision = runtime.revision
+		const row = agendaRow(source, "z.org", hook.result.current.activeBufferId!, true)
+		const inboxRow = agendaRow(source, "inbox.org", "old")
+		const nextRow = { ...inboxRow, origin: { ...inboxRow.origin!, diskRevision: "old" } }
+		let settle!: (value: E.Either<never, OrgDocumentInterface>) => void
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(
+			() =>
+				new Promise((resolve) => {
+					settle = resolve
+				}),
+		)
+		const controller = new AbortController()
+		let next!: Promise<unknown>
+		const onCommitStarted = vi.fn(() => {
+			controller.abort()
+			next = hook.result.current.executeAgendaCommand(nextRow, {
+				kind: "schedule",
+				date: "2026-07-09",
+			})
+		})
+		await act(async () => {
+			expect(
+				await hook.result.current.executeAgendaCommand(
+					row,
+					{ kind: "schedule", date: "2026-07-09" },
+					controller.signal,
+					{ onCommitStarted },
+				),
+			).toEqual({ kind: "stale" })
+		})
+		expect(onCommitStarted).toHaveBeenCalledTimes(1)
+		expect(runtime.source).toBe(source)
+		expect(runtime.revision).toBe(revision)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(hook.result.current.isLoading).toBe(true)
+		expect(nativeState.isBusy).toBe(true)
+		await act(async () => {
+			settle(E.right({ content: source, relativePath: "inbox.org", revision: "old" }))
+			expect(await next).toEqual({ kind: "confirmed" })
+		})
+		expect(hook.result.current.isLoading).toBe(false)
+		expect(nativeState.isBusy).toBe(false)
+		const nextBuffer = hook.result.current.liveBuffers.find(
+			(buffer) => buffer.document.relativePath === "inbox.org",
+		)!
+		expect(nextBuffer.content).toBe(source.replace("<2026-07-01 Wed>", "<2026-07-09>"))
+		expect(undoDepth(nextBuffer.runtime.state)).toBe(1)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it.each([
+		"unopened",
+		"live",
+	] as const)("does not notify the commit-start observer or create history for unchanged %s planning", async (target) => {
+		const { result } = await setup()
+		const source = "* TODO task\nSCHEDULED: <2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		if (target === "live") {
+			await act(async () => {
+				await result.current.openDocumentPath("z.org")
+			})
+		}
+		const before = result.current.liveBuffers
+		const runtime = result.current.activeBufferRuntime!
+		const revision = runtime.revision
+		const onCommitStarted = vi.fn(() => {
+			throw new Error("must not observe unchanged")
+		})
+		const row =
+			target === "live"
+				? agendaRow(source, "z.org", result.current.activeBufferId!, true)
+				: agendaRow(source)
+		await act(async () => {
+			expect(
+				await result.current.executeAgendaCommand(
+					row,
+					{ kind: "schedule", date: "2026-07-01" },
+					undefined,
+					{ onCommitStarted },
+				),
+			).toEqual({ kind: "unchanged" })
+		})
+		expect(onCommitStarted).not.toHaveBeenCalled()
+		expect(result.current.liveBuffers).toEqual(before)
+		expect(runtime.revision).toBe(revision)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(redoDepth(runtime.state)).toBe(0)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	// The wrapper delays only RESULT delivery: canonical commit and Root publication
+	// have already happened when cancellation is attempted. Never fake a confirmed edit.
+	const resultGate = () => {
+		let release!: () => void
+		const promise = new Promise<void>((resolve) => {
+			release = resolve
+		})
+		return { promise, release }
+	}
+	it.each([
+		"schedule",
+		"deadline",
+	] as const)("keeps a real Root %s commit authoritative when the accepting session calls onCancel", async (kind) => {
+		vi.useRealTimers()
+		const gate = resultGate()
+		const reload = vi.fn()
+		const restoreFocus = vi.fn()
+		let signal!: AbortSignal
+		let committed = false
+		const source = "* TODO task\nSCHEDULED: <2026-07-01 Wed> DEADLINE: <2026-07-03 Fri>\n"
+		const hook = renderHook(() => {
+			const owner = useOrgWorkspace()
+			const parameters = useOrgAgendaParameters({
+				controller: {
+					prepareAgendaPlanning: owner.prepareAgendaPlanning,
+					executeAgendaCommand: async (...args) => {
+						signal = args[2]!
+						const outcome = await owner.executeAgendaCommand(...args)
+						expect(outcome).toEqual({ kind: "confirmed" })
+						committed = true
+						await gate.promise
+						return outcome
+					},
+				},
+				scope: owner.workspaceSessionId ?? "",
+				// Exercise publication while the accepting request still awaits RESULT.
+				sourceVersion: JSON.stringify(owner.liveBuffers.map((buffer) => buffer.content)),
+				reload,
+				restoreFocus,
+			})
+			return { owner, parameters }
+		})
+		agendaOwner = () => hook.result.current.owner
+		await act(async () => {
+			await hook.result.current.owner.openDefaultWorkspace()
+		})
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			hook.result.current.parameters.start(agendaRow(source), kind)
+		})
+		const session = hook.result.current.parameters.session!
+		let accepted!: ReturnType<typeof session.onAccept>
+		await act(async () => {
+			accepted = session.onAccept("2026-07-09")
+		})
+		expect(committed).toBe(true)
+		const buffer = hook.result.current.owner.liveBuffers[0]!
+		const expected = source.replace(
+			kind === "schedule" ? "<2026-07-01 Wed>" : "<2026-07-03 Fri>",
+			"<2026-07-09>",
+		)
+		expect(buffer.content).toBe(expected)
+		expect(buffer.runtime.source).toBe(expected)
+		expect(buffer.isDirty).toBe(true)
+		expect(undoDepth(buffer.runtime.state)).toBe(1)
+		const revision = buffer.runtime.revision
+		act(() => {
+			session.onCancel()
+			session.onCancel()
+			hook.result.current.parameters.cancel()
+		})
+		expect(signal.aborted).toBe(false)
+		expect(hook.result.current.parameters.pending).toBe(true)
+		expect(hook.result.current.parameters.status).not.toMatch(/cancelled/i)
+		expect(reload).not.toHaveBeenCalled()
+		expect(restoreFocus).not.toHaveBeenCalled()
+		await act(async () => {
+			gate.release()
+			await accepted
+		})
+		expect(hook.result.current.parameters.status).toBe(
+			`${kind === "schedule" ? "Schedule" : "Deadline"} changed in working copy. Save to write the file.`,
+		)
+		expect(hook.result.current.parameters.session).toBeNull()
+		expect(hook.result.current.parameters.pending).toBe(false)
+		expect(hook.result.current.parameters.isPending()).toBe(false)
+		expect(reload).toHaveBeenCalledTimes(1)
+		expect(restoreFocus).toHaveBeenCalledTimes(1)
+		expect(buffer.runtime.revision).toBe(revision)
+		expect(buffer.runtime.source).toBe(expected)
+		expect(undoDepth(buffer.runtime.state)).toBe(1)
+		expect(hook.result.current.owner.isLoading).toBe(false)
+		expect(nativeState.isBusy).toBe(false)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it.each([
+		"scope-change",
+		"unmount",
+	] as const)("suppresses late UI completion after real Root publication and %s", async (boundary) => {
+		vi.useRealTimers()
+		const gate = resultGate()
+		const reload = vi.fn()
+		const restoreFocus = vi.fn()
+		const source = "* TODO task\nSCHEDULED: <2026-07-01 Wed>\n"
+		let signal!: AbortSignal
+		let committed = false
+		const hook = renderHook(
+			({ surfaceScope }) => {
+				const owner = useOrgWorkspace()
+				const parameters = useOrgAgendaParameters({
+					controller: {
+						prepareAgendaPlanning: owner.prepareAgendaPlanning,
+						executeAgendaCommand: async (...args) => {
+							signal = args[2]!
+							const outcome = await owner.executeAgendaCommand(...args)
+							expect(outcome).toEqual({ kind: "confirmed" })
+							committed = true
+							await gate.promise
+							return outcome
+						},
+					},
+					scope: surfaceScope,
+					reload,
+					restoreFocus,
+				})
+				return { owner, parameters }
+			},
+			{ initialProps: { surfaceScope: "agenda-G1" } },
+		)
+		agendaOwner = () => hook.result.current.owner
+		await act(async () => {
+			await hook.result.current.owner.openDefaultWorkspace()
+		})
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			hook.result.current.parameters.start(agendaRow(source), "schedule")
+		})
+		const session = hook.result.current.parameters.session!
+		let accepted!: ReturnType<typeof session.onAccept>
+		await act(async () => {
+			accepted = session.onAccept("2026-07-09")
+		})
+		expect(committed).toBe(true)
+		const buffer = hook.result.current.owner.liveBuffers[0]!
+		const expected = source.replace("<2026-07-01 Wed>", "<2026-07-09>")
+		expect(buffer.content).toBe(expected)
+		expect(buffer.runtime.source).toBe(expected)
+		expect(undoDepth(buffer.runtime.state)).toBe(1)
+		const revision = buffer.runtime.revision
+		if (boundary === "scope-change") hook.rerender({ surfaceScope: "agenda-G2" })
+		else hook.unmount()
+		expect(signal.aborted).toBe(true)
+		await act(async () => {
+			gate.release()
+			await accepted
+		})
+		expect(reload).not.toHaveBeenCalled()
+		expect(restoreFocus).not.toHaveBeenCalled()
+		if (boundary === "scope-change") {
+			expect(hook.result.current.parameters.status).toBeNull()
+			expect(hook.result.current.parameters.session).toBeNull()
+			expect(hook.result.current.parameters.pending).toBe(false)
+			expect(hook.result.current.parameters.isPending()).toBe(false)
+			expect(hook.result.current.owner.isLoading).toBe(false)
+		}
+		expect(buffer.runtime.source).toBe(expected)
+		expect(buffer.runtime.revision).toBe(revision)
+		expect(undoDepth(buffer.runtime.state)).toBe(1)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it.each([
+		{ kind: "schedule", label: "Schedule", key: "Escape", ctrlKey: false },
+		{ kind: "deadline", label: "Deadline", key: "g", ctrlKey: true },
+		{ kind: "cycle-todo", label: "Cycle TODO", key: "Escape", ctrlKey: false },
+	] as const)("ignores outer Agenda $key cancellation after real Root $kind publication", async ({
+		kind,
+		label,
+		key,
+		ctrlKey,
+	}) => {
+		vi.useRealTimers()
+		const gate = resultGate()
+		const source = "* TODO task\nSCHEDULED: <2026-07-01 Wed> DEADLINE: <2026-07-03 Fri>\n"
+		let owner!: ReturnType<typeof useOrgWorkspace>
+		let signal!: AbortSignal
+		let committed = false
+		const onShowEditor = vi.fn()
+		vi.mocked(loadOrgAgendaFlow).mockImplementation(() => async () => {
+			const live = owner.liveBuffers.find((buffer) => buffer.document.relativePath === "z.org")
+			const row = live ? agendaRow(live.content, "z.org", live.bufferId, true) : agendaRow(source)
+			// Keep the same scheduled row: after rescheduling, parseOrgAgenda's
+			// first date-sorted entry is the deadline, a different focus identity.
+			const scheduled = parseOrgAgenda("z.org", live?.content ?? source).find(
+				(entry) => entry.kind === "scheduled",
+			)!
+			const stableRow = {
+				...scheduled,
+				origin: { ...row.origin!, timestamp: scheduled.origin!.timestamp },
+			}
+			return E.right([stableRow])
+		})
+		const RootAgenda = () => {
+			owner = useOrgWorkspace()
+			agendaOwner = () => owner
+			const root = owner
+			return createElement(OrgAgendaContainer, {
+				controller: {
+					...root,
+					executeAgendaCommand: async (...args) => {
+						signal = args[2]!
+						const outcome = await root.executeAgendaCommand(...args)
+						expect(outcome).toEqual({ kind: "confirmed" })
+						committed = true
+						await gate.promise
+						return outcome
+					},
+				},
+				onShowEditor,
+			})
+		}
+		render(createElement(RootAgenda))
+		await act(async () => {
+			await owner.openDefaultWorkspace()
+		})
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		const button = await screen.findByRole("button", { name: `${label} for task` })
+		await act(async () => {
+			button.focus()
+			fireEvent.click(button)
+		})
+		if (kind !== "cycle-todo") {
+			const input = await screen.findByRole("combobox")
+			fireEvent.change(input, { target: { value: "2026-07-09" } })
+			await act(async () => {
+				fireEvent.keyDown(input, { key: "Enter" })
+			})
+		}
+		expect(committed).toBe(true)
+		const buffer = owner.liveBuffers[0]!
+		const revision = buffer.runtime.revision
+		const expected =
+			kind === "cycle-todo"
+				? source.replace("TODO", "DONE")
+				: source.replace(
+						kind === "schedule" ? "<2026-07-01 Wed>" : "<2026-07-03 Fri>",
+						"<2026-07-09>",
+					)
+		expect(buffer.runtime.source).toBe(expected)
+		expect(buffer.content).toBe(expected)
+		expect(undoDepth(buffer.runtime.state)).toBe(1)
+		// Reservoir publication can render before the runtime revision advances.
+		// Wait for the committed generation before counting RESULT's reload.
+		await waitFor(() =>
+			expect(vi.mocked(loadOrgAgendaFlow).mock.calls.at(-1)?.[3]).toEqual([
+				expect.objectContaining({ content: expected, sourceGeneration: revision }),
+			]),
+		)
+		const loadsAfterPublication = vi.mocked(loadOrgAgendaFlow).mock.calls.length
+		fireEvent.keyDown(screen.getByRole("main"), { key, ctrlKey })
+		fireEvent.keyDown(screen.getByRole("main"), { key, ctrlKey })
+		expect(signal.aborted).toBe(false)
+		expect(screen.getByRole("status")).not.toHaveTextContent("cancelled")
+		await act(async () => {
+			gate.release()
+		})
+		await waitFor(() =>
+			expect(screen.getByRole("status")).toHaveTextContent(
+				`${kind === "cycle-todo" ? "TODO state" : label} changed in working copy`,
+			),
+		)
+		await waitFor(() =>
+			expect(document.activeElement).toBe(
+				screen.getByRole("button", { name: `${label} for task` }),
+			),
+		)
+		// Container source refreshes may overlap RESULT's explicit reload;
+		// the parameter-hook tests separately assert exactly one reload request.
+		expect(vi.mocked(loadOrgAgendaFlow).mock.calls.length).toBeGreaterThan(loadsAfterPublication)
+		expect(screen.queryByRole("combobox")).not.toBeInTheDocument()
+		expect(screen.getByRole("button", { name: `${label} for task` })).not.toBeDisabled()
+		expect(buffer.runtime.source).toBe(expected)
+		expect(buffer.runtime.revision).toBe(revision)
+		expect(undoDepth(buffer.runtime.state)).toBe(1)
+		expect(owner.isLoading).toBe(false)
+		expect(nativeState.isBusy).toBe(false)
+		expect(onShowEditor).not.toHaveBeenCalled()
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it.each([
+		"preparation",
+		"execution",
+	] as const)("still cancels real Root %s reads without late ghost buffers", async (phase) => {
+		vi.useRealTimers()
+		const observed = observeParkedReservoir()
+		const reload = vi.fn()
+		const restoreFocus = vi.fn()
+		const source = "* TODO task\nSCHEDULED: <2026-07-01 Wed>\n"
+		let signal!: AbortSignal
+		let settle!: (value: E.Either<never, OrgDocumentInterface>) => void
+		const lateRead = () =>
+			vi.mocked(openOrgDocumentFlow).mockReturnValue(
+				() =>
+					new Promise((resolve) => {
+						settle = resolve
+					}),
+			)
+		const hook = renderHook(() => {
+			const owner = useOrgWorkspace()
+			const parameters = useOrgAgendaParameters({
+				controller: {
+					prepareAgendaPlanning: (...args) => {
+						signal = args[2]!
+						return owner.prepareAgendaPlanning(...args)
+					},
+					executeAgendaCommand: (...args) => {
+						signal = args[2]!
+						return owner.executeAgendaCommand(...args)
+					},
+				},
+				scope: owner.workspaceSessionId ?? "",
+				reload,
+				restoreFocus,
+			})
+			return { owner, parameters }
+		})
+		agendaOwner = () => hook.result.current.owner
+		await act(async () => {
+			await hook.result.current.owner.openDefaultWorkspace()
+		})
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		const create = vi.spyOn(runtimeFactory, "createOrgBufferRuntime")
+		const park = vi.spyOn(observed.reservoir, "park")
+		if (phase === "preparation") lateRead()
+		await act(async () => {
+			hook.result.current.parameters.start(agendaRow(source), "schedule")
+		})
+		let accepted: unknown
+		if (phase === "execution") {
+			lateRead()
+			await act(async () => {
+				accepted = hook.result.current.parameters.session!.onAccept("2026-07-09")
+			})
+			act(() => hook.result.current.parameters.session!.onCancel())
+		} else act(() => hook.result.current.parameters.cancel())
+		expect(signal.aborted).toBe(true)
+		expect(hook.result.current.parameters.status).toBe("Agenda action cancelled.")
+		expect(hook.result.current.parameters.session).toBeNull()
+		expect(hook.result.current.parameters.isPending()).toBe(false)
+		await act(async () => {
+			settle(E.right({ content: source, relativePath: "z.org", revision: "z-1" }))
+			await accepted
+		})
+		expect(hook.result.current.parameters.status).toBe("Agenda action cancelled.")
+		expect(hook.result.current.parameters.pending).toBe(false)
+		expect(hook.result.current.owner.liveBuffers).toEqual([])
+		expect(create).not.toHaveBeenCalled()
+		expect(park).not.toHaveBeenCalled()
+		expect(reload).not.toHaveBeenCalled()
+		expect(restoreFocus).toHaveBeenCalledTimes(1)
+		expect(hook.result.current.owner.isLoading).toBe(false)
+		expect(nativeState.isBusy).toBe(false)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	const planningOperations = [
+		{ field: "schedule", prepare: true },
+		{ field: "deadline", prepare: true },
+		{ field: "schedule", prepare: false },
+		{ field: "deadline", prepare: false },
+	] as const
+	const runPlanning = (
+		owner: ReturnType<typeof useOrgWorkspace>,
+		row: OrgAgendaEntry,
+		operation: (typeof planningOperations)[number],
+		signal?: AbortSignal,
+	) =>
+		operation.prepare
+			? owner.prepareAgendaPlanning(row, operation.field, signal)
+			: owner.executeAgendaCommand(row, { kind: operation.field, date: "2026-07-09" }, signal)
+	it.each(
+		planningOperations,
+	)("rejects false Right planning RPCs before allocation: %j", async (operation) => {
+		const observed = observeParkedReservoir()
+		const { result } = await setup()
+		const create = vi.spyOn(runtimeFactory, "createOrgBufferRuntime")
+		const park = vi.spyOn(observed.reservoir, "park")
+		const before = result.current.liveBuffers
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		for (const response of [
+			{ _tag: "Invalid", right: { content: source, relativePath: "z.org", revision: "z-1" } },
+			{ _tag: "Right", right: null },
+			{ _tag: "Right", right: { content: 42, relativePath: "z.org", revision: "z-1" } },
+			{ _tag: "Right", right: { content: source, relativePath: "other.org", revision: "z-1" } },
+			{ _tag: "Right", right: { content: source, relativePath: "z.org", revision: "" } },
+		]) {
+			vi.mocked(openOrgDocumentFlow).mockReturnValue(async () => response as never)
+			await act(async () => {
+				expect(await runPlanning(result.current, agendaRow(source), operation)).toMatchObject({
+					kind: "rejected",
+				})
+			})
+			expect(result.current.isLoading).toBe(false)
+			expect(nativeState.isBusy).toBe(false)
+		}
+		expect(create).not.toHaveBeenCalled()
+		expect(park).not.toHaveBeenCalled()
+		expect(result.current.liveBuffers).toEqual(before)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it.each(
+		planningOperations,
+	)("ignores late G1 planning RPC after G2 replaces its session: %j", async (operation) => {
+		const observed = observeParkedReservoir()
+		const { result } = await setup()
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		const row = agendaRow(source)
+		let settle!: (value: E.Either<never, OrgDocumentInterface>) => void
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(
+			() =>
+				new Promise((resolve) => {
+					settle = resolve
+				}),
+		)
+		const create = vi.spyOn(runtimeFactory, "createOrgBufferRuntime")
+		const park = vi.spyOn(observed.reservoir, "park")
+		const controller = new AbortController()
+		let pending!: Promise<unknown>
+		act(() => {
+			pending = runPlanning(result.current, row, operation, controller.signal)
+		})
+		act(() => controller.abort())
+		await act(async () => {
+			expect(await pending).toEqual({ kind: "stale" })
+		})
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () =>
+			E.right({ ...workspace, capabilityToken: "G2" }),
+		)
+		await act(async () => {
+			await result.current.openDefaultWorkspace()
+		})
+		await act(async () => {
+			settle(E.right({ content: source, relativePath: "z.org", revision: "z-1" }))
+			expect(await pending).toEqual({ kind: "stale" })
+		})
+		expect(create).not.toHaveBeenCalled()
+		expect(park).not.toHaveBeenCalled()
+		expect(result.current.liveBuffers).toEqual([])
+		expect(result.current.workspaceSessionId).toBe("G2")
+		expect(result.current.error).toBeNull()
+		expect(result.current.isLoading).toBe(false)
+		vi.mocked(openOrgDocumentFlow).mockClear()
+		await act(async () => {
+			expect(await runPlanning(result.current, row, operation)).toEqual({ kind: "stale" })
+		})
+		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it.each(
+		planningOperations,
+	)("rejects planning against a real disk conflict without changing history: %j", async (operation) => {
+		const { result } = await setup()
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		act(() => result.current.updateContent(source + "dirty\n"))
+		vi.mocked(scanOrgWorkspaceFlow).mockReturnValue(async () =>
+			E.right({
+				...workspace,
+				documents: workspace.documents.map((document) =>
+					document.relativePath === "z.org" ? { ...document, revision: "z-2" } : document,
+				),
+			}),
+		)
+		await act(async () => {
+			await result.current.refreshWorkspace()
+		})
+		const runtime = result.current.activeBufferRuntime!
+		const raw = runtime.source
+		const revision = runtime.revision
+		const depth = undoDepth(runtime.state)
+		vi.mocked(openOrgDocumentFlow).mockClear()
+		await act(async () => {
+			expect(
+				await runPlanning(
+					result.current,
+					agendaRow(raw, "z.org", result.current.activeBufferId!, true),
+					operation,
+				),
+			).toMatchObject({ kind: "rejected" })
+		})
+		expect(runtime.source).toBe(raw)
+		expect(runtime.revision).toBe(revision)
+		expect(undoDepth(runtime.state)).toBe(depth)
+		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
 	it("commands an unopened exact disk revision without activation and retains one undo cycle", async () => {
 		const { result } = await setup()
 		const source = "#+TODO: NEXT | FINISHED\r\n* NEXT 😀 task\r\nDEADLINE: <2026-07-01 Wed>\r\n"
@@ -358,6 +1246,166 @@ describe("Org capture entry and transient drafts", () => {
 		})
 		editor.dispose()
 	})
+	it.each([
+		"schedule",
+		"deadline",
+	] as const)("planning %s: publishes runtime identity and rejects generation drift even after undo restores the body", async (field) => {
+		const { result } = await setup()
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const live = result.current.liveBuffers.find(
+			(buffer) => buffer.document.relativePath === "z.org",
+		)!
+		const row = agendaRow(source, "z.org", live.bufferId, true)
+		const bound = {
+			...row,
+			origin: {
+				...row.origin!,
+				workspaceSessionId: result.current.workspaceSessionId!,
+				runtimeIncarnation: live.runtimeIncarnation,
+				sourceGeneration: live.sourceGeneration,
+			},
+		}
+		const editor = attachRuntime(live.runtime, result.current, "agenda-generation")
+		act(() => {
+			editor.view.dispatch({ changes: { from: source.length, insert: "body edit\n" } })
+		})
+		const edited = result.current.liveBuffers.find((buffer) => buffer.bufferId === live.bufferId)!
+		expect(edited.runtimeIncarnation).toBe(live.runtimeIncarnation)
+		expect(edited.sourceGeneration).toBe(live.runtime.revision)
+		expect(edited.sourceGeneration).toBeGreaterThan(live.sourceGeneration)
+		const editRevision = live.runtime.revision
+		const editDepth = undoDepth(live.runtime.state)
+		await act(async () => {
+			expect(await result.current.prepareAgendaPlanning(bound, field)).toEqual({ kind: "stale" })
+		})
+		expect(live.runtime.revision).toBe(editRevision)
+		expect(undoDepth(live.runtime.state)).toBe(editDepth)
+		act(() => {
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(live.runtime.source).toBe(source)
+		const undoRevision = live.runtime.revision
+		const undoHistory = undoDepth(live.runtime.state)
+		await act(async () => {
+			expect(await result.current.prepareAgendaPlanning(bound, field)).toEqual({ kind: "stale" })
+		})
+		expect(live.runtime.revision).toBe(undoRevision)
+		expect(undoDepth(live.runtime.state)).toBe(undoHistory)
+		const fresh = result.current.liveBuffers.find((buffer) => buffer.bufferId === live.bufferId)!
+		await act(async () => {
+			expect(
+				await result.current.prepareAgendaPlanning(
+					{
+						...bound,
+						origin: {
+							...bound.origin,
+							runtimeIncarnation: "retired-runtime",
+							sourceGeneration: fresh.sourceGeneration,
+						},
+					},
+					field,
+				),
+			).toEqual({ kind: "stale" })
+			expect(
+				await result.current.prepareAgendaPlanning(
+					{
+						...bound,
+						origin: { ...bound.origin, sourceGeneration: fresh.sourceGeneration },
+					},
+					field,
+				),
+			).toMatchObject({ kind: "ready", date: null })
+		})
+		editor.dispose()
+	})
+	it.each([
+		"schedule",
+		"deadline",
+	] as const)("command %s: publishes runtime identity and rejects generation drift even after undo restores the body", async (field) => {
+		const { result } = await setup()
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const live = result.current.liveBuffers.find(
+			(buffer) => buffer.document.relativePath === "z.org",
+		)!
+		const row = agendaRow(source, "z.org", live.bufferId, true)
+		const bound = {
+			...row,
+			origin: {
+				...row.origin!,
+				workspaceSessionId: result.current.workspaceSessionId!,
+				runtimeIncarnation: live.runtimeIncarnation,
+				sourceGeneration: live.sourceGeneration,
+			},
+		}
+		const editor = attachRuntime(live.runtime, result.current, "agenda-generation")
+		act(() => {
+			editor.view.dispatch({ changes: { from: source.length, insert: "body edit\n" } })
+		})
+		const edited = result.current.liveBuffers.find((buffer) => buffer.bufferId === live.bufferId)!
+		expect(edited.runtimeIncarnation).toBe(live.runtimeIncarnation)
+		expect(edited.sourceGeneration).toBe(live.runtime.revision)
+		expect(edited.sourceGeneration).toBeGreaterThan(live.sourceGeneration)
+		const editRevision = live.runtime.revision
+		const editDepth = undoDepth(live.runtime.state)
+		await act(async () => {
+			expect(
+				await result.current.executeAgendaCommand(bound, { kind: field, date: "2026-07-09" }),
+			).toEqual({ kind: "stale" })
+		})
+		expect(live.runtime.revision).toBe(editRevision)
+		expect(undoDepth(live.runtime.state)).toBe(editDepth)
+		act(() => {
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(live.runtime.source).toBe(source)
+		const undoRevision = live.runtime.revision
+		const undoHistory = undoDepth(live.runtime.state)
+		await act(async () => {
+			expect(
+				await result.current.executeAgendaCommand(bound, { kind: field, date: "2026-07-09" }),
+			).toEqual({ kind: "stale" })
+		})
+		expect(live.runtime.revision).toBe(undoRevision)
+		expect(undoDepth(live.runtime.state)).toBe(undoHistory)
+		const fresh = result.current.liveBuffers.find((buffer) => buffer.bufferId === live.bufferId)!
+		await act(async () => {
+			expect(
+				await result.current.executeAgendaCommand(
+					{
+						...bound,
+						origin: {
+							...bound.origin,
+							runtimeIncarnation: "retired-runtime",
+							sourceGeneration: fresh.sourceGeneration,
+						},
+					},
+					{ kind: field, date: "2026-07-09" },
+				),
+			).toEqual({ kind: "stale" })
+			expect(
+				await result.current.executeAgendaCommand(
+					{
+						...bound,
+						origin: { ...bound.origin, sourceGeneration: fresh.sourceGeneration },
+					},
+					{ kind: field, date: "2026-07-09" },
+				),
+			).toEqual({ kind: "confirmed" })
+		})
+		editor.dispose()
+	})
 	it("refuses disk rows when unrelated unsaved body edits leave their anchors intact", async () => {
 		const { result } = await setup()
 		const source = "* TODO task\n<2026-07-01 Wed>\n"
@@ -430,6 +1478,46 @@ describe("Org capture entry and transient drafts", () => {
 		expect(result.current.workspaceSessionId).toBe("G2")
 		expect(result.current.isLoading).toBe(false)
 	})
+	it.each([
+		"schedule",
+		"deadline",
+	] as const)("planning %s: aborts an unopened read, releases only its busy owner, and ignores its late G1 body", async (field) => {
+		const { result } = await setup()
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		let settle!: (value: E.Either<never, OrgDocumentInterface>) => void
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(
+			() =>
+				new Promise((resolve) => {
+					settle = resolve
+				}),
+		)
+		const controller = new AbortController()
+		let command!: Promise<unknown>
+		act(() => {
+			command = result.current.prepareAgendaPlanning(agendaRow(source), field, controller.signal)
+		})
+		expect(result.current.isLoading).toBe(true)
+		act(() => {
+			controller.abort()
+		})
+		expect(result.current.isLoading).toBe(false)
+		// Cancellation settles independently of the unresolved native read.
+		await act(async () => {
+			expect(await command).toEqual({ kind: "stale" })
+		})
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () =>
+			E.right({ ...workspace, capabilityToken: "G2" }),
+		)
+		await act(async () => {
+			await result.current.openDefaultWorkspace()
+		})
+		await act(async () => {
+			settle(E.right({ content: source, relativePath: "z.org", revision: "z-1" }))
+		})
+		expect(result.current.liveBuffers).toEqual([])
+		expect(result.current.workspaceSessionId).toBe("G2")
+		expect(result.current.isLoading).toBe(false)
+	})
 	it("ignores a cancelled read's late G1 failure without releasing the next read owner", async () => {
 		const { result } = await setup()
 		const source = "* TODO task\n<2026-07-01 Wed>\n"
@@ -475,6 +1563,55 @@ describe("Org capture entry and transient drafts", () => {
 		})
 		expect(result.current.isLoading).toBe(false)
 		expect(result.current.liveBuffers).toHaveLength(2)
+	})
+	it.each([
+		"schedule",
+		"deadline",
+	] as const)("preparation %s: ignores a cancelled read's late G1 failure without releasing the next read owner", async (field) => {
+		const { result } = await setup()
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		let failFirst!: (error: Error) => void
+		let settleSecond!: (value: E.Either<never, OrgDocumentInterface>) => void
+		vi.mocked(openOrgDocumentFlow)
+			.mockReturnValueOnce(
+				() =>
+					new Promise((_resolve, reject) => {
+						failFirst = reject
+					}),
+			)
+			.mockReturnValueOnce(
+				() =>
+					new Promise((resolve) => {
+						settleSecond = resolve
+					}),
+			)
+		const controller = new AbortController()
+		let first!: Promise<unknown>
+		act(() => {
+			first = result.current.prepareAgendaPlanning(agendaRow(source), field, controller.signal)
+		})
+		act(() => {
+			controller.abort()
+		})
+		await act(async () => {
+			expect(await first).toEqual({ kind: "stale" })
+		})
+		let second!: Promise<unknown>
+		act(() => {
+			second = result.current.prepareAgendaPlanning(agendaRow(source), field)
+		})
+		await act(async () => {
+			failFirst(new Error("late G1 read failure"))
+		})
+		expect(result.current.isLoading).toBe(true)
+		expect(result.current.error).toBeNull()
+		expect(result.current.liveBuffers).toHaveLength(1)
+		await act(async () => {
+			settleSecond(E.right({ content: source, relativePath: "z.org", revision: "z-1" }))
+			expect(await second).toMatchObject({ kind: "ready", date: null })
+		})
+		expect(result.current.isLoading).toBe(false)
+		expect(result.current.liveBuffers).toHaveLength(1)
 	})
 	it("retains a confirmed canonical command when its mirror observer aborts reentrantly", async () => {
 		const observed = observeParkedReservoir()
@@ -613,6 +1750,52 @@ describe("Org capture entry and transient drafts", () => {
 			expect(
 				await result.current.actOnAgendaEntry(
 					agendaRow(source, "z.org", result.current.activeBufferId!, true),
+				),
+			).toMatchObject({ kind: "rejected" })
+			await vi.advanceTimersByTimeAsync(6000)
+		})
+		expect(runtime.source).toBe(source)
+		expect(runtime.revision).toBe(generation)
+		expect(undoDepth(runtime.state)).toBe(depth)
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		editor.dispose()
+	})
+	it.each(
+		planningOperations,
+	)("planning %j: retains a real failed-save pause after canonical undo restores baseline", async (operation) => {
+		const { result } = await setup()
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const runtime = result.current.activeBufferRuntime!
+		const editor = attachRuntime(runtime, result.current, "paused-agenda")
+		act(() => editor.view.dispatch({ changes: { from: source.length, insert: "dirty body\n" } }))
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(async () =>
+			E.left({ type: "IO_ERROR", message: "uncertain write" } as never),
+		)
+		await act(async () => {
+			await result.current.saveDocument()
+		})
+		act(() => {
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(runtime.source).toBe(source)
+		expect(result.current.isDirty).toBe(false)
+		const generation = runtime.revision
+		const depth = undoDepth(runtime.state)
+		await act(async () => {
+			expect(await runPlanning(result.current, agendaRow(source), operation)).toMatchObject({
+				kind: "rejected",
+			})
+			expect(
+				await runPlanning(
+					result.current,
+					agendaRow(source, "z.org", result.current.activeBufferId!, true),
+					operation,
 				),
 			).toMatchObject({ kind: "rejected" })
 			await vi.advanceTimersByTimeAsync(6000)

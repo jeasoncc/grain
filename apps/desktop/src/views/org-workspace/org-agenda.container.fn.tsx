@@ -4,22 +4,25 @@ import { loadOrgAgendaFlow } from "@/flows/org-workspace"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
 import type { OrgAgendaEntry } from "@/pipes/org"
 import { OrgAgendaView } from "./org-agenda.view.fn"
+import { OrgMinibuffer } from "./org-minibuffer.view.fn"
+import { useOrgAgendaParameters } from "@/hooks/use-org-agenda-parameters"
 
 /** Derived rows are snapshots, never a second working-copy authority. */
 export const OrgAgendaContainer = memo(function OrgAgendaContainer({
 	controller,
 	onShowEditor,
+	now,
 }: {
 	readonly controller: OrgWorkspaceController
 	readonly onShowEditor: () => void
+	readonly now?: () => Date
 }) {
 	const [entries, setEntries] = useState<readonly OrgAgendaEntry[]>([])
 	const [error, setError] = useState<string | null>(null)
 	const [isLoading, setLoading] = useState(true)
-	const [actionPending, setActionPending] = useState(false)
-	const [actionStatus, setActionStatus] = useState<string | null>(null)
 	const [reload, setReload] = useState(0)
-	const actionRef = useRef<AbortController | null>(null)
+	const surfaceRef = useRef<HTMLDivElement>(null)
+	const focusOrigin = useRef<{ key: string; action: string; element: HTMLElement } | null>(null)
 	const workspace = controller.workspace
 	const session = controller.workspaceSessionId
 	const scope = JSON.stringify([workspace?.rootPath, workspace?.capabilityToken, session])
@@ -48,17 +51,55 @@ export const OrgAgendaContainer = memo(function OrgAgendaContainer({
 	}))
 	const liveSnapshotKey = JSON.stringify(overlays)
 
-	useEffect(() => {
-		return () => {
-			actionRef.current?.abort()
-			actionRef.current = null
-		}
-	}, [workspace?.capabilityToken, workspace?.rootPath, session])
-
-	useEffect(() => {
-		setActionPending(false)
-		setActionStatus(null)
-	}, [workspace?.capabilityToken, workspace?.rootPath, session])
+	const parameters = useOrgAgendaParameters({
+		controller,
+		scope,
+		sourceVersion: JSON.stringify([liveSnapshotKey, workspace, entries]),
+		now,
+		reload: () => setReload((value) => value + 1),
+		restoreFocus: () => {
+			const origin = focusOrigin.current
+			const root = surfaceRef.current
+			if (!origin || !root) return
+			const focused = document.activeElement
+			if (
+				focused !== document.body &&
+				focused !== origin.element &&
+				!focused?.closest('[aria-label="Minibuffer"]')
+			)
+				return
+			requestAnimationFrame(() => {
+				if (disposedRef.current || scopeRef.current !== scope || !root.isConnected) return
+				const current = document.activeElement
+				if (
+					current !== document.body &&
+					current !== origin.element &&
+					!current?.closest('[aria-label="Minibuffer"]')
+				)
+					return
+				const row = [...root.querySelectorAll<HTMLElement>("[data-agenda-key]")].find(
+					(row) => row.dataset.agendaKey === origin.key,
+				)
+				const button = row?.querySelector<HTMLElement>(`[data-agenda-action="${origin.action}"]`)
+				;(
+					button ??
+					row?.querySelector<HTMLElement>("[data-agenda-open]") ??
+					root.querySelector<HTMLElement>("main")
+				)?.focus()
+			})
+		},
+	})
+	const startAction = (entry: OrgAgendaEntry, kind: "cycle-todo" | "schedule" | "deadline") => {
+		if (parameters.isPending()) return
+		openGeneration.current += 1
+		const element = document.activeElement as HTMLElement | null
+		const row = element?.closest<HTMLElement>("[data-agenda-key]")
+		focusOrigin.current =
+			element && row
+				? { key: row.dataset.agendaKey!, action: element.dataset.agendaAction ?? "open", element }
+				: null
+		parameters.start(entry, kind)
+	}
 
 	useEffect(() => {
 		let disposed = false
@@ -95,65 +136,44 @@ export const OrgAgendaContainer = memo(function OrgAgendaContainer({
 	}, [workspace, session, liveSnapshotKey, reload])
 
 	return (
-		<OrgAgendaView
-			entries={entries}
-			focusScope={scope}
-			error={error}
-			isLoading={isLoading}
-			actionPending={actionPending}
-			actionStatus={actionStatus}
-			onCycleTodo={(entry) => {
-				if (actionRef.current) return
-				const request = new AbortController()
-				actionRef.current = request
-				setActionPending(true)
-				setActionStatus("Changing TODO state…")
-				void controller
-					.actOnAgendaEntry(entry, request.signal)
-					.then((outcome) => {
-						if (actionRef.current !== request) return
-						setActionStatus(
-							outcome.kind === "confirmed"
-								? "TODO state changed in working copy. Save to write the file."
-								: outcome.kind === "stale"
-									? "Agenda row changed; select a refreshed row and try again."
-									: (outcome.message ?? "TODO change rejected."),
-						)
-						setReload((value) => value + 1)
-					})
-					.catch(() => {
-						if (actionRef.current === request)
-							setActionStatus("TODO change failed; no automatic retry.")
-					})
-					.finally(() => {
-						if (actionRef.current !== request) return
-						actionRef.current = null
-						setActionPending(false)
-					})
-			}}
-			onOpenEntry={(entry) => {
-				const generation = ++openGeneration.current
-				const requestScope = scope
-				// Root owns the file effect; this container independently owns navigation.
-				void (async () => {
-					try {
-						const opened = await controller.openDocumentAt(
-							entry.relativePath,
-							entry.line,
-							entry.origin?.diskRevision,
-						)
-						if (
-							!disposedRef.current &&
-							scopeRef.current === requestScope &&
-							openGeneration.current === generation &&
-							opened
-						)
-							onShowEditor()
-					} catch {
-						// Unexpected failures must not produce late navigation or error echoes.
-					}
-				})()
-			}}
-		/>
+		<div ref={surfaceRef} className="flex min-h-0 flex-1 flex-col">
+			<OrgAgendaView
+				entries={entries}
+				focusScope={scope}
+				error={error}
+				isLoading={isLoading}
+				actionPending={parameters.pending}
+				actionStatus={parameters.status}
+				onSchedule={(entry) => startAction(entry, "schedule")}
+				onDeadline={(entry) => startAction(entry, "deadline")}
+				onCancelAction={parameters.cancel}
+				onCycleTodo={(entry) => startAction(entry, "cycle-todo")}
+				onOpenEntry={(entry) => {
+					if (parameters.isPending()) return
+					const generation = ++openGeneration.current
+					const requestScope = scope
+					// Root owns the file effect; this container independently owns navigation.
+					void (async () => {
+						try {
+							const opened = await controller.openDocumentAt(
+								entry.relativePath,
+								entry.line,
+								entry.origin?.diskRevision,
+							)
+							if (
+								!disposedRef.current &&
+								scopeRef.current === requestScope &&
+								openGeneration.current === generation &&
+								opened
+							)
+								onShowEditor()
+						} catch {
+							// Unexpected failures must not produce late navigation or error echoes.
+						}
+					})()
+				}}
+			/>
+			<OrgMinibuffer session={parameters.session} />
+		</div>
 	)
 })
