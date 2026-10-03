@@ -6,6 +6,7 @@ import type {
 	Transaction,
 } from "@codemirror/state"
 import type { EditorView } from "@codemirror/view"
+import type { OrgTextEdit } from "@/pipes/org/org-text.pipe"
 
 export interface OrgBufferKey {
 	readonly workspaceSessionId: string
@@ -25,6 +26,7 @@ export type OrgBufferErrorCode =
 	| "stale-window"
 	| "stale-source"
 	| "invalid-window"
+	| "invalid-edit"
 	| "unknown-effect"
 	| "commit-denied"
 	| "callback-failed"
@@ -46,6 +48,7 @@ export interface OrgBufferRuntimeOptions {
 		previousSource: string,
 		nextSource: string,
 		originWindowId: string | null,
+		operation: "edit" | "installation" | "command",
 	) => boolean
 	readonly onCommit: (receipt: OrgBufferCommitReceipt) => void
 	readonly onError?: (error: OrgBufferRuntimeError) => void
@@ -78,5 +81,7 @@ export interface OrgBufferRuntime {
 	adoptLegacyState(state: EditorState): boolean
 	attachWindow(options: OrgBufferWindowOptions): OrgBufferWindowHandle
 	applyControllerSource(previousExpectedSource: string, nextSource: string): boolean
+	/** Raw-source edit, committed as one isolated canonical history event, without a window origin. */
+	applyCommandEdit(previousExpectedSource: string, edit: OrgTextEdit): boolean
 	close(): void
 }

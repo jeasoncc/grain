@@ -34,6 +34,7 @@ const controller = (content: string): OrgWorkspaceController => ({
 	activeDocument: { content: "saved", relativePath: "target.org", revision: "one" },
 	activeBufferRuntime: null,
 	liveBuffers: [],
+	actOnAgendaEntry: vi.fn(async () => ({ kind: "confirmed" as const })),
 	registerBufferWindow: vi.fn(() => () => undefined),
 	activateOpenBuffer: vi.fn(() => true),
 	activeBufferId: "buffer:target",

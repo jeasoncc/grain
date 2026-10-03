@@ -1,3 +1,4 @@
+import { parseOrgAgenda, type OrgAgendaEntry } from "@/pipes/org/org-agenda.pipe"
 import * as registryFactory from "@/flows/org-editor-runtime/org-workspace-runtime-registry"
 import * as parkedFactory from "@/flows/org-editor-runtime/org-parked-working-copy-reservoir"
 import type { OrgBufferIdentityScope } from "@/flows/org-editor-runtime/org-buffer-identity-registry"
@@ -159,8 +160,10 @@ describe("Org capture entry and transient drafts", () => {
 		vi.restoreAllMocks()
 		vi.useRealTimers()
 	})
+	let agendaOwner: () => ReturnType<typeof useOrgWorkspace>
 	const setup = async () => {
 		const hook = renderHook(() => useOrgWorkspace())
+		agendaOwner = () => hook.result.current
 		await act(async () => {
 			await hook.result.current.openDefaultWorkspace()
 		})
@@ -195,6 +198,487 @@ describe("Org capture entry and transient drafts", () => {
 			},
 		}
 	}
+	const agendaRow = (
+		source: string,
+		path = "z.org",
+		revision = "z-1",
+		live = false,
+	): OrgAgendaEntry => {
+		const row = parseOrgAgenda(path, source)[0]
+		return {
+			...row,
+			origin: {
+				...row.origin,
+				source: live ? "live" : "disk",
+				workspaceRoot: workspace.rootPath,
+				capabilityToken: workspace.capabilityToken,
+				sourceRevision: revision,
+				diskRevision: "z-1",
+				workspaceSessionId: agendaOwner().workspaceSessionId!,
+				...(live
+					? {
+							runtimeIncarnation: agendaOwner().liveBuffers.find(
+								(buffer) => buffer.bufferId === revision,
+							)!.runtimeIncarnation,
+							sourceGeneration: agendaOwner().liveBuffers.find(
+								(buffer) => buffer.bufferId === revision,
+							)!.sourceGeneration,
+						}
+					: {}),
+			},
+		}
+	}
+	it("commands an unopened exact disk revision without activation and retains one undo cycle", async () => {
+		const { result } = await setup()
+		const source = "#+TODO: NEXT | FINISHED\r\n* NEXT 😀 task\r\nDEADLINE: <2026-07-01 Wed>\r\n"
+		const document = { content: source, relativePath: "z.org", revision: "z-1" }
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () => E.right(document))
+		const active = result.current.activeBufferRuntime
+		const blocker = vi.mocked(useBlocker).mock.calls.at(-1)![0] as unknown as {
+			shouldBlockFn: () => boolean
+		}
+		let outcome
+		await act(async () => {
+			outcome = await result.current.actOnAgendaEntry(agendaRow(source))
+		})
+		expect(outcome).toEqual({ kind: "confirmed" })
+		expect(result.current.activeBufferRuntime).toBe(active)
+		expect(result.current.activeDocument?.relativePath).toBe("inbox.org")
+		expect(result.current.revealTarget).toBeNull()
+		const parked = result.current.liveBuffers.find(
+			(buffer) => buffer.document.relativePath === "z.org",
+		)!
+		expect(parked.content).toBe(source.replace("* NEXT", "* FINISHED"))
+		expect(parked.isDirty).toBe(true)
+		expect(undoDepth(parked.runtime.state)).toBe(1)
+		expect(nativeState.hasDirtyBuffers).toBe(true)
+		expect(blocker.shouldBlockFn()).toBe(true)
+		const editor = attachRuntime(parked.runtime, result.current, "agenda-undo")
+		act(() => {
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(parked.runtime.source).toBe(source)
+		expect(redoDepth(parked.runtime.state)).toBe(1)
+		editor.dispose()
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it("uses current dirty live anchors, not the disk body, and rejects stale rows", async () => {
+		const { result } = await setup()
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		act(() => {
+			result.current.updateContent(source + "unsaved\n")
+		})
+		const raw = result.current.content
+		const id = result.current.activeBufferId!
+		await act(async () => {
+			expect(await result.current.actOnAgendaEntry(agendaRow(raw, "z.org", id, true))).toEqual({
+				kind: "confirmed",
+			})
+		})
+		expect(result.current.content).toBe(raw.replace("* TODO", "* DONE"))
+		await act(async () => {
+			expect(await result.current.actOnAgendaEntry(agendaRow(raw, "z.org", id, true))).toEqual({
+				kind: "stale",
+			})
+		})
+		expect(undoDepth(result.current.activeBufferRuntime!.state)).toBe(1)
+	})
+	it("publishes runtime identity and rejects generation drift even after undo restores the body", async () => {
+		const { result } = await setup()
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const live = result.current.liveBuffers.find(
+			(buffer) => buffer.document.relativePath === "z.org",
+		)!
+		const row = agendaRow(source, "z.org", live.bufferId, true)
+		const bound = {
+			...row,
+			origin: {
+				...row.origin!,
+				workspaceSessionId: result.current.workspaceSessionId!,
+				runtimeIncarnation: live.runtimeIncarnation,
+				sourceGeneration: live.sourceGeneration,
+			},
+		}
+		const editor = attachRuntime(live.runtime, result.current, "agenda-generation")
+		act(() => {
+			editor.view.dispatch({ changes: { from: source.length, insert: "body edit\n" } })
+		})
+		const edited = result.current.liveBuffers.find((buffer) => buffer.bufferId === live.bufferId)!
+		expect(edited.runtimeIncarnation).toBe(live.runtimeIncarnation)
+		expect(edited.sourceGeneration).toBe(live.runtime.revision)
+		expect(edited.sourceGeneration).toBeGreaterThan(live.sourceGeneration)
+		const editRevision = live.runtime.revision
+		const editDepth = undoDepth(live.runtime.state)
+		await act(async () => {
+			expect(await result.current.actOnAgendaEntry(bound)).toEqual({ kind: "stale" })
+		})
+		expect(live.runtime.revision).toBe(editRevision)
+		expect(undoDepth(live.runtime.state)).toBe(editDepth)
+		act(() => {
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(live.runtime.source).toBe(source)
+		const undoRevision = live.runtime.revision
+		const undoHistory = undoDepth(live.runtime.state)
+		await act(async () => {
+			expect(await result.current.actOnAgendaEntry(bound)).toEqual({ kind: "stale" })
+		})
+		expect(live.runtime.revision).toBe(undoRevision)
+		expect(undoDepth(live.runtime.state)).toBe(undoHistory)
+		const fresh = result.current.liveBuffers.find((buffer) => buffer.bufferId === live.bufferId)!
+		await act(async () => {
+			expect(
+				await result.current.actOnAgendaEntry({
+					...bound,
+					origin: {
+						...bound.origin,
+						runtimeIncarnation: "retired-runtime",
+						sourceGeneration: fresh.sourceGeneration,
+					},
+				}),
+			).toEqual({ kind: "stale" })
+			expect(
+				await result.current.actOnAgendaEntry({
+					...bound,
+					origin: { ...bound.origin, sourceGeneration: fresh.sourceGeneration },
+				}),
+			).toEqual({ kind: "confirmed" })
+		})
+		editor.dispose()
+	})
+	it("refuses disk rows when unrelated unsaved body edits leave their anchors intact", async () => {
+		const { result } = await setup()
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		act(() => {
+			result.current.updateContent(source + "unrelated body edit\n")
+		})
+		const before = result.current.content
+		await act(async () => {
+			expect(await result.current.actOnAgendaEntry(agendaRow(source))).toEqual({ kind: "stale" })
+		})
+		expect(result.current.content).toBe(before)
+	})
+	it("rejects foreign sessions before reading unopened disk entries", async () => {
+		const { result } = await setup()
+		vi.mocked(openOrgDocumentFlow).mockClear()
+		const row = agendaRow("* TODO task\n<2026-07-01 Wed>\n")
+		await act(async () => {
+			expect(
+				await result.current.actOnAgendaEntry({
+					...row,
+					origin: {
+						...row.origin!,
+						workspaceSessionId: "old-session",
+					},
+				}),
+			).toEqual({ kind: "stale" })
+		})
+		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it("aborts an unopened read, releases only its busy owner, and ignores its late G1 body", async () => {
+		const { result } = await setup()
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		let settle!: (value: E.Either<never, OrgDocumentInterface>) => void
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(
+			() =>
+				new Promise((resolve) => {
+					settle = resolve
+				}),
+		)
+		const controller = new AbortController()
+		let command!: Promise<unknown>
+		act(() => {
+			command = result.current.actOnAgendaEntry(agendaRow(source), controller.signal)
+		})
+		expect(result.current.isLoading).toBe(true)
+		act(() => {
+			controller.abort()
+		})
+		expect(result.current.isLoading).toBe(false)
+		// Cancellation settles independently of the unresolved native read.
+		await act(async () => {
+			expect(await command).toEqual({ kind: "stale" })
+		})
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () =>
+			E.right({ ...workspace, capabilityToken: "G2" }),
+		)
+		await act(async () => {
+			await result.current.openDefaultWorkspace()
+		})
+		await act(async () => {
+			settle(E.right({ content: source, relativePath: "z.org", revision: "z-1" }))
+		})
+		expect(result.current.liveBuffers).toEqual([])
+		expect(result.current.workspaceSessionId).toBe("G2")
+		expect(result.current.isLoading).toBe(false)
+	})
+	it("ignores a cancelled read's late G1 failure without releasing the next read owner", async () => {
+		const { result } = await setup()
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		let failFirst!: (error: Error) => void
+		let settleSecond!: (value: E.Either<never, OrgDocumentInterface>) => void
+		vi.mocked(openOrgDocumentFlow)
+			.mockReturnValueOnce(
+				() =>
+					new Promise((_resolve, reject) => {
+						failFirst = reject
+					}),
+			)
+			.mockReturnValueOnce(
+				() =>
+					new Promise((resolve) => {
+						settleSecond = resolve
+					}),
+			)
+		const controller = new AbortController()
+		let first!: Promise<unknown>
+		act(() => {
+			first = result.current.actOnAgendaEntry(agendaRow(source), controller.signal)
+		})
+		act(() => {
+			controller.abort()
+		})
+		await act(async () => {
+			expect(await first).toEqual({ kind: "stale" })
+		})
+		let second!: Promise<unknown>
+		act(() => {
+			second = result.current.actOnAgendaEntry(agendaRow(source))
+		})
+		await act(async () => {
+			failFirst(new Error("late G1 read failure"))
+		})
+		expect(result.current.isLoading).toBe(true)
+		expect(result.current.error).toBeNull()
+		expect(result.current.liveBuffers).toHaveLength(1)
+		await act(async () => {
+			settleSecond(E.right({ content: source, relativePath: "z.org", revision: "z-1" }))
+			expect(await second).toEqual({ kind: "confirmed" })
+		})
+		expect(result.current.isLoading).toBe(false)
+		expect(result.current.liveBuffers).toHaveLength(2)
+	})
+	it("retains a confirmed canonical command when its mirror observer aborts reentrantly", async () => {
+		const observed = observeParkedReservoir()
+		const { result } = await setup()
+		const source = "#+TODO: NEXT | FINISHED\r\n* NEXT 😀 task\r\n<2026-07-01 Wed>\r\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({
+				content: source,
+				relativePath: "z.org",
+				revision: "z-1",
+			}),
+		)
+		const controller = new AbortController()
+		const unsubscribe = observed.reservoir.subscribe(() => {
+			if (observed.reservoir.read(observed.scope, "z.org")?.isDirty) controller.abort()
+		})
+		await act(async () => {
+			expect(await result.current.actOnAgendaEntry(agendaRow(source), controller.signal)).toEqual({
+				kind: "confirmed",
+			})
+		})
+		unsubscribe()
+		expect(controller.signal.aborted).toBe(true)
+		const buffer = result.current.liveBuffers.find(
+			(copy) => copy.document.relativePath === "z.org",
+		)!
+		expect(buffer.runtime.source).toBe(source.replace("* NEXT", "* FINISHED"))
+		expect(buffer.content).toBe(buffer.runtime.source)
+		expect(buffer.isDirty).toBe(true)
+		expect(undoDepth(buffer.runtime.state)).toBe(1)
+		expect(nativeState.hasDirtyBuffers).toBe(true)
+		expect(result.current.isLoading).toBe(false)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it("commands use the captured runtime ports' live active mirror after focus changes", async () => {
+		const { result } = await setup()
+		const source = "* TODO task\r\n<2026-07-01 Wed>\r\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({
+				content: source,
+				relativePath: "z.org",
+				revision: "z-1",
+			}),
+		)
+		await act(async () => {
+			await result.current.actOnAgendaEntry(agendaRow(source))
+		})
+		const parked = result.current.liveBuffers.find(
+			(copy) => copy.document.relativePath === "z.org",
+		)!
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		expect(result.current.activeBufferRuntime).toBe(parked.runtime)
+		const raw = result.current.content
+		await act(async () => {
+			expect(
+				await result.current.actOnAgendaEntry(agendaRow(raw, "z.org", parked.bufferId, true)),
+			).toEqual({ kind: "confirmed" })
+		})
+		expect(result.current.content).toBe(source.replace("* TODO", "*"))
+		expect(parked.runtime.source).toBe(result.current.content)
+		expect(result.current.isDirty).toBe(true)
+	})
+	it("does not park or allocate command history for a mismatched disk revision", async () => {
+		const { result } = await setup()
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-2" }),
+		)
+		await act(async () => {
+			expect(await result.current.actOnAgendaEntry(agendaRow(source))).toEqual({ kind: "stale" })
+		})
+		expect(result.current.liveBuffers).toHaveLength(1)
+		expect(result.current.isLoading).toBe(false)
+		expect(nativeState.isBusy).toBe(false)
+	})
+
+	it.each([
+		{
+			_tag: "Invalid",
+			right: { content: "* TODO task\n<2026-07-01 Wed>\n", relativePath: "z.org", revision: "z-1" },
+		},
+		{ _tag: "Right", right: null },
+		{ _tag: "Right", right: { content: 42, relativePath: "z.org", revision: "z-1" } },
+		{ _tag: "Right", right: { content: "", relativePath: "other.org", revision: "z-1" } },
+		{ _tag: "Right", right: { content: "", relativePath: "z.org", revision: "" } },
+	])("rejects malformed command reads before runtime or parked allocation: %j", async (response) => {
+		const observed = observeParkedReservoir()
+		const { result } = await setup()
+		const create = vi.spyOn(runtimeFactory, "createOrgBufferRuntime")
+		const park = vi.spyOn(observed.reservoir, "park")
+		const before = result.current.liveBuffers
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () => response as never)
+		await act(async () => {
+			expect(
+				await result.current.actOnAgendaEntry(agendaRow("* TODO task\n<2026-07-01 Wed>\n")),
+			).toMatchObject({ kind: "rejected" })
+		})
+		expect(create).not.toHaveBeenCalled()
+		expect(park).not.toHaveBeenCalled()
+		expect(result.current.liveBuffers).toEqual(before)
+		expect(result.current.isLoading).toBe(false)
+		expect(nativeState.isBusy).toBe(false)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it("retains a real failed-save pause after canonical undo restores baseline", async () => {
+		const { result } = await setup()
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const runtime = result.current.activeBufferRuntime!
+		const editor = attachRuntime(runtime, result.current, "paused-agenda")
+		act(() => editor.view.dispatch({ changes: { from: source.length, insert: "dirty body\n" } }))
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(async () =>
+			E.left({ type: "IO_ERROR", message: "uncertain write" } as never),
+		)
+		await act(async () => {
+			await result.current.saveDocument()
+		})
+		act(() => {
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(runtime.source).toBe(source)
+		expect(result.current.isDirty).toBe(false)
+		const generation = runtime.revision
+		const depth = undoDepth(runtime.state)
+		await act(async () => {
+			expect(await result.current.actOnAgendaEntry(agendaRow(source))).toMatchObject({
+				kind: "rejected",
+			})
+			expect(
+				await result.current.actOnAgendaEntry(
+					agendaRow(source, "z.org", result.current.activeBufferId!, true),
+				),
+			).toMatchObject({ kind: "rejected" })
+			await vi.advanceTimersByTimeAsync(6000)
+		})
+		expect(runtime.source).toBe(source)
+		expect(runtime.revision).toBe(generation)
+		expect(undoDepth(runtime.state)).toBe(depth)
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		editor.dispose()
+	})
+	it("requires complete live and disk command provenance before any read", async () => {
+		const { result } = await setup()
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		const disk = agendaRow(source)
+		vi.mocked(openOrgDocumentFlow).mockClear()
+		for (const key of [
+			"workspaceSessionId",
+			"sourceRevision",
+			"diskRevision",
+			"workspaceRoot",
+			"capabilityToken",
+			"timestamp",
+			"heading",
+		] as const) {
+			await act(async () => {
+				expect(
+					await result.current.actOnAgendaEntry({
+						...disk,
+						origin: { ...disk.origin!, [key]: undefined },
+					}),
+				).toEqual({ kind: "stale" })
+			})
+		}
+		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const live = agendaRow(source, "z.org", result.current.activeBufferId!, true)
+		const runtime = result.current.activeBufferRuntime!
+		vi.mocked(openOrgDocumentFlow).mockClear()
+		for (const key of [
+			"workspaceSessionId",
+			"sourceRevision",
+			"diskRevision",
+			"runtimeIncarnation",
+			"sourceGeneration",
+		] as const) {
+			for (const value of [undefined, key === "sourceGeneration" ? -1 : "tampered"]) {
+				await act(async () => {
+					expect(
+						await result.current.actOnAgendaEntry({
+							...live,
+							origin: { ...live.origin!, [key]: value },
+						}),
+					).toEqual({ kind: "stale" })
+				})
+			}
+		}
+		expect(runtime.source).toBe(source)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
 	it("edits parked live buffers only through matching window leases and preserves history on focus", async () => {
 		const { result } = await setup()
 		const a = result.current.activeBufferRuntime!

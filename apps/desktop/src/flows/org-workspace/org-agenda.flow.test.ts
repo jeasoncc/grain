@@ -77,6 +77,181 @@ const load = (
 ) => loadOrgAgendaFlow(inputWorkspace, repository, cache)()
 
 describe("loadOrgAgendaFlow", () => {
+	it("refuses malformed RPC payloads without caching or throwing", async () => {
+		for (const payload of [
+			null,
+			{},
+			{ _tag: "Right", right: null },
+			{
+				_tag: "Right",
+				right: { content: "<2025-01-01>", relativePath: "other.org", revision: "1" },
+			},
+			{ _tag: "Right", right: { content: "<2025-01-01>", relativePath: "a.org", revision: "" } },
+			{ _tag: "Right", right: { content: null, relativePath: "a.org", revision: "1" } },
+			{ _tag: "Left", left: null },
+		]) {
+			const cache: OrgAgendaCache = new Map()
+			const read = vi.fn(() => async () => payload) as unknown as OrgFileRepository["readDocument"]
+			expect(E.isLeft(await load(workspace, repositoryWithRead(read), cache))).toBe(true)
+			expect(cache.size).toBe(0)
+		}
+	})
+
+	it("scopes emitted disk entries to the current session without contaminating the cache", async () => {
+		const cache: OrgAgendaCache = new Map()
+		const read = successfulReader()
+		for (const workspaceSessionId of ["first", "second"]) {
+			const result = await loadOrgAgendaFlow(workspace, repositoryWithRead(read), cache, [], {
+				workspaceSessionId,
+			})()
+			expect(
+				E.isRight(result) &&
+					result.right.every((entry) => entry.origin.workspaceSessionId === workspaceSessionId),
+			).toBe(true)
+		}
+		expect(read).toHaveBeenCalledTimes(2)
+		expect(
+			[...cache.values()].every(({ entries }) =>
+				entries.every(({ origin }) => origin.workspaceSessionId === undefined),
+			),
+		).toBe(true)
+	})
+
+	it("maps thrown reads into explicit errors", async () => {
+		const read = () => async () => {
+			throw new Error("RPC disconnected")
+		}
+		const result = await load(workspace, repositoryWithRead(read), new Map())
+		expect(E.isLeft(result) && result.left.message).toContain("RPC disconnected")
+	})
+
+	it("refuses unsafe scan paths and empty revisions before reading", async () => {
+		const read = successfulReader()
+		for (const document of [
+			{ relativePath: "../a.org", revision: "1" },
+			{ relativePath: "a.org", revision: "" },
+			{ relativePath: "a\n.org", revision: "1" },
+		]) {
+			expect(
+				E.isLeft(
+					await load({ ...workspace, documents: [document] }, repositoryWithRead(read), new Map()),
+				),
+			).toBe(true)
+		}
+		expect(read).not.toHaveBeenCalled()
+	})
+
+	it("retains live overlays missing from the scan and refuses malformed local overlays", async () => {
+		const read = successfulReader()
+		const overlay = {
+			content: "* TODO Live\n<2025-01-01>",
+			diskRevision: "old",
+			relativePath: "a.org",
+			sourceRevision: "buffer",
+			workspaceRoot: workspace.rootPath,
+		}
+		const result = await loadOrgAgendaFlow(
+			{ ...workspace, documents: [] },
+			repositoryWithRead(read),
+			new Map(),
+			[overlay],
+			{ workspaceSessionId: "s" },
+		)()
+		expect(E.isRight(result) && result.right[0].origin).toMatchObject({
+			diskRevision: "old",
+			source: "live",
+			workspaceSessionId: "s",
+		})
+		for (const invalid of [
+			{ ...overlay, sourceRevision: "" },
+			{ ...overlay, diskRevision: "" },
+			{ ...overlay, relativePath: "../a.org" },
+			{ ...overlay, sourceGeneration: -1 },
+		]) {
+			expect(
+				E.isLeft(
+					await loadOrgAgendaFlow(workspace, repositoryWithRead(read), new Map(), [invalid])(),
+				),
+			).toBe(true)
+		}
+		expect(read).not.toHaveBeenCalled()
+	})
+
+	it("partitions cache and pruning by exact grant, including absent versus empty", async () => {
+		const cache: OrgAgendaCache = new Map()
+		const readDocument = successfulReader()
+		const repository = repositoryWithRead(readDocument)
+		for (const capabilityToken of [undefined, "", "grant-a", "grant-b"]) {
+			const granted = {
+				...workspace,
+				...(capabilityToken === undefined ? {} : { capabilityToken }),
+			}
+			const result = await load(granted, repository, cache)
+			expect(E.isRight(result) && result.right[0].origin).toMatchObject({
+				diskRevision: "2",
+				source: "disk",
+				sourceRevision: "2",
+				workspaceRoot: workspace.rootPath,
+			})
+		}
+		expect(readDocument).toHaveBeenCalledTimes(8)
+		await load({ ...workspace, capabilityToken: "grant-a", documents: [] }, repository, cache)
+		await load({ ...workspace, capabilityToken: "grant-b" }, repository, cache)
+		expect(readDocument).toHaveBeenCalledTimes(8)
+		await load({ ...workspace, capabilityToken: "grant-a" }, repository, cache)
+		expect(readDocument).toHaveBeenCalledTimes(10)
+	})
+
+	it("overlays live source without poisoning disk cache and rejects foreign snapshots", async () => {
+		const cache: OrgAgendaCache = new Map()
+		const readDocument = successfulReader()
+		const repository = repositoryWithRead(readDocument)
+		await load(workspace, repository, cache)
+		const overlay = {
+			content: "* NEXT Live\n#+TODO: NEXT | DONE\n<2025-01-01>",
+			diskRevision: "1",
+			relativePath: "a.org",
+			sourceRevision: "buffer-7",
+			workspaceRoot: workspace.rootPath,
+		}
+		const result = await loadOrgAgendaFlow(workspace, repository, cache, [overlay])()
+		expect(E.isRight(result) && result.right[0]).toMatchObject({
+			date: "2025-01-01",
+			heading: "Live",
+			origin: { diskRevision: "1", source: "live", sourceRevision: "buffer-7" },
+			todo: "NEXT",
+		})
+		for (const snapshot of [
+			{ ...overlay, capabilityToken: "foreign" },
+			{ ...overlay, workspaceRoot: "/elsewhere" },
+		]) {
+			const rejected = await loadOrgAgendaFlow(workspace, repository, cache, [snapshot])()
+			expect(E.isRight(rejected) && rejected.right.map(({ date }) => date)).toEqual([
+				"2025-05-01",
+				"2025-05-02",
+			])
+		}
+		const drifted = await loadOrgAgendaFlow(workspace, repository, cache, [
+			{
+				...overlay,
+				diskRevision: "old",
+				runtimeIncarnation: "runtime-2",
+				sourceGeneration: 7,
+				workspaceSessionId: "session",
+			},
+		])()
+		expect(E.isRight(drifted) && drifted.right[0].origin).toMatchObject({
+			diskRevision: "old",
+			runtimeIncarnation: "runtime-2",
+			source: "live",
+			sourceGeneration: 7,
+			workspaceSessionId: "session",
+		})
+		const disk = await load(workspace, repository, cache)
+		expect(E.isRight(disk) && disk.right[1].origin.source).toBe("disk")
+		expect(readDocument).toHaveBeenCalledTimes(2)
+	})
+
 	it("returns globally sorted entries and performs zero reads on a second load", async () => {
 		const cache: OrgAgendaCache = new Map()
 		const readDocument = successfulReader()

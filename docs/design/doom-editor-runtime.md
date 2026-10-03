@@ -576,6 +576,41 @@ Verification: 168 files /2741 tests, typecheck/build pass
 (2026-10-03 20:16 +08:00). Full configurable targets and native/user acceptance
 remain separate unfinished requirements.
 
+## Agenda TODO action: derived tool → canonical command
+
+Agenda row selection supports arrows/n/p, Enter navigation and repeat-safe `t`.
+Cycling TODO stays in Agenda and updates the canonical source/history once;
+there is no direct write RPC. An unopened target is explicitly read, validated
+and parked without activating an editor or overwriting dirty working input.
+Live snapshots overlay disk-derived rows, including unsaved states. Parked edits
+remain memory-only until Save All/manual persistence; native close sees them.
+
+```text
+Derived row + complete scope/provenance + raw heading/timestamp anchors
+ -> current live source OR validated explicit read -> fresh command guard
+ -> scoped command permit (not window lease or no-history installation)
+ -> isolated canonical source-range edit -> mirror -> refreshed live Agenda
+```
+
+The registry grants a temporary, exact expected-source command permit with
+owner-checked cleanup. Loading/destructive mutation/notification fences precede
+that exception. Direct null-origin runtime edits still have no command authority.
+Malformed Either discriminants, path/revision payloads and incomplete provenance
+reject before allocation or commit. Live actions require current session,
+runtime incarnation and generation—even unrelated edit→undo invalidates a DTO.
+Disk actions require current-session provenance and verified revisions/anchors.
+Derived cache keys include the capability grant, not just filesystem root labels.
+
+Pending rows use guarded aria-disabled behavior and retain actual focus; surviving
+selected rows/root fallback restore only within the owned interaction. Navigation
+completion is disposal/scope/request-fenced, including rejection and superseding
+requests. Actual production-container/runtime tests cover focused deferred success,
+rejection/refresh/empty/removal, outside-focus preservation, late G1 versus live G2,
+source drift, malformed reads, failed-save pause after undo and canonical undo/CAS.
+Verification: 169 files /2807 tests, typecheck/build pass
+(2026-10-03 23:53 +08:00). Schedule/Deadline tool commands, unified global tool
+registry, full TODO logging and native/user acceptance remain unfinished.
+
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.

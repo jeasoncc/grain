@@ -92,6 +92,44 @@ function expectCode(fn: () => unknown, code: string) {
 }
 
 describe("canonical Org buffer/window runtime", () => {
+	it.each(["\n", "\r\n", "\r"])("commands use raw coordinates and isolated history (%j)", (eol) => {
+		const source = `* TODO first${eol}* TODO second${eol}`
+		const { runtime, onCommit } = buffer(source)
+		const a = window(runtime, "a")
+		const b = window(runtime, "b")
+		type(a.view, "x", 1000)
+		const expected = runtime.source
+		const from = expected.indexOf("TODO second")
+		expect(
+			runtime.applyCommandEdit(expected, { from, to: from + 4, insert: "DONE", cursor: from + 4 }),
+		).toBe(true)
+		expect(onCommit.mock.calls.at(-1)?.[0].originWindowId).toBeNull()
+		expect(runtime.revision).toBe(2)
+		expect(a.view.state.sliceDoc()).toBe(runtime.source)
+		expect(b.view.state.sliceDoc()).toBe(runtime.source)
+		type(a.view, "y", 1001)
+		expect(undoDepth(runtime.state)).toBe(3)
+		expect(b.handle.undo()).toBe(true)
+		expect(b.handle.undo()).toBe(true)
+		expect(runtime.source).toBe(expected)
+		expect(b.handle.redo()).toBe(true)
+		expect(runtime.source).toContain("DONE second")
+	})
+	it("commands reject stale, invalid and denied edits without changing history or views", () => {
+		const { runtime } = buffer("* TODO task", { canCommit: () => false })
+		const a = window(runtime, "a")
+		const before = runtime.state
+		const edit = { from: 2, to: 6, insert: "DONE", cursor: 6 }
+		expectCode(() => runtime.applyCommandEdit("stale", edit), "stale-source")
+		expectCode(
+			() => runtime.applyCommandEdit(runtime.source, { ...edit, from: -1 }),
+			"invalid-edit",
+		)
+		expectCode(() => runtime.applyCommandEdit(runtime.source, edit), "commit-denied")
+		expect(runtime.state).toBe(before)
+		expect(a.view.state.sliceDoc()).toBe("* TODO task")
+		expect(undoDepth(runtime.state)).toBe(0)
+	})
 	it.each([
 		"",
 		"x\n",

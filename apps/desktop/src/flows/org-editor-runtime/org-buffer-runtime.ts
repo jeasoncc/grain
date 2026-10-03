@@ -160,6 +160,7 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 		projections: readonly Projection[],
 		origin: string | null,
 		nextOrigin: string | null,
+		operation: "edit" | "installation" | "command" = "edit",
 	) => {
 		const previousSource = state.sliceDoc(),
 			source = next.sliceDoc()
@@ -167,7 +168,7 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 		if (changed) {
 			let allowed = false
 			try {
-				allowed = options.canCommit(previousSource, source, origin)
+				allowed = options.canCommit(previousSource, source, origin, operation)
 			} catch (cause) {
 				fail("callback-failed", "Commit guard threw before canonical advance", cause)
 			}
@@ -430,6 +431,47 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 				busy = false
 			}
 		},
+		applyCommandEdit(previousExpectedSource, edit) {
+			guard()
+			if (previousExpectedSource !== state.sliceDoc()) {
+				fail("stale-source", "Command source baseline is stale")
+			}
+			if (
+				!Number.isInteger(edit.from) ||
+				!Number.isInteger(edit.to) ||
+				edit.from < 0 ||
+				edit.to < edit.from ||
+				edit.to > previousExpectedSource.length ||
+				typeof edit.insert !== "string"
+			) {
+				fail("invalid-edit", "Command edit must use valid raw-source coordinates")
+			}
+			const nextSource =
+				previousExpectedSource.slice(0, edit.from) +
+				edit.insert +
+				previousExpectedSource.slice(edit.to)
+			if (nextSource === previousExpectedSource) return false
+			if (orgSourceLineSeparator(nextSource) !== state.lineBreak) {
+				fail("invalid-edit", "Command edits must preserve the source separator")
+			}
+			busy = true
+			try {
+				const tr = state.update({
+					annotations: [
+						Transaction.addToHistory.of(true),
+						isolateHistory.of("full"),
+						Transaction.userEvent.of("input.org-command"),
+					],
+					changes: minimalTextChange(state.doc, orgSourceText(nextSource, state.lineBreak)),
+					filter: false,
+				})
+				const projections = buildProjections([tr])
+				commit(tr.state, projections, null, null, "command")
+				return true
+			} finally {
+				busy = false
+			}
+		},
 		applyControllerSource(previousExpectedSource, nextSource) {
 			guard()
 			if (previousExpectedSource !== state.sliceDoc()) {
@@ -463,7 +505,7 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 							selection: tr.state.selection,
 						})
 					: tr.state
-				commit(next, projections, null, null)
+				commit(next, projections, null, null, "installation")
 				return true
 			} finally {
 				busy = false

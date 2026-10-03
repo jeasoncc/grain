@@ -1,8 +1,13 @@
 export {
+	type AnchoredOrgAgendaEntry,
 	type OrgAgendaEntry,
 	type OrgAgendaEntryKind,
+	type OrgAgendaOrigin,
+	type OrgAgendaOriginValidation,
+	type OrgAgendaSourceAnchor,
 	parseOrgAgenda,
 	sortOrgAgendaEntries,
+	validateOrgAgendaOrigin,
 } from "./org-agenda.pipe"
 export {
 	type OrgHeadingIdentifier,

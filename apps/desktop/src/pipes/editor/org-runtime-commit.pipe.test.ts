@@ -55,6 +55,42 @@ describe("guardOrgRuntimeCommit", () => {
 	it.each([
 		true,
 		false,
+	])("command permits retain every safety fence (active=%s)", (isActiveOwner) => {
+		const context = {
+			...base,
+			isActiveOwner,
+			parkedSource: base.previous,
+			originWindowId: null,
+			registeredWindowBufferId: undefined,
+			authorizedCommand: installation,
+		}
+		expect(guardOrgRuntimeCommit(context)).toEqual({
+			kind: "accepted",
+			destination: isActiveOwner ? "active" : "parked",
+			reason: "command",
+		})
+		for (const patch of [
+			{ mounted: false },
+			{ closeReady: false },
+			{ grantMatches: false },
+			{ sessionMatches: false },
+			{ notificationInProgress: true },
+			{ notificationInProgress: true, ordinarySaveInFlight: true },
+			{ loading: true },
+			{ loading: true, ordinarySaveInFlight: true },
+			{ mutationInProgress: true },
+			{ mutationInProgress: true, ordinarySaveInFlight: true },
+			{ activeSource: "stale", parkedSource: "stale" },
+			{ authorizedCommand: { ...installation, bufferId: "other" } },
+			{ authorizedCommand: { ...installation, expected: "stale" } },
+			{ authorizedCommand: { ...installation, next: "other" } },
+			{ originWindowId: "unleased" },
+		])
+			expect(guardOrgRuntimeCommit({ ...context, ...patch }).kind).toBe("rejected")
+	})
+	it.each([
+		true,
+		false,
 	])("requires exact leases for ordinary edits (active=%s)", (isActiveOwner) => {
 		const context = { ...base, isActiveOwner, parkedSource: base.previous }
 		for (const patch of [

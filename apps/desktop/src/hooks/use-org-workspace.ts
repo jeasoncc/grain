@@ -36,6 +36,13 @@ import {
 	type OrgParkedWorkingCopy,
 } from "@/flows/org-editor-runtime/org-parked-working-copy-reservoir"
 import { createOrgBufferIdentityRegistry } from "@/flows/org-editor-runtime/org-buffer-identity-registry"
+import type { OrgWorkspaceRuntimePorts } from "@/flows/org-editor-runtime/org-workspace-runtime-registry"
+import { cycleOrgTodoAt } from "@/pipes/org/org-text.pipe"
+import {
+	hasOrgAgendaActionOrigin,
+	validateOrgAgendaOrigin,
+	type OrgAgendaEntry,
+} from "@/pipes/org/org-agenda.pipe"
 import { createOrgWorkspaceRuntimeRegistry } from "@/flows/org-editor-runtime/org-workspace-runtime-registry"
 import { orgWorkspaceEventAdapter } from "@/io/event/org-workspace-event.adapter"
 import {
@@ -153,6 +160,8 @@ export interface OrgOpenBufferSummary {
 }
 
 export interface OrgLiveBuffer {
+	readonly runtimeIncarnation: string
+	readonly sourceGeneration: number
 	readonly bufferId: string
 	readonly document: OrgDocumentInterface
 	readonly content: string
@@ -160,7 +169,16 @@ export interface OrgLiveBuffer {
 	readonly isDirty: boolean
 }
 
+export type OrgAgendaActionOutcome = {
+	readonly kind: "confirmed" | "rejected" | "stale"
+	readonly message?: string
+}
+
 export interface OrgWorkspaceController {
+	readonly actOnAgendaEntry: (
+		entry: OrgAgendaEntry,
+		signal?: AbortSignal,
+	) => Promise<OrgAgendaActionOutcome>
 	/** Live working-copy views; .org refresh/watch/CAS remains the disk authority. */
 	readonly liveBuffers: readonly OrgLiveBuffer[]
 	/** Mounted view lease permitting exact-source edits to its parked canonical runtime. */
@@ -312,6 +330,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	const openRequestRef = useRef(0)
 	const mutationInProgressRef = useRef(false)
 	const mutationOwnerRef = useRef<symbol | null>(null)
+	const agendaCommandOwnerRef = useRef<symbol | null>(null)
 	const rootApprovalOwnerRef = useRef<symbol | null>(null)
 	const finishMutation = (owner: symbol) => {
 		if (mutationOwnerRef.current !== owner) return
@@ -350,6 +369,15 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	const registryRef = useRef<ReturnType<typeof createOrgWorkspaceRuntimeRegistry> | null>(null)
 	if (!registryRef.current) registryRef.current = createOrgWorkspaceRuntimeRegistry()
 	const registry = registryRef.current
+	const runtimeIncarnationsRef = useRef(new WeakMap<OrgBufferRuntime, string>())
+	const runtimeIncarnation = (runtime: OrgBufferRuntime): string => {
+		let incarnation = runtimeIncarnationsRef.current.get(runtime)
+		if (!incarnation) {
+			incarnation = crypto.randomUUID()
+			runtimeIncarnationsRef.current.set(runtime, incarnation)
+		}
+		return incarnation
+	}
 	const bufferWindowLeasesRef = useRef(
 		new Map<
 			string,
@@ -425,6 +453,64 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		registry.close()
 		setActiveBufferRuntime(null)
 	}
+	// Shared grant-local ports for active and command-created parked runtimes.
+	const runtimePorts = (
+		grant: OrgWorkspaceInterface,
+		session: string,
+	): OrgWorkspaceRuntimePorts => {
+		const identityScope = { grant, sessionId: session }
+		return {
+			readCommitContext: (key, previous, next, originWindowId): OrgRuntimeCommitContext => {
+				const lease = originWindowId ? bufferWindowLeasesRef.current.get(originWindowId) : undefined
+				const path = activeRef.current?.relativePath
+				const parkedPath = bufferIdentity.findPath(identityScope, key.bufferId)
+				return {
+					mounted: mountedRef.current,
+					closeReady: nativeCloseReadyRef.current,
+					grantMatches: grantRef.current === grant,
+					sessionMatches: sessionRef.current === session && key.workspaceSessionId === session,
+					originWindowId,
+					registeredWindowBufferId:
+						lease?.grant === grant && lease.session === session ? lease.bufferId : undefined,
+					isActiveOwner:
+						path !== undefined && bufferIdentity.lookup(identityScope, path) === key.bufferId,
+					previous,
+					next,
+					activeSource: latestContentRef.current,
+					parkedSource: parkedPath
+						? parkedReservoir.read(identityScope, parkedPath)?.content
+						: undefined,
+					runtimeBufferId: key.bufferId,
+					loading: loadingRef.current,
+					notificationInProgress: !parkedReservoir.canMutate(),
+					mutationInProgress: mutationInProgressRef.current,
+					ordinarySaveInFlight: Boolean(saveInFlightRef.current),
+				}
+			},
+			commitSource: (key, source) => {
+				const path = bufferIdentity.findPath(identityScope, key.bufferId)
+				if (path === activeRef.current?.relativePath) mirrorSource(source)
+				else if (path) {
+					const parked = parkedReservoir.read(identityScope, path)
+					if (parked)
+						parkedReservoir.mirrorReplacement(identityScope, key.bufferId, {
+							previous: parked.content,
+							source,
+						})
+				}
+			},
+			emitFailure: (key, failure) => {
+				if (
+					mountedRef.current &&
+					grantRef.current === grant &&
+					sessionRef.current === session &&
+					key.workspaceSessionId === session &&
+					bufferIdentity.findPath(identityScope, key.bufferId) !== undefined
+				)
+					setError(failure.message)
+			},
+		}
+	}
 	// Root captures authority and supplies snapshots/mirrors; the reservoir owns leases.
 	const installSource = (value: string) => {
 		const document = activeRef.current
@@ -437,70 +523,13 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		}
 		const identityScope = { grant, sessionId: session }
 		const id = bufferIdentity.ensure(identityScope, document.relativePath)
-		registry.activate(
-			runtimeKey(id),
-			value,
-			{
-				readCommitContext: (key, previous, next, originWindowId): OrgRuntimeCommitContext => {
-					const lease = originWindowId
-						? bufferWindowLeasesRef.current.get(originWindowId)
-						: undefined
-					const path = activeRef.current?.relativePath
-					const parkedPath = bufferIdentity.findPath(identityScope, key.bufferId)
-					return {
-						mounted: mountedRef.current,
-						closeReady: nativeCloseReadyRef.current,
-						grantMatches: grantRef.current === grant,
-						sessionMatches: sessionRef.current === session && key.workspaceSessionId === session,
-						originWindowId,
-						registeredWindowBufferId:
-							lease?.grant === grant && lease.session === session ? lease.bufferId : undefined,
-						isActiveOwner:
-							path !== undefined && bufferIdentity.lookup(identityScope, path) === key.bufferId,
-						previous,
-						next,
-						activeSource: latestContentRef.current,
-						parkedSource: parkedPath
-							? parkedReservoir.read(identityScope, parkedPath)?.content
-							: undefined,
-						runtimeBufferId: key.bufferId,
-						loading: loadingRef.current,
-						notificationInProgress: !parkedReservoir.canMutate(),
-						mutationInProgress: mutationInProgressRef.current,
-						ordinarySaveInFlight: Boolean(saveInFlightRef.current),
-					}
-				},
-				commitSource: (key, source) => {
-					const path = bufferIdentity.findPath(identityScope, key.bufferId)
-					if (path === activeRef.current?.relativePath) mirrorSource(source)
-					else if (path) {
-						const parked = parkedReservoir.read(identityScope, path)
-						if (parked)
-							parkedReservoir.mirrorReplacement(identityScope, key.bufferId, {
-								previous: parked.content,
-								source,
-							})
-					}
-				},
-				emitFailure: (key, failure) => {
-					if (
-						mountedRef.current &&
-						grantRef.current === grant &&
-						sessionRef.current === session &&
-						key.workspaceSessionId === session &&
-						bufferIdentity.findPath(identityScope, key.bufferId) !== undefined
-					)
-						setError(failure.message)
-				},
+		registry.activate(runtimeKey(id), value, runtimePorts(grant, session), {
+			prepareSource: (source) => {
+				latestContentRef.current = source
+				setContent(source)
 			},
-			{
-				prepareSource: (source) => {
-					latestContentRef.current = source
-					setContent(source)
-				},
-				setActiveRuntime: setActiveBufferRuntime,
-			},
-		)
+			setActiveRuntime: setActiveBufferRuntime,
+		})
 		setDirty(latestContentRef.current !== document.content)
 	}
 	const dirtyPath = useCallback(
@@ -641,7 +670,13 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					},
 				]
 			: []),
-	].filter((buffer) => Boolean(buffer.runtime))
+	]
+		.filter((buffer) => Boolean(buffer.runtime))
+		.map((buffer) => ({
+			...buffer,
+			runtimeIncarnation: runtimeIncarnation(buffer.runtime),
+			sourceGeneration: buffer.runtime.revision,
+		}))
 
 	const registerBufferWindow = useCallback(
 		(windowId: string, bufferId: string): (() => void) => {
@@ -1287,6 +1322,190 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			}
 		},
 		[workspace, bufferIdFor, originSession, originActivation, originPath],
+	)
+
+	const actOnAgendaEntry = useCallback(
+		async (entry: OrgAgendaEntry, signal?: AbortSignal): Promise<OrgAgendaActionOutcome> => {
+			const stale = (): OrgAgendaActionOutcome => ({ kind: "stale" })
+			const rejected = (message: string): OrgAgendaActionOutcome => ({ kind: "rejected", message })
+			const grant = originGrant
+			const session = originSession
+			const origin = entry.origin
+			const currentScope = grant && session ? { grant, sessionId: session } : null
+			const current = () =>
+				mountedRef.current &&
+				nativeCloseReadyRef.current &&
+				parkedReservoir.canMutate() &&
+				grantRef.current === grant &&
+				sessionRef.current === session &&
+				!signal?.aborted
+			if (!grant || !session || !current()) return stale()
+			if (
+				!hasOrgAgendaActionOrigin(origin) ||
+				origin.workspaceRoot !== grant.rootPath ||
+				origin.capabilityToken !== grant.capabilityToken ||
+				origin.workspaceSessionId !== session ||
+				origin.relativePath !== entry.relativePath ||
+				!isSafeRelativeOrgPath(entry.relativePath)
+			)
+				return stale()
+			if (
+				loadingRef.current ||
+				mutationInProgressRef.current ||
+				saveInFlightRef.current ||
+				saveAllOwnerRef.current ||
+				agendaCommandOwnerRef.current
+			)
+				return rejected("A workspace operation is running.")
+			const path = entry.relativePath
+			if (conflictsRef.current.has(path) || autosavePausedRef.current.has(path))
+				return rejected("Resolve the target buffer conflict before changing TODO state.")
+			const owner = Symbol("agendaCommand")
+			agendaCommandOwnerRef.current = owner
+			const owns = () => current() && agendaCommandOwnerRef.current === owner
+			let cancelRead!: () => void
+			const cancelledRead = new Promise<null>((resolve) => {
+				cancelRead = () => resolve(null)
+			})
+			const cancel = () => {
+				cancelRead()
+				if (agendaCommandOwnerRef.current === owner) agendaCommandOwnerRef.current = null
+				finishMutation(owner)
+			}
+			signal?.addEventListener("abort", cancel, { once: true })
+			try {
+				let id = bufferIdentity.lookup(currentScope, path)
+				let document =
+					activeRef.current?.relativePath === path
+						? activeRef.current
+						: parkedReservoir.read(currentScope, path)?.document
+				let raw =
+					activeRef.current?.relativePath === path
+						? latestContentRef.current
+						: parkedReservoir.read(currentScope, path)?.content
+				if (!document) {
+					if (origin.source !== "disk") return stale()
+					mutationOwnerRef.current = owner
+					mutationInProgressRef.current = true
+					setLoading(true)
+					// Release the caller too: late read results (or failures) remain observed
+					// by the race but cannot allocate identities, mirrors, or history.
+					const opened = await Promise.race([
+						openOrgDocumentFlow({
+							relativePath: path,
+							workspaceRoot: grant.rootPath,
+							capabilityToken: grant.capabilityToken,
+						})(),
+						cancelledRead,
+					])
+					if (!opened || !owns() || mutationOwnerRef.current !== owner) return stale()
+					if (opened._tag === "Left")
+						return rejected(
+							typeof opened.left?.message === "string"
+								? opened.left.message
+								: "Invalid document read response.",
+						)
+					if (
+						opened._tag !== "Right" ||
+						!opened.right ||
+						typeof opened.right.relativePath !== "string" ||
+						opened.right.relativePath !== path ||
+						typeof opened.right.content !== "string" ||
+						typeof opened.right.revision !== "string" ||
+						!opened.right.revision
+					)
+						return rejected("Invalid document read response.")
+					document = opened.right
+					raw = document.content
+					if (
+						document.relativePath !== path ||
+						document.revision !== origin.diskRevision ||
+						origin.sourceRevision !== document.revision ||
+						!validateOrgAgendaOrigin({ ...entry, origin }, raw, document.revision, {
+							workspaceSessionId: session,
+						}).valid
+					)
+						return stale()
+					if (!origin.heading || !cycleOrgTodoAt(raw, origin.heading.from))
+						return rejected("This agenda entry has no actionable heading.")
+					id = bufferIdentity.ensure(currentScope, path)
+					// Publish the close-gate copy before any command can make it dirty.
+					if (
+						!parkedReservoir.park(currentScope, id, {
+							document,
+							content: raw,
+							editGeneration: 0,
+							isDirty: false,
+						})
+					)
+						return stale()
+					if (!owns()) return stale()
+					registry.create(
+						{ workspaceSessionId: session, bufferId: id },
+						raw,
+						runtimePorts(grant, session),
+					)
+					finishMutation(owner)
+				}
+				if (
+					!owns() ||
+					!id ||
+					raw === undefined ||
+					!document ||
+					document.revision !== origin.diskRevision
+				)
+					return stale()
+				const key = { workspaceSessionId: session, bufferId: id }
+				const runtime = registry.get(key)
+				if (!runtime || runtime.source !== raw) return stale()
+				// Disk anchors cannot authorize a command against an unsaved working copy.
+				if (origin.source === "disk" && runtime.source !== document.content) return stale()
+				const revision = origin.source === "live" ? id : document.revision
+				if (
+					!validateOrgAgendaOrigin({ ...entry, origin }, runtime.source, revision, {
+						workspaceSessionId: session,
+						...(origin.source === "live"
+							? {
+									runtimeIncarnation: runtimeIncarnation(runtime),
+									sourceGeneration: runtime.revision,
+								}
+							: {}),
+					}).valid
+				)
+					return stale()
+				if (!origin.heading) return rejected("This agenda entry has no actionable heading.")
+				const edit = cycleOrgTodoAt(raw, origin.heading.from)
+				if (!edit) return rejected("This agenda entry has no actionable heading.")
+				const commandOwner = () =>
+					owns() &&
+					bufferIdentity.lookup(currentScope, path) === id &&
+					registry.get(key) === runtime &&
+					!loadingRef.current &&
+					!mutationInProgressRef.current &&
+					!saveInFlightRef.current &&
+					!saveAllOwnerRef.current &&
+					!conflictsRef.current.has(path) &&
+					!autosavePausedRef.current.has(path) &&
+					validateOrgAgendaOrigin({ ...entry, origin }, runtime.source, revision, {
+						workspaceSessionId: session,
+						...(origin.source === "live"
+							? {
+									runtimeIncarnation: runtimeIncarnation(runtime),
+									sourceGeneration: runtime.revision,
+								}
+							: {}),
+					}).valid
+				return registry.applyCommandEdit(key, raw, edit, commandOwner)
+					? { kind: "confirmed" }
+					: stale()
+			} catch {
+				return owns() ? rejected("Cannot change agenda TODO state.") : stale()
+			} finally {
+				signal?.removeEventListener("abort", cancel)
+				cancel()
+			}
+		},
+		[originGrant, originSession],
 	)
 
 	const openDocumentPath = useCallback(
@@ -2958,6 +3177,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		openDocumentPath,
 		switchBuffer,
 		openOrgLink,
+		actOnAgendaEntry,
 		rebuildDerivedIndex,
 		refileSubtree,
 		readRefileTarget,

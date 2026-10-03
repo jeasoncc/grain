@@ -18,6 +18,12 @@ export interface OrgRuntimeCommitContext {
 		readonly expected: string
 		readonly next: string
 	}
+	/** Registry-scoped command permit; never substitutes for installation authority. */
+	readonly authorizedCommand?: {
+		readonly bufferId: string
+		readonly expected: string
+		readonly next: string
+	}
 	readonly runtimeBufferId: string
 	readonly loading: boolean
 	/** Independent fence: observer notification must not permit any source commit. */
@@ -41,7 +47,7 @@ export type OrgRuntimeCommitDecision =
 	| {
 			readonly kind: "accepted"
 			readonly destination: "active" | "parked"
-			readonly reason: "edit" | "installation"
+			readonly reason: "edit" | "installation" | "command"
 	  }
 	| {
 			readonly kind: "rejected"

@@ -54,6 +54,62 @@ const setup = () => {
 }
 
 describe("Org workspace runtime reservoir", () => {
+	const edit = { from: 0, to: 8, insert: "DONE", cursor: 4 }
+	it.each([false, true])("scopes command permits to exact live leases (parked=%s)", (parked) => {
+		const { registry, key, ports, park } = setup()
+		const runtime = registry.create(key, "original\r\n", ports)
+		if (parked) park()
+		expect(() => runtime.applyCommandEdit(runtime.source, edit)).toThrow(
+			"Commit guard rejected source",
+		)
+		expect(registry.applyCommandEdit(key, runtime.source, edit, () => false)).toBe(false)
+		expect(registry.applyCommandEdit(key, "stale", edit, () => true)).toBe(false)
+		let checks = 0
+		expect(() =>
+			registry.applyCommandEdit(key, runtime.source, edit, () => ++checks === 1),
+		).toThrow("Commit guard rejected source")
+		expect(runtime.source).toBe("original\r\n")
+		expect(registry.applyCommandEdit(key, runtime.source, edit, () => true)).toBe(true)
+		expect(runtime.source).toBe("DONE\r\n")
+		expect(ports.commitSource).toHaveBeenCalledTimes(1)
+		expect(() => runtime.applyControllerSource(runtime.source, "bare")).toThrow(
+			"Commit guard rejected source",
+		)
+	})
+	it("does not let a retired/recreated key borrow its old runtime lease", () => {
+		const { registry, key, ports } = setup()
+		const runtime = registry.create(key, "original\r\n", ports)
+		expect(
+			registry.applyCommandEdit(key, runtime.source, edit, () => {
+				registry.retire(key)
+				registry.create(key, "original\r\n", ports)
+				return true
+			}),
+		).toBe(false)
+		expect(runtime.closed).toBe(true)
+		expect(registry.get(key)).not.toBe(runtime)
+		expect(ports.commitSource).not.toHaveBeenCalled()
+	})
+	it("clears command authority on throw and rejects nested commands/installations", () => {
+		const { registry, key, ports } = setup()
+		const runtime = registry.create(key, "original\r\n", ports)
+		const apply = vi.spyOn(runtime, "applyCommandEdit").mockImplementationOnce(() => {
+			expect(() => runtime.applyControllerSource(runtime.source, "DONE\r\n")).toThrow(
+				"Commit guard rejected source",
+			)
+			expect(registry.install(key, "nested")).toBe(false)
+			expect(registry.applyCommandEdit(key, runtime.source, edit, () => true)).toBe(false)
+			throw new Error("command failed")
+		})
+		expect(() => registry.applyCommandEdit(key, runtime.source, edit, () => true)).toThrow(
+			"command failed",
+		)
+		apply.mockRestore()
+		expect(() => runtime.applyCommandEdit(runtime.source, edit)).toThrow(
+			"Commit guard rejected source",
+		)
+		expect(registry.applyCommandEdit(key, runtime.source, edit, () => true)).toBe(true)
+	})
 	it("owns distinct session/key leases without a second source store, and closes/retire leases", () => {
 		const { registry, key, ports } = setup()
 		const first = registry.create(key, "a\r\n", ports)

@@ -1,6 +1,7 @@
 import { guardOrgRuntimeCommit } from "@/pipes/editor/org-runtime-commit.pipe"
 import type { OrgRuntimeCommitContext } from "@/types/editor/org-runtime-owner.interface"
 import { createOrgBufferRuntime } from "@/flows/org-editor-runtime"
+import type { OrgTextEdit } from "@/pipes/org/org-text.pipe"
 import type { OrgBufferKey, OrgBufferRuntime } from "./org-buffer-runtime.types"
 
 export interface OrgWorkspaceRuntimePorts {
@@ -29,6 +30,12 @@ export const createOrgWorkspaceRuntimeRegistry = () => {
 		readonly expected: string
 		readonly next: string
 	} | null = null
+	let command: {
+		readonly runtime: OrgBufferRuntime
+		readonly expected: string
+		readonly next: string
+		readonly isCurrentOwner: () => boolean
+	} | null = null
 	const identity = (key: OrgBufferKey) => JSON.stringify([key.workspaceSessionId, key.bufferId])
 	const get = (key: OrgBufferKey) => runtimes.get(identity(key))
 	const create = (key: OrgBufferKey, source: string, ports: OrgWorkspaceRuntimePorts) => {
@@ -37,13 +44,25 @@ export const createOrgWorkspaceRuntimeRegistry = () => {
 		const runtime = createOrgBufferRuntime({
 			key,
 			source,
-			canCommit: (previous, next, originWindowId) => {
+			canCommit: (previous, next, originWindowId, operation) => {
 				const context = ports.readCommitContext(key, previous, next, originWindowId)
 				return (
 					guardOrgRuntimeCommit({
 						...context,
+						originWindowId,
+						authorizedCommand:
+							operation === "command" &&
+							command &&
+							command.runtime === runtime &&
+							get(key) === runtime &&
+							!runtime.closed &&
+							command.isCurrentOwner()
+								? { bufferId: key.bufferId, expected: command.expected, next: command.next }
+								: undefined,
 						authorizedInstallation:
-							installation && identity(installation.key) === identity(key)
+							operation === "installation" &&
+							installation &&
+							identity(installation.key) === identity(key)
 								? {
 										bufferId: key.bufferId,
 										expected: installation.expected,
@@ -60,7 +79,7 @@ export const createOrgWorkspaceRuntimeRegistry = () => {
 		return runtime
 	}
 	const install = (key: OrgBufferKey, source: string): boolean => {
-		if (installation) return false
+		if (installation || command) return false
 		const runtime = get(key)
 		if (!runtime) return false
 		installation = { key: runtime.key, expected: runtime.source, next: source }
@@ -79,6 +98,31 @@ export const createOrgWorkspaceRuntimeRegistry = () => {
 	): boolean => {
 		if (!isCurrentOwner() || get(key)?.source !== expected) return false
 		return install(key, source)
+	}
+	/** One synchronous command permit, tied to the live runtime lease and exact raw edit. */
+	const applyCommandEdit = (
+		key: OrgBufferKey,
+		expected: string,
+		edit: OrgTextEdit,
+		isCurrentOwner: () => boolean,
+	): boolean => {
+		if (installation || command) return false
+		const runtime = get(key)
+		if (
+			!runtime ||
+			runtime.closed ||
+			runtime.source !== expected ||
+			!isCurrentOwner() ||
+			get(key) !== runtime
+		)
+			return false
+		const next = expected.slice(0, edit.from) + edit.insert + expected.slice(edit.to)
+		command = { runtime, expected, next, isCurrentOwner }
+		try {
+			return runtime.applyCommandEdit(expected, edit)
+		} finally {
+			command = null
+		}
 	}
 	const activate = (
 		key: OrgBufferKey,
@@ -112,5 +156,5 @@ export const createOrgWorkspaceRuntimeRegistry = () => {
 		for (const runtime of runtimes.values()) runtime.close()
 		runtimes.clear()
 	}
-	return { get, create, install, updateSource, activate, retire, close }
+	return { get, create, install, updateSource, applyCommandEdit, activate, retire, close }
 }

@@ -1,4 +1,78 @@
+import { isSafeRelativeOrgPath } from "./org-subtree-refile.pipe"
+import { eligibleOrgSourceLines, parseOrgTodoKeywords } from "./org-text.pipe"
+
+/** Display snapshot metadata. Commands require the complete OrgAgendaActionOrigin below. */
+export interface OrgAgendaSourceMetadata {
+	readonly workspaceSessionId?: string
+	readonly runtimeIncarnation?: string
+	readonly sourceGeneration?: number
+}
+
+/** Complete command provenance; parser/manual rows remain display-only. */
+export type OrgAgendaActionOrigin = OrgAgendaOrigin & {
+	readonly workspaceSessionId: string
+	readonly workspaceRoot: string
+	readonly sourceRevision: string
+	readonly diskRevision: string
+} & (
+		| { readonly source: "disk" }
+		| {
+				readonly source: "live"
+				readonly runtimeIncarnation: string
+				readonly sourceGeneration: number
+		  }
+	)
+
+export const hasOrgAgendaActionOrigin = (
+	origin: OrgAgendaOrigin | undefined,
+): origin is OrgAgendaActionOrigin => {
+	const nonempty = (value: unknown) => typeof value === "string" && value.length > 0
+	const validAnchor = (value: OrgAgendaSourceAnchor | null | undefined) =>
+		!!value &&
+		Number.isSafeInteger(value.from) &&
+		value.from >= 0 &&
+		Number.isSafeInteger(value.to) &&
+		value.to > value.from &&
+		typeof value.text === "string" &&
+		value.text.length === value.to - value.from
+	return (
+		!!origin &&
+		(origin.source === "disk" || origin.source === "live") &&
+		nonempty(origin.workspaceSessionId) &&
+		nonempty(origin.workspaceRoot) &&
+		nonempty(origin.sourceRevision) &&
+		nonempty(origin.diskRevision) &&
+		nonempty(origin.relativePath) &&
+		(origin.capabilityToken === undefined || nonempty(origin.capabilityToken)) &&
+		validAnchor(origin.timestamp) &&
+		validAnchor(origin.heading) &&
+		(origin.source === "disk" ||
+			(nonempty(origin.runtimeIncarnation) &&
+				Number.isSafeInteger(origin.sourceGeneration) &&
+				Number(origin.sourceGeneration) >= 0))
+	)
+}
+
 export type OrgAgendaEntryKind = "deadline" | "scheduled" | "timestamp"
+
+/** Half-open UTF-16 offsets into verbatim source, never normalized editor text. */
+export interface OrgAgendaSourceAnchor {
+	readonly from: number
+	readonly to: number
+	readonly text: string
+}
+
+export interface OrgAgendaOrigin extends OrgAgendaSourceMetadata {
+	readonly relativePath: string
+	readonly timestamp: OrgAgendaSourceAnchor
+	readonly heading: OrgAgendaSourceAnchor | null
+	readonly source: "parser" | "disk" | "live"
+	readonly workspaceRoot?: string
+	readonly capabilityToken?: string
+	readonly sourceRevision?: string
+	/** Live revisions are consumer-owned; diskRevision remains the write precondition. */
+	readonly diskRevision?: string
+}
 
 /** A dated item extracted from Org source. Lines are one-based; columns are zero-based. */
 export interface OrgAgendaEntry {
@@ -10,35 +84,27 @@ export interface OrgAgendaEntry {
 	readonly heading: string | null
 	readonly level: number
 	readonly todo: string | null
+	/** Optional only for legacy/manual display rows. Parser and flow rows always carry it. */
+	readonly origin?: OrgAgendaOrigin
+}
+
+export interface AnchoredOrgAgendaEntry extends OrgAgendaEntry {
+	readonly origin: OrgAgendaOrigin
+}
+
+export interface OrgAgendaActionEntry extends OrgAgendaEntry {
+	readonly origin: OrgAgendaActionOrigin
 }
 
 const ACTIVE_TIMESTAMP = /<(\d{4}-\d{2}-\d{2})(?:\s[^>\r\n]*)?>/g
 const PLANNING_TIMESTAMP = /\b(SCHEDULED|DEADLINE):\s*(<(\d{4}-\d{2}-\d{2})(?:\s[^>\r\n]*)?>)/g
-const HEADING = /^(\*+)\s+(.*)$/
-const TODO_DIRECTIVE = /^#\+(?:SEQ_)?TODO:\s*(.*)$/i
-const BLOCK_BEGIN = /^\s*#\+begin_\S+/i
-const BLOCK_END = /^\s*#\+end_\S+/i
-const ORDINARY_COMMENT = /^\s*#(?!\+)/
-const DIRECTIVE = /^\s*#\+/
-const DRAWER_BEGIN = /^\s*:PROPERTIES:\s*$/i
-const DRAWER_END = /^\s*:END:\s*$/i
-const FIXED_WIDTH = /^\s*:\s/
-const DEFAULT_TODO_KEYWORDS = ["TODO", "DONE"] as const
-
-interface HeadingContext {
-	readonly heading: string
-	readonly level: number
-	readonly todo: string | null
-}
+const HEADING = /^(\*+)[ \t]+(.*)$/
 
 const compareText = (left: string, right: string): number =>
 	left < right ? -1 : left > right ? 1 : 0
 
 const isCalendarDate = (date: string): boolean => {
-	const [yearText, monthText, dayText] = date.split("-")
-	const year = Number(yearText)
-	const month = Number(monthText)
-	const day = Number(dayText)
+	const [year, month, day] = date.split("-").map(Number)
 	if (month < 1 || month > 12 || day < 1) {
 		return false
 	}
@@ -48,192 +114,100 @@ const isCalendarDate = (date: string): boolean => {
 	return parsed.toISOString().slice(0, 10) === date
 }
 
-/** Marks block delimiters and their contents so they cannot affect parsing. */
-const blockLinesFrom = (lines: readonly string[]): readonly boolean[] => {
-	let depth = 0
-	return lines.map((line) => {
-		if (BLOCK_BEGIN.test(line)) {
-			depth += 1
-			return true
-		}
-		if (BLOCK_END.test(line)) {
-			depth = Math.max(0, depth - 1)
-			return true
-		}
-		return depth > 0
-	})
-}
+const anchor = (from: number, text: string): OrgAgendaSourceAnchor =>
+	Object.freeze({ from, text, to: from + text.length })
 
-const todoKeywordsFrom = (
-	lines: readonly string[],
-	blockLines: readonly boolean[],
-): ReadonlySet<string> => {
-	const keywords = new Set<string>(DEFAULT_TODO_KEYWORDS)
-	for (const [index, line] of lines.entries()) {
-		if (blockLines[index] || ORDINARY_COMMENT.test(line)) {
-			continue
-		}
-		const match = line.match(TODO_DIRECTIVE)
-		if (!match) {
-			continue
-		}
-		for (const token of match[1].split(/\s+/)) {
-			const keyword = token.replace(/\([^)]*\)$/, "")
-			if (keyword && keyword !== "|") {
-				keywords.add(keyword)
-			}
-		}
-	}
-	return keywords
-}
-
-const headingContextFrom = (
-	stars: string,
-	rawHeading: string,
-	todoKeywords: ReadonlySet<string>,
-): HeadingContext => {
-	const firstSpace = rawHeading.search(/\s/)
-	const firstWord = firstSpace === -1 ? rawHeading : rawHeading.slice(0, firstSpace)
-	const todo = todoKeywords.has(firstWord) ? firstWord : null
-	const heading = todo ? rawHeading.slice(firstWord.length).trim() : rawHeading.trim()
-	return { heading, level: stars.length, todo }
-}
-
-const isCommentHeading = (context: HeadingContext): boolean =>
-	context.heading === "COMMENT" || context.heading.startsWith("COMMENT ")
-
-interface ParseContext {
-	readonly context: HeadingContext | null
-	readonly commentLevel: number | null
-	readonly headingLine: number
-	readonly ignoreLine: boolean
-}
-
-const contextAtLine = (
-	lineText: string,
-	index: number,
-	todoKeywords: ReadonlySet<string>,
-	current: ParseContext,
-): ParseContext => {
-	const headingMatch = lineText.match(HEADING)
-	if (!headingMatch) {
-		return { ...current, ignoreLine: current.commentLevel !== null }
-	}
-
-	const candidate = headingContextFrom(headingMatch[1], headingMatch[2], todoKeywords)
-	if (current.commentLevel !== null && candidate.level > current.commentLevel) {
-		return { ...current, ignoreLine: true }
-	}
-	if (isCommentHeading(candidate)) {
-		return { ...current, commentLevel: candidate.level, ignoreLine: true }
-	}
-	return { commentLevel: null, context: candidate, headingLine: index, ignoreLine: false }
-}
-
-const entry = (
+/** Extracts immutable anchors using the same eligibility grammar as Org structural editing. */
+export const parseOrgAgenda = (
 	relativePath: string,
-	line: number,
-	column: number,
-	date: string,
-	kind: OrgAgendaEntryKind,
-	context: HeadingContext | null,
-): OrgAgendaEntry => ({
-	column,
-	date,
-	heading: context?.heading ?? null,
-	kind,
-	level: context?.level ?? 0,
-	line,
-	relativePath,
-	todo: context?.todo ?? null,
-})
-
-const entriesFromLine = (
-	relativePath: string,
-	line: number,
-	lineText: string,
-	context: HeadingContext | null,
-	isPlanningLine: boolean,
-): readonly OrgAgendaEntry[] => {
-	const entries: OrgAgendaEntry[] = []
-	const planningRanges: Array<readonly [number, number]> = []
-	if (isPlanningLine) {
-		for (const match of lineText.matchAll(PLANNING_TIMESTAMP)) {
-			const matchedText = match[2]
-			const date = match[3]
-			const column = match.index + match[0].indexOf(matchedText)
-			planningRanges.push([column, column + matchedText.length])
-			if (isCalendarDate(date)) {
-				const kind = match[1] === "DEADLINE" ? "deadline" : "scheduled"
-				entries.push(entry(relativePath, line, column, date, kind, context))
+	source: string,
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one source-order pass retains heading and planning adjacency in raw coordinates.
+): readonly AnchoredOrgAgendaEntry[] => {
+	if (
+		typeof relativePath !== "string" ||
+		!isSafeRelativeOrgPath(relativePath) ||
+		[...relativePath].some(
+			(character) =>
+				character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127 || character === ":",
+		) ||
+		typeof source !== "string"
+	) {
+		return Object.freeze([])
+	}
+	const keywords = parseOrgTodoKeywords(source)
+	const states = new Set([...keywords.todo, ...keywords.done])
+	const entries: AnchoredOrgAgendaEntry[] = []
+	let heading: string | null = null
+	let headingAnchor: OrgAgendaSourceAnchor | null = null
+	let headingBreakTo = -1
+	let level = 0
+	let todo: string | null = null
+	// Offsets and physical line numbers include excluded source and every raw line ending.
+	const lineNumbers = new Map<number, number>([[0, 1]])
+	let lineNumber = 1
+	for (const match of source.matchAll(/\r\n|\r|\n/g)) {
+		lineNumber += 1
+		lineNumbers.set(match.index + match[0].length, lineNumber)
+	}
+	for (const line of eligibleOrgSourceLines(source, states)) {
+		if (/^[ \t]*#/.test(line.text) || /^[ \t]*:[ \t]/.test(line.text)) {
+			continue
+		}
+		const headingMatch = HEADING.exec(line.text)
+		if (headingMatch) {
+			const rawHeading = headingMatch[2]
+			const firstWord = rawHeading.split(/[ \t]/, 1)[0]
+			todo = states.has(firstWord) ? firstWord : null
+			heading = (todo ? rawHeading.slice(firstWord.length) : rawHeading).trim()
+			level = headingMatch[1].length
+			headingAnchor = anchor(line.from, line.text)
+			headingBreakTo = line.breakTo
+		}
+		const addEntry = (column: number, text: string, date: string, kind: OrgAgendaEntryKind) => {
+			if (!isCalendarDate(date)) {
+				return
 			}
-		}
-	}
-	for (const match of lineText.matchAll(ACTIVE_TIMESTAMP)) {
-		const insidePlanning = planningRanges.some(
-			([rangeStart, rangeEnd]) => match.index >= rangeStart && match.index < rangeEnd,
-		)
-		if (!insidePlanning && isCalendarDate(match[1])) {
-			entries.push(entry(relativePath, line, match.index, match[1], "timestamp", context))
-		}
-	}
-	return entries
-}
-
-/** Extracts agenda entries without normalizing or modifying the supplied Org source. */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: source-order context keeps comments, drawers, blocks, and planning semantics aligned.
-export const parseOrgAgenda = (relativePath: string, source: string): readonly OrgAgendaEntry[] => {
-	const lines = source.split(/\r\n|\r|\n/)
-	const blockLines = blockLinesFrom(lines)
-	const todoKeywords = todoKeywordsFrom(lines, blockLines)
-	const entries: OrgAgendaEntry[] = []
-	let inPropertyDrawer = false
-	let parseContext: ParseContext = {
-		commentLevel: null,
-		context: null,
-		headingLine: -2,
-		ignoreLine: false,
-	}
-
-	for (const [index, lineText] of lines.entries()) {
-		if (blockLines[index] || ORDINARY_COMMENT.test(lineText)) {
-			continue
-		}
-		if (DRAWER_BEGIN.test(lineText)) {
-			inPropertyDrawer = true
-			continue
-		}
-		if (inPropertyDrawer) {
-			if (DRAWER_END.test(lineText)) {
-				inPropertyDrawer = false
-			}
-			continue
-		}
-		if (DIRECTIVE.test(lineText) || FIXED_WIDTH.test(lineText)) {
-			continue
-		}
-
-		parseContext = contextAtLine(lineText, index, todoKeywords, parseContext)
-		if (!parseContext.ignoreLine) {
+			const origin: OrgAgendaOrigin = Object.freeze({
+				heading: headingAnchor,
+				relativePath,
+				source: "parser",
+				timestamp: anchor(line.from + column, text),
+			})
 			entries.push(
-				...entriesFromLine(
+				Object.freeze({
+					column,
+					date,
+					heading,
+					kind,
+					level,
+					line: lineNumbers.get(line.from) ?? 1,
+					origin,
 					relativePath,
-					index + 1,
-					lineText,
-					parseContext.context,
-					index === parseContext.headingLine + 1,
-				),
+					todo,
+				}),
 			)
 		}
+		const planningRanges: Array<readonly [number, number]> = []
+		if (!headingMatch && line.from === headingBreakTo) {
+			for (const match of line.text.matchAll(PLANNING_TIMESTAMP)) {
+				const column = match.index + match[0].indexOf(match[2])
+				planningRanges.push([column, column + match[2].length])
+				addEntry(column, match[2], match[3], match[1] === "DEADLINE" ? "deadline" : "scheduled")
+			}
+		}
+		for (const match of line.text.matchAll(ACTIVE_TIMESTAMP)) {
+			if (!planningRanges.some(([from, to]) => match.index >= from && match.index < to)) {
+				addEntry(match.index, match[0], match[1], "timestamp")
+			}
+		}
 	}
-
-	return sortOrgAgendaEntries(entries)
+	return Object.freeze(sortOrgAgendaEntries(entries))
 }
 
 /** Gives aggregated parser output the same stable order as a single document. */
-export const sortOrgAgendaEntries = (
-	entries: readonly OrgAgendaEntry[],
-): readonly OrgAgendaEntry[] =>
+export const sortOrgAgendaEntries = <T extends OrgAgendaEntry>(
+	entries: readonly T[],
+): readonly T[] =>
 	[...entries].sort(
 		(left, right) =>
 			compareText(left.date, right.date) ||
@@ -242,3 +216,60 @@ export const sortOrgAgendaEntries = (
 			left.line - right.line ||
 			left.column - right.column,
 	)
+
+export type OrgAgendaOriginValidation =
+	| { readonly valid: true; readonly entry: AnchoredOrgAgendaEntry }
+	| { readonly valid: false; readonly reason: "revision" | "source-drift" }
+
+/** Reparse, do not relocate: identical timestamp text in an inert region is not a valid anchor. */
+export const validateOrgAgendaOrigin = (
+	entry: AnchoredOrgAgendaEntry,
+	source: string,
+	sourceRevision?: string,
+	metadata: OrgAgendaSourceMetadata = {},
+): OrgAgendaOriginValidation => {
+	if (
+		!entry?.origin ||
+		typeof source !== "string" ||
+		(entry.origin.source !== "parser" && !hasOrgAgendaActionOrigin(entry.origin))
+	) {
+		return { reason: "source-drift", valid: false }
+	}
+	if (
+		(entry.origin.sourceRevision !== undefined &&
+			(!entry.origin.sourceRevision || entry.origin.sourceRevision !== sourceRevision)) ||
+		(entry.origin.diskRevision !== undefined && !entry.origin.diskRevision) ||
+		(["workspaceSessionId", "runtimeIncarnation", "sourceGeneration"] as const).some(
+			(key) =>
+				entry.origin[key] !== undefined &&
+				(entry.origin[key] !== metadata[key] ||
+					(key === "sourceGeneration"
+						? !Number.isSafeInteger(entry.origin[key]) || Number(entry.origin[key]) < 0
+						: typeof entry.origin[key] !== "string" || entry.origin[key] === "")),
+		)
+	) {
+		return { reason: "revision", valid: false }
+	}
+	const sameAnchor = (left: OrgAgendaSourceAnchor | null, right: OrgAgendaSourceAnchor | null) =>
+		left === null
+			? right === null
+			: left !== undefined &&
+				right !== null &&
+				left.from === right.from &&
+				left.to === right.to &&
+				left.text === right.text
+	const matched = parseOrgAgenda(entry.relativePath, source).find(
+		(candidate) =>
+			entry.origin.relativePath === entry.relativePath &&
+			sameAnchor(entry.origin.timestamp, candidate.origin.timestamp) &&
+			sameAnchor(entry.origin.heading, candidate.origin.heading) &&
+			entry.kind === candidate.kind &&
+			entry.date === candidate.date &&
+			entry.todo === candidate.todo &&
+			entry.heading === candidate.heading &&
+			entry.line === candidate.line &&
+			entry.column === candidate.column &&
+			entry.level === candidate.level,
+	)
+	return matched ? { entry, valid: true } : { reason: "source-drift", valid: false }
+}
