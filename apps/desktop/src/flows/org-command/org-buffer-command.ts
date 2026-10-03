@@ -18,12 +18,17 @@ export type OrgBufferCommandPreparation =
 			readonly candidates: readonly string[]
 	  }
 	| OrgBufferCommandRejected
+export interface OrgBufferViewPayload {
+	readonly kind: "sparse-tree"
+	readonly query: string | null
+}
 export type OrgBufferCommandResult =
+	| { readonly kind: "view"; readonly view: OrgBufferViewPayload }
 	| { readonly kind: "edit"; readonly edit: OrgTextEdit }
 	| { readonly kind: "no-change"; readonly reason: string }
 	| OrgBufferCommandRejected
 
-/** A parameterized buffer edit, not a file-write or application-wide command service. */
+/** A parameterized buffer operation, not a file-write or application-wide command service. */
 export interface OrgBufferCommand {
 	readonly id: string
 	readonly prompt: string

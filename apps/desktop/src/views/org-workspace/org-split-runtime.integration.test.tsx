@@ -21,6 +21,7 @@ import {
 } from "@/io/file/org-file.repository"
 import type { OrgDocumentInterface, OrgWorkspaceInterface } from "@/types/org"
 import { OrgWorkspaceContainer } from "./org-workspace.container.fn"
+import { orgSparseTreeField } from "../org-editor/org-sparse-tree.extension"
 
 // Observe, but never substitute, the production controller used by the production root.
 let controller: OrgWorkspaceController
@@ -225,6 +226,102 @@ afterEach(() => {
 })
 
 describe("production root independently bound split (synthetic host IO, real hook/pane/editor/runtime)", () => {
+	it.each([
+		["todo", "TODO Work", "DONE Needle"],
+		["tag:work", "TODO Work", "DONE Needle"],
+		["text:Needle", "DONE Needle", "TODO Work"],
+	])("production sparse %s changes only the originating window presentation and clears via catalog", async (query, visible, hidden) => {
+		const raw = "Preamble\r\n* TODO Work :work:\r\nbody\0😀\r\n* DONE Needle :home:\r\nOther text"
+		disk.set("a.org", { relativePath: "a.org", content: raw, revision: "a-1" })
+		await setup()
+		const a = left(),
+			peer = right(),
+			runtime = controller.activeBufferRuntime!
+		act(() => a.dispatch({ selection: { anchor: a.state.doc.length } }))
+		type(a, " seed")
+		await act(async () => {
+			await controller.saveDocument()
+		})
+		const before = runtime.source
+		const writes = vi.mocked(saveOrgDocumentFlow).mock.calls.length
+		const committed = commits.mock.calls.length
+		const depth = undoDepth(runtime.state)
+		expect(depth).toBe(1)
+		fireEvent.keyDown(a.contentDOM, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(a.contentDOM, { key: "/" })
+		const input = screen.getByRole("combobox", { name: /^Sparse tree/ })
+		fireEvent.change(input, { target: { value: query } })
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(a.contentDOM).toHaveFocus()
+		expect(a.state.field(orgSparseTreeField)?.plan.hiddenRanges.length).toBeGreaterThan(0)
+		expect(a.contentDOM).toHaveTextContent(visible)
+		expect(a.contentDOM).not.toHaveTextContent(hidden)
+		expect(peer.state.field(orgSparseTreeField)).toBeNull()
+		expect(peer.contentDOM).toHaveTextContent(hidden)
+		source(before)
+		expect(controller.isDirty).toBe(false)
+		expect(undoDepth(runtime.state)).toBe(depth)
+		expect(commits).toHaveBeenCalledTimes(committed)
+		expect(disk.get("a.org")!.content).toBe(before)
+		fireEvent.keyDown(a.contentDOM, { key: "p", ctrlKey: true })
+		const palette = screen.getByRole("combobox")
+		fireEvent.change(palette, { target: { value: "Clear sparse tree" } })
+		fireEvent.keyDown(palette, { key: "Enter" })
+		expect(a.state.field(orgSparseTreeField)).toBeNull()
+		expect(a.contentDOM).toHaveTextContent(visible)
+		expect(a.contentDOM).toHaveTextContent(hidden)
+		expect(a.contentDOM).toHaveFocus()
+		source(before)
+		expect(undoDepth(runtime.state)).toBe(depth)
+		expect(commits).toHaveBeenCalledTimes(committed)
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(writes)
+		expect(disk.get("a.org")!.content).toBe(before)
+	})
+
+	it("refuses a peer-staled sparse prompt and routes a parked independent-window prefix to its own buffer", async () => {
+		await setup()
+		const a = left(),
+			peer = right(),
+			runtimeA = controller.activeBufferRuntime!
+		focus(a)
+		fireEvent.keyDown(a.contentDOM, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(a.contentDOM, { key: "/" })
+		const input = screen.getByRole("combobox", { name: /^Sparse tree/ })
+		fireEvent.change(input, { target: { value: "tag:raw" } })
+		// The other real CM projection edits the same canonical buffer while the prompt is open.
+		act(() => peer.dispatch({ changes: { from: peer.state.doc.length, insert: " peer edit" } }))
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(screen.getByRole("alert")).toHaveTextContent("content changed")
+		expect(a.state.field(orgSparseTreeField)).toBeNull()
+		expect(peer.state.field(orgSparseTreeField)).toBeNull()
+		expect(undoDepth(runtimeA.state)).toBe(1)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		fireEvent.keyDown(input, { key: "Escape" })
+		focus(peer)
+		await open("b.org")
+		const b = right(),
+			runtimeB = controller.activeBufferRuntime!
+		// No helper focus: production key handoff must choose parked A, not focused B.
+		fireEvent.keyDown(a.contentDOM, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(a.contentDOM, { key: "/" })
+		const fresh = screen.getByRole("combobox", { name: /^Sparse tree/ })
+		fireEvent.change(fresh, { target: { value: "tag:raw" } })
+		fireEvent.keyDown(fresh, { key: "Enter" })
+		expect(controller.activeBufferRuntime).toBe(runtimeA)
+		expect(a.contentDOM).toHaveFocus()
+		expect(a.state.field(orgSparseTreeField)).not.toBeNull()
+		expect(a.contentDOM).not.toHaveTextContent("Second")
+		expect(b.state.field(orgSparseTreeField)).toBeNull()
+		expect(runtimeB.source).toBe(rawB)
+		expect(b.state.sliceDoc()).toBe(rawB)
+		expect(runtimeA.source).toBe(rawA + " peer edit")
+		expect(controller.content).toBe(runtimeA.source)
+		expect(undoDepth(runtimeA.state)).toBe(1)
+		expect(undoDepth(runtimeB.state)).toBe(0)
+		expect(disk.get("a.org")!.content).toBe(rawA)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
 	it("ordinary parked-window key hands off before input, and immediate metadata/save use fresh A source and target", async () => {
 		await setup()
 		const a = left()

@@ -53,6 +53,9 @@ export interface OrgBufferRuntimeOptions {
 export interface OrgBufferWindowOptions {
 	readonly windowId: string
 	readonly view: EditorView
+	/** Window-local source safety veto, evaluated for the entire user batch before commit.
+	 * Never called for controller ACKs, peer projections, or canonical undo/redo. */
+	readonly preflightSourceTransaction?: (transaction: Transaction) => boolean
 	readonly knownLocalEffects?: readonly StateEffectType<unknown>[]
 	/** Only approve effects created by this window's registered configuration/scroll API.
 	 * Root reconfiguration is always forbidden. Resulting states are checked again. */

@@ -6,6 +6,7 @@ export type OrgPrefixCommandId =
 	| "scheduled"
 	| "deadline"
 	| "property"
+	| "sparse-tree"
 	| "timestamp-active"
 	| "timestamp-inactive"
 	| "refile"

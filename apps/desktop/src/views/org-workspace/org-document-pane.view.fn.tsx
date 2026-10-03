@@ -23,6 +23,7 @@ import { useOrgCommandMinibuffer } from "@/hooks/use-org-command-minibuffer"
 import { orgTagsBufferCommand } from "@/flows/org-command/org-tags.command"
 import { createOrgPlanningCommand } from "@/flows/org-command/org-planning.command"
 import { orgPropertyBufferCommand } from "@/flows/org-command/org-property.command"
+import { orgSparseTreeBufferCommand } from "@/flows/org-command/org-sparse-tree.command"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
 import { OrgEditor, type OrgEditorCommandTarget } from "@/views/org-editor"
 import type { OrgEditorSessionSnapshot } from "@/views/org-editor/org-editor.types"
@@ -55,7 +56,7 @@ const BoundEditor = ({
 }
 let nextPaneId = 0
 
-type OrgMetadataType = "tags" | "scheduled" | "deadline" | "property"
+type OrgMetadataType = "tags" | "scheduled" | "deadline" | "property" | "sparse-tree"
 
 const today = (): string => {
 	const now = new Date()
@@ -79,6 +80,9 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	sidebarVisible,
 	parameterSessionSuspended = false,
 	editorSessionCache,
+	viewCommandOriginRef,
+	viewCommandRequest,
+	onViewCommandHandled,
 }: {
 	readonly canGoBack: boolean
 	readonly canGoForward: boolean
@@ -96,6 +100,17 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	readonly sidebarVisible: boolean
 	readonly parameterSessionSuspended?: boolean
 	readonly editorSessionCache?: Map<string, OrgEditorSessionSnapshot>
+	readonly onViewCommandHandled?: (id: number) => void
+	readonly viewCommandOriginRef?: {
+		current: ((command: "sparse-tree" | "clear-sparse-tree") => (() => void) | null) | null
+	}
+	readonly viewCommandRequest?: {
+		readonly id: number
+		readonly command: "sparse-tree" | "clear-sparse-tree"
+		readonly bufferId: string | null
+		readonly workspaceSessionId: string | null
+		readonly execute?: (() => void) | null
+	} | null
 }) {
 	const controllerRef = useRef(controller)
 	controllerRef.current = controller
@@ -120,6 +135,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	} | null>(null)
 	const lastActiveId = useRef(controller.activeBufferId)
 	const activeWindowRef = useRef<"primary" | "secondary">("primary")
+	const focusLease = useRef(0)
 	// Shell navigation changes only the focused view. Focus handoff records its ID
 	// synchronously so the following render cannot overwrite the peer binding.
 	if (lastActiveId.current !== controller.activeBufferId) {
@@ -196,6 +212,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 		const switchingBuffer = id !== lastActiveId.current
 		const switchingWindow = activeWindowRef.current !== name
 		if (switchingBuffer || switchingWindow) {
+			focusLease.current++
 			const previous = lastActiveId.current
 			let activated = !switchingBuffer
 			// Both controller and pane focus context must be committed before CM
@@ -257,12 +274,18 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	const openMetadataCommand = (type: OrgMetadataType, position: number) => {
 		const document = activeDocument
 		if (!document || isBusy) return
+		if (type === "sparse-tree") {
+			commandTargetRef.current = targets.current.get(windowKey(activeWindowRef.current)) ?? null
+			if (!commandTargetRef.current) return
+		}
 		parameterCommandRef.current.open(
-			type === "tags"
-				? orgTagsBufferCommand
-				: type === "property"
-					? orgPropertyBufferCommand
-					: createOrgPlanningCommand(type === "deadline" ? "DEADLINE" : "SCHEDULED", today()),
+			type === "sparse-tree"
+				? orgSparseTreeBufferCommand
+				: type === "tags"
+					? orgTagsBufferCommand
+					: type === "property"
+						? orgPropertyBufferCommand
+						: createOrgPlanningCommand(type === "deadline" ? "DEADLINE" : "SCHEDULED", today()),
 			position,
 		)
 	}
@@ -280,12 +303,19 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	}
 	const toolbarMetadata = (type: OrgMetadataType) => {
 		if (!resolveToolbarWindow()) return
+		if (type === "sparse-tree") {
+			// An earlier edit toolbar command may have left its selection wrapper
+			// in this ref. Always launch VIEW commands with the mounted plain port.
+			commandTargetRef.current = targets.current.get(windowKey(activeWindowRef.current)) ?? null
+			if (!commandTargetRef.current) return
+		}
 		const node = windowNodes.current
 			.get(activeWindowRef.current)
 			?.querySelector<HTMLElement>(".cm-content")
 		const view = node ? EditorView.findFromDOM(node) : null
 		const target = commandTargetRef.current
-		if (view && target) {
+		// View operations own selection relocation and restoration, unlike edits.
+		if (view && target && type !== "sparse-tree") {
 			let selection = view.state.selection
 			commandTargetRef.current = {
 				...target,
@@ -329,6 +359,57 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	}
 	const openMetadataCommandRef = useRef(openMetadataCommand)
 	openMetadataCommandRef.current = openMetadataCommand
+	if (viewCommandOriginRef)
+		viewCommandOriginRef.current = (command) => {
+			const name = activeWindowRef.current
+			const key = windowKey(name)
+			const target = targets.current.get(key)
+			const bufferId = bindings.current[name]
+			const runtime = bufferFor(name)?.runtime
+			const origin = controllerRef.current
+			const lease = focusLease.current
+			if (!target || !bufferId || pendingWindow.current) return null
+			return () => {
+				const current = controllerRef.current
+				if (
+					lease !== focusLease.current ||
+					activeWindowRef.current !== name ||
+					!windowNodes.current.has(name) ||
+					targets.current.get(key) !== target ||
+					bindings.current[name] !== bufferId ||
+					current.activeBufferId !== bufferId ||
+					current.workspaceSessionId !== origin.workspaceSessionId ||
+					current.workspace?.capabilityToken !== origin.workspace?.capabilityToken ||
+					current.workspace?.rootPath !== origin.workspace?.rootPath ||
+					(current.liveBuffers?.find((buffer) => buffer.bufferId === bufferId)?.runtime ??
+						current.activeBufferRuntime) !== runtime
+				)
+					return
+				commandTargetRef.current = target
+				if (command === "clear-sparse-tree") parameterCommandRef.current.clearSparseTree()
+				else openMetadataCommandRef.current("sparse-tree", cursors.current.get(key) ?? 0)
+			}
+		}
+	const handledViewCommand = useRef<number | null>(null)
+	useEffect(() => {
+		if (!viewCommandRequest || handledViewCommand.current === viewCommandRequest.id) return
+		handledViewCommand.current = viewCommandRequest.id
+		onViewCommandHandled?.(viewCommandRequest.id)
+		if (
+			viewCommandRequest.bufferId !== controller.activeBufferId ||
+			viewCommandRequest.workspaceSessionId !== controller.workspaceSessionId ||
+			parameterSessionSuspended
+		)
+			return
+		// Missing or expired origins never fall back to the newest active target.
+		viewCommandRequest.execute?.()
+	}, [
+		viewCommandRequest,
+		onViewCommandHandled,
+		controller.activeBufferId,
+		controller.workspaceSessionId,
+		parameterSessionSuspended,
+	])
 
 	return (
 		<main className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
@@ -492,6 +573,21 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 									}
 								}}
 							>
+								<DropdownMenuItem disabled={isBusy} onClick={() => toolbarMetadata("sparse-tree")}>
+									Sparse tree
+									<span className="ml-auto text-[10px] text-muted-foreground">C-c /</span>
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									disabled={isBusy}
+									onClick={() => {
+										if (!resolveToolbarWindow()) return
+										commandTargetRef.current =
+											targets.current.get(windowKey(activeWindowRef.current)) ?? null
+										parameterCommandRef.current.clearSparseTree()
+									}}
+								>
+									Clear sparse tree
+								</DropdownMenuItem>
 								<DropdownMenuItem disabled={isBusy} onClick={() => toolbarMetadata("tags")}>
 									<Tags className="mr-2 size-4" />
 									Heading tags{" "}
@@ -647,6 +743,10 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 											}}
 											onDeadline={(position) => {
 												if (selectWindow(name)) openMetadataCommandRef.current("deadline", position)
+											}}
+											onSparseTree={(position) => {
+												if (selectWindow(name))
+													openMetadataCommandRef.current("sparse-tree", position)
 											}}
 											onSetProperty={(position) => {
 												if (selectWindow(name)) openMetadataCommandRef.current("property", position)

@@ -17,11 +17,13 @@ export {
 	parseOrgLinkTarget,
 	resolveOrgLinkPath,
 } from "./org-backlinks.pipe"
+export * from "./org-capture.pipe"
 export {
 	buildOrgDerivedIndexDocument,
 	parseOrgIndexHeadings,
 } from "./org-derived-index.pipe"
 export { type OrgLinkClickTarget, orgFileLinkAt, orgLinkTargetAt } from "./org-link.pipe"
+export { buildOrgSparseTreePlan, parseOrgSparseTreeQuery } from "./org-sparse-tree.pipe"
 export {
 	appendOrgSubtree,
 	deriveOrgArchivePath,
@@ -48,4 +50,3 @@ export {
 	toggleOrgCheckboxAt,
 } from "./org-text.pipe"
 export { buildOrgWorkspaceTree } from "./org-workspace-tree.pipe"
-export * from "./org-capture.pipe"

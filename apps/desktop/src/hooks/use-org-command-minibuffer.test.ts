@@ -1,6 +1,7 @@
 import { act, renderHook } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 import { orgTagsBufferCommand } from "@/flows/org-command/org-tags.command"
+import { orgSparseTreeBufferCommand } from "@/flows/org-command/org-sparse-tree.command"
 import { createOrgPlanningCommand } from "@/flows/org-command/org-planning.command"
 import type { OrgWorkspaceController } from "./use-org-workspace"
 import { useOrgCommandMinibuffer } from "./use-org-command-minibuffer"
@@ -35,6 +36,66 @@ const makeController = (rootPath = "/workspace") =>
 		activeDocument: { relativePath: "note.org", revision: "one" },
 	}) as unknown as OrgWorkspaceController
 const makeTarget = () => ({ applyEdit: vi.fn(() => true), restoreFocus: vi.fn() })
+
+describe("sparse tree view parameters", () => {
+	it.each([
+		true,
+		false,
+		undefined,
+	])("explicitly applies view or refuses absent/failed port (%s)", (applied) => {
+		const target = {
+			...makeTarget(),
+			applyView: applied === undefined ? undefined : vi.fn(() => applied),
+		}
+		const { result } = renderHook(() =>
+			useOrgCommandMinibuffer(makeController(), false, { current: target }),
+		)
+		act(() => result.current.open(orgSparseTreeBufferCommand, 0))
+		act(() => {
+			expect(result.current.session!.onAccept("todo")).toMatchObject({ ok: applied === true })
+		})
+		expect(target.applyEdit).not.toHaveBeenCalled()
+		if (target.applyView)
+			expect(target.applyView).toHaveBeenCalledWith("* Note", {
+				kind: "sparse-tree",
+				query: "todo",
+			})
+		expect(result.current.session === null).toBe(applied === true)
+		expect(target.restoreFocus).toHaveBeenCalledTimes(applied === true ? 1 : 0)
+	})
+	it("rejects invalid query and stale source before reaching the editor", () => {
+		const target = { ...makeTarget(), applyView: vi.fn(() => true) }
+		const controller = makeController()
+		const { result, rerender } = renderHook(
+			({ content }) =>
+				useOrgCommandMinibuffer({ ...controller, content }, false, { current: target }),
+			{ initialProps: { content: controller.content } },
+		)
+		act(() => result.current.open(orgSparseTreeBufferCommand, 0))
+		act(() => {
+			expect(result.current.session!.onAccept("tag:")).toMatchObject({ ok: false })
+		})
+		rerender({ content: "changed" })
+		act(() => {
+			expect(result.current.session!.onAccept("todo")).toMatchObject({ ok: false })
+		})
+		expect(target.applyView).not.toHaveBeenCalled()
+		expect(target.applyEdit).not.toHaveBeenCalled()
+	})
+	it("clears only through the optional view port and retires older callbacks", () => {
+		const target = { ...makeTarget(), applyView: vi.fn(() => true) }
+		const { result } = renderHook(() =>
+			useOrgCommandMinibuffer(makeController(), false, { current: target }),
+		)
+		act(() => result.current.open(orgSparseTreeBufferCommand, 0))
+		const old = result.current.session!
+		act(() => result.current.clearSparseTree())
+		expect(target.applyView).toHaveBeenCalledWith("* Note", { kind: "sparse-tree", query: null })
+		expect(old.onAccept("todo")).toMatchObject({ ok: false })
+		expect(target.applyEdit).not.toHaveBeenCalled()
+		expect(result.current.echo).toBe("Sparse tree cleared")
+	})
+})
 
 describe("buffer parameter session origin ownership", () => {
 	it("dismisses and invalidates buffer parameters while a workspace parameter surface owns input", () => {

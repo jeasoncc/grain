@@ -800,6 +800,26 @@ describe("OrgEditor", () => {
 		expect(onChange.mock.lastCall?.[0]).toMatch(/^\* <\d{4}-\d{2}-\d{2}>Note$/)
 	})
 
+	it("opens the view-only sparse prefix while read-only without editing", () => {
+		const onSparseTree = vi.fn()
+		const onChange = vi.fn()
+		render(
+			<OrgEditor
+				value="* Note"
+				onChange={onChange}
+				onSave={vi.fn()}
+				readOnly
+				onSparseTree={onSparseTree}
+			/>,
+		)
+		const editor = screen.getByRole("textbox")
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(editor, { key: "/" })
+		expect(onSparseTree).toHaveBeenCalledExactlyOnceWith(0)
+		expect(getEditorView().state.sliceDoc()).toBe("* Note")
+		expect(onChange).not.toHaveBeenCalled()
+	})
+
 	it("does not open metadata commands while read-only", () => {
 		const onSchedule = vi.fn()
 		render(

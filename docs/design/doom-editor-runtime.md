@@ -498,6 +498,47 @@ verification: 157 files /2601 tests, typecheck/build pass (2026-10-03 17:21 +08:
 This does not claim detached/native windows, fully independent mutation owners,
 real native Chinese IME or user workflow acceptance.
 
+## Body Sparse Tree and guarded view commands
+
+`OrgBufferCommandResult` distinguishes source edits from explicit view operations.
+The shared minibuffer applies Sparse Tree through a fresh source/window target;
+Execute-command requests retain the dispatch-time target/runtime/grant identity,
+so a delayed same-buffer peer focus cannot redirect the operation. Toolbar view
+commands do not use edit-specific selection-restoration wrappers.
+
+```text
+C-c / / catalog / menu -> guarded minibuffer query -> pure raw-source plan
+  -> originating window's proven local effect -> body replacement decorations
+Canonical .org source/history unchanged; peer filter state independent
+```
+
+Queries support `todo`, `todo:STATE`, local `tag:NAME` and title-only literal
+`text:LITERAL`. Candidates reuse eligible headings/TODO declarations; no match
+shows the document rather than trapping an empty view. Matched sections and
+ancestor paths stay visible. Clear restores mapped full selections where
+appropriate; ordinary movement supersedes the saved selection. Mixed raw
+separators use exact heading-range marks, not invalid CM line decorations.
+
+Lexical block protection stays distinct from sparse/TODO source eligibility:
+COMMENT-subtree blocks still guard all existing Org transformations, while inert
+markers in excluded comments/drawers cannot hide valid peer headings. Windows
+recompute after edits and canonical projections without AST serialization.
+
+Atomic navigation alone is insufficient: origin transaction preflight rejects
+hidden-source edits and hidden-selection reveal attempts, including `filter:false`
+batches. Runtime canonical history/projection has private authority; standalone
+history is entered only by owned per-view key/DOM handlers. Caller-supplied
+undo/redo/canonical annotations confer no exemption. Effect approval uses
+instance provenance, rejecting forged or other-window sparse effects.
+
+Production and local-editor tests cover visibility/source/history separation,
+full multi-range relocation/Clear, Backspace/Delete/movement, peer undo/redo,
+forged transactions/effects, mixed endings, source scopes, cancellation, IME,
+held acceptance, stale catalog targets and source-derived completion. Verification:
+166 files /2692 tests, typecheck/build pass (2026-10-03 19:08 +08:00).
+This is bounded query support, not full Org sparse grammar/tag inheritance,
+TODO logging, measured large-file performance or native IME acceptance.
+
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.

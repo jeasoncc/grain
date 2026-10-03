@@ -1,4 +1,5 @@
 import type { EditorState } from "@codemirror/state"
+import type { OrgBufferViewPayload } from "@/flows/org-command/org-buffer-command"
 import type { OrgBufferRuntime } from "@/flows/org-editor-runtime"
 import type { OrgLinkClickTarget, OrgTextEdit } from "@/pipes/org"
 import type { OrgPrefixSession } from "@/types/editor/org-keymap.interface"
@@ -6,6 +7,8 @@ import type { OrgPrefixSession } from "@/types/editor/org-keymap.interface"
 /** Buffer-local transaction boundary; never performs filesystem IO. */
 export interface OrgEditorCommandTarget {
 	readonly applyEdit: (expectedSource: string, edit: OrgTextEdit) => boolean
+	/** Window-local presentation only; never modifies source or buffer history. */
+	readonly applyView?: (expectedSource: string, operation: OrgBufferViewPayload) => boolean
 	readonly restoreFocus: () => void
 }
 
@@ -53,6 +56,7 @@ export interface OrgEditorProps {
 	readonly onSchedule?: (cursor: number) => void
 	readonly onDeadline?: (cursor: number) => void
 	readonly onSetProperty?: (cursor: number) => void
+	readonly onSparseTree?: (cursor: number) => void
 	readonly onCursorChange?: (cursor: number) => void
 	readonly revealTarget?: OrgEditorRevealTarget | null
 	readonly readOnly?: boolean

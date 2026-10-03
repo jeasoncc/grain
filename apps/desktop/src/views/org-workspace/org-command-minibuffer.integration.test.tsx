@@ -105,6 +105,54 @@ const viewFromEditor = () => {
 	return view
 }
 
+describe("sparse tree command vertical slice", () => {
+	it.each([
+		["todo:待", "todo:待機"],
+		["tag:研", "tag:研究"],
+	])("Tab completes %s to an actual source query through the shared minibuffer", (prefix, query) => {
+		const source = "#+TODO: 待機 | 終了\n* 待機 Work :研究:\n* 終了 Other :other:"
+		render(<Harness source={source} />)
+		const view = viewFromEditor()
+		const editor = screen.getByRole("textbox")
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(editor, { key: "/" })
+		const input = screen.getByRole("combobox", { name: /^Sparse tree/ })
+		fireEvent.change(input, { target: { value: prefix } })
+		fireEvent.keyDown(input, { key: "Tab" })
+		expect(input).toHaveValue(query)
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(screen.queryByRole("combobox")).toBeNull()
+		expect(screen.queryByRole("alert")).toBeNull()
+		expect(view.state.doc.toString()).toBe(source)
+		expect(undo(view)).toBe(false)
+	})
+	it("routes C-c / through shared minibuffer without editing or adding undo history, then clears from the menu", async () => {
+		const source = "Preamble\n* TODO Work :work:\nbody\n* DONE Other\nother body"
+		render(<Harness source={source} />)
+		const view = viewFromEditor()
+		const editor = screen.getByRole("textbox")
+		fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(editor, { key: "/" })
+		const input = screen.getByRole("combobox", { name: /^Sparse tree/ })
+		fireEvent.change(input, { target: { value: "tag:" } })
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(screen.getByRole("alert")).toHaveTextContent("tag:NAME")
+		fireEvent.change(input, { target: { value: "todo" } })
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(screen.queryByRole("combobox")).toBeNull()
+		expect(editor).toHaveFocus()
+		expect(view.state.doc.toString()).toBe(source)
+		expect(undo(view)).toBe(false)
+		fireEvent.pointerDown(screen.getByRole("button", { name: "Note actions" }), {
+			button: 0,
+			ctrlKey: false,
+		})
+		fireEvent.click(await screen.findByRole("menuitem", { name: "Clear sparse tree" }))
+		expect(view.state.doc.toString()).toBe(source)
+		expect(screen.getByText("Sparse tree cleared")).toBeInTheDocument()
+	})
+})
+
 describe("property minibuffer transactions", () => {
 	it("validates, updates locally, and undoes in one transaction", () => {
 		const source = "* Note\r\n:PROPERTIES:\r\n:ID: abc\r\n:END:\r\nbody"

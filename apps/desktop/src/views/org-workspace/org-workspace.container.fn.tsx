@@ -301,6 +301,16 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 
 	const controllerRef = useRef(controller)
 	controllerRef.current = controller
+	const viewCommandOriginRef = useRef<
+		((command: "sparse-tree" | "clear-sparse-tree") => (() => void) | null) | null
+	>(null)
+	const [viewCommandRequest, setViewCommandRequest] = useState<{
+		readonly id: number
+		readonly command: "sparse-tree" | "clear-sparse-tree"
+		readonly execute: (() => void) | null
+		readonly bufferId: string | null
+		readonly workspaceSessionId: string | null
+	} | null>(null)
 	const commandEchoSequenceRef = useRef(0)
 	const [commandEcho, setCommandEcho] = useState<{
 		readonly scope: string | null
@@ -361,6 +371,17 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 				break
 			case "diary":
 				void createDiary()
+				break
+			case "sparse-tree":
+			case "clear-sparse-tree":
+				setShowAgenda(false)
+				setViewCommandRequest({
+					id: echoSequence,
+					command: id,
+					execute: viewCommandOriginRef.current?.(id) ?? null,
+					bufferId: controller.activeBufferId,
+					workspaceSessionId: controller.workspaceSessionId,
+				})
 				break
 			case "editor":
 				setShowAgenda(false)
@@ -679,6 +700,11 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 										}
 										controller={controller}
 										editorSessionCache={editorSessionCacheRef.current}
+										viewCommandOriginRef={viewCommandOriginRef}
+										viewCommandRequest={viewCommandRequest}
+										onViewCommandHandled={(id) =>
+											setViewCommandRequest((request) => (request?.id === id ? null : request))
+										}
 										parameterSessionSuspended={
 											quickOpenVisible ||
 											bufferSwitchVisible ||

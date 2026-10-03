@@ -213,6 +213,28 @@ afterEach(() => {
 })
 
 describe("production root capture runtime (real hook, pane, workflow and CodeMirror)", () => {
+	it("dispatches sparse tree and clear from the catalog without changing the working copy or history", async () => {
+		await setup()
+		const source = controller.content
+		fireEvent.keyDown(editor().contentDOM, { key: "p", ctrlKey: true })
+		let input = screen.getByRole("combobox")
+		fireEvent.change(input, { target: { value: "Sparse tree" } })
+		fireEvent.keyDown(input, { key: "Enter" })
+		input = screen.getByRole("combobox", { name: /^Sparse tree/ })
+		fireEvent.change(input, { target: { value: "tag:raw" } })
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(controller.content).toBe(source)
+		expect(controller.isDirty).toBe(false)
+		expectHistory(0)
+		fireEvent.keyDown(editor().contentDOM, { key: "p", ctrlKey: true })
+		input = screen.getByRole("combobox")
+		fireEvent.change(input, { target: { value: "Clear sparse tree" } })
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(screen.queryByRole("combobox")).toBeNull()
+		expect(screen.getByText("Sparse tree cleared")).toBeInTheDocument()
+		expect(controller.content).toBe(source)
+		expectHistory(0)
+	})
 	it("dispatches palette Capture into TODO scratch, writes raw multiline source only on Finish and restores origin history/focus", async () => {
 		await setup()
 		act(() =>

@@ -6,6 +6,7 @@ import {
 	insertOrgTimestampAt,
 	moveOrgSubtreeAt,
 	type OrgTextEdit,
+	orgBlockRanges,
 	parseOrgTodoKeywords,
 	setOrgHeadingTagsAt,
 	setOrgPlanningAt,
@@ -15,6 +16,63 @@ import {
 
 const apply = (content: string, edit: OrgTextEdit | null): string =>
 	edit ? `${content.slice(0, edit.from)}${edit.insert}${content.slice(edit.to)}` : content
+
+describe("Org parser scope boundaries", () => {
+	it.each(["\n", "\r", "\r\n"])("protects literal edits inside COMMENT blocks (%j)", (ending) => {
+		const source = [
+			"* COMMENT ignored",
+			"#+begin_src",
+			"* TODO literal :old:",
+			"body",
+			"#+end_src",
+			"* TODO Real",
+		].join(ending)
+		const at = source.indexOf("literal")
+		expect(cycleOrgTodoAt(source, at)).toBeNull()
+		expect(changeOrgHeadingLevelAt(source, at, 1)).toBeNull()
+		expect(setOrgPlanningAt(source, at, "SCHEDULED", "2025-01-01")).toBeNull()
+		expect(setOrgPropertyAt(source, at, "ID", "fake")).toBeNull()
+		expect(setOrgHeadingTagsAt(source, at, ["fake"])).toBeNull()
+	})
+	it("preserves exact block ranges across lone CR and mixed line endings", () => {
+		const source =
+			"preamble\r#+BEGIN_SRC text\r* fake\n#+end_example\r\n#+END_SRC\r* Real\n#+begin_quote\r* hidden"
+		expect(orgBlockRanges(source)).toEqual([
+			{ closed: true, from: source.indexOf("#+BEGIN_SRC"), to: source.indexOf("* Real") },
+			{ closed: false, from: source.indexOf("#+begin_quote"), to: source.length },
+		])
+	})
+
+	it("ignores TODO directives in drawers, comments, and unclosed blocks", () => {
+		const source = [
+			":LOGBOOK:",
+			"#+TODO: DRAWER | NO",
+			":END:",
+			"# #+TODO: LINE | NO",
+			"* NEXT COMMENT ignored",
+			"#+TODO: COMMENTED | NO",
+			"** Child",
+			"#+SEQ_TODO: CHILD | NO",
+			"* Real",
+			"#+TODO: NEXT(n) WAIT(w) | FINISHED(f)",
+			"#+begin_src",
+			"#+end_quote",
+			"#+TODO: BLOCK | NO",
+			"* Fake",
+		].join("\r")
+		expect(parseOrgTodoKeywords(source)).toEqual({ done: ["FINISHED"], todo: ["NEXT", "WAIT"] })
+	})
+
+	it("defaults when all directives are out of scope and treats an unclosed drawer conservatively", () => {
+		for (const source of [
+			"* TODO COMMENT hidden\n#+TODO: FAKE | NO\n* Real",
+			":PROPERTIES:\r#+TODO: FAKE | NO\r* Real\r#+SEQ_TODO: ALSO_FAKE | NO",
+			"#+begin_example\r#+TODO: FAKE | NO\r#+end_src\r* Real",
+		]) {
+			expect(parseOrgTodoKeywords(source)).toEqual({ done: ["DONE"], todo: ["TODO"] })
+		}
+	})
+})
 
 describe("appendOrgTodoCapture", () => {
 	it("appends without changing unknown Org syntax", () => {
@@ -163,13 +221,13 @@ describe("Org local text transformations", () => {
 		const source =
 			"* Outer\n#+begin_src text\n#+TODO: NEXT | COMPLETE\n* NEXT literal\n#+end_src\nbody"
 		const literal = source.indexOf("literal")
-		expect(parseOrgTodoKeywords(source)).toEqual({ todo: ["TODO"], done: ["DONE"] })
+		expect(parseOrgTodoKeywords(source)).toEqual({ done: ["DONE"], todo: ["TODO"] })
 		expect(cycleOrgTodoAt(source, literal)).toBeNull()
 		expect(changeOrgHeadingLevelAt(source, literal, 1)).toBeNull()
 		expect(moveOrgSubtreeAt(source, literal, 1)).toBeNull()
 		expect(setOrgPlanningAt(source, literal, "SCHEDULED", "2025-01-01")).toBeNull()
 		const loneCr = source.replaceAll("\n", "\r")
-		expect(parseOrgTodoKeywords(loneCr)).toEqual({ todo: ["TODO"], done: ["DONE"] })
+		expect(parseOrgTodoKeywords(loneCr)).toEqual({ done: ["DONE"], todo: ["TODO"] })
 		expect(
 			setOrgPlanningAt(loneCr, loneCr.indexOf("literal"), "SCHEDULED", "2025-01-01"),
 		).toBeNull()

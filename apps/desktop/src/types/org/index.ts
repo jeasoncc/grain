@@ -35,3 +35,8 @@ export type {
 	WriteOrgDocumentInput,
 	WriteOrgMigrationInput,
 } from "./org.interface"
+export type {
+	OrgSparseTreePlan,
+	OrgSparseTreeQuery,
+	OrgSparseTreeRange,
+} from "./org-sparse-tree.interface"

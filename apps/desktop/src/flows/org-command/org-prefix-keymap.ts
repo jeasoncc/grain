@@ -18,6 +18,7 @@ export const ORG_PREFIX_BINDINGS: readonly OrgPrefixBinding[] = [
 	{ keyLabel: "C-s", label: "Schedule", commandId: "scheduled" },
 	{ keyLabel: "C-d", label: "Set deadline", commandId: "deadline" },
 	{ keyLabel: "C-p", label: "Set property", commandId: "property" },
+	{ keyLabel: "/", label: "Sparse tree", commandId: "sparse-tree" },
 	{ keyLabel: "C-w", label: "Refile", commandId: "refile" },
 	{ keyLabel: "C-x", label: "Extra commands", prefixLabel: "C-c C-x" },
 	{ keyLabel: ".", label: "Active timestamp", commandId: "timestamp-active" },
@@ -71,7 +72,11 @@ export const resolveOrgPrefixKey = (
 		const bindings = Object.hasOwn(ORG_PREFIX_MAPS, binding.prefixLabel)
 			? ORG_PREFIX_MAPS[binding.prefixLabel]
 			: undefined
-		if (!bindings || (timeoutMs !== null && (!Number.isFinite(timeoutMs) || timeoutMs < 0 || timeoutMs > MAX_ORG_PREFIX_TIMEOUT_MS))) {
+		if (
+			!bindings ||
+			(timeoutMs !== null &&
+				(!Number.isFinite(timeoutMs) || timeoutMs < 0 || timeoutMs > MAX_ORG_PREFIX_TIMEOUT_MS))
+		) {
 			return fallthrough
 		}
 		return {
@@ -93,7 +98,10 @@ export const resolveOrgPrefixKey = (
 		!input.shiftKey &&
 		selectionEmpty
 	) {
-		if (timeoutMs !== null && (!Number.isFinite(timeoutMs) || timeoutMs < 0 || timeoutMs > MAX_ORG_PREFIX_TIMEOUT_MS)) {
+		if (
+			timeoutMs !== null &&
+			(!Number.isFinite(timeoutMs) || timeoutMs < 0 || timeoutMs > MAX_ORG_PREFIX_TIMEOUT_MS)
+		) {
 			return fallthrough
 		}
 		return {

@@ -10,6 +10,8 @@ export type OrgWorkspaceCommandId =
 	| "editor"
 	| "toggle-sidebar"
 	| "toggle-inspector"
+	| "sparse-tree"
+	| "clear-sparse-tree"
 
 /** Keys into the palette's icon map; the pure flow does not import React or views. */
 export type OrgWorkspaceCommandIcon =
@@ -55,6 +57,8 @@ export const orgWorkspaceCommandDefinitions: readonly OrgWorkspaceCommandDefinit
 	{ id: "capture", label: "Quick capture", icon: "capture" },
 	{ id: "diary", label: "New diary (today)", icon: "diary" },
 	{ id: "editor", label: "Show editor", icon: "files" },
+	{ id: "sparse-tree", label: "Sparse tree", icon: "files", shortcut: "C-c /" },
+	{ id: "clear-sparse-tree", label: "Clear sparse tree", icon: "files" },
 	{ id: "toggle-sidebar", label: "Show file sidebar", icon: "sidebar" },
 	{ id: "toggle-inspector", label: "Show note inspector", icon: "inspector" },
 ]
@@ -73,6 +77,10 @@ export const deriveOrgWorkspaceCommands = (
 			case "save-all":
 				disabled =
 					!context.hasWorkspace || !(context.hasDirtyBuffers ?? context.isDirty) || context.isBusy
+				break
+			case "sparse-tree":
+			case "clear-sparse-tree":
+				disabled = !context.hasWorkspace || !context.hasDocument || context.isBusy
 				break
 			case "save":
 				disabled =

@@ -285,6 +285,9 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 				fail("stale-window", "Transaction batch does not succeed the attached state")
 			}
 			validateLocalEffects(slot, tr)
+			if (slot.options.preflightSourceTransaction?.(tr) === false) {
+				fail("commit-denied", "Window source preflight rejected the entire batch")
+			}
 			if (
 				tr.state.field(historyField, false) !== undefined ||
 				tr.state.lineBreak !== state.lineBreak ||

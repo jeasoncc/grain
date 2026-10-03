@@ -1,7 +1,6 @@
 import {
 	defaultKeymap,
 	history,
-	historyKeymap,
 	historyField,
 	indentMore,
 	isolateHistory,
@@ -52,9 +51,18 @@ import {
 	parseOrgTodoKeywords,
 	toggleOrgCheckboxAt,
 } from "@/pipes/org"
+import { parseOrgSparseTreeQuery } from "@/pipes/org/org-sparse-tree.pipe"
 import type { OrgPrefixSession } from "@/types/editor/org-keymap.interface"
 import type { OrgEditorProps } from "./org-editor.types"
 import { orgHeadingFoldRange } from "./org-fold.pipe"
+import { editorOffsetFromSource } from "./org-source-offset.pipe"
+import {
+	allowOrgSparseTreeSourceTransaction,
+	clearOrgSparseTree,
+	createOrgSparseHistoryController,
+	orgSparseTreeField,
+	setOrgSparseTree,
+} from "./org-sparse-tree.extension"
 
 let nextWindowId = 0
 
@@ -82,14 +90,6 @@ const sourceOffsetFromEditor = (view: EditorView, position: number): number => {
 	return position + (line.number - 1) * (view.state.lineBreak.length - 1)
 }
 
-const editorOffsetFromSource = (source: string, position: number, lineBreak: string): number => {
-	if (lineBreak.length === 1) {
-		return position
-	}
-	const completeBreaks = source.slice(0, position).match(/\r\n/g)?.length ?? 0
-	return position - completeBreaks * (lineBreak.length - 1)
-}
-
 const applySourceEdit = (view: EditorView, createEdit: OrgEditFactory, exact = false): boolean => {
 	if (view.state.readOnly) {
 		return false
@@ -114,7 +114,7 @@ const applySourceEdit = (view: EditorView, createEdit: OrgEditFactory, exact = f
 			anchor: editorOffsetFromSource(nextSource, edit.cursor, view.state.lineBreak),
 		},
 	})
-	return true
+	return view.state.sliceDoc() === nextSource
 }
 
 const orgListItem = (
@@ -310,6 +310,9 @@ const editorTheme = EditorView.theme({
 		fontWeight: "700",
 		padding: "0 0.2rem",
 	},
+	".cm-org-sparse-match": {
+		backgroundColor: "color-mix(in srgb, var(--primary) 10%, transparent)",
+	},
 	".cm-org-tags": { color: "var(--primary)" },
 	".cm-org-todo": { color: "var(--destructive)" },
 	".cm-scroller": {
@@ -356,6 +359,7 @@ export const OrgEditor = memo(function OrgEditor({
 	onSchedule,
 	onDeadline,
 	onSetProperty,
+	onSparseTree,
 	onCursorChange,
 	revealTarget,
 	readOnly = false,
@@ -385,6 +389,7 @@ export const OrgEditor = memo(function OrgEditor({
 	const onScheduleRef = useRef(onSchedule)
 	const onDeadlineRef = useRef(onDeadline)
 	const onSetPropertyRef = useRef(onSetProperty)
+	const onSparseTreeRef = useRef(onSparseTree)
 	const onCursorChangeRef = useRef(onCursorChange)
 	const documentPathRef = useRef(documentPath)
 	const initialSessionRef = useRef({ sessionCache, sessionKey })
@@ -408,6 +413,7 @@ export const OrgEditor = memo(function OrgEditor({
 	onScheduleRef.current = onSchedule
 	onDeadlineRef.current = onDeadline
 	onSetPropertyRef.current = onSetProperty
+	onSparseTreeRef.current = onSparseTree
 	onCursorChangeRef.current = onCursorChange
 	documentPathRef.current = documentPath
 
@@ -421,14 +427,18 @@ export const OrgEditor = memo(function OrgEditor({
 		const readOnlyCompartment = readOnlyCompartmentRef.current
 		const accessibilityCompartment = accessibilityCompartmentRef.current
 		const lineSeparatorCompartment = lineSeparatorCompartmentRef.current
-		const effectRegistry = createOrgWindowEffectRegistry([
-			readOnlyCompartment,
-			accessibilityCompartment,
-		])
+		const effectRegistry = createOrgWindowEffectRegistry(
+			[readOnlyCompartment, accessibilityCompartment],
+			[setOrgSparseTree, clearOrgSparseTree],
+		)
 		effectRegistryRef.current = effectRegistry
 		const applyOrgEdit = (view: EditorView, edit: OrgEditFactory) =>
 			applySourceEdit(view, edit, bufferRuntime !== null)
-		const routeHistory = (redo: boolean) => {
+		const standaloneHistory = createOrgSparseHistoryController(
+			() => viewRef.current,
+			effectRegistry.knownEffect,
+		)
+		const routeHistory = (isRedo: boolean) => {
 			if (viewRef.current?.state.readOnly) {
 				return true
 			}
@@ -436,7 +446,7 @@ export const OrgEditor = memo(function OrgEditor({
 			if (!handle) {
 				throw new Error("Org runtime window is not attached")
 			}
-			if (redo) {
+			if (isRedo) {
 				handle.redo()
 			} else {
 				handle.undo()
@@ -481,7 +491,9 @@ export const OrgEditor = memo(function OrgEditor({
 							EditorState.lineSeparator.of(lineSeparatorFor(initialValueRef.current)),
 						),
 					]),
+			EditorState.allowMultipleSelections.of(true),
 			orgHighlightPlugin,
+			orgSparseTreeField,
 			orgHeadingFolding,
 			foldGutter(),
 			EditorView.lineWrapping,
@@ -558,6 +570,8 @@ export const OrgEditor = memo(function OrgEditor({
 						applyOrgEdit(editor, (content, position) =>
 							insertOrgTimestampAt(content, position, localDate(), command === "timestamp-active"),
 						)
+					} else if (command === "sparse-tree") {
+						onSparseTreeRef.current?.(cursor)
 					} else if (!editor.state.readOnly) {
 						const callbacks = {
 							archive: onArchiveSubtreeRef.current,
@@ -715,8 +729,8 @@ export const OrgEditor = memo(function OrgEditor({
 				},
 				...foldKeymap,
 				...defaultKeymap,
-				...(bufferRuntime ? [] : historyKeymap),
 			]),
+			...(bufferRuntime ? [] : [standaloneHistory.extension]),
 			readOnlyCompartment.of([
 				EditorState.readOnly.of(initialReadOnlyRef.current),
 				EditorView.editable.of(!initialReadOnlyRef.current),
@@ -782,6 +796,7 @@ export const OrgEditor = memo(function OrgEditor({
 			})
 			restoredState = restoredState.update({
 				annotations: [externalValueUpdate.of(true), Transaction.addToHistory.of(false)],
+				filter: false,
 				changes,
 				selection: restoredState.selection.map(changes, -1),
 			}).state
@@ -830,7 +845,8 @@ export const OrgEditor = memo(function OrgEditor({
 					})
 		const view = new EditorView({
 			parent: host,
-			state,
+			// Sparse presentation is transient, never revived from a parked session.
+			state: state.update({ effects: clearOrgSparseTree.of(null) }).state,
 			...(bufferRuntime
 				? {
 						dispatchTransactions: (transactions: readonly Transaction[]) => {
@@ -841,10 +857,16 @@ export const OrgEditor = memo(function OrgEditor({
 							handle.dispatchTransactions(transactions)
 						},
 					}
-				: {}),
+				: {
+						dispatchTransactions: (transactions: readonly Transaction[], localView: EditorView) => {
+							standaloneHistory.dispatch(transactions, localView)
+						},
+					}),
 		})
 		if (bufferRuntime) {
 			runtimeHandleRef.current = bufferRuntime.attachWindow({
+				preflightSourceTransaction: (tr) =>
+					allowOrgSparseTreeSourceTransaction(tr, effectRegistry.knownEffect),
 				knownLocalEffects: [EditorView.announce],
 				knownReconfigure: effectRegistry.knownEffect,
 				view,
@@ -925,6 +947,40 @@ export const OrgEditor = memo(function OrgEditor({
 						anchor: editorOffsetFromSource(nextSource, edit.cursor, view.state.lineBreak),
 					},
 				})
+				return view.state.sliceDoc() === nextSource
+			},
+			applyView: (expectedSource, operation) => {
+				if (
+					viewRef.current !== view ||
+					view.state.sliceDoc() !== expectedSource ||
+					operation.kind !== "sparse-tree"
+				) {
+					return false
+				}
+				const active = view.state.field(orgSparseTreeField)
+				if (operation.query === null) {
+					view.dispatch({
+						annotations: Transaction.addToHistory.of(false),
+						effects: effectRegistry.localEffect(clearOrgSparseTree.of(null)),
+						...(active?.restoreSelection
+							? { scrollIntoView: true, selection: active.restoreSelection }
+							: {}),
+					})
+					return true
+				}
+				const query = parseOrgSparseTreeQuery(operation.query)
+				if (!query) {
+					return false
+				}
+				view.dispatch({
+					annotations: Transaction.addToHistory.of(false),
+					effects: effectRegistry.localEffect(
+						setOrgSparseTree.of({
+							query,
+							restoreSelection: active ? active.restoreSelection : view.state.selection,
+						}),
+					),
+				})
 				return true
 			},
 			restoreFocus: () => {
@@ -942,12 +998,12 @@ export const OrgEditor = memo(function OrgEditor({
 			if (key !== undefined && cache) {
 				cache.set(key, {
 					...snapshot,
-					source: bufferRuntime?.source ?? view.state.sliceDoc(),
-					state: bufferRuntime?.state ?? view.state,
-					windowState: bufferRuntime ? view.state : undefined,
 					runtimeOwner: bufferRuntime ?? undefined,
 					scrollLeft: view.scrollDOM.scrollLeft,
 					scrollTop: view.scrollDOM.scrollTop,
+					source: bufferRuntime?.source ?? view.state.sliceDoc(),
+					state: bufferRuntime?.state ?? view.state,
+					windowState: bufferRuntime ? view.state : undefined,
 				})
 			}
 			window.removeEventListener("blur", onWindowBlur)
@@ -1010,7 +1066,14 @@ export const OrgEditor = memo(function OrgEditor({
 				insert: value.slice(from, nextTo),
 				to: editorOffsetFromSource(before, to, separator),
 			})
-			view.dispatch({ annotations, changes, selection: view.state.selection.map(changes, -1) })
+			view.update([
+				view.state.update({
+					annotations,
+					changes,
+					filter: false,
+					selection: view.state.selection.map(changes, -1),
+				}),
+			])
 		} else {
 			const selection = view.state.selection
 			const ranges = selection.ranges.map((range) => ({
@@ -1029,16 +1092,19 @@ export const OrgEditor = memo(function OrgEditor({
 					changes.newLength,
 					editorOffsetFromSource(value, Math.min(raw, value.length), separator),
 				)
-			view.dispatch({
-				annotations,
-				changes,
-				selection: EditorSelection.create(
-					ranges.map((range) =>
-						EditorSelection.range(position(range.anchor), position(range.head)),
+			view.update([
+				view.state.update({
+					annotations,
+					filter: false,
+					changes,
+					selection: EditorSelection.create(
+						ranges.map((range) =>
+							EditorSelection.range(position(range.anchor), position(range.head)),
+						),
+						selection.mainIndex,
 					),
-					selection.mainIndex,
-				),
-			})
+				}),
+			])
 		}
 	}, [value])
 

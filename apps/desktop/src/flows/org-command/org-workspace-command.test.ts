@@ -39,6 +39,8 @@ const ids = [
 	"capture",
 	"diary",
 	"editor",
+	"sparse-tree",
+	"clear-sparse-tree",
 	"toggle-sidebar",
 	"toggle-inspector",
 ]
@@ -55,6 +57,8 @@ describe("workspace command definitions and guards", () => {
 			{ id: "capture", label: "Quick capture", icon: "capture" },
 			{ id: "diary", label: "New diary (today)", icon: "diary" },
 			{ id: "editor", label: "Show editor", icon: "files" },
+			{ id: "sparse-tree", label: "Sparse tree", icon: "files", shortcut: "C-c /" },
+			{ id: "clear-sparse-tree", label: "Clear sparse tree", icon: "files" },
 			{ id: "toggle-sidebar", label: "Show file sidebar", icon: "sidebar" },
 			{ id: "toggle-inspector", label: "Show note inspector", icon: "inspector" },
 		])
@@ -102,6 +106,8 @@ describe("workspace command definitions and guards", () => {
 				capture: current.hasWorkspace && !current.isBusy,
 				diary: current.hasWorkspace && !current.isBusy,
 				editor: true,
+				"sparse-tree": current.hasWorkspace && current.hasDocument && !current.isBusy,
+				"clear-sparse-tree": current.hasWorkspace && current.hasDocument && !current.isBusy,
 				"toggle-sidebar": true,
 				"toggle-inspector": current.hasWorkspace && current.hasDocument,
 			}

@@ -73,22 +73,61 @@ interface OrgBlockRange {
 	readonly closed: boolean
 }
 
-export const orgBlockRanges = (content: string): readonly OrgBlockRange[] => {
+// COMMENT is a heading marker after an optional configured state and priority,
+// not an arbitrary word appearing anywhere in a title.
+export const orgHeadingIsComment = (title: string, states: ReadonlySet<string>): boolean => {
+	const first = title.split(/[ \t]+/, 1)[0]
+	const withoutState = states.has(first) ? title.slice(first.length).trimStart() : title
+	return /^COMMENT(?:[ \t]|$)/.test(withoutState.replace(/^\[#[A-Za-z0-9]\][ \t]+/, ""))
+}
+
+// A block can only begin in eligible source. Once active it owns every line:
+// drawer-looking text and heading-looking text inside it cannot change scope.
+const scanOrgSource = (content: string, states: ReadonlySet<string>, excludeComments: boolean) => {
 	const ranges: OrgBlockRange[] = []
+	const lines: RawOrgLine[] = []
 	let block: { readonly from: number; readonly type: string } | null = null
+	let inDrawer = false
+	let commentLevel: number | null = null
 	for (const line of rawOrgLines(content)) {
-		const begin = /^[ \t]*#\+begin_([A-Za-z0-9_-]+)\b/i.exec(line.text)
-		const end = /^[ \t]*#\+end_([A-Za-z0-9_-]+)\b/i.exec(line.text)
-		if (block === null && begin) {
-			block = { from: line.from, type: begin[1].toLowerCase() }
-		} else if (block && end?.[1].toLowerCase() === block.type) {
-			ranges.push({ from: block.from, to: line.breakTo, closed: true })
-			block = null
+		if (block) {
+			const end = /^[ \t]*#\+end_([A-Za-z0-9_-]+)\b/i.exec(line.text)
+			if (end?.[1].toLowerCase() === block.type) {
+				ranges.push({ from: block.from, to: line.breakTo, closed: true })
+				block = null
+			}
+			continue
 		}
+		if (inDrawer) {
+			if (/^[ \t]*:END:[ \t]*$/i.test(line.text)) inDrawer = false
+			continue
+		}
+		const heading = /^(\*+)[ \t]+(.*)$/.exec(line.text)
+		if (heading && excludeComments) {
+			const level = heading[1].length
+			if (commentLevel !== null && level > commentLevel) continue
+			commentLevel = orgHeadingIsComment(heading[2].trim(), states) ? level : null
+		}
+		if (commentLevel !== null) continue
+		if (/^[ \t]*:[\w-]+:[ \t]*$/.test(line.text) && !/^[ \t]*:END:/i.test(line.text)) {
+			inDrawer = true
+			continue
+		}
+		const begin = /^[ \t]*#\+begin_([A-Za-z0-9_-]+)\b/i.exec(line.text)
+		if (begin) block = { from: line.from, type: begin[1].toLowerCase() }
+		else lines.push(line)
 	}
 	if (block) ranges.push({ from: block.from, to: content.length, closed: false })
-	return ranges
+	return { ranges, lines }
 }
+
+/** Lexical literal protection includes blocks in COMMENT subtrees, but not drawer markers. */
+export const orgBlockRanges = (content: string): readonly OrgBlockRange[] =>
+	scanOrgSource(content, new Set(), false).ranges
+
+/** Shared eligibility grammar for TODO declarations and sparse headings. */
+export const eligibleOrgSourceLines = (content: string, states: ReadonlySet<string>) =>
+	scanOrgSource(content, states, true).lines
 
 const positionIsInOrgBlock = (ranges: readonly OrgBlockRange[], position: number): boolean =>
 	ranges.some((range) => position >= range.from && position < range.to)
@@ -96,13 +135,16 @@ const positionIsInOrgBlock = (ranges: readonly OrgBlockRange[], position: number
 const TODO_DIRECTIVE = /^#\+(?:TODO|SEQ_TODO):[ \t]*(.*?)[ \t]*$/i
 const todoKeywordFromToken = (token: string): string => token.replace(/\([^)]*\)$/, "")
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: bounded source-order scope validation supports states declared after COMMENT headings.
 const todoSequencesFrom = (content: string): readonly OrgTodoSequence[] => {
-	const sequences: OrgTodoSequence[] = []
-	const blocks = orgBlockRanges(content)
+	const candidates: { readonly line: RawOrgLine; readonly sequence: OrgTodoSequence }[] = []
+	// Provisional declarations allow configured states before their declaration.
+	// Every declaration is subsequently validated by the source-order scope scan.
 	for (const line of rawOrgLines(content)) {
-		if (positionIsInOrgBlock(blocks, line.from)) continue
 		const match = TODO_DIRECTIVE.exec(line.text)
-		if (!match) continue
+		if (!match) {
+			continue
+		}
 		const tokens = match[1]
 			.trim()
 			.split(/[ \t]+/)
@@ -114,12 +156,33 @@ const todoSequencesFrom = (content: string): readonly OrgTodoSequence[] => {
 		const done = doneTokens.map(todoKeywordFromToken).filter(Boolean)
 		const all = [...todo, ...done]
 		if (all.length > 0) {
-			sequences.push({ all, done, todo })
+			candidates.push({ line, sequence: { all, done, todo } })
 		}
 	}
-	return sequences.length > 0
-		? sequences
-		: [{ all: ["TODO", "DONE"], done: ["DONE"], todo: ["TODO"] }]
+	const defaults = [{ all: ["TODO", "DONE"], done: ["DONE"], todo: ["TODO"] }]
+	let accepted = candidates
+	// Revalidate after removing inert declarations: their fake states must not turn
+	// ordinary title words into COMMENT markers. Bound the scan for ambiguous
+	// self-referential raw declarations; no source transformation is performed.
+	for (let pass = 0; pass <= candidates.length + 1; pass++) {
+		const sequences = accepted.length ? accepted.map(({ sequence }) => sequence) : defaults
+		const states = new Set([
+			...sequences.flatMap(({ all }) => all),
+			...(pass === 0 ? ["TODO", "DONE"] : []),
+		])
+		const eligible = new Set(eligibleOrgSourceLines(content, states).map(({ from }) => from))
+		const next = candidates.filter(({ line }) => eligible.has(line.from))
+		if (
+			pass > 0 &&
+			next.length === accepted.length &&
+			next.every((candidate, index) => candidate === accepted[index])
+		) {
+			return sequences
+		}
+		accepted = next
+	}
+	// Unsupported cyclic declarations are conservatively ignored.
+	return defaults
 }
 
 /** Parses configured pending and completed states, defaulting to TODO and DONE. */

@@ -16,6 +16,7 @@ import type {
 	OrgMinibufferAcceptResult,
 } from "@/types/editor/minibuffer.interface"
 import { orgRefileTargetCandidates, RootCandidateLabel } from "@/pipes/org/org-refile-target.pipe"
+import { buildOrgSparseTreePlan, parseOrgSparseTreeQuery } from "@/pipes/org/org-sparse-tree.pipe"
 import type { OrgEditorCommandTarget } from "@/views/org-editor"
 import type { OrgWorkspaceController } from "./use-org-workspace"
 
@@ -194,11 +195,26 @@ export const useOrgCommandMinibuffer = (
 					input,
 				)
 				if (result.kind === "rejected") return { ok: false, message: result.message }
+				if (result.kind === "view" && !target.applyView?.(origin.content, result.view))
+					return {
+						ok: false,
+						message: "This editor cannot apply the view, or the buffer changed. Cancel and retry.",
+					}
 				if (result.kind === "edit" && !target.applyEdit(origin.content, result.edit))
 					return {
 						ok: false,
 						message: "The buffer changed before the command could be applied. Cancel and retry.",
 					}
+				if (result.kind === "view" && result.view.query !== null) {
+					const query = parseOrgSparseTreeQuery(result.view.query)
+					if (
+						query &&
+						buildOrgSparseTreePlan(origin.content, query).matchedHeadingStarts.length === 0
+					) {
+						finish("No sparse-tree matches; the whole document remains visible.")
+						return { ok: true }
+					}
+				}
 				finish(result.kind === "no-change" ? command.unchangedMessage : command.updatedMessage)
 				return { ok: true }
 			},
@@ -381,10 +397,35 @@ export const useOrgCommandMinibuffer = (
 			}
 		})
 	}
+	const clearSparseTree = () => {
+		const current = runtimeRef.current
+		const target = targetRef.current
+		if (
+			!current.controller.activeDocument ||
+			!target ||
+			current.isBusy ||
+			current.controller.isSaving ||
+			current.controller.isLoading ||
+			current.suspended ||
+			committingRef.current ||
+			lookupRef.current
+		)
+			return
+		if (!target.applyView?.(current.controller.content, { kind: "sparse-tree", query: null })) {
+			setEcho("This editor cannot clear the view, or the buffer changed. Cancel and retry.")
+			return
+		}
+		++sessionIdRef.current
+		setSession(null)
+		persistentEchoRef.current = false
+		setEcho("Sparse tree cleared")
+		target.restoreFocus()
+	}
 	return {
 		session,
 		echo,
 		open,
+		clearSparseTree,
 		openRefile: (cursor: number) => openTransfer(false, cursor),
 		openArchive: (cursor: number) => openTransfer(true, cursor),
 	}

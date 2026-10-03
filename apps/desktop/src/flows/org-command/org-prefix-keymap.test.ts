@@ -47,7 +47,7 @@ describe("resolveOrgPrefixKey", () => {
 					binding.commandId === undefined ? [] : [binding.commandId],
 				),
 			).size,
-		).toBe(10)
+		).toBe(11)
 		expect(ORG_PREFIX_BINDINGS.every((binding) => binding.label && binding.keyLabel)).toBe(true)
 	})
 
