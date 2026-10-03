@@ -38,6 +38,7 @@ const controller = (content: string): OrgWorkspaceController => ({
 	executeAgendaCommand: vi.fn(async () => ({ kind: "confirmed" as const })),
 	prepareAgendaPlanning: vi.fn(async () => ({ kind: "stale" as const })),
 	registerBufferWindow: vi.fn(() => () => undefined),
+	captureBufferWindowPermit: vi.fn(() => () => false),
 	activateOpenBuffer: vi.fn(() => true),
 	activeBufferId: "buffer:target",
 	workspaceSessionId: "capability:test",

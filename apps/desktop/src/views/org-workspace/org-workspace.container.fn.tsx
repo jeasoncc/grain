@@ -31,6 +31,8 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/views/ui/dropdown-menu"
+import { useOrgTodoNoteWorkflow } from "@/hooks/use-org-todo-note-workflow"
+import { OrgTodoNote } from "@/views/org-editor/org-todo-note.view.fn"
 import { OrgCaptureWorkflow } from "./org-capture-workflow.view.fn"
 import { OrgAgendaContainer } from "./org-agenda.container.fn"
 import { OrgCommandPalette, orgCommandIcons } from "./org-command-palette.view.fn"
@@ -251,6 +253,9 @@ const OrgWorkspaceEmptyState = ({
 
 export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	const controller = useOrgWorkspace()
+	const todoNote = useOrgTodoNoteWorkflow(controller)
+	const todoNoteOwnedRef = useRef(todoNote.isOwned)
+	todoNoteOwnedRef.current = todoNote.isOwned
 	const isBusy = controller.isLoading || controller.isSaving
 	const [showAgenda, setShowAgenda] = useState(false)
 	const [showCapture, setShowCapture] = useState(false)
@@ -328,6 +333,11 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	}
 	const workspaceCommands = deriveOrgWorkspaceCommands(commandContext)
 	const dispatchWorkspaceCommand = (id: OrgWorkspaceCommandId) => {
+		if (
+			todoNote.isOwned() &&
+			["capture", "quick-open", "buffer-switch", "sparse-tree", "clear-sparse-tree"].includes(id)
+		)
+			return false
 		if (!guardOrgWorkspaceCommand(id, commandContext)) return false
 		const echoSequence = ++commandEchoSequenceRef.current
 		setCommandEcho(null)
@@ -399,7 +409,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	commandDispatcherRef.current = dispatchWorkspaceCommand
 
 	useEffect(() => {
-		if (quickOpenVisible || bufferSwitchVisible || showCapture) return
+		if (todoNote.isActive || quickOpenVisible || bufferSwitchVisible || showCapture) return
 		const pending = pendingFileFocusRef.current
 		pendingFileFocusRef.current = null
 		if (
@@ -415,6 +425,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 				) ?? workspaceViewRef.current?.querySelector<HTMLElement>(".cm-content")
 			)?.focus()
 	}, [
+		todoNote.isActive,
 		quickOpenVisible,
 		bufferSwitchVisible,
 		showCapture,
@@ -567,6 +578,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 			})
 			if (!command) return
 			event.preventDefault()
+			if (todoNoteOwnedRef.current() && command === "execute-command") return
 			if (command === "execute-command") {
 				setQuickOpenVisible(false)
 				setBufferSwitchVisible(false)
@@ -667,7 +679,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 							<div className="flex h-full min-h-0 flex-col">
 								<OrgWorkspaceNotice controller={controller} />
 								{showAgenda ? (
-									<div className="flex min-h-0 flex-1 flex-col">
+									<div inert={todoNote.isActive} className="flex min-h-0 flex-1 flex-col">
 										<div className="flex h-10 shrink-0 items-center border-b bg-muted/20 px-1">
 											{!sidebarVisible && (
 												<Button
@@ -685,6 +697,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 										<OrgAgendaContainer
 											controller={controller}
 											onShowEditor={() => setShowAgenda(false)}
+											onTodoNoteRequest={todoNote.admit}
 										/>
 										<footer className="h-[22px] shrink-0 border-t border-border/70 bg-muted/20 px-2 text-right text-[11px] leading-[22px] text-muted-foreground">
 											Workspace agenda
@@ -705,7 +718,9 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 										onViewCommandHandled={(id) =>
 											setViewCommandRequest((request) => (request?.id === id ? null : request))
 										}
+										onTodoNoteRequest={todoNote.admit}
 										parameterSessionSuspended={
+											todoNote.isActive ||
 											quickOpenVisible ||
 											bufferSwitchVisible ||
 											commandPaletteVisible ||
@@ -760,84 +775,99 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 					{commandEcho.message}
 				</output>
 			)}
-			<OrgCaptureWorkflow
-				controller={controller}
-				open={showCapture}
-				onOpenChange={setShowCapture}
-				onRestoreOrigin={(origin, signal) => {
-					const live = controllerRef.current
-					if (
-						signal?.aborted ||
-						origin.scope.workspaceSessionId !== live.workspaceSessionId ||
-						origin.scope.capabilityToken !== live.workspace?.capabilityToken
-					)
-						return
-					const buffer = live.openBuffers.find((entry) => entry.bufferId === origin.bufferId)
-					if (buffer) {
-						pendingFileFocusRef.current = {
-							scope: live.workspaceSessionId,
-							root: live.workspace?.rootPath ?? "",
-							path: buffer.relativePath,
+			{todoNote.note && (
+				<OrgTodoNote
+					request={todoNote.note.request}
+					onClose={todoNote.note.close}
+					isProtected={todoNote.isProtected}
+				/>
+			)}
+			{!todoNote.isActive && (
+				<OrgCaptureWorkflow
+					controller={controller}
+					open={showCapture}
+					onOpenChange={setShowCapture}
+					onRestoreOrigin={(origin, signal) => {
+						const live = controllerRef.current
+						if (
+							signal?.aborted ||
+							origin.scope.workspaceSessionId !== live.workspaceSessionId ||
+							origin.scope.capabilityToken !== live.workspace?.capabilityToken
+						)
+							return
+						const buffer = live.openBuffers.find((entry) => entry.bufferId === origin.bufferId)
+						if (buffer) {
+							pendingFileFocusRef.current = {
+								scope: live.workspaceSessionId,
+								root: live.workspace?.rootPath ?? "",
+								path: buffer.relativePath,
+							}
+							setShowAgenda(false)
 						}
-						setShowAgenda(false)
-					}
-				}}
-			/>
-			<OrgCommandPalette
-				open={commandPaletteVisible}
-				onOpenChange={setCommandPaletteVisible}
-				sessionKey={controller.workspaceSessionId ?? controller.workspace?.rootPath}
-				commands={workspaceCommands.map((command) => ({
-					...command,
-					icon: orgCommandIcons[command.icon],
-					run: () => dispatchWorkspaceCommand(command.id),
-				}))}
-			/>
-			<OrgBufferSwitch
-				buffers={controller.openBuffers ?? []}
-				activeBufferId={controller.activeBufferId}
-				open={bufferSwitchVisible}
-				onOpenChange={setBufferSwitchVisible}
-				sessionKey={controller.workspaceSessionId ?? "unapproved"}
-				onSelect={async (buffer, signal) => {
-					const opened = await controller.switchBuffer(buffer.bufferId, signal)
-					if (
-						opened &&
-						!signal?.aborted &&
-						controllerRef.current.workspaceSessionId === controller.workspaceSessionId
-					) {
-						pendingFileFocusRef.current = {
-							scope: controller.workspaceSessionId,
-							root: controller.workspace?.rootPath ?? "",
-							path: buffer.relativePath,
+					}}
+				/>
+			)}
+			{!todoNote.isActive && (
+				<OrgCommandPalette
+					open={commandPaletteVisible}
+					onOpenChange={setCommandPaletteVisible}
+					sessionKey={controller.workspaceSessionId ?? controller.workspace?.rootPath}
+					commands={workspaceCommands.map((command) => ({
+						...command,
+						icon: orgCommandIcons[command.icon],
+						run: () => dispatchWorkspaceCommand(command.id),
+					}))}
+				/>
+			)}
+			{!todoNote.isActive && (
+				<OrgBufferSwitch
+					buffers={controller.openBuffers ?? []}
+					activeBufferId={controller.activeBufferId}
+					open={bufferSwitchVisible}
+					onOpenChange={setBufferSwitchVisible}
+					sessionKey={controller.workspaceSessionId ?? "unapproved"}
+					onSelect={async (buffer, signal) => {
+						const opened = await controller.switchBuffer(buffer.bufferId, signal)
+						if (
+							opened &&
+							!signal?.aborted &&
+							controllerRef.current.workspaceSessionId === controller.workspaceSessionId
+						) {
+							pendingFileFocusRef.current = {
+								scope: controller.workspaceSessionId,
+								root: controller.workspace?.rootPath ?? "",
+								path: buffer.relativePath,
+							}
+							setShowAgenda(false)
 						}
-						setShowAgenda(false)
-					}
-					return opened
-				}}
-			/>
-			<OrgQuickOpen
-				documents={controller.workspace?.documents ?? []}
-				open={quickOpenVisible}
-				onOpenChange={setQuickOpenVisible}
-				sessionKey={controller.workspaceSessionId ?? controller.workspace?.rootPath}
-				onSelect={async (document, signal) => {
-					const opened = await controller.openDocument(document, undefined, signal)
-					if (
-						opened &&
-						!signal?.aborted &&
-						controllerRef.current.workspaceSessionId === controller.workspaceSessionId
-					) {
-						pendingFileFocusRef.current = {
-							scope: controller.workspaceSessionId,
-							root: controller.workspace?.rootPath ?? "",
-							path: document.relativePath,
+						return opened
+					}}
+				/>
+			)}
+			{!todoNote.isActive && (
+				<OrgQuickOpen
+					documents={controller.workspace?.documents ?? []}
+					open={quickOpenVisible}
+					onOpenChange={setQuickOpenVisible}
+					sessionKey={controller.workspaceSessionId ?? controller.workspace?.rootPath}
+					onSelect={async (document, signal) => {
+						const opened = await controller.openDocument(document, undefined, signal)
+						if (
+							opened &&
+							!signal?.aborted &&
+							controllerRef.current.workspaceSessionId === controller.workspaceSessionId
+						) {
+							pendingFileFocusRef.current = {
+								scope: controller.workspaceSessionId,
+								root: controller.workspace?.rootPath ?? "",
+								path: document.relativePath,
+							}
+							setShowAgenda(false)
 						}
-						setShowAgenda(false)
-					}
-					return opened
-				}}
-			/>
+						return opened
+					}}
+				/>
+			)}
 		</div>
 	)
 })

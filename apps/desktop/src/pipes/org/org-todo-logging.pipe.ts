@@ -13,6 +13,7 @@ import {
 export type OrgTodoTransitionPlan =
 	| { readonly kind: "edit"; readonly edits: OrgTextEdit[]; readonly done: boolean }
 	| { readonly kind: "noop" }
+	| { readonly kind: "needs-note" }
 	| { readonly kind: "rejected"; readonly reason: string }
 
 const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -96,22 +97,37 @@ const parseDrawerName = (value: string): string | null | undefined => {
 		: undefined
 }
 
+/**
+ * Literal fixedwidth lines containing JSON strings. Decoding each line after
+ * `  : ` with JSON.parse and concatenating recovers the exact note, including
+ * NUL, Unicode, trailing whitespace and mixed original newline separators.
+ * Neither note text nor its separators can become Org structural source.
+ */
+const literalNote = (note: string, eol: string): string =>
+	linesOf(note)
+		.filter((line) => line.end > line.from)
+		.map((line) => `  : ${JSON.stringify(note.slice(line.from, line.end))}${eol}`)
+		.join("")
+
 /** Plans one atomic transition using only original-source coordinates. No clock or I/O. */
 export const planOrgTodoTransition = (
 	source: string,
 	cursor: number,
 	stamp: unknown,
+	note?: string,
 ): OrgTodoTransitionPlan => {
 	if (!validOrgLocalTimestamp(stamp)) return rejected("invalid-timestamp")
 	if (!Number.isInteger(cursor) || cursor < 0 || cursor > source.length)
 		return rejected("invalid-cursor")
 	const lines = linesOf(source)
 	const heading = lines.findLast((line) => line.from <= cursor)
-	if (!heading || !/^\*+[ \t]+/.test(heading.text)) return { kind: "noop" }
+	if (!heading || !/^\*+[ \t]+/.test(heading.text))
+		return note === undefined ? { kind: "noop" } : rejected("unexpected-note")
 	const keywords = parseOrgTodoKeywords(source)
 	const states = new Set([...keywords.todo, ...keywords.done])
 	const eligible = eligibleOrgSourceLines(source, states)
-	if (!eligible.some((line) => line.from === heading.from)) return { kind: "noop" }
+	if (!eligible.some((line) => line.from === heading.from))
+		return note === undefined ? { kind: "noop" } : rejected("unexpected-note")
 	const logging = new Map<string, Logging>()
 	let donePolicy: "none" | "time" | "note" = "none"
 	let drawer: string | null = null
@@ -203,18 +219,17 @@ export const planOrgTodoTransition = (
 	)
 		return rejected("unsupported-logging-policy")
 	const edit = cycleOrgTodoAt(source, cursor)
-	if (!edit) return { kind: "noop" }
+	if (!edit) return note === undefined ? { kind: "noop" } : rejected("unexpected-note")
 	const oldState = heading.text.replace(/^\*+[ \t]+/, "").split(/[ \t]/)[0]
 	const previous = states.has(oldState) ? oldState : ""
 	const next = edit.insert.trim()
 	const done = keywords.done.includes(next)
 	const incoming = logging.get(next)?.incoming
 	const outgoing = logging.get(previous)?.outgoing
-	if (incoming === "@" || outgoing === "@" || (done && donePolicy === "note"))
-		return rejected("needs-note")
-	const logState = incoming === "!" || outgoing === "!"
+	const needsNote = incoming === "@" || outgoing === "@" || (done && donePolicy === "note")
+	const logState = needsNote || incoming === "!" || outgoing === "!"
 	const removeClosed = !done && keywords.done.includes(previous)
-	const logdone = donePolicy === "time"
+	const logdone = donePolicy === "time" || donePolicy === "note"
 	const index = lines.indexOf(heading)
 	const following = lines.slice(index + 1)
 	const blocks = orgBlockRanges(source)
@@ -345,7 +360,12 @@ export const planOrgTodoTransition = (
 			drawer = name
 		}
 	}
-	const entry = `- State "${next}"${" ".repeat(Math.max(1, 12 - next.length))}from "${previous}" ${stamp}`
+	// Preparation validates the same source and policies as submission, but never
+	// publishes partial edits or accepts a note for an unrelated transition.
+	if (!needsNote && note !== undefined) return rejected("unexpected-note")
+	if (needsNote && note === undefined) return { kind: "needs-note" }
+	if (needsNote && (typeof note !== "string" || !note.trim())) return rejected("invalid-note")
+	const entry = `- State ${JSON.stringify(next)}${" ".repeat(Math.max(1, 12 - next.length))}from ${JSON.stringify(previous)} ${stamp}${eol}${needsNote ? literalNote(note!, eol) : ""}`
 	let append = ""
 	if (!planningItem && done && logdone) {
 		if (insertion === heading.end) append += `CLOSED: ${stamp}${eol}`
@@ -365,9 +385,9 @@ export const planOrgTodoTransition = (
 				const closing = lines.find(
 					(line) => line.end === matches[0].to && /^[ \t]*:END:[ \t]*$/i.test(line.text),
 				)!
-				push(closing.from, closing.from, `${entry}${eol}`)
-			} else append += `:${drawer}:${eol}${entry}${eol}:END:${eol}`
-		} else append += `${entry}${eol}`
+				push(closing.from, closing.from, entry)
+			} else append += `:${drawer}:${eol}${entry}:END:${eol}`
+		} else append += entry
 	}
 	if (append)
 		push(

@@ -175,13 +175,12 @@ export interface OrgLiveBuffer {
 	readonly isDirty: boolean
 }
 
-export type OrgAgendaActionOutcome = {
-	readonly kind: "confirmed" | "unchanged" | "rejected" | "stale"
-	readonly message?: string
-}
+export type OrgAgendaActionOutcome =
+	| { readonly kind: "confirmed" | "unchanged" | "rejected" | "stale"; readonly message?: string }
+	| { readonly kind: "needs-note"; readonly entry: OrgAgendaEntry }
 
 export type OrgAgendaCommand =
-	| { readonly kind: "cycle-todo"; readonly timestamp?: string }
+	| { readonly kind: "cycle-todo"; readonly timestamp?: string; readonly note?: string }
 	| { readonly kind: "schedule" | "deadline"; readonly date: string }
 
 export type OrgAgendaPlanningPreparation =
@@ -204,17 +203,30 @@ const planAgendaOperation = (
 	if (!entry.origin?.heading)
 		return { kind: "rejected", message: "This agenda entry has no actionable heading." }
 	if (operation.kind === "cycle-todo") {
-		const plan = planOrgTodoTransition(raw, entry.origin.heading.from, operation.timestamp ?? "")
+		const plan = planOrgTodoTransition(
+			raw,
+			entry.origin.heading.from,
+			operation.timestamp ?? "",
+			operation.note,
+		)
+		if (plan.kind === "needs-note") {
+			const snapshot = structuredClone(entry)
+			const freeze = (value: object): void => {
+				Object.values(value).forEach((child) => {
+					if (child && typeof child === "object") freeze(child)
+				})
+				Object.freeze(value)
+			}
+			freeze(snapshot)
+			return { kind: "needs-note", entry: snapshot }
+		}
 		return plan.kind === "edit"
 			? plan
 			: plan.kind === "noop"
 				? { kind: "unchanged" }
 				: {
 						kind: "rejected",
-						message:
-							plan.reason === "needs-note"
-								? "This TODO transition requires a note; the state was not changed."
-								: `Cannot change TODO state: ${plan.reason}.`,
+						message: `Cannot change TODO state: ${plan.reason}.`,
 					}
 	}
 	const field = operation.kind === "prepare" ? operation.field : operation.kind
@@ -267,6 +279,8 @@ export interface OrgWorkspaceController {
 	readonly liveBuffers: readonly OrgLiveBuffer[]
 	/** Mounted view lease permitting exact-source edits to its parked canonical runtime. */
 	readonly registerBufferWindow: (windowId: string, bufferId: string) => () => void
+	/** Opaque exact-registration authority; replacement with the same IDs cannot revive it. */
+	readonly captureBufferWindowPermit: (windowId: string, bufferId: string) => () => boolean
 	/**
 	 * Synchronous memory-only context handoff, preserving canonical history.
 	 * Returns false during file effects: callers must defer cross-buffer focus/commands
@@ -315,7 +329,7 @@ export interface OrgWorkspaceController {
 		entrySource: string,
 		targetRelativePath: string,
 	) => Promise<OrgCaptureOutcome>
-	readonly setTransientDirty: (id: string, dirty: boolean) => void
+	readonly setTransientDirty: (id: string, dirty: boolean) => boolean
 	readonly captureTodo: (title: string, targetRelativePath?: string) => Promise<void>
 	readonly readRefileTarget: (path: string, signal?: AbortSignal) => Promise<OrgRefileTargetOutcome>
 	readonly refileSubtree: (
@@ -699,12 +713,13 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				grantRef.current !== originGrant ||
 				sessionRef.current !== originSession
 			)
-				return
-			if (Boolean(transientDirtyRef.current.get(id)) === dirty) return
+				return false
+			if (Boolean(transientDirtyRef.current.get(id)) === dirty) return true
 			transientGenerationRef.current += 1
 			if (dirty) transientDirtyRef.current.set(id, true)
 			else transientDirtyRef.current.delete(id)
 			publishBuffers((version) => version + 1)
+			return true
 		},
 		[originGrant, originSession],
 	)
@@ -787,6 +802,29 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				if (bufferWindowLeasesRef.current.get(windowId) === lease)
 					bufferWindowLeasesRef.current.delete(windowId)
 			}
+		},
+		[originGrant, originSession],
+	)
+
+	const captureBufferWindowPermit = useCallback(
+		(windowId: string, bufferId: string): (() => boolean) => {
+			const lease = bufferWindowLeasesRef.current.get(windowId)
+			const path = bufferIdentity.findPath(identityScope, bufferId)
+			return () =>
+				!!lease &&
+				lease.bufferId === bufferId &&
+				lease.grant === originGrant &&
+				lease.session === originSession &&
+				mountedRef.current &&
+				grantRef.current === lease.grant &&
+				sessionRef.current === lease.session &&
+				bufferWindowLeasesRef.current.get(windowId) === lease &&
+				!!runtimeFor(bufferId) &&
+				!!path &&
+				bufferIdentity.findPath(identityScope, bufferId) === path &&
+				!conflictsRef.current.has(path) &&
+				!autosavePausedRef.current.has(path) &&
+				parkedReservoir.canMutate()
 		},
 		[originGrant, originSession],
 	)
@@ -1441,8 +1479,6 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			const currentScope = grant && session ? { grant, sessionId: session } : null
 			const current = () =>
 				mountedRef.current &&
-				nativeCloseReadyRef.current &&
-				parkedReservoir.canMutate() &&
 				grantRef.current === grant &&
 				sessionRef.current === session &&
 				!signal?.aborted
@@ -1457,6 +1493,8 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			)
 				return stale()
 			if (
+				!nativeCloseReadyRef.current ||
+				!parkedReservoir.canMutate() ||
 				loadingRef.current ||
 				mutationInProgressRef.current ||
 				saveInFlightRef.current ||
@@ -1474,7 +1512,11 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			const cancelledRead = new Promise<null>((resolve) => {
 				cancelRead = () => resolve(null)
 			})
+			let publishing = false
 			const cancel = () => {
+				// Runtime publication synchronously notifies subscribers. An abort from
+				// one of them must not release the owner before publication unwinds.
+				if (publishing) return
 				cancelRead()
 				if (agendaCommandOwnerRef.current === owner) agendaCommandOwnerRef.current = null
 				finishMutation(owner)
@@ -1580,19 +1622,29 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					}).valid
 				)
 					return stale()
-				const planned = planAgendaOperation(entry, raw, operation)
+				// An already-open disk row must pin note permission to this runtime,
+				// not to disk text that an edit/undo or close/reopen can reproduce.
+				const incarnation = runtimeIncarnation(runtime)
+				const generation = runtime.revision
+				const planningEntry = {
+					...entry,
+					origin: {
+						...origin,
+						source: "live" as const,
+						sourceRevision: id,
+						runtimeIncarnation: incarnation,
+						sourceGeneration: generation,
+					},
+				}
+				const planned = planAgendaOperation(planningEntry, raw, operation)
 				if (planned.kind !== "edit") return planned
 				const edits = planned.edits
-				const commandOwner = () =>
+				const anchorCurrent = () =>
 					owns() &&
 					bufferIdentity.lookup(currentScope, path) === id &&
 					registry.get(key) === runtime &&
-					!loadingRef.current &&
-					!mutationInProgressRef.current &&
-					!saveInFlightRef.current &&
-					!saveAllOwnerRef.current &&
-					!conflictsRef.current.has(path) &&
-					!autosavePausedRef.current.has(path) &&
+					runtimeIncarnation(runtime) === incarnation &&
+					runtime.revision === generation &&
 					validateOrgAgendaOrigin({ ...entry, origin }, runtime.source, revision, {
 						workspaceSessionId: session,
 						...(origin.source === "live"
@@ -1602,14 +1654,37 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 								}
 							: {}),
 					}).valid
-				if (!commandOwner()) return stale()
+				const commandOwner = () =>
+					anchorCurrent() &&
+					nativeCloseReadyRef.current &&
+					parkedReservoir.canMutate() &&
+					!loadingRef.current &&
+					!mutationInProgressRef.current &&
+					!saveInFlightRef.current &&
+					!saveAllOwnerRef.current &&
+					!conflictsRef.current.has(path) &&
+					!autosavePausedRef.current.has(path)
+				const refusedCommit = () =>
+					anchorCurrent() ? rejected("A workspace operation is running.") : stale()
+				if (!commandOwner()) return refusedCommit()
 				// This observation precedes publication; a throwing observer cannot
 				// manufacture a committed outcome. Recheck ownership after callbacks.
 				options?.onCommitStarted?.()
-				if (!commandOwner()) return stale()
-				return registry.applyCommandEdits(key, raw, edits, commandOwner)
-					? { kind: "confirmed" }
-					: stale()
+				if (!commandOwner()) return refusedCommit()
+				publishing = true
+				const beforePublication = runtime.revision
+				try {
+					return registry.applyCommandEdits(key, raw, edits, commandOwner)
+						? { kind: "confirmed" }
+						: refusedCommit()
+				} catch {
+					// Publication commits canonical state before notifying observers. A
+					// throwing observer must not report a retryable failure after that commit.
+					if (runtime.revision !== beforePublication) return { kind: "confirmed" }
+					throw new Error("Agenda publication failed before commit.")
+				} finally {
+					publishing = false
+				}
 			} catch {
 				return owns() ? rejected("Cannot change the agenda heading.") : stale()
 			} finally {
@@ -3282,6 +3357,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	return {
 		liveBuffers,
 		registerBufferWindow,
+		captureBufferWindowPermit,
 		activateOpenBuffer,
 		activeBufferRuntime,
 		activeBufferId: activeDocument ? bufferIdFor(activeDocument.relativePath) : null,

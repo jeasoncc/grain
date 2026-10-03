@@ -650,8 +650,8 @@ Editor (runtime and standalone) and Agenda use `planOrgTodoTransition` with an
 explicit validated local timestamp. State `!` / outgoing `/!` flags and final
 ordered file STARTUP policy govern state logs and CLOSED. No implicit logging
 default is enabled. `logdrawer` selects a valid log drawer; ordinary non-drawer
-logs remain source lines. Note `@` and a final `lognotedone` only reject when the
-chosen transition actually requires a note, visibly and without changing state.
+logs remain source lines. Note `@` and a final `lognotedone` prepare a note request only when the
+chosen transition actually requires a note, without changing state before Finish.
 
 ```text
 TODO shortcut / Agenda t -> current source + injected local clock
@@ -673,8 +673,50 @@ required notes and sparse hidden edits are rejected before commit; production
 Editor/Agenda tests assert rendered rejection messages, peer mapping/folds,
 consumed/IME/repeat safety, full undo and timezone behavior.
 Verification: 173 files /2988 tests, typecheck/build pass
-(2026-10-04 02:15 +08:00). Multiline note workflows, full property inheritance
+(2026-10-04 02:15 +08:00). The multiline workflow is described below; full property inheritance
 and complete logging-policy compatibility remain unfinished requirements.
+
+## TODO notes: scoped request → retained scratch → atomic source commit
+
+`OrgTodoNoteRequest` and its asynchronous Agenda specialization live in the
+command flow layer, not view types. They carry validate/execute/abort behavior
+with captured source identity; they do not serialize capabilities or persist
+another document authority. The planner takes explicit literal note text and
+finish-local timestamp; reversible Org-safe literal encoding prevents multiline
+`:END:`, headings, blocks and directives from escaping the note/log structure.
+
+```text
+Editor TODO / Agenda t -> needs-note preparation (original state held)
+ -> shell admission + acknowledged transient protection -> multiline scratch
+ -> fresh grant/session/buffer/incarnation/generation/window lease/source checks
+ -> cancellable read -> commit boundary -> one state/CLOSED/log/note history event
+ -> owned origin focus; later normal CAS / Save All
+```
+
+The workspace shell owns the note across Editor/Agenda navigation. Only one
+request is admitted; competing requests cannot replace a draft. Editor/standalone
+source ownership remains canonical runtime/local CM, while the plain-text note
+scratch has its own native input history. Source edits including edit→undo,
+retired/rebound windows, conflict or paused autosave invalidate Finish without
+throwing away the copyable draft. Root checks the exact active or parked buffer
+again after the commit observer; unrelated flags are not authority.
+
+Protection is acknowledged before editable publication. Retained old-scope
+scratch may receive a separate current-scope dirty-close registration, never
+current-scope commit authority; old callbacks cannot release another grant's
+protection. Explicit abort or confirmed completion retires the request. Pending
+reads can abort, but a committed result remains applied through terminal gaps.
+Focus restoration requires the host still owns focus and the origin is current;
+publication callbacks focusing another surface are not overridden.
+
+Production tests cover Editor/standalone/Agenda notes, injected clock, raw undo,
+no-write/read-only preparation, literal payload reversibility, dirty baseline/CAS,
+lease/ABA/G2 drift, late active/parked pause/conflict, mode-switch retention,
+acknowledged close protection, read/commit cancellation and external focus.
+Verification: 175 files /3073 tests, typecheck/build pass
+(2026-10-04 03:51 +08:00). Native textarea undo and Chinese IME require actual
+browser/native acceptance; restart recovery and unified tool registry/complete
+logging inheritance remain open, not silently declared complete.
 
 ## Next decision gates and work
 

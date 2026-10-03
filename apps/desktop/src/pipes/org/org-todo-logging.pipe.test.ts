@@ -7,8 +7,8 @@ import {
 } from "./org-todo-logging.pipe"
 
 const stamp = "[2025-04-01 Tue 09:07]"
-const run = (source: string, position = source.indexOf("* ")) => {
-	const plan = planOrgTodoTransition(source, position, stamp)
+const run = (source: string, position = source.indexOf("* "), note?: string) => {
+	const plan = planOrgTodoTransition(source, position, stamp, note)
 	if (plan.kind !== "edit") throw new Error(JSON.stringify(plan))
 	let result = source
 	for (const edit of [...plan.edits].sort((a, b) => b.from - a.from))
@@ -87,8 +87,7 @@ describe("TODO logging planner", () => {
 		]) {
 			const source = `#+TODO: ${declaration}\n* TODO title`
 			expect(planOrgTodoTransition(source, source.indexOf("* "), stamp)).toEqual({
-				kind: "rejected",
-				reason: "needs-note",
+				kind: "needs-note",
 			})
 		}
 	})
@@ -337,8 +336,99 @@ describe("shape and applicable policy proof", () => {
 			"#+STARTUP: lognotedone nologdone\n#+TODO: NEXT TODO(@) | DONE\n* NEXT x",
 		])
 			expect(planOrgTodoTransition(source, source.indexOf("* "), stamp)).toEqual({
-				kind: "rejected",
-				reason: "needs-note",
+				kind: "needs-note",
 			})
+	})
+})
+
+describe("explicit multiline TODO notes", () => {
+	it.each([
+		"TODO(t/@) | DONE(d)",
+		"TODO(t) | DONE(d@)",
+		"TODO(t/@) | DONE(d@)",
+	])("prepares and submits incoming/outgoing note policy %s once", (declaration) => {
+		const source = `#+TODO: ${declaration}\n* TODO title\nbody`
+		const cursor = source.indexOf("* ")
+		expect(planOrgTodoTransition(source, cursor, stamp)).toEqual({ kind: "needs-note" })
+		const { result, plan } = run(source, cursor, "first\nsecond")
+		expect(result.match(/- State/g)).toHaveLength(1)
+		expect(result).toContain('  : "first\\n"\n  : "second"\nbody')
+		expect(result).not.toContain("CLOSED:")
+		expect(planOrgTodoTransition(source, cursor, stamp, "first\nsecond")).toEqual(plan)
+	})
+	it.each(["", " \t\r\n", "\u2003"])("rejects blank note %j without edits", (note) => {
+		const source = "#+TODO: TODO | DONE(@)\n* TODO x"
+		expect(planOrgTodoTransition(source, source.indexOf("* "), stamp, note)).toEqual({
+			kind: "rejected",
+			reason: "invalid-note",
+		})
+	})
+	it("rejects notes on unrelated transitions and inert source", () => {
+		for (const source of ["* TODO x", "body", "* COMMENT x"])
+			expect(planOrgTodoTransition(source, 0, stamp, "note")).toEqual({
+				kind: "rejected",
+				reason: "unexpected-note",
+			})
+	})
+	it.each(["\n", "\r", "\r\n"])("roundtrips hostile literal bytes in %j source", (eol) => {
+		const source = [
+			"#+STARTUP: logdrawer",
+			"#+TODO: TODO | DONE(@)",
+			"* TODO café 😀",
+			":LOGBOOK:",
+			"old",
+			":END:",
+			"body",
+		].join(eol)
+		const note =
+			'中文 😀\u0000\r\n:END:\r* DONE injected\n#+TODO: BAD | EVIL\n:PROPERTIES:\n\\ \"\t  \n'
+		const { result, plan } = run(source, source.indexOf("* "), note)
+		const chunks = result.split(/\r\n|\r|\n/).filter((line) => line.startsWith("  : "))
+		expect(chunks.map((line) => JSON.parse(line.slice(4))).join("")).toBe(note)
+		expect(result.split(/\r\n|\r|\n/).filter((line) => line === ":END:")).toHaveLength(1)
+		expect(result).toContain(`old${eol}- State`)
+		let restored = result
+		let delta = 0
+		const inverses = plan.edits.map((edit) => {
+			const inverse = {
+				from: edit.from + delta,
+				to: edit.from + delta + edit.insert.length,
+				insert: source.slice(edit.from, edit.to),
+			}
+			delta += edit.insert.length - (edit.to - edit.from)
+			return inverse
+		})
+		for (const edit of inverses.reverse())
+			restored = restored.slice(0, edit.from) + edit.insert + restored.slice(edit.to)
+		expect(restored).toBe(source)
+	})
+	it("lognotedone adds CLOSED and a note, preserves planning shape and removes CLOSED on reopen", () => {
+		const source =
+			"#+STARTUP: lognotedone\n* TODO x\nCLOSED:\t[2025-03-31\tMon]  DEADLINE: <2025-04-03 Thu>\nbody"
+		const result = run(source, source.indexOf("* "), "done").result
+		expect(result).toContain("CLOSED:\t[2025-04-01\tTue]  DEADLINE:")
+		expect(result).toContain('  : "done"\nbody')
+		expect(run(result).result).not.toContain("CLOSED:")
+		const bare = "#+STARTUP: lognotedone\n* TODO x"
+		expect(run(bare, bare.indexOf("* "), "done").result).toContain(
+			`* DONE x\nCLOSED: ${stamp}\n- State`,
+		)
+	})
+	it("fails closed before note preparation or submission on malformed metadata and unsupported policy", () => {
+		for (const suffix of [
+			":LOGBOOK:\nunclosed",
+			"CLOSED: broken",
+			":PROPERTIES:\n:LOGGING: nil\n:END:",
+		])
+			for (const note of [undefined, "note"]) {
+				const source = `#+TODO: TODO | DONE(@)\n* TODO x\n${suffix}`
+				expect(planOrgTodoTransition(source, source.indexOf("* "), stamp, note).kind).toBe(
+					"rejected",
+				)
+			}
+	})
+	it("quotes unsafe state payloads as JSON literals", () => {
+		const source = "#+TODO: TODO | D\u0000ONE(!)\n* TODO x"
+		expect(run(source).result).toContain('- State "D\\u0000ONE"')
 	})
 })

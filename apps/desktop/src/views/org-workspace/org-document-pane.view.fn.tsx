@@ -19,6 +19,7 @@ import { flushSync } from "react-dom"
 import { EditorView } from "@codemirror/view"
 import { ChangeSet } from "@codemirror/state"
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react"
+import type { OrgTodoNoteRequest } from "@/flows/org-command/org-todo-note"
 import { useOrgCommandMinibuffer } from "@/hooks/use-org-command-minibuffer"
 import { orgTagsBufferCommand } from "@/flows/org-command/org-tags.command"
 import { createOrgPlanningCommand } from "@/flows/org-command/org-planning.command"
@@ -52,7 +53,14 @@ const BoundEditor = ({
 		() => controller.registerBufferWindow?.(props.windowId!, bufferId),
 		[controller.registerBufferWindow, props.windowId, bufferId, props.runtime],
 	)
-	return <OrgEditor {...props} />
+	return (
+		<OrgEditor
+			{...props}
+			getTodoNotePermit={() =>
+				controller.captureBufferWindowPermit?.(props.windowId!, bufferId) ?? (() => false)
+			}
+		/>
+	)
 }
 let nextPaneId = 0
 
@@ -83,6 +91,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	viewCommandOriginRef,
 	viewCommandRequest,
 	onViewCommandHandled,
+	onTodoNoteRequest,
 }: {
 	readonly canGoBack: boolean
 	readonly canGoForward: boolean
@@ -98,6 +107,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	readonly onShowSidebar: () => void
 	readonly openDocumentPaths: readonly string[]
 	readonly sidebarVisible: boolean
+	readonly onTodoNoteRequest?: (request: OrgTodoNoteRequest) => void
 	readonly parameterSessionSuspended?: boolean
 	readonly editorSessionCache?: Map<string, OrgEditorSessionSnapshot>
 	readonly onViewCommandHandled?: (id: number) => void
@@ -273,7 +283,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	parameterCommandRef.current = parameterCommand
 	const openMetadataCommand = (type: OrgMetadataType, position: number) => {
 		const document = activeDocument
-		if (!document || isBusy) return
+		if (!document || isBusy || parameterSessionSuspended) return
 		if (type === "sparse-tree") {
 			commandTargetRef.current = targets.current.get(windowKey(activeWindowRef.current)) ?? null
 			if (!commandTargetRef.current) return
@@ -294,6 +304,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	// that origin before reading any render-bound command/controller or cursor.
 	const resolveToolbarWindow = () => {
 		const origin = pendingWindow.current
+		if (parameterSessionSuspended) return false
 		if (origin && !selectWindow(origin.name)) return false
 		if (!commandTargetRef.current) return false
 		// selectWindow flushes the controller handoff and suspends old parameter
@@ -708,6 +719,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 												prefixes.current.set(boundWindowKey, next)
 												if (activeWindowRef.current === name) setPrefix(next)
 											}}
+											onTodoNoteRequest={onTodoNoteRequest}
 											value={buffer.content}
 											onChange={controller.updateContent}
 											onCommandTarget={(target) => {

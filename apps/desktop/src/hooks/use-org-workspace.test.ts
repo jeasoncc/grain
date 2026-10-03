@@ -339,7 +339,7 @@ describe("Org capture entry and transient drafts", () => {
 		"NEXT(n/@) | FINISHED(f)",
 		"NEXT(n) | FINISHED(f@)",
 		"NEXT(n/@) | FINISHED(f!)",
-	])("rejects note-required %s without allocating an unopened buffer", async (states) => {
+	])("prepares note-required %s without allocating an unopened buffer", async (states) => {
 		const observed = observeParkedReservoir()
 		const { result } = await setup()
 		const source = `#+TODO: ${states}\n* NEXT task\n<2026-07-01 Wed>\n`
@@ -355,11 +355,170 @@ describe("Org capture entry and transient drafts", () => {
 					kind: "cycle-todo",
 					timestamp: todoStamp,
 				}),
-			).toMatchObject({ kind: "rejected", message: expect.stringContaining("requires a note") })
+			).toMatchObject({ kind: "needs-note", entry: agendaRow(source) })
 		})
 		expect(create).not.toHaveBeenCalled()
 		expect(park).not.toHaveBeenCalled()
 		expect(result.current.liveBuffers).toEqual(before)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it.each([
+		"active",
+		"parked",
+	] as const)("pins an already-open %s disk note row to its exact runtime revision", async (target) => {
+		const { result } = await setup()
+		const source = "#+TODO: NEXT | FINISHED(f@)\n* NEXT task\n<2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const buffer = result.current.liveBuffers.find(
+			(item) => item.document.relativePath === "z.org",
+		)!
+		if (target === "parked") {
+			vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () =>
+				E.right({ content: "* Other\n", relativePath: "other.org", revision: "other-1" }),
+			)
+			await act(async () => {
+				await result.current.openDocumentPath("other.org")
+			})
+		}
+		const row = agendaRow(source)
+		const prepared = await result.current.executeAgendaCommand(row, {
+			kind: "cycle-todo",
+			timestamp: todoStamp,
+		})
+		expect(prepared.kind).toBe("needs-note")
+		if (prepared.kind !== "needs-note") throw new Error("expected note request")
+		expect(prepared.entry.origin).toEqual({
+			...row.origin,
+			source: "live",
+			sourceRevision: buffer.bufferId,
+			runtimeIncarnation: buffer.runtimeIncarnation,
+			sourceGeneration: buffer.runtime.revision,
+		})
+		expect(Object.isFrozen(prepared.entry)).toBe(true)
+		expect(Object.isFrozen(prepared.entry.origin)).toBe(true)
+		expect(Object.isFrozen(prepared.entry.origin?.heading)).toBe(true)
+		expect(Object.isFrozen(prepared.entry.origin?.timestamp)).toBe(true)
+		const editor = attachRuntime(buffer.runtime, result.current, `disk-note-${target}`)
+		act(() => {
+			editor.view.dispatch({
+				changes: { from: editor.view.state.doc.length, insert: "edit\n" },
+				annotations: isolateHistory.of("full"),
+			})
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(buffer.runtime.source).toBe(source)
+		await act(async () => {
+			expect(
+				await result.current.executeAgendaCommand(prepared.entry, {
+					kind: "cycle-todo",
+					note: "late",
+					timestamp: todoStamp,
+				}),
+			).toEqual({ kind: "stale" })
+		})
+		expect(buffer.runtime.source).toBe(source)
+		editor.dispose()
+		const fresh = await result.current.executeAgendaCommand(row, {
+			kind: "cycle-todo",
+			timestamp: todoStamp,
+		})
+		if (fresh.kind !== "needs-note") throw new Error("expected fresh note request")
+		await act(async () => {
+			expect(await result.current.closeDocumentPath("z.org")).toBe(true)
+			await result.current.openDocumentPath("z.org")
+			expect(
+				await result.current.executeAgendaCommand(fresh.entry, {
+					kind: "cycle-todo",
+					note: "late",
+					timestamp: todoStamp,
+				}),
+			).toEqual({ kind: "stale" })
+		})
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+	it("rejects disk command edit/undo ABA inside the commit-start callback", async () => {
+		const { result } = await setup()
+		const source = "* TODO task\n<2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const runtime = result.current.activeBufferRuntime!
+		const editor = attachRuntime(runtime, result.current, "disk-commit-aba")
+		await act(async () => {
+			expect(
+				await result.current.executeAgendaCommand(
+					agendaRow(source),
+					{ kind: "cycle-todo", timestamp: todoStamp },
+					undefined,
+					{
+						onCommitStarted: () => {
+							editor.view.dispatch({
+								changes: { from: editor.view.state.doc.length, insert: "edit\n" },
+								annotations: isolateHistory.of("full"),
+							})
+							expect(editor.handle.undo()).toBe(true)
+						},
+					},
+				),
+			).toEqual({ kind: "stale" })
+		})
+		expect(runtime.source).toBe(source)
+		editor.dispose()
+	})
+	it("revalidates a frozen note snapshot and applies literal note atomically", async () => {
+		const { result } = await setup()
+		const source = "#+TODO: NEXT | FINISHED(f@)\n* NEXT task\n<2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		const row = agendaRow(source)
+		const prepared = await result.current.executeAgendaCommand(row, {
+			kind: "cycle-todo",
+			timestamp: todoStamp,
+		})
+		expect(prepared.kind).toBe("needs-note")
+		if (prepared.kind !== "needs-note") throw new Error("expected note request")
+		expect(Object.isFrozen(prepared.entry)).toBe(true)
+		expect(Object.isFrozen(prepared.entry.origin)).toBe(true)
+		expect(prepared.entry).not.toBe(row)
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-2" }),
+		)
+		await act(async () => {
+			expect(
+				await result.current.executeAgendaCommand(prepared.entry, {
+					kind: "cycle-todo",
+					note: "literal [note]",
+					timestamp: todoStamp,
+				}),
+			).toEqual({ kind: "stale" })
+		})
+		expect(
+			result.current.liveBuffers.some((buffer) => buffer.document.relativePath === "z.org"),
+		).toBe(false)
+		await act(async () => {
+			expect(
+				await result.current.executeAgendaCommand(prepared.entry, {
+					kind: "cycle-todo",
+					note: "literal [note]",
+					timestamp: todoStamp,
+				}),
+			).toEqual({ kind: "confirmed" })
+		})
+		const runtime = result.current.liveBuffers.find(
+			(buffer) => buffer.document.relativePath === "z.org",
+		)!.runtime
+		expect(runtime.source).toContain("* FINISHED task")
+		expect(runtime.source).toContain("literal [note]")
+		expect(undoDepth(runtime.state)).toBe(1)
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 	})
 	it("rejects invalid TODO clocks before reading or allocating", async () => {
@@ -654,6 +813,63 @@ describe("Org capture entry and transient drafts", () => {
 		expect(nativeState.isBusy).toBe(false)
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 	})
+	it.each([
+		"active",
+		"parked",
+	] as const)("rechecks synchronous late pause/conflict before the canonical Agenda Tx (%s)", async (target) => {
+		const { result } = await setup()
+		const source = "* TODO task\nSCHEDULED: <2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const runtime = result.current.activeBufferRuntime!
+		const id = result.current.activeBufferId!
+		const row = agendaRow(source, "z.org", id, true)
+		if (target === "parked") {
+			await act(async () => {
+				await result.current.openDocumentPath("inbox.org")
+			})
+		}
+		const before = runtime.state
+		const revision = runtime.revision
+		// A synchronous uncertain-write exception runs the real Root catch/finally:
+		// it latches path-local flags and releases busy ownership before returning.
+		vi.mocked(captureOrgEntryFlow).mockImplementationOnce(() => () => {
+			throw new Error("late uncertain capture")
+		})
+		let capture!: Promise<unknown>
+		const onCommitStarted = vi.fn(() => {
+			capture = result.current.captureEntry("* captured\n", "z.org")
+		})
+		await act(async () => {
+			expect(
+				await result.current.executeAgendaCommand(
+					row,
+					{ kind: "schedule", date: "2026-07-09" },
+					undefined,
+					{ onCommitStarted },
+				),
+			).toMatchObject({ kind: "rejected" })
+			expect(await capture).toMatchObject({ kind: "uncertain" })
+		})
+		expect(onCommitStarted).toHaveBeenCalledTimes(1)
+		expect(captureOrgEntryFlow).toHaveBeenCalledTimes(1)
+		expect(runtime.state).toBe(before)
+		expect(runtime.source).toBe(source)
+		expect(runtime.revision).toBe(revision)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(redoDepth(runtime.state)).toBe(0)
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === "z.org"),
+		).toMatchObject({ hasConflict: true, autosavePaused: true })
+		expect(result.current.isLoading).toBe(false)
+		expect(nativeState.isBusy).toBe(false)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
 	it("does not release a fresh Root read owner started reentrantly by the commit-start observer", async () => {
 		const hook = renderHook(() => useOrgWorkspace())
 		agendaOwner = () => hook.result.current
@@ -2010,6 +2226,83 @@ describe("Org capture entry and transient drafts", () => {
 		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
 	})
 
+	it.each([
+		"conflict",
+		"pause",
+	] as const)("late G1 %s refresh cannot deny a G2 exact-path Editor note permit", async (failure) => {
+		const { result } = await setup()
+		const oldRuntime = result.current.activeBufferRuntime!
+		const oldEditor = attachRuntime(oldRuntime, result.current, "old-note-pane")
+		act(() => oldEditor.view.dispatch({ changes: { from: 0, insert: "dirty " } }))
+		let settle!: (value: E.Either<never, OrgDocumentInterface>) => void
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(
+			() =>
+				new Promise((resolve) => {
+					settle = resolve
+				}),
+		)
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(2000)
+		})
+		expect(settle).toBeTypeOf("function")
+		vi.mocked(window.confirm).mockReturnValue(true)
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValueOnce(async () =>
+			E.right({ ...workspace, capabilityToken: "G2" }),
+		)
+		await act(async () => {
+			await result.current.openDefaultWorkspace()
+		})
+		await act(async () => {
+			await result.current.openDocumentPath("inbox.org")
+		})
+		const runtime = result.current.activeBufferRuntime!
+		const editor = attachRuntime(runtime, result.current, "G2-note-pane")
+		const permit = result.current.captureBufferWindowPermit("G2-note-pane", runtime.key.bufferId)
+		expect(result.current.workspaceSessionId).toBe("G2")
+		expect(permit()).toBe(true)
+		const state = runtime.state
+		await act(async () => {
+			settle(
+				failure === "conflict"
+					? E.right({ ...captured, revision: "late-G1-revision" })
+					: E.left({ type: "IO_ERROR", message: "late G1 refresh failure" } as never),
+			)
+		})
+		expect(permit()).toBe(true)
+		expect(runtime.state).toBe(state)
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === "inbox.org"),
+		).toMatchObject({ hasConflict: false, autosavePaused: false })
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		editor.dispose()
+		oldEditor.dispose()
+	})
+
+	it("captures exact window registrations without reviving revoked same-ID permits", async () => {
+		const { result } = await setup()
+		const id = result.current.activeBufferId!
+		const missing = result.current.captureBufferWindowPermit("exact-pane", id)
+		expect(missing()).toBe(false)
+		const release = result.current.registerBufferWindow("exact-pane", id)
+		const captured = result.current.captureBufferWindowPermit("exact-pane", id)
+		expect(captured()).toBe(true)
+		expect(missing()).toBe(false)
+		expect(result.current.captureBufferWindowPermit("exact-pane", "wrong-buffer")()).toBe(false)
+		release()
+		expect(captured()).toBe(false)
+		const replacementRelease = result.current.registerBufferWindow("exact-pane", id)
+		const replacement = result.current.captureBufferWindowPermit("exact-pane", id)
+		expect(captured()).toBe(false)
+		expect(replacement()).toBe(true)
+		release()
+		expect(replacement()).toBe(true)
+		const newerRelease = result.current.registerBufferWindow("exact-pane", id)
+		expect(replacement()).toBe(false)
+		expect(result.current.captureBufferWindowPermit("exact-pane", id)()).toBe(true)
+		replacementRelease()
+		newerRelease()
+	})
+
 	it("edits parked live buffers only through matching window leases and preserves history on focus", async () => {
 		const { result } = await setup()
 		const a = result.current.activeBufferRuntime!
@@ -2802,7 +3095,8 @@ describe("Org capture entry and transient drafts", () => {
 		const setter = result.current.setTransientDirty
 		const staleCapture = result.current.captureEntry
 		act(() => {
-			setter("draft", true)
+			expect(setter("draft", true)).toBe(true)
+			expect(setter("draft", true)).toBe(true)
 			expect(nativeState.hasDirtyBuffers).toBe(true)
 		})
 		await act(async () => {
@@ -2815,7 +3109,7 @@ describe("Org capture entry and transient drafts", () => {
 		await act(async () => {
 			await result.current.openDocumentPath("inbox.org")
 		})
-		act(() => setter("draft", false))
+		act(() => expect(setter("draft", false)).toBe(true))
 		expect(nativeState.hasDirtyBuffers).toBe(false)
 		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () =>
 			E.right({ ...workspace, capabilityToken: "G2" }),
@@ -2823,8 +3117,11 @@ describe("Org capture entry and transient drafts", () => {
 		await act(async () => {
 			await result.current.openDefaultWorkspace()
 		})
-		act(() => result.current.setTransientDirty("draft", true))
-		act(() => setter("draft", false))
+		act(() => expect(result.current.setTransientDirty("draft", true)).toBe(true))
+		act(() => {
+			expect(setter("draft", false)).toBe(false)
+			expect(setter("old-draft", true)).toBe(false)
+		})
 		expect(nativeState.hasDirtyBuffers).toBe(true)
 		await act(async () => {
 			expect(await staleCapture("* Old", "inbox.org")).toMatchObject({ kind: "rejected" })

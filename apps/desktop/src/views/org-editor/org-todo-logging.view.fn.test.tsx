@@ -3,23 +3,24 @@ import { foldEffect, foldedRanges } from "@codemirror/language"
 import { EditorView } from "@codemirror/view"
 import { act, cleanup, createEvent, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
+import type { OrgTodoNoteRequest } from "@/flows/org-command/org-todo-note"
 import { createOrgBufferRuntime } from "@/flows/org-editor-runtime"
-import { OrgEditor } from "./org-editor.view.fn"
 import type { OrgEditorCommandTarget } from "./org-editor.types"
+import { OrgEditor } from "./org-editor.view.fn"
 
 const stamp = "[2026-06-16 Tue 09:42]"
 const viewFor = (name = "Org document editor") =>
 	EditorView.findFromDOM(screen.getByRole("textbox", { name }))!
 const todoKey = (view: EditorView, prefix: boolean) => {
 	if (prefix) {
-		fireEvent.keyDown(view.contentDOM, { key: "c", ctrlKey: true })
-		fireEvent.keyDown(view.contentDOM, { key: "t", ctrlKey: true })
+		fireEvent.keyDown(view.contentDOM, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(view.contentDOM, { ctrlKey: true, key: "t" })
 	} else {
 		fireEvent.keyDown(view.contentDOM, {
-			key: "T",
-			code: "KeyT",
-			keyCode: 84,
 			altKey: true,
+			code: "KeyT",
+			key: "T",
+			keyCode: 84,
 			shiftKey: true,
 		})
 	}
@@ -34,7 +35,7 @@ describe("OrgEditor TODO logging boundary", () => {
 			const oldClock = vi.fn(() => "[2026-06-16 Tue 08:00]")
 			const clock = vi.fn(() => stamp)
 			const change = vi.fn()
-			const props = { value: source, onChange: change, onSave: vi.fn() }
+			const props = { onChange: change, onSave: vi.fn(), value: source }
 			const mounted = render(<OrgEditor {...props} todoClock={oldClock} />)
 			mounted.rerender(<OrgEditor {...props} todoClock={clock} />)
 			const view = viewFor()
@@ -57,7 +58,7 @@ describe("OrgEditor TODO logging boundary", () => {
 			})
 			expect(view.state.sliceDoc()).toBe(result)
 		})
-		it(`rejects note-required transitions without mutation (${prefix})`, () => {
+		it(`collects note-required transitions without premature mutation (${prefix})`, () => {
 			const source = "#+TODO: TODO | DONE(d@)\n* TODO task\n"
 			const rejected = vi.fn(),
 				change = vi.fn()
@@ -76,12 +77,185 @@ describe("OrgEditor TODO logging boundary", () => {
 			expect(view.state.sliceDoc()).toBe(source)
 			expect(undoDepth(view.state)).toBe(0)
 			expect(change).not.toHaveBeenCalled()
-			expect(rejected).toHaveBeenCalledWith("needs-note")
-			expect(screen.getByRole("status")).toHaveTextContent(
-				"This TODO transition requires a note; the state was not changed.",
-			)
+			expect(rejected).not.toHaveBeenCalled()
+			const note = screen.getByRole("textbox", { name: "TODO note" })
+			fireEvent.change(note, { target: { value: "first line\n* literal heading\n:END:\n" } })
+			fireEvent.click(screen.getByRole("button", { name: "Finish note" }))
+			expect(view.state.sliceDoc()).toContain("* DONE task")
+			expect(view.state.sliceDoc()).toContain("literal heading")
+			expect(change).toHaveBeenCalledTimes(1)
+			expect(undoDepth(view.state)).toBe(1)
+			act(() => {
+				undo(view)
+			})
+			expect(view.state.sliceDoc()).toBe(source)
 		})
 	}
+
+	it.each([
+		true,
+		false,
+	])("preserves drafts on duplicate TODO keys and uses the finish clock (%s)", (prefix) => {
+		const source = "#+TODO: TODO | DONE(d@)\n* TODO task\n"
+		const clock = vi.fn(() => stamp)
+		render(<OrgEditor value={source} onChange={vi.fn()} onSave={vi.fn()} todoClock={clock} />)
+		const view = viewFor()
+		act(() => view.dispatch({ selection: { anchor: view.state.doc.line(2).from } }))
+		act(() => todoKey(view, prefix))
+		const note = screen.getByRole("textbox", { name: "TODO note" })
+		fireEvent.change(note, { target: { value: "owned draft" } })
+		act(() => todoKey(view, prefix))
+		expect(screen.getByRole("textbox", { name: "TODO note" })).toBe(note)
+		expect(note).toHaveValue("owned draft")
+		expect(clock).toHaveBeenCalledTimes(1)
+		const finishStamp = "[2026-06-16 Tue 10:45]"
+		clock.mockReturnValue(finishStamp)
+		fireEvent.click(screen.getByRole("button", { name: "Finish note" }))
+		expect(view.state.sliceDoc()).toContain("owned draft")
+		expect(view.state.sliceDoc()).toContain(finishStamp)
+		expect(view.state.sliceDoc()).not.toContain(stamp)
+		expect(clock).toHaveBeenCalledTimes(2)
+	})
+
+	it.each([
+		false,
+		true,
+	])("preserves publication callback focus after standalone finish (throws=%s)", (throws) => {
+		const source = "#+TODO: TODO | DONE(d@)\n* TODO task\n"
+		const change = vi.fn(() => {
+			screen.getByRole("button", { name: "External" }).focus()
+			if (throws) throw new Error("publication failed after commit")
+		})
+		render(
+			<>
+				<button type="button">External</button>
+				<OrgEditor value={source} onChange={change} onSave={vi.fn()} todoClock={() => stamp} />
+			</>,
+		)
+		const view = viewFor()
+		act(() => {
+			view.focus()
+			view.dispatch({ selection: { anchor: view.state.doc.line(2).from } })
+			todoKey(view, true)
+		})
+		const note = screen.getByRole("textbox", { name: "TODO note" })
+		expect(note).toHaveFocus()
+		fireEvent.change(note, { target: { value: "published" } })
+		fireEvent.keyDown(note, { key: "s", ctrlKey: true })
+		expect(view.state.sliceDoc()).toContain("* DONE task")
+		expect(view.state.sliceDoc()).toContain("published")
+		expect(change).toHaveBeenCalledOnce()
+		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+		expect(screen.getByRole("button", { name: "External" })).toHaveFocus()
+	})
+
+	it.each(["finish", "abort"])("restores the exact standalone request origin on %s", (action) => {
+		const source = "#+TODO: TODO | DONE(d@)\n* TODO task\n"
+		render(<OrgEditor value={source} onChange={vi.fn()} onSave={vi.fn()} todoClock={() => stamp} />)
+		const view = viewFor()
+		act(() => {
+			view.focus()
+			view.dispatch({ selection: { anchor: view.state.doc.line(2).from } })
+			todoKey(view, true)
+		})
+		const note = screen.getByRole("textbox", { name: "TODO note" })
+		expect(note).toHaveFocus()
+		fireEvent.change(note, { target: { value: "owned note" } })
+		fireEvent.keyDown(note, { key: action === "finish" ? "s" : "g", ctrlKey: true })
+		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+		expect(view.contentDOM).toHaveFocus()
+		if (action === "abort") {
+			expect(view.state.sliceDoc()).toBe(source)
+			expect(undoDepth(view.state)).toBe(0)
+		}
+	})
+
+	it("does not steal foreign focus on standalone cancellation", () => {
+		const source = "#+TODO: TODO | DONE(d@)\n* TODO task\n"
+		render(
+			<>
+				<button type="button">External</button>
+				<OrgEditor value={source} onChange={vi.fn()} onSave={vi.fn()} todoClock={() => stamp} />
+			</>,
+		)
+		const view = viewFor()
+		act(() => {
+			view.focus()
+			view.dispatch({ selection: { anchor: view.state.doc.line(2).from } })
+			todoKey(view, true)
+		})
+		screen.getByRole("button", { name: "External" }).focus()
+		fireEvent.click(screen.getByRole("button", { name: "Abort note" }))
+		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+		expect(screen.getByRole("button", { name: "External" })).toHaveFocus()
+		expect(view.state.sliceDoc()).toBe(source)
+		expect(undoDepth(view.state)).toBe(0)
+	})
+
+	it("refuses batch edits against a closed canonical runtime without dispatching", () => {
+		const source = "* TODO task\n"
+		let target: OrgEditorCommandTarget | null = null
+		const runtime = createOrgBufferRuntime({
+			canCommit: () => true,
+			key: { bufferId: "closed-note", workspaceSessionId: "test" },
+			onCommit: vi.fn(),
+			source,
+		})
+		render(
+			<OrgEditor
+				runtime={runtime}
+				value={source}
+				onChange={vi.fn()}
+				onSave={vi.fn()}
+				onCommandTarget={(next) => {
+					target = next
+				}}
+			/>,
+		)
+		runtime.close()
+		expect(
+			target!.applyEdits!(source, {
+				changes: [{ from: 2, to: 6, insert: "DONE" }],
+				cursor: 2,
+			}),
+		).toBe(false)
+		expect(viewFor().state.sliceDoc()).toBe(source)
+	})
+
+	it("reports applied when a runtime publication callback throws after commit", () => {
+		const source = "#+TODO: TODO | DONE(d@)\n* TODO task\n"
+		let request: OrgTodoNoteRequest | undefined
+		const runtime = createOrgBufferRuntime({
+			canCommit: () => true,
+			key: { bufferId: "throw-note", workspaceSessionId: "test" },
+			onCommit: () => {
+				throw new Error("publication failed")
+			},
+			source,
+		})
+		render(
+			<OrgEditor
+				getTodoNotePermit={() => () => true}
+				runtime={runtime}
+				value={source}
+				onChange={vi.fn()}
+				onSave={vi.fn()}
+				todoClock={() => stamp}
+				onTodoNoteRequest={(next) => {
+					request = next
+				}}
+			/>,
+		)
+		const view = viewFor()
+		act(() => {
+			view.dispatch({ selection: { anchor: view.state.doc.line(2).from } })
+			todoKey(view, true)
+		})
+		act(() => expect(request!.execute("committed")).toEqual({ kind: "applied" }))
+		expect(runtime.source).toContain("committed")
+		expect(runtime.revision).toBe(1)
+		expect(request!.execute("again")).toMatchObject({ kind: "rejected" })
+	})
 
 	it.each([
 		["CLOSED:[2025-04-01]", "CLOSED:[2026-06-16]"],
@@ -157,17 +331,17 @@ describe("OrgEditor TODO logging boundary", () => {
 		const source = "#+STARTUP: logdone\n* TODO task\nbody\n* Peer\npeer body\n"
 		const commit = vi.fn()
 		const runtime = createOrgBufferRuntime({
-			key: { bufferId: "todo", workspaceSessionId: "test" },
-			source,
 			canCommit: () => true,
+			key: { bufferId: "todo", workspaceSessionId: "test" },
 			onCommit: commit,
+			source,
 		})
 		const props = {
-			runtime,
-			value: source,
 			onChange: vi.fn(),
 			onSave: vi.fn(),
+			runtime,
 			todoClock: () => stamp,
+			value: source,
 		}
 		render(
 			<>
@@ -180,8 +354,8 @@ describe("OrgEditor TODO logging boundary", () => {
 		act(() => {
 			a.dispatch({ selection: { anchor: a.state.doc.line(2).from } })
 			b.dispatch({
-				selection: { anchor: source.indexOf("* Peer") + 2 },
 				effects: foldEffect.of({ from: b.state.doc.line(4).to, to: b.state.doc.line(5).to }),
+				selection: { anchor: source.indexOf("* Peer") + 2 },
 			})
 		})
 		const peerChanges: { from: number; to: number; length: number }[] = []
@@ -189,7 +363,7 @@ describe("OrgEditor TODO logging boundary", () => {
 		const updateSpy = vi.spyOn(b, "update").mockImplementation((transactions) => {
 			for (const transaction of transactions)
 				transaction.changes.iterChangedRanges((from, to) => {
-					peerChanges.push({ from, to, length: transaction.startState.doc.length })
+					peerChanges.push({ from, length: transaction.startState.doc.length, to })
 				})
 			update(transactions)
 		})
@@ -204,7 +378,7 @@ describe("OrgEditor TODO logging boundary", () => {
 		expect(foldedRanges(b.state).size).toBe(1)
 		expect(foldedRanges(a.state).size).toBe(0)
 		expect(undoDepth(runtime.state)).toBe(1)
-		act(() => fireEvent.keyDown(b.contentDOM, { key: "z", ctrlKey: true }))
+		act(() => fireEvent.keyDown(b.contentDOM, { ctrlKey: true, key: "z" }))
 		expect(runtime.source).toBe(source)
 		expect(a.state.sliceDoc()).toBe(source)
 		expect(b.state.sliceDoc()).toBe(source)
@@ -301,13 +475,13 @@ describe("OrgEditor TODO logging boundary", () => {
 				{ consumed: true },
 			]) {
 				act(() => {
-					if (prefix) fireEvent.keyDown(view.contentDOM, { key: "c", ctrlKey: true })
+					if (prefix) fireEvent.keyDown(view.contentDOM, { ctrlKey: true, key: "c" })
 					const event = createEvent.keyDown(view.contentDOM, {
-						key: prefix ? "t" : "T",
-						code: "KeyT",
-						keyCode: 84,
-						ctrlKey: prefix,
 						altKey: !prefix,
+						code: "KeyT",
+						ctrlKey: prefix,
+						key: prefix ? "t" : "T",
+						keyCode: 84,
 						shiftKey: !prefix,
 						...guard,
 					})
@@ -328,17 +502,209 @@ describe("OrgEditor TODO logging boundary", () => {
 
 	it("fences readonly and repeated/IME shortcuts before reading the clock", () => {
 		const clock = vi.fn(() => stamp)
-		const props = { value: "* TODO task", onChange: vi.fn(), onSave: vi.fn(), todoClock: clock }
+		const props = { onChange: vi.fn(), onSave: vi.fn(), todoClock: clock, value: "* TODO task" }
 		const mounted = render(<OrgEditor {...props} readOnly />)
 		const view = viewFor()
 		act(() => todoKey(view, true))
 		mounted.rerender(<OrgEditor {...props} />)
 		for (const guard of [{ repeat: true }, { isComposing: true }, { keyCode: 229 }]) {
 			act(() =>
-				fireEvent.keyDown(view.contentDOM, { key: "T", altKey: true, shiftKey: true, ...guard }),
+				fireEvent.keyDown(view.contentDOM, { altKey: true, key: "T", shiftKey: true, ...guard }),
 			)
 		}
 		expect(view.state.sliceDoc()).toBe(props.value)
 		expect(clock).not.toHaveBeenCalled()
+	})
+	it.each([
+		"missing",
+		"preparation-clock",
+		"finish-clock",
+		"same-ID-replacement",
+	] as const)("requires exact Root note authority (%s)", (mode) => {
+		const source = "#+TODO: TODO | DONE(d@)\n* TODO task\n"
+		let request: OrgTodoNoteRequest | undefined
+		let registration: object | null = {}
+		let clockCalls = 0
+		const runtime = createOrgBufferRuntime({
+			canCommit: () => true,
+			key: { bufferId: "exact-note", workspaceSessionId: "test" },
+			onCommit: vi.fn(),
+			source,
+		})
+		render(
+			<OrgEditor
+				runtime={runtime}
+				windowId="same-window"
+				value={source}
+				onChange={vi.fn()}
+				onSave={vi.fn()}
+				getTodoNotePermit={
+					mode === "missing"
+						? undefined
+						: () => {
+								const captured = registration
+								return () => captured !== null && registration === captured
+							}
+				}
+				todoClock={() => {
+					clockCalls++
+					if (mode === "preparation-clock" || (mode === "finish-clock" && clockCalls === 2)) {
+						registration = null
+						registration = {} // Same IDs, but a different Root registration.
+					}
+					return stamp
+				}}
+				onTodoNoteRequest={(next) => {
+					request = next
+				}}
+			/>,
+		)
+		const view = viewFor()
+		act(() => {
+			view.dispatch({ selection: { anchor: view.state.doc.line(2).from } })
+			todoKey(view, true)
+		})
+		if (mode === "missing" || mode === "preparation-clock") {
+			expect(request).toBeUndefined()
+		} else {
+			expect(request!.validate!()).toEqual({ kind: "ready" })
+			if (mode === "same-ID-replacement") {
+				registration = null
+				registration = {}
+			}
+			act(() => {
+				expect(request!.execute("must not commit")).toEqual({
+					kind: "rejected",
+					reason: "stale-note-request",
+				})
+			})
+		}
+		expect(runtime.source).toBe(source)
+		expect(runtime.revision).toBe(0)
+		expect(undoDepth(runtime.state)).toBe(0)
+	})
+
+	it("delegates an opaque snapshot capability and refuses reuse, abort and source ABA", () => {
+		const source = "#+TODO: TODO | DONE(d@)\n* TODO task\n"
+		let request: OrgTodoNoteRequest | undefined
+		const runtime = createOrgBufferRuntime({
+			canCommit: () => true,
+			key: { bufferId: "note", workspaceSessionId: "test" },
+			onCommit: vi.fn(),
+			source,
+		})
+		render(
+			<OrgEditor
+				getTodoNotePermit={() => () => true}
+				runtime={runtime}
+				value={source}
+				onChange={vi.fn()}
+				onSave={vi.fn()}
+				todoClock={() => stamp}
+				onTodoNoteRequest={(next) => {
+					request = next
+				}}
+			/>,
+		)
+		const view = viewFor()
+		act(() => {
+			view.dispatch({ selection: { anchor: view.state.doc.line(2).from } })
+			todoKey(view, true)
+		})
+		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+		expect(request!.validate!()).toEqual({ kind: "ready" })
+		act(() => {
+			runtime.applyControllerSource(source, source + "changed")
+			runtime.applyControllerSource(source + "changed", source)
+		})
+		expect(request!.execute("retained")).toEqual({ kind: "rejected", reason: "stale-note-request" })
+		request!.abort()
+		act(() => todoKey(view, true))
+		act(() => {
+			expect(request!.execute("literal\ntext")).toEqual({ kind: "applied" })
+		})
+		expect(request!.execute("twice")).toMatchObject({ kind: "rejected" })
+	})
+
+	it("retains the local draft for copying after readonly invalidates its lease", () => {
+		const source = "#+TODO: TODO | DONE(d@)\n* TODO task\n"
+		const props = { onChange: vi.fn(), onSave: vi.fn(), todoClock: () => stamp, value: source }
+		const mounted = render(<OrgEditor {...props} />)
+		const view = viewFor()
+		act(() => {
+			view.dispatch({ selection: { anchor: view.state.doc.line(2).from } })
+			todoKey(view, true)
+		})
+		fireEvent.change(screen.getByRole("textbox", { name: "TODO note" }), {
+			target: { value: "keep me\nplease" },
+		})
+		mounted.rerender(<OrgEditor {...props} readOnly />)
+		fireEvent.click(screen.getByRole("button", { name: "Finish note" }))
+		expect(screen.getByRole("textbox", { name: "TODO note" })).toHaveValue("keep me\nplease")
+		expect(screen.getByRole("status")).toHaveTextContent("stale-note-request")
+		expect(view.state.sliceDoc()).toBe(source)
+	})
+
+	it("fences scratch IME/repeat, preserves native copy and aborts without history", () => {
+		const source = "#+TODO: TODO | DONE(d@)\n* TODO task\n"
+		render(<OrgEditor value={source} onChange={vi.fn()} onSave={vi.fn()} todoClock={() => stamp} />)
+		const view = viewFor()
+		act(() => {
+			view.dispatch({ selection: { anchor: view.state.doc.line(2).from } })
+			todoKey(view, true)
+		})
+		const note = screen.getByRole("textbox", { name: "TODO note" }) as HTMLTextAreaElement
+		fireEvent.change(note, { target: { value: "copy me" } })
+		note.setSelectionRange(0, 7)
+		const copy = createEvent.keyDown(note, { ctrlKey: true, key: "c" })
+		fireEvent(note, copy)
+		expect(copy.defaultPrevented).toBe(false)
+		note.setSelectionRange(7, 7)
+		for (const guard of [{ repeat: true }, { isComposing: true }, { keyCode: 229 }]) {
+			fireEvent.keyDown(note, { ctrlKey: true, key: "c", ...guard })
+			fireEvent.keyDown(note, { ctrlKey: true, key: "g", ...guard })
+		}
+		expect(view.state.sliceDoc()).toBe(source)
+		expect(undoDepth(view.state)).toBe(0)
+		fireEvent.keyDown(note, { ctrlKey: true, key: "g" })
+		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+	})
+	it("finishes local scratch with Ctrl-C Ctrl-C and revokes callbacks on unmount", () => {
+		const source = "#+TODO: TODO | DONE(d@)\n* TODO task\n"
+		const mounted = render(
+			<OrgEditor value={source} onChange={vi.fn()} onSave={vi.fn()} todoClock={() => stamp} />,
+		)
+		const view = viewFor()
+		act(() => {
+			view.dispatch({ selection: { anchor: view.state.doc.line(2).from } })
+			todoKey(view, true)
+		})
+		const note = screen.getByRole("textbox", { name: "TODO note" })
+		fireEvent.change(note, { target: { value: "done" } })
+		fireEvent.keyDown(note, { key: "c", ctrlKey: true })
+		expect(view.state.sliceDoc()).toBe(source)
+		fireEvent.keyDown(note, { key: "c", ctrlKey: true })
+		expect(view.state.sliceDoc()).toContain("* DONE task")
+		expect(undoDepth(view.state)).toBe(1)
+		mounted.unmount()
+		let request: OrgTodoNoteRequest | undefined
+		const delegated = render(
+			<OrgEditor
+				value={source}
+				onChange={vi.fn()}
+				onSave={vi.fn()}
+				todoClock={() => stamp}
+				onTodoNoteRequest={(next) => {
+					request = next
+				}}
+			/>,
+		)
+		const second = viewFor()
+		act(() => {
+			second.dispatch({ selection: { anchor: second.state.doc.line(2).from } })
+			todoKey(second, true)
+		})
+		delegated.unmount()
+		expect(request!.execute("too late")).toEqual({ kind: "rejected", reason: "stale-note-request" })
 	})
 })

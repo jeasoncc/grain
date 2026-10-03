@@ -1,5 +1,6 @@
 import type { EditorState } from "@codemirror/state"
 import type { OrgBufferViewPayload } from "@/flows/org-command/org-buffer-command"
+import type { OrgTodoNoteRequest } from "@/flows/org-command/org-todo-note"
 import type { OrgBufferRuntime } from "@/flows/org-editor-runtime"
 import type { OrgLinkClickTarget, OrgTextEdit, OrgTextEditBatch } from "@/pipes/org"
 import type { OrgPrefixSession } from "@/types/editor/org-keymap.interface"
@@ -46,6 +47,9 @@ export interface OrgEditorProps {
 	/** Effect boundary for TODO logging; defaults to the current local time. */
 	readonly todoClock?: () => string
 	readonly onTodoRejected?: (reason: string) => void
+	readonly onTodoNoteRequest?: (request: OrgTodoNoteRequest) => void
+	/** Capture Root's exact mounted-window registration, required for runtime TODO notes. */
+	readonly getTodoNotePermit?: () => () => boolean
 	readonly onCommandTarget?: (target: OrgEditorCommandTarget | null) => void
 	readonly onPrefixChange?: (prefix: OrgPrefixSession | null) => void
 	readonly prefixContextKey?: string

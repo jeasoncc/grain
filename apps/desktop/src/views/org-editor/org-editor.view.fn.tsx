@@ -36,6 +36,7 @@ import {
 } from "@codemirror/view"
 import { memo, useEffect, useRef, useState } from "react"
 import { resolveOrgPrefixKey } from "@/flows/org-command/org-prefix-keymap"
+import type { OrgTodoNoteRequest, OrgTodoNoteResult } from "@/flows/org-command/org-todo-note"
 import {
 	createOrgWindowEffectRegistry,
 	type OrgBufferWindowHandle,
@@ -43,13 +44,13 @@ import {
 import {
 	changeOrgHeadingLevelAt,
 	formatOrgLocalTimestamp,
-	planOrgTodoTransition,
 	insertOrgTimestampAt,
 	moveOrgSubtreeAt,
 	type OrgTextEdit,
 	orgFileLinkAt,
 	orgLinkTargetAt,
 	parseOrgTodoKeywords,
+	planOrgTodoTransition,
 	toggleOrgCheckboxAt,
 } from "@/pipes/org"
 import { parseOrgSparseTreeQuery } from "@/pipes/org/org-sparse-tree.pipe"
@@ -61,11 +62,12 @@ import { safeOrgSparseBoundaryChange } from "./org-sparse-boundary.pipe"
 import {
 	allowOrgSparseTreeSourceTransaction,
 	clearOrgSparseTree,
-	createOrgSparseHistoryController,
 	createOrgSparseBatchController,
+	createOrgSparseHistoryController,
 	orgSparseTreeField,
 	setOrgSparseTree,
 } from "./org-sparse-tree.extension"
+import { OrgTodoNote } from "./org-todo-note.view.fn"
 
 let nextWindowId = 0
 
@@ -351,6 +353,8 @@ export const OrgEditor = memo(function OrgEditor({
 	onSave,
 	todoClock = () => formatOrgLocalTimestamp(new Date()),
 	onTodoRejected,
+	onTodoNoteRequest,
+	getTodoNotePermit,
 	onCommandTarget,
 	onPrefixChange,
 	prefixContextKey,
@@ -383,6 +387,25 @@ export const OrgEditor = memo(function OrgEditor({
 	const onChangeRef = useRef(onChange)
 	const onSaveRef = useRef(onSave)
 	const [todoMessage, setTodoMessage] = useState<string | null>(null)
+	const [todoNote, setTodoNote] = useState<OrgTodoNoteRequest | null>(null)
+	const onTodoNoteRequestRef = useRef(onTodoNoteRequest)
+	const getTodoNotePermitRef = useRef(getTodoNotePermit)
+	const noteRequestRef = useRef<OrgTodoNoteRequest | null>(null)
+	const noteRequestIdRef = useRef(0)
+	const localNoteOwnerRef = useRef<{
+		request: OrgTodoNoteRequest
+		editor: EditorView
+		target: OrgEditorCommandTarget | null
+	} | null>(null)
+	const localRevisionRef = useRef(0)
+	const noteContextRef = useRef({
+		documentPath,
+		prefixContextKey,
+		readOnly,
+		runtime,
+		sessionKey,
+		windowId,
+	})
 	const todoClockRef = useRef(todoClock)
 	const onTodoRejectedRef = useRef(onTodoRejected)
 	const commandTargetRef = useRef<OrgEditorCommandTarget | null>(null)
@@ -413,6 +436,26 @@ export const OrgEditor = memo(function OrgEditor({
 	onSaveRef.current = onSave
 	todoClockRef.current = todoClock
 	onTodoRejectedRef.current = onTodoRejected
+	onTodoNoteRequestRef.current = onTodoNoteRequest
+	getTodoNotePermitRef.current = getTodoNotePermit
+	const previousNoteContext = noteContextRef.current
+	if (
+		previousNoteContext.runtime !== runtime ||
+		previousNoteContext.windowId !== windowId ||
+		previousNoteContext.sessionKey !== sessionKey ||
+		previousNoteContext.documentPath !== documentPath ||
+		previousNoteContext.prefixContextKey !== prefixContextKey ||
+		previousNoteContext.readOnly !== readOnly
+	) {
+		noteContextRef.current = {
+			documentPath,
+			prefixContextKey,
+			readOnly,
+			runtime,
+			sessionKey,
+			windowId,
+		}
+	}
 	onCommandTargetRef.current = onCommandTarget
 	onPrefixChangeRef.current = onPrefixChange
 	prefixTimeoutRef.current = prefixTimeoutMs
@@ -447,8 +490,14 @@ export const OrgEditor = memo(function OrgEditor({
 			applySourceEdit(view, edit, bufferRuntime !== null)
 		const batchController = createOrgSparseBatchController(() => viewRef.current)
 		const transitionTodo = (editor: EditorView): boolean => {
-			if (editor.state.readOnly) return true
+			if (editor.state.readOnly || noteRequestRef.current) return true
 			const source = editor.state.sliceDoc()
+			const context = noteContextRef.current
+			const handle = runtimeHandleRef.current
+			const revision = bufferRuntime?.revision ?? localRevisionRef.current
+			// Runtime installation (including null-origin normal commits) is not Root authority.
+			const permit = getTodoNotePermitRef.current?.() ?? (() => !bufferRuntime)
+			const cursor = sourceOffsetFromEditor(editor, editor.state.selection.main.head)
 			let stamp: string
 			try {
 				stamp = todoClockRef.current()
@@ -457,11 +506,101 @@ export const OrgEditor = memo(function OrgEditor({
 				onTodoRejectedRef.current?.("invalid-timestamp")
 				return true
 			}
-			const plan = planOrgTodoTransition(
-				source,
-				sourceOffsetFromEditor(editor, editor.state.selection.main.head),
-				stamp,
-			)
+			const plan = planOrgTodoTransition(source, cursor, stamp)
+			if (plan.kind === "needs-note") {
+				if (
+					!permit() ||
+					noteContextRef.current !== context ||
+					runtimeHandleRef.current !== handle ||
+					editor.state.readOnly ||
+					editor.state.sliceDoc() !== source ||
+					(bufferRuntime && (bufferRuntime.closed || !handle || bufferRuntime.source !== source)) ||
+					(bufferRuntime?.revision ?? localRevisionRef.current) !== revision
+				) {
+					setTodoMessage("Cannot change TODO state: stale-note-request.")
+					return true
+				}
+				const target = commandTargetRef.current
+				let active = true
+				const validate = (): OrgTodoNoteResult => {
+					if (
+						!active ||
+						!permit() ||
+						noteRequestRef.current !== request ||
+						viewRef.current !== editor ||
+						commandTargetRef.current !== target ||
+						runtimeHandleRef.current !== handle ||
+						noteContextRef.current !== context ||
+						editor.state.readOnly ||
+						editor.state.sliceDoc() !== source ||
+						(bufferRuntime &&
+							(bufferRuntime.closed || !handle || bufferRuntime.source !== source)) ||
+						(bufferRuntime?.revision ?? localRevisionRef.current) !== revision
+					)
+						return { kind: "rejected", reason: "stale-note-request" }
+					return { kind: "ready" }
+				}
+				const request: OrgTodoNoteRequest = {
+					abort: () => {
+						active = false
+						if (noteRequestRef.current === request) noteRequestRef.current = null
+					},
+					execute: (note) => {
+						const validity = validate()
+						if (validity.kind === "rejected") return validity
+						let finishStamp: string
+						try {
+							finishStamp = todoClockRef.current()
+						} catch {
+							return { kind: "rejected", reason: "invalid-timestamp" }
+						}
+						// The injected clock is an effect boundary and may synchronously revoke authority.
+						const afterClock = validate()
+						if (afterClock.kind === "rejected") return afterClock
+						const finished = planOrgTodoTransition(source, cursor, finishStamp, note)
+						if (finished.kind !== "edit")
+							return {
+								kind: "rejected",
+								reason: finished.kind === "rejected" ? finished.reason : finished.kind,
+							}
+						let nextSource = source
+						for (const edit of [...finished.edits].sort((a, b) => b.from - a.from)) {
+							const insert = bufferRuntime
+								? edit.insert
+								: edit.insert.replace(/\r\n|\r|\n/g, editor.state.lineBreak)
+							nextSource = nextSource.slice(0, edit.from) + insert + nextSource.slice(edit.to)
+						}
+						let applied = false
+						try {
+							applied =
+								target?.applyEdits?.(source, {
+									changes: finished.edits,
+									cursor: finished.edits[0].cursor,
+									requiredVisibleRanges: finished.edits.map(({ from, to }) => ({ from, to })),
+								}) ?? false
+						} catch {
+							// Publication callbacks may throw after the canonical commit succeeded.
+						}
+						applied =
+							applied ||
+							((bufferRuntime?.source ?? editor.state.sliceDoc()) === nextSource &&
+								(bufferRuntime?.revision ?? localRevisionRef.current) > revision)
+						if (!applied) return { kind: "rejected", reason: "commit-refused" }
+						request.abort()
+						return { kind: "applied" }
+					},
+					validate,
+				}
+				noteRequestRef.current = request
+				noteRequestIdRef.current++
+				setTodoMessage(null)
+				if (onTodoNoteRequestRef.current) onTodoNoteRequestRef.current(request)
+				else {
+					localNoteOwnerRef.current = { request, editor, target }
+					setTodoNote(request)
+				}
+				return true
+			}
 			setTodoMessage(
 				plan.kind === "rejected"
 					? plan.reason === "needs-note"
@@ -802,6 +941,7 @@ export const OrgEditor = memo(function OrgEditor({
 				}),
 			),
 			EditorView.updateListener.of((update) => {
+				if (update.docChanged) localRevisionRef.current++
 				const isExternalUpdate = update.transactions.some(
 					(transaction) => transaction.annotation(externalValueUpdate) === true,
 				)
@@ -856,8 +996,8 @@ export const OrgEditor = memo(function OrgEditor({
 			})
 			restoredState = restoredState.update({
 				annotations: [externalValueUpdate.of(true), Transaction.addToHistory.of(false)],
-				filter: false,
 				changes,
+				filter: false,
 				selection: restoredState.selection.map(changes, -1),
 			}).state
 		}
@@ -925,10 +1065,10 @@ export const OrgEditor = memo(function OrgEditor({
 		})
 		if (bufferRuntime) {
 			runtimeHandleRef.current = bufferRuntime.attachWindow({
-				preflightSourceTransaction: (tr) =>
-					allowOrgSparseTreeSourceTransaction(tr, effectRegistry.knownEffect),
 				knownLocalEffects: [EditorView.announce],
 				knownReconfigure: effectRegistry.knownEffect,
+				preflightSourceTransaction: (tr) =>
+					allowOrgSparseTreeSourceTransaction(tr, effectRegistry.knownEffect),
 				view,
 				windowId: windowIdRef.current,
 			})
@@ -1011,6 +1151,10 @@ export const OrgEditor = memo(function OrgEditor({
 			},
 			applyEdits: (expectedSource, batch) => {
 				if (
+					(bufferRuntime &&
+						(bufferRuntime.closed ||
+							!runtimeHandleRef.current ||
+							bufferRuntime.source !== expectedSource)) ||
 					viewRef.current !== view ||
 					view.state.readOnly ||
 					view.state.sliceDoc() !== expectedSource
@@ -1090,13 +1234,13 @@ export const OrgEditor = memo(function OrgEditor({
 						annotations: isolateHistory.of("full"),
 						changes: normalized.map(({ from, to, insert }) => ({
 							from: editorOffsetFromSource(expectedSource, from, view.state.lineBreak),
-							to: editorOffsetFromSource(expectedSource, to, view.state.lineBreak),
 							insert,
+							to: editorOffsetFromSource(expectedSource, to, view.state.lineBreak),
 						})),
+						scrollIntoView: true,
 						selection: {
 							anchor: editorOffsetFromSource(nextSource, batch.cursor, view.state.lineBreak),
 						},
-						scrollIntoView: true,
 					})
 					return (
 						view.state.sliceDoc() === nextSource &&
@@ -1148,6 +1292,7 @@ export const OrgEditor = memo(function OrgEditor({
 		commandTargetRef.current = commandTarget
 		onCommandTargetRef.current?.(commandTarget)
 		return () => {
+			noteRequestRef.current?.abort()
 			commandTargetRef.current = null
 			cancelScrollRestore()
 			cancelScrollRestoreRef.current = () => {}
@@ -1254,8 +1399,8 @@ export const OrgEditor = memo(function OrgEditor({
 			view.update([
 				view.state.update({
 					annotations,
-					filter: false,
 					changes,
+					filter: false,
 					selection: EditorSelection.create(
 						ranges.map((range) =>
 							EditorSelection.range(position(range.anchor), position(range.head)),
@@ -1317,6 +1462,24 @@ export const OrgEditor = memo(function OrgEditor({
 				<div role="status" className="shrink-0 px-3 py-1 text-sm">
 					{todoMessage}
 				</div>
+			)}
+			{todoNote && (
+				<OrgTodoNote
+					key={noteRequestIdRef.current}
+					request={todoNote}
+					onClose={(host) => {
+						const owner = localNoteOwnerRef.current
+						if (owner?.request !== todoNote) return
+						const restore =
+							host?.isConnected &&
+							host.contains(document.activeElement) &&
+							viewRef.current === owner.editor &&
+							commandTargetRef.current === owner.target
+						localNoteOwnerRef.current = null
+						setTodoNote(null)
+						if (restore) owner.target?.restoreFocus()
+					}}
+				/>
 			)}
 			<div ref={hostRef} className="min-h-0 w-full flex-1" />
 		</div>

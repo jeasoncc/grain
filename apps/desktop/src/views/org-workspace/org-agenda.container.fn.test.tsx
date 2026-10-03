@@ -9,6 +9,7 @@ import { useOrgWorkspace, type OrgWorkspaceController } from "@/hooks/use-org-wo
 import { orgFileRepository } from "@/io/file/org-file.repository"
 import type { OrgDocumentInterface, OrgWorkspaceInterface } from "@/types/org"
 import type { OrgBufferRuntime, OrgBufferWindowHandle } from "@/flows/org-editor-runtime"
+import type { OrgAgendaTodoNoteRequest } from "@/flows/org-command/org-todo-note"
 import { OrgAgendaContainer } from "./org-agenda.container.fn"
 
 // Production container, hook, flows, parser, runtime and CM history; only host/file IO is replaced.
@@ -51,6 +52,7 @@ let hideAgenda: () => void
 let workspace: OrgWorkspaceInterface
 let disk: Map<string, OrgDocumentInterface>
 const showEditor = vi.fn()
+let noteCallback: ((request: OrgAgendaTodoNoteRequest) => boolean | void) | undefined
 const disposers: (() => void)[] = []
 let grant = 0
 
@@ -65,6 +67,7 @@ function Harness() {
 				<OrgAgendaContainer
 					controller={controller}
 					onShowEditor={showEditor}
+					onTodoNoteRequest={noteCallback}
 					now={() => new Date(2026, 8, 30, 23, 59)}
 				/>
 			) : null}
@@ -127,6 +130,7 @@ function expectChangedRows() {
 }
 
 beforeEach(() => {
+	noteCallback = undefined
 	vi.useFakeTimers()
 	vi.clearAllMocks()
 	window.localStorage.clear()
@@ -173,6 +177,148 @@ afterEach(() => {
 })
 
 describe("production OrgAgendaContainer working-copy actions", () => {
+	it("rejects a throwing precommit observer without edits and drains ownership", async () => {
+		await setup()
+		await open("tasks.org")
+		const runtime = live().runtime
+		const original = controller.executeAgendaCommand
+		vi.spyOn(controller, "executeAgendaCommand").mockImplementationOnce((entry, command, signal) =>
+			original(entry, command, signal, {
+				onCommitStarted: () => {
+					throw new Error("precommit observer")
+				},
+			}),
+		)
+		await cycleSecondKeyboard()
+		expect(runtime.source).toBe(source)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(screen.getByRole("status")).toHaveTextContent("Cannot change the agenda heading")
+		await cycleSecondKeyboard()
+		expect(runtime.source).toBe(changed)
+		expect(undoDepth(runtime.state)).toBe(1)
+	})
+
+	it("confirms a committed publication despite an observer throw and drains ownership", async () => {
+		await setup()
+		await open("tasks.org")
+		const runtime = live().runtime
+		const original = runtime.applyCommandEdits.bind(runtime)
+		vi.spyOn(runtime, "applyCommandEdits").mockImplementationOnce((raw, edits) => {
+			original(raw, edits)
+			throw new Error("observer threw after canonical commit")
+		})
+		await cycleSecondKeyboard()
+		expect(screen.getByRole("status")).toHaveTextContent("TODO state changed")
+		expect(runtime.source).toBe(changed)
+		expect(undoDepth(runtime.state)).toBe(1)
+		// A later operation must not inherit the publication or mutation owner.
+		await act(async () => {
+			fireEvent.click(screen.getAllByRole("button", { name: "Cycle TODO for 😀 duplicate" })[0])
+		})
+		expect(undoDepth(runtime.state)).toBe(2)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it("hands a no-allocation note request to the shell and completes only once", async () => {
+		const raw = source.replace("#+TODO: NEXT | FINISHED\r\n", "#+TODO: NEXT | FINISHED(f@)\r\n")
+		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
+		let request!: OrgAgendaTodoNoteRequest
+		const callback = vi.fn((value: OrgAgendaTodoNoteRequest) => {
+			request = value
+			return true
+		})
+		noteCallback = callback
+		await setup()
+		await cycleSecondKeyboard()
+		expect(callback).toHaveBeenCalledTimes(1)
+		expect(
+			controller.liveBuffers.some((buffer) => buffer.document.relativePath === "tasks.org"),
+		).toBe(false)
+		fireEvent.keyDown(screen.getByRole("main"), { key: "t" })
+		expect(callback).toHaveBeenCalledTimes(1)
+		expect(request.validate?.()).toEqual({ kind: "ready" })
+		await act(async () => {
+			expect(await request.execute(" \t\r\n ")).toMatchObject({ kind: "rejected" })
+		})
+		expect(request.validate?.()).toEqual({ kind: "ready" })
+		expect(
+			controller.liveBuffers.some((buffer) => buffer.document.relativePath === "tasks.org"),
+		).toBe(false)
+		await act(async () => {
+			expect(await request.execute("literal note")).toEqual({ kind: "applied" })
+		})
+		const runtime = live().runtime
+		expect(runtime.source).toContain("literal note")
+		expect(undoDepth(runtime.state)).toBe(1)
+		expect(await request.execute("again")).toMatchObject({ kind: "rejected" })
+		expect(undoDepth(runtime.state)).toBe(1)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+	it.each([
+		["shell", "rejected"],
+		["shell", "confirmed"],
+		["agenda", "rejected"],
+		["agenda", "confirmed"],
+	] as const)("latches %s cancellation during note commit and preserves %s outcome", async (surface, outcome) => {
+		const raw = source.replace("#+TODO: NEXT | FINISHED\r\n", "#+TODO: NEXT | FINISHED(f@)\r\n")
+		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
+		let request!: OrgAgendaTodoNoteRequest
+		const callback = vi.fn((value: OrgAgendaTodoNoteRequest) => {
+			request = value
+			return true
+		})
+		noteCallback = callback
+		await setup()
+		const original = controller.executeAgendaCommand
+		vi.spyOn(controller, "executeAgendaCommand")
+			.mockImplementationOnce(original)
+			.mockImplementationOnce((entry, command, signal, options) =>
+				original(entry, command, signal, {
+					onCommitStarted: () => {
+						options?.onCommitStarted?.()
+						if (surface === "shell") request.abort()
+						else fireEvent.keyDown(screen.getByRole("main"), { key: "Escape" })
+						expect(signal?.aborted).toBe(false)
+						if (outcome === "rejected") throw new Error("reject after cancellation")
+					},
+				}),
+			)
+		await cycleSecondKeyboard()
+		await act(async () => {
+			expect(await request.execute("literal note")).toMatchObject({
+				kind: outcome === "confirmed" ? "applied" : "rejected",
+			})
+		})
+		expect(request.validate?.()).toMatchObject({ kind: "rejected" })
+		expect(screen.getByRole("status")).toHaveTextContent(
+			outcome === "confirmed" ? "TODO state changed" : "Agenda action cancelled",
+		)
+		expect(live().runtime.source.includes("literal note")).toBe(outcome === "confirmed")
+		expect(undoDepth(live().runtime.state)).toBe(outcome === "confirmed" ? 1 : 0)
+		// Deferred cancellation must release ownership, not leave the old prompt retryable.
+		await act(async () => {
+			fireEvent.click(screen.getAllByRole("button", { name: "Cycle TODO for 😀 duplicate" })[0])
+		})
+		expect(callback).toHaveBeenCalledTimes(2)
+		act(() => request.abort())
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+	it("revokes a shell note request on Agenda unmount without allocating", async () => {
+		const raw = source.replace("#+TODO: NEXT | FINISHED\r\n", "#+TODO: NEXT | FINISHED(f@)\r\n")
+		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
+		let request!: OrgAgendaTodoNoteRequest
+		noteCallback = (value) => {
+			request = value
+		}
+		await setup()
+		await cycleSecondKeyboard()
+		act(() => hideAgenda())
+		expect(await request.execute("late")).toMatchObject({ kind: "rejected" })
+		expect(
+			controller.liveBuffers.some((buffer) => buffer.document.relativePath === "tasks.org"),
+		).toBe(false)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
 	it.each([
 		["#+TODO: NEXT | FINISHED(f@)\r\n", "requires a note"],
 		["#+TODO: NEXT | FINISHED\r\n#+PROPERTY: LOGGING logdone\r\n", "unsupported-logging-policy"],
