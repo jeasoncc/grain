@@ -43,6 +43,8 @@ import type { WorkspaceInterface } from "@/types/workspace"
 import type { OrgDocumentInterface, OrgWorkspaceInterface } from "@/types/org"
 import type { OrgSubtreeTransferOutcome } from "./use-org-workspace"
 import * as orgWindowClose from "./use-org-window-close"
+import * as windowCloseAdapter from "@/io/event/org-window-close.adapter"
+import * as workingCopyFlow from "@/flows/org-workspace/org-save-working-copy.flow"
 import {
 	canContinueAfterOrgSave,
 	hasDefaultWorkspacePreference,
@@ -3621,6 +3623,393 @@ describe("Org save-all snapshot transaction", () => {
 		expect(result.current.isSaving).toBe(false)
 		expect(result.current.activeDocument?.relativePath).toBe("a.org")
 	})
+	it("ordinary save ACKs the captured body without replacing newer input or disabling typing", async () => {
+		const { result } = await setup(1)
+		const pending = deferred<SaveResult>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+		let saving!: Promise<void>
+		act(() => {
+			saving = result.current.saveDocument()
+		})
+		expect(result.current.isEditorReadOnly).toBe(false)
+		act(() => result.current.updateContent("newer body during write"))
+		await act(async () => {
+			pending.resolve(E.right({ relativePath: "a.org", revision: "ack" }))
+			await saving
+		})
+		expect(result.current.activeDocument).toEqual({
+			...documents[0],
+			content: "edited a.org",
+			revision: "ack",
+		})
+		expect(result.current.content).toBe("newer body during write")
+		expect(result.current.isDirty).toBe(true)
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+	})
+
+	it.each([
+		"right",
+		"rejection",
+	])("holds native Busy while draining an ordinary save notification throw: %s", async (mode) => {
+		const register = windowCloseAdapter.registerOrgWindowClose
+		let readCloseState!: () => windowCloseAdapter.OrgWindowCloseState
+		vi.spyOn(windowCloseAdapter, "registerOrgWindowClose").mockImplementation((options) => {
+			readCloseState = options.getState
+			return register(options)
+		})
+		const flow = workingCopyFlow.saveOrgWorkingCopyFlow
+		vi.spyOn(workingCopyFlow, "saveOrgWorkingCopyFlow").mockImplementation((capture, ports) =>
+			flow(capture, {
+				...ports,
+				onWriteStarted: (settled) => {
+					ports.onWriteStarted?.(settled)
+					throw new Error("observer fault after root notification")
+				},
+			}),
+		)
+		const { result } = await setup(1)
+		const id = result.current.activeBufferId
+		const pending = deferred<SaveResult>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+		let completed = false
+		let closing!: Promise<boolean>
+		act(() => {
+			closing = result.current.closeActiveDocument().then((value) => {
+				completed = true
+				return value
+			})
+		})
+		await act(async () => {
+			await Promise.resolve()
+			await Promise.resolve()
+		})
+		expect(completed).toBe(false)
+		expect(readCloseState().isBusy).toBe(true)
+		expect(readCloseState().hasDirtyBuffers).toBe(true)
+		expect(result.current.isSaving).toBe(true)
+		await act(async () => {
+			expect(await result.current.closeActiveDocument()).toBe(false)
+			await result.current.saveDocument()
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		expect(readCloseState().isBusy).toBe(true)
+		await act(async () => {
+			if (mode === "right")
+				pending.resolve(E.right({ relativePath: "a.org", revision: "unacknowledged" }))
+			else pending.reject(new Error("late write rejection"))
+			expect(await closing).toBe(false)
+		})
+		expect(readCloseState().isBusy).toBe(false)
+		expect(readCloseState().hasDirtyBuffers).toBe(true)
+		expect(result.current.activeBufferId).toBe(id)
+		expect(result.current.content).toBe("edited a.org")
+		expect(result.current.activeDocument).toEqual(documents[0])
+		expect(result.current.openBuffers[0]).toMatchObject({ isDirty: true, hasConflict: true })
+		expect(result.current.error).not.toBeNull()
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(1000)
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+	})
+
+	it("preserves a newer same-ID inactive baseline and body, latching conflict without retirement or retry", async () => {
+		const { result } = await setup(2)
+		const id = result.current.openBuffers.find(
+			(buffer) => buffer.relativePath === "a.org",
+		)!.bufferId
+		const pending = deferred<SaveResult>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+		// Narrow structural fault injection: retain the actual parked fixture only
+		// during capture, without exposing any production mutation API.
+		let parked!: { document: OrgDocumentInterface; content: string; isDirty: boolean }
+		const get = Map.prototype.get
+		const spy = vi.spyOn(Map.prototype, "get").mockImplementation(function (
+			this: Map<unknown, unknown>,
+			key: unknown,
+		) {
+			const value = get.call(this, key)
+			if (
+				key === "a.org" &&
+				value?.document?.revision === "a.org-1" &&
+				value.content === "edited a.org"
+			)
+				parked = value
+			return value
+		})
+		let closing!: Promise<boolean>
+		act(() => {
+			closing = result.current.closeDocumentPath("a.org")
+		})
+		spy.mockRestore()
+		expect(parked).toBeDefined()
+		parked.document = { ...documents[0], content: "newer baseline", revision: "newer-revision" }
+		parked.content = "newer working body"
+		parked.isDirty = true
+		await act(async () => {
+			pending.resolve(E.right({ relativePath: "a.org", revision: "old-write-ack" }))
+			expect(await closing).toBe(false)
+		})
+		expect(result.current.openBuffers.find((buffer) => buffer.bufferId === id)).toMatchObject({
+			baseRevision: "newer-revision",
+			isDirty: true,
+			hasConflict: true,
+		})
+		expect(result.current.error).not.toBeNull()
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () => E.right(parked.document))
+		await act(async () => {
+			expect(await result.current.switchBuffer(id)).toBe(true)
+		})
+		expect(result.current.activeBufferId).toBe(id)
+		expect(result.current.content).toBe("newer working body")
+		expect(result.current.activeDocument).toEqual(parked.document)
+		expect(result.current.openBuffers.find((buffer) => buffer.bufferId === id)?.hasConflict).toBe(
+			true,
+		)
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(1000)
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+	})
+
+	it("rejects an active save-close after unmount in the flow terminal microtask gap", async () => {
+		const hook = await setup(1)
+		const pending = deferred<SaveResult>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+		let closing!: Promise<boolean>
+		act(() => {
+			closing = hook.result.current.closeActiveDocument()
+		})
+		// The flow's write continuation commits before this handler, but the root
+		// awaiting the flow cannot emit successful completion until after it.
+		const retired = pending.promise.then(() => hook.unmount())
+		await act(async () => {
+			pending.resolve(E.right({ relativePath: "a.org", revision: "ack" }))
+			await retired
+			expect(await closing).toBe(false)
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+	})
+
+	it("confirms and retires an ordinary dirty inactive close", async () => {
+		const { result } = await setup(2)
+		const id = result.current.openBuffers.find(
+			(buffer) => buffer.relativePath === "a.org",
+		)!.bufferId
+		await act(async () => {
+			expect(await result.current.closeDocumentPath("a.org")).toBe(true)
+		})
+		expect(result.current.openBuffers.some((buffer) => buffer.bufferId === id)).toBe(false)
+		expect(saveOrgDocumentFlow).toHaveBeenCalledWith(
+			expect.objectContaining({ content: "edited a.org", expectedRevision: "a.org-1" }),
+		)
+		expect(result.current.activeDocument?.relativePath).toBe("b.org")
+	})
+
+	it("ACKs the captured baseline while retaining a same-grant inactive body replacement before confirmation", async () => {
+		const create = runtimeFactory.createOrgBufferRuntime
+		let firstOptions!: OrgBufferRuntimeOptions
+		vi.spyOn(runtimeFactory, "createOrgBufferRuntime").mockImplementation((options) => {
+			if (options.source === "base a.org") firstOptions = options
+			return create(options)
+		})
+		const { result } = await setup(2)
+		const id = result.current.openBuffers.find(
+			(buffer) => buffer.relativePath === "a.org",
+		)!.bufferId
+		const pending = deferred<SaveResult>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+		let closing!: Promise<boolean>
+		act(() => {
+			closing = result.current.closeDocumentPath("a.org")
+			firstOptions.onCommit({
+				key: firstOptions.key,
+				previousSource: "edited a.org",
+				source: "same-grant replacement",
+				revision: 3,
+				originWindowId: null,
+			})
+		})
+		await act(async () => {
+			pending.resolve(E.right({ relativePath: "a.org", revision: "ack" }))
+			expect(await closing).toBe(false)
+		})
+		// Reactivation must observe the disk baseline just confirmed by the write.
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () =>
+			E.right({ ...documents[0], content: "edited a.org", revision: "ack" }),
+		)
+		await act(async () => {
+			expect(await result.current.switchBuffer(id)).toBe(true)
+		})
+		expect(result.current.activeBufferId).toBe(id)
+		expect(result.current.content).toBe("same-grant replacement")
+		expect(result.current.activeDocument).toMatchObject({
+			content: "edited a.org",
+			revision: "ack",
+		})
+		expect(result.current.isDirty).toBe(true)
+		expect(result.current.error).toBeNull()
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		await act(async () => {
+			await result.current.saveDocument()
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				relativePath: "a.org",
+				expectedRevision: "ack",
+				content: "same-grant replacement",
+			}),
+		)
+		expect(result.current.activeBufferId).toBe(id)
+		expect(result.current.content).toBe("same-grant replacement")
+		expect(result.current.isDirty).toBe(false)
+		expect(result.current.error).toBeNull()
+	})
+
+	it.each([
+		"left",
+		"invalid",
+		"throw",
+	])("latches an inactive close %s failure on the current owner despite a body replacement", async (failure) => {
+		const create = runtimeFactory.createOrgBufferRuntime
+		let firstOptions!: OrgBufferRuntimeOptions
+		vi.spyOn(runtimeFactory, "createOrgBufferRuntime").mockImplementation((options) => {
+			if (options.source === "base a.org") firstOptions = options
+			return create(options)
+		})
+		const { result } = await setup(2)
+		const id = result.current.openBuffers.find(
+			(buffer) => buffer.relativePath === "a.org",
+		)!.bufferId
+		const pending = deferred<SaveResult>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+		let closing!: Promise<boolean>
+		act(() => {
+			closing = result.current.closeDocumentPath("a.org")
+			firstOptions.onCommit({
+				key: firstOptions.key,
+				previousSource: "edited a.org",
+				source: "newer failed-close body",
+				revision: 3,
+				originWindowId: null,
+			})
+		})
+		await act(async () => {
+			if (failure === "throw") pending.reject(new Error("write uncertain"))
+			else if (failure === "left")
+				pending.resolve(E.left({ type: "IO_ERROR", message: "write uncertain" } as never))
+			else pending.resolve(E.right({ relativePath: "wrong.org", revision: "ack" }))
+			expect(await closing).toBe(false)
+		})
+		expect(result.current.openBuffers.find((buffer) => buffer.bufferId === id)).toMatchObject({
+			baseRevision: "a.org-1",
+			hasConflict: true,
+			isDirty: true,
+		})
+		expect(result.current.error).not.toBeNull()
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+	})
+
+	it("does not retire an inactive replacement installed in the flow terminal microtask gap", async () => {
+		const create = runtimeFactory.createOrgBufferRuntime
+		let firstOptions!: OrgBufferRuntimeOptions
+		vi.spyOn(runtimeFactory, "createOrgBufferRuntime").mockImplementation((options) => {
+			if (options.source === "base a.org") firstOptions = options
+			return create(options)
+		})
+		const { result } = await setup(2)
+		const id = result.current.openBuffers.find(
+			(buffer) => buffer.relativePath === "a.org",
+		)!.bufferId
+		const pending = deferred<SaveResult>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+		let closing!: Promise<boolean>
+		act(() => {
+			closing = result.current.closeDocumentPath("a.org")
+		})
+		// Simulate a root source-mirror installation at the boundary, replacing
+		// the parked identity after confirmation but before the close continuation.
+		const replacement = pending.promise.then(() =>
+			firstOptions.onCommit({
+				key: firstOptions.key,
+				previousSource: "edited a.org",
+				source: "replacement a body",
+				revision: 3,
+				originWindowId: null,
+			}),
+		)
+		await act(async () => {
+			pending.resolve(E.right({ relativePath: "a.org", revision: "ack" }))
+			await replacement
+			expect(await closing).toBe(false)
+		})
+		expect(
+			result.current.workspace?.documents.find((document) => document.relativePath === "a.org")
+				?.revision,
+		).toBe("ack")
+		expect(
+			result.current.openBuffers.find((buffer) => buffer.relativePath === "a.org")?.bufferId,
+		).toBe(id)
+		await act(async () => {
+			expect(await result.current.switchBuffer(id)).toBe(true)
+		})
+		expect(result.current.content).toBe("replacement a body")
+		expect(result.current.activeDocument).toMatchObject({
+			content: "edited a.org",
+			revision: "ack",
+		})
+		expect(result.current.activeBufferId).toBe(id)
+		expect(result.current.isDirty).toBe(true)
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		await act(async () => {
+			await result.current.saveDocument()
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				relativePath: "a.org",
+				expectedRevision: "ack",
+				content: "replacement a body",
+			}),
+		)
+		expect(result.current.activeBufferId).toBe(id)
+		expect(result.current.content).toBe("replacement a body")
+		expect(result.current.isDirty).toBe(false)
+	})
+
+	it("late unmounted G1 inactive completion cannot alter an already live same-root G2 buffer", async () => {
+		const hook = await setup(2)
+		const pending = deferred<SaveResult>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+		let closing!: Promise<boolean>
+		act(() => {
+			closing = hook.result.current.closeDocumentPath("a.org")
+		})
+		hook.unmount()
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () =>
+			E.right({ ...workspace, documents, capabilityToken: "G2" }),
+		)
+		const fresh = await setup(2)
+		const id = fresh.result.current.openBuffers.find(
+			(buffer) => buffer.relativePath === "a.org",
+		)!.bufferId
+		const buffersBefore = fresh.result.current.openBuffers
+		const workspaceBefore = fresh.result.current.workspace
+		await act(async () => {
+			pending.resolve(E.right({ relativePath: "a.org", revision: "G1-ack" }))
+			expect(await closing).toBe(false)
+		})
+		expect(fresh.result.current.openBuffers).toEqual(buffersBefore)
+		expect(fresh.result.current.workspace).toEqual(workspaceBefore)
+
+		expect(fresh.result.current.workspaceSessionId).toBe("G2")
+		expect(fresh.result.current.error).toBeNull()
+		await act(async () => {
+			expect(await fresh.result.current.switchBuffer(id)).toBe(true)
+		})
+		expect(fresh.result.current.content).toBe("edited a.org")
+		expect(fresh.result.current.activeDocument?.revision).toBe("a.org-1")
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+	})
+
 	it("retains the final confirmed path but rejects a completion retired in the terminal microtask gap", async () => {
 		const hook = await setup(1)
 		const pending = deferred<SaveResult>()

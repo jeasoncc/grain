@@ -29,6 +29,7 @@ import {
 	saveAllOrgDocumentsFlow,
 	type OrgSaveAllCapture,
 } from "@/flows/org-workspace/org-save-all.flow"
+import { saveOrgWorkingCopyFlow } from "@/flows/org-workspace/org-save-working-copy.flow"
 import type { OrgBufferRuntime } from "@/flows/org-editor-runtime"
 import { createOrgWorkspaceRuntimeRegistry } from "@/flows/org-editor-runtime/org-workspace-runtime-registry"
 import { orgWorkspaceEventAdapter } from "@/io/event/org-workspace-event.adapter"
@@ -1515,63 +1516,70 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		const contentBeingSaved = latestContentRef.current
 		setSaving(true)
 		setError(null)
+		const capture = Object.freeze({
+			content: contentBeingSaved,
+			expectedRevision: sourceRevision,
+			relativePath: sourcePath,
+			capabilityToken: workspace.capabilityToken,
+			workspaceRoot: workspace.rootPath,
+		})
+		const current = () => mutationOwnerRef.current === owner && isCurrentOrigin()
 		try {
-			const saveTask = saveOrgDocumentFlow({
-				content: contentBeingSaved,
-				expectedRevision: sourceRevision,
-				relativePath: sourcePath,
-				capabilityToken: workspace.capabilityToken,
-				workspaceRoot: workspace.rootPath,
-			})()
-			saveInFlightContentRef.current = contentBeingSaved
-			// Navigation waits on a non-rejecting result, including unexpected Task rejection.
-			saveInFlightRef.current = saveTask.then(E.isRight, () => false)
-			const result = await saveTask
-			if (mutationOwnerRef.current !== owner) return false
-			if (!isCurrentOrigin()) return false
-			if (E.isLeft(result)) {
-				conflictsRef.current.add(sourcePath)
-				autosavePausedRef.current.add(sourcePath)
-				setError(result.left.message)
-				return false
-			}
-			if (
-				result.right.relativePath !== sourcePath ||
-				typeof result.right.revision !== "string" ||
-				!result.right.revision
-			) {
-				throw new Error("Unexpected save confirmation")
-			}
-			autosavePausedRef.current.delete(sourcePath)
-			conflictsRef.current.delete(sourcePath)
-			if (activeRef.current?.relativePath === sourcePath) {
-				activeRef.current = {
-					...activeRef.current,
-					content: contentBeingSaved,
-					revision: result.right.revision,
-				}
-			}
-			setActiveDocument((current) =>
-				current?.relativePath === sourcePath && current.revision === sourceRevision
-					? { ...current, content: contentBeingSaved, revision: result.right.revision }
-					: current,
-			)
-			setWorkspace((current) =>
-				current
-					? {
-							...current,
-							documents: current.documents.map((document) =>
-								document.relativePath === sourcePath ? result.right : document,
-							),
+			const result = await saveOrgWorkingCopyFlow(capture, {
+				write: saveOrgDocumentFlow,
+				isFresh: () =>
+					current() &&
+					activeRef.current?.relativePath === sourcePath &&
+					activeRef.current.revision === sourceRevision,
+				isCurrent: current,
+				onWriteStarted: (settled) => {
+					saveInFlightContentRef.current = contentBeingSaved
+					saveInFlightRef.current = settled
+				},
+				commitConfirmed: (_, receipt) => {
+					autosavePausedRef.current.delete(sourcePath)
+					conflictsRef.current.delete(sourcePath)
+					if (activeRef.current?.relativePath === sourcePath) {
+						activeRef.current = {
+							...activeRef.current,
+							content: contentBeingSaved,
+							revision: receipt.revision,
 						}
-					: current,
+					}
+					setActiveDocument((value) =>
+						value?.relativePath === sourcePath && value.revision === sourceRevision
+							? { ...value, content: contentBeingSaved, revision: receipt.revision }
+							: value,
+					)
+					setWorkspace((value) =>
+						value
+							? {
+									...value,
+									documents: value.documents.map((document) =>
+										document.relativePath === sourcePath ? receipt : document,
+									),
+								}
+							: value,
+					)
+					if (activeRef.current?.relativePath === sourcePath) {
+						setDirty(latestContentRef.current !== contentBeingSaved)
+					}
+				},
+			})
+			// The flow's terminal await introduces another ownership gap.
+			if (!current()) return false
+			if (result.kind === "confirmed") return true
+			if (result.kind === "stale-before" || result.kind === "stale-after") return false
+			conflictsRef.current.add(sourcePath)
+			autosavePausedRef.current.add(sourcePath)
+			setError(
+				result.kind === "write-left"
+					? result.error.message
+					: "Save ended unexpectedly; files may have changed. The editor body was retained. Refresh and reconcile before a manual retry; no rollback was attempted.",
 			)
-			if (activeRef.current?.relativePath === sourcePath) {
-				setDirty(latestContentRef.current !== contentBeingSaved)
-			}
-			return true
+			return false
 		} catch {
-			if (mutationOwnerRef.current === owner && isCurrentOrigin()) {
+			if (current()) {
 				autosavePausedRef.current.add(sourcePath)
 				conflictsRef.current.add(sourcePath)
 				setError(
@@ -1788,46 +1796,73 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				mutationInProgressRef.current = true
 				refileTargetRequestRef.current += 1
 				setSaving(true)
+				let closingBuffer = buffer
+				const logicalBufferId = bufferIdsRef.current.get(relativePath)
+				const currentOwner = () =>
+					mutationOwnerRef.current === owner &&
+					isCurrentOrigin() &&
+					session === sessionRef.current &&
+					logicalBufferId !== undefined &&
+					bufferIdsRef.current.get(relativePath) === logicalBufferId
+				const currentRetirement = () =>
+					currentOwner() && parkedRef.current.get(relativePath) === closingBuffer
+				const capture = Object.freeze({
+					logicalBufferId,
+					content: buffer.content,
+					expectedRevision: buffer.document.revision,
+					relativePath,
+					capabilityToken: workspace.capabilityToken,
+					workspaceRoot: workspace.rootPath,
+				})
 				try {
-					const result = await saveOrgDocumentFlow({
-						content: buffer.content,
-						expectedRevision: buffer.document.revision,
-						relativePath,
-						capabilityToken: workspace.capabilityToken,
-						workspaceRoot: workspace.rootPath,
-					})()
-					if (
-						mutationOwnerRef.current !== owner ||
-						!isCurrentOrigin() ||
-						session !== sessionRef.current ||
-						parkedRef.current.get(relativePath) !== buffer
-					) {
-						return false
-					}
-					if (E.isLeft(result)) {
+					const result = await saveOrgWorkingCopyFlow(capture, {
+						write: saveOrgDocumentFlow,
+						isFresh: currentRetirement,
+						isCurrent: currentOwner,
+						commitConfirmed: (_, receipt) => {
+							const parked = parkedRef.current.get(relativePath)
+							if (
+								!currentOwner() ||
+								!parked ||
+								parked.document.revision !== capture.expectedRevision
+							) {
+								throw new Error("The captured baseline is no longer current")
+							}
+							const persisted = {
+								...parked.document,
+								content: capture.content,
+								revision: receipt.revision,
+							}
+							// ACK the disk baseline without touching working source or runtime history.
+							const successor = {
+								...parked,
+								document: persisted,
+								isDirty: parked.content !== capture.content,
+							}
+							// A replacement receives the ACK, but never permission to retire.
+							if (parked === closingBuffer) closingBuffer = successor
+							parkedRef.current.set(relativePath, successor)
+							conflictsRef.current.delete(relativePath)
+							autosavePausedRef.current.delete(relativePath)
+							setWorkspace((value) => (value ? updateWorkspaceDocument(value, persisted) : value))
+						},
+					})
+					// Failed effects belong to the lease even when the working body changed.
+					if (!currentOwner()) return false
+					if (result.kind !== "confirmed") {
+						if (result.kind === "stale-before" || result.kind === "stale-after") return false
 						conflictsRef.current.add(relativePath)
 						autosavePausedRef.current.add(relativePath)
-						setError(result.left.message)
+						setError(
+							result.kind === "write-left"
+								? result.error.message
+								: `Cannot save ${relativePath}; the buffer was retained. Files may have changed. Refresh and reconcile before a manual retry; no rollback was attempted.`,
+						)
 						return false
 					}
-					if (
-						result.right.relativePath !== relativePath ||
-						typeof result.right.revision !== "string" ||
-						!result.right.revision
-					) {
-						throw new Error("Unexpected save confirmation")
-					}
-					setWorkspace((current) =>
-						current
-							? updateWorkspaceDocument(current, {
-									...buffer.document,
-									content: buffer.content,
-									revision: result.right.revision,
-								})
-							: current,
-					)
+					if (!currentRetirement()) return false
 				} catch {
-					if (mutationOwnerRef.current !== owner || !isCurrentOrigin()) return false
+					if (!currentOwner()) return false
 					conflictsRef.current.add(relativePath)
 					autosavePausedRef.current.add(relativePath)
 					setError(

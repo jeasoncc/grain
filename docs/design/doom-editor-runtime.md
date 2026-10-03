@@ -417,10 +417,20 @@ flow-to-hook microtask gap: final commit followed by unmount must not return
 success or emit into another origin. The hook rechecks ownership immediately
 when the flow settles, even on success.
 
+`org-save-working-copy.flow.ts` now handles one captured CAS effect for both
+active saves and inactive close: fresh/current guards, exact confirmation,
+nonrejecting navigation waiter, synchronous ACK and classified failures. Active
+ACK never replaces newer input. Inactive ACK updates the surviving same-ID
+baseline even if its body changed, but retirement still requires the exact owned
+snapshot. Baseline drift retains the newer baseline and pauses reconciliation.
+Old-grant results cannot mutate an already-live G2. A throwing write-start
+notification drains the already-started effect before releasing Busy; handling
+promise rejection alone is not enough to preserve native-close protection.
+
 This is the beginning, not completion, of splitting lifecycle/state reservoirs,
 file effects and presentation. It does not weaken the experience target to avoid
-larger window/config/workflow work. Full desktop verification: 153 files /2493
-cases, typecheck/build pass (2026-10-03 14:01 +08:00).
+larger window/config/workflow work. Full desktop verification: 154 files /2527
+cases, typecheck/build pass (2026-10-03 14:30 +08:00).
 
 ## Next decision gates and work
 
