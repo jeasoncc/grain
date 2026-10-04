@@ -1,4 +1,4 @@
-import { undoDepth, redoDepth } from "@codemirror/commands"
+import { redoDepth, undoDepth } from "@codemirror/commands"
 import { EditorSelection } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
 import { act, cleanup, createEvent, fireEvent, render, screen } from "@testing-library/react"
@@ -9,12 +9,12 @@ import { orgSparseTreeField } from "../org-editor/org-sparse-tree.extension"
 import { OrgDocumentPane } from "./org-document-pane.view.fn"
 
 const source = "* DONE Hidden\nhidden body\n* TODO Visible\nvisible body"
-const makeRuntime = () =>
+const makeRuntime = (sourceText = source) =>
 	createOrgBufferRuntime({
-		source,
 		canCommit: () => true,
-		onCommit: vi.fn(),
 		key: { bufferId: "note.org", workspaceSessionId: "G1" },
+		onCommit: vi.fn(),
+		source: sourceText,
 	})
 type Capture = (command: "sparse-tree" | "clear-sparse-tree") => (() => void) | null
 const originRef: { current: Capture | null } = { current: null }
@@ -23,36 +23,35 @@ const props = (
 	grant = "G1",
 	execute?: (() => void) | null,
 ) => ({
+	canGoBack: false,
+	canGoForward: false,
 	controller: {
-		content: source,
 		activeBufferId: "note.org",
 		activeBufferRuntime: runtime,
-		activeDocument: { relativePath: "note.org", revision: "one", content: source },
-		workspaceSessionId: "G1",
-		workspace: {
-			rootPath: "/workspace",
-			capabilityToken: grant,
-			documents: [{ relativePath: "note.org" }],
-		},
+		activeDocument: { content: runtime.source, relativePath: "note.org", revision: "one" },
+		content: runtime.source,
+		isDirty: false,
 		liveBuffers: [
 			{
 				bufferId: "note.org",
+				content: runtime.source,
 				document: { relativePath: "note.org" },
-				content: source,
-				runtime,
 				isDirty: false,
+				runtime,
 			},
 		],
-		updateContent: vi.fn(),
-		saveDocument: vi.fn(),
 		openOrgLink: vi.fn(),
-		isDirty: false,
+		saveDocument: vi.fn(),
+		updateContent: vi.fn(),
+		workspace: {
+			capabilityToken: grant,
+			documents: [{ relativePath: "note.org" }],
+			rootPath: "/workspace",
+		},
+		workspaceSessionId: "G1",
 	} as unknown as OrgWorkspaceController,
-	isBusy: false,
-	canGoBack: false,
-	canGoForward: false,
 	inspectorVisible: false,
-	sidebarVisible: true,
+	isBusy: false,
 	onCloseTab: vi.fn(),
 	onGoBack: vi.fn(),
 	onGoForward: vi.fn(),
@@ -61,16 +60,17 @@ const props = (
 	onShowInspector: vi.fn(),
 	onShowSidebar: vi.fn(),
 	openDocumentPaths: ["note.org"],
+	sidebarVisible: true,
 	viewCommandOriginRef: originRef,
 	viewCommandRequest:
 		execute === undefined
 			? null
 			: {
-					id: 1,
-					command: "sparse-tree" as const,
 					bufferId: "note.org",
-					workspaceSessionId: "G1",
+					command: "sparse-tree" as const,
 					execute,
+					id: 1,
+					workspaceSessionId: "G1",
 				},
 })
 const views = () =>
@@ -125,10 +125,10 @@ describe("production pane sparse origin ownership", () => {
 		const input = screen.getByRole("combobox", { name: /^Sparse tree/ })
 		fireEvent.change(input, { target: { value: "todo" } })
 		fireEvent.compositionStart(input)
-		fireEvent.keyDown(input, { key: "Enter", isComposing: true })
+		fireEvent.keyDown(input, { isComposing: true, key: "Enter" })
 		expect(screen.getByRole("combobox")).toBe(input)
 		fireEvent.compositionEnd(input)
-		const consumed = createEvent.keyDown(input, { key: "Enter", cancelable: true })
+		const consumed = createEvent.keyDown(input, { cancelable: true, key: "Enter" })
 		consumed.preventDefault()
 		fireEvent(input, consumed)
 		expect(screen.getByRole("combobox")).toBe(input)
@@ -146,26 +146,42 @@ describe("production pane sparse origin ownership", () => {
 		expect(view.state.sliceDoc()).toBe(source)
 		expect(view.contentDOM).toHaveFocus()
 	})
-	it("bound catalog command applies only to its origin window", () => {
-		const runtime = makeRuntime()
+	it("bound catalog complex queries remain independent and invalid match retains the origin view", () => {
+		const raw =
+			"#+FILETAGS: :file:\n* Parent :work:\nparent BODY\n** TODO Visible\nvisible BODY\n** DONE Hidden :blocked:\nhidden BODY\n* TODO Outside\noutside BODY"
+		const runtime = makeRuntime(raw)
 		const mounted = render(<OrgDocumentPane {...props(runtime)} />)
 		fireEvent.click(screen.getByRole("button", { name: "Split editor" }))
 		act(() => views()[0].focus())
 		const execute = originRef.current!("sparse-tree")!
 		mounted.rerender(<OrgDocumentPane {...props(runtime, "G1", execute)} />)
-		submit()
-		expect(views()[0].state.field(orgSparseTreeField)?.query).toEqual({ kind: "todo" })
+		submit('match: itag:work AND (todo OR text:"Hidden") AND NOT tag:blocked')
+		const origin = views()[0].state.field(orgSparseTreeField)!
+		expect(origin.plan.matchedHeadingStarts).toEqual([raw.indexOf("** TODO Visible")])
+		expect(views()[0].contentDOM.textContent).toContain("visible BODY")
+		expect(views()[0].contentDOM.textContent).not.toContain("hidden BODY")
+		expect(views()[0].contentDOM.textContent).not.toContain("outside BODY")
 		expect(views()[1].state.field(orgSparseTreeField)).toBeNull()
 		act(() => views()[1].focus())
 		const peerCommand = originRef.current!("sparse-tree")!
 		act(() => peerCommand())
-		submit("text:Hidden")
-		expect(views()[0].state.field(orgSparseTreeField)?.query).toEqual({ kind: "todo" })
-		expect(views()[1].state.field(orgSparseTreeField)?.query).toEqual({
-			kind: "text",
-			literal: "Hidden",
-		})
-		expect(runtime.source).toBe(source)
+		submit('match: itag:file AND (tag:blocked OR text:"Outside") AND NOT todo')
+		const peer = views()[1].state.field(orgSparseTreeField)!
+		expect(peer.plan.matchedHeadingStarts).toEqual([raw.indexOf("** DONE Hidden")])
+		expect(views()[0].state.field(orgSparseTreeField)).toBe(origin)
+		expect(views()[1].contentDOM.textContent).toContain("hidden BODY")
+		expect(views()[1].contentDOM.textContent).not.toContain("visible BODY")
+		act(() => views()[1].focus())
+		act(() => originRef.current!("sparse-tree")!())
+		submit("match: todo AND (")
+		expect(screen.getByRole("combobox", { name: /^Sparse tree/ })).toBeInTheDocument()
+		expect(views()[1].state.field(orgSparseTreeField)).toBe(peer)
+		expect(views()[0].state.field(orgSparseTreeField)).toBe(origin)
+		fireEvent.keyDown(screen.getByRole("combobox"), { key: "Escape" })
+		expect(runtime.source).toBe(raw)
+		expect(runtime.revision).toBe(0)
+		expect(undoDepth(runtime.state) + redoDepth(runtime.state)).toBe(0)
+		for (const view of views()) expect(view.state.sliceDoc()).toBe(raw)
 	})
 	it.each([
 		"peer focus",

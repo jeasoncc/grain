@@ -28,6 +28,11 @@ describe("sparse tree query candidates", () => {
 			"tag:研究",
 			"tag:work",
 			"tag:a.b[+]",
+			"itag:global",
+			"itag:Work",
+			"itag:研究",
+			"itag:work",
+			"itag:a.b[+]",
 		])
 		for (const candidate of orgSparseTreeCandidates(source)) {
 			expect(parseOrgSparseTreeQuery(candidate)).not.toBeNull()
@@ -64,6 +69,8 @@ describe("sparse tree query candidates", () => {
 			"todo:FINISHED",
 			"tag:local",
 			"tag:Local",
+			"itag:local",
+			"itag:Local",
 		])
 	})
 	it("defaults states and derives afresh from each source", () => {
@@ -73,12 +80,14 @@ describe("sparse tree query candidates", () => {
 			"todo:TODO",
 			"todo:DONE",
 			"tag:one",
+			"itag:one",
 		])
 		expect(orgSparseTreeCandidates("#+TODO: WAIT | CLOSED\n* Plain :two:")).toEqual([
 			"todo",
 			"todo:WAIT",
 			"todo:CLOSED",
 			"tag:two",
+			"itag:two",
 		])
 	})
 })

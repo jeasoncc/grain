@@ -2,11 +2,12 @@ import { history, historyField, redo, redoDepth, undo, undoDepth } from "@codemi
 import { foldCode, foldedRanges } from "@codemirror/language"
 import { EditorState, StateEffect } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { createOrgBufferRuntime } from "@/flows/org-editor-runtime"
 import type { OrgEditorCommandTarget, OrgEditorSessionSnapshot } from "./org-editor.types"
 import { OrgEditor } from "./org-editor.view.fn"
+import { orgSparseTreeField } from "./org-sparse-tree.extension"
 
 const viewFor = (name = "primary") => {
 	const view = EditorView.findFromDOM(screen.getByRole("textbox", { name }))
@@ -209,8 +210,8 @@ describe("OrgEditor runtime projection", () => {
 		const second = source.indexOf("Two")
 		const batch = {
 			changes: [
-				{ from: second, to: second + 3, insert: "Second" },
-				{ from: 7, to: 10, insert: "First" },
+				{ from: second, insert: "Second", to: second + 3 },
+				{ from: 7, insert: "First", to: 10 },
 			],
 			cursor: source.length + 5,
 		}
@@ -221,8 +222,8 @@ describe("OrgEditor runtime projection", () => {
 				target!.applyEdits!(source, {
 					...batch,
 					changes: [
-						{ from: 0, to: 3, insert: "x" },
-						{ from: 2, to: 4, insert: "y" },
+						{ from: 0, insert: "x", to: 3 },
+						{ from: 2, insert: "y", to: 4 },
 					],
 				}),
 			).toBe(false)
@@ -230,7 +231,7 @@ describe("OrgEditor runtime projection", () => {
 				expect(
 					target!.applyEdits!(source, {
 						changes: [
-							{ from: source.indexOf("\r") + 1, to: source.indexOf("\r") + 1, insert: "x" },
+							{ from: source.indexOf("\r") + 1, insert: "x", to: source.indexOf("\r") + 1 },
 						],
 						cursor: 0,
 					}),
@@ -263,6 +264,69 @@ describe("OrgEditor runtime projection", () => {
 		expect(stale.applyEdits!(source, batch)).toBe(false)
 	})
 
+	it("recomputes inherited boolean BODY visibility after sibling tag edits and canonical undo", async () => {
+		const source =
+			"* Parent :work:\nparent BODY\n** TODO Child\nchild BODY\n* TODO Other :other:\nother BODY\n"
+		const { runtime, onCommit } = makeRuntime(source)
+		let target: OrgEditorCommandTarget | null = null
+		render(
+			<>
+				<OrgEditor
+					runtime={runtime}
+					value={source}
+					onChange={vi.fn()}
+					onSave={vi.fn()}
+					ariaLabel="primary"
+					onCommandTarget={(next) => {
+						target = next
+					}}
+				/>
+				<OrgEditor
+					runtime={runtime}
+					value={source}
+					onChange={vi.fn()}
+					onSave={vi.fn()}
+					ariaLabel="secondary"
+				/>
+			</>,
+		)
+		const a = viewFor(),
+			b = viewFor("secondary")
+		act(() => {
+			a.dispatch({ selection: { anchor: source.indexOf("* TODO Other") } })
+			expect(
+				target!.applyView!(source, {
+					kind: "sparse-tree",
+					query: "match: (itag:work AND todo) OR tag:other",
+				}),
+			).toBe(true)
+		})
+		expect(a.state.field(orgSparseTreeField)!.plan.matchedHeadingStarts).toEqual([
+			source.indexOf("** TODO Child"),
+			source.indexOf("* TODO Other"),
+		])
+		act(() =>
+			b.dispatch({
+				changes: { from: source.indexOf("work"), insert: "away", to: source.indexOf("work") + 4 },
+			}),
+		)
+		expect(a.state.field(orgSparseTreeField)!.plan.matchedHeadingStarts).toEqual([
+			source.indexOf("* TODO Other"),
+		])
+		await waitFor(() => expect(a.contentDOM.textContent).not.toContain("child BODY"))
+		expect(a.contentDOM.textContent).not.toContain("parent BODY")
+		expect(a.contentDOM.textContent).toContain("other BODY")
+		expect(b.contentDOM.textContent).toContain("child BODY")
+		expect(b.state.field(orgSparseTreeField)).toBeNull()
+		expect(undoDepth(runtime.state)).toBe(1)
+		expect(onCommit).toHaveBeenCalledOnce()
+		act(() => key(b, "z"))
+		expect(runtime.source).toBe(source)
+		await waitFor(() => expect(a.contentDOM.textContent).toContain("child BODY"))
+		expect(a.state.field(orgSparseTreeField)!.plan.allVisible).toBe(true)
+		expect(redoDepth(runtime.state)).toBe(1)
+	})
+
 	it("checks sparse batch dependencies and privately permits separator reinsertion only", () => {
 		const source = "* TODO Visible\nbody\n* Hidden\nsecret\n* TODO Last\n"
 		const { runtime, onCommit } = makeRuntime(source)
@@ -282,7 +346,7 @@ describe("OrgEditor runtime projection", () => {
 		const start = source.indexOf("* Hidden")
 		act(() => {
 			expect(target!.applyView!(source, { kind: "sparse-tree", query: "todo" })).toBe(true)
-			const batch = { changes: [{ from: 7, to: 14, insert: "Changed" }], cursor: 7 }
+			const batch = { changes: [{ from: 7, insert: "Changed", to: 14 }], cursor: 7 }
 			expect(
 				target!.applyEdits!(source, {
 					...batch,
@@ -292,26 +356,26 @@ describe("OrgEditor runtime projection", () => {
 			expect(
 				target!.applyEdits!(source, {
 					...batch,
-					changes: [...batch.changes, { from: start + 2, to: start + 3, insert: "X" }],
+					changes: [...batch.changes, { from: start + 2, insert: "X", to: start + 3 }],
 				}),
 			).toBe(false)
 			// A direct/filter:false transaction cannot acquire the private batch authority.
 			expect(() =>
 				viewFor().dispatch({
+					changes: { from: start - 1, insert: "\nnew\n", to: start },
 					filter: false,
-					changes: { from: start - 1, to: start, insert: "\nnew\n" },
 				}),
 			).toThrow()
 			expect(runtime.source).toBe(source)
 			expect(
 				target!.applyEdits!(source, {
-					changes: [{ from: start - 1, to: start, insert: "new\n" }],
+					changes: [{ from: start - 1, insert: "new\n", to: start }],
 					cursor: 0,
 				}),
 			).toBe(false)
 			expect(
 				target!.applyEdits!(source, {
-					changes: [{ from: start - 1, to: start, insert: "\nnew\n" }],
+					changes: [{ from: start - 1, insert: "\nnew\n", to: start }],
 					cursor: start + 1,
 					requiredVisibleRanges: [{ from: start - 1, to: start }],
 				}),
@@ -403,7 +467,7 @@ describe("OrgEditor runtime projection", () => {
 	it("parks separate primary/secondary window state while scratch retains its own history owner", () => {
 		const { runtime, onCommit } = makeRuntime("* Heading\nbody\n* Next\n")
 		const cache = new Map<string, OrgEditorSessionSnapshot>()
-		const props = { value: runtime.source, onChange: vi.fn(), onSave: vi.fn(), sessionCache: cache }
+		const props = { onChange: vi.fn(), onSave: vi.fn(), sessionCache: cache, value: runtime.source }
 		const windows = () => (
 			<>
 				<OrgEditor
@@ -467,9 +531,9 @@ describe("OrgEditor runtime projection", () => {
 			[
 				"buffer",
 				{
-					state: legacy,
-					scrollTop: 0,
 					scrollLeft: 0,
+					scrollTop: 0,
+					state: legacy,
 				},
 			],
 		])

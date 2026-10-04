@@ -1,14 +1,4 @@
 export type {
-	OrgAgendaActionOutcome,
-	OrgAgendaCapturedOperation,
-	OrgAgendaCommand,
-	OrgAgendaExecutionOptions,
-	OrgAgendaOperation,
-	OrgAgendaOperationCapture,
-	OrgAgendaOperationPlan,
-	OrgAgendaPlanningPreparation,
-} from "./org-agenda-command.types"
-export type {
 	CaptureOrgTodoInput,
 	CreateOrgDirectoryInput,
 	DeleteOrgDocumentInput,
@@ -46,6 +36,17 @@ export type {
 	WriteOrgMigrationInput,
 } from "./org.interface"
 export type {
+	OrgAgendaActionOutcome,
+	OrgAgendaCapturedOperation,
+	OrgAgendaCommand,
+	OrgAgendaExecutionOptions,
+	OrgAgendaOperation,
+	OrgAgendaOperationCapture,
+	OrgAgendaOperationPlan,
+	OrgAgendaPlanningPreparation,
+} from "./org-agenda-command.types"
+export type {
+	OrgEffectiveTagSnapshot,
 	OrgSparseTreePlan,
 	OrgSparseTreeQuery,
 	OrgSparseTreeRange,

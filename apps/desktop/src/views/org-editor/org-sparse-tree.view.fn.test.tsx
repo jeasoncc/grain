@@ -7,21 +7,235 @@ import {
 	undo,
 	undoDepth,
 } from "@codemirror/commands"
-import { EditorSelection, Transaction } from "@codemirror/state"
+import { EditorSelection, EditorState, Transaction } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { createOrgBufferRuntime } from "@/flows/org-editor-runtime"
+import type { OrgSparseTreeQuery } from "@/types/org"
 import type { OrgEditorCommandTarget, OrgEditorSessionSnapshot } from "./org-editor.types"
 import { OrgEditor } from "./org-editor.view.fn"
 import { editorOffsetFromSource } from "./org-source-offset.pipe"
-import { orgSparseTreeField } from "./org-sparse-tree.extension"
 import * as sparseAPI from "./org-sparse-tree.extension"
+import { orgSparseTreeField } from "./org-sparse-tree.extension"
 
 const viewFor = (name: string) => EditorView.findFromDOM(screen.getByRole("textbox", { name }))!
 const source = "* TODO Keep\r\nkeep body\r\n* DONE Hide\r\nhidden body\r\n"
 
 describe("real CodeMirror sparse-tree presentation", () => {
+	it.each([
+		false,
+		true,
+	])("hides BODY sections for inherited and boolean queries without granting edit authority in runtime=%s", (shared) => {
+		const raw =
+			"#+FILETAGS: :file:\r\n* Parent :work:\r\nparent BODY\r\n** TODO Keep\r\nkeep BODY\r\n** DONE Hide :blocked:\r\nhidden BODY\r\n* TODO Outside\r\noutside BODY\r\n"
+		const onCommit = vi.fn(),
+			onChange = vi.fn()
+		const runtime = shared
+			? createOrgBufferRuntime({
+					canCommit: () => true,
+					key: { bufferId: "boolean", workspaceSessionId: "test" },
+					onCommit,
+					source: raw,
+				})
+			: undefined
+		let target: OrgEditorCommandTarget | null = null
+		render(
+			<OrgEditor
+				runtime={runtime}
+				value={raw}
+				onChange={onChange}
+				onSave={vi.fn()}
+				ariaLabel="boolean"
+				onCommandTarget={(next) => {
+					target = next
+				}}
+			/>,
+		)
+		const view = viewFor("boolean")
+		act(() => {
+			expect(target!.applyView!(raw, { kind: "sparse-tree", query: "itag:work" })).toBe(true)
+		})
+		expect(view.state.field(orgSparseTreeField)!.plan.matchedHeadingStarts).toEqual([
+			raw.indexOf("* Parent"),
+			raw.indexOf("** TODO Keep"),
+			raw.indexOf("** DONE Hide"),
+		])
+		expect(view.contentDOM.textContent).toContain("hidden BODY")
+		expect(view.contentDOM.textContent).not.toContain("outside BODY")
+		act(() => {
+			expect(
+				target!.applyView!(raw, {
+					kind: "sparse-tree",
+					query: 'match: itag:file AND (todo OR text:"Hide") AND itag:work AND NOT tag:blocked',
+				}),
+			).toBe(true)
+		})
+		const before = view.state
+		expect(before.field(orgSparseTreeField)!.plan.matchedHeadingStarts).toEqual([
+			raw.indexOf("** TODO Keep"),
+		])
+		expect(before.field(orgSparseTreeField)!.plan.hiddenRanges).toEqual([
+			{ from: raw.indexOf("** DONE Hide"), to: raw.length },
+		])
+		expect(view.contentDOM.textContent).toContain("parent BODY")
+		expect(view.contentDOM.textContent).toContain("keep BODY")
+		expect(view.contentDOM.textContent).not.toContain("hidden BODY")
+		expect(view.contentDOM.textContent).not.toContain("outside BODY")
+		act(() => {
+			expect(target!.applyView!(raw, { kind: "sparse-tree", query: "match: todo AND (" })).toBe(
+				false,
+			)
+		})
+		expect(view.state).toBe(before)
+		const hidden = before.field(orgSparseTreeField)!.hiddenRanges[0]!
+		const forged = () =>
+			view.dispatch({
+				annotations: Transaction.userEvent.of("undo"),
+				changes: { from: hidden.from + 2, insert: "forged" },
+				filter: false,
+			})
+		if (shared) expect(forged).toThrow(/preflight/)
+		else act(forged)
+		expect(view.state).toBe(before)
+		// Even cyclic caller payloads must be refused before AST traversal.
+		const cyclic: { kind: "not"; operand?: OrgSparseTreeQuery } = { kind: "not" }
+		const readOperand = vi.fn(() => cyclic as OrgSparseTreeQuery)
+		Object.defineProperty(cyclic, "operand", { get: readOperand })
+		for (const filter of [true, false]) {
+			const dispatch = () =>
+				view.dispatch({
+					effects: sparseAPI.setOrgSparseTree.of({
+						query: cyclic as OrgSparseTreeQuery,
+						restoreSelection: null,
+					}),
+					filter,
+				})
+			if (shared) expect(dispatch).toThrow(/Unregistered window effect; entire batch rejected/)
+			else act(dispatch)
+			expect(readOperand).not.toHaveBeenCalled()
+			expect(view.state.field(orgSparseTreeField)).toBe(before.field(orgSparseTreeField))
+			expect(view.state.sliceDoc()).toBe(raw)
+		}
+		expect(view.state.sliceDoc()).toBe(raw)
+		if (runtime) {
+			expect(runtime.source).toBe(raw)
+			expect(runtime.revision).toBe(0)
+		}
+		expect(undoDepth(runtime?.state ?? view.state)).toBe(0)
+		expect(redoDepth(runtime?.state ?? view.state)).toBe(0)
+		expect(onChange).not.toHaveBeenCalled()
+		expect(onCommit).not.toHaveBeenCalled()
+	})
+
+	it.each([
+		true,
+		false,
+	])("raw state fails closed on cyclic presentation without authority (filter=%s)", (filter) => {
+		const state = EditorState.create({
+			doc: source,
+			extensions: [EditorState.lineSeparator.of("\r\n"), orgSparseTreeField],
+		})
+		const cyclic: { kind: "not"; operand?: OrgSparseTreeQuery } = { kind: "not" }
+		const readOperand = vi.fn(() => cyclic as OrgSparseTreeQuery)
+		Object.defineProperty(cyclic, "operand", { get: readOperand })
+		const transaction = state.update({
+			effects: sparseAPI.setOrgSparseTree.of({
+				query: cyclic as OrgSparseTreeQuery,
+				restoreSelection: null,
+			}),
+			filter,
+		})
+		expect(transaction.state.field(orgSparseTreeField)).toBeNull()
+		expect(transaction.state.sliceDoc()).toBe(source)
+		expect(transaction.state.selection.toJSON()).toEqual(state.selection.toJSON())
+		expect(readOperand).not.toHaveBeenCalled()
+	})
+
+	it.each([
+		false,
+		true,
+	])("hides a heading after its tag is removed and safely undoes once in runtime=%s", (shared) => {
+		const raw = "* First :work:\r\nfirst body\r\n* Second :work:\r\nsecond body\r\n"
+		const edited = raw.replace(":work:", "")
+		const onCommit = vi.fn(),
+			onChange = vi.fn()
+		const runtime = shared
+			? createOrgBufferRuntime({
+					canCommit: () => true,
+					key: { bufferId: "remove-tag", workspaceSessionId: "test" },
+					onCommit,
+					source: raw,
+				})
+			: undefined
+		let target: OrgEditorCommandTarget | null = null
+		render(
+			<OrgEditor
+				runtime={runtime}
+				value={raw}
+				onChange={onChange}
+				onSave={vi.fn()}
+				ariaLabel="remove-tag"
+				onCommandTarget={(next) => {
+					target = next
+				}}
+			/>,
+		)
+		const view = viewFor("remove-tag")
+		act(() => {
+			expect(target!.applyView!(raw, { kind: "sparse-tree", query: "match: tag:work" })).toBe(true)
+			view.dispatch({ selection: { anchor: 3 } })
+		})
+		expect(view.state.field(orgSparseTreeField)!.plan.matchedHeadingStarts).toEqual([
+			0,
+			raw.indexOf("* Second"),
+		])
+		expect(undoDepth(runtime?.state ?? view.state)).toBe(0)
+		act(() => {
+			view.dispatch({ changes: { from: raw.indexOf(":work:"), to: raw.indexOf(":work:") + 6 } })
+		})
+		expect(view.state.sliceDoc()).toBe(edited)
+		if (runtime) expect(runtime.source).toBe(edited)
+		const sparse = view.state.field(orgSparseTreeField)!
+		expect(sparse.plan.matchedHeadingStarts).toEqual([edited.indexOf("* Second")])
+		expect(sparse.plan.hiddenRanges).toEqual([{ from: 0, to: edited.indexOf("* Second") }])
+		expect(view.contentDOM.textContent).not.toContain("first body")
+		expect(view.contentDOM.textContent).toContain("second body")
+		expect(view.state.selection.main.empty).toBe(true)
+		expect(view.state.selection.main.head).toBe(view.state.doc.line(3).from)
+		expect(undoDepth(runtime?.state ?? view.state)).toBe(1)
+		expect(redoDepth(runtime?.state ?? view.state)).toBe(0)
+		const baseline = view.state
+		for (const spec of [
+			{ changes: { from: 3, insert: "forged" }, filter: false },
+			{ selection: { anchor: 3 }, filter: false },
+		]) {
+			const dispatch = () => view.dispatch(spec)
+			if (shared) expect(dispatch).toThrow(/preflight/)
+			else act(dispatch)
+			expect(view.state).toBe(baseline)
+			expect(view.state.field(orgSparseTreeField)).toBe(sparse)
+			expect(view.contentDOM.textContent).not.toContain("first body")
+			expect(view.state.sliceDoc()).toBe(edited)
+			if (runtime) expect(runtime.source).toBe(edited)
+		}
+		expect(undoDepth(runtime?.state ?? view.state)).toBe(1)
+		act(() => {
+			fireEvent.keyDown(view.contentDOM, { ctrlKey: true, key: "z" })
+		})
+		expect(view.state.sliceDoc()).toBe(raw)
+		if (runtime) expect(runtime.source).toBe(raw)
+		expect(view.state.field(orgSparseTreeField)!.plan.matchedHeadingStarts).toEqual([
+			0,
+			raw.indexOf("* Second"),
+		])
+		expect(view.state.field(orgSparseTreeField)!.hiddenRanges).toEqual([])
+		expect(view.contentDOM.textContent).toContain("first body")
+		expect(view.contentDOM.textContent).toContain("second body")
+		expect(undoDepth(runtime?.state ?? view.state)).toBe(0)
+		expect(redoDepth(runtime?.state ?? view.state)).toBe(1)
+	})
+
 	it("exports no caller-forgeable canonical approval annotation", () => {
 		expect(sparseAPI).not.toHaveProperty("orgSparseCanonicalUpdate")
 	})
@@ -46,7 +260,7 @@ describe("real CodeMirror sparse-tree presentation", () => {
 		const before = view.state
 		const hidden = before.field(orgSparseTreeField)!.hiddenRanges[0]
 		act(() => {
-			view.dispatch({ filter: false, changes: { from: hidden.from + 2, insert: "bad" } })
+			view.dispatch({ changes: { from: hidden.from + 2, insert: "bad" }, filter: false })
 		})
 		expect(view.state).toBe(before)
 		expect(view.state.sliceDoc()).toBe(source)
@@ -54,7 +268,7 @@ describe("real CodeMirror sparse-tree presentation", () => {
 		expect(undoDepth(view.state)).toBe(0)
 		expect(redoDepth(view.state)).toBe(0)
 		act(() => {
-			view.dispatch({ filter: false, changes: { from: view.state.doc.line(2).from, insert: "X" } })
+			view.dispatch({ changes: { from: view.state.doc.line(2).from, insert: "X" }, filter: false })
 		})
 		expect(onChange).toHaveBeenCalledTimes(1)
 		expect(undoDepth(view.state)).toBe(1)
@@ -66,10 +280,10 @@ describe("real CodeMirror sparse-tree presentation", () => {
 	it.each([false, true])("rejects forged history and selection reveal in runtime=%s", (shared) => {
 		const runtime = shared
 			? createOrgBufferRuntime({
-					source,
 					canCommit: () => true,
-					onCommit: vi.fn(),
 					key: { bufferId: "forged", workspaceSessionId: "test" },
+					onCommit: vi.fn(),
+					source,
 				})
 			: undefined
 		let target: OrgEditorCommandTarget | null = null
@@ -101,9 +315,9 @@ describe("real CodeMirror sparse-tree presentation", () => {
 			for (const filter of [true, false]) {
 				const dispatch = () =>
 					view.dispatch({
-						filter,
 						annotations: Transaction.userEvent.of(event),
 						changes: { from: hidden.from + 2, insert: "forged" },
+						filter,
 					})
 				if (filter)
 					act(dispatch) // Ordinary filtered edits are dropped before dispatch.
@@ -112,14 +326,14 @@ describe("real CodeMirror sparse-tree presentation", () => {
 			}
 			reject(() =>
 				view.dispatch({
-					filter: false,
 					annotations: Transaction.userEvent.of(event),
+					filter: false,
 					selection: { anchor: hidden.from + 2 },
 				}),
 			)
 			// The second step cannot exploit a revealed field produced by step one.
 			reject(() =>
-				view.dispatch({ filter: false, changes: { from: hidden.from + 2, insert: "bad" } }),
+				view.dispatch({ changes: { from: hidden.from + 2, insert: "bad" }, filter: false }),
 			)
 		}
 		expect(undoDepth(runtime?.state ?? view.state)).toBe(0)
@@ -132,10 +346,10 @@ describe("real CodeMirror sparse-tree presentation", () => {
 	])("owned keys and DOM history reveal legitimate targets in runtime=%s", (shared) => {
 		const runtime = shared
 			? createOrgBufferRuntime({
-					source,
 					canCommit: () => true,
-					onCommit: vi.fn(),
 					key: { bufferId: "owned", workspaceSessionId: "test" },
+					onCommit: vi.fn(),
+					source,
 				})
 			: undefined
 		let target: OrgEditorCommandTarget | null = null
@@ -160,7 +374,7 @@ describe("real CodeMirror sparse-tree presentation", () => {
 		})
 		const edited = view.state.sliceDoc()
 		act(() => {
-			fireEvent.keyDown(view.contentDOM, { key: "z", ctrlKey: true })
+			fireEvent.keyDown(view.contentDOM, { ctrlKey: true, key: "z" })
 		})
 		expect(view.state.sliceDoc()).toBe(source)
 		expect(view.state.field(orgSparseTreeField)).not.toBeNull()
@@ -187,17 +401,17 @@ describe("real CodeMirror sparse-tree presentation", () => {
 		})
 		expect(view.state.sliceDoc()).toBe(source)
 		act(() => {
-			fireEvent.keyDown(view.contentDOM, { key: "y", ctrlKey: true })
+			fireEvent.keyDown(view.contentDOM, { ctrlKey: true, key: "y" })
 		})
 		expect(view.state.sliceDoc()).toBe(edited)
 	})
 	afterEach(cleanup)
 
 	it.each([
-		{ name: "CRLF", separator: "\r\n", body: "hidden body", trailing: true },
-		{ name: "lone CR", separator: "\r", body: "hidden body", trailing: true },
-		{ name: "mixed", separator: "\r\n", body: "hidden\nbody\rwith mixed breaks", trailing: true },
-		{ name: "NUL Unicode EOF", separator: "\r\n", body: "hidden\0 café 😀 中文", trailing: false },
+		{ body: "hidden body", name: "CRLF", separator: "\r\n", trailing: true },
+		{ body: "hidden body", name: "lone CR", separator: "\r", trailing: true },
+		{ body: "hidden\nbody\rwith mixed breaks", name: "mixed", separator: "\r\n", trailing: true },
+		{ body: "hidden\0 café 😀 中文", name: "NUL Unicode EOF", separator: "\r\n", trailing: false },
 	])("maps $name raw ranges and restores exact selections in real CM", ({
 		separator,
 		body,
@@ -357,7 +571,7 @@ describe("real CodeMirror sparse-tree presentation", () => {
 		expect(a.state.sliceDoc()).toBe(before)
 		act(() => {
 			a.dispatch({
-				changes: { from: 0, to: a.state.doc.length, insert: "bad" },
+				changes: { from: 0, insert: "bad", to: a.state.doc.length },
 				selection: { anchor: 3 },
 			})
 		})
@@ -380,10 +594,10 @@ describe("real CodeMirror sparse-tree presentation", () => {
 	it("denies filter:false root dispatch atomically without source, history, or notifications", () => {
 		const onCommit = vi.fn()
 		const runtime = createOrgBufferRuntime({
-			source,
 			canCommit: () => true,
-			onCommit,
 			key: { bufferId: "guard", workspaceSessionId: "test" },
+			onCommit,
+			source,
 		})
 		let target: OrgEditorCommandTarget | null = null
 		render(
@@ -405,16 +619,16 @@ describe("real CodeMirror sparse-tree presentation", () => {
 		const baseline = a.state
 		const hidden = baseline.field(orgSparseTreeField)!.hiddenRanges[0]!
 		expect(() =>
-			a.dispatch({ filter: false, changes: { from: hidden.from + 2, insert: "bad" } }),
+			a.dispatch({ changes: { from: hidden.from + 2, insert: "bad" }, filter: false }),
 		).toThrow(/preflight/)
 		expect(a.state).toBe(baseline)
 		const visible = baseline.update({
-			filter: false,
 			changes: { from: baseline.doc.line(2).from, insert: "X" },
+			filter: false,
 		})
 		const hiddenEdit = visible.state.update({
-			filter: false,
 			changes: { from: hidden.from + 3, to: hidden.from + 4 },
+			filter: false,
 		})
 		expect(() => a.dispatch([visible, hiddenEdit])).toThrow(/preflight/)
 		expect(a.state).toBe(baseline)
@@ -496,10 +710,10 @@ describe("real CodeMirror sparse-tree presentation", () => {
 
 	it("reveals canonical history targets and preserves mapped restore selections across both history branches", () => {
 		const runtime = createOrgBufferRuntime({
-			source,
 			canCommit: () => true,
-			onCommit: vi.fn(),
 			key: { bufferId: "history", workspaceSessionId: "test" },
+			onCommit: vi.fn(),
+			source,
 		})
 		let target: OrgEditorCommandTarget | null = null
 		render(

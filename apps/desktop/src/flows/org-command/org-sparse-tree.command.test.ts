@@ -2,22 +2,22 @@ import { describe, expect, it } from "vitest"
 import { executeOrgSparseTreeCommand, prepareOrgSparseTreeCommand } from "./org-sparse-tree.command"
 
 const origin = {
-	relativePath: "note.org",
 	content: "Preamble\n#+begin_src\nx\n#+end_src\n* TODO Work",
 	cursor: 15,
+	relativePath: "note.org",
 }
 
 describe("sparse tree buffer command", () => {
 	it("prepares from anywhere without requiring or editing a heading", () => {
-		expect(prepareOrgSparseTreeCommand(origin)).toMatchObject({ kind: "ready", initialInput: "" })
+		expect(prepareOrgSparseTreeCommand(origin)).toMatchObject({ initialInput: "", kind: "ready" })
 	})
 	it("prepares actual source query candidates independent of caret scope", () => {
 		const content =
 			"#+TODO: NEXT | FINISHED\n#+begin_src\n* Fake :fake:\n#+end_src\n* NEXT Real :研究:"
 		for (const cursor of [0, content.indexOf("Fake"), content.length]) {
 			expect(prepareOrgSparseTreeCommand({ ...origin, content, cursor })).toMatchObject({
+				candidates: ["todo", "todo:NEXT", "todo:FINISHED", "tag:研究", "itag:研究"],
 				kind: "ready",
-				candidates: ["todo", "todo:NEXT", "todo:FINISHED", "tag:研究"],
 			})
 		}
 	})

@@ -929,7 +929,9 @@ export const OrgEditor = memo(function OrgEditor({
 				...foldKeymap,
 				...defaultKeymap,
 			]),
-			...(bufferRuntime ? [] : [standaloneHistory.extension]),
+			...(bufferRuntime
+				? [standaloneHistory.presentationExtension]
+				: [standaloneHistory.extension]),
 			readOnlyCompartment.of([
 				EditorState.readOnly.of(initialReadOnlyRef.current),
 				EditorView.editable.of(!initialReadOnlyRef.current),
@@ -1046,7 +1048,8 @@ export const OrgEditor = memo(function OrgEditor({
 		const view = new EditorView({
 			parent: host,
 			// Sparse presentation is transient, never revived from a parked session.
-			state: state.update({ effects: clearOrgSparseTree.of(null) }).state,
+			state: state.update({ effects: effectRegistry.localEffect(clearOrgSparseTree.of(null)) })
+				.state,
 			...(bufferRuntime
 				? {
 						dispatchTransactions: (transactions: readonly Transaction[]) => {

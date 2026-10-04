@@ -11,8 +11,10 @@ import {
 	Compartment,
 	EditorState,
 	type Extension,
+	Facet,
 	StateEffect,
 	Transaction,
+	type TransactionSpec,
 } from "@codemirror/state"
 import {
 	minimalTextChange,
@@ -34,6 +36,18 @@ import {
 export { orgSourceLineSeparator, orgSourceText } from "./org-buffer-runtime.helpers"
 export * from "./org-buffer-runtime.types"
 
+// The facet and its issuer stay private: neither annotations nor filter:false
+// confer canonical projection authority on caller-created transactions.
+const projectionAuthority = Facet.define<(tr: Transaction) => boolean>()
+
+/** True only for runtime-issued window projections (including undo/redo).
+ * Presentation StateFields may use this to reveal canonical/history targets.
+ * Ordinary origin edits are deliberately not projections, even with filter:false.
+ */
+export function isOrgRuntimeProjection(tr: Transaction): boolean {
+	return tr.startState.facet(projectionAuthority).some((recognize) => recognize(tr))
+}
+
 interface WindowSlot {
 	readonly options: OrgBufferWindowOptions
 	state: EditorState
@@ -50,6 +64,23 @@ interface Projection {
 export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBufferRuntime {
 	const key = Object.freeze({ ...options.key })
 	const sourceCompartment = new Compartment()
+	const issuedProjections = new WeakSet<Transaction>()
+	let projectionDepth = 0
+	const authorityExtension = projectionAuthority.of((tr) => issuedProjections.has(tr))
+	// Force lazy StateFields while inside the private projection boundary. Mark the
+	// exact transaction, not ambient callback activity, so nested local updates
+	// cannot borrow authority. No issuer/controller is exposed through the facet.
+	const withProjectionAuthority = (build: () => Transaction): Transaction => {
+		projectionDepth++
+		try {
+			const tr = build()
+			if (projectionDepth > 0) issuedProjections.add(tr)
+			void tr.state
+			return tr
+		} finally {
+			projectionDepth--
+		}
+	}
 	const inversion = invertedEffects.of((tr) => {
 		if (tr.changes.empty) {
 			return []
@@ -62,6 +93,7 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 	})
 	const canonicalExtensions = (separator: string): Extension => [
 		history(),
+		authorityExtension,
 		EditorState.allowMultipleSelections.of(true),
 		EditorState.lineSeparator.of(separator),
 		inversion,
@@ -76,6 +108,10 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 		disabled = false
 	let lastOrigin: string | null = null
 	const windows = new Map<string, WindowSlot>()
+	const guardedStates = new WeakMap<
+		EditorState,
+		{ slot: WindowSlot; update: EditorState["update"] }
+	>()
 	const fail = (
 		code: ConstructorParameters<typeof OrgBufferRuntimeError>[0],
 		message: string,
@@ -145,6 +181,7 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 				slot.revision = revision
 			} catch (cause) {
 				slot.detached = true
+				releaseWindowUpdate(slot)
 				windows.delete(slot.options.windowId)
 				report(
 					new OrgBufferRuntimeError(
@@ -226,22 +263,28 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 			)
 		}
 		const selection = local?.selection ?? projectionSelection(slot, canonical, origin)
-		const tr = projected.update({
-			annotations: [...transactionTraits(local ?? canonical), Transaction.addToHistory.of(false)],
-			changes: canonical.changes,
-			effects,
-			filter: false,
-			scrollIntoView: local?.scrollIntoView ?? false,
-			selection,
+		// Internal projections may reconfigure the runtime-owned source compartment.
+		const update = guardedStates.get(projected)?.update ?? projected.update
+		const tr = withProjectionAuthority(() => {
+			const transaction = update.call(projected, {
+				annotations: [...transactionTraits(local ?? canonical), Transaction.addToHistory.of(false)],
+				changes: canonical.changes,
+				effects,
+				filter: false,
+				scrollIntoView: local?.scrollIntoView ?? false,
+				selection,
+			})
+			// Reject injected effects before evaluating lazy presentation fields.
+			if (
+				transaction.effects.length !== effects.length ||
+				transaction.effects.some((effect, index) => effect !== effects[index])
+			) {
+				fail("unknown-effect", "Projection extender injected effects; entire batch rejected")
+			}
+			return transaction
 		})
-		// Peer extenders must not inject window effects into a source-only projection.
-		if (
-			tr.effects.length !== effects.length ||
-			tr.effects.some((effect, index) => effect !== effects[index])
-		) {
-			fail("unknown-effect", "Projection extender injected effects; entire batch rejected")
-		}
 		assertWindowState(tr.state, canonical.state)
+		guardWindowUpdate(slot, tr.state)
 		return tr
 	}
 	const buildProjections = (
@@ -265,8 +308,8 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 		}
 		return projections
 	}
-	const validateLocalEffects = (slot: WindowSlot, tr: Transaction) => {
-		for (const effect of tr.effects) {
+	const validateEffects = (slot: WindowSlot, effects: readonly StateEffect<unknown>[]) => {
+		for (const effect of effects) {
 			if (effect.is(StateEffect.reconfigure) || effect.is(StateEffect.appendConfig)) {
 				fail("unknown-effect", "Root configuration effects are forbidden")
 			}
@@ -278,6 +321,46 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 			) {
 				fail("unknown-effect", "Unregistered window effect; entire batch rejected")
 			}
+		}
+	}
+	const validateLocalEffects = (slot: WindowSlot, tr: Transaction) =>
+		validateEffects(slot, tr.effects)
+	// No CM facet runs before all filters, and filter:false skips both filter facets.
+	// Intercept the public state.update boundary used by EditorView.dispatch instead.
+	const guardWindowUpdate = (slot: WindowSlot, candidate: EditorState) => {
+		const existing = guardedStates.get(candidate)
+		if (existing) {
+			if (existing.slot !== slot) {
+				fail("invalid-window", "An editor state cannot belong to multiple windows")
+			}
+			return
+		}
+		const update = candidate.update
+		guardedStates.set(candidate, { slot, update })
+		Object.defineProperty(candidate, "update", {
+			configurable: true,
+			value: function (this: EditorState, ...specs: TransactionSpec[]): Transaction {
+				for (const spec of specs) {
+					const effects = spec.effects
+					validateEffects(slot, effects == null ? [] : Array.isArray(effects) ? effects : [effects])
+				}
+				const tr = update.apply(this, specs)
+				// Filters/extenders can inject effects. Check before evaluating lazy state fields.
+				validateLocalEffects(slot, tr)
+				guardWindowUpdate(slot, tr.state)
+				return tr
+			},
+		})
+	}
+	const releaseWindowUpdate = (slot: WindowSlot) => {
+		const guarded = guardedStates.get(slot.state)
+		if (guarded?.slot === slot) {
+			Object.defineProperty(slot.state, "update", {
+				configurable: true,
+				writable: true,
+				value: guarded.update,
+			})
+			guardedStates.delete(slot.state)
 		}
 	}
 	const validateBatch = (slot: WindowSlot, input: readonly Transaction[]) => {
@@ -514,6 +597,7 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 				revision,
 				state: windowOptions.view.state,
 			}
+			guardWindowUpdate(slot, slot.state)
 			windows.set(windowOptions.windowId, slot)
 			const handle: OrgBufferWindowHandle = {
 				detach() {
@@ -521,6 +605,7 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 						fail("reentrant", "Reentrant window detach")
 					}
 					slot.detached = true
+					releaseWindowUpdate(slot)
 					if (windows.get(windowOptions.windowId) === slot) {
 						windows.delete(windowOptions.windowId)
 					}
@@ -538,6 +623,7 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 			closed = true
 			for (const slot of windows.values()) {
 				slot.detached = true
+				releaseWindowUpdate(slot)
 			}
 			windows.clear()
 		},
@@ -546,6 +632,7 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 		},
 		get historyFreeSourceExtensions() {
 			return [
+				authorityExtension,
 				sourceCompartment.of(EditorState.lineSeparator.of(state.lineBreak)),
 				EditorState.allowMultipleSelections.of(true),
 			]

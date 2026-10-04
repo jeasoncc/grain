@@ -819,6 +819,37 @@ Verification: 180 files /3240 tests, typecheck/build and diff checks pass
 application command registry: navigation pickers, capture/note tools, declarative
 keymaps/transients and extension/configuration protocols remain separate work.
 
+## Sparse Tree composition and explicit tag inheritance
+
+Existing `todo`, `todo:STATE`, local `tag:NAME` and whole-tail `text:LITERAL`
+remain unchanged. `itag:NAME` explicitly queries effective file/ancestor/own tags.
+`match:` introduces bounded boolean composition: NOT > AND > OR, parentheses,
+and quoted title literals with quote/backslash escapes. Example:
+
+```text
+match: todo AND (itag:work OR tag:urgent) AND NOT text:"Not now"
+```
+
+Parsing admits at most 8192 UTF-16 units, depth 32 and 128 nodes; malformed input
+leaves the existing window view untouched. Effective tags use shared ancestry
+metadata and requested-tag matching, not quadratic per-descendant copies of all
+ancestor sets. Candidate generation scans declared/local tags once. Excluded
+COMMENT/block/drawer source cannot forge tags or structural parents.
+
+Runtime rejects unknown effects before CodeMirror filters can traverse an AST;
+standalone and runtime presentation authority are both installed, and missing
+authority fails closed. Cyclic forged ASTs are rejected before traversal, including
+`filter:false`. Ordinary local edits relocate selections against newly computed
+hidden sections when a heading stops matching; canonical peer/history reveal
+remains separately trusted. Queries still change only window presentation, never
+source/history; visible same-file Refile remains a canonical atomic range move.
+
+Verification: 183 files /3270 tests, typecheck/build and diff checks pass
+(2026-10-04 19:01 +08:00). Production cases cover composition/invalid queries,
+independent split views, new-range caret relocation, forged ASTs, deep ancestry,
+raw source preservation and undo/refile guards. Native large-file performance and
+full Org query grammar/configurable inheritance remain separate open work.
+
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.

@@ -20,11 +20,14 @@ import { EditorView } from "@codemirror/view"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import {
 	createOrgBufferRuntime,
+	isOrgRuntimeProjection,
 	type OrgBufferRuntime,
 	OrgBufferRuntimeError,
 	type OrgBufferWindowHandle,
 } from "./org-buffer-runtime"
 import { createOrgWindowEffectRegistry } from "./org-window-effects"
+import { setOrgSparseTree } from "@/views/org-editor/org-sparse-tree.extension"
+import type { OrgSparseTreeQuery } from "@/types/org"
 
 const views: EditorView[] = []
 afterEach(() => {
@@ -92,6 +95,106 @@ function expectCode(fn: () => unknown, code: string) {
 }
 
 describe("canonical Org buffer/window runtime", () => {
+	it("grants private projection authority to peers, controller edits, and history only", () => {
+		const { runtime } = buffer()
+		const seen: { tr: Transaction; authority: boolean }[] = []
+		const observe = StateField.define<null>({
+			create: () => null,
+			update(value, tr) {
+				seen.push({ tr, authority: isOrgRuntimeProjection(tr) })
+				return value
+			},
+		})
+		const a = window(runtime, "a", { extensions: observe })
+		const b = window(runtime, "b", { extensions: observe })
+		a.view.dispatch({ changes: { from: 0, insert: "X" }, filter: false })
+		expect(seen.map(({ authority }) => authority)).toEqual([false, true])
+		const peer = seen[1].tr
+		expect(isOrgRuntimeProjection(peer)).toBe(true)
+		seen.length = 0
+		// Copying traits from a genuine projection cannot grant authority.
+		const forged = a.view.state.update({
+			annotations: [Transaction.addToHistory.of(false)],
+			filter: false,
+			selection: peer.selection,
+		})
+		expect(isOrgRuntimeProjection(forged)).toBe(false)
+		expect(seen.map(({ authority }) => authority)).toEqual([false])
+		seen.length = 0
+		expect(a.handle.undo()).toBe(true)
+		expect(seen.map(({ authority }) => authority)).toEqual([true, true])
+		seen.length = 0
+		expect(b.handle.redo()).toBe(true)
+		expect(seen.map(({ authority }) => authority)).toEqual([true, true])
+		seen.length = 0
+		runtime.applyControllerSource(runtime.source, "replacement")
+		expect(seen.map(({ authority }) => authority)).toEqual([true, true])
+		seen.length = 0
+		runtime.applyCommandEdit(runtime.source, { from: 0, to: 0, insert: "!", cursor: 1 })
+		expect(seen.map(({ authority }) => authority)).toEqual([true, true])
+	})
+
+	it.each([true, false])("denies forged cyclic AST before filters (filter=%s)", (filter) => {
+		const { runtime, onCommit } = buffer("* TODO heading\nbody")
+		const filterSpy = vi.fn((tr: Transaction) => {
+			// A presentation filter must never get an opportunity to traverse this payload.
+			for (const effect of tr.effects) {
+				if (effect.is(setOrgSparseTree)) throw new Error("forged AST reached filter")
+			}
+			return tr
+		})
+		const changeFilter = vi.fn(() => true)
+		const registry = createOrgWindowEffectRegistry([], [setOrgSparseTree])
+		const a = window(
+			runtime,
+			"a",
+			{
+				extensions: [
+					EditorState.transactionFilter.of(filterSpy),
+					EditorState.changeFilter.of(changeFilter),
+				],
+			},
+			registry,
+		)
+		const b = window(runtime, "b")
+		const before = a.view.state
+		const canonical = runtime.state
+		const update = vi.spyOn(b.view, "update")
+		const cyclic = { kind: "not" } as { kind: "not"; operand: OrgSparseTreeQuery }
+		cyclic.operand = cyclic
+		// Same registered presentation type, but not issued by this window's registry.
+		const forged = setOrgSparseTree.of({ query: cyclic, restoreSelection: null })
+		expectCode(
+			() => a.view.dispatch({ changes: { from: 0, insert: "X" } }, { effects: forged, filter }),
+			"unknown-effect",
+		)
+		expect(filterSpy).not.toHaveBeenCalled()
+		expect(changeFilter).not.toHaveBeenCalled()
+		expect(a.view.state).toBe(before)
+		expect(runtime.state).toBe(canonical)
+		expect(runtime.revision).toBe(0)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(onCommit).not.toHaveBeenCalled()
+		expect(update).not.toHaveBeenCalled()
+		// Explicitly issued presentation effects still work, including filter:false.
+		a.view.dispatch({
+			effects: registry.localEffect(
+				setOrgSparseTree.of({
+					query: { kind: "todo" },
+					restoreSelection: null,
+				}),
+			),
+			filter: false,
+		})
+		// New origin and peer states retain the guard after projection.
+		type(a.view, "safe")
+		filterSpy.mockClear()
+		changeFilter.mockClear()
+		expectCode(() => a.view.dispatch({ effects: forged, filter }), "unknown-effect")
+		expectCode(() => b.view.dispatch({ effects: forged, filter }), "unknown-effect")
+		expect(filterSpy).not.toHaveBeenCalled()
+		expect(changeFilter).not.toHaveBeenCalled()
+	})
 	it.each([
 		"\n",
 		"\r\n",
@@ -349,7 +452,8 @@ describe("canonical Org buffer/window runtime", () => {
 			b = window(runtime, "b")
 		const update = vi.spyOn(b.view, "update")
 		const first = a.view.state.update({ changes: { from: 0, insert: "1" } })
-		const bad = first.state.update({
+		// Bypass the input boundary to also exercise the resolved-batch defense.
+		const bad = EditorState.prototype.update.call(first.state, {
 			changes: { from: 1, insert: "2" },
 			effects: StateEffect.define().of(null),
 		})

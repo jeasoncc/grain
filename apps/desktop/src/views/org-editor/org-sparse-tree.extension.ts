@@ -1,14 +1,19 @@
-import { historyKeymap, undo, redo } from "@codemirror/commands"
+import { historyKeymap, redo, undo } from "@codemirror/commands"
 import {
 	EditorSelection,
 	EditorState,
 	Facet,
+	Prec,
 	StateEffect,
 	StateField,
 	Transaction,
 } from "@codemirror/state"
 import { Decoration, type DecorationSet, EditorView, keymap } from "@codemirror/view"
-import { buildOrgSparseTreePlan } from "@/pipes/org/org-sparse-tree.pipe"
+import {
+	buildOrgSparseTreePlan,
+	isParsedOrgSparseTreeQuery,
+} from "@/pipes/org/org-sparse-tree.pipe"
+import { isOrgRuntimeProjection } from "@/flows/org-editor-runtime/org-buffer-runtime"
 import type { OrgSparseTreePlan, OrgSparseTreeQuery } from "@/types/org"
 import { editorOffsetFromSource } from "./org-source-offset.pipe"
 import { safeOrgSparseBoundaryChange } from "./org-sparse-boundary.pipe"
@@ -31,6 +36,17 @@ export const setOrgSparseTree = StateEffect.define<{
 export const clearOrgSparseTree = StateEffect.define<null>()
 // Each controller owns its invocation context. No annotation can confer authority.
 const ownedHistory = Facet.define<(transaction: Transaction) => boolean>()
+// Validate effects before their AST payload can be traversed, including filter:false.
+const presentationAuthority = Facet.define<(effect: StateEffect<unknown>) => boolean>()
+const unownedPresentation = (transaction: Transaction): boolean => {
+	const authorities = transaction.startState.facet(presentationAuthority)
+	return transaction.effects.some(
+		(effect) =>
+			(effect.is(setOrgSparseTree) || effect.is(clearOrgSparseTree)) &&
+			(!authorities.some((owns) => owns(effect)) ||
+				(effect.is(setOrgSparseTree) && !isParsedOrgSparseTreeQuery(effect.value.query))),
+	)
+}
 const isOwnedHistory = (tr: Transaction) =>
 	tr.startState.facet(ownedHistory).some((owns) => owns(tr))
 
@@ -56,7 +72,9 @@ export function createOrgSparseHistoryController(
 	knownEffect: (effect: StateEffect<unknown>) => boolean,
 ) {
 	let depth = 0
-	const owns = (tr: Transaction) => depth > 0 && getView()?.state === tr.startState
+	const issued = new WeakSet<Transaction>()
+	const owns = (tr: Transaction) =>
+		issued.has(tr) || (depth > 0 && getView()?.state === tr.startState)
 	const run = (command: (view: EditorView) => boolean) => {
 		const view = getView()
 		if (!view || view.state.readOnly) return false
@@ -68,24 +86,6 @@ export function createOrgSparseHistoryController(
 		}
 	}
 	return {
-		extension: [
-			ownedHistory.of(owns),
-			keymap.of(
-				historyKeymap.map((binding) => ({
-					...binding,
-					run: binding.run ? () => run(binding.run!) : undefined,
-					shift: binding.shift ? () => run(binding.shift!) : undefined,
-				})),
-			),
-			EditorView.domEventHandlers({
-				beforeinput: (event) => {
-					if (event.inputType !== "historyUndo" && event.inputType !== "historyRedo") return false
-					event.preventDefault()
-					run(event.inputType === "historyRedo" ? redo : undo)
-					return true
-				},
-			}),
-		],
 		dispatch(transactions: readonly Transaction[], view: EditorView) {
 			if (view !== getView()) return
 			// Validate every intermediate state, before installing any source/history.
@@ -101,8 +101,31 @@ export function createOrgSparseHistoryController(
 				)
 			)
 				return
+			for (const tr of transactions) if (owns(tr)) issued.add(tr)
 			view.update(transactions)
 		},
+		presentationExtension: presentationAuthority.of(knownEffect),
+		extension: [
+			presentationAuthority.of(knownEffect),
+			ownedHistory.of(owns),
+			keymap.of(
+				historyKeymap.map((binding) => ({
+					...binding,
+					run: binding.run ? () => run(binding.run!) : undefined,
+					shift: binding.shift ? () => run(binding.shift!) : undefined,
+				})),
+			),
+			Prec.highest(
+				EditorView.domEventHandlers({
+					beforeinput: (event) => {
+						if (event.inputType !== "historyUndo" && event.inputType !== "historyRedo") return false
+						event.preventDefault()
+						run(event.inputType === "historyRedo" ? redo : undo)
+						return true
+					},
+				}),
+			),
+		],
 	}
 }
 
@@ -120,6 +143,7 @@ export const sparseSelectionIntersects = (
 export const allowOrgSparseTreeSourceTransaction = (
 	transaction: Transaction,
 	knownEffect: (effect: StateEffect<unknown>) => boolean = () => false,
+	checkNewSelection = true,
 ): boolean => {
 	const sparse = transaction.startState.field(orgSparseTreeField, false)
 	if (!sparse) return true
@@ -167,6 +191,20 @@ export const allowOrgSparseTreeSourceTransaction = (
 		)
 			allowed = false
 	})
+	if (allowed && checkNewSelection && !ownedPresentation) {
+		const source = transaction.newDoc.sliceString(
+			0,
+			transaction.newDoc.length,
+			transaction.startState.lineBreak,
+		)
+		const ranges = buildOrgSparseTreePlan(source, sparse.query).hiddenRanges.map(
+			({ from, to }) => ({
+				from: editorOffsetFromSource(source, from, transaction.startState.lineBreak),
+				to: editorOffsetFromSource(source, to, transaction.startState.lineBreak),
+			}),
+		)
+		if (sparseSelectionIntersects(transaction.newSelection, ranges)) return false
+	}
 	return allowed
 }
 
@@ -174,6 +212,7 @@ const project = (
 	state: EditorState,
 	query: OrgSparseTreeQuery,
 	restoreSelection: EditorSelection | null,
+	revealSelection = false,
 ): OrgSparseTreeState => {
 	const source = state.sliceDoc()
 	const plan = buildOrgSparseTreePlan(source, query)
@@ -182,7 +221,9 @@ const project = (
 	const hiddenRanges = plan.hiddenRanges
 		.map(({ from, to }) => ({ from: offset(from), to: offset(to) }))
 		.filter(
-			(range) => range.to > range.from && !sparseSelectionIntersects(state.selection, [range]),
+			(range) =>
+				range.to > range.from &&
+				(!revealSelection || !sparseSelectionIntersects(state.selection, [range])),
 		)
 	return {
 		decorations: Decoration.set(
@@ -211,8 +252,12 @@ export const orgSparseTreeField = StateField.define<OrgSparseTreeState | null>({
 		EditorView.decorations.from(field, (value) => value?.decorations ?? Decoration.none),
 		EditorView.atomicRanges.of((view) => view.state.field(field)?.decorations ?? Decoration.none),
 		EditorState.transactionFilter.of((transaction) => {
+			if (unownedPresentation(transaction)) return []
 			if (isOwnedHistory(transaction)) return transaction
-			if (transaction.docChanged && !allowOrgSparseTreeSourceTransaction(transaction, () => true))
+			if (
+				transaction.docChanged &&
+				!allowOrgSparseTreeSourceTransaction(transaction, () => true, false)
+			)
 				return []
 			if (transaction.effects.some((effect) => effect.is(clearOrgSparseTree))) return transaction
 			const apply = transaction.effects.find((effect) => effect.is(setOrgSparseTree))
@@ -221,15 +266,16 @@ export const orgSparseTreeField = StateField.define<OrgSparseTreeState | null>({
 			if (!query) return transaction
 			const state = transaction.state
 			const plan = buildOrgSparseTreePlan(state.sliceDoc(), query)
-			const ranges = apply
-				? plan.hiddenRanges.map(({ from, to }) => ({
-						from: editorOffsetFromSource(state.sliceDoc(), from, state.lineBreak),
-						to: editorOffsetFromSource(state.sliceDoc(), to, state.lineBreak),
-					}))
-				: (active?.hiddenRanges ?? []).map(({ from, to }) => ({
-						from: transaction.changes.mapPos(from),
-						to: transaction.changes.mapPos(to),
-					}))
+			const ranges =
+				apply || transaction.docChanged
+					? plan.hiddenRanges.map(({ from, to }) => ({
+							from: editorOffsetFromSource(state.sliceDoc(), from, state.lineBreak),
+							to: editorOffsetFromSource(state.sliceDoc(), to, state.lineBreak),
+						}))
+					: (active?.hiddenRanges ?? []).map(({ from, to }) => ({
+							from: transaction.changes.mapPos(from),
+							to: transaction.changes.mapPos(to),
+						}))
 			if (!sparseSelectionIntersects(state.selection, ranges)) return transaction
 			const match = plan.matchedHeadingStarts[0]
 			if (match === undefined) return transaction
@@ -242,7 +288,7 @@ export const orgSparseTreeField = StateField.define<OrgSparseTreeState | null>({
 							if (!sparseSelectionIntersects(EditorSelection.create([range]), ranges)) return range
 							const hidden = ranges.find(({ from, to }) => range.head >= from && range.head < to)
 							const target =
-								!apply && range.empty && hidden
+								!apply && !transaction.docChanged && range.empty && hidden
 									? range.head < transaction.startState.selection.main.head && hidden.from > 0
 										? hidden.from - 1
 										: hidden.to
@@ -257,12 +303,14 @@ export const orgSparseTreeField = StateField.define<OrgSparseTreeState | null>({
 		}),
 	],
 	update(value, transaction) {
+		if (unownedPresentation(transaction)) return value
 		let next = value
 		if (next && (transaction.docChanged || transaction.selection)) {
 			next = project(
 				transaction.state,
 				next.query,
 				next.restoreSelection?.map(transaction.changes) ?? null,
+				isOwnedHistory(transaction) || isOrgRuntimeProjection(transaction),
 			)
 		}
 		// Genuine local movement supersedes the original caret, but canonical ACK/history

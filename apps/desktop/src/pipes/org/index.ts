@@ -1,9 +1,4 @@
 export {
-	captureOrgAgendaOperation,
-	freezeOrgAgendaEntrySnapshot,
-	planAgendaOperation,
-} from "./org-agenda-command-plan.pipe"
-export {
 	type AnchoredOrgAgendaEntry,
 	type OrgAgendaEntry,
 	type OrgAgendaEntryKind,
@@ -14,6 +9,11 @@ export {
 	sortOrgAgendaEntries,
 	validateOrgAgendaOrigin,
 } from "./org-agenda.pipe"
+export {
+	captureOrgAgendaOperation,
+	freezeOrgAgendaEntrySnapshot,
+	planAgendaOperation,
+} from "./org-agenda-command-plan.pipe"
 export {
 	type OrgHeadingIdentifier,
 	type OrgHeadingIdentifierKind,
@@ -33,7 +33,11 @@ export {
 	parseOrgIndexHeadings,
 } from "./org-derived-index.pipe"
 export { type OrgLinkClickTarget, orgFileLinkAt, orgLinkTargetAt } from "./org-link.pipe"
-export { buildOrgSparseTreePlan, parseOrgSparseTreeQuery } from "./org-sparse-tree.pipe"
+export {
+	buildOrgSparseTreePlan,
+	orgEffectiveTagSnapshot,
+	parseOrgSparseTreeQuery,
+} from "./org-sparse-tree.pipe"
 export {
 	appendOrgSubtree,
 	deriveOrgArchivePath,
@@ -60,10 +64,10 @@ export {
 	setOrgPropertyAt,
 	toggleOrgCheckboxAt,
 } from "./org-text.pipe"
-export { buildOrgWorkspaceTree } from "./org-workspace-tree.pipe"
 export {
 	formatOrgLocalTimestamp,
 	type OrgTodoTransitionPlan,
 	planOrgTodoTransition,
 	validOrgLocalTimestamp,
 } from "./org-todo-logging.pipe"
+export { buildOrgWorkspaceTree } from "./org-workspace-tree.pipe"

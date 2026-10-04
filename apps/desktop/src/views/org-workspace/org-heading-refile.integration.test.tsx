@@ -12,6 +12,7 @@ import type {
 	WriteOrgDocumentInput,
 } from "@/types/org"
 import type { OrgEditorSessionSnapshot } from "@/views/org-editor/org-editor.types"
+import { orgSparseTreeField } from "../org-editor/org-sparse-tree.extension"
 import { OrgDocumentPane } from "./org-document-pane.view.fn"
 
 // Default repository injection only: workspace/target/refile flows, both hooks,
@@ -295,6 +296,72 @@ describe("real heading refile runtime with an in-memory filesystem boundary", ()
 		expect(
 			boundary.write.mock.calls.map(([input]) => [input.relativePath, input.expectedRevision]),
 		).toEqual([["source.org", "source-1"]])
+	})
+	it("atomically refiles visible ranges across hidden text under an explicit composite match without permitting hidden edits", async () => {
+		const moving = "* TODO Move :work:\nmove body\n"
+		const hidden = "* DONE Hidden :blocked:\nhidden body\n"
+		const destination = "* TODO Destination :work:\ndestination body\n"
+		const peer = "* DONE Peer\npeer body\n"
+		const initial = moving + hidden + destination + peer
+		const expected = hidden + destination + moving.replace("* TODO", "** TODO") + peer
+		disk.set("source.org", { relativePath: "source.org", content: initial, revision: "source-1" })
+		await setup()
+		fireEvent.pointerDown(screen.getByRole("button", { name: "Note actions" }), {
+			button: 0,
+			ctrlKey: false,
+		})
+		await flush()
+		fireEvent.click(screen.getByRole("menuitem", { name: /^Sparse tree/ }))
+		const sparseInput = screen.getByRole("combobox", { name: /^Sparse tree/ })
+		fireEvent.change(sparseInput, {
+			target: { value: 'match: todo AND (tag:work OR text:"Destination") AND NOT tag:blocked' },
+		})
+		await accept(sparseInput)
+		expect(view().state.field(orgSparseTreeField)!.plan.matchedHeadingStarts).toEqual([
+			0,
+			initial.indexOf(destination),
+		])
+		expect(view().contentDOM.textContent).not.toContain("hidden body")
+		expect(view().contentDOM.textContent).not.toContain("peer body")
+		const selection = view().state.selection
+		const depth = undoDepth(controller.activeBufferRuntime!.state)
+		const reads = boundary.read.mock.calls.length
+		const scans = boundary.scan.mock.calls.length
+		act(() => {
+			view().dispatch({ changes: { from: initial.indexOf("hidden body"), insert: "forbidden" } })
+		})
+		expect(controller.content).toBe(initial)
+		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(depth)
+		fireEvent.keyDown(screen.getByRole("textbox"), { ctrlKey: true, shiftKey: true, key: "r" })
+		const file = screen.getByRole("combobox", { name: "Refile to Org file:" })
+		fireEvent.change(file, { target: { value: "source.org" } })
+		await accept(file)
+		const headingInput = screen.getByRole("combobox", { name: "Refile under heading:" })
+		fireEvent.change(headingInput, { target: { value: "Destination" } })
+		fireEvent.keyDown(headingInput, { key: "Tab" })
+		await accept(headingInput)
+		expect(screen.queryByRole("alert")).toBeNull()
+		expect(controller.content).toBe(expected)
+		expect(view().state.sliceDoc()).toBe(expected)
+		expect(controller.isDirty).toBe(true)
+		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(depth + 1)
+		expect(view().state.field(orgSparseTreeField)).not.toBeNull()
+		expect(view().contentDOM.textContent).not.toContain("hidden body")
+		act(() => {
+			view().dispatch({ changes: { from: expected.indexOf("hidden body"), insert: "forbidden" } })
+		})
+		expect(controller.content).toBe(expected)
+		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(depth + 1)
+		fireEvent.keyDown(screen.getByRole("textbox"), { ctrlKey: true, key: "z" })
+		await flush()
+		expect(controller.content).toBe(initial)
+		expect(view().state.selection.eq(selection)).toBe(true)
+		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(depth)
+		expect(redoDepth(controller.activeBufferRuntime!.state)).toBe(1)
+		expect(boundary.read).toHaveBeenCalledTimes(reads)
+		expect(boundary.scan).toHaveBeenCalledTimes(scans)
+		expect(boundary.write).not.toHaveBeenCalled()
+		expect(disk.get("source.org")!.content).toBe(initial)
 	})
 	it.each([
 		["same", "incoming"],
