@@ -321,7 +321,7 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 	})
 	it.each([
 		["#+TODO: NEXT | FINISHED(f@)\r\n", "requires a note"],
-		["#+TODO: NEXT | FINISHED\r\n#+PROPERTY: LOGGING logdone\r\n", "unsupported-logging-policy"],
+		["#+TODO: NEXT | FINISHED\r\n#+PROPERTY: LOGGING repeat\r\n", "unsupported-logging-policy"],
 	])("renders TODO policy refusal from the production planner (%s)", async (directives, message) => {
 		const raw = source.replace("#+TODO: NEXT | FINISHED\r\n", directives)
 		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })

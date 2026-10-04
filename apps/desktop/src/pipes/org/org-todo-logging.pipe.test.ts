@@ -237,13 +237,13 @@ describe("TODO logging safety regressions", () => {
 		})
 	})
 	it("rejects recognized unsupported LOGGING but ignores COMMENT properties", () => {
-		expect(planOrgTodoTransition("#+PROPERTY: LOGGING nil\n* TODO task", 25, stamp).kind).toBe(
+		expect(planOrgTodoTransition("#+PROPERTY: LOGGING repeat\n* TODO task", 28, stamp).kind).toBe(
 			"rejected",
 		)
 		const source = "* COMMENT example\n:PROPERTIES:\n:LOGGING: nil\n:END:\n* TODO task"
 		expect(run(source, source.lastIndexOf("* TODO")).result).toContain("* DONE task")
 		expect(
-			planOrgTodoTransition("* TODO task\n:PROPERTIES:\n:LOGGING: nil\n:END:\n", 0, stamp),
+			planOrgTodoTransition("* TODO task\n:PROPERTIES:\n:LOGGING: repeat\n:END:\n", 0, stamp),
 		).toEqual({ kind: "rejected", reason: "unsupported-logging-policy" })
 	})
 	it("coalesces keyword and log insertions at empty EOF heading", () => {
@@ -302,7 +302,7 @@ describe("shape and applicable policy proof", () => {
 					source.lastIndexOf("TODO target") - source.match(/\*+(?= TODO target)/)![0].length - 1,
 					stamp,
 				).kind,
-			).toBe("rejected")
+			).toBe("edit")
 		for (const source of [
 			`* Sibling\n${property}\n* TODO target`,
 			`* Parent\n** Sibling\n${property}\n** TODO target`,
@@ -418,7 +418,7 @@ describe("explicit multiline TODO notes", () => {
 		for (const suffix of [
 			":LOGBOOK:\nunclosed",
 			"CLOSED: broken",
-			":PROPERTIES:\n:LOGGING: nil\n:END:",
+			":PROPERTIES:\n:LOGGING: repeat\n:END:",
 		])
 			for (const note of [undefined, "note"]) {
 				const source = `#+TODO: TODO | DONE(@)\n* TODO x\n${suffix}`

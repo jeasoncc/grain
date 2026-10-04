@@ -153,6 +153,13 @@ export const structuralOrgSourceLines = (content: string) =>
 export const eligibleOrgSourceLines = (content: string, states: ReadonlySet<string>) =>
 	scanOrgSource(content, states, true).lines
 
+/** TODO policy scopes ignore literal-looking content in excluded COMMENT subtrees. */
+export const eligibleOrgDrawerRanges = (content: string, states: ReadonlySet<string>) =>
+	scanOrgSource(content, states, true).drawers
+
+export const eligibleOrgBlockRanges = (content: string, states: ReadonlySet<string>) =>
+	scanOrgSource(content, states, true).ranges
+
 const positionIsInOrgBlock = (ranges: readonly OrgBlockRange[], position: number): boolean =>
 	ranges.some((range) => position >= range.from && position < range.to)
 
@@ -220,9 +227,26 @@ export const parseOrgTodoKeywords = (content: string): OrgTodoKeywords => {
 
 /** Cycles a heading through its configured TODO sequence and then back to no keyword. */
 export const cycleOrgTodoAt = (content: string, cursor: number): OrgTextEdit | null => {
+	if (positionIsInOrgBlock(orgBlockRanges(content), lineRangeAt(content, cursor).from)) return null
+	return cycleOrgTodoHeadingAt(content, cursor)
+}
+
+/** Policy-aware cycling uses the same COMMENT/source eligibility as declarations and sparse TODOs. */
+export const cycleEligibleOrgTodoAt = (content: string, cursor: number): OrgTextEdit | null => {
+	const range = lineRangeAt(content, cursor)
+	const keywords = parseOrgTodoKeywords(content)
+	if (
+		!eligibleOrgSourceLines(content, new Set([...keywords.todo, ...keywords.done])).some(
+			(line) => line.from === range.from,
+		)
+	)
+		return null
+	return cycleOrgTodoHeadingAt(content, cursor)
+}
+
+const cycleOrgTodoHeadingAt = (content: string, cursor: number): OrgTextEdit | null => {
 	const range = lineRangeAt(content, cursor)
 	const line = content.slice(range.from, range.to)
-	if (positionIsInOrgBlock(orgBlockRanges(content), range.from)) return null
 	const heading = /^(\*+[ \t]+)(\S+)?([ \t]+)?/.exec(line)
 	if (!heading) {
 		return null

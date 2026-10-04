@@ -1,13 +1,13 @@
+import { resolveOrgLoggingPolicy } from "./org-logging-policy.pipe"
 import { parseOrgPlanningLine } from "./org-planning-line.pipe"
 import {
-	cycleOrgTodoAt,
-	validOrgDate,
-	structuralOrgSourceLines,
+	cycleEligibleOrgTodoAt,
 	eligibleOrgSourceLines,
-	orgBlockRanges,
-	orgDrawerRanges,
-	parseOrgTodoKeywords,
 	type OrgTextEdit,
+	eligibleOrgBlockRanges,
+	eligibleOrgDrawerRanges,
+	parseOrgTodoKeywords,
+	validOrgDate,
 } from "./org-text.pipe"
 
 export type OrgTodoTransitionPlan =
@@ -74,29 +74,16 @@ const linesOf = (source: string): Line[] => {
 	const pattern = /([^\r\n]*)(\r\n|\r|\n|$)/g
 	for (const match of source.matchAll(pattern)) {
 		lines.push({
-			from: match.index,
-			to: match.index + match[1].length,
 			end: match.index + match[0].length,
+			from: match.index,
 			text: match[1],
+			to: match.index + match[1].length,
 		})
 		if (!match[0]) break
 	}
 	return lines
 }
 const rejected = (reason: string): OrgTodoTransitionPlan => ({ kind: "rejected", reason })
-interface Logging {
-	incoming: string
-	outgoing: string
-}
-const parseDrawerName = (value: string): string | null | undefined => {
-	const name = value.trim().replace(/^"([^"\r\n]*)"$/, "$1")
-	if (/^nil$/i.test(name)) return null
-	if (/^t$/i.test(name)) return "LOGBOOK"
-	return /^[A-Za-z][A-Za-z0-9_-]*$/.test(name) && !/^(END|PROPERTIES)$/i.test(name)
-		? name
-		: undefined
-}
-
 /**
  * Literal fixedwidth lines containing JSON strings. Decoding each line after
  * `  : ` with JSON.parse and concatenating recovers the exact note, including
@@ -126,116 +113,37 @@ export const planOrgTodoTransition = (
 	const keywords = parseOrgTodoKeywords(source)
 	const states = new Set([...keywords.todo, ...keywords.done])
 	const eligible = eligibleOrgSourceLines(source, states)
-	if (!eligible.some((line) => line.from === heading.from))
-		return note === undefined ? { kind: "noop" } : rejected("unexpected-note")
-	const logging = new Map<string, Logging>()
-	let donePolicy: "none" | "time" | "note" = "none"
-	let drawer: string | null = null
-	let drawerSpecified = false
-	for (const line of eligible) {
-		// Inherited/LOGGING override semantics need a note-aware policy UI.
-		// Recognized policies must never silently fall back to an unlogged cycle.
-		if (/^#\+PROPERTY:[ \t]+LOGGING(?:\+)?(?:[ \t]|$)/i.test(line.text))
-			return rejected("unsupported-logging-policy")
-		if (/^#\+(?:TODO|SEQ_TODO):/i.test(line.text)) {
-			const value = line.text.replace(/^#\+(?:TODO|SEQ_TODO):[ \t]*/i, "").trim()
-			const tokens = value.split(/[ \t]+/)
-			if (
-				!value ||
-				tokens.filter((token) => token === "|").length > 1 ||
-				tokens[0] === "|" ||
-				tokens.at(-1) === "|"
-			)
-				return rejected("malformed-todo-directive")
-			for (const token of tokens.filter((token) => token !== "|")) {
-				const match = /^([^\s()|!@/"\\]+)(?:\(([^\s()!@/]?)([!@]?)(?:\/([!@]))?\))?$/.exec(token)
-				if (!match || logging.has(match[1])) return rejected("ambiguous-todo-directive")
-				logging.set(match[1], { incoming: match[3] ?? "", outgoing: match[4] ?? "" })
-			}
-		}
-		if (/^#\+STARTUP:/i.test(line.text)) {
-			for (const option of line.text
-				.replace(/^#\+STARTUP:/i, "")
-				.trim()
-				.toLowerCase()
-				.split(/[ \t]+/)) {
-				if (option === "logdone") donePolicy = "time"
-				if (option === "nologdone") donePolicy = "none"
-				if (option === "lognotedone") donePolicy = "note"
-				if (!drawerSpecified && option === "logdrawer") drawer = "LOGBOOK"
-				if (!drawerSpecified && option === "nologdrawer") drawer = null
-			}
-		}
+	if (!eligible.some((line) => line.from === heading.from)) {
+		// An unclosed drawer cannot lend policy to a heading-looking line it swallowed.
 		if (
-			/^#\+LOG_INTO_DRAWER:/i.test(line.text) ||
-			/^#\+PROPERTY:[ \t]+LOG_INTO_DRAWER(?:[ \t]|$)/i.test(line.text)
-		) {
-			if (drawerSpecified) return rejected("ambiguous-log-drawer-directive")
-			drawerSpecified = true
-			const name = parseDrawerName(
-				line.text.replace(
-					/^#\+(?:LOG_INTO_DRAWER:[ \t]*|PROPERTY:[ \t]+LOG_INTO_DRAWER[ \t]*)/i,
-					"",
-				),
+			eligibleOrgDrawerRanges(source, states).some(
+				(range) => !range.closed && heading.from >= range.from && heading.from < range.to,
 			)
-			if (name === undefined) return rejected("unsafe-log-drawer")
-			drawer = name
-		}
-	}
-	if (
-		logging.size &&
-		(logging.size !== states.size || [...logging.keys()].some((state) => !states.has(state)))
-	)
-		return rejected("ambiguous-todo-scope")
-	const structuralHeadings = structuralOrgSourceLines(source).filter((line) =>
-		/^\*+[ \t]+/.test(line.text),
-	)
-	// Only the target and its actual ancestor chain can supply local policy.
-	const ancestors: typeof structuralHeadings = []
-	for (const candidate of structuralHeadings) {
-		if (candidate.from > heading.from) break
-		const level = candidate.text.match(/^\*+/)![0].length
-		while (ancestors.length && ancestors.at(-1)!.text.match(/^\*+/)![0].length >= level)
-			ancestors.pop()
-		ancestors.push(candidate)
-	}
-	const applicable = new Set(ancestors.map((line) => line.from))
-	if (
-		lines.some(
-			(line) =>
-				/^[ \t]*:LOGGING(?:\+)?:/i.test(line.text) &&
-				applicable.has(
-					structuralHeadings.findLast((owner) => owner.from < line.from)?.from ?? -1,
-				) &&
-				orgDrawerRanges(source).some(
-					(range) =>
-						line.from > range.from &&
-						line.from < range.to &&
-						/^[ \t]*:PROPERTIES:[ \t]*$/i.test(
-							lines.find((candidate) => candidate.from === range.from)?.text ?? "",
-						),
-				),
 		)
-	)
-		return rejected("unsupported-logging-policy")
-	const edit = cycleOrgTodoAt(source, cursor)
+			return rejected("malformed-drawer")
+		return note === undefined ? { kind: "noop" } : rejected("unexpected-note")
+	}
+	const resolved = resolveOrgLoggingPolicy(source, { from: heading.from })
+	if (resolved.kind === "rejected") return resolved
+	const { states: logging, done: donePolicy, drawer } = resolved.policy
+	const edit = cycleEligibleOrgTodoAt(source, cursor)
 	if (!edit) return note === undefined ? { kind: "noop" } : rejected("unexpected-note")
 	const oldState = heading.text.replace(/^\*+[ \t]+/, "").split(/[ \t]/)[0]
 	const previous = states.has(oldState) ? oldState : ""
 	const next = edit.insert.trim()
 	const done = keywords.done.includes(next)
-	const incoming = logging.get(next)?.incoming
-	const outgoing = logging.get(previous)?.outgoing
+	const incoming = logging.find((state) => state.state === next)?.incoming
+	const outgoing = logging.find((state) => state.state === previous)?.outgoing
 	const needsNote = incoming === "@" || outgoing === "@" || (done && donePolicy === "note")
 	const logState = needsNote || incoming === "!" || outgoing === "!"
 	const removeClosed = !done && keywords.done.includes(previous)
 	const logdone = donePolicy === "time" || donePolicy === "note"
 	const index = lines.indexOf(heading)
 	const following = lines.slice(index + 1)
-	const blocks = orgBlockRanges(source)
+	const blocks = eligibleOrgBlockRanges(source, states)
 	const inBlock = (position: number) =>
 		blocks.some((range) => position >= range.from && position < range.to)
-	const allDrawers = orgDrawerRanges(source)
+	const allDrawers = eligibleOrgDrawerRanges(source, states)
 	const boundary = following.findIndex(
 		(line) =>
 			/^\*+[ \t]+/.test(line.text) &&
@@ -305,7 +213,7 @@ export const planOrgTodoTransition = (
 	const eol = source.slice(heading.to, heading.end) || source.match(/\r\n|\r|\n/)?.[0] || "\n"
 	const edits: OrgTextEdit[] = [edit]
 	const push = (from: number, to: number, insert: string) =>
-		edits.push({ from, to, insert, cursor: edit.cursor })
+		edits.push({ cursor: edit.cursor, from, insert, to })
 	let insertion = heading.end
 	if (planningItem?.parsed.kind === "planning") {
 		const { line, parsed } = planningItem
@@ -347,18 +255,6 @@ export const planOrgTodoTransition = (
 	if (properties[0]) {
 		if (properties[0].from !== insertion) return rejected("misplaced-properties")
 		insertion = properties[0].to
-		const overrides = lines.filter(
-			(line) =>
-				line.from > properties[0].from &&
-				line.from < properties[0].to &&
-				/^[ \t]*:LOG_INTO_DRAWER:/i.test(line.text),
-		)
-		if (overrides.length > 1) return rejected("ambiguous-log-drawer-property")
-		if (overrides[0]) {
-			const name = parseDrawerName(overrides[0].text.replace(/^[ \t]*:LOG_INTO_DRAWER:[ \t]*/i, ""))
-			if (name === undefined) return rejected("unsafe-log-drawer")
-			drawer = name
-		}
 	}
 	// Preparation validates the same source and policies as submission, but never
 	// publishes partial edits or accepts a note for an unrelated transition.
@@ -403,5 +299,5 @@ export const planOrgTodoTransition = (
 			atomic[atomic.length - 1] = { ...prior, insert: prior.insert + change.insert }
 		else atomic.push(change)
 	}
-	return { kind: "edit", edits: atomic, done }
+	return { done, edits: atomic, kind: "edit" }
 }

@@ -713,6 +713,229 @@ describe("production Root TODO logging", () => {
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 	})
 
+	it("owns an inherited parent lognotedone scratch and commits only the child", async () => {
+		const raw =
+			"#+TODO: NEXT | FINISHED\r\n* Parent\r\n:PROPERTIES:\r\n:LOGGING: lognotedone\r\n:END:\r\n** NEXT child\r\nbody\r\n* Sibling\r\nuntouched\r\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: raw, relativePath: "a.org", revision: "a-1" }),
+		)
+		await setup()
+		act(() => {
+			editor().dispatch({ selection: { anchor: raw.indexOf("** NEXT") } })
+			key("c")
+			key("t")
+		})
+		expect(controller.content).toBe(raw)
+		expect(controller.activeBufferRuntime!.source).toBe(raw)
+		expect(controller.isDirty).toBe(false)
+		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(0)
+		fireEvent.change(screen.getByRole("textbox", { name: "TODO note" }), {
+			target: { value: "inherited Root note" },
+		})
+		fireEvent.click(screen.getByRole("button", { name: "Finish note" }))
+		expect(controller.content).toContain(
+			'** FINISHED child\r\nCLOSED: [2026-07-01 Wed 00:01]\r\n- State "FINISHED"',
+		)
+		expect(controller.content).toContain("inherited Root note")
+		expect(controller.content).toContain(raw.slice(0, raw.indexOf("** NEXT")))
+		expect(controller.content).toContain("* Sibling\r\nuntouched\r\n")
+		expect(controller.activeBufferRuntime!.source).toBe(controller.content)
+		expect(editor().state.sliceDoc()).toBe(controller.content)
+		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(1)
+		expect(controller.isDirty).toBe(true)
+		act(() => {
+			key("z")
+		})
+		expect(controller.content).toBe(raw)
+		expect(controller.activeBufferRuntime!.source).toBe(raw)
+		expect(controller.isDirty).toBe(false)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
+	it.each([
+		{
+			name: "local nil suppresses file @",
+			raw: "#+TODO: NEXT | FINISHED(@)\r\n#+PROPERTY: LOGGING lognotedone\r\n* NEXT child\r\n:PROPERTIES:\r\n:LOGGING: nil\r\n:END:\r\nbody\r\n",
+			insert: "* FINISHED child\r\n",
+			heading: "* NEXT child\r\n",
+		},
+		{
+			name: "inherited custom drawer only changes the child",
+			raw: "#+TODO: NEXT | FINISHED(!)\r\n* Parent\r\n:PROPERTIES:\r\n:LOG_INTO_DRAWER: HISTORY\r\n:END:\r\n:HISTORY:\r\nparent entry\r\n:END:\r\n** NEXT child\r\nbody\r\n* Sibling\r\nuntouched\r\n",
+			insert:
+				'** FINISHED child\r\n:HISTORY:\r\n- State "FINISHED"    from "NEXT" [2026-07-01 Wed 00:01]\r\n:END:\r\n',
+			heading: "** NEXT child\r\n",
+		},
+	])("applies PROPERTY inheritance atomically in Root: $name", async ({ raw, insert, heading }) => {
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: raw, relativePath: "a.org", revision: "a-1" }),
+		)
+		await setup()
+		act(() => {
+			editor().dispatch({ selection: { anchor: raw.indexOf(heading) } })
+			key("c")
+			key("t")
+		})
+		const expected = raw.replace(heading, insert)
+		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+		expect(controller.content).toBe(expected)
+		expect(controller.activeBufferRuntime!.source).toBe(expected)
+		expect(editor().state.sliceDoc()).toBe(expected)
+		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(1)
+		expect(controller.isDirty).toBe(true)
+		act(() => {
+			key("z")
+		})
+		expect(controller.content).toBe(raw)
+		expect(controller.activeBufferRuntime!.source).toBe(raw)
+		expect(controller.isDirty).toBe(false)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
+	it.each([
+		"Editor",
+		"Agenda",
+	])("retains a stale PROPERTY draft after canonical edit and undo (%s)", async (origin) => {
+		const raw =
+			"#+TODO: NEXT | FINISHED\r\n#+PROPERTY: LOGGING lognotedone\r\n* NEXT task\r\nDEADLINE: <2026-07-01 Wed>\r\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: raw, relativePath: "a.org", revision: "a-1" }),
+		)
+		await setup()
+		await act(async () => {
+			if (origin === "Agenda") {
+				fireEvent.click(screen.getByRole("button", { name: "Agenda" }))
+			} else {
+				key("c")
+				key("t")
+			}
+		})
+		if (origin === "Agenda")
+			await act(async () => {
+				fireEvent.click(screen.getByRole("button", { name: /Cycle TODO/ }))
+			})
+		const note = screen.getByRole("textbox", { name: "TODO note" }) as HTMLTextAreaElement
+		fireEvent.change(note, { target: { value: "retained property note" } })
+		const runtime = controller.activeBufferRuntime!
+		const revision = runtime.revision
+		if (origin === "Agenda")
+			await act(async () => {
+				fireEvent.click(screen.getByRole("button", { name: "a" }))
+			})
+		act(() => {
+			const from = editor().state.doc.toString().indexOf("lognotedone")
+			editor().dispatch({ changes: { from, to: from + "lognotedone".length, insert: "nil" } })
+			key("z")
+		})
+		expect(runtime.revision).toBeGreaterThan(revision)
+		expect(runtime.source).toBe(raw)
+		expect(controller.content).toBe(raw)
+		expect(controller.isDirty).toBe(false)
+		await act(async () => {
+			fireEvent.click(screen.getByRole("button", { name: "Finish note" }))
+		})
+		expect(note).toHaveValue("retained property note")
+		expect(note).toHaveAttribute("readonly")
+		note.setSelectionRange(0, note.value.length)
+		const copy = createEvent.keyDown(note, { key: "c", ctrlKey: true })
+		fireEvent(note, copy)
+		expect(copy.defaultPrevented).toBe(false)
+		expectProtectedDraft()
+		expect(runtime.source).toBe(raw)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		fireEvent.click(screen.getByRole("button", { name: "Abort note" }))
+		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+		expectReleasedDraft()
+		expect(runtime.source).toBe(raw)
+		expect(undoDepth(runtime.state)).toBe(0)
+	})
+
+	it("refreshes dirty incremental PROPERTY metadata for Agenda and saves against the original disk base", async () => {
+		const raw =
+			"#+TODO: NEXT | FINISHED\r\n#+PROPERTY: LOGGING nil\r\n* NEXT task\r\nDEADLINE: <2026-07-01 Wed>\r\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: raw, relativePath: "a.org", revision: "a-1" }),
+		)
+		await setup()
+		act(() => {
+			const from = editor().state.doc.toString().indexOf("nil")
+			editor().dispatch({ changes: { from, to: from + 3, insert: "lognotedone" } })
+		})
+		const dirty = raw.replace("nil", "lognotedone")
+		expect(controller.content).toBe(dirty)
+		expect(controller.activeBufferRuntime!.source).toBe(dirty)
+		expect(controller.isDirty).toBe(true)
+		expect(controller.activeDocument?.revision).toBe("a-1")
+		await act(async () => {
+			fireEvent.click(screen.getByRole("button", { name: "Agenda" }))
+		})
+		await act(async () => {
+			fireEvent.click(screen.getByRole("button", { name: /Cycle TODO/ }))
+		})
+		const note = screen.getByRole("textbox", { name: "TODO note" })
+		expect(controller.content).toBe(dirty)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		fireEvent.change(note, { target: { value: "fresh property policy" } })
+		await act(async () => {
+			fireEvent.click(screen.getByRole("button", { name: "Finish note" }))
+		})
+		const completed = controller.content
+		expect(completed).toContain("* FINISHED task\r\n")
+		expect(completed).toContain("fresh property policy")
+		expect(completed).toContain("#+PROPERTY: LOGGING lognotedone\r\n")
+		expect(controller.activeBufferRuntime!.source).toBe(completed)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(async () =>
+			E.right({ relativePath: "a.org", revision: "a-2" }),
+		)
+		await act(async () => {
+			await controller.saveAllDocuments()
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledOnce()
+		expect(saveOrgDocumentFlow).toHaveBeenCalledWith(
+			expect.objectContaining({ content: completed, expectedRevision: "a-1" }),
+		)
+		expect(controller.isDirty).toBe(false)
+	})
+
+	it.each([
+		"Editor",
+		"Agenda",
+	])("visibly rejects a malformed applicable parent LOGGING without canonical mutation (%s)", async (origin) => {
+		const raw =
+			"#+TODO: NEXT | FINISHED\n* Parent\n:PROPERTIES:\n:LOGGING: definitely-not-a-policy\n:END:\n** NEXT child\nDEADLINE: <2026-07-01 Wed>\nbody\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: raw, relativePath: "a.org", revision: "a-1" }),
+		)
+		await setup()
+		if (origin === "Agenda") {
+			await act(async () => {
+				fireEvent.click(screen.getByRole("button", { name: "Agenda" }))
+			})
+			await act(async () => {
+				fireEvent.click(screen.getByRole("button", { name: /Cycle TODO/ }))
+			})
+		} else
+			act(() => {
+				editor().dispatch({ selection: { anchor: raw.indexOf("** NEXT") } })
+				key("c")
+				key("t")
+			})
+		expect(
+			screen
+				.getAllByRole("status")
+				.some((node) => node.textContent?.includes("Cannot change TODO state")),
+		).toBe(true)
+		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+		expect(controller.content).toBe(raw)
+		expect(controller.activeBufferRuntime!.source).toBe(raw)
+		if (origin === "Editor") expect(editor().state.sliceDoc()).toBe(raw)
+		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(0)
+		expect(controller.isDirty).toBe(false)
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
 	it("routes prefix TODO to one canonical batch and restores exact raw bytes with Root undo", async () => {
 		await setup()
 		act(() => {

@@ -674,7 +674,7 @@ Editor/Agenda tests assert rendered rejection messages, peer mapping/folds,
 consumed/IME/repeat safety, full undo and timezone behavior.
 Verification: 173 files /2988 tests, typecheck/build pass
 (2026-10-04 02:15 +08:00). The multiline workflow is described below; full property inheritance
-and complete logging-policy compatibility remain unfinished requirements.
+is implemented for the declared subset below; complete logging-policy compatibility remains unfinished.
 
 ## TODO notes: scoped request → retained scratch → atomic source commit
 
@@ -716,7 +716,39 @@ acknowledged close protection, read/commit cancellation and external focus.
 Verification: 175 files /3073 tests, typecheck/build pass
 (2026-10-04 03:51 +08:00). Native textarea undo and Chinese IME require actual
 browser/native acceptance; restart recovery and unified tool registry/complete
-logging inheritance remain open, not silently declared complete.
+logging compatibility remain open, not silently declared complete.
+
+## Declared logging inheritance: pure scopes → effective policy
+
+`org-logging-scope.pipe.ts` snapshots applicable file/ancestor/target declarations;
+`org-logging-policy.pipe.ts` resolves immutable policy and provenance. The source
+transition planner consumes that data without new Root orchestration or mutable
+policy caches. Editor, Agenda and note Finish therefore resolve the same policy
+from current canonical source; edit→undo still invalidates captured note origins.
+
+```text
+eligible TODO flags + ordered STARTUP -> compatibility drawer directive
+ -> file properties -> ancestors root-to-parent -> target properties
+ -> effective state/done/drawer policy -> existing atomic TODO/note planner
+```
+
+Empty values inherit. Standalone `nil` clears state flags, done policy and drawer;
+later overlays restore only explicit behavior, not hidden file defaults. A state
+token replaces its entry/exit logging flags; `STATE()` clears them. `LOGGING+`
+appends declarations; duplicate bases, mixed nil, unknown options/states and unsafe
+drawers reject. Explicit drawer properties beat logging toggles at the same tier;
+later tiers can override them. Inherited drawer names select the target's drawer,
+never append logs to the ancestor. CLOSED reopening remains metadata cleanup.
+
+Excluded COMMENT/block/drawer content cannot forge declarations or ancestry.
+Unrelated sibling policies do not block a target; applicable malformed scopes
+reject before any transaction. Production cases cover inherited note admission,
+local nil/no popup, overrides/append/empty settings, custom target drawers,
+raw undo, dirty working-source overlays and source-generation stale drafts.
+Verification: 176 files /3112 tests, typecheck/build pass
+(2026-10-04 15:41 +08:00). Unsupported repeat/reschedule/redeadline/refile logging
+and complete Org policy semantics remain explicit future work; this is not a
+claim of native/user acceptance or a Lisp runtime.
 
 ## Next decision gates and work
 

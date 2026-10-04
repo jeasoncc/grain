@@ -280,6 +280,72 @@ describe("OrgEditor TODO logging boundary", () => {
 		expect(undoDepth(view.state)).toBe(0)
 	})
 
+	it("inherits parent lognotedone and collects a note before one undoable child edit", () => {
+		const source =
+			"* Parent\n:PROPERTIES:\n:LOGGING: lognotedone\n:END:\n** TODO child\nbody\n* Sibling\nuntouched\n"
+		const change = vi.fn()
+		render(<OrgEditor value={source} onChange={change} onSave={vi.fn()} todoClock={() => stamp} />)
+		const view = viewFor()
+		act(() => view.dispatch({ selection: { anchor: source.indexOf("** TODO") } }))
+		act(() => todoKey(view, true))
+		expect(view.state.sliceDoc()).toBe(source)
+		expect(change).not.toHaveBeenCalled()
+		expect(undoDepth(view.state)).toBe(0)
+		fireEvent.change(screen.getByRole("textbox", { name: "TODO note" }), {
+			target: { value: "inherited note" },
+		})
+		fireEvent.click(screen.getByRole("button", { name: "Finish note" }))
+		expect(view.state.sliceDoc()).toContain(`** DONE child\nCLOSED: ${stamp}\n- State "DONE"`)
+		expect(view.state.sliceDoc()).toContain("inherited note")
+		expect(view.state.sliceDoc()).toContain(source.slice(0, source.indexOf("** TODO")))
+		expect(view.state.sliceDoc()).toContain("* Sibling\nuntouched\n")
+		expect(change).toHaveBeenCalledTimes(1)
+		expect(undoDepth(view.state)).toBe(1)
+		act(() => {
+			undo(view)
+		})
+		expect(view.state.sliceDoc()).toBe(source)
+	})
+
+	it("uses local LOGGING nil to suppress file @ and completion logging", () => {
+		const source =
+			"#+TODO: TODO | DONE(@)\n#+PROPERTY: LOGGING lognotedone\n* TODO task\n:PROPERTIES:\n:LOGGING: nil\n:END:\nbody\n"
+		const change = vi.fn()
+		render(<OrgEditor value={source} onChange={change} onSave={vi.fn()} todoClock={() => stamp} />)
+		const view = viewFor()
+		act(() => view.dispatch({ selection: { anchor: source.indexOf("* TODO") } }))
+		act(() => todoKey(view, false))
+		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+		expect(view.state.sliceDoc()).toBe(source.replace("* TODO task", "* DONE task"))
+		expect(change).toHaveBeenCalledTimes(1)
+		expect(undoDepth(view.state)).toBe(1)
+		act(() => {
+			undo(view)
+		})
+		expect(view.state.sliceDoc()).toBe(source)
+	})
+
+	it("inherits a custom drawer but writes only into the target child", () => {
+		const source =
+			"#+TODO: TODO | DONE(!)\n* Parent\n:PROPERTIES:\n:LOG_INTO_DRAWER: HISTORY\n:END:\n:HISTORY:\nparent entry\n:END:\n** TODO child\nbody\n* Sibling\nuntouched\n"
+		const expected = source.replace(
+			"** TODO child\n",
+			`** DONE child\n:HISTORY:\n- State "DONE"        from "TODO" ${stamp}\n:END:\n`,
+		)
+		const change = vi.fn()
+		render(<OrgEditor value={source} onChange={change} onSave={vi.fn()} todoClock={() => stamp} />)
+		const view = viewFor()
+		act(() => view.dispatch({ selection: { anchor: source.indexOf("** TODO") } }))
+		act(() => todoKey(view, true))
+		expect(view.state.sliceDoc()).toBe(expected)
+		expect(change).toHaveBeenCalledTimes(1)
+		expect(undoDepth(view.state)).toBe(1)
+		act(() => {
+			undo(view)
+		})
+		expect(view.state.sliceDoc()).toBe(source)
+	})
+
 	it("accepts an empty CUSTOM_ID property and logs atomically with exact undo", () => {
 		const source =
 			"#+TODO: TODO | DONE(!)\r\n#+STARTUP: logdone logdrawer\r\n* TODO task\r\n:PROPERTIES:\r\n:CUSTOM_ID:\r\n:END:\r\nbody\r\n"
@@ -447,12 +513,18 @@ describe("OrgEditor TODO logging boundary", () => {
 		expect(undoDepth(view.state)).toBe(0)
 	})
 
-	it("renders unsupported policy refusal without changing history", () => {
-		const source = "#+PROPERTY: LOGGING logdone\n* TODO task\n"
+	it.each([
+		{ source: "#+PROPERTY: LOGGING definitely-not-a-policy\n* TODO task\n", line: 2 },
+		{ source: "* Parent\n:PROPERTIES:\n:LOGGING: repeat\n:END:\n** TODO task\n", line: 5 },
+	])("renders malformed applicable policy refusal without changing history ($line)", ({
+		source,
+		line,
+	}) => {
 		const change = vi.fn()
 		render(<OrgEditor value={source} onChange={change} onSave={vi.fn()} todoClock={() => stamp} />)
 		const view = viewFor()
 		act(() => view.dispatch({ selection: { anchor: view.state.doc.line(2).from } }))
+		act(() => view.dispatch({ selection: { anchor: view.state.doc.line(line).from } }))
 		act(() => todoKey(view, false))
 		expect(screen.getByRole("status")).toHaveTextContent("unsupported-logging-policy")
 		expect(view.state.sliceDoc()).toBe(source)
@@ -624,6 +696,39 @@ describe("OrgEditor TODO logging boundary", () => {
 			expect(request!.execute("literal\ntext")).toEqual({ kind: "applied" })
 		})
 		expect(request!.execute("twice")).toMatchObject({ kind: "rejected" })
+	})
+
+	it("retains a property-derived draft after source edit and undo, then cancels without mutation", () => {
+		const source = "#+PROPERTY: LOGGING lognotedone\n* TODO task\n"
+		const change = vi.fn()
+		render(<OrgEditor value={source} onChange={change} onSave={vi.fn()} todoClock={() => stamp} />)
+		const view = viewFor()
+		act(() => {
+			view.dispatch({ selection: { anchor: view.state.doc.line(2).from } })
+			todoKey(view, true)
+		})
+		const note = screen.getByRole("textbox", { name: "TODO note" }) as HTMLTextAreaElement
+		fireEvent.change(note, { target: { value: "copy property draft" } })
+		act(() => {
+			const from = source.indexOf("lognotedone")
+			view.dispatch({ changes: { from, to: from + "lognotedone".length, insert: "nil" } })
+			expect(undo(view)).toBe(true)
+		})
+		expect(view.state.sliceDoc()).toBe(source)
+		fireEvent.click(screen.getByRole("button", { name: "Finish note" }))
+		expect(note).toHaveValue("copy property draft")
+		expect(screen.getByRole("status")).toHaveTextContent("stale-note-request")
+		note.setSelectionRange(0, note.value.length)
+		const copy = createEvent.keyDown(note, { key: "c", ctrlKey: true })
+		fireEvent(note, copy)
+		expect(copy.defaultPrevented).toBe(false)
+		expect(view.state.sliceDoc()).toBe(source)
+		expect(undoDepth(view.state)).toBe(0)
+		expect(change).toHaveBeenCalledTimes(2)
+		fireEvent.click(screen.getByRole("button", { name: "Abort note" }))
+		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+		expect(view.state.sliceDoc()).toBe(source)
+		expect(change).toHaveBeenCalledTimes(2)
 	})
 
 	it("retains the local draft for copying after readonly invalidates its lease", () => {
