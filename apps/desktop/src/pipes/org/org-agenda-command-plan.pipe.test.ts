@@ -47,6 +47,25 @@ describe("agenda command planning", () => {
 			}),
 		).toMatchObject({ kind: "rejected" })
 	})
+	it.each([
+		"scheduled: <2026-09-30 Wed>",
+		"Deadline: <2026-09-30 Wed>",
+		"Closed: [2026-09-29 Tue] <2026-09-30 Wed>",
+		"SCHEDULED: <2026-09-30 Wed> custom deadline: <2026-10-01 Thu>",
+	])("rejects agenda preparation and edits for noncanonical planning %j", (line) => {
+		const raw = `* TODO Task\n${line}\nbody\n`
+		const target = parseOrgAgenda("tasks.org", raw)[0]!
+		for (const operation of [
+			{ kind: "prepare", field: "schedule" },
+			{ kind: "prepare", field: "deadline" },
+			{ kind: "schedule", date: "2026-10-02" },
+			{ kind: "deadline", date: "2026-10-02" },
+		] as const) {
+			expect(planAgendaOperation(target, raw, operation)).toMatchObject({
+				kind: "rejected",
+			})
+		}
+	})
 	it("returns an isolated deeply frozen note snapshot", () => {
 		const raw = `#+TODO: TODO | DONE(@)\n${source}`
 		const target = structuredClone(parseOrgAgenda("tasks.org", raw)[0]!)

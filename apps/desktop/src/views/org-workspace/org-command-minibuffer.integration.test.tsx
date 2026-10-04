@@ -4,6 +4,8 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { useState } from "react"
 import { describe, expect, it, vi } from "vitest"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
+import * as parameterSession from "@/flows/org-command/parameter-session"
+import * as orgClock from "@/utils/org-date-clock"
 import { OrgDocumentPane } from "./org-document-pane.view.fn"
 
 const readyTarget = (relativePath = "inbox.org") => ({
@@ -89,7 +91,7 @@ const openPlanning = (kind: "SCHEDULED" | "DEADLINE") => {
 	fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
 	fireEvent.keyDown(editor, { ctrlKey: true, key: kind === "SCHEDULED" ? "s" : "d" })
 	return screen.getByRole("combobox", {
-		name: kind === "SCHEDULED" ? "Schedule (YYYY-MM-DD):" : "Deadline (YYYY-MM-DD):",
+		name: kind === "SCHEDULED" ? /^Schedule \(YYYY-MM-DD/ : /^Deadline \(YYYY-MM-DD/,
 	})
 }
 
@@ -202,6 +204,109 @@ describe("property minibuffer transactions", () => {
 })
 
 describe("planning minibuffer transactions", () => {
+	it.each([
+		["SCHEDULED", "invalid Date"],
+		["DEADLINE", "invalid Date"],
+		["SCHEDULED", "throw"],
+		["DEADLINE", "throw"],
+	] as const)("rejects %s preparation with a %s clock before allocating or editing", (kind, failure) => {
+		const original = parameterSession.createParameterSession
+		const begin = vi.fn()
+		vi.spyOn(parameterSession, "createParameterSession").mockImplementation(() => {
+			const core = original()
+			return {
+				...core,
+				begin: (...args: Parameters<typeof core.begin>) => {
+					begin()
+					return core.begin(...args)
+				},
+			}
+		})
+		const clock = vi.spyOn(orgClock, "systemOrgNow").mockImplementation(() => {
+			if (failure === "throw") throw new Error("Clock unavailable")
+			return new Date(Number.NaN)
+		})
+		try {
+			const source = "* Note\r\nbody"
+			const readRefileTarget = mockReadRefileTarget()
+			render(<Harness source={source} readRefileTarget={readRefileTarget} />)
+			const view = viewFromEditor()
+			const state = view.state
+			for (let attempt = 0; attempt < 2; attempt++) {
+				const editor = screen.getByRole("textbox")
+				fireEvent.keyDown(editor, { ctrlKey: true, key: "c" })
+				fireEvent.keyDown(editor, { ctrlKey: true, key: kind === "SCHEDULED" ? "s" : "d" })
+				expect(
+					screen.getByText("Cannot read a valid local calendar day from the clock."),
+				).toBeVisible()
+				expect(screen.queryByRole("combobox")).toBeNull()
+				expect(view.state).toBe(state)
+			}
+			expect(clock).toHaveBeenCalledTimes(2)
+			expect(begin).not.toHaveBeenCalled()
+			expect(readRefileTarget).not.toHaveBeenCalled()
+			expect(view.state.sliceDoc()).toBe(source)
+			expect(undo(view)).toBe(false)
+			expect(redo(view)).toBe(false)
+		} finally {
+			vi.restoreAllMocks()
+		}
+	})
+
+	it.each([
+		"SCHEDULED",
+		"DEADLINE",
+	] as const)("opens existing %s ISO date without consulting a throwing clock", (kind) => {
+		const clock = vi.spyOn(orgClock, "systemOrgNow").mockImplementation(() => {
+			throw new Error("Clock must not be read")
+		})
+		try {
+			const source = `* Note\r\n${kind}: <2026-09-27 Sun 10:30 +1w>\r\nbody`
+			render(<Harness source={source} />)
+			const view = viewFromEditor()
+			expect(openPlanning(kind)).toHaveValue("2026-09-27")
+			expect(clock).not.toHaveBeenCalled()
+			expect(view.state.sliceDoc()).toBe(source)
+			expect(undo(view)).toBe(false)
+			fireEvent.keyDown(screen.getByRole("combobox"), { key: "Escape" })
+		} finally {
+			vi.restoreAllMocks()
+		}
+	})
+
+	it.each([
+		["SCHEDULED", "tomorrow"],
+		["DEADLINE", "明天"],
+	] as const)("resolves %s relative input %s at accept across midnight with one undo", (kind, alias) => {
+		vi.useFakeTimers({ toFake: ["Date"] })
+		try {
+			vi.setSystemTime(new Date(2026, 8, 30, 23, 59))
+			const source = `* Note\r\n${kind}: <2026-09-27 Sun 10:30 +1w>\r\nbody`
+			render(<Harness source={source} />)
+			const view = viewFromEditor()
+			act(() => view.dispatch({ selection: { anchor: 2 } }))
+			const input = openPlanning(kind)
+			fireEvent.change(input, { target: { value: alias } })
+			vi.setSystemTime(new Date(2026, 9, 1, 0, 1))
+			fireEvent.keyDown(input, { key: "Enter" })
+			expect(view.state.sliceDoc()).toBe(source.replace("2026-09-27 Sun", "2026-10-02"))
+			expect(screen.queryByRole("combobox")).toBeNull()
+			expect(screen.getByRole("textbox")).toHaveFocus()
+			act(() => {
+				expect(undo(view)).toBe(true)
+			})
+			expect(view.state.sliceDoc()).toBe(source)
+			expect(view.state.selection.main.head).toBe(2)
+			expect(undo(view)).toBe(false)
+			act(() => {
+				expect(redo(view)).toBe(true)
+			})
+			expect(view.state.sliceDoc()).toContain("2026-10-02 10:30 +1w")
+		} finally {
+			vi.useRealTimers()
+		}
+	})
+
 	it.each([
 		"SCHEDULED",
 		"DEADLINE",

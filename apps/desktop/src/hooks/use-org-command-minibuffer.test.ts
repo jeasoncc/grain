@@ -48,6 +48,89 @@ const deferred = <T>() => {
 const strictWrapper = ({ children }: { children: ReactNode }) =>
 	createElement(StrictMode, null, children)
 
+describe("planning accept-time clock", () => {
+	it.each([
+		"SCHEDULED",
+		"DEADLINE",
+	] as const)("resolves %s after midnight at accept, not when opening the session", (kind) => {
+		let clock = new Date(2026, 8, 30, 23, 59)
+		const now = vi.fn(() => clock)
+		const controller = makeController()
+		const target = makeTarget()
+		const { result } = renderHook(() =>
+			useOrgCommandMinibuffer(controller, false, { current: target }, false, now),
+		)
+		act(() => result.current.open(createOrgPlanningCommand(kind, "2026-09-30"), 2))
+		expect(now).not.toHaveBeenCalled()
+		clock = new Date(2026, 9, 1, 0, 1)
+		act(() => {
+			expect(result.current.session!.onAccept("tomorrow")).toEqual({ ok: true })
+		})
+		expect(now).toHaveBeenCalledOnce()
+		expect(target.applyEdit).toHaveBeenCalledExactlyOnceWith(
+			controller.content,
+			expect.objectContaining({ insert: `\n${kind}: <2026-10-02>` }),
+		)
+		expect(result.current.session).toBeNull()
+	})
+
+	it.each([
+		["today", "2026-09-30"],
+		["tomorrow", "2026-10-01"],
+		["yesterday", "2026-09-29"],
+		["今天", "2026-09-30"],
+		["明天", "2026-10-01"],
+		["昨天", "2026-09-29"],
+	])("accepts alias %s as %s", (input, date) => {
+		const controller = makeController()
+		const target = makeTarget()
+		const now = vi.fn(() => new Date(2026, 8, 30, 12))
+		const { result } = renderHook(() =>
+			useOrgCommandMinibuffer(controller, false, { current: target }, false, now),
+		)
+		act(() => result.current.open(createOrgPlanningCommand("SCHEDULED", "2026-09-30"), 2))
+		act(() => {
+			expect(result.current.session!.onAccept(input)).toEqual({ ok: true })
+		})
+		expect(now).toHaveBeenCalledOnce()
+		expect(target.applyEdit).toHaveBeenCalledExactlyOnceWith(
+			controller.content,
+			expect.objectContaining({ insert: `\nSCHEDULED: <${date}>` }),
+		)
+	})
+
+	it.each([
+		"invalid",
+		"throws",
+	] as const)("retains the session without edits when the clock %s, then allows correction", (failure) => {
+		const now = vi.fn(() => {
+			if (failure === "throws") throw new Error("Clock unavailable")
+			return new Date(Number.NaN)
+		})
+		const target = makeTarget()
+		const { result } = renderHook(() =>
+			useOrgCommandMinibuffer(makeController(), false, { current: target }, false, now),
+		)
+		act(() => result.current.open(createOrgPlanningCommand("DEADLINE", "2026-09-30"), 2))
+		const session = result.current.session!
+		act(() => {
+			expect(session.onAccept("明天")).toMatchObject({
+				ok: false,
+				message: expect.stringContaining("clock"),
+			})
+		})
+		expect(result.current.session).toBe(session)
+		expect(target.applyEdit).not.toHaveBeenCalled()
+		expect(target.restoreFocus).not.toHaveBeenCalled()
+		act(() => {
+			expect(session.onAccept("2026-10-01")).toEqual({ ok: true })
+		})
+		expect(now).toHaveBeenCalledOnce()
+		expect(target.applyEdit).toHaveBeenCalledOnce()
+		expect(result.current.session).toBeNull()
+	})
+})
+
 describe("sparse tree view parameters", () => {
 	it.each([
 		true,
@@ -142,7 +225,7 @@ describe("buffer parameter session origin ownership", () => {
 		act(() => old.onCancel())
 		expect(target.applyEdit).not.toHaveBeenCalled()
 		expect(target.restoreFocus).not.toHaveBeenCalled()
-		expect(result.current.session?.prompt).toBe("Schedule (YYYY-MM-DD):")
+		expect(result.current.session?.prompt).toBe("Schedule (YYYY-MM-DD / today / +3d / next mon):")
 	})
 	it("rejects the same relative path under a different workspace", () => {
 		const target = makeTarget()

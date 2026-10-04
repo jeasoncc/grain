@@ -13,7 +13,7 @@ const deferred = <T,>() => {
 	return { promise, resolve }
 }
 const entry = { relativePath: "tasks.org", heading: "Task" } as OrgAgendaEntry
-const setup = (strict = false) => {
+const setup = (strict = false, now?: () => Date) => {
 	const prepareAgendaPlanning = vi.fn().mockResolvedValue({ kind: "ready", date: null })
 	const executeAgendaCommand = vi.fn().mockResolvedValue({ kind: "confirmed" })
 	const restoreFocus = vi.fn()
@@ -26,6 +26,7 @@ const setup = (strict = false) => {
 				sourceVersion,
 				reload,
 				restoreFocus,
+				now,
 			}),
 		{
 			initialProps: { scope: "one", sourceVersion: "v1" },
@@ -38,6 +39,126 @@ const setup = (strict = false) => {
 }
 afterEach(cleanup)
 describe("agenda shared parameter lifecycle", () => {
+	it.each([
+		["today", "2026-10-01"],
+		[" TOMORROW ", "2026-10-02"],
+		["yesterday", "2026-09-30"],
+		["+2d", "2026-10-03"],
+		["-1w", "2026-09-24"],
+	])("resolves %s using the fresh local accept date across midnight", async (input, date) => {
+		const now = vi
+			.fn()
+			.mockReturnValueOnce(new Date(2026, 8, 30, 23, 59))
+			.mockReturnValue(new Date(2026, 9, 1, 0, 1))
+		const test = setup(false, now)
+		await act(async () => test.result.current.start(entry, "schedule"))
+		const session = test.result.current.session!
+		expect(session.initialInput).toBe("2026-09-30")
+		expect(session.candidates).toEqual(expect.arrayContaining(["today", "tomorrow", "+1d"]))
+		expect(session.prompt).toContain("tomorrow")
+		await act(async () => {
+			await session.onAccept(input)
+		})
+		expect(now).toHaveBeenCalledTimes(2)
+		expect(test.executeAgendaCommand.mock.calls[0][1]).toEqual({ kind: "schedule", date })
+	})
+
+	it("accepts an ISO date without reading a failed clock again", async () => {
+		const now = vi
+			.fn()
+			.mockReturnValueOnce(new Date(2026, 8, 30))
+			.mockImplementation(() => {
+				throw new Error("clock unavailable")
+			})
+		const test = setup(false, now)
+		await act(async () => test.result.current.start(entry, "deadline"))
+		await act(async () => {
+			await test.result.current.session!.onAccept(" 2026-10-02 ")
+		})
+		expect(now).toHaveBeenCalledOnce()
+		expect(test.executeAgendaCommand.mock.calls[0][1]).toEqual({
+			kind: "deadline",
+			date: "2026-10-02",
+		})
+	})
+
+	it.each([
+		"throw",
+		"invalid",
+		"outside-range",
+	])("rejects a %s preparation clock before preparing or locking", async (failure) => {
+		const now = vi.fn(() => {
+			if (failure === "throw") throw new Error("clock unavailable")
+			return failure === "invalid" ? new Date(Number.NaN) : new Date(10000, 0, 1)
+		})
+		const test = setup(false, now)
+		await act(async () => test.result.current.start(entry, "schedule"))
+		expect(test.prepareAgendaPlanning).not.toHaveBeenCalled()
+		expect(test.executeAgendaCommand).not.toHaveBeenCalled()
+		expect(test.result.current.session).toBeNull()
+		expect(test.result.current.isPending()).toBe(false)
+		expect(test.result.current.status).toBeTruthy()
+		expect(test.reload).not.toHaveBeenCalled()
+		expect(test.restoreFocus).not.toHaveBeenCalled()
+		// A bad planning clock must not prevent date-independent TODO commands.
+		await act(async () => test.result.current.start(entry, "cycle-todo"))
+		expect(now).toHaveBeenCalledOnce()
+		expect(test.executeAgendaCommand).toHaveBeenCalledOnce()
+	})
+
+	it.each([
+		"throw",
+		"invalid",
+	])("retains the session on a %s relative accept clock and allows correction", async (failure) => {
+		const now = vi
+			.fn()
+			.mockReturnValueOnce(new Date(2026, 8, 30))
+			.mockImplementation(() => {
+				if (failure === "throw") throw new Error("clock unavailable")
+				return new Date(Number.NaN)
+			})
+		const test = setup(false, now)
+		await act(async () => test.result.current.start(entry, "schedule"))
+		const session = test.result.current.session!
+		let result: unknown
+		await act(async () => {
+			result = await session.onAccept("tomorrow")
+		})
+		expect(result).toEqual({ ok: false, message: expect.any(String) })
+		expect(test.result.current.session).toBe(session)
+		expect(test.executeAgendaCommand).not.toHaveBeenCalled()
+		expect(test.reload).not.toHaveBeenCalled()
+		expect(test.restoreFocus).not.toHaveBeenCalled()
+		await act(async () => {
+			await session.onAccept("2026-10-02")
+		})
+		expect(test.executeAgendaCommand).toHaveBeenCalledOnce()
+	})
+
+	it.each([
+		"2026-02-30",
+		"next Monday",
+		"",
+		"+1m",
+		"2026-10-01 trailing",
+	])("keeps invalid input %s editable without clock or effect reads", async (input) => {
+		const now = vi.fn(() => new Date(2026, 8, 30))
+		const test = setup(false, now)
+		await act(async () => test.result.current.start(entry, "schedule"))
+		const session = test.result.current.session!
+		let result: unknown
+		await act(async () => {
+			result = await session.onAccept(input)
+		})
+		expect(result).toEqual({ ok: false, message: expect.any(String) })
+		expect(now).toHaveBeenCalledOnce()
+		expect(test.prepareAgendaPlanning).toHaveBeenCalledOnce()
+		expect(test.executeAgendaCommand).not.toHaveBeenCalled()
+		expect(test.result.current.session).toBe(session)
+		expect(test.reload).not.toHaveBeenCalled()
+		expect(test.restoreFocus).not.toHaveBeenCalled()
+	})
+
 	it.each([
 		false,
 		true,

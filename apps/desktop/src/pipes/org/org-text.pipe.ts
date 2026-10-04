@@ -1,4 +1,5 @@
 import { parseOrgPlanningLine } from "./org-planning-line.pipe"
+import { isOrgCalendarISO } from "./org-date-reader.pipe"
 
 const normalizedCaptureTitle = (title: string): string =>
 	title.trim().replace(/\s*[\r\n]+\s*/g, " ")
@@ -482,19 +483,7 @@ export const setOrgHeadingTagsAt = (
 
 export type OrgPlanningKind = "SCHEDULED" | "DEADLINE"
 
-export const validOrgDate = (date: string): boolean => {
-	const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date)
-	if (!match) return false
-	const year = Number(match[1])
-	const month = Number(match[2])
-	const day = Number(match[3])
-	const parsed = new Date(Date.UTC(year, month - 1, day))
-	return (
-		parsed.getUTCFullYear() === year &&
-		parsed.getUTCMonth() === month - 1 &&
-		parsed.getUTCDate() === day
-	)
-}
+export const validOrgDate = (date: string): boolean => isOrgCalendarISO(date)
 
 /** Sets a planning date on the line directly below the containing heading. */
 export const setOrgPlanningAt = (

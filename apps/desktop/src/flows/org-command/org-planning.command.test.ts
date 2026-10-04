@@ -15,6 +15,22 @@ const apply = (content: string, date: string, kind: "SCHEDULED" | "DEADLINE" = "
 }
 
 describe("planning buffer commands", () => {
+	it("requires explicit relative context without changing the two-argument ISO API", () => {
+		const origin = context("* Note\nSCHEDULED: <2026-09-30 Wed 12:30 +1w>\n")
+		const command = createOrgPlanningCommand("SCHEDULED", "2026-09-30")
+		expect(command.execute(origin, origin, "today")).toMatchObject({
+			kind: "rejected",
+			reason: "invalid-date",
+		})
+		expect(command.execute(origin, origin, "2026-09-30")).toEqual({
+			kind: "no-change",
+			reason: "unchanged-date",
+		})
+		expect(command.execute(origin, origin, "明天", { today: "2026-09-30" })).toMatchObject({
+			kind: "edit",
+			edit: { insert: "2026-10-01" },
+		})
+	})
 	it.each([
 		"SCHEDULED",
 		"DEADLINE",
@@ -25,7 +41,7 @@ describe("planning buffer commands", () => {
 		expect(createOrgPlanningCommand(kind, "2026-09-30").prepare(source)).toMatchObject({
 			kind: "ready",
 			initialInput: "2026-09-27",
-			candidates: ["2026-09-27", "2026-09-30"],
+			candidates: ["today", "tomorrow", "+3d", "next mon", "2026-09-27", "2026-09-30"],
 		})
 	})
 	it.each([
@@ -136,6 +152,28 @@ describe("planning buffer commands", () => {
 				context("* Note\nSCHEDULED: <2026-09-30 Mittwoch>"),
 			),
 		).toMatchObject({ kind: "rejected", reason: "invalid-planning" })
+	})
+
+	it("owns its date snapshot despite adversarial caller mutation", () => {
+		const source = context("* Note")
+		const supplied = { today: "2026-09-30" }
+		const command = createOrgPlanningCommand("SCHEDULED", supplied.today, supplied)
+		expect(command.prepare(source)).toMatchObject({ kind: "ready" })
+		supplied.today = "2026-10-20"
+		const result = command.execute(source, source, "tomorrow")
+		expect(result).toMatchObject({
+			kind: "edit",
+			edit: { insert: expect.stringContaining("2026-10-01") },
+		})
+		const accept = { today: "2026-10-01" }
+		expect(command.execute(source, source, "tomorrow", accept)).toMatchObject({
+			kind: "edit",
+			edit: { insert: expect.stringContaining("2026-10-02") },
+		})
+		expect(accept).toEqual({ today: "2026-10-01" })
+		expect(
+			command.execute(source, { ...source, content: "* Changed" }, "tomorrow", accept),
+		).toMatchObject({ reason: "content-changed" })
 	})
 
 	it("rejects stale origin content and paths", () => {

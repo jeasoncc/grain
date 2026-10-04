@@ -40,6 +40,7 @@ export interface OrgBufferCommand {
 		origin: OrgBufferCommandContext,
 		current: OrgBufferCommandContext,
 		input: string,
+		dateContext?: import("@/pipes/org/org-date-reader.pipe").OrgDateContext,
 	) => OrgBufferCommandResult
 }
 

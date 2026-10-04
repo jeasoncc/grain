@@ -23,6 +23,7 @@ import type { OrgTodoNoteRequest } from "@/flows/org-command/org-todo-note"
 import { useOrgCommandMinibuffer } from "@/hooks/use-org-command-minibuffer"
 import { orgTagsBufferCommand } from "@/flows/org-command/org-tags.command"
 import { createOrgPlanningCommand } from "@/flows/org-command/org-planning.command"
+import { prepareOrgPlanningDefault, systemOrgNow } from "@/utils/org-date-clock"
 import { orgPropertyBufferCommand } from "@/flows/org-command/org-property.command"
 import { orgSparseTreeBufferCommand } from "@/flows/org-command/org-sparse-tree.command"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
@@ -66,9 +67,13 @@ let nextPaneId = 0
 
 type OrgMetadataType = "tags" | "scheduled" | "deadline" | "property" | "sparse-tree"
 
-const today = (): string => {
-	const now = new Date()
-	return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+const planningCommand = (kind: "SCHEDULED" | "DEADLINE") => {
+	const command = createOrgPlanningCommand(kind, "")
+	return {
+		...command,
+		prepare: (context: Parameters<typeof command.prepare>[0]) =>
+			prepareOrgPlanningDefault(command.prepare(context), systemOrgNow),
+	}
 }
 
 export const OrgDocumentPane = memo(function OrgDocumentPane({
@@ -295,7 +300,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 					? orgTagsBufferCommand
 					: type === "property"
 						? orgPropertyBufferCommand
-						: createOrgPlanningCommand(type === "deadline" ? "DEADLINE" : "SCHEDULED", today()),
+						: planningCommand(type === "deadline" ? "DEADLINE" : "SCHEDULED"),
 			position,
 		)
 	}

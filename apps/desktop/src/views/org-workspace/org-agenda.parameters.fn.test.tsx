@@ -31,7 +31,7 @@ const deferred = <T,>() => {
 	})
 	return { promise, resolve }
 }
-function setup() {
+function setup(now = () => new Date(2026, 8, 30, 23, 59)) {
 	const executeAgendaCommand = vi.fn().mockResolvedValue({ kind: "confirmed" })
 	const prepareAgendaPlanning = vi
 		.fn()
@@ -48,7 +48,7 @@ function setup() {
 	const props = {
 		controller: controller as unknown as OrgWorkspaceController,
 		onShowEditor,
-		now: () => new Date(2026, 8, 30, 23, 59),
+		now,
 	}
 	const mounted = render(
 		<>
@@ -149,6 +149,34 @@ describe("production agenda parameter adapter and bottom minibuffer", () => {
 		expect(screen.queryByRole("combobox")).not.toBeInTheDocument()
 		expect(screen.getByRole("status")).toHaveTextContent("Schedule changed in working copy")
 		expect(test.onShowEditor).not.toHaveBeenCalled()
+	})
+
+	it.each([
+		["Schedule", "  +2d  ", "2026-10-03"],
+		["Deadline", "tomorrow", "2026-10-02"],
+		["Schedule", "today", "2026-10-01"],
+		["Deadline", "yesterday", "2026-09-30"],
+	] as const)("submits %s alias %s using acceptance day and recalls raw history", async (kind, raw, date) => {
+		let day = new Date(2026, 8, 30, 23, 59)
+		const test = setup(() => day)
+		await start(kind)
+		const input = await screen.findByRole("combobox")
+		expect(input).toHaveValue("2026-09-30")
+		fireEvent.change(input, { target: { value: raw } })
+		day = new Date(2026, 9, 1, 0, 1)
+		fireEvent.keyDown(input, { key: "Enter" })
+		await waitFor(() => expect(screen.queryByRole("combobox")).not.toBeInTheDocument())
+		expect(test.executeAgendaCommand).toHaveBeenCalledExactlyOnceWith(
+			entries[1],
+			{ kind: kind === "Schedule" ? "schedule" : "deadline", date },
+			expect.any(AbortSignal),
+			{ onCommitStarted: expect.any(Function) },
+		)
+		await start(kind)
+		const reopened = await screen.findByRole("combobox")
+		fireEvent.keyDown(reopened, { key: "p", altKey: true })
+		expect(reopened).toHaveValue(raw)
+		fireEvent.keyDown(reopened, { key: "Escape" })
 	})
 
 	it.each([

@@ -271,6 +271,23 @@ describe("Org heading metadata transformations", () => {
 		)
 	})
 
+	it.each([
+		"scheduled: <2025-01-01>",
+		"Deadline: <2025-01-01>",
+		"closed: [2025-01-01]",
+		"SCHEDULED: <2025-01-01> custom deadline: <2025-02-01>",
+		"CLOSED: [2025-01-01] custom Scheduled: <2025-02-01>",
+	])("rejects planning edits rather than inserting around %j", (line) => {
+		for (const ending of ["\n", "\r", "\r\n"]) {
+			const source = ["* Heading", line, "body"].join(ending)
+			for (const kind of ["SCHEDULED", "DEADLINE"] as const) {
+				expect(() => setOrgPlanningAt(source, source.indexOf("body"), kind, "2026-02-03")).toThrow(
+					"noncanonical",
+				)
+			}
+		}
+	})
+
 	it("keeps CLOSED and planning metadata on one planning line", () => {
 		const source = "* DONE Heading\nCLOSED: [2025-01-01 Wed]\nbody"
 		const scheduled = apply(

@@ -1,3 +1,4 @@
+import { resolveOrgDateInput, systemOrgNow } from "@/utils/org-date-clock"
 import {
 	useEffect,
 	useLayoutEffect,
@@ -54,6 +55,7 @@ export const useOrgCommandMinibuffer = (
 	isBusy: boolean,
 	targetRef: RefObject<OrgEditorCommandTarget | null>,
 	suspended = false,
+	now: () => Date = systemOrgNow,
 ) => {
 	const [core] = useState(createParameterSession)
 	const { session } = useSyncExternalStore(core.subscribe, core.getSnapshot, core.getSnapshot)
@@ -73,8 +75,8 @@ export const useOrgCommandMinibuffer = (
 		}
 	}
 	const persistentEchoRef = useRef(false)
-	const runtimeRef = useRef({ controller, isBusy, suspended })
-	runtimeRef.current = { controller, isBusy, suspended }
+	const runtimeRef = useRef({ controller, isBusy, suspended, now })
+	runtimeRef.current = { controller, isBusy, suspended, now }
 	useLayoutEffect(() => {
 		core.attach()
 		setEcho(null)
@@ -240,6 +242,14 @@ export const useOrgCommandMinibuffer = (
 			command.prepare,
 			cursor,
 			(origin, current, target, finish, input) => {
+				let dateContext: { today: string } | undefined
+				if (command.id === "org.heading.scheduled" || command.id === "org.heading.deadline") {
+					const resolved = resolveOrgDateInput(input, runtimeRef.current.now)
+					if (resolved.kind === "error") return { ok: false, message: resolved.message }
+					// Already captured before editor effects; raw input remains the session history value.
+					input = resolved.date
+					dateContext = { today: resolved.date }
+				}
 				const result = command.execute(
 					origin,
 					{
@@ -248,6 +258,7 @@ export const useOrgCommandMinibuffer = (
 						cursor,
 					},
 					input,
+					dateContext,
 				)
 				if (result.kind === "rejected") return { ok: false, message: result.message }
 				if (result.kind === "view" && !target.applyView?.(origin.content, result.view))

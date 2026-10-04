@@ -14,13 +14,13 @@ export type OrgPlanningLineResult =
 
 /** Source ranges only. Ambiguous/unsupported lines must never be rewritten by guessing. */
 export const parseOrgPlanningLine = (text: string): OrgPlanningLineResult => {
-	if (!/^[ \t]*(?:CLOSED|SCHEDULED|DEADLINE):/.test(text)) return { kind: "none" }
+	if (!/^[ \t]*(?:CLOSED|SCHEDULED|DEADLINE):/i.test(text)) return { kind: "none" }
 	const fields: OrgPlanningFieldRange[] = []
 	let position = 0
 	while (position < text.length) {
 		position += /^[ \t]*/.exec(text.slice(position))![0].length
 		if (position === text.length) break
-		const field = /^(CLOSED|SCHEDULED|DEADLINE):[ \t]*/.exec(text.slice(position))
+		const field = /^(CLOSED|SCHEDULED|DEADLINE):[ \t]*/i.exec(text.slice(position))
 		if (!field) {
 			// Preserve opaque text between/after fields, but never find a field inside brackets.
 			const brackets: string[] = []
@@ -29,7 +29,7 @@ export const parseOrgPlanningLine = (text: string): OrgPlanningLineResult => {
 				if (
 					brackets.length === 0 &&
 					(position === 0 || /[ \t]/.test(text[position - 1])) &&
-					/^(?:CLOSED|SCHEDULED|DEADLINE):/.test(text.slice(position))
+					/^(?:CLOSED|SCHEDULED|DEADLINE):/i.test(text.slice(position))
 				)
 					break
 				if (character === "<" || character === "[") brackets.push(character === "<" ? ">" : "]")
@@ -51,6 +51,12 @@ export const parseOrgPlanningLine = (text: string): OrgPlanningLineResult => {
 				}
 			continue
 		}
+		if (field[1] !== field[1].toUpperCase())
+			return {
+				kind: "invalid",
+				message:
+					"The planning line contains noncanonical field casing. Use uppercase CLOSED, SCHEDULED, and DEADLINE before changing its date.",
+			}
 		const kind = field[1] as OrgPlanningFieldRange["kind"]
 		if (fields.some((existing) => existing.kind === kind))
 			return {

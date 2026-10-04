@@ -850,6 +850,34 @@ independent split views, new-range caret relocation, forged ASTs, deep ancestry,
 raw source preservation and undo/refile guards. Native large-file performance and
 full Org query grammar/configurable inheritance remain separate open work.
 
+## Shared bounded date reader
+
+Editor and Agenda Schedule/Deadline use the same pure reader with explicit local
+calendar context. Supported input: ISO date, today/tomorrow/yesterday and Chinese
+aliases, signed integer days/weeks, and strictly-next English weekdays. Offset is
+bounded to 36600 days, input to 128 UTF-16 units, years to 1–9999. Arithmetic is
+calendar-based and independent of system timezone/DST; no Date.now in the core.
+
+```text
+raw parameter/history -> accept-time boundary clock (relative input only)
+ -> pure date guard/resolve -> validated ISO -> existing source-range command
+ -> one canonical transaction -> later ordinary CAS
+```
+
+ISO input remains usable without a clock context. Prepared contexts are copied
+and frozen, while explicit acceptance context is fresh at midnight. Preparation
+clock errors emit a visible rejection without allocating a session; malformed
+input keeps the prompt. Root still accepts only validated ISO and checks it before
+reads/allocation. Raw input, not normalized ISO, remains in parameter history.
+Known noncanonical planning-field casing rejects instead of inserting duplicate
+fields; unrelated prose and accepted raw suffix/component formatting remain intact.
+
+Verification: 185 files /3381 tests, typecheck/build and diff checks pass
+(2026-10-05 02:00 +08:00). Tests cover calendar boundaries/leap days, timezone,
+clock failure, context mutation, midnight acceptance, both production workflows,
+raw undo and malformed-source refusal. Full Org calendar/time/range/repeater
+reader and native Chinese IME remain separate unfinished requirements.
+
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.

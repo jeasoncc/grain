@@ -12,8 +12,11 @@ import {
 } from "@/flows/org-workspace"
 import { loadOrgAgendaFlow as productionLoadAgenda } from "@/flows/org-workspace/org-agenda.flow"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
+import * as parameterSession from "@/flows/org-command/parameter-session"
+import * as orgClock from "@/utils/org-date-clock"
 import { ORG_WINDOW_CLOSE_DISCARD_MESSAGE } from "@/hooks/use-org-window-close"
 import {
+	orgFileRepository,
 	watchOrgWorkspace,
 	unwatchOrgWorkspace,
 	releaseOrgWorkspace,
@@ -207,6 +210,122 @@ function expectReleasedDraft() {
 }
 
 describe("production Root TODO logging", () => {
+	it.each([
+		["Schedule", "invalid Date"],
+		["Deadline", "invalid Date"],
+		["Schedule", "throw"],
+		["Deadline", "throw"],
+	] as const)("document pane %s clock preparation rejects %s without editing or native reads", async (command, failure) => {
+		await setup()
+		const runtime = controller.activeBufferRuntime!
+		const state = runtime.state
+		const editorState = editor().state
+		vi.mocked(orgFileRepository.readDocument).mockClear()
+		vi.spyOn(orgClock, "systemOrgNow").mockImplementation(() => {
+			if (failure === "throw") throw new Error("Clock unavailable")
+			return new Date(Number.NaN)
+		})
+		act(() => {
+			key("c")
+			key(command === "Schedule" ? "s" : "d")
+		})
+		expect(screen.getByText("Cannot read a valid local calendar day from the clock.")).toBeVisible()
+		expect(screen.queryByRole("combobox")).toBeNull()
+		expect(controller.content).toBe(source)
+		expect(controller.isDirty).toBe(false)
+		expect(runtime.state).toBe(state)
+		expect(editor().state).toBe(editorState)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(redoDepth(runtime.state)).toBe(0)
+		expect(orgFileRepository.readDocument).not.toHaveBeenCalled()
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
+	it.each(
+		(["Editor", "Agenda"] as const).flatMap((origin) =>
+			(["scheduled", "deadline", "closed"] as const).flatMap((field) =>
+				(["Schedule", "Deadline", "TODO"] as const).map((command) => ({ origin, field, command })),
+			),
+		),
+	)("fails closed for $field through actual $origin $command without mutation or an input session", async ({
+		origin,
+		field,
+		command,
+	}) => {
+		const stamp = field === "closed" ? "[2026-07-01 Wed]" : "<2026-07-01 Wed>"
+		const raw = `#+STARTUP: logdone\r\n#+TODO: NEXT | FINISHED(@)\r\n* NEXT café 😀\r\n${field}: ${stamp} SCHEDULED: <2026-07-01 Wed>\r\nbody\r\n`
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: raw, relativePath: "a.org", revision: "a-1" }),
+		)
+		const original = parameterSession.createParameterSession
+		const begin = vi.fn()
+		const publishSession = vi.fn()
+		vi.spyOn(parameterSession, "createParameterSession").mockImplementation(() => {
+			const core = original()
+			return {
+				...core,
+				begin: (...args: Parameters<typeof core.begin>) => {
+					begin()
+					return core.begin(...args)
+				},
+				publishSession: (...args: Parameters<typeof core.publishSession>) => {
+					publishSession()
+					return core.publishSession(...args)
+				},
+			}
+		})
+		await setup()
+		const runtime = controller.activeBufferRuntime!
+		const baseline = runtime.state
+		const clock = vi.spyOn(orgClock, "systemOrgNow")
+		vi.mocked(orgFileRepository.readDocument).mockClear()
+		if (origin === "Agenda")
+			await act(async () => {
+				fireEvent.click(screen.getByRole("button", { name: "Agenda" }))
+			})
+		for (let attempt = 0; attempt < 2; attempt++) {
+			if (origin === "Agenda")
+				await act(async () => {
+					fireEvent.click(
+						screen.getAllByRole("button", {
+							name: command === "TODO" ? /Cycle TODO/ : new RegExp(`${command} for`),
+						})[0],
+					)
+				})
+			else
+				act(() => {
+					key("c")
+					key(command === "TODO" ? "t" : command === "Schedule" ? "s" : "d")
+				})
+			expect(
+				screen
+					.getAllByRole("status")
+					.some((node) =>
+						node.textContent?.includes(
+							command === "TODO" ? "Cannot change TODO state" : "noncanonical field casing",
+						),
+					),
+			).toBe(true)
+			expect(screen.queryByRole("combobox")).toBeNull()
+			expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+			expect(controller.content).toBe(raw)
+			expect(runtime.state).toBe(baseline)
+		}
+		expect(runtime.source).toBe(raw)
+		expect(controller.activeDocument?.revision).toBe("a-1")
+		expect(controller.isDirty).toBe(false)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(redoDepth(runtime.state)).toBe(0)
+		// Agenda reserves a cancellable preparation lease before validating the live buffer.
+		if (origin === "Agenda" && command !== "TODO") expect(begin).toHaveBeenCalledTimes(2)
+		else expect(begin).not.toHaveBeenCalled()
+		expect(publishSession).not.toHaveBeenCalled()
+		expect(clock).not.toHaveBeenCalled()
+		expect(orgFileRepository.readDocument).not.toHaveBeenCalled()
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		if (origin === "Editor") expect(editor().state.sliceDoc()).toBe(raw)
+	})
+
 	it.each([
 		false,
 		true,
@@ -849,6 +968,61 @@ describe("production Root TODO logging", () => {
 		expectReleasedDraft()
 		expect(runtime.source).toBe(raw)
 		expect(undoDepth(runtime.state)).toBe(0)
+	})
+
+	it.each([
+		["Schedule", "today", "SCHEDULED"],
+		["Deadline", "+0d", "DEADLINE"],
+	] as const)("Agenda %s relative acceptance updates canonical day, preserves suffix and disk CAS", async (action, alias, keyword) => {
+		const raw = `#+TODO: NEXT | FINISHED\r\n* NEXT task\r\n${keyword}: <2026-07-01 Wed 09:30-10:30 +1w -2d>\r\nbody café 😀\r\n`
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ content: raw, relativePath: "a.org", revision: "a-1" }),
+		)
+		vi.setSystemTime(new Date(2026, 6, 1, 23, 59))
+		await setup()
+		const runtime = controller.activeBufferRuntime!
+		await act(async () => {
+			fireEvent.click(screen.getByRole("button", { name: "Agenda" }))
+		})
+		await act(async () => {
+			fireEvent.click(screen.getByRole("button", { name: `${action} for task` }))
+		})
+		const input = screen.getByRole("combobox")
+		expect(input).toHaveValue("2026-07-01")
+		fireEvent.change(input, { target: { value: alias } })
+		vi.setSystemTime(new Date(2026, 6, 2, 0, 1))
+		await act(async () => {
+			fireEvent.keyDown(input, { key: "Enter" })
+		})
+		const expected = raw.replace("2026-07-01 Wed", "2026-07-02")
+		expect(screen.queryByRole("combobox")).not.toBeInTheDocument()
+		expect(controller.content).toBe(expected)
+		expect(runtime.source).toBe(expected)
+		expect(undoDepth(runtime.state)).toBe(1)
+		expect(controller.openBuffers[0]).toMatchObject({ baseRevision: "a-1", isDirty: true })
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		await act(async () => {
+			fireEvent.click(screen.getByRole("button", { name: "a" }))
+		})
+		expect(editor().state.sliceDoc()).toBe(expected)
+		act(() => key("z"))
+		expect(runtime.source).toBe(raw)
+		expect(controller.content).toBe(raw)
+		expect(controller.isDirty).toBe(false)
+		// Redo through the Root runtime, then persist against the original disk revision.
+		act(() => {
+			fireEvent.keyDown(editor().contentDOM, { key: "y", code: "KeyY", ctrlKey: true })
+		})
+		expect(runtime.source).toBe(expected)
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(async () =>
+			E.right({ relativePath: "a.org", revision: "a-2" }),
+		)
+		await act(async () => {
+			await controller.saveAllDocuments()
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledExactlyOnceWith(
+			expect.objectContaining({ content: expected, expectedRevision: "a-1" }),
+		)
 	})
 
 	it("refreshes dirty incremental PROPERTY metadata for Agenda and saves against the original disk base", async () => {

@@ -16,7 +16,11 @@ export const OrgMinibuffer = ({
 }) => {
 	const inputRef = useRef<HTMLInputElement>(null)
 	const composingRef = useRef(false)
-	const generationRef = useRef<{ session: OrgMinibufferSession; id: number } | null>(null)
+	const generationRef = useRef<{
+		session: OrgMinibufferSession
+		id: number
+		cancelled: boolean
+	} | null>(null)
 	const acceptingRef = useRef(false)
 	const [accepting, setAccepting] = useState(false)
 	const [input, setInput] = useState("")
@@ -49,7 +53,7 @@ export const OrgMinibuffer = ({
 	}, [session?.candidates, input, token, tokenFrom, tokenTo])
 
 	useLayoutEffect(() => {
-		generationRef.current = session ? { session, id: session.id } : null
+		generationRef.current = session ? { session, id: session.id, cancelled: false } : null
 		acceptingRef.current = false
 		setAccepting(false)
 		if (!session) return
@@ -97,6 +101,7 @@ export const OrgMinibuffer = ({
 	}
 	const cancel = () => {
 		if (acceptingRef.current && session.cancelWhileAccepting === false) return
+		if (generationRef.current) generationRef.current.cancelled = true
 		generationRef.current = null
 		acceptingRef.current = false
 		setAccepting(false)
@@ -115,6 +120,22 @@ export const OrgMinibuffer = ({
 			generation.session === session &&
 			generation.id === session.id
 		const finish = (result: OrgMinibufferAcceptResult) => {
+			// A confirmed accept may retire its prompt before the async result is delivered.
+			// Persist raw history by its captured key; never update a replacement prompt's UI.
+			if (
+				result.ok &&
+				!generation.cancelled &&
+				value.trim() &&
+				(isCurrent() || generationRef.current === null)
+			) {
+				const key = session.historyKey ?? session.prompt
+				const history = [
+					value,
+					...(historiesRef.current.get(key) ?? []).filter((entry) => entry !== value),
+				].slice(0, 50)
+				historiesRef.current.set(key, history)
+				if (isCurrent()) historyRef.current = history
+			}
 			if (!isCurrent()) return
 			acceptingRef.current = false
 			setAccepting(false)
@@ -123,13 +144,6 @@ export const OrgMinibuffer = ({
 				return
 			}
 			setError(null)
-			if (value.trim()) {
-				historyRef.current = [
-					value,
-					...historyRef.current.filter((entry) => entry !== value),
-				].slice(0, 50)
-				historiesRef.current.set(session.historyKey ?? session.prompt, historyRef.current)
-			}
 		}
 		const fail = (reason: unknown) => {
 			finish({ ok: false, message: reason instanceof Error ? reason.message : String(reason) })

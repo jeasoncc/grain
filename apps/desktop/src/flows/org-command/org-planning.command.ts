@@ -1,3 +1,4 @@
+import { readOrgDate, type OrgDateContext } from "@/pipes/org/org-date-reader.pipe"
 import { parseOrgPlanningLine } from "@/pipes/org/org-planning-line.pipe"
 import {
 	headingPositionAt,
@@ -76,11 +77,14 @@ const isRejected = (
 export const createOrgPlanningCommand = (
 	kind: OrgPlanningKind,
 	defaultDate: string,
+	dateContext?: OrgDateContext,
 ): OrgBufferCommand => {
+	// Own the supplied scalar snapshot; callers may reuse or mutate their context object.
+	const preparedDateContext = dateContext ? Object.freeze({ today: dateContext.today }) : undefined
 	const label = kind === "SCHEDULED" ? "Schedule" : "Deadline"
 	return {
 		id: `org.heading.${kind.toLowerCase()}`,
-		prompt: `${label} (YYYY-MM-DD):`,
+		prompt: `${label} (YYYY-MM-DD / today / +3d / next mon):`,
 		completion: "value",
 		updatedMessage: `${label} updated`,
 		unchangedMessage: `${label} unchanged`,
@@ -94,6 +98,10 @@ export const createOrgPlanningCommand = (
 				context: { ...context },
 				initialInput: existing.date ?? defaultDate,
 				candidates: [
+					"today",
+					"tomorrow",
+					"+3d",
+					"next mon",
 					...new Set(
 						[existing.date, defaultDate].filter(
 							(date): date is string => date !== null && validOrgDate(date),
@@ -102,18 +110,22 @@ export const createOrgPlanningCommand = (
 				],
 			}
 		},
-		execute: (origin, current, input) => {
+		execute: (origin, current, input, acceptedContext) => {
 			const guard = guardOrgCommandOrigin(origin, current) ?? guardOrgHeadingCommand(origin)
 			if (guard) return guard
 			const existing = planningAt(origin, kind)
 			if (isRejected(existing)) return existing
-			const date = input.trim()
-			if (!validOrgDate(date))
+			const acceptedDateContext = acceptedContext
+				? Object.freeze({ today: acceptedContext.today })
+				: preparedDateContext
+			const parsed = readOrgDate(input, acceptedDateContext)
+			if (parsed.kind === "error")
 				return {
 					kind: "rejected",
 					reason: "invalid-date",
-					message: "Enter a real calendar date in YYYY-MM-DD format (for example, 2026-09-30).",
+					message: parsed.message,
 				}
+			const date = parsed.date
 			// A no-op must not strip an existing weekday, time, repeater or warning.
 			if (existing.date === date) return { kind: "no-change", reason: "unchanged-date" }
 			const edit = setOrgPlanningAt(origin.content, origin.cursor, kind, date)

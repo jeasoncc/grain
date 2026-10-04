@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 import type { OrgAgendaEntry } from "@/pipes/org"
 import type { OrgAgendaCommand, OrgWorkspaceController } from "@/hooks/use-org-workspace"
-import { validOrgDate } from "@/pipes/org/org-text.pipe"
+import { captureOrgToday, resolveOrgDateInput } from "@/utils/org-date-clock"
 import { createParameterSession, type ParameterLease } from "@/flows/org-command/parameter-session"
 
 export type AgendaCommand = OrgAgendaCommand
@@ -9,8 +9,6 @@ export type AgendaParameterController = Pick<
 	OrgWorkspaceController,
 	"executeAgendaCommand" | "prepareAgendaPlanning"
 >
-const localToday = (now: Date) =>
-	`${now.getFullYear().toString().padStart(4, "0")}-${(now.getMonth() + 1).toString().padStart(2, "0")}-${now.getDate().toString().padStart(2, "0")}`
 const systemNow = () => new Date()
 const outcomeStatus = (
 	label: string,
@@ -132,6 +130,12 @@ export function useOrgAgendaParameters({
 	}
 	const start = (entry: OrgAgendaEntry, kind: "cycle-todo" | "schedule" | "deadline") => {
 		if (core.getSnapshot().lease || core.busy()) return
+		// Validate the local clock before allocating a lease or starting preparation.
+		const preparationToday = kind === "cycle-todo" ? null : captureOrgToday(now)
+		if (preparationToday?.kind === "error") {
+			setStatus(preparationToday.message)
+			return
+		}
 		const originFocus = typeof document === "undefined" ? null : document.activeElement
 		const lease = core.begin()
 		if (!lease) return
@@ -243,17 +247,28 @@ export function useOrgAgendaParameters({
 					return
 				}
 				core.endRead(lease, abort)
-				const today = localToday(now())
+				if (preparationToday?.kind !== "date") return
+				const today = preparationToday.date
 				setStatus(`${label} date for ${target.heading ?? "(No heading)"}`)
 				core.publishSession(lease, {
 					id: lease.id,
-					prompt: `${label} (YYYY-MM-DD):`,
+					prompt: `${label} (YYYY-MM-DD, today, tomorrow, yesterday, +1d, -1w):`,
 					historyKey: `agenda-${kind}`,
 					completion: "value",
 					get cancelWhileAccepting() {
 						return core.getSnapshot().phase !== "commit"
 					},
-					candidates: [...new Set([prepared.date ?? today, today])],
+					candidates: [
+						...new Set([
+							prepared.date ?? today,
+							today,
+							"today",
+							"tomorrow",
+							"yesterday",
+							"+1d",
+							"-1w",
+						]),
+					],
 					initialInput: prepared.date ?? today,
 					onCancel: () => {
 						if (current()) cancel()
@@ -265,14 +280,9 @@ export function useOrgAgendaParameters({
 							finish("Agenda source changed; select a refreshed row and try again.", true)
 							return { ok: true }
 						}
-						const date = input.trim()
-						if (!validOrgDate(date))
-							return {
-								ok: false,
-								message:
-									"Enter a real calendar date in YYYY-MM-DD format (for example, 2026-09-30).",
-							}
-						return execute({ kind, date })
+						const parsed = resolveOrgDateInput(input, now)
+						if (parsed.kind === "error") return { ok: false, message: parsed.message }
+						return execute({ kind, date: parsed.date })
 					},
 				})
 			} catch {

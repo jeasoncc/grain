@@ -16,6 +16,32 @@ describe("planning source ranges", () => {
 			)
 		}
 	})
+	it.each([
+		"scheduled",
+		"Scheduled",
+		"deadline",
+		"DeadLine",
+		"closed",
+		"Closed",
+	])("rejects noncanonical known field %s at the start or after opaque text", (field) => {
+		for (const line of [
+			`\t${field}: <2026-09-30>`,
+			`SCHEDULED: <2026-09-30> ${field}: <2026-10-01>`,
+			`CLOSED: [2026-09-01] custom ${field}: <2026-10-01>`,
+		]) {
+			expect(parseOrgPlanningLine(line)).toMatchObject({
+				kind: "invalid",
+				message: expect.stringContaining("noncanonical"),
+			})
+		}
+	})
+	it("keeps noncanonical names in bracketed details and body text opaque", () => {
+		expect(
+			parseOrgPlanningLine("CLOSED: [2026-09-01 Tue scheduled: text] custom <deadline: text>"),
+		).toMatchObject({ kind: "planning", fields: [{ kind: "CLOSED" }] })
+		expect(parseOrgPlanningLine("body scheduled: <2026-09-30>")).toEqual({ kind: "none" })
+		expect(parseOrgPlanningLine("UNKNOWN: <2026-09-30>")).toEqual({ kind: "none" })
+	})
 	it("does not misread a body line as planning", () => {
 		expect(parseOrgPlanningLine("text SCHEDULED: <2026-09-30>")).toEqual({ kind: "none" })
 	})
