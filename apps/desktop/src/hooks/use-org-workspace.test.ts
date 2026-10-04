@@ -1063,7 +1063,8 @@ describe("Org capture entry and transient drafts", () => {
 		expect(hook.result.current.parameters.pending).toBe(false)
 		expect(hook.result.current.parameters.isPending()).toBe(false)
 		expect(reload).toHaveBeenCalledTimes(1)
-		expect(restoreFocus).toHaveBeenCalledTimes(1)
+		// Hook-only delivery has no owned minibuffer host; body is not completion ownership.
+		expect(restoreFocus).not.toHaveBeenCalled()
 		expect(buffer.runtime.revision).toBe(revision)
 		expect(buffer.runtime.source).toBe(expected)
 		expect(undoDepth(buffer.runtime.state)).toBe(1)
@@ -1340,7 +1341,8 @@ describe("Org capture entry and transient drafts", () => {
 		expect(create).not.toHaveBeenCalled()
 		expect(park).not.toHaveBeenCalled()
 		expect(reload).not.toHaveBeenCalled()
-		expect(restoreFocus).toHaveBeenCalledTimes(1)
+		// No focused origin or minibuffer host was mounted by this hook-only test.
+		expect(restoreFocus).not.toHaveBeenCalled()
 		expect(hook.result.current.owner.isLoading).toBe(false)
 		expect(nativeState.isBusy).toBe(false)
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()

@@ -152,6 +152,7 @@ export const OrgMinibuffer = ({
 			aria-label="Minibuffer"
 			aria-busy={accepting}
 			data-org-parameter-input="true"
+			data-org-parameter-session={session.id}
 			className="shrink-0 border-t border-border bg-background shadow-[0_-8px_24px_-16px_rgba(0,0,0,0.4)]"
 		>
 			<div

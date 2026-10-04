@@ -1256,6 +1256,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 		fireEvent.click(screen.getByRole("button", { name: "Note actions" }))
 		fireEvent.click(screen.getByRole("menuitem", { name: /Heading tags/ }))
 		const input = screen.getByRole("combobox", { name: "Tags:" })
+		input.focus()
 		fireEvent.change(input, { target: { value: "toolbarA" } })
 		fireEvent.keyDown(input, { key: "Enter" })
 		expect(a.state.sliceDoc()).toContain("* A :toolbarA:")

@@ -783,6 +783,42 @@ Verification: 178 files /3170 tests, typecheck/build and diff checks pass
 configuration dependency is missing. Root lifecycle/mutation coordination beyond
 Agenda and the full application command/tool host remain open requirements.
 
+## Shared parameter lifecycle: adopted Editor and Agenda reservoir
+
+`createParameterSession` holds immutable stable snapshots and opaque leases for
+prepare/collect/read/commit/settle/retired stages. Both `useOrgCommandMinibuffer`
+(metadata, Sparse Tree, local/cross-file Refile and Archive) and
+`useOrgAgendaParameters` (date preparation/acceptance) adopt it. The core owns only
+lifecycle law; origin guards, literal inputs, domain transformations, file effects,
+body/history and DOM focus remain adapter/flow responsibilities.
+
+```text
+intent -> opaque lease -> prepare/read -> frozen prompt/candidates
+ -> singleflight accept -> owned advance OR commit boundary
+ -> settle real result -> owner-checked retire/cleanup
+```
+
+Session IDs do not alias between hosts. Stale callbacks cannot cancel a successor
+heading prompt or release its read; candidates are captured, not caller arrays.
+Abort clears the captured read before synchronous dispatch and fences lifecycle
+reentry, independently of snapshot notification guards. Listener throws do not
+roll back publication. Started commit locks drain through actual settlement even
+when UI scope detaches, while old emissions remain suppressed; read cancellation
+and Agenda's synchronous commit boundary remain distinct.
+
+Completion captures the original minibuffer host before domain callbacks, then
+requires that exact connected, same-ID host to contain current focus. Replacing a
+child within it remains owned; removed/replacement hosts, generic body and foreign
+focus do not. Pre-minibuffer Agenda errors separately preserve original source
+focus ownership. Cancellation remains distinct from completion. Production tests
+cover both adapters, owned multi-stage Refile, direct duplicate accepts, read vs
+post-commit cancellation, reentrant abort/notification, StrictMode and focus cases.
+
+Verification: 180 files /3240 tests, typecheck/build and diff checks pass
+(2026-10-04 17:54 +08:00). This is shared parameter lifecycle, not a completed
+application command registry: navigation pickers, capture/note tools, declarative
+keymaps/transients and extension/configuration protocols remain separate work.
+
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.

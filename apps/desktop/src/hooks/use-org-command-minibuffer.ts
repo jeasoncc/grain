@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react"
+import {
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+	useSyncExternalStore,
+	type RefObject,
+} from "react"
 import {
 	guardOrgCommandOrigin,
 	type OrgBufferCommand,
@@ -26,6 +33,8 @@ import { buildOrgSparseTreePlan, parseOrgSparseTreeQuery } from "@/pipes/org/org
 import type { OrgEditorCommandTarget } from "@/views/org-editor"
 import type { OrgWorkspaceController } from "./use-org-workspace"
 
+import { createParameterSession, type ParameterLease } from "@/flows/org-command/parameter-session"
+
 type ParameterDescription = Pick<
 	OrgMinibufferSession,
 	"prompt" | "historyKey" | "completion" | "cancelWhileAccepting" | "acceptCandidate"
@@ -36,6 +45,7 @@ type ParameterCommit = (
 	target: OrgEditorCommandTarget,
 	finish: (message: string, persistent?: boolean) => void,
 	input: string,
+	lease: ParameterLease,
 ) => OrgMinibufferAcceptResult | Promise<OrgMinibufferAcceptResult>
 
 /** Shared parameter ownership; pure buffer transactions and explicit transfer effects remain distinct. */
@@ -45,31 +55,35 @@ export const useOrgCommandMinibuffer = (
 	targetRef: RefObject<OrgEditorCommandTarget | null>,
 	suspended = false,
 ) => {
-	const [session, setSession] = useState<OrgMinibufferSession | null>(null)
+	const [core] = useState(createParameterSession)
+	const { session } = useSyncExternalStore(core.subscribe, core.getSnapshot, core.getSnapshot)
 	const [echo, setEcho] = useState<string | null>(null)
-	const sessionIdRef = useRef(0)
-	const committingRef = useRef(false)
-	const lookupRef = useRef<{ abort: AbortController; isActive: () => boolean } | null>(null)
+	const originGateRef = useRef<{ lease: ParameterLease; isActive: () => boolean } | null>(null)
+	const lookupRef = useRef<{
+		abort: AbortController
+		lease: ParameterLease
+		isActive: () => boolean
+	} | null>(null)
 	const abortLookup = () => {
-		lookupRef.current?.abort.abort()
-		lookupRef.current = null
+		const lookup = lookupRef.current
+		if (lookup) {
+			lookupRef.current = null
+			core.endRead(lookup.lease, lookup.abort)
+			lookup.abort.abort()
+		}
 	}
 	const persistentEchoRef = useRef(false)
 	const runtimeRef = useRef({ controller, isBusy, suspended })
 	runtimeRef.current = { controller, isBusy, suspended }
-	useEffect(
-		() => () => {
-			++sessionIdRef.current
-			abortLookup()
-		},
-		[],
-	)
-	useEffect(() => {
-		++sessionIdRef.current
-		abortLookup()
-		setSession(null)
+	useLayoutEffect(() => {
+		core.attach()
 		setEcho(null)
+		return () => {
+			core.detach()
+			lookupRef.current = null
+		}
 	}, [
+		core,
 		controller.workspace?.rootPath,
 		controller.workspace?.capabilityToken,
 		controller.workspaceSessionId,
@@ -77,19 +91,19 @@ export const useOrgCommandMinibuffer = (
 		controller.activeDocument?.relativePath,
 	])
 	useLayoutEffect(() => {
+		const origin = originGateRef.current
+		if (origin && core.current(origin.lease) && !origin.isActive()) core.retire(origin.lease)
 		if (lookupRef.current && !lookupRef.current.isActive()) {
+			const lease = lookupRef.current.lease
 			abortLookup()
-			++sessionIdRef.current
-			setSession(null)
+			core.retire(lease)
+		}
+		if (suspended) {
+			const lease = core.getSnapshot().lease
+			if (lease) core.retire(lease)
+			setEcho(null)
 		}
 	})
-	useLayoutEffect(() => {
-		if (!suspended) return
-		abortLookup()
-		++sessionIdRef.current
-		setSession(null)
-		setEcho(null)
-	}, [suspended])
 	useEffect(() => {
 		if (!echo || persistentEchoRef.current) return
 		const timer = window.setTimeout(() => setEcho(null), 3500)
@@ -101,11 +115,11 @@ export const useOrgCommandMinibuffer = (
 		prepare: (context: OrgBufferCommandContext) => OrgBufferCommandPreparation,
 		cursor: number,
 		commit: ParameterCommit,
+		previous?: ParameterLease,
 	) => {
 		const document = controller.activeDocument
 		const target = targetRef.current
-		if (!document || !target || isBusy || suspended || committingRef.current || lookupRef.current)
-			return
+		if (!document || !target || isBusy || suspended || (!previous && core.busy())) return
 		const prepared = prepare({
 			relativePath: document.relativePath,
 			content: controller.content,
@@ -119,11 +133,14 @@ export const useOrgCommandMinibuffer = (
 		const grant = controller.workspace?.capabilityToken
 		const workspaceSessionId = controller.workspaceSessionId
 		const activeBufferId = controller.activeBufferId
-		const sessionId = ++sessionIdRef.current
+		const originFocus = globalThis.document?.activeElement
+		const lease = core.begin(previous)
+		if (!lease) return
+		const sessionId = lease.id
 		setEcho(null)
 		const originIsActive = () =>
 			!runtimeRef.current.suspended &&
-			sessionIdRef.current === sessionId &&
+			core.current(lease) &&
 			runtimeRef.current.controller.workspace?.rootPath === root &&
 			runtimeRef.current.controller.workspace?.capabilityToken === grant &&
 			runtimeRef.current.controller.workspaceSessionId === workspaceSessionId &&
@@ -131,22 +148,62 @@ export const useOrgCommandMinibuffer = (
 			runtimeRef.current.controller.activeDocument?.relativePath ===
 				prepared.context.relativePath &&
 			targetRef.current === target
+		originGateRef.current = { lease, isActive: originIsActive }
+		let completionFocus: { before: Element; host: Element } | null = null
+		const captureCompletionFocus = () => {
+			const before = globalThis.document?.activeElement
+			const host = before?.closest("[data-org-parameter-session]")
+			return before && host?.getAttribute("data-org-parameter-session") === String(lease.id)
+				? { before, host }
+				: null
+		}
 		const finish = (message: string, persistent = false) => {
 			if (!originIsActive()) return
-			abortLookup()
-			++sessionIdRef.current
-			setSession(null)
+			const focus = completionFocus
+			// Ownership follows the original host, not an input that publication may replace.
+			const before = globalThis.document?.activeElement
+			const ownsFocus = Boolean(
+				focus?.host.isConnected &&
+					focus.host.getAttribute("data-org-parameter-session") === String(lease.id) &&
+					focus.host.contains(before ?? null),
+			)
+			if (!core.retire(lease) || !core.isAttached() || targetRef.current !== target) return
 			persistentEchoRef.current = persistent
 			setEcho(message)
-			target.restoreFocus()
+			const after = globalThis.document?.activeElement
+			if (
+				ownsFocus &&
+				focus &&
+				(after === before || (before && !before.isConnected && after === globalThis.document?.body))
+			)
+				target.restoreFocus()
 		}
-		setSession({
+		core.publishSession(lease, {
 			...description,
 			id: sessionId,
 			initialInput: prepared.initialInput,
 			candidates: prepared.candidates,
 			onCancel: () => {
-				if (!committingRef.current || description.cancelWhileAccepting !== false) finish("Canceled")
+				if (!originIsActive()) return
+				const before = globalThis.document?.activeElement
+				const ownsFocus =
+					(before === originFocus && before !== globalThis.document?.body && before?.isConnected) ||
+					(before === globalThis.document?.body &&
+						Boolean(originFocus && !originFocus.isConnected)) ||
+					before
+						?.closest("[data-org-parameter-session]")
+						?.getAttribute("data-org-parameter-session") === String(lease.id)
+				if (core.cancel(lease) && core.isAttached() && targetRef.current === target) {
+					persistentEchoRef.current = false
+					setEcho("Canceled")
+					const after = globalThis.document?.activeElement
+					if (
+						ownsFocus &&
+						(after === before ||
+							(before && !before.isConnected && after === globalThis.document?.body))
+					)
+						target.restoreFocus()
+				}
 			},
 			onAccept: (input) => {
 				const current = runtimeRef.current
@@ -156,8 +213,7 @@ export const useOrgCommandMinibuffer = (
 					current.isBusy ||
 					current.controller.isSaving ||
 					current.controller.isLoading ||
-					committingRef.current ||
-					lookupRef.current
+					core.busy()
 				)
 					return {
 						ok: false,
@@ -169,19 +225,12 @@ export const useOrgCommandMinibuffer = (
 					cursor,
 				})
 				if (guard) return { ok: false, message: guard.message }
-				if (description.cancelWhileAccepting !== false)
-					return commit(prepared.context, current.controller, target, finish, input)
-				committingRef.current = true
-				try {
-					return Promise.resolve(
-						commit(prepared.context, current.controller, target, finish, input),
-					).finally(() => {
-						committingRef.current = false
-					})
-				} catch (error) {
-					committingRef.current = false
-					throw error
-				}
+				completionFocus = captureCompletionFocus()
+				return (
+					core.accept(lease, originIsActive, description.cancelWhileAccepting === false, () =>
+						commit(prepared.context, current.controller, target, finish, input, lease),
+					) ?? { ok: false, message: "The originating command or buffer is no longer active." }
+				)
 			},
 		})
 	}
@@ -243,7 +292,7 @@ export const useOrgCommandMinibuffer = (
 						context,
 						controller.workspace?.documents.map((document) => document.relativePath) ?? [],
 					)
-		launch(description, prepare, cursor, async (origin, current, _target, finish, input) => {
+		launch(description, prepare, cursor, async (origin, current, _target, finish, input, lease) => {
 			if (
 				(archive && current.isDirty) ||
 				current.openBuffers?.some(
@@ -325,6 +374,7 @@ export const useOrgCommandMinibuffer = (
 						retire(plan.kind === "no-change" ? "Subtree already in place" : "Subtree refiled")
 						return { ok: true }
 					},
+					lease,
 				)
 				return { ok: true }
 			}
@@ -344,13 +394,14 @@ export const useOrgCommandMinibuffer = (
 				typeof result.targetRelativePath === "string"
 			) {
 				const targetPath = result.targetRelativePath
-				const generation = sessionIdRef.current
-				const abort = new AbortController()
+				const abort = core.beginRead(lease)
+				if (!abort)
+					return { ok: false, message: "The originating command or buffer is no longer active." }
 				const isActive = () => {
 					const live = runtimeRef.current
 					return (
 						!live.suspended &&
-						sessionIdRef.current === generation &&
+						core.current(lease) &&
 						live.controller.workspace?.rootPath === current.workspace?.rootPath &&
 						live.controller.workspace?.capabilityToken === current.workspace?.capabilityToken &&
 						live.controller.workspaceSessionId === current.workspaceSessionId &&
@@ -360,7 +411,7 @@ export const useOrgCommandMinibuffer = (
 						targetRef.current === _target
 					)
 				}
-				lookupRef.current = { abort, isActive }
+				lookupRef.current = { abort, lease, isActive }
 				try {
 					const lookup = await current.readRefileTarget(targetPath, abort.signal)
 					if (abort.signal.aborted || !isActive())
@@ -374,6 +425,7 @@ export const useOrgCommandMinibuffer = (
 						),
 					})
 					const candidates = orgRefileTargetCandidates(snapshot, true)
+					core.endRead(lease, abort)
 					lookupRef.current = null
 					launch(
 						{
@@ -438,6 +490,7 @@ export const useOrgCommandMinibuffer = (
 								return { ok: false, message }
 							}
 						},
+						lease,
 					)
 					return { ok: true }
 				} catch {
@@ -446,6 +499,7 @@ export const useOrgCommandMinibuffer = (
 						message: "Could not read the target. Review the file path and try again.",
 					}
 				} finally {
+					core.endRead(lease, abort)
 					if (lookupRef.current?.abort === abort) lookupRef.current = null
 				}
 			}
@@ -483,19 +537,41 @@ export const useOrgCommandMinibuffer = (
 			current.controller.isSaving ||
 			current.controller.isLoading ||
 			current.suspended ||
-			committingRef.current ||
-			lookupRef.current
+			core.busy()
 		)
 			return
+		const lease = core.getSnapshot().lease
+		const before = globalThis.document?.activeElement
+		const host = before?.closest("[data-org-parameter-session]")
+		const ownsFocus = Boolean(
+			lease && host?.getAttribute("data-org-parameter-session") === String(lease.id),
+		)
 		if (!target.applyView?.(current.controller.content, { kind: "sparse-tree", query: null })) {
 			setEcho("This editor cannot clear the view, or the buffer changed. Cancel and retry.")
 			return
 		}
-		++sessionIdRef.current
-		setSession(null)
+		if (!core.isAttached() || targetRef.current !== target || core.getSnapshot().lease !== lease)
+			return
+		const currentFocus = globalThis.document?.activeElement
+		const stillOwned =
+			ownsFocus &&
+			host?.isConnected &&
+			host.getAttribute("data-org-parameter-session") === String(lease?.id) &&
+			host.contains(currentFocus ?? null) &&
+			core.getSnapshot().lease === lease
+		if (lease) core.retire(lease)
 		persistentEchoRef.current = false
 		setEcho("Sparse tree cleared")
-		target.restoreFocus()
+		if (
+			stillOwned &&
+			core.isAttached() &&
+			targetRef.current === target &&
+			(globalThis.document?.activeElement === currentFocus ||
+				(currentFocus &&
+					!currentFocus.isConnected &&
+					globalThis.document?.activeElement === globalThis.document?.body))
+		)
+			target.restoreFocus()
 	}
 	return {
 		session,

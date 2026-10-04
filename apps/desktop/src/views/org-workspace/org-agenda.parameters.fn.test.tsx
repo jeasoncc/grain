@@ -80,6 +80,7 @@ beforeEach(() => {
 afterEach(() => {
 	cleanup()
 	vi.restoreAllMocks()
+	document.body.removeAttribute("tabindex")
 })
 
 describe("production agenda parameter adapter and bottom minibuffer", () => {
@@ -251,6 +252,42 @@ describe("production agenda parameter adapter and bottom minibuffer", () => {
 		await act(async () => result.resolve({ kind: "confirmed" }))
 		await new Promise((resolve) => requestAnimationFrame(resolve))
 		expect(document.activeElement).toBe(other)
+	})
+
+	it.each(
+		["rejected", "throw"].flatMap((outcome) =>
+			["origin", "foreign", "removed", "body", "body-origin", "another-row"].map((focus) => ({
+				outcome,
+				focus,
+			})),
+		),
+	)("pre-minibuffer $outcome restores only the still-owned production origin: $focus", async ({
+		outcome,
+		focus,
+	}) => {
+		const test = setup()
+		await screen.findAllByRole("button", { name: "Schedule for Duplicate" })
+		const buttons = screen.getAllByRole("button", { name: "Schedule for Duplicate" })
+		const origin = buttons[1]
+		if (focus !== "body-origin") act(() => origin.focus())
+		const restore = vi.spyOn(origin, "focus")
+		test.prepareAgendaPlanning.mockImplementationOnce(async () => {
+			if (focus === "foreign") screen.getByRole("textbox", { name: "Other surface" }).focus()
+			if (focus === "removed") origin.remove()
+			if (focus === "body") {
+				document.body.tabIndex = -1
+				document.body.focus()
+			}
+			if (focus === "another-row") buttons[0].focus()
+			if (outcome === "throw") throw new Error("prepare failed")
+			return { kind: "rejected", message: "Invalid planning" }
+		})
+		fireEvent.click(origin)
+		await waitFor(() => expect(screen.getByRole("main")).toHaveAttribute("aria-busy", "false"))
+		await new Promise((resolve) => requestAnimationFrame(resolve))
+		expect(restore).toHaveBeenCalledTimes(focus === "origin" ? 1 : 0)
+		expect(screen.queryByRole("combobox")).not.toBeInTheDocument()
+		expect(test.executeAgendaCommand).not.toHaveBeenCalled()
 	})
 
 	it.each(["stale", "rejected"])("never opens parameters on %s preparation", async (kind) => {

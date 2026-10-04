@@ -84,6 +84,8 @@ async function menu(name: string) {
 }
 function submit(query = "todo") {
 	const input = screen.getByRole("combobox", { name: /^Sparse tree/ })
+	// A keyboard accept is owned by the focused minibuffer, not menu-close body focus.
+	input.focus()
 	fireEvent.change(input, { target: { value: query } })
 	fireEvent.keyDown(input, { key: "Enter" })
 }
