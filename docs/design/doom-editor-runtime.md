@@ -750,6 +750,39 @@ Verification: 176 files /3112 tests, typecheck/build pass
 and complete Org policy semantics remain explicit future work; this is not a
 claim of native/user acceptance or a Lisp runtime.
 
+## Agenda command coordination: explicit flow, thin Root ports
+
+`runOrgAgendaOperationFlow` owns capture, validation, cancellable reads, pure
+planning, EDIT-only allocation, anchor freshness, publication and owner-checked
+cleanup. `org-agenda-command-plan.pipe.ts` is the pure command/plan boundary;
+public data types live in `types/org`, not the React hook. Capture freezes nested
+entry/heading/timestamp origin and operation so caller mutation across an await
+cannot retarget a command.
+
+```text
+Root snapshot + exact-reference grant/session + narrow ports
+ -> frozen intent/calendar/clock guard -> owned read lease
+ -> explicit Right/path/revision/body validation -> allocation-free plan
+ -> EDIT-only park/runtime -> fresh ID/incarnation/generation/source fences
+ -> observer -> recheck -> atomic publication -> actual confirmation -> finally
+```
+
+Root retains only current authority snapshots, owned busy/read state, local clock
+capture, scoped identity/mirror/runtime adapters and the commit port. The flow is
+not a service or another body/history owner. Preparation, note-needed and unchanged
+outcomes allocate nothing. Cancelling a read releases its caller, observes the
+late task and cannot clear a successor's owner. Publishing/notification abort or
+throw after canonical commit remains confirmed; observer failure before it does
+not manufacture success. UI disposal and scope guards still own UI completion.
+
+New tests cover mutated DTO/operation inputs, malformed read contracts, late G1/G2,
+read cancellation, edit/undo and logical/runtime drift, no-allocation branches,
+post-observer readiness/pause/conflict changes and actual committed results.
+Verification: 178 files /3170 tests, typecheck/build and diff checks pass
+(2026-10-04 16:06 +08:00). ESLint remains unverified because its `@eslint/js`
+configuration dependency is missing. Root lifecycle/mutation coordination beyond
+Agenda and the full application command/tool host remain open requirements.
+
 ## Next decision gates and work
 
 1. Inventory actual Doom workflows and non-negotiable behaviors.

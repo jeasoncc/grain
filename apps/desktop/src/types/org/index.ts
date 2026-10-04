@@ -1,4 +1,14 @@
 export type {
+	OrgAgendaActionOutcome,
+	OrgAgendaCapturedOperation,
+	OrgAgendaCommand,
+	OrgAgendaExecutionOptions,
+	OrgAgendaOperation,
+	OrgAgendaOperationCapture,
+	OrgAgendaOperationPlan,
+	OrgAgendaPlanningPreparation,
+} from "./org-agenda-command.types"
+export type {
 	CaptureOrgTodoInput,
 	CreateOrgDirectoryInput,
 	DeleteOrgDocumentInput,

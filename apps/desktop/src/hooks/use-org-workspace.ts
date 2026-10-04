@@ -37,18 +37,16 @@ import {
 } from "@/flows/org-editor-runtime/org-parked-working-copy-reservoir"
 import { createOrgBufferIdentityRegistry } from "@/flows/org-editor-runtime/org-buffer-identity-registry"
 import type { OrgWorkspaceRuntimePorts } from "@/flows/org-editor-runtime/org-workspace-runtime-registry"
-import { validOrgDate, type OrgTextEdit } from "@/pipes/org/org-text.pipe"
-import {
-	planOrgTodoTransition,
-	validOrgLocalTimestamp,
-	formatOrgLocalTimestamp,
-} from "@/pipes/org/org-todo-logging.pipe"
-import { createOrgPlanningCommand } from "@/flows/org-command/org-planning.command"
-import {
-	hasOrgAgendaActionOrigin,
-	validateOrgAgendaOrigin,
-	type OrgAgendaEntry,
-} from "@/pipes/org/org-agenda.pipe"
+import { formatOrgLocalTimestamp } from "@/pipes/org/org-todo-logging.pipe"
+import type { OrgAgendaEntry } from "@/pipes/org/org-agenda.pipe"
+import type {
+	OrgAgendaActionOutcome,
+	OrgAgendaCommand,
+	OrgAgendaPlanningPreparation,
+	OrgAgendaExecutionOptions,
+	OrgAgendaOperation,
+} from "@/types/org/org-agenda-command.types"
+import { runOrgAgendaOperationFlow } from "@/flows/org-workspace/org-agenda-command.flow"
 import { createOrgWorkspaceRuntimeRegistry } from "@/flows/org-editor-runtime/org-workspace-runtime-registry"
 import { orgWorkspaceEventAdapter } from "@/io/event/org-workspace-event.adapter"
 import {
@@ -175,88 +173,12 @@ export interface OrgLiveBuffer {
 	readonly isDirty: boolean
 }
 
-export type OrgAgendaActionOutcome =
-	| { readonly kind: "confirmed" | "unchanged" | "rejected" | "stale"; readonly message?: string }
-	| { readonly kind: "needs-note"; readonly entry: OrgAgendaEntry }
-
-export type OrgAgendaCommand =
-	| { readonly kind: "cycle-todo"; readonly timestamp?: string; readonly note?: string }
-	| { readonly kind: "schedule" | "deadline"; readonly date: string }
-
-export type OrgAgendaPlanningPreparation =
-	| { readonly kind: "ready"; readonly entry: OrgAgendaEntry; readonly date: string | null }
-	| { readonly kind: "stale" | "rejected"; readonly message?: string }
-
-type OrgAgendaOperation =
-	| OrgAgendaCommand
-	| { readonly kind: "prepare"; readonly field: "schedule" | "deadline" }
-
-/** Pure source-range planning, shared by preparation and execution before any allocation. */
-const planAgendaOperation = (
-	entry: OrgAgendaEntry,
-	raw: string,
-	operation: OrgAgendaOperation,
-):
-	| { readonly kind: "edit"; readonly edits: readonly OrgTextEdit[]; readonly done?: boolean }
-	| OrgAgendaPlanningPreparation
-	| OrgAgendaActionOutcome => {
-	if (!entry.origin?.heading)
-		return { kind: "rejected", message: "This agenda entry has no actionable heading." }
-	if (operation.kind === "cycle-todo") {
-		const plan = planOrgTodoTransition(
-			raw,
-			entry.origin.heading.from,
-			operation.timestamp ?? "",
-			operation.note,
-		)
-		if (plan.kind === "needs-note") {
-			const snapshot = structuredClone(entry)
-			const freeze = (value: object): void => {
-				Object.values(value).forEach((child) => {
-					if (child && typeof child === "object") freeze(child)
-				})
-				Object.freeze(value)
-			}
-			freeze(snapshot)
-			return { kind: "needs-note", entry: snapshot }
-		}
-		return plan.kind === "edit"
-			? plan
-			: plan.kind === "noop"
-				? { kind: "unchanged" }
-				: {
-						kind: "rejected",
-						message: `Cannot change TODO state: ${plan.reason}.`,
-					}
-	}
-	const field = operation.kind === "prepare" ? operation.field : operation.kind
-	const planner = createOrgPlanningCommand(field === "schedule" ? "SCHEDULED" : "DEADLINE", "")
-	const context = {
-		relativePath: entry.relativePath,
-		content: raw,
-		cursor: entry.origin.heading.from,
-	}
-	if (operation.kind === "prepare") {
-		const prepared = planner.prepare(context)
-		return prepared.kind === "rejected"
-			? { kind: "rejected", message: prepared.message }
-			: { kind: "ready", entry, date: prepared.initialInput || null }
-	}
-	const result = planner.execute(context, context, operation.date)
-	return result.kind === "edit"
-		? { kind: "edit", edits: [result.edit] }
-		: result.kind === "no-change"
-			? { kind: "unchanged" }
-			: {
-					kind: "rejected",
-					message: result.kind === "rejected" ? result.message : "Unsupported agenda command.",
-				}
-}
-
-/** Observation only: does not authorize a command or replace Root's fresh guards. */
-export interface OrgAgendaExecutionOptions {
-	readonly onCommitStarted?: () => void
-}
+export type {
+	OrgAgendaActionOutcome,
+	OrgAgendaCommand,
+	OrgAgendaPlanningPreparation,
+	OrgAgendaExecutionOptions,
+} from "@/types/org/org-agenda-command.types"
 
 export interface OrgWorkspaceController {
 	readonly executeAgendaCommand: (
@@ -1447,250 +1369,103 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	)
 
 	const runAgendaOperation = useCallback(
-		async (
+		(
 			entry: OrgAgendaEntry,
 			operation: OrgAgendaOperation,
 			signal?: AbortSignal,
 			options?: OrgAgendaExecutionOptions,
-		): Promise<OrgAgendaActionOutcome | OrgAgendaPlanningPreparation> => {
-			const stale = (): OrgAgendaActionOutcome => ({ kind: "stale" })
-			const rejected = (message: string): OrgAgendaActionOutcome => ({ kind: "rejected", message })
-			// Capture the clock once at the effect boundary, before reads or allocation.
-			if (operation.kind === "cycle-todo") {
-				let timestamp: string
-				try {
-					timestamp = operation.timestamp ?? formatOrgLocalTimestamp(new Date())
-				} catch {
-					return rejected("Invalid local TODO timestamp.")
-				}
-				if (!validOrgLocalTimestamp(timestamp)) return rejected("Invalid local TODO timestamp.")
-				operation = { ...operation, timestamp }
-			}
-			// Calendar validation precedes reads, owner acquisition, identity allocation and edits.
-			if (
-				operation.kind !== "cycle-todo" &&
-				operation.kind !== "prepare" &&
-				!validOrgDate(operation.date)
-			)
-				return rejected("Enter a real calendar date in YYYY-MM-DD format.")
+		) => {
 			const grant = originGrant
 			const session = originSession
-			const origin = entry.origin
-			const currentScope = grant && session ? { grant, sessionId: session } : null
-			const current = () =>
-				mountedRef.current &&
-				grantRef.current === grant &&
-				sessionRef.current === session &&
-				!signal?.aborted
-			if (!grant || !session || !current()) return stale()
-			if (
-				!hasOrgAgendaActionOrigin(origin) ||
-				origin.workspaceRoot !== grant.rootPath ||
-				origin.capabilityToken !== grant.capabilityToken ||
-				origin.workspaceSessionId !== session ||
-				origin.relativePath !== entry.relativePath ||
-				!isSafeRelativeOrgPath(entry.relativePath)
-			)
-				return stale()
-			if (
-				!nativeCloseReadyRef.current ||
-				!parkedReservoir.canMutate() ||
-				loadingRef.current ||
-				mutationInProgressRef.current ||
-				saveInFlightRef.current ||
-				saveAllOwnerRef.current ||
-				agendaCommandOwnerRef.current
-			)
-				return rejected("A workspace operation is running.")
-			const path = entry.relativePath
-			if (conflictsRef.current.has(path) || autosavePausedRef.current.has(path))
-				return rejected("Resolve the target buffer conflict before changing the agenda heading.")
-			const owner = Symbol("agendaCommand")
-			agendaCommandOwnerRef.current = owner
-			const owns = () => current() && agendaCommandOwnerRef.current === owner
-			let cancelRead!: () => void
-			const cancelledRead = new Promise<null>((resolve) => {
-				cancelRead = () => resolve(null)
-			})
-			let publishing = false
-			const cancel = () => {
-				// Runtime publication synchronously notifies subscribers. An abort from
-				// one of them must not release the owner before publication unwinds.
-				if (publishing) return
-				cancelRead()
-				if (agendaCommandOwnerRef.current === owner) agendaCommandOwnerRef.current = null
-				finishMutation(owner)
-			}
-			signal?.addEventListener("abort", cancel, { once: true })
-			try {
-				let id = bufferIdentity.lookup(currentScope, path)
-				let document =
-					activeRef.current?.relativePath === path
-						? activeRef.current
-						: parkedReservoir.read(currentScope, path)?.document
-				let raw =
-					activeRef.current?.relativePath === path
-						? latestContentRef.current
-						: parkedReservoir.read(currentScope, path)?.content
-				if (!document) {
-					if (origin.source !== "disk") return stale()
-					mutationOwnerRef.current = owner
-					mutationInProgressRef.current = true
-					setLoading(true)
-					// Release the caller too: late read results (or failures) remain observed
-					// by the race but cannot allocate identities, mirrors, or history.
-					const opened = await Promise.race([
-						openOrgDocumentFlow({
+			const scope = grant && session ? { grant, sessionId: session } : null
+			return runOrgAgendaOperationFlow(
+				entry,
+				operation,
+				{
+					scope,
+					captureClock: () => formatOrgLocalTimestamp(new Date()),
+					snapshot: (path) => ({
+						current:
+							mountedRef.current && grantRef.current === grant && sessionRef.current === session,
+						nativeReady: nativeCloseReadyRef.current,
+						mirrorsMutable: parkedReservoir.canMutate(),
+						loading: loadingRef.current,
+						mutating: mutationInProgressRef.current,
+						saving: Boolean(saveInFlightRef.current),
+						saveAll: Boolean(saveAllOwnerRef.current),
+						agendaBusy: Boolean(agendaCommandOwnerRef.current),
+						conflict: conflictsRef.current.has(path),
+						paused: autosavePausedRef.current.has(path),
+					}),
+					claim: () => {
+						const owner = Symbol("agendaCommand")
+						agendaCommandOwnerRef.current = owner
+						return {
+							isCurrent: () => agendaCommandOwnerRef.current === owner,
+							startRead: () => {
+								mutationOwnerRef.current = owner
+								mutationInProgressRef.current = true
+								setLoading(true)
+							},
+							readIsCurrent: () => mutationOwnerRef.current === owner,
+							finishRead: () => finishMutation(owner),
+							release: () => {
+								if (agendaCommandOwnerRef.current === owner) agendaCommandOwnerRef.current = null
+								finishMutation(owner)
+							},
+						}
+					},
+					readWorkingCopy: (path) => {
+						if (activeRef.current?.relativePath === path)
+							return { document: activeRef.current, content: latestContentRef.current }
+						const parked = parkedReservoir.read(scope, path)
+						return parked ? { document: parked.document, content: parked.content } : undefined
+					},
+					readDocument: (path) => {
+						if (!scope) throw new Error("Missing agenda scope.")
+						return openOrgDocumentFlow({
 							relativePath: path,
-							workspaceRoot: grant.rootPath,
-							capabilityToken: grant.capabilityToken,
-						})(),
-						cancelledRead,
-					])
-					if (!opened || !owns() || mutationOwnerRef.current !== owner) return stale()
-					if (opened._tag === "Left")
-						return rejected(
-							typeof opened.left?.message === "string"
-								? opened.left.message
-								: "Invalid document read response.",
-						)
-					if (
-						opened._tag !== "Right" ||
-						!opened.right ||
-						typeof opened.right.relativePath !== "string" ||
-						opened.right.relativePath !== path ||
-						typeof opened.right.content !== "string" ||
-						typeof opened.right.revision !== "string" ||
-						!opened.right.revision
-					)
-						return rejected("Invalid document read response.")
-					document = opened.right
-					raw = document.content
-					if (
-						document.relativePath !== path ||
-						document.revision !== origin.diskRevision ||
-						origin.sourceRevision !== document.revision ||
-						!validateOrgAgendaOrigin({ ...entry, origin }, raw, document.revision, {
-							workspaceSessionId: session,
-						}).valid
-					)
-						return stale()
-					const planned = planAgendaOperation(entry, raw, operation)
-					if (planned.kind !== "edit") return planned
-					id = bufferIdentity.ensure(currentScope, path)
-					// Publish the close-gate copy before any command can make it dirty.
-					if (
-						!parkedReservoir.park(currentScope, id, {
+							workspaceRoot: scope.grant.rootPath,
+							capabilityToken: scope.grant.capabilityToken,
+						})()
+					},
+					lookupId: (path) => (scope ? bufferIdentity.lookup(scope, path) : undefined),
+					parkEditSource: (path, document, body) => {
+						if (!scope) return undefined
+						const id = bufferIdentity.ensure(scope, path)
+						return parkedReservoir.park(scope, id, {
 							document,
-							content: raw,
+							content: body,
 							editGeneration: 0,
 							isDirty: false,
 						})
-					)
-						return stale()
-					if (!owns()) return stale()
-					registry.create(
-						{ workspaceSessionId: session, bufferId: id },
-						raw,
-						runtimePorts(grant, session),
-					)
-					finishMutation(owner)
-				}
-				if (
-					!owns() ||
-					!id ||
-					raw === undefined ||
-					!document ||
-					document.revision !== origin.diskRevision
-				)
-					return stale()
-				const key = { workspaceSessionId: session, bufferId: id }
-				const runtime = registry.get(key)
-				if (!runtime || runtime.source !== raw) return stale()
-				// Disk anchors cannot authorize a command against an unsaved working copy.
-				if (origin.source === "disk" && runtime.source !== document.content) return stale()
-				const revision = origin.source === "live" ? id : document.revision
-				if (
-					!validateOrgAgendaOrigin({ ...entry, origin }, runtime.source, revision, {
-						workspaceSessionId: session,
-						...(origin.source === "live"
-							? {
-									runtimeIncarnation: runtimeIncarnation(runtime),
-									sourceGeneration: runtime.revision,
-								}
-							: {}),
-					}).valid
-				)
-					return stale()
-				// An already-open disk row must pin note permission to this runtime,
-				// not to disk text that an edit/undo or close/reopen can reproduce.
-				const incarnation = runtimeIncarnation(runtime)
-				const generation = runtime.revision
-				const planningEntry = {
-					...entry,
-					origin: {
-						...origin,
-						source: "live" as const,
-						sourceRevision: id,
-						runtimeIncarnation: incarnation,
-						sourceGeneration: generation,
+							? id
+							: undefined
 					},
-				}
-				const planned = planAgendaOperation(planningEntry, raw, operation)
-				if (planned.kind !== "edit") return planned
-				const edits = planned.edits
-				const anchorCurrent = () =>
-					owns() &&
-					bufferIdentity.lookup(currentScope, path) === id &&
-					registry.get(key) === runtime &&
-					runtimeIncarnation(runtime) === incarnation &&
-					runtime.revision === generation &&
-					validateOrgAgendaOrigin({ ...entry, origin }, runtime.source, revision, {
-						workspaceSessionId: session,
-						...(origin.source === "live"
-							? {
-									runtimeIncarnation: runtimeIncarnation(runtime),
-									sourceGeneration: runtime.revision,
-								}
-							: {}),
-					}).valid
-				const commandOwner = () =>
-					anchorCurrent() &&
-					nativeCloseReadyRef.current &&
-					parkedReservoir.canMutate() &&
-					!loadingRef.current &&
-					!mutationInProgressRef.current &&
-					!saveInFlightRef.current &&
-					!saveAllOwnerRef.current &&
-					!conflictsRef.current.has(path) &&
-					!autosavePausedRef.current.has(path)
-				const refusedCommit = () =>
-					anchorCurrent() ? rejected("A workspace operation is running.") : stale()
-				if (!commandOwner()) return refusedCommit()
-				// This observation precedes publication; a throwing observer cannot
-				// manufacture a committed outcome. Recheck ownership after callbacks.
-				options?.onCommitStarted?.()
-				if (!commandOwner()) return refusedCommit()
-				publishing = true
-				const beforePublication = runtime.revision
-				try {
-					return registry.applyCommandEdits(key, raw, edits, commandOwner)
-						? { kind: "confirmed" }
-						: refusedCommit()
-				} catch {
-					// Publication commits canonical state before notifying observers. A
-					// throwing observer must not report a retryable failure after that commit.
-					if (runtime.revision !== beforePublication) return { kind: "confirmed" }
-					throw new Error("Agenda publication failed before commit.")
-				} finally {
-					publishing = false
-				}
-			} catch {
-				return owns() ? rejected("Cannot change the agenda heading.") : stale()
-			} finally {
-				signal?.removeEventListener("abort", cancel)
-				cancel()
-			}
+					createRuntime: (id, body) => {
+						if (!scope) throw new Error("Missing agenda scope.")
+						registry.create(
+							{ workspaceSessionId: scope.sessionId, bufferId: id },
+							body,
+							runtimePorts(scope.grant, scope.sessionId),
+						)
+					},
+					getRuntime: (id) =>
+						scope ? registry.get({ workspaceSessionId: scope.sessionId, bufferId: id }) : undefined,
+					runtimeIdentity: runtimeIncarnation,
+					commit: (id, body, edits, guard) =>
+						scope
+							? registry.applyCommandEdits(
+									{ workspaceSessionId: scope.sessionId, bufferId: id },
+									body,
+									edits,
+									guard,
+								)
+							: false,
+				},
+				signal,
+				options,
+			)
 		},
 		[originGrant, originSession],
 	)
@@ -1701,7 +1476,13 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			command: OrgAgendaCommand,
 			signal?: AbortSignal,
 			options?: OrgAgendaExecutionOptions,
-		) => runAgendaOperation(entry, command, signal, options) as Promise<OrgAgendaActionOutcome>,
+		) =>
+			runAgendaOperation(entry, command, signal, options).then(
+				(result): OrgAgendaActionOutcome =>
+					result.kind === "ready"
+						? { kind: "rejected", message: "Unsupported agenda command." }
+						: result,
+			),
 		[runAgendaOperation],
 	)
 	const actOnAgendaEntry = useCallback(
@@ -1711,11 +1492,14 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	)
 	const prepareAgendaPlanning = useCallback(
 		(entry: OrgAgendaEntry, field: "schedule" | "deadline", signal?: AbortSignal) =>
-			runAgendaOperation(
-				entry,
-				{ kind: "prepare", field },
-				signal,
-			) as Promise<OrgAgendaPlanningPreparation>,
+			runAgendaOperation(entry, { kind: "prepare", field }, signal).then(
+				(result): OrgAgendaPlanningPreparation =>
+					result.kind === "ready"
+						? result
+						: result.kind === "stale" || result.kind === "rejected"
+							? { kind: result.kind, message: result.message }
+							: { kind: "rejected", message: "Unsupported agenda preparation." },
+			),
 		[runAgendaOperation],
 	)
 

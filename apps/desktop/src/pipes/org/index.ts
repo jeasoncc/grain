@@ -1,4 +1,9 @@
 export {
+	captureOrgAgendaOperation,
+	freezeOrgAgendaEntrySnapshot,
+	planAgendaOperation,
+} from "./org-agenda-command-plan.pipe"
+export {
 	type AnchoredOrgAgendaEntry,
 	type OrgAgendaEntry,
 	type OrgAgendaEntryKind,
